@@ -100,6 +100,12 @@ const STEP_TEXTS: Readonly<Record<StepKey, Omit<ActivationStep, 'key' | 'blockin
       "L'extrait est déposé — ouvrez-le, comparez-le à l'identité enregistrée, puis confirmez.",
     cta: "J'ai vérifié cet extrait",
   },
+  chorus: {
+    title: 'Fiche Chorus relevée',
+    detail:
+      "Un organisme public est facturé par Chorus Pro : relevez dans l'annuaire ce qu'il exige sur ses factures (engagement, code service).",
+    cta: 'Relever la fiche Chorus',
+  },
   bank_account: {
     title: 'RIB du client',
     detail:
@@ -142,6 +148,8 @@ const BLOCKER_SENTENCES: Readonly<Record<ActivationBlocker, string>> = {
   telephone: 'Aucun interlocuteur joignable : renseignez au moins un numéro de téléphone.',
   vat: 'Le numéro de TVA intracommunautaire manque.',
   facturation: "L'adresse de facturation manque.",
+  chorus:
+    "La fiche Chorus Pro n'est pas relevée : sans elle, on ne sait pas comment adresser les factures de cet organisme public.",
 };
 
 /**
@@ -244,6 +252,7 @@ function debitSteps(company: AdminCompanyDetail): readonly ActivationStep[] {
 const PIECE_BLOCKERS: Partial<Record<ActivationPiece, ActivationBlocker>> = {
   vat: 'vat',
   billing: 'facturation',
+  chorus: 'chorus',
 };
 
 /**

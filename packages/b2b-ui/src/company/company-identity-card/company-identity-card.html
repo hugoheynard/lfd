@@ -25,9 +25,9 @@
 
   <fold-card>
     <fold-field-list>
-      <fold-field label="Raison sociale">{{ id.raisonSociale }}</fold-field>
-      <fold-field label="Enseigne" [empty]="!id.enseigne">{{ id.enseigne }}</fold-field>
-      <fold-field label="Forme juridique">{{ legalFormLabel() }}</fold-field>
+      <fold-field [label]="labels().raisonSociale">{{ id.raisonSociale }}</fold-field>
+      <fold-field [label]="labels().enseigne" [empty]="!id.enseigne">{{ id.enseigne }}</fold-field>
+      <fold-field [label]="labels().formeJuridique">{{ legalFormLabel() }}</fold-field>
       <fold-field label="SIRET">{{ id.siret }}</fold-field>
       <fold-field label="SIREN" [empty]="!id.siren">{{ id.siren }}</fold-field>
       <fold-field label="TVA intracommunautaire" [empty]="!id.vatNumber">
@@ -67,173 +67,176 @@
     }
   </fold-card>
 
-  <!-- KBIS : l'extrait demandé pour la validation. -->
-  <fold-card class="kbis">
-    <!-- Input caché mutualisé (au niveau carte pour être visible des deux vues). -->
-    <input
-      #kbisInput
-      type="file"
-      accept="application/pdf,image/*"
-      hidden
-      [disabled]="busy()"
-      (change)="onKbisSelected($event)"
-    />
+  <!-- KBIS : l'extrait demandé pour la validation. Un organisme public n'en a
+       pas : la fiche Chorus Pro en tient lieu, posée par l'app. -->
+  @if (!isPublic()) {
+    <fold-card class="kbis">
+      <!-- Input caché mutualisé (au niveau carte pour être visible des deux vues). -->
+      <input
+        #kbisInput
+        type="file"
+        accept="application/pdf,image/*"
+        hidden
+        [disabled]="busy()"
+        (change)="onKbisSelected($event)"
+      />
 
-    <div class="kbis-head">
-      <div class="kbis-title">
-        <fold-icon name="contracts" [size]="18" />
-        <span>Extrait KBIS</span>
-        @if (id.kbis?.certified) {
-          <fold-badge content="Certifié" variant="success" />
-        } @else if (id.kbis) {
-          <fold-badge content="En attente de validation" variant="warning" />
-        }
+      <div class="kbis-head">
+        <div class="kbis-title">
+          <fold-icon name="contracts" [size]="18" />
+          <span>Extrait KBIS</span>
+          @if (id.kbis?.certified) {
+            <fold-badge content="Certifié" variant="success" />
+          } @else if (id.kbis) {
+            <fold-badge content="En attente de validation" variant="warning" />
+          }
+        </div>
       </div>
-    </div>
 
-    <!-- Remplacer un extrait VÉRIFIÉ annule la vérification : c'est la règle du
+      <!-- Remplacer un extrait VÉRIFIÉ annule la vérification : c'est la règle du
          serveur (un nouveau fichier n'hérite jamais de la parole donnée sur le
          précédent). La conséquence se dit AVANT le sélecteur de fichier, pas
          après coup dans un toast — une fois le fichier déposé, il est trop tard
          pour changer d'avis. -->
-    @if (replacing()) {
-      <fold-callout variant="info" class="kbis-replace">
-        <p>
-          Ce nouvel extrait <strong>ne sera pas vérifié</strong> : il faudra le confronter à
-          l'identité et le confirmer, comme le précédent.
-        </p>
-        <p>
-          Entre-temps, le compte n'est plus couvert par une vérification —
-          <strong>le régime mensuel n'est pas disponible</strong> tant que le nouvel extrait n'a pas
-          été vérifié.
-        </p>
-        <div class="kbis-replace-actions">
-          <button foldButton size="sm" (click)="confirmReplace(kbisInput)">
-            Choisir le nouvel extrait
-          </button>
-          <!-- 🔴 La photo manquait ICI, et c'est le cas où elle sert le plus :
+      @if (replacing()) {
+        <fold-callout variant="info" class="kbis-replace">
+          <p>
+            Ce nouvel extrait <strong>ne sera pas vérifié</strong> : il faudra le confronter à
+            l'identité et le confirmer, comme le précédent.
+          </p>
+          <p>
+            Entre-temps, le compte n'est plus couvert par une vérification —
+            <strong>le régime mensuel n'est pas disponible</strong> tant que le nouvel extrait n'a
+            pas été vérifié.
+          </p>
+          <div class="kbis-replace-actions">
+            <button foldButton size="sm" (click)="confirmReplace(kbisInput)">
+              Choisir le nouvel extrait
+            </button>
+            <!-- 🔴 La photo manquait ICI, et c'est le cas où elle sert le plus :
                un extrait périmé se remplace chez le client, l'extrait neuf sur
                le comptoir. Sans elle, il fallait repartir et revenir. -->
-          @if (handheld) {
-            <button foldButton emphasis="outline" size="sm" (click)="capture()">
-              Photographier
+            @if (handheld) {
+              <button foldButton emphasis="outline" size="sm" (click)="capture()">
+                Photographier
+              </button>
+            }
+            <button foldButton emphasis="outline" size="sm" (click)="replacing.set(false)">
+              Annuler
             </button>
-          }
-          <button foldButton emphasis="outline" size="sm" (click)="replacing.set(false)">
-            Annuler
-          </button>
-        </div>
-      </fold-callout>
-    }
+          </div>
+        </fold-callout>
+      }
 
-    @if (error(); as message) {
-      <fold-callout variant="alert" announce>{{ message }}</fold-callout>
-    }
+      @if (error(); as message) {
+        <fold-callout variant="alert" announce>{{ message }}</fold-callout>
+      }
 
-    <!-- La carte CONSTATE, elle ne juge pas : ce qu'un extrait manquant empêche
+      <!-- La carte CONSTATE, elle ne juge pas : ce qu'un extrait manquant empêche
          appartient au verdict d'activation, et la synthèse le dit déjà. Cette
          phrase l'énonçait une seconde fois — « il n'empêche pas l'activation,
          mais la synthèse le réclamera » — et une règle écrite à deux endroits
          finit toujours par se contredire. Le TON, lui, reste informé par le
          réglage : exigé se voit en avertissement, attendu en information. -->
-    @if (askForKbis() && !id.kbis) {
-      <fold-callout variant="info">
-        Aucun extrait KBIS n'a encore été déposé. Un PDF ou une photo lisible font l'affaire.
-      </fold-callout>
-    }
+      @if (askForKbis() && !id.kbis) {
+        <fold-callout variant="info">
+          Aucun extrait KBIS n'a encore été déposé. Un PDF ou une photo lisible font l'affaire.
+        </fold-callout>
+      }
 
-    @if (id.kbis; as k) {
-      <div class="kbis-file">
-        <div class="kbis-meta">
-          <fold-icon name="contracts" [size]="20" />
-          <span class="kbis-name">{{ k.fileName }}</span>
-          <span class="kbis-date">Déposé le {{ k.uploadedAt | date: 'dd/MM/yyyy' }}</span>
-        </div>
-        @if (canAccessKbis()) {
-          <!-- Des icônes en fin de ligne : le nom du fichier dit déjà de quoi il
+      @if (id.kbis; as k) {
+        <div class="kbis-file">
+          <div class="kbis-meta">
+            <fold-icon name="contracts" [size]="20" />
+            <span class="kbis-name">{{ k.fileName }}</span>
+            <span class="kbis-date">Déposé le {{ k.uploadedAt | date: 'dd/MM/yyyy' }}</span>
+          </div>
+          @if (canAccessKbis()) {
+            <!-- Des icônes en fin de ligne : le nom du fichier dit déjà de quoi il
                s'agit, les libellés ne répétaient que l'évident et poussaient la
                ligne à passer sur deux niveaux. Le titre reste accessible.
                « Remplacer » ouvre la tête de file parce que c'est le geste qui
                ENGAGE — les deux suivants ne font que lire la pièce. -->
-          <div class="kbis-actions">
-            @if (canManageKbis()) {
-              <button
-                foldButton
-                emphasis="outline"
-                size="sm"
-                icon="upload"
-                title="Remplacer l'extrait"
-                aria-label="Remplacer l'extrait"
-                [disabled]="busy()"
-                (click)="askReplace()"
-              ></button>
-            }
-            <button
-              foldButton
-              emphasis="outline"
-              size="sm"
-              icon="eye"
-              title="Voir l'extrait"
-              aria-label="Voir l'extrait"
-              (click)="viewKbis.emit()"
-            ></button>
-            <button
-              foldButton
-              emphasis="soft"
-              size="sm"
-              icon="download"
-              title="Télécharger l'extrait"
-              aria-label="Télécharger l'extrait"
-              (click)="downloadKbis.emit()"
-            ></button>
-          </div>
-        }
-      </div>
-
-      <!-- Ce que le porteur de la carte a le droit d'ajouter SOUS le fichier :
-           côté staff, la certification. La carte n'en sait rien — elle réserve
-           la place, au bon endroit, pour que l'action vive avec la pièce
-           qu'elle concerne plutôt que dans une carte voisine. -->
-      <ng-content select="[kbisFooter]" />
-    } @else {
-      <div class="kbis-drop">
-        <fold-icon name="upload" [size]="30" />
-        <p class="kbis-drop-title">Aucun KBIS déposé</p>
-        <p class="kbis-drop-sub">{{ kbisEmptyHint() }}</p>
-        @if (canManageKbis()) {
-          <div class="kbis-drop-actions">
-            <button
-              foldButton
-              intent="warning"
-              emphasis="solid"
-              size="sm"
-              icon="plus"
-              [disabled]="busy()"
-              (click)="kbisInput.click()"
-            >
-              {{ busy() ? 'Dépôt…' : 'Déposer le KBIS' }}
-            </button>
-            <!-- Secours : l'extrait est sur le comptoir et le scanner au bureau.
-                 Sur un poste fixe le bouton n'apparaît pas — une webcam de
-                 portable qui photographie un document posé à plat rend une
-                 pièce qu'on ne peut pas certifier, et le scanner y est meilleur.
-                 La capacité se constate (`pointer: coarse`), elle ne se suppose
-                 pas : au doute, pas de bouton. -->
-            @if (handheld) {
+            <div class="kbis-actions">
+              @if (canManageKbis()) {
+                <button
+                  foldButton
+                  emphasis="outline"
+                  size="sm"
+                  icon="upload"
+                  title="Remplacer l'extrait"
+                  aria-label="Remplacer l'extrait"
+                  [disabled]="busy()"
+                  (click)="askReplace()"
+                ></button>
+              }
               <button
                 foldButton
                 emphasis="outline"
                 size="sm"
                 icon="eye"
+                title="Voir l'extrait"
+                aria-label="Voir l'extrait"
+                (click)="viewKbis.emit()"
+              ></button>
+              <button
+                foldButton
+                emphasis="soft"
+                size="sm"
+                icon="download"
+                title="Télécharger l'extrait"
+                aria-label="Télécharger l'extrait"
+                (click)="downloadKbis.emit()"
+              ></button>
+            </div>
+          }
+        </div>
+
+        <!-- Ce que le porteur de la carte a le droit d'ajouter SOUS le fichier :
+           côté staff, la certification. La carte n'en sait rien — elle réserve
+           la place, au bon endroit, pour que l'action vive avec la pièce
+           qu'elle concerne plutôt que dans une carte voisine. -->
+        <ng-content select="[kbisFooter]" />
+      } @else {
+        <div class="kbis-drop">
+          <fold-icon name="upload" [size]="30" />
+          <p class="kbis-drop-title">Aucun KBIS déposé</p>
+          <p class="kbis-drop-sub">{{ kbisEmptyHint() }}</p>
+          @if (canManageKbis()) {
+            <div class="kbis-drop-actions">
+              <button
+                foldButton
+                intent="warning"
+                emphasis="solid"
+                size="sm"
+                icon="plus"
                 [disabled]="busy()"
-                (click)="capture()"
+                (click)="kbisInput.click()"
               >
-                Prendre en photo
+                {{ busy() ? 'Dépôt…' : 'Déposer le KBIS' }}
               </button>
-            }
-          </div>
-        }
-      </div>
-    }
-  </fold-card>
+              <!-- Secours : l'extrait est sur le comptoir et le scanner au bureau.
+                 Sur un poste fixe le bouton n'apparaît pas — une webcam de
+                 portable qui photographie un document posé à plat rend une
+                 pièce qu'on ne peut pas certifier, et le scanner y est meilleur.
+                 La capacité se constate (`pointer: coarse`), elle ne se suppose
+                 pas : au doute, pas de bouton. -->
+              @if (handheld) {
+                <button
+                  foldButton
+                  emphasis="outline"
+                  size="sm"
+                  icon="eye"
+                  [disabled]="busy()"
+                  (click)="capture()"
+                >
+                  Prendre en photo
+                </button>
+              }
+            </div>
+          }
+        </div>
+      }
+    </fold-card>
+  }
 </fold-page-section>

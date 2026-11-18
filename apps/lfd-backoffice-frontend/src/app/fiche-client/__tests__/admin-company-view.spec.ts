@@ -40,6 +40,7 @@ function company(over: Partial<AdminCompanyDetail> = {}): AdminCompanyDetail {
     createdAt: '2026-07-30T10:00:00.000Z',
     declaredVia: null,
     piecesReached: [],
+    chorusRouting: null,
     activatedAt: null,
     warnings: [],
     // Le DÉTAIL : c'est lui que la fiche projette, et lui seul qui sait si la

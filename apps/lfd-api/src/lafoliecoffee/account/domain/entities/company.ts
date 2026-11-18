@@ -1,4 +1,5 @@
 import {
+  ChorusRoutingNotPublicError,
   CompanyChangedSinceReadError,
   CompanyActivationBlockedError,
   CompanyAlreadyHasOwnerError,
@@ -24,6 +25,8 @@ import { PersonName } from "../value-objects/person-name.js";
 import { PhoneNumber } from "../value-objects/phone-number.js";
 import { contactSnapshotOf, sameContact } from "../value-objects/contact-details.js";
 import { LegalRegistration } from "../value-objects/legal-registration.js";
+import { ensurePublicNatureKept, isPublicFormeJuridique } from "../value-objects/public-nature.js";
+import { ChorusRouting, type ChorusRoutingInput } from "../value-objects/chorus-routing.js";
 import { ensureVatMatchesSiren, normalizedVatNumber } from "../value-objects/vat-number.js";
 import type { Siren } from "../value-objects/siren.js";
 import type { Siret } from "../value-objects/siret.js";
@@ -492,7 +495,7 @@ export class Company {
       this.raisonSocialeValue = optional(input.raisonSociale, "Raison sociale");
     }
     if (this.formeJuridiqueValue === "") {
-      this.formeJuridiqueValue = legalForm(input.formeJuridique);
+      this.reviseLegalForm(input.formeJuridique);
     }
   }
 
@@ -522,8 +525,46 @@ export class Company {
       this.raisonSocialeValue = optional(input.raisonSociale, "Raison sociale");
     }
     if (input.formeJuridique.trim() !== "") {
-      this.formeJuridiqueValue = legalForm(input.formeJuridique);
+      this.reviseLegalForm(input.formeJuridique);
     }
+  }
+
+  /**
+   * Le seul passage qui réécrit la forme d'une société existante : la nature
+   * (entreprise ou organisme public) se fige dès que le compte n'est plus en
+   * attente.
+   *
+   * @throws {CompanyPublicNatureFrozenError}
+   */
+  private reviseLegalForm(raw: string): void {
+    const next = legalForm(raw);
+    ensurePublicNatureKept({
+      companyId: this.identityId ?? "",
+      status: this.statusValue,
+      before: this.formeJuridiqueValue,
+      after: next,
+    });
+    this.formeJuridiqueValue = next;
+  }
+
+  /** La forme juridique est-elle celle d'un organisme public (facturé par Chorus Pro) ? */
+  get isPublic(): boolean {
+    return isPublicFormeJuridique(this.formeJuridiqueValue);
+  }
+
+  /**
+   * La fiche Chorus Pro relevée pour cette société. Seul un organisme public
+   * en a une : sur une autre forme, elle ne routerait aucune facture et
+   * laisserait croire qu'elle le fait.
+   *
+   * @throws {ChorusRoutingNotPublicError} la forme juridique n'est pas publique.
+   * @throws {InvalidChorusRoutingError} la fiche est mal formée.
+   */
+  recordChorusRouting(input: ChorusRoutingInput, checkedBy: StaffTrace): ChorusRouting {
+    if (!this.isPublic) {
+      throw new ChorusRoutingNotPublicError(this.identityId ?? "");
+    }
+    return ChorusRouting.record(input, checkedBy);
   }
 
   /**

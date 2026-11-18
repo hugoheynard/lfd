@@ -9,10 +9,12 @@ export interface DossierFacts {
   readonly kbisDeposited: boolean;
   readonly hasBillingAddress: boolean;
   readonly hasDeliveryAddress: boolean;
+  /** La fiche Chorus Pro d'un organisme public est-elle relevée ? */
+  readonly chorusRouted: boolean;
 }
 
 /** L'ordre canonique : celui de l'étage Activation, que les écrans connaissent. */
-const ORDER: readonly ActivationPiece[] = ["vat", "kbis", "billing", "delivery"];
+const ORDER: readonly ActivationPiece[] = ["vat", "kbis", "chorus", "billing", "delivery"];
 
 /**
  * Les pièces présentes dans le dossier, dans l'ordre canonique — ce que lit le
@@ -31,6 +33,7 @@ export function dossierPieces(facts: DossierFacts): ActivationPiece[] {
     kbis: facts.kbisDeposited,
     billing: facts.hasBillingAddress,
     delivery: facts.hasDeliveryAddress,
+    chorus: facts.chorusRouted,
   };
   return ORDER.filter((piece) => present[piece]);
 }

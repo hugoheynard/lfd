@@ -17,7 +17,9 @@ import {
   DEFERRED_TERM_LABELS,
   deferredTermSchema,
   MANDATE_STATUS_LABELS,
+  publicPaymentDeadlineDays,
   SEPA_SCHEME_LABELS,
+  toLegalForm,
   type CompanyBankAccountView,
   type DeferredTerm,
   type MintBlocker,
@@ -184,6 +186,17 @@ export class PaiementSection {
    * société n'existe pas encore.
    */
   readonly company = input<AdminCompanyDetail | null>(null);
+
+  /**
+   * Le délai légal d'un **organisme public**, en jours ; `null` pour une
+   * entreprise. Un organisme public paie par virement sur mandat administratif,
+   * après dépôt de la facture sur Chorus Pro : la section ne montre alors qu'un
+   * bloc fixe, sans carte, sans RIB, sans mandat SEPA et sans choix du moyen.
+   */
+  protected readonly publicDeadline = computed(() => {
+    const form = toLegalForm(this.companyLegalForm());
+    return form === null ? null : publicPaymentDeadlineDays(form);
+  });
 
   /** Le staff change l'ensemble complet des crédits accordés. */
   readonly grantedTermsChange = output<readonly DeferredTerm[]>();

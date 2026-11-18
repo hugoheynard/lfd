@@ -11,7 +11,11 @@
     </fold-callout>
   }
 
-  <lfd-company-identity-fields [value]="draft()" (valueChange)="draft.set($event)" />
+  <lfd-company-identity-fields
+    nature="company"
+    [value]="draft()"
+    (valueChange)="draft.set($event)"
+  />
 
   <p class="note">
     Le contact principal de l'entreprise est repris de votre profil. Votre entreprise sera créée

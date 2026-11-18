@@ -66,8 +66,21 @@
             description="Le nom commercial suffit pour ouvrir ; les mentions du greffe peuvent venir ensuite."
           >
             <fold-card class="form">
+              <!-- La NATURE d'abord, rien de coché : elle décide des formes
+                   proposées et des mots de l'identité. Un organisme public est
+                   facturé par Chorus Pro, et cela se décide à l'ouverture. -->
+              <fold-listbox
+                label="Nature du compte"
+                required
+                placeholder="Entreprise ou organisme public"
+                [options]="natureOptions"
+                [value]="openingNature()"
+                (selectionChange)="chooseNature($event)"
+                data-opening-nature
+              />
               <lfd-company-identity-fields
                 [legalDeferred]="true"
+                [nature]="openingNature()"
                 [value]="identityDraft()"
                 (valueChange)="identityDraft.set($event)"
               />
@@ -107,6 +120,8 @@
           <div class="open-actions">
             @if (!canCreate()) {
               <p class="open-blocker">Saisissez l'enseigne pour ouvrir le compte.</p>
+            } @else if (natureBlocker(); as reason) {
+              <p class="open-blocker" data-opening-nature-missing>{{ reason }}</p>
             } @else if (openingModeMissing()) {
               <p class="open-blocker" data-opening-mode-missing>
                 Choisissez le mode de facturation pour ouvrir le compte.
@@ -202,6 +217,15 @@
               </div>
             }
           </lfd-company-identity-card>
+          <!-- Un organisme public n'a pas de KBIS : sa fiche Chorus Pro en tient
+               lieu, juste sous l'identité. -->
+          @if (isPublic() && fiche.company(); as c) {
+            <app-chorus-routing-card
+              [company]="c"
+              [canManage]="canManage()"
+              (changed)="fiche.reload()"
+            />
+          }
         }
 
         <!-- Ce que le compte EST, juste sous son identité : une holding qui

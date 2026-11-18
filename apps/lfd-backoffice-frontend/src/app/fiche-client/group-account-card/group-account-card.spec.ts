@@ -38,6 +38,7 @@ function principal(hierarchy: Partial<CompanyHierarchyView> = {}): AdminCompanyD
     createdAt: '2026-07-30T10:00:00.000Z',
     declaredVia: null,
     piecesReached: [],
+    chorusRouting: null,
     activatedAt: null,
     warnings: [],
     activation: null,

@@ -21,6 +21,10 @@
        « obligatoire pour cette forme juridique » sans qu'aucune forme soit
        choisie. -->
   <lfd-company-identity-fields [(value)]="draft" [enseigneOptional]="true" />
+
+  @if (refusal(); as message) {
+    <fold-callout variant="alert" announce data-identity-refusal>{{ message }}</fold-callout>
+  }
 </div>
 
 <footer class="foot">

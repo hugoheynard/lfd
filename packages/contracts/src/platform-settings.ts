@@ -19,6 +19,8 @@ import { z } from "zod";
  * Les pièces d'un dossier. `paymentTerm` n'en est pas une (elle a toujours une
  * valeur) ; `delivery` n'est plus demandée tant que le service n'existe pas,
  * mais son nom reste — c'est un vocabulaire, pas une liste d'exigences.
+ * `chorus` (la fiche Chorus Pro relevée) remplace `kbis` pour un organisme
+ * public.
  */
-export const activationPieceSchema = z.enum(["vat", "kbis", "billing", "delivery"]);
+export const activationPieceSchema = z.enum(["vat", "kbis", "billing", "delivery", "chorus"]);
 export type ActivationPiece = z.infer<typeof activationPieceSchema>;

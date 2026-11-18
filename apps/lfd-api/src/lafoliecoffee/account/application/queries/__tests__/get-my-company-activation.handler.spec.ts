@@ -56,6 +56,7 @@ const detail: AdminCompanyDetailView = {
   activation: null,
   suspensionCause: null,
   contacts: [],
+  chorusRouting: null,
   fulfillmentPreference: {
     method: null,
     pickupAddressId: null,

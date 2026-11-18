@@ -8,13 +8,8 @@ import {
   signal,
   untracked,
 } from '@angular/core';
-import { sirenFollowingSiret } from '@lfd/b2b-ui/company';
-import {
-  LEGAL_FORM_OPTIONS,
-  legalFormRequiresVat,
-  toLegalForm,
-  type CompanyView,
-} from '@lfd/contracts';
+import { legalFormOptionsOf, sirenFollowingSiret } from '@lfd/b2b-ui/company';
+import { legalFormRequiresVat, toLegalForm, type CompanyView } from '@lfd/contracts';
 import {
   FoldButtonComponent,
   FoldCalloutComponent,
@@ -203,8 +198,12 @@ export class IdentityPanel {
   });
   protected readonly openFields = computed(() => this.legalFields().filter((f) => !f.locked));
 
-  /** Les formes du catalogue — la liste vient du contrat, pas de l'écran. */
-  protected readonly legalForms = LEGAL_FORM_OPTIONS;
+  /**
+   * Les formes du catalogue, **sans les formes publiques** : un organisme
+   * public est ouvert par l'équipe, qui relève sa fiche Chorus Pro. Une forme
+   * publique déjà posée se lit, comme toute mention du greffe renseignée.
+   */
+  protected readonly legalForms = legalFormOptionsOf('company');
 
   /** Le choix en cours : seule la liste l'écrit, il est donc toujours une clé du catalogue. */
   protected readonly formChoice = computed(() => toLegalForm(this.legal().formeJuridique));

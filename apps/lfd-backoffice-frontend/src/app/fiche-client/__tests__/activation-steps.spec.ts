@@ -278,3 +278,23 @@ describe('le prélèvement se prépare quand un règlement différé est accord�
     expect(steps).toEqual([]);
   });
 });
+
+describe('un organisme public : la fiche Chorus tient la place du KBIS', () => {
+  const PUBLIC_TODO: readonly ActivationCheck[] = [
+    { piece: 'vat', blocking: false, done: true },
+    { piece: 'chorus', blocking: true, done: false },
+    { piece: 'billing', blocking: true, done: false },
+  ];
+
+  it('réclame « Fiche Chorus relevée », bloquante, et aucun KBIS', () => {
+    const steps = activationSteps(
+      withGate({ blocking: ['chorus', 'facturation'], checklist: PUBLIC_TODO }),
+    );
+    expect(steps.map((step) => step.key)).toEqual(['chorus', 'billing']);
+    expect(steps[0]).toMatchObject({ title: 'Fiche Chorus relevée', blocking: true });
+  });
+
+  it('dit pourquoi le compte ne s’active pas sans elle', () => {
+    expect(blockedReason(withGate({ blocking: ['chorus'] }))).toContain('fiche Chorus Pro');
+  });
+});

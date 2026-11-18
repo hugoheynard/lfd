@@ -560,6 +560,10 @@ export type {
 export {
   legalFormSchema,
   legalFormRequiresVat,
+  isPublicLegalForm,
+  PUBLIC_LEGAL_FORM_HINTS,
+  PUBLIC_LEGAL_FORM_GUIDE,
+  publicPaymentDeadlineDays,
   toLegalForm,
   LEGAL_FORM_LABELS,
   HOLDER_CIVILITIES,
@@ -569,6 +573,8 @@ export {
   LEGAL_FORM_OPTIONS,
 } from "./legal-form.js";
 export type { LegalForm, LegalFormOption } from "./legal-form.js";
+export { chorusRoutingPayloadSchema } from "./chorus-routing.js";
+export type { ChorusRoutingPayload, ChorusRoutingView } from "./chorus-routing.js";
 export {
   companyMemberRoleSchema,
   assignableRoleSchema,

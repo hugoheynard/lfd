@@ -2,11 +2,13 @@
      a en tête et que le client donne au téléphone. La raison sociale est une
      donnée de greffe — elle appartient au bloc légal, avec le SIRET. -->
 <fold-input
-  label="Enseigne"
+  [label]="labels().enseigne"
   [hint]="
-    enseigneOptional()
-      ? 'nom commercial, s\'il diffère de la raison sociale'
-      : 'le nom sous lequel l\'établissement est connu'
+    isPublic()
+      ? 'l\'école, la base ou le service qui commande'
+      : enseigneOptional()
+        ? 'nom commercial, s\'il diffère de la raison sociale'
+        : 'le nom sous lequel l\'établissement est connu'
   "
   [required]="!enseigneOptional()"
   [optional]="enseigneOptional()"
@@ -14,11 +16,13 @@
   (valueChange)="setEnseigne($event)"
 />
 <fold-input
-  label="Raison sociale"
+  [label]="labels().raisonSociale"
   [hint]="
-    legalDeferred()
-      ? 'la dénomination au registre — à compléter avec le SIRET'
-      : 'la dénomination légale, telle qu\'elle figure au registre'
+    isPublic()
+      ? 'le nom officiel de l\'organisme (commune, ministère…)'
+      : legalDeferred()
+        ? 'la dénomination au registre — à compléter avec le SIRET'
+        : 'la dénomination légale, telle qu\'elle figure au registre'
   "
   [required]="!legalDeferred()"
   [optional]="legalDeferred()"
@@ -30,16 +34,40 @@
   <!-- Une LISTE, pas un champ libre : c'est la forme juridique qui décide de
        l'assujettissement à la TVA, et une saisie hors catalogue tombait du
        mauvais côté sans que personne le voie. -->
-  <fold-listbox
-    class="forme"
-    label="Forme juridique"
-    placeholder="À choisir"
-    [required]="!legalDeferred()"
-    [optional]="legalDeferred()"
-    [options]="legalForms"
-    [value]="value().formeJuridique"
-    (selectionChange)="setFormeJuridique($event)"
-  />
+  @if (isPublic()) {
+    <!-- Une CARTE par catégorie publique, avec sa phrase et ses exemples : le
+         libellé seul ne dit pas où ranger une cantine ou un collège. -->
+    <div class="forme categories" role="group" [attr.aria-label]="labels().formeJuridique">
+      <fold-callout variant="warning" data-public-guide>
+        <strong>{{ publicGuide.title }}</strong> {{ publicGuide.body }}
+      </fold-callout>
+      @for (category of publicCategories(); track category.value) {
+        <fold-card
+          interactive
+          padding="sm"
+          (activated)="setFormeJuridique(category.value)"
+          [attr.data-public-category]="category.value"
+        >
+          <fold-element-title variant="title" [title]="category.label" [subtitle]="category.hint">
+            @if (value().formeJuridique === category.value) {
+              <fold-badge titleAction content="Choisie" variant="success" />
+            }
+          </fold-element-title>
+        </fold-card>
+      }
+    </div>
+  } @else {
+    <fold-listbox
+      class="forme"
+      [label]="labels().formeJuridique"
+      placeholder="À choisir"
+      [required]="!legalDeferred()"
+      [optional]="legalDeferred()"
+      [options]="legalForms()"
+      [value]="value().formeJuridique"
+      (selectionChange)="setFormeJuridique($event)"
+    />
+  }
   <!-- Le SIREN SOUS le SIRET : il en est le préfixe quand celui-ci le porte, et
        le formulaire le propose alors. Saisi à part parce qu'il ne l'est pas
        toujours — et exigé par le mandat interentreprises. -->
@@ -49,12 +77,14 @@
       label="SIRET"
       placeholder="812 456 789 00021"
       [hint]="
-        legalDeferred()
-          ? 'à compléter plus tard s’il n’est pas connu — la clé de contrôle est vérifiée'
-          : '14 chiffres — la clé de contrôle est vérifiée'
+        isPublic()
+          ? '14 chiffres — il adresse les factures sur Chorus Pro'
+          : legalDeferred()
+            ? 'à compléter plus tard s’il n’est pas connu — la clé de contrôle est vérifiée'
+            : '14 chiffres — la clé de contrôle est vérifiée'
       "
-      [required]="!legalDeferred()"
-      [optional]="legalDeferred()"
+      [required]="siretRequired()"
+      [optional]="!siretRequired()"
       [value]="value().siret"
       (valueChange)="setSiret($event)"
     />
@@ -75,11 +105,13 @@
 <fold-input
   label="TVA intracommunautaire"
   [hint]="
-    vatUndecided()
-      ? 'obligatoire ou non selon la forme juridique'
-      : vatRequired()
-        ? 'obligatoire pour cette forme juridique'
-        : 'facultatif pour cette forme — franchise en base'
+    isPublic()
+      ? 'facultatif — un organisme public n\'en a souvent pas'
+      : vatUndecided()
+        ? 'obligatoire ou non selon la forme juridique'
+        : vatRequired()
+          ? 'obligatoire pour cette forme juridique'
+          : 'facultatif pour cette forme — franchise en base'
   "
   [required]="vatRequired() && !legalDeferred()"
   [optional]="!vatRequired()"

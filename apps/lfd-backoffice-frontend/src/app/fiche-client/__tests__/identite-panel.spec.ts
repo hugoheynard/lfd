@@ -1,3 +1,4 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { FoldPanelRef } from 'fold-ng';
 import { beforeEach, describe, expect, it } from 'vitest';
@@ -90,5 +91,48 @@ describe('AdminIdentitePanel', () => {
 
     expect(text).not.toContain('obligatoire pour cette forme juridique');
     expect(text).toContain('selon la forme juridique');
+  });
+});
+
+describe('AdminIdentitePanel — le refus de changer de nature', () => {
+  beforeEach(() => {
+    TestBed.resetTestingModule();
+  });
+
+  it('montre le message du serveur tel quel, dans le panneau resté ouvert', async () => {
+    const message =
+      "Ce compte est actif : il ne peut pas passer d'entreprise à organisme public. Ouvrez un autre compte.";
+    const toasts: unknown[] = [];
+    TestBed.configureTestingModule({
+      providers: [
+        {
+          provide: AdminCompaniesService,
+          useValue: {
+            updateIdentity: () =>
+              Promise.reject(
+                new HttpErrorResponse({
+                  status: 409,
+                  error: { code: 'account.company.public_nature_frozen', message },
+                }),
+              ),
+          },
+        },
+        {
+          provide: NotifyService,
+          useValue: { success: () => undefined, error: (e: unknown) => toasts.push(e) },
+        },
+        { provide: FoldPanelRef, useValue: { close: () => undefined } },
+      ],
+    });
+    const fixture = TestBed.createComponent(AdminIdentitePanel);
+    fixture.componentRef.setInput('data', PARTIELLE);
+    fixture.detectChanges();
+
+    await fixture.componentInstance['submit']();
+    fixture.detectChanges();
+
+    const host = fixture.nativeElement as HTMLElement;
+    expect(host.querySelector('[data-identity-refusal]')?.textContent?.trim()).toBe(message);
+    expect(toasts).toEqual([]);
   });
 });

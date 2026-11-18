@@ -17,11 +17,16 @@ import {
   FoldPanelRef,
 } from 'fold-ng';
 
+import { httpErrorCode, httpErrorMessage } from '@lfd/endpoints';
+
 import { NotifyService } from '../../../notify.service';
 import { AdminCompaniesService } from '../../../comptes-clients/admin-companies.service';
 import { isStaleSheet } from '../../../comptes-clients/sheet-revision';
 
 /** Charge d'ouverture : la société + l'identité souple courante (à préremplir). */
+/** Le refus d'un passage entreprise ↔ organisme public sur un compte déjà actif. */
+const PUBLIC_NATURE_FROZEN = 'account.company.public_nature_frozen';
+
 export interface AdminIdentitePanelData {
   readonly companyId: string;
   readonly enseigne: string;
@@ -91,6 +96,12 @@ export class AdminIdentitePanel {
   protected readonly submitting = signal(false);
   /** La fiche a changé depuis son ouverture : le seul geste utile est de la relire. */
   protected readonly stale = signal(false);
+  /**
+   * Le refus de changer de nature, dit tel quel par le serveur : il nomme le
+   * geste de sortie (ouvrir un autre compte), et se lit là où l'on a voulu
+   * changer la forme — pas dans un toast déjà reparti.
+   */
+  protected readonly refusal = signal<string | null>(null);
 
   /**
    * Le compte a-t-il été ouvert sans ses papiers ? Se lit sur la donnée
@@ -129,6 +140,7 @@ export class AdminIdentitePanel {
       return;
     }
     this.submitting.set(true);
+    this.refusal.set(null);
     try {
       const draft = this.draft();
       await this.service.updateIdentity(
@@ -150,6 +162,8 @@ export class AdminIdentitePanel {
     } catch (error) {
       if (isStaleSheet(error)) {
         this.stale.set(true);
+      } else if (httpErrorCode(error) === PUBLIC_NATURE_FROZEN) {
+        this.refusal.set(httpErrorMessage(error));
       } else {
         this.notify.error(error);
       }

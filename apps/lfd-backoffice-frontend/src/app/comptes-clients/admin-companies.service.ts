@@ -8,6 +8,7 @@ import type {
   AccountHolderPayload,
   BillingAddressPayload,
   CertifyKbisPayload,
+  ChorusRoutingPayload,
   CompanyWarningsCountView,
   CompanyMemberInvitedView,
   CompanyMemberView,
@@ -275,6 +276,17 @@ export class AdminCompaniesService {
         payload,
         intentOptions(intentKey),
       ),
+    );
+  }
+
+  /**
+   * Pose la **fiche Chorus Pro** d'un organisme public, relevée dans l'annuaire.
+   * Sans clé d'intention : le geste écrit l'état entier, le rejouer ne change
+   * rien. Le serveur refuse (409) une société dont la forme n'est pas publique.
+   */
+  async setChorusRouting(companyId: string, payload: ChorusRoutingPayload): Promise<void> {
+    await firstValueFrom(
+      this.http.put<void>(`${B2B_API_BASE}/admin/companies/${companyId}/chorus-routing`, payload),
     );
   }
 

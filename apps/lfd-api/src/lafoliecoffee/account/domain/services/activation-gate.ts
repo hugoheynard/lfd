@@ -6,6 +6,7 @@ export type { ActivationBlocker, ActivationCheck, ActivationGate };
 import type { ActivationPiece } from "@lfd/contracts";
 
 import type { AdminCompanyDetailView } from "../ports/admin-company.reader.js";
+import { isPublicFormeJuridique } from "../value-objects/public-nature.js";
 
 /**
  * Les pièces demandées, et **lesquelles bloquent** — écrit ici, en dur.
@@ -22,24 +23,42 @@ import type { AdminCompanyDetailView } from "../ports/admin-company.reader.js";
  *   l'extrait, on ne veut pas perdre la commande de demain matin pour un PDF.
  *   Le signal vit ailleurs (file de vérification), pas dans cette porte.
  * - `billing` — bloquante. Il faut savoir à qui adresser la facture.
+ * - `chorus` — bloquante, et seulement pour une forme juridique publique, à
+ *   la place de `kbis` : la fiche Chorus Pro relevée dit comment adresser la
+ *   facture.
  *
  * La **livraison** n'y figure plus du tout : le service n'existe pas. Le jour
  * où il ouvre, elle revient ici — dans un commit, avec ses tests, pas dans une
  * case à cocher.
  */
-const PIECES: readonly { readonly piece: ActivationPiece; readonly blocking: boolean }[] = [
+type PieceRule = { readonly piece: ActivationPiece; readonly blocking: boolean };
+
+const PIECES: readonly PieceRule[] = [
   { piece: "vat", blocking: true },
   { piece: "kbis", blocking: false },
+  { piece: "billing", blocking: true },
+];
+
+/**
+ * Les pièces d'un **organisme public** : pas d'extrait KBIS (un organisme
+ * public n'est pas immatriculé au greffe), mais la fiche Chorus Pro, et elle
+ * bloque — sans elle, on ne sait pas adresser sa facture.
+ */
+const PUBLIC_PIECES: readonly PieceRule[] = [
+  { piece: "vat", blocking: true },
+  { piece: "chorus", blocking: true },
   { piece: "billing", blocking: true },
 ];
 
 const PIECE_BLOCKERS: Readonly<Partial<Record<ActivationPiece, ActivationBlocker>>> = {
   vat: "vat",
   billing: "facturation",
+  chorus: "chorus",
 };
 
 export function activationGate(company: AdminCompanyDetailView): ActivationGate {
-  const checklist = PIECES.map((piece) => ({
+  const pieces = isPublicFormeJuridique(company.formeJuridique) ? PUBLIC_PIECES : PIECES;
+  const checklist = pieces.map((piece) => ({
     piece: piece.piece,
     blocking: piece.blocking,
     done: isDone(company, piece.piece),
@@ -99,6 +118,8 @@ function isDone(company: AdminCompanyDetailView, piece: ActivationPiece): boolea
       return company.kbis?.certified === true;
     case "billing":
       return company.addresses.billing !== null;
+    case "chorus":
+      return company.chorusRouting !== null;
     case "delivery":
       // Le service n'existe pas : la pièce n'est jamais demandée (elle n'est pas
       // dans `PIECES`). Le cas reste écrit parce que le type l'exige, et il dira

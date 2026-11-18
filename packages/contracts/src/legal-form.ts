@@ -33,6 +33,10 @@ export const legalFormSchema = z.enum([
   "micro",
   "auto_entrepreneur",
   "foreign",
+  "public_state",
+  "public_local_authority",
+  "public_establishment",
+  "public_health_establishment",
 ]);
 export type LegalForm = z.infer<typeof legalFormSchema>;
 
@@ -51,6 +55,10 @@ export const LEGAL_FORM_LABELS: Readonly<Record<LegalForm, string>> = {
   micro: "Micro-entreprise",
   auto_entrepreneur: "Auto-entrepreneur",
   foreign: "Société de droit étranger",
+  public_state: "État et services de l'État (armée, préfecture…)",
+  public_local_authority: "Collectivité territoriale (commune, département, région)",
+  public_establishment: "Établissement public (école, lycée, université…)",
+  public_health_establishment: "Établissement public de santé",
 };
 
 /**
@@ -71,11 +79,67 @@ const NOT_VAT_LIABLE: ReadonlySet<LegalForm> = new Set<LegalForm>([
   // n'a pas de numéro de TVA intracommunautaire ; dans l'Union, elle en a un,
   // qu'on renseigne quand même — le champ reste ouvert, il n'est pas exigé.
   "foreign",
+  // Un organisme public n'a souvent pas de numéro de TVA intracommunautaire :
+  // le champ reste ouvert, il n'est pas exigé.
+  "public_state",
+  "public_local_authority",
+  "public_establishment",
+  "public_health_establishment",
 ]);
 
 /** Cette forme impose-t-elle un numéro de TVA intracommunautaire ? */
 export function legalFormRequiresVat(form: LegalForm): boolean {
   return !NOT_VAT_LIABLE.has(form);
+}
+
+/**
+ * Les formes **publiques**, et le délai légal de paiement de chacune, en jours
+ * après la réception de la facture : 50 pour un établissement public de santé,
+ * 30 pour les autres acheteurs publics. La nature publique d'un compte EST sa
+ * forme juridique : aucun autre champ ne la porte, et le délai s'en dérive.
+ */
+const PUBLIC_PAYMENT_DEADLINE_DAYS: Partial<Readonly<Record<LegalForm, number>>> = {
+  public_state: 30,
+  public_local_authority: 30,
+  public_establishment: 30,
+  public_health_establishment: 50,
+};
+
+/**
+ * Ce qui aide le commercial à choisir la catégorie d'un acheteur public : qui
+ * en relève, avec des exemples qu'il a au téléphone. Une école se trompe
+ * souvent de case — primaire (la commune) ou collège et lycée (établissement
+ * public) —, d'où l'exemple le plus précis à cet endroit.
+ */
+export const PUBLIC_LEGAL_FORM_HINTS: Partial<Readonly<Record<LegalForm, string>>> = {
+  public_state:
+    "Un service qui dépend directement d'un ministère. Ex. : une base ou un régiment de l'armée, une préfecture, une gendarmerie, un commissariat, un tribunal.",
+  public_local_authority:
+    "La commune, le département ou la région eux-mêmes, et leurs services. Ex. : une mairie, une crèche municipale, un conseil départemental. ⚠️ Une école MATERNELLE ou ÉLÉMENTAIRE est ici : elle n'a pas de budget à elle, c'est la mairie qui commande et qui paie.",
+  public_establishment:
+    "Un organisme public qui a son propre budget et son propre SIRET. Ex. : une université, un CROUS, un CCAS, un office de tourisme public, un musée national. ⚠️ Un COLLÈGE ou un LYCÉE est ici : il commande et paie lui-même, par son gestionnaire.",
+  public_health_establishment:
+    "Un hôpital public ou un établissement public de soins. Ex. : un centre hospitalier, un CHU, un EHPAD public. Le délai de paiement y est de 50 jours.",
+};
+
+/**
+ * L'encart affiché AU-DESSUS du choix de catégorie publique : la confusion la
+ * plus coûteuse est celle de l'école, parce qu'une mauvaise case adresse la
+ * facture à une structure qui ne la paiera pas, et Chorus la rejette.
+ */
+export const PUBLIC_LEGAL_FORM_GUIDE = {
+  title: "Une école ? Demandez d'abord au client de quelle école il s'agit.",
+  body: "Maternelle ou élémentaire : c'est la MAIRIE qui commande et paie → Collectivité territoriale, avec le SIRET de la mairie. Collège ou lycée : l'établissement paie lui-même → Établissement public, avec le SIRET du collège ou du lycée. Dans le doute, demandez au client « qui va payer la facture ? » : c'est la structure qu'il vous nomme qu'on enregistre, avec son SIRET.",
+} as const;
+
+/** Cette forme est-elle celle d'un acheteur public (facturé par Chorus Pro) ? */
+export function isPublicLegalForm(form: LegalForm): boolean {
+  return form in PUBLIC_PAYMENT_DEADLINE_DAYS;
+}
+
+/** Le délai légal de paiement d'un acheteur public, en jours ; `null` hors public. */
+export function publicPaymentDeadlineDays(form: LegalForm): number | null {
+  return PUBLIC_PAYMENT_DEADLINE_DAYS[form] ?? null;
 }
 
 /** Une entrée de liste déroulante : la valeur stockée, le mot lu. */
@@ -144,7 +208,9 @@ const NOT_A_HOLDER_LEGAL_FORM: Partial<Readonly<Record<LegalForm, LegalForm>>> =
 /**
  * La liste fermée de la case « civilité ou forme juridique » du **titulaire
  * d'un RIB** : les civilités, puis les libellés de {@link LEGAL_FORM_LABELS}
- * dans l'ordre de l'énumération, moins {@link NOT_A_HOLDER_LEGAL_FORM}. Dérivée, pas recopiée : une forme ajoutée à
+ * dans l'ordre de l'énumération, moins {@link NOT_A_HOLDER_LEGAL_FORM} et
+ * moins les formes publiques — un acheteur public paie par virement sur mandat
+ * administratif, jamais par prélèvement, et n'a donc pas de mandat à signer. Dérivée, pas recopiée : une forme ajoutée à
  * l'identité apparaît aussi dans le RIB.
  *
  * C'est le LIBELLÉ qui s'enregistre et s'imprime sur le mandat (« SAS »,
@@ -154,7 +220,7 @@ const NOT_A_HOLDER_LEGAL_FORM: Partial<Readonly<Record<LegalForm, LegalForm>>> =
 export const HOLDER_LEGAL_FORM_LABELS: readonly string[] = [
   ...HOLDER_CIVILITIES,
   ...legalFormSchema.options
-    .filter((form) => !(form in NOT_A_HOLDER_LEGAL_FORM))
+    .filter((form) => !(form in NOT_A_HOLDER_LEGAL_FORM) && !isPublicLegalForm(form))
     .map((form) => LEGAL_FORM_LABELS[form]),
 ];
 

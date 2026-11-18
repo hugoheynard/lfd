@@ -51,6 +51,7 @@ function detail(over: Partial<AdminCompanyDetailView> = {}): AdminCompanyDetailV
     activation: null,
     suspensionCause: null,
     contacts: [],
+    chorusRouting: null,
     fulfillmentPreference: {
       method: null,
       pickupAddressId: null,
@@ -316,5 +317,48 @@ describe("activationGate — le verdict, et il n'y en a qu'un", () => {
         "detenteur",
       ]);
     });
+  });
+});
+
+describe("activationGate — un organisme public", () => {
+  const CHORUS = {
+    commitmentRequired: true,
+    serviceCodeRequired: false,
+    defaultServiceCode: "",
+    checkedOn: "2026-11-01",
+    checkedBy: { name: "Camille", role: "commercial" },
+  };
+  const PUBLIC: Partial<AdminCompanyDetailView> = {
+    ...COMPLETE,
+    formeJuridique: "public_state",
+    vatNumber: "",
+    vatNumberRequired: false,
+    kbis: null,
+  };
+
+  it("ne demande pas d'extrait KBIS, et demande la fiche Chorus Pro, bloquante", () => {
+    const gate = activationGate(detail(PUBLIC));
+
+    expect(gate.checklist).toEqual([
+      { piece: "vat", blocking: true, done: true },
+      { piece: "chorus", blocking: true, done: false },
+      { piece: "billing", blocking: true, done: true },
+    ]);
+    expect(gate.blocking).toEqual(["chorus"]);
+    expect(gate.canActivate).toBe(false);
+  });
+
+  it("ouvre la porte quand la fiche Chorus Pro est relevée", () => {
+    const gate = activationGate(detail({ ...PUBLIC, chorusRouting: CHORUS }));
+
+    expect(gate.blocking).toEqual([]);
+    expect(gate.canActivate).toBe(true);
+  });
+
+  it("ne change rien hors forme publique, même avec une fiche Chorus rangée", () => {
+    const gate = activationGate(detail({ ...COMPLETE, chorusRouting: CHORUS }));
+
+    expect(gate.checklist.map((check) => check.piece)).toEqual(["vat", "kbis", "billing"]);
+    expect(gate.blocking).toEqual([]);
   });
 });

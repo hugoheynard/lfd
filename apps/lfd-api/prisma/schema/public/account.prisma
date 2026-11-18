@@ -325,6 +325,9 @@ model Company {
   /// Le carnet de notes du commercial — au plus un (cf. lafoliecoffee/client-notes/).
   clientNotebook ClientNotebook?
 
+  /// La fiche Chorus Pro d'un organisme public — au plus une.
+  chorusRouting CompanyChorusRouting?
+
   // Unicité du SIRET : index PARTIEL (`siret <> ''`), donc invisible du schéma
   // Prisma — il vit dans la migration `20260811160000_unicite_siret_et_interlocuteur`.
   // Le SIRET est facultatif à l'ouverture ; les chaînes vides sont des absences,
@@ -395,6 +398,31 @@ model CompanyCollectionForm {
 
   @@id([companyId, validFrom])
   @@map("company_collection_form")
+  @@schema("public")
+}
+
+/// **La fiche Chorus Pro** d'un organisme public, relevée à la main par le
+/// staff dans l'annuaire Chorus : ce que l'acheteur exige sur ses factures.
+/// Au plus une par société. Posée seulement sur une forme juridique publique
+/// (`Company.acceptChorusRouting`) ; le délai de paiement ne s'y range pas, il
+/// se dérive de la forme. Doc :
+/// `documentation/comptabilite/facturation/plan-clients-publics-chorus.md`.
+model CompanyChorusRouting {
+  companyId           String   @id @map("company_id")
+  company             Company  @relation(fields: [companyId], references: [id])
+  commitmentRequired  Boolean  @map("commitment_required")
+  serviceCodeRequired Boolean  @map("service_code_required")
+  /// Vide permis : un code exigé se saisit alors à la commande.
+  defaultServiceCode  String   @default("") @map("default_service_code")
+  /// Le jour du relevé dans l'annuaire.
+  checkedOn           DateTime @map("checked_on") @db.Date
+  /// L'id de fiche de l'agent qui a relevé — sans clé étrangère, comme les autres traces.
+  checkedByStaffId    String   @map("checked_by_staff_id")
+  /// Instantanés à l'instant du geste, vides si l'annuaire ne connaît pas l'agent.
+  checkedByName       String   @default("") @map("checked_by_name")
+  checkedByRole       String   @default("") @map("checked_by_role")
+
+  @@map("company_chorus_routing")
   @@schema("public")
 }
 

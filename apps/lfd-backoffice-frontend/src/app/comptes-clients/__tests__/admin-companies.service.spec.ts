@@ -88,6 +88,7 @@ describe('AdminCompaniesService', () => {
       activation: null,
       gate: { canActivate: false, blocking: [], checklist: [] },
       suspensionCause: null,
+      chorusRouting: null,
       ...company,
       vatNumberRequired: true,
       hasBankAccount: false,

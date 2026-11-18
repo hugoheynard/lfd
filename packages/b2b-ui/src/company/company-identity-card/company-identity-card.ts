@@ -23,6 +23,7 @@ import {
 import type { CompanyIdentityView } from '../company-identity.view-model';
 import { KbisCapturePanel } from '../kbis-capture-panel/kbis-capture-panel';
 import { legalFormLabelFor } from '../legal-form-label';
+import { COMPANY_IDENTITY_LABELS, natureOfLegalForm } from '../company-nature';
 
 /**
  * Carte **Identité légale** d'une société — présentation pure.
@@ -107,6 +108,18 @@ export class CompanyIdentityCard {
   /** La forme juridique en mots, jamais la clé stockée. */
   protected readonly legalFormLabel = computed(() =>
     legalFormLabelFor(this.identity().formeJuridique),
+  );
+
+  /**
+   * Un organisme public : ses mentions prennent leurs mots (dénomination,
+   * catégorie juridique…), et il n'a pas d'extrait KBIS — la fiche Chorus Pro
+   * en tient lieu, dans une carte que l'app pose à côté.
+   */
+  protected readonly isPublic = computed(
+    () => natureOfLegalForm(this.identity().formeJuridique) === 'public',
+  );
+  protected readonly labels = computed(
+    () => COMPANY_IDENTITY_LABELS[this.isPublic() ? 'public' : 'company'],
   );
 
   private readonly panels = inject(FoldPanelHostService);

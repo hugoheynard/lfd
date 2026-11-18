@@ -4,6 +4,8 @@ import {
   LEGAL_FORM_OPTIONS,
   listedHolderLegalForm,
   holderLegalFormOf,
+  isPublicLegalForm,
+  publicPaymentDeadlineDays,
   legalFormRequiresVat,
   legalFormSchema,
   toLegalForm,
@@ -75,6 +77,7 @@ describe("la liste fermée de la forme du titulaire d'un RIB", () => {
     expect(HOLDER_LEGAL_FORM_LABELS.slice(3)).toEqual(
       legalFormSchema.options
         .filter((form) => form !== "micro" && form !== "auto_entrepreneur")
+        .filter((form) => !isPublicLegalForm(form))
         .map((form) => LEGAL_FORM_LABELS[form]),
     );
   });
@@ -99,5 +102,46 @@ describe("la liste fermée de la forme du titulaire d'un RIB", () => {
     expect(listedHolderLegalForm("société de droit étranger")).toBe("Société de droit étranger");
     expect(listedHolderLegalForm("Col Pers SAS")).toBeNull();
     expect(listedHolderLegalForm("sas_u")).toBeNull();
+  });
+});
+
+describe("les formes publiques", () => {
+  const PUBLIC_FORMS = [
+    "public_state",
+    "public_local_authority",
+    "public_establishment",
+    "public_health_establishment",
+  ] as const;
+
+  it("reconnaît les quatre, et elles seules", () => {
+    expect(legalFormSchema.options.filter((form) => isPublicLegalForm(form))).toEqual([
+      ...PUBLIC_FORMS,
+    ]);
+  });
+
+  it("n'exige pas de TVA d'un organisme public", () => {
+    for (const form of PUBLIC_FORMS) {
+      expect(legalFormRequiresVat(form)).toBe(false);
+    }
+  });
+
+  it("dérive le délai légal de la forme : 50 jours pour la santé, 30 pour les autres", () => {
+    expect(publicPaymentDeadlineDays("public_state")).toBe(30);
+    expect(publicPaymentDeadlineDays("public_local_authority")).toBe(30);
+    expect(publicPaymentDeadlineDays("public_establishment")).toBe(30);
+    expect(publicPaymentDeadlineDays("public_health_establishment")).toBe(50);
+  });
+
+  it("n'a pas de délai public hors public", () => {
+    expect(publicPaymentDeadlineDays("sas")).toBeNull();
+    expect(isPublicLegalForm("association")).toBe(false);
+  });
+
+  it("reconnaît la clé stockée", () => {
+    expect(toLegalForm("public_state")).toBe("public_state");
+  });
+
+  it("n'offre aucune forme publique au titulaire d'un RIB : un acheteur public ne signe pas de mandat", () => {
+    expect(HOLDER_LEGAL_FORM_LABELS).not.toContain(LEGAL_FORM_LABELS.public_state);
   });
 });

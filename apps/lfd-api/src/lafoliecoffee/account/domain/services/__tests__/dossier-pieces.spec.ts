@@ -5,6 +5,7 @@ const EMPTY = {
   kbisDeposited: false,
   hasBillingAddress: false,
   hasDeliveryAddress: false,
+  chorusRouted: false,
 };
 
 describe("dossierPieces — le x/4 de Comptes clients", () => {
@@ -19,6 +20,7 @@ describe("dossierPieces — le x/4 de Comptes clients", () => {
         kbisDeposited: true,
         hasBillingAddress: true,
         hasDeliveryAddress: true,
+        chorusRouted: false,
       }),
     ).toEqual(["vat", "kbis", "billing", "delivery"]);
   });
@@ -27,6 +29,13 @@ describe("dossierPieces — le x/4 de Comptes clients", () => {
     expect(dossierPieces({ ...EMPTY, hasDeliveryAddress: true, kbisDeposited: true })).toEqual([
       "kbis",
       "delivery",
+    ]);
+  });
+
+  it("compte la fiche Chorus Pro relevée, entre l'extrait et la facturation", () => {
+    expect(dossierPieces({ ...EMPTY, chorusRouted: true, hasBillingAddress: true })).toEqual([
+      "chorus",
+      "billing",
     ]);
   });
 

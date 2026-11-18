@@ -16,6 +16,7 @@ import {
   FoldInlineConfirmComponent,
   FoldCardComponent,
   FoldEmptyStateComponent,
+  FoldListboxComponent,
   FoldLoadingStateComponent,
   FoldPageSectionComponent,
 } from 'fold-ng';
@@ -27,7 +28,10 @@ import {
   CompanyIdentityCard,
   CompanyIdentityFields,
   CompanyReferenceCard,
+  COMPANY_NATURE_OPTIONS,
   EMPTY_COMPANY_IDENTITY_DRAFT,
+  natureOfLegalForm,
+  type CompanyNature,
   type CompanyActivationStep,
   type CompanyIdentityDraft,
 } from '@lfd/b2b-ui/company';
@@ -52,6 +56,7 @@ import { FicheClientStore } from './fiche-client.store';
 import { followsBilling, openingSteps } from './activation-steps';
 import type { AdminCompanyDetail } from '../../comptes-clients/admin-company';
 import { SiteIdentityCard } from '../site-identity-card/site-identity-card';
+import { ChorusRoutingCard } from '../chorus-routing-card/chorus-routing-card';
 import { SitePaymentNote } from '../site-payment-note/site-payment-note';
 import { GroupAccountCard } from '../group-account-card/group-account-card';
 import { KbisCertification } from '../kbis-certification/kbis-certification';
@@ -96,8 +101,10 @@ import { watchCompanySubjects } from '../../comptes-clients/company-cache/compan
     FoldInlineConfirmComponent,
     FoldCardComponent,
     FoldEmptyStateComponent,
+    FoldListboxComponent,
     FoldLoadingStateComponent,
     FoldPageSectionComponent,
+    ChorusRoutingCard,
     CompanyReferenceCard,
     CompanyIdentityCard,
     CompanyIdentityFields,
@@ -148,13 +155,57 @@ export class InformationsPage {
 
   protected readonly canCreate = computed(() => this.fiche.canOpen(this.identityDraft()));
 
+  /**
+   * La nature choisie à l'ouverture — rien de coché d'avance, comme le mode de
+   * facturation. Elle n'est pas envoyée : la forme juridique la porte, et la
+   * nature ne fait que restreindre les formes proposées.
+   */
+  protected readonly openingNature = signal<CompanyNature | null>(null);
+  protected readonly natureOptions = COMPANY_NATURE_OPTIONS;
+
+  /**
+   * Ce qui manque encore à la nature pour ouvrir, ou `''`. Un organisme public
+   * exige sa catégorie dès l'ouverture : sans elle, le compte s'ouvrirait comme
+   * une entreprise, et Chorus Pro ne serait jamais réclamé.
+   */
+  protected readonly natureBlocker = computed(() => {
+    const nature = this.openingNature();
+    if (nature === null) {
+      return 'Choisissez la nature du compte : entreprise ou organisme public.';
+    }
+    if (
+      nature === 'public' &&
+      natureOfLegalForm(this.identityDraft().formeJuridique) !== 'public'
+    ) {
+      return "Choisissez la catégorie juridique de l'organisme pour ouvrir le compte.";
+    }
+    return '';
+  });
+
+  /** Change de nature : une forme de l'autre nature ne tient plus, elle s'efface. */
+  protected chooseNature(nature: CompanyNature): void {
+    this.openingNature.set(nature);
+    const draft = this.identityDraft();
+    const current = natureOfLegalForm(draft.formeJuridique);
+    if (current !== null && current !== nature) {
+      this.identityDraft.set({ ...draft, formeJuridique: '' });
+    }
+  }
+
+  /** Un organisme public : sa fiche Chorus Pro remplace le KBIS. */
+  protected readonly isPublic = computed(
+    () => natureOfLegalForm(this.fiche.company()?.formeJuridique ?? '') === 'public',
+  );
+
   /** Le mode choisi à l'ouverture — exigé, sauf quand il n'y a rien à choisir ici. */
   protected readonly openingMode = signal<InitialBillingMode>({ kind: 'missing' });
   protected readonly openingModeMissing = computed(() =>
     initialBillingModeMissing(this.openingMode()),
   );
   /** Ouvrir demande l'enseigne ET le mode ; la liste d'ouverture ne compte que l'enseigne. */
-  protected readonly canOpen = computed(() => this.canCreate() && !this.openingModeMissing());
+  protected readonly canOpen = computed(
+    () => this.canCreate() && this.natureBlocker() === '' && !this.openingModeMissing(),
+  );
 
   /** Le mode choisi à l'activation ; un site suit celui de son principal et n'en choisit pas. */
   protected readonly activationMode = signal<InitialBillingMode>({ kind: 'missing' });
@@ -217,6 +268,8 @@ export class InformationsPage {
 
   /** La section des moyens de paiement, où se règlent le RIB et le mandat. */
   private readonly payment = viewChild(PaiementSection);
+  /** La carte Chorus Pro, que l'étape « Fiche Chorus relevée » amène sous les yeux. */
+  private readonly chorus = viewChild(ChorusRoutingCard);
 
   /**
    * Le geste d'une ligne de l'encart. Le RIB et le mandat n'ont pas de panneau :
@@ -225,6 +278,10 @@ export class InformationsPage {
   protected onStepAction(key: string): void {
     if (key === 'bank_account' || key === 'mandate') {
       this.payment()?.reveal(key);
+      return;
+    }
+    if (key === 'chorus') {
+      this.chorus()?.reveal();
       return;
     }
     this.fiche.openStep(key);

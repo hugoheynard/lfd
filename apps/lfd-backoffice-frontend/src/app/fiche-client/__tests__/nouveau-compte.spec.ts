@@ -140,6 +140,7 @@ function fill(page: InformationsPage): void {
     siren: '',
     vatNumber: '',
   });
+  page['openingNature'].set('company');
   page['openingMode'].set({ kind: 'chosen', legalEntityId: 'le1', mode: 'weekly' });
   page['holder'].set({
     firstName: 'Jean',
@@ -206,6 +207,7 @@ describe('InformationsPage — ouverture d’un compte', () => {
       siren: '',
       vatNumber: '',
     });
+    page['openingNature'].set('company');
     page['openingMode'].set({ kind: 'not-required' });
 
     await page['createAccount']();
@@ -316,6 +318,45 @@ describe('InformationsPage — ouverture d’un compte', () => {
     // n'est pas celle du commercial.
     expect(page['identityDraft']().enseigne).toBe('  Le Comptoir  ');
     expect(fiche.creating()).toBe(false);
+  });
+});
+
+describe('La nature du compte se choisit à l’ouverture', () => {
+  beforeEach(() => {
+    TestBed.resetTestingModule();
+    vi.restoreAllMocks();
+    refuseMode = null;
+  });
+
+  it('rien n’est coché : le compte ne s’ouvre pas, et l’écran dit pourquoi', async () => {
+    const { page, fixture, create } = await setup();
+    fill(page);
+    page['openingNature'].set(null);
+    fixture.detectChanges();
+
+    expect(page['canOpen']()).toBe(false);
+    expect(
+      fixture.nativeElement.querySelector('[data-opening-nature-missing]')?.textContent,
+    ).toContain('entreprise ou organisme public');
+    await page['createAccount']();
+    expect(create).not.toHaveBeenCalled();
+  });
+
+  it('un organisme public exige sa catégorie juridique pour ouvrir', async () => {
+    const { page } = await setup();
+    fill(page);
+    page['chooseNature']('public');
+    expect(page['canOpen']()).toBe(false);
+
+    page['identityDraft'].update((draft) => ({ ...draft, formeJuridique: 'public_state' }));
+    expect(page['canOpen']()).toBe(true);
+  });
+
+  it('changer de nature efface une forme de l’autre nature', async () => {
+    const { page } = await setup();
+    page['identityDraft'].update((draft) => ({ ...draft, formeJuridique: 'sas' }));
+    page['chooseNature']('public');
+    expect(page['identityDraft']().formeJuridique).toBe('');
   });
 });
 

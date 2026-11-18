@@ -1,3 +1,4 @@
+import type { ChorusRoutingView } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
 import type { Prisma } from "../../../platform/database/client/client.js";
@@ -98,6 +99,18 @@ const COMPANY_SELECT = {
     where: { aspect: "billing", validTo: null },
     select: { validFrom: true, parentId: true },
     take: 1,
+  },
+  // La fiche Chorus Pro (une ligne au plus) : la pièce `chorus` de la liste,
+  // et la carte de la fiche.
+  chorusRouting: {
+    select: {
+      commitmentRequired: true,
+      serviceCodeRequired: true,
+      defaultServiceCode: true,
+      checkedOn: true,
+      checkedByName: true,
+      checkedByRole: true,
+    },
   },
 } satisfies Prisma.CompanySelect;
 
@@ -214,8 +227,23 @@ export class PrismaAdminCompanyReader extends AdminCompanyReader {
         signatureRequired: row.deliverySignatureRequired,
       },
       hierarchy,
+      chorusRouting: chorusRoutingView(row.chorusRouting),
     };
   }
+}
+
+/** La fiche Chorus Pro rangée, telle que la fiche staff la montre. */
+function chorusRoutingView(routing: CompanyRow["chorusRouting"]): ChorusRoutingView | null {
+  if (routing === null) {
+    return null;
+  }
+  return {
+    commitmentRequired: routing.commitmentRequired,
+    serviceCodeRequired: routing.serviceCodeRequired,
+    defaultServiceCode: routing.defaultServiceCode,
+    checkedOn: routing.checkedOn.toISOString().slice(0, 10),
+    checkedBy: { name: routing.checkedByName, role: routing.checkedByRole },
+  };
 }
 
 /** Mappe une ligne société vers la vue admin de liste (champs propres). */
@@ -283,6 +311,7 @@ function toView(
       kbisDeposited: company.kbisUploadedAt !== null,
       hasBillingAddress: company.addresses.length > 0,
       hasDeliveryAddress: company._count.addresses > 0,
+      chorusRouted: company.chorusRouting !== null,
     }),
   };
 }

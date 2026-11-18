@@ -82,6 +82,8 @@ function render(options: {
   readonly issuerScheme?: SepaScheme | null;
   /** Le refus que le serveur rend à la signature ; `null` = elle passe. */
   readonly signRefusal?: HttpErrorResponse | null;
+  /** La forme juridique de la société ; publique, la section n'offre aucun choix. */
+  readonly legalForm?: string;
 }): Rendered {
   const calls = { reads: 0, signed: [] as string[][] };
   const refusals: string[] = [];
@@ -113,6 +115,7 @@ function render(options: {
   fixture.componentRef.setInput('grantedTerms', options.grantedTerms ?? []);
   fixture.componentRef.setInput('requestedTerm', options.requestedTerm ?? null);
   fixture.componentRef.setInput('companyId', options.companyId ?? null);
+  fixture.componentRef.setInput('companyLegalForm', options.legalForm ?? '');
   const granted: (readonly DeferredTerm[])[] = [];
   fixture.componentInstance.grantedTermsChange.subscribe((terms) => granted.push(terms));
   fixture.detectChanges();
@@ -605,5 +608,35 @@ describe('section Moyens de paiement — les mentions manquantes du mandat', () 
     await settle();
 
     expect(host.querySelector('fold-callout[variant="warning"]')).toBeNull();
+  });
+});
+
+describe('section Moyens de paiement — un organisme public', () => {
+  beforeEach(() => {
+    TestBed.resetTestingModule();
+  });
+
+  it('un seul bloc, sans choix : virement sur mandat administratif, au délai de sa catégorie', () => {
+    const { host } = render({
+      legalForm: 'public_health_establishment',
+      grantedTerms: ['monthly'],
+    });
+
+    const block = host.querySelector('[data-public-payment]');
+    expect(block?.textContent).toContain('Virement — mandat administratif');
+    expect(block?.textContent).toContain(
+      'Facture déposée sur Chorus Pro, réglée à 50 jours après le dépôt.',
+    );
+    // Ni carte, ni RIB, ni mandat SEPA, ni crédits, ni zone de danger.
+    expect(host.textContent).not.toContain('À la commande');
+    expect(host.textContent).not.toContain('Mandat SEPA');
+    expect(host.textContent).not.toContain('Coordonnées bancaires');
+    expect(host.querySelector('fold-danger-zone')).toBeNull();
+  });
+
+  it('une entreprise garde ses moyens de paiement', () => {
+    const { host } = render({ legalForm: 'sas' });
+    expect(host.querySelector('[data-public-payment]')).toBeNull();
+    expect(host.textContent).toContain('À la commande');
   });
 });

@@ -169,3 +169,10 @@ fold-danger-zone {
   margin: 0;
   padding-left: var(--fold-space-lg);
 }
+
+/* L'organisme public : un bloc fixe, encadré — il n'y a rien d'autre à régler. */
+.pm-public {
+  padding: var(--fold-space-md);
+  border: 1px solid var(--fold-color-border-subtle);
+  border-radius: var(--fold-radius-md);
+}

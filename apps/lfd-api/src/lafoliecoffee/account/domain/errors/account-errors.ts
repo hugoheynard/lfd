@@ -747,3 +747,44 @@ export class MarketingWithoutAddressError extends BusinessError {
     );
   }
 }
+
+/**
+ * Un compte qui n'est plus en attente change de nature (entreprise ↔ organisme
+ * public). La nature décide de la facturation (Chorus Pro, virement sur mandat
+ * administratif) : la changer sous un compte ouvert réécrirait les règles de
+ * ce qu'il a déjà engagé. Une correction de forme dans la même nature reste
+ * libre.
+ */
+export class CompanyPublicNatureFrozenError extends BusinessError {
+  constructor(
+    readonly companyId: string,
+    readonly toPublic: boolean,
+  ) {
+    super(
+      "account.company.public_nature_frozen",
+      toPublic
+        ? "Ce compte a déjà été ouvert : il ne peut plus passer d'entreprise à organisme public. Ouvrez un autre compte."
+        : "Ce compte a déjà été ouvert : il ne peut plus passer d'organisme public à entreprise. Ouvrez un autre compte.",
+    );
+  }
+}
+
+/** Le routage Chorus Pro est posé sur une société dont la forme n'est pas publique. */
+export class ChorusRoutingNotPublicError extends BusinessError {
+  constructor(readonly companyId: string) {
+    super(
+      "account.company.chorus_routing_not_public",
+      "Ce compte n'est pas un organisme public : il n'a pas de fiche Chorus Pro. Choisissez d'abord une forme juridique publique dans l'identité légale.",
+    );
+  }
+}
+
+/** Une fiche Chorus Pro mal formée : code service trop long, date du relevé impossible. */
+export class InvalidChorusRoutingError extends DomainError {
+  constructor(
+    readonly field: string,
+    readonly reason: string,
+  ) {
+    super("account.chorus_routing.invalid", `Fiche Chorus Pro — ${field} : ${reason}`);
+  }
+}

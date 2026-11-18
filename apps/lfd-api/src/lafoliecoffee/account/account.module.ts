@@ -187,6 +187,10 @@ import { AdminCompanyContactsController } from "./http/admin-company-contacts.co
 import { AdminCompanyNotedContactsController } from "./http/admin-company-noted-contacts.controller.js";
 import { AdminCompanyFollowerController } from "./http/admin-company-follower.controller.js";
 import { AdminCompanyPiecesController } from "./http/admin-company-pieces.controller.js";
+import { AdminCompanyChorusRoutingController } from "./http/admin-company-chorus-routing.controller.js";
+import { RecordChorusRoutingHandler } from "./application/commands/record-chorus-routing.handler.js";
+import { ChorusRoutingRepository } from "./domain/ports/chorus-routing.repository.js";
+import { PrismaChorusRoutingRepository } from "./infrastructure/prisma-chorus-routing.repository.js";
 import { CompaniesController } from "./http/companies.controller.js";
 import { AdminAccessPendingController } from "./http/admin-access-pending.controller.js";
 import { AdminCustomerAccessController } from "./http/admin-customer-access.controller.js";
@@ -284,6 +288,7 @@ import {
     AdminCompanyNotedContactsController,
     AdminCompanyFollowerController,
     AdminCompanyPiecesController,
+    AdminCompanyChorusRoutingController,
     CompanyDeliveryProcedureController,
     AdminCompanyDeliveryProcedureController,
     // Les sous-comptes (plan `sous-comptes.md`, S1) : la fiche, et le
@@ -384,6 +389,7 @@ import {
     GetCustomerSheetHandler,
     UploadKbisByStaffHandler,
     CertifyKbisHandler,
+    RecordChorusRoutingHandler,
     NoteCompanyContactHandler,
     AssignCompanyFollowerHandler,
     RevokeKbisCertificationHandler,
@@ -425,6 +431,7 @@ import {
     IssuePasswordLinkHandler,
     { provide: CustomerSheetReader, useClass: PrismaCustomerSheetReader },
     { provide: CompanyRepository, useClass: PrismaCompanyRepository },
+    { provide: ChorusRoutingRepository, useClass: PrismaChorusRoutingRepository },
     { provide: StaffDirectory, useClass: StaffBlockDirectory },
     { provide: CompanyContactRepository, useClass: PrismaCompanyContactRepository },
     { provide: CompanyAddressRepository, useClass: PrismaCompanyAddressRepository },

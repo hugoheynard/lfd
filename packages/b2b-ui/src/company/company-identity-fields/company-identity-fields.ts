@@ -1,8 +1,28 @@
 import { ChangeDetectionStrategy, Component, computed, input, model } from '@angular/core';
-import { LEGAL_FORM_OPTIONS, toLegalForm, type LegalForm } from '@lfd/contracts';
-import { FoldInputComponent, FoldListboxComponent, type FoldSelectOption } from 'fold-ng';
+import {
+  LEGAL_FORM_OPTIONS,
+  PUBLIC_LEGAL_FORM_GUIDE,
+  PUBLIC_LEGAL_FORM_HINTS,
+  toLegalForm,
+  type LegalForm,
+} from '@lfd/contracts';
+import {
+  FoldBadgeComponent,
+  FoldCalloutComponent,
+  FoldCardComponent,
+  FoldElementTitleComponent,
+  FoldInputComponent,
+  FoldListboxComponent,
+  type FoldSelectOption,
+} from 'fold-ng';
 
 import { isVatRequiredFor, withSiret, type CompanyIdentityDraft } from '../company-form.model';
+import {
+  COMPANY_IDENTITY_LABELS,
+  legalFormOptionsOf,
+  natureOfLegalForm,
+  type CompanyNature,
+} from '../company-nature';
 
 /**
  * Champs d'**identité légale** d'une société — fragment de formulaire pur,
@@ -13,7 +33,14 @@ import { isVatRequiredFor, withSiret, type CompanyIdentityDraft } from '../compa
 @Component({
   selector: 'lfd-company-identity-fields',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldInputComponent, FoldListboxComponent],
+  imports: [
+    FoldBadgeComponent,
+    FoldCalloutComponent,
+    FoldCardComponent,
+    FoldElementTitleComponent,
+    FoldInputComponent,
+    FoldListboxComponent,
+  ],
   templateUrl: './company-identity-fields.html',
   styleUrl: './company-identity-fields.scss',
 })
@@ -21,10 +48,48 @@ export class CompanyIdentityFields {
   /** Brouillon d'identité (two-way). */
   readonly value = model.required<CompanyIdentityDraft>();
 
-  /** Les formes du catalogue — la liste vient du contrat, pas de l'écran. */
-  protected readonly legalForms: readonly FoldSelectOption<LegalForm>[] = LEGAL_FORM_OPTIONS.map(
-    (option) => ({ value: option.value, label: option.label }),
+  /**
+   * La nature **choisie** du compte, quand l'écran la fait choisir (ouverture
+   * staff, boutique qui ne propose que l'entreprise) : elle restreint les formes
+   * proposées. `null` : toutes les formes, et la nature se lit sur celle posée.
+   */
+  readonly nature = input<CompanyNature | null>(null);
+
+  /** La nature qui règle les libellés : choisie, sinon celle de la forme, sinon l'entreprise. */
+  protected readonly shownNature = computed<CompanyNature>(
+    () => this.nature() ?? natureOfLegalForm(this.value().formeJuridique) ?? 'company',
   );
+  protected readonly isPublic = computed(() => this.shownNature() === 'public');
+  protected readonly labels = computed(() => COMPANY_IDENTITY_LABELS[this.shownNature()]);
+
+  /** Les formes du catalogue — la liste vient du contrat, pas de l'écran. */
+  protected readonly legalForms = computed<readonly FoldSelectOption<LegalForm>[]>(() => {
+    const nature = this.nature();
+    const options = nature === null ? LEGAL_FORM_OPTIONS : legalFormOptionsOf(nature);
+    return options.map((option) => ({ value: option.value, label: option.label }));
+  });
+
+  /** L'encart qui tranche l'erreur la plus fréquente : l'école primaire ou le collège. */
+  protected readonly publicGuide = PUBLIC_LEGAL_FORM_GUIDE;
+
+  /**
+   * Les catégories publiques, chacune avec sa phrase et ses exemples : le
+   * commercial les choisit au téléphone, et une école se trompe souvent de
+   * case. Le texte vient du contrat, il ne se recopie pas ici.
+   */
+  protected readonly publicCategories = computed(() =>
+    legalFormOptionsOf('public').map((option) => ({
+      value: option.value,
+      label: option.label,
+      hint: PUBLIC_LEGAL_FORM_HINTS[option.value] ?? '',
+    })),
+  );
+
+  /**
+   * Le SIRET est-il exigé ? Toujours pour un organisme public, même à une
+   * ouverture différée : c'est lui qui adresse ses factures sur Chorus Pro.
+   */
+  protected readonly siretRequired = computed(() => this.isPublic() || !this.legalDeferred());
 
   /**
    * La TVA est-elle obligatoire pour la forme choisie ? Tant qu'aucune n'est
@@ -32,7 +97,9 @@ export class CompanyIdentityFields {
    * laisser manquer en silence pour une société assujettie — le même défaut
    * prudent que côté serveur.
    */
-  protected readonly vatRequired = computed(() => isVatRequiredFor(this.value().formeJuridique));
+  protected readonly vatRequired = computed(
+    () => !this.isPublic() && isVatRequiredFor(this.value().formeJuridique),
+  );
 
   /**
    * Vrai tant qu'AUCUNE forme juridique n'est choisie.
@@ -45,7 +112,7 @@ export class CompanyIdentityFields {
    * (`legalDeferred`). On dit donc ce qu'on sait : ça dépendra de la forme.
    */
   protected readonly vatUndecided = computed(
-    () => toLegalForm(this.value().formeJuridique) === null,
+    () => !this.isPublic() && toLegalForm(this.value().formeJuridique) === null,
   );
 
   /**

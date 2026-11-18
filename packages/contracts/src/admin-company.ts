@@ -17,6 +17,7 @@ import type { DeferredTerm } from "./company.js";
 import type { CompanyStatus } from "./customer-sheet.js";
 import type { FulfillmentPreferenceView } from "./fulfillment-preference.js";
 import type { ActivationPiece } from "./platform-settings.js";
+import type { ChorusRoutingView } from "./chorus-routing.js";
 import type { CompanyHierarchyView, CompanyRefView } from "./sub-accounts.js";
 
 /**
@@ -187,6 +188,12 @@ export interface AdminCompanyDetailView extends AdminCompanyView {
    * actif n'a pas d'identité légale propre à fournir (§2.1 bis).
    */
   readonly hierarchy: CompanyHierarchyView;
+
+  /**
+   * La fiche Chorus Pro relevée, ou `null` : jamais relevée. Ne se pose que sur
+   * une forme juridique publique ; la pièce d'activation `chorus` la lit.
+   */
+  readonly chorusRouting: ChorusRoutingView | null;
 }
 
 /**
@@ -269,7 +276,7 @@ export interface ActivationTraceView {
  * reformulation un déploiement backend, et d'une traduction une migration.
  */
 export type ActivationBlocker =
-  "identite_legale" | "detenteur" | "telephone" | "vat" | "facturation";
+  "identite_legale" | "detenteur" | "telephone" | "vat" | "facturation" | "chorus";
 
 /** Une pièce du dossier, telle que la fiche la montre. */
 export interface ActivationCheck {

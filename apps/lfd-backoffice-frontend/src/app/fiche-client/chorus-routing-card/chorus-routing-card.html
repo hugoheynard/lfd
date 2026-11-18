@@ -1,0 +1,94 @@
+<fold-card>
+  <fold-element-title
+    cardHeader
+    variant="title"
+    icon="contracts"
+    title="Chorus Pro"
+    subtitle="Ce que cet organisme exige sur ses factures, relevé dans l'annuaire Chorus."
+  >
+    @if (canManage() && !editing() && routing() !== null) {
+      <button titleAction foldButton size="sm" emphasis="outline" icon="edit" (click)="edit()">
+        Modifier
+      </button>
+    }
+  </fold-element-title>
+
+  <div class="body">
+    @if (editing()) {
+      <fold-checkbox
+        label="Numéro d'engagement exigé"
+        hint="L'acheteur rejette une facture qui ne reprend pas le numéro de son bon de commande."
+        [checked]="commitmentRequired()"
+        (checkedChange)="commitmentRequired.set($event)"
+        data-chorus-commitment
+      />
+      <fold-checkbox
+        label="Code service exigé"
+        hint="La facture doit être adressée à un service précis de l'organisme."
+        [checked]="serviceCodeRequired()"
+        (checkedChange)="serviceCodeRequired.set($event)"
+        data-chorus-service-required
+      />
+      <fold-input
+        label="Code service par défaut"
+        hint="Proposé à chaque commande ; vide, il se saisira à la commande."
+        [optional]="true"
+        [value]="defaultServiceCode()"
+        (valueChange)="defaultServiceCode.set($event)"
+        data-chorus-service-code
+      />
+      <fold-date
+        label="Relevé le"
+        hint="Le jour où l'annuaire Chorus a été consulté."
+        [required]="true"
+        [max]="today"
+        [value]="checkedOn()"
+        (valueChange)="checkedOn.set($event)"
+        data-chorus-checked-on
+      />
+
+      @if (refusal(); as message) {
+        <fold-callout variant="alert" announce data-chorus-refusal>{{ message }}</fold-callout>
+      }
+
+      <div class="actions">
+        <button foldButton emphasis="outline" intent="neutral" (click)="cancel()">Annuler</button>
+        <button
+          foldButton
+          intent="primary"
+          [disabled]="!canSave()"
+          [loading]="saving()"
+          (click)="save()"
+          data-chorus-save
+        >
+          Enregistrer
+        </button>
+      </div>
+    } @else if (routing(); as r) {
+      <fold-field-list>
+        <fold-field label="Numéro d'engagement">
+          {{ r.commitmentRequired ? 'Exigé' : 'Non exigé' }}
+        </fold-field>
+        <fold-field label="Code service">
+          {{ r.serviceCodeRequired ? 'Exigé' : 'Non exigé' }}
+        </fold-field>
+        <fold-field label="Code service par défaut" [empty]="r.defaultServiceCode === ''">
+          {{ r.defaultServiceCode }}
+        </fold-field>
+        @if (deadlineDays(); as days) {
+          <fold-field label="Délai de paiement">{{ days }} jours après le dépôt</fold-field>
+        }
+      </fold-field-list>
+      <p class="checked" data-chorus-checked>{{ checkedLine() }}</p>
+    } @else {
+      <fold-callout variant="warning" data-chorus-missing>
+        La fiche Chorus Pro n'est pas encore relevée : le compte ne peut pas être activé sans elle.
+        @if (canManage()) {
+          <button actions foldButton intent="warning" emphasis="soft" size="sm" (click)="edit()">
+            Relever la fiche
+          </button>
+        }
+      </fold-callout>
+    }
+  </div>
+</fold-card>
