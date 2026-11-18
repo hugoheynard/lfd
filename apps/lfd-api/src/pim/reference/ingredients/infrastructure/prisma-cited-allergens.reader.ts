@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 
-import { CitedAllergensReader } from "../../../catalogue/product/domain/ports/cited-allergens.reader.js";
+import { CitedAllergensReader } from "../domain/ports/cited-allergens.reader.js";
 import { PimPrismaService } from "../../../infra/database/pim-prisma.service.js";
 import { citedUnion } from "../application/ingredient-allergen-support.js";
 

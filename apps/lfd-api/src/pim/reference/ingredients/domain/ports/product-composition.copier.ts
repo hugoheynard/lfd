@@ -4,10 +4,9 @@ import type { WriteTicket } from "../../../../../platform/journal/scoped-journal
  * **Recopie la composition d'une fiche sur une autre** — les ingrédients
  * qu'elle cite, dans leur ordre (`plan-gestes-de-declinaison.md`, D3).
  *
- * Même montage que `IngredientCitationsReader` : déclaré par le catalogue, qui
- * fait naître le produit détaché ; implémenté par la provenance
- * (`ingredients/`), qui possède `product_ingredient`. Le catalogue n'écrit pas
- * ses tables. Un port d'ÉCRITURE à part : aucun lecteur des citations n'en a
+ * Même montage que `IngredientCitationsReader` : déclaré et implémenté par la
+ * provenance (`ingredients/`), qui possède `product_ingredient` ; le catalogue,
+ * qui fait naître le produit détaché, l'appelle sans écrire ses tables. Un port d'ÉCRITURE à part : aucun lecteur des citations n'en a
  * l'usage (ISP).
  *
  * S'exécute dans l'unité de travail de l'appelant, sous son ticket : la copie

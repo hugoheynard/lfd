@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 
 import type { WriteTicket } from "../../../../platform/journal/scoped-journal.js";
-import { ProductCompositionCopier } from "../../../catalogue/product/domain/ports/product-composition.copier.js";
+import { ProductCompositionCopier } from "../domain/ports/product-composition.copier.js";
 import { IngredientRepository } from "../domain/ports/ingredient.repository.js";
 
 /**

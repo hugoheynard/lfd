@@ -3,7 +3,7 @@ import type { ProductComplianceWarningView } from "@lfd/pim-contracts";
 
 import { ActiveSalesContextsReader } from "../../../reference/sales-contexts/domain/ports/active-sales-contexts.reader.js";
 import { CatalogueReader } from "../../shared/domain/ports/catalogue-reader.js";
-import { CitedAllergensReader } from "../domain/ports/cited-allergens.reader.js";
+import { CitedAllergensReader } from "../../../reference/ingredients/domain/ports/cited-allergens.reader.js";
 import { isLiveStatus, ProductRepository } from "../domain/ports/product.repository.js";
 import type { Product } from "../domain/entities/product.js";
 import { ProductNotFoundError } from "../domain/errors/product-errors.js";

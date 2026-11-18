@@ -13,7 +13,7 @@ import {
 } from "../../domain/ports/editorial-reader.js";
 import { EditorialRepository } from "../../domain/ports/editorial.repository.js";
 import { NutritionValuesRepository } from "../../domain/ports/nutrition-values.repository.js";
-import { ProductCompositionCopier } from "../../domain/ports/product-composition.copier.js";
+import { ProductCompositionCopier } from "../../../../reference/ingredients/domain/ports/product-composition.copier.js";
 import { ProductRepository } from "../../domain/ports/product.repository.js";
 import { VariantAllergensRepository } from "../../domain/ports/variant-allergens.repository.js";
 import type { SkuAvailability } from "../../domain/services/sku-generator.js";

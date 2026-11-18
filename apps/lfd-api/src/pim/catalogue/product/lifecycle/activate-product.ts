@@ -9,7 +9,7 @@ import { requireProduct } from "../shared/product-support.js";
 import { CatalogEmitter } from "../../../shared/catalog-emitter.js";
 import { ActiveSalesContextsReader } from "../../../reference/sales-contexts/domain/ports/active-sales-contexts.reader.js";
 import { readCompletenessRules } from "../regulatory/completeness-support.js";
-import { CitedAllergensReader } from "../domain/ports/cited-allergens.reader.js";
+import { CitedAllergensReader } from "../../../reference/ingredients/domain/ports/cited-allergens.reader.js";
 import { CategoryRepository } from "../../category/domain/ports/category.repository.js";
 import { requireCategory } from "../../category/application/category-support.js";
 

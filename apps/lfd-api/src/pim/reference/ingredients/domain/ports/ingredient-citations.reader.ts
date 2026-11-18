@@ -23,10 +23,10 @@ export interface IngredientCitations {
  * **Les fiches qui citent un ingrédient**, et ce que leurs autres ingrédients
  * portent — de quoi juger qu'un allergène retiré y reste dû.
  *
- * Même montage que `CitedAllergensReader` : déclaré par le catalogue, qui
- * possède les déclarations et le jugement ; implémenté par la provenance
- * (`ingredients/`), qui possède les citations. Le catalogue ne lit pas ses
- * tables. Un port à part et non une méthode de plus sur le premier : ses
+ * Même montage que `CitedAllergensReader` : déclaré et implémenté par la
+ * provenance (`ingredients/`), qui possède les citations ; le catalogue, qui
+ * possède les déclarations et le jugement, l'appelle sans lire ses tables
+ * (le sens admis est catalogue → référentiel, jamais l'inverse). Un port à part et non une méthode de plus sur le premier : ses
  * lecteurs (liste, activation, encart) n'en ont pas l'usage.
  */
 export abstract class IngredientCitationsReader {

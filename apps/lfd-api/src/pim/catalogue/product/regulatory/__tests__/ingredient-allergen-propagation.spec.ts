@@ -9,7 +9,7 @@ import { Product, type ProductSnapshot } from "../../domain/entities/product.js"
 import type { VariantSnapshot } from "../../domain/entities/variant.js";
 import { PropagationIngredientNotFoundError } from "../../domain/errors/propagation-errors.js";
 import { FixedIngredientCitations } from "../../domain/ports/__tests__/fixed-ingredient-citations.js";
-import type { IngredientCitations } from "../../domain/ports/ingredient-citations.reader.js";
+import type { IngredientCitations } from "../../../../reference/ingredients/domain/ports/ingredient-citations.reader.js";
 import { ProductRepository } from "../../domain/ports/product.repository.js";
 import { VariantAllergensRepository } from "../../domain/ports/variant-allergens.repository.js";
 import type { CompletenessRules } from "../../domain/services/variant-completeness.js";

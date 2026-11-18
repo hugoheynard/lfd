@@ -6,7 +6,7 @@ import { AllergenCatalogueReader } from "../../../reference/allergens/domain/por
 import { AllergenNaming } from "../../../reference/allergens/domain/services/allergen-naming.js";
 import { DetachmentLineageReader } from "../../../catalogue/product/domain/ports/detachment-lineage.reader.js";
 import type { ProductRecord } from "../../../catalogue/product/domain/ports/product.repository.js";
-import { CitedAllergensReader } from "../../../catalogue/product/domain/ports/cited-allergens.reader.js";
+import { CitedAllergensReader } from "../../../reference/ingredients/domain/ports/cited-allergens.reader.js";
 import { PublishedAllergensReader } from "../../../catalogue/product/domain/ports/published-allergens.reader.js";
 import { EditorialReader } from "../../../catalogue/product/domain/ports/editorial-reader.js";
 import {

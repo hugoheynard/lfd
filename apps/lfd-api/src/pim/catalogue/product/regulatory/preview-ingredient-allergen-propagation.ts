@@ -2,7 +2,7 @@ import { type IQueryHandler, QueryHandler } from "@nestjs/cqrs";
 import type { IngredientAllergenPropagationView } from "@lfd/pim-contracts";
 
 import { AllergenCatalogueReader } from "../../../reference/allergens/domain/ports/allergen-catalogue.reader.js";
-import { IngredientCitationsReader } from "../domain/ports/ingredient-citations.reader.js";
+import { IngredientCitationsReader } from "../../../reference/ingredients/domain/ports/ingredient-citations.reader.js";
 import { ProductRepository } from "../domain/ports/product.repository.js";
 import { propagationCounts } from "../domain/services/ingredient-allergen-propagation.js";
 import { loadPropagationPlan } from "./ingredient-allergen-propagation-support.js";

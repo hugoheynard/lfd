@@ -1,7 +1,7 @@
 import {
   IngredientCitationsReader,
   type IngredientCitations,
-} from "../ingredient-citations.reader.js";
+} from "../../../../../reference/ingredients/domain/ports/ingredient-citations.reader.js";
 
 /** Les citations d'UN ingrédient, posées par le test — et modifiables entre deux appels. */
 export class FixedIngredientCitations extends IngredientCitationsReader {

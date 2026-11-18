@@ -7,7 +7,7 @@ import { AllergenCatalogueReader } from "../../../reference/allergens/domain/por
 import { PIM_EVENTS, PimJournal } from "../../../journal/pim-journal.js";
 import { CatalogEmitter } from "../../../shared/catalog-emitter.js";
 import type { Product } from "../domain/entities/product.js";
-import { IngredientCitationsReader } from "../domain/ports/ingredient-citations.reader.js";
+import { IngredientCitationsReader } from "../../../reference/ingredients/domain/ports/ingredient-citations.reader.js";
 import { ProductRepository } from "../domain/ports/product.repository.js";
 import { VariantAllergensRepository } from "../domain/ports/variant-allergens.repository.js";
 import {

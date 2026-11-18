@@ -18,7 +18,7 @@ import type { CompletenessRules } from "../domain/services/variant-completeness.
 import { audienceView, type AudienceView } from "../sale/audience-view.js";
 import { readCompletenessRules } from "../regulatory/completeness-support.js";
 import { complianceFindingsOf } from "../regulatory/compliance-view.js";
-import { CitedAllergensReader } from "../domain/ports/cited-allergens.reader.js";
+import { CitedAllergensReader } from "../../../reference/ingredients/domain/ports/cited-allergens.reader.js";
 import { IllustratedProductsReader } from "../domain/ports/illustrated-products.reader.js";
 
 /**

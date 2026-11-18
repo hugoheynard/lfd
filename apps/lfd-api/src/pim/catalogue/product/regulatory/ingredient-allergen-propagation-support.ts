@@ -1,8 +1,8 @@
 import { AllergenCatalogueReader } from "../../../reference/allergens/domain/ports/allergen-catalogue.reader.js";
 import { isLiveStatus, type Product } from "../domain/entities/product.js";
 import { PropagationIngredientNotFoundError } from "../domain/errors/propagation-errors.js";
-import type { CitedIngredient } from "../domain/ports/ingredient-citations.reader.js";
-import { IngredientCitationsReader } from "../domain/ports/ingredient-citations.reader.js";
+import type { CitedIngredient } from "../../../reference/ingredients/domain/ports/ingredient-citations.reader.js";
+import { IngredientCitationsReader } from "../../../reference/ingredients/domain/ports/ingredient-citations.reader.js";
 import { ProductRepository } from "../domain/ports/product.repository.js";
 import {
   effectiveChange,

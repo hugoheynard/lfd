@@ -2,7 +2,7 @@ import { type IQueryHandler, QueryHandler } from "@nestjs/cqrs";
 import type { ProductIngredientAllergensView, VariantAllergenGapView } from "@lfd/pim-contracts";
 
 import type { VariantSnapshot } from "../domain/entities/variant.js";
-import { CitedAllergensReader } from "../domain/ports/cited-allergens.reader.js";
+import { CitedAllergensReader } from "../../../reference/ingredients/domain/ports/cited-allergens.reader.js";
 import { ProductRepository } from "../domain/ports/product.repository.js";
 import { citedNotDeclared } from "../domain/services/effective-allergens.js";
 

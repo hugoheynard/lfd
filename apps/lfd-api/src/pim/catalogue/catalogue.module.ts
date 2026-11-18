@@ -98,6 +98,7 @@ import { VariantAllergensRepository } from "./product/domain/ports/variant-aller
 import { ProductRepository } from "./product/domain/ports/product.repository.js";
 import { CategoryController } from "./category/http/category.controller.js";
 import { ProductController } from "./product/http/product.controller.js";
+import { ProductIngredientAllergensController } from "./product/http/product-ingredient-allergens.controller.js";
 import { ProductSaleUnitUsageController } from "./product/http/product-sale-unit-usage.controller.js";
 import { GetProductSaleUnitUsageHandler } from "./product/sale/get-product-sale-unit-usage.js";
 import { ProductMinQuantitiesController } from "./product/http/product-min-quantities.controller.js";
@@ -153,6 +154,7 @@ import { PrismaSkuAvailability } from "./product/infrastructure/prisma-sku-avail
     ProductController,
     ProductDeletionController,
     ProductSaleUnitUsageController,
+    ProductIngredientAllergensController,
     ProductMinQuantitiesController,
     ProductVariantsAsTilesController,
     VariantCustomRecipeController,

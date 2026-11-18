@@ -1,4 +1,4 @@
-import { CitedAllergensReader } from "../cited-allergens.reader.js";
+import { CitedAllergensReader } from "../../../../../reference/ingredients/domain/ports/cited-allergens.reader.js";
 
 /** Ce que la composition de chaque fiche cite, posé par le test. */
 export class FixedCitedAllergens extends CitedAllergensReader {

@@ -18,10 +18,6 @@
     "catalogue/product/sale/update-variant-pricing.ts → channels": 1,
     "catalogue/product/shared/__tests__/product-handlers.spec.ts → channels": 1,
     "catalogue/revision/infrastructure/prisma-catalog-revision.source.ts → channels": 1,
-    "order-time-limitation/application/get-general-order-cutoff.ts → channels": 1,
-    "reference/ingredients/http/ingredient.controller.ts → catalogue": 3,
-    "reference/ingredients/infrastructure/ingredient-composition-copier.ts → catalogue": 1,
-    "reference/ingredients/infrastructure/prisma-cited-allergens.reader.ts → catalogue": 1,
-    "reference/ingredients/infrastructure/prisma-ingredient-citations.reader.ts → catalogue": 1
+    "order-time-limitation/application/get-general-order-cutoff.ts → channels": 1
   }
 }
