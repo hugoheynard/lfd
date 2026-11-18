@@ -12,7 +12,6 @@
     }
   },
   "files": {
-    "catalogue/product/domain/entities/variant.ts": 607,
     "catalogue/product/infrastructure/prisma-product.repository.ts": 420,
     "catalogue/product/domain/errors/product-errors.ts": 331,
     "channels/b2b-platform/products/catalog-facts.ts": 306

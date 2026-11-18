@@ -2,6 +2,9 @@ import type { LocalizedText } from "../../../shared/domain/value-objects/localiz
 import { NO_MIN_QUANTITIES } from "../value-objects/min-quantities.js";
 import { PIECE_SALE_TERMS } from "../value-objects/sale-terms.js";
 import type { Sku } from "../value-objects/sku.value-object.js";
+import type { VariantLifecycle } from "./variant-lifecycle.js";
+import type { VariantRegulatory } from "./variant-regulatory.js";
+import type { VariantSale } from "./variant-sale.js";
 import type { VariantSnapshot } from "./variant-snapshot.js";
 
 /** Ce qu'il faut pour ouvrir une déclinaison qui n'est pas le défaut. */
@@ -127,5 +130,59 @@ export function defaultSnapshotFrom(
     regulatoryFollowsDefault: false,
     pricingFollowsDefault: false,
     nutritionFollowsDefault: false,
+  };
+}
+
+/** Ce qui reste à la déclinaison une fois ses trois objets sortis. */
+export interface VariantCore {
+  readonly id: string;
+  readonly sku: string;
+  readonly name: LocalizedText;
+  readonly internalLabel: string | null;
+  readonly options: Readonly<Record<string, string>>;
+  readonly position: number;
+  readonly customRecipe: boolean;
+}
+
+/**
+ * L'instantané d'une déclinaison : son noyau et ce que portent ses trois
+ * objets. L'ordre des clés est celui d'avant le découpage — l'empreinte de
+ * révision lit cet instantané, et sa forme ne bouge pas.
+ */
+export function variantSnapshot(
+  core: VariantCore,
+  lifecycle: VariantLifecycle,
+  regulatory: VariantRegulatory,
+  sale: VariantSale,
+): VariantSnapshot {
+  const f = sale.fields;
+  return {
+    id: core.id,
+    sku: core.sku,
+    name: core.name,
+    internalLabel: core.internalLabel,
+    options: core.options,
+    isDefault: lifecycle.isDefault,
+    isDiscontinued: lifecycle.isDiscontinued,
+    detachedToProductId: lifecycle.detachedToProductId,
+    detachedFromVariantId: lifecycle.detachedFromVariantId,
+    position: core.position,
+    priceCents: f.priceCents,
+    weightGrams: f.weightGrams,
+    proPriceMillicents: f.proPriceMillicents,
+    proPricePerKgMillicents: f.proPricePerKgMillicents,
+    publicPricePerKgTtcCents: f.publicPricePerKgTtcCents,
+    pricePerKgShownPublic: f.pricePerKgShownPublic,
+    pricePerKgShownPro: f.pricePerKgShownPro,
+    ...f.terms,
+    hasBeenPublished: lifecycle.hasBeenPublished,
+    minQuantities: f.minQuantities,
+    minQuantityFollowsDefault: f.minQuantityFollowsDefault,
+    customRecipe: core.customRecipe,
+    regulatoryFollowsDefault: regulatory.followsAllergens,
+    pricingFollowsDefault: f.followsPricing,
+    nutritionFollowsDefault: regulatory.followsNutrition,
+    allergenSheet: regulatory.allergenSheet,
+    nutrition: regulatory.nutrition,
   };
 }
