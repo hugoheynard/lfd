@@ -1,7 +1,7 @@
 import { type IQueryHandler, QueryHandler } from "@nestjs/cqrs";
 import type { ProductSaleUnitUsageView } from "@lfd/pim-contracts";
 
-import { SaleReferenceUsage } from "../../../channels/b2b-platform/sale-reference-usage/sale-reference-usage.js";
+import { SaleReferenceUsage } from "../domain/ports/sale-reference-usage.js";
 import { saleReferenceUseLabel } from "../domain/errors/sale-unit-errors.js";
 import { ProductRepository } from "../domain/ports/product.repository.js";
 import { orderedUses } from "../domain/value-objects/sale-reference-usage.js";

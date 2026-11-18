@@ -1,7 +1,7 @@
 import {
   FailingSaleReferenceUsage,
   FixedSaleReferenceUsage,
-} from "../../../../channels/b2b-platform/sale-reference-usage/__tests__/sale-reference-usage-doubles.js";
+} from "../../domain/ports/__tests__/sale-reference-usage-doubles.js";
 import {
   GetProductSaleUnitUsageHandler,
   GetProductSaleUnitUsageQuery,

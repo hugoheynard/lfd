@@ -1,5 +1,5 @@
 import { MediaAssetDescribedFact } from "../../../../../media/channels/carriers/media-asset-described.fact.js";
-import { PIM_PRODUCT_MEDIA_CHANGED } from "../../../../channels/b2b-platform/products/product-media-changed.fact.js";
+import { PIM_PRODUCT_MEDIA_CHANGED } from "../product-media-changed.fact.js";
 import {
   EditorialReader,
   type ProductEditorialView,

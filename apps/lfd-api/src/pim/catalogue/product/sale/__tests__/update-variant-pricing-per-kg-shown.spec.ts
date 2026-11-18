@@ -1,6 +1,6 @@
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingJournal } from "../../../../journal/__tests__/recording-journal.js";
-import { FixedSaleReferenceUsage } from "../../../../channels/b2b-platform/sale-reference-usage/__tests__/sale-reference-usage-doubles.js";
+import { FixedSaleReferenceUsage } from "../../domain/ports/__tests__/sale-reference-usage-doubles.js";
 import { RecordingCatalogEmitter } from "../../../../shared/__tests__/catalog-emitter-doubles.js";
 import {
   UpdateVariantPricingCommand,

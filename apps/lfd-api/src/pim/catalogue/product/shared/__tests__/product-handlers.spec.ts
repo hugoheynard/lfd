@@ -49,7 +49,7 @@ import { UpdateProductIdentityCommand } from "../../lifecycle/update-product-ide
 import { UpdateVariantPricingHandler } from "../../sale/update-variant-pricing.js";
 import { UpdateVariantPricingCommand } from "../../sale/update-variant-pricing.js";
 import { RecordingCatalogEmitter } from "../../../../shared/__tests__/catalog-emitter-doubles.js";
-import { FixedSaleReferenceUsage } from "../../../../channels/b2b-platform/sale-reference-usage/__tests__/sale-reference-usage-doubles.js";
+import { FixedSaleReferenceUsage } from "../../domain/ports/__tests__/sale-reference-usage-doubles.js";
 
 const PRODUCT_ID = "prd_1";
 const VARIANT_ID = "prd_1_v1";

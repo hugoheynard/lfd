@@ -8,8 +8,8 @@ import {
 import {
   FailingSaleReferenceUsage,
   FixedSaleReferenceUsage,
-} from "../../../../channels/b2b-platform/sale-reference-usage/__tests__/sale-reference-usage-doubles.js";
-import type { SaleReferenceUsage } from "../../../../channels/b2b-platform/sale-reference-usage/sale-reference-usage.js";
+} from "../../domain/ports/__tests__/sale-reference-usage-doubles.js";
+import type { SaleReferenceUsage } from "../../domain/ports/sale-reference-usage.js";
 import {
   UpdateVariantPricingCommand,
   UpdateVariantPricingHandler,

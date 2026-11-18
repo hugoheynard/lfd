@@ -369,7 +369,8 @@ un changement d'unité passe par `ensureUnused`, qui lève
 d'usage (`USE_LABELS`).
 
 **Le port** : `SaleReferenceUsage`
-(`pim/channels/b2b-platform/sale-reference-usage/sale-reference-usage.ts`),
+(`pim/catalogue/product/domain/ports/sale-reference-usage.ts`, publié au commerce par
+`pim/channels/b2b-platform/sale-reference-usage/sale-reference-usage.ts`),
 déclaré par le référentiel, lu par lot ; implémenté par le commerce
 (`lafoliecoffee/catalog/infrastructure/prisma-sale-reference-usage.ts`,
 `PrismaSaleReferenceUsage`) ; relié par

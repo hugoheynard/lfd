@@ -10,7 +10,7 @@ import type { SaleUnit } from "../domain/value-objects/sale-terms.js";
 import { ProductRepository } from "../domain/ports/product.repository.js";
 import { namedVariant, requireProduct } from "../shared/product-support.js";
 import { CatalogEmitter } from "../../../shared/catalog-emitter.js";
-import { SaleReferenceUsage } from "../../../channels/b2b-platform/sale-reference-usage/sale-reference-usage.js";
+import { SaleReferenceUsage } from "../domain/ports/sale-reference-usage.js";
 import type { Product } from "../domain/entities/product.js";
 import type { SaleUnitClearance } from "../domain/value-objects/sale-reference-usage.js";
 import { clearancesOf } from "./sale-unit-clearance-support.js";

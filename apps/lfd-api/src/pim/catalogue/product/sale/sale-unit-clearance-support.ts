@@ -1,7 +1,7 @@
 import {
   SaleReferenceUsage,
   type SaleReferenceQuery,
-} from "../../../channels/b2b-platform/sale-reference-usage/sale-reference-usage.js";
+} from "../domain/ports/sale-reference-usage.js";
 import type { SaleUnitClearance } from "../domain/value-objects/sale-reference-usage.js";
 
 /**

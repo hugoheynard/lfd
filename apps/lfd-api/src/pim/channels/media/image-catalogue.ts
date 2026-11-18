@@ -1,81 +1,15 @@
-import { ResourceNotFoundError } from "../../../platform/shared/errors/app-error.js";
-import type { LocalizedText } from "../../catalogue/shared/domain/value-objects/localized-text.js";
-
-/** Une image de la bibliothèque, telle qu'un PORTEUR a besoin de la connaître. */
-export interface CatalogueImage {
-  readonly url: string;
-  /** L'étiquette de bibliothèque ; `''` = personne ne l'a nommée. */
-  readonly name: string;
-  /** Une image, une description — écrite dans la médiathèque et nulle part ailleurs. */
-  readonly alt: LocalizedText;
-  readonly width: number | null;
-  readonly height: number | null;
-  readonly bytes: number | null;
-  readonly contentType: string | null;
-  /**
-   * Le **point focal**, en fractions de 0 à 1 — là où un recadrage doit
-   * garder l'œil. `null` = personne ne s'est prononcé : le porteur recadre au
-   * centre. Il voyage jusqu'à la vitrine (cf.
-   * `documentation/mediatheque/mediatheque.md` §7).
-   */
-  readonly focal: CatalogueFocal | null;
-}
-
-/** Un point focal : deux fractions de 0 à 1, à partir du coin haut gauche. */
-export interface CatalogueFocal {
-  readonly x: number;
-  readonly y: number;
-}
-
 /**
- * **Ce que le référentiel a besoin de savoir des images qu'il affiche.**
+ * Le port `ImageCatalogue` tel que la médiathèque l'implémente.
  *
- * 🔴 Un PORT, et pas une lecture directe de la table. Le référentiel ne possède
- * pas la bibliothèque : les fiches en portent, les familles aussi, et les
- * contenus de la vitrine en porteront. `lint:prisma-model-ownership` le dira
- * bientôt en toutes lettres — « un modèle a UN propriétaire, et lui seul le
- * lit » —, mais ce n'est pas la porte qui commande ici : c'est que le
- * référentiel n'a aucune raison de connaître la forme d'une table qui ne lui
- * appartient pas.
- *
- * Déclaré ICI et implémenté ailleurs, comme `production/channels/commerce/` :
- * le bloc qui a besoin déclare, celui qui sait implémente, et
- * `appBootstrap` les relie. Un bloc qui publie un port ne doit pas connaître
- * ceux qui le branchent — sinon la dépendance revient par l'autre bout.
- *
- * ⚠️ **En lecture seule, et c'est le sujet.** Depuis le 2026-09-23, le
- * référentiel n'écrit plus rien dans la bibliothèque : ni étiquette, ni
- * alternative, ni inscription à la volée. Ajouter une écriture ici rendrait au
- * PIM la propriété qu'on vient de lui retirer.
+ * Il est DÉCLARÉ par le catalogue (`catalogue/shared/domain/ports/image-catalogue.ts`),
+ * qui est celui qui a besoin de décrire ses images ; ce fichier n'en est que la
+ * porte publiée : un bloc extérieur n'atteint le référentiel que par `channels/`
+ * (`lint:context-boundaries`), et la classe — donc le jeton d'injection — est la
+ * même des deux côtés.
  */
-export abstract class ImageCatalogue {
-  /**
-   * Les images citées, indexées par URL. Une URL inconnue est **absente** de la
-   * carte — jamais rendue vide : un porteur doit pouvoir distinguer « l'image
-   * n'existe pas » de « elle n'a rien d'écrit ».
-   */
-  abstract describe(urls: readonly string[]): Promise<ReadonlyMap<string, CatalogueImage>>;
-
-  /**
-   * Cette URL est-elle dans la bibliothèque ?
-   *
-   * Sert au RATTACHEMENT : une fiche ne peut porter qu'une image déposée
-   * (Hugo, 2026-09-23), et c'est cette question-là qui le tient.
-   */
-  abstract has(url: string): Promise<boolean>;
-}
-
-/**
- * Le porteur refuse de rattacher une image que la bibliothèque ne connaît pas
- * (→ 404).
- *
- * 🔴 Déclarée **avec le port**, et pas empruntée à la médiathèque : c'est le
- * RÉFÉRENTIEL qui refuse ici, sur son propre geste. La médiathèque a sa propre
- * erreur pour ses propres routes, et les deux disent des choses différentes —
- * « je ne peux pas l'attacher » n'est pas « je ne peux pas la décrire ».
- */
-export class UnknownImageError extends ResourceNotFoundError {
-  constructor(url: string) {
-    super("catalogue.media.unknown_image", `Image absente de la bibliothèque : ${url}`);
-  }
-}
+export {
+  ImageCatalogue,
+  UnknownImageError,
+  type CatalogueFocal,
+  type CatalogueImage,
+} from "../../catalogue/shared/domain/ports/image-catalogue.js";

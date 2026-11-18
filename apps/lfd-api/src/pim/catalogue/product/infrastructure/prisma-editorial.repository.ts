@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 
 import { Prisma } from "../../../../platform/database/client/client.js";
-import { ImageCatalogue, UnknownImageError } from "../../../channels/media/image-catalogue.js";
+import { ImageCatalogue, UnknownImageError } from "../../shared/domain/ports/image-catalogue.js";
 import { PimPrismaService } from "../../../infra/database/pim-prisma.service.js";
 import { EditorialRepository } from "../domain/ports/editorial.repository.js";
 import type { Editorial, MediaItem } from "../domain/value-objects/editorial.js";

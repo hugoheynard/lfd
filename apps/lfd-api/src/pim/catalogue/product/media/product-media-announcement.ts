@@ -4,7 +4,7 @@ import { SOURCE_LOCALE } from "../../shared/domain/value-objects/localized-text.
 
 import type { DurablePublisher } from "../../../../platform/outbox/durable-publisher.js";
 import type { UuidGenerator } from "../../../../platform/id/uuid-generator.js";
-import { ProductMediaChangedFact } from "../../../channels/b2b-platform/products/product-media-changed.fact.js";
+import { ProductMediaChangedFact } from "./product-media-changed.fact.js";
 import type { EditorialReader, ProductMediaRecord } from "../domain/ports/editorial-reader.js";
 
 /**

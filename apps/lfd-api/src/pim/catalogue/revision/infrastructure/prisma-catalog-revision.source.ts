@@ -3,7 +3,7 @@ import { Injectable } from "@nestjs/common";
 import { CatalogueReader } from "../../shared/domain/ports/catalogue-reader.js";
 import { EditorialReader } from "../../product/domain/ports/editorial-reader.js";
 import { ReadinessRepository } from "../../product/domain/ports/readiness.repository.js";
-import { ImageCatalogue } from "../../../channels/media/image-catalogue.js";
+import { ImageCatalogue } from "../../shared/domain/ports/image-catalogue.js";
 import { PimPrismaService } from "../../../infra/database/pim-prisma.service.js";
 import type { VariantNutritionView } from "../../product/domain/ports/product.repository.js";
 import { CatalogRevisionSource } from "../domain/ports/catalog-revision.source.js";

@@ -2,22 +2,6 @@
   "$comment": "La dette du sens des dépendances dans src/pim, relevée le 2026-11-18 à la naissance de dev-toolbox/gates/pim-subcontexts.mjs (documentation/pim/plan-referentiel-a-neuf.md, L0). Un compte par fichier → sous-contexte cible. Elle ne grandit pas, elle se vide : L1 la retire (noyau pim/shared, ports retournés). Une paire neuve, un compte qui monte, une paire résolue encore inscrite, un compte trop haut échouent.",
   "since": "2026-11-18",
   "imports": {
-    "catalogue/category/infrastructure/prisma-category-editorial.reader.ts → channels": 1,
-    "catalogue/category/infrastructure/prisma-category-editorial.repository.ts → channels": 1,
-    "catalogue/product/infrastructure/prisma-editorial-reader.ts → channels": 1,
-    "catalogue/product/infrastructure/prisma-editorial.repository.ts → channels": 1,
-    "catalogue/product/media/__tests__/on-media-asset-described.spec.ts → channels": 1,
-    "catalogue/product/media/product-media-announcement.ts → channels": 1,
-    "catalogue/product/sale/__tests__/get-product-sale-unit-usage.spec.ts → channels": 1,
-    "catalogue/product/sale/__tests__/update-variant-pricing-per-kg-shown.spec.ts → channels": 1,
-    "catalogue/product/sale/__tests__/update-variant-pricing-per-kg.spec.ts → channels": 1,
-    "catalogue/product/sale/__tests__/update-variant-pricing-sale-unit.spec.ts → channels": 2,
-    "catalogue/product/sale/__tests__/update-variant-pricing.spec.ts → channels": 1,
-    "catalogue/product/sale/get-product-sale-unit-usage.ts → channels": 1,
-    "catalogue/product/sale/sale-unit-clearance-support.ts → channels": 1,
-    "catalogue/product/sale/update-variant-pricing.ts → channels": 1,
-    "catalogue/product/shared/__tests__/product-handlers.spec.ts → channels": 1,
-    "catalogue/revision/infrastructure/prisma-catalog-revision.source.ts → channels": 1,
     "order-time-limitation/application/get-general-order-cutoff.ts → channels": 1
   }
 }
