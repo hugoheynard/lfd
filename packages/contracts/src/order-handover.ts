@@ -263,6 +263,16 @@ export interface HandoverQueueEntryView {
    * Supervision, pas devant le client.
    */
   readonly heldForQuality: boolean;
+  /**
+   * **Décision attendue** : le colisage a signalé un manque et le superviseur
+   * n'a pas encore décidé. Le scan et la saisie la refusent avec « Il manque
+   * des produits : la décision du superviseur est attendue. » ; seul un
+   * départ incomplet (sous `b2b_orders_shortfall:write`) la fait partir.
+   *
+   * Le serveur le rend toujours ; optionnel pour que les fixtures du front
+   * d'avant restent valides.
+   */
+  readonly awaitingShortfallDecision?: boolean;
 }
 
 /** La place d'une livraison dans sa tournée, lue à la livraison par son port. */

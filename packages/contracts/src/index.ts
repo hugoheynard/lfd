@@ -881,7 +881,10 @@ export type {
   CounterIncompleteHandoverRefusal,
   CounterIncompleteHandoverView,
 } from "./counter-incomplete-handover.js";
-export { COUNTER_INCOMPLETE_HANDOVER_REFUSALS } from "./counter-incomplete-handover.js";
+export {
+  COUNTER_INCOMPLETE_HANDOVER_PERMISSION,
+  COUNTER_INCOMPLETE_HANDOVER_REFUSALS,
+} from "./counter-incomplete-handover.js";
 export {
   announcedOrderUntil,
   clockTimeSchema,

@@ -26,6 +26,7 @@ function subjectOf(orderId: string, requestedDeliveryDate: Date | null): Handove
     pickupLabel: null,
     status: "ready",
     settled: true,
+    awaitingShortfallDecision: false,
     fulfillmentMethod: "delivery",
     note: "",
     lines: [],

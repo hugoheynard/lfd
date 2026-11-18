@@ -66,7 +66,7 @@ function order(packed: boolean): BoardOrder {
 }
 
 function stock(sku: string, received: number, packed: number): BoardStock {
-  return { sku, received, returned: 0, packed, sentToShop: 0, reserved: 0 };
+  return { sku, received, returned: 0, packed, sentToShop: 0, missing: 0, reserved: 0 };
 }
 
 function run(source: CounterPackingSheetSource | null) {

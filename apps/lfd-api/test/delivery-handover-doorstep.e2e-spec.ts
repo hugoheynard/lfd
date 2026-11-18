@@ -8,9 +8,11 @@
  * validation (la commande `fulfilled`), et une validation qui échoue ne laisse
  * ni commande `fulfilled`, ni point, ni pièce.
  */
+import { CommandBus } from "@nestjs/cqrs";
 import type request from "supertest";
 import type { Response } from "supertest";
 
+import { RecordOrderShortfallCommand } from "../src/lafoliecoffee/orders/application/commands/record-order-shortfall.command.js";
 import { PrismaService } from "../src/platform/database/prisma.service.js";
 import { currentTransaction } from "../src/platform/database/transaction.store.js";
 import { PrismaUnitOfWork, UnitOfWork } from "../src/platform/database/unit-of-work.js";
@@ -298,5 +300,39 @@ describe("« Remis au client » (B1)", () => {
       .expect(404);
 
     expect(await ctx.prisma.orderHandover.count({ where: { orderId } })).toBe(0);
+  });
+});
+
+/**
+ * D7 du plan `documentation/colisage/plan-niveaux-de-suivi-colisage.md` : le
+ * comptoir attend la décision d'un manque, la porte non — la feuille de
+ * tournée dit déjà le manque au livreur.
+ */
+describe("« Remis au client » — un manque qui attend une décision (D7)", () => {
+  it("n'est pas bloqué à la porte", async () => {
+    const paul = await staffWithRole(ctx, "livreur-paul");
+    const { roundId, orderId, stopId } = await departedStop(paul);
+    const { orderNumber } = await ctx.prisma.order.findUniqueOrThrow({
+      where: { id: orderId },
+      select: { orderNumber: true },
+    });
+    // Le vrai abonné du commerce, par le bus : le manque comme le colisage le signale.
+    await ctx.app
+      .get(CommandBus)
+      .execute(
+        new RecordOrderShortfallCommand(orderNumber, 1, new Date(1_000), [
+          { sku: "CRO", due: 2, packed: 1 },
+        ]),
+      );
+    const shortfall = await ctx.prisma.orderShortfall.findUniqueOrThrow({
+      where: { orderId_rank: { orderId, rank: 1 } },
+    });
+    expect(shortfall.reportedAt).not.toBeNull();
+    expect(shortfall.decidedAt).toBeNull();
+
+    expect((await handOver(paul.agent, roundId, stopId)).status).toBe(204);
+    await ctx.drain();
+
+    expect(await ctx.prisma.orderHandover.count({ where: { orderId } })).toBe(1);
   });
 });

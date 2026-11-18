@@ -42,6 +42,7 @@ function entry(overrides: Partial<HandoverQueueEntry> = {}): HandoverQueueEntry 
     abandoned: [],
     status: "ready",
     settled: true,
+    awaitingShortfallDecision: false,
     readyAt: null,
     placedAt: PLACED_AT,
     ...overrides,
@@ -515,5 +516,26 @@ describe("GetHandoverQueueHandler — le périmètre du comptoir", () => {
     expect(view.entries.find((line) => line.orderId === "ord_liv")?.round?.label).toBe(
       "Kangoo blanc",
     );
+  });
+});
+
+describe("GetHandoverQueueHandler — décision attendue (D7)", () => {
+  it("dit « décision attendue » d'une commande que le scan refuse, jamais d'un sac parti", async () => {
+    const { handler } = handlerOf(
+      [
+        entry({ orderId: "ord_1", awaitingShortfallDecision: true }),
+        entry({ orderId: "ord_2", awaitingShortfallDecision: true }),
+        entry({ orderId: "ord_3" }),
+      ],
+      new Map([["ord_2", attestation()]]),
+    );
+
+    const view = await handler.execute(new GetHandoverQueueQuery("2026-09-10", "whole_day"));
+
+    expect(view.entries.map((line) => [line.orderId, line.awaitingShortfallDecision])).toEqual([
+      ["ord_1", true],
+      ["ord_2", false],
+      ["ord_3", false],
+    ]);
   });
 });

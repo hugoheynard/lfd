@@ -1,7 +1,12 @@
 import { FIRST_SHIPMENT_RANK, ShipmentRef } from "../../../production/channels/handover/index.js";
 import { HandoverRefusedError } from "../errors/handover-errors.js";
 import type { HandoverSubject } from "../../channels/commerce/handover-subject.reader.js";
-import { handoverBlocker, type HandoverVia } from "../services/handover.js";
+import {
+  counterHandoverBlocker,
+  handoverBlocker,
+  type HandoverCandidate,
+  type HandoverVia,
+} from "../services/handover.js";
 import { shipmentPrepared, shipmentReference } from "../services/handover-shipments.js";
 
 /** Ce que la règle lit d'une commande et que le commerce ne porte pas. */
@@ -106,14 +111,45 @@ export class OrderHandover {
     rank: number,
     standing: HandoverStanding,
   ): string | null {
-    return handoverBlocker({
-      status: subject.status,
-      rank,
-      handedOverAt: standing.handedOverAt,
-      // Un reste pas encore colisé n'est pas un sac (L4c) ; le rang 1 l'est toujours.
-      prepared: shipmentPrepared(subject, rank),
-      qualityHold: standing.qualityHold,
-      settled: subject.settled,
+    return handoverBlocker(candidateOf(subject, rank, standing));
+  }
+
+  /**
+   * **La remise normale au comptoir** — le scan et la saisie : {@link attest},
+   * précédé de la règle du comptoir (un manque qui attend la décision du
+   * superviseur refuse, `counterHandoverBlocker`). Le départ incomplet et la
+   * remise à la porte passent par {@link attest} seul.
+   *
+   * @throws {HandoverRefusedError} l'état interdit le retrait, ou l'auteur manque.
+   */
+  static attestAtCounter(
+    subject: HandoverSubject,
+    rank: number,
+    standing: HandoverStanding,
+    at: Date,
+    by: string,
+    via: HandoverVia,
+  ): OrderHandover {
+    const blocker = OrderHandover.counterRefusalOf(
+      subject,
+      ShipmentRef.of(subject.orderId, rank).rank,
+      standing,
+    );
+    if (blocker !== null) {
+      throw new HandoverRefusedError(blocker);
+    }
+    return OrderHandover.attest(subject, rank, standing, at, by, via);
+  }
+
+  /** La règle de {@link attestAtCounter}, sans attester — la vue du comptoir la dit avant le geste. */
+  static counterRefusalOf(
+    subject: HandoverSubject,
+    rank: number,
+    standing: HandoverStanding,
+  ): string | null {
+    return counterHandoverBlocker({
+      ...candidateOf(subject, rank, standing),
+      awaitingShortfallDecision: subject.awaitingShortfallDecision,
     });
   }
 
@@ -140,4 +176,21 @@ export class OrderHandover {
   get shipment(): ShipmentRef {
     return ShipmentRef.of(this.orderId, this.rank);
   }
+}
+
+/** Ce que la règle du retrait lit d'un envoi : le sujet du commerce, et ce que le retrait sait. */
+function candidateOf(
+  subject: HandoverSubject,
+  rank: number,
+  standing: HandoverStanding,
+): HandoverCandidate {
+  return {
+    status: subject.status,
+    rank,
+    handedOverAt: standing.handedOverAt,
+    // Un reste pas encore colisé n'est pas un sac (L4c) ; le rang 1 l'est toujours.
+    prepared: shipmentPrepared(subject, rank),
+    qualityHold: standing.qualityHold,
+    settled: subject.settled,
+  };
 }

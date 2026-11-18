@@ -327,6 +327,7 @@ import { OrderExistenceReader } from "./domain/ports/order-existence.reader.js";
 import { PrismaOrderExistenceReader } from "./infrastructure/prisma-order-existence.reader.js";
 import { ListOrderMailsHandler } from "./application/queries/list-order-mails.handler.js";
 import { RingFailedOrderMail } from "./application/handlers/ring-failed-order-mail.handler.js";
+import { ShortfallBell } from "./application/services/shortfall-bell.js";
 import { OrderDayChangePruner } from "./domain/ports/order-day-change.pruner.js";
 import { PrismaOrderDayVersionReader } from "./infrastructure/prisma-order-day-version.reader.js";
 import { PrismaOrderDayChangePruner } from "./infrastructure/prisma-order-day-change.pruner.js";
@@ -659,6 +660,7 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     },
     MarkOrderReadyHandler,
     RecordOrderShortfallHandler,
+    ShortfallBell,
     ClearOrderShortfallHandler,
     OnPackingShortfallReported,
     OnPackingShortfallCleared,

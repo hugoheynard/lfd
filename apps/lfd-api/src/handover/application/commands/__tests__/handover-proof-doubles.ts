@@ -128,6 +128,7 @@ export class NumberedSubjects extends HandoverSubjectReader {
             pickupLabel: null,
             status: "fulfilled",
             settled: true,
+            awaitingShortfallDecision: false,
             fulfillmentMethod: "delivery",
             note: "",
             lines: [],

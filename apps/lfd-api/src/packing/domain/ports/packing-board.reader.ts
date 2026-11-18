@@ -50,7 +50,7 @@ export interface BoardOrder {
   readonly shortfallAuthorizedAt?: Date | null;
 }
 
-/** La réserve d'un article : reçu du four, rendu, au bac, réservé. */
+/** La réserve d'un article : reçu du four, rendu, au bac, manquant, réservé. */
 export interface BoardStock {
   readonly sku: string;
   readonly received: number;
@@ -58,6 +58,11 @@ export interface BoardStock {
   readonly packed: number;
   /** Envoyé en boutique depuis la réserve (plan A1, lot A1.4). */
   readonly sentToShop: number;
+  /**
+   * Les pièces mises de côté comme absentes (« Problème ») — hors du libre,
+   * comme `PackingStock.free` les retire.
+   */
+  readonly missing: number;
   /** Ce que les réassorts lancés retiennent encore (R4b) — hors d'atteinte des commandes. */
   readonly reserved: number;
 }

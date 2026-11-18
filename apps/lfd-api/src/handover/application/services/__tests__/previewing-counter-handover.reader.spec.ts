@@ -43,6 +43,7 @@ function subject(overrides: Partial<HandoverSubject> = {}): HandoverSubject {
     pickupLabel: "Le labo",
     status: "confirmed",
     settled: true,
+    awaitingShortfallDecision: false,
     fulfillmentMethod: "pickup",
     note: "",
     lines: [{ sku: "CRO", productName: "Croissant", quantity: 12, saleUnit: "piece" }],

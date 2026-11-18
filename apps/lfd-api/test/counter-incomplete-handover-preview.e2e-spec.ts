@@ -125,7 +125,10 @@ describe("Aperçu du départ incomplet — chaque cas rend son code", () => {
     expect(await ctx.prisma.orderShortfall.count()).toBe(0);
     expect(sheet.shortfallReportedAt).toBeNull();
 
-    await seller.post(path(order.id)).send({ remainder: "abandoned" }).expect(204);
+    // Le vendeur voit l'aperçu ; le geste est au superviseur (D7 du plan
+    // `documentation/colisage/plan-niveaux-de-suivi-colisage.md`).
+    await seller.post(path(order.id)).send({ remainder: "abandoned" }).expect(403);
+    await ctx.asSub(STAFF).post(path(order.id)).send({ remainder: "abandoned" }).expect(204);
     await ctx.drain();
     const decision = await ctx.prisma.orderShortfallDecision.findFirstOrThrow({
       where: { orderId: order.id },

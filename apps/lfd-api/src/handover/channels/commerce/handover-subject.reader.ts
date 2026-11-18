@@ -39,6 +39,13 @@ export interface HandoverSubject {
    * `documentation/commandes/reglement/commande-carte-reglee.md`, §4.4).
    */
   readonly settled: boolean;
+  /**
+   * Le colisage a signalé un manque sur la commande (son rang 1), et le
+   * superviseur n'a pas encore décidé — dit par le commerce, qui tient le
+   * manque et sa décision. Le comptoir refuse alors la remise normale
+   * (`counterHandoverBlocker`) ; la remise à la porte ne le lit pas.
+   */
+  readonly awaitingShortfallDecision: boolean;
   readonly fulfillmentMethod: FulfillmentMethod;
   /** La note du client — elle est sur le bon, donc elle traverse. */
   readonly note: string;

@@ -42,7 +42,14 @@ export class PrismaCounterPackingSheetReader extends CounterPackingSheetReader {
       this.desk.liveBins(row.containers.flatMap((container) => container.binId ?? [])),
       this.prisma.packingStock.findMany({
         where: { serviceDay: row.serviceDay, sku: { in: skus } },
-        select: { sku: true, received: true, returned: true, packed: true, sentToShop: true },
+        select: {
+          sku: true,
+          received: true,
+          returned: true,
+          packed: true,
+          sentToShop: true,
+          missing: true,
+        },
       }),
       reservationsOn(this.prisma, row.serviceDay),
     ]);

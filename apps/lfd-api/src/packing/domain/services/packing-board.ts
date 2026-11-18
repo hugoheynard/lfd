@@ -152,7 +152,12 @@ function freeBySku(day: PackingBoardDay): ReadonlyMap<string, number> {
       (stock) =>
         [
           stock.sku,
-          stock.received - stock.returned - stock.packed - stock.sentToShop - stock.reserved,
+          stock.received -
+            stock.returned -
+            stock.packed -
+            stock.sentToShop -
+            stock.missing -
+            stock.reserved,
         ] as const,
     ),
   );

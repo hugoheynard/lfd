@@ -106,6 +106,12 @@ export interface HandoverQueueEntry {
    * attendue une commande que le scan refuse.
    */
   readonly settled: boolean;
+  /**
+   * Un manque signalé attend la décision du superviseur — même fait que
+   * {@link HandoverSubject.awaitingShortfallDecision}, pour que la file dise
+   * « décision attendue » d'une commande que le scan refuse.
+   */
+  readonly awaitingShortfallDecision: boolean;
   /** Quand le fournil l'a déclarée prête, ou `null` si elle ne l'est pas. */
   readonly readyAt: Date | null;
   /** Passée le — l'ordre de la file quand aucun créneau ne la départage. */

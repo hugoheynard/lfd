@@ -43,7 +43,7 @@ function order(overrides: Partial<BoardOrder> & Pick<BoardOrder, "orderId">): Bo
 }
 
 function stock(sku: string, received: number): BoardStock {
-  return { sku, received, returned: 0, packed: 0, sentToShop: 0, reserved: 0 };
+  return { sku, received, returned: 0, packed: 0, sentToShop: 0, missing: 0, reserved: 0 };
 }
 
 function day(orders: readonly BoardOrder[], stocks: readonly BoardStock[]): PackingBoardDay {

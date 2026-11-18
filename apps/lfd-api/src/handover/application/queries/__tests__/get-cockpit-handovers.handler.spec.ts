@@ -28,6 +28,7 @@ function entry(overrides: Partial<HandoverQueueEntry> = {}): HandoverQueueEntry 
     abandoned: [],
     status: "ready",
     settled: true,
+    awaitingShortfallDecision: false,
     readyAt: null,
     placedAt: PLACED_AT,
     ...overrides,

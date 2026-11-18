@@ -32,6 +32,7 @@ function subject(overrides: Partial<HandoverSubject> = {}): HandoverSubject {
     pickupLabel: "Le labo",
     status: "ready",
     settled: true,
+    awaitingShortfallDecision: false,
     fulfillmentMethod: "pickup",
     note: "",
     lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 2, saleUnit: "piece" }],
@@ -171,5 +172,42 @@ describe("OrderHandover — le rang de l'envoi (plan E7 reliquat, L3d)", () => {
   it("rehydrate relit le rang de la ligne, et le rang 1 quand on ne le dit pas", () => {
     expect(OrderHandover.rehydrate("ord_1", "ORD-1", AT, "staff-1", "scan").rank).toBe(1);
     expect(OrderHandover.rehydrate("ord_1", "ORD-1-2", AT, "staff-1", "scan", 2).rank).toBe(2);
+  });
+});
+
+describe("OrderHandover.attestAtCounter — un manque attend la décision (D7)", () => {
+  it("refuse au comptoir, en nommant le cas et qui débloque", () => {
+    expect(() =>
+      OrderHandover.attestAtCounter(
+        subject({ awaitingShortfallDecision: true }),
+        1,
+        FREE,
+        AT,
+        "staff-1",
+        "scan",
+      ),
+    ).toThrow("Il manque des produits : la décision du superviseur est attendue.");
+  });
+
+  it("grave une fois la décision prise", () => {
+    const handover = OrderHandover.attestAtCounter(subject(), 1, FREE, AT, "staff-1", "manual");
+
+    expect(handover.via).toBe("manual");
+  });
+
+  it("`attest` seul (la porte, le départ incomplet) ne lit pas le manque", () => {
+    const handover = OrderHandover.attest(
+      subject({ awaitingShortfallDecision: true }),
+      1,
+      FREE,
+      AT,
+      "courier-1",
+      "scan",
+    );
+
+    expect(handover.handedOverBy).toBe("courier-1");
+    expect(
+      OrderHandover.refusalOf(subject({ awaitingShortfallDecision: true }), 1, FREE),
+    ).toBeNull();
   });
 });

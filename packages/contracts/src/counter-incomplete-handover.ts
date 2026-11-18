@@ -1,4 +1,17 @@
 import type { OrderSaleUnit } from "./order.js";
+import type { StaffPermission } from "./staff-access.js";
+
+/**
+ * **Le droit du geste** `POST /admin/counter/orders/:orderId/incomplete-handover` :
+ * celui de la décision d'un départ incomplet, pas celui du comptoir (D7 du
+ * plan `documentation/colisage/plan-niveaux-de-suivi-colisage.md`). Le
+ * superviseur décide, le comptoir attend.
+ *
+ * L'aperçu reste sous `handover_counter:read` et ne connaît pas l'appelant :
+ * c'est l'écran qui masque le geste quand l'effectif de la personne
+ * (`GET /admin/me`) ne porte pas ce droit. Sans lui, le geste répond `403`.
+ */
+export const COUNTER_INCOMPLETE_HANDOVER_PERMISSION: StaffPermission = "b2b_orders_shortfall:write";
 
 /**
  * **Pourquoi le comptoir ne peut pas proposer un départ incomplet** — un code
@@ -76,6 +89,8 @@ export interface CounterIncompleteHandoverLine {
 /**
  * `GET /admin/counter/orders/:orderId/incomplete-handover`, sous
  * `handover_counter:read` — l'aperçu du départ incomplet, AVANT le geste.
+ * Il ne dit pas si l'appelant peut faire le geste : cf.
+ * {@link COUNTER_INCOMPLETE_HANDOVER_PERMISSION}.
  *
  * `refusal` vaut `null` quand le départ incomplet peut être proposé. Un
  * aperçu, pas une promesse : le geste rejuge sous verrou.

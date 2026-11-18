@@ -11,6 +11,7 @@ import { abandonedOf, decisionMarkOf } from "./prisma-shortfall-aftermath.reader
 import { departingOf } from "./prisma-shortfall-decision.reader.js";
 import { shortfallLinesOf } from "./prisma-order-shortfall.repository.js";
 import { notAbandonedAttemptWhere } from "./abandoned-attempt.where.js";
+import { awaitingShortfallDecisionOf } from "./awaiting-shortfall-decision.js";
 
 /**
  * **La lecture d'une commande POUR LA REMISE**, partagée par les deux
@@ -144,6 +145,10 @@ export const DEPARTURE_SELECT = {
     where: { rank: FIRST_SHIPMENT_RANK },
     select: {
       lines: true,
+      // « Décision attendue » (`awaitingShortfallDecisionOf`) : le comptoir
+      // refuse la remise normale tant qu'elle l'est.
+      reportedAt: true,
+      decidedAt: true,
       decision: {
         select: { decidedAt: true, decidedByStaffId: true, remainder: true, departing: true },
       },
@@ -202,6 +207,7 @@ export function toHandoverSubject(row: HandoverRow): {
   readonly pickupLabel: string | null;
   readonly status: HandoverRow["status"];
   readonly settled: boolean;
+  readonly awaitingShortfallDecision: boolean;
   readonly fulfillmentMethod: HandoverRow["fulfillmentMethod"];
   readonly note: string;
   readonly lines: readonly DepartureLine[];
@@ -218,6 +224,7 @@ export function toHandoverSubject(row: HandoverRow): {
     // La définition du contrat, appliquée ici : le retrait ne connaît pas
     // l'énuméré du règlement.
     settled: isSettled(row.paymentStatus),
+    awaitingShortfallDecision: awaitingShortfallDecisionOf(row),
     fulfillmentMethod: row.fulfillmentMethod,
     note: row.note,
     lines: departureOf(row).lines,
@@ -239,6 +246,7 @@ export function toQueueEntry(row: QueueRow): {
   readonly abandoned: readonly DepartureLine[];
   readonly status: string;
   readonly settled: boolean;
+  readonly awaitingShortfallDecision: boolean;
   readonly readyAt: Date | null;
   readonly placedAt: Date;
 } {
@@ -260,6 +268,7 @@ export function toQueueEntry(row: QueueRow): {
     abandoned: departure.abandoned,
     status: row.status,
     settled: isSettled(row.paymentStatus),
+    awaitingShortfallDecision: awaitingShortfallDecisionOf(row),
     readyAt: row.readyAt,
     placedAt: row.createdAt,
   };

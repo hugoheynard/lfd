@@ -104,6 +104,7 @@ function subject(withPackedRest: boolean): HandoverSubject {
     pickupLabel: null,
     status: "ready",
     settled: true,
+    awaitingShortfallDecision: false,
     fulfillmentMethod: "pickup",
     note: "",
     lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 10, saleUnit: "piece" }],

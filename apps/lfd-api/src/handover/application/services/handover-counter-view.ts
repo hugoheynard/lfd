@@ -14,7 +14,7 @@ import type {
 import type { OrderHandover } from "../../domain/entities/order-handover.js";
 import { HandedOverOrdersReader } from "../../domain/ports/handed-over-orders.reader.js";
 import { OrderHandoverRepository } from "../../domain/ports/order-handover.repository.js";
-import { handoverBlocker } from "../../domain/services/handover.js";
+import { counterHandoverBlocker } from "../../domain/services/handover.js";
 import {
   candidateRanks,
   focusedRank,
@@ -137,7 +137,10 @@ function toHandoverView(
     handedOverBy: handover === null ? null : handover.handedOverBy,
     handedOverByName: handover === null ? null : authors.nameOf(handover.handedOverBy),
     handedOverVia: handover === null ? null : handover.via,
-    blockedReason: handoverBlocker({
+    // La règle du scan et de la saisie : un manque qui attend une décision
+    // se dit avant le geste.
+    blockedReason: counterHandoverBlocker({
+      awaitingShortfallDecision: subject.awaitingShortfallDecision,
       status: subject.status,
       rank,
       handedOverAt: handover === null ? null : handover.handedOverAt,

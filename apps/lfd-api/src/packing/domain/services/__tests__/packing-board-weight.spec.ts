@@ -51,8 +51,16 @@ function boardOf(target: BoardOrder) {
     orders: [target],
     withdrawn: [],
     stocks: [
-      { sku: "CRO", received: 12, returned: 0, packed: 0, sentToShop: 0, reserved: 0 },
-      { sku: "SAU", received: 1250, returned: 0, packed: 0, sentToShop: 0, reserved: 0 },
+      { sku: "CRO", received: 12, returned: 0, packed: 0, sentToShop: 0, missing: 0, reserved: 0 },
+      {
+        sku: "SAU",
+        received: 1250,
+        returned: 0,
+        packed: 0,
+        sentToShop: 0,
+        missing: 0,
+        reserved: 0,
+      },
     ],
   };
   const sources: BoardSources = {

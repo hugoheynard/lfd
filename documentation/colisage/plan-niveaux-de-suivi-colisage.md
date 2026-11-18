@@ -176,6 +176,19 @@ plan à part.
     aux rôles qui décident — jamais en migration
     (`lint:no-role-grants-in-migrations`). Sans ce geste, seul l'administrateur
     peut décider d'un départ incomplet.
+- **Bâti en C2b (2026-11-18), ce que le plan ne disait pas :**
+  - l'aperçu du départ incomplet ne connaît pas l'appelant : le contrat nomme
+    le droit (`COUNTER_INCOMPLETE_HANDOVER_PERMISSION`) et l'écran masque le
+    geste, plutôt qu'un code de refus faux pour un superviseur ;
+  - seul le manque de la **commande** (rang 1) bloque le comptoir ; un reste
+    (reliquat) avec un manque en attente ne l'est pas encore — à étendre si
+    le cas se présente ;
+  - le manque est lu hors du verrou de la commande, comme la retenue qualité :
+    un signalement arrivé entre la lecture et la remise la laisse passer ;
+  - la cloche part après validation et n'est pas rejouée si l'envoi échoue,
+    comme celle du fournil ; audience `b2b_orders_shortfall:write` ;
+  - les rôles de la graine qui perdent le départ incomplet : **commercial,
+    comptabilite, comptoir** ; `admin` le garde.
 - **D8 — La cloche sonne chez le commerce**, celui qui décide, quand il
   enregistre un manque (sur le modèle de `ring-failed-order-mail.handler.ts`).
   Vérifié le 2026-11-18 : aucun manque ne sonne aujourd'hui.
@@ -245,7 +258,8 @@ flowchart LR
   l'importent du colisage. `packing.returned` reste au fournil (§ 1).
 - **C1** — migration, réglage, niveau figé, ligne de la page Niveau de suivi.
 - **C2** — « Problème » (serveur et écran), D5 à D8, « Pièces retrouvées ».
-  C2a (le colisage) ✅ bâti le 2026-11-18 sur `feat/colisage-simple`.
+  C2a (le colisage) et C2b (le comptoir, la cloche) ✅ bâtis le 2026-11-18
+  sur `feat/colisage-simple` ; C2c (les écrans) à faire.
 - **C3** — « Tout est prêt » (serveur et écran).
 - **C4** — la correction du fournil (D9). Aujourd'hui déjà, personne ne
   l'écoute : ce lot ferme ce trou pour les deux niveaux.

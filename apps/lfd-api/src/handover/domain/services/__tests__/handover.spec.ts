@@ -1,6 +1,8 @@
 import {
+  AWAITING_SHORTFALL_DECISION_REASON,
   QUALITY_HOLD_REASON,
   UNSETTLED_REASON,
+  counterHandoverBlocker,
   handoverBlocker,
   type HandoverCandidate,
 } from "../handover.js";
@@ -142,5 +144,37 @@ describe("handoverBlocker", () => {
         handoverBlocker(candidate({ rank: 2, prepared: false, handedOverAt: new Date() })),
       ).toBe("Le reste de cette commande (envoi 2) a déjà été retiré.");
     });
+  });
+});
+
+describe("counterHandoverBlocker — le scan et la saisie au comptoir (D7)", () => {
+  const atCounter = (overrides: Partial<HandoverCandidate> = {}, awaiting = true) => ({
+    ...candidate(overrides),
+    awaitingShortfallDecision: awaiting,
+  });
+
+  it("refuse une commande dont le manque attend la décision du superviseur", () => {
+    expect(counterHandoverBlocker(atCounter())).toBe(AWAITING_SHORTFALL_DECISION_REASON);
+    expect(AWAITING_SHORTFALL_DECISION_REASON).toBe(
+      "Il manque des produits : la décision du superviseur est attendue.",
+    );
+  });
+
+  it("laisse passer une fois la décision prise", () => {
+    expect(counterHandoverBlocker(atCounter({}, false))).toBeNull();
+  });
+
+  it("dit d'abord les refus du retrait : annulée, déjà retirée, non réglée", () => {
+    expect(counterHandoverBlocker(atCounter({ status: "cancelled" }))).toBe(
+      "Cette commande est annulée.",
+    );
+    expect(counterHandoverBlocker(atCounter({ handedOverAt: new Date(0) }))).toBe(
+      "Cette commande a déjà été retirée.",
+    );
+    expect(counterHandoverBlocker(atCounter({ settled: false }))).toBe(UNSETTLED_REASON);
+  });
+
+  it("ne bloque pas un reste (rang > 1) : le manque porté est celui de la commande", () => {
+    expect(counterHandoverBlocker(atCounter({ rank: 2 }))).toBeNull();
   });
 });

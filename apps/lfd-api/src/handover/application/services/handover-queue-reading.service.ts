@@ -147,6 +147,9 @@ function toEntryView(
     // cela d'abord, jamais « en vérification » — la production peut retenir
     // un sac déjà parti sans le savoir.
     heldForQuality: held && (state === "ready" || state === "expected"),
+    // Même garde : une commande retirée ne dit plus « décision attendue ».
+    awaitingShortfallDecision:
+      entry.awaitingShortfallDecision && (state === "ready" || state === "expected"),
     handedOverAt: attestation === undefined ? null : attestation.handedOverAt.toISOString(),
     handedOverVia: attestation?.via ?? null,
     readyAt: entry.readyAt === null ? null : entry.readyAt.toISOString(),

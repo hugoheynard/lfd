@@ -3,7 +3,8 @@
  * `documentation/commandes/reliquat/reliquat.md`, §2.2.2 et
  * §2.2.3 — Hugo, 2026-11-03) : `POST
  * /admin/counter/orders/:orderId/incomplete-handover`, sous
- * `handover_counter:write`.
+ * `b2b_orders_shortfall:write` : le superviseur décide, le comptoir attend
+ * (D7 du plan `documentation/colisage/plan-niveaux-de-suivi-colisage.md`).
  *
  * Ce que seul le vrai Postgres prouve : la fiche, le signal, la décision, le
  * BL et l'attestation partent dans UNE transaction — ou rien ; le BL remis
@@ -67,14 +68,12 @@ function openCounterOnServiceDay(): void {
   clock.set(localToInstant(SERVICE_DAY, "12:00") ?? new Date());
 }
 
-/** Un membre du staff qui ne tient QUE le comptoir — le vendeur. */
-async function counterSeller(): Promise<{ readonly agent: request.Agent; readonly id: string }> {
-  const key = "vendeur-comptoir";
-  await ctx
-    .asSub(STAFF)
-    .post("/admin/staff-roles")
-    .send({ key, label: key, grants: [{ resource: "handover_counter", action: "write" }] })
-    .expect(201);
+/** Un rôle créé à l'écran des rôles, et une personne qui le tient. */
+async function staffWith(
+  key: string,
+  grants: readonly { readonly resource: string; readonly action: "read" | "write" }[],
+): Promise<{ readonly agent: request.Agent; readonly id: string }> {
+  await ctx.asSub(STAFF).post("/admin/staff-roles").send({ key, label: key, grants }).expect(201);
   const sub = `staff-${key}`;
   const seller = await ctx.prisma.staffUser.create({
     data: {
@@ -88,6 +87,18 @@ async function counterSeller(): Promise<{ readonly agent: request.Agent; readonl
     },
   });
   return { agent: ctx.asSub(sub), id: seller.id };
+}
+
+/**
+ * Le comptoir ET la décision d'un départ incomplet — le superviseur (D7). Le
+ * vendeur qui ne tient que le comptoir reçoit `403` :
+ * `counter-awaiting-shortfall-decision.e2e-spec.ts`.
+ */
+function counterSupervisor(): Promise<{ readonly agent: request.Agent; readonly id: string }> {
+  return staffWith("superviseur-comptoir", [
+    { resource: "handover_counter", action: "write" },
+    { resource: "b2b_orders_shortfall", action: "write" },
+  ]);
 }
 
 async function handOverPacked(
@@ -138,7 +149,7 @@ async function tokenOf(orderId: string): Promise<string> {
 describe("Départ incomplet au comptoir — ce qui est au bac part, le reste est abandonné", () => {
   it("décide, réécrit le BL, remet, et solde la commande sur le livré", async () => {
     const order = await accountOrder(ctx, 1);
-    const seller = await counterSeller();
+    const seller = await counterSupervisor();
     openCounterOnServiceDay();
 
     expect(await handOverPacked(seller.agent, order.id)).toEqual({ status: 204, code: null });
@@ -179,7 +190,7 @@ describe("Départ incomplet au comptoir — ce qui est au bac part, le reste est
       data: { postalPrefixes: ["73150"], label: "Val d'Isère", feeMode: "amount", feeValue: 2000 },
     });
     const order = await accountOrder(ctx, 1, [], SCENE_DELIVERY);
-    const seller = await counterSeller();
+    const seller = await counterSupervisor();
     openCounterOnServiceDay();
 
     expect(await handOverPacked(seller.agent, order.id)).toEqual({
@@ -193,7 +204,7 @@ describe("Départ incomplet au comptoir — ce qui est au bac part, le reste est
 
   it("refuse un retrait d'un autre jour, en 403 nommé, sans rien écrire", async () => {
     const order = await accountOrder(ctx, 1);
-    const seller = await counterSeller();
+    const seller = await counterSupervisor();
 
     expect(await handOverPacked(seller.agent, order.id)).toEqual({
       status: 403,
@@ -324,7 +335,7 @@ describe("Départ incomplet au comptoir — ce qui est au bac part, le reste est
 
   it("avec le jeton du QR de la commande, la remise est gravée « scan » (Hugo, 2026-11-03)", async () => {
     const order = await accountOrder(ctx, 1);
-    const seller = await counterSeller();
+    const seller = await counterSupervisor();
     openCounterOnServiceDay();
 
     expect(await handOverPacked(seller.agent, order.id, await tokenOf(order.id))).toEqual({
@@ -349,7 +360,7 @@ describe("Départ incomplet au comptoir — ce qui est au bac part, le reste est
       lines: [{ sku: CROISSANT, quantity: 3 }],
     });
     const order = await accountOrder(ctx, 1);
-    const seller = await counterSeller();
+    const seller = await counterSupervisor();
     openCounterOnServiceDay();
 
     expect(await handOverPacked(seller.agent, order.id, await tokenOf(other.id))).toEqual({

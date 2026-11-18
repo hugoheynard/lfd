@@ -41,6 +41,7 @@ function subject(): HandoverSubject {
     pickupLabel: "Le labo",
     status: "ready",
     settled: true,
+    awaitingShortfallDecision: false,
     fulfillmentMethod: "pickup",
     note: "",
     lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 2, saleUnit: "piece" }],
@@ -551,5 +552,50 @@ describe("HandoverAttestation — deux envois d'un geste (plan E7 reliquat, L4c)
       /envoi 3\) n'est pas prêt/u,
     );
     expect(written).toEqual([]);
+  });
+});
+
+/**
+ * D7 du plan `documentation/colisage/plan-niveaux-de-suivi-colisage.md` : le
+ * superviseur décide, le comptoir attend. Le scan et la saisie passent par
+ * `attest` ; le départ incomplet et la remise à la porte par `attestQuietly`.
+ */
+describe("HandoverAttestation — un manque attend la décision du superviseur (D7)", () => {
+  const awaiting = (): HandoverSubject => ({ ...subject(), awaitingShortfallDecision: true });
+
+  it("le comptoir (scan, saisie) refuse, sans rien écrire ni publier", async () => {
+    const { service, written, events } = attestationOf(null, true);
+
+    for (const via of ["scan", "manual"] as const) {
+      await expect(service.attest(awaiting(), [1], "staff-1", via)).rejects.toThrow(
+        "Il manque des produits : la décision du superviseur est attendue.",
+      );
+    }
+    expect(written).toEqual([]);
+    expect(events.published).toEqual([]);
+  });
+
+  it("dit « déjà retirée » d'abord, d'une commande partie", async () => {
+    const earlier = OrderHandover.rehydrate("ord_1", "ORD-ABCD-1234", AT, "staff-0", "scan");
+    const { service } = attestationOf(earlier, true);
+
+    await expect(service.attest(awaiting(), [1], "staff-1", "scan")).rejects.toThrow(
+      /déjà été retirée/u,
+    );
+  });
+
+  it("la remise sans la règle du comptoir (la porte, le départ incomplet) n'est pas bloquée", async () => {
+    const { service, written } = attestationOf(null, true);
+
+    const handover = await service.attestQuietly(awaiting(), 1, "courier-1", "scan");
+
+    expect(handover.handedOverBy).toBe("courier-1");
+    expect(written).toHaveLength(1);
+  });
+
+  it("l'aperçu du départ incomplet ne dit pas ce refus : c'est la décision qui le lève", async () => {
+    const { service } = attestationOf(null, true);
+
+    expect(await service.refusalOf(awaiting(), 1)).toBeNull();
   });
 });

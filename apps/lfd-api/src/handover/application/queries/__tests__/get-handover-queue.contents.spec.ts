@@ -47,6 +47,7 @@ function entry(orderId: string, fulfillmentMethod: "pickup" | "delivery"): Hando
     abandoned: [],
     status: "ready",
     settled: true,
+    awaitingShortfallDecision: false,
     readyAt: null,
     placedAt: PLACED_AT,
   };

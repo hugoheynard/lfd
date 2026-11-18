@@ -134,6 +134,46 @@ export function handoverBlocker(candidate: HandoverCandidate): string | null {
 }
 
 /**
+ * La phrase d'une commande dont le manque attend la décision du superviseur
+ * (D7 du plan `documentation/colisage/plan-niveaux-de-suivi-colisage.md`) :
+ * elle dit au comptoir ce qui se passe et qui débloque.
+ */
+export const AWAITING_SHORTFALL_DECISION_REASON =
+  "Il manque des produits : la décision du superviseur est attendue.";
+
+/** Ce que la règle du comptoir lit en plus de {@link HandoverCandidate}. */
+export interface CounterHandoverCandidate extends HandoverCandidate {
+  /** Dit par le commerce (`HandoverSubject.awaitingShortfallDecision`), rang 1 seulement. */
+  readonly awaitingShortfallDecision: boolean;
+}
+
+/**
+ * **La remise normale au comptoir** — le scan et la saisie : la règle de
+ * {@link handoverBlocker}, puis le manque qui attend une décision.
+ *
+ * Le statut de la commande ne redescend pas quand un manque est signalé
+ * (« prête » est lu par trop d'écrans et d'e-mails) : c'est donc ici que le
+ * comptoir s'arrête, tant que le superviseur n'a pas décidé. La décision —
+ * le départ incomplet — passe par un autre geste, qui ne lit pas cette règle.
+ *
+ * 🔴 **La remise à la porte ne la lit pas** : la feuille de tournée dit déjà
+ * le manque au livreur, et la décision n'est pas la sienne.
+ *
+ * Lue APRÈS les refus du retrait : une commande annulée ou déjà retirée dit
+ * cela d'abord. Le manque est celui du rang 1 : un reste (rang > 1) ne le
+ * porte pas.
+ */
+export function counterHandoverBlocker(candidate: CounterHandoverCandidate): string | null {
+  const blocker = handoverBlocker(candidate);
+  if (blocker !== null) {
+    return blocker;
+  }
+  return candidate.awaitingShortfallDecision && candidate.rank === FIRST_SHIPMENT_RANK
+    ? AWAITING_SHORTFALL_DECISION_REASON
+    : null;
+}
+
+/**
  * La phrase d'un reste pas encore colisé : il n'y a pas de sac à tendre, et
  * c'est au colisage qu'il se prépare.
  */

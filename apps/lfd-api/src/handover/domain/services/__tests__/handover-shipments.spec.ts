@@ -29,6 +29,7 @@ function subject(laterShipments: HandoverSubject["laterShipments"] = []): Handov
     pickupLabel: null,
     status: "placed",
     settled: true,
+    awaitingShortfallDecision: false,
     fulfillmentMethod: "pickup",
     note: "",
     lines: ORDER_LINES,

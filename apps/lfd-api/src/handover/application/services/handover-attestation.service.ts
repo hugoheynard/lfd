@@ -73,6 +73,9 @@ export class HandoverAttestation {
    * La vue de l'accusé est l'affaire de l'appelant (`HandoverCounterView`) :
    * elle dépend aussi des envois qui restent, que ce service n'a pas à lire.
    *
+   * La règle est celle du comptoir (`OrderHandover.attestAtCounter`) : un
+   * manque qui attend la décision du superviseur refuse la remise.
+   *
    * @throws {HandoverRefusedError} l'état l'interdit, ou un autre poste a gagné.
    */
   async attest(
@@ -89,7 +92,7 @@ export class HandoverAttestation {
       return await this.uow.run(async () => {
         const engraved: OrderHandover[] = [];
         for (const shipment of shipments) {
-          engraved.push(await this.engrave(subject, shipment, by, via));
+          engraved.push(await this.engrave(subject, shipment, by, via, AT_COUNTER));
         }
         return engraved;
       });
@@ -183,8 +186,9 @@ export class HandoverAttestation {
     shipment: ShipmentRef,
     by: string,
     via: HandoverVia,
+    rule: AttestingRule = ANYWHERE,
   ): Promise<OrderHandover> {
-    const handover = await this.judge(subject, shipment, by, via);
+    const handover = await this.judge(subject, shipment, by, via, rule);
     const won = await this.handovers.attest(handover);
     if (!won) {
       // Perdu la course : un autre poste a scanné, ou saisi, entre notre lecture
@@ -208,6 +212,7 @@ export class HandoverAttestation {
     shipment: ShipmentRef,
     by: string,
     via: HandoverVia,
+    rule: AttestingRule = ANYWHERE,
   ): Promise<OrderHandover> {
     const current = await this.lockOrder(subject);
     const { standing, transfer } = await this.standingOf(subject, shipment);
@@ -215,8 +220,10 @@ export class HandoverAttestation {
       throw transfer;
     }
     // L'agrégat refuse ici — commande annulée, pas encore passée, déjà
-    // retirée, retenue au contrôle.
-    return OrderHandover.attest(current, shipment.rank, standing, this.clock.now(), by, via);
+    // retirée, retenue au contrôle — et, au comptoir, un manque qui attend
+    // la décision du superviseur (lu sur le sujet, hors du verrou : une
+    // vérification, comme la retenue).
+    return rule(current, shipment.rank, standing, this.clock.now(), by, via);
   }
 
   /**
@@ -282,6 +289,16 @@ export class HandoverAttestation {
 }
 
 /** La commande a été annulée pendant que le comptoir la tenait à l'écran. */
+/**
+ * La règle qui construit l'attestation : `OrderHandover.attestAtCounter` pour
+ * le scan et la saisie au comptoir, `OrderHandover.attest` pour le départ
+ * incomplet et la remise à la porte, qui ne lisent pas le manque.
+ */
+type AttestingRule = (...args: Parameters<typeof OrderHandover.attest>) => OrderHandover;
+
+const AT_COUNTER: AttestingRule = (...args) => OrderHandover.attestAtCounter(...args);
+const ANYWHERE: AttestingRule = (...args) => OrderHandover.attest(...args);
+
 const CANCELLED_JUST_NOW =
   "Cette commande vient d'être annulée : ne la donnez pas. Rechargez la file du comptoir.";
 
