@@ -200,6 +200,11 @@ export interface ProductionDaySnapshot {
   /** Le nom, figé au retirage, de qui l'a fait ; `null` si inconnu. */
   readonly retakenByName: string | null;
   /**
+   * Le nombre de retirages depuis le dernier arrêt : le dossier en est au
+   * tirage `retakeCount + 1`. Facultatif à la RÉHYDRATATION (absent vaut 0).
+   */
+  readonly retakeCount?: number;
+  /**
    * La dernière réouverture (2026-10-14) — `null` : jamais rouverte.
    * Facultative à la RÉHYDRATATION seulement (absente vaut `null`) ;
    * `toSnapshot` la rend toujours.

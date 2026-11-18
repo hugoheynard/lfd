@@ -67,6 +67,7 @@ const STAMP = {
   retakenAt: null,
   closedBy: null,
   retakenByName: null,
+  printRun: 1,
 };
 
 describe("renderDayDossierPdf — le bon figé à l'arrêt (E1b)", () => {
@@ -134,7 +135,14 @@ describe("renderDayDossierPdf", () => {
     const pages = pdfPages(
       await rendered(
         DOSSIER,
-        { serviceDay: DAY, closedAt: CLOSED, retakenAt: null, closedBy: null, retakenByName: null },
+        {
+          serviceDay: DAY,
+          closedAt: CLOSED,
+          retakenAt: null,
+          closedBy: null,
+          retakenByName: null,
+          printRun: 1,
+        },
         () => "",
         NO_COLORS,
         NO_COLORS,
@@ -162,6 +170,7 @@ describe("renderDayDossierPdf", () => {
           retakenAt: RETAKEN,
           closedBy: null,
           retakenByName: null,
+          printRun: 1,
         },
         () => "",
         NO_COLORS,
@@ -178,6 +187,7 @@ describe("renderDayDossierPdf", () => {
       retakenAt: null,
       closedBy: null,
       retakenByName: null,
+      printRun: 1,
     };
     const first = await rendered(
       DOSSIER,
@@ -207,7 +217,14 @@ describe("renderDayDossierPdf", () => {
     const pages = pdfPages(
       await rendered(
         dossier,
-        { serviceDay: DAY, closedAt: CLOSED, retakenAt: null, closedBy: null, retakenByName: null },
+        {
+          serviceDay: DAY,
+          closedAt: CLOSED,
+          retakenAt: null,
+          closedBy: null,
+          retakenByName: null,
+          printRun: 1,
+        },
         () => "",
         NO_COLORS,
         NO_COLORS,
@@ -236,6 +253,7 @@ describe("renderDayDossierPdf", () => {
           closedBy: { kind: "staff", staffUserId: "s-1", name: "Marie Dupont" },
           retakenAt: RETAKEN,
           retakenByName: "Paul Martin",
+          printRun: 1,
         },
         () => "",
         NO_COLORS,
@@ -277,7 +295,7 @@ describe("renderDayDossierPdf", () => {
 describe("dayDossierPdfKey — la version de mise en page", () => {
   it("n'est plus la clé d'avant E1b : un dossier archivé à l'ancien papier n'est jamais resservi", () => {
     expect(dayDossierPdfKey(DAY, null)).not.toBe(`${DAY}/dossier-du-jour.pdf`);
-    expect(dayDossierPdfKey(DAY, RETAKEN)).toContain("-v13-retirage-");
+    expect(dayDossierPdfKey(DAY, RETAKEN)).toContain("-v14-retirage-");
   });
 });
 
@@ -285,7 +303,7 @@ describe("dayDossierPdfKey", () => {
   it("une clé pour la clôture, une autre par retirage : le complément n'écrase pas l'original", () => {
     const original = dayDossierPdfKey(DAY, null);
     const completed = dayDossierPdfKey(DAY, RETAKEN);
-    expect(original).toBe(`${DAY}/dossier-du-jour-v13.pdf`);
+    expect(original).toBe(`${DAY}/dossier-du-jour-v14.pdf`);
     expect(completed).not.toBe(original);
     expect(completed.startsWith(`${DAY}/`)).toBe(true);
   });

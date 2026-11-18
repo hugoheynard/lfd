@@ -60,7 +60,7 @@ export class ProductionDay extends ProductionDayState {
    */
   static open(day: ServiceDay): ProductionDay {
     const plan = DayPlan.of(DayPlan.EMPTY);
-    return new ProductionDay(day, null, null, null, null, LEGACY_PACKING_OWNER, plan, [], null);
+    return new ProductionDay(day, null, null, null, null, LEGACY_PACKING_OWNER, plan, [], null, 0);
   }
 
   /**
@@ -100,6 +100,7 @@ export class ProductionDay extends ProductionDayState {
       plan,
       snapshot.batches,
       snapshot.reopened ?? null,
+      snapshot.retakeCount ?? 0,
     );
   }
 
@@ -171,6 +172,7 @@ export class ProductionDay extends ProductionDayState {
     this.planValue = plan;
     this.retakenValue = { at, by };
     this.retakenByNameValue = byName;
+    this.retakeCountValue += 1;
     return count;
   }
 
@@ -196,6 +198,7 @@ export class ProductionDay extends ProductionDayState {
     this.closedByValue = null;
     this.retakenValue = null;
     this.retakenByNameValue = null;
+    this.retakeCountValue = 0;
     this.planValue = this.planValue.cleared();
     this.reopenedValue = { at, by };
     return released;

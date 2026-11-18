@@ -59,6 +59,7 @@ export class GetDayDossierSpecimenHandler implements IQueryHandler<
         closedBy: staffSigner("specimen-staff", "EXEMPLE — Marie Dupont"),
         retakenAt: null,
         retakenByName: null,
+        printRun: 1,
       },
       {
         logo: await this.logo.load(),

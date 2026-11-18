@@ -59,6 +59,8 @@ export interface DossierStamp {
   readonly retakenAt: Date | null;
   /** Qui a complété, nom figé au retirage ; `null` si inconnu. */
   readonly retakenByName: string | null;
+  /** Le tirage : 1 à l'arrêt, plus un à chaque retirage. */
+  readonly printRun: number;
 }
 
 /**
@@ -125,7 +127,8 @@ export function renderDayDossierPdf(
       });
       pages.finish({
         logo: print.logo,
-        headerRight: `Lot pour le ${weekdayShortDate(stamp.serviceDay)}`,
+        headerRight: dossierHeader(stamp),
+        headerRightBold: true,
         footerLeft: stampLine(stamp),
       });
     },
@@ -225,8 +228,11 @@ function drawOrder(
  * `v13` (2026-11-02, circuit du jour J, bâti des restes) : la part de
  * réassort d'un rayon compte un réassort au poids pour une pièce, jamais ses
  * grammes ; la ligne dit « dont 1,25 kg réassort ».
+ *
+ * `v14` (2026-11-18, Hugo) : l'en-tête de chaque page dit en gras le jour du
+ * lot et le tirage (« Lot pour le mer. 18 nov. · v2 »).
  */
-export const DOSSIER_LAYOUT_VERSION = "v13";
+export const DOSSIER_LAYOUT_VERSION = "v14";
 
 export function dayDossierPdfKey(serviceDay: string, retakenAt: Date | null): string {
   const base = `${serviceDay}/dossier-du-jour-${DOSSIER_LAYOUT_VERSION}`;
@@ -350,6 +356,15 @@ function drawScan(doc: Doc, url: string, reference: string, y: number): void {
  * « LOT POUR LE MER. 7 OCT. » — le jour où la marchandise est attendue
  * (retrait ou livraison), pas celui où on la fabrique.
  */
+/**
+ * L'en-tête de chaque page, en gras : le jour du lot et le tirage (Hugo,
+ * 2026-11-18) — une fiche de poste qui traîne dit d'elle-même si elle est
+ * la dernière.
+ */
+export function dossierHeader(stamp: Pick<DossierStamp, "serviceDay" | "printRun">): string {
+  return `Lot pour le ${weekdayShortDate(stamp.serviceDay)} · v${String(stamp.printRun)}`;
+}
+
 function lotBanner(stamp: DossierStamp): string {
   return `LOT POUR LE ${weekdayShortDate(stamp.serviceDay).toUpperCase()}`;
 }

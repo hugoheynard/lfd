@@ -37,6 +37,7 @@ export abstract class ProductionDayState implements batching.BatchState {
     protected planValue: DayPlan,
     protected batchesValue: readonly ProductionBatchSnapshot[],
     protected reopenedValue: PackedMark | null,
+    protected retakeCountValue: number,
   ) {}
 
   /**
@@ -90,6 +91,11 @@ export abstract class ProductionDayState implements batching.BatchState {
   /** Le nom, figé au retirage, de qui a complété ; `null` si inconnu. */
   get retakenByName(): string | null {
     return this.retakenByNameValue;
+  }
+
+  /** Le tirage du dossier : 1 à l'arrêt, plus un par retirage. */
+  get printRun(): number {
+    return this.retakeCountValue + 1;
   }
 
   /** Le dernier retirage, ou `null` — la fiche dit quel tirage elle montre. */
@@ -185,6 +191,7 @@ export abstract class ProductionDayState implements batching.BatchState {
       counts: this.counts,
       batches: this.batchesValue,
       reopened: this.reopenedValue,
+      retakeCount: this.retakeCountValue,
     };
   }
 }

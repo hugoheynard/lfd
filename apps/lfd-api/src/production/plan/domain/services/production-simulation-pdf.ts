@@ -14,8 +14,10 @@ import {
   putRight,
   render,
   rule,
+  weekdayShortDate,
   type Doc,
 } from "../../../../platform/pdf/paper-pdf-kit.js";
+import { todayOf } from "../../../day/index.js";
 import { PaperPages } from "../../../../platform/pdf/paper-pages.js";
 import type { DayDossier } from "./day-dossier.js";
 import type { CalendarPage } from "./day-dossier-calendar.js";
@@ -66,7 +68,9 @@ export function renderProductionSimulationPdf(
       drawRecapWithCalendars(doc, pages, dossier.recap, calendar);
       pages.finish({
         logo: print.logo,
-        headerRight: SIMULATION_MARK,
+        // Aucun tirage : la simulation n'est jamais arrêtée (Hugo, 2026-11-18).
+        headerRight: `${weekdayShortDate(todayOf(print.at))} · v0`,
+        headerRightBold: true,
         footerLeft: `${SIMULATION_MARK} · ${MODE_LABELS[cover.mode]} · tirée le ${parisDateTime(print.at)}`,
       });
     },

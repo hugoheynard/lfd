@@ -75,6 +75,8 @@ export interface PaperFrame {
   readonly logo: Buffer;
   /** Cadré à droite de l'en-tête — le jour du lot. */
   readonly headerRight: string;
+  /** L'en-tête de droite en gras : il se lit sur la pile, avant le titre. */
+  readonly headerRightBold?: boolean | undefined;
   /** À gauche du pied — qui a arrêté, et quand. */
   readonly footerLeft: string;
 }
@@ -258,13 +260,17 @@ function ruleAcross(doc: Doc, y: number, thickness: number, right: number, color
 function drawHeader(doc: Doc, frame: PaperFrame, title: string, right: number): void {
   doc.image(frame.logo, LEFT, LOGO_TOP, { fit: [LOGO_SIZE, LOGO_SIZE] });
   const x = LEFT + LOGO_SIZE + 4 * MM;
-  const dayWidth = doc.font(REGULAR).fontSize(10).widthOfString(frame.headerRight);
+  const bold = frame.headerRightBold === true;
+  const dayWidth = doc
+    .font(bold ? BOLD : REGULAR)
+    .fontSize(10)
+    .widthOfString(frame.headerRight);
   put(doc, title, x, LOGO_TOP + 4 * MM, {
     size: 14,
     bold: true,
     width: right - x - dayWidth - 6 * MM,
   });
-  putRight(doc, frame.headerRight, right, LOGO_TOP + 5 * MM, 10);
+  putRight(doc, frame.headerRight, right, LOGO_TOP + 5 * MM, 10, bold);
   ruleAcross(doc, HEADER_RULE, 1.5, right);
 }
 

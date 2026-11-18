@@ -45,6 +45,9 @@ model ProductionDay {
   /// tirage d'origine.
   retakenAt DateTime? @map("retaken_at")
   retakenBy String?   @map("retaken_by")
+  /// Le nombre de retirages depuis le dernier arrêt (2026-11-18) : le dossier
+  /// imprime le tirage « v<n + 1> ». Remis à zéro par la réouverture.
+  retakeCount Int @default(0) @map("retake_count")
 
   /// La dernière **réouverture** (2026-10-14) : l'arrêt a été défait, le plan
   /// effacé, les clients peuvent de nouveau commander pour ce jour. L'auteur

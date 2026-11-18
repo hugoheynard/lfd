@@ -162,6 +162,7 @@ export class ProductionPaperRenderer {
         closedBy: snapshot.closedBy,
         retakenAt: snapshot.retaken?.at ?? null,
         retakenByName: snapshot.retakenByName,
+        printRun: snapshot.retakeCount === undefined ? 1 : snapshot.retakeCount + 1,
       },
       {
         logo: inputs.logo,

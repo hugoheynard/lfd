@@ -126,6 +126,7 @@ describe("les papiers disent « SUR MESURE »", () => {
           closedBy: null,
           retakenAt: null,
           retakenByName: null,
+          printRun: 1,
         },
         {
           logo: PAPER_LOGO,
