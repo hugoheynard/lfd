@@ -139,6 +139,17 @@ describe("la fournée automatique", () => {
   });
 
   it("une ligne sans palier n'est pas complétée, et la Supervision la sert à confirmer", async () => {
+    // Un mode fixe sans heure ne s'enregistre plus : seul un réglage déjà en
+    // base le porte encore, et se relit tel quel. Il est écrit en base pour ça.
+    await ctx.prisma.productionTrancheSettings.create({
+      data: {
+        key: "house",
+        mode: "fixed",
+        fixedTranches: [],
+        updatedAt: morningAt("00:00"),
+        updatedByStaffId: "staff-avant-la-regle",
+      },
+    });
     await closedDay(false);
     clock.set(morningAt("23:00"));
 

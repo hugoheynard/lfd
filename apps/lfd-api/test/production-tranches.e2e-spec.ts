@@ -96,8 +96,8 @@ async function seedDay(): Promise<void> {
 }
 
 describe("Réglages › Production › Tranches (T1)", () => {
-  it("sans réglage : mode fixe, aucune heure", async () => {
-    expect((await settings()).tranches).toEqual({ mode: "fixed", fixedTranches: [] });
+  it("sans réglage : mode calculé", async () => {
+    expect((await settings()).tranches).toEqual({ mode: "computed", fixedTranches: [] });
   });
 
   it("pose les heures triées, fige l'auteur et journalise dans la même transaction", async () => {
@@ -121,7 +121,7 @@ describe("Réglages › Production › Tranches (T1)", () => {
       {
         mode: "fixed",
         fixedTranches: ["05:00", "07:00", "12:00"],
-        previous: { mode: "fixed", fixedTranches: [] },
+        previous: { mode: "computed", fixedTranches: [] },
       },
     ]);
   });
@@ -133,6 +133,12 @@ describe("Réglages › Production › Tranches (T1)", () => {
       .expect(400);
 
     expect(jsonBody<{ message: string }>(response).message).toContain("05:00");
+    expect(await ctx.prisma.productionTrancheSettings.count()).toBe(0);
+  });
+
+  it("refuse le mode fixe sans aucune heure en 400, sans rien écrire", async () => {
+    await staff().put(TRANCHES).send({ mode: "fixed", fixedTranches: [] }).expect(400);
+
     expect(await ctx.prisma.productionTrancheSettings.count()).toBe(0);
   });
 
@@ -149,14 +155,15 @@ describe("Réglages › Production › Tranches (T1)", () => {
 });
 
 describe("les seuils du jour rangés en tranches (T2)", () => {
-  it("sans réglage : une seule tranche, la journée", async () => {
+  it("sans réglage : les heures des besoins (mode calculé)", async () => {
     await seedDay();
 
     const view = await dueThresholds();
 
-    expect(view).toMatchObject({ trancheMode: "fixed", fixedTranches: [] });
+    expect(view).toMatchObject({ trancheMode: "computed", fixedTranches: [] });
     expect(view.lines.find((line) => line.sku === SKU)?.thresholds).toEqual([
-      { kind: "day", before: null, quantity: 10, cumulative: 10 },
+      { kind: "deadline", before: "06:40", quantity: 4, cumulative: 4 },
+      { kind: "deadline", before: "07:40", quantity: 6, cumulative: 10 },
     ]);
   });
 

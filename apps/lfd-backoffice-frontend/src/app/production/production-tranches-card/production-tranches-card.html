@@ -26,7 +26,9 @@
       </p>
     } @else {
       @if (times().length === 0) {
-        <p class="note" data-single-tranche>Aucune heure réglée : une seule tranche, la journée.</p>
+        <p class="note" data-single-tranche>
+          Aucune heure réglée : ajoutez au moins une heure, ou choisissez « Calculées ».
+        </p>
       } @else {
         <ul class="times">
           @for (time of times(); track time) {
@@ -75,7 +77,7 @@
         <button
           foldButton
           [loading]="busy()"
-          [disabled]="!dirty()"
+          [disabled]="!dirty() || missingTime()"
           (click)="save()"
           data-save-tranches
         >

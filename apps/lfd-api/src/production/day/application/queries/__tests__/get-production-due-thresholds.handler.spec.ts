@@ -79,16 +79,14 @@ describe("GetProductionDueThresholdsHandler", () => {
     ]);
   });
 
-  it("sans réglage : mode fixe sans heure, une seule tranche, la journée", async () => {
+  it("sans réglage : les heures des besoins (mode calculé)", async () => {
     const view = await handlerOf(new Commerce(DUE), null).execute(
       new GetProductionDueThresholdsQuery("2030-01-15"),
     );
 
-    expect(view.trancheMode).toBe("fixed");
+    expect(view.trancheMode).toBe("computed");
     expect(view.fixedTranches).toEqual([]);
-    expect(view.lines[0]?.thresholds).toEqual([
-      { kind: "day", before: null, quantity: 15, cumulative: 15 },
-    ]);
+    expect(view.lines).toEqual(DUE.items);
   });
 
   it("refuse un jour mal formé sans rien demander au commerce", async () => {

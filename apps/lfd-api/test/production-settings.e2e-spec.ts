@@ -85,7 +85,7 @@ describe("l'arrêt automatique, lu de l'heure limite générale", () => {
     expect(await read()).toEqual({
       automaticClose: null,
       closedDays: [],
-      tranches: { mode: "fixed", fixedTranches: [] },
+      tranches: { mode: "computed", fixedTranches: [] },
       // Le rangement du fournil : par racine, sans intertitres, en mode boutique.
       display: { showSubcategories: false, grouping: "shelf" },
     });

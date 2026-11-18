@@ -105,8 +105,11 @@ répartition se calcule.
 **Le réglage** — Réglages › Production, carte « Tranches de production »
 (`production/production-tranches-card/`) : un interrupteur Fixes / Calculées,
 la liste des heures (`HH:mm`, triées, uniques, 8 au plus,
-`MAX_FIXED_TRANCHES`). Table `production_tranche_settings`, une ligne `house`,
-ligne absente = fixe sans heure ; `PUT admin/production/settings/tranches`
+`MAX_FIXED_TRANCHES`). Le mode fixe demande au moins une heure (décidé par
+Hugo le 2026-11-18) : sans elle, il n'y aurait pas d'heure de sortie ; un
+réglage fixe sans heure déjà en base se relit tel quel, et le prochain
+enregistrement en porte une. Table `production_tranche_settings`, une ligne
+`house`, ligne absente = calculé ; `PUT admin/production/settings/tranches`
 sous `production_settings` ; agrégat `ProductionTrancheSettings`. Les mêmes
 heures tous les jours.
 

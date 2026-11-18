@@ -51,7 +51,7 @@ describe("SetProductionTranchesHandler", () => {
       payload: {
         mode: "fixed",
         fixedTranches: ["05:00", "07:00"],
-        previous: { mode: "fixed", fixedTranches: [] },
+        previous: { mode: "computed", fixedTranches: [] },
       },
     });
   });
@@ -59,7 +59,7 @@ describe("SetProductionTranchesHandler", () => {
   it("une fiche sans nom laisse le nom vide : on n'en invente pas", async () => {
     const { handler, settings } = subject();
 
-    await handler.execute(new SetProductionTranchesCommand("computed", [], "staff-inconnu"));
+    await handler.execute(new SetProductionTranchesCommand("fixed", ["05:00"], "staff-inconnu"));
 
     expect(settings.writes[0]?.author).toEqual({ staffUserId: "staff-inconnu", name: null });
   });

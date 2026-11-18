@@ -45,3 +45,13 @@ export class UnknownTrancheModeError extends DomainError {
     );
   }
 }
+
+/** Le mode fixe sans aucune heure : une seule tranche, sans heure de sortie. */
+export class EmptyFixedTranchesError extends DomainError {
+  constructor() {
+    super(
+      "production.tranches.empty_fixed",
+      "Les tranches fixes demandent au moins une heure : ajoutez-en une, ou choisissez « Calculées ».",
+    );
+  }
+}

@@ -254,9 +254,10 @@ et l'e2e `write-replay` (les deux routes de réglage).
   le 2026-11-18) : une journée arrêtée avant reste en détaillé ; la première
   arrêtée depuis suit le niveau réglé, toujours vert par défaut — le régler à
   l'écran avant son arrêt si l'équipe doit garder sa fiche.
-- **Il faut des tranches à heure.** Avec le réglage des tranches par défaut
-  (mode fixe sans heure, une seule tranche « la journée »), toutes les lignes
-  sont « à confirmer » et la fournée automatique **ne déclare rien**.
+- **Il faut des tranches à heure.** Le mode fixe en demande au moins une et
+  le défaut est calculé ; seul un réglage fixe sans heure déjà en base (une
+  seule tranche, « la journée ») met toutes les lignes « à confirmer », et la
+  fournée automatique n'y **déclare rien**.
 - **Un reste sans échéance n'est pas complété** : une ligne qui a des paliers
   à heure plus un reste « la journée » voit ses paliers complétés, jamais ce
   reste, et elle n'est pas « à confirmer » pour autant.

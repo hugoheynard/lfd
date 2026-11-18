@@ -1,5 +1,6 @@
 import {
   DuplicateTrancheError,
+  EmptyFixedTranchesError,
   InvalidTrancheTimeError,
   TooManyTranchesError,
   UnknownTrancheModeError,
@@ -36,9 +37,13 @@ export class ProductionTrancheSettings implements ProductionTrancheSettingsState
     readonly fixedTranches: readonly string[],
   ) {}
 
-  /** Personne n'a rien réglé : mode fixe, aucune heure — une seule tranche, la journée (§2.2). */
+  /**
+   * Personne n'a rien réglé : les heures des besoins. Un mode fixe sans heure
+   * n'aurait qu'une tranche, la journée, sans heure de sortie — la fournée
+   * automatique n'y aurait rien à déclarer.
+   */
   static defaults(): ProductionTrancheSettings {
-    return new ProductionTrancheSettings("fixed", []);
+    return new ProductionTrancheSettings("computed", []);
   }
 
   /**
@@ -46,8 +51,25 @@ export class ProductionTrancheSettings implements ProductionTrancheSettingsState
    * @throws {InvalidTrancheTimeError} une heure n'est pas `HH:mm`.
    * @throws {DuplicateTrancheError} la même heure deux fois.
    * @throws {TooManyTranchesError} plus de {@link MAX_FIXED_TRANCHES} heures.
+   * @throws {EmptyFixedTranchesError} le mode fixe sans aucune heure.
    */
   static set(mode: string, fixedTranches: readonly string[]): ProductionTrancheSettings {
+    const settings = ProductionTrancheSettings.restore(mode, fixedTranches);
+    if (settings.mode === "fixed" && settings.fixedTranches.length === 0) {
+      throw new EmptyFixedTranchesError();
+    }
+    return settings;
+  }
+
+  /**
+   * Un réglage relu en base. Un mode fixe sans heure, enregistré avant que la
+   * règle le refuse, se relit tel quel : l'écran le montre, et le prochain
+   * enregistrement devra porter une heure.
+   *
+   * @throws {UnknownTrancheModeError} le mode n'est ni `fixed` ni `computed`.
+   * @throws {InvalidTrancheTimeError} une heure n'est pas `HH:mm`.
+   */
+  static restore(mode: string, fixedTranches: readonly string[]): ProductionTrancheSettings {
     return new ProductionTrancheSettings(modeOf(mode), tranchesOf(fixedTranches));
   }
 

@@ -17,6 +17,6 @@ export class PrismaProductionTrancheSettingsReader extends ProductionTrancheSett
       where: { key: PRODUCTION_TRANCHE_SETTINGS_KEY },
       select: { mode: true, fixedTranches: true },
     });
-    return row === null ? null : ProductionTrancheSettings.set(row.mode, row.fixedTranches);
+    return row === null ? null : ProductionTrancheSettings.restore(row.mode, row.fixedTranches);
   }
 }

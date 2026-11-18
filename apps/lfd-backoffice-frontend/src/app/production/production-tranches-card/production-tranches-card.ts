@@ -98,6 +98,11 @@ export class ProductionTranchesCard {
       this.times().length < MAX_FIXED_TRANCHES,
   );
 
+  /** Le mode fixe demande au moins une heure : sans elle, il n'y aurait pas d'heure de sortie. */
+  protected readonly missingTime = computed(
+    () => this.mode() === 'fixed' && this.times().length === 0,
+  );
+
   protected readonly dirty = computed(() => {
     const served = this.tranches();
     return (
@@ -125,7 +130,7 @@ export class ProductionTranchesCard {
   }
 
   protected async save(): Promise<void> {
-    if (!this.canWrite() || !this.dirty() || this.busy()) {
+    if (!this.canWrite() || !this.dirty() || this.missingTime() || this.busy()) {
       return;
     }
     this.busy.set(true);

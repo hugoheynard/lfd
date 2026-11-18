@@ -39,7 +39,7 @@ describe("GetProductionSettingsHandler", () => {
     expect(await handler.execute()).toEqual({
       automaticClose: null,
       closedDays: [],
-      tranches: { mode: "fixed", fixedTranches: [] },
+      tranches: { mode: "computed", fixedTranches: [] },
       display: { showSubcategories: false, grouping: "shelf" },
     });
   });
@@ -59,7 +59,7 @@ describe("GetProductionSettingsHandler", () => {
     expect(await handler.execute()).toEqual({
       automaticClose: { daysBefore: 1, time: "23:15" },
       closedDays: [TODAY, addDays(TODAY, 5)],
-      tranches: { mode: "fixed", fixedTranches: [] },
+      tranches: { mode: "computed", fixedTranches: [] },
       display: { showSubcategories: false, grouping: "shelf" },
     });
   });

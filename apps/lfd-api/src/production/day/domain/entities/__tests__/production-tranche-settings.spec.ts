@@ -1,16 +1,17 @@
 import { ProductionTrancheSettings } from "../production-tranche-settings.js";
 import {
   DuplicateTrancheError,
+  EmptyFixedTranchesError,
   InvalidTrancheTimeError,
   TooManyTranchesError,
   UnknownTrancheModeError,
 } from "../../errors/production-tranches-errors.js";
 
 describe("ProductionTrancheSettings", () => {
-  it("sans réglage : mode fixe, aucune heure", () => {
+  it("sans réglage : les heures des besoins (mode calculé)", () => {
     const settings = ProductionTrancheSettings.defaults();
 
-    expect(settings.mode).toBe("fixed");
+    expect(settings.mode).toBe("computed");
     expect(settings.fixedTranches).toEqual([]);
   });
 
@@ -56,5 +57,20 @@ describe("ProductionTrancheSettings", () => {
     expect(posed.equals(ProductionTrancheSettings.set("fixed", ["05:00", "07:00"]))).toBe(true);
     expect(posed.equals(ProductionTrancheSettings.set("computed", ["05:00", "07:00"]))).toBe(false);
     expect(posed.equals(ProductionTrancheSettings.set("fixed", ["05:00"]))).toBe(false);
+  });
+
+  it("refuse le mode fixe sans aucune heure", () => {
+    expect(() => ProductionTrancheSettings.set("fixed", [])).toThrow(EmptyFixedTranchesError);
+  });
+
+  it("relit tel quel un mode fixe sans heure déjà en base", () => {
+    const stored = ProductionTrancheSettings.restore("fixed", []);
+
+    expect(stored.mode).toBe("fixed");
+    expect(stored.fixedTranches).toEqual([]);
+  });
+
+  it("le mode calculé n'a pas besoin d'heure fixe", () => {
+    expect(ProductionTrancheSettings.set("computed", []).mode).toBe("computed");
   });
 });

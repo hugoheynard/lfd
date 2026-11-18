@@ -96,11 +96,12 @@ describe('sortedTranches', () => {
 });
 
 describe('Production › Réglages — les tranches fixes', () => {
-  it('dit la journée entière sans heure réglée', async () => {
+  it('sans heure réglée, demande une heure et refuse d’enregistrer', async () => {
     const fixture = await boot({ mode: 'fixed', fixedTranches: [] });
     expect(el(fixture, '[data-single-tranche]').textContent).toContain(
-      'une seule tranche, la journée',
+      'ajoutez au moins une heure',
     );
+    expect((el(fixture, '[data-save-tranches]') as HTMLButtonElement).disabled).toBe(true);
   });
 
   it('affiche les heures triées', async () => {
