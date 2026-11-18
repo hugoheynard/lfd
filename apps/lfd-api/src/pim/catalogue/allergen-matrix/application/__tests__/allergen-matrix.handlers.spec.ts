@@ -32,6 +32,7 @@ import {
   ExportAllergenMatrixPdfHandler,
   ExportAllergenMatrixPdfQuery,
 } from "../export-allergen-matrix-pdf.js";
+import { PdfAllergenMatrixRenderer } from "../../infrastructure/pdf-allergen-matrix.renderer.js";
 import { GetAllergenMatrixHandler, GetAllergenMatrixQuery } from "../get-allergen-matrix.js";
 
 /** Le vrai logo du dépôt, tendu par le port. */
@@ -174,6 +175,7 @@ describe("ExportAllergenMatrixPdfHandler", () => {
       new FixedSource(RECORDS),
       new RepositoryLogo(),
       new FixedClock(GENERATED_AT),
+      new PdfAllergenMatrixRenderer(),
     );
 
     const file = await handler.execute(
@@ -193,6 +195,7 @@ describe("ExportAllergenMatrixPdfHandler", () => {
       new FixedSource(RECORDS),
       new MissingLogo(),
       new FixedClock(GENERATED_AT),
+      new PdfAllergenMatrixRenderer(),
     );
 
     await expect(handler.execute(new ExportAllergenMatrixPdfQuery(FILTERS))).rejects.toBeInstanceOf(

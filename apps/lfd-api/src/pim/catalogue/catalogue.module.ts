@@ -9,8 +9,10 @@ import { AllergensModule } from "../reference/allergens/allergens.module.js";
 import { ExportAllergenMatrixCsvHandler } from "./allergen-matrix/application/export-allergen-matrix-csv.js";
 import { ExportAllergenMatrixPdfHandler } from "./allergen-matrix/application/export-allergen-matrix-pdf.js";
 import { GetAllergenMatrixHandler } from "./allergen-matrix/application/get-allergen-matrix.js";
+import { AllergenMatrixRenderer } from "./allergen-matrix/domain/ports/allergen-matrix.renderer.js";
 import { AllergenMatrixSource } from "./allergen-matrix/domain/ports/allergen-matrix.source.js";
 import { AllergenMatrixController } from "./allergen-matrix/http/allergen-matrix.controller.js";
+import { PdfAllergenMatrixRenderer } from "./allergen-matrix/infrastructure/pdf-allergen-matrix.renderer.js";
 import { RepositoryAllergenMatrixSource } from "./allergen-matrix/infrastructure/repository-allergen-matrix.source.js";
 import { VatRatesModule } from "../reference/vat-rates/vat-rates.module.js";
 import { PrismaMediaCarriers } from "./shared/infrastructure/prisma-media-carriers.js";
@@ -252,6 +254,7 @@ import { PrismaSkuAvailability } from "./product/infrastructure/prisma-sku-avail
     { provide: CategoryEditorialRepository, useClass: PrismaCategoryEditorialRepository },
     // La matrice des allergènes (plan AM1) : un port de lecture à elle.
     { provide: AllergenMatrixSource, useClass: RepositoryAllergenMatrixSource },
+    { provide: AllergenMatrixRenderer, useClass: PdfAllergenMatrixRenderer },
     GetAllergenMatrixHandler,
     ExportAllergenMatrixCsvHandler,
     ExportAllergenMatrixPdfHandler,

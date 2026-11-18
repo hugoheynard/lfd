@@ -139,7 +139,7 @@ ou non les non renseignés (défaut : inclus, pour qu'on les voie).
   au-dessus de sa table ; quand elle déborde, son titre porte sa pagination
   — « Pains (1/2) », « Pains (2/2) » —, et rien quand elle tient sur une page,
   comme les papiers du fournil. Le bandeau gris « (suite) » est retiré.
-  Implémenté le 2026-10-26 (`apps/lfd-api/src/pim/catalogue/allergen-matrix/domain/allergen-matrix-pdf-titles.ts`).
+  Implémenté le 2026-10-26 (`apps/lfd-api/src/pim/catalogue/allergen-matrix/infrastructure/allergen-matrix-pdf-titles.ts`).
 
 ## 3. Les lots
 

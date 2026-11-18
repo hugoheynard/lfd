@@ -10,6 +10,10 @@
 > ✅ **Bâtis le 2026-11-18** : L0 (portes armées), L1 bis (rangement par
 > capacité) et L2 (hygiène — sauf le point « produit archivé », en attente de
 > la décision de Hugo).
+>
+> ✅ **L7 et L6 bâtis le 2026-11-18.** L7 : entité, handlers et `sale-terms` testés ;
+> les gestes d'`allergens/application` l'étaient déjà. L6 : le PDF vit dans
+> `allergen-matrix/infrastructure/` derrière `AllergenMatrixRenderer` ; octets inchangés.
 
 ## 1. En deux mots
 
@@ -79,8 +83,8 @@ d'événements et une surface HTTP —, et les découper ne lirait pas mieux.
   `changeMinQuantities`, `saleUnit`), les noms et le sur mesure.
 - **Les écarts aux couches** : le jeton `SKU_AVAILABILITY` et l'adaptateur
   de séquence de publication, qui étaient hors de leur couche, ont été remis en
-  place par L2 (2026-11-18) ; reste `catalogue/allergen-matrix/domain/allergen-matrix-pdf*.ts`
-  (~700 lignes), qui met en page un PDF dans le domaine.
+  place par L2 (2026-11-18) ; la mise en page du PDF de la matrice est sortie du
+  domaine par L6 (2026-11-18).
 - **Les écritures sans agrégat** : `Revision` est une interface
   (`catalogue/revision/domain/revision.ts:204`), la règle « déjà nommée » est
   dans le handler (`catalogue/revision/application/rename-catalog-revision.ts:66`)

@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 import { pdfPages } from "../../../../../../platform/pdf/__tests__/pdf-text.js";
 import { BrandLogoSource } from "../../../../../../platform/brand/brand-logo.source.js";
 import { FixedClock } from "../../../../../../platform/time/fixed-clock.js";
+import { PdfAllergenMatrixRenderer } from "../../../infrastructure/pdf-allergen-matrix.renderer.js";
 import { GetAllergenMatrixSpecimenHandler } from "../get-allergen-matrix-specimen.handler.js";
 
 const LOGO = readFileSync(
@@ -22,6 +23,7 @@ describe("GetAllergenMatrixSpecimenHandler", () => {
     const handler = new GetAllergenMatrixSpecimenHandler(
       new FixedBrandLogo(),
       new FixedClock(new Date()),
+      new PdfAllergenMatrixRenderer(),
     );
 
     const pdf = await handler.execute();

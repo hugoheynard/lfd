@@ -11,10 +11,10 @@ import {
   ROW_GRAY,
 } from "../../../../platform/pdf/paper-pdf-kit.js";
 import { fillBox } from "../../../../platform/pdf/paper-pdf-shapes.js";
-import type { MatrixColumn, MatrixRow } from "./allergen-matrix.js";
+import type { MatrixColumn, MatrixRow } from "../domain/allergen-matrix.js";
 import { drawMark, type MarkKind } from "./allergen-matrix-pdf-marks.js";
-import type { MatrixCell, MatrixOthersCell } from "./matrix-row.js";
-import { otherAllergenName } from "./other-allergen-name.js";
+import type { MatrixCell, MatrixOthersCell } from "../domain/matrix-row.js";
+import { otherAllergenName } from "../domain/other-allergen-name.js";
 
 /** La page A4 en PAYSAGE : la largeur du portrait devient la hauteur. */
 export const SHEET_WIDTH = PAGE_HEIGHT;

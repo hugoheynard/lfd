@@ -3,14 +3,20 @@ import { readFileSync } from "node:fs";
 import { inflateSync } from "node:zlib";
 
 import { pdfPages } from "../../../../../platform/pdf/__tests__/pdf-text.js";
-import { buildAllergenMatrix, type MatrixFilters } from "../allergen-matrix.js";
+import { buildAllergenMatrix, type MatrixFilters } from "../../domain/allergen-matrix.js";
 import {
   allergenMatrixPdfFileName,
-  renderAllergenMatrixPdf,
   type AllergenMatrixPaper,
-} from "../allergen-matrix-pdf.js";
+} from "../../domain/allergen-matrix-paper.js";
+import { renderAllergenMatrixPdf } from "../allergen-matrix-pdf.js";
 import type { AllergenCategoryView } from "../../../../reference/allergens/domain/ports/allergen-catalogue.reader.js";
-import { families, OTHER_FAMILY_ID, product, referential, variant } from "./matrix-fixtures.js";
+import {
+  families,
+  OTHER_FAMILY_ID,
+  product,
+  referential,
+  variant,
+} from "../../domain/__tests__/matrix-fixtures.js";
 import type { ProductRecord } from "../../../product/domain/ports/product.repository.js";
 
 /**

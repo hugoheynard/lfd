@@ -1,10 +1,6 @@
 import type { Buffer } from "node:buffer";
 
-import {
-  ALLERGEN_MATRIX_WORDING,
-  type AllergenMatrixWording,
-  type Locale,
-} from "@lfd/pim-contracts";
+import { ALLERGEN_MATRIX_WORDING, type AllergenMatrixWording } from "@lfd/pim-contracts";
 
 import {
   type Doc,
@@ -15,7 +11,8 @@ import {
   render,
 } from "../../../../platform/pdf/paper-pdf-kit.js";
 import { fillBox, strokeBox } from "../../../../platform/pdf/paper-pdf-shapes.js";
-import type { AllergenMatrix, MatrixFamily, MatrixFilters } from "./allergen-matrix.js";
+import type { MatrixFamily } from "../domain/allergen-matrix.js";
+import type { AllergenMatrixPaper } from "../domain/allergen-matrix-paper.js";
 import {
   drawColumnHeaders,
   drawRow,
@@ -30,23 +27,8 @@ import { drawPageFoot, FOOT_HEIGHT } from "./allergen-matrix-pdf-foot.js";
 import { FamilyTitles } from "./allergen-matrix-pdf-titles.js";
 import { fill, localDateTime } from "./allergen-matrix-pdf-words.js";
 
-/** Ce que le PDF imprime : la matrice, son périmètre et ses deux dates. */
-export interface AllergenMatrixPaper {
-  readonly matrix: AllergenMatrix;
-  readonly filters: MatrixFilters;
-  /** Le nom de la famille filtrée ; `null` = toutes. */
-  readonly familyName: string | null;
-  readonly generatedAt: Date;
-  readonly lastModifiedAt: Date | null;
-}
-
 const LOGO_SIZE = 16 * MM;
 const CONTENT_BOTTOM = SHEET_HEIGHT - MARGIN_Y - FOOT_HEIGHT;
-
-/** Le nom du fichier servi : la langue y est, un PDF par langue (Q4). */
-export function allergenMatrixPdfFileName(locale: Locale): string {
-  return `matrice-allergenes-${locale}.pdf`;
-}
 
 /** Ce que le rendu traîne de page en page. */
 interface Sheet {

@@ -5,7 +5,7 @@ import type {
   MatrixFilters,
   MatrixRow,
 } from "../../domain/allergen-matrix.js";
-import type { AllergenMatrixPaper } from "../../domain/allergen-matrix-pdf.js";
+import type { AllergenMatrixPaper } from "../../domain/allergen-matrix-paper.js";
 import type { MatrixCell, MatrixOthersCell, MatrixRowState } from "../../domain/matrix-row.js";
 
 /**

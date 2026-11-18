@@ -1,7 +1,7 @@
 import type { AllergenMatrixWording } from "@lfd/pim-contracts";
 
 import { type Doc, MARGIN_Y, put, putRight } from "../../../../platform/pdf/paper-pdf-kit.js";
-import type { MatrixColumn } from "./allergen-matrix.js";
+import type { MatrixColumn } from "../domain/allergen-matrix.js";
 import { SHEET_HEIGHT, SHEET_LEFT, SHEET_RIGHT } from "./allergen-matrix-pdf-grid.js";
 import { drawMark } from "./allergen-matrix-pdf-marks.js";
 import { fill, localDateTime } from "./allergen-matrix-pdf-words.js";

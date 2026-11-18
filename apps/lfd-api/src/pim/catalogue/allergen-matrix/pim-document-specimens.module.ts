@@ -1,6 +1,8 @@
 import { Module } from "@nestjs/common";
 
 import { BrandModule } from "../../../platform/brand/brand.module.js";
+import { AllergenMatrixRenderer } from "./domain/ports/allergen-matrix.renderer.js";
+import { PdfAllergenMatrixRenderer } from "./infrastructure/pdf-allergen-matrix.renderer.js";
 import { GetAllergenMatrixSpecimenHandler } from "./application/queries/get-allergen-matrix-specimen.handler.js";
 import { AdminAllergenMatrixSpecimenController } from "./http/admin-allergen-matrix-specimen.controller.js";
 
@@ -16,6 +18,9 @@ import { AdminAllergenMatrixSpecimenController } from "./http/admin-allergen-mat
 @Module({
   imports: [BrandModule],
   controllers: [AdminAllergenMatrixSpecimenController],
-  providers: [GetAllergenMatrixSpecimenHandler],
+  providers: [
+    GetAllergenMatrixSpecimenHandler,
+    { provide: AllergenMatrixRenderer, useClass: PdfAllergenMatrixRenderer },
+  ],
 })
 export class PimDocumentSpecimensModule {}

@@ -6,10 +6,8 @@ import { BrandLogoSource } from "../../../../platform/brand/brand-logo.source.js
 import { Clock } from "../../../../platform/time/clock.js";
 import { AllergenCatalogueReader } from "../../../reference/allergens/domain/ports/allergen-catalogue.reader.js";
 import type { MatrixFilters } from "../domain/allergen-matrix.js";
-import {
-  allergenMatrixPdfFileName,
-  renderAllergenMatrixPdf,
-} from "../domain/allergen-matrix-pdf.js";
+import { allergenMatrixPdfFileName } from "../domain/allergen-matrix-paper.js";
+import { AllergenMatrixRenderer } from "../domain/ports/allergen-matrix.renderer.js";
 import { AllergenMatrixSource } from "../domain/ports/allergen-matrix.source.js";
 import { loadAllergenMatrix } from "./allergen-matrix-support.js";
 
@@ -40,6 +38,7 @@ export class ExportAllergenMatrixPdfHandler implements IQueryHandler<
     private readonly source: AllergenMatrixSource,
     private readonly logo: BrandLogoSource,
     private readonly clock: Clock,
+    private readonly renderer: AllergenMatrixRenderer,
   ) {}
 
   async execute({ filters }: ExportAllergenMatrixPdfQuery): Promise<AllergenMatrixPdfFile> {
@@ -61,7 +60,7 @@ export class ExportAllergenMatrixPdfHandler implements IQueryHandler<
     };
     return {
       fileName: allergenMatrixPdfFileName(filters.locale),
-      bytes: await renderAllergenMatrixPdf(paper, logo),
+      bytes: await this.renderer.renderAllergenMatrixPdf(paper, logo),
     };
   }
 }

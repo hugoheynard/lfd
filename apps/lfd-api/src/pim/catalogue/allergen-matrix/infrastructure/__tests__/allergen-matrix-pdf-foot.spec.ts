@@ -1,6 +1,6 @@
 import { ALLERGEN_MATRIX_WORDING, type Locale } from "@lfd/pim-contracts";
 
-import type { MatrixColumn } from "../allergen-matrix.js";
+import type { MatrixColumn } from "../../domain/allergen-matrix.js";
 import { shortNameNotes } from "../allergen-matrix-pdf-foot.js";
 
 /**
