@@ -42,10 +42,13 @@ export function allReadyShortages(
  * **« Tout est prêt » a-t-il tout ce qu'il lui faut ?** (D4) — lu par le
  * poste. Une fiche ouverte, rangée en contenants, dont chaque reste à mettre
  * au sac est couvert par le libre de la réserve : la règle de
- * {@link allReadyShortages}, que le geste applique sous verrou. Ne dit rien
- * du niveau de suivi : l'écran ne montre le bouton qu'au retrait simple.
+ * {@link allReadyShortages}, que le geste applique sous verrou. Faux hors
+ * d'un retrait au suivi simple — la garde de `PackingSheet.assertAllReadyAllowed`.
  */
 export function allReadyAvailable(order: BoardOrder, awaiting: Awaiting): boolean {
+  if (order.trackingLevel !== "simple" || order.fulfillmentMethod !== "pickup") {
+    return false;
+  }
   if (order.containerMode !== "listed" || order.packed !== null || order.lines.length === 0) {
     return false;
   }

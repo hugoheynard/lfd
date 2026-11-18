@@ -1081,6 +1081,16 @@ export type {
 } from "./packing-resupplies.js";
 export type { CounterPackingSheetLine, CounterPackingSheetView } from "./counter-packing-sheet.js";
 export { productionPackingQuerySchema } from "./production-packing.js";
+export {
+  packingAllReadyBodySchema,
+  packingFoundBodySchema,
+  packingProblemBodySchema,
+} from "./packing-simple-gestures.js";
+export type {
+  PackingAllReadyBody,
+  PackingFoundBody,
+  PackingProblemBody,
+} from "./packing-simple-gestures.js";
 export type {
   PackingAbandonedLine,
   PackingShortfallDecision,

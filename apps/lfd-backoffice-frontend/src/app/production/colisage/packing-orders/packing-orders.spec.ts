@@ -39,6 +39,8 @@ function sheet(over: Partial<PackingSheet> = {}): PackingSheet {
     customerLabel: 'Hôtel du Parc',
     clientele: null,
     fulfillmentMethod: 'delivery',
+    trackingLevel: 'detailed',
+    allReadyAvailable: false,
     destination: '12 rue des Lilas',
     lines: [line()],
     lineCount: 1,

@@ -3,6 +3,10 @@ import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../../platform/database/prisma.service.js";
 import { BinDesk } from "../channels/delivery/index.js";
 import type { PackingContainerState } from "../domain/entities/order-contents.js";
+import {
+  packingTrackingLevelOf,
+  readTrackingLevel,
+} from "../domain/entities/packing-tracking-level.js";
 import { citeContainer } from "../domain/events/packing-container.events.js";
 import {
   type BoardContainer,
@@ -35,6 +39,7 @@ export const ORDER_SELECT = {
   shortfallReportedAt: true,
   shortfallAuthorizedAt: true,
   withdrawnAt: true,
+  trackingLevel: true,
   containers: CONTAINER_SELECT,
   lines: {
     select: {
@@ -136,6 +141,7 @@ export interface OrderRow {
   readonly shortfallReportedAt: Date | null;
   readonly shortfallAuthorizedAt: Date | null;
   readonly withdrawnAt: Date | null;
+  readonly trackingLevel: string | null;
   readonly containers: Parameters<typeof containerOf>[0][];
   readonly lines: readonly {
     readonly sku: string;
@@ -186,6 +192,9 @@ export function boardOrderOf(row: OrderRow, liveBins: ReadonlySet<string>): Boar
     containerList: live.map((container) => boardContainerOf(container, all)),
     shortfallReportedAt: row.shortfallReportedAt,
     shortfallAuthorizedAt: row.shortfallAuthorizedAt,
+    trackingLevel: readTrackingLevel(
+      row.trackingLevel === null ? null : packingTrackingLevelOf(row.trackingLevel),
+    ),
   };
 }
 

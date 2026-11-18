@@ -89,6 +89,8 @@ function bac(over: Partial<PackingSheet> = {}): PackingSheet {
     customerLabel: 'Hôtel du Parc',
     clientele: null,
     fulfillmentMethod: 'delivery',
+    trackingLevel: 'detailed',
+    allReadyAvailable: false,
     destination: '12 rue des Lilas',
     lines: [line(), line({ sku: 'BAG', productName: 'Baguette', quantity: 8 })],
     lineCount: 2,

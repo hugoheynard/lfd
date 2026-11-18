@@ -69,6 +69,8 @@ function sheet(over: Partial<PackingSheet>): PackingSheet {
     customerLabel: 'Le Refuge',
     clientele: null,
     fulfillmentMethod: 'delivery',
+    trackingLevel: 'detailed',
+    allReadyAvailable: false,
     destination: 'Annecy',
     lines: [line({})],
     lineCount: 1,

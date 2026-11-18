@@ -177,6 +177,7 @@ export function sheetOf(order: BoardOrder, context: SheetContext): PackingSheet 
     containers: order.containers,
     customerLabel: order.customerLabel,
     fulfillmentMethod: order.fulfillmentMethod,
+    trackingLevel: order.trackingLevel,
     clientele: order.clientele,
     siteId: order.siteId,
     dueAt: order.dueAt,

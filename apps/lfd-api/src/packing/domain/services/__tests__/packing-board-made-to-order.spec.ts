@@ -38,6 +38,7 @@ function boardWith(lines: readonly BoardLine[]) {
     lines,
     containerList: [],
     shortfallReportedAt: null,
+    trackingLevel: "detailed",
   };
   return packingBoardOf({
     date: instantToLocal(NOW).day,

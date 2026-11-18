@@ -109,7 +109,10 @@ async function factsOf(type: string, orderId: string): Promise<number> {
 describe("« Tout est prêt » au colisage simple d'un retrait", () => {
   it("ferme la fiche dans un sac et publie `packing.order_packed` une fois", async () => {
     const order = await pickupOrder(3);
-    expect((await sheetOf(ctx, order.orderNumber)).allReadyAvailable).toBe(true);
+    expect(await sheetOf(ctx, order.orderNumber)).toMatchObject({
+      trackingLevel: "simple",
+      allReadyAvailable: true,
+    });
 
     expect(await allReady(order.id)).toMatchObject({ status: 204 });
 
@@ -189,6 +192,11 @@ describe("« Tout est prêt » au colisage simple d'un retrait", () => {
       data: { postalPrefixes: ["73150"], label: "Val d'Isère", feeMode: "amount", feeValue: 2000 },
     });
     const order = await accountOrder(ctx, 0, [], SCENE_DELIVERY);
+    // Une livraison n'a pas de niveau figé : le poste la sert détaillée, sans le bouton.
+    expect(await sheetOf(ctx, order.orderNumber)).toMatchObject({
+      trackingLevel: "detailed",
+      allReadyAvailable: false,
+    });
 
     expect(await allReady(order.id)).toMatchObject({
       status: 409,
@@ -202,6 +210,10 @@ describe("« Tout est prêt » au colisage simple d'un retrait", () => {
       .send({ halfSharing: false, pickupTrackingLevel: "detailed" })
       .expect(204);
     const order = await pickupOrder(3);
+    expect(await sheetOf(ctx, order.orderNumber)).toMatchObject({
+      trackingLevel: "detailed",
+      allReadyAvailable: false,
+    });
 
     expect(await allReady(order.id)).toMatchObject({
       status: 409,

@@ -13,6 +13,8 @@ function sheet(reference: string, awaited: readonly string[]): PackingSheet {
     customerLabel: reference,
     clientele: null,
     fulfillmentMethod: 'pickup',
+    trackingLevel: 'detailed',
+    allReadyAvailable: false,
     destination: 'Boutique',
     lines: skus.map((sku) => ({
       sku,

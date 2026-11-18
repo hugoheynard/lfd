@@ -71,6 +71,7 @@ const SHEET: BoardOrder = {
     { id: "c2", nature: "bag", label: "Sac 2", bin: null, lines: [] },
   ],
   shortfallReportedAt: null,
+  trackingLevel: "detailed",
 };
 
 const HEAD: OrderLabelHead = {

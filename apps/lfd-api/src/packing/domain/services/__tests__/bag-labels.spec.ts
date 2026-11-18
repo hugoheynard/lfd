@@ -42,6 +42,7 @@ function order(containerList: readonly BoardContainer[]): BoardOrder {
     lines: [],
     containerList,
     shortfallReportedAt: null,
+    trackingLevel: "detailed",
   };
 }
 

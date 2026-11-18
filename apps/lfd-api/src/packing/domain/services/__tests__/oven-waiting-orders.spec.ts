@@ -38,6 +38,7 @@ function order(overrides: Partial<BoardOrder> & Pick<BoardOrder, "orderId">): Bo
     lines: [],
     containerList: [],
     shortfallReportedAt: null,
+    trackingLevel: "detailed",
     ...overrides,
   };
 }

@@ -43,6 +43,7 @@ function order(
     lines,
     containerList: [{ id: "c_1", nature: "bag", label: "Sac 1", bin: null, lines: held }],
     shortfallReportedAt: null,
+    trackingLevel: "detailed",
   };
 }
 

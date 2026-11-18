@@ -33,6 +33,8 @@ function sheet(reference: string, lines: readonly PackingLine[]): PackingSheet {
     customerLabel: reference,
     clientele: null,
     fulfillmentMethod: 'delivery',
+    trackingLevel: 'detailed',
+    allReadyAvailable: false,
     destination: 'ici',
     lines,
     lineCount: lines.length,

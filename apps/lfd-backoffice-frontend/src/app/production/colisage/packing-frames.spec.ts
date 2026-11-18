@@ -57,6 +57,8 @@ const SHEET: PackingSheet = {
   containers: 0,
   customerLabel: 'Client',
   fulfillmentMethod: 'delivery',
+  trackingLevel: 'detailed',
+  allReadyAvailable: false,
   clientele: null,
   siteId: null,
   dueAt: null,

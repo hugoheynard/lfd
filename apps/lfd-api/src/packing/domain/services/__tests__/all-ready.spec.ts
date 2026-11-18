@@ -58,6 +58,7 @@ function order(overrides: Partial<BoardOrder> = {}): BoardOrder {
     lines: [CRO],
     containerList: [],
     shortfallReportedAt: null,
+    trackingLevel: "simple",
     ...overrides,
   };
 }
@@ -90,5 +91,12 @@ describe("allReadyAvailable — le bouton du poste", () => {
     expect(allReadyAvailable(order({ packed: MARK }), free)).toBe(false);
     expect(allReadyAvailable(order({ lines: [] }), free)).toBe(false);
     expect(allReadyAvailable(order({ containerMode: "counted" }), free)).toBe(false);
+  });
+
+  it.each([
+    ["une livraison", { fulfillmentMethod: "delivery" as const }],
+    ["un retrait détaillé", { trackingLevel: "detailed" as const }],
+  ])("faux sur %s, même quand tout est arrivé", (_case, overrides) => {
+    expect(allReadyAvailable(order(overrides), awaitingWith({ CRO: 10 }))).toBe(false);
   });
 });

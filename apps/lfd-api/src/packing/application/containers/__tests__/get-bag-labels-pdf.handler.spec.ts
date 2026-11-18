@@ -66,6 +66,7 @@ function sheet(containerList: BoardOrder["containerList"]): BoardOrder {
     lines: [],
     containerList,
     shortfallReportedAt: null,
+    trackingLevel: "detailed",
   };
 }
 

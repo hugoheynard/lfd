@@ -1,5 +1,6 @@
 import type { ContainerBin, ContainerNature } from "../entities/order-contents.js";
 import type { ContainerMode, SheetLine, SheetMark } from "../entities/packing-sheet.snapshot.js";
+import type { PackingTrackingLevel } from "../entities/packing-tracking-level.js";
 
 /** Un contenant VIVANT d'une commande, tel que le poste le montre. */
 export interface BoardContainer {
@@ -48,6 +49,8 @@ export interface BoardOrder {
   readonly shortfallReportedAt: Date | null;
   /** Le départ incomplet décidé (E6b). Absent = aucun. */
   readonly shortfallAuthorizedAt?: Date | null;
+  /** Le niveau de suivi figé à la naissance de la fiche, déjà lu : rien de figé vaut `detailed`. */
+  readonly trackingLevel: PackingTrackingLevel;
 }
 
 /** La réserve d'un article : reçu du four, rendu, au bac, manquant, réservé. */

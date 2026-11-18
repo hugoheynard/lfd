@@ -31,6 +31,8 @@ function sheet(reference: string, customerLabel: string, skus: readonly string[]
     customerLabel,
     clientele: null,
     fulfillmentMethod: 'pickup',
+    trackingLevel: 'detailed',
+    allReadyAvailable: false,
     destination: 'Boutique',
     lines: skus.map(line),
     lineCount: skus.length,

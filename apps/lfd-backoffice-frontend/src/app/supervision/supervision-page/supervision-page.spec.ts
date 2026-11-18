@@ -130,6 +130,8 @@ function packingView(closedAt: string | null = 'x'): ProductionPackingView {
               customerLabel: 'Traiteur Vermeil',
               clientele: null,
               fulfillmentMethod: 'pickup',
+              trackingLevel: 'detailed',
+              allReadyAvailable: false,
               destination: 'Boutique',
               lineCount: 1,
               packedLines: 0,

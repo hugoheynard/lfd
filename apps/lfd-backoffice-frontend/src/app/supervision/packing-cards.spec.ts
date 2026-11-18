@@ -38,6 +38,8 @@ function sheet(reference: string, overrides: Partial<PackingSheet> = {}): Packin
     customerLabel: `Client ${reference}`,
     clientele: null,
     fulfillmentMethod: 'pickup',
+    trackingLevel: 'detailed',
+    allReadyAvailable: false,
     destination: 'Boutique',
     lines: [packingLine()],
     lineCount: 1,

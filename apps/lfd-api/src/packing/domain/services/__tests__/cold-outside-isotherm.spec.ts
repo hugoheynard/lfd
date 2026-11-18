@@ -23,6 +23,7 @@ function order(overrides: Partial<BoardOrder> = {}): BoardOrder {
     ],
     containerList: [],
     shortfallReportedAt: null,
+    trackingLevel: "detailed",
     ...overrides,
   };
 }

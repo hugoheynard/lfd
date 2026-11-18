@@ -62,6 +62,7 @@ function order(packed: boolean): BoardOrder {
       },
     ],
     shortfallReportedAt: null,
+    trackingLevel: "detailed",
   };
 }
 

@@ -1,6 +1,11 @@
 import { Body, Controller, HttpCode, Param, Post } from "@nestjs/common";
 import { CommandBus } from "@nestjs/cqrs";
-import { z } from "zod";
+import {
+  packingFoundBodySchema,
+  packingProblemBodySchema,
+  type PackingFoundBody,
+  type PackingProblemBody,
+} from "@lfd/contracts";
 
 import { AdminSurface } from "../../platform/auth/admin-surface.decorator.js";
 import { StaffUserId } from "../../platform/auth/staff.decorator.js";
@@ -17,18 +22,6 @@ import { Idempotent } from "../../platform/shared/http/idempotent.decorator.js";
 
 /** Le code de retour d'un geste qui n'a rien à rendre — le client relit le poste. */
 const NO_CONTENT = 204;
-
-/** « Problème » : ce qui est vraiment là, par SKU — la forme seulement. */
-const packingProblemSchema = z.object({
-  lines: z.array(z.object({ sku: z.string().min(1), present: z.number().int().min(0) })),
-});
-type PackingProblemBody = z.infer<typeof packingProblemSchema>;
-
-/** « Pièces retrouvées » : par SKU, combien — la forme seulement. */
-const foundPiecesSchema = z.object({
-  lines: z.array(z.object({ sku: z.string().min(1), quantity: z.number().int().min(1) })).min(1),
-});
-type FoundPiecesBody = z.infer<typeof foundPiecesSchema>;
 
 /**
  * **Fermer et rouvrir une commande au colisage** (plan
@@ -120,7 +113,7 @@ export class PackingOrdersController {
   async reportProblem(
     @Param("date") date: string,
     @Param("orderId") orderId: string,
-    @Body(new ZodBody(packingProblemSchema)) body: PackingProblemBody,
+    @Body(new ZodBody(packingProblemBodySchema)) body: PackingProblemBody,
     @StaffUserId() staffUserId: string,
     @IntentKey() intentKey: string,
   ): Promise<void> {
@@ -140,7 +133,7 @@ export class PackingOrdersController {
   async recoverFound(
     @Param("date") date: string,
     @Param("orderId") orderId: string,
-    @Body(new ZodBody(foundPiecesSchema)) body: FoundPiecesBody,
+    @Body(new ZodBody(packingFoundBodySchema)) body: PackingFoundBody,
     @StaffUserId() staffUserId: string,
     @IntentKey() intentKey: string,
   ): Promise<void> {

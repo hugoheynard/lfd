@@ -141,6 +141,7 @@ export function order(orderId: string, packedBy: string | null): BoardOrder {
     lines: [{ sku: "CRO", productName: "Croissant", quantity: 1, packed: null, saleUnit: "piece" }],
     containerList: [],
     shortfallReportedAt: null,
+    trackingLevel: "detailed",
   };
 }
 

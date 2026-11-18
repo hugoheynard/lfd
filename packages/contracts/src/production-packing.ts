@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import type { OrderSaleUnit } from "./order.js";
+import type { PackingTrackingLevel } from "./packing-settings.js";
 import type { PackingContainerView } from "./packing-containers.js";
 import type { WithdrawnPackingSheet } from "./production-packing-withdrawn.js";
 
@@ -167,6 +168,13 @@ export interface PackingSheet {
   readonly customerLabel: string;
   readonly fulfillmentMethod: "pickup" | "delivery";
   /**
+   * **Le niveau de suivi de cette commande**, figé à sa naissance au colisage :
+   * `simple` — « Tout est prêt » ou « Problème » — ou `detailed` — contenants
+   * et « Déclarer prête ». Rien de figé (une livraison, une fiche d'avant le
+   * réglage) se lit `detailed`.
+   */
+  readonly trackingLevel: PackingTrackingLevel;
+  /**
    * **Qui commande** — le badge « Pro » / « Public » du poste (2026-10-06).
    * `null` = inconnue : journée arrêtée avant le champ, ou commande d'avant la
    * distinction côté commerce. L'écran n'affiche alors rien.
@@ -228,9 +236,9 @@ export interface PackingSheet {
    * « Tout est prêt » a-t-il tout ce qu'il lui faut ? (colisage simple, D4) :
    * une fiche ouverte dont la réserve libre couvre tout ce qui reste à mettre
    * au sac. Une règle, donc au serveur : l'écran grise le bouton quand elle
-   * est fausse. Absent (contenu servi avant ce champ) = faux.
+   * est fausse. Toujours faux hors d'un retrait au niveau simple.
    */
-  readonly allReadyAvailable?: boolean;
+  readonly allReadyAvailable: boolean;
   /**
    * L'instant du manque signalé en vigueur (ISO), `null` = aucun. Effacé quand
    * le bac se ferme complet.

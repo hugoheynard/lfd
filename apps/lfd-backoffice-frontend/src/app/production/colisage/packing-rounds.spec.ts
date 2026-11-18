@@ -19,6 +19,8 @@ function sheet(
     customerLabel: orderId,
     clientele: null,
     fulfillmentMethod,
+    trackingLevel: 'detailed',
+    allReadyAvailable: false,
     destination: '',
     lines: [],
     lineCount: 0,
