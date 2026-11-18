@@ -2,11 +2,8 @@ import {
   ArchivedProductNotPublishableError,
   ArchivedProductNotWithdrawableError,
   DeletedProductNotChangeableError,
-  InvalidProductVariantsError,
   NotArchivedProductNotDeletableError,
   NotArchivedProductNotRestorableError,
-  VariantNotFoundError,
-  VariantNotInProductError,
 } from "../errors/product-errors.js";
 import { refuseEditOfArchived } from "../errors/archived-product-edit-errors.js";
 import {
@@ -32,17 +29,7 @@ import {
   type ComplianceFinding,
 } from "../services/product-compliance.js";
 import { refusalOf } from "./activation-refusal.js";
-import {
-  DefaultVariantNotDetachableError,
-  DefaultVariantNotDiscontinuableError,
-  LastLiveVariantNotDiscontinuableError,
-  DiscontinuedVariantNotDefaultableError,
-  VariantAlreadyDefaultError,
-  VariantAlreadyDiscontinuedError,
-} from "../errors/variant-lifecycle-errors.js";
-import { PricingAlignmentAcrossUnitsError } from "../errors/sale-unit-errors.js";
-import { CustomRecipeDefaultWithoutTilesError } from "../errors/custom-recipe-errors.js";
-import { resolveVariant } from "./variant-resolution.js";
+import { VariantLineup, type NewVariantInput } from "./variant-lineup.js";
 import {
   productFieldsFrom,
   productSnapshot,
@@ -94,7 +81,7 @@ export {
 export class Product {
   private constructor(
     private fields: ProductFields,
-    private readonly variantList: Variant[],
+    private readonly lineup: VariantLineup,
   ) {}
 
   static open(input: NewProductInput): Product {
@@ -112,15 +99,14 @@ export class Product {
         options: ProductCommerceOptions.initial(),
         originVariantId: null,
       },
-      [Variant.openDefault(input.defaultVariant)],
+      VariantLineup.open(input.id, input.defaultVariant),
     );
   }
 
   static reconstitute(snapshot: ProductSnapshot): Product {
-    assertVariants(snapshot);
     return new Product(
       productFieldsFrom(snapshot),
-      snapshot.variants.map((variant) => Variant.reconstitute(variant)),
+      VariantLineup.reconstitute(snapshot.id, snapshot.variants),
     );
   }
 
@@ -213,7 +199,7 @@ export class Product {
     if (this.fields.options.variantsAsTiles === variantsAsTiles) {
       return false;
     }
-    this.refuseCustomDefaultWithoutTiles(this.defaultVariant, variantsAsTiles);
+    this.lineup.refuseCustomDefaultWithoutTiles(this.lineup.defaultVariant, variantsAsTiles);
     return this.changeOptions(this.fields.options.withVariantsAsTiles(variantsAsTiles));
   }
 
@@ -231,27 +217,15 @@ export class Product {
    * @throws {CustomRecipeDefaultWithoutTilesError} le défaut d'une fiche sans vignettes (V5).
    */
   declareVariantCustomRecipe(variantId: string, customRecipe: boolean): boolean {
-    const target = this.variant(variantId);
+    const target = this.lineup.get(variantId);
     if (customRecipe && target.isDefault) {
-      this.refuseCustomDefaultWithoutTiles(target, this.fields.options.variantsAsTiles, true);
+      this.lineup.refuseCustomDefaultWithoutTiles(
+        target,
+        this.fields.options.variantsAsTiles,
+        true,
+      );
     }
     return target.declareCustomRecipe(customRecipe);
-  }
-
-  /**
-   * **V5 (a)** — une fiche sans vignettes ne paraît au rayon que par son
-   * défaut : sur mesure, elle disparaîtrait pour tous les pros sans
-   * réservation. L'état que les trois gestes laisseraient est jugé ici, avant
-   * toute mutation.
-   */
-  private refuseCustomDefaultWithoutTiles(
-    defaultVariant: Variant,
-    variantsAsTiles: boolean,
-    customRecipe = defaultVariant.customRecipe,
-  ): void {
-    if (customRecipe && !variantsAsTiles) {
-      throw new CustomRecipeDefaultWithoutTilesError(defaultVariant.sku);
-    }
   }
 
   /** Sa propre audience, ou `null` s'il suit sa famille. */
@@ -288,7 +262,7 @@ export class Product {
    * @returns `false` quand la déclinaison le disait déjà.
    */
   changeMinQuantities(variantId: string, next: MinQuantities | "follow"): boolean {
-    return this.variant(variantId).changeMinQuantities(next);
+    return this.lineup.get(variantId).changeMinQuantities(next);
   }
 
   /** Renomme — et re-dérive le slug. */
@@ -366,7 +340,7 @@ export class Product {
    * diverger.
    */
   resolvedVariants(): VariantSnapshot[] {
-    return this.variantList.map((variant) => this.resolvedSnapshot(variant));
+    return this.lineup.resolvedSnapshots();
   }
 
   activate(
@@ -388,9 +362,7 @@ export class Product {
     }
     this.fields = { ...this.fields, status: "published" };
     // Toutes partent avec la fiche : c'est ce qui fige leur unité de vente.
-    for (const variant of this.variantList) {
-      variant.markPublished();
-    }
+    this.lineup.markAllPublished();
     return true;
   }
 
@@ -482,38 +454,23 @@ export class Product {
    * BOUTIQUE — qui fige le libellé au premier écart.
    */
   renameVariantForShop(variantId: string, name: LocalizedText): void {
-    this.variant(variantId).renameForShop(name);
+    this.lineup.get(variantId).renameForShop(name);
   }
 
   /** Le libellé interne LU d'une déclinaison — le sien, sinon son nom de boutique en français. */
   variantInternalLabel(variantId: string): string {
-    return this.variant(variantId).internalLabel;
+    return this.lineup.get(variantId).internalLabel;
   }
 
   /** Le libellé INTERNE d'une déclinaison — le nom de boutique ne bouge pas. */
   renameVariantInternalLabel(variantId: string, label: string): void {
-    this.variant(variantId).renameInternalLabel(label);
+    this.lineup.get(variantId).renameInternalLabel(label);
   }
 
   /** Tarif et poids d'une déclinaison **du produit**. */
   priceVariant(variantId: string, pricing: VariantPricing, clearance?: SaleUnitClearance): void {
-    this.variant(variantId).price(pricing, clearance);
-    this.assertPricingUnitsAgree();
-  }
-
-  /**
-   * Une déclinaison qui suit le tarif du défaut se vend dans la même unité
-   * que lui : sinon le prix au kilo du défaut deviendrait le prix d'une de ses
-   * pièces. Tenu après chaque geste qui touche l'unité ou l'alignement.
-   */
-  private assertPricingUnitsAgree(): void {
-    const unit = this.defaultVariant.saleUnit;
-    const stray = this.variantList.find(
-      (variant) => variant.pricingFollowsDefault && variant.saleUnit !== unit,
-    );
-    if (stray !== undefined) {
-      throw new PricingAlignmentAcrossUnitsError(stray.sku);
-    }
+    this.lineup.get(variantId).price(pricing, clearance);
+    this.lineup.assertPricingUnitsAgree();
   }
 
   /**
@@ -530,12 +487,12 @@ export class Product {
    * déclinaison RÉSOLUE contre son défaut, et il le fait sur l'état d'APRÈS.
    */
   declareAllergens(variantId: string, declaration: AllergenDeclaration): void {
-    this.variant(variantId).declareAllergens(declaration);
+    this.lineup.get(variantId).declareAllergens(declaration);
   }
 
   /** **Les valeurs d'une déclinaison**, sans toucher à ses allergènes. */
   declareNutritionValues(variantId: string, values: VariantNutritionValues): void {
-    this.variant(variantId).declareNutritionValues(values);
+    this.lineup.get(variantId).declareNutritionValues(values);
   }
 
   /**
@@ -544,63 +501,22 @@ export class Product {
    * l'agrégat qui dit ce qui lui appartient, pas une requête sur l'id seul.
    */
   requireVariant(variantId: string): void {
-    this.variant(variantId);
-  }
-
-  private variant(variantId: string): Variant {
-    const found = this.variantList.find((candidate) => candidate.id === variantId);
-    if (found === undefined) {
-      throw new VariantNotFoundError(this.fields.id, variantId);
-    }
-    return found;
-  }
-
-  /**
-   * **La déclinaison par défaut** — l'invariant 2 garantit qu'il y en a une.
-   *
-   * Le `?? this.variantList[0]` n'est pas une prudence de plus : `at()` rend
-   * `T | undefined` quel que soit l'invariant, et le compilateur ne lit pas les
-   * garanties écrites en prose.
-   */
-  private get defaultVariant(): Variant {
-    return this.variantList.find((variant) => variant.isDefault) ?? this.variantList[0]!;
+    this.lineup.get(variantId);
   }
 
   /**
    * **Archive une déclinaison** — `is_discontinued`, hors vente, en base pour
-   * toujours (`plan-gestes-de-declinaison.md`, D1).
-   *
-   * Elle RESTE dans l'agrégat : son rang reste pris ({@link nextVariantPosition}),
-   * si bien que la suivante prend `-3` après un `-2` archivé, et jamais `-2-2`.
-   * Ce sont les lectures (fiche, faits du catalogue) qui l'écartent.
-   *
-   * @throws {DefaultVariantNotDiscontinuableError} le défaut, tant qu'il en reste d'autres.
-   * @throws {LastLiveVariantNotDiscontinuableError} la dernière vivante : c'est la fiche qu'on archive.
-   * @throws {VariantAlreadyDiscontinuedError} déjà archivée.
+   * toujours : elle RESTE dans la fiche et son rang reste pris. Les refus (le
+   * défaut, la dernière vivante, une déjà archivée) sont ceux de {@link VariantLineup}.
    */
   discontinueVariant(variantId: string): void {
-    const target = this.variant(variantId);
-    if (target.isDiscontinued) {
-      throw new VariantAlreadyDiscontinuedError(target.sku);
-    }
-    const othersAlive = this.variantList.some(
-      (variant) => variant.id !== variantId && !variant.isDiscontinued,
-    );
-    if (!othersAlive) {
-      throw new LastLiveVariantNotDiscontinuableError(target.sku);
-    }
-    if (target.isDefault) {
-      throw new DefaultVariantNotDiscontinuableError(target.sku);
-    }
-    target.discontinue();
+    this.lineup.discontinue(variantId);
   }
 
   /**
-   * **Fait d'une déclinaison un produit** (`plan-gestes-de-declinaison.md`,
-   * D2 et D3) : le nouveau produit naît de ce qu'elle VOYAIT — sa vue résolue,
-   * plus la famille, le genre, la TVA, l'audience, le froid et l'opération de
-   * la fiche — et l'origine l'archive dans le même geste.
-   *
+   * **Fait d'une déclinaison un produit** : le nouveau produit naît de ce
+   * qu'elle VOYAIT — sa vue résolue, plus la famille, le genre, la TVA, les
+   * réglages de vente de la fiche — et l'origine l'archive dans le même geste.
    * Il naît **brouillon** : un produit neuf n'a jamais été relu sous sa
    * nouvelle référence. Le nom du produit est celui de la déclinaison.
    *
@@ -611,15 +527,7 @@ export class Product {
     variantId: string,
     input: { id: string; sku: Sku; defaultVariant: { id: string; sku: Sku } },
   ): Product {
-    const target = this.variant(variantId);
-    if (target.isDiscontinued) {
-      throw new VariantAlreadyDiscontinuedError(target.sku);
-    }
-    if (target.isDefault) {
-      throw new DefaultVariantNotDetachableError(target.sku);
-    }
-    const resolved = this.resolvedSnapshot(target);
-    target.detachTo(input.id);
+    const resolved = this.lineup.detach(variantId, input.id);
     return new Product(
       {
         id: input.id,
@@ -633,134 +541,58 @@ export class Product {
         options: this.fields.options.forDetachedProduct(),
         originVariantId: variantId,
       },
-      [Variant.openDefaultFrom(resolved, { ...input.defaultVariant, name: resolved.name })],
+      VariantLineup.fromDetached(
+        input.id,
+        Variant.openDefaultFrom(resolved, { ...input.defaultVariant, name: resolved.name }),
+      ),
     );
   }
 
   /**
-   * **Désarchive une déclinaison** — elle reprend son rang et sa référence, et
-   * revient en vente selon l'état de la fiche. Refuse celle devenue un produit.
-   *
-   * @param detachedProductLabel le nom du produit qu'elle est devenue, s'il y
-   *   en a un, pour que le refus le dise.
-   * @throws {VariantNotDiscontinuedError} elle n'est pas archivée.
-   * @throws {DetachedVariantNotRestorableError} elle est devenue un produit.
+   * **Désarchive une déclinaison** — elle reprend son rang et sa référence.
+   * Refuse celle devenue un produit ; `detachedProductLabel` est le nom de ce
+   * produit, pour que le refus le dise.
    */
   restoreVariant(variantId: string, detachedProductLabel?: string): void {
-    this.variant(variantId).restore(detachedProductLabel);
+    this.lineup.restore(variantId, detachedProductLabel);
   }
 
   /**
-   * **Fait d'une déclinaison la déclinaison par défaut** (`plan-gestes-de-declinaison.md`,
-   * G4). Le cœur du geste est ce qui SUIT le défaut :
+   * **Fait d'une déclinaison la déclinaison par défaut.** Le cœur du geste, ce
+   * qui SUIT le défaut, est décrit par {@link VariantLineup.makeDefault} ; la
+   * fiche y ajoute ce qu'elle seule sait, si elle montre ses vignettes.
    *
-   * - les sœurs qui suivaient l'ancien défaut (tarif, allergènes, nutrition,
-   *   minimum) suivent désormais la nouvelle — rien à écrire chez elles, le
-   *   lien est vivant ({@link resolvedSnapshot}) ;
-   * - la nouvelle ne peut pas se suivre elle-même : elle reçoit en PROPRE les
-   *   valeurs qu'elle voyait, drapeaux remis à `false` ({@link Variant.promoteToDefault}) ;
-   * - l'ancienne garde ses valeurs : un défaut ne suivait rien.
-   *
-   * Tenu après la bascule : une sœur qui suit le tarif se vend dans l'unité
-   * du nouveau défaut ({@link assertPricingUnitsAgree}).
-   *
-   * @returns l'ancien défaut, et les moitiés de fiche réglementaire que la
-   *   nouvelle a reçues en propre — elles se persistent par leurs ports dédiés.
-   * @throws {VariantAlreadyDefaultError} elle l'est déjà.
-   * @throws {DiscontinuedVariantNotDefaultableError} elle est archivée.
-   * @throws {CustomRecipeDefaultWithoutTilesError} elle est sur mesure sur une fiche sans vignettes (V5).
-   * @throws {DormantSheetWouldWakeError} cf. {@link Variant.promoteToDefault}.
-   * @throws {PricingAlignmentAcrossUnitsError} une sœur suivrait un tarif d'une autre unité.
+   * @returns l'ancien défaut, et les moitiés de fiche que la nouvelle a reçues
+   *   en propre — elles se persistent par leurs ports dédiés.
    */
   makeVariantDefault(variantId: string): DefaultVariantChange {
-    const target = this.variant(variantId);
-    if (target.isDefault) {
-      throw new VariantAlreadyDefaultError(target.sku);
-    }
-    if (target.isDiscontinued) {
-      throw new DiscontinuedVariantNotDefaultableError(target.sku);
-    }
-    this.refuseCustomDefaultWithoutTiles(target, this.fields.options.variantsAsTiles);
-    const previous = this.defaultVariant;
-    const resolved = this.resolvedSnapshot(target);
-    const inherited = {
-      allergens: target.follows("allergens"),
-      nutrition: target.follows("nutrition"),
-    };
-    target.promoteToDefault(resolved);
-    previous.demote();
-    this.assertPricingUnitsAgree();
-    return { previousDefaultId: previous.id, inherited };
+    return this.lineup.makeDefault(variantId, this.fields.options.variantsAsTiles);
   }
 
   /** Le produit qu'une déclinaison de la fiche est devenue, ou `null`. */
   detachedProductOf(variantId: string): string | null {
-    return this.variant(variantId).detachedToProductId;
+    return this.lineup.get(variantId).detachedToProductId;
   }
 
   /**
    * Ajoute une déclinaison — **jamais la première**, jamais celle par défaut.
-   *
-   * Elle prend le rang suivant, et sa fiche réglementaire suit celle du défaut :
-   * une déclinaison née nue rendrait le produit impubliable, et sur un produit
-   * déjà en vente elle partirait au canal sans allergènes déclarés.
+   * Sa fiche réglementaire suit celle du défaut : née nue, elle rendrait le
+   * produit impubliable, ou partirait au canal sans allergènes déclarés.
    *
    * @returns la déclinaison ouverte — l'appelant a besoin de son id et de son SKU.
    */
-  addVariant(input: {
-    id: string;
-    sku: Sku;
-    name: LocalizedText;
-    options: Readonly<Record<string, string>>;
-  }): Variant {
-    // Elle hérite du sur mesure du défaut : sur une fiche réservée, une
-    // déclinaison neuve naît fermée comme ses sœurs plutôt qu'ouverte à tous.
-    const variant = Variant.open({
-      ...input,
-      position: this.nextVariantPosition,
-      customRecipe: this.defaultVariant.customRecipe,
-    });
-    // Sur une fiche en vente, elle part au prochain envoi : déjà publiée.
-    if (this.fields.status === "published") {
-      variant.markPublished();
-    }
-    this.variantList.push(variant);
-    return variant;
+  addVariant(input: NewVariantInput): Variant {
+    return this.lineup.add(input, this.fields.status === "published");
   }
 
-  /**
-   * Le rang de la prochaine déclinaison — jamais leur nombre.
-   *
-   * Public parce que la RÉFÉRENCE en dérive (`P-XXXXXX-3`) et qu'elle se
-   * fabrique avant l'ajout, contre le registre. Le compter au dehors — un
-   * `count` en base, la longueur d'une liste — rouvrirait la porte à deux `-2`
-   * sous la même fiche le jour où une déclinaison est retirée du milieu : seul
-   * le registre les refuserait, et trop tard pour le dire bien.
-   */
+  /** Le rang de la prochaine déclinaison — jamais leur nombre ({@link VariantLineup.nextPosition}). */
   get nextVariantPosition(): number {
-    return (
-      this.variantList.reduce((highest, variant) => Math.max(highest, variant.position), -1) + 1
-    );
+    return this.lineup.nextPosition;
   }
 
-  /**
-   * Aligne une déclinaison sur la fiche du défaut, ou l'en détache.
-   *
-   * L'appartenance est tenue ici — une requête forgée ne peut pas aligner la
-   * déclinaison d'un autre produit, exactement comme pour le tarif.
-   */
+  /** Aligne une déclinaison sur la fiche du défaut, ou l'en détache. */
   alignVariant(variantId: string, aspect: VariantAspect, aligned: boolean): void {
-    const variant = this.variantList.find((candidate) => candidate.id === variantId);
-    if (variant === undefined) {
-      throw new VariantNotInProductError(this.fields.id, variantId);
-    }
-    variant.alignOnDefault(aspect, aligned);
-    this.assertPricingUnitsAgree();
-  }
-
-  /** Le jugement d'une déclinaison alignée porte sur ce que le défaut lui prête ({@link resolveVariant}). */
-  private resolvedSnapshot(variant: Variant): VariantSnapshot {
-    return resolveVariant(variant, this.defaultVariant);
+    this.lineup.align(variantId, aspect, aligned);
   }
 
   /**
@@ -773,10 +605,7 @@ export class Product {
    * finirait par donner trois réponses.
    */
   snapshot(): ProductSnapshot {
-    return productSnapshot(
-      this.fields,
-      this.variantList.map((variant) => this.resolvedSnapshot(variant)),
-    );
+    return productSnapshot(this.fields, this.lineup.resolvedSnapshots());
   }
 
   /**
@@ -789,23 +618,6 @@ export class Product {
    * rien : ils passent par l'agrégat et reçoivent la résolution à la lecture.
    */
   persistenceSnapshot(): ProductSnapshot {
-    return productSnapshot(
-      this.fields,
-      this.variantList.map((variant) => variant.snapshot()),
-    );
-  }
-}
-
-/** Invariant 2 du socle — la seule règle qui rende l'agrégat cohérent. */
-function assertVariants(snapshot: ProductSnapshot): void {
-  if (snapshot.variants.length === 0) {
-    throw new InvalidProductVariantsError(snapshot.id, "aucune déclinaison");
-  }
-  const defaults = snapshot.variants.filter((variant) => variant.isDefault).length;
-  if (defaults !== 1) {
-    throw new InvalidProductVariantsError(
-      snapshot.id,
-      `${String(defaults)} déclinaison(s) par défaut au lieu d’une`,
-    );
+    return productSnapshot(this.fields, this.lineup.ownSnapshots());
   }
 }
