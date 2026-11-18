@@ -55,9 +55,7 @@ export const ACCOUNTING_SCENARIOS: ScenarioSet = {
       sub: STAFF,
       path: "/admin/accounting/collection-tests",
       body: {
-        companyId,
-        amountCents: 100,
-        sequence: "RCUR",
+        debtors: [{ companyId, amountCents: 100, sequence: "RCUR" }],
         remittance: null,
         requestedCollectionDay: businessDaysAfter(today(world), TEST_COLLECTION_MIN_BUSINESS_DAYS),
       },

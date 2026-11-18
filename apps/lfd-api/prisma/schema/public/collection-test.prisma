@@ -10,8 +10,10 @@
 // `20261022200100_le_prelevement_d_essai` :
 //   · un retrait porte son instant ET son auteur, ou ni l'un ni l'autre ;
 //   · un essai : 1 ≤ montant ≤ 100 centimes, séquence RCUR | FRST | OOFF
-//     (jamais FNAL), références `ESS-…` de 35 caractères au plus ;
+//     (jamais FNAL), `EndToEndId` `ESS-…` de 35 caractères au plus ;
 //   · un retour porte tous ses champs ou aucun ; un remboursement aussi.
+// et dans `20261118150000_l_envoi_d_essai` :
+//   · un envoi : `MsgId` `ESS-…` de 35 caractères au plus.
 
 /// Une société cliente déclarée « à nous » (Q1). Pas de ligne = pas à nous.
 /// Retirer ne supprime pas la ligne : on garde qui l'a posée et retirée.
@@ -29,10 +31,40 @@ model OwnEstablishment {
   @@schema("public")
 }
 
-/// Un prélèvement d'essai : UN débit, son fichier gardé, sa trace.
+/// Un envoi d'essai : UN fichier `pain.008`, un `MsgId`, une empreinte, et
+/// de un à dix débits (`collection_test`) sur nos établissements.
+model CollectionTestFile {
+  /// ULID — il entre dans `MsgId` et `PmtInfId` (`ESS-<ULID>`).
+  id                     String     @id
+  /// L'entité émettrice, seule créancière du fichier — opaque.
+  legalEntityId          String     @map("legal_entity_id")
+  /// Le `LclInstrm` du fichier : un seul schéma par envoi.
+  scheme                 SepaScheme
+  /// `ReqdColltnDt`, commune à toutes les lignes.
+  requestedCollectionDay DateTime   @map("requested_collection_day") @db.Date
+  /// `ESS-<ULID de l'envoi>` — CHECK en SQL.
+  messageId              String     @unique @map("message_id")
+  /// Le fichier tel qu'il a été rendu. Il porte l'IBAN des débiteurs en
+  /// clair, comme `collection_batch.xml` — au registre RGPD.
+  xml                    String
+  fileSha256             String     @map("file_sha256")
+  createdAt              DateTime   @map("created_at") @db.Timestamptz(3)
+  createdByStaffId       String     @map("created_by_staff_id")
+
+  tests CollectionTest[]
+
+  @@map("collection_test_file")
+  @@schema("public")
+}
+
+/// Un prélèvement d'essai : UN débit d'un envoi, sa trace, son retour.
 model CollectionTest {
-  /// ULID — il entre dans `MsgId`, `PmtInfId` et `EndToEndId` (`ESS-<ULID>`).
+  /// ULID — il entre dans `EndToEndId` (`ESS-<ULID>`).
   id String @id
+
+  /// L'envoi qui porte ce débit : son fichier, son `MsgId`.
+  fileId String             @map("file_id")
+  file   CollectionTestFile @relation(fields: [fileId], references: [id])
 
   /// L'entité émettrice (créancier du mandat) — opaque.
   legalEntityId          String     @map("legal_entity_id")
@@ -49,16 +81,18 @@ model CollectionTest {
   /// `RmtInf/Ustrd`, déjà au jeu SEPA.
   remittance             String
 
-  messageId  String @unique @map("message_id")
-  endToEndId String @unique @map("end_to_end_id")
+  /// Plus écrite : le `MsgId` est celui de l'envoi. Garde la valeur des
+  /// essais d'avant l'envoi.
+  messageId  String? @map("message_id")
+  endToEndId String  @unique @map("end_to_end_id")
 
   createdAt        DateTime @map("created_at") @db.Timestamptz(3)
   createdByStaffId String   @map("created_by_staff_id")
 
-  /// Le fichier tel qu'il a été rendu. Il porte l'IBAN du débiteur en clair,
-  /// comme `collection_batch.xml` — au registre RGPD.
-  xml        String
-  fileSha256 String @map("file_sha256")
+  /// Plus écrites : le fichier est celui de l'envoi. `xml` est vide (l'IBAN
+  /// n'est gardé qu'une fois) ; `file_sha256` garde la valeur d'avant l'envoi.
+  xml        String?
+  fileSha256 String? @map("file_sha256")
 
   /// Le retour de la banque, rattaché par `EndToEndId` (`ESS-…`).
   returnKind              CollectionReturnKind?   @map("return_kind")
@@ -76,6 +110,7 @@ model CollectionTest {
   refundRecordedByStaffId String?   @map("refund_recorded_by_staff_id")
 
   @@index([createdAt])
+  @@index([fileId])
   @@map("collection_test")
   @@schema("public")
 }

@@ -2742,7 +2742,25 @@
       "colonne": "public.collection_test.xml",
       "personne": "tiers",
       "categorie": "coordonnees-bancaires",
-      "finalite": "Le fichier pain.008 d'un prélèvement d'essai, gardé tel qu'il a été rendu : il porte en clair l'IBAN, le BIC et le nom de l'établissement débité — une société déclarée « à nous » (plan-prelevement-d-essai.md), qui peut être une entreprise individuelle. Gardé pour le retélécharger à l'identique et rapprocher un retour bancaire. Ne sort que sous `collection_test:write`.",
+      "finalite": "Colonne retirée et VIDÉE (mise à NULL) par la migration 20261118150000_l_envoi_d_essai : le fichier pain.008 d'un essai est désormais celui de son envoi (`collection_test_file.xml`), et l'IBAN n'est gardé qu'une fois. Plus écrite ; la colonne reste en base, sans donnée.",
+      "conservation": "a-decider",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.collection_test_file.created_by_staff_id",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`created_by_staff_id`) sur `collection_test_file` — générer un envoi de prélèvement d'essai (plan-essai-a-plusieurs-debiteurs.md).",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.collection_test_file.xml",
+      "personne": "tiers",
+      "categorie": "coordonnees-bancaires",
+      "finalite": "Le fichier pain.008 d'un envoi de prélèvement d'essai, gardé tel qu'il a été rendu : il porte en clair l'IBAN, le BIC et le nom de chaque établissement débité — des sociétés déclarées « à nous » (plan-prelevement-d-essai.md, plan-essai-a-plusieurs-debiteurs.md), qui peuvent être des entreprises individuelles. Gardé pour le retélécharger à l'identique et rapprocher un retour bancaire. Ne sort que sous `collection_test:write`.",
       "conservation": "a-decider",
       "purge": null,
       "information": false

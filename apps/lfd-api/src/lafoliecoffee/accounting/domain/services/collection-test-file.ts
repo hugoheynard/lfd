@@ -8,7 +8,7 @@ import {
   type TestSequence,
 } from "./pain008-document.js";
 import { sha256Of } from "./collection-batch-file.js";
-import { testSepaIdentifiers } from "./collection-test-identifiers.js";
+import { testFileSepaIdentifiers } from "./collection-test-identifiers.js";
 import { businessDaysAfter } from "./target2-calendar.js";
 import type { SepaScheme } from "../value-objects/sepa-scheme.js";
 
@@ -44,57 +44,55 @@ export function parisDayOf(at: Date): string {
   return instantToLocal(at).day;
 }
 
-export interface TestFileInput {
-  readonly testId: string;
-  readonly creditor: CreditorSnapshot;
-  readonly scheme: SepaScheme;
+/** Un débit de l'envoi : sa ligne d'essai, déjà jugée. */
+export interface TestFileDebit {
+  readonly endToEndId: string;
   readonly sequence: TestSequence;
-  /** `CreDtTm` — l'instant de la génération. */
-  readonly createdAt: Date;
-  readonly requestedCollectionDay: string;
   readonly debtorName: string;
   readonly amountCents: number;
   readonly mandate: DocumentMandate;
-  /** Déjà passé au jeu SEPA, non vide. */
+}
+
+export interface TestFileInput {
+  readonly fileId: string;
+  readonly creditor: CreditorSnapshot;
+  readonly scheme: SepaScheme;
+  /** `CreDtTm` — l'instant de la génération. */
+  readonly createdAt: Date;
+  readonly requestedCollectionDay: string;
+  /** Déjà passé au jeu SEPA, non vide — commun à toutes les lignes. */
   readonly remittance: string;
+  /** Au moins un : un fichier d'essai vide n'a rien à éprouver. */
+  readonly debits: readonly [TestFileDebit, ...TestFileDebit[]];
 }
 
 export interface TestFile {
   readonly messageId: string;
-  readonly endToEndId: string;
   readonly xml: string;
   readonly sha256: string;
 }
 
 /**
- * **Le fichier d'un essai** — UN débit, rendu par le MÊME rendu que les lots
- * (`renderPain008Document`), sans bandeau : il est déposable, c'est tout son
- * objet. Seuls changent ses identifiants (`ESS-…`) et sa séquence, donnée
- * plutôt que déduite du mandat.
+ * **Le fichier d'un envoi d'essai** — ses débits, rendus par le MÊME rendu
+ * que les lots (`renderPain008Document`, un `PmtInf` par séquence), sans
+ * bandeau : il est déposable, c'est tout son objet. Seuls changent ses
+ * identifiants (`ESS-…`) et ses séquences, données plutôt que déduites du
+ * mandat.
  */
 export function renderTestFile(input: TestFileInput): TestFile {
-  const ids = testSepaIdentifiers(input.testId);
+  const ids = testFileSepaIdentifiers(input.fileId);
   const xml = renderPain008Document<TestSequence>({
     creditor: input.creditor,
     scheme: input.scheme,
     messageId: ids.messageId,
     paymentInfoIdOf: ids.paymentInfoIdOf,
-    emptySequence: input.sequence,
+    emptySequence: input.debits[0].sequence,
     createdAt: input.createdAt,
     requestedCollectionDay: input.requestedCollectionDay,
     banner: null,
-    debits: [
-      {
-        sequence: input.sequence,
-        endToEndId: ids.endToEndId,
-        debtorName: input.debtorName,
-        amountCents: input.amountCents,
-        mandate: input.mandate,
-        remittance: input.remittance,
-      },
-    ],
+    debits: input.debits.map((debit) => ({ ...debit, remittance: input.remittance })),
   });
-  return { messageId: ids.messageId, endToEndId: ids.endToEndId, xml, sha256: sha256Of(xml) };
+  return { messageId: ids.messageId, xml, sha256: sha256Of(xml) };
 }
 
 /** Le libellé tel qu'il sortira : jeu SEPA, 140 caractères, défaut si vide. */

@@ -19,7 +19,32 @@ function onCompany(type: string, payload: Record<string, unknown>): FactInput {
   };
 }
 
-const TEST = { messageId: 'ESS-01JBQ7Z5K8M3QT9P2X4BE55A00', amountCents: 100 };
+const TEST = {
+  messageId: 'ESS-01JBQ7Z5K8M3QT9P2X4BE55F00',
+  endToEndId: 'ESS-01JBQ7Z5K8M3QT9P2X4BE55A00',
+  amountCents: 100,
+};
+
+/** Un fait d'avant l'envoi à plusieurs débiteurs : le `MsgId` seul, égal à la ligne. */
+const SINGLE_FILE_TEST = { messageId: 'ESS-01JBQ7Z5K8M3QT9P2X4BE55A00', amountCents: 100 };
+
+const LINE_IN_FILE =
+  'l’essai ESS-01JBQ7Z5K8M3QT9P2X4BE55A00 (envoi ESS-01JBQ7Z5K8M3QT9P2X4BE55F00)';
+
+const GENERATED = {
+  sequence: 'FRST',
+  scheme: 'B2B',
+  collectionDay: '2026-11-05',
+  legalEntity: { id: 'le_1', name: 'La Folie Douce' },
+};
+
+const RETURNED = {
+  kind: 'reject',
+  reasonCode: 'AM04',
+  reason: 'Provision insuffisante',
+  returnedOn: '2026-11-05',
+  source: 'pain002',
+};
 
 describe('le prélèvement d’essai au journal', () => {
   it('dit la déclaration et le retrait d’un établissement', () => {
@@ -31,40 +56,49 @@ describe('le prélèvement d’essai au journal', () => {
     );
   });
 
-  it('dit la génération : référence, montant, séquence, échéance, entité', () => {
+  it('dit la génération : la ligne, son envoi, montant, séquence, échéance, entité', () => {
     const said = renderFact(
-      onCompany('collection.test_generated', {
-        ...TEST,
-        sequence: 'FRST',
-        scheme: 'B2B',
-        collectionDay: '2026-11-05',
-        legalEntity: { id: 'le_1', name: 'La Folie Douce' },
-      }),
+      onCompany('collection.test_generated', { ...TEST, fileId: 'f_1', ...GENERATED }),
     );
 
-    expect(said.sentence).toContain('a généré l’essai ESS-01JBQ7Z5K8M3QT9P2X4BE55A00');
+    expect(said.sentence).toContain(`a généré ${LINE_IN_FILE}`);
     expect(said.sentence).toContain('1,00');
     expect(said.sentence).toContain('FRST');
     expect(said.sentence).toContain('« La Folie Douce »');
+    expect(said.consumed).toEqual(expect.arrayContaining(['endToEndId', 'fileId', 'messageId']));
+    expect(said.detail).toEqual([]);
   });
 
-  it('dit le remboursement et le retour', () => {
-    expect(
-      renderFact(onCompany('collection.test_refunded', { ...TEST, refundedOn: '2026-11-06' }))
-        .sentence,
-    ).toContain('a marqué remboursé l’essai ESS-01JBQ7Z5K8M3QT9P2X4BE55A00');
-    expect(
-      renderFact(
-        onCompany('collection.test_returned', {
-          ...TEST,
-          kind: 'reject',
-          reasonCode: 'AM04',
-          reason: 'Provision insuffisante',
-          returnedOn: '2026-11-05',
-          source: 'pain002',
-        }),
-      ).sentence,
-    ).toContain('(AM04 : Provision insuffisante)');
+  it('dit le remboursement et le retour, avec la ligne et son envoi', () => {
+    const refunded = renderFact(
+      onCompany('collection.test_refunded', { ...TEST, refundedOn: '2026-11-06' }),
+    );
+    expect(refunded.sentence).toContain(`a marqué remboursé ${LINE_IN_FILE}`);
+    expect(refunded.detail).toEqual([]);
+
+    const returned = renderFact(onCompany('collection.test_returned', { ...TEST, ...RETURNED }));
+    expect(returned.sentence).toContain(LINE_IN_FILE);
+    expect(returned.sentence).toContain('(AM04 : Provision insuffisante)');
+    expect(returned.detail).toEqual([]);
+  });
+
+  it('dit un fait d’avant l’envoi à plusieurs débiteurs par son seul MsgId', () => {
+    const generated = renderFact(
+      onCompany('collection.test_generated', { ...SINGLE_FILE_TEST, ...GENERATED }),
+    ).sentence;
+    const refunded = renderFact(
+      onCompany('collection.test_refunded', { ...SINGLE_FILE_TEST, refundedOn: '2026-11-06' }),
+    ).sentence;
+    const returned = renderFact(
+      onCompany('collection.test_returned', { ...SINGLE_FILE_TEST, ...RETURNED }),
+    ).sentence;
+
+    expect(generated).toContain('a généré l’essai ESS-01JBQ7Z5K8M3QT9P2X4BE55A00 de');
+    expect(refunded).toContain('a marqué remboursé l’essai ESS-01JBQ7Z5K8M3QT9P2X4BE55A00 de');
+    expect(returned).toContain('de l’essai ESS-01JBQ7Z5K8M3QT9P2X4BE55A00 de');
+    for (const sentence of [generated, refunded, returned]) {
+      expect(sentence).not.toContain('envoi');
+    }
   });
 
   it('dit l’export du RIB depuis l’essai, sans IBAN', () => {

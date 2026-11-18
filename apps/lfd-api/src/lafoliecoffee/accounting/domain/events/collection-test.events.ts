@@ -54,9 +54,17 @@ export class OwnEstablishmentWithdrawnEvent implements JournaledEvent {
   }
 }
 
+/**
+ * Ce qui désigne l'essai : le `MsgId` de l'envoi (le fichier déposé, que la
+ * banque cite) et l'`EndToEndId` de la ligne (le débit, que le retour cite).
+ */
 function testPayload(test: CollectionTest): Readonly<Record<string, unknown>> {
   const state = test.toPersistence();
-  return { messageId: state.messageId, amountCents: state.amountCents };
+  return {
+    messageId: state.messageId,
+    endToEndId: state.endToEndId,
+    amountCents: state.amountCents,
+  };
 }
 
 function subjectOf(test: CollectionTest): TestSubject {
@@ -64,7 +72,10 @@ function subjectOf(test: CollectionTest): TestSubject {
   return { companyId: state.debtorCompanyId, name: state.debtorName };
 }
 
-/** Un fichier d'essai est généré. L'entité émettrice est nommée par l'appelant. */
+/**
+ * Un essai est généré, ligne d'un envoi — un fait par ligne, l'envoi n'est que
+ * leur enveloppe. L'entité émettrice est nommée par l'appelant.
+ */
 export class CollectionTestGeneratedEvent implements JournaledEvent {
   constructor(
     readonly test: CollectionTest,
@@ -76,6 +87,7 @@ export class CollectionTestGeneratedEvent implements JournaledEvent {
     const state = this.test.toPersistence();
     return companyFact(COLLECTION_TEST_FACT_TYPES.generated, subjectOf(this.test), this.at, {
       ...testPayload(this.test),
+      fileId: state.fileId,
       legalEntity: { id: state.legalEntityId, name: this.legalEntityName },
       scheme: state.scheme,
       sequence: state.sequence,

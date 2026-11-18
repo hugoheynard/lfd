@@ -1,4 +1,6 @@
 import type { CollectionTest } from "../../../domain/entities/collection-test.js";
+import type { CollectionTestFile } from "../../../domain/entities/collection-test-file.js";
+import { CollectionTestFileRepository } from "../../../domain/ports/collection-test-file.repository.js";
 import type { OwnEstablishment } from "../../../domain/entities/own-establishment.js";
 import { BatchedMandatesReader } from "../../../domain/ports/batched-mandates.reader.js";
 import {
@@ -18,10 +20,9 @@ import {
 import { MandateCollectionTestsReader } from "../../../domain/ports/mandate-collection-tests.reader.js";
 import type { PriorCollectionTest } from "../../../domain/services/collection-test-lookalike.js";
 
-/** Les essais en mémoire ; `save` crée ou réécrit. */
+/** Les essais en mémoire ; `save` réécrit le suivi d'une ligne. */
 export class MemoryCollectionTests extends CollectionTestRepository {
   readonly saved = new Map<string, CollectionTest>();
-  saveCount = 0;
 
   load(id: string): Promise<CollectionTest | null> {
     return Promise.resolve(this.saved.get(id) ?? null);
@@ -38,8 +39,24 @@ export class MemoryCollectionTests extends CollectionTestRepository {
   }
 
   save(test: CollectionTest): Promise<void> {
-    this.saveCount += 1;
     this.saved.set(test.id, test);
+    return Promise.resolve();
+  }
+}
+
+/** Les envois en mémoire ; `save` garde l'envoi et range ses lignes parmi les essais. */
+export class MemoryCollectionTestFiles extends CollectionTestFileRepository {
+  readonly saved = new Map<string, CollectionTestFile>();
+
+  constructor(private readonly tests: MemoryCollectionTests) {
+    super();
+  }
+
+  save(file: CollectionTestFile): Promise<void> {
+    this.saved.set(file.id, file);
+    for (const test of file.tests) {
+      this.tests.saved.set(test.id, test);
+    }
     return Promise.resolve();
   }
 }

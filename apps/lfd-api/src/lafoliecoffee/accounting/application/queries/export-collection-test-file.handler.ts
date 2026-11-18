@@ -1,38 +1,26 @@
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
-import {
-  CollectionTestFileTamperedError,
-  CollectionTestNotFoundError,
-} from "../../domain/errors/collection-test-errors.js";
+import { CollectionTestFileNotFoundError } from "../../domain/errors/collection-test-file-errors.js";
 import { CollectionTestFileReader } from "../../domain/ports/collection-test-file.reader.js";
-import { sha256Of } from "../../domain/services/collection-batch-file.js";
+import {
+  verifiedTestFile,
+  type CollectionTestFileDownload,
+} from "../collection-test-file-support.js";
 import { ExportCollectionTestFileQuery } from "./collection-test-queries.js";
 
-export interface CollectionTestFile {
-  readonly xml: string;
-  readonly fileName: string;
-}
-
-/**
- * Rend le fichier **gardé** d'un essai, après avoir vérifié son empreinte —
- * comme le fichier d'un lot. Le nom commence par `ESSAI-` : un fichier rangé
- * sur un bureau perd son contexte, jamais son nom.
- */
+/** Rend le fichier gardé d'un envoi d'essai, empreinte vérifiée. */
 @QueryHandler(ExportCollectionTestFileQuery)
 export class ExportCollectionTestFileHandler implements IQueryHandler<
   ExportCollectionTestFileQuery,
-  CollectionTestFile
+  CollectionTestFileDownload
 > {
   constructor(private readonly files: CollectionTestFileReader) {}
 
-  async execute(query: ExportCollectionTestFileQuery): Promise<CollectionTestFile> {
-    const file = await this.files.fileOf(query.testId);
+  async execute(query: ExportCollectionTestFileQuery): Promise<CollectionTestFileDownload> {
+    const file = await this.files.fileOf(query.fileId);
     if (file === null) {
-      throw new CollectionTestNotFoundError(query.testId);
+      throw new CollectionTestFileNotFoundError(query.fileId);
     }
-    if (sha256Of(file.xml) !== file.sha256) {
-      throw new CollectionTestFileTamperedError(file.messageId);
-    }
-    return { xml: file.xml, fileName: `ESSAI-prelevement-${file.messageId}.xml` };
+    return verifiedTestFile(file);
   }
 }

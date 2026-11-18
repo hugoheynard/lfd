@@ -1,7 +1,7 @@
 import type { CollectionTestState } from "../entities/collection-test.js";
 
-/** Un essai pour la liste — tout son état, sauf le fichier. */
-export type CollectionTestSummary = Omit<CollectionTestState, "xml" | "fileSha256">;
+/** Un essai pour la liste — son état, jamais le fichier. */
+export type CollectionTestSummary = CollectionTestState;
 
 /** Port de lecture de la liste « Essais ». */
 export abstract class CollectionTestsReader {

@@ -4,6 +4,7 @@ import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 import { AppError } from "../../../../platform/shared/errors/app-error.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import { MAX_COLLECTION_TEST_CENTS } from "../../domain/entities/collection-test.js";
+import { MAX_DEBTORS_PER_TEST_FILE } from "../../domain/entities/collection-test-file.js";
 import { CollectionTestCreditorNotFoundError } from "../../domain/errors/collection-test-errors.js";
 import { CreditorBicMissingError } from "../../domain/errors/accounting-errors.js";
 import { BatchedMandatesReader } from "../../domain/ports/batched-mandates.reader.js";
@@ -48,6 +49,7 @@ export class GetCollectionTestDebtorsHandler implements IQueryHandler<
     }
     return {
       maxAmountCents: MAX_COLLECTION_TEST_CENTS,
+      maxDebtorsPerFile: MAX_DEBTORS_PER_TEST_FILE,
       defaultRemittance: DEFAULT_TEST_REMITTANCE,
       debtors,
     };

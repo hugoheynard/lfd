@@ -18,7 +18,11 @@
  * posée à maintenant) : l'échéance est relue dans la proposition du serveur,
  * jamais écrite en dur.
  */
-import type { CollectionTestDebtorsView } from "@lfd/contracts";
+import type {
+  CollectionTestDebtorsView,
+  CollectionTestView,
+  CollectionTestsView,
+} from "@lfd/contracts";
 import { sha256Of } from "../src/lafoliecoffee/accounting/domain/services/collection-batch-file.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { Clock } from "../src/platform/time/clock.js";
@@ -131,11 +135,36 @@ export async function proposedDay(): Promise<string> {
   return day;
 }
 
+/** Un envoi d'UNE ligne : `amountCents` et `sequence` vont à la ligne, le reste à l'envoi. */
 export function generate(companyId: string, body: Record<string, unknown>) {
+  const { amountCents = 100, sequence = "RCUR", ...rest } = body;
+  return generateFile([{ companyId, amountCents, sequence }], rest);
+}
+
+/** Un envoi de plusieurs lignes. */
+export function generateFile(
+  debtors: readonly Record<string, unknown>[],
+  body: Record<string, unknown>,
+) {
   return staff()
     .post(TESTS)
     .set(INTENT_KEY, freshIntent())
-    .send({ companyId, amountCents: 100, sequence: "RCUR", remittance: null, ...body });
+    .send({ debtors, remittance: null, ...body });
+}
+
+/** Les lignes d'un envoi, telles que la liste « Essais » les sert. */
+export async function testsOf(fileId: string): Promise<readonly CollectionTestView[]> {
+  const list = jsonBody<CollectionTestsView>(await staff().get(TESTS).expect(200));
+  return list.tests.filter((test) => test.fileId === fileId);
+}
+
+/** L'id de la ligne unique d'un envoi. */
+export async function onlyTestOf(fileId: string): Promise<string> {
+  const [test, ...others] = await testsOf(fileId);
+  if (test === undefined || others.length > 0) {
+    throw new Error(`l'envoi ${fileId} n'a pas une seule ligne`);
+  }
+  return test.id;
 }
 
 /** Les tables qu'un essai ne doit JAMAIS toucher. */

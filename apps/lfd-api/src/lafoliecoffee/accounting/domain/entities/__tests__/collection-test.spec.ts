@@ -16,10 +16,12 @@ import {
   CREATED_AT,
   DUE_DAY,
   EARLIEST_DAY,
+  FILE_ID,
   TEST_ID,
   eligible,
   generateInput,
   generated,
+  generatedFile,
 } from "./collection-test-fixtures.js";
 
 /** Après l'échéance : le 6 novembre 2026, 10 h à Paris. */
@@ -98,22 +100,28 @@ describe("générer un prélèvement d'essai", () => {
     );
   });
 
-  it("le fichier : un débit, la séquence demandée, les références ESS-, le schéma du mandat", () => {
-    const state = generated({ sequence: "FRST", amountCents: 37 }).toPersistence();
+  it("le fichier d'une ligne : MsgId de l'envoi, EndToEndId de l'essai, le schéma du mandat", () => {
+    const file = generatedFile({ sequence: "FRST", amountCents: 37 });
+    const { xml } = file.toPersistence();
+    const [test] = file.tests;
 
-    expect(state.messageId).toBe(`ESS-${TEST_ID}`);
-    expect(state.endToEndId).toBe(`ESS-${TEST_ID}`);
-    expect(state.xml).toContain(`<MsgId>ESS-${TEST_ID}</MsgId>`);
-    expect(state.xml).toContain(`<PmtInfId>ESS-${TEST_ID}-FRST</PmtInfId>`);
-    expect(state.xml).toContain(`<EndToEndId>ESS-${TEST_ID}</EndToEndId>`);
-    expect(state.xml).toContain("<SeqTp>FRST</SeqTp>");
-    expect(state.xml).toContain("<LclInstrm><Cd>B2B</Cd></LclInstrm>");
-    expect(state.xml).toContain(`<ReqdColltnDt>${DUE_DAY}</ReqdColltnDt>`);
-    expect(state.xml).toContain('<InstdAmt Ccy="EUR">0.37</InstdAmt>');
-    expect(state.xml).toContain("<NbOfTxs>1</NbOfTxs>");
-    expect(state.xml).toContain("<CreDtTm>2026-10-22T10:00:00</CreDtTm>");
-    expect(state.xml).not.toContain("BROUILLON");
-    expect(isAuditCoherent(state.xml)).toBe(true);
+    expect(file.messageId).toBe(`ESS-${FILE_ID}`);
+    expect(test?.toPersistence()).toMatchObject({
+      fileId: FILE_ID,
+      messageId: `ESS-${FILE_ID}`,
+      endToEndId: `ESS-${TEST_ID}`,
+    });
+    expect(xml).toContain(`<MsgId>ESS-${FILE_ID}</MsgId>`);
+    expect(xml).toContain(`<PmtInfId>ESS-${FILE_ID}-FRST</PmtInfId>`);
+    expect(xml).toContain(`<EndToEndId>ESS-${TEST_ID}</EndToEndId>`);
+    expect(xml).toContain("<SeqTp>FRST</SeqTp>");
+    expect(xml).toContain("<LclInstrm><Cd>B2B</Cd></LclInstrm>");
+    expect(xml).toContain(`<ReqdColltnDt>${DUE_DAY}</ReqdColltnDt>`);
+    expect(xml).toContain('<InstdAmt Ccy="EUR">0.37</InstdAmt>');
+    expect(xml).toContain("<NbOfTxs>1</NbOfTxs>");
+    expect(xml).toContain("<CreDtTm>2026-10-22T10:00:00</CreDtTm>");
+    expect(xml).not.toContain("BROUILLON");
+    expect(isAuditCoherent(xml)).toBe(true);
   });
 
   it("l'entité émettrice est le créancier du mandat", () => {

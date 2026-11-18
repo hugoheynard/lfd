@@ -1,6 +1,7 @@
 /** Ce qu'un fichier de retours apparie d'un essai — sans IBAN. */
 export interface CollectionTestReturnTarget {
   readonly testId: string;
+  /** Le `MsgId` de l'envoi qui porte l'essai. */
   readonly messageId: string;
   readonly debtorName: string;
   readonly amountCents: number;

@@ -1,24 +1,32 @@
 import { InvalidCollectionTestIdError } from "../../errors/collection-test-errors.js";
 import { SEPA_IDENTIFIER_MAX } from "../collection-identifiers.js";
-import { isTestReference, testSepaIdentifiers } from "../collection-test-identifiers.js";
+import {
+  isTestReference,
+  testEndToEndId,
+  testFileSepaIdentifiers,
+} from "../collection-test-identifiers.js";
 import type { TestSequence } from "../pain008-document.js";
 
+const FILE_ID = "01JBQ7Z5K8M3QT9P2X4BE55F00";
 const TEST_ID = "01JBQ7Z5K8M3QT9P2X4BE55A00";
 const SEQUENCES: readonly TestSequence[] = ["RCUR", "FRST", "OOFF"];
 
-describe("les références SEPA d'un essai (format arrêté le 2026-10-22)", () => {
-  it("MsgId et EndToEndId = ESS-<ULID>, 30 caractères", () => {
-    const ids = testSepaIdentifiers(TEST_ID);
+describe("les références SEPA d'un envoi d'essai", () => {
+  it("MsgId = ESS-<ULID de l'envoi>, 30 caractères", () => {
+    const ids = testFileSepaIdentifiers(FILE_ID);
 
-    expect(ids.messageId).toBe(`ESS-${TEST_ID}`);
-    expect(ids.endToEndId).toBe(`ESS-${TEST_ID}`);
+    expect(ids.messageId).toBe(`ESS-${FILE_ID}`);
     expect(ids.messageId).toHaveLength(30);
   });
 
-  it.each(SEQUENCES)("PmtInfId = ESS-<ULID>-%s, au plus 35 caractères", (sequence) => {
-    const id = testSepaIdentifiers(TEST_ID).paymentInfoIdOf(sequence);
+  it("EndToEndId = ESS-<ULID de l'essai> : la ligne, pas l'envoi", () => {
+    expect(testEndToEndId(TEST_ID)).toBe(`ESS-${TEST_ID}`);
+  });
 
-    expect(id).toBe(`ESS-${TEST_ID}-${sequence}`);
+  it.each(SEQUENCES)("PmtInfId = ESS-<envoi>-%s, au plus 35 caractères", (sequence) => {
+    const id = testFileSepaIdentifiers(FILE_ID).paymentInfoIdOf(sequence);
+
+    expect(id).toBe(`ESS-${FILE_ID}-${sequence}`);
     expect(id.length).toBeLessThanOrEqual(SEPA_IDENTIFIER_MAX);
   });
 
@@ -27,8 +35,8 @@ describe("les références SEPA d'un essai (format arrêté le 2026-10-22)", () 
   });
 
   it("refuse un identifiant qui n'est pas un ULID", () => {
-    expect(() => testSepaIdentifiers("pas-un-ulid")).toThrow(InvalidCollectionTestIdError);
-    expect(() => testSepaIdentifiers(`${TEST_ID}X`)).toThrow(InvalidCollectionTestIdError);
+    expect(() => testFileSepaIdentifiers("pas-un-ulid")).toThrow(InvalidCollectionTestIdError);
+    expect(() => testEndToEndId(`${TEST_ID}X`)).toThrow(InvalidCollectionTestIdError);
   });
 
   it("reconnaît une référence d'essai, jamais une référence de lot", () => {

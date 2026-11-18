@@ -27,7 +27,9 @@ import {
  * **Le prélèvement d'essai et nos établissements** (plan
  * `plan-prelevement-d-essai.md`) — famille `accounting`. Sujet : la société.
  * À part d'`accounting-phrases.ts`, qui dépasse déjà la taille d'un fichier.
- * Jamais d'IBAN ni de RUM : un essai se dit par son `MsgId` (`ESS-…`).
+ * Jamais d'IBAN ni de RUM : un essai se dit par son `EndToEndId` et le
+ * `MsgId` de son envoi (`ESS-…`). Un fait d'avant l'envoi à plusieurs
+ * débiteurs n'a que `messageId`, alors égal à l'`EndToEndId` : il se dit seul.
  */
 
 const ENTITY: Noun = { the: 'sous l’entité', a: 'sous une entité' };
@@ -37,11 +39,21 @@ function company(fact: PhraseFact): Segment[] {
   return label === null ? [text('une société')] : [text('« '), subject(fact, label), text(' »')];
 }
 
-/** « l'essai ESS-… de 1,00 € sur « Folie Douce Val » ». */
+/** « ESS-<ligne> (envoi ESS-<fichier>) », ou le seul `MsgId` d'un fait d'avant. */
+function testReference(fact: PhraseFact): Segment[] {
+  const messageId = value(optional(fact.payload['messageId']) ?? '?');
+  const endToEndId = optional(fact.payload['endToEndId']);
+  if (endToEndId === null) {
+    return [messageId];
+  }
+  return [value(endToEndId), text(' (envoi '), messageId, text(')')];
+}
+
+/** « l'essai ESS-… (envoi ESS-…) de 1,00 € sur « Folie Douce Val » ». */
 function testOn(fact: PhraseFact): Segment[] {
   return [
     text('l’essai '),
-    value(optional(fact.payload['messageId']) ?? '?'),
+    ...testReference(fact),
     text(' de '),
     inUnit('cents', fact.payload['amountCents']),
     text(' sur '),
@@ -81,6 +93,8 @@ const generated: Phrase = (fact) =>
     [
       'subjectLabel',
       'messageId',
+      'endToEndId',
+      'fileId',
       'amountCents',
       'sequence',
       'scheme',
@@ -98,7 +112,7 @@ const refunded: Phrase = (fact) =>
       text(', le '),
       inUnit('day', fact.payload['refundedOn']),
     ],
-    ['subjectLabel', 'messageId', 'amountCents', 'refundedOn'],
+    ['subjectLabel', 'messageId', 'endToEndId', 'amountCents', 'refundedOn'],
   );
 
 const returned: Phrase = (fact) =>
@@ -121,6 +135,7 @@ const returned: Phrase = (fact) =>
     [
       'subjectLabel',
       'messageId',
+      'endToEndId',
       'amountCents',
       'kind',
       'reasonCode',

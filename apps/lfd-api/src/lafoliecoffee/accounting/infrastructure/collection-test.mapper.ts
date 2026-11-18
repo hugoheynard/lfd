@@ -1,4 +1,8 @@
-import type { CollectionTest as CollectionTestRow } from "../../../platform/database/client/client.js";
+import type {
+  CollectionTestFile as CollectionTestFileRow,
+  CollectionTest as CollectionTestLineRow,
+} from "../../../platform/database/client/client.js";
+import type { CollectionTestFileState } from "../domain/entities/collection-test-file.js";
 import type {
   CollectionTestState,
   TestBankReturn,
@@ -9,6 +13,14 @@ import { CorruptCollectionTestRowError } from "./collection-test-row.error.js";
 import { returnDayColumn, returnDayOf } from "./collection-return.mapper.js";
 
 const SEQUENCES: readonly TestSequence[] = ["RCUR", "FRST", "OOFF"];
+
+/** Une ligne d'essai, avec le `MsgId` de son envoi. */
+export type CollectionTestRow = CollectionTestLineRow & {
+  readonly file: Pick<CollectionTestFileRow, "messageId">;
+};
+
+/** Ce qu'une lecture d'essai joint de son envoi. */
+export const WITH_FILE_MESSAGE_ID = { file: { select: { messageId: true } } } as const;
 
 function sequenceOf(row: CollectionTestRow): TestSequence {
   const found = SEQUENCES.find((sequence) => sequence === row.sequence);
@@ -68,6 +80,7 @@ function refundOf(row: CollectionTestRow): TestRefund | null {
 export function toCollectionTestState(row: CollectionTestRow): CollectionTestState {
   return {
     id: row.id,
+    fileId: row.fileId,
     legalEntityId: row.legalEntityId,
     debtorCompanyId: row.debtorCompanyId,
     debtorName: row.debtorName,
@@ -78,11 +91,9 @@ export function toCollectionTestState(row: CollectionTestRow): CollectionTestSta
     amountCents: row.amountCents,
     requestedCollectionDay: returnDayOf(row.requestedCollectionDay),
     remittance: row.remittance,
-    messageId: row.messageId,
+    messageId: row.file.messageId,
     endToEndId: row.endToEndId,
     created: { at: row.createdAt, staffId: row.createdByStaffId },
-    xml: row.xml,
-    fileSha256: row.fileSha256,
     bankReturn: bankReturnOf(row),
     refund: refundOf(row),
   };
@@ -106,10 +117,14 @@ export function collectionTestFollowUpColumns(state: CollectionTestState) {
   };
 }
 
-/** État → toutes les colonnes, à la création. */
+/**
+ * État → toutes les colonnes, à la création. `message_id`, `xml` et
+ * `file_sha256` ne s'écrivent plus : ils sont ceux de l'envoi.
+ */
 export function collectionTestColumns(state: CollectionTestState) {
   return {
     id: state.id,
+    fileId: state.fileId,
     legalEntityId: state.legalEntityId,
     debtorCompanyId: state.debtorCompanyId,
     debtorName: state.debtorName,
@@ -120,12 +135,24 @@ export function collectionTestColumns(state: CollectionTestState) {
     amountCents: state.amountCents,
     requestedCollectionDay: returnDayColumn(state.requestedCollectionDay),
     remittance: state.remittance,
-    messageId: state.messageId,
     endToEndId: state.endToEndId,
     createdAt: state.created.at,
     createdByStaffId: state.created.staffId,
+    ...collectionTestFollowUpColumns(state),
+  };
+}
+
+/** Envoi → ses colonnes, à sa naissance (il ne s'écrit jamais ensuite). */
+export function collectionTestFileColumns(state: CollectionTestFileState) {
+  return {
+    id: state.id,
+    legalEntityId: state.legalEntityId,
+    scheme: state.scheme,
+    requestedCollectionDay: returnDayColumn(state.requestedCollectionDay),
+    messageId: state.messageId,
     xml: state.xml,
     fileSha256: state.fileSha256,
-    ...collectionTestFollowUpColumns(state),
+    createdAt: state.created.at,
+    createdByStaffId: state.created.staffId,
   };
 }

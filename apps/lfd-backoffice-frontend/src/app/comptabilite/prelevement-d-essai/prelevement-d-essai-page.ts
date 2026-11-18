@@ -13,8 +13,10 @@ import {
   FoldCardComponent,
   FoldDataTableCellDirective,
   FoldDataTableComponent,
+  FoldElementTitleComponent,
   FoldEmptyStateComponent,
   FoldIconComponent,
+  FoldLoadingStateComponent,
   FoldPageLayoutComponent,
   FoldPanelHostService,
   type FoldTableColumn,
@@ -34,8 +36,36 @@ import {
 } from './generate-test-panel/generate-test-panel';
 import { RefundTestPanel, type RefundTestPanelData } from './refund-test-panel/refund-test-panel';
 
-/** Les trois fichiers d'une ligne, dans l'ordre des boutons. */
-type RowFile = 'rib' | 'mandate' | 'debit';
+/** Les deux fichiers d'une ligne, dans l'ordre des boutons. */
+type RowFile = 'rib' | 'mandate';
+
+/** Un envoi : un fichier `pain.008` et ses lignes, dans l'ordre de la liste. */
+export interface TestFile {
+  readonly fileId: string;
+  readonly messageId: string;
+  readonly lines: readonly CollectionTestView[];
+}
+
+/**
+ * Les lignes regroupées par envoi (`fileId`), dans l'ordre où la liste les
+ * rend : un envoi prend la place de sa première ligne.
+ */
+export function groupByFile(tests: readonly CollectionTestView[]): readonly TestFile[] {
+  const files = new Map<string, CollectionTestView[]>();
+  for (const test of tests) {
+    const lines = files.get(test.fileId);
+    if (lines === undefined) {
+      files.set(test.fileId, [test]);
+    } else {
+      lines.push(test);
+    }
+  }
+  return Array.from(files, ([fileId, lines]) => ({
+    fileId,
+    messageId: lines[0]?.messageId ?? fileId,
+    lines,
+  }));
+}
 
 type BadgeVariant = 'success' | 'alert' | 'warning' | 'neutral';
 
@@ -49,7 +79,7 @@ const STATUS_VARIANTS: Readonly<Record<CollectionTestStatusView, BadgeVariant>> 
 
 const BASE_COLUMNS: readonly FoldTableColumn[] = [
   { key: 'debtor', label: 'Établissement' },
-  { key: 'file', label: 'Fichier' },
+  { key: 'line', label: 'Ligne' },
   { key: 'amount', label: 'Montant', numeric: true },
   { key: 'due', label: 'Échéance' },
   { key: 'status', label: 'État' },
@@ -58,7 +88,7 @@ const BASE_COLUMNS: readonly FoldTableColumn[] = [
 /**
  * **Comptabilité › Prélèvement d'essai** (plan
  * `documentation/comptabilite/prelevement/plan-prelevement-d-essai.md`) —
- * générer un `pain.008` d'un débit sur un de nos établissements, le
+ * générer un `pain.008` d'un ou plusieurs débits sur nos établissements, le
  * télécharger, et suivre les essais : « à rembourser » si la banque a pu
  * prélever (Q4), rejet ou retour rattaché, « Marqué remboursé ».
  *
@@ -75,8 +105,10 @@ const BASE_COLUMNS: readonly FoldTableColumn[] = [
     FoldCardComponent,
     FoldDataTableCellDirective,
     FoldDataTableComponent,
+    FoldElementTitleComponent,
     FoldEmptyStateComponent,
     FoldIconComponent,
+    FoldLoadingStateComponent,
     FoldPageLayoutComponent,
     RouterLink,
   ],
@@ -100,6 +132,7 @@ export class PrelevementDEssaiPage {
   protected readonly columns = computed<readonly FoldTableColumn[]>(() =>
     this.canWrite() ? [...BASE_COLUMNS, { key: 'actions', label: '' }] : BASE_COLUMNS,
   );
+  protected readonly files = computed(() => groupByFile(this.tests()));
   protected readonly refused = computed(
     () => this.tool()?.debtors.filter((debtor) => debtor.refusal !== null) ?? [],
   );
@@ -146,6 +179,16 @@ export class PrelevementDEssaiPage {
     return day(row.requestedCollectionDay);
   }
 
+  /** « 2 lignes — 1,50 € au total, échéance le 5 nov. 2026 · généré le … par … ». */
+  protected fileSummary(file: TestFile): string {
+    const [first] = file.lines;
+    const count = file.lines.length === 1 ? '1 ligne' : `${file.lines.length} lignes`;
+    const total = euros(file.lines.reduce((sum, line) => sum + line.amountCents, 0));
+    return first === undefined
+      ? count
+      : `${count} — ${total} au total, échéance le ${this.dueOf(first)} · ${this.createdOf(first)}`;
+  }
+
   protected createdOf(row: CollectionTestView): string {
     const by = row.createdByName === null ? '' : ` par ${row.createdByName}`;
     return `${instant(row.createdAt)}${by}`;
@@ -168,20 +211,24 @@ export class PrelevementDEssaiPage {
     if (tool === null) {
       return;
     }
-    const testId = await this.panels.open<GenerateTestPanelData, string>(GenerateTestPanel, {
+    const fileId = await this.panels.open<GenerateTestPanelData, string>(GenerateTestPanel, {
       data: { tool },
       width: 'md',
     }).closed;
-    if (testId === undefined) {
+    if (fileId === undefined) {
       return;
     }
     this.notify.success('Fichier d’essai généré.');
-    await this.download(testId, `ESSAI-prelevement-ESS-${testId}.xml`);
+    await this.download(fileId, `ESSAI-prelevement-ESS-${fileId}.xml`);
     await this.reload();
   }
 
   protected isPending(row: CollectionTestView, file: RowFile): boolean {
     return this.pending() === `${row.id}:${file}`;
+  }
+
+  protected isFilePending(file: TestFile): boolean {
+    return this.pending() === `${file.fileId}:debit`;
   }
 
   /** Le compte de l'établissement, au format des comptes destinataires de la banque. */
@@ -204,9 +251,9 @@ export class PrelevementDEssaiPage {
     );
   }
 
-  /** Le `pain.008` gardé de l'essai. */
-  protected async downloadRow(row: CollectionTestView): Promise<void> {
-    await this.download(row.id, `ESSAI-prelevement-${row.messageId}.xml`);
+  /** Le `pain.008` gardé de l'envoi : toutes ses lignes. */
+  protected async downloadFile(file: TestFile): Promise<void> {
+    await this.download(file.fileId, `ESSAI-prelevement-${file.messageId}.xml`);
   }
 
   protected async refund(row: CollectionTestView): Promise<void> {
@@ -221,10 +268,10 @@ export class PrelevementDEssaiPage {
     await this.reload();
   }
 
-  private async download(testId: string, fileName: string): Promise<void> {
+  private async download(fileId: string, fileName: string): Promise<void> {
     await this.save(
-      `${testId}:debit`,
-      () => this.api.file(testId),
+      `${fileId}:debit`,
+      () => this.api.file(fileId),
       fileName,
       'Le fichier n’a pas pu être téléchargé.',
     );

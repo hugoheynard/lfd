@@ -319,6 +319,7 @@ export type {
 export {
   COLLECTION_TEST_STATUS_LABELS,
   TEST_SEQUENCE_LABELS,
+  collectionTestDebtorPayloadSchema,
   declareOwnEstablishmentPayloadSchema,
   generateCollectionTestPayloadSchema,
   markCollectionTestRefundedPayloadSchema,
@@ -326,6 +327,7 @@ export {
 } from "./collection-test.js";
 export type {
   CollectionTestCreatedView,
+  CollectionTestDebtorPayload,
   CollectionTestDebtorView,
   CollectionTestDebtorsView,
   CollectionTestMandateView,

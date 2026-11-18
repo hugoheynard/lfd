@@ -6,9 +6,11 @@ import {
   inject,
   input,
   signal,
+  untracked,
 } from '@angular/core';
 import {
   TEST_SEQUENCE_LABELS,
+  type CollectionTestDebtorPayload,
   type CollectionTestDebtorView,
   type CollectionTestDebtorsView,
   type TestSequenceView,
@@ -16,6 +18,7 @@ import {
 import {
   FoldButtonComponent,
   FoldCalloutComponent,
+  FoldCheckboxComponent,
   FoldDateComponent,
   FoldInputComponent,
   FoldListboxComponent,
@@ -51,13 +54,36 @@ export function defaultSequence(sequences: readonly TestSequenceView[]): TestSeq
   return sequences.includes('RCUR') ? 'RCUR' : (sequences[0] ?? null);
 }
 
+/** Une ligne de l'envoi, telle que l'écran la tient : cochée, son montant saisi, sa séquence. */
+export interface DraftLine {
+  readonly amount: string;
+  readonly sequence: TestSequenceView | null;
+}
+
+/** Le montant proposé d'office à une ligne cochée. */
+const DEFAULT_AMOUNT = '1,00';
+
+/** Le seul sujet d'intention du panneau : il n'en part qu'un envoi à la fois. */
+const INTENT_SUBJECT = 'collection-test-file';
+
 /**
- * **Générer un prélèvement d'essai** (plan `plan-prelevement-d-essai.md`) —
- * un débiteur parmi nos établissements, un montant d'au plus le plafond,
- * l'échéance la plus proche (J + 2 jours ouvrés, sans pré-notification : Q6),
- * une séquence permise par le mandat. Le mandat choisi s'exporte aussi au
- * format d'import de la banque, seul. L'écran ne fait que proposer : chaque refus est celui de l'agrégat,
- * affiché tel que le serveur le rédige.
+ * L'échéance au plus tôt d'un envoi : la plus tardive des échéances au plus
+ * tôt de ses lignes, puisqu'une échéance est commune à tout le fichier.
+ */
+export function earliestCommonDay(debtors: readonly CollectionTestDebtorView[]): string | null {
+  return debtors.reduce<string | null>((latest, debtor) => {
+    const day = debtor.earliestCollectionDay;
+    return day !== null && (latest === null || day > latest) ? day : latest;
+  }, null);
+}
+
+/**
+ * **Générer un envoi de prélèvement d'essai** (plan
+ * `plan-essai-a-plusieurs-debiteurs.md`, § 1.4) — un fichier, une ligne par
+ * établissement coché, au plus `maxDebtorsPerFile`. Chaque ligne porte son
+ * montant (au plus le plafond) et sa séquence ; l'échéance et le libellé sont
+ * communs à l'envoi. L'écran ne fait que proposer : chaque refus est celui de
+ * l'agrégat, affiché tel que le serveur le rédige.
  */
 @Component({
   selector: 'app-generate-test-panel',
@@ -65,6 +91,7 @@ export function defaultSequence(sequences: readonly TestSequenceView[]): TestSeq
   imports: [
     FoldButtonComponent,
     FoldCalloutComponent,
+    FoldCheckboxComponent,
     FoldDateComponent,
     FoldInputComponent,
     FoldListboxComponent,
@@ -75,16 +102,15 @@ export function defaultSequence(sequences: readonly TestSequenceView[]): TestSeq
 })
 export class GenerateTestPanel {
   private readonly api = inject(CollectionTestsService);
-  /** Un essai par intention : un double clic ne garde pas deux fichiers. */
+  /** Un envoi par intention : un double clic ne garde pas deux fichiers. */
   private readonly intents = new GestureIntents();
   private readonly ref = inject(FoldPanelRef<string>);
 
   readonly data = input<GenerateTestPanelData | undefined>(undefined);
 
-  protected readonly companyId = signal<string | null>(null);
-  protected readonly amount = signal('1,00');
+  /** Les lignes cochées, par société, dans l'ordre où elles l'ont été. */
+  protected readonly lines = signal<ReadonlyMap<string, DraftLine>>(new Map());
   protected readonly collectionDay = signal('');
-  protected readonly sequence = signal<TestSequenceView | null>(null);
   protected readonly remittance = signal('');
   protected readonly saving = signal(false);
   protected readonly error = signal<string | null>(null);
@@ -93,79 +119,154 @@ export class GenerateTestPanel {
     const tool = this.data()?.tool;
     return tool === undefined ? [] : eligibleDebtors(tool);
   });
-  protected readonly debtorOptions = computed(() =>
-    this.debtors().map((debtor) => ({ value: debtor.companyId, label: debtor.companyName })),
-  );
-  protected readonly debtor = computed(
-    () => this.debtors().find((debtor) => debtor.companyId === this.companyId()) ?? null,
-  );
-  protected readonly sequenceOptions = computed(() =>
-    (this.debtor()?.sequences ?? []).map((value) => ({
-      value,
-      label: TEST_SEQUENCE_LABELS[value],
-    })),
-  );
+  protected readonly maxLines = computed(() => this.data()?.tool.maxDebtorsPerFile ?? 0);
   protected readonly maxLabel = computed(() => euros(this.data()?.tool.maxAmountCents ?? 0));
   protected readonly defaultRemittance = computed(() => this.data()?.tool.defaultRemittance ?? '');
-  /** Le `min` du sélecteur de date : la même borne que celle du serveur. */
-  protected readonly earliestDay = computed(
-    () => this.debtor()?.earliestCollectionDay ?? undefined,
+
+  protected readonly chosen = computed(() =>
+    this.debtors().filter((debtor) => this.lines().has(debtor.companyId)),
   );
+  protected readonly full = computed(() => this.lines().size >= this.maxLines());
+
+  /**
+   * Le `min` du sélecteur de date : la même borne que celle du serveur pour
+   * les lignes cochées ; avant toute case, la plus proche des établissements.
+   */
+  protected readonly earliestDay = computed(() => {
+    const chosen = this.chosen();
+    if (chosen.length > 0) {
+      return earliestCommonDay(chosen) ?? undefined;
+    }
+    const days = this.debtors().flatMap((debtor) => debtor.earliestCollectionDay ?? []);
+    return days.length === 0 ? undefined : days.reduce((a, b) => (b < a ? b : a));
+  });
   protected readonly earliestLabel = computed(() => {
-    const earliest = this.debtor()?.earliestCollectionDay ?? null;
-    return earliest === null ? '' : day(earliest);
+    const earliest = this.earliestDay();
+    return earliest === undefined ? '' : day(earliest);
   });
 
-  private readonly amountCents = computed(() => centsOf(this.amount()));
-  protected readonly amountInvalid = computed(() => this.amountCents() === null);
+  /** Les lignes prêtes à partir ; `null` dès qu'une est incomplète. */
+  private readonly payloadLines = computed<CollectionTestDebtorPayload[] | null>(() => {
+    const payload: CollectionTestDebtorPayload[] = [];
+    for (const [companyId, line] of this.lines()) {
+      const amountCents = centsOf(line.amount);
+      if (amountCents === null || line.sequence === null) {
+        return null;
+      }
+      payload.push({ companyId, amountCents, sequence: line.sequence });
+    }
+    return payload;
+  });
+
+  /** « 2 lignes — 1,50 € au total », ou ce qui manque. */
+  protected readonly summary = computed(() => {
+    const count = this.lines().size;
+    if (count === 0) {
+      return 'Aucun établissement coché.';
+    }
+    const lines = count === 1 ? '1 ligne' : `${count} lignes`;
+    const payload = this.payloadLines();
+    if (payload === null) {
+      return `${lines} — un montant est à reprendre.`;
+    }
+    const total = payload.reduce((sum, line) => sum + line.amountCents, 0);
+    return `${lines} — ${euros(total)} au total.`;
+  });
 
   protected readonly canSubmit = computed(
     () =>
-      this.debtor() !== null &&
-      this.amountCents() !== null &&
+      this.lines().size > 0 &&
+      this.lines().size <= this.maxLines() &&
+      this.payloadLines() !== null &&
       this.collectionDay() !== '' &&
-      this.sequence() !== null &&
       !this.saving(),
   );
 
   constructor() {
-    // Un débiteur choisi propose SON échéance, et RCUR s'il l'admet.
+    // Une échéance plus tôt que ce que l'envoi admet remonte à sa borne.
     effect(() => {
-      const debtor = this.debtor();
-      this.collectionDay.set(debtor?.earliestCollectionDay ?? '');
-      this.sequence.set(defaultSequence(debtor?.sequences ?? []));
-    });
-    effect(() => {
-      const [first] = this.debtors();
-      if (this.companyId() === null && first !== undefined) {
-        this.companyId.set(first.companyId);
+      const earliest = this.earliestDay();
+      if (earliest === undefined) {
+        return;
+      }
+      const current = untracked(this.collectionDay);
+      if (current === '' || current < earliest) {
+        this.collectionDay.set(earliest);
       }
     });
   }
 
+  protected isChecked(debtor: CollectionTestDebtorView): boolean {
+    return this.lines().has(debtor.companyId);
+  }
+
+  /** Plus de case cochable une fois l'envoi plein ; une case cochée se décoche toujours. */
+  protected isLocked(debtor: CollectionTestDebtorView): boolean {
+    return this.full() && !this.isChecked(debtor);
+  }
+
+  protected lineOf(debtor: CollectionTestDebtorView): DraftLine | null {
+    return this.lines().get(debtor.companyId) ?? null;
+  }
+
+  protected mandateHint(debtor: CollectionTestDebtorView): string {
+    const mandate = debtor.mandate;
+    return mandate === null
+      ? ''
+      : `Mandat ${mandate.reference} — schéma ${mandate.scheme}, compte ••••${mandate.ibanLast4}.`;
+  }
+
+  protected sequenceOptions(
+    debtor: CollectionTestDebtorView,
+  ): readonly { value: TestSequenceView; label: string }[] {
+    return debtor.sequences.map((value) => ({ value, label: TEST_SEQUENCE_LABELS[value] }));
+  }
+
+  protected amountInvalid(debtor: CollectionTestDebtorView): boolean {
+    const line = this.lineOf(debtor);
+    return line !== null && centsOf(line.amount) === null;
+  }
+
+  protected toggle(debtor: CollectionTestDebtorView, checked: boolean): void {
+    const next = new Map(this.lines());
+    if (!checked) {
+      next.delete(debtor.companyId);
+    } else if (!next.has(debtor.companyId) && next.size < this.maxLines()) {
+      next.set(debtor.companyId, {
+        amount: DEFAULT_AMOUNT,
+        sequence: defaultSequence(debtor.sequences),
+      });
+    }
+    this.lines.set(next);
+  }
+
+  protected setAmount(debtor: CollectionTestDebtorView, amount: string): void {
+    this.patch(debtor, { amount });
+  }
+
+  protected setSequence(debtor: CollectionTestDebtorView, sequence: TestSequenceView | null): void {
+    this.patch(debtor, { sequence });
+  }
+
   protected async submit(): Promise<void> {
-    const companyId = this.companyId();
-    const amountCents = this.amountCents();
-    const sequence = this.sequence();
-    if (companyId === null || amountCents === null || sequence === null) {
+    const debtors = this.payloadLines();
+    if (debtors === null || debtors.length === 0) {
       return;
     }
     this.saving.set(true);
     this.error.set(null);
     try {
       const remittance = this.remittance().trim();
-      const testId = await this.api.generate(
+      const fileId = await this.api.generate(
         {
-          companyId,
-          amountCents,
+          debtors,
           requestedCollectionDay: this.collectionDay(),
-          sequence,
           remittance: remittance === '' ? null : remittance,
         },
-        this.intents.keyFor(companyId),
+        this.intents.keyFor(INTENT_SUBJECT),
       );
-      this.intents.done(companyId);
-      this.ref.close(testId);
+      this.intents.done(INTENT_SUBJECT);
+      this.ref.close(fileId);
     } catch (caught) {
       this.error.set(httpErrorMessage(caught, 'Le fichier d’essai n’a pas été généré.'));
     } finally {
@@ -173,8 +274,15 @@ export class GenerateTestPanel {
     }
   }
 
-  /** Le CSV du seul mandat de l'établissement choisi, pour le portail de la banque. */
   protected close(): void {
     this.ref.close();
+  }
+
+  private patch(debtor: CollectionTestDebtorView, change: Partial<DraftLine>): void {
+    const line = this.lines().get(debtor.companyId);
+    if (line === undefined) {
+      return;
+    }
+    this.lines.set(new Map(this.lines()).set(debtor.companyId, { ...line, ...change }));
   }
 }

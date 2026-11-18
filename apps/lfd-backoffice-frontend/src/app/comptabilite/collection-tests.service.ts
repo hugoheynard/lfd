@@ -48,19 +48,20 @@ export class CollectionTestsService {
   }
 
   /**
-   * Génère et garde le fichier ; rend l'id de l'essai. Une fois par intention :
-   * la même clé rend le même essai.
+   * Génère et garde l'envoi — un fichier, une ligne par débiteur ; rend l'id
+   * de l'envoi. Une fois par intention : la même clé rend le même envoi.
    */
   async generate(payload: GenerateCollectionTestPayload, intentKey: string): Promise<string> {
     const created = await firstValueFrom(
       this.http.post<CollectionTestCreatedView>(this.tests, payload, intentOptions(intentKey)),
     );
-    return created.testId;
+    return created.fileId;
   }
 
-  async file(testId: string): Promise<Blob> {
+  /** Le `pain.008` gardé de l'envoi : toutes ses lignes, un seul fichier. */
+  async file(fileId: string): Promise<Blob> {
     return firstValueFrom(
-      this.http.get(`${this.tests}/${testId}/file.xml`, { responseType: 'blob' }),
+      this.http.get(`${this.tests}/files/${fileId}/file.xml`, { responseType: 'blob' }),
     );
   }
 

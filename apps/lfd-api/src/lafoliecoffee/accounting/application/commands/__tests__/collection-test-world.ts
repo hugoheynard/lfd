@@ -28,6 +28,7 @@ import { FakeMandates, FixedCreditors, UlidSequence } from "./collection-doubles
 import {
   FakeBatchedMandates,
   FakeEstablishmentCompanies,
+  MemoryCollectionTestFiles,
   MemoryCollectionTests,
   MemoryMandateCollectionTests,
   MemoryOwnEstablishments,
@@ -45,8 +46,7 @@ class MemoryTestsReader extends CollectionTestsReader {
 }
 
 function summaryOf(test: CollectionTest): CollectionTestSummary {
-  const { xml: _xml, fileSha256: _sha256, ...summary } = test.toPersistence();
-  return summary;
+  return test.toPersistence();
 }
 
 /**
@@ -62,6 +62,7 @@ export function collectionTestWorld(creditor: CreditorSnapshot | null = CREDITOR
   const batched = new FakeBatchedMandates();
   const creditors = new FixedCreditors(creditor);
   const tests = new MemoryCollectionTests();
+  const files = new MemoryCollectionTestFiles(tests);
   const events = new RecordingPublisher();
   const clock = new FixedClock(CREATED_AT);
   const uow = new DirectUnitOfWork();
@@ -75,6 +76,7 @@ export function collectionTestWorld(creditor: CreditorSnapshot | null = CREDITOR
     mandates,
     batched,
     tests,
+    files,
     events,
     clock,
     declare: new DeclareOwnEstablishmentHandler(companies, establishments, clock, events, uow),
@@ -84,7 +86,7 @@ export function collectionTestWorld(creditor: CreditorSnapshot | null = CREDITOR
       mandates,
       batched,
       creditors,
-      tests,
+      files,
       new MemoryMandateCollectionTests(tests),
       new UlidSequence(),
       clock,

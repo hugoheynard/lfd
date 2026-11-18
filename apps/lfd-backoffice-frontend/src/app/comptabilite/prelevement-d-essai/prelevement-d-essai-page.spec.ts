@@ -14,19 +14,21 @@ import { PermissionsStore } from '../../auth/permissions.store';
 import { NotifyService } from '../../notify.service';
 import { CollectionTestsService } from '../collection-tests.service';
 import { eligibleDebtors } from './generate-test-panel/generate-test-panel';
-import { PrelevementDEssaiPage } from './prelevement-d-essai-page';
+import { PrelevementDEssaiPage, groupByFile } from './prelevement-d-essai-page';
 
 /**
  * Ce que ces cas tiennent : chaque colonne de la liste rend quelque chose ;
  * « Marqué remboursé » ne s'offre que sur un essai « à rembourser » ; un
  * établissement refusé s'affiche avec les mots du serveur ; sans
- * `collection_test:write`, aucun geste. Chaque ligne offre trois
- * téléchargements, dans cet ordre : RIB, Mandat, Prélèvement (Hugo,
- * 2026-10-26) ; un refus s'affiche avec les mots du serveur.
+ * `collection_test:write`, aucun geste. Les lignes d'un même envoi sont
+ * regroupées sous lui ; chaque ligne offre RIB puis Mandat (Hugo, 2026-10-26),
+ * et l'envoi offre son Prélèvement — un fichier pour toutes ses lignes. Un
+ * refus s'affiche avec les mots du serveur.
  */
 
 const TOOL: CollectionTestDebtorsView = {
   maxAmountCents: 100,
+  maxDebtorsPerFile: 10,
   defaultRemittance: 'ESSAI PRELEVEMENT',
   debtors: [
     {
@@ -51,7 +53,9 @@ const TOOL: CollectionTestDebtorsView = {
 function test(over: Partial<CollectionTestView> = {}): CollectionTestView {
   return {
     id: 't1',
-    messageId: 'ESS-T1',
+    fileId: 'f1',
+    messageId: 'ESS-F1',
+    endToEndId: 'ESS-T1',
     debtorCompanyId: 'c1',
     debtorName: 'Folie Douce Val',
     mandateReference: 'RUM-1',
@@ -73,7 +77,18 @@ function test(over: Partial<CollectionTestView> = {}): CollectionTestView {
 class FakeApi {
   tests: readonly CollectionTestView[] = [
     test(),
-    test({ id: 't2', messageId: 'ESS-T2', status: 'awaiting_due_date' }),
+    test({ id: 't2', endToEndId: 'ESS-T2', status: 'awaiting_due_date' }),
+    test({
+      id: 't3',
+      fileId: 'f2',
+      messageId: 'ESS-F2',
+      endToEndId: 'ESS-T3',
+      debtorCompanyId: 'c3',
+      debtorName: 'Folie Douce Lac',
+      mandateReference: 'RUM-3',
+      status: 'refunded',
+      refundedOn: '2026-11-06',
+    }),
   ];
   debtors(): Promise<CollectionTestDebtorsView> {
     return Promise.resolve(TOOL);
@@ -89,8 +104,8 @@ class FakeApi {
   mandateFile(companyId: string): Promise<Blob> {
     return this.answer(`mandate:${companyId}`);
   }
-  file(testId: string): Promise<Blob> {
-    return this.answer(`debit:${testId}`);
+  file(fileId: string): Promise<Blob> {
+    return this.answer(`debit:${fileId}`);
   }
   private answer(asked: string): Promise<Blob> {
     this.asked.push(asked);
@@ -154,11 +169,12 @@ function buttons(fixture: ComponentFixture<PrelevementDEssaiPage>, label: string
 }
 
 describe('PrelevementDEssaiPage', () => {
-  it('rend chaque colonne : établissement, fichier, montant, échéance, état', async () => {
+  it('rend chaque colonne : établissement, ligne, montant, échéance, état', async () => {
     const body = text(await render(['collection_test:read']));
 
     expect(body).toContain('Folie Douce Val');
     expect(body).toContain('ESS-T1');
+    expect(body).toContain('Envoi ESS-F1');
     expect(body).toContain('FRST');
     expect(body).toContain('0,42');
     expect(body).toContain('À rembourser');
@@ -177,6 +193,7 @@ describe('PrelevementDEssaiPage', () => {
 
     expect(buttons(fixture, 'Marqué remboursé')).toHaveLength(1);
     expect(buttons(fixture, 'Prélèvement')).toHaveLength(2);
+    expect(buttons(fixture, 'RIB')).toHaveLength(3);
     expect(buttons(fixture, 'Générer un essai')).toHaveLength(1);
   });
 
@@ -194,34 +211,57 @@ describe('PrelevementDEssaiPage', () => {
     expect(eligibleDebtors(TOOL).map((debtor) => debtor.companyId)).toEqual(['c1']);
   });
 
-  it('chaque ligne offre RIB, Mandat, Prélèvement — dans cet ordre', async () => {
+  it('regroupe les lignes par envoi, dans l’ordre de la liste', () => {
+    const files = groupByFile(new FakeApi().tests);
+
+    expect(files.map((file) => [file.messageId, file.lines.map((line) => line.id)])).toEqual([
+      ['ESS-F1', ['t1', 't2']],
+      ['ESS-F2', ['t3']],
+    ]);
+  });
+
+  it('chaque envoi a sa carte, son total et un seul Prélèvement', async () => {
+    const fixture = await render(['collection_test:read', 'collection_test:write']);
+    const cards = Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll<HTMLElement>('[data-file]'),
+    );
+
+    expect(cards).toHaveLength(2);
+    expect(cards[0]?.textContent).toContain('2 lignes — 0,84');
+    expect(cards[0]?.querySelectorAll('[data-download="debit"]')).toHaveLength(1);
+    expect(cards[1]?.textContent).toContain('1 ligne — 0,42');
+  });
+
+  it('chaque ligne offre RIB puis Mandat', async () => {
     const fixture = await render(['collection_test:read', 'collection_test:write']);
     const rows = (fixture.nativeElement as HTMLElement).querySelectorAll('.actions');
 
-    expect(rows).toHaveLength(2);
+    expect(rows).toHaveLength(3);
     for (const row of Array.from(rows)) {
       const labels = Array.from(row.querySelectorAll('[data-download]')).map((button) =>
         button.textContent?.trim(),
       );
-      expect(labels).toEqual(['RIB', 'Mandat', 'Prélèvement']);
+      expect(labels).toEqual(['RIB', 'Mandat']);
     }
   });
 
-  it('chaque bouton télécharge le fichier de l’établissement de SA ligne', async () => {
+  it('RIB et Mandat visent l’établissement de SA ligne, Prélèvement le fichier de l’envoi', async () => {
     const api = new FakeApi();
     const names = downloads();
     const fixture = await render(['collection_test:read', 'collection_test:write'], api);
 
-    for (const label of ['RIB', 'Mandat', 'Prélèvement']) {
-      buttons(fixture, label)[0]?.click();
-      await fixture.whenStable();
-    }
+    buttons(fixture, 'RIB')[2]?.click();
+    await fixture.whenStable();
+    buttons(fixture, 'Mandat')[2]?.click();
+    await fixture.whenStable();
+    buttons(fixture, 'Prélèvement')[0]?.click();
+    await fixture.whenStable();
 
-    expect(api.asked).toEqual(['rib:c1', 'mandate:c1', 'debit:t1']);
+    expect(api.asked).toEqual(['rib:c3', 'mandate:c3', 'debit:f1']);
     expect(names).toEqual([
-      'ESSAI-rib-banque-RUM-1.csv',
-      'ESSAI-mandat-banque-RUM-1.csv',
-      'ESSAI-prelevement-ESS-T1.xml',
+      'ESSAI-rib-banque-RUM-3.csv',
+      'ESSAI-mandat-banque-RUM-3.csv',
+      'ESSAI-prelevement-ESS-F1.xml',
     ]);
   });
 

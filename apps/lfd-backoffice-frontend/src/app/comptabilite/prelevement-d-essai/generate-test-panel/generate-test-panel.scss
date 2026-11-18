@@ -5,10 +5,34 @@
   padding: var(--fold-space-lg);
 }
 
+.lines {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.line {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+.line-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: var(--fold-space-md);
+}
+
 .foot {
   display: flex;
+  align-items: center;
   justify-content: flex-end;
   gap: var(--fold-space-sm);
   padding: var(--fold-space-lg);
   border-top: 1px solid var(--fold-color-border);
+}
+
+.summary {
+  margin-right: auto;
+  color: var(--fold-color-text-muted);
 }

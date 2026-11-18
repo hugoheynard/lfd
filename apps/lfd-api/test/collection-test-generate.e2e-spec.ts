@@ -25,6 +25,7 @@ import {
   entity,
   generate,
   moneyTables,
+  onlyTestOf,
   ourCompany,
   proposedDay,
   SEPA_MAX,
@@ -87,7 +88,7 @@ describe("générer un prélèvement d'essai", () => {
       requestedCollectionDay: day,
       amountCents: 50,
     }).expect(409);
-    expect(JSON.stringify(refused.body)).toContain(`ESS-${first.testId}`);
+    expect(JSON.stringify(refused.body)).toContain(`ESS-${await onlyTestOf(first.fileId)}`);
     expect(JSON.stringify(refused.body)).toContain("Choisissez un autre montant");
     await generate(companyId, { requestedCollectionDay: day, amountCents: 49 }).expect(201);
 
@@ -127,11 +128,12 @@ describe("générer un prélèvement d'essai", () => {
         amountCents: 42,
       }).expect(201),
     );
-    const file = await staff().get(`${TESTS}/${created.testId}/file.xml`).expect(200);
+    const testId = await onlyTestOf(created.fileId);
+    const file = await staff().get(`${TESTS}/${testId}/file.xml`).expect(200);
     const xml = file.text;
 
     expect(file.headers["content-disposition"]).toContain(
-      `ESSAI-prelevement-ESS-${created.testId}.xml`,
+      `ESSAI-prelevement-ESS-${created.fileId}.xml`,
     );
     expect(await pain008XsdErrors(xml)).toEqual([]);
     expect(xml).toContain("<SeqTp>FRST</SeqTp>");
@@ -147,7 +149,14 @@ describe("générer un prélèvement d'essai", () => {
     }
     const list = jsonBody<CollectionTestsView>(await staff().get(TESTS).expect(200));
     expect(list.tests).toEqual([
-      expect.objectContaining({ id: created.testId, status: "awaiting_due_date", amountCents: 42 }),
+      expect.objectContaining({
+        id: testId,
+        fileId: created.fileId,
+        messageId: `ESS-${created.fileId}`,
+        endToEndId: `ESS-${testId}`,
+        status: "awaiting_due_date",
+        amountCents: 42,
+      }),
     ]);
     expect(JSON.stringify(list)).not.toContain(DEBTOR_IBAN);
     const fact = await ctx.prisma.activityEvent.findFirstOrThrow({
@@ -162,9 +171,10 @@ describe("générer un prélèvement d'essai", () => {
     const { companyId } = await ourCompany(entityId);
     await declare(companyId);
     const day = await proposedDay();
-    const { testId } = jsonBody<CollectionTestCreatedView>(
+    const { fileId } = jsonBody<CollectionTestCreatedView>(
       await generate(companyId, { requestedCollectionDay: day }).expect(201),
     );
+    const testId = await onlyTestOf(fileId);
     await staff().post(`${TESTS}/${testId}/refunded`).send({ refundedOn: day }).expect(409);
 
     clock.set(new Date(new Date(`${day}T12:00:00.000Z`).getTime() + DAY_MS));

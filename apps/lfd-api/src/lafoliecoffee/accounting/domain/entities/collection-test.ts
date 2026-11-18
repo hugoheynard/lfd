@@ -1,35 +1,24 @@
-import type { CreditorSnapshot } from "../creditor-snapshot.js";
 import {
   CollectionTestAlreadyRefundedError,
   CollectionTestAlreadyReturnedError,
   CollectionTestAmountOutOfRangeError,
-  CollectionTestDayClosedError,
-  CollectionTestDayTooEarlyError,
-  CollectionTestFileIncoherentError,
   CollectionTestNothingToRefundError,
   CollectionTestRefundDayInvalidError,
-  CollectionTestRemittanceEmptyError,
 } from "../errors/collection-test-errors.js";
 import { admittedSequence, type TestDebtorVerdict } from "../services/collection-test-debtor.js";
-import {
-  earliestTestCollectionDay,
-  parisDayOf,
-  renderTestFile,
-  testRemittanceOf,
-} from "../services/collection-test-file.js";
+import { parisDayOf } from "../services/collection-test-file.js";
+import { testEndToEndId } from "../services/collection-test-identifiers.js";
 import {
   assertNoLookalike,
   type PriorCollectionTest,
 } from "../services/collection-test-lookalike.js";
-import { isAuditCoherent } from "../services/pain008-audit.js";
 import type { TestSequence } from "../services/pain008-document.js";
-import { isTarget2BusinessDay, onOrAfterBusinessDay } from "../services/target2-calendar.js";
 import type { BankReturnKind } from "../value-objects/bank-return-reason.js";
 import type { SepaScheme } from "../value-objects/sepa-scheme.js";
 import type { StaffStamp } from "./collection-batch.js";
 import { collectionTestStatus, type CollectionTestStatus } from "./collection-test-status.js";
 
-/** Le plafond d'un essai, en centimes — 1 € (Hugo, 2026-10-22, Q2 révisée). */
+/** Le plafond d'un essai, en centimes, PAR LIGNE d'un envoi — 1 € (Hugo, 2026-10-22 et 2026-11-18). */
 export const MAX_COLLECTION_TEST_CENTS = 100;
 
 /** Le retour que la banque a fait d'un essai — sans IBAN. */
@@ -51,6 +40,8 @@ export interface TestRefund {
 
 export interface CollectionTestState {
   readonly id: string;
+  /** L'envoi qui porte ce débit. */
+  readonly fileId: string;
   readonly legalEntityId: string;
   readonly debtorCompanyId: string;
   readonly debtorName: string;
@@ -61,79 +52,66 @@ export interface CollectionTestState {
   readonly amountCents: number;
   readonly requestedCollectionDay: string;
   readonly remittance: string;
+  /** Le `MsgId` de l'envoi — le fichier déposé, que la banque cite. */
   readonly messageId: string;
+  /** `ESS-<ULID de l'essai>` — ce qui désigne CE débit dans le fichier. */
   readonly endToEndId: string;
   readonly created: StaffStamp;
-  /** Le fichier tel qu'il a été rendu — il porte l'IBAN du débiteur. */
-  readonly xml: string;
-  readonly fileSha256: string;
   readonly bankReturn: TestBankReturn | null;
   readonly refund: TestRefund | null;
 }
 
+/** Une ligne de l'envoi, telle que l'envoi la fait naître. */
 export interface GenerateCollectionTestInput {
   readonly id: string;
+  readonly fileId: string;
+  /** Le `MsgId` de l'envoi. */
+  readonly messageId: string;
   readonly created: StaffStamp;
-  readonly creditor: CreditorSnapshot;
   readonly debtorCompanyId: string;
   readonly debtorName: string;
   readonly verdict: Extract<TestDebtorVerdict, { kind: "eligible" }>;
   readonly sequence: TestSequence;
   readonly amountCents: number;
+  /** Commune à l'envoi, déjà admise par lui. */
   readonly requestedCollectionDay: string;
-  readonly remittance: string | null;
+  /** Commun à l'envoi, déjà passé au jeu SEPA. */
+  readonly remittance: string;
   /**
    * Les essais déjà générés sur le même mandat dans la fenêtre anti-doublon
-   * (`lookalikeWindowStart`) — l'agrégat refuse d'en répéter le montant.
+   * (`lookalikeWindowStart`) — la ligne refuse d'en répéter le montant.
    */
   readonly recentOnMandate: readonly PriorCollectionTest[];
 }
 
 /**
- * **Un prélèvement d'essai** (plan `plan-prelevement-d-essai.md`) — un fichier
- * `pain.008` d'UN débit sur un de nos établissements, gardé et tracé.
+ * **Un prélèvement d'essai** — UN débit sur un de nos établissements, l'une
+ * des lignes d'un envoi (`CollectionTestFile`, qui porte le fichier).
  *
  * 🔴 Ce n'est pas un lot : il ne touche ni facture, ni bon, ni lot, ni état
- * d'encaissement. Il se télécharge, il ne se dépose pas par l'outil. Si la
- * banque le prélève, l'argent arrive sans pièce : l'essai passe « à
- * rembourser » jusqu'au geste « Marqué remboursé » (Q4).
+ * d'encaissement. Si la banque le prélève, l'argent arrive sans pièce :
+ * l'essai passe « à rembourser » jusqu'au geste « Marqué remboursé » (Q4).
+ * Son retour, son remboursement et son statut sont les siens, jamais ceux de
+ * l'envoi.
  */
 export class CollectionTest {
   private constructor(private state: CollectionTestState) {}
 
   /**
-   * Génère le fichier et l'essai qui le garde. Refuse avant de rendre quoi
-   * que ce soit : montant (et son doublon possible), séquence, échéance, libellé ; puis relit le fichier
-   * par le contrôle des lots avant de le garder.
+   * Fait naître une ligne d'envoi. Refuse ce qui ne regarde qu'elle : montant
+   * (et son doublon récent sur le mandat), séquence permise par le mandat.
+   * Seul `CollectionTestFile.generate` l'appelle : une ligne n'existe pas
+   * sans son fichier.
    */
   static generate(input: GenerateCollectionTestInput): CollectionTest {
-    const { verdict, creditor } = input;
+    const { verdict } = input;
     assertAmount(input.amountCents);
     assertNoLookalike(input.recentOnMandate, input.amountCents, input.created.at);
     const sequence = admittedSequence(verdict, input.sequence);
-    assertCollectionDay(input.requestedCollectionDay, earliestTestCollectionDay(input.created.at));
-    const remittance = testRemittanceOf(input.remittance);
-    if (remittance === "") {
-      throw new CollectionTestRemittanceEmptyError();
-    }
     const { mandate } = verdict;
-    const file = renderTestFile({
-      testId: input.id,
-      creditor,
-      scheme: mandate.scheme,
-      sequence,
-      createdAt: input.created.at,
-      requestedCollectionDay: input.requestedCollectionDay,
-      debtorName: input.debtorName,
-      amountCents: input.amountCents,
-      mandate,
-      remittance,
-    });
-    if (!isAuditCoherent(file.xml)) {
-      throw new CollectionTestFileIncoherentError();
-    }
     return new CollectionTest({
       id: input.id,
+      fileId: input.fileId,
       legalEntityId: mandate.creditorId,
       debtorCompanyId: input.debtorCompanyId,
       debtorName: input.debtorName,
@@ -143,12 +121,10 @@ export class CollectionTest {
       sequence,
       amountCents: input.amountCents,
       requestedCollectionDay: input.requestedCollectionDay,
-      remittance,
-      messageId: file.messageId,
-      endToEndId: file.endToEndId,
+      remittance: input.remittance,
+      messageId: input.messageId,
+      endToEndId: testEndToEndId(input.id),
       created: input.created,
-      xml: file.xml,
-      fileSha256: file.sha256,
       bankReturn: null,
       refund: null,
     });
@@ -162,12 +138,24 @@ export class CollectionTest {
     return this.state.id;
   }
 
+  get fileId(): string {
+    return this.state.fileId;
+  }
+
   get endToEndId(): string {
     return this.state.endToEndId;
   }
 
   get amountCents(): number {
     return this.state.amountCents;
+  }
+
+  get debtorCompanyId(): string {
+    return this.state.debtorCompanyId;
+  }
+
+  get sequence(): TestSequence {
+    return this.state.sequence;
   }
 
   get debtorName(): string {
@@ -240,14 +228,5 @@ function assertAmount(amountCents: number): void {
     amountCents > MAX_COLLECTION_TEST_CENTS
   ) {
     throw new CollectionTestAmountOutOfRangeError(amountCents, MAX_COLLECTION_TEST_CENTS);
-  }
-}
-
-function assertCollectionDay(day: string, earliest: string): void {
-  if (!isTarget2BusinessDay(day)) {
-    throw new CollectionTestDayClosedError(day, onOrAfterBusinessDay(day));
-  }
-  if (day < earliest) {
-    throw new CollectionTestDayTooEarlyError(day, earliest);
   }
 }

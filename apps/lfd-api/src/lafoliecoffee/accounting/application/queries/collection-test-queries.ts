@@ -7,8 +7,13 @@ export class GetCollectionTestDebtorsQuery {}
 /** La liste « Essais », du plus récent au plus ancien. */
 export class ListCollectionTestsQuery {}
 
-/** Le fichier GARDÉ d'un essai — relu, jamais rendu de nouveau. */
+/** Le fichier GARDÉ d'un envoi d'essai — relu, jamais rendu de nouveau. */
 export class ExportCollectionTestFileQuery {
+  constructor(readonly fileId: string) {}
+}
+
+/** Le fichier GARDÉ de l'envoi qui porte cet essai. */
+export class ExportCollectionTestFileOfTestQuery {
   constructor(readonly testId: string) {}
 }
 

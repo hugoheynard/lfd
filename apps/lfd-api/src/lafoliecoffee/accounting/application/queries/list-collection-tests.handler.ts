@@ -13,7 +13,8 @@ import { reasonDescription } from "../../domain/value-objects/bank-return-reason
 import { ListCollectionTestsQuery } from "./collection-test-queries.js";
 
 /**
- * **La liste « Essais »** : chaque essai, son état du jour (« à rembourser »
+ * **La liste « Essais »** : chaque essai (une ligne d'un envoi, avec l'envoi
+ * et son `MsgId`), son état du jour (« à rembourser »
  * après l'échéance sans retour, Q4), son retour bancaire rattaché et son
  * remboursement. Sans IBAN, sans fichier.
  */
@@ -51,7 +52,9 @@ function viewOf(
   const { bankReturn } = row;
   return {
     id: row.id,
+    fileId: row.fileId,
     messageId: row.messageId,
+    endToEndId: row.endToEndId,
     debtorCompanyId: row.debtorCompanyId,
     debtorName: row.debtorName,
     mandateReference: row.mandateReference,

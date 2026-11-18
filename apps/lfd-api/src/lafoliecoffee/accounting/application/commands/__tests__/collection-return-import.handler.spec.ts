@@ -3,7 +3,11 @@ import {
   RECORDED_AT,
   returnableLine,
 } from "../../../domain/entities/__tests__/collection-return-fixtures.js";
-import { TEST_ID, generated } from "../../../domain/entities/__tests__/collection-test-fixtures.js";
+import {
+  FILE_ID,
+  TEST_ID,
+  generated,
+} from "../../../domain/entities/__tests__/collection-test-fixtures.js";
 import { ImportEntryNotRecordableError } from "../../../domain/errors/bank-return-file-errors.js";
 import { camt054, pain002 } from "../../../domain/services/__tests__/bank-return-file-fixtures.js";
 import { PreviewCollectionReturnImportQuery } from "../../queries/collection-return-queries.js";
@@ -130,7 +134,7 @@ describe("un retour sur un prélèvement d'essai (ESS-, plan `plan-prelevement-d
       status: "collection_test",
       debtorName: "Folie Douce Val",
       lineAmountCents: 100,
-      batchLabel: `Essai ${ESSAI}`,
+      batchLabel: `Essai ESS-${FILE_ID}`,
       problem: null,
     });
     expect(view.entries[1]).toMatchObject({ status: "matched" });

@@ -31,13 +31,14 @@ import { RecordCollectionTestBankAccountDownloadCommand } from "../application/c
 import { MarkCollectionTestRefundedCommand } from "../application/commands/mark-collection-test-refunded.command.js";
 import {
   ExportCollectionTestBankAccountQuery,
+  ExportCollectionTestFileOfTestQuery,
   ExportCollectionTestFileQuery,
   ExportCollectionTestMandateQuery,
   GetCollectionTestDebtorsQuery,
   ListCollectionTestsQuery,
 } from "../application/queries/collection-test-queries.js";
 import type { CollectionTestBankAccountFile } from "../application/queries/export-collection-test-bank-account.handler.js";
-import type { CollectionTestFile } from "../application/queries/export-collection-test-file.handler.js";
+import type { CollectionTestFileDownload } from "../application/collection-test-file-support.js";
 import type { MandateBankFile } from "../application/queries/export-mandate-bank-file.handler.js";
 import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 import { IntentKey } from "../../../platform/shared/http/intent-key.decorator.js";
@@ -75,8 +76,9 @@ export class AdminCollectionTestsController {
   }
 
   /**
-   * Génère et garde le fichier ; 400/409 nommant le refus. Une fois par
-   * intention (`Idempotency-Key`) : la même clé rend le même essai.
+   * Génère et garde un envoi — un fichier, une ligne par débiteur ; 400/409
+   * nommant le refus. Une fois par intention (`Idempotency-Key`) : la même clé
+   * rend le même envoi.
    */
   @Post()
   async generate(
@@ -84,18 +86,16 @@ export class AdminCollectionTestsController {
     @Body(new ZodBody(generateCollectionTestPayloadSchema)) payload: GenerateCollectionTestPayload,
     @IntentKey() intentKey: string,
   ): Promise<CollectionTestCreatedView> {
-    const testId = await this.commands.execute<GenerateCollectionTestCommand, string>(
+    const fileId = await this.commands.execute<GenerateCollectionTestCommand, string>(
       new GenerateCollectionTestCommand(
-        payload.companyId,
-        payload.amountCents,
+        payload.debtors,
         payload.requestedCollectionDay,
-        payload.sequence,
         payload.remittance,
         staffUserId,
         intentKey,
       ),
     );
-    return { testId };
+    return { fileId };
   }
 
   /**
@@ -153,7 +153,26 @@ export class AdminCollectionTestsController {
     return new StreamableFile(Buffer.from(file.csv, "latin1"));
   }
 
-  /** Le fichier GARDÉ — mêmes octets à chaque téléchargement, empreinte vérifiée. */
+  /**
+   * Le fichier GARDÉ d'un envoi — mêmes octets à chaque téléchargement,
+   * empreinte vérifiée.
+   */
+  @Get("files/:fileId/file.xml")
+  @RequirePermission("collection_test:write")
+  @Header("Content-Type", "application/xml; charset=utf-8")
+  @Header("Cache-Control", "no-store")
+  async sendingFile(
+    @Param("fileId") fileId: string,
+    @Res({ passthrough: true }) response: Response,
+  ): Promise<string> {
+    const file = await this.queries.execute<
+      ExportCollectionTestFileQuery,
+      CollectionTestFileDownload
+    >(new ExportCollectionTestFileQuery(fileId));
+    return attachment(response, file);
+  }
+
+  /** Le fichier GARDÉ de l'envoi qui porte cet essai — le même que par l'envoi. */
   @Get(":id/file.xml")
   @RequirePermission("collection_test:write")
   @Header("Content-Type", "application/xml; charset=utf-8")
@@ -162,14 +181,11 @@ export class AdminCollectionTestsController {
     @Param("id") id: string,
     @Res({ passthrough: true }) response: Response,
   ): Promise<string> {
-    const file = await this.queries.execute<ExportCollectionTestFileQuery, CollectionTestFile>(
-      new ExportCollectionTestFileQuery(id),
-    );
-    response.setHeader(
-      "Content-Disposition",
-      contentDispositionAttachment(sanitiseFileName(file.fileName, "essai-prelevement.xml")),
-    );
-    return file.xml;
+    const file = await this.queries.execute<
+      ExportCollectionTestFileOfTestQuery,
+      CollectionTestFileDownload
+    >(new ExportCollectionTestFileOfTestQuery(id));
+    return attachment(response, file);
   }
 
   /** « Marqué remboursé » ; 409 s'il n'y a rien à rembourser ou si c'est déjà dit. */
@@ -188,4 +204,13 @@ export class AdminCollectionTestsController {
       new MarkCollectionTestRefundedCommand(id, payload.refundedOn, staffUserId),
     );
   }
+}
+
+/** Nomme le téléchargement, et rend le XML. */
+function attachment(response: Response, file: CollectionTestFileDownload): string {
+  response.setHeader(
+    "Content-Disposition",
+    contentDispositionAttachment(sanitiseFileName(file.fileName, "essai-prelevement.xml")),
+  );
+  return file.xml;
 }

@@ -1,6 +1,6 @@
 <fold-page-layout title="Prélèvement d'essai" separator>
   <p description>
-    Un fichier de prélèvement d'<strong>un seul débit</strong>, sur un de
+    Un fichier de prélèvement d'une ou plusieurs lignes, chacune sur un de
     <a routerLink="/comptabilite/nos-etablissements">nos établissements</a>, pour éprouver ce que la
     banque accepte. Il ne touche ni facture, ni bon, ni lot&nbsp;; l'outil ne le dépose pas.
   </p>
@@ -30,7 +30,9 @@
       <fold-callout appearance="inset" variant="alert" announce>{{ message }}</fold-callout>
     }
 
-    @if (!loading() && tests().length === 0) {
+    @if (loading() && tests().length === 0) {
+      <fold-loading message="Lecture des essais…" />
+    } @else if (tests().length === 0) {
       <fold-empty-state
         title="Aucun essai"
         subtitle="Les fichiers d'essai générés s'afficheront ici."
@@ -38,81 +40,88 @@
         <fold-icon empty-icon name="archive" />
       </fold-empty-state>
     } @else {
-      <fold-card>
-        <fold-data-table
-          caption="Essais"
-          narrowLayout="cards"
-          zebra
-          [columns]="columns()"
-          [rows]="tests()"
-          [rowKey]="rowKey"
-          [loading]="loading()"
-        >
-          <ng-template foldCell="debtor" let-row>
-            <span class="stack">
-              <span class="strong">{{ row.debtorName }}</span>
-              <span class="muted">{{ createdOf(row) }}</span>
-            </span>
-          </ng-template>
-          <ng-template foldCell="file" let-row>
-            <span class="stack">
-              <span class="ref">{{ row.messageId }}</span>
-              <span class="muted"
-                >{{ row.sequence }} · {{ row.scheme }} · {{ row.remittance }}</span
-              >
-            </span>
-          </ng-template>
-          <ng-template foldCell="amount" let-row>{{ amountOf(row) }}</ng-template>
-          <ng-template foldCell="due" let-row>{{ dueOf(row) }}</ng-template>
-          <ng-template foldCell="status" let-row>
-            <span class="stack">
-              <fold-badge [variant]="statusVariant(row)" [content]="statusLabel(row)" />
-              @if (detailOf(row) !== '') {
-                <span class="muted">{{ detailOf(row) }}</span>
-              }
-            </span>
-          </ng-template>
-          <ng-template foldCell="actions" let-row>
-            <span class="actions">
+      @for (file of files(); track file.fileId) {
+        <fold-card data-file>
+          <fold-element-title
+            variant="title"
+            [title]="'Envoi ' + file.messageId"
+            [subtitle]="fileSummary(file)"
+          >
+            @if (canWrite()) {
               <button
-                foldButton
-                size="sm"
-                emphasis="outline"
-                data-download="rib"
-                [loading]="isPending(row, 'rib')"
-                (click)="downloadRib(row)"
-              >
-                RIB
-              </button>
-              <button
-                foldButton
-                size="sm"
-                emphasis="outline"
-                data-download="mandate"
-                [loading]="isPending(row, 'mandate')"
-                (click)="downloadMandate(row)"
-              >
-                Mandat
-              </button>
-              <button
+                titleAction
                 foldButton
                 size="sm"
                 emphasis="outline"
                 data-download="debit"
-                [loading]="isPending(row, 'debit')"
-                (click)="downloadRow(row)"
+                [loading]="isFilePending(file)"
+                (click)="downloadFile(file)"
               >
                 Prélèvement
               </button>
-              @if (row.status === 'to_refund') {
-                <button foldButton size="sm" emphasis="outline" (click)="refund(row)">
-                  Marqué remboursé
+            }
+          </fold-element-title>
+          <fold-data-table
+            [caption]="'Lignes de l\'envoi ' + file.messageId"
+            narrowLayout="cards"
+            zebra
+            [columns]="columns()"
+            [rows]="file.lines"
+            [rowKey]="rowKey"
+          >
+            <ng-template foldCell="debtor" let-row>
+              <span class="strong">{{ row.debtorName }}</span>
+            </ng-template>
+            <ng-template foldCell="line" let-row>
+              <span class="stack">
+                <span class="ref">{{ row.endToEndId }}</span>
+                <span class="muted"
+                  >{{ row.sequence }} · {{ row.scheme }} · {{ row.remittance }}</span
+                >
+              </span>
+            </ng-template>
+            <ng-template foldCell="amount" let-row>{{ amountOf(row) }}</ng-template>
+            <ng-template foldCell="due" let-row>{{ dueOf(row) }}</ng-template>
+            <ng-template foldCell="status" let-row>
+              <span class="stack">
+                <fold-badge [variant]="statusVariant(row)" [content]="statusLabel(row)" />
+                @if (detailOf(row) !== '') {
+                  <span class="muted">{{ detailOf(row) }}</span>
+                }
+              </span>
+            </ng-template>
+            <ng-template foldCell="actions" let-row>
+              <span class="actions">
+                <button
+                  foldButton
+                  size="sm"
+                  emphasis="outline"
+                  data-download="rib"
+                  [loading]="isPending(row, 'rib')"
+                  (click)="downloadRib(row)"
+                >
+                  RIB
                 </button>
-              }
-            </span>
-          </ng-template>
-        </fold-data-table>
-      </fold-card>
+                <button
+                  foldButton
+                  size="sm"
+                  emphasis="outline"
+                  data-download="mandate"
+                  [loading]="isPending(row, 'mandate')"
+                  (click)="downloadMandate(row)"
+                >
+                  Mandat
+                </button>
+                @if (row.status === 'to_refund') {
+                  <button foldButton size="sm" emphasis="outline" (click)="refund(row)">
+                    Marqué remboursé
+                  </button>
+                }
+              </span>
+            </ng-template>
+          </fold-data-table>
+        </fold-card>
+      }
     }
   }
 </fold-page-layout>

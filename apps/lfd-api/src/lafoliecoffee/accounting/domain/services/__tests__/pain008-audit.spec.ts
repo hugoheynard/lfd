@@ -2,7 +2,7 @@ import { Iban } from "../../value-objects/iban.js";
 import type { CreditorSnapshot } from "../../creditor-snapshot.js";
 import type { BillableCompany } from "../../ports/billable-orders.reader.js";
 import type { DebtorMandate } from "../../ports/debtor-mandate.reader.js";
-import { TEST_ID, generated } from "../../entities/__tests__/collection-test-fixtures.js";
+import { TEST_ID, generatedFile } from "../../entities/__tests__/collection-test-fixtures.js";
 import { auditCsv, isAuditCoherent } from "../pain008-audit.js";
 import { renderPain008 } from "../pain008.js";
 
@@ -254,7 +254,7 @@ describe("le contrôle d'un prélèvement d'essai (plan `plan-prelevement-d-essa
   it.each(["RCUR", "FRST"] as const)(
     "relit un essai %s : une ligne, ESS-, COHÉRENT",
     (sequence) => {
-      const xml = generated({ sequence, amountCents: 42 }).toPersistence().xml;
+      const xml = generatedFile({ sequence, amountCents: 42 }).toPersistence().xml;
       const csv = auditCsv(xml);
 
       expect(csv).toContain(`"ESS-${TEST_ID}"`);
@@ -264,7 +264,7 @@ describe("le contrôle d'un prélèvement d'essai (plan `plan-prelevement-d-essa
   );
 
   it("un total déclaré faux rend le verdict incohérent", () => {
-    const xml = generated({ amountCents: 42 }).toPersistence().xml;
+    const xml = generatedFile({ amountCents: 42 }).toPersistence().xml;
 
     expect(isAuditCoherent(xml.replace("<CtrlSum>0.42</CtrlSum>", "<CtrlSum>0.43</CtrlSum>"))).toBe(
       false,

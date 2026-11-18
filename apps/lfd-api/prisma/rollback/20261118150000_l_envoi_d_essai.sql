@@ -1,0 +1,28 @@
+-- RETOUR ARRIÈRE de 20261118150000_l_envoi_d_essai
+-- (documentation/comptabilite/prelevement/plan-essai-a-plusieurs-debiteurs.md, §5.7).
+--
+-- 🔴 NON APPLIQUÉ, et Prisma ne le lit pas. La migration reste inscrite
+-- « appliquée ».
+--
+-- Le code d'avant lit `collection_test.message_id`, `xml` et `file_sha256`,
+-- que le code de l'envoi n'écrit plus (et `xml` est vidée). Revenir au code
+-- d'avant demande de les recopier depuis l'envoi — possible tant que chaque
+-- envoi n'a qu'une ligne :
+--
+--   SELECT f.id FROM public.collection_test_file f
+--    WHERE (SELECT count(*) FROM public.collection_test t WHERE t.file_id = f.id) > 1;
+--   -- doit être vide ; sinon, ces envois n'ont pas de forme « un fichier par essai ».
+--
+--   UPDATE public.collection_test t
+--      SET message_id = f.message_id, xml = f.xml, file_sha256 = f.file_sha256
+--     FROM public.collection_test_file f
+--    WHERE f.id = t.file_id;
+--
+--   ALTER TABLE public.collection_test
+--     ALTER COLUMN message_id SET NOT NULL,
+--     ALTER COLUMN xml SET NOT NULL,
+--     ALTER COLUMN file_sha256 SET NOT NULL;
+--   CREATE UNIQUE INDEX collection_test_message_id_key ON public.collection_test(message_id);
+--
+-- `collection_test_file` et `collection_test.file_id` restent : le code
+-- d'avant ne les lit pas.

@@ -31,12 +31,24 @@ export const declareOwnEstablishmentPayloadSchema = z.object({
 });
 export type DeclareOwnEstablishmentPayload = z.infer<typeof declareOwnEstablishmentPayloadSchema>;
 
-/** Générer un essai. `remittance` : `null` ou vide = « ESSAI PRELEVEMENT ». */
-export const generateCollectionTestPayloadSchema = z.object({
+/** Une ligne d'un envoi d'essai : l'établissement débité, son montant, sa séquence. */
+export const collectionTestDebtorPayloadSchema = z.object({
   companyId: z.string().min(1),
   amountCents: z.number().int(),
-  requestedCollectionDay: day,
   sequence: testSequenceSchema,
+});
+export type CollectionTestDebtorPayload = z.infer<typeof collectionTestDebtorPayloadSchema>;
+
+/**
+ * Générer un envoi d'essai : un fichier, au moins un débiteur. L'échéance et
+ * le libellé sont communs à l'envoi ; `remittance` : `null` ou vide =
+ * « ESSAI PRELEVEMENT ». Le nombre maximal de lignes, le doublon
+ * d'établissement et le mélange de schémas ou de créanciers sont des règles
+ * de l'agrégat (`maxDebtorsPerFile` de la vue de l'outil).
+ */
+export const generateCollectionTestPayloadSchema = z.object({
+  debtors: z.array(collectionTestDebtorPayloadSchema).min(1),
+  requestedCollectionDay: day,
   remittance: z.string().max(140).nullable(),
 });
 export type GenerateCollectionTestPayload = z.infer<typeof generateCollectionTestPayloadSchema>;
@@ -86,8 +98,10 @@ export interface CollectionTestDebtorView {
 }
 
 export interface CollectionTestDebtorsView {
-  /** Le plafond d'un essai, en centimes — affiché, la règle est côté serveur. */
+  /** Le plafond d'un essai, en centimes, PAR LIGNE — affiché, la règle est côté serveur. */
   readonly maxAmountCents: number;
+  /** Le nombre de lignes d'un envoi, au plus — affiché, la règle est côté serveur. */
+  readonly maxDebtorsPerFile: number;
   readonly defaultRemittance: string;
   readonly debtors: readonly CollectionTestDebtorView[];
 }
@@ -111,10 +125,15 @@ export interface CollectionTestReturnView {
   readonly amountCents: number;
 }
 
-/** Un essai dans la liste « Essais ». */
+/** Un essai dans la liste « Essais » — une ligne d'un envoi. */
 export interface CollectionTestView {
   readonly id: string;
+  /** L'envoi qui le porte : son fichier se télécharge par `files/:fileId/file.xml`. */
+  readonly fileId: string;
+  /** Le `MsgId` de l'envoi — commun aux lignes d'un même fichier. */
   readonly messageId: string;
+  /** `ESS-<ULID de l'essai>` — la ligne, que le retour de la banque cite. */
+  readonly endToEndId: string;
   /** La société débitée — ce que les fichiers RIB et mandat de la ligne visent. */
   readonly debtorCompanyId: string;
   readonly debtorName: string;
@@ -136,6 +155,7 @@ export interface CollectionTestsView {
   readonly tests: readonly CollectionTestView[];
 }
 
+/** L'envoi généré : ses lignes se relisent dans la liste « Essais ». */
 export interface CollectionTestCreatedView {
-  readonly testId: string;
+  readonly fileId: string;
 }

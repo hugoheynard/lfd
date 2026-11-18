@@ -7,12 +7,14 @@ import { MarkCollectionTestRefundedHandler } from "./application/commands/mark-c
 import { WithdrawOwnEstablishmentHandler } from "./application/commands/withdraw-own-establishment.handler.js";
 import { ExportCollectionTestBankAccountHandler } from "./application/queries/export-collection-test-bank-account.handler.js";
 import { ExportCollectionTestFileHandler } from "./application/queries/export-collection-test-file.handler.js";
+import { ExportCollectionTestFileOfTestHandler } from "./application/queries/export-collection-test-file-of-test.handler.js";
 import { ExportCollectionTestMandateHandler } from "./application/queries/export-collection-test-mandate.handler.js";
 import { GetCollectionTestDebtorsHandler } from "./application/queries/get-collection-test-debtors.handler.js";
 import { ListCollectionTestsHandler } from "./application/queries/list-collection-tests.handler.js";
 import { ListOwnEstablishmentsHandler } from "./application/queries/list-own-establishments.handler.js";
 import { BatchedMandatesReader } from "./domain/ports/batched-mandates.reader.js";
 import { CollectionTestFileReader } from "./domain/ports/collection-test-file.reader.js";
+import { CollectionTestFileRepository } from "./domain/ports/collection-test-file.repository.js";
 import { CollectionTestReturnTargetsReader } from "./domain/ports/collection-test-return-targets.reader.js";
 import { CollectionTestRepository } from "./domain/ports/collection-test.repository.js";
 import { CollectionTestsReader } from "./domain/ports/collection-tests.reader.js";
@@ -24,6 +26,7 @@ import { AdminCollectionTestsController } from "./http/admin-collection-tests.co
 import { AdminOwnEstablishmentsController } from "./http/admin-own-establishments.controller.js";
 import { PrismaBatchedMandatesReader } from "./infrastructure/prisma-batched-mandates.reader.js";
 import { PrismaCollectionTestRepository } from "./infrastructure/prisma-collection-test.repository.js";
+import { PrismaCollectionTestFileRepository } from "./infrastructure/prisma-collection-test-file.repository.js";
 import {
   PrismaCollectionTestFileReader,
   PrismaCollectionTestReturnTargetsReader,
@@ -50,6 +53,7 @@ export const COLLECTION_TEST_PROVIDERS: readonly Provider[] = [
   { provide: OwnEstablishmentsReader, useClass: PrismaOwnEstablishmentsReader },
   { provide: EstablishmentCompaniesReader, useClass: PrismaEstablishmentCompaniesReader },
   { provide: BatchedMandatesReader, useClass: PrismaBatchedMandatesReader },
+  { provide: CollectionTestFileRepository, useClass: PrismaCollectionTestFileRepository },
   { provide: CollectionTestRepository, useClass: PrismaCollectionTestRepository },
   { provide: CollectionTestsReader, useClass: PrismaCollectionTestsReader },
   { provide: MandateCollectionTestsReader, useClass: PrismaMandateCollectionTestsReader },
@@ -63,6 +67,7 @@ export const COLLECTION_TEST_PROVIDERS: readonly Provider[] = [
   GetCollectionTestDebtorsHandler,
   ListCollectionTestsHandler,
   ExportCollectionTestFileHandler,
+  ExportCollectionTestFileOfTestHandler,
   ExportCollectionTestMandateHandler,
   ExportCollectionTestBankAccountHandler,
   RecordCollectionTestBankAccountDownloadHandler,

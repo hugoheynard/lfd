@@ -1,7 +1,6 @@
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
-import type { CollectionTestState } from "../domain/entities/collection-test.js";
 import {
   CollectionTestFileReader,
   type StoredCollectionTestFile,
@@ -16,9 +15,12 @@ import {
 } from "../domain/ports/collection-tests.reader.js";
 import { MandateCollectionTestsReader } from "../domain/ports/mandate-collection-tests.reader.js";
 import type { PriorCollectionTest } from "../domain/services/collection-test-lookalike.js";
-import { toCollectionTestState } from "./collection-test.mapper.js";
+import { WITH_FILE_MESSAGE_ID, toCollectionTestState } from "./collection-test.mapper.js";
 
-/** La liste « Essais », du plus récent au plus ancien. Le fichier n'en sort pas. */
+/**
+ * La liste « Essais », du plus récent au plus ancien, chaque ligne avec le
+ * `MsgId` de son envoi. Le fichier n'en sort pas.
+ */
 @Injectable()
 export class PrismaCollectionTestsReader extends CollectionTestsReader {
   constructor(private readonly prisma: PrismaService) {
@@ -27,55 +29,45 @@ export class PrismaCollectionTestsReader extends CollectionTestsReader {
 
   async list(): Promise<readonly CollectionTestSummary[]> {
     const rows = await this.prisma.collectionTest.findMany({
+      include: WITH_FILE_MESSAGE_ID,
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     });
-    return rows.map((row) => summaryOf(toCollectionTestState(row)));
+    return rows.map(toCollectionTestState);
   }
 }
 
-/** L'état sans le fichier : la liste ne fait jamais sortir l'IBAN. */
-function summaryOf(state: CollectionTestState): CollectionTestSummary {
-  return {
-    id: state.id,
-    legalEntityId: state.legalEntityId,
-    debtorCompanyId: state.debtorCompanyId,
-    debtorName: state.debtorName,
-    mandateId: state.mandateId,
-    mandateReference: state.mandateReference,
-    scheme: state.scheme,
-    sequence: state.sequence,
-    amountCents: state.amountCents,
-    requestedCollectionDay: state.requestedCollectionDay,
-    remittance: state.remittance,
-    messageId: state.messageId,
-    endToEndId: state.endToEndId,
-    created: state.created,
-    bankReturn: state.bankReturn,
-    refund: state.refund,
-  };
-}
+const STORED_FILE = { messageId: true, xml: true, fileSha256: true } as const;
 
-/** Le fichier gardé d'un essai — il porte l'IBAN en clair. */
+/** Le fichier gardé d'un envoi d'essai — il porte l'IBAN en clair. */
 @Injectable()
 export class PrismaCollectionTestFileReader extends CollectionTestFileReader {
   constructor(private readonly prisma: PrismaService) {
     super();
   }
 
-  async fileOf(id: string): Promise<StoredCollectionTestFile | null> {
-    const row = await this.prisma.collectionTest.findUnique({
-      where: { id },
-      select: { messageId: true, debtorName: true, xml: true, fileSha256: true },
+  async fileOf(fileId: string): Promise<StoredCollectionTestFile | null> {
+    const row = await this.prisma.collectionTestFile.findUnique({
+      where: { id: fileId },
+      select: STORED_FILE,
     });
-    return row === null
-      ? null
-      : {
-          messageId: row.messageId,
-          debtorName: row.debtorName,
-          xml: row.xml,
-          sha256: row.fileSha256,
-        };
+    return row === null ? null : storedFileOf(row);
   }
+
+  async fileOfTest(testId: string): Promise<StoredCollectionTestFile | null> {
+    const row = await this.prisma.collectionTest.findUnique({
+      where: { id: testId },
+      select: { file: { select: STORED_FILE } },
+    });
+    return row === null ? null : storedFileOf(row.file);
+  }
+}
+
+function storedFileOf(row: {
+  readonly messageId: string;
+  readonly xml: string;
+  readonly fileSha256: string;
+}): StoredCollectionTestFile {
+  return { messageId: row.messageId, xml: row.xml, sha256: row.fileSha256 };
 }
 
 /** Les essais qu'un fichier de retours désigne. */
@@ -96,7 +88,7 @@ export class PrismaCollectionTestReturnTargetsReader extends CollectionTestRetur
       select: {
         id: true,
         endToEndId: true,
-        messageId: true,
+        file: { select: { messageId: true } },
         debtorName: true,
         amountCents: true,
         returnKind: true,
@@ -107,7 +99,7 @@ export class PrismaCollectionTestReturnTargetsReader extends CollectionTestRetur
         row.endToEndId,
         {
           testId: row.id,
-          messageId: row.messageId,
+          messageId: row.file.messageId,
           debtorName: row.debtorName,
           amountCents: row.amountCents,
           returned: row.returnKind !== null,

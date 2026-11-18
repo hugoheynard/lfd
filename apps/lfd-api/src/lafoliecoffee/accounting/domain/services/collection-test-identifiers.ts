@@ -3,13 +3,13 @@ import { SEPA_IDENTIFIER_MAX, ULID } from "./collection-identifiers.js";
 import type { TestSequence } from "./pain008-document.js";
 
 /**
- * **Les références SEPA d'un prélèvement d'essai** (plan
- * `plan-prelevement-d-essai.md`, §4 — format arrêté par vitruve le 2026-10-22).
+ * **Les références SEPA d'un envoi d'essai** (plan
+ * `plan-essai-a-plusieurs-debiteurs.md`, §1.2).
  *
  * | Champ        | Forme                       | Longueur |
  * | ------------ | --------------------------- | -------- |
- * | `MsgId`      | `ESS-<essai>`               | 30       |
- * | `PmtInfId`   | `ESS-<essai>-<séquence>`    | 35       |
+ * | `MsgId`      | `ESS-<envoi>`               | 30       |
+ * | `PmtInfId`   | `ESS-<envoi>-<séquence>`    | 35       |
  * | `EndToEndId` | `ESS-<essai>`               | 30       |
  *
  * 🔴 Le préfixe `ESS-` est le SEUL signe d'un essai, et il ne peut pas
@@ -18,28 +18,36 @@ import type { TestSequence } from "./pain008-document.js";
  * en quatrième position. C'est aussi ce qui rattache un retour bancaire à son
  * essai plutôt qu'à un lot.
  *
- * Un seul débit par fichier : `EndToEndId` n'a pas de rang.
+ * L'`EndToEndId` porte l'ULID de la LIGNE, pas de l'envoi : c'est lui que la
+ * banque renvoie dans un retour, et il désigne un débit parmi ceux du fichier.
  */
 
 export const TEST_REFERENCE_PREFIX = "ESS-";
 
-export interface TestSepaIdentifiers {
+export interface TestFileSepaIdentifiers {
   readonly messageId: string;
   readonly paymentInfoIdOf: (sequence: TestSequence) => string;
-  readonly endToEndId: string;
 }
 
-/** @throws {InvalidCollectionTestIdError} l'identifiant n'est pas un ULID. */
-export function testSepaIdentifiers(testId: string): TestSepaIdentifiers {
-  if (!ULID.test(testId)) {
-    throw new InvalidCollectionTestIdError(testId);
-  }
-  const reference = `${TEST_REFERENCE_PREFIX}${testId}`;
+/** @throws {InvalidCollectionTestIdError} l'identifiant de l'envoi n'est pas un ULID. */
+export function testFileSepaIdentifiers(fileId: string): TestFileSepaIdentifiers {
+  const reference = referenceOf(fileId);
   return {
-    messageId: bounded(reference),
+    messageId: reference,
     paymentInfoIdOf: (sequence) => bounded(`${reference}-${sequence}`),
-    endToEndId: bounded(reference),
   };
+}
+
+/** @throws {InvalidCollectionTestIdError} l'identifiant de l'essai n'est pas un ULID. */
+export function testEndToEndId(testId: string): string {
+  return referenceOf(testId);
+}
+
+function referenceOf(id: string): string {
+  if (!ULID.test(id)) {
+    throw new InvalidCollectionTestIdError(id);
+  }
+  return bounded(`${TEST_REFERENCE_PREFIX}${id}`);
 }
 
 /** Une référence porte-t-elle la marque d'un essai ? */

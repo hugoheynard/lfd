@@ -2,8 +2,9 @@ import {
   CREATED_AT,
   DUE_DAY,
   OUR_COMPANY,
+  FILE_ID,
   TEST_ID,
-  generated,
+  generatedFile,
 } from "../../entities/__tests__/collection-test-fixtures.js";
 import { assembleCollection } from "../collection-assembly.js";
 import { renderBatchFile } from "../collection-batch-file.js";
@@ -58,7 +59,37 @@ describe("le XSD pain.008.001.02", () => {
   });
 
   it.each(["RCUR", "FRST"] as const)("valide le fichier d'un essai en %s", async (sequence) => {
-    expect(await pain008XsdErrors(generated({ sequence }).toPersistence().xml)).toEqual([]);
+    expect(await pain008XsdErrors(generatedFile({ sequence }).toPersistence().xml)).toEqual([]);
+  });
+
+  it("valide un envoi à deux lignes et deux séquences (RCUR et FRST)", async () => {
+    const xml = renderTestFile({
+      fileId: FILE_ID,
+      creditor: CREDITOR,
+      scheme: "B2B",
+      createdAt: CREATED_AT,
+      requestedCollectionDay: DUE_DAY,
+      remittance: DEFAULT_TEST_REMITTANCE,
+      debits: [
+        {
+          endToEndId: `ESS-${TEST_ID}`,
+          sequence: "RCUR",
+          debtorName: "Folie Douce Val",
+          amountCents: 100,
+          mandate: mandate(OUR_COMPANY),
+        },
+        {
+          endToEndId: "ESS-01JBQ7Z5K8M3QT9P2X4BE55B00",
+          sequence: "FRST",
+          debtorName: "Folie Douce Mer",
+          amountCents: 42,
+          mandate: mandate("c_mer"),
+        },
+      ],
+    }).xml;
+
+    expect(xml).toContain("<NbOfTxs>2</NbOfTxs>");
+    expect(await pain008XsdErrors(xml)).toEqual([]);
   });
 
   /**
@@ -72,16 +103,21 @@ describe("le XSD pain.008.001.02", () => {
     ["OOFF", "one_off"],
   ] as const)("valide le rendu d'un essai en %s", async (sequence: TestSequence, paymentType) => {
     const { xml } = renderTestFile({
-      testId: TEST_ID,
+      fileId: FILE_ID,
       creditor: CREDITOR,
       scheme: "B2B",
-      sequence,
       createdAt: CREATED_AT,
       requestedCollectionDay: DUE_DAY,
-      debtorName: "Folie Douce Val",
-      amountCents: 100,
-      mandate: mandate(OUR_COMPANY, { paymentType }),
       remittance: DEFAULT_TEST_REMITTANCE,
+      debits: [
+        {
+          endToEndId: `ESS-${TEST_ID}`,
+          sequence,
+          debtorName: "Folie Douce Val",
+          amountCents: 100,
+          mandate: mandate(OUR_COMPANY, { paymentType }),
+        },
+      ],
     });
 
     expect(xml).toContain(`<SeqTp>${sequence}</SeqTp>`);
@@ -89,7 +125,7 @@ describe("le XSD pain.008.001.02", () => {
   });
 
   it("refuse un fichier dont la séquence n'existe pas (le validateur n'est pas creux)", async () => {
-    const broken = generated()
+    const broken = generatedFile()
       .toPersistence()
       .xml.replace("<SeqTp>RCUR</SeqTp>", "<SeqTp>XXXX</SeqTp>");
 
@@ -97,7 +133,7 @@ describe("le XSD pain.008.001.02", () => {
   });
 
   it("refuse une référence de plus de 35 caractères", async () => {
-    const xml = generated().toPersistence().xml;
+    const xml = generatedFile().toPersistence().xml;
     const long = xml.replace(/<MsgId>([^<]*)<\/MsgId>/u, "<MsgId>$1-TROP-LONG</MsgId>");
 
     expect(await pain008XsdErrors(long)).not.toEqual([]);

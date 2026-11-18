@@ -114,6 +114,7 @@
   "test/collection-schedule.e2e-spec.ts": 3550,
   "test/collection-test-bank-account.e2e-spec.ts": 3573,
   "test/collection-test-establishments.e2e-spec.ts": 3774,
+  "test/collection-test-file.e2e-spec.ts": 4500,
   "test/collection-test-generate.e2e-spec.ts": 4726,
   "test/collection-test-return.e2e-spec.ts": 2346,
   "test/commercial-settings-access.e2e-spec.ts": 2638,
