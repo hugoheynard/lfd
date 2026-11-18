@@ -115,6 +115,7 @@ import { VIENNOISERIES } from "../../../../catalog/domain/__tests__/families.fix
 import { ownPricingParties } from "../../../../pricing/application/__tests__/pricing-parties.doubles.js";
 import { CommerceOrderPlacedFact } from "../../../../../delivery/channels/commerce/index.js";
 import { RecordingDurable } from "./durable-doubles.js";
+import { FixedCommitmentTerms } from "./commitment-doubles.js";
 import {
   FixedStopwatch,
   RecordingTimings,
@@ -494,6 +495,7 @@ function handler(
     options.shelf ?? shelfCircuitOf(options.plans ?? openPlanGate()),
     options.intake ?? intakeAt(),
     options.intents ?? inMemoryIntents(),
+    new FixedCommitmentTerms(),
   );
 }
 
@@ -1109,6 +1111,7 @@ describe("PlaceOrderForCustomerHandler — le règlement", () => {
       shelfCircuitOf(openPlanGate()),
       intakeAt(),
       inMemoryIntents(),
+      new FixedCommitmentTerms(),
     );
 
     const result = await free.execute(placement("staff_1", payload({ settlement: "link" })));

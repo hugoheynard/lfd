@@ -83,7 +83,9 @@ export function operationText(state: InvoiceState): string {
  * (livrée ou retirée, « reçue le ») — une mention obligatoire —, puis les bons
  * de livraison facturés. La norme n'admet qu'UNE référence de commande
  * (BT-13, 0..1) et une facture du mois en couvre plusieurs : la liste entière
- * vit donc en note (plan § 5, remonté le 2026-10-08).
+ * vit donc en note. BT-13 porte le numéro d'engagement budgétaire d'un
+ * organisme public (un seul par facture, la facture étant découpée par
+ * engagement) ; sans engagement, il reste vide.
  *
  * « Commandes : ORD-1042 (reçue le …) — Bons de livraison : BL-1042-1 »
  * depuis E6c2 (Hugo, 2026-10-25, plan E6 § 11) : après un départ incomplet,

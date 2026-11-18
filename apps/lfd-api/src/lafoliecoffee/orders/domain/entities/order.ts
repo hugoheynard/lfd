@@ -65,6 +65,14 @@ import {
 } from "../../cancellation/domain/services/customer-cancellation-window.js";
 import { settlementRegimeOf } from "../services/settlement-regime.js";
 import type { FreeDelivery } from "../value-objects/free-delivery.js";
+import {
+  budgetCommitmentFor,
+  type PayerCommitmentTerms,
+} from "../services/budget-commitment-rule.js";
+import type {
+  BudgetCommitment,
+  EnteredBudgetCommitment,
+} from "../value-objects/budget-commitment.js";
 import type { OrderBuyerKind } from "../value-objects/order-buyer-kind.js";
 import type { OrderLocale } from "../value-objects/order-locale.js";
 import { placementVatMethodOf, type OrderVatMethod } from "../value-objects/order-vat-method.js";
@@ -111,6 +119,7 @@ export class Order {
   private offPlan = false;
   private customerCancellation: FixedCustomerCancellation = NOT_FIXED_CANCELLATION;
   private customerCancellableUntil: Date | null = null;
+  private budgetCommitment: BudgetCommitment | null = null;
   private constructor(
     private readonly companyId: string | null,
     private readonly billedCompanyIdValue: string | null,
@@ -386,6 +395,18 @@ export class Order {
     });
   }
 
+  /**
+   * **L'engagement budgétaire du payeur** (E2′), jugé à la PASSATION — jamais
+   * dans `draft`, que l'estimation de la saisie partage : un devis sans
+   * numéro garde ses totaux. Les trois passations l'appellent, avec ce que
+   * le payeur exige (`billedCompanyId`).
+   *
+   * @throws voir {@link budgetCommitmentFor}.
+   */
+  commitBudget(entered: EnteredBudgetCommitment | null, terms: PayerCommitmentTerms): void {
+    this.budgetCommitment = budgetCommitmentFor(entered, terms);
+  }
+
   /** Règlement **carte** : rattache l'intention Stripe. Refuse un total nul. */
   payByCard(paymentIntentId: string): void {
     if (this.drafted.totalCents <= 0) {
@@ -473,6 +494,8 @@ export class Order {
       companyId: this.companyId,
       billedCompanyId: this.billedCompanyIdValue,
       principalCompanyId: this.principal?.companyId ?? null,
+      budgetCommitmentNumber: nullIfEmpty(this.budgetCommitment?.number),
+      budgetCommitmentServiceCode: nullIfEmpty(this.budgetCommitment?.serviceCode),
       principalSeesAmount: this.principal?.seesAmount ?? null,
       clientele: clienteleOf(this.companyId),
       placedByUserId: this.placedByUserId,
@@ -522,4 +545,9 @@ export class Order {
       lines: this.drafted.lines.map((line) => line.toSnapshot()),
     };
   }
+}
+
+/** Une colonne nullable : rien ou la chaîne vide s'écrit NULL. */
+function nullIfEmpty(value: string | undefined): string | null {
+  return value === undefined || value === "" ? null : value;
 }

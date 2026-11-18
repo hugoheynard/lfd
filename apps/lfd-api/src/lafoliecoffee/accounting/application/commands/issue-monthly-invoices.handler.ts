@@ -25,7 +25,9 @@ import {
   type MonthlyInvoiceOutcomeKey,
 } from "../../domain/ports/monthly-invoice-outcomes.js";
 import { MonthlyInvoicingReader } from "../../domain/ports/monthly-invoicing.reader.js";
+import { OrderBudgetCommitmentsReader } from "../../domain/ports/order-budget-commitments.reader.js";
 import { OrderRowsLock } from "../../domain/ports/order-rows-lock.js";
+import { PayerCommitmentRequirementsReader } from "../../domain/ports/payer-commitment-requirements.reader.js";
 import { PayerBillingModesReader } from "../../domain/ports/payer-billing-modes.reader.js";
 import { PayersCollectionMeansReader } from "../../domain/ports/payers-collection-means.reader.js";
 import { StatementBuyerReader } from "../../domain/ports/statement-buyer.reader.js";
@@ -42,9 +44,12 @@ import {
 } from "../../domain/services/invoicing-closures.js";
 import {
   groupOrderIds,
+  withoutCancelled,
+  withoutMovedCommitments,
+} from "../../domain/services/invoice-group-under-lock.js";
+import {
   ordersByPayer,
   planMonthlyInvoices,
-  withoutCancelled,
   type MonthlyInvoicePlan,
   type PayerInvoicePlan,
 } from "../../domain/services/monthly-invoicing.js";
@@ -118,6 +123,8 @@ export class IssueMonthlyInvoicesHandler implements ICommandHandler<
     private readonly outcomes: MonthlyInvoiceOutcomes,
     private readonly rows: OrderRowsLock,
     private readonly cancelled: CancelledOrdersReader,
+    private readonly commitments: OrderBudgetCommitmentsReader,
+    private readonly requirements: PayerCommitmentRequirementsReader,
     private readonly ids: IdGenerator,
     private readonly events: DomainEventPublisher,
     private readonly clock: Clock,
@@ -176,9 +183,9 @@ export class IssueMonthlyInvoicesHandler implements ICommandHandler<
     const payers = ordersByPayer(orders, follows).filter((payer) =>
       calendar.closesFor(payer.payerId, closesAt),
     );
-    const { reader, buyers, mandates, means } = this;
+    const { reader, buyers, mandates, means, requirements } = this;
     const context = await readMonthlyContext(
-      { reader, buyers, mandates, means },
+      { reader, buyers, mandates, means, requirements },
       payers,
       follows,
       at,
@@ -276,13 +283,23 @@ export class IssueMonthlyInvoicesHandler implements ICommandHandler<
     }
   }
 
-  /** Le groupe sous le verrou de ses lignes `orders`, moins ses annulées ; `null` s'il est vide. */
+  /**
+   * Le groupe sous le verrou de ses lignes `orders`, moins ses annulées et
+   * moins les bons dont l'engagement a été corrigé depuis la préparation
+   * (E4″) ; `null` s'il est vide. La correction d'engagement prend le même
+   * verrou : elle passe avant (le bon sort d'ici) ou attend la facture (et la
+   * refuse alors, la commande étant facturée).
+   */
   private async liveGroup(planned: PayerInvoicePlan): Promise<PayerInvoicePlan | null> {
     const ids = groupOrderIds(planned);
     await this.rows.lockAll(ids);
     // `cancelledAmong` rend des NUMÉROS de commande, pas des identifiants.
     const cancelledNumbers = await this.cancelled.cancelledAmong(ids);
-    return withoutCancelled(planned, new Set(cancelledNumbers));
+    const live = withoutCancelled(planned, new Set(cancelledNumbers));
+    if (live === null) {
+      return null;
+    }
+    return withoutMovedCommitments(live, await this.commitments.commitmentsOf(ids));
   }
 
   /**

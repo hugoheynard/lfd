@@ -27,6 +27,8 @@ import type {
   OrderRevisionPayload,
   OrderRevisionQuotePayload,
   OrderRevisionQuoteView,
+  BudgetCommitmentRequirementsView,
+  CorrectBudgetCommitmentPayload,
 } from '@lfd/contracts';
 
 import { B2B_API_BASE } from '../api/api-config';
@@ -329,6 +331,35 @@ export class AdminOrdersService {
       this.http.get(`${B2B_API_BASE}/admin/orders/${encodeURIComponent(id)}/bon.pdf`, {
         responseType: 'blob',
       }),
+    );
+  }
+
+  /**
+   * **Ce que le payeur d'une commande de ce compte exige** de son engagement
+   * budgétaire (organisme public) : numéro, code service, code proposé.
+   */
+  async budgetCommitmentRequirements(companyId: string): Promise<BudgetCommitmentRequirementsView> {
+    return firstValueFrom(
+      this.http.get<BudgetCommitmentRequirementsView>(
+        `${B2B_API_BASE}/admin/companies/${encodeURIComponent(companyId)}/budget-commitment-requirements`,
+      ),
+    );
+  }
+
+  /**
+   * **Corrige l'engagement budgétaire** d'une commande tant qu'elle n'est pas
+   * facturée (`null` le retire). Idempotent au serveur : rejouer la même
+   * correction ne change rien.
+   */
+  async correctBudgetCommitment(
+    orderId: string,
+    payload: CorrectBudgetCommitmentPayload,
+  ): Promise<void> {
+    await firstValueFrom(
+      this.http.put<void>(
+        `${B2B_API_BASE}/admin/orders/${encodeURIComponent(orderId)}/budget-commitment`,
+        payload,
+      ),
     );
   }
 

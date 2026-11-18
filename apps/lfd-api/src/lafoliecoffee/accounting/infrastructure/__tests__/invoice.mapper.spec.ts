@@ -58,6 +58,8 @@ function rowOf(invoice: Invoice, correctsNumber: string | null = null): InvoiceR
     paymentMeans: data.paymentMeans === undefined ? null : stored(data.paymentMeans),
     prepaidCents: data.prepaidCents ?? null,
     paidOn: dateOf(data.paidOn),
+    budgetCommitmentNumber: data.budgetCommitmentNumber ?? null,
+    budgetCommitmentServiceCode: data.budgetCommitmentServiceCode ?? null,
     createdAt: new Date(0),
     orders: orders
       .map((order) => ({
@@ -82,6 +84,23 @@ describe("invoice.mapper — écrire puis relire", () => {
     invoice.attachDocument("invoices/FA-LFD-2026-000001.pdf", "c".repeat(64));
 
     expect(toInvoice(rowOf(invoice)).toState()).toEqual(invoice.toState());
+  });
+
+  it("écrit et relit l'engagement budgétaire ; sans engagement, deux NULL", () => {
+    const commitment = { number: "1300012345", serviceCode: "SERV-RH-01" };
+    const invoice = Invoice.issue(
+      issueInput({ paymentMeans: { code: "58" }, budgetCommitment: commitment }),
+    );
+
+    const data = toInvoiceCreate(invoice);
+
+    expect([data.budgetCommitmentNumber, data.budgetCommitmentServiceCode]).toEqual([
+      "1300012345",
+      "SERV-RH-01",
+    ]);
+    expect(toInvoice(rowOf(invoice)).toState().budgetCommitment).toEqual(commitment);
+    const none = toInvoiceCreate(issuedInvoice());
+    expect([none.budgetCommitmentNumber, none.budgetCommitmentServiceCode]).toEqual([null, null]);
   });
 
   it("écrit l'année et le rang du numéro, le payeur, les totaux de la ventilation", () => {

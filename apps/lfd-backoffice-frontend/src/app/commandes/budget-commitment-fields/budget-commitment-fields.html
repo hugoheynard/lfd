@@ -1,0 +1,27 @@
+<fieldset class="bcf" data-budget-commitment>
+  <legend class="bcf-legend">Engagement budgétaire</legend>
+  @if (requirementsFailed()) {
+    <fold-callout variant="alert" data-budget-commitment-unread>
+      Les exigences de ce payeur n’ont pas pu être lues : la saisie reste possible, et la validation
+      dira ce qui manque.
+    </fold-callout>
+  }
+  <fold-input
+    label="N° d’engagement"
+    [required]="numberRequired()"
+    [optional]="!numberRequired()"
+    optionalLabel="facultatif"
+    [hint]="numberHint()"
+    [(value)]="number"
+    data-budget-commitment-number
+  />
+  <fold-input
+    label="Code service"
+    [required]="serviceCodeRequired()"
+    [optional]="!serviceCodeRequired()"
+    optionalLabel="facultatif"
+    [hint]="serviceCodeHint()"
+    [(value)]="serviceCode"
+    data-budget-commitment-service
+  />
+</fieldset>

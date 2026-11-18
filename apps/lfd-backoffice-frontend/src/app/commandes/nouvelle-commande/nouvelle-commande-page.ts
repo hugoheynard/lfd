@@ -22,6 +22,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { firstValueFrom, tap } from 'rxjs';
 
 import { buyerOf, composedDraftOf, placePayloadOf } from './draft-payload';
+import { budgetCommitmentPayloadOf } from '../budget-commitment';
 import {
   estimateKeyOf,
   estimatesOf,
@@ -66,6 +67,7 @@ import {
   type AdminOrderEstimateView,
   type AdminOrderRow,
   type BillingAddressPayload,
+  type BudgetCommitmentRequirementsView,
   type DeliverySpecs,
   type CatalogItemView,
   type CustomerShelfPricesView,
@@ -380,6 +382,14 @@ export class NouvelleCommandePage {
   protected readonly payerIsPublic = computed(() => this.company()?.payerIsPublic ?? false);
 
   /**
+   * Ce que le payeur public exige de son engagement budgétaire (plan clients
+   * publics, § 6 quater) — lu au chargement d'un organisme public seulement.
+   */
+  protected readonly commitmentRequirements = signal<BudgetCommitmentRequirementsView | null>(null);
+  /** Sa lecture a échoué : la saisie reste, la passation dira ce qui manque. */
+  protected readonly commitmentRequirementsFailed = signal(false);
+
+  /**
    * **La commande qu'on passerait**, quand la saisie est assez complète pour
    * se composer — la même définition que la validation (`composedDraftOf`).
    */
@@ -546,6 +556,7 @@ export class NouvelleCommandePage {
       // Un brouillon repris ne rouvre pas le lien à un organisme public.
       if (company.payerIsPublic) {
         this.draft.settlement.set('account');
+        void this.loadCommitmentRequirements(companyId);
       }
       this.state.set('ready');
     } catch (error) {
@@ -553,6 +564,25 @@ export class NouvelleCommandePage {
       // sous-titre générique sinon.
       this.loadError.set(error instanceof HttpErrorResponse ? serverMessageOf(error) : null);
       this.state.set('error');
+    }
+  }
+
+  /**
+   * Les exigences d'engagement du payeur, hors des lectures de l'écran : un
+   * échec ne coûte que l'indication « exigé », pas la saisie. Le code service
+   * se préremplit du défaut de la fiche, sauf s'il est déjà saisi.
+   */
+  private async loadCommitmentRequirements(companyId: string): Promise<void> {
+    this.commitmentRequirements.set(null);
+    this.commitmentRequirementsFailed.set(false);
+    try {
+      const requirements = await this.orders.budgetCommitmentRequirements(companyId);
+      this.commitmentRequirements.set(requirements);
+      if (this.draft.commitmentServiceCode() === '') {
+        this.draft.commitmentServiceCode.set(requirements.defaultServiceCode);
+      }
+    } catch {
+      this.commitmentRequirementsFailed.set(true);
     }
   }
 
@@ -605,6 +635,7 @@ export class NouvelleCommandePage {
   protected async onDropDraft(): Promise<void> {
     this.cart.clear();
     this.draft.reset();
+    this.draft.commitmentServiceCode.set(this.commitmentRequirements()?.defaultServiceCode ?? '');
     this.resumedAt.set('');
     try {
       await this.draftsService.discard(this.id());
@@ -648,6 +679,8 @@ export class NouvelleCommandePage {
         estimateReady: this.estimateReady,
         linkOffered: this.linkOffered(),
         payerIsPublic: this.payerIsPublic(),
+        commitmentRequirements: this.commitmentRequirements.asReadonly(),
+        commitmentRequirementsFailed: this.commitmentRequirementsFailed.asReadonly(),
       },
     });
     const placed = await ref.closed;
@@ -759,6 +792,14 @@ export class NouvelleCommandePage {
           ...placePayloadOf(this.id(), draft, this.cart.toPayloadLines(), this.origin),
           // Le TTC de l'estimation affichée : la passation refuse un autre total.
           expectedTotalCents: amounts.totalCents,
+          // L'engagement d'un organisme public part avec la passation SEULE :
+          // hors de `placePayloadOf`, l'estimation ne se redemande pas à
+          // chaque caractère saisi (E2′ : le refus vit à la passation).
+          ...budgetCommitmentPayloadOf(
+            this.payerIsPublic(),
+            this.draft.commitmentNumber(),
+            this.draft.commitmentServiceCode(),
+          ),
         },
         this.placeIntents.keyFor(PLACE_INTENT),
       );
@@ -768,6 +809,7 @@ export class NouvelleCommandePage {
       // le laisser ferait rouvrir l'écran sur une commande déjà passée. Son
       // effacement ne conditionne pas le reste — la commande, elle, est passée.
       this.draft.reset();
+      this.draft.commitmentServiceCode.set(this.commitmentRequirements()?.defaultServiceCode ?? '');
       this.resumedAt.set('');
       void this.draftsService.discard(this.id()).catch(() => undefined);
       // Le carnet APRÈS la commande : une adresse enregistrée pour une commande

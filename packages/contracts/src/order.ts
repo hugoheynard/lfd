@@ -20,6 +20,7 @@ import type { OrderCutoffStatus } from "./order-cutoff.js";
 import { exposedHandoverToken } from "./order-settlement.values.js";
 import { contentLocales, salesTermsDocuments } from "./platform-content.defaults.js";
 import { societyConsentAnswerSchema } from "./marketing-consent.js";
+import { budgetCommitmentPayloadSchema, type BudgetCommitmentView } from "./budget-commitment.js";
 import { SALES_TERMS_REQUIRED_MESSAGE } from "./sales-terms-acceptance.values.js";
 
 /**
@@ -514,6 +515,12 @@ export const placeOrderPayloadSchema = z
      * `askable`. Hors de l'empreinte d'idempotence (règle 21).
      */
     marketingConsent: societyConsentAnswerSchema.optional(),
+    /**
+     * L'engagement budgétaire d'un organisme public (BT-13, BT-10), ou absent.
+     * Exigé quand la fiche Chorus du payeur l'exige ; refusé pour un payeur
+     * privé. Cf. `budgetCommitmentPayloadSchema`.
+     */
+    budgetCommitment: budgetCommitmentPayloadSchema.optional(),
     ...orderContentShape,
   })
   .refine(hasAddressWhenDelivered, deliveryAddressIssue())
@@ -829,6 +836,11 @@ export interface OrderView {
    */
   readonly fulfillment: OrderFulfillment;
   readonly note: string;
+  /**
+   * L'engagement budgétaire d'un organisme public, saisi à la passation ou
+   * corrigé depuis ; absent pour toute commande qui n'en porte pas.
+   */
+  readonly budgetCommitment?: BudgetCommitmentView;
   /** Sous-total marchandises **HT**, en centimes. */
   readonly subtotalCents: number;
   /** Remise (retrait) déduite du sous-total, en centimes. `0` si aucune. */
@@ -1216,6 +1228,11 @@ export interface CustomerOrderView {
   readonly ttcTerms?: OrderTtcTerms;
   /** Cf. {@link OrderView.ttcByRate}. */
   readonly ttcByRate?: readonly OrderRateAmounts[];
+  /**
+   * Le numéro d'engagement et le code service du bon de commande d'un
+   * organisme public : le client les a saisis, il les relit. Absent sinon.
+   */
+  readonly budgetCommitment?: BudgetCommitmentView;
 }
 
 /**
@@ -1308,6 +1325,7 @@ export function toCustomerOrder(view: OrderView): CustomerOrderView {
     refundedCents: view.refundedCents,
     ...(view.ttcTerms === undefined ? {} : { ttcTerms: view.ttcTerms }),
     ...(view.ttcByRate === undefined ? {} : { ttcByRate: view.ttcByRate }),
+    ...(view.budgetCommitment === undefined ? {} : { budgetCommitment: view.budgetCommitment }),
   };
 }
 

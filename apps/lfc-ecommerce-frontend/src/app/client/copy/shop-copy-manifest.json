@@ -4009,6 +4009,76 @@
           "variables": []
         },
         {
+          "key": "cart.commitmentTitle",
+          "fr": "Votre bon de commande",
+          "en": "Your purchase order",
+          "it": "Il vostro buono d’ordine",
+          "variables": []
+        },
+        {
+          "key": "cart.commitmentNumber",
+          "fr": "N° d’engagement",
+          "en": "Commitment number",
+          "it": "N. di impegno",
+          "variables": []
+        },
+        {
+          "key": "cart.commitmentNumberRequiredHint",
+          "fr": "Exigé par votre organisme : il figure sur votre bon de commande.",
+          "en": "Required by your organisation: it is on your purchase order.",
+          "it": "Richiesto dal vostro ente: è indicato sul buono d’ordine.",
+          "variables": []
+        },
+        {
+          "key": "cart.commitmentNumberOptionalHint",
+          "fr": "Il figure sur votre bon de commande, si vous en avez un.",
+          "en": "It is on your purchase order, if you have one.",
+          "it": "È indicato sul buono d’ordine, se ne avete uno.",
+          "variables": []
+        },
+        {
+          "key": "cart.commitmentOptional",
+          "fr": "facultatif",
+          "en": "optional",
+          "it": "facoltativo",
+          "variables": []
+        },
+        {
+          "key": "cart.commitmentServiceCode",
+          "fr": "Code service",
+          "en": "Service code",
+          "it": "Codice servizio",
+          "variables": []
+        },
+        {
+          "key": "cart.commitmentServiceCodeHint",
+          "fr": "Le code Chorus Pro du service à qui adresser la facture.",
+          "en": "The Chorus Pro code of the department the invoice goes to.",
+          "it": "Il codice Chorus Pro del servizio a cui indirizzare la fattura.",
+          "variables": []
+        },
+        {
+          "key": "cart.commitmentNumberMissing",
+          "fr": "Saisissez le numéro d’engagement de votre bon de commande.",
+          "en": "Enter the commitment number from your purchase order.",
+          "it": "Inserite il numero di impegno del vostro buono d’ordine.",
+          "variables": []
+        },
+        {
+          "key": "cart.commitmentServiceCodeMissing",
+          "fr": "Saisissez le code service Chorus Pro de votre organisme.",
+          "en": "Enter your organisation’s Chorus Pro service code.",
+          "it": "Inserite il codice servizio Chorus Pro del vostro ente.",
+          "variables": []
+        },
+        {
+          "key": "cart.commitmentUnread",
+          "fr": "Nous n’avons pas pu lire ce que votre organisme exige : saisissez votre bon de commande, la commande dira s’il manque quelque chose.",
+          "en": "We could not read what your organisation requires: enter your purchase order, and the order will tell you if anything is missing.",
+          "it": "Non siamo riusciti a leggere ciò che il vostro ente richiede: inserite il buono d’ordine, l’ordine vi dirà se manca qualcosa.",
+          "variables": []
+        },
+        {
           "key": "cart.closeEmpty",
           "fr": "Fermer",
           "en": "Close",
@@ -4599,6 +4669,27 @@
           "en": "{count} items",
           "it": "{count} pezzi",
           "variables": ["count"]
+        },
+        {
+          "key": "done.recapCommitment",
+          "fr": "Bon de commande",
+          "en": "Purchase order",
+          "it": "Buono d’ordine",
+          "variables": []
+        },
+        {
+          "key": "done.recapCommitmentNumber",
+          "fr": "engagement n° {number}",
+          "en": "commitment no. {number}",
+          "it": "impegno n. {number}",
+          "variables": ["number"]
+        },
+        {
+          "key": "done.recapCommitmentService",
+          "fr": "service {code}",
+          "en": "service {code}",
+          "it": "servizio {code}",
+          "variables": ["code"]
         },
         {
           "key": "done.paidOnline",
@@ -6767,6 +6858,27 @@
           "en": "Refund",
           "it": "Rimborso",
           "variables": []
+        },
+        {
+          "key": "orders.detailCommitment",
+          "fr": "Bon de commande",
+          "en": "Purchase order",
+          "it": "Buono d’ordine",
+          "variables": []
+        },
+        {
+          "key": "orders.detailCommitmentNumber",
+          "fr": "engagement n° {number}",
+          "en": "commitment no. {number}",
+          "it": "impegno n. {number}",
+          "variables": ["number"]
+        },
+        {
+          "key": "orders.detailCommitmentService",
+          "fr": "service {code}",
+          "en": "service {code}",
+          "it": "servizio {code}",
+          "variables": ["code"]
         },
         {
           "key": "orders.detailPickupDiscount",

@@ -211,6 +211,9 @@ export class PrismaOrderRepository extends OrderRepository {
           paymentStatus: state.paymentStatus,
           stripePaymentIntentId: state.stripePaymentIntentId,
           note: state.note,
+          // L'engagement budgétaire d'un payeur public (P2) ; deux NULL sinon.
+          budgetCommitmentNumber: state.budgetCommitmentNumber,
+          budgetCommitmentServiceCode: state.budgetCommitmentServiceCode,
           lines: { create: lines.create },
           discounts: { create: discounts.create },
         },

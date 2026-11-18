@@ -205,6 +205,12 @@ import { AccountOrderRevaluing } from "./application/services/account-order-reva
 import { AccountOrderSettling } from "./application/services/account-order-settling.js";
 import { OrderEngagementReader } from "./domain/ports/order-engagement.reader.js";
 import { OrderRowsLock } from "./domain/ports/order-rows-lock.js";
+import { OrderBudgetCommitmentsReader } from "./domain/ports/order-budget-commitments.reader.js";
+import { PayerCommitmentRequirementsReader } from "./domain/ports/payer-commitment-requirements.reader.js";
+import {
+  PrismaOrderBudgetCommitmentsReader,
+  PrismaPayerCommitmentRequirementsReader,
+} from "./infrastructure/prisma-order-budget-commitments.readers.js";
 import { PrismaOrderEngagementReader } from "./infrastructure/prisma-order-engagement.reader.js";
 import { PrismaOrderRowsLock } from "./infrastructure/prisma-order-rows-lock.js";
 
@@ -300,6 +306,11 @@ import { PrismaOrderRowsLock } from "./infrastructure/prisma-order-rows-lock.js"
     // L'annulation d'une commande au compte (doc `documentation/commandes/annulation/annulation-par-le-staff.md`,
     // C5) : l'ordre unique des verrous de lignes, et la réponse à la commande.
     { provide: OrderRowsLock, useClass: PrismaOrderRowsLock },
+    { provide: OrderBudgetCommitmentsReader, useClass: PrismaOrderBudgetCommitmentsReader },
+    {
+      provide: PayerCommitmentRequirementsReader,
+      useClass: PrismaPayerCommitmentRequirementsReader,
+    },
     { provide: OrderEngagementReader, useClass: PrismaOrderEngagementReader },
     AccountOrderEngaging,
     AccountOrderRevaluing,

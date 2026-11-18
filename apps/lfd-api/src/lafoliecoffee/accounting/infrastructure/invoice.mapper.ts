@@ -4,6 +4,7 @@ import type { Prisma } from "../../../platform/database/client/client.js";
 import { Invoice } from "../domain/entities/invoice.js";
 import type { InvoiceState } from "../domain/entities/invoice.types.js";
 import { UnreadableInvoiceError } from "../domain/errors/invoice-errors.js";
+import { budgetCommitmentOf } from "../domain/value-objects/invoice-budget-commitment.js";
 import { InvoiceNumber } from "../domain/value-objects/invoice-number.js";
 import { buyerJson, sellerJson, vatBreakdownJson } from "./billing-statement-json.js";
 import { vatBreakdownSchema } from "./billing-statement-json.schema.js";
@@ -41,6 +42,11 @@ function dayOf(column: Date): string {
   return column.toISOString().slice(0, 10);
 }
 
+/** Une colonne nullable : la chaîne vide (ou l'absence) s'écrit NULL. */
+function nullIfEmpty(value: string | undefined): string | null {
+  return value === undefined || value === "" ? null : value;
+}
+
 /** Agrégat → données de création, bons compris. Le numéro se redécompose en préfixe, année et rang. */
 export function toInvoiceCreate(invoice: Invoice): Prisma.InvoiceUncheckedCreateInput {
   const state = invoice.toState();
@@ -70,6 +76,9 @@ export function toInvoiceCreate(invoice: Invoice): Prisma.InvoiceUncheckedCreate
       : { deliveryAddress: addressLinesJson(state.deliveryAddressLines) }),
     ...(state.paymentMeans === null ? {} : { paymentMeans: paymentMeansJson(state.paymentMeans) }),
     prepaidCents: state.prepayment?.amountCents ?? null,
+    // Figé à l'INSERT (P2) ; l'avoir recopie celui de la facture qu'il corrige.
+    budgetCommitmentNumber: nullIfEmpty(state.budgetCommitment?.number),
+    budgetCommitmentServiceCode: nullIfEmpty(state.budgetCommitment?.serviceCode),
     paidOn: state.prepayment === null ? null : dayColumn(state.prepayment.paidOn),
     bodyVersion: INVOICE_BODY_VERSION,
     documentKey: state.documentKey,
@@ -143,6 +152,10 @@ function toInvoiceState(row: InvoiceRow): InvoiceState {
       row.prepaidCents === null || row.paidOn === null
         ? null
         : { amountCents: row.prepaidCents, paidOn: dayOf(row.paidOn) },
+    budgetCommitment: budgetCommitmentOf(
+      row.budgetCommitmentNumber,
+      row.budgetCommitmentServiceCode,
+    ),
     documentKey: row.documentKey,
     documentSha256: row.documentSha256,
   };

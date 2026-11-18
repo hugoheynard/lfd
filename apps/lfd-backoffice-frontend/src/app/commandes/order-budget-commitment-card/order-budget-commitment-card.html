@@ -1,0 +1,45 @@
+@if (shown()) {
+  <fold-card data-order-budget-commitment>
+    <fold-element-title
+      cardHeader
+      variant="title"
+      icon="receipt"
+      title="Engagement budgétaire"
+      subtitle="Repris sur la facture, tant que la commande n’est pas facturée."
+    >
+      @if (publicPayer()) {
+        <button
+          titleAction
+          foldButton
+          size="sm"
+          emphasis="outline"
+          data-budget-commitment-correct
+          (click)="correct()"
+        >
+          Corriger l’engagement
+        </button>
+      }
+    </fold-element-title>
+    @if (payer().kind === 'failed') {
+      <fold-callout variant="alert" data-budget-commitment-unread>
+        Le payeur de cette commande n’a pas pu être lu : la correction n’est pas proposée.
+      </fold-callout>
+    }
+    <fold-field-list>
+      <fold-field
+        label="N° d’engagement"
+        [empty]="(commitment()?.number ?? '') === ''"
+        placeholder="Aucun"
+      >
+        <span data-budget-commitment-number>{{ commitment()?.number }}</span>
+      </fold-field>
+      <fold-field
+        label="Code service"
+        [empty]="(commitment()?.serviceCode ?? '') === ''"
+        placeholder="Aucun"
+      >
+        <span data-budget-commitment-service>{{ commitment()?.serviceCode }}</span>
+      </fold-field>
+    </fold-field-list>
+  </fold-card>
+}

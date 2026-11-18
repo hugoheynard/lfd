@@ -30,6 +30,8 @@ import { OrderLocale } from "../../domain/value-objects/order-locale.js";
 import { OrderMarketingConsent } from "../services/order-marketing-consent.js";
 import { CustomerCancellationDeadline } from "../../cancellation/application/services/customer-cancellation-deadline.js";
 import { OrderDrafting } from "../services/order-drafting.service.js";
+import { commitOrderBudget } from "../services/order-budget-commitment.js";
+import { PayerCommitmentRequirements } from "../../domain/ports/payer-commitment-requirements.js";
 import { OrderIntake } from "../services/order-intake.service.js";
 import { OrderCardRetrieval } from "../../domain/ports/order-card-payments.js";
 import { orderCardSubject } from "../services/order-card-subject.js";
@@ -72,6 +74,7 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, Pla
     private readonly intake: OrderIntake,
     private readonly cancellationDeadline: CustomerCancellationDeadline,
     private readonly consent: OrderMarketingConsent,
+    private readonly commitments: PayerCommitmentRequirements,
   ) {}
 
   /**
@@ -174,6 +177,9 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, Pla
       OrderLocale.ofOptional(payload.locale),
       "checkout",
     );
+    // L'engagement budgétaire d'un payeur public (E2′) : refusé ici, avant
+    // toute intention, s'il manque alors qu'il est exigé.
+    await commitOrderBudget(order, payload.budgetCommitment, this.commitments);
     // Le délai d'annulation du réglage d'AUJOURD'HUI, celui que les CGV ont
     // rappelé : figé avant l'écriture (Hugo, 2026-10-26).
     await this.cancellationDeadline.fixOn(order);

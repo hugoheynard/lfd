@@ -192,11 +192,24 @@ function lineNote(line: InvoiceLineInput): string {
   return `<ram:IncludedNote>${textElement("ram:Content", priceDiscountNote(line.unitPriceMillicents, discount))}</ram:IncludedNote>`;
 }
 
+/**
+ * BG-… l'accord : BT-10 (`BuyerReference`, le code service Chorus) en PREMIER
+ * fils, puis les parties, puis BT-13 (`BuyerOrderReferencedDocument`, le
+ * numéro d'engagement) — l'ordre du XSD CII. Les deux seulement pour une
+ * facture qui porte un engagement (organisme public, P2) ; la liste des
+ * commandes reste en note.
+ */
 function headerAgreement(state: InvoiceState): string {
+  const serviceCode = state.budgetCommitment?.serviceCode ?? "";
+  const commitment = state.budgetCommitment?.number ?? "";
   return [
     "<ram:ApplicableHeaderTradeAgreement>",
+    serviceCode === "" ? "" : textElement("ram:BuyerReference", serviceCode),
     sellerParty(state.seller),
     buyerParty(state.buyer),
+    commitment === ""
+      ? ""
+      : `<ram:BuyerOrderReferencedDocument>${textElement("ram:IssuerAssignedID", commitment)}</ram:BuyerOrderReferencedDocument>`,
     "</ram:ApplicableHeaderTradeAgreement>",
   ].join("");
 }

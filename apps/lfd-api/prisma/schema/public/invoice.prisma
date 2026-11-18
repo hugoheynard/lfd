@@ -84,6 +84,11 @@ model Invoice {
   /// Le jour local de l'encaissement par carte — « acquittée le … ».
   paidOn       DateTime? @map("paid_on") @db.Date
 
+  /// L'engagement budgétaire (BT-13) et le code service (BT-10) d'une facture
+  /// d'organisme public, figés à l'INSERT ; recopiés par l'avoir. NULL = aucun.
+  budgetCommitmentNumber      String? @map("budget_commitment_number")
+  budgetCommitmentServiceCode String? @map("budget_commitment_service_code")
+
   bodyVersion Int @map("body_version")
 
   /// Le document rendu (Factur-X), posé une fois après l'émission.
@@ -189,8 +194,13 @@ model InvoiceMonthlyOutcome {
   /// Les références des bons signalés non facturables.
   unbillableOrders String[]    @default([]) @map("unbillable_orders")
   recordedAt       DateTime    @map("recorded_at") @db.Timestamptz(3)
+  /// L'engagement budgétaire de la facture (P2) ; `""` = aucun — clé primaire,
+  /// donc jamais NULL, comme `mandateId`.
+  budgetCommitmentNumber      String @default("") @map("budget_commitment_number")
+  /// Le code service de la facture (P2) ; `""` = aucun.
+  budgetCommitmentServiceCode String @default("") @map("budget_commitment_service_code")
 
-  @@id([legalEntityId, periodClosesAt, payerCompanyId, mandateId])
+  @@id([legalEntityId, periodClosesAt, payerCompanyId, mandateId, budgetCommitmentNumber, budgetCommitmentServiceCode])
   @@map("invoice_monthly_outcome")
   @@schema("public")
 }

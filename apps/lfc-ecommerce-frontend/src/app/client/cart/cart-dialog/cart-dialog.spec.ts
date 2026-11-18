@@ -28,6 +28,7 @@ import { GuestIdentityForm } from '../guest-identity-form/guest-identity-form';
 import { SalesTermsConsent } from '../sales-terms-consent.service';
 import { ShopQuote, type QuoteStatus } from '../shop-quote.service';
 import type { ShopQuoteView } from '@lfd/contracts';
+import { ClientBudgetCommitment } from '../budget-commitment.service';
 import { CartDialog } from './cart-dialog';
 
 const AU_LABO: ServiceChoice = {
@@ -101,6 +102,8 @@ interface Monde {
   readonly cgvOutdated?: boolean;
   /** Le jour retenu n'est plus possible — l'heure limite est passée (2026-10-26). */
   readonly dayGone?: boolean;
+  /** Ce qui manque au bon de commande d'un organisme public (plan clients publics, § 6 quater). */
+  readonly commitmentGap?: 'number' | 'serviceCode' | null;
 }
 
 /**
@@ -193,6 +196,7 @@ function boot({
   cgv = false,
   cgvOutdated = false,
   dayGone = false,
+  commitmentGap = null,
 }: Monde = {}): ComponentFixture<CartDialog> {
   localStorage.clear();
   TestBed.resetTestingModule();
@@ -205,6 +209,21 @@ function boot({
       provideWorkspace(workspaceDouble()),
       { provide: AuthFacade, useValue: auth },
       { provide: ShopQuote, useValue: quoteDouble() },
+      // La saisie du bon de commande est éprouvée dans
+      // `budget-commitment.service.spec.ts` ; ici, ce que le panier en fait.
+      {
+        provide: ClientBudgetCommitment,
+        useValue: {
+          requirements: signal(null),
+          failed: signal(false),
+          number: signal(''),
+          serviceCode: signal(''),
+          gap: signal(commitmentGap),
+          ensure: (): void => undefined,
+          setNumber: (): void => undefined,
+          setServiceCode: (): void => undefined,
+        },
+      },
       { provide: SalesTermsConsent, useValue: consentDouble(cgv, cgvOutdated) },
       {
         provide: OrderAdmissionStore,
@@ -654,11 +673,37 @@ describe('le panier d’un organisme public', () => {
     expect(regle).toEqual(['account']);
   });
 
+  it('demande le bon de commande ; le numéro exigé retient le bouton et le dit', () => {
+    const fixture = boot({
+      auth: RECONNU,
+      granted: ['monthly'],
+      publicPayer: true,
+      commitmentGap: 'number',
+    });
+
+    expect(el(fixture).querySelector('app-budget-commitment-fields')).not.toBeNull();
+    expect(
+      el(fixture).querySelector<HTMLButtonElement>('button[data-settle-public]')?.disabled,
+    ).toBe(true);
+    expect(el(fixture).querySelector('[data-pay-blocked]')?.textContent).toContain(
+      FR.cart.commitmentNumberMissing,
+    );
+  });
+
   it('🔴 sans compte qui règle : aucun bouton de paiement, jamais la carte', () => {
     const fixture = boot({ auth: RECONNU, granted: [], publicPayer: true });
 
     expect(el(fixture).querySelector('button.pay')).toBeNull();
     expect(el(fixture).querySelector('[data-public-account-unavailable]')).not.toBeNull();
+  });
+});
+
+/** Plan clients publics, § 6 quater : rien du bon de commande pour un autre payeur. */
+describe('le bon de commande hors organisme public', () => {
+  it('n’apparaît pas pour un pro au compte', () => {
+    const fixture = boot({ auth: RECONNU, granted: ['monthly'] });
+
+    expect(el(fixture).querySelector('app-budget-commitment-fields')).toBeNull();
   });
 });
 

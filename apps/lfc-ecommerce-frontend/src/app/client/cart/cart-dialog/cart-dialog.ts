@@ -43,6 +43,8 @@ import { TotalChangedCallout } from '../total-changed-callout/total-changed-call
 import { ReservedLinesCallout } from '../reserved-lines-callout/reserved-lines-callout';
 import { dialogSide } from '../../panel-side';
 import { CartSummary } from '../cart-summary/cart-summary';
+import { BudgetCommitmentFields } from '../budget-commitment-fields/budget-commitment-fields';
+import { ClientBudgetCommitment } from '../budget-commitment.service';
 import { SalesTermsConsent } from '../sales-terms-consent.service';
 import { CheckoutConsent } from '../../marketing/checkout-consent.service';
 import { MarketingConsentBox } from '../../marketing/marketing-consent-box/marketing-consent-box';
@@ -92,6 +94,7 @@ const AFTER_SIGN_IN = '/boutique';
   selector: 'app-cart-dialog',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    BudgetCommitmentFields,
     EndedDiscountsCallout,
     RemovedLinesCallout,
     ReservedLinesCallout,
@@ -222,6 +225,16 @@ export class CartDialog {
    */
   protected readonly publicPayer = computed(() => payerIsPublic(this.firm.company()));
 
+  /**
+   * **Le bon de commande se demande** à un organisme public qui peut
+   * commander (au compte, panier non vide) : sans compte, aucun bouton, rien
+   * à joindre.
+   */
+  protected readonly commitmentAsked = computed(
+    () => this.publicPayer() && this.mayUseAccount() && !this.cart.isEmpty(),
+  );
+  private readonly commitment = inject(ClientBudgetCommitment);
+
   protected readonly t = inject(ClientCopyService).t;
   protected readonly cart = inject(ClientCart);
   protected readonly choice = this.order.choice;
@@ -310,6 +323,17 @@ export class CartDialog {
     }
     if (this.identityNeeded() && this.signingIn()) {
       return c.payBlockedSignIn;
+    }
+    // Le bon de commande exigé d'un organisme public (plan clients publics,
+    // § 6 quater) : la passation le refuserait sans lui.
+    if (this.commitmentAsked()) {
+      const gap = this.commitment.gap();
+      if (gap === 'number') {
+        return c.commitmentNumberMissing;
+      }
+      if (gap === 'serviceCode') {
+        return c.commitmentServiceCodeMissing;
+      }
     }
     // Les CGV publiées se cochent avant de commander (2026-10-26).
     if (this.termsShown() && this.salesTerms.blocking()) {

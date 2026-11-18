@@ -4,7 +4,7 @@
 >
 > La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.
 
-## Sommaire — 1820 textes
+## Sommaire — 1836 textes
 
 Clés présentes dans une langue et absentes d'une autre : 0.
 
@@ -31,15 +31,15 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Choix de l’heure — le sélecteur de créneau](#espace-slotpicker) | `slotPicker` | 15 |
 | [Choix de l’heure — l’étape du créneau](#espace-slotstep) | `slotStep` | 11 |
 | [Choix de l’heure — le rappel téléphonique](#espace-rappel) | `rappel` | 12 |
-| [Panier, connexion et saisie invité](#espace-cart) | `cart` | 102 |
+| [Panier, connexion et saisie invité](#espace-cart) | `cart` | 112 |
 | [Règlement](#espace-pay) | `pay` | 21 |
-| [Confirmation](#espace-done) | `done` | 28 |
+| [Confirmation](#espace-done) | `done` | 31 |
 | [Confirmation — le QR de retrait](#espace-qr) | `qr` | 12 |
 | **Le reste de la boutique** | | |
 | [Le cadre — bandeaux et erreurs générales](#espace-chrome) | `chrome` | 56 |
 | [La navigation](#espace-nav) | `nav` | 16 |
 | [La colonne d’accompagnement](#espace-aside) | `aside` | 4 |
-| [Mes commandes (récapitulatif compris)](#espace-orders) | `orders` | 282 |
+| [Mes commandes (récapitulatif compris)](#espace-orders) | `orders` | 285 |
 | [Annuler une commande — Mes commandes et la page invité](#espace-ordercancel) | `orderCancel` | 57 |
 | [Fidélité](#espace-loyalty) | `loyalty` | 38 |
 | [Mon compte (factures comprises)](#espace-account) | `account` | 532 |
@@ -50,7 +50,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Les cases des e-mails marketing, « Mes e-mails » et le pied de page](#espace-marketingconsent) | `marketingConsent` | 29 |
 | [Les documents légaux](#espace-legaldocument) | `legalDocument` | 14 |
 | [Le suivi des corrections d’accessibilité — sous la déclaration](#espace-accessibilityfollowup) | `accessibilityFollowUp` | 28 |
-| **Total** | | **1820** |
+| **Total** | | **1836** |
 
 ## Le parcours de commande
 
@@ -732,7 +732,7 @@ Source : `fr.ts · en.ts · it.ts` · 12 textes.
 
 ### Panier, connexion et saisie invité — `cart`
 
-Source : `fr.ts · en.ts · it.ts` · 102 textes.
+Source : `fr.ts · en.ts · it.ts` · 112 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -798,6 +798,16 @@ Source : `fr.ts · en.ts · it.ts` · 102 textes.
 | `cart.settleAccount` | Ajouter au compte | Add to the account | Aggiungi al conto |  |
 | `cart.payHintPublic` | Au compte — facture déposée sur Chorus Pro, réglée par virement. | On account — invoice filed on Chorus Pro, paid by bank transfer. | Sul conto — fattura depositata su Chorus Pro, saldata con bonifico. |  |
 | `cart.publicAccountUnavailable` | Votre organisme règle uniquement au compte, et ce compte ne peut pas régler aujourd’hui. Contactez-nous pour le rétablir : la commande ne peut pas se payer par carte. | Your organisation pays on account only, and that account cannot settle today. Contact us to restore it: the order cannot be paid by card. | Il vostro ente paga solo sul conto, e questo conto oggi non può saldare. Ci contatti per ripristinarlo: l’ordine non può essere pagato con carta. |  |
+| `cart.commitmentTitle` | Votre bon de commande | Your purchase order | Il vostro buono d’ordine |  |
+| `cart.commitmentNumber` | N° d’engagement | Commitment number | N. di impegno |  |
+| `cart.commitmentNumberRequiredHint` | Exigé par votre organisme : il figure sur votre bon de commande. | Required by your organisation: it is on your purchase order. | Richiesto dal vostro ente: è indicato sul buono d’ordine. |  |
+| `cart.commitmentNumberOptionalHint` | Il figure sur votre bon de commande, si vous en avez un. | It is on your purchase order, if you have one. | È indicato sul buono d’ordine, se ne avete uno. |  |
+| `cart.commitmentOptional` | facultatif | optional | facoltativo |  |
+| `cart.commitmentServiceCode` | Code service | Service code | Codice servizio |  |
+| `cart.commitmentServiceCodeHint` | Le code Chorus Pro du service à qui adresser la facture. | The Chorus Pro code of the department the invoice goes to. | Il codice Chorus Pro del servizio a cui indirizzare la fattura. |  |
+| `cart.commitmentNumberMissing` | Saisissez le numéro d’engagement de votre bon de commande. | Enter the commitment number from your purchase order. | Inserite il numero di impegno del vostro buono d’ordine. |  |
+| `cart.commitmentServiceCodeMissing` | Saisissez le code service Chorus Pro de votre organisme. | Enter your organisation’s Chorus Pro service code. | Inserite il codice servizio Chorus Pro del vostro ente. |  |
+| `cart.commitmentUnread` | Nous n’avons pas pu lire ce que votre organisme exige : saisissez votre bon de commande, la commande dira s’il manque quelque chose. | We could not read what your organisation requires: enter your purchase order, and the order will tell you if anything is missing. | Non siamo riusciti a leggere ciò che il vostro ente richiede: inserite il buono d’ordine, l’ordine vi dirà se manca qualcosa. |  |
 | `cart.closeEmpty` | Fermer | Close | Chiudi |  |
 | `cart.whoTitle` | Qui passe cette commande ? | Who is placing this order? | Chi effettua questo ordine? |  |
 | `cart.whoHint` | Il nous faut un nom et une adresse pour vous envoyer votre QR de retrait. | We need a name and an address to send you your pickup QR. | Ci servono un nome e un indirizzo per inviarle il QR di ritiro. |  |
@@ -873,7 +883,7 @@ Source : `fr.ts · en.ts · it.ts` · 21 textes.
 
 ### Confirmation — `done`
 
-Source : `fr.ts · en.ts · it.ts` · 28 textes.
+Source : `fr.ts · en.ts · it.ts` · 31 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -898,6 +908,9 @@ Source : `fr.ts · en.ts · it.ts` · 28 textes.
 | `done.recapDelivery` | Livraison | Delivery | Consegna |  |
 | `done.recapContent` | Contenu | Contents | Contenuto |  |
 | `done.recapPieces` | {count} pièces | {count} items | {count} pezzi | `{count}` |
+| `done.recapCommitment` | Bon de commande | Purchase order | Buono d’ordine |  |
+| `done.recapCommitmentNumber` | engagement n° {number} | commitment no. {number} | impegno n. {number} | `{number}` |
+| `done.recapCommitmentService` | service {code} | service {code} | servizio {code} | `{code}` |
 | `done.paidOnline` | Réglé en ligne | Paid online | Pagato online |  |
 | `done.toSettle` | Reste à régler | Left to pay | Resta da pagare |  |
 | `done.onAccount` | Porté à votre compte | Charged to your account | Addebitato sul conto |  |
@@ -1036,7 +1049,7 @@ Source : `fr.ts · en.ts · it.ts` · 4 textes.
 
 ### Mes commandes (récapitulatif compris) — `orders`
 
-Source : `screens/orders.copy.ts · screens/order-summary.copy.ts · screens/order-change-request.copy.ts` · 282 textes.
+Source : `screens/orders.copy.ts · screens/order-summary.copy.ts · screens/order-change-request.copy.ts` · 285 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -1262,6 +1275,9 @@ Source : `screens/orders.copy.ts · screens/order-summary.copy.ts · screens/ord
 | `orders.payRefusedNote` | votre banque a refusé la carte | your bank declined the card | la tua banca ha rifiutato la carta |  |
 | `orders.settle` | Régler | Pay | Paga |  |
 | `orders.detailRefund` | Remboursement | Refund | Rimborso |  |
+| `orders.detailCommitment` | Bon de commande | Purchase order | Buono d’ordine |  |
+| `orders.detailCommitmentNumber` | engagement n° {number} | commitment no. {number} | impegno n. {number} | `{number}` |
+| `orders.detailCommitmentService` | service {code} | service {code} | servizio {code} | `{code}` |
 | `orders.detailPickupDiscount` | Remise retrait | Collection discount | Sconto ritiro |  |
 | `orders.detailPickupDiscountValue` | −{value} sur {base} éligibles | −{value} on {base} eligible | −{value} su {base} idonei | `{value}` `{base}` |
 | `orders.detailPickupExcluded` | Non concernés par la remise retrait | Not covered by the collection discount | Non coperti dallo sconto ritiro |  |

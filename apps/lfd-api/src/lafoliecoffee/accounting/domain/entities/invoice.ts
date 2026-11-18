@@ -6,6 +6,8 @@ import {
 } from "../errors/invoice-errors.js";
 import type { InvoiceSellerFacts } from "../services/invoice-issuance-blockers.js";
 import type { InvoiceSettlementKind } from "../services/public-payer-means-blocker.js";
+import type { PayerCommitmentRequirement } from "../services/public-commitment-blocker.js";
+import type { InvoiceBudgetCommitment } from "../value-objects/invoice-budget-commitment.js";
 import { InvoiceNumber } from "../value-objects/invoice-number.js";
 import {
   assertLines,
@@ -55,6 +57,13 @@ export interface IssueInvoiceInput {
    * `null` pour la facture du mois. Exige le moyen « carte », et lui seul.
    */
   readonly prepayment: InvoicePrepayment | null;
+  /**
+   * L'engagement budgétaire de la facture (P2) — celui de tous ses bons, la
+   * facture étant découpée par engagement. Absent ou `null` : aucun.
+   */
+  readonly budgetCommitment?: InvoiceBudgetCommitment | null;
+  /** Ce que la fiche Chorus du payeur exige (E7) ; absent ou `null` : rien. */
+  readonly commitmentRequirement?: PayerCommitmentRequirement | null;
 }
 
 /** Ce que l'émission d'un avoir (381) reçoit. */
@@ -105,6 +114,7 @@ export class Invoice {
   static issue(input: IssueInvoiceInput): Invoice {
     const number = input.number.value;
     const legalEntityId = input.seller.legalEntityId;
+    const commitment = input.budgetCommitment ?? null;
     const parties = issuableParties(
       input.number,
       input.sellerFacts,
@@ -112,6 +122,7 @@ export class Invoice {
       input.buyer,
       input.orders,
       settlementKindOf(input.paymentMeans),
+      { requirement: input.commitmentRequirement ?? null, commitment },
     );
     assertDates(input.number, input.issuedOn, input.dueOn);
     if (input.orders.length === 0) {
@@ -140,6 +151,7 @@ export class Invoice {
         vat: input.vat,
         paymentMeans: input.paymentMeans,
         prepayment: input.prepayment,
+        budgetCommitment: commitment,
         documentKey: null,
         documentSha256: null,
       },

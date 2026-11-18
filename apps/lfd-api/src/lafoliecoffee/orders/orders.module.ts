@@ -57,6 +57,10 @@ import {
   ORDER_SHORTFALL_EXPORTS,
   ORDER_SHORTFALL_PROVIDERS,
 } from "./order-shortfall.providers.js";
+import {
+  ORDER_BUDGET_COMMITMENT_CONTROLLERS,
+  ORDER_BUDGET_COMMITMENT_PROVIDERS,
+} from "./order-budget-commitment.providers.js";
 import { ORDER_CUSTOMER_NUDGES_PROVIDERS } from "./order-customer-nudges.providers.js";
 import { ORDER_LATE_TOLERANCE_PROVIDERS } from "./order-late-tolerance.providers.js";
 import {
@@ -376,6 +380,7 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     ...ORDER_REVISION_CONTROLLERS,
     ...CARD_INCREASE_CONTROLLERS,
     ...ORDER_SHORTFALL_CONTROLLERS,
+    ...ORDER_BUDGET_COMMITMENT_CONTROLLERS,
     ...ORDER_SHORTFALL_REFUND_CONTROLLERS,
     OrdersController,
     MyShopCatalogueController,
@@ -479,6 +484,7 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     ...ORDER_REVISION_PROVIDERS,
     ...CARD_INCREASE_PROVIDERS,
     ...ORDER_SHORTFALL_PROVIDERS,
+    ...ORDER_BUDGET_COMMITMENT_PROVIDERS,
     VoucherRestitutionRefusal,
     // Lot C5 : la règle d'annulation et l'engagement comptable — le port est
     // relié par `appBootstrap/account-order-engagement.module.ts`.

@@ -181,6 +181,11 @@ import { PAINS } from "../../../../catalog/domain/__tests__/families.fixture.js"
 import { ownPricingParties } from "../../../../pricing/application/__tests__/pricing-parties.doubles.js";
 import { CommerceOrderPlacedFact } from "../../../../../delivery/channels/commerce/index.js";
 import { RecordingDurable } from "./durable-doubles.js";
+import { FixedCommitmentTerms } from "./commitment-doubles.js";
+import {
+  BudgetCommitmentNumberRequiredError,
+  PrivatePayerBudgetCommitmentError,
+} from "../../../domain/errors/budget-commitment-errors.js";
 import { CustomerCancellationDeadline } from "../../../cancellation/application/services/customer-cancellation-deadline.js";
 import { FixedCancellationSettings } from "../../../cancellation/application/commands/__tests__/customer-cancellation-doubles.js";
 import { intakeAt } from "./intake-doubles.js";
@@ -699,6 +704,7 @@ describe("PlaceOrderHandler", () => {
         intakeAt(),
         new CustomerCancellationDeadline(new FixedCancellationSettings()),
         noOrderMarketing(),
+        new FixedCommitmentTerms(),
       );
 
       await handler.execute(
@@ -734,6 +740,7 @@ describe("PlaceOrderHandler", () => {
       intakeAt(),
       new CustomerCancellationDeadline(new FixedCancellationSettings()),
       noOrderMarketing(),
+      new FixedCommitmentTerms(),
     );
 
     await handler.execute(new PlaceOrderCommand("u1", payload(), null));
@@ -765,6 +772,7 @@ describe("PlaceOrderHandler", () => {
       intakeAt(),
       new CustomerCancellationDeadline(new FixedCancellationSettings()),
       noOrderMarketing(),
+      new FixedCommitmentTerms(),
     );
 
     await handler.execute(new PlaceOrderCommand("u1", payload(), null));
@@ -793,6 +801,7 @@ describe("PlaceOrderHandler", () => {
       intakeAt(),
       new CustomerCancellationDeadline(new FixedCancellationSettings()),
       noOrderMarketing(),
+      new FixedCommitmentTerms(),
     );
 
     await handler.execute(new PlaceOrderCommand("u1", payload(), null));
@@ -840,6 +849,7 @@ describe("PlaceOrderHandler", () => {
       intakeAt(),
       new CustomerCancellationDeadline(new FixedCancellationSettings()),
       noOrderMarketing(),
+      new FixedCommitmentTerms(),
     );
 
     await expect(
@@ -869,6 +879,7 @@ describe("PlaceOrderHandler", () => {
       intakeAt(),
       new CustomerCancellationDeadline(new FixedCancellationSettings()),
       noOrderMarketing(),
+      new FixedCommitmentTerms(),
     );
 
     const result = await handler.execute(new PlaceOrderCommand("u1", payload(), null));
@@ -900,6 +911,7 @@ describe("PlaceOrderHandler", () => {
       intakeAt(),
       new CustomerCancellationDeadline(new FixedCancellationSettings()),
       noOrderMarketing(),
+      new FixedCommitmentTerms(),
     );
 
     await handler.execute(
@@ -976,6 +988,7 @@ describe("PlaceOrderHandler", () => {
       intakeAt(),
       new CustomerCancellationDeadline(new FixedCancellationSettings()),
       noOrderMarketing(),
+      new FixedCommitmentTerms(),
     );
 
     await handler.execute(
@@ -1019,6 +1032,7 @@ describe("PlaceOrderHandler", () => {
       intakeAt(),
       new CustomerCancellationDeadline(new FixedCancellationSettings()),
       noOrderMarketing(),
+      new FixedCommitmentTerms(),
     );
 
     await expect(
@@ -1049,6 +1063,7 @@ describe("PlaceOrderHandler", () => {
       intakeAt(),
       new CustomerCancellationDeadline(new FixedCancellationSettings()),
       noOrderMarketing(),
+      new FixedCommitmentTerms(),
     );
 
     await handler.execute(new PlaceOrderCommand("u1", payload(), "c1"));
@@ -1080,6 +1095,7 @@ describe("PlaceOrderHandler", () => {
       intakeAt(),
       new CustomerCancellationDeadline(new FixedCancellationSettings()),
       noOrderMarketing(),
+      new FixedCommitmentTerms(),
     );
 
     await expect(
@@ -1112,6 +1128,7 @@ describe("PlaceOrderHandler", () => {
       intakeAt(),
       new CustomerCancellationDeadline(new FixedCancellationSettings()),
       noOrderMarketing(),
+      new FixedCommitmentTerms(),
     );
 
     // 2 × 200 = 400 ; remise 20 % = 80 ; total = 320.
@@ -1174,6 +1191,7 @@ describe("PlaceOrderHandler", () => {
       intakeAt(),
       new CustomerCancellationDeadline(new FixedCancellationSettings()),
       noOrderMarketing(),
+      new FixedCommitmentTerms(),
     );
     const lines = [
       { sku: "VIE-001", quantity: 2 },
@@ -1222,6 +1240,7 @@ describe("PlaceOrderHandler", () => {
       intakeAt(),
       new CustomerCancellationDeadline(new FixedCancellationSettings()),
       noOrderMarketing(),
+      new FixedCommitmentTerms(),
     );
 
     await handler.execute(new PlaceOrderCommand("u1", payload(), "c1"));
@@ -1253,6 +1272,7 @@ describe("PlaceOrderHandler", () => {
       intakeAt(),
       new CustomerCancellationDeadline(new FixedCancellationSettings()),
       noOrderMarketing(),
+      new FixedCommitmentTerms(),
     );
 
     await expect(
@@ -1287,6 +1307,7 @@ describe("PlaceOrderHandler", () => {
       intakeAt(),
       new CustomerCancellationDeadline(new FixedCancellationSettings()),
       noOrderMarketing(),
+      new FixedCommitmentTerms(),
     );
 
     // 2 × 200 = 400 HT (TVA 0 dans ce catalogue de test) ; frais 20 € = 2000 HT
@@ -1345,6 +1366,7 @@ describe("PlaceOrderHandler", () => {
       intakeAt(),
       new CustomerCancellationDeadline(new FixedCancellationSettings()),
       noOrderMarketing(),
+      new FixedCommitmentTerms(),
     );
 
     await handler.execute(
@@ -1392,6 +1414,7 @@ describe("PlaceOrderHandler", () => {
         intakeAt(),
         new CustomerCancellationDeadline(new FixedCancellationSettings()),
         noOrderMarketing(),
+        new FixedCommitmentTerms(),
       );
       await handler.execute(
         new PlaceOrderCommand(
@@ -1449,6 +1472,7 @@ describe("PlaceOrderHandler", () => {
       intakeAt(),
       new CustomerCancellationDeadline(new FixedCancellationSettings()),
       noOrderMarketing(),
+      new FixedCommitmentTerms(),
     );
 
     await expect(
@@ -1487,6 +1511,7 @@ describe("PlaceOrderHandler", () => {
       intakeAt(),
       new CustomerCancellationDeadline(new FixedCancellationSettings()),
       noOrderMarketing(),
+      new FixedCommitmentTerms(),
     );
 
     const result = await handler.execute(new PlaceOrderCommand("u1", payload(), "c1"));
@@ -1523,6 +1548,7 @@ describe("PlaceOrderHandler", () => {
       intakeAt(),
       new CustomerCancellationDeadline(new FixedCancellationSettings()),
       noOrderMarketing(),
+      new FixedCommitmentTerms(),
     );
 
     const result = await handler.execute(new PlaceOrderCommand("u1", payload(), "c1"));
@@ -1556,6 +1582,7 @@ describe("PlaceOrderHandler", () => {
       intakeAt(),
       new CustomerCancellationDeadline(new FixedCancellationSettings()),
       noOrderMarketing(),
+      new FixedCommitmentTerms(),
     );
 
     await handler.execute(new PlaceOrderCommand("u1", payload(), "c1"));
@@ -1615,6 +1642,7 @@ describe("PlaceOrderHandler — un article d'opération datée", () => {
       intakeAt(),
       new CustomerCancellationDeadline(new FixedCancellationSettings()),
       noOrderMarketing(),
+      new FixedCommitmentTerms(),
     );
   }
 
@@ -1677,6 +1705,7 @@ describe("PlaceOrderHandler — un article d'opération datée", () => {
       intakeAt(),
       new CustomerCancellationDeadline(new FixedCancellationSettings()),
       noOrderMarketing(),
+      new FixedCommitmentTerms(),
     );
 
     await handler.execute(
@@ -1725,6 +1754,7 @@ describe("PlaceOrderHandler — payeur public", () => {
       intakeAt(),
       new CustomerCancellationDeadline(new FixedCancellationSettings()),
       noOrderMarketing(),
+      new FixedCommitmentTerms(),
     );
   }
 
@@ -1797,6 +1827,7 @@ describe("PlaceOrderHandler — prélèvement bloqué", () => {
       intakeAt(),
       new CustomerCancellationDeadline(new FixedCancellationSettings()),
       noOrderMarketing(),
+      new FixedCommitmentTerms(),
     );
   }
 
@@ -1895,6 +1926,7 @@ describe("PlaceOrderHandler — le bon de fidélité", () => {
       intakeAt(),
       new CustomerCancellationDeadline(new FixedCancellationSettings()),
       noOrderMarketing(),
+      new FixedCommitmentTerms(),
     );
   }
 
@@ -2005,6 +2037,7 @@ describe("PlaceOrderHandler — créneau ou échéance", () => {
       intakeAt(),
       new CustomerCancellationDeadline(new FixedCancellationSettings()),
       noOrderMarketing(),
+      new FixedCommitmentTerms(),
     );
     await handler.execute(
       new PlaceOrderCommand(
@@ -2128,6 +2161,7 @@ describe("PlaceOrderHandler — un site facturé à son principal", () => {
       intakeAt(),
       new CustomerCancellationDeadline(new FixedCancellationSettings()),
       noOrderMarketing(),
+      new FixedCommitmentTerms(),
     );
   }
 
@@ -2255,6 +2289,7 @@ describe("PlaceOrderHandler — la boutique fermée à une clientèle", () => {
       intakeAt(opening, "active", [], {}, undefined, new FixedClock(PRICED_AT)),
       new CustomerCancellationDeadline(new FixedCancellationSettings()),
       noOrderMarketing(),
+      new FixedCommitmentTerms(),
     );
   }
 
@@ -2369,6 +2404,7 @@ describe("PlaceOrderHandler — l'arrêt du plan", () => {
       intakeAt(),
       new CustomerCancellationDeadline(new FixedCancellationSettings()),
       noOrderMarketing(),
+      new FixedCommitmentTerms(),
     );
   }
 
@@ -2560,6 +2596,7 @@ describe("PlaceOrderHandler — les CGV en vigueur", () => {
       intakeAt(),
       new CustomerCancellationDeadline(new FixedCancellationSettings()),
       noOrderMarketing(),
+      new FixedCommitmentTerms(),
     );
     // Explicite : la suite compte les lectures des CGV.
     await handler.execute(
@@ -2637,6 +2674,7 @@ describe("PlaceOrderHandler — les CGV cochées au panier", () => {
       intakeAt(DEFAULT_ORDER_OPENING, "active", [], {}, salesTerms),
       new CustomerCancellationDeadline(new FixedCancellationSettings()),
       noOrderMarketing(),
+      new FixedCommitmentTerms(),
     );
     return { handler, sink, released };
   }
@@ -2755,6 +2793,7 @@ describe("PlaceOrderHandler — limite d'article et règle générale", () => {
       intakeAt(),
       new CustomerCancellationDeadline(new FixedCancellationSettings()),
       noOrderMarketing(),
+      new FixedCommitmentTerms(),
     );
   }
 
@@ -2806,6 +2845,7 @@ describe("PlaceOrderHandler — le délai d'annulation figé", () => {
       intakeAt(),
       new CustomerCancellationDeadline(settings),
       noOrderMarketing(),
+      new FixedCommitmentTerms(),
     );
   }
 
@@ -2891,6 +2931,7 @@ describe("PlaceOrderHandler — le total vu", () => {
       intakeAt(),
       new CustomerCancellationDeadline(new FixedCancellationSettings()),
       noOrderMarketing(),
+      new FixedCommitmentTerms(),
     );
   }
 
@@ -2932,5 +2973,85 @@ describe("PlaceOrderHandler — le total vu", () => {
     expect(paid.intent).toBeNull();
     expect(sink.placed).toBeNull();
     expect(keys.released).toEqual(["3f2504e0-4f89-41d3-9a0c-0305e82c3301"]);
+  });
+});
+
+describe("PlaceOrderHandler — l'engagement budgétaire d'un payeur public (P2, E2′)", () => {
+  const ARMY = new Map([
+    [
+      "c1",
+      {
+        kind: "public",
+        commitmentRequired: true,
+        serviceCodeRequired: false,
+        defaultServiceCode: "SERV-RH",
+      } as const,
+    ],
+  ]);
+
+  function armyHandler(sink: { placed: OrderToPlace | null }, terms: FixedCommitmentTerms) {
+    return new SeeingPlaceOrderHandler(
+      guard("orders", "active"),
+      drafting(pickups(LABO_POINT), zones()),
+      capturingRepo(sink),
+      payments(),
+      noRetrieval,
+      events(),
+      noWaivers,
+      new FixedClock(PRICED_AT),
+      freeKeys,
+      noReader,
+      directWork,
+      new FixedVoucherQuotes(),
+      new RecordingRedemption(),
+      new RecordingDurable(),
+      intakeAt(),
+      new CustomerCancellationDeadline(new FixedCancellationSettings()),
+      noOrderMarketing(),
+      terms,
+    );
+  }
+
+  it("refusée sans numéro quand le payeur l'exige, rien n'est écrit", async () => {
+    const sink = { placed: null as OrderToPlace | null };
+    const terms = new FixedCommitmentTerms(ARMY);
+
+    await expect(
+      armyHandler(sink, terms).execute(new PlaceOrderCommand("u1", payload(), "c1")),
+    ).rejects.toThrow(BudgetCommitmentNumberRequiredError);
+    expect(sink.placed).toBeNull();
+    expect(terms.asked).toEqual(["c1"]);
+  });
+
+  it("acceptée avec le numéro ; le code par défaut de la fiche est écrit", async () => {
+    const sink = { placed: null as OrderToPlace | null };
+
+    await armyHandler(sink, new FixedCommitmentTerms(ARMY)).execute(
+      new PlaceOrderCommand(
+        "u1",
+        payload({ budgetCommitment: { number: "1300012345", serviceCode: "" } }),
+        "c1",
+      ),
+    );
+
+    expect(sink.placed).toMatchObject({
+      budgetCommitmentNumber: "1300012345",
+      budgetCommitmentServiceCode: "SERV-RH",
+    });
+  });
+
+  it("un payeur privé qui envoie un numéro est refusé", async () => {
+    const sink = { placed: null as OrderToPlace | null };
+
+    await expect(
+      armyHandler(sink, new FixedCommitmentTerms()).execute(
+        new PlaceOrderCommand(
+          "u1",
+          payload({ budgetCommitment: { number: "1300012345", serviceCode: "" } }),
+          "c1",
+        ),
+      ),
+    ).rejects.toThrow(PrivatePayerBudgetCommitmentError);
+    expect(sink.placed).toBeNull();
   });
 });

@@ -1,6 +1,6 @@
 # Plan — les clients publics (armée, écoles, mairies) et Chorus Pro
 
-> 🟨 **Plan v2** (2026-11-18). **P1a ✅ bâti** (`f4f10fb25`, § 6 bis), **P1b ✅ bâti** (2026-11-18, § 6 ter) ; P2–P4 restent. Contredit par `vitruve` le
+> 🟨 **Plan v2** (2026-11-18). **P1a ✅ bâti** (`f4f10fb25`, § 6 bis), **P1b ✅ bâti** (2026-11-18, § 6 ter), **P2 ✅ bâti** (2026-11-18, § 6 quater, limites écrites) ; P3–P4 restent. Contredit par `vitruve` le
 > 2026-11-18 : 4 bloquants et 7 sérieux, tous intégrés (§ 10).
 
 # Partie 1 — En simple
@@ -321,12 +321,177 @@ au compte acceptée ; activation puis lecture du moyen à la fiche.
 | S repli carte d'un public suspendu          | refus nommé (B5)                                                          |
 | S « nature figée dès l'ouverture »          | faux pendant `pending` : la v2 n'en dépend plus                           |
 
+## 6 quater. P2 — l'engagement budgétaire sur la commande et la facture
+
+> 🟨 Écrit le 2026-11-18, à contredire par `vitruve` (argent : le découpage
+> des factures).
+
+### En simple
+
+Quand l'armée commande, elle a un **bon de commande** avec un **numéro
+d'engagement**. Ce numéro se saisit sur la commande ; la facture le reprend.
+Une facture ne mélange jamais deux engagements : si l'armée passe trois
+commandes sur deux bons dans le mois, elle reçoit **deux factures**. Un pro,
+lui, ne voit rien changer.
+
+```mermaid
+flowchart LR
+  A["Commande 1<br/>engagement 1300012345"] --> F1["Facture A<br/>engagement 1300012345"]
+  B["Commande 2<br/>engagement 1300012345"] --> F1
+  C["Commande 3<br/>engagement 1300067890"] --> F2["Facture B<br/>engagement 1300067890"]
+```
+
+### Le format attendu par Chorus (cherché le 2026-11-18)
+
+- **Numéro d'engagement** → BT-13 (`BuyerOrderReferencedDocument/IssuerAssignedID`).
+  Pour l'État, un engagement juridique fait **10 caractères** ; une
+  collectivité peut en avoir d'autres. On ne valide donc qu'une forme large
+  (1 à 50 caractères imprimables, sans espace en tête ni en queue), jamais
+  le format de l'État en dur.
+- **Code service** → BT-10 (`BuyerReference`).
+- Source : guides d'intégration d'éditeurs et correspondance EN 16931/CII,
+  **pas** la spécification officielle de l'AIFE, introuvable ce jour. Comme
+  le dépôt est manuel jusqu'à P4 (le staff ressaisit le code service et
+  l'engagement sur le portail), une erreur de correspondance ne bloque
+  personne ; elle est à confirmer au premier dépôt réel et avant P4.
+
+### Ce qui existe (ouvert le 2026-11-18)
+
+- La clé « déjà facturé » d'une période : `invoiceGroupKey(payer, mandat)`
+  (`monthly-invoicing.ts:104`), relue de `invoice_monthly_outcome`
+  (PK `legalEntityId, periodClosesAt, payerCompanyId, mandateId`,
+  `invoice.prisma:193`, déclencheur `invoice_monthly_outcome_final`).
+- Ses lecteurs et écrivains : `prisma-monthly-invoicing.reader.ts:137`,
+  `prisma-monthly-invoice-outcomes.ts` (écrit), `prisma-monthly-invoices.reader.ts:39`,
+  `prisma-invoice-periods.reader.ts:29`, `cycle-order-membership.ts:116`.
+- La passation : `Order.draft(...)` avec `PricedDraftInput`, les révisions
+  par `recompose` → `compose` (`order.ts:157`, `:274`) ; `AccountEngagement`
+  dit déjà si une commande est facturée.
+- BT-13 est vide aujourd'hui, la liste des commandes vit en note
+  (`facturx-mentions.ts:81`).
+- Le code service et l'exigence d'engagement sont sur la fiche Chorus de la
+  société (P1a, `company_chorus_routing`).
+
+### Décisions
+
+- **E1 — Le numéro vit sur la commande**, value object `BudgetCommitment`
+  (`number`, `serviceCode`), colonnes `orders.budget_commitment_number` et
+  `orders.budget_commitment_service_code`, nullables. Lu chez le **payeur** :
+  sa fiche Chorus dit si le numéro et le code sont exigés ; le code service
+  par défaut de la fiche est proposé.
+- **E2 — Exigé ⇒ refusé sans.** Le handler lit l'exigence du payeur par un
+  port étroit déclaré dans `orders` (`PayerCommitmentRequirements`, implémenté
+  par `account`) et la passe dans `PricedDraftInput` ; `Order.draft` refuse
+  (« Cette structure exige un numéro d'engagement : il figure sur son bon de
+  commande. »). Même règle pour le code service exigé et sans défaut. Un
+  payeur privé qui envoie un numéro est refusé aussi : rien ne se perd en
+  silence.
+- **E3 — Une révision peut corriger le numéro tant que la commande n'est pas
+  facturée** ; au-delà, refus nommé (« Cette commande est déjà facturée :
+  son numéro d'engagement ne change plus. Faites un avoir. »).
+- **E4 — Une facture par (payeur, mandat, engagement).**
+  `invoiceGroupKey(payer, mandat, engagement)` ; la colonne
+  `invoice_monthly_outcome.budget_commitment_number` NOT NULL DEFAULT `''`
+  entre dans la clé primaire (migration additive : la valeur par défaut
+  remplit l'existant, la clé est recréée) ; les cinq fichiers ci-dessus la
+  lisent ou l'écrivent. Un payeur privé a toujours `''` : même découpage
+  qu'avant, sur les trois rythmes.
+- **E5 — La facture porte son engagement**, figé à l'INSERT :
+  `invoice.budget_commitment_number`, `invoice.budget_commitment_service_code`.
+  Factur-X : BT-13 = le numéro, BT-10 = le code service ; la note des
+  commandes reste. Le PDF l'imprime en tête (« Engagement n° … — Service … »).
+- **E6 — La facture carte n'est pas concernée** (un public ne paie jamais par
+  carte, P1b).
+
+### Après contradiction (`vitruve`, 2026-11-18) — ce qui remplace E1–E6
+
+- **E2′ — Le refus vit à la PASSATION, pas dans `Order.draft`** : le devis
+  de la saisie (`estimate-order-for-customer`) doit garder ses totaux tant
+  que le champ est vide. Méthode de l'agrégat appelée par les trois
+  passations (boutique, commande pro, commande à la place du client), avec
+  l'exigence lue chez `billedCompanyId ?? companyId`. Un organisme public
+  sans fiche Chorus ne peut pas être actif (P1a) ; un payeur privé qui
+  envoie un numéro est refusé.
+- **E3′ — Corriger l'engagement est un geste à part**, pas une révision (la
+  révision refuse dès la préparation, `order-revisability.ts:181`, alors
+  qu'un numéro manquant se découvre souvent après la livraison) : commande
+  « corriger l'engagement », méthode de l'agrégat, gardée par
+  `AccountOrderEngagement` (non facturée), sous le verrou des lignes
+  `orders` que prend l'émission (`prisma-order-rows-lock.ts`), avec un fait
+  au journal.
+- **E4′ — La clé est (payeur, mandat, numéro, code service).** Deux sites
+  d'un même principal public peuvent avoir deux services : une facture n'a
+  qu'un BT-10. Deux colonnes NOT NULL DEFAULT `''` dans la PK de
+  `invoice_monthly_outcome` (même geste que
+  `20261008210000_une_facture_par_mandat`).
+- **E4″ — Sous le verrou, l'émission relit le numéro et le code des bons** et
+  retire du groupe ceux dont la clé a changé (`withoutCancelled` ne relit
+  aujourd'hui que les annulations). Test de la course.
+- **E7 — Filet à l'émission** : motif `public_commitment_missing` dans
+  `invoice-issuance-blockers.ts` quand la fiche du payeur exige le numéro (ou
+  le code) et qu'un bon n'en a pas. Aucune commande publique n'existe en
+  production (rien n'est déployé) : pas de rattrapage.
+- **E8 — Le dossier de facturation simule par clé**, comme l'émission
+  (`invoice-dossier-support.ts:99`), pour que l'arrondi de TVA dise la même
+  chose.
+- **E9 — L'avoir d'une facture publique reprend son numéro et son code**
+  (copiés de la facture). Refacturer une commande sortie par un avoir suit
+  le chemin existant ; s'il n'existe pas, c'est écrit comme limite.
+- **E10 — Un blocage rangé sous une clé qui n'a plus de commande** (numéro
+  corrigé depuis) ne s'affiche plus ; il reste en base (issue finale).
+- **E11 — `MonthlyInvoiceView` porte le numéro**, pour distinguer deux
+  factures d'un même payeur sans mandat.
+- **Factur-X** : BT-10 premier fils de `ApplicableHeaderTradeAgreement`,
+  BT-13 après la partie acheteur (ordre du XSD, validé par
+  `xsd-validation.ts`) ; JSDoc de `facturx-mentions.ts:81` réécrit.
+  `invoice_immutable` couvre les colonnes neuves sans changement.
+- **Retour arrière** : gratuit tant qu'aucune facture publique n'est émise
+  (les deux colonnes valent `''` partout) ; après, la clé à six colonnes ne
+  se défait plus (`invoice_monthly_outcome_final`).
+
+### Ce qui est bâti, et ses limites (2026-11-18)
+
+- **Bâti** : E2′, E3′, E4′, E4″, E7, E9, E10, E11, Factur-X (BT-10, BT-13,
+  validés par Schematron et XSD), le PDF, la migration
+  `20261118160000_l_engagement_budgetaire`.
+- **E8 n'est pas fait, et c'est assumé** : le dossier de facturation simule
+  toute la période d'un payeur en une seule facture et ne découpe déjà pas
+  par mandat. Le découper par clé change sa vue, ses trois CSV et son écran :
+  chantier à part, à décider.
+- **Une commande sortie d'une facture par un avoir ne se refacture pas**
+  (`invoice_order_invoiced_once`, et `uninvoicedOrders` écarte toute commande
+  déjà portée par une facture). Un engagement faux sur une facture émise n'a
+  donc pas de sortie dans le système : le refus de correction renvoie à la
+  comptabilité, sans promettre d'avoir. **Décidé par Hugo le 2026-11-18 : la
+  refacturation après avoir se traite à la main, hors système** — la
+  comptabilité fait l'avoir et émet la nouvelle facture elle-même.
+- **Fiche Chorus** : le code service va en BT-10 sur la foi de guides
+  d'éditeurs ; à confirmer au premier dépôt réel.
+
+### Écrans
+
+- Boutique, panier d'un payeur public : « N° d'engagement » (exigé ou non,
+  dit à côté du champ) et « Code service » prérempli. Le numéro est rappelé
+  dans le récapitulatif et sur la commande.
+- Back-office, nouvelle commande et révision : les mêmes deux champs.
+- Fiche commande : le numéro et le code, modifiables tant que non facturée.
+
+### Tests
+
+Domaine : `BudgetCommitment` (forme), `Order.draft` exigé/absent/privé,
+révision avant et après facturation. Émission : deux engagements dans la
+période ⇒ deux factures et deux issues ; un payeur privé ⇒ découpage
+inchangé (un test qui compare au découpage par mandat) ; BT-13 et BT-10 dans
+le XML, validé par le Schematron existant. E2E : passation boutique refusée
+sans numéro pour l'armée, acceptée avec ; émission mensuelle à deux
+engagements.
+
 ## 7. Lots
 
 | Lot       | Contenu                                                                                                                                 | Dépend de                                                     |
 | --------- | --------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
 | **P1** ✅ | D1, D2, D3 : routage du payeur, geste « passer public », virement forcé, carte refusée, suivi refusé entre natures ; fiche client       | —                                                             |
-| **P2**    | D4, D5 : engagement sur la commande et ses révisions, clé de clôture à trois termes, BT-13 et référence acheteur ; champ dans le panier | P1, mapping Chorus vérifié, inventaire des lecteurs de la clé |
+| **P2** ✅ | D4, D5 : engagement sur la commande et ses révisions, clé de clôture à trois termes, BT-13 et référence acheteur ; champ dans le panier | P1, mapping Chorus vérifié, inventaire des lecteurs de la clé |
 | **P3**    | D6, D7, D8 : journal de transmission, échéance au dépôt, `ManualChorusDeposit`, file « À déposer »                                      | P2                                                            |
 | **P4**    | Adaptateur de la plateforme agréée, lecture de l'annuaire Chorus (exigences relues)                                                     | Q4 de [`plan-zero-faille.md`](plan-zero-faille.md)            |
 

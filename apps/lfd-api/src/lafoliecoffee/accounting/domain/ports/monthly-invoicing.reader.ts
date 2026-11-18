@@ -41,7 +41,8 @@ export abstract class MonthlyInvoicingReader extends BillingFollowsReader {
 
   /**
    * Les factures déjà émises par l'entité pour la période qui se clôt à
-   * `periodClosesAt`, en clés `invoiceGroupKey` (payeur × mandat effectif, E4b).
+   * `periodClosesAt`, en clés `invoiceGroupKey` (payeur × mandat effectif ×
+   * engagement, E4b et P2).
    */
   abstract invoicedGroups(
     legalEntityId: string,

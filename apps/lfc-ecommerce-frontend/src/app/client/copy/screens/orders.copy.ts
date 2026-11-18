@@ -601,6 +601,12 @@ export interface OrdersCopy {
   /** L'intitulé de la ligne « Remboursement » — absente sans remboursement. */
   readonly detailRefund: string;
   /** L'intitulé de la remise de retrait quand une ligne en était exclue. */
+  /** Le bon de commande d'un organisme public, sur le détail. */
+  readonly detailCommitment: string;
+  /** `{number}` : le numéro d'engagement. */
+  readonly detailCommitmentNumber: string;
+  /** `{code}` : le code service. */
+  readonly detailCommitmentService: string;
   readonly detailPickupDiscount: string;
   /** `{value}` la remise, `{base}` son assiette mention comprise. */
   readonly detailPickupDiscountValue: string;
@@ -765,6 +771,9 @@ export const ORDERS_FR: OrdersCopy = {
   payRefusedNote: 'votre banque a refusé la carte',
   settle: 'Régler',
   detailRefund: 'Remboursement',
+  detailCommitment: 'Bon de commande',
+  detailCommitmentNumber: 'engagement n° {number}',
+  detailCommitmentService: 'service {code}',
   detailPickupDiscount: 'Remise retrait',
   detailPickupDiscountValue: '−{value} sur {base} éligibles',
   detailPickupExcluded: 'Non concernés par la remise retrait',
@@ -900,6 +909,9 @@ export const ORDERS_EN: OrdersCopy = {
   payRefusedNote: 'your bank declined the card',
   settle: 'Pay',
   detailRefund: 'Refund',
+  detailCommitment: 'Purchase order',
+  detailCommitmentNumber: 'commitment no. {number}',
+  detailCommitmentService: 'service {code}',
   detailPickupDiscount: 'Collection discount',
   detailPickupDiscountValue: '−{value} on {base} eligible',
   detailPickupExcluded: 'Not covered by the collection discount',
@@ -1035,6 +1047,9 @@ export const ORDERS_IT: OrdersCopy = {
   payRefusedNote: 'la tua banca ha rifiutato la carta',
   settle: 'Paga',
   detailRefund: 'Rimborso',
+  detailCommitment: 'Buono d’ordine',
+  detailCommitmentNumber: 'impegno n. {number}',
+  detailCommitmentService: 'servizio {code}',
   detailPickupDiscount: 'Sconto ritiro',
   detailPickupDiscountValue: '−{value} su {base} idonei',
   detailPickupExcluded: 'Non coperti dallo sconto ritiro',

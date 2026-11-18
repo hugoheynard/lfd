@@ -369,6 +369,13 @@ model Order {
 
   note String @default("")
 
+  /// L'engagement budgétaire d'un organisme public (BT-13), saisi à la
+  /// passation ou corrigé tant que la commande n'est pas facturée ; NULL =
+  /// aucun (tout payeur privé). Plan `plan-clients-publics-chorus.md`, § 6 quater.
+  budgetCommitmentNumber      String? @map("budget_commitment_number")
+  /// Le code service Chorus (BT-10) ; NULL = aucun.
+  budgetCommitmentServiceCode String? @map("budget_commitment_service_code")
+
   // Origine récurrente : l'abonnement qui a produit cette commande (« récurrent »)
   // et l'écart vs son gabarit pour cette échéance ({ added, removed } — pills +/−).
   // Nuls tant que le planificateur ne génère pas de commandes depuis un abonnement.

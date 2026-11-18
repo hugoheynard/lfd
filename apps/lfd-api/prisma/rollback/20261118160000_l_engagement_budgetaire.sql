@@ -1,0 +1,35 @@
+-- RETOUR ARRIÈRE de 20261118160000_l_engagement_budgetaire
+-- (documentation/comptabilite/facturation/plan-clients-publics-chorus.md, § 6 quater).
+--
+-- 🔴 NON APPLIQUÉ, et Prisma ne le lit pas. La migration reste inscrite
+-- « appliquée ».
+--
+-- Le code d'avant ignore les six colonnes : le retour arrière est d'abord le
+-- retour du code seul. Gratuit tant qu'aucune facture publique n'est émise
+-- (les deux colonnes de `invoice_monthly_outcome` valent '' partout). Après,
+-- la clé à six colonnes ne se défait plus : deux issues d'un même payeur et
+-- d'un même mandat sous deux engagements entreraient en collision, et
+-- `invoice_monthly_outcome_final` refuse de toucher une issue émise.
+--
+-- Le garde d'abord, puis le reste — sur décision de Hugo seulement :
+--
+--   DO $$
+--   BEGIN
+--       IF EXISTS (
+--           SELECT 1 FROM "public"."invoice_monthly_outcome"
+--           WHERE "budget_commitment_number" <> '' OR "budget_commitment_service_code" <> ''
+--       ) THEN
+--           RAISE EXCEPTION 'l_engagement_budgetaire : une issue porte un engagement, la clé ne se rétrécit plus.';
+--       END IF;
+--   END;
+--   $$;
+--
+--   ALTER TABLE "public"."invoice_monthly_outcome"
+--       DROP CONSTRAINT "invoice_monthly_outcome_pkey",
+--       ADD CONSTRAINT "invoice_monthly_outcome_pkey"
+--           PRIMARY KEY ("legal_entity_id", "period_closes_at", "payer_company_id", "mandate_id");
+--
+--   -- Colonnes gardées en base (CLAUDE.md §0) ; à retirer seulement sur ordre :
+--   -- ALTER TABLE "public"."invoice_monthly_outcome" DROP COLUMN "budget_commitment_number", DROP COLUMN "budget_commitment_service_code";
+--   -- ALTER TABLE "public"."invoice" DROP COLUMN "budget_commitment_number", DROP COLUMN "budget_commitment_service_code";
+--   -- ALTER TABLE "public"."orders" DROP COLUMN "budget_commitment_number", DROP COLUMN "budget_commitment_service_code";

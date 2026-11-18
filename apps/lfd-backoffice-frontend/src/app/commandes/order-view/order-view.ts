@@ -29,6 +29,7 @@ import { OrderDeliveryNotesCard } from '../order-delivery-notes-card/order-deliv
 import { OrderMailsCard } from '../order-mails-card/order-mails-card';
 import { OrderMailsStore } from '../order-mails.store';
 import { OrderInvoicesCard } from '../order-invoices-card/order-invoices-card';
+import { OrderBudgetCommitmentCard } from '../order-budget-commitment-card/order-budget-commitment-card';
 import { OrderRefundBanner } from '../order-refund-banner/order-refund-banner';
 import { OrderShortfallBanner } from '../order-shortfall-banner/order-shortfall-banner';
 import { OrderShortfallDecision } from '../order-shortfall-decision/order-shortfall-decision';
@@ -74,6 +75,7 @@ type LoadState = 'loading' | 'ready' | 'error';
     OrderRevisionsCard,
     OrderSalesTermsCard,
     OrderDeliveryNotesCard,
+    OrderBudgetCommitmentCard,
     OrderInvoicesCard,
     OrderMailsCard,
     OrderRefundBanner,

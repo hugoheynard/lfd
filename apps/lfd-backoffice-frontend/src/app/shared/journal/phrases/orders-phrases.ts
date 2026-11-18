@@ -167,6 +167,43 @@ function orderRevised(fact: PhraseFact): Said {
 }
 
 /**
+ * « n° 1300012345 · service SRV-01 » — un engagement budgétaire, avant ou
+ * après ; « aucun » quand la commande n'en portait pas (`null`, ou deux
+ * textes vides).
+ */
+function commitmentTerms(raw: unknown): Segment[] {
+  const commitment = recordOf(raw);
+  const number = commitment === null ? null : optional(commitment['number']);
+  const serviceCode = commitment === null ? null : optional(commitment['serviceCode']);
+  const parts: Segment[][] = [
+    ...(number === null ? [] : [[text('n° '), value(number)]]),
+    ...(serviceCode === null ? [] : [[text('service '), value(serviceCode)]]),
+  ];
+  if (parts.length === 0) {
+    return [text('aucun')];
+  }
+  return parts.flatMap((part, index) => (index === 0 ? part : [text(' · '), ...part]));
+}
+
+/**
+ * L'engagement budgétaire corrigé par l'équipe (plan clients publics, E3′) :
+ * « Marie D. a corrigé l'engagement de la commande ORD-7 : de n° … à n° … ».
+ */
+function orderBudgetCommitmentCorrected(fact: PhraseFact): Said {
+  return staffGesture(
+    fact,
+    'correctedBy',
+    [
+      text(' a corrigé l’engagement de la commande '),
+      name(orDash(fact.payload['orderNumber'])),
+      text(' : '),
+      ...fromTo(commitmentTerms(fact.payload['before']), commitmentTerms(fact.payload['after'])),
+    ],
+    ['orderNumber', 'before', 'after'],
+  );
+}
+
+/**
  * Le départ incomplet décidé (plan E6c2, § 5) : « Marie D. a décidé d’un
  * départ incomplet pour la commande ORD-7 ». Ce qui part et le sort du reste
  * restent au détail.
@@ -471,6 +508,7 @@ export const ORDERS_PHRASES = {
   'order.abandoned': orderAbandoned,
   'order.cancelled': orderCancelled,
   'order.revised': orderRevised,
+  'order.budget_commitment_corrected': orderBudgetCommitmentCorrected,
   'order.shortfall_decided': orderShortfallDecided,
   'order.handed_over': orderHandedOver,
 

@@ -20,6 +20,10 @@ import type { JournalFactType } from '@lfd/contracts/journal-facts';
  * rien à faire ici.
  */
 export const KEY_LABELS: Readonly<Record<string, string>> = {
+  checkedOn: 'Fiche Chorus vérifiée le',
+  commitmentRequired: 'Numéro d’engagement exigé',
+  defaultServiceCode: 'Code service par défaut',
+  serviceCodeRequired: 'Code service exigé',
   absorbed: 'Commandes absorbées',
   action: 'Action',
   activatedAt: 'Activé le',

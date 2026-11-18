@@ -156,6 +156,9 @@ const BARE_REFS: Readonly<Record<string, string>> = {
   "order.ready:readyBy": "une fiche staff que l'annuaire ne nomme pas se cite par son id",
   // Le départ incomplet décidé (plan E6c2, § 5, 2026-10-25).
   "order.shortfall_decided:orderId": "voisine son nom figé (`orderNumber`)",
+  "order.budget_commitment_corrected:orderId": "voisine son nom figé (`orderNumber`)",
+  "order.budget_commitment_corrected:correctedBy":
+    "une fiche staff que l'annuaire ne nomme pas se cite par son id",
   "order.shortfall_decided:decidedBy":
     "une fiche staff que l'annuaire ne nomme pas se cite par son id",
   // La demande de modification après l'heure limite (plan de modification, M4, 2026-10-23).

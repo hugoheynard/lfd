@@ -276,3 +276,13 @@ describe("isSettled", () => {
     expect(isSettled(paymentStatus)).toBe(expected);
   });
 });
+
+describe("l'engagement budgétaire (plan clients publics, § 6 quater)", () => {
+  it("recopie l'engagement budgétaire quand la commande en porte un, et rien sinon", () => {
+    const budgetCommitment = { number: "1300012345", serviceCode: "SRV-01" };
+    expect(toCustomerOrder({ ...STAFF_ORDER, budgetCommitment }).budgetCommitment).toEqual(
+      budgetCommitment,
+    );
+    expect("budgetCommitment" in toCustomerOrder(STAFF_ORDER)).toBe(false);
+  });
+});

@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, inject, input, type Signal } from '
 import { FoldPanelHeaderComponent, FoldPanelRef, type FoldPanelDefaults } from 'fold-ng';
 import type {
   AdminOrderEstimateView,
+  BudgetCommitmentRequirementsView,
   CustomerAudience,
   DeliveryAddressView,
   DeliveryAvailabilityView,
@@ -42,6 +43,9 @@ export interface PanierPanelData {
   readonly linkOffered: boolean;
   /** Un organisme public : au compte, facture Chorus. */
   readonly payerIsPublic: boolean;
+  /** Ce que le payeur public exige de son engagement — `null` tant que non lu. */
+  readonly commitmentRequirements: Signal<BudgetCommitmentRequirementsView | null>;
+  readonly commitmentRequirementsFailed: Signal<boolean>;
 }
 
 /**

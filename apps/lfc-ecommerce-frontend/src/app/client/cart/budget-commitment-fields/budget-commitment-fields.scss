@@ -1,0 +1,14 @@
+.commitment {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+.commitment-title {
+  margin: 0;
+  font-family: var(--fold-font-label);
+  font-size: var(--lfc-text-block);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-block);
+  text-transform: uppercase;
+}

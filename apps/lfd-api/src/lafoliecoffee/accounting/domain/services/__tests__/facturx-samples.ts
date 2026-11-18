@@ -115,6 +115,20 @@ function creditTransfer(): Invoice {
   );
 }
 
+/**
+ * La facture d'un organisme public (P2) : au virement, BT-10 = le code
+ * service Chorus, BT-13 = le numéro d'engagement de son bon de commande.
+ */
+function publicCommitment(): Invoice {
+  return Invoice.issue(
+    realisticInput({
+      id: "inv_public",
+      paymentMeans: { code: SEPA_CREDIT_TRANSFER },
+      budgetCommitment: { number: "1300012345", serviceCode: "SERV-RH-01" },
+    }),
+  );
+}
+
 const CARD_LINES = [billedLine("PAIN", 5.5, 1_000), billedLine("JUS", 20, 500)];
 
 function paidByCard(): Invoice {
@@ -289,6 +303,7 @@ export function facturXSamples(): readonly FacturXSample[] {
     { name: "plusieurs-taux-remise-livraison", invoice: multiRateWithDiscountAndDelivery() },
     { name: "prelevement-sepa", invoice: directDebit() },
     { name: "virement-sepa", invoice: creditTransfer() },
+    { name: "organisme-public-engagement", invoice: publicCommitment() },
     { name: "carte-acquittee", invoice: paidByCard() },
     { name: "avoir-partiel", invoice: partialCreditNote() },
     { name: "quantites-au-kilo", invoice: weighed() },

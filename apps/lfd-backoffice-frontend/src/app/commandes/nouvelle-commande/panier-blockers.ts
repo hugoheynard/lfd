@@ -24,6 +24,8 @@ export interface PanierBlockerFacts {
   readonly settlesOnAccount: boolean;
   /** Un organisme public : au compte, toujours ; le serveur dit le refus. */
   readonly payerIsPublic?: boolean;
+  /** Ce qui manque à l'engagement budgétaire d'un organisme public (`budgetCommitmentGaps`). */
+  readonly commitmentGaps?: readonly string[];
   readonly refusal: AdminOrderEstimateNotice | null;
 }
 
@@ -56,6 +58,9 @@ export function panierBlockersOf(facts: PanierBlockerFacts): readonly PanierBloc
     issues.push({ text: facts.shelfIssue, view: 'lines' });
   }
   issues.push(...settlementBlockers(facts));
+  for (const gap of facts.commitmentGaps ?? []) {
+    issues.push({ text: gap, view: 'settings' });
+  }
   if (facts.refusal !== null && isBlockingRefusal(facts.refusal)) {
     issues.push({ text: facts.refusal.message, view: refusalViewOf(facts.refusal.code) });
   }

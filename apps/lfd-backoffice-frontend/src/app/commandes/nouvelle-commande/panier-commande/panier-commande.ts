@@ -12,6 +12,7 @@ import {
 import {
   STAFF_SETTLEMENT_LABELS,
   type AdminOrderEstimateView,
+  type BudgetCommitmentRequirementsView,
   type CustomerAudience,
   type DeliveryAddressView,
   type DeliveryAvailabilityView,
@@ -21,6 +22,8 @@ import {
 } from '@lfd/contracts';
 import { CartRow } from '@lfd/b2b-ui/cart';
 
+import { budgetCommitmentGaps } from '../../budget-commitment';
+import { BudgetCommitmentFields } from '../../budget-commitment-fields/budget-commitment-fields';
 import type { CartStore } from '../cart.store';
 import type { DraftStore } from '../draft.store';
 import { buyerOf, composedDraftOf, type OrderDraft } from '../draft-payload';
@@ -77,6 +80,7 @@ const NO_FULFILLMENT: FulfillmentChoice = {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     AcheminementCommande,
+    BudgetCommitmentFields,
     CartRow,
     FoldButtonComponent,
     FoldButtonIconComponent,
@@ -145,6 +149,10 @@ export class PanierCommande {
    * compte, facture déposée sur Chorus Pro. Ni choix du règlement, ni lien.
    */
   readonly payerIsPublic = input(false);
+  /** Ce que le payeur public exige de son engagement — `null` tant que non lu. */
+  readonly commitmentRequirements = input<BudgetCommitmentRequirementsView | null>(null);
+  /** La lecture des exigences a échoué : les champs restent, l'échec est dit. */
+  readonly commitmentRequirementsFailed = input(false);
 
   /** Ce que l'écran ne calcule PAS, dit près du sous-total. */
   protected readonly TOTALS_LATER =
@@ -253,6 +261,11 @@ export class PanierCommande {
       linkOffered: this.linkOffered(),
       settlesOnAccount: this.settlesOnAccount(),
       payerIsPublic: this.payerIsPublic(),
+      commitmentGaps: budgetCommitmentGaps(
+        this.commitmentRequirements(),
+        this.draft().commitmentNumber(),
+        this.draft().commitmentServiceCode(),
+      ),
       refusal: this.estimate()?.refusal ?? null,
     }),
   );

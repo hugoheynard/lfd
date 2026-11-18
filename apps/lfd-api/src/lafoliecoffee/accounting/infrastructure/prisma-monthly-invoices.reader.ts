@@ -1,4 +1,5 @@
 import type {
+  BudgetCommitmentView,
   MonthlyInvoiceAutopilotOutcomeView,
   MonthlyInvoiceAutopilotRunView,
   MonthlyInvoiceView,
@@ -10,7 +11,8 @@ import {
   MonthlyInvoicesReader,
   type MonthlyInvoicesRead,
 } from "../domain/ports/monthly-invoices.reader.js";
-import { mandateReferenceOf } from "../domain/entities/invoice.types.js";
+import { COMMERCIAL_INVOICE, mandateReferenceOf } from "../domain/entities/invoice.types.js";
+import { budgetCommitmentOf } from "../domain/value-objects/invoice-budget-commitment.js";
 import { invoicePaymentMeansSchema } from "./invoice-json.schema.js";
 import { BLOCKED_OUTCOME, ISSUED_OUTCOME } from "./prisma-monthly-invoice-outcomes.js";
 
@@ -22,7 +24,10 @@ const OUTCOMES: readonly MonthlyInvoiceAutopilotOutcomeView[] = [
   "failed",
 ];
 
-/** Les issues d'une clôture, leurs factures, et la tentative automatique — trois lectures. */
+/**
+ * Les issues d'une clôture, leurs factures, et la tentative automatique —
+ * trois lectures ; deux de plus quand un payeur est signalé (E10).
+ */
 @Injectable()
 export class PrismaMonthlyInvoicesReader extends MonthlyInvoicesReader {
   constructor(private readonly prisma: PrismaService) {
@@ -57,6 +62,7 @@ export class PrismaMonthlyInvoicesReader extends MonthlyInvoicesReader {
         where: { legalEntityId_periodClosesAt: { legalEntityId, periodClosesAt } },
       }),
     ]);
+    const blocked = outcomes.filter((row) => row.outcome === BLOCKED_OUTCOME);
     return {
       floorAt: floor?.floorAt ?? null,
       invoices: outcomes.flatMap((row): MonthlyInvoiceView[] =>
@@ -76,22 +82,100 @@ export class PrismaMonthlyInvoicesReader extends MonthlyInvoicesReader {
                   invoicePaymentMeansSchema.safeParse(row.invoice.paymentMeans).data ?? null,
                 ),
                 unbillableOrders: row.unbillableOrders,
+                ...commitmentViewOf(row),
               },
             ],
       ),
-      signaled: outcomes
-        .filter((row) => row.outcome === BLOCKED_OUTCOME)
-        .map((row) => ({
-          payerCompanyId: row.payerCompanyId,
-          payerName: row.payerName,
-          mandateReference: row.mandateReference,
-          message: row.message ?? "",
-          unbillableOrders: row.unbillableOrders,
-          recordedAt: row.recordedAt.toISOString(),
-        })),
+      signaled: (await this.stillCarried(blocked, periodClosesAt)).map((row) => ({
+        payerCompanyId: row.payerCompanyId,
+        payerName: row.payerName,
+        mandateReference: row.mandateReference,
+        ...commitmentViewOf(row),
+        message: row.message ?? "",
+        unbillableOrders: row.unbillableOrders,
+        recordedAt: row.recordedAt.toISOString(),
+      })),
       autopilotRun: run === null ? null : runView(run),
     };
   }
+
+  /**
+   * **E10 — un blocage sans commande ne s'affiche plus.** Un refus est rangé
+   * sous sa clé (payeur, mandat, engagement) ; quand l'engagement de ses bons
+   * a été corrigé depuis, la clé n'en porte plus aucun, et le refus resterait
+   * à l'écran pour toujours (l'issue finale ne s'efface pas, elle reste en
+   * base). Il est caché quand, parmi les bons non facturés du payeur passés
+   * avant la clôture, aucun ne porte sa clé ET qu'au moins un porte un
+   * engagement — ou que le refus en portait un. Un payeur privé n'a jamais
+   * d'engagement : ses refus s'affichent tous, comme avant P2.
+   */
+  private async stillCarried<
+    T extends {
+      readonly payerCompanyId: string;
+      readonly budgetCommitmentNumber: string;
+      readonly budgetCommitmentServiceCode: string;
+    },
+  >(blocked: readonly T[], periodClosesAt: Date): Promise<readonly T[]> {
+    const payers = [...new Set(blocked.map((row) => row.payerCompanyId))];
+    if (payers.length === 0) {
+      return [];
+    }
+    const orders = await this.prisma.order.findMany({
+      where: {
+        createdAt: { lt: periodClosesAt },
+        status: { not: "cancelled" },
+        OR: [
+          { billedCompanyId: { in: payers } },
+          { billedCompanyId: null, companyId: { in: payers } },
+        ],
+      },
+      select: {
+        id: true,
+        companyId: true,
+        billedCompanyId: true,
+        budgetCommitmentNumber: true,
+        budgetCommitmentServiceCode: true,
+      },
+    });
+    const invoiced = await this.prisma.invoiceOrder.findMany({
+      where: { orderId: { in: orders.map((order) => order.id) }, invoiceType: COMMERCIAL_INVOICE },
+      select: { orderId: true },
+    });
+    const taken = new Set(invoiced.map((row) => row.orderId));
+    const keys = new Map<string, Set<string>>();
+    for (const order of orders.filter((candidate) => !taken.has(candidate.id))) {
+      const payer = order.billedCompanyId ?? order.companyId ?? "";
+      const set = keys.get(payer) ?? new Set<string>();
+      set.add(
+        commitmentKey(order.budgetCommitmentNumber ?? "", order.budgetCommitmentServiceCode ?? ""),
+      );
+      keys.set(payer, set);
+    }
+    return blocked.filter((row) => {
+      const carried = keys.get(row.payerCompanyId) ?? new Set<string>();
+      const own = commitmentKey(row.budgetCommitmentNumber, row.budgetCommitmentServiceCode);
+      const anyCommitment = [...carried].some((key) => key !== NO_COMMITMENT_KEY);
+      return carried.has(own) || (own === NO_COMMITMENT_KEY && !anyCommitment);
+    });
+  }
+}
+
+const NO_COMMITMENT_KEY = commitmentKey("", "");
+
+function commitmentKey(number: string, serviceCode: string): string {
+  return JSON.stringify([number, serviceCode]);
+}
+
+/** Les deux colonnes de clé d'une issue ; absentes de la vue quand elles sont vides (E11). */
+function commitmentViewOf(row: {
+  readonly budgetCommitmentNumber: string;
+  readonly budgetCommitmentServiceCode: string;
+}): { budgetCommitment?: BudgetCommitmentView } {
+  const commitment = budgetCommitmentOf(
+    row.budgetCommitmentNumber,
+    row.budgetCommitmentServiceCode,
+  );
+  return commitment === null ? {} : { budgetCommitment: commitment };
 }
 
 function runView(run: {

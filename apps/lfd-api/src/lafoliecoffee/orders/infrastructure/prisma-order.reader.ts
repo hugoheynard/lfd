@@ -1,5 +1,6 @@
 import {
   type BillingAddressPayload,
+  type BudgetCommitmentView,
   billingAddressPayloadSchema,
   type CartAdjustment,
   cartAdjustmentSchema,
@@ -73,6 +74,8 @@ export interface OrderRow {
   readonly pickupAddress: Prisma.JsonValue | null;
   readonly fulfillment: Prisma.JsonValue | null;
   readonly note: string;
+  readonly budgetCommitmentNumber: string | null;
+  readonly budgetCommitmentServiceCode: string | null;
   readonly subtotalCents: number;
   readonly discountCents: number;
   readonly discountAdjustment: Prisma.JsonValue | null;
@@ -124,6 +127,8 @@ export const ORDER_SELECT = {
   pickupAddress: true,
   fulfillment: true,
   note: true,
+  budgetCommitmentNumber: true,
+  budgetCommitmentServiceCode: true,
   subtotalCents: true,
   discountCents: true,
   discountAdjustment: true,
@@ -526,6 +531,16 @@ function parseAddress(value: Prisma.JsonValue | null): BillingAddressPayload | n
  * La ligne → la vue. Les remboursements viennent du bloc `card-payment` (plan
  * M2, lot P1.c), lus par lot à côté de la ligne.
  */
+/** L'engagement budgétaire, absent de la vue quand la commande n'en porte pas (P2). */
+function budgetCommitmentFieldOf(
+  number: string | null,
+  serviceCode: string | null,
+): { budgetCommitment?: BudgetCommitmentView } {
+  return number === null && serviceCode === null
+    ? {}
+    : { budgetCommitment: { number: number ?? "", serviceCode: serviceCode ?? "" } };
+}
+
 export function toOrderView(row: OrderRow, refunds: OrderRefundsReading): OrderView {
   return {
     id: row.id,
@@ -543,6 +558,7 @@ export function toOrderView(row: OrderRow, refunds: OrderRefundsReading): OrderV
     pickupAddressId: siteIdOf(row.pickupAddress),
     fulfillment: fulfillmentOf(row.fulfillment),
     note: row.note,
+    ...budgetCommitmentFieldOf(row.budgetCommitmentNumber, row.budgetCommitmentServiceCode),
     subtotalCents: row.subtotalCents,
     discountCents: row.discountCents,
     discountAdjustment: parseAdjustment(row.discountAdjustment),

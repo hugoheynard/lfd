@@ -2,6 +2,7 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { computed, effect, inject, Injectable, isDevMode, signal, untracked } from '@angular/core';
 import {
   WORKSPACE_HEADER,
+  type BudgetCommitmentView,
   type GuestBuyerPayload,
   type OrderPaymentIntent,
   type OrderSaleUnit,
@@ -25,6 +26,7 @@ import { switchMap } from 'rxjs/operators';
 
 import { AUTH_CONFIG } from '../auth/auth.config';
 import { AuthFacade } from '../auth/auth.facade';
+import { ClientBudgetCommitment } from './cart/budget-commitment.service';
 import { ClientCart } from './cart/client-cart.service';
 import { SalesTermsConsent } from './cart/sales-terms-consent.service';
 import { CheckoutConsent } from './marketing/checkout-consent.service';
@@ -113,6 +115,11 @@ export interface PlacedOrder {
    * Absent quand le bonus est éteint, et sur toute commande passée connecté.
    */
   readonly welcomeBonusPoints?: number;
+  /**
+   * Le bon de commande d'un organisme public, tel qu'il est parti avec la
+   * passation : rappelé à la confirmation. Absent pour toute autre commande.
+   */
+  readonly budgetCommitment?: BudgetCommitmentView;
 }
 
 /**
@@ -307,6 +314,7 @@ export class ClientOrders {
   private readonly auth = inject(AuthFacade);
   private readonly workspace = inject(ClientWorkspace);
   private readonly voucher = inject(VoucherChoice);
+  private readonly commitment = inject(ClientBudgetCommitment);
   /** La case des CGV du panier : sa version part avec la commande, son refus la renouvelle. */
   private readonly salesTerms = inject(SalesTermsConsent);
   private readonly checkoutConsent = inject(CheckoutConsent);
@@ -430,7 +438,18 @@ export class ClientOrders {
     // serveur répond que le total a changé (T3). Le panier ne laisse pas
     // cliquer pendant qu'un devis est en vol (`cart-dialog`, `blockReason`).
     const seen = this.cart.totals();
-    const placed = await this.send(service, lines, settlement, workspace, voucherId, seen);
+    // Le bon de commande d'un organisme public, capturé au clic comme l'espace :
+    // vide pour tout autre payeur.
+    const commitment = this.commitment.payloadFor(workspace);
+    const placed = await this.send(
+      service,
+      lines,
+      settlement,
+      workspace,
+      voucherId,
+      seen,
+      commitment,
+    );
     if (placed === null) {
       return null;
     }
@@ -458,7 +477,9 @@ export class ClientOrders {
       // décide, jamais l'écran.
       settlement: payment === null ? 'not_required' : 'due',
       onAccount: placed.settlement === 'account',
+      ...shownCommitmentOf(commitment.budgetCommitment),
     };
+    this.commitment.forget(workspace);
     this.intent.set(payment === null ? null : { orderId: placed.id, payment });
     // La tentative est close : la commande suivante en ouvrira une autre. Gardée
     // au-delà, elle ferait rendre CETTE commande au prochain panier.
@@ -751,6 +772,7 @@ export class ClientOrders {
     workspace: string,
     voucherId: string | null,
     seen: ShopQuoteView,
+    commitment: { readonly budgetCommitment?: BudgetCommitmentView },
   ): Promise<PlacedOrderResponse | null> {
     if (!this.auth.isAuthenticated()) {
       // Pas un échec : une étape. L'écran envoie se connecter, et le panier
@@ -773,6 +795,8 @@ export class ClientOrders {
       ...(voucherId === null ? {} : { voucherId }),
       // Le TTC du devis affiché : la passation refuse un autre total (T3).
       expectedTotalCents: seen.totalCents,
+      // L'engagement d'un organisme public ; omis pour tout autre payeur.
+      ...commitment,
     };
     try {
       return await firstValueFrom(
@@ -995,6 +1019,15 @@ function guestContentOf(
   // Un visiteur n'a pas de carnet : aucun identifiant d'adresse ne part d'ici,
   // quoi que porte le choix stocké.
   return { ...content, deliveryAddressId: null };
+}
+
+/** L'engagement à rappeler à la confirmation : seulement s'il dit quelque chose. */
+function shownCommitmentOf(commitment: BudgetCommitmentView | undefined): {
+  readonly budgetCommitment?: BudgetCommitmentView;
+} {
+  return commitment === undefined || (commitment.number === '' && commitment.serviceCode === '')
+    ? {}
+    : { budgetCommitment: commitment };
 }
 
 /** Le serveur a répondu, et il refuse : un 4xx. Un réseau coupé (0) ou un 5xx n'en est pas un. */

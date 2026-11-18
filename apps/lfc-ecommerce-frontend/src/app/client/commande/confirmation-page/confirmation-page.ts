@@ -157,6 +157,27 @@ export class ConfirmationPage {
     this.auth.continueWithEmailCode(AFTER_SIGN_UP, identity.email, identity);
   }
 
+  /**
+   * Le bon de commande d'un organisme public, tel qu'il est parti :
+   * « engagement n° … · service … », `null` pour toute autre commande.
+   */
+  protected readonly commitmentLabel = computed(() => {
+    const commitment = this.order()?.budgetCommitment;
+    if (commitment === undefined) {
+      return null;
+    }
+    const done = this.t().done;
+    const parts = [
+      commitment.number === ''
+        ? null
+        : fill(done.recapCommitmentNumber, { number: commitment.number }),
+      commitment.serviceCode === ''
+        ? null
+        : fill(done.recapCommitmentService, { code: commitment.serviceCode }),
+    ].filter((part): part is string => part !== null);
+    return parts.length === 0 ? null : parts.join(' · ');
+  });
+
   protected readonly piecesLabel = computed(() =>
     fill(this.t().done.recapPieces, { count: String(this.order()?.pieces ?? 0) }),
   );

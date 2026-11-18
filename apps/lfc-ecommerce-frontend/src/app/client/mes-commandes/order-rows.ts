@@ -1,4 +1,5 @@
 import type {
+  BudgetCommitmentView,
   CompanyOrderAuthorView,
   CompanyOrderSiteView,
   CustomerOrderView,
@@ -253,6 +254,8 @@ export interface HistoryOrder {
   readonly site: string | null;
   /** « passée par Prénom N. » / « par l'équipe » ; vide quand la liste ne le dit pas. */
   readonly author: string;
+  /** Le bon de commande d'un organisme public ; absent pour toute autre commande. */
+  readonly budgetCommitment?: BudgetCommitmentView;
 }
 
 /**
@@ -446,6 +449,7 @@ export function historyRowOf(order: RowSource, org: string, copy: RowCopy): Hist
     org,
     site: order.site?.name ?? null,
     author: authorOf(order.author ?? null, copy),
+    ...(order.budgetCommitment === undefined ? {} : { budgetCommitment: order.budgetCommitment }),
   };
 }
 

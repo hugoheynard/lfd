@@ -2,7 +2,9 @@ import type { StatementBuyer } from "../domain/entities/billing-statement.js";
 import type { CollectionMandate } from "../domain/ports/collection-mandates.reader.js";
 import type { CollectionMandatesReader } from "../domain/ports/collection-mandates.reader.js";
 import type { MonthlyInvoicingReader } from "../domain/ports/monthly-invoicing.reader.js";
+import type { PayerCommitmentRequirementsReader } from "../domain/ports/payer-commitment-requirements.reader.js";
 import type { PayersCollectionMeansReader } from "../domain/ports/payers-collection-means.reader.js";
+import type { PayerCommitmentRequirement } from "../domain/services/public-commitment-blocker.js";
 import type { BillingFollow } from "../domain/ports/statement-billing.reader.js";
 import type { StatementBuyerReader } from "../domain/ports/statement-buyer.reader.js";
 import type { PayerOrders } from "../domain/services/monthly-invoicing.js";
@@ -21,6 +23,8 @@ export interface MonthlyContextReaders {
   readonly mandates: CollectionMandatesReader;
   /** Le moyen d'encaissement des payeurs, en une lecture (K10). */
   readonly means: PayersCollectionMeansReader;
+  /** Ce que la fiche Chorus des payeurs publics exige (P2, E7), en une lecture. */
+  readonly requirements: PayerCommitmentRequirementsReader;
 }
 
 /** La période que l'émission ferme pour un payeur : où lire son moyen. */
@@ -48,6 +52,8 @@ export interface MonthlyContext {
    * (V3', K10) : la facture le fige, le lot le relira sur elle.
    */
   readonly collectionMeansOf: (payerId: string) => CollectionMeans;
+  /** L'exigence d'engagement des payeurs publics (E7) ; absent = rien d'exigé. */
+  readonly commitmentRequirements: ReadonlyMap<string, PayerCommitmentRequirement>;
 }
 
 /**
@@ -69,16 +75,27 @@ export async function readMonthlyContext(
   const orders = payerOrders.flatMap((payer) => payer.orders);
   const sites = unique(orders.map((order) => order.companyId));
   const companies = unique([...payers, ...sites]);
-  const [buyers, names, mandates, collectionForms, meansEntries] = await Promise.all([
-    readers.buyers.buyersOf(payers),
-    readers.reader.companyNames(payers),
-    readers.mandates.activeFor(companies),
-    readers.reader.collectionFormsAt(sites, at),
-    readers.means.entriesOfPayers(periods.legalEntityId, payers),
-  ]);
+  const [buyers, names, mandates, collectionForms, meansEntries, commitmentRequirements] =
+    await Promise.all([
+      readers.buyers.buyersOf(payers),
+      readers.reader.companyNames(payers),
+      readers.mandates.activeFor(companies),
+      readers.reader.collectionFormsAt(sites, at),
+      readers.means.entriesOfPayers(periods.legalEntityId, payers),
+      readers.requirements.requirementsOf(payers),
+    ]);
   const receivedOn = new Map(orders.map((order) => [order.orderId, order.receivedOn]));
   const means = PayersCollectionMeans.of(meansEntries);
   const collectionMeansOf = (payerId: string): CollectionMeans =>
     means.at(payerId, periods.periodStartOf(payerId));
-  return { follows, buyers, names, mandates, collectionForms, receivedOn, collectionMeansOf };
+  return {
+    follows,
+    buyers,
+    names,
+    mandates,
+    collectionForms,
+    receivedOn,
+    collectionMeansOf,
+    commitmentRequirements,
+  };
 }

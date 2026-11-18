@@ -1,7 +1,10 @@
 import {
   groupOrderIds,
-  invoiceGroupKey,
   withoutCancelled,
+  withoutMovedCommitments,
+} from "../invoice-group-under-lock.js";
+import {
+  invoiceGroupKey,
   type InvoiceableOrder,
   type PayerInvoicePlan,
 } from "../monthly-invoicing.js";
@@ -25,6 +28,7 @@ function bon(id: string): InvoiceableOrder {
     billedCompanyId: null,
     frozen: frozenOrder(`ORD-${id}`, PLACED),
     deliveryNoteNumbers: [],
+    budgetCommitment: null,
   };
 }
 
@@ -32,6 +36,7 @@ const GROUP: PayerInvoicePlan = {
   payerId: "c_port",
   means: "sepa_debit",
   mandate: mandate("c_port"),
+  budgetCommitment: null,
   billable: [bon("a"), bon("b")],
   unbillable: [bon("z")],
 };
@@ -42,8 +47,8 @@ describe("withoutCancelled — retirer, rien d'autre", () => {
 
     expect(live?.billable.map((order) => order.orderId)).toEqual(["b"]);
     expect(live?.unbillable).toEqual([]);
-    expect(invoiceGroupKey(live?.payerId ?? "", live?.mandate?.mandateId ?? null)).toBe(
-      invoiceGroupKey(GROUP.payerId, GROUP.mandate?.mandateId ?? null),
+    expect(invoiceGroupKey(live?.payerId ?? "", live?.mandate?.mandateId ?? null, null)).toBe(
+      invoiceGroupKey(GROUP.payerId, GROUP.mandate?.mandateId ?? null, null),
     );
   });
 
@@ -66,5 +71,66 @@ describe("withoutCancelled — retirer, rien d'autre", () => {
 describe("groupOrderIds — ce que l'émission verrouille", () => {
   it("tous les bons, facturables ET non facturables", () => {
     expect(groupOrderIds(GROUP)).toEqual(["a", "b", "z"]);
+  });
+});
+
+describe("withoutMovedCommitments — la course E4″ : un engagement corrigé sous le verrou", () => {
+  const ARMY = { number: "1300012345", serviceCode: "SERV-1" };
+  const army = (id: string): InvoiceableOrder => ({ ...bon(id), budgetCommitment: ARMY });
+  const ARMY_GROUP: PayerInvoicePlan = {
+    ...GROUP,
+    budgetCommitment: ARMY,
+    billable: [army("a"), army("b")],
+    unbillable: [],
+  };
+
+  it("retire le bon dont le numéro a changé depuis la préparation", () => {
+    const live = withoutMovedCommitments(
+      ARMY_GROUP,
+      new Map([
+        ["a", ARMY],
+        ["b", { number: "1300067890", serviceCode: "SERV-1" }],
+      ]),
+    );
+
+    expect(live?.billable.map((order) => order.orderId)).toEqual(["a"]);
+    expect(live?.budgetCommitment).toEqual(ARMY);
+  });
+
+  it("retire aussi le bon dont seul le code service a changé (E4′ : le code est dans la clé)", () => {
+    const live = withoutMovedCommitments(
+      ARMY_GROUP,
+      new Map([
+        ["a", { number: ARMY.number, serviceCode: "SERV-2" }],
+        ["b", ARMY],
+      ]),
+    );
+
+    expect(live?.billable.map((order) => order.orderId)).toEqual(["b"]);
+  });
+
+  it("un groupe sans engagement garde ses bons sans engagement", () => {
+    expect(
+      withoutMovedCommitments(
+        GROUP,
+        new Map([
+          ["a", null],
+          ["b", null],
+          ["z", null],
+        ]),
+      ),
+    ).toEqual(GROUP);
+  });
+
+  it("tous les bons ont changé : `null`, rien à émettre sous cette clé", () => {
+    expect(
+      withoutMovedCommitments(
+        ARMY_GROUP,
+        new Map([
+          ["a", null],
+          ["b", null],
+        ]),
+      ),
+    ).toBeNull();
   });
 });

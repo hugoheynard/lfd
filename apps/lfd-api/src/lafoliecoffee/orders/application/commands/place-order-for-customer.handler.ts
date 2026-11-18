@@ -26,6 +26,8 @@ import { ShelfCircuit } from "../services/shelf-circuit.service.js";
 import { paymentUrlFor } from "../../domain/services/payment-link.js";
 import { isCounterEntry } from "../../domain/services/order-supply-rules.js";
 import { OrderDrafting } from "../services/order-drafting.service.js";
+import { commitOrderBudget } from "../services/order-budget-commitment.js";
+import { PayerCommitmentRequirements } from "../../domain/ports/payer-commitment-requirements.js";
 import { OrderIntake } from "../services/order-intake.service.js";
 import { prepareStaffOrder } from "../services/staff-order-preparation.js";
 import { staffSettlementRefusal } from "../services/staff-settlement-refusal.js";
@@ -73,6 +75,7 @@ export class PlaceOrderForCustomerHandler implements ICommandHandler<
     private readonly shelf: ShelfCircuit,
     private readonly intake: OrderIntake,
     private readonly intents: OncePerIntent,
+    private readonly commitments: PayerCommitmentRequirements,
   ) {}
 
   /**
@@ -109,6 +112,9 @@ export class PlaceOrderForCustomerHandler implements ICommandHandler<
       payload,
       "checkout",
     );
+    // L'engagement budgétaire d'un payeur public (E2′) : l'estimation ne le
+    // juge pas, la passation si — avant le règlement et le lien.
+    await commitOrderBudget(order, payload.budgetCommitment, this.commitments);
     // Le total que l'estimation a montré, avant le règlement (T2) : un refus ici
     // précède celui du compte sans crédit et ne crée aucun lien.
     ensureTotalSeen(order.totalCents, payload.expectedTotalCents);

@@ -423,6 +423,18 @@ export const FR: ClientCopy = {
     payHintPublic: 'Au compte — facture déposée sur Chorus Pro, réglée par virement.',
     publicAccountUnavailable:
       'Votre organisme règle uniquement au compte, et ce compte ne peut pas régler aujourd’hui. Contactez-nous pour le rétablir : la commande ne peut pas se payer par carte.',
+    commitmentTitle: 'Votre bon de commande',
+    commitmentNumber: 'N° d’engagement',
+    commitmentNumberRequiredHint:
+      'Exigé par votre organisme : il figure sur votre bon de commande.',
+    commitmentNumberOptionalHint: 'Il figure sur votre bon de commande, si vous en avez un.',
+    commitmentOptional: 'facultatif',
+    commitmentServiceCode: 'Code service',
+    commitmentServiceCodeHint: 'Le code Chorus Pro du service à qui adresser la facture.',
+    commitmentNumberMissing: 'Saisissez le numéro d’engagement de votre bon de commande.',
+    commitmentServiceCodeMissing: 'Saisissez le code service Chorus Pro de votre organisme.',
+    commitmentUnread:
+      'Nous n’avons pas pu lire ce que votre organisme exige : saisissez votre bon de commande, la commande dira s’il manque quelque chose.',
     closeEmpty: 'Fermer',
     whoTitle: 'Qui passe cette commande ?',
     whoHint: 'Il nous faut un nom et une adresse pour vous envoyer votre QR de retrait.',
@@ -533,6 +545,9 @@ export const FR: ClientCopy = {
     recapDelivery: 'Livraison',
     recapContent: 'Contenu',
     recapPieces: '{count} pièces',
+    recapCommitment: 'Bon de commande',
+    recapCommitmentNumber: 'engagement n° {number}',
+    recapCommitmentService: 'service {code}',
     paidOnline: 'Réglé en ligne',
     toSettle: 'Reste à régler',
     onAccount: 'Porté à votre compte',

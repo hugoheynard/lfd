@@ -93,6 +93,12 @@
       <fold-callout variant="info" data-public-payer>
         <strong>Organisme public</strong>&nbsp;: au compte, facture Chorus.
       </fold-callout>
+      <app-budget-commitment-fields
+        [requirements]="commitmentRequirements()"
+        [requirementsFailed]="commitmentRequirementsFailed()"
+        [(number)]="draft().commitmentNumber"
+        [(serviceCode)]="draft().commitmentServiceCode"
+      />
     } @else {
       <fieldset class="pan-settle">
         <legend class="pan-label">Règlement</legend>

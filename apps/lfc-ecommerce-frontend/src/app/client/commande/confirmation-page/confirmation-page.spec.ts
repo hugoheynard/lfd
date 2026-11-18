@@ -85,6 +85,23 @@ describe('ConfirmationPage — le récapitulatif selon le régime', () => {
     expect(el.querySelector('.pretax-note')).toBeNull();
   });
 
+  it('rappelle le bon de commande d’un organisme public', () => {
+    const el = render(
+      placed({
+        onAccount: true,
+        budgetCommitment: { number: '1300012345', serviceCode: 'SRV-01' },
+      }),
+    );
+
+    expect(el.querySelector('[data-recap-commitment]')?.textContent).toContain(
+      'engagement n° 1300012345 · service SRV-01',
+    );
+  });
+
+  it('ne rappelle aucun bon de commande sans engagement', () => {
+    expect(render(placed()).querySelector('[data-recap-commitment]')).toBeNull();
+  });
+
   it.each(['paid', 'due'] as const)('%s : TVA et total TTC inchangés', (settlement) => {
     const el = render(placed({ settlement, onAccount: false }));
 

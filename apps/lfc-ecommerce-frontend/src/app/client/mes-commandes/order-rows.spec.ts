@@ -57,6 +57,14 @@ const ORDER = {
  * ce qu'elles portent que ce qu'elles ont **cessé** d'affirmer.
  */
 describe('les lignes de l’écran des commandes', () => {
+  it('porte le bon de commande quand la commande en a un, et rien sinon', () => {
+    const commitment = { number: '1300012345', serviceCode: 'SRV-01' };
+    expect(
+      historyRowOf({ ...ORDER, budgetCommitment: commitment }, '', COPY).budgetCommitment,
+    ).toEqual(commitment);
+    expect('budgetCommitment' in historyRowOf(ORDER, '', COPY)).toBe(false);
+  });
+
   it('compte les PIÈCES, pas les lignes', () => {
     expect(historyRowOf(ORDER, 'Les Tommeuses', COPY).pieces).toBe(7);
   });

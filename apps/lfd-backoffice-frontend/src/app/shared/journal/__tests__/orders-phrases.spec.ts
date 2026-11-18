@@ -613,3 +613,37 @@ describe('le départ incomplet décidé (order.shortfall_decided)', () => {
     expect(row(decided, 'Ce qui part')).toBeDefined();
   });
 });
+
+describe('la correction d’un engagement budgétaire (order.budget_commitment_corrected)', () => {
+  const corrected = fact({
+    type: 'order.budget_commitment_corrected',
+    subjectType: 'user',
+    actorName: 'Système',
+    payload: {
+      subjectLabel: 'Armée de terre',
+      orderId: 'ord_1',
+      orderNumber: 'ORD-7',
+      correctedBy: { id: 'stf_1', name: 'Cécile Martin' },
+      before: null,
+      after: { number: '1300012345', serviceCode: 'SRV-01' },
+    },
+  });
+
+  it('nomme la fiche, la commande, l’engagement d’avant et d’après', () => {
+    expect(sentence(corrected)).toBe(
+      'Cécile Martin a corrigé l’engagement de la commande ORD-7 : de aucun à n° 1300012345 · service SRV-01 — Armée de terre',
+    );
+  });
+
+  it('un code seul se dit seul', () => {
+    const codeOnly = {
+      ...corrected,
+      payload: {
+        ...corrected.payload,
+        before: { number: '', serviceCode: 'SRV-01' },
+        after: { number: 'N-2', serviceCode: 'SRV-01' },
+      },
+    };
+    expect(sentence(codeOnly)).toContain('de service SRV-01 à n° N-2 · service SRV-01');
+  });
+});

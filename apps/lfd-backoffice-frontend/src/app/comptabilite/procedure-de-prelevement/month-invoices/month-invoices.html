@@ -44,6 +44,7 @@
         >
           <ng-template foldCell="payer" let-row>{{ row.payerName }}</ng-template>
           <ng-template foldCell="mandate" let-row>{{ row.mandate }}</ng-template>
+          <ng-template foldCell="commitment" let-row>{{ row.commitment }}</ng-template>
           <ng-template foldCell="message" let-row>{{ row.message }}</ng-template>
         </fold-data-table>
       }
@@ -74,6 +75,7 @@
           </ng-template>
           <ng-template foldCell="due" let-row>{{ row.due }}</ng-template>
           <ng-template foldCell="mandate" let-row>{{ row.mandate }}</ng-template>
+          <ng-template foldCell="commitment" let-row>{{ row.commitment }}</ng-template>
         </fold-data-table>
       } @else if (signaled().length === 0) {
         <fold-empty-state

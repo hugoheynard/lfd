@@ -63,7 +63,25 @@ function pieceLines(state: InvoiceState): readonly string[] {
     ...(state.correctedInvoiceNumber === null
       ? []
       : [`Avoir sur la facture ${state.correctedInvoiceNumber}`]),
+    ...budgetCommitmentLines(state),
   ];
+}
+
+/**
+ * « Engagement n° … — Service … » : ce que le service comptable d'un
+ * organisme public rapproche de son bon de commande (BT-13, BT-10). Rien sans
+ * engagement.
+ */
+export function budgetCommitmentLines(
+  state: Pick<InvoiceState, "budgetCommitment">,
+): readonly string[] {
+  const number = state.budgetCommitment?.number ?? "";
+  const service = state.budgetCommitment?.serviceCode ?? "";
+  const parts = [
+    ...(number === "" ? [] : [`Engagement n° ${number}`]),
+    ...(service === "" ? [] : [`Service ${service}`]),
+  ];
+  return parts.length === 0 ? [] : [parts.join(" — ")];
 }
 
 /** Le vendeur (sous son logo s'il existe) et la pièce, côte à côte. */

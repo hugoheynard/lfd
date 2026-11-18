@@ -53,6 +53,12 @@
         <dt>{{ t().done.recapContent }}</dt>
         <dd>{{ piecesLabel() }}</dd>
       </div>
+      @if (commitmentLabel(); as commitment) {
+        <div class="row" data-recap-commitment>
+          <dt>{{ t().done.recapCommitment }}</dt>
+          <dd>{{ commitment }}</dd>
+        </div>
+      }
       @for (row of discountRows(); track $index) {
         <div class="row saved">
           <dt>{{ row.label }}</dt>

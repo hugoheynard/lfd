@@ -93,6 +93,9 @@ export function draftOf(
     paymentMeans,
     // Rien n'est payé d'avance sur un bon au compte : il sera prélevé ou viré.
     prepayment: null,
+    // L'engagement de tous ses bons (P2) et ce que le payeur exige (E7).
+    budgetCommitment: payer.budgetCommitment,
+    commitmentRequirement: context.commitmentRequirements.get(payer.payerId) ?? null,
     computed: simulateInvoiceDossier(payer.billable.map((order) => order.frozen)).invoice,
   });
 }
@@ -107,6 +110,7 @@ export function outcomeKey(payer: PayerInvoicePlan, issuance: Issuance): Monthly
     payerName: issuance.context.names.get(payer.payerId) ?? payer.payerId,
     mandateId: payer.mandate?.mandateId ?? null,
     mandateReference: payer.mandate?.reference ?? null,
+    budgetCommitment: payer.budgetCommitment,
     unbillableOrders: payer.unbillable.map((order) => order.orderNumber),
     at: issuance.at,
   };

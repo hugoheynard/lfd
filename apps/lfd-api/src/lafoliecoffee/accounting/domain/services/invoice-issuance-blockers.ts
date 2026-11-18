@@ -48,7 +48,8 @@ export type InvoiceIssuanceBlockerCode =
   | "buyer_vat_missing"
   | "buyer_address_missing"
   | "buyer_country_unknown"
-  | "public_payer_not_on_transfer";
+  | "public_payer_not_on_transfer"
+  | "public_commitment_missing";
 
 /** Un manque, nommé : le code pour l'écran, la phrase pour la personne. */
 export interface InvoiceIssuanceBlocker {

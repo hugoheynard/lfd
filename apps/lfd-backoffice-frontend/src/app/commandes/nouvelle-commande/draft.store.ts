@@ -85,6 +85,14 @@ export class DraftStore {
    * devant le comptoir, jamais pour une saisie reprise plus tard.
    */
   readonly entry = signal<OrderEntryKind>('scheduled');
+  /**
+   * L'engagement budgétaire d'un organisme public (plan clients publics,
+   * § 6 quater) : le numéro de son bon de commande et le code service. Hors
+   * du brouillon conservé — il ne voyage qu'avec la passation, et
+   * l'estimation l'ignore. Le code se préremplit du défaut de la fiche.
+   */
+  readonly commitmentNumber = signal('');
+  readonly commitmentServiceCode = signal('');
 
   /**
    * L'acheminement **résolu** par le sélecteur (point, adresse, tranche, et ce
@@ -130,6 +138,8 @@ export class DraftStore {
 
   reset(): void {
     this.entry.set('scheduled');
+    this.commitmentNumber.set('');
+    this.commitmentServiceCode.set('');
     this.restore({
       buyerUserId: null,
       method: 'pickup',

@@ -1,0 +1,28 @@
+<section class="commitment" data-budget-commitment>
+  <p class="commitment-title">{{ t().cart.commitmentTitle }}</p>
+  @if (commitment.failed()) {
+    <fold-callout variant="alert" data-budget-commitment-unread>{{
+      t().cart.commitmentUnread
+    }}</fold-callout>
+  }
+  <fold-input
+    [label]="t().cart.commitmentNumber"
+    [required]="numberRequired()"
+    [optional]="!numberRequired()"
+    [optionalLabel]="t().cart.commitmentOptional"
+    [hint]="numberHint()"
+    [value]="commitment.number()"
+    (valueChange)="commitment.setNumber($event)"
+    data-budget-commitment-number
+  />
+  <fold-input
+    [label]="t().cart.commitmentServiceCode"
+    [required]="serviceCodeRequired()"
+    [optional]="!serviceCodeRequired()"
+    [optionalLabel]="t().cart.commitmentOptional"
+    [hint]="t().cart.commitmentServiceCodeHint"
+    [value]="commitment.serviceCode()"
+    (valueChange)="commitment.setServiceCode($event)"
+    data-budget-commitment-service
+  />
+</section>

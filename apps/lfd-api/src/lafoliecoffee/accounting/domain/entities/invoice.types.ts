@@ -1,5 +1,7 @@
 import type { InvoiceVatBreakdown } from "@lfd/money";
 
+import type { InvoiceBudgetCommitment } from "../value-objects/invoice-budget-commitment.js";
+
 import type { InvoicePriceDiscount } from "../services/invoice-price-discount.js";
 import type { InvoiceUnitCode } from "../value-objects/invoice-unit.js";
 import type { StatementBuyer, StatementSeller } from "./billing-statement.js";
@@ -170,6 +172,11 @@ export interface InvoiceState {
   readonly paymentMeans: InvoicePaymentMeans | null;
   /** `null` : rien n'était payé à l'émission (facture du mois), ou un avoir. */
   readonly prepayment: InvoicePrepayment | null;
+  /**
+   * L'engagement budgétaire d'un organisme public (BT-13, BT-10), figé à
+   * l'émission, recopié par l'avoir ; `null` sans engagement.
+   */
+  readonly budgetCommitment: InvoiceBudgetCommitment | null;
   readonly documentKey: string | null;
   readonly documentSha256: string | null;
 }

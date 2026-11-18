@@ -228,6 +228,13 @@ export interface OrderToPlace {
   readonly billedCompanyId: string | null;
   /** Le principal copié (cf. {@link DraftOrderInput.principal}), `null` sans principal. */
   readonly principalCompanyId: string | null;
+  /**
+   * L'engagement budgétaire d'un payeur public (`Order.commitBudget`) ; deux
+   * `null` sans engagement. Écrit par la passation seule : la révision ne le
+   * relit ni ne l'écrit.
+   */
+  readonly budgetCommitmentNumber: string | null;
+  readonly budgetCommitmentServiceCode: string | null;
   /** `null` sans principal ; sinon s'il voit le montant (Q1). */
   readonly principalSeesAmount: boolean | null;
   /** Qui commande, déduit par l'agrégat — cf. `clienteleOf` dans `order-fulfillment.ts`. */

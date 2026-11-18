@@ -80,6 +80,13 @@ export const ACTIVITY_TYPES = {
    */
   orderShortfallDecided: "order.shortfall_decided",
   /**
+   * L'équipe a **corrigé l'engagement budgétaire** d'une commande d'organisme
+   * public (plan `plan-clients-publics-chorus.md`, § 6 quater, E3′) : la
+   * facture reprendra le nouveau. Un fait de cycle de vie : aucun score ne le
+   * lit.
+   */
+  orderBudgetCommitmentCorrected: "order.budget_commitment_corrected",
+  /**
    * La commande a **changé de mains**. Le fait le plus important du lot : c'est
    * lui qu'on cherchera le jour où un client dit n'avoir rien reçu.
    *

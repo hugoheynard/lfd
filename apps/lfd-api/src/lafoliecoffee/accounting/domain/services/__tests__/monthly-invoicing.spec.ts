@@ -30,6 +30,7 @@ function bon(companyId: string, overrides: Partial<InvoiceableOrder> = {}): Invo
     billedCompanyId: null,
     frozen: frozenOrder(orderNumber, placedAt),
     deliveryNoteNumbers: [],
+    budgetCommitment: null,
     ...overrides,
   };
 }
@@ -144,7 +145,7 @@ describe("planMonthlyInvoices — une facture par payeur légal et par mandat (E
     const again = plan([port, principal, chalet], context).invoices;
 
     const order = (invoices: typeof first) =>
-      invoices.map((i) => invoiceGroupKey(i.payerId, i.mandate?.mandateId ?? null));
+      invoices.map((i) => invoiceGroupKey(i.payerId, i.mandate?.mandateId ?? null, null));
     expect(order(first)).toEqual([
       "c_port|m_c_port",
       "c_principal|m_c_principal",
@@ -189,7 +190,7 @@ describe("planMonthlyInvoices — une facture par payeur légal et par mandat (E
   });
 
   it("une facture déjà émise pour le mois n'est pas reprise ; l'autre mandat l'est", () => {
-    const already = new Set([invoiceGroupKey("c_principal", "m_c_principal")]);
+    const already = new Set([invoiceGroupKey("c_principal", "m_c_principal", null)]);
 
     const result = plan([bon("c_principal"), bon("c_chalet")], TWO_MANDATES, already);
 
@@ -235,7 +236,7 @@ describe("planMonthlyInvoices — un payeur dont la période est au virement (K1
   });
 
   it("sa clé est celle d'une facture sans mandat (K7)", () => {
-    const already = new Set([invoiceGroupKey("c_principal", null)]);
+    const already = new Set([invoiceGroupKey("c_principal", null, null)]);
 
     expect(plan([bon("c_principal")], TRANSFER, already).alreadyInvoiced).toEqual(["c_principal|"]);
   });
@@ -302,5 +303,74 @@ describe("planMonthlyInvoices — un bon remis mais pas soldé (plan E6c2, § 1)
     const [invoice] = plan([broken]).invoices;
 
     expect(invoice?.billable.map((o) => o.orderId)).toEqual([broken.orderId]);
+  });
+});
+
+describe("planMonthlyInvoices — une facture par engagement budgétaire (P2, E4′)", () => {
+  const ARMY_A = { number: "1300012345", serviceCode: "SERV-RH" };
+  const ARMY_B = { number: "1300067890", serviceCode: "SERV-RH" };
+
+  it("deux engagements dans la période : deux factures, chacune sous le sien", () => {
+    const first = bon("c_principal", { budgetCommitment: ARMY_A });
+    const second = bon("c_principal", { budgetCommitment: ARMY_A });
+    const third = bon("c_principal", { budgetCommitment: ARMY_B });
+
+    const { invoices } = plan([first, second, third]);
+
+    expect(invoices.map((i) => [i.budgetCommitment, i.billable.map((o) => o.orderId)])).toEqual([
+      [ARMY_A, [first.orderId, second.orderId]],
+      [ARMY_B, [third.orderId]],
+    ]);
+  });
+
+  it("même numéro, deux codes service : deux factures (une facture n'a qu'un BT-10)", () => {
+    const rh = bon("c_principal", { budgetCommitment: ARMY_A });
+    const log = bon("c_principal", { budgetCommitment: { ...ARMY_A, serviceCode: "SERV-LOG" } });
+
+    expect(plan([rh, log]).invoices).toHaveLength(2);
+  });
+
+  it("une facture déjà émise sous un engagement ne bloque pas celle de l'autre", () => {
+    const a = bon("c_principal", { budgetCommitment: ARMY_A });
+    const b = bon("c_principal", { budgetCommitment: ARMY_B });
+    const already = new Set([invoiceGroupKey("c_principal", "m_c_principal", ARMY_A)]);
+
+    const result = plan([a, b], ONE_MANDATE, already);
+
+    expect(result.invoices.map((i) => i.budgetCommitment)).toEqual([ARMY_B]);
+    expect(result.alreadyInvoiced).toEqual([...already]);
+  });
+
+  /**
+   * Non-régression du découpage d'un payeur privé : sans engagement, la clé
+   * est celle d'avant P2 au caractère près, et les groupes sont ceux du
+   * découpage par (payeur, mandat) seul.
+   */
+  it("un payeur privé : la clé et les groupes d'avant P2, inchangés", () => {
+    const [chalet, principal, chaletAgain, port] = [
+      bon("c_chalet"),
+      bon("c_principal"),
+      bon("c_chalet"),
+      bon("c_port"),
+    ];
+    const context = { ...TWO_MANDATES, mandates: [...TWO_MANDATES.mandates, mandate("c_port")] };
+
+    const { invoices } = plan([chalet, principal, chaletAgain, port], context);
+
+    expect(invoiceGroupKey("c_port", "m_c_port", null)).toBe("c_port|m_c_port");
+    expect(invoiceGroupKey("c_port", null, null)).toBe("c_port|");
+    expect(invoiceGroupKey("c_port", null, { number: "", serviceCode: "" })).toBe("c_port|");
+    expect(
+      invoices.map((i) => [
+        i.payerId,
+        i.mandate?.reference,
+        i.budgetCommitment,
+        i.billable.map((o) => o.orderId),
+      ]),
+    ).toEqual([
+      ["c_principal", "RUM-chalet", null, [chalet?.orderId, chaletAgain?.orderId]],
+      ["c_principal", "RUM-c-principal", null, [principal?.orderId]],
+      ["c_port", "RUM-c-port", null, [port?.orderId]],
+    ]);
   });
 });

@@ -6,6 +6,7 @@ import { MonthlyInvoicingReader } from "../domain/ports/monthly-invoicing.reader
 import type { BillingFollow } from "../domain/ports/statement-billing.reader.js";
 import { invoiceGroupKey, type InvoiceableOrder } from "../domain/services/monthly-invoicing.js";
 import type { CollectionFormName } from "../domain/value-objects/collection-form.js";
+import { budgetCommitmentOf } from "../domain/value-objects/invoice-budget-commitment.js";
 import {
   BILLABLE_INVOICE_ORDER_SELECT,
   handedOverNoteNumbersOf,
@@ -54,6 +55,8 @@ export class PrismaMonthlyInvoicingReader extends MonthlyInvoicingReader {
         receivedOn: true,
         ...AWAITING_REMAINDER_SELECT,
         shortfallDecisions: { select: { id: true, remainder: true } },
+        budgetCommitmentNumber: true,
+        budgetCommitmentServiceCode: true,
       },
     });
     const invoiced = await this.prisma.invoiceOrder.findMany({
@@ -77,6 +80,10 @@ export class PrismaMonthlyInvoicingReader extends MonthlyInvoicingReader {
               receivedOn: order.receivedOn?.toISOString().slice(0, DAY_LENGTH) ?? null,
               billedCompanyId: order.billedCompanyId,
               deliveryNoteNumbers: handedOverNoteNumbersOf(order),
+              budgetCommitment: budgetCommitmentOf(
+                order.budgetCommitmentNumber,
+                order.budgetCommitmentServiceCode,
+              ),
               // Non soldé : la facture de son payeur ne part pas (bloqueur) ; le
               // dossier montré en attendant est celui de la commande.
               ...(order.billableTotalCents === null
@@ -136,10 +143,21 @@ export class PrismaMonthlyInvoicingReader extends MonthlyInvoicingReader {
   async invoicedGroups(legalEntityId: string, periodClosesAt: Date): Promise<ReadonlySet<string>> {
     const rows = await this.prisma.invoiceMonthlyOutcome.findMany({
       where: { legalEntityId, periodClosesAt, outcome: ISSUED_OUTCOME },
-      select: { payerCompanyId: true, mandateId: true },
+      select: {
+        payerCompanyId: true,
+        mandateId: true,
+        budgetCommitmentNumber: true,
+        budgetCommitmentServiceCode: true,
+      },
     });
     return new Set(
-      rows.map((row) => invoiceGroupKey(row.payerCompanyId, mandateIdOfColumn(row.mandateId))),
+      rows.map((row) =>
+        invoiceGroupKey(
+          row.payerCompanyId,
+          mandateIdOfColumn(row.mandateId),
+          budgetCommitmentOf(row.budgetCommitmentNumber, row.budgetCommitmentServiceCode),
+        ),
+      ),
     );
   }
 }

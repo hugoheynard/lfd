@@ -70,6 +70,24 @@ export class OrderDetail {
   protected readonly stars = STARS;
 
   /** « Signaler un problème » n'existe que sur une commande retirée ou livrée. */
+  /** « engagement n° … · service … », `null` sans bon de commande. */
+  protected readonly commitmentLabel = computed(() => {
+    const commitment = this.order().budgetCommitment;
+    if (commitment === undefined) {
+      return null;
+    }
+    const copy = this.t().orders;
+    const parts = [
+      commitment.number === ''
+        ? null
+        : fill(copy.detailCommitmentNumber, { number: commitment.number }),
+      commitment.serviceCode === ''
+        ? null
+        : fill(copy.detailCommitmentService, { code: commitment.serviceCode }),
+    ].filter((part): part is string => part !== null);
+    return parts.length === 0 ? null : parts.join(' · ');
+  });
+
   protected readonly reportable = computed(() => isFulfilled(this.order()));
 
   protected readonly paymentLabel = computed(() => {

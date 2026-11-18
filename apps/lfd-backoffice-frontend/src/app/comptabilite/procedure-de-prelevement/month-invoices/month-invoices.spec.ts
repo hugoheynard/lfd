@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { MonthlyClosureView } from '@lfd/contracts';
 
-import { MonthInvoices, autopilotSentence } from './month-invoices';
+import { MonthInvoices, autopilotSentence, commitmentLabel } from './month-invoices';
 
 /**
  * Ce que ces cas tiennent (plan `facture-emise.md`) : la
@@ -126,6 +126,34 @@ describe('MonthInvoices', () => {
     );
   });
 
+  it('une facture publique montre son engagement ; deux engagements signalés font deux lignes (E4′)', async () => {
+    const signal = {
+      payerCompanyId: 'c3',
+      payerName: 'Armée',
+      mandateReference: null,
+      message: 'Un bon de commande n’a pas de numéro d’engagement.',
+      unbillableOrders: [],
+      recordedAt: '2026-09-30T21:56:00.000Z',
+    };
+    const { host } = await render({
+      ...VIEW,
+      invoices: [
+        { ...VIEW.invoices[0]!, budgetCommitment: { number: '1300012345', serviceCode: 'SRV-01' } },
+      ],
+      signaled: [
+        { ...signal, budgetCommitment: { number: '1300067890', serviceCode: 'SRV-01' } },
+        { ...signal, budgetCommitment: { number: '1300099999', serviceCode: 'SRV-01' } },
+      ],
+    });
+
+    expect(host.querySelector('[data-invoices-table]')?.textContent).toContain(
+      'n° 1300012345 · service SRV-01',
+    );
+    const table = host.querySelector('[data-signaled-table]')?.textContent ?? '';
+    expect(table).toContain('n° 1300067890');
+    expect(table).toContain('n° 1300099999');
+  });
+
   it('rythmes mêlés : le titre dit les modes qui closent ici (M4c)', async () => {
     const { host } = await render({ ...VIEW, modes: ['monthly', 'weekly'] });
 
@@ -163,6 +191,15 @@ describe('MonthInvoices', () => {
     const { host } = await render(null, { error: 'illisible' });
 
     expect(host.querySelector('[data-invoices-error]')?.textContent).toContain('illisible');
+  });
+});
+
+describe('commitmentLabel', () => {
+  it('dit le numéro et le code, l’un sans l’autre, ou un tiret', () => {
+    expect(commitmentLabel(undefined)).toBe('—');
+    expect(commitmentLabel({ number: '', serviceCode: '' })).toBe('—');
+    expect(commitmentLabel({ number: '', serviceCode: 'SRV' })).toBe('service SRV');
+    expect(commitmentLabel({ number: 'N1', serviceCode: '' })).toBe('n° N1');
   });
 });
 

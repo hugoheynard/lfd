@@ -893,6 +893,27 @@ export interface ClientCopy {
     /** Un organisme public dont le compte ne règle pas : ni compte, ni carte — pas de bouton. */
     readonly publicAccountUnavailable: string;
     /**
+     * **Le bon de commande d'un organisme public** (plan clients publics,
+     * § 6 quater) : son numéro d'engagement et son code service Chorus Pro,
+     * saisis au panier et repris sur la facture. Rien pour un autre payeur.
+     */
+    readonly commitmentTitle: string;
+    readonly commitmentNumber: string;
+    /** Sous le numéro, quand le payeur l'exige. */
+    readonly commitmentNumberRequiredHint: string;
+    /** Sous le numéro, quand il est facultatif. */
+    readonly commitmentNumberOptionalHint: string;
+    /** Le mot du marqueur « facultatif » des deux champs. */
+    readonly commitmentOptional: string;
+    readonly commitmentServiceCode: string;
+    readonly commitmentServiceCodeHint: string;
+    /** Sous le bouton : le numéro exigé n'est pas saisi. */
+    readonly commitmentNumberMissing: string;
+    /** Sous le bouton : le code service exigé n'est ni saisi ni proposé. */
+    readonly commitmentServiceCodeMissing: string;
+    /** Les exigences du payeur n'ont pas pu être lues : la saisie reste ouverte. */
+    readonly commitmentUnread: string;
+    /**
      * Le bouton d'un panier vide : il ferme le panneau (2026-10-09). Il disait
      * « Voir le rayon » et, ouvert depuis « Mes commandes », y ramenait.
      */
@@ -1088,6 +1109,12 @@ export interface ClientCopy {
     readonly recapContent: string;
     /** `{count}` est remplacé par le nombre de pièces. */
     readonly recapPieces: string;
+    /** Le rappel du bon de commande d'un organisme public. */
+    readonly recapCommitment: string;
+    /** `{number}` : le numéro d'engagement. */
+    readonly recapCommitmentNumber: string;
+    /** `{code}` : le code service. */
+    readonly recapCommitmentService: string;
     readonly paidOnline: string;
     /** La ligne de total quand le règlement reste dû. */
     readonly toSettle: string;

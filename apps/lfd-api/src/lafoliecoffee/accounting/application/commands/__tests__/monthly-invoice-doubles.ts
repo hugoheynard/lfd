@@ -17,6 +17,10 @@ import {
   type MonthlyInvoiceOutcomeKey,
 } from "../../../domain/ports/monthly-invoice-outcomes.js";
 import { MonthlyInvoicingReader } from "../../../domain/ports/monthly-invoicing.reader.js";
+import { OrderBudgetCommitmentsReader } from "../../../domain/ports/order-budget-commitments.reader.js";
+import { PayerCommitmentRequirementsReader } from "../../../domain/ports/payer-commitment-requirements.reader.js";
+import type { PayerCommitmentRequirement } from "../../../domain/services/public-commitment-blocker.js";
+import type { InvoiceBudgetCommitment } from "../../../domain/value-objects/invoice-budget-commitment.js";
 import {
   PayerBillingModesReader,
   type PayerModeSegments,
@@ -102,7 +106,9 @@ export class FakeMonthlyReader extends MonthlyInvoicingReader {
               row.key.periodClosesAt.getTime() === periodClosesAt.getTime() &&
               row.invoiceId !== null,
           )
-          .map((row) => invoiceGroupKey(row.key.payerCompanyId, row.key.mandateId)),
+          .map((row) =>
+            invoiceGroupKey(row.key.payerCompanyId, row.key.mandateId, row.key.budgetCommitment),
+          ),
       ),
     );
   }
@@ -117,7 +123,7 @@ export interface OutcomeRow {
 export class MemoryOutcomes extends MonthlyInvoiceOutcomes {
   readonly rows = new Map<string, OutcomeRow>();
   recordIssued(key: MonthlyInvoiceOutcomeKey, invoiceId: string): Promise<void> {
-    this.rows.set(invoiceGroupKey(key.payerCompanyId, key.mandateId), {
+    this.rows.set(invoiceGroupKey(key.payerCompanyId, key.mandateId, key.budgetCommitment), {
       key,
       invoiceId,
       message: null,
@@ -125,13 +131,50 @@ export class MemoryOutcomes extends MonthlyInvoiceOutcomes {
     return Promise.resolve();
   }
   recordBlocked(key: MonthlyInvoiceOutcomeKey, message: string): Promise<boolean> {
-    const group = invoiceGroupKey(key.payerCompanyId, key.mandateId);
+    const group = invoiceGroupKey(key.payerCompanyId, key.mandateId, key.budgetCommitment);
     const known = this.rows.get(group);
     if (known !== undefined && (known.invoiceId !== null || known.message === message)) {
       return Promise.resolve(false);
     }
     this.rows.set(group, { key, invoiceId: null, message });
     return Promise.resolve(true);
+  }
+}
+
+/**
+ * L'engagement que les bons portent MAINTENANT (E4″) : par défaut celui de
+ * `FakeMonthlyReader.orders` ; `corrected` simule une correction passée entre
+ * la préparation et le verrou.
+ */
+export class CurrentCommitments extends OrderBudgetCommitmentsReader {
+  readonly corrected = new Map<string, InvoiceBudgetCommitment | null>();
+  constructor(private readonly reader: FakeMonthlyReader) {
+    super();
+  }
+  commitmentsOf(
+    orderIds: readonly string[],
+  ): Promise<ReadonlyMap<string, InvoiceBudgetCommitment | null>> {
+    const byId = new Map(this.reader.orders.map((order) => [order.orderId, order]));
+    return Promise.resolve(
+      new Map(
+        orderIds.flatMap((id) => {
+          const order = byId.get(id);
+          if (order === undefined) {
+            return [];
+          }
+          const corrected = this.corrected.get(id);
+          return [[id, corrected === undefined ? order.budgetCommitment : corrected] as const];
+        }),
+      ),
+    );
+  }
+}
+
+/** La fiche Chorus des payeurs publics ; aucune par défaut (tous privés). */
+export class FixedCommitmentRequirements extends PayerCommitmentRequirementsReader {
+  readonly requirements = new Map<string, PayerCommitmentRequirement>();
+  requirementsOf(): Promise<ReadonlyMap<string, PayerCommitmentRequirement>> {
+    return Promise.resolve(this.requirements);
   }
 }
 

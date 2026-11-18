@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { budgetCommitmentPayloadSchema } from "./budget-commitment.js";
 import {
   billingAddressPayloadSchema,
   fulfillmentWindowSchema,
@@ -129,6 +130,9 @@ const adminOrderEntryShape = {
   entryShortcut: staffEntryShortcutSchema.optional(),
   // D'où vient la saisie (E4 étendu) : `counter` refuse le lien de règlement.
   entryOrigin: staffEntryOriginSchema.optional(),
+  // L'engagement budgétaire d'un organisme public (P2) : l'estimation l'ignore,
+  // la passation le juge contre la fiche Chorus du payeur.
+  budgetCommitment: budgetCommitmentPayloadSchema.optional(),
   ...orderContentShape,
 };
 

@@ -98,6 +98,12 @@
     <app-reserved-lines-callout />
     <app-sign-in-offer-callout />
 
+    <!-- Le bon de commande d'un organisme public qui règle au compte (plan
+         clients publics, § 6 quater) : rien pour un autre payeur. -->
+    @if (commitmentAsked()) {
+      <app-budget-commitment-fields />
+    }
+
     <app-cart-summary>
       @if (!ordersClosed() && !payNoteIsReason()) {
         <p summaryNote class="pay-hint">{{ payNote() }}</p>

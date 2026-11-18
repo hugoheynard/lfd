@@ -1,3 +1,4 @@
+import type { BudgetCommitmentView } from "./budget-commitment.js";
 import type { CollectionBatchStatusView } from "./collection-batch.js";
 import type { BillingRhythmKind } from "./legal-entity.js";
 
@@ -25,6 +26,11 @@ export interface MonthlyInvoiceView {
   readonly mandateReference: string | null;
   /** Bons du payeur signalés non facturables, laissés hors de la facture. */
   readonly unbillableOrders: readonly string[];
+  /**
+   * L'engagement budgétaire de la facture (organisme public, une facture par
+   * engagement) ; absent pour toute facture sans engagement.
+   */
+  readonly budgetCommitment?: BudgetCommitmentView;
 }
 
 /** Un payeur signalé : sa facture n'est pas partie, et pourquoi. */
@@ -36,6 +42,8 @@ export interface MonthlyInvoiceSignalView {
    * payeur ET par mandat) ; `null` pour les bons sans mandat.
    */
   readonly mandateReference: string | null;
+  /** L'engagement de la facture qui n'est pas partie ; absent sans engagement. */
+  readonly budgetCommitment?: BudgetCommitmentView;
   /** Le refus, en clair — il nomme le geste de sortie. */
   readonly message: string;
   readonly unbillableOrders: readonly string[];

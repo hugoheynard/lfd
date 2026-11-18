@@ -14,6 +14,7 @@ import { orderHistory } from "./invoice-dossier-history.js";
 import { isBillable } from "./invoice-billability.js";
 import type { FrozenInvoiceOrder } from "./invoice-dossier.types.js";
 import type { CollectionMeans } from "../value-objects/collection-means.js";
+import type { InvoiceBudgetCommitment } from "../value-objects/invoice-budget-commitment.js";
 
 /**
  * **La facture du mois**, sa partie pure (plan
@@ -55,6 +56,12 @@ export interface InvoiceableOrder {
    *   anomalie. La facture de son payeur ne part pas, le bloqueur la nomme.
    */
   readonly settlement?: "awaiting_remainder" | "unsettled";
+  /**
+   * L'engagement budgétaire que la commande porte (organisme public, P2) ;
+   * `null` sans engagement — tout payeur privé. Il entre dans la clé de la
+   * facture : deux engagements, deux factures.
+   */
+  readonly budgetCommitment: InvoiceBudgetCommitment | null;
 }
 
 /** Les bons du mois d'UN payeur légal, dans l'ordre reçu (date de passation). */
@@ -65,7 +72,8 @@ export interface PayerOrders {
 
 /**
  * **UNE facture du mois** : un payeur légal, un mandat effectif (ou aucun),
- * et les bons qui tombent dessus (E4b, option b).
+ * un engagement budgétaire (ou aucun, P2), et les bons qui tombent dessus
+ * (E4b, option b).
  */
 export interface PayerInvoicePlan {
   readonly payerId: string;
@@ -76,6 +84,8 @@ export interface PayerInvoicePlan {
   readonly means: CollectionMeans;
   /** Le mandat effectif de tous ses bons ; `null` : aucun mandat unique. */
   readonly mandate: CollectionMandate | null;
+  /** L'engagement de tous ses bons (P2) ; `null` : aucun. */
+  readonly budgetCommitment: InvoiceBudgetCommitment | null;
   /** Les bons à facturer, dans l'ordre reçu (date de passation). */
   readonly billable: readonly InvoiceableOrder[];
   /** Les bons qu'on ne sait pas facturer : signalés, laissés hors de la facture. */
@@ -98,11 +108,23 @@ export type MandateContext = Pick<
 >;
 
 /**
- * La clé d'une facture dans sa période (clôture) : le payeur ET le mandat
- * effectif (`null` = aucun). C'est elle qui dit « déjà facturé ».
+ * La clé d'une facture dans sa période (clôture) : le payeur, le mandat
+ * effectif (`null` = aucun), le numéro d'engagement et le code service (P2,
+ * E4′ — `null` = aucun). C'est elle qui dit « déjà facturé ». Un payeur privé
+ * n'a jamais d'engagement : il garde le découpage par (payeur, mandat).
  */
-export function invoiceGroupKey(payerId: string, mandateId: string | null): string {
-  return `${payerId}|${mandateId ?? ""}`;
+export function invoiceGroupKey(
+  payerId: string,
+  mandateId: string | null,
+  commitment: InvoiceBudgetCommitment | null,
+): string {
+  const base = `${payerId}|${mandateId ?? ""}`;
+  // Sans engagement, la clé d'avant P2, au caractère près. L'engagement est
+  // saisi par une personne : sérialisé, un `|` dans le numéro ne confond pas
+  // deux clés.
+  return commitment === null || (commitment.number === "" && commitment.serviceCode === "")
+    ? base
+    : `${base}|${JSON.stringify([commitment.number, commitment.serviceCode])}`;
 }
 
 /**
@@ -149,8 +171,12 @@ export function planMonthlyInvoices(
   const invoices: PayerInvoicePlan[] = [];
   const skipped = new Set<string>();
   for (const payer of payers) {
-    for (const group of byMandate(payer, context)) {
-      const key = invoiceGroupKey(group.payerId, group.mandate?.mandateId ?? null);
+    for (const group of byInvoiceKey(payer, context)) {
+      const key = invoiceGroupKey(
+        group.payerId,
+        group.mandate?.mandateId ?? null,
+        group.budgetCommitment,
+      );
       if (alreadyInvoiced.has(key)) {
         skipped.add(key);
       } else {
@@ -162,53 +188,26 @@ export function planMonthlyInvoices(
 }
 
 /**
- * **Le groupe d'une facture, moins ses commandes annulées** (doc
- * `documentation/commandes/annulation/annulation-par-le-staff.md`, C5.3), relu sous le verrou des
- * lignes `orders` du groupe. On retire, rien d'autre : le mandat effectif se
- * calcule bon par bon (`effectiveMandateOf`), retirer un bon ne change donc
- * ni le mandat ni la clé des autres — replanifier rendrait le même groupe.
- * `null` : plus aucun bon, rien à émettre ni à signaler.
- *
- * Par NUMÉRO de commande : c'est ce que rend `CancelledOrdersReader`, écrit
- * pour nommer le refus du dépôt (vérifié le 2026-10-12) ; un numéro est
- * unique.
+ * Les bons d'un payeur rangés par mandat effectif et par engagement (P2),
+ * dans l'ordre du premier bon. Au virement, `effectiveMandateOf` rend `null`
+ * pour tous ; sans engagement (tout payeur privé), un seul groupe par mandat.
  */
-export function withoutCancelled(
-  group: PayerInvoicePlan,
-  cancelledNumbers: ReadonlySet<string>,
-): PayerInvoicePlan | null {
-  const live = (order: InvoiceableOrder): boolean => !cancelledNumbers.has(order.orderNumber);
-  const billable = group.billable.filter(live);
-  const unbillable = group.unbillable.filter(live);
-  if (billable.length === 0 && unbillable.length === 0) {
-    return null;
-  }
-  return { ...group, billable, unbillable };
-}
-
-/** Tous les bons d'un groupe — ceux que l'émission verrouille. */
-export function groupOrderIds(group: PayerInvoicePlan): readonly string[] {
-  return [...group.billable, ...group.unbillable].map((order) => order.orderId);
-}
-
-/**
- * Les bons d'un payeur rangés par mandat effectif, dans l'ordre du premier
- * bon. Au virement, `effectiveMandateOf` rend `null` pour tous : un seul groupe.
- */
-function byMandate(payer: PayerOrders, context: MandateContext): readonly PayerInvoicePlan[] {
+function byInvoiceKey(payer: PayerOrders, context: MandateContext): readonly PayerInvoicePlan[] {
   const means = context.collectionMeansOf(payer.payerId);
   const groups = new Map<
     string,
     {
       mandate: CollectionMandate | null;
+      budgetCommitment: InvoiceBudgetCommitment | null;
       billable: InvoiceableOrder[];
       unbillable: InvoiceableOrder[];
     }
   >();
   for (const order of payer.orders) {
     const mandate = effectiveMandateOf(order, context);
-    const key = mandate?.mandateId ?? "";
-    const group = groups.get(key) ?? { mandate, billable: [], unbillable: [] };
+    const { budgetCommitment } = order;
+    const key = invoiceGroupKey(payer.payerId, mandate?.mandateId ?? null, budgetCommitment);
+    const group = groups.get(key) ?? { mandate, budgetCommitment, billable: [], unbillable: [] };
     const held = order.settlement === "awaiting_remainder";
     (!held && isBillable(order.frozen) ? group.billable : group.unbillable).push(order);
     groups.set(key, group);

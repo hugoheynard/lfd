@@ -46,7 +46,9 @@ import {
 } from "./collection-doubles.js";
 import {
   CountingNumbering,
+  CurrentCommitments,
   FakeMonthlyReader,
+  FixedCommitmentRequirements,
   FixedIssuers,
   FixedModeDates,
   FixedPayerModes,
@@ -70,8 +72,8 @@ const AFTER_MOMENT = new Date("2026-09-30T21:56:00.000Z");
 const FLOOR = new Date("2026-08-31T22:00:00.000Z");
 
 /** Les clés d'issue (payeur × mandat effectif, E4b) des deux payeurs mandatés. */
-const PORT = invoiceGroupKey("c_port", "m_c_port");
-const PRINCIPAL = invoiceGroupKey("c_principal", "m_c_principal");
+const PORT = invoiceGroupKey("c_port", "m_c_port", null);
+const PRINCIPAL = invoiceGroupKey("c_principal", "m_c_principal", null);
 /** Le jour de réception des bons (`orders.received_on`) — dans la période facturée. */
 const RECEIVED_ON = "2026-09-16";
 
@@ -89,6 +91,7 @@ function bon(companyId: string, overrides: Partial<InvoiceableOrder> = {}): Invo
     billedCompanyId: null,
     frozen: frozenOrder(orderNumber, placedAt),
     deliveryNoteNumbers: [`BL-${String(seq).padStart(3, "0")}-1`],
+    budgetCommitment: null,
     ...overrides,
   };
 }
@@ -154,6 +157,8 @@ function harness(
   const steps = { log: [] as string[] };
   const rows = new RecordingRowsLock(steps);
   const cancelled = new FakeCancelled();
+  const commitments = new CurrentCommitments(reader);
+  const requirements = new FixedCommitmentRequirements();
   const handler = new IssueMonthlyInvoicesHandler(
     reader,
     new FixedModeDates(),
@@ -167,6 +172,8 @@ function harness(
     outcomes,
     rows,
     cancelled,
+    commitments,
+    requirements,
     new UlidSequence(),
     events,
     clock,
@@ -238,7 +245,7 @@ describe("IssueMonthlyInvoices — la facture du mois (E4)", () => {
     expect(principal?.dueOn).toBe("2026-10-15");
     expect(principal?.paymentMeans).toEqual({ code: "59", mandateReference: "RUM-c-principal" });
     // La clé d'issue est celle d'une facture sans mandat (K7).
-    expect(h.outcomes.rows.get(invoiceGroupKey("c_port", null))?.invoiceId).toBe(port?.id);
+    expect(h.outcomes.rows.get(invoiceGroupKey("c_port", null, null))?.invoiceId).toBe(port?.id);
   });
 
   it("un virement qui prend effet à la clôture ne touche pas la facture de la période qu'elle ferme (V3')", async () => {
@@ -428,7 +435,9 @@ describe("IssueMonthlyInvoices — la facture du mois (E4)", () => {
       "FA-LFD-2026-000001",
       "FA-LFD-2026-000002",
     ]);
-    expect(h.outcomes.rows.get(invoiceGroupKey("c_principal", "m_c_chalet"))?.key).toMatchObject({
+    expect(
+      h.outcomes.rows.get(invoiceGroupKey("c_principal", "m_c_chalet", null))?.key,
+    ).toMatchObject({
       mandateReference: "RUM-chalet",
     });
     expect(h.outcomes.rows.get(PRINCIPAL)?.invoiceId).toBe(states[1]?.id);
@@ -444,7 +453,7 @@ describe("IssueMonthlyInvoices — la facture du mois (E4)", () => {
       { code: "59", mandateReference: "RUM-c-port" },
       null,
     ]);
-    expect(h.outcomes.rows.get(invoiceGroupKey("c_quai", null))?.invoiceId).not.toBeNull();
+    expect(h.outcomes.rows.get(invoiceGroupKey("c_quai", null, null))?.invoiceId).not.toBeNull();
   });
 
   it("au rejeu, une facture déjà émise est sautée et l'autre mandat est repris", async () => {
@@ -524,6 +533,8 @@ describe("IssueMonthlyInvoices — la facture du mois (E4)", () => {
         h.outcomes,
         new RecordingRowsLock({ log: [] }),
         new FakeCancelled(),
+        new CurrentCommitments(h.reader),
+        new FixedCommitmentRequirements(),
         new UlidSequence(),
         h.events,
         new FixedClock(AFTER_MOMENT),

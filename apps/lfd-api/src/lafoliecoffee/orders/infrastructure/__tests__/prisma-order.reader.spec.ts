@@ -18,6 +18,8 @@ function row(overrides: Partial<OrderRow> = {}): OrderRow {
     pickupAddress: null,
     fulfillment: null,
     note: "",
+    budgetCommitmentNumber: null,
+    budgetCommitmentServiceCode: null,
     subtotalCents: 10_000,
     discountCents: 1_000,
     discountAdjustment: null,
@@ -86,5 +88,20 @@ describe("toOrderView — les remboursements lus au bloc `card-payment` (P1.c)",
 
     expect(view.refunds).toEqual(refunds);
     expect(view.refundedCents).toBe(700);
+  });
+});
+
+describe("toOrderView — l'engagement budgétaire (P2)", () => {
+  it("absent quand la commande n'en porte pas", () => {
+    expect(toOrderView(row(), NO_REFUNDS).budgetCommitment).toBeUndefined();
+  });
+
+  it("le numéro et le code, l'un des deux pouvant manquer", () => {
+    const view = toOrderView(
+      row({ budgetCommitmentNumber: "1300012345", budgetCommitmentServiceCode: null }),
+      NO_REFUNDS,
+    );
+
+    expect(view.budgetCommitment).toEqual({ number: "1300012345", serviceCode: "" });
   });
 });

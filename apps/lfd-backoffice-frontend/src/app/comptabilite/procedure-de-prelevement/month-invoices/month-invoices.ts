@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import {
   instantToLocal,
+  type BudgetCommitmentView,
   type MonthlyClosureBatchView,
   type MonthlyClosureView,
   type MonthlyInvoiceAutopilotRunView,
@@ -16,6 +17,7 @@ import {
   type FoldTableColumn,
 } from 'fold-ng';
 
+import { budgetCommitmentLabel } from '../../../commandes/budget-commitment';
 import { longDay, periodWithModes } from '../../collection-month-wording';
 import { day, euros, instant } from '../../invoice-dossier-format';
 
@@ -26,11 +28,13 @@ const INVOICE_COLUMNS: readonly FoldTableColumn[] = [
   { key: 'total', label: 'Total TTC', numeric: true },
   { key: 'due', label: 'Échéance' },
   { key: 'mandate', label: 'Mandat (RUM)' },
+  { key: 'commitment', label: 'Engagement' },
 ];
 
 const SIGNAL_COLUMNS: readonly FoldTableColumn[] = [
   { key: 'payer', label: 'Payeur' },
   { key: 'mandate', label: 'Mandat (RUM)' },
+  { key: 'commitment', label: 'Engagement' },
   { key: 'message', label: 'Pourquoi la facture n’est pas partie' },
 ];
 
@@ -43,6 +47,8 @@ export interface MonthlyInvoiceRow {
   readonly due: string;
   /** « — » quand aucun mandat unique n'a été figé. */
   readonly mandate: string;
+  /** Cf. {@link commitmentLabel}. */
+  readonly commitment: string;
   /** « Émise en retard, le … » quand elle l'a été après la période ; `null` sinon. */
   readonly late: string | null;
   /** « Bons non facturables : … », ou `null`. */
@@ -54,6 +60,8 @@ export interface MonthlySignalRow {
   readonly payerName: string;
   /** « — » pour la facture des bons sans mandat. */
   readonly mandate: string;
+  /** Cf. {@link commitmentLabel}. */
+  readonly commitment: string;
   readonly message: string;
 }
 
@@ -81,6 +89,15 @@ export function batchSentence(batch: MonthlyClosureBatchView): string {
  */
 export function lateSentence(issuedOn: string, lastDay: string): string | null {
   return issuedOn > lastDay ? `Émise en retard, le ${day(issuedOn)}` : null;
+}
+
+/**
+ * **L'engagement budgétaire d'une facture** (organisme public, une facture par
+ * engagement) : « n° 1300012345 · service SRV-01 », l'une ou l'autre part
+ * seule quand l'autre est vide, « — » sans engagement.
+ */
+export function commitmentLabel(commitment: BudgetCommitmentView | undefined): string {
+  return budgetCommitmentLabel(commitment) ?? '—';
 }
 
 /** La tentative automatique du mois, en une phrase. */
@@ -203,6 +220,7 @@ export class MonthInvoices {
       total: euros(invoice.totalCents),
       due: invoice.dueOn === null ? '—' : day(invoice.dueOn),
       mandate: invoice.mandateReference ?? '—',
+      commitment: commitmentLabel(invoice.budgetCommitment),
       late:
         view === null ? null : lateSentence(invoice.issuedOn, periodLastDay(view.periodClosesAt)),
       unbillable:
@@ -214,10 +232,17 @@ export class MonthInvoices {
 
   protected readonly signaled = computed((): readonly MonthlySignalRow[] =>
     (this.view()?.signaled ?? []).map((row) => ({
-      // Un payeur a une issue PAR MANDAT (E4b) : la RUM complète la clé.
-      key: `${row.payerCompanyId}:${row.mandateReference ?? ''}`,
+      // Un payeur a une issue PAR MANDAT ET PAR ENGAGEMENT (E4b, E4′) : la RUM,
+      // le numéro et le code service complètent la clé.
+      key: [
+        row.payerCompanyId,
+        row.mandateReference ?? '',
+        row.budgetCommitment?.number ?? '',
+        row.budgetCommitment?.serviceCode ?? '',
+      ].join(':'),
       payerName: row.payerName,
       mandate: row.mandateReference ?? '—',
+      commitment: commitmentLabel(row.budgetCommitment),
       message: row.message,
     })),
   );

@@ -30,6 +30,12 @@
            lien explicite avec le relevé. -->
       <dd>{{ paymentLabel() }} · {{ paymentNote() }}</dd>
     </div>
+    @if (commitmentLabel(); as commitment) {
+      <div class="fact" data-commitment>
+        <dt>{{ t().orders.detailCommitment }}</dt>
+        <dd>{{ commitment }}</dd>
+      </div>
+    }
     <!-- Ce que Stripe a rendu : lu sur le règlement, jamais sur le régime. -->
     @if (refundLabel(); as refund) {
       <div class="fact">

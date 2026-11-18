@@ -1,0 +1,33 @@
+<fold-panel-header
+  title="Corriger l’engagement"
+  [subtitle]="'Commande ' + data().orderNumber + ' — tant qu’elle n’est pas facturée.'"
+/>
+
+<fold-panel-body>
+  @if (refusal(); as message) {
+    <fold-callout variant="alert" announce data-budget-commitment-refusal>{{
+      message
+    }}</fold-callout>
+  }
+  <app-budget-commitment-fields
+    [requirements]="data().requirements"
+    [(number)]="number"
+    [(serviceCode)]="serviceCode"
+  />
+  @for (gap of gaps(); track gap) {
+    <fold-callout variant="warning" data-budget-commitment-gap>{{ gap }}</fold-callout>
+  }
+</fold-panel-body>
+
+<fold-panel-footer>
+  <button foldButton emphasis="outline" intent="neutral" (click)="cancel()">Annuler</button>
+  <button
+    foldButton
+    data-budget-commitment-save
+    [loading]="saving()"
+    [disabled]="!modified() || saving()"
+    (click)="save()"
+  >
+    Enregistrer
+  </button>
+</fold-panel-footer>

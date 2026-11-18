@@ -1,0 +1,16 @@
+.bcf {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.bcf-legend {
+  padding: 0;
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+  font-weight: 500;
+}

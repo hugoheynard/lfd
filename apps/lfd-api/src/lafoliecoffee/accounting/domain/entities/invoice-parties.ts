@@ -9,6 +9,11 @@ import {
   publicPayerMeansBlockers,
   type InvoiceSettlementKind,
 } from "../services/public-payer-means-blocker.js";
+import {
+  publicCommitmentBlockers,
+  type PayerCommitmentRequirement,
+} from "../services/public-commitment-blocker.js";
+import type { InvoiceBudgetCommitment } from "../value-objects/invoice-budget-commitment.js";
 import type { InvoiceNumber } from "../value-objects/invoice-number.js";
 import type {
   InvoiceBuyer,
@@ -26,7 +31,8 @@ export interface IssuableParties {
 
 /**
  * Juge les parties par `invoiceIssuanceBlockers` (E0), le moyen d'un payeur
- * public par `publicPayerMeansBlockers`, et les bons par
+ * public par `publicPayerMeansBlockers`, son engagement exigé par
+ * `publicCommitmentBlockers` (E7), et les bons par
  * `orderDeliveryBlockers` (M5, lot ZA), et refuse en citant TOUS les manques
  * — l'écran du dossier et l'émission disent la même chose. Rien n'est
  * comblé : un SIREN vide, un taux absent ou une date de livraison inconnue
@@ -43,11 +49,21 @@ export function issuableParties(
   buyer: InvoiceBuyer | null,
   orders: readonly InvoiceOrderReference[],
   settlement: InvoiceSettlementKind,
+  budget: {
+    readonly requirement: PayerCommitmentRequirement | null;
+    readonly commitment: InvoiceBudgetCommitment | null;
+  },
 ): IssuableParties {
   const legalEntityId = seller.legalEntityId;
   const blockers = [
     ...invoiceIssuanceBlockers(sellerFacts, buyer),
     ...publicPayerMeansBlockers(buyer, settlement),
+    ...publicCommitmentBlockers(
+      buyer?.name ?? "",
+      budget.requirement,
+      budget.commitment,
+      orders.map((order) => order.reference),
+    ),
     ...orderDeliveryBlockers(orders),
     ...orderSettlementBlockers(orders),
   ];

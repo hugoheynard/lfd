@@ -1,3 +1,5 @@
+import type { InvoiceBudgetCommitment } from "../value-objects/invoice-budget-commitment.js";
+
 /** Ce que la facture du mois retient d'un payeur. */
 export interface MonthlyInvoiceOutcomeKey {
   readonly legalEntityId: string;
@@ -18,13 +20,18 @@ export interface MonthlyInvoiceOutcomeKey {
   readonly mandateId: string | null;
   /** Sa RUM, pour que l'écran nomme le mandat d'un payeur signalé. */
   readonly mandateReference: string | null;
+  /**
+   * L'engagement budgétaire de la facture (P2, E4′) ; `null` sans engagement.
+   * Avec le payeur, la clôture et le mandat, la clé de l'issue.
+   */
+  readonly budgetCommitment: InvoiceBudgetCommitment | null;
   /** Les références des bons signalés non facturables. */
   readonly unbillableOrders: readonly string[];
   readonly at: Date;
 }
 
 /**
- * **L'issue de la facture du mois, par payeur et par mandat** (lots E4, E4b) : émise ou
+ * **L'issue de la facture du mois, par payeur, mandat et engagement** (lots E4, E4b, P2) : émise ou
  * signalée. Rien n'est avalé — un refus est RANGÉ, l'écran le lit.
  *
  * La base tient qu'une issue émise ne redevient jamais signalée

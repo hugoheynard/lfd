@@ -37,7 +37,8 @@ export interface InvoiceIssuanceBlockerView {
     | "buyer_vat_missing"
     | "buyer_address_missing"
     | "buyer_country_unknown"
-    | "public_payer_not_on_transfer";
+    | "public_payer_not_on_transfer"
+    | "public_commitment_missing";
   /** Rédigé par le domaine, pour du personnel : le manque et le geste. */
   readonly message: string;
 }

@@ -5,6 +5,7 @@ import {
   MonthlyInvoiceOutcomes,
   type MonthlyInvoiceOutcomeKey,
 } from "../domain/ports/monthly-invoice-outcomes.js";
+import { budgetCommitmentColumnsOf } from "../domain/value-objects/invoice-budget-commitment.js";
 
 /** Les deux valeurs de `invoice_monthly_outcome.outcome` (CHECK en base). */
 export const ISSUED_OUTCOME = "issued";
@@ -25,7 +26,8 @@ export function mandateIdOfColumn(column: string): string | null {
 }
 
 /**
- * L'issue par payeur et par mandat (E4b), dans `public.invoice_monthly_outcome`.
+ * L'issue par payeur, par mandat (E4b) et par engagement (P2), dans
+ * `public.invoice_monthly_outcome`.
  *
  * 🔴 Le déclencheur `invoice_monthly_outcome_final` refuse de toucher une
  * issue `issued` : un refus n'écrase donc qu'un refus (`outcome = blocked`
@@ -41,7 +43,10 @@ export class PrismaMonthlyInvoiceOutcomes extends MonthlyInvoiceOutcomes {
   async recordIssued(key: MonthlyInvoiceOutcomeKey, invoiceId: string): Promise<void> {
     const columns = { ...this.columns(key), outcome: ISSUED_OUTCOME, invoiceId, message: null };
     await this.prisma.invoiceMonthlyOutcome.upsert({
-      where: { legalEntityId_periodClosesAt_payerCompanyId_mandateId: this.id(key) },
+      where: {
+        legalEntityId_periodClosesAt_payerCompanyId_mandateId_budgetCommitmentNumber_budgetCommitmentServiceCode:
+          this.id(key),
+      },
       create: columns,
       update: columns,
     });
@@ -71,6 +76,7 @@ export class PrismaMonthlyInvoiceOutcomes extends MonthlyInvoiceOutcomes {
       periodClosesAt: key.periodClosesAt,
       payerCompanyId: key.payerCompanyId,
       mandateId: mandateColumnOf(key.mandateId),
+      ...budgetCommitmentColumnsOf(key.budgetCommitment),
     };
   }
 

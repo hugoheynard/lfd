@@ -5,6 +5,7 @@ import type { PlaceOrderPayload, PlaceShopOrderPayload } from '@lfd/contracts';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AuthFacade } from '../auth/auth.facade';
+import { ClientBudgetCommitment } from './cart/budget-commitment.service';
 import { ClientCart } from './cart/client-cart.service';
 import { ClientOrders } from './client-orders.service';
 import { ClientLocale } from './client-locale.service';
@@ -301,6 +302,43 @@ describe('passer commande', () => {
 
     expect(order).not.toBeNull();
     expect(order && 'welcomeBonusPoints' in order).toBe(false);
+  });
+
+  /** Plan clients publics, § 6 quater : le bon de commande part avec la passation. */
+  it('un organisme public envoie son bon de commande, et la confirmation le rappelle', async () => {
+    const http = boot();
+    TestBed.inject(OrderContextStore).choice.set(AU_LABO);
+    TestBed.inject(ClientCart).add('VIE-001');
+    const commitment = TestBed.inject(ClientBudgetCommitment);
+    vi.spyOn(commitment, 'payloadFor').mockReturnValue({
+      budgetCommitment: { number: '1300012345', serviceCode: 'SRV-01' },
+    });
+    const forget = vi.spyOn(commitment, 'forget');
+
+    const placing = TestBed.inject(ClientOrders).place('account');
+    await Promise.resolve();
+    await Promise.resolve();
+    const body = sentBody(http);
+    const order = await placing;
+
+    expect(body.budgetCommitment).toEqual({ number: '1300012345', serviceCode: 'SRV-01' });
+    expect(order?.budgetCommitment).toEqual({ number: '1300012345', serviceCode: 'SRV-01' });
+    expect(forget).toHaveBeenCalled();
+  });
+
+  it('tout autre payeur n’envoie aucun engagement', async () => {
+    const http = boot();
+    TestBed.inject(OrderContextStore).choice.set(AU_LABO);
+    TestBed.inject(ClientCart).add('VIE-001');
+
+    const placing = TestBed.inject(ClientOrders).place();
+    await Promise.resolve();
+    await Promise.resolve();
+    const body = sentBody(http);
+    const order = await placing;
+
+    expect('budgetCommitment' in body).toBe(false);
+    expect(order !== null && 'budgetCommitment' in order).toBe(false);
   });
 
   /** Le numéro vient du SERVEUR : c'est celui qu'on lira au téléphone. */

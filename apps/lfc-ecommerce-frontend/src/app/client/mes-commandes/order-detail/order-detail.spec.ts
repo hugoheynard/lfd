@@ -90,6 +90,19 @@ describe('OrderDetail', () => {
     expect(el().querySelector('[data-refund]')?.textContent?.trim()).toBe(FR.orders.refundedFull);
   });
 
+  it('rappelle le bon de commande d’un organisme public quand il y en a un', () => {
+    expect(el().querySelector('[data-commitment]')).toBeNull();
+
+    fixture.componentRef.setInput('order', {
+      ...ROWS[0],
+      budgetCommitment: { number: '1300012345', serviceCode: 'SRV-01' },
+    });
+    fixture.detectChanges();
+    const fact = el().querySelector('[data-commitment]')?.textContent ?? '';
+    expect(fact).toContain(FR.orders.detailCommitment);
+    expect(fact).toContain('engagement n° 1300012345 · service SRV-01');
+  });
+
   it('n’annonce l’origine que lorsqu’il y en a une', () => {
     expect(el().textContent).not.toContain(FR.orders.detailOrigin);
 
