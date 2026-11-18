@@ -16,7 +16,8 @@ import {
 import { httpErrorMessage } from '@lfd/endpoints';
 
 import { BankTransfersService } from '../bank-transfers.service';
-import { day, euros } from '../invoice-dossier-format';
+import { dueCell } from '../chorus-due-wording';
+import { euros } from '../invoice-dossier-format';
 
 const COLUMNS: readonly FoldTableColumn[] = [
   { key: 'payer', label: 'Client' },
@@ -60,7 +61,7 @@ export class VirementsEnRetardPage {
 
   protected readonly columns = COLUMNS;
   protected readonly euros = euros;
-  protected readonly day = day;
+  protected readonly dueCell = dueCell;
   protected readonly empty = computed(() => !this.loading() && this.rows().length === 0);
   protected readonly rowKey = (row: UnpaidTransferInvoiceView): string => row.invoiceId;
 

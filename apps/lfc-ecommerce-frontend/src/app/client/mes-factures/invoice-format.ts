@@ -131,13 +131,44 @@ export function invoiceMeta(
   if (invoice.period !== null) {
     parts.push(fill(copy.period, { period: invoiceMonth(invoice.period, locale) }));
   }
-  if (invoice.dueOn !== null) {
-    parts.push(fill(copy.dueOn, { date: invoiceDay(invoice.dueOn, locale) }));
+  const due = dueClause(invoice, copy, locale);
+  if (due !== null) {
+    parts.push(due);
   }
   if (invoice.correctedInvoiceNumber !== null) {
     parts.push(fill(copy.corrects, { number: invoice.correctedInvoiceNumber }));
   }
   return parts.join(' · ');
+}
+
+/**
+ * L'échéance dite au client. Pour une facture d'organisme public, l'échéance
+ * imprimée n'est qu'un plancher : le délai part du dépôt sur Chorus Pro (plan
+ * `plan-clients-publics-chorus.md`, § 6 quinquies). Déposée : le jour du dépôt
+ * et l'échéance effective ; pas encore : « en cours de dépôt » ; rejetée :
+ * aucune échéance — la facture sera remplacée.
+ */
+function dueClause(
+  invoice: IssuedInvoiceSummaryView,
+  copy: AccountInvoicesCopy,
+  locale: LocaleCode,
+): string | null {
+  const chorus = invoice.chorus;
+  if (chorus === undefined || chorus === null) {
+    return invoice.dueOn === null
+      ? null
+      : fill(copy.dueOn, { date: invoiceDay(invoice.dueOn, locale) });
+  }
+  if (chorus.state === 'to_deposit') {
+    return copy.chorusPending;
+  }
+  if (chorus.depositedOn === null || chorus.effectiveDueOn === null) {
+    return null;
+  }
+  return fill(copy.chorusDeposited, {
+    deposited: invoiceDay(chorus.depositedOn, locale),
+    date: invoiceDay(chorus.effectiveDueOn, locale),
+  });
 }
 
 /** `2000` → « 2 » ; en kilos, toujours trois décimales : « 1,250 kg », « 2,000 kg ». */

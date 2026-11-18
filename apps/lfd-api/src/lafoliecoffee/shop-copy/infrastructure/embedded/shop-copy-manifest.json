@@ -11441,6 +11441,20 @@
           "variables": ["date"]
         },
         {
+          "key": "account.invoices.chorusDeposited",
+          "fr": "déposée sur Chorus le {deposited} — échéance le {date}",
+          "en": "filed on Chorus on {deposited} — due on {date}",
+          "it": "depositata su Chorus il {deposited} — scadenza il {date}",
+          "variables": ["deposited", "date"]
+        },
+        {
+          "key": "account.invoices.chorusPending",
+          "fr": "en cours de dépôt sur Chorus",
+          "en": "being filed on Chorus",
+          "it": "in corso di deposito su Chorus",
+          "variables": []
+        },
+        {
           "key": "account.invoices.period",
           "fr": "commandes de {period}",
           "en": "orders of {period}",

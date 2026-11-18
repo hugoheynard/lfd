@@ -1,8 +1,10 @@
+import { addDays } from "@lfd/contracts";
 import { grams, invoiceVatBreakdown, lineTotalCents, splitOrderByRate } from "@lfd/money";
 
 import {
   BUYER,
   breakdownOf,
+  ISSUED_ON,
   issueInput,
   line,
   SELLER,
@@ -116,13 +118,24 @@ function creditTransfer(): Invoice {
 }
 
 /**
- * La facture d'un organisme public (P2) : au virement, BT-10 = le code
- * service Chorus, BT-13 = le numéro d'engagement de son bon de commande.
+ * La facture d'un organisme public (P2, P3) : au virement, BT-10 = le code
+ * service Chorus, BT-13 = le numéro d'engagement de son bon de commande ;
+ * l'acheteur a une forme publique, l'échéance figée vaut émission + 30 jours
+ * (T1′), et le XML dit la condition de Chorus en BT-20 sans BT-9 (T1″).
  */
+const PUBLIC_DEADLINE_DAYS = 30;
+
 function publicCommitment(): Invoice {
   return Invoice.issue(
     realisticInput({
       id: "inv_public",
+      buyer: {
+        ...BUYER,
+        name: "Mairie de Chambéry",
+        legalForm: "public_local_authority",
+        vatNumber: "",
+      },
+      dueOn: addDays(ISSUED_ON, PUBLIC_DEADLINE_DAYS),
       paymentMeans: { code: SEPA_CREDIT_TRANSFER },
       budgetCommitment: { number: "1300012345", serviceCode: "SERV-RH-01" },
     }),

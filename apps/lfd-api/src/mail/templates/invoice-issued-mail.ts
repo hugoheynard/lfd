@@ -30,6 +30,13 @@ export interface InvoiceIssuedMailData {
   readonly total: string;
   /** « jeudi 15 octobre 2026 ». */
   readonly dueOn: string;
+  /**
+   * Le délai légal d'une facture d'organisme public, en jours ; `null` hors
+   * public. Présent, l'e-mail dit la condition (à compter du dépôt sur
+   * Chorus Pro) au lieu d'une date (plan `plan-clients-publics-chorus.md`, T1″).
+   * Absent d'une demande rangée avant : rien de public.
+   */
+  readonly publicPaymentDeadlineDays?: number | null;
   /** « Prélèvement SEPA — mandat RUM-… », ou `null` : aucun moyen figé sur la facture. */
   readonly paymentMeans: string | null;
   /**
@@ -115,14 +122,24 @@ function rowsOf(data: InvoiceIssuedMailData, copy: InvoiceIssuedCopy): readonly 
     { label: copy.dateLabel, value: data.issuedOn },
     ...(data.period === null ? [] : [{ label: copy.periodLabel, value: data.period }]),
     { label: copy.addressedToLabel, value: data.buyerName },
-    { label: copy.dueLabel, value: data.dueOn },
+    { label: copy.dueLabel, value: dueValueOf(data, copy) },
     ...paymentRow(data, copy),
     { label: copy.totalLabel, value: data.total, strong: true },
   ];
 }
 
+/** L'échéance : la date, ou la condition de Chorus d'une facture publique. */
+function dueValueOf(data: InvoiceIssuedMailData, copy: InvoiceIssuedCopy): string {
+  const days = data.publicPaymentDeadlineDays ?? null;
+  return days === null ? data.dueOn : fill(copy.publicDue, { days: String(days) });
+}
+
 /** La ligne « Règlement » : le virement et sa référence, sinon le moyen figé, sinon rien. */
 function paymentRow(data: InvoiceIssuedMailData, copy: InvoiceIssuedCopy): readonly LayoutRow[] {
+  if (data.bankTransferReference !== null && (data.publicPaymentDeadlineDays ?? null) !== null) {
+    const value = fill(copy.publicBankTransfer, { number: data.bankTransferReference });
+    return [{ label: copy.paymentLabel, value }];
+  }
   if (data.bankTransferReference !== null) {
     const value = fill(copy.bankTransfer, {
       due: data.dueOn,

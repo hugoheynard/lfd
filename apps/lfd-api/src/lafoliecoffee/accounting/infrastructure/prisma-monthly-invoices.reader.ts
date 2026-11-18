@@ -1,4 +1,5 @@
 import type {
+  ChorusDepositStatusView,
   BudgetCommitmentView,
   MonthlyInvoiceAutopilotOutcomeView,
   MonthlyInvoiceAutopilotRunView,
@@ -11,9 +12,16 @@ import {
   MonthlyInvoicesReader,
   type MonthlyInvoicesRead,
 } from "../domain/ports/monthly-invoices.reader.js";
-import { COMMERCIAL_INVOICE, mandateReferenceOf } from "../domain/entities/invoice.types.js";
+import {
+  COMMERCIAL_INVOICE,
+  CREDIT_NOTE,
+  mandateReferenceOf,
+} from "../domain/entities/invoice.types.js";
+import { chorusStatusViewOf } from "../domain/services/chorus-status-view.js";
 import { budgetCommitmentOf } from "../domain/value-objects/invoice-budget-commitment.js";
+import { chorusStandingOfRows } from "./chorus-deposit-rows.js";
 import { invoicePaymentMeansSchema } from "./invoice-json.schema.js";
+import { invoicePayerOf } from "./invoice-payer-name.js";
 import { BLOCKED_OUTCOME, ISSUED_OUTCOME } from "./prisma-monthly-invoice-outcomes.js";
 
 const OUTCOMES: readonly MonthlyInvoiceAutopilotOutcomeView[] = [
@@ -53,6 +61,9 @@ export class PrismaMonthlyInvoicesReader extends MonthlyInvoicesReader {
               dueOn: true,
               totalTtcCents: true,
               paymentMeans: true,
+              type: true,
+              buyer: true,
+              chorusDeposits: { select: { kind: true, occurredOn: true, reason: true } },
               _count: { select: { orders: true } },
             },
           },
@@ -83,6 +94,7 @@ export class PrismaMonthlyInvoicesReader extends MonthlyInvoicesReader {
                 ),
                 unbillableOrders: row.unbillableOrders,
                 ...commitmentViewOf(row),
+                ...chorusViewOf(row.invoice),
               },
             ],
       ),
@@ -199,4 +211,32 @@ function runView(run: {
 
 function dayOf(column: Date): string {
   return column.toISOString().slice(0, 10);
+}
+
+/**
+ * L'état Chorus d'une facture d'organisme public et son échéance effective
+ * (T3′) ; rien pour toute autre.
+ */
+function chorusViewOf(invoice: {
+  readonly id: string;
+  readonly type: string;
+  readonly buyer: unknown;
+  readonly issuedOn: Date;
+  readonly dueOn: Date | null;
+  readonly chorusDeposits: readonly {
+    readonly kind: string;
+    readonly occurredOn: Date;
+    readonly reason: string | null;
+  }[];
+}): { readonly chorus?: ChorusDepositStatusView } {
+  const chorus = chorusStatusViewOf(
+    {
+      isCreditNote: invoice.type === CREDIT_NOTE,
+      buyerLegalForm: invoicePayerOf(invoice.id, invoice.buyer).legalForm,
+      issuedOn: dayOf(invoice.issuedOn),
+      dueOn: invoice.dueOn === null ? null : dayOf(invoice.dueOn),
+    },
+    chorusStandingOfRows(invoice.id, invoice.chorusDeposits),
+  );
+  return chorus === null ? {} : { chorus };
 }

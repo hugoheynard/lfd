@@ -99,3 +99,20 @@ describe("le courriel « votre facture »", () => {
     expect(italian.html).toContain("Vedi le mie fatture");
   });
 });
+
+describe("le courriel « votre facture » d'un organisme public (Chorus Pro, P3)", () => {
+  it("dit la condition de paiement au lieu d'une date, et le virement sans date", () => {
+    const rendered = render({
+      paymentMeans: null,
+      bankTransferReference: "FA-LFD-2026-000007",
+      publicPaymentDeadlineDays: 30,
+    });
+
+    expect(rendered.html).toContain(
+      "30 jours à compter de la réception de la facture sur Chorus Pro",
+    );
+    expect(rendered.html).toContain("Par virement (mandat administratif)");
+    expect(rendered.html).not.toContain("jeudi 15 octobre 2026");
+    expect(rendered.html).not.toContain("avant le");
+  });
+});

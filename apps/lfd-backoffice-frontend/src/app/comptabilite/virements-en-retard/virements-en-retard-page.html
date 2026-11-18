@@ -42,7 +42,9 @@
           <a [routerLink]="['/comptabilite/factures', of(row).invoiceId]">{{ of(row).number }}</a>
         </ng-template>
         <ng-template foldCell="entity" let-row>{{ of(row).legalEntityName }}</ng-template>
-        <ng-template foldCell="due" let-row>{{ day(of(row).dueOn) }}</ng-template>
+        <ng-template foldCell="due" let-row>{{
+          dueCell(of(row).dueOn, of(row).chorus)
+        }}</ng-template>
         <ng-template foldCell="late" let-row>
           <fold-badge variant="alert" [content]="of(row).daysLate + ' j'" />
         </ng-template>

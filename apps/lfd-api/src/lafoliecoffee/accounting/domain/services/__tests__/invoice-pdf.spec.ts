@@ -14,6 +14,7 @@ import { facturXArithmeticViolations } from "../facturx-arithmetic.js";
 import { renderFacturXml } from "../facturx-xml.js";
 import { renderInvoicePdf } from "../invoice-pdf.js";
 import { invoiceDocumentKey, printedIban } from "../invoice-pdf-wording.js";
+import { facturXSamples } from "./facturx-samples.js";
 import { TEST_FONTS } from "./invoice-fonts-fixture.js";
 import { drawnUnicodeText, pdfObjects, streamsWith } from "./pdf-objects.js";
 
@@ -283,5 +284,20 @@ describe("renderInvoicePdf — une ligne au poids (plan vente au poids, P7)", ()
       expect(printed).toContain(expected);
     }
     expect(printed).not.toContain("kilogramme");
+  });
+});
+
+describe("renderInvoicePdf — une facture d'organisme public (P3, T1″)", () => {
+  it("dit la condition de Chorus Pro au lieu d'une date d'échéance, en tête et au règlement", async () => {
+    const invoice = facturXSamples().find(
+      (sample) => sample.name === "organisme-public-engagement",
+    );
+    const printed = drawnUnicodeText(await render(invoice?.invoice ?? fail("témoin absent")));
+
+    expect(printed).toContain(
+      "Paiement à 30 jours à compter de la réception de la facture sur Chorus Pro.",
+    );
+    expect(printed).not.toContain("Date d'échéance");
+    expect(printed).not.toContain("À régler par virement avant le");
   });
 });

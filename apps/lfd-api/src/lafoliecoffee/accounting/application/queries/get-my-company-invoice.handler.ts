@@ -9,6 +9,7 @@ import { UnpaidAccessReader } from "../../domain/ports/unpaid-access.reader.js";
 import { ensureInvoiceAccess } from "../../domain/services/invoice-access.js";
 import { invoiceViewOf } from "../issued-invoice-view-support.js";
 import { GetMyCompanyInvoiceQuery } from "./issued-invoice-queries.js";
+import { ChorusDepositStandingsReader } from "../../domain/ports/chorus-deposit-standings.reader.js";
 
 /**
  * Une facture de « Mes factures » (E6) : le mur de la liste, puis la pièce
@@ -24,6 +25,7 @@ export class GetMyCompanyInvoiceHandler implements IQueryHandler<
     private readonly access: UnpaidAccessReader,
     private readonly invoices: CompanyInvoicesReader,
     private readonly periods: InvoicePeriodsReader,
+    private readonly chorus: ChorusDepositStandingsReader,
     private readonly transfers: InvoiceTransferSettlementReader,
   ) {}
 
@@ -36,6 +38,9 @@ export class GetMyCompanyInvoiceHandler implements IQueryHandler<
     if (invoice === null) {
       throw new InvoiceNotFoundError(query.invoiceId);
     }
-    return invoiceViewOf({ periods: this.periods, transfers: this.transfers }, invoice);
+    return invoiceViewOf(
+      { periods: this.periods, chorus: this.chorus, transfers: this.transfers },
+      invoice,
+    );
   }
 }

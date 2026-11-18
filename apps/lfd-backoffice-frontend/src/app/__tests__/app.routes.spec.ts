@@ -79,6 +79,7 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   'comptabilite/entites-juridiques/:id': null,
   'comptabilite/blocages-prelevement': null,
   'comptabilite/virements-en-retard': null,
+  'comptabilite/chorus-pro': null,
   'comptabilite/liens-de-paiement': null,
   'comptabilite/procedure-de-prelevement': null,
   'comptabilite/procedure-de-prelevement/:id': null,

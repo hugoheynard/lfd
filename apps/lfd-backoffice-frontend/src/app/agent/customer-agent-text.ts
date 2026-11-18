@@ -10,6 +10,7 @@ import type {
 
 import type { AdminCompany, AdminCompanyDetail } from '../comptes-clients/admin-company';
 import { FOLLOW_ASPECT_LABELS, STATUS_LABELS } from '../comptes-clients/admin-company';
+import { dueClause } from '../comptabilite/chorus-due-wording';
 
 /**
  * Les textes de la trousse des comptes clients — des RÉSUMÉS choisis champ par
@@ -176,7 +177,7 @@ export function invoicesText(view: IssuedInvoicesView): string {
         .slice(0, SHOWN_ROWS)
         .map(
           (invoice) =>
-            `- ${invoice.number} (${invoice.kind}${invoice.correctedInvoiceNumber === null ? '' : `, corrige ${invoice.correctedInvoiceNumber}`}) émise le ${day(invoice.issuedOn)} · échéance ${day(invoice.dueOn)}${invoice.periodLabel === null ? '' : ` · ${invoice.periodLabel}`} · ${euros(invoice.totalTtcCents)} TTC · document ${invoice.documentAvailable ? 'disponible' : 'absent'}`,
+            `- ${invoice.number} (${invoice.kind}${invoice.correctedInvoiceNumber === null ? '' : `, corrige ${invoice.correctedInvoiceNumber}`}) émise le ${day(invoice.issuedOn)}${dueSuffix(invoice.dueOn, invoice.chorus)}${invoice.periodLabel === null ? '' : ` · ${invoice.periodLabel}`} · ${euros(invoice.totalTtcCents)} TTC · document ${invoice.documentAvailable ? 'disponible' : 'absent'}`,
         ),
     ].join('\n') + cut(invoices.length)
   );
@@ -217,4 +218,13 @@ export function journalText(timeline: readonly CustomerTimelineEntry[]): string 
         ),
     ].join('\n') + cut(timeline.length)
   );
+}
+
+/**
+ * L'échéance d'une facture dite à l'agent : l'échéance effective d'une facture
+ * publique (ou son état Chorus), jamais la date au plus tôt imprimée.
+ */
+function dueSuffix(dueOn: string | null, chorus: Parameters<typeof dueClause>[1]): string {
+  const clause = dueClause(dueOn, chorus);
+  return clause === null ? '' : ` · ${clause}`;
 }

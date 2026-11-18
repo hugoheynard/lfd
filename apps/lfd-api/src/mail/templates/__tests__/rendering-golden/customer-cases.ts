@@ -62,6 +62,12 @@ export const CUSTOMER_CASES: Pick<
     full: INVOICE,
     bare: { ...INVOICE, period: null, paymentMeans: null, invoicesUrl: "", document: null },
     bankTransfer: { ...INVOICE, paymentMeans: null, bankTransferReference: "FA-LFD-2026-000001" },
+    publicPayer: {
+      ...INVOICE,
+      paymentMeans: null,
+      bankTransferReference: "FA-LFD-2026-000001",
+      publicPaymentDeadlineDays: 30,
+    },
   },
   "customer.mandate-to-sign": {
     core: {

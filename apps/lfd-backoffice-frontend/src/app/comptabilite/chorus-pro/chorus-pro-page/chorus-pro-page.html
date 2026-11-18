@@ -1,0 +1,166 @@
+<fold-page-layout title="Chorus Pro" separator>
+  <p description>
+    Téléchargez la facture, déposez-la sur chorus-pro.gouv.fr, puis notez la date ici&nbsp;: le
+    délai de paiement part de ce jour.
+  </p>
+
+  @if (loading() && toDeposit().length === 0 && deposited().length === 0) {
+    <fold-loading message="Lecture des factures Chorus…" />
+  } @else if (loadError(); as message) {
+    <fold-empty-state
+      tone="alert"
+      title="Impossible de lire les factures Chorus"
+      [subtitle]="message"
+    >
+      <button foldButton (click)="load()">Réessayer</button>
+    </fold-empty-state>
+  } @else {
+    <fold-nav-layout>
+      <fold-tabs
+        tabNav
+        #bar="foldTabs"
+        size="compact"
+        activeStyle="fill"
+        background="surface"
+        [tabs]="tabs()"
+        [(activeKey)]="tab"
+      />
+
+      <fold-tab-panel [tabs]="bar" key="to-deposit">
+        @if (toDeposit().length === 0) {
+          <fold-empty-state
+            title="Aucune facture à déposer"
+            subtitle="Les factures des organismes publics apparaissent ici dès leur émission."
+          >
+            <fold-icon empty-icon name="receipt" />
+          </fold-empty-state>
+        } @else {
+          <fold-card>
+            <fold-data-table
+              narrowLayout="cards"
+              zebra
+              [columns]="toDepositColumns"
+              [rows]="toDeposit()"
+              [rowKey]="rowKey"
+            >
+              <ng-template foldCell="payer" let-row>
+                <a [routerLink]="['/comptes-clients', of(row).payerCompanyId, 'facturation']">
+                  {{ of(row).payerName }}
+                </a>
+              </ng-template>
+              <ng-template foldCell="invoice" let-row>
+                <a [routerLink]="['/comptabilite/factures', of(row).invoiceId]">{{
+                  of(row).number
+                }}</a>
+              </ng-template>
+              <ng-template foldCell="issued" let-row>{{ day(of(row).issuedOn) }}</ng-template>
+              <ng-template foldCell="commitment" let-row>{{ commitmentOf(of(row)) }}</ng-template>
+              <ng-template foldCell="amount" let-row>{{
+                euros(of(row).totalTtcCents)
+              }}</ng-template>
+              <ng-template foldCell="actions" let-row>
+                @if (of(row).documentAvailable) {
+                  <button
+                    foldButton
+                    size="sm"
+                    emphasis="soft"
+                    icon="download"
+                    data-chorus-pdf
+                    [attr.aria-label]="'Télécharger le PDF Factur-X de ' + of(row).number"
+                    [loading]="downloading() === of(row).invoiceId"
+                    (click)="download(of(row))"
+                  >
+                    PDF Factur-X
+                  </button>
+                } @else {
+                  <span>PDF en cours de rendu</span>
+                }
+                @if (canWrite()) {
+                  <button
+                    foldButton
+                    size="sm"
+                    data-chorus-deposit
+                    (click)="open('deposit', of(row))"
+                  >
+                    Déposée le…
+                  </button>
+                }
+              </ng-template>
+            </fold-data-table>
+          </fold-card>
+        }
+      </fold-tab-panel>
+
+      <fold-tab-panel [tabs]="bar" key="deposited">
+        @if (deposited().length === 0) {
+          <fold-empty-state
+            title="Aucune facture déposée"
+            subtitle="Une facture notée « Déposée le… » passe ici, avec son échéance."
+          >
+            <fold-icon empty-icon name="receipt" />
+          </fold-empty-state>
+        } @else {
+          <fold-card>
+            <fold-data-table
+              narrowLayout="cards"
+              zebra
+              [columns]="depositedColumns"
+              [rows]="deposited()"
+              [rowKey]="rowKey"
+            >
+              <ng-template foldCell="payer" let-row>
+                <a [routerLink]="['/comptes-clients', of(row).payerCompanyId, 'facturation']">
+                  {{ of(row).payerName }}
+                </a>
+              </ng-template>
+              <ng-template foldCell="invoice" let-row>
+                <a [routerLink]="['/comptabilite/factures', of(row).invoiceId]">{{
+                  of(row).number
+                }}</a>
+              </ng-template>
+              <ng-template foldCell="deposited" let-row>
+                {{ dayOrDash(of(row).chorus.depositedOn) }}
+              </ng-template>
+              <ng-template foldCell="due" let-row>{{ dueOf(of(row)) }}</ng-template>
+              <ng-template foldCell="state" let-row>
+                <fold-badge
+                  [variant]="stateVariant(of(row).chorus.state)"
+                  [content]="stateLabel(of(row).chorus.state)"
+                />
+                @if (of(row).chorus.rejectionReason; as reason) {
+                  <span data-chorus-reason>{{ reason }}</span>
+                }
+              </ng-template>
+              <ng-template foldCell="amount" let-row>{{
+                euros(of(row).totalTtcCents)
+              }}</ng-template>
+              <ng-template foldCell="actions" let-row>
+                @if (canWrite() && of(row).chorus.state === 'deposited') {
+                  <button
+                    foldButton
+                    size="sm"
+                    emphasis="outline"
+                    intent="neutral"
+                    data-chorus-reject
+                    (click)="open('rejection', of(row))"
+                  >
+                    Rejetée par Chorus
+                  </button>
+                  <button
+                    foldButton
+                    size="sm"
+                    emphasis="soft"
+                    data-chorus-accept
+                    (click)="open('acceptance', of(row))"
+                  >
+                    Mise en paiement
+                  </button>
+                }
+              </ng-template>
+            </fold-data-table>
+          </fold-card>
+        }
+      </fold-tab-panel>
+    </fold-nav-layout>
+  }
+</fold-page-layout>

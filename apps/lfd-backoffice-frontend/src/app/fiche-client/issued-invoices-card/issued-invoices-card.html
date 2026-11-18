@@ -21,8 +21,8 @@
             @if (invoice.period; as month) {
               · {{ period(month) }}
             }
-            @if (invoice.dueOn; as due) {
-              · échéance le {{ day(due) }}
+            @if (dueClause(invoice.dueOn, invoice.chorus); as due) {
+              · {{ due }}
             }
             @if (invoice.correctedInvoiceNumber; as corrected) {
               · corrige {{ corrected }}

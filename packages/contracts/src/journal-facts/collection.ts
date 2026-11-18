@@ -58,6 +58,13 @@ const invoiceNotice = {
   recipientCount: count(),
 };
 
+/** Un geste noté du dépôt d'une facture sur Chorus Pro. Sujet : `invoice`. */
+const chorusDeposit = {
+  subjectLabel: subjectLabel(),
+  payer: named("company"),
+  occurredOn: day(),
+};
+
 /**
  * Le PDF/A-3 Factur-X d'une pièce (plan `facture-emise.md`). Sujet : `invoice`. Jamais la clé de stockage : sa taille, son
  * empreinte, et s'il s'agit d'une facture ou d'un avoir.
@@ -272,6 +279,16 @@ export const COLLECTION_FACTS = {
   ),
   /** Le rendu a échoué : la pièce reste sans PDF, `failure` dit pourquoi. */
   "invoice.document_render_failed": fact(payload({ ...invoiceDocument, failure: z.string() })),
+  /**
+   * La comptabilité a déposé la facture d'un organisme public sur Chorus Pro
+   * (plan `plan-clients-publics-chorus.md`, P3) : `occurredOn` est le jour du
+   * dépôt, d'où part le délai de paiement. Sujet : `invoice`.
+   */
+  "invoice.chorus_deposited": fact(payload(chorusDeposit)),
+  /** Chorus Pro a rejeté la facture : `reason` est le motif du portail. */
+  "invoice.chorus_rejected": fact(payload({ ...chorusDeposit, reason: z.string().min(1) })),
+  /** Chorus Pro a mis la facture en paiement — informatif. */
+  "invoice.chorus_accepted": fact(payload(chorusDeposit)),
   /** Le passage automatique a tenté la facture du mois : son issue, jamais avalée. */
   "invoice.autopilot_ran": fact(payload(invoiceAutopilotRun), [payload(invoiceAutopilotRunBefore)]),
   /**

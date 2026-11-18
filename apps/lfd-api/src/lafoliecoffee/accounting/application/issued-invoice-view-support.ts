@@ -14,18 +14,28 @@ import type { InvoiceTransferSettlementReader } from "../domain/ports/invoice-tr
 import type { InvoiceReader } from "../domain/ports/invoice.reader.js";
 import type { OrderInvoicesReader } from "../domain/ports/order-invoices.reader.js";
 import type { BillingCycle } from "../domain/services/billing-cycle.js";
+import type { ChorusDepositStandingsReader } from "../domain/ports/chorus-deposit-standings.reader.js";
+import { dueFactsOf } from "../domain/services/facturx-mentions.js";
 import { periodLabelOf, periodMonthOf } from "../domain/services/invoicing-closures.js";
+import {
+  effectiveDueOn,
+  type ChorusDepositStanding,
+} from "../domain/services/public-invoice-due.js";
+import { chorusStatusViewOf } from "../domain/services/chorus-status-view.js";
 
-/** Les deux ports qu'une lecture de facture appelle. */
+/** Les ports qu'une lecture de facture appelle. */
 export interface IssuedInvoiceReaders {
   readonly invoices: InvoiceReader;
   readonly periods: InvoicePeriodsReader;
+  /** Le dépôt Chorus des pièces publiques : leur échéance effective (T3′). */
+  readonly chorus: ChorusDepositStandingsReader;
 }
 
 /** Ce que la vue d'UNE pièce lit en plus : son mois facturé, et le virement qui l'a réglée. */
 export interface InvoiceDetailReaders {
   readonly periods: InvoicePeriodsReader;
   readonly transfers: InvoiceTransferSettlementReader;
+  readonly chorus: ChorusDepositStandingsReader;
 }
 
 /**
@@ -39,18 +49,24 @@ export async function issuedInvoicesOf(
   readers: IssuedInvoiceReaders,
   payerCompanyId: string,
 ): Promise<IssuedInvoicesView> {
-  return invoicesViewOf(readers.periods, await readers.invoices.byPayer(payerCompanyId));
+  return invoicesViewOf(readers, await readers.invoices.byPayer(payerCompanyId));
 }
 
 /** Des pièces déjà lues (dans l'ordre des numéros), les plus récentes d'abord, avec leur mois facturé. */
 async function invoicesViewOf(
-  periodsReader: InvoicePeriodsReader,
+  readers: Pick<IssuedInvoiceReaders, "periods" | "chorus">,
   read: readonly Invoice[],
 ): Promise<IssuedInvoicesView> {
   const invoices = [...read].reverse();
-  const periods = await periodsReader.periodsOf(invoices.map((invoice) => invoice.id));
+  const ids = invoices.map((invoice) => invoice.id);
+  const [periods, standings] = await Promise.all([
+    readers.periods.periodsOf(ids),
+    readers.chorus.standingsOf(ids),
+  ]);
   return {
-    invoices: invoices.map((invoice) => summaryOf(invoice, periods.get(invoice.id) ?? null)),
+    invoices: invoices.map((invoice) =>
+      summaryOf(invoice, periods.get(invoice.id) ?? null, standings.get(invoice.id) ?? null),
+    ),
   };
 }
 
@@ -59,11 +75,17 @@ export async function invoiceViewOf(
   readers: InvoiceDetailReaders,
   invoice: Invoice,
 ): Promise<IssuedInvoiceView> {
-  const [periods, settledByTransferOn] = await Promise.all([
+  const [periods, settledByTransferOn, standings] = await Promise.all([
     readers.periods.periodsOf([invoice.id]),
     readers.transfers.receivedOnOf(invoice.id),
+    readers.chorus.standingsOf([invoice.id]),
   ]);
-  return detailOf(invoice, periods.get(invoice.id) ?? null, settledByTransferOn);
+  return detailOf(
+    invoice,
+    periods.get(invoice.id) ?? null,
+    settledByTransferOn,
+    standings.get(invoice.id) ?? null,
+  );
 }
 
 /**
@@ -92,19 +114,29 @@ export async function issuedInvoiceOf(
  * numéros — pour la fiche commande du back-office.
  */
 export async function orderInvoicesOf(
-  readers: { readonly invoices: OrderInvoicesReader; readonly periods: InvoicePeriodsReader },
+  readers: {
+    readonly invoices: OrderInvoicesReader;
+    readonly periods: InvoicePeriodsReader;
+    readonly chorus: ChorusDepositStandingsReader;
+  },
   orderId: string,
 ): Promise<OrderInvoicesView> {
   const invoices = await readers.invoices.ofOrder(orderId);
-  const periods = await readers.periods.periodsOf(invoices.map((invoice) => invoice.id));
-  return {
-    invoices: invoices.map((invoice) => summaryOf(invoice, periods.get(invoice.id) ?? null)),
-  };
+  return invoicesViewOf(readers, [...invoices].reverse());
 }
 
-/** Le résumé partagé d'une pièce — la fiche, la commande, et « Mes factures » qui l'étend. */
-export function summaryOf(invoice: Invoice, period: BillingCycle | null): IssuedInvoiceSummaryView {
+/**
+ * Le résumé partagé d'une pièce — la fiche, la commande, et « Mes factures »
+ * qui l'étend. `dueOn` est l'échéance imprimée ; `effectiveDueOn` celle qui
+ * juge le règlement (T3′), et `chorus` l'état du dépôt d'une facture publique.
+ */
+export function summaryOf(
+  invoice: Invoice,
+  period: BillingCycle | null,
+  standing: ChorusDepositStanding | null,
+): IssuedInvoiceSummaryView {
   const state = invoice.toState();
+  const facts = dueFactsOf(state);
   return {
     invoiceId: state.id,
     number: state.number,
@@ -112,6 +144,8 @@ export function summaryOf(invoice: Invoice, period: BillingCycle | null): Issued
     correctedInvoiceNumber: state.correctedInvoiceNumber,
     issuedOn: state.issuedOn,
     dueOn: state.dueOn,
+    effectiveDueOn: effectiveDueOn(facts, standing),
+    chorus: chorusStatusViewOf(facts, standing),
     period: period === null ? null : periodMonthOf(period.closesAt),
     periodClosesAt: period === null ? null : period.closesAt.toISOString(),
     periodLabel: period === null ? null : periodLabelOf(period),
@@ -130,11 +164,12 @@ function detailOf(
   invoice: Invoice,
   period: BillingCycle | null,
   settledByTransferOn: string | null,
+  standing: ChorusDepositStanding | null,
 ): IssuedInvoiceView {
   const state = invoice.toState();
   const { seller, buyer, vat, mentions } = state;
   return {
-    ...summaryOf(invoice, period),
+    ...summaryOf(invoice, period, standing),
     payerCompanyId: buyer.companyId,
     seller: {
       name: seller.name,

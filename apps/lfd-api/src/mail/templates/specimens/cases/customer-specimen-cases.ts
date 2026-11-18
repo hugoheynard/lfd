@@ -148,6 +148,17 @@ export const CUSTOMER_CASE_TABLES: Pick<
         paymentMeans: null,
         bankTransferReference: data.invoiceNumber,
       })),
+      variantCase(
+        "customer.invoice-issued",
+        "publicPayer",
+        "Organisme public (Chorus Pro)",
+        (data) => ({
+          ...data,
+          paymentMeans: null,
+          bankTransferReference: data.invoiceNumber,
+          publicPaymentDeadlineDays: 30,
+        }),
+      ),
     ],
     axes: [{ id: "document", values: PRESENCE, of: (data) => presence(data.document?.fileName) }],
   },

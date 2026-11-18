@@ -20,6 +20,9 @@ export const BILLING_MAILS_EN: BillingMailsCopy = {
     paymentLabel: "Payment",
     bankTransfer:
       "To be paid by bank transfer before {due}, quoting the reference {number}: the bank details are on the attached invoice.",
+    publicDue: "{days} days from receipt of the invoice on Chorus Pro",
+    publicBankTransfer:
+      "By bank transfer (administrative mandate), quoting the reference {number}: the bank details are on the attached invoice.",
     totalLabel: "Total incl. VAT",
     cta: "See my invoices",
     footer:

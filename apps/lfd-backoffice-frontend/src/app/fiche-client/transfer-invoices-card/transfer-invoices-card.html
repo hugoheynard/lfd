@@ -27,7 +27,7 @@
         @for (invoice of unpaid.invoices; track invoice.invoiceId) {
           <p class="row" [attr.data-transfer-invoice]="invoice.invoiceId">
             <a [routerLink]="['/comptabilite/factures', invoice.invoiceId]">{{ invoice.number }}</a>
-            <span class="meta">échéance le {{ day(invoice.dueOn) }}</span>
+            <span class="meta">{{ dueClause(invoice.dueOn, invoice.chorus) }}</span>
             @if (invoice.overdue) {
               <fold-badge variant="alert" [content]="'En retard de ' + invoice.daysLate + ' j'" />
             } @else {

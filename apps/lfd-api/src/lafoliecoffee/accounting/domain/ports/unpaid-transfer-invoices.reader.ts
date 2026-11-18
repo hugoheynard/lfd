@@ -1,3 +1,5 @@
+import type { ChorusDepositStanding } from "../services/public-invoice-due.js";
+
 /** Une facture au virement qu'aucun virement reçu n'a encore réglée. */
 export interface UnpaidTransferInvoice {
   readonly invoiceId: string;
@@ -8,9 +10,17 @@ export interface UnpaidTransferInvoice {
   readonly payerName: string;
   /** `AAAA-MM-JJ`. */
   readonly issuedOn: string;
-  /** `AAAA-MM-JJ` ; une facture au virement en a toujours une. */
+  /**
+   * `AAAA-MM-JJ` — l'échéance imprimée ; une facture au virement en a toujours
+   * une. Celle d'un organisme public n'est que la plus tôt possible : le
+   * retard se juge sur `effectiveDueOn` (T3′).
+   */
   readonly dueOn: string;
   readonly remainingCents: number;
+  /** La forme juridique de l'acheteur figée : dit si la facture est publique. */
+  readonly buyerLegalForm: string;
+  /** Son journal de dépôt sur Chorus ; vide (`NOT_DEPOSITED`) hors public. */
+  readonly chorus: ChorusDepositStanding;
 }
 
 /** Restreindre la liste : à une entité, à un payeur, ou rien. */

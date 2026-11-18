@@ -955,6 +955,24 @@
         ],
         "fr": "À régler par virement avant le {due}, en indiquant la référence {number} : les coordonnées bancaires figurent sur la facture jointe."
       },
+      "publicDue": {
+        "variables": [
+          "days"
+        ],
+        "required": [
+          "days"
+        ],
+        "fr": "{days} jours à compter de la réception de la facture sur Chorus Pro"
+      },
+      "publicBankTransfer": {
+        "variables": [
+          "number"
+        ],
+        "required": [
+          "number"
+        ],
+        "fr": "Par virement (mandat administratif), en indiquant la référence {number} : les coordonnées bancaires figurent sur la facture jointe."
+      },
       "totalLabel": {
         "variables": [],
         "required": [],

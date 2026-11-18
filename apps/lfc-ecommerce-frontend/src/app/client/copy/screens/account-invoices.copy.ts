@@ -93,6 +93,10 @@ export interface AccountInvoicesCopy {
   readonly issuedOn: string;
   /** `{date}`. */
   readonly dueOn: string;
+  /** `{deposited}`, `{date}` : une facture d'organisme public déposée sur Chorus Pro, et son échéance. */
+  readonly chorusDeposited: string;
+  /** Une facture d'organisme public pas encore déposée sur Chorus Pro : pas d'échéance. */
+  readonly chorusPending: string;
   /** `{period}` : « septembre 2026 ». */
   readonly period: string;
   /** `{number}` : la facture qu'un avoir corrige. */
@@ -209,6 +213,8 @@ export const ACCOUNT_INVOICES_FR: AccountInvoicesCopy = {
   creditNote: 'Avoir',
   issuedOn: 'émise le {date}',
   dueOn: 'échéance le {date}',
+  chorusDeposited: 'déposée sur Chorus le {deposited} — échéance le {date}',
+  chorusPending: 'en cours de dépôt sur Chorus',
   period: 'commandes de {period}',
   corrects: 'corrige la facture {number}',
   open: 'Voir',
@@ -312,6 +318,8 @@ export const ACCOUNT_INVOICES_EN: AccountInvoicesCopy = {
   creditNote: 'Credit note',
   issuedOn: 'issued on {date}',
   dueOn: 'due on {date}',
+  chorusDeposited: 'filed on Chorus on {deposited} — due on {date}',
+  chorusPending: 'being filed on Chorus',
   period: 'orders of {period}',
   corrects: 'corrects invoice {number}',
   open: 'View',
@@ -416,6 +424,8 @@ export const ACCOUNT_INVOICES_IT: AccountInvoicesCopy = {
   creditNote: 'Nota di credito',
   issuedOn: 'emessa il {date}',
   dueOn: 'scadenza il {date}',
+  chorusDeposited: 'depositata su Chorus il {deposited} — scadenza il {date}',
+  chorusPending: 'in corso di deposito su Chorus',
   period: 'ordini di {period}',
   corrects: 'rettifica la fattura {number}',
   open: 'Apri',

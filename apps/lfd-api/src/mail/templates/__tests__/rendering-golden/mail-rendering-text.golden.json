@@ -133,6 +133,9 @@
     },
     "bankTransfer": {
       "textSha256": "94dc1f3993324a38942f481733de0853fb770cab608b88281560084d5a66a989"
+    },
+    "publicPayer": {
+      "textSha256": "2a8081e9cd2571155a270a38425f491ea1875a4d1e517151e31a8f87f43777f1"
     }
   },
   "customer.mandate-to-sign": {

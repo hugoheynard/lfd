@@ -99,6 +99,7 @@ model Invoice {
 
   orders          InvoiceOrder[]
   monthlyOutcome  InvoiceMonthlyOutcome?
+  chorusDeposits  InvoiceChorusDeposit[]
   cardOutcome     CardInvoiceOutcome?
   collectionLines CollectionBatchLineInvoice[]
   /// Le remboursement par carte que cet avoir constate (plan M2, lot P1) —

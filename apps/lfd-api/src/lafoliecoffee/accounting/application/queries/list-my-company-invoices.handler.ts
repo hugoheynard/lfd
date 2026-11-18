@@ -10,6 +10,7 @@ import { parisDayOf } from "../../domain/services/collection-test-file.js";
 import { ensureInvoiceAccess } from "../../domain/services/invoice-access.js";
 import { myInvoicesViewOf } from "../my-invoices-view-support.js";
 import { ListMyCompanyInvoicesQuery } from "./issued-invoice-queries.js";
+import { ChorusDepositStandingsReader } from "../../domain/ports/chorus-deposit-standings.reader.js";
 
 /**
  * « Mes factures » (E6, puis la page — plan `plan-page-mes-factures.md`) :
@@ -27,6 +28,7 @@ export class ListMyCompanyInvoicesHandler implements IQueryHandler<
     private readonly access: UnpaidAccessReader,
     private readonly invoices: CompanyInvoicesReader,
     private readonly periods: InvoicePeriodsReader,
+    private readonly chorus: ChorusDepositStandingsReader,
     private readonly settlements: InvoiceSettlementFactsReader,
     private readonly clock: Clock,
   ) {}
@@ -37,7 +39,7 @@ export class ListMyCompanyInvoicesHandler implements IQueryHandler<
       query.companyId,
     );
     return myInvoicesViewOf(
-      { periods: this.periods, settlements: this.settlements },
+      { periods: this.periods, chorus: this.chorus, settlements: this.settlements },
       await this.invoices.visibleTo(query.companyId),
       query.filter,
       parisDayOf(this.clock.now()),

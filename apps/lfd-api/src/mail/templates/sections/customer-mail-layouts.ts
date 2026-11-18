@@ -128,7 +128,11 @@ export const CUSTOMER_MAIL_LAYOUTS: Readonly<
             "paymentLabel",
             "totalLabel",
           ),
-          ...variants({ bankTransfer: "Facture au virement" }),
+          ...variants({
+            bankTransfer: "Facture au virement",
+            publicDue: "Échéance d'un organisme public (Chorus Pro)",
+            publicBankTransfer: "Règlement d'un organisme public (Chorus Pro)",
+          }),
         ],
       },
       { id: "cta", texts: texts("cta") },

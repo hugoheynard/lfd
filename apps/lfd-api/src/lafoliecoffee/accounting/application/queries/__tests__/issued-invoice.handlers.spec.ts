@@ -12,6 +12,7 @@ import {
   SEPTEMBER_2026,
   FixedRoles,
   FixedSettlementFacts,
+  FixedChorusStandings,
   FixedTransferSettlements,
   MemoryCompanyInvoices,
   MemoryInvoiceReader,
@@ -53,6 +54,7 @@ const invoices = new MemoryInvoiceReader([SEPTEMBER, OCTOBER, OTHER_PAYER]);
 const periods = new FixedInvoicePeriods(new Map([["inv_1", SEPTEMBER_2026]]));
 /** `inv_2` réglée par un virement reçu ; les autres, non. */
 const TRANSFER_DAY = "2026-11-10";
+const chorus = new FixedChorusStandings();
 const transfers = new FixedTransferSettlements(new Map([["inv_2", TRANSFER_DAY]]));
 const roles = new FixedRoles(
   new Map([
@@ -85,10 +87,11 @@ describe("« Mes factures » côté client (E6)", () => {
     roles,
     visible,
     periods,
+    chorus,
     new FixedSettlementFacts(),
     CLOCK,
   );
-  const read = new GetMyCompanyInvoiceHandler(roles, visible, periods, transfers);
+  const read = new GetMyCompanyInvoiceHandler(roles, visible, periods, chorus, transfers);
 
   it("le détenteur et le rôle facturation voient les pièces adressées à leur société, récentes d'abord", async () => {
     for (const user of ["u_owner", "u_compta"]) {
@@ -110,6 +113,8 @@ describe("« Mes factures » côté client (E6)", () => {
       correctedInvoiceNumber: null,
       issuedOn: "2026-09-30",
       dueOn: "2026-10-14",
+      effectiveDueOn: "2026-10-14",
+      chorus: null,
       period: "2026-09",
       periodClosesAt: "2026-09-30T22:00:00.000Z",
       periodLabel: "du 1er au 30 septembre 2026",
@@ -167,10 +172,11 @@ describe("« Mes factures » d'un site (E6, suite (a))", () => {
     roles,
     siteVisible,
     periods,
+    chorus,
     new FixedSettlementFacts(),
     CLOCK,
   );
-  const read = new GetMyCompanyInvoiceHandler(roles, siteVisible, periods, transfers);
+  const read = new GetMyCompanyInvoiceHandler(roles, siteVisible, periods, chorus, transfers);
 
   it("voit, en lecture, les pièces de sa maison mère qui couvrent un de ses bons", async () => {
     const view = await list.execute(new ListMyCompanyInvoicesQuery("u_site", "c_site"));
@@ -211,7 +217,7 @@ const REJECTED = {
 describe("« Mes factures » : règlement, total dû, filtres (plan page-mes-factures, P1)", () => {
   it("chaque pièce porte son statut ; le total dû compte le prévu et le rejeté, lus en UNE fois", async () => {
     const facts = new FixedSettlementFacts(new Map([["inv_1", REJECTED]]));
-    const list = new ListMyCompanyInvoicesHandler(roles, visible, periods, facts, CLOCK);
+    const list = new ListMyCompanyInvoicesHandler(roles, visible, periods, chorus, facts, CLOCK);
 
     const view = await list.execute(new ListMyCompanyInvoicesQuery("u_compta", "c_port"));
 
@@ -236,7 +242,7 @@ describe("« Mes factures » : règlement, total dû, filtres (plan page-mes-fac
 
   it("le filtre choisit les lignes, jamais le total dû (§7.3)", async () => {
     const facts = new FixedSettlementFacts(new Map([["inv_1", REJECTED]]));
-    const list = new ListMyCompanyInvoicesHandler(roles, visible, periods, facts, CLOCK);
+    const list = new ListMyCompanyInvoicesHandler(roles, visible, periods, chorus, facts, CLOCK);
 
     const view = await list.execute(
       new ListMyCompanyInvoicesQuery("u_owner", "c_port", { year: 2026, month: 10, kind: null }),
@@ -256,7 +262,14 @@ describe("« Mes factures » : règlement, total dû, filtres (plan page-mes-fac
 
   it("un site compte dans SON total la pièce rejetée de sa maison mère (Q-C)", async () => {
     const facts = new FixedSettlementFacts(new Map([["inv_9", REJECTED]]));
-    const list = new ListMyCompanyInvoicesHandler(roles, siteVisible, periods, facts, CLOCK);
+    const list = new ListMyCompanyInvoicesHandler(
+      roles,
+      siteVisible,
+      periods,
+      chorus,
+      facts,
+      CLOCK,
+    );
 
     const view = await list.execute(new ListMyCompanyInvoicesQuery("u_site", "c_site"));
 
@@ -265,7 +278,7 @@ describe("« Mes factures » : règlement, total dû, filtres (plan page-mes-fac
 
   it("le mur passe avant toute lecture : un autre rôle, 403, et rien n'est lu", async () => {
     const facts = new FixedSettlementFacts();
-    const list = new ListMyCompanyInvoicesHandler(roles, visible, periods, facts, CLOCK);
+    const list = new ListMyCompanyInvoicesHandler(roles, visible, periods, chorus, facts, CLOCK);
 
     await expect(
       list.execute(new ListMyCompanyInvoicesQuery("u_orders", "c_port")),
@@ -276,17 +289,17 @@ describe("« Mes factures » : règlement, total dû, filtres (plan page-mes-fac
 
 describe("les factures depuis le back-office (E6)", () => {
   it("la fiche lit celles de la société ; la comptabilité lit n'importe quelle pièce", async () => {
-    const list = await new ListCompanyInvoicesHandler(invoices, periods).execute(
+    const list = await new ListCompanyInvoicesHandler(invoices, periods, chorus).execute(
       new ListCompanyInvoicesQuery("c_other"),
     );
     expect(list.invoices.map((invoice) => invoice.number)).toEqual(["FA-LFD-2026-000003"]);
 
-    const one = await new GetIssuedInvoiceHandler(invoices, periods, transfers).execute(
+    const one = await new GetIssuedInvoiceHandler(invoices, periods, chorus, transfers).execute(
       new GetIssuedInvoiceQuery("inv_3"),
     );
     expect(one.payerCompanyId).toBe("c_other");
     await expect(
-      new GetIssuedInvoiceHandler(invoices, periods, transfers).execute(
+      new GetIssuedInvoiceHandler(invoices, periods, chorus, transfers).execute(
         new GetIssuedInvoiceQuery("absente"),
       ),
     ).rejects.toBeInstanceOf(InvoiceNotFoundError);
@@ -295,7 +308,7 @@ describe("les factures depuis le back-office (E6)", () => {
 
 describe("« Réglée par virement le … » dans la vue d'une pièce (V7)", () => {
   it("le back-office lit le jour du virement reçu qui règle la facture, et null sinon", async () => {
-    const handler = new GetIssuedInvoiceHandler(invoices, periods, transfers);
+    const handler = new GetIssuedInvoiceHandler(invoices, periods, chorus, transfers);
 
     expect((await handler.execute(new GetIssuedInvoiceQuery("inv_2"))).settledByTransferOn).toBe(
       TRANSFER_DAY,
@@ -306,10 +319,67 @@ describe("« Réglée par virement le … » dans la vue d'une pièce (V7)", () 
   });
 
   it("le client lit le même jour dans sa facture", async () => {
-    const handler = new GetMyCompanyInvoiceHandler(roles, visible, periods, transfers);
+    const handler = new GetMyCompanyInvoiceHandler(roles, visible, periods, chorus, transfers);
 
     const view = await handler.execute(new GetMyCompanyInvoiceQuery("u_owner", "c_port", "inv_2"));
 
     expect(view.settledByTransferOn).toBe(TRANSFER_DAY);
+  });
+});
+
+describe("« Mes factures » d'un organisme public : l'échéance part du dépôt sur Chorus (P3, T3′)", () => {
+  /** Émise le 30 septembre, délai figé de 30 jours : échéance imprimée au 30 octobre. */
+  const ARMY_INVOICE = Invoice.issue(
+    issueInput({
+      id: "inv_army",
+      number: InvoiceNumber.compose("LFD", 2026, 20),
+      buyer: { ...BUYER, companyId: "c_army", name: "Base de défense", legalForm: "public_state" },
+      dueOn: "2026-10-30",
+      paymentMeans: { code: "58" },
+    }),
+  );
+  const armyRoles = new FixedRoles(new Map([["u_army:c_army", "billing"]] as const));
+  const armyVisible = new MemoryCompanyInvoices([ARMY_INVOICE]);
+  const list = (standings: FixedChorusStandings) =>
+    new ListMyCompanyInvoicesHandler(
+      armyRoles,
+      armyVisible,
+      periods,
+      standings,
+      new FixedSettlementFacts(),
+      CLOCK,
+    );
+
+  it("non déposée : virement attendu, sans date, et l'état « à déposer »", async () => {
+    const view = await list(new FixedChorusStandings()).execute(
+      new ListMyCompanyInvoicesQuery("u_army", "c_army"),
+    );
+
+    expect(view.invoices[0]).toMatchObject({
+      dueOn: "2026-10-30",
+      effectiveDueOn: null,
+      chorus: { state: "to_deposit", paymentDeadlineDays: 30 },
+      settlement: { status: "transfer_expected", date: null },
+    });
+  });
+
+  it("déposée le 5 octobre : échéance effective au 4 novembre, pas encore en retard le 20 octobre", async () => {
+    const standings = new FixedChorusStandings(
+      new Map([
+        [
+          "inv_army",
+          { depositedOn: "2026-10-05", rejectedOn: null, rejectionReason: null, acceptedOn: null },
+        ],
+      ]),
+    );
+
+    const view = await list(standings).execute(new ListMyCompanyInvoicesQuery("u_army", "c_army"));
+
+    expect(view.invoices[0]).toMatchObject({
+      effectiveDueOn: "2026-11-04",
+      chorus: { state: "deposited", depositedOn: "2026-10-05" },
+      settlement: { status: "transfer_expected", date: "2026-11-04" },
+    });
+    expect(standings.calls).toEqual([["inv_army"]]);
   });
 });

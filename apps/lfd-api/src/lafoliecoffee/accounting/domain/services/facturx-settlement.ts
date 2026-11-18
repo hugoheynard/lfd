@@ -6,7 +6,8 @@ import {
   type InvoiceState,
 } from "../entities/invoice.types.js";
 import { centsAmount, dateElement, ratePercent, textElement } from "./facturx-format.js";
-import { paymentTermsDescription } from "./facturx-mentions.js";
+import { dueFactsOf, paymentTermsDescription } from "./facturx-mentions.js";
+import { publicDeadlineDaysOf } from "./public-invoice-due.js";
 import {
   COMPANY_DISCOUNT,
   DELIVERY_FOLLOWS_GOODS,
@@ -213,12 +214,17 @@ function reasonOf(part: InvoiceVatPart): string {
   return ALLOWANCE_CHARGE_REASONS[key] ?? key;
 }
 
-/** BT-20 et BT-9 ; un avoir n'a pas d'échéance, ses conditions restent dites. */
+/**
+ * BT-20 et BT-9 ; un avoir n'a pas d'échéance, ses conditions restent dites.
+ * Une facture publique omet BT-9 : son échéance part du dépôt sur Chorus, et
+ * BT-20, toujours présent, tient BR-CO-25 (T1″).
+ */
 function paymentTerms(state: InvoiceState): string {
+  const printedDueOn = publicDeadlineDaysOf(dueFactsOf(state)) === null ? state.dueOn : null;
   return [
     "<ram:SpecifiedTradePaymentTerms>",
     textElement("ram:Description", paymentTermsDescription(state)),
-    state.dueOn === null ? "" : dateElement("ram:DueDateDateTime", state.dueOn, "udt"),
+    printedDueOn === null ? "" : dateElement("ram:DueDateDateTime", printedDueOn, "udt"),
     directDebitMandate(mandateReferenceOf(state.paymentMeans)),
     "</ram:SpecifiedTradePaymentTerms>",
   ].join("");

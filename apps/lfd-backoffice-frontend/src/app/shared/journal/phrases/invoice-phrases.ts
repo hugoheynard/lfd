@@ -274,7 +274,34 @@ const bankTransferReceived: Phrase = (fact) => {
   );
 };
 
+/**
+ * « a noté la facture « FA-… » du client « X » déposée sur Chorus Pro le
+ * 18/11/2026 » — et rejetée (motif), ou mise en paiement (plan
+ * `plan-clients-publics-chorus.md`, P3).
+ */
+function chorusNoted(verb: string, withReason: boolean): Phrase {
+  return (fact) =>
+    byActor(
+      fact,
+      [
+        text('a noté '),
+        ...piece(fact, INVOICE),
+        text(' '),
+        ...cite(FOR_CLIENT, fact.payload['payer']),
+        text(` ${verb} le `),
+        inUnit('day', fact.payload['occurredOn']),
+        ...(withReason
+          ? [text(' : « '), name(optional(fact.payload['reason']) ?? '—'), text(' »')]
+          : []),
+      ],
+      ['subjectLabel', 'payer', 'occurredOn', ...(withReason ? ['reason'] : [])],
+    );
+}
+
 export const INVOICE_PHRASES = {
+  'invoice.chorus_deposited': chorusNoted('déposée sur Chorus Pro', false),
+  'invoice.chorus_rejected': chorusNoted('rejetée par Chorus Pro', true),
+  'invoice.chorus_accepted': chorusNoted('mise en paiement par Chorus Pro', false),
   'invoice.issued': invoiceIssued,
   'invoice.credit_note_issued': creditNoteIssued,
   'invoice.notice_sent': noticeSent,

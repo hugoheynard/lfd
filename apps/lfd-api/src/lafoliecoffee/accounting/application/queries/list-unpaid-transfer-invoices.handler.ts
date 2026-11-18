@@ -5,6 +5,7 @@ import { Clock } from "../../../../platform/time/clock.js";
 import { UnpaidTransferInvoicesReader } from "../../domain/ports/unpaid-transfer-invoices.reader.js";
 import { parisDayOf } from "../../domain/services/collection-test-file.js";
 import { transferArrearsOf } from "../../domain/services/transfer-arrears.js";
+import { chorusStatusViewOf } from "../../domain/services/chorus-status-view.js";
 import { ListUnpaidTransferInvoicesQuery } from "./list-unpaid-transfer-invoices.query.js";
 
 /**
@@ -41,6 +42,16 @@ export class ListUnpaidTransferInvoicesHandler implements IQueryHandler<
         payerName: arrear.payerName,
         issuedOn: arrear.issuedOn,
         dueOn: arrear.dueOn,
+        effectiveDueOn: arrear.effectiveDueOn,
+        chorus: chorusStatusViewOf(
+          {
+            isCreditNote: false,
+            buyerLegalForm: arrear.buyerLegalForm,
+            issuedOn: arrear.issuedOn,
+            dueOn: arrear.dueOn,
+          },
+          arrear.chorus,
+        ),
         amountCents: arrear.remainingCents,
         overdue: arrear.overdue,
         daysLate: arrear.daysLate,

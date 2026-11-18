@@ -1,4 +1,5 @@
 import type { BudgetCommitmentView } from "./budget-commitment.js";
+import type { ChorusDepositStatusView } from "./chorus-deposit.js";
 import type { CollectionBatchStatusView } from "./collection-batch.js";
 import type { BillingRhythmKind } from "./legal-entity.js";
 
@@ -31,6 +32,11 @@ export interface MonthlyInvoiceView {
    * engagement) ; absent pour toute facture sans engagement.
    */
   readonly budgetCommitment?: BudgetCommitmentView;
+  /**
+   * L'état Chorus d'une facture d'organisme public et son échéance effective
+   * (plan `plan-clients-publics-chorus.md`, T3′) ; absent pour toute autre.
+   */
+  readonly chorus?: ChorusDepositStatusView;
 }
 
 /** Un payeur signalé : sa facture n'est pas partie, et pourquoi. */

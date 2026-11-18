@@ -1,10 +1,17 @@
 import type { UnpaidTransferInvoice } from "../ports/unpaid-transfer-invoices.reader.js";
+import { effectiveDueOn } from "./public-invoice-due.js";
 import { businessDaysAfter } from "./target2-calendar.js";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 /** Une facture au virement non réglée, jugée au jour de Paris. */
 export interface TransferArrear extends UnpaidTransferInvoice {
+  /**
+   * L'échéance qui juge le retard (`effectiveDueOn`) : `dueOn`, sauf une
+   * facture publique — `null` tant qu'elle n'est pas déposée sur Chorus, et
+   * après un rejet. Sans échéance effective, jamais en retard.
+   */
+  readonly effectiveDueOn: string | null;
   /** `true` dès le premier jour ouvré qui suit l'échéance (`transferOverdueFrom`). */
   readonly overdue: boolean;
   /** Jours écoulés depuis l'échéance ; `0` tant qu'elle n'est pas passée. */
@@ -50,7 +57,10 @@ export function daysLateOf(dueOn: string, today: string): number {
 /**
  * **Les impayés de factures au virement** (V8, C7 ; Q2 : on SIGNALE, rien ne
  * bloque) : chaque facture non réglée avec son retard, les plus en retard
- * d'abord, puis par numéro.
+ * d'abord, puis par numéro. Le retard se juge sur l'échéance effective
+ * (`effectiveDueOn`) : une facture publique non déposée, ou rejetée par
+ * Chorus, n'est jamais en retard — elle reste listée, un virement reçu
+ * s'y affecte quand même (T3″).
  */
 export function transferArrearsOf(
   invoices: readonly UnpaidTransferInvoice[],
@@ -58,8 +68,17 @@ export function transferArrearsOf(
 ): readonly TransferArrear[] {
   return invoices
     .map((invoice) => {
-      const daysLate = daysLateOf(invoice.dueOn, today);
-      return { ...invoice, overdue: daysLate > 0, daysLate };
+      const due = effectiveDueOn(
+        {
+          isCreditNote: false,
+          buyerLegalForm: invoice.buyerLegalForm,
+          issuedOn: invoice.issuedOn,
+          dueOn: invoice.dueOn,
+        },
+        invoice.chorus,
+      );
+      const daysLate = due === null ? 0 : daysLateOf(due, today);
+      return { ...invoice, effectiveDueOn: due, overdue: daysLate > 0, daysLate };
     })
     .sort((a, b) => b.daysLate - a.daysLate || (a.number < b.number ? -1 : 1));
 }

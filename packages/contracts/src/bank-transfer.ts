@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import type { ChorusDepositStatusView } from "./chorus-deposit.js";
+
 /**
  * **Le virement reçu** et **les factures au virement à régler** (plan
  * `documentation/comptabilite/le-paiement-par-virement.md`, V7,
@@ -67,7 +69,17 @@ export interface UnpaidTransferInvoiceView {
   readonly payerCompanyId: string;
   readonly payerName: string;
   readonly issuedOn: string;
+  /** L'échéance IMPRIMÉE — pour une facture publique, l'échéance au plus tôt. */
   readonly dueOn: string;
+  /**
+   * L'échéance qui juge le retard : `dueOn`, sauf pour une facture d'organisme
+   * public, dont le délai part du dépôt sur Chorus — `null` tant qu'elle n'est
+   * pas déposée (plan `plan-clients-publics-chorus.md`, T3′). Toujours servie ;
+   * facultative dans le type tant que les écrans ne la lisent pas.
+   */
+  readonly effectiveDueOn?: string | null;
+  /** L'état Chorus d'une facture publique ; `null` pour toute autre. Toujours servi. */
+  readonly chorus?: ChorusDepositStatusView | null;
   /** Le reste dû : ce qu'un virement doit apporter pour la régler. */
   readonly amountCents: number;
   readonly overdue: boolean;

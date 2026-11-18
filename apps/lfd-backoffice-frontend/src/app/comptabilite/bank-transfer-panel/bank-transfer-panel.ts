@@ -29,6 +29,7 @@ import { httpErrorMessage } from '@lfd/endpoints';
 import { GestureIntents } from '../../shared/gesture-intents';
 import { BankTransfersService } from '../bank-transfers.service';
 import { centsOf } from '../cents-field';
+import { chorusDueNotice, payableDueOn } from '../chorus-due-wording';
 import { day, euros } from '../invoice-dossier-format';
 
 /** Ce que le panneau reçoit : le payeur et ses factures au virement non réglées. */
@@ -169,9 +170,15 @@ export class BankTransferPanel {
 
   /** L'échéance, le retard et l'entité qui l'a émise. */
   protected hintOf(invoice: UnpaidTransferInvoiceView): string {
-    const due = invoice.overdue
-      ? `En retard de ${invoice.daysLate} j — échéance ${day(invoice.dueOn)}`
-      : `Échéance ${day(invoice.dueOn)}`;
+    const notice = chorusDueNotice(invoice.chorus);
+    const dueOn = payableDueOn(invoice.dueOn, invoice.chorus);
+    const due =
+      notice ??
+      (invoice.overdue && dueOn !== null
+        ? `En retard de ${invoice.daysLate} j — échéance ${day(dueOn)}`
+        : dueOn === null
+          ? 'Sans échéance'
+          : `Échéance ${day(dueOn)}`);
     return `${due} — ${invoice.legalEntityName}`;
   }
 

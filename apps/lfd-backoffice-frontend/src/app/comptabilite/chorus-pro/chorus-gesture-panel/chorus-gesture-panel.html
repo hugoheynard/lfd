@@ -1,0 +1,46 @@
+<fold-panel-header [title]="title()" [subtitle]="subtitle()" />
+
+<div class="body">
+  <fold-date
+    [label]="dateLabel()"
+    required
+    hint="Le jour lu sur le portail Chorus Pro."
+    [min]="earliest()"
+    [max]="today()"
+    [value]="occurredOn()"
+    (valueChange)="setOccurredOn($event)"
+  />
+  @if (dateProblem(); as problem) {
+    <fold-callout appearance="inset" variant="warning" data-chorus-date-problem>
+      {{ problem }}
+    </fold-callout>
+  }
+
+  @if (asksReason()) {
+    <fold-textarea
+      label="Motif du rejet"
+      required
+      [hint]="'Recopié du portail. Au plus ' + reasonMax + ' caractères.'"
+      [(value)]="reason"
+    />
+    @if (reasonTooLong()) {
+      <fold-callout appearance="inset" variant="warning">
+        Le motif dépasse {{ reasonMax }} caractères.
+      </fold-callout>
+    }
+    <fold-callout appearance="inset" variant="info">
+      Une facture rejetée ne se redépose pas&nbsp;: faites l’avoir et une nouvelle facture.
+    </fold-callout>
+  }
+
+  @if (error(); as message) {
+    <fold-callout appearance="inset" variant="alert" announce>{{ message }}</fold-callout>
+  }
+</div>
+
+<footer class="foot">
+  <button foldButton emphasis="outline" intent="neutral" (click)="close()">Annuler</button>
+  <button foldButton [disabled]="!canSubmit()" [loading]="saving()" (click)="submit()">
+    Enregistrer
+  </button>
+</footer>

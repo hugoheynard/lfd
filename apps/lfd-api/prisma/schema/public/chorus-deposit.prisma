@@ -1,0 +1,24 @@
+/// Le dépôt d'une facture d'organisme public sur Chorus Pro, à la main
+/// (plan `plan-clients-publics-chorus.md`, P3) : déposée, rejetée, mise en
+/// paiement. APPEND-ONLY (déclencheur `invoice_chorus_deposit_append_only`) ;
+/// une ligne par (facture, sorte). L'agrégat `ChorusDeposit` décide de l'ordre.
+model InvoiceChorusDeposit {
+  /// ULID.
+  id         String   @id
+  invoiceId  String   @map("invoice_id")
+  invoice    Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Restrict)
+  /// `deposited` | `rejected` | `accepted`.
+  kind       String
+  /// Le jour du geste sur le portail, saisi par le staff.
+  occurredOn DateTime @map("occurred_on") @db.Date
+  /// Le motif d'un rejet ; NULL sinon (CHECK).
+  reason     String?
+  staffId    String   @map("staff_id")
+  /// Le nom figé de l'auteur ; NULL si la fiche n'en porte aucun.
+  staffName  String?  @map("staff_name")
+  recordedAt DateTime @map("recorded_at") @db.Timestamptz(3)
+
+  @@unique([invoiceId, kind])
+  @@map("invoice_chorus_deposit")
+  @@schema("public")
+}

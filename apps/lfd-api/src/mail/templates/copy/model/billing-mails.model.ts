@@ -40,6 +40,14 @@ export interface InvoiceIssuedCopy {
    * e-mail, donc ni dans la boîte d'envoi ni dans le suivi.
    */
   readonly bankTransfer: string;
+  /**
+   * `{days}` — l'échéance d'une facture d'organisme public : le délai légal
+   * court à compter du dépôt sur Chorus Pro, aucune date n'est connue à
+   * l'émission (plan `plan-clients-publics-chorus.md`, T1″).
+   */
+  readonly publicDue: string;
+  /** `{number}` — la ligne « Règlement » d'une facture d'organisme public, sans date. */
+  readonly publicBankTransfer: string;
   readonly totalLabel: string;
   readonly cta: string;
   readonly footer: string;

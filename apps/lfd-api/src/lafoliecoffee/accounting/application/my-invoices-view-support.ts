@@ -4,7 +4,10 @@ import type { Invoice } from "../domain/entities/invoice.js";
 import type { InvoicePeriodsReader } from "../domain/ports/invoice-periods.reader.js";
 import type { InvoiceSettlementFactsReader } from "../domain/ports/invoice-settlement-facts.reader.js";
 import { SEPA_CREDIT_TRANSFER } from "../domain/entities/invoice.types.js";
+import type { ChorusDepositStandingsReader } from "../domain/ports/chorus-deposit-standings.reader.js";
+import { dueFactsOf } from "../domain/services/facturx-mentions.js";
 import { settlementOf } from "../domain/services/invoice-settlement.js";
+import { effectiveDueOn } from "../domain/services/public-invoice-due.js";
 import {
   amountDueOf,
   filteredLedger,
@@ -17,6 +20,8 @@ import { summaryOf } from "./issued-invoice-view-support.js";
 export interface MyInvoicesReaders {
   readonly periods: InvoicePeriodsReader;
   readonly settlements: InvoiceSettlementFactsReader;
+  /** Le dépôt Chorus des pièces publiques : leur échéance effective (T3′). */
+  readonly chorus: ChorusDepositStandingsReader;
 }
 
 type Entry = LedgerEntry & { readonly view: MyIssuedInvoiceView };
@@ -34,17 +39,20 @@ export async function myInvoicesViewOf(
   today: string,
 ): Promise<MyIssuedInvoicesView> {
   const ids = visible.map((invoice) => invoice.id);
-  const [periods, facts] = await Promise.all([
+  const [periods, facts, standings] = await Promise.all([
     readers.periods.periodsOf(ids),
     readers.settlements.factsOf(ids),
+    readers.chorus.standingsOf(ids),
   ]);
   const entries = visible.map((invoice): Entry => {
     const state = invoice.toState();
     const known = facts.get(invoice.id);
+    const standing = standings.get(invoice.id) ?? null;
     const settlement = settlementOf({
       isCreditNote: invoice.isCreditNote,
       paidOn: state.prepayment?.paidOn ?? null,
-      dueOn: state.dueOn,
+      // Une facture publique : l'échéance part du dépôt sur Chorus (T3′).
+      dueOn: effectiveDueOn(dueFactsOf(state), standing),
       debits: known?.debits ?? [],
       blocked: known?.blocked ?? false,
       paidByTransfer: state.paymentMeans?.code === SEPA_CREDIT_TRANSFER,
@@ -57,7 +65,7 @@ export async function myInvoicesViewOf(
       issuedOn: state.issuedOn,
       totalTtcCents: invoice.totalTtcCents,
       settlement,
-      view: { ...summaryOf(invoice, periods.get(invoice.id) ?? null), settlement },
+      view: { ...summaryOf(invoice, periods.get(invoice.id) ?? null, standing), settlement },
     };
   });
   return {

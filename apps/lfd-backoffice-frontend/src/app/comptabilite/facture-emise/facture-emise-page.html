@@ -59,8 +59,8 @@
             @if (bill.period; as month) {
               pour les commandes de {{ period(month) }}
             }
-            @if (bill.dueOn; as due) {
-              — échéance le {{ day(due) }}
+            @if (dueClause(bill.dueOn, bill.chorus); as due) {
+              — {{ due }}
             }
             @if (bill.correctedInvoiceNumber; as corrected) {
               — corrige la facture {{ corrected }}

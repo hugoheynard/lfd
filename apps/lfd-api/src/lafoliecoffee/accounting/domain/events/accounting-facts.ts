@@ -177,6 +177,12 @@ export const INVOICE_FACT_TYPES = {
   autopilotRan: "invoice.autopilot_ran",
   /** Un payeur n'est pas facturé ce mois-ci : la raison, jamais un montant. */
   signalled: "invoice.signalled",
+  /** Déposée sur Chorus Pro, à la main (P3) : le délai de paiement part de ce jour. */
+  chorusDeposited: "invoice.chorus_deposited",
+  /** Rejetée par Chorus Pro, avec le motif du portail. */
+  chorusRejected: "invoice.chorus_rejected",
+  /** Mise en paiement par Chorus Pro — informatif. */
+  chorusAccepted: "invoice.chorus_accepted",
 } as const satisfies Readonly<Record<string, JournalFactType>>;
 
 /**

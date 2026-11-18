@@ -56,6 +56,7 @@ export const CUSTOMER_SPECIMENS: Pick<
       period: "du 21 au 27 septembre 2026",
       total: "1 234,56 €",
       dueOn: "jeudi 15 octobre 2026",
+      publicPaymentDeadlineDays: null,
       paymentMeans: `Prélèvement SEPA — mandat ${MANDATE}`,
       bankTransferReference: null,
       invoicesUrl: `${SPECIMEN_URL}/mes-factures`,

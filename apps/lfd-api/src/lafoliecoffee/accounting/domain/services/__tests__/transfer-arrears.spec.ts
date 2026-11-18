@@ -5,6 +5,7 @@ import {
   transferArrearsOf,
   transferOverdueFrom,
 } from "../transfer-arrears.js";
+import { NOT_DEPOSITED } from "../public-invoice-due.js";
 
 // Jours comparés entre eux seulement : `today` est donné.
 const unpaid = (over: Partial<UnpaidTransferInvoice> = {}): UnpaidTransferInvoice => ({
@@ -17,6 +18,8 @@ const unpaid = (over: Partial<UnpaidTransferInvoice> = {}): UnpaidTransferInvoic
   issuedOn: "2026-10-31",
   dueOn: "2026-11-14",
   remainingCents: 12_000,
+  buyerLegalForm: "sas",
+  chorus: NOT_DEPOSITED,
   ...over,
 });
 
@@ -77,5 +80,52 @@ describe("les impayés de factures au virement (V8)", () => {
       ["FA-LFD-2026-000002", true, 6],
       ["FA-LFD-2026-000003", false, 0],
     ]);
+  });
+});
+
+describe("les impayés d'un organisme public : le retard part du dépôt sur Chorus (P3, T3′)", () => {
+  // Facture publique du 31 octobre, délai figé de 30 jours (échéance au plus tôt le 30 novembre).
+  const army = (chorus: UnpaidTransferInvoice["chorus"]): UnpaidTransferInvoice =>
+    unpaid({ buyerLegalForm: "public_state", dueOn: "2026-11-30", chorus });
+
+  it("non déposée : jamais en retard, même longtemps après l'échéance imprimée", () => {
+    const [arrear] = transferArrearsOf([army(NOT_DEPOSITED)], "2027-03-01");
+
+    expect(arrear).toMatchObject({ effectiveDueOn: null, overdue: false, daysLate: 0 });
+  });
+
+  it("déposée le 10 novembre : échéance le 10 décembre, en retard au jour ouvré qui suit", () => {
+    const deposited = { ...NOT_DEPOSITED, depositedOn: "2026-11-10" };
+
+    expect(transferArrearsOf([army(deposited)], "2026-12-10")[0]).toMatchObject({
+      effectiveDueOn: "2026-12-10",
+      overdue: false,
+    });
+    // Jeudi 10 décembre 2026 → en retard le vendredi 11.
+    expect(transferArrearsOf([army(deposited)], "2026-12-11")[0]).toMatchObject({
+      overdue: true,
+      daysLate: 1,
+    });
+  });
+
+  it("rejetée par Chorus : listée (un virement s'y affecte encore, T3″) mais jamais en retard", () => {
+    const rejected = {
+      ...NOT_DEPOSITED,
+      depositedOn: "2026-11-10",
+      rejectedOn: "2026-11-12",
+      rejectionReason: "Service inconnu",
+    };
+
+    expect(transferArrearsOf([army(rejected)], "2027-03-01")[0]).toMatchObject({
+      effectiveDueOn: null,
+      overdue: false,
+    });
+  });
+
+  it("un pro n'est pas touché : l'échéance effective est celle imprimée", () => {
+    expect(transferArrearsOf([unpaid()], "2026-11-16")[0]).toMatchObject({
+      effectiveDueOn: "2026-11-14",
+      overdue: true,
+    });
   });
 });

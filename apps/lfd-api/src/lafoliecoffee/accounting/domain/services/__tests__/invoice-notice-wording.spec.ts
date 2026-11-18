@@ -29,6 +29,7 @@ describe("le contenu de « Votre facture » (E6)", () => {
       period: "du 1er au 30 septembre 2026",
       total: "16,55\u00A0€",
       dueOn: "mercredi 14 octobre 2026",
+      publicPaymentDeadlineDays: null,
       paymentMeans: "Prélèvement SEPA — mandat RUM-PORT-1",
       bankTransferReference: null,
       invoicesUrl: "https://boutique.test/mon-compte",

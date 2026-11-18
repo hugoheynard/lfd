@@ -71,6 +71,8 @@ const DECLARED_VARIABLES = {
     intro: ["seller", "number", "buyer", "period", "total"],
     periodClause: ["period"],
     bankTransfer: ["due", "number"],
+    publicDue: ["days"],
+    publicBankTransfer: ["number"],
   },
   "customer.collection-notice": {
     subject: ["title", "creditor", "day"],

@@ -1,8 +1,14 @@
-import type {
-  InvoiceMentions,
-  InvoiceOrderReference,
-  InvoiceState,
+import {
+  CREDIT_NOTE,
+  type InvoiceMentions,
+  type InvoiceOrderReference,
+  type InvoiceState,
 } from "../entities/invoice.types.js";
+import {
+  publicDeadlineDaysOf,
+  publicPaymentConditionText,
+  type DueInvoiceFacts,
+} from "./public-invoice-due.js";
 import { basisPointsPercent, centsAmount, textElement } from "./facturx-format.js";
 
 /**
@@ -30,11 +36,34 @@ const OPERATION_LABELS: Readonly<Record<InvoiceMentions["operationCategory"], st
 export function paymentTermsDescription(state: InvoiceState): string {
   return [
     ...(state.prepayment === null ? [] : [settledText(state)]),
-    state.dueOn === null ? "Avoir : sans échéance." : `Échéance : ${frenchDate(state.dueOn)}.`,
+    dueText(state),
     latePenaltiesText(state),
     recoveryIndemnityText(state),
     state.mentions.earlyPaymentDiscount,
   ].join(" ");
+}
+
+/**
+ * L'échéance dite en clair. Une facture publique dit la condition de Chorus
+ * (le délai part du dépôt, T1″) — choisie par la nature de l'acheteur figé,
+ * jamais par `dueOn === null`, qui désigne l'avoir.
+ */
+export function dueText(state: InvoiceState): string {
+  const publicDays = publicDeadlineDaysOf(dueFactsOf(state));
+  if (publicDays !== null) {
+    return publicPaymentConditionText(publicDays);
+  }
+  return state.dueOn === null ? "Avoir : sans échéance." : `Échéance : ${frenchDate(state.dueOn)}.`;
+}
+
+/** Les faits d'échéance d'une pièce figée. */
+export function dueFactsOf(state: InvoiceState): DueInvoiceFacts {
+  return {
+    isCreditNote: state.type === CREDIT_NOTE,
+    buyerLegalForm: state.buyer.legalForm,
+    issuedOn: state.issuedOn,
+    dueOn: state.dueOn,
+  };
 }
 
 /** BG-1 — les mentions légales et la liste des bons couverts. */

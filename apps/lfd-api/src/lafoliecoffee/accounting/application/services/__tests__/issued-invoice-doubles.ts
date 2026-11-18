@@ -3,6 +3,7 @@ import { Buffer } from "node:buffer";
 import { CustomerDocumentStore } from "../../../../../platform/storage/customer-document-store.js";
 import type { StoredDocument } from "../../../../../platform/storage/document-store.js";
 import type { Invoice } from "../../../domain/entities/invoice.js";
+import { ChorusDepositStandingsReader } from "../../../domain/ports/chorus-deposit-standings.reader.js";
 import { CompanyInvoicesReader } from "../../../domain/ports/company-invoices.reader.js";
 import { InvoicePeriodsReader } from "../../../domain/ports/invoice-periods.reader.js";
 import {
@@ -11,6 +12,7 @@ import {
 } from "../../../domain/ports/invoice-settlement-facts.reader.js";
 import { InvoiceTransferSettlementReader } from "../../../domain/ports/invoice-transfer-settlement.reader.js";
 import type { BillingCycle } from "../../../domain/services/billing-cycle.js";
+import type { ChorusDepositStanding } from "../../../domain/services/public-invoice-due.js";
 import { InvoiceReader } from "../../../domain/ports/invoice.reader.js";
 import { PayerNoticeContactsReader } from "../../../domain/ports/payer-notice-contacts.reader.js";
 import {
@@ -113,6 +115,25 @@ export class FixedTransferSettlements extends InvoiceTransferSettlementReader {
   }
   receivedOnOf(invoiceId: string): Promise<string | null> {
     return Promise.resolve(this.days.get(invoiceId) ?? null);
+  }
+}
+
+/** Le journal de dépôt Chorus de chaque pièce ; aucun par défaut. Retient les lectures. */
+export class FixedChorusStandings extends ChorusDepositStandingsReader {
+  readonly calls: (readonly string[])[] = [];
+  constructor(private readonly standings: ReadonlyMap<string, ChorusDepositStanding> = new Map()) {
+    super();
+  }
+  standingsOf(invoiceIds: readonly string[]): Promise<ReadonlyMap<string, ChorusDepositStanding>> {
+    this.calls.push([...invoiceIds]);
+    return Promise.resolve(
+      new Map(
+        invoiceIds.flatMap((id) => {
+          const standing = this.standings.get(id);
+          return standing === undefined ? [] : [[id, standing] as const];
+        }),
+      ),
+    );
   }
 }
 

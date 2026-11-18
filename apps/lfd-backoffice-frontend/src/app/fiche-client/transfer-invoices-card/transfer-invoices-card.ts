@@ -25,6 +25,7 @@ import {
   type BankTransferPanelData,
 } from '../../comptabilite/bank-transfer-panel/bank-transfer-panel';
 import { BankTransfersService } from '../../comptabilite/bank-transfers.service';
+import { dueClause } from '../../comptabilite/chorus-due-wording';
 import { day, euros } from '../../comptabilite/invoice-dossier-format';
 import { NotifyService } from '../../notify.service';
 
@@ -64,6 +65,7 @@ export class TransferInvoicesCard {
 
   protected readonly euros = euros;
   protected readonly day = day;
+  protected readonly dueClause = dueClause;
 
   protected readonly canRecord = computed(() => this.permissions.can('b2b_accounting:write'));
   protected readonly overdueCount = computed(

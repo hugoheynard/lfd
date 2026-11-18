@@ -28,6 +28,7 @@ import {
 
 import { PermissionsStore } from '../../auth/permissions.store';
 import { NotifyService } from '../../notify.service';
+import { dueClause } from '../chorus-due-wording';
 import { day, euros, ratePercent, unitPrice } from '../invoice-dossier-format';
 import { downloadIssuedInvoicePdf } from '../issued-invoice-pdf';
 import { IssuedInvoicesService } from '../issued-invoices.service';
@@ -110,6 +111,7 @@ export class FactureEmisePage {
 
   protected readonly euros = euros;
   protected readonly day = day;
+  protected readonly dueClause = dueClause;
   protected readonly rate = ratePercent;
   protected readonly unitPrice = unitPrice;
   protected readonly quantity = quantityLabel;

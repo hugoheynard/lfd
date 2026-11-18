@@ -5,7 +5,9 @@ import {
 } from "../entities/invoice.types.js";
 import type { BillingCycle } from "./billing-cycle.js";
 import { noticeAmount, noticeDay } from "./collection-notice-wording.js";
+import { dueFactsOf } from "./facturx-mentions.js";
 import { periodLabelOf } from "./invoicing-closures.js";
+import { publicDeadlineDaysOf } from "./public-invoice-due.js";
 
 /** Ce que l'e-mail « Votre facture » imprime, mis en forme une fois. */
 export interface InvoiceNoticeContent {
@@ -16,6 +18,8 @@ export interface InvoiceNoticeContent {
   readonly period: string | null;
   readonly total: string;
   readonly dueOn: string;
+  /** Le délai légal d'une facture d'organisme public ; `null` hors public (T1″). */
+  readonly publicPaymentDeadlineDays: number | null;
   readonly paymentMeans: string | null;
   /** Le numéro de la facture au virement, à reporter ; `null` pour tout autre moyen. */
   readonly bankTransferReference: string | null;
@@ -51,6 +55,9 @@ export function invoiceNoticeContent(
     period: period === null ? null : periodLabelOf(period),
     total: noticeAmount(state.vat.totalCents),
     dueOn: noticeDay(state.dueOn),
+    // Une facture publique dit la condition, jamais une date : son échéance
+    // part du dépôt sur Chorus Pro.
+    publicPaymentDeadlineDays: publicDeadlineDaysOf(dueFactsOf(state)),
     paymentMeans: paymentMeansText(state),
     bankTransferReference: state.paymentMeans?.code === SEPA_CREDIT_TRANSFER ? state.number : null,
     invoicesUrl,

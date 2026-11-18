@@ -8,7 +8,8 @@ import {
   type UnpaidTransferFilter,
   type UnpaidTransferInvoice,
 } from "../domain/ports/unpaid-transfer-invoices.reader.js";
-import { invoicePayerName } from "./invoice-payer-name.js";
+import { chorusStandingOfRows } from "./chorus-deposit-rows.js";
+import { invoicePayerOf } from "./invoice-payer-name.js";
 
 const DAY_LENGTH = 10;
 
@@ -44,22 +45,26 @@ export class PrismaUnpaidTransferInvoicesReader extends UnpaidTransferInvoicesRe
         dueOn: true,
         totalTtcCents: true,
         prepaidCents: true,
+        chorusDeposits: { select: { kind: true, occurredOn: true, reason: true } },
       },
     });
     return rows.map((row) => {
       if (row.dueOn === null) {
         throw new UnreadableInvoiceError(row.id, "due_on");
       }
+      const buyer = invoicePayerOf(row.id, row.buyer);
       return {
         invoiceId: row.id,
         number: row.number,
         legalEntityId: row.legalEntityId,
         legalEntityName: row.legalEntity.name,
         payerCompanyId: row.payerCompanyId,
-        payerName: invoicePayerName(row.id, row.buyer),
+        payerName: buyer.name,
         issuedOn: row.issuedOn.toISOString().slice(0, DAY_LENGTH),
         dueOn: row.dueOn.toISOString().slice(0, DAY_LENGTH),
         remainingCents: row.totalTtcCents - (row.prepaidCents ?? 0),
+        buyerLegalForm: buyer.legalForm,
+        chorus: chorusStandingOfRows(row.id, row.chorusDeposits),
       };
     });
   }

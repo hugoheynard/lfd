@@ -6,6 +6,7 @@ import {
   type InvoiceState,
 } from "../entities/invoice.types.js";
 import {
+  dueFactsOf,
   latePenaltiesText,
   operationText,
   settledText,
@@ -23,6 +24,7 @@ import {
   type TextStyle,
 } from "./invoice-pdf-sheet.js";
 import { day, euros, printedIban, vatRateLabel } from "./invoice-pdf-wording.js";
+import { publicDeadlineDaysOf, publicPaymentConditionText } from "./public-invoice-due.js";
 
 /**
  * **Le bas de la facture** (E3b) : la ventilation par taux, les totaux, le
@@ -147,12 +149,21 @@ export function drawMentions(sheet: InvoiceSheet, state: InvoiceState): void {
 function transferSentences(state: InvoiceState): readonly string[] {
   const { name, creditorIban, creditorBic } = state.seller;
   return [
-    ...(state.dueOn === null ? [] : [`À régler par virement avant le ${day(state.dueOn)}.`]),
+    ...transferDueLines(state),
     `Bénéficiaire : ${name}.`,
     `IBAN : ${printedIban(creditorIban)}`,
     ...(creditorBic === null ? [] : [`BIC : ${creditorBic}`]),
     `Référence à reporter sur le virement : ${state.number}.`,
   ];
+}
+
+/** « À régler avant le … », ou la condition de Chorus d'une facture publique (T1″). */
+function transferDueLines(state: InvoiceState): readonly string[] {
+  const publicDays = publicDeadlineDaysOf(dueFactsOf(state));
+  if (publicDays !== null) {
+    return [publicPaymentConditionText(publicDays)];
+  }
+  return state.dueOn === null ? [] : [`À régler par virement avant le ${day(state.dueOn)}.`];
 }
 
 /** Le pied de chaque page : la pièce, le vendeur, la page sur le total. */

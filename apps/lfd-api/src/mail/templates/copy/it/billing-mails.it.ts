@@ -20,6 +20,9 @@ export const BILLING_MAILS_IT: BillingMailsCopy = {
     paymentLabel: "Pagamento",
     bankTransfer:
       "Da pagare con bonifico entro il {due}, indicando il riferimento {number}: le coordinate bancarie figurano sulla fattura allegata.",
+    publicDue: "{days} giorni dal ricevimento della fattura su Chorus Pro",
+    publicBankTransfer:
+      "Tramite bonifico (mandato amministrativo), indicando il riferimento {number}: le coordinate bancarie sono riportate nella fattura allegata.",
     totalLabel: "Totale IVA inclusa",
     cta: "Vedi le mie fatture",
     footer:

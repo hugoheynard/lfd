@@ -25,6 +25,9 @@ export const BILLING_MAILS_FR: BillingMailsCopy = {
     paymentLabel: "Règlement",
     bankTransfer:
       "À régler par virement avant le {due}, en indiquant la référence {number} : les coordonnées bancaires figurent sur la facture jointe.",
+    publicDue: "{days} jours à compter de la réception de la facture sur Chorus Pro",
+    publicBankTransfer:
+      "Par virement (mandat administratif), en indiquant la référence {number} : les coordonnées bancaires figurent sur la facture jointe.",
     totalLabel: "Total TTC",
     cta: "Voir mes factures",
     footer:

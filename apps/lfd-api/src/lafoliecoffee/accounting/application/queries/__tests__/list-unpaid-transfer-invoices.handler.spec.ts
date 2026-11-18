@@ -6,6 +6,7 @@ import {
 } from "../../../domain/ports/unpaid-transfer-invoices.reader.js";
 import { ListUnpaidTransferInvoicesHandler } from "../list-unpaid-transfer-invoices.handler.js";
 import { ListUnpaidTransferInvoicesQuery } from "../list-unpaid-transfer-invoices.query.js";
+import { NOT_DEPOSITED } from "../../../domain/services/public-invoice-due.js";
 
 /** Horloge FIXE : le 20 novembre 2026 à 10 h à Paris. */
 const NOW = new Date("2026-11-20T09:00:00.000Z");
@@ -20,6 +21,8 @@ const unpaid = (over: Partial<UnpaidTransferInvoice> = {}): UnpaidTransferInvoic
   issuedOn: "2026-10-31",
   dueOn: "2026-11-14",
   remainingCents: 12_000,
+  buyerLegalForm: "sas",
+  chorus: NOT_DEPOSITED,
   ...over,
 });
 
@@ -64,5 +67,33 @@ describe("ListUnpaidTransferInvoicesHandler — les impayés au virement (V8, C7
       "FA-LFD-2026-000001",
       "FA-LFD-2026-000003",
     ]);
+  });
+});
+
+/**
+ * Régression : une facture d'organisme public non déposée sur Chorus était
+ * jugée sur son échéance imprimée, et comptée en retard.
+ */
+describe("ListUnpaidTransferInvoicesHandler — un organisme public (P3, T3′)", () => {
+  class PublicUnpaid extends UnpaidTransferInvoicesReader {
+    unpaid(): Promise<readonly UnpaidTransferInvoice[]> {
+      return Promise.resolve([
+        unpaid({ buyerLegalForm: "public_state", issuedOn: "2026-10-01", dueOn: "2026-10-31" }),
+      ]);
+    }
+  }
+
+  it("non déposée : listée sans erreur, sans échéance effective ni retard, état « à déposer »", async () => {
+    const handler = new ListUnpaidTransferInvoicesHandler(new PublicUnpaid(), new FixedClock(NOW));
+
+    const view = await handler.execute(new ListUnpaidTransferInvoicesQuery(null, null, false));
+
+    expect(view.invoices[0]).toMatchObject({
+      dueOn: "2026-10-31",
+      effectiveDueOn: null,
+      overdue: false,
+      chorus: { state: "to_deposit", paymentDeadlineDays: 30, effectiveDueOn: null },
+    });
+    expect(view.overdueCents).toBe(0);
   });
 });

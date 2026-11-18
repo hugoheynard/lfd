@@ -10,7 +10,9 @@ import {
   RIGHT,
   type TextStyle,
 } from "./invoice-pdf-sheet.js";
+import { dueFactsOf } from "./facturx-mentions.js";
 import { day, documentTitle, euros } from "./invoice-pdf-wording.js";
+import { publicDeadlineDaysOf, publicPaymentConditionText } from "./public-invoice-due.js";
 
 /**
  * **L'en-tête de la facture** (E3b) : le vendeur et son logo à gauche, la
@@ -59,12 +61,24 @@ function pieceLines(state: InvoiceState): readonly string[] {
   return [
     `N° ${state.number}`,
     `Date d'émission : ${day(state.issuedOn)}`,
-    ...(state.dueOn === null ? [] : [`Date d'échéance : ${day(state.dueOn)}`]),
+    ...dueLines(state),
     ...(state.correctedInvoiceNumber === null
       ? []
       : [`Avoir sur la facture ${state.correctedInvoiceNumber}`]),
     ...budgetCommitmentLines(state),
   ];
+}
+
+/**
+ * La date d'échéance ; une facture publique dit la condition de Chorus à la
+ * place (le délai part du dépôt, T1″).
+ */
+function dueLines(state: InvoiceState): readonly string[] {
+  const publicDays = publicDeadlineDaysOf(dueFactsOf(state));
+  if (publicDays !== null) {
+    return [publicPaymentConditionText(publicDays)];
+  }
+  return state.dueOn === null ? [] : [`Date d'échéance : ${day(state.dueOn)}`];
 }
 
 /**

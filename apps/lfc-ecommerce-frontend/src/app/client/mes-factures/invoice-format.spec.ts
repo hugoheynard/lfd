@@ -23,6 +23,41 @@ describe('les mises en forme de « Mes factures »', () => {
     );
   });
 
+  it('une facture publique dit son dépôt sur Chorus au lieu de l’échéance imprimée', () => {
+    const chorus = {
+      state: 'to_deposit' as const,
+      paymentDeadlineDays: 30,
+      depositedOn: null,
+      rejectedOn: null,
+      rejectionReason: null,
+      acceptedOn: null,
+      effectiveDueOn: null,
+    };
+    const pending = { ...SEPTEMBER, period: null, chorus };
+    expect(invoiceMeta(pending, COPY, 'fr')).toBe(
+      'émise le 30 sept. 2026 · en cours de dépôt sur Chorus',
+    );
+
+    const deposited = {
+      ...pending,
+      chorus: {
+        ...chorus,
+        state: 'deposited' as const,
+        depositedOn: '2026-10-02',
+        effectiveDueOn: '2026-11-01',
+      },
+    };
+    expect(invoiceMeta(deposited, COPY, 'fr')).toBe(
+      'émise le 30 sept. 2026 · déposée sur Chorus le 2 oct. 2026 — échéance le 1 nov. 2026',
+    );
+
+    const rejected = {
+      ...pending,
+      chorus: { ...chorus, state: 'rejected' as const, depositedOn: '2026-10-02' },
+    };
+    expect(invoiceMeta(rejected, COPY, 'fr')).toBe('émise le 30 sept. 2026');
+  });
+
   it('dit le statut et sa date, ou le statut seul quand il n’en a pas', () => {
     expect(
       settlementLabel(

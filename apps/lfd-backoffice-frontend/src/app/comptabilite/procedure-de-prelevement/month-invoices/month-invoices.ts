@@ -18,6 +18,7 @@ import {
 } from 'fold-ng';
 
 import { budgetCommitmentLabel } from '../../../commandes/budget-commitment';
+import { dueCell } from '../../chorus-due-wording';
 import { longDay, periodWithModes } from '../../collection-month-wording';
 import { day, euros, instant } from '../../invoice-dossier-format';
 
@@ -218,7 +219,7 @@ export class MonthInvoices {
       payerName: invoice.payerName,
       orderCount: invoice.orderCount,
       total: euros(invoice.totalCents),
-      due: invoice.dueOn === null ? '—' : day(invoice.dueOn),
+      due: dueCell(invoice.dueOn, invoice.chorus),
       mandate: invoice.mandateReference ?? '—',
       commitment: commitmentLabel(invoice.budgetCommitment),
       late:

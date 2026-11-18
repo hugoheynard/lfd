@@ -64,6 +64,15 @@ export const comptabiliteRoutes: Routes = [
           ),
       },
       {
+        // Les factures d'organismes publics à déposer sur Chorus Pro, puis
+        // déposées (plan plan-clients-publics-chorus.md, § 6 quinquies). Les
+        // gestes demandent `b2b_accounting:write` ; l'écran les masque sans.
+        path: 'chorus-pro',
+        title: 'Chorus Pro — LFC B2B admin',
+        loadComponent: () =>
+          import('./chorus-pro/chorus-pro-page/chorus-pro-page').then((m) => m.ChorusProPage),
+      },
+      {
         // LES PROCÉDURES DE PRÉLÈVEMENT — une ligne par clôture : ouvertes, à
         // venir, closes récentes. `?entite=&lot=` (les anciennes adresses)
         // redirige vers le détail du lot.

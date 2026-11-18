@@ -13,6 +13,7 @@ export const BILLING_VALUE_CARDS: Pick<
   | "debtor"
   | "day"
   | "document"
+  | "days"
   | "due"
   | "number"
   | "numbers"
@@ -95,6 +96,12 @@ export const BILLING_VALUE_CARDS: Pick<
     label: "Nom du mandat",
     description: "Le nom du mandat à signer, selon son schéma SEPA (particulier ou entreprise).",
     example: "mandat de prélèvement SEPA",
+  },
+  days: {
+    label: "Délai de paiement",
+    description:
+      "Le délai légal de paiement d'un organisme public, en jours, compté à partir du dépôt de la facture sur Chorus Pro.",
+    example: "30",
   },
   due: {
     label: "Échéance de la facture",

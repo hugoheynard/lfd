@@ -9,6 +9,8 @@
  * vit ailleurs (§ 5 du plan).
  */
 
+import type { ChorusDepositStatusView } from "./chorus-deposit.js";
+
 /** `invoice` = 380, `credit_note` = 381. */
 export type IssuedInvoiceKind = "invoice" | "credit_note";
 
@@ -22,8 +24,22 @@ export interface IssuedInvoiceSummaryView {
   readonly correctedInvoiceNumber: string | null;
   /** `AAAA-MM-JJ`. */
   readonly issuedOn: string;
-  /** `AAAA-MM-JJ` ; `null` pour un avoir. */
+  /**
+   * `AAAA-MM-JJ` — l'échéance IMPRIMÉE ; `null` pour un avoir. Pour une
+   * facture d'organisme public, l'échéance au plus tôt : celle qui compte est
+   * `effectiveDueOn`.
+   */
   readonly dueOn: string | null;
+  /**
+   * L'échéance qui juge le règlement : `dueOn`, sauf pour une facture
+   * d'organisme public — dépôt sur Chorus + délai, `null` tant qu'elle n'est
+   * pas déposée ou après un rejet (plan `plan-clients-publics-chorus.md`,
+   * T3′). Toujours servie ; facultative dans le type tant que les écrans ne
+   * la lisent pas.
+   */
+  readonly effectiveDueOn?: string | null;
+  /** L'état Chorus d'une facture d'organisme public ; `null` pour toute autre pièce. Toujours servi. */
+  readonly chorus?: ChorusDepositStatusView | null;
   /**
    * `AAAA-MM` — le mois où s'achève la période facturée ; `null` hors facture
    * de période. Gardé pour « Mes factures » : deux semaines d'un même mois y

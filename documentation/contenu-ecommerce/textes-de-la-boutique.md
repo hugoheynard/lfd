@@ -4,7 +4,7 @@
 >
 > La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.
 
-## Sommaire — 1836 textes
+## Sommaire — 1838 textes
 
 Clés présentes dans une langue et absentes d'une autre : 0.
 
@@ -42,7 +42,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Mes commandes (récapitulatif compris)](#espace-orders) | `orders` | 285 |
 | [Annuler une commande — Mes commandes et la page invité](#espace-ordercancel) | `orderCancel` | 57 |
 | [Fidélité](#espace-loyalty) | `loyalty` | 38 |
-| [Mon compte (factures comprises)](#espace-account) | `account` | 532 |
+| [Mon compte (factures comprises)](#espace-account) | `account` | 534 |
 | [Le compte pro — le dictionnaire général](#espace-pro) | `pro` | 8 |
 | [Le compte pro — l’écran](#espace-proaccount) | `proAccount` | 27 |
 | [La procédure de livraison d’une adresse](#espace-deliveryprocedure) | `deliveryProcedure` | 47 (+ 3 non recensé) |
@@ -50,7 +50,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Les cases des e-mails marketing, « Mes e-mails » et le pied de page](#espace-marketingconsent) | `marketingConsent` | 29 |
 | [Les documents légaux](#espace-legaldocument) | `legalDocument` | 14 |
 | [Le suivi des corrections d’accessibilité — sous la déclaration](#espace-accessibilityfollowup) | `accessibilityFollowUp` | 28 |
-| **Total** | | **1836** |
+| **Total** | | **1838** |
 
 ## Le parcours de commande
 
@@ -1456,7 +1456,7 @@ Source : `screens/loyalty.copy.ts` · 38 textes.
 
 ### Mon compte (factures comprises) — `account`
 
-Source : `screens/account.{fr,en,it}.ts · screens/account-invoices.copy.ts` · 532 textes.
+Source : `screens/account.{fr,en,it}.ts · screens/account-invoices.copy.ts` · 534 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -1956,6 +1956,8 @@ Source : `screens/account.{fr,en,it}.ts · screens/account-invoices.copy.ts` · 
 | `account.invoices.creditNote` | Avoir | Credit note | Nota di credito |  |
 | `account.invoices.issuedOn` | émise le {date} | issued on {date} | emessa il {date} | `{date}` |
 | `account.invoices.dueOn` | échéance le {date} | due on {date} | scadenza il {date} | `{date}` |
+| `account.invoices.chorusDeposited` | déposée sur Chorus le {deposited} — échéance le {date} | filed on Chorus on {deposited} — due on {date} | depositata su Chorus il {deposited} — scadenza il {date} | `{deposited}` `{date}` |
+| `account.invoices.chorusPending` | en cours de dépôt sur Chorus | being filed on Chorus | in corso di deposito su Chorus |  |
 | `account.invoices.period` | commandes de {period} | orders of {period} | ordini di {period} | `{period}` |
 | `account.invoices.corrects` | corrige la facture {number} | corrects invoice {number} | rettifica la fattura {number} | `{number}` |
 | `account.invoices.open` | Voir | View | Apri |  |

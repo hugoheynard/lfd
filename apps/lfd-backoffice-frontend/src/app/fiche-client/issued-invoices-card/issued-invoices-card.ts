@@ -16,6 +16,7 @@ import {
   FoldElementTitleComponent,
 } from 'fold-ng';
 
+import { dueClause } from '../../comptabilite/chorus-due-wording';
 import { day, euros } from '../../comptabilite/invoice-dossier-format';
 import { kindLabel, periodLabel } from '../../comptabilite/issued-invoice-format';
 import { downloadIssuedInvoicePdf } from '../../comptabilite/issued-invoice-pdf';
@@ -65,6 +66,7 @@ export class IssuedInvoicesCard {
 
   protected readonly euros = euros;
   protected readonly day = day;
+  protected readonly dueClause = dueClause;
   protected readonly kind = kindLabel;
   protected readonly period = periodLabel;
 

@@ -818,6 +818,14 @@ export const COMPTABILITE_VIEWS: readonly WorkspaceView[] = [
     needs: 'b2b_accounting:read',
   },
   {
+    // Les factures d'organismes publics à déposer sur Chorus Pro, à la main.
+    key: 'chorus-pro',
+    label: 'Chorus Pro',
+    link: '/comptabilite/chorus-pro',
+    icon: 'receipt',
+    needs: 'b2b_accounting:read',
+  },
+  {
     // Le fil d'une clôture, de ses factures à ses retours ; il a repris
     // « Prélèvement du mois », retiré le 2026-10-24 (plan
     // `plan-page-procedure-de-prelevement.md`, § 12).

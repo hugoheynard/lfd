@@ -3339,6 +3339,20 @@ export type {
   SetPayerCollectionMeansPayload,
 } from "./payer-collection-means.js";
 export {
+  CHORUS_DEPOSIT_STATES,
+  CHORUS_REJECTION_REASON_MAX,
+  noteChorusDepositPayloadSchema,
+  rejectChorusDepositPayloadSchema,
+} from "./chorus-deposit.js";
+export type {
+  ChorusDepositState,
+  ChorusDepositStatusView,
+  ChorusInvoiceView,
+  ChorusInvoicesView,
+  NoteChorusDepositPayload,
+  RejectChorusDepositPayload,
+} from "./chorus-deposit.js";
+export {
   BANK_TRANSFER_INVOICES_MAX,
   BANK_TRANSFER_REFERENCE_MAX,
   bankTransferPreviewQuerySchema,

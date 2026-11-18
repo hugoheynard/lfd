@@ -1,6 +1,6 @@
 # Plan — les clients publics (armée, écoles, mairies) et Chorus Pro
 
-> 🟨 **Plan v2** (2026-11-18). **P1a ✅ bâti** (`f4f10fb25`, § 6 bis), **P1b ✅ bâti** (2026-11-18, § 6 ter), **P2 ✅ bâti** (2026-11-18, § 6 quater, limites écrites) ; P3–P4 restent. Contredit par `vitruve` le
+> 🟨 **Plan v2** (2026-11-18). **P1a ✅ bâti** (`f4f10fb25`, § 6 bis), **P1b ✅ bâti** (2026-11-18, § 6 ter), **P2 ✅ bâti** (2026-11-18, § 6 quater, limites écrites), **P3 ✅ bâti** (2026-11-18, § 6 quinquies) ; P4 attend le choix de la plateforme agréée. Contredit par `vitruve` le
 > 2026-11-18 : 4 bloquants et 7 sérieux, tous intégrés (§ 10).
 
 # Partie 1 — En simple
@@ -486,13 +486,169 @@ le XML, validé par le Schematron existant. E2E : passation boutique refusée
 sans numéro pour l'armée, acceptée avec ; émission mensuelle à deux
 engagements.
 
+## 6 quinquies. P3 — le dépôt sur Chorus, à la main
+
+> 🟨 Écrit le 2026-11-18, à contredire par `vitruve` (argent : l'échéance).
+
+### En simple
+
+Une facture d'organisme public ne part pas par e-mail pour être payée : la
+comptabilité la **télécharge et la dépose sur le portail Chorus Pro**, puis
+le dit dans le back-office. Une file « **À déposer sur Chorus** » montre
+celles qui attendent. Le **délai de paiement (30 jours, 50 pour un hôpital)
+part du jour du dépôt**, pas du jour de la facture : tant que la facture
+n'est pas déposée, elle n'a pas d'échéance et ne peut pas être « en
+retard ». Chorus peut **rejeter** une facture (numéro faux, service
+inconnu) : la comptabilité le note avec le motif, et la facture sort de la
+file des paiements attendus.
+
+```mermaid
+stateDiagram-v2
+  [*] --> ADeposer: facture émise (payeur public)
+  ADeposer --> Deposee: « Déposée le … » (date saisie)
+  Deposee --> Rejetee: « Rejetée par Chorus » (motif)
+  Deposee --> Acceptee: « Mise en paiement » (facultatif)
+  Rejetee --> [*]: la comptabilité fait l'avoir à la main
+```
+
+### Ce qui existe (ouvert le 2026-11-18)
+
+- `invoice.due_on` (nullable) est figé à l'émission
+  (`monthly-invoice-issuance.ts`) et lu par : le PDF (`invoice-pdf-header.ts`,
+  `invoice-pdf-summary.ts`), le Factur-X (BT-9, `facturx-settlement.ts:221`,
+  omis si NULL), l'e-mail d'avis (`invoice-notice-wording.ts`), les retards
+  du virement (`prisma-unpaid-transfer-invoices.reader.ts:50` saute une
+  facture sans échéance ; `transfer-arrears.ts`), les vues
+  (`issued-invoice-view-support.ts`, `my-invoices-view-support.ts`).
+- La facture est immuable (`invoice_immutable`) : rien ne s'écrit sur sa
+  ligne après l'émission, sauf son document, une fois.
+- Le port `EInvoiceTransport` n'existe que dans la doc.
+
+### Décisions
+
+- **T1 — Une facture publique s'émet sans échéance** (`due_on` NULL), et
+  porte à la place la condition de paiement en clair, dans le PDF et en
+  BT-20 : « Paiement à 30 jours (50 pour un établissement public de santé) à
+  compter de la réception de la facture sur Chorus Pro. » Le délai vient de
+  `publicPaymentDeadlineDays` (forme du payeur). Le e-mail d'avis dit la
+  même chose, sans date.
+- **T2 — Le dépôt est un journal à part, append-only** :
+  `invoice_chorus_deposit(id, invoice_id, kind, occurred_on, reason,
+staff_id, staff_name, recorded_at)`, `kind` ∈ `deposited` | `rejected` |
+  `accepted`. Règles dans un agrégat `ChorusDeposit` (une facture) :
+  déposer une seule fois (une facture rejetée ne se redépose pas : la
+  comptabilité fait l'avoir et une nouvelle facture, à la main) ; rejeter ou
+  accepter seulement après un dépôt ; `occurred_on` ≤ aujourd'hui et ≥ la
+  date de la facture. Seulement pour une facture d'un payeur public, non
+  annulée par un avoir.
+- **T3 — L'échéance d'une facture publique = date de dépôt + délai** du
+  payeur figé dans la ligne de dépôt (`deadline_days`), calculée par une
+  seule fonction (`publicInvoiceDueOn`). Les lecteurs des retards et des
+  vues prennent `due_on ?? échéance de dépôt` ; une facture publique non
+  déposée n'est jamais en retard ; une facture rejetée sort des impayés
+  attendus (elle sera remplacée).
+- **T4 — `EInvoiceTransport` devient réel**, avec un seul adaptateur pour
+  l'instant, `ManualChorusDeposit` : « transmettre » = mettre la facture
+  dans la file « À déposer » (rien n'est envoyé). P4 branchera la
+  plateforme agréée sur le même port, qui écrira lui-même les lignes de
+  dépôt.
+- **T5 — Les gestes du staff** (`b2b_accounting:write`) : « Déposée le … »,
+  « Rejetée par Chorus » (motif obligatoire), « Mise en paiement »
+  (facultatif, informatif). Chacun écrit un fait au journal. Clé
+  d'intention ou `@Idempotent` selon `lint:write-idempotence`.
+
+### Après contradiction (`vitruve`, 2026-11-18) — ce qui remplace T1–T5
+
+La v1 émettait la facture publique **sans** `due_on`. Une dizaine de
+lecteurs le supposent non nul (le lecteur des virements impayés lève une
+erreur, l'avis par e-mail ne part pas, le Factur-X l'écrit « Avoir »,
+l'agrégat refuse d'émettre). La v2 garde la donnée non nulle et change ce
+qu'on en **dit** et ce qu'on en **fait**.
+
+- **T1′ — `due_on` reste posé à l'émission**, et vaut **date de facture +
+  délai du payeur** (30 ou 50 jours **calendaires**, `publicPaymentDeadlineDays`)
+  : l'échéance au plus tôt, si la facture était déposée le jour même. Le
+  délai est donc figé à l'émission (`due_on − issued_on`) : la condition
+  imprimée et le calcul ne peuvent pas diverger. Rien ne change dans
+  l'agrégat ni dans `invoice_immutable`.
+- **T1″ — Ce qu'on imprime d'une facture publique, choisi par la NATURE du
+  payeur** (jamais par `dueOn === null`, qui désigne l'avoir) : en BT-20 et
+  sur le PDF, « Paiement à N jours à compter de la réception de la facture
+  sur Chorus Pro. » ; BT-9 **omis** (BR-CO-25 est tenue par BT-20, toujours
+  présent) ; l'e-mail d'avis dit la condition au lieu d'une date (gabarit et
+  dictionnaire des e-mails, `mail-copy:digest`, spécimen).
+- **T2′ — Un seul journal, `invoice_chorus_deposit`** (remplace
+  `invoice_transmission` de D6/D7 et du § 10) : `(id, invoice_id, kind,
+occurred_on, reason, staff_id, staff_name, recorded_at)`, `kind` ∈
+  `deposited` | `rejected` | `accepted`. **Déclencheur qui refuse UPDATE et
+  DELETE.** Agrégat `ChorusDeposit` : un seul dépôt ; rejet ou mise en
+  paiement seulement après le dépôt ; `issued_on ≤ occurred_on ≤
+aujourd'hui` ; facture d'un payeur public, de type 380, non annulée par
+  un avoir.
+- **T3′ — L'échéance effective** d'une facture publique, une seule fonction
+  `effectiveDueOn` : non déposée ⇒ aucune (jamais en retard) ; déposée ⇒
+  dépôt + (due_on − issued_on) ; rejetée ⇒ hors des impayés attendus. En
+  retard dès le jour ouvré qui suit, comme un virement
+  (`transferOverdueFrom`). **Tous** les lecteurs des retards et du
+  règlement passent par elle : `prisma-unpaid-transfer-invoices.reader.ts`,
+  `invoice-settlement.ts`, `transfer-arrears.ts`, les vues (factures
+  émises, mes factures, factures du mois, fiche facture, carte client,
+  virements en retard, `bank-transfer`, l'agent client). Un pro n'est pas
+  touché : `effectiveDueOn = due_on`.
+- **T3″ — Un virement reçu sur une facture rejetée** s'affecte quand même
+  (l'argent est arrivé ; le refuser serait pire) ; la comptabilité règle
+  l'écart avec l'avoir, à la main.
+- **T4′ — La file « À déposer »** = factures 380 d'un payeur public, sans
+  ligne de dépôt, **non annulées par un avoir**.
+- **T5′ — Gestes** (`b2b_accounting:write`) : `@Idempotent`, raison
+  « l'agrégat refuse un second dépôt / rejet » ; faits
+  `invoice.chorus_deposited`, `invoice.chorus_rejected`,
+  `invoice.chorus_accepted` {invoiceId, invoiceNumber, occurredOn, reason?,
+  by}.
+
+### Ce qui est bâti (2026-11-18)
+
+T1′ à T5′, la migration `20261118180000_le_depot_chorus`, la page
+« Chorus Pro » de la comptabilité, l'échéance effective sur tous les écrans
+(back-office, agent client, « Mes factures »). Tranché en bâtissant :
+
+- une facture **rejetée reste dans la liste des virements impayés**, sans
+  échéance et jamais en retard, pour qu'un virement reçu puisse s'y
+  affecter (T3″) ; « Mes factures » n'affiche alors aucune échéance ;
+- « Mise en paiement » est informative : elle ne change ni l'échéance ni le
+  règlement ;
+- l'abonné `TransmitPublicInvoice` appelle `EInvoiceTransport` à chaque
+  facture publique émise ; `ManualChorusDeposit` n'envoie rien (la file se
+  lit sur l'absence de dépôt) — P4 remplacera l'adaptateur ;
+- un seul document à télécharger : le PDF/A-3 Factur-X (le XML y est
+  embarqué) ;
+- reste pour P4 : BT-49 / BR-FR-12, l'adresse électronique de l'acheteur
+  lue à l'annuaire Chorus.
+
+### Écrans
+
+- Comptabilité : nouvelle page « Chorus Pro » — onglet « À déposer »
+  (payeur, n°, date, montant, télécharger le PDF et le Factur-X, « Déposée
+  le … »), onglet « Déposées » (échéance, rejet, mise en paiement).
+- Fiche facture / fiche client : l'état Chorus et l'échéance.
+- Boutique (« Mes factures ») : « Déposée sur Chorus le … — échéance … » ou
+  « En cours de dépôt sur Chorus ».
+
+### Tests
+
+Domaine : `ChorusDeposit` (une fois, ordre, dates), `publicInvoiceDueOn`.
+Émission : facture publique sans `due_on`, BT-20 présent, BT-9 absent,
+Schematron + XSD verts. Retards : non déposée jamais en retard, déposée en
+retard à J+délai+1 jour ouvré, rejetée hors des impayés. E2E : émettre,
+lister à déposer, déposer, relire l'échéance, rejeter.
+
 ## 7. Lots
 
 | Lot       | Contenu                                                                                                                                 | Dépend de                                                     |
 | --------- | --------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
 | **P1** ✅ | D1, D2, D3 : routage du payeur, geste « passer public », virement forcé, carte refusée, suivi refusé entre natures ; fiche client       | —                                                             |
 | **P2** ✅ | D4, D5 : engagement sur la commande et ses révisions, clé de clôture à trois termes, BT-13 et référence acheteur ; champ dans le panier | P1, mapping Chorus vérifié, inventaire des lecteurs de la clé |
-| **P3**    | D6, D7, D8 : journal de transmission, échéance au dépôt, `ManualChorusDeposit`, file « À déposer »                                      | P2                                                            |
+| **P3** ✅ | D6, D7, D8 : journal de transmission, échéance au dépôt, `ManualChorusDeposit`, file « À déposer »                                      | P2                                                            |
 | **P4**    | Adaptateur de la plateforme agréée, lecture de l'annuaire Chorus (exigences relues)                                                     | Q4 de [`plan-zero-faille.md`](plan-zero-faille.md)            |
 
 ## 8. Décisions de Hugo (2026-11-18)

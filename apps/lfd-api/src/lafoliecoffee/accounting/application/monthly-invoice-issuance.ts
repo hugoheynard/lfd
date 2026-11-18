@@ -1,12 +1,13 @@
 import type { CreditorSnapshot } from "../domain/creditor-snapshot.js";
 import { SEPA_CREDIT_TRANSFER } from "../domain/entities/invoice.types.js";
-import { statementSellerOf } from "../domain/entities/billing-statement.js";
+import { statementSellerOf, type StatementBuyer } from "../domain/entities/billing-statement.js";
 import type { MonthlyInvoiceOutcomeKey } from "../domain/ports/monthly-invoice-outcomes.js";
 import type { BillingCycle } from "../domain/services/billing-cycle.js";
 import type { InvoicingCalendar } from "../domain/services/invoicing-calendar.js";
 import { periodLabelOf } from "../domain/services/invoicing-closures.js";
 import { invoiceFromDossier } from "../domain/services/invoice-from-dossier.js";
 import type { InvoiceSellerFacts } from "../domain/services/invoice-issuance-blockers.js";
+import { publicInvoiceDueOn } from "../domain/services/public-invoice-due.js";
 import { simulateInvoiceDossier } from "../domain/services/invoice-dossier.js";
 import type { MonthlyInvoiceReport } from "../domain/services/monthly-invoice-report.js";
 import {
@@ -67,19 +68,15 @@ export function draftOf(
 ): ReturnType<typeof invoiceFromDossier> {
   const { context } = issuance;
   const paymentMeans = invoicePaymentMeansOf(payer);
+  const buyer = context.buyers.get(payer.payerId) ?? null;
   return invoiceFromDossier({
     id,
     number,
     issuedOn: issuance.issuedOn,
-    // Seul le virement change d'échéance ; le prélèvement et la facture sans
-    // mandat gardent celle du cycle (Hugo, 2026-11-13).
-    dueOn:
-      paymentMeans?.code === SEPA_CREDIT_TRANSFER
-        ? issuance.transferDueOn
-        : issuance.collectionDueOn,
+    dueOn: dueOnOf(buyer, paymentMeans?.code ?? null, issuance),
     sellerFacts: issuance.sellerFacts,
     seller: statementSellerOf(issuance.creditor),
-    buyer: context.buyers.get(payer.payerId) ?? null,
+    buyer,
     // L'adresse de livraison n'est pas figée par bon : aucune n'est imprimée
     // plutôt qu'une parmi plusieurs (rapport du lot E4).
     deliveryAddressLines: null,
@@ -98,6 +95,26 @@ export function draftOf(
     commitmentRequirement: context.commitmentRequirements.get(payer.payerId) ?? null,
     computed: simulateInvoiceDossier(payer.billable.map((order) => order.frozen)).invoice,
   });
+}
+
+/**
+ * L'échéance figée d'une facture du mois. Un organisme public : date de
+ * facture + délai légal de sa forme (T1′ — l'échéance au plus tôt, celle qui
+ * compte part du dépôt sur Chorus). Sinon, seul le virement change
+ * d'échéance ; le prélèvement et la facture sans mandat gardent celle du
+ * cycle (Hugo, 2026-11-13).
+ */
+function dueOnOf(
+  buyer: StatementBuyer | null,
+  meansCode: string | null,
+  issuance: Issuance,
+): string {
+  const publicDueOn =
+    buyer === null ? null : publicInvoiceDueOn(issuance.issuedOn, buyer.legalForm);
+  if (publicDueOn !== null) {
+    return publicDueOn;
+  }
+  return meansCode === SEPA_CREDIT_TRANSFER ? issuance.transferDueOn : issuance.collectionDueOn;
 }
 
 export function outcomeKey(payer: PayerInvoicePlan, issuance: Issuance): MonthlyInvoiceOutcomeKey {

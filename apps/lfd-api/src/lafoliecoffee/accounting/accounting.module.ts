@@ -1,6 +1,10 @@
 import { AdminIssuedInvoicesController } from "./http/admin-issued-invoices.controller.js";
 import { CompanyInvoicesController } from "./http/company-invoices.controller.js";
 import { BANK_TRANSFER_CONTROLLERS, BANK_TRANSFER_PROVIDERS } from "./bank-transfer.providers.js";
+import {
+  CHORUS_DEPOSIT_CONTROLLERS,
+  CHORUS_DEPOSIT_PROVIDERS,
+} from "./chorus-deposit.providers.js";
 import { BILLING_MODE_CONTROLLERS, BILLING_MODE_PROVIDERS } from "./billing-mode.providers.js";
 import { CARD_INVOICE_PROVIDERS } from "./card-invoice.providers.js";
 import { UNCONFIRMED_DELIVERIES_PROVIDERS } from "./unconfirmed-deliveries.providers.js";
@@ -267,6 +271,7 @@ import { PrismaOrderRowsLock } from "./infrastructure/prisma-order-rows-lock.js"
     CompanyInvoicesController,
     ...BILLING_MODE_CONTROLLERS,
     ...BANK_TRANSFER_CONTROLLERS,
+    ...CHORUS_DEPOSIT_CONTROLLERS,
     ...COLLECTION_PROCEDURE_CONTROLLERS,
     ...COLLECTION_TEST_CONTROLLERS,
     ...ACCOUNT_BANK_EXPORT_CONTROLLERS,
@@ -348,6 +353,7 @@ import { PrismaOrderRowsLock } from "./infrastructure/prisma-order-rows-lock.js"
     ...UNCONFIRMED_DELIVERIES_PROVIDERS,
     ...BILLING_MODE_PROVIDERS,
     ...BANK_TRANSFER_PROVIDERS,
+    ...CHORUS_DEPOSIT_PROVIDERS,
     ...MANDATE_BANK_EXPORT_PROVIDERS,
     ...COLLECTION_PROCEDURE_PROVIDERS,
     ...ACCOUNT_BANK_EXPORT_PROVIDERS,
