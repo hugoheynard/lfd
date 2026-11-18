@@ -1,10 +1,10 @@
 # Plan — le colisage simple, le retrait d'abord
 
 **État : 📐 plan, rien n'est bâti** (2026-11-18). Décisions de Hugo des
-2026-11-17 et 2026-11-18. Contredit par `vitruve` le 2026-11-18 (§ 8). La
-réflexion qui le précède :
-[`reflexion-colisage-simple.md`](reflexion-colisage-simple.md). La carte des
-blocs et de tous les cas de figure :
+2026-11-17 et 2026-11-18. Contredit deux fois par `vitruve` le 2026-11-18 ;
+ses objections sont reprises dans les décisions (§ 8). La réflexion qui le
+précède : [`reflexion-colisage-simple.md`](reflexion-colisage-simple.md). La
+carte des blocs et de tous les cas de figure :
 [`../commandes/la-chaine-de-la-commande.md`](../commandes/la-chaine-de-la-commande.md).
 
 Chaque affirmation sur l'existant a été ouverte le 2026-11-18 (chemins relatifs
@@ -36,19 +36,20 @@ flowchart LR
     F["Le four remet<br/>les pièces"] --> R["La réserve<br/>du colisage"]
     R --> B["« Tout est prêt »<br/>actif quand tout est arrivé"]
     B --> P["Commande prête"]
-    P --> C["Le comptoir<br/>la remet"]
+    P --> C["Le comptoir<br/>la remet au client"]
     X["« Problème »<br/>ce qui est vraiment là"] --> M["Plus prête, décision attendue<br/>la cloche sonne"]
     M --> D["Le manager décide<br/>partir incomplète, ou attendre"]
 ```
 
 - **« Tout est prêt »** s'active dès que le four a remis toutes les pièces de la
-  commande (sans marge horaire, décidé par Hugo le 2026-11-18). Un appui : la
-  commande est prête.
+  commande (sans marge horaire, décidé par Hugo le 2026-11-18).
 - **« Problème »** dit, produit par produit, combien est vraiment là. La
   commande **cesse d'être prête** et attend la décision du manager ; la
   **cloche** sonne chez qui peut décider, et la commande reste en rouge dans la
-  **Supervision**. Les pièces dites absentes **sortent de la réserve** : elles
-  ne seront pas données à une autre commande.
+  **Supervision**. Les pièces dites absentes sont mises de côté comme
+  **manquantes** : elles ne seront données à aucune autre commande.
+- Des pièces **retrouvées** se rendent au stock par le manager, depuis la
+  commande, quand il décide.
 
 ### Les faits du colisage sont à lui (Hugo, 2026-11-18)
 
@@ -68,12 +69,12 @@ plan à part.
 
 | Règle d'aujourd'hui                                                                                 | Au niveau simple                                |
 | --------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
-| **La réserve** : on ne colise que ce que le four a sorti (`PackingStock.take`), jamais à découvert  | « Tout est prêt » passe par `take`, même verrou |
+| **La réserve** : on ne colise que ce que le four a sorti (`PackingStock.take`)                      | « Tout est prêt » passe par `take`, même verrou |
 | **Le manque** : `PackingSheet.reportShortfall` fige ce qui est au sac, `packing.shortfall_reported` | « Problème » **est** ce geste                   |
 | **La décision** : un sac incomplet ne se ferme pas sans décision (`ShortfallAwaitingDecisionError`) | inchangé                                        |
 | **Carte et bon de fidélité** : jamais de départ incomplet                                           | inchangé                                        |
-| **Annuler, modifier** : refusés sur un sac fermé (`withdrawSheet`, `reviseDue`)                     | inchangé — comme au détaillé                    |
-| **La remise d'une commande pas colisée** (`leaveAtHandover`)                                        | inchangé                                        |
+| **Annuler, modifier** : refusés sur un sac fermé (`withdrawSheet`, `reviseDue`)                     | inchangé — c'est un humain qui ferme            |
+| **Une commande pas colisée remise au comptoir** (`leaveAtHandover`)                                 | inchangé                                        |
 | **La livraison, les réassorts**                                                                     | toujours en détaillé                            |
 
 ## 3. Les décisions
@@ -90,44 +91,75 @@ plan à part.
   (`on-packing-list-drawn.handler.ts`), que la liste vienne de l'arrêt ou du
   retirage : les deux publient `production.packing_list_drawn`
   (`production/plan/application/services/packing-list-facts.ts`). Une fiche de
-  **reliquat** (rang > 1) prend le niveau de la fiche d'origine. Changer le
-  réglage vaut pour les fiches suivantes.
+  **reliquat** (rang > 1) prend le niveau de la fiche d'origine.
 - **D4 — « Tout est prêt »** : ouvre **un sac** (jamais un bac, pas de
   `BinDesk`), répartit chaque ligne (`allocate`, `take`), ferme (`seal`) et
   publie `order_packed`, dans une transaction, par intention. Refusé, avec ce
-  qui manque nommé, si la réserve ne suffit pas ; le bouton est grisé tant
-  que tout n'est pas arrivé.
+  qui manque nommé, si la réserve ne suffit pas ; le bouton est grisé tant que
+  tout n'est pas arrivé.
 - **D5 — « Problème »**, y compris sur une fiche fermée par « Tout est prêt » :
   le geste rouvre le sac (`PackingSheet.reopen`), y laisse ce qui est vraiment
-  là, puis déclare le manque. Une fiche **déjà remise** est refusée. Saisir tout
-  comme présent est refusé par le refus existant `nothing_short`, avec ses mots.
-- **D6 — Les pièces dites absentes sortent de la réserve.** Laissées libres,
-  le « Tout est prêt » d'une autre commande les prendrait, alors qu'elles
-  n'existent pas. La réserve gagne un compteur **« manquant »**
-  (`PackingStock`, nouvelle colonne) ; l'invariant devient
-  `au sac + rendu + envoyé + manquant ≤ reçu`. Des pièces retrouvées se
-  rendent à la réserve par le manager, depuis la commande, quand il décide
-  (proposé ; un bouton « Retrouvé » au poste viendrait plus tard s'il manque).
+  là, met l'absent de côté (D6), puis déclare le manque. Trois refus, avec
+  leurs mots :
+  - **la commande est déjà retirée par le client** : la fiche le sait par une
+    colonne nouvelle, `handed_over_at`, écrite par l'abonné de
+    `handover.handed_over` (`packing/application/handlers/on-order-handed-over.handler.ts`) ;
+    c'est `reopen` qui refuse. Aujourd'hui, `leaveAtHandover` rend `unchanged`
+    sur un sac fermé (`packing-sheet.ts:367`) et rien n'empêcherait de le
+    rouvrir ;
+  - **le manager a déjà décidé** : `reportShortfall` lève `already_authorized`
+    (`packing-sheet.ts:213`) — « La décision est déjà prise : le manque se
+    corrige depuis la commande. » ;
+  - **tout est déclaré présent** : `nothing_short`, avec ses mots d'aujourd'hui.
+- **D6 — Les pièces absentes sont mises de côté.** Laissées libres, le « Tout
+  est prêt » d'une autre commande les prendrait. La réserve
+  (`packing/domain/entities/packing-stock.ts`) gagne un compteur **`missing`**,
+  et trois endroits le retirent : `free` (ce que peuvent prendre une commande,
+  un retour au fournil et l'envoi en boutique), `availableTo` (ce qu'un
+  réassort réservé peut prendre), et l'invariant du domaine vérifié à la
+  relecture (`fromSnapshot`). Il n'y a **pas de CHECK** de la réserve en base
+  aujourd'hui (seulement la positivité,
+  `prisma/migrations/20261004180100_*/migration.sql`) : l'invariant reste dans
+  le domaine, et la colonne a son CHECK `>= 0`. Le manager rend des pièces
+  **retrouvées** depuis la commande (un geste du colisage, sous son droit) :
+  `missing` baisse d'autant. Un bouton « Retrouvé » au poste viendrait plus tard
+  s'il manque (proposé).
 - **D7 — Le commerce retire « prête » à un manque.** Aujourd'hui,
   `OrderShortfall.report` ne regarde pas le statut, et rouvrir un sac ne publie
   rien : le comptoir remettrait une commande dont la décision est attendue. Le
-  commerce, propriétaire de « prête », fait repasser une commande prête en
-  **« décision attendue »** quand il enregistre un manque sur elle. Premier
-  changement du lot C2, avec son test.
+  commerce, propriétaire du statut, ajoute à l'agrégat `Order` une transition
+  **`ready` → `in_production`** (les statuts : `packages/contracts/src/order.ts`),
+  appelée quand il enregistre un manque sur une commande prête. **Rien n'est
+  envoyé au client** à ce moment : il a été prévenu « prête »
+  (`order-customer-nudges.ts`), et c'est la décision du manager qui déclenche
+  la communication existante (départ incomplet ou reliquat). Premier changement
+  du lot C2, avec son test.
 - **D8 — La cloche sonne chez le commerce**, celui qui décide, quand il
   enregistre un manque (sur le modèle de `ring-failed-order-mail.handler.ts`).
   Vérifié le 2026-11-18 : aucun manque ne sonne aujourd'hui.
 - **D9 — La correction du fournil** (`production.output_corrected`, « N pièces
-  déclarées n'existent pas », décidé par Hugo le 2026-11-18) : le colisage
-  baisse sa réserve de ce qui est **libre**, jusqu'à N. S'il reste un écart, il
-  **ne touche à aucune commande** — quelqu'un a vu ce qui est au sac — et fait
-  sonner la cloche du manager, qui décide. La réserve n'est jamais à
-  découvert : on ne baisse que le libre, sous le verrou de la réserve. Les
-  corrections déjà publiées avant ce lot se rattrapent par
+  déclarées n'existent pas », décidé par Hugo le 2026-11-18). Le compteur qui
+  baisse est **`received`** : ces pièces ne sont jamais arrivées. Dans l'ordre,
+  sous le verrou de la réserve `(jour, SKU)` :
+  1. **elles expliquent d'abord le manquant** : `x = min(N, missing)`,
+     `missing −= x`, `received −= x` — sans quoi la même pièce, déclarée
+     absente au colisage puis corrigée au fournil, serait comptée deux fois ;
+  2. **puis le libre** : `y = min(N − x, free)`, `received −= y` ;
+  3. **le reste ne touche à aucune commande** — quelqu'un a vu ce qui est au
+     sac — et fait sonner la cloche du manager.
+
+  La réserve n'est jamais à découvert. **Idempotence et rattrapage** : une
+  table `packing_applied_correction (service_day, handoff_id, sku, applied)`
+  garde, par remise, ce qui a été **réellement baissé** (x + y). Une correction
+  n'applique que la différence entre le cumul publié et `applied` ; un reste
+  non couvert est retenté au fait suivant. Une remise retirée du fournil (le
+  cumul disparaît du lecteur) ne fait **jamais remonter** la réserve. Une
+  correction qui arrive **avant sa remise** (aucun `PackingReceipt` de ce
+  `handoffId`) est reportée : la réception de la remise l'applique
+  (`on-handed-to-packing.handler.ts`). Les corrections publiées avant ce lot se
+  rattrapent au déploiement, pour les journées non closes, par
   `OutputCorrectionsReader` (`production/channels/packing/output-corrections.reader.ts`,
-  déjà relié dans `appBootstrap/packing-feed.module.ts`), qui donne un cumul
-  par fournée : le colisage garde ce qu'il a déjà appliqué par fournée et
-  n'applique que la différence.
+  relié dans `appBootstrap/packing-feed.module.ts`).
 
 ## 4. Données
 
@@ -138,27 +170,28 @@ Migration `2026111xxxxxxx_le_colisage_simple`, schéma `packing`
   CHECK `simple | detailed` ;
 - `packing_order.tracking_level text NULL`, même CHECK : `NULL` pour une fiche
   d'avant la colonne, une livraison ou un réassort, lue **détaillé** ;
-- `packing_stock.missing integer NOT NULL DEFAULT 0`, CHECK `>= 0`, et le CHECK
-  de la réserve élargi au manquant (D6) ;
-- une table `packing_applied_correction (service_day, batch_id, applied)` pour
-  D9.
+- `packing_order.handed_over_at timestamptz NULL` (D5) ;
+- `packing_stock.missing integer NOT NULL DEFAULT 0`, CHECK `>= 0` (D6) ;
+- la table `packing_applied_correction (service_day, handoff_id, sku, applied)`,
+  clé sur les trois premières, CHECK `applied >= 0` (D9).
 
 Toute fiche existante est détaillée, comme aujourd'hui. Cette migration passe
 par `lecteur-de-migrations`.
 
 ## 5. Les gestes
 
-| Geste             | Route (sous `production_packing:write`, par intention) | Ce qu'il compose, dans une transaction                                    |
-| ----------------- | ------------------------------------------------------ | ------------------------------------------------------------------------- |
-| « Tout est prêt » | `POST …/orders/:id/all-ready`                          | ouvrir un sac, `allocate` chaque ligne, `seal`, `order_packed`            |
-| « Problème »      | `POST …/orders/:id/problem` (quantités par SKU)        | rouvrir si fermé, ajuster le sac, sortir l'absent (D6), `reportShortfall` |
+| Geste                           | Route (par intention)                                      | Ce qu'il compose, dans une transaction                                       |
+| ------------------------------- | ---------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| « Tout est prêt »               | `POST …/orders/:id/all-ready` (`production_packing:write`) | ouvrir un sac, `allocate` chaque ligne, `seal`, `order_packed`               |
+| « Problème »                    | `POST …/orders/:id/problem` (`production_packing:write`)   | rouvrir si fermé, ajuster le sac, mettre l'absent de côté, `reportShortfall` |
+| « Pièces retrouvées » (manager) | `POST …/orders/:id/found` (`production_packing:write`)     | `missing` baisse ; les pièces redeviennent libres                            |
 
 ## 6. Lots
 
 ```mermaid
 flowchart LR
     C0["C0 les faits rentrent<br/>au colisage"] --> C1["C1 réglage<br/>niveau figé"]
-    C1 --> C2["C2 Problème, prête retirée<br/>la cloche"]
+    C1 --> C2["C2 Problème, prête retirée<br/>la cloche, le manquant"]
     C2 --> C3["C3 Tout est prêt"]
     C3 --> C4["C4 la correction<br/>du fournil"]
     C4 --> C5["C5 doc d'état"]
@@ -174,31 +207,41 @@ flowchart LR
   fournil à `packing.returned`. Portes à relancer : `context-boundaries`,
   `production-subcontexts`, `durable-cross-block`.
 - **C1** — migration, réglage, niveau figé, ligne de la page Niveau de suivi.
-- **C2** — « Problème » (serveur et écran), D5 à D8.
+- **C2** — « Problème » (serveur et écran), D5 à D8, « Pièces retrouvées ».
 - **C3** — « Tout est prêt » (serveur et écran).
 - **C4** — la correction du fournil (D9). Aujourd'hui déjà, personne ne
   l'écoute : ce lot ferme ce trou pour les deux niveaux.
 - **C5** — doc d'état, la réflexion retirée, la carte de la chaîne mise à jour.
 
-## 7. Question ouverte
+## 7. Questions ouvertes
 
-- **Q1** — D6 : les pièces retrouvées, rendues par le manager depuis la
-  commande. Suffit-il, ou faut-il un bouton « Retrouvé » au poste ? (Proposé :
-  le manager seul, le bouton plus tard s'il manque.)
+Aucune : les pièces retrouvées se rendent par le manager (D6) ; un bouton au
+poste viendra si l'équipe en a besoin.
 
 ## 8. Ce que `vitruve` a contredit (2026-11-18)
 
-La première version avait un toujours vert au colisage. Hugo l'a retiré le
-2026-11-18 ; plusieurs objections tombent avec lui.
+**Première contradiction** (avec un toujours vert au colisage, retiré depuis par
+Hugo) :
 
-| Objection                                             | Devenir                                                                 |
-| ----------------------------------------------------- | ----------------------------------------------------------------------- |
-| B1 « Problème » défait par le toujours vert           | sans objet ; l'absent sort quand même de la réserve (D6)                |
-| B2 le commerce garde « prête » une commande en manque | D7                                                                      |
-| B3 l'ordre des verrous de la correction               | sans objet : D9 ne baisse que le libre, sous un seul verrou par réserve |
-| S4 le rattrapage des corrections déjà publiées        | D9, § 4                                                                 |
-| S5 annulation et modification d'une auto-prête        | sans objet : comme au détaillé, c'est un humain qui ferme               |
-| S6 l'auteur système chez le commerce                  | sans objet                                                              |
-| S7 tous les importeurs du fait déplacé                | C0                                                                      |
-| S8 reliquats et réassorts                             | D1, D3                                                                  |
-| m — sac fermé, `nothing_short`, sac sans `BinDesk`    | D4, D5                                                                  |
+| Objection                                             | Devenir                                           |
+| ----------------------------------------------------- | ------------------------------------------------- |
+| B1 « Problème » défait par le toujours vert           | sans objet ; l'absent est mis de côté (D6)        |
+| B2 le commerce garde « prête » une commande en manque | D7                                                |
+| B3 l'ordre des verrous de la correction               | sans objet : D9 ne prend qu'un verrou, la réserve |
+| S4 le rattrapage des corrections déjà publiées        | D9                                                |
+| S5 annulation et modification d'une auto-prête        | sans objet : c'est un humain qui ferme            |
+| S6 l'auteur système chez le commerce                  | sans objet                                        |
+| S7 tous les importeurs du fait déplacé                | C0                                                |
+| S8 reliquats et réassorts                             | D1, D3                                            |
+
+**Seconde contradiction** (la version simple) :
+
+| Objection                                                      | Reprise                                        |
+| -------------------------------------------------------------- | ---------------------------------------------- |
+| B1 le manquant et la correction comptaient deux fois une pièce | D9 étape 1                                     |
+| B2 rien ne refusait de rouvrir une commande déjà retirée       | D5, `handed_over_at`                           |
+| S3 « décision attendue » n'est pas un statut                   | D7 : `ready` → `in_production`, rien au client |
+| S4 « Problème » après une décision du manager                  | D5, refus nommé                                |
+| S5 pas de CHECK de la réserve ; `free` et `availableTo`        | D6                                             |
+| S6 clé, contenu et moment du rattrapage                        | D9, § 4                                        |
+| m « déjà remise » : le mot est réservé au prix                 | « retirée »                                    |
