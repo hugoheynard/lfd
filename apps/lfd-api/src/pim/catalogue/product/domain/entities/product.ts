@@ -5,7 +5,6 @@ import {
   InvalidProductVariantsError,
   NotArchivedProductNotDeletableError,
   NotArchivedProductNotRestorableError,
-  ProductUnknownContextError,
   VariantNotFoundError,
   VariantNotInProductError,
 } from "../errors/product-errors.js";
@@ -47,6 +46,7 @@ import {
 } from "../errors/variant-lifecycle-errors.js";
 import { PricingAlignmentAcrossUnitsError } from "../errors/sale-unit-errors.js";
 import { CustomRecipeDefaultWithoutTilesError } from "../errors/custom-recipe-errors.js";
+import { VatByContext } from "../value-objects/vat-by-context.js";
 import { ProductCommerceOptions } from "../value-objects/product-commerce-options.js";
 import type { CompletenessRules } from "../services/variant-completeness.js";
 
@@ -178,7 +178,7 @@ export class Product {
     private categoryIdValue: string,
     private statusValue: ProductStatus,
     private readonly variantList: Variant[],
-    private vatByContextValue: ContextVat,
+    private vatValue: VatByContext,
     private optionsValue: ProductCommerceOptions,
     private readonly originVariantIdValue: string | null = null,
   ) {}
@@ -194,9 +194,7 @@ export class Product {
       // Un produit naît INVISIBLE : c'est ce qui rend l'invariant 7 tenable.
       "draft",
       [Variant.openDefault(input.defaultVariant)],
-      // Un produit naît SANS dérogation : il suit sa famille jusqu'à ce que
-      // quelqu'un décide le contraire, et cette décision se voit.
-      {},
+      VatByContext.none(),
       ProductCommerceOptions.initial(),
     );
   }
@@ -212,7 +210,7 @@ export class Product {
       snapshot.categoryId,
       snapshot.status,
       snapshot.variants.map((variant) => Variant.reconstitute(variant)),
-      snapshot.vatByContext,
+      VatByContext.reconstitute(snapshot.vatByContext),
       ProductCommerceOptions.of({
         operationOnly: snapshot.operationOnly,
         requiresCold: snapshot.requiresCold,
@@ -241,27 +239,17 @@ export class Product {
 
   /** Les taux propres au produit — sa dérogation. Vide = il hérite. */
   get vatByContext(): ContextVat {
-    return this.vatByContextValue;
+    return this.vatValue.toMap();
   }
 
   /**
    * Déroge au taux de la famille, ou **revient à l'héritage**.
    *
-   * Une carte vide n'est pas une dérogation vide : c'est le retour au taux de
-   * la famille, et c'est ce qui rend le geste réversible sans écrire un état
-   * « pas de dérogation » qui ressemblerait à une décision.
-   *
-   * Un seul refus : le contexte doit exister (registre). Un contexte que la
-   * fiche ne vend pas se règle — la matrice ne décide plus de la TVA.
+   * La règle (carte vide = héritage, contexte inconnu refusé) est celle de
+   * {@link VatByContext}.
    */
   setVat(vat: ContextVat, contexts: readonly SalesContext[]): void {
-    const known = new Set(contexts.map((context) => context.key));
-    for (const key of Object.keys(vat)) {
-      if (!known.has(key)) {
-        throw new ProductUnknownContextError(key);
-      }
-    }
-    this.vatByContextValue = { ...vat };
+    this.vatValue = VatByContext.declare(vat, contexts);
   }
 
   /** Vendu seulement pendant une opération ? */
@@ -778,7 +766,7 @@ export class Product {
       this.categoryIdValue,
       "draft",
       [Variant.openDefaultFrom(resolved, { ...input.defaultVariant, name: resolved.name })],
-      { ...this.vatByContextValue },
+      this.vatValue.copy(),
       this.optionsValue.forDetachedProduct(),
       variantId,
     );
@@ -984,7 +972,7 @@ export class Product {
       kind: this.kindValue,
       categoryId: this.categoryIdValue,
       status: this.statusValue,
-      vatByContext: this.vatByContextValue,
+      vatByContext: this.vatValue.toMap(),
       operationOnly: this.optionsValue.operationOnly,
       requiresCold: this.optionsValue.requiresCold,
       audience: this.optionsValue.audience,
