@@ -232,6 +232,25 @@ describe("bloquer, lister, débloquer", () => {
     expect(list.find((entry) => entry.companyId === other.id)?.block).toBeNull();
   });
 
+  it("ne liste pas un organisme public : il a le compte, mais règle par virement", async () => {
+    const pro = await createCompany(ctx.prisma, { status: CompanyStatus.active });
+    const publicBuyer = await createCompany(ctx.prisma, { status: CompanyStatus.active });
+    await ctx.prisma.company.update({
+      where: { id: pro.id },
+      data: { grantedTerms: [DeferredTerm.monthly] },
+    });
+    await ctx.prisma.company.update({
+      where: { id: publicBuyer.id },
+      data: { grantedTerms: [DeferredTerm.monthly], formeJuridique: "public_local_authority" },
+    });
+
+    const list = jsonBody<DirectDebitBlockView[]>(await staff().get(ROUTE).expect(200));
+
+    const ids = list.map((entry) => entry.companyId);
+    expect(ids).toContain(pro.id);
+    expect(ids).not.toContain(publicBuyer.id);
+  });
+
   it("débloque : les trois colonnes reviennent à NULL, et le journal le dit", async () => {
     const { companyId } = await seedCompany(true);
     await block(companyId);

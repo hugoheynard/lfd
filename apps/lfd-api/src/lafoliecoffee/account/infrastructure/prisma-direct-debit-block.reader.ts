@@ -5,6 +5,7 @@ import {
   DirectDebitBlockReader,
   type CreditedCompanyEntry,
 } from "../domain/ports/direct-debit-block.reader.js";
+import { isPublicFormeJuridique } from "../domain/value-objects/public-nature.js";
 
 /** Adaptateur Prisma de la lecture des blocages du prélèvement. */
 @Injectable()
@@ -23,29 +24,36 @@ export class PrismaDirectDebitBlockReader extends DirectDebitBlockReader {
         reference: true,
         raisonSociale: true,
         enseigne: true,
+        formeJuridique: true,
         directDebitBlockedAt: true,
         directDebitBlockedBy: true,
         directDebitBlockReason: true,
       },
       orderBy: [{ enseigne: "asc" }, { raisonSociale: "asc" }],
     });
-    return rows.map((row) => ({
-      companyId: row.id,
-      reference: row.reference,
-      raisonSociale: row.raisonSociale,
-      enseigne: row.enseigne,
-      // Les trois colonnes vont ensemble (CHECK en base) ; on exige quand même
-      // les trois plutôt que l'instant seul.
-      block:
-        row.directDebitBlockedAt === null ||
-        row.directDebitBlockedBy === null ||
-        row.directDebitBlockReason === null
-          ? null
-          : {
-              blockedAt: row.directDebitBlockedAt,
-              blockedByStaffId: row.directDebitBlockedBy,
-              reason: row.directDebitBlockReason,
-            },
-    }));
+    // Un organisme public n'est jamais au prélèvement : il a le compte (accordé
+    // à l'activation) mais règle par virement, et son blocage est refusé. Il
+    // n'a donc rien à faire sur cette page. Filtré ici plutôt qu'en `where` :
+    // la forme est du texte, reconnue par `toLegalForm` sous plusieurs graphies.
+    return rows
+      .filter((row) => !isPublicFormeJuridique(row.formeJuridique))
+      .map((row) => ({
+        companyId: row.id,
+        reference: row.reference,
+        raisonSociale: row.raisonSociale,
+        enseigne: row.enseigne,
+        // Les trois colonnes vont ensemble (CHECK en base) ; on exige quand même
+        // les trois plutôt que l'instant seul.
+        block:
+          row.directDebitBlockedAt === null ||
+          row.directDebitBlockedBy === null ||
+          row.directDebitBlockReason === null
+            ? null
+            : {
+                blockedAt: row.directDebitBlockedAt,
+                blockedByStaffId: row.directDebitBlockedBy,
+                reason: row.directDebitBlockReason,
+              },
+      }));
   }
 }
