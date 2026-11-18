@@ -76,6 +76,7 @@ function sheetKey(serviceDay: string, orderId: string, rank: number): string {
 export class InMemoryStocks extends PackingStockRepository {
   private readonly packed = new Map<string, number>();
   private readonly sent = new Map<string, number>();
+  private readonly missing = new Map<string, number>();
   /**
    * Les réservations (R4b), telles que l'adaptateur les relit : leur emballé
    * suit l'agrégat, comme la ligne de la fiche s'écrit sous le même verrou.
@@ -97,6 +98,7 @@ export class InMemoryStocks extends PackingStockRepository {
         packed: this.packed.get(key) ?? 0,
         sentToShop: this.sent.get(key) ?? 0,
         reservations: this.reservations.get(key) ?? [],
+        missing: this.missing.get(key) ?? 0,
       }),
     );
   }
@@ -107,6 +109,7 @@ export class InMemoryStocks extends PackingStockRepository {
     this.shadow.stocks.set(key, { ...held, returned: stock.returned });
     this.packed.set(key, stock.packed);
     this.sent.set(key, stock.sentToShop);
+    this.missing.set(key, stock.missing);
     this.reservations.set(key, stock.reservations);
     return Promise.resolve();
   }
@@ -114,6 +117,11 @@ export class InMemoryStocks extends PackingStockRepository {
   /** Ce que la réserve a envoyé en boutique (plan A1, lot A1.4). */
   sentOf(serviceDay: string, sku: string): number {
     return this.sent.get(`${serviceDay}/${sku}`) ?? 0;
+  }
+
+  /** Les pièces mises de côté comme absentes (« Problème »). */
+  missingOf(serviceDay: string, sku: string): number {
+    return this.missing.get(`${serviceDay}/${sku}`) ?? 0;
   }
 
   packedOf(serviceDay: string, sku: string): number {

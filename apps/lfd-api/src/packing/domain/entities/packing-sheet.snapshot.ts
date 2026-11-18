@@ -78,4 +78,6 @@ export interface PackingSheetSnapshot {
    * rien de figé — une livraison, une fiche d'avant la colonne —, lu détaillé.
    */
   readonly trackingLevel?: PackingTrackingLevel | null;
+  /** L'instant où le client a retiré la commande (D5). Absent = pas retirée. */
+  readonly handedOverAt?: Date | null;
 }

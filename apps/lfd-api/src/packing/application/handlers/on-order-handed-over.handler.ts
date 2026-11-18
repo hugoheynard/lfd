@@ -27,10 +27,12 @@ export const ON_ORDER_HANDED_OVER = "packing.leave-handed-over-sheet";
  * La fiche la plus récente de l'envoi (rang par rang), sous verrou, dans la
  * transaction du reçu ; l'agrégat décide (`PackingSheet.leaveAtHandover`) :
  * retirée si rien n'est au bac, fermée telle quelle sinon. Signée par le
- * retrait — son instant et son auteur, ceux du FAIT.
+ * retrait — son instant et son auteur, ceux du FAIT. Dans tous les cas, la
+ * fiche retient l'instant du retrait : un sac fermé, le cas de toute remise
+ * ordinaire, ne se rouvre plus (« Problème » refusé).
  *
  * Sans effet, donc idempotent : pas de fiche (la liste ne l'a pas inscrite),
- * fiche déjà retirée, bac déjà fermé — le cas de toute remise ordinaire.
+ * fiche déjà retirée, retrait déjà retenu (rejeu du fait).
  *
  * @sans-journal le retrait est l'acte, journalisé par le commerce
  * (`order.fulfilled`) ; le journal n'a pas de type pour ce rangement, et on ne

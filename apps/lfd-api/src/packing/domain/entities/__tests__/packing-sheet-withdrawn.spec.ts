@@ -52,6 +52,7 @@ const NOT_A_GESTURE: ReadonlySet<string> = new Set([
   "assertListedAndOpen",
   "assertListed",
   "assertNotWithdrawn",
+  "assertNotHandedOver",
   "assertOpen",
   "replaceLine",
 ]);

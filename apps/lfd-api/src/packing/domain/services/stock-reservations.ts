@@ -47,6 +47,8 @@ export interface StockCounters {
   readonly packed: number;
   /** Les pièces sorties vers une boutique (plan A1, lot A1.4). */
   readonly sentToShop: number;
+  /** Les pièces mises de côté comme absentes (« Problème ») ; absent = 0. */
+  readonly missing?: number;
 }
 
 /**
@@ -86,6 +88,7 @@ export function availableTo(
       counters.returned -
       counters.packed -
       counters.sentToShop -
+      (counters.missing ?? 0) -
       reservedOf(ahead),
   );
 }

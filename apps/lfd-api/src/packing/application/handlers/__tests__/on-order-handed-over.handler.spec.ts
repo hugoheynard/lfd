@@ -93,15 +93,17 @@ describe("OnOrderHandedOver (colisage)", () => {
     expect(sheets.saves).toBe(1);
   });
 
-  it("ne touche pas un bac déjà fermé — la remise ordinaire", async () => {
+  it("sur un bac déjà fermé — la remise ordinaire —, ne retient que l'instant du retrait, une fois", async () => {
     const sheets = new CountingSheets();
     const packed = { at: new Date(5), by: "staff_packer" };
     sheets.put(snapshot({ packed }));
 
     await new OnOrderHandedOver(sheets).handle(delivery());
+    await new OnOrderHandedOver(sheets).handle(delivery());
 
-    expect(sheets.saves).toBe(0);
+    expect(sheets.saves).toBe(1);
     expect(sheets.of(DAY, "ord_1")?.packed).toEqual(packed);
+    expect(sheets.of(DAY, "ord_1")?.handedOverAt).not.toBeNull();
   });
 
   it("sans fiche (envoi jamais inscrit au colisage), ne fait rien", async () => {

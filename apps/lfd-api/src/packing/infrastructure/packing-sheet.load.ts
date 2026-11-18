@@ -57,6 +57,7 @@ export async function loadPackingSheet(
       shortfallAuthorizedAt: true,
       withdrawnAt: true,
       trackingLevel: true,
+      handedOverAt: true,
       containers: CONTAINER_SELECT,
       lines: {
         select: {
@@ -93,6 +94,7 @@ export async function loadPackingSheet(
     shortfallAuthorizedAt: row.shortfallAuthorizedAt,
     withdrawnAt: row.withdrawnAt,
     trackingLevel: row.trackingLevel === null ? null : packingTrackingLevelOf(row.trackingLevel),
+    handedOverAt: row.handedOverAt,
   });
 }
 

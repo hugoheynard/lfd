@@ -1,16 +1,33 @@
-import { Controller, HttpCode, Param, Post } from "@nestjs/common";
+import { Body, Controller, HttpCode, Param, Post } from "@nestjs/common";
 import { CommandBus } from "@nestjs/cqrs";
+import { z } from "zod";
 
 import { AdminSurface } from "../../platform/auth/admin-surface.decorator.js";
 import { StaffUserId } from "../../platform/auth/staff.decorator.js";
 import { ClosePackingOrderCommand } from "../application/station/close-packing-order.command.js";
 import { ReportPackingShortfallCommand } from "../application/station/report-packing-shortfall.command.js";
 import { ReopenPackingOrderCommand } from "../application/station/reopen-packing-order.command.js";
+import { RecoverMissingPiecesCommand } from "../application/station/recover-missing-pieces.command.js";
+import { ReportPackingProblemCommand } from "../application/station/report-packing-problem.command.js";
+import { IntentKey } from "../../platform/shared/http/intent-key.decorator.js";
+import { ZodBody } from "../../platform/shared/http/zod-body.pipe.js";
 import { packingDayOf } from "./packing-day-path.js";
 import { Idempotent } from "../../platform/shared/http/idempotent.decorator.js";
 
 /** Le code de retour d'un geste qui n'a rien à rendre — le client relit le poste. */
 const NO_CONTENT = 204;
+
+/** « Problème » : ce qui est vraiment là, par SKU — la forme seulement. */
+const packingProblemSchema = z.object({
+  lines: z.array(z.object({ sku: z.string().min(1), present: z.number().int().min(0) })),
+});
+type PackingProblemBody = z.infer<typeof packingProblemSchema>;
+
+/** « Pièces retrouvées » : par SKU, combien — la forme seulement. */
+const foundPiecesSchema = z.object({
+  lines: z.array(z.object({ sku: z.string().min(1), quantity: z.number().int().min(1) })).min(1),
+});
+type FoundPiecesBody = z.infer<typeof foundPiecesSchema>;
 
 /**
  * **Fermer et rouvrir une commande au colisage** (plan
@@ -22,9 +39,16 @@ const NO_CONTENT = 204;
  *   refusé si un bac est chargé ou la tournée partie ; la commande reste
  *   « prête » au commerce ;
  * - `POST …/shortfall` — « Il manque » (E6a) : fige ce qui est au bac et
- *   publie `packing.shortfall_reported` ; la fiche reste ouverte.
+ *   publie `packing.shortfall_reported` ; la fiche reste ouverte ;
+ * - `POST …/problem` — « Problème » (retrait au niveau simple) : le sac porte
+ *   ce qui est vraiment là, l'absent est mis de côté, le manque est déclaré ;
+ * - `POST …/found` — « Pièces retrouvées » : des pièces mises de côté
+ *   reviennent au libre de la réserve.
  *
- * Sous `production_packing` (`write`). Les trois rendent `204` : l'écran relit
+ * « Problème » et « Pièces retrouvées » sont par intention (`Idempotency-Key`,
+ * obligatoire) : un double clic ne les fait qu'une fois.
+ *
+ * Sous `production_packing` (`write`). Toutes rendent `204` : l'écran relit
  * `GET admin/packing/:date/board`. Il n'injecte que le `CommandBus`.
  */
 @Controller("admin/packing/:date/orders/:orderId")
@@ -70,6 +94,46 @@ export class PackingOrdersController {
   async reopen(@Param("date") date: string, @Param("orderId") orderId: string): Promise<void> {
     await this.commands.execute<ReopenPackingOrderCommand, void>(
       new ReopenPackingOrderCommand(packingDayOf(date), orderId),
+    );
+  }
+
+  @Post("problem")
+  @HttpCode(NO_CONTENT)
+  async reportProblem(
+    @Param("date") date: string,
+    @Param("orderId") orderId: string,
+    @Body(new ZodBody(packingProblemSchema)) body: PackingProblemBody,
+    @StaffUserId() staffUserId: string,
+    @IntentKey() intentKey: string,
+  ): Promise<void> {
+    await this.commands.execute<ReportPackingProblemCommand, void>(
+      new ReportPackingProblemCommand(
+        packingDayOf(date),
+        orderId,
+        body.lines,
+        staffUserId,
+        intentKey,
+      ),
+    );
+  }
+
+  @Post("found")
+  @HttpCode(NO_CONTENT)
+  async recoverFound(
+    @Param("date") date: string,
+    @Param("orderId") orderId: string,
+    @Body(new ZodBody(foundPiecesSchema)) body: FoundPiecesBody,
+    @StaffUserId() staffUserId: string,
+    @IntentKey() intentKey: string,
+  ): Promise<void> {
+    await this.commands.execute<RecoverMissingPiecesCommand, void>(
+      new RecoverMissingPiecesCommand(
+        packingDayOf(date),
+        orderId,
+        body.lines,
+        staffUserId,
+        intentKey,
+      ),
     );
   }
 }

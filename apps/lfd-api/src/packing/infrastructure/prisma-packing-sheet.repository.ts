@@ -56,6 +56,7 @@ export class PrismaPackingSheetRepository extends PackingSheetRepository {
         shortfallReportedAt: snapshot.shortfallReportedAt ?? null,
         shortfallAuthorizedAt: snapshot.shortfallAuthorizedAt ?? null,
         withdrawnAt: snapshot.withdrawnAt ?? null,
+        handedOverAt: snapshot.handedOverAt ?? null,
       },
     });
     await saveContainers(this.prisma, snapshot, sheet.rank);

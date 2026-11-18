@@ -16,6 +16,11 @@ import {
   ShortfallSheetSealedError,
 } from "../errors/packing-shortfall-errors.js";
 import {
+  PackingSheetHandedOverError,
+  ProblemAfterDecisionError,
+  ProblemOutsideSimplePickupError,
+} from "../errors/packing-problem-errors.js";
+import {
   PackingSheetHasLiveContainersError,
   PackingSheetWithdrawnError,
 } from "../errors/packing-withdrawal-errors.js";
@@ -99,6 +104,7 @@ export class PackingSheet {
     private authorizedValue: Date | null,
     private withdrawnValue: Date | null,
     private readonly fixedLevel: PackingTrackingLevel | null,
+    private handedOverValue: Date | null,
   ) {
     this.contents = OrderContents.of(reference, containerList);
   }
@@ -119,6 +125,7 @@ export class PackingSheet {
       snapshot.shortfallAuthorizedAt ?? null,
       snapshot.withdrawnAt ?? null,
       snapshot.trackingLevel ?? null,
+      snapshot.handedOverAt ?? null,
     );
   }
 
@@ -310,12 +317,16 @@ export class PackingSheet {
    *
    * Ce que l'agrégat ne sait pas — un bac chargé, une tournée partie — est
    * refusé AVANT par la livraison (`BinDesk`), dans la même unité de travail.
+   * Une commande retirée par le client ne se rouvre jamais : ce qui était au
+   * sac est parti avec lui.
    *
    * @returns `false` si le bac était déjà ouvert : rien à rouvrir, rien à écrire.
+   * @throws {PackingSheetHandedOverError} le client a retiré la commande.
    * @throws {ContainersCountedError} une commande colisée avec l'ancien poste.
    */
   reopen(): boolean {
     this.assertNotWithdrawn();
+    this.assertNotHandedOver();
     this.assertListed();
     if (this.packedValue === null) {
       return false;
@@ -359,18 +370,26 @@ export class PackingSheet {
    *   retirée : annuler ses contenants rendrait à la réserve des pièces qui
    *   ont quitté la boutique.
    *
+   * Dans tous les cas, la fiche retient l'instant du retrait : un sac fermé
+   * ne se rouvre plus (`reopen`).
+   *
    * Ne publie rien : `packing.order_packed` ferait rendre « prête » une
    * commande déjà retirée, et le commerce le refuserait en message mort.
    *
-   * @returns ce qui a été écrit — `unchanged` sur un bac déjà fermé ou une
-   *   commande comptée par contenants (ancien poste, en lecture seule).
+   * @returns ce qui a été écrit — `recorded` sur un bac déjà fermé ou une
+   *   commande comptée par contenants (seul l'instant du retrait change),
+   *   `unchanged` si le retrait était déjà retenu (rejeu du fait).
    * @throws {PackingSheetWithdrawnError} l'appelant écarte d'abord une
    *   feuille déjà retirée.
    */
-  leaveAtHandover(mark: SheetMark): "withdrawn" | "sealed" | "unchanged" {
+  leaveAtHandover(mark: SheetMark): "withdrawn" | "sealed" | "recorded" | "unchanged" {
     this.assertNotWithdrawn();
-    if (this.packedValue !== null || this.containerMode !== "listed") {
+    if (this.handedOverValue !== null) {
       return "unchanged";
+    }
+    this.handedOverValue = mark.at;
+    if (this.packedValue !== null || this.containerMode !== "listed") {
+      return "recorded";
     }
     if (this.contents.liveCount === 0) {
       this.withdrawnValue = mark.at;
@@ -386,6 +405,32 @@ export class PackingSheet {
    */
   get trackingLevel(): PackingTrackingLevel {
     return readTrackingLevel(this.fixedLevel);
+  }
+
+  /** L'instant où le client a retiré la commande, ou `null`. */
+  get handedOverAt(): Date | null {
+    return this.handedOverValue;
+  }
+
+  /**
+   * **« Problème » se pose-t-il ici ?** (D5) Seulement sur un retrait colisé
+   * au niveau simple, pas encore retiré par le client, dont le départ
+   * incomplet n'est pas déjà décidé.
+   *
+   * @throws {ProblemOutsideSimplePickupError} livraison, ou niveau détaillé.
+   * @throws {PackingSheetHandedOverError} @throws {ProblemAfterDecisionError}
+   * @throws {ContainersCountedError}
+   */
+  assertProblemAllowed(): void {
+    this.assertNotWithdrawn();
+    if (this.trackingLevel !== "simple" || this.fulfillmentMethod !== "pickup") {
+      throw new ProblemOutsideSimplePickupError(this.reference);
+    }
+    this.assertNotHandedOver();
+    this.assertListed();
+    if (this.authorizedValue !== null) {
+      throw new ProblemAfterDecisionError(this.reference);
+    }
   }
 
   /** L'instant du retrait, ou `null` : la feuille vit. */
@@ -414,6 +459,7 @@ export class PackingSheet {
       shortfallAuthorizedAt: this.authorizedValue,
       withdrawnAt: this.withdrawnValue,
       trackingLevel: this.fixedLevel,
+      handedOverAt: this.handedOverValue,
     };
   }
 
@@ -542,6 +588,12 @@ export class PackingSheet {
   private assertNotWithdrawn(): void {
     if (this.withdrawnValue !== null) {
       throw new PackingSheetWithdrawnError(this.reference);
+    }
+  }
+
+  private assertNotHandedOver(): void {
+    if (this.handedOverValue !== null) {
+      throw new PackingSheetHandedOverError(this.reference);
     }
   }
 

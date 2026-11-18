@@ -75,19 +75,22 @@ describe("PackingSheet.leaveAtHandover — l'envoi est parti", () => {
     expect(target.leaveAtHandover(MARK)).toBe("sealed");
   });
 
-  it("un bac déjà fermé ne change pas : sa signature d'origine reste", () => {
+  it("un bac déjà fermé garde sa signature d'origine ; seul l'instant du retrait est retenu", () => {
     const original: SheetMark = { at: new Date(5), by: "staff_packer" };
     const target = sheet({ packed: original });
 
-    expect(target.leaveAtHandover(MARK)).toBe("unchanged");
+    expect(target.leaveAtHandover(MARK)).toBe("recorded");
     expect(target.packed).toBe(original);
+    expect(target.handedOverAt).toBe(AT);
   });
 
-  it("une commande comptée par l'ancien poste reste en lecture seule", () => {
+  it("une commande comptée par l'ancien poste reste en lecture seule ; seul l'instant du retrait est retenu", () => {
     const target = sheet({ containerMode: "counted" });
 
-    expect(target.leaveAtHandover(MARK)).toBe("unchanged");
+    expect(target.leaveAtHandover(MARK)).toBe("recorded");
     expect(target.withdrawnAt).toBeNull();
+    expect(target.packed).toBeNull();
+    expect(target.handedOverAt).toBe(AT);
   });
 
   it("refuse une feuille déjà retirée : l'appelant l'écarte avant", () => {

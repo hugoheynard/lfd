@@ -70,7 +70,7 @@ export class PackedStockInconsistentError extends TechnicalError {
 
 /**
  * La réserve relue compte plus de sorties que d'entrées : `au bac + rendu +
- * envoyé en boutique > reçu` (audit final du réassort, 2026-11-03). Aucun
+ * envoyé en boutique + manquant > reçu` (audit final du réassort, 2026-11-03). Aucun
  * geste de l'agrégat ne l'écrit ; relue telle quelle, elle aurait servi un
  * libre faux (borné à zéro) sans que personne le sache. Rien n'est écrit.
  */
@@ -83,12 +83,13 @@ export class PackingStockOverdrawnError extends TechnicalError {
       readonly packed: number;
       readonly returned: number;
       readonly sentToShop: number;
+      readonly missing: number;
     },
   ) {
-    const { received, packed, returned, sentToShop } = counters;
+    const { received, packed, returned, sentToShop, missing } = counters;
     super(
       "packing.stock.overdrawn",
-      `La réserve du colisage de « ${sku} » pour le ${serviceDay} compte ${String(packed)} au bac, ${String(returned)} rendus et ${String(sentToShop)} envoyés en boutique pour ${String(received)} reçus : elle est incohérente, et le geste n'a rien écrit. Signalez-le à l'équipe technique avec l'article et la journée.`,
+      `La réserve du colisage de « ${sku} » pour le ${serviceDay} compte ${String(packed)} au bac, ${String(returned)} rendus, ${String(sentToShop)} envoyés en boutique et ${String(missing)} mis de côté comme absents pour ${String(received)} reçus : elle est incohérente, et le geste n'a rien écrit. Signalez-le à l'équipe technique avec l'article et la journée.`,
     );
   }
 }

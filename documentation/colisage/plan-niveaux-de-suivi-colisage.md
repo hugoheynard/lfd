@@ -129,6 +129,15 @@ plan à part.
   **retrouvées** depuis la commande (un geste du colisage, sous son droit) :
   `missing` baisse d'autant. Un bouton « Retrouvé » au poste viendrait plus tard
   s'il manque (proposé).
+- **Bâti en C2a (2026-11-18), ce que le plan ne disait pas :**
+  - le sac garde `min(présent, au sac + libre)` ; une ligne non citée compte
+    entièrement présente ; l'absent mis de côté vaut `min(dû − gardé, libre)` ;
+  - le manquant est compté par **jour et produit**, pas par commande : des
+    pièces retrouvées rendues « depuis la commande » peuvent être celles d'une
+    autre commande du même jour, ce qui ne change rien au stock ;
+  - un article **au poids** ne se découpe pas : un présent partiel sur un lot
+    pesé est refusé (`WeightLotSplitError`), comme au détaillé ;
+  - « Pièces retrouvées » refuse au-delà du manquant, avec ses mots.
 - **D7 — Le superviseur décide, le comptoir attend** (choix par défaut,
   réversible, posé le 2026-11-18 : Hugo veut la décision au superviseur, pas
   au comptoir). Aujourd'hui, `OrderShortfall.report` ne regarde pas le statut,
@@ -236,6 +245,7 @@ flowchart LR
   l'importent du colisage. `packing.returned` reste au fournil (§ 1).
 - **C1** — migration, réglage, niveau figé, ligne de la page Niveau de suivi.
 - **C2** — « Problème » (serveur et écran), D5 à D8, « Pièces retrouvées ».
+  C2a (le colisage) ✅ bâti le 2026-11-18 sur `feat/colisage-simple`.
 - **C3** — « Tout est prêt » (serveur et écran).
 - **C4** — la correction du fournil (D9). Aujourd'hui déjà, personne ne
   l'écoute : ce lot ferme ce trou pour les deux niveaux.

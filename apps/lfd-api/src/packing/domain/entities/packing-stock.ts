@@ -11,6 +11,10 @@ import {
   StockMoveQuantityInvalidError,
   ReserveShortForShopError,
 } from "../errors/packing-shop-release-errors.js";
+import {
+  MissingBeyondFreeError,
+  RecoveredBeyondMissingError,
+} from "../errors/packing-problem-errors.js";
 import { LineNotProducedYetError } from "../errors/packing-station-errors.js";
 import { shortfall } from "../services/placement.js";
 import {
@@ -34,6 +38,12 @@ export interface PackingStockSnapshot {
   readonly sentToShop: number;
   /** Les réservations des réassorts lancés (R4b), levées comprises. */
   readonly reservations: readonly StockReservationSnapshot[];
+  /**
+   * Les pièces dites absentes par « Problème », mises de côté : ni une
+   * commande, ni un retour, ni une boutique, ni un réassort ne les prend.
+   * Absent = 0.
+   */
+  readonly missing?: number;
 }
 
 /**
@@ -56,6 +66,12 @@ export interface PackingStockSnapshot {
  * le four n'a pas encore remis assez, elle attend les remises suivantes
  * (« en attente du four »), et le libre des commandes reste à zéro d'ici là.
  *
+ * **Le manquant** (`missing`) : les pièces que la réserve compte reçues mais
+ * que le poste a dites absentes (« Problème »). Mises de côté, elles sortent
+ * du libre et de ce qu'un réassort peut prendre ; des pièces retrouvées y
+ * reviennent (`recover`). Sans quoi le « Tout est prêt » d'une autre commande
+ * prendrait des pièces que personne n'a sous la main.
+ *
  * ⚠️ Le `packed` d'une RÉSERVATION n'est pas écrit par le dépôt de la réserve :
  * il se relit de la ligne de la fiche (`reservationsOn`, vérifié le
  * 2026-11-03). `takeForResupply` et `releaseFromResupply` le tiennent à jour
@@ -71,6 +87,7 @@ export class PackingStock {
     private packedValue: number,
     private sentToShopValue: number,
     private reservationsValue: readonly StockReservationSnapshot[],
+    private missingValue: number,
   ) {}
 
   /**
@@ -79,11 +96,15 @@ export class PackingStock {
    * à la relecture, sans quoi une ligne écrite hors de l'agrégat le romprait
    * en silence.
    *
-   * @throws {PackingStockOverdrawnError} `au bac + rendu + envoyé > reçu`.
+   * @throws {PackingStockOverdrawnError} `au bac + rendu + envoyé + manquant > reçu`.
    */
   static fromSnapshot(snapshot: PackingStockSnapshot): PackingStock {
-    if (snapshot.packed + snapshot.returned + snapshot.sentToShop > snapshot.received) {
-      throw new PackingStockOverdrawnError(snapshot.serviceDay, snapshot.sku, snapshot);
+    const missing = snapshot.missing ?? 0;
+    if (snapshot.packed + snapshot.returned + snapshot.sentToShop + missing > snapshot.received) {
+      throw new PackingStockOverdrawnError(snapshot.serviceDay, snapshot.sku, {
+        ...snapshot,
+        missing,
+      });
     }
     return new PackingStock(
       snapshot.serviceDay,
@@ -93,6 +114,7 @@ export class PackingStock {
       snapshot.packed,
       snapshot.sentToShop,
       snapshot.reservations,
+      missing,
     );
   }
 
@@ -108,6 +130,11 @@ export class PackingStock {
     return this.sentToShopValue;
   }
 
+  /** Les pièces mises de côté comme absentes. */
+  get missing(): number {
+    return this.missingValue;
+  }
+
   get reservations(): readonly StockReservationSnapshot[] {
     return this.reservationsValue;
   }
@@ -119,13 +146,50 @@ export class PackingStock {
 
   /**
    * Ce qui peut encore aller au bac d'une commande, être rendu ou envoyé en
-   * boutique — hors des pièces réservées. Jamais négatif.
+   * boutique — hors des pièces réservées et des pièces mises de côté comme
+   * absentes. Jamais négatif.
    */
   get free(): number {
     return Math.max(
       0,
-      this.received - this.returnedValue - this.packedValue - this.sentToShopValue - this.reserved,
+      this.received -
+        this.returnedValue -
+        this.packedValue -
+        this.sentToShopValue -
+        this.missingValue -
+        this.reserved,
     );
+  }
+
+  /**
+   * **« Problème » : des pièces sont absentes** — elles quittent le libre et
+   * sont mises de côté (D6). Seulement du libre : une pièce au bac en sort
+   * d'abord (`release`), une pièce réservée n'est pas à la commande.
+   *
+   * @throws {StockMoveQuantityInvalidError} négatif ou fractionnaire.
+   * @throws {MissingBeyondFreeError} le libre ne couvre pas la quantité.
+   */
+  setAside(quantity: number, productName: string, unit: SaleUnit): void {
+    this.ensureMovable(quantity, unit);
+    if (quantity > this.free) {
+      throw new MissingBeyondFreeError(productName, this.free, quantity, unit);
+    }
+    this.missingValue += quantity;
+  }
+
+  /**
+   * **Des pièces retrouvées** reviennent au libre, au plus ce qui a été mis
+   * de côté.
+   *
+   * @throws {StockMoveQuantityInvalidError} négatif ou fractionnaire.
+   * @throws {RecoveredBeyondMissingError} plus que les pièces mises de côté.
+   */
+  recover(quantity: number, productName: string, unit: SaleUnit): void {
+    this.ensureMovable(quantity, unit);
+    if (quantity > this.missingValue) {
+      throw new RecoveredBeyondMissingError(productName, this.missingValue, quantity, unit);
+    }
+    this.missingValue -= quantity;
   }
 
   /**
@@ -288,6 +352,7 @@ export class PackingStock {
       packed: this.packedValue,
       sentToShop: this.sentToShopValue,
       reservations: this.reservationsValue,
+      missing: this.missingValue,
     };
   }
 
