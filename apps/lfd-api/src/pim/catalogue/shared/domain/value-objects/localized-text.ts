@@ -1,8 +1,8 @@
 import {
   buildLocalized,
   InvalidLocalizedTextError,
-  type Languages,
 } from "../../../../../platform/i18n/localized-text.js";
+import { CATALOGUE_LANGUAGES } from "../../../../shared/catalogue-languages.js";
 import {
   LOCALES,
   SOURCE_LOCALE,
@@ -12,17 +12,7 @@ import {
 } from "@lfd/pim-contracts";
 
 export type { Locale, LocalizedText, TranslatedLocale };
-export { InvalidLocalizedTextError, LOCALES, SOURCE_LOCALE };
-
-/**
- * Les langues du catalogue, en DONNÉE — ce que la mécanique de `platform/`
- * boucle sans les connaître (2026-10-10 : la liste est un contrat métier, que
- * la plateforme n'importe pas).
- */
-export const CATALOGUE_LANGUAGES: Languages<typeof SOURCE_LOCALE, Locale> = {
-  source: SOURCE_LOCALE,
-  all: LOCALES,
-};
+export { CATALOGUE_LANGUAGES, InvalidLocalizedTextError, LOCALES, SOURCE_LOCALE };
 
 /**
  * Construit un texte traduisible à partir d'une carte de langues.

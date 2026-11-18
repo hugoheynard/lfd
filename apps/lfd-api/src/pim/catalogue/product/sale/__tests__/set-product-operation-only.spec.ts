@@ -7,7 +7,7 @@ import {
   SetProductOperationOnlyCommand,
   SetProductOperationOnlyHandler,
 } from "../set-product-operation-only.js";
-import { RecordingCatalogEmitter } from "../../../shared/domain/ports/__tests__/catalog-emitter-doubles.js";
+import { RecordingCatalogEmitter } from "../../../../shared/__tests__/catalog-emitter-doubles.js";
 
 /**
  * La case « vendu seulement pendant une opération » de la fiche (D3 du plan des

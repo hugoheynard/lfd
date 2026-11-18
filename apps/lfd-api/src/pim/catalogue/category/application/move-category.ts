@@ -6,7 +6,7 @@ import { CategoryArchivedParentError } from "../domain/errors/category-errors.js
 import { CategoryRepository } from "../domain/ports/category.repository.js";
 import { assertNoCycle } from "../domain/services/category-tree.js";
 import { namedCategory, requireCategory } from "./category-support.js";
-import { CatalogEmitter } from "../../shared/domain/ports/catalog-emitter.js";
+import { CatalogEmitter } from "../../../shared/catalog-emitter.js";
 
 export class MoveCategoryCommand {
   constructor(

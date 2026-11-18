@@ -2,16 +2,16 @@ import {
   localizedColumn as localizedColumnOf,
   readLocalizedColumn as readLocalizedColumnOf,
   readOptionalLocalizedColumn,
-} from "../../../../platform/i18n/localized-text.js";
-import { CATALOGUE_LANGUAGES, type LocalizedText } from "../domain/value-objects/localized-text.js";
+} from "../../platform/i18n/localized-text.js";
+import type { LocalizedText } from "@lfd/pim-contracts";
+import { CATALOGUE_LANGUAGES } from "./catalogue-languages.js";
 
 /**
  * Les colonnes `jsonb` du référentiel, lues et écrites dans SES langues.
  *
- * La mécanique est en `platform/` depuis le 2026-10-10 (`database/json-columns`,
- * `i18n/localized-text`) : rien n'y parlait de catalogue, et la médiathèque
- * l'empruntait ici. Ce fichier ne fait plus que lier la liste des langues du
- * catalogue — ses lecteurs n'ont pas eu à changer d'import.
+ * La mécanique est dans `platform/` (`database/json-columns`, `i18n/localized-text`) :
+ * rien n'y parle de catalogue. Ce fichier lie la liste des langues du catalogue
+ * et vit dans le noyau pour que les référentiels le lisent sans importer le catalogue.
  */
 export {
   CorruptedRecordError,
@@ -19,7 +19,7 @@ export {
   readStringArrayColumn,
   readStringMapColumn,
   violatedConstraint,
-} from "../../../../platform/database/json-columns.js";
+} from "../../platform/database/json-columns.js";
 
 export function readLocalizedColumn(value: unknown, field: string): LocalizedText {
   return readLocalizedColumnOf(CATALOGUE_LANGUAGES, value, field);

@@ -8,7 +8,7 @@ import { DefaultVariantChangeGate } from "../domain/ports/default-variant-change
 import { NutritionValuesRepository } from "../domain/ports/nutrition-values.repository.js";
 import { ProductRepository } from "../domain/ports/product.repository.js";
 import { VariantAllergensRepository } from "../domain/ports/variant-allergens.repository.js";
-import { CatalogEmitter } from "../../shared/domain/ports/catalog-emitter.js";
+import { CatalogEmitter } from "../../../shared/catalog-emitter.js";
 import { copiedNutrition } from "./detached-product-copy.js";
 import { requireProduct, variantSnapshotOf } from "../shared/product-support.js";
 

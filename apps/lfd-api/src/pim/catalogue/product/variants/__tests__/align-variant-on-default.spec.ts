@@ -7,7 +7,7 @@ import {
   AlignVariantOnDefaultCommand,
   AlignVariantOnDefaultHandler,
 } from "../align-variant-on-default.js";
-import { RecordingCatalogEmitter } from "../../../shared/domain/ports/__tests__/catalog-emitter-doubles.js";
+import { RecordingCatalogEmitter } from "../../../../shared/__tests__/catalog-emitter-doubles.js";
 import { PricingAlignmentAcrossUnitsError } from "../../domain/errors/sale-unit-errors.js";
 
 const PRODUCT_ID = "prd_1";

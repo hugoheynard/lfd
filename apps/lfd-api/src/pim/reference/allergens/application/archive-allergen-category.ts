@@ -6,7 +6,7 @@ import { PIM_EVENTS, PimJournal } from "../../../journal/pim-journal.js";
 import { AllergenCatalogueReader } from "../domain/ports/allergen-catalogue.reader.js";
 import { AllergenCategoryRepository } from "../domain/ports/allergen-category.repository.js";
 import { ensureCategoryUncited, requireCategory } from "./allergen-support.js";
-import { CatalogReemission } from "../../../catalogue/shared/domain/ports/catalog-reemission.js";
+import { CatalogReemission } from "../../../shared/catalog-reemission.js";
 
 export class ArchiveAllergenCategoryCommand {
   constructor(readonly id: string) {}

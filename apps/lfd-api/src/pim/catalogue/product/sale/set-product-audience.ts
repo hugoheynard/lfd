@@ -7,7 +7,7 @@ import type { Audience } from "../../shared/domain/value-objects/audience.js";
 import type { Product } from "../domain/entities/product.js";
 import { ProductRepository } from "../domain/ports/product.repository.js";
 import { requireProduct } from "../shared/product-support.js";
-import { CatalogEmitter } from "../../shared/domain/ports/catalog-emitter.js";
+import { CatalogEmitter } from "../../../shared/catalog-emitter.js";
 
 export class SetProductAudienceCommand {
   constructor(

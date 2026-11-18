@@ -1,7 +1,4 @@
-import {
-  localizedColumn,
-  readLocalizedColumn,
-} from "../../../catalogue/shared/infrastructure/json-readers.js";
+import { localizedColumn, readLocalizedColumn } from "../../../shared/json-readers.js";
 import { AllergenCategory } from "../domain/entities/allergen-category.js";
 import { AllergenEntry } from "../domain/entities/allergen-entry.js";
 

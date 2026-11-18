@@ -4,7 +4,7 @@ import {
   InMemoryAllergenCatalogueReader,
 } from "../../../../reference/allergens/application/__tests__/in-memory-allergens.js";
 import { RecordingJournal } from "../../../../journal/__tests__/recording-journal.js";
-import { RecordingCatalogEmitter } from "../../../shared/domain/ports/__tests__/catalog-emitter-doubles.js";
+import { RecordingCatalogEmitter } from "../../../../shared/__tests__/catalog-emitter-doubles.js";
 import { Product, type ProductSnapshot } from "../../domain/entities/product.js";
 import type { VariantSnapshot } from "../../domain/entities/variant.js";
 import { PropagationIngredientNotFoundError } from "../../domain/errors/propagation-errors.js";

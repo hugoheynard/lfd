@@ -5,7 +5,7 @@ import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { PIM_EVENTS, PimJournal } from "../../../journal/pim-journal.js";
 import { AllergenCategoryRepository } from "../domain/ports/allergen-category.repository.js";
 import { requireCategory } from "./allergen-support.js";
-import { CatalogReemission } from "../../../catalogue/shared/domain/ports/catalog-reemission.js";
+import { CatalogReemission } from "../../../shared/catalog-reemission.js";
 
 export class RenameAllergenCategoryCommand {
   constructor(

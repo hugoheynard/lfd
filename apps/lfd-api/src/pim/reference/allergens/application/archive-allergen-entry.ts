@@ -5,7 +5,7 @@ import { Clock } from "../../../../platform/time/clock.js";
 import { PIM_EVENTS, PimJournal } from "../../../journal/pim-journal.js";
 import { AllergenEntryRepository } from "../domain/ports/allergen-entry.repository.js";
 import { requireEntry } from "./allergen-support.js";
-import { CatalogReemission } from "../../../catalogue/shared/domain/ports/catalog-reemission.js";
+import { CatalogReemission } from "../../../shared/catalog-reemission.js";
 
 export class ArchiveAllergenEntryCommand {
   constructor(readonly id: string) {}

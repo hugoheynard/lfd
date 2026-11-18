@@ -11,7 +11,7 @@ import {
   localizedColumn,
   readLocalizedColumn,
   violatedConstraint,
-} from "../../shared/infrastructure/json-readers.js";
+} from "../../../shared/json-readers.js";
 import { audience } from "../../shared/domain/value-objects/audience.js";
 
 interface CategoryRow {

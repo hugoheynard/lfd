@@ -6,7 +6,7 @@ import {
   SetVariantCustomRecipeCommand,
   SetVariantCustomRecipeHandler,
 } from "../set-variant-custom-recipe.js";
-import { RecordingCatalogEmitter } from "../../../shared/domain/ports/__tests__/catalog-emitter-doubles.js";
+import { RecordingCatalogEmitter } from "../../../../shared/__tests__/catalog-emitter-doubles.js";
 import {
   bareVariant,
   OneProduct,

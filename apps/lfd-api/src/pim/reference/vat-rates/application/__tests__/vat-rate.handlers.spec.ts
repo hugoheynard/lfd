@@ -10,7 +10,7 @@ import { CreateVatRateCommand, CreateVatRateHandler } from "../create-vat-rate.j
 import { ListVatRatesHandler } from "../list-vat-rates.js";
 import { RemoveVatRateCommand, RemoveVatRateHandler } from "../remove-vat-rate.js";
 import { UpdateVatRateCommand, UpdateVatRateHandler } from "../update-vat-rate.js";
-import { RecordingCatalogReemission } from "../../../../catalogue/shared/domain/ports/__tests__/catalog-emitter-doubles.js";
+import { RecordingCatalogReemission } from "../../../../shared/__tests__/catalog-emitter-doubles.js";
 import { DirectPimContents } from "../../../../changes/application/__tests__/direct-pim-contents.js";
 
 /** Garde des agrégats et reconstitue à chaque lecture — comme la vraie base. */

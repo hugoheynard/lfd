@@ -3,7 +3,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import type { WriteTicket } from "../../../../platform/journal/scoped-journal.js";
 import { PIM_EVENTS, PimJournal } from "../../../journal/pim-journal.js";
-import { CatalogEmitter } from "../../shared/domain/ports/catalog-emitter.js";
+import { CatalogEmitter } from "../../../shared/catalog-emitter.js";
 import type { Product } from "../domain/entities/product.js";
 import type { VariantSnapshot } from "../domain/entities/variant.js";
 import { VariantNotFoundError } from "../domain/errors/product-errors.js";

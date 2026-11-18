@@ -7,7 +7,7 @@ import {
   localizedText,
   type LocalizedText,
 } from "../../shared/domain/value-objects/localized-text.js";
-import { CatalogEmitter } from "../../shared/domain/ports/catalog-emitter.js";
+import { CatalogEmitter } from "../../../shared/catalog-emitter.js";
 import { ProductRepository } from "../domain/ports/product.repository.js";
 import { requireProduct } from "../shared/product-support.js";
 

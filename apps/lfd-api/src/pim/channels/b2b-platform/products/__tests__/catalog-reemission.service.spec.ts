@@ -1,13 +1,13 @@
 import { UnitOfWork } from "../../../../../platform/database/unit-of-work.js";
 import type { ProductRecord } from "../../../../catalogue/product/domain/ports/product.repository.js";
 import { tarte } from "../../../../catalogue/product/shared/__tests__/audience-doubles.js";
-import { CatalogEmitter } from "../../../../catalogue/shared/domain/ports/catalog-emitter.js";
+import { CatalogEmitter } from "../../../../shared/catalog-emitter.js";
 import {
   CatalogFactsReader,
   type CatalogFamilyRecord,
 } from "../../../../catalogue/shared/domain/ports/catalog-facts.reader.js";
 import { CatalogRulesEmitter } from "../../../../order-time-limitation/domain/ports/catalog-rules.emitter.js";
-import { ReemissionProgress } from "../../../../catalogue/shared/domain/ports/catalog-reemission.js";
+import { ReemissionProgress } from "../../../../shared/catalog-reemission.js";
 import {
   FamilyReemissionFailedError,
   RulesReemissionFailedError,

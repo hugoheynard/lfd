@@ -16,7 +16,7 @@ import {
   InMemoryAppellationRepository,
   InMemoryIngredientRepository,
 } from "./in-memory-repositories.js";
-import { RecordingCatalogEmitter } from "../../../../catalogue/shared/domain/ports/__tests__/catalog-emitter-doubles.js";
+import { RecordingCatalogEmitter } from "../../../../shared/__tests__/catalog-emitter-doubles.js";
 import { DirectPimContents } from "../../../../changes/application/__tests__/direct-pim-contents.js";
 
 const PRODUCT = "prd_1";

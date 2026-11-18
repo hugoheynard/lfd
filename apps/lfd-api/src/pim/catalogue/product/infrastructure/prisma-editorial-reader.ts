@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 
-import { optionalLocalizedColumn as localizedOf } from "../../shared/infrastructure/json-readers.js";
+import { optionalLocalizedColumn as localizedOf } from "../../../shared/json-readers.js";
 import { ImageCatalogue } from "../../../channels/media/image-catalogue.js";
 import { PimPrismaService } from "../../../infra/database/pim-prisma.service.js";
 import {

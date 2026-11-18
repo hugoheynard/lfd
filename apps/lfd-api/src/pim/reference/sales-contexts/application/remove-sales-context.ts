@@ -4,7 +4,7 @@ import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { PIM_EVENTS, PimJournal } from "../../../journal/pim-journal.js";
 import { SalesContextRepository } from "../domain/ports/sales-context.repository.js";
 import { requireContext } from "./sales-context-support.js";
-import { CatalogReemission } from "../../../catalogue/shared/domain/ports/catalog-reemission.js";
+import { CatalogReemission } from "../../../shared/catalog-reemission.js";
 
 export class RemoveSalesContextCommand {
   constructor(readonly key: string) {}

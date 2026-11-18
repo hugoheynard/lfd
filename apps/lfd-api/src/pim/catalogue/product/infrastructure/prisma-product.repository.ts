@@ -24,7 +24,7 @@ import {
   readLocalizedColumn,
   readStringArrayColumn,
   readStringMapColumn,
-} from "../../shared/infrastructure/json-readers.js";
+} from "../../../shared/json-readers.js";
 import { audience } from "../../shared/domain/value-objects/audience.js";
 
 /** La moitié « sécurité » : ce que la déclinaison contient, et ses traces. */

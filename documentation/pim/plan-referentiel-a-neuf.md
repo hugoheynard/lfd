@@ -55,8 +55,8 @@ d'événements et une surface HTTP —, et les découper ne lirait pas mieux.
 
 - **Les cycles** (compte complet en § L1) : `vat-rates`, `sales-contexts` et
   `allergens` importent `catalogue/` surtout pour deux choses — le port
-  `catalogue/shared/domain/ports/catalog-reemission.ts` (11 imports) et
-  l'utilitaire `catalogue/shared/infrastructure/json-readers.ts` (4) —, et
+  `shared/catalog-reemission.ts` (11 imports, rangé dans le catalogue avant L1) et
+  l'utilitaire `shared/json-readers.ts` (4, idem) —, et
   `catalogue/` les importe en retour. `order-time-limitation` ↔ `channels`
   par `channels/b2b-platform/catalog-facts.module.ts`. La porte
   `context-boundaries` ne raisonne qu'au premier niveau de `src/`

@@ -11,7 +11,7 @@ import { ProductRepository } from "../domain/ports/product.repository.js";
 import { mediaItems, type MediaInput } from "../domain/value-objects/editorial.js";
 import { announceProductMedia } from "./product-media-announcement.js";
 import { requireProduct } from "../shared/product-support.js";
-import { CatalogEmitter } from "../../shared/domain/ports/catalog-emitter.js";
+import { CatalogEmitter } from "../../../shared/catalog-emitter.js";
 
 export class SetProductMediaCommand {
   constructor(

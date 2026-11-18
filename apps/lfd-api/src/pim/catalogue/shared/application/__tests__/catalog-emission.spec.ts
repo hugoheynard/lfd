@@ -16,8 +16,8 @@ import {
   SetProductAudienceCommand,
   SetProductAudienceHandler,
 } from "../../../product/sale/set-product-audience.js";
-import { CatalogEmitter } from "../../domain/ports/catalog-emitter.js";
-import { CatalogReemission, type ReemissionReport } from "../../domain/ports/catalog-reemission.js";
+import { CatalogEmitter } from "../../../../shared/catalog-emitter.js";
+import { CatalogReemission, type ReemissionReport } from "../../../../shared/catalog-reemission.js";
 
 /**
  * **Où** un geste émet (2a3, C4) : la fiche DANS sa transaction, en dernière

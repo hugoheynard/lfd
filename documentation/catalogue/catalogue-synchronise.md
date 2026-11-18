@@ -68,7 +68,7 @@ sequenceDiagram
 
 ### Le port et son implémentation
 
-Le catalogue **déclare** `CatalogEmitter` (`apps/lfd-api/src/pim/catalogue/shared/domain/ports/catalog-emitter.ts:21`) :
+Le catalogue **déclare** `CatalogEmitter` (`apps/lfd-api/src/pim/shared/catalog-emitter.ts:21`) :
 il dit « cette fiche a changé », jamais « envoie-la à la plateforme ». Le
 canal `pim/channels/b2b-platform/` l'implémente
 (`apps/lfd-api/src/pim/channels/b2b-platform/products/catalog-facts.emitter.ts:24`)
@@ -167,7 +167,7 @@ l'écran garde son libellé pour les manques publiés avant.)
 
 ### La réémission
 
-`CatalogReemission` (`apps/lfd-api/src/pim/catalogue/shared/domain/ports/catalog-reemission.ts:22`)
+`CatalogReemission` (`apps/lfd-api/src/pim/shared/catalog-reemission.ts:22`)
 réémet plusieurs fiches **hors** de la transaction du geste, une transaction
 par fiche : un geste qui change le prix ou le taux de cent fiches ne doit pas
 verrouiller le catalogue entier. Elle est appelée **après** le `uow.run`, et

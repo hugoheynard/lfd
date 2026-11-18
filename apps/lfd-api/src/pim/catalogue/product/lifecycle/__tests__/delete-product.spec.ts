@@ -6,7 +6,7 @@ import {
   NotArchivedProductNotDeletableError,
   ProductNotFoundError,
 } from "../../domain/errors/product-errors.js";
-import { RecordingCatalogEmitter } from "../../../shared/domain/ports/__tests__/catalog-emitter-doubles.js";
+import { RecordingCatalogEmitter } from "../../../../shared/__tests__/catalog-emitter-doubles.js";
 import { DeleteProductCommand, DeleteProductHandler } from "../delete-product.js";
 import { requireProduct } from "../../shared/product-support.js";
 import { OneProduct, PRODUCT_ID, tarte } from "../../shared/__tests__/audience-doubles.js";

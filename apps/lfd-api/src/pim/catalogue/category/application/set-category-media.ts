@@ -8,7 +8,7 @@ import { CategoryEditorialReader } from "../domain/ports/category-editorial-read
 import { CategoryEditorialRepository } from "../domain/ports/category-editorial.repository.js";
 import { CategoryRepository } from "../domain/ports/category.repository.js";
 import { requireCategory } from "./category-support.js";
-import { CatalogEmitter } from "../../shared/domain/ports/catalog-emitter.js";
+import { CatalogEmitter } from "../../../shared/catalog-emitter.js";
 
 export class SetCategoryMediaCommand {
   constructor(

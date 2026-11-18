@@ -2,7 +2,7 @@ import { Injectable } from "@nestjs/common";
 
 import { DurablePublisher } from "../../../../platform/outbox/durable-publisher.js";
 import { Clock } from "../../../../platform/time/clock.js";
-import { CatalogEmitter } from "../../../catalogue/shared/domain/ports/catalog-emitter.js";
+import { CatalogEmitter } from "../../../shared/catalog-emitter.js";
 import { CatalogCategoryChangedFact } from "./catalog-category-changed.fact.js";
 import { CatalogSnapshots } from "./catalog-snapshots.js";
 import { CatalogProductChangedFact } from "./catalog-product-changed.fact.js";

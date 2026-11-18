@@ -3,7 +3,7 @@ import { RecordingJournal } from "../../../../journal/__tests__/recording-journa
 import { Product, type ProductSnapshot } from "../../domain/entities/product.js";
 import { BlankVariantInternalLabelError } from "../../domain/errors/variant-label-errors.js";
 import { ProductRepository } from "../../domain/ports/product.repository.js";
-import { RecordingCatalogEmitter } from "../../../shared/domain/ports/__tests__/catalog-emitter-doubles.js";
+import { RecordingCatalogEmitter } from "../../../../shared/__tests__/catalog-emitter-doubles.js";
 import {
   RenameProductVariantCommand,
   RenameProductVariantHandler,

@@ -4,7 +4,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 import { PIM_EVENTS, PimJournal } from "../../../journal/pim-journal.js";
 import { VatRateRepository } from "../domain/ports/vat-rate.repository.js";
 import { requireRate } from "./vat-support.js";
-import { CatalogReemission } from "../../../catalogue/shared/domain/ports/catalog-reemission.js";
+import { CatalogReemission } from "../../../shared/catalog-reemission.js";
 
 export class RemoveVatRateCommand {
   constructor(readonly id: string) {}

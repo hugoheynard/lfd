@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 
 import { PimPrismaService } from "../../../infra/database/pim-prisma.service.js";
-import { readStringArrayColumn } from "../../shared/infrastructure/json-readers.js";
+import { readStringArrayColumn } from "../../../shared/json-readers.js";
 import { PublishedAllergensReader } from "../domain/ports/published-allergens.reader.js";
 
 /**

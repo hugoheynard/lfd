@@ -12,7 +12,7 @@ import {
   type EditorialInput,
 } from "../domain/value-objects/editorial.js";
 import { requireProduct } from "../shared/product-support.js";
-import { CatalogEmitter } from "../../shared/domain/ports/catalog-emitter.js";
+import { CatalogEmitter } from "../../../shared/catalog-emitter.js";
 
 export class UpdateProductEditorialCommand {
   constructor(

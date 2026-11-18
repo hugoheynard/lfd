@@ -4,7 +4,7 @@ import {
   IngredientCitationsReader,
   type IngredientCitations,
 } from "../../../catalogue/product/domain/ports/ingredient-citations.reader.js";
-import { readLocalizedColumn } from "../../../catalogue/shared/infrastructure/json-readers.js";
+import { readLocalizedColumn } from "../../../shared/json-readers.js";
 import { PimPrismaService } from "../../../infra/database/pim-prisma.service.js";
 import { citedUnion } from "../application/ingredient-allergen-support.js";
 

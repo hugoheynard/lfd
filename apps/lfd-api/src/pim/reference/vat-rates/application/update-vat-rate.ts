@@ -8,7 +8,7 @@ import { SalesContextRegistry } from "../../sales-contexts/domain/ports/sales-co
 import { VatRateRepository } from "../domain/ports/vat-rate.repository.js";
 import type { VatRatePayload } from "./create-vat-rate.js";
 import { ensureRateFree, requireRate } from "./vat-support.js";
-import { CatalogReemission } from "../../../catalogue/shared/domain/ports/catalog-reemission.js";
+import { CatalogReemission } from "../../../shared/catalog-reemission.js";
 
 export class UpdateVatRateCommand {
   constructor(

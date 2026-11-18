@@ -14,7 +14,7 @@ import {
 import {
   RecordingCatalogEmitter,
   RecordingCatalogReemission,
-} from "../../../shared/domain/ports/__tests__/catalog-emitter-doubles.js";
+} from "../../../../shared/__tests__/catalog-emitter-doubles.js";
 
 /** L'audience d'une famille (1c du plan d'audience). */
 function setting(

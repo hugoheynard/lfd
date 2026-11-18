@@ -11,7 +11,7 @@ import {
 import { tarte } from "../../../../catalogue/product/shared/__tests__/audience-doubles.js";
 import { ProductNotFoundError } from "../../../../catalogue/product/domain/errors/product-errors.js";
 import type { ProductRecord } from "../../../../catalogue/product/domain/ports/product.repository.js";
-import { RecordingCatalogEmitter } from "../../../../catalogue/shared/domain/ports/__tests__/catalog-emitter-doubles.js";
+import { RecordingCatalogEmitter } from "../../../../shared/__tests__/catalog-emitter-doubles.js";
 import {
   CatalogFactsReader,
   type CatalogFamilyRecord,
@@ -20,7 +20,7 @@ import {
   CatalogReemission,
   type ReemissionProgress,
   type ReemissionReport,
-} from "../../../../catalogue/shared/domain/ports/catalog-reemission.js";
+} from "../../../../shared/catalog-reemission.js";
 import {
   CatalogReemissionJob,
   INTERRUPTED_BY_RESTART,

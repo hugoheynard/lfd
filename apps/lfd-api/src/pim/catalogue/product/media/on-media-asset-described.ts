@@ -11,7 +11,7 @@ import {
   type DurableSubscriber,
 } from "../../../../platform/outbox/durable-handler.js";
 import { DurablePublisher } from "../../../../platform/outbox/durable-publisher.js";
-import { CatalogEmitter } from "../../shared/domain/ports/catalog-emitter.js";
+import { CatalogEmitter } from "../../../shared/catalog-emitter.js";
 import { EditorialReader } from "../domain/ports/editorial-reader.js";
 import { ProductImageUsage } from "../domain/ports/product-image-usage.js";
 import { announceProductMedia, SHOWCASED_ROLES } from "./product-media-announcement.js";

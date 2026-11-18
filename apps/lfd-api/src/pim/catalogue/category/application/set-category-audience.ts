@@ -7,8 +7,8 @@ import type { Audience } from "../../shared/domain/value-objects/audience.js";
 import type { Category } from "../domain/entities/category.js";
 import { CategoryRepository } from "../domain/ports/category.repository.js";
 import { requireCategory } from "./category-support.js";
-import { CatalogEmitter } from "../../shared/domain/ports/catalog-emitter.js";
-import { CatalogReemission } from "../../shared/domain/ports/catalog-reemission.js";
+import { CatalogEmitter } from "../../../shared/catalog-emitter.js";
+import { CatalogReemission } from "../../../shared/catalog-reemission.js";
 
 export class SetCategoryAudienceCommand {
   constructor(

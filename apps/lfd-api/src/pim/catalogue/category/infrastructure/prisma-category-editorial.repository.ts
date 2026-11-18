@@ -5,7 +5,7 @@ import { ImageCatalogue, UnknownImageError } from "../../../channels/media/image
 import { PimPrismaService } from "../../../infra/database/pim-prisma.service.js";
 import type { LocalizedText } from "../../shared/domain/value-objects/localized-text.js";
 import type { MediaItem } from "../../shared/domain/value-objects/media.js";
-import { localizedColumn } from "../../shared/infrastructure/json-readers.js";
+import { localizedColumn } from "../../../shared/json-readers.js";
 import { CategoryEditorialRepository } from "../domain/ports/category-editorial.repository.js";
 import {
   isEmptyCategoryEditorial,

@@ -6,7 +6,7 @@ import { CatalogueReader } from "../../shared/domain/ports/catalogue-reader.js";
 import type { Product } from "../domain/entities/product.js";
 import { ProductRepository } from "../domain/ports/product.repository.js";
 import { requireProduct } from "../shared/product-support.js";
-import { CatalogEmitter } from "../../shared/domain/ports/catalog-emitter.js";
+import { CatalogEmitter } from "../../../shared/catalog-emitter.js";
 import { ActiveSalesContextsReader } from "../../../reference/sales-contexts/domain/ports/active-sales-contexts.reader.js";
 import { readCompletenessRules } from "../regulatory/completeness-support.js";
 import { CitedAllergensReader } from "../domain/ports/cited-allergens.reader.js";

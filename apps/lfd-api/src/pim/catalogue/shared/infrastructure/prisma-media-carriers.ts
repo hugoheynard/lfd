@@ -7,7 +7,7 @@ import {
 } from "../../../../media/channels/carriers/media-carriers.js";
 import type { WriteTicket } from "../../../../platform/journal/scoped-journal.js";
 import { SOURCE_LOCALE } from "../domain/value-objects/localized-text.js";
-import { optionalLocalizedColumn as localizedOf } from "./json-readers.js";
+import { optionalLocalizedColumn as localizedOf } from "../../../shared/json-readers.js";
 import { PimPrismaService } from "../../../infra/database/pim-prisma.service.js";
 
 /**

@@ -4,7 +4,7 @@ import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { PIM_EVENTS, PimJournal } from "../../../journal/pim-journal.js";
 import { IngredientNotFoundError } from "../domain/errors/ingredient-errors.js";
 import { IngredientRepository } from "../domain/ports/ingredient.repository.js";
-import { CatalogEmitter } from "../../../catalogue/shared/domain/ports/catalog-emitter.js";
+import { CatalogEmitter } from "../../../shared/catalog-emitter.js";
 
 export class SetProductIngredientsCommand {
   constructor(

@@ -1,7 +1,7 @@
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { inMemoryIntents } from "../../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
 import { RecordingJournal } from "../../../../journal/__tests__/recording-journal.js";
-import { RecordingCatalogEmitter } from "../../../shared/domain/ports/__tests__/catalog-emitter-doubles.js";
+import { RecordingCatalogEmitter } from "../../../../shared/__tests__/catalog-emitter-doubles.js";
 import { Product, type ProductSnapshot } from "../../domain/entities/product.js";
 import { ProductRepository } from "../../domain/ports/product.repository.js";
 import type { SkuAvailability } from "../../domain/services/sku-generator.js";

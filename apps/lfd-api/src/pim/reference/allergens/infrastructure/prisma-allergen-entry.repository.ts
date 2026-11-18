@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 
 import { PimPrismaService } from "../../../infra/database/pim-prisma.service.js";
-import { isUniqueViolation } from "../../../catalogue/shared/infrastructure/json-readers.js";
+import { isUniqueViolation } from "../../../shared/json-readers.js";
 import type { AllergenEntry } from "../domain/entities/allergen-entry.js";
 import { AllergenCodeTakenError } from "../domain/errors/allergen-errors.js";
 import { AllergenEntryRepository } from "../domain/ports/allergen-entry.repository.js";

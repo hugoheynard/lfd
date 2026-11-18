@@ -1,10 +1,7 @@
 import { Injectable } from "@nestjs/common";
 
 import { PimPrismaService } from "../../../infra/database/pim-prisma.service.js";
-import {
-  localizedColumn,
-  readLocalizedColumn,
-} from "../../../catalogue/shared/infrastructure/json-readers.js";
+import { localizedColumn, readLocalizedColumn } from "../../../shared/json-readers.js";
 import { AppellationAggregate } from "../domain/entities/appellation.entity.js";
 import {
   AppellationCodeTakenError,

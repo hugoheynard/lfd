@@ -10,7 +10,7 @@ import {
   InMemoryAppellationRepository,
   InMemoryIngredientRepository,
 } from "./in-memory-repositories.js";
-import { RecordingCatalogEmitter } from "../../../../catalogue/shared/domain/ports/__tests__/catalog-emitter-doubles.js";
+import { RecordingCatalogEmitter } from "../../../../shared/__tests__/catalog-emitter-doubles.js";
 
 async function declare(ingredients: InMemoryIngredientRepository, key: string): Promise<void> {
   await new CreateIngredientHandler(

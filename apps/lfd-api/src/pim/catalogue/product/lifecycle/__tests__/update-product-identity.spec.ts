@@ -8,7 +8,7 @@ import {
   UpdateProductIdentityCommand,
   UpdateProductIdentityHandler,
 } from "../update-product-identity.js";
-import { RecordingCatalogEmitter } from "../../../shared/domain/ports/__tests__/catalog-emitter-doubles.js";
+import { RecordingCatalogEmitter } from "../../../../shared/__tests__/catalog-emitter-doubles.js";
 
 /**
  * Changer de famille change les taux dont la fiche hérite : un fait dédié,

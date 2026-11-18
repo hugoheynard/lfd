@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 
 import { PimPrismaService } from "../../../infra/database/pim-prisma.service.js";
-import { readLocalizedColumn } from "../../../catalogue/shared/infrastructure/json-readers.js";
+import { readLocalizedColumn } from "../../../shared/json-readers.js";
 import { toIncoCategory } from "../domain/value-objects/inco-category.js";
 import {
   AllergenCatalogueReader,

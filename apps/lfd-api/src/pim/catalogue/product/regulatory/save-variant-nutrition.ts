@@ -11,7 +11,7 @@ import {
   type NutritionValues,
 } from "../domain/value-objects/nutrition-declaration.js";
 import { namedVariant, requireProduct } from "../shared/product-support.js";
-import { CatalogEmitter } from "../../shared/domain/ports/catalog-emitter.js";
+import { CatalogEmitter } from "../../../shared/catalog-emitter.js";
 
 /** Ce que la section « Nutrition » envoie — les valeurs pour 100 g. */
 export type SaveVariantNutritionInput = NutritionValues;

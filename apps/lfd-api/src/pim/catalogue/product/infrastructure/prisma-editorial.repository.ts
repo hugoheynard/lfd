@@ -6,7 +6,7 @@ import { PimPrismaService } from "../../../infra/database/pim-prisma.service.js"
 import { EditorialRepository } from "../domain/ports/editorial.repository.js";
 import type { Editorial, MediaItem } from "../domain/value-objects/editorial.js";
 import type { LocalizedText } from "../../shared/domain/value-objects/localized-text.js";
-import { localizedColumn } from "../../shared/infrastructure/json-readers.js";
+import { localizedColumn } from "../../../shared/json-readers.js";
 
 /**
  * Un champ vidé doit **effacer** la colonne, pas la laisser telle quelle : d'où

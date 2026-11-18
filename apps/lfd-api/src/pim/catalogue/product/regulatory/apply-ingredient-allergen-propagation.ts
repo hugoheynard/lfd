@@ -5,7 +5,7 @@ import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { changesBetween, type FieldChanges } from "../../../../platform/journal/changes.js";
 import { AllergenCatalogueReader } from "../../../reference/allergens/domain/ports/allergen-catalogue.reader.js";
 import { PIM_EVENTS, PimJournal } from "../../../journal/pim-journal.js";
-import { CatalogEmitter } from "../../shared/domain/ports/catalog-emitter.js";
+import { CatalogEmitter } from "../../../shared/catalog-emitter.js";
 import type { Product } from "../domain/entities/product.js";
 import { IngredientCitationsReader } from "../domain/ports/ingredient-citations.reader.js";
 import { ProductRepository } from "../domain/ports/product.repository.js";

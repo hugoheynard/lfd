@@ -40,7 +40,7 @@ import {
   InMemoryAllergenCategoryRepository,
   InMemoryAllergenEntryRepository,
 } from "./in-memory-allergens.js";
-import { RecordingCatalogReemission } from "../../../../catalogue/shared/domain/ports/__tests__/catalog-emitter-doubles.js";
+import { RecordingCatalogReemission } from "../../../../shared/__tests__/catalog-emitter-doubles.js";
 
 /**
  * L'instant du geste. Absolu, et c'est l'exception étroite de `CLAUDE.md` §5 :

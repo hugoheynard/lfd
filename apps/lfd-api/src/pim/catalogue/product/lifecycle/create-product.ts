@@ -43,7 +43,7 @@ import { validatedDeclaration } from "../regulatory/declaration-support.js";
 import { Sku } from "../domain/value-objects/sku.value-object.js";
 import { SKU_AVAILABILITY } from "../domain/ports/sku-availability.js";
 import { Product } from "../domain/entities/product.js";
-import { CatalogEmitter } from "../../shared/domain/ports/catalog-emitter.js";
+import { CatalogEmitter } from "../../../shared/catalog-emitter.js";
 
 export interface CreateProductInput {
   /** Le nom, dans les langues renseignées — la source est obligatoire. Une

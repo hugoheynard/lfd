@@ -18,7 +18,7 @@ import {
   type LocalizedText,
 } from "../../shared/domain/value-objects/localized-text.js";
 import { requireProduct } from "../shared/product-support.js";
-import { CatalogEmitter } from "../../shared/domain/ports/catalog-emitter.js";
+import { CatalogEmitter } from "../../../shared/catalog-emitter.js";
 
 export interface UpdateProductIdentityInput {
   /** Le nom, dans les langues renseignées — la source est obligatoire. Une

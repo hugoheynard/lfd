@@ -3,7 +3,7 @@ import { Injectable } from "@nestjs/common";
 import { PimPrismaService } from "../../../infra/database/pim-prisma.service.js";
 import { effectiveVat } from "../../shared/domain/value-objects/context-vat.js";
 import { SOURCE_LOCALE } from "../../shared/domain/value-objects/localized-text.js";
-import { readLocalizedColumn } from "../../shared/infrastructure/json-readers.js";
+import { readLocalizedColumn } from "../../../shared/json-readers.js";
 import type { LineageLink, ProductLineage, RevisionMark } from "../domain/product-lineage.js";
 import { ProductLineageReader } from "../domain/ports/product-lineage.reader.js";
 

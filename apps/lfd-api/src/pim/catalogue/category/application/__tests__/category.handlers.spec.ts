@@ -40,7 +40,7 @@ import type { SalesContext } from "../../../../reference/sales-contexts/domain/v
 import {
   RecordingCatalogEmitter,
   RecordingCatalogReemission,
-} from "../../../shared/domain/ports/__tests__/catalog-emitter-doubles.js";
+} from "../../../../shared/__tests__/catalog-emitter-doubles.js";
 import { DirectPimContents } from "../../../../changes/application/__tests__/direct-pim-contents.js";
 
 /**

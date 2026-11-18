@@ -24,7 +24,7 @@ import {
   CreateProductHandler,
   type CreateProductInput,
 } from "../create-product.js";
-import { RecordingCatalogEmitter } from "../../../shared/domain/ports/__tests__/catalog-emitter-doubles.js";
+import { RecordingCatalogEmitter } from "../../../../shared/__tests__/catalog-emitter-doubles.js";
 
 let intentCount = 0;
 /** Une clé d'intention neuve par geste voulu, comme l'écran. */

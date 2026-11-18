@@ -5,7 +5,7 @@ import { PIM_EVENTS, PimJournal } from "../../../journal/pim-journal.js";
 import { followsDefaultIn, type VariantAspect } from "../domain/entities/variant.js";
 import { ProductRepository } from "../domain/ports/product.repository.js";
 import { requireProduct } from "../shared/product-support.js";
-import { CatalogEmitter } from "../../shared/domain/ports/catalog-emitter.js";
+import { CatalogEmitter } from "../../../shared/catalog-emitter.js";
 
 export class AlignVariantOnDefaultCommand {
   constructor(

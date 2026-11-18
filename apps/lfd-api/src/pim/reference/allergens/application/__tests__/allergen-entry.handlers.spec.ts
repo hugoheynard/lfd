@@ -39,7 +39,7 @@ import {
   InMemoryAllergenCategoryRepository,
   InMemoryAllergenEntryRepository,
 } from "./in-memory-allergens.js";
-import { RecordingCatalogReemission } from "../../../../catalogue/shared/domain/ports/__tests__/catalog-emitter-doubles.js";
+import { RecordingCatalogReemission } from "../../../../shared/__tests__/catalog-emitter-doubles.js";
 
 /** Cf. la suite jumelle : absolue, mais jamais comparée à l'horloge. */
 const NOW = new Date("2026-09-02T10:00:00.000Z");

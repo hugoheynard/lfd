@@ -19,7 +19,7 @@ import {
 import { Sku } from "../domain/value-objects/sku.value-object.js";
 import { SKU_AVAILABILITY } from "../domain/ports/sku-availability.js";
 import { requireProduct } from "../shared/product-support.js";
-import { CatalogEmitter } from "../../shared/domain/ports/catalog-emitter.js";
+import { CatalogEmitter } from "../../../shared/catalog-emitter.js";
 
 export interface AddProductVariantInput {
   /** Le nom de l'article — « Boîte de 220 g », pas celui de la fiche. */

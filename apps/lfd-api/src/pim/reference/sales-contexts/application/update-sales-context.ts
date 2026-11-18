@@ -6,7 +6,7 @@ import { PIM_EVENTS, PimJournal } from "../../../journal/pim-journal.js";
 import type { SalesContextAggregate } from "../domain/entities/sales-context.entity.js";
 import { SalesContextRepository } from "../domain/ports/sales-context.repository.js";
 import { requireContext } from "./sales-context-support.js";
-import { CatalogReemission } from "../../../catalogue/shared/domain/ports/catalog-reemission.js";
+import { CatalogReemission } from "../../../shared/catalog-reemission.js";
 
 export interface UpdateSalesContextPayload {
   readonly label: string;

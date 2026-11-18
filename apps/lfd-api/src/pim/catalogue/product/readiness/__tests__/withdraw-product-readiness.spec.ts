@@ -7,7 +7,7 @@ import {
   ProductNotFoundError,
 } from "../../domain/errors/product-errors.js";
 import type { ProductSnapshot } from "../../domain/entities/product.js";
-import { RecordingCatalogEmitter } from "../../../shared/domain/ports/__tests__/catalog-emitter-doubles.js";
+import { RecordingCatalogEmitter } from "../../../../shared/__tests__/catalog-emitter-doubles.js";
 import {
   WithdrawProductReadinessCommand,
   WithdrawProductReadinessHandler,

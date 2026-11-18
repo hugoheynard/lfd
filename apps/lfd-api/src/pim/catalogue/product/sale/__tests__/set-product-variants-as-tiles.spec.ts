@@ -7,7 +7,7 @@ import {
   SetProductVariantsAsTilesCommand,
   SetProductVariantsAsTilesHandler,
 } from "../set-product-variants-as-tiles.js";
-import { RecordingCatalogEmitter } from "../../../shared/domain/ports/__tests__/catalog-emitter-doubles.js";
+import { RecordingCatalogEmitter } from "../../../../shared/__tests__/catalog-emitter-doubles.js";
 
 /**
  * La case « Montrer chaque déclinaison en vignette » de la fiche

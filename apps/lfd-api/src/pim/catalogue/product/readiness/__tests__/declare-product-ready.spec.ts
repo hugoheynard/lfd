@@ -21,7 +21,7 @@ import {
   DeclareProductReadyCommand,
   DeclareProductReadyHandler,
 } from "../declare-product-ready.js";
-import { RecordingCatalogEmitter } from "../../../shared/domain/ports/__tests__/catalog-emitter-doubles.js";
+import { RecordingCatalogEmitter } from "../../../../shared/__tests__/catalog-emitter-doubles.js";
 
 /**
  * **La signature.** Ce que la commande inscrit — et ce qu'elle refuse

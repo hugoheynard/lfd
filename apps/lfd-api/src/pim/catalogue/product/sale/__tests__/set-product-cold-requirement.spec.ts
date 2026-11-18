@@ -7,7 +7,7 @@ import {
   SetProductColdRequirementCommand,
   SetProductColdRequirementHandler,
 } from "../set-product-cold-requirement.js";
-import { RecordingCatalogEmitter } from "../../../shared/domain/ports/__tests__/catalog-emitter-doubles.js";
+import { RecordingCatalogEmitter } from "../../../../shared/__tests__/catalog-emitter-doubles.js";
 
 /**
  * La case « demande le froid » de la fiche (lot 4 bis du plan de préparation

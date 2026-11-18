@@ -13,7 +13,7 @@ import { ProductRepository } from "../domain/ports/product.repository.js";
 import { ReadinessRepository } from "../domain/ports/readiness.repository.js";
 import { signatureStillHolds } from "../domain/services/readiness-renewal.js";
 import { requireProduct } from "../shared/product-support.js";
-import { CatalogEmitter } from "../../shared/domain/ports/catalog-emitter.js";
+import { CatalogEmitter } from "../../../shared/catalog-emitter.js";
 
 export class DeclareProductReadyCommand {
   constructor(readonly id: string) {}

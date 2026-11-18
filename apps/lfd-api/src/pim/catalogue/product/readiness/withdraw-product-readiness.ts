@@ -9,7 +9,7 @@ import {
 import { ProductRepository } from "../domain/ports/product.repository.js";
 import { ReadinessRepository } from "../domain/ports/readiness.repository.js";
 import { requireProduct } from "../shared/product-support.js";
-import { CatalogEmitter } from "../../shared/domain/ports/catalog-emitter.js";
+import { CatalogEmitter } from "../../../shared/catalog-emitter.js";
 
 export class WithdrawProductReadinessCommand {
   constructor(readonly id: string) {}

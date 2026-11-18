@@ -4,10 +4,7 @@ import { PimPrismaService } from "../../../infra/database/pim-prisma.service.js"
 import { CategoryRepository } from "../../category/domain/ports/category.repository.js";
 import { isLiveStatus } from "../../product/domain/ports/product.repository.js";
 import { alignedAllergenSheet } from "../../product/domain/services/aligned-allergen-sheet.js";
-import {
-  readLocalizedColumn,
-  readStringArrayColumn,
-} from "../../shared/infrastructure/json-readers.js";
+import { readLocalizedColumn, readStringArrayColumn } from "../../../shared/json-readers.js";
 import {
   AllergenMatrixSource,
   type MatrixFamilyRecord,

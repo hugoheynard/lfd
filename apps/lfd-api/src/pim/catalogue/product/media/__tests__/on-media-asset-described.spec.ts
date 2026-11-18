@@ -8,7 +8,7 @@ import {
 import { ProductImageUsage } from "../../domain/ports/product-image-usage.js";
 import { OnMediaAssetDescribedHandler } from "../on-media-asset-described.js";
 import { CountingPimIds, RecordingDurable } from "../../shared/__tests__/durable-doubles.js";
-import { RecordingCatalogEmitter } from "../../../shared/domain/ports/__tests__/catalog-emitter-doubles.js";
+import { RecordingCatalogEmitter } from "../../../../shared/__tests__/catalog-emitter-doubles.js";
 
 const URL = "https://media.example/products/abc.jpg";
 

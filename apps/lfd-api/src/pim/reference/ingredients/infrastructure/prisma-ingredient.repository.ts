@@ -6,7 +6,7 @@ import {
   localizedColumn,
   optionalLocalizedColumn,
   readLocalizedColumn,
-} from "../../../catalogue/shared/infrastructure/json-readers.js";
+} from "../../../shared/json-readers.js";
 import type { LocalizedText } from "@lfd/pim-contracts";
 
 import type { AppellationSnapshot } from "../domain/entities/appellation.entity.js";

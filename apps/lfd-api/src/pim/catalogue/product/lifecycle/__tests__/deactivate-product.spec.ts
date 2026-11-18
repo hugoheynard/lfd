@@ -3,7 +3,7 @@ import { RecordingJournal } from "../../../../journal/__tests__/recording-journa
 import { ArchivedProductNotWithdrawableError } from "../../domain/errors/product-errors.js";
 import { DeactivateProductCommand, DeactivateProductHandler } from "../deactivate-product.js";
 import { OneProduct, PRODUCT_ID, tarte } from "../../shared/__tests__/audience-doubles.js";
-import { RecordingCatalogEmitter } from "../../../shared/domain/ports/__tests__/catalog-emitter-doubles.js";
+import { RecordingCatalogEmitter } from "../../../../shared/__tests__/catalog-emitter-doubles.js";
 
 /** **Désactiver** — l'ancien « dépublier », repris de la suite d'avant. */
 function deactivating(products: OneProduct, journal: RecordingJournal): Promise<void> {

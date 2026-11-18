@@ -9,7 +9,7 @@ import { ProductUnknownContextError } from "../../domain/errors/product-errors.j
 import { Product, type ProductSnapshot } from "../../domain/entities/product.js";
 import { ProductRepository } from "../../domain/ports/product.repository.js";
 import { SetProductVatCommand, SetProductVatHandler } from "../set-product-vat.js";
-import { RecordingCatalogEmitter } from "../../../shared/domain/ports/__tests__/catalog-emitter-doubles.js";
+import { RecordingCatalogEmitter } from "../../../../shared/__tests__/catalog-emitter-doubles.js";
 
 const CONTEXTS: readonly SalesContext[] = [
   {

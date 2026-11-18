@@ -4,7 +4,7 @@ import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { PIM_EVENTS, PimJournal } from "../../../journal/pim-journal.js";
 import { ProductRepository } from "../domain/ports/product.repository.js";
 import { requireProduct, variantSnapshotOf } from "../shared/product-support.js";
-import { CatalogEmitter } from "../../shared/domain/ports/catalog-emitter.js";
+import { CatalogEmitter } from "../../../shared/catalog-emitter.js";
 
 export class DiscontinueProductVariantCommand {
   constructor(

@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 
 import { PimPrismaService } from "../../../infra/database/pim-prisma.service.js";
-import { readLocalizedColumn } from "../../shared/infrastructure/json-readers.js";
+import { readLocalizedColumn } from "../../../shared/json-readers.js";
 import {
   DetachmentLineageReader,
   type LineageOrigin,

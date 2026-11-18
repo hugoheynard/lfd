@@ -19,7 +19,7 @@ import {
   tarte,
 } from "../../shared/__tests__/audience-doubles.js";
 import type { Audience } from "../../../shared/domain/value-objects/audience.js";
-import { RecordingCatalogEmitter } from "../../../shared/domain/ports/__tests__/catalog-emitter-doubles.js";
+import { RecordingCatalogEmitter } from "../../../../shared/__tests__/catalog-emitter-doubles.js";
 import { FixedCitedAllergens } from "../../domain/ports/__tests__/fixed-cited-allergens.js";
 import { FixedActiveContexts } from "../../../../reference/sales-contexts/domain/ports/__tests__/fixed-active-contexts.js";
 
