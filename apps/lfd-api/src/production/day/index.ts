@@ -62,6 +62,7 @@ export type { OrderOutOfHand } from "./domain/services/order-out-of-hand.js";
  * demande une lecture ici, il ne lit pas la table.
  */
 export { ProductionDayStatusReader } from "./domain/ports/production-day-status.reader.js";
+export { CountedProductNameReader } from "./domain/ports/counted-product-name.reader.js";
 export { ProductionHandoffReader } from "./domain/ports/production-handoff.reader.js";
 export { OrderWithdrawalsReader } from "./domain/ports/order-withdrawals.reader.js";
 export { ProductionTrancheSettingsReader } from "./domain/ports/production-tranche-settings.reader.js";
@@ -84,7 +85,6 @@ export { KnownArticles } from "./domain/ports/known-articles.reader.js";
  */
 export { ProductionDayRepository } from "./domain/ports/production-day.repository.js";
 export { ProductionDayLock } from "./domain/ports/production-day.lock.js";
-export { dayLockKey } from "./infrastructure/prisma-production-day.lock.js";
 export { ProductionBatchRepository } from "./domain/ports/production-batch.repository.js";
 export { ProductionHandoffLedger } from "./domain/ports/production-handoff.ledger.js";
 export { ProductionReturnRequests } from "./domain/ports/production-return.requests.js";

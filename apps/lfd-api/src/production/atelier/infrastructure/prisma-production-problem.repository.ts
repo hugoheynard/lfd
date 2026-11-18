@@ -1,3 +1,4 @@
+import { ProblemChangedMeanwhileError } from "../domain/errors/problem-errors.js";
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
@@ -108,11 +109,17 @@ export class PrismaProductionProblemRepository extends ProductionProblemReposito
 
   async save(problem: ProductionProblem): Promise<void> {
     const columns = columnsOf(problem.state);
-    await this.prisma.productionProblem.upsert({
-      where: { id: problem.id },
-      create: { id: problem.id, ...columns },
-      update: columns,
+    if (problem.loadedVersion === null) {
+      await this.prisma.productionProblem.create({ data: { id: problem.id, ...columns } });
+      return;
+    }
+    const { count } = await this.prisma.productionProblem.updateMany({
+      where: { id: problem.id, version: problem.loadedVersion },
+      data: columns,
     });
+    if (count === 0) {
+      throw new ProblemChangedMeanwhileError();
+    }
   }
 }
 

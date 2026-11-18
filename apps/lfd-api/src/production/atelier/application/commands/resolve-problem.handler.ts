@@ -6,7 +6,7 @@ import { intentSubject } from "../../../../platform/intent/intent-subject.js";
 import { NOTHING_TO_REPLAY, OncePerIntent } from "../../../../platform/intent/once-per-intent.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import { StaffAuthorDirectory } from "../../../../staff/directory/domain/staff-author-directory.js";
-import { ProductionDayLock, ProductionDayRepository, ServiceDay } from "../../../day/index.js";
+import { ProductionDayLock, CountedProductNameReader, ServiceDay } from "../../../day/index.js";
 import type { ProductionProblem } from "../../domain/entities/production-problem.js";
 import { ProductionProblemNotFoundError } from "../../domain/errors/problem-errors.js";
 import { ProductionProblemResolvedEvent } from "../../domain/events/production-problem.events.js";
@@ -27,7 +27,7 @@ import { ResolveProblemCommand } from "./resolve-problem.command.js";
 export class ResolveProblemHandler implements ICommandHandler<ResolveProblemCommand, void> {
   constructor(
     private readonly problems: ProductionProblemRepository,
-    private readonly days: ProductionDayRepository,
+    private readonly names: CountedProductNameReader,
     private readonly lock: ProductionDayLock,
     private readonly events: DomainEventPublisher,
     private readonly authors: StaffAuthorDirectory,
@@ -54,10 +54,8 @@ export class ResolveProblemHandler implements ICommandHandler<ResolveProblemComm
           const mark = { at: this.clock.now(), staffId: command.staffUserId, name };
           if (problem.resolve(mark)) {
             await this.problems.save(problem);
-            const current = await this.days.load(day);
             const productName =
-              current.counts.find((item) => item.sku === problem.state.sku)?.productName ??
-              problem.state.sku;
+              (await this.names.nameOf(day, problem.state.sku)) ?? problem.state.sku;
             await this.events.publishTraced(
               new ProductionProblemResolvedEvent(problem.state, productName),
             );

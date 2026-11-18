@@ -23,7 +23,11 @@ import {
   InMemoryHandoffReader,
   returnCountsOf,
 } from "../../../day/application/__tests__/handoff-doubles.js";
-import { ServiceDay } from "../../../day/index.js";
+import {
+  CountedProductNameReader,
+  type ProductionDayRepository,
+  ServiceDay,
+} from "../../../day/index.js";
 import { CancelBatchHandler } from "../commands/cancel-batch.handler.js";
 import { MarkLineDoneHandler } from "../commands/mark-line-done.handler.js";
 import { RecordBatchHandler } from "../commands/record-batch.handler.js";
@@ -139,7 +143,7 @@ export function problemScene() {
     ),
     resolve: new ResolveProblemHandler(
       problems.repository(),
-      days,
+      new DayNames(days),
       lock,
       events,
       authors,
@@ -153,3 +157,15 @@ export function problemScene() {
 let keys = 0;
 /** Une clé d'intention neuve, par geste. */
 export const nextIntent = (): string => `intent_${String((keys += 1))}`;
+
+/** Le nom au compte, lu sur la journée en mémoire de la scène. */
+class DayNames extends CountedProductNameReader {
+  constructor(private readonly days: ProductionDayRepository) {
+    super();
+  }
+
+  async nameOf(day: ServiceDay, sku: string): Promise<string | null> {
+    const current = await this.days.load(day);
+    return current.counts.find((item) => item.sku === sku)?.productName ?? null;
+  }
+}

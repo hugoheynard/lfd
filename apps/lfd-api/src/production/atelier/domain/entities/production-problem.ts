@@ -43,7 +43,15 @@ export interface ProductionProblemState {
  * problème : il redevient rouge dans la Supervision.
  */
 export class ProductionProblem {
-  private constructor(private current: ProductionProblemState) {}
+  /**
+   * @param loadedVersion la version relue en base ; `null` pour un problème
+   * neuf. L'écriture ne remplace que cette version : deux écrivains qui
+   * oublieraient le verrou de la journée ne s'écraseraient pas en silence.
+   */
+  private constructor(
+    private current: ProductionProblemState,
+    readonly loadedVersion: number | null,
+  ) {}
 
   /**
    * Le premier rouge d'une ligne.
@@ -55,17 +63,20 @@ export class ProductionProblem {
     identity: { readonly id: string; readonly serviceDay: string; readonly sku: string },
     report: ProblemReport,
   ): ProductionProblem {
-    return new ProductionProblem({
-      ...identity,
-      ...reportedState(report),
-      resolved: null,
-      version: 1,
-    });
+    return new ProductionProblem(
+      {
+        ...identity,
+        ...reportedState(report),
+        resolved: null,
+        version: 1,
+      },
+      null,
+    );
   }
 
   /** Relit un problème rangé ; la base a déjà tenu ses CHECK. */
   static fromState(state: ProductionProblemState): ProductionProblem {
-    return new ProductionProblem(state);
+    return new ProductionProblem(state, state.version);
   }
 
   /**

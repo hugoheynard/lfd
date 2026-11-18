@@ -143,8 +143,16 @@ export class WorkshopGestures {
       return;
     }
     this.refusal.set(null);
-    if (await this.problems.openFor(date, line)) {
-      await this.day.rereadAfterWrite();
+    // La ligne est occupée tant que le panneau est ouvert : un second appui
+    // n'en ouvre pas un autre.
+    const key = markKey(date, line.sku);
+    this.day.setBusy(key, true);
+    try {
+      if (await this.problems.openFor(date, line)) {
+        await this.day.rereadAfterWrite();
+      }
+    } finally {
+      this.day.setBusy(key, false);
     }
   }
 

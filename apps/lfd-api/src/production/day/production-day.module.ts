@@ -20,6 +20,7 @@ import { OrderWithdrawalsReader } from "./domain/ports/order-withdrawals.reader.
 import { PlannedOrderLinesReader } from "./domain/ports/planned-order-lines.reader.js";
 import { ProductionBatchRepository } from "./domain/ports/production-batch.repository.js";
 import { ProductionDayChangePruner } from "./domain/ports/production-day-change.pruner.js";
+import { CountedProductNameReader } from "./domain/ports/counted-product-name.reader.js";
 import { ProductionDayStatusReader } from "./domain/ports/production-day-status.reader.js";
 import { ProductionDayVersionReader } from "./domain/ports/production-day-version.reader.js";
 import { ProductionDayLock } from "./domain/ports/production-day.lock.js";
@@ -46,6 +47,7 @@ import { PrismaOrderWithdrawalsReader } from "./infrastructure/prisma-order-with
 import { PrismaPlannedOrderLinesReader } from "./infrastructure/prisma-planned-order-lines.reader.js";
 import { PrismaProductionBatchRepository } from "./infrastructure/prisma-production-batch.repository.js";
 import { PrismaProductionDayChangePruner } from "./infrastructure/prisma-production-day-change.pruner.js";
+import { PrismaCountedProductNameReader } from "./infrastructure/prisma-counted-product-name.reader.js";
 import { PrismaProductionDayStatusReader } from "./infrastructure/prisma-production-day-status.reader.js";
 import { PrismaProductionDayVersionReader } from "./infrastructure/prisma-production-day-version.reader.js";
 import { PrismaProductionDayLock } from "./infrastructure/prisma-production-day.lock.js";
@@ -76,6 +78,7 @@ import { PrismaProductionTrancheSettingsRepository } from "./infrastructure/pris
     { provide: ProductionDayLock, useClass: PrismaProductionDayLock },
     // L'en-tête seul : une lecture ciblée, à part du dépôt qui relit la journée entière (ISP).
     { provide: ProductionDayStatusReader, useClass: PrismaProductionDayStatusReader },
+    { provide: CountedProductNameReader, useClass: PrismaCountedProductNameReader },
     { provide: ProductionTrancheSettingsReader, useClass: PrismaProductionTrancheSettingsReader },
     {
       provide: ProductionTrancheSettingsRepository,
@@ -131,6 +134,7 @@ import { PrismaProductionTrancheSettingsRepository } from "./infrastructure/pris
     ProductionDayRepository,
     ProductionBatchRepository,
     ProductionDayLock,
+    CountedProductNameReader,
     ProductionDayStatusReader,
     ProductionTrancheSettingsReader,
     ProductionTrancheSettingsRepository,

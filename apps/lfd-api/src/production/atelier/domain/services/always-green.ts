@@ -8,7 +8,8 @@ import { remainderUnderCeiling } from "./line-remainder.js";
  * pures.
  *
  * - Un palier est **échu** quand son heure plus la marge du réglage est
- *   passée ; seuls les paliers à heure comptent. Un palier « la journée »
+ *   passée, au plus tard au dernier passage du jour ({@link LAST_ROUND_TIME}) ;
+ *   seuls les paliers à heure comptent. Un palier « la journée »
  *   (`before: null`) n'échoit jamais : aucune heure n'est inventée.
  * - **La cible** est `min(cumul des paliers échus, compte, plafond)` ; **la
  *   quantité** à déclarer, `cible − sorti`, si elle est positive.
@@ -22,6 +23,12 @@ import { remainderUnderCeiling } from "./line-remainder.js";
 
 /** L'auteur des fournées automatiques, rangé dans `production_batch.recorded_by`. */
 export const ALWAYS_GREEN_AUTHOR = "system:always-green";
+
+/**
+ * Le dernier passage du tour sur une journée (il passe toutes les 5 minutes,
+ * heure de Paris) : aucune échéance n'est reportée au-delà.
+ */
+export const LAST_ROUND_TIME = "23:55";
 
 /** Un palier d'une ligne, tel que la fiche le sert : sa quantité propre, son heure. */
 export interface AlwaysGreenDeadline {
@@ -72,11 +79,19 @@ export function dueCumulative(
   marginMinutes: number,
   now: Date,
 ): number {
+  const lastRound = localToInstant(serviceDay, LAST_ROUND_TIME);
   return deadlines.reduce((total, step) => {
     const time = timeOf(step);
     const at = time === null ? null : localToInstant(serviceDay, time);
-    const due = at !== null && addMinutes(at, marginMinutes).getTime() <= now.getTime();
-    return due ? total + step.quantity : total;
+    if (at === null) {
+      return total;
+    }
+    const withMargin = addMinutes(at, marginMinutes);
+    // Une échéance qui passerait minuit tombe au dernier passage du jour : le
+    // tour ne relit plus une journée devenue « hier ».
+    const dueAt =
+      lastRound !== null && withMargin.getTime() > lastRound.getTime() ? lastRound : withMargin;
+    return dueAt.getTime() <= now.getTime() ? total + step.quantity : total;
   }, 0);
 }
 
@@ -106,10 +121,12 @@ function timeOf(step: AlwaysGreenDeadline): string | null {
  * **Ce que la fournée automatique ne complétera jamais** d'une ligne : la
  * part de son reste (sous le plafond) au-delà de ses paliers à heure. Un
  * palier « la journée » n'échoit jamais ; une ligne qui en porte un, seul ou
- * à côté de paliers à heure, garde cette part à confirmer à la main. Des
- * paliers illisibles (`null`) n'automatisent rien.
+ * à côté de paliers à heure, garde cette part à confirmer à la main, comme
+ * un palier à une heure qui n'existe pas ce jour-là. Des paliers illisibles
+ * (`null`) n'automatisent rien.
  */
 export function unautomatedRemainder(line: {
+  readonly serviceDay: string;
   readonly counted: number;
   readonly deadlines: readonly AlwaysGreenDeadline[] | null;
   readonly ceiling: number | null;
@@ -117,7 +134,11 @@ export function unautomatedRemainder(line: {
 }): number {
   const target = line.ceiling === null ? line.counted : Math.min(line.counted, line.ceiling);
   const timed = (line.deadlines ?? [])
-    .filter((step) => timeOf(step) !== null)
+    .filter((step) => {
+      // Une heure qui n'existe pas ce jour-là (passage à l'heure d'été) n'échoit jamais.
+      const time = timeOf(step);
+      return time !== null && localToInstant(line.serviceDay, time) !== null;
+    })
     .reduce((total, step) => total + step.quantity, 0);
   return Math.max(0, target - Math.max(line.output, Math.min(timed, target)));
 }

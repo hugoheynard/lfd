@@ -57,6 +57,7 @@ export class UnconfirmedLinesReading {
       .filter(
         (line) =>
           unautomatedRemainder({
+            serviceDay: day.value,
             counted: line.quantity,
             deadlines:
               tranches === null ? null : deadlinesOf(line.quantity, tranches.get(line.sku) ?? []),

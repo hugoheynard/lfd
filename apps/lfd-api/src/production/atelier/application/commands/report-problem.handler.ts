@@ -25,6 +25,7 @@ import { OutputCorrecting } from "../services/output-correcting.service.js";
 import { ProblemBell } from "../services/problem-bell.js";
 import { ReportProblemCommand } from "./report-problem.command.js";
 
+import { assertProblemWithinBound } from "../../domain/services/line-remainder.js";
 /** Rien n'a été corrigé : le rouge a dit autant, ou plus, que sorti. */
 const NOTHING_CORRECTED = { corrections: [], uncorrected: 0 } as const;
 
@@ -45,6 +46,7 @@ const NOTHING_CORRECTED = { corrections: [], uncorrected: 0 } as const;
  * @throws {ProductionDayNotClosedError} la journée n'est pas arrêtée.
  * @throws {ProducedItemNotFoundError} ce SKU n'est pas au compte du jour.
  * @throws {InvalidProblemOutputError} le sorti n'est pas un entier ≥ 0.
+ * @throws {ProblemOutputAboveCountError} le sorti dépasse le compte et le déjà déclaré.
  */
 @CommandHandler(ReportProblemCommand)
 export class ReportProblemHandler implements ICommandHandler<ReportProblemCommand, void> {
@@ -93,6 +95,7 @@ export class ReportProblemHandler implements ICommandHandler<ReportProblemComman
     const current = await this.days.load(day);
     const item = current.itemToMark(command.sku);
     const output = current.producedOf(command.sku);
+    assertProblemWithinBound(command.produced, item.quantity, output);
     const problem = await this.posed(day, command, item.quantity, mark);
     const outcome = await this.applied(day, current, problem.state, output);
     await this.problems.save(problem);

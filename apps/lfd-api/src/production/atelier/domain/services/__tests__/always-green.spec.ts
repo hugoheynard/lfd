@@ -107,6 +107,33 @@ describe("dueCumulative et hasTimedDeadline", () => {
     expect(hasTimedDeadline(steps)).toBe(true);
     expect(hasTimedDeadline(null)).toBe(false);
   });
+
+  /**
+   * Régression : 22:30 + 120 min échoyait à 00:30, quand le tour ne relit
+   * plus la journée — le palier n'était jamais déclaré.
+   */
+  it("une échéance qui passerait minuit tombe au dernier passage du jour", () => {
+    const steps = [{ quantity: 20, before: "22:30" }];
+
+    expect(dueCumulative(DAY, steps, 120, at("23:50"))).toBe(0);
+    expect(dueCumulative(DAY, steps, 120, at("23:55"))).toBe(20);
+  });
+});
+
+describe("unautomatedRemainder — l'heure d'été", () => {
+  it("un palier à une heure qui n'existe pas ce jour-là reste à confirmer", () => {
+    const deadlines = [{ quantity: 10, before: "02:30" }];
+
+    expect(
+      unautomatedRemainder({
+        serviceDay: "2027-03-28",
+        counted: 10,
+        deadlines,
+        ceiling: null,
+        output: 0,
+      }),
+    ).toBe(10);
+  });
 });
 
 describe("unautomatedRemainder — ce que la fournée automatique ne complétera pas", () => {
@@ -119,27 +146,40 @@ describe("unautomatedRemainder — ce que la fournée automatique ne complétera
       { quantity: 10, before: "08:00" },
       { quantity: 5, before: null },
     ];
-    expect(unautomatedRemainder({ counted: 15, deadlines, ceiling: null, output: 10 })).toBe(5);
-    expect(unautomatedRemainder({ counted: 15, deadlines, ceiling: null, output: 0 })).toBe(5);
+    expect(
+      unautomatedRemainder({ serviceDay: DAY, counted: 15, deadlines, ceiling: null, output: 10 }),
+    ).toBe(5);
+    expect(
+      unautomatedRemainder({ serviceDay: DAY, counted: 15, deadlines, ceiling: null, output: 0 }),
+    ).toBe(5);
   });
 
   it("une ligne toute à heure n'a rien à confirmer", () => {
     const deadlines = [{ quantity: 15, before: "08:00" }];
-    expect(unautomatedRemainder({ counted: 15, deadlines, ceiling: null, output: 0 })).toBe(0);
+    expect(
+      unautomatedRemainder({ serviceDay: DAY, counted: 15, deadlines, ceiling: null, output: 0 }),
+    ).toBe(0);
   });
 
   it("une ligne sans palier à heure, ou illisible, est toute à confirmer", () => {
     expect(
       unautomatedRemainder({
+        serviceDay: DAY,
         counted: 15,
         deadlines: [{ quantity: 15, before: null }],
         ceiling: null,
         output: 4,
       }),
     ).toBe(11);
-    expect(unautomatedRemainder({ counted: 15, deadlines: null, ceiling: null, output: 0 })).toBe(
-      15,
-    );
+    expect(
+      unautomatedRemainder({
+        serviceDay: DAY,
+        counted: 15,
+        deadlines: null,
+        ceiling: null,
+        output: 0,
+      }),
+    ).toBe(15);
   });
 
   it("le plafond d'un rouge borne le reste", () => {
@@ -147,8 +187,12 @@ describe("unautomatedRemainder — ce que la fournée automatique ne complétera
       { quantity: 10, before: "08:00" },
       { quantity: 5, before: null },
     ];
-    expect(unautomatedRemainder({ counted: 15, deadlines, ceiling: 12, output: 10 })).toBe(2);
-    expect(unautomatedRemainder({ counted: 15, deadlines, ceiling: 8, output: 0 })).toBe(0);
+    expect(
+      unautomatedRemainder({ serviceDay: DAY, counted: 15, deadlines, ceiling: 12, output: 10 }),
+    ).toBe(2);
+    expect(
+      unautomatedRemainder({ serviceDay: DAY, counted: 15, deadlines, ceiling: 8, output: 0 }),
+    ).toBe(0);
   });
 
   it("au-delà des paliers à heure déjà sorti, il ne reste que ce qui manque au compte", () => {
@@ -156,7 +200,11 @@ describe("unautomatedRemainder — ce que la fournée automatique ne complétera
       { quantity: 10, before: "08:00" },
       { quantity: 5, before: null },
     ];
-    expect(unautomatedRemainder({ counted: 15, deadlines, ceiling: null, output: 13 })).toBe(2);
-    expect(unautomatedRemainder({ counted: 15, deadlines, ceiling: null, output: 15 })).toBe(0);
+    expect(
+      unautomatedRemainder({ serviceDay: DAY, counted: 15, deadlines, ceiling: null, output: 13 }),
+    ).toBe(2);
+    expect(
+      unautomatedRemainder({ serviceDay: DAY, counted: 15, deadlines, ceiling: null, output: 15 }),
+    ).toBe(0);
   });
 });

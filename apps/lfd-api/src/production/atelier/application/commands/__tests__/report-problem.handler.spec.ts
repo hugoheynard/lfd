@@ -1,4 +1,7 @@
-import { InvalidProblemOutputError } from "../../../domain/errors/problem-errors.js";
+import {
+  InvalidProblemOutputError,
+  ProblemOutputAboveCountError,
+} from "../../../domain/errors/problem-errors.js";
 import {
   nextIntent,
   problemScene,
@@ -104,15 +107,15 @@ describe("ReportProblemHandler — moins que sorti", () => {
 
 describe("ReportProblemHandler — plus que sorti", () => {
   it("déclare la différence par une fournée ordinaire, remise au colisage", async () => {
-    const scene = await withBatches(40);
+    const scene = await withBatches(10);
 
-    await scene.report.execute(red(55));
+    await scene.report.execute(red(SCENE_COUNT));
 
     const declared = scene.store.batches.find((batch) => batch.id === "problem-pb_000001-1");
-    expect(declared).toMatchObject({ sku: SCENE_SKU, quantity: 15, corrected: 0 });
+    expect(declared).toMatchObject({ sku: SCENE_SKU, quantity: SCENE_COUNT - 10, corrected: 0 });
     expect(scene.ledger.handoffs.map((handoff) => handoff.id)).toContain("problem-pb_000001-1");
     expect(scene.durable.of(OUTPUT_CORRECTED)).toEqual([]);
-    expect(await outputOf(scene)).toBe(55);
+    expect(await outputOf(scene)).toBe(SCENE_COUNT);
   });
 });
 
@@ -189,6 +192,24 @@ describe("ReportProblemHandler — le geste", () => {
     await expect(scene.report.execute(red(-2))).rejects.toBeInstanceOf(InvalidProblemOutputError);
     expect(scene.problems.saves).toBe(0);
     expect(scene.store.batches[0]?.corrected).toBe(0);
+  });
+
+  it("refuse un sorti au-delà du compte et du déjà déclaré : une faute de frappe ne déclare pas de surplus", async () => {
+    const scene = await withBatches(10);
+
+    await expect(scene.report.execute(red(SCENE_COUNT + 1))).rejects.toBeInstanceOf(
+      ProblemOutputAboveCountError,
+    );
+    expect(scene.problems.saves).toBe(0);
+    expect(scene.store.batches).toHaveLength(1);
+  });
+
+  it("admet le compte du jour, ou ce qui est déjà déclaré s'il le dépasse", async () => {
+    const scene = await withBatches(80);
+
+    await scene.report.execute(red(80));
+
+    expect(scene.problems.saves).toBe(1);
   });
 });
 

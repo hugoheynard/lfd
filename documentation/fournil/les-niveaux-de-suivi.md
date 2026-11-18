@@ -49,7 +49,10 @@ On dit **combien est réellement sorti**, et une raison si on veut. Alors :
   fournées : c'est une **correction de déclaration** (« N pièces déclarées
   n'existent pas »), annoncée au colisage ;
 - si le nombre est plus haut que ce qui est déclaré, la différence est
-  déclarée comme une fournée ordinaire ;
+  déclarée comme une fournée ordinaire. Il ne peut pas dépasser le compte du
+  jour, ou ce qui est déjà déclaré s'il le dépasse (décidé par Hugo le
+  2026-11-18) : au-delà, c'est une faute de frappe, refusée ; un vrai
+  surplus se déclare par une fournée ;
 - la **cloche** du back-office sonne chez toute personne qui peut lire la
   Supervision, et un clic mène à la ligne ;
 - la ligne reste **en rouge dans la Supervision** (colonne du fournil) jusqu'à
@@ -69,7 +72,8 @@ Toutes les **5 minutes**, le système regarde les journées arrêtées
 d'aujourd'hui et de demain. Pour chaque produit en toujours vert, dès que
 l'heure d'un palier **plus la marge** (15 minutes par défaut) est passée, il
 déclare une fournée ordinaire de ce qui manque pour atteindre ce palier. Elle
-part au colisage comme toute fournée.
+part au colisage comme toute fournée. Une échéance qui passerait minuit tombe
+au dernier passage du jour, à 23 h 55.
 
 ```mermaid
 sequenceDiagram
@@ -86,9 +90,12 @@ sequenceDiagram
     F-->>M: cloche, et la ligne en rouge en Supervision
 ```
 
-Une ligne **sans palier à heure** (produit sans tranche horaire, ou besoins du
-commerce illisibles) n'est pas complétée : elle s'affiche « **à confirmer** »
-dans la Supervision, sous les rouges, et se confirme depuis la fiche.
+Une ligne **sans palier à heure** (produit sans tranche horaire, besoins du
+commerce illisibles, ou heure qui n'existe pas le jour du passage à l'heure
+d'été) n'est pas complétée : elle s'affiche « **à confirmer** » dans la
+Supervision, sous les rouges, et se confirme depuis la fiche. Une ligne qui a
+des paliers à heure et un reste « la journée » y apparaît aussi, pour ce
+reste.
 
 ### La page « Niveau de suivi »
 
