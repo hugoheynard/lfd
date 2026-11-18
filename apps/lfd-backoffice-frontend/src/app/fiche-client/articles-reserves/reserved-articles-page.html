@@ -19,8 +19,9 @@
             size="sm"
             clearOnSelect
             label="Réserver un article à ce compte"
-            placeholder="Nom ou référence de l'article"
-            emptyText="Aucun article ne correspond."
+            placeholder="Nom ou référence d'un article sur mesure"
+            hint="Seuls les articles cochés « Sur mesure » au référentiel sont proposés."
+            emptyText="Aucun article sur mesure ne correspond."
             [disabled]="pending() !== null"
             [options]="options()"
             (selectionChange)="reserve($event)"

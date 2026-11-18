@@ -84,13 +84,17 @@ export class ClientReservedArticlesPage {
 
   protected readonly when = reservationDate;
   protected readonly releaseWarning =
-    'Retirer cette réservation ? Dès que la restriction s’applique, l’article redevient visible et commandable par tous les professionnels — nom, photo et composition compris.';
+    'Retirer cette réservation ? Ce compte et ses sites ne pourront plus le commander. S’il n’est réservé à aucun autre compte, plus aucun professionnel ne le verra.';
 
-  /** Les articles en vente qu'on peut encore réserver à ce compte. */
+  /**
+   * Les articles sur mesure qu'on peut encore réserver à ce compte : réserver
+   * un article ouvert à tous ne restreindrait rien (Hugo, 2026-11-18). Un
+   * article se déclare sur mesure au référentiel, sur sa fiche.
+   */
   protected readonly options = computed<readonly FoldSelectOption<string>[]>(() => {
     const taken = new Set(this.view().own.map((article) => article.sku));
     return this.articles()
-      .filter((article) => !taken.has(article.sku))
+      .filter((article) => article.isCustomRecipe && !taken.has(article.sku))
       .map((article) => ({ value: article.sku, label: `${article.name} · ${article.sku}` }));
   });
 
