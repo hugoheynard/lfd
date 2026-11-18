@@ -1,3 +1,4 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import {
   FoldButtonComponent,
@@ -117,7 +118,12 @@ export class WorkshopProblemPanel implements FoldPanelContent<ProblemPanelData> 
         this.intents.keyFor(subject),
       );
     } catch (error) {
-      this.refusal.set(serverMessageOf(error));
+      // Sans réponse, on ne sait pas si le rouge est passé : renvoyer le même rouge ne le doublera pas.
+      this.refusal.set(
+        error instanceof HttpErrorResponse && error.status === 0
+          ? 'Le serveur n’a pas répondu — renvoyez : le même problème ne comptera pas deux fois.'
+          : serverMessageOf(error),
+      );
       this.sending.set(false);
       return;
     }

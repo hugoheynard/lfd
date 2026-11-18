@@ -36,12 +36,16 @@
             subtitle="Vaut à partir de la prochaine journée arrêtée"
           />
           <div class="tl-fournil">
-            <fold-view-toggle
-              ariaLabel="Niveau de suivi du fournil"
-              [options]="levelOptions"
-              [value]="level()"
-              (valueChange)="chooseLevel($event)"
-            />
+            @if (canWriteTracking()) {
+              <fold-view-toggle
+                ariaLabel="Niveau de suivi du fournil"
+                [options]="levelOptions"
+                [value]="level()"
+                (valueChange)="chooseLevel($event)"
+              />
+            } @else {
+              <p class="tl-level-read" data-level-read>Niveau : {{ levelLabel() }}</p>
+            }
             <fold-number-input
               label="Marge après l'heure d'un palier, en minutes"
               hint="Un palier est réputé sorti à son heure plus cette marge (toujours vert)."

@@ -140,6 +140,9 @@ export class TrackingLevelsPage {
     );
   });
 
+  /** Le niveau en vigueur, en mots, pour qui ne peut pas le changer. */
+  protected readonly levelLabel = computed(() => LEVEL_LABEL[this.level()]);
+
   protected readonly canSave = computed(() => {
     const margin = this.margin();
     return (
@@ -147,7 +150,8 @@ export class TrackingLevelsPage {
       this.dirty() &&
       !this.saving() &&
       margin !== null &&
-      Number.isInteger(margin)
+      Number.isInteger(margin) &&
+      margin >= 0
     );
   });
 
@@ -189,9 +193,17 @@ export class TrackingLevelsPage {
     try {
       await this.settings.saveTracking(payload, this.intents.keyFor(subject));
       this.intents.done(subject);
-      this.apply(await this.settings.tracking());
     } catch (error) {
       this.refusal.set(`Le niveau du fournil n'a pas été enregistré : ${serverMessageOf(error)}`);
+      this.saving.set(false);
+      return;
+    }
+    try {
+      this.apply(await this.settings.tracking());
+    } catch {
+      this.refusal.set(
+        "Le niveau du fournil est enregistré, mais n'a pas pu être relu : rechargez la page pour le voir.",
+      );
     } finally {
       this.saving.set(false);
     }
@@ -208,11 +220,14 @@ export class TrackingLevelsPage {
     try {
       await this.workstations.setTrackingLevel(station.id, level, this.intents.keyFor(subject));
       this.intents.done(subject);
-      await this.readStations();
     } catch (error) {
       this.refusal.set(
         `Le niveau du poste ${station.name} n'a pas été enregistré : ${serverMessageOf(error)}`,
       );
+    }
+    try {
+      // Relu après un succès comme après un refus : la liste remontre l'état réel.
+      await this.readStations();
     } finally {
       this.savingStation.set(null);
     }
@@ -226,7 +241,8 @@ export class TrackingLevelsPage {
 
   private async readStations(): Promise<void> {
     try {
-      this.stations.set((await this.workstations.page()).workstations);
+      // Une nouvelle référence par poste : la liste se redessine même si la valeur servie n'a pas changé.
+      this.stations.set((await this.workstations.page()).workstations.map((s) => ({ ...s })));
     } catch {
       this.stations.set(null);
     }
