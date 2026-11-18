@@ -8,6 +8,8 @@ ont été vérifiées le 2026-11-17 dans [`colisage.md`](colisage.md),
 [`../commandes/reliquat/reliquat.md`](../commandes/reliquat/reliquat.md) et
 `apps/lfd-api/src/packing/domain/entities/packing-sheet.ts`.
 
+Le plan qui en sort, pour le retrait : [`plan-niveaux-de-suivi-colisage.md`](plan-niveaux-de-suivi-colisage.md).
+
 La fiche d'atelier a ses niveaux de suivi, bâtis : [`../fournil/les-niveaux-de-suivi.md`](../fournil/les-niveaux-de-suivi.md).
 
 Ce document n'est pas un plan. Il pose l'idée, ce qu'elle garde, ce qu'elle
