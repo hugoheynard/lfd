@@ -13,6 +13,14 @@
 >
 > ✅ **L1 bâti le 2026-11-18** : la dette de `lint:pim-subcontexts` est à zéro (48 imports au départ). Noyau `pim/shared/` (réémission, émetteur, `json-readers`, langues du catalogue) ; les ports de citation chez `ingredients` ; les trois routes de propagation dans un contrôleur du catalogue (mêmes URL) ; le catalogue et la limite de commande déclarent leurs ports et le fait des visuels, `channels/` les ré-exporte comme porte publiée aux autres blocs.
 >
+> ✅ **L3 bâti le 2026-11-18.** `CatalogRevision` est un agrégat (`name` refuse
+> « déjà nommée », port `load`/`save`/`add`, plus de `rename` à primitives) ;
+> `ProductReadiness` aussi (`declare(at, by, contentUpdatedAt)`, `withdraw()`),
+> son port d'écriture `load`/`save` séparé de `ReadinessReader` (les lectures,
+> dont `contentUpdatedAt` réutilisée comme fraîcheur). Un seul refus est neuf :
+> une fiche plus récente que sa preuve (`ProductChangedAfterReadinessError`).
+> `prisma-media-carriers.ts` garde son SQL, la raison est écrite au-dessus.
+>
 > ✅ **L7 et L6 bâtis le 2026-11-18.** L7 : entité, handlers et `sale-terms` testés ;
 > les gestes d'`allergens/application` l'étaient déjà. L6 : le PDF vit dans
 > `allergen-matrix/infrastructure/` derrière `AllergenMatrixRenderer` ; octets inchangés.
