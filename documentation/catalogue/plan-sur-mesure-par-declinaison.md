@@ -36,7 +36,7 @@ changement se limite au référentiel, au fil et à l'écran de la fiche.
 - **Le fait** : `pim.products.custom_recipe` (`prisma/schema/pim/product.prisma`,
   modèle `Product`), écrit par `SetProductCustomRecipeCommand`
   (retiré par D1, remplacé par `set-variant-custom-recipe.ts`), qui
-  appelle `Product.declareCustomRecipe` (`domain/entities/product.ts:367`),
+  appelle `Product.declareCustomRecipe` (`domain/entities/product.ts`),
   journalise `productCustomRecipeChanged` et émet la fiche.
 - **`ProductVariant`** (`product.prisma`, modèle `ProductVariant`) n'a aucune
   colonne de sur mesure.
@@ -160,7 +160,7 @@ Cinq sérieux, intégrés ainsi :
    2026-11-18 : (a).**
 
 Mineurs tranchés : le **détachement** emporte la valeur de sa déclinaison par
-`resolvedSnapshot` (`variant.ts:476`), l'argument fiche de `product.ts:790`
+`resolveVariant` (`variant-resolution.ts`), l'argument fiche de `product.ts`
 disparaît ; **`restoreVariant`** garde la valeur de la déclinaison ;
 **`align-variant-on-default`** n'y touche pas (il n'aligne que la fiche
 réglementaire).

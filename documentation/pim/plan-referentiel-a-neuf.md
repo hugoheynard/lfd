@@ -27,6 +27,12 @@
 > ✅ **L7 et L6 bâtis le 2026-11-18.** L7 : entité, handlers et `sale-terms` testés ;
 > les gestes d'`allergens/application` l'étaient déjà. L6 : le PDF vit dans
 > `allergen-matrix/infrastructure/` derrière `AllergenMatrixRenderer` ; octets inchangés.
+>
+> ✅ **L5 bâti le 2026-11-18** : `product.ts` (1057 → 291 lignes) et `variant.ts`
+> (1037 → 297) sont découpés en objets que l'agrégat possède, chacun ≤300 et testé
+> seul ; `snapshot()`, `persistenceSnapshot()` et `reconstitute()` gardent leur
+> forme et leur ordre de clés, aucun handler ni test existant ne change. Écarts au
+> tableau (§ L5, « Tel que bâti »).
 
 ## 1. En deux mots
 
@@ -383,6 +389,42 @@ Ce qui tient la promesse « aucun handler ne change » :
 
 Coût : **3 à 4 jours**, une dizaine de fichiers neufs, `product.ts` et
 `variant.ts` réécrits en délégation.
+
+**Tel que bâti (2026-11-18)** — tout est dans `catalogue/product/domain/` :
+
+| Objet                                                  | Fichier                                           |
+| ------------------------------------------------------ | ------------------------------------------------- |
+| `ProductCommerceOptions`                               | `value-objects/product-commerce-options.ts`       |
+| `VatByContext`                                         | `value-objects/vat-by-context.ts`                 |
+| `ProductCompleteness`                                  | `services/product-completeness.ts`                |
+| `VariantLineup`                                        | `entities/variant-lineup.ts`                      |
+| `ProductSnapshotMapper` (champs, fabriques)            | `entities/product-snapshot-mapper.ts`             |
+| `VariantRegulatory`, `VariantSale`, `VariantLifecycle` | `entities/variant-{regulatory,sale,lifecycle}.ts` |
+| `VariantSnapshotMapper`                                | `entities/variant-snapshot-mapper.ts`             |
+
+Ce que le tableau ne disait pas, et que le code a demandé :
+
+- **`product-lifecycle.ts`** : les cinq transitions de statut, en fonctions
+  pures qui rendent le statut d'après ou refusent. Sans elles `Product` restait
+  à 560 lignes.
+- **`product-variant-gestures.ts`** : une classe de base abstraite qui porte les
+  dix-sept gestes de `Product` adressés à une déclinaison (« trouver dans la
+  collection, puis lui parler »). C'est l'API publique de `Product`, donc elle ne
+  pouvait pas disparaître ; la base ne reçoit de lui que `status` et
+  `variantsAsTiles`.
+- **`product-state.ts`**, **`variant-snapshot.ts`**, **`variant-aspect.ts`**,
+  **`variant-resolution.ts`** : les types d'instantané, la table
+  `regulatory ↔ allergens` et la résolution de l'héritage (`resolveVariant`),
+  que la collection et le mapper lisent tous deux. `product.ts` et `variant.ts`
+  les ré-exportent : aucun import ailleurs ne bouge.
+- **`sale-terms.ts` n'est pas absorbé** par `VariantSale` : cinq autres
+  fichiers l'importent et c'est déjà un objet net.
+- **« Réveil »** (refus de réveiller une saisie dormante à la bascule en défaut)
+  vit dans `VariantRegulatory.promote`, pas dans `VariantLifecycle` : il ne
+  juge que la fiche réglementaire.
+- **Un refus ne laisse plus rien à moitié posé** : `VariantSale.price` est
+  immuable, donc un refus au milieu d'un tarif ne mute plus rien. L'agrégat
+  n'était jamais sauvé après un refus : rien ne change en base.
 
 ### L6 — Le PDF sort du domaine (isolation)
 
