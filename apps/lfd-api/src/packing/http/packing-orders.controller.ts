@@ -9,6 +9,7 @@ import { ReportPackingShortfallCommand } from "../application/station/report-pac
 import { ReopenPackingOrderCommand } from "../application/station/reopen-packing-order.command.js";
 import { RecoverMissingPiecesCommand } from "../application/station/recover-missing-pieces.command.js";
 import { ReportPackingProblemCommand } from "../application/station/report-packing-problem.command.js";
+import { DeclareAllReadyCommand } from "../application/station/declare-all-ready.command.js";
 import { IntentKey } from "../../platform/shared/http/intent-key.decorator.js";
 import { ZodBody } from "../../platform/shared/http/zod-body.pipe.js";
 import { packingDayOf } from "./packing-day-path.js";
@@ -40,12 +41,16 @@ type FoundPiecesBody = z.infer<typeof foundPiecesSchema>;
  *   « prête » au commerce ;
  * - `POST …/shortfall` — « Il manque » (E6a) : fige ce qui est au bac et
  *   publie `packing.shortfall_reported` ; la fiche reste ouverte ;
+ * - `POST …/all-ready` — « Tout est prêt » (retrait au niveau simple) : un
+ *   sac ouvert, chaque ligne mise entière par la réserve, la fiche fermée et
+ *   `packing.order_packed` publié ; refusé, rien d'écrit, si tout n'est pas
+ *   arrivé ;
  * - `POST …/problem` — « Problème » (retrait au niveau simple) : le sac porte
  *   ce qui est vraiment là, l'absent est mis de côté, le manque est déclaré ;
  * - `POST …/found` — « Pièces retrouvées » : des pièces mises de côté
  *   reviennent au libre de la réserve.
  *
- * « Problème » et « Pièces retrouvées » sont par intention (`Idempotency-Key`,
+ * « Tout est prêt », « Problème » et « Pièces retrouvées » sont par intention (`Idempotency-Key`,
  * obligatoire) : un double clic ne les fait qu'une fois.
  *
  * Sous `production_packing` (`write`). Toutes rendent `204` : l'écran relit
@@ -94,6 +99,19 @@ export class PackingOrdersController {
   async reopen(@Param("date") date: string, @Param("orderId") orderId: string): Promise<void> {
     await this.commands.execute<ReopenPackingOrderCommand, void>(
       new ReopenPackingOrderCommand(packingDayOf(date), orderId),
+    );
+  }
+
+  @Post("all-ready")
+  @HttpCode(NO_CONTENT)
+  async declareAllReady(
+    @Param("date") date: string,
+    @Param("orderId") orderId: string,
+    @StaffUserId() staffUserId: string,
+    @IntentKey() intentKey: string,
+  ): Promise<void> {
+    await this.commands.execute<DeclareAllReadyCommand, void>(
+      new DeclareAllReadyCommand(packingDayOf(date), orderId, staffUserId, intentKey),
     );
   }
 

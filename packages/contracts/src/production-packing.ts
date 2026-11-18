@@ -225,6 +225,13 @@ export interface PackingSheet {
    */
   readonly canReportShortfall: boolean;
   /**
+   * « Tout est prêt » a-t-il tout ce qu'il lui faut ? (colisage simple, D4) :
+   * une fiche ouverte dont la réserve libre couvre tout ce qui reste à mettre
+   * au sac. Une règle, donc au serveur : l'écran grise le bouton quand elle
+   * est fausse. Absent (contenu servi avant ce champ) = faux.
+   */
+  readonly allReadyAvailable?: boolean;
+  /**
    * L'instant du manque signalé en vigueur (ISO), `null` = aucun. Effacé quand
    * le bac se ferme complet.
    */

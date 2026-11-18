@@ -20,6 +20,7 @@ import {
   ProblemAfterDecisionError,
   ProblemOutsideSimplePickupError,
 } from "../errors/packing-problem-errors.js";
+import { AllReadyOutsideSimplePickupError } from "../errors/packing-all-ready-errors.js";
 import {
   PackingSheetHasLiveContainersError,
   PackingSheetWithdrawnError,
@@ -431,6 +432,22 @@ export class PackingSheet {
     if (this.authorizedValue !== null) {
       throw new ProblemAfterDecisionError(this.reference);
     }
+  }
+
+  /**
+   * **« Tout est prêt » se pose-t-il ici ?** (D4) Seulement sur un retrait
+   * colisé au niveau simple et rangé en contenants. Une fiche déjà fermée
+   * passe : le geste la réannonce, comme « Déclarer prête ».
+   *
+   * @throws {PackingSheetWithdrawnError} @throws {AllReadyOutsideSimplePickupError}
+   * @throws {ContainersCountedError}
+   */
+  assertAllReadyAllowed(): void {
+    this.assertNotWithdrawn();
+    if (this.trackingLevel !== "simple" || this.fulfillmentMethod !== "pickup") {
+      throw new AllReadyOutsideSimplePickupError(this.reference);
+    }
+    this.assertListed();
   }
 
   /** L'instant du retrait, ou `null` : la feuille vit. */

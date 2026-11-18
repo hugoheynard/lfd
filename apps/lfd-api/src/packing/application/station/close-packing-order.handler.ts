@@ -3,13 +3,12 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
 import { DurablePublisher } from "../../../platform/outbox/durable-publisher.js";
 import { Clock } from "../../../platform/time/clock.js";
-import { PackingOrderPackedEvent } from "../../channels/commerce/index.js";
-import { PackingShortfallClearedEvent } from "../../channels/commerce/index.js";
 import { PackingSheetRepository } from "../../domain/ports/packing-sheet.repository.js";
 import { lockedSheet } from "../containers/container-support.js";
 import { ClosePackingOrderCommand } from "./close-packing-order.command.js";
 import { ArrestedPlanHold } from "../../../production/channels/packing/index.js";
 import { holdArrestedPlan } from "../arrested-plan-support.js";
+import { publishSealedOrder } from "./sealed-order-facts.js";
 
 /**
  * **Fermer le bac** — « Déclarer prête », servi par le colisage lui-même (plan
@@ -66,26 +65,7 @@ export class ClosePackingOrderHandler implements ICommandHandler<ClosePackingOrd
       if (sealed.fresh) {
         await this.sheets.save(sheet);
       }
-      await this.durable.publish(
-        new PackingOrderPackedEvent(
-          sheet.orderId,
-          sheet.rank,
-          sheet.reference,
-          sealed.mark.at,
-          sealed.mark.by,
-          sealed.fresh ? null : now,
-        ).durableFact(),
-      );
-      if (sealed.fresh && signalled) {
-        await this.durable.publish(
-          new PackingShortfallClearedEvent(
-            sheet.orderId,
-            sheet.rank,
-            sheet.reference,
-            now,
-          ).durableFact(),
-        );
-      }
+      await publishSealedOrder(this.durable, sheet, sealed, signalled, now);
     });
   }
 }

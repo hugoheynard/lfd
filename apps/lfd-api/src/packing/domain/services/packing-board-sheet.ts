@@ -9,6 +9,7 @@ import { pieceTally, saleQuantity, type SaleUnit } from "@lfd/money";
 
 import type { SheetLine } from "../entities/packing-sheet.snapshot.js";
 import type { BoardOrder } from "../ports/packing-board.reader.js";
+import { allReadyAvailable } from "./all-ready.js";
 import { allocatedOnLine, leftToPlace } from "./placement.js";
 import type { ReadyBy } from "./ready-by.js";
 
@@ -193,6 +194,7 @@ export function sheetOf(order: BoardOrder, context: SheetContext): PackingSheet 
     packedPieces: order.lines.reduce((sum, line) => sum + placedPieces(line, allocatedOf(line)), 0),
     canDeclareReady: canDeclareReady(order),
     canReportShortfall: canReportShortfall(order),
+    allReadyAvailable: allReadyAvailable(order, context.awaiting),
     shortfallReportedAt: order.shortfallReportedAt?.toISOString() ?? null,
     deliveryNoteReprintNeeded: context.reprintNeeded?.has(order.orderId) ?? false,
     deliveryNotePrint: deliveryNotePrintOf(

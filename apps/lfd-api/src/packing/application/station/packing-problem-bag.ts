@@ -21,6 +21,8 @@ import { citedOrderOf } from "../containers/container-support.js";
  * encore libre — et que personne n'a sous la main. Sans quoi le « Tout est
  * prêt » d'une autre commande le prendrait.
  *
+ * Sert aussi « Tout est prêt » (D4), qui remplit chaque ligne entière.
+ *
  * Jamais un bac : un retrait se colise en sacs, et rien ne passe par la
  * livraison. Les mouvements sont rendus pour le journal, comme ceux du poste.
  */
@@ -36,6 +38,15 @@ export class ProblemBag {
   /** Les faits du journal, dans l'ordre des mouvements. */
   get events(): readonly JournaledEvent[] {
     return this.traced;
+  }
+
+  /**
+   * **« Tout est prêt »** (D4) : la ligne entière au sac. L'appelant a vérifié
+   * sous le même verrou que le libre couvre le reste (`allReadyShortages`) :
+   * rien n'est alors mis de côté.
+   */
+  fill(line: PresentLine["line"], stock: PackingStock): void {
+    this.adjust({ line, present: line.quantity }, stock);
   }
 
   /** Ajuste le sac pour cette ligne, puis met l'absent de côté. */
@@ -97,7 +108,8 @@ export class ProblemBag {
     return id;
   }
 
-  private heldOf(sku: string): number {
+  /** Ce que les contenants vivants portent déjà de l'article. */
+  heldOf(sku: string): number {
     return this.liveContainers().reduce(
       (sum, container) => sum + (container.lines.find((entry) => entry.sku === sku)?.quantity ?? 0),
       0,

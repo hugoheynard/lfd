@@ -42,6 +42,7 @@ import { ClosePackingOrderHandler } from "./application/station/close-packing-or
 import { ReportPackingShortfallHandler } from "./application/station/report-packing-shortfall.handler.js";
 import { ReopenPackingOrderHandler } from "./application/station/reopen-packing-order.handler.js";
 import { ReportPackingProblemHandler } from "./application/station/report-packing-problem.handler.js";
+import { DeclareAllReadyHandler } from "./application/station/declare-all-ready.handler.js";
 import { RecoverMissingPiecesHandler } from "./application/station/recover-missing-pieces.handler.js";
 import { PackingBoardReader } from "./domain/ports/packing-board.reader.js";
 import { PackingBoardController } from "./http/packing-board.controller.js";
@@ -186,6 +187,7 @@ import { PrismaPackingSettingsRepository } from "./infrastructure/prisma-packing
     { provide: PackingSheetTombstones, useClass: PrismaPackingSheetTombstones },
     ReopenPackingOrderHandler,
     ReportPackingProblemHandler,
+    DeclareAllReadyHandler,
     RecoverMissingPiecesHandler,
     { provide: PackingBoardReader, useClass: PrismaPackingBoardReader },
     // La fiche d'une commande, au comptoir (2026-11-03).

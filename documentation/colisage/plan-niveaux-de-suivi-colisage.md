@@ -102,6 +102,11 @@ plan à part.
   publie `order_packed`, dans une transaction, par intention. Refusé, avec ce
   qui manque nommé, si la réserve ne suffit pas ; le bouton est grisé tant que
   tout n'est pas arrivé.
+- **Bâti en C3 (2026-11-18)** : sur une commande qui porte un manque pas
+  encore décidé, « Tout est prêt » est refusé tant que la réserve ne couvre
+  pas tout ; si elle le couvre (des pièces retrouvées, par exemple), la
+  commande se ferme et le signal s'efface — la règle de `seal` aujourd'hui.
+  La lecture du poste sert `allReadyAvailable` pour griser le bouton.
 - **D5 — « Problème »**, y compris sur une fiche fermée par « Tout est prêt » :
   le geste rouvre le sac (`PackingSheet.reopen`), y laisse ce qui est vraiment
   là, met l'absent de côté (D6), puis déclare le manque. Trois refus, avec
@@ -260,7 +265,8 @@ flowchart LR
 - **C2** — « Problème » (serveur et écran), D5 à D8, « Pièces retrouvées ».
   C2a (le colisage) et C2b (le comptoir, la cloche) ✅ bâtis le 2026-11-18
   sur `feat/colisage-simple` ; C2c (les écrans) à faire.
-- **C3** — « Tout est prêt » (serveur et écran).
+- **C3** — « Tout est prêt » (serveur et écran). Serveur ✅ bâti le
+  2026-11-18 sur `feat/colisage-simple` ; écran avec C2c.
 - **C4** — la correction du fournil (D9). Aujourd'hui déjà, personne ne
   l'écoute : ce lot ferme ce trou pour les deux niveaux.
 - **C5** — doc d'état, la réflexion retirée, la carte de la chaîne mise à jour.
