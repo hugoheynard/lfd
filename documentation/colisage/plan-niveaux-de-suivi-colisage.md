@@ -37,16 +37,17 @@ flowchart LR
     R --> B["« Tout est prêt »<br/>actif quand tout est arrivé"]
     B --> P["Commande prête"]
     P --> C["Le comptoir<br/>la remet au client"]
-    X["« Problème »<br/>ce qui est vraiment là"] --> M["Plus prête, décision attendue<br/>la cloche sonne"]
-    M --> D["Le manager décide<br/>partir incomplète, ou attendre"]
+    X["« Problème »<br/>ce qui est vraiment là"] --> M["Décision du superviseur attendue<br/>la cloche sonne"]
+    M --> D["Le superviseur décide<br/>partir incomplète, ou attendre"]
+    M -. "remise bloquée<br/>en attendant" .-> C
 ```
 
 - **« Tout est prêt »** s'active dès que le four a remis toutes les pièces de la
   commande (sans marge horaire, décidé par Hugo le 2026-11-18).
 - **« Problème »** dit, produit par produit, combien est vraiment là. La
-  commande **cesse d'être prête** et attend la décision du manager ; la
-  **cloche** sonne chez qui peut décider, et la commande reste en rouge dans la
-  **Supervision**. Les pièces dites absentes sont mises de côté comme
+  commande reste « prête », mais **le comptoir ne peut plus la remettre** tant
+  que le superviseur n'a pas décidé ; la **cloche** sonne chez qui peut
+  décider, et la commande reste en rouge dans la **Supervision**. Les pièces dites absentes sont mises de côté comme
   **manquantes** : elles ne seront données à aucune autre commande.
 - Des pièces **retrouvées** se rendent au stock par le manager, depuis la
   commande, quand il décide.
@@ -124,16 +125,25 @@ plan à part.
   **retrouvées** depuis la commande (un geste du colisage, sous son droit) :
   `missing` baisse d'autant. Un bouton « Retrouvé » au poste viendrait plus tard
   s'il manque (proposé).
-- **D7 — Le commerce retire « prête » à un manque.** Aujourd'hui,
-  `OrderShortfall.report` ne regarde pas le statut, et rouvrir un sac ne publie
-  rien : le comptoir remettrait une commande dont la décision est attendue. Le
-  commerce, propriétaire du statut, ajoute à l'agrégat `Order` une transition
-  **`ready` → `in_production`** (les statuts : `packages/contracts/src/order.ts`),
-  appelée quand il enregistre un manque sur une commande prête. **Rien n'est
-  envoyé au client** à ce moment : il a été prévenu « prête »
-  (`order-customer-nudges.ts`), et c'est la décision du manager qui déclenche
-  la communication existante (départ incomplet ou reliquat). Premier changement
-  du lot C2, avec son test.
+- **D7 — Le superviseur décide, le comptoir attend** (choix par défaut,
+  réversible, posé le 2026-11-18 : Hugo veut la décision au superviseur, pas
+  au comptoir). Aujourd'hui, `OrderShortfall.report` ne regarde pas le statut,
+  et rouvrir un sac ne publie rien : le comptoir remettrait une commande dont
+  la décision est attendue. **Le statut ne bouge pas** (« prête » est lu par
+  trop d'écrans et d'e-mails pour redescendre). À la place :
+  - la **remise normale** au comptoir est **refusée** tant qu'un manque attend
+    une décision : « Il manque des produits : la décision du superviseur est
+    attendue. » — à vérifier au bâti dans le chemin de la remise normale, et à
+    ajouter s'il n'y est pas ;
+  - le **départ incomplet au comptoir**
+    (`lafoliecoffee/orders/http/admin-counter-incomplete-handover.controller.ts`,
+    sous `handover_counter` seulement aujourd'hui) exige **aussi**
+    `b2b_orders_shortfall:write`, le droit de la décision du superviseur
+    (`admin-order-shortfall.controller.ts`). Un superviseur au comptoir le fait
+    toujours ; un vendeur seul ne le peut plus. Frontière de droits : `vitruve`
+    d'office, et à accorder à l'écran Rôles aux rôles superviseur.
+  - **Rien n'est envoyé au client** au signalement : c'est la décision du
+    superviseur qui déclenche la communication existante.
 - **D8 — La cloche sonne chez le commerce**, celui qui décide, quand il
   enregistre un manque (sur le modèle de `ring-failed-order-mail.handler.ts`).
   Vérifié le 2026-11-18 : aucun manque ne sonne aujourd'hui.
@@ -223,25 +233,25 @@ poste viendra si l'équipe en a besoin.
 **Première contradiction** (avec un toujours vert au colisage, retiré depuis par
 Hugo) :
 
-| Objection                                             | Devenir                                           |
-| ----------------------------------------------------- | ------------------------------------------------- |
-| B1 « Problème » défait par le toujours vert           | sans objet ; l'absent est mis de côté (D6)        |
-| B2 le commerce garde « prête » une commande en manque | D7                                                |
-| B3 l'ordre des verrous de la correction               | sans objet : D9 ne prend qu'un verrou, la réserve |
-| S4 le rattrapage des corrections déjà publiées        | D9                                                |
-| S5 annulation et modification d'une auto-prête        | sans objet : c'est un humain qui ferme            |
-| S6 l'auteur système chez le commerce                  | sans objet                                        |
-| S7 tous les importeurs du fait déplacé                | C0                                                |
-| S8 reliquats et réassorts                             | D1, D3                                            |
+| Objection                                             | Devenir                                                |
+| ----------------------------------------------------- | ------------------------------------------------------ |
+| B1 « Problème » défait par le toujours vert           | sans objet ; l'absent est mis de côté (D6)             |
+| B2 le commerce garde « prête » une commande en manque | D7 : la remise est bloquée, la décision au superviseur |
+| B3 l'ordre des verrous de la correction               | sans objet : D9 ne prend qu'un verrou, la réserve      |
+| S4 le rattrapage des corrections déjà publiées        | D9                                                     |
+| S5 annulation et modification d'une auto-prête        | sans objet : c'est un humain qui ferme                 |
+| S6 l'auteur système chez le commerce                  | sans objet                                             |
+| S7 tous les importeurs du fait déplacé                | C0                                                     |
+| S8 reliquats et réassorts                             | D1, D3                                                 |
 
 **Seconde contradiction** (la version simple) :
 
-| Objection                                                      | Reprise                                        |
-| -------------------------------------------------------------- | ---------------------------------------------- |
-| B1 le manquant et la correction comptaient deux fois une pièce | D9 étape 1                                     |
-| B2 rien ne refusait de rouvrir une commande déjà retirée       | D5, `handed_over_at`                           |
-| S3 « décision attendue » n'est pas un statut                   | D7 : `ready` → `in_production`, rien au client |
-| S4 « Problème » après une décision du manager                  | D5, refus nommé                                |
-| S5 pas de CHECK de la réserve ; `free` et `availableTo`        | D6                                             |
-| S6 clé, contenu et moment du rattrapage                        | D9, § 4                                        |
-| m « déjà remise » : le mot est réservé au prix                 | « retirée »                                    |
+| Objection                                                      | Reprise                                              |
+| -------------------------------------------------------------- | ---------------------------------------------------- |
+| B1 le manquant et la correction comptaient deux fois une pièce | D9 étape 1                                           |
+| B2 rien ne refusait de rouvrir une commande déjà retirée       | D5, `handed_over_at`                                 |
+| S3 « décision attendue » n'est pas un statut                   | D7 : le statut ne bouge plus ; la remise est bloquée |
+| S4 « Problème » après une décision du manager                  | D5, refus nommé                                      |
+| S5 pas de CHECK de la réserve ; `free` et `availableTo`        | D6                                                   |
+| S6 clé, contenu et moment du rattrapage                        | D9, § 4                                              |
+| m « déjà remise » : le mot est réservé au prix                 | « retirée »                                          |
