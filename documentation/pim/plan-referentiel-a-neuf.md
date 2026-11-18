@@ -219,12 +219,13 @@ pim/
   (`prisma/schema/pim/product.prisma:408-418`, clé `productId`, cascade), et
   sa péremption se lit en comparant les dates de modification de quatre
   tables (`:400-407`). La faire porter par `Product` chargerait l'agrégat
-  entier pour écrire une ligne. Décision : un **agrégat `ProductReadiness`**
-  (`declare(at, by, freshness)`, `withdraw()`), qui reçoit en argument la
-  fraîcheur que le handler lit par un port de lecture nommé
-  (`ProductFreshness.of(productId)`) ; l'agrégat refuse de se déclarer prêt
-  sur une fiche plus récente que sa preuve. `load`/`save`, plus d'écriture
-  par primitives (`readiness.repository.ts:44,52`).
+  entier pour écrire une ligne. Décision : un **agrégat `ProductReadiness`** (`declare(at, by)`,
+  `withdraw()`), mêmes refus qu'avant ; la péremption se lit après coup, par
+  un port de lecture à part (`ReadinessReader`). Plus d'écriture par
+  primitives. Un refus « fiche plus récente que sa preuve » à la déclaration
+  a été essayé puis retiré le 2026-11-18 : l'instant de la signature est
+  toujours le plus récent, il ne pouvait se déclencher que sur un décalage
+  d'horloges.
 - `catalogue/shared/infrastructure/prisma-media-carriers.ts:139-157` : passer
   par le port éditorial, ou écrire la raison au-dessus.
 
