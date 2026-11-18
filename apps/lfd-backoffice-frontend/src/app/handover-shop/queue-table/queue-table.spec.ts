@@ -93,6 +93,18 @@ const clienteleBadges = (fixture: ComponentFixture<QueueTable>): readonly string
 const LATE = { start: '06:00', end: '06:30', source: 'override' } as const;
 
 describe('QueueTable', () => {
+  it('une commande dont le manque attend le superviseur porte son badge', () => {
+    const fixture = render([
+      entry({ awaitingShortfallDecision: true }),
+      entry({ orderId: 'ord_2', reference: 'CMD-1043' }),
+    ]);
+    const marks = (fixture.nativeElement as HTMLElement).querySelectorAll(
+      '[data-awaiting-decision]',
+    );
+    expect(marks.length).toBe(1);
+    expect(text(fixture)).toContain('Décision du superviseur attendue');
+  });
+
   it('rend chaque colonne de la ligne', () => {
     const body = text(render([entry()]));
 

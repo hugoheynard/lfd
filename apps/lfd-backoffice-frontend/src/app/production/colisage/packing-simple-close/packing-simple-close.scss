@@ -1,0 +1,20 @@
+.psc {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+.psc-said {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-xs);
+  margin: 0;
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-muted);
+}
+
+.psc-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-sm);
+}

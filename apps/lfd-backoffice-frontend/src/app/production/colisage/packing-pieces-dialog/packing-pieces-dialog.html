@@ -1,0 +1,39 @@
+<fold-panel-header [title]="data().title" [subtitle]="data().intro" closeLabel="Fermer" />
+
+<fold-panel-body>
+  <form class="ppd-form" (submit)="$event.preventDefault(); confirm()">
+    @if (refusal(); as refusal) {
+      <fold-callout variant="alert" data-pieces-refusal>{{ refusal }}</fold-callout>
+    }
+    @for (line of data().lines; track line.sku) {
+      <fold-number-input
+        [attr.data-sku]="line.sku"
+        [label]="line.saleUnit === 'weight' ? line.productName + ' (en grammes)' : line.productName"
+        spinner="plusminus"
+        controls="outside"
+        [hint]="hint(line)"
+        [min]="0"
+        [max]="line.max"
+        [integer]="true"
+        [value]="quantityOf(line.sku)"
+        (valueChange)="setQuantity(line.sku, $event)"
+      />
+    }
+  </form>
+</fold-panel-body>
+
+<fold-panel-footer align="end">
+  <button foldButton emphasis="outline" intent="neutral" type="button" (click)="cancel()">
+    Annuler
+  </button>
+  <button
+    foldButton
+    type="button"
+    [disabled]="data().busy() || !confirmable()"
+    [loading]="data().busy()"
+    (click)="confirm()"
+    data-confirm-pieces
+  >
+    {{ data().confirmLabel }}
+  </button>
+</fold-panel-footer>

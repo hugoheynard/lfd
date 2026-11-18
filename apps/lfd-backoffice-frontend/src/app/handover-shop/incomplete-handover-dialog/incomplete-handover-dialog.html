@@ -20,6 +20,12 @@
       <fold-callout variant="warning" icon="info" data-refusal>{{ why }}</fold-callout>
     }
 
+    @if (reservedToSupervisor()) {
+      <fold-callout variant="info" icon="info" data-supervisor-only>
+        Le départ incomplet est décidé par un superviseur.
+      </fold-callout>
+    }
+
     @if (lines().length > 0) {
       <ul class="ihd-lines">
         @for (line of lines(); track line.sku) {
@@ -55,7 +61,7 @@
     <button foldButton icon="check" type="button" data-action="remit" (click)="remitWhole()">
       Remettre la commande
     </button>
-  } @else if (refusal() === null) {
+  } @else if (refusal() === null && mayDecide()) {
     <button foldButton emphasis="outline" intent="neutral" type="button" (click)="cancel()">
       Annuler
     </button>

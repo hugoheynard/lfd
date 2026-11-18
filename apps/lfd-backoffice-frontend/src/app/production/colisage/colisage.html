@@ -315,6 +315,8 @@
             (reopen)="reopenCurrent()"
             (reportShortfall)="shortfall.report($event)"
             (deliveryNotePrinted)="afterDeliveryNotePrint()"
+            [canWrite]="canWrite()"
+            (simplePacked)="afterSimplePacked($event)"
           />
 
           <app-packing-resources

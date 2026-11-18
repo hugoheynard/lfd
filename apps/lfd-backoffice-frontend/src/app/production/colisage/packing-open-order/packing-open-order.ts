@@ -16,6 +16,7 @@ import { isListed } from '../container-board';
 import { PackingContainerBoard } from '../packing-container-board/packing-container-board';
 import { PackingContainers } from '../packing-containers/packing-containers';
 import { PackingLine } from '../packing-line/packing-line';
+import { PackingSimpleClose } from '../packing-simple-close/packing-simple-close';
 
 /**
  * **La commande ouverte au poste** — la colonne du milieu : la bande, les
@@ -50,6 +51,7 @@ import { PackingLine } from '../packing-line/packing-line';
     PackingContainerBoard,
     PackingContainers,
     PackingLine,
+    PackingSimpleClose,
   ],
   templateUrl: './packing-open-order.html',
   styleUrl: './packing-open-order.scss',
@@ -91,6 +93,12 @@ export class PackingOpenOrder {
 
   /** « Il manque » (E6a) : la commande à signaler — `Colisage` l'écrit puis relit. */
   readonly reportShortfall = output<PackingSheet>();
+  /** Le droit d'écriture du poste — « Pièces retrouvées » au colisage simple. */
+  readonly canWrite = input(false);
+
+  /** « Tout est prêt » accepté (colisage simple) : `Colisage` enchaîne. */
+  readonly simplePacked = output<PackingSheet>();
+
   /** Le BL est ouvert pour impression : au poste de relire (« Nouveau BL imprimé »). */
   readonly deliveryNotePrinted = output<void>();
 
@@ -107,6 +115,13 @@ export class PackingOpenOrder {
     const order = this.sheet();
     return order !== null && order.shortfallReportedAt !== null && !order.canDeclareReady;
   });
+
+  /**
+   * Un retrait au **colisage simple** : ni contenants ni « Déclarer prête »,
+   * mais « Tout est prêt » et « Problème ». Une commande `detailed` garde
+   * l'écran des contenants, inchangé.
+   */
+  protected readonly simple = computed(() => this.sheet()?.trackingLevel === 'simple');
 
   protected readonly listed = computed(() => {
     const order = this.sheet();

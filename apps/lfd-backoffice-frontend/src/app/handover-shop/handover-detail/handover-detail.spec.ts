@@ -247,6 +247,16 @@ const buttonSaying = (
   ) ?? null;
 
 describe('HandoverDetail', () => {
+  it('une commande dont le manque attend le superviseur le dit dans le rail', async () => {
+    const fixture = await render(entry({ awaitingShortfallDecision: true }));
+    expect(text(fixture)).toContain('Décision du superviseur attendue');
+  });
+
+  it('sans manque en attente, pas de badge de décision', async () => {
+    const fixture = await render(entry());
+    expect(text(fixture)).not.toContain('Décision du superviseur attendue');
+  });
+
   /** Hugo, 2026-09-28 : « déclarée prête » ne disait pas où en était le bac. */
   it('montre le fournil PUIS le colisage, et atténue les gestes tant que le sac n’est pas fini', async () => {
     const packing = new FakePackingSheets([

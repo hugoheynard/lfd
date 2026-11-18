@@ -16,7 +16,32 @@
       colonne, et ses lignes s'y GLISSENT. Une commande `counted` a été colisée
       avec l'ancien poste : tout est en lecture seule (§17.6).
     -->
-    @if (listed()) {
+    @if (simple()) {
+      <!-- Le COLISAGE SIMPLE d'un retrait (plan des niveaux de suivi, D4–D6) :
+           les lignes se lisent, rien ne se range en contenants. -->
+      <div class="co-lines">
+        @for (line of order.lines; track line.sku) {
+          <app-packing-line [line]="line" [locked]="true" [hit]="hitSkus().has(line.sku)" />
+        }
+      </div>
+      <div class="co-close">
+        @if (order.shortfallDecision; as decision) {
+          <fold-callout variant="success" icon="check-circle" data-shortfall-decision>
+            Décision : départ incomplet, reste abandonné — par
+            {{ decision.decidedByName ?? decision.decidedBy }} à
+            {{ decision.decidedAt | date: 'HH:mm' }}
+          </fold-callout>
+        }
+        @if (order.abandonedRemainder?.length) {
+          <app-abandoned-remainder [lines]="order.abandonedRemainder" />
+        }
+        <app-packing-simple-close
+          [sheet]="order"
+          [canRecover]="canWrite()"
+          (packed)="simplePacked.emit($event)"
+        />
+      </div>
+    } @else if (listed()) {
       <app-packing-container-board [sheet]="order" [stock]="stock()" />
     } @else {
       <fold-callout variant="info" data-legacy-order>
@@ -38,7 +63,7 @@
     }
 
     <!-- Une commande `counted` : ni « Prête » ni « Rouvrir » (§17.6). -->
-    @if (listed()) {
+    @if (listed() && !simple()) {
       <div class="co-close">
         <!-- Départ incomplet décidé : ce qui n'est pas parti reste dit, et le
              BL qui a changé se réimprime (plan E6, § 14 ; Hugo, 2026-10-25). -->

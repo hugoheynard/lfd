@@ -16,6 +16,7 @@ import type {
   CounterPackingSheetView,
 } from '@lfd/contracts';
 import {
+  FoldBadgeComponent,
   FoldButtonComponent,
   FoldCalloutComponent,
   FoldEmptyStateComponent,
@@ -104,6 +105,7 @@ const PLACED_AT = new Intl.DateTimeFormat('fr-FR', {
   imports: [
     SaleQuantityPipe,
     ShipmentChoice,
+    FoldBadgeComponent,
     FoldButtonComponent,
     FoldCalloutComponent,
     FoldEmptyStateComponent,

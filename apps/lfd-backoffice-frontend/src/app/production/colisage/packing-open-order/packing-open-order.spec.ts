@@ -7,6 +7,7 @@ import { PermissionsStore } from '../../../auth/permissions.store';
 import { DeliveryBinsService } from '../../../livraison/delivery-bins.service';
 import { PackingContainersService } from '../../packing-containers.service';
 import { PackingDayReader } from '../packing-day.reader';
+import { PackingSimpleGestures } from '../packing-simple-gestures';
 import { PackingOpenOrder } from './packing-open-order';
 
 /**
@@ -71,6 +72,7 @@ function render(inputs: Readonly<Record<string, unknown>>): ComponentFixture<Pac
       provideRouter([]),
       { provide: PermissionsStore, useValue: { can: () => false } },
       { provide: PackingContainersService, useValue: {} },
+      { provide: PackingSimpleGestures, useValue: { busy: () => false, refusal: () => null } },
       {
         provide: PackingDayReader,
         useValue: { date: () => '2026-10-05', rereadAfterWrite: () => Promise.resolve(true) },
@@ -94,6 +96,30 @@ function said(element: Element | null | undefined): string {
 }
 
 describe('la commande ouverte du colisage', () => {
+  it('un retrait au niveau simple : « Tout est prêt » et « Problème », ni contenants ni « Déclarer prête »', () => {
+    const host: HTMLElement = render({
+      sheet: sheet({
+        fulfillmentMethod: 'pickup',
+        trackingLevel: 'simple',
+        allReadyAvailable: true,
+      }),
+    }).nativeElement;
+
+    expect(host.querySelector('app-packing-simple-close')).not.toBeNull();
+    expect(host.querySelector('[data-all-ready]')).not.toBeNull();
+    expect(host.querySelector('[data-problem]')).not.toBeNull();
+    expect(host.querySelector('app-packing-container-board')).toBeNull();
+    expect(host.querySelector('[data-declare-ready]')).toBeNull();
+    expect(said(host)).toContain('Croissant');
+  });
+
+  it('une commande détaillée garde ses contenants, sans les gestes du niveau simple', () => {
+    const host: HTMLElement = render({ sheet: sheet() }).nativeElement;
+
+    expect(host.querySelector('app-packing-simple-close')).toBeNull();
+    expect(host.querySelector('[data-declare-ready]')).not.toBeNull();
+  });
+
   it('affiche le compte servi, même incohérent avec les lignes', () => {
     const host: HTMLElement = render({
       sheet: sheet({ lineCount: 9, packedLines: 5 }),

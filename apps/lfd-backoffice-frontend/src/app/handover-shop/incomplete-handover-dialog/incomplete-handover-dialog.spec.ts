@@ -1,8 +1,13 @@
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
-import type { CounterIncompleteHandoverView } from '@lfd/contracts';
+import {
+  COUNTER_INCOMPLETE_HANDOVER_PERMISSION,
+  type CounterIncompleteHandoverView,
+  type StaffPermission,
+} from '@lfd/contracts';
 import { FoldPanelRef } from 'fold-ng';
 import { describe, expect, it } from 'vitest';
 
+import { PermissionsStore } from '../../auth/permissions.store';
 import { CounterIncompleteHandoverService } from '../../comptoir/counter-incomplete-handover.service';
 import {
   IncompleteHandoverDialog,
@@ -66,12 +71,17 @@ async function render(
   api: FakeApi,
   view: CounterIncompleteHandoverView,
   token: string | null = null,
+  granted: readonly StaffPermission[] = [COUNTER_INCOMPLETE_HANDOVER_PERMISSION],
 ): Promise<Rendered> {
   const closedWith: (IncompleteHandoverOutcome | undefined)[] = [];
   TestBed.configureTestingModule({
     imports: [IncompleteHandoverDialog],
     providers: [
       { provide: CounterIncompleteHandoverService, useValue: api },
+      {
+        provide: PermissionsStore,
+        useValue: { can: (permission: StaffPermission) => granted.includes(permission) },
+      },
       {
         provide: FoldPanelRef,
         useValue: new FoldPanelRef<IncompleteHandoverOutcome>(1, (result) =>
@@ -127,6 +137,21 @@ describe('IncompleteHandoverDialog', () => {
     button(PARTIAL)?.click();
     await fixture.whenStable();
     expect(api.tokens).toEqual(['tok_1']);
+  });
+
+  it('sans le droit du superviseur : l’aperçu reste lisible, le geste est masqué et la raison dite', async () => {
+    const api = new FakeApi();
+    const { text, button } = await render(api, VIEW, null, []);
+    expect(text()).toContain('Croissant nature');
+    expect(text()).toContain('Le départ incomplet est décidé par un superviseur.');
+    expect(button(PARTIAL)).toBeNull();
+    expect(button('Fermer')).not.toBeNull();
+  });
+
+  it('avec le droit du superviseur : le geste est offert, sans la phrase', async () => {
+    const { text, button } = await render(new FakeApi(), VIEW);
+    expect(button(PARTIAL)).not.toBeNull();
+    expect(text()).not.toContain('décidé par un superviseur');
   });
 
   // Deux instants « locaux » : l'heure attendue ne dépend pas du fuseau du poste.

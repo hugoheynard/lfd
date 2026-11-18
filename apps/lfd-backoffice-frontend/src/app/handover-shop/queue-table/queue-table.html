@@ -74,7 +74,18 @@
        que la note le répétait deux lignes plus bas — la même minute écrite
        deux fois, dans deux tons, sur la même ligne. -->
   <ng-template foldCell="state" let-row>
-    <fold-badge [variant]="variant(row)" [content]="label(row)" />
+    <span class="qt-state">
+      <fold-badge [variant]="variant(row)" [content]="label(row)" />
+      <!-- Un manque signalé au colisage : le superviseur décide, le comptoir
+           attend (plan des niveaux de suivi du colisage, D7). -->
+      @if (row.awaitingShortfallDecision) {
+        <fold-badge
+          variant="warning"
+          content="Décision du superviseur attendue"
+          data-awaiting-decision
+        />
+      }
+    </span>
   </ng-template>
 
   <!--

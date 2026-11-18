@@ -4,11 +4,14 @@ import { firstValueFrom } from 'rxjs';
 
 import type {
   EnterPackedResupplyLine,
+  PackingFoundBody,
+  PackingProblemBody,
   PackingResuppliesView,
   ProductionPackingView,
 } from '@lfd/contracts';
 
 import { B2B_API_BASE } from '../api/api-config';
+import { intentOptions } from '../shared/gesture-intents';
 
 /**
  * **Le poste de colisage** d'une journée : les bacs, la ressource, et les gestes
@@ -66,6 +69,57 @@ export class PackingService {
    */
   async reportShortfall(date: string, orderId: string): Promise<void> {
     await firstValueFrom(this.http.post<void>(`${this.orderUrl(date, orderId)}/shortfall`, {}));
+  }
+
+  /**
+   * **« Tout est prêt »** (colisage simple, retrait) : un sac, chaque ligne
+   * mise entière depuis la réserve, la commande fermée. Par intention. Un
+   * `409` nomme ce qui n'est pas encore arrivé.
+   */
+  async allReady(date: string, orderId: string, intentKey: string): Promise<void> {
+    await firstValueFrom(
+      this.http.post<void>(
+        `${this.orderUrl(date, orderId)}/all-ready`,
+        {},
+        intentOptions(intentKey),
+      ),
+    );
+  }
+
+  /**
+   * **« Problème »** (colisage simple) : par produit, ce qui est vraiment là ;
+   * l'absent est mis de côté et le manque déclaré au superviseur. Par
+   * intention ; les refus portent leurs mots.
+   */
+  async reportProblem(
+    date: string,
+    orderId: string,
+    body: PackingProblemBody,
+    intentKey: string,
+  ): Promise<void> {
+    await firstValueFrom(
+      this.http.post<void>(
+        `${this.orderUrl(date, orderId)}/problem`,
+        body,
+        intentOptions(intentKey),
+      ),
+    );
+  }
+
+  /**
+   * **« Pièces retrouvées »** : des pièces mises de côté par « Problème »
+   * reviennent au libre de la réserve. Par intention ; le serveur refuse d'en
+   * rendre plus qu'il n'en a mis de côté.
+   */
+  async recoverFound(
+    date: string,
+    orderId: string,
+    body: PackingFoundBody,
+    intentKey: string,
+  ): Promise<void> {
+    await firstValueFrom(
+      this.http.post<void>(`${this.orderUrl(date, orderId)}/found`, body, intentOptions(intentKey)),
+    );
   }
 
   /**

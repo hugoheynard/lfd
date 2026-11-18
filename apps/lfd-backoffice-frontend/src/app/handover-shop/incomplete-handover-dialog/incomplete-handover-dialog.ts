@@ -1,7 +1,8 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
-import type {
-  CounterIncompleteHandoverRefusal,
-  CounterIncompleteHandoverView,
+import {
+  COUNTER_INCOMPLETE_HANDOVER_PERMISSION,
+  type CounterIncompleteHandoverRefusal,
+  type CounterIncompleteHandoverView,
 } from '@lfd/contracts';
 import { httpErrorMessage } from '@lfd/endpoints';
 import {
@@ -15,6 +16,7 @@ import {
   type FoldPanelDefaults,
 } from 'fold-ng';
 
+import { PermissionsStore } from '../../auth/permissions.store';
 import { CounterIncompleteHandoverService } from '../../comptoir/counter-incomplete-handover.service';
 import { clockOf, formatHour } from '../handover-queue';
 import { SaleQuantityPipe } from '../../shared/sale-quantity/sale-quantity.pipe';
@@ -108,6 +110,21 @@ export class IncompleteHandoverDialog implements FoldPanelContent<IncompleteHand
 
   private readonly api = inject(CounterIncompleteHandoverService);
   private readonly panel = inject(FoldPanelRef<IncompleteHandoverOutcome>);
+  private readonly permissions = inject(PermissionsStore);
+
+  /**
+   * Le départ incomplet est décidé par un superviseur
+   * ({@link COUNTER_INCOMPLETE_HANDOVER_PERMISSION}) : sans ce droit, l'aperçu
+   * reste lisible, le geste est masqué et l'écran dit pourquoi.
+   */
+  protected readonly mayDecide = computed(() =>
+    this.permissions.can(COUNTER_INCOMPLETE_HANDOVER_PERMISSION),
+  );
+
+  /** Le geste serait offert, mais la personne n'a pas le droit de le faire. */
+  protected readonly reservedToSupervisor = computed(
+    () => this.refusal() === null && this.settled() === null && !this.mayDecide(),
+  );
 
   protected readonly saving = signal(false);
   protected readonly error = signal<string | null>(null);
@@ -151,7 +168,7 @@ export class IncompleteHandoverDialog implements FoldPanelContent<IncompleteHand
   });
 
   protected async submit(): Promise<void> {
-    if (this.saving() || this.refusal() !== null || this.settled() !== null) {
+    if (this.saving() || this.refusal() !== null || this.settled() !== null || !this.mayDecide()) {
       return;
     }
     this.saving.set(true);

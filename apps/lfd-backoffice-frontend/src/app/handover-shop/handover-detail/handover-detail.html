@@ -41,6 +41,16 @@
           }
         </p>
         <p class="hd-reference">{{ row.reference }}</p>
+        @if (row.awaitingShortfallDecision) {
+          <!-- D7 du plan des niveaux de suivi du colisage : le manque attend le superviseur. -->
+          <p class="hd-meta">
+            <fold-badge
+              variant="warning"
+              content="Décision du superviseur attendue"
+              data-awaiting-decision
+            />
+          </p>
+        }
         <p class="hd-meta">Commandée le {{ placedAt() }}</p>
         <!-- Les documents PRÈS de l'identité (Hugo, 2026-10-25) : ce sont des
              lectures de la commande, pas des gestes de remise. Deux bons

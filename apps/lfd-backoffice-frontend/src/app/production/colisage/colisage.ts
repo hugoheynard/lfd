@@ -26,6 +26,7 @@ import { ClienteleBadge } from './clientele-badge/clientele-badge';
 import { PackingDayReader } from './packing-day.reader';
 import { PackingGestures } from './packing-gestures';
 import { PackingShortfallGesture } from './packing-shortfall-gesture';
+import { PackingSimpleGestures } from './packing-simple-gestures';
 import { PackingOpenOrder } from './packing-open-order/packing-open-order';
 import { PackingOrders } from './packing-orders/packing-orders';
 import { PackingResources } from './packing-resources/packing-resources';
@@ -103,6 +104,7 @@ const COMPACT_MASTHEAD_QUERY = '(max-width: 1366px)';
     PackingDayReader,
     PackingGestures,
     PackingShortfallGesture,
+    PackingSimpleGestures,
     PackingRoundsReader,
     DayTransfersReader,
   ],
@@ -114,6 +116,7 @@ export class Colisage {
   private readonly permissions = inject(PermissionsStore);
   protected readonly gestures = inject(PackingGestures);
   protected readonly shortfall = inject(PackingShortfallGesture);
+  private readonly simpleGestures = inject(PackingSimpleGestures);
   /** Les tournées du jour, lues côté livraison (lot PC2) : l'ORDRE de la liste. */
   protected readonly rounds = inject(PackingRoundsReader);
   /** Les transferts du jour, lus côté livraison : le manifeste depuis l'encadré (2026-11-01). */
@@ -313,6 +316,7 @@ export class Colisage {
   protected async load(): Promise<void> {
     this.gestures.forgetOrderFailures();
     this.shortfall.forget();
+    this.simpleGestures.forget();
     const served = await this.day.load();
     if (served !== null) {
       // Le manifeste ne retient pas l'ouverture du poste : lu à côté, sans attendre.
@@ -382,6 +386,7 @@ export class Colisage {
     this.unknownReference.set(null);
     this.gestures.forgetOrderFailures();
     this.shortfall.forget();
+    this.simpleGestures.forget();
     this.justDeclared.set(null);
     this.closedElsewhere.set(null);
     this.ordersFolded.set(true);
@@ -390,6 +395,19 @@ export class Colisage {
   /** Replie ou rouvre la liste des commandes (tablette). */
   protected toggleOrders(): void {
     this.ordersFolded.update((folded) => !folded);
+  }
+
+  /** Le droit d'écriture du poste : « Pièces retrouvées » au colisage simple. */
+  protected readonly canWrite = computed(() => this.permissions.can('production_packing:write'));
+
+  /**
+   * « Tout est prêt » accepté (colisage simple) : comme « Déclarer prête »,
+   * l'écran enchaîne sur la commande suivante. Le poste est déjà relu.
+   */
+  protected afterSimplePacked(sheet: PackingSheet): void {
+    void this.rounds.load(this.day.date());
+    this.chosen.set(null);
+    this.justDeclared.set(sheet.customerLabel);
   }
 
   /** Change de pile. Le choix courant retombe sur la tête de la nouvelle pile. */

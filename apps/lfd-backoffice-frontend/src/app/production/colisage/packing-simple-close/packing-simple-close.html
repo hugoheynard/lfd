@@ -1,0 +1,62 @@
+<div class="psc">
+  @if (ready()) {
+    <p class="psc-said" data-simple-ready>
+      <fold-icon name="package-check" size="sm" />
+      Prête — le commerce l'a appris.
+    </p>
+  } @else {
+    <button
+      foldButton
+      block
+      size="lg"
+      icon="check"
+      [disabled]="!sheet().allReadyAvailable || gestures.busy()"
+      [loading]="gestures.busy()"
+      (click)="allReady()"
+      data-all-ready
+    >
+      Tout est prêt
+    </button>
+    @if (!sheet().allReadyAvailable) {
+      <p class="psc-said" data-awaiting-oven>
+        <fold-icon name="clock" size="sm" />
+        En attente du four : tout n'est pas encore sorti.
+      </p>
+    }
+    @if (awaitingDecision()) {
+      <fold-callout variant="warning" icon="clock" data-awaiting-decision>
+        Problème signalé : en attente de la décision du superviseur.
+      </fold-callout>
+    }
+  }
+
+  @if (allReadyRefusal(); as refusal) {
+    <fold-callout variant="alert" announce data-all-ready-refusal>{{ refusal }}</fold-callout>
+  }
+
+  <div class="psc-actions">
+    <button
+      foldButton
+      intent="danger"
+      emphasis="outline"
+      icon="alert"
+      [disabled]="gestures.busy()"
+      (click)="openProblem()"
+      data-problem
+    >
+      Problème
+    </button>
+    @if (hasShortfall() && canRecover()) {
+      <button
+        foldButton
+        emphasis="outline"
+        intent="neutral"
+        [disabled]="gestures.busy()"
+        (click)="openFound()"
+        data-found
+      >
+        Pièces retrouvées
+      </button>
+    }
+  </div>
+</div>
