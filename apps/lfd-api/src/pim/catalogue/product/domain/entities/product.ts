@@ -47,6 +47,7 @@ import {
 } from "../errors/variant-lifecycle-errors.js";
 import { PricingAlignmentAcrossUnitsError } from "../errors/sale-unit-errors.js";
 import { CustomRecipeDefaultWithoutTilesError } from "../errors/custom-recipe-errors.js";
+import { ProductCommerceOptions } from "../value-objects/product-commerce-options.js";
 import type { CompletenessRules } from "../services/variant-completeness.js";
 
 export type ProductKind = "daily" | "made_to_order" | "resale";
@@ -178,13 +179,8 @@ export class Product {
     private statusValue: ProductStatus,
     private readonly variantList: Variant[],
     private vatByContextValue: ContextVat,
-    private operationOnlyValue: boolean,
-    private requiresColdValue: boolean,
-    private audienceValue: Audience | null,
+    private optionsValue: ProductCommerceOptions,
     private readonly originVariantIdValue: string | null = null,
-    // Une fiche naît en montrant chaque déclinaison (Hugo, 2026-10-29) : le
-    // comportement de base, qu'on décoche fiche par fiche.
-    private variantsAsTilesValue = true,
   ) {}
 
   static open(input: NewProductInput): Product {
@@ -201,13 +197,7 @@ export class Product {
       // Un produit naît SANS dérogation : il suit sa famille jusqu'à ce que
       // quelqu'un décide le contraire, et cette décision se voit.
       {},
-      // Un produit naît COURANT : le réserver aux opérations est une décision
-      // qu'on prend en le sachant, et qui se lit au journal.
-      false,
-      // Un produit naît SANS froid déclaré : le froid se dit, il ne se devine pas.
-      false,
-      // Un produit naît avec l'audience de sa famille : il en hérite.
-      null,
+      ProductCommerceOptions.initial(),
     );
   }
 
@@ -223,11 +213,13 @@ export class Product {
       snapshot.status,
       snapshot.variants.map((variant) => Variant.reconstitute(variant)),
       snapshot.vatByContext,
-      snapshot.operationOnly,
-      snapshot.requiresCold,
-      snapshot.audience,
+      ProductCommerceOptions.of({
+        operationOnly: snapshot.operationOnly,
+        requiresCold: snapshot.requiresCold,
+        audience: snapshot.audience,
+        variantsAsTiles: snapshot.variantsAsTiles ?? true,
+      }),
       snapshot.originVariantId ?? null,
-      snapshot.variantsAsTiles ?? true,
     );
   }
 
@@ -274,7 +266,7 @@ export class Product {
 
   /** Vendu seulement pendant une opération ? */
   get operationOnly(): boolean {
-    return this.operationOnlyValue;
+    return this.optionsValue.operationOnly;
   }
 
   /**
@@ -288,16 +280,12 @@ export class Product {
    * comme pour un statut ({@link StatusChanged}).
    */
   reserveForOperations(operationOnly: boolean): boolean {
-    if (this.operationOnlyValue === operationOnly) {
-      return false;
-    }
-    this.operationOnlyValue = operationOnly;
-    return true;
+    return this.changeOptions(this.optionsValue.withOperationOnly(operationOnly));
   }
 
   /** Demande le froid ? */
   get requiresCold(): boolean {
-    return this.requiresColdValue;
+    return this.optionsValue.requiresCold;
   }
 
   /**
@@ -311,16 +299,12 @@ export class Product {
    * ({@link StatusChanged}).
    */
   declareColdRequirement(requiresCold: boolean): boolean {
-    if (this.requiresColdValue === requiresCold) {
-      return false;
-    }
-    this.requiresColdValue = requiresCold;
-    return true;
+    return this.changeOptions(this.optionsValue.withRequiresCold(requiresCold));
   }
 
   /** Montre-t-il chaque déclinaison en vignette ? */
   get variantsAsTiles(): boolean {
-    return this.variantsAsTilesValue;
+    return this.optionsValue.variantsAsTiles;
   }
 
   /**
@@ -335,12 +319,11 @@ export class Product {
    * @throws {CustomRecipeDefaultWithoutTilesError} le défaut est sur mesure.
    */
   showVariantsAsTiles(variantsAsTiles: boolean): boolean {
-    if (this.variantsAsTilesValue === variantsAsTiles) {
+    if (this.optionsValue.variantsAsTiles === variantsAsTiles) {
       return false;
     }
     this.refuseCustomDefaultWithoutTiles(this.defaultVariant, variantsAsTiles);
-    this.variantsAsTilesValue = variantsAsTiles;
-    return true;
+    return this.changeOptions(this.optionsValue.withVariantsAsTiles(variantsAsTiles));
   }
 
   /**
@@ -359,7 +342,7 @@ export class Product {
   declareVariantCustomRecipe(variantId: string, customRecipe: boolean): boolean {
     const target = this.variant(variantId);
     if (customRecipe && target.isDefault) {
-      this.refuseCustomDefaultWithoutTiles(target, this.variantsAsTilesValue, true);
+      this.refuseCustomDefaultWithoutTiles(target, this.optionsValue.variantsAsTiles, true);
     }
     return target.declareCustomRecipe(customRecipe);
   }
@@ -382,7 +365,7 @@ export class Product {
 
   /** Sa propre audience, ou `null` s'il suit sa famille. */
   get audience(): Audience | null {
-    return this.audienceValue;
+    return this.optionsValue.audience;
   }
 
   /**
@@ -393,10 +376,15 @@ export class Product {
    * @returns `false` quand elle le disait déjà ({@link StatusChanged}).
    */
   changeAudience(audience: Audience | null): boolean {
-    if (this.audienceValue === audience) {
+    return this.changeOptions(this.optionsValue.withAudience(audience));
+  }
+
+  /** Pose les nouveaux réglages ; `false` quand ils étaient déjà ceux-là. */
+  private changeOptions(next: ProductCommerceOptions): boolean {
+    if (next === this.optionsValue) {
       return false;
     }
-    this.audienceValue = audience;
+    this.optionsValue = next;
     return true;
   }
 
@@ -496,7 +484,7 @@ export class Product {
       vatPercents,
       rules,
       citedAllergens,
-      effectiveAudience(this.audienceValue, categoryAudience),
+      effectiveAudience(this.optionsValue.audience, categoryAudience),
     );
   }
 
@@ -791,14 +779,8 @@ export class Product {
       "draft",
       [Variant.openDefaultFrom(resolved, { ...input.defaultVariant, name: resolved.name })],
       { ...this.vatByContextValue },
-      this.operationOnlyValue,
-      this.requiresColdValue,
-      this.audienceValue,
+      this.optionsValue.forDetachedProduct(),
       variantId,
-      // Une fiche née d'un détachement montre ses vignettes ; son défaut garde
-      // le sur mesure de la déclinaison qu'il était (`resolved`), si bien que le
-      // détachement n'ouvre à tous les pros aucune recette réservée.
-      true,
     );
   }
 
@@ -845,7 +827,7 @@ export class Product {
     if (target.isDiscontinued) {
       throw new DiscontinuedVariantNotDefaultableError(target.sku);
     }
-    this.refuseCustomDefaultWithoutTiles(target, this.variantsAsTilesValue);
+    this.refuseCustomDefaultWithoutTiles(target, this.optionsValue.variantsAsTiles);
     const previous = this.defaultVariant;
     const resolved = this.resolvedSnapshot(target);
     const inherited = {
@@ -1003,11 +985,11 @@ export class Product {
       categoryId: this.categoryIdValue,
       status: this.statusValue,
       vatByContext: this.vatByContextValue,
-      operationOnly: this.operationOnlyValue,
-      requiresCold: this.requiresColdValue,
-      audience: this.audienceValue,
+      operationOnly: this.optionsValue.operationOnly,
+      requiresCold: this.optionsValue.requiresCold,
+      audience: this.optionsValue.audience,
       originVariantId: this.originVariantIdValue,
-      variantsAsTiles: this.variantsAsTilesValue,
+      variantsAsTiles: this.optionsValue.variantsAsTiles,
     };
   }
 }
