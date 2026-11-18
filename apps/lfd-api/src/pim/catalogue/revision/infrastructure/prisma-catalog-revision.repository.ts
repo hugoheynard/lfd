@@ -153,7 +153,7 @@ export class PrismaCatalogRevisionRepository extends CatalogRevisionRepository {
     // du catalogue, elle le PHOTOGRAPHIE. Il est exigé quand même — c'est ce qui
     // garantit que le fait est tracé avant que la ligne existe.
     void ticket;
-    const { id, reference, label, hash, takenAt, takenBy } = revision.toState();
+    const { id, reference, label, note, hash, takenAt, takenBy } = revision.toState();
     // Trois écritures SÉQUENTIELLES, sans `$transaction` : l'atomicité vient de
     // l'unité de travail du handler, qui englobe déjà la trace du journal. En
     // ouvrir une seconde ici serait une transaction imbriquée — que Prisma ne
@@ -173,7 +173,16 @@ export class PrismaCatalogRevisionRepository extends CatalogRevisionRepository {
     // suite honnête : rattraper l'ancre du gagnant.
     await this.prisma.catalogRevision
       .create({
-        data: { id, reference, label, hash, header: { ...photograph.header }, takenAt, takenBy },
+        data: {
+          id,
+          reference,
+          label,
+          note,
+          hash,
+          header: { ...photograph.header },
+          takenAt,
+          takenBy,
+        },
       })
       .catch((error: unknown) => {
         if (isUniqueViolation(error)) {

@@ -133,6 +133,22 @@ describe("Ancre de publication du catalogue", () => {
   });
 
   /**
+   * Régression : la note apportée à la pose n'était pas écrite — seul le nom
+   * l'était, et la note disparaissait sans un mot (corrigé le 2026-11-18).
+   */
+  it("garde la note apportée à la pose", async () => {
+    await aProduct("Croissant");
+
+    const response = await staff()
+      .post(REVISIONS)
+      .send({ label: "rentrée", note: "prix de septembre validés" });
+    expect(response.status).toBe(201);
+
+    const row = await ctx.prisma.catalogRevision.findFirstOrThrow();
+    expect(row).toMatchObject({ label: "rentrée", note: "prix de septembre validés" });
+  });
+
+  /**
    * **La garde qui empêche l'histoire de devenir une liste de doublons.** Un
    * bouton cliqué deux fois sur un catalogue inchangé ne pose rien : l'empreinte
    * est comparée à celle de la dernière ancre.
