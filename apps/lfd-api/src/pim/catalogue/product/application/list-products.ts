@@ -3,7 +3,7 @@ import type { ProductComplianceFinding } from "@lfd/pim-contracts";
 
 import { PimContents } from "../../../changes/application/pim-contents.js";
 import { listContent, PIM_CONTENT_KEYS } from "../../../changes/application/pim-content-keys.js";
-import { ActiveSalesContextsReader } from "../../../sales-contexts/domain/ports/active-sales-contexts.reader.js";
+import { ActiveSalesContextsReader } from "../../../reference/sales-contexts/domain/ports/active-sales-contexts.reader.js";
 import { CategoryNotFoundError } from "../../category/domain/errors/category-errors.js";
 import { CategoryRepository } from "../../category/domain/ports/category.repository.js";
 import {

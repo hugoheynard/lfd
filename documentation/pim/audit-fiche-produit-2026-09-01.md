@@ -474,7 +474,7 @@ tranches 6 à 8 attendent §15.
 
 Code : `apps/lfd-backoffice-frontend/src/app/pim/catalogue/product-form/`,
 `.../products-page/`, `apps/lfd-api/src/pim/catalogue/product/`,
-`.../catalogue/revision/`, `apps/lfd-api/src/pim/ingredients/`,
+`.../catalogue/revision/`, `apps/lfd-api/src/pim/reference/ingredients/`,
 `packages/pim-contracts/src/ingredient.ts`.
 
 Docs liés : [`pim/data-model/05-allergenes-gs1-inco.md`](data-model/05-allergenes-gs1-inco.md)

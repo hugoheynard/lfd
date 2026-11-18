@@ -9,7 +9,7 @@ import {
   renderAllergenMatrixPdf,
   type AllergenMatrixPaper,
 } from "../allergen-matrix-pdf.js";
-import type { AllergenCategoryView } from "../../../../allergens/domain/ports/allergen-catalogue.reader.js";
+import type { AllergenCategoryView } from "../../../../reference/allergens/domain/ports/allergen-catalogue.reader.js";
 import { families, OTHER_FAMILY_ID, product, referential, variant } from "./matrix-fixtures.js";
 import type { ProductRecord } from "../../../product/domain/ports/product.repository.js";
 

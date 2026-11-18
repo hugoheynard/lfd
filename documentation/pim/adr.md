@@ -24,7 +24,7 @@ l'affichage. Mapping **n:1** maintenu (donnée de référence versionnée), serv
 Stocker le plus riche, projeter vers le bas (l'inverse serait avec perte).
 **Conséquences** : détail dans
 [`data-model/05-allergenes-gs1-inco.md`](./data-model/05-allergenes-gs1-inco.md).
-Le bloc est en place : [`apps/lfd-api/src/pim/allergens`](../../apps/lfd-api/src/pim/allergens).
+Le bloc est en place : [`apps/lfd-api/src/pim/reference/allergens`](../../apps/lfd-api/src/pim/reference/allergens).
 
 ✅ **Le « à peupler » est fait** (vérifié le 2026-09-13), et autrement que prévu :
 les codes ne sont plus une liste en dur à compléter depuis `ref.gs1.org`, ils

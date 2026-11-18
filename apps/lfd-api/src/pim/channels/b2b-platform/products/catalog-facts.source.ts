@@ -1,9 +1,9 @@
 import { Injectable } from "@nestjs/common";
 
 import { readCompletenessRules } from "../../../catalogue/product/application/completeness-support.js";
-import { ActiveSalesContextsReader } from "../../../sales-contexts/domain/ports/active-sales-contexts.reader.js";
-import { AllergenCatalogueReader } from "../../../allergens/domain/ports/allergen-catalogue.reader.js";
-import { AllergenNaming } from "../../../allergens/domain/services/allergen-naming.js";
+import { ActiveSalesContextsReader } from "../../../reference/sales-contexts/domain/ports/active-sales-contexts.reader.js";
+import { AllergenCatalogueReader } from "../../../reference/allergens/domain/ports/allergen-catalogue.reader.js";
+import { AllergenNaming } from "../../../reference/allergens/domain/services/allergen-naming.js";
 import { DetachmentLineageReader } from "../../../catalogue/product/domain/ports/detachment-lineage.reader.js";
 import type { ProductRecord } from "../../../catalogue/product/domain/ports/product.repository.js";
 import { CitedAllergensReader } from "../../../catalogue/product/domain/ports/cited-allergens.reader.js";
@@ -15,7 +15,7 @@ import {
 } from "../../../catalogue/shared/domain/ports/catalog-facts.reader.js";
 import type { CategoryVatPercents } from "../../../catalogue/shared/domain/ports/catalogue-reader.js";
 import { effectiveVat } from "../../../catalogue/shared/domain/value-objects/context-vat.js";
-import { VatRateRepository } from "../../../vat-rates/domain/ports/vat-rate.repository.js";
+import { VatRateRepository } from "../../../reference/vat-rates/domain/ports/vat-rate.repository.js";
 import {
   projectFamilyFact,
   projectProductFact,

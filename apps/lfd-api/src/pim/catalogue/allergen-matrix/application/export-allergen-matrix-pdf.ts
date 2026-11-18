@@ -4,7 +4,7 @@ import { type IQueryHandler, QueryHandler } from "@nestjs/cqrs";
 
 import { BrandLogoSource } from "../../../../platform/brand/brand-logo.source.js";
 import { Clock } from "../../../../platform/time/clock.js";
-import { AllergenCatalogueReader } from "../../../allergens/domain/ports/allergen-catalogue.reader.js";
+import { AllergenCatalogueReader } from "../../../reference/allergens/domain/ports/allergen-catalogue.reader.js";
 import type { MatrixFilters } from "../domain/allergen-matrix.js";
 import {
   allergenMatrixPdfFileName,

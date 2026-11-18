@@ -1,7 +1,7 @@
-import { contextLabelsOf } from "../../../sales-contexts/application/context-labels.js";
-import { SalesContextRegistry } from "../../../sales-contexts/domain/ports/sales-context.registry.js";
-import { VatRateNotFoundError } from "../../../vat-rates/domain/errors/vat-rate-errors.js";
-import { VatRateRepository } from "../../../vat-rates/domain/ports/vat-rate.repository.js";
+import { contextLabelsOf } from "../../../reference/sales-contexts/application/context-labels.js";
+import { SalesContextRegistry } from "../../../reference/sales-contexts/domain/ports/sales-context.registry.js";
+import { VatRateNotFoundError } from "../../../reference/vat-rates/domain/errors/vat-rate-errors.js";
+import { VatRateRepository } from "../../../reference/vat-rates/domain/ports/vat-rate.repository.js";
 
 /**
  * **Les noms que les faits du catalogue figent** (D5 du plan des phrases du

@@ -1,5 +1,5 @@
-import type { AllergenCategoryView } from "../../../../allergens/domain/ports/allergen-catalogue.reader.js";
-import type { IncoCategory } from "../../../../allergens/domain/value-objects/inco-category.js";
+import type { AllergenCategoryView } from "../../../../reference/allergens/domain/ports/allergen-catalogue.reader.js";
+import type { IncoCategory } from "../../../../reference/allergens/domain/value-objects/inco-category.js";
 import { Product, type ProductSnapshot } from "../../../product/domain/entities/product.js";
 import type { VariantSnapshot } from "../../../product/domain/entities/variant.js";
 import type { ProductRecord } from "../../../product/domain/ports/product.repository.js";

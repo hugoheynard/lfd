@@ -47,7 +47,7 @@ import { rootFamilyOf } from "./family-roots.js";
  */
 export const SYNTHETIC_MARKER = 0;
 
-/** Les codes GS1 du référentiel — cf. `src/pim/allergens/allergen-mapping.ts`. */
+/** Les codes GS1 du référentiel — cf. `src/pim/reference/allergens/allergen-mapping.ts`. */
 const GLUTEN_WHEAT = "UW";
 const EGGS = "AE";
 const MILK = "AM";

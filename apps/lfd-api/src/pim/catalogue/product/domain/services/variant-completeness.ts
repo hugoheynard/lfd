@@ -1,4 +1,4 @@
-import { ROOT_CONTEXT_KEY } from "../../../../sales-contexts/domain/value-objects/bootstrap-contexts.js";
+import { ROOT_CONTEXT_KEY } from "../../../../reference/sales-contexts/domain/value-objects/bootstrap-contexts.js";
 import type { CategoryVatPercents } from "../../../shared/domain/ports/catalogue-reader.js";
 import type { VariantSnapshot } from "../entities/variant.js";
 import { servedAudiences, type Audience } from "../../../shared/domain/value-objects/audience.js";

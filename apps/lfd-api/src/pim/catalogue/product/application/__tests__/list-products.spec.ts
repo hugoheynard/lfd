@@ -14,7 +14,7 @@ import {
 } from "./audience-doubles.js";
 import { FixedCitedAllergens } from "../../domain/ports/__tests__/fixed-cited-allergens.js";
 import { FixedIllustratedProducts } from "../../domain/ports/__tests__/fixed-illustrated-products.js";
-import { FixedActiveContexts } from "../../../../sales-contexts/domain/ports/__tests__/fixed-active-contexts.js";
+import { FixedActiveContexts } from "../../../../reference/sales-contexts/domain/ports/__tests__/fixed-active-contexts.js";
 import { DirectPimContents } from "../../../../changes/application/__tests__/direct-pim-contents.js";
 
 /** Le handler de liste, avec taux et contextes doublés. */

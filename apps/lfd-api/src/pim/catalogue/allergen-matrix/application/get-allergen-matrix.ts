@@ -2,7 +2,7 @@ import { type IQueryHandler, QueryHandler } from "@nestjs/cqrs";
 import type { AllergenMatrixView } from "@lfd/pim-contracts";
 
 import { Clock } from "../../../../platform/time/clock.js";
-import { AllergenCatalogueReader } from "../../../allergens/domain/ports/allergen-catalogue.reader.js";
+import { AllergenCatalogueReader } from "../../../reference/allergens/domain/ports/allergen-catalogue.reader.js";
 import { familyChoices } from "../domain/family-choices.js";
 import type { MatrixFilters } from "../domain/allergen-matrix.js";
 import { AllergenMatrixSource } from "../domain/ports/allergen-matrix.source.js";

@@ -8,7 +8,7 @@
 import type { Response } from "supertest";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
-import { SalesContextRegistry } from "../src/pim/sales-contexts/domain/ports/sales-context.registry.js";
+import { SalesContextRegistry } from "../src/pim/reference/sales-contexts/domain/ports/sales-context.registry.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { freshIntent, INTENT_KEY } from "./intent-key.js";
 

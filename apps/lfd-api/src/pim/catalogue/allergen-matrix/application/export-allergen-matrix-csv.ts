@@ -1,6 +1,6 @@
 import { type IQueryHandler, QueryHandler } from "@nestjs/cqrs";
 
-import { AllergenCatalogueReader } from "../../../allergens/domain/ports/allergen-catalogue.reader.js";
+import { AllergenCatalogueReader } from "../../../reference/allergens/domain/ports/allergen-catalogue.reader.js";
 import { allergenMatrixCsv } from "../domain/allergen-matrix-csv.js";
 import type { MatrixFilters } from "../domain/allergen-matrix.js";
 import { AllergenMatrixSource } from "../domain/ports/allergen-matrix.source.js";

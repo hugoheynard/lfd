@@ -1,11 +1,11 @@
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingJournal } from "../../../../journal/__tests__/recording-journal.js";
-import { VatRateNotFoundError } from "../../../../vat-rates/domain/errors/vat-rate-errors.js";
-import { VatRate } from "../../../../vat-rates/domain/entities/vat-rate.js";
+import { VatRateNotFoundError } from "../../../../reference/vat-rates/domain/errors/vat-rate-errors.js";
+import { VatRate } from "../../../../reference/vat-rates/domain/entities/vat-rate.js";
 import {
   VatRateRepository,
   type VatRateUsage,
-} from "../../../../vat-rates/domain/ports/vat-rate.repository.js";
+} from "../../../../reference/vat-rates/domain/ports/vat-rate.repository.js";
 import { UuidGenerator } from "../../../../../platform/id/uuid-generator.js";
 import { Category, type CategorySnapshot } from "../../domain/entities/category.js";
 import {
@@ -35,8 +35,8 @@ import { RenameCategoryCommand, RenameCategoryHandler } from "../rename-category
 import { ReorderCategoriesCommand, ReorderCategoriesHandler } from "../reorder-categories.js";
 import { SetCategoryMediaCommand, SetCategoryMediaHandler } from "../set-category-media.js";
 import { SetCategoryVatCommand, SetCategoryVatHandler } from "../set-category-vat.js";
-import { SalesContextRegistry } from "../../../../sales-contexts/domain/ports/sales-context.registry.js";
-import type { SalesContext } from "../../../../sales-contexts/domain/value-objects/sales-context.js";
+import { SalesContextRegistry } from "../../../../reference/sales-contexts/domain/ports/sales-context.registry.js";
+import type { SalesContext } from "../../../../reference/sales-contexts/domain/value-objects/sales-context.js";
 import {
   RecordingCatalogEmitter,
   RecordingCatalogReemission,

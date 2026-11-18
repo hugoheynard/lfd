@@ -7,7 +7,7 @@ import type { Product } from "../domain/entities/product.js";
 import { ProductRepository } from "../domain/ports/product.repository.js";
 import { requireProduct } from "./product-support.js";
 import { CatalogEmitter } from "../../shared/domain/ports/catalog-emitter.js";
-import { ActiveSalesContextsReader } from "../../../sales-contexts/domain/ports/active-sales-contexts.reader.js";
+import { ActiveSalesContextsReader } from "../../../reference/sales-contexts/domain/ports/active-sales-contexts.reader.js";
 import { readCompletenessRules } from "./completeness-support.js";
 import { CitedAllergensReader } from "../domain/ports/cited-allergens.reader.js";
 import { CategoryRepository } from "../../category/domain/ports/category.repository.js";

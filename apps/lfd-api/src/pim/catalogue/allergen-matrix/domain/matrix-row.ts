@@ -3,8 +3,8 @@ import { readLocalized, type Locale } from "@lfd/pim-contracts";
 import type {
   IncoProjector,
   OutsideAnnexLabel,
-} from "../../../allergens/domain/services/inco-projector.js";
-import type { IncoCategory } from "../../../allergens/domain/value-objects/inco-category.js";
+} from "../../../reference/allergens/domain/services/inco-projector.js";
+import type { IncoCategory } from "../../../reference/allergens/domain/value-objects/inco-category.js";
 import type { VariantAllergenSheetSnapshot } from "../../product/domain/entities/variant.js";
 import type { LocalizedText } from "../../shared/domain/value-objects/localized-text.js";
 

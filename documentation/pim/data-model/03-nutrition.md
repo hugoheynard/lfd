@@ -86,7 +86,7 @@ s'ajouter plus tard sans casser celle-ci.
 
 `allergens` / `may_contain` stockent des **codes GS1** (canonique, interopérable B2B/GDSN). La
 projection vers l'**INCO-14** (filtre + libellés + mise en forme) se fait à l'affichage — logique
-déjà codée : [`src/allergens`](../../../apps/lfd-api/src/pim/allergens) (`toInco` /
+déjà codée : [`src/allergens`](../../../apps/lfd-api/src/pim/reference/allergens) (`toInco` /
 `toGdsn`), détail dans [`05-allergenes-gs1-inco.md`](05-allergenes-gs1-inco.md). Les 30 codes GS1
 ont été **recoupés un par un** avec `ref.gs1.org/voc/AllergenTypeCode` — trois codes provisoires
 étaient faux et ont été corrigés ; la provenance est en tête d'`allergen-mapping.ts`. Le

@@ -6,8 +6,8 @@ import { v7 as uuidV7 } from "uuid";
 import {
   AllergenStore,
   InMemoryAllergenCatalogueReader,
-} from "../../../../allergens/application/__tests__/in-memory-allergens.js";
-import { ArchivedAllergenDeclaredError } from "../../../../allergens/domain/errors/allergen-errors.js";
+} from "../../../../reference/allergens/application/__tests__/in-memory-allergens.js";
+import { ArchivedAllergenDeclaredError } from "../../../../reference/allergens/domain/errors/allergen-errors.js";
 import { UuidGenerator } from "../../../../../platform/id/uuid-generator.js";
 import { Category } from "../../../category/domain/entities/category.js";
 import { CategoryArchivedError } from "../../../category/domain/errors/category-errors.js";

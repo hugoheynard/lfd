@@ -3,7 +3,7 @@ import { QueryBus } from "@nestjs/cqrs";
 import { SOURCE_LOCALE, type AllergenReference } from "@lfd/pim-contracts";
 
 import { AdminSurface } from "../../../../platform/auth/admin-surface.decorator.js";
-import { ReadAllergenReferenceQuery } from "../../../allergens/application/read-allergen-reference.js";
+import { ReadAllergenReferenceQuery } from "../../../reference/allergens/application/read-allergen-reference.js";
 
 /**
  * Le référentiel des **allergènes**, tel que la fiche produit le consomme.

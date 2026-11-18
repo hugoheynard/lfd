@@ -1,7 +1,7 @@
 import { type IQueryHandler, QueryHandler } from "@nestjs/cqrs";
 import type { ProductComplianceWarningView } from "@lfd/pim-contracts";
 
-import { ActiveSalesContextsReader } from "../../../sales-contexts/domain/ports/active-sales-contexts.reader.js";
+import { ActiveSalesContextsReader } from "../../../reference/sales-contexts/domain/ports/active-sales-contexts.reader.js";
 import { CatalogueReader } from "../../shared/domain/ports/catalogue-reader.js";
 import { CitedAllergensReader } from "../domain/ports/cited-allergens.reader.js";
 import { isLiveStatus, ProductRepository } from "../domain/ports/product.repository.js";

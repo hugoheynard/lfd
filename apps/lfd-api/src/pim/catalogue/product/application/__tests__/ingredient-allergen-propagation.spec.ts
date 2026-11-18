@@ -2,7 +2,7 @@ import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/dir
 import {
   AllergenStore,
   InMemoryAllergenCatalogueReader,
-} from "../../../../allergens/application/__tests__/in-memory-allergens.js";
+} from "../../../../reference/allergens/application/__tests__/in-memory-allergens.js";
 import { RecordingJournal } from "../../../../journal/__tests__/recording-journal.js";
 import { RecordingCatalogEmitter } from "../../../shared/domain/ports/__tests__/catalog-emitter-doubles.js";
 import { Product, type ProductSnapshot } from "../../domain/entities/product.js";

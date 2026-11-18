@@ -12,7 +12,7 @@ export type { AllergenEntry, AllergenReference, AllergenScope } from '../data/mo
  *
  * Il vivait ici en dur, recopié du domaine backend — deux listes réglementées à
  * tenir d'accord, dont une que personne ne pensait à rouvrir. Les codes GS1 et
- * les catégories INCO n'ont qu'une source, `apps/lfd-api/src/pim/allergens/`,
+ * les catégories INCO n'ont qu'une source, `apps/lfd-api/src/pim/reference/allergens/`,
  * et c'est le serveur qui la sert : les mêmes codes valident l'écriture et
  * peuplent le formulaire, sinon on peut cocher ici ce que là-bas refuse.
  *

@@ -20,7 +20,7 @@ import {
   slugify,
   type LocalizedText,
 } from "../../../shared/domain/value-objects/localized-text.js";
-import type { SalesContext } from "../../../../sales-contexts/domain/value-objects/sales-context.js";
+import type { SalesContext } from "../../../../reference/sales-contexts/domain/value-objects/sales-context.js";
 import type { ContextVat } from "../../../shared/domain/value-objects/context-vat.js";
 import type { AllergenDeclaration } from "../value-objects/nutrition-declaration.js";
 import type { Sku } from "../value-objects/sku.value-object.js";

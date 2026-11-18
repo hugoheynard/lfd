@@ -1,4 +1,4 @@
-import { AllergenNaming } from "../../../../allergens/domain/services/allergen-naming.js";
+import { AllergenNaming } from "../../../../reference/allergens/domain/services/allergen-naming.js";
 import { bareVariant } from "../../../../catalogue/product/application/__tests__/audience-doubles.js";
 import { projectVariant, type AllergenContext } from "../projection.js";
 

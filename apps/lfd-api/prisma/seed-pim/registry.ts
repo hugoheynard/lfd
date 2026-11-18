@@ -2,8 +2,8 @@ import type { CommandBus } from "@nestjs/cqrs";
 
 import { CreateCategoryCommand } from "../../src/pim/catalogue/category/application/create-category.js";
 import { SetCategoryVatCommand } from "../../src/pim/catalogue/category/application/set-category-vat.js";
-import { CreateSalesContextCommand } from "../../src/pim/sales-contexts/application/create-sales-context.js";
-import { CreateVatRateCommand } from "../../src/pim/vat-rates/application/create-vat-rate.js";
+import { CreateSalesContextCommand } from "../../src/pim/reference/sales-contexts/application/create-sales-context.js";
+import { CreateVatRateCommand } from "../../src/pim/reference/vat-rates/application/create-vat-rate.js";
 import type { ContextVat } from "../../src/pim/catalogue/shared/domain/value-objects/context-vat.js";
 import type { PrismaService } from "../../src/platform/database/prisma.service.js";
 import type { CatalogueCorpus } from "./corpus.js";

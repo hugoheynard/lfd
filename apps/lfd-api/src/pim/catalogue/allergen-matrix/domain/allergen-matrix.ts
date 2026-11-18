@@ -1,8 +1,8 @@
 import { ALLERGEN_MATRIX_WORDING, readLocalized, type Locale } from "@lfd/pim-contracts";
 
-import type { AllergenCategoryView } from "../../../allergens/domain/ports/allergen-catalogue.reader.js";
-import { IncoProjector } from "../../../allergens/domain/services/inco-projector.js";
-import type { IncoCategory } from "../../../allergens/domain/value-objects/inco-category.js";
+import type { AllergenCategoryView } from "../../../reference/allergens/domain/ports/allergen-catalogue.reader.js";
+import { IncoProjector } from "../../../reference/allergens/domain/services/inco-projector.js";
+import type { IncoCategory } from "../../../reference/allergens/domain/value-objects/inco-category.js";
 import { CategoryNotFoundError } from "../../category/domain/errors/category-errors.js";
 import { isLiveStatus } from "../../product/domain/ports/product.repository.js";
 import type { LocalizedText } from "../../shared/domain/value-objects/localized-text.js";

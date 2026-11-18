@@ -2,7 +2,7 @@ import type { SyncMedia, SyncMinQuantities, SyncVariant } from "@lfd/catalog-syn
 import { proPriceOf } from "@lfd/pim-contracts";
 
 import { TechnicalError } from "../../../../platform/shared/errors/app-error.js";
-import type { AllergenNaming } from "../../../allergens/domain/services/allergen-naming.js";
+import type { AllergenNaming } from "../../../reference/allergens/domain/services/allergen-naming.js";
 import type { ProductRecord } from "../../../catalogue/product/domain/ports/product.repository.js";
 import type { ProductStatus } from "../../../catalogue/product/domain/entities/product.js";
 import {

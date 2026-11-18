@@ -1,4 +1,4 @@
-import type { IncoCategory } from "../../../../allergens/domain/value-objects/inco-category.js";
+import type { IncoCategory } from "../../../../reference/allergens/domain/value-objects/inco-category.js";
 import type {
   AllergenMatrix,
   MatrixColumn,

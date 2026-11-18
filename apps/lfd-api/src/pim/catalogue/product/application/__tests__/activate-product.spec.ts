@@ -21,7 +21,7 @@ import {
 import type { Audience } from "../../../shared/domain/value-objects/audience.js";
 import { RecordingCatalogEmitter } from "../../../shared/domain/ports/__tests__/catalog-emitter-doubles.js";
 import { FixedCitedAllergens } from "../../domain/ports/__tests__/fixed-cited-allergens.js";
-import { FixedActiveContexts } from "../../../../sales-contexts/domain/ports/__tests__/fixed-active-contexts.js";
+import { FixedActiveContexts } from "../../../../reference/sales-contexts/domain/ports/__tests__/fixed-active-contexts.js";
 
 /**
  * **Activer** — l'ancien « publier » (1e du plan

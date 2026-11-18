@@ -8,7 +8,7 @@ import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import {
   AllergenCatalogueReader,
   type AllergenCategoryView,
-} from "../../../../allergens/domain/ports/allergen-catalogue.reader.js";
+} from "../../../../reference/allergens/domain/ports/allergen-catalogue.reader.js";
 import type { ProductRecord } from "../../../product/domain/ports/product.repository.js";
 import type { MatrixFilters } from "../../domain/allergen-matrix.js";
 import {

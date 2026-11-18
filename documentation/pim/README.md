@@ -36,17 +36,17 @@ plan de production du labo.
 Le **langage et les verbes** d'abord ; les tables ne sont qu'une conséquence. Puis le **produit**
 (identité) au centre, et des **couches** posées autour — chacune son doc et son rythme de vie.
 
-|                             | Doc                                                                                      | Rôle                                                                                                       |
-| --------------------------- | ---------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| 📖 **Langage & verbes**     | [`data-model/00-langage-et-comportement.md`](./data-model/00-langage-et-comportement.md) | **À lire en premier** — glossaire, agrégats, commandes & faits, cycle de vie                               |
-| 🧩 **Identité (socle)**     | [`data-model/02-catalogue-items.md`](./data-model/02-catalogue-items.md)                 | Le **quoi** — `Product` / `ProductVariant` / `Category` / `Collection`. **Fait seul autorité**             |
-| 🥗 **Réglementaire**        | [`data-model/03-nutrition.md`](./data-model/03-nutrition.md)                             | **Allergènes** (GS1 → INCO, [code](../../apps/lfd-api/src/pim/allergens)) + nutrition, par **déclinaison** |
-| ✍️ **Éditorial**            | [`data-model/01-produit.md`](./data-model/01-produit.md)                                 | Récit, provenance, labels, médias, SEO                                                                     |
-| 📡 **Composition & canaux** | [`data-model/04-composition-et-canaux.md`](./data-model/04-composition-et-canaux.md)     | Comment on **étend** sans diluer : trois natures de table, bindings, overrides                             |
-| 🔖 **Identifiants & SKU**   | [`data-model/06-identifiants-et-sku.md`](./data-model/06-identifiants-et-sku.md)         | `id` vs `sku` vs référence canal ; value object, SKU par défaut, unicité                                   |
-| 💶 **Prix**                 | _à porter_                                                                               | Le **combien** — par canal + TVA                                                                           |
-| 📅 **Disponibilité**        | _à porter_                                                                               | Le **quand** — capacité, créneaux, cut-off (pas un stock)                                                  |
-| ⚖️ **Logistique**           | —                                                                                        | **Descopée v1** ([ADR-14](./adr.md#adr-14--couche-logistique-descopée-de-la-v1))                           |
+|                             | Doc                                                                                      | Rôle                                                                                                                 |
+| --------------------------- | ---------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| 📖 **Langage & verbes**     | [`data-model/00-langage-et-comportement.md`](./data-model/00-langage-et-comportement.md) | **À lire en premier** — glossaire, agrégats, commandes & faits, cycle de vie                                         |
+| 🧩 **Identité (socle)**     | [`data-model/02-catalogue-items.md`](./data-model/02-catalogue-items.md)                 | Le **quoi** — `Product` / `ProductVariant` / `Category` / `Collection`. **Fait seul autorité**                       |
+| 🥗 **Réglementaire**        | [`data-model/03-nutrition.md`](./data-model/03-nutrition.md)                             | **Allergènes** (GS1 → INCO, [code](../../apps/lfd-api/src/pim/reference/allergens)) + nutrition, par **déclinaison** |
+| ✍️ **Éditorial**            | [`data-model/01-produit.md`](./data-model/01-produit.md)                                 | Récit, provenance, labels, médias, SEO                                                                               |
+| 📡 **Composition & canaux** | [`data-model/04-composition-et-canaux.md`](./data-model/04-composition-et-canaux.md)     | Comment on **étend** sans diluer : trois natures de table, bindings, overrides                                       |
+| 🔖 **Identifiants & SKU**   | [`data-model/06-identifiants-et-sku.md`](./data-model/06-identifiants-et-sku.md)         | `id` vs `sku` vs référence canal ; value object, SKU par défaut, unicité                                             |
+| 💶 **Prix**                 | _à porter_                                                                               | Le **combien** — par canal + TVA                                                                                     |
+| 📅 **Disponibilité**        | _à porter_                                                                               | Le **quand** — capacité, créneaux, cut-off (pas un stock)                                                            |
+| ⚖️ **Logistique**           | —                                                                                        | **Descopée v1** ([ADR-14](./adr.md#adr-14--couche-logistique-descopée-de-la-v1))                                     |
 
 ## Démarrer en local
 

@@ -61,7 +61,7 @@ const ROOT = process.cwd();
 
 /** Les contrôleurs dont la dette est purgée. En ajouter un = l'avoir drainé. */
 const SCOPE = [
-  "apps/lfd-api/src/pim/ingredients/http/ingredient.controller.ts",
+  "apps/lfd-api/src/pim/reference/ingredients/http/ingredient.controller.ts",
   // Drainé le 2026-09-10 : il injectait `CatalogAdminReader` en direct, et la
   // lecture qu'il servait n'avait donc PAS de nom. Ça s'est payé le jour où le
   // tableau de bord de la comptabilité a eu besoin de la même liste, sous deux
@@ -93,7 +93,7 @@ const SCOPE = [
   // aurait injecté un port. Être vert et être tenu sont deux choses.
   "apps/lfd-api/src/lafoliecoffee/pricing/http/admin-price-floors.controller.ts",
   "apps/lfd-api/src/ops/traffic/admin-traffic.controller.ts",
-  "apps/lfd-api/src/pim/sales-contexts/http/sales-context.controller.ts",
+  "apps/lfd-api/src/pim/reference/sales-contexts/http/sales-context.controller.ts",
   // Déménagé le 2026-11-08 (suivi des e-mails, T1) depuis `platform/mailer/webhook/`.
   "apps/lfd-api/src/mail/deliveries/http/resend-webhook.controller.ts",
   "apps/lfd-api/src/staff/notifications/http/admin-staff-push.controller.ts",

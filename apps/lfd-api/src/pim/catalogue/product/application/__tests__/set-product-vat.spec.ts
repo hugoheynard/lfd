@@ -1,10 +1,10 @@
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { KnownVatRates } from "../../../shared/application/__tests__/journal-name-doubles.js";
 import { RecordingJournal } from "../../../../journal/__tests__/recording-journal.js";
-import { VatRateNotFoundError } from "../../../../vat-rates/domain/errors/vat-rate-errors.js";
-import { VatRateRepository } from "../../../../vat-rates/domain/ports/vat-rate.repository.js";
-import type { SalesContext } from "../../../../sales-contexts/domain/value-objects/sales-context.js";
-import { SalesContextRegistry } from "../../../../sales-contexts/domain/ports/sales-context.registry.js";
+import { VatRateNotFoundError } from "../../../../reference/vat-rates/domain/errors/vat-rate-errors.js";
+import { VatRateRepository } from "../../../../reference/vat-rates/domain/ports/vat-rate.repository.js";
+import type { SalesContext } from "../../../../reference/sales-contexts/domain/value-objects/sales-context.js";
+import { SalesContextRegistry } from "../../../../reference/sales-contexts/domain/ports/sales-context.registry.js";
 import { ProductUnknownContextError } from "../../domain/errors/product-errors.js";
 import { Product, type ProductSnapshot } from "../../domain/entities/product.js";
 import { ProductRepository } from "../../domain/ports/product.repository.js";

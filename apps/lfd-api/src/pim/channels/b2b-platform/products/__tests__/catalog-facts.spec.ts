@@ -1,4 +1,4 @@
-import { AllergenNaming } from "../../../../allergens/domain/services/allergen-naming.js";
+import { AllergenNaming } from "../../../../reference/allergens/domain/services/allergen-naming.js";
 import {
   bareVariant,
   SELLABLE_VARIANT,

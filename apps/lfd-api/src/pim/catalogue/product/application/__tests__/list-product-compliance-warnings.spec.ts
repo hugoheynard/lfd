@@ -1,4 +1,4 @@
-import { FixedActiveContexts } from "../../../../sales-contexts/domain/ports/__tests__/fixed-active-contexts.js";
+import { FixedActiveContexts } from "../../../../reference/sales-contexts/domain/ports/__tests__/fixed-active-contexts.js";
 import type { ProductSnapshot } from "../../domain/entities/product.js";
 import { FixedCitedAllergens } from "../../domain/ports/__tests__/fixed-cited-allergens.js";
 import {

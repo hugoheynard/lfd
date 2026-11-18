@@ -3,7 +3,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 import { BusinessError, DomainError } from "../../../../platform/shared/errors/app-error.js";
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { changesBetween, type FieldChanges } from "../../../../platform/journal/changes.js";
-import { AllergenCatalogueReader } from "../../../allergens/domain/ports/allergen-catalogue.reader.js";
+import { AllergenCatalogueReader } from "../../../reference/allergens/domain/ports/allergen-catalogue.reader.js";
 import { PIM_EVENTS, PimJournal } from "../../../journal/pim-journal.js";
 import { CatalogEmitter } from "../../shared/domain/ports/catalog-emitter.js";
 import type { Product } from "../domain/entities/product.js";

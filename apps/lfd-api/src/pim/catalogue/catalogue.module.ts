@@ -5,14 +5,14 @@ import { ReadProductIngredientAllergensHandler } from "./product/application/rea
 import { Module } from "@nestjs/common";
 
 import { BrandModule } from "../../platform/brand/brand.module.js";
-import { AllergensModule } from "../allergens/allergens.module.js";
+import { AllergensModule } from "../reference/allergens/allergens.module.js";
 import { ExportAllergenMatrixCsvHandler } from "./allergen-matrix/application/export-allergen-matrix-csv.js";
 import { ExportAllergenMatrixPdfHandler } from "./allergen-matrix/application/export-allergen-matrix-pdf.js";
 import { GetAllergenMatrixHandler } from "./allergen-matrix/application/get-allergen-matrix.js";
 import { AllergenMatrixSource } from "./allergen-matrix/domain/ports/allergen-matrix.source.js";
 import { AllergenMatrixController } from "./allergen-matrix/http/allergen-matrix.controller.js";
 import { RepositoryAllergenMatrixSource } from "./allergen-matrix/infrastructure/repository-allergen-matrix.source.js";
-import { VatRatesModule } from "../vat-rates/vat-rates.module.js";
+import { VatRatesModule } from "../reference/vat-rates/vat-rates.module.js";
 import { PrismaMediaCarriers } from "./shared/infrastructure/prisma-media-carriers.js";
 import { PimDatabaseModule } from "../infra/database/pim-database.module.js";
 import { PimChangesModule } from "../changes/pim-changes.module.js";
@@ -73,7 +73,7 @@ import { UpdateVariantPricingHandler } from "./product/application/update-varian
 import { CatalogueReader } from "./shared/domain/ports/catalogue-reader.js";
 import { CatalogFactsReader } from "./shared/domain/ports/catalog-facts.reader.js";
 import { RepositoryCatalogFactsReader } from "./shared/infrastructure/repository-catalog-facts.reader.js";
-import { SalesContextsModule } from "../sales-contexts/sales-contexts.module.js";
+import { SalesContextsModule } from "../reference/sales-contexts/sales-contexts.module.js";
 import { CategoryRepository } from "./category/domain/ports/category.repository.js";
 import { ProductCountReader } from "./category/domain/ports/product-count.reader.js";
 import { CatalogRevisionRepository } from "./revision/domain/ports/catalog-revision.repository.js";

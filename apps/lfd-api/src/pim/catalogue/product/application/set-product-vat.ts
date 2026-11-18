@@ -1,11 +1,11 @@
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
-import { requireRate } from "../../../vat-rates/application/vat-support.js";
-import { VatRateRepository } from "../../../vat-rates/domain/ports/vat-rate.repository.js";
+import { requireRate } from "../../../reference/vat-rates/application/vat-support.js";
+import { VatRateRepository } from "../../../reference/vat-rates/domain/ports/vat-rate.repository.js";
 import type { WriteTicket } from "../../../../platform/journal/scoped-journal.js";
 import { PIM_EVENTS, PimJournal } from "../../../journal/pim-journal.js";
-import { SalesContextRegistry } from "../../../sales-contexts/domain/ports/sales-context.registry.js";
+import { SalesContextRegistry } from "../../../reference/sales-contexts/domain/ports/sales-context.registry.js";
 import type { ContextVat } from "../../shared/domain/value-objects/context-vat.js";
 import { vatChangePayload } from "../../shared/application/journal-names.js";
 import type { Product } from "../domain/entities/product.js";

@@ -27,13 +27,13 @@ la Comptabilité ; tout le monde peut lire.
 
 **Déjà en place** — l'écriture, entièrement :
 
-| Pièce                                                                                                           | Où                                              |
-| --------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
-| Ressource `pim_tax`, détachée de `pim_catalog`                                                                  | `packages/contracts/src/staff-access.ts`        |
-| `comptabilite` porte `pim_tax: "write"`                                                                         | `ROLE_GRANTS`                                   |
-| `@AdminSurface("pim_tax")` sur le contrôleur ; l'action se déduit du verbe — `GET` → `read`, le reste → `write` | `src/pim/vat-rates/http/vat-rate.controller.ts` |
-| L'écran cache la création et la colonne d'actions sans `pim_tax:write`                                          | `vat-rates-page.ts`, `vat-rate-table.ts`        |
-| La route exige `pim_tax:read`, distincte du `pim_catalog:read` du PIM                                           | `pim.routes.ts`                                 |
+| Pièce                                                                                                           | Où                                                        |
+| --------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| Ressource `pim_tax`, détachée de `pim_catalog`                                                                  | `packages/contracts/src/staff-access.ts`                  |
+| `comptabilite` porte `pim_tax: "write"`                                                                         | `ROLE_GRANTS`                                             |
+| `@AdminSurface("pim_tax")` sur le contrôleur ; l'action se déduit du verbe — `GET` → `read`, le reste → `write` | `src/pim/reference/vat-rates/http/vat-rate.controller.ts` |
+| L'écran cache la création et la colonne d'actions sans `pim_tax:write`                                          | `vat-rates-page.ts`, `vat-rate-table.ts`                  |
+| La route exige `pim_tax:read`, distincte du `pim_catalog:read` du PIM                                           | `pim.routes.ts`                                           |
 
 **Ce qui reste** :
 

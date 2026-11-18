@@ -1,4 +1,4 @@
-import type { OutsideAnnexLabel } from "../../../allergens/domain/services/inco-projector.js";
+import type { OutsideAnnexLabel } from "../../../reference/allergens/domain/services/inco-projector.js";
 
 /**
  * Le nom imprimé d'un allergène de la colonne « Autres » : le code GS1 suit le

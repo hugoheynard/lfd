@@ -24,8 +24,8 @@ import {
   incoLabel,
   nonEuLabel,
   type IncoCategory,
-} from "../src/pim/allergens/allergen-mapping.js";
-import { allergenReference } from "../src/pim/allergens/allergen-reference.js";
+} from "../src/pim/reference/allergens/allergen-mapping.js";
+import { allergenReference } from "../src/pim/reference/allergens/allergen-reference.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { freshIntent, INTENT_KEY } from "./intent-key.js";

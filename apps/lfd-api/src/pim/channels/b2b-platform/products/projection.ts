@@ -7,8 +7,8 @@ import type {
 } from "@lfd/catalog-sync";
 import { htMillicentsOf } from "@lfd/pim-contracts";
 
-import type { AllergenNaming } from "../../../allergens/domain/services/allergen-naming.js";
-import type { IncoProjector } from "../../../allergens/domain/services/inco-projector.js";
+import type { AllergenNaming } from "../../../reference/allergens/domain/services/allergen-naming.js";
+import type { IncoProjector } from "../../../reference/allergens/domain/services/inco-projector.js";
 import { effectiveAllergens } from "../../../catalogue/product/domain/services/effective-allergens.js";
 import type { CatalogTranslations } from "./translations.js";
 import type { CategoryVatPercents } from "../../../catalogue/shared/domain/ports/catalogue-reader.js";

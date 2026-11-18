@@ -350,13 +350,13 @@
       "verified": "2026-11-12"
     },
     {
-      "route": "apps/lfd-api/src/pim/ingredients/http/appellation.controller.ts#create",
+      "route": "apps/lfd-api/src/pim/reference/ingredients/http/appellation.controller.ts#create",
       "effects": ["creates"],
       "reason": "par unicité : le code d'une appellation est unique ; rejouée, la création est refusée (409 AppellationCodeTakenError) avant toute écriture",
       "verified": "2026-11-12"
     },
     {
-      "route": "apps/lfd-api/src/pim/ingredients/http/ingredient.controller.ts#createIngredient",
+      "route": "apps/lfd-api/src/pim/reference/ingredients/http/ingredient.controller.ts#createIngredient",
       "effects": ["creates"],
       "reason": "par unicité : la clé d'un ingrédient est unique ; rejouée, la création est refusée (409 IngredientKeyTakenError) avant toute écriture",
       "verified": "2026-11-12"

@@ -13,7 +13,7 @@
 > [`todos/todo-allergenes-objections-vitruve.md`](../../todos/todo-allergenes-objections-vitruve.md) :
 > trois bloquantes, huit sérieuses. **Ce plan n'est pas bon à bâtir en l'état.** Le § « L'existant, exactement » décrit l'état
 > d'AVANT la bascule : il est conservé parce que c'est lui qui explique les
-> décisions, mais `src/pim/allergens/` compte aujourd'hui quatre couches et une
+> décisions, mais `src/pim/reference/allergens/` compte aujourd'hui quatre couches et une
 > quarantaine de fichiers. Ce document est
 > le plan de la bascule, et il devient la référence du sujet — il remplit le
 > renvoi pendant de [`03-nutrition.md`](03-nutrition.md).
@@ -32,7 +32,7 @@ Trois choses, dans cet ordre de difficulté croissante :
 
 ## L'existant, exactement
 
-Le référentiel vit dans trois fichiers de `src/pim/allergens/`, en dur :
+Le référentiel vit dans trois fichiers de `src/pim/reference/allergens/`, en dur :
 
 | Fichier                  | Ce qu'il porte                                                                                                                                                                                                                                                                                   |
 | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |

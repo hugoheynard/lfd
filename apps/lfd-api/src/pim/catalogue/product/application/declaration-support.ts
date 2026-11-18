@@ -1,5 +1,5 @@
-import { ArchivedAllergenDeclaredError } from "../../../allergens/domain/errors/allergen-errors.js";
-import { AllergenCatalogueReader } from "../../../allergens/domain/ports/allergen-catalogue.reader.js";
+import { ArchivedAllergenDeclaredError } from "../../../reference/allergens/domain/errors/allergen-errors.js";
+import { AllergenCatalogueReader } from "../../../reference/allergens/domain/ports/allergen-catalogue.reader.js";
 import {
   allergenDeclaration,
   nutritionValues,

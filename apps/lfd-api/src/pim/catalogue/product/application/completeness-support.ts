@@ -1,4 +1,4 @@
-import type { ActiveSalesContextsReader } from "../../../sales-contexts/domain/ports/active-sales-contexts.reader.js";
+import type { ActiveSalesContextsReader } from "../../../reference/sales-contexts/domain/ports/active-sales-contexts.reader.js";
 import type { CompletenessRules } from "../domain/services/variant-completeness.js";
 
 /**

@@ -28,19 +28,19 @@ const SERVED_ADAPTERS = [
   "catalogue/category/infrastructure/prisma-category.repository.ts",
   "catalogue/shared/infrastructure/prisma-catalogue-reader.ts",
   "catalogue/product/infrastructure/prisma-illustrated-products.reader.ts",
-  "ingredients/infrastructure/prisma-cited-allergens.reader.ts",
-  "sales-contexts/infrastructure/prisma-sales-context.registry.ts",
+  "reference/ingredients/infrastructure/prisma-cited-allergens.reader.ts",
+  "reference/sales-contexts/infrastructure/prisma-sales-context.registry.ts",
   // Le détail d'une fiche.
   "catalogue/product/infrastructure/prisma-editorial-reader.ts",
   "catalogue/product/infrastructure/prisma-readiness.repository.ts",
   "catalogue/product/infrastructure/prisma-detachment-lineage.reader.ts",
   // Les référentiels.
   "catalogue/category/infrastructure/prisma-product-count.reader.ts",
-  "vat-rates/infrastructure/prisma-vat-rate.repository.ts",
-  "sales-contexts/infrastructure/prisma-sales-context.repository.ts",
-  "ingredients/infrastructure/prisma-appellation.repository.ts",
-  "ingredients/infrastructure/prisma-ingredient.repository.ts",
-  "allergens/infrastructure/prisma-allergen-catalogue.reader.ts",
+  "reference/vat-rates/infrastructure/prisma-vat-rate.repository.ts",
+  "reference/sales-contexts/infrastructure/prisma-sales-context.repository.ts",
+  "reference/ingredients/infrastructure/prisma-appellation.repository.ts",
+  "reference/ingredients/infrastructure/prisma-ingredient.repository.ts",
+  "reference/allergens/infrastructure/prisma-allergen-catalogue.reader.ts",
 ] as const;
 
 const READ_ACCESS =

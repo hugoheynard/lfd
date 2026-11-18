@@ -1,6 +1,6 @@
 import { Module } from "@nestjs/common";
 
-import { AllergensModule } from "../../allergens/allergens.module.js";
+import { AllergensModule } from "../../reference/allergens/allergens.module.js";
 import { CatalogueModule } from "../../catalogue/catalogue.module.js";
 import { OrderTimeLimitationModule } from "../../order-time-limitation/order-time-limitation.module.js";
 import { PimDatabaseModule } from "../../infra/database/pim-database.module.js";

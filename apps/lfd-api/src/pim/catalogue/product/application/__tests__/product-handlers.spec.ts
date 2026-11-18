@@ -2,8 +2,8 @@ import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/dir
 import {
   AllergenStore,
   InMemoryAllergenCatalogueReader,
-} from "../../../../allergens/application/__tests__/in-memory-allergens.js";
-import { ArchivedAllergenDeclaredError } from "../../../../allergens/domain/errors/allergen-errors.js";
+} from "../../../../reference/allergens/application/__tests__/in-memory-allergens.js";
+import { ArchivedAllergenDeclaredError } from "../../../../reference/allergens/domain/errors/allergen-errors.js";
 import { NutritionPartExceedsWholeError } from "../../domain/value-objects/nutrition-declaration.js";
 import { RecordingJournal } from "../../../../journal/__tests__/recording-journal.js";
 import {

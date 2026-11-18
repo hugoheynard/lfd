@@ -3,7 +3,7 @@ import { PIM_EVENTS, PimJournal } from "../../../journal/pim-journal.js";
 import { Inject } from "@nestjs/common";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
-import { AllergenCatalogueReader } from "../../../allergens/domain/ports/allergen-catalogue.reader.js";
+import { AllergenCatalogueReader } from "../../../reference/allergens/domain/ports/allergen-catalogue.reader.js";
 import { UuidGenerator } from "../../../../platform/id/uuid-generator.js";
 import { CREATED_ID_REPLAY, OncePerIntent } from "../../../../platform/intent/once-per-intent.js";
 import { intentSubject } from "../../../../platform/intent/intent-subject.js";

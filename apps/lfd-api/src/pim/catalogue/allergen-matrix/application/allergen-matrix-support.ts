@@ -1,6 +1,6 @@
 import { readLocalized } from "@lfd/pim-contracts";
 
-import { AllergenCatalogueReader } from "../../../allergens/domain/ports/allergen-catalogue.reader.js";
+import { AllergenCatalogueReader } from "../../../reference/allergens/domain/ports/allergen-catalogue.reader.js";
 import {
   buildAllergenMatrix,
   retainedProducts,

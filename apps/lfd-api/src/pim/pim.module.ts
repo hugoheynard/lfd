@@ -1,15 +1,15 @@
 import { Module } from "@nestjs/common";
 import { RouterModule } from "@nestjs/core";
 
-import { AllergensModule } from "./allergens/allergens.module.js";
+import { AllergensModule } from "./reference/allergens/allergens.module.js";
 import { PimDocumentSpecimensModule } from "./catalogue/allergen-matrix/pim-document-specimens.module.js";
 import { CatalogueModule } from "./catalogue/catalogue.module.js";
 import { B2bPlatformModule } from "./channels/b2b-platform/b2b-platform.module.js";
 import { CatalogFactsModule } from "./channels/b2b-platform/catalog-facts.module.js";
-import { IngredientsModule } from "./ingredients/ingredients.module.js";
+import { IngredientsModule } from "./reference/ingredients/ingredients.module.js";
 import { OrderTimeLimitationModule } from "./order-time-limitation/order-time-limitation.module.js";
-import { VatRatesModule } from "./vat-rates/vat-rates.module.js";
-import { SalesContextsModule } from "./sales-contexts/sales-contexts.module.js";
+import { VatRatesModule } from "./reference/vat-rates/vat-rates.module.js";
+import { SalesContextsModule } from "./reference/sales-contexts/sales-contexts.module.js";
 
 /**
  * Le **référentiel produit** — un contexte du processus, plus une application.

@@ -1,5 +1,5 @@
-import { AllergenStore } from "../../../../allergens/application/__tests__/in-memory-allergens.js";
-import { AllergenNaming } from "../../../../allergens/domain/services/allergen-naming.js";
+import { AllergenStore } from "../../../../reference/allergens/application/__tests__/in-memory-allergens.js";
+import { AllergenNaming } from "../../../../reference/allergens/domain/services/allergen-naming.js";
 import type { VariantRecord } from "../../../../catalogue/product/domain/ports/product.repository.js";
 import { Product } from "../../../../catalogue/product/domain/entities/product.js";
 import {
