@@ -221,6 +221,19 @@ plan à part.
   `OutputCorrectionsReader` (`production/channels/packing/output-corrections.reader.ts`,
   relié dans `appBootstrap/packing-feed.module.ts`).
 
+- **Bâti en C4 (2026-11-18), ce que le plan ne disait pas :**
+  - le fait du fournil ne sert que de **signal** : l'abonné relit les cumuls
+    (`OutputCorrectionsReader`) — c'est ce qui retente un reste non couvert
+    et ignore une fournée retirée ;
+  - le **rattrapage** tourne à chaque démarrage, idempotent, sur les journées
+    où le colisage a reçu une remise **depuis la veille** : le colisage ne sait
+    pas quelle journée est close ; une journée plus ancienne restée ouverte
+    n'est pas rattrapée ;
+  - la cloche nomme le **SKU** (le fait ne porte pas le nom du produit) et
+    sonne une fois par cumul ; audience `b2b_orders_shortfall:write` ;
+  - la correction compte en pièces ; un article au poids n'a pas de règle
+    propre.
+
 ## 4. Données
 
 Migration `2026111xxxxxxx_le_colisage_simple`, schéma `packing`
@@ -264,11 +277,12 @@ flowchart LR
 - **C1** — migration, réglage, niveau figé, ligne de la page Niveau de suivi.
 - **C2** — « Problème » (serveur et écran), D5 à D8, « Pièces retrouvées ».
   C2a (le colisage) et C2b (le comptoir, la cloche) ✅ bâtis le 2026-11-18
-  sur `feat/colisage-simple` ; C2c (les écrans) à faire.
-- **C3** — « Tout est prêt » (serveur et écran). Serveur ✅ bâti le
-  2026-11-18 sur `feat/colisage-simple` ; écran avec C2c.
+  sur `feat/colisage-simple` ; C2c (les écrans) ✅ bâti le même jour.
+- **C3** — « Tout est prêt » (serveur et écran). Serveur et écran
+  ✅ bâtis le 2026-11-18 sur `feat/colisage-simple`.
 - **C4** — la correction du fournil (D9). Aujourd'hui déjà, personne ne
-  l'écoute : ce lot ferme ce trou pour les deux niveaux.
+  l'écoute : ce lot ferme ce trou pour les deux niveaux. ✅ bâti le
+  2026-11-18 sur `feat/colisage-simple`.
 - **C5** — doc d'état, la réflexion retirée, la carte de la chaîne mise à jour.
 
 ## 7. Questions ouvertes

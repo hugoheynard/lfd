@@ -12,6 +12,7 @@ import {
 } from "../../../production/channels/packing/index.js";
 import { PackingShadowLedger } from "../../domain/ports/packing-shadow.ledger.js";
 import { PackingReturnDesk } from "../returns/packing-return-desk.service.js";
+import { OutputCorrectionApplier } from "../corrections/output-correction-applier.js";
 
 /** Nom STABLE de l'abonné — clé de son reçu dans la boîte d'envoi. */
 export const ON_HANDED_TO_PACKING = "packing.shadow.receive-handoff";
@@ -26,6 +27,10 @@ export const ON_HANDED_TO_PACKING = "packing.shadow.receive-handoff";
  *
  * Depuis K2, elle tranche aussi les demandes de retour qui l'attendaient
  * (« remise inconnue », §13) — dans la même unité de travail.
+ *
+ * Et une correction du fournil arrivée AVANT elle (D9 de
+ * `colisage/plan-niveaux-de-suivi-colisage.md`) : la correction a attendu la
+ * remise, la réception l'applique.
  */
 @Injectable()
 @DurableHandler({ type: PRODUCTION_HANDED_TO_PACKING, subscriber: ON_HANDED_TO_PACKING })
@@ -34,6 +39,7 @@ export class OnHandedToPacking implements DurableSubscriber {
     private readonly shadow: PackingShadowLedger,
     private readonly clock: Clock,
     private readonly desk: PackingReturnDesk,
+    private readonly corrections: OutputCorrectionApplier,
   ) {}
 
   async handle(delivery: DurableDelivery): Promise<void> {
@@ -49,6 +55,10 @@ export class OnHandedToPacking implements DurableSubscriber {
     if (fresh) {
       // Une demande de retour arrivée AVANT la remise l'attendait (K2, §13).
       await this.desk.settlePending(event.handoffId);
+      await this.corrections.applyMatching(
+        event.serviceDay,
+        (correction) => correction.handoffId === event.handoffId,
+      );
     }
   }
 }

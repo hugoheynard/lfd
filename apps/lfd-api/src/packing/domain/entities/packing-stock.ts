@@ -46,6 +46,16 @@ export interface PackingStockSnapshot {
   readonly missing?: number;
 }
 
+/** Ce qu'une correction du fournil a fait de la réserve. */
+export interface ReceivedCorrection {
+  /** Les pièces mises de côté comme absentes, qu'elle explique. */
+  readonly fromMissing: number;
+  /** Les pièces libres qu'elle retire. */
+  readonly fromFree: number;
+  /** Ce qu'aucune des deux ne couvre : la réserve n'a pas baissé d'autant. */
+  readonly uncovered: number;
+}
+
 /**
  * **La réserve d'un article pour une journée** — l'agrégat qui porte
  * l'invariant du colisage : `au bac + envoyé en boutique ≤ reçu − rendu` (plan
@@ -82,7 +92,7 @@ export class PackingStock {
   private constructor(
     readonly serviceDay: string,
     readonly sku: string,
-    readonly received: number,
+    private receivedValue: number,
     private returnedValue: number,
     private packedValue: number,
     private sentToShopValue: number,
@@ -116,6 +126,10 @@ export class PackingStock {
       snapshot.reservations,
       missing,
     );
+  }
+
+  get received(): number {
+    return this.receivedValue;
   }
 
   get returned(): number {
@@ -190,6 +204,27 @@ export class PackingStock {
       throw new RecoveredBeyondMissingError(productName, this.missingValue, quantity, unit);
     }
     this.missingValue -= quantity;
+  }
+
+  /**
+   * **Le fournil corrige sa déclaration** : `quantity` pièces reçues n'ont
+   * jamais existé, et le reçu baisse — jamais à découvert.
+   *
+   * Dans l'ordre : elles expliquent d'abord le manquant (la même pièce, dite
+   * absente au colisage puis corrigée au fournil, ne se compte pas deux
+   * fois), puis le libre. Le reste est dans un sac, réservé, rendu ou parti
+   * en boutique : la réserve n'y touche pas, l'appelant le signale.
+   *
+   * @throws {StockMoveQuantityInvalidError} négatif ou fractionnaire.
+   */
+  correctReceived(quantity: number): ReceivedCorrection {
+    this.ensureMovable(quantity, "piece");
+    const fromMissing = Math.min(quantity, this.missingValue);
+    this.missingValue -= fromMissing;
+    this.receivedValue -= fromMissing;
+    const fromFree = Math.min(quantity - fromMissing, this.free);
+    this.receivedValue -= fromFree;
+    return { fromMissing, fromFree, uncovered: quantity - fromMissing - fromFree };
   }
 
   /**
@@ -347,7 +382,7 @@ export class PackingStock {
     return {
       serviceDay: this.serviceDay,
       sku: this.sku,
-      received: this.received,
+      received: this.receivedValue,
       returned: this.returnedValue,
       packed: this.packedValue,
       sentToShop: this.sentToShopValue,

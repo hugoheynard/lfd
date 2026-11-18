@@ -122,8 +122,7 @@ import { ProductionModule } from "../production/production.module.js";
     { provide: ArrestedPlanHold, useExisting: PrismaArrestedPlanHold },
     // Les corrections de déclaration d'une journée (
     // `fournil/les-niveaux-de-suivi.md`) — la production déclare ET
-    // implémente, le colisage les relira quand il saura les traiter. Aucun
-    // lecteur aujourd'hui.
+    // implémente, le colisage les relit pour corriger sa réserve.
     { provide: OutputCorrectionsReader, useExisting: PrismaOutputCorrectionsReader },
   ],
   exports: [

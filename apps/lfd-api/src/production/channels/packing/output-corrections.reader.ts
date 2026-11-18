@@ -12,9 +12,10 @@ export interface DeclarationCorrection {
  * fournil DÉCLARE et IMPLÉMENTE (
  * `documentation/fournil/les-niveaux-de-suivi.md`).
  *
- * Le colisage la relira quand il saura traiter une correction : rien ne se
- * perd, même pour une correction publiée (`production.output_corrected`)
- * avant qu'il ne l'écoute. Seules les fournées vivantes à part corrigée non
+ * Le colisage la relit à chaque correction, à chaque remise reçue et au
+ * rattrapage du démarrage : c'est un cumul par fournée, et rien ne se perd,
+ * même pour une correction publiée (`production.output_corrected`) avant
+ * qu'il ne l'écoute. Seules les fournées vivantes à part corrigée non
  * nulle, triées par `handoffId`.
  */
 export abstract class OutputCorrectionsReader {

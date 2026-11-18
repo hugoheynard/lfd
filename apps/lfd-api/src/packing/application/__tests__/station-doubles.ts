@@ -106,7 +106,7 @@ export class InMemoryStocks extends PackingStockRepository {
   save(stock: PackingStock): Promise<void> {
     const key = `${stock.serviceDay}/${stock.sku}`;
     const held = this.shadow.stocks.get(key) ?? { received: 0, returned: 0 };
-    this.shadow.stocks.set(key, { ...held, returned: stock.returned });
+    this.shadow.stocks.set(key, { ...held, received: stock.received, returned: stock.returned });
     this.packed.set(key, stock.packed);
     this.sent.set(key, stock.sentToShop);
     this.missing.set(key, stock.missing);

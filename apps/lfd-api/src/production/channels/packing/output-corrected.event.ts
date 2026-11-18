@@ -1,4 +1,6 @@
 import type { DurableEvent, DurableFact } from "../../../platform/outbox/durable-event.js";
+import { TechnicalError } from "../../../platform/shared/errors/app-error.js";
+import { recordOf, textOf } from "../payload-fields.js";
 
 /** Nom stable du fait, clé de routage vers `@DurableHandler`. */
 export const PRODUCTION_OUTPUT_CORRECTED = "production.output_corrected";
@@ -28,9 +30,10 @@ export interface CorrectedHandoff {
  * `production.output_corrected:<problemId>:<version>` — un rouge, une
  * correction.
  *
- * Aucun abonné aujourd'hui : un futur abonné du colisage ne recevra pas les
- * faits publiés avant lui (la boîte d'envoi ne livre qu'aux abonnés connus à
- * l'écriture), et relira donc les corrections par `OutputCorrectionsReader`.
+ * Le colisage l'écoute (`packing.apply-output-correction`) : la réserve
+ * `(jour, SKU)` perd les pièces qui n'ont jamais existé. Les faits publiés
+ * avant cet abonné ne lui sont pas livrés (la boîte d'envoi ne livre qu'aux
+ * abonnés connus à l'écriture) : il les rattrape par `OutputCorrectionsReader`.
  *
  * 🔴 Il vit dans le CANAL : le colisage le lira, et `lint:context-boundaries`
  * n'autorise `packing → production` que par ce dossier.
@@ -61,5 +64,58 @@ export class OutputCorrectedEvent implements DurableEvent {
         })),
       },
     };
+  }
+
+  /** @throws {OutputCorrectedPayloadError} un payload hors contrat. */
+  static fromPayload(payload: Readonly<Record<string, unknown>>): OutputCorrectedEvent {
+    const problemId = textOf(payload["problemId"]);
+    const version = countOf(payload["version"]);
+    const serviceDay = textOf(payload["serviceDay"]);
+    const sku = textOf(payload["sku"]);
+    const batches = batchesOf(payload["batches"]);
+    if (
+      problemId === null ||
+      version === null ||
+      serviceDay === null ||
+      sku === null ||
+      batches === null
+    ) {
+      throw new OutputCorrectedPayloadError();
+    }
+    return new OutputCorrectedEvent(problemId, version, serviceDay, sku, batches);
+  }
+}
+
+/** Un entier positif ou nul, ou `null`. */
+function countOf(value: unknown): number | null {
+  return typeof value === "number" && Number.isInteger(value) && value >= 0 ? value : null;
+}
+
+function batchesOf(value: unknown): readonly CorrectedHandoff[] | null {
+  if (!Array.isArray(value)) {
+    return null;
+  }
+  const batches: CorrectedHandoff[] = [];
+  for (const item of value) {
+    const record = recordOf(item);
+    const handoffId = textOf(record?.["handoffId"]);
+    const corrected = countOf(record?.["corrected"]);
+    const totalCorrected = countOf(record?.["totalCorrected"]);
+    if (handoffId === null || corrected === null || totalCorrected === null) {
+      return null;
+    }
+    batches.push({ handoffId, corrected, totalCorrected });
+  }
+  return batches;
+}
+
+export class OutputCorrectedPayloadError extends TechnicalError {
+  constructor() {
+    super(
+      "output_corrected.payload_invalid",
+      "Le fait « correction du fournil » reçu est illisible (rouge, version, journée, article ou " +
+        "fournées manquants) : la réserve du colisage n'a pas été corrigée. Le message reste dans la " +
+        "boîte d'envoi ; corriger l'émetteur puis le rejouer depuis la carte de santé.",
+    );
   }
 }

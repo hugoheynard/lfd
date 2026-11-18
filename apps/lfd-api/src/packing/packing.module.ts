@@ -1,6 +1,21 @@
 import { Module } from "@nestjs/common";
 
 import { OnHandedToPacking } from "./application/handlers/on-handed-to-packing.handler.js";
+import { OnOutputCorrected } from "./application/handlers/on-output-corrected.handler.js";
+import { CatchUpOutputCorrections } from "./application/corrections/catch-up-output-corrections.js";
+import { CorrectionBell } from "./application/corrections/correction-bell.js";
+import { OutputCorrectionApplier } from "./application/corrections/output-correction-applier.js";
+import {
+  AppliedCorrectionLedger,
+  CorrectionCatchUpDays,
+  HandoffReceipts,
+} from "./domain/ports/applied-correction.ledger.js";
+import {
+  PrismaAppliedCorrectionLedger,
+  PrismaCorrectionCatchUpDays,
+  PrismaHandoffReceipts,
+} from "./infrastructure/prisma-applied-correction.ledger.js";
+import { OutputCorrectionsCatchUpOnBoot } from "./infrastructure/output-corrections-catch-up.on-boot.js";
 import { OnPackingListDrawn } from "./application/handlers/on-packing-list-drawn.handler.js";
 import { OnReturnRequested } from "./application/handlers/on-return-requested.handler.js";
 import { OnOrderHandedOver } from "./application/handlers/on-order-handed-over.handler.js";
@@ -144,6 +159,15 @@ import { PrismaPackingSettingsRepository } from "./infrastructure/prisma-packing
     OnProductionDayReopened,
     // Un envoi remis sort de la liste à coliser (2026-11-03, option b).
     OnOrderHandedOver,
+    // La correction du fournil (D9) : l'abonné, la réception, le rattrapage au démarrage.
+    OnOutputCorrected,
+    OutputCorrectionApplier,
+    CorrectionBell,
+    CatchUpOutputCorrections,
+    OutputCorrectionsCatchUpOnBoot,
+    { provide: AppliedCorrectionLedger, useClass: PrismaAppliedCorrectionLedger },
+    { provide: HandoffReceipts, useClass: PrismaHandoffReceipts },
+    { provide: CorrectionCatchUpDays, useClass: PrismaCorrectionCatchUpDays },
     { provide: PackingListWithdrawal, useClass: PrismaPackingListWithdrawal },
     { provide: PackingShadowLedger, useClass: PrismaPackingShadowLedger },
     // Les retours du fournil (K2).

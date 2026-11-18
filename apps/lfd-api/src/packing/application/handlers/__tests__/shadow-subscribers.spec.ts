@@ -14,6 +14,16 @@ import {
   RecordingDurable,
 } from "../../__tests__/station-doubles.js";
 import { PackingReturnDesk } from "../../returns/packing-return-desk.service.js";
+import { BackgroundWork } from "../../../../platform/events/background-work.js";
+import { HeldAfterCommit } from "../../../../platform/database/__tests__/held-after-commit.js";
+import { CorrectionBell } from "../../corrections/correction-bell.js";
+import { OutputCorrectionApplier } from "../../corrections/output-correction-applier.js";
+import {
+  InMemoryAppliedCorrections,
+  PublishedCorrections,
+  RecordingNotifier,
+  ShadowHandoffReceipts,
+} from "../../corrections/__tests__/correction-doubles.js";
 import { OnHandedToPacking } from "../on-handed-to-packing.handler.js";
 import { OnPackingListDrawn } from "../on-packing-list-drawn.handler.js";
 import { OnReturnRequested } from "../on-return-requested.handler.js";
@@ -65,13 +75,23 @@ function setup() {
     durable,
     clock,
   );
+  const published = new PublishedCorrections();
+  const corrections = new OutputCorrectionApplier(
+    published,
+    stocks,
+    new InMemoryAppliedCorrections(),
+    new ShadowHandoffReceipts(shadow),
+    new CorrectionBell(new RecordingNotifier(), new HeldAfterCommit(), new BackgroundWork()),
+    clock,
+  );
   return {
+    published,
     shadow,
     returns,
     stocks,
     durable,
     list: new OnPackingListDrawn(shadow, new InMemoryPackingSettings().reader(), shadow.origins()),
-    handed: new OnHandedToPacking(shadow, clock, desk),
+    handed: new OnHandedToPacking(shadow, clock, desk, corrections),
     returned: new OnReturnRequested(shadow, clock, desk),
   };
 }
@@ -177,6 +197,21 @@ describe("OnHandedToPacking", () => {
 
     expect(shadow.stockOf(DAY, "CRO")?.received).toBe(3);
     expect(shadow.orders.size).toBe(1);
+  });
+
+  it("applique la correction du fournil qui attendait sa remise (D9)", async () => {
+    const { shadow, published, handed } = setup();
+    published.byDay.set(DAY, [
+      { handoffId: "b1", sku: "CRO", corrected: 4 },
+      { handoffId: "b_other", sku: "CRO", corrected: 9 },
+    ]);
+    const fact = new HandedToPackingEvent("b1", DAY, "CRO", 12, AT).durableFact();
+
+    await handed.handle(delivery(fact));
+    await handed.handle(delivery(fact));
+
+    // Seule SA correction, une fois : l'autre remise n'est pas reçue.
+    expect(shadow.stockOf(DAY, "CRO")?.received).toBe(8);
   });
 });
 

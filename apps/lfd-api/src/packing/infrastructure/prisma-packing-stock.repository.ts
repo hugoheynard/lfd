@@ -21,8 +21,10 @@ interface StockRow {
  *
  * `lock` crée la ligne vide si besoin (`ON CONFLICT DO NOTHING`), puis la lit
  * `FOR UPDATE`. Une remise qui arrive pendant le verrou attend son `COMMIT`,
- * puis ajoute à `received` en incrément : `save` n'écrit donc que `packed`,
- * `returned`, `sentToShop` (A1.4) et `missing` (le manquant), les compteurs que l'agrégat change — et les réservations
+ * puis ajoute à `received` en incrément sur la ligne validée : `save` écrit
+ * les compteurs que l'agrégat change — `received` (que seule la correction du
+ * fournil baisse), `packed`, `returned`, `sentToShop` (A1.4) et `missing` (le
+ * manquant) — et les réservations
  * des réassorts lancés (R4b) : une neuve s'insère, une levée prend son
  * instant. Leur reste dû n'est pas écrit : il se déduit de la ligne.
  */
@@ -65,6 +67,7 @@ export class PrismaPackingStockRepository extends PackingStockRepository {
     await this.prisma.packingStock.update({
       where: { serviceDay_sku: { serviceDay: stock.serviceDay, sku: stock.sku } },
       data: {
+        received: stock.received,
         packed: stock.packed,
         returned: stock.returned,
         sentToShop: stock.sentToShop,
