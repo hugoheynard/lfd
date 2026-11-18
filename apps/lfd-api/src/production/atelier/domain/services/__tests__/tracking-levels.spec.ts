@@ -6,6 +6,7 @@ import {
   lineLevelOf,
   mustFreeze,
   resolvedLevels,
+  servedBeforeService,
 } from "../tracking-levels.js";
 
 /**
@@ -78,16 +79,37 @@ describe("dayLevelsOf — ce que la journée sert", () => {
   const CURRENT = resolvedLevels("always_green", []);
 
   it("le niveau figé, jamais le réglage courant", () => {
-    expect(dayLevelsOf({ closedAt: AFTER }, FROZEN, SINCE, CURRENT)).toBe(FROZEN);
+    expect(dayLevelsOf({ closedAt: AFTER }, FROZEN, SINCE, AFTER, CURRENT)).toBe(FROZEN);
   });
 
   it("une journée arrêtée avant la mise en service : détaillé, quoi que dise le réglage", () => {
-    expect(dayLevelsOf({ closedAt: BEFORE }, null, SINCE, CURRENT)).toBe(DETAILED_DAY);
+    expect(dayLevelsOf({ closedAt: BEFORE }, null, SINCE, AFTER, CURRENT)).toBe(DETAILED_DAY);
   });
 
   it("une journée pas encore figée sert ce que le premier passage figera", () => {
-    expect(dayLevelsOf({ closedAt: AFTER }, null, SINCE, CURRENT)).toBe(CURRENT);
-    expect(dayLevelsOf({ closedAt: null }, null, SINCE, CURRENT)).toBe(CURRENT);
+    expect(dayLevelsOf({ closedAt: AFTER }, null, SINCE, AFTER, CURRENT)).toBe(CURRENT);
+    expect(dayLevelsOf({ closedAt: null }, null, SINCE, AFTER, CURRENT)).toBe(CURRENT);
+  });
+
+  /**
+   * Régression : une journée pas encore arrêtée servait le réglage courant
+   * (toujours vert) avant la mise en service, et la fiche du jour quittait le
+   * détaillé.
+   */
+  it("une journée ouverte avant la mise en service : détaillé", () => {
+    expect(dayLevelsOf({ closedAt: null }, null, SINCE, BEFORE, CURRENT)).toBe(DETAILED_DAY);
+  });
+});
+
+describe("servedBeforeService — l'arrêt, sinon l'instant présent", () => {
+  it("une journée arrêtée se juge sur son arrêt, pas sur l'instant présent", () => {
+    expect(servedBeforeService({ closedAt: BEFORE }, SINCE, AFTER)).toBe(true);
+    expect(servedBeforeService({ closedAt: AFTER }, SINCE, BEFORE)).toBe(false);
+  });
+
+  it("une journée ouverte se juge sur l'instant présent", () => {
+    expect(servedBeforeService({ closedAt: null }, SINCE, BEFORE)).toBe(true);
+    expect(servedBeforeService({ closedAt: null }, SINCE, SINCE)).toBe(false);
   });
 });
 

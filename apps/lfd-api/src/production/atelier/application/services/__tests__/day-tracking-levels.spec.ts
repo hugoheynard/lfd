@@ -71,7 +71,13 @@ function scene(options: { since?: FixedCommissioning } = {}) {
   const frozen = new InMemoryFrozenLevels(trace);
   const lock = new TracedLock(trace);
   const since = options.since ?? SINCE_BEFORE;
-  const reading = new DayTrackingLevelsReading(frozen.reader(), settings.reader(), stations, since);
+  const reading = new DayTrackingLevelsReading(
+    frozen.reader(),
+    settings.reader(),
+    stations,
+    since,
+    new FixedClock(FROZEN_AT),
+  );
   const freezing = new DayTrackingLevelsFreezing(
     new DirectUnitOfWork(),
     lock,

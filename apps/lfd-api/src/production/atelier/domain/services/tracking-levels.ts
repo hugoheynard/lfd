@@ -12,7 +12,8 @@ import type { ProductionTrackingLevel } from "@lfd/contracts";
  *   — le fournil et chaque poste, résolus à cet instant —, et ne bouge plus :
  *   un changement de réglage vaut pour la journée suivante.
  * - Une journée arrêtée **avant la mise en service** (`since`) reste en
- *   détaillé, et n'est jamais figée.
+ *   détaillé, et n'est jamais figée ; une journée ouverte l'est aussi tant
+ *   que la mise en service n'est pas arrivée.
  */
 
 /** Les niveaux d'une journée : le fournil, et chaque poste résolu. */
@@ -55,6 +56,15 @@ export function arrestedBeforeService(day: TrackedDay, since: Date): boolean {
 }
 
 /**
+ * La journée se sert-elle encore d'avant la mise en service ? Arrêtée avant,
+ * ou pas encore arrêtée alors que la mise en service n'est pas arrivée
+ * (`now`) : en détaillé, quoi que dise le réglage.
+ */
+export function servedBeforeService(day: TrackedDay, since: Date, now: Date): boolean {
+  return (day.closedAt ?? now).getTime() < since.getTime();
+}
+
+/**
  * La journée doit-elle être figée maintenant ? Arrêtée, depuis la mise en
  * service, et sans niveau figé.
  */
@@ -68,7 +78,8 @@ export function mustFreeze(
 
 /**
  * **Les niveaux qu'une journée sert** : le niveau figé s'il existe ; une
- * journée arrêtée avant la mise en service, en détaillé ; sinon ceux que le
+ * journée servie avant la mise en service (`servedBeforeService`), en
+ * détaillé ; sinon ceux que le
  * premier passage figera (`current`) — une journée ouverte, ou arrêtée et pas
  * encore figée.
  */
@@ -76,12 +87,13 @@ export function dayLevelsOf(
   day: TrackedDay,
   frozen: DayTrackingLevels | null,
   since: Date,
+  now: Date,
   current: DayTrackingLevels,
 ): DayTrackingLevels {
   if (frozen !== null) {
     return frozen;
   }
-  return arrestedBeforeService(day, since) ? DETAILED_DAY : current;
+  return servedBeforeService(day, since, now) ? DETAILED_DAY : current;
 }
 
 /** Le niveau d'une ligne : celui de son poste dans la journée, sinon celui du fournil. */

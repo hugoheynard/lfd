@@ -1,5 +1,6 @@
 import type { ProductionTrackingLevel } from "@lfd/contracts";
 
+import { FixedClock } from "../../../../platform/time/fixed-clock.js";
 import type { ServiceDay, TrancheSettingsAuthor } from "../../../day/index.js";
 import { GroupingSourceReading, WorkstationTrackingLevels } from "../../../workstations/index.js";
 import { placementPorts } from "../../../workstations/application/__tests__/placement-doubles.js";
@@ -171,6 +172,7 @@ export function trackingReadingOf(scene: TrackingScene = {}): DayTrackingLevelsR
     (scene.settings ?? new InMemoryTrackingSettings()).reader(),
     new FixedWorkstationTrackingLevels(scene.stations ?? []),
     scene.commissioning ?? LONG_AGO,
+    new FixedClock(new Date(0)),
   );
 }
 
