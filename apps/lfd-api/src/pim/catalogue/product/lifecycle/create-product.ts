@@ -33,7 +33,12 @@ import {
   type EditorialInput,
   type MediaInput,
 } from "../domain/value-objects/editorial.js";
-import type { NutritionValues } from "../domain/value-objects/nutrition-declaration.js";
+import type {
+  NutritionDeclaration,
+  NutritionValues,
+} from "../domain/value-objects/nutrition-declaration.js";
+import type { Category } from "../../category/domain/entities/category.js";
+import type { WriteTicket } from "../../../../platform/journal/scoped-journal.js";
 import { validatedDeclaration } from "../regulatory/declaration-support.js";
 import { Sku } from "../domain/value-objects/sku.value-object.js";
 import { SKU_AVAILABILITY } from "../domain/ports/sku-availability.js";
@@ -119,45 +124,17 @@ export class CreateProductHandler implements ICommandHandler<CreateProductComman
   ): Promise<string> {
     const { input } = command;
     const name = localizedText("nom", input.name);
-    const category = await this.categories.findById(input.categoryId);
-
-    if (category === null) {
-      throw new CategoryNotFoundError(input.categoryId);
-    }
-    if (category.isArchived) {
-      throw new CategoryArchivedError(input.categoryId);
-    }
-
-    const sku =
-      input.sku === undefined || input.sku.trim() === ""
-        ? await proposeProductSku(() => this.ids.next(), this.availability)
-        : Sku.create(input.sku);
-
+    const category = await this.openCategory(input.categoryId);
+    const sku = await this.skuFor(input);
     // Validée AVANT toute écriture : une fiche refusée ne doit pas laisser
     // derrière elle un produit à moitié créé.
-    //
-    // Aucun code n'était déjà déclaré — la fiche naît avec le produit. Un code
-    // archivé y est donc TOUJOURS un ajout à neuf, et il est refusé (D2 bis).
-    const declaration =
-      input.allergens === undefined
-        ? null
-        : await validatedDeclaration(
-            this.allergens,
-            {
-              allergens: input.allergens,
-              mayContain: input.mayContain,
-              nutrition: input.nutrition,
-            },
-            [],
-          );
-
+    const declaration = await this.declarationFor(input);
     const story = editorial(input.editorial ?? {});
     const visuals = mediaItems(input.media ?? []);
 
     const productId = this.ids.next();
     const variantId = this.ids.next();
     const variantSku = await proposeSku(variantSkuRoot(sku, 0), this.availability);
-
     const product = Product.open({
       id: productId,
       sku,
@@ -166,6 +143,7 @@ export class CreateProductHandler implements ICommandHandler<CreateProductComman
       categoryId: input.categoryId,
       defaultVariant: { id: variantId, sku: variantSku, name },
     });
+
     // UNE trace pour UN geste, même si l'ouverture touche trois dépôts : la
     // fiche naît d'un seul acte, et trois lignes de journal pour un formulaire
     // rendraient l'historique illisible là où il doit se lire d'un trait.
@@ -185,17 +163,7 @@ export class CreateProductHandler implements ICommandHandler<CreateProductComman
         },
       });
       await this.products.add(product, ticket);
-
-      if (declaration !== null) {
-        // Deux tables, deux écritures — la fiche naît d'un seul geste, mais ses
-        // deux moitiés ne se touchent plus (§6a du plan). Les valeurs ne
-        // s'écrivent que si le formulaire en portait : une ligne de huit `null`
-        // dirait « quelqu'un a saisi », ce qui n'est pas vrai.
-        await this.allergenSheets.save(variantId, declaration, ticket);
-        if (input.nutrition !== undefined) {
-          await this.nutritionValues.save(variantId, declaration, ticket);
-        }
-      }
+      await this.writeSheets(variantId, declaration, input, ticket);
       if (!isEmptyEditorial(story) || visuals.length > 0) {
         await this.editorials.save(productId, story, visuals, ticket);
       }
@@ -204,5 +172,62 @@ export class CreateProductHandler implements ICommandHandler<CreateProductComman
     });
 
     return productId;
+  }
+
+  /** La famille d'accueil : elle existe et n'est pas archivée. */
+  private async openCategory(categoryId: string): Promise<Category> {
+    const category = await this.categories.findById(categoryId);
+    if (category === null) {
+      throw new CategoryNotFoundError(categoryId);
+    }
+    if (category.isArchived) {
+      throw new CategoryArchivedError(categoryId);
+    }
+    return category;
+  }
+
+  /** La référence saisie, ou une référence proposée quand le formulaire n'en porte pas. */
+  private async skuFor(input: CreateProductInput): Promise<Sku> {
+    return input.sku === undefined || input.sku.trim() === ""
+      ? proposeProductSku(() => this.ids.next(), this.availability)
+      : Sku.create(input.sku);
+  }
+
+  /**
+   * La déclaration d'allergènes et de valeurs nutritionnelles, ou `null` si le
+   * formulaire n'en porte pas. Aucun code n'était déjà déclaré — la fiche naît
+   * avec le produit : un code archivé y est donc TOUJOURS un ajout à neuf, et il
+   * est refusé (D2 bis).
+   */
+  private async declarationFor(input: CreateProductInput): Promise<NutritionDeclaration | null> {
+    if (input.allergens === undefined) {
+      return null;
+    }
+    return validatedDeclaration(
+      this.allergens,
+      { allergens: input.allergens, mayContain: input.mayContain, nutrition: input.nutrition },
+      [],
+    );
+  }
+
+  /**
+   * Deux tables, deux écritures — la fiche naît d'un seul geste, mais ses deux
+   * moitiés ne se touchent plus (§6a du plan). Les valeurs ne s'écrivent que si
+   * le formulaire en portait : une ligne de huit `null` dirait « quelqu'un a
+   * saisi », ce qui n'est pas vrai.
+   */
+  private async writeSheets(
+    variantId: string,
+    declaration: NutritionDeclaration | null,
+    input: CreateProductInput,
+    ticket: WriteTicket,
+  ): Promise<void> {
+    if (declaration === null) {
+      return;
+    }
+    await this.allergenSheets.save(variantId, declaration, ticket);
+    if (input.nutrition !== undefined) {
+      await this.nutritionValues.save(variantId, declaration, ticket);
+    }
   }
 }
