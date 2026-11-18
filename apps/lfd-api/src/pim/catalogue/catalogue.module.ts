@@ -121,10 +121,8 @@ import { GetProductHistoryHandler } from "./history/application/get-product-hist
 import { ProductLineageReader } from "./history/domain/ports/product-lineage.reader.js";
 import { ProductHistoryController } from "./history/http/product-history.controller.js";
 import { PrismaProductLineageReader } from "./history/infrastructure/prisma-product-lineage.reader.js";
-import {
-  PrismaSkuAvailability,
-  SKU_AVAILABILITY,
-} from "./product/infrastructure/prisma-sku-availability.js";
+import { SKU_AVAILABILITY } from "./product/domain/ports/sku-availability.js";
+import { PrismaSkuAvailability } from "./product/infrastructure/prisma-sku-availability.js";
 
 /**
  * Câblage du module catalogue.

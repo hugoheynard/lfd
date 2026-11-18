@@ -99,7 +99,7 @@ L'ordre est la garantie (`catalog-facts.emitter.ts:34-50`) :
 
 1. `SELECT id … ORDER BY id FOR UPDATE` sur les fiches visées, triées et sans
    doublon — le seul ordre de verrou du mécanisme
-   (`apps/lfd-api/src/pim/channels/b2b-platform/products/prisma-publication-sequence.ts:19-26`) ;
+   (`apps/lfd-api/src/pim/channels/b2b-platform/infrastructure/prisma-publication-sequence.ts:19-26`) ;
 2. relecture et projection ;
 3. un numéro par fait, tiré de `pim.catalog_publication_seq`
    (`prisma-publication-sequence.ts:46-53`, séquence posée par la migration

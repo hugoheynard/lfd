@@ -73,7 +73,7 @@ export abstract class PimPrismaService {
   /**
    * Le SQL écrit à la main — pour **un seul usage** à ce jour (vérifié le
    * 2026-10-15) : le verrou et le numéro de publication des faits du catalogue
-   * (`channels/b2b-platform/products/prisma-publication-sequence.ts`). Prisma
+   * (`channels/b2b-platform/infrastructure/prisma-publication-sequence.ts`). Prisma
    * n'exprime ni `SELECT … FOR UPDATE` ni `nextval`.
    *
    * ⚠️ Il élargit cette surface au-delà des délégués déclarés : une requête

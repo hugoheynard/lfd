@@ -1,3 +1,4 @@
+import type { SkuAvailability } from "../ports/sku-availability.js";
 import { referenceFrom } from "../../../../../platform/id/reference.js";
 import { SkuGenerationExhaustedError } from "../errors/sku-errors.js";
 import { Sku, SKU_MAX_LENGTH } from "../value-objects/sku.value-object.js";
@@ -25,9 +26,7 @@ import { Sku, SKU_MAX_LENGTH } from "../value-objects/sku.value-object.js";
  * Ce module est **pur** : il dépend d'un port, jamais d'un dépôt. Le défaut est *proposé*,
  * pas garanti unique — seul l'index unique en base garantit (cf. doc 06 §5).
  */
-export interface SkuAvailability {
-  isTaken(candidate: Sku): Promise<boolean>;
-}
+export type { SkuAvailability };
 
 const MAX_ATTEMPTS = 10;
 

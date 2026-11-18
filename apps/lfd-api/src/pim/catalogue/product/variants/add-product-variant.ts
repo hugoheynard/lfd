@@ -17,7 +17,7 @@ import {
   type SkuAvailability,
 } from "../domain/services/sku-generator.js";
 import { Sku } from "../domain/value-objects/sku.value-object.js";
-import { SKU_AVAILABILITY } from "../infrastructure/prisma-sku-availability.js";
+import { SKU_AVAILABILITY } from "../domain/ports/sku-availability.js";
 import { requireProduct } from "../shared/product-support.js";
 import { CatalogEmitter } from "../../shared/domain/ports/catalog-emitter.js";
 

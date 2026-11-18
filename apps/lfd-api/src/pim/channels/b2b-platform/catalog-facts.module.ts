@@ -14,7 +14,7 @@ import { B2bCatalogRulesEmitter } from "./products/catalog-rules.emitter.js";
 import { CatalogFactsSource } from "./products/catalog-facts.source.js";
 import { CatalogSnapshots } from "./products/catalog-snapshots.js";
 import { B2bCatalogReemission } from "./products/catalog-reemission.service.js";
-import { PrismaPublicationSequence } from "./products/prisma-publication-sequence.js";
+import { PrismaPublicationSequence } from "./infrastructure/prisma-publication-sequence.js";
 import { PublicationSequence } from "./products/publication-sequence.js";
 
 /**

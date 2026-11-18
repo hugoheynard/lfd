@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 
 import { PimPrismaService } from "../../../infra/database/pim-prisma.service.js";
-import type { SkuAvailability } from "../domain/services/sku-generator.js";
+import type { SkuAvailability } from "../domain/ports/sku-availability.js";
 import type { Sku } from "../domain/value-objects/sku.value-object.js";
 
 /**
@@ -24,5 +24,3 @@ export class PrismaSkuAvailability implements SkuAvailability {
     return found !== null;
   }
 }
-
-export const SKU_AVAILABILITY = Symbol("SkuAvailability");

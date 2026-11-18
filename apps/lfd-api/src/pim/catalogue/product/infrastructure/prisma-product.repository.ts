@@ -3,6 +3,7 @@ import { Injectable } from "@nestjs/common";
 import { currentRequestContext } from "../../../../platform/context/request-context.store.js";
 
 import { PimPrismaService } from "../../../infra/database/pim-prisma.service.js";
+import { ProductWithoutVariantError } from "../domain/errors/product-invariant-errors.js";
 import { SkuAlreadyUsedError } from "../domain/errors/sku-errors.js";
 import { Product, type ProductSnapshot } from "../domain/entities/product.js";
 import type { VariantSnapshot } from "../domain/entities/variant.js";
@@ -278,8 +279,7 @@ export class PrismaProductRepository extends ProductRepository {
     const snapshot = product.persistenceSnapshot();
     const [defaultVariant] = snapshot.variants;
     if (defaultVariant === undefined) {
-      // Inatteignable : l'agrégat refuse de naître sans déclinaison par défaut.
-      throw new Error("produit sans déclinaison — invariant 2 violé avant écriture");
+      throw new ProductWithoutVariantError(product.id);
     }
 
     try {

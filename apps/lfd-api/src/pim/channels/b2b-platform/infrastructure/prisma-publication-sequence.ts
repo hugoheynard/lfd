@@ -2,7 +2,7 @@ import { Injectable } from "@nestjs/common";
 
 import { TechnicalError } from "../../../../platform/shared/errors/app-error.js";
 import { PimPrismaService } from "../../../infra/database/pim-prisma.service.js";
-import { PublicationSequence } from "./publication-sequence.js";
+import { PublicationSequence } from "../products/publication-sequence.js";
 
 /**
  * L'adaptateur, en SQL écrit à la main : Prisma n'exprime ni le verrou de

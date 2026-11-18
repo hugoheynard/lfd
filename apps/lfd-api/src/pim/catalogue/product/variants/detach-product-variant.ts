@@ -19,7 +19,7 @@ import {
   variantSkuRoot,
   type SkuAvailability,
 } from "../domain/services/sku-generator.js";
-import { SKU_AVAILABILITY } from "../infrastructure/prisma-sku-availability.js";
+import { SKU_AVAILABILITY } from "../domain/ports/sku-availability.js";
 import { CatalogEmitter } from "../../shared/domain/ports/catalog-emitter.js";
 import { copiedEditorial, copiedMedia, copiedNutrition } from "./detached-product-copy.js";
 import { announceProductMedia } from "../media/product-media-announcement.js";
