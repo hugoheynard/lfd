@@ -11,6 +11,8 @@
 > capacité) et L2 (hygiène — sauf le point « produit archivé », en attente de
 > la décision de Hugo).
 >
+> ✅ **L1 bâti le 2026-11-18** : la dette de `lint:pim-subcontexts` est à zéro (48 imports au départ). Noyau `pim/shared/` (réémission, émetteur, `json-readers`, langues du catalogue) ; les ports de citation chez `ingredients` ; les trois routes de propagation dans un contrôleur du catalogue (mêmes URL) ; le catalogue et la limite de commande déclarent leurs ports et le fait des visuels, `channels/` les ré-exporte comme porte publiée aux autres blocs.
+>
 > ✅ **L7 et L6 bâtis le 2026-11-18.** L7 : entité, handlers et `sale-terms` testés ;
 > les gestes d'`allergens/application` l'étaient déjà. L6 : le PDF vit dans
 > `allergen-matrix/infrastructure/` derrière `AllergenMatrixRenderer` ; octets inchangés.

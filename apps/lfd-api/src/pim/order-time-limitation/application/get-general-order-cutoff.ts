@@ -1,7 +1,7 @@
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 import type { GeneralOrderCutoffView } from "@lfd/pim-contracts";
 
-import { GeneralOrderCutoffReader } from "../../channels/b2b-platform/general-order-cutoff/general-order-cutoff.reader.js";
+import { GeneralOrderCutoffReader } from "../domain/ports/general-order-cutoff.reader.js";
 
 export class GetGeneralOrderCutoffQuery {}
 

@@ -1,7 +1,5 @@
 {
-  "$comment": "La dette du sens des dépendances dans src/pim, relevée le 2026-11-18 à la naissance de dev-toolbox/gates/pim-subcontexts.mjs (documentation/pim/plan-referentiel-a-neuf.md, L0). Un compte par fichier → sous-contexte cible. Elle ne grandit pas, elle se vide : L1 la retire (noyau pim/shared, ports retournés). Une paire neuve, un compte qui monte, une paire résolue encore inscrite, un compte trop haut échouent.",
+  "$comment": "La dette du sens des dépendances dans src/pim (documentation/pim/plan-referentiel-a-neuf.md, L0, L1). Elle est vide : toute arête hors du sens admis échoue, et une entrée neuve est une faute, pas une ligne à coller.",
   "since": "2026-11-18",
-  "imports": {
-    "order-time-limitation/application/get-general-order-cutoff.ts → channels": 1
-  }
+  "imports": {}
 }
