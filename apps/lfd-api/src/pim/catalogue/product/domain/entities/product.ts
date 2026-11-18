@@ -1,10 +1,3 @@
-import {
-  ArchivedProductNotPublishableError,
-  ArchivedProductNotWithdrawableError,
-  DeletedProductNotChangeableError,
-  NotArchivedProductNotDeletableError,
-  NotArchivedProductNotRestorableError,
-} from "../errors/product-errors.js";
 import { refuseEditOfArchived } from "../errors/archived-product-edit-errors.js";
 import {
   Variant,
@@ -24,11 +17,14 @@ import type { Audience } from "../../../shared/domain/value-objects/audience.js"
 import type { CategoryVatPercents } from "../../../shared/domain/ports/catalogue-reader.js";
 import type { ActivationGaps } from "../services/activation-gaps.js";
 import { ProductCompleteness } from "../services/product-completeness.js";
+import type { ComplianceFinding } from "../services/product-compliance.js";
 import {
-  isCompliantForActivation,
-  type ComplianceFinding,
-} from "../services/product-compliance.js";
-import { refusalOf } from "./activation-refusal.js";
+  statusAfterActivation,
+  statusAfterArchiving,
+  statusAfterDeactivation,
+  statusAfterDeletion,
+  statusAfterRestoration,
+} from "./product-lifecycle.js";
 import { VariantLineup, type NewVariantInput } from "./variant-lineup.js";
 import {
   productFieldsFrom,
@@ -343,106 +339,55 @@ export class Product {
     return this.lineup.resolvedSnapshots();
   }
 
+  /**
+   * Met la fiche en vente — toutes ses déclinaisons partent avec elle, ce qui
+   * fige leur unité de vente. Les règles de chaque transition sont dans
+   * `product-lifecycle.ts`.
+   */
   activate(
     vatPercents: CategoryVatPercents,
     rules: CompletenessRules,
     citedAllergens: readonly string[],
     categoryAudience: Audience,
   ): StatusChanged {
-    this.refuseIfDeleted();
-    if (this.fields.status === "archived") {
-      throw new ArchivedProductNotPublishableError(this.fields.id);
+    const changed = this.moveTo(
+      statusAfterActivation(this.fields.id, this.fields.status, () =>
+        this.complianceWith(vatPercents, rules, citedAllergens, categoryAudience),
+      ),
+    );
+    if (changed) {
+      this.lineup.markAllPublished();
     }
-    if (this.fields.status === "published") {
-      return false;
-    }
-    const findings = this.complianceWith(vatPercents, rules, citedAllergens, categoryAudience);
-    if (!isCompliantForActivation(findings)) {
-      throw refusalOf(this.fields.id, findings);
-    }
-    this.fields = { ...this.fields, status: "published" };
-    // Toutes partent avec la fiche : c'est ce qui fige leur unité de vente.
-    this.lineup.markAllPublished();
-    return true;
+    return changed;
   }
 
-  /**
-   * Retire de la vente en ligne, sans archiver : le produit redevient brouillon.
-   *
-   * Refuse sur un produit **archivé** : il n'est pas en vente, il est sorti du
-   * catalogue, et « le retirer de la vente » ne veut rien dire. Le refus n'est
-   * pas de la rigueur gratuite — c'est ici que le front envoyait sa demande de
-   * RESTAURATION (audit 2026-09-01, §1). Le verbe ne faisait rien, le handler
-   * journalisait quand même, et l'écran peignait « Brouillon » sur une fiche
-   * restée archivée. Un no-op silencieux avait donc l'exacte apparence d'un
-   * succès.
-   */
+  /** Retire de la vente en ligne, sans archiver : le produit redevient brouillon. */
   deactivate(): StatusChanged {
-    if (this.fields.status === "archived") {
-      throw new ArchivedProductNotWithdrawableError(this.fields.id);
-    }
-    if (this.fields.status !== "published") {
-      return false;
-    }
-    this.fields = { ...this.fields, status: "draft" };
-    return true;
+    return this.moveTo(statusAfterDeactivation(this.fields.id, this.fields.status));
   }
 
-  /**
-   * Retire de la vente sans supprimer. Idempotent — l'archivage en lot passe par
-   * là, et une sélection contient couramment ce qui l'est déjà.
-   *
-   * Refuse une **supprimée** : elle ne redevient rien par l'écran, pas même
-   * archivée. La remettre en archives est un geste d'entretien.
-   */
+  /** Retire de la vente sans supprimer. Idempotent. */
   archive(): StatusChanged {
-    this.refuseIfDeleted();
-    if (this.fields.status === "archived") {
+    return this.moveTo(statusAfterArchiving(this.fields.id, this.fields.status));
+  }
+
+  /** Remet une archivée en brouillon — jamais directement en ligne. */
+  restore(): StatusChanged {
+    return this.moveTo(statusAfterRestoration(this.fields.id, this.fields.status));
+  }
+
+  /** Supprime une fiche archivée — un soft delete (le SKU reste pris). */
+  delete(): void {
+    this.moveTo(statusAfterDeletion(this.fields.id, this.fields.status));
+  }
+
+  /** Pose le statut d'après ; `false` quand la fiche y était déjà. */
+  private moveTo(status: ProductStatus): StatusChanged {
+    if (status === this.fields.status) {
       return false;
     }
-    this.fields = { ...this.fields, status: "archived" };
+    this.fields = { ...this.fields, status };
     return true;
-  }
-
-  /**
-   * Remet un produit archivé en brouillon — jamais directement en ligne.
-   *
-   * Refuse sur un produit qui n'est pas archivé. Sans ce refus, restaurer un
-   * produit **en ligne** le rétrogradait silencieusement en brouillon : le
-   * verbe posait `draft` sans regarder d'où il venait, et le produit sortait de
-   * la vente sur un geste qui prétendait l'y ramener.
-   */
-  restore(): StatusChanged {
-    if (this.fields.status !== "archived") {
-      throw new NotArchivedProductNotRestorableError(this.fields.id, this.fields.status);
-    }
-    this.fields = { ...this.fields, status: "draft" };
-    return true;
-  }
-
-  /**
-   * **Supprime** une fiche archivée — un soft delete : elle sort de tout le
-   * référentiel, la ligne reste, le SKU reste pris.
-   *
-   * Seule une archivée se supprime : une fiche en vente ou en brouillon
-   * s'archive d'abord, ce qui la retire du miroir du commerce. Le refus vaut
-   * aussi pour une fiche déjà supprimée — il n'y a pas de « déjà supprimée »
-   * à taire, puisque l'écran ne la montre plus : la demande vient d'ailleurs.
-   *
-   * @throws {NotArchivedProductNotDeletableError} la fiche n'est pas archivée.
-   */
-  delete(): void {
-    if (this.fields.status !== "archived") {
-      throw new NotArchivedProductNotDeletableError(this.fields.id, this.fields.status);
-    }
-    this.fields = { ...this.fields, status: "deleted" };
-  }
-
-  /** Une supprimée ne redevient rien depuis l'écran (plan v4, point 2). */
-  private refuseIfDeleted(): void {
-    if (this.fields.status === "deleted") {
-      throw new DeletedProductNotChangeableError(this.fields.id);
-    }
   }
 
   /**
