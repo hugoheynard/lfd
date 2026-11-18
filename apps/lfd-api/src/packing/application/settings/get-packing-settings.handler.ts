@@ -7,7 +7,7 @@ import { GetPackingSettingsQuery } from "./get-packing-settings.query.js";
 
 /**
  * Les réglages du colisage tels qu'ils valent : ceux qu'on a posés, sinon les
- * défauts — partage d'une moitié fermé, sur mesure affiché. Lu par Réglages ›
+ * défauts — partage d'une moitié fermé, sur mesure affiché, retrait en simple. Lu par Réglages ›
  * Colisage et par le poste, qui n'affiche « Partager une moitié » que s'il est
  * ouvert, et la pastille « Sur mesure » que si elle est demandée.
  */
@@ -24,6 +24,7 @@ export class GetPackingSettingsHandler implements IQueryHandler<
     return {
       halfSharing: settings.halfSharing,
       showMadeToOrder: settings.showMadeToOrder,
+      pickupTrackingLevel: settings.pickupTrackingLevel,
       source: posed === null ? "default" : "explicit",
     };
   }

@@ -60,6 +60,14 @@ model PackingOrder {
   /// Posée sur une ligne neuve — la pierre tombale — si la liste à coliser
   /// n'est pas encore arrivée : le tirage n'y insère alors aucune ligne.
   withdrawnAt           DateTime? @map("withdrawn_at") @db.Timestamptz(6)
+  /// Le niveau de suivi figé à la naissance de la fiche (`simple` ou
+  /// `detailed`, CHECK) : le réglage pour un retrait, celui de la fiche
+  /// d'origine pour un reliquat. `null` — livraison, fiche d'avant la
+  /// colonne — se lit détaillé.
+  trackingLevel         String?   @map("tracking_level")
+  /// L'instant où le client a retiré la commande (`handover.handed_over`) :
+  /// une fiche retirée ne se rouvre plus.
+  handedOverAt          DateTime? @map("handed_over_at") @db.Timestamptz(6)
 
   lines      PackingLine[]
   containers PackingContainer[]
@@ -119,6 +127,9 @@ model PackingStock {
   /// Σ des pièces envoyées en boutique depuis la réserve (plan A1, lot A1.4) :
   /// une sortie, reçue au comptoir comme un réassort d'origine `reserve`.
   sentToShop Int @default(0) @map("sent_to_shop")
+  /// Les pièces dites absentes par un « Problème », mises de côté : aucune
+  /// autre commande ne les prend. CHECK ≥ 0.
+  missing    Int @default(0)
 
   @@id([serviceDay, sku])
   @@map("packing_stock")
@@ -334,14 +345,31 @@ model PackingStockReservation {
 /// **Aucune journée** : exception écrite dans `test/day-change-triggers.e2e-spec.ts`.
 model PackingSettings {
   /// Toujours `packing` : il n'y a qu'un réglage.
-  key             String   @id
+  key                 String   @id
   /// Le geste « Partager une moitié » du poste ; fermé par défaut.
-  halfSharing     Boolean  @default(false) @map("half_sharing")
+  halfSharing         Boolean  @default(false) @map("half_sharing")
   /// La pastille « Sur mesure » à l'écran du colisage ; affichée par défaut.
-  showMadeToOrder Boolean  @default(true) @map("show_made_to_order")
-  updatedAt       DateTime @map("updated_at") @db.Timestamptz(6)
-  updatedBy       String   @map("updated_by")
+  showMadeToOrder     Boolean  @default(true) @map("show_made_to_order")
+  /// Le niveau de suivi du colisage d'un retrait : `simple` (défaut) ou
+  /// `detailed` (CHECK). Figé sur chaque fiche à sa naissance.
+  pickupTrackingLevel String   @default("simple") @map("pickup_tracking_level")
+  updatedAt           DateTime @map("updated_at") @db.Timestamptz(6)
+  updatedBy           String   @map("updated_by")
 
   @@map("packing_settings")
+  @@schema("packing")
+}
+
+/// **Ce que les corrections du fournil ont réellement baissé**, par remise et
+/// par article : une correction n'applique que la différence entre le cumul
+/// publié et `applied`. CHECK `applied ≥ 0`.
+model PackingAppliedCorrection {
+  serviceDay String @map("service_day") @db.VarChar(10)
+  handoffId  String @map("handoff_id")
+  sku        String
+  applied    Int
+
+  @@id([serviceDay, handoffId, sku])
+  @@map("packing_applied_correction")
   @@schema("packing")
 }

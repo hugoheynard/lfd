@@ -1,5 +1,6 @@
 import type { SaleUnit } from "@lfd/money";
 import type { ContainerMode } from "../entities/packing-sheet.js";
+import type { PackingTrackingLevel } from "../entities/packing-tracking-level.js";
 
 /** Une commande à coliser, telle que l'ombre l'inscrit. */
 export interface ShadowOrderToDraw {
@@ -22,6 +23,11 @@ export interface ShadowOrderToDraw {
    * garde le sien — l'inscription ne réécrit rien.
    */
   readonly containerMode: ContainerMode;
+  /**
+   * Le niveau de suivi figé à la naissance (plan des niveaux de suivi du
+   * colisage, D3) ; `null` = rien de figé, lu détaillé. Jamais réécrit.
+   */
+  readonly trackingLevel: PackingTrackingLevel | null;
   /** Additionnées par article : une ligne par SKU. */
   readonly lines: readonly {
     readonly sku: string;

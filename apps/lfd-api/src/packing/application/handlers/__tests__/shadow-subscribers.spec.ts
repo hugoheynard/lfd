@@ -5,6 +5,7 @@ import {
   PackingListDrawnPayloadError,
   ReturnRequestedEvent,
 } from "../../../../production/channels/packing/index.js";
+import { InMemoryPackingSettings } from "../../__tests__/packing-settings-doubles.js";
 import { InMemoryShadow } from "../../__tests__/shadow-doubles.js";
 import {
   InMemoryReturnReader,
@@ -69,7 +70,7 @@ function setup() {
     returns,
     stocks,
     durable,
-    list: new OnPackingListDrawn(shadow),
+    list: new OnPackingListDrawn(shadow, new InMemoryPackingSettings().reader(), shadow.origins()),
     handed: new OnHandedToPacking(shadow, clock, desk),
     returned: new OnReturnRequested(shadow, clock, desk),
   };
@@ -95,6 +96,8 @@ describe("OnPackingListDrawn", () => {
         drawnAt: AT,
         // K2b : toute commande inscrite désormais liste ses contenants.
         containerMode: "listed",
+        // D3 : un retrait naît au niveau réglé — ici le défaut, simple.
+        trackingLevel: "simple",
         lines: [{ sku: "CRO", productName: "Croissant", quantity: 3, saleUnit: "piece" }],
       },
     ]);

@@ -10,6 +10,7 @@ import type {
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { PermissionsStore } from '../../../auth/permissions.store';
+import { PackingSettingsService } from '../../../production/packing-settings.service';
 import { ProductionSettingsService } from '../../../production/production-settings.service';
 import { WorkstationsService } from '../../../production/workstations.service';
 import { TrackingLevelsPage } from './tracking-levels-page';
@@ -85,6 +86,18 @@ async function mount(
       provideRouter([]),
       { provide: ProductionSettingsService, useValue: settings },
       { provide: WorkstationsService, useValue: stations },
+      {
+        provide: PackingSettingsService,
+        useValue: {
+          read: () =>
+            Promise.resolve({
+              halfSharing: false,
+              showMadeToOrder: true,
+              pickupTrackingLevel: 'simple',
+              source: 'default',
+            }),
+        },
+      },
       {
         provide: PermissionsStore,
         useValue: { can: (permission: StaffPermission) => granted.includes(permission) },
@@ -163,5 +176,15 @@ describe('la page « Niveau de suivi »', () => {
     const { fixture } = await mount(['production_settings:read', 'production_workstations:read']);
 
     expect(root(fixture).querySelector('[data-save-tracking]')).toBeNull();
+  });
+
+  it('montre « Colisage — retrait » à qui lit les réglages du colisage, et à lui seul', async () => {
+    const { fixture } = await mount([...ALL, 'delivery_settings:read']);
+    expect(root(fixture).querySelector('app-packing-pickup-level-card')).not.toBeNull();
+  });
+
+  it('sans lecture des réglages du colisage, pas de carte du colisage', async () => {
+    const { fixture } = await mount();
+    expect(root(fixture).querySelector('app-packing-pickup-level-card')).toBeNull();
   });
 });

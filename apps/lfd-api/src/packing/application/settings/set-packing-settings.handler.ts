@@ -24,10 +24,11 @@ export class SetPackingSettingsHandler implements ICommandHandler<SetPackingSett
   async execute(command: SetPackingSettingsCommand): Promise<void> {
     await this.uow.run(async () => {
       const before = await this.reader.current();
+      const standing = before ?? PackingSettings.defaults();
       const next = PackingSettings.of({
         halfSharing: command.halfSharing,
-        showMadeToOrder:
-          command.showMadeToOrder ?? (before ?? PackingSettings.defaults()).showMadeToOrder,
+        showMadeToOrder: command.showMadeToOrder ?? standing.showMadeToOrder,
+        pickupTrackingLevel: command.pickupTrackingLevel ?? standing.pickupTrackingLevel,
       });
       if (before?.equals(next) === true) {
         return;

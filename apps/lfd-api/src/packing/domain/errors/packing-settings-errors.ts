@@ -1,4 +1,4 @@
-import { BusinessError } from "../../../platform/shared/errors/app-error.js";
+import { BusinessError, DomainError } from "../../../platform/shared/errors/app-error.js";
 
 /**
  * Le geste « Partager une moitié » est fermé dans Réglages › Colisage (fermé
@@ -10,6 +10,16 @@ export class HalfSharingDisabledError extends BusinessError {
     super(
       "packing.half_sharing.disabled",
       "Le partage d'une moitié de bac est désactivé dans Réglages › Colisage. Rechargez le poste et déclarez un bac à la commande, ou demandez à qui règle la livraison de l'activer.",
+    );
+  }
+}
+
+/** Un niveau de suivi du colisage qui n'est ni `simple` ni `detailed`. */
+export class PackingTrackingLevelUnknownError extends DomainError {
+  constructor(raw: string) {
+    super(
+      "packing.tracking_level.unknown",
+      `Le niveau de suivi du colisage « ${raw} » n'existe pas : choisissez Simple ou Détaillé dans Réglages › Niveau de suivi.`,
     );
   }
 }

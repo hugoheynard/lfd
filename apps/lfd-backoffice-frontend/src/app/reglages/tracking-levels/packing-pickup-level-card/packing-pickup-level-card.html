@@ -1,0 +1,38 @@
+<fold-card>
+  <fold-element-title
+    cardHeader
+    variant="title"
+    title="Colisage — retrait"
+    subtitle="Vaut pour les commandes inscrites ensuite ; une livraison reste détaillée"
+  />
+  @switch (state()) {
+    @case ('loading') {
+      <fold-loading message="Lecture du niveau du colisage…" />
+    }
+    @case ('error') {
+      <fold-callout variant="alert" data-packing-lost>
+        Le niveau du colisage n'a pas pu être lu.
+      </fold-callout>
+    }
+    @default {
+      <div class="pl-stack">
+        @if (refusal(); as refused) {
+          <fold-callout variant="alert" data-packing-refused>{{ refused }}</fold-callout>
+        }
+        @if (canWrite()) {
+          <fold-view-toggle
+            ariaLabel="Niveau de suivi du colisage d'un retrait"
+            [options]="options"
+            [value]="level() ?? ''"
+            (valueChange)="choose($event)"
+          />
+        } @else {
+          <p data-packing-level-read>Niveau : {{ levelLabel() }}</p>
+        }
+        <p class="pl-hint">
+          Simple : « Tout est prêt » ou « Problème ». Détaillé : contenants et répartition.
+        </p>
+      </div>
+    }
+  }
+</fold-card>

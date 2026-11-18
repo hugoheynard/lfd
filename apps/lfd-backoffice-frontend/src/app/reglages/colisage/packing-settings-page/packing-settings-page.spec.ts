@@ -15,6 +15,7 @@ import { PackingSettingsPage } from './packing-settings-page';
 const DEFAULTS: PackingSettingsView = {
   halfSharing: false,
   showMadeToOrder: true,
+  pickupTrackingLevel: 'simple',
   source: 'default',
 };
 
@@ -40,6 +41,7 @@ class FakeSettings {
     this.current = {
       halfSharing: payload.halfSharing,
       showMadeToOrder: payload.showMadeToOrder ?? before.showMadeToOrder,
+      pickupTrackingLevel: payload.pickupTrackingLevel ?? before.pickupTrackingLevel,
       source: 'explicit',
     };
     return Promise.resolve();

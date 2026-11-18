@@ -32,6 +32,7 @@ import {
   type ShortfallLine,
   shortfallOf,
 } from "../services/shortfall.js";
+import { type PackingTrackingLevel, readTrackingLevel } from "./packing-tracking-level.js";
 import {
   type ContainerLine,
   type ContainerMark,
@@ -97,6 +98,7 @@ export class PackingSheet {
     private shortfallValue: Date | null,
     private authorizedValue: Date | null,
     private withdrawnValue: Date | null,
+    private readonly fixedLevel: PackingTrackingLevel | null,
   ) {
     this.contents = OrderContents.of(reference, containerList);
   }
@@ -116,6 +118,7 @@ export class PackingSheet {
       snapshot.shortfallReportedAt ?? null,
       snapshot.shortfallAuthorizedAt ?? null,
       snapshot.withdrawnAt ?? null,
+      snapshot.trackingLevel ?? null,
     );
   }
 
@@ -377,6 +380,14 @@ export class PackingSheet {
     return "sealed";
   }
 
+  /**
+   * Le niveau de suivi de la fiche, figé à sa naissance (plan des niveaux de
+   * suivi du colisage, D3) : rien de figé se lit détaillé.
+   */
+  get trackingLevel(): PackingTrackingLevel {
+    return readTrackingLevel(this.fixedLevel);
+  }
+
   /** L'instant du retrait, ou `null` : la feuille vit. */
   get withdrawnAt(): Date | null {
     return this.withdrawnValue;
@@ -402,6 +413,7 @@ export class PackingSheet {
       shortfallReportedAt: this.shortfallValue,
       shortfallAuthorizedAt: this.authorizedValue,
       withdrawnAt: this.withdrawnValue,
+      trackingLevel: this.fixedLevel,
     };
   }
 

@@ -1,5 +1,6 @@
 import type { PrismaService } from "../../platform/database/prisma.service.js";
 import { PackingSheet, type SheetLine } from "../domain/entities/packing-sheet.js";
+import { packingTrackingLevelOf } from "../domain/entities/packing-tracking-level.js";
 import { CONTAINER_SELECT, containerModeOf, containerOf } from "./packing-container.mapper.js";
 import { packingSaleUnitOf } from "./sale-unit.column.js";
 
@@ -55,6 +56,7 @@ export async function loadPackingSheet(
       shortfallReportedAt: true,
       shortfallAuthorizedAt: true,
       withdrawnAt: true,
+      trackingLevel: true,
       containers: CONTAINER_SELECT,
       lines: {
         select: {
@@ -90,6 +92,7 @@ export async function loadPackingSheet(
     shortfallReportedAt: row.shortfallReportedAt,
     shortfallAuthorizedAt: row.shortfallAuthorizedAt,
     withdrawnAt: row.withdrawnAt,
+    trackingLevel: row.trackingLevel === null ? null : packingTrackingLevelOf(row.trackingLevel),
   });
 }
 

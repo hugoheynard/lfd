@@ -1,0 +1,9 @@
+.pl-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.pl-hint {
+  color: var(--fold-color-text-muted);
+}

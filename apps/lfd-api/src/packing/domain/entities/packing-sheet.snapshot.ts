@@ -1,6 +1,7 @@
 import type { SaleUnit } from "@lfd/money";
 
 import type { PackingContainerState } from "./order-contents.js";
+import type { PackingTrackingLevel } from "./packing-tracking-level.js";
 
 /**
  * Le plafond d'une commande : **99 contenants** — une règle du colisage
@@ -72,4 +73,9 @@ export interface PackingSheetSnapshot {
   readonly shortfallAuthorizedAt?: Date | null;
   /** La feuille retirée par une annulation après l'arrêt (plan A1). Absent = vivante. */
   readonly withdrawnAt?: Date | null;
+  /**
+   * Le niveau de suivi figé à la naissance de la fiche. Absent ou `null` :
+   * rien de figé — une livraison, une fiche d'avant la colonne —, lu détaillé.
+   */
+  readonly trackingLevel?: PackingTrackingLevel | null;
 }

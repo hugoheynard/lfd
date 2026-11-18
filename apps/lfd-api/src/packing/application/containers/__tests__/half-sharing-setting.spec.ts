@@ -74,7 +74,13 @@ describe("Partager une moitié — soumis à Réglages › Colisage", () => {
   });
 
   it("refuse le partage quand le réglage est fermé", async () => {
-    const { open } = setup(PackingSettings.of({ halfSharing: false, showMadeToOrder: true }));
+    const { open } = setup(
+      PackingSettings.of({
+        halfSharing: false,
+        showMadeToOrder: true,
+        pickupTrackingLevel: "simple",
+      }),
+    );
 
     await expect(
       open.execute(new OpenPackingContainerCommand(DAY, "ord_1", SHARE, STAFF, nextKey())),
@@ -90,7 +96,13 @@ describe("Partager une moitié — soumis à Réglages › Colisage", () => {
   });
 
   it("partage une moitié quand le réglage est ouvert", async () => {
-    const { open, desk } = setup(PackingSettings.of({ halfSharing: true, showMadeToOrder: true }));
+    const { open, desk } = setup(
+      PackingSettings.of({
+        halfSharing: true,
+        showMadeToOrder: true,
+        pickupTrackingLevel: "simple",
+      }),
+    );
 
     await open.execute(new OpenPackingContainerCommand(DAY, "ord_1", SHARE, STAFF, nextKey()));
 

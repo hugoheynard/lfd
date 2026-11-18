@@ -16,6 +16,7 @@ export class PrismaPackingSettingsRepository extends PackingSettingsRepository {
     const row = {
       halfSharing: settings.halfSharing,
       showMadeToOrder: settings.showMadeToOrder,
+      pickupTrackingLevel: settings.pickupTrackingLevel,
       updatedAt: at,
       updatedBy: staffUserId,
     };

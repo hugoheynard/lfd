@@ -50,15 +50,30 @@ async function read(): Promise<PackingSettingsView> {
 
 describe("GET|PUT admin/packing/settings", () => {
   it("rend le partage d'une moitié FERMÉ tant que personne n'a rien posé", async () => {
-    expect(await read()).toEqual({ halfSharing: false, showMadeToOrder: true, source: "default" });
+    expect(await read()).toEqual({
+      halfSharing: false,
+      showMadeToOrder: true,
+      pickupTrackingLevel: "simple",
+      source: "default",
+    });
   });
 
   it("ouvre puis referme le partage, une seule ligne en base", async () => {
     await admin(ctx).put(PACKING_SETTINGS).send({ halfSharing: true }).expect(204);
-    expect(await read()).toEqual({ halfSharing: true, showMadeToOrder: true, source: "explicit" });
+    expect(await read()).toEqual({
+      halfSharing: true,
+      showMadeToOrder: true,
+      pickupTrackingLevel: "simple",
+      source: "explicit",
+    });
 
     await admin(ctx).put(PACKING_SETTINGS).send({ halfSharing: false }).expect(204);
-    expect(await read()).toEqual({ halfSharing: false, showMadeToOrder: true, source: "explicit" });
+    expect(await read()).toEqual({
+      halfSharing: false,
+      showMadeToOrder: true,
+      pickupTrackingLevel: "simple",
+      source: "explicit",
+    });
     expect(await ctx.prisma.packingSettings.count()).toBe(1);
   });
 
@@ -70,6 +85,7 @@ describe("GET|PUT admin/packing/settings", () => {
     expect(await read()).toEqual({
       halfSharing: false,
       showMadeToOrder: false,
+      pickupTrackingLevel: "simple",
       source: "explicit",
     });
 
@@ -77,8 +93,23 @@ describe("GET|PUT admin/packing/settings", () => {
     expect(await read()).toMatchObject({ halfSharing: true, showMadeToOrder: false });
   });
 
+  it("pose le niveau du retrait en détaillé, et un envoi qui n'en dit rien le garde", async () => {
+    await admin(ctx)
+      .put(PACKING_SETTINGS)
+      .send({ halfSharing: false, pickupTrackingLevel: "detailed" })
+      .expect(204);
+    expect(await read()).toMatchObject({ pickupTrackingLevel: "detailed", source: "explicit" });
+
+    await admin(ctx).put(PACKING_SETTINGS).send({ halfSharing: true }).expect(204);
+    expect(await read()).toMatchObject({ halfSharing: true, pickupTrackingLevel: "detailed" });
+  });
+
   it("refuse une forme invalide (400)", async () => {
     await admin(ctx).put(PACKING_SETTINGS).send({ halfSharing: "oui" }).expect(400);
+    await admin(ctx)
+      .put(PACKING_SETTINGS)
+      .send({ halfSharing: false, pickupTrackingLevel: "always_green" })
+      .expect(400);
   });
 });
 

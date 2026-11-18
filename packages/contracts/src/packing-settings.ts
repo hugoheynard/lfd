@@ -15,6 +15,13 @@ import { z } from "zod";
  * serveur sert le marqueur de toute façon ; c'est l'écran qui le tait.
  * Facultatif à l'envoi : absent, le réglage en vigueur reste.
  *
+ * `pickupTrackingLevel` — le niveau de suivi du colisage d'un retrait (plan
+ * des niveaux de suivi du colisage, D2 — Hugo, 2026-11-18) : `simple` (« Tout
+ * est prêt » ou « Problème ») par défaut, ou `detailed` (contenants et
+ * répartition). Figé sur chaque fiche à sa naissance ; une livraison et un
+ * réassort restent détaillés. Réglé sur la page Réglages › Niveau de suivi.
+ * Facultatif à l'envoi : absent, le niveau en vigueur reste.
+ *
  * Routes :
  * - `GET admin/packing/settings` → {@link PackingSettingsView}, sous
  *   `delivery_settings:read` OU `production_packing:read` (le poste doit
@@ -22,9 +29,13 @@ import { z } from "zod";
  * - `PUT admin/packing/settings` ← {@link PackingSettingsPayload}, sous
  *   `delivery_settings:write` → 204.
  */
+export const PACKING_TRACKING_LEVELS = ["simple", "detailed"] as const;
+export type PackingTrackingLevel = (typeof PACKING_TRACKING_LEVELS)[number];
+
 export const packingSettingsPayloadSchema = z.object({
   halfSharing: z.boolean(),
   showMadeToOrder: z.boolean().optional(),
+  pickupTrackingLevel: z.enum(PACKING_TRACKING_LEVELS).optional(),
 });
 export type PackingSettingsPayload = z.infer<typeof packingSettingsPayloadSchema>;
 
@@ -34,9 +45,13 @@ export const DEFAULT_PACKING_HALF_SHARING = false;
 /** Personne n'a rien réglé : la pastille « Sur mesure » est affichée (Hugo, 2026-10-30). */
 export const DEFAULT_PACKING_SHOW_MADE_TO_ORDER = true;
 
+/** Personne n'a rien réglé : un retrait se colise en simple (Hugo, 2026-11-18). */
+export const DEFAULT_PACKING_PICKUP_TRACKING_LEVEL: PackingTrackingLevel = "simple";
+
 /** Les réglages du colisage tels qu'ils valent ; `default` : personne ne les a encore posés. */
 export interface PackingSettingsView {
   readonly halfSharing: boolean;
   readonly showMadeToOrder: boolean;
+  readonly pickupTrackingLevel: PackingTrackingLevel;
   readonly source: "default" | "explicit";
 }

@@ -20,7 +20,11 @@ export class InMemoryPackingSettings extends PackingSettingsRepository {
   /** Le partage d'une moitié ouvert — le cas des suites qui éprouvent le geste lui-même. */
   static sharingOpen(): InMemoryPackingSettings {
     return new InMemoryPackingSettings(
-      PackingSettings.of({ halfSharing: true, showMadeToOrder: true }),
+      PackingSettings.of({
+        halfSharing: true,
+        showMadeToOrder: true,
+        pickupTrackingLevel: "simple",
+      }),
     );
   }
 

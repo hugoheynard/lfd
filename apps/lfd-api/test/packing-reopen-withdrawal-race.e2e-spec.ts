@@ -81,6 +81,7 @@ async function draw(rank: number): Promise<void> {
       siteId: null,
       drawnAt: clock.now(),
       containerMode: "counted",
+      trackingLevel: null,
       lines: [{ sku: SKU, productName: "Croissant", quantity: 4, saleUnit: "piece" }],
     }),
   );

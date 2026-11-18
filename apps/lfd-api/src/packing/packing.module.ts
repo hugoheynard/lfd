@@ -80,9 +80,11 @@ import { PackingResuppliesController } from "./http/packing-resupplies.controlle
 import { GetPackingSettingsHandler } from "./application/settings/get-packing-settings.handler.js";
 import { SetPackingSettingsHandler } from "./application/settings/set-packing-settings.handler.js";
 import { PackingSettingsReader } from "./domain/ports/packing-settings.reader.js";
+import { OriginTrackingLevelReader } from "./domain/ports/origin-tracking-level.reader.js";
 import { PackingSettingsRepository } from "./domain/ports/packing-settings.repository.js";
 import { PackingSettingsController } from "./http/packing-settings.controller.js";
 import { PrismaPackingSettingsReader } from "./infrastructure/prisma-packing-settings.reader.js";
+import { PrismaOriginTrackingLevelReader } from "./infrastructure/prisma-origin-tracking-level.reader.js";
 import { PrismaPackingSettingsRepository } from "./infrastructure/prisma-packing-settings.repository.js";
 
 /**
@@ -203,6 +205,7 @@ import { PrismaPackingSettingsRepository } from "./infrastructure/prisma-packing
     GetPackingSettingsHandler,
     SetPackingSettingsHandler,
     { provide: PackingSettingsReader, useClass: PrismaPackingSettingsReader },
+    { provide: OriginTrackingLevelReader, useClass: PrismaOriginTrackingLevelReader },
     { provide: PackingSettingsRepository, useClass: PrismaPackingSettingsRepository },
   ],
   exports: [

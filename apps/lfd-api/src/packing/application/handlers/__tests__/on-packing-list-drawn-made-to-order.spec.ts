@@ -2,6 +2,7 @@ import {
   PackingListDrawnEvent,
   type PackingListLine,
 } from "../../../../production/channels/packing/index.js";
+import { InMemoryPackingSettings } from "../../__tests__/packing-settings-doubles.js";
 import { InMemoryShadow } from "../../__tests__/shadow-doubles.js";
 import { OnPackingListDrawn } from "../on-packing-list-drawn.handler.js";
 
@@ -32,7 +33,11 @@ function delivered(lines: readonly FactLine[]) {
 
 async function drawnLines(lines: readonly FactLine[]) {
   const shadow = new InMemoryShadow();
-  await new OnPackingListDrawn(shadow).handle(delivered(lines));
+  await new OnPackingListDrawn(
+    shadow,
+    new InMemoryPackingSettings().reader(),
+    shadow.origins(),
+  ).handle(delivered(lines));
   return [...shadow.orders.values()][0]?.lines ?? [];
 }
 

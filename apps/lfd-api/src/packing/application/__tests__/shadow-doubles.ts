@@ -1,3 +1,5 @@
+import type { PackingTrackingLevel } from "../../domain/entities/packing-tracking-level.js";
+import { OriginTrackingLevelReader } from "../../domain/ports/origin-tracking-level.reader.js";
 import {
   PackingShadowLedger,
   type ShadowOrderToDraw,
@@ -40,5 +42,18 @@ export class InMemoryShadow extends PackingShadowLedger {
   /** La réserve d'un article, ou `undefined` si rien n'y est jamais arrivé. */
   stockOf(serviceDay: string, sku: string): { received: number; returned: number } | undefined {
     return this.stocks.get(`${serviceDay}/${sku}`);
+  }
+
+  /** Le niveau des fiches d'origine, lu sur la même mémoire (rang 1, la plus récente ≤ jour). */
+  origins(): OriginTrackingLevelReader {
+    const orders = (): readonly ShadowOrderToDraw[] => [...this.orders.values()];
+    return new (class extends OriginTrackingLevelReader {
+      originLevelOf(orderId: string, serviceDay: string): Promise<PackingTrackingLevel | null> {
+        const origin = orders()
+          .filter((o) => o.orderId === orderId && o.rank === 1 && o.serviceDay <= serviceDay)
+          .sort((a, b) => b.serviceDay.localeCompare(a.serviceDay))[0];
+        return Promise.resolve(origin?.trackingLevel ?? null);
+      }
+    })();
   }
 }

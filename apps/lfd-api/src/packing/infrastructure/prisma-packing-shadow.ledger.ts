@@ -33,6 +33,7 @@ export class PrismaPackingShadowLedger extends PackingShadowLedger {
           siteId: order.siteId,
           drawnAt: order.drawnAt,
           containerMode: order.containerMode,
+          trackingLevel: order.trackingLevel,
         },
       ],
       skipDuplicates: true,

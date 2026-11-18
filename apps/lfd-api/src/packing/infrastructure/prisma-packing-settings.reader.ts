@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../platform/database/prisma.service.js";
 import { PackingSettings } from "../domain/entities/packing-settings.js";
+import { packingTrackingLevelOf } from "../domain/entities/packing-tracking-level.js";
 import { PackingSettingsReader } from "../domain/ports/packing-settings.reader.js";
 import { PACKING_SETTINGS_KEY } from "./packing-settings.key.js";
 
@@ -15,8 +16,14 @@ export class PrismaPackingSettingsReader extends PackingSettingsReader {
   async current(): Promise<PackingSettings | null> {
     const row = await this.prisma.packingSettings.findUnique({
       where: { key: PACKING_SETTINGS_KEY },
-      select: { halfSharing: true, showMadeToOrder: true },
+      select: { halfSharing: true, showMadeToOrder: true, pickupTrackingLevel: true },
     });
-    return row === null ? null : PackingSettings.of(row);
+    return row === null
+      ? null
+      : PackingSettings.of({
+          halfSharing: row.halfSharing,
+          showMadeToOrder: row.showMadeToOrder,
+          pickupTrackingLevel: packingTrackingLevelOf(row.pickupTrackingLevel),
+        });
   }
 }

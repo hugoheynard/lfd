@@ -1,6 +1,6 @@
 <fold-page-layout title="Niveau de suivi">
   <p description>
-    Ce que l'équipe du fournil a à déclarer, pour tout le fournil puis poste par poste.
+    Ce que l'équipe a à déclarer : au fournil, poste par poste, puis au colisage d'un retrait.
   </p>
   <a pageActions foldButton size="sm" emphasis="outline" intent="neutral" routerLink="apercu">
     Voir l'aperçu
@@ -104,6 +104,10 @@
             </fold-callout>
           }
         </fold-card>
+
+        @if (canReadPacking()) {
+          <app-packing-pickup-level-card />
+        }
       </div>
     }
   }

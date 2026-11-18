@@ -27,16 +27,24 @@ describe("GetPackingSettingsHandler — les réglages tels qu'ils valent", () =>
     await expect(setup().get.execute()).resolves.toEqual({
       halfSharing: false,
       showMadeToOrder: true,
+      pickupTrackingLevel: "simple",
       source: "default",
     });
   });
 
   it("rend le réglage posé", async () => {
     await expect(
-      setup(PackingSettings.of({ halfSharing: true, showMadeToOrder: true })).get.execute(),
+      setup(
+        PackingSettings.of({
+          halfSharing: true,
+          showMadeToOrder: true,
+          pickupTrackingLevel: "simple",
+        }),
+      ).get.execute(),
     ).resolves.toEqual({
       halfSharing: true,
       showMadeToOrder: true,
+      pickupTrackingLevel: "simple",
       source: "explicit",
     });
   });
@@ -54,7 +62,13 @@ describe("SetPackingSettingsHandler — poser les réglages du colisage", () => 
   });
 
   it("n'écrit rien quand le réglage est déjà en vigueur", async () => {
-    const { set, store } = setup(PackingSettings.of({ halfSharing: true, showMadeToOrder: true }));
+    const { set, store } = setup(
+      PackingSettings.of({
+        halfSharing: true,
+        showMadeToOrder: true,
+        pickupTrackingLevel: "simple",
+      }),
+    );
 
     await set.execute(new SetPackingSettingsCommand(true, "staff_2"));
 
@@ -87,7 +101,11 @@ describe("SetPackingSettingsHandler — afficher le sur mesure", () => {
 
   it("un envoi qui ne dit rien du sur mesure garde le réglage en vigueur", async () => {
     const { set, store } = setup(
-      PackingSettings.of({ halfSharing: false, showMadeToOrder: false }),
+      PackingSettings.of({
+        halfSharing: false,
+        showMadeToOrder: false,
+        pickupTrackingLevel: "simple",
+      }),
     );
 
     await set.execute(new SetPackingSettingsCommand(true, "staff_1"));
@@ -95,5 +113,44 @@ describe("SetPackingSettingsHandler — afficher le sur mesure", () => {
     expect(store.writes).toEqual([
       { halfSharing: true, showMadeToOrder: false, at: NOW, by: "staff_1" },
     ]);
+  });
+});
+
+describe("SetPackingSettingsHandler — le niveau de suivi du retrait (D2)", () => {
+  it("pose le niveau détaillé sans toucher aux autres réglages", async () => {
+    const { set, store } = setup();
+
+    await set.execute(new SetPackingSettingsCommand(false, "staff_1", undefined, "detailed"));
+
+    expect(store.posed?.pickupTrackingLevel).toBe("detailed");
+    expect(store.posed?.showMadeToOrder).toBe(true);
+  });
+
+  it("garde le niveau en vigueur quand l'envoi n'en dit rien", async () => {
+    const { set, store } = setup(
+      PackingSettings.of({
+        halfSharing: false,
+        showMadeToOrder: true,
+        pickupTrackingLevel: "detailed",
+      }),
+    );
+
+    await set.execute(new SetPackingSettingsCommand(true, "staff_1"));
+
+    expect(store.posed?.pickupTrackingLevel).toBe("detailed");
+  });
+
+  it("n'écrit rien quand seul le niveau déjà en vigueur est renvoyé", async () => {
+    const { set, store } = setup(
+      PackingSettings.of({
+        halfSharing: false,
+        showMadeToOrder: true,
+        pickupTrackingLevel: "simple",
+      }),
+    );
+
+    await set.execute(new SetPackingSettingsCommand(false, "staff_1", true, "simple"));
+
+    expect(store.writes).toEqual([]);
   });
 });

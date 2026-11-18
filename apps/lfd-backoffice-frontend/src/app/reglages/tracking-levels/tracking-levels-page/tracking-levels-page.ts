@@ -27,6 +27,7 @@ import { ProductionSettingsService } from '../../../production/production-settin
 import { serverMessageOf } from '../../../production/server-message';
 import { WorkstationsService } from '../../../production/workstations.service';
 import { GestureIntents } from '../../../shared/gesture-intents';
+import { PackingPickupLevelCard } from '../packing-pickup-level-card/packing-pickup-level-card';
 
 const LEVEL_LABEL: Readonly<Record<ProductionTrackingLevel, string>> = {
   always_green: 'Toujours vert',
@@ -57,9 +58,10 @@ function isLevel(value: string): value is ProductionTrackingLevel {
  * `documentation/fournil/les-niveaux-de-suivi.md`) : le
  * niveau du fournil et sa marge, puis le niveau propre de chaque poste.
  *
- * Elle rassemble deux propriétaires : le réglage du fournil s'écrit chez
+ * Elle rassemble trois propriétaires : le réglage du fournil s'écrit chez
  * l'atelier (`PUT …/settings/tracking`), le niveau d'un poste chez les postes
- * (`PUT …/workstations/:id/tracking-level`). Chaque écriture part sous la clé
+ * (`PUT …/workstations/:id/tracking-level`), le niveau du colisage d'un
+ * retrait chez le colisage ({@link PackingPickupLevelCard}). Chaque écriture part sous la clé
  * d'une {@link GestureIntents}, tenue par contenu, puis la page relit.
  */
 @Component({
@@ -77,6 +79,7 @@ function isLevel(value: string): value is ProductionTrackingLevel {
     FoldNumberInputComponent,
     FoldPageLayoutComponent,
     FoldViewToggleComponent,
+    PackingPickupLevelCard,
   ],
   templateUrl: './tracking-levels-page.html',
   styleUrl: './tracking-levels-page.scss',
@@ -105,6 +108,9 @@ export class TrackingLevelsPage {
   );
   protected readonly canWriteStations = computed(() =>
     this.permissions.can('production_workstations:write'),
+  );
+  protected readonly canReadPacking = computed(() =>
+    this.permissions.can('delivery_settings:read'),
   );
 
   protected readonly levelOptions: readonly FoldViewToggleOption[] = PRODUCTION_TRACKING_LEVELS.map(

@@ -1053,10 +1053,16 @@ export type {
 export type { PackingBagLabelView, PackingBagLabelsView } from "./packing-bag-labels.js";
 export {
   DEFAULT_PACKING_HALF_SHARING,
+  DEFAULT_PACKING_PICKUP_TRACKING_LEVEL,
   DEFAULT_PACKING_SHOW_MADE_TO_ORDER,
+  PACKING_TRACKING_LEVELS,
   packingSettingsPayloadSchema,
 } from "./packing-settings.js";
-export type { PackingSettingsPayload, PackingSettingsView } from "./packing-settings.js";
+export type {
+  PackingSettingsPayload,
+  PackingSettingsView,
+  PackingTrackingLevel,
+} from "./packing-settings.js";
 export { qualityControlSettingsPayloadSchema } from "./quality-control-settings.js";
 export type {
   QualityControlSettingsPayload,
