@@ -84,6 +84,7 @@ function roundOn(options: {
       new WorksheetTrackingLevelsReading(new GroupingSourceReading(...placementPorts())),
     ),
     runner,
+    commissioning,
   );
   return { scene, runner, round };
 }
@@ -132,12 +133,40 @@ describe("RunAlwaysGreenRoundHandler", () => {
     const { scene, runner, round } = roundOn({
       commissioning: new FixedCommissioning(new Date(afterTheArrest())),
     });
+    // Le tour passe après la mise en service ; la journée a été arrêtée avant.
+    scene.clock.set(new Date(afterTheArrest() + 3_600_000));
+    let loads = 0;
+    const load = scene.days.load.bind(scene.days);
+    scene.days.load = (day) => {
+      loads += 1;
+      return load(day);
+    };
 
     const report = await round.execute();
 
     expect(runner.calls).toEqual([]);
     expect(scene.frozen.attempts).toEqual([]);
     expect(report.days[0]).toMatchObject({ arrested: true, recorded: [], toConfirm: [] });
+    // Une fois pour le figement, jamais pour les lignes : tout est en détaillé.
+    expect(loads).toBe(1);
+  });
+
+  it("avant la mise en service, le tour ne lit aucune journée", async () => {
+    const { scene, runner, round } = roundOn({
+      commissioning: new FixedCommissioning(new Date(afterTheArrest() + 24 * 3_600_000)),
+    });
+    let loads = 0;
+    const load = scene.days.load.bind(scene.days);
+    scene.days.load = (day) => {
+      loads += 1;
+      return load(day);
+    };
+
+    const report = await round.execute();
+
+    expect(report.days).toEqual([]);
+    expect(runner.calls).toEqual([]);
+    expect(loads).toBe(0);
   });
 });
 

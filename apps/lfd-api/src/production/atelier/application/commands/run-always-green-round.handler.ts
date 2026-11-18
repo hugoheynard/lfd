@@ -19,6 +19,8 @@ import {
   RunAlwaysGreenRoundCommand,
 } from "./run-always-green-round.command.js";
 
+import { TrackingLevelsCommissioning } from "../../domain/ports/tracking-levels-commissioning.js";
+import { mayRunAlwaysGreen } from "../../domain/services/tracking-levels.js";
 /**
  * **Le tour de la fournée automatique** (
  * `documentation/fournil/les-niveaux-de-suivi.md`).
@@ -28,7 +30,9 @@ import {
  * niveau est figé s'il ne l'est pas (`DayTrackingLevelsFreezing`, sous le
  * verrou), puis chaque SKU au compte dont la ligne est en toujours vert
  * d'après ce niveau reçoit sa commande, `RunAlwaysGreenLineCommand`. Une
- * journée arrêtée avant la mise en service est en détaillé : aucune ligne.
+ * journée arrêtée avant la mise en service est en détaillé : aucune ligne ;
+ * avant la mise en service, le tour ne lit rien. Une journée dont aucune
+ * ligne ne peut être en toujours vert n'est pas chargée.
  *
  * **Chaque ligne est isolée**, comme chaque journée : une erreur se
  * journalise et les autres continuent. Le passage suivant, cinq minutes plus
@@ -51,10 +55,16 @@ export class RunAlwaysGreenRoundHandler implements ICommandHandler<
     private readonly days: ProductionDayRepository,
     private readonly lines: AlwaysGreenLines,
     private readonly runner: AlwaysGreenLineRunner,
+    private readonly commissioning: TrackingLevelsCommissioning,
   ) {}
 
   async execute(): Promise<AlwaysGreenRoundReport> {
     const now = this.clock.now();
+    // Avant la mise en service, toute journée arrêtée l'a été avant : en
+    // détaillé. Le tour ne lit rien — il passe toutes les cinq minutes.
+    if (now.getTime() < this.commissioning.since().getTime()) {
+      return { days: [] };
+    }
     const days: AlwaysGreenDayReport[] = [];
     for (const day of [todayOf(now), tomorrowOf(now)]) {
       days.push(await this.forDay(ServiceDay.of(day)));
@@ -71,6 +81,9 @@ export class RunAlwaysGreenRoundHandler implements ICommandHandler<
         return { ...untouched, arrested, error: null };
       }
       const levels = await this.freezing.freezeIfDue(day);
+      if (!mayRunAlwaysGreen(levels)) {
+        return { ...untouched, arrested, error: null };
+      }
       const skus = await this.lines.skusOf(day, await this.days.load(day), levels);
       return { serviceDay: day.value, arrested, error: null, ...(await this.runLines(day, skus)) };
     } catch (error) {

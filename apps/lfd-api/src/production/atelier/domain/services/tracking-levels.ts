@@ -115,3 +115,14 @@ export function lineLevelOf(
 export function isUniform(levels: DayTrackingLevels): boolean {
   return [...levels.workstations.values()].every((level) => level === levels.house);
 }
+
+/**
+ * Une ligne de la journée peut-elle être en toujours vert ? Sinon, la
+ * fournée automatique n'a rien à lire de la journée — ni son compte, ni ses
+ * postes.
+ */
+export function mayRunAlwaysGreen(levels: DayTrackingLevels): boolean {
+  return (
+    levels.house === "always_green" || [...levels.workstations.values()].includes("always_green")
+  );
+}
