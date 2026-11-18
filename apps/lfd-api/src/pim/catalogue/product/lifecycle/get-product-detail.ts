@@ -51,7 +51,7 @@ export type ProductDetail = Omit<ProductRecord, "variants"> &
      *   basculer, resserrer). À supprimer au resserrement, avec la méthode
      *   `ReadinessRepository.contentUpdatedAt` qui n'aura plus de lecteur.
      */
-    readonly contentUpdatedAt: string;
+    readonly contentUpdatedAt: string | null;
     /**
      * La signature vaut-elle encore ?
      *
@@ -157,10 +157,9 @@ export class GetProductDetailHandler implements IQueryHandler<
       readinessStale: await this.staleSince(query.id, readiness?.readyAt ?? null),
       // Les dates sortent en ISO ici, comme partout dans les vues : le port les
       // manipule en `Date` parce qu'il compare, la vue en chaînes parce qu'elle
-      // voyage. `findById` a répondu juste au-dessus, donc la ligne existe et a
-      // une date — le `??` ne couvre que la course, supprimée entre les deux
-      // lectures.
-      contentUpdatedAt: (contentUpdatedAt ?? new Date(0)).toISOString(),
+      // voyage. `null` = le dépôt ne date aucun contenu (fiche supprimée entre
+      // les deux lectures) : on le dit, on n'invente pas une date.
+      contentUpdatedAt: contentUpdatedAt?.toISOString() ?? null,
     };
   }
 

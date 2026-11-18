@@ -6,6 +6,10 @@
 > lot L4 porte une migration de données et touche la TVA. Contredit le
 > 2026-11-18 (§ 4 bis). Chemins relatifs à
 > `apps/lfd-api/src/pim/` sauf mention ; affirmations ouvertes le 2026-11-18.
+>
+> ✅ **Bâtis le 2026-11-18** : L0 (portes armées), L1 bis (rangement par
+> capacité) et L2 (hygiène — sauf le point « produit archivé », en attente de
+> la décision de Hugo).
 
 ## 1. En deux mots
 
@@ -73,12 +77,10 @@ d'événements et une surface HTTP —, et les découper ne lirait pas mieux.
   (`declareAllergens`, `declareNutritionValues`, `alignOnDefault`, `follows`),
   la vente (`price`, `changeSaleTerms`, `pricePerKg`, `hasOwnProPrice`,
   `changeMinQuantities`, `saleUnit`), les noms et le sur mesure.
-- **Les écarts aux couches** : `catalogue/product/lifecycle/create-product.ts:39`,
-  `add-product-variant.ts:20`, `detach-product-variant.ts:22` importent le
-  jeton `SKU_AVAILABILITY` de `infrastructure/prisma-sku-availability.ts` ;
-  `channels/b2b-platform/products/prisma-publication-sequence.ts` est un
-  adaptateur Prisma hors `infrastructure/` ; `catalogue/allergen-matrix/domain/allergen-matrix-pdf*.ts`
-  (~700 lignes) met en page un PDF dans le domaine.
+- **Les écarts aux couches** : le jeton `SKU_AVAILABILITY` et l'adaptateur
+  de séquence de publication, qui étaient hors de leur couche, ont été remis en
+  place par L2 (2026-11-18) ; reste `catalogue/allergen-matrix/domain/allergen-matrix-pdf*.ts`
+  (~700 lignes), qui met en page un PDF dans le domaine.
 - **Les écritures sans agrégat** : `Revision` est une interface
   (`catalogue/revision/domain/revision.ts:204`), la règle « déjà nommée » est
   dans le handler (`catalogue/revision/application/rename-catalog-revision.ts:66`)

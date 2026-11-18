@@ -539,8 +539,11 @@ export type ProductDetailView = ProductView & {
    *
    *   Servie encore UN déploiement, le temps que les fronts basculent (audit
    *   2026-09-01, tranche 3).
+   *
+   *   `null` quand le dépôt ne date aucun contenu (fiche supprimée entre deux
+   *   lectures) : le serveur ne fabrique pas de date.
    */
-  readonly contentUpdatedAt: string;
+  readonly contentUpdatedAt: string | null;
   /**
    * La déclaration « publiable » vaut-elle encore ?
    *
