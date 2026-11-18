@@ -31,11 +31,11 @@ export class B2bCatalogRulesEmitter extends CatalogRulesEmitter {
   async emitRules(): Promise<void> {
     await this.sequence.lockRules();
     const seq = await this.sequence.next();
-    // Le produit seulement (décision de Hugo, 2026-10-21) : un rang global,
-    // une famille ou une déclinaison résiduels ne traversent plus — le commerce
-    // les ignorerait de toute façon, mais un fait qui les porte ferait croire
-    // qu'ils comptent encore.
-    const rules = (await this.limits.list())
+    // En vigueur seulement : une limite archivée cesse de s'appliquer, et le
+    // commerce ne la reçoit plus. Le produit seulement (décision de Hugo,
+    // 2026-10-21) : un rang global, une famille ou une déclinaison résiduels
+    // ne traversent plus — un fait qui les porte ferait croire qu'ils comptent.
+    const rules = (await this.limits.inForce())
       .filter((rule) => rule.scope.type === "product")
       .map(toSyncRule);
     await this.durable.publish(

@@ -62,11 +62,52 @@ describe("OrderTimeLimit", () => {
     const residual = OrderTimeLimit.reconstitute(
       "vieux",
       payload({ scope: { type: "global", id: null }, graceMinutes: 60 }),
+      null,
     );
 
     expect(residual.scope.type).toBe("global");
     expect(() => {
       residual.reset(payload({ scope: { type: "global", id: null } }));
     }).toThrow(RetiredOrderTimeLimitScopeError);
+  });
+});
+
+/** L'instant n'est comparé qu'à lui-même : aucune horloge n'est en jeu. */
+const AT = new Date("2026-11-18T09:00:00.000Z");
+
+describe("l'archive d'une limite", () => {
+  it("s'archive en gardant ses valeurs, une seule fois", () => {
+    const limit = OrderTimeLimit.set("l1", payload());
+
+    expect(limit.archive(AT)).toBe(true);
+    expect(limit.archive(AT)).toBe(false);
+    expect([limit.isArchived, limit.daysBefore, limit.time]).toEqual([true, 2, "12:00"]);
+  });
+
+  it("se restaure, et la restauration rejouée ne change rien", () => {
+    const limit = OrderTimeLimit.set("l1", payload());
+    limit.archive(AT);
+
+    expect(limit.restore()).toBe(true);
+    expect(limit.restore()).toBe(false);
+    expect(limit.archivedAt).toBeNull();
+  });
+
+  it("reposée à l'identique sur sa portée, une limite archivée revient en vigueur", () => {
+    const limit = OrderTimeLimit.set("l1", payload());
+    limit.archive(AT);
+
+    expect(limit.reset(payload())).toBe(true);
+    expect(limit.isArchived).toBe(false);
+  });
+
+  it("une ligne résiduelle s'archive aussi", () => {
+    const residual = OrderTimeLimit.reconstitute(
+      "vieux",
+      payload({ scope: { type: "global", id: null }, graceMinutes: 60 }),
+      null,
+    );
+
+    expect(residual.archive(AT)).toBe(true);
   });
 });

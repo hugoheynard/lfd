@@ -158,24 +158,31 @@ const rateRenamed: Phrase = (fact) =>
     ['subjectLabel', 'from', 'to'],
   );
 
-const rateDeleted: Phrase = (fact) =>
-  byActor(
-    fact,
-    [
-      text('a supprimé le taux de TVA « '),
-      bold(fact.payload['name']),
-      text(' » ('),
-      value(percent(fact.payload['percent'])),
-      text(')'),
-    ],
-    ['subjectLabel', 'name', 'percent'],
-  );
+/** « a archivé le taux de TVA « Réduit » (5,5 %) » — supprimer, archiver, restaurer. */
+function rateGesture(verb: string): Phrase {
+  return (fact) =>
+    byActor(
+      fact,
+      [
+        text(`${verb} le taux de TVA « `),
+        bold(fact.payload['name']),
+        text(' » ('),
+        value(percent(fact.payload['percent'])),
+        text(')'),
+      ],
+      ['subjectLabel', 'name', 'percent'],
+    );
+}
+
+const rateDeleted = rateGesture('a supprimé');
 
 export const REFERENTIAL_VAT_PHRASES = {
   'vat_rate.created': rateCreated,
   'vat_rate.rate_changed': rateChanged,
   'vat_rate.renamed': rateRenamed,
   'vat_rate.deleted': rateDeleted,
+  'vat_rate.archived': rateGesture('a archivé'),
+  'vat_rate.restored': rateGesture('a restauré'),
   // Les taux quand ils s'appelaient « régimes » (le 2026-08-21, base de dev) :
   // le `tag` (collection de l'ancien canal) et la portée d'août restent au détail.
   'tax_regime.created': rateCreated,

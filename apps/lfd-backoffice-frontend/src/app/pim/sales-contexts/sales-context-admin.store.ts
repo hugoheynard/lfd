@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { isPlatformBrowser } from '@angular/common';
-import { Injectable, PLATFORM_ID, inject, signal } from '@angular/core';
+import { Injectable, PLATFORM_ID, computed, inject, signal } from '@angular/core';
 import type {
   CreateSalesContextPayload,
   SalesContextAdminView,
@@ -33,7 +33,9 @@ export class SalesContextAdminStore {
   private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
 
   private readonly state = signal<SalesContextAdminView[]>([]);
-  readonly items = this.state.asReadonly();
+  /** Au registre, en service ou non ; les archivés sont à part, avec « Restaurer ». */
+  readonly items = computed(() => this.state().filter((context) => !context.archived));
+  readonly archivedItems = computed(() => this.state().filter((context) => context.archived));
   private readonly load = new ListLoadState();
   /** Pourquoi la liste est vide — `null` = elle l'est vraiment. */
   readonly loadError = this.load.error;
@@ -76,8 +78,14 @@ export class SalesContextAdminStore {
     await this.reload();
   }
 
-  async remove(key: string): Promise<void> {
+  /** La route garde son `DELETE` : un contexte ne se supprime plus, il s'archive. */
+  async archive(key: string): Promise<void> {
     await firstValueFrom(this.http.delete(this.url(key)));
+    await this.reload();
+  }
+
+  async restore(key: string): Promise<void> {
+    await firstValueFrom(this.http.post(this.url(`${key}/restore`), {}));
     await this.reload();
   }
 

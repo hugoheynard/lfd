@@ -6,7 +6,8 @@ import { AdminSurface } from "../../../../platform/auth/admin-surface.decorator.
 import { ZodBody } from "../../../../platform/shared/http/zod-body.pipe.js";
 import { CreateVatRateCommand } from "../application/create-vat-rate.js";
 import { ListVatRatesQuery } from "../application/list-vat-rates.js";
-import { RemoveVatRateCommand } from "../application/remove-vat-rate.js";
+import { ArchiveVatRateCommand } from "../application/archive-vat-rate.js";
+import { RestoreVatRateCommand } from "../application/restore-vat-rate.js";
 import { UpdateVatRateCommand } from "../application/update-vat-rate.js";
 import { Idempotent } from "../../../../platform/shared/http/idempotent.decorator.js";
 
@@ -59,12 +60,21 @@ export class VatRateController {
     return { id };
   }
 
+  /**
+   * **Archive** le taux — la route garde son verbe `DELETE` et sa réponse : un
+   * taux ne se supprime plus, même jamais utilisé.
+   */
   @Delete(":id")
-  @Idempotent(
-    "retire le taux : rejoué, il n'existe plus et la demande est refusée (404) sans rien écrire",
-  )
-  async remove(@Param("id") id: string) {
-    await this.commands.execute<RemoveVatRateCommand, void>(new RemoveVatRateCommand(id));
+  @Idempotent("archive le taux : rejouée, il l'est déjà et rien ne s'écrit")
+  async archive(@Param("id") id: string) {
+    await this.commands.execute<ArchiveVatRateCommand, void>(new ArchiveVatRateCommand(id));
+    return { id };
+  }
+
+  @Post(":id/restore")
+  @Idempotent("remet le taux en service : rejouée, il l'est déjà et rien ne s'écrit")
+  async restore(@Param("id") id: string) {
+    await this.commands.execute<RestoreVatRateCommand, void>(new RestoreVatRateCommand(id));
     return { id };
   }
 }

@@ -65,7 +65,6 @@ export class AppellationPanel {
   protected readonly draftCode = signal('');
   protected readonly draftScheme = signal('');
   protected readonly draftActive = signal(true);
-  protected readonly confirmCode = signal('');
   protected readonly busy = signal(false);
   protected readonly dangerOpen = signal(false);
 
@@ -79,16 +78,8 @@ export class AppellationPanel {
     this.isEdit() ? "Régler l'appellation" : 'Nouvelle appellation',
   );
 
-  /** Ce qui la retient — zéro = suppression sans conséquence. */
+  /** Les ingrédients qui la portent — ils la gardent, même archivée. */
   protected readonly held = computed(() => this.appellation()?.usedBy ?? 0);
-
-  protected readonly confirmMatches = computed(
-    () => this.confirmCode().trim() === (this.appellation()?.code ?? ' '),
-  );
-
-  protected readonly canDelete = computed(
-    () => this.held() === 0 && this.confirmMatches() && !this.busy(),
-  );
 
   constructor() {
     effect(() => {
@@ -109,12 +100,12 @@ export class AppellationPanel {
     await this.run(() => this.persist());
   }
 
-  protected async remove(): Promise<void> {
+  protected async archive(): Promise<void> {
     const target = this.appellation();
     if (target === undefined) {
       return;
     }
-    await this.run(() => this.store.removeAppellation(target.code));
+    await this.run(() => this.store.archiveAppellation(target.code));
   }
 
   protected toggleDanger(): void {

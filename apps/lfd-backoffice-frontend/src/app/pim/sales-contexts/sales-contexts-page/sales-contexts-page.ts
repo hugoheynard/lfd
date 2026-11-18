@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import type { SalesContextAdminView } from '@lfd/pim-contracts';
 
 import {
@@ -16,6 +16,8 @@ import {
 } from 'fold-ng';
 
 import { PermissionsStore } from '../../../auth/permissions.store';
+import { NotifyService } from '../../../notify.service';
+import { ArchivedList, type ArchivedEntry } from '../../shared/archived-list/archived-list';
 import { SalesContextAdminStore } from '../sales-context-admin.store';
 import { SalesContextPanel } from '../sales-context-panel/sales-context-panel';
 
@@ -50,6 +52,7 @@ import { SalesContextPanel } from '../sales-context-panel/sales-context-panel';
     FoldEmptyStateComponent,
     FoldButtonComponent,
     FoldIconComponent,
+    ArchivedList,
   ],
   templateUrl: './sales-contexts-page.html',
   styleUrl: './sales-contexts-page.scss',
@@ -58,6 +61,18 @@ export class SalesContextsPage {
   private readonly store = inject(SalesContextAdminStore);
   private readonly panelHost = inject(FoldPanelHostService);
   private readonly permissions = inject(PermissionsStore);
+  private readonly notify = inject(NotifyService);
+
+  protected readonly busy = signal(false);
+
+  /** Les contextes archivés, à part : ils ne se proposent plus, et reviennent d'ici. */
+  protected readonly archived = computed<readonly ArchivedEntry[]>(() =>
+    this.store.archivedItems().map((context) => ({
+      key: context.key,
+      label: context.label,
+      detail: context.key,
+    })),
+  );
 
   /** Ouvrir ou régler un contexte est un geste d'admin, et lui seul. */
   protected readonly canWrite = computed(() => this.permissions.can('pim_settings:write'));
@@ -90,6 +105,17 @@ export class SalesContextsPage {
       side: 'right',
       ...(context === undefined ? {} : { data: { context } }),
     });
+  }
+
+  protected async restore(key: string): Promise<void> {
+    this.busy.set(true);
+    try {
+      await this.store.restore(key);
+    } catch (caught) {
+      this.notify.refused(caught, 'Restauration refusée.');
+    } finally {
+      this.busy.set(false);
+    }
   }
 
   protected retry(): void {

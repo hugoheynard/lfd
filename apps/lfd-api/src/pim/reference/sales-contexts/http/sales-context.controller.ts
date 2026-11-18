@@ -14,7 +14,8 @@ import { ZodBody } from "../../../../platform/shared/http/zod-body.pipe.js";
 import { CreateSalesContextCommand } from "../application/create-sales-context.js";
 import { ListActiveSalesContextsQuery } from "../application/list-active-sales-contexts.js";
 import { ListSalesContextsQuery } from "../application/list-sales-contexts.js";
-import { RemoveSalesContextCommand } from "../application/remove-sales-context.js";
+import { ArchiveSalesContextCommand } from "../application/archive-sales-context.js";
+import { RestoreSalesContextCommand } from "../application/restore-sales-context.js";
 import { UpdateSalesContextCommand } from "../application/update-sales-context.js";
 import { Idempotent } from "../../../../platform/shared/http/idempotent.decorator.js";
 
@@ -93,13 +94,24 @@ export class SalesContextController {
     return { key };
   }
 
+  /**
+   * **Archive** le contexte — la route garde son verbe `DELETE` et sa réponse :
+   * un contexte ne se supprime plus, même jamais utilisé.
+   */
   @Delete(":key")
-  @Idempotent(
-    "retire le contexte : rejoué, il n'existe plus et la demande est refusée (404) sans rien écrire",
-  )
-  async remove(@Param("key") key: string) {
-    await this.commands.execute<RemoveSalesContextCommand, void>(
-      new RemoveSalesContextCommand(key),
+  @Idempotent("archive le contexte : rejouée, il l'est déjà et rien ne s'écrit")
+  async archive(@Param("key") key: string) {
+    await this.commands.execute<ArchiveSalesContextCommand, void>(
+      new ArchiveSalesContextCommand(key),
+    );
+    return { key };
+  }
+
+  @Post(":key/restore")
+  @Idempotent("remet le contexte au registre : rejouée, il l'est déjà et rien ne s'écrit")
+  async restore(@Param("key") key: string) {
+    await this.commands.execute<RestoreSalesContextCommand, void>(
+      new RestoreSalesContextCommand(key),
     );
     return { key };
   }

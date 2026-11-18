@@ -64,6 +64,11 @@ export interface AppellationView {
    * l'apprendre après le clic.
    */
   readonly usedBy: number;
+  /**
+   * Archivé : ne se propose plus aux listes de choix, et se restaure depuis
+   * l'écran qui l'administre. On ne supprime plus un référentiel.
+   */
+  readonly archived: boolean;
 }
 
 /** Déclarer un ingrédient. La `key` est une identité : elle ne change plus. */
@@ -130,8 +135,13 @@ export interface IngredientView {
    * non renseigné.
    */
   readonly declaresNoAllergen: boolean;
-  /** Combien de fiches le citent — ce qui le retient à l'effacement. */
+  /** Combien de fiches le citent. Une fiche qui le cite le garde, même archivé. */
   readonly usedBy: number;
+  /**
+   * Archivé : ne se propose plus à la saisie d'une composition ; une fiche qui
+   * le cite déjà le garde.
+   */
+  readonly archived: boolean;
 }
 
 /**

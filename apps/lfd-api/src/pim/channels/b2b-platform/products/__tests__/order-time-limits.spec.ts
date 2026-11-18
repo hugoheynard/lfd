@@ -25,6 +25,7 @@ function view(
     daysBefore: null,
     time: null,
     graceMinutes: null,
+    archived: false,
     ...over,
   };
 }

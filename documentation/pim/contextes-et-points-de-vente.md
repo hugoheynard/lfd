@@ -240,9 +240,15 @@ facture d'hier. C'est l'invariant qui rend tout le reste sûr à modifier.
 - **Une fiche ne déroge que là où ELLE vend** — ses canaux **effectifs** : sa
   propre matrice si elle en a une, celle de sa famille sinon. Déroger sur une
   carte fermée, c'est décider d'un prix pour une vente qui n'a pas lieu.
-- **Un taux visé ne se supprime pas.** `Restrict` sur les deux jointures, et
-  l'écran le dit **avant** : il additionne les familles et les fiches qui visent
-  le taux, tous contextes confondus, et masque le geste.
+- **Un taux ne se supprime pas, il s'archive ; un taux visé ne s'archive
+  pas.** `VatRate.archive` refuse tant qu'une famille ou une fiche le porte
+  (compte lu par `VatRateUsageReader`), et l'écran le dit **avant** : il
+  additionne les familles et les fiches qui visent le taux, tous contextes
+  confondus, et masque le geste. Archivé, un taux ne se pose plus
+  (`commerce.tva_rate_archived`) : aucune fiche n'est facturée à un taux
+  qu'on ne peut plus choisir. Même règle pour un contexte de vente, qui
+  s'archive tant qu'aucun taux n'y est réglé ; archivé, il sort de
+  `SalesContextRegistry.active`. Les `Restrict` restent en base, en filet.
 - **Une carte inconnue est refusée** (`CategoryUnknownContextError`) : une clé
   sans ligne de registre en face serait persistée sans que personne puisse dire,
   six mois plus tard, ce qu'elle facturait.

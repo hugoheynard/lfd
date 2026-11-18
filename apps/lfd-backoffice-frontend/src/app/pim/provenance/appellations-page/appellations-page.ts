@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import type { AppellationView } from '@lfd/pim-contracts';
 
 import {
@@ -16,6 +16,8 @@ import {
 } from 'fold-ng';
 
 import { PermissionsStore } from '../../../auth/permissions.store';
+import { NotifyService } from '../../../notify.service';
+import { ArchivedList, type ArchivedEntry } from '../../shared/archived-list/archived-list';
 import { AppellationPanel } from '../appellation-panel/appellation-panel';
 import { ProvenanceStore } from '../provenance.store';
 
@@ -43,6 +45,7 @@ import { ProvenanceStore } from '../provenance.store';
     FoldEmptyStateComponent,
     FoldButtonComponent,
     FoldIconComponent,
+    ArchivedList,
   ],
   templateUrl: './appellations-page.html',
   styleUrl: './appellations-page.scss',
@@ -53,7 +56,19 @@ export class AppellationsPage {
   private readonly permissions = inject(PermissionsStore);
 
   protected readonly canWrite = computed(() => this.permissions.can('pim_catalog:write'));
-  protected readonly appellations = this.store.appellations;
+  /** Le tableau ne montre que celles qui ne sont pas archivées ; les archivées sont repliées dessous. */
+  protected readonly appellations = computed(() =>
+    this.store.appellations().filter((row) => !row.archived),
+  );
+  private readonly notify = inject(NotifyService);
+  protected readonly busy = signal(false);
+  protected readonly archived = computed<readonly ArchivedEntry[]>(() =>
+    this.store.archivedAppellations().map((row) => ({
+      key: row.code,
+      label: row.label.fr,
+      detail: row.usedBy > 0 ? `portée par ${String(row.usedBy)} ingrédient(s)` : row.code,
+    })),
+  );
   protected readonly loadError = this.store.appellationError;
 
   private readonly allColumns: readonly FoldTableColumn[] = [
@@ -86,5 +101,16 @@ export class AppellationsPage {
 
   protected retry(): void {
     void this.store.reloadAppellations().catch(() => undefined);
+  }
+
+  protected async restore(key: string): Promise<void> {
+    this.busy.set(true);
+    try {
+      await this.store.restoreAppellation(key);
+    } catch (caught) {
+      this.notify.refused(caught, 'Restauration refusée.');
+    } finally {
+      this.busy.set(false);
+    }
   }
 }

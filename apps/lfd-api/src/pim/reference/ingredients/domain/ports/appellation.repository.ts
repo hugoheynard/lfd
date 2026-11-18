@@ -3,7 +3,7 @@ import type { AppellationAggregate, AppellationSnapshot } from "../entities/appe
 
 /** Une appellation telle qu'on la LIT, avec ce qui la retient. */
 export interface AppellationRecord extends AppellationSnapshot {
-  /** Combien d'ingrédients la citent. Zéro = elle est effaçable. */
+  /** Combien d'ingrédients la citent — ils la gardent, même archivée. */
   readonly usedBy: number;
 }
 
@@ -12,10 +12,12 @@ export abstract class AppellationRepository {
   /** Toutes, hors service comprises, avec ce qui les retient. */
   abstract list(): Promise<readonly AppellationRecord[]>;
   abstract findByCode(code: string): Promise<AppellationAggregate | null>;
-  /** L'identifiant technique derrière un code — ce que l'ingrédient stocke. */
-  abstract idOfCode(code: string): Promise<string | null>;
   abstract add(appellation: AppellationAggregate, ticket: WriteTicket): Promise<void>;
   abstract save(appellation: AppellationAggregate, ticket: WriteTicket): Promise<void>;
-  /** Refuse (`AppellationInUseError`) si des ingrédients la citent encore. */
-  abstract remove(code: string, ticket: WriteTicket): Promise<void>;
+  /**
+   * N'écrit QUE `archived_at` — pour l'archive et la restauration. Le geste
+   * charge l'agrégat sous verrou, mais un renommage concurrent peut l'avoir
+   * précédé : réécrire toute la ligne effacerait ce renommage.
+   */
+  abstract saveArchival(appellation: AppellationAggregate, ticket: WriteTicket): Promise<void>;
 }

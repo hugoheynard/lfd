@@ -53,13 +53,16 @@ export class RootSalesContextProtectedError extends BusinessError {
   }
 }
 
-/** Des taux de TVA sont encore réglés sur le contexte : on refuse de l'effacer. */
+/**
+ * Des taux de TVA sont encore réglés sur le contexte : on refuse de l'archiver.
+ * Le code est celui du refus de suppression d'avant — même cas, même sortie.
+ */
 export class SalesContextInUseError extends BusinessError {
   constructor(key: string) {
     super(
       "catalogue.sales_context.in_use",
       `« ${key} » porte encore des taux de TVA, réglés sur une famille ou une fiche. ` +
-        `Retirez-les d'abord avant de le supprimer — ou mettez-le hors service.`,
+        `Retirez-les d'abord avant de l'archiver — ou mettez-le hors service.`,
     );
   }
 }

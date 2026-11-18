@@ -23,6 +23,7 @@ const RATE = {
   description: '',
   percent: 5.5,
   usage: {},
+  archived: false,
 };
 
 /** Le bouton portant ce libellé — on pilote l'écran, pas ses champs privés. */
@@ -66,10 +67,10 @@ describe('VatRateFormPanel — un taux déjà pris', () => {
 });
 
 describe('VatRateFormPanel — un taux visé par le SEUL contexte B2B', () => {
-  it('refuse la suppression, comme la base le ferait', async () => {
+  it('refuse l’archive, comme le référentiel le ferait', async () => {
     // Le total additionnait deux contextes sur trois : un taux que seules des
-    // familles B2B visaient totalisait zéro, le panneau offrait « Supprimer »,
-    // et la base refusait APRÈS le clic. Le compte porte maintenant tous les
+    // familles B2B visaient totalisait zéro, le panneau offrait le geste, et le
+    // serveur refusait APRÈS le clic. Le compte porte maintenant tous les
     // contextes, sans en nommer aucun.
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
@@ -84,7 +85,7 @@ describe('VatRateFormPanel — un taux visé par le SEUL contexte B2B', () => {
     fixture.detectChanges();
 
     const host = fixture.nativeElement as HTMLElement;
-    button(host, 'Supprimer ce taux').click();
+    button(host, 'Archiver ce taux').click();
     fixture.detectChanges();
 
     // La zone dangereuse dit POURQUOI et n'offre pas le geste : le compte porte
@@ -95,8 +96,43 @@ describe('VatRateFormPanel — un taux visé par le SEUL contexte B2B', () => {
     expect(host.textContent).toContain('1 famille(s) ou fiche(s)');
     expect(
       [...host.querySelectorAll('button')].some((b) =>
-        (b.textContent ?? '').includes('définitivement'),
+        (b.textContent ?? '').includes('Archiver le taux'),
       ),
     ).toBe(false);
+  });
+});
+
+describe('VatRateFormPanel — un taux que rien ne vise', () => {
+  it('l’archive, sans retaper son nom : le geste se défait d’un clic', async () => {
+    TestBed.resetTestingModule();
+    const archived: string[] = [];
+    TestBed.configureTestingModule({
+      providers: [
+        provideHttpClient(),
+        { provide: FoldPanelRef, useValue: { close: () => undefined } },
+        {
+          provide: VatRateStore,
+          useValue: {
+            archive: (id: string) => {
+              archived.push(id);
+              return Promise.resolve();
+            },
+          },
+        },
+      ],
+    });
+
+    const fixture = TestBed.createComponent(VatRateFormPanel);
+    fixture.componentRef.setInput('data', { rate: RATE });
+    fixture.detectChanges();
+    const host = fixture.nativeElement as HTMLElement;
+    button(host, 'Archiver ce taux').click();
+    fixture.detectChanges();
+
+    expect(host.textContent).toContain('se restaure depuis la liste des taux');
+    button(host, 'Archiver le taux').click();
+    await fixture.whenStable();
+
+    expect(archived).toEqual(['tva_1']);
   });
 });

@@ -78,6 +78,11 @@ export interface SalesContextAdminView extends SalesContextView {
   readonly root: boolean;
   /** Taux réglés dessus, famille ou fiche — ce qui empêche de l'effacer. */
   readonly ratedBy: number;
+  /**
+   * Archivé : ne se propose plus aux listes de choix, et se restaure depuis
+   * l'écran qui l'administre. On ne supprime plus un référentiel.
+   */
+  readonly archived: boolean;
 }
 
 /**

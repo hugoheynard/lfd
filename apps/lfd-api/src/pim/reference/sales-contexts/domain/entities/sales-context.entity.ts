@@ -1,10 +1,17 @@
 import {
   RootSalesContextProtectedError,
+  SalesContextInUseError,
   SalesContextKeyInvalidError,
   SalesContextLabelRequiredError,
 } from "../errors/sales-context-errors.js";
 import { isRootContext } from "../value-objects/bootstrap-contexts.js";
 import type { SalesContext } from "../value-objects/sales-context.js";
+
+/** L'état d'un contexte tel qu'il part en base : le registre, plus son archive. */
+export interface SalesContextState extends SalesContext {
+  /** `null` = en service ou hors service, mais pas archivé. */
+  readonly archivedAt: Date | null;
+}
 
 /** Ce qu'une révision remplace — tout ce qui est réglable, d'un bloc. */
 export interface SalesContextRevision {
@@ -34,9 +41,13 @@ export interface NewSalesContextInput extends SalesContextRevision {
  *   change jamais ;
  * - **la racine est intouchable**, sauf pour être mise hors service.
  *
- * Ce qu'il ne peut pas voir, et qui reste au handler : qu'aucun AUTRE contexte
- * ne porte cette clé, et que rien ne le vend au moment de
- * l'effacer.
+ * - **un contexte qui porte des taux ne s'archive pas** — le compte lui est
+ *   apporté par un port d'usage, la règle est ici.
+ *
+ * Il ne se supprime pas (décision de Hugo du 2026-11-18, même jamais utilisé) :
+ * archivé, il ne se propose plus (`SalesContextRegistry.active` l'écarte) et se
+ * restaure. Ce qu'il ne peut pas voir, et qui reste au handler : qu'aucun AUTRE
+ * contexte ne porte cette clé.
  */
 export class SalesContextAggregate {
   private constructor(
@@ -45,6 +56,7 @@ export class SalesContextAggregate {
     private labelValue: string,
     private activeValue: boolean,
     private positionValue: number,
+    private archivedAtValue: Date | null,
   ) {}
 
   static open(input: NewSalesContextInput): SalesContextAggregate {
@@ -54,16 +66,18 @@ export class SalesContextAggregate {
       requireLabel(input.label),
       input.active,
       input.position,
+      null,
     );
   }
 
-  static reconstitute(snapshot: SalesContext): SalesContextAggregate {
+  static reconstitute(snapshot: SalesContextState): SalesContextAggregate {
     return new SalesContextAggregate(
       snapshot.id,
       snapshot.key,
       snapshot.label,
       snapshot.active,
       snapshot.position,
+      snapshot.archivedAt,
     );
   }
 
@@ -88,20 +102,51 @@ export class SalesContextAggregate {
     this.positionValue = revision.position;
   }
 
-  /** Refuse d'effacer la racine. Le reste dépend de ce qui la vend. */
-  refuseRemovalIfRoot(): void {
-    if (this.isRoot) {
-      throw new RootSalesContextProtectedError("être supprimé");
-    }
+  get isArchived(): boolean {
+    return this.archivedAtValue !== null;
   }
 
-  snapshot(): SalesContext {
+  /**
+   * Archive le contexte : il ne se propose plus, ni au réglage d'un taux, ni à
+   * la facturation.
+   *
+   * @param ratedBy taux réglés dessus, famille ou fiche, lus par le port
+   *   d'usage (`SalesContextUsageReader`).
+   * @returns `false` s'il était déjà archivé — le geste rejoué ne change rien.
+   * @throws {RootSalesContextProtectedError} la racine ne s'archive pas.
+   * @throws {SalesContextInUseError} des taux y sont encore réglés.
+   */
+  archive(at: Date, ratedBy: number): boolean {
+    if (this.isRoot) {
+      throw new RootSalesContextProtectedError("être archivé");
+    }
+    if (this.archivedAtValue !== null) {
+      return false;
+    }
+    if (ratedBy > 0) {
+      throw new SalesContextInUseError(this.keyValue);
+    }
+    this.archivedAtValue = at;
+    return true;
+  }
+
+  /** Remet le contexte au registre. `false` s'il n'était pas archivé. */
+  restore(): boolean {
+    if (this.archivedAtValue === null) {
+      return false;
+    }
+    this.archivedAtValue = null;
+    return true;
+  }
+
+  snapshot(): SalesContextState {
     return {
       id: this.identity,
       key: this.keyValue,
       label: this.labelValue,
       active: this.activeValue,
       position: this.positionValue,
+      archivedAt: this.archivedAtValue,
     };
   }
 }

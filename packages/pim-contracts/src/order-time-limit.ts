@@ -99,6 +99,11 @@ export interface OrderTimeLimitView {
   readonly daysBefore: number | null;
   readonly time: string | null;
   readonly graceMinutes: number | null;
+  /**
+   * Archivée : la limite **ne s'applique plus** — ni au référentiel, ni au
+   * commerce. Elle reste listée pour pouvoir être restaurée.
+   */
+  readonly archived: boolean;
 }
 
 /**

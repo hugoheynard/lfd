@@ -2,10 +2,7 @@ import { Injectable } from "@nestjs/common";
 
 import { PimPrismaService } from "../../../infra/database/pim-prisma.service.js";
 import { SalesContextAggregate } from "../domain/entities/sales-context.entity.js";
-import {
-  SalesContextInUseError,
-  SalesContextKeyTakenError,
-} from "../domain/errors/sales-context-errors.js";
+import { SalesContextKeyTakenError } from "../domain/errors/sales-context-errors.js";
 import {
   SalesContextRepository,
   type SalesContextUsage,
@@ -17,6 +14,7 @@ interface SalesContextRow {
   readonly label: string;
   readonly active: boolean;
   readonly position: number;
+  readonly archivedAt: Date | null;
 }
 
 function toAggregate(row: SalesContextRow): SalesContextAggregate {
@@ -26,17 +24,13 @@ function toAggregate(row: SalesContextRow): SalesContextAggregate {
     label: row.label,
     active: row.active,
     position: row.position,
+    archivedAt: row.archivedAt,
   });
 }
 
 /** Violation d'unicité Prisma — le `23505` de Postgres. Ici : deux fois la même clé. */
 function isUniqueViolation(error: unknown): boolean {
   return typeof error === "object" && error !== null && "code" in error && error.code === "P2002";
-}
-
-/** Violation de clé étrangère — le `23503`. Ici : un contexte encore cité. */
-function isForeignKeyViolation(error: unknown): boolean {
-  return typeof error === "object" && error !== null && "code" in error && error.code === "P2003";
 }
 
 @Injectable()
@@ -67,36 +61,19 @@ export class PrismaSalesContextRepository extends SalesContextRepository {
 
   async save(context: SalesContextAggregate): Promise<void> {
     const snapshot = context.snapshot();
-    const { id, key, ...columns } = snapshot;
+    // `archived_at` n'est écrit que par `saveArchival`, sous verrou : une édition
+    // chargée avant une archive ne doit pas la défaire.
+    const { id, key, archivedAt, ...columns } = snapshot;
     void id;
+    void archivedAt;
     await this.guardKey(key, () =>
       this.prisma.salesContext.update({ where: { key }, data: columns }),
     );
   }
 
-  /**
-   * Le **dernier mot** sur « un contexte encore cité ne disparaît pas ».
-   *
-   * Deux tables le citent par clé étrangère en `RESTRICT` — les taux,
-   * `category_context_tva` et `product_context_tva` (repassées de `CASCADE` en
-   * `RESTRICT` par `20261017120000`, quand la matrice et le point de vente
-   * sont tombés). Aucune lecture préalable ne tiendrait : entre le compte et la
-   * suppression, un taux peut y être réglé.
-   *
-   * **Sans recompter.** La suppression part dans la transaction du handler ;
-   * une fois l'ordre en échec, Postgres a avorté la transaction et toute
-   * requête suivante échoue à son tour. C'est la leçon du taux de TVA, payée
-   * une fois.
-   */
-  async remove(key: string): Promise<void> {
-    try {
-      await this.prisma.salesContext.delete({ where: { key } });
-    } catch (error) {
-      if (isForeignKeyViolation(error)) {
-        throw new SalesContextInUseError(key);
-      }
-      throw error;
-    }
+  async saveArchival(context: SalesContextAggregate): Promise<void> {
+    const { key, archivedAt } = context.snapshot();
+    await this.prisma.salesContext.update({ where: { key }, data: { archivedAt } });
   }
 
   /**
@@ -123,6 +100,14 @@ export class PrismaSalesContextRepository extends SalesContextRepository {
       }
     }
     return usage;
+  }
+
+  async archivedKeys(): Promise<ReadonlySet<string>> {
+    const rows = await this.prisma.salesContext.findMany({
+      where: { archivedAt: { not: null } },
+      select: { key: true },
+    });
+    return new Set(rows.map((row) => row.key));
   }
 
   /**

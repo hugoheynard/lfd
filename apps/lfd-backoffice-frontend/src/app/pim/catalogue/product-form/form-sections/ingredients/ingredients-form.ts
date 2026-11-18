@@ -64,10 +64,13 @@ export class IngredientsForm {
       .filter((row) => row !== undefined);
   });
 
-  /** Ce qu'on peut encore ajouter — jamais deux fois le même. */
+  /**
+   * Ce qu'on peut encore ajouter — jamais deux fois le même, jamais un archivé.
+   * Celui que la fiche cite déjà reste dans `selected`, archivé ou non.
+   */
   protected readonly addable = computed(() => {
     const already = new Set(this.store.keys());
-    return this.provenance.ingredients().filter((row) => !already.has(row.key));
+    return this.provenance.offeredIngredients().filter((row) => !already.has(row.key));
   });
 
   /** Les mêmes, en options du combobox : le nom français, l'appellation en appui. */

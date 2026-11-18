@@ -38,7 +38,7 @@ class RegistryDouble extends SalesContextRegistry {
   }
 }
 
-/** Seul `usageByKey` est lu : les écritures ne sont pas le sujet. */
+/** Seuls `usageByKey` et `archivedKeys` sont lus : les écritures ne sont pas le sujet. */
 class UsageDouble extends SalesContextRepository {
   findByKey(): Promise<SalesContextAggregate | null> {
     return Promise.resolve(null);
@@ -52,11 +52,14 @@ class UsageDouble extends SalesContextRepository {
   save(): Promise<void> {
     return Promise.resolve();
   }
-  remove(): Promise<void> {
+  saveArchival(): Promise<void> {
     return Promise.resolve();
   }
   usageByKey(): Promise<ReadonlyMap<string, SalesContextUsage>> {
     return Promise.resolve(new Map([[ROOT.key, { ratedBy: 4 } satisfies SalesContextUsage]]));
+  }
+  archivedKeys(): Promise<ReadonlySet<string>> {
+    return Promise.resolve(new Set(["eat_in"]));
   }
 }
 
@@ -85,12 +88,14 @@ describe("ListSalesContextsHandler", () => {
         root: true,
         active: true,
         ratedBy: 4,
+        archived: false,
       }),
       expect.objectContaining({
         key: "eat_in",
         root: false,
         active: false,
         ratedBy: 0,
+        archived: true,
       }),
     ]);
     // Seuls les taux retiennent un contexte depuis L4 : la matrice et le point

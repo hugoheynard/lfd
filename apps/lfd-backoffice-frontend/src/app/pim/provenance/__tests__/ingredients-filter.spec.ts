@@ -13,6 +13,7 @@ const AOP: AppellationView = {
   scheme: 'AOP',
   active: true,
   usedBy: 1,
+  archived: false,
 };
 
 function ingredient(
@@ -30,6 +31,7 @@ function ingredient(
     allergens: [],
     declaresNoAllergen: false,
     usedBy: 0,
+    archived: false,
   };
 }
 

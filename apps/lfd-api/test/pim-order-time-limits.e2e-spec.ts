@@ -48,6 +48,7 @@ interface LimitRow {
   readonly daysBefore: number | null;
   readonly time: string | null;
   readonly graceMinutes: number | null;
+  readonly archived: boolean;
 }
 
 async function list(): Promise<readonly LimitRow[]> {
@@ -147,14 +148,47 @@ describe("poser une limite", () => {
   });
 });
 
-describe("retirer une limite", () => {
-  it("supprime la ligne — le produit n'a plus de limite propre", async () => {
-    const created = jsonBody<{ id: string }>(
+/** On ne supprime plus une limite (L4, 2026-11-18) : le `DELETE` l'archive. */
+describe("archiver une limite", () => {
+  async function created(): Promise<string> {
+    return jsonBody<{ id: string }>(
       await staff().put(LIMITS).send({ scope: PRODUCT, daysBefore: 1, time: "16:00" }).expect(200),
+    ).id;
+  }
+
+  it("archive la ligne sans l'effacer — elle reste listée, marquée, avec ses valeurs", async () => {
+    const id = await created();
+
+    await staff().delete(`${LIMITS}/${id}`).expect(204);
+    await staff().delete(`${LIMITS}/${id}`).expect(204);
+
+    expect(await list()).toEqual([
+      expect.objectContaining({ id, archived: true, daysBefore: 1, time: "16:00" }),
+    ]);
+  });
+
+  it("se restaure, en vigueur avec ses valeurs", async () => {
+    const id = await created();
+    await staff().delete(`${LIMITS}/${id}`).expect(204);
+
+    await staff().post(`${LIMITS}/${id}/restore`).expect(204);
+
+    expect(await list()).toEqual([expect.objectContaining({ id, archived: false })]);
+  });
+
+  /** Une ligne par portée : poser là où la limite est archivée la remet en vigueur. */
+  it("reposer la portée d'une limite archivée la remet en vigueur, sans seconde ligne", async () => {
+    const id = await created();
+    await staff().delete(`${LIMITS}/${id}`).expect(204);
+
+    const again = jsonBody<{ id: string }>(
+      await staff().put(LIMITS).send({ scope: PRODUCT, daysBefore: 2, time: "12:00" }).expect(200),
     );
 
-    await staff().delete(`${LIMITS}/${created.id}`).expect(204);
-    expect(await list()).toHaveLength(0);
+    expect(again.id).toBe(id);
+    expect(await list()).toEqual([
+      expect.objectContaining({ id, archived: false, daysBefore: 2, time: "12:00" }),
+    ]);
   });
 
   it("404 sur une règle qui n'existe pas", async () => {

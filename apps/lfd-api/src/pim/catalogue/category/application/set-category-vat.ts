@@ -1,8 +1,10 @@
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
-import { requireRate } from "../../../reference/vat-rates/application/vat-support.js";
+import { requireRateInService } from "../../../reference/vat-rates/application/vat-support.js";
 import { VatRateRepository } from "../../../reference/vat-rates/domain/ports/vat-rate.repository.js";
+import { VatRateLock } from "../../../reference/vat-rates/domain/ports/vat-rate.lock.js";
+import { SalesContextLock } from "../../../reference/sales-contexts/domain/ports/sales-context.lock.js";
 import type { WriteTicket } from "../../../../platform/journal/scoped-journal.js";
 import { PIM_EVENTS, PimJournal } from "../../../journal/pim-journal.js";
 import { SalesContextRegistry } from "../../../reference/sales-contexts/domain/ports/sales-context.registry.js";
@@ -24,7 +26,7 @@ export class SetCategoryVatCommand {
 /**
  * Règle les taux de TVA d'une famille en un geste, un par contexte de vente.
  *
- * Chaque référence est **validée** contre le contexte commerce (`requireRate`) :
+ * Chaque référence est **validée** contre le contexte commerce (`requireRateInService`) :
  * on ne pointe jamais un taux fantôme, et l'agrégat ne peut pas le savoir seul.
  * Une clé absente efface le réglage de ce contexte.
  */
@@ -33,6 +35,8 @@ export class SetCategoryVatHandler implements ICommandHandler<SetCategoryVatComm
   constructor(
     private readonly categories: CategoryRepository,
     private readonly rates: VatRateRepository,
+    private readonly rateLock: VatRateLock,
+    private readonly contextLock: SalesContextLock,
     private readonly contexts: SalesContextRegistry,
     private readonly journal: PimJournal,
     private readonly uow: UnitOfWork,
@@ -42,14 +46,20 @@ export class SetCategoryVatHandler implements ICommandHandler<SetCategoryVatComm
 
   async execute(command: SetCategoryVatCommand): Promise<void> {
     const category = await requireCategory(this.categories, command.id);
-    // Chaque référence est validée AVANT la première écriture : une famille ne
-    // doit jamais se retrouver avec un taux réglé et un autre refusé.
-    for (const rateId of Object.values(command.vat)) {
-      await requireRate(this.rates, rateId);
-    }
-    const before = category.vatByContext;
-    category.setVat(command.vat, await this.contexts.active());
     await this.uow.run(async () => {
+      // Les taux et les contextes visés sont verrouillés en partage AVANT d'être
+      // relus : une archive en cours finit d'abord, et la relecture voit alors
+      // le taux archivé ou le contexte retiré — la pose refuse. Sans lui, une
+      // archive pourrait compter zéro usage pendant que cette pose écrit.
+      await this.rateLock.forUse(Object.values(command.vat));
+      await this.contextLock.forUse(Object.keys(command.vat));
+      // Tout est validé AVANT la première écriture : rien ne doit se retrouver
+      // avec un taux posé et un autre refusé.
+      for (const rateId of Object.values(command.vat)) {
+        await requireRateInService(this.rates, rateId);
+      }
+      const before = category.vatByContext;
+      category.setVat(command.vat, await this.contexts.active());
       const ticket = await this.journalize(category, before, category.vatByContext);
       await this.categories.save(category, ticket);
       await this.emitter.emitCategories([command.id]);

@@ -2,13 +2,8 @@ import { Injectable } from "@nestjs/common";
 
 import { PimPrismaService } from "../../../infra/database/pim-prisma.service.js";
 import { VatRate, type VatRateSnapshot } from "../domain/entities/vat-rate.js";
-import { VatRateConflictError, VatRateInUseError } from "../domain/errors/vat-rate-errors.js";
+import { VatRateConflictError } from "../domain/errors/vat-rate-errors.js";
 import { VatRateRepository, type VatRateUsage } from "../domain/ports/vat-rate.repository.js";
-
-/** Violation de clé étrangère Prisma — le `23503` de Postgres, vu depuis l'ORM. */
-function isForeignKeyViolation(error: unknown): boolean {
-  return typeof error === "object" && error !== null && "code" in error && error.code === "P2003";
-}
 
 /** Violation d'unicité Prisma — le `23505` de Postgres. Ici : deux fois le même taux. */
 function isUniqueViolation(error: unknown): boolean {
@@ -20,6 +15,7 @@ interface VatRateRow {
   name: string;
   description: string;
   percent: number;
+  archivedAt: Date | null;
 }
 
 function toRegime(row: VatRateRow): VatRate {
@@ -28,10 +24,15 @@ function toRegime(row: VatRateRow): VatRate {
     name: row.name,
     description: row.description,
     percent: row.percent,
+    archivedAt: row.archivedAt,
   });
 }
 
-/** Les colonnes que l'agrégat possède. */
+/**
+ * Les colonnes qu'une édition écrit. `archived_at` n'en est pas : seul
+ * `saveArchival` l'écrit, sous verrou — sinon une édition chargée avant une
+ * archive et écrite après la déferait.
+ */
 function toColumns(snapshot: VatRateSnapshot) {
   return {
     name: snapshot.name,
@@ -64,7 +65,9 @@ export class PrismaVatRateRepository extends VatRateRepository {
   async add(rate: VatRate): Promise<void> {
     const snapshot = rate.snapshot();
     await this.write(snapshot.percent, () =>
-      this.prisma.vatRate.create({ data: { id: snapshot.id, ...toColumns(snapshot) } }),
+      this.prisma.vatRate.create({
+        data: { id: snapshot.id, ...toColumns(snapshot), archivedAt: snapshot.archivedAt },
+      }),
     );
   }
 
@@ -73,6 +76,11 @@ export class PrismaVatRateRepository extends VatRateRepository {
     await this.write(snapshot.percent, () =>
       this.prisma.vatRate.update({ where: { id: snapshot.id }, data: toColumns(snapshot) }),
     );
+  }
+
+  async saveArchival(rate: VatRate): Promise<void> {
+    const { id, archivedAt } = rate.snapshot();
+    await this.prisma.vatRate.update({ where: { id }, data: { archivedAt } });
   }
 
   /**
@@ -107,9 +115,9 @@ export class PrismaVatRateRepository extends VatRateRepository {
         by: ["vatRateId", "contextId"],
         _count: { _all: true },
       }),
-      // Les DÉROGATIONS comptent aussi : un taux visé par une seule fiche ne se
-      // supprime pas plus qu'un taux visé par une famille entière — la base
-      // pose le même `RESTRICT`, et l'écran doit le dire avant le clic.
+      // Les DÉROGATIONS comptent aussi : un taux visé par une seule fiche ne
+      // s'archive pas plus qu'un taux visé par une famille entière, et l'écran
+      // doit le dire avant le clic.
       this.prisma.productContextVat.groupBy({
         by: ["vatRateId", "contextId"],
         _count: { _all: true },
@@ -135,16 +143,5 @@ export class PrismaVatRateRepository extends VatRateRepository {
       usage.set(row.vatRateId, current);
     }
     return usage;
-  }
-
-  async remove(id: string): Promise<void> {
-    try {
-      await this.prisma.vatRate.delete({ where: { id } });
-    } catch (error) {
-      if (isForeignKeyViolation(error)) {
-        throw new VatRateInUseError(id);
-      }
-      throw error;
-    }
   }
 }

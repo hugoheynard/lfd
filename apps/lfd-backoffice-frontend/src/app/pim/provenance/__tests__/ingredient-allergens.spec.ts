@@ -49,6 +49,7 @@ const FARINE: IngredientView = {
   allergens: ['BWD'],
   declaresNoAllergen: false,
   usedBy: 1,
+  archived: false,
 };
 
 /** Le périmètre demandé au serveur, capté à travers un vrai `ReferenceApi` doublé. */
@@ -238,6 +239,9 @@ describe('IngredientsPage — les allergènes dans la liste', () => {
             appellations: () => [],
             ingredients: () => [ingredient],
             offeredAppellations: () => [],
+            offeredIngredients: () => [ingredient],
+            archivedAppellations: () => [],
+            archivedIngredients: () => [],
             appellationError: () => null,
             ingredientError: () => null,
             reload: () => Promise.resolve(),

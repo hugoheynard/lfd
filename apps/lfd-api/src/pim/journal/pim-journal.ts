@@ -89,7 +89,10 @@ export const PIM_EVENTS = {
   vatRateRateChanged: "vat_rate.rate_changed",
   /** Renommage / description : tracé à part, parce que c'est sans conséquence. */
   vatRateRenamed: "vat_rate.renamed",
+  /** Plus émis : un taux s'archive (L4, 2026-11-18). Gardé pour les faits passés. */
   vatRateDeleted: "vat_rate.deleted",
+  vatRateArchived: "vat_rate.archived",
+  vatRateRestored: "vat_rate.restored",
   productCategoryVatChanged: "product_category.vat_changed",
   /**
    * Une fiche DÉROGE au taux de sa famille — ou lui revient. Distinct du fait
@@ -387,7 +390,10 @@ export const PIM_EVENTS = {
   accountingRulesMethodChanged: "accounting_rules.method_changed",
   salesContextCreated: "sales_context.created",
   salesContextUpdated: "sales_context.updated",
+  /** Plus émis : un contexte s'archive (L4). Gardé pour les faits passés. */
   salesContextDeleted: "sales_context.deleted",
+  salesContextArchived: "sales_context.archived",
+  salesContextRestored: "sales_context.restored",
   /**
    * **La provenance** — les ingrédients, les appellations, et ce qu'une fiche
    * en cite.
@@ -399,10 +405,16 @@ export const PIM_EVENTS = {
    */
   appellationCreated: "appellation.created",
   appellationUpdated: "appellation.updated",
+  /** Plus émis : une appellation s'archive (L4). Gardé pour les faits passés. */
   appellationDeleted: "appellation.deleted",
+  appellationArchived: "appellation.archived",
+  appellationRestored: "appellation.restored",
   ingredientCreated: "ingredient.created",
   ingredientUpdated: "ingredient.updated",
+  /** Plus émis : un ingrédient s'archive (L4). Gardé pour les faits passés. */
   ingredientDeleted: "ingredient.deleted",
+  ingredientArchived: "ingredient.archived",
+  ingredientRestored: "ingredient.restored",
   /**
    * Ce qu'une matière **contient** — la liste entière, en codes.
    *
@@ -463,8 +475,12 @@ export const PIM_EVENTS = {
    * types pour suivre une seule valeur dans le temps.
    */
   orderTimeLimitSet: "order_time_limit.set",
-  /** Retirée : l'article retombe sur le rang du dessus. */
+  /** Plus émis : une limite s'archive (L4). Gardé pour les faits passés. */
   orderTimeLimitRemoved: "order_time_limit.removed",
+  /** Archivée : la limite cesse de s'appliquer ; seule la règle générale du commerce juge. */
+  orderTimeLimitArchived: "order_time_limit.archived",
+  /** Restaurée : la limite s'applique de nouveau, avec les valeurs qu'elle portait. */
+  orderTimeLimitRestored: "order_time_limit.restored",
 
   /**
    * **Les opérations datées** — Noël, Pâques, la galette (lot 1 du plan

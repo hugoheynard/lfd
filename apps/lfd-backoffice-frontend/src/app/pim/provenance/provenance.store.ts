@@ -55,12 +55,27 @@ export class ProvenanceStore {
 
   private readonly appellationState = signal<AppellationView[]>([]);
   private readonly ingredientState = signal<IngredientView[]>([]);
+  /**
+   * Tout le référentiel, archivés compris — ce qu'on RELIT : une fiche qui
+   * cite un ingrédient archivé le garde, et doit pouvoir le nommer.
+   */
   readonly appellations = this.appellationState.asReadonly();
   readonly ingredients = this.ingredientState.asReadonly();
+  /** Les archivés, à part : ils se restaurent depuis l'écran qui les administre. */
+  readonly archivedAppellations = computed(() =>
+    this.appellationState().filter((row) => row.archived),
+  );
+  readonly archivedIngredients = computed(() =>
+    this.ingredientState().filter((row) => row.archived),
+  );
 
-  /** Celles qu'on peut encore POSER — une appellation retirée ne se propose plus. */
+  /** Celles qu'on peut encore POSER — ni hors service, ni archivées. */
   readonly offeredAppellations = computed(() =>
-    this.appellationState().filter((row) => row.active),
+    this.appellationState().filter((row) => row.active && !row.archived),
+  );
+  /** Ceux qu'on peut encore CITER sur une fiche — un archivé ne se propose plus. */
+  readonly offeredIngredients = computed(() =>
+    this.ingredientState().filter((row) => !row.archived),
   );
 
   private readonly allergenState = signal<readonly AllergenEntry[]>([]);
@@ -192,9 +207,16 @@ export class ProvenanceStore {
     await this.reload();
   }
 
-  async removeAppellation(code: string): Promise<void> {
+  /** La route garde son `DELETE` : une appellation ne se supprime plus, elle s'archive. */
+  async archiveAppellation(code: string): Promise<void> {
     await firstValueFrom(this.http.delete(`${this.base}/appellations/${code}`));
-    await this.reloadAppellations();
+    // Les deux : l'appellation s'affiche AUSSI, archivée, sur ses ingrédients.
+    await this.reload();
+  }
+
+  async restoreAppellation(code: string): Promise<void> {
+    await firstValueFrom(this.http.post(`${this.base}/appellations/${code}/restore`, {}));
+    await this.reload();
   }
 
   async createIngredient(payload: CreateIngredientPayload): Promise<void> {
@@ -207,8 +229,14 @@ export class ProvenanceStore {
     await this.reload();
   }
 
-  async removeIngredient(key: string): Promise<void> {
+  /** La route garde son `DELETE` : un ingrédient ne se supprime plus, il s'archive. */
+  async archiveIngredient(key: string): Promise<void> {
     await firstValueFrom(this.http.delete(`${this.base}/ingredients/${key}`));
+    await this.reload();
+  }
+
+  async restoreIngredient(key: string): Promise<void> {
+    await firstValueFrom(this.http.post(`${this.base}/ingredients/${key}/restore`, {}));
     await this.reload();
   }
 }

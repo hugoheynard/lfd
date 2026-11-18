@@ -100,8 +100,13 @@ Trois choix qui ne sont pas des détails :
 - **Le rattachement est une TABLE de liaison**, pas un tableau `Json` sur le
   produit. Un `Json` ne peut pas porter de clé étrangère : effacer un ingrédient
   laisserait des références mortes dans les fiches, sans que rien ne le dise.
-  Avec la liaison, la base refuse d'effacer un ingrédient encore cité — et c'est
-  exactement le comportement voulu.
+  Avec la liaison, la base refuse d'effacer un ingrédient encore cité.
+- **On n'efface plus ni ingrédient ni appellation : on archive.** L'archive
+  est toujours permise ; la fiche qui cite un ingrédient archivé le garde,
+  l'ingrédient qui porte une appellation archivée la garde. Archivés, ils ne se
+  proposent plus à la saisie (`catalogue.ingredient.archived`,
+  `catalogue.appellation.archived` sur une nouvelle citation), et se
+  restaurent depuis l'écran des provenances.
 - **L'appellation d'un ingrédient est facultative.** La farine du moulin d'à
   côté n'a pas de signe officiel, et l'obliger à en porter un fabriquerait des
   appellations creuses pour satisfaire une colonne.

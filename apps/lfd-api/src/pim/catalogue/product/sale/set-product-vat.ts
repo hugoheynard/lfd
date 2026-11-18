@@ -1,8 +1,10 @@
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
-import { requireRate } from "../../../reference/vat-rates/application/vat-support.js";
+import { requireRateInService } from "../../../reference/vat-rates/application/vat-support.js";
 import { VatRateRepository } from "../../../reference/vat-rates/domain/ports/vat-rate.repository.js";
+import { VatRateLock } from "../../../reference/vat-rates/domain/ports/vat-rate.lock.js";
+import { SalesContextLock } from "../../../reference/sales-contexts/domain/ports/sales-context.lock.js";
 import type { WriteTicket } from "../../../../platform/journal/scoped-journal.js";
 import { PIM_EVENTS, PimJournal } from "../../../journal/pim-journal.js";
 import { SalesContextRegistry } from "../../../reference/sales-contexts/domain/ports/sales-context.registry.js";
@@ -37,6 +39,8 @@ export class SetProductVatHandler implements ICommandHandler<SetProductVatComman
   constructor(
     private readonly products: ProductRepository,
     private readonly rates: VatRateRepository,
+    private readonly rateLock: VatRateLock,
+    private readonly contextLock: SalesContextLock,
     private readonly contexts: SalesContextRegistry,
     private readonly journal: PimJournal,
     private readonly uow: UnitOfWork,
@@ -45,14 +49,20 @@ export class SetProductVatHandler implements ICommandHandler<SetProductVatComman
 
   async execute(command: SetProductVatCommand): Promise<void> {
     const product = await requireProduct(this.products, command.id);
-    // Tout est validé AVANT la première écriture : un produit ne doit jamais se
-    // retrouver avec un taux posé et un autre refusé.
-    for (const rateId of Object.values(command.vat)) {
-      await requireRate(this.rates, rateId);
-    }
-    const before = product.vatByContext;
-    product.setVat(command.vat, await this.contexts.active());
     await this.uow.run(async () => {
+      // Les taux et les contextes visés sont verrouillés en partage AVANT d'être
+      // relus : une archive en cours finit d'abord, et la relecture voit alors
+      // le taux archivé ou le contexte retiré — la pose refuse. Sans lui, une
+      // archive pourrait compter zéro usage pendant que cette pose écrit.
+      await this.rateLock.forUse(Object.values(command.vat));
+      await this.contextLock.forUse(Object.keys(command.vat));
+      // Tout est validé AVANT la première écriture : rien ne doit se retrouver
+      // avec un taux posé et un autre refusé.
+      for (const rateId of Object.values(command.vat)) {
+        await requireRateInService(this.rates, rateId);
+      }
+      const before = product.vatByContext;
+      product.setVat(command.vat, await this.contexts.active());
       const ticket = await this.journalize(product, before, product.vatByContext);
       await this.products.save(product, ticket);
       await this.emitter.emitProducts([command.id]);

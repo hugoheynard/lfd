@@ -44,13 +44,21 @@ const RESIDUAL = {
   daysBefore: 1,
   time: "18:00",
   graceMinutes: 60,
+  archived: false,
 } as const;
 
 class TableLimits extends OrderTimeLimitRepository {
   constructor(private readonly sequence: RecordingSequence) {
     super();
   }
+  /**
+   * L'émetteur ne lit que les règles EN VIGUEUR : une limite archivée cesse de
+   * s'appliquer, et relire toute la table la ferait traverser.
+   */
   list(): Promise<readonly OrderTimeLimitView[]> {
+    return Promise.reject(new RangeError("l'émetteur ne lit que les règles en vigueur"));
+  }
+  inForce(): Promise<readonly OrderTimeLimitView[]> {
     this.sequence.calls.push("read:rules");
     return Promise.resolve([
       {
@@ -60,6 +68,7 @@ class TableLimits extends OrderTimeLimitRepository {
         daysBefore: 1,
         time: "16:00",
         graceMinutes: null,
+        archived: false,
       },
       // Des lignes d'avant le 2026-10-21, que la décision de Hugo a retirées.
       { ...RESIDUAL, id: "lim_g", scope: { type: "global", id: null } },
@@ -70,10 +79,13 @@ class TableLimits extends OrderTimeLimitRepository {
   findByScope(): Promise<OrderTimeLimit | null> {
     return Promise.resolve(null);
   }
+  findById(): Promise<OrderTimeLimit | null> {
+    return Promise.resolve(null);
+  }
   save(): Promise<void> {
     return Promise.resolve();
   }
-  remove(): Promise<void> {
+  saveArchival(): Promise<void> {
     return Promise.resolve();
   }
 }

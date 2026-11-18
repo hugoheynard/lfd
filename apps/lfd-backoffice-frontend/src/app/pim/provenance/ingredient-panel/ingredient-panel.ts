@@ -102,7 +102,6 @@ export class IngredientPanel {
   protected readonly draftAllergens = signal<readonly string[]>([]);
   /** « Aucun allergène », déclaré — exclusif des codes (décision de Hugo, 2026-10-26). */
   protected readonly draftNoAllergen = signal(false);
-  protected readonly confirmKey = signal('');
   protected readonly busy = signal(false);
   protected readonly dangerOpen = signal(false);
 
@@ -238,15 +237,8 @@ export class IngredientPanel {
     );
   });
 
+  /** Les fiches qui le citent — elles le gardent, même archivé. */
   protected readonly held = computed(() => this.ingredient()?.usedBy ?? 0);
-
-  protected readonly confirmMatches = computed(
-    () => this.confirmKey().trim() === (this.ingredient()?.key ?? ' '),
-  );
-
-  protected readonly canDelete = computed(
-    () => this.held() === 0 && this.confirmMatches() && !this.busy(),
-  );
 
   constructor() {
     // Le référentiel n'est lu qu'ici : c'est le seul écran qui pose des codes
@@ -294,12 +286,12 @@ export class IngredientPanel {
     await this.run(() => this.persist());
   }
 
-  protected async remove(): Promise<void> {
+  protected async archive(): Promise<void> {
     const target = this.ingredient();
     if (target === undefined) {
       return;
     }
-    await this.run(() => this.store.removeIngredient(target.key));
+    await this.run(() => this.store.archiveIngredient(target.key));
   }
 
   /** Le référentiel n'est pas venu : on redemande, sans quitter la saisie. */

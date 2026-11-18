@@ -116,7 +116,8 @@ export function declarePimCommerceAgentTools(): readonly string[] {
     inputSchema: { type: 'object', properties: {}, additionalProperties: false },
     execute: () =>
       said('Lecture des taux', async () => {
-        const rows = await rates.list();
+        // Un taux archivé ne se pose plus : il ne se propose pas non plus.
+        const rows = (await rates.list()).filter((rate) => !rate.archived);
         return rows.length === 0
           ? 'Aucun taux.'
           : rows.map((rate) => `${rate.id} — ${rate.name} — ${String(rate.percent)} %`).join('\n');

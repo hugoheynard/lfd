@@ -8,7 +8,6 @@ import {
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import type { WriteTicket } from "../../../platform/journal/scoped-journal.js";
 import { OrderTimeLimit } from "../domain/entities/order-time-limit.js";
-import { OrderTimeLimitNotFoundError } from "../domain/errors/order-time-limit-errors.js";
 import { OrderTimeLimitRepository } from "../domain/ports/order-time-limit.repository.js";
 import { LimitScope } from "../domain/value-objects/limit-scope.js";
 import { targetLabels } from "./target-labels.js";
@@ -21,6 +20,7 @@ interface LimitRow {
   readonly daysBefore: number | null;
   readonly time: string | null;
   readonly graceMinutes: number | null;
+  readonly archivedAt: Date | null;
 }
 
 @Injectable()
@@ -38,12 +38,17 @@ export class PrismaOrderTimeLimitRepository extends OrderTimeLimitRepository {
    * `null`, et la règle reste visible plutôt que d'être escamotée avec elle.
    */
   async list(): Promise<readonly OrderTimeLimitView[]> {
-    const rows = await this.prisma.orderTimeLimit.findMany();
-    const labels = await targetLabels(this.prisma, rows);
-    return rows.flatMap((row) => {
-      const view = toView(row, labels);
-      return view === null ? [] : [view];
-    });
+    return this.views(await this.prisma.orderTimeLimit.findMany());
+  }
+
+  /** `archived_at IS NULL` dans la requête : une limite archivée ne s'applique plus. */
+  async inForce(): Promise<readonly OrderTimeLimitView[]> {
+    return this.views(await this.prisma.orderTimeLimit.findMany({ where: { archivedAt: null } }));
+  }
+
+  async findById(id: string): Promise<OrderTimeLimit | null> {
+    const row = await this.prisma.orderTimeLimit.findUnique({ where: { id } });
+    return row === null ? null : toDomain(row);
   }
 
   async findByScope(scope: LimitScope): Promise<OrderTimeLimit | null> {
@@ -63,6 +68,7 @@ export class PrismaOrderTimeLimitRepository extends OrderTimeLimitRepository {
       daysBefore: limit.daysBefore,
       time: limit.time,
       graceMinutes: limit.graceMinutes,
+      archivedAt: limit.archivedAt,
     };
     await this.prisma.orderTimeLimit.upsert({
       where: { id: limit.id },
@@ -71,15 +77,19 @@ export class PrismaOrderTimeLimitRepository extends OrderTimeLimitRepository {
     });
   }
 
-  async remove(id: string, _ticket: WriteTicket): Promise<void> {
-    const found = await this.prisma.orderTimeLimit.findUnique({
-      where: { id },
-      select: { id: true },
+  async saveArchival(limit: OrderTimeLimit, _ticket: WriteTicket): Promise<void> {
+    await this.prisma.orderTimeLimit.update({
+      where: { id: limit.id },
+      data: { archivedAt: limit.archivedAt },
     });
-    if (found === null) {
-      throw new OrderTimeLimitNotFoundError(id);
-    }
-    await this.prisma.orderTimeLimit.delete({ where: { id } });
+  }
+
+  private async views(rows: readonly LimitRow[]): Promise<readonly OrderTimeLimitView[]> {
+    const labels = await targetLabels(this.prisma, rows);
+    return rows.flatMap((row) => {
+      const view = toView(row, labels);
+      return view === null ? [] : [view];
+    });
   }
 }
 
@@ -95,6 +105,7 @@ function toView(row: LimitRow, labels: ReadonlyMap<string, string>): OrderTimeLi
     daysBefore: row.daysBefore,
     time: row.time,
     graceMinutes: row.graceMinutes,
+    archived: row.archivedAt !== null,
   };
 }
 
@@ -107,12 +118,16 @@ function toDomain(row: LimitRow): OrderTimeLimit | null {
   if (type === null) {
     return null;
   }
-  return OrderTimeLimit.reconstitute(row.id, {
-    scope: { type, id: row.scopeId },
-    daysBefore: row.daysBefore,
-    time: row.time,
-    graceMinutes: row.graceMinutes,
-  });
+  return OrderTimeLimit.reconstitute(
+    row.id,
+    {
+      scope: { type, id: row.scopeId },
+      daysBefore: row.daysBefore,
+      time: row.time,
+      graceMinutes: row.graceMinutes,
+    },
+    row.archivedAt,
+  );
 }
 
 /**

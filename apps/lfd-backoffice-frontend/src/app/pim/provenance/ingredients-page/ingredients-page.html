@@ -137,6 +137,15 @@
       />
     }
 
+    <app-archived-list
+      title="Ingrédients archivés"
+      restoreMessage="Restaurer cet ingrédient ? Il se proposera de nouveau à la composition des fiches."
+      [entries]="archived()"
+      [canRestore]="canWrite()"
+      [busy]="busy()"
+      (restore)="restore($event)"
+    />
+
     <fold-callout class="pv-note" appearance="inset" variant="info">
       Ce référentiel n'est <strong>pas</strong> la liste réglementaire d'ingrédients. Celle-là est
       ordonnée par masse décroissante et porte des quantités&nbsp;: elle appartient à la

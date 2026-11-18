@@ -6,7 +6,7 @@ import type { IngredientAggregate, IngredientSnapshot } from "../entities/ingred
 export interface IngredientRecord extends IngredientSnapshot {
   /** L'appellation citée, déjà résolue — l'écran n'a pas à la re-chercher. */
   readonly appellation: AppellationSnapshot | null;
-  /** Combien de fiches le citent. Zéro = il est effaçable. */
+  /** Combien de fiches le citent — elles le gardent, même archivé. */
   readonly usedBy: number;
 }
 
@@ -24,8 +24,12 @@ export abstract class IngredientRepository {
   abstract findByKey(key: string): Promise<IngredientAggregate | null>;
   abstract add(ingredient: IngredientAggregate, ticket: WriteTicket): Promise<void>;
   abstract save(ingredient: IngredientAggregate, ticket: WriteTicket): Promise<void>;
-  /** Refuse (`IngredientInUseError`) si des fiches le citent encore. */
-  abstract remove(key: string, ticket: WriteTicket): Promise<void>;
+  /**
+   * N'écrit QUE `archived_at` — pour l'archive et la restauration. Le geste
+   * charge l'agrégat sous verrou, mais un renommage concurrent peut l'avoir
+   * précédé : réécrire toute la ligne effacerait ce renommage.
+   */
+  abstract saveArchival(ingredient: IngredientAggregate, ticket: WriteTicket): Promise<void>;
 
   /** Ce qu'une fiche cite, dans son ordre d'affichage. */
   abstract ofProduct(productId: string): Promise<readonly IngredientRecord[]>;

@@ -38,6 +38,7 @@ describe("ListAppellationsHandler", () => {
         scheme: "AOP",
         active: true,
         usedBy: 0,
+        archived: false,
       },
     ]);
   });

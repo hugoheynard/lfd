@@ -31,8 +31,8 @@
   />
 
   @if (isEdit() && !isRoot()) {
-    <!-- La zone dangereuse vit au bas du panneau, repliée : on décide de
-         supprimer en REGARDANT l'objet. -->
+    <!-- La zone dangereuse vit au bas du panneau, repliée : on décide
+         d'archiver en REGARDANT l'objet. -->
     <section class="danger">
       <button
         type="button"
@@ -40,37 +40,29 @@
         [attr.aria-expanded]="dangerOpen()"
         (click)="toggleDanger()"
       >
-        Supprimer ce contexte
+        Archiver ce contexte
       </button>
 
       @if (dangerOpen()) {
         @if (held() > 0) {
           <fold-callout appearance="inset" variant="warning">
-            <strong>Suppression impossible.</strong> «&nbsp;{{ context()?.label }}&nbsp;» est encore
+            <strong>Archive impossible.</strong> «&nbsp;{{ context()?.label }}&nbsp;» est encore
             retenu par <strong>{{ heldLabel() }}</strong
             >. Des taux de TVA y sont réglés&nbsp;: retirez-les d'abord, sur les familles et les
-            fiches. Tant qu'un seul taux le cite, la base refuse.
+            fiches.
             <br />
             Vous pouvez en revanche le mettre <strong>hors service</strong> — il cesse de facturer
-            sans que rien ne soit effacé.
+            sans que rien ne soit retiré.
           </fold-callout>
         } @else {
-          <fold-callout appearance="inset" variant="alert">
-            <strong>Action irréversible.</strong> Aucun taux n'est réglé sur «&nbsp;{{
-              context()?.key
-            }}&nbsp;», donc rien ne perd sa référence. L'historique du journal, lui, garde la trace
-            de son existence.
+          <fold-callout appearance="inset" variant="info">
+            Archivé, «&nbsp;{{ context()?.label }}&nbsp;» ne se proposera plus, ni au réglage d'un
+            taux, ni à la facturation. Il reste en base, et se restaure depuis la liste des
+            contextes.
           </fold-callout>
 
-          <fold-input
-            label="Retapez la clé pour confirmer"
-            [placeholder]="context()?.key ?? ''"
-            [value]="confirmKey()"
-            (valueChange)="confirmKey.set($event)"
-          />
-
-          <button foldButton intent="danger" [disabled]="!canDelete()" (click)="remove()">
-            Supprimer définitivement
+          <button foldButton intent="danger" [disabled]="busy()" (click)="archive()">
+            Archiver le contexte
           </button>
         }
       }

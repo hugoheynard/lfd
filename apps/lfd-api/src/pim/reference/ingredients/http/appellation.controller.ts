@@ -11,7 +11,8 @@ import {
 import { AdminSurface } from "../../../../platform/auth/admin-surface.decorator.js";
 import { ZodBody } from "../../../../platform/shared/http/zod-body.pipe.js";
 import { CreateAppellationCommand } from "../application/create-appellation.js";
-import { RemoveAppellationCommand } from "../application/remove-appellation.js";
+import { ArchiveAppellationCommand } from "../application/archive-appellation.js";
+import { RestoreAppellationCommand } from "../application/restore-appellation.js";
 import { UpdateAppellationCommand } from "../application/update-appellation.js";
 import { ListAppellationsQuery } from "../application/list-appellations.js";
 import { Idempotent } from "../../../../platform/shared/http/idempotent.decorator.js";
@@ -72,12 +73,25 @@ export class AppellationController {
     return { code };
   }
 
+  /**
+   * **Archive** l'appellation — la route garde son verbe `DELETE` et sa
+   * réponse : une appellation ne se supprime plus.
+   */
   @Delete(":code")
-  @Idempotent(
-    "retire l'appellation : rejoué, elle n'existe plus et la demande est refusée (404) sans rien écrire",
-  )
-  async remove(@Param("code") code: string) {
-    await this.commands.execute<RemoveAppellationCommand, void>(new RemoveAppellationCommand(code));
+  @Idempotent("archive l'appellation : rejouée, elle l'est déjà et rien ne s'écrit")
+  async archive(@Param("code") code: string) {
+    await this.commands.execute<ArchiveAppellationCommand, void>(
+      new ArchiveAppellationCommand(code),
+    );
+    return { code };
+  }
+
+  @Post(":code/restore")
+  @Idempotent("remet l'appellation au référentiel : rejouée, elle l'est déjà et rien ne s'écrit")
+  async restore(@Param("code") code: string) {
+    await this.commands.execute<RestoreAppellationCommand, void>(
+      new RestoreAppellationCommand(code),
+    );
     return { code };
   }
 }

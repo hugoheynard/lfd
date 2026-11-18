@@ -23,8 +23,8 @@
   />
 
   @if (isEdit()) {
-    <!-- La zone dangereuse vit au bas du panneau, repliée : on décide de
-         supprimer en REGARDANT l'objet, pas en choisissant son intention dans
+    <!-- La zone dangereuse vit au bas du panneau, repliée : on décide
+         d'archiver en REGARDANT l'objet, pas en choisissant son intention dans
          un menu avant de l'ouvrir. -->
     <section class="danger">
       <button
@@ -33,34 +33,26 @@
         [attr.aria-expanded]="dangerOpen()"
         (click)="toggleDanger()"
       >
-        Supprimer ce taux
+        Archiver ce taux
       </button>
 
       @if (dangerOpen()) {
         @if (usageTotal() > 0) {
-          <!-- Encore visé : la base refusera. On le dit ici plutôt que de
-               laisser l'erreur de clé étrangère l'apprendre après coup. -->
+          <!-- Encore visé : le référentiel refusera. On le dit ici plutôt que de
+               laisser le refus l'apprendre après coup. -->
           <fold-callout appearance="inset" variant="warning">
-            <strong>Suppression impossible.</strong> «&nbsp;{{ rate()?.name }}&nbsp;» est encore
-            visé par <strong>{{ usageTotal() }} famille(s) ou fiche(s)</strong>. Réattribuez-les à
-            un autre taux d'abord&nbsp;: tant qu'une seule le vise, la base refuse la suppression.
+            <strong>Archive impossible.</strong> «&nbsp;{{ rate()?.name }}&nbsp;» est encore visé
+            par <strong>{{ usageTotal() }} famille(s) ou fiche(s)</strong>. Réattribuez-les à un
+            autre taux d'abord&nbsp;: aucune fiche ne doit être facturée à un taux archivé.
           </fold-callout>
         } @else {
-          <fold-callout appearance="inset" variant="alert">
-            <strong>Action irréversible.</strong> Rien ne vise «&nbsp;{{ rate()?.name }}&nbsp;» ({{
-              percentLabel()
-            }}), donc rien ne perd sa référence de taxe.
+          <fold-callout appearance="inset" variant="info">
+            Archivé, «&nbsp;{{ rate()?.name }}&nbsp;» ({{ percentLabel() }}) ne se proposera plus
+            aux familles ni aux fiches. Il reste en base, et se restaure depuis la liste des taux.
           </fold-callout>
 
-          <fold-input
-            label="Retapez le nom du taux pour confirmer"
-            [placeholder]="rate()?.name ?? ''"
-            [value]="confirmName()"
-            (valueChange)="confirmName.set($event)"
-          />
-
-          <button foldButton intent="danger" [disabled]="!canDelete()" (click)="remove()">
-            Supprimer définitivement
+          <button foldButton intent="danger" [disabled]="busy()" (click)="archive()">
+            Archiver le taux
           </button>
         }
       }

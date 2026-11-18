@@ -1,5 +1,5 @@
 import { isPlatformBrowser } from '@angular/common';
-import { Injectable, PLATFORM_ID, inject, signal } from '@angular/core';
+import { Injectable, PLATFORM_ID, computed, inject, signal } from '@angular/core';
 
 import type { VatRate } from '../../data/models';
 import { VatRateHttpApi, type VatRateInput } from './vat-http-api';
@@ -8,8 +8,10 @@ import { ListLoadState } from '../../data/list-load-state';
 
 /**
  * Source **réactive** unique des taux de TVA — remplace le signal LocalDb.
- * Table, panneau et usages plateforme lisent `items()` ; les mutations passent
- * ici (backend puis relecture), donc tout ce qui affiche la liste se recompose.
+ * Table, panneau et listes de choix lisent `items()` — les taux **en service**,
+ * les seuls qu'on propose ; les archivés sont à part (`archivedItems()`), avec
+ * « Restaurer ». Les mutations passent ici (backend puis relecture), donc tout
+ * ce qui affiche la liste se recompose.
  */
 @Injectable({ providedIn: 'root' })
 export class VatRateStore {
@@ -17,7 +19,9 @@ export class VatRateStore {
   private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
 
   private readonly state = signal<VatRate[]>([]);
-  readonly items = this.state.asReadonly();
+  /** En service : ce qui se propose au choix d'une famille ou d'une fiche. */
+  readonly items = computed(() => this.state().filter((rate) => !rate.archived));
+  readonly archivedItems = computed(() => this.state().filter((rate) => rate.archived));
   private readonly load = new ListLoadState();
   /**
    * Pourquoi la liste est vide — `null` = elle l'est vraiment. Les écrans le
@@ -82,8 +86,13 @@ export class VatRateStore {
     await this.reload();
   }
 
-  async remove(id: string): Promise<void> {
-    await this.api.remove(id);
+  async archive(id: string): Promise<void> {
+    await this.api.archive(id);
+    await this.reload();
+  }
+
+  async restore(id: string): Promise<void> {
+    await this.api.restore(id);
     await this.reload();
   }
 }

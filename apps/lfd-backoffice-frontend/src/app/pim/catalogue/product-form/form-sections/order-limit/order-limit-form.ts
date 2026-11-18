@@ -49,8 +49,17 @@ export class OrderLimitForm {
   protected readonly failed = signal(false);
   protected readonly pendingRemoval = signal(false);
 
-  /** La limite posée sur ce produit, ou `null`. */
-  protected readonly rule = computed(() => productRule(this.rules(), this.store.productId()));
+  /**
+   * La limite EN VIGUEUR sur ce produit, ou `null`. Une limite archivée ne
+   * s'applique plus : la fiche dit « pas de limite propre », et en poser une
+   * remet la ligne archivée en vigueur (une seule par produit).
+   */
+  protected readonly rule = computed(() =>
+    productRule(
+      this.rules().filter((rule) => !rule.archived),
+      this.store.productId(),
+    ),
+  );
 
   /** Ce qui s'applique, en une phrase — ou `null` : seule la règle générale juge. */
   protected readonly phrase = computed(() => {
@@ -107,8 +116,10 @@ export class OrderLimitForm {
       return;
     }
     try {
-      await this.api.remove(rule.id);
-      this.notify.success('Limite retirée — seule la règle générale juge ce produit.');
+      await this.api.archive(rule.id);
+      this.notify.success(
+        "Limite archivée — elle ne s'applique plus ; seule la règle générale juge ce produit.",
+      );
       await this.load();
     } catch (error) {
       this.notify.error(error);

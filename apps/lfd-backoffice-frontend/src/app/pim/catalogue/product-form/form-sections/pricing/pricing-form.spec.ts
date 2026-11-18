@@ -23,6 +23,7 @@ function withFamily(store: ProductFormStore): void {
       description: '',
       percent: 5.5,
       usage: { takeaway: 0, eatIn: 0 },
+      archived: false,
     },
     {
       id: 'tva_20',
@@ -30,6 +31,7 @@ function withFamily(store: ProductFormStore): void {
       description: '',
       percent: 20,
       usage: { takeaway: 0, eatIn: 0 },
+      archived: false,
     },
   ]);
   store.categories.set([

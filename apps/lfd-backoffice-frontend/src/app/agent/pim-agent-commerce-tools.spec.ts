@@ -167,7 +167,9 @@ function armTools(
   };
   const rates: Pick<VatRateHttpApi, 'list'> = {
     list: () =>
-      Promise.resolve([{ id: 'r1', name: 'Réduit', description: '', percent: 5.5, usage: {} }]),
+      Promise.resolve([
+        { id: 'r1', name: 'Réduit', description: '', percent: 5.5, usage: {}, archived: false },
+      ]),
   };
   TestBed.configureTestingModule({
     providers: [

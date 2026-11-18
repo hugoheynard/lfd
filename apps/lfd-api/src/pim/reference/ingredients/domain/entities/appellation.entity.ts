@@ -33,6 +33,8 @@ export interface NewAppellationInput extends AppellationRevision {
 export interface AppellationSnapshot extends AppellationRevision {
   readonly id: string;
   readonly code: string;
+  /** `null` = pas archivée. */
+  readonly archivedAt: Date | null;
 }
 
 /**
@@ -46,8 +48,10 @@ export interface AppellationSnapshot extends AppellationRevision {
  *   nom lisible produirait un badge vide — c'est-à-dire une affirmation
  *   réglementée que personne ne peut lire.
  *
- * Ce qu'il ne peut pas voir, et qui reste au handler : qu'aucune AUTRE
- * appellation ne porte ce code, et que rien ne la cite au moment de l'effacer.
+ * Elle ne se supprime pas (décision de Hugo du 2026-11-18) : elle s'archive,
+ * et l'archive est **toujours permise** — les ingrédients qui la portent la
+ * gardent, elle ne se pose plus sur un autre. Ce qu'il ne peut pas voir, et
+ * qui reste au handler : qu'aucune AUTRE appellation ne porte ce code.
  */
 export class AppellationAggregate {
   private constructor(
@@ -56,6 +60,7 @@ export class AppellationAggregate {
     private labelValue: LocalizedText,
     private schemeValue: string,
     private activeValue: boolean,
+    private archivedAtValue: Date | null,
   ) {}
 
   /** Ouvre une appellation — le code est nettoyé puis validé, une fois pour toutes. */
@@ -66,6 +71,7 @@ export class AppellationAggregate {
       cleanRequiredText("l'appellation", input.label),
       input.scheme.trim(),
       input.active,
+      null,
     );
   }
 
@@ -77,6 +83,7 @@ export class AppellationAggregate {
       snapshot.label,
       snapshot.scheme,
       snapshot.active,
+      snapshot.archivedAt,
     );
   }
 
@@ -93,6 +100,28 @@ export class AppellationAggregate {
     }
   }
 
+  get isArchived(): boolean {
+    return this.archivedAtValue !== null;
+  }
+
+  /** Archive l'appellation. `false` si elle l'était déjà — rien ne change. */
+  archive(at: Date): boolean {
+    if (this.archivedAtValue !== null) {
+      return false;
+    }
+    this.archivedAtValue = at;
+    return true;
+  }
+
+  /** La remet au référentiel. `false` si elle n'était pas archivée. */
+  restore(): boolean {
+    if (this.archivedAtValue === null) {
+      return false;
+    }
+    this.archivedAtValue = null;
+    return true;
+  }
+
   snapshot(): AppellationSnapshot {
     return {
       id: this.identity,
@@ -100,6 +129,7 @@ export class AppellationAggregate {
       label: this.labelValue,
       scheme: this.schemeValue,
       active: this.activeValue,
+      archivedAt: this.archivedAtValue,
     };
   }
 }

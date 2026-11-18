@@ -1,4 +1,14 @@
-import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Put } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Post,
+  Put,
+} from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import {
   type GeneralOrderCutoffView,
@@ -11,7 +21,8 @@ import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js"
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { GetGeneralOrderCutoffQuery } from "../application/get-general-order-cutoff.js";
 import { ListOrderTimeLimitsQuery } from "../application/list-order-time-limits.js";
-import { RemoveOrderTimeLimitCommand } from "../application/remove-order-time-limit.js";
+import { ArchiveOrderTimeLimitCommand } from "../application/archive-order-time-limit.js";
+import { RestoreOrderTimeLimitCommand } from "../application/restore-order-time-limit.js";
 import { SetOrderTimeLimitCommand } from "../application/set-order-time-limit.js";
 import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
@@ -23,7 +34,7 @@ import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.j
  * identifiant technique. Un écran qui pose « la viennoiserie ferme à 16 h » ne
  * doit pas avoir à savoir si quelqu'un l'a déjà posée — la question n'a aucun
  * sens pour lui, et l'obliger à y répondre le ferait se tromper une fois sur
- * deux. Le `DELETE`, lui, vise l'identifiant : on retire une ligne qu'on a sous
+ * deux. Le `DELETE`, lui, vise l'identifiant : on archive une ligne qu'on a sous
  * les yeux.
  *
  * Surface staff murée par `@AdminSurface("pim_catalog")` : c'est une décision de
@@ -70,14 +81,27 @@ export class OrderTimeLimitController {
     return { id };
   }
 
+  /**
+   * **Archive** la limite : elle cesse de s'appliquer. La route garde son verbe
+   * `DELETE` et sa réponse (204) : une limite ne se supprime plus.
+   */
   @Delete(":id")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent("archive la limite : rejouée, elle l'est déjà et rien ne s'écrit ni ne s'émet")
+  async archive(@Param("id") id: string): Promise<void> {
+    await this.commands.execute<ArchiveOrderTimeLimitCommand, void>(
+      new ArchiveOrderTimeLimitCommand(id),
+    );
+  }
+
+  @Post(":id/restore")
+  @HttpCode(HttpStatus.NO_CONTENT)
   @Idempotent(
-    "retire la limite : rejoué, elle n'existe plus et la demande est refusée (404) sans rien écrire",
+    "remet la limite en vigueur : rejouée, elle l'est déjà et rien ne s'écrit ni ne s'émet",
   )
-  async remove(@Param("id") id: string): Promise<void> {
-    await this.commands.execute<RemoveOrderTimeLimitCommand, void>(
-      new RemoveOrderTimeLimitCommand(id),
+  async restore(@Param("id") id: string): Promise<void> {
+    await this.commands.execute<RestoreOrderTimeLimitCommand, void>(
+      new RestoreOrderTimeLimitCommand(id),
     );
   }
 }

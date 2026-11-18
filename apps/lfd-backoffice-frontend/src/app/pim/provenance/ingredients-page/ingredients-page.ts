@@ -21,6 +21,8 @@ import {
 } from 'fold-ng';
 
 import { PermissionsStore } from '../../../auth/permissions.store';
+import { NotifyService } from '../../../notify.service';
+import { ArchivedList, type ArchivedEntry } from '../../shared/archived-list/archived-list';
 import type { IngredientAllergenChange } from '../allergen-propagation';
 import { IngredientPanel } from '../ingredient-panel/ingredient-panel';
 import { IngredientPropagation } from '../ingredient-propagation/ingredient-propagation';
@@ -58,6 +60,7 @@ import {
     FoldPaginatorComponent,
     FoldViewToggleComponent,
     IngredientPropagation,
+    ArchivedList,
   ],
   templateUrl: './ingredients-page.html',
   styleUrl: './ingredients-page.scss',
@@ -66,9 +69,19 @@ export class IngredientsPage {
   private readonly store = inject(ProvenanceStore);
   private readonly panelHost = inject(FoldPanelHostService);
   private readonly permissions = inject(PermissionsStore);
+  private readonly notify = inject(NotifyService);
 
   protected readonly canWrite = computed(() => this.permissions.can('pim_catalog:write'));
-  protected readonly ingredients = this.store.ingredients;
+  /** Le tableau ne montre que ceux qu'on propose ; les archivés sont repliés dessous. */
+  protected readonly ingredients = this.store.offeredIngredients;
+  protected readonly busy = signal(false);
+  protected readonly archived = computed<readonly ArchivedEntry[]>(() =>
+    this.store.archivedIngredients().map((row) => ({
+      key: row.key,
+      label: row.name.fr,
+      detail: row.usedBy > 0 ? `cité par ${String(row.usedBy)} fiche(s)` : undefined,
+    })),
+  );
   protected readonly loadError = this.store.ingredientError;
   protected readonly query = signal('');
   protected readonly allergenState = signal<AllergenStateFilter>('all');
@@ -205,5 +218,16 @@ export class IngredientsPage {
 
   protected retry(): void {
     void this.store.reload().catch(() => undefined);
+  }
+
+  protected async restore(key: string): Promise<void> {
+    this.busy.set(true);
+    try {
+      await this.store.restoreIngredient(key);
+    } catch (caught) {
+      this.notify.refused(caught, 'Restauration refusée.');
+    } finally {
+      this.busy.set(false);
+    }
   }
 }

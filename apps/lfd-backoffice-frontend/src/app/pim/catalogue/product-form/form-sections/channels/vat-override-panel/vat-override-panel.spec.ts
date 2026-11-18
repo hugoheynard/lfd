@@ -26,6 +26,7 @@ function data(over: Partial<VatOverridePanelData> = {}): VatOverridePanelData {
         description: '',
         percent: 5.5,
         usage: { takeaway: 0, eatIn: 0 },
+        archived: false,
       },
       {
         id: 'tva_20',
@@ -33,6 +34,7 @@ function data(over: Partial<VatOverridePanelData> = {}): VatOverridePanelData {
         description: '',
         percent: 20,
         usage: { takeaway: 0, eatIn: 0 },
+        archived: false,
       },
     ],
     inheritedLabel: 'Réduit · 5,5 %',
@@ -87,7 +89,12 @@ function make(input: VatOverridePanelData) {
     }
   };
 
-  return { fixture, closes, buttonNamed, pick, openList };
+  const optionLabels = (): string[] =>
+    [...fixture.nativeElement.querySelectorAll('[role="option"]')].map((node) =>
+      ((node as HTMLElement).textContent ?? '').trim(),
+    );
+
+  return { fixture, closes, buttonNamed, pick, openList, optionLabels };
 }
 
 describe('le panneau de dérogation de TVA rend le taux choisi', () => {
@@ -117,5 +124,39 @@ describe('le panneau de dérogation de TVA rend le taux choisi', () => {
     buttonNamed('Annuler').click();
 
     expect(closes).toEqual([undefined]);
+  });
+});
+
+describe('le panneau de dérogation ne propose pas un taux archivé', () => {
+  const archived = {
+    id: 'tva_10',
+    name: 'Intermédiaire',
+    description: '',
+    percent: 10,
+    usage: { takeaway: 0, eatIn: 0 },
+    archived: true,
+  };
+
+  it('écarte de la liste un taux archivé', async () => {
+    const base = data();
+    const { openList, optionLabels } = make({ ...base, rates: [...base.rates, archived] });
+
+    await openList();
+
+    expect(optionLabels().some((label) => label.includes('Intermédiaire'))).toBe(false);
+    expect(optionLabels().some((label) => label.includes('Normal'))).toBe(true);
+  });
+
+  it('garde, tel quel, le taux archivé que la fiche porte déjà', async () => {
+    const base = data();
+    const { openList, optionLabels } = make({
+      ...base,
+      rates: [...base.rates, archived],
+      current: 'tva_10',
+    });
+
+    await openList();
+
+    expect(optionLabels().some((label) => label.includes('Intermédiaire'))).toBe(true);
   });
 });

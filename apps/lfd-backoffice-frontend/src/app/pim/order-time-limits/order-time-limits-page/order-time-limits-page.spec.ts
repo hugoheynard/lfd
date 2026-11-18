@@ -13,6 +13,7 @@ const BUCHE: OrderTimeLimitView = {
   daysBefore: 2,
   time: '12:00',
   graceMinutes: null,
+  archived: false,
 };
 
 /** Le service doublé : seules ses deux lectures servent à l'affichage. */

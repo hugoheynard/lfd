@@ -6,14 +6,19 @@ import { StartupReport } from "../../../platform/startup/startup-report.service.
 import { CreateSalesContextHandler } from "./application/create-sales-context.js";
 import { ListActiveSalesContextsHandler } from "./application/list-active-sales-contexts.js";
 import { ListSalesContextsHandler } from "./application/list-sales-contexts.js";
-import { RemoveSalesContextHandler } from "./application/remove-sales-context.js";
+import { ArchiveSalesContextHandler } from "./application/archive-sales-context.js";
+import { RestoreSalesContextHandler } from "./application/restore-sales-context.js";
 import { UpdateSalesContextHandler } from "./application/update-sales-context.js";
 import { ActiveSalesContextsReader } from "./domain/ports/active-sales-contexts.reader.js";
 import { SalesContextRegistry } from "./domain/ports/sales-context.registry.js";
 import { SalesContextRepository } from "./domain/ports/sales-context.repository.js";
+import { SalesContextUsageReader } from "./domain/ports/sales-context-usage.reader.js";
+import { SalesContextLock } from "./domain/ports/sales-context.lock.js";
 import { SalesContextController } from "./http/sales-context.controller.js";
 import { PrismaSalesContextRegistry } from "./infrastructure/prisma-sales-context.registry.js";
 import { PrismaSalesContextRepository } from "./infrastructure/prisma-sales-context.repository.js";
+import { PrismaSalesContextUsageReader } from "./infrastructure/prisma-sales-context-usage.reader.js";
+import { PrismaSalesContextLock } from "./infrastructure/prisma-sales-context.lock.js";
 
 /**
  * Contexte **sales-contexts** — le registre des manières de vendre.
@@ -42,7 +47,8 @@ import { PrismaSalesContextRepository } from "./infrastructure/prisma-sales-cont
  *
  * Il **exporte** le registre : le catalogue le lit pour ses taux et sa matrice,
  * les canaux l'itèrent pour savoir ce qu'ils projettent. Le dépôt d'écriture,
- * lui, ne sort pas — on règle un contexte par cet écran, pas d'ailleurs.
+ * lui, ne sort pas — on règle un contexte par cet écran, pas d'ailleurs. Le
+ * verrou sort : la pose d'un taux le prend avant de relire les contextes.
  */
 @Module({
   imports: [PimDatabaseModule, PimChangesModule],
@@ -50,16 +56,19 @@ import { PrismaSalesContextRepository } from "./infrastructure/prisma-sales-cont
   providers: [
     CreateSalesContextHandler,
     UpdateSalesContextHandler,
-    RemoveSalesContextHandler,
+    ArchiveSalesContextHandler,
+    RestoreSalesContextHandler,
     ListActiveSalesContextsHandler,
     ListSalesContextsHandler,
     { provide: SalesContextRegistry, useClass: PrismaSalesContextRegistry },
     { provide: SalesContextRepository, useClass: PrismaSalesContextRepository },
+    { provide: SalesContextUsageReader, useClass: PrismaSalesContextUsageReader },
+    { provide: SalesContextLock, useClass: PrismaSalesContextLock },
     // Le port étroit (ISP) : la même instance, vue par ceux qui ne lisent que
     // les contextes en service — la règle de complétude des fiches.
     { provide: ActiveSalesContextsReader, useExisting: SalesContextRegistry },
   ],
-  exports: [SalesContextRegistry, ActiveSalesContextsReader],
+  exports: [SalesContextRegistry, ActiveSalesContextsReader, SalesContextLock],
 })
 export class SalesContextsModule implements OnModuleInit {
   private readonly logger = new Logger(SalesContextsModule.name);

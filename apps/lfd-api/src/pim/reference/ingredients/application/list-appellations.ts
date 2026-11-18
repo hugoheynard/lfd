@@ -14,9 +14,10 @@ export class ListAppellationsQuery {}
 /**
  * Ce que l'écran des provenances lit dans sa colonne « appellations ».
  *
- * Il ne filtre **rien** — les appellations hors service comprises : c'est
- * depuis cet écran qu'on les remet en service, et une ligne qu'on ne voit pas
- * est une ligne qu'on ne peut plus rouvrir.
+ * Il ne filtre **rien** — les appellations hors service et archivées
+ * comprises : c'est depuis cet écran qu'on les remet en service ou qu'on les
+ * restaure, et une ligne qu'on ne voit pas est une ligne qu'on ne peut plus
+ * rouvrir. Ce sont les listes de choix qui écartent les archivées.
  */
 @QueryHandler(ListAppellationsQuery)
 export class ListAppellationsHandler implements IQueryHandler<
@@ -51,5 +52,6 @@ function toAppellationView(record: AppellationRecord): AppellationView {
     scheme: record.scheme,
     active: record.active,
     usedBy: record.usedBy,
+    archived: record.archivedAt !== null,
   };
 }

@@ -53,6 +53,8 @@ export interface VatRate {
   percent: number;
   /** Combien de familles le visent — rendu par l'API, jamais recalculé ici. */
   usage: VatRateUsage;
+  /** Archivé : il ne se propose plus, et se restaure depuis la liste des taux. */
+  archived: boolean;
 }
 
 /**

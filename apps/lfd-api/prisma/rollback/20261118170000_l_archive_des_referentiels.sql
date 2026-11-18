@@ -1,0 +1,34 @@
+-- RETOUR ARRIÈRE de 20261118170000_l_archive_des_referentiels
+-- (documentation/pim/plan-referentiel-a-neuf.md, L4).
+--
+-- 🔴 NON APPLIQUÉ, et Prisma ne le lit pas. La migration reste inscrite
+-- « appliquée ».
+--
+-- 🔴 DÉCIDÉ PAR HUGO LE 2026-11-18 : APRÈS L4, ON NE REVIENT PAS AU CODE
+-- D'AVANT, ON CORRIGE EN AVANT. La raison est ci-dessous : le code d'avant
+-- ignore les cinq colonnes, et tout ce qui a été archivé redeviendrait en
+-- service sans un mot. Si une panne l'imposait malgré tout, ce fichier dit ce
+-- qu'il faut relever d'abord, et chaque ligne archivée se décide au cas par
+-- cas avec Hugo — jamais en masse.
+--
+-- ⚠️ Un objet archivé redevient EN SERVICE pour le
+-- code d'avant : une limite horaire archivée se remettrait à s'appliquer au
+-- commerce à la prochaine émission des règles, un taux ou un contexte archivé
+-- se proposerait de nouveau. Avant de revenir au code d'avant, relever les
+-- lignes archivées :
+--
+--   SELECT 'tva_rate' AS t, id FROM "pim"."tva_rate" WHERE "archived_at" IS NOT NULL
+--   UNION ALL SELECT 'sales_context', id FROM "pim"."sales_context" WHERE "archived_at" IS NOT NULL
+--   UNION ALL SELECT 'ingredient', id FROM "pim"."ingredient" WHERE "archived_at" IS NOT NULL
+--   UNION ALL SELECT 'appellation', id FROM "pim"."appellation" WHERE "archived_at" IS NOT NULL
+--   UNION ALL SELECT 'order_time_limit', id FROM "pim"."order_time_limit" WHERE "archived_at" IS NOT NULL;
+--
+-- Retirer les colonnes serait un resserrement ultérieur, sur décision de Hugo :
+--
+--   ALTER TABLE "pim"."tva_rate" DROP COLUMN "archived_at";
+--   ALTER TABLE "pim"."sales_context" DROP COLUMN "archived_at";
+--   ALTER TABLE "pim"."ingredient" DROP COLUMN "archived_at";
+--   ALTER TABLE "pim"."appellation" DROP COLUMN "archived_at";
+--   ALTER TABLE "pim"."order_time_limit" DROP COLUMN "archived_at";
+
+SELECT 1;

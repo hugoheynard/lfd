@@ -47,6 +47,7 @@ describe('SalesContextsPage', () => {
                 ratedBy: 0,
               },
             ],
+            archivedItems: () => [],
             loadError: () => null,
             reload: () => Promise.resolve(),
           },

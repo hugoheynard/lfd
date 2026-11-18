@@ -49,6 +49,7 @@ interface AppellationRow {
   readonly scheme: string;
   readonly active: boolean;
   readonly usedBy: number;
+  readonly archived: boolean;
 }
 
 interface IngredientRow {
@@ -60,6 +61,7 @@ interface IngredientRow {
   readonly allergens: string[];
   readonly declaresNoAllergen: boolean;
   readonly usedBy: number;
+  readonly archived: boolean;
 }
 
 interface VariantGapRow {
@@ -145,7 +147,14 @@ describe("le référentiel des appellations", () => {
     await anAppellation();
 
     expect(await appellations()).toEqual([
-      { code: "aop-beaufort", label: { fr: "Beaufort" }, scheme: "AOP", active: true, usedBy: 0 },
+      {
+        code: "aop-beaufort",
+        label: { fr: "Beaufort" },
+        scheme: "AOP",
+        active: true,
+        usedBy: 0,
+        archived: false,
+      },
     ]);
   });
 
@@ -219,31 +228,37 @@ describe("le journal de la provenance — les noms du moment", () => {
   });
 });
 
-describe("les deux murs de suppression", () => {
-  /**
-   * Le refus vient de la clé étrangère, pas d'un compte lu avant l'ordre : un
-   * compte laisserait l'intervalle pendant lequel un ingrédient se met à citer
-   * l'appellation.
-   */
-  it("refuse d'effacer une appellation qu'un ingrédient porte", async () => {
+/**
+ * On ne supprime plus la provenance (L4, 2026-11-18) : le `DELETE` archive, et
+ * l'archive est toujours permise — ce qui la cite la garde.
+ */
+describe("l'archive de la provenance", () => {
+  it("archive une appellation qu'un ingrédient porte : il la garde", async () => {
     const code = await anAppellation();
-    await anIngredient("beurre-de-savoie", code);
-
-    const removed = await staff().delete(`${APPELLATIONS}/${code}`);
-
-    expect(removed.status).toBe(409);
-    expect((await appellations())[0]?.usedBy).toBe(1);
-  });
-
-  it("laisse effacer une appellation que plus rien ne porte", async () => {
-    const code = await anAppellation();
+    const key = await anIngredient("beurre-de-savoie", code);
 
     await staff().delete(`${APPELLATIONS}/${code}`).expect(200);
 
-    expect(await appellations()).toEqual([]);
+    expect((await appellations())[0]).toMatchObject({ code, archived: true, usedBy: 1 });
+    expect((await ingredients()).find((row) => row.key === key)?.appellation).toMatchObject({
+      code,
+      archived: true,
+    });
   });
 
-  it("refuse d'effacer un ingrédient qu'une fiche cite", async () => {
+  it("une appellation archivée ne se pose plus sur un ingrédient neuf", async () => {
+    const code = await anAppellation();
+    await staff().delete(`${APPELLATIONS}/${code}`).expect(200);
+
+    const refused = await staff()
+      .post(INGREDIENTS)
+      .send({ key: "comte", name: { fr: "Comté" }, origin: "", appellationCode: code });
+
+    expect(refused.status).toBe(409);
+    expect(jsonBody<{ code: string }>(refused).code).toBe("catalogue.appellation.archived");
+  });
+
+  it("archive un ingrédient qu'une fiche cite : la fiche le garde", async () => {
     const key = await anIngredient();
     const productId = await aProduct();
     await staff()
@@ -251,10 +266,42 @@ describe("les deux murs de suppression", () => {
       .send({ keys: [key] })
       .expect(200);
 
-    const removed = await staff().delete(`${INGREDIENTS}/${key}`);
+    await staff().delete(`${INGREDIENTS}/${key}`).expect(200);
 
-    expect(removed.status).toBe(409);
-    expect((await ingredients())[0]?.usedBy).toBe(1);
+    expect((await ingredients())[0]).toMatchObject({ key, archived: true, usedBy: 1 });
+    const cited = jsonBody<{ key: string }[]>(
+      await staff().get(`/pim/products/${productId}/ingredients`).expect(200),
+    );
+    expect(cited.map((row) => row.key)).toEqual([key]);
+  });
+
+  it("un ingrédient archivé ne s'ajoute plus à une autre fiche", async () => {
+    const key = await anIngredient();
+    const productId = await aProduct();
+    await staff().delete(`${INGREDIENTS}/${key}`).expect(200);
+
+    const refused = await staff()
+      .put(`/pim/products/${productId}/ingredients`)
+      .send({ keys: [key] });
+
+    expect(refused.status).toBe(409);
+    expect(jsonBody<{ code: string }>(refused).code).toBe("catalogue.ingredient.archived");
+  });
+
+  it("restaure l'un et l'autre ; rejouées, archive et restauration répondent pareil", async () => {
+    const code = await anAppellation();
+    const key = await anIngredient("beurre-de-savoie");
+    await staff().delete(`${APPELLATIONS}/${code}`).expect(200);
+    await staff().delete(`${APPELLATIONS}/${code}`).expect(200);
+    await staff().delete(`${INGREDIENTS}/${key}`).expect(200);
+
+    await staff().post(`${APPELLATIONS}/${code}/restore`).expect(201);
+    await staff().post(`${INGREDIENTS}/${key}/restore`).expect(201);
+    await staff().post(`${INGREDIENTS}/${key}/restore`).expect(201);
+
+    expect((await appellations())[0]?.archived).toBe(false);
+    expect((await ingredients())[0]?.archived).toBe(false);
+    expect(await ctx.prisma.ingredient.count()).toBe(1);
   });
 });
 
@@ -405,19 +452,14 @@ describe("les allergènes d'un ingrédient", () => {
     expect((await ingredients())[0]?.allergens).toEqual([]);
   });
 
-  /**
-   * `Cascade` côté ingrédient : ses déclarations n'ont plus d'objet quand il
-   * disparaît. Sans elle, la clé étrangère refuserait l'effacement d'une
-   * matière que plus aucune fiche ne cite — et l'écran ne pourrait plus jamais
-   * la retirer du référentiel.
-   */
-  it("laisse effacer une matière qui porte des allergènes", async () => {
+  /** Archivée, une matière garde ce qu'elle contient : la restaurer le rend intact. */
+  it("archive une matière qui porte des allergènes sans les lui retirer", async () => {
     const key = await anIngredient("praline");
     await setAllergens(key, ["SH"]).expect(200);
 
     await staff().delete(`${INGREDIENTS}/${key}`).expect(200);
 
-    expect(await ingredients()).toEqual([]);
+    expect((await ingredients())[0]).toMatchObject({ archived: true, allergens: ["SH"] });
   });
 });
 

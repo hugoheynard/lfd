@@ -9,9 +9,9 @@ import type { VatRate } from "../entities/vat-rate.js";
  * aucun invariant qui dépende de ce compte, et le lui faire porter obligerait
  * à le recompter à chaque `save()` pour rien.
  *
- * Indexé, et non trois champs nommés : le compte protège la suppression, et un
- * contexte oublié dans le total offrirait un bouton « Supprimer » que la base
- * refuserait ensuite. C'est exactement ce qui arrivait au B2B côté écran.
+ * Indexé, et non trois champs nommés : le compte dit à l'écran si l'archive
+ * sera refusée, et un contexte oublié dans le total offrirait un bouton
+ * « Archiver » que l'agrégat refuserait ensuite.
  */
 export type VatRateUsage = Readonly<Record<string, number>>;
 
@@ -29,8 +29,12 @@ export abstract class VatRateRepository {
   abstract findByPercent(percent: number): Promise<VatRate | null>;
   abstract add(rate: VatRate, ticket: WriteTicket): Promise<void>;
   abstract save(rate: VatRate, ticket: WriteTicket): Promise<void>;
-  /** Refuse (`VatRateInUseError`) si une famille vise encore ce taux. */
-  abstract remove(id: string, ticket: WriteTicket): Promise<void>;
+  /**
+   * N'écrit QUE `archived_at` — pour l'archive et la restauration. Le geste
+   * charge l'agrégat sous verrou, mais un renommage concurrent peut l'avoir
+   * précédé : réécrire toute la ligne effacerait ce renommage.
+   */
+  abstract saveArchival(rate: VatRate, ticket: WriteTicket): Promise<void>;
   /**
    * Le compte d'usages par id de taux — un seul aller-retour pour toute la
    * liste, et non un `count` par ligne. Les taux sans usage en sont absents.

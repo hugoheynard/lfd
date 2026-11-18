@@ -158,6 +158,7 @@ describe("IngredientAggregate", () => {
         origin: "Savoie",
         allergens: ["SH", "AC", "SH"],
         declaresNoAllergen: false,
+        archivedAt: null,
       });
 
       expect(ingredient.snapshot().allergens).toEqual(["AC", "SH"]);
@@ -204,10 +205,50 @@ describe("IngredientAggregate", () => {
           ...base,
           allergens: ["SH"],
           declaresNoAllergen: true,
+          archivedAt: null,
         });
 
         expect(ingredient.snapshot().declaresNoAllergen).toBe(false);
       });
     });
+  });
+});
+
+/** L'instant n'est comparé qu'à lui-même : aucune horloge n'est en jeu. */
+const AT = new Date("2026-11-18T09:00:00.000Z");
+
+describe("l'archive de la provenance", () => {
+  it("un ingrédient s'archive toujours, une seule fois, et se restaure", () => {
+    const ingredient = IngredientAggregate.declare({
+      id: "id_1",
+      key: "beurre-de-savoie",
+      name: { fr: "Beurre de Savoie" },
+      description: null,
+      origin: "Savoie",
+      appellationId: null,
+    });
+
+    expect(ingredient.archive(AT)).toBe(true);
+    expect(ingredient.archive(AT)).toBe(false);
+    expect(ingredient.snapshot().archivedAt).toBe(AT);
+    expect(ingredient.restore()).toBe(true);
+    expect(ingredient.restore()).toBe(false);
+    expect(ingredient.isArchived).toBe(false);
+  });
+
+  it("une appellation s'archive toujours, une seule fois, et se restaure", () => {
+    const appellation = AppellationAggregate.open({
+      id: "id_1",
+      code: "aop-beaufort",
+      label: { fr: "Beaufort" },
+      scheme: "AOP",
+      active: true,
+    });
+
+    expect(appellation.archive(AT)).toBe(true);
+    expect(appellation.archive(AT)).toBe(false);
+    expect(appellation.isArchived).toBe(true);
+    expect(appellation.restore()).toBe(true);
+    expect(appellation.snapshot().archivedAt).toBeNull();
   });
 });

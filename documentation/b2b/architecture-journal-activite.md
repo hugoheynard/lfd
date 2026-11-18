@@ -105,7 +105,9 @@ fige.
 | `vat_rate.created`             | — (un taux qui naît ne vise personne)  |
 | `vat_rate.rate_changed`        | `familiesEmporter`, `familiesSurPlace` |
 | `vat_rate.renamed`             | — (un nom qui change ne change rien)   |
-| `vat_rate.deleted`             | —                                      |
+| `vat_rate.deleted`             | — (plus émis : un taux s'archive)      |
+| `vat_rate.archived`            | — (refusé tant qu'un taux sert)        |
+| `vat_rate.restored`            | —                                      |
 | `product_category.vat_changed` | —                                      |
 | `product.published`            | `variants`                             |
 | `product.unpublished`          | `variants`                             |

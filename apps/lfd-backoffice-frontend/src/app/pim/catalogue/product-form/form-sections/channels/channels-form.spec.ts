@@ -31,6 +31,7 @@ describe('ChannelsForm', () => {
         description: '',
         percent: 5.5,
         usage: { takeaway: 0, eatIn: 0 },
+        archived: false,
       },
     ]);
     store.categories.set([

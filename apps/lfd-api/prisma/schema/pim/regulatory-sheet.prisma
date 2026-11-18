@@ -89,6 +89,10 @@ model Appellation {
   /// l'effacer.
   active Boolean @default(true)
 
+  /// Archivé : ne se propose plus (L4 du plan du référentiel). `NULL` = en
+  /// service. On ne supprime plus : l'archive se restaure.
+  archivedAt DateTime? @map("archived_at") @db.Timestamptz(6)
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
@@ -130,6 +134,10 @@ model Ingredient {
   /// « Aucun allergène », DÉCLARÉ (2026-10-26). `false` sans code = personne
   /// n'a rien dit. Jamais `true` avec des codes : l'agrégat le refuse.
   declaresNoAllergen Boolean @default(false) @map("declares_no_allergen")
+
+  /// Archivé : ne se propose plus (L4 du plan du référentiel). `NULL` = en
+  /// service. On ne supprime plus : l'archive se restaure.
+  archivedAt DateTime? @map("archived_at") @db.Timestamptz(6)
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")

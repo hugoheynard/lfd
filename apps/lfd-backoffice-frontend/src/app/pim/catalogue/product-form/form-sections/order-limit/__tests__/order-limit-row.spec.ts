@@ -16,6 +16,7 @@ function rule(
     daysBefore: 1,
     time: '18:00',
     graceMinutes: null,
+    archived: false,
     ...over,
   };
 }

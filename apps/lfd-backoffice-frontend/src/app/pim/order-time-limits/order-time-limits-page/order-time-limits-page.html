@@ -64,7 +64,7 @@
                       size="sm"
                       (click)="askRemove(rule)"
                     >
-                      Retirer
+                      Archiver
                     </button>
                   }
                 </div>
@@ -74,9 +74,18 @@
         }
       </fold-card>
 
+      <app-archived-list
+        title="Limites archivées"
+        restoreMessage="Restaurer cette limite ? Elle s'appliquera de nouveau à la prise de commande."
+        [entries]="archived()"
+        [busy]="busy()"
+        (restore)="restore($event)"
+      />
+
       <fold-callout appearance="inset" variant="neutral">
         La limite d'un produit se <strong>pose</strong> depuis sa fiche&nbsp;; elle vaut pour toutes
-        ses déclinaisons, sans rattrapage. Elle se lit, se modifie et se retire ici.
+        ses déclinaisons, sans rattrapage. Elle se lit, se modifie et s'archive ici — archivée, elle
+        ne s'applique plus.
       </fold-callout>
     }
   }

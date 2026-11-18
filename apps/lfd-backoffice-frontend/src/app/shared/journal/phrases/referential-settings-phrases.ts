@@ -208,12 +208,14 @@ function salesContextCreated(fact: PhraseFact): Said {
   );
 }
 
-function salesContextDeleted(fact: PhraseFact): Said {
-  return byActor(
-    fact,
-    [text('a supprimé '), ...theSubject(fact, SALES_CONTEXT, optional(fact.payload['label']))],
-    ['subjectLabel', ...sameLabel(fact)],
-  );
+/** « a archivé le contexte de vente « Traiteur » » — supprimer, archiver, restaurer. */
+function salesContextGesture(verb: string): Phrase {
+  return (fact) =>
+    byActor(
+      fact,
+      [text(`${verb} `), ...theSubject(fact, SALES_CONTEXT, optional(fact.payload['label']))],
+      ['subjectLabel', ...sameLabel(fact)],
+    );
 }
 
 // ─── Les heures limites de commande ───────────────────────────────────────
@@ -277,13 +279,17 @@ function timeLimitSet(fact: PhraseFact): Said {
   );
 }
 
-/** « a supprimé l'heure limite de commande (Famille « Tartes ») » — ce qu'elle valait, au détail. */
-function timeLimitRemoved(fact: PhraseFact): Said {
-  return byActor(
-    fact,
-    [text('a supprimé l’heure limite de commande ('), ...scopeOf(fact), text(')')],
-    ['subjectLabel', 'scope'],
-  );
+/**
+ * « a archivé l'heure limite de commande (Famille « Tartes ») » — supprimer,
+ * archiver, restaurer ; ce qu'elle valait, au détail.
+ */
+function timeLimitGesture(verb: string): Phrase {
+  return (fact) =>
+    byActor(
+      fact,
+      [text(`${verb} l’heure limite de commande (`), ...scopeOf(fact), text(')')],
+      ['subjectLabel', 'scope'],
+    );
 }
 
 export const REFERENTIAL_SETTINGS_PHRASES = {
@@ -300,8 +306,12 @@ export const REFERENTIAL_SETTINGS_PHRASES = {
 
   'sales_context.created': salesContextCreated,
   'sales_context.updated': onSubjectChanges(SALES_CONTEXT),
-  'sales_context.deleted': salesContextDeleted,
+  'sales_context.deleted': salesContextGesture('a supprimé'),
+  'sales_context.archived': salesContextGesture('a archivé'),
+  'sales_context.restored': salesContextGesture('a restauré'),
 
   'order_time_limit.set': timeLimitSet,
-  'order_time_limit.removed': timeLimitRemoved,
+  'order_time_limit.removed': timeLimitGesture('a supprimé'),
+  'order_time_limit.archived': timeLimitGesture('a archivé'),
+  'order_time_limit.restored': timeLimitGesture('a restauré'),
 } as const satisfies Partial<Record<JournalFactType, Phrase>>;

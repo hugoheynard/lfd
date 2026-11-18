@@ -101,5 +101,14 @@
         définition.
       </fold-callout>
     }
+
+    <app-archived-list
+      title="Contextes archivés"
+      restoreMessage="Restaurer ce contexte ? Il revient au registre, dans l'état de service qu'il avait."
+      [entries]="archived()"
+      [canRestore]="canWrite()"
+      [busy]="busy()"
+      (restore)="restore($event)"
+    />
   }
 </fold-page-layout>

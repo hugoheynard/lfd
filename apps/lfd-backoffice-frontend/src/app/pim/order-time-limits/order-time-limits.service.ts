@@ -42,8 +42,14 @@ export class OrderTimeLimitsService {
     return firstValueFrom(this.http.put<SetOrderTimeLimitResponse>(this.url(), payload));
   }
 
-  async remove(id: string): Promise<void> {
+  /** La route garde son `DELETE` : une limite ne se supprime plus, elle s'archive et cesse de s'appliquer. */
+  async archive(id: string): Promise<void> {
     await firstValueFrom(this.http.delete<void>(`${this.url()}/${id}`));
+  }
+
+  /** La remet en vigueur, avec les valeurs qu'elle portait. */
+  async restore(id: string): Promise<void> {
+    await firstValueFrom(this.http.post<void>(`${this.url()}/${id}/restore`, {}));
   }
 
   private url(): string {

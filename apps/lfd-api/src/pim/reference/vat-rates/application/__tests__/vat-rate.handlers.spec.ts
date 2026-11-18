@@ -4,11 +4,19 @@ import { RecordingJournal } from "../../../../journal/__tests__/recording-journa
 import { SalesContextRegistry } from "../../../sales-contexts/domain/ports/sales-context.registry.js";
 import type { SalesContext } from "../../../sales-contexts/domain/value-objects/sales-context.js";
 import { VatRate, type VatRateSnapshot } from "../../domain/entities/vat-rate.js";
-import { VatRateNotFoundError, VatRateConflictError } from "../../domain/errors/vat-rate-errors.js";
+import {
+  VatRateConflictError,
+  VatRateInUseError,
+  VatRateNotFoundError,
+} from "../../domain/errors/vat-rate-errors.js";
+import { VatRateUsageReader } from "../../domain/ports/vat-rate-usage.reader.js";
+import { RecordingVatRateLock } from "../../domain/ports/__tests__/recording-vat-rate-lock.js";
+import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import { VatRateRepository, type VatRateUsage } from "../../domain/ports/vat-rate.repository.js";
 import { CreateVatRateCommand, CreateVatRateHandler } from "../create-vat-rate.js";
 import { ListVatRatesHandler } from "../list-vat-rates.js";
-import { RemoveVatRateCommand, RemoveVatRateHandler } from "../remove-vat-rate.js";
+import { ArchiveVatRateCommand, ArchiveVatRateHandler } from "../archive-vat-rate.js";
+import { RestoreVatRateCommand, RestoreVatRateHandler } from "../restore-vat-rate.js";
 import { UpdateVatRateCommand, UpdateVatRateHandler } from "../update-vat-rate.js";
 import { RecordingCatalogReemission } from "../../../../shared/__tests__/catalog-emitter-doubles.js";
 import { DirectPimContents } from "../../../../changes/application/__tests__/direct-pim-contents.js";
@@ -16,6 +24,8 @@ import { DirectPimContents } from "../../../../changes/application/__tests__/dir
 /** Garde des agrégats et reconstitue à chaque lecture — comme la vraie base. */
 class InMemoryRepo extends VatRateRepository {
   readonly stored = new Map<string, VatRateSnapshot>();
+  /** Lectures et écritures dans l'ordre — partagé avec le verrou doublé. */
+  readonly log: string[] = [];
 
   listAll(): Promise<VatRate[]> {
     return Promise.resolve(
@@ -23,6 +33,7 @@ class InMemoryRepo extends VatRateRepository {
     );
   }
   findById(id: string): Promise<VatRate | null> {
+    this.log.push(`find:${id}`);
     const snapshot = this.stored.get(id);
     return Promise.resolve(snapshot === undefined ? null : VatRate.reconstitute(snapshot));
   }
@@ -38,8 +49,14 @@ class InMemoryRepo extends VatRateRepository {
     this.stored.set(snapshot.id, snapshot);
     return Promise.resolve();
   }
-  remove(id: string): Promise<void> {
-    this.stored.delete(id);
+  /** Comme la base : seul `archived_at` change, le reste de la ligne stockée reste. */
+  saveArchival(rate: VatRate): Promise<void> {
+    const { id, archivedAt } = rate.snapshot();
+    const stored = this.stored.get(id);
+    if (stored !== undefined) {
+      this.stored.set(id, { ...stored, archivedAt });
+    }
+    this.log.push(`saveArchival:${id}`);
     return Promise.resolve();
   }
   /** Usages posés à la main par le test — la vraie base les compte. */
@@ -109,6 +126,7 @@ describe("CreateVatRateHandler", () => {
       name: "Réduit",
       description: "",
       percent: 5.5,
+      archivedAt: null,
     });
   });
 
@@ -163,6 +181,7 @@ describe("UpdateVatRateHandler", () => {
       name: "Intermédiaire",
       description: "",
       percent: 10,
+      archivedAt: null,
     });
   });
 
@@ -213,8 +232,18 @@ describe("UpdateVatRateHandler", () => {
   });
 });
 
-describe("RemoveVatRateHandler", () => {
-  it("supprime un taux existant", async () => {
+/** Le compte de ce qui porte chaque taux, posé à la main par le test. */
+class CountedHolders extends VatRateUsageReader {
+  readonly holders = new Map<string, number>();
+  holdersOf(rateId: string): Promise<number> {
+    return Promise.resolve(this.holders.get(rateId) ?? 0);
+  }
+}
+
+describe("ArchiveVatRateHandler / RestoreVatRateHandler", () => {
+  const NOW = new Date();
+
+  async function seeded(): Promise<{ repo: InMemoryRepo; id: string }> {
     const repo = new InMemoryRepo();
     const id = await new CreateVatRateHandler(
       repo,
@@ -222,15 +251,94 @@ describe("RemoveVatRateHandler", () => {
       new RecordingJournal(),
       new DirectUnitOfWork(),
     ).execute(new CreateVatRateCommand({ name: "Réduit", percent: 5.5 }));
+    return { repo, id };
+  }
 
-    await new RemoveVatRateHandler(
+  function archiver(repo: InMemoryRepo, usage: CountedHolders, journal: RecordingJournal) {
+    return new ArchiveVatRateHandler(
       repo,
-      new RecordingJournal(),
+      new RecordingVatRateLock(repo.log),
+      usage,
+      journal,
+      new FixedClock(NOW),
       new DirectUnitOfWork(),
       new RecordingCatalogReemission(),
-    ).execute(new RemoveVatRateCommand(id));
+    );
+  }
 
-    expect(repo.at(id)).toBeUndefined();
+  it("archive un taux que rien ne porte : la ligne reste, datée, et le fait est écrit", async () => {
+    const { repo, id } = await seeded();
+    const journal = new RecordingJournal();
+
+    await archiver(repo, new CountedHolders(), journal).execute(new ArchiveVatRateCommand(id));
+
+    expect(repo.at(id)?.archivedAt).toBe(NOW);
+    expect(journal.types()).toEqual(["vat_rate.archived"]);
+  });
+
+  it("refuse d’archiver un taux qu’une fiche porte, sans rien écrire", async () => {
+    const { repo, id } = await seeded();
+    const usage = new CountedHolders();
+    usage.holders.set(id, 1);
+    const journal = new RecordingJournal();
+
+    await expect(
+      archiver(repo, usage, journal).execute(new ArchiveVatRateCommand(id)),
+    ).rejects.toBeInstanceOf(VatRateInUseError);
+    expect(repo.at(id)?.archivedAt).toBeNull();
+    expect(journal.types()).toEqual([]);
+  });
+
+  it("rejouée sur un taux archivé, l’archive n’écrit ni ne trace rien", async () => {
+    const { repo, id } = await seeded();
+    await archiver(repo, new CountedHolders(), new RecordingJournal()).execute(
+      new ArchiveVatRateCommand(id),
+    );
+    const journal = new RecordingJournal();
+
+    await archiver(repo, new CountedHolders(), journal).execute(new ArchiveVatRateCommand(id));
+
+    expect(journal.types()).toEqual([]);
+  });
+
+  it("restaure un taux archivé, et la restauration rejouée se tait", async () => {
+    const { repo, id } = await seeded();
+    await archiver(repo, new CountedHolders(), new RecordingJournal()).execute(
+      new ArchiveVatRateCommand(id),
+    );
+    const journal = new RecordingJournal();
+    const restore = new RestoreVatRateHandler(
+      repo,
+      new RecordingVatRateLock(repo.log),
+      journal,
+      new DirectUnitOfWork(),
+      new RecordingCatalogReemission(),
+    );
+
+    await restore.execute(new RestoreVatRateCommand(id));
+    await restore.execute(new RestoreVatRateCommand(id));
+
+    expect(repo.at(id)?.archivedAt).toBeNull();
+    expect(journal.types()).toEqual(["vat_rate.restored"]);
+  });
+
+  it("verrouille le taux AVANT de le charger, et n’écrit que la date d’archive", async () => {
+    const { repo, id } = await seeded();
+    repo.log.length = 0;
+
+    await archiver(repo, new CountedHolders(), new RecordingJournal()).execute(
+      new ArchiveVatRateCommand(id),
+    );
+
+    expect(repo.log).toEqual([`lock:archival:${id}`, `find:${id}`, `saveArchival:${id}`]);
+  });
+
+  it("refuse d’archiver un taux inconnu", async () => {
+    await expect(
+      archiver(new InMemoryRepo(), new CountedHolders(), new RecordingJournal()).execute(
+        new ArchiveVatRateCommand("tva_absent"),
+      ),
+    ).rejects.toBeInstanceOf(VatRateNotFoundError);
   });
 });
 

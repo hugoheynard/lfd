@@ -30,16 +30,13 @@ export interface VatRatePanelData {
 /**
  * Panneau **taux de TVA** : création ou modification, ouvert impérativement via
  * `FoldPanelHostService.open()`. Sans `data` il crée ; avec `{ rate }` il
- * modifie, et la **zone dangereuse** de suppression vit au bas du même panneau.
+ * modifie, et la **zone dangereuse** d'archive vit au bas du même panneau :
+ * c'est en regardant l'objet qu'on décide de l'archiver.
  *
- * Elle avait un mode `delete` à elle, ouvert depuis un menu déroulant du
- * tableau. Deux ouvertures pour un même objet obligeaient à choisir son
- * intention AVANT de voir l'objet — or c'est en le regardant qu'on décide de le
- * supprimer. Le menu a disparu, le mode aussi.
- *
- * La zone dangereuse dit ce qui va vraiment se passer : la base pose un
- * `Restrict`, donc un taux encore visé par une famille n'est pas supprimé, la
- * requête échoue. On le dit avant, et on bloque.
+ * Un taux ne se supprime plus : il s'archive, et se restaure depuis la liste.
+ * La zone dangereuse dit ce qui va vraiment se passer : un taux encore visé
+ * par une famille ou une fiche ne s'archive pas, le référentiel refuse. On le
+ * dit avant, et on bloque.
  */
 @Component({
   selector: 'app-vat-rate-form-panel',
@@ -65,10 +62,8 @@ export class VatRateFormPanel {
   protected readonly draftName = signal('');
   protected readonly draftDescription = signal('');
   protected readonly draftPercent = signal<number | null>(null);
-  /** Saisie de confirmation de suppression (doit égaler le nom du taux). */
-  protected readonly confirmName = signal('');
   protected readonly busy = signal(false);
-  /** La zone dangereuse reste repliée : on ne supprime pas par inadvertance. */
+  /** La zone dangereuse reste repliée : on n'archive pas par inadvertance. */
   protected readonly dangerOpen = signal(false);
 
   protected readonly rate = computed(() => this.data()?.rate);
@@ -85,24 +80,13 @@ export class VatRateFormPanel {
     return target === undefined ? '—' : formatPercent(target.percent);
   });
 
-  /** Familles ET fiches dérogeantes qui visent ce taux — 0 = suppression sans conséquence. */
+  /** Familles ET fiches dérogeantes qui visent ce taux — 0 = archivable. */
   protected readonly usageTotal = computed(() => {
     const target = this.rate();
     return target === undefined
       ? 0
       : Object.values(target.usage).reduce((total, count) => total + count, 0);
   });
-
-  /** Pour supprimer, le nom retapé doit correspondre exactement. */
-  protected readonly confirmMatches = computed(() => {
-    const target = this.rate();
-    return target !== undefined && this.confirmName().trim() === target.name;
-  });
-
-  /** Supprimable : aucune famille ne le vise, et le nom est confirmé. */
-  protected readonly canDelete = computed(
-    () => this.usageTotal() === 0 && this.confirmMatches() && !this.busy(),
-  );
 
   constructor() {
     // Préremplit les champs quand un taux est fourni (modification).
@@ -124,12 +108,12 @@ export class VatRateFormPanel {
     await this.run(() => this.persist());
   }
 
-  protected async remove(): Promise<void> {
+  protected async archive(): Promise<void> {
     const target = this.rate();
     if (target === undefined) {
       return;
     }
-    await this.run(() => this.store.remove(target.id));
+    await this.run(() => this.store.archive(target.id));
   }
 
   protected toggleDanger(): void {

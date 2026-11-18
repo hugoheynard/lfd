@@ -3,15 +3,12 @@ import { Injectable } from "@nestjs/common";
 import { PimPrismaService } from "../../../infra/database/pim-prisma.service.js";
 import { localizedColumn, readLocalizedColumn } from "../../../shared/json-readers.js";
 import { AppellationAggregate } from "../domain/entities/appellation.entity.js";
-import {
-  AppellationCodeTakenError,
-  AppellationInUseError,
-} from "../domain/errors/ingredient-errors.js";
+import { AppellationCodeTakenError } from "../domain/errors/ingredient-errors.js";
 import {
   AppellationRepository,
   type AppellationRecord,
 } from "../domain/ports/appellation.repository.js";
-import { isForeignKeyViolation, isUniqueViolation } from "./prisma-violations.js";
+import { isUniqueViolation } from "./prisma-violations.js";
 
 interface AppellationRow {
   readonly id: string;
@@ -19,6 +16,7 @@ interface AppellationRow {
   readonly label: unknown;
   readonly scheme: string;
   readonly active: boolean;
+  readonly archivedAt: Date | null;
 }
 
 function toAggregate(row: AppellationRow): AppellationAggregate {
@@ -28,6 +26,7 @@ function toAggregate(row: AppellationRow): AppellationAggregate {
     label: readLocalizedColumn(row.label, "appellation.label"),
     scheme: row.scheme,
     active: row.active,
+    archivedAt: row.archivedAt,
   });
 }
 
@@ -60,14 +59,6 @@ export class PrismaAppellationRepository extends AppellationRepository {
     return row === null ? null : toAggregate(row);
   }
 
-  async idOfCode(code: string): Promise<string | null> {
-    const row = await this.prisma.appellation.findUnique({
-      where: { code },
-      select: { id: true },
-    });
-    return row?.id ?? null;
-  }
-
   async add(appellation: AppellationAggregate): Promise<void> {
     const { label, ...rest } = appellation.snapshot();
     await this.guardCode(rest.code, () =>
@@ -76,8 +67,11 @@ export class PrismaAppellationRepository extends AppellationRepository {
   }
 
   async save(appellation: AppellationAggregate): Promise<void> {
-    const { id, code, label, ...columns } = appellation.snapshot();
+    // `archived_at` n'est écrit que par `saveArchival` : une édition chargée
+    // avant une archive ne doit pas la défaire.
+    const { id, code, label, archivedAt, ...columns } = appellation.snapshot();
     void id;
+    void archivedAt;
     await this.guardCode(code, () =>
       this.prisma.appellation.update({
         where: { code },
@@ -86,23 +80,9 @@ export class PrismaAppellationRepository extends AppellationRepository {
     );
   }
 
-  /**
-   * Le **dernier mot** sur « une appellation citée ne disparaît pas ».
-   *
-   * La clé étrangère tranche, et non un compte préalable : entre le compte et
-   * la suppression, un ingrédient peut se mettre à la citer. Et on ne recompte
-   * PAS après l'échec — la transaction du handler est déjà avortée à ce
-   * moment-là, toute requête suivante échouerait à son tour.
-   */
-  async remove(code: string): Promise<void> {
-    try {
-      await this.prisma.appellation.delete({ where: { code } });
-    } catch (error) {
-      if (isForeignKeyViolation(error)) {
-        throw new AppellationInUseError(code);
-      }
-      throw error;
-    }
+  async saveArchival(appellation: AppellationAggregate): Promise<void> {
+    const { code, archivedAt } = appellation.snapshot();
+    await this.prisma.appellation.update({ where: { code }, data: { archivedAt } });
   }
 
   /**

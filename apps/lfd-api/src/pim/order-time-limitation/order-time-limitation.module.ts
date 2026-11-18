@@ -3,7 +3,8 @@ import { Module } from "@nestjs/common";
 import { PimDatabaseModule } from "../infra/database/pim-database.module.js";
 import { GetGeneralOrderCutoffHandler } from "./application/get-general-order-cutoff.js";
 import { ListOrderTimeLimitsHandler } from "./application/list-order-time-limits.js";
-import { RemoveOrderTimeLimitHandler } from "./application/remove-order-time-limit.js";
+import { ArchiveOrderTimeLimitHandler } from "./application/archive-order-time-limit.js";
+import { RestoreOrderTimeLimitHandler } from "./application/restore-order-time-limit.js";
 import { SetOrderTimeLimitHandler } from "./application/set-order-time-limit.js";
 import { LimitScopeNamer } from "./domain/ports/limit-scope.namer.js";
 import { OrderTimeLimitRepository } from "./domain/ports/order-time-limit.repository.js";
@@ -35,7 +36,8 @@ import { PrismaOrderTimeLimitRepository } from "./infrastructure/prisma-order-ti
     { provide: OrderTimeLimitRepository, useClass: PrismaOrderTimeLimitRepository },
     { provide: LimitScopeNamer, useClass: PrismaLimitScopeNamer },
     SetOrderTimeLimitHandler,
-    RemoveOrderTimeLimitHandler,
+    ArchiveOrderTimeLimitHandler,
+    RestoreOrderTimeLimitHandler,
     ListOrderTimeLimitsHandler,
     // `GeneralOrderCutoffReader` est fourni par `appBootstrap/` (global) : le
     // commerce l'implémente, et ce module ne peut pas l'importer.

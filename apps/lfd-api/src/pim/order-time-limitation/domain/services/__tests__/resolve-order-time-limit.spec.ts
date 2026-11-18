@@ -23,6 +23,7 @@ function rule(
     daysBefore: null,
     time: null,
     graceMinutes: null,
+    archived: false,
     ...values,
   };
 }

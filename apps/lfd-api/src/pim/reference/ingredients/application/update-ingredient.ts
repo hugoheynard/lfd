@@ -33,7 +33,11 @@ export class UpdateIngredientHandler implements ICommandHandler<UpdateIngredient
     if (ingredient === null) {
       throw new IngredientNotFoundError(key);
     }
-    const appellationId = await resolveAppellation(this.appellations, payload.appellationCode);
+    const appellationId = await resolveAppellation(
+      this.appellations,
+      payload.appellationCode,
+      ingredient.snapshot().appellationId,
+    );
     const before = traced(ingredient.snapshot());
     ingredient.revise({
       name: payload.name,

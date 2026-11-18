@@ -36,8 +36,13 @@ export class VatRateHttpApi {
     await firstValueFrom(this.http.put(this.url(id), this.body(input)));
   }
 
-  async remove(id: string): Promise<void> {
+  /** La route garde son `DELETE` : un taux ne se supprime plus, il s'archive. */
+  async archive(id: string): Promise<void> {
     await firstValueFrom(this.http.delete(this.url(id)));
+  }
+
+  async restore(id: string): Promise<void> {
+    await firstValueFrom(this.http.post(this.url(`${id}/restore`), {}));
   }
 
   private body(input: VatRateInput): Record<string, unknown> {

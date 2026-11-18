@@ -2,13 +2,15 @@
  * E2E des **taux de TVA** — sur un vrai Postgres.
  *
  * Ce que seul ce niveau prouve : l'unicité du taux tenue par un `@unique` en
- * base (les specs la font tenir par un tableau en mémoire), les DEUX `RESTRICT`
- * qui refusent de supprimer un taux encore visé — par une famille sur l'un de
- * ses trois contextes, ou par la seule dérogation d'une fiche — et le compte
- * d'usages lu par un `_count` Prisma qu'aucun double ne joue.
+ * base (les specs la font tenir par un tableau en mémoire), le compte de ce
+ * qui porte un taux — une famille sur l'un de ses contextes, ou la seule
+ * dérogation d'une fiche — qui refuse de l'archiver, et le compte d'usages lu
+ * par un `_count` Prisma qu'aucun double ne joue. Un taux ne se supprime plus :
+ * le `DELETE` archive (L4, 2026-11-18).
  */
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { gate, started, untilBlocked } from "./day-lock-race.js";
 import { freshIntent, INTENT_KEY } from "./intent-key.js";
 
 /** Staff doublé : accepte n'importe quel jeton porteur comme staff synthétique. */
@@ -45,6 +47,7 @@ interface RateRow {
   readonly name: string;
   readonly percent: number;
   readonly usage: { readonly takeaway: number; readonly eatIn: number; readonly b2b: number };
+  readonly archived: boolean;
 }
 
 async function createRate(name: string, percent: number): Promise<string> {
@@ -130,13 +133,9 @@ describe("deux taux ne portent pas le même taux", () => {
   });
 });
 
-describe("un taux visé ne se supprime pas", () => {
-  /**
-   * Le mur est un `RESTRICT` en base sur TROIS colonnes. Le canal B2B en est
-   * une, ajoutée après les deux autres : un taux que seule la plateforme vise
-   * doit être aussi protégé que les autres.
-   */
-  it("refuse la suppression d'un taux visé par le canal B2B", async () => {
+describe("un taux visé ne s'archive pas", () => {
+  /** Un taux que seule la plateforme vise doit être aussi protégé que les autres. */
+  it("refuse l'archive d'un taux visé par le canal B2B", async () => {
     const rate = await createRate("Réduit", 5.5);
     await categorySellingB2b("Viennoiseries", rate);
 
@@ -147,11 +146,10 @@ describe("un taux visé ne se supprime pas", () => {
   });
 
   /**
-   * Le SECOND mur — `product_context_tva`. Il existait en base et le compte
-   * d'usages le portait déjà, mais rien ne vérifiait qu'il tienne : c'est
-   * précisément le cas où une seule fiche, et aucune famille, retient le taux.
+   * Le SECOND compte — `product_context_tva` : une seule fiche, et aucune
+   * famille, retient le taux.
    */
-  it("refuse la suppression d'un taux visé par la seule DÉROGATION d'une fiche", async () => {
+  it("refuse l'archive d'un taux visé par la seule DÉROGATION d'une fiche", async () => {
     const inherited = await createRate("Réduit", 5.5);
     const derogated = await createRate("Normal", 20);
     const category = await categorySellingB2b("Viennoiseries", inherited);
@@ -163,12 +161,142 @@ describe("un taux visé ne se supprime pas", () => {
     expect(jsonBody<{ code: string }>(response).code).toBe("commerce.tva_rate_in_use");
   });
 
-  it("accepte la suppression d'un taux que personne ne vise", async () => {
+  it("refusée, l'archive laisse le taux en service", async () => {
+    const rate = await createRate("Réduit", 5.5);
+    await categorySellingB2b("Viennoiseries", rate);
+
+    await staff().delete(`${RATES}/${rate}`).expect(409);
+
+    expect((await readRate(rate)).archived).toBe(false);
+  });
+});
+
+describe("un taux que personne ne vise s'archive et se restaure", () => {
+  it("archive sans supprimer : la ligne reste, marquée archivée", async () => {
     const rate = await createRate("Réduit", 5.5);
 
+    const response = await staff().delete(`${RATES}/${rate}`).expect(200);
+
+    expect(jsonBody<{ id: string }>(response)).toEqual({ id: rate });
+    expect((await readRate(rate)).archived).toBe(true);
+    expect(await ctx.prisma.vatRate.count({ where: { id: rate } })).toBe(1);
+  });
+
+  /** Aucune fiche n'est facturée à un taux archivé : il ne se propose plus. */
+  it("un taux archivé ne se pose plus sur une famille", async () => {
+    const rate = await createRate("Réduit", 5.5);
+    await staff().delete(`${RATES}/${rate}`).expect(200);
+    const category = jsonBody<{ id: string }>(
+      await staff()
+        .post(CATEGORIES)
+        .send({ name: { fr: "Viennoiseries" } }),
+    ).id;
+
+    const response = await staff()
+      .put(`${CATEGORIES}/${category}/vat`)
+      .send({ vatByContext: { b2b: rate } });
+
+    expect(response.status).toBe(409);
+    expect(jsonBody<{ code: string }>(response).code).toBe("commerce.tva_rate_archived");
+  });
+
+  it("rejouée, l'archive répond pareil ; restauré, le taux se pose de nouveau", async () => {
+    const rate = await createRate("Réduit", 5.5);
+    await staff().delete(`${RATES}/${rate}`).expect(200);
     await staff().delete(`${RATES}/${rate}`).expect(200);
 
-    expect(jsonBody<RateRow[]>(await staff().get(RATES))).toEqual([]);
+    await staff().post(`${RATES}/${rate}/restore`).expect(201);
+
+    expect((await readRate(rate)).archived).toBe(false);
+    await categorySellingB2b("Viennoiseries", rate);
+  });
+
+  it("recréer le même taux qu'un taux archivé est refusé, en disant de le restaurer", async () => {
+    const rate = await createRate("Réduit", 5.5);
+    await staff().delete(`${RATES}/${rate}`).expect(200);
+
+    const response = await staff().post(RATES).send({ name: "Réduit bis", percent: 5.5 });
+
+    expect(response.status).toBe(409);
+    expect(jsonBody<{ message: string }>(response).message).toMatch(/restaurez-le/u);
+  });
+});
+
+/**
+ * La course archive ↔ pose. La clé étrangère ne la ferme pas : l'insertion qui
+ * vise le taux prend un verrou de clé partagé, compatible avec la mise à jour
+ * de `archived_at`. Une transaction tient ici la ligne du taux comme le fait
+ * l'archive (`FOR UPDATE`, puis la date), le temps que la pose se mette en
+ * file derrière ; validée, la pose relit le taux archivé et refuse.
+ */
+describe("une pose concurrente d'une archive attend, puis refuse", () => {
+  it("la pose d'un taux attend l'archive en cours, relit le taux archivé et refuse", async () => {
+    const rate = await createRate("Réduit", 5.5);
+    const category = jsonBody<{ id: string }>(
+      await staff()
+        .post(CATEGORIES)
+        .send({ name: { fr: "Viennoiseries" } }),
+    ).id;
+    const release = gate();
+    const held = gate();
+    const archive = ctx.prisma.$transaction(
+      async (tx) => {
+        await tx.$queryRaw`SELECT id FROM pim.tva_rate WHERE id = ${rate} FOR UPDATE`;
+        await tx.$executeRaw`UPDATE pim.tva_rate SET archived_at = now() WHERE id = ${rate}`;
+        held.open();
+        await release.opened;
+      },
+      { timeout: 20_000 },
+    );
+    await held.opened;
+
+    const pose = started(
+      staff()
+        .put(`${CATEGORIES}/${category}/vat`)
+        .send({ vatByContext: { b2b: rate } }),
+    );
+    await untilBlocked(ctx, 1, pose);
+    release.open();
+    await archive;
+    const response = await pose;
+
+    expect(response.status).toBe(409);
+    expect(jsonBody<{ code: string }>(response).code).toBe("commerce.tva_rate_archived");
+    expect(await ctx.prisma.categoryContextVat.count({ where: { vatRateId: rate } })).toBe(0);
+  });
+});
+
+describe("une édition ne défait pas une archive", () => {
+  /**
+   * Régression : l'édition d'un taux réécrivait toute la ligne, `archived_at`
+   * compris. Chargée avant une archive et écrite après, elle la défaisait
+   * (corrigé le 2026-11-18).
+   */
+  it("un renommage qui attend derrière une archive la laisse archivée", async () => {
+    const rate = await createRate("Réduit", 5.5);
+    const release = gate();
+    const held = gate();
+    const archive = ctx.prisma.$transaction(
+      async (tx) => {
+        await tx.$queryRaw`SELECT id FROM pim.tva_rate WHERE id = ${rate} FOR UPDATE`;
+        await tx.$executeRaw`UPDATE pim.tva_rate SET archived_at = now() WHERE id = ${rate}`;
+        held.open();
+        await release.opened;
+      },
+      { timeout: 20_000 },
+    );
+    await held.opened;
+
+    const rename = started(
+      staff().put(`${RATES}/${rate}`).send({ name: "Réduit bis", percent: 5.5 }),
+    );
+    await untilBlocked(ctx, 1, rename);
+    release.open();
+    await archive;
+    await rename;
+
+    const row = await ctx.prisma.vatRate.findUniqueOrThrow({ where: { id: rate } });
+    expect(row.archivedAt).not.toBeNull();
   });
 });
 

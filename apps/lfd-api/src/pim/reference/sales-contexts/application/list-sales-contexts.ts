@@ -10,8 +10,8 @@ import { SalesContextRepository } from "../domain/ports/sales-context.repository
 export class ListSalesContextsQuery {}
 
 /**
- * Le registre **complet**, hors-service compris, avec ce qui retient chaque
- * contexte. Une donnée qu'on ne peut pas voir n'est pas pilotable.
+ * Le registre **complet**, hors-service et archivés compris, avec ce qui
+ * retient chaque contexte. Une donnée qu'on ne peut pas voir n'est pas pilotable.
  */
 @QueryHandler(ListSalesContextsQuery)
 export class ListSalesContextsHandler implements IQueryHandler<
@@ -34,9 +34,10 @@ export class ListSalesContextsHandler implements IQueryHandler<
   }
 
   private async fromBase(): Promise<SalesContextAdminView[]> {
-    const [contexts, usage] = await Promise.all([
+    const [contexts, usage, archived] = await Promise.all([
       this.contexts.all(),
       this.repository.usageByKey(),
+      this.repository.archivedKeys(),
     ]);
     return contexts.map((context) => ({
       key: context.key,
@@ -47,6 +48,9 @@ export class ListSalesContextsHandler implements IQueryHandler<
       // Ce qui le RETIENT — l'écran doit le dire avant le geste, plutôt que de
       // laisser le refus l'apprendre après le clic.
       ratedBy: usage.get(context.key)?.ratedBy ?? 0,
+      // Montré à part, avec « Restaurer » : une ligne qu'on ne voit pas est
+      // une ligne qu'on ne peut plus rouvrir.
+      archived: archived.has(context.key),
     }));
   }
 }

@@ -7,6 +7,8 @@ import {
   type VatRateUsage,
 } from "../../../../reference/vat-rates/domain/ports/vat-rate.repository.js";
 import { UuidGenerator } from "../../../../../platform/id/uuid-generator.js";
+import { RecordingVatRateLock } from "../../../../reference/vat-rates/domain/ports/__tests__/recording-vat-rate-lock.js";
+import { RecordingSalesContextLock } from "../../../../reference/sales-contexts/domain/ports/__tests__/recording-sales-context-lock.js";
 import { Category, type CategorySnapshot } from "../../domain/entities/category.js";
 import {
   CategoryArchivedParentError,
@@ -176,6 +178,9 @@ class InMemoryRegimes extends VatRateRepository {
     return Promise.resolve();
   }
   save(): Promise<void> {
+    return Promise.resolve();
+  }
+  saveArchival(): Promise<void> {
     return Promise.resolve();
   }
   remove(id: string): Promise<void> {
@@ -411,6 +416,8 @@ describe("SetCategoryVatHandler", () => {
     await new SetCategoryVatHandler(
       categories,
       rates,
+      new RecordingVatRateLock(),
+      new RecordingSalesContextLock(),
       registry,
       new RecordingJournal(),
       new DirectUnitOfWork(),
@@ -429,6 +436,8 @@ describe("SetCategoryVatHandler", () => {
       new SetCategoryVatHandler(
         categories,
         new InMemoryRegimes(),
+        new RecordingVatRateLock(),
+        new RecordingSalesContextLock(),
         registry,
         new RecordingJournal(),
         new DirectUnitOfWork(),
@@ -451,6 +460,8 @@ describe("SetCategoryVatHandler", () => {
     await new SetCategoryVatHandler(
       categories,
       rates,
+      new RecordingVatRateLock(),
+      new RecordingSalesContextLock(),
       registry,
       new RecordingJournal(),
       new DirectUnitOfWork(),

@@ -41,6 +41,9 @@ export class KnownVatRates extends VatRateRepository {
   save(): Promise<void> {
     return Promise.resolve();
   }
+  saveArchival(): Promise<void> {
+    return Promise.resolve();
+  }
   remove(): Promise<void> {
     return Promise.resolve();
   }

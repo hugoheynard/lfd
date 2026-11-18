@@ -19,6 +19,10 @@ model VatRate {
   /// qu'un taux visé par une famille.
   productVat ProductContextVat[]
 
+  /// Archivé : ne se propose plus (L4 du plan du référentiel). `NULL` = en
+  /// service. On ne supprime plus : l'archive se restaure.
+  archivedAt DateTime? @map("archived_at") @db.Timestamptz(6)
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 

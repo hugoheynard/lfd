@@ -1,6 +1,9 @@
 import type { IngredientView } from "@lfd/pim-contracts";
 
-import { AppellationNotFoundError } from "../domain/errors/ingredient-errors.js";
+import {
+  AppellationArchivedError,
+  AppellationNotFoundError,
+} from "../domain/errors/ingredient-errors.js";
 import type { AppellationRepository } from "../domain/ports/appellation.repository.js";
 import type { IngredientRecord } from "../domain/ports/ingredient.repository.js";
 
@@ -27,12 +30,14 @@ export function toIngredientView(record: IngredientRecord): IngredientView {
             label: record.appellation.label,
             scheme: record.appellation.scheme,
             active: record.appellation.active,
+            archived: record.appellation.archivedAt !== null,
             // Le compte n'a pas de sens sur une appellation lue À TRAVERS un
             // ingrédient : ce serait le compte de l'appellation, pas celui de
             // ce rattachement, et l'écran s'en servirait à tort.
             usedBy: 0,
           },
     usedBy: record.usedBy,
+    archived: record.archivedAt !== null,
   };
 }
 
@@ -45,6 +50,11 @@ export function toIngredientView(record: IngredientRecord): IngredientView {
  *
  * `null` reçu vaut « retirer le signe » ; `undefined` vaut « ne touche pas ».
  * Les confondre rendrait impossible d'annuler une appellation posée par erreur.
+ *
+ * @param heldId l'appellation que l'ingrédient porte déjà : elle reste
+ *   permise même archivée.
+ * @throws {AppellationNotFoundError} le code ne désigne aucune appellation.
+ * @throws {AppellationArchivedError} l'appellation, nouvelle pour lui, est archivée.
  */
 /**
  * Une appellation citée au journal, avec son libellé français **du moment**
@@ -71,6 +81,7 @@ export async function namedAppellation(
 export async function resolveAppellation(
   appellations: AppellationRepository,
   code: string | null | undefined,
+  heldId: string | null = null,
 ): Promise<string | null | undefined> {
   if (code === undefined) {
     return undefined;
@@ -78,9 +89,15 @@ export async function resolveAppellation(
   if (code === null) {
     return null;
   }
-  const id = await appellations.idOfCode(code);
-  if (id === null) {
+  const found = await appellations.findByCode(code);
+  if (found === null) {
     throw new AppellationNotFoundError(code);
+  }
+  const { id } = found.snapshot();
+  // Archivée, elle ne se pose plus — mais l'ingrédient qui la porte déjà la
+  // garde, et un formulaire réenregistré à l'identique ne doit pas échouer.
+  if (found.isArchived && id !== heldId) {
+    throw new AppellationArchivedError(code);
   }
   return id;
 }

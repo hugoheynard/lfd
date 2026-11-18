@@ -46,6 +46,8 @@ export interface IngredientSnapshot extends IngredientRevision {
    * `[]` + `false` = non renseigné. Jamais `true` avec des codes.
    */
   readonly declaresNoAllergen: boolean;
+  /** `null` = pas archivé. */
+  readonly archivedAt: Date | null;
 }
 
 /**
@@ -61,9 +63,8 @@ export interface IngredientSnapshot extends IngredientRevision {
  * qu'un objet de chaînes vides.
  *
  * Ce qu'il ne peut pas voir, et qui reste au handler : qu'aucun AUTRE
- * ingrédient ne porte cette clé, que l'appellation citée existe, que les codes
- * d'allergènes qu'il porte sont au référentiel, et qu'aucune fiche ne le cite au
- * moment de l'effacer.
+ * ingrédient ne porte cette clé, que l'appellation citée existe et n'est pas
+ * archivée, et que les codes d'allergènes qu'il porte sont au référentiel.
  */
 export class IngredientAggregate {
   private constructor(
@@ -75,6 +76,7 @@ export class IngredientAggregate {
     private appellationValue: string | null,
     private allergenValues: readonly string[],
     private declaresNone: boolean,
+    private archivedAtValue: Date | null,
   ) {}
 
   static declare(input: NewIngredientInput): IngredientAggregate {
@@ -90,6 +92,7 @@ export class IngredientAggregate {
       // ici. Et cette liste vide n'affirme RIEN — cf. `declareAllergens`.
       [],
       false,
+      null,
     );
   }
 
@@ -103,6 +106,7 @@ export class IngredientAggregate {
       snapshot.appellationId,
       distinctCodes(snapshot.allergens),
       snapshot.declaresNoAllergen && snapshot.allergens.length === 0,
+      snapshot.archivedAt,
     );
   }
 
@@ -161,6 +165,34 @@ export class IngredientAggregate {
     this.declaresNone = none;
   }
 
+  get isArchived(): boolean {
+    return this.archivedAtValue !== null;
+  }
+
+  /**
+   * Archive l'ingrédient : il ne se propose plus à la saisie d'une composition.
+   * **Toujours permis** — une fiche qui le cite le garde (décision de Hugo du
+   * 2026-11-18 : on ne supprime plus un référentiel).
+   *
+   * @returns `false` s'il l'était déjà — le geste rejoué ne change rien.
+   */
+  archive(at: Date): boolean {
+    if (this.archivedAtValue !== null) {
+      return false;
+    }
+    this.archivedAtValue = at;
+    return true;
+  }
+
+  /** Le remet au référentiel. `false` s'il n'était pas archivé. */
+  restore(): boolean {
+    if (this.archivedAtValue === null) {
+      return false;
+    }
+    this.archivedAtValue = null;
+    return true;
+  }
+
   snapshot(): IngredientSnapshot {
     return {
       id: this.identity,
@@ -171,6 +203,7 @@ export class IngredientAggregate {
       appellationId: this.appellationValue,
       allergens: this.allergenValues,
       declaresNoAllergen: this.declaresNone,
+      archivedAt: this.archivedAtValue,
     };
   }
 }

@@ -489,9 +489,11 @@ en JSON par Hugo, hors du dépôt. Aucune grille n'a été recopiée : celle des
 sites est née vide.
 
 **Le registre des contextes de vente** ne retient plus un contexte que par ses
-**taux** de TVA, famille et fiche. La même migration a repassé leurs clés
-étrangères en `ON DELETE RESTRICT` : c'est la base qui refuse de retirer un
-contexte encore cité (`remove-sales-context.ts`).
+**taux** de TVA, famille et fiche. Un contexte ne se supprime plus : il
+s'archive, et l'agrégat refuse d'archiver un contexte qui porte encore un taux
+(`archive-sales-context.ts`, `SalesContextAggregate.archive`). La même
+migration a repassé leurs clés étrangères en `ON DELETE RESTRICT`, qui restent
+en filet sous une suppression directe.
 
 **Reste à faire** — la commande à table. Rien ne sert le QR : aucune route ne
 lit le jeton. Il faudrait un mode de service `eat_in`, le taux `eatIn` figé sur

@@ -31,6 +31,7 @@ export class OrderTimeLimit {
     readonly id: string,
     readonly scope: LimitScope,
     private values: LimitValues,
+    private archivedAtValue: Date | null,
   ) {}
 
   /**
@@ -45,7 +46,7 @@ export class OrderTimeLimit {
     const scope = LimitScope.of(payload.scope);
     ensureProduct(scope);
     const values = productValuesOf(payload);
-    return new OrderTimeLimit(id, scope, values);
+    return new OrderTimeLimit(id, scope, values, null);
   }
 
   /**
@@ -54,8 +55,12 @@ export class OrderTimeLimit {
    * 2026-10-21 doit encore pouvoir se relire pour être retirée. La résolution
    * l'ignore, et `reset` la refuse.
    */
-  static reconstitute(id: string, payload: OrderTimeLimitPayload): OrderTimeLimit {
-    return new OrderTimeLimit(id, LimitScope.of(payload.scope), valuesOf(payload));
+  static reconstitute(
+    id: string,
+    payload: OrderTimeLimitPayload,
+    archivedAt: Date | null,
+  ): OrderTimeLimit {
+    return new OrderTimeLimit(id, LimitScope.of(payload.scope), valuesOf(payload), archivedAt);
   }
 
   /**
@@ -64,20 +69,58 @@ export class OrderTimeLimit {
    * une création — et le confondre ferait perdre la trace de ce qui s'appliquait
    * à l'ancienne portée.
    *
+   * Reposer une règle sur la portée d'une limite **archivée** la remet en
+   * vigueur : il n'y a qu'une ligne par portée, et poser une limite, c'est
+   * vouloir qu'elle s'applique.
+   *
    * @throws {RetiredOrderTimeLimitScopeError} la règle vise une portée retirée.
    * @throws {IncompleteOrderTimeLimitError} le délai ou l'heure manque.
-   * @returns `false` si les réglages reposés sont ceux qu'elle porte déjà.
+   * @returns `false` si les réglages reposés sont ceux qu'elle porte déjà, en vigueur.
    */
   reset(payload: OrderTimeLimitPayload): boolean {
     ensureProduct(this.scope);
     const next = productValuesOf(payload);
     const before = this.values;
+    const revived = this.restore();
     this.values = next;
     return (
+      revived ||
       before.daysBefore !== next.daysBefore ||
       before.time !== next.time ||
       before.graceMinutes !== next.graceMinutes
     );
+  }
+
+  get isArchived(): boolean {
+    return this.archivedAtValue !== null;
+  }
+
+  get archivedAt(): Date | null {
+    return this.archivedAtValue;
+  }
+
+  /**
+   * Archive la limite : elle **cesse de s'appliquer** — le fil vers le commerce
+   * ne la porte plus, et seule la règle générale du commerce juge l'article.
+   * Toujours permis ; ses valeurs sont gardées pour la restaurer.
+   *
+   * @returns `false` si elle l'était déjà — le geste rejoué ne change rien.
+   */
+  archive(at: Date): boolean {
+    if (this.archivedAtValue !== null) {
+      return false;
+    }
+    this.archivedAtValue = at;
+    return true;
+  }
+
+  /** La remet en vigueur, avec les valeurs qu'elle portait. `false` si elle l'était. */
+  restore(): boolean {
+    if (this.archivedAtValue === null) {
+      return false;
+    }
+    this.archivedAtValue = null;
+    return true;
   }
 
   get daysBefore(): number | null {

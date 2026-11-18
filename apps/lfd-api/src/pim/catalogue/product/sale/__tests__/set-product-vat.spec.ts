@@ -9,6 +9,8 @@ import { ProductUnknownContextError } from "../../domain/errors/product-errors.j
 import { Product, type ProductSnapshot } from "../../domain/entities/product.js";
 import { ProductRepository } from "../../domain/ports/product.repository.js";
 import { SetProductVatCommand, SetProductVatHandler } from "../set-product-vat.js";
+import { RecordingVatRateLock } from "../../../../reference/vat-rates/domain/ports/__tests__/recording-vat-rate-lock.js";
+import { RecordingSalesContextLock } from "../../../../reference/sales-contexts/domain/ports/__tests__/recording-sales-context-lock.js";
 import { RecordingCatalogEmitter } from "../../../../shared/__tests__/catalog-emitter-doubles.js";
 
 const CONTEXTS: readonly SalesContext[] = [
@@ -126,6 +128,8 @@ describe("SetProductVatHandler", () => {
     await new SetProductVatHandler(
       products,
       rates(),
+      new RecordingVatRateLock(),
+      new RecordingSalesContextLock(),
       registry,
       journal,
       new DirectUnitOfWork(),
@@ -150,6 +154,8 @@ describe("SetProductVatHandler", () => {
     await new SetProductVatHandler(
       products,
       rates(),
+      new RecordingVatRateLock(),
+      new RecordingSalesContextLock(),
       registry,
       new RecordingJournal(),
       new DirectUnitOfWork(),
@@ -166,6 +172,8 @@ describe("SetProductVatHandler", () => {
       new SetProductVatHandler(
         products,
         rates(),
+        new RecordingVatRateLock(),
+        new RecordingSalesContextLock(),
         registry,
         new RecordingJournal(),
         new DirectUnitOfWork(),
@@ -182,6 +190,8 @@ describe("SetProductVatHandler", () => {
       new SetProductVatHandler(
         products,
         rates(),
+        new RecordingVatRateLock(),
+        new RecordingSalesContextLock(),
         registry,
         new RecordingJournal(),
         new DirectUnitOfWork(),
@@ -200,6 +210,8 @@ describe("SetProductVatHandler", () => {
     await new SetProductVatHandler(
       products,
       rates(),
+      new RecordingVatRateLock(),
+      new RecordingSalesContextLock(),
       registry,
       new RecordingJournal(),
       new DirectUnitOfWork(),
@@ -216,6 +228,8 @@ describe("SetProductVatHandler", () => {
     await new SetProductVatHandler(
       products,
       rates(),
+      new RecordingVatRateLock(),
+      new RecordingSalesContextLock(),
       registry,
       journal,
       new DirectUnitOfWork(),
@@ -223,5 +237,36 @@ describe("SetProductVatHandler", () => {
     ).execute(new SetProductVatCommand("prd_1", { b2b: "tva_20" }));
 
     expect(journal.types()).toEqual([]);
+  });
+
+  it("verrouille les taux et les contextes visés AVANT de les relire", async () => {
+    const log: string[] = [];
+    class LoggedRates extends KnownVatRates {
+      override findById(id: string) {
+        log.push(`find:${id}`);
+        return super.findById(id);
+      }
+    }
+    const loggedRegistry: SalesContextRegistry = {
+      active: () => {
+        log.push("active");
+        return Promise.resolve(CONTEXTS);
+      },
+      all: () => Promise.resolve(CONTEXTS),
+      ensureRootContext: () => Promise.resolve(),
+    };
+
+    await new SetProductVatHandler(
+      new FakeProducts(snapshot()),
+      new LoggedRates({ tva_20: { name: "Normal", percent: 20 } }),
+      new RecordingVatRateLock(log),
+      new RecordingSalesContextLock(log),
+      loggedRegistry,
+      new RecordingJournal(),
+      new DirectUnitOfWork(),
+      new RecordingCatalogEmitter(),
+    ).execute(new SetProductVatCommand("prd_1", { b2b: "tva_20" }));
+
+    expect(log.slice(0, 4)).toEqual(["lock:use:tva_20", "lock:use:b2b", "find:tva_20", "active"]);
   });
 });

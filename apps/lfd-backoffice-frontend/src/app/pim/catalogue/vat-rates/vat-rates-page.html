@@ -18,4 +18,13 @@
   }
 
   <app-vat-rate-table />
+
+  <app-archived-list
+    title="Taux archivés"
+    restoreMessage="Restaurer ce taux ? Il se proposera de nouveau aux familles et aux fiches."
+    [entries]="archived()"
+    [canRestore]="canWrite()"
+    [busy]="busy()"
+    (restore)="restore($event)"
+  />
 </fold-page-layout>

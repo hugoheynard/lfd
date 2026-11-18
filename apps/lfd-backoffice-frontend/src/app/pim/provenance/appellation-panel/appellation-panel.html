@@ -48,35 +48,21 @@
         [attr.aria-expanded]="dangerOpen()"
         (click)="toggleDanger()"
       >
-        Supprimer cette appellation
+        Archiver cette appellation
       </button>
 
       @if (dangerOpen()) {
-        @if (held() > 0) {
-          <fold-callout appearance="inset" variant="warning">
-            <strong>Suppression impossible.</strong> {{ held() }} ingrédient(s) la portent encore.
-            Retirez-la d'eux d'abord&nbsp;: tant qu'un seul la cite, la base refuse — sinon des
-            badges affirmeraient un signe officiel que plus rien ne définit.
-            <br />
-            Vous pouvez en revanche la mettre <strong>hors service</strong>.
-          </fold-callout>
-        } @else {
-          <fold-callout appearance="inset" variant="alert">
-            <strong>Action irréversible.</strong> Aucun ingrédient ne la porte, donc rien ne perd sa
-            référence. Le journal, lui, garde la trace de son existence.
-          </fold-callout>
+        <fold-callout appearance="inset" variant="info">
+          Archivée, elle ne se pose plus sur un ingrédient.
+          @if (held() > 0) {
+            Les {{ held() }} ingrédient(s) qui la portent la gardent.
+          }
+          Elle reste en base, et se restaure depuis la liste des appellations.
+        </fold-callout>
 
-          <fold-input
-            label="Retapez le code pour confirmer"
-            [placeholder]="appellation()?.code ?? ''"
-            [value]="confirmCode()"
-            (valueChange)="confirmCode.set($event)"
-          />
-
-          <button foldButton intent="danger" [disabled]="!canDelete()" (click)="remove()">
-            Supprimer définitivement
-          </button>
-        }
+        <button foldButton intent="danger" [disabled]="busy()" (click)="archive()">
+          Archiver l'appellation
+        </button>
       }
     </section>
   }

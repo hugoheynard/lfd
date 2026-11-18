@@ -36,4 +36,9 @@ export interface VatRateView {
   readonly percent: number;
   /** Ce qui s'y rattache dans le PIM — un compte, pas un état de l'agrégat. */
   readonly usage: VatRateUsageView;
+  /**
+   * Archivé : ne se propose plus aux listes de choix, et se restaure depuis
+   * l'écran qui l'administre. On ne supprime plus un référentiel.
+   */
+  readonly archived: boolean;
 }

@@ -57,6 +57,10 @@ model OrderTimeLimit {
   /// résolution, c'est-à-dire une limite ferme.
   graceMinutes Int? @map("grace_minutes")
 
+  /// Archivée : la limite **cesse de s'appliquer** — ni le référentiel ni le
+  /// fil vers le commerce ne la lisent plus. `NULL` = en vigueur.
+  archivedAt DateTime? @map("archived_at") @db.Timestamptz(6)
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
   updatedBy String?  @map("updated_by")
@@ -94,6 +98,10 @@ model SalesContext {
   /// clé : un contexte qui porte un taux ne se supprime pas sous lui.
   categoryVat CategoryContextVat[]
   productVat  ProductContextVat[]
+
+  /// Archivé : ne se propose plus (L4 du plan du référentiel). `NULL` = en
+  /// service. On ne supprime plus : l'archive se restaure.
+  archivedAt DateTime? @map("archived_at") @db.Timestamptz(6)
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")

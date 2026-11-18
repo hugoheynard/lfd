@@ -12,7 +12,7 @@
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { OutboxRelayTrigger } from "../src/platform/outbox/outbox-relay-trigger.js";
 import { aDraftFiche, anActiveFiche, relayAll, SILENT_TRIGGER } from "./catalog-facts-scene.js";
-import { bootstrapE2e, E2E_STAFF_SUB, type E2eContext } from "./e2e-harness.js";
+import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 
 const stubAdminVerifier = {
   verify: (token: string): Promise<{ subject: string; scopes: string[] }> =>
@@ -87,6 +87,40 @@ describe("les limites de commande voyagent en règles", () => {
       orderLimitDaysBefore: 1,
       orderLimitTime: "18:00",
       orderLimitGraceMinutes: 0,
+    });
+  });
+
+  /**
+   * Archivée, une limite CESSE de s'appliquer (L4, 2026-11-18) : l'échelle
+   * réémise ne la porte plus, et l'article du commerce retombe sur la seule
+   * règle générale. Restaurée, elle revient avec ses valeurs.
+   */
+  it("une limite archivée cesse de s'appliquer au commerce, restaurée elle revient", async () => {
+    const fiche = await anActiveFiche(staff, "Pain aux noix");
+    const { id } = jsonBody<{ id: string }>(
+      await staff()
+        .put(LIMITS)
+        .send({ scope: { type: "product", id: fiche.id }, daysBefore: 1, time: "18:00" })
+        .expect(200),
+    );
+    await relayAll(ctx);
+    expect(await limitOf(fiche.variantSku)).toMatchObject({ orderLimitTime: "18:00" });
+
+    await staff().delete(`${LIMITS}/${id}`).expect(204);
+    await relayAll(ctx);
+
+    const rules = await ctx.prisma.catalogRules.findUnique({
+      where: { kind: "order_time_limits" },
+    });
+    expect(rules?.rules).toEqual([]);
+    expect(await limitOf(fiche.variantSku)).toMatchObject({ orderLimitTime: null });
+
+    await staff().post(`${LIMITS}/${id}/restore`).expect(204);
+    await relayAll(ctx);
+
+    expect(await limitOf(fiche.variantSku)).toMatchObject({
+      orderLimitDaysBefore: 1,
+      orderLimitTime: "18:00",
     });
   });
 

@@ -12,7 +12,6 @@ import type { LocalizedText } from "@lfd/pim-contracts";
 import type { AppellationSnapshot } from "../domain/entities/appellation.entity.js";
 import { IngredientAggregate } from "../domain/entities/ingredient.entity.js";
 import {
-  IngredientInUseError,
   IngredientKeyTakenError,
   IngredientNotFoundError,
   UnknownIngredientAllergenError,
@@ -21,7 +20,7 @@ import {
   IngredientRepository,
   type IngredientRecord,
 } from "../domain/ports/ingredient.repository.js";
-import { isForeignKeyViolation, isUniqueViolation } from "./prisma-violations.js";
+import { isUniqueViolation } from "./prisma-violations.js";
 
 interface AppellationJoin {
   readonly id: string;
@@ -29,6 +28,7 @@ interface AppellationJoin {
   readonly label: unknown;
   readonly scheme: string;
   readonly active: boolean;
+  readonly archivedAt: Date | null;
 }
 
 interface AllergenJoin {
@@ -43,6 +43,7 @@ interface IngredientRow {
   readonly origin: string;
   readonly appellationId: string | null;
   readonly declaresNoAllergen: boolean;
+  readonly archivedAt: Date | null;
   readonly allergens: readonly AllergenJoin[];
 }
 
@@ -71,6 +72,7 @@ function toAggregate(row: IngredientRow): IngredientAggregate {
     // une donnée, et on ne lui en demande donc pas un.
     allergens: row.allergens.map((link) => link.entry.code),
     declaresNoAllergen: row.declaresNoAllergen,
+    archivedAt: row.archivedAt,
   });
 }
 
@@ -83,6 +85,7 @@ function toAppellation(row: AppellationJoin | null): AppellationSnapshot | null 
         label: readLocalizedColumn(row.label, "appellation.label"),
         scheme: row.scheme,
         active: row.active,
+        archivedAt: row.archivedAt,
       };
 }
 
@@ -142,7 +145,10 @@ export class PrismaIngredientRepository extends IngredientRepository {
   }
 
   async save(ingredient: IngredientAggregate): Promise<void> {
-    const { id, key, name, description, allergens, ...columns } = ingredient.snapshot();
+    // `archived_at` n'est écrit que par `saveArchival` : une édition chargée
+    // avant une archive ne doit pas la défaire.
+    const { id, key, name, description, allergens, archivedAt, ...columns } = ingredient.snapshot();
+    void archivedAt;
     await this.guardKey(key, () =>
       this.prisma.ingredient.update({
         where: { key },
@@ -156,21 +162,9 @@ export class PrismaIngredientRepository extends IngredientRepository {
     await this.linkAllergens(id, allergens);
   }
 
-  /**
-   * Le **dernier mot** sur « un ingrédient cité ne disparaît pas ».
-   *
-   * Même raisonnement que l'appellation : la clé étrangère tranche, et on ne
-   * recompte pas après l'échec — la transaction du handler est déjà avortée.
-   */
-  async remove(key: string): Promise<void> {
-    try {
-      await this.prisma.ingredient.delete({ where: { key } });
-    } catch (error) {
-      if (isForeignKeyViolation(error)) {
-        throw new IngredientInUseError(key);
-      }
-      throw error;
-    }
+  async saveArchival(ingredient: IngredientAggregate): Promise<void> {
+    const { key, archivedAt } = ingredient.snapshot();
+    await this.prisma.ingredient.update({ where: { key }, data: { archivedAt } });
   }
 
   async ofProduct(productId: string): Promise<readonly IngredientRecord[]> {

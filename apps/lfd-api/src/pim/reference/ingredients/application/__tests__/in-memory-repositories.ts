@@ -52,8 +52,13 @@ export class InMemoryIngredientRepository extends IngredientRepository {
     return Promise.resolve();
   }
 
-  remove(key: string): Promise<void> {
-    this.byKey.delete(key);
+  /** Comme la base : seul `archived_at` change, le reste de la ligne stockée reste. */
+  saveArchival(ingredient: IngredientAggregate): Promise<void> {
+    const { key, archivedAt } = ingredient.snapshot();
+    const stored = this.byKey.get(key);
+    if (stored !== undefined) {
+      this.byKey.set(key, { ...stored, archivedAt });
+    }
     return Promise.resolve();
   }
 
@@ -111,10 +116,6 @@ export class InMemoryAppellationRepository extends AppellationRepository {
     );
   }
 
-  idOfCode(code: string): Promise<string | null> {
-    return Promise.resolve(this.byCode.get(code)?.id ?? null);
-  }
-
   add(appellation: AppellationAggregate): Promise<void> {
     return this.save(appellation);
   }
@@ -125,8 +126,13 @@ export class InMemoryAppellationRepository extends AppellationRepository {
     return Promise.resolve();
   }
 
-  remove(code: string): Promise<void> {
-    this.byCode.delete(code);
+  /** Comme la base : seul `archived_at` change, le reste de la ligne stockée reste. */
+  saveArchival(appellation: AppellationAggregate): Promise<void> {
+    const { code, archivedAt } = appellation.snapshot();
+    const stored = this.byCode.get(code);
+    if (stored !== undefined) {
+      this.byCode.set(code, { ...stored, archivedAt });
+    }
     return Promise.resolve();
   }
 

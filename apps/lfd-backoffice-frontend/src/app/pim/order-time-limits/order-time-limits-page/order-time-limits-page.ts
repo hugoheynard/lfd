@@ -15,6 +15,7 @@ import {
 import { NotifyService } from '../../../notify.service';
 import { LimitPanel } from '../limit-panel/limit-panel';
 import { OrderTimeLimitsService } from '../order-time-limits.service';
+import { ArchivedList, type ArchivedEntry } from '../../shared/archived-list/archived-list';
 import { byName, generalCutoffPhrase, limitPhrase, scopeLabel } from '../limit-format';
 
 type LoadState = 'loading' | 'ready' | 'error';
@@ -36,7 +37,8 @@ type LoadState = 'loading' | 'ready' | 'error';
  *
  * Il ne **pose** pas de limite : poser se fait depuis la fiche du produit,
  * c'est là qu'on regarde quand on se demande ce que CET article demande. Ici,
- * on lit, on modifie, on retire.
+ * on lit, on modifie, on archive — une limite archivée cesse de s'appliquer, et
+ * se restaure depuis la liste repliée sous le tableau.
  */
 @Component({
   selector: 'app-order-time-limits-page',
@@ -50,6 +52,7 @@ type LoadState = 'loading' | 'ready' | 'error';
     FoldIconComponent,
     FoldLoadingStateComponent,
     RouterLink,
+    ArchivedList,
   ],
   templateUrl: './order-time-limits-page.html',
   styleUrl: './order-time-limits-page.scss',
@@ -64,8 +67,21 @@ export class OrderTimeLimitsPage {
   protected readonly general = signal<GeneralOrderCutoffView | null>(null);
   protected readonly pendingRemoval = signal<string | null>(null);
 
-  /** Les produits, par nom. */
-  protected readonly ordered = computed(() => [...this.rules()].sort(byName));
+  /** Les limites en vigueur, par nom de produit. */
+  protected readonly ordered = computed(() =>
+    this.rules()
+      .filter((rule) => !rule.archived)
+      .sort(byName),
+  );
+
+  /** Les archivées : elles ne s'appliquent plus, et reviennent d'ici. */
+  protected readonly archived = computed<readonly ArchivedEntry[]>(() =>
+    this.rules()
+      .filter((rule) => rule.archived)
+      .sort(byName)
+      .map((rule) => ({ key: rule.id, label: scopeLabel(rule), detail: limitPhrase(rule) })),
+  );
+  protected readonly busy = signal(false);
 
   /** « La veille à 18:00, rattrapage aucun », ou `null` sans règle générale. */
   protected readonly generalPhrase = computed(() => {
@@ -113,11 +129,26 @@ export class OrderTimeLimitsPage {
   protected async remove(rule: OrderTimeLimitView): Promise<void> {
     this.pendingRemoval.set(null);
     try {
-      await this.api.remove(rule.id);
-      this.notify.success('Limite retirée — seule la règle générale juge ce produit.');
+      await this.api.archive(rule.id);
+      this.notify.success(
+        "Limite archivée — elle ne s'applique plus ; seule la règle générale juge ce produit.",
+      );
       await this.load();
     } catch (error) {
       this.notify.error(error);
+    }
+  }
+
+  protected async restore(id: string): Promise<void> {
+    this.busy.set(true);
+    try {
+      await this.api.restore(id);
+      this.notify.success('Limite restaurée — elle s’applique de nouveau.');
+      await this.load();
+    } catch (error) {
+      this.notify.error(error);
+    } finally {
+      this.busy.set(false);
     }
   }
 

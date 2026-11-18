@@ -1,0 +1,26 @@
+@if (entries().length > 0) {
+  <fold-disclosure>
+    <span summary>{{ title() }} ({{ entries().length }})</span>
+    <ul class="archived-list">
+      @for (entry of entries(); track entry.key) {
+        <li>
+          <span class="archived-name">{{ entry.label }}</span>
+          @if (entry.detail) {
+            <span class="archived-detail">{{ entry.detail }}</span>
+          }
+          @if (canRestore()) {
+            <fold-inline-confirm
+              intent="primary"
+              [message]="restoreMessage()"
+              [labels]="{ confirm: 'Restaurer' }"
+              [loading]="busy()"
+              (confirmed)="restore.emit(entry.key)"
+            >
+              <button foldButton size="sm" emphasis="soft" [disabled]="busy()">Restaurer</button>
+            </fold-inline-confirm>
+          }
+        </li>
+      }
+    </ul>
+  </fold-disclosure>
+}

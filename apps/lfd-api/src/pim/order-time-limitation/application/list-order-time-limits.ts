@@ -11,7 +11,8 @@ export class ListOrderTimeLimitsQuery {}
  * Depuis le 2026-10-21, seul le produit porte une limite au référentiel ; une
  * ligne résiduelle d'une autre portée n'est plus montrée, parce qu'elle ne
  * s'applique plus (la résolution l'ignore). Elle se retire encore par son
- * identifiant.
+ * identifiant. Les limites archivées y sont, marquées : l'écran les montre à
+ * part, avec « Restaurer ».
  */
 @QueryHandler(ListOrderTimeLimitsQuery)
 export class ListOrderTimeLimitsHandler implements IQueryHandler<

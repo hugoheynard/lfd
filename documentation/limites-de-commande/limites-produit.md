@@ -67,16 +67,18 @@ general-order-cutoff.module.ts` les relie. Puis la liste des produits qui ont
   ici ;
 - la carte **« Limite de commande »** de la fiche produit
   (`product-form/form-sections/order-limit/`) — la limite du produit (délai,
-  heure), ou « pas de limite propre » ; poser, modifier, retirer. Le panneau
+  heure), ou « pas de limite propre » ; poser, modifier, archiver (elle cesse de s'appliquer), restaurer. Le panneau
   n'a plus ni portée, ni « hériter », ni rattrapage.
 
 ## 2. La propagation au commerce
 
-`SetOrderTimeLimit` / `RemoveOrderTimeLimit` émettent, dans leur transaction,
+`SetOrderTimeLimit` / `ArchiveOrderTimeLimit` / `RestoreOrderTimeLimit` émettent, dans leur transaction,
 le fait durable **`pim.catalog_rules_changed`**
 (`pim/channels/b2b-platform/products/catalog-rules-changed.fact.ts`) : ce sont
 les **règles** qui traversent, pas des limites résolues — et, depuis le
-2026-10-21, les seules règles de produit (`B2bCatalogRulesEmitter` filtre). Le commerce
+2026-10-21, les seules règles de produit **en vigueur** (`B2bCatalogRulesEmitter`
+lit `inForce`, qui filtre `archived_at IS NULL` dans la requête : une limite
+archivée cesse de s'appliquer et ne traverse plus). Le commerce
 (`OnCatalogRulesChangedHandler`, `lafoliecoffee/catalog/application/handlers/`) les range
 dans `public.catalog_rules` si le fait est plus récent (`applied_seq`), puis
 `OrderLimitsRefresher` les **descend sur chaque article en vente** (la règle de

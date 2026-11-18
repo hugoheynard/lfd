@@ -33,6 +33,7 @@ const AOP: AppellationView = {
   scheme: 'AOP',
   active: true,
   usedBy: 1,
+  archived: false,
 };
 
 function ingredient(key: string, overrides: Partial<IngredientView> = {}): IngredientView {
@@ -45,6 +46,7 @@ function ingredient(key: string, overrides: Partial<IngredientView> = {}): Ingre
     allergens: [],
     declaresNoAllergen: false,
     usedBy: 0,
+    archived: false,
     ...overrides,
   };
 }

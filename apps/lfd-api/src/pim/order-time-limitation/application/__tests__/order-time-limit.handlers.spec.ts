@@ -10,15 +10,10 @@ import {
   InvalidOrderTimeLimitScopeError,
   ProductGraceRetiredError,
   RetiredOrderTimeLimitScopeError,
-  OrderTimeLimitNotFoundError,
 } from "../../domain/errors/order-time-limit-errors.js";
 import { LimitScopeNamer } from "../../domain/ports/limit-scope.namer.js";
 import { OrderTimeLimitRepository } from "../../domain/ports/order-time-limit.repository.js";
 import type { LimitScope } from "../../domain/value-objects/limit-scope.js";
-import {
-  RemoveOrderTimeLimitCommand,
-  RemoveOrderTimeLimitHandler,
-} from "../remove-order-time-limit.js";
 import { SetOrderTimeLimitCommand, SetOrderTimeLimitHandler } from "../set-order-time-limit.js";
 import { RecordingRulesEmitter } from "../../domain/ports/__tests__/recording-rules-emitter.js";
 
@@ -63,7 +58,9 @@ function doubles(existing: OrderTimeLimit | null): Doubles {
       saved.push(limit);
       return Promise.resolve();
     },
-    remove: () => Promise.resolve(),
+    saveArchival: () => Promise.resolve(),
+    inForce: () => Promise.resolve([] as readonly OrderTimeLimitView[]),
+    findById: () => Promise.resolve(existing),
   } satisfies OrderTimeLimitRepository;
   const ids = {
     next: () => {
@@ -259,6 +256,7 @@ describe("SetOrderTimeLimitHandler", () => {
     const residual = OrderTimeLimit.reconstitute(
       "vieux",
       payload({ scope: { type: "global", id: null } }),
+      null,
     );
     const { handler, saved } = doubles(residual);
 
@@ -288,125 +286,25 @@ describe("SetOrderTimeLimitHandler", () => {
     expect(saved).toHaveLength(0);
   });
 
+  /** Une seule ligne par portée : poser une limite là où elle est archivée la remet en vigueur. */
+  it("remet en vigueur la limite archivée de la portée qu'on repose, sans en créer une autre", async () => {
+    const archived = OrderTimeLimit.reconstitute("id_old", payload(), new Date());
+    const { handler, saved, minted, journal } = doubles(archived);
+
+    const id = await handler.execute(new SetOrderTimeLimitCommand(payload()));
+
+    expect(id).toBe("id_old");
+    expect(minted).toEqual([]);
+    expect(saved[0]?.isArchived).toBe(false);
+    expect(journal.types()).toEqual(["order_time_limit.set"]);
+  });
+
   it("remet à zéro le rattrapage résiduel d'un produit qu'on repose", async () => {
-    const residual = OrderTimeLimit.reconstitute("vieux", payload({ graceMinutes: 60 }));
+    const residual = OrderTimeLimit.reconstitute("vieux", payload({ graceMinutes: 60 }), null);
     const { handler, saved } = doubles(residual);
 
     await handler.execute(new SetOrderTimeLimitCommand(payload({ graceMinutes: 0 })));
 
     expect(saved[0]?.graceMinutes).toBeNull();
-  });
-});
-
-describe("RemoveOrderTimeLimitHandler", () => {
-  function view(over: Partial<OrderTimeLimitView> = {}): OrderTimeLimitView {
-    return {
-      id: "id_global",
-      scope: { type: "global", id: null },
-      scopeLabel: null,
-      daysBefore: 1,
-      time: "18:00",
-      graceMinutes: null,
-      ...over,
-    };
-  }
-
-  interface RemoveDoubles {
-    readonly handler: RemoveOrderTimeLimitHandler;
-    readonly removed: string[];
-    readonly journal: RecordingJournal;
-    readonly emitter: RecordingRulesEmitter;
-  }
-
-  function removeDoubles(rules: readonly OrderTimeLimitView[]): RemoveDoubles {
-    const removed: string[] = [];
-    const limits = {
-      list: () => Promise.resolve(rules),
-      findByScope: () => Promise.resolve(null),
-      save: () => Promise.resolve(),
-      remove: (id: string, _ticket: WriteTicket) => {
-        removed.push(id);
-        return Promise.resolve();
-      },
-    } satisfies OrderTimeLimitRepository;
-    const journal = new RecordingJournal();
-    const emitter = new RecordingRulesEmitter(() => removed.length);
-    return {
-      handler: new RemoveOrderTimeLimitHandler(limits, journal, new DirectUnitOfWork(), emitter),
-      removed,
-      journal,
-      emitter,
-    };
-  }
-
-  it("délègue la suppression au port", async () => {
-    const { handler, removed, journal } = removeDoubles([view({ id: "id_1" })]);
-
-    await handler.execute(new RemoveOrderTimeLimitCommand("id_1"));
-
-    expect(removed).toEqual(["id_1"]);
-    expect(journal.types()).toEqual(["order_time_limit.removed"]);
-  });
-
-  /** Lot 2b : l'échelle d'après la suppression part vers la plateforme. */
-  it("émet les règles après la suppression", async () => {
-    const { handler, emitter } = removeDoubles([view({ id: "id_1" })]);
-
-    await handler.execute(new RemoveOrderTimeLimitCommand("id_1"));
-
-    expect(emitter.emissions).toEqual([1]);
-  });
-
-  /**
-   * Régression : le fait ne portait qu'un `payload: {}`, alors que son JSDoc
-   * promettait d'y verser les trois valeurs. Après la suppression, le journal
-   * est le SEUL endroit où la règle a existé — un fait vide n'atteste que d'une
-   * suppression sans objet.
-   */
-  it("verse dans le journal ce que la règle disait avant de la retirer", async () => {
-    const { handler, journal } = removeDoubles([
-      view({
-        id: "id_1",
-        scope: { type: "category", id: "cat_1" },
-        scopeLabel: "Tartes",
-        time: "16:00",
-        graceMinutes: 30,
-      }),
-    ]);
-
-    await handler.execute(new RemoveOrderTimeLimitCommand("id_1"));
-
-    expect(journal.entries[0]?.payload).toEqual({
-      subjectLabel: "Famille « Tartes »",
-      scope: "category:cat_1",
-      daysBefore: 1,
-      time: "16:00",
-      graceMinutes: 30,
-    });
-  });
-
-  /**
-   * La garde qui refusait de retirer le global sous des règles qui en
-   * héritaient est tombée le 2026-10-21 : plus aucun rang n'hérite, et la
-   * résolution ignore le global. Le retirer est le geste qui le vide.
-   */
-  it("retire un rang global résiduel, même sous des familles incomplètes", async () => {
-    const { handler, removed } = removeDoubles([
-      view(),
-      view({ id: "id_cat", scope: { type: "category", id: "cat_1" }, daysBefore: null }),
-    ]);
-
-    await handler.execute(new RemoveOrderTimeLimitCommand("id_global"));
-
-    expect(removed).toEqual(["id_global"]);
-  });
-
-  it("refuse un identifiant que personne ne porte", async () => {
-    const { handler, journal } = removeDoubles([view()]);
-
-    await expect(handler.execute(new RemoveOrderTimeLimitCommand("id_absent"))).rejects.toThrow(
-      OrderTimeLimitNotFoundError,
-    );
-    expect(journal.types()).toEqual([]);
   });
 });

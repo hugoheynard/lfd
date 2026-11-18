@@ -2,14 +2,16 @@
  * E2E du **registre des contextes de vente** — sur un vrai Postgres.
  *
  * Ce que seul ce niveau prouve : que le contexte racine **réapparaît** après
- * une suppression directe en base, et que la surface d'administration rend
- * aussi les contextes hors service — les deux touchent la base, pas le domaine.
+ * une suppression directe en base, que la surface d'administration rend
+ * aussi les contextes hors service et archivés, et qu'un contexte archivé ne se
+ * propose plus — tout cela touche la base, pas le domaine.
  */
 import type { Response } from "supertest";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { SalesContextRegistry } from "../src/pim/reference/sales-contexts/domain/ports/sales-context.registry.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { gate, started, untilBlocked } from "./day-lock-race.js";
 import { freshIntent, INTENT_KEY } from "./intent-key.js";
 
 const stubAdminVerifier = {
@@ -45,6 +47,7 @@ interface ContextRow {
   readonly position: number;
   readonly root: boolean;
   readonly ratedBy: number;
+  readonly archived: boolean;
 }
 
 const NEW_CONTEXT = {
@@ -181,7 +184,7 @@ describe("ouvrir un contexte de vente", () => {
 
     const row = await rowOf("traiteur");
     expect(Object.keys(row ?? {}).sort()).toEqual(
-      ["active", "key", "label", "position", "ratedBy", "root"].sort(),
+      ["active", "archived", "key", "label", "position", "ratedBy", "root"].sort(),
     );
   });
 });
@@ -253,13 +256,92 @@ async function rateEverywhere(contextKey: string): Promise<{ category: string; p
   return { category, product };
 }
 
-describe("effacer un contexte de vente", () => {
-  it("efface celui que rien ne retient", async () => {
+describe("archiver un contexte de vente", () => {
+  it("archive celui que rien ne retient, sans l'effacer", async () => {
     await staff().post(CONTEXTS).send(NEW_CONTEXT).expect(201);
 
+    const response = await staff().delete(`${CONTEXTS}/traiteur`).expect(200);
+
+    expect(jsonBody<{ key: string }>(response)).toEqual({ key: "traiteur" });
+    expect(await rowOf("traiteur")).toMatchObject({ archived: true, active: true });
+  });
+
+  it("archivé, il ne se propose plus, ni au réglage d'un taux", async () => {
+    await staff().post(CONTEXTS).send(NEW_CONTEXT).expect(201);
     await staff().delete(`${CONTEXTS}/traiteur`).expect(200);
 
-    expect(await rowOf("traiteur")).toBeUndefined();
+    const active = jsonBody<{ key: string }[]>(await staff().get(`${CONTEXTS}/active`).expect(200));
+    expect(active.map((row) => row.key)).not.toContain("traiteur");
+    const rate = await createdId(staff().post(RATES).send({ name: "Alimentaire", percent: 5.5 }));
+    const category = await createdId(
+      staff()
+        .post(CATEGORIES)
+        .send({ name: { fr: "Traiteur" } }),
+    );
+    const refused = await staff()
+      .put(`${CATEGORIES}/${category}/vat`)
+      .send({ vatByContext: { traiteur: rate } });
+    expect(refused.status).toBe(409);
+    expect(jsonBody<{ code: string }>(refused).code).toBe(
+      "catalogue.category.unknown_sales_context",
+    );
+    expect(await ctx.prisma.categoryContextVat.count()).toBe(0);
+  });
+
+  /**
+   * La course archive ↔ pose : une transaction tient la ligne du contexte comme
+   * le fait l'archive (`FOR UPDATE`, puis la date), le temps que la pose se
+   * mette en file ; validée, la pose ne voit plus le contexte proposé et
+   * refuse. La clé étrangère seule ne l'aurait pas fait attendre.
+   */
+  it("une pose concurrente de l'archive attend, puis refuse le contexte archivé", async () => {
+    await staff().post(CONTEXTS).send(NEW_CONTEXT).expect(201);
+    const rate = await createdId(staff().post(RATES).send({ name: "Alimentaire", percent: 5.5 }));
+    const category = await createdId(
+      staff()
+        .post(CATEGORIES)
+        .send({ name: { fr: "Traiteur" } }),
+    );
+    const release = gate();
+    const held = gate();
+    const archive = ctx.prisma.$transaction(
+      async (tx) => {
+        await tx.$queryRaw`SELECT id FROM pim.sales_context WHERE key = 'traiteur' FOR UPDATE`;
+        await tx.$executeRaw`UPDATE pim.sales_context SET archived_at = now() WHERE key = 'traiteur'`;
+        held.open();
+        await release.opened;
+      },
+      { timeout: 20_000 },
+    );
+    await held.opened;
+
+    const pose = started(
+      staff()
+        .put(`${CATEGORIES}/${category}/vat`)
+        .send({ vatByContext: { traiteur: rate } }),
+    );
+    await untilBlocked(ctx, 1, pose);
+    release.open();
+    await archive;
+    const refused = await pose;
+
+    expect(refused.status).toBe(409);
+    expect(jsonBody<{ code: string }>(refused).code).toBe(
+      "catalogue.category.unknown_sales_context",
+    );
+    expect(await ctx.prisma.categoryContextVat.count()).toBe(0);
+  });
+
+  it("restauré, il revient au registre ; rejouée, la restauration répond pareil", async () => {
+    await staff().post(CONTEXTS).send(NEW_CONTEXT).expect(201);
+    await staff().delete(`${CONTEXTS}/traiteur`).expect(200);
+
+    await staff().post(`${CONTEXTS}/traiteur/restore`).expect(201);
+    await staff().post(`${CONTEXTS}/traiteur/restore`).expect(201);
+
+    expect(await rowOf("traiteur")).toMatchObject({ archived: false });
+    const active = jsonBody<{ key: string }[]>(await staff().get(`${CONTEXTS}/active`).expect(200));
+    expect(active.map((row) => row.key)).toContain("traiteur");
   });
 
   it("REFUSE la racine", async () => {
@@ -285,13 +367,13 @@ describe("effacer un contexte de vente", () => {
 
     expect(response.status).toBe(409);
     expect(jsonBody<{ code: string }>(response).code).toBe("catalogue.sales_context.in_use");
-    expect(await rowOf("traiteur")).toMatchObject({ ratedBy: 2 });
+    expect(await rowOf("traiteur")).toMatchObject({ ratedBy: 2, archived: false });
     expect(await ctx.prisma.categoryContextVat.count({ where: { categoryId: category } })).toBe(1);
     expect(await ctx.prisma.productContextVat.count({ where: { productId: product } })).toBe(1);
   });
 
   /**
-   * Le mur est la BASE, pas le compte affiché : une suppression directe, sans
+   * Le `RESTRICT` reste en base comme filet : une suppression directe, sans
    * passer par la route, est refusée elle aussi.
    */
   it("la base refuse elle-même d'effacer un contexte qui porte un taux", async () => {

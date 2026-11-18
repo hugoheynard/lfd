@@ -68,7 +68,15 @@ export class VatOverridePanel {
    *  bouton à part : c'est la même décision, prise dans le même geste. */
   protected readonly draft = signal('');
 
-  protected readonly rates = computed(() => this.data().rates);
+  /**
+   * Les taux PROPOSÉS : un taux archivé ne se choisit plus, et le serveur
+   * refuserait de le poser. Celui que la fiche porte déjà reste dans la liste,
+   * tel quel — sinon la dérogation en cours ne se lirait plus.
+   */
+  protected readonly rates = computed(() => {
+    const { rates, current } = this.data();
+    return rates.filter((rate) => !rate.archived || rate.id === current);
+  });
 
   constructor() {
     effect(() => {

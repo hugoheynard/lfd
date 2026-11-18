@@ -26,6 +26,7 @@ const AOP: AppellationView = {
   scheme: 'AOP',
   active: true,
   usedBy: 1,
+  archived: false,
 };
 
 const BEURRE: IngredientView = {
@@ -37,6 +38,7 @@ const BEURRE: IngredientView = {
   allergens: [],
   declaresNoAllergen: false,
   usedBy: 2,
+  archived: false,
 };
 
 function setup(canWrite: boolean, ingredients: readonly IngredientView[] = [BEURRE]): void {
@@ -54,6 +56,9 @@ function setup(canWrite: boolean, ingredients: readonly IngredientView[] = [BEUR
           appellations: () => [AOP],
           ingredients: () => ingredients,
           offeredAppellations: () => [AOP],
+          offeredIngredients: () => ingredients,
+          archivedAppellations: () => [],
+          archivedIngredients: () => [],
           appellationError: () => null,
           ingredientError: () => null,
           reload: () => Promise.resolve(),

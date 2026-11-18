@@ -21,6 +21,9 @@
 > une fiche plus récente que sa preuve (`ProductChangedAfterReadinessError`).
 > `prisma-media-carriers.ts` garde son SQL, la raison est écrite au-dessus.
 >
+> 🟨 **L4 bâti le 2026-11-18, non commité** — en attente de `vitruve` sur le lot
+> bâti (§ L4, « Tel que bâti »).
+>
 > ✅ **L7 et L6 bâtis le 2026-11-18.** L7 : entité, handlers et `sale-terms` testés ;
 > les gestes d'`allergens/application` l'étaient déjà. L6 : le PDF vit dans
 > `allergen-matrix/infrastructure/` derrière `AllergenMatrixRenderer` ; octets inchangés.
@@ -255,6 +258,101 @@ est lue par l'instantané du catalogue (à vérifier au premier pas du lot) ;
   supprime-t-il encore pour de bon ? Recommandation : non, l'archive suffit.
   **Décidé par Hugo le 2026-11-18 : non, l'archive seulement.**
 
+#### Tel que bâti (2026-11-18, non commité)
+
+- **Migration** `20261118170000_l_archive_des_referentiels` : `archived_at
+TIMESTAMPTZ NULL` sur `tva_rate`, `sales_context`, `ingredient`,
+  `appellation`, `order_time_limit` ; retour arrière dans
+  `prisma/rollback/` (le code seul, et la liste des lignes archivées à relever
+  d'abord). Les clés étrangères `RESTRICT` restent, en filet.
+- **Domaine** : `archive(at…)` / `restore()` sur `VatRate`,
+  `SalesContextAggregate`, `IngredientAggregate`, `AppellationAggregate`,
+  `OrderTimeLimit` — rejoués, ils rendent `false` et le handler n'écrit, ne
+  trace ni n'émet rien.
+  - **TVA** : `VatRate.archive(at, holders)` refuse (`commerce.tva_rate_in_use`,
+    même code qu'avant) tant qu'une famille ou une fiche le porte ; le compte
+    vient d'un port d'usage, `VatRateUsageReader` (deux `count`), lu dans la
+    transaction. Un taux archivé ne se pose plus (`requireRateInService` dans
+    `set-category-vat` et `set-product-vat`, `commerce.tva_rate_archived`) ;
+    recréer son pourcentage est refusé en disant de le restaurer.
+  - **Contexte de vente** : refusé pour la racine et tant qu'un taux y est
+    réglé (`catalogue.sales_context.in_use`, port `SalesContextUsageReader`) ;
+    archivé, il sort de `SalesContextRegistry.active()` (requête `archived_at
+IS NULL`), donc ni réglage de taux ni facturation ; `all()` le garde pour
+    nommer les faits passés.
+  - **Ingrédient, appellation** : toujours permis ; ce qui le cite le garde.
+    Une NOUVELLE citation est refusée (`catalogue.ingredient.archived` dans
+    `set-product-ingredients`, `catalogue.appellation.archived` dans
+    `resolveAppellation`), une citation déjà portée passe.
+  - **Limite horaire** : toujours permise ; archivée, elle cesse de
+    s'appliquer — `OrderTimeLimitRepository.inForce()` filtre dans la requête,
+    et `B2bCatalogRulesEmitter` ne lit plus que lui. Reposer la portée d'une
+    limite archivée la remet en vigueur (une ligne par portée). Le commerce ne
+    relit pas la table du référentiel : il ne connaît que l'échelle émise.
+- **Routes** : les `DELETE` gardent leur URL et leur réponse et archivent ;
+  `POST …/:id/restore` (`:key`, `:code`) restaure. `@Idempotent` sur toutes.
+  Les handlers `remove-*` sont devenus `archive-*`, plus `restore-*`.
+- **Journal** : `*.archived` / `*.restored` pour les cinq (`pim-journal.ts`,
+  `@lfd/contracts` `referential-settings.ts`, phrases du back-office) ; les
+  `*.deleted` / `order_time_limit.removed` restent pour les faits passés.
+- **Écrans** : « Supprimer » devient « Archiver » dans les cinq panneaux (plus
+  de nom retapé : le geste se défait) ; chaque liste replie ses archivés sous
+  le tableau avec « Restaurer » (`pim/shared/archived-list/`, sur le modèle des
+  déclinaisons archivées). Les listes de choix écartent les archivés
+  (`VatRateStore.items`, `offeredIngredients`, `offeredAppellations`, la
+  surtaxe tardive, l'outil d'agent des taux) ; la fiche relit ce qu'elle cite.
+- **Instantané du catalogue** : aucune des cinq tables n'est lue par
+  `CATALOGUE_SNAPSHOT_COLUMNS` ; `lint:context-version-columns` passe sans
+  classement.
+- **La course archive ↔ pose est fermée par un verrou de ligne**, des deux
+  côtés, dans la transaction du geste. La clé étrangère ne la fermait pas :
+  l'insertion qui vise un taux prend `FOR KEY SHARE`, compatible avec le
+  `FOR NO KEY UPDATE` de la mise à jour de `archived_at`. Deux ports,
+  `VatRateLock` et `SalesContextLock` (`forArchival` / `forUse`), en SQL dans
+  l'adaptateur, qui refusent d'être pris hors d'une unité de travail :
+  - l'archive et la restauration prennent `SELECT … FOR UPDATE` sur la ligne,
+    PUIS chargent l'agrégat et comptent ses usages ;
+  - `set-category-vat` et `set-product-vat` prennent `SELECT … FOR SHARE` sur
+    les taux et les contextes visés (triés), PUIS relisent le taux
+    (`requireRateInService`) et les contextes proposés (`active()`) — tout
+    dans la même transaction que l'écriture.
+    Deux e2e le prouvent (`pim-vat-rates`, `pim-sales-contexts`) : une
+    transaction tient la ligne et pose `archived_at`, la pose se met en file,
+    puis refuse (409) ; sans le verrou, elle répondait 200.
+- **Mise à jour perdue fermée** : les cinq archives et restaurations chargent
+  l'agrégat dans la transaction et écrivent par `saveArchival`, qui n'écrit
+  QUE `archived_at` — un renommage concurrent n'est plus effacé. Le `save`
+  ordinaire réécrit toujours la ligne entière, `archived_at` compris : un
+  renommage chargé AVANT une archive et écrit APRÈS la défait (voir « Reste »).
+- **Fiche produit** : le panneau de dérogation de TVA ne propose plus un taux
+  archivé ; celui que la fiche porte déjà reste affiché.
+- **Contexte archivé, complétude et canaux** : l'archive d'un contexte réémet
+  tout le catalogue après validation (`CatalogReemission.everything`, comme
+  les autres gestes du référentiel — ce port s'appelle HORS de la
+  transaction, par construction). Le canal `b2b-platform` ne lit pas le
+  registre : il sert les pourcentages par clé de contexte tirés des taux
+  réglés, et un contexte archivé n'en porte aucun. Le commerce ne lit pas le
+  registre du référentiel.
+- **Reste** : le `save` des mises à jour (taux, contexte, ingrédient,
+  appellation, limite) charge hors transaction et réécrit `archived_at` ;
+  le retour arrière (`prisma/rollback/`) attend une décision de Hugo.
+
+**Décisions et suites du 2026-11-18, après vitruve :**
+
+- **Pas de retour arrière après L4** (Hugo) : on corrige en avant. Le code
+  d'avant ignore `archived_at` et remettrait en service tout ce qui est
+  archivé ; `prisma/rollback/20261118170000_l_archive_des_referentiels.sql`
+  le dit et liste ce qu'il faudrait relever.
+- **Course archive ↔ pose fermée** (TVA, contexte) : `VatRateLock` /
+  `SalesContextLock`, `FOR UPDATE` à l'archive, `FOR SHARE` à la pose, lecture
+  et écriture dans la même transaction ; deux e2e de concurrence.
+- **Une édition ne défait plus une archive** : `save` n'écrit plus
+  `archived_at`, seul `saveArchival` l'écrit ; e2e de régression du renommage
+  concurrent.
+- **La réémission** qui suit l'archive d'un contexte part après validation,
+  comme pour tous les gestes du référentiel (`CatalogReemission` : appelée
+  dans le geste, elle verrouillerait toutes les fiches).
+
 ### L5 — Découper `Product` et `Variant` (qualité, SOLID, DDD)
 
 L'agrégat reste un : `Product` est la racine et garde ses invariants. Ce qui
@@ -335,4 +433,4 @@ Total : **9 à 11 jours**.
 
 - La longueur des fonctions (≲40 lignes) n'a été mesurée que sur
   `create-product.ts` : L8 pourrait aussi compter les fonctions.
-- Les écrans qui suppriment les cinq objets de L4 : à inventorier au bâti.
+- Les écrans qui suppriment les cinq objets de L4 : inventoriés au bâti (cinq panneaux, quatre listes, la fiche produit pour la limite).

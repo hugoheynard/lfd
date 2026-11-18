@@ -8,8 +8,10 @@ import { CreateIngredientHandler } from "./application/create-ingredient.js";
 import { ListAppellationsHandler } from "./application/list-appellations.js";
 import { ListIngredientsHandler } from "./application/list-ingredients.js";
 import { ReadProductIngredientsHandler } from "./application/read-product-ingredients.js";
-import { RemoveAppellationHandler } from "./application/remove-appellation.js";
-import { RemoveIngredientHandler } from "./application/remove-ingredient.js";
+import { ArchiveAppellationHandler } from "./application/archive-appellation.js";
+import { ArchiveIngredientHandler } from "./application/archive-ingredient.js";
+import { RestoreAppellationHandler } from "./application/restore-appellation.js";
+import { RestoreIngredientHandler } from "./application/restore-ingredient.js";
 import { SetIngredientAllergensHandler } from "./application/set-ingredient-allergens.js";
 import { SetProductIngredientsHandler } from "./application/set-product-ingredients.js";
 import { UpdateAppellationHandler } from "./application/update-appellation.js";
@@ -44,10 +46,12 @@ import { IngredientCompositionCopier } from "./infrastructure/ingredient-composi
   providers: [
     CreateAppellationHandler,
     UpdateAppellationHandler,
-    RemoveAppellationHandler,
+    ArchiveAppellationHandler,
+    RestoreAppellationHandler,
     CreateIngredientHandler,
     UpdateIngredientHandler,
-    RemoveIngredientHandler,
+    ArchiveIngredientHandler,
+    RestoreIngredientHandler,
     SetProductIngredientsHandler,
     SetIngredientAllergensHandler,
     ListAppellationsHandler,

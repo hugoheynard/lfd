@@ -174,13 +174,13 @@ verrouiller le catalogue entier. Elle est appelée **après** le `uow.run`, et
 une fiche en échec est journalisée et listée sans faire échouer le geste,
 déjà validé (`apps/lfd-api/src/pim/channels/b2b-platform/products/catalog-reemission.service.ts:72-91`).
 
-| Déclencheur                                          | Appel                                                                                                                                |
-| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| audience, taux d'une famille                         | `productsOfCategories` (`apps/lfd-api/src/pim/catalogue/category/application/set-category-audience.ts:50`, `set-category-vat.ts:57`) |
-| modifier ou retirer un taux de TVA                   | `everything` (`apps/lfd-api/src/pim/reference/vat-rates/application/update-vat-rate.ts:51`, `remove-vat-rate.ts:43`)                 |
-| modifier ou retirer un contexte de vente             | `everything` (`apps/lfd-api/src/pim/reference/sales-contexts/application/update-sales-context.ts:60`, `remove-sales-context.ts:55`)  |
-| le référentiel d'allergènes (7 gestes)               | `everything` (par exemple `apps/lfd-api/src/pim/reference/allergens/application/revise-allergen-entry.ts:74`)                        |
-| `POST /pim/channels/b2b/reemit` — une fiche, ou tout | `apps/lfd-api/src/pim/channels/b2b-platform/http/reemit.controller.ts`                                                               |
+| Déclencheur                                          | Appel                                                                                                                                                               |
+| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| audience, taux d'une famille                         | `productsOfCategories` (`apps/lfd-api/src/pim/catalogue/category/application/set-category-audience.ts:50`, `set-category-vat.ts:57`)                                |
+| modifier, archiver ou restaurer un taux de TVA       | `everything` (`apps/lfd-api/src/pim/reference/vat-rates/application/update-vat-rate.ts:51`, `archive-vat-rate.ts:52`, `restore-vat-rate.ts:41`)                     |
+| modifier, archiver ou restaurer un contexte de vente | `everything` (`apps/lfd-api/src/pim/reference/sales-contexts/application/update-sales-context.ts:60`, `archive-sales-context.ts:56`, `restore-sales-context.ts:44`) |
+| le référentiel d'allergènes (7 gestes)               | `everything` (par exemple `apps/lfd-api/src/pim/reference/allergens/application/revise-allergen-entry.ts:74`)                                                       |
+| `POST /pim/channels/b2b/reemit` — une fiche, ou tout | `apps/lfd-api/src/pim/channels/b2b-platform/http/reemit.controller.ts`                                                                                              |
 
 (La méthode et le rapport du prix pro réémettaient tout ; ils sont retirés le
 2026-10-27, lot R3.)

@@ -15,7 +15,8 @@ import {
 import { AdminSurface } from "../../../../platform/auth/admin-surface.decorator.js";
 import { ZodBody } from "../../../../platform/shared/http/zod-body.pipe.js";
 import { CreateIngredientCommand } from "../application/create-ingredient.js";
-import { RemoveIngredientCommand } from "../application/remove-ingredient.js";
+import { ArchiveIngredientCommand } from "../application/archive-ingredient.js";
+import { RestoreIngredientCommand } from "../application/restore-ingredient.js";
 import { UpdateIngredientCommand } from "../application/update-ingredient.js";
 import { ListIngredientsQuery } from "../application/list-ingredients.js";
 import { ReadProductIngredientsQuery } from "../application/read-product-ingredients.js";
@@ -79,12 +80,21 @@ export class IngredientController {
     return { key };
   }
 
+  /**
+   * **Archive** l'ingrédient — la route garde son verbe `DELETE` et sa
+   * réponse : un ingrédient ne se supprime plus.
+   */
   @Delete("ingredients/:key")
-  @Idempotent(
-    "retire l'ingrédient : rejoué, il n'existe plus et la demande est refusée (404) sans rien écrire",
-  )
-  async removeIngredient(@Param("key") key: string) {
-    await this.commands.execute<RemoveIngredientCommand, void>(new RemoveIngredientCommand(key));
+  @Idempotent("archive l'ingrédient : rejouée, il l'est déjà et rien ne s'écrit")
+  async archiveIngredient(@Param("key") key: string) {
+    await this.commands.execute<ArchiveIngredientCommand, void>(new ArchiveIngredientCommand(key));
+    return { key };
+  }
+
+  @Post("ingredients/:key/restore")
+  @Idempotent("remet l'ingrédient au référentiel : rejouée, il l'est déjà et rien ne s'écrit")
+  async restoreIngredient(@Param("key") key: string) {
+    await this.commands.execute<RestoreIngredientCommand, void>(new RestoreIngredientCommand(key));
     return { key };
   }
 

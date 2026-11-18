@@ -1,5 +1,6 @@
 import {
   RootSalesContextProtectedError,
+  SalesContextInUseError,
   SalesContextKeyInvalidError,
   SalesContextLabelRequiredError,
 } from "../../errors/sales-context-errors.js";
@@ -21,6 +22,7 @@ describe("SalesContextAggregate", () => {
         label: "Traiteur",
         active: true,
         position: 3,
+        archivedAt: null,
       });
     });
 
@@ -41,7 +43,14 @@ describe("SalesContextAggregate", () => {
 
   describe("reconstitute", () => {
     it("rend l'instantané tel qu'il a été relu, sans revalider la clé", () => {
-      const snapshot = { id: "x", key: "b2b", label: "Pro", active: false, position: 0 };
+      const snapshot = {
+        id: "x",
+        key: "b2b",
+        label: "Pro",
+        active: false,
+        position: 0,
+        archivedAt: null,
+      };
 
       expect(SalesContextAggregate.reconstitute(snapshot).snapshot()).toEqual(snapshot);
     });
@@ -79,20 +88,40 @@ describe("SalesContextAggregate", () => {
     });
   });
 
-  describe("refuseRemovalIfRoot", () => {
-    it("refuse d'effacer la racine, en disant qu'elle peut être mise hors service", () => {
+  describe("archive", () => {
+    /** L'instant n'est comparé qu'à lui-même : aucune horloge n'est en jeu. */
+    const AT = new Date("2026-11-18T09:00:00.000Z");
+
+    it("refuse d'archiver la racine, en disant qu'elle peut être mise hors service", () => {
       const root = open(ROOT_CONTEXT_KEY, "Pro");
 
       expect(root.isRoot).toBe(true);
-      expect(() => root.refuseRemovalIfRoot()).toThrow(RootSalesContextProtectedError);
-      expect(() => root.refuseRemovalIfRoot()).toThrow(/hors service/u);
+      expect(() => root.archive(AT, 0)).toThrow(RootSalesContextProtectedError);
+      expect(() => root.archive(AT, 0)).toThrow(/hors service/u);
     });
 
-    it("laisse passer un contexte ordinaire", () => {
+    it("refuse d'archiver un contexte qui porte des taux", () => {
       const context = open("traiteur");
 
-      expect(context.isRoot).toBe(false);
-      expect(() => context.refuseRemovalIfRoot()).not.toThrow();
+      expect(() => context.archive(AT, 2)).toThrow(SalesContextInUseError);
+      expect(context.isArchived).toBe(false);
+    });
+
+    it("archive un contexte ordinaire que rien ne retient, une seule fois", () => {
+      const context = open("traiteur");
+
+      expect(context.archive(AT, 0)).toBe(true);
+      expect(context.archive(AT, 0)).toBe(false);
+      expect(context.snapshot().archivedAt).toBe(AT);
+    });
+
+    it("se restaure, et la restauration rejouée ne change rien", () => {
+      const context = open("traiteur");
+      context.archive(AT, 0);
+
+      expect(context.restore()).toBe(true);
+      expect(context.restore()).toBe(false);
+      expect(context.isArchived).toBe(false);
     });
   });
 });

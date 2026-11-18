@@ -123,7 +123,7 @@ const salesContextUpdated = payload({
     position: z.number().int(),
   }),
 });
-const salesContextDeleted = payload({ key: z.string(), label: z.string() });
+const salesContextState = payload({ key: z.string(), label: z.string() });
 
 const appellationCreated = payload({
   code: z.string(),
@@ -133,7 +133,7 @@ const appellationCreated = payload({
 const appellationUpdated = payload({
   changes: changes({ label: localizedText(), scheme: z.string(), active: z.boolean() }),
 });
-const appellationDeleted = payload({ label: localizedText() });
+const appellationState = payload({ label: localizedText() });
 
 const ingredientCreatedV1 = payload({
   key: z.string(),
@@ -150,7 +150,7 @@ const ingredientUpdatedV1 = payload({
     appellationId: ref("appellation").nullable(),
   }),
 });
-const ingredientDeleted = payload({ name: localizedText() });
+const ingredientState = payload({ name: localizedText() });
 /**
  * Ce que la matière contient : l'avant et l'après, en codes d'allergènes — et,
  * depuis le 2026-10-26, l'affirmation « aucun allergène » quand elle bouge
@@ -205,6 +205,8 @@ export const REFERENTIAL_SETTINGS_FACTS = {
   /** `subjectLabel` = le nom APRÈS : c'est celui que le taux porte depuis. */
   "vat_rate.renamed": labelled(fromTo(z.string())),
   "vat_rate.deleted": labelled(vatRateSnapshot),
+  "vat_rate.archived": labelled(vatRateSnapshot),
+  "vat_rate.restored": labelled(vatRateSnapshot),
 
   /**
    * La méthode de calcul du prix professionnel. Le sujet est unique (les
@@ -253,11 +255,15 @@ export const REFERENTIAL_SETTINGS_FACTS = {
 
   "sales_context.created": labelled(salesContextCreated),
   "sales_context.updated": labelled(salesContextUpdated),
-  "sales_context.deleted": labelled(salesContextDeleted),
+  "sales_context.deleted": labelled(salesContextState),
+  "sales_context.archived": labelled(salesContextState),
+  "sales_context.restored": labelled(salesContextState),
 
   "appellation.created": labelled(appellationCreated),
   "appellation.updated": labelled(appellationUpdated),
-  "appellation.deleted": labelled(appellationDeleted),
+  "appellation.deleted": labelled(appellationState),
+  "appellation.archived": labelled(appellationState),
+  "appellation.restored": labelled(appellationState),
 
   /** L'appellation revendiquée, nommée — la même clé qu'à la modification. */
   "ingredient.created": fact(
@@ -282,7 +288,9 @@ export const REFERENTIAL_SETTINGS_FACTS = {
     }),
     [ingredientUpdatedV1],
   ),
-  "ingredient.deleted": labelled(ingredientDeleted),
+  "ingredient.deleted": labelled(ingredientState),
+  "ingredient.archived": labelled(ingredientState),
+  "ingredient.restored": labelled(ingredientState),
   "ingredient.allergens_saved": labelled(ingredientAllergens),
 
   "allergen_category.created": labelled(allergenCategoryCreated),
@@ -323,4 +331,6 @@ export const REFERENTIAL_SETTINGS_FACTS = {
    */
   "order_time_limit.set": labelled(orderTimeLimit()),
   "order_time_limit.removed": labelled(orderTimeLimit()),
+  "order_time_limit.archived": labelled(orderTimeLimit()),
+  "order_time_limit.restored": labelled(orderTimeLimit()),
 } as const satisfies JournalFactFamily;

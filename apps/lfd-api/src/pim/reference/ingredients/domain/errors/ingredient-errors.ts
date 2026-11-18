@@ -37,18 +37,15 @@ export class AppellationNotFoundError extends ResourceNotFoundError {
 }
 
 /**
- * Des ingrédients la citent : on refuse de l'effacer.
- *
- * Ce n'est pas une prudence de façade. Une appellation est une affirmation
- * réglementée ; l'effacer sous les ingrédients qui la portent laisserait des
- * badges affirmant un signe officiel que plus rien ne définit.
+ * Une appellation archivée ne se pose plus sur un ingrédient. Ceux qui la
+ * portaient déjà la gardent : l'archive ne retire pas une affirmation faite.
  */
-export class AppellationInUseError extends BusinessError {
+export class AppellationArchivedError extends BusinessError {
   constructor(code: string) {
     super(
-      "catalogue.appellation.in_use",
-      `« ${code} » est encore portée par des ingrédients. Retirez-la d'eux ` +
-        `avant de la supprimer — ou mettez-la hors service.`,
+      "catalogue.appellation.archived",
+      `L'appellation « ${code} » est archivée : elle ne se pose plus sur un ingrédient. ` +
+        `Restaurez-la depuis l'écran des provenances pour la citer.`,
     );
   }
 }
@@ -67,12 +64,16 @@ export class IngredientNotFoundError extends ResourceNotFoundError {
   }
 }
 
-/** Des fiches le citent : on refuse de l'effacer. */
-export class IngredientInUseError extends BusinessError {
+/**
+ * Un ingrédient archivé ne se cite plus sur une fiche qui ne le citait pas. Une
+ * composition qui le cite déjà le garde.
+ */
+export class IngredientArchivedError extends BusinessError {
   constructor(key: string) {
     super(
-      "catalogue.ingredient.in_use",
-      `« ${key} » est encore cité par des fiches. Retirez-le d'elles avant de le supprimer.`,
+      "catalogue.ingredient.archived",
+      `L'ingrédient « ${key} » est archivé : il ne s'ajoute plus à une fiche. ` +
+        `Restaurez-le depuis l'écran des provenances pour le citer.`,
     );
   }
 }

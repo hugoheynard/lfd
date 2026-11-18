@@ -90,5 +90,14 @@
         </div>
       </ng-template>
     </fold-data-table>
+
+    <app-archived-list
+      title="Appellations archivées"
+      restoreMessage="Restaurer cette appellation ? Elle se posera de nouveau sur les ingrédients."
+      [entries]="archived()"
+      [canRestore]="canWrite()"
+      [busy]="busy()"
+      (restore)="restore($event)"
+    />
   }
 </fold-page-layout>

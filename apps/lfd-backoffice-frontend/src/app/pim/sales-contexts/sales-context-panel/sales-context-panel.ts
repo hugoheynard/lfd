@@ -64,10 +64,8 @@ export class SalesContextPanel {
   protected readonly draftKey = signal('');
   protected readonly draftLabel = signal('');
   protected readonly draftActive = signal(true);
-  /** Saisie de confirmation de suppression (doit égaler la clé). */
-  protected readonly confirmKey = signal('');
   protected readonly busy = signal(false);
-  /** La zone dangereuse reste repliée : on ne supprime pas par inadvertance. */
+  /** La zone dangereuse reste repliée : on n'archive pas par inadvertance. */
   protected readonly dangerOpen = signal(false);
 
   protected readonly context = computed(() => this.data()?.context);
@@ -78,7 +76,7 @@ export class SalesContextPanel {
     this.isEdit() ? 'Régler le contexte' : 'Nouveau contexte de vente',
   );
 
-  /** Ce qui retient ce contexte — zéro partout donc suppression sans conséquence. */
+  /** Ce qui retient ce contexte — zéro = archivable. */
   protected readonly held = computed(() => {
     const target = this.context();
     if (target === undefined) {
@@ -94,15 +92,6 @@ export class SalesContextPanel {
     }
     return target.ratedBy > 0 ? `${String(target.ratedBy)} taux réglé(s)` : '';
   });
-
-  /** Pour supprimer, la clé retapée doit correspondre exactement. */
-  protected readonly confirmMatches = computed(
-    () => this.confirmKey().trim() === (this.context()?.key ?? ' '),
-  );
-
-  protected readonly canDelete = computed(
-    () => !this.isRoot() && this.held() === 0 && this.confirmMatches() && !this.busy(),
-  );
 
   constructor() {
     effect(() => {
@@ -123,12 +112,12 @@ export class SalesContextPanel {
     await this.run(() => this.persist());
   }
 
-  protected async remove(): Promise<void> {
+  protected async archive(): Promise<void> {
     const target = this.context();
     if (target === undefined) {
       return;
     }
-    await this.run(() => this.store.remove(target.key));
+    await this.run(() => this.store.archive(target.key));
   }
 
   protected toggleDanger(): void {

@@ -4,11 +4,16 @@ import {
   ViewEncapsulation,
   computed,
   inject,
+  signal,
 } from '@angular/core';
 
 import { FoldButtonComponent, FoldPageLayoutComponent, FoldPanelHostService } from 'fold-ng';
 
 import { PermissionsStore } from '../../../auth/permissions.store';
+import { NotifyService } from '../../../notify.service';
+import { formatPercent } from '../../data/channels';
+import { ArchivedList, type ArchivedEntry } from '../../shared/archived-list/archived-list';
+import { VatRateStore } from './vat-store';
 import { VatRateFormPanel } from './vat-rate-form-panel/vat-rate-form-panel';
 import { VatRateTable } from './vat-rate-table/vat-rate-table';
 
@@ -24,14 +29,15 @@ import { VatRateTable } from './vat-rate-table/vat-rate-table';
  * y poussait les collections `tva-*`. Ce n'était pas un usage mais un **envoi**,
  * et il est parti dans Publication, où vivent les canaux. Restait ici
  * le seul usage qui regarde vers l'intérieur : combien de familles visent le
- * taux — la colonne « Utilisé par », qui dit avant la suppression ce que la
- * base refuserait après.
+ * taux — la colonne « Utilisé par », qui dit avant l'archive ce que le
+ * référentiel refuserait après. Les taux archivés sont repliés sous le
+ * tableau, avec « Restaurer ».
  */
 
 @Component({
   selector: 'app-vat-rates-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldPageLayoutComponent, FoldButtonComponent, VatRateTable],
+  imports: [FoldPageLayoutComponent, FoldButtonComponent, VatRateTable, ArchivedList],
   templateUrl: './vat-rates-page.html',
   styleUrl: './vat-rates-page.scss',
   // Encapsulation désactivée pour une seule règle : garder le CTA sur la ligne
@@ -43,6 +49,19 @@ import { VatRateTable } from './vat-rate-table/vat-rate-table';
 export class VatRatesPage {
   private readonly panelHost = inject(FoldPanelHostService);
   private readonly permissions = inject(PermissionsStore);
+  private readonly store = inject(VatRateStore);
+  private readonly notify = inject(NotifyService);
+
+  protected readonly busy = signal(false);
+
+  /** Les taux archivés, à part : ils ne se proposent plus, et reviennent d'ici. */
+  protected readonly archived = computed<readonly ArchivedEntry[]>(() =>
+    this.store.archivedItems().map((rate) => ({
+      key: rate.id,
+      label: rate.name,
+      detail: formatPercent(rate.percent),
+    })),
+  );
 
   /**
    * Poser un taux est un droit à part (`tax:write`, la comptabilité l'a).
@@ -55,5 +74,16 @@ export class VatRatesPage {
    *  jour tout seul quand un taux en sort. */
   protected openCreate(): void {
     this.panelHost.open<boolean>(VatRateFormPanel, { side: 'right' });
+  }
+
+  protected async restore(id: string): Promise<void> {
+    this.busy.set(true);
+    try {
+      await this.store.restore(id);
+    } catch (caught) {
+      this.notify.refused(caught, 'Restauration refusée.');
+    } finally {
+      this.busy.set(false);
+    }
   }
 }

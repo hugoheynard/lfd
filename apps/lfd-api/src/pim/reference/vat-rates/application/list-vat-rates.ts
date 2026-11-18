@@ -21,8 +21,9 @@ const UNUSED: Readonly<Record<string, number>> = {};
 
 /**
  * Rend un **modèle de lecture**, et non l'instantané de l'agrégat : la vue porte
- * en plus le nombre de familles qui visent chaque taux. C'est ce qui manquait
- * à l'écran pour prévenir avant une suppression que la base refusera.
+ * en plus le nombre de familles qui visent chaque taux, pour prévenir avant une
+ * archive que l'agrégat refusera. Les taux archivés y sont, marqués : c'est
+ * d'ici qu'on les restaure, et ce sont les listes de choix qui les écartent.
  */
 @QueryHandler(ListVatRatesQuery)
 export class ListVatRatesHandler implements IQueryHandler<ListVatRatesQuery, VatRateView[]> {
@@ -43,8 +44,12 @@ export class ListVatRatesHandler implements IQueryHandler<ListVatRatesQuery, Vat
   private async fromBase(): Promise<VatRateView[]> {
     const [rates, usage] = await Promise.all([this.rates.listAll(), this.rates.usageByRegime()]);
     return rates.map((rate) => {
-      const snapshot = rate.snapshot();
-      return { ...snapshot, usage: usage.get(snapshot.id) ?? UNUSED };
+      const { archivedAt, ...snapshot } = rate.snapshot();
+      return {
+        ...snapshot,
+        usage: usage.get(snapshot.id) ?? UNUSED,
+        archived: archivedAt !== null,
+      };
     });
   }
 }

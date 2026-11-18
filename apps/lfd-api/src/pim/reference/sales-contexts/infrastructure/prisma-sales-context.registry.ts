@@ -44,10 +44,16 @@ export class PrismaSalesContextRegistry extends SalesContextRegistry {
     super();
   }
 
+  /**
+   * En service ET non archivés : c'est la liste qui se PROPOSE — au réglage
+   * d'un taux, à la facturation. Un contexte archivé n'y entre plus, même
+   * resté coché « en service ».
+   */
   async active(): Promise<readonly SalesContext[]> {
-    return this.read({ active: true });
+    return this.read({ active: true, archivedAt: null });
   }
 
+  /** Tous, archivés compris : un fait passé peut citer un contexte archivé depuis. */
   async all(): Promise<readonly SalesContext[]> {
     return this.read({});
   }
@@ -71,7 +77,10 @@ export class PrismaSalesContextRegistry extends SalesContextRegistry {
     });
   }
 
-  private async read(where: { active?: boolean }): Promise<readonly SalesContext[]> {
+  private async read(where: {
+    active?: boolean;
+    archivedAt?: null;
+  }): Promise<readonly SalesContext[]> {
     const rows = await this.prisma.salesContext.findMany({
       where,
       orderBy: { position: "asc" },

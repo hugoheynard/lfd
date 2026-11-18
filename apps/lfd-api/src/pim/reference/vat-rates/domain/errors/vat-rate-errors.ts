@@ -20,20 +20,41 @@ export class VatRateNotFoundError extends BusinessError {
  * aucun moyen de savoir qu'il vient de recréer le taux réduit.
  */
 export class VatRateConflictError extends BusinessError {
-  constructor(percent: number) {
+  constructor(percent: number, archived = false) {
+    const shown = String(percent).replace(".", ",");
     super(
       "commerce.tva_rate_conflict",
-      `Un taux de TVA existe déjà à ${String(percent).replace(".", ",")} %.`,
+      archived
+        ? `Un taux de TVA archivé existe déjà à ${shown} % — restaurez-le plutôt que d'en créer un second.`
+        : `Un taux de TVA existe déjà à ${shown} %.`,
     );
   }
 }
 
-/** Suppression refusée : une catégorie vise encore ce taux (FK `Restrict`). */
+/**
+ * Un taux archivé ne se pose plus sur une famille ni sur une fiche : il ne se
+ * propose plus, et une fiche ne se facture pas à un taux qu'on a retiré.
+ */
+export class VatRateArchivedError extends BusinessError {
+  constructor(name: string) {
+    super(
+      "commerce.tva_rate_archived",
+      `Le taux de TVA « ${name} » est archivé : choisissez un taux en service, ` +
+        `ou restaurez-le depuis l'écran des taux de TVA.`,
+    );
+  }
+}
+
+/**
+ * Archive refusée : une famille ou une fiche porte encore ce taux. Le code est
+ * celui du refus de suppression d'avant — même cas, même geste de sortie.
+ */
 export class VatRateInUseError extends BusinessError {
   constructor(id: string) {
     super(
       "commerce.tva_rate_in_use",
-      `Taux de TVA utilisé par une catégorie — réaffectez-la d'abord (${id}).`,
+      `Taux de TVA utilisé par une famille ou une fiche — réaffectez-les à un autre taux ` +
+        `avant de l'archiver (${id}).`,
     );
   }
 }
