@@ -194,7 +194,8 @@ pim/
 - 🔴 **À trancher par Hugo** : `rename`, `changeKind`, `reclassify` acceptent
   un produit **archivé** (`product.ts:415-427`, `product-support.ts:45` ne
   refuse que `deleted`). Recommandation : les refuser — un archivé se
-  restaure avant de se modifier.
+  restaure avant de se modifier. **Décidé par Hugo le 2026-11-18 : refusé**
+  (`ArchivedProductNotEditableError`, bâti le même jour).
 
 ### L3 — `Revision` en agrégat, la mise en vente nommée (DDD)
 

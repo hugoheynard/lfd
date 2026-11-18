@@ -9,6 +9,7 @@ import {
   VariantNotFoundError,
   VariantNotInProductError,
 } from "../errors/product-errors.js";
+import { refuseEditOfArchived } from "../errors/archived-product-edit-errors.js";
 import {
   Variant,
   type VariantAspect,
@@ -413,16 +414,19 @@ export class Product {
 
   /** Renomme — et re-dérive le slug. */
   rename(name: LocalizedText): void {
+    refuseEditOfArchived(this.statusValue, this.identity, "rename");
     this.nameValue = name;
     this.slugValue = slugOf(name);
   }
 
   changeKind(kind: ProductKind): void {
+    refuseEditOfArchived(this.statusValue, this.identity, "change_kind");
     this.kindValue = kind;
   }
 
   /** Range le produit dans une autre famille (`ReclassifyProduct`). */
   reclassify(categoryId: string): void {
+    refuseEditOfArchived(this.statusValue, this.identity, "reclassify");
     this.categoryIdValue = categoryId;
   }
 
@@ -922,15 +926,10 @@ export class Product {
   /**
    * Ce que le défaut prête à une déclinaison alignée, section par section.
    *
-   * Trois sections depuis le 2026-09-22, et la fiche réglementaire en fait deux
-   * à elle seule : ses moitiés s'enregistrent séparément, donc elles s'héritent
-   * séparément. Une déclinaison peut porter ses propres valeurs nutritionnelles
-   * tout en suivant les allergènes du défaut — c'est le cas courant d'un format
-   * différent de la même pâte.
-   *
-   * Le prix et le poids voyagent ENSEMBLE, jamais l'un sans l'autre : un prix
-   * hérité au-dessus d'un poids propre décrirait un article que personne ne
-   * vend, et c'est le couple que la section « Tarif » enregistre.
+   * Trois sections, dont les deux moitiés de la fiche réglementaire, qui
+   * s'enregistrent et s'héritent séparément (un format différent de la même
+   * pâte suit les allergènes du défaut, pas ses valeurs). Le prix et le poids
+   * voyagent ensemble : c'est le couple que la section « Tarif » enregistre.
    */
   private resolvedSnapshot(variant: Variant): VariantSnapshot {
     const own = variant.snapshot();
