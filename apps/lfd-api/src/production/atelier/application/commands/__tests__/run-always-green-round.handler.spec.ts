@@ -140,9 +140,9 @@ describe("RunAlwaysGreenRoundHandler", () => {
     scene.clock.set(new Date(afterTheArrest() + 3_600_000));
     let loads = 0;
     const load = scene.days.load.bind(scene.days);
-    scene.days.load = (day) => {
+    scene.days.load = () => {
       loads += 1;
-      return load(day);
+      return load();
     };
 
     const report = await round.execute();
@@ -160,9 +160,9 @@ describe("RunAlwaysGreenRoundHandler", () => {
     });
     let loads = 0;
     const load = scene.days.load.bind(scene.days);
-    scene.days.load = (day) => {
+    scene.days.load = () => {
       loads += 1;
-      return load(day);
+      return load();
     };
 
     const report = await round.execute();
