@@ -244,6 +244,7 @@ est lue par l'instantané du catalogue (à vérifier au premier pas du lot) ;
 
 - 🔴 **À trancher par Hugo** : un taux ou un contexte **jamais utilisé** se
   supprime-t-il encore pour de bon ? Recommandation : non, l'archive suffit.
+  **Décidé par Hugo le 2026-11-18 : non, l'archive seulement.**
 
 ### L5 — Découper `Product` et `Variant` (qualité, SOLID, DDD)
 
