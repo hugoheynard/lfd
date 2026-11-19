@@ -36,11 +36,17 @@ const SERVED_ADAPTERS = [
   "catalogue/product/infrastructure/prisma-readiness.repository.ts",
   "catalogue/product/infrastructure/prisma-detachment-lineage.reader.ts",
   // Les référentiels.
-  "catalogue/category/infrastructure/prisma-product-count.reader.ts",
+  "catalogue/product/infrastructure/prisma-product-count.reader.ts",
   "reference/vat-rates/infrastructure/prisma-vat-rate.repository.ts",
+  "catalogue/category/infrastructure/prisma-category-rate-usage.reader.ts",
+  "catalogue/product/infrastructure/prisma-product-rate-usage.reader.ts",
+  "reference/sales-contexts/infrastructure/prisma-sales-context-keys.reader.ts",
   "reference/sales-contexts/infrastructure/prisma-sales-context.repository.ts",
+  "catalogue/category/infrastructure/prisma-category-context-rates.reader.ts",
+  "catalogue/product/infrastructure/prisma-product-context-rates.reader.ts",
   "reference/ingredients/infrastructure/prisma-appellation.repository.ts",
   "reference/ingredients/infrastructure/prisma-ingredient.repository.ts",
+  "reference/allergens/infrastructure/prisma-allergen-entry-ids.reader.ts",
   "reference/allergens/infrastructure/prisma-allergen-catalogue.reader.ts",
 ] as const;
 

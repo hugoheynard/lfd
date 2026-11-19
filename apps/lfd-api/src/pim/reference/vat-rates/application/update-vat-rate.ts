@@ -5,6 +5,7 @@ import type { WriteTicket } from "../../../../platform/journal/scoped-journal.js
 import { PIM_EVENTS, PimJournal } from "../../../journal/pim-journal.js";
 import { contextLabelsOf } from "../../sales-contexts/domain/services/context-labels.js";
 import { SalesContextRegistry } from "../../sales-contexts/domain/ports/sales-context.registry.js";
+import { VatRateContextUsageReader } from "../domain/ports/vat-rate-context-usage.reader.js";
 import { VatRateRepository } from "../domain/ports/vat-rate.repository.js";
 import type { VatRatePayload } from "./create-vat-rate.js";
 import { ensureRateFree, requireRate } from "./vat-support.js";
@@ -21,6 +22,7 @@ export class UpdateVatRateCommand {
 export class UpdateVatRateHandler implements ICommandHandler<UpdateVatRateCommand, void> {
   constructor(
     private readonly rates: VatRateRepository,
+    private readonly usage: VatRateContextUsageReader,
     private readonly contexts: SalesContextRegistry,
     private readonly journal: PimJournal,
     private readonly uow: UnitOfWork,
@@ -69,7 +71,7 @@ export class UpdateVatRateHandler implements ICommandHandler<UpdateVatRateComman
     const tickets: WriteTicket[] = [];
     if (before.percent !== after.percent) {
       // La portée : ce que ce taux touchait à l'instant du changement.
-      const families = { ...((await this.rates.usageByRegime()).get(after.id) ?? {}) };
+      const families = { ...((await this.usage.usageByRegime()).get(after.id) ?? {}) };
       tickets.push(
         await this.journal.trace({
           type: PIM_EVENTS.vatRateRateChanged,

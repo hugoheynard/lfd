@@ -20,6 +20,7 @@ import {
   type IngredientRecord,
 } from "../domain/ports/ingredient.repository.js";
 import { isUniqueViolation } from "../../../shared/json-readers.js";
+import { AllergenEntryIdsReader } from "../../allergens/domain/ports/allergen-entry-ids.reader.js";
 
 interface AppellationJoin {
   readonly id: string;
@@ -109,7 +110,10 @@ function toRecord(
 
 @Injectable()
 export class PrismaIngredientRepository extends IngredientRepository {
-  constructor(private readonly prisma: PimPrismaService) {
+  constructor(
+    private readonly prisma: PimPrismaService,
+    private readonly allergenEntries: AllergenEntryIdsReader,
+  ) {
     super();
   }
 
@@ -184,25 +188,19 @@ export class PrismaIngredientRepository extends IngredientRepository {
    * est appelé par TOUS les gestes de l'ingrédient — renommer une matière
    * réécrirait sinon ses liaisons à chaque fois, pour rien.
    *
-   * La traduction code → identifiant technique vit ici, comme celle des clés
-   * d'ingrédients de la composition : le fil et le journal parlent en codes,
-   * la base joint par identifiant. Un code absent du référentiel est refusé —
+   * La traduction code → identifiant technique est la lecture que le
+   * référentiel d'allergènes publie (`AllergenEntryIdsReader`) : le fil et le
+   * journal parlent en codes, la base joint par identifiant. Un code absent du référentiel est refusé —
    * le handler l'a déjà vérifié, mais un dépôt ne suppose pas son appelant.
    */
   private async linkAllergens(ingredientId: string, codes: readonly string[]): Promise<void> {
-    const [current, entries] = await Promise.all([
+    const [current, idOfCode] = await Promise.all([
       this.prisma.ingredientAllergen.findMany({
         where: { ingredientId },
         select: { entryId: true },
       }),
-      codes.length === 0
-        ? Promise.resolve([])
-        : this.prisma.allergenEntry.findMany({
-            where: { code: { in: [...codes] } },
-            select: { id: true, code: true },
-          }),
+      this.allergenEntries.idsOfCodes(codes),
     ]);
-    const idOfCode = new Map(entries.map((entry) => [entry.code, entry.id]));
     const wanted = new Set(
       codes.map((code) => {
         const entryId = idOfCode.get(code);

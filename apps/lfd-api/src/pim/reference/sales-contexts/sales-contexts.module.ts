@@ -12,12 +12,12 @@ import { UpdateSalesContextHandler } from "./application/update-sales-context.js
 import { ActiveSalesContextsReader } from "./domain/ports/active-sales-contexts.reader.js";
 import { SalesContextRegistry } from "./domain/ports/sales-context.registry.js";
 import { SalesContextRepository } from "./domain/ports/sales-context.repository.js";
-import { SalesContextUsageReader } from "./domain/ports/sales-context-usage.reader.js";
+import { SalesContextKeysReader } from "./domain/ports/sales-context-keys.reader.js";
 import { SalesContextLock } from "./domain/ports/sales-context.lock.js";
 import { SalesContextController } from "./http/sales-context.controller.js";
 import { PrismaSalesContextRegistry } from "./infrastructure/prisma-sales-context.registry.js";
 import { PrismaSalesContextRepository } from "./infrastructure/prisma-sales-context.repository.js";
-import { PrismaSalesContextUsageReader } from "./infrastructure/prisma-sales-context-usage.reader.js";
+import { PrismaSalesContextKeysReader } from "./infrastructure/prisma-sales-context-keys.reader.js";
 import { PrismaSalesContextLock } from "./infrastructure/prisma-sales-context.lock.js";
 
 /**
@@ -48,7 +48,9 @@ import { PrismaSalesContextLock } from "./infrastructure/prisma-sales-context.lo
  * Il **exporte** le registre : le catalogue le lit pour ses taux et sa matrice,
  * les canaux l'itèrent pour savoir ce qu'ils projettent. Le dépôt d'écriture,
  * lui, ne sort pas — on règle un contexte par cet écran, pas d'ailleurs. Le
- * verrou sort : la pose d'un taux le prend avant de relire les contextes.
+ * verrou sort : la pose d'un taux le prend avant de relire les contextes. Les
+ * clés par identifiant sortent : les taux comptent par identifiant et
+ * l'écran parle en clé.
  */
 @Module({
   imports: [PimDatabaseModule, PimChangesModule],
@@ -62,13 +64,21 @@ import { PrismaSalesContextLock } from "./infrastructure/prisma-sales-context.lo
     ListSalesContextsHandler,
     { provide: SalesContextRegistry, useClass: PrismaSalesContextRegistry },
     { provide: SalesContextRepository, useClass: PrismaSalesContextRepository },
-    { provide: SalesContextUsageReader, useClass: PrismaSalesContextUsageReader },
+    // `SalesContextUsageReader` et `SalesContextRatingsReader` sont fournis par
+    // `appBootstrap/` (global) : le catalogue y répond, et ce module ne peut
+    // pas l'importer.
+    { provide: SalesContextKeysReader, useClass: PrismaSalesContextKeysReader },
     { provide: SalesContextLock, useClass: PrismaSalesContextLock },
     // Le port étroit (ISP) : la même instance, vue par ceux qui ne lisent que
     // les contextes en service — la règle de complétude des fiches.
     { provide: ActiveSalesContextsReader, useExisting: SalesContextRegistry },
   ],
-  exports: [SalesContextRegistry, ActiveSalesContextsReader, SalesContextLock],
+  exports: [
+    SalesContextRegistry,
+    ActiveSalesContextsReader,
+    SalesContextLock,
+    SalesContextKeysReader,
+  ],
 })
 export class SalesContextsModule implements OnModuleInit {
   private readonly logger = new Logger(SalesContextsModule.name);

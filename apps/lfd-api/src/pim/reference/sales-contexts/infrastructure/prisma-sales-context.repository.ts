@@ -8,6 +8,7 @@ import {
   SalesContextRepository,
   type SalesContextUsage,
 } from "../domain/ports/sales-context.repository.js";
+import { SalesContextRatingsReader } from "../domain/ports/sales-context-ratings.reader.js";
 
 interface SalesContextRow {
   readonly id: string;
@@ -31,7 +32,10 @@ function toAggregate(row: SalesContextRow): SalesContextAggregate {
 
 @Injectable()
 export class PrismaSalesContextRepository extends SalesContextRepository {
-  constructor(private readonly prisma: PimPrismaService) {
+  constructor(
+    private readonly prisma: PimPrismaService,
+    private readonly ratings: SalesContextRatingsReader,
+  ) {
     super();
   }
 
@@ -73,26 +77,22 @@ export class PrismaSalesContextRepository extends SalesContextRepository {
   }
 
   /**
-   * Ce qui retient chaque contexte — les taux, famille et fiche, deux `groupBy`.
-   *
-   * Comptés côté base : charger les taux pour n'en garder que des nombres
-   * ferait voyager tout le catalogue pour peupler une colonne d'écran.
+   * Ce qui retient chaque contexte — les taux, famille et fiche, que le
+   * catalogue compte côté base (`SalesContextRatingsReader`).
    */
   async usageByKey(): Promise<ReadonlyMap<string, SalesContextUsage>> {
-    const [ratedCategory, ratedProduct, contexts] = await Promise.all([
-      this.prisma.categoryContextVat.groupBy({ by: ["contextId"], _count: { _all: true } }),
-      this.prisma.productContextVat.groupBy({ by: ["contextId"], _count: { _all: true } }),
+    const [ratedByContext, contexts] = await Promise.all([
+      this.ratings.ratedByContext(),
       this.prisma.salesContext.findMany({ select: { id: true, key: true } }),
     ]);
 
     // Les taux joignent par IDENTIFIANT ; l'écran parle en clé. On traduit une
     // fois plutôt que de faire porter la traduction à chaque lecteur.
-    const keyById = new Map(contexts.map((context) => [context.id, context.key]));
     const usage = new Map<string, SalesContextUsage>();
-    for (const row of [...ratedCategory, ...ratedProduct]) {
-      const key = keyById.get(row.contextId);
-      if (key !== undefined) {
-        usage.set(key, { ratedBy: (usage.get(key)?.ratedBy ?? 0) + row._count._all });
+    for (const context of contexts) {
+      const ratedBy = ratedByContext.get(context.id);
+      if (ratedBy !== undefined) {
+        usage.set(context.key, { ratedBy });
       }
     }
     return usage;

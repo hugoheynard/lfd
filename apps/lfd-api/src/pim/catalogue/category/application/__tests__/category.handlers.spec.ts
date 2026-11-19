@@ -3,10 +3,7 @@ import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/dir
 import { RecordingJournal } from "../../../../journal/__tests__/recording-journal.js";
 import { VatRateNotFoundError } from "../../../../reference/vat-rates/domain/errors/vat-rate-errors.js";
 import { VatRate } from "../../../../reference/vat-rates/domain/entities/vat-rate.js";
-import {
-  VatRateRepository,
-  type VatRateUsage,
-} from "../../../../reference/vat-rates/domain/ports/vat-rate.repository.js";
+import { VatRateRepository } from "../../../../reference/vat-rates/domain/ports/vat-rate.repository.js";
 import { UuidGenerator } from "../../../../../platform/id/uuid-generator.js";
 import { RecordingVatRateLock } from "../../../../reference/vat-rates/domain/ports/__tests__/recording-vat-rate-lock.js";
 import { RecordingSalesContextLock } from "../../../../reference/sales-contexts/domain/ports/__tests__/recording-sales-context-lock.js";
@@ -176,9 +173,6 @@ class InMemoryRegimes extends VatRateRepository {
   }
   findByPercent(percent: number): Promise<VatRate | null> {
     return Promise.resolve(this.rows.find((r) => r.percent === percent) ?? null);
-  }
-  usageByRegime(): Promise<ReadonlyMap<string, VatRateUsage>> {
-    return Promise.resolve(new Map());
   }
   add(rate: VatRate): Promise<void> {
     this.rows.push(rate);

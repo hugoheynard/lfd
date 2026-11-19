@@ -4,6 +4,7 @@ import type { VatRateView } from "@lfd/pim-contracts";
 
 import { PimContents } from "../../../changes/application/pim-contents.js";
 import { listContent, PIM_CONTENT_KEYS } from "../../../changes/application/pim-content-keys.js";
+import { VatRateContextUsageReader } from "../domain/ports/vat-rate-context-usage.reader.js";
 import { VatRateRepository } from "../domain/ports/vat-rate.repository.js";
 
 /** Lecture des taux de TVA — dispatchée par le `QueryBus`. Sans paramètre. */
@@ -29,6 +30,7 @@ const UNUSED: Readonly<Record<string, number>> = {};
 export class ListVatRatesHandler implements IQueryHandler<ListVatRatesQuery, VatRateView[]> {
   constructor(
     private readonly rates: VatRateRepository,
+    private readonly usage: VatRateContextUsageReader,
     private readonly contents: PimContents,
   ) {}
 
@@ -42,7 +44,7 @@ export class ListVatRatesHandler implements IQueryHandler<ListVatRatesQuery, Vat
   }
 
   private async fromBase(): Promise<VatRateView[]> {
-    const [rates, usage] = await Promise.all([this.rates.listAll(), this.rates.usageByRegime()]);
+    const [rates, usage] = await Promise.all([this.rates.listAll(), this.usage.usageByRegime()]);
     return rates.map((rate) => {
       const { archivedAt, ...snapshot } = rate.snapshot();
       return {

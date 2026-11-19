@@ -9,8 +9,8 @@ import { PrismaService } from "../../../platform/database/prisma.service.js";
 import type { WriteTicket } from "../../../platform/journal/scoped-journal.js";
 import { OrderTimeLimit } from "../domain/entities/order-time-limit.js";
 import { OrderTimeLimitRepository } from "../domain/ports/order-time-limit.repository.js";
+import { LimitTargetLabelsReader } from "../domain/ports/limit-target-labels.reader.js";
 import { LimitScope } from "../domain/value-objects/limit-scope.js";
-import { targetLabels } from "./target-labels.js";
 
 /** Une ligne telle que Prisma la rend. */
 interface LimitRow {
@@ -25,17 +25,20 @@ interface LimitRow {
 
 @Injectable()
 export class PrismaOrderTimeLimitRepository extends OrderTimeLimitRepository {
-  constructor(private readonly prisma: PrismaService) {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly targets: LimitTargetLabelsReader,
+  ) {
     super();
   }
 
   /**
    * Les règles, avec le **nom** de leur cible résolu pour l'affichage.
    *
-   * Trois lectures plutôt qu'une jointure : les cibles vivent dans trois tables
-   * différentes (famille, produit, déclinaison) et Prisma n'a pas de relation
-   * polymorphe. Les noms ne servent qu'à l'écran — une cible disparue rend
-   * `null`, et la règle reste visible plutôt que d'être escamotée avec elle.
+   * Les noms viennent du catalogue (`LimitTargetLabelsReader`) : les cibles
+   * vivent dans trois tables qui ne sont pas les nôtres. Ils ne servent qu'à
+   * l'écran — une cible disparue rend `null`, et la règle reste visible
+   * plutôt que d'être escamotée avec elle.
    */
   async list(): Promise<readonly OrderTimeLimitView[]> {
     return this.views(await this.prisma.orderTimeLimit.findMany());
@@ -85,7 +88,7 @@ export class PrismaOrderTimeLimitRepository extends OrderTimeLimitRepository {
   }
 
   private async views(rows: readonly LimitRow[]): Promise<readonly OrderTimeLimitView[]> {
-    const labels = await targetLabels(this.prisma, rows);
+    const labels = await this.targets.labelsOf(rows);
     return rows.flatMap((row) => {
       const view = toView(row, labels);
       return view === null ? [] : [view];

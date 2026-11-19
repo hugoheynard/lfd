@@ -4,7 +4,7 @@ import { PimPrismaService } from "../../../infra/database/pim-prisma.service.js"
 import { isUniqueViolation } from "../../../shared/json-readers.js";
 import { VatRate, type VatRateSnapshot } from "../domain/entities/vat-rate.js";
 import { VatRateConflictError } from "../domain/errors/vat-rate-errors.js";
-import { VatRateRepository, type VatRateUsage } from "../domain/ports/vat-rate.repository.js";
+import { VatRateRepository } from "../domain/ports/vat-rate.repository.js";
 
 interface VatRateRow {
   id: string;
@@ -97,47 +97,5 @@ export class PrismaVatRateRepository extends VatRateRepository {
       }
       throw error;
     }
-  }
-
-  /**
-   * Les usages comptés **côté base** : deux `groupBy` — les familles et les
-   * fiches qui dérogent — plus la table des contextes (trois lignes) pour nommer
-   * les clés. Compter en mémoire aurait demandé de charger tout le catalogue
-   * pour n'en garder que des nombres.
-   */
-  async usageByRegime(): Promise<ReadonlyMap<string, VatRateUsage>> {
-    const [byFamily, byProduct, contexts] = await Promise.all([
-      this.prisma.categoryContextVat.groupBy({
-        by: ["vatRateId", "contextId"],
-        _count: { _all: true },
-      }),
-      // Les DÉROGATIONS comptent aussi : un taux visé par une seule fiche ne
-      // s'archive pas plus qu'un taux visé par une famille entière, et l'écran
-      // doit le dire avant le clic.
-      this.prisma.productContextVat.groupBy({
-        by: ["vatRateId", "contextId"],
-        _count: { _all: true },
-      }),
-      this.prisma.salesContext.findMany({ select: { id: true, key: true } }),
-    ]);
-    const keyById = new Map(contexts.map((context) => [context.id, context.key]));
-
-    const usage = new Map<string, Record<string, number>>();
-    for (const row of [...byFamily, ...byProduct]) {
-      const key = keyById.get(row.contextId);
-      if (key === undefined) {
-        // Une ligne dont le contexte a disparu ne se compte pas : la nommer
-        // « inconnu » ferait apparaître un usage que l'écran ne sait pas
-        // expliquer. La clé étrangère rend le cas théorique ; on ne s'y appuie
-        // pas pour autant.
-        continue;
-      }
-      const current = usage.get(row.vatRateId) ?? {};
-      // On ADDITIONNE : familles et fiches visent le même taux dans le même
-      // contexte, et le compte doit dire combien de décisions en dépendent.
-      current[key] = (current[key] ?? 0) + row._count._all;
-      usage.set(row.vatRateId, current);
-    }
-    return usage;
   }
 }

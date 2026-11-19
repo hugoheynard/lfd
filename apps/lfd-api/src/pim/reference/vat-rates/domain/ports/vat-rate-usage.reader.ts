@@ -3,7 +3,7 @@
  * pour refuser un taux qui sert.
  *
  * Un port à part du dépôt (ISP) : l'archive n'a besoin que de ce compte, et la
- * liste en lit un autre, ventilé par contexte (`VatRateRepository.usageByRegime`).
+ * liste en lit un autre, ventilé par contexte (`VatRateContextUsageReader`).
  * La règle — « un taux qui sert ne s'archive pas » — est dans `VatRate.archive`.
  */
 export abstract class VatRateUsageReader {

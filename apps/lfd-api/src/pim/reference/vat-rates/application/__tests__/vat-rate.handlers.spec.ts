@@ -12,7 +12,11 @@ import {
 import { VatRateUsageReader } from "../../domain/ports/vat-rate-usage.reader.js";
 import { RecordingVatRateLock } from "../../domain/ports/__tests__/recording-vat-rate-lock.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
-import { VatRateRepository, type VatRateUsage } from "../../domain/ports/vat-rate.repository.js";
+import { VatRateRepository } from "../../domain/ports/vat-rate.repository.js";
+import {
+  VatRateContextUsageReader,
+  type VatRateUsage,
+} from "../../domain/ports/vat-rate-context-usage.reader.js";
 import { CreateVatRateCommand, CreateVatRateHandler } from "../create-vat-rate.js";
 import { ListVatRatesHandler } from "../list-vat-rates.js";
 import { ArchiveVatRateCommand, ArchiveVatRateHandler } from "../archive-vat-rate.js";
@@ -20,6 +24,14 @@ import { RestoreVatRateCommand, RestoreVatRateHandler } from "../restore-vat-rat
 import { UpdateVatRateCommand, UpdateVatRateHandler } from "../update-vat-rate.js";
 import { RecordingCatalogReemission } from "../../../../shared/__tests__/catalog-emitter-doubles.js";
 import { DirectPimContents } from "../../../../changes/application/__tests__/direct-pim-contents.js";
+
+/** Usages posés à la main par le test — le catalogue les compte. */
+class PostedUsage extends VatRateContextUsageReader {
+  readonly usage = new Map<string, VatRateUsage>();
+  usageByRegime(): Promise<ReadonlyMap<string, VatRateUsage>> {
+    return Promise.resolve(this.usage);
+  }
+}
 
 /** Garde des agrégats et reconstitue à chaque lecture — comme la vraie base. */
 class InMemoryRepo extends VatRateRepository {
@@ -59,12 +71,6 @@ class InMemoryRepo extends VatRateRepository {
     this.log.push(`saveArchival:${id}`);
     return Promise.resolve();
   }
-  /** Usages posés à la main par le test — la vraie base les compte. */
-  readonly usage = new Map<string, VatRateUsage>();
-  usageByRegime(): Promise<ReadonlyMap<string, VatRateUsage>> {
-    return Promise.resolve(this.usage);
-  }
-
   at(id: string): VatRateSnapshot | undefined {
     return this.stored.get(id);
   }
@@ -151,6 +157,7 @@ describe("UpdateVatRateHandler", () => {
     await expect(
       new UpdateVatRateHandler(
         new InMemoryRepo(),
+        new PostedUsage(),
         new KnownContexts(),
         new RecordingJournal(),
         new DirectUnitOfWork(),
@@ -170,6 +177,7 @@ describe("UpdateVatRateHandler", () => {
 
     await new UpdateVatRateHandler(
       repo,
+      new PostedUsage(),
       new KnownContexts(),
       new RecordingJournal(),
       new DirectUnitOfWork(),
@@ -200,6 +208,7 @@ describe("UpdateVatRateHandler", () => {
 
     await new UpdateVatRateHandler(
       repo,
+      new PostedUsage(),
       new KnownContexts(),
       new RecordingJournal(),
       new DirectUnitOfWork(),
@@ -223,6 +232,7 @@ describe("UpdateVatRateHandler", () => {
     await expect(
       new UpdateVatRateHandler(
         repo,
+        new PostedUsage(),
         new KnownContexts(),
         new RecordingJournal(),
         new DirectUnitOfWork(),
@@ -345,6 +355,7 @@ describe("ArchiveVatRateHandler / RestoreVatRateHandler", () => {
 describe("ListVatRatesHandler", () => {
   it("joint le compte d’usages, et n’invente aucun contexte", async () => {
     const repo = new InMemoryRepo();
+    const usage = new PostedUsage();
     // Un SEUL générateur : deux instances repartiraient de `tva_1` chacune, et
     // le second taux écraserait le premier.
     const create = new CreateVatRateHandler(
@@ -355,9 +366,9 @@ describe("ListVatRatesHandler", () => {
     );
     await create.execute(new CreateVatRateCommand({ name: "Réduit", percent: 5.5 }));
     await create.execute(new CreateVatRateCommand({ name: "Normal", percent: 20 }));
-    repo.usage.set("tva_1", { takeaway: 3, eatIn: 1 });
+    usage.usage.set("tva_1", { takeaway: 3, eatIn: 1 });
 
-    const views = await new ListVatRatesHandler(repo, new DirectPimContents()).execute();
+    const views = await new ListVatRatesHandler(repo, usage, new DirectPimContents()).execute();
 
     // Un taux que personne ne vise rend une carte VIDE. Poser un zéro par
     // contexte reviendrait à nommer les contextes dans la réponse, donc à les
@@ -372,6 +383,7 @@ describe("ListVatRatesHandler", () => {
 describe("Le journal du référentiel", () => {
   it("distingue un taux qui bouge d’un simple renommage, et fige la portée", async () => {
     const repo = new InMemoryRepo();
+    const usage = new PostedUsage();
     const journal = new RecordingJournal();
     const id = await new CreateVatRateHandler(
       repo,
@@ -380,10 +392,11 @@ describe("Le journal du référentiel", () => {
       new DirectUnitOfWork(),
     ).execute(new CreateVatRateCommand({ name: "Réduit", percent: 5.5 }));
     // Ce que ce taux touchait à l'instant du changement.
-    repo.usage.set(id, { takeaway: 3, eatIn: 1, b2b: 2 });
+    usage.usage.set(id, { takeaway: 3, eatIn: 1, b2b: 2 });
 
     await new UpdateVatRateHandler(
       repo,
+      usage,
       new KnownContexts(),
       journal,
       new DirectUnitOfWork(),
@@ -414,6 +427,7 @@ describe("Le journal du référentiel", () => {
    */
   it("fige le libellé du moment de chaque contexte que la portée compte", async () => {
     const repo = new InMemoryRepo();
+    const usage = new PostedUsage();
     const journal = new RecordingJournal();
     const id = await new CreateVatRateHandler(
       repo,
@@ -421,10 +435,11 @@ describe("Le journal du référentiel", () => {
       journal,
       new DirectUnitOfWork(),
     ).execute(new CreateVatRateCommand({ name: "Réduit", percent: 5.5 }));
-    repo.usage.set(id, { takeaway: 3, brunch: 1, disparu: 2 });
+    usage.usage.set(id, { takeaway: 3, brunch: 1, disparu: 2 });
 
     await new UpdateVatRateHandler(
       repo,
+      usage,
       new KnownContexts(),
       journal,
       new DirectUnitOfWork(),
@@ -450,6 +465,7 @@ describe("Le journal du référentiel", () => {
 
     await new UpdateVatRateHandler(
       repo,
+      new PostedUsage(),
       new KnownContexts(),
       journal,
       new DirectUnitOfWork(),
@@ -478,6 +494,7 @@ describe("l’unicité de la valeur du taux", () => {
     await expect(
       new UpdateVatRateHandler(
         repo,
+        new PostedUsage(),
         new KnownContexts(),
         journal,
         new DirectUnitOfWork(),

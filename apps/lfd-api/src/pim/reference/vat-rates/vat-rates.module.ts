@@ -34,8 +34,10 @@ import { PrismaVatRateLock } from "./infrastructure/prisma-vat-rate.lock.js";
  * catégories puissent valider leurs références (`emporterTvaId` / `surPlaceTvaId`),
  * `VatRateLock` pour qu'elles les verrouillent avant de les relire, et
  * `VatRateNamesReader` pour qu'un lecteur nomme un taux sans charger l'agrégat.
- * `VatRateUsageReader` (le compte de ce qui porte un taux) est implémenté par
- * le catalogue et relié par `appBootstrap/vat-rate-usage-feed.module.ts`.
+ * `VatRateUsageReader` (le compte de ce qui porte un taux) et
+ * `VatRateContextUsageReader` (son usage par contexte) sont implémentés par la
+ * racine sur ce que le catalogue publie, et reliés par
+ * `appBootstrap/vat-rate-usage-feed.module.ts`.
  */
 @Module({
   imports: [PimDatabaseModule, PimChangesModule, SalesContextsModule],

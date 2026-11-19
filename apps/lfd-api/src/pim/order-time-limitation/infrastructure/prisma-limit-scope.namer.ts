@@ -1,14 +1,13 @@
 import { Injectable } from "@nestjs/common";
 
-import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { LimitScopeNamer } from "../domain/ports/limit-scope.namer.js";
+import { LimitTargetLabelsReader } from "../domain/ports/limit-target-labels.reader.js";
 import type { LimitScope } from "../domain/value-objects/limit-scope.js";
-import { targetLabels } from "./target-labels.js";
 
 /** Nomme la cible d'une limite avec les mots de l'écran des réglages. */
 @Injectable()
 export class PrismaLimitScopeNamer extends LimitScopeNamer {
-  constructor(private readonly prisma: PrismaService) {
+  constructor(private readonly targets: LimitTargetLabelsReader) {
     super();
   }
 
@@ -16,7 +15,7 @@ export class PrismaLimitScopeNamer extends LimitScopeNamer {
     if (scope.id === null) {
       return null;
     }
-    const labels = await targetLabels(this.prisma, [{ scopeType: scope.type, scopeId: scope.id }]);
+    const labels = await this.targets.labelsOf([{ scopeType: scope.type, scopeId: scope.id }]);
     return labels.get(scope.id) ?? null;
   }
 }

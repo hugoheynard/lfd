@@ -16,18 +16,21 @@ import { ReviseAllergenEntryHandler } from "./application/revise-allergen-entry.
 import { AllergenCatalogueReader } from "./domain/ports/allergen-catalogue.reader.js";
 import { AllergenCategoryRepository } from "./domain/ports/allergen-category.repository.js";
 import { AllergenEntryRepository } from "./domain/ports/allergen-entry.repository.js";
+import { AllergenEntryIdsReader } from "./domain/ports/allergen-entry-ids.reader.js";
 import { AllergenController } from "./http/allergen.controller.js";
 import { PrismaAllergenCatalogueReader } from "./infrastructure/prisma-allergen-catalogue.reader.js";
 import { PrismaAllergenCategoryRepository } from "./infrastructure/prisma-allergen-category.repository.js";
 import { PrismaAllergenEntryRepository } from "./infrastructure/prisma-allergen-entry.repository.js";
+import { PrismaAllergenEntryIdsReader } from "./infrastructure/prisma-allergen-entry-ids.reader.js";
 
 /**
  * Contexte **allergens** — le référentiel réglementaire, désormais servi depuis
  * la base.
  *
- * Il exporte `AllergenCatalogueReader`, et lui seul : le catalogue produit lit
- * la liste (l'endpoint de saisie, puis la validation d'une déclaration au lot
- * 4), il n'écrit jamais dans le référentiel. Les deux dépôts d'écriture restent
+ * Il exporte ses deux lectures : `AllergenCatalogueReader`, que le catalogue
+ * produit lit (l'endpoint de saisie, la validation d'une déclaration), et
+ * `AllergenEntryIdsReader`, que les ingrédients lisent pour lier un code à son
+ * entrée. Personne n'écrit dans le référentiel depuis ailleurs. Les deux dépôts d'écriture restent
  * privés — un consommateur ne dépend que de ce qu'il appelle (ISP), et exporter
  * `save()` inviterait le premier handler pressé à écrire une colonne depuis
  * ailleurs.
@@ -39,6 +42,7 @@ import { PrismaAllergenEntryRepository } from "./infrastructure/prisma-allergen-
     { provide: AllergenCatalogueReader, useClass: PrismaAllergenCatalogueReader },
     { provide: AllergenCategoryRepository, useClass: PrismaAllergenCategoryRepository },
     { provide: AllergenEntryRepository, useClass: PrismaAllergenEntryRepository },
+    { provide: AllergenEntryIdsReader, useClass: PrismaAllergenEntryIdsReader },
     ReadAllergenReferenceHandler,
     ListAllergenCatalogueHandler,
     CreateAllergenCategoryHandler,
@@ -51,6 +55,6 @@ import { PrismaAllergenEntryRepository } from "./infrastructure/prisma-allergen-
     ArchiveAllergenEntryHandler,
     RestoreAllergenEntryHandler,
   ],
-  exports: [AllergenCatalogueReader],
+  exports: [AllergenCatalogueReader, AllergenEntryIdsReader],
 })
 export class AllergensModule {}

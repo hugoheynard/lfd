@@ -32,11 +32,28 @@ import { CategoryVatHoldersReader } from "./category/domain/ports/category-vat-h
 import { PrismaCategoryVatHoldersReader } from "./category/infrastructure/prisma-category-vat-holders.reader.js";
 import { ProductVatHoldersReader } from "./product/domain/ports/product-vat-holders.reader.js";
 import { PrismaProductVatHoldersReader } from "./product/infrastructure/prisma-product-vat-holders.reader.js";
+import { AllergenListingReader } from "./product/domain/ports/allergen-listing.reader.js";
+import { PrismaAllergenListingReader } from "./product/infrastructure/prisma-allergen-listing.reader.js";
+import { AllergenFreshnessReader } from "./product/domain/ports/allergen-freshness.reader.js";
+import { PrismaAllergenFreshnessReader } from "./product/infrastructure/prisma-allergen-freshness.reader.js";
+
+import { CategoryContextRatesReader } from "./category/domain/ports/category-context-rates.reader.js";
+import { PrismaCategoryContextRatesReader } from "./category/infrastructure/prisma-category-context-rates.reader.js";
+import { CategoryRateUsageReader } from "./category/domain/ports/category-rate-usage.reader.js";
+import { PrismaCategoryRateUsageReader } from "./category/infrastructure/prisma-category-rate-usage.reader.js";
+import { ProductContextRatesReader } from "./product/domain/ports/product-context-rates.reader.js";
+import { PrismaProductContextRatesReader } from "./product/infrastructure/prisma-product-context-rates.reader.js";
+import { ProductRateUsageReader } from "./product/domain/ports/product-rate-usage.reader.js";
+import { PrismaProductRateUsageReader } from "./product/infrastructure/prisma-product-rate-usage.reader.js";
+import { CategoryNamesReader } from "./category/domain/ports/category-names.reader.js";
+import { PrismaCategoryNamesReader } from "./category/infrastructure/prisma-category-names.reader.js";
+import { ProductSkusReader } from "./product/domain/ports/product-skus.reader.js";
+import { PrismaProductSkusReader } from "./product/infrastructure/prisma-product-skus.reader.js";
 
 /**
  * **Ce que la fiche et la famille savent répondre** : les lectures qu'elles
  * publient, chacune par capacité, et leurs porteurs d'images. Les canaux, la
- * médiathèque et le référentiel des taux composent par elles, jamais par les
+ * médiathèque, le référentiel des taux et celui des contextes de vente composent par elles, jamais par les
  * dépôts ni les tables.
  */
 export const CATALOGUE_READINGS: readonly Provider[] = [
@@ -56,6 +73,14 @@ export const CATALOGUE_READINGS: readonly Provider[] = [
   { provide: CategoryImageRepointing, useClass: PrismaCategoryImageRepointing },
   { provide: CategoryVatHoldersReader, useClass: PrismaCategoryVatHoldersReader },
   { provide: ProductVatHoldersReader, useClass: PrismaProductVatHoldersReader },
+  { provide: AllergenListingReader, useClass: PrismaAllergenListingReader },
+  { provide: AllergenFreshnessReader, useClass: PrismaAllergenFreshnessReader },
+  { provide: CategoryContextRatesReader, useClass: PrismaCategoryContextRatesReader },
+  { provide: CategoryRateUsageReader, useClass: PrismaCategoryRateUsageReader },
+  { provide: ProductContextRatesReader, useClass: PrismaProductContextRatesReader },
+  { provide: ProductRateUsageReader, useClass: PrismaProductRateUsageReader },
+  { provide: CategoryNamesReader, useClass: PrismaCategoryNamesReader },
+  { provide: ProductSkusReader, useClass: PrismaProductSkusReader },
 ];
 
 /** Les jetons de ces lectures, tels que le module les exporte. */
@@ -70,4 +95,10 @@ export const CATALOGUE_READING_PORTS = [
   CategoryImageRepointing,
   CategoryVatHoldersReader,
   ProductVatHoldersReader,
+  CategoryContextRatesReader,
+  CategoryRateUsageReader,
+  ProductContextRatesReader,
+  ProductRateUsageReader,
+  CategoryNamesReader,
+  ProductSkusReader,
 ] as const;

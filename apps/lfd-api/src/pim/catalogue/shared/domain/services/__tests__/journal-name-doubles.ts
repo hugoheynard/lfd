@@ -1,8 +1,5 @@
 import { VatRate } from "../../../../../reference/vat-rates/domain/entities/vat-rate.js";
-import {
-  VatRateRepository,
-  type VatRateUsage,
-} from "../../../../../reference/vat-rates/domain/ports/vat-rate.repository.js";
+import { VatRateRepository } from "../../../../../reference/vat-rates/domain/ports/vat-rate.repository.js";
 import {
   VatRateNamesReader,
   type VatRateName,
@@ -35,9 +32,6 @@ export class KnownVatRates extends VatRateRepository {
   }
   findByPercent(percent: number): Promise<VatRate | null> {
     return Promise.resolve(this.rates.find((rate) => rate.percent === percent) ?? null);
-  }
-  usageByRegime(): Promise<ReadonlyMap<string, VatRateUsage>> {
-    return Promise.resolve(new Map());
   }
   add(): Promise<void> {
     return Promise.resolve();

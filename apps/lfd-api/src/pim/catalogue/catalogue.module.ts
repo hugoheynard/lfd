@@ -108,7 +108,7 @@ import { VariantCustomRecipeController } from "./product/http/variant-custom-rec
 import { ProductVariantLifecycleController } from "./product/http/product-variant-lifecycle.controller.js";
 import { ReferenceController } from "./shared/http/reference.controller.js";
 import { PrismaCategoryRepository } from "./category/infrastructure/prisma-category.repository.js";
-import { PrismaProductCountReader } from "./category/infrastructure/prisma-product-count.reader.js";
+import { PrismaProductCountReader } from "./product/infrastructure/prisma-product-count.reader.js";
 import { PrismaEditorialReader } from "./product/infrastructure/prisma-editorial-reader.js";
 import { DetachmentLineageReader } from "./product/domain/ports/detachment-lineage.reader.js";
 import { PrismaDetachmentLineageReader } from "./product/infrastructure/prisma-detachment-lineage.reader.js";

@@ -2,21 +2,5 @@
   "$comment": "Les lectures Prisma d'une table écrite par un autre sous-contexte du référentiel (documentation/pim/plan-referentiel-a-neuf.md, L9). Dette décroissante : une entrée neuve est une faute, pas une ligne à coller. declaredOwners range un modèle écrit seulement par imbrication.",
   "since": "2026-11-19",
   "declaredOwners": {},
-  "reads": {
-    "catalogue/allergen-matrix/infrastructure/repository-allergen-matrix.source.ts → product": 2,
-    "catalogue/allergen-matrix/infrastructure/repository-allergen-matrix.source.ts → productVariant": 1,
-    "catalogue/allergen-matrix/infrastructure/repository-allergen-matrix.source.ts → variantAllergens": 1,
-    "catalogue/category/infrastructure/prisma-product-count.reader.ts → product": 2,
-    "order-time-limitation/infrastructure/target-labels.ts → category": 1,
-    "order-time-limitation/infrastructure/target-labels.ts → product": 1,
-    "order-time-limitation/infrastructure/target-labels.ts → productVariant": 1,
-    "reference/ingredients/infrastructure/prisma-ingredient.repository.ts → allergenEntry": 1,
-    "reference/sales-contexts/infrastructure/prisma-sales-context-usage.reader.ts → categoryContextVat": 1,
-    "reference/sales-contexts/infrastructure/prisma-sales-context-usage.reader.ts → productContextVat": 1,
-    "reference/sales-contexts/infrastructure/prisma-sales-context.repository.ts → categoryContextVat": 1,
-    "reference/sales-contexts/infrastructure/prisma-sales-context.repository.ts → productContextVat": 1,
-    "reference/vat-rates/infrastructure/prisma-vat-rate.repository.ts → categoryContextVat": 1,
-    "reference/vat-rates/infrastructure/prisma-vat-rate.repository.ts → productContextVat": 1,
-    "reference/vat-rates/infrastructure/prisma-vat-rate.repository.ts → salesContext": 1
-  }
+  "reads": {}
 }

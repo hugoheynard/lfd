@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 
 import { PimPrismaService } from "../../../infra/database/pim-prisma.service.js";
-import { ProductCountReader } from "../domain/ports/product-count.reader.js";
+import { ProductCountReader } from "../../category/domain/ports/product-count.reader.js";
 
 /**
  * « Active » = tout sauf archivée — et sauf supprimée, qui est absente de tout
@@ -11,6 +11,11 @@ import { ProductCountReader } from "../domain/ports/product-count.reader.js";
 const OUT_OF_CATALOGUE: ("archived" | "deleted")[] = ["archived", "deleted"];
 const ACTIVE = { status: { notIn: OUT_OF_CATALOGUE } };
 
+/**
+ * Ce que la FICHE répond à la famille : combien de fiches vivantes elle porte.
+ * La famille déclare la question, la fiche y répond avec sa table — un `count`
+ * pour une famille, un `groupBy` pour toutes.
+ */
 @Injectable()
 export class PrismaProductCountReader extends ProductCountReader {
   constructor(private readonly prisma: PimPrismaService) {
