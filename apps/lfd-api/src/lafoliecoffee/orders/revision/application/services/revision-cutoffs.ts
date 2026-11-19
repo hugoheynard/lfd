@@ -23,8 +23,20 @@ import {
  * La limite d'article en clientèle `pro`, comme la passation, et aucune
  * dérogation — une modification ne crée ni ne retire de surtaxe (R4).
  */
+/**
+ * La question d'une modification. Le plancher d'un dépassement y est « une
+ * limite générale ce jour-là », sans plus : l'heure limite générale n'est pas
+ * opposée à l'équipe en modification — sa fenêtre est l'inscription au fournil
+ * (`standingOf`). Le client ne passe jamais outre : le plancher ne le concerne pas.
+ */
 function revisionAsker(exceedItemLimits: boolean): OrderDeadlineAsker {
-  return { audience: "pro", companyId: null, waiver: "ignore", exceedItemLimits };
+  return {
+    audience: "pro",
+    companyId: null,
+    waiver: "ignore",
+    exceedItemLimits,
+    itemLimitFloor: "general_rule_posed",
+  };
 }
 
 /**

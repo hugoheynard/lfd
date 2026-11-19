@@ -37,4 +37,8 @@ export {
   judgeOrderDeadline,
   priceLateness,
 } from "./domain/deadline/judge-order-deadline.js";
-export type { DeadlineFacts, DeadlineLine } from "./domain/deadline/judge-order-deadline.js";
+export type {
+  DeadlineFacts,
+  DeadlineLine,
+  ItemLimitFloor,
+} from "./domain/deadline/judge-order-deadline.js";

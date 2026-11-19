@@ -25,11 +25,15 @@ flowchart TD
   R -->|oui| M["Passe, jugée par la règle générale seule<br/>motif obligatoire, dépassement consigné"]
 ```
 
-**Le plancher, c'est la règle générale.** Passer outre la limite d'un produit
-laisse l'heure limite générale juger la ligne, avec son rattrapage, sa
-dérogation et sa surtaxe. Sans limite générale ce jour-là, pas de dépassement :
-**un dépassement remplace une limite par une autre, jamais par rien** (Hugo,
-2026-11-19 : « on essaye d'avoir un comportement prévisible »).
+**Le plancher, c'est la règle générale, selon le geste.** À la saisie (et à
+l'estimation, à l'avis), passer outre la limite d'un produit laisse l'heure
+limite générale juger la ligne, avec son rattrapage, sa dérogation et sa
+surtaxe : une commerciale met à J+1 un produit à 48 h, pas après l'heure
+générale sans dérogation. En **modification par l'équipe** (et pour une
+demande du client qu'elle applique), l'heure limite générale ne lui est pas
+opposée — sa fenêtre est l'inscription au fournil : il suffit qu'une limite
+générale existe ce jour-là (`itemLimitFloor`, `general_rule_open` /
+`general_rule_posed`).
 
 **La même réponse partout.** La case et le droit valent en saisie d'une
 commande, en estimation et en modification par l'équipe. Le client, l'invité

@@ -56,7 +56,14 @@ export class OrderCutoffNotice {
       skus,
       serviceDay: fulfillmentDate,
       at: this.clock.now(),
-      asker: { audience: "pro", companyId: null, waiver: "ignore", exceedItemLimits },
+      asker: {
+        audience: "pro",
+        companyId: null,
+        waiver: "ignore",
+        exceedItemLimits,
+        // L'avis annonce la saisie : la règle générale lui est opposée.
+        itemLimitFloor: "general_rule_open",
+      },
     });
     const items = {
       exceeded: exceededOf(verdict),

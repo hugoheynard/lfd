@@ -90,6 +90,7 @@ export async function waiverPair(
         companyId: pro.companyId,
         waiver: "consider",
         exceedItemLimits: false,
+        itemLimitFloor: "general_rule_open",
       },
     });
     return verdict.kind === "grace" ? (verdict.waiver?.id ?? null) : null;

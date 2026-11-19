@@ -47,6 +47,7 @@ function admit(over: {
     at: new Date(over.now ?? CUTOFF_INSTANT),
     waiver: over.waiver ?? null,
     exceedItemLimits: false,
+    itemLimitFloor: "general_rule_open",
   });
   return admitWithinDeadline(verdict, FULFILLMENT_DAY).waiverUsed;
 }
@@ -270,6 +271,7 @@ describe("les limites d'article passées par l'équipe", () => {
       at: new Date(now),
       waiver: exceedItemLimits ? { id: "w1" } : null,
       exceedItemLimits,
+      itemLimitFloor: "general_rule_open",
     });
   }
 

@@ -41,7 +41,13 @@ export class ForeseenLateFee {
       serviceDay: day,
       at: this.clock.now(),
       // La surtaxe prévue du devis de la boutique : jamais l'équipe.
-      asker: { audience: "pro", companyId, waiver: "consider", exceedItemLimits: false },
+      asker: {
+        audience: "pro",
+        companyId,
+        waiver: "consider",
+        exceedItemLimits: false,
+        itemLimitFloor: "general_rule_open",
+      },
     });
     return verdict.kind === "grace" ? verdict.lateFee : null;
   }

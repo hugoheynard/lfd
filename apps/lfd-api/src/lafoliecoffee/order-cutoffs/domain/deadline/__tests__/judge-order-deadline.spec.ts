@@ -52,6 +52,7 @@ function judge(
     at: new Date(over.at),
     waiver: over.waiver ?? null,
     exceedItemLimits: over.exceedItemLimits ?? false,
+    itemLimitFloor: over.itemLimitFloor ?? "general_rule_open",
   });
 }
 
@@ -184,6 +185,28 @@ describe("passer outre la limite d'un produit", () => {
       exceedItemLimits: true,
     });
     expect(verdict).toMatchObject({ kind: "closed", source: "item_limit", exceeded: [] });
+  });
+
+  it("en modification par l'équipe, passe outre même quand la règle générale ferme : elle ne lui est pas opposée", () => {
+    const verdict = judge({
+      lines: levain(PASSABLE),
+      at: "2026-08-11T17:00:00.000Z",
+      exceedItemLimits: true,
+      itemLimitFloor: "general_rule_posed",
+    });
+    expect(verdict.exceeded.map((passed) => passed.sku)).toEqual(["LEVAIN"]);
+    expect(verdict.lines.get("LEVAIN")).toMatchObject({ itemStatus: "closed", exceeded: true });
+  });
+
+  it("en modification par l'équipe, jamais sans limite générale ce jour-là", () => {
+    const verdict = judge({
+      lines: levain(PASSABLE),
+      generalRules: [],
+      at: AFTER_ITEM,
+      exceedItemLimits: true,
+      itemLimitFloor: "general_rule_posed",
+    });
+    expect(verdict.exceeded).toEqual([]);
   });
 
   it("ne propose rien à dépasser quand la règle générale ferme de toute façon", () => {

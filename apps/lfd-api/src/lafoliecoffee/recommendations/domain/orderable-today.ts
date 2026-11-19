@@ -88,6 +88,7 @@ function isOpen(
     at: now,
     waiver: null,
     exceedItemLimits: false,
+    itemLimitFloor: "general_rule_open",
   });
   return verdict.kind === "open";
 }

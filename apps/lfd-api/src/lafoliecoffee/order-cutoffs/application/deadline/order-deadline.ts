@@ -1,5 +1,6 @@
 import type { OrderCutoffStatus } from "@lfd/contracts";
 
+import type { ItemLimitFloor } from "../../domain/deadline/judge-order-deadline.js";
 import type { OrderDeadlineVerdict } from "../../domain/deadline/order-deadline-verdict.js";
 import type { DeadlineAudience } from "../../domain/deadline/ports/deadline-sources.js";
 
@@ -21,6 +22,8 @@ export interface OrderDeadlineAsker {
    * jugent pas, la règle générale si. Obligatoire, sans valeur par défaut.
    */
   readonly exceedItemLimits: boolean;
+  /** Le plancher d'un dépassement selon le geste (cf. `DeadlineFacts.itemLimitFloor`). */
+  readonly itemLimitFloor: ItemLimitFloor;
 }
 
 /** Ce qu'on demande au délai de commande. */

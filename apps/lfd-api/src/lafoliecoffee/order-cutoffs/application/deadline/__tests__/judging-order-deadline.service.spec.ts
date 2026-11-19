@@ -92,7 +92,13 @@ function question(over: Partial<OrderDeadlineQuestion> = {}): OrderDeadlineQuest
     skus: ["PAIN"],
     serviceDay: DAY,
     at: IN_GRACE,
-    asker: { audience: "pro", companyId: "co_1", waiver: "consider", exceedItemLimits: false },
+    asker: {
+      audience: "pro",
+      companyId: "co_1",
+      waiver: "consider",
+      exceedItemLimits: false,
+      itemLimitFloor: "general_rule_open",
+    },
     ...over,
   };
 }
@@ -110,7 +116,13 @@ describe("ce que le verdict lit", () => {
     const { deadline, waivers, fees } = court();
     const verdict = await deadline.verdict(
       question({
-        asker: { audience: "pro", companyId: "co_1", waiver: "ignore", exceedItemLimits: false },
+        asker: {
+          audience: "pro",
+          companyId: "co_1",
+          waiver: "ignore",
+          exceedItemLimits: false,
+          itemLimitFloor: "general_rule_open",
+        },
       }),
     );
     expect(verdict).toMatchObject({ kind: "grace", waiver: null, lateFee: null });
@@ -122,7 +134,13 @@ describe("ce que le verdict lit", () => {
     const { deadline, waivers } = court();
     await deadline.verdict(
       question({
-        asker: { audience: "pro", companyId: null, waiver: "consider", exceedItemLimits: false },
+        asker: {
+          audience: "pro",
+          companyId: null,
+          waiver: "consider",
+          exceedItemLimits: false,
+          itemLimitFloor: "general_rule_open",
+        },
       }),
     );
     expect(waivers.asked).toEqual([]);

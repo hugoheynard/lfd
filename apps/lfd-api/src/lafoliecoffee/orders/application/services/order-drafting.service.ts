@@ -329,6 +329,8 @@ export class OrderDrafting {
         companyId: parties.companyId,
         waiver: "consider",
         exceedItemLimits: parties.exceedItemLimits,
+        // La saisie : la règle générale est opposée, un dépassement ne la franchit pas.
+        itemLimitFloor: "general_rule_open",
       },
     });
     return admitWithinDeadline(verdict, day);

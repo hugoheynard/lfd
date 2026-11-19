@@ -40,7 +40,20 @@ export interface DeadlineFacts {
    * Obligatoire : personne n'en hérite par défaut.
    */
   readonly exceedItemLimits: boolean;
+  /**
+   * Le plancher d'un dépassement, selon le geste. `general_rule_open` (saisie,
+   * estimation, avis) : la règle générale pose une limite ce jour-là ET ne
+   * ferme pas la ligne — la règle générale est opposée à ce geste.
+   * `general_rule_posed` (modification par l'équipe, demande qu'elle
+   * applique) : la règle générale pose une limite ce jour-là, sans plus —
+   * elle n'est pas opposée à l'équipe en modification, dont la fenêtre est
+   * l'inscription au fournil.
+   */
+  readonly itemLimitFloor: ItemLimitFloor;
 }
+
+/** Le plancher d'un dépassement de limite de produit (cf. {@link DeadlineFacts.itemLimitFloor}). */
+export type ItemLimitFloor = "general_rule_open" | "general_rule_posed";
 
 /** Une décision et ce qui l'a retenue. */
 interface Sourced {
@@ -128,7 +141,7 @@ function exceededBy(
   if (
     ofDay === null ||
     !isExceedable(line, general, facts) ||
-    general.decision.status === "closed" ||
+    (facts.itemLimitFloor === "general_rule_open" && general.decision.status === "closed") ||
     own.decision.status !== "closed"
   ) {
     return null;

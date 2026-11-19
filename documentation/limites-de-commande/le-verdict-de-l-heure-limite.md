@@ -117,17 +117,80 @@ refuse une dérogation déjà servie (`orders.cutoff.waiver_spent`), dans la
 transaction de la commande — commande, clé d'intention et lien de règlement
 sont annulés avec elle.
 
-### 2.4 Ce qui reste ailleurs, et pourquoi
+### 2.4 La carte : ce qui décide encore ailleurs
 
-- **La vitrine, les journées proposées, le fournil** lisent la règle pour
-  l'**annoncer** (`shownItemOrderLimit`, `nextFulfillmentDay`,
-  `announcedOrderUntil`, l'arrêt automatique du plan) : ils ne jugent pas de
-  panier. La boutique ne reçoit aucune règle, seulement les heures annoncées,
-  rattrapage non compris.
-- **La fenêtre d'une opération datée** (`order-operation-guard.ts`) : une autre
-  règle, sans dérogation.
-- **Le plan arrêté et le « jour même »** : gardes de la passation
-  (`ensureDayOpen`), voir la piste P2.
+Le verdict est **le juge complet du « trop tard »** : heure limite générale et
+son rattrapage, limite de chaque produit, dérogation et surtaxe, dépassement
+d'une limite de produit, et par ligne ce qui bloque. Ce qu'un geste peut faire
+d'une commande **ce jour-là** se décide encore à quelques autres endroits,
+chacun à un seul endroit (relevé le 2026-11-19) :
+
+| Règle                            | Où                                                                                                                                                           | Ce qu'elle décide                                                                                                                                                                 |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Le plan arrêté                   | `OrderDrafting.ensureDayOpen` et `holdSupply` ; `OrderRevising.ensureDayOpen` et `holdDay` ; `Order.receiveOffPlan` ; `ApplyCardIncrease` (`ensurePlanOpen`) | client refusé, équipe reçue hors plan ; date changée vers un jour arrêté refusée à tous ; hausse refusée — lu sans verrou puis sous le verrou de la journée (`PlanAdmissionDesk`) |
+| L'inscription au fournil         | `OrderRevising.standingOf`, sur la règle d'annulation (`CancellationRule`, `BEFORE_INSCRIPTION`)                                                             | une modification s'arrête à l'inscription ; après, l'équipe garde les quantités d'un pro au compte                                                                                |
+| Le jour même                     | `OrderPlanGate.ensureNotTooSoon`, par porte (`same-day-doors.ts`)                                                                                            | « trop tôt » : aujourd'hui fermé ou ouvert selon la clientèle                                                                                                                     |
+| La fenêtre d'une opération datée | `order-operation-guard.ts`                                                                                                                                   | commander dans la fenêtre de l'opération, sans dérogation                                                                                                                         |
+| Les journées proposées           | `list-fulfillment-days.handler.ts`                                                                                                                           | la boutique ne propose ni un jour arrêté, ni un jour hors des délais                                                                                                              |
+| Le circuit sur stock             | `ShelfCircuit`                                                                                                                                               | d'où vient la marchandise (pas un refus)                                                                                                                                          |
+
+Ce que le fournil possède, et que le commerce lit par ses canaux : l'arrêt du
+plan (`ClosedPlansReader`, `PlanAdmissionDesk`) et l'inscription
+(`OrderInscriptionReader`). **Arrêter le plan, c'est inscrire** : la clôture
+d'une journée fige le plan avec ses commandes (`ProductionDay.close`). Ce que
+ces faits **impliquent** pour chaque geste est une décision du commerce.
+
+**Changer ce qu'on peut faire après la clôture, aujourd'hui** :
+
+- pour une commande **déjà inscrite** (le cas courant) : `standingOf` ;
+- pour une commande **reçue après l'arrêt** (hors plan), ou une date déplacée
+  vers un jour arrêté : les gardes du jour ci-dessus, et l'agrégat ;
+- pour ce que la boutique propose : `list-fulfillment-days`.
+
+### 2.4 bis Le point unique, en puissance
+
+Décidé de ne pas bâtir le 2026-11-19 (Hugo : J6 et la carte d'abord) ; écrit
+pour qu'un changement de comportement après la clôture parte d'ici, avec ce
+qu'une contradiction de `vitruve` a déjà appris.
+
+**L'idée** : une seule règle, « ce qu'un geste peut faire d'une commande, selon
+la journée et l'état de la commande », pure, avec une table par geste × acteur
+× (plan ouvert, arrêté, commande inscrite) × (date inchangée, changée). Elle
+réunirait le plan arrêté, l'inscription et le jour même ; le verdict de
+l'heure limite resterait le juge du « trop tard ». Le fait reste au fournil ;
+la règle est au commerce.
+
+**Ce qu'il faut savoir avant de la bâtir** (contradiction du plan « le verdict
+de la journée », 2026-11-19) :
+
+- **elle vit côté commande, pas dans ce verdict** : l'inscription est l'état de
+  la commande et partage la règle d'annulation (réglage A1) ; la mettre dans le
+  verdict de l'heure limite y ferait entrer l'annulation ;
+- **l'agrégat tient déjà « client refusé, équipe hors plan »**
+  (`receiveOffPlan`) : il doit appliquer la décision de la règle, pas la
+  recalculer, sans devenir un simple setter ;
+- **une même fonction pour les deux temps** : sans verrou, et sous le verrou
+  de la journée (le guichet rend `open | closed`) ;
+- **le jour même n'est pas le même par geste** : en passation l'équipe hors
+  plan en est exemptée ; en modification il ne se juge que si la date change,
+  et alors contre tous ;
+- **en modification, le jugement du jour doit se demander une fois, avant le
+  chargement, sur la nouvelle journée seulement** : juger l'ancienne
+  refuserait à tort un client qui quitte un jour arrêté ;
+- **l'application d'une hausse traverse trois lectures de l'arrêt**
+  (recomposition, `ensurePlanOpen`, verrou), avec deux codes de refus : la
+  table doit dire lequel, et quand ;
+- **les devis de modification refusent aujourd'hui un jour arrêté**, le devis
+  de passation non : un devis de modification est un geste, pas un avis ;
+- **l'acteur est celui des règles appliquées** (`rulesOf`) : une demande du
+  client appliquée par l'équipe se juge avec les règles de l'équipe ; la
+  boutique est un client ;
+- **la boutique** (`list-fulfillment-days`) doit suivre la même table, sans
+  quoi elle masquera un jour que la règle ouvre ;
+- **la porte** visera `ClosedPlansReader` dans `lafoliecoffee/` avec une liste
+  admise, pas `OrderPlanGate.isClosed` ;
+- **l'ordre des refus change** à la passation si la règle est jugée avant le
+  chargement : à écrire refus par refus.
 
 ### 2.5 La porte
 
@@ -137,7 +200,7 @@ hors du juge, personne n'importe une fonction de décision du contrat
 
 ## 3. Ce qui reste
 
-- Les pistes P1 et P2 ci-dessous : à inventorier sur ce code avant d'en faire
+- La piste P1 ci-dessous et le point unique du § 2.4 bis : à inventorier sur ce code avant d'en faire
   un plan (Hugo, 2026-11-19 : « bâtir d'abord, puis faire l'inventaire des
   capacités »).
 - Le dépassement d'une limite de produit par la commerciale est **bâti**
@@ -274,76 +337,3 @@ franchie, journée possible) ne dit au client que ce qui le concerne : jamais
 `grace`, jamais la dérogation, jamais la surtaxe — une ligne en rattrapage lui
 est dite « trop tard ». Les gestes servis à la boutique ne nomment que ce
 qu'un client peut faire.
-
-### P2. L'arrêt du plan du fournil
-
-Décidé par Hugo le 2026-11-19 : l'arrêt du plan entre dans le verdict.
-« Puis-je commander pour ce jour ? » n'a alors qu'une réponse, et le
-dépassement de limite pourra s'y appuyer.
-
-**Aujourd'hui** (lu le 2026-11-19), la question « le plan de ce jour est-il
-arrêté ? » se pose par `OrderPlanGate.isClosed`
-(`orders/application/services/order-plan-gate.service.ts`, sur
-`ClosedPlansReader` que le fournil publie dans `production/channels/commerce/`),
-et chaque lecteur en tire sa conséquence :
-
-| Lecteur                     | Où                                                                    | Ce qu'il en fait                                                                                   |
-| --------------------------- | --------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| passation (`ensureDayOpen`) | `order-drafting.service.ts:246`                                       | client refusé (`ProductionPlanClosedError`) ; l'équipe passe, et le « jour même » n'est pas opposé |
-| révisabilité                | `order-revising.service.ts:164`                                       | `planClosedDay` de `revisabilityOf`                                                                |
-| révision                    | `order-revising.service.ts:362`                                       | sa propre garde du jour                                                                            |
-| application d'une hausse    | `apply-card-increase.handler.ts:158`                                  | refuse sur un plan arrêté                                                                          |
-| circuit sur stock           | `shelf-circuit.service.ts:84` ; `get-shelf-stock-today.handler.ts:47` | **choisit le circuit** : plan d'aujourd'hui arrêté → la vitrine                                    |
-
-**Ce qui entre dans le verdict, au lot la piste et pas avant.** Le faire au lot
-V3 changerait des réponses, ce que V1–V7 s'interdisent : `draft` lit
-aujourd'hui le plan arrêté **avant** de charger le panier
-(`order-drafting.service.ts:177`, puis `load` l.181, puis l'heure limite
-l.195). Un client qui vise un plan arrêté avec un article inconnu reçoit
-`ProductionPlanClosedError` ; si le plan est jugé dans le verdict, demandé
-après `load`, il recevrait l'erreur de chargement, et le panier serait tarifé
-avant le refus. la piste l'assume et le dit :
-
-- **où** : le verdict est demandé une fois, **à la place de `ensureDayOpen`**,
-  avant `load`. Il n'a besoin que des SKU, de la journée, de l'instant et de
-  qui demande : la limite d'un article se lit sur le catalogue `pro`, pas sur
-  le point retenu (la règle par point est retirée depuis le 2026-10-21, ce que
-  le commentaire l.191-194 suppose encore). L'ordre des refus devient : plan
-  arrêté, « jour même », heure limite, puis chargement. **Ce qui change** : un
-  panier qui serait refusé au chargement **et** pour l'heure est refusé pour
-  l'heure. Écrit dans les e2e de la piste, épinglé.
-- **le « jour même »** lit le même verdict : `ensureNotTooSoon(day, door, at,
-verdict.offPlan)`. L'équipe sur un plan arrêté reste exemptée, comme
-  aujourd'hui (l.252, JSDoc l.243-245), sans seconde lecture de `isClosed`.
-  Un test épingle l'exemption.
-- **chaque lecteur garde sa traduction et son code**, parce qu'ils ne disent
-  pas la même chose aujourd'hui :
-
-| Lecteur                                                         | Client          | Équipe          | Code                          |
-| --------------------------------------------------------------- | --------------- | --------------- | ----------------------------- |
-| passation (`ensureDayOpen`)                                     | refusé          | reçue hors plan | `ProductionPlanClosedError`   |
-| révision, date inchangée (`order-revising.service.ts:362-367`)  | refusé          | passe           | id.                           |
-| révision vers un jour arrêté                                    | refusé          | **refusée**     | `RevisionIntoClosedDayError`  |
-| révision sous verrou (`holdDay`, l.339-348)                     | même asymétrie  |                 |                               |
-| application d'une hausse (`apply-card-increase.handler.ts:158`) | refusé          | refusé          | `CardIncreasePlanClosedError` |
-| révisabilité (l.159-160)                                        | `planClosedDay` | rien de lu      | —                             |
-
-Le verdict rend le **fait** (`source: "plan_closed"`, `offPlan`) ; la
-traduction reste au lecteur. `asker.kind` ne suffit pas à la deviner.
-
-- **ce que le verdict lit** : le plan arrêté n'est lu que pour la passation,
-  l'estimation, la révision et la hausse. L'avis et la surtaxe prévue ne le
-  lisent pas aujourd'hui ; ils ne le lisent pas en la piste (une lecture de plus à
-  chaque saisie de l'équipe, sur une base facturée à l'opération).
-- **le fait, sans instant** : `ClosedPlansReader.closedBetween`
-  (`production/channels/commerce/`) rend des journées, pas l'heure de l'arrêt.
-  Pour `plan_closed`, `CrossedLimit.limit`, `graceEnd` et `rule` valent `null`.
-- **la frontière** : `ClosedPlansReader` est un port du fournil
-  (`lafoliecoffee → production` : port uniquement), fourni par
-  `appBootstrap/production-desk-feed.module.ts`, global. Le cycle
-  d'instanciation (`ProductionModule` ↔ l'adaptateur de la fin du rattrapage
-  que fournit `OrderCutoffsModule`) s'éprouve au démarrage dès V2.
-
-**Ce qui reste au fournil** : le calcul de l'heure d'arrêt automatique
-(`production/plan/application/services/plan-stop-rules.ts`, la plus tardive de
-la fin du rattrapage et de l'heure du réassort), et l'arrêt lui-même.
