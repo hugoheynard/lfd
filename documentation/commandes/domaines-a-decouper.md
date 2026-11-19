@@ -39,64 +39,12 @@ flowchart LR
 
 ### 2.1 Le délai de commande (l'heure limite) — le plus utile
 
-**Aujourd'hui.** Les **réglages** sont bien rangés : le contexte
-`lafoliecoffee/order-cutoffs` possède l'heure limite générale, les réglages par jour,
-le « jour même », les jours de livraison. Mais le **jugement** — « est-ce trop
-tard pour ces articles, ce jour, cet acheteur, à cet instant, et qu'en
-fait-on ? » — vit dans `orders` : `OrderCutoffGate`
-(`application/services/order-cutoff-gate.service.ts`) et `order-cutoff-guard`
-(`domain/services/order-cutoff-guard.ts`) lisent eux-mêmes trois sources
-(réglage du commerce, limite propre à chaque article publiée par le
-référentiel, dérogation accordée au client), choisissent la plus fermée et
-appliquent le rattrapage ; la surtaxe tardive (`late-fee-judgement`), la
-tolérance de retard, les relances avant l'heure limite et les avis de fin de
-commande y sont aussi. **39 fichiers** de `orders` en parlent : passation,
-devis, modification, hausse, vente sur stock, relances, expiration des
-paniers non réglés.
-
-**Le signe.** Le 2026-11-10, pour la hausse carte (plan S2, R6), il a fallu
-faire juger l'heure limite « à l'instant de la décision » : trois services
-partagés avec la passation ont changé de signature, parce que le jugement
-lisait l'horloge à trois endroits.
-
-**La forme visée.** Un contexte « délai de commande » qui rend un **verdict**
-— ouverte, en rattrapage (avec la surtaxe), ou fermée, avec la raison — pour
-(articles, jour, acheteur, instant). `orders` demande et applique ; la
-passation, la modification, la hausse et les relances posent la même
-question à la même brique.
-
-**Une piste d'extraction** (2026-11-10, non contredite, appelants non lus un
-par un) :
-
-- **Pas de bloc neuf.** `lafoliecoffee/order-cutoffs` possède déjà les réglages ; il
-  devient aussi le propriétaire du **jugement**, et `orders` ne l'atteint plus
-  que par une seule question.
-- **La question, unique :**
-
-  ```
-  OrderDeadline.verdict({ lines, serviceDay, buyer, at })
-    → { kind: "open", until }
-    | { kind: "grace", until, lateFee }   // rattrapage, avec la surtaxe
-    | { kind: "closed", reason }          // trop tard, et pourquoi
-  ```
-
-  Les articles (chacun peut porter sa limite, publiée par le référentiel), le
-  jour, l'acheteur (sa clientèle, ses dérogations) et **l'instant** de la
-  décision — ce qui règle d'office le besoin de la hausse.
-
-- **Ce qui déménage** : `order-cutoff-guard`, `OrderCutoffGate`, le jugement
-  de la surtaxe tardive et la tolérance de retard. **Ce qui reste** dans
-  `orders` : appliquer le verdict (refuser, ajouter la surtaxe, passer).
-- **La dérogation** se **dépense** à la passation, et c'est une écriture : le
-  verdict dit « fermé, sauf dérogation disponible », et la passation la
-  dépense par un geste à part, sous son verrou. Une question qui écrit ne
-  serait plus une question.
-- **Les lots** : (1) le verdict écrit dans `order-cutoffs`, fonction pure
-  entourée de ses lectures, éprouvé **contre le jugement actuel** cas par cas
-  — aucune réponse ne doit changer ; (2) un seul appelant basculé, la
-  passation, sous ses e2e et le golden master des prix ; (3) les autres un par
-  un (devis, modification, hausse, vente sur stock, relances, expiration des
-  paniers, avis de fin de commande) ; (4) l'ancien jugement retiré.
+Extrait le 2026-11-19 dans son document :
+[`../limites-de-commande/extraire-le-jugement-de-l-heure-limite.md`](../limites-de-commande/extraire-le-jugement-de-l-heure-limite.md).
+En bref : les réglages vivent dans `lafoliecoffee/order-cutoffs`, le jugement
+(garde, porte, surtaxe de retard, tolérance) dans `orders`, lu par 39 fichiers.
+La piste : `order-cutoffs` devient propriétaire du jugement et rend un verdict
+unique — ouverte, en rattrapage avec la surtaxe, ou fermée avec la raison.
 
 ### 2.2 Le départ incomplet — le plus proche du paiement
 
