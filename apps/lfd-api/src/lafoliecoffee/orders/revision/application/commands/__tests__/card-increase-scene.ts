@@ -22,7 +22,7 @@ import type { RevisableOrder } from "../../../domain/entities/order-revision.js"
 import { CardIncreaseProposalReader } from "../../../domain/ports/card-increase-proposal.reader.js";
 import { CardIncreaseAbandonment } from "../../services/card-increase-abandonment.js";
 import { CardIncreaseCancellation } from "../../../../cancellation/application/services/card-increase-cancellation.js";
-import { OrderCutoffGate } from "../../../../application/services/order-cutoff-gate.service.js";
+import { deadlineOf } from "../../../../application/services/__tests__/order-deadline-of.js";
 import { RevisionWall } from "../../services/revision-wall.js";
 import { RecordingProposals } from "../../services/__tests__/card-increase-doubles.js";
 import { Steps } from "../../../../application/services/__tests__/order-card-doubles.js";
@@ -168,12 +168,12 @@ export function increaseScene(
   const wall = new RevisionWall(new FixedRevisableOrders(order), new OneRoleAccess("orders"));
   const revising = revisingAt(clock);
   const abandonment = new CardIncreaseAbandonment(reader, proposals, cards, journal, clock);
-  const cutoffs = new OrderCutoffGate(
-    { list: () => Promise.resolve([]) },
-    new InMemoryProductCatalog(CATALOG),
-    { openFor: () => Promise.resolve(null), consume: () => Promise.resolve() },
-    clock,
-  );
+  const cutoffs = deadlineOf({
+    cutoffs: { list: () => Promise.resolve([]) },
+    catalog: new InMemoryProductCatalog(CATALOG),
+    waivers: { openFor: () => Promise.resolve(null), consume: () => Promise.resolve() },
+    lateFees: { current: () => Promise.resolve(null) },
+  });
   const handler = new ProposeCardIncreaseHandler(
     wall,
     revising,

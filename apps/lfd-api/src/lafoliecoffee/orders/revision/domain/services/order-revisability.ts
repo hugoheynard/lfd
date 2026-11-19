@@ -1,4 +1,6 @@
-import type { OrderCutoffDecision, OrderRevisionRefusal, PaymentStatus } from "@lfd/contracts";
+import type { OrderRevisionRefusal, PaymentStatus } from "@lfd/contracts";
+
+import type { OrderDeadlineVerdict } from "../../../../order-cutoffs/index.js";
 
 import type {
   CancellationBlock,
@@ -104,15 +106,15 @@ export function isCardSettlement(paymentStatus: PaymentStatus, totalCents: numbe
 /**
  * Le verdict complet. `planClosedDay` et `cutoff` ne sont fournis que pour le
  * client (R1 : l'équipe ignore l'heure limite, et reçoit une commande « hors
- * plan » à date inchangée). La décision d'heure limite est celle que la
- * modification oppose (`decideStrictestOrderCutoff`) : ouverte, elle dit
- * jusqu'à quand ; en grâce ou fermée, elle refuse — une modification ne
+ * plan » à date inchangée). Le verdict d'heure limite est celui que la
+ * modification oppose : ouvert, il dit jusqu'à quand ; en rattrapage ou
+ * fermé, il refuse en nommant la limite franchie — une modification ne
  * dépense aucune dérogation.
  */
 export function revisabilityOf(input: {
   readonly standing: StandingRevisionBlock | null;
   readonly planClosedDay: string | null;
-  readonly cutoff: OrderCutoffDecision | null;
+  readonly cutoff: OrderDeadlineVerdict | null;
 }): RevisionVerdict {
   if (input.standing !== null) {
     return { revisable: false, block: input.standing };
@@ -123,7 +125,7 @@ export function revisabilityOf(input: {
   if (input.cutoff === null) {
     return { revisable: true, until: null };
   }
-  if (input.cutoff.status !== "open") {
+  if (input.cutoff.kind !== "open") {
     return { revisable: false, block: { kind: "past_cutoff", until: input.cutoff.limit } };
   }
   return { revisable: true, until: input.cutoff.limit };

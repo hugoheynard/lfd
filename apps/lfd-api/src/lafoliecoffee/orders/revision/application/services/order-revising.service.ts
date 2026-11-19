@@ -48,7 +48,9 @@ import {
   type RevisionPriceRefusal,
 } from "../../../application/services/order-composition.service.js";
 import type { OrderContent } from "../../../application/services/order-content.js";
-import { OrderCutoffGate } from "../../../application/services/order-cutoff-gate.service.js";
+import { OrderDeadline, type OrderDeadlineAsker } from "../../../../order-cutoffs/index.js";
+import { Clock } from "../../../../../platform/time/clock.js";
+import { admitWithinDeadline } from "../../../domain/services/admit-within-deadline.js";
 import { OrderIntake } from "../../../application/services/order-intake.service.js";
 import type { OrderParties } from "../../../application/services/order-parties.js";
 import { OrderPlanGate } from "../../../application/services/order-plan-gate.service.js";
@@ -81,17 +83,25 @@ import { ShelfRevising } from "./shelf-revising.service.js";
  * - **R5** : la nouvelle journée ouverte — et, pour le client, pas avant le
  *   premier jour commandable de sa clientèle (2026-10-28).
  */
+/**
+ * Ce que la modification demande au délai de commande : la limite des
+ * articles en clientèle `pro`, comme la passation, et aucune dérogation — une
+ * modification ne crée ni ne retire de surtaxe (R4).
+ */
+const REVISION_ASKER: OrderDeadlineAsker = { audience: "pro", companyId: null, waiver: "ignore" };
+
 @Injectable()
 export class OrderRevising {
   private readonly logger = new Logger(OrderRevising.name);
 
   constructor(
     private readonly composition: OrderComposition,
-    private readonly cutoffs: OrderCutoffGate,
+    private readonly deadline: OrderDeadline,
     private readonly plans: OrderPlanGate,
     private readonly rule: CancellationRule,
     private readonly intake: OrderIntake,
     private readonly shelf: ShelfRevising,
+    private readonly clock: Clock,
   ) {}
 
   /**
@@ -162,10 +172,12 @@ export class OrderRevising {
     const day = order.serviceDay;
     const [closed, cutoff] = await Promise.all([
       this.plans.isClosed(day),
-      this.cutoffs.decide(
-        order.lines.map((line) => line.sku),
-        day,
-      ),
+      this.deadline.verdict({
+        skus: order.lines.map((line) => line.sku),
+        serviceDay: day,
+        at: this.clock.now(),
+        asker: REVISION_ASKER,
+      }),
     ]);
     return revisabilityOf({
       standing,
@@ -423,10 +435,13 @@ export class OrderRevising {
     const days = new Set([order.serviceDay, content.requestedDeliveryDate]);
     for (const day of days) {
       if (day !== null) {
-        await this.cutoffs.ensure(skus, day, order.companyId, {
-          withWaiver: false,
+        const verdict = await this.deadline.verdict({
+          skus,
+          serviceDay: day,
           at: decidedAt,
+          asker: REVISION_ASKER,
         });
+        admitWithinDeadline(verdict, day);
       }
     }
   }

@@ -1,4 +1,6 @@
-import type { OrderCutoffDecision } from "@lfd/contracts";
+import type { OrderCutoffStatus } from "@lfd/contracts";
+
+import type { OrderDeadlineVerdict } from "../../../../../order-cutoffs/index.js";
 
 import type { CancellationDecision } from "../../../../cancellation/domain/services/order-cancellation.js";
 import {
@@ -21,8 +23,17 @@ const OPEN: CancellationDecision = { cancellable: true, regime: "account" };
 const ACCOUNT = { paymentStatus: "not_required", totalCents: 1_200, hasSalesTerms: true } as const;
 const LIMIT = new Date("2026-11-09T17:00:00.000Z");
 
-function cutoff(status: OrderCutoffDecision["status"]): OrderCutoffDecision {
-  return { status, rule: null, limit: LIMIT, graceEnd: LIMIT };
+/** La fin du rattrapage, distincte de la limite : la révisabilité nomme la LIMITE franchie. */
+const GRACE_END = new Date("2026-11-09T17:30:00.000Z");
+
+function cutoff(kind: OrderCutoffStatus): OrderDeadlineVerdict {
+  const bounds = {
+    limit: LIMIT,
+    graceEnd: GRACE_END,
+    source: "general_rule" as const,
+    lines: new Map(),
+  };
+  return kind === "grace" ? { kind, waiver: null, lateFee: null, ...bounds } : { kind, ...bounds };
 }
 
 describe("standingBlockOf — ce qui vaut pour le client comme pour l'équipe", () => {

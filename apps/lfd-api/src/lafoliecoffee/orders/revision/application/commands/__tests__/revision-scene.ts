@@ -57,7 +57,7 @@ import { CartAdjustments } from "../../../../application/services/cart-adjustmen
 import { CustomerAudiences } from "../../../../application/services/customer-audiences.service.js";
 import { OrderComposition } from "../../../../application/services/order-composition.service.js";
 import type { OrderContent } from "../../../../application/services/order-content.js";
-import { OrderCutoffGate } from "../../../../application/services/order-cutoff-gate.service.js";
+import { deadlineOf } from "../../../../application/services/__tests__/order-deadline-of.js";
 import { OrderLinePricing } from "../../../../application/services/order-line-pricing.service.js";
 import { OrderOperations } from "../../../../application/services/order-operations.service.js";
 import type { OrderPlanGate } from "../../../../application/services/order-plan-gate.service.js";
@@ -260,12 +260,12 @@ export function revisingAt(
     classifications,
     new CustomerAudiences({ companyStatusOf: () => Promise.resolve(companyStatus) }),
   );
-  const cutoffs = new OrderCutoffGate(
-    { list: () => Promise.resolve([]) },
-    catalog,
-    { openFor: () => Promise.resolve(null), consume: () => Promise.resolve() },
-    clock,
-  );
+  const cutoffs = deadlineOf({
+    cutoffs: { list: () => Promise.resolve([]) },
+    catalog: catalog,
+    waivers: { openFor: () => Promise.resolve(null), consume: () => Promise.resolve() },
+    lateFees: { current: () => Promise.resolve(null) },
+  });
   const plans = options.plans ?? openPlanGate();
   return new OrderRevising(
     composition,
@@ -274,6 +274,7 @@ export function revisingAt(
     new CancellationRule(options.engagements ?? new FixedEngagements()),
     options.intake ?? intakeAt(undefined, "active", [], {}, undefined, clock),
     new ShelfRevising(options.shelf ?? shelfCircuitOf(plans), plans),
+    clock,
   );
 }
 

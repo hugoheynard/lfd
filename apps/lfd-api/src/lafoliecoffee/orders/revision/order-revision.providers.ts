@@ -10,7 +10,6 @@ import { QuoteOrderChangeRequestHandler } from "../application/queries/quote-ord
 import { QuoteOrderRevisionHandler } from "./application/queries/quote-order-revision.handler.js";
 import { CardIncreaseAbandonment } from "./application/services/card-increase-abandonment.js";
 import { OrderComposition } from "../application/services/order-composition.service.js";
-import { OrderCutoffGate } from "../application/services/order-cutoff-gate.service.js";
 import { OrderRevisabilityReading } from "./application/services/order-revisability-reading.js";
 import { OrderRevising } from "./application/services/order-revising.service.js";
 import { RevisionWall } from "./application/services/revision-wall.js";
@@ -41,7 +40,6 @@ import { PrismaRevisableOrderReader } from "./infrastructure/prisma-revisable-or
  */
 export const ORDER_REVISION_PROVIDERS: readonly Provider[] = [
   OrderComposition,
-  OrderCutoffGate,
   OrderRevising,
   RevisionWall,
   ReviseOrderHandler,

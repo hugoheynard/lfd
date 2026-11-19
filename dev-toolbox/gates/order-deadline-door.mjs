@@ -55,11 +55,6 @@ export const DEBT = [
   "apps/lfd-api/src/lafoliecoffee/orders/domain/services/__tests__/order-cutoff-guard.spec.ts",
   "apps/lfd-api/src/lafoliecoffee/orders/domain/services/order-cutoff-guard.ts",
   "apps/lfd-api/src/lafoliecoffee/orders/domain/services/settlement-reminder.ts",
-  "apps/lfd-api/src/lafoliecoffee/orders/revision/application/commands/__tests__/card-increase-scene.ts",
-  "apps/lfd-api/src/lafoliecoffee/orders/revision/application/commands/__tests__/revision-scene.ts",
-  "apps/lfd-api/src/lafoliecoffee/orders/revision/application/commands/propose-card-increase.handler.ts",
-  "apps/lfd-api/src/lafoliecoffee/orders/revision/application/services/order-revising.service.ts",
-  "apps/lfd-api/src/lafoliecoffee/orders/revision/order-revision.providers.ts",
   "apps/lfd-api/src/lafoliecoffee/recommendations/domain/orderable-today.ts",
 ];
 
