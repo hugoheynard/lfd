@@ -15,6 +15,7 @@ import type {
   ResupplyReceiptLineView,
   ResupplyTarget,
   SiteResupplyDraftView,
+  StockAlertLevel,
   UnorderedReceiptLineView,
 } from '@lfd/contracts';
 import {
@@ -141,20 +142,47 @@ export class ResupplyStockTable {
     () => this.canWrite() && this.resupplies.view()?.today === this.day(),
   );
 
+  /**
+   * Le point suit-il l'état de son stock ? Réglé dans Réglages › Comptoir,
+   * désactivé par défaut (décidé par Hugo le 2026-11-19) ; faux tant que la
+   * vue n'est pas lue. Désactivé, ni « Stock du jour », ni « État », ni
+   * teinte : le serveur refuserait de déclarer (409
+   * `resupply.stock_tracking.disabled`).
+   */
+  protected readonly tracking = computed(() => this.resupplies.view()?.stockTracking ?? false);
+
+  /**
+   * Les alertes déjà ouvertes d'un point qui ne suit plus son stock : lues,
+   * jamais levées ici (la réception d'un réassort de l'article les lève).
+   */
+  protected readonly untrackedAlerts = computed(() =>
+    this.tracking()
+      ? []
+      : this.alerts.alerts().map((alert) => `${alert.label} (${rowStateLabel(alert.level)})`),
+  );
+
   /** Les colonnes ; « Actions » seulement quand le reçu sans commande s'écrit. */
   protected readonly columns = computed<readonly FoldTableColumn<StockRow>[]>(() => [
     { key: 'product', label: 'Produit' },
-    { key: 'stock', label: 'Stock du jour', numeric: true },
-    { key: 'state', label: 'État' },
+    ...(this.tracking()
+      ? [
+          { key: 'stock', label: 'Stock du jour', numeric: true },
+          { key: 'state', label: 'État' },
+        ]
+      : []),
     { key: 'quantity', label: this.targetLabel() },
     ...(this.unorderedOpen()
       ? [{ key: 'actions', label: 'Actions', align: 'right' as const }]
       : []),
   ]);
   protected readonly skuOf = (row: StockRow): string => row.sku;
-  /** La rupture en alerte, le stock faible en avertissement. */
-  protected readonly toneOf = (row: StockRow): FoldTableTone =>
-    row.state === 'out_of_stock' ? 'alert' : row.state === 'low' ? 'warning' : null;
+  /** La rupture en alerte, le stock faible en avertissement — seulement si le point suit son stock. */
+  protected readonly toneOf = computed(() =>
+    this.tracking()
+      ? (row: StockRow): FoldTableTone =>
+          row.state === 'out_of_stock' ? 'alert' : row.state === 'low' ? 'warning' : null
+      : (): FoldTableTone => null,
+  );
 
   /** La visée choisie d'un clic ; `null` tant que personne n'a cliqué. */
   private readonly chosenTarget = signal<ResupplyTarget | null>(null);
@@ -206,7 +234,10 @@ export class ResupplyStockTable {
       articles: this.articles(),
       stock: this.stock(),
       unordered: this.unordered(),
-      alertLevels: new Map([...this.alerts.bySku()].map(([sku, alert]) => [sku, alert.level])),
+      // Sans suivi, aucun état : les alertes ouvertes ne teintent ni ne trient.
+      alertLevels: this.tracking()
+        ? new Map([...this.alerts.bySku()].map(([sku, alert]) => [sku, alert.level]))
+        : new Map<string, StockAlertLevel>(),
       asapDraft: this.asapDraft(),
       tomorrowDraft: this.tomorrowDraft(),
     }),
@@ -244,7 +275,7 @@ export class ResupplyStockTable {
    * au plus tôt : la visée y passe et le curseur va dans sa case.
    */
   protected async setState(row: StockRow, value: string): Promise<void> {
-    if (value === row.state) {
+    if (value === row.state || !this.tracking()) {
       return;
     }
     if (value === 'ok') {

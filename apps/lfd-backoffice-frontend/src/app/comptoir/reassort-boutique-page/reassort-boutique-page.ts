@@ -111,6 +111,8 @@ export class ReassortBoutiquePage {
   protected readonly placesLoaded = this.counter.placesLoaded;
   /** La journée des flèches du bandeau : une seule source de journée sur l'écran. */
   protected readonly day = this.counter.day;
+  /** Le point suit-il l'état de son stock (Réglages › Comptoir) ? Faux tant que non lu. */
+  protected readonly stockTracking = computed(() => this.resupplies.view()?.stockTracking ?? false);
   protected readonly receipt = signal<ResupplyReceiptView | null>(null);
   protected readonly refreshFailed = signal(false);
   /** Le stock estimé du jour : la somme des reçus. */

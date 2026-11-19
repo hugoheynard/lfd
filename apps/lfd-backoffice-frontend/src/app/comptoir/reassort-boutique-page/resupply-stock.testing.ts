@@ -55,6 +55,8 @@ export class FakeResupplies {
   private version = 0;
   private readonly names = new Map<ResupplyTarget, string>();
   tomorrowOrderUntil: string | null = null;
+  /** Réglages › Comptoir : le point suit-il son stock ? Suivi par défaut dans les doublures. */
+  stockTracking = true;
   usedNames: readonly string[] = [];
 
   list(siteId: string): Promise<SiteResuppliesView> {
@@ -87,6 +89,7 @@ export class FakeResupplies {
       drafts,
       resupplies: [],
       usedNames: this.usedNames,
+      stockTracking: this.stockTracking,
     });
   }
   name(_s: string, target: ResupplyTarget, name: string | null): Promise<{ id: string }> {

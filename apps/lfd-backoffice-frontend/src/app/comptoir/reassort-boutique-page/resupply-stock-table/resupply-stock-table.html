@@ -50,6 +50,13 @@
     <fold-callout variant="alert" announce>{{ failure }}</fold-callout>
   }
 
+  @if (untrackedAlerts().length > 0) {
+    <fold-callout variant="warning" data-resupply-untracked-alerts>
+      Ce point ne suit plus l'état de son stock ; alertes encore ouvertes :
+      {{ untrackedAlerts().join(', ') }}. La réception d'un réassort de l'article les lève.
+    </fold-callout>
+  }
+
   <!-- La table fold du fournil (Hugo, 2026-10-28) : une ligne par produit, sa
        teinte dit la rupture ou le stock faible. -->
   <fold-data-table
@@ -60,7 +67,7 @@
     [columns]="columns()"
     [rows]="visibleRows()"
     [rowKey]="skuOf"
-    [rowTone]="toneOf"
+    [rowTone]="toneOf()"
   >
     <ng-template foldCell="product" let-row>
       <span

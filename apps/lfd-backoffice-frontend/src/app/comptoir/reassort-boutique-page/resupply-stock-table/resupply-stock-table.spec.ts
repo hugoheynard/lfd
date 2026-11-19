@@ -65,10 +65,12 @@ async function mount(
     readonly tomorrowOrderUntil?: string;
     readonly now?: number;
     readonly articles?: readonly ResupplyArticleView[];
+    readonly stockTracking?: boolean;
   } = {},
 ): Promise<Mounted> {
   const resupplies = new FakeResupplies();
   resupplies.tomorrowOrderUntil = options.tomorrowOrderUntil ?? null;
+  resupplies.stockTracking = options.stockTracking ?? true;
   const alerts = options.alerts ?? new FakeAlerts();
   const receipts = new FakeReceipts();
   TestBed.resetTestingModule();
@@ -521,5 +523,41 @@ describe('ResupplyStockTable', () => {
     table['category'].set('fam_tart');
     await settle(fixture);
     expect(order(fixture)).toEqual(['TAR-6', 'TAR-1']);
+  });
+});
+
+/** Réglages › Comptoir (Hugo, 2026-11-19) : sans suivi, ni stock, ni état, ni teinte. */
+describe('ResupplyStockTable — sans suivi du stock', () => {
+  const headers = (fixture: ComponentFixture<ResupplyStockTable>): string[] =>
+    [...root(fixture).querySelectorAll('th')].map((th) => (th.textContent ?? '').trim());
+
+  it('avec le suivi : les colonnes « Stock du jour » et « État »', async () => {
+    const { fixture } = await mount();
+    expect(headers(fixture).join(' ')).toContain('Stock du jour');
+    expect(root(fixture).querySelector('[data-resupply-state]')).not.toBeNull();
+  });
+
+  it('sans le suivi : produit, quantité et gestes seulement, aucune déclaration', async () => {
+    const { fixture } = await mount({ stockTracking: false });
+    const text = headers(fixture).join(' ');
+    expect(text).not.toContain('Stock du jour');
+    expect(text).not.toContain('État');
+    expect(text).toContain('Produit');
+    expect(root(fixture).querySelector('[data-resupply-state]')).toBeNull();
+    expect(root(fixture).querySelector('[data-resupply-stock]')).toBeNull();
+    expect(root(fixture).querySelector('[data-resupply-quantity]')).not.toBeNull();
+  });
+
+  it('sans le suivi : une alerte déjà ouverte se lit, sans teinte ni geste', async () => {
+    const alerts = new FakeAlerts();
+    await alerts.declare('site_v', 'CRO', 'out_of_stock');
+    alerts.calls.length = 0;
+    const { fixture, table } = await mount({ stockTracking: false, alerts });
+
+    const callout = root(fixture).querySelector('[data-resupply-untracked-alerts]');
+    expect(callout?.textContent).toContain('CRO (Rupture)');
+    expect(rowOf(table, 'CRO').state).toBe('ok');
+    expect(table['toneOf']()(rowOf(table, 'CRO'))).toBeNull();
+    expect(alerts.calls).toEqual([]);
   });
 });

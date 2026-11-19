@@ -282,6 +282,19 @@ export const reglagesRoutes: Routes = [
           ),
       },
 
+      // RÉGLAGES › COMPTOIR (Hugo, 2026-11-19) — le suivi de l'état du stock,
+      // point par point, désactivé par défaut. Sous `lfc_order_settings`,
+      // comme la route `admin/counter-settings` ; la page se fige sans `:write`.
+      {
+        path: 'comptoir',
+        canActivate: [permissionGuard('lfc_order_settings:read')],
+        title: 'Comptoir — LFC B2B admin',
+        loadComponent: () =>
+          import('./comptoir/counter-settings-page/counter-settings-page').then(
+            (m) => m.CounterSettingsPage,
+          ),
+      },
+
       // RÉGLAGES › COMMERCIAL (Hugo, 2026-10-13) — venus de la section
       // « Réglages » de l'espace Commercial, mêmes droits que leurs routes
       // d'API : Disponibilité sous `b2b_commercial_appointment`, Marchés sous

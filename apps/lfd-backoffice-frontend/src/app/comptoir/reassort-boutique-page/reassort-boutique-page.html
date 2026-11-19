@@ -1,10 +1,14 @@
 <fold-page-layout>
   <p description>
-    Un clic par produit : déclarer une rupture ou un stock faible, demander au fournil, puis
-    réceptionner d'un geste. Le stock du jour est la somme des reçus réceptionnés : il n'est jamais
-    saisi.
+    @if (stockTracking()) {
+      Un clic par produit : déclarer une rupture ou un stock faible, demander au fournil, puis
+      réceptionner d'un geste. Le stock du jour est la somme des reçus réceptionnés : il n'est
+      jamais saisi.
+    } @else {
+      Demander au fournil, puis réceptionner d'un geste. Le suivi de l'état du stock se règle par
+      point dans Réglages › Comptoir.
+    }
   </p>
-
   @switch (state()) {
     @case ('loading') {
       <fold-loading message="Chargement du réassort…" />

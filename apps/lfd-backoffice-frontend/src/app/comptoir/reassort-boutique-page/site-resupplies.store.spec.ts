@@ -49,6 +49,7 @@ class FakeService {
       drafts: [],
       resupplies: [LAUNCHED],
       usedNames: [],
+      stockTracking: true,
     });
   }
   cancel(siteId: string, resupplyId: string): Promise<void> {
