@@ -9,7 +9,7 @@
 > jugement a depuis été rassemblé
 > ([`le-verdict-de-l-heure-limite.md`](le-verdict-de-l-heure-limite.md)), et
 > cette version s'écrit dessus. Frontière de sécurité (un droit neuf) : `vitruve`
-> avant Hugo. **Une décision attend Hugo** (§ 7, Q2 ; Q1 tranchée).
+> avant Hugo. **Les deux décisions sont tranchées** (§ 7) : prêt à bâtir.
 
 ## 1. En deux mots
 
@@ -325,9 +325,15 @@ Un lot par commit.
   modification ; et un produit dont la case n'est pas cochée garde sa limite
   en modification par l'équipe — le resserrement du § 3.6 est retenu, avec le
   lot O5 entier.
-- **Q2 — Sans limite générale ce jour-là** (aucune règle posée, ou une heure
-  qui n'existe pas ce jour-là). Défaut proposé : pas de dépassement.
-  L'alternative : le dépassement ne laisse alors aucune limite.
+- **Q2 — Sans limite générale ce jour-là. Tranché par Hugo le 2026-11-19** :
+  « on essaye d'avoir un comportement prévisible ». Pas de dépassement : la
+  limite d'un produit tient quand aucune limite générale ne s'applique ce
+  jour-là (aucune règle posée, ou une heure qui n'existe pas ce jour-là). Un
+  dépassement remplace toujours une limite par une autre, jamais par rien.
+
+**Le principe qui tranche les deux** : une même case et un même droit
+donnent la même réponse partout — saisie, estimation, modification, hausse —
+et un dépassement ne fait jamais disparaître toute limite.
 
 ## 8. La contradiction de `vitruve` (2026-11-19, v3)
 
