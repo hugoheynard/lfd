@@ -199,12 +199,49 @@ describe('modifier une commande depuis le back-office', () => {
       );
     });
 
-    it('le refus « limite passée » s’affiche dans les mots du serveur', async () => {
+    it('une ligne fermée que personne ne passe s’annonce avant le refus, et « Valider » dit pourquoi il reste fermé', async () => {
+      quoted = { ...QUOTE, closedByItemLimit: [{ ...LIMIT, exceedable: false }] };
+      const { fixture, page, revise } = await mount();
+      await page['askQuote']();
+      fixture.detectChanges();
+      const el = fixture.nativeElement as HTMLElement;
+      expect(el.querySelector('[data-item-limit="closed"]')?.textContent).toContain(
+        'Ce produit ne se commande plus pour ce jour.',
+      );
+      expect(el.querySelector('[data-item-limit-override]')).toBeNull();
+      expect(el.querySelector('[data-item-limit-blocker]')?.textContent).toContain(
+        'retirez sa ligne ou changez la date',
+      );
+      expect(el.querySelector<HTMLButtonElement>('[data-validate]')?.disabled).toBe(true);
+      await page['validate']();
+      expect(revise).not.toHaveBeenCalled();
+    });
+
+    it('une ligne fermée dépassable, lue sur `closedByItemLimit`, ouvre « Passer outre »', async () => {
+      quoted = {
+        ...QUOTE,
+        itemLimitOverrides: [LIMIT],
+        closedByItemLimit: [{ ...LIMIT, exceedable: true }],
+      };
+      const { fixture, page } = await mount();
+      await page['askQuote']();
+      fixture.detectChanges();
+      const el = fixture.nativeElement as HTMLElement;
+      expect(el.querySelector('[data-item-limit="exceeded"]')?.textContent).toContain(
+        'Limite dépassée',
+      );
+      expect(el.querySelector('[data-item-limit-override]')).not.toBeNull();
+    });
+
+    it('le refus « limite passée » de la modification s’affiche dans les mots du serveur', async () => {
       const said =
         '« Baguette » ne se commande plus pour cette journée : sa limite de commande est passée.';
-      const { fixture, page, quoteRevision } = await mount();
-      quoteRevision.mockRejectedValueOnce(refusal('orders.cutoff.item_limit_past', said));
+      const { fixture, page } = await mount(async () => {
+        throw refusal('orders.cutoff.item_limit_past', said);
+      });
       await page['askQuote']();
+      await page['validate']();
+      await fixture.whenStable();
       fixture.detectChanges();
       const el = fixture.nativeElement as HTMLElement;
       expect(el.querySelector('[data-revise-refusal]')?.textContent).toContain(said);

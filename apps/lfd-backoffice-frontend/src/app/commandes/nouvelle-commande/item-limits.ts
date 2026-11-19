@@ -3,6 +3,7 @@ import {
   ITEM_LIMIT_OVERRIDE_REASON_MAX_LENGTH,
   type OrderQuoteCutoffView,
   type OrderQuoteExceededLimitView,
+  type OrderRevisionQuoteView,
 } from '@lfd/contracts';
 
 /**
@@ -55,6 +56,44 @@ export function itemLimitNoticesOf(
     );
   }
   return notices;
+}
+
+/**
+ * Le mot de chaque ligne fermée par sa limite, lu sur le devis d'une
+ * modification par l'équipe (`closedByItemLimit`, dépassables ou non). Le
+ * devis ne refuse plus une ligne fermée : seul le geste refuse, et l'écran
+ * l'annonce avant. Un devis qui ne porte que `itemLimitOverrides` (serveur
+ * antérieur) n'annonce que les lignes dépassables.
+ */
+export function revisionItemLimitNoticesOf(
+  quote: OrderRevisionQuoteView | null,
+): ReadonlyMap<string, ItemLimitNotice> {
+  const notices = new Map<string, ItemLimitNotice>();
+  if (quote === null) {
+    return notices;
+  }
+  const closed =
+    quote.closedByItemLimit ??
+    (quote.itemLimitOverrides ?? []).map((limit) => ({ ...limit, exceedable: true }));
+  for (const line of closed) {
+    notices.set(
+      line.sku,
+      line.exceedable
+        ? { kind: 'exceeded', text: exceededText(line) }
+        : { kind: 'closed', text: ITEM_LIMIT_CLOSED },
+    );
+  }
+  return notices;
+}
+
+/** Une ligne au moins demande le motif (elle sera passée outre). */
+export function noticesAskReason(notices: ReadonlyMap<string, ItemLimitNotice>): boolean {
+  return [...notices.values()].some((notice) => notice.kind === 'exceeded');
+}
+
+/** Une ligne au moins ne se commande plus : le geste serait refusé. */
+export function noticesHoldClosedLine(notices: ReadonlyMap<string, ItemLimitNotice>): boolean {
+  return [...notices.values()].some((notice) => notice.kind === 'closed');
 }
 
 /** La saisie passe-t-elle une limite de produit, donc demande-t-elle un motif ? */

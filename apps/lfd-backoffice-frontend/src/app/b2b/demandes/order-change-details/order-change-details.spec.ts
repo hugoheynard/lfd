@@ -92,8 +92,15 @@ async function mount(
             calls.push(`quote ${id}`);
             return (wire.quote ?? (() => Promise.resolve(QUOTE)))();
           },
-          applyOrderChange: (id: string, expectedTotalCents: number) => {
-            calls.push(`apply ${id} ${expectedTotalCents}`);
+          applyOrderChange: (
+            id: string,
+            expectedTotalCents: number,
+            reason: { readonly itemLimitOverrideReason?: string } = {},
+          ) => {
+            const said = reason.itemLimitOverrideReason;
+            calls.push(
+              `apply ${id} ${expectedTotalCents}${said === undefined ? '' : ` « ${said} »`}`,
+            );
             return (wire.apply ?? (() => Promise.resolve({ revision: 2 })))();
           },
           refuseOrderChange: (id: string, reason: string) => {
@@ -241,6 +248,97 @@ describe('OrderChangeDetails', () => {
       'Commande inscrite.',
     );
     expect(inbox.answered()).toBe(0);
+  });
+
+  describe('la limite d’un produit demandé (doc des dépassements, § 2.5)', () => {
+    const LIMIT = {
+      sku: 'SKU-1',
+      daysBefore: 2,
+      time: '12:00',
+      limitAt: '2030-01-01T11:00:00.000Z',
+    };
+
+    async function typeReason(fixture: ComponentFixture<OrderChangeDetails>, text: string) {
+      const area = host(fixture).querySelector('[data-item-limit-reason] textarea');
+      if (!(area instanceof HTMLTextAreaElement)) throw new Error('Motif introuvable.');
+      area.value = text;
+      area.dispatchEvent(new Event('input'));
+      await settle(fixture);
+    }
+
+    it('dépassable : « Passer outre » ouvre le motif, qui part avec l’application', async () => {
+      const { fixture, calls } = await mount(DETAILS, {
+        quote: () =>
+          Promise.resolve({
+            ...QUOTE,
+            itemLimitOverrides: [LIMIT],
+            closedByItemLimit: [{ ...LIMIT, exceedable: true }],
+          }),
+      });
+      const el = host(fixture);
+      expect(el.querySelector('[data-item-limit="exceeded"]')?.textContent).toContain(
+        'ce produit se commande 2 jours avant, 12:00',
+      );
+      expect(el.querySelector<HTMLButtonElement>('button[data-apply]')?.disabled).toBe(true);
+      click(fixture, '[data-item-limit-override]');
+      await settle(fixture);
+      expect(el.querySelector('[data-item-limit-blocker]')?.textContent).toContain(
+        'Indiquez pourquoi',
+      );
+      await typeReason(fixture, '  Le client a appelé  ');
+      expect(el.querySelector('[data-item-limit-blocker]')).toBeNull();
+      click(fixture, '[data-apply]');
+      await settle(fixture);
+      expect(calls).toContain(`apply cr_1 ${QUOTE.totalCents} « Le client a appelé »`);
+    });
+
+    it('non dépassable : annoncée avant le refus, « Appliquer » fermé avec sa raison', async () => {
+      const { fixture, calls } = await mount(DETAILS, {
+        quote: () =>
+          Promise.resolve({ ...QUOTE, closedByItemLimit: [{ ...LIMIT, exceedable: false }] }),
+      });
+      const el = host(fixture);
+      expect(el.querySelector('[data-item-limit="closed"]')?.textContent).toContain(
+        'Ce produit ne se commande plus pour ce jour.',
+      );
+      expect(el.querySelector('[data-item-limit-override]')).toBeNull();
+      expect(el.querySelector('[data-item-limit-blocker]')?.textContent).toContain(
+        '« Appliquer » sera refusé',
+      );
+      expect(el.querySelector<HTMLButtonElement>('button[data-apply]')?.disabled).toBe(true);
+      click(fixture, '[data-apply]');
+      await settle(fixture);
+      expect(calls).toEqual(['quote cr_1']);
+    });
+
+    it('le refus « motif manquant » relit le devis et ramène au motif', async () => {
+      const missing = new HttpErrorResponse({
+        status: 409,
+        error: { code: 'orders.cutoff.item_limit_reason_required', message: 'Indiquez pourquoi.' },
+      });
+      let quotes = 0;
+      const { fixture, calls } = await mount(DETAILS, {
+        quote: () => {
+          quotes += 1;
+          return Promise.resolve(
+            quotes === 1
+              ? QUOTE
+              : {
+                  ...QUOTE,
+                  itemLimitOverrides: [LIMIT],
+                  closedByItemLimit: [{ ...LIMIT, exceedable: true }],
+                },
+          );
+        },
+        apply: () => Promise.reject(missing),
+      });
+      click(fixture, '[data-apply]');
+      await settle(fixture);
+      expect(calls).toEqual(['quote cr_1', `apply cr_1 ${QUOTE.totalCents}`, 'quote cr_1']);
+      const el = host(fixture);
+      expect(el.querySelector('[data-item-limit-reason]')).not.toBeNull();
+      expect(el.querySelector('[data-answer-error]')?.textContent).toContain('Indiquez pourquoi.');
+    });
   });
 
   it('« Refuser » demande un mot, puis l’envoie', async () => {

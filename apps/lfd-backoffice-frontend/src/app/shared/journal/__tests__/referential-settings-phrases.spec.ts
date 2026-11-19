@@ -414,6 +414,42 @@ describe('la case « l’équipe peut passer outre » d’une heure limite', () 
     );
     expect(labels(open)).toEqual(['Tolérance']);
   });
+
+  it('dit le changement quand le fait porte l’état d’avant de la case, et qu’il diffère', () => {
+    const base = {
+      subjectLabel: 'Produit « Bûche »',
+      scope: 'product:prd_1',
+      daysBefore: 2,
+      time: '12:00',
+      graceMinutes: null,
+    };
+    const opened = on('order_time_limit', 'order_time_limit.set', {
+      ...base,
+      staffMayExceed: true,
+      previousStaffMayExceed: false,
+    });
+    const closed = on('order_time_limit', 'order_time_limit.set', {
+      ...base,
+      staffMayExceed: false,
+      previousStaffMayExceed: true,
+    });
+    const kept = on('order_time_limit', 'order_time_limit.set', {
+      ...base,
+      staffMayExceed: true,
+      previousStaffMayExceed: true,
+    });
+
+    expect(sentence(opened)).toBe(
+      'Colette Martin a réglé l’heure limite de commande (Produit « Bûche ») : 2 jours avant, à 12:00, l’équipe peut désormais passer outre cette limite',
+    );
+    expect(sentence(closed)).toBe(
+      'Colette Martin a réglé l’heure limite de commande (Produit « Bûche ») : 2 jours avant, à 12:00, l’équipe ne peut plus passer outre cette limite',
+    );
+    expect(sentence(kept)).toBe(
+      'Colette Martin a réglé l’heure limite de commande (Produit « Bûche ») : 2 jours avant, à 12:00, l’équipe peut passer outre',
+    );
+    expect(labels(kept)).toEqual(['Tolérance']);
+  });
 });
 
 describe('la portée d’un changement de taux, sous sa forme d’août 2026', () => {

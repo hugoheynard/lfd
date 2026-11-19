@@ -76,10 +76,12 @@ import {
 } from '../revision-draft';
 import { isTotalChangedRefusal } from '../../nouvelle-commande/total-changed-refusal';
 import {
-  exceededText,
   isItemLimitReasonRefusal,
   itemLimitReasonBlockerOf,
   itemLimitReasonPayloadOf,
+  noticesAskReason,
+  noticesHoldClosedLine,
+  revisionItemLimitNoticesOf,
 } from '../../nouvelle-commande/item-limits';
 import {
   hasRefusal,
@@ -89,6 +91,10 @@ import {
 } from '../revision-refusals';
 
 type LoadState = 'loading' | 'ready' | 'error';
+
+/** Pourquoi « Valider » reste fermé quand une ligne ne se commande plus pour ce jour. */
+const CLOSED_LINE_BLOCKER =
+  'Un produit ne se commande plus pour ce jour : retirez sa ligne ou changez la date pour valider.';
 
 /** Le refus « modifiée ailleurs » (R7) : on ne recalcule pas, on relit. */
 const STALE_REVISION = 'orders.revise.stale_revision';
@@ -354,32 +360,31 @@ export class ModifierCommandePage {
   });
 
   /**
-   * Les limites de produit que la modification passerait (plan
-   * `plan-passer-outre-la-limite-produit.md`, § 3.5), dites par SKU — le
-   * serveur ne les sert qu'à qui a le droit, sur les lignes ajoutées ou
-   * augmentées d'un produit qui le permet.
+   * Les lignes que la limite de leur produit ferme, dites par SKU (doc
+   * `passer-outre-la-limite-d-un-produit.md`, § 2.5) : le devis les annonce
+   * sans refuser — dépassables (« Passer outre », motif) ou non (« ne se
+   * commande plus »). Servies à l'équipe seulement.
    */
-  protected readonly limitNotices = computed(
-    () =>
-      new Map(
-        (this.quote()?.itemLimitOverrides ?? []).map(
-          (limit) => [limit.sku, exceededText(limit)] as const,
-        ),
-      ),
-  );
+  protected readonly limitNotices = computed(() => revisionItemLimitNoticesOf(this.quote()));
   /** Le devis passe une limite de produit : le motif a lieu d'être. */
-  protected readonly asksReason = computed(() => this.limitNotices().size > 0);
+  protected readonly asksReason = computed(() => noticesAskReason(this.limitNotices()));
   protected readonly reasonHint = computed(
     () =>
       `Obligatoire, consigné sur la commande. ${String(this.draft.itemLimitReason().trim().length)} / ${String(ITEM_LIMIT_OVERRIDE_REASON_MAX_LENGTH)} caractères.`,
   );
-  /** Ce qui retient « Valider » tant que le motif manque — `null` quand rien. */
+  /**
+   * Ce qui retient « Valider » du côté des limites de produit — `null` quand
+   * rien. Une ligne qu'on ne peut pas passer outre passe avant le motif : le
+   * serveur la refuserait (`orders.cutoff.item_limit_past`) quoi qu'on écrive.
+   */
   protected readonly limitBlocker = computed(() =>
-    itemLimitReasonBlockerOf(
-      this.asksReason(),
-      this.draft.itemLimitOverriding(),
-      this.draft.itemLimitReason(),
-    ),
+    noticesHoldClosedLine(this.limitNotices())
+      ? CLOSED_LINE_BLOCKER
+      : itemLimitReasonBlockerOf(
+          this.asksReason(),
+          this.draft.itemLimitOverriding(),
+          this.draft.itemLimitReason(),
+        ),
   );
 
   protected readonly changes = computed(() =>

@@ -1,6 +1,9 @@
 import {
+  afterNextRender,
   ChangeDetectionStrategy,
   Component,
+  ElementRef,
+  Injector,
   computed,
   effect,
   inject,
@@ -12,6 +15,7 @@ import { RouterLink } from '@angular/router';
 import { formatCents } from '@lfd/b2b-ui/order';
 import {
   CONTACT_BOUNDS,
+  ITEM_LIMIT_OVERRIDE_REASON_MAX_LENGTH,
   type OrderChangeDetailsView,
   type OrderRevisionQuoteView,
 } from '@lfd/contracts';
@@ -32,6 +36,18 @@ import { CustomerRequestsInbox } from '../customer-requests-inbox.store';
 import { CustomerRequestsService } from '../customer-requests.service';
 import { hasRefusal, refusalsBySku } from '../../../commandes/modifier-commande/revision-refusals';
 import { isTotalChangedRefusal } from '../../../commandes/nouvelle-commande/total-changed-refusal';
+import {
+  isItemLimitReasonRefusal,
+  itemLimitReasonBlockerOf,
+  itemLimitReasonPayloadOf,
+  noticesAskReason,
+  noticesHoldClosedLine,
+  revisionItemLimitNoticesOf,
+} from '../../../commandes/nouvelle-commande/item-limits';
+
+/** Pourquoi « Appliquer » reste fermé quand une ligne demandée ne se commande plus. */
+const CLOSED_LINE_BLOCKER =
+  'Un produit demandé ne se commande plus pour ce jour : « Appliquer » sera refusé. Refusez la demande avec un mot au client.';
 
 /** L'écart, tel que le serveur le calcule — ou la phrase de la règle qui refuse. */
 type QuoteState =
@@ -78,6 +94,8 @@ export class OrderChangeDetails {
   private readonly inbox = inject(CustomerRequestsInbox);
   private readonly notify = inject(NotifyService);
   private readonly permissions = inject(PermissionsStore);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly injector = inject(Injector);
 
   protected readonly maxLength = CONTACT_BOUNDS.changeRefusal;
   protected readonly canWrite = computed(() => this.permissions.can('b2b_contact:write'));
@@ -109,6 +127,26 @@ export class OrderChangeDetails {
     const view = this.ready();
     return view !== null && hasRefusal(view);
   });
+  /**
+   * Les lignes demandées que la limite de leur produit ferme (doc
+   * `passer-outre-la-limite-d-un-produit.md`, § 2.5) : le devis les annonce,
+   * et le droit lu est celui de la personne qui applique.
+   */
+  protected readonly limitNotices = computed(() => revisionItemLimitNoticesOf(this.ready()));
+  protected readonly asksReason = computed(() => noticesAskReason(this.limitNotices()));
+  /** L'équipe a choisi de passer outre : le motif s'ouvre. */
+  protected readonly overriding = signal(false);
+  protected readonly itemLimitReason = signal('');
+  protected readonly reasonHint = computed(
+    () =>
+      `Obligatoire, consigné sur la commande. ${String(this.itemLimitReason().trim().length)} / ${String(ITEM_LIMIT_OVERRIDE_REASON_MAX_LENGTH)} caractères.`,
+  );
+  /** Ce qui retient « Appliquer » du côté des limites de produit — `null` quand rien. */
+  protected readonly limitBlocker = computed(() =>
+    noticesHoldClosedLine(this.limitNotices())
+      ? CLOSED_LINE_BLOCKER
+      : itemLimitReasonBlockerOf(this.asksReason(), this.overriding(), this.itemLimitReason()),
+  );
   protected readonly difference = computed(() => {
     const cents = this.ready()?.differenceCents ?? 0;
     return cents === 0 ? 'Aucun' : `${cents > 0 ? '+' : '−'} ${formatCents(Math.abs(cents))}`;
@@ -149,13 +187,25 @@ export class OrderChangeDetails {
 
   protected async apply(): Promise<void> {
     const view = this.ready();
-    if (this.busy() !== null || view === null || this.stale() || this.refused()) return;
+    if (
+      this.busy() !== null ||
+      view === null ||
+      this.stale() ||
+      this.refused() ||
+      this.limitBlocker() !== null
+    ) {
+      return;
+    }
     this.busy.set('apply');
     this.error.set(null);
     this.refusedTotalCents.set(null);
     try {
       // Le total du devis affiché : celui que l'équipe a vu (R14).
-      const { revision } = await this.api.applyOrderChange(this.requestId(), view.totalCents);
+      const { revision } = await this.api.applyOrderChange(
+        this.requestId(),
+        view.totalCents,
+        itemLimitReasonPayloadOf(this.overriding(), this.itemLimitReason()),
+      );
       this.notify.success(`Modification appliquée : la commande passe en révision ${revision}.`);
       this.inbox.noteAnswered();
     } catch (error) {
@@ -163,6 +213,19 @@ export class OrderChangeDetails {
         // Pas une panne : un écart à montrer. Le devis se relit.
         this.refusedTotalCents.set(view.totalCents);
         void this.loadQuote(this.requestId());
+        return;
+      }
+      if (isItemLimitReasonRefusal(error)) {
+        // Le motif manque : le devis se relit (il annonce la ligne), le champ
+        // s'ouvre et reçoit le focus ; la phrase du serveur se pose après.
+        const said = httpErrorMessage(
+          error,
+          'Indiquez pourquoi vous passez outre la limite du produit.',
+        );
+        this.overriding.set(true);
+        await this.loadQuote(this.requestId());
+        this.error.set(said);
+        this.focusReason();
         return;
       }
       this.error.set(httpErrorMessage(error, "La modification n'a pas pu être appliquée."));
@@ -185,6 +248,20 @@ export class OrderChangeDetails {
     } finally {
       this.busy.set(null);
     }
+  }
+
+  /** Amène au champ du motif, une fois rendu. */
+  private focusReason(): void {
+    afterNextRender(
+      () => {
+        const field = this.host.nativeElement.querySelector<HTMLElement>(
+          '[data-item-limit-reason] textarea',
+        );
+        // `focus()` amène le champ à l'écran.
+        field?.focus();
+      },
+      { injector: this.injector },
+    );
   }
 
   private async loadQuote(id: string): Promise<void> {

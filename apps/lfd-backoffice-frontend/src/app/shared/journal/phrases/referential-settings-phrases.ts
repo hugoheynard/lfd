@@ -268,13 +268,28 @@ function limitValues(payload: Readonly<Record<string, unknown>>): {
   // Absente des faits écrits avant la case : rien à dire, la limite était infranchissable.
   const mayExceed = payload['staffMayExceed'];
   if (typeof mayExceed === 'boolean') {
-    parts.push([
-      text(mayExceed ? 'l’équipe peut passer outre' : 'l’équipe ne peut pas passer outre'),
-    ]);
+    parts.push([text(mayExceedText(mayExceed, payload['previousStaffMayExceed']))]);
     said.push('staffMayExceed');
+  }
+  if (typeof payload['previousStaffMayExceed'] === 'boolean') {
+    said.push('previousStaffMayExceed');
   }
   const segments = parts.flatMap((part, index) => (index === 0 ? part : [text(', '), ...part]));
   return { segments: parts.length === 0 ? [] : [text(' : '), ...segments], said };
+}
+
+/**
+ * La case « l'équipe peut passer outre », dite comme un changement quand le
+ * fait porte son état d'avant (`previousStaffMayExceed`, sur la seule pose)
+ * et qu'il diffère ; sinon son état. Absente quand la limite naît.
+ */
+function mayExceedText(mayExceed: boolean, previous: unknown): string {
+  if (typeof previous === 'boolean' && previous !== mayExceed) {
+    return mayExceed
+      ? 'l’équipe peut désormais passer outre cette limite'
+      : 'l’équipe ne peut plus passer outre cette limite';
+  }
+  return mayExceed ? 'l’équipe peut passer outre' : 'l’équipe ne peut pas passer outre';
 }
 
 /** « a réglé l'heure limite de commande (Toute la production) : 1 jour avant, à 17:30 ». */

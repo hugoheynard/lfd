@@ -52,9 +52,15 @@ export class CustomerRequestsService {
    * Applique la modification demandée : une révision au nom de l'équipe. Rend
    * la révision produite. `expectedTotalCents` est le total du devis que
    * l'équipe a vu (plan S2, R14) : s'il a bougé, `409 orders.total_changed`.
+   * `itemLimitOverrideReason` : le motif quand l'équipe passe outre la limite
+   * d'un produit que la demande ajoute — omis sinon.
    */
-  applyOrderChange(id: string, expectedTotalCents: number): Promise<OrderChangeAppliedResponse> {
-    const body: OrderChangeApplyPayload = { expectedTotalCents };
+  applyOrderChange(
+    id: string,
+    expectedTotalCents: number,
+    reason: { readonly itemLimitOverrideReason?: string } = {},
+  ): Promise<OrderChangeAppliedResponse> {
+    const body: OrderChangeApplyPayload = { expectedTotalCents, ...reason };
     return firstValueFrom(
       this.http.post<OrderChangeAppliedResponse>(`${this.orderChange(id)}/apply`, body),
     );

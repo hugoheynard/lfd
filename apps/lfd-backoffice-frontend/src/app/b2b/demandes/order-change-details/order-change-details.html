@@ -61,6 +61,28 @@
                     {{ line.quantity }} × {{ line.productName }} —
                     {{ cents(line.lineTotalCents) }} HT
                     {{ line.priceFrozen ? '(prix d’origine)' : '(prix du jour)' }}
+                    @if (limitNotices().get(line.sku); as notice) {
+                      <fold-callout
+                        [variant]="notice.kind === 'closed' ? 'alert' : 'warning'"
+                        [attr.data-item-limit]="notice.kind"
+                      >
+                        <div class="ocd-limit">
+                          <span>{{ notice.text }}</span>
+                          @if (notice.kind === 'exceeded' && canWrite() && !overriding()) {
+                            <button
+                              foldButton
+                              size="sm"
+                              emphasis="outline"
+                              type="button"
+                              data-item-limit-override
+                              (click)="overriding.set(true)"
+                            >
+                              Passer outre
+                            </button>
+                          }
+                        </div>
+                      </fold-callout>
+                    }
                     @for (said of refusals().get(line.sku) ?? []; track said) {
                       <fold-callout variant="alert" data-line-refusal>{{ said }}</fold-callout>
                     }
@@ -70,6 +92,23 @@
             </fold-field>
           </fold-field-list>
         }
+      }
+    }
+
+    @if (canWrite() && ready() !== null) {
+      @if (asksReason() && overriding()) {
+        <fold-textarea
+          label="Motif du dépassement"
+          required
+          data-item-limit-reason
+          placeholder="Pourquoi l'équipe passe outre la limite du produit."
+          [rows]="2"
+          [hint]="reasonHint()"
+          [(value)]="itemLimitReason"
+        />
+      }
+      @if (limitBlocker(); as message) {
+        <fold-callout variant="warning" data-item-limit-blocker>{{ message }}</fold-callout>
       }
     }
 
@@ -131,7 +170,9 @@
             size="sm"
             icon="check"
             type="button"
-            [disabled]="busy() !== null || ready() === null || stale() || refused()"
+            [disabled]="
+              busy() !== null || ready() === null || stale() || refused() || limitBlocker() !== null
+            "
             [loading]="busy() === 'apply'"
             (click)="apply()"
             data-apply

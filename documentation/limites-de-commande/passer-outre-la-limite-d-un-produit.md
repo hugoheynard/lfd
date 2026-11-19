@@ -132,13 +132,12 @@ La saisie et la modification d'une commande au back-office annoncent les
 lignes fermées par leur produit : « Passer outre » (si dépassable) ouvre le
 motif, sinon « Ce produit ne se commande plus pour ce jour ». Le refus pour
 motif manquant ramène au champ. La fiche d'une commande montre la carte
-« Limites de produit dépassées ».
+« Limites de produit dépassées ». La modification par l'équipe et
+l'application d'une demande du client annoncent aussi les lignes fermées non
+dépassables, avant le refus ; le journal du référentiel dit quand la case
+change (« l'équipe peut désormais passer outre… »).
 
 ## 3. Ce qui reste
 
-- **Les écrans** : le back-office ne lit encore ni `closedByItemLimit` au
-  devis d'une modification, ni le motif à l'application d'une demande ; la
-  phrase du journal ne lit pas encore `previousStaffMayExceed` (le fait
-  `order_time_limit.set` le porte, absent quand la limite naît).
 - **Rien ne vérifie qu'un produit se fabrique en moins de temps que sa
   limite** : la case du produit en répond.

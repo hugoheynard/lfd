@@ -62,10 +62,13 @@
                         (remove)="cart.remove(line.sku)"
                       />
                       @if (limitNotices().get(line.sku); as notice) {
-                        <fold-callout variant="warning" data-item-limit>
+                        <fold-callout
+                          [variant]="notice.kind === 'closed' ? 'alert' : 'warning'"
+                          [attr.data-item-limit]="notice.kind"
+                        >
                           <div class="mc-limit">
-                            <span>{{ notice }}</span>
-                            @if (!draft.itemLimitOverriding()) {
+                            <span>{{ notice.text }}</span>
+                            @if (notice.kind === 'exceeded' && !draft.itemLimitOverriding()) {
                               <button
                                 foldButton
                                 size="sm"
