@@ -1,0 +1,84 @@
+<fold-page-layout icon="library" title="Modèles de réassort" separator>
+  <p description>
+    Les listes habituelles d'un point — « Base matin », « Réassort après-midi ». Un modèle ne part
+    jamais seul : le comptoir l'applique à sa demande, l'ajuste, puis envoie.
+  </p>
+
+  @if (canWrite() && siteId(); as site) {
+    <div pageActions>
+      <a foldButton intent="primary" [routerLink]="['/comptoir/reassort/modeles', site, 'nouveau']">
+        Nouveau modèle
+      </a>
+    </div>
+  }
+
+  @if (sitesFailed()) {
+    <fold-empty-state tone="alert" title="Impossible de lire les points">
+      <button foldButton (click)="loadSites()">Réessayer</button>
+    </fold-empty-state>
+  } @else if (sites() === null) {
+    <fold-loading message="Chargement des points…" />
+  } @else {
+    <div class="library">
+      <fold-listbox
+        label="Point"
+        placeholder="Choisir un point"
+        [options]="siteOptions()"
+        [value]="siteId()"
+        (selectionChange)="pickSite($event)"
+      />
+
+      @if (siteId() === null) {
+        <fold-empty-state
+          title="Choisissez un point"
+          subtitle="Chaque point a sa bibliothèque de modèles."
+        >
+          <fold-icon empty-icon name="places" />
+        </fold-empty-state>
+      } @else if (store.loadError(); as message) {
+        <fold-empty-state
+          tone="alert"
+          title="Impossible de lire les modèles du point"
+          [subtitle]="message"
+        >
+          <button foldButton (click)="retry()">Réessayer</button>
+        </fold-empty-state>
+      } @else if (cards().length === 0) {
+        <fold-empty-state
+          title="Aucun modèle pour ce point"
+          subtitle="Un modèle se crée ici, ou depuis le comptoir avec « Enregistrer comme modèle »."
+        >
+          <fold-icon empty-icon name="library" />
+        </fold-empty-state>
+      } @else {
+        <div class="cards" data-templates>
+          @for (card of cards(); track card.id) {
+            <fold-card [attr.data-template]="card.id">
+              <fold-element-title
+                cardHeader
+                variant="title"
+                [title]="card.name"
+                [subtitle]="card.summary"
+              >
+                @if (canWrite()) {
+                  <a
+                    titleAction
+                    foldButton
+                    emphasis="outline"
+                    size="sm"
+                    [routerLink]="['/comptoir/reassort/modeles', siteId(), card.id]"
+                  >
+                    Ajuster
+                  </a>
+                }
+              </fold-element-title>
+              @if (card.warning; as warning) {
+                <fold-callout variant="warning" data-template-stale>{{ warning }}</fold-callout>
+              }
+            </fold-card>
+          }
+        </div>
+      }
+    </div>
+  }
+</fold-page-layout>

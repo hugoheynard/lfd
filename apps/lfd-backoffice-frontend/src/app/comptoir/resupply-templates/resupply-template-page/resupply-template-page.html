@@ -1,0 +1,197 @@
+<fold-page-layout [title]="pageTitle()">
+  <fold-back-link
+    pageEyebrow
+    icon="arrow-back"
+    label="Modèles de réassort"
+    [routerLink]="['/comptoir/reassort/modeles']"
+  />
+
+  @if (articles() !== null && !missing()) {
+    <div pageActions>
+      <button
+        foldButton
+        data-template-save
+        [disabled]="!canSave()"
+        [loading]="pending()"
+        (click)="save()"
+      >
+        Enregistrer — {{ lines().length }} article(s)
+      </button>
+    </div>
+  }
+
+  @if (loadFailed()) {
+    <fold-empty-state tone="alert" title="Impossible de lire le modèle et le catalogue du réassort">
+      <button foldButton (click)="load()">Réessayer</button>
+    </fold-empty-state>
+  } @else if (articles() === null) {
+    <fold-loading message="Chargement du catalogue du réassort…" />
+  } @else if (missing()) {
+    <fold-empty-state
+      tone="alert"
+      title="Ce modèle n'est plus dans la bibliothèque"
+      subtitle="Il a été archivé, ou n'appartient pas à ce point."
+      data-template-missing
+    >
+      <button foldButton (click)="load()">Relire la bibliothèque</button>
+    </fold-empty-state>
+  } @else {
+    <div class="composition">
+      @if (failure(); as message) {
+        <fold-callout variant="alert" announce data-template-failure>{{ message }}</fold-callout>
+      }
+      @if (done(); as message) {
+        <fold-callout variant="success" announce data-template-done>{{ message }}</fold-callout>
+      }
+
+      <fold-card>
+        <fold-element-title
+          cardHeader
+          variant="title"
+          title="Le modèle"
+          subtitle="Son nom le retrouve au comptoir ; sa visée est proposée à l'application, qui peut la changer."
+        />
+        <div class="identity">
+          <fold-input
+            label="Nom"
+            required
+            placeholder="Base matin"
+            hint="60 caractères au plus ; unique parmi les modèles du point."
+            data-template-name
+            [touched]="true"
+            [errors]="nameErrors()"
+            [value]="name()"
+            (valueChange)="typeName($event)"
+          />
+          <fold-view-toggle
+            data-template-target
+            ariaLabel="Visée proposée"
+            [options]="targetOptions"
+            [value]="target()"
+            (valueChange)="pickTarget($event)"
+          />
+        </div>
+      </fold-card>
+
+      @if (stale().length > 0) {
+        <fold-card data-template-stale>
+          <fold-element-title
+            cardHeader
+            variant="title"
+            title="Lignes qui ne s'appliquent plus"
+            subtitle="Elles restent dans le modèle tant que vous ne les retirez pas, et seront écartées à l'application."
+          />
+          <ul class="stale">
+            @for (line of stale(); track line.sku) {
+              <li class="stale-line" [attr.data-stale-line]="line.sku">
+                <span class="product">
+                  {{ line.articleName ?? line.sku }} —
+                  {{ line.quantity | saleQuantity: line.saleUnit }}
+                  @if (line.issue; as issue) {
+                    <span class="muted">{{ issueLabels[issue] }}</span>
+                  }
+                </span>
+                <button
+                  foldButton
+                  emphasis="outline"
+                  intent="neutral"
+                  size="sm"
+                  [disabled]="pending()"
+                  (click)="dropStale(line.sku)"
+                >
+                  Retirer
+                </button>
+              </li>
+            }
+          </ul>
+        </fold-card>
+      }
+
+      <fold-card>
+        <fold-element-title
+          cardHeader
+          variant="title"
+          title="Les articles"
+          subtitle="Une quantité par article ; vidée ou à zéro, l'article n'est pas dans le modèle."
+        />
+        <div class="articles">
+          <div class="filters">
+            @if (familyOptions().length > 2) {
+              <fold-view-toggle
+                ariaLabel="Filtrer par famille"
+                size="sm"
+                [options]="familyOptions()"
+                [value]="family()"
+                (valueChange)="family.set($event)"
+              />
+            }
+            <fold-search
+              placeholder="Chercher un produit"
+              ariaLabel="Chercher un produit"
+              [value]="query()"
+              (valueChange)="query.set($event)"
+              [resultCount]="visibleArticles().length"
+              resultLabel="produits"
+            />
+          </div>
+          <fold-data-table
+            data-template-table
+            density="compact"
+            hover
+            caption="Quantités du modèle, par article"
+            [columns]="columns()"
+            [rows]="visibleArticles()"
+            [rowKey]="skuOf"
+            [empty]="nothingFound"
+          >
+            <ng-template foldCell="family" let-article>
+              <span class="muted">{{ article.categoryName }}</span>
+            </ng-template>
+            <ng-template foldCell="product" let-article>
+              <span class="product" [class.asked]="quantityOf(article.sku)">
+                {{ article.name }}
+                <span class="muted">{{ article.sku }}</span>
+              </span>
+            </ng-template>
+            <ng-template foldCell="quantity" let-article>
+              <app-bakehouse-quantity-stepper
+                [article]="article"
+                [quantity]="quantityOf(article.sku)"
+                [phone]="phone()"
+                (quantityChange)="setQuantity(article.sku, $event)"
+              />
+            </ng-template>
+          </fold-data-table>
+        </div>
+      </fold-card>
+
+      @if (!isNew()) {
+        <fold-danger-zone appearance="section" title="Archiver ce modèle">
+          <div class="archive">
+            <p>
+              Le modèle quitte la bibliothèque du point ; son nom redevient libre. Aucun réassort
+              déjà envoyé n'est touché.
+            </p>
+            <fold-inline-confirm
+              intent="danger"
+              confirmIcon="archive"
+              message="Archiver ce modèle ? Il ne sera plus proposé au comptoir."
+              [labels]="{ confirm: 'Archiver' }"
+              (confirmed)="archive()"
+            >
+              <button
+                foldButton
+                intent="danger"
+                icon="archive"
+                data-template-archive
+                [disabled]="pending()"
+              >
+                Archiver le modèle
+              </button>
+            </fold-inline-confirm>
+          </div>
+        </fold-danger-zone>
+      }
+    </div>
+  }
+</fold-page-layout>

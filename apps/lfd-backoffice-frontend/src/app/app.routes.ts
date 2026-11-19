@@ -1030,6 +1030,36 @@ export const routes: Routes = [
           ),
       },
       {
+        // LES MODÈLES DE RÉASSORT — la bibliothèque d'un point (plan
+        // `reassort-boutiques/plan-modeles-de-reassort.md`, § 6). Lire sous
+        // `resupply_templates:read` ; composer sous l'écriture.
+        path: 'reassort/modeles',
+        canActivate: [permissionGuard('resupply_templates:read')],
+        title: 'Modèles de réassort — LFC B2B admin',
+        loadComponent: () =>
+          import('./comptoir/resupply-templates/resupply-templates-page/resupply-templates-page').then(
+            (m) => m.ResupplyTemplatesPage,
+          ),
+      },
+      {
+        path: 'reassort/modeles/:siteId/nouveau',
+        canActivate: [permissionGuard('resupply_templates:write')],
+        title: 'Nouveau modèle de réassort — LFC B2B admin',
+        loadComponent: () =>
+          import('./comptoir/resupply-templates/resupply-template-page/resupply-template-page').then(
+            (m) => m.ResupplyTemplatePage,
+          ),
+      },
+      {
+        path: 'reassort/modeles/:siteId/:templateId',
+        canActivate: [permissionGuard('resupply_templates:write')],
+        title: 'Modèle de réassort — LFC B2B admin',
+        loadComponent: () =>
+          import('./comptoir/resupply-templates/resupply-template-page/resupply-template-page').then(
+            (m) => m.ResupplyTemplatePage,
+          ),
+      },
+      {
         // LE RÉASSORT — la réception du jour et le stock estimé (2026-10-21,
         // jour-meme-sur-stock.md J1). Le droit du retrait : le comptoir
         // déclare le stock (Q1, Hugo) ; les routes serveur le tiennent aussi.
