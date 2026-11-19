@@ -10,8 +10,8 @@ import {
   type LateFeeSetting,
 } from "../../../domain/ports/order-late-fee.reader.js";
 import { openPlanGate } from "../../commands/__tests__/plan-doubles.js";
-import { LateFeeJudgement } from "../late-fee-judgement.service.js";
-import { OrderCutoffGate } from "../order-cutoff-gate.service.js";
+import { ForeseenLateFee } from "../foreseen-late-fee.service.js";
+import { deadlineOf } from "./order-deadline-of.js";
 import { shelfCircuitOf } from "./shelf-circuit-doubles.js";
 
 class Rules extends OrderCutoffReader {
@@ -62,17 +62,16 @@ export interface LateFeeSetup {
   readonly setting?: LateFeeSetting | null;
 }
 
-/** Le jugement monté sur ses vrais services (porte de l'heure limite, circuit), ports doublés. */
-export function lateFeeJudgementOf(setup: LateFeeSetup): LateFeeJudgement {
-  const plans = openPlanGate();
-  return new LateFeeJudgement(
-    new OrderCutoffGate(
-      new Rules(setup.rules ?? []),
-      new InMemoryProductCatalog(setup.catalog),
-      setup.waivers ?? new RecordingWaivers(null),
-      new FixedClock(setup.now),
-    ),
-    shelfCircuitOf(plans),
-    new Setting(setup.setting ?? null),
+/** La surtaxe prévue montée sur ses vrais services (verdict, juge, circuit), ports doublés. */
+export function foreseenLateFeeOf(setup: LateFeeSetup): ForeseenLateFee {
+  return new ForeseenLateFee(
+    deadlineOf({
+      cutoffs: new Rules(setup.rules ?? []),
+      catalog: new InMemoryProductCatalog(setup.catalog),
+      waivers: setup.waivers ?? new RecordingWaivers(null),
+      lateFees: new Setting(setup.setting ?? null),
+    }),
+    shelfCircuitOf(openPlanGate()),
+    new FixedClock(setup.now),
   );
 }

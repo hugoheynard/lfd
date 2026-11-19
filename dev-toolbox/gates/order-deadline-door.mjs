@@ -50,24 +50,17 @@ export const ADMITTED = {
 
 /** Les fichiers qui importent encore l'ancien jugement (relevés le 2026-11-19, V3). */
 export const DEBT = [
-  "apps/lfd-api/src/lafoliecoffee/orders/application/services/__tests__/late-fee-judgement.doubles.ts",
-  "apps/lfd-api/src/lafoliecoffee/orders/application/services/__tests__/shop-cart-quoting.doubles.ts",
-  "apps/lfd-api/src/lafoliecoffee/orders/application/services/late-fee-judgement.service.ts",
   "apps/lfd-api/src/lafoliecoffee/orders/application/services/order-cutoff-gate.service.ts",
-  "apps/lfd-api/src/lafoliecoffee/orders/application/services/order-cutoff-notice.service.ts",
-  "apps/lfd-api/src/lafoliecoffee/orders/application/services/shop-cart-quoting.service.ts",
   "apps/lfd-api/src/lafoliecoffee/orders/domain/services/__tests__/order-cutoff-guard-foreseen.spec.ts",
   "apps/lfd-api/src/lafoliecoffee/orders/domain/services/__tests__/order-cutoff-guard.spec.ts",
   "apps/lfd-api/src/lafoliecoffee/orders/domain/services/order-cutoff-guard.ts",
   "apps/lfd-api/src/lafoliecoffee/orders/domain/services/settlement-reminder.ts",
-  "apps/lfd-api/src/lafoliecoffee/orders/orders.module.ts",
   "apps/lfd-api/src/lafoliecoffee/orders/revision/application/commands/__tests__/card-increase-scene.ts",
   "apps/lfd-api/src/lafoliecoffee/orders/revision/application/commands/__tests__/revision-scene.ts",
   "apps/lfd-api/src/lafoliecoffee/orders/revision/application/commands/propose-card-increase.handler.ts",
   "apps/lfd-api/src/lafoliecoffee/orders/revision/application/services/order-revising.service.ts",
   "apps/lfd-api/src/lafoliecoffee/orders/revision/order-revision.providers.ts",
   "apps/lfd-api/src/lafoliecoffee/recommendations/domain/orderable-today.ts",
-  "apps/lfd-api/test/pricing-golden-master-pairs.ts",
 ];
 
 /** Les modules de l'ancien jugement, par la fin de leur chemin. */

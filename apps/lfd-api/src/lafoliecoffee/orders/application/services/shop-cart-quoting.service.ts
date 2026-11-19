@@ -22,7 +22,7 @@ import { handoverMomentOf } from "../../domain/services/handover-moment.js";
 
 import { warnBeyondCap } from "./basket-promotions.service.js";
 import { CartAdjustments } from "./cart-adjustments.service.js";
-import { LateFeeJudgement } from "./late-fee-judgement.service.js";
+import { ForeseenLateFee } from "./foreseen-late-fee.service.js";
 import { GuestSignInOffer } from "./guest-sign-in-offer.service.js";
 import { CustomerAudiences } from "./customer-audiences.service.js";
 import { OrderOperations } from "./order-operations.service.js";
@@ -64,7 +64,7 @@ export class ShopCartQuoting {
     deliveryVat: OrderDeliveryVatReader,
     private readonly signIn: GuestSignInOffer,
     classifications: OrderLineClassificationReader,
-    private readonly lateFee: LateFeeJudgement,
+    private readonly lateFee: ForeseenLateFee,
   ) {
     // Le chargement même de la passation (plan `le-prix-d-un-panier.md`,
     // § 2.1, lot L2) : mêmes lectures, même ordre, panier partiel admis.
@@ -171,7 +171,7 @@ export class ShopCartQuoting {
       // dérogation (É11, plan `le-prix-d-un-panier.md`, T1) : rien sans société,
       // sans jour, sans dérogation ouverte ou sans réglage.
       {
-        lateFee: await this.lateFee.foreseen(
+        lateFee: await this.lateFee.of(
           query.companyId,
           query.payload.lines.map((line) => line.sku),
           query.payload.requestedDeliveryDate ?? null,

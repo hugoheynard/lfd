@@ -52,8 +52,8 @@ import {
   pointDiscountPromotions,
 } from "./basket-promotions.doubles.js";
 import type { GuestSignInOffer } from "../guest-sign-in-offer.service.js";
-import type { LateFeeJudgement } from "../late-fee-judgement.service.js";
-import { lateFeeJudgementOf } from "./late-fee-judgement.doubles.js";
+import type { ForeseenLateFee } from "../foreseen-late-fee.service.js";
+import { foreseenLateFeeOf } from "./foreseen-late-fee.doubles.js";
 
 /**
  * Le devis de la boutique monté sur ses VRAIS services, ports doublés à la
@@ -218,7 +218,7 @@ export interface QuotingSetup {
    */
   readonly basketPromotions?: readonly LivePromotion[];
   /** La surtaxe prévue (plan `le-prix-d-un-panier.md`, T1) ; par défaut, aucune règle d'heure. */
-  readonly lateFee?: LateFeeJudgement;
+  readonly lateFee?: ForeseenLateFee;
 }
 
 /**
@@ -265,6 +265,6 @@ export function quotingOf(setup: QuotingSetup): ShopCartQuoting {
     new FixedDeliveryVat(setup.deliveryVatMode ?? "standard"),
     setup.signIn ?? guestSignInOffer(),
     new FixedLineClassifications(setup.classified ?? {}),
-    setup.lateFee ?? lateFeeJudgementOf({ now: PRICED_AT, catalog: setup.catalog }),
+    setup.lateFee ?? foreseenLateFeeOf({ now: PRICED_AT, catalog: setup.catalog }),
   );
 }

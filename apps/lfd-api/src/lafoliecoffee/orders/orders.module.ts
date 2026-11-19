@@ -153,7 +153,7 @@ import { QuoteShopCartHandler } from "./application/queries/quote-shop-cart.hand
 import { QuoteMyShopCartHandler } from "./application/queries/quote-my-shop-cart.handler.js";
 import { ShopCartQuoting } from "./application/services/shop-cart-quoting.service.js";
 import { OrderQuoting } from "./application/services/order-quoting.service.js";
-import { LateFeeJudgement } from "./application/services/late-fee-judgement.service.js";
+import { ForeseenLateFee } from "./application/services/foreseen-late-fee.service.js";
 import { GuestSignInOffer } from "./application/services/guest-sign-in-offer.service.js";
 import { OrderNumberReader } from "./domain/ports/order-number.reader.js";
 import { PrismaOrderNumberReader } from "./infrastructure/prisma-order-number.reader.js";
@@ -683,7 +683,7 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     ReadCustomerShelfPricesHandler,
     ShopCartQuoting,
     // La surtaxe prévue au devis d'une société (plan `le-prix-d-un-panier.md`, T1).
-    LateFeeJudgement,
+    ForeseenLateFee,
     GuestSignInOffer,
     QuoteShopCartHandler,
     QuoteMyShopCartHandler,

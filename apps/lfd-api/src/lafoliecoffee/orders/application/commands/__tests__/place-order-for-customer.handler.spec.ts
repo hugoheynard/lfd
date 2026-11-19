@@ -1259,7 +1259,10 @@ describe("EstimateOrderForCustomerHandler", () => {
       options.intake ?? intakeAt(),
       draftingFor(guardDouble, { ...options, plans, shelf }),
       shelf,
-      new OrderCutoffNotice(noOrderCutoffs, catalog, new FixedClock(PRICED_AT)),
+      new OrderCutoffNotice(
+        deadlineOf({ cutoffs: noOrderCutoffs, catalog, waivers: noWaivers, lateFees: noLateFee }),
+        new FixedClock(PRICED_AT),
+      ),
     );
   }
 

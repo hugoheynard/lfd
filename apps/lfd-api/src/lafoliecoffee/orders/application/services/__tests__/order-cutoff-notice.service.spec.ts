@@ -5,6 +5,9 @@ import type { UnsealedCatalogItem } from "../../../../catalog/domain/ports/produ
 import { InMemoryProductCatalog } from "../../../../catalog/infrastructure/in-memory-product-catalog.js";
 import { OrderCutoffReader } from "../../../domain/ports/order-cutoff.reader.js";
 import { OrderCutoffNotice } from "../order-cutoff-notice.service.js";
+import { deadlineOf } from "./order-deadline-of.js";
+import type { OrderCutoffWaiverGate } from "../../../domain/ports/order-cutoff-waiver.gate.js";
+import type { OrderLateFeeReader } from "../../../domain/ports/order-late-fee.reader.js";
 
 // Dates comparées entre elles seulement : l'horloge est celle de la fixture.
 const TODAY = "2026-03-10";
@@ -51,6 +54,15 @@ function item(sku: string, limit: UnsealedCatalogItem["orderTimeLimit"]): Unseal
   };
 }
 
+/** L'avis ne lit ni dérogation ni surtaxe : ces doubles refusent d'être lus. */
+const NO_WAIVERS: OrderCutoffWaiverGate = {
+  openFor: () => Promise.reject(new Error("l'avis ne lit pas les dérogations")),
+  consume: () => Promise.reject(new Error("l'avis ne dépense rien")),
+};
+const NO_FEE: OrderLateFeeReader = {
+  current: () => Promise.reject(new Error("l'avis ne lit pas la surtaxe")),
+};
+
 const CATALOG = new InMemoryProductCatalog([
   item("PLAIN", null),
   item("EARLY", { daysBefore: 1, time: "09:00", graceMinutes: 0 }),
@@ -58,7 +70,15 @@ const CATALOG = new InMemoryProductCatalog([
 ]);
 
 function notice(rules: readonly OrderCutoffView[], now: Date): OrderCutoffNotice {
-  return new OrderCutoffNotice(new Rules(rules), CATALOG, new FixedClock(now));
+  return new OrderCutoffNotice(
+    deadlineOf({
+      cutoffs: new Rules(rules),
+      catalog: CATALOG,
+      waivers: NO_WAIVERS,
+      lateFees: NO_FEE,
+    }),
+    new FixedClock(now),
+  );
 }
 
 describe("OrderCutoffNotice — le signal d'heure limite du devis", () => {

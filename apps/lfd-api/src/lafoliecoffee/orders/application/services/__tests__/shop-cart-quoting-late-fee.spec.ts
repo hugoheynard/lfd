@@ -1,7 +1,7 @@
 import type { OrderCutoffView, ShopQuotePayload } from "@lfd/contracts";
 
 import type { LateFeeSetting } from "../../../domain/ports/order-late-fee.reader.js";
-import { lateFeeJudgementOf, RecordingWaivers } from "./late-fee-judgement.doubles.js";
+import { foreseenLateFeeOf, RecordingWaivers } from "./foreseen-late-fee.doubles.js";
 import { catalogItem, PRICED_AT, quotingOf } from "./shop-cart-quoting.doubles.js";
 
 /**
@@ -48,7 +48,7 @@ async function totalOf(
   const quoting = quotingOf({
     catalog: CATALOG,
     companyStatus: "active",
-    lateFee: lateFeeJudgementOf({
+    lateFee: foreseenLateFeeOf({
       now: PRICED_AT,
       catalog: CATALOG,
       rules: [RULE],
