@@ -18,7 +18,9 @@ test("carte : l'emplacement actuel et celui de L1 bis donnent le même sous-cont
   assert.equal(contextOf("vat-rates/domain/a.ts"), "reference/vat-rates");
   assert.equal(contextOf("reference/vat-rates/domain/a.ts"), "reference/vat-rates");
   assert.equal(contextOf("ingredients/a.ts"), "reference/ingredients");
-  assert.equal(contextOf("catalogue/product/lifecycle/a.ts"), "catalogue");
+  assert.equal(contextOf("catalogue/product/lifecycle/a.ts"), "catalogue/product");
+  assert.equal(contextOf("catalogue/catalogue.module.ts"), "catalogue");
+  assert.equal(contextOf("catalogue/unknown/a.ts"), null);
   assert.equal(contextOf("shared/a.ts"), "shared");
   assert.equal(contextOf("pim.module.ts"), ROOT_CONTEXT);
   assert.equal(contextOf("reference/unknown/a.ts"), null);
@@ -97,4 +99,34 @@ test("cycles : détectés sur les arêtes admises, une fois chacun", () => {
     "ingredients/i.ts": imp("../allergens/a.js"),
   });
   assert.match(verdict(found, {}).join(), /cycle entre sous-contextes/u);
+});
+
+test("intérieur du catalogue : la surface publique d'un voisin admis passe", () => {
+  const found = run({
+    "catalogue/product/lifecycle/a.ts":
+      imp("../../category/domain/ports/p.js") +
+      imp("../../category/index.js") +
+      imp("../../shared/domain/v.js"),
+    "catalogue/reading/r.ts":
+      imp("../product/media/m.fact.js") + imp("../product/__tests__/doubles.js"),
+    "channels/c.ts": imp("../catalogue/product/domain/ports/p.js"),
+  });
+  assert.equal(found.violations.size, 0);
+});
+
+test("intérieur du catalogue : l'application d'un voisin, le mauvais sens, et un spec échouent", () => {
+  const found = run({
+    "catalogue/product/lifecycle/a.ts": imp("../../category/application/support.js"),
+    "catalogue/shared/domain/p.ts": imp("../../product/domain/ports/p.js"),
+    "catalogue/category/c.ts": imp("../product/domain/x.js"),
+    "channels/c.ts": imp("../catalogue/product/regulatory/support.js"),
+    "catalogue/reading/r.ts": imp("../product/__tests__/a.spec.js"),
+  });
+  assert.deepEqual(Object.fromEntries(found.violations), {
+    "catalogue/product/lifecycle/a.ts → catalogue/category": 1,
+    "catalogue/shared/domain/p.ts → catalogue/product": 1,
+    "catalogue/category/c.ts → catalogue/product": 1,
+    "channels/c.ts → catalogue/product": 1,
+    "catalogue/reading/r.ts → catalogue/product": 1,
+  });
 });

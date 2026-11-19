@@ -1,5 +1,24 @@
 {
-  "$comment": "La dette du sens des dépendances dans src/pim (documentation/pim/plan-referentiel-a-neuf.md, L0, L1). Elle est vide : toute arête hors du sens admis échoue, et une entrée neuve est une faute, pas une ligne à coller.",
-  "since": "2026-11-18",
-  "imports": {}
+  "$comment": "La dette du sens des dépendances dans src/pim (documentation/pim/plan-referentiel-a-neuf.md, L0, L1, L9). Entre blocs, elle est vide depuis L1 ; à l'intérieur du catalogue, elle est comptée depuis L9.a et ne peut que décroître. Une entrée neuve est une faute, pas une ligne à coller.",
+  "since": "2026-11-19",
+  "imports": {
+    "catalogue/category/application/__tests__/set-category-audience.spec.ts → catalogue/product": 1,
+    "catalogue/category/application/set-category-vat.ts → catalogue/shared": 1,
+    "catalogue/product/domain/__tests__/content-facts.spec.ts → catalogue/revision": 1,
+    "catalogue/product/lifecycle/activate-product.ts → catalogue/category": 1,
+    "catalogue/product/lifecycle/get-product-detail.ts → catalogue/category": 1,
+    "catalogue/product/lifecycle/update-product-identity.ts → catalogue/category": 1,
+    "catalogue/product/sale/set-product-vat.ts → catalogue/shared": 1,
+    "catalogue/shared/application/__tests__/catalog-emission.spec.ts → catalogue/category": 1,
+    "catalogue/shared/application/__tests__/catalog-emission.spec.ts → catalogue/product": 2,
+    "catalogue/shared/domain/ports/catalog-facts.reader.ts → catalogue/product": 1,
+    "catalogue/shared/domain/ports/catalogue-reader.ts → catalogue/product": 2,
+    "catalogue/shared/infrastructure/__tests__/prisma-catalogue-reader.spec.ts → catalogue/category": 2,
+    "catalogue/shared/infrastructure/__tests__/prisma-catalogue-reader.spec.ts → catalogue/product": 3,
+    "catalogue/shared/infrastructure/prisma-catalogue-reader.ts → catalogue/category": 2,
+    "catalogue/shared/infrastructure/prisma-catalogue-reader.ts → catalogue/product": 2,
+    "catalogue/shared/infrastructure/repository-catalog-facts.reader.ts → catalogue/category": 1,
+    "catalogue/shared/infrastructure/repository-catalog-facts.reader.ts → catalogue/product": 1,
+    "channels/b2b-platform/products/catalog-facts.source.ts → catalogue/product": 1
+  }
 }

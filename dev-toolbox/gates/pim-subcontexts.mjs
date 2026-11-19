@@ -27,6 +27,24 @@
  * - `channels` lit `catalogue`, `reference/*` et `order-time-limitation` ;
  * - aucun cycle entre sous-contextes sur les arêtes admises.
  *
+ * ## L'intérieur du catalogue (L9)
+ *
+ * `catalogue/` se découpe à son tour : `shared` (le noyau du catalogue, qui
+ * ne lit aucun voisin), `category`, `product`, `revision`, `history`,
+ * `allergen-matrix` et `reading` (les lectures qui croisent fiches et
+ * familles). Le sens admis :
+ *
+ * - `category` lit `shared` ;
+ * - `product` lit `shared` et `category` ;
+ * - `revision`, `history`, `allergen-matrix` et `reading` lisent `shared`,
+ *   `category` et `product`.
+ *
+ * Entre deux sous-contextes du catalogue, et de `channels` vers le
+ * catalogue, on ne lit que la **surface publique** du sous-contexte lu : son
+ * `index.ts`, son `domain/` (ports, erreurs, valeurs), ses faits
+ * (`*.fact.ts`) et ses doublures de test (`__tests__/`, hors specs). Un fichier d'application, d'infrastructure ou de `http/` se
+ * lit par un port que son propriétaire publie.
+ *
  * Les racines du bloc (`pim.module.ts`) composent et sont exemptées.
  *
  * ## La dette, décroissante
@@ -52,6 +70,37 @@ const CORE = ["shared", "journal", "changes", "infra"];
 const REFERENCES = ["vat-rates", "sales-contexts", "allergens", "ingredients"];
 const OTL = "order-time-limitation";
 const isReference = (context) => context.startsWith("reference/");
+const CATALOGUE = [
+  "shared",
+  "category",
+  "product",
+  "revision",
+  "history",
+  "allergen-matrix",
+  "reading",
+];
+const isCatalogue = (context) => context === "catalogue" || context.startsWith("catalogue/");
+/** Ce que chaque sous-contexte du catalogue lit chez ses voisins du catalogue. */
+const CATALOGUE_READS = {
+  "catalogue/shared": [],
+  "catalogue/category": ["catalogue/shared"],
+  "catalogue/product": ["catalogue/shared", "catalogue/category"],
+  "catalogue/revision": ["catalogue/shared", "catalogue/category", "catalogue/product"],
+  "catalogue/history": ["catalogue/shared", "catalogue/category", "catalogue/product"],
+  "catalogue/allergen-matrix": ["catalogue/shared", "catalogue/category", "catalogue/product"],
+  "catalogue/reading": ["catalogue/shared", "catalogue/category", "catalogue/product"],
+};
+
+/** La surface publique d'un sous-contexte du catalogue : `index.ts`, `domain/`, les faits. */
+export function isPublicSurface(path) {
+  const rest = path.split("/").slice(2);
+  return (
+    rest.join("/") === "index.ts" ||
+    rest.includes("domain") ||
+    path.endsWith(".fact.ts") ||
+    (rest.includes("__tests__") && !path.endsWith(".spec.ts"))
+  );
+}
 
 /** Le sous-contexte d'un chemin sous `pim/`, ou `null` s'il n'est pas classé. */
 export function contextOf(path) {
@@ -61,20 +110,33 @@ export function contextOf(path) {
   if (CORE.includes(head)) return head;
   if (REFERENCES.includes(head)) return `reference/${head}`;
   if (head === "reference" && REFERENCES.includes(second)) return `reference/${second}`;
-  if (head === "catalogue") return "catalogue";
+  if (head === "catalogue") {
+    if (parts.length === 2) return "catalogue";
+    return CATALOGUE.includes(second) ? `catalogue/${second}` : null;
+  }
   if (head === OTL) return OTL;
   if (head === "channels") return "channels";
   return null;
 }
 
-/** `a` peut-il lire `b` ? */
-export function isAllowed(a, b) {
+/** `a` peut-il lire `b` ? `target` est le fichier lu (surface publique). */
+export function isAllowed(a, b, target = "") {
   if (a === b || a === ROOT_CONTEXT || b === ROOT_CONTEXT) return true;
   if (CORE.includes(b)) return true;
   if (CORE.includes(a)) return false;
   if (isReference(a)) return isReference(b);
-  if (a === "catalogue") return isReference(b) || b === OTL;
-  if (a === "channels") return isReference(b) || b === OTL || b === "catalogue";
+  if (a === "catalogue") return isReference(b) || b === OTL || isCatalogue(b);
+  if (isCatalogue(a)) {
+    if (isReference(b) || b === OTL) return true;
+    if (b === "catalogue") return false;
+    return (CATALOGUE_READS[a] ?? []).includes(b) && isPublicSurface(target);
+  }
+  if (a === "channels")
+    return (
+      isReference(b) ||
+      b === OTL ||
+      (isCatalogue(b) && (b === "catalogue" || isPublicSurface(target)))
+    );
   return false;
 }
 
@@ -131,7 +193,7 @@ export function analyse(files) {
     for (const target of importsOf(path, source)) {
       const theirs = contextOf(target);
       if (theirs === null || theirs === own) continue;
-      if (isAllowed(own, theirs)) {
+      if (isAllowed(own, theirs, target)) {
         if (own !== ROOT_CONTEXT && theirs !== ROOT_CONTEXT) admitted.add(`${own}\u0000${theirs}`);
         continue;
       }
