@@ -97,6 +97,7 @@ import {
   OperationDayOutsideError,
 } from "../../../domain/errors/order-operation-errors.js";
 import { OrderCutoffReader } from "../../../domain/ports/order-cutoff.reader.js";
+import { deadlineOf } from "../../services/__tests__/order-deadline-of.js";
 import { OrderCutoffWaiverGate } from "../../../domain/ports/order-cutoff-waiver.gate.js";
 import { OrderIdempotencyStore } from "../../../domain/ports/order-idempotency.store.js";
 import { OrderReader } from "../../../domain/ports/order.reader.js";
@@ -563,11 +564,13 @@ function drafting(
       pointDiscountPromotions(pickupsDouble, classifications),
     ),
     audience.book ?? noDeliveryDefaults(),
-    audience.cutoffs ?? noOrderCutoffs,
+    deadlineOf({
+      cutoffs: audience.cutoffs ?? noOrderCutoffs,
+      catalog: audience.limits ?? catalog,
+      waivers: noWaivers,
+      lateFees: noLateFee,
+    }),
     new FixedClock(PRICED_AT),
-    audience.limits ?? catalog,
-    noWaivers,
-    noLateFee,
     new CustomerAudiences(companiesAt(audience.status === undefined ? "active" : audience.status)),
     new OrderOperations(audience.sale ?? noSaleOperations(PRICED_AT)),
     audience.payers ?? ownPayers(),

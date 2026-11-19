@@ -209,6 +209,12 @@
 >   depuis le 2026-11-19 avec `lint:pim-table-owners` (même plan, L9) : dans
 >   le référentiel, un sous-contexte ne lit en Prisma que les tables qu'il
 >   écrit — le propriétaire publie une lecture nommée, le lecteur la compose.
+>   Et **78** depuis le
+>   2026-11-19 avec `lint:order-deadline-door` (plan
+>   `documentation/limites-de-commande/extraire-le-jugement-de-l-heure-limite.md`) :
+>   « trop tard ? » se demande au délai de commande, `OrderDeadline` — personne
+>   n'importe l'ancien jugement ni une fonction de décision du contrat hors du
+>   juge pur ; les lecteurs pas encore basculés sont une dette comptée.
 >   C'est la
 >   **seule** correction faite dans le corps, parce qu'un chiffre faux se vérifie
 >   en une commande et trompe tout de suite ;
@@ -1489,7 +1495,7 @@ pnpm --filter lfd-api seed:pim       # catalogue rejoué PAR LE BUS (cible local
 pnpm lint               # turbo, toutes les apps
 pnpm test
 pnpm build
-pnpm lint:gates         # les 77 portes du dépôt, toutes, et un résumé à la fin
+pnpm lint:gates         # les 78 portes du dépôt, toutes, et un résumé à la fin
 pnpm gate <nom>         # une porte (pnpm gate --list : la liste, avec ce qu'elle tient)
 pnpm lint:watch         # relance les portes dont un fichier lu change
 pnpm tool               # les outils occasionnels (digests, carte, axe…) ; pnpm tool <nom>

@@ -68,6 +68,7 @@ import {
   type GuestBuyer,
 } from "../../../domain/ports/guest-buyer.registrar.js";
 import { OrderCutoffReader } from "../../../domain/ports/order-cutoff.reader.js";
+import { deadlineOf } from "../../services/__tests__/order-deadline-of.js";
 import { OrderCutoffWaiverGate } from "../../../domain/ports/order-cutoff-waiver.gate.js";
 import { OrderLateFeeReader } from "../../../domain/ports/order-late-fee.reader.js";
 import { FixedDeliveryVat } from "./fixed-delivery-vat.js";
@@ -299,11 +300,13 @@ function drafting(
       pointDiscountPromotions(pickups()),
     ),
     noDeliveryDefaults,
-    noOrderCutoffs,
+    deadlineOf({
+      cutoffs: noOrderCutoffs,
+      catalog: catalog,
+      waivers: noWaivers,
+      lateFees: noLateFee,
+    }),
     new FixedClock(PRICED_AT),
-    catalog,
-    noWaivers,
-    noLateFee,
     new CustomerAudiences(noCompanies),
     new OrderOperations(noSaleOperations(PRICED_AT)),
     ownPayers(),

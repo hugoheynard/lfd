@@ -11,10 +11,7 @@ import { DeliveryDefaultsReader } from "../../domain/ports/delivery-defaults.rea
 import { windowRequesterOf } from "../../domain/services/delivery-window.js";
 import { Order, type OrderSalesTerms, type OrderVoucher } from "../../domain/entities/order.js";
 import { ProductionPlanClosedError } from "../../domain/errors/production-plan-closed.error.js";
-import { OrderCutoffReader } from "../../domain/ports/order-cutoff.reader.js";
-import { OrderCutoffWaiverGate } from "../../domain/ports/order-cutoff-waiver.gate.js";
 import { OrderDeliveryVatReader } from "../../domain/ports/order-delivery-vat.reader.js";
-import { OrderLateFeeReader } from "../../domain/ports/order-late-fee.reader.js";
 import { OrderLineClassificationReader } from "../../domain/ports/order-line-classification.reader.js";
 import {
   OrderPayerReader,
@@ -25,13 +22,15 @@ import { salesTermsOf } from "../../domain/services/sales-terms-of.js";
 import { orderPayerOf } from "../../domain/services/order-payer.js";
 import { orderPrincipalOf } from "../../domain/services/order-principal.js";
 import type { OrderEntryOrigin } from "../../domain/value-objects/order-supply.js";
-import { ProductCatalogReader } from "../../../catalog/domain/ports/product-catalog.reader.js";
+import { OrderDeadline } from "../../../order-cutoffs/index.js";
+import {
+  admitWithinDeadline,
+  type DeadlineAdmission,
+} from "../../domain/services/admit-within-deadline.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import { warnBeyondCap } from "./basket-promotions.service.js";
 import { OrderComposition, pickupSiteOf } from "./order-composition.service.js";
 import type { OrderContent } from "./order-content.js";
-import { OrderCutoffGate } from "./order-cutoff-gate.service.js";
-import { LateFeeJudgement } from "./late-fee-judgement.service.js";
 import { OrderOperations } from "./order-operations.service.js";
 import { OrderPlanGate } from "./order-plan-gate.service.js";
 import { OrderLinePricing } from "./order-line-pricing.service.js";
@@ -83,18 +82,13 @@ export interface DraftedOrder {
 export class OrderDrafting {
   private readonly logger = new Logger(OrderDrafting.name);
   private readonly composition: OrderComposition;
-  private readonly cutoffGate: OrderCutoffGate;
-  private readonly lateFee: LateFeeJudgement;
 
   constructor(
     linePricing: OrderLinePricing,
     adjustments: CartAdjustments,
     deliveryDefaults: DeliveryDefaultsReader,
-    cutoffs: OrderCutoffReader,
+    private readonly deadline: OrderDeadline,
     private readonly clock: Clock,
-    catalog: ProductCatalogReader,
-    waivers: OrderCutoffWaiverGate,
-    lateFees: OrderLateFeeReader,
     audiences: CustomerAudiences,
     operations: OrderOperations,
     private readonly payers: OrderPayerReader,
@@ -113,18 +107,15 @@ export class OrderDrafting {
       classifications,
       audiences,
     );
-    this.cutoffGate = new OrderCutoffGate(cutoffs, catalog, waivers, clock);
-    this.lateFee = new LateFeeJudgement(this.cutoffGate, shelf, lateFees);
   }
 
   /**
    * Compose la commande. Le règlement reste à décider par l'appelant.
    *
-   * Rend **aussi** la dérogation dépensée, s'il y en a eu une : l'appelant doit
-   * la consommer APRÈS avoir persisté la commande. La rendre ici plutôt que de
-   * consommer sur place n'est pas de la timidité — consommer une autorisation
-   * pour une commande qui échoue ensuite la brûlerait, et le client devrait
-   * rappeler pour en obtenir une seconde qu'il avait déjà.
+   * Rend **aussi** la dérogation retenue, s'il y en a une : l'appelant la
+   * consomme dans la transaction qui écrit la commande. La rendre ici plutôt
+   * que de consommer sur place : ce service compose, il n'écrit rien — une
+   * commande qui échoue ensuite ne doit pas avoir brûlé l'autorisation.
    *
    * `voucher` : le bon de fidélité déjà lu par l'appelant, ou `null`. Seule la
    * passation du client connecté en porte un (plan des points, C3) ; ce
@@ -188,11 +179,10 @@ export class OrderDrafting {
       frozenAudience: null,
       frozenDeliveryFee: null,
     });
-    // APRÈS la résolution, et l'ordre est un choix : la règle qui s'applique est
-    // celle du point EFFECTIVEMENT retenu, qu'on ne connaît qu'ici. Le coût est
-    // de tarifer un panier qu'on refusera ensuite ; le prix de l'inverse serait
-    // d'opposer la mauvaise règle, ce qui est un refus faux.
-    const waiverUsed = await this.ensureCircuit(
+    // APRÈS le chargement : un panier qu'on ne sait pas charger est refusé pour
+    // ce qu'il est (un article inconnu, indisponible) avant de l'être pour
+    // l'heure. Le coût est de tarifer un panier qu'on refusera ensuite.
+    const admission = await this.ensureCircuit(
       supply,
       content,
       parties,
@@ -210,7 +200,7 @@ export class OrderDrafting {
     // C'est un VERDICT qui a un prix (§ 2.3) : `priceBasket` l'applique au
     // sous-total ; le devis d'une société le prévoit par la même source.
     const composed = OrderComposition.draftOf(content, loaded.context, arranged, {
-      lateFee: await this.lateFee.forWaiver(waiverUsed),
+      lateFee: admission.lateFee,
     });
     const order = Order.draft(
       {
@@ -235,7 +225,7 @@ export class OrderDrafting {
     );
     // Sur LE chiffrage de l'agrégat : il n'est plus refait ici (L7, 2026-11-04).
     warnBeyondCap(this.logger, order.pricingNotes());
-    return { order, waiverUsed };
+    return { order, waiverUsed: admission.waiverUsed };
   }
 
   /**
@@ -262,19 +252,20 @@ export class OrderDrafting {
    * Les gardes qui suivent la résolution, séparées sur la marque (§11.1) :
    * une commande fabriquée oppose l'heure limite (et sa dérogation) ; une
    * commande sur stock n'en a pas — sa clientèle et les créneaux restants de
-   * son point la limitent à la place. Rend la dérogation dépensée, ou `null`.
+   * son point la limitent à la place. Rend ce que la commande doit à son
+   * retard : la dérogation à dépenser et son prix.
    */
   private async ensureCircuit(
     supply: OrderSupplyDecision,
     content: OrderContent,
     parties: OrderParties,
     siteId: string | null,
-  ): Promise<string | null> {
+  ): Promise<DeadlineAdmission> {
     if (supply.supply === "planned") {
       return this.ensureNotTooLate(content, parties);
     }
     await this.shelf.ensureOpen(parties, siteId);
-    return null;
+    return { waiverUsed: null, lateFee: null };
   }
 
   /**
@@ -302,8 +293,13 @@ export class OrderDrafting {
   }
 
   /**
-   * Oppose l'heure limite de commande, s'il y en a une à opposer — avec la
-   * dérogation du client (cf. {@link OrderCutoffGate}).
+   * Oppose l'heure limite de commande, s'il y en a une à opposer : le verdict
+   * du délai de commande, appliqué par la passation — avec la dérogation de la
+   * société et son prix.
+   *
+   * La limite d'un article se lit en clientèle `pro` : la saisie par l'équipe
+   * exige une société (cf. `place-order-for-customer`), et c'est la lecture
+   * que toutes les passations font aujourd'hui.
    *
    * `requestedDeliveryDate` est obligatoire au contrat (`orderPayloadSchema`) ;
    * la garde typée couvre les appelants internes, pas une entrée HTTP.
@@ -311,17 +307,19 @@ export class OrderDrafting {
   private async ensureNotTooLate(
     content: OrderContent,
     parties: OrderParties,
-  ): Promise<string | null> {
-    if (content.requestedDeliveryDate === null) {
-      return null;
+  ): Promise<DeadlineAdmission> {
+    const day = content.requestedDeliveryDate;
+    if (day === null) {
+      return { waiverUsed: null, lateFee: null };
     }
-    return this.cutoffGate.ensure(
-      content.lines.map((line) => line.sku),
-      content.requestedDeliveryDate,
-      parties.companyId,
+    const verdict = await this.deadline.verdict({
+      skus: content.lines.map((line) => line.sku),
+      serviceDay: day,
       // La passation juge à l'horloge (plan S2, R6).
-      { withWaiver: true, at: this.clock.now() },
-    );
+      at: this.clock.now(),
+      asker: { audience: "pro", companyId: parties.companyId, waiver: "consider" },
+    });
+    return admitWithinDeadline(verdict, day);
   }
 
   /** La société qui commande, lue à l'instant de la passation — `null` sans société. */

@@ -57,6 +57,7 @@ import { OrderDrafting } from "../../services/order-drafting.service.js";
 import { OrderOperations } from "../../services/order-operations.service.js";
 import { noSaleOperations } from "../../../../catalog/application/__tests__/sale-operations-doubles.js";
 import { OrderCutoffReader } from "../../../domain/ports/order-cutoff.reader.js";
+import { deadlineOf } from "../../services/__tests__/order-deadline-of.js";
 import { OrderCutoffWaiverGate } from "../../../domain/ports/order-cutoff-waiver.gate.js";
 import { OrderLateFeeReader } from "../../../domain/ports/order-late-fee.reader.js";
 import { FixedDeliveryVat } from "./fixed-delivery-vat.js";
@@ -445,11 +446,13 @@ function draftingFor(guardDouble: OrderGuardReader, options: DraftingOptions = {
       pointDiscountPromotions(pickups),
     ),
     noDeliveryDefaults(),
-    noOrderCutoffs,
+    deadlineOf({
+      cutoffs: noOrderCutoffs,
+      catalog: catalog,
+      waivers: noWaivers,
+      lateFees: noLateFee,
+    }),
     new FixedClock(PRICED_AT),
-    catalog,
-    noWaivers,
-    noLateFee,
     new CustomerAudiences(guardDouble),
     new OrderOperations(noSaleOperations(PRICED_AT)),
     options.payers ?? ownPayers(),
@@ -1086,11 +1089,13 @@ describe("PlaceOrderForCustomerHandler — le règlement", () => {
           pointDiscountPromotions(pickups),
         ),
         noDeliveryDefaults(),
-        noOrderCutoffs,
+        deadlineOf({
+          cutoffs: noOrderCutoffs,
+          catalog: catalog,
+          waivers: noWaivers,
+          lateFees: noLateFee,
+        }),
         new FixedClock(PRICED_AT),
-        catalog,
-        noWaivers,
-        noLateFee,
         new CustomerAudiences(guard("orders")),
         new OrderOperations(noSaleOperations(PRICED_AT)),
         ownPayers(),

@@ -200,6 +200,17 @@
       "watch": ["apps/lfd-api/src/pim/**", "dev-toolbox/gates/pim-table-owners*"]
     },
     {
+      "name": "order-deadline-door",
+      "script": "dev-toolbox/gates/order-deadline-door.mjs",
+      "holds": "« Trop tard ? » se demande au délai de commande (`OrderDeadline`, juge pur dans `order-cutoffs/domain/deadline/`) : personne n'importe l'ancien jugement ni une fonction de décision du contrat hors du juge ; les lecteurs pas encore basculés sont une dette comptée qui ne peut que décroître.",
+      "since": "2026-11-19",
+      "watch": [
+        "apps/lfd-api/src/**",
+        "apps/lfd-api/test/**",
+        "dev-toolbox/gates/order-deadline-door*"
+      ]
+    },
+    {
       "name": "mail-through-block",
       "script": "dev-toolbox/gates/mail-through-block.mjs",
       "holds": "Un e-mail s'envoie par la porte `Mail` du bloc `mail` ; personne d'autre n'injecte le mailer.",
