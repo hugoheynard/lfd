@@ -394,12 +394,12 @@ describe("checkout → Order", () => {
     expect(stored.deliveryAddressSnapshot).toEqual(COURIER_ADDR);
     expect(stored.pickupAddress).toBeNull();
     // 2 × 2,50237 € = 500 HT (prix public : ce client n'a pas de société) ;
-    // frais 20 € = 2000 HT. TVA = 5,5 % × 500 (28) + 20 % × 2000 (400) = 428.
-    // Total TTC = 500 + 2000 + 428 = 2928.
+    // frais 20 € = 2000 HT, qui suivent le taux des produits livrés (5,5 %).
+    // TVA = 5,5 % × 2500 = 137,5 → 138. Total TTC = 500 + 2000 + 138 = 2638.
     expect(stored.subtotalCents).toBe(500);
     expect(stored.deliveryFeeCents).toBe(2000);
-    expect(stored.vatCents).toBe(428);
-    expect(stored.totalCents).toBe(2928);
+    expect(stored.vatCents).toBe(138);
+    expect(stored.totalCents).toBe(2638);
   });
 
   it("REFUSE le coursier vers un code postal qu'aucune zone ne dessert", async () => {

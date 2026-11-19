@@ -193,8 +193,8 @@ describe("le franco au devis", () => {
     expect(reached.deliveryFeeCents).toBe(0);
     // 1c : « Coursier offert », sans montant (Hugo, 2026-11-05).
     expect(reached.freeDelivery).toEqual({ status: "offered" });
-    // La course disparaît avec sa TVA : 20,00 € HT à 20 % (port standard).
-    expect(reached.totalCents).toBe(base.totalCents - 2_400);
+    // La course disparaît avec sa TVA : 20,00 € HT au taux des produits livrés (5,5 %).
+    expect(reached.totalCents).toBe(base.totalCents - 2_110);
 
     await setGlobal({ b2c: { freeDeliveryThresholdCents: base.subtotalHtCents + 1 } });
     const short = await guestQuote();
