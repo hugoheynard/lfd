@@ -372,6 +372,18 @@
       "effects": ["creates"],
       "reason": "par unicité : un destinataire n'est qu'une fois dans la liste ; rejoué, l'ajout est refusé (409 DuplicateDossierRecipientError) avant toute écriture",
       "verified": "2026-11-12"
+    },
+    {
+      "route": "apps/lfd-api/src/lafoliecoffee/orders/revision/http/admin-order-revisions.controller.ts#revise",
+      "effects": ["creates"],
+      "reason": "par expectedRevision, obligatoire au corps et rejugé sous le verrou de la commande : rejouée, la révision l'a fait monter et la modification est refusée (409 OrderRevisedElsewhereError) avant toute écriture ; les identifiants tirés sont ceux des traces de dépassement de limite de produit, écrites dans la même transaction que la révision, après elle",
+      "verified": "2026-11-19"
+    },
+    {
+      "route": "apps/lfd-api/src/lafoliecoffee/orders/revision/http/order-revisions.controller.ts#revise",
+      "effects": ["creates"],
+      "reason": "par expectedRevision, obligatoire au corps et rejugé sous le verrou de la commande : rejouée, la révision l'a fait monter et la modification est refusée (409 OrderRevisedElsewhereError) avant toute écriture ; les identifiants tirés sont ceux des traces de dépassement de limite de produit, écrites dans la même transaction que la révision, après elle",
+      "verified": "2026-11-19"
     }
   ]
 }

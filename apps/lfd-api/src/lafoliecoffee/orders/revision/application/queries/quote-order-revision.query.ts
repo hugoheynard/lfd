@@ -12,5 +12,11 @@ export class QuoteOrderRevisionQuery {
     readonly orderId: string,
     readonly actor: RevisionActor,
     readonly content: OrderContent,
+    /**
+     * Le droit `lfc_product_limit_override`, lu en base par le contrôleur de
+     * l'équipe : le devis annonce alors les limites que la modification
+     * dépasserait. Faux pour le client.
+     */
+    readonly exceedItemLimits: boolean = false,
   ) {}
 }

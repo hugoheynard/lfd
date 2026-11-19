@@ -1,11 +1,12 @@
 import {
+  adminOrderRevisionPayloadSchema,
+  type AdminOrderRevisionPayload,
   type OrderRevisionEntryView,
-  orderRevisionPayloadSchema,
   orderRevisionQuotePayloadSchema,
   type OrderRevisedResponse,
-  type OrderRevisionPayload,
   type OrderRevisionQuotePayload,
   type OrderRevisionQuoteView,
+  type StaffPermission,
 } from "@lfd/contracts";
 import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
@@ -14,7 +15,8 @@ import {
   AdminSurface,
   RequirePermission,
 } from "../../../../platform/auth/admin-surface.decorator.js";
-import { StaffUserId } from "../../../../platform/auth/staff.decorator.js";
+import { StaffPermissions, StaffUserId } from "../../../../platform/auth/staff.decorator.js";
+import { mayExceedItemLimits } from "../../http/item-limit-override-permissions.js";
 import { ZodBody } from "../../../../platform/shared/http/zod-body.pipe.js";
 import {
   ReviseOrderCommand,
@@ -27,8 +29,11 @@ import { Idempotent } from "../../../../platform/shared/http/idempotent.decorato
 /**
  * **L'équipe modifie une commande** (voir
  * `documentation/commandes/modification/modifier-une-commande.md`, § 2.2 « Le chemin d'une modification ») — heure limite
- * ignorée, jusqu'à l'inscription au fournil, au compte ou à total nul
- * seulement (§ 2.7).
+ * générale ignorée, jusqu'à l'inscription au fournil, au compte ou à total nul
+ * seulement (§ 2.7). La limite propre d'un produit ajouté ou augmenté, elle,
+ * est opposée ; le droit `lfc_product_limit_override`, lu en base
+ * (`@StaffPermissions()`), la fait passer outre quand le produit le permet,
+ * avec un motif.
  *
  * Sous `b2b_place_order:write`, le droit de composer une commande pour un
  * client : la modification reprend le même parcours que la saisie (§ 2.2). Le
@@ -56,7 +61,11 @@ export class AdminOrderRevisionsController {
     );
   }
 
-  /** Le devis de révision — même recomposition que la modification. */
+  /**
+   * Le devis de révision — même recomposition que la modification. Il lit le
+   * droit de passer outre pour annoncer les limites que la modification
+   * dépasserait (`itemLimitOverrides`), sans exiger de motif.
+   */
   @Post(":id/revisions/quote")
   @RequirePermission("b2b_place_order:write")
   @HttpCode(HttpStatus.OK)
@@ -65,9 +74,15 @@ export class AdminOrderRevisionsController {
     @Param("id") id: string,
     @StaffUserId() staffUserId: string,
     @Body(new ZodBody(orderRevisionQuotePayloadSchema)) payload: OrderRevisionQuotePayload,
+    @StaffPermissions() permissions: readonly StaffPermission[],
   ): Promise<OrderRevisionQuoteView> {
     return this.queries.execute<QuoteOrderRevisionQuery, OrderRevisionQuoteView>(
-      new QuoteOrderRevisionQuery(id, { kind: "staff", staffId: staffUserId }, payload),
+      new QuoteOrderRevisionQuery(
+        id,
+        { kind: "staff", staffId: staffUserId },
+        payload,
+        mayExceedItemLimits(permissions),
+      ),
     );
   }
 
@@ -81,9 +96,10 @@ export class AdminOrderRevisionsController {
   async revise(
     @Param("id") id: string,
     @StaffUserId() staffUserId: string,
-    @Body(new ZodBody(orderRevisionPayloadSchema)) payload: OrderRevisionPayload,
+    @Body(new ZodBody(adminOrderRevisionPayloadSchema)) payload: AdminOrderRevisionPayload,
+    @StaffPermissions() permissions: readonly StaffPermission[],
   ): Promise<OrderRevisedResponse> {
-    const { expectedRevision, expectedTotalCents, ...content } = payload;
+    const { expectedRevision, expectedTotalCents, itemLimitOverrideReason, ...content } = payload;
     return this.commands.execute<ReviseOrderCommand, ReviseOrderResult>(
       new ReviseOrderCommand(
         id,
@@ -92,6 +108,10 @@ export class AdminOrderRevisionsController {
         content,
         expectedTotalCents,
         "direct",
+        {
+          exceedItemLimits: mayExceedItemLimits(permissions),
+          overrideReason: itemLimitOverrideReason,
+        },
       ),
     );
   }

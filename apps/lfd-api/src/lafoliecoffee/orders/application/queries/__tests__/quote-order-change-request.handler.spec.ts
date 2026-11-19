@@ -11,8 +11,10 @@ import type { OrderPlanGate } from "../../services/order-plan-gate.service.js";
 import { OrderRevisabilityReading } from "../../../revision/application/services/order-revisability-reading.js";
 import { RevisionWall } from "../../../revision/application/services/revision-wall.js";
 import { FixedClosedPlans, gateOf } from "../../commands/__tests__/plan-doubles.js";
+import { ItemLimitPassedOnRevisionError } from "../../../domain/errors/item-limit-override-errors.js";
 import {
   AFTER_CUTOFF,
+  CATALOG,
   content,
   DAY,
   FixedRevisableOrders,
@@ -31,6 +33,28 @@ import { QuoteOrderChangeRequestQuery } from "../quote-order-change-request.quer
  * recomposition que la modification. Instants de la scène, horloge FIXE.
  */
 
+/**
+ * La limite de la scène portée par la RÈGLE GÉNÉRALE (la veille, 18 h) et non
+ * par les articles : l'équipe qui applique une demande se voit opposer la
+ * limite propre d'un produit ajouté (plan des dépassements, § 3.6), jamais la
+ * règle générale.
+ */
+const GENERAL_RULE = {
+  list: () =>
+    Promise.resolve([
+      {
+        id: "general",
+        pickupAddressId: null,
+        pickupLabel: null,
+        weekday: null,
+        daysBefore: 1,
+        time: "18:00",
+        graceMinutes: 0,
+      },
+    ]),
+};
+const WITHOUT_ITEM_LIMITS = CATALOG.map((item) => ({ ...item, orderTimeLimit: null }));
+
 class FixedInscription extends OrderInscriptionReader {
   constructor(private readonly day: string | null = null) {
     super();
@@ -48,11 +72,17 @@ function handlerFor(
     readonly plans?: OrderPlanGate;
     readonly inscribedDay?: string | null;
     readonly role?: "orders" | null;
+    /** Par défaut, des articles sans limite propre : seule la règle générale juge. */
+    readonly catalogItems?: typeof CATALOG;
   } = {},
 ): QuoteOrderChangeRequestHandler {
   const orders = new FixedRevisableOrders(order);
   const clock = new FixedClock(options.now ?? AFTER_CUTOFF);
-  const revising = revisingAt(clock, options.plans === undefined ? {} : { plans: options.plans });
+  const revising = revisingAt(clock, {
+    ...(options.plans === undefined ? {} : { plans: options.plans }),
+    cutoffs: GENERAL_RULE,
+    catalogItems: options.catalogItems ?? WITHOUT_ITEM_LIMITS,
+  });
   return new QuoteOrderChangeRequestHandler(
     new RevisionWall(
       orders,
@@ -91,6 +121,16 @@ describe("QuoteOrderChangeRequestHandler", () => {
       ["VIE-001", true],
       ["PAI-001", false],
     ]);
+  });
+
+  it("refuse d'ajouter un produit dont la limite propre est passée : l'équipe qui applique n'a pas le droit", async () => {
+    const order = await placedOrder({ revision: 2 });
+
+    await expect(
+      handlerFor(order, { catalogItems: CATALOG }).execute(
+        new QuoteOrderChangeRequestQuery("ord_1", "usr_1", MORE),
+      ),
+    ).rejects.toBeInstanceOf(ItemLimitPassedOnRevisionError);
   });
 
   it("avant l'heure limite : refusé, la commande se modifie directement", async () => {

@@ -48,13 +48,13 @@ import {
   type RevisionPriceRefusal,
 } from "../../../application/services/order-composition.service.js";
 import type { OrderContent } from "../../../application/services/order-content.js";
-import { OrderDeadline, type OrderDeadlineAsker } from "../../../../order-cutoffs/index.js";
+import type { ExceededItemLimit } from "../../../../order-cutoffs/index.js";
 import { Clock } from "../../../../../platform/time/clock.js";
-import { admitWithinDeadline } from "../../../domain/services/admit-within-deadline.js";
 import { OrderIntake } from "../../../application/services/order-intake.service.js";
 import type { OrderParties } from "../../../application/services/order-parties.js";
 import { OrderPlanGate } from "../../../application/services/order-plan-gate.service.js";
 import type { FrozenDeliveryFee } from "../../../application/services/pricing-context.service.js";
+import { RevisionCutoffs } from "./revision-cutoffs.js";
 import { ShelfRevising } from "./shelf-revising.service.js";
 
 /**
@@ -66,8 +66,9 @@ import { ShelfRevising } from "./shelf-revising.service.js";
  * n'ajoute que ce qui n'appartient qu'à la révision :
  *
  * - **R1** : la même frontière que l'annulation (`cancellationOf`) pour tous,
- *   et l'heure limite de l'ancienne ET de la nouvelle date pour le client —
- *   jamais pour l'équipe, ni dérogation dépensée ;
+ *   et l'heure limite de l'ancienne ET de la nouvelle date pour le client ;
+ *   pour l'équipe, la seule limite d'article des lignes ajoutées ou
+ *   augmentées ({@link RevisionCutoffs}) ; aucune dérogation dépensée ;
  * - **R2** : payeur, société, principal, clientèle, CGV et langue relus sur la
  *   commande, jamais recalculés — la clientèle se lit sur les CGV figées
  *   (`salesTermsPro` ⇒ pro), et c'est elle qui ouvre ou ferme le point de
@@ -83,25 +84,13 @@ import { ShelfRevising } from "./shelf-revising.service.js";
  * - **R5** : la nouvelle journée ouverte — et, pour le client, pas avant le
  *   premier jour commandable de sa clientèle (2026-10-28).
  */
-/**
- * Ce que la modification demande au délai de commande : la limite des
- * articles en clientèle `pro`, comme la passation, et aucune dérogation — une
- * modification ne crée ni ne retire de surtaxe (R4).
- */
-const REVISION_ASKER: OrderDeadlineAsker = {
-  audience: "pro",
-  companyId: null,
-  waiver: "ignore",
-  exceedItemLimits: false,
-};
-
 @Injectable()
 export class OrderRevising {
   private readonly logger = new Logger(OrderRevising.name);
 
   constructor(
     private readonly composition: OrderComposition,
-    private readonly deadline: OrderDeadline,
+    private readonly cutoffs: RevisionCutoffs,
     private readonly plans: OrderPlanGate,
     private readonly rule: CancellationRule,
     private readonly intake: OrderIntake,
@@ -177,12 +166,7 @@ export class OrderRevising {
     const day = order.serviceDay;
     const [closed, cutoff] = await Promise.all([
       this.plans.isClosed(day),
-      this.deadline.verdict({
-        skus: order.lines.map((line) => line.sku),
-        serviceDay: day,
-        at: this.clock.now(),
-        asker: REVISION_ASKER,
-      }),
+      this.cutoffs.currentDay(order, day, this.clock.now()),
     ]);
     return revisabilityOf({
       standing,
@@ -240,15 +224,20 @@ export class OrderRevising {
     content: OrderContent,
     author: RevisionActor,
     options: RevisionOptions,
-  ): Promise<RecomposedRevision> {
-    const { revision, settlement, refusals } = await this.quote(order, content, author, options);
+  ): Promise<ComposedRevision> {
+    const { revision, settlement, refusals, exceeded } = await this.quote(
+      order,
+      content,
+      author,
+      options,
+    );
     const [first] = refusals;
     if (first !== undefined) {
       throw revisionPriceErrorOf(first);
     }
     // Plan S1, R5 bis : le règlement de l'agrégat remonte — seule source du
     // montant que M1 rendra (`card_refund`).
-    return { revision, settlement };
+    return { revision, settlement, exceeded };
   }
 
   /**
@@ -305,8 +294,8 @@ export class OrderRevising {
       // un frais relevé depuis ne renchérit pas la commande.
       frozenDeliveryFee: frozenDeliveryFeeOf(order),
     });
-    if (!fromShelf) {
-      await this.ensureBeforeCutoff(order, content, actor, options.decidedAt);
+    if (!fromShelf && actor === "customer") {
+      await this.cutoffs.ensureCustomerBefore(order, content, options.decidedAt);
     }
     const arranged = await this.composition.arrange(
       content,
@@ -325,11 +314,24 @@ export class OrderRevising {
       }),
     );
     const { revision, settlement } = recomposedOf(order, input, author, options);
+    // Sur les lignes chiffrées, pour nommer le produit d'un refus.
+    const exceeded =
+      fromShelf || actor === "customer"
+        ? []
+        : await this.cutoffs.staffExceeded(order, content, revision.state.lines, {
+            decidedAt: options.decidedAt,
+            exceedItemLimits: options.exceedItemLimits ?? false,
+          });
     // Les remises rejouées que la révision ferait perdre, lues sur LE calcul
     // de l'agrégat — il n'est plus refait ici (L7, 2026-11-04).
     const notes = revision.pricingNotes;
     warnBeyondCap(this.logger, notes);
-    return { revision, settlement, refusals: [...loaded.keptRefusals, ...notes.refusals] };
+    return {
+      revision,
+      settlement,
+      refusals: [...loaded.keptRefusals, ...notes.refusals],
+      exceeded,
+    };
   }
 
   /**
@@ -422,37 +424,6 @@ export class OrderRevising {
       decidedAt,
     );
   }
-
-  /**
-   * R1 client : l'heure limite de l'ancienne date ET de la nouvelle, sur tous
-   * les articles des deux compositions. L'équipe n'y est pas soumise ; aucune
-   * dérogation ne se dépense (R4 : pas de surtaxe créée).
-   */
-  private async ensureBeforeCutoff(
-    order: RevisableOrder,
-    content: OrderContent,
-    actor: RevisionActor["kind"],
-    decidedAt: Instant,
-  ): Promise<void> {
-    if (actor === "staff") {
-      return;
-    }
-    const skus = [
-      ...new Set([...order.lines.map((line) => line.sku), ...content.lines.map((l) => l.sku)]),
-    ];
-    const days = new Set([order.serviceDay, content.requestedDeliveryDate]);
-    for (const day of days) {
-      if (day !== null) {
-        const verdict = await this.deadline.verdict({
-          skus,
-          serviceDay: day,
-          at: decidedAt,
-          asker: REVISION_ASKER,
-        });
-        admitWithinDeadline(verdict, day);
-      }
-    }
-  }
 }
 
 /**
@@ -476,6 +447,12 @@ export interface RevisionOptions {
    * règlement est refusé, nommé, par l'agrégat.
    */
   readonly expected?: "card_complement";
+  /**
+   * L'équipe a le droit `lfc_product_limit_override` (lu au contrôleur) :
+   * une ligne ajoutée dont le produit le permet dépasse sa limite. Absent :
+   * faux — le client, la hausse, une demande appliquée.
+   */
+  readonly exceedItemLimits?: boolean;
 }
 
 /**
@@ -486,6 +463,16 @@ export interface QuotedRevision {
   readonly revision: OrderRevisionToSave;
   readonly settlement: RevisionSettlement;
   readonly refusals: readonly RevisionPriceRefusal[];
+  /**
+   * Les limites d'article que l'équipe dépasse sur les lignes ajoutées ou
+   * augmentées — à justifier par un motif et à consigner ; vide pour le client.
+   */
+  readonly exceeded: readonly ExceededItemLimit[];
+}
+
+/** Une révision recomposée, et les limites d'article qu'elle dépasse. */
+export interface ComposedRevision extends RecomposedRevision {
+  readonly exceeded: readonly ExceededItemLimit[];
 }
 
 /**

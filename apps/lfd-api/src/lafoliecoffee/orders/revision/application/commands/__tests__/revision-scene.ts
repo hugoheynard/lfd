@@ -62,6 +62,14 @@ import { OrderLinePricing } from "../../../../application/services/order-line-pr
 import { OrderOperations } from "../../../../application/services/order-operations.service.js";
 import type { OrderPlanGate } from "../../../../application/services/order-plan-gate.service.js";
 import { OrderRevising } from "../../services/order-revising.service.js";
+import { RevisionCutoffs } from "../../services/revision-cutoffs.js";
+import {
+  ConsignedOverrides,
+  RecordedOverrides,
+} from "../../../../domain/ports/__tests__/item-limit-override-doubles.js";
+import type { ItemLimitOverride } from "../../../../domain/services/item-limit-overrides.js";
+import type { OrderCutoffsInForce } from "../../../../../order-cutoffs/domain/order-cutoffs-in-force.js";
+import { FixedIdGenerator } from "../../../../../../platform/id/fixed-id-generator.js";
 import { shelfCircuitOf } from "../../../../application/services/__tests__/shelf-circuit-doubles.js";
 import type { ShelfCircuit } from "../../../../application/services/shelf-circuit.service.js";
 import { ShelfRevising } from "../../services/shelf-revising.service.js";
@@ -239,6 +247,10 @@ export function revisingAt(
     readonly companyStatus?: OrderCompanyStatus;
     /** Le point de retrait — par défaut le Labo, ouvert à tous. */
     readonly point?: PickupAddressView;
+    /** Les dépassements de limite déjà consignés sur la commande — par défaut aucun. */
+    readonly consigned?: readonly ItemLimitOverride[];
+    /** La règle générale — par défaut aucune. */
+    readonly cutoffs?: OrderCutoffsInForce;
   } = {},
 ): OrderRevising {
   const pickups = pickupsOf(options.point ?? LABO_POINT);
@@ -261,13 +273,13 @@ export function revisingAt(
     new CustomerAudiences({ companyStatusOf: () => Promise.resolve(companyStatus) }),
   );
   const cutoffs = deadlineOf({
-    cutoffs: { list: () => Promise.resolve([]) },
+    cutoffs: options.cutoffs ?? { list: () => Promise.resolve([]) },
     catalog: catalog,
   });
   const plans = options.plans ?? openPlanGate();
   return new OrderRevising(
     composition,
-    cutoffs,
+    new RevisionCutoffs(cutoffs, new ConsignedOverrides(options.consigned ?? [])),
     plans,
     new CancellationRule(options.engagements ?? new FixedEngagements()),
     options.intake ?? intakeAt(undefined, "active", [], {}, undefined, clock),
@@ -564,6 +576,10 @@ export function reviseScene(
     readonly shelf?: ShelfCircuit;
     /** Plan S1 : la carte encaissée — projets, paiements, restes. */
     readonly card?: CardRefundSetup;
+    /** Les dépassements déjà consignés sur la commande. */
+    readonly consigned?: readonly ItemLimitOverride[];
+    /** La règle générale — par défaut aucune. */
+    readonly cutoffs?: OrderCutoffsInForce;
   } = {},
 ) {
   const trace: string[] = [];
@@ -586,7 +602,10 @@ export function reviseScene(
     ...(options.engagements === undefined ? {} : { engagements: options.engagements }),
     ...(options.catalogItems === undefined ? {} : { catalogItems: options.catalogItems }),
     ...(options.shelf === undefined ? {} : { shelf: options.shelf }),
+    ...(options.consigned === undefined ? {} : { consigned: options.consigned }),
+    ...(options.cutoffs === undefined ? {} : { cutoffs: options.cutoffs }),
   });
+  const overrides = new RecordedOverrides(trace);
   const recording = new OrderRevisionRecording(
     revising,
     revisions,
@@ -603,8 +622,10 @@ export function reviseScene(
     revisions,
     recording,
     card.service,
+    overrides,
     new DirectUnitOfWork(),
     clock,
+    new FixedIdGenerator("ovr"),
   );
   const asSeen = seenRevisions(wall, revising, clock);
   return {
@@ -620,5 +641,7 @@ export function reviseScene(
     revaluation,
     durable,
     cardRefunds: card.refunds,
+    overrides,
+    wall,
   };
 }

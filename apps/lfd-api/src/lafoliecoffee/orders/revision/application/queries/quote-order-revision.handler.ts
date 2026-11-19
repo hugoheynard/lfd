@@ -8,6 +8,7 @@ import { OrderRevising } from "../services/order-revising.service.js";
 import { quoteViewOf } from "../services/revision-quote-view.js";
 import { RevisionWall } from "../services/revision-wall.js";
 import { QuoteOrderRevisionQuery } from "./quote-order-revision.query.js";
+import { exceededViewOf } from "../../../application/services/exceeded-limit-view.js";
 
 /**
  * **Le devis de révision** (voir `documentation/commandes/modification/modifier-une-commande.md`,
@@ -39,10 +40,15 @@ export class QuoteOrderRevisionHandler implements IQueryHandler<
     const quoted = await this.revising.quote(current, query.content, query.actor, {
       requireChange: false,
       decidedAt: this.clock.now(),
+      exceedItemLimits: query.exceedItemLimits,
     });
     if (scope === "quantities" && !isQuantitiesOnly(current.lines, quoted.revision)) {
       throw new QuantitiesOnlyAfterArrestError(current.orderId);
     }
-    return quoteViewOf(current, quoted);
+    const view = quoteViewOf(current, quoted);
+    // L'annonce des dépassements n'est servie qu'à l'équipe (§ 3.6).
+    return query.actor.kind === "staff"
+      ? { ...view, itemLimitOverrides: quoted.exceeded.map(exceededViewOf) }
+      : view;
   }
 }

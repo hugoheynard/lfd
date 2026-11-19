@@ -43,6 +43,25 @@ export class ItemLimitOverrideReasonInvalidError extends DomainError {
   }
 }
 
+/**
+ * **L'équipe ajoute à une commande un produit dont la limite est passée**,
+ * sans pouvoir passer outre — refus métier (409).
+ *
+ * Un code à lui plutôt que `orders.cutoff.past` : celui-là dit que la
+ * JOURNÉE est fermée, et les écrans y répondent « choisissez une autre
+ * date ». Ici la journée reste ouverte à l'équipe (la règle générale ne lui
+ * est pas opposée en modification) ; seul ce produit l'est, et le message le
+ * nomme avec les gestes de sortie.
+ */
+export class ItemLimitPassedOnRevisionError extends BusinessError {
+  constructor(readonly productNames: readonly string[]) {
+    super(
+      "orders.cutoff.item_limit_past",
+      `${productNames.map((name) => `« ${name} »`).join(", ")} ne se commande plus pour cette journée : sa limite de commande est passée. Retirez-le de la modification, choisissez une journée plus tardive, ou demandez à une personne qui a le droit de passer outre, si la fiche du produit le permet.`,
+    );
+  }
+}
+
 /** Une trace de dépassement dont l'origine n'est pas l'une des deux admises. */
 export class ItemLimitOverrideUnreadableError extends TechnicalError {
   constructor(

@@ -8,6 +8,7 @@ import {
   hasAddressWhenDelivered,
   hasPickupPointWhenPickedUp,
   orderContentShape,
+  type OrderQuoteExceededLimitView,
   type OrderSaleUnit,
   pickupPointIssue,
 } from "./order.js";
@@ -161,6 +162,13 @@ export interface OrderRevisionQuoteView {
    * 2026-11-10) ; obligatoire depuis que les écrans le lisent (S2.d).
    */
   readonly settlement: OrderRevisionQuoteSettlement;
+  /**
+   * Les limites de produit que la modification de l'équipe passerait, sur
+   * les lignes ajoutées ou augmentées, dans l'ordre du panier : l'écran
+   * demande alors le motif. Servi au devis de l'équipe seulement — absent
+   * pour le client, qui ne passe jamais outre.
+   */
+  readonly itemLimitOverrides?: readonly OrderQuoteExceededLimitView[];
 }
 
 /** Ce que la modification rend : la commande se relit ensuite (`GET :id`). */

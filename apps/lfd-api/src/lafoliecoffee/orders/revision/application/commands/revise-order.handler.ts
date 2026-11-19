@@ -1,21 +1,26 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { UnitOfWork } from "../../../../../platform/database/unit-of-work.js";
+import { IdGenerator } from "../../../../../platform/id/id-generator.js";
 import { Clock } from "../../../../../platform/time/clock.js";
 import type { OrderRevisionToSave, RevisableOrder } from "../../domain/entities/order-revision.js";
-import type { RecomposedRevision } from "../../domain/entities/revision-settlement.js";
 import { OrderNotFoundError } from "../../../domain/errors/order-errors.js";
 import {
   OrderRevisedElsewhereError,
   QuantitiesOnlyAfterArrestError,
 } from "../../domain/errors/order-revision-errors.js";
 import { OrderRevisionRepository } from "../../domain/ports/order-revision.repository.js";
+import { ItemLimitOverrideRecorder } from "../../../domain/ports/item-limit-override.recorder.js";
+import {
+  itemLimitOverridesOf,
+  justifyItemLimitOverrides,
+} from "../../../domain/services/item-limit-overrides.js";
 import { ensureTotalSeen } from "../../../domain/services/seen-total.js";
 import {
   isQuantitiesOnly,
   type RevisionScope,
 } from "../../domain/services/revision-after-arrest.js";
-import { OrderRevising } from "../services/order-revising.service.js";
+import { type ComposedRevision, OrderRevising } from "../services/order-revising.service.js";
 import { OrderRevisionRecording } from "../services/order-revision-recording.js";
 import { RevisionCardRefund } from "../services/revision-card-refund.js";
 import { RevisionWall } from "../services/revision-wall.js";
@@ -37,6 +42,13 @@ import { ReviseOrderCommand, type ReviseOrderResult } from "./revise-order.comma
  *    chaque journée touchée (§ 2.8 — « inscrite » refuse et annule tout), la
  *    journée nouvelle tenue ouverte, l'écriture conditionnée, la ligne
  *    d'encaissement recalée (au compte), et les deux faits durables.
+ *
+ * ## La limite d'un produit passée par l'équipe (plan
+ * `documentation/limites-de-commande/plan-passer-outre-la-limite-produit.md`, § 3.6)
+ *
+ * Une ligne ajoutée ou augmentée que l'équipe fait passer outre sa limite
+ * exige un motif, refusé hors verrou ; chaque dépassement est consigné
+ * (`origin = revision`) dans la transaction qui écrit la révision.
  *
  * ## Une carte encaissée (plan
  * `documentation/commandes/modification/modifier-une-commande.md`, §2.7.12)
@@ -70,8 +82,10 @@ export class ReviseOrderHandler implements ICommandHandler<ReviseOrderCommand, R
     private readonly revisions: OrderRevisionRepository,
     private readonly recording: OrderRevisionRecording,
     private readonly cardRefund: RevisionCardRefund,
+    private readonly overrides: ItemLimitOverrideRecorder,
     private readonly unitOfWork: UnitOfWork,
     private readonly clock: Clock,
+    private readonly ids: IdGenerator,
   ) {}
 
   async execute(command: ReviseOrderCommand): Promise<ReviseOrderResult> {
@@ -82,14 +96,20 @@ export class ReviseOrderHandler implements ICommandHandler<ReviseOrderCommand, R
       requireChange: true,
       // M1 juge à l'horloge (plan S2, R6).
       decidedAt: this.clock.now(),
+      exceedItemLimits: command.itemLimits.exceedItemLimits,
     });
     const { revision } = recomposed;
+    const reason = justifyItemLimitOverrides(
+      recomposed.exceeded,
+      command.itemLimits.overrideReason,
+      revision.state.lines,
+    );
     ensureWithinScope(current, revision, scope);
     // R14, R15 (plan S2) : le règlement a parlé (ensureRevisable, compose) ;
     // on ne fait pas revalider un montant qu'on refuserait de toute façon.
     ensureTotalSeen(revision.totalAfterCents, command.expectedTotalCents);
     await this.cardRefund.ensureNoLiveIncrease(current);
-    await this.unitOfWork.run(() => this.record(command, recomposed));
+    await this.unitOfWork.run(() => this.record(command, recomposed, reason));
     return {
       id: revision.orderId,
       revision: revision.toRevision,
@@ -104,7 +124,8 @@ export class ReviseOrderHandler implements ICommandHandler<ReviseOrderCommand, R
 
   private async record(
     command: ReviseOrderCommand,
-    { revision, settlement }: RecomposedRevision,
+    { revision, settlement, exceeded }: ComposedRevision,
+    reason: string | null,
   ): Promise<void> {
     const locked = await this.revisions.lock(command.orderId);
     if (locked === null) {
@@ -118,7 +139,33 @@ export class ReviseOrderHandler implements ICommandHandler<ReviseOrderCommand, R
     );
     const parts = await this.cardRefund.prepare(locked, settlement, command.actor.kind);
     await this.recording.record(locked, revision, command.actor, command.origin);
+    await this.recordOverrides(command, revision, exceeded, reason);
     await this.cardRefund.request(parts, command.actor);
+  }
+
+  /** Les dépassements de l'équipe, une trace par SKU, dans la transaction de la révision. */
+  private async recordOverrides(
+    command: ReviseOrderCommand,
+    revision: OrderRevisionToSave,
+    exceeded: ComposedRevision["exceeded"],
+    reason: string | null,
+  ): Promise<void> {
+    const { actor } = command;
+    if (reason === null || actor.kind !== "staff" || revision.serviceDay === null) {
+      return;
+    }
+    await this.overrides.record(
+      itemLimitOverridesOf({
+        exceeded,
+        orderId: revision.orderId,
+        staffUserId: actor.staffId,
+        reason,
+        serviceDay: revision.serviceDay,
+        origin: "revision",
+        at: this.clock.now(),
+        nextId: () => this.ids.next(),
+      }),
+    );
   }
 }
 

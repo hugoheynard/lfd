@@ -25,8 +25,26 @@ export class ReviseOrderCommand {
     readonly content: OrderContent,
     readonly expectedTotalCents: number,
     readonly origin: RevisionOrigin,
+    readonly itemLimits: RevisionItemLimits = NO_ITEM_LIMIT_OVERRIDE,
   ) {}
 }
+
+/**
+ * **Passer outre la limite d'un produit en modifiant** (plan
+ * `documentation/limites-de-commande/plan-passer-outre-la-limite-produit.md`,
+ * § 3.6) : le droit, lu en base par le contrôleur de l'équipe, et le motif du
+ * corps. Le client, une demande appliquée : ni l'un ni l'autre.
+ */
+export interface RevisionItemLimits {
+  readonly exceedItemLimits: boolean;
+  readonly overrideReason: string | undefined;
+}
+
+/** Aucun dépassement possible : le client, une demande appliquée. */
+export const NO_ITEM_LIMIT_OVERRIDE: RevisionItemLimits = {
+  exceedItemLimits: false,
+  overrideReason: undefined,
+};
 
 /** Ce que la modification rend : la commande se relit ensuite. */
 export interface ReviseOrderResult {

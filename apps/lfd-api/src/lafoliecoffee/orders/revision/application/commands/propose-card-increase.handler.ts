@@ -40,9 +40,8 @@ import {
   orderCardSubject,
   orderCardTag,
 } from "../../../application/services/order-card-subject.js";
-import type { OrderContent } from "../../../application/services/order-content.js";
-import { OrderDeadline } from "../../../../order-cutoffs/index.js";
 import { OrderRevising } from "../services/order-revising.service.js";
+import { RevisionCutoffs } from "../services/revision-cutoffs.js";
 import { RevisionWall } from "../services/revision-wall.js";
 import { ProposeCardIncreaseCommand } from "./propose-card-increase.command.js";
 
@@ -101,7 +100,7 @@ export class ProposeCardIncreaseHandler implements ICommandHandler<
     private readonly abandonment: CardIncreaseAbandonment,
     private readonly proposals: CardIncreaseProposalRepository,
     private readonly cards: CardPayments,
-    private readonly deadline: OrderDeadline,
+    private readonly cutoffs: RevisionCutoffs,
     private readonly journal: Journal,
     private readonly unitOfWork: UnitOfWork,
     private readonly clock: Clock,
@@ -134,7 +133,8 @@ export class ProposeCardIncreaseHandler implements ICommandHandler<
   ): Promise<CardComplementPaymentView> {
     const current = await this.wall.find(command.orderId, command.actor);
     const revision = await this.composed(current, command);
-    const cutoff = await this.cutoffOf(current, command.content);
+    // L'heure limite qui borne le délai de paiement (Q1), limites consignées écartées.
+    const cutoff = await this.cutoffs.paymentCutoff(current, command.content, this.clock.now());
     const released = await this.abandonment.releaseForReplacement(current.orderId, command.actor);
     const preparation = await this.cards.prepare(
       ORDER_CARD_SUBJECT_TYPE,
@@ -217,37 +217,6 @@ export class ProposeCardIncreaseHandler implements ICommandHandler<
     if (day !== null) {
       throw new OrderNotRevisableError(order.orderId, { kind: "inscribed", day });
     }
-  }
-
-  /**
-   * L'heure limite qui borne le délai de paiement (Q1) : la plus proche de
-   * l'ancienne et de la nouvelle journée, sur les articles des deux
-   * compositions — celles que la modification du client a passées.
-   */
-  private async cutoffOf(order: RevisableOrder, content: OrderContent): Promise<Date | null> {
-    const skus = [
-      ...new Set([...order.lines.map((line) => line.sku), ...content.lines.map((l) => l.sku)]),
-    ];
-    const days = [...new Set([order.serviceDay, content.requestedDeliveryDate])].filter(
-      (day): day is string => day !== null,
-    );
-    const at = this.clock.now();
-    const verdicts = await Promise.all(
-      days.map((day) =>
-        this.deadline.verdict({
-          skus,
-          serviceDay: day,
-          at,
-          asker: { audience: "pro", companyId: null, waiver: "ignore", exceedItemLimits: false },
-        }),
-      ),
-    );
-    // La limite retenue, quel que soit l'état de la journée : une journée en
-    // rattrapage ou fermée borne aussi le délai.
-    const times = verdicts.flatMap((verdict) =>
-      verdict.limit === null ? [] : [verdict.limit.getTime()],
-    );
-    return times.length === 0 ? null : new Date(Math.min(...times));
   }
 }
 

@@ -47,8 +47,12 @@ export class JudgingOrderDeadline extends OrderDeadline {
       this.items.limitsOf(skus, question.asker.audience),
       this.waiverFor(question),
     ]);
+    const settled = new Set(question.settledItemLimits ?? []);
     const verdict = judgeOrderDeadline({
-      lines: question.skus.map((sku) => ({ sku, limit: limits.get(sku) ?? null })),
+      lines: question.skus.map((sku) => ({
+        sku,
+        limit: settled.has(sku) ? null : (limits.get(sku) ?? null),
+      })),
       generalRules,
       serviceDay: question.serviceDay,
       at: question.at,

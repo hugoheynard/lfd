@@ -150,3 +150,33 @@ describe("la règle générale seule", () => {
     expect(statuses.get("2026-08-14")).toBe("open");
   });
 });
+
+describe("une limite d'article déjà passée et consignée", () => {
+  /** Le pain se commande trois jours avant : sa limite est tombée le 9. */
+  const PASSED: ItemOrderLimit = {
+    daysBefore: 3,
+    time: "12:00",
+    graceMinutes: 0,
+    staffMayExceed: false,
+  };
+
+  it("garde la ligne au panier, jugée par la règle générale seule", async () => {
+    const { deadline } = court(new Items(new Map([["PAIN", PASSED]])));
+
+    const judged = await deadline.verdict(question({ at: BEFORE }));
+    const settled = await deadline.verdict(question({ at: BEFORE, settledItemLimits: ["PAIN"] }));
+
+    expect(judged.kind).toBe("closed");
+    expect(settled.kind).toBe("open");
+    expect(settled.lines.get("PAIN")).toMatchObject({ status: "open", itemStatus: "open" });
+  });
+
+  it("laisse la règle générale fermer un panier dont toutes les lignes sont consignées", async () => {
+    const { deadline } = court(new Items(new Map([["PAIN", PASSED]])));
+    const after = new Date("2026-08-11T17:00:00.000Z");
+
+    const verdict = await deadline.verdict(question({ at: after, settledItemLimits: ["PAIN"] }));
+
+    expect(verdict).toMatchObject({ kind: "closed", source: "general_rule" });
+  });
+});

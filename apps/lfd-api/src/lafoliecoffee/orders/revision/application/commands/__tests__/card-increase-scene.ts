@@ -27,6 +27,9 @@ import { RevisionWall } from "../../services/revision-wall.js";
 import { RecordingProposals } from "../../services/__tests__/card-increase-doubles.js";
 import { Steps } from "../../../../application/services/__tests__/order-card-doubles.js";
 import { ProposeCardIncreaseHandler } from "../propose-card-increase.handler.js";
+import { RevisionCutoffs } from "../../services/revision-cutoffs.js";
+import { ConsignedOverrides } from "../../../../domain/ports/__tests__/item-limit-override-doubles.js";
+import type { ItemLimitOverride } from "../../../../domain/services/item-limit-overrides.js";
 import {
   CATALOG,
   FixedRevisableOrders,
@@ -156,6 +159,8 @@ export function increaseScene(
     readonly underLock?: RevisableOrder;
     readonly proposalWritten?: boolean;
     readonly inscribedDay?: string | null;
+    /** Les dépassements déjà consignés sur la commande. */
+    readonly consigned?: readonly ItemLimitOverride[];
   } = {},
 ) {
   const steps = new Steps();
@@ -166,7 +171,10 @@ export function increaseScene(
   const cards = new IncreaseCardPayments(steps);
   const journal = new RecordingJournal();
   const wall = new RevisionWall(new FixedRevisableOrders(order), new OneRoleAccess("orders"));
-  const revising = revisingAt(clock);
+  const revising = revisingAt(
+    clock,
+    options.consigned === undefined ? {} : { consigned: options.consigned },
+  );
   const abandonment = new CardIncreaseAbandonment(reader, proposals, cards, journal, clock);
   const cutoffs = deadlineOf({
     cutoffs: { list: () => Promise.resolve([]) },
@@ -180,7 +188,7 @@ export function increaseScene(
     abandonment,
     proposals,
     cards,
-    cutoffs,
+    new RevisionCutoffs(cutoffs, new ConsignedOverrides(options.consigned ?? [])),
     journal,
     new DirectUnitOfWork(),
     clock,

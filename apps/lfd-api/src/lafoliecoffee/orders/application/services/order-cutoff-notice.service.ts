@@ -8,6 +8,7 @@ import type {
 import { Clock } from "../../../../platform/time/clock.js";
 import { OrderDeadline, type OrderDeadlineVerdict } from "../../../order-cutoffs/index.js";
 import type { OrderSupply } from "../../domain/value-objects/order-supply.js";
+import { exceededViewOf } from "./exceeded-limit-view.js";
 
 /** Ce qu'une commande sur stock lit de l'heure limite : rien ne la ferme (lot L4). */
 const SHELF_NOTICE: OrderQuoteCutoffView = {
@@ -73,12 +74,7 @@ export class OrderCutoffNotice {
 }
 
 function exceededOf(verdict: OrderDeadlineVerdict): readonly OrderQuoteExceededLimitView[] {
-  return verdict.exceeded.map((passed) => ({
-    sku: passed.sku,
-    daysBefore: passed.rule.daysBefore,
-    time: passed.rule.time,
-    limitAt: passed.limit.toISOString(),
-  }));
+  return verdict.exceeded.map(exceededViewOf);
 }
 
 /** Les lignes que leur propre limite ferme, dans l'ordre du panier. */

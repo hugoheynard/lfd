@@ -12,6 +12,7 @@ import { CardIncreaseAbandonment } from "./application/services/card-increase-ab
 import { OrderComposition } from "../application/services/order-composition.service.js";
 import { OrderRevisabilityReading } from "./application/services/order-revisability-reading.js";
 import { OrderRevising } from "./application/services/order-revising.service.js";
+import { RevisionCutoffs } from "./application/services/revision-cutoffs.js";
 import { RevisionWall } from "./application/services/revision-wall.js";
 import { OrderRevisionHistoryReader } from "./domain/ports/order-revision-history.reader.js";
 import { OrderRevisionRepository } from "./domain/ports/order-revision.repository.js";
@@ -41,6 +42,7 @@ import { PrismaRevisableOrderReader } from "./infrastructure/prisma-revisable-or
 export const ORDER_REVISION_PROVIDERS: readonly Provider[] = [
   OrderComposition,
   OrderRevising,
+  RevisionCutoffs,
   RevisionWall,
   ReviseOrderHandler,
   QuoteOrderRevisionHandler,

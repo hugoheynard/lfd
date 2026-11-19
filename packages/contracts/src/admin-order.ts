@@ -124,6 +124,16 @@ export function pickupWindowIssue(): { message: string; path: PropertyKey[] } {
 /** La longueur maximale du motif d'un dépassement de limite de produit. */
 export const ITEM_LIMIT_OVERRIDE_REASON_MAX_LENGTH = 280;
 
+/**
+ * Pourquoi l'équipe passe outre la limite d'un produit : exigé dès qu'une
+ * limite est passée, ignoré sinon. Partagé par la saisie et la modification.
+ */
+export const itemLimitOverrideReasonSchema = z
+  .string()
+  .trim()
+  .min(1, "motif requis")
+  .max(ITEM_LIMIT_OVERRIDE_REASON_MAX_LENGTH, "motif trop long");
+
 const adminOrderEntryShape = {
   companyId: z.string().trim().min(1, "société requise"),
   buyerUserId: z.string().trim().min(1, "client requis"),
@@ -139,12 +149,7 @@ const adminOrderEntryShape = {
   // Pourquoi la saisie passe outre la limite d'un produit (plan des
   // dépassements, § 3.5) : exigé par la passation dès qu'une limite est
   // passée, ignoré sinon ; l'estimation ne le lit pas.
-  itemLimitOverrideReason: z
-    .string()
-    .trim()
-    .min(1, "motif requis")
-    .max(ITEM_LIMIT_OVERRIDE_REASON_MAX_LENGTH, "motif trop long")
-    .optional(),
+  itemLimitOverrideReason: itemLimitOverrideReasonSchema.optional(),
   ...orderContentShape,
 };
 
@@ -158,6 +163,26 @@ export const adminPlaceOrderPayloadSchema = z
   .refine(hasPickupPointWhenPickedUp, pickupPointIssue())
   .refine(hasWindowWhenPickedUp, pickupWindowIssue());
 export type AdminPlaceOrderPayload = z.infer<typeof adminPlaceOrderPayloadSchema>;
+
+/**
+ * **La modification d'une commande par l'équipe** : la commande voulue, la
+ * révision qu'elle corrige et le total vu — la forme de
+ * `orderRevisionPayloadSchema` —, plus le motif d'un dépassement de limite de
+ * produit (plan des dépassements, § 3.6), exigé dès qu'une ligne ajoutée ou
+ * augmentée passe outre sa limite, ignoré sinon. Rangée ici, avec la saisie
+ * de l'équipe : le client ne passe jamais outre, et la boutique n'embarque
+ * pas ce schéma.
+ */
+export const adminOrderRevisionPayloadSchema = z
+  .object({
+    expectedRevision: z.number().int().nonnegative(),
+    ...orderContentShape,
+    expectedTotalCents: expectedTotalCentsSchema,
+    itemLimitOverrideReason: itemLimitOverrideReasonSchema.optional(),
+  })
+  .refine(hasAddressWhenDelivered, deliveryAddressIssue())
+  .refine(hasPickupPointWhenPickedUp, pickupPointIssue());
+export type AdminOrderRevisionPayload = z.infer<typeof adminOrderRevisionPayloadSchema>;
 
 /**
  * **Ce que l'estimation de la saisie reçoit** (`POST /admin/orders/estimate`)

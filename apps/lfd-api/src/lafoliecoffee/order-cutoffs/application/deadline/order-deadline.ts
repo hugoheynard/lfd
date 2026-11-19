@@ -32,6 +32,14 @@ export interface OrderDeadlineQuestion {
   /** L'instant de la décision : l'horloge, ou celui d'un geste décidé plus tôt. */
   readonly at: Date;
   readonly asker: OrderDeadlineAsker;
+  /**
+   * Les articles dont la limite propre a déjà été passée par l'équipe, et
+   * consignée, pour cette commande et cette journée : la ligne reste au
+   * panier, jugée par la règle générale seule. Sans quoi la ligne dépassée,
+   * déjà passée, fermerait tout jugement d'une modification qui la voit.
+   * Absent : toutes les limites jugent.
+   */
+  readonly settledItemLimits?: readonly string[];
 }
 
 /**
