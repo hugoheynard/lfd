@@ -1,3 +1,4 @@
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 
@@ -25,7 +26,9 @@ describe('Shop — ce que la boutique montre', () => {
 
   beforeEach(() => {
     TestBed.resetTestingModule();
-    TestBed.configureTestingModule({ providers: [ShopStore, Shop, provideHttpClient()] });
+    TestBed.configureTestingModule({
+      providers: [ShopStore, Shop, provideHttpClient(), provideHttpClientTesting()],
+    });
     hydrateWith(TestBed.inject(ShopCatalogue), TEST_CATALOGUE);
     store = TestBed.inject(ShopStore);
     shop = TestBed.inject(Shop);

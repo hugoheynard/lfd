@@ -1,3 +1,4 @@
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { signal } from '@angular/core';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
@@ -80,6 +81,7 @@ describe('ProductSheet', () => {
       imports: [ProductSheet],
       providers: [
         provideHttpClient(),
+        provideHttpClientTesting(),
         providePick(new StaffPickDouble()),
         ...(pro
           ? [
@@ -564,6 +566,7 @@ describe('ProductSheet — la suggestion du staff (RS2, fiche)', () => {
       imports: [ProductSheet],
       providers: [
         provideHttpClient(),
+        provideHttpClientTesting(),
         providePick(pick),
         {
           provide: ProductAudience,

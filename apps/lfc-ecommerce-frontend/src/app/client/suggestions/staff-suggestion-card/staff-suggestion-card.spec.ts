@@ -1,3 +1,4 @@
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { signal } from '@angular/core';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
@@ -64,6 +65,7 @@ describe('StaffSuggestionCard', () => {
       imports: [StaffSuggestionCard],
       providers: [
         provideHttpClient(),
+        provideHttpClientTesting(),
         { provide: ShopPriceBasis, useValue: { showsTtc } },
         {
           provide: ProductAudience,

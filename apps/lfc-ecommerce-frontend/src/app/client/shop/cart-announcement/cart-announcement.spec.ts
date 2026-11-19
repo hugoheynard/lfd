@@ -1,3 +1,4 @@
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 
@@ -13,7 +14,7 @@ describe('CartAnnouncement', () => {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       imports: [CartAnnouncement],
-      providers: [provideHttpClient()],
+      providers: [provideHttpClient(), provideHttpClientTesting()],
     });
     hydrateWith(TestBed.inject(ShopCatalogue), TEST_CATALOGUE);
     TestBed.inject(ClientCart).clear();

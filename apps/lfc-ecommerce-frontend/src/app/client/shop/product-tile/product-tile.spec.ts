@@ -1,3 +1,4 @@
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { signal } from '@angular/core';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import type { CompanyView } from '@lfd/contracts';
@@ -517,7 +518,10 @@ describe('ProductTile', () => {
 
     function mountOperation(state: ShopOperationState): void {
       TestBed.resetTestingModule();
-      TestBed.configureTestingModule({ imports: [ProductTile], providers: [provideHttpClient()] });
+      TestBed.configureTestingModule({
+        imports: [ProductTile],
+        providers: [provideHttpClient(), provideHttpClientTesting()],
+      });
       hydrateWith(TestBed.inject(ShopCatalogue), operationCatalogue(state));
       fixture = TestBed.createComponent(ProductTile);
       fixture.componentRef.setInput('product', testOperationItem(state));

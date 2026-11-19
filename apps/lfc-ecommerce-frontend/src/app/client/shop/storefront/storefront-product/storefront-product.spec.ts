@@ -1,3 +1,4 @@
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 
@@ -29,7 +30,7 @@ describe('StorefrontProduct', () => {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       imports: [StorefrontProduct],
-      providers: [provideHttpClient(), StorefrontActions],
+      providers: [provideHttpClient(), provideHttpClientTesting(), StorefrontActions],
     });
     hydrateWith(TestBed.inject(ShopCatalogue), TEST_CATALOGUE);
     TestBed.inject(ClientCart).clear();

@@ -1,3 +1,4 @@
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { CartEntries } from '../../../cart/cart-entries';
@@ -21,7 +22,10 @@ describe('ShelfGrid', () => {
   beforeEach(() => {
     localStorage.clear();
     TestBed.resetTestingModule();
-    TestBed.configureTestingModule({ imports: [ShelfGrid], providers: [provideHttpClient()] });
+    TestBed.configureTestingModule({
+      imports: [ShelfGrid],
+      providers: [provideHttpClient(), provideHttpClientTesting()],
+    });
     hydrateWith(TestBed.inject(ShopCatalogue), TEST_CATALOGUE);
     cart = TestBed.inject(ClientCart);
     cart.clear();

@@ -1,3 +1,4 @@
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { DOCUMENT, Location } from '@angular/common';
 import { provideHttpClient } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
@@ -35,7 +36,13 @@ describe('PieceAddress — la fiche d’un article a une adresse', () => {
   async function arrive(url: string): Promise<void> {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
-      providers: [provideRouter(ROUTES), provideHttpClient(), PieceAddress, PieceHead],
+      providers: [
+        provideRouter(ROUTES),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        PieceAddress,
+        PieceHead,
+      ],
     });
     hydrateWith(TestBed.inject(ShopCatalogue), TEST_CATALOGUE);
     router = TestBed.inject(Router);

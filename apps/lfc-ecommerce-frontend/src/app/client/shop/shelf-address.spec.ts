@@ -1,3 +1,4 @@
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
@@ -26,6 +27,7 @@ describe('ShelfAddress — le rayon dans l’adresse', () => {
       providers: [
         provideRouter([{ path: 'boutique', children: [] }]),
         provideHttpClient(),
+        provideHttpClientTesting(),
         ShopStore,
         Shop,
         ShelfAddress,
