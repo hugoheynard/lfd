@@ -439,6 +439,91 @@ Unitaires de domaine et d'application pour `sales-contexts` (entité,
 création, mise à jour, archivage), `sale-terms` (ou `VariantSale`), et les
 gestes d'`allergens/application` (archiver, restaurer, déplacer, renommer).
 
+### L9 — L'intérieur du catalogue (isolation, DDD, qualité)
+
+Ajouté le 2026-11-19 après le second audit (≈ 7/10). La porte
+`lint:pim-subcontexts` traite `catalogue/` comme un seul bloc : ce qui s'y
+tient à contresens ne se voyait pas. Constats ouverts le 2026-11-19.
+
+**L9.a — La porte descend dans `catalogue/`, dette comptée d'abord.**
+`pim-subcontexts.mjs` apprend les sous-blocs `catalogue/{shared,category,
+product,revision,history,allergen-matrix}` et le sens admis : `shared` ne lit
+personne du catalogue ; `product` lit `category` par son `index.ts` (ou un
+port), jamais son `application/` ; `revision`, `history` et
+`allergen-matrix` lisent `product` par sa porte ; `channels` lit le catalogue
+par des ports ou des `index.ts`, jamais un fichier d'application. Ce qui
+viole est compté en dette décroissante, comme L0.
+
+**L9.b — Défaire les liens à contresens** (vérifiés le 2026-11-19) :
+
+- `shared/domain/ports/catalogue-reader.ts` et `catalog-facts.reader.ts`
+  importent `ProductRecord` et `ProductEditorialView` de `product/` : ces
+  types de lecture sont soit déplacés dans `shared/`, soit les ports montent
+  dans `product/` — on choisit au bâti selon qui les lit, et `shared` cesse
+  d'importer `product`.
+- `product/lifecycle/{activate-product,update-product-identity,
+get-product-detail}.ts` importent `category/application/category-support.js`
+  (`requireCategory`) : la garde passe derrière une lecture nommée que
+  `category` publie dans son `index.ts`.
+- `channels/b2b-platform/products/catalog-facts.source.ts:3` importe
+  `product/regulatory/completeness-support.js` : les règles de complétude
+  sont publiées par la porte de `product`.
+- `shared/infrastructure/prisma-catalogue-reader.ts` relit la TVA de la
+  famille en SQL (`familyVat`) : il appelle la lecture que `category` publie.
+
+**L9.c — Les lecteurs ne passent plus par le port d'écriture.**
+`ProductRepository.listAll()` sert de lecture à `list-products`,
+`list-product-compliance-warnings`, `allergen-matrix`, `catalog-facts` et
+`catalogue-reader` (cinq lecteurs). Une lecture nommée par capacité les
+remplace, avec la même requête ; `listAll` disparaît du port d'écriture.
+Même geste pour `CategoryRepository.listAll()` côté lecture.
+
+**L9.d — Les satellites portés par leur agrégat.** Médias
+(`EditorialRepository.replaceMedia`), textes éditoriaux, composition et
+allergènes d'une déclinaison s'écrivent aujourd'hui par primitives depuis le
+handler. Chacun passe en `load` → méthode métier → `save` : sur `Product`
+quand l'invariant est celui de la fiche (archivée refusée, déclinaison
+connue), sur un petit agrégat propre sinon. Question de tri inchangée
+(§ 3.1 du CLAUDE.md) : s'il n'existe aucune règle qui refuse l'écriture, le
+satellite reste un CRUD, et sa justification s'écrit au-dessus.
+
+**L9.e — Composition au lieu d'héritage.** `ProductVariantGestures` est une
+base abstraite à une seule sous-classe, créée pour passer `product.ts` sous
+300 lignes. Les gestes de déclinaison deviennent un objet possédé
+(`ProductLineup`, nom à trancher au bâti) que `Product` délègue ; l'API
+publique de `Product` ne change pas. De même, `pricingOf`
+(`sale/update-variant-pricing.ts`), qui énumère les onze champs tracés de la
+section « Tarif & logistique », devient une méthode de `VariantSale`.
+
+**L9.f — Petites dettes.**
+
+- Les trois fichiers de plus de 300 lignes (`prisma-product.repository.ts`
+  420, `product-errors.ts` 331, `catalog-facts.ts` 306) passent sous la borne
+  — erreurs rangées par capacité, `save` du dépôt découpé.
+- Les fonctions de plus de 40 lignes du catalogue : `save` du dépôt des
+  fiches (~89), `execute` de la prise de révision (~85), `create` (~57),
+  `projectVariant` (~49). L9 les compte d'abord (la mesure manque, § 5).
+- `isUniqueViolation` est défini quatre fois (révision, TVA, contextes de
+  vente, ingrédients) et `traced` quatre fois : un seul exemplaire dans
+  `pim/shared/`. `isRecord` trois fois dans `revision/` : un seul.
+- `revision/domain/fingerprint.ts` lève trois `TypeError` bruts : ils
+  deviennent une `TechnicalError` nommée (un payload non sérialisable est un
+  bug, pas un refus métier).
+- Deux ports d'identifiant (`IdGenerator`, 3 fichiers ; `UuidGenerator`, 12) : un seul, celui que le reste de l'API utilise — à vérifier au bâti.
+- Les commentaires historiques croisés en route se réécrivent au présent
+  (CLAUDE.md § 8) ; pas de grand ménage à part.
+
+**Critère de fin** : `lint:pim-subcontexts` à dette nulle sur les sous-blocs
+du catalogue, `lint:pim-file-size` à dette nulle, aucun `listAll` dans un
+port d'écriture lu par un lecteur, aucune classe abstraite à sous-classe
+unique dans `domain/`. Puis un audit à l'aveugle, sans lui donner les notes
+précédentes.
+
+**Ce que L9 ne fait pas** : aucune migration, aucun contrat servi changé,
+aucune route renommée. D'où pas de `vitruve` d'office (ni argent, ni
+migration, ni sécurité, ni runbook) : chaque affirmation ci-dessus a été
+ouverte le 2026-11-19.
+
 ## 4. Ordre et coût
 
 | Lot    | Coût      | Risque                         | Pré-requis                  |
@@ -452,8 +537,9 @@ gestes d'`allergens/application` (archiver, restaurer, déplacer, renommer).
 | L3     | 1 jour    | moyen                          | L2                          |
 | L4     | 1–1½ jour | moyen (migration, écrans, TVA) | L2, vitruve sur le lot bâti |
 | L5     | 3–4 jours | moyen (le cœur, API inchangée) | L1, L3                      |
+| L9     | 3–4 jours | moyen (modules, agrégats)      | L5                          |
 
-Total : **9 à 11 jours**.
+Total : **9 à 11 jours** pour L0–L7 (bâtis), puis **3 à 4 jours** pour L9.
 
 ## 4 bis. Contradiction de vitruve (2026-11-18), et ce qu'elle change
 
