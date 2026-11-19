@@ -101,6 +101,8 @@ export interface AdminOrderItemLimitOverride {
   readonly sku: string;
   /** La fiche d'annuaire de la personne qui a passé outre. */
   readonly staffUserId: string;
+  /** Son nom, lu dans l'annuaire ; `null` si la fiche n'y est plus. */
+  readonly staffName: string | null;
   readonly reason: string;
   /** Le délai de la limite passée, en jours avant la journée. */
   readonly daysBefore: number;

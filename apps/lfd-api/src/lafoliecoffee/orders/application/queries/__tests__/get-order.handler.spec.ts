@@ -794,7 +794,7 @@ describe("GetAdminOrderHandler", () => {
       id: "ovr_1",
       orderId: "ord_1",
       sku: "LEV-001",
-      staffUserId: "staff_1",
+      staffUserId: "stf_1",
       reason: "Le client l'a demandé au salon",
       serviceDay: "2030-11-30",
       daysBefore: 2,
@@ -831,7 +831,8 @@ describe("GetAdminOrderHandler", () => {
       expect(view.itemLimitOverrides).toEqual([
         {
           sku: "LEV-001",
-          staffUserId: "staff_1",
+          staffUserId: "stf_1",
+          staffName: "Hugo H",
           reason: "Le client l'a demandé au salon",
           daysBefore: 2,
           time: "12:00",

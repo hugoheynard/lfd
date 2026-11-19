@@ -121,9 +121,13 @@ export class GetAdminOrderHandler implements IQueryHandler<GetAdminOrderQuery, A
       throw new OrderNotFoundError(query.orderId);
     }
     const notifier = shortfall?.decision?.customerNotice?.byStaffId;
-    const staffAuthors = await this.staff.identify(
-      notifier === undefined ? [author.placedByStaffId] : [author.placedByStaffId, notifier],
-    );
+    // Une seule lecture de l'annuaire : qui a saisi, qui a prévenu, qui a
+    // passé outre une limite de produit.
+    const staffAuthors = await this.staff.identify([
+      author.placedByStaffId,
+      ...(notifier === undefined ? [] : [notifier]),
+      ...(overrides ?? []).map((override) => override.staffUserId),
+    ]);
     return {
       ...owned.view,
       clientele: owned.clientele,
@@ -140,7 +144,11 @@ export class GetAdminOrderHandler implements IQueryHandler<GetAdminOrderQuery, A
       shortfall: shortfall === null ? null : shortfallViewOf(shortfall, staffAuthors),
       cardIncrease: adminCardIncreaseOf(increase),
       shortfallRefund,
-      ...(overrides === null ? {} : { itemLimitOverrides: overrides.map(overrideViewOf) }),
+      ...(overrides === null
+        ? {}
+        : {
+            itemLimitOverrides: overrides.map((override) => overrideViewOf(override, staffAuthors)),
+          }),
     };
   }
 
@@ -177,10 +185,14 @@ export class GetAdminOrderHandler implements IQueryHandler<GetAdminOrderQuery, A
 }
 
 /** Un dépassement consigné, dans la forme du contrat. */
-function overrideViewOf(override: ItemLimitOverride): AdminOrderItemLimitOverride {
+function overrideViewOf(
+  override: ItemLimitOverride,
+  staff: StaffAuthors,
+): AdminOrderItemLimitOverride {
   return {
     sku: override.sku,
     staffUserId: override.staffUserId,
+    staffName: staff.nameOf(override.staffUserId),
     reason: override.reason,
     daysBefore: override.daysBefore,
     time: override.time,
