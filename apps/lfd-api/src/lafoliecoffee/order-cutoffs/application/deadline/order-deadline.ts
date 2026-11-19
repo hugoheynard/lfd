@@ -15,6 +15,12 @@ export interface OrderDeadlineAsker {
    * révision, la hausse — rien de ce qui a un prix n'est lu.
    */
   readonly waiver: "ignore" | "consider";
+  /**
+   * L'équipe avec le droit `lfc_product_limit_override`, lu en base par son
+   * contrôleur : les limites d'article que le produit permet de passer ne la
+   * jugent pas, la règle générale si. Obligatoire, sans valeur par défaut.
+   */
+  readonly exceedItemLimits: boolean;
 }
 
 /** Ce qu'on demande au délai de commande. */

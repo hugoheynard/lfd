@@ -1,6 +1,9 @@
-import type { LateFeeAdjustment, OrderCutoffView, OrderLimitSpec } from "@lfd/contracts";
+import type { LateFeeAdjustment, OrderCutoffView } from "@lfd/contracts";
 
-import type { WaiverAvailable } from "../../../domain/deadline/order-deadline-verdict.js";
+import type {
+  ItemOrderLimit,
+  WaiverAvailable,
+} from "../../../domain/deadline/order-deadline-verdict.js";
 import {
   ItemOrderLimitsReader,
   LateFeeSettingReader,
@@ -40,13 +43,13 @@ class Rules extends OrderCutoffsInForce {
 
 class Items extends ItemOrderLimitsReader {
   readonly asked: { skus: readonly string[]; audience: DeadlineAudience }[] = [];
-  constructor(private readonly limits: ReadonlyMap<string, OrderLimitSpec | null> = new Map()) {
+  constructor(private readonly limits: ReadonlyMap<string, ItemOrderLimit | null> = new Map()) {
     super();
   }
   limitsOf(
     skus: readonly string[],
     audience: DeadlineAudience,
-  ): Promise<ReadonlyMap<string, OrderLimitSpec | null>> {
+  ): Promise<ReadonlyMap<string, ItemOrderLimit | null>> {
     this.asked.push({ skus, audience });
     return Promise.resolve(this.limits);
   }
@@ -89,7 +92,7 @@ function question(over: Partial<OrderDeadlineQuestion> = {}): OrderDeadlineQuest
     skus: ["PAIN"],
     serviceDay: DAY,
     at: IN_GRACE,
-    asker: { audience: "pro", companyId: "co_1", waiver: "consider" },
+    asker: { audience: "pro", companyId: "co_1", waiver: "consider", exceedItemLimits: false },
     ...over,
   };
 }
@@ -106,7 +109,9 @@ describe("ce que le verdict lit", () => {
   it("ne lit ni dérogation ni prix pour une question qui les ignore, même avec une société", async () => {
     const { deadline, waivers, fees } = court();
     const verdict = await deadline.verdict(
-      question({ asker: { audience: "pro", companyId: "co_1", waiver: "ignore" } }),
+      question({
+        asker: { audience: "pro", companyId: "co_1", waiver: "ignore", exceedItemLimits: false },
+      }),
     );
     expect(verdict).toMatchObject({ kind: "grace", waiver: null, lateFee: null });
     expect(waivers.asked).toEqual([]);
@@ -116,7 +121,9 @@ describe("ce que le verdict lit", () => {
   it("ne lit aucune dérogation sans société", async () => {
     const { deadline, waivers } = court();
     await deadline.verdict(
-      question({ asker: { audience: "pro", companyId: null, waiver: "consider" } }),
+      question({
+        asker: { audience: "pro", companyId: null, waiver: "consider", exceedItemLimits: false },
+      }),
     );
     expect(waivers.asked).toEqual([]);
   });

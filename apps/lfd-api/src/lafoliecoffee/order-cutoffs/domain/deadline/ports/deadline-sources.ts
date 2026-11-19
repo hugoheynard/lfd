@@ -1,6 +1,6 @@
-import type { LateFeeAdjustment, OrderLimitSpec } from "@lfd/contracts";
+import type { LateFeeAdjustment } from "@lfd/contracts";
 
-import type { WaiverAvailable } from "../order-deadline-verdict.js";
+import type { ItemOrderLimit, WaiverAvailable } from "../order-deadline-verdict.js";
 
 /**
  * Les sources du verdict que le délai de commande ne possède pas. Une
@@ -21,7 +21,7 @@ export abstract class ItemOrderLimitsReader {
   abstract limitsOf(
     skus: readonly string[],
     audience: DeadlineAudience,
-  ): Promise<ReadonlyMap<string, OrderLimitSpec | null>>;
+  ): Promise<ReadonlyMap<string, ItemOrderLimit | null>>;
 }
 
 /** La dérogation ouverte d'une société pour une journée. */

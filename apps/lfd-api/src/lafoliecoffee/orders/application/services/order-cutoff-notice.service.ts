@@ -40,7 +40,7 @@ export class OrderCutoffNotice {
       skus,
       serviceDay: fulfillmentDate,
       at: this.clock.now(),
-      asker: { audience: "pro", companyId: null, waiver: "ignore" },
+      asker: { audience: "pro", companyId: null, waiver: "ignore", exceedItemLimits: false },
     });
     switch (verdict.kind) {
       case "open":

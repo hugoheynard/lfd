@@ -85,7 +85,12 @@ export async function waiverPair(
       skus,
       serviceDay: day,
       at: GOLDEN_CLOCK.now(),
-      asker: { audience: "pro", companyId: pro.companyId, waiver: "consider" },
+      asker: {
+        audience: "pro",
+        companyId: pro.companyId,
+        waiver: "consider",
+        exceedItemLimits: false,
+      },
     });
     return verdict.kind === "grace" ? (verdict.waiver?.id ?? null) : null;
   };

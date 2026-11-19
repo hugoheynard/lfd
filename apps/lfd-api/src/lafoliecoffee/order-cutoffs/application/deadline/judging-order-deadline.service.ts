@@ -53,6 +53,7 @@ export class JudgingOrderDeadline extends OrderDeadline {
       serviceDay: question.serviceDay,
       at: question.at,
       waiver,
+      exceedItemLimits: question.asker.exceedItemLimits,
     });
     if (verdict.kind !== "grace" || verdict.waiver === null) {
       return verdict;

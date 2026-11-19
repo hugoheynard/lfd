@@ -31,7 +31,7 @@ function commerceRule(over: Partial<OrderCutoffView> = {}): OrderCutoffView {
 }
 
 function line(sku: string, limit: OrderLimitSpec | null = null): DeadlineLine {
-  return { sku, limit };
+  return { sku, limit: limit === null ? null : { ...limit, staffMayExceed: false } };
 }
 
 function admit(over: {
@@ -46,6 +46,7 @@ function admit(over: {
     serviceDay: FULFILLMENT_DAY,
     at: new Date(over.now ?? CUTOFF_INSTANT),
     waiver: over.waiver ?? null,
+    exceedItemLimits: false,
   });
   return admitWithinDeadline(verdict, FULFILLMENT_DAY).waiverUsed;
 }

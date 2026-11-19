@@ -6,11 +6,12 @@ import {
   type OrderCutoffDecision,
   type OrderCutoffStatus,
   type OrderCutoffView,
-  type OrderLimitSpec,
 } from "@lfd/contracts";
 
 import type {
   DeadlineSource,
+  ExceededItemLimit,
+  ItemOrderLimit,
   LineVerdict,
   OrderDeadlineVerdict,
   WaiverAvailable,
@@ -19,7 +20,7 @@ import type {
 /** Un article du panier et la limite que le référentiel lui donne, s'il en donne une. */
 export interface DeadlineLine {
   readonly sku: string;
-  readonly limit: OrderLimitSpec | null;
+  readonly limit: ItemOrderLimit | null;
 }
 
 /** Ce que le juge reçoit, déjà lu : il ne lit rien lui-même. */
@@ -32,6 +33,12 @@ export interface DeadlineFacts {
   readonly at: Date;
   /** La dérogation ouverte de la société pour cette journée, si la question la considère. */
   readonly waiver: WaiverAvailable | null;
+  /**
+   * Celui qui demande peut passer outre les limites d'article qui le
+   * permettent : l'équipe, avec le droit `lfc_product_limit_override`.
+   * Obligatoire : personne n'en hérite par défaut.
+   */
+  readonly exceedItemLimits: boolean;
 }
 
 /** Une décision et ce qui l'a retenue. */
@@ -73,18 +80,64 @@ const SEVERITY: Readonly<Record<OrderCutoffStatus, number>> = {
 export function judgeOrderDeadline(facts: DeadlineFacts): OrderDeadlineVerdict {
   const general = generalDecision(facts);
   const lines = new Map<string, LineVerdict>();
+  const exceeded: ExceededItemLimit[] = [];
   let strictest: Sourced = facts.lines.length === 0 ? NOTHING_SOURCED : general;
   for (const line of facts.lines) {
     const own = itemDecision(line.limit, facts);
-    strictest = stricterOf(strictest, own);
-    const judged = stricterOf(general, own);
+    const passed = exceededBy(line, own, general, facts);
+    if (passed !== null) {
+      exceeded.push(passed);
+    }
+    // Une limite dépassée ne juge plus la ligne : la règle générale seule.
+    const opposed = passed === null ? own : NOTHING_SOURCED;
+    strictest = stricterOf(strictest, opposed);
+    const judged = stricterOf(general, opposed);
     lines.set(line.sku, {
       status: judged.decision.status,
       source: judged.source,
       limit: judged.decision.limit,
+      itemStatus: own.decision.status,
+      exceeded: passed !== null,
     });
   }
-  return verdictOf(strictest, lines, facts.waiver);
+  return verdictOf(strictest, lines, facts.waiver, exceeded);
+}
+
+/**
+ * **La ligne dépasse-t-elle sa limite d'article ?** Il faut tout à la fois :
+ *
+ * - que celui qui demande le puisse (l'équipe, avec le droit) ;
+ * - que le produit le permette (sa case, décidée au référentiel) ;
+ * - que la règle générale **pose une limite ce jour-là** — le plancher. Sans
+ *   elle, passer outre ne laisserait aucune limite, et un dépassement remplace
+ *   une limite par une autre, jamais par rien (Hugo, 2026-11-19 : « on essaye
+ *   d'avoir un comportement prévisible ») ;
+ * - que la limite d'article ait fermé la ligne, et que la règle générale, elle,
+ *   ne la ferme pas : une ligne fermée de toute façon n'a rien à dépasser.
+ */
+function exceededBy(
+  line: DeadlineLine,
+  own: Sourced,
+  general: Sourced,
+  facts: DeadlineFacts,
+): ExceededItemLimit | null {
+  const limit = own.decision.limit;
+  if (
+    !facts.exceedItemLimits ||
+    line.limit === null ||
+    !line.limit.staffMayExceed ||
+    general.decision.limit === null ||
+    general.decision.status === "closed" ||
+    own.decision.status !== "closed" ||
+    limit === null
+  ) {
+    return null;
+  }
+  return {
+    sku: line.sku,
+    rule: { daysBefore: line.limit.daysBefore, time: line.limit.time, graceMinutes: 0 },
+    limit,
+  };
 }
 
 /**
@@ -128,7 +181,7 @@ function generalDecision(facts: DeadlineFacts): Sourced {
   };
 }
 
-function itemDecision(limit: OrderLimitSpec | null, facts: DeadlineFacts): Sourced {
+function itemDecision(limit: ItemOrderLimit | null, facts: DeadlineFacts): Sourced {
   if (limit === null) {
     return NOTHING_SOURCED;
   }
@@ -163,12 +216,14 @@ function verdictOf(
   retained: Sourced,
   lines: ReadonlyMap<string, LineVerdict>,
   waiver: WaiverAvailable | null,
+  exceeded: readonly ExceededItemLimit[],
 ): OrderDeadlineVerdict {
   const bounds = {
     limit: retained.decision.limit,
     graceEnd: retained.decision.graceEnd,
     source: retained.source,
     lines,
+    exceeded,
   };
   switch (retained.decision.status) {
     case "open":

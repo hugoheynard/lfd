@@ -1,8 +1,8 @@
-import type { OrderLimitSpec } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
 import { staffViewer } from "../../../catalog/domain/catalog-viewer.js";
 import { ProductCatalogReader } from "../../../catalog/domain/ports/product-catalog.reader.js";
+import type { ItemOrderLimit } from "../../domain/deadline/order-deadline-verdict.js";
 import {
   ItemOrderLimitsReader,
   type DeadlineAudience,
@@ -24,7 +24,7 @@ export class CatalogItemOrderLimitsReader extends ItemOrderLimitsReader {
   async limitsOf(
     skus: readonly string[],
     audience: DeadlineAudience,
-  ): Promise<ReadonlyMap<string, OrderLimitSpec | null>> {
+  ): Promise<ReadonlyMap<string, ItemOrderLimit | null>> {
     if (skus.length === 0) {
       return new Map();
     }

@@ -317,7 +317,12 @@ export class OrderDrafting {
       serviceDay: day,
       // La passation juge à l'horloge (plan S2, R6).
       at: this.clock.now(),
-      asker: { audience: "pro", companyId: parties.companyId, waiver: "consider" },
+      asker: {
+        audience: "pro",
+        companyId: parties.companyId,
+        waiver: "consider",
+        exceedItemLimits: false,
+      },
     });
     return admitWithinDeadline(verdict, day);
   }

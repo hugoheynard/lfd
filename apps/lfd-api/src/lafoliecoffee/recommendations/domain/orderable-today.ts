@@ -1,6 +1,6 @@
 import type { OrderCutoffView, OrderLimitSpec } from "@lfd/contracts";
 
-import { judgeOrderDeadline } from "../../order-cutoffs/index.js";
+import { judgeOrderDeadline, type ItemOrderLimit } from "../../order-cutoffs/index.js";
 
 /** Le jour de service visé et le point de retrait, quand le client les a choisis. */
 export interface FulfillmentTarget {
@@ -81,11 +81,17 @@ function isOpen(
   now: Date,
 ): boolean {
   const verdict = judgeOrderDeadline({
-    lines: [{ sku: candidate.sku, limit: candidate.orderTimeLimit }],
+    // Une suggestion ne passe jamais outre : la case du produit n'y compte pas.
+    lines: [{ sku: candidate.sku, limit: itemLimitOf(candidate.orderTimeLimit) }],
     generalRules: fallback,
     serviceDay: target.date,
     at: now,
     waiver: null,
+    exceedItemLimits: false,
   });
   return verdict.kind === "open";
+}
+
+function itemLimitOf(limit: OrderLimitSpec | null): ItemOrderLimit | null {
+  return limit === null ? null : { ...limit, staffMayExceed: false };
 }

@@ -1,10 +1,31 @@
-import type { LateFeeAdjustment, OrderCutoffStatus } from "@lfd/contracts";
+import type { LateFeeAdjustment, OrderCutoffStatus, OrderLimitSpec } from "@lfd/contracts";
 
 /**
  * Ce qui a retenu une décision : la règle générale du commerce, la limite
  * propre d'un article, ou rien — aucune limite n'oppose quoi que ce soit.
  */
 export type DeadlineSource = "general_rule" | "item_limit" | "none";
+
+/**
+ * **La limite propre d'un article**, et si l'équipe peut passer outre — une
+ * décision du catalogue, prise au référentiel sur la limite du produit.
+ */
+export interface ItemOrderLimit extends OrderLimitSpec {
+  readonly staffMayExceed: boolean;
+}
+
+/**
+ * **Une limite d'article que la ligne a dépassée** : l'équipe, avec le droit,
+ * a passé outre une limite que le produit permet de passer. De quoi la
+ * consigner et la dire.
+ */
+export interface ExceededItemLimit {
+  readonly sku: string;
+  /** La limite telle qu'elle juge : délai et heure, rattrapage 0. */
+  readonly rule: OrderLimitSpec;
+  /** L'instant où elle est tombée pour cette journée. */
+  readonly limit: Date;
+}
 
 /** Une dérogation ouverte, telle que la question l'a trouvée. */
 export interface WaiverAvailable {
@@ -20,6 +41,14 @@ export interface LineVerdict {
   readonly source: DeadlineSource;
   /** L'instant limite retenu pour cette ligne, ou `null` : rien à opposer. */
   readonly limit: Date | null;
+  /**
+   * L'état de la **seule** limite de l'article, sans la règle générale ni le
+   * droit de passer outre : `open` sans limite propre. La modification par
+   * l'équipe le lit — la règle générale ne lui est pas opposée.
+   */
+  readonly itemStatus: OrderCutoffStatus;
+  /** La ligne a dépassé sa limite d'article (cf. {@link ExceededItemLimit}). */
+  readonly exceeded: boolean;
 }
 
 /**
@@ -39,6 +68,11 @@ export interface DeadlineBounds {
   readonly source: DeadlineSource;
   /** La décision de chaque article, par SKU. */
   readonly lines: ReadonlyMap<string, LineVerdict>;
+  /**
+   * Les limites d'article dépassées, dans l'ordre du panier. Vide sans le
+   * droit de passer outre ; un panier peut en porter et rester ouvert.
+   */
+  readonly exceeded: readonly ExceededItemLimit[];
 }
 
 /**

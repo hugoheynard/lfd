@@ -88,7 +88,12 @@ import { ShelfRevising } from "./shelf-revising.service.js";
  * articles en clientèle `pro`, comme la passation, et aucune dérogation — une
  * modification ne crée ni ne retire de surtaxe (R4).
  */
-const REVISION_ASKER: OrderDeadlineAsker = { audience: "pro", companyId: null, waiver: "ignore" };
+const REVISION_ASKER: OrderDeadlineAsker = {
+  audience: "pro",
+  companyId: null,
+  waiver: "ignore",
+  exceedItemLimits: false,
+};
 
 @Injectable()
 export class OrderRevising {

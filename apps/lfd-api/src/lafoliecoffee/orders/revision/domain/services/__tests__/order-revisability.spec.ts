@@ -32,6 +32,7 @@ function cutoff(kind: OrderCutoffStatus): OrderDeadlineVerdict {
     graceEnd: GRACE_END,
     source: "general_rule" as const,
     lines: new Map(),
+    exceeded: [],
   };
   return kind === "grace" ? { kind, waiver: null, lateFee: null, ...bounds } : { kind, ...bounds };
 }

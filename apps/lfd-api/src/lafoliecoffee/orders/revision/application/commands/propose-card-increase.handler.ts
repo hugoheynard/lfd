@@ -238,7 +238,7 @@ export class ProposeCardIncreaseHandler implements ICommandHandler<
           skus,
           serviceDay: day,
           at,
-          asker: { audience: "pro", companyId: null, waiver: "ignore" },
+          asker: { audience: "pro", companyId: null, waiver: "ignore", exceedItemLimits: false },
         }),
       ),
     );

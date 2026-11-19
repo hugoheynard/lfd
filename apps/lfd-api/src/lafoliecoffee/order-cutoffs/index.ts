@@ -18,6 +18,8 @@ export type {
 export type {
   DeadlineBounds,
   DeadlineSource,
+  ExceededItemLimit,
+  ItemOrderLimit,
   LineVerdict,
   OrderDeadlineVerdict,
   WaiverAvailable,

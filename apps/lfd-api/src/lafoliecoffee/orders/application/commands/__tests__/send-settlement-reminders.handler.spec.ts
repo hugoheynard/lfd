@@ -1,4 +1,6 @@
-import { localToInstant, type OrderCutoffView, type OrderLimitSpec } from "@lfd/contracts";
+import { localToInstant, type OrderCutoffView } from "@lfd/contracts";
+
+import type { ItemOrderLimit } from "../../../../order-cutoffs/index.js";
 
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import {
@@ -69,7 +71,7 @@ class Cutoffs extends OrderCutoffsInForce {
 }
 
 class NoSource extends ItemOrderLimitsReader {
-  limitsOf(): Promise<ReadonlyMap<string, OrderLimitSpec | null>> {
+  limitsOf(): Promise<ReadonlyMap<string, ItemOrderLimit | null>> {
     return Promise.reject(new Error("la relance ne lit pas les articles"));
   }
 }
