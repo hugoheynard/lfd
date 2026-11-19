@@ -1,5 +1,5 @@
 {
-  "$comment": "Les fichiers de src/pim au-delà de 300 lignes, relevés le 2026-11-18 à la naissance de dev-toolbox/gates/pim-file-size.mjs (documentation/pim/plan-referentiel-a-neuf.md, L0). admitted : leur taille est leur nature, datés avec leur raison. files : la dette, à la taille relevée ; elle ne peut que décroître — vide depuis le 2026-11-19 (L9.f).",
+  "$comment": "Les fichiers de src/pim au-delà de 300 lignes, relevés le 2026-11-18 à la naissance de dev-toolbox/gates/pim-file-size.mjs (documentation/pim/architecture-du-referentiel.md, L0). admitted : leur taille est leur nature, datés avec leur raison. files : la dette, à la taille relevée ; elle ne peut que décroître — vide depuis le 2026-11-19 (L9.f).",
   "since": "2026-11-18",
   "admitted": {
     "journal/pim-journal.ts": {

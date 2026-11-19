@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Gate : **aucun fichier du référentiel au-delà de 300 lignes**
- * (`documentation/pim/plan-referentiel-a-neuf.md`, L0 ; CLAUDE.md § 6,
+ * (`documentation/pim/architecture-du-referentiel.md`, L0 ; CLAUDE.md § 6,
  * « fichiers ≲300 lignes »).
  *
  * Elle tient la taille pendant que les autres lots avancent : un fichier qui

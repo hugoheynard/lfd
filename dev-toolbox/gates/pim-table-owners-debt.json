@@ -1,5 +1,5 @@
 {
-  "$comment": "Les lectures Prisma d'une table écrite par un autre sous-contexte du référentiel (documentation/pim/plan-referentiel-a-neuf.md, L9). Dette décroissante : une entrée neuve est une faute, pas une ligne à coller. declaredOwners range un modèle écrit seulement par imbrication.",
+  "$comment": "Les lectures Prisma d'une table écrite par un autre sous-contexte du référentiel (documentation/pim/architecture-du-referentiel.md, L9). Dette décroissante : une entrée neuve est une faute, pas une ligne à coller. declaredOwners range un modèle écrit seulement par imbrication.",
   "since": "2026-11-19",
   "declaredOwners": {},
   "reads": {}

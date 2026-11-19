@@ -1,5 +1,5 @@
 -- RETOUR ARRIÈRE de 20261118170000_l_archive_des_referentiels
--- (documentation/pim/plan-referentiel-a-neuf.md, L4).
+-- (documentation/pim/architecture-du-referentiel.md, L4).
 --
 -- 🔴 NON APPLIQUÉ, et Prisma ne le lit pas. La migration reste inscrite
 -- « appliquée ».

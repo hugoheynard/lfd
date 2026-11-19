@@ -1,5 +1,5 @@
 {
-  "$comment": "La dette du sens des dépendances dans src/pim (documentation/pim/plan-referentiel-a-neuf.md, L0, L1, L9). Entre blocs, elle est vide depuis L1 ; à l'intérieur du catalogue, elle est comptée depuis L9.a et ne peut que décroître. Une entrée neuve est une faute, pas une ligne à coller.",
+  "$comment": "La dette du sens des dépendances dans src/pim (documentation/pim/architecture-du-referentiel.md, L0, L1, L9). Entre blocs, elle est vide depuis L1 ; à l'intérieur du catalogue, elle est comptée depuis L9.a et ne peut que décroître. Une entrée neuve est une faute, pas une ligne à coller.",
   "since": "2026-11-19",
   "imports": {}
 }

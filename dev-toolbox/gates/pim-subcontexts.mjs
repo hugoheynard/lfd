@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Gate : **le référentiel se lit dans un seul sens** — des référentiels de
- * base vers ce qui les cite (`documentation/pim/plan-referentiel-a-neuf.md`,
+ * base vers ce qui les cite (`documentation/pim/architecture-du-referentiel.md`,
  * L0, L1 et L1 bis).
  *
  * `lint:context-boundaries` ne raisonne qu'au premier niveau de `src/` : à

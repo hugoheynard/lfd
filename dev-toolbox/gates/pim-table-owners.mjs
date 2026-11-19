@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Gate : **dans le référentiel, un sous-contexte ne lit que les tables qu'il
- * écrit** (`documentation/pim/plan-referentiel-a-neuf.md`, L9).
+ * écrit** (`documentation/pim/architecture-du-referentiel.md`, L9).
  *
  * `lint:pim-subcontexts` lit les imports, et `lint:prisma-model-ownership`
  * traite `src/pim` comme un seul bloc : ni l'une ni l'autre ne voit un

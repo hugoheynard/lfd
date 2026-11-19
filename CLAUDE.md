@@ -200,7 +200,7 @@
 >   de chaque modèle du schéma `production` et les abonnés durables entre
 >   métiers, et compte ce qui viole aujourd'hui en dette décroissante. Et **75**
 >   et **76** depuis le 2026-11-18 avec `lint:pim-subcontexts` et
->   `lint:pim-file-size` (plan `documentation/pim/plan-referentiel-a-neuf.md`,
+>   `lint:pim-file-size` (plan `documentation/pim/architecture-du-referentiel.md`,
 >   L0) : le référentiel se lit dans un seul sens — des référentiels de base
 >   vers le catalogue, du catalogue vers les canaux, le noyau lu par tous —,
 >   la carte connaît l'arborescence d'avant et d'après le déménagement, et
