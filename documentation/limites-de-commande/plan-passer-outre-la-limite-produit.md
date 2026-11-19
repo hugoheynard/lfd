@@ -1,19 +1,15 @@
 # Plan — passer outre la limite d'un produit
 
-> 📐 **Plan v2, rien n'est bâti** (2026-11-19). Demandé par Hugo le
+> 📐 **Plan v4, rien n'est bâti** (2026-11-19 ; v3 contredite par `vitruve`
+> le même jour, trois bloquants et sept sérieux, tous intégrés, § 8). Demandé par Hugo le
 > 2026-11-19 : « décider si ces limites de commande sont overridable par notre
 > commerciale ou non, par exemple un produit qui demanderait 48 h, si notre
 > commerciale veut l'ajouter à 24 h elle doit pouvoir si on lui donne le
-> droit ». Frontière de sécurité (un droit neuf) : la v1 est passée par
-> `vitruve` le 2026-11-19 (quatre bloquants, six sérieux), et elle est
-> réécrite ici. Les objections et ce qu'elles sont devenues sont au § 7.
-> **Deux décisions attendent Hugo** (§ 6).
->
-> ⏭️ **À réécrire avant d'être bâti.** Le verdict de l'heure limite est bâti
-> ([`le-verdict-de-l-heure-limite.md`](le-verdict-de-l-heure-limite.md),
-> 2026-11-19) : le dépassement s'y écrit une fois — une donnée de `asker` et une
-> propriété de la limite d'un article —, au lieu d'un drapeau passé à cinq
-> lecteurs. Les §§ 2 et 3.4 ci-dessous décrivent l'ancienne garde.
+> droit ». La v2 décrivait l'ancienne garde, éparpillée en cinq lecteurs ; le
+> jugement a depuis été rassemblé
+> ([`le-verdict-de-l-heure-limite.md`](le-verdict-de-l-heure-limite.md)), et
+> cette version s'écrit dessus. Frontière de sécurité (un droit neuf) : `vitruve`
+> avant Hugo. **Deux décisions attendent Hugo** (§ 7).
 
 ## 1. En deux mots
 
@@ -24,59 +20,58 @@ Deux clés, et il faut **les deux** :
 2. **La personne en a le droit.** Un droit neuf, réglé à l'écran des rôles.
 
 Quand une personne qui a le droit saisit une commande pour un client, une ligne
-dont le produit le permet **oublie sa limite d'article**. Elle n'est plus jugée
-que par la **règle générale du commerce**. La personne donne un motif, et
+dont le produit le permet **oublie sa limite d'article** : le verdict la juge
+par la **règle générale** du commerce seule. La personne donne un motif, et
 chaque dépassement est consigné.
 
 ```mermaid
 flowchart TD
-  L["Ligne : pain au levain<br/>limite 2 jours avant, 12 h"] --> Q{"Saisie par l'équipe ?"}
-  Q -->|non : boutique| A["Limite d'article + règle générale<br/>(inchangé)"]
-  Q -->|oui| P{"Produit : l'équipe peut passer outre ?"}
-  P -->|non| A
-  P -->|oui| D{"La personne a le droit ?"}
+  L["Ligne : pain au levain<br/>limite 2 jours avant, 12 h"] --> P{"Le produit le permet ?"}
+  P -->|non| A["Limite d'article + règle générale<br/>(aujourd'hui)"]
+  P -->|oui| D{"Celui qui demande peut passer outre ?<br/>(l'équipe, avec le droit)"}
   D -->|non| A
   D -->|oui| R{"Une règle générale est en vigueur ?"}
   R -->|non| A
   R -->|oui| G["Règle générale seule<br/>(son rattrapage, sa dérogation, sa surtaxe)"]
-  G -->|la limite d'article aurait fermé| T["Motif obligatoire<br/>dépassement consigné"]
+  G -->|la limite d'article aurait fermé| T["Le verdict nomme le dépassement<br/>motif obligatoire, consigné"]
 ```
 
-**Le plancher, c'est la règle générale.** La garde prend déjà « la plus
-stricte » entre la limite d'article et la règle générale (`README.md` § 2).
-Retirer la limite d'article laisse donc la règle générale juger la ligne, avec
-son rattrapage, sa dérogation et sa surtaxe telles qu'elles sont. Une
-commerciale peut mettre à J+1 un produit à 48 h. Elle ne peut pas le mettre
-après l'heure limite générale sans dérogation, ni après le rattrapage.
+**Le plancher, c'est la règle générale.** Le juge prend déjà « la plus stricte »
+des deux limites ; retirer la limite d'article laisse la règle générale juger
+la ligne, avec son rattrapage, sa dérogation et sa surtaxe telles qu'elles
+sont. Une commerciale peut mettre à J+1 un produit à 48 h ; elle ne peut pas le
+mettre après l'heure limite générale sans dérogation, ni après le rattrapage.
 
-🔴 **Sans règle générale, aucun dépassement** (choix par défaut, § 6 Q2). Quand
-aucune règle générale n'est en vigueur, le lecteur n'en rend aucune
-(`order-cutoff-guard.ts:44-46`, `pim-general-order-cutoff.reader.ts`). Retirer
-la limite d'article ne laisserait alors plus rien. Dans ce cas, le dépassement
-n'a pas lieu et la ligne reste jugée par sa limite.
+**Sans règle générale en vigueur, aucun dépassement** (défaut, § 7 Q2) : le
+juge n'en rend aucune quand personne ne l'a posée, et retirer la limite
+d'article ne laisserait plus rien.
 
-Hors du plan :
+**Pourquoi c'est court maintenant.** Tout le jugement passe par une question,
+`OrderDeadline.verdict`. Le dépassement s'y écrit **une fois** : une capacité
+de celui qui demande (`asker`), une propriété de la limite d'un article, et un
+fait du verdict (« telle ligne a dépassé telle limite »). Chaque lecteur qui
+pose la question hérite de la même réponse.
 
-- **la boutique** (client, invité) : la limite d'article lui reste opposée ;
-- **la fenêtre d'une opération datée** (`ensureWithinOperation`, premier geste
-  d'`arrange`) : elle n'a aucune dérogation et n'en gagne pas ;
-- **le jour même** et **l'arrêt du plan** : leurs règles ne changent pas.
+Hors du plan : la boutique (client, invité), qui ne peut jamais passer outre ;
+la fenêtre d'une opération datée, le jour même et l'arrêt du plan, dont les
+règles ne changent pas.
 
-## 2. Ce qui existe (ouvert le 2026-11-19, revérifié après `vitruve`)
+## 2. Ce qui existe (ouvert le 2026-11-19, après le bâti du verdict)
 
-| Constat                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | Où                                                                                                                                                                                                                                           |
-| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Une limite d'article est une règle entière (délai + heure), par produit, sans rattrapage. Elle vit au référentiel.                                                                                                                                                                                                                                                                                                                                                                                    | `pim/order-time-limitation/domain/entities/order-time-limit.ts` ; `prisma/schema/pim/sales-contexts.prisma` `OrderTimeLimit`                                                                                                                 |
-| Elle descend au commerce par le fait `catalog-rules-changed` → `public.catalog_rules` (jsonb) → `order-limit-descent` → colonnes de `public.catalog_items`. `OrderLimitsRefresher` (`lafoliecoffee/catalog/application/order-limits-refresher.service.ts`) les redescend après chacun des trois faits du catalogue ; avant le premier fait de règles, les limites posées par le push d'un instantané restent (chemin du push pas encore relu). `sameLimit` ne compare que délai, heure et rattrapage. | `pim/channels/b2b-platform/products/order-time-limits.ts` ; `packages/catalog-sync/src/snapshot.ts` (`SyncOrderTimeLimit`) ; `lafoliecoffee/catalog/domain/order-limit-descent.ts:61-70` ; `catalog-item-columns.ts`, `catalog-item-rows.ts` |
-| Les colonnes de `catalog_items` font monter `context_versions` par un déclencheur, et une porte exige que chaque colonne y soit lue ou ignorée avec sa raison.                                                                                                                                                                                                                                                                                                                                        | `migrations/20261106120000_les_versions_par_contexte` ; `lint:context-version-columns`                                                                                                                                                       |
-| La garde : par ligne, la plus fermée entre limite d'article et règle générale. Sur le panier, la plus fermée. La dérogation joue **dans le rattrapage seulement**. Elle rend une décision agrégée.                                                                                                                                                                                                                                                                                                    | `apps/lfd-api/src/lafoliecoffee/order-cutoffs/domain/deadline/judge-order-deadline.ts`                                                                                                                                                       |
-| `decideStrictestOrderCutoff` a d'autres lecteurs que la passation : les suggestions (`recommendations/domain/orderable-today.ts`), l'avis d'heure limite (`order-cutoff-notice.service.ts`), `OrderCutoffGate.decide` et `foresee` (la surtaxe prévue).                                                                                                                                                                                                                                               | id.                                                                                                                                                                                                                                          |
-| La passation de l'équipe **et son estimation** composent par `prepareStaffOrder` → `OrderDrafting.draft` → `ensureNotTooLate` (`order-drafting.service.ts:318`). La passation exige le total de l'estimation (`ensureTotalSeen`).                                                                                                                                                                                                                                                                     | `commands/place-order-for-customer.handler.ts` ; `queries/estimate-order-for-customer.handler.ts`                                                                                                                                            |
-| 🔴 **La révision par l'équipe n'oppose aucune heure limite**, ni d'article ni générale : `ensureBeforeCutoff` sort tout de suite pour l'acteur `staff`, et la révisabilité aussi.                                                                                                                                                                                                                                                                                                                     | `orders/revision/application/services/order-revising.service.ts:159, 418-420`                                                                                                                                                                |
-| Pour le client, la révisabilité d'une commande se lit par `cutoffs.decide` sur toutes ses lignes.                                                                                                                                                                                                                                                                                                                                                                                                     | id., l. 163-168                                                                                                                                                                                                                              |
-| Un droit partiel se lit au contrôleur par `@StaffPermissions()` (résolu en base par `StaffAccessGuard`). Le contrôleur en tire un booléen pour la commande. Aucun handler du commerce ne lit un droit lui-même.                                                                                                                                                                                                                                                                                       | `platform/auth/staff.decorator.ts:32-53` (DG-D8)                                                                                                                                                                                             |
-| Un droit = une valeur de l'enum `StaffResource` (migration additive, irréversible en pratique) et sa phrase dans `STAFF_RESOURCE_SCOPES`. Rien n'est accordé par migration.                                                                                                                                                                                                                                                                                                                           | `prisma/schema/public/staff.prisma` ; `packages/contracts/src/staff-resource-scopes.ts` ; `lint:no-role-grants-in-migrations`                                                                                                                |
-| L'empreinte d'intention d'une saisie de l'équipe hache le panier.                                                                                                                                                                                                                                                                                                                                                                                                                                     | `staff-placement-intent.ts`                                                                                                                                                                                                                  |
+| Constat                                                                                                                                                                                                                                                                                                                                                               | Où                                                                                                                                                                                               |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Une limite d'article est une règle entière (délai + heure), par produit, sans rattrapage. Elle vit au référentiel.                                                                                                                                                                                                                                                    | `pim/order-time-limitation/domain/entities/order-time-limit.ts` ; `prisma/schema/pim/sales-contexts.prisma` `OrderTimeLimit`                                                                     |
+| Elle descend au commerce par le fait des règles (`catalog-rules-changed` → `public.catalog_rules` → `order-limit-descent` → colonnes de `public.catalog_items`, rafraîchies par `OrderLimitsRefresher`) et par les faits d'une fiche (`prisma-catalog-product-facts.projection.ts`, `catalog-item-upsert.ts`). `sameLimit` ne compare que délai, heure et rattrapage. | `pim/channels/b2b-platform/products/order-time-limits.ts` ; `packages/catalog-sync/src/snapshot.ts` ; `lafoliecoffee/catalog/domain/order-limit-descent.ts`                                      |
+| Les colonnes de `catalog_items` sont lues par l'instantané du catalogue et par le déclencheur des versions, qu'une porte tient.                                                                                                                                                                                                                                       | `catalog-item-columns.ts`, `catalogue-snapshot-columns.ts` ; `lint:context-version-columns`                                                                                                      |
+| Le commerce lit la limite sur l'article : `OrderTimeLimitFacts` (délai, heure, rattrapage).                                                                                                                                                                                                                                                                           | `lafoliecoffee/catalog/domain/entities/catalog-item.ts:48`                                                                                                                                       |
+| **Le juge** : par ligne, la plus fermée entre la règle générale et la limite d'article (rattrapage forcé à 0) ; sur le panier, la plus fermée. Il rend un verdict par ligne (`lines`) et ce qui a retenu la décision (`source`).                                                                                                                                      | `lafoliecoffee/order-cutoffs/domain/deadline/judge-order-deadline.ts`                                                                                                                            |
+| **La question** porte `asker` : clientèle, société, dérogation considérée ou non. Les limites d'article sont lues par `ItemOrderLimitsReader`, sur le catalogue.                                                                                                                                                                                                      | `order-cutoffs/application/deadline/order-deadline.ts` ; `order-cutoffs/domain/deadline/ports/deadline-sources.ts` ; `order-cutoffs/infrastructure/deadline/catalog-item-order-limits.reader.ts` |
+| La passation (client, invité, boutique, équipe, estimation) demande le verdict dans `OrderDrafting.ensureNotTooLate` et l'applique par `admitWithinDeadline`.                                                                                                                                                                                                         | `orders/application/services/order-drafting.service.ts` ; `orders/domain/services/admit-within-deadline.ts`                                                                                      |
+| `prepareStaffOrder` est partagé par l'estimation et la passation de l'équipe ; il reçoit `AdminOrderEstimatePayload`. La passation exige le total de l'estimation (`ensureTotalSeen`).                                                                                                                                                                                | `orders/application/commands/place-order-for-customer.handler.ts` ; `queries/estimate-order-for-customer.handler.ts`                                                                             |
+| 🔴 **La modification par l'équipe n'oppose aucune heure limite** : `ensureBeforeCutoff` et la révisabilité sortent tout de suite pour l'acteur `staff`.                                                                                                                                                                                                               | `orders/revision/application/services/order-revising.service.ts`                                                                                                                                 |
+| Un droit partiel se lit au contrôleur par `@StaffPermissions()` (résolu en base par `StaffAccessGuard`) ; le contrôleur en tire un booléen pour la commande.                                                                                                                                                                                                          | `platform/auth/staff.decorator.ts` (DG-D8)                                                                                                                                                       |
+| Un droit = une valeur de `StaffResource` (migration additive, irréversible en pratique) et sa phrase dans `STAFF_RESOURCE_SCOPES` ; rien n'est accordé par migration.                                                                                                                                                                                                 | `prisma/schema/public/staff.prisma` ; `packages/contracts/src/staff-resource-scopes.ts` ; `lint:no-role-grants-in-migrations`                                                                    |
+| L'empreinte d'intention d'une saisie de l'équipe hache le panier.                                                                                                                                                                                                                                                                                                     | `orders/application/commands/staff-placement-intent.ts`                                                                                                                                          |
 
 ## 3. Le modèle
 
@@ -84,28 +79,44 @@ Hors du plan :
 
 - Colonne `pim.order_time_limits.staff_may_exceed boolean NOT NULL DEFAULT
 false`. Toutes les limites existantes restent infranchissables.
-- `OrderTimeLimit` porte `staffMayExceed`. `set` et `reset` le reçoivent dans
-  `OrderTimeLimitPayload`, avec un champ **obligatoire**. `reset` compte un
+- `OrderTimeLimit` porte `staffMayExceed`, reçu par `set` et `reset` dans
+  `OrderTimeLimitPayload` (champ **obligatoire**) ; `reset` compte un
   changement de ce seul champ comme un changement (journal, fait).
-  `OrderTimeLimitView` le rend.
-- Le journal du référentiel nomme le geste.
+  `OrderTimeLimitView` le rend. Le journal du référentiel nomme le geste.
 - Écran : la case sur la fiche produit et dans Référentiel › Limites de
   commande, sous `pim_catalog:write`. **Décider qu'un produit le permet est une
-  décision de catalogue**, et c'est elle qui répond de la faisabilité au
-  fournil (§ 3.8).
+  décision de catalogue**, et elle répond de la faisabilité au fournil (§ 3.7).
 
 ### 3.2 Jusqu'au commerce
 
-- `SyncOrderTimeLimitRule.staffMayExceed` (le fil) et `SyncOrderTimeLimit`
-  (la limite résolue, `resolveOrderTimeLimit`) le portent.
-- `sameLimit` (`order-limit-descent.ts`) **le compare**. Sans ça, cocher la
-  case seule ne changerait rien sur l'article, et rien ne le dirait.
-- Le push d'un instantané le porte aussi. Son chemin n'est pas encore relu : le fichier que `vitruve` nommait pour lui n'existe pas (vérifié le 2026-11-19). À ouvrir au début d'O1.
+- `SyncOrderTimeLimitRule.staffMayExceed` (le fil), `SyncOrderTimeLimit` (la
+  limite résolue, `resolveOrderTimeLimit`) le portent ; `toSyncRule` l'envoie.
+- `sameLimit` **le compare** : sans ça, cocher la case seule ne changerait rien
+  sur l'article, et rien ne le dirait.
+- Les faits d'une fiche (`prisma-catalog-product-facts.projection.ts`,
+  `catalog-item-upsert.ts`, `catalog-fact-mapping.ts`) l'écrivent comme les
+  règles.
+- 🔴 **`orderLimitGroups`** (`catalog/infrastructure/prisma-catalog-order-limits.ts`)
+  regroupe les articles par clé `délai|heure|rattrapage` avant un `updateMany`
+  par groupe : la case **entre dans la clé**, sans quoi deux produits de même
+  délai mais de cases différentes recevraient la même valeur, en silence. Le
+  même fichier relit les colonnes pour `sameLimit` : il sélectionne la
+  nouvelle.
+- Les lecteurs : `prisma-catalog.reader.ts`, `catalog-backed-product-catalog.ts`,
+  et le type de la limite sur le port `ProductCatalogReader` (aujourd'hui
+  `OrderLimitSpec`, un type de contrat partagé, que le commerce étend par son
+  propre type plutôt que de changer le contrat).
+- La case ne se lit qu'au rang du **produit** : le schéma du fil admet encore
+  d'autres rangs, que la résolution ignore déjà.
+- **Le contrat du référentiel et l'écran** : `OrderTimeLimitPayload` rend la
+  case obligatoire, et le back-office l'envoie. Les deux partent **dans le
+  même déploiement** (O1 et la case de O6 ensemble) : un back-office en ligne
+  qui ne l'envoie pas verrait chaque pose de limite refusée.
 - Commerce : colonne `public.catalog_items.order_limit_staff_may_exceed
-boolean NOT NULL DEFAULT false`, ses lignes (`catalog-item-columns.ts`,
-  `catalog-item-rows.ts`) et `OrderTimeLimitFacts.staffMayExceed`. Le
-  déclencheur des versions la **lit** (elle change ce que la saisie peut
-  faire). La migration redéfinit donc le déclencheur, et
+boolean NOT NULL DEFAULT false`, ses colonnes et lignes
+  (`catalog-item-columns.ts`, `catalog-item-rows.ts`,
+  `catalogue-snapshot-columns.ts`), et `OrderTimeLimitFacts.staffMayExceed`.
+  Le déclencheur des versions la **lit** ; la migration le redéfinit, et
   `lint:context-version-columns` le vérifie.
 - Une règle rangée avant (jsonb de `catalog_rules`, sans le champ) se lit
   `false`, jamais `true`.
@@ -113,159 +124,228 @@ boolean NOT NULL DEFAULT false`, ses lignes (`catalog-item-columns.ts`,
 ### 3.3 Le droit : `lfc_product_limit_override`
 
 - Valeur neuve de `StaffResource`, par migration additive. **Le nom est
-  définitif au merge** : une valeur d'enum ne se retire pas. Elle n'est
-  accordée à personne par la migration. Hugo la donne à l'écran des rôles.
-- Phrases :
+  définitif au merge.** Accordée à personne par la migration : Hugo la donne à
+  l'écran des rôles.
+- La valeur entre aussi dans `staffResourceSchema` (`@lfd/contracts`), que
+  `staff.prisma` cite.
+- Phrases (`STAFF_RESOURCE_SCOPES`) :
   - `read` : « Voir les dépassements de limite de produit consignés sur une
     commande. »
-  - `write` : « En saisissant ou en modifiant une commande pour un client,
-    passer outre la limite de commande d'un produit qui le permet. L'heure
-    limite générale reste opposée. »
+  - `write` : « En saisissant une commande pour un client, passer outre la
+    limite de commande d'un produit qui le permet. L'heure limite générale
+    reste opposée. »
 - Distinct de `b2b_order_waivers` : une dérogation rouvre **une journée** pour
   **une société** pendant le rattrapage ; ce droit-ci efface **la limite d'un
-  article**.
-- Lu au **contrôleur** par `@StaffPermissions()`, le patron DG-D8. Le
-  contrôleur passe un booléen `productLimitOverride` à la commande ou à la
-  query. Le serveur le résout en base, et la requête de l'écran ne peut pas
-  le forger.
+  article** pour la commande en cours.
+- Lu au contrôleur par `@StaffPermissions()` (DG-D8), passé en booléen à la
+  commande ou à la query. Le serveur le résout en base ; la requête de l'écran
+  ne peut pas le forger.
 
-### 3.4 La garde : une décision par ligne
+### 3.4 Dans le verdict
 
-`ensureWithinOrderCutoff` et `decideStrictestOrderCutoff` reçoivent une entrée
-**obligatoire**, pour qu'un appelant oublié ne compile pas :
+**La limite d'un article porte la case.** `ItemOrderLimitsReader` rend, par
+SKU, la limite et `staffMayExceed` (type `ItemOrderLimit`, qui remplace
+`OrderLimitSpec` dans le port et dans `DeadlineLine`).
+
+**Le juge reçoit la capacité par ses faits.** `DeadlineFacts` gagne
+`exceedItemLimits: boolean`, **obligatoire** : c'est le juge qui décide, et les
+suggestions l'appellent en direct (`recommendations/domain/orderable-today.ts`,
+qui passe `false` et prend `ItemOrderLimit`). `OrderDeadlineAsker` gagne le
+même champ, obligatoire, que le service transmet. Les constructeurs, relevés
+le 2026-11-19 :
+
+| Où                                               | Qui                                                            | `exceedItemLimits` |
+| ------------------------------------------------ | -------------------------------------------------------------- | ------------------ |
+| `order-drafting.service.ts` (`ensureNotTooLate`) | client, invité, boutique                                       | `false`            |
+| id.                                              | équipe, estimation et passation                                | **son droit**      |
+| `order-cutoff-notice.service.ts`                 | avis du devis client                                           | `false`            |
+| id.                                              | avis du comptoir, de l'estimation, du devis d'une modification | **son droit**      |
+| `foreseen-late-fee.service.ts`                   | surtaxe prévue du devis de la boutique                         | `false`            |
+| `order-revising.service.ts` (`REVISION_ASKER`)   | modification                                                   | § 3.6              |
+| `propose-card-increase.handler.ts`               | borne de paiement d'une hausse                                 | `false` (§ 3.6)    |
+| `orderable-today.ts` (faits du juge)             | suggestions                                                    | `false`            |
+
+La relance (`generalRuleStatuses`) ne juge pas de panier.
+
+**Le plancher, nommé.** La ligne n'oublie sa limite d'article que si la règle
+générale **pose une limite ce jour-là** (`decision.limit !== null`), pas
+seulement si une règle est enregistrée : une heure qui n'existe pas ce jour-là
+ouvre la journée sans limite, et un dépassement y ne laisserait rien (Q2).
+
+**Le dépassement.** Si `exceedItemLimits`, `limit.staffMayExceed` et le
+plancher : la ligne est jugée par la règle générale seule. Elle est un
+**dépassement** quand sa limite d'article, seule, aurait été `closed` **et**
+que la règle générale, seule, ne l'est pas — une ligne fermée de toute façon
+n'est pas proposée au dépassement :
 
 ```ts
-/** L'appelant peut passer outre les limites d'article qui le permettent. */
-readonly productLimitOverride: boolean;
+interface ExceededItemLimit {
+  readonly sku: string;
+  /** La limite telle qu'elle juge : délai et heure, rattrapage 0. */
+  readonly rule: OrderLimitSpec;
+  /** L'instant où elle est tombée pour cette journée. */
+  readonly limit: Date;
+}
 ```
 
-Pour chaque ligne : si `productLimitOverride`, `limit.staffMayExceed` **et**
-qu'une règle générale est en vigueur, la ligne est jugée sans sa limite
-d'article. La garde calcule donc d'abord une **décision par ligne**, puis
-l'agrège comme aujourd'hui. Elle rend aussi **les SKU dépassés** : ceux dont
-la limite d'article seule aurait été `closed`. Une ligne encore dans les temps
-n'est pas un dépassement.
+Le verdict porte `exceeded: readonly ExceededItemLimit[]` dans ses bornes : un
+panier peut dépasser une limite d'article et rester ouvert. `LineVerdict`
+gagne `exceeded: boolean`.
 
-Pure, sans port. Ses tests se posent en premier.
+**Ce que la limite d'article dit seule.** Le juge rend aussi, par ligne,
+`itemStatus` : l'état de la **seule** limite d'article, indépendamment de la
+règle générale et du droit. Aujourd'hui la décision d'une ligne fermée par les
+deux garde `source: general_rule` (à égalité, la première retenue), et masque
+la limite d'article ; la modification par l'équipe (§ 3.6) a besoin de la lire
+sans elle.
 
-| Lecteur                                                                               | `productLimitOverride`                                               |
-| ------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
-| boutique : passation, devis, avis d'heure limite                                      | `false`                                                              |
-| suggestions (`orderable-today`)                                                       | `false`                                                              |
-| équipe sans le droit                                                                  | `false`                                                              |
-| **équipe avec le droit** : estimation, passation, devis du comptoir, révision (§ 3.6) | `true`                                                               |
-| surtaxe prévue (`foresee`)                                                            | celui de l'appelant, pour que l'annoncé et le facturé soient le même |
-
-Le drapeau descend par `prepareStaffOrder` → `draft` → `ensureNotTooLate`.
-Cette méthode, commune aux trois portes, le reçoit en paramètre explicite.
+Quand `exceedItemLimits` est faux, `kind`, `limit`, `graceEnd`, `source` et
+`lines[].status` ne changent pas : `admit-within-deadline.spec.ts` garde ses
+cas, et le juge ses tests.
 
 ### 3.5 La passation de l'équipe : motif et trace
 
-- `AdminOrderEstimatePayload` (que `prepareStaffOrder` reçoit, donc
-  l'estimation **et** la passation) gagne `productLimitOverrideReason?:
-string` (1 à 280 caractères).
-- Si la garde rend au moins un dépassement et que le motif manque, la
-  **passation** refuse avec `orders.cutoff.product_limit_reason_required`, en
-  nommant les produits (« Le pain au levain se commande 2 jours avant :
-  indiquez pourquoi vous passez outre. »). Le refus tombe avant l'écriture, et
-  la clé d'intention est rendue. L'**estimation**, elle, ne refuse pas pour un
-  motif manquant : elle chiffre et rend la liste des dépassements, pour que
-  l'écran demande le motif.
-- Un motif donné sans dépassement est ignoré.
-- L'empreinte d'intention ne hache pas le motif : un renvoi du même panier
-  avec un autre motif rend la commande déjà passée. C'est voulu.
-- Trace : table `public.order_product_limit_overrides` — `id`, `order_id`,
-  `sku`, `staff_user_id`, `reason`, `fulfillment_date`, la limite dépassée
-  (`days_before`, `time`), `origin` (`placement` | `revision`), `created_at`.
-  Elle est écrite **dans la transaction** de la commande, avec une ligne par
-  SKU dépassé, et jamais modifiée. Propriétaire : `lafoliecoffee/orders`.
+- **Le chemin du drapeau.** `OrderParties` gagne `exceedItemLimits` (faux
+  pour le client, l'invité, la boutique ; le droit pour l'équipe), lu par
+  `ensureNotTooLate`. `DraftedOrder` rend `exceeded` à côté de `waiverUsed`,
+  jusqu'à `persist`. Le contrôleur de la saisie lit le droit
+  (`@StaffPermissions()`) ; celui de l'estimation aussi, pour
+  `prepareStaffOrder` **et** pour son avis (`OrderCutoffNotice.forDay`).
+  `QuoteOrderQuery`, partagé avec le devis client, garde `false` sur ce chemin.
+- `admitWithinDeadline` rend aussi `exceeded`.
+- Le motif `itemLimitOverrideReason?: string` (1 à 280 caractères) entre dans
+  `adminOrderEntryShape`, que partagent la passation et l'estimation.
+- **Passation** : `exceeded` non vide et motif absent → refus
+  `orders.cutoff.item_limit_reason_required`, qui nomme les produits (« Le
+  pain au levain se commande 2 jours avant, 12 h : indiquez pourquoi vous
+  passez outre. »). Il tombe dans `prepareStaffOrder`, **avant `settle`** :
+  aucune intention de paiement n'est créée ; la clé d'intention est rendue.
+- **Estimation** : elle ne refuse pas pour un motif manquant ; elle chiffre et
+  rend `exceeded`, pour que l'écran demande le motif.
+- Un motif sans dépassement est ignoré. L'empreinte d'intention
+  (`orderFingerprint`, qui choisit ses champs) n'y fait pas entrer le motif :
+  un renvoi du même panier avec un autre motif rend la commande déjà passée.
+- **Trace** : table `public.order_item_limit_overrides` — `id`, `order_id`,
+  `sku`, `staff_user_id`, `reason`, `service_day`, la limite dépassée
+  (`days_before`, `time`, `limit_at`), `origin` (`placement` | `revision`),
+  `created_at`. Écrite **dans la transaction** de la commande, une ligne par
+  SKU dépassé, jamais modifiée. Propriétaire : `lafoliecoffee/orders`.
 - `staff_user_id` et `reason` (texte libre, qui peut nommer un client) entrent
-  au registre `documentation/legal/rgpd-registre.json` (`lint:rgpd-staff`).
-  Durée de conservation : celle de la commande. À confirmer au registre.
-- La vue d'une commande au back-office affiche les dépassements sous
-  `lfc_product_limit_override:read`.
+  au registre `documentation/legal/rgpd-registre.json` (`lint:rgpd-staff`) ;
+  durée de conservation : celle de la commande.
+- La vue d'une commande au back-office (`GetAdminOrderQuery`) rend les
+  dépassements sous `lfc_product_limit_override:read`, lu par
+  `@StaffPermissions()` sur sa route.
 
-### 3.6 La révision
+### 3.6 La modification
 
-Aujourd'hui, l'équipe révise sans aucune heure limite (§ 2). Laisser ce chemin
-ouvert rendrait les deux clés décoratives : n'importe qui passerait une
-commande, puis y ajouterait le produit à 48 h sans droit, sans motif et sans
-trace. **Choix par défaut (§ 6 Q1)** : la révision par l'équipe oppose la
-**limite d'article** des lignes **ajoutées ou augmentées**, avec la même garde,
-le même droit et le même motif (`origin = revision`). La règle générale reste,
-pour l'équipe, ce qu'elle est aujourd'hui en révision : non opposée. Ce plan
-ne touche pas à cette décision.
+Aujourd'hui, l'équipe modifie une commande **sans aucune heure limite** (§ 2).
+Laisser ce chemin tel quel rend les deux clés décoratives : n'importe quel
+membre de l'équipe passerait une commande, puis y ajouterait le produit à 48 h,
+sans droit, sans motif, sans trace.
 
-Côté client, une commande qui porte un dépassement serait figée : sa
-révisabilité lit `decide` sur toutes ses lignes, et la ligne dépassée la
-ferme. `decide` exclut donc de la révisabilité **du client** les SKU consignés
-dans la trace pour cette commande. Le client peut toujours modifier le reste
-tant que la règle générale le permet. Il ne peut pas augmenter la ligne
-dépassée : une augmentation est un ajout, et l'ajout reste jugé par la limite
-d'article.
+**Défaut proposé (§ 7 Q1)** : la modification par l'équipe oppose la **limite
+d'article** aux lignes **ajoutées ou augmentées** — la règle générale, elle,
+reste non opposée à l'équipe, comme aujourd'hui. Ce que ça demande :
 
-### 3.7 Ce que dit l'écran de saisie
+- **le jugement « limite d'article seule »** : `lines[].itemStatus` (§ 3.4),
+  pas `kind`, qui fermerait dès que la règle générale est passée ;
+- **« ajoutée ou augmentée »** se calcule dans `OrderRevising` en comparant
+  l'ancienne et la nouvelle composition par SKU ; seules ces lignes sont
+  opposées ;
+- **le droit et le motif** : la route de modification de l'équipe lit le droit
+  (`@StaffPermissions()`), son devis aussi (`QuoteOrderRevisionQuery`, pour
+  annoncer « dépassable »), et le motif entre dans sa charge ; la trace
+  s'écrit avec `origin = revision` ;
+- 🔴 **la hausse par carte** : une modification de l'équipe qui fait monter
+  une commande payée par carte devient une proposition, appliquée plus tard,
+  au paiement du client, sans personne de l'équipe dans la requête
+  (`apply-card-increase.handler.ts`, qui recompose avec l'acteur figé). Le
+  droit, le motif et les dépassements jugés à la proposition sont **figés
+  dans `CardIncreaseProposal`** (l'objet et sa ligne), et l'application les
+  relit : elle ne rejuge pas un droit qu'elle ne peut pas lire, et ne passe
+  pas sans trace.
 
-L'estimation et le devis du comptoir rendent, par ligne fermée par sa limite
-d'article, `{ sku, exceedable: boolean }`. `exceedable` est vrai quand le
-produit le permet, que la personne a le droit et qu'une règle générale est en
-vigueur. L'avis d'heure limite de l'estimation (`cutoffOf`,
-`OrderCutoffNotice.forDay`) tient compte du dépassement. L'écran affiche
-« Limite dépassée — passer outre » et demande le motif, ou « Ce produit ne se
-commande plus pour ce jour ».
+**Côté client**, une commande qui porte un dépassement serait figée : la ligne
+dépassée, déjà passée, ferme tout jugement qui la voit. Les SKU consignés pour
+cette commande sont écartés **aux trois endroits** qui jugent une
+modification : la révisabilité, `ensureBeforeCutoff` (qui juge les deux
+compositions sur les deux journées), et la borne de paiement d'une hausse
+(`cutoffOf` dans `propose-card-increase.handler.ts`), sans quoi la limite déjà
+passée deviendrait le minimum et la hausse naîtrait échue. Le client ne peut
+pas **augmenter** la ligne dépassée : une augmentation est jugée comme un ajout.
 
-### 3.8 Ce que le fournil voit
+### 3.7 Ce que dit l'écran, et ce que voit le fournil
 
-Rien de neuf. Une commande de l'équipe sur un plan arrêté est déjà reçue
-« hors plan » (`placed_off_plan`). Avant l'arrêt, elle entre dans le plan
-comme une autre ligne. **Rien ne vérifie qu'un produit se fabrique en moins de
-temps que sa limite** : c'est la case du produit qui en répond. Un produit qui
-ne se fait pas en moins de 48 h ne doit pas l'avoir cochée.
+- L'estimation et l'avis du comptoir rendent, par ligne fermée par sa limite
+  d'article, si elle est **dépassable** (le produit le permet, la personne a
+  le droit, une règle générale est en vigueur), et les dépassements retenus.
+  L'écran affiche « Limite dépassée — passer outre » et demande le motif, ou
+  « Ce produit ne se commande plus pour ce jour ». Le contrat de l'avis
+  (`OrderQuoteCutoffView`) s'étend en ajoutant ; il n'est servi qu'au staff.
+- Le fournil : rien de neuf. Une commande passée avant l'arrêt du plan y entre
+  comme une autre ; après, l'équipe est déjà reçue « hors plan ». **Rien ne
+  vérifie qu'un produit se fabrique en moins de temps que sa limite** : c'est
+  la case du produit qui en répond.
 
 ## 4. Les lots
 
-| Lot    | Contenu                                                                                                                                                                                                                                                                             | Tests                                                                                                                                                                                                                                                                                          |
-| ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **O1** | Référentiel (colonne `pim`, entité, `OrderTimeLimitPayload`/`View`, journal) ; fil (`SyncOrderTimeLimitRule`, `SyncOrderTimeLimit`, `resolveOrderTimeLimit`, `sameLimit`, `snapshot-limits`) ; commerce (colonne `public`, déclencheur des versions, lignes, `OrderTimeLimitFacts`) | domaine ; `sameLimit` sur la seule case ; règle d'avant → `false` ; e2e `pim-*` et ingestion ; **`pnpm test` racine** (`packages/` bouge)                                                                                                                                                      |
-| **O2** | Droit : enum, migration, phrases                                                                                                                                                                                                                                                    | e2e : la migration n'accorde rien                                                                                                                                                                                                                                                              |
-| **O3** | Garde par ligne, entrée obligatoire, SKU dépassés ; ses cinq lecteurs ; `prepareStaffOrder`/`draft` ; contrôleurs (`@StaffPermissions`) ; motif, refus, table, transaction, registre RGPD                                                                                           | unitaires de la garde (avec/sans droit, avec/sans case, sans règle générale, règle générale qui ferme quand même, panier mixte) ; handlers ; e2e : sans droit → refus, sans motif → refus et clé rendue, avec motif → commande + trace, boutique → refus, estimation → montants + dépassements |
-| **O4** | Révision de l'équipe (§ 3.6) et révisabilité du client                                                                                                                                                                                                                              | e2e : ajout d'un produit à 48 h en révision sans droit → refus, avec droit + motif → trace `revision` ; client : commande avec dépassement encore modifiable sur le reste                                                                                                                      |
-| **O5** | Back-office : case sur la limite, `exceedable` et motif à la saisie et en révision, dépassements sur la commande                                                                                                                                                                    | specs des composants                                                                                                                                                                                                                                                                           |
-| **O6** | Doc d'état : `limites-produit.md` § 3, `README.md` § 1-2 ; ce plan retiré                                                                                                                                                                                                           | —                                                                                                                                                                                                                                                                                              |
+| Lot    | Contenu                                                                                                                                                                                                                                                                                                                                                                  | Tests                                                                                                                                                                                                |
+| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **O1** | Référentiel (colonne `pim`, entité, contrats, journal) ; fil (`SyncOrderTimeLimitRule`, `SyncOrderTimeLimit`, `resolveOrderTimeLimit`, `sameLimit`) ; commerce (colonne `public`, déclencheur des versions, colonnes et lignes, `orderLimitGroups`, faits d'une fiche, lecteurs, `OrderTimeLimitFacts`) ; **la case à l'écran du référentiel, dans le même déploiement** | domaine ; `sameLimit` sur la seule case ; règle d'avant → `false` ; e2e `pim-*` et ingestion ; **`pnpm test` racine** (`packages/` bouge)                                                            |
+| **O2** | Droit : enum, migration, phrases                                                                                                                                                                                                                                                                                                                                         | e2e : la migration n'accorde rien                                                                                                                                                                    |
+| **O3** | Verdict : `ItemOrderLimit`, `exceedItemLimits` obligatoire (faits du juge et asker), plancher `decision.limit`, `exceeded`, `itemStatus` ; chaque constructeur passe sa valeur                                                                                                                                                                                           | unitaires du juge (avec/sans droit, avec/sans case, sans règle générale, règle générale qui ferme quand même, panier mixte, dépassement en panier ouvert) ; `admit-within-deadline.spec.ts` inchangé |
+| **O4** | Passation et estimation de l'équipe : `OrderParties`, `DraftedOrder`, droit aux contrôleurs (saisie, estimation, avis), motif avant `settle`, table, transaction, registre RGPD ; lecture des dépassements sur la commande                                                                                                                                               | handler ; e2e : sans droit → refus, sans motif → refus et clé rendue, avec motif → commande + trace, boutique → refus, estimation → montants + dépassements                                          |
+| **O5** | Modification (selon Q1) : lignes ajoutées, `itemStatus`, droit et motif sur la route et son devis, `CardIncreaseProposal` figé ; côté client, SKU consignés écartés aux trois endroits                                                                                                                                                                                   | e2e : ajout d'un produit à 48 h en modification sans droit → refus, avec droit + motif → trace `revision` ; client : commande avec dépassement encore modifiable sur le reste                        |
+| **O6** | Back-office : « dépassable » et le motif à la saisie et en modification, les dépassements sur la commande (la case du référentiel part avec O1)                                                                                                                                                                                                                          | specs des composants                                                                                                                                                                                 |
+| **O7** | Doc d'état : `le-verdict-de-l-heure-limite.md`, `limites-produit.md` ; ce plan retiré                                                                                                                                                                                                                                                                                    | —                                                                                                                                                                                                    |
+
+Un lot par commit.
 
 ## 5. Irréversible
 
-- La valeur d'enum `StaffResource` : elle ne se retire pas. **Nom à confirmer
-  avant O2.**
-- Les colonnes `pim` et `public` restent en base même si le geste est retiré
-  (§ 0 du `CLAUDE.md`).
+- La valeur d'enum `StaffResource` ne se retire pas : **nom à confirmer avant
+  O2**.
+- Les colonnes `pim` et `public` restent en base même si le geste est retiré.
 - La table de trace devient de la donnée réelle au premier usage.
 
-## 6. Décisions pour Hugo
+## 6. Ce que ce plan ne fait pas
 
-- **Q1 — La révision par l'équipe.** Aujourd'hui, elle ignore toute heure
+- Pas de délai minimal propre au produit (« passer outre, mais jamais à moins
+  de 24 h ») : la règle générale sert de plancher. À ajouter si un produit le
+  demande.
+- Pas de dépassement côté boutique, ni de dépassement de la règle générale (la
+  dérogation existe pour ça, pendant le rattrapage).
+
+## 7. Décisions pour Hugo
+
+- **Q1 — La modification par l'équipe.** Aujourd'hui, elle ignore toute heure
   limite. Défaut proposé : elle oppose désormais la limite d'article aux lignes
-  ajoutées, avec la même porte à deux clés (§ 3.6). L'alternative est de
-  laisser la révision telle qu'elle est. Dans ce cas, le droit n'ouvre rien de
-  plus que ce que l'équipe a déjà, et seuls le motif et la trace sont neufs.
-  C'est un **resserrement** pour l'équipe : sans le droit, elle ne pourra plus
-  ajouter en révision un produit dont la limite est passée.
-- **Q2 — Sans règle générale en vigueur.** Défaut proposé : pas de dépassement
-  (§ 1). L'alternative : le dépassement ne laisse alors aucune limite.
+  ajoutées, avec les deux clés et le motif (§ 3.6). C'est un **resserrement** :
+  sans le droit, l'équipe ne pourra plus ajouter en modification un produit
+  dont la limite est passée. Il coûte le lot O5, le plus lourd : un jugement
+  « limite d'article seule », le calcul des lignes ajoutées, le droit et le
+  motif sur la modification et son devis, et le gel dans la proposition de
+  hausse par carte. L'alternative est de laisser la modification telle
+  qu'elle est (O5 se réduit au côté client) ; le droit n'ouvre alors rien que
+  l'équipe n'ait déjà par la modification, et seuls le motif et la trace de la
+  saisie sont neufs.
+- **Q2 — Sans limite générale ce jour-là** (aucune règle posée, ou une heure
+  qui n'existe pas ce jour-là). Défaut proposé : pas de dépassement.
+  L'alternative : le dépassement ne laisse alors aucune limite.
 
-## 7. La contradiction de `vitruve` (2026-11-19, v1)
+## 8. La contradiction de `vitruve` (2026-11-19, v3)
 
-| Objection                                                                                          | Devenue                                                                                                                      |
-| -------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| B1 — la révision de l'équipe contourne tout, et la v1 disait l'inverse                             | vérifiée (`order-revising.service.ts:159, 418`) ; § 2, § 3.6, Q1                                                             |
-| B2 — sans règle générale, plus de plancher                                                         | vérifiée (`order-cutoff-guard.ts:44-46`) ; § 1, Q2                                                                           |
-| B3 — la case n'arrivait pas au commerce (`sameLimit`, `SyncOrderTimeLimit`, colonnes, déclencheur) | § 3.2, lot O1                                                                                                                |
-| B4 — l'estimation non branchée rendait la passation impossible                                     | § 3.4, § 3.5, § 3.7                                                                                                          |
-| S5 — le droit se lit au contrôleur (`@StaffPermissions`)                                           | vérifié (`staff.decorator.ts:32-53`) ; § 3.3                                                                                 |
-| S6 — une commande avec dépassement figée pour le client                                            | § 3.6                                                                                                                        |
-| S7 — la surtaxe prévue sans le drapeau                                                             | § 3.4                                                                                                                        |
-| S8 — cinq lecteurs de la garde, une décision par ligne                                             | § 3.4                                                                                                                        |
-| S9 — registre RGPD                                                                                 | § 3.5                                                                                                                        |
-| S10 — irréversibilité                                                                              | § 5                                                                                                                          |
-| Mineurs (chemin du fil, ligne 318, idempotence, payload d'estimation)                              | § 2, § 3.5                                                                                                                   |
-| Non vérifié par `vitruve` : un « délai de fabrication » dans `arrange`                             | ouvert le 2026-11-19 : `arrange` n'oppose que la fenêtre d'une opération datée (`operations.ensure`), pas un délai d'article |
+| Objection                                                                                                            | Devenue                                                                                       |
+| -------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| B1 — le verdict ne sait pas dire « fermé par la limite d'article seule »                                             | vérifiée (`stricterOf` garde la règle générale à égalité) ; `itemStatus` (§ 3.4, § 3.6)       |
+| B2 — la hausse par carte appliquée sans droit ni motif                                                               | vérifiée (`apply-card-increase.handler.ts:102-112`) ; gel dans `CardIncreaseProposal` (§ 3.6) |
+| B3 — côté client, trois endroits jugent la modification                                                              | § 3.6                                                                                         |
+| S1 — les constructeurs d'`asker`, et les suggestions qui appellent le juge                                           | tableau du § 3.4, drapeau dans `DeadlineFacts`                                                |
+| S2 — le chemin du drapeau jusqu'à la passation                                                                       | `OrderParties`, `DraftedOrder` (§ 3.5)                                                        |
+| S3 — `orderLimitGroups` et les lecteurs du catalogue                                                                 | vérifié (`prisma-catalog-order-limits.ts:118`) ; § 3.2                                        |
+| S4 — « règle générale en vigueur » ambigu                                                                            | `decision.limit !== null` (§ 3.4)                                                             |
+| S5 — payload obligatoire avant l'écran                                                                               | O1 et la case de l'écran dans le même déploiement                                             |
+| S6 — le motif avant `settle`                                                                                         | § 3.5                                                                                         |
+| S7 — un dépassement sur une ligne fermée de toute façon                                                              | exclu (§ 3.4)                                                                                 |
+| Mineurs (`staffResourceSchema`, devis d'une modification, route de lecture, `adminOrderEntryShape`, rang du produit) | §§ 3.2 à 3.6                                                                                  |
