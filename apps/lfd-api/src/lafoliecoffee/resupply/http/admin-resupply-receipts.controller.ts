@@ -20,7 +20,11 @@ import {
 } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
-import { AdminSurface, RequirePermission } from "../../../platform/auth/admin-surface.decorator.js";
+import {
+  AdminSurface,
+  RequireAnyPermission,
+  RequirePermission,
+} from "../../../platform/auth/admin-surface.decorator.js";
 import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { ZodBody, ZodQuery } from "../../../platform/shared/http/zod-body.pipe.js";
 import { CorrectReceivedResupplyLineCommand } from "../application/correct-received-resupply-line.command.js";
@@ -53,9 +57,13 @@ export class AdminResupplyReceiptsController {
     private readonly queries: QueryBus,
   ) {}
 
-  /** Les articles proposables : le catalogue publié de la boutique, sans prix. */
+  /**
+   * Les articles proposables : le catalogue publié de la boutique, sans prix.
+   * Ouverte aussi à qui compose les modèles de réassort, sans autre geste du
+   * comptoir.
+   */
   @Get("articles")
-  @RequirePermission("handover_counter:read")
+  @RequireAnyPermission("handover_counter:read", "resupply_templates:read")
   articles(): Promise<readonly ResupplyArticleView[]> {
     return this.queries.execute<ListResupplyArticlesQuery, readonly ResupplyArticleView[]>(
       new ListResupplyArticlesQuery(),
