@@ -143,7 +143,7 @@ change (« l'équipe peut désormais passer outre… »).
 
 ## 3. Ce qui reste
 
-Comparé aux logiciels du marché (Odoo, SAP, Shopify — de mémoire, non
+Comparé aux logiciels du marché (ERP et plateformes de vente en ligne — de mémoire, non
 vérifié le 2026-11-19), la règle elle-même est plus stricte : un seul juge
 pour tous les gestes, aucun geste qui la contourne, et la limite générale
 toujours opposée. Ce qui manque est autour de la règle :
