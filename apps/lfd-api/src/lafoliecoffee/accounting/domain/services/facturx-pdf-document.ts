@@ -49,8 +49,13 @@ export interface FacturXPdfInput {
   readonly title: string;
   /** `AAAA-MM-JJ` : la date de toutes les métadonnées du fichier. */
   readonly issuedOn: string;
-  /** Le XML CII, joint tel quel, octet pour octet. */
-  readonly xml: string;
+  /**
+   * Le XML CII, joint tel quel, octet pour octet. `null` : un PDF ordinaire,
+   * sans XML ni déclaration PDF/A — l'exemplaire à déposer à la main sur
+   * Chorus Pro, dont le portail refuse une Factur-X (constat du 2026-11-19,
+   * plan `plan-clients-publics-chorus.md`). Il n'est jamais rangé.
+   */
+  readonly xml: string | null;
   readonly fonts: InvoicePdfFonts;
 }
 
@@ -67,7 +72,7 @@ type AttachmentOptions = PDFKit.Mixins.PDFAttachmentOptions & {
 const PRODUCER = "La Folie Coffee";
 
 /**
- * Ouvre le document PDF/A-3b, laisse `draw` dessiner (pages en mémoire, pour
+ * Ouvre le document (PDF/A-3b quand le XML est joint), laisse `draw` dessiner (pages en mémoire, pour
  * que le pied de page sache le nombre total), joint le XML, rend les octets.
  */
 export async function renderFacturXPdf(
@@ -79,7 +84,7 @@ export async function renderFacturXPdf(
     size: "A4",
     margin: 0,
     pdfVersion: "1.7",
-    subset: "PDF/A-3b",
+    ...(input.xml === null ? {} : { subset: "PDF/A-3b" as const }),
     bufferPages: true,
     lang: "fr-FR",
     info: { Title: input.title, Producer: PRODUCER, Creator: PRODUCER, CreationDate: at },
@@ -95,6 +100,16 @@ export async function renderFacturXPdf(
     });
   });
   draw(doc);
+  if (input.xml !== null) {
+    attachFacturX(doc, input.xml, at);
+  }
+  doc.end();
+  await done;
+  return Buffer.concat(chunks);
+}
+
+/** Joint le XML (relation `Alternative`) et la déclaration Factur-X du XMP. */
+function attachFacturX(doc: InvoiceDoc, xml: string, at: Date): void {
   const attachment: AttachmentOptions = {
     name: FACTURX_FILE_NAME,
     type: "text/xml",
@@ -103,9 +118,6 @@ export async function renderFacturXPdf(
     creationDate: at,
     modifiedDate: at,
   };
-  doc.file(Buffer.from(input.xml, "utf8"), attachment);
+  doc.file(Buffer.from(xml, "utf8"), attachment);
   doc.appendXML(facturXXmp());
-  doc.end();
-  await done;
-  return Buffer.concat(chunks);
 }

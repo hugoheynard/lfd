@@ -59,22 +59,18 @@
                 euros(of(row).totalTtcCents)
               }}</ng-template>
               <ng-template foldCell="actions" let-row>
-                @if (of(row).documentAvailable) {
-                  <button
-                    foldButton
-                    size="sm"
-                    emphasis="soft"
-                    icon="download"
-                    data-chorus-pdf
-                    [attr.aria-label]="'Télécharger le PDF Factur-X de ' + of(row).number"
-                    [loading]="downloading() === of(row).invoiceId"
-                    (click)="download(of(row))"
-                  >
-                    PDF Factur-X
-                  </button>
-                } @else {
-                  <span>PDF en cours de rendu</span>
-                }
+                <button
+                  foldButton
+                  size="sm"
+                  emphasis="soft"
+                  icon="download"
+                  data-chorus-pdf
+                  [attr.aria-label]="'Télécharger le PDF à déposer de ' + of(row).number"
+                  [loading]="downloading() === of(row).invoiceId"
+                  (click)="download(of(row))"
+                >
+                  PDF à déposer
+                </button>
                 @if (canWrite()) {
                   <button
                     foldButton

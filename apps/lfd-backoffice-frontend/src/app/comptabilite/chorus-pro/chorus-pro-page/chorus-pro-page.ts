@@ -26,8 +26,7 @@ import { PermissionsStore } from '../../../auth/permissions.store';
 import { NotifyService } from '../../../notify.service';
 import { ChorusDepositsService, type ChorusQueue } from '../../chorus-deposits.service';
 import { day, euros } from '../../invoice-dossier-format';
-import { downloadIssuedInvoicePdf } from '../../issued-invoice-pdf';
-import { IssuedInvoicesService } from '../../issued-invoices.service';
+import { saveBlob } from '../../../shared/download/save-blob';
 import {
   type ChorusGesture,
   ChorusGesturePanel,
@@ -102,7 +101,6 @@ const SUCCESS: Readonly<Record<ChorusGesture, string>> = {
 })
 export class ChorusProPage {
   private readonly api = inject(ChorusDepositsService);
-  private readonly invoices = inject(IssuedInvoicesService);
   private readonly notify = inject(NotifyService);
   private readonly panels = inject(FoldPanelHostService);
   private readonly permissions = inject(PermissionsStore);
@@ -177,10 +175,19 @@ export class ChorusProPage {
     return service === null ? number : `${number} · service ${service}`;
   }
 
+  /**
+   * Le PDF à déposer sur le portail : un PDF ordinaire, sans le XML Factur-X,
+   * que le portail refuse en dépôt manuel. L'exemplaire gardé ne change pas.
+   */
   protected async download(row: ChorusInvoiceView): Promise<void> {
     this.downloading.set(row.invoiceId);
     try {
-      await downloadIssuedInvoicePdf(this.invoices, this.notify, row);
+      saveBlob(await this.api.depositPdf(row.invoiceId), `${row.number}-chorus.pdf`);
+    } catch (error) {
+      this.notify.error(
+        error,
+        `Le PDF de la facture ${row.number} n’a pas pu être préparé. Réessayez dans un instant.`,
+      );
     } finally {
       this.downloading.set(null);
     }

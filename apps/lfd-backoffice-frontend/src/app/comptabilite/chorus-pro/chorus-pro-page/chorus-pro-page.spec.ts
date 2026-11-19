@@ -8,6 +8,8 @@ import { NotifyService } from '../../../notify.service';
 import { ChorusDepositsService, type ChorusQueue } from '../../chorus-deposits.service';
 import { ChorusProPage } from './chorus-pro-page';
 
+const requestedPdfs: string[] = [];
+
 // Des jours seulement affichés : aucun n'est comparé à l'horloge.
 const row = (over: Partial<ChorusInvoiceView['chorus']>, number: string): ChorusInvoiceView => ({
   invoiceId: number,
@@ -48,6 +50,10 @@ async function render(
             lists === 'fail'
               ? Promise.reject(new Error('down'))
               : Promise.resolve({ invoices: lists[queue] }),
+          depositPdf: (invoiceId: string) => {
+            requestedPdfs.push(invoiceId);
+            return Promise.reject(new Error('pas de téléchargement en test'));
+          },
         },
       },
       {
@@ -75,6 +81,20 @@ describe('ChorusProPage', () => {
     expect(page.textContent).toContain('1234567890 · service SERV1');
     expect(page.querySelector('[data-chorus-pdf]')).not.toBeNull();
     expect(page.querySelector('[data-chorus-deposit]')).not.toBeNull();
+  });
+
+  it('le PDF à déposer est demandé à la route Chorus, jamais la Factur-X gardée', async () => {
+    requestedPdfs.length = 0;
+    const page = await render({ 'to-deposit': [row({}, 'FA-1')], deposited: [] }, [
+      'b2b_accounting:read',
+    ]);
+
+    const button = page.querySelector<HTMLButtonElement>('[data-chorus-pdf]');
+    expect(button?.textContent).toContain('PDF à déposer');
+    button?.click();
+    await Promise.resolve();
+
+    expect(requestedPdfs).toEqual(['FA-1']);
   });
 
   it('sans le droit d’écrire, aucun geste', async () => {

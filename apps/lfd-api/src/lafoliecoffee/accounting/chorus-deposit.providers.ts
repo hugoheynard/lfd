@@ -4,6 +4,7 @@ import { NoteChorusAcceptanceHandler } from "./application/commands/note-chorus-
 import { NoteChorusDepositHandler } from "./application/commands/note-chorus-deposit.handler.js";
 import { NoteChorusRejectionHandler } from "./application/commands/note-chorus-rejection.handler.js";
 import { TransmitPublicInvoice } from "./application/handlers/transmit-public-invoice.handler.js";
+import { GetChorusDepositPdfHandler } from "./application/queries/get-chorus-deposit-pdf.handler.js";
 import { ListChorusInvoicesDepositedHandler } from "./application/queries/list-chorus-invoices-deposited.handler.js";
 import { ListChorusInvoicesToDepositHandler } from "./application/queries/list-chorus-invoices-to-deposit.handler.js";
 import { ChorusDepositStandingsReader } from "./domain/ports/chorus-deposit-standings.reader.js";
@@ -31,6 +32,7 @@ export const CHORUS_DEPOSIT_PROVIDERS: readonly Provider[] = [
   NoteChorusAcceptanceHandler,
   ListChorusInvoicesToDepositHandler,
   ListChorusInvoicesDepositedHandler,
+  GetChorusDepositPdfHandler,
   TransmitPublicInvoice,
 ];
 

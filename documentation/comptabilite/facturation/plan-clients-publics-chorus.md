@@ -620,15 +620,35 @@ T1′ à T5′, la migration `20261118180000_le_depot_chorus`, la page
 - l'abonné `TransmitPublicInvoice` appelle `EInvoiceTransport` à chaque
   facture publique émise ; `ManualChorusDeposit` n'envoie rien (la file se
   lit sur l'absence de dépôt) — P4 remplacera l'adaptateur ;
-- un seul document à télécharger : le PDF/A-3 Factur-X (le XML y est
-  embarqué) ;
+- le document à déposer est un **PDF ordinaire**, sans le XML : la même
+  pièce redessinée à la demande (route
+  `GET /admin/accounting/chorus/invoices/:id/pdf`, `GetChorusDepositPdfHandler`),
+  jamais rangée. L'exemplaire qui fait foi reste le PDF/A-3 Factur-X gardé.
+  Voir « Le portail refuse une Factur-X » ci-dessous ;
 - reste pour P4 : BT-49 / BR-FR-12, l'adresse électronique de l'acheteur
   lue à l'annuaire Chorus.
+
+### Le portail refuse une Factur-X (constat du 2026-11-19)
+
+Le DAF d'un client public a essayé de déposer une Factur-X sur le portail
+Chorus Pro : refusée, et les équipes de Chorus lui ont confirmé que ça ne
+marchait pas. Il a déposé un PDF ordinaire, accepté.
+
+La documentation trouvée en ligne dit le contraire (Factur-X listée parmi les
+formats acceptés, surtout par des éditeurs ; la documentation officielle AIFE
+n'a pas été ouverte). On s'en tient au constat : **en dépôt manuel, on dépose
+un PDF ordinaire**, et les données (engagement, code service) se ressaisissent
+à l'écran — la page les affiche. Ne pas « corriger » vers la Factur-X sans un
+dépôt réel réussi.
+
+Pour **P4** : la plateforme agréée doit transmettre à Chorus un format qu'il
+accepte, en convertissant nos pièces s'il le faut. C'est un critère
+éliminatoire du choix.
 
 ### Écrans
 
 - Comptabilité : nouvelle page « Chorus Pro » — onglet « À déposer »
-  (payeur, n°, date, montant, télécharger le PDF et le Factur-X, « Déposée
+  (payeur, n°, date, montant, « PDF à déposer » sans XML, « Déposée
   le … »), onglet « Déposées » (échéance, rejet, mise en paiement).
 - Fiche facture / fiche client : l'état Chorus et l'échéance.
 - Boutique (« Mes factures ») : « Déposée sur Chorus le … — échéance … » ou
@@ -649,7 +669,7 @@ lister à déposer, déposer, relire l'échéance, rejeter.
 | **P1** ✅ | D1, D2, D3 : routage du payeur, geste « passer public », virement forcé, carte refusée, suivi refusé entre natures ; fiche client       | —                                                             |
 | **P2** ✅ | D4, D5 : engagement sur la commande et ses révisions, clé de clôture à trois termes, BT-13 et référence acheteur ; champ dans le panier | P1, mapping Chorus vérifié, inventaire des lecteurs de la clé |
 | **P3** ✅ | D6, D7, D8 : journal de transmission, échéance au dépôt, `ManualChorusDeposit`, file « À déposer »                                      | P2                                                            |
-| **P4**    | Adaptateur de la plateforme agréée, lecture de l'annuaire Chorus (exigences relues)                                                     | Q4 de [`plan-zero-faille.md`](plan-zero-faille.md)            |
+| **P4**    | Adaptateur de la plateforme agréée (qui envoie à Chorus un format qu'il accepte), lecture de l'annuaire Chorus (exigences relues)       | Q4 de [`plan-zero-faille.md`](plan-zero-faille.md)            |
 
 ## 8. Décisions de Hugo (2026-11-18)
 

@@ -13,8 +13,11 @@ import { documentTitle } from "./invoice-pdf-wording.js";
 /** Ce que le rendu reçoit : la pièce, son XML déjà contrôlé, les polices, le logo. */
 export interface InvoicePdfInput {
   readonly invoice: Invoice;
-  /** Le XML CII de `renderFacturXml`, joint tel quel. */
-  readonly xml: string;
+  /**
+   * Le XML CII de `renderFacturXml`, joint tel quel ; `null` : le même
+   * dessin en PDF ordinaire, pour le dépôt manuel sur Chorus Pro.
+   */
+  readonly xml: string | null;
   readonly fonts: InvoicePdfFonts;
   /** Le logo de l'entité émettrice ; `null` : la pièce sort sans, valide. */
   readonly logo: Buffer | null;

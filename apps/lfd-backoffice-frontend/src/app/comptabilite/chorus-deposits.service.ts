@@ -39,6 +39,16 @@ export class ChorusDepositsService {
     );
   }
 
+  /** Le PDF à déposer sur le portail : la pièce sans le XML Factur-X. */
+  async depositPdf(invoiceId: string): Promise<Blob> {
+    return firstValueFrom(
+      this.http.get(
+        `${B2B_API_BASE}/admin/accounting/chorus/invoices/${encodeURIComponent(invoiceId)}/pdf`,
+        { responseType: 'blob' },
+      ),
+    );
+  }
+
   /** « Déposée le … » */
   async deposit(invoiceId: string, payload: NoteChorusDepositPayload): Promise<void> {
     await this.post(invoiceId, 'deposit', payload);
