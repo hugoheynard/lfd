@@ -254,7 +254,7 @@ l'invariant existe.
 
 **Et `publishable()` ne se resserre pas non plus.** Il a quatre consommateurs, dont
 la **source de révision**
-([`prisma-catalog-revision.source.ts:33`](../../apps/lfd-api/src/pim/catalogue/revision/infrastructure/prisma-catalog-revision.source.ts)) :
+([`composed-catalog-revision.source.ts`](../../apps/lfd-api/src/pim/catalogue/revision/infrastructure/composed-catalog-revision.source.ts)) :
 le resserrer ferait passer l'ancre de 95 fiches à 1, changeant l'archive du
 catalogue, la référence du diff et l'empreinte de dérive. La garde va dans la
 projection du canal, pas dans le lecteur partagé.

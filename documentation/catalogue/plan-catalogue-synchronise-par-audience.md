@@ -615,7 +615,7 @@ entier, jamais un flottant.
   déclinaison, et l'émetteur du lot 2a (sans effet tant que les faits sont
   fermés).
 - **Les révisions couvrent le prix pro** (SÉRIEUX) : le champ entre dans la
-  source (`prisma-catalog-revision.source.ts:74`), le diff, l'attribution et
+  source (`composed-catalog-revision.source.ts`), le diff, l'attribution et
   la signature ; sans quoi le filet du §4 ne couvre pas le prix qu'on vend.
 - **Bascule de méthode → fil** : changer la méthode réémet tout le catalogue
   (déjà branché en 2a pour `choose-pro-price-method`) ; côté push actuel, le

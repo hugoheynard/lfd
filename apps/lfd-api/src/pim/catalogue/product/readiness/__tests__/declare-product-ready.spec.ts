@@ -6,8 +6,8 @@ import { PIM_EVENTS } from "../../../../journal/pim-journal.js";
 import {
   AnonymousReadinessError,
   ArchivedProductNotReadyError,
-  ProductNotFoundError,
-} from "../../domain/errors/product-errors.js";
+} from "../../domain/errors/readiness-errors.js";
+import { ProductNotFoundError } from "../../domain/errors/product-errors.js";
 import type { ProductSnapshot } from "../../domain/entities/product.js";
 import {
   FakeProductHistory,

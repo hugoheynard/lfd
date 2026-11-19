@@ -1,5 +1,8 @@
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
-import { KnownVatRates } from "../../../shared/domain/services/__tests__/journal-name-doubles.js";
+import {
+  KnownVatRates,
+  VatRateNamesOf,
+} from "../../../shared/domain/services/__tests__/journal-name-doubles.js";
 import { RecordingJournal } from "../../../../journal/__tests__/recording-journal.js";
 import { VatRateNotFoundError } from "../../../../reference/vat-rates/domain/errors/vat-rate-errors.js";
 import { VatRateRepository } from "../../../../reference/vat-rates/domain/ports/vat-rate.repository.js";
@@ -128,6 +131,7 @@ describe("SetProductVatHandler", () => {
     await new SetProductVatHandler(
       products,
       rates(),
+      new VatRateNamesOf(rates()),
       new RecordingVatRateLock(),
       new RecordingSalesContextLock(),
       registry,
@@ -154,6 +158,7 @@ describe("SetProductVatHandler", () => {
     await new SetProductVatHandler(
       products,
       rates(),
+      new VatRateNamesOf(rates()),
       new RecordingVatRateLock(),
       new RecordingSalesContextLock(),
       registry,
@@ -172,6 +177,7 @@ describe("SetProductVatHandler", () => {
       new SetProductVatHandler(
         products,
         rates(),
+        new VatRateNamesOf(rates()),
         new RecordingVatRateLock(),
         new RecordingSalesContextLock(),
         registry,
@@ -190,6 +196,7 @@ describe("SetProductVatHandler", () => {
       new SetProductVatHandler(
         products,
         rates(),
+        new VatRateNamesOf(rates()),
         new RecordingVatRateLock(),
         new RecordingSalesContextLock(),
         registry,
@@ -210,6 +217,7 @@ describe("SetProductVatHandler", () => {
     await new SetProductVatHandler(
       products,
       rates(),
+      new VatRateNamesOf(rates()),
       new RecordingVatRateLock(),
       new RecordingSalesContextLock(),
       registry,
@@ -228,6 +236,7 @@ describe("SetProductVatHandler", () => {
     await new SetProductVatHandler(
       products,
       rates(),
+      new VatRateNamesOf(rates()),
       new RecordingVatRateLock(),
       new RecordingSalesContextLock(),
       registry,
@@ -259,6 +268,7 @@ describe("SetProductVatHandler", () => {
     await new SetProductVatHandler(
       new FakeProducts(snapshot()),
       new LoggedRates({ tva_20: { name: "Normal", percent: 20 } }),
+      new VatRateNamesOf(new KnownVatRates({ tva_20: { name: "Normal", percent: 20 } })),
       new RecordingVatRateLock(log),
       new RecordingSalesContextLock(log),
       loggedRegistry,

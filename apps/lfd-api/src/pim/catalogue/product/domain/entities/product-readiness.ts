@@ -1,4 +1,7 @@
-import { AnonymousReadinessError, ProductNotDeclaredReadyError } from "../errors/product-errors.js";
+import {
+  AnonymousReadinessError,
+  ProductNotDeclaredReadyError,
+} from "../errors/readiness-errors.js";
 
 /**
  * Ce qu'une **déclaration de publiabilité** vaut : sa date et son auteur.

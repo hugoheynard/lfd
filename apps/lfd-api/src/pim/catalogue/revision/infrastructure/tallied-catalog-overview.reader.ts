@@ -13,7 +13,7 @@ import {
  * quelle que soit la taille du catalogue, et aucune table d'un voisin lue ici.
  */
 @Injectable()
-export class PrismaCatalogOverviewReader extends CatalogOverviewReader {
+export class TalliedCatalogOverviewReader extends CatalogOverviewReader {
   constructor(
     private readonly products: ProductTalliesReader,
     private readonly categories: CategoryIdsReader,

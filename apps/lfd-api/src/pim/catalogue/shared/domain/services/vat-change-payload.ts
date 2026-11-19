@@ -1,17 +1,15 @@
 import { contextLabelsOf } from "../../../../reference/sales-contexts/domain/services/context-labels.js";
 import { SalesContextRegistry } from "../../../../reference/sales-contexts/domain/ports/sales-context.registry.js";
 import { VatRateNotFoundError } from "../../../../reference/vat-rates/domain/errors/vat-rate-errors.js";
-import { VatRateRepository } from "../../../../reference/vat-rates/domain/ports/vat-rate.repository.js";
+import { VatRateNamesReader } from "../../../../reference/vat-rates/domain/ports/vat-rate-names.reader.js";
 
 /**
- * **Les noms que les faits du catalogue figent** (D5 du plan des phrases du
- * journal, lot B) : un objet cité l'est avec son nom **du moment**, parce que
+ * **Les noms que les faits du catalogue figent** : un objet cité l'est avec son nom **du moment**, parce que
  * le journal dit ce qui était vrai quand c'est arrivé. Un taux renommé depuis
  * se lit sous son ancien nom sur les lignes d'avant.
  *
  * Partagé par les familles et les fiches, qui citent les mêmes taux : deux
- * façons de les nommer finiraient par raconter deux histoires. (La matrice
- * des canaux, qu'elles citaient aussi, ne s'écrit plus depuis X4.)
+ * façons de les nommer finiraient par raconter deux histoires.
  *
  * Un objet cité introuvable est un **refus**, pas un nom inventé : la base
  * refuserait de toute façon l'écriture qui le cite (clé étrangère), et un
@@ -42,10 +40,13 @@ export type NamedVatChange = Readonly<
  */
 async function namedVatChange(
   change: VatChange,
-  rates: VatRateRepository,
+  rates: VatRateNamesReader,
 ): Promise<NamedVatChange> {
+  const cited = Object.values(change).flatMap(({ from, to }) =>
+    [from, to].filter((id): id is string => id !== null),
+  );
   const names = new Map(
-    (await rates.listAll()).map((rate) => [rate.id, rate.snapshot().name] as const),
+    (await rates.namesOf([...new Set(cited)])).map((rate) => [rate.id, rate.name] as const),
   );
   const nameOf = (id: string | null): NamedRef | null => {
     if (id === null) {
@@ -67,9 +68,8 @@ async function namedVatChange(
 
 /**
  * **La charge d'un fait `*.vat_changed`**, hors sujet : chaque taux nommé, et
- * le libellé du moment de chaque contexte cité (`contextLabels`, lot D du plan
- * des phrases, 2026-09-19) — sans lui, un contexte créé à l'écran se lisait
- * sous sa clé.
+ * le libellé du moment de chaque contexte cité (`contextLabels`) — sans lui,
+ * un contexte créé à l'écran se lirait sous sa clé.
  *
  * Partagée par les quatre écrivains (taux et canaux, famille et fiche) : un
  * écrivain qui oublierait la table écrirait une charge que le catalogue refuse
@@ -79,7 +79,7 @@ async function namedVatChange(
  */
 export async function vatChangePayload(
   change: VatChange,
-  rates: VatRateRepository,
+  rates: VatRateNamesReader,
   contexts: SalesContextRegistry,
 ): Promise<{
   readonly vatByContext: NamedVatChange;

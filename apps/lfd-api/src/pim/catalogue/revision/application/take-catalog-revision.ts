@@ -35,34 +35,27 @@ export class TakeCatalogRevisionCommand {
  *
  * ## Une capture identique ne pose rien
  *
- * La garde demande « **cette ancre existe-t-elle ?** », par son empreinte. Elle
- * demandait « est-ce la DERNIÈRE ? », ce qui en était une approximation — juste
- * tant qu'on ne revient jamais en arrière, fausse dès qu'un catalogue revient à
- * un état qu'il a déjà eu. Un aller-retour A → B → A posait alors une seconde
- * ancre A, et l'histoire du catalogue gagnait un doublon que rien ne distingue
- * de l'original.
+ * La garde demande « **cette ancre existe-t-elle ?** », par son empreinte — et
+ * non « est-ce la dernière ? », qui poserait une seconde ancre A sur un
+ * aller-retour A → B → A, un doublon que rien ne distingue de l'original.
  *
  * Un LIBELLÉ ne suffit pas à justifier une nouvelle ancre : nommer différemment
  * un catalogue identique ne le rend pas différent.
  *
- * ⚠️ **Cette garde ne peut pas gagner la course, et elle n'a plus à la gagner.**
- * Deux pushs simultanés lisent tous deux « rien », calculent la même empreinte
- * et écrivent tous deux : la lecture est hors transaction, aucune rédaction
- * applicative n'y changerait quoi que ce soit. C'est `catalog_revision.hash`
- * en `@unique` qui ferme la course — la base refuse, et celui qui perd
- * **rattrape l'ancre du gagnant** au lieu de tomber. Il voulait cette ancre-là ;
- * elle existe ; il l'a.
+ * ⚠️ **Cette garde ne gagne pas la course, et n'a pas à la gagner.** Deux
+ * pushs simultanés lisent tous deux « rien », calculent la même empreinte et
+ * écrivent tous deux : la lecture est hors transaction. C'est
+ * `catalog_revision.hash` en `@unique` qui ferme la course — la base refuse,
+ * et celui qui perd **rattrape l'ancre du gagnant** au lieu de tomber. Il
+ * voulait cette ancre-là ; elle existe ; il l'a. La garde n'est qu'une
+ * optimisation qui évite un aller-retour, pas une ligne de défense.
  *
- * La garde redevient donc ce qu'elle aurait toujours dû être : une optimisation
- * qui évite un aller-retour, pas une ligne de défense.
- *
- * ## Un push échoué ne laisse plus de déchet
+ * ## Un push échoué ne laisse pas de déchet
  *
  * L'ancre est posée **avant** l'envoi — l'ordre est délibéré : elle dit ce qu'on
  * s'apprête à publier, pas ce qui est parti. Un échec en laisse donc une sans
- * publication. Au retry, l'empreinte la **retrouve** et la publication réussie
- * s'inscrit dessus. Avec l'ancienne garde, la référence était la dernière ancre
- * posée — orpheline comprise — et le doublon n'arrivait que par chance.
+ * publication ; au retry, l'empreinte la **retrouve** et la publication
+ * réussie s'inscrit dessus.
  */
 @CommandHandler(TakeCatalogRevisionCommand)
 export class TakeCatalogRevisionHandler implements ICommandHandler<
@@ -83,76 +76,15 @@ export class TakeCatalogRevisionHandler implements ICommandHandler<
     const revision = buildRevision(ENTERED_PRO_PRICE_HEADER, items);
 
     // L'empreinte d'abord, la question ensuite : on ne peut pas demander « cette
-    // ancre existe-t-elle ? » avant de savoir laquelle. La lecture quitte donc
-    // le `Promise.all` — un aller-retour de plus par pose, contre une garde qui
-    // pose la bonne question.
+    // ancre existe-t-elle ? » avant de savoir laquelle.
     const existing = await this.revisions.loadByHash(revision.hash);
     if (existing !== null) {
-      // 🔴 **Une ancre muette prend le nom qu'on lui apporte.**
-      //
-      // Le cas est celui d'un push : l'ancre existe déjà — un envoi précédent
-      // l'a posée, ou un « préparer » sans nom — et l'appelant, lui, arrive
-      // avec une intention. La lui refuser laisserait une ancre anonyme partir
-      // une fois de plus, ce qui est exactement ce qu'on veut faire cesser.
-      //
-      // Le PREMIER nom gagne, en revanche : une ancre déjà nommée garde le
-      // sien. Le nom dit avec quelle intention un catalogue est parti chez des
-      // clients ; le réécrire au passage d'un push le raconterait autrement,
-      // sans que personne ne l'ait demandé.
-      if (!existing.isNamed && command.label !== null) {
-        existing.name(command.label, command.note);
-        await this.revisions.save(existing);
-        await this.journal.trace({
-          type: PIM_EVENTS.catalogRevisionNamed,
-          subjectType: "catalog_revision",
-          subjectId: existing.id,
-          payload: {
-            subjectLabel: command.label,
-            reference: existing.reference,
-            label: command.label,
-          },
-        });
-      }
-      return {
-        id: existing.id,
-        reference: existing.reference,
-        hash: existing.hash,
-        label: existing.label,
-        created: false,
-      };
+      return this.nameIfMute(existing, command);
     }
-
-    const takenAt = new Date(this.clock.now());
-    const takenBy = currentRequestContext()?.actor.id ?? "system";
-    // Le fait et l'ancre dans la MÊME transaction. Une ancre est une lecture
-    // qu'on enregistre, mais elle s'enregistre : si la trace passait et l'ancre
-    // non, l'historique affirmerait une révision que la base ne porte pas.
-    const id = this.ids.next();
-    const anchor = CatalogRevision.take({
-      id,
-      // Dérivée de l'identifiant, pas tirée d'un compteur : lire « le dernier
-      // numéro » pour ajouter un est une course, et deux publications
-      // simultanées calculaient le même.
-      reference: referenceFrom(REVISION_PREFIX, id),
-      label: command.label,
-      note: command.note,
-      hash: revision.hash,
-      takenAt,
-      takenBy,
-    });
-    const posed = await this.pose(command, revision, anchor).catch(async (error: unknown) => {
-      // Course perdue : un autre push vient de poser exactement cette ancre.
-      // On la rattrape plutôt que de rendre une erreur pour un résultat qui
-      // est déjà là.
-      if (!(error instanceof RevisionHashAlreadyTakenError)) {
-        throw error;
-      }
-      const winner = await this.revisions.loadByHash(revision.hash);
-      if (winner === null) {
-        throw error;
-      }
-      return { id: winner.id, reference: winner.reference, adopted: true as const };
-    });
+    const anchor = this.anchorFor(command, revision.hash);
+    const posed = await this.pose(command, revision, anchor).catch((error: unknown) =>
+      this.adoptWinner(error, revision.hash),
+    );
     return {
       id: posed.id,
       reference: posed.reference,
@@ -162,7 +94,82 @@ export class TakeCatalogRevisionHandler implements ICommandHandler<
     };
   }
 
-  /** La trace et l'ancre, dans la même transaction. */
+  /**
+   * 🔴 **Une ancre muette prend le nom qu'on lui apporte.**
+   *
+   * Le cas est celui d'un push : l'ancre existe déjà — un envoi précédent l'a
+   * posée, ou un « préparer » sans nom — et l'appelant arrive avec une
+   * intention. La lui refuser laisserait une ancre anonyme partir une fois de
+   * plus. Le PREMIER nom gagne : une ancre déjà nommée garde le sien, car il
+   * dit avec quelle intention un catalogue est parti chez des clients.
+   */
+  private async nameIfMute(
+    existing: CatalogRevision,
+    command: TakeCatalogRevisionCommand,
+  ): Promise<TakenRevision> {
+    if (!existing.isNamed && command.label !== null) {
+      existing.name(command.label, command.note);
+      await this.revisions.save(existing);
+      await this.journal.trace({
+        type: PIM_EVENTS.catalogRevisionNamed,
+        subjectType: "catalog_revision",
+        subjectId: existing.id,
+        payload: {
+          subjectLabel: command.label,
+          reference: existing.reference,
+          label: command.label,
+        },
+      });
+    }
+    return {
+      id: existing.id,
+      reference: existing.reference,
+      hash: existing.hash,
+      label: existing.label,
+      created: false,
+    };
+  }
+
+  /**
+   * L'ancre à poser. Sa référence est dérivée de l'identifiant, pas tirée d'un
+   * compteur : lire « le dernier numéro » pour ajouter un serait une course,
+   * et deux publications simultanées calculeraient le même.
+   */
+  private anchorFor(command: TakeCatalogRevisionCommand, hash: string): CatalogRevision {
+    const id = this.ids.next();
+    return CatalogRevision.take({
+      id,
+      reference: referenceFrom(REVISION_PREFIX, id),
+      label: command.label,
+      note: command.note,
+      hash,
+      takenAt: new Date(this.clock.now()),
+      takenBy: currentRequestContext()?.actor.id ?? "system",
+    });
+  }
+
+  /**
+   * Course perdue : un autre push vient de poser exactement cette ancre. On la
+   * rattrape plutôt que de rendre une erreur pour un résultat déjà là.
+   */
+  private async adoptWinner(
+    error: unknown,
+    hash: string,
+  ): Promise<{ readonly id: string; readonly reference: string; readonly adopted: true }> {
+    if (!(error instanceof RevisionHashAlreadyTakenError)) {
+      throw error;
+    }
+    const winner = await this.revisions.loadByHash(hash);
+    if (winner === null) {
+      throw error;
+    }
+    return { id: winner.id, reference: winner.reference, adopted: true };
+  }
+
+  /**
+   * La trace et l'ancre, dans la MÊME transaction : si la trace passait et
+   * l'ancre non, l'historique affirmerait une révision que la base ne porte pas.
+   */
   private async pose(
     command: TakeCatalogRevisionCommand,
     revision: ReturnType<typeof buildRevision>,

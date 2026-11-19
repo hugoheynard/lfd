@@ -1,4 +1,4 @@
-import { InvalidProPriceError } from "../errors/product-errors.js";
+import { InvalidProPriceError } from "../errors/variant-pricing-errors.js";
 
 /** 10⁻⁵ € : l'unité du fil et de `catalog_items.price_millicents`. */
 export const PRO_PRICE_DECIMALS = 5;

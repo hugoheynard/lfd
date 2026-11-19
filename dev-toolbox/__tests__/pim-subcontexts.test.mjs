@@ -110,6 +110,7 @@ test("intérieur du catalogue : la surface publique d'un voisin admis passe", ()
     "catalogue/revision/r.ts":
       imp("../product/media/m.fact.js") + imp("../product/__tests__/doubles.js"),
     "channels/c.ts": imp("../catalogue/product/domain/ports/p.js"),
+    "catalogue/history/infrastructure/h.ts": imp("../../revision/domain/ports/r.js"),
   });
   assert.equal(found.violations.size, 0);
 });
@@ -121,6 +122,8 @@ test("intérieur du catalogue : l'application d'un voisin, le mauvais sens, et u
     "catalogue/category/c.ts": imp("../product/domain/x.js"),
     "channels/c.ts": imp("../catalogue/product/regulatory/support.js"),
     "catalogue/revision/r.ts": imp("../product/__tests__/a.spec.js"),
+    "catalogue/history/infrastructure/h.ts": imp("../../revision/infrastructure/r.js"),
+    "catalogue/revision/domain/d.ts": imp("../../history/domain/h.js"),
   });
   assert.deepEqual(Object.fromEntries(found.violations), {
     "catalogue/product/lifecycle/a.ts → catalogue/category": 1,
@@ -128,5 +131,7 @@ test("intérieur du catalogue : l'application d'un voisin, le mauvais sens, et u
     "catalogue/category/c.ts → catalogue/product": 1,
     "channels/c.ts → catalogue/product": 1,
     "catalogue/revision/r.ts → catalogue/product": 1,
+    "catalogue/history/infrastructure/h.ts → catalogue/revision": 1,
+    "catalogue/revision/domain/d.ts → catalogue/history": 1,
   });
 });

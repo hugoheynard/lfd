@@ -2,28 +2,20 @@ import { Injectable } from "@nestjs/common";
 
 import type { WriteTicket } from "../../../../platform/journal/scoped-journal.js";
 import { PimPrismaService } from "../../../infra/database/pim-prisma.service.js";
+import { isUniqueViolation } from "../../../shared/json-readers.js";
 import {
   CatalogRevisionRepository,
   type RevisionRecord,
 } from "../domain/ports/catalog-revision.repository.js";
 import { CatalogRevision } from "../domain/entities/catalog-revision.js";
-import { RevisionHashAlreadyTakenError } from "../domain/errors/revision-errors.js";
+import {
+  RevisionHashAlreadyTakenError,
+  UnserializableRevisionPayloadError,
+} from "../domain/errors/revision-errors.js";
+import { isRecord } from "../domain/payload-reading.js";
 import type { RevisionIndex } from "../domain/diff.js";
 import { toJsonObject, type JsonObject } from "../domain/fingerprint.js";
 import type { Revision } from "../domain/revision.js";
-
-/**
- * Violation d'unicité Prisma (`P2002`) — **duck-typée**, sans importer les
- * classes du client.
- *
- * Le motif est celui du dépôt (`prisma-appointment.repository.ts`,
- * `customer-principal.resolver.ts`) : importer `PrismaClientKnownRequestError`
- * ferait entrer une classe du client dans le seul fichier qui a le droit de la
- * connaître, pour y gagner un `instanceof` que la forme donne déjà.
- */
-function isUniqueViolation(error: unknown): boolean {
-  return typeof error === "object" && error !== null && Reflect.get(error, "code") === "P2002";
-}
 
 @Injectable()
 export class PrismaCatalogRevisionRepository extends CatalogRevisionRepository {
@@ -257,11 +249,9 @@ function methodOf(header: unknown): string | null {
 /** Un payload stocké est un objet — sinon la ligne a été écrite hors de ce code. */
 function asRecord(payload: unknown): Record<string, unknown> {
   if (!isRecord(payload)) {
-    throw new TypeError("Un payload de révision stocké n'est pas un objet.");
+    throw new UnserializableRevisionPayloadError(
+      "un payload de révision stocké n'est pas un objet.",
+    );
   }
   return { ...payload };
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
 }

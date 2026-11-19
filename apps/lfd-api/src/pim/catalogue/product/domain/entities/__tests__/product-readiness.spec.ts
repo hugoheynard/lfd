@@ -2,7 +2,7 @@ import { ProductReadiness } from "../product-readiness.js";
 import {
   AnonymousReadinessError,
   ProductNotDeclaredReadyError,
-} from "../../errors/product-errors.js";
+} from "../../errors/readiness-errors.js";
 
 const AT = new Date("2026-08-31T09:00:00.000Z");
 

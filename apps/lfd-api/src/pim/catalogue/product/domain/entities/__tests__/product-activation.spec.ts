@@ -1,7 +1,7 @@
 import {
   ArchivedProductNotPublishableError,
   ProductNotActivatableError,
-} from "../../errors/product-errors.js";
+} from "../../errors/product-status-errors.js";
 import { Product, type ProductSnapshot } from "../product.js";
 import type { VariantSnapshot } from "../variant.js";
 import type { CompletenessRules } from "../../services/variant-completeness.js";

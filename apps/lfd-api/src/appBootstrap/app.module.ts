@@ -73,6 +73,7 @@ import { PackingFeedModule } from "./packing-feed.module.js";
 import { ShelfDrawsFeedModule } from "./shelf-draws-feed.module.js";
 import { PackingCommerceFeedModule } from "./packing-commerce-feed.module.js";
 import { CitedAllergensFeedModule } from "./cited-allergens-feed.module.js";
+import { VatRateUsageFeedModule } from "./vat-rate-usage-feed.module.js";
 import { ProductionDeskFeedModule } from "./production-desk-feed.module.js";
 import { PackingDeliveryFeedModule } from "./packing-delivery-feed.module.js";
 import { GeneralOrderCutoffModule } from "./general-order-cutoff.module.js";
@@ -263,6 +264,7 @@ import { DevImpersonation } from "../platform/auth/dev-impersonation.js";
     PackingDeliveryFeedModule,
     PackingCommerceFeedModule,
     CitedAllergensFeedModule,
+    VatRateUsageFeedModule,
     // Le bloc des e-mails : sa porte et le suivi des demandes
     // (plan `mail/plan-service-e-mails.md`, S1).
     MailModule,

@@ -8,7 +8,7 @@ import {
   AppellationRepository,
   type AppellationRecord,
 } from "../domain/ports/appellation.repository.js";
-import { isUniqueViolation } from "./prisma-violations.js";
+import { isUniqueViolation } from "../../../shared/json-readers.js";
 
 interface AppellationRow {
   readonly id: string;

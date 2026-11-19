@@ -77,7 +77,12 @@ const CATALOGUE_READS = {
   "catalogue/category": ["catalogue/shared"],
   "catalogue/product": ["catalogue/shared", "catalogue/category"],
   "catalogue/revision": ["catalogue/shared", "catalogue/category", "catalogue/product"],
-  "catalogue/history": ["catalogue/shared", "catalogue/category", "catalogue/product"],
+  "catalogue/history": [
+    "catalogue/shared",
+    "catalogue/category",
+    "catalogue/product",
+    "catalogue/revision",
+  ],
   "catalogue/allergen-matrix": ["catalogue/shared", "catalogue/category", "catalogue/product"],
 };
 

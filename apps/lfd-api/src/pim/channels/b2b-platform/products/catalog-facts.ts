@@ -1,26 +1,13 @@
 import type { SyncMedia, SyncMinQuantities, SyncVariant } from "@lfd/catalog-sync";
-import { proPriceOf } from "@lfd/pim-contracts";
 
-import { TechnicalError } from "../../../../platform/shared/errors/app-error.js";
 import type { AllergenNaming } from "../../../reference/allergens/domain/services/allergen-naming.js";
 import type { ProductRecord } from "../../../catalogue/product/domain/ports/product.repository.js";
-import type { ProductStatus } from "../../../catalogue/product/domain/entities/product.js";
-import {
-  variantGaps,
-  type CompletenessRules,
-} from "../../../catalogue/product/domain/services/variant-completeness.js";
+import type { CompletenessRules } from "../../../catalogue/product/domain/services/variant-completeness.js";
 import type { CatalogFamilyRecord } from "../domain/ports/catalog-facts.reader.js";
 import type { CategoryVatPercents } from "../../../catalogue/shared/domain/value-objects/vat-percents.js";
-import {
-  effectiveAudience,
-  type Audience,
-} from "../../../catalogue/shared/domain/value-objects/audience.js";
-import { projectVariant, vatOf, type Showcase } from "./projection.js";
-import {
-  translationsOf,
-  variantNameTranslationsOf,
-  type CatalogTranslations,
-} from "./translations.js";
+import type { Audience } from "../../../catalogue/shared/domain/value-objects/audience.js";
+import type { Showcase } from "./projection.js";
+import type { CatalogTranslations } from "./translations.js";
 
 export type { CatalogTranslations };
 
@@ -30,16 +17,6 @@ export type { CatalogTranslations };
  * traverse pas non plus — la plateforme n'a jamais su ce qu'était un brouillon.
  */
 export type CatalogEntryStatus = "inactive" | "active" | "archived";
-
-const STATUS_OF: Readonly<Record<ProductStatus, CatalogEntryStatus>> = {
-  draft: "inactive",
-  published: "active",
-  archived: "archived",
-  // Une supprimée est une archivée pour le commerce : son miroir l'a déjà
-  // retirée à l'archivage, et n'a pas à connaître la différence
-  // (`plan-effacer-une-fiche-archivee.md`, point 3).
-  deleted: "archived",
-};
 
 /** La famille telle qu'un fait la porte — celle d'une fiche, ou la sienne. */
 export interface CatalogFamilyFactBody {
@@ -184,123 +161,4 @@ export interface ProductFactInput {
    * déclinaison copiée ; un id absent n'est pas résolu, la trace part `null`.
    */
   readonly variantOrigins: ReadonlyMap<string, string>;
-}
-
-/** La famille projetée — pure, le taux part tel quel, `null` compris. */
-export function projectFamilyFact(
-  family: CatalogFamilyRecord,
-  percents: CategoryVatPercents,
-): CatalogFamilyFactBody {
-  return {
-    id: family.id,
-    name: family.name.fr,
-    nameTranslations: translationsOf(family.name),
-    slug: family.slug.fr,
-    parentId: family.parentId,
-    position: family.position,
-    vatRatePercent: vatOf(percents),
-    audience: family.audience,
-    archived: family.isArchived,
-  };
-}
-
-/**
- * **Projette une fiche en instantané** — pure, comme l'était la projection du
- * push (partie en X4), dont elle reprend la conversion de chaque déclinaison
- * (`projectVariant`).
- *
- * Ce qu'elle fait de plus que le push : elle **n'écarte rien en silence**. Une
- * déclinaison incomplète part dans `gaps`, avec ce qui lui manque — c'est C1 :
- * la projection juge l'état final, quel que soit le geste, et une déclinaison
- * incomplète est invendable par construction.
- *
- * Ce qu'elle ne fait plus : filtrer par la matrice des canaux. C'est
- * l'audience qui dit à qui la fiche se vend (C2, C5).
- */
-export function projectProductFact(input: ProductFactInput): CatalogProductFactBody {
-  const { product, family, showcase } = input;
-  const audience = effectiveAudience(product.audience, family.audience);
-  const variants: CatalogVariantFact[] = [];
-  const gaps: Record<string, readonly string[]> = {};
-  for (const variant of product.variants) {
-    if (variant.isDiscontinued) {
-      continue;
-    }
-    const missing = variantGaps(variant, input.percents, input.rules, audience);
-    if (missing.length > 0) {
-      gaps[variant.sku] = missing;
-      continue;
-    }
-    variants.push(sellableVariant(variant, input));
-  }
-  return {
-    status: STATUS_OF[product.status],
-    audience,
-    audienceInherited: product.audience === null,
-    product: {
-      id: product.id,
-      sku: product.sku,
-      name: product.name.fr,
-      categoryId: product.categoryId,
-      kind: product.kind,
-      note: showcase?.note ?? null,
-      noteTranslations: showcase?.noteTranslations ?? {},
-      image: showcase?.image ?? null,
-      thumbnail: showcase?.thumbnail ?? null,
-      operationOnly: product.operationOnly,
-      requiresCold: product.requiresCold,
-      variantsAsTiles: product.variantsAsTiles ?? true,
-      detachedFromSku: input.detachedFromSku,
-    },
-    variants,
-    gaps,
-    family: projectFamilyFact(family, input.familyPercents),
-  };
-}
-
-type VariantOf = ProductRecord["variants"][number];
-
-/**
- * Une déclinaison sans manque, convertie comme le push la convertit.
- *
- * Un prix absent part `null` — et `publicByContext` vide sans prix public :
- * la déclinaison ne se vend qu'à l'audience dont elle a le prix (2026-10-27).
- *
- * @throws {IncompleteVariantProjectedError} appelée sur une déclinaison sans
- *   AUCUN prix — faute de cette projection, `variantGaps` devait l'avoir écartée.
- */
-function sellableVariant(variant: VariantOf, input: ProductFactInput): CatalogVariantFact {
-  const vatRatePercent = vatOf(input.percents);
-  const proPrice = proPriceOf(vatRatePercent, variant.proPriceMillicents);
-  if (proPrice === null && variant.priceCents === null) {
-    throw new IncompleteVariantProjectedError(variant.sku);
-  }
-  return {
-    ...projectVariant(
-      variant,
-      proPrice?.htMillicents ?? null,
-      vatRatePercent,
-      variant.priceCents,
-      input.percents,
-      input.naming,
-      { cited: input.cited, catalogueUnion: input.catalogueUnion },
-    ),
-    nameTranslations: variantNameTranslationsOf(variant.name, input.product.name),
-    detachedFromVariantSku:
-      variant.detachedFromVariantId == null
-        ? null
-        : (input.variantOrigins.get(variant.detachedFromVariantId) ?? null),
-  };
-}
-
-/** Une déclinaison sans aucun prix est arrivée jusqu'à la conversion : faute de la projection. */
-export class IncompleteVariantProjectedError extends TechnicalError {
-  constructor(sku: string) {
-    super(
-      "catalog_facts.incomplete_variant_projected",
-      `La déclinaison ${sku} a été projetée comme vendable sans aucun prix (ni public, ni pro calculable). ` +
-        "C'est une faute de la projection des faits du catalogue, pas de la fiche : " +
-        "aucun fait n'est parti pour ce geste. Signaler l'erreur ; la fiche se réémet une fois corrigée.",
-    );
-  }
 }

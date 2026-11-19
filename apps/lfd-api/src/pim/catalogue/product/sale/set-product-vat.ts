@@ -3,6 +3,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { requireRateInService } from "../../../reference/vat-rates/application/vat-support.js";
 import { VatRateRepository } from "../../../reference/vat-rates/domain/ports/vat-rate.repository.js";
+import { VatRateNamesReader } from "../../../reference/vat-rates/domain/ports/vat-rate-names.reader.js";
 import { VatRateLock } from "../../../reference/vat-rates/domain/ports/vat-rate.lock.js";
 import { SalesContextLock } from "../../../reference/sales-contexts/domain/ports/sales-context.lock.js";
 import type { WriteTicket } from "../../../../platform/journal/scoped-journal.js";
@@ -39,6 +40,7 @@ export class SetProductVatHandler implements ICommandHandler<SetProductVatComman
   constructor(
     private readonly products: ProductRepository,
     private readonly rates: VatRateRepository,
+    private readonly rateNames: VatRateNamesReader,
     private readonly rateLock: VatRateLock,
     private readonly contextLock: SalesContextLock,
     private readonly contexts: SalesContextRegistry,
@@ -96,7 +98,7 @@ export class SetProductVatHandler implements ICommandHandler<SetProductVatComman
           Object.fromEntries(
             changed.map((key) => [key, { from: before[key] ?? null, to: after[key] ?? null }]),
           ),
-          this.rates,
+          this.rateNames,
           this.contexts,
         )),
       },

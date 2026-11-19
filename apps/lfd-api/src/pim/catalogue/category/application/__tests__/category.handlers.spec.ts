@@ -1,3 +1,4 @@
+import { VatRateNamesOf } from "../../../shared/domain/services/__tests__/journal-name-doubles.js";
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingJournal } from "../../../../journal/__tests__/recording-journal.js";
 import { VatRateNotFoundError } from "../../../../reference/vat-rates/domain/errors/vat-rate-errors.js";
@@ -424,6 +425,7 @@ describe("SetCategoryVatHandler", () => {
     await new SetCategoryVatHandler(
       categories,
       rates,
+      new VatRateNamesOf(rates),
       new RecordingVatRateLock(),
       new RecordingSalesContextLock(),
       registry,
@@ -444,6 +446,7 @@ describe("SetCategoryVatHandler", () => {
       new SetCategoryVatHandler(
         categories,
         new InMemoryRegimes(),
+        new VatRateNamesOf(new InMemoryRegimes()),
         new RecordingVatRateLock(),
         new RecordingSalesContextLock(),
         registry,
@@ -468,6 +471,7 @@ describe("SetCategoryVatHandler", () => {
     await new SetCategoryVatHandler(
       categories,
       rates,
+      new VatRateNamesOf(rates),
       new RecordingVatRateLock(),
       new RecordingSalesContextLock(),
       registry,

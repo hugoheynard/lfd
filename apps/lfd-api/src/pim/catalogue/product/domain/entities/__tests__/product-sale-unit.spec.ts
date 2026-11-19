@@ -5,7 +5,7 @@ import {
   SaleReferenceUsageUnknownError,
 } from "../../errors/sale-unit-errors.js";
 import type { SaleUnitClearance } from "../../value-objects/sale-reference-usage.js";
-import { ProductNotActivatableError } from "../../errors/product-errors.js";
+import { ProductNotActivatableError } from "../../errors/product-status-errors.js";
 import { Sku } from "../../value-objects/sku.value-object.js";
 import { Product } from "../product.js";
 import type { VariantSnapshot } from "../variant.js";

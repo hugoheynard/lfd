@@ -84,9 +84,11 @@ import { ListCatalogRevisionsHandler } from "./revision/application/list-catalog
 import { TakeCatalogRevisionHandler } from "./revision/application/take-catalog-revision.js";
 import { CatalogRevisionController } from "./revision/http/catalog-revision.controller.js";
 import { PrismaCatalogRevisionRepository } from "./revision/infrastructure/prisma-catalog-revision.repository.js";
-import { PrismaCatalogRevisionSource } from "./revision/infrastructure/prisma-catalog-revision.source.js";
+import { ComposedCatalogRevisionSource } from "./revision/infrastructure/composed-catalog-revision.source.js";
 import { CatalogOverviewReader } from "./revision/domain/ports/catalog-overview.reader.js";
-import { PrismaCatalogOverviewReader } from "./revision/infrastructure/prisma-catalog-overview.reader.js";
+import { TalliedCatalogOverviewReader } from "./revision/infrastructure/tallied-catalog-overview.reader.js";
+import { RevisionsHoldingReader } from "./revision/domain/ports/revisions-holding.reader.js";
+import { PrismaRevisionsHoldingReader } from "./revision/infrastructure/prisma-revisions-holding.reader.js";
 import { EditorialReader } from "./product/domain/ports/editorial-reader.js";
 import { ReadinessReader } from "./product/domain/ports/readiness.reader.js";
 import { ReadinessRepository } from "./product/domain/ports/readiness.repository.js";
@@ -121,7 +123,7 @@ import { PrismaProductRepository } from "./product/infrastructure/prisma-product
 import { GetProductHistoryHandler } from "./history/application/get-product-history.js";
 import { ProductLineageReader } from "./history/domain/ports/product-lineage.reader.js";
 import { ProductHistoryController } from "./history/http/product-history.controller.js";
-import { PrismaProductLineageReader } from "./history/infrastructure/prisma-product-lineage.reader.js";
+import { ComposedProductLineageReader } from "./history/infrastructure/composed-product-lineage.reader.js";
 import { SKU_AVAILABILITY } from "./product/domain/ports/sku-availability.js";
 import { PrismaSkuAvailability } from "./product/infrastructure/prisma-sku-availability.js";
 
@@ -220,7 +222,7 @@ import { PrismaSkuAvailability } from "./product/infrastructure/prisma-sku-avail
     GetProductSaleUnitUsageHandler,
     // L'onglet « Historique » : la lignée ici, le journal par le port global.
     GetProductHistoryHandler,
-    { provide: ProductLineageReader, useClass: PrismaProductLineageReader },
+    { provide: ProductLineageReader, useClass: ComposedProductLineageReader },
     { provide: CategoryRepository, useClass: PrismaCategoryRepository },
     // Deux LECTURES posées hors du dépôt des familles : le compte de fiches
     // interroge les produits, l'existence d'un emplacement interroge les
@@ -240,8 +242,9 @@ import { PrismaSkuAvailability } from "./product/infrastructure/prisma-sku-avail
     { provide: ProductImageUsage, useClass: PrismaProductImageUsage },
     { provide: IllustratedProductsReader, useClass: PrismaIllustratedProductsReader },
     { provide: CatalogRevisionRepository, useClass: PrismaCatalogRevisionRepository },
-    { provide: CatalogRevisionSource, useClass: PrismaCatalogRevisionSource },
-    { provide: CatalogOverviewReader, useClass: PrismaCatalogOverviewReader },
+    { provide: CatalogRevisionSource, useClass: ComposedCatalogRevisionSource },
+    { provide: CatalogOverviewReader, useClass: TalliedCatalogOverviewReader },
+    { provide: RevisionsHoldingReader, useClass: PrismaRevisionsHoldingReader },
     TakeCatalogRevisionHandler,
     ListCatalogRevisionsHandler,
     DiffCatalogRevisionsHandler,

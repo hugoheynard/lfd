@@ -48,6 +48,7 @@ export class SetProductMediaHandler implements ICommandHandler<SetProductMediaCo
 
   async execute(command: SetProductMediaCommand): Promise<void> {
     const product = await requireProduct(this.products, command.id);
+    product.requireEditable("replace_media");
     const before = await this.readers.mediaOf(command.id);
     const after = mediaItems(command.media);
     // UNE seule entrée `media`, la liste entière : c'est un remplacement, et

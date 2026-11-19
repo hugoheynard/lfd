@@ -590,7 +590,7 @@ ne passent pas par l'objet.
 - La source de la matrice des allergènes lit un type allégé ; le filtre
   reste au serveur, partagé avec les exports CSV et PDF.
 - Les ancêtres d'une famille en une requête (`WITH RECURSIVE`,
-  `pim/catalogue/history/infrastructure/prisma-product-lineage.reader.ts`).
+  `pim/catalogue/category/infrastructure/prisma-category-chain.reader.ts`).
 - La vue d'ensemble compte par une requête d'agrégat.
 
 ### 5.2 Le numéro `pim`

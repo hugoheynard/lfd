@@ -1,9 +1,9 @@
 import {
   DefaultVariantCannotFollowItselfError,
-  ProductNotActivatableError,
   VariantNotFoundError,
   VariantNotInProductError,
 } from "../../errors/product-errors.js";
+import { ProductNotActivatableError } from "../../errors/product-status-errors.js";
 import { ProPriceHt } from "../../value-objects/pro-price-ht.js";
 import { Sku } from "../../value-objects/sku.value-object.js";
 import { Product } from "../product.js";

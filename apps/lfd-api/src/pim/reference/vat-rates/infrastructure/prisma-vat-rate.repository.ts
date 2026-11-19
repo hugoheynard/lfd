@@ -1,14 +1,10 @@
 import { Injectable } from "@nestjs/common";
 
 import { PimPrismaService } from "../../../infra/database/pim-prisma.service.js";
+import { isUniqueViolation } from "../../../shared/json-readers.js";
 import { VatRate, type VatRateSnapshot } from "../domain/entities/vat-rate.js";
 import { VatRateConflictError } from "../domain/errors/vat-rate-errors.js";
 import { VatRateRepository, type VatRateUsage } from "../domain/ports/vat-rate.repository.js";
-
-/** Violation d'unicité Prisma — le `23505` de Postgres. Ici : deux fois le même taux. */
-function isUniqueViolation(error: unknown): boolean {
-  return typeof error === "object" && error !== null && "code" in error && error.code === "P2002";
-}
 
 interface VatRateRow {
   id: string;

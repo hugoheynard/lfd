@@ -28,11 +28,16 @@ import { CategoryImageHolders } from "./category/domain/ports/category-image-hol
 import { CategoryImageRepointing } from "./category/domain/ports/category-image-repointing.js";
 import { PrismaCategoryImageHolders } from "./category/infrastructure/prisma-category-image-holders.js";
 import { PrismaCategoryImageRepointing } from "./category/infrastructure/prisma-category-image-repointing.js";
+import { CategoryVatHoldersReader } from "./category/domain/ports/category-vat-holders.reader.js";
+import { PrismaCategoryVatHoldersReader } from "./category/infrastructure/prisma-category-vat-holders.reader.js";
+import { ProductVatHoldersReader } from "./product/domain/ports/product-vat-holders.reader.js";
+import { PrismaProductVatHoldersReader } from "./product/infrastructure/prisma-product-vat-holders.reader.js";
 
 /**
  * **Ce que la fiche et la famille savent répondre** : les lectures qu'elles
- * publient, chacune par capacité, et leurs porteurs d'images. Les canaux et
- * la médiathèque composent par elles, jamais par les dépôts ni les tables.
+ * publient, chacune par capacité, et leurs porteurs d'images. Les canaux, la
+ * médiathèque et le référentiel des taux composent par elles, jamais par les
+ * dépôts ni les tables.
  */
 export const CATALOGUE_READINGS: readonly Provider[] = [
   { provide: AllProductsReader, useClass: PrismaAllProductsReader },
@@ -49,6 +54,8 @@ export const CATALOGUE_READINGS: readonly Provider[] = [
   { provide: ProductImageRepointing, useClass: PrismaProductImageRepointing },
   { provide: CategoryImageHolders, useClass: PrismaCategoryImageHolders },
   { provide: CategoryImageRepointing, useClass: PrismaCategoryImageRepointing },
+  { provide: CategoryVatHoldersReader, useClass: PrismaCategoryVatHoldersReader },
+  { provide: ProductVatHoldersReader, useClass: PrismaProductVatHoldersReader },
 ];
 
 /** Les jetons de ces lectures, tels que le module les exporte. */
@@ -61,4 +68,6 @@ export const CATALOGUE_READING_PORTS = [
   ProductImageRepointing,
   CategoryImageHolders,
   CategoryImageRepointing,
+  CategoryVatHoldersReader,
+  ProductVatHoldersReader,
 ] as const;

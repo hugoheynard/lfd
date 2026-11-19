@@ -1,247 +1,13 @@
 import { Injectable } from "@nestjs/common";
 
-import { currentRequestContext } from "../../../../platform/context/request-context.store.js";
-
 import { PimPrismaService } from "../../../infra/database/pim-prisma.service.js";
 import { ProductWithoutVariantError } from "../domain/errors/product-invariant-errors.js";
 import { SkuAlreadyUsedError } from "../domain/errors/sku-errors.js";
-import { Product, type ProductSnapshot } from "../domain/entities/product.js";
-import type { VariantSnapshot } from "../domain/entities/variant.js";
-import { saleTermsColumns, saleTermsOf } from "./variant-sale-terms-columns.js";
-import {
-  minQuantitiesOf,
-  minQuantityColumns,
-  type MinQuantityColumns,
-} from "./variant-min-quantities-columns.js";
-import {
-  ProductRepository,
-  type ProductKind,
-  type ProductStatus,
-} from "../domain/ports/product.repository.js";
-import {
-  isUniqueViolation,
-  localizedColumn,
-  readLocalizedColumn,
-  readStringArrayColumn,
-  readStringMapColumn,
-} from "../../../shared/json-readers.js";
-import { audience } from "../../shared/domain/value-objects/audience.js";
-
-/** La moitié « sécurité » : ce que la déclinaison contient, et ses traces. */
-interface AllergensRow {
-  allergens: unknown;
-  mayContain: unknown;
-}
-
-/** La moitié « valeurs » : les mentions de l'annexe XV, plus l'indice. */
-interface NutritionRow {
-  energyKcal: number | null;
-  fatG: number | null;
-  saturatedFatG: number | null;
-  carbsG: number | null;
-  sugarsG: number | null;
-  proteinG: number | null;
-  saltG: number | null;
-  glycemicIndex: number | null;
-}
-
-interface VariantRow extends MinQuantityColumns {
-  id: string;
-  sku: string;
-  name: unknown;
-  internalLabel: string | null;
-  options: unknown;
-  isDefault: boolean;
-  isDiscontinued: boolean;
-  detachedToProductId: string | null;
-  detachedFromVariantId: string | null;
-  position: number;
-  priceCents: number | null;
-  weightGrams: number | null;
-  proPriceMillicents: number | null;
-  proPricePerKgMillicents: number | null;
-  publicPricePerKgTtcCents: number | null;
-  pricePerKgShownPublic: boolean;
-  pricePerKgShownPro: boolean;
-  saleUnit: string;
-  weightMinGrams: number | null;
-  weightStepGrams: number | null;
-  hasBeenPublished: boolean;
-  regulatoryFollowsDefault: boolean;
-  pricingFollowsDefault: boolean;
-  nutritionFollowsDefault: boolean;
-  minQuantityFollowsDefault: boolean;
-  customRecipe: boolean;
-  allergenSheet: AllergensRow | null;
-  nutritionValues: NutritionRow | null;
-}
-
-/** Une fiche lue avec ses déclinaisons et ses taux joints — ce que `toProduct` relit. */
-export interface ProductRow {
-  id: string;
-  sku: string;
-  name: unknown;
-  slug: unknown;
-  kind: ProductKind;
-  categoryId: string;
-  status: ProductStatus;
-  operationOnly: boolean;
-  requiresCold: boolean;
-  audience: string | null;
-  originVariantId: string | null;
-  variantsAsTiles: boolean;
-  variants: VariantRow[];
-  contextVat: readonly { vatRateId: string; context: { key: string } }[];
-}
-
-/**
- * Les dérogations voyagent AVEC le produit : elles sont à lui.
- *
- * Celle des canaux n'est plus lue ni écrite depuis que la révision ne
- * photographie plus `soldContexts` (2026-10-17, suite de X4) : ses tables
- * restent, figées.
- */
-export const PRODUCT_INCLUDE = {
-  // Les DEUX tables de la fiche réglementaire depuis le 2026-09-22, et plus
-  // `nutrition_declaration`, qui n'est plus ni lue ni écrite nulle part.
-  // Leur absence est une information : personne ne s'est prononcé.
-  variants: {
-    orderBy: { position: "asc" },
-    include: { allergenSheet: true, nutritionValues: true },
-  },
-  contextVat: { select: { vatRateId: true, context: { select: { key: true } } } },
-} as const;
-
-function toVariant(row: VariantRow): VariantSnapshot {
-  return {
-    id: row.id,
-    sku: row.sku,
-    name: readLocalizedColumn(row.name, "variant.name"),
-    internalLabel: row.internalLabel,
-    options: readStringMapColumn(row.options, "variant.options"),
-    isDefault: row.isDefault,
-    isDiscontinued: row.isDiscontinued,
-    detachedToProductId: row.detachedToProductId,
-    detachedFromVariantId: row.detachedFromVariantId,
-    position: row.position,
-    priceCents: row.priceCents,
-    weightGrams: row.weightGrams,
-    proPriceMillicents: row.proPriceMillicents,
-    proPricePerKgMillicents: row.proPricePerKgMillicents,
-    publicPricePerKgTtcCents: row.publicPricePerKgTtcCents,
-    pricePerKgShownPublic: row.pricePerKgShownPublic,
-    pricePerKgShownPro: row.pricePerKgShownPro,
-    ...saleTermsOf(row),
-    regulatoryFollowsDefault: row.regulatoryFollowsDefault,
-    pricingFollowsDefault: row.pricingFollowsDefault,
-    nutritionFollowsDefault: row.nutritionFollowsDefault,
-    minQuantities: minQuantitiesOf(row),
-    minQuantityFollowsDefault: row.minQuantityFollowsDefault,
-    customRecipe: row.customRecipe,
-    // 🔴 Pas de ligne = personne n'a déclaré (`null`) ; une ligne, même à
-    // tableau vide, est une AFFIRMATION (« aucun allergène »). C'est tout
-    // l'intérêt d'une table séparée : le tri-état est structurel.
-    allergenSheet: toAllergenSheet(row.allergenSheet),
-    nutrition: toNutrition(row.nutritionValues),
-  };
-}
-
-/**
- * La déclaration d'allergènes, **une ligne ou rien**.
- *
- * Les traces sortent d'ici et non de la nutrition : une trace EST un allergène,
- * elle vient de la même ligne, et l'absence de cette ligne est le seul silence
- * (lot 7 du plan `plan-separer-allergenes-et-nutrition.md`).
- */
-function toAllergenSheet(row: AllergensRow | null): VariantSnapshot["allergenSheet"] {
-  if (row === null) {
-    return null;
-  }
-  return {
-    declared: readStringArrayColumn(row.allergens, "variant_allergens.allergens"),
-    mayContain: readStringArrayColumn(row.mayContain, "variant_allergens.may_contain"),
-  };
-}
-
-/**
- * Les valeurs pour 100 g, **une ligne ou rien**.
- *
- * `null` quand personne n'en a saisi aucune — et non un bloc de huit `null`,
- * qui laisserait croire qu'une fiche existe. Déclarer un allergène ne fabrique
- * donc plus de tableau nutritionnel vide.
- */
-function toNutrition(row: NutritionRow | null): VariantSnapshot["nutrition"] {
-  if (row === null) {
-    return null;
-  }
-  return {
-    energyKcal: row.energyKcal,
-    fatG: row.fatG,
-    saturatedFatG: row.saturatedFatG,
-    carbsG: row.carbsG,
-    sugarsG: row.sugarsG,
-    proteinG: row.proteinG,
-    saltG: row.saltG,
-    glycemicIndex: row.glycemicIndex,
-  };
-}
-
-export function toProduct(row: ProductRow): Product {
-  return Product.reconstitute({
-    id: row.id,
-    sku: row.sku,
-    name: readLocalizedColumn(row.name, "product.name"),
-    slug: readLocalizedColumn(row.slug, "product.slug"),
-    kind: row.kind,
-    categoryId: row.categoryId,
-    status: row.status,
-    operationOnly: row.operationOnly,
-    requiresCold: row.requiresCold,
-    // Revalidée : une ligne relue n'est pas passée par le contrat.
-    audience: row.audience === null ? null : audience(row.audience),
-    originVariantId: row.originVariantId,
-    variantsAsTiles: row.variantsAsTiles,
-    variants: row.variants.map(toVariant),
-    vatByContext: Object.fromEntries(
-      row.contextVat.map((line) => [line.context.key, line.vatRateId]),
-    ),
-  });
-}
-
-/** Les colonnes du produit lui-même — les déclinaisons ont les leurs. */
-/**
- * QUI a écrit — la colonne système d'ADR-11, enfin remplie.
- *
- * Ici, dans l'infrastructure, et non dans un handler : c'est le seul endroit
- * qu'aucune écriture ne peut contourner. Un handler qui devrait y penser est un
- * handler qui peut l'oublier, et une colonne remplie une fois sur deux est pire
- * que vide — on la croit.
- *
- * `null` hors requête (un seed, un cron) : c'est exactement ce qui est vrai, et
- * l'inventer serait pire que l'avouer.
- */
-function writtenBy(): string | null {
-  return currentRequestContext()?.actor.id ?? null;
-}
-
-function toColumns(snapshot: ProductSnapshot) {
-  return {
-    updatedBy: writtenBy(),
-    name: localizedColumn(snapshot.name),
-    slug: localizedColumn(snapshot.slug),
-    kind: snapshot.kind,
-    categoryId: snapshot.categoryId,
-    status: snapshot.status,
-    operationOnly: snapshot.operationOnly,
-    requiresCold: snapshot.requiresCold,
-    audience: snapshot.audience,
-    originVariantId: snapshot.originVariantId ?? null,
-    variantsAsTiles: snapshot.variantsAsTiles ?? true,
-    // `custom_recipe` de la fiche n'est plus ni lu ni écrit : colonne morte, qui
-    // garde la valeur du report pour qu'un retour au code d'avant ne rouvre rien
-    // (`plan-sur-mesure-par-declinaison.md`, V4).
-  };
-}
+import type { Product, ProductSnapshot } from "../domain/entities/product.js";
+import { ProductRepository } from "../domain/ports/product.repository.js";
+import { isUniqueViolation, localizedColumn } from "../../../shared/json-readers.js";
+import { productColumns, variantCreateColumns, variantUpdateColumns } from "./product-columns.js";
+import { PRODUCT_INCLUDE, toProduct } from "./product-rows.js";
 
 @Injectable()
 export class PrismaProductRepository extends ProductRepository {
@@ -287,7 +53,7 @@ export class PrismaProductRepository extends ProductRepository {
           data: {
             id: snapshot.id,
             sku: snapshot.sku,
-            ...toColumns(snapshot),
+            ...productColumns(snapshot),
             variants: {
               create: {
                 id: defaultVariant.id,
@@ -317,9 +83,8 @@ export class PrismaProductRepository extends ProductRepository {
   /**
    * Écrit le produit ET ses déclinaisons, en une transaction. On réécrit
    * toutes les déclinaisons plutôt que de deviner celles qui ont bougé : un
-   * agrégat en porte une poignée, et « deviner » est précisément ce que
-   * l'ancien port faisait — une méthode par mutation, à tenir d'accord avec
-   * le domaine à la main.
+   * agrégat en porte une poignée, et deviner demanderait une écriture par
+   * mutation, à tenir d'accord avec le domaine à la main.
    */
   async save(product: Product): Promise<void> {
     // 🔴 L'instantané NON résolu. `snapshot()` substitue le prix et la fiche du
@@ -328,10 +93,19 @@ export class PrismaProductRepository extends ProductRepository {
     // promesse de `Variant.follows`. Les lecteurs résolvent à la lecture.
     const snapshot = product.persistenceSnapshot();
     await this.prisma.$transaction([
-      this.prisma.product.update({ where: { id: snapshot.id }, data: toColumns(snapshot) }),
-      // Les dérogations se REMPLACENT d'un bloc : un `upsert` par contexte
-      // laisserait vivre la ligne d'un contexte qu'on vient de rendre à sa
-      // famille, et « je reviens à l'héritage » ressemblerait à « rien changé ».
+      this.prisma.product.update({ where: { id: snapshot.id }, data: productColumns(snapshot) }),
+      ...this.vatOverrideWrites(snapshot),
+      ...this.variantWrites(snapshot),
+    ]);
+  }
+
+  /**
+   * Les dérogations se REMPLACENT d'un bloc : un `upsert` par contexte
+   * laisserait vivre la ligne d'un contexte qu'on vient de rendre à sa
+   * famille, et « je reviens à l'héritage » ressemblerait à « rien changé ».
+   */
+  private vatOverrideWrites(snapshot: ProductSnapshot) {
+    return [
       this.prisma.productContextVat.deleteMany({ where: { productId: snapshot.id } }),
       ...Object.entries(snapshot.vatByContext).map(([contextKey, vatRateId]) =>
         this.prisma.productContextVat.create({
@@ -342,11 +116,18 @@ export class PrismaProductRepository extends ProductRepository {
           },
         }),
       ),
-      // `upsert` et non `update` : une déclinaison AJOUTÉE par ce passage
-      // n'existe pas encore en base, et un `update` échouerait sur elle. La
-      // réservation de sa référence part avec, dans la même transaction — sans
-      // quoi un SKU vivrait sur une déclinaison que le registre ignore, et le
-      // prochain tirage pourrait le proposer à une autre.
+    ];
+  }
+
+  /**
+   * `upsert` et non `update` : une déclinaison AJOUTÉE par ce passage
+   * n'existe pas encore en base, et un `update` échouerait sur elle. La
+   * réservation de sa référence part avec, dans la même transaction — sans
+   * quoi un SKU vivrait sur une déclinaison que le registre ignore, et le
+   * prochain tirage pourrait le proposer à une autre.
+   */
+  private variantWrites(snapshot: ProductSnapshot) {
+    return [
       ...snapshot.variants.map((variant) =>
         this.prisma.skuRegistry.upsert({
           where: { value: variant.sku },
@@ -357,57 +138,10 @@ export class PrismaProductRepository extends ProductRepository {
       ...snapshot.variants.map((variant) =>
         this.prisma.productVariant.upsert({
           where: { id: variant.id },
-          create: {
-            id: variant.id,
-            productId: snapshot.id,
-            sku: variant.sku,
-            name: localizedColumn(variant.name),
-            internalLabel: variant.internalLabel ?? null,
-            options: { ...variant.options },
-            isDefault: variant.isDefault,
-            isDiscontinued: variant.isDiscontinued,
-            detachedToProductId: variant.detachedToProductId ?? null,
-            detachedFromVariantId: variant.detachedFromVariantId ?? null,
-            position: variant.position,
-            priceCents: variant.priceCents,
-            weightGrams: variant.weightGrams,
-            proPriceMillicents: variant.proPriceMillicents,
-            proPricePerKgMillicents: variant.proPricePerKgMillicents,
-            publicPricePerKgTtcCents: variant.publicPricePerKgTtcCents,
-            pricePerKgShownPublic: variant.pricePerKgShownPublic,
-            pricePerKgShownPro: variant.pricePerKgShownPro,
-            ...saleTermsColumns(variant),
-            regulatoryFollowsDefault: variant.regulatoryFollowsDefault,
-            pricingFollowsDefault: variant.pricingFollowsDefault,
-            nutritionFollowsDefault: variant.nutritionFollowsDefault,
-            minQuantityFollowsDefault: variant.minQuantityFollowsDefault,
-            customRecipe: variant.customRecipe ?? false,
-            ...minQuantityColumns(variant.minQuantities),
-          },
-          update: {
-            name: localizedColumn(variant.name),
-            internalLabel: variant.internalLabel ?? null,
-            isDefault: variant.isDefault,
-            isDiscontinued: variant.isDiscontinued,
-            detachedToProductId: variant.detachedToProductId ?? null,
-            position: variant.position,
-            priceCents: variant.priceCents,
-            weightGrams: variant.weightGrams,
-            proPriceMillicents: variant.proPriceMillicents,
-            proPricePerKgMillicents: variant.proPricePerKgMillicents,
-            publicPricePerKgTtcCents: variant.publicPricePerKgTtcCents,
-            pricePerKgShownPublic: variant.pricePerKgShownPublic,
-            pricePerKgShownPro: variant.pricePerKgShownPro,
-            ...saleTermsColumns(variant),
-            regulatoryFollowsDefault: variant.regulatoryFollowsDefault,
-            pricingFollowsDefault: variant.pricingFollowsDefault,
-            nutritionFollowsDefault: variant.nutritionFollowsDefault,
-            minQuantityFollowsDefault: variant.minQuantityFollowsDefault,
-            customRecipe: variant.customRecipe ?? false,
-            ...minQuantityColumns(variant.minQuantities),
-          },
+          create: variantCreateColumns(snapshot.id, variant),
+          update: variantUpdateColumns(variant),
         }),
       ),
-    ]);
+    ];
   }
 }

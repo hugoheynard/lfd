@@ -1,10 +1,8 @@
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingJournal } from "../../../../journal/__tests__/recording-journal.js";
 import type { CategoryVatPercents } from "../../../shared/domain/value-objects/vat-percents.js";
-import {
-  ProductNotActivatableError,
-  ProductNotFoundError,
-} from "../../domain/errors/product-errors.js";
+import { ProductNotActivatableError } from "../../domain/errors/product-status-errors.js";
+import { ProductNotFoundError } from "../../domain/errors/product-errors.js";
 import type { ProductSnapshot } from "../../domain/entities/product.js";
 import { ActivateProductCommand, ActivateProductHandler } from "../activate-product.js";
 import {

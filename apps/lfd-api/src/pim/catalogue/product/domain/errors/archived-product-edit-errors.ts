@@ -1,17 +1,21 @@
 import { BusinessError } from "../../../../../platform/shared/errors/app-error.js";
 
-/** Les gestes d'identité qu'une fiche archivée refuse. */
-export type ArchivedProductEdit = "rename" | "change_kind" | "reclassify";
+/** Les gestes qu'une fiche archivée refuse : son identité, ses textes, ses visuels. */
+export type ArchivedProductEdit =
+  "rename" | "change_kind" | "reclassify" | "edit_editorial" | "replace_media";
 
 const GESTURE_LABEL: Readonly<Record<ArchivedProductEdit, string>> = {
   rename: "renommée",
   change_kind: "changée de type",
   reclassify: "rangée dans une autre famille",
+  edit_editorial: "modifiée dans ses textes",
+  replace_media: "modifiée dans ses visuels",
 };
 
 /**
- * Une fiche archivée ne se modifie pas : on la restaure d'abord (décidé par
- * Hugo le 2026-11-18). Sans ce refus, un renommage sur une archivée passait
+ * Une fiche archivée ne se modifie pas, textes et visuels compris : on la
+ * restaure d'abord (décidé par Hugo le 2026-11-18, étendu aux textes et aux
+ * visuels le 2026-11-19). Sans ce refus, un renommage sur une archivée passait
  * en silence et se publiait à la restauration sans que personne l'ait revu.
  */
 export class ArchivedProductNotEditableError extends BusinessError {

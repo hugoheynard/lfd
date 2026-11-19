@@ -41,6 +41,7 @@ export class UpdateProductEditorialHandler implements ICommandHandler<
 
   async execute(command: UpdateProductEditorialCommand): Promise<void> {
     const product = await requireProduct(this.products, command.id);
+    product.requireEditable("edit_editorial");
     // Une lecture de plus, assumée : contrairement à l'identité ou au tarif, la
     // couche éditoriale n'est pas portée par l'agrégat déjà chargé. Sans elle
     // la trace dirait « Communication enregistrée » sans dire quoi — c'est

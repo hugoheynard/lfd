@@ -1,4 +1,7 @@
-import { InvalidVariantPricingError, ZeroPricePerKgError } from "../../errors/product-errors.js";
+import {
+  InvalidVariantPricingError,
+  ZeroPricePerKgError,
+} from "../../errors/variant-pricing-errors.js";
 import {
   DefaultVariantCannotFollowMinQuantityError,
   MinQuantityOnWeightSaleError,

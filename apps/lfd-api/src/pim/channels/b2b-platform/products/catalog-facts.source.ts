@@ -16,12 +16,8 @@ import {
 import type { CategoryVatPercents } from "../../../catalogue/shared/domain/value-objects/vat-percents.js";
 import { effectiveVat } from "../../../catalogue/shared/domain/value-objects/context-vat.js";
 import { VatRateRepository } from "../../../reference/vat-rates/domain/ports/vat-rate.repository.js";
-import {
-  projectFamilyFact,
-  projectProductFact,
-  type CatalogFamilyFactBody,
-  type CatalogProductFactBody,
-} from "./catalog-facts.js";
+import { projectFamilyFact, projectProductFact } from "./catalog-fact-projection.js";
+import type { CatalogFamilyFactBody, CatalogProductFactBody } from "./catalog-facts.js";
 import { CatalogSnapshots } from "./catalog-snapshots.js";
 import { showcaseOf } from "./showcase.js";
 

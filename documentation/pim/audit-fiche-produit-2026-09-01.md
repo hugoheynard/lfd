@@ -216,7 +216,7 @@ nomme jamais. Elle est sur un autre écran (`/pim/revisions`, l'aperçu à
 `overview-page.html:51-78`).
 
 ⚠️ **Et la révision ne filtre pas sur le statut.**
-`prisma-catalog-revision.source.ts:33` appelle `catalogue.publishable()`, qui
+`composed-catalog-revision.source.ts` appelle `catalogue.publishable()`, qui
 (`prisma-catalogue-reader.ts:54-57`) rend **tout ce qui n'est pas archivé** —
 brouillons compris. Le nom `publishable()` dit « ce qui est publiable » et
 signifie « ce qui n'est pas archivé ». Le `status` est bien recopié dans l'item

@@ -2,7 +2,7 @@ import {
   DeletedProductNotChangeableError,
   NotArchivedProductNotDeletableError,
   NotArchivedProductNotRestorableError,
-} from "../../errors/product-errors.js";
+} from "../../errors/product-status-errors.js";
 import { Sku } from "../../value-objects/sku.value-object.js";
 import { isLiveStatus, Product, type ProductStatus } from "../product.js";
 

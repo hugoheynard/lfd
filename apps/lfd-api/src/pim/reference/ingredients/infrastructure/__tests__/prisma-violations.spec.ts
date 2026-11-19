@@ -1,4 +1,5 @@
-import { isForeignKeyViolation, isUniqueViolation } from "../prisma-violations.js";
+import { isUniqueViolation } from "../../../../shared/json-readers.js";
+import { isForeignKeyViolation } from "../prisma-violations.js";
 
 /**
  * Ces deux fonctions sont le seul point qui décide si une erreur Postgres brute

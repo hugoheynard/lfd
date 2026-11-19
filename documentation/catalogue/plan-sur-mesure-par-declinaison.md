@@ -136,7 +136,7 @@ Cinq sérieux, intégrés ainsi :
 2. **Une déclinaison ajoutée hérite de la déclinaison par défaut** (et non
    `false`) : sur une fiche sur mesure aujourd'hui, elle naissait fermée ; elle
    le reste. Corrige D1.
-3. **La colonne morte n'est plus écrite** : `prisma-product.repository.ts:238`
+3. **La colonne morte n'est plus écrite** : `product-columns.ts:43`
    (`customRecipe: snapshot.customRecipe ?? false` à chaque `save`) est
    retirée dans D1, sans quoi chaque enregistrement remettrait
    `products.custom_recipe` à `false` et un retour au code v17 ouvrirait les

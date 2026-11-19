@@ -1,7 +1,5 @@
-import {
-  InvalidPackagingQuantityError,
-  InvalidVariantPricingError,
-} from "../errors/product-errors.js";
+import { InvalidPackagingQuantityError } from "../errors/product-errors.js";
+import { InvalidVariantPricingError } from "../errors/variant-pricing-errors.js";
 import type { Sku } from "../value-objects/sku.value-object.js";
 
 /** Les formes d'emballage que la maison vend en volume. */

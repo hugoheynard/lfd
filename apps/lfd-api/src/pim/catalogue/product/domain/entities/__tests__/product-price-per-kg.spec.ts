@@ -1,4 +1,7 @@
-import { InvalidVariantPricingError, ZeroPricePerKgError } from "../../errors/product-errors.js";
+import {
+  InvalidVariantPricingError,
+  ZeroPricePerKgError,
+} from "../../errors/variant-pricing-errors.js";
 import { ProPriceHt } from "../../value-objects/pro-price-ht.js";
 import { Sku } from "../../value-objects/sku.value-object.js";
 import { Product } from "../product.js";

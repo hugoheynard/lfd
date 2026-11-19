@@ -207,7 +207,7 @@ pim/
 
 - `SKU_AVAILABILITY` et son port dans `domain/ports/` ;
   `prisma-publication-sequence.ts` dans `channels/b2b-platform/infrastructure/`.
-- `prisma-product.repository.ts:282` : `TechnicalError` au lieu de `Error`.
+- `prisma-product.repository.ts` : `TechnicalError` au lieu de `Error`.
 - `get-product-detail.ts:163` : plus de `new Date(0)` inventée — le champ
   devient nullable dans la vue.
 - La garde d'unicité recopiée cinq fois (`vat-support.ts:11`,
@@ -407,11 +407,9 @@ Ce que le tableau ne disait pas, et que le code a demandé :
 - **`product-lifecycle.ts`** : les cinq transitions de statut, en fonctions
   pures qui rendent le statut d'après ou refusent. Sans elles `Product` restait
   à 560 lignes.
-- **`product-variant-gestures.ts`** : une classe de base abstraite qui porte les
-  dix-sept gestes de `Product` adressés à une déclinaison (« trouver dans la
-  collection, puis lui parler »). C'est l'API publique de `Product`, donc elle ne
-  pouvait pas disparaître ; la base ne reçoit de lui que `status` et
-  `variantsAsTiles`.
+- **`product-lineup.ts`** : les dix-sept gestes de `Product` adressés à une
+  déclinaison (« trouver dans la collection, puis lui parler »), dans un objet
+  que `Product` possède et auquel il délègue (L9.e).
 - **`product-state.ts`**, **`variant-snapshot.ts`**, **`variant-aspect.ts`**,
   **`variant-resolution.ts`** : les types d'instantané, la table
   `regulatory ↔ allergens` et la résolution de l'héritage (`resolveVariant`),
@@ -479,48 +477,37 @@ l'implémente en composant les lectures que les propriétaires publient.
 - **Porte** : `pim-subcontexts` à dette nulle, sous-contextes du catalogue
   compris.
 
-**Reste pour la suite de L9** (constaté au bâti) : trois adaptateurs lisent
-encore des tables d'un voisin — `revision/infrastructure/prisma-catalog-revision.source.ts`
-(médias), `revision/infrastructure/prisma-catalog-overview.reader.ts`
-(fiches et familles), `history/infrastructure/prisma-product-lineage.reader.ts`
-(fiche, TVA de famille, taux) ; la porte d'appartenance des modèles ne les
-voit pas, elle raisonne au niveau du bloc. Et `vatChangePayload` lit
-`contextLabelsOf` dans l'application des contextes de vente.
+**L9.d, L9.e, L9.f et les restes — Bâtis le 2026-11-19.**
 
-**L9.d — Les satellites portés par leur agrégat.** Médias
-(`EditorialRepository.replaceMedia`), textes éditoriaux, composition et
-allergènes d'une déclinaison s'écrivent aujourd'hui par primitives depuis le
-handler. Chacun passe en `load` → méthode métier → `save` : sur `Product`
-quand l'invariant est celui de la fiche (archivée refusée, déclinaison
-connue), sur un petit agrégat propre sinon. Question de tri inchangée
-(§ 3.1 du CLAUDE.md) : s'il n'existe aucune règle qui refuse l'écriture, le
-satellite reste un CRUD, et sa justification s'écrit au-dessus.
-
-**L9.e — Composition au lieu d'héritage.** `ProductVariantGestures` est une
-base abstraite à une seule sous-classe, créée pour passer `product.ts` sous
-300 lignes. Les gestes de déclinaison deviennent un objet possédé
-(`ProductLineup`, nom à trancher au bâti) que `Product` délègue ; l'API
-publique de `Product` ne change pas. De même, `pricingOf`
-(`sale/update-variant-pricing.ts`), qui énumère les onze champs tracés de la
-section « Tarif & logistique », devient une méthode de `VariantSale`.
-
-**L9.f — Petites dettes.**
-
-- Les trois fichiers de plus de 300 lignes (`prisma-product.repository.ts`
-  420, `product-errors.ts` 331, `catalog-facts.ts` 306) passent sous la borne
-  — erreurs rangées par capacité, `save` du dépôt découpé.
-- Les fonctions de plus de 40 lignes du catalogue : `save` du dépôt des
-  fiches (~89), `execute` de la prise de révision (~85), `create` (~57),
-  `projectVariant` (~49). L9 les compte d'abord (la mesure manque, § 5).
-- `isUniqueViolation` est défini quatre fois (révision, TVA, contextes de
-  vente, ingrédients) et `traced` quatre fois : un seul exemplaire dans
-  `pim/shared/`. `isRecord` trois fois dans `revision/` : un seul.
-- `revision/domain/fingerprint.ts` lève trois `TypeError` bruts : ils
-  deviennent une `TechnicalError` nommée (un payload non sérialisable est un
-  bug, pas un refus métier).
-- Deux ports d'identifiant (`IdGenerator`, 3 fichiers ; `UuidGenerator`, 12) : un seul, celui que le reste de l'API utilise — à vérifier au bâti.
-- Les commentaires historiques croisés en route se réécrivent au présent
-  (CLAUDE.md § 8) ; pas de grand ménage à part.
+- **Plus aucune table d'un voisin** : la révision, la lignée d'une fiche et le
+  décompte des taux en usage composent des lectures publiées
+  (`ProductTalliesReader`, `CategoryIdsReader`, `ProductPlacementReader`,
+  `CategoryChainReader`, `VatRateNamesReader`, `ProductCompositionReader`,
+  `RevisionsHoldingReader`, `ProductVatHoldersReader`,
+  `CategoryVatHoldersReader`). Le référentiel des taux déclare
+  `VatRateUsageReader`, la racine l'implémente
+  (`appBootstrap/pim-catalogue-vat-rate-usage.ts`). La porte admet
+  `history → revision` par sa surface publique.
+- **Les satellites** : les allergènes d'une déclinaison s'écrivent depuis la
+  fiche qui les déclare ; la composition est l'agrégat `ProductComposition`
+  des ingrédients (ingrédient inconnu ou archivé refusé) ; textes et visuels
+  passent par `Product.requireEditable` — décidé par Hugo le 2026-11-19 : une
+  fiche archivée refuse aussi ses textes et ses visuels.
+- **Composition** : `ProductLineup` remplace la base abstraite ;
+  `pricingSectionOf` (dix champs) sort du handler du tarif.
+- **Petites dettes** : plus aucun fichier au-dessus de 300 lignes (dette
+  vide) ; `save`, la prise de révision, `create` et `projectVariant` découpés ;
+  un seul `isUniqueViolation` ; `UnserializableRevisionPayloadError` au lieu
+  des `TypeError`.
+- **Laissé, avec sa raison** : les deux ports d'identifiant (`IdGenerator`
+  ULID, `UuidGenerator` UUID v7) restent — unifier changerait un format
+  d'identifiant ; les quatre `traced` ne partagent que leur nom ; onze
+  fonctions dépassent encore 40 lignes (la plus longue, `snapshotItems`, 71).
+- **À surveiller** : `product.ts` est à 300 lignes exactement, le prochain
+  geste ajouté à la fiche devra sortir une capacité (les réglages de vente
+  sont la première candidate). `PrismaVatRateRepository.usageByRegime` lit
+  encore des tables du catalogue, et `create-product` le dépôt d'écriture des
+  familles pour une lecture.
 
 **Critère de fin** : `lint:pim-subcontexts` à dette nulle sur les sous-blocs
 du catalogue, `lint:pim-file-size` à dette nulle, aucun `listAll` dans un

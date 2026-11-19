@@ -7,11 +7,8 @@ import {
 import { ArchivedAllergenDeclaredError } from "../../../../reference/allergens/domain/errors/allergen-errors.js";
 import { NutritionPartExceedsWholeError } from "../../domain/value-objects/nutrition-declaration.js";
 import { RecordingJournal } from "../../../../journal/__tests__/recording-journal.js";
-import {
-  NotArchivedProductNotRestorableError,
-  ProductNotFoundError,
-  VariantNotFoundError,
-} from "../../domain/errors/product-errors.js";
+import { NotArchivedProductNotRestorableError } from "../../domain/errors/product-status-errors.js";
+import { ProductNotFoundError, VariantNotFoundError } from "../../domain/errors/product-errors.js";
 import {
   CategoryArchivedError,
   CategoryNotFoundError,
@@ -520,6 +517,27 @@ describe("UpdateProductEditorialHandler", () => {
       fr: "Torréfaction douce",
     });
   });
+
+  it("refuse les textes d'une fiche archivée, sans rien écrire ni tracer", async () => {
+    const products = new FakeProductRepository({ ...seedProduct(), status: "archived" });
+    const editorials = new RecordingEditorialRepository();
+    const journal = new RecordingJournal();
+
+    await expect(
+      new UpdateProductEditorialHandler(
+        products,
+        editorials,
+        new EmptyEditorialReader(),
+        journal,
+        new DirectUnitOfWork(),
+        new RecordingCatalogEmitter(),
+      ).execute(
+        new UpdateProductEditorialCommand(PRODUCT_ID, { descriptionShort: { fr: "Nouveau" } }),
+      ),
+    ).rejects.toMatchObject({ gesture: "edit_editorial" });
+    expect(editorials.calls).toEqual([]);
+    expect(journal.types()).toEqual([]);
+  });
 });
 
 /**
@@ -763,6 +781,29 @@ describe("Archive / Restore product", () => {
 // `deactivate-product.spec.ts` (lot 1 du plan d'audience, 2026-10-15).
 
 describe("SetProductMediaHandler", () => {
+  it("refuse les visuels d'une fiche archivée, sans rien écrire ni tracer", async () => {
+    const products = new FakeProductRepository({ ...seedProduct(), status: "archived" });
+    const editorials = new RecordingEditorialRepository();
+    const journal = new RecordingJournal();
+
+    await expect(
+      new SetProductMediaHandler(
+        products,
+        editorials,
+        new EmptyEditorialReader(),
+        journal,
+        new RecordingDurable(),
+        new CountingPimIds(),
+        new DirectUnitOfWork(),
+        new RecordingCatalogEmitter(),
+      ).execute(
+        new SetProductMediaCommand(PRODUCT_ID, [{ role: "hero", url: "https://cdn/1.jpg" }]),
+      ),
+    ).rejects.toMatchObject({ gesture: "replace_media" });
+    expect(editorials.replaced).toEqual([]);
+    expect(journal.types()).toEqual([]);
+  });
+
   it("remplace la liste, et tire la position du RANG reçu", async () => {
     const products = new FakeProductRepository(seedProduct());
     const editorials = new RecordingEditorialRepository();

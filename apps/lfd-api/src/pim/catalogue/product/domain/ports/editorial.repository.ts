@@ -15,11 +15,12 @@ import type { Editorial, MediaItem } from "../value-objects/editorial.js";
  */
 export abstract class EditorialRepository {
   /**
-   * Un CRUD, et c'est voulu : aucune règle ne peut refuser ces textes une fois
-   * la fiche trouvée. Leur forme est tenue par le value object (`editorial`) ;
-   * l'existence de la fiche, supprimée comprise, par `requireProduct` ; et une
-   * fiche archivée reçoit ses textes comme une fiche en vente. Un agrégat
-   * n'aurait aucun invariant à porter.
+   * Le satellite de la fiche : la règle qui peut refuser est portée par
+   * `Product` — une fiche archivée ne reçoit pas de textes
+   * (`Product.requireEditable`), et le handler la juge avant d'écrire ici. La
+   * forme des textes est tenue par le value object (`editorial`), l'existence
+   * de la fiche, supprimée comprise, par `requireProduct`. Ce port n'écrit que
+   * ce que la fiche a accepté.
    */
   abstract save(
     productId: string,
@@ -30,10 +31,10 @@ export abstract class EditorialRepository {
   /**
    * Remplace la liste entière des visuels, dans l'ordre reçu.
    *
-   * Un CRUD, pour la même raison que `save` : la liste est jugée par
-   * construction (`mediaItems` — URL obligatoire, rôle unique là où il doit
-   * l'être, position dérivée du rang), et rien de l'état de la fiche ne la
-   * refuse.
+   * Comme `save` : une fiche archivée refuse ses visuels
+   * (`Product.requireEditable`, jugé par le handler avant cette écriture), et
+   * la liste est jugée par construction (`mediaItems` — URL obligatoire, rôle
+   * unique là où il doit l'être, position dérivée du rang).
    */
   abstract replaceMedia(
     productId: string,

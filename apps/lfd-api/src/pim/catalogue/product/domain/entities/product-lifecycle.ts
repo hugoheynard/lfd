@@ -4,7 +4,7 @@ import {
   DeletedProductNotChangeableError,
   NotArchivedProductNotDeletableError,
   NotArchivedProductNotRestorableError,
-} from "../errors/product-errors.js";
+} from "../errors/product-status-errors.js";
 import {
   isCompliantForActivation,
   type ComplianceFinding,

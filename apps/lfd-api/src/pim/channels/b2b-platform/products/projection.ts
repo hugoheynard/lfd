@@ -63,8 +63,7 @@ function frenchOf(text: { readonly fr: string }): string {
  * transformerait un oubli de tarification en produit gratuit — précisément la
  * faute que le tri en amont existe pour empêcher. Un prix absent traverse
  * `null` — « pas vendable à cette audience », jamais zéro — et
- * `publicByContext` est alors vide (2026-10-27,
- * `saisir-un-prix.md`).
+ * `publicByContext` est alors vide (`saisir-un-prix.md`).
  *
  * Le prix pro est **hors taxe**, quelle que soit l'assiette de la déclinaison :
  * la plateforme professionnelle facture en HT de bout en bout, et la frontière
@@ -80,45 +79,63 @@ export function projectVariant(
   naming: AllergenNaming,
   context: AllergenContext,
 ): SyncVariant {
-  const served = effectiveAllergens(variant.allergenSheet, context.cited, context.catalogueUnion);
   return {
-    // L'identifiant traverse depuis la v7 : une règle de rang « déclinaison »
-    // vise celui-ci, et le récepteur ne pourrait pas la rattacher au SKU seul.
+    // L'identifiant traverse : une règle de rang « déclinaison » vise celui-ci,
+    // et le récepteur ne pourrait pas la rattacher au SKU seul.
     id: variant.id,
     sku: variant.sku,
     name: frenchOf(variant.name),
-    priceMillicents: htPriceMillicents,
-    publicTtcCents,
-    publicByContext: publicTtcCents === null ? {} : publicPricesOf(publicTtcCents, percents),
-    weightGrams: variant.weightGrams,
-    // Informatifs, recopiés tels que saisis (`saisir-un-prix.md`) : rien
-    // ne les calcule ici, rien ne les lit pour tarifer de l'autre côté. Case
-    // de SON audience décochée (`saisir-un-prix.md`) : `null`, ce que le fil
-    // sait déjà dire — le canal ne reçoit pas ce qu'il ne montre pas.
-    proPricePerKgMillicents: variant.pricePerKgShownPro ? variant.proPricePerKgMillicents : null,
-    publicPricePerKgTtcCents: variant.pricePerKgShownPublic
-      ? variant.publicPricePerKgTtcCents
-      : null,
-    // L'unité de vente et ses termes (v14, `vente-au-poids.md`) :
-    // recopiés tels que saisis, déjà validés par la déclinaison.
-    saleUnit: variant.saleUnit,
-    weightMinGrams: variant.weightMinGrams,
-    weightStepGrams: variant.weightStepGrams,
-    // La quantité minimale EFFECTIVE (v15, `plan-quantite-minimale.md`) :
-    // l'instantané de l'agrégat a déjà résolu l'héritage du défaut et vidé
-    // celle d'une déclinaison au poids.
+    ...pricesOf(variant, htPriceMillicents, publicTtcCents, percents),
+    // La quantité minimale EFFECTIVE : l'instantané de l'agrégat a déjà résolu
+    // l'héritage du défaut et vidé celle d'une déclinaison au poids.
     minQuantities: { pro: variant.minQuantities.pro, public: variant.minQuantities.public },
     isDefault: variant.isDefault,
     position: variant.position,
     vatRatePercent,
+    ...allergensOf(variant, naming, context),
+    // Le sur mesure de CETTE déclinaison : jamais résolu sur le défaut,
+    // chacune porte le sien.
+    customRecipe: variant.customRecipe ?? false,
+  };
+}
+
+/** Les prix, le poids et l'unité de vente d'une déclinaison, tels que le fil les porte. */
+function pricesOf(
+  variant: VariantRecord,
+  htPriceMillicents: number | null,
+  publicTtcCents: number | null,
+  percents: CategoryVatPercents,
+) {
+  return {
+    priceMillicents: htPriceMillicents,
+    publicTtcCents,
+    publicByContext: publicTtcCents === null ? {} : publicPricesOf(publicTtcCents, percents),
+    weightGrams: variant.weightGrams,
+    // Informatifs, recopiés tels que saisis (`saisir-un-prix.md`) : rien ne
+    // les calcule ici, rien ne les lit pour tarifer de l'autre côté. Case de
+    // SON audience décochée : `null` — le canal ne reçoit pas ce qu'il ne
+    // montre pas.
+    proPricePerKgMillicents: variant.pricePerKgShownPro ? variant.proPricePerKgMillicents : null,
+    publicPricePerKgTtcCents: variant.pricePerKgShownPublic
+      ? variant.publicPricePerKgTtcCents
+      : null,
+    // L'unité de vente et ses termes (`vente-au-poids.md`) : recopiés tels que
+    // saisis, déjà validés par la déclinaison.
+    saleUnit: variant.saleUnit,
+    weightMinGrams: variant.weightMinGrams,
+    weightStepGrams: variant.weightStepGrams,
+  };
+}
+
+/** Les allergènes SERVIS d'une déclinaison ({@link AllergenContext}), avec leurs libellés. */
+function allergensOf(variant: VariantRecord, naming: AllergenNaming, context: AllergenContext) {
+  const served = effectiveAllergens(variant.allergenSheet, context.cited, context.catalogueUnion);
+  return {
     allergens: [...served.allergens],
     allergenLabels: labelsOf(naming.source, served.allergens),
     mayContain: [...served.mayContain],
     allergensPrecautionary: served.precautionary,
     allergenTexts: allergenTextsOf(naming, served.allergens, served.mayContain),
-    // Le sur mesure de CETTE déclinaison (v18, `plan-sur-mesure-par-declinaison.md`) :
-    // jamais résolu sur le défaut, chacune porte le sien.
-    customRecipe: variant.customRecipe ?? false,
   };
 }
 
@@ -131,8 +148,7 @@ export function projectVariant(
  * `plan-allergenes-jamais-bloquants.md`), jamais la déclaration enregistrée.
  * Sous B, `allergens` porte les seuls cités — vide si la composition est
  * muette — et c'est `allergensPrecautionary` qui empêche le récepteur de lire
- * cette liste vide comme « aucun allergène ». Ce renversement du `null` du
- * 2026-10-27 au matin date du même jour : le fil porte désormais les traces.
+ * cette liste vide comme « aucun allergène ». Le fil porte les traces.
  */
 export interface AllergenContext {
   /** Les codes que la composition de la fiche cite (règle A). */

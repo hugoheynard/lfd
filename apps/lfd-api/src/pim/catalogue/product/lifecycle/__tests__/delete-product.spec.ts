@@ -2,10 +2,8 @@ import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/dir
 import { RecordingJournal } from "../../../../journal/__tests__/recording-journal.js";
 import type { PimJournalEntry } from "../../../../journal/pim-journal.js";
 import type { Product } from "../../domain/entities/product.js";
-import {
-  NotArchivedProductNotDeletableError,
-  ProductNotFoundError,
-} from "../../domain/errors/product-errors.js";
+import { NotArchivedProductNotDeletableError } from "../../domain/errors/product-status-errors.js";
+import { ProductNotFoundError } from "../../domain/errors/product-errors.js";
 import { RecordingCatalogEmitter } from "../../../../shared/__tests__/catalog-emitter-doubles.js";
 import { DeleteProductCommand, DeleteProductHandler } from "../delete-product.js";
 import { requireProduct } from "../../shared/product-support.js";

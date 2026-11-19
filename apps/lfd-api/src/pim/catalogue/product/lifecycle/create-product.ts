@@ -83,6 +83,18 @@ export class CreateProductCommand {
 }
 
 /**
+ * Ce que le formulaire porte au-delà de la fiche, validé AVANT toute écriture :
+ * une fiche refusée ne doit pas laisser derrière elle un produit à moitié créé.
+ */
+interface OpeningContent {
+  readonly declaration: NutritionDeclaration | null;
+  readonly story: ReturnType<typeof editorial>;
+  readonly visuals: ReturnType<typeof mediaItems>;
+  /** Le formulaire portait des valeurs : sans elles, aucune ligne de valeurs ne s'écrit. */
+  readonly nutritionGiven: boolean;
+}
+
+/**
  * Crée le produit **et sa déclinaison par défaut** — indissociables (invariant 2).
  * La persistance les écrit en une transaction : l'invariant n'est jamais faux.
  * Une fois par intention : la clé est scellée dans cette transaction, et un
@@ -126,23 +138,13 @@ export class CreateProductHandler implements ICommandHandler<CreateProductComman
     const name = localizedText("nom", input.name);
     const category = await this.openCategory(input.categoryId);
     const sku = await this.skuFor(input);
-    // Validée AVANT toute écriture : une fiche refusée ne doit pas laisser
-    // derrière elle un produit à moitié créé.
-    const declaration = await this.declarationFor(input);
-    const story = editorial(input.editorial ?? {});
-    const visuals = mediaItems(input.media ?? []);
-
-    const productId = this.ids.next();
-    const variantId = this.ids.next();
-    const variantSku = await proposeSku(variantSkuRoot(sku, 0), this.availability);
-    const product = Product.open({
-      id: productId,
-      sku,
-      name,
-      kind: input.kind,
-      categoryId: input.categoryId,
-      defaultVariant: { id: variantId, sku: variantSku, name },
-    });
+    const content: OpeningContent = {
+      declaration: await this.declarationFor(input),
+      story: editorial(input.editorial ?? {}),
+      visuals: mediaItems(input.media ?? []),
+      nutritionGiven: input.nutrition !== undefined,
+    };
+    const { product, variantId } = await this.openProduct(input, name, sku);
 
     // UNE trace pour UN geste, même si l'ouverture touche trois dépôts : la
     // fiche naît d'un seul acte, et trois lignes de journal pour un formulaire
@@ -151,27 +153,55 @@ export class CreateProductHandler implements ICommandHandler<CreateProductComman
       const ticket = await this.journal.trace({
         type: PIM_EVENTS.productCreated,
         subjectType: "product",
-        subjectId: productId,
+        subjectId: product.id,
         payload: {
           subjectLabel: name.fr,
           sku: sku.value,
           name,
           kind: input.kind,
-          // La famille NOMMÉE (D5 du plan des phrases du journal).
           category: { id: category.id, name: category.name.fr },
-          declared: declaration !== null,
+          declared: content.declaration !== null,
         },
       });
-      await this.products.add(product, ticket);
-      await this.writeSheets(product, variantId, declaration, input, ticket);
-      if (!isEmptyEditorial(story) || visuals.length > 0) {
-        await this.editorials.save(productId, story, visuals, ticket);
-      }
-      await this.emitter.emitProducts([productId]);
-      await seal(productId);
+      await this.writeAll(product, variantId, content, ticket);
+      await seal(product.id);
     });
+    return product.id;
+  }
 
-    return productId;
+  /** La fiche et sa déclinaison par défaut, nées ensemble (invariant 2). */
+  private async openProduct(
+    input: CreateProductInput,
+    name: LocalizedText,
+    sku: Sku,
+  ): Promise<{ readonly product: Product; readonly variantId: string }> {
+    const id = this.ids.next();
+    const variantId = this.ids.next();
+    const variantSku = await proposeSku(variantSkuRoot(sku, 0), this.availability);
+    const product = Product.open({
+      id,
+      sku,
+      name,
+      kind: input.kind,
+      categoryId: input.categoryId,
+      defaultVariant: { id: variantId, sku: variantSku, name },
+    });
+    return { product, variantId };
+  }
+
+  /** La fiche, sa fiche réglementaire, sa couche éditoriale, puis le fait du canal. */
+  private async writeAll(
+    product: Product,
+    variantId: string,
+    content: OpeningContent,
+    ticket: WriteTicket,
+  ): Promise<void> {
+    await this.products.add(product, ticket);
+    await this.writeSheets(product, variantId, content, ticket);
+    if (!isEmptyEditorial(content.story) || content.visuals.length > 0) {
+      await this.editorials.save(product.id, content.story, content.visuals, ticket);
+    }
+    await this.emitter.emitProducts([product.id]);
   }
 
   /** La famille d'accueil : elle existe et n'est pas archivée. */
@@ -219,8 +249,7 @@ export class CreateProductHandler implements ICommandHandler<CreateProductComman
   private async writeSheets(
     product: Product,
     variantId: string,
-    declaration: NutritionDeclaration | null,
-    input: CreateProductInput,
+    { declaration, nutritionGiven }: OpeningContent,
     ticket: WriteTicket,
   ): Promise<void> {
     if (declaration === null) {
@@ -228,7 +257,7 @@ export class CreateProductHandler implements ICommandHandler<CreateProductComman
     }
     product.declareAllergens(variantId, declaration);
     await this.allergenSheets.save(product, variantId, ticket);
-    if (input.nutrition !== undefined) {
+    if (nutritionGiven) {
       await this.nutritionValues.save(variantId, declaration, ticket);
     }
   }

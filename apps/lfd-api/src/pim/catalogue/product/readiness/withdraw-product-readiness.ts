@@ -2,7 +2,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { PIM_EVENTS, PimJournal } from "../../../journal/pim-journal.js";
-import { ArchivedProductReadinessError } from "../domain/errors/product-errors.js";
+import { ArchivedProductReadinessError } from "../domain/errors/readiness-errors.js";
 import { ProductRepository } from "../domain/ports/product.repository.js";
 import { ReadinessRepository } from "../domain/ports/readiness.repository.js";
 import { requireProduct } from "../shared/product-support.js";

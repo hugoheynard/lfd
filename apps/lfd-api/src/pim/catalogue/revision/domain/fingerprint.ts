@@ -1,5 +1,7 @@
 import { createHash } from "node:crypto";
 
+import { UnserializableRevisionPayloadError } from "./errors/revision-errors.js";
+
 /**
  * L'**empreinte** d'une valeur — SHA-256 de sa forme canonique.
  *
@@ -45,7 +47,7 @@ export type JsonObject = { [key: string]: JsonValue };
 export function toJsonObject(value: Record<string, unknown>): JsonObject {
   const json = toJson(value);
   if (json === null || typeof json !== "object" || Array.isArray(json)) {
-    throw new TypeError("Un payload de révision est un objet.");
+    throw new UnserializableRevisionPayloadError("un payload de révision est un objet.");
   }
   return json;
 }
@@ -58,14 +60,16 @@ function toJson(value: unknown): JsonValue {
     if (!Number.isFinite(value)) {
       // `NaN` et `Infinity` deviennent `null` chez `JSON.stringify` : le payload
       // stocké ne serait alors plus celui qu'on a haché.
-      throw new TypeError(`Nombre non sérialisable dans un payload : ${String(value)}.`);
+      throw new UnserializableRevisionPayloadError(
+        `nombre non sérialisable dans un payload (${String(value)}).`,
+      );
     }
     return value;
   }
   if (Array.isArray(value)) {
     return value.map((item) => toJson(item));
   }
-  if (isRecord(value)) {
+  if (isPlainObject(value)) {
     const out: JsonObject = {};
     for (const [key, item] of Object.entries(value)) {
       // Une clé indéfinie est une clé ABSENTE, comme chez `JSON.stringify`.
@@ -75,10 +79,17 @@ function toJson(value: unknown): JsonValue {
     }
     return out;
   }
-  throw new TypeError(`Valeur non sérialisable dans un payload : ${typeof value}.`);
+  throw new UnserializableRevisionPayloadError(
+    `valeur non sérialisable dans un payload (${typeof value}).`,
+  );
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+/**
+ * Un objet LITTÉRAL, et lui seul : une `Date` ou un `Map` sont des objets que
+ * `JSON.stringify` déforme, donc refusés ici — d'où ce garde plus strict que
+ * `isRecord` des lecteurs de charge.
+ */
+function isPlainObject(value: unknown): value is Record<string, unknown> {
   return (
     typeof value === "object" && value !== null && Object.getPrototypeOf(value) === Object.prototype
   );

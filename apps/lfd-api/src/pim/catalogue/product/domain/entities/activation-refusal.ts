@@ -1,4 +1,4 @@
-import { ProductNotActivatableError } from "../errors/product-errors.js";
+import { ProductNotActivatableError } from "../errors/product-status-errors.js";
 import { activationGapsOf } from "../services/activation-gaps.js";
 import type { ComplianceFinding } from "../services/product-compliance.js";
 

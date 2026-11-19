@@ -2,7 +2,7 @@ import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/dir
 import { RecordingJournal } from "../../../../journal/__tests__/recording-journal.js";
 import { FixedSaleReferenceUsage } from "../../domain/ports/__tests__/sale-reference-usage-doubles.js";
 import { RecordingCatalogEmitter } from "../../../../shared/__tests__/catalog-emitter-doubles.js";
-import { InvalidProPriceError } from "../../domain/errors/product-errors.js";
+import { InvalidProPriceError } from "../../domain/errors/variant-pricing-errors.js";
 import {
   UpdateVariantPricingCommand,
   UpdateVariantPricingHandler,

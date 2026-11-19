@@ -24,7 +24,7 @@ import type { VariantSnapshot } from "../../product/domain/entities/variant.js";
  * voisin.
  */
 @Injectable()
-export class PrismaCatalogRevisionSource extends CatalogRevisionSource {
+export class ComposedCatalogRevisionSource extends CatalogRevisionSource {
   constructor(
     private readonly products: AllProductsReader,
     private readonly categories: AllCategoriesReader,

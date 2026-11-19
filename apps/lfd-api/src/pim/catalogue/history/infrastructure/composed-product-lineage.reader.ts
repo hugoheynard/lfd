@@ -1,6 +1,5 @@
 import { Injectable } from "@nestjs/common";
 
-import { PimPrismaService } from "../../../infra/database/pim-prisma.service.js";
 import { CategoryChainReader } from "../../category/domain/ports/category-chain.reader.js";
 import { FamilyVatReader } from "../../category/domain/ports/family-vat.reader.js";
 import { ProductPlacementReader } from "../../product/domain/ports/product-placement.reader.js";
@@ -8,13 +7,15 @@ import { ProductCompositionReader } from "../../../reference/ingredients/domain/
 import { VatRateNamesReader } from "../../../reference/vat-rates/domain/ports/vat-rate-names.reader.js";
 import { effectiveVat } from "../../shared/domain/value-objects/context-vat.js";
 import { SOURCE_LOCALE } from "../../shared/domain/value-objects/localized-text.js";
-import type { LineageLink, ProductLineage, RevisionMark } from "../domain/product-lineage.js";
+import type { LineageLink, ProductLineage } from "../domain/product-lineage.js";
 import { ProductLineageReader } from "../domain/ports/product-lineage.reader.js";
+import { RevisionsHoldingReader } from "../../revision/domain/ports/revisions-holding.reader.js";
 
 /**
  * La lignée d'une fiche, composée de ce que ses propriétaires publient : la
  * fiche dit où elle se tient, la famille sa chaîne et ses taux, les taux leur
- * nom, la provenance ce que la fiche cite. Aucune table d'un voisin n'est lue
+ * nom, la provenance ce que la fiche cite, la révision les ancres qui l'ont
+ * figée. Aucune table d'un voisin n'est lue
  * ici.
  *
  * Le taux appliqué passe par `effectiveVat`, la règle unique « la fiche
@@ -22,14 +23,14 @@ import { ProductLineageReader } from "../domain/ports/product-lineage.reader.js"
  * finirait par dire un autre taux que celui qu'on facture.
  */
 @Injectable()
-export class PrismaProductLineageReader extends ProductLineageReader {
+export class ComposedProductLineageReader extends ProductLineageReader {
   constructor(
-    private readonly prisma: PimPrismaService,
     private readonly placements: ProductPlacementReader,
     private readonly chains: CategoryChainReader,
     private readonly familyVat: FamilyVatReader,
     private readonly rateNames: VatRateNamesReader,
     private readonly composition: ProductCompositionReader,
+    private readonly revisions: RevisionsHoldingReader,
   ) {
     super();
   }
@@ -43,7 +44,7 @@ export class PrismaProductLineageReader extends ProductLineageReader {
       this.chains.chainOf(placement.categoryId),
       this.appliedRates(placement.categoryId, placement.vatByContext),
       this.composition.compositionOf(productId),
-      this.revisionsHolding(placement.variantSkus),
+      this.revisions.holding(placement.variantSkus),
     ]);
     return {
       productId: placement.productId,
@@ -78,19 +79,6 @@ export class PrismaProductLineageReader extends ProductLineageReader {
     const applied = [...new Set(Object.values(effectiveVat(familyVat, productVat)))];
     const rates = await this.rateNames.namesOf(applied);
     return rates.map((rate) => ({ id: rate.id, label: rate.name }));
-  }
-
-  /** Les révisions dont la photo contient une des déclinaisons. */
-  private async revisionsHolding(skus: readonly string[]): Promise<RevisionMark[]> {
-    if (skus.length === 0) {
-      return [];
-    }
-    const rows = await this.prisma.catalogRevisionItem.findMany({
-      where: { sku: { in: [...skus] } },
-      distinct: ["revisionId"],
-      select: { revision: { select: { id: true, hash: true } } },
-    });
-    return rows.map((row) => ({ id: row.revision.id, hash: row.revision.hash }));
   }
 }
 

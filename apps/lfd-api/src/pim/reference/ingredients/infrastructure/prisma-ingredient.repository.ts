@@ -19,7 +19,7 @@ import {
   IngredientRepository,
   type IngredientRecord,
 } from "../domain/ports/ingredient.repository.js";
-import { isUniqueViolation } from "./prisma-violations.js";
+import { isUniqueViolation } from "../../../shared/json-readers.js";
 
 interface AppellationJoin {
   readonly id: string;

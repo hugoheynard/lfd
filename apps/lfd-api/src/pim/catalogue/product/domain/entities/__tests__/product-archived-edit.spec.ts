@@ -4,8 +4,8 @@ import { Product, type ProductStatus } from "../product.js";
 
 /**
  * **Une fiche archivée ne se modifie pas** : renommer, changer de type ou de
- * famille se refuse tant qu'elle n'est pas restaurée (décidé par Hugo le
- * 2026-11-18).
+ * famille, toucher ses textes ou ses visuels se refuse tant qu'elle n'est pas
+ * restaurée (décidé par Hugo le 2026-11-18 et le 2026-11-19).
  */
 const withStatus = (status: ProductStatus): Product =>
   Product.reconstitute({
@@ -55,5 +55,29 @@ describe("une fiche archivée refuse les gestes d'identité", () => {
 
   it("le message nomme le geste de sortie", () => {
     expect(() => GESTURES.rename(withStatus("archived"))).toThrow(/Restaurez-le d'abord/);
+  });
+});
+
+describe("une fiche archivée refuse ses textes et ses visuels", () => {
+  it.each(["edit_editorial", "replace_media"] as const)("%s est refusé", (gesture) => {
+    let refusal: unknown = null;
+    try {
+      withStatus("archived").requireEditable(gesture);
+    } catch (caught) {
+      refusal = caught;
+    }
+    expect(refusal).toBeInstanceOf(ArchivedProductNotEditableError);
+    expect(refusal).toMatchObject({ gesture });
+  });
+
+  it.each(["draft", "published"] as const)("une fiche %s les accepte", (status) => {
+    expect(() => withStatus(status).requireEditable("edit_editorial")).not.toThrow();
+    expect(() => withStatus(status).requireEditable("replace_media")).not.toThrow();
+  });
+
+  it("le message nomme ce qui est refusé et le geste de sortie", () => {
+    expect(() => withStatus("archived").requireEditable("replace_media")).toThrow(
+      /modifiée dans ses visuels\. Restaurez-le d'abord/,
+    );
   });
 });

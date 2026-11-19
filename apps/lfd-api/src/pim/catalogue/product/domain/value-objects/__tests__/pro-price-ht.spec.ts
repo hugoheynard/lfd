@@ -1,4 +1,4 @@
-import { InvalidProPriceError } from "../../errors/product-errors.js";
+import { InvalidProPriceError } from "../../errors/variant-pricing-errors.js";
 import { MAX_PRO_PRICE_MILLICENTS, ProPriceHt } from "../pro-price-ht.js";
 
 describe("ProPriceHt — le prix pro HT saisi, au plus cinq décimales", () => {

@@ -5,7 +5,7 @@ import { Clock } from "../../../../platform/time/clock.js";
 import { currentRequestContext } from "../../../../platform/context/request-context.store.js";
 import { PIM_EVENTS, PimJournal } from "../../../journal/pim-journal.js";
 import { PimJournalReader } from "../../../journal/pim-journal-reader.js";
-import { ArchivedProductNotReadyError } from "../domain/errors/product-errors.js";
+import { ArchivedProductNotReadyError } from "../domain/errors/readiness-errors.js";
 import type { ReadinessSignature } from "../domain/entities/product-readiness.js";
 import { ProductRepository } from "../domain/ports/product.repository.js";
 import { ReadinessRepository } from "../domain/ports/readiness.repository.js";

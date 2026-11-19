@@ -7,7 +7,8 @@ import {
 import type { CatalogFamilyRecord } from "../../domain/ports/catalog-facts.reader.js";
 import type { CategoryVatPercents } from "../../../../catalogue/shared/domain/value-objects/vat-percents.js";
 import type { CompletenessRules } from "../../../../catalogue/product/domain/services/variant-completeness.js";
-import { projectFamilyFact, projectProductFact, type ProductFactInput } from "../catalog-facts.js";
+import { projectFamilyFact, projectProductFact } from "../catalog-fact-projection.js";
+import type { ProductFactInput } from "../catalog-facts.js";
 
 /**
  * La projection d'une fiche en instantané (2a1) — pure, et c'est elle qui

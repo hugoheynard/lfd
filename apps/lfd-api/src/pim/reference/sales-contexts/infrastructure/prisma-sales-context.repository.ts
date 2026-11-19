@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 
 import { PimPrismaService } from "../../../infra/database/pim-prisma.service.js";
+import { isUniqueViolation } from "../../../shared/json-readers.js";
 import { SalesContextAggregate } from "../domain/entities/sales-context.entity.js";
 import { SalesContextKeyTakenError } from "../domain/errors/sales-context-errors.js";
 import {
@@ -26,11 +27,6 @@ function toAggregate(row: SalesContextRow): SalesContextAggregate {
     position: row.position,
     archivedAt: row.archivedAt,
   });
-}
-
-/** Violation d'unicité Prisma — le `23505` de Postgres. Ici : deux fois la même clé. */
-function isUniqueViolation(error: unknown): boolean {
-  return typeof error === "object" && error !== null && "code" in error && error.code === "P2002";
 }
 
 @Injectable()

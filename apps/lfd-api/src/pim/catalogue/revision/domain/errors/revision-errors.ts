@@ -1,6 +1,7 @@
 import {
   BusinessError,
   ResourceNotFoundError,
+  TechnicalError,
 } from "../../../../../platform/shared/errors/app-error.js";
 
 /** On compare à une ancre qui n'existe pas. */
@@ -52,6 +53,23 @@ export class RevisionHashAlreadyTakenError extends BusinessError {
     super(
       "catalogue.revision.hash_already_taken",
       "Une autre ancre porte déjà cette empreinte de catalogue.",
+    );
+  }
+}
+
+/**
+ * **Un payload de révision qui n'est pas du JSON fidèle** — un objet attendu,
+ * un nombre infini, une `Date`, un `Map`. Le magasin est adressé par contenu :
+ * ce qui se stocke doit être exactement ce qui s'est haché. C'est une faute du
+ * code qui photographie (ou d'une ligne écrite hors de lui), jamais un refus
+ * métier : aucune ancre n'est posée, et le catalogue n'a pas bougé.
+ */
+export class UnserializableRevisionPayloadError extends TechnicalError {
+  constructor(readonly detail: string) {
+    super(
+      "catalogue.revision.unserializable_payload",
+      `La photographie du catalogue contient une valeur qui ne se range pas telle quelle : ${detail} ` +
+        "Aucune révision n'a été posée. Signaler l'erreur avec ce message : c'est une faute du code, pas du catalogue.",
     );
   }
 }

@@ -17,7 +17,7 @@ function aProduct(): Product {
  * Les gestes de déclinaison passent par la fiche : une requête forgée sur
  * l'identifiant d'une déclinaison d'une AUTRE fiche n'a aucun effet.
  */
-describe("ProductVariantGestures — la fiche garde ses déclinaisons", () => {
+describe("ProductLineup — la fiche garde ses déclinaisons", () => {
   const FOREIGN = "var_d_une_autre_fiche";
 
   it("refuse chaque geste adressé à une déclinaison qui n'est pas la sienne", () => {
@@ -54,7 +54,7 @@ describe("ProductVariantGestures — la fiche garde ses déclinaisons", () => {
   });
 });
 
-describe("ProductVariantGestures — ce qu'une déclinaison déclare elle-même", () => {
+describe("ProductLineup — ce qu'une déclinaison déclare elle-même", () => {
   it("ne rend rien tant que la déclinaison n'a rien déclaré", () => {
     expect(aProduct().ownAllergenDeclaration("var_1")).toBeNull();
   });

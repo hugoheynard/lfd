@@ -11,18 +11,20 @@ import { PrismaCitedAllergensReader } from "../pim/reference/ingredients/infrast
 import { IngredientsModule } from "../pim/reference/ingredients/ingredients.module.js";
 
 /**
- * **Ce que le catalogue demande à la provenance**, relié (2026-10-27) :
- * `CitedAllergensReader` — les allergènes que la composition de chaque fiche
- * cite, pour le jugement unique (`productCompliance`) ; et, depuis le même
- * jour, `IngredientCitationsReader` — les fiches qui citent un ingrédient, pour
- * propager ses allergènes ; et, depuis le 2026-10-29, `ProductCompositionCopier` —
- * la composition recopiée sur un produit né d'une déclinaison détachée
- * (`plan-gestes-de-declinaison.md`, D3) ; et `ProductCompositionReader` — ce
- * qu'une fiche cite, pour sa lignée. Le catalogue déclare, les ingrédients
- * implémentent.
+ * **Ce que la provenance publie pour le catalogue**, relié. Les quatre ports
+ * sont déclarés ET implémentés par `reference/ingredients` ; le catalogue les
+ * consomme :
  *
- * Lié ici et non par un import de module : aucun des deux n'importe l'autre,
- * donc pas de cycle, et la frontière reste visible
+ * - `CitedAllergensReader` — les allergènes que la composition de chaque fiche
+ *   cite, pour le jugement unique (`productCompliance`) ;
+ * - `IngredientCitationsReader` — les fiches qui citent un ingrédient, pour
+ *   propager ses allergènes ;
+ * - `ProductCompositionCopier` — la composition recopiée sur un produit né
+ *   d'une déclinaison détachée ;
+ * - `ProductCompositionReader` — ce qu'une fiche cite, pour sa lignée.
+ *
+ * Lié ici et non par un import de module : aucun des deux modules n'importe
+ * l'autre, donc pas de cycle, et la frontière reste visible
  * (`documentation/pim/data-model/05-allergenes-gs1-inco.md`).
  */
 @Global()

@@ -1,12 +1,11 @@
 import {
   ArchivedProductNotPublishableError,
   ArchivedProductNotWithdrawableError,
-  InvalidProductVariantsError,
-  InvalidVariantPricingError,
   NotArchivedProductNotRestorableError,
   ProductNotActivatableError,
-  VariantNotFoundError,
-} from "../../errors/product-errors.js";
+} from "../../errors/product-status-errors.js";
+import { InvalidProductVariantsError, VariantNotFoundError } from "../../errors/product-errors.js";
+import { InvalidVariantPricingError } from "../../errors/variant-pricing-errors.js";
 import { Sku } from "../../value-objects/sku.value-object.js";
 import { Product, type ProductSnapshot } from "../product.js";
 import type { VariantNutritionSnapshot } from "../variant.js";

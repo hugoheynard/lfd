@@ -3,7 +3,7 @@ import { Injectable } from "@nestjs/common";
 import { PimPrismaService } from "../../../infra/database/pim-prisma.service.js";
 import type { Product } from "../domain/entities/product.js";
 import { AllProductsReader } from "../domain/ports/all-products.reader.js";
-import { PRODUCT_INCLUDE, toProduct } from "./prisma-product.repository.js";
+import { PRODUCT_INCLUDE, toProduct } from "./product-rows.js";
 
 /**
  * L'adaptateur : la requête et le mapper du dépôt des fiches, pour qu'une

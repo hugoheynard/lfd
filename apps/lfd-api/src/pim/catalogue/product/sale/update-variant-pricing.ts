@@ -14,6 +14,8 @@ import { SaleReferenceUsage } from "../domain/ports/sale-reference-usage.js";
 import type { Product } from "../domain/entities/product.js";
 import type { SaleUnitClearance } from "../domain/value-objects/sale-reference-usage.js";
 import { clearancesOf } from "./sale-unit-clearance-support.js";
+import { pricingSectionOf } from "../domain/entities/variant-pricing-section.js";
+import type { VariantSnapshot } from "../domain/entities/variant-snapshot.js";
 
 /**
  * Ce que la section « Tarif & TVA » envoie. L'assiette voyage AVEC le prix :
@@ -78,10 +80,10 @@ export class UpdateVariantPricingHandler implements ICommandHandler<
   async execute(command: UpdateVariantPricingCommand): Promise<void> {
     const { productId, variantId, input } = command;
     const product = await requireProduct(this.products, productId);
-    const before = pricingOf(product.snapshot().variants, variantId);
+    const before = pricingSectionOf(variantOf(product, variantId));
     const clearance = await clearanceOf(this.usage, product, variantId, input.saleUnit);
     product.priceVariant(variantId, pricingOfInput(input), clearance);
-    const changes = changesBetween(before, pricingOf(product.snapshot().variants, variantId));
+    const changes = changesBetween(before, pricingSectionOf(variantOf(product, variantId)));
 
     await this.uow.run(async () => {
       const ticket =
@@ -152,45 +154,7 @@ function euros(raw: string | null): ProPriceHt | null {
   return raw === null ? null : ProPriceHt.fromEuros(raw);
 }
 
-/**
- * Ce que la section « Tarif & logistique » possède, pour UNE déclinaison.
- *
- * Le prix pro y entre (lot P) : sa clé est celle de la révision et du contrat
- * du fait, `proPriceMillicents`, pour que `attribution.ts` le lise tel quel.
- * Les prix au kilo aussi : sans eux, une saisie du seul kilo serait
- * `untraced` (`saisir-un-prix.md`, K1).
- */
-function pricingOf(
-  variants: readonly {
-    readonly id: string;
-    readonly priceCents: number | null;
-    readonly weightGrams: number | null;
-    readonly proPriceMillicents: number | null;
-    readonly proPricePerKgMillicents: number | null;
-    readonly publicPricePerKgTtcCents: number | null;
-    readonly pricePerKgShownPublic: boolean;
-    readonly pricePerKgShownPro: boolean;
-    readonly saleUnit: SaleUnit;
-    readonly weightMinGrams: number | null;
-    readonly weightStepGrams: number | null;
-  }[],
-  variantId: string,
-): Record<string, unknown> {
-  const variant = variants.find((candidate) => candidate.id === variantId);
-  return {
-    priceCents: variant?.priceCents ?? null,
-    weightGrams: variant?.weightGrams ?? null,
-    proPriceMillicents: variant?.proPriceMillicents ?? null,
-    proPricePerKgMillicents: variant?.proPricePerKgMillicents ?? null,
-    publicPricePerKgTtcCents: variant?.publicPricePerKgTtcCents ?? null,
-    // Les cases « afficher aux particuliers / aux pros » (`saisir-un-prix.md`) :
-    // en décocher une seule est un geste, il se trace.
-    pricePerKgShownPublic: variant?.pricePerKgShownPublic ?? true,
-    pricePerKgShownPro: variant?.pricePerKgShownPro ?? true,
-    // L'unité de vente et son pas (`vente-au-poids.md`) : sans eux, un
-    // passage au poids serait `untraced`.
-    saleUnit: variant?.saleUnit ?? "piece",
-    weightMinGrams: variant?.weightMinGrams ?? null,
-    weightStepGrams: variant?.weightStepGrams ?? null,
-  };
+/** La déclinaison résolue, telle que l'écran la montre — absente si elle n'est pas sous la fiche. */
+function variantOf(product: Product, variantId: string): VariantSnapshot | undefined {
+  return product.snapshot().variants.find((candidate) => candidate.id === variantId);
 }

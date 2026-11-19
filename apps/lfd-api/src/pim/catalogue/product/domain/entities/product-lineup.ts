@@ -2,14 +2,15 @@ import type { LocalizedText } from "../../../shared/domain/value-objects/localiz
 import type { AllergenDeclaration } from "../value-objects/nutrition-declaration.js";
 import type { MinQuantities } from "../value-objects/min-quantities.js";
 import type { SaleUnitClearance } from "../value-objects/sale-reference-usage.js";
-import type { DefaultVariantChange, ProductStatus } from "./product-state.js";
-import type { NewVariantInput, VariantLineup } from "./variant-lineup.js";
-import type {
+import type { DefaultVariantChange } from "./product-state.js";
+import { VariantLineup, type NewVariantInput } from "./variant-lineup.js";
+import type { Sku } from "../value-objects/sku.value-object.js";
+import {
   Variant,
-  VariantAspect,
-  VariantNutritionValues,
-  VariantPricing,
-  VariantSnapshot,
+  type VariantAspect,
+  type VariantNutritionValues,
+  type VariantPricing,
+  type VariantSnapshot,
 } from "./variant.js";
 
 /**
@@ -21,16 +22,13 @@ import type {
  * trouver la déclinaison dans {@link VariantLineup} puis lui parler — les
  * règles vivent chez elle, ou dans la collection quand il faut voir les sœurs.
  *
- * Une classe de base et non un objet de plus : ces gestes SONT l'API publique
- * de `Product` (aucun handler ne change), et seuls l'état de la fiche (son
- * statut, ses vignettes) lui manque — les deux accesseurs abstraits que
- * `Product` fournit. La séparer ne change donc ni l'agrégat ni sa racine.
+ * Un objet que `Product` possède et auquel il délègue : la fiche reste la
+ * seule racine (aucun handler ne voit `ProductLineup`), et ce qui manque ici
+ * de son état — le statut, les vignettes — est passé par la fiche à chaque
+ * geste qui le lit.
  */
-export abstract class ProductVariantGestures {
-  protected constructor(protected readonly lineup: VariantLineup) {}
-
-  abstract get status(): ProductStatus;
-  abstract get variantsAsTiles(): boolean;
+export class ProductLineup {
+  constructor(private readonly lineup: VariantLineup) {}
 
   /**
    * Les déclinaisons **résolues** — une alignée porte la déclaration du défaut.
@@ -119,10 +117,14 @@ export abstract class ProductVariantGestures {
    * @returns `false` quand elle le disait déjà.
    * @throws {CustomRecipeDefaultWithoutTilesError} le défaut d'une fiche sans vignettes.
    */
-  declareVariantCustomRecipe(variantId: string, customRecipe: boolean): boolean {
+  declareVariantCustomRecipe(
+    variantId: string,
+    customRecipe: boolean,
+    variantsAsTiles: boolean,
+  ): boolean {
     const target = this.lineup.get(variantId);
     if (customRecipe && target.isDefault) {
-      this.lineup.refuseCustomDefaultWithoutTiles(target, this.variantsAsTiles, true);
+      this.lineup.refuseCustomDefaultWithoutTiles(target, variantsAsTiles, true);
     }
     return target.declareCustomRecipe(customRecipe);
   }
@@ -153,8 +155,8 @@ export abstract class ProductVariantGestures {
    * @returns l'ancien défaut, et les moitiés de fiche que la nouvelle a reçues
    *   en propre — elles se persistent par leurs ports dédiés.
    */
-  makeVariantDefault(variantId: string): DefaultVariantChange {
-    return this.lineup.makeDefault(variantId, this.variantsAsTiles);
+  makeVariantDefault(variantId: string, variantsAsTiles: boolean): DefaultVariantChange {
+    return this.lineup.makeDefault(variantId, variantsAsTiles);
   }
 
   /** Le produit qu'une déclinaison de la fiche est devenue, ou `null`. */
@@ -169,8 +171,8 @@ export abstract class ProductVariantGestures {
    *
    * @returns la déclinaison ouverte — l'appelant a besoin de son id et de son SKU.
    */
-  addVariant(input: NewVariantInput): Variant {
-    return this.lineup.add(input, this.status === "published");
+  addVariant(input: NewVariantInput, published: boolean): Variant {
+    return this.lineup.add(input, published);
   }
 
   /** Le rang de la prochaine déclinaison — jamais leur nombre ({@link VariantLineup.nextPosition}). */
@@ -181,5 +183,39 @@ export abstract class ProductVariantGestures {
   /** Aligne une déclinaison sur la fiche du défaut, ou l'en détache. */
   alignVariant(variantId: string, aspect: VariantAspect, aligned: boolean): void {
     this.lineup.align(variantId, aspect, aligned);
+  }
+
+  /** Les déclinaisons telles qu'elles se PERSISTENT — l'héritage non résolu. */
+  ownVariants(): VariantSnapshot[] {
+    return this.lineup.ownSnapshots();
+  }
+
+  /** Refuse de retirer les vignettes d'une fiche dont le défaut est sur mesure. */
+  refuseUntiledCustomDefault(variantsAsTiles: boolean): void {
+    this.lineup.refuseCustomDefaultWithoutTiles(this.lineup.defaultVariant, variantsAsTiles);
+  }
+
+  /** La mise en vente de la fiche publie toutes ses déclinaisons. */
+  markAllPublished(): void {
+    this.lineup.markAllPublished();
+  }
+
+  /**
+   * Fait d'une déclinaison la collection d'un produit neuf : la vue résolue
+   * qu'elle VOYAIT devient son défaut, et elle est archivée ici.
+   */
+  detachInto(
+    variantId: string,
+    input: { id: string; defaultVariant: { id: string; sku: Sku } },
+  ): { readonly name: LocalizedText; readonly lineup: ProductLineup } {
+    const resolved = this.lineup.detach(variantId, input.id);
+    const opened = Variant.openDefaultFrom(resolved, {
+      ...input.defaultVariant,
+      name: resolved.name,
+    });
+    return {
+      name: resolved.name,
+      lineup: new ProductLineup(VariantLineup.fromDetached(input.id, opened)),
+    };
   }
 }
