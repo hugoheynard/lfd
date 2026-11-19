@@ -1,12 +1,15 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
 import type {
+  AppliedResupplyTemplateResponse,
   ResupplyTarget,
+  ResupplyTemplateApplyMode,
   SiteResuppliesView,
   SiteResupplyDraftView,
   SiteResupplyView,
 } from '@lfd/contracts';
 import { httpErrorMessage } from '@lfd/endpoints';
 
+import { GestureIntents, sentOnce } from '../../shared/gesture-intents';
 import { SiteResuppliesService } from './site-resupplies.service';
 
 /**
@@ -20,6 +23,8 @@ import { SiteResuppliesService } from './site-resupplies.service';
 @Injectable()
 export class SiteResuppliesStore {
   private readonly service = inject(SiteResuppliesService);
+  /** Les clés d'intention des applications de modèle, une par geste voulu. */
+  private readonly intents = new GestureIntents();
 
   readonly siteId = signal<string | null>(null);
   readonly view = signal<SiteResuppliesView | null>(null);
@@ -64,6 +69,31 @@ export class SiteResuppliesStore {
     // requête renvoyée non.
     const intentKey = crypto.randomUUID();
     return this.act((siteId) => this.service.addLine(siteId, target, sku, quantity, intentKey));
+  }
+
+  /**
+   * Applique un modèle à la demande en cours de la visée, puis relit. Rend la
+   * réponse du serveur (les lignes écartées), ou `null` si le geste a été
+   * refusé — le refus est alors dans `failure`.
+   *
+   * La clé tient au geste — point, visée, modèle, mode : un réessai après une
+   * coupure renvoie la même, et le serveur rend la réponse d'origine sans
+   * appliquer deux fois ; le succès l'oublie, le geste suivant en tire une neuve.
+   */
+  async applyTemplate(
+    target: ResupplyTarget,
+    templateId: string,
+    mode: ResupplyTemplateApplyMode,
+  ): Promise<AppliedResupplyTemplateResponse | null> {
+    const result: { applied: AppliedResupplyTemplateResponse | null } = { applied: null };
+    const accepted = await this.act(async (siteId) => {
+      result.applied = await sentOnce(
+        this.intents,
+        `apply:${siteId}:${target}:${templateId}:${mode}`,
+        (intentKey) => this.service.applyTemplate(siteId, target, { templateId, mode }, intentKey),
+      );
+    });
+    return accepted ? result.applied : null;
   }
 
   /** Nomme la demande en cours de la visée (R1g) ; vide retire le nom. */

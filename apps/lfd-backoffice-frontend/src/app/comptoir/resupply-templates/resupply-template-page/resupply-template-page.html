@@ -3,7 +3,9 @@
     pageEyebrow
     icon="arrow-back"
     label="Modèles de réassort"
-    [routerLink]="['/comptoir/reassort/modeles']"
+    data-template-back
+    [href]="backUrl()"
+    (click)="goBack($event)"
   />
 
   @if (articles() !== null && !missing()) {

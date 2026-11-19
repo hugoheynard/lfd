@@ -10,6 +10,11 @@ import type {
 import { describe, expect, it, vi } from 'vitest';
 
 import { PickupAddressesService } from '../../../b2b/reglages/pickup-addresses.service';
+import {
+  baseMatin,
+  FakeTemplatesService,
+} from '../../../comptoir/resupply-templates/resupply-template.testing';
+import { ResupplyTemplatesService } from '../../../comptoir/resupply-templates/resupply-templates.service';
 import { BakehouseResuppliesService } from '../bakehouse-resupplies.service';
 import { WorkstationsService } from '../../workstations.service';
 import { BakehouseResupplyCard } from './bakehouse-resupply-card';
@@ -124,9 +129,9 @@ class FakeBakehouse {
 
 /** Le dialogue de quantité doublé : il rend ce qu'on lui a fait valider. */
 class FakePanels {
-  answer: number | undefined = undefined;
+  answer: unknown = undefined;
   readonly asked: unknown[] = [];
-  open(_component: unknown, config: { data: unknown }): { closed: Promise<number | undefined> } {
+  open(_component: unknown, config: { data: unknown }): { closed: Promise<unknown> } {
     this.asked.push(config.data);
     return { closed: Promise.resolve(this.answer) };
   }
@@ -138,6 +143,7 @@ async function mount(
   panels = new FakePanels(),
   draftId: string | null = null,
   phone = false,
+  templates = new FakeTemplatesService(),
 ) {
   // jsdom n'a pas `matchMedia` : le bureau par défaut, le téléphone sur demande.
   vi.stubGlobal('matchMedia', () => ({
@@ -157,6 +163,7 @@ async function mount(
         useValue: { grouping: () => Promise.reject(new Error('non lu')) },
       },
       { provide: FoldPanelHostService, useValue: panels },
+      { provide: ResupplyTemplatesService, useValue: templates },
     ],
   });
   const fixture = TestBed.createComponent(BakehouseResupplyCard);
@@ -194,6 +201,7 @@ async function mount(
     press,
     root: fixture.nativeElement as HTMLElement,
     sentCount: () => sent,
+    templates,
   };
 }
 
@@ -565,5 +573,62 @@ describe('BakehouseResupplyCard', () => {
       { sku: 'CRO', quantity: 12 },
       { sku: 'GRA', quantity: 1250 },
     ]);
+  });
+});
+
+describe('BakehouseResupplyCard — partir d’un modèle (plan-modeles-de-reassort.md, T4)', () => {
+  async function settled(fixture: Awaited<ReturnType<typeof mount>>['fixture']): Promise<void> {
+    await new Promise((resolve) => setTimeout(resolve));
+    await fixture.whenStable();
+    fixture.detectChanges();
+  }
+
+  it('lit les modèles du point choisi', async () => {
+    const { fixture, card, templates } = await mount();
+    await card['pickSite']('site_v');
+    await settled(fixture);
+    expect(templates.calls).toEqual(['list site_v']);
+    expect(card['templates']().map((template) => template.name)).toEqual(['Base matin']);
+  });
+
+  it('remplit la carte vide sans rien écrire, reprend la visée et le nom, et nomme les écartés', async () => {
+    const { fixture, card, bakehouse, root, templates } = await mount();
+    await card['pickSite']('site_v');
+    await card['fromTemplate'](baseMatin());
+    await settled(fixture);
+    expect(card['lines']()).toEqual([{ sku: 'CRO', quantity: 12 }]);
+    expect(card['target']()).toBe('tomorrow');
+    expect(card['name']()).toBe('Base matin');
+    expect(bakehouse.sent).toEqual([]);
+    expect(bakehouse.draftCalls).toEqual([]);
+    expect(templates.calls).toEqual(['list site_v']);
+    expect(root.querySelector('[data-bakehouse-template-skipped]')?.textContent).toContain(
+      '2 articles écartés : OLD (article retiré du réassort), Baguette (unité de vente changée depuis).',
+    );
+  });
+
+  it('sur une carte remplie, « Ajouter » additionne au lieu de remplacer', async () => {
+    const panels = new FakePanels();
+    panels.answer = 'add';
+    const { fixture, card, add } = await mount(new FakePickups(), new FakeBakehouse(), panels);
+    await card['pickSite']('site_v');
+    await settled(fixture);
+    add('CRO', 3);
+    add('PAC', 2);
+    await card['fromTemplate'](baseMatin());
+    expect(panels.asked).toEqual([{ templateName: 'Base matin', lineCount: 2 }]);
+    expect(card['lines']()).toEqual([
+      { sku: 'CRO', quantity: 15 },
+      { sku: 'PAC', quantity: 2 },
+    ]);
+  });
+
+  it("garde la carte telle quelle si l'on ferme la question", async () => {
+    const { fixture, card, add } = await mount();
+    await card['pickSite']('site_v');
+    await settled(fixture);
+    add('PAC', 2);
+    await card['fromTemplate'](baseMatin());
+    expect(card['lines']()).toEqual([{ sku: 'PAC', quantity: 2 }]);
   });
 });

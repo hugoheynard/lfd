@@ -28,6 +28,18 @@
     />
   </div>
 
+  <!-- Les modèles du point, appliqués à la visée affichée (plan-modeles-de-reassort.md, § 4). -->
+  @if (canWrite() || canWriteTemplates()) {
+    <app-resupply-templates-menu
+      [siteId]="siteId()"
+      [target]="target()"
+      [draft]="targetDraft()"
+      [articles]="articles()"
+      [canApply]="canWrite()"
+      [canWriteTemplates]="canWriteTemplates()"
+    />
+  }
+
   @if (alertFailure(); as failure) {
     <fold-callout variant="alert" announce>{{ failure }}</fold-callout>
   }

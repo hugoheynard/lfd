@@ -6,7 +6,7 @@
 
   @if (canWrite() && siteId(); as site) {
     <div pageActions>
-      <a foldButton intent="primary" [routerLink]="['/comptoir/reassort/modeles', site, 'nouveau']">
+      <a foldButton intent="primary" [routerLink]="['/comptoir/modeles-reassort', site, 'nouveau']">
         Nouveau modèle
       </a>
     </div>
@@ -66,7 +66,7 @@
                     foldButton
                     emphasis="outline"
                     size="sm"
-                    [routerLink]="['/comptoir/reassort/modeles', siteId(), card.id]"
+                    [routerLink]="['/comptoir/modeles-reassort', siteId(), card.id]"
                   >
                     Ajuster
                   </a>

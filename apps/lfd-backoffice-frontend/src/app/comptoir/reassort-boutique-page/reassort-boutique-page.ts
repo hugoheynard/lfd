@@ -99,6 +99,9 @@ export class ReassortBoutiquePage {
   private readonly resupplies = inject(SiteResuppliesStore);
 
   protected readonly canWrite = computed(() => this.permissions.can('handover_counter:write'));
+  protected readonly canWriteTemplates = computed(() =>
+    this.permissions.can('resupply_templates:write'),
+  );
   protected readonly state = signal<LoadState>('loading');
   protected readonly articles = signal<readonly ResupplyArticleView[]>([]);
   /** Le point ouvert dans la bande ; `null` tant qu'aucun site n'y est choisi. */

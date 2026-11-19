@@ -7,6 +7,9 @@ import type {
 } from '@lfd/contracts';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { FakeTemplatesService } from '../../resupply-templates/resupply-template.testing';
+import { ResupplyTemplatesService } from '../../resupply-templates/resupply-templates.service';
+
 // jsdom n'a pas `matchMedia` : la table le lit pour la saisie mobile (2026-10-28).
 beforeEach(() => {
   vi.stubGlobal('matchMedia', () => ({
@@ -77,6 +80,7 @@ async function mount(
       { provide: SiteResuppliesService, useValue: resupplies },
       { provide: SiteStockAlertsService, useValue: alerts },
       { provide: ResupplyReceiptsService, useValue: receipts },
+      { provide: ResupplyTemplatesService, useValue: new FakeTemplatesService() },
     ],
   });
   await TestBed.inject(SiteResuppliesStore).load('site_v');

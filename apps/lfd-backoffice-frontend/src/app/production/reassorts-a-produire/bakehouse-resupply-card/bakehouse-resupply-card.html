@@ -59,7 +59,42 @@
           [value]="target()"
           (valueChange)="pickTarget($event)"
         />
+        <!-- Un modèle du point remplit la carte, sans rien écrire (plan-modeles-de-reassort.md, T4). -->
+        @if (siteId() !== null) {
+          <fold-dropdown placement="bottom-start" ariaLabel="Partir d'un modèle">
+            <button
+              foldPopoverTrigger="menu"
+              foldButton
+              type="button"
+              emphasis="soft"
+              intent="neutral"
+              data-bakehouse-templates
+              [disabled]="pending()"
+            >
+              <fold-icon name="library" [size]="16" />
+              Partir d'un modèle
+            </button>
+            @for (template of templates(); track template.id) {
+              <fold-dropdown-item
+                [attr.data-bakehouse-template]="template.id"
+                (selected)="fromTemplate(template)"
+              >
+                {{ template.name }}
+              </fold-dropdown-item>
+            } @empty {
+              <fold-dropdown-item [disabled]="true">Aucun modèle pour ce point</fold-dropdown-item>
+            }
+          </fold-dropdown>
+        }
       </div>
+      @if (siteId() !== null && templatesLoadError(); as message) {
+        <fold-callout variant="alert" data-bakehouse-templates-error>{{ message }}</fold-callout>
+      }
+      @if (templateNotice(); as message) {
+        <fold-callout variant="warning" announce data-bakehouse-template-skipped>
+          {{ message }}
+        </fold-callout>
+      }
 
       <!-- Le nom en haut, avec le point et la visée (Hugo, 2026-10-28) : il
            dit QUEL réassort on compose, avant d'en saisir les quantités. -->

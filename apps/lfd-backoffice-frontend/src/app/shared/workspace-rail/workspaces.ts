@@ -563,7 +563,7 @@ export const COMPTOIR_VIEWS: readonly WorkspaceView[] = [
   {
     key: 'modeles-de-reassort',
     label: 'Modèles de réassort',
-    link: '/comptoir/reassort/modeles',
+    link: '/comptoir/modeles-reassort',
     icon: 'library',
     needs: 'resupply_templates:read',
   },

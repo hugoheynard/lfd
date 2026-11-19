@@ -1033,7 +1033,7 @@ export const routes: Routes = [
         // LES MODÈLES DE RÉASSORT — la bibliothèque d'un point (plan
         // `reassort-boutiques/plan-modeles-de-reassort.md`, § 6). Lire sous
         // `resupply_templates:read` ; composer sous l'écriture.
-        path: 'reassort/modeles',
+        path: 'modeles-reassort',
         canActivate: [permissionGuard('resupply_templates:read')],
         title: 'Modèles de réassort — LFC B2B admin',
         loadComponent: () =>
@@ -1042,7 +1042,7 @@ export const routes: Routes = [
           ),
       },
       {
-        path: 'reassort/modeles/:siteId/nouveau',
+        path: 'modeles-reassort/:siteId/nouveau',
         canActivate: [permissionGuard('resupply_templates:write')],
         title: 'Nouveau modèle de réassort — LFC B2B admin',
         loadComponent: () =>
@@ -1051,7 +1051,7 @@ export const routes: Routes = [
           ),
       },
       {
-        path: 'reassort/modeles/:siteId/:templateId',
+        path: 'modeles-reassort/:siteId/:templateId',
         canActivate: [permissionGuard('resupply_templates:write')],
         title: 'Modèle de réassort — LFC B2B admin',
         loadComponent: () =>

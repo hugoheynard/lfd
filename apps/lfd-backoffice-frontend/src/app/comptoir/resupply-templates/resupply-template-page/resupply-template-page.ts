@@ -70,10 +70,12 @@ const TARGET_OPTIONS = [
 const NAME_TAKEN = 'resupply.template.name_taken';
 const NAME_REQUIRED = 'resupply.template.name_required';
 const CHANGED_MEANWHILE = 'resupply.template.changed_meanwhile';
+/** L'écran des modèles, hors de `/comptoir/reassort` : son onglet ne s'y allume pas. */
+const TEMPLATES_URL = '/comptoir/modeles-reassort';
 
 /**
  * **Composer un modèle de réassort** — le créer
- * (`/comptoir/reassort/modeles/:siteId/nouveau`) ou l'ajuster
+ * (`/comptoir/modeles-reassort/:siteId/nouveau`) ou l'ajuster
  * (`…/:siteId/:templateId`) : son nom, sa visée proposée, et une quantité par
  * article dans la table du catalogue du réassort, filtrée par famille — les
  * briques de « Envoyer un réassort » du fournil.
@@ -149,6 +151,17 @@ export class ResupplyTemplatePage {
 
   protected readonly isNew = computed(() => this.templateId() === undefined);
   protected readonly back = computed(() => ({ point: this.siteId() }));
+  /**
+   * Le retour garde le point (`?point=`) : `fold-back-link` ne porte pas de
+   * paramètres de requête sur son `routerLink` (vérifié dans `fold-ng.d.ts`
+   * le 2026-11-19). Il prend donc l'adresse entière en `href` — un clic du
+   * milieu ouvre le bon écran — et un clic simple navigue par le routeur.
+   */
+  protected readonly backUrl = computed(() =>
+    this.router.serializeUrl(
+      this.router.createUrlTree([TEMPLATES_URL], { queryParams: this.back() }),
+    ),
+  );
   protected readonly pageTitle = computed(() => {
     const site = this.siteLabel();
     const base = this.isNew() ? 'Nouveau modèle' : 'Ajuster le modèle';
@@ -300,8 +313,17 @@ export class ResupplyTemplatePage {
     }, "Le modèle n'a pas pu être archivé.");
   }
 
+  /** Un clic simple reste dans l'application ; un clic modifié ouvre l'adresse ailleurs. */
+  protected goBack(event: MouseEvent): void {
+    if (event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) {
+      return;
+    }
+    event.preventDefault();
+    void this.leave();
+  }
+
   private async leave(): Promise<void> {
-    await this.router.navigate(['/comptoir/reassort/modeles'], { queryParams: this.back() });
+    await this.router.navigate([TEMPLATES_URL], { queryParams: this.back() });
   }
 
   /** Un geste vers le serveur : un à la fois, son refus placé là où il se corrige. */

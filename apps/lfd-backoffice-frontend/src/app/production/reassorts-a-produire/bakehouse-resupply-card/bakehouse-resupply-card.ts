@@ -13,6 +13,8 @@ import type {
   BakehouseResupplyDraftView,
   ResupplyArticleView,
   ResupplyTarget,
+  ResupplyTemplateApplyMode,
+  ResupplyTemplateView,
   SaveBakehouseResupplyDraftPayload,
 } from '@lfd/contracts';
 import { NgTemplateOutlet } from '@angular/common';
@@ -23,9 +25,13 @@ import {
   FoldCardComponent,
   FoldDataTableCellDirective,
   FoldDataTableComponent,
+  FoldDropdownComponent,
+  FoldDropdownItemComponent,
   FoldElementTitleComponent,
   FoldEmptyStateComponent,
+  FoldIconComponent,
   FoldListboxComponent,
+  FoldPanelHostService,
   FoldSearchComponent,
   FoldViewToggleComponent,
   type FoldSelectOption,
@@ -33,6 +39,15 @@ import {
 } from 'fold-ng';
 
 import { PickupAddressesService } from '../../../b2b/reglages/pickup-addresses.service';
+import {
+  ApplyModeDialog,
+  type ApplyModeDialogData,
+} from '../../../comptoir/resupply-templates/apply-mode-dialog/apply-mode-dialog';
+import {
+  filledFromTemplate,
+  skippedNotice,
+} from '../../../comptoir/resupply-templates/resupply-template-apply';
+import { ResupplyTemplatesStore } from '../../../comptoir/resupply-templates/resupply-templates.store';
 import { ResupplyNameField } from '../../../shared/resupply-name-field/resupply-name-field';
 import { narrowViewport } from '../../../shared/viewport/narrow-viewport';
 import { ALL_FAMILIES, articlesMatching, familyOptionsOf } from './article-filters';
@@ -98,15 +113,18 @@ interface SiteChoice {
     FoldCardComponent,
     FoldDataTableCellDirective,
     FoldDataTableComponent,
+    FoldDropdownComponent,
+    FoldDropdownItemComponent,
     FoldElementTitleComponent,
     FoldEmptyStateComponent,
+    FoldIconComponent,
     FoldListboxComponent,
     FoldSearchComponent,
     FoldViewToggleComponent,
     NgTemplateOutlet,
     ResupplyNameField,
   ],
-  providers: [BakehouseDraftsStore],
+  providers: [BakehouseDraftsStore, ResupplyTemplatesStore],
   templateUrl: './bakehouse-resupply-card.html',
   styleUrl: './bakehouse-resupply-card.scss',
 })
@@ -115,6 +133,13 @@ export class BakehouseResupplyCard {
   private readonly pickups = inject(PickupAddressesService);
   private readonly workstations = inject(WorkstationsService);
   protected readonly draftsStore = inject(BakehouseDraftsStore);
+  private readonly panels = inject(FoldPanelHostService);
+  /** La bibliothèque des modèles du point choisi (T4), lue sous `production_resupply:read`. */
+  private readonly library = inject(ResupplyTemplatesStore);
+  protected readonly templates = this.library.templates;
+  protected readonly templatesLoadError = this.library.loadError;
+  /** Les lignes d'un modèle écartées en remplissant la carte ; `null` : aucune. */
+  protected readonly templateNotice = signal<string | null>(null);
   /** Le libellé de chaque point, pour la liste des brouillons. */
   protected readonly siteLabels = computed(
     () => new Map(this.sites().map((site) => [site.id, site.label] as const)),
@@ -264,6 +289,8 @@ export class BakehouseResupplyCard {
   protected async pickSite(siteId: string): Promise<void> {
     this.siteId.set(siteId);
     this.usedNames.set([]);
+    this.templateNotice.set(null);
+    void this.library.open(siteId);
     try {
       const names = await this.service.usedNames(siteId);
       if (this.siteId() === siteId) {
@@ -282,6 +309,38 @@ export class BakehouseResupplyCard {
 
   protected quantityOf(sku: string): number | null {
     return this.quantities().get(sku) ?? null;
+  }
+
+  /**
+   * **« Partir d'un modèle »** (plan `plan-modeles-de-reassort.md`, T4) : le
+   * modèle REMPLIT la composition de la carte, sans aucun appel — elle reste
+   * locale jusqu'à « Envoyer » ou « Enregistrer comme brouillon ». Une carte
+   * déjà remplie demande « Remplacer · Ajouter », comme au comptoir. La visée
+   * du modèle est reprise (elle se rechange d'un clic), son nom aussi si la
+   * carte n'en a pas ; les lignes inapplicables sont écartées et nommées.
+   */
+  protected async fromTemplate(template: ResupplyTemplateView): Promise<void> {
+    let mode: ResupplyTemplateApplyMode = 'replace';
+    const lineCount = this.lines().length;
+    if (lineCount > 0) {
+      const chosen = await this.panels.open<ApplyModeDialogData, ResupplyTemplateApplyMode>(
+        ApplyModeDialog,
+        { data: { templateName: template.name, lineCount } },
+      ).closed;
+      if (chosen === undefined) {
+        return;
+      }
+      mode = chosen;
+    }
+    const filled = filledFromTemplate(this.quantities(), template, mode, this.articles());
+    this.quantities.set(filled.quantities);
+    this.target.set(template.target);
+    if (this.name().trim() === '') {
+      this.name.set(template.name);
+    }
+    this.failure.set(null);
+    this.done.set(null);
+    this.templateNotice.set(skippedNotice(filled.skipped, this.articles(), template));
   }
 
   /** La case réécrite : vidée ou à zéro, l'article n'est plus demandé. */
@@ -340,6 +399,7 @@ export class BakehouseResupplyCard {
   private clear(): void {
     this.quantities.set(new Map());
     this.name.set('');
+    this.templateNotice.set(null);
   }
 
   /** Un geste vers le serveur : un à la fois, et son refus dit dans la carte. */

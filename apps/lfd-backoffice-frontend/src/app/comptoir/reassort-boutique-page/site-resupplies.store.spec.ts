@@ -3,6 +3,7 @@ import { TestBed } from '@angular/core/testing';
 import type { SiteResuppliesView, SiteResupplyView } from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
+import { FakeResupplies } from './resupply-stock.testing';
 import { SiteResuppliesService } from './site-resupplies.service';
 import { SiteResuppliesStore } from './site-resupplies.store';
 
@@ -71,5 +72,47 @@ describe('SiteResuppliesStore — annuler un réassort lancé (R4a)', () => {
     expect(store.failure()).toBe(REFUSAL);
     expect(service.calls).toEqual(['list site_v', 'cancel site_v r1', 'list site_v']);
     expect(store.view()?.resupplies[0]?.status).toBe('placed');
+  });
+});
+
+describe('SiteResuppliesStore — appliquer un modèle (plan-modeles-de-reassort.md, § 4)', () => {
+  async function opened(): Promise<{ store: SiteResuppliesStore; fake: FakeResupplies }> {
+    const fake = new FakeResupplies();
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [SiteResuppliesStore, { provide: SiteResuppliesService, useValue: fake }],
+    });
+    const store = TestBed.inject(SiteResuppliesStore);
+    await store.load('site_v');
+    return { store, fake };
+  }
+
+  it('applique, rend les lignes écartées, et relit la demande', async () => {
+    const { store, fake } = await opened();
+    fake.skipped = [{ sku: 'OLD', reason: 'withdrawn' }];
+    const applied = await store.applyTemplate('tomorrow', 'tpl_1', 'replace');
+    expect(applied?.skipped).toEqual([{ sku: 'OLD', reason: 'withdrawn' }]);
+    expect(fake.calls).toEqual(['apply tomorrow tpl_1 replace']);
+    expect(store.drafts()[0]?.lines.map((line) => line.sku)).toEqual(['CRO']);
+  });
+
+  it('renvoie la même clé après une coupure, puis en tire une neuve pour le geste suivant', async () => {
+    const { store, fake } = await opened();
+    fake.applyFailures = [new HttpErrorResponse({ status: 0 })];
+    expect(await store.applyTemplate('asap', 'tpl_1', 'add')).toBeNull();
+    expect(store.failure()).not.toBeNull();
+    await store.applyTemplate('asap', 'tpl_1', 'add');
+    await store.applyTemplate('asap', 'tpl_1', 'add');
+    const [lost, retried, next] = fake.applyKeys;
+    expect(retried).toBe(lost);
+    expect(next).not.toBe(retried);
+  });
+
+  it('un autre mode est un autre geste, sous une autre clé', async () => {
+    const { store, fake } = await opened();
+    fake.applyFailures = [new HttpErrorResponse({ status: 0 })];
+    await store.applyTemplate('asap', 'tpl_1', 'add');
+    await store.applyTemplate('asap', 'tpl_1', 'replace');
+    expect(fake.applyKeys[1]).not.toBe(fake.applyKeys[0]);
   });
 });

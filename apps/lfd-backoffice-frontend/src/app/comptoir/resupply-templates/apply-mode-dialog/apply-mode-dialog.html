@@ -1,0 +1,19 @@
+<fold-panel-header
+  [title]="'Appliquer « ' + data().templateName + ' »'"
+  subtitle="La demande a déjà des articles"
+/>
+
+<fold-panel-body>
+  <p>
+    Elle compte {{ data().lineCount }} article(s). « Remplacer » la remplace par le modèle ; «
+    Ajouter » additionne les quantités du modèle à celles déjà saisies.
+  </p>
+</fold-panel-body>
+
+<fold-panel-footer>
+  <button foldButton emphasis="outline" intent="neutral" (click)="cancel()">Annuler</button>
+  <button foldButton emphasis="outline" data-apply-mode="add" (click)="choose('add')">
+    Ajouter
+  </button>
+  <button foldButton data-apply-mode="replace" (click)="choose('replace')">Remplacer</button>
+</fold-panel-footer>

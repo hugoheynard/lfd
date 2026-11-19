@@ -346,9 +346,9 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   // Le réassort (2026-10-12, pas encore construit) : le poste du retrait.
   'comptoir/reassort': 'handover_counter:read',
   // Les modèles de réassort : leur propre droit (plan-modeles-de-reassort.md, § 6).
-  'comptoir/reassort/modeles': 'resupply_templates:read',
-  'comptoir/reassort/modeles/:siteId/nouveau': 'resupply_templates:write',
-  'comptoir/reassort/modeles/:siteId/:templateId': 'resupply_templates:write',
+  'comptoir/modeles-reassort': 'resupply_templates:read',
+  'comptoir/modeles-reassort/:siteId/nouveau': 'resupply_templates:write',
+  'comptoir/modeles-reassort/:siteId/:templateId': 'resupply_templates:write',
   // Lire les clients du comptoir ET commander : deux gardes, deux droits
   // (architecture-commande-au-comptoir.md). `b2b_companies` n'y apparaît pas — c'est le
   // point : le vendeur de comptoir n'a pas la fiche client.

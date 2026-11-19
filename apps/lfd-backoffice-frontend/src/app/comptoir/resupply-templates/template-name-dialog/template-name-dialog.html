@@ -1,0 +1,32 @@
+<fold-panel-header title="Enregistrer comme modèle" [subtitle]="data().summary" />
+
+<fold-panel-body>
+  <div class="form">
+    @if (refusal(); as message) {
+      <fold-callout variant="alert" announce data-template-name-refusal>{{ message }}</fold-callout>
+    }
+    <fold-input
+      data-template-name
+      label="Nom du modèle"
+      placeholder="Base matin"
+      required
+      [autofocus]="true"
+      [value]="name()"
+      (valueChange)="name.set($event)"
+      (keydown.enter)="submit()"
+    />
+  </div>
+</fold-panel-body>
+
+<fold-panel-footer>
+  <button foldButton emphasis="outline" intent="neutral" (click)="cancel()">Annuler</button>
+  <button
+    foldButton
+    data-template-name-save
+    [disabled]="!canSave()"
+    [loading]="pending()"
+    (click)="submit()"
+  >
+    Enregistrer
+  </button>
+</fold-panel-footer>

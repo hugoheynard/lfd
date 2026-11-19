@@ -62,7 +62,7 @@ export function templateCardOf(template: ResupplyTemplateView): TemplateCard {
 }
 
 /**
- * **Les modèles de réassort** (`/comptoir/reassort/modeles`, plan
+ * **Les modèles de réassort** (`/comptoir/modeles-reassort`, plan
  * `documentation/reassort-boutiques/plan-modeles-de-reassort.md`, § 6) — la
  * bibliothèque d'un point : choisir le point, voir ses modèles actifs, en
  * créer ou en ajuster un (page de composition).

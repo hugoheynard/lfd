@@ -2,6 +2,8 @@ import { HttpClient } from '@angular/common/http';
 import { intentOptions } from '../../shared/gesture-intents';
 import { inject, Injectable } from '@angular/core';
 import type {
+  AppliedResupplyTemplateResponse,
+  ApplyResupplyTemplatePayload,
   PlacedSiteResupplyResponse,
   ResupplyTarget,
   SiteResuppliesView,
@@ -43,6 +45,27 @@ export class SiteResuppliesService {
       this.http.post<PlacedSiteResupplyResponse>(
         `${this.site(siteId)}/drafts/${target}/lines`,
         { sku, quantity },
+        intentOptions(intentKey),
+      ),
+    );
+  }
+
+  /**
+   * Applique un modèle à la demande en cours de la visée (plan
+   * `plan-modeles-de-reassort.md`, § 4) : `replace` pose le modèle, `add`
+   * additionne. `intentKey` est la clé du geste : la même requête renvoyée
+   * rend la même réponse sans appliquer deux fois.
+   */
+  applyTemplate(
+    siteId: string,
+    target: ResupplyTarget,
+    payload: ApplyResupplyTemplatePayload,
+    intentKey: string,
+  ): Promise<AppliedResupplyTemplateResponse> {
+    return firstValueFrom(
+      this.http.post<AppliedResupplyTemplateResponse>(
+        `${this.site(siteId)}/drafts/${target}/apply-template`,
+        payload,
         intentOptions(intentKey),
       ),
     );

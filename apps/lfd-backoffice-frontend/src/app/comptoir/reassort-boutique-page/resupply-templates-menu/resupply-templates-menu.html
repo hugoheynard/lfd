@@ -1,0 +1,71 @@
+<div class="templates">
+  <fold-dropdown placement="bottom-start" ariaLabel="Modèles de réassort">
+    <button
+      foldPopoverTrigger="menu"
+      foldButton
+      type="button"
+      emphasis="soft"
+      intent="neutral"
+      size="sm"
+      data-templates-menu
+      [loading]="busy()"
+    >
+      <fold-icon name="library" [size]="16" />
+      Modèles
+    </button>
+    @if (canApply()) {
+      @for (template of templates(); track template.id) {
+        <fold-dropdown-item
+          [attr.data-template-apply]="template.id"
+          [disabled]="busy()"
+          (selected)="apply(template)"
+        >
+          Appliquer « {{ template.name }} »
+        </fold-dropdown-item>
+      } @empty {
+        <fold-dropdown-item [disabled]="true">Aucun modèle pour ce point</fold-dropdown-item>
+      }
+    }
+    @if (canWriteTemplates()) {
+      <fold-dropdown-item
+        icon="save"
+        data-template-save-as
+        [disabled]="busy() || draftLines().length === 0"
+        (selected)="saveAsTemplate()"
+      >
+        Enregistrer comme modèle…
+      </fold-dropdown-item>
+    }
+  </fold-dropdown>
+
+  @if (loadError(); as message) {
+    <fold-callout variant="alert" data-templates-load-error>{{ message }}</fold-callout>
+  }
+  @if (skipped(); as message) {
+    <fold-callout variant="warning" announce data-templates-skipped>{{ message }}</fold-callout>
+  }
+  @if (failure(); as message) {
+    <fold-callout variant="alert" announce data-templates-failure>{{ message }}</fold-callout>
+  }
+  @if (done(); as message) {
+    <fold-callout variant="success" announce data-templates-done>{{ message }}</fold-callout>
+  }
+  @if (canWriteTemplates() && drift(); as summary) {
+    @if (applied(); as template) {
+      <fold-callout variant="info" data-templates-drift>
+        Écart avec « {{ template.name }} » : {{ summary }}.
+        <button
+          actions
+          foldButton
+          type="button"
+          size="sm"
+          data-template-update
+          [disabled]="busy()"
+          (click)="update()"
+        >
+          Mettre à jour « {{ template.name }} »
+        </button>
+      </fold-callout>
+    }
+  }
+</div>

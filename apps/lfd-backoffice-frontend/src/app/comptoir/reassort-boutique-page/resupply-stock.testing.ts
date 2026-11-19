@@ -1,8 +1,11 @@
 import type {
+  AppliedResupplyTemplateResponse,
+  ApplyResupplyTemplatePayload,
   ResupplyArticleView,
   ResupplyTarget,
   SiteResuppliesView,
   SiteStockAlertsView,
+  SkippedResupplyTemplateLine,
   StockAlertLevel,
   StockAlertView,
 } from '@lfd/contracts';
@@ -122,6 +125,35 @@ export class FakeResupplies {
     this.lines.get(id === 'draft_asap' ? 'asap' : 'tomorrow')?.delete(sku);
     this.version += 1;
     return Promise.resolve();
+  }
+  /** La clé d'intention de chaque application de modèle, dans l'ordre. */
+  readonly applyKeys: string[] = [];
+  /** Les refus des prochaines applications, dans l'ordre ; vide : elles passent. */
+  applyFailures: unknown[] = [];
+  /** Ce que le modèle appliqué pose, et ce que le serveur écarte. */
+  templateLines = new Map<string, number>([['CRO', 12]]);
+  skipped: SkippedResupplyTemplateLine[] = [];
+  applyTemplate(
+    _s: string,
+    target: ResupplyTarget,
+    payload: ApplyResupplyTemplatePayload,
+    intentKey: string,
+  ): Promise<AppliedResupplyTemplateResponse> {
+    this.calls.push(`apply ${target} ${payload.templateId} ${payload.mode}`);
+    this.applyKeys.push(intentKey);
+    const failure = this.applyFailures.shift();
+    if (failure !== undefined) {
+      return Promise.reject(failure);
+    }
+    const lines = this.lines.get(target);
+    if (payload.mode === 'replace') {
+      lines?.clear();
+    }
+    for (const [sku, quantity] of this.templateLines) {
+      lines?.set(sku, (lines.get(sku) ?? 0) + quantity);
+    }
+    this.version += 1;
+    return Promise.resolve({ resupplyId: `draft_${target}`, skipped: this.skipped });
   }
   send(_s: string, id: string): Promise<void> {
     this.calls.push(`send ${id}`);

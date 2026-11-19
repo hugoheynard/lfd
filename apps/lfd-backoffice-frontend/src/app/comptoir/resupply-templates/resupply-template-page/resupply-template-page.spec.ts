@@ -117,7 +117,7 @@ describe('ResupplyTemplatePage', () => {
       lines: [{ sku: 'BAG', quantity: 6, saleUnit: 'piece' }],
     });
     expect(service.created[0]?.payload.key).not.toBe('');
-    expect(navigate).toHaveBeenCalledWith(['/comptoir/reassort/modeles'], {
+    expect(navigate).toHaveBeenCalledWith(['/comptoir/modeles-reassort'], {
       queryParams: { point: 'site_v' },
     });
   });
@@ -133,5 +133,17 @@ describe('ResupplyTemplatePage', () => {
   it('un modèle absent de la bibliothèque le dit', async () => {
     const { root } = await mount('tpl_gone');
     expect(root.querySelector('[data-template-missing]')).not.toBeNull();
+  });
+
+  it('le lien retour garde le point, et navigue sans recharger la page', async () => {
+    const { root, navigate } = await mount('tpl_1');
+    const link = root.querySelector<HTMLAnchorElement>('[data-template-back] a');
+    expect(link?.getAttribute('href')).toBe('/comptoir/modeles-reassort?point=site_v');
+    const click = new MouseEvent('click', { bubbles: true, cancelable: true, button: 0 });
+    link?.dispatchEvent(click);
+    expect(click.defaultPrevented).toBe(true);
+    expect(navigate).toHaveBeenCalledWith(['/comptoir/modeles-reassort'], {
+      queryParams: { point: 'site_v' },
+    });
   });
 });

@@ -1,0 +1,11 @@
+.templates {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--fold-space-sm);
+}
+
+/* Les avis prennent la largeur ; le menu garde la sienne. */
+.templates fold-callout {
+  align-self: stretch;
+}

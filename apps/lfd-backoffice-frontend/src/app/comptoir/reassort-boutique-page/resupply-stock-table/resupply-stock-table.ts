@@ -35,6 +35,7 @@ import { ResupplyNameField } from '../../../shared/resupply-name-field/resupply-
 import { SaleQuantityPipe } from '../../../shared/sale-quantity/sale-quantity.pipe';
 import { narrowViewport } from '../../../shared/viewport/narrow-viewport';
 import { ResupplyQuantityCell } from '../resupply-quantity-cell/resupply-quantity-cell';
+import { ResupplyTemplatesMenu } from '../resupply-templates-menu/resupply-templates-menu';
 import {
   ALL_CATEGORIES,
   buildStockRows,
@@ -94,6 +95,7 @@ const PHONE_QUERY = '(max-width: 768px)';
     FoldViewToggleComponent,
     ResupplyNameField,
     ResupplyQuantityCell,
+    ResupplyTemplatesMenu,
     SaleQuantityPipe,
     UnorderedReceiptEditor,
   ],
@@ -111,6 +113,8 @@ export class ResupplyStockTable {
   readonly stock = input.required<readonly ResupplyReceiptLineView[]>();
   readonly unordered = input.required<readonly UnorderedReceiptLineView[]>();
   readonly canWrite = input.required<boolean>();
+  /** `resupply_templates:write` : enregistrer et mettre à jour un modèle depuis la demande. */
+  readonly canWriteTemplates = input(false);
   /**
    * L'instant qui choisit la visée par défaut, relu chaque minute : il était
    * lu UNE fois, et une table ouverte avant l'heure limite proposait encore
