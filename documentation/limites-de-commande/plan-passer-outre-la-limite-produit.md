@@ -9,7 +9,7 @@
 > jugement a depuis été rassemblé
 > ([`le-verdict-de-l-heure-limite.md`](le-verdict-de-l-heure-limite.md)), et
 > cette version s'écrit dessus. Frontière de sécurité (un droit neuf) : `vitruve`
-> avant Hugo. **Deux décisions attendent Hugo** (§ 7).
+> avant Hugo. **Une décision attend Hugo** (§ 7, Q2 ; Q1 tranchée).
 
 ## 1. En deux mots
 
@@ -244,7 +244,7 @@ Laisser ce chemin tel quel rend les deux clés décoratives : n'importe quel
 membre de l'équipe passerait une commande, puis y ajouterait le produit à 48 h,
 sans droit, sans motif, sans trace.
 
-**Défaut proposé (§ 7 Q1)** : la modification par l'équipe oppose la **limite
+**Retenu (§ 7 Q1, Hugo, 2026-11-19)** : la modification par l'équipe oppose la **limite
 d'article** aux lignes **ajoutées ou augmentées** — la règle générale, elle,
 reste non opposée à l'équipe, comme aujourd'hui. Ce que ça demande :
 
@@ -317,19 +317,14 @@ Un lot par commit.
 - Pas de dépassement côté boutique, ni de dépassement de la règle générale (la
   dérogation existe pour ça, pendant le rattrapage).
 
-## 7. Décisions pour Hugo
+## 7. Décisions
 
-- **Q1 — La modification par l'équipe.** Aujourd'hui, elle ignore toute heure
-  limite. Défaut proposé : elle oppose désormais la limite d'article aux lignes
-  ajoutées, avec les deux clés et le motif (§ 3.6). C'est un **resserrement** :
-  sans le droit, l'équipe ne pourra plus ajouter en modification un produit
-  dont la limite est passée. Il coûte le lot O5, le plus lourd : un jugement
-  « limite d'article seule », le calcul des lignes ajoutées, le droit et le
-  motif sur la modification et son devis, et le gel dans la proposition de
-  hausse par carte. L'alternative est de laisser la modification telle
-  qu'elle est (O5 se réduit au côté client) ; le droit n'ouvre alors rien que
-  l'équipe n'ait déjà par la modification, et seuls le motif et la trace de la
-  saisie sont neufs.
+- **Q1 — La modification par l'équipe. Tranché par Hugo le 2026-11-19** :
+  « la limite d'article est dépassable par le staff si l'option est cochée »,
+  avec **les deux clés** (la case et le droit), en saisie comme en
+  modification ; et un produit dont la case n'est pas cochée garde sa limite
+  en modification par l'équipe — le resserrement du § 3.6 est retenu, avec le
+  lot O5 entier.
 - **Q2 — Sans limite générale ce jour-là** (aucune règle posée, ou une heure
   qui n'existe pas ce jour-là). Défaut proposé : pas de dépassement.
   L'alternative : le dépassement ne laisse alors aucune limite.
