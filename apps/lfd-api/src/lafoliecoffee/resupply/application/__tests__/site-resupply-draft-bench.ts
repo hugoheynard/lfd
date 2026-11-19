@@ -19,6 +19,7 @@ import {
   InMemoryResupplyUsedNames,
   FixedLaunches,
 } from "./site-resupply-doubles.js";
+import { TrackedSites } from "./counter-settings-doubles.js";
 import { CROISSANT, PAIN_AU_CHOCOLAT, SALMON } from "./resupply-articles.js";
 
 /**
@@ -87,6 +88,7 @@ export function setup(deadline: Date | null = null, stopped: readonly string[] =
       cutoff,
       clock,
       new InMemoryResupplyUsedNames(store),
+      new TrackedSites([]),
     ),
   };
 }

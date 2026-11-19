@@ -152,6 +152,12 @@ export interface SiteResuppliesView {
    * d'abord, {@link RESUPPLY_USED_NAMES_MAX} au plus : proposés à la saisie.
    */
   readonly usedNames: readonly string[];
+  /**
+   * Le point suit-il son stock au comptoir (Réglages › Comptoir) ? `false`
+   * — le défaut — : ni colonne « Stock » ni colonne « État », et déclarer
+   * OK · Faible · Rupture est refusé (409 `resupply.stock_tracking.disabled`).
+   */
+  readonly stockTracking: boolean;
 }
 
 /**

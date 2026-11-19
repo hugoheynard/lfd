@@ -73,6 +73,13 @@ async function seedSite(label = "Val Village"): Promise<string> {
     data: { label, ligne1: "1 place", codePostal: "73150", ville: "Val d'Isère", pays: "France" },
     select: { id: true },
   });
+  // Le point suit son stock au comptoir (Réglages › Comptoir, désactivé par
+  // défaut) : sans lui, déclarer une rupture serait refusé.
+  await ctx
+    .asSub(E2E_STAFF_SUB)
+    .put(`/admin/counter-settings/${site.id}`)
+    .send({ stockTracking: true })
+    .expect(204);
   return site.id;
 }
 

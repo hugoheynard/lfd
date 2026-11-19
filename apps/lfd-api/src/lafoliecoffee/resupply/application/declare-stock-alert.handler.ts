@@ -4,12 +4,14 @@ import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
 import { IdGenerator } from "../../../platform/id/id-generator.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { StaffDirectory } from "../../account/domain/ports/staff-directory.js";
+import { CounterStockTracking } from "../domain/counter-stock-tracking.js";
 import { ResupplyCatalogue } from "../domain/resupply-catalogue.js";
 import { ResupplyArticleUnknownError } from "../domain/resupply-receipt-errors.js";
 import { ResupplySiteUnknownError } from "../domain/resupply-site-errors.js";
 import { ResupplySites } from "../domain/resupply-sites.js";
 import { StockAlert } from "../domain/stock-alert.js";
 import { StockAlertRepository } from "../domain/stock-alert.repository.js";
+import { assertStockTracked } from "./assert-stock-tracked.js";
 import { DeclareStockAlertCommand } from "./declare-stock-alert.command.js";
 import { traceOf } from "./resupply-receipt-trace.js";
 
@@ -17,7 +19,8 @@ import { traceOf } from "./resupply-receipt-trace.js";
  * **Déclare une rupture ou un stock faible.** S'il y a déjà une alerte
  * vivante pour cet article à ce point, elle est REDÉCLARÉE (son niveau
  * change) plutôt qu'une seconde ouverte. Le libellé est lu au catalogue
- * publié, jamais pris du client.
+ * publié, jamais pris du client. Refusée (409) si le point ne suit pas son
+ * stock (Réglages › Comptoir).
  */
 @CommandHandler(DeclareStockAlertCommand)
 export class DeclareStockAlertHandler implements ICommandHandler<DeclareStockAlertCommand, void> {
@@ -29,12 +32,14 @@ export class DeclareStockAlertHandler implements ICommandHandler<DeclareStockAle
     private readonly clock: Clock,
     private readonly ids: IdGenerator,
     private readonly uow: UnitOfWork,
+    private readonly tracking: CounterStockTracking,
   ) {}
 
   async execute(command: DeclareStockAlertCommand): Promise<void> {
     if (!(await this.sites.exists(command.siteId))) {
       throw new ResupplySiteUnknownError(command.siteId);
     }
+    await assertStockTracked(this.tracking, command.siteId);
     const article = await this.catalogue.article(command.sku);
     if (article === null) {
       throw new ResupplyArticleUnknownError(command.sku);

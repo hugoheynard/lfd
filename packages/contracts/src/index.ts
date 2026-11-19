@@ -3203,6 +3203,12 @@ export type {
   ResupplySiteToProduceView,
   ResupplyTotalView,
 } from "./site-resupply-production.js";
+export { counterStockTrackingSchema } from "./counter-settings.js";
+export type {
+  CounterSettingsView,
+  CounterSiteSettingsView,
+  CounterStockTrackingPayload,
+} from "./counter-settings.js";
 export { declareStockAlertSchema, STOCK_ALERT_LEVELS } from "./site-stock-alert.js";
 export type {
   DeclareStockAlertPayload,

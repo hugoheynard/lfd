@@ -278,3 +278,25 @@ model BakehouseResupplyDraft {
   @@map("bakehouse_resupply_drafts")
   @@schema("public")
 }
+
+/// **Le suivi du stock au comptoir, par point** (Réglages › Comptoir,
+/// `documentation/reassort-boutiques/reception-et-stock.md` § 5, décidé par
+/// Hugo le 2026-11-19). Une ligne par point réglé au moins une fois ;
+/// l'ABSENCE de ligne vaut « suivi désactivé ». Désactivé, le comptoir ne
+/// déclare plus OK · Faible · Rupture ; le stock du jour et la réception ne
+/// changent pas. Un réglage sans transition : pas d'agrégat, une ligne
+/// réécrite, jamais supprimée.
+model CounterStockSetting {
+  /// Le point de retrait (`site.id`), sans clé étrangère.
+  siteId        String  @id @map("site_id")
+  stockTracking Boolean @default(false) @map("stock_tracking")
+
+  /// La dernière modification : instant du `Clock`, auteur figé.
+  updatedAt        DateTime @map("updated_at")
+  updatedByStaffId String   @map("updated_by_staff_id")
+  updatedByName    String   @map("updated_by_name")
+  updatedByRole    String   @map("updated_by_role")
+
+  @@map("counter_stock_settings")
+  @@schema("public")
+}

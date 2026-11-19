@@ -98,6 +98,17 @@ import { ShelfStockLock } from "./domain/shelf-stock-lock.js";
 import { DayShelfStock } from "./application/day-shelf-stock.js";
 import { ReceivedStockLowering } from "./application/received-stock-lowering.js";
 import { ResupplyArrival } from "./application/resupply-arrival.js";
+import { GetCounterSettingsHandler } from "./application/get-counter-settings.handler.js";
+import { SetCounterStockTrackingHandler } from "./application/set-counter-stock-tracking.handler.js";
+import { CounterSites } from "./domain/counter-sites.js";
+import { CounterStockSettingsReader } from "./domain/counter-stock-settings.reader.js";
+import { CounterStockSettingsWriter } from "./domain/counter-stock-settings.writer.js";
+import { CounterStockTracking } from "./domain/counter-stock-tracking.js";
+import { AdminCounterSettingsController } from "./http/admin-counter-settings.controller.js";
+import { PrismaCounterSites } from "./infrastructure/prisma-counter-sites.js";
+import { PrismaCounterStockSettingsReader } from "./infrastructure/prisma-counter-stock-settings.reader.js";
+import { PrismaCounterStockSettingsWriter } from "./infrastructure/prisma-counter-stock-settings.writer.js";
+import { PrismaCounterStockTracking } from "./infrastructure/prisma-counter-stock-tracking.js";
 
 /**
  * **Le réapprovisionnement d'un site** (modèle B de
@@ -148,6 +159,7 @@ import { ResupplyArrival } from "./application/resupply-arrival.js";
     AdminSupervisionStockController,
     AdminReserveShopReleasesController,
     AdminResupplyTemplatesController,
+    AdminCounterSettingsController,
   ],
   providers: [
     { provide: ResupplyReceiptRepository, useClass: PrismaResupplyReceiptRepository },
@@ -220,6 +232,13 @@ import { ResupplyArrival } from "./application/resupply-arrival.js";
     ResupplyPlanGate,
     ProductionDayResupplies,
     ProductionRangeResupplies,
+    // Réglages › Comptoir : le suivi du stock, point par point (2026-11-19).
+    { provide: CounterStockTracking, useClass: PrismaCounterStockTracking },
+    { provide: CounterStockSettingsReader, useClass: PrismaCounterStockSettingsReader },
+    { provide: CounterStockSettingsWriter, useClass: PrismaCounterStockSettingsWriter },
+    { provide: CounterSites, useClass: PrismaCounterSites },
+    GetCounterSettingsHandler,
+    SetCounterStockTrackingHandler,
   ],
   // Le reste du jour et son verrou, que la passation sur stock lit (plan du
   // jour J, lot L4) — même bloc `b2b`, sans frontière franchie.

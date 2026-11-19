@@ -20,6 +20,7 @@ import {
   FixedLaunches,
   InMemorySiteResupplyPlanKeys,
 } from "./site-resupply-doubles.js";
+import { TrackedSites } from "./counter-settings-doubles.js";
 import { CROISSANT, PAIN_AU_CHOCOLAT } from "./resupply-articles.js";
 
 /**
@@ -85,6 +86,7 @@ export function setup(
       cutoff,
       clock,
       new InMemoryResupplyUsedNames(store),
+      new TrackedSites([]),
     ),
     toProduce: new ListResuppliesToProduceHandler(
       reader,

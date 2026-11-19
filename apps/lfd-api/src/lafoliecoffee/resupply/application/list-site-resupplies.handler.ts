@@ -2,6 +2,7 @@ import { RESUPPLY_USED_NAMES_MAX, type SiteResuppliesView } from "@lfd/contracts
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
 import { Clock } from "../../../platform/time/clock.js";
+import { CounterStockTracking } from "../domain/counter-stock-tracking.js";
 import { ResupplyCutoff } from "../domain/resupply-cutoff.js";
 import { ResupplyUsedNames } from "../domain/resupply-used-names.js";
 import { isPlaced } from "../domain/site-resupply.js";
@@ -14,7 +15,8 @@ import { siteResupplyDraftView, siteResupplyView } from "./site-resupply-view.js
  * Sert la liste du comptoir : les demandes en cours du point (R1c) et
  * ses réassorts envoyés pour aujourd'hui et demain, annulés compris, et
  * jusqu'à quand « Pour demain » est accepté — et, depuis le nom du réassort (R1g), les noms
- * déjà employés au point, proposés à la saisie.
+ * déjà employés au point, proposés à la saisie ; et si le point suit son
+ * stock au comptoir (Réglages › Comptoir).
  */
 @QueryHandler(ListSiteResuppliesQuery)
 export class ListSiteResuppliesHandler implements IQueryHandler<
@@ -26,14 +28,16 @@ export class ListSiteResuppliesHandler implements IQueryHandler<
     private readonly cutoff: ResupplyCutoff,
     private readonly clock: Clock,
     private readonly names: ResupplyUsedNames,
+    private readonly tracking: CounterStockTracking,
   ) {}
 
   async execute(query: ListSiteResuppliesQuery): Promise<SiteResuppliesView> {
     const { today, tomorrow } = resupplyDays(this.clock.now());
-    const [resupplies, deadline, usedNames] = await Promise.all([
+    const [resupplies, deadline, usedNames, stockTracking] = await Promise.all([
       this.reader.forSite(query.siteId, [today, tomorrow]),
       this.cutoff.deadlineFor(tomorrow),
       this.names.usedAt(query.siteId, RESUPPLY_USED_NAMES_MAX),
+      this.tracking.isTrackedAt(query.siteId),
     ]);
     return {
       siteId: query.siteId,
@@ -43,6 +47,7 @@ export class ListSiteResuppliesHandler implements IQueryHandler<
       drafts: resupplies.filter((resupply) => !isPlaced(resupply)).map(siteResupplyDraftView),
       resupplies: resupplies.filter(isPlaced).map(siteResupplyView),
       usedNames,
+      stockTracking,
     };
   }
 }

@@ -172,3 +172,30 @@ flowchart LR
   ; une alerte, qui ne porte pas de jour, ne se voit qu'au prochain mouvement
   ou au rechargement. Le renvoi « Ouvrir le réassort » mène à
   `/prod-manager/reassorts`.
+
+## 5. Le suivi du stock au comptoir, point par point
+
+Décidé par Hugo le 2026-11-19 : l'état du stock du comptoir (colonne
+« Stock » du jour, colonne « État » OK · Faible · Rupture qui crée les
+alertes) se règle **point par point**, dans **Réglages › Comptoir**.
+**Désactivé par défaut** : un point jamais réglé ne le suit pas.
+
+- **La table** `public.counter_stock_settings` (une ligne par point réglé,
+  `site_id` clé, `stock_tracking`, auteur et instant de la dernière
+  modification) ; l'absence de ligne vaut « désactivé »
+  (`STOCK_TRACKING_BY_DEFAULT`, `apps/lfd-api/src/lafoliecoffee/resupply/domain/counter-stock-setting.ts`). Un
+  réglage sans transition : pas d'agrégat, une ligne réécrite, jamais
+  supprimée.
+- **Routes** (`apps/lfd-api/src/lafoliecoffee/resupply/http/admin-counter-settings.controller.ts`, sous
+  `lfc_order_settings`, comme l'heure du réassort) : `GET admin/counter-settings`
+  (chaque point non archivé, par nom, avec son réglage —
+  `CounterSettingsView`) et `PUT admin/counter-settings/:siteId`
+  `{ stockTracking: boolean }` (204 ; point inconnu ou archivé : 404).
+- **Le comptoir l'apprend** par `stockTracking` de la vue
+  `GET admin/site-resupplies/sites/:siteId` (`SiteResuppliesView`).
+- **Désactivé**, déclarer un état (`POST admin/site-stock-alerts/sites/:siteId`)
+  et le lever à la main (le « OK », `…/:alertId/lift`) rendent 409
+  `resupply.stock_tracking.disabled`. Les alertes déjà ouvertes restent
+  ouvertes et lisibles (comptoir, fournil, Supervision), et la réception
+  d'un réassort de l'article les lève toujours (§ 3). Le stock du jour, la
+  réception et le jour même qui y puise ne changent pas.

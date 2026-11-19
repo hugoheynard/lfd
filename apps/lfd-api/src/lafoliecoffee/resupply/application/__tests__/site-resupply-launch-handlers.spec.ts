@@ -27,6 +27,7 @@ import {
   freshSendingKey,
   InMemorySiteResupplyPlanKeys,
 } from "./site-resupply-doubles.js";
+import { TrackedSites } from "./counter-settings-doubles.js";
 import { CapturedWarnings } from "./captured-warnings.js";
 import { CROISSANT } from "./resupply-articles.js";
 
@@ -78,6 +79,7 @@ function setup() {
       cutoff,
       clock,
       new InMemoryResupplyUsedNames(store),
+      new TrackedSites([]),
     ),
     toProduce: new ListResuppliesToProduceHandler(
       reader,

@@ -35,6 +35,7 @@ import {
   FixedLaunches,
   freshSendingKey,
 } from "./site-resupply-doubles.js";
+import { TrackedSites } from "./counter-settings-doubles.js";
 import { CROISSANT } from "./resupply-articles.js";
 
 /** 17 h à Paris le 2 janvier : les journées ne sont comparées qu'à cette horloge figée. */
@@ -90,6 +91,7 @@ function setup() {
       cutoff,
       clock,
       names,
+      new TrackedSites([]),
     ),
     usedNames: new ListResupplyUsedNamesHandler(names),
   };
