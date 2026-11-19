@@ -20,6 +20,13 @@
     <input type="time" [value]="time()" (change)="onTime($event)" />
   </label>
 
+  <fold-checkbox
+    label="L'équipe peut passer outre cette limite"
+    hint="Une personne qui a le droit pourra saisir ce produit pour un client après cette limite, avec un motif. L'heure limite générale reste opposée."
+    [checked]="staffMayExceed()"
+    (checkedChange)="staffMayExceed.set($event)"
+  />
+
   <!-- Pas de rattrapage par produit (Hugo, 2026-10-21) : le dire, parce que
        l'écran en proposait un. -->
   <fold-callout variant="info">{{ recap() }}</fold-callout>

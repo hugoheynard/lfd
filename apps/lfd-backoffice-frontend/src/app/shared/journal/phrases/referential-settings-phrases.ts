@@ -265,6 +265,14 @@ function limitValues(payload: Readonly<Record<string, unknown>>): {
     parts.push([inUnit('minutes', payload['graceMinutes']), text(' de tolérance')]);
     said.push('graceMinutes');
   }
+  // Absente des faits écrits avant la case : rien à dire, la limite était infranchissable.
+  const mayExceed = payload['staffMayExceed'];
+  if (typeof mayExceed === 'boolean') {
+    parts.push([
+      text(mayExceed ? 'l’équipe peut passer outre' : 'l’équipe ne peut pas passer outre'),
+    ]);
+    said.push('staffMayExceed');
+  }
   const segments = parts.flatMap((part, index) => (index === 0 ? part : [text(', '), ...part]));
   return { segments: parts.length === 0 ? [] : [text(' : '), ...segments], said };
 }

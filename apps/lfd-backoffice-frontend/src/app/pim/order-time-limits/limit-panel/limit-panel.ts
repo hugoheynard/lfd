@@ -11,6 +11,7 @@ import type { OrderTimeLimitPayload, OrderTimeLimitView } from '@lfd/pim-contrac
 import {
   FoldButtonComponent,
   FoldCalloutComponent,
+  FoldCheckboxComponent,
   FoldListboxComponent,
   FoldPanelHeaderComponent,
   FoldPanelRef,
@@ -51,6 +52,7 @@ const DAYS_CHOICES: FoldSelectOption<string>[] = [0, 1, 2, 3, 7].map((days) => (
     FoldPanelHeaderComponent,
     FoldButtonComponent,
     FoldCalloutComponent,
+    FoldCheckboxComponent,
     FoldListboxComponent,
   ],
   templateUrl: './limit-panel.html',
@@ -65,6 +67,8 @@ export class LimitPanel {
   protected readonly daysChoices = DAYS_CHOICES;
   protected readonly daysBefore = signal<string>('1');
   protected readonly time = signal<string>('');
+  /** L'équipe peut passer outre. Décochée par défaut : une limite neuve est infranchissable. */
+  protected readonly staffMayExceed = signal(false);
   protected readonly saving = signal(false);
 
   protected readonly label = computed(() => this.data()?.label ?? '');
@@ -90,6 +94,7 @@ export class LimitPanel {
       }
       this.daysBefore.set(String(rule.daysBefore ?? 1));
       this.time.set(rule.time ?? '');
+      this.staffMayExceed.set(rule.staffMayExceed);
     });
   }
 
@@ -112,6 +117,7 @@ export class LimitPanel {
       daysBefore: Number(this.daysBefore()),
       time: this.time(),
       graceMinutes: null,
+      staffMayExceed: this.staffMayExceed(),
     };
     try {
       await this.api.set(payload);

@@ -387,6 +387,35 @@ describe('les heures limites de commande', () => {
   });
 });
 
+describe('la case « l’équipe peut passer outre » d’une heure limite', () => {
+  it('se dit quand le fait la porte, et se tait sur un fait d’avant la case', () => {
+    const open = on('order_time_limit', 'order_time_limit.set', {
+      subjectLabel: 'Produit « Bûche »',
+      scope: 'product:prd_1',
+      daysBefore: 2,
+      time: '12:00',
+      graceMinutes: null,
+      staffMayExceed: true,
+    });
+    const closed = on('order_time_limit', 'order_time_limit.set', {
+      subjectLabel: 'Produit « Bûche »',
+      scope: 'product:prd_1',
+      daysBefore: 2,
+      time: '12:00',
+      graceMinutes: null,
+      staffMayExceed: false,
+    });
+
+    expect(sentence(open)).toBe(
+      'Colette Martin a réglé l’heure limite de commande (Produit « Bûche ») : 2 jours avant, à 12:00, l’équipe peut passer outre',
+    );
+    expect(sentence(closed)).toBe(
+      'Colette Martin a réglé l’heure limite de commande (Produit « Bûche ») : 2 jours avant, à 12:00, l’équipe ne peut pas passer outre',
+    );
+    expect(labels(open)).toEqual(['Tolérance']);
+  });
+});
+
 describe('la portée d’un changement de taux, sous sa forme d’août 2026', () => {
   /**
    * Régression : du 2026-08-21 (`6959131d`) au 2026-08-24 (`5d526662`), la

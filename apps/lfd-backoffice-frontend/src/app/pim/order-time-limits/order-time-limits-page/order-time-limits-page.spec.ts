@@ -13,6 +13,7 @@ const BUCHE: OrderTimeLimitView = {
   daysBefore: 2,
   time: '12:00',
   graceMinutes: null,
+  staffMayExceed: false,
   archived: false,
 };
 

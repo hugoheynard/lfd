@@ -19,6 +19,7 @@ function rule(over: Partial<OrderTimeLimitView> = {}): OrderTimeLimitView {
     daysBefore: 2,
     time: '12:00',
     graceMinutes: null,
+    staffMayExceed: false,
     archived: false,
     ...over,
   };
