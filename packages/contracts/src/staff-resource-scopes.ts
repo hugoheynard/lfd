@@ -297,6 +297,10 @@ export const STAFF_RESOURCE_SCOPES: Readonly<Record<StaffResource, StaffResource
     read: "Voir la file des retraits et le détail d'une commande à remettre.",
     write: "Remettre une commande au client, au scan de son QR ou à la main.",
   },
+  resupply_templates: {
+    read: "Voir les modèles de réassort d'un point, et leurs lignes qui ne s'appliqueraient plus.",
+    write: "Créer, ajuster et archiver les modèles de réassort d'un point.",
+  },
   delivery_run_sheet: {
     read: "Voir les livraisons du jour avec l'adresse et le contact de chaque client livré. Les procédures n'y paraissent qu'avec Procédures de livraison en lecture.",
     write: "N'ajoute rien : la feuille de route se lit seulement.",

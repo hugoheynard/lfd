@@ -569,6 +569,7 @@
   "test/resupply-packing.e2e-spec.ts": 3739,
   "test/resupply-receipt.e2e-spec.ts": 6209,
   "test/resupply-refusal-codes.e2e-spec.ts": 3063,
+  "test/resupply-templates.e2e-spec.ts": 9479,
   "test/resupply-transfer-reception.e2e-spec.ts": 3520,
   "test/resupply-transfer.e2e-spec.ts": 4014,
   "test/resupply-village-flow.e2e-spec.ts": 3334,

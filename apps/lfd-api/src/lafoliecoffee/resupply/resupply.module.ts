@@ -39,6 +39,15 @@ import { BakehouseResupplyDraftRepository } from "./domain/bakehouse-resupply-dr
 import { BakehouseResupplyDraftReader } from "./domain/bakehouse-resupply-draft.reader.js";
 import { PrismaBakehouseResupplyDraftRepository } from "./infrastructure/prisma-bakehouse-resupply-draft.repository.js";
 import { PrismaBakehouseResupplyDraftReader } from "./infrastructure/prisma-bakehouse-resupply-draft.reader.js";
+import { CreateResupplyTemplateHandler } from "./application/create-resupply-template.handler.js";
+import { AdjustResupplyTemplateHandler } from "./application/adjust-resupply-template.handler.js";
+import { ArchiveResupplyTemplateHandler } from "./application/archive-resupply-template.handler.js";
+import { ListResupplyTemplatesHandler } from "./application/list-resupply-templates.handler.js";
+import { ResupplyTemplateRepository } from "./domain/resupply-template.repository.js";
+import { ResupplyTemplateReader } from "./domain/resupply-template.reader.js";
+import { PrismaResupplyTemplateRepository } from "./infrastructure/prisma-resupply-template.repository.js";
+import { PrismaResupplyTemplateReader } from "./infrastructure/prisma-resupply-template.reader.js";
+import { AdminResupplyTemplatesController } from "./http/admin-resupply-templates.controller.js";
 import { SendReserveToShopHandler } from "./application/send-reserve-to-shop.handler.js";
 import { AdminReserveShopReleasesController } from "./http/admin-reserve-shop-releases.controller.js";
 import { SendSiteResupplyHandler } from "./application/send-site-resupply.handler.js";
@@ -137,6 +146,7 @@ import { ResupplyArrival } from "./application/resupply-arrival.js";
     AdminBakehouseResuppliesController,
     AdminSupervisionStockController,
     AdminReserveShopReleasesController,
+    AdminResupplyTemplatesController,
   ],
   providers: [
     { provide: ResupplyReceiptRepository, useClass: PrismaResupplyReceiptRepository },
@@ -171,11 +181,17 @@ import { ResupplyArrival } from "./application/resupply-arrival.js";
     // Les brouillons du fournil (reassort-boutiques/commander.md, 2026-10-28).
     { provide: BakehouseResupplyDraftRepository, useClass: PrismaBakehouseResupplyDraftRepository },
     { provide: BakehouseResupplyDraftReader, useClass: PrismaBakehouseResupplyDraftReader },
+    { provide: ResupplyTemplateRepository, useClass: PrismaResupplyTemplateRepository },
+    { provide: ResupplyTemplateReader, useClass: PrismaResupplyTemplateReader },
     CreateBakehouseResupplyDraftHandler,
     SaveBakehouseResupplyDraftHandler,
     DiscardBakehouseResupplyDraftHandler,
     SendBakehouseResupplyDraftHandler,
     ListBakehouseResupplyDraftsHandler,
+    CreateResupplyTemplateHandler,
+    AdjustResupplyTemplateHandler,
+    ArchiveResupplyTemplateHandler,
+    ListResupplyTemplatesHandler,
     // « Envoyer en boutique » depuis la réserve du colisage (A1.4).
     SendReserveToShopHandler,
     CancelSiteResupplyHandler,

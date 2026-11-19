@@ -3240,6 +3240,23 @@ export type {
   BakehouseResupplyDraftView,
   SavedBakehouseResupplyDraftResponse,
 } from "./bakehouse-resupply-draft.js";
+export {
+  adjustResupplyTemplateSchema,
+  createResupplyTemplateSchema,
+  RESUPPLY_TEMPLATE_LINE_ISSUES,
+  resupplyTemplateContentSchema,
+  resupplyTemplateLineSchema,
+} from "./resupply-template.js";
+export type {
+  AdjustResupplyTemplatePayload,
+  CreateResupplyTemplatePayload,
+  ResupplyTemplateContentPayload,
+  ResupplyTemplateLine,
+  ResupplyTemplateLineIssue,
+  ResupplyTemplateLineView,
+  ResupplyTemplateView,
+  SavedResupplyTemplateResponse,
+} from "./resupply-template.js";
 export type {
   SaleReferenceDecisionKind,
   SaleReferenceDecisionOrigin,

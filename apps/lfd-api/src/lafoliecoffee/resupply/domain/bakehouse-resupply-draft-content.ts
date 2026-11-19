@@ -5,24 +5,25 @@ import {
   TooManyBakehouseResupplyDraftLinesError,
 } from "./bakehouse-resupply-draft-errors.js";
 import { resupplyNameOf } from "./resupply-name.js";
-import { InvalidRequestedQuantityError } from "./site-resupply-errors.js";
+import {
+  RESUPPLY_LIST_MAX_LINES,
+  type ResupplyListLine,
+  type ResupplyListRefusals,
+  resupplyListOf,
+} from "./resupply-line-list.js";
 import type { SaleUnit } from "./resupply-sale-unit.js";
 import type { ResupplyTarget } from "./site-resupply-snapshot.js";
 
 const PIECE: SaleUnit = "piece";
 
 /** Au plus 200 articles par brouillon — la borne du contrat. */
-export const BAKEHOUSE_DRAFT_MAX_LINES = 200;
+export const BAKEHOUSE_DRAFT_MAX_LINES = RESUPPLY_LIST_MAX_LINES;
 
 /**
  * Une ligne de brouillon : un article, sa quantité et son unité, sans libellé.
  * Au poids, la quantité compte des grammes (L2b-1).
  */
-export interface BakehouseResupplyDraftLine {
-  readonly sku: string;
-  readonly quantity: number;
-  readonly saleUnit: SaleUnit;
-}
+export type BakehouseResupplyDraftLine = ResupplyListLine;
 
 /**
  * Une ligne telle que l'écran ou la base la donnent, l'unité lue : absente,
@@ -49,42 +50,26 @@ export interface BakehouseResupplyDraftContent {
   readonly lines: readonly BakehouseResupplyDraftLine[];
 }
 
+const DRAFT_REFUSALS: ResupplyListRefusals = {
+  empty: () => new EmptyBakehouseResupplyDraftError(),
+  tooMany: (max) => new TooManyBakehouseResupplyDraftLinesError(max),
+  blankSku: () => new BlankBakehouseResupplyDraftSkuError(),
+  duplicate: (sku) => new DuplicateBakehouseResupplyDraftLineError(sku),
+};
+
 /**
  * Le contenu validé : le nom suit la règle des réassorts (`resupplyNameOf`),
- * au moins une ligne et au plus {@link BAKEHOUSE_DRAFT_MAX_LINES}, des
- * quantités entières > 0, et un même article deux fois est REFUSÉ — l'écran
- * envoie une quantité par article, un doublon dit une erreur de l'écran.
- * Les SKU ne sont pas lus au catalogue : un article retiré se refuse à
- * l'envoi, pour qu'un brouillon reste toujours rouvrable.
+ * les lignes celle d'une composition ({@link resupplyListOf}) sous les refus
+ * du brouillon. Les SKU ne sont pas lus au catalogue : un article retiré se
+ * refuse à l'envoi, pour qu'un brouillon reste toujours rouvrable.
  */
 export function draftContentOf(
   input: BakehouseResupplyDraftContent,
 ): BakehouseResupplyDraftContent {
-  if (input.lines.length === 0) {
-    throw new EmptyBakehouseResupplyDraftError();
-  }
-  if (input.lines.length > BAKEHOUSE_DRAFT_MAX_LINES) {
-    throw new TooManyBakehouseResupplyDraftLinesError(BAKEHOUSE_DRAFT_MAX_LINES);
-  }
-  const seen = new Set<string>();
-  const lines = input.lines.map((line) => {
-    const sku = line.sku.trim();
-    if (sku === "") {
-      throw new BlankBakehouseResupplyDraftSkuError();
-    }
-    if (!Number.isInteger(line.quantity) || line.quantity < 1) {
-      throw new InvalidRequestedQuantityError(line.quantity);
-    }
-    if (seen.has(sku)) {
-      throw new DuplicateBakehouseResupplyDraftLineError(sku);
-    }
-    seen.add(sku);
-    return { sku, quantity: line.quantity, saleUnit: line.saleUnit };
-  });
   return {
     siteId: input.siteId,
     target: input.target,
     name: resupplyNameOf(input.name),
-    lines,
+    lines: resupplyListOf(input.lines, DRAFT_REFUSALS),
   };
 }

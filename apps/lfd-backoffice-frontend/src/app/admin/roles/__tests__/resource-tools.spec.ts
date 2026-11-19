@@ -109,6 +109,10 @@ describe('les domaines rangés par outil', () => {
     expect(transverse?.resources.map((r) => r.resource) ?? []).not.toContain('allergen_matrix');
   });
 
+  it('range les modèles de réassort au retrait, avec le comptoir qui les tient', () => {
+    expect(toolOf('resupply_templates')).toBe('handover');
+  });
+
   it('rattache le journal au transverse — il traverse les outils', () => {
     expect(toolOf('activity')).toBe('transverse');
   });

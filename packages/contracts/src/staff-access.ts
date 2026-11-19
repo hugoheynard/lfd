@@ -532,6 +532,14 @@ export const staffResourceSchema = z.enum([
   // ── `handover.` — LE RETRAIT ────────────────────────────────────────────
   /** **Le retrait au comptoir** — la file, la remise manuelle, le scan du QR. */
   "handover_counter",
+  /**
+   * **Les modèles de réassort** — la bibliothèque d'un point : créer, ajuster,
+   * archiver un modèle (plan `reassort-boutiques/plan-modeles-de-reassort.md`,
+   * M2, 2026-11-19). La lecture s'ouvre aussi au comptoir et au fournil.
+   * Ajoutée sans être accordée : elle s'accorde à l'écran ; la graine ne la
+   * donne qu'à l'administrateur.
+   */
+  "resupply_templates",
 
   // ── `delivery.` — LA LIVRAISON ──────────────────────────────────────────
   // Un droit par geste, créé quand son écran existe (Hugo, 2026-09-29 —
@@ -845,6 +853,7 @@ export const STAFF_RESOURCE_LABELS: Readonly<Record<StaffResource, string>> = {
   production_resupply: "Production — Réassorts",
   production_workstations: "Production — Postes",
   handover_counter: "Retrait au comptoir",
+  resupply_templates: "Modèles de réassort",
   b2b_companies: "Comptes clients",
   b2b_orders: "Commandes",
   b2b_place_order: "Passer une commande pro",
@@ -991,6 +1000,9 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     // production, accordée à l'écran.
     production_workstations: "write",
     handover_counter: "write",
+    // L'administrateur seul (2026-11-19, modèles de réassort, T1) : en
+    // production, accordée à l'écran.
+    resupply_templates: "write",
     delivery_procedures: "write",
     delivery_decisions: "write",
     delivery_proofs: "write",

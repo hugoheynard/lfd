@@ -1,0 +1,46 @@
+/// **Un modèle de réassort** — un raccourci de saisie d'un point (« Base
+/// matin »), appliqué à la demande en cours puis ajusté (plan
+/// `documentation/reassort-boutiques/plan-modeles-de-reassort.md`). Jetable :
+/// aucun réassort ne le référence, et il ne garde pas d'historique.
+///
+/// Un nom une fois parmi les modèles ACTIFS du point, sans égard à la casse :
+/// index unique partiel `resupply_templates_site_active_name_key`, écrit dans
+/// la migration (Prisma ne sait pas le déclarer). Pas de suppression : un
+/// modèle s'archive, et son nom redevient libre.
+model ResupplyTemplate {
+  id String @id
+
+  /// Le point de retrait (`pickup_addresses.id`), sans clé étrangère ; figé à la création.
+  siteId String @map("site_id")
+  /// Obligatoire, rogné, 1 à 60 caractères (CHECK `resupply_template_name_trimmed`).
+  name   String @db.VarChar(60)
+  /// La visée proposée à l'application : `tomorrow` | `asap`.
+  target String
+  /// Les lignes `[{ sku, quantity, saleUnit }]` : remplacées ensemble, jamais lues une à une.
+  lines  Json
+
+  /// Verrou optimiste : deux écrans qui ajustent le même modèle ne s'écrasent pas.
+  version Int @default(1)
+
+  /// La création : instant du `Clock`, auteur figé.
+  createdAt        DateTime @map("created_at")
+  createdByStaffId String   @map("created_by_staff_id")
+  createdByName    String   @map("created_by_name")
+  createdByRole    String   @map("created_by_role")
+
+  /// Le dernier ajustement (la création comprise).
+  updatedAt        DateTime @map("updated_at")
+  updatedByStaffId String   @map("updated_by_staff_id")
+  updatedByName    String   @map("updated_by_name")
+  updatedByRole    String   @map("updated_by_role")
+
+  /// L'archivage ; tous `null` tant qu'il est actif (CHECK `resupply_template_archived_whole`).
+  archivedAt        DateTime? @map("archived_at")
+  archivedByStaffId String?   @map("archived_by_staff_id")
+  archivedByName    String?   @map("archived_by_name")
+  archivedByRole    String?   @map("archived_by_role")
+
+  @@index([siteId])
+  @@map("resupply_templates")
+  @@schema("public")
+}
