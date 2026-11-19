@@ -190,7 +190,8 @@ export class OrderLateFeePage {
           return [];
         }),
       ]);
-      this.rates.set(rates);
+      // Un taux archivé ne se propose plus.
+      this.rates.set(rates.filter((rate) => !rate.archived));
       this.fee.set(setting?.fee ?? null);
       this.vatRatePercent.set(setting?.vatRatePercent ?? null);
       this.state.set('ready');

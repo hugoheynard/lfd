@@ -12,7 +12,7 @@ import { OrderLateFeeService } from '../order-late-fee.service';
 
 /** Un taux du référentiel, réduit à ce que l'écran en lit. */
 function rate(name: string, percent: number): VatRate {
-  return { id: name, name, description: '', percent, usage: {} };
+  return { id: name, name, description: '', percent, usage: {}, archived: false };
 }
 
 interface Harness {
