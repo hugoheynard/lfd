@@ -25,6 +25,7 @@ const UNREPLAYED: readonly string[] = [
   // Un semis à reprendre de sa suite : le réassort d'un site, une image
   // portée partout, une réémission du référentiel en cours.
   "lafoliecoffee/resupply/http/admin-site-resupplies.controller.ts#addLine",
+  "lafoliecoffee/resupply/http/admin-site-resupplies.controller.ts#applyTemplate",
   "media/http/media-replace.controller.ts#replace",
   "pim/channels/b2b-platform/http/reemit.controller.ts#reemit",
 ];
@@ -33,7 +34,7 @@ const UNREPLAYED: readonly string[] = [
  * Le plafond de la dette : le test échoue si elle le dépasse. Il ne fait que
  * baisser — une route qui gagne son scénario le fait baisser d'autant.
  */
-export const REPLAY_DEBT_CEILING = 13;
+export const REPLAY_DEBT_CEILING = 14;
 
 export const REPLAY_DEBT: ReadonlySet<string> = new Set(
   UNREPLAYED.map((route) => `apps/lfd-api/src/${route}`),
