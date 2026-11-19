@@ -1,6 +1,7 @@
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 
 import { ALL_SHELVES, FEATURED_SHELF } from '../../shelves';
 import {
@@ -27,7 +28,10 @@ describe('ShelfNav', () => {
       .map((b) => b.textContent?.trim() ?? '');
 
   beforeEach(() => {
-    TestBed.configureTestingModule({ imports: [ShelfNav], providers: [provideHttpClient()] });
+    TestBed.configureTestingModule({
+      imports: [ShelfNav],
+      providers: [provideHttpClient(), provideHttpClientTesting()],
+    });
     hydrateWith(TestBed.inject(ShopCatalogue), TEST_CATALOGUE);
     fixture = TestBed.createComponent(ShelfNav);
     fixture.detectChanges();
@@ -146,7 +150,10 @@ describe('ShelfNav — familles imbriquées', () => {
   }
 
   beforeEach(async () => {
-    TestBed.configureTestingModule({ imports: [ShelfNav], providers: [provideHttpClient()] });
+    TestBed.configureTestingModule({
+      imports: [ShelfNav],
+      providers: [provideHttpClient(), provideHttpClientTesting()],
+    });
     hydrateWith(TestBed.inject(ShopCatalogue), NESTED_CATALOGUE);
     fixture = TestBed.createComponent(ShelfNav);
     picked = [];

@@ -1,4 +1,5 @@
 import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { signal } from '@angular/core';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 
@@ -32,6 +33,7 @@ describe('HomeFeatured — les incontournables de l’accueil', () => {
     TestBed.configureTestingModule({
       providers: [
         provideHttpClient(),
+        provideHttpClientTesting(),
         { provide: ShopPriceBasis, useValue: { showsTtc } },
         { provide: PieceRequest, useValue: { open: (sku: string) => asked.push(sku) } },
       ],
