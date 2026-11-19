@@ -5,7 +5,7 @@ import {
   StaffNotifier,
   type StaffNotice,
 } from "../../../../staff/notifications/domain/ports/staff-notifier.js";
-import { OrderCutoffReader } from "../../domain/ports/order-cutoff.reader.js";
+import { OrderDeadline } from "../../../order-cutoffs/index.js";
 import {
   UnpaidLinkOrderReader,
   type UnpaidLinkOrder,
@@ -54,7 +54,7 @@ export class SendSettlementRemindersHandler implements ICommandHandler<
 > {
   constructor(
     private readonly orders: UnpaidLinkOrderReader,
-    private readonly cutoffs: OrderCutoffReader,
+    private readonly deadline: OrderDeadline,
     private readonly notifier: StaffNotifier,
     private readonly clock: Clock,
   ) {}
@@ -64,10 +64,13 @@ export class SendSettlementRemindersHandler implements ICommandHandler<
     if (candidates.length === 0) {
       return { overdue: 0 };
     }
-    const rules = await this.cutoffs.list();
     const now = this.clock.now();
+    const statuses = await this.deadline.generalRuleStatuses(
+      [...new Set(candidates.map(settlementReminderDay))],
+      now,
+    );
     const overdue = candidates.filter((order) =>
-      isSettlementReminderDue(rules, settlementReminderDay(order), now),
+      isSettlementReminderDue(statuses.get(settlementReminderDay(order)) ?? "open"),
     );
     if (overdue.length > 0) {
       await this.notifier.notify(overdue.map((order) => reminderOf(order, now)));

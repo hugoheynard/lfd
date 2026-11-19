@@ -1,4 +1,4 @@
-import { decideOrderCutoff, instantToLocal, type OrderCutoffView } from "@lfd/contracts";
+import { instantToLocal, type OrderCutoffStatus } from "@lfd/contracts";
 
 /*
  * La règle opposée à une JOURNÉE est la règle générale — la seule depuis le
@@ -34,17 +34,13 @@ export function settlementReminderDay(subject: SettlementReminderSubject): strin
  * relancer, pas quand la grâce se ferme.
  *
  * Non quand aucune règle ne couvre la journée, ou que son heure n'existe pas
- * ce jour-là : sans limite, il n'y a pas de « trop tard » à annoncer, et
+ * ce jour-là (le délai de commande rend alors `open`) : sans limite, il n'y a pas de « trop tard » à annoncer, et
  * sonner sur une limite inventée serait pire que se taire.
  *
  * La borne haute, la clôture, n'est pas lue ici : la clôture annule la commande
  * (Q7), qui cesse alors d'être candidate — le lecteur ne rend que des commandes
  * encore `placed`.
  */
-export function isSettlementReminderDue(
-  rules: readonly OrderCutoffView[],
-  serviceDay: string,
-  now: Date,
-): boolean {
-  return decideOrderCutoff(rules, serviceDay, now).status !== "open";
+export function isSettlementReminderDue(generalRule: OrderCutoffStatus): boolean {
+  return generalRule !== "open";
 }

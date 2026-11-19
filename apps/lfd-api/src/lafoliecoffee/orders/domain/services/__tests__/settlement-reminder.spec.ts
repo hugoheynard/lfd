@@ -1,6 +1,12 @@
 import { localToInstant, type OrderCutoffView } from "@lfd/contracts";
 
+import { generalRuleStatus } from "../../../../order-cutoffs/index.js";
 import { isSettlementReminderDue, settlementReminderDay } from "../settlement-reminder.js";
+
+/** La question de la relance : la règle générale de la journée, puis la règle de la relance. */
+function due(rules: readonly OrderCutoffView[], day: string, now: Date): boolean {
+  return isSettlementReminderDue(generalRuleStatus(rules, day, now));
+}
 
 /**
  * Les dates ne sont comparées qu'entre elles — la journée et un `now` construit
@@ -30,29 +36,29 @@ function at(day: string, time: string): Date {
 
 describe("isSettlementReminderDue", () => {
   it("se tait avant l'heure limite, et à la seconde même de la limite", () => {
-    expect(isSettlementReminderDue([rule()], DAY, at(EVE, "17:59"))).toBe(false);
-    expect(isSettlementReminderDue([rule()], DAY, at(EVE, "18:00"))).toBe(false);
+    expect(due([rule()], DAY, at(EVE, "17:59"))).toBe(false);
+    expect(due([rule()], DAY, at(EVE, "18:00"))).toBe(false);
   });
 
   it("sonne dès que la limite est passée, grâce comprise", () => {
-    expect(isSettlementReminderDue([rule()], DAY, at(EVE, "18:01"))).toBe(true);
-    expect(isSettlementReminderDue([rule({ graceMinutes: 60 })], DAY, at(EVE, "18:30"))).toBe(true);
+    expect(due([rule()], DAY, at(EVE, "18:01"))).toBe(true);
+    expect(due([rule({ graceMinutes: 60 })], DAY, at(EVE, "18:30"))).toBe(true);
   });
 
   it("lit la limite à l'heure de Paris, pas en UTC", () => {
     // 18 h à Paris en mars = 17 h UTC : à 17 h 30 UTC, c'est passé.
-    expect(isSettlementReminderDue([rule()], DAY, new Date(`${EVE}T17:30:00.000Z`))).toBe(true);
-    expect(isSettlementReminderDue([rule()], DAY, new Date(`${EVE}T16:30:00.000Z`))).toBe(false);
+    expect(due([rule()], DAY, new Date(`${EVE}T17:30:00.000Z`))).toBe(true);
+    expect(due([rule()], DAY, new Date(`${EVE}T16:30:00.000Z`))).toBe(false);
   });
 
   it("se tait sans règle : aucun « trop tard » à annoncer", () => {
-    expect(isSettlementReminderDue([], DAY, at(DAY, "23:00"))).toBe(false);
+    expect(due([], DAY, at(DAY, "23:00"))).toBe(false);
   });
 
   it("oppose la règle par défaut de la journée, jamais celle d'un point de retrait", () => {
     const pointOnly = rule({ pickupAddressId: "pickup_1", daysBefore: 3 });
 
-    expect(isSettlementReminderDue([pointOnly], DAY, at(EVE, "12:00"))).toBe(false);
+    expect(due([pointOnly], DAY, at(EVE, "12:00"))).toBe(false);
   });
 });
 

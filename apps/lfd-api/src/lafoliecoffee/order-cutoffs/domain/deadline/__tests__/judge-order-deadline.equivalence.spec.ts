@@ -1,4 +1,9 @@
-import { orderLimitInstant, type OrderCutoffView, type OrderLimitSpec } from "@lfd/contracts";
+import {
+  decideOrderCutoff,
+  orderLimitInstant,
+  type OrderCutoffView,
+  type OrderLimitSpec,
+} from "@lfd/contracts";
 
 import {
   OrderCutoffGraceError,
@@ -9,7 +14,6 @@ import {
   ensureWithinOrderCutoff,
   foreseenWaiver,
 } from "../../../../orders/domain/services/order-cutoff-guard.js";
-import { isSettlementReminderDue } from "../../../../orders/domain/services/settlement-reminder.js";
 import {
   generalRuleStatus,
   judgeOrderDeadline,
@@ -155,7 +159,7 @@ describe("le juge rend la décision d'aujourd'hui", () => {
         verdict.graceEnd?.getTime() === decision.graceEnd?.getTime() &&
         spent === foreseenWaiver(old) &&
         JSON.stringify(placementNow) === JSON.stringify(placement) &&
-        (generalRuleStatus(rules, day, at) !== "open") === isSettlementReminderDue(rules, day, at);
+        generalRuleStatus(rules, day, at) === decideOrderCutoff(rules, day, at).status;
       if (!same) {
         gaps.push(
           `${day} ${at.toISOString()} ${JSON.stringify(rules)} ${JSON.stringify(lines)} ${JSON.stringify(waiver)}`,

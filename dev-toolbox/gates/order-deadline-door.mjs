@@ -54,8 +54,6 @@ export const DEBT = [
   "apps/lfd-api/src/lafoliecoffee/orders/domain/services/__tests__/order-cutoff-guard-foreseen.spec.ts",
   "apps/lfd-api/src/lafoliecoffee/orders/domain/services/__tests__/order-cutoff-guard.spec.ts",
   "apps/lfd-api/src/lafoliecoffee/orders/domain/services/order-cutoff-guard.ts",
-  "apps/lfd-api/src/lafoliecoffee/orders/domain/services/settlement-reminder.ts",
-  "apps/lfd-api/src/lafoliecoffee/recommendations/domain/orderable-today.ts",
 ];
 
 /** Les modules de l'ancien jugement, par la fin de leur chemin. */

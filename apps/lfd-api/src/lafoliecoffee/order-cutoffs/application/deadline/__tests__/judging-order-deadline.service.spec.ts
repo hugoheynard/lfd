@@ -136,8 +136,10 @@ describe("ce que le verdict lit", () => {
 });
 
 describe("la règle générale seule", () => {
-  it("dit le rattrapage pour la relance", async () => {
+  it("dit le rattrapage pour la relance, journée par journée", async () => {
     const { deadline } = court();
-    expect(await deadline.generalRuleStatus(DAY, IN_GRACE)).toBe("grace");
+    const statuses = await deadline.generalRuleStatuses([DAY, "2026-08-14"], IN_GRACE);
+    expect(statuses.get(DAY)).toBe("grace");
+    expect(statuses.get("2026-08-14")).toBe("open");
   });
 });

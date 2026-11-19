@@ -1,6 +1,6 @@
 import type { OrderCutoffView, OrderLimitSpec } from "@lfd/contracts";
 
-import { decideStrictestOrderCutoff } from "../../orders/domain/services/order-cutoff-guard.js";
+import { judgeOrderDeadline } from "../../order-cutoffs/index.js";
 
 /** Le jour de service visé et le point de retrait, quand le client les a choisis. */
 export interface FulfillmentTarget {
@@ -20,9 +20,9 @@ export interface OrderableCandidate {
  * **Garde les candidats qu'on peut encore commander pour ce jour**, dans
  * l'ordre reçu, sans doublon, sans ce qui est déjà au panier (R4).
  *
- * La MÊME décision que la garde de passation (`decideStrictestOrderCutoff`,
- * `order-cutoff-guard.ts`) : la plus stricte entre la limite de l'article,
- * sans rattrapage, et la règle du commerce. Mais un
+ * La MÊME décision que la passation : le juge du délai de commande
+ * (`judgeOrderDeadline`), la plus stricte entre la limite de l'article, sans
+ * rattrapage, et la règle du commerce. Mais un
  * article est gardé seulement s'il est **ouvert** — en rattrapage, il ne
  * passerait qu'avec une dérogation, et une suggestion ne montre jamais ce
  * qu'un clic ne peut pas commander.
@@ -80,11 +80,12 @@ function isOpen(
   fallback: readonly OrderCutoffView[],
   now: Date,
 ): boolean {
-  const decision = decideStrictestOrderCutoff({
+  const verdict = judgeOrderDeadline({
     lines: [{ sku: candidate.sku, limit: candidate.orderTimeLimit }],
-    fallback,
-    fulfillmentDate: target.date,
-    now,
+    generalRules: fallback,
+    serviceDay: target.date,
+    at: now,
+    waiver: null,
   });
-  return decision.status === "open";
+  return verdict.kind === "open";
 }

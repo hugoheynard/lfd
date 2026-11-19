@@ -1,11 +1,17 @@
-import { localToInstant, type OrderCutoffView } from "@lfd/contracts";
+import { localToInstant, type OrderCutoffView, type OrderLimitSpec } from "@lfd/contracts";
 
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import {
   StaffNotifier,
   type StaffNotice,
 } from "../../../../../staff/notifications/domain/ports/staff-notifier.js";
-import { OrderCutoffReader } from "../../../domain/ports/order-cutoff.reader.js";
+import { JudgingOrderDeadline } from "../../../../order-cutoffs/application/deadline/judging-order-deadline.service.js";
+import {
+  ItemOrderLimitsReader,
+  LateFeeSettingReader,
+  OpenWaiverReader,
+} from "../../../../order-cutoffs/domain/deadline/ports/deadline-sources.js";
+import { OrderCutoffsInForce } from "../../../../order-cutoffs/domain/order-cutoffs-in-force.js";
 import {
   UnpaidLinkOrderReader,
   type UnpaidLinkOrder,
@@ -48,7 +54,8 @@ class Orders extends UnpaidLinkOrderReader {
   }
 }
 
-class Cutoffs extends OrderCutoffReader {
+/** Le vrai délai de commande sur des règles fixes ; `reads` compte les lectures de la règle. */
+class Cutoffs extends OrderCutoffsInForce {
   reads = 0;
 
   constructor(private readonly rules: readonly OrderCutoffView[]) {
@@ -58,6 +65,24 @@ class Cutoffs extends OrderCutoffReader {
   list(): Promise<readonly OrderCutoffView[]> {
     this.reads += 1;
     return Promise.resolve(this.rules);
+  }
+}
+
+class NoSource extends ItemOrderLimitsReader {
+  limitsOf(): Promise<ReadonlyMap<string, OrderLimitSpec | null>> {
+    return Promise.reject(new Error("la relance ne lit pas les articles"));
+  }
+}
+
+class NoWaiver extends OpenWaiverReader {
+  openFor(): Promise<null> {
+    return Promise.reject(new Error("la relance ne lit pas les dérogations"));
+  }
+}
+
+class NoFee extends LateFeeSettingReader {
+  current(): Promise<null> {
+    return Promise.reject(new Error("la relance ne lit pas la surtaxe"));
   }
 }
 
@@ -95,7 +120,7 @@ function passAt(
   const cutoffs = new Cutoffs(rules);
   const handler = new SendSettlementRemindersHandler(
     new Orders(found),
-    cutoffs,
+    new JudgingOrderDeadline(cutoffs, new NoSource(), new NoWaiver(), new NoFee()),
     notifier,
     new FixedClock(now),
   );

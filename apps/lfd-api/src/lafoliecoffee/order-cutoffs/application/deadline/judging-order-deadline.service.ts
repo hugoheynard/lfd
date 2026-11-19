@@ -60,8 +60,12 @@ export class JudgingOrderDeadline extends OrderDeadline {
     return priceLateness(verdict, await this.lateFees.current());
   }
 
-  async generalRuleStatus(serviceDay: string, at: Date): Promise<OrderCutoffStatus> {
-    return generalRuleStatus(await this.rules.list(), serviceDay, at);
+  async generalRuleStatuses(
+    serviceDays: readonly string[],
+    at: Date,
+  ): Promise<ReadonlyMap<string, OrderCutoffStatus>> {
+    const rules = await this.rules.list();
+    return new Map(serviceDays.map((day) => [day, generalRuleStatus(rules, day, at)]));
   }
 
   private waiverFor(question: OrderDeadlineQuestion): Promise<WaiverAvailable | null> {

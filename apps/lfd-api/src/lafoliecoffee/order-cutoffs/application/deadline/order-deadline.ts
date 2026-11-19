@@ -38,8 +38,13 @@ export abstract class OrderDeadline {
   abstract verdict(question: OrderDeadlineQuestion): Promise<OrderDeadlineVerdict>;
 
   /**
-   * La règle générale seule, rattrapage compris — la question de la relance de
-   * règlement, qui n'a pas de panier : un panier vide n'opposerait rien.
+   * La règle générale seule, rattrapage compris, pour chacune de ces journées
+   * — la question de la relance de règlement, qui n'a pas de panier (un
+   * panier vide n'opposerait rien) et en pose une par commande : la règle se
+   * lit une fois pour toutes.
    */
-  abstract generalRuleStatus(serviceDay: string, at: Date): Promise<OrderCutoffStatus>;
+  abstract generalRuleStatuses(
+    serviceDays: readonly string[],
+    at: Date,
+  ): Promise<ReadonlyMap<string, OrderCutoffStatus>>;
 }
