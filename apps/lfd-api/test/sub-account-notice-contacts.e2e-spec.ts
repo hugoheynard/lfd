@@ -120,11 +120,13 @@ describe("les contacts d'un site", () => {
     await site.patch(`/companies/${s.site}/contact`).send(CONTACT).expect(200);
     await ctx.drain();
 
+    // Un avis par geste : l'ordre de la boîte d'envoi n'est pas promis.
     expect(
       notices()
         .filter((mail) => mail.to === mailOf(s.owner))
-        .map(gestureOf),
-    ).toEqual(["contact_added", "contact_updated", "contact_removed", "primary_contact_changed"]);
+        .map(gestureOf)
+        .sort(),
+    ).toEqual(["contact_added", "contact_removed", "contact_updated", "primary_contact_changed"]);
   });
 
   it("geste de l'équipe : « notre équipe », et la gouvernante est prévenue comme les autres", async () => {
