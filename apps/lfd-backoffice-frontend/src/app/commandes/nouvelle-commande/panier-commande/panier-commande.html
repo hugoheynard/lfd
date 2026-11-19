@@ -141,9 +141,41 @@
               (quantityChange)="cart().setQuantity(line.sku, $event)"
               (remove)="cart().remove(line.sku)"
             />
+            @if (limitNotices().get(line.sku); as notice) {
+              <fold-callout
+                [variant]="notice.kind === 'closed' ? 'alert' : 'warning'"
+                data-item-limit
+              >
+                <div class="pan-blocker">
+                  <span>{{ notice.text }}</span>
+                  @if (notice.kind === 'exceeded' && !draft().itemLimitOverriding()) {
+                    <button
+                      foldButton
+                      size="sm"
+                      emphasis="outline"
+                      data-item-limit-override
+                      (click)="draft().itemLimitOverriding.set(true)"
+                    >
+                      Passer outre
+                    </button>
+                  }
+                </div>
+              </fold-callout>
+            }
           </li>
         }
       </ul>
+      @if (asksReason() && draft().itemLimitOverriding()) {
+        <fold-textarea
+          label="Motif du dépassement"
+          required
+          data-item-limit-reason
+          placeholder="Pourquoi l'équipe passe outre la limite du produit."
+          [rows]="2"
+          [hint]="reasonHint()"
+          [(value)]="draft().itemLimitReason"
+        />
+      }
       <!-- Le détail de l'estimation, par la règle de toute commande (F5). -->
       @if (totalRows(); as rows) {
         <app-montants-panier [rows]="rows" />

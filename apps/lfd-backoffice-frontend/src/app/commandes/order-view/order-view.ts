@@ -34,6 +34,7 @@ import { OrderRefundBanner } from '../order-refund-banner/order-refund-banner';
 import { OrderShortfallBanner } from '../order-shortfall-banner/order-shortfall-banner';
 import { OrderShortfallDecision } from '../order-shortfall-decision/order-shortfall-decision';
 import { OrderShortfallLetter } from '../order-shortfall-letter/order-shortfall-letter';
+import { OrderItemLimitOverridesCard } from '../order-item-limit-overrides-card/order-item-limit-overrides-card';
 import { OrderRefundsCard } from '../order-refunds-card/order-refunds-card';
 import { isOrderSheet } from '../commande-page/order-sheet-key';
 import { AdminOrdersService } from '../orders.service';
@@ -82,6 +83,7 @@ type LoadState = 'loading' | 'ready' | 'error';
     OrderShortfallBanner,
     OrderShortfallDecision,
     OrderShortfallLetter,
+    OrderItemLimitOverridesCard,
     OrderRefundsCard,
   ],
   // Une lecture des e-mails par fiche ouverte, partagée par la carte et la lettre de manque.

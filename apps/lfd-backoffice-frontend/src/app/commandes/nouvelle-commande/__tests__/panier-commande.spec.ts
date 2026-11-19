@@ -324,3 +324,75 @@ describe('PanierCommande — un organisme public', () => {
     expect(host.textContent).not.toContain('aucun crédit ne lui a été accordé');
   });
 });
+
+/** Plan des dépassements, § 3.7 : la ligne fermée par la limite de son produit. */
+describe('PanierCommande — la limite d’un produit', () => {
+  const exceeded: AdminOrderEstimateView = {
+    ...ESTIMATE,
+    cutoff: {
+      status: 'open',
+      until: null,
+      exceeded: [
+        { sku: 'VIE-001', daysBefore: 2, time: '12:00', limitAt: '2030-01-01T11:00:00.000Z' },
+      ],
+      closedByItemLimit: [{ sku: 'VIE-001', exceedable: true }],
+    },
+  };
+
+  function inLines(estimate: AdminOrderEstimateView, draft = readyDraft()) {
+    const mounted = mountFull(filledCart(), { estimate, draft });
+    draft.fulfillment.set(readyDraft().fulfillment());
+    mounted.component.view.set('lines');
+    mounted.fixture.detectChanges();
+    return { ...mounted, draft };
+  }
+
+  it('dépassable : dit la limite, propose « Passer outre », et retient la validation', () => {
+    const { host } = inLines(exceeded);
+    expect(squash(host.querySelector('[data-item-limit]')?.textContent)).toContain(
+      'Limite dépassée — ce produit se commande 2 jours avant, 12:00.',
+    );
+    expect(host.querySelector('[data-item-limit-override]')).not.toBeNull();
+    expect(host.querySelector('[data-item-limit-reason]')).toBeNull();
+    expect(validate(host)).toBeUndefined();
+  });
+
+  it('« Passer outre » ouvre le motif, obligatoire ; un motif rouvre la validation', () => {
+    const { fixture, host, draft } = inLines(exceeded);
+    host.querySelector<HTMLButtonElement>('[data-item-limit-override]')?.click();
+    fixture.detectChanges();
+    expect(host.querySelector('[data-item-limit-reason]')).not.toBeNull();
+    expect(host.querySelector('.pan-foot')?.textContent).toContain('Indiquez pourquoi');
+
+    draft.itemLimitReason.set('Le client a appelé avant midi.');
+    fixture.detectChanges();
+    expect(host.querySelector('.pan-foot')?.textContent).not.toContain('Indiquez pourquoi');
+    expect(validate(host)).toBeDefined();
+  });
+
+  it('non dépassable : « ne se commande plus », sans geste', () => {
+    const { host } = inLines({
+      ...ESTIMATE,
+      cutoff: {
+        status: 'open',
+        until: null,
+        exceeded: [],
+        closedByItemLimit: [{ sku: 'VIE-001', exceedable: false }],
+      },
+    });
+    expect(host.querySelector('[data-item-limit]')?.textContent).toContain(
+      'Ce produit ne se commande plus pour ce jour.',
+    );
+    expect(host.querySelector('[data-item-limit-override]')).toBeNull();
+  });
+
+  it('un refus « motif manquant » ramène à la vue des lignes', () => {
+    const draft = readyDraft();
+    const { fixture, component } = mountFull(filledCart(), { estimate: exceeded, draft });
+    expect(component.view()).toBe('settings');
+    draft.itemLimitReasonAsked.set(true);
+    fixture.detectChanges();
+    expect(component.view()).toBe('lines');
+    expect(draft.itemLimitReasonAsked()).toBe(false);
+  });
+});

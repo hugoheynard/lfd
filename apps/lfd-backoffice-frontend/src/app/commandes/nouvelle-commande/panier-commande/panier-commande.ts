@@ -1,4 +1,13 @@
-import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  input,
+  output,
+  signal,
+  untracked,
+} from '@angular/core';
 import {
   FoldButtonComponent,
   FoldButtonIconComponent,
@@ -7,9 +16,11 @@ import {
   FoldSelectComponent,
   FoldTabPanelComponent,
   FoldTabsComponent,
+  FoldTextareaComponent,
   type FoldTabItem,
 } from 'fold-ng';
 import {
+  ITEM_LIMIT_OVERRIDE_REASON_MAX_LENGTH,
   STAFF_SETTLEMENT_LABELS,
   type AdminOrderEstimateView,
   type BudgetCommitmentRequirementsView,
@@ -38,6 +49,7 @@ import {
   AcheminementCommande,
   type FulfillmentChoice,
 } from '../acheminement-commande/acheminement-commande';
+import { asksItemLimitReason, itemLimitBlockerOf, itemLimitNoticesOf } from '../item-limits';
 import { MontantsPanier } from '../montants-panier/montants-panier';
 import { panierBlockersOf, type PanierBlocker, type PanierView } from '../panier-blockers';
 
@@ -90,6 +102,7 @@ const NO_FULFILLMENT: FulfillmentChoice = {
     MontantsPanier,
     FoldTabPanelComponent,
     FoldTabsComponent,
+    FoldTextareaComponent,
   ],
   templateUrl: './panier-commande.html',
   styleUrl: './panier-commande.scss',
@@ -206,6 +219,33 @@ export class PanierCommande {
 
   readonly place = output<OrderDraft>();
 
+  /** Le mot de chaque ligne fermée par la limite de son produit, par SKU. */
+  protected readonly limitNotices = computed(() =>
+    itemLimitNoticesOf(this.estimate()?.cutoff ?? null),
+  );
+  /** La saisie passe une limite de produit : le champ du motif a lieu d'être. */
+  protected readonly asksReason = computed(() =>
+    asksItemLimitReason(this.estimate()?.cutoff ?? null),
+  );
+  protected readonly reasonMax = ITEM_LIMIT_OVERRIDE_REASON_MAX_LENGTH;
+  protected readonly reasonHint = computed(
+    () =>
+      `Obligatoire, consigné sur la commande. ${String(this.draft().itemLimitReason().trim().length)} / ${String(this.reasonMax)} caractères.`,
+  );
+
+  constructor() {
+    // Un refus « motif manquant » ramène au champ, qui vit dans la vue des lignes.
+    effect(() => {
+      const draft = this.draft();
+      if (draft.itemLimitReasonAsked()) {
+        untracked(() => {
+          this.view.set('lines');
+          draft.itemLimitReasonAsked.set(false);
+        });
+      }
+    });
+  }
+
   /**
    * L'acheminement résolu par le sélecteur. Le seul état que la colonne garde
    * pour elle : c'est une **dérivation** du brouillon et des points/zones connus,
@@ -250,8 +290,13 @@ export class PanierCommande {
    * Ce qui empêche de valider, dit en clair. Une liste et non un booléen : un
    * bouton grisé sans raison oblige à deviner ce qui manque.
    */
-  protected readonly blockers = computed<readonly PanierBlocker[]>(() =>
-    panierBlockersOf({
+  protected readonly blockers = computed<readonly PanierBlocker[]>(() => {
+    const limit = itemLimitBlockerOf(
+      this.estimate()?.cutoff ?? null,
+      this.draft().itemLimitOverriding(),
+      this.draft().itemLimitReason(),
+    );
+    const issues = panierBlockersOf({
       empty: this.cart().isEmpty(),
       hasBuyer: this.buyer() !== null,
       requestedDate: this.draft().requestedDate(),
@@ -267,8 +312,9 @@ export class PanierCommande {
         this.draft().commitmentServiceCode(),
       ),
       refusal: this.estimate()?.refusal ?? null,
-    }),
-  );
+    });
+    return limit === null ? issues : [...issues, { text: limit, view: 'lines' }];
+  });
 
   protected readonly canPlace = computed(
     () => this.blockers().length === 0 && !this.submitting() && this.estimateReady(),

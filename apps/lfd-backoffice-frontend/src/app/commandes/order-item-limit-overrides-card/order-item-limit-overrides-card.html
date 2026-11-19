@@ -1,0 +1,16 @@
+@if (rows().length > 0) {
+  <fold-card data-item-limit-overrides>
+    <fold-element-title variant="title" icon="clock" title="Limites de produit dépassées" />
+    @for (row of rows(); track $index) {
+      <fold-field-list data-item-limit-override>
+        <fold-field label="Produit">{{ row.product }}</fold-field>
+        <fold-field label="Limite">{{ row.limit }}</fold-field>
+        <fold-field label="Motif">{{ row.reason }}</fold-field>
+        <fold-field label="Par">{{ row.by }}</fold-field>
+        <fold-field label="Le">
+          {{ row.recordedAt | date: 'dd/MM/yyyy à HH:mm' }}, {{ row.origin }}
+        </fold-field>
+      </fold-field-list>
+    }
+  </fold-card>
+}

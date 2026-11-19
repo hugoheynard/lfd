@@ -121,3 +121,10 @@
   flex-direction: column;
   gap: var(--fold-space-md);
 }
+
+// Une ligne et ce que dit la limite de son produit, l'une sous l'autre.
+.pan-list li {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+}

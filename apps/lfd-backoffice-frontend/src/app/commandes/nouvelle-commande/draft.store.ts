@@ -95,6 +95,19 @@ export class DraftStore {
   readonly commitmentServiceCode = signal('');
 
   /**
+   * « Passer outre » la limite d'un produit (plan des dépassements, § 3.5) :
+   * le geste ouvert, et son motif. Hors du brouillon conservé — un motif vaut
+   * pour la saisie en cours, jamais pour une reprise un autre jour.
+   */
+  readonly itemLimitOverriding = signal(false);
+  readonly itemLimitReason = signal('');
+  /**
+   * Le serveur a refusé faute de motif : le panier se rouvre sur ses lignes,
+   * où vit le champ, puis remet le drapeau à faux.
+   */
+  readonly itemLimitReasonAsked = signal(false);
+
+  /**
    * L'acheminement **résolu** par le sélecteur (point, adresse, tranche, et ce
    * qui manque encore) — `null` tant qu'il n'a rien émis. Une dérivation, pas
    * une décision : hors du brouillon conservé. Il vit ici et non dans la
@@ -140,6 +153,9 @@ export class DraftStore {
     this.entry.set('scheduled');
     this.commitmentNumber.set('');
     this.commitmentServiceCode.set('');
+    this.itemLimitOverriding.set(false);
+    this.itemLimitReason.set('');
+    this.itemLimitReasonAsked.set(false);
     this.restore({
       buyerUserId: null,
       method: 'pickup',

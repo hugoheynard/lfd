@@ -2,6 +2,7 @@ import { PermissionsStore } from '../../auth/permissions.store';
 import { GestureIntents } from '../../shared/gesture-intents';
 import { isBelowMinimumRefusal } from './below-minimum-refusal';
 import { isGraceRefusal } from './grace-refusal';
+import { isItemLimitReasonRefusal, itemLimitReasonPayloadOf } from './item-limits';
 import { isDeliveryClosedRefusal } from './delivery-closed-refusal';
 import { isTotalChangedRefusal } from './total-changed-refusal';
 import { estimateChangeMessage } from './estimate-changes';
@@ -800,6 +801,12 @@ export class NouvelleCommandePage {
             this.draft.commitmentNumber(),
             this.draft.commitmentServiceCode(),
           ),
+          // Le motif d'un dépassement de limite de produit : à la passation
+          // seule, comme l'engagement — l'estimation ne le lit pas.
+          ...itemLimitReasonPayloadOf(
+            this.draft.itemLimitOverriding(),
+            this.draft.itemLimitReason(),
+          ),
         },
         this.placeIntents.keyFor(PLACE_INTENT),
       );
@@ -842,6 +849,18 @@ export class NouvelleCommandePage {
         // montrer avant de confirmer (T3).
         this.lateDraft.set(null);
         await this.showTotalChange(draft, amounts);
+      } else if (isItemLimitReasonRefusal(error)) {
+        // Une limite de produit est passée sans motif : pas une panne, le
+        // champ du motif. On le rouvre, on y ramène, et l'estimation se
+        // redemande pour nommer la ligne.
+        this.lateDraft.set(null);
+        this.draft.itemLimitOverriding.set(true);
+        this.draft.itemLimitReasonAsked.set(true);
+        this.notify.refused(error, 'Indiquez pourquoi vous passez outre la limite du produit.');
+        void this.freshEstimate();
+        if (this.narrow()) {
+          void this.openPanier();
+        }
       } else if (isGraceRefusal(error)) {
         this.lateDraft.set(draft);
         this.notify.refused(error, "L'heure limite est passée pour cette date.");
