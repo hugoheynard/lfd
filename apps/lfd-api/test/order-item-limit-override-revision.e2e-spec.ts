@@ -41,6 +41,8 @@ const LEVAIN = "VIE-001-1";
 /** Un article sans limite propre. */
 const OTHER = "VIE-002-1";
 const DAY = serviceDay(30);
+/** Une semaine plus tôt, même jour de semaine : la date où l'équipe avance la commande. */
+const EARLIER = serviceDay(23);
 
 /** Le jeton porteur EST le `sub` : chaque membre de l'équipe se nomme par le sien. */
 const stubAdminVerifier = {
@@ -150,9 +152,10 @@ async function staffDeniedWrite(sub: string): Promise<void> {
 
 function content(
   lines: readonly { readonly sku: string; readonly quantity: number }[],
+  day: string = DAY,
 ): Record<string, unknown> {
   return {
-    requestedDeliveryDate: DAY,
+    requestedDeliveryDate: day,
     fulfillmentMethod: "pickup",
     pickupAddressId: pickupId,
     requestedWindow: { start: "07:00", end: "08:00" },
@@ -167,13 +170,19 @@ const MORE_LEVAIN = [
   { sku: OTHER, quantity: 3 },
 ];
 
-function staffRevise(sub: string, lines: typeof MORE_LEVAIN, reason?: string) {
+/** Les lignes de la passation, inchangées. */
+const SAME_LINES = [
+  { sku: LEVAIN, quantity: 2 },
+  { sku: OTHER, quantity: 3 },
+];
+
+function staffRevise(sub: string, lines: typeof MORE_LEVAIN, reason?: string, day: string = DAY) {
   return ctx
     .asSub(sub)
     .post(`/admin/orders/${orderId}/revisions`)
     .send({
       expectedRevision: 0,
-      ...content(lines),
+      ...content(lines, day),
       ...(reason === undefined ? {} : { itemLimitOverrideReason: reason }),
     });
 }
@@ -187,6 +196,30 @@ async function state(): Promise<readonly number[]> {
 }
 
 describe("l'équipe modifie une commande et la limite d'un produit", () => {
+  /**
+   * Régression : déplacer la date ne rejugeait que les lignes ajoutées ou
+   * augmentées ; un produit à limite passée déjà au panier passait à la
+   * nouvelle date sans droit, sans motif, sans trace (fermé le 2026-11-19).
+   */
+  it("sans le droit, avancer la date d'une commande qui porte le levain est refusé", async () => {
+    await seedLimit(true);
+
+    const response = await staffRevise(WITHOUT_RIGHT, SAME_LINES, "Salon", EARLIER).expect(409);
+
+    expect(response.body).toMatchObject({ code: "orders.cutoff.item_limit_past" });
+    expect(await state()).toEqual([0, 0]);
+  });
+
+  it("avec le droit, la case et un motif, la date change et le dépassement est consigné", async () => {
+    await seedLimit(true);
+
+    await staffRevise(E2E_STAFF_SUB, SAME_LINES, "Le client part plus tôt", EARLIER).expect(
+      (response) => expect([200, 201]).toContain(response.status),
+    );
+
+    expect(await state()).toEqual([1, 1]);
+  });
+
   it("sans le droit, augmenter le levain est refusé en le nommant", async () => {
     await seedLimit(true);
 

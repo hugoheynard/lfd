@@ -5,7 +5,12 @@ import type {
 } from "../../../../../order-cutoffs/index.js";
 import { ItemLimitPassedOnRevisionError } from "../../../../domain/errors/item-limit-override-errors.js";
 import type { ItemLimitOverride } from "../../../../domain/services/item-limit-overrides.js";
-import { admitRaisedLines, raisedSkus, settledSkusOn } from "../revision-item-limits.js";
+import {
+  admitRaisedLines,
+  raisedSkus,
+  settledSkusOn,
+  staffJudgedSkus,
+} from "../revision-item-limits.js";
 
 /**
  * La limite d'article dans une modification (plan
@@ -110,6 +115,28 @@ describe("raisedSkus — les lignes ajoutées ou augmentées", () => {
         ],
       ),
     ).toEqual(["PAIN"]);
+  });
+});
+
+describe("staffJudgedSkus — ce qu'une modification de l'équipe soumet à la limite d'article", () => {
+  const lines = [
+    { sku: "LEV", quantity: 2 },
+    { sku: "PAIN", quantity: 3 },
+  ];
+
+  it("à journée inchangée, les seules lignes ajoutées ou augmentées", () => {
+    expect(
+      staffJudgedSkus(
+        { serviceDay: "2026-12-10", lines },
+        { serviceDay: "2026-12-10", lines: [...lines, { sku: "BRI", quantity: 1 }] },
+      ),
+    ).toEqual(["BRI"]);
+  });
+
+  it("quand la journée change, toutes les lignes, même gardées telles quelles", () => {
+    expect(
+      staffJudgedSkus({ serviceDay: "2026-12-10", lines }, { serviceDay: "2026-12-03", lines }),
+    ).toEqual(["LEV", "PAIN"]);
   });
 });
 

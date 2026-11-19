@@ -95,7 +95,11 @@ l'écran lit aussi l'état de la ligne.
   produit sur la nouvelle journée — refus `orders.cutoff.item_limit_past`
   (qui nomme le produit et les sorties) sauf dépassement avec les deux clés,
   motif, trace `revision`. La règle générale ne lui est toujours pas opposée.
-  Une ligne existante non augmentée passe comme avant.
+  Une ligne existante non augmentée passe comme avant — **sauf quand la date
+  change** : toutes les lignes sont alors jugées sur la nouvelle journée,
+  aucune n'y ayant été jugée (`staffJudgedSkus`). Déplacer une commande ne
+  fait pas passer en douce un produit dont la limite tombe avant la nouvelle
+  date.
 - **Par le client**, sur une commande qui porte un dépassement : pour sa
   journée, la ligne consignée n'est jugée que par la règle générale
   (`settledItemLimits` de la question), sans quitter le panier — un panier
@@ -118,10 +122,6 @@ motif manquant ramène au champ. La fiche d'une commande montre la carte
 
 ## 3. Ce qui reste
 
-- **L'équipe qui déplace la date d'une commande** n'est pas jugée sur les
-  produits qu'elle n'ajoute ni n'augmente : un produit à 48 h déjà au panier
-  passe à une date plus proche. À fermer si Hugo le veut (juger toutes les
-  lignes sur la nouvelle journée quand la date change).
 - **Une demande du client (M4) appliquée par une personne qui a le droit** :
   aujourd'hui refusée comme sans droit. Lire le droit au contrôleur de M4 la
   laisserait passer avec un motif.

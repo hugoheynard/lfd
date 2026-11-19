@@ -16,6 +16,7 @@ import {
   admitRaisedLines,
   raisedSkus,
   settledSkusOn,
+  staffJudgedSkus,
 } from "../../domain/services/revision-item-limits.js";
 
 /**
@@ -76,8 +77,9 @@ export class RevisionCutoffs {
   }
 
   /**
-   * L'équipe : la limite d'article des seules lignes ajoutées ou augmentées,
-   * sur la nouvelle journée ; la règle générale ne lui est pas opposée. Rend
+   * L'équipe : la limite d'article des lignes ajoutées ou augmentées — de
+   * toutes, quand la journée change —, sur la nouvelle journée ; la règle
+   * générale ne lui est pas opposée. Rend
    * les limites qu'elle dépasse, à justifier et à consigner.
    *
    * `exceedItemLimits` : le droit `lfc_product_limit_override`, lu au
@@ -92,12 +94,15 @@ export class RevisionCutoffs {
     judged: { readonly decidedAt: Instant; readonly exceedItemLimits: boolean },
   ): Promise<readonly ExceededItemLimit[]> {
     const day = content.requestedDeliveryDate;
-    const raised = raisedSkus(order.lines, content.lines);
-    if (day === null || raised.length === 0) {
+    const submitted = staffJudgedSkus(
+      { serviceDay: order.serviceDay, lines: order.lines },
+      { serviceDay: day, lines: content.lines },
+    );
+    if (day === null || submitted.length === 0) {
       return [];
     }
     const verdict = await this.deadline.verdict({
-      skus: raised,
+      skus: submitted,
       serviceDay: day,
       at: judged.decidedAt,
       asker: revisionAsker(judged.exceedItemLimits),

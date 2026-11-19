@@ -27,6 +27,26 @@ export function raisedSkus(
   );
 }
 
+/**
+ * **Les SKU qu'une modification de l'équipe soumet à leur limite d'article.**
+ *
+ * À journée inchangée : les lignes ajoutées ou augmentées ({@link raisedSkus})
+ * — les autres ont été jugées pour cette journée à leur passation. Quand la
+ * journée CHANGE : toutes les lignes, car aucune n'a été jugée pour la
+ * nouvelle (Hugo, 2026-11-19 : une même case et un même droit donnent la même
+ * réponse partout — déplacer une commande ne fait pas passer en douce un
+ * produit dont la limite tombe avant la nouvelle date).
+ */
+export function staffJudgedSkus(
+  before: { readonly serviceDay: string | null; readonly lines: readonly CountedLine[] },
+  after: { readonly serviceDay: string | null; readonly lines: readonly CountedLine[] },
+): readonly string[] {
+  if (before.serviceDay === after.serviceDay) {
+    return raisedSkus(before.lines, after.lines);
+  }
+  return [...totalsBySku(after.lines).keys()];
+}
+
 function totalsBySku(lines: readonly CountedLine[]): ReadonlyMap<string, number> {
   const totals = new Map<string, number>();
   for (const line of lines) {
@@ -59,13 +79,14 @@ export function settledSkusOn(
 }
 
 /**
- * **Ce que la limite d'article dit des lignes ajoutées par l'équipe** — la
+ * **Ce que la limite d'article dit des lignes que l'équipe soumet** (ajoutées,
+ * augmentées, ou toutes quand la journée change) — la
  * règle générale ne lui est pas opposée, la limite d'article l'est. Une ligne
  * que sa propre limite ferme passe seulement si le verdict la dit dépassée
  * (la case du produit, le droit, une limite générale ce jour-là) ; elle rend
  * alors le dépassement, à justifier et à consigner.
  *
- * `verdict` est celui des SEULS SKU ajoutés ou augmentés.
+ * `verdict` est celui des seuls SKU soumis ({@link staffJudgedSkus}).
  *
  * @throws {ItemLimitPassedOnRevisionError} une ligne ajoutée que sa limite ferme, non dépassée.
  */
