@@ -2,6 +2,7 @@ import type {
   AdminCancellationRefund,
   AdminCancellationVoucher,
   AdminOrderCancellability,
+  AdminOrderItemLimitOverride,
   AdminOrderShortfall,
   AdminOrderView,
   AdminShortfallCustomerNotice,
@@ -37,6 +38,8 @@ import { OrderRevisabilityReading } from "../../revision/application/services/or
 import { CancellationPreview } from "../../cancellation/application/services/cancellation-preview.js";
 import { VoucherRestitutionRefusal } from "../services/voucher-restitution-refusal.js";
 import { GetAdminOrderQuery } from "./get-admin-order.query.js";
+import { ItemLimitOverrideReader } from "../../domain/ports/item-limit-override.reader.js";
+import type { ItemLimitOverride } from "../../domain/services/item-limit-overrides.js";
 
 /**
  * Sert une commande au staff, avec QUI l'a passée — la personne, sa société,
@@ -68,6 +71,9 @@ import { GetAdminOrderQuery } from "./get-admin-order.query.js";
  * Le reste d'un départ incomplet payé par carte (plan
  * `documentation/commandes/reliquat/plan-e9-reste-carte.md`, § 4.5) : ce que
  * « Rembourser le reste » rendrait, lu sur l'état.
+ *
+ * Les limites de produit que l'équipe a passées, pour qui a le droit de les
+ * lire ; la lecture n'est pas faite sans lui.
  */
 @QueryHandler(GetAdminOrderQuery)
 export class GetAdminOrderHandler implements IQueryHandler<GetAdminOrderQuery, AdminOrderView> {
@@ -86,6 +92,7 @@ export class GetAdminOrderHandler implements IQueryHandler<GetAdminOrderQuery, A
     private readonly shortfalls: OrderShortfallReader,
     private readonly cardIncreases: CardIncreaseProposalReader,
     private readonly shortfallRefunds: AdminShortfallRefundView,
+    private readonly itemLimitOverrides: ItemLimitOverrideReader,
   ) {}
 
   async execute(query: GetAdminOrderQuery): Promise<AdminOrderView> {
@@ -98,6 +105,7 @@ export class GetAdminOrderHandler implements IQueryHandler<GetAdminOrderQuery, A
       shortfall,
       increase,
       shortfallRefund,
+      overrides,
     ] = await Promise.all([
       this.orders.findById(query.orderId),
       this.authors.authorOf(query.orderId),
@@ -107,6 +115,7 @@ export class GetAdminOrderHandler implements IQueryHandler<GetAdminOrderQuery, A
       this.shortfalls.of(query.orderId),
       this.cardIncreases.liveOf(query.orderId),
       this.shortfallRefunds.of(query.orderId),
+      query.withItemLimitOverrides ? this.itemLimitOverrides.forOrder(query.orderId) : null,
     ]);
     if (owned === null || author === null || cancellability === null || revision === null) {
       throw new OrderNotFoundError(query.orderId);
@@ -131,6 +140,7 @@ export class GetAdminOrderHandler implements IQueryHandler<GetAdminOrderQuery, A
       shortfall: shortfall === null ? null : shortfallViewOf(shortfall, staffAuthors),
       cardIncrease: adminCardIncreaseOf(increase),
       shortfallRefund,
+      ...(overrides === null ? {} : { itemLimitOverrides: overrides.map(overrideViewOf) }),
     };
   }
 
@@ -164,6 +174,20 @@ export class GetAdminOrderHandler implements IQueryHandler<GetAdminOrderQuery, A
     }
     return { cancellable: true, voucher: voucherPreviewOf(restitution), refund };
   }
+}
+
+/** Un dépassement consigné, dans la forme du contrat. */
+function overrideViewOf(override: ItemLimitOverride): AdminOrderItemLimitOverride {
+  return {
+    sku: override.sku,
+    staffUserId: override.staffUserId,
+    reason: override.reason,
+    daysBefore: override.daysBefore,
+    time: override.time,
+    limitAt: override.limitAt.toISOString(),
+    origin: override.origin,
+    recordedAt: override.createdAt.toISOString(),
+  };
 }
 
 /** Le manque signalé, dans la forme du contrat (E6a) ; le client prévenu, nommé (E6d). */

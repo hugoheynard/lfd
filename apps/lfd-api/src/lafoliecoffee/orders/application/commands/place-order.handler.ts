@@ -171,6 +171,8 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, Pla
         placedByUserId: command.actorUserId,
         placedByStaffId: null,
         buyerKind: REGISTERED_BUYER,
+        // Un client ne passe jamais outre la limite d'un produit.
+        exceedItemLimits: false,
       },
       payload,
       voucher,

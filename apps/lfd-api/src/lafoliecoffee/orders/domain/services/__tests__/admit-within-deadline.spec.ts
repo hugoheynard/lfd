@@ -256,3 +256,55 @@ describe("la dérogation, seul chemin de sortie", () => {
     );
   });
 });
+
+describe("les limites d'article passées par l'équipe", () => {
+  /** Lundi 10 à midi : passée le mardi matin, quand la règle générale (mardi 18 h) ne l'est pas. */
+  const PASSABLE = { daysBefore: 2, time: "12:00", graceMinutes: 0, staffMayExceed: true };
+  const TUESDAY_MORNING = "2026-08-11T08:00:00.000Z";
+
+  function verdictFor(exceedItemLimits: boolean, now = TUESDAY_MORNING, graceMinutes = 0) {
+    return judgeOrderDeadline({
+      lines: [line("VIE-001"), { sku: "LEV-001", limit: PASSABLE }],
+      generalRules: [commerceRule({ graceMinutes })],
+      serviceDay: FULFILLMENT_DAY,
+      at: new Date(now),
+      waiver: exceedItemLimits ? { id: "w1" } : null,
+      exceedItemLimits,
+    });
+  }
+
+  it("admet le panier et rend la limite dépassée, pour la faire justifier et consigner", () => {
+    const admission = admitWithinDeadline(verdictFor(true), FULFILLMENT_DAY);
+    expect(admission.waiverUsed).toBeNull();
+    expect(admission.exceeded).toEqual([
+      {
+        sku: "LEV-001",
+        rule: { daysBefore: 2, time: "12:00", graceMinutes: 0 },
+        limit: new Date("2026-08-10T10:00:00.000Z"),
+      },
+    ]);
+  });
+
+  it("rend les dépassements avec la dérogation dépensée dans le rattrapage", () => {
+    const admission = admitWithinDeadline(
+      verdictFor(true, "2026-08-11T16:10:00.000Z", 30),
+      FULFILLMENT_DAY,
+    );
+    expect(admission.waiverUsed).toBe("w1");
+    expect(admission.exceeded.map((passed) => passed.sku)).toEqual(["LEV-001"]);
+  });
+
+  it("refuse sans la capacité : la limite d'article ferme le panier", () => {
+    expect(() => admitWithinDeadline(verdictFor(false), FULFILLMENT_DAY)).toThrow(
+      PastOrderCutoffError,
+    );
+  });
+
+  it("ne rend aucun dépassement à un panier à l'heure", () => {
+    const admission = admitWithinDeadline(
+      verdictFor(true, "2026-08-09T08:00:00.000Z"),
+      FULFILLMENT_DAY,
+    );
+    expect(admission.exceeded).toEqual([]);
+  });
+});

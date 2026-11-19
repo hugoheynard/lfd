@@ -32,6 +32,12 @@ export class QuoteOrderQuery {
      * se mure exactement comme la commande qui l'appliquerait.
      */
     readonly asStaff: boolean,
+    /**
+     * Le droit `lfc_product_limit_override:write` de l'équipe, lu au
+     * contrôleur : l'avis du comptoir dit quelles limites de produit la
+     * saisie passerait. Toujours faux sur la route du client.
+     */
+    readonly exceedItemLimits: boolean,
   ) {}
 }
 
@@ -61,6 +67,8 @@ export class QuoteOrderHandler implements IQueryHandler<QuoteOrderQuery, OrderQu
       placedByStaffId: query.asStaff ? query.actorUserId : null,
       // Derrière une route gardée, staff ou client : un compte reconnu (§ 13.7).
       buyerKind: REGISTERED_BUYER,
+      // Le chiffrage ne juge pas l'heure limite : l'avis plus bas le fait.
+      exceedItemLimits: false,
     };
     const quoted = await this.quoting.quote(
       parties,
@@ -92,6 +100,7 @@ export class QuoteOrderHandler implements IQueryHandler<QuoteOrderQuery, OrderQu
               requestedDeliveryDate,
               (await this.shelf.decide(parties, requestedDeliveryDate, query.payload.supply))
                 .supply,
+              query.asStaff && query.exceedItemLimits,
             ),
       // Le sous-total de la composition même de la commande (`priceBasket`
       // puis `draftedAmountsOf`, lot L3) : arrondi au centime une fois par

@@ -1605,6 +1605,38 @@ export interface OrderQuoteCutoffView {
    * n'y a rien à opposer ; `grace` : la fin du rattrapage ; `closed` : `null`.
    */
   readonly until: string | null;
+  /**
+   * Les limites de produit que la saisie passerait, dans l'ordre du panier :
+   * l'écran demande alors le motif. Vide sans le droit de passer outre.
+   */
+  readonly exceeded: readonly OrderQuoteExceededLimitView[];
+  /**
+   * Chaque ligne que **sa propre limite** ferme, et si celle qui saisit
+   * peut la passer : « Limite dépassée — passer outre » ou « Ce produit ne se
+   * commande plus pour ce jour ».
+   */
+  readonly closedByItemLimit: readonly OrderQuoteItemLimitLineView[];
+}
+
+/** Une limite de produit que la saisie passerait. */
+export interface OrderQuoteExceededLimitView {
+  readonly sku: string;
+  /** Le délai de la limite, en jours avant la journée. */
+  readonly daysBefore: number;
+  /** `HH:mm`, à Paris. */
+  readonly time: string;
+  /** ISO 8601 : l'instant où elle est tombée pour cette journée. */
+  readonly limitAt: string;
+}
+
+/** Une ligne fermée par sa limite de produit. */
+export interface OrderQuoteItemLimitLineView {
+  readonly sku: string;
+  /**
+   * Le produit le permet, la personne en a le droit, et une limite générale
+   * juge ce jour-là. Faux : la ligne ne se commande plus pour ce jour.
+   */
+  readonly exceedable: boolean;
 }
 
 export interface OrderQuoteView {

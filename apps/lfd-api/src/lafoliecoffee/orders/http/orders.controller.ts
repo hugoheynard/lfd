@@ -133,7 +133,8 @@ export class OrdersController {
   ): Promise<CustomerOrderQuoteView> {
     return toCustomerQuote(
       await this.queries.execute<QuoteOrderQuery, OrderQuoteView>(
-        new QuoteOrderQuery(user.userId, payload, false),
+        // Un client ne passe jamais outre la limite d'un produit.
+        new QuoteOrderQuery(user.userId, payload, false, false),
       ),
     );
   }

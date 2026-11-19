@@ -103,6 +103,7 @@ describe("chaque ligne dit ce qui la juge", () => {
       limit: new Date(ITEM_LIMIT),
       itemStatus: "closed",
       exceeded: false,
+      exceedable: false,
     });
     expect(verdict.lines.get("PAIN")).toEqual({
       status: "open",
@@ -110,6 +111,7 @@ describe("chaque ligne dit ce qui la juge", () => {
       limit: new Date(GENERAL_LIMIT),
       itemStatus: "open",
       exceeded: false,
+      exceedable: false,
     });
   });
 
@@ -208,6 +210,53 @@ describe("passer outre la limite d'un produit", () => {
     expect(verdict.kind).toBe("closed");
     expect(verdict.exceeded.map((passed) => passed.sku)).toEqual(["LEVAIN"]);
     expect(verdict.lines.get("BRIOCHE")).toMatchObject({ status: "closed", exceeded: false });
+  });
+});
+
+describe("ce que l'écran de l'équipe lit : la ligne est-elle dépassable ?", () => {
+  const AFTER_ITEM = "2026-08-11T08:00:00.000Z";
+
+  it("dit dépassable l'article qui le permet, pour qui en a la capacité, sous une règle générale", () => {
+    const verdict = judge({
+      lines: [
+        { sku: "LEVAIN", limit: PASSABLE },
+        { sku: "BRIOCHE", limit: TWO_DAYS_NOON },
+        { sku: "PAIN", limit: null },
+      ],
+      at: AFTER_ITEM,
+      exceedItemLimits: true,
+    });
+    expect(verdict.lines.get("LEVAIN")?.exceedable).toBe(true);
+    expect(verdict.lines.get("BRIOCHE")?.exceedable).toBe(false);
+    expect(verdict.lines.get("PAIN")?.exceedable).toBe(false);
+  });
+
+  it("ne dit rien de dépassable sans la capacité", () => {
+    const verdict = judge({ lines: [{ sku: "LEVAIN", limit: PASSABLE }], at: AFTER_ITEM });
+    expect(verdict.lines.get("LEVAIN")).toMatchObject({ status: "closed", exceedable: false });
+  });
+
+  it("ne dit rien de dépassable sans limite générale ce jour-là", () => {
+    const verdict = judge({
+      lines: [{ sku: "LEVAIN", limit: PASSABLE }],
+      generalRules: [],
+      at: AFTER_ITEM,
+      exceedItemLimits: true,
+    });
+    expect(verdict.lines.get("LEVAIN")?.exceedable).toBe(false);
+  });
+
+  it("reste dépassable quand la règle générale ferme de toute façon : la clé ne dit pas l'instant", () => {
+    const verdict = judge({
+      lines: [{ sku: "LEVAIN", limit: PASSABLE }],
+      at: "2026-08-11T17:00:00.000Z",
+      exceedItemLimits: true,
+    });
+    expect(verdict.lines.get("LEVAIN")).toMatchObject({
+      status: "closed",
+      exceeded: false,
+      exceedable: true,
+    });
   });
 });
 

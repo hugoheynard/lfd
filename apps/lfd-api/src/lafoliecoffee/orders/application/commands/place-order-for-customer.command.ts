@@ -18,6 +18,12 @@ export class PlaceOrderForCustomerCommand {
      * envoi de même clé rend la commande déjà passée sans rien réécrire.
      */
     readonly intentKey: string,
+    /**
+     * Celui qui saisit a le droit `lfc_product_limit_override:write`, lu en
+     * base par la porte staff : il peut passer outre la limite d'un produit
+     * qui le permet, avec un motif.
+     */
+    readonly exceedItemLimits: boolean,
   ) {}
 }
 

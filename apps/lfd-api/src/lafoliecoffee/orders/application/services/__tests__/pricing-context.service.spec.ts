@@ -37,6 +37,7 @@ function request(over: Partial<PricingRequest> = {}): PricingRequest {
       placedByUserId: "user_1",
       placedByStaffId: null,
       buyerKind: "guest",
+      exceedItemLimits: false,
     },
     revised: null,
     caller: "checkout",

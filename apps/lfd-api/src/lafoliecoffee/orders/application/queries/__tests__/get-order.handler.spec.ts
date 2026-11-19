@@ -66,6 +66,8 @@ import {
 
 const VIEW: OrderView = { ...orderView(), id: "ord_1", orderNumber: "ORD-0001" };
 
+import { ItemLimitOverrideReader } from "../../../domain/ports/item-limit-override.reader.js";
+import type { ItemLimitOverride } from "../../../domain/services/item-limit-overrides.js";
 /** Lecteur doublé : rend la commande demandée (ou rien), et compte ses appels. */
 function reader(owned: OwnedOrder | null): OrderReader {
   return {
@@ -271,6 +273,7 @@ function adminHandler(
   settings: FixedCancellationSettings = new FixedCancellationSettings(),
   packing: FixedPackingStates = new FixedPackingStates(),
   increase: CardIncreaseProposal | null = null,
+  overrides: ItemLimitOverrideReader = new RecordedOverrides([]),
 ): GetAdminOrderHandler {
   const subjects = new FixedSubjects(subject, others);
   const inscriptions = new FixedInscription(inscribedDay);
@@ -301,6 +304,7 @@ function adminHandler(
         refunds,
       ),
     ),
+    overrides,
   );
 }
 
@@ -319,7 +323,7 @@ describe("GetAdminOrderHandler", () => {
       directory(),
     );
 
-    await expect(handler.execute(new GetAdminOrderQuery("ord_1"))).resolves.toEqual({
+    await expect(handler.execute(new GetAdminOrderQuery("ord_1", false))).resolves.toEqual({
       ...VIEW,
       clientele: "pro",
       entryOrigin: null,
@@ -350,7 +354,7 @@ describe("GetAdminOrderHandler", () => {
       new FixedCancellationSettings(),
       new FixedPackingStates(),
       proposalAt("stalled"),
-    ).execute(new GetAdminOrderQuery("ord_1"));
+    ).execute(new GetAdminOrderQuery("ord_1", false));
 
     expect(view.cardIncrease).toMatchObject({ complementCents: 1_200, state: "stalled" });
   });
@@ -372,7 +376,7 @@ describe("GetAdminOrderHandler", () => {
         lines: [{ sku: "CRO", due: 12, packed: 9, saleUnit: "piece" as const }],
         decision: null,
       },
-    ).execute(new GetAdminOrderQuery("ord_1"));
+    ).execute(new GetAdminOrderQuery("ord_1", false));
 
     expect(view.shortfall).toEqual({
       reportedAt: NOW.toISOString(),
@@ -403,7 +407,7 @@ describe("GetAdminOrderHandler", () => {
           customerNotice: { at: NOW, byStaffId: "stf_1" },
         },
       },
-    ).execute(new GetAdminOrderQuery("ord_1"));
+    ).execute(new GetAdminOrderQuery("ord_1", false));
 
     expect(staff.asked).toEqual([null, "stf_1"]);
     expect(view.shortfall?.decision).toEqual({
@@ -432,7 +436,7 @@ describe("GetAdminOrderHandler", () => {
         { kind: "free" },
         new FixedCardRefundRequests(),
         free,
-      ).execute(new GetAdminOrderQuery("ord_1"));
+      ).execute(new GetAdminOrderQuery("ord_1", false));
 
       expect(view.revisability).toEqual({
         revisable: false,
@@ -447,7 +451,7 @@ describe("GetAdminOrderHandler", () => {
         directory(),
         cancellationSubject(),
         "2026-11-10",
-      ).execute(new GetAdminOrderQuery("ord_1"));
+      ).execute(new GetAdminOrderQuery("ord_1", false));
 
       expect(view.revisability).toEqual({
         revisable: true,
@@ -469,7 +473,7 @@ describe("GetAdminOrderHandler", () => {
         { kind: "free" },
         new FixedCardRefundRequests(),
         card,
-      ).execute(new GetAdminOrderQuery("ord_1"));
+      ).execute(new GetAdminOrderQuery("ord_1", false));
 
       // Plan S1 (R12, « l'équipe baisse librement ») : le verdict ne grise plus
       // une carte encaissée ; la hausse de l'équipe est refusée par le devis.
@@ -490,7 +494,7 @@ describe("GetAdminOrderHandler", () => {
         preview,
         others,
       );
-      return { preview, view: handler.execute(new GetAdminOrderQuery("ord_1")) };
+      return { preview, view: handler.execute(new GetAdminOrderQuery("ord_1", false)) };
     };
 
     it("rendu : la phrase dit la valeur et la date limite", async () => {
@@ -573,7 +577,7 @@ describe("GetAdminOrderHandler", () => {
         preview,
       );
 
-      await handler.execute(new GetAdminOrderQuery("ord_1"));
+      await handler.execute(new GetAdminOrderQuery("ord_1", false));
 
       expect(preview.asked).toEqual([]);
     });
@@ -588,7 +592,7 @@ describe("GetAdminOrderHandler", () => {
       "2026-10-13",
     );
 
-    const view = await handler.execute(new GetAdminOrderQuery("ord_1"));
+    const view = await handler.execute(new GetAdminOrderQuery("ord_1", false));
 
     expect(view.cancellability).toEqual({
       cancellable: false,
@@ -614,7 +618,7 @@ describe("GetAdminOrderHandler", () => {
       new FixedPackingStates({ ord_1: "packed" }),
     );
 
-    const view = await handler.execute(new GetAdminOrderQuery("ord_1"));
+    const view = await handler.execute(new GetAdminOrderQuery("ord_1", false));
 
     expect(view.cancellability).toEqual({
       cancellable: false,
@@ -640,7 +644,7 @@ describe("GetAdminOrderHandler", () => {
       new FixedPackingStates(),
     );
 
-    const view = await handler.execute(new GetAdminOrderQuery("ord_1"));
+    const view = await handler.execute(new GetAdminOrderQuery("ord_1", false));
 
     expect(view.cancellability.cancellable).toBe(true);
   });
@@ -656,7 +660,7 @@ describe("GetAdminOrderHandler", () => {
       }),
     );
 
-    const view = await handler.execute(new GetAdminOrderQuery("ord_1"));
+    const view = await handler.execute(new GetAdminOrderQuery("ord_1", false));
 
     expect(view.cancellability).toMatchObject({
       cancellable: true,
@@ -676,7 +680,7 @@ describe("GetAdminOrderHandler", () => {
       cancellationSubject({ paymentStatus: "refunded" }),
     );
 
-    const view = await handler.execute(new GetAdminOrderQuery("ord_1"));
+    const view = await handler.execute(new GetAdminOrderQuery("ord_1", false));
 
     expect(view.cancellability).toMatchObject({
       cancellable: true,
@@ -698,7 +702,7 @@ describe("GetAdminOrderHandler", () => {
       }),
     );
 
-    const view = await handler.execute(new GetAdminOrderQuery("ord_1"));
+    const view = await handler.execute(new GetAdminOrderQuery("ord_1", false));
 
     expect(view.cancellability).toMatchObject({ cancellable: false });
     expect(said(view.cancellability)).toContain("est en cours chez Stripe");
@@ -716,7 +720,7 @@ describe("GetAdminOrderHandler", () => {
       { kind: "settled_otherwise" },
     );
 
-    const view = await handler.execute(new GetAdminOrderQuery("ord_1"));
+    const view = await handler.execute(new GetAdminOrderQuery("ord_1", false));
 
     expect(view.cancellability).toEqual({
       cancellable: false,
@@ -733,7 +737,7 @@ describe("GetAdminOrderHandler", () => {
       cancellationSubject({ paymentStatus: "not_required", stripePaymentIntentId: null }),
     );
 
-    const view = await handler.execute(new GetAdminOrderQuery("ord_1"));
+    const view = await handler.execute(new GetAdminOrderQuery("ord_1", false));
 
     expect(view.cancellability).toEqual({ cancellable: true, voucher: null, refund: null });
   });
@@ -745,7 +749,7 @@ describe("GetAdminOrderHandler", () => {
       directory(),
     );
 
-    const view = await handler.execute(new GetAdminOrderQuery("ord_1"));
+    const view = await handler.execute(new GetAdminOrderQuery("ord_1", false));
 
     expect(view.clientele).toBe("public");
     expect(view.placedBy.company).toBeNull();
@@ -759,7 +763,7 @@ describe("GetAdminOrderHandler", () => {
       staff,
     );
 
-    const view = await handler.execute(new GetAdminOrderQuery("ord_1"));
+    const view = await handler.execute(new GetAdminOrderQuery("ord_1", false));
 
     expect(staff.asked).toEqual(["stf_1"]);
     expect(view.placedBy.staffName).toBe("Hugo H");
@@ -772,7 +776,7 @@ describe("GetAdminOrderHandler", () => {
       directory(),
     );
 
-    const view = await handler.execute(new GetAdminOrderQuery("ord_1"));
+    const view = await handler.execute(new GetAdminOrderQuery("ord_1", false));
 
     expect(view.placedBy.staffName).toBeNull();
   });
@@ -780,8 +784,83 @@ describe("GetAdminOrderHandler", () => {
   it("lève le même 404 sur une commande inexistante", async () => {
     const handler = adminHandler(null, null, directory(), null);
 
-    await expect(handler.execute(new GetAdminOrderQuery("ord_x"))).rejects.toBeInstanceOf(
+    await expect(handler.execute(new GetAdminOrderQuery("ord_x", false))).rejects.toBeInstanceOf(
       OrderNotFoundError,
     );
   });
+
+  describe("les limites de produit passées", () => {
+    const PASSED: ItemLimitOverride = {
+      id: "ovr_1",
+      orderId: "ord_1",
+      sku: "LEV-001",
+      staffUserId: "staff_1",
+      reason: "Le client l'a demandé au salon",
+      serviceDay: "2030-11-30",
+      daysBefore: 2,
+      time: "12:00",
+      limitAt: VOUCHER_EXPIRES,
+      origin: "placement",
+      createdAt: VOUCHER_EXPIRES,
+    };
+
+    function withOverrides(overrides: RecordedOverrides): GetAdminOrderHandler {
+      return adminHandler(
+        ofCompany("cmp_1"),
+        { customer: CUSTOMER, company: COMPANY, placedByStaffId: null },
+        directory(),
+        cancellationSubject(),
+        null,
+        new FixedRestitutionPreview({ kind: "already" }),
+        {},
+        { kind: "free" },
+        new FixedCardRefundRequests(),
+        PLACED,
+        null,
+        new FixedCancellationSettings(),
+        new FixedPackingStates(),
+        null,
+        overrides,
+      );
+    }
+
+    it("les rend à qui a le droit de les lire", async () => {
+      const view = await withOverrides(new RecordedOverrides([PASSED])).execute(
+        new GetAdminOrderQuery("ord_1", true),
+      );
+      expect(view.itemLimitOverrides).toEqual([
+        {
+          sku: "LEV-001",
+          staffUserId: "staff_1",
+          reason: "Le client l'a demandé au salon",
+          daysBefore: 2,
+          time: "12:00",
+          limitAt: VOUCHER_EXPIRES.toISOString(),
+          origin: "placement",
+          recordedAt: VOUCHER_EXPIRES.toISOString(),
+        },
+      ]);
+    });
+
+    it("ne les lit même pas sans le droit, et la vue n'en porte pas la clé", async () => {
+      const overrides = new RecordedOverrides([PASSED]);
+      const view = await withOverrides(overrides).execute(new GetAdminOrderQuery("ord_1", false));
+      expect("itemLimitOverrides" in view).toBe(false);
+      expect(overrides.readFor).toEqual([]);
+    });
+  });
 });
+
+/** Les dépassements d'une commande, et les commandes pour lesquelles on les a lus. */
+class RecordedOverrides extends ItemLimitOverrideReader {
+  readonly readFor: string[] = [];
+
+  constructor(private readonly overrides: readonly ItemLimitOverride[]) {
+    super();
+  }
+
+  forOrder(orderId: string): Promise<readonly ItemLimitOverride[]> {
+    this.readFor.push(orderId);
+    return Promise.resolve(this.overrides.filter((override) => override.orderId === orderId));
+  }
+}

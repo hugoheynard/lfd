@@ -283,6 +283,9 @@ export class OrderRevising {
       placedByUserId: order.placedByUserId,
       placedByStaffId: order.placedByStaffId,
       buyerKind: order.buyerKind,
+      // La composition d'une modification ne juge pas l'heure limite : ses
+      // gardes de délai sont celles de ce service, qui ont leur propre asker.
+      exceedItemLimits: false,
     };
     const loaded = await this.composition.load({
       content,

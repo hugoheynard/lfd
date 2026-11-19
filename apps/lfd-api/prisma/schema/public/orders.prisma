@@ -550,6 +550,8 @@ model Order {
   deliveryNotes      DeliveryNote[]
   /// Ses remises de panier, une ligne par remise (plan des promotions, § 18.2, M2).
   discounts          OrderDiscount[]
+  /// Les limites de produit que l'équipe a passées (plan des dépassements, § 3.5).
+  itemLimitOverrides OrderItemLimitOverride[]
 
   @@index([companyId])
   @@index([billedCompanyId])

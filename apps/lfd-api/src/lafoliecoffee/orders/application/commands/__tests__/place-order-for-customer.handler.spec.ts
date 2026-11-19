@@ -1,4 +1,9 @@
 import { orderPretaxCents } from "@lfd/money";
+import { FixedIdGenerator } from "../../../../../platform/id/fixed-id-generator.js";
+import { UnitOfWork } from "../../../../../platform/database/unit-of-work.js";
+import { ItemLimitOverrideRecorder } from "../../../domain/ports/item-limit-override.recorder.js";
+import type { ItemLimitOverride } from "../../../domain/services/item-limit-overrides.js";
+import { ItemLimitReasonRequiredError } from "../../../domain/errors/item-limit-override-errors.js";
 import { FixedLineClassifications } from "../../../domain/ports/__tests__/line-classification-doubles.js";
 import { OrderTotalChangedError } from "../../../domain/errors/order-total-changed.error.js";
 import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
@@ -25,6 +30,7 @@ import {
   AccountSettlementNotGrantedError,
   SuspendedCompanyAccountSettlementError,
   OrderCompanyNotFoundError,
+  PastOrderCutoffError,
 } from "../../../domain/errors/order-errors.js";
 import {
   PublicBuyerAccountUnavailableError,
@@ -404,19 +410,23 @@ interface HandlerOptions {
   readonly shelf?: ShelfCircuit;
   readonly intake?: OrderIntake;
   readonly intents?: OncePerIntent;
+  readonly cutoffs?: OrderCutoffsInForce;
+  readonly catalog?: InMemoryProductCatalog;
+  readonly overrides?: RecordingOverrides;
+  readonly unitOfWork?: TrackingUnitOfWork;
 }
 
 /** Ce que le constructeur de la composition lit des options d'un cas. */
 type DraftingOptions = Pick<
   HandlerOptions,
-  "delivery" | "payers" | "plans" | "salesTerms" | "shelf"
+  "delivery" | "payers" | "plans" | "salesTerms" | "shelf" | "cutoffs" | "catalog"
 >;
 
 /** La composition sur les doubles de ces suites — partagée par la passation et l'estimation. */
 function draftingFor(guardDouble: OrderGuardReader, options: DraftingOptions = {}): OrderDrafting {
   return new OrderDrafting(
     new OrderLinePricing(
-      catalog,
+      options.catalog ?? catalog,
       // LA porte du prix, montée sur la seule séquence de chargement du dépôt.
       new Pricer(
         new PricingMaterialsLoader(
@@ -446,8 +456,8 @@ function draftingFor(guardDouble: OrderGuardReader, options: DraftingOptions = {
     ),
     noDeliveryDefaults(),
     deadlineOf({
-      cutoffs: noOrderCutoffs,
-      catalog: catalog,
+      cutoffs: options.cutoffs ?? noOrderCutoffs,
+      catalog: options.catalog ?? catalog,
     }),
     new FixedClock(PRICED_AT),
     new CustomerAudiences(guardDouble),
@@ -490,12 +500,14 @@ function handler(
     new FakeConfig(clientBaseUrl),
     noWaivers,
     new FixedClock(PRICED_AT),
-    { run: <T>(work: () => Promise<T>): Promise<T> => work() },
+    options.unitOfWork ?? { run: <T>(work: () => Promise<T>): Promise<T> => work() },
     options.durable ?? new RecordingDurable(),
     options.shelf ?? shelfCircuitOf(options.plans ?? openPlanGate()),
     options.intake ?? intakeAt(),
     options.intents ?? inMemoryIntents(),
     new FixedCommitmentTerms(),
+    options.overrides ?? new RecordingOverrides(),
+    new FixedIdGenerator("ovr"),
   );
 }
 
@@ -504,8 +516,9 @@ function placement(
   staffUserId: string,
   payload: AdminPlaceOrderPayload,
   intentKey: string = randomUUID(),
+  exceedItemLimits = false,
 ): PlaceOrderForCustomerCommand {
-  return new PlaceOrderForCustomerCommand(staffUserId, payload, intentKey);
+  return new PlaceOrderForCustomerCommand(staffUserId, payload, intentKey, exceedItemLimits);
 }
 
 /**
@@ -1110,6 +1123,8 @@ describe("PlaceOrderForCustomerHandler — le règlement", () => {
       intakeAt(),
       inMemoryIntents(),
       new FixedCommitmentTerms(),
+      new RecordingOverrides(),
+      new FixedIdGenerator("ovr"),
     );
 
     const result = await free.execute(placement("staff_1", payload({ settlement: "link" })));
@@ -1253,7 +1268,10 @@ describe("EstimateOrderForCustomerHandler", () => {
       draftingFor(guardDouble, { ...options, plans, shelf }),
       shelf,
       new OrderCutoffNotice(
-        deadlineOf({ cutoffs: noOrderCutoffs, catalog }),
+        deadlineOf({
+          cutoffs: options.cutoffs ?? noOrderCutoffs,
+          catalog: options.catalog ?? catalog,
+        }),
         new FixedClock(PRICED_AT),
       ),
     );
@@ -1284,7 +1302,7 @@ describe("EstimateOrderForCustomerHandler", () => {
     await handler(guard("orders"), sink).execute(placement("staff_1", payload()));
 
     const estimate = await estimator(guard("orders")).execute(
-      new EstimateOrderForCustomerQuery("staff_1", payload()),
+      new EstimateOrderForCustomerQuery("staff_1", payload(), false),
     );
 
     expect(estimate.refusal).toBeNull();
@@ -1307,7 +1325,7 @@ describe("EstimateOrderForCustomerHandler", () => {
     }
 
     const estimate = await estimator(guard("orders")).execute(
-      new EstimateOrderForCustomerQuery("staff_1", payload()),
+      new EstimateOrderForCustomerQuery("staff_1", payload(), false),
     );
 
     expect(estimate.amounts?.pretaxCents).toBe(orderPretaxCents(placed));
@@ -1323,16 +1341,51 @@ describe("EstimateOrderForCustomerHandler", () => {
       new EstimateOrderForCustomerQuery(
         "staff_1",
         payload({ requestedDeliveryDate: TODAY, supply: "shelf" }),
+        false,
       ),
     );
 
     expect(lock.taken).toEqual([]);
   });
 
+  it("passe outre avec le droit sans exiger de motif, et annonce la limite passée", async () => {
+    const estimate = await estimator(guard("orders"), {
+      cutoffs: GENERAL_RULE,
+      catalog: PASSABLE_CATALOG,
+    }).execute(
+      new EstimateOrderForCustomerQuery(
+        "staff_1",
+        payload({ requestedDeliveryDate: SERVICE_DAY, lines: [{ sku: "LEV-001", quantity: 1 }] }),
+        true,
+      ),
+    );
+
+    expect(estimate.refusal).toBeNull();
+    expect(estimate.amounts?.totalCents).toBeGreaterThan(0);
+    expect(estimate.cutoff?.exceeded.map((passed) => passed.sku)).toEqual(["LEV-001"]);
+    expect(estimate.cutoff?.closedByItemLimit).toEqual([{ sku: "LEV-001", exceedable: true }]);
+  });
+
+  it("refuse sans le droit, et dit la ligne non dépassable", async () => {
+    const estimate = await estimator(guard("orders"), {
+      cutoffs: GENERAL_RULE,
+      catalog: PASSABLE_CATALOG,
+    }).execute(
+      new EstimateOrderForCustomerQuery(
+        "staff_1",
+        payload({ requestedDeliveryDate: SERVICE_DAY, lines: [{ sku: "LEV-001", quantity: 1 }] }),
+        false,
+      ),
+    );
+
+    expect(estimate.refusal?.code).toBe("orders.cutoff.past");
+    expect(estimate.cutoff?.closedByItemLimit).toEqual([{ sku: "LEV-001", exceedable: false }]);
+  });
+
   it("rend le refus de la composition avec les mots de la passation, sans montants", async () => {
     const estimate = await estimator(guard("orders"), {
       intake: intakeAt({ ordersOpenToB2b: false }, "active"),
-    }).execute(new EstimateOrderForCustomerQuery("staff_1", payload()));
+    }).execute(new EstimateOrderForCustomerQuery("staff_1", payload(), false));
 
     expect(estimate.amounts).toBeNull();
     expect(estimate.refusal?.code).toBe(new OrdersClosedForAudienceError("b2b").code);
@@ -1349,6 +1402,7 @@ describe("EstimateOrderForCustomerHandler", () => {
           supply: "shelf",
           entryShortcut: "immediate_pickup",
         }),
+        false,
       ),
     );
 
@@ -1357,7 +1411,9 @@ describe("EstimateOrderForCustomerHandler", () => {
 
   it("garde le mur : un acheteur qui n'est pas membre reste une 404, jamais un refus rendu", async () => {
     await expect(
-      estimator(guard(null)).execute(new EstimateOrderForCustomerQuery("staff_1", payload())),
+      estimator(guard(null)).execute(
+        new EstimateOrderForCustomerQuery("staff_1", payload(), false),
+      ),
     ).rejects.toBeInstanceOf(OrderCompanyNotFoundError);
   });
 
@@ -1372,6 +1428,7 @@ describe("EstimateOrderForCustomerHandler", () => {
       new EstimateOrderForCustomerQuery(
         "staff_1",
         payload({ requestedDeliveryDate: TODAY, supply: "shelf" }),
+        false,
       ),
     );
 
@@ -1383,7 +1440,7 @@ describe("EstimateOrderForCustomerHandler", () => {
 
   it("avertit qu'une société sans crédit ne règle pas au compte, par le refus de la passation", async () => {
     const estimate = await estimator(guard("orders", "active", "none")).execute(
-      new EstimateOrderForCustomerQuery("staff_1", payload({ settlement: "account" })),
+      new EstimateOrderForCustomerQuery("staff_1", payload({ settlement: "account" }), false),
     );
 
     expect(estimate.amounts).not.toBeNull();
@@ -1405,6 +1462,7 @@ describe("EstimateOrderForCustomerHandler", () => {
       new EstimateOrderForCustomerQuery(
         "staff_1",
         payload({ settlement: "link", entryOrigin: "counter" }),
+        false,
       ),
     );
 
@@ -1416,6 +1474,7 @@ describe("EstimateOrderForCustomerHandler", () => {
       new EstimateOrderForCustomerQuery(
         "staff_1",
         payload({ settlement: "account", entryOrigin: "counter" }),
+        false,
       ),
     );
 
@@ -1635,5 +1694,194 @@ describe("PlaceOrderForCustomerHandler — une fois par intention", () => {
     );
 
     expect(placed.id).toBe("order_1");
+  });
+});
+
+/**
+ * Dates relatives à l'horloge des doubles (`PRICED_AT`, le 15 janvier à
+ * 10 h à Paris) : la journée du lendemain, une règle générale « la veille à
+ * 18 h » encore ouverte, et un levain « 2 jours avant, 12 h » déjà tombé.
+ */
+const SERVICE_DAY = "2026-01-16";
+const GENERAL_RULE: OrderCutoffsInForce = {
+  list: () =>
+    Promise.resolve([
+      {
+        id: "general",
+        pickupAddressId: null,
+        pickupLabel: null,
+        weekday: null,
+        daysBefore: 1,
+        time: "18:00",
+        graceMinutes: 0,
+      },
+    ]),
+};
+
+function levain(staffMayExceed: boolean): UnsealedCatalogItem {
+  return {
+    sku: "LEV-001",
+    name: "Pain au levain",
+    unitPriceMillicents: 400_000,
+    vatRate: 0,
+    family: VIENNOISERIES,
+    allergens: null,
+    orderTimeLimit: { daysBefore: 2, time: "12:00", graceMinutes: 0, staffMayExceed },
+  };
+}
+
+const PASSABLE_CATALOG = new InMemoryProductCatalog([levain(true)]);
+
+/** L'unité de travail des doubles, qui sait si l'on est dedans. */
+class TrackingUnitOfWork extends UnitOfWork {
+  inside = false;
+
+  async run<T>(work: () => Promise<T>): Promise<T> {
+    this.inside = true;
+    try {
+      return await work();
+    } finally {
+      this.inside = false;
+    }
+  }
+}
+
+/** Les dépassements consignés, et s'ils l'ont été dans la transaction. */
+class RecordingOverrides extends ItemLimitOverrideRecorder {
+  readonly recorded: ItemLimitOverride[] = [];
+  readonly insideTransaction: boolean[] = [];
+
+  constructor(private readonly unitOfWork: TrackingUnitOfWork | null = null) {
+    super();
+  }
+
+  record(overrides: readonly ItemLimitOverride[]): Promise<void> {
+    this.recorded.push(...overrides);
+    this.insideTransaction.push(this.unitOfWork?.inside ?? false);
+    return Promise.resolve();
+  }
+}
+
+describe("PlaceOrderForCustomerHandler — passer outre la limite d'un produit", () => {
+  const body = (over: Partial<AdminPlaceOrderPayload> = {}) =>
+    payload({
+      settlement: "link",
+      requestedDeliveryDate: SERVICE_DAY,
+      lines: [{ sku: "LEV-001", quantity: 1 }],
+      ...over,
+    });
+
+  function placing(catalogue: InMemoryProductCatalog = PASSABLE_CATALOG) {
+    const unitOfWork = new TrackingUnitOfWork();
+    const overrides = new RecordingOverrides(unitOfWork);
+    const cards = new CountingCardPayments({ intent: null });
+    const sink = { placed: null as OrderToPlace | null };
+    const intents = inMemoryIntents();
+    const place = handler(guard("orders"), sink, {
+      cutoffs: GENERAL_RULE,
+      catalog: catalogue,
+      overrides,
+      unitOfWork,
+      payments: cards,
+      intents,
+    });
+    return { place, overrides, cards, sink };
+  }
+
+  it("refuse sans motif avant tout règlement, en nommant le produit et sa limite", async () => {
+    const { place, cards, sink, overrides } = placing();
+
+    const refusal = place.execute(placement("staff_1", body(), randomUUID(), true));
+
+    await expect(refusal).rejects.toBeInstanceOf(ItemLimitReasonRequiredError);
+    await expect(refusal).rejects.toMatchObject({
+      code: "orders.cutoff.item_limit_reason_required",
+      message:
+        "« Pain au levain » se commande 2 jours avant, 12 h : indiquez pourquoi vous passez outre.",
+    });
+    expect(cards.prepared).toBe(0);
+    expect(sink.placed).toBeNull();
+    expect(overrides.recorded).toEqual([]);
+  });
+
+  it("rend la clé d'intention après le refus : le renvoi motivé passe sous la même clé", async () => {
+    const { place } = placing();
+    const key = randomUUID();
+    await expect(place.execute(placement("staff_1", body(), key, true))).rejects.toBeInstanceOf(
+      ItemLimitReasonRequiredError,
+    );
+
+    const placed = await place.execute(
+      placement("staff_1", body({ itemLimitOverrideReason: "Salon du client" }), key, true),
+    );
+
+    expect(placed.id).toBe("order_1");
+  });
+
+  it("avec un motif, passe la commande et consigne le dépassement dans sa transaction", async () => {
+    const { place, overrides } = placing();
+
+    await place.execute(
+      placement(
+        "staff_1",
+        body({ itemLimitOverrideReason: "  Salon du client  " }),
+        randomUUID(),
+        true,
+      ),
+    );
+
+    expect(overrides.insideTransaction).toEqual([true]);
+    expect(overrides.recorded).toEqual([
+      {
+        id: "ovr_000001",
+        orderId: "order_1",
+        sku: "LEV-001",
+        staffUserId: "staff_1",
+        reason: "Salon du client",
+        serviceDay: SERVICE_DAY,
+        daysBefore: 2,
+        time: "12:00",
+        // Le 14 à midi, à Paris (UTC+1 en janvier).
+        limitAt: new Date("2026-01-14T11:00:00.000Z"),
+        origin: "placement",
+        createdAt: PRICED_AT,
+      },
+    ]);
+  });
+
+  it("refuse sans le droit, comme toute limite passée", async () => {
+    const { place, cards } = placing();
+
+    await expect(
+      place.execute(
+        placement("staff_1", body({ itemLimitOverrideReason: "Salon" }), randomUUID(), false),
+      ),
+    ).rejects.toBeInstanceOf(PastOrderCutoffError);
+    expect(cards.prepared).toBe(0);
+  });
+
+  it("refuse un produit dont la case n'est pas cochée, même avec le droit", async () => {
+    const { place } = placing(new InMemoryProductCatalog([levain(false)]));
+
+    await expect(
+      place.execute(
+        placement("staff_1", body({ itemLimitOverrideReason: "Salon" }), randomUUID(), true),
+      ),
+    ).rejects.toBeInstanceOf(PastOrderCutoffError);
+  });
+
+  it("ignore un motif quand rien n'est dépassé, et ne consigne rien", async () => {
+    const { place, overrides } = placing();
+
+    await place.execute(
+      placement(
+        "staff_1",
+        body({ requestedDeliveryDate: "2026-01-20", itemLimitOverrideReason: "Par précaution" }),
+        randomUUID(),
+        true,
+      ),
+    );
+
+    expect(overrides.recorded).toEqual([]);
   });
 });

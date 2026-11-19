@@ -33,6 +33,9 @@ export interface StaffOrderPreparationPorts {
  * la clientèle du client porté (E2) ; puis la composition, aux mêmes parties
  * que la passation du client (D4).
  *
+ * Les limites de produit passées reviennent avec la commande composée
+ * (`exceeded`) : la passation en exige le motif, l'estimation les annonce.
+ *
  * Rien n'est écrit : ni la vitrine ou la journée tenues, ni la commande, ni
  * le règlement, ni la dérogation consommée — c'est à l'appelant.
  *
@@ -48,6 +51,8 @@ export async function prepareStaffOrder(
   staffUserId: string,
   payload: AdminOrderEstimatePayload,
   caller: PricingCaller,
+  // Le droit de passer outre la limite d'un produit, lu au contrôleur.
+  exceedItemLimits: boolean,
 ): Promise<DraftedOrder> {
   const { companyId, buyerUserId } = payload;
   // Un 404 non-divulguant, comme sur le chemin client : le back-office a la
@@ -66,6 +71,7 @@ export async function prepareStaffOrder(
       placedByUserId: buyerUserId,
       placedByStaffId: staffUserId,
       buyerKind: REGISTERED_BUYER,
+      exceedItemLimits,
     },
     payload,
     // L'équipe ne dépense pas le bon d'un client : son contrat n'en nomme

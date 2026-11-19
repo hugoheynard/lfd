@@ -35,6 +35,7 @@ const CLIENT: OrderParties = {
   placedByUserId: "usr_1",
   placedByStaffId: null,
   buyerKind: "registered",
+  exceedItemLimits: false,
 };
 const PRO: OrderParties = { ...CLIENT, companyId: "co_1" };
 const STAFF: OrderParties = { ...PRO, placedByStaffId: "staff_1" };

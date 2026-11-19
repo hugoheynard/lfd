@@ -32,6 +32,7 @@ function request(over: Partial<PricingRequest> = {}): PricingRequest {
       placedByUserId: "user_1",
       placedByStaffId: null,
       buyerKind: "guest",
+      exceedItemLimits: false,
     },
     revised: null,
     caller: "checkout",
@@ -49,6 +50,7 @@ const FOR_COMPANY: Partial<PricingRequest> = {
     placedByUserId: "user_1",
     placedByStaffId: null,
     buyerKind: "registered",
+    exceedItemLimits: false,
   },
 };
 
@@ -120,6 +122,7 @@ describe("PricingContext — le frais de livraison par audience (0b)", () => {
         placedByUserId: "user_client",
         placedByStaffId: "staff_1",
         buyerKind: "registered",
+        exceedItemLimits: false,
       },
     };
 
@@ -213,6 +216,7 @@ describe("PricingContext — le franco de la route (1b)", () => {
             placedByUserId: "user_client",
             placedByStaffId: "staff_1",
             buyerKind: "registered",
+            exceedItemLimits: false,
           },
         },
       ),

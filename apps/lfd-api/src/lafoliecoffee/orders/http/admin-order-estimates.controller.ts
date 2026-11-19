@@ -2,12 +2,14 @@ import {
   type AdminOrderEstimateView,
   type AdminOrderEstimatePayload,
   adminOrderEstimatePayloadSchema,
+  type StaffPermission,
 } from "@lfd/contracts";
 import { Body, Controller, HttpCode, HttpStatus, Post } from "@nestjs/common";
 import { QueryBus } from "@nestjs/cqrs";
 
 import { AdminSurface, RequirePermission } from "../../../platform/auth/admin-surface.decorator.js";
-import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
+import { StaffPermissions, StaffUserId } from "../../../platform/auth/staff.decorator.js";
+import { mayExceedItemLimits } from "./item-limit-override-permissions.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { EstimateOrderForCustomerQuery } from "../application/queries/estimate-order-for-customer.query.js";
 import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
@@ -40,9 +42,10 @@ export class AdminOrderEstimatesController {
   async estimate(
     @StaffUserId() staffUserId: string,
     @Body(new ZodBody(adminOrderEstimatePayloadSchema)) payload: AdminOrderEstimatePayload,
+    @StaffPermissions() permissions: readonly StaffPermission[],
   ): Promise<AdminOrderEstimateView> {
     return this.queries.execute<EstimateOrderForCustomerQuery, AdminOrderEstimateView>(
-      new EstimateOrderForCustomerQuery(staffUserId, payload),
+      new EstimateOrderForCustomerQuery(staffUserId, payload, mayExceedItemLimits(permissions)),
     );
   }
 }

@@ -87,7 +87,12 @@ describe("le devis signale l'heure limite du jour visé, sans refuser", () => {
   it("dit « fermé » pour un jour dont la limite est passée — et chiffre quand même", async () => {
     await seedCutoff({ daysBefore: 1, time: "00:01" });
     const view = await quote(serviceDay(0));
-    expect(view.cutoff).toEqual({ status: "closed", until: null });
+    expect(view.cutoff).toEqual({
+      status: "closed",
+      until: null,
+      exceeded: [],
+      closedByItemLimit: [],
+    });
     expect(view.lines).toHaveLength(1);
   });
 

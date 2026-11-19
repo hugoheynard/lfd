@@ -22,9 +22,10 @@ import { salesTermsOf } from "../../domain/services/sales-terms-of.js";
 import { orderPayerOf } from "../../domain/services/order-payer.js";
 import { orderPrincipalOf } from "../../domain/services/order-principal.js";
 import type { OrderEntryOrigin } from "../../domain/value-objects/order-supply.js";
-import { OrderDeadline } from "../../../order-cutoffs/index.js";
+import { OrderDeadline, type ExceededItemLimit } from "../../../order-cutoffs/index.js";
 import {
   admitWithinDeadline,
+  NOTHING_OWED,
   type DeadlineAdmission,
 } from "../../domain/services/admit-within-deadline.js";
 import { Clock } from "../../../../platform/time/clock.js";
@@ -53,6 +54,12 @@ export type { OrderContent } from "./order-content.js";
 export interface DraftedOrder {
   readonly order: Order;
   readonly waiverUsed: string | null;
+  /**
+   * Les limites d'article que l'équipe a passées : la passation exige un
+   * motif puis les consigne dans la transaction de la commande ; l'estimation
+   * les rend à l'écran. Vide pour tout autre appelant.
+   */
+  readonly exceeded: readonly ExceededItemLimit[];
 }
 
 /**
@@ -225,7 +232,7 @@ export class OrderDrafting {
     );
     // Sur LE chiffrage de l'agrégat : il n'est plus refait ici (L7, 2026-11-04).
     warnBeyondCap(this.logger, order.pricingNotes());
-    return { order, waiverUsed: admission.waiverUsed };
+    return { order, waiverUsed: admission.waiverUsed, exceeded: admission.exceeded };
   }
 
   /**
@@ -265,7 +272,7 @@ export class OrderDrafting {
       return this.ensureNotTooLate(content, parties);
     }
     await this.shelf.ensureOpen(parties, siteId);
-    return { waiverUsed: null, lateFee: null };
+    return NOTHING_OWED;
   }
 
   /**
@@ -310,7 +317,7 @@ export class OrderDrafting {
   ): Promise<DeadlineAdmission> {
     const day = content.requestedDeliveryDate;
     if (day === null) {
-      return { waiverUsed: null, lateFee: null };
+      return NOTHING_OWED;
     }
     const verdict = await this.deadline.verdict({
       skus: content.lines.map((line) => line.sku),
@@ -321,7 +328,7 @@ export class OrderDrafting {
         audience: "pro",
         companyId: parties.companyId,
         waiver: "consider",
-        exceedItemLimits: false,
+        exceedItemLimits: parties.exceedItemLimits,
       },
     });
     return admitWithinDeadline(verdict, day);

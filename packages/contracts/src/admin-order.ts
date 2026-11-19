@@ -121,6 +121,9 @@ export function pickupWindowIssue(): { message: string; path: PropertyKey[] } {
  *   règlement est une décision commerciale ; un défaut silencieux la prendrait
  *   à la place du commercial, et toujours dans le même sens.
  */
+/** La longueur maximale du motif d'un dépassement de limite de produit. */
+export const ITEM_LIMIT_OVERRIDE_REASON_MAX_LENGTH = 280;
+
 const adminOrderEntryShape = {
   companyId: z.string().trim().min(1, "société requise"),
   buyerUserId: z.string().trim().min(1, "client requis"),
@@ -133,6 +136,15 @@ const adminOrderEntryShape = {
   // L'engagement budgétaire d'un organisme public (P2) : l'estimation l'ignore,
   // la passation le juge contre la fiche Chorus du payeur.
   budgetCommitment: budgetCommitmentPayloadSchema.optional(),
+  // Pourquoi la saisie passe outre la limite d'un produit (plan des
+  // dépassements, § 3.5) : exigé par la passation dès qu'une limite est
+  // passée, ignoré sinon ; l'estimation ne le lit pas.
+  itemLimitOverrideReason: z
+    .string()
+    .trim()
+    .min(1, "motif requis")
+    .max(ITEM_LIMIT_OVERRIDE_REASON_MAX_LENGTH, "motif trop long")
+    .optional(),
   ...orderContentShape,
 };
 

@@ -20,7 +20,10 @@ export const STAFF_PLACEMENT_GESTURE = "orders.place-for-customer";
  * la société comprise) : la même clé renvoyée sur un panier corrigé APRÈS un
  * succès est refusée (409), jamais rendue comme la commande d'avant. Après un
  * refus, l'intention est rendue : le renvoi corrigé repasse sous la même clé.
- * Le total vu n'y entre pas, comme pour la passation du client.
+ * Le total vu n'y entre pas, comme pour la passation du client. Le motif
+ * d'un dépassement de limite de produit non plus (`orderFingerprint` ne lit
+ * que les champs de `OrderFingerprintMaterial`, vérifié le 2026-11-19) : un
+ * renvoi du même panier avec un autre motif rend la commande déjà passée.
  */
 export function staffPlacementIntent(
   staffUserId: string,

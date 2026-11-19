@@ -16,6 +16,7 @@ import {
   type OrderQuotePayload,
   type OrderQuoteView,
   DELIVERY_PROOF_PERMISSION,
+  type StaffPermission,
 } from "@lfd/contracts";
 import {
   Body,
@@ -36,7 +37,11 @@ import { contentDispositionAttachment, sanitiseFileName } from "@lfd/storage";
 import type { Response } from "express";
 
 import type { AuthenticatedStaffRequest } from "../../../platform/auth/staff-principal.js";
-import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
+import { StaffPermissions, StaffUserId } from "../../../platform/auth/staff.decorator.js";
+import {
+  mayExceedItemLimits,
+  mayReadItemLimitOverrides,
+} from "./item-limit-override-permissions.js";
 import { ZodBody, ZodQuery } from "../../../platform/shared/http/zod-body.pipe.js";
 import {
   PlaceOrderForCustomerCommand,
@@ -175,9 +180,10 @@ export class AdminOrdersController {
   async quote(
     @Req() request: AuthenticatedStaffRequest,
     @Body(new ZodBody(orderQuotePayloadSchema)) payload: OrderQuotePayload,
+    @StaffPermissions() permissions: readonly StaffPermission[],
   ): Promise<OrderQuoteView> {
     return this.queries.execute<QuoteOrderQuery, OrderQuoteView>(
-      new QuoteOrderQuery(staffUserIdOf(request), payload, true),
+      new QuoteOrderQuery(staffUserIdOf(request), payload, true, mayExceedItemLimits(permissions)),
     );
   }
 
@@ -213,11 +219,19 @@ export class AdminOrdersController {
     @Req() request: AuthenticatedStaffRequest,
     @Body(new ZodBody(adminPlaceOrderPayloadSchema)) payload: AdminPlaceOrderPayload,
     @IntentKey() intentKey: string,
+    @StaffPermissions() permissions: readonly StaffPermission[],
   ): Promise<AdminPlacedOrderResponse> {
     const placed = await this.commands.execute<
       PlaceOrderForCustomerCommand,
       PlaceOrderForCustomerResult
-    >(new PlaceOrderForCustomerCommand(staffUserIdOf(request), payload, intentKey));
+    >(
+      new PlaceOrderForCustomerCommand(
+        staffUserIdOf(request),
+        payload,
+        intentKey,
+        mayExceedItemLimits(permissions),
+      ),
+    );
     // `exactOptionalPropertyTypes` : `paymentUrl` est présent ou absent, jamais
     // présent-et-indéfini.
     return placed.paymentUrl === undefined
@@ -238,11 +252,17 @@ export class AdminOrdersController {
 
   /**
    * Une commande, dans la vue du client — plus QUI l'a passée (`AdminOrderView`),
-   * que les routes client ne servent pas.
+   * que les routes client ne servent pas. Les limites de produit passées
+   * n'y sont que pour qui a `lfc_product_limit_override:read`.
    */
   @Get(":id")
-  async one(@Param("id") id: string): Promise<AdminOrderView> {
-    return this.queries.execute<GetAdminOrderQuery, AdminOrderView>(new GetAdminOrderQuery(id));
+  async one(
+    @Param("id") id: string,
+    @StaffPermissions() permissions: readonly StaffPermission[],
+  ): Promise<AdminOrderView> {
+    return this.queries.execute<GetAdminOrderQuery, AdminOrderView>(
+      new GetAdminOrderQuery(id, mayReadItemLimitOverrides(permissions)),
+    );
   }
 
   /**

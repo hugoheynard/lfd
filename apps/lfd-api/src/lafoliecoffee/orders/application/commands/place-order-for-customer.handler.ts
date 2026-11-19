@@ -36,6 +36,21 @@ import {
   type PlaceOrderForCustomerResult,
 } from "./place-order-for-customer.command.js";
 import { STAFF_PLACEMENT_REPLAY, staffPlacementIntent } from "./staff-placement-intent.js";
+import { IdGenerator } from "../../../../platform/id/id-generator.js";
+import type { ExceededItemLimit } from "../../../order-cutoffs/index.js";
+import { ItemLimitOverrideRecorder } from "../../domain/ports/item-limit-override.recorder.js";
+import {
+  itemLimitOverridesOf,
+  justifyItemLimitOverrides,
+} from "../../domain/services/item-limit-overrides.js";
+
+/** Ce que la commande doit à son heure limite, à solder dans sa transaction. */
+interface DeadlineDebts {
+  readonly waiverUsed: string | null;
+  readonly exceeded: readonly ExceededItemLimit[];
+  /** Le motif des dépassements, `null` quand rien n'est dépassé. */
+  readonly overrideReason: string | null;
+}
 
 /**
  * Passe une commande **au nom d'un client**, depuis le back-office.
@@ -76,6 +91,8 @@ export class PlaceOrderForCustomerHandler implements ICommandHandler<
     private readonly intake: OrderIntake,
     private readonly intents: OncePerIntent,
     private readonly commitments: PayerCommitmentRequirements,
+    private readonly overrides: ItemLimitOverrideRecorder,
+    private readonly ids: IdGenerator,
   ) {}
 
   /**
@@ -106,11 +123,19 @@ export class PlaceOrderForCustomerHandler implements ICommandHandler<
 
     // La préparation que l'estimation partage (lot P2) : le mur sur
     // l'acheteur, le comptoir, la porte de la boutique, puis la composition.
-    const { order, waiverUsed } = await prepareStaffOrder(
+    const { order, waiverUsed, exceeded } = await prepareStaffOrder(
       { guard: this.guard, intake: this.intake, drafting: this.drafting },
       command.staffUserId,
       payload,
       "checkout",
+      command.exceedItemLimits,
+    );
+    // Le motif d'une limite de produit passée, avant tout règlement : un
+    // refus ici ne crée aucun lien et rend la clé d'intention.
+    const overrideReason = justifyItemLimitOverrides(
+      exceeded,
+      payload.itemLimitOverrideReason,
+      order.amounts().lines,
     );
     // L'engagement budgétaire d'un payeur public (E2′) : l'estimation ne le
     // juge pas, la passation si — avant le règlement et le lien.
@@ -125,7 +150,13 @@ export class PlaceOrderForCustomerHandler implements ICommandHandler<
       companyId,
       isCounterEntry(payload.entryOrigin, payload.entryShortcut),
     );
-    const { placed, result } = await this.persist(order, payload, intent, waiverUsed, seal);
+    const { placed, result } = await this.persist(
+      order,
+      command,
+      intent,
+      { waiverUsed, exceeded, overrideReason },
+      seal,
+    );
 
     // Le fait de domaine porte l'ACHETEUR, pas le commercial : c'est bien ce
     // client-là qui vient de commander, et le journal croissance compte des
@@ -167,11 +198,13 @@ export class PlaceOrderForCustomerHandler implements ICommandHandler<
    */
   private async persist(
     order: Order,
-    payload: PlaceOrderForCustomerCommand["payload"],
+    command: PlaceOrderForCustomerCommand,
     intent: PreparedCardPayment | null,
-    waiverUsed: string | null,
+    debts: DeadlineDebts,
     seal: (result: PlaceOrderForCustomerResult) => Promise<void>,
   ): Promise<{ readonly placed: PlacedOrder; readonly result: PlaceOrderForCustomerResult }> {
+    const { payload } = command;
+    const { waiverUsed } = debts;
     try {
       return await this.unitOfWork.run(async () => {
         await this.drafting.holdSupply(order, payload.requestedDeliveryDate);
@@ -181,6 +214,7 @@ export class PlaceOrderForCustomerHandler implements ICommandHandler<
         if (waiverUsed !== null) {
           await this.waivers.consume(waiverUsed, written.id, this.clock.now());
         }
+        await this.recordOverrides(written.id, command, debts);
         if (intent !== null) {
           await this.payments.attach(orderCardSubject(written.id), intent, "first");
         }
@@ -195,6 +229,33 @@ export class PlaceOrderForCustomerHandler implements ICommandHandler<
       }
       throw error;
     }
+  }
+
+  /**
+   * Les limites de produit passées, consignées avec la commande : une ligne
+   * par SKU, qui, pourquoi et la limite telle qu'elle jugeait.
+   */
+  private async recordOverrides(
+    orderId: string,
+    command: PlaceOrderForCustomerCommand,
+    debts: DeadlineDebts,
+  ): Promise<void> {
+    const serviceDay = command.payload.requestedDeliveryDate;
+    if (debts.overrideReason === null || serviceDay === null) {
+      return;
+    }
+    await this.overrides.record(
+      itemLimitOverridesOf({
+        exceeded: debts.exceeded,
+        orderId,
+        staffUserId: command.staffUserId,
+        reason: debts.overrideReason,
+        serviceDay,
+        origin: "placement",
+        at: this.clock.now(),
+        nextId: () => this.ids.next(),
+      }),
+    );
   }
 
   /**

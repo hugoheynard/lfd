@@ -63,7 +63,7 @@ export class EstimateOrderForCustomerHandler implements IQueryHandler<
   private async estimate(query: EstimateOrderForCustomerQuery): Promise<AdminOrderEstimateView> {
     const { payload } = query;
     const drafted = await this.draftOrRefusal(query);
-    const cutoff = await this.cutoffOf(payload);
+    const cutoff = await this.cutoffOf(payload, query.exceedItemLimits);
     if (!("order" in drafted)) {
       return { amounts: null, cutoff, refusal: drafted, warnings: [] };
     }
@@ -85,6 +85,7 @@ export class EstimateOrderForCustomerHandler implements IQueryHandler<
         query.staffUserId,
         query.payload,
         "estimate",
+        query.exceedItemLimits,
       );
     } catch (error) {
       if (isCompositionRefusal(error)) {
@@ -112,8 +113,15 @@ export class EstimateOrderForCustomerHandler implements IQueryHandler<
     );
   }
 
-  /** L'heure limite du jour visé, séparée sur la marque comme le devis (lot L4). */
-  private async cutoffOf(payload: AdminOrderEstimatePayload): Promise<OrderQuoteCutoffView | null> {
+  /**
+   * L'heure limite du jour visé, séparée sur la marque comme le devis (lot
+   * L4), avec les limites de produit que la passation passerait : elle ne
+   * refuse pas pour un motif manquant, l'écran le demande en les lisant.
+   */
+  private async cutoffOf(
+    payload: AdminOrderEstimatePayload,
+    exceedItemLimits: boolean,
+  ): Promise<OrderQuoteCutoffView | null> {
     if (payload.requestedDeliveryDate === null) {
       return null;
     }
@@ -121,6 +129,7 @@ export class EstimateOrderForCustomerHandler implements IQueryHandler<
       payload.lines.map((line) => line.sku),
       payload.requestedDeliveryDate,
       payload.supply ?? "planned",
+      exceedItemLimits,
     );
   }
 }

@@ -68,7 +68,11 @@ const CATALOG = new InMemoryProductCatalog([
   item("PLAIN", null),
   item("EARLY", { daysBefore: 1, time: "09:00", graceMinutes: 0, staffMayExceed: false }),
   item("LATE", { daysBefore: 0, time: "12:00", graceMinutes: 0, staffMayExceed: false }),
+  item("PASSABLE", { daysBefore: 2, time: "09:00", graceMinutes: 0, staffMayExceed: true }),
 ]);
+
+/** Aucune limite de produit passée ni fermée. */
+const NO_ITEM_LIMIT = { exceeded: [], closedByItemLimit: [] };
 
 function notice(rules: readonly OrderCutoffView[], now: Date): OrderCutoffNotice {
   return new OrderCutoffNotice(
@@ -88,8 +92,13 @@ describe("OrderCutoffNotice — le signal d'heure limite du devis", () => {
       ["PLAIN"],
       TOMORROW,
       "planned",
+      false,
     );
-    expect(view).toEqual({ status: "open", until: at(TODAY, "18:00").toISOString() });
+    expect(view).toEqual({
+      status: "open",
+      until: at(TODAY, "18:00").toISOString(),
+      ...NO_ITEM_LIMIT,
+    });
   });
 
   it("annonce la limite de l'article quand elle tombe avant la règle générale", async () => {
@@ -97,8 +106,13 @@ describe("OrderCutoffNotice — le signal d'heure limite du devis", () => {
       ["PLAIN", "EARLY"],
       TOMORROW,
       "planned",
+      false,
     );
-    expect(view).toEqual({ status: "open", until: at(TODAY, "09:00").toISOString() });
+    expect(view).toEqual({
+      status: "open",
+      until: at(TODAY, "09:00").toISOString(),
+      ...NO_ITEM_LIMIT,
+    });
   });
 
   it("signale le rattrapage de la règle générale, avec sa fin", async () => {
@@ -106,8 +120,13 @@ describe("OrderCutoffNotice — le signal d'heure limite du devis", () => {
       ["PLAIN"],
       TOMORROW,
       "planned",
+      false,
     );
-    expect(view).toEqual({ status: "grace", until: at(TODAY, "10:30").toISOString() });
+    expect(view).toEqual({
+      status: "grace",
+      until: at(TODAY, "10:30").toISOString(),
+      ...NO_ITEM_LIMIT,
+    });
   });
 
   /** Même règle que la passation : la plus stricte gagne, la limite d'article ne relâche rien. */
@@ -116,13 +135,14 @@ describe("OrderCutoffNotice — le signal d'heure limite du devis", () => {
       ["LATE"],
       TOMORROW,
       "planned",
+      false,
     );
-    expect(view).toEqual({ status: "closed", until: null });
+    expect(view).toEqual({ status: "closed", until: null, ...NO_ITEM_LIMIT });
   });
 
   it("dit ouvert, sans heure, quand rien n'est réglé", async () => {
-    const view = await notice([], at(TODAY, "10:00")).forDay(["PLAIN"], TOMORROW, "planned");
-    expect(view).toEqual({ status: "open", until: null });
+    const view = await notice([], at(TODAY, "10:00")).forDay(["PLAIN"], TOMORROW, "planned", false);
+    expect(view).toEqual({ status: "open", until: null, ...NO_ITEM_LIMIT });
   });
 
   /**
@@ -134,7 +154,47 @@ describe("OrderCutoffNotice — le signal d'heure limite du devis", () => {
       ["PLAIN"],
       TODAY,
       "shelf",
+      false,
     );
-    expect(view).toEqual({ status: "open", until: null });
+    expect(view).toEqual({ status: "open", until: null, ...NO_ITEM_LIMIT });
+  });
+
+  describe("les limites de produit, pour l'équipe", () => {
+    // Le 10 à 10 h pour le 11 : « 2 jours avant, 9 h » est tombé le 9 ; la
+    // règle générale (la veille à 18 h) ne l'est pas.
+    const ask = (exceedItemLimits: boolean) =>
+      notice([general("18:00")], at(TODAY, "10:00")).forDay(
+        ["PLAIN", "PASSABLE", "EARLY"],
+        TOMORROW,
+        "planned",
+        exceedItemLimits,
+      );
+
+    it("annonce la limite passée et la dit dépassable, avec le droit", async () => {
+      const view = await ask(true);
+      expect(view.exceeded).toEqual([
+        {
+          sku: "PASSABLE",
+          daysBefore: 2,
+          time: "09:00",
+          limitAt: at(addDays(TODAY, -1), "09:00").toISOString(),
+        },
+      ]);
+      expect(view.closedByItemLimit).toEqual([
+        { sku: "PASSABLE", exceedable: true },
+        { sku: "EARLY", exceedable: false },
+      ]);
+      // EARLY (la veille à 9 h) ferme encore le panier : seul PASSABLE passe.
+      expect(view.status).toBe("closed");
+    });
+
+    it("ne dit rien de dépassable sans le droit", async () => {
+      const view = await ask(false);
+      expect(view.exceeded).toEqual([]);
+      expect(view.closedByItemLimit).toEqual([
+        { sku: "PASSABLE", exceedable: false },
+        { sku: "EARLY", exceedable: false },
+      ]);
+    });
   });
 });

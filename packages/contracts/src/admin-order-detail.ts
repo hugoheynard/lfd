@@ -87,6 +87,31 @@ export interface AdminOrderView extends OrderView {
    * Facultatif : un serveur plus ancien ne le sert pas, et l'écran se tait.
    */
   readonly shortfallRefund?: AdminShortfallRefund | null;
+  /**
+   * **Les limites de produit que l'équipe a passées** sur cette commande,
+   * dans l'ordre où elles ont été consignées. Présent seulement pour qui a
+   * `lfc_product_limit_override:read` (le serveur le décide) ; absent sinon,
+   * et absent d'un serveur plus ancien.
+   */
+  readonly itemLimitOverrides?: readonly AdminOrderItemLimitOverride[];
+}
+
+/** Un dépassement consigné : la limite passée, qui, pourquoi, par quel geste. */
+export interface AdminOrderItemLimitOverride {
+  readonly sku: string;
+  /** La fiche d'annuaire de la personne qui a passé outre. */
+  readonly staffUserId: string;
+  readonly reason: string;
+  /** Le délai de la limite passée, en jours avant la journée. */
+  readonly daysBefore: number;
+  /** `HH:mm`, à Paris. */
+  readonly time: string;
+  /** ISO 8601 : l'instant où la limite est tombée. */
+  readonly limitAt: string;
+  /** `placement` : à la saisie ; `revision` : en modification. */
+  readonly origin: "placement" | "revision";
+  /** ISO 8601. */
+  readonly recordedAt: string;
 }
 
 /**

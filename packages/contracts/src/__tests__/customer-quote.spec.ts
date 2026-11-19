@@ -15,7 +15,14 @@ import type { OrderQuoteView } from "../order.js";
  */
 const STAFF_QUOTE: OrderQuoteView = {
   subtotalCents: 2_400,
-  cutoff: { status: "grace", until: "2026-03-10T22:30:00.000Z" },
+  cutoff: {
+    status: "grace",
+    until: "2026-03-10T22:30:00.000Z",
+    exceeded: [
+      { sku: "VIE-001", daysBefore: 2, time: "12:00", limitAt: "2026-03-09T11:00:00.000Z" },
+    ],
+    closedByItemLimit: [{ sku: "VIE-001", exceedable: true }],
+  },
   lines: [
     {
       sku: "VIE-001",

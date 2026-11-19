@@ -18,4 +18,11 @@ export interface OrderParties {
    * oublié ne compile pas.
    */
   readonly buyerKind: OrderBuyerKind;
+  /**
+   * Celui qui saisit peut passer outre la limite d'un produit qui le permet :
+   * l'équipe, avec le droit `lfc_product_limit_override`, lu en base par la
+   * porte staff. Faux pour le client, l'invité, la boutique et tout devis.
+   * Obligatoire : un poseur oublié ne compile pas, et personne n'en hérite.
+   */
+  readonly exceedItemLimits: boolean;
 }

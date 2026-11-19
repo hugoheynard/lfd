@@ -248,15 +248,15 @@ export function placeOrderForCustomer(
   const intentKey = randomUUID();
   return placeAt(ctx, seed.placedAt, { type: "staff", id: seed.staffUserId }, () =>
     seeingTotal(undefined, (expectedTotalCents) =>
-      ctx.app
-        .get(CommandBus)
-        .execute<PlaceOrderForCustomerCommand, PlaceOrderForCustomerResult>(
-          new PlaceOrderForCustomerCommand(
-            seed.staffUserId,
-            payload(expectedTotalCents),
-            intentKey,
-          ),
+      ctx.app.get(CommandBus).execute<PlaceOrderForCustomerCommand, PlaceOrderForCustomerResult>(
+        new PlaceOrderForCustomerCommand(
+          seed.staffUserId,
+          payload(expectedTotalCents),
+          intentKey,
+          // Une commande semée ne passe outre aucune limite de produit.
+          false,
         ),
+      ),
     ),
   );
 }

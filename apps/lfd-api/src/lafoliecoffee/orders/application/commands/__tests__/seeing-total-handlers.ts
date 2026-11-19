@@ -72,6 +72,7 @@ export class SeeingPlaceOrderForCustomerHandler extends PlaceOrderForCustomerHan
           command.staffUserId,
           { ...command.payload, expectedTotalCents },
           command.intentKey,
+          command.exceedItemLimits,
         ),
       ),
     );

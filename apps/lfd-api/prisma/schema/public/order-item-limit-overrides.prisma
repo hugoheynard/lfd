@@ -1,0 +1,35 @@
+/// **Une limite de produit que l'équipe a passée sur une commande** — plan
+/// `documentation/limites-de-commande/plan-passer-outre-la-limite-produit.md`,
+/// § 3.5. Une ligne par SKU dépassé, écrite dans la transaction de la
+/// commande, jamais modifiée ni supprimée.
+///
+/// Écrit à la main dans `20261119170000_les_depassements_de_limite_produit`,
+/// invisible ici : CHECK `origin` ∈ {`placement`, `revision`} ; motif de 1 à
+/// 280 caractères.
+model OrderItemLimitOverride {
+  /// ULID.
+  id          String   @id
+  orderId     String   @map("order_id")
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  /// L'article dépassé, identifiant opaque du catalogue.
+  sku         String
+  /// La fiche d'annuaire de la personne qui a passé outre (registre RGPD).
+  staffUserId String   @map("staff_user_id")
+  /// Pourquoi, en texte libre (registre RGPD : il peut nommer un client).
+  reason      String
+  /// La journée d'acheminement de la commande.
+  serviceDay  DateTime @map("service_day") @db.Date
+  /// La limite passée, telle qu'elle jugeait : délai en jours…
+  daysBefore  Int      @map("days_before")
+  /// … et heure `HH:mm`, à Paris.
+  time        String
+  /// L'instant où elle est tombée pour cette journée.
+  limitAt     DateTime @map("limit_at") @db.Timestamptz(6)
+  /// `placement` (saisie de l'équipe) | `revision` (modification).
+  origin      String
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([orderId])
+  @@map("order_item_limit_overrides")
+  @@schema("public")
+}

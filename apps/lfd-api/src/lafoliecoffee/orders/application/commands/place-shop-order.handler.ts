@@ -168,6 +168,8 @@ export class PlaceShopOrderHandler implements ICommandHandler<
         placedByUserId: buyerUserId,
         placedByStaffId: null,
         buyerKind: GUEST_BUYER,
+        // La boutique ne passe jamais outre la limite d'un produit.
+        exceedItemLimits: false,
       },
       payload,
       // Un invité n'a pas de bons : son contrat n'en nomme aucun (plan des points, C3).

@@ -49,6 +49,14 @@ export interface LineVerdict {
   readonly itemStatus: OrderCutoffStatus;
   /** La ligne a dépassé sa limite d'article (cf. {@link ExceededItemLimit}). */
   readonly exceeded: boolean;
+  /**
+   * Sa limite d'article **pourrait** être dépassée par celui qui demande : il
+   * en a la capacité, le produit le permet, et une limite générale juge ce
+   * jour-là. Vrai que la limite d'article ferme ou non — l'écran de l'équipe
+   * dit « passer outre » ou « ne se commande plus » en le lisant sur une
+   * ligne fermée par sa limite d'article.
+   */
+  readonly exceedable: boolean;
 }
 
 /**

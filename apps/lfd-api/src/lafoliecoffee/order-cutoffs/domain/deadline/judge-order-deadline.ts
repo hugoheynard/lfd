@@ -98,6 +98,7 @@ export function judgeOrderDeadline(facts: DeadlineFacts): OrderDeadlineVerdict {
       limit: judged.decision.limit,
       itemStatus: own.decision.status,
       exceeded: passed !== null,
+      exceedable: isExceedable(line, general, facts),
     });
   }
   return verdictOf(strictest, lines, facts.waiver, exceeded);
@@ -123,10 +124,8 @@ function exceededBy(
 ): ExceededItemLimit | null {
   const limit = own.decision.limit;
   if (
-    !facts.exceedItemLimits ||
     line.limit === null ||
-    !line.limit.staffMayExceed ||
-    general.decision.limit === null ||
+    !isExceedable(line, general, facts) ||
     general.decision.status === "closed" ||
     own.decision.status !== "closed" ||
     limit === null
@@ -138,6 +137,19 @@ function exceededBy(
     rule: { daysBefore: line.limit.daysBefore, time: line.limit.time, graceMinutes: 0 },
     limit,
   };
+}
+
+/**
+ * Les trois clés du dépassement, sans regarder l'instant : la capacité de
+ * celui qui demande, la case du produit, le plancher de la règle générale.
+ */
+function isExceedable(line: DeadlineLine, general: Sourced, facts: DeadlineFacts): boolean {
+  return (
+    facts.exceedItemLimits &&
+    line.limit !== null &&
+    line.limit.staffMayExceed &&
+    general.decision.limit !== null
+  );
 }
 
 /**

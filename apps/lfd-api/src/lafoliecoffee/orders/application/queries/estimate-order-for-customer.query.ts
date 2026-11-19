@@ -12,5 +12,11 @@ export class EstimateOrderForCustomerQuery {
   constructor(
     readonly staffUserId: string,
     readonly payload: AdminOrderEstimatePayload,
+    /**
+     * Le droit `lfc_product_limit_override:write` de celui qui saisit, lu en
+     * base par la porte staff : l'estimation compose et annonce comme la
+     * passation le ferait pour lui.
+     */
+    readonly exceedItemLimits: boolean,
   ) {}
 }

@@ -5,5 +5,12 @@
  * l'affaiblir pour tout le monde.
  */
 export class GetAdminOrderQuery {
-  constructor(readonly orderId: string) {}
+  constructor(
+    readonly orderId: string,
+    /**
+     * L'appelant a `lfc_product_limit_override:read`, lu en base par la porte
+     * staff : la vue porte les limites de produit passées sur la commande.
+     */
+    readonly withItemLimitOverrides: boolean,
+  ) {}
 }

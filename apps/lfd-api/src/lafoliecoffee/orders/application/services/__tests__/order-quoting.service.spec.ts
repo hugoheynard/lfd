@@ -47,6 +47,7 @@ function partiesOf(companyId: string | null): OrderParties {
     placedByUserId: "user_1",
     placedByStaffId: null,
     buyerKind: REGISTERED_BUYER,
+    exceedItemLimits: false,
   };
 }
 

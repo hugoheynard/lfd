@@ -62,6 +62,7 @@ import {
 } from "./order-budget-commitment.providers.js";
 import { ORDER_CUSTOMER_NUDGES_PROVIDERS } from "./order-customer-nudges.providers.js";
 import { ORDER_LATE_TOLERANCE_PROVIDERS } from "./order-late-tolerance.providers.js";
+import { ORDER_ITEM_LIMIT_OVERRIDE_PROVIDERS } from "./order-item-limit-override.providers.js";
 import {
   CUSTOMER_CANCELLATION_CONTROLLERS,
   CUSTOMER_CANCELLATION_PROVIDERS,
@@ -625,6 +626,7 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     MailDeliveryEnRoute,
     ...ORDER_CUSTOMER_NUDGES_PROVIDERS,
     ...ORDER_LATE_TOLERANCE_PROVIDERS,
+    ...ORDER_ITEM_LIMIT_OVERRIDE_PROVIDERS,
     { provide: OrderPaymentLinkReader, useClass: PrismaOrderPaymentLinkReader },
     ListOrdersAwaitingPaymentHandler,
     { provide: DaySupervisionReader, useClass: PrismaDaySupervisionReader },
