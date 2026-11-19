@@ -1,5 +1,6 @@
 import { Injectable } from "@nestjs/common";
 
+import { OrderCutoffWaiverSpentError } from "../../orders/domain/errors/order-errors.js";
 import { OrderCutoffWaiverGate } from "../../orders/domain/ports/order-cutoff-waiver.gate.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 
@@ -21,18 +22,22 @@ export class PrismaOrderCutoffWaiverGate extends OrderCutoffWaiverGate {
   }
 
   /**
-   * Le `where` porte `usedByOrderId: null` : deux commandes qui tenteraient de
-   * consommer la même autorisation au même instant n'en verraient qu'une
-   * aboutir. Le second `updateMany` ne touche aucune ligne, et c'est le bon
-   * comportement — l'autorisation n'a servi qu'une fois.
+   * Le `where` porte `usedByOrderId: null` : de deux passations qui ont lu la
+   * même autorisation, une seule l'écrit. L'autre ne touche aucune ligne, et
+   * c'est une course PERDUE : sa commande passerait tard sans décision. Le
+   * compte le dit, et le refus annule la transaction de la commande.
    *
-   * `updateMany` et non `update` pour cette raison précise : `update` lèverait
-   * sur zéro ligne, et transformerait une course perdue en erreur de commande.
+   * `updateMany` plutôt qu'`update` : le compte nomme le cas, là où `update`
+   * lèverait une erreur Prisma qui ne dit pas laquelle des deux passations a
+   * perdu.
    */
   async consume(waiverId: string, orderId: string, at: Date): Promise<void> {
-    await this.prisma.orderCutoffWaiver.updateMany({
+    const { count } = await this.prisma.orderCutoffWaiver.updateMany({
       where: { id: waiverId, usedByOrderId: null },
       data: { usedByOrderId: orderId, usedAt: at },
     });
+    if (count === 0) {
+      throw new OrderCutoffWaiverSpentError(waiverId);
+    }
   }
 }

@@ -125,14 +125,7 @@ export class PlaceOrderForCustomerHandler implements ICommandHandler<
       companyId,
       isCounterEntry(payload.entryOrigin, payload.entryShortcut),
     );
-    const { placed, result } = await this.persist(order, payload, intent, seal);
-
-    // La dérogation se consomme APRÈS la persistance, et son échec ne s'absorbe
-    // pas : restée ouverte, elle laisserait passer une seconde commande tardive
-    // sur une seule décision.
-    if (waiverUsed !== null) {
-      await this.waivers.consume(waiverUsed, placed.id, this.clock.now());
-    }
+    const { placed, result } = await this.persist(order, payload, intent, waiverUsed, seal);
 
     // Le fait de domaine porte l'ACHETEUR, pas le commercial : c'est bien ce
     // client-là qui vient de commander, et le journal croissance compte des
@@ -176,12 +169,18 @@ export class PlaceOrderForCustomerHandler implements ICommandHandler<
     order: Order,
     payload: PlaceOrderForCustomerCommand["payload"],
     intent: PreparedCardPayment | null,
+    waiverUsed: string | null,
     seal: (result: PlaceOrderForCustomerResult) => Promise<void>,
   ): Promise<{ readonly placed: PlacedOrder; readonly result: PlaceOrderForCustomerResult }> {
     try {
       return await this.unitOfWork.run(async () => {
         await this.drafting.holdSupply(order, payload.requestedDeliveryDate);
         const written = await this.orders.place(order);
+        // La dérogation se dépense avec la commande : une course perdue
+        // annule l'une et l'autre, et la clé d'intention est rendue.
+        if (waiverUsed !== null) {
+          await this.waivers.consume(waiverUsed, written.id, this.clock.now());
+        }
         if (intent !== null) {
           await this.payments.attach(orderCardSubject(written.id), intent, "first");
         }

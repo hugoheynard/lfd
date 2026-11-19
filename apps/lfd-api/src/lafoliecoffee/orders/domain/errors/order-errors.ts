@@ -382,6 +382,27 @@ export class OrderCutoffGraceError extends BusinessError {
 }
 
 /**
+ * **La dérogation de ce jour a déjà servi à une autre commande.** Refus
+ * métier (409).
+ *
+ * Deux passations qui lisent la même dérogation ouverte avant que l'une ne
+ * l'ait dépensée ne peuvent pas passer toutes les deux : une dérogation est
+ * UNE décision, pour UNE commande tardive. La seconde est refusée dans la
+ * transaction qui l'écrirait, et rien d'elle n'est enregistré.
+ *
+ * Le geste de sortie est celui du rattrapage : une nouvelle dérogation, ou
+ * une autre date.
+ */
+export class OrderCutoffWaiverSpentError extends BusinessError {
+  constructor(readonly waiverId: string) {
+    super(
+      "orders.cutoff.waiver_spent",
+      "La dérogation accordée pour ce jour vient de servir à une autre commande. Accordez-en une nouvelle, ou choisissez une autre date.",
+    );
+  }
+}
+
+/**
  * **Une commande identique est en train de passer.**
  *
  * Levée quand la clé d'idempotence est réclamée, non résolue, et son bail encore

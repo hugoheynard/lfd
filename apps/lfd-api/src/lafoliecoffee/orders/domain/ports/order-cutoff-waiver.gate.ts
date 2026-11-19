@@ -24,9 +24,13 @@ export abstract class OrderCutoffWaiverGate {
   /**
    * Marque la dérogation comme **consommée** par cette commande.
    *
-   * Appelée APRÈS la persistance de la commande, et pas avant : consommer une
-   * autorisation pour une commande qui échoue ensuite la brûlerait, et le client
-   * devrait rappeler pour en obtenir une seconde qu'il avait déjà.
+   * Appelée DANS la transaction qui écrit la commande, après l'écriture : la
+   * commande et la dépense partent ensemble, ou rien ne part. Une commande qui
+   * échoue ensuite ne brûle donc pas l'autorisation.
+   *
+   * @throws {OrderCutoffWaiverSpentError} la dérogation a déjà servi — une
+   * autre passation l'a dépensée entre la lecture et l'écriture. La
+   * transaction est annulée : la commande n'existe pas.
    */
   abstract consume(waiverId: string, orderId: string, at: Date): Promise<void>;
 }

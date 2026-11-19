@@ -192,11 +192,7 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, Pla
       companyId,
       payload.settlement,
     );
-    const placed = await this.persist(command, order, intent);
-
-    // La dérogation se consomme APRÈS la persistance : la brûler avant aurait
-    // laissé le client sans autorisation pour une commande qui n'existe pas.
-    await this.spendWaiver(waiverUsed, placed.id);
+    const placed = await this.persist(command, order, intent, waiverUsed);
 
     // Fait de domaine, publié APRÈS persistance (on ne journalise pas une commande
     // qui n'a pas pris). Le journal croissance écoute ; l'échec d'un abonné ne
@@ -252,6 +248,7 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, Pla
     command: PlaceOrderCommand,
     order: Order,
     intent: CardPaymentPreparation | null,
+    waiverUsed: string | null,
   ): Promise<PlacedOrder> {
     const { actorUserId, payload } = command;
     const voucherId = payload.voucherId ?? null;
@@ -267,6 +264,9 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, Pla
           await this.vouchers.reserve(voucherId, actorUserId, this.clock.now());
         }
         const written = await this.orders.place(order);
+        // La dérogation se dépense avec la commande : une course perdue
+        // annule l'une et l'autre.
+        await this.spendWaiver(waiverUsed, written.id);
         if (intent !== null) {
           await this.payments.attach(orderCardSubject(written.id), intent.prepared, "first");
         }
@@ -337,12 +337,11 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, Pla
   }
 
   /**
-   * Marque l'autorisation comme dépensée, s'il y en a eu une.
+   * Marque l'autorisation comme dépensée, s'il y en a eu une, dans la
+   * transaction de la commande. L'échec n'est **pas** absorbé : une seule
+   * décision ne laisse passer qu'une commande tardive.
    *
-   * L'échec n'est **pas** absorbé : une dérogation qui reste ouverte après avoir
-   * servi laisserait passer une seconde commande tardive sur une seule décision.
-   * Mieux vaut une commande qui échoue bruyamment qu'une exception qui se
-   * dédouble en silence.
+   * @throws {OrderCutoffWaiverSpentError} une autre passation l'a dépensée.
    */
   private async spendWaiver(waiverId: string | null, orderId: string): Promise<void> {
     if (waiverId === null) {

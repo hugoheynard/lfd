@@ -22,6 +22,8 @@ import {
   DeferredTerm,
 } from "../src/platform/database/client/client.js";
 import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
+import { OrderCutoffWaiverSpentError } from "../src/lafoliecoffee/orders/domain/errors/order-errors.js";
+import { OrderCutoffWaiverGate } from "../src/lafoliecoffee/orders/domain/ports/order-cutoff-waiver.gate.js";
 import { anActiveFiche, relayAll } from "./catalog-facts-scene.js";
 import { passedLimit } from "./order-cutoff-scene.js";
 import { bootstrapE2e, serviceDay, type E2eContext } from "./e2e-harness.js";
@@ -699,6 +701,55 @@ describe("la dérogation, seul chemin de sortie", () => {
       .expect(409);
     expect(response.body).toMatchObject({ code: "orders.cutoff.grace" });
     expect(await orderCount()).toBe(1);
+  });
+
+  /**
+   * Régression : deux passations qui lisaient la même dérogation ouverte
+   * passaient toutes les deux, la seconde « consommant » sans rien écrire
+   * (`consume` ne lisait pas le compte, corrigé le 2026-11-19).
+   */
+  it("ne laisse passer qu'UNE de deux passations simultanées sur la même dérogation", async () => {
+    const day = await seedCutoffPassedBy(10, 45);
+    await grantWaiver(day);
+
+    const responses = await Promise.all([
+      ctx
+        .asSub(MEMBER)
+        .post("/orders")
+        .send(order({ requestedDeliveryDate: day })),
+      ctx
+        .asSub(MEMBER)
+        .post("/orders")
+        .send(order({ requestedDeliveryDate: day })),
+    ]);
+
+    const statuses = responses.map((response) => response.status).sort();
+    expect(statuses).toEqual([201, 409]);
+    const refused = responses.find((response) => response.status === 409);
+    expect(["orders.cutoff.grace", "orders.cutoff.waiver_spent"]).toContain(
+      (refused?.body as { code?: string }).code,
+    );
+    expect(await orderCount()).toBe(1);
+  });
+
+  /** Le cas que la course ne garantit pas d'atteindre : la dépense perdue, nommée. */
+  it("refuse de dépenser une dérogation qui a déjà servi, en le nommant", async () => {
+    const day = await seedCutoffPassedBy(10, 45);
+    const waiverId = await grantWaiver(day);
+    await ctx
+      .asSub(MEMBER)
+      .post("/orders")
+      .send(order({ requestedDeliveryDate: day }))
+      .expect(201);
+
+    const gate = ctx.app.get(OrderCutoffWaiverGate);
+    await expect(gate.consume(waiverId, "ord_autre", new Date())).rejects.toBeInstanceOf(
+      OrderCutoffWaiverSpentError,
+    );
+    const waiver = await ctx.prisma.orderCutoffWaiver.findUniqueOrThrow({
+      where: { id: waiverId },
+    });
+    expect(waiver.usedByOrderId).not.toBe("ord_autre");
   });
 
   /**
