@@ -1,3 +1,4 @@
+import { UndeclaredAllergensWriteError } from "../../domain/errors/product-invariant-errors.js";
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
 import {
   AllergenStore,
@@ -189,7 +190,11 @@ class FakeCategoryRepository extends CategoryRepository {
 
 class RecordingAllergensRepository extends VariantAllergensRepository {
   readonly calls: { variantId: string; declaration: AllergenDeclaration }[] = [];
-  save(variantId: string, declaration: AllergenDeclaration): Promise<void> {
+  save(product: Product, variantId: string): Promise<void> {
+    const declaration = product.ownAllergenDeclaration(variantId);
+    if (declaration === null) {
+      throw new UndeclaredAllergensWriteError(product.id, variantId);
+    }
     this.calls.push({ variantId, declaration });
     return Promise.resolve();
   }

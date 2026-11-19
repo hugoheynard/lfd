@@ -1,4 +1,4 @@
-import { contextLabelsOf } from "../../../../reference/sales-contexts/application/context-labels.js";
+import { contextLabelsOf } from "../../../../reference/sales-contexts/domain/services/context-labels.js";
 import { SalesContextRegistry } from "../../../../reference/sales-contexts/domain/ports/sales-context.registry.js";
 import { VatRateNotFoundError } from "../../../../reference/vat-rates/domain/errors/vat-rate-errors.js";
 import { VatRateRepository } from "../../../../reference/vat-rates/domain/ports/vat-rate.repository.js";

@@ -17,6 +17,7 @@ import { RecordingCatalogEmitter } from "../../../../shared/__tests__/catalog-em
 import {
   InMemoryAppellationRepository,
   InMemoryIngredientRepository,
+  InMemoryProductCompositionRepository,
 } from "./in-memory-repositories.js";
 import { INGREDIENT_PAYLOAD } from "./ingredient-fixtures.js";
 
@@ -89,6 +90,7 @@ describe("ArchiveIngredientHandler / RestoreIngredientHandler", () => {
 describe("un ingrédient archivé et la composition d’une fiche", () => {
   function composer(ingredients: InMemoryIngredientRepository) {
     return new SetProductIngredientsHandler(
+      new InMemoryProductCompositionRepository(ingredients),
       ingredients,
       new RecordingJournal(),
       new DirectUnitOfWork(),

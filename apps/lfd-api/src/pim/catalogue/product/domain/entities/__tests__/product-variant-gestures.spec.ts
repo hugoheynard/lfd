@@ -33,6 +33,7 @@ describe("ProductVariantGestures — la fiche garde ses déclinaisons", () => {
       () => product.restoreVariant(FOREIGN),
       () => product.makeVariantDefault(FOREIGN),
       () => product.detachedProductOf(FOREIGN),
+      () => product.ownAllergenDeclaration(FOREIGN),
     ];
     for (const gesture of gestures) {
       expect(gesture).toThrow(VariantNotFoundError);
@@ -50,5 +51,41 @@ describe("ProductVariantGestures — la fiche garde ses déclinaisons", () => {
     });
     expect(added.snapshot().hasBeenPublished).toBe(true);
     expect(product.nextVariantPosition).toBe(2);
+  });
+});
+
+describe("ProductVariantGestures — ce qu'une déclinaison déclare elle-même", () => {
+  it("ne rend rien tant que la déclinaison n'a rien déclaré", () => {
+    expect(aProduct().ownAllergenDeclaration("var_1")).toBeNull();
+  });
+
+  it("rend la déclaration posée par le verbe, traces comprises", () => {
+    const product = aProduct();
+    product.declareAllergens("var_1", { allergens: ["gluten"], mayContain: ["nuts"] });
+
+    expect(product.ownAllergenDeclaration("var_1")).toEqual({
+      allergens: ["gluten"],
+      mayContain: ["nuts"],
+    });
+  });
+
+  it("distingue « aucun allergène » déclaré d'une absence de déclaration", () => {
+    const product = aProduct();
+    product.declareAllergens("var_1", { allergens: [], mayContain: [] });
+
+    expect(product.ownAllergenDeclaration("var_1")).toEqual({ allergens: [], mayContain: [] });
+  });
+
+  it("rend la moitié PROPRE d'une sœur alignée, pas celle du défaut qu'elle suit", () => {
+    const product = aProduct();
+    product.declareAllergens("var_1", { allergens: ["gluten"], mayContain: [] });
+    product.addVariant({
+      id: "var_2",
+      sku: Sku.create("CHO-001-2"),
+      name: { fr: "Sœur" },
+      options: {},
+    });
+
+    expect(product.ownAllergenDeclaration("var_2")).toBeNull();
   });
 });

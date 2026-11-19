@@ -2,11 +2,13 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { PIM_EVENTS, PimJournal } from "../../../journal/pim-journal.js";
-import {
-  IngredientArchivedError,
-  IngredientNotFoundError,
-} from "../domain/errors/ingredient-errors.js";
+import type {
+  CitableIngredient,
+  NamedCitation,
+  ProductComposition,
+} from "../domain/entities/product-composition.entity.js";
 import { IngredientRepository } from "../domain/ports/ingredient.repository.js";
+import { ProductCompositionRepository } from "../domain/ports/product-composition.repository.js";
 import { CatalogEmitter } from "../../../shared/catalog-emitter.js";
 
 export class SetProductIngredientsCommand {
@@ -35,6 +37,7 @@ export class SetProductIngredientsHandler implements ICommandHandler<
   void
 > {
   constructor(
+    private readonly compositions: ProductCompositionRepository,
     private readonly ingredients: IngredientRepository,
     private readonly journal: PimJournal,
     private readonly uow: UnitOfWork,
@@ -43,57 +46,47 @@ export class SetProductIngredientsHandler implements ICommandHandler<
 
   async execute(command: SetProductIngredientsCommand): Promise<void> {
     const { productId, keys } = command;
-    const cited = await this.ingredients.ofProduct(productId);
-    const before = cited.map((row) => row.key);
-    const unchanged = before.length === keys.length && before.every((key, at) => key === keys[at]);
-    const after = unchanged ? [] : await this.named(keys, before);
+    const composition = await this.compositions.load(productId);
+    const unchanged = composition.cites(keys);
+    const change = unchanged ? null : await this.replaced(composition, keys);
 
     await this.uow.run(async () => {
-      const ticket = unchanged
-        ? this.journal.untraced("record without modification")
-        : await this.journal.trace({
-            type: PIM_EVENTS.productIngredientsSaved,
-            subjectType: "product",
-            subjectId: productId,
-            // Chaque ingrédient NOMMÉ (D5 du plan des phrases du journal) : sa
-            // clé, et son nom français de ce jour-là.
-            payload: {
-              changes: {
-                ingredients: {
-                  from: cited.map((row) => ({ id: row.key, name: row.name.fr })),
-                  to: after,
-                },
-              },
-            },
-          });
-      await this.ingredients.setOfProduct(productId, keys, ticket);
+      const ticket =
+        change === null
+          ? this.journal.untraced("record without modification")
+          : await this.journal.trace({
+              type: PIM_EVENTS.productIngredientsSaved,
+              subjectType: "product",
+              subjectId: productId,
+              // Chaque ingrédient NOMMÉ (D5 du plan des phrases du journal) : sa
+              // clé, et son nom français de ce jour-là.
+              payload: { changes: { ingredients: change } },
+            });
+      await this.compositions.save(composition, ticket);
       await this.emitter.emitProducts([productId]);
     });
   }
 
   /**
-   * Les ingrédients cités, nommés, dans l'ordre reçu.
+   * Remplace la liste sur l'agrégat, qui juge chaque clé, et rend l'avant et
+   * l'après nommés pour la trace.
    *
-   * @throws {IngredientNotFoundError} une clé que le référentiel ignore — le
-   *   dépôt la refuserait de toute façon, et le journal ne l'écrit pas nue.
+   * @throws {IngredientNotFoundError} une clé que le référentiel ignore.
    * @throws {IngredientArchivedError} un ingrédient archivé que la fiche ne
-   *   citait pas encore — celle qui le cite déjà le garde.
+   *   citait pas encore.
    */
-  private async named(
+  private async replaced(
+    composition: ProductComposition,
     keys: readonly string[],
-    before: readonly string[],
-  ): Promise<readonly { readonly id: string; readonly name: string }[]> {
-    const rows = new Map((await this.ingredients.list()).map((row) => [row.key, row]));
-    const held = new Set(before);
-    return keys.map((key) => {
-      const row = rows.get(key);
-      if (row === undefined) {
-        throw new IngredientNotFoundError(key);
-      }
-      if (row.archivedAt !== null && !held.has(key)) {
-        throw new IngredientArchivedError(key);
-      }
-      return { id: key, name: row.name.fr };
-    });
+  ): Promise<{ readonly from: readonly NamedCitation[]; readonly to: readonly NamedCitation[] }> {
+    const [cited, all] = await Promise.all([
+      this.ingredients.ofProduct(composition.productId),
+      this.ingredients.list(),
+    ]);
+    const referential = new Map<string, CitableIngredient>(
+      all.map((row) => [row.key, { name: row.name.fr, archived: row.archivedAt !== null }]),
+    );
+    const from = cited.map((row) => ({ id: row.key, name: row.name.fr }));
+    return { from, to: composition.replace(keys, referential) };
   }
 }

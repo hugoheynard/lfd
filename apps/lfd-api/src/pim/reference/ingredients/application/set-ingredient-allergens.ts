@@ -25,8 +25,7 @@ export class SetIngredientAllergensCommand {
  * Par l'agrégat et son verbe, puis `save()` — et non par une écriture ciblée du
  * dépôt : ce que contient un ingrédient est un fait qui lui appartient (la
  * liaison meurt avec lui, en `Cascade`), là où ce qu'une **fiche** cite comme
- * ingrédients est un lien entre deux agrégats dont ce module ne possède qu'un
- * bout — d'où le `setOfProduct` du dépôt, à côté, qui n'est pas le même geste.
+ * ingrédients est un autre agrégat, `ProductComposition` — pas le même geste.
  *
  * **Un seul fait pour la liste entière**, avec l'AVANT et l'APRÈS en codes :
  * même raison qu'`ingredients_saved`, N traces pour N lignes noieraient

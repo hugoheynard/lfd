@@ -10,6 +10,8 @@ import {
   AppellationRepository,
   type AppellationRecord,
 } from "../../domain/ports/appellation.repository.js";
+import { ProductComposition } from "../../domain/entities/product-composition.entity.js";
+import { ProductCompositionRepository } from "../../domain/ports/product-composition.repository.js";
 import {
   IngredientRepository,
   type IngredientRecord,
@@ -75,9 +77,13 @@ export class InMemoryIngredientRepository extends IngredientRepository {
     );
   }
 
-  setOfProduct(productId: string, keys: readonly string[]): Promise<void> {
+  /** Ce que la fiche cite, stocké — le double du dépôt des compositions y écrit. */
+  citedKeys(productId: string): readonly string[] {
+    return this.citedBy.get(productId) ?? [];
+  }
+
+  cite(productId: string, keys: readonly string[]): void {
     this.citedBy.set(productId, [...keys]);
-    return Promise.resolve();
   }
 
   /** Ce que le test relit — l'état stocké, sans repasser par une commande. */
@@ -96,6 +102,28 @@ export class InMemoryIngredientRepository extends IngredientRepository {
   /** Combien de fiches citent la matière — ce que la vraie lecture compte. */
   private citationsOf(key: string): number {
     return [...this.citedBy.values()].filter((keys) => keys.includes(key)).length;
+  }
+}
+
+/**
+ * Les compositions, écrites dans le même état que les ingrédients : la vraie
+ * table `product_ingredient` est lue par les deux dépôts, et deux états
+ * séparés laisseraient `ofProduct` et `usedBy` ignorer ce qu'on vient de citer.
+ */
+export class InMemoryProductCompositionRepository extends ProductCompositionRepository {
+  constructor(private readonly ingredients: InMemoryIngredientRepository) {
+    super();
+  }
+
+  load(productId: string): Promise<ProductComposition> {
+    return Promise.resolve(
+      ProductComposition.rehydrate(productId, this.ingredients.citedKeys(productId)),
+    );
+  }
+
+  save(composition: ProductComposition): Promise<void> {
+    this.ingredients.cite(composition.productId, composition.keys);
+    return Promise.resolve();
   }
 }
 

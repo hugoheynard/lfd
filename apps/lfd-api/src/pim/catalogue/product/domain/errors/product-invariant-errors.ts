@@ -10,3 +10,14 @@ export class ProductWithoutVariantError extends TechnicalError {
     );
   }
 }
+
+/** Le dépôt des allergènes a été appelé pour une déclinaison qui n'a rien déclaré. */
+export class UndeclaredAllergensWriteError extends TechnicalError {
+  constructor(productId: string, variantId: string) {
+    super(
+      "catalogue.product.undeclared_allergens_write",
+      `La déclinaison ${variantId} de la fiche ${productId} n'a aucune déclaration d'allergènes ` +
+        `au moment d'être écrite : le geste doit la poser sur la fiche (declareAllergens) avant d'appeler le dépôt.`,
+    );
+  }
+}

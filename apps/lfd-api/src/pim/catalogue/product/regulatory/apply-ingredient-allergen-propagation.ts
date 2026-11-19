@@ -37,7 +37,6 @@ export class ApplyIngredientAllergenPropagationCommand {
 interface PendingDeclaration {
   readonly product: Product;
   readonly variantId: string;
-  readonly declaration: AllergenDeclaration;
   readonly changes: FieldChanges;
 }
 
@@ -130,7 +129,7 @@ export class ApplyIngredientAllergenPropagationHandler implements ICommandHandle
       return null;
     }
     product.declareAllergens(variant.variantId, declaration);
-    return { product, variantId: variant.variantId, declaration, changes };
+    return { product, variantId: variant.variantId, changes };
   }
 
   /**
@@ -165,6 +164,6 @@ export class ApplyIngredientAllergenPropagationHandler implements ICommandHandle
         fromIngredient: { id: plan.ingredient.key, name: plan.ingredient.name },
       },
     });
-    await this.allergenSheets.save(pending.variantId, pending.declaration, ticket);
+    await this.allergenSheets.save(pending.product, pending.variantId, ticket);
   }
 }

@@ -31,18 +31,9 @@ export abstract class IngredientRepository {
    */
   abstract saveArchival(ingredient: IngredientAggregate, ticket: WriteTicket): Promise<void>;
 
-  /** Ce qu'une fiche cite, dans son ordre d'affichage. */
-  abstract ofProduct(productId: string): Promise<readonly IngredientRecord[]>;
   /**
-   * Remplace ce qu'une fiche cite, d'un bloc.
-   *
-   * Un REMPLACEMENT et non un ajout/retrait unitaire : c'est un seul geste
-   * éditorial à l'écran — la liste et son ordre — et le journal doit en garder
-   * une trace, pas trois.
+   * Ce qu'une fiche cite, dans son ordre d'affichage — en LECTURE. L'écriture
+   * passe par l'agrégat `ProductComposition` et son dépôt.
    */
-  abstract setOfProduct(
-    productId: string,
-    keys: readonly string[],
-    ticket: WriteTicket,
-  ): Promise<void>;
+  abstract ofProduct(productId: string): Promise<readonly IngredientRecord[]>;
 }

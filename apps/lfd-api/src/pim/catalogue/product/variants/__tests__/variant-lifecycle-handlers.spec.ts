@@ -1,3 +1,4 @@
+import { UndeclaredAllergensWriteError } from "../../domain/errors/product-invariant-errors.js";
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingJournal } from "../../../../journal/__tests__/recording-journal.js";
 import { RecordingCatalogEmitter } from "../../../../shared/__tests__/catalog-emitter-doubles.js";
@@ -75,7 +76,11 @@ class Products extends ProductRepository {
 
 class Allergens extends VariantAllergensRepository {
   readonly saved = new Map<string, AllergenDeclaration>();
-  save(variantId: string, declaration: AllergenDeclaration): Promise<void> {
+  save(product: Product, variantId: string): Promise<void> {
+    const declaration = product.ownAllergenDeclaration(variantId);
+    if (declaration === null) {
+      throw new UndeclaredAllergensWriteError(product.id, variantId);
+    }
     this.saved.set(variantId, declaration);
     return Promise.resolve();
   }

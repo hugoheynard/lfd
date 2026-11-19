@@ -6,11 +6,10 @@ import { EffectiveVatReader } from "../../product/domain/ports/effective-vat.rea
 import { isLiveStatus } from "../../product/domain/ports/product.repository.js";
 import { EditorialReader } from "../../product/domain/ports/editorial-reader.js";
 import { ReadinessReader } from "../../product/domain/ports/readiness.reader.js";
-import { ImageCatalogue } from "../../shared/domain/ports/image-catalogue.js";
-import { PimPrismaService } from "../../../infra/database/pim-prisma.service.js";
 import type { VariantNutritionView } from "../../product/domain/ports/product.repository.js";
 import { CatalogRevisionSource } from "../domain/ports/catalog-revision.source.js";
 import type { RevisionItemInput, RevisionMedia } from "../domain/revision.js";
+import type { ProductMediaRecord } from "../../product/domain/ports/editorial-reader.js";
 import type { VariantSnapshot } from "../../product/domain/entities/variant.js";
 
 /**
@@ -20,9 +19,9 @@ import type { VariantSnapshot } from "../../product/domain/entities/variant.js";
  * touche les quatre-vingt-douze fiches d'un coup, et une boucle d'appels y
  * coûterait autant d'allers-retours que d'articles.
  *
- * Les visuels passent par Prisma directement plutôt que par `mediaOf`, qui est
- * par produit. Ajouter un lot au port éditorial l'aurait élargi pour un seul
- * appelant ; la révision lit ce qu'elle a besoin de lire.
+ * Les visuels se lisent par la fiche, qui possède leurs rattachements
+ * (`EditorialReader.mediaOfProducts`) : la révision ne lit aucune table d'un
+ * voisin.
  */
 @Injectable()
 export class PrismaCatalogRevisionSource extends CatalogRevisionSource {
@@ -32,8 +31,6 @@ export class PrismaCatalogRevisionSource extends CatalogRevisionSource {
     private readonly vat: EffectiveVatReader,
     private readonly editorials: EditorialReader,
     private readonly readiness: ReadinessReader,
-    private readonly prisma: PimPrismaService,
-    private readonly images: ImageCatalogue,
   ) {
     super();
   }
@@ -52,7 +49,7 @@ export class PrismaCatalogRevisionSource extends CatalogRevisionSource {
       this.categories.all(),
       this.vat.vatPercents(products),
       this.editorials.findByProducts(ids),
-      this.mediaOf(ids),
+      this.editorials.mediaOfProducts(ids),
       this.readiness.readMany(ids),
     ]);
     // Une famille archivée ne nomme plus ses fiches dans la révision.
@@ -65,7 +62,7 @@ export class PrismaCatalogRevisionSource extends CatalogRevisionSource {
     return products.flatMap((product) => {
       const vat = vatByProduct.get(product.id) ?? {};
       const editorial = editorials.get(product.id) ?? null;
-      const media = mediaByProduct.get(product.id) ?? [];
+      const media = mediaOfAnchor(mediaByProduct.get(product.id) ?? []);
       // La signature est portée par le PRODUIT : ses déclinaisons partagent
       // donc la même, ce qui est exact — on valide une fiche, pas un article.
       const signed = signatures.get(product.id) ?? null;
@@ -108,61 +105,6 @@ export class PrismaCatalogRevisionSource extends CatalogRevisionSource {
         readyBy: signed?.readyBy ?? null,
       }));
     });
-  }
-
-  /**
-   * Les visuels de plusieurs produits, dans leur ordre d'affichage.
-   *
-   * 🔴 En DEUX requêtes et non par un `include` : le rattachement désigne
-   * l'image par son URL depuis le 2026-09-23, et la relation disparaîtra avec
-   * la clé étrangère au déploiement ③
-   * (le déménagement de la médiathèque du 2026-09-23, `documentation/mediatheque/mediatheque.md`).
-   *
-   * Ce que ça change pour une ANCRE, et c'est ce qui compte ici : l'alternative
-   * entre dans le payload **hashé** d'une révision. Elle vient désormais de
-   * l'image elle-même — une seule par image — et non plus de la ligne d'actif
-   * propre à chaque fiche.
-   */
-  private async mediaOf(ids: readonly string[]): Promise<Map<string, RevisionMedia[]>> {
-    const rows = await this.prisma.productMedia.findMany({
-      where: { productId: { in: [...ids] } },
-      orderBy: [{ productId: "asc" }, { position: "asc" }],
-      select: { productId: true, role: true, mediaUrl: true },
-    });
-    // 🔴 Par le PORT : une ancre cite des URL, elle ne lit pas la table des
-    // images. C'est ce qui permettra à la bibliothèque de devenir un bloc sans
-    // que la révision ait à le savoir.
-    //
-    // ⚠️ L'alternative est prise TELLE QU'ELLE EST ÉCRITE. Ici on PHOTOGRAPHIE :
-    // une alternative absente doit rester absente dans l'ancre, et la
-    // remplacer ferait croire, dans six mois, qu'elle avait été rédigée. Le
-    // port ne retombe sur l'URL que si la colonne est illisible — jamais pour
-    // embellir un vide (ce raisonnement portait un helper `altOf`, supprimé
-    // le 2026-09-23 avec la lecture directe qu'il servait).
-    const images = await this.images.describe(
-      rows.flatMap((row) => (row.mediaUrl === null ? [] : [row.mediaUrl])),
-    );
-
-    const byProduct = new Map<string, RevisionMedia[]>();
-    for (const row of rows) {
-      const asset = row.mediaUrl === null ? undefined : images.get(row.mediaUrl);
-      if (asset === undefined) {
-        // Une ancre ne fige QUE ce qu'elle a pu lire. Un rattachement sans
-        // image — une ligne antérieure au report de l'URL — n'entre pas dans
-        // l'empreinte plutôt que d'y entrer à moitié.
-        continue;
-      }
-      const media = byProduct.get(row.productId) ?? [];
-      media.push({
-        role: row.role,
-        // L'ADRESSE, jamais les octets : ils vivent dans le bucket, et un visuel
-        // remplacé est une AUTRE image, pas la même écrasée.
-        url: asset.url,
-        alt: asset.alt,
-      });
-      byProduct.set(row.productId, media);
-    }
-    return byProduct;
   }
 }
 
@@ -214,4 +156,17 @@ function weightTermsOf(
     ...(variant.weightMinGrams === null ? {} : { weightMinGrams: variant.weightMinGrams }),
     ...(variant.weightStepGrams === null ? {} : { weightStepGrams: variant.weightStepGrams }),
   };
+}
+
+/**
+ * Les visuels d'une ancre : rôle, ADRESSE et alternative, dans l'ordre
+ * d'affichage — jamais les octets, qui vivent dans le bucket.
+ *
+ * L'alternative est prise telle que la médiathèque la décrit : on
+ * PHOTOGRAPHIE, et une alternative absente doit le rester dans l'ancre. Un
+ * rattachement sans image n'est pas rendu par la fiche, donc n'entre pas
+ * dans l'empreinte plutôt que d'y entrer à moitié.
+ */
+function mediaOfAnchor(records: readonly ProductMediaRecord[]): RevisionMedia[] {
+  return records.map((record) => ({ role: record.role, url: record.url, alt: record.alt }));
 }

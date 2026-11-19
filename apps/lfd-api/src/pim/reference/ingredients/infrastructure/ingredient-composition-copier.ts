@@ -1,30 +1,28 @@
 import { Injectable } from "@nestjs/common";
 
 import type { WriteTicket } from "../../../../platform/journal/scoped-journal.js";
+import { ProductComposition } from "../domain/entities/product-composition.entity.js";
 import { ProductCompositionCopier } from "../domain/ports/product-composition.copier.js";
-import { IngredientRepository } from "../domain/ports/ingredient.repository.js";
+import { ProductCompositionRepository } from "../domain/ports/product-composition.repository.js";
 
 /**
  * La provenance recopie ce qu'une fiche cite sur une autre, pour le catalogue
- * (`ProductCompositionCopier`). Par son propre dépôt : la même lecture que
- * l'écran (`ofProduct`, dans l'ordre), le même remplacement d'un bloc que
- * l'enregistrement (`setOfProduct`). Une fiche qui ne cite rien ne s'écrit pas.
+ * (`ProductCompositionCopier`). Par son propre agrégat : la composition de
+ * l'origine, chargée, devient celle de la fiche née d'elle
+ * (`ProductComposition.copiedFrom`, archivés compris), et le même dépôt
+ * l'écrit d'un bloc. Une fiche qui ne cite rien ne s'écrit pas.
  */
 @Injectable()
 export class IngredientCompositionCopier extends ProductCompositionCopier {
-  constructor(private readonly ingredients: IngredientRepository) {
+  constructor(private readonly compositions: ProductCompositionRepository) {
     super();
   }
 
   async copy(fromProductId: string, toProductId: string, ticket: WriteTicket): Promise<void> {
-    const cited = await this.ingredients.ofProduct(fromProductId);
-    if (cited.length === 0) {
+    const origin = await this.compositions.load(fromProductId);
+    if (origin.keys.length === 0) {
       return;
     }
-    await this.ingredients.setOfProduct(
-      toProductId,
-      cited.map((row) => row.key),
-      ticket,
-    );
+    await this.compositions.save(ProductComposition.copiedFrom(origin, toProductId), ticket);
   }
 }

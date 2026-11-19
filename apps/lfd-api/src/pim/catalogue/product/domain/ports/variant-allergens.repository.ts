@@ -1,5 +1,5 @@
 import type { WriteTicket } from "../../../../../platform/journal/scoped-journal.js";
-import type { AllergenDeclaration } from "../value-objects/nutrition-declaration.js";
+import type { Product } from "../entities/product.js";
 
 /**
  * Écriture des **allergènes** d'une déclinaison — et rien d'autre.
@@ -13,11 +13,16 @@ import type { AllergenDeclaration } from "../value-objects/nutrition-declaration
  * Il ne revient pas dans `ProductRepository.save()` : celui-ci a douze
  * appelants — publier, archiver, renommer, régler un taux — et lui confier la
  * fiche étendrait le *lost update* à douze gestes, sur de la donnée d'étiquette.
+ *
+ * Il prend pourtant l'**agrégat** : ce qu'il écrit est la déclaration que la
+ * fiche porte (`Product.ownAllergenDeclaration`), après que son verbe l'a
+ * jugée (`declareAllergens` refuse une déclinaison d'une autre fiche). Il
+ * n'écrit que cette moitié, et seulement pour cette déclinaison.
+ *
+ * @throws {VariantNotFoundError} la déclinaison n'est pas sous cette fiche.
+ * @throws {TechnicalError} la déclinaison n'a rien déclaré — l'appelant
+ *   persiste une déclaration qu'il n'a pas posée.
  */
 export abstract class VariantAllergensRepository {
-  abstract save(
-    variantId: string,
-    declaration: AllergenDeclaration,
-    ticket: WriteTicket,
-  ): Promise<void>;
+  abstract save(product: Product, variantId: string, ticket: WriteTicket): Promise<void>;
 }

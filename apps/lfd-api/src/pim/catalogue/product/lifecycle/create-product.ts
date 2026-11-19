@@ -163,7 +163,7 @@ export class CreateProductHandler implements ICommandHandler<CreateProductComman
         },
       });
       await this.products.add(product, ticket);
-      await this.writeSheets(variantId, declaration, input, ticket);
+      await this.writeSheets(product, variantId, declaration, input, ticket);
       if (!isEmptyEditorial(story) || visuals.length > 0) {
         await this.editorials.save(productId, story, visuals, ticket);
       }
@@ -217,6 +217,7 @@ export class CreateProductHandler implements ICommandHandler<CreateProductComman
    * saisi », ce qui n'est pas vrai.
    */
   private async writeSheets(
+    product: Product,
     variantId: string,
     declaration: NutritionDeclaration | null,
     input: CreateProductInput,
@@ -225,7 +226,8 @@ export class CreateProductHandler implements ICommandHandler<CreateProductComman
     if (declaration === null) {
       return;
     }
-    await this.allergenSheets.save(variantId, declaration, ticket);
+    product.declareAllergens(variantId, declaration);
+    await this.allergenSheets.save(product, variantId, ticket);
     if (input.nutrition !== undefined) {
       await this.nutritionValues.save(variantId, declaration, ticket);
     }

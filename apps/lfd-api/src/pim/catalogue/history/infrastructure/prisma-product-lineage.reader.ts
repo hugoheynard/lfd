@@ -1,24 +1,21 @@
 import { Injectable } from "@nestjs/common";
 
 import { PimPrismaService } from "../../../infra/database/pim-prisma.service.js";
+import { CategoryChainReader } from "../../category/domain/ports/category-chain.reader.js";
+import { FamilyVatReader } from "../../category/domain/ports/family-vat.reader.js";
+import { ProductPlacementReader } from "../../product/domain/ports/product-placement.reader.js";
+import { ProductCompositionReader } from "../../../reference/ingredients/domain/ports/product-composition.reader.js";
+import { VatRateNamesReader } from "../../../reference/vat-rates/domain/ports/vat-rate-names.reader.js";
 import { effectiveVat } from "../../shared/domain/value-objects/context-vat.js";
 import { SOURCE_LOCALE } from "../../shared/domain/value-objects/localized-text.js";
-import { readLocalizedColumn } from "../../../shared/json-readers.js";
 import type { LineageLink, ProductLineage, RevisionMark } from "../domain/product-lineage.js";
 import { ProductLineageReader } from "../domain/ports/product-lineage.reader.js";
 
-/** Un arbre de familles n'a pas cette profondeur ; une boucle en base, si. */
-const MAX_CATEGORY_DEPTH = 32;
-
-interface CategoryRow {
-  readonly id: string;
-  readonly name: unknown;
-  readonly parentId: string | null;
-}
-
 /**
- * La lignée d'une fiche, lue dans les tables du référentiel — et seulement
- * elles.
+ * La lignée d'une fiche, composée de ce que ses propriétaires publient : la
+ * fiche dit où elle se tient, la famille sa chaîne et ses taux, les taux leur
+ * nom, la provenance ce que la fiche cite. Aucune table d'un voisin n'est lue
+ * ici.
  *
  * Le taux appliqué passe par `effectiveVat`, la règle unique « la fiche
  * d'abord, sa famille ensuite » : une seconde écriture de cette règle ici
@@ -26,48 +23,35 @@ interface CategoryRow {
  */
 @Injectable()
 export class PrismaProductLineageReader extends ProductLineageReader {
-  constructor(private readonly prisma: PimPrismaService) {
+  constructor(
+    private readonly prisma: PimPrismaService,
+    private readonly placements: ProductPlacementReader,
+    private readonly chains: CategoryChainReader,
+    private readonly familyVat: FamilyVatReader,
+    private readonly rateNames: VatRateNamesReader,
+    private readonly composition: ProductCompositionReader,
+  ) {
     super();
   }
 
   async lineageOf(productId: string): Promise<ProductLineage | null> {
-    const product = await this.prisma.product.findUnique({
-      where: { id: productId },
-      select: {
-        id: true,
-        categoryId: true,
-        contextVat: { select: { contextId: true, vatRateId: true } },
-        variants: { select: { sku: true } },
-        ingredients: {
-          orderBy: { position: "asc" },
-          select: {
-            ingredient: {
-              select: {
-                key: true,
-                name: true,
-                appellation: { select: { code: true, label: true } },
-              },
-            },
-          },
-        },
-      },
-    });
-    if (product === null) {
+    const placement = await this.placements.placementOf(productId);
+    if (placement === null) {
       return null;
     }
-    const cited = product.ingredients.map((row) => row.ingredient);
-    const [categories, vatRates, revisions] = await Promise.all([
-      this.categoryChain(product.categoryId),
-      this.appliedRates(product.categoryId, byContext(product.contextVat)),
-      this.revisionsHolding(product.variants.map((variant) => variant.sku)),
+    const [chain, vatRates, cited, revisions] = await Promise.all([
+      this.chains.chainOf(placement.categoryId),
+      this.appliedRates(placement.categoryId, placement.vatByContext),
+      this.composition.compositionOf(productId),
+      this.revisionsHolding(placement.variantSkus),
     ]);
     return {
-      productId: product.id,
-      categories,
+      productId: placement.productId,
+      categories: chain.map((link) => ({ id: link.id, label: link.name[SOURCE_LOCALE] })),
       vatRates,
       ingredients: cited.map((ingredient) => ({
         id: ingredient.key,
-        label: labelOf(ingredient.name, "ingredient.name"),
+        label: ingredient.name[SOURCE_LOCALE],
       })),
       appellations: uniqueById(
         cited.flatMap((ingredient) =>
@@ -76,7 +60,7 @@ export class PrismaProductLineageReader extends ProductLineageReader {
             : [
                 {
                   id: ingredient.appellation.code,
-                  label: labelOf(ingredient.appellation.label, "appellation.label"),
+                  label: ingredient.appellation.label[SOURCE_LOCALE],
                 },
               ],
         ),
@@ -85,51 +69,14 @@ export class PrismaProductLineageReader extends ProductLineageReader {
     };
   }
 
-  /**
-   * La famille, puis ses ancêtres jusqu'à la racine — en UNE requête (CTE
-   * récursive) plutôt qu'une par ancêtre. La profondeur est bornée en SQL :
-   * une boucle en base s'arrête là, et la chaîne s'arrête au premier retour.
-   */
-  private async categoryChain(familyId: string): Promise<LineageLink[]> {
-    const rows = await this.prisma.$queryRaw<CategoryRow[]>`
-      WITH RECURSIVE chain AS (
-        SELECT id, name, parent_id, 1 AS depth FROM pim.category WHERE id = ${familyId}
-        UNION ALL
-        SELECT c.id, c.name, c.parent_id, chain.depth + 1
-          FROM pim.category c JOIN chain ON c.id = chain.parent_id
-         WHERE chain.depth < ${MAX_CATEGORY_DEPTH}
-      )
-      SELECT id, name, parent_id AS "parentId" FROM chain ORDER BY depth`;
-    const chain: LineageLink[] = [];
-    const seen = new Set<string>();
-    for (const row of rows) {
-      if (seen.has(row.id)) {
-        break;
-      }
-      seen.add(row.id);
-      chain.push({ id: row.id, label: labelOf(row.name, "category.name") });
-    }
-    return chain;
-  }
-
-  /** Les taux effectivement appliqués, contexte par contexte. */
+  /** Les taux effectivement appliqués, contexte par contexte. Une famille inconnue n'en apporte aucun. */
   private async appliedRates(
     familyId: string,
     productVat: Readonly<Record<string, string>>,
   ): Promise<LineageLink[]> {
-    const familyRows = await this.prisma.categoryContextVat.findMany({
-      where: { categoryId: familyId },
-      select: { contextId: true, vatRateId: true },
-    });
-    const applied = [...new Set(Object.values(effectiveVat(byContext(familyRows), productVat)))];
-    if (applied.length === 0) {
-      return [];
-    }
-    const rates = await this.prisma.vatRate.findMany({
-      where: { id: { in: applied } },
-      select: { id: true, name: true },
-      orderBy: { percent: "asc" },
-    });
+    const familyVat = (await this.familyVat.vatOf(familyId)) ?? {};
+    const applied = [...new Set(Object.values(effectiveVat(familyVat, productVat)))];
+    const rates = await this.rateNames.namesOf(applied);
     return rates.map((rate) => ({ id: rate.id, label: rate.name }));
   }
 
@@ -145,16 +92,6 @@ export class PrismaProductLineageReader extends ProductLineageReader {
     });
     return rows.map((row) => ({ id: row.revision.id, hash: row.revision.hash }));
   }
-}
-
-function byContext(
-  rows: readonly { readonly contextId: string; readonly vatRateId: string }[],
-): Readonly<Record<string, string>> {
-  return Object.fromEntries(rows.map((row) => [row.contextId, row.vatRateId]));
-}
-
-function labelOf(column: unknown, field: string): string {
-  return readLocalizedColumn(column, field)[SOURCE_LOCALE];
 }
 
 function uniqueById(links: readonly LineageLink[]): LineageLink[] {

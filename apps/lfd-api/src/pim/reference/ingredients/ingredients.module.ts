@@ -23,6 +23,9 @@ import { IngredientController } from "./http/ingredient.controller.js";
 import { PrismaAppellationRepository } from "./infrastructure/prisma-appellation.repository.js";
 import { PrismaIngredientRepository } from "./infrastructure/prisma-ingredient.repository.js";
 import { PrismaCitedAllergensReader } from "./infrastructure/prisma-cited-allergens.reader.js";
+import { PrismaProductCompositionReader } from "./infrastructure/prisma-product-composition.reader.js";
+import { ProductCompositionRepository } from "./domain/ports/product-composition.repository.js";
+import { PrismaProductCompositionRepository } from "./infrastructure/prisma-product-composition.repository.js";
 import { PrismaIngredientCitationsReader } from "./infrastructure/prisma-ingredient-citations.reader.js";
 import { IngredientCompositionCopier } from "./infrastructure/ingredient-composition-copier.js";
 
@@ -59,18 +62,22 @@ import { IngredientCompositionCopier } from "./infrastructure/ingredient-composi
     ReadProductIngredientsHandler,
     { provide: AppellationRepository, useClass: PrismaAppellationRepository },
     { provide: IngredientRepository, useClass: PrismaIngredientRepository },
+    { provide: ProductCompositionRepository, useClass: PrismaProductCompositionRepository },
     PrismaCitedAllergensReader,
     PrismaIngredientCitationsReader,
+    PrismaProductCompositionReader,
     IngredientCompositionCopier,
   ],
   // Les adaptateurs des ports que le CATALOGUE déclare (`CitedAllergensReader`,
-  // `IngredientCitationsReader`), et l'écrivain qu'il déclare pour le
+  // `IngredientCitationsReader`), le lecteur qu'elle publie pour la lignée d'une
+  // fiche (`ProductCompositionReader`), et l'écrivain qu'il déclare pour le
   // détachement d'une déclinaison (`ProductCompositionCopier`).
   // Exporté, pas fourni sous son token : c'est la racine qui relie les deux
   // côtés (`appBootstrap/cited-allergens-feed.module.ts`).
   exports: [
     PrismaCitedAllergensReader,
     PrismaIngredientCitationsReader,
+    PrismaProductCompositionReader,
     IngredientCompositionCopier,
   ],
 })

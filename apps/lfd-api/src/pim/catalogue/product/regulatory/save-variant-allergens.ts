@@ -63,7 +63,8 @@ export class SaveVariantAllergensHandler implements ICommandHandler<
     // déclarer.
     //
     // 🔴 Il ne PERSISTE pas pour autant : l'écriture reste au port dédié, qui
-    // n'écrit que cette table (§6a du plan). La confier à `products.save` ferait
+    // lit la déclaration sur l'agrégat et n'écrit que cette table (§6a du
+    // plan). La confier à `products.save` ferait
     // qu'un renommage ou une publication écrase une déclaration faite entre
     // temps, par les douze appelants qu'il a.
     product.declareAllergens(variantId, declaration);
@@ -92,7 +93,7 @@ export class SaveVariantAllergensHandler implements ICommandHandler<
               },
             })
           : this.journal.untraced("section enregistrée sans modification");
-      await this.allergenSheets.save(variantId, declaration, ticket);
+      await this.allergenSheets.save(product, variantId, ticket);
       await this.emitter.emitProducts([productId]);
     });
   }

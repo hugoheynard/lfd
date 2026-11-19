@@ -1,9 +1,10 @@
-import { SalesContextRegistry } from "../domain/ports/sales-context.registry.js";
+import { SalesContextRegistry } from "../ports/sales-context.registry.js";
 
 /**
  * **Les libellés du moment des contextes qu'un fait cite par leur clé** — la
- * table `contextLabels` des charges du journal (D5 du plan des phrases, lot D,
- * 2026-09-19).
+ * table `contextLabels` des charges du journal. Un service du domaine, sur le
+ * seul port du registre : le catalogue et les taux le lisent sans entrer dans
+ * l'application des contextes de vente.
  *
  * Une clé de contexte est ce qu'un record de charge emploie (`vatByContext`,
  * `blast.families`) ; seule, elle ne dit rien d'un contexte créé à l'écran

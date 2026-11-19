@@ -112,8 +112,7 @@ export class DetachProductVariantHandler implements ICommandHandler<
     await this.products.add(born, ticket);
     await this.products.save(born, ticket);
     if (variant?.allergenSheet != null) {
-      const { declared, mayContain } = variant.allergenSheet;
-      await this.allergenSheets.save(variant.id, { allergens: declared, mayContain }, ticket);
+      await this.allergenSheets.save(born, variant.id, ticket);
     }
     if (variant?.nutrition != null) {
       await this.nutritionValues.save(variant.id, copiedNutrition(variant.nutrition), ticket);

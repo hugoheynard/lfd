@@ -74,6 +74,18 @@ export abstract class ProductVariantGestures {
     this.lineup.get(variantId).declareAllergens(declaration);
   }
 
+  /**
+   * **Ce qu'une déclinaison déclare elle-même** comme allergènes et traces —
+   * sa moitié propre, héritage non résolu : ce que le dépôt des allergènes
+   * persiste. `null` tant qu'elle n'a rien déclaré.
+   *
+   * @throws {VariantNotFoundError} la déclinaison n'est pas sous cette fiche.
+   */
+  ownAllergenDeclaration(variantId: string): AllergenDeclaration | null {
+    const sheet = this.lineup.get(variantId).snapshot().allergenSheet;
+    return sheet === null ? null : { allergens: sheet.declared, mayContain: sheet.mayContain };
+  }
+
   /** **Les valeurs d'une déclinaison**, sans toucher à ses allergènes. */
   declareNutritionValues(variantId: string, values: VariantNutritionValues): void {
     this.lineup.get(variantId).declareNutritionValues(values);

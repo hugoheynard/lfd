@@ -13,7 +13,6 @@ import type { AppellationSnapshot } from "../domain/entities/appellation.entity.
 import { IngredientAggregate } from "../domain/entities/ingredient.entity.js";
 import {
   IngredientKeyTakenError,
-  IngredientNotFoundError,
   UnknownIngredientAllergenError,
 } from "../domain/errors/ingredient-errors.js";
 import {
@@ -177,48 +176,16 @@ export class PrismaIngredientRepository extends IngredientRepository {
   }
 
   /**
-   * Remplace ce qu'une fiche cite, **dans l'ordre reçu**.
-   *
-   * Table rase puis réécriture, et non un différentiel : l'ordre fait partie de
-   * la donnée, et rejouer un différentiel sur des rangs revient à recalculer
-   * toute la liste de toute façon. Les deux ordres partent dans la transaction
-   * du handler, donc la fiche n'est jamais vue sans ses ingrédients.
-   */
-  async setOfProduct(productId: string, keys: readonly string[]): Promise<void> {
-    // Un ingrédient cité deux fois est une liste, pas deux citations : le
-    // doublon est écarté ici plutôt que de heurter la clé primaire, qui
-    // rendrait une violation d'unicité là où il n'y a qu'une redite.
-    const wanted = [...new Set(keys)];
-    const found = await this.prisma.ingredient.findMany({
-      where: { key: { in: wanted } },
-      select: { id: true, key: true },
-    });
-    const idOfKey = new Map(found.map((row) => [row.key, row.id]));
-    const data = wanted.map((key, position) => {
-      const ingredientId = idOfKey.get(key);
-      if (ingredientId === undefined) {
-        throw new IngredientNotFoundError(key);
-      }
-      return { productId, ingredientId, position };
-    });
-
-    await this.prisma.productIngredient.deleteMany({ where: { productId } });
-    if (data.length > 0) {
-      await this.prisma.productIngredient.createMany({ data });
-    }
-  }
-
-  /**
    * Aligne les liaisons d'allergènes sur ce que porte l'agrégat.
    *
-   * Un **différentiel** et non la table rase de `setOfProduct` : là-bas l'ordre
+   * Un **différentiel** et non la table rase de la composition (`PrismaProductCompositionRepository.save`) : là-bas l'ordre
    * fait partie de la donnée, si bien qu'un différentiel reviendrait à
    * recalculer toute la liste ; ici c'est un ensemble sans ordre, et `save()`
    * est appelé par TOUS les gestes de l'ingrédient — renommer une matière
    * réécrirait sinon ses liaisons à chaque fois, pour rien.
    *
    * La traduction code → identifiant technique vit ici, comme celle des clés
-   * d'ingrédients dans `setOfProduct` : le fil et le journal parlent en codes,
+   * d'ingrédients de la composition : le fil et le journal parlent en codes,
    * la base joint par identifiant. Un code absent du référentiel est refusé —
    * le handler l'a déjà vérifié, mais un dépôt ne suppose pas son appelant.
    */

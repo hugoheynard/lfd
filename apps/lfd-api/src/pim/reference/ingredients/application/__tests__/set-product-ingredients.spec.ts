@@ -9,6 +9,7 @@ import {
 import {
   InMemoryAppellationRepository,
   InMemoryIngredientRepository,
+  InMemoryProductCompositionRepository,
 } from "./in-memory-repositories.js";
 import { RecordingCatalogEmitter } from "../../../../shared/__tests__/catalog-emitter-doubles.js";
 
@@ -37,6 +38,7 @@ describe("SetProductIngredientsHandler", () => {
     await declare(ingredients, "farine");
     await declare(ingredients, "sucre");
     const handler = new SetProductIngredientsHandler(
+      new InMemoryProductCompositionRepository(ingredients),
       ingredients,
       new RecordingJournal(),
       new DirectUnitOfWork(),
@@ -54,6 +56,7 @@ describe("SetProductIngredientsHandler", () => {
     const ingredients = new InMemoryIngredientRepository();
     await declare(ingredients, "beurre");
     const handler = new SetProductIngredientsHandler(
+      new InMemoryProductCompositionRepository(ingredients),
       ingredients,
       new RecordingJournal(),
       new DirectUnitOfWork(),
@@ -73,6 +76,7 @@ describe("SetProductIngredientsHandler", () => {
       await declare(ingredients, "farine");
       const journal = new RecordingJournal();
       const handler = new SetProductIngredientsHandler(
+        new InMemoryProductCompositionRepository(ingredients),
         ingredients,
         journal,
         new DirectUnitOfWork(),
@@ -95,6 +99,7 @@ describe("SetProductIngredientsHandler", () => {
       await declare(ingredients, "farine");
       const journal = new RecordingJournal();
       const handler = new SetProductIngredientsHandler(
+        new InMemoryProductCompositionRepository(ingredients),
         ingredients,
         journal,
         new DirectUnitOfWork(),
@@ -130,6 +135,7 @@ describe("SetProductIngredientsHandler", () => {
       const ingredients = new InMemoryIngredientRepository();
       const journal = new RecordingJournal();
       const handler = new SetProductIngredientsHandler(
+        new InMemoryProductCompositionRepository(ingredients),
         ingredients,
         journal,
         new DirectUnitOfWork(),

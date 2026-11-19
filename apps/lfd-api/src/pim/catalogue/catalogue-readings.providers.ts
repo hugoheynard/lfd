@@ -16,6 +16,14 @@ import { ProductImageHolders } from "./product/domain/ports/product-image-holder
 import { ProductImageRepointing } from "./product/domain/ports/product-image-repointing.js";
 import { PrismaProductImageHolders } from "./product/infrastructure/prisma-product-image-holders.js";
 import { PrismaProductImageRepointing } from "./product/infrastructure/prisma-product-image-repointing.js";
+import { ProductTalliesReader } from "./product/domain/ports/product-tallies.reader.js";
+import { PrismaProductTalliesReader } from "./product/infrastructure/prisma-product-tallies.reader.js";
+import { ProductPlacementReader } from "./product/domain/ports/product-placement.reader.js";
+import { PrismaProductPlacementReader } from "./product/infrastructure/prisma-product-placement.reader.js";
+import { CategoryIdsReader } from "./category/domain/ports/category-ids.reader.js";
+import { PrismaCategoryIdsReader } from "./category/infrastructure/prisma-category-ids.reader.js";
+import { CategoryChainReader } from "./category/domain/ports/category-chain.reader.js";
+import { PrismaCategoryChainReader } from "./category/infrastructure/prisma-category-chain.reader.js";
 import { CategoryImageHolders } from "./category/domain/ports/category-image-holders.js";
 import { CategoryImageRepointing } from "./category/domain/ports/category-image-repointing.js";
 import { PrismaCategoryImageHolders } from "./category/infrastructure/prisma-category-image-holders.js";
@@ -33,6 +41,10 @@ export const CATALOGUE_READINGS: readonly Provider[] = [
   { provide: ProductRecordsReader, useClass: RepositoryProductRecordsReader },
   { provide: CategorySnapshotsReader, useClass: RepositoryCategorySnapshotsReader },
   { provide: EffectiveVatReader, useClass: ResolvedEffectiveVatReader },
+  { provide: ProductTalliesReader, useClass: PrismaProductTalliesReader },
+  { provide: ProductPlacementReader, useClass: PrismaProductPlacementReader },
+  { provide: CategoryIdsReader, useClass: PrismaCategoryIdsReader },
+  { provide: CategoryChainReader, useClass: PrismaCategoryChainReader },
   { provide: ProductImageHolders, useClass: PrismaProductImageHolders },
   { provide: ProductImageRepointing, useClass: PrismaProductImageRepointing },
   { provide: CategoryImageHolders, useClass: PrismaCategoryImageHolders },

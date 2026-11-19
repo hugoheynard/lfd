@@ -14,13 +14,27 @@ import type { Editorial, MediaItem } from "../value-objects/editorial.js";
  * premier écran ouvert sur une donnée qu'il ne connaît pas.
  */
 export abstract class EditorialRepository {
+  /**
+   * Un CRUD, et c'est voulu : aucune règle ne peut refuser ces textes une fois
+   * la fiche trouvée. Leur forme est tenue par le value object (`editorial`) ;
+   * l'existence de la fiche, supprimée comprise, par `requireProduct` ; et une
+   * fiche archivée reçoit ses textes comme une fiche en vente. Un agrégat
+   * n'aurait aucun invariant à porter.
+   */
   abstract save(
     productId: string,
     editorial: Editorial,
     media: readonly MediaItem[],
     ticket: WriteTicket,
   ): Promise<void>;
-  /** Remplace la liste entière des visuels, dans l'ordre reçu. */
+  /**
+   * Remplace la liste entière des visuels, dans l'ordre reçu.
+   *
+   * Un CRUD, pour la même raison que `save` : la liste est jugée par
+   * construction (`mediaItems` — URL obligatoire, rôle unique là où il doit
+   * l'être, position dérivée du rang), et rien de l'état de la fiche ne la
+   * refuse.
+   */
   abstract replaceMedia(
     productId: string,
     media: readonly MediaItem[],

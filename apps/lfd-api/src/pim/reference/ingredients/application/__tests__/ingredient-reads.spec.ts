@@ -15,6 +15,7 @@ import {
 import {
   InMemoryAppellationRepository,
   InMemoryIngredientRepository,
+  InMemoryProductCompositionRepository,
 } from "./in-memory-repositories.js";
 import { RecordingCatalogEmitter } from "../../../../shared/__tests__/catalog-emitter-doubles.js";
 import { DirectPimContents } from "../../../../changes/application/__tests__/direct-pim-contents.js";
@@ -77,6 +78,7 @@ async function cite(
   keys: readonly string[],
 ): Promise<void> {
   await new SetProductIngredientsHandler(
+    new InMemoryProductCompositionRepository(ingredients),
     ingredients,
     new RecordingJournal(),
     new DirectUnitOfWork(),

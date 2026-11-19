@@ -91,8 +91,7 @@ export class MakeVariantDefaultHandler implements ICommandHandler<MakeVariantDef
   ): Promise<void> {
     const variant = variantSnapshotOf(product.persistenceSnapshot(), variantId);
     if (change.inherited.allergens && variant.allergenSheet !== null) {
-      const { declared, mayContain } = variant.allergenSheet;
-      await this.allergenSheets.save(variantId, { allergens: declared, mayContain }, ticket);
+      await this.allergenSheets.save(product, variantId, ticket);
     }
     if (change.inherited.nutrition && variant.nutrition !== null) {
       await this.nutritionValues.save(variantId, copiedNutrition(variant.nutrition), ticket);

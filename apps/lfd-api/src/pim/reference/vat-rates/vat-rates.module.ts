@@ -9,6 +9,8 @@ import { ArchiveVatRateHandler } from "./application/archive-vat-rate.js";
 import { RestoreVatRateHandler } from "./application/restore-vat-rate.js";
 import { UpdateVatRateHandler } from "./application/update-vat-rate.js";
 import { VatRateRepository } from "./domain/ports/vat-rate.repository.js";
+import { VatRateNamesReader } from "./domain/ports/vat-rate-names.reader.js";
+import { PrismaVatRateNamesReader } from "./infrastructure/prisma-vat-rate-names.reader.js";
 import { VatRateUsageReader } from "./domain/ports/vat-rate-usage.reader.js";
 import { VatRateLock } from "./domain/ports/vat-rate.lock.js";
 import { VatRateController } from "./http/vat-rate.controller.js";
@@ -32,7 +34,8 @@ import { PrismaVatRateLock } from "./infrastructure/prisma-vat-rate.lock.js";
  * **taux de TVA**. Modèle **CQRS** : les contrôleurs dispatchent sur les bus, les
  * handlers portent les invariants. Exporte `VatRateRepository` pour que les
  * catégories puissent valider leurs références (`emporterTvaId` / `surPlaceTvaId`),
- * et `VatRateLock` pour qu'elles les verrouillent avant de les relire.
+ * `VatRateLock` pour qu'elles les verrouillent avant de les relire, et
+ * `VatRateNamesReader` pour qu'un lecteur nomme un taux sans charger l'agrégat.
  */
 @Module({
   imports: [PimDatabaseModule, PimChangesModule, SalesContextsModule],
@@ -40,6 +43,7 @@ import { PrismaVatRateLock } from "./infrastructure/prisma-vat-rate.lock.js";
   providers: [
     { provide: VatRateRepository, useClass: PrismaVatRateRepository },
     { provide: VatRateUsageReader, useClass: PrismaVatRateUsageReader },
+    { provide: VatRateNamesReader, useClass: PrismaVatRateNamesReader },
     { provide: VatRateLock, useClass: PrismaVatRateLock },
     CreateVatRateHandler,
     UpdateVatRateHandler,
@@ -47,6 +51,6 @@ import { PrismaVatRateLock } from "./infrastructure/prisma-vat-rate.lock.js";
     RestoreVatRateHandler,
     ListVatRatesHandler,
   ],
-  exports: [VatRateRepository, VatRateLock],
+  exports: [VatRateRepository, VatRateLock, VatRateNamesReader],
 })
 export class VatRatesModule {}
