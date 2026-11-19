@@ -179,14 +179,13 @@ export class PrelevementDEssaiPage {
     return day(row.requestedCollectionDay);
   }
 
-  /** « 2 lignes — 1,50 € au total, échéance le 5 nov. 2026 · généré le … par … ». */
+  /** « 2 lignes, échéance le 5 nov. 2026 · généré le … par … » — sans total : l'écran n'additionne pas d'argent. */
   protected fileSummary(file: TestFile): string {
     const [first] = file.lines;
     const count = file.lines.length === 1 ? '1 ligne' : `${file.lines.length} lignes`;
-    const total = euros(file.lines.reduce((sum, line) => sum + line.amountCents, 0));
     return first === undefined
       ? count
-      : `${count} — ${total} au total, échéance le ${this.dueOf(first)} · ${this.createdOf(first)}`;
+      : `${count}, échéance le ${this.dueOf(first)} · ${this.createdOf(first)}`;
   }
 
   protected createdOf(row: CollectionTestView): string {

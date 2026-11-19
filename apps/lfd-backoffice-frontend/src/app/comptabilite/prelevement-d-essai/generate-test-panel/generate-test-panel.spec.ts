@@ -126,7 +126,7 @@ describe('GenerateTestPanel', () => {
       amount: '1,00',
       sequence: 'RCUR',
     });
-    expect(summary(fixture)).toBe('1 ligne — 1,00 € au total.');
+    expect(summary(fixture)).toBe('1 ligne.');
   });
 
   it('l’échéance commune remonte à la plus tardive des lignes cochées', () => {
@@ -146,7 +146,7 @@ describe('GenerateTestPanel', () => {
     p.toggle('c2', true);
     p.amount('c2', '0,50');
 
-    expect(summary(fixture)).toBe('2 lignes — 1,50 € au total.');
+    expect(summary(fixture)).toBe('2 lignes.');
     expect(fixture.componentInstance['canSubmit']()).toBe(true);
 
     p.amount('c2', 'abc');

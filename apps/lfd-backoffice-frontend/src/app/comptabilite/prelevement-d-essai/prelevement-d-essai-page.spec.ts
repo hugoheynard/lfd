@@ -220,16 +220,16 @@ describe('PrelevementDEssaiPage', () => {
     ]);
   });
 
-  it('chaque envoi a sa carte, son total et un seul Prélèvement', async () => {
+  it('chaque envoi a sa carte et un seul Prélèvement', async () => {
     const fixture = await render(['collection_test:read', 'collection_test:write']);
     const cards = Array.from(
       (fixture.nativeElement as HTMLElement).querySelectorAll<HTMLElement>('[data-file]'),
     );
 
     expect(cards).toHaveLength(2);
-    expect(cards[0]?.textContent).toContain('2 lignes — 0,84');
+    expect(cards[0]?.textContent).toContain('2 lignes, échéance');
     expect(cards[0]?.querySelectorAll('[data-download="debit"]')).toHaveLength(1);
-    expect(cards[1]?.textContent).toContain('1 ligne — 0,42');
+    expect(cards[1]?.textContent).toContain('1 ligne, échéance');
   });
 
   it('chaque ligne offre RIB puis Mandat', async () => {

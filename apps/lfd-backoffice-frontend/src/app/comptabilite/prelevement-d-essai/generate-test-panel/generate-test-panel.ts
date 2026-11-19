@@ -158,7 +158,7 @@ export class GenerateTestPanel {
     return payload;
   });
 
-  /** « 2 lignes — 1,50 € au total », ou ce qui manque. */
+  /** « 2 lignes », ou ce qui manque. Chaque ligne montre son montant : l'écran n'additionne pas d'argent. */
   protected readonly summary = computed(() => {
     const count = this.lines().size;
     if (count === 0) {
@@ -169,8 +169,7 @@ export class GenerateTestPanel {
     if (payload === null) {
       return `${lines} — un montant est à reprendre.`;
     }
-    const total = payload.reduce((sum, line) => sum + line.amountCents, 0);
-    return `${lines} — ${euros(total)} au total.`;
+    return `${lines}.`;
   });
 
   protected readonly canSubmit = computed(
