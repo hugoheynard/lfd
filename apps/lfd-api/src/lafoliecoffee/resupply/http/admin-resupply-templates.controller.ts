@@ -25,7 +25,7 @@ import type { ResupplyTemplateContent } from "../domain/resupply-template.js";
 
 /**
  * **La bibliothèque des modèles de réassort d'un point** (plan
- * `documentation/reassort-boutiques/plan-modeles-de-reassort.md`, § 5).
+ * `documentation/reassort-boutiques/commander.md § 6`, § 5).
  *
  * Sous `resupply_templates` (M2) pour créer, ajuster, archiver. La lecture
  * s'ouvre aussi au comptoir (`handover_counter:read`) et au fournil

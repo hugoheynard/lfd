@@ -52,7 +52,7 @@ export class SiteResuppliesService {
 
   /**
    * Applique un modèle à la demande en cours de la visée (plan
-   * `plan-modeles-de-reassort.md`, § 4) : `replace` pose le modèle, `add`
+   * `commander.md § 6`, § 4) : `replace` pose le modèle, `add`
    * additionne. `intentKey` est la clé du geste : la même requête renvoyée
    * rend la même réponse sans appliquer deux fois.
    */

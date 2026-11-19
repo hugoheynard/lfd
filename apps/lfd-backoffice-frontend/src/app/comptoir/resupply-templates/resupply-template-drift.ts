@@ -11,7 +11,7 @@ export interface DriftLine {
 /**
  * **L'écart entre un modèle et la demande qu'on en a tirée**, en une phrase
  * du comptoir : « +2 Croissant, −1 Tradition, 1 article ajouté, 1 retiré »
- * (plan `plan-modeles-de-reassort.md`, § 4). Les quantités changées sont
+ * (plan `commander.md § 6`, § 4). Les quantités changées sont
  * nommées, dans l'ordre de la demande puis du modèle ; les articles ajoutés ou
  * retirés sont comptés. Au poids, l'écart se dit en grammes ou en kilos
  * (`saleQuantityLabel`) : « +250 g Saumon », jamais « +250 ».

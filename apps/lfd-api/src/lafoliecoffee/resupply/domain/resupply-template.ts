@@ -24,7 +24,7 @@ export interface ResupplyTemplateSnapshot {
 
 /**
  * **Un modèle de réassort** (plan
- * `documentation/reassort-boutiques/plan-modeles-de-reassort.md`) — un
+ * `documentation/reassort-boutiques/commander.md § 6`) — un
  * raccourci de saisie d'un point, jetable : aucun réassort ne le référence,
  * et il ne garde pas d'historique.
  *

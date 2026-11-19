@@ -1031,7 +1031,7 @@ export const routes: Routes = [
       },
       {
         // LES MODÈLES DE RÉASSORT — la bibliothèque d'un point (plan
-        // `reassort-boutiques/plan-modeles-de-reassort.md`, § 6). Lire sous
+        // `reassort-boutiques/commander.md § 6`, § 6). Lire sous
         // `resupply_templates:read` ; composer sous l'écriture.
         path: 'modeles-reassort',
         canActivate: [permissionGuard('resupply_templates:read')],

@@ -576,7 +576,7 @@ describe('BakehouseResupplyCard', () => {
   });
 });
 
-describe('BakehouseResupplyCard — partir d’un modèle (plan-modeles-de-reassort.md, T4)', () => {
+describe('BakehouseResupplyCard — partir d’un modèle (commander.md § 6, T4)', () => {
   async function settled(fixture: Awaited<ReturnType<typeof mount>>['fixture']): Promise<void> {
     await new Promise((resolve) => setTimeout(resolve));
     await fixture.whenStable();

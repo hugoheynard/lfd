@@ -106,7 +106,7 @@ export interface ToolGroup {
  *   `b2b_accounting` (2026-10-22, plan `plan-prelevement-d-essai.md`) ; sa clé
  *   n'a pas de préfixe d'outil.
  * - `resupply_templates` : les modèles de réassort se tiennent au comptoir
- *   (Comptoir › Réassort, plan `plan-modeles-de-reassort.md`, 2026-11-19) ;
+ *   (Comptoir › Réassort, plan `commander.md § 6`, 2026-11-19) ;
  *   rangés au retrait, avec `handover_counter`, plutôt qu'en « Transverse ».
  */
 const RESOURCE_TOOL_EXCEPTIONS: Readonly<Partial<Record<StaffResource, StaffTool>>> = {

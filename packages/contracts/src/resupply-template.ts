@@ -5,7 +5,7 @@ import { RESUPPLY_TARGETS, type ResupplyTarget } from "./site-resupply.js";
 
 /**
  * **Les modèles de réassort d'un point** (« Base matin », « Réassort
- * après-midi ») — plan `documentation/reassort-boutiques/plan-modeles-de-reassort.md`.
+ * après-midi ») — plan `documentation/reassort-boutiques/commander.md § 6`.
  *
  * Un raccourci de saisie : une liste d'articles et de quantités, qu'on
  * applique à la demande en cours puis qu'on ajuste. Il ne part jamais seul,

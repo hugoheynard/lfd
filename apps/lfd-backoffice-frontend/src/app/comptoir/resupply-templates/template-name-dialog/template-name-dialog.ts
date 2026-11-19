@@ -32,7 +32,7 @@ export interface TemplateNameDialogData {
 
 /**
  * **« Enregistrer comme modèle »** — le nom du modèle, demandé au comptoir
- * (plan `plan-modeles-de-reassort.md`, § 4). Rend le nom enregistré, rien si
+ * (plan `commander.md § 6`, § 4). Rend le nom enregistré, rien si
  * l'on ferme.
  */
 @Component({

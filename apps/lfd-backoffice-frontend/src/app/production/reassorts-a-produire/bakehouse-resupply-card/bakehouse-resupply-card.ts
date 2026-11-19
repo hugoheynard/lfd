@@ -312,7 +312,7 @@ export class BakehouseResupplyCard {
   }
 
   /**
-   * **« Partir d'un modèle »** (plan `plan-modeles-de-reassort.md`, T4) : le
+   * **« Partir d'un modèle »** (plan `commander.md § 6`, T4) : le
    * modèle REMPLIT la composition de la carte, sans aucun appel — elle reste
    * locale jusqu'à « Envoyer » ou « Enregistrer comme brouillon ». Une carte
    * déjà remplie demande « Remplacer · Ajouter », comme au comptoir. La visée

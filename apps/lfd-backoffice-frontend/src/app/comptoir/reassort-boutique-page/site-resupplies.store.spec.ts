@@ -75,7 +75,7 @@ describe('SiteResuppliesStore — annuler un réassort lancé (R4a)', () => {
   });
 });
 
-describe('SiteResuppliesStore — appliquer un modèle (plan-modeles-de-reassort.md, § 4)', () => {
+describe('SiteResuppliesStore — appliquer un modèle (commander.md § 6, § 4)', () => {
   async function opened(): Promise<{ store: SiteResuppliesStore; fake: FakeResupplies }> {
     const fake = new FakeResupplies();
     TestBed.resetTestingModule();

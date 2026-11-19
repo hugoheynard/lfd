@@ -29,7 +29,7 @@ import { currentDraft } from "./site-resupply-draft.js";
 
 /**
  * **Applique un modèle à la demande en cours** (plan
- * `documentation/reassort-boutiques/plan-modeles-de-reassort.md`, § 4) :
+ * `documentation/reassort-boutiques/commander.md § 6`, § 4) :
  * le modèle actif du point, ses lignes confrontées au catalogue du réassort
  * (les inapplicables écartées et rendues), posées sur la demande en cours de
  * la visée — ouverte si aucune ne l'est. Un réassort envoyé n'est jamais

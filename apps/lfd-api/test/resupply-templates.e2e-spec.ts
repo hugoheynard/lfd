@@ -1,6 +1,6 @@
 /**
  * E2E des **modèles de réassort** d'un point (plan
- * `documentation/reassort-boutiques/plan-modeles-de-reassort.md`, lot T1).
+ * `documentation/reassort-boutiques/commander.md § 6`, lot T1).
  *
  * Ce qui ne s'éprouve qu'ici : les droits de la bibliothèque (trois droits
  * ouvrent la lecture, un seul l'écriture), l'index unique partiel du nom

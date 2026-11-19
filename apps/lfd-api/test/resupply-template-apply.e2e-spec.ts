@@ -1,6 +1,6 @@
 /**
  * E2E de l'**application d'un modèle de réassort** à la demande en cours
- * (plan `documentation/reassort-boutiques/plan-modeles-de-reassort.md`, § 4,
+ * (plan `documentation/reassort-boutiques/commander.md § 6`, § 4,
  * lot T3).
  *
  * Ce qui ne s'éprouve qu'ici : le droit du comptoir, la clé d'intention

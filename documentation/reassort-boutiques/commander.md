@@ -220,3 +220,85 @@ réserve ». Seule la réserve du jour sort. La clé du panneau est
 l'identifiant du réassort ; prise par un autre point, elle est refusée en
 409 (C-B, 2026-11-02), plus jamais avalée. Détail :
 [`../commandes/annulation/plan-a1-4-envoyer-en-boutique.md`](../commandes/annulation/plan-a1-4-envoyer-en-boutique.md).
+
+## 6. Les modèles de réassort — des raccourcis par point
+
+Demandé par le responsable des comptoirs, décidé par Hugo le 2026-11-19 :
+une **bibliothèque de modèles** par point (« Base matin », « Réassort
+après-midi »), qu'on applique à une demande, qu'on ajuste, et qu'on affine
+quand l'habitude change. Un modèle est un **raccourci de saisie jetable** :
+ce qui compte est le réassort envoyé, qui ne sait pas de quel modèle il est
+parti, et le modèle ne garde aucun historique.
+
+```mermaid
+flowchart LR
+  L["Bibliothèque du point<br/>Base matin · Après-midi"] -->|"« Appliquer »"| D["Demande en cours<br/>du comptoir"]
+  L -->|"« Partir d'un modèle »"| B["Composition du fournil<br/>(locale à l'écran)"]
+  D -->|"ajuster, « Envoyer »"| S["SiteResupply envoyé"]
+  D -.->|"« Enregistrer comme modèle »<br/>« Mettre à jour le modèle »"| L
+  G["Comptoir › Modèles de réassort<br/>droit resupply_templates"] -->|"créer · ajuster · archiver"| L
+```
+
+**Les décisions**, que le code cite par leur numéro :
+
+| #   | Règle                                                                                                                                                                       |
+| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| M1  | Un modèle appartient à **un point** et n'en change jamais.                                                                                                                  |
+| M2  | Créer, ajuster, archiver demandent **`resupply_templates`** (accordé à l'écran des rôles, jamais par migration).                                                            |
+| M3  | Un modèle s'ajuste (nom, visée proposée, lignes) sous **verrou de version** : une version périmée est refusée (409), jamais écrasée.                                        |
+| M4  | Lire la bibliothèque d'un point : `resupply_templates:read`, `handover_counter:read` ou `production_resupply:read`. Appliquer au comptoir : `handover_counter:write`.       |
+| M5  | Sur une demande non vide, l'écran demande **Remplacer** ou **Ajouter** (les quantités s'additionnent) ; vide, il remplace.                                                  |
+| M6  | Un article retiré du catalogue ou dont l'unité a changé est **écarté à l'application** et nommé ; le modèle n'est jamais corrigé en douce, la bibliothèque marque la ligne. |
+| M7  | Pas de suppression : un modèle **s'archive**, et son nom redevient libre.                                                                                                   |
+| M8  | **Aucun lien** du réassort vers son modèle, **aucune révision** du modèle.                                                                                                  |
+
+**L'agrégat** `ResupplyTemplate` (`apps/lfd-api/src/lafoliecoffee/resupply/domain/resupply-template.ts`) :
+point, nom obligatoire (normalisé par `resupplyNameOf`, unique sans égard à la
+casse parmi les modèles actifs du point — index partiel
+`resupply_templates_site_active_name_key`), visée proposée, lignes
+`{ sku, quantity, saleUnit }`, version, trace de création, de dernière
+modification et d'archivage. La règle des lignes (au moins une, 200 au plus,
+un SKU une fois, quantité entière ≥ 1) est **commune** avec les brouillons du
+fournil : `domain/resupply-line-list.ts`, chaque agrégat gardant ses erreurs.
+Table `public.resupply_templates` (lignes en `jsonb`) ; codes d'erreur
+`resupply.template.*`.
+
+**Appliquer** (`application/apply-resupply-template.handler.ts`, fonctions
+pures dans `resupply-template-applying.ts`) : une transaction scellée par la
+clé d'intention (`runSealed`) — un rejeu rend la même réponse et n'additionne
+pas deux fois en mode « ajouter ». Modèle inconnu ou d'un autre point : 404 ;
+archivé : 409. On applique toujours à **la demande en cours** de la visée de
+l'URL ; un réassort envoyé n'est jamais touché. `replace` retire les articles
+absents du modèle puis corrige ou ajoute ; la demande prend le nom du modèle si
+elle n'en a pas. La réponse nomme les lignes écartées.
+
+**Routes** :
+
+| Route                                                                    | Droit                      | Geste                                                       |
+| ------------------------------------------------------------------------ | -------------------------- | ----------------------------------------------------------- |
+| `GET admin/resupply-templates/sites/:siteId`                             | M4                         | les modèles actifs, lignes inapplicables marquées           |
+| `POST admin/resupply-templates/sites/:siteId`                            | `resupply_templates:write` | créer `{ key, name, target, lines }`                        |
+| `PUT admin/resupply-templates/:templateId`                               | `resupply_templates:write` | ajuster (contenu entier + version lue)                      |
+| `POST admin/resupply-templates/:templateId/archive`                      | `resupply_templates:write` | archiver                                                    |
+| `POST admin/site-resupplies/sites/:siteId/drafts/:target/apply-template` | `handover_counter:write`   | appliquer `{ templateId, mode }`, en-tête `Idempotency-Key` |
+
+Ajuster et archiver ne revérifient pas le point (comme les brouillons du
+fournil) : le droit suffit. La liste des points et celle des articles
+s'ouvrent aussi à `resupply_templates:read`.
+
+**Les écrans** :
+
+- **Comptoir › Modèles de réassort** (`/comptoir/modeles-reassort`,
+  `apps/lfd-backoffice-frontend/src/app/comptoir/resupply-templates/`) : choix
+  du point, la bibliothèque, une composition par famille (briques de la carte
+  du fournil) pour créer ou ajuster, les lignes qui ne s'appliquent plus à
+  retirer, « Archiver ».
+- **Comptoir › Réassort** : un menu « Modèles » (`resupply-templates-menu/`)
+  applique à la visée affichée, avec le dialogue Remplacer · Ajouter. Avec
+  `resupply_templates:write` : « Enregistrer comme modèle » et, après une
+  application, « Mettre à jour « X » » avec l'écart calculé à l'écran
+  (`resupply-template-drift.ts` : « +2 Croissant, −1 Tradition, 1 article
+  ajouté »). Le modèle appliqué n'est gardé qu'en mémoire de l'écran.
+- **Prod manager › Réassorts › Créer un réassort** : « Partir d'un modèle »
+  remplit la composition locale, sans appel au serveur, et pose la visée et
+  le nom du modèle.

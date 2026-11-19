@@ -534,7 +534,7 @@ export const staffResourceSchema = z.enum([
   "handover_counter",
   /**
    * **Les modèles de réassort** — la bibliothèque d'un point : créer, ajuster,
-   * archiver un modèle (plan `reassort-boutiques/plan-modeles-de-reassort.md`,
+   * archiver un modèle (plan `reassort-boutiques/commander.md § 6`,
    * M2, 2026-11-19). La lecture s'ouvre aussi au comptoir et au fournil.
    * Ajoutée sans être accordée : elle s'accorde à l'écran ; la graine ne la
    * donne qu'à l'administrateur.

@@ -17,7 +17,7 @@ export interface ApplyModeDialogData {
 
 /**
  * **Remplacer ou ajouter ?** — la question posée quand on applique un modèle
- * à une composition qui a déjà des lignes (plan `plan-modeles-de-reassort.md`,
+ * à une composition qui a déjà des lignes (plan `commander.md § 6`,
  * M5). « Remplacer » pose le modèle et retire le reste ; « Ajouter »
  * additionne ses quantités. Rend le mode choisi, rien si l'on ferme.
  * Le comptoir et le fournil posent la même question.

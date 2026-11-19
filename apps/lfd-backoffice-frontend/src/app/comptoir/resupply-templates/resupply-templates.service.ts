@@ -13,7 +13,7 @@ import { B2B_API_BASE } from '../../api/api-config';
 /**
  * **La bibliothèque des modèles de réassort d'un point** —
  * `/admin/resupply-templates`, sous le droit `resupply_templates` (plan
- * `documentation/reassort-boutiques/plan-modeles-de-reassort.md`, § 5).
+ * `documentation/reassort-boutiques/commander.md § 6`, § 5).
  *
  * Aucune route n'attend d'en-tête d'intention : la création porte sa clé dans
  * le corps (`key`), l'ajustement est tenu par la version lue, l'archivage par

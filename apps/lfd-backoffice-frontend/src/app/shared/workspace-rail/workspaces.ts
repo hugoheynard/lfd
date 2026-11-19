@@ -559,7 +559,7 @@ export const COMPTOIR_VIEWS: readonly WorkspaceView[] = [
     needs: 'handover_counter:read',
   },
   // La bibliothèque des modèles de réassort : un droit à part, l'administrateur
-  // seul tant qu'il n'est pas accordé à l'écran (plan-modeles-de-reassort.md).
+  // seul tant qu'il n'est pas accordé à l'écran (commander.md § 6).
   {
     key: 'modeles-de-reassort',
     label: 'Modèles de réassort',

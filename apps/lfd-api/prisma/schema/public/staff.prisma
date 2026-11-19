@@ -197,7 +197,7 @@ enum StaffResource {
   /// LE RETRAIT AU COMPTOIR — la file, la remise, le scan (même plan).
   handover_counter
   /// LES MODÈLES DE RÉASSORT — la bibliothèque d'un point : créer, ajuster,
-  /// archiver (2026-11-19, `reassort-boutiques/plan-modeles-de-reassort.md`,
+  /// archiver (2026-11-19, `reassort-boutiques/commander.md § 6`,
   /// M2). Accordée à l'écran.
   resupply_templates
   /// La FEUILLE DE ROUTE du jour, sortie de `b2b_orders` (2026-09-29,

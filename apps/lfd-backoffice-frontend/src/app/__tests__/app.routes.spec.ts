@@ -345,7 +345,7 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   'comptoir/retrait': 'handover_counter:read',
   // Le réassort (2026-10-12, pas encore construit) : le poste du retrait.
   'comptoir/reassort': 'handover_counter:read',
-  // Les modèles de réassort : leur propre droit (plan-modeles-de-reassort.md, § 6).
+  // Les modèles de réassort : leur propre droit (commander.md § 6, § 6).
   'comptoir/modeles-reassort': 'resupply_templates:read',
   'comptoir/modeles-reassort/:siteId/nouveau': 'resupply_templates:write',
   'comptoir/modeles-reassort/:siteId/:templateId': 'resupply_templates:write',

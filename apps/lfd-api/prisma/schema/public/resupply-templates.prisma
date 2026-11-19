@@ -1,6 +1,6 @@
 /// **Un modèle de réassort** — un raccourci de saisie d'un point (« Base
 /// matin »), appliqué à la demande en cours puis ajusté (plan
-/// `documentation/reassort-boutiques/plan-modeles-de-reassort.md`). Jetable :
+/// `documentation/reassort-boutiques/commander.md § 6`). Jetable :
 /// aucun réassort ne le référence, et il ne garde pas d'historique.
 ///
 /// Un nom une fois parmi les modèles ACTIFS du point, sans égard à la casse :

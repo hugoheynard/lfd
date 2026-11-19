@@ -71,7 +71,7 @@ interface AppliedTemplate {
 }
 
 /**
- * **Les modèles au comptoir** (plan `plan-modeles-de-reassort.md`, § 4 et
+ * **Les modèles au comptoir** (plan `commander.md § 6`, § 4 et
  * § 6) : le menu « Modèles » du point de la bande, qui applique un modèle à
  * la demande en cours de la visée affichée — « Remplacer · Ajouter » si elle
  * a déjà des lignes —, puis l'avis des articles écartés.
