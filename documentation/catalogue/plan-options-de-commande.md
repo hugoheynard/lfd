@@ -40,9 +40,8 @@ flowchart LR
   est implicite (le pain entier).
 - **Un choix** porte un libellé et une **clientèle** (pros, particuliers, les
   deux). Pas de prix dans cette version.
-- **La fiche active un groupe** pour toutes ses déclinaisons ou une liste.
-  `Product` refuse d'activer un groupe sur une déclinaison **vendue au
-  poids**, et refuse de passer au poids une déclinaison qui en porte un.
+- **La fiche active un groupe** pour toutes ses déclinaisons ou une liste,
+  qu'elles se vendent à la pièce ou au poids.
 - Archive, jamais suppression ; une fiche archivée refuse l'activation ; un
   groupe ou un choix archivé n'est plus proposé, les commandes passées gardent
   leur instantané.
@@ -63,6 +62,10 @@ lecture.
   hors de l'audience **du client** (l'équipe qui commande à sa place applique
   sa clientèle), une quantité nulle, une somme des quantités d'un groupe
   supérieure à celle de la ligne (le reste est « sans »).
+- **Une ligne vendue au poids** (quantité en grammes) ne se partage pas : un
+  choix y vaut pour **toute la ligne** (« 1,2 kg de pain de seigle,
+  tranché »), et sa quantité est celle de la ligne. Décidé par Hugo le
+  2026-11-19 : un pain au poids se tranche aussi.
 - **La ligne figée** garde ses options dans une table fille
   `order_line_option` (ligne, groupe, choix, libellés figés, quantité). Aucune
   colonne d'argent.
@@ -86,13 +89,16 @@ lecture.
 - **Le colisage** reçoit la même mention dans sa liste ; ses clés ne
   changent pas.
 - **Le bon de livraison** porte la mention ; un départ partiel la plafonne à
-  la quantité qui part (au plus « dont 2 tranchés » si 2 pains partent).
+  la quantité qui part (au plus « dont 2 tranchés » si 2 pains partent) ; au
+  poids, la mention suit la ligne entière.
 - **La facture** ne change pas.
 
 ## 4. Les décisions
 
 - **Hugo, 2026-11-19** : options gratuites d'abord ; le supplément payant
   plus tard, avec sa propre conception (§ 7).
+- **Hugo, 2026-11-19** : une déclinaison vendue au poids accepte les
+  options ; le choix vaut pour toute la ligne.
 - **Proposé** : plusieurs groupes sur une ligne (tranché + emballé), chacun
   compté indépendamment.
 
