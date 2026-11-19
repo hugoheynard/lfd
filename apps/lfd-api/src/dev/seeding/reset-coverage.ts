@@ -33,6 +33,7 @@ export const RESET_WIPED_TABLES: readonly CoveredTable[] = [
       "public.addresses",
       "public.client_notebooks",
       "public.companies",
+      "public.company_chorus_routing",
       "public.company_collection_form",
       "public.company_follows",
       "public.loyalty_ledger_entries",
@@ -47,6 +48,7 @@ export const RESET_WIPED_TABLES: readonly CoveredTable[] = [
       "public.subscriptions",
     ],
   },
+  { table: "public.company_chorus_routing", referencedBy: [] },
   { table: "public.company_collection_form", referencedBy: [] },
   { table: "public.company_follows", referencedBy: [] },
   {

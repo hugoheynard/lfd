@@ -37,7 +37,7 @@ export interface StaffSettlementPorts {
  * - `link` sur la vitrine suit le réglage du pro sans crédit (Q7).
  *
  * - un payeur public (sa forme juridique) ne règle jamais par lien, et un
- *   compte qui ne règle pas lui est refusé sans repli (`publicBuyerRefusal`).
+ *   compte qui ne règle pas lui est refusé sans repli.
  *
  * Au comptoir (`atCounter`), le refus nomme sa cause et un geste qui existe
  * au comptoir — pas « réglez par lien » (Hugo, 2026-11-03). Mêmes lectures
@@ -60,28 +60,18 @@ export async function staffSettlementRefusal(
   | null
 > {
   const parties = { companyId, payerId: order.billedCompanyId };
-  if (await ports.guard.isPublicPayer(order.billedCompanyId ?? companyId)) {
-    return publicBuyerRefusal(ports.guard, parties, settlement);
-  }
-  if (settlement === "account" && atCounter) {
-    return counterAccountRefusal(ports.guard, parties);
+  const payerId = order.billedCompanyId ?? companyId;
+  // La forme du payeur ne se lit que quand elle change la réponse : sur un
+  // lien, ou sur un compte refusé — un compte qui règle se passe d'elle.
+  if (settlement === "link" && (await ports.guard.isPublicPayer(payerId))) {
+    return new PublicBuyerCardRefusedError();
   }
   if (settlement === "account") {
-    // É18 : la suspendue est servie comme dans son espace (lot P0), jamais au
-    // compte — et un payeur suspendu ferme le compte de ses sites (décision 2).
-    const status = await ports.guard.companyStatusOf(companyId);
-    const settling = await settlingStatusOf(ports.guard, companyId, order.billedCompanyId, status);
-    if (settling === "suspended") {
-      return new SuspendedCompanyAccountSettlementError();
+    const refusal = await accountRefusal(ports.guard, order, companyId, atCounter);
+    if (refusal !== null && (await ports.guard.isPublicPayer(payerId))) {
+      return new PublicBuyerAccountUnavailableError();
     }
-    // Les statuts se lisent UNE fois : les relire pour le crédit doublait la lecture.
-    const standing =
-      settling === "active"
-        ? await ports.guard.settlesOnAccount(order.billedCompanyId ?? companyId)
-        : "none";
-    return standing === "granted"
-      ? null
-      : new AccountSettlementNotGrantedError(standing === "blocked");
+    return refusal;
   }
   if (!order.isFromShelf) {
     return null;
@@ -93,21 +83,36 @@ export async function staffSettlementRefusal(
   return null;
 }
 
-/**
- * Le refus d'un payeur public : le lien (la carte) toujours, le compte quand
- * il ne règle pas — au comptoir comme à la saisie, avec les mêmes mots.
- */
-async function publicBuyerRefusal(
+/** Le refus du règlement au compte, ou `null` quand le compte règle. */
+async function accountRefusal(
   guard: StaffSettlementPorts["guard"],
-  parties: { readonly companyId: string; readonly payerId: string | null },
-  settlement: StaffSettlement,
-): Promise<PublicBuyerCardRefusedError | PublicBuyerAccountUnavailableError | null> {
-  if (settlement === "link") {
-    return new PublicBuyerCardRefusedError();
+  order: Order,
+  companyId: string,
+  atCounter: boolean,
+): Promise<
+  | AccountSettlementNotGrantedError
+  | SuspendedCompanyAccountSettlementError
+  | CounterAccountSettlementNotGrantedError
+  | null
+> {
+  if (atCounter) {
+    return counterAccountRefusal(guard, { companyId, payerId: order.billedCompanyId });
   }
-  return (await accountStanding(guard, parties)) === "granted"
+  // É18 : la suspendue est servie comme dans son espace (lot P0), jamais au
+  // compte — et un payeur suspendu ferme le compte de ses sites (décision 2).
+  const status = await guard.companyStatusOf(companyId);
+  const settling = await settlingStatusOf(guard, companyId, order.billedCompanyId, status);
+  if (settling === "suspended") {
+    return new SuspendedCompanyAccountSettlementError();
+  }
+  // Les statuts se lisent UNE fois : les relire pour le crédit doublait la lecture.
+  const standing =
+    settling === "active"
+      ? await guard.settlesOnAccount(order.billedCompanyId ?? companyId)
+      : "none";
+  return standing === "granted"
     ? null
-    : new PublicBuyerAccountUnavailableError();
+    : new AccountSettlementNotGrantedError(standing === "blocked");
 }
 
 /** Le refus du comptoir, par cause — ou `null` quand le compte règle. */

@@ -119,12 +119,13 @@ describe("RecordChorusRoutingHandler", () => {
     const { handler, events } = handlerFor(company("public_state"));
 
     await handler.execute(new RecordChorusRoutingCommand("c1", "staff_1", READING));
+    const payload: unknown = expect.objectContaining(READING);
 
     expect(events.traced.map((event) => event.journalFact())).toEqual([
       expect.objectContaining({
         type: "company.chorus_routing_recorded",
         subjectId: "c1",
-        payload: expect.objectContaining(READING),
+        payload,
       }),
     ]);
   });

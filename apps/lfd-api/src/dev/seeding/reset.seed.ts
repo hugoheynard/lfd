@@ -172,6 +172,8 @@ async function wipe(prisma: PrismaClient, companyIds: string[], userIds: string[
   await prisma.orderCutoffWaiver.deleteMany({ where: { companyId: { in: companyIds } } });
   await prisma.orderDraft.deleteMany({ where: { companyId: { in: companyIds } } });
   await prisma.paymentMandate.deleteMany({ where: { companyId: { in: companyIds } } });
+  // La fiche Chorus pointe la société en `Restrict`.
+  await prisma.companyChorusRouting.deleteMany({ where: { companyId: { in: companyIds } } });
   // Le carnet du commercial pointe la société (clé `Restrict`) ; ses notes
   // suivent en cascade. Absent jusqu'au 2026-09-29 : une société d'essai dotée
   // d'un carnet faisait échouer tout le rechargement sur la clé étrangère.
