@@ -336,6 +336,20 @@ export const staffResourceSchema = z.enum([
    */
   "b2b_order_waivers",
   /**
+   * **Passer outre la limite d'un produit** — en saisissant ou en modifiant
+   * une commande pour un client, ignorer la limite de commande d'un produit
+   * dont la case « l'équipe peut passer outre » est cochée ; l'heure limite
+   * générale reste opposée (2026-11-19, plan
+   * `limites-de-commande/plan-passer-outre-la-limite-produit.md`).
+   *
+   * Une ressource à elle, et pas `b2b_order_waivers` : une dérogation rouvre
+   * une journée pour une société pendant le rattrapage ; ce droit efface la
+   * limite d'un article pour la commande en cours. Ajoutée sans être
+   * accordée : elle s'accorde à l'écran ; la graine ne la donne qu'à
+   * l'administrateur.
+   */
+  "lfc_product_limit_override",
+  /**
    * L'**accès aux fonctionnalités** : fermer la boutique, la rouvrir en
    * vitrine, ouvrir la commande — et désigner les adresses qui y gardent accès
    * pour tester en production.
@@ -880,6 +894,7 @@ export const STAFF_RESOURCE_LABELS: Readonly<Record<StaffResource, string>> = {
   b2b_late_fee: "Surtaxe de retard",
   b2b_alerts: "Alertes",
   b2b_order_waivers: "Dérogations d'heure limite",
+  lfc_product_limit_override: "Passer outre la limite d'un produit",
   b2b_feature_access: "Accès aux fonctionnalités",
   b2b_client_notes: "Notes du commercial",
   b2b_settings: "Réglages plateforme",
@@ -1003,6 +1018,9 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     // L'administrateur seul (2026-11-19, modèles de réassort, T1) : en
     // production, accordée à l'écran.
     resupply_templates: "write",
+    // L'administrateur seul (2026-11-19, dépassement d'une limite de produit,
+    // O2) : en production, accordée à l'écran.
+    lfc_product_limit_override: "write",
     delivery_procedures: "write",
     delivery_decisions: "write",
     delivery_proofs: "write",

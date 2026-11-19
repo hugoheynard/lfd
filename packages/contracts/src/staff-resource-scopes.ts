@@ -174,6 +174,11 @@ export const STAFF_RESOURCE_SCOPES: Readonly<Record<StaffResource, StaffResource
     read: "Voir les alertes en attente et les règles d'alerte d'un client. Les règles globales relèvent de « Règles d'alerte globales ».",
     write: "Acquitter une alerte, régler les règles d'alerte d'un client.",
   },
+  lfc_product_limit_override: {
+    read: "Voir les dépassements de limite de produit consignés sur une commande.",
+    write:
+      "En saisissant ou en modifiant une commande pour un client, passer outre la limite de commande d'un produit qui le permet. L'heure limite générale reste opposée.",
+  },
   b2b_order_waivers: {
     read: "Voir les dérogations d'heure limite accordées à un client.",
     write:
