@@ -22,7 +22,15 @@
   color: var(--fold-color-text-muted);
 }
 
+.lanes-nav {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--fold-space-xs);
+}
+
 .lanes-axis {
+  min-width: 9rem;
+  text-align: center;
   font-size: var(--fold-text-sm);
   font-variant-numeric: tabular-nums;
   color: var(--fold-color-text);

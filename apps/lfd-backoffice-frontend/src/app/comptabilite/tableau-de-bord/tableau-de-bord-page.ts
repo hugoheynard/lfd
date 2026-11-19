@@ -99,6 +99,8 @@ export class TableauDeBordPage {
   protected readonly catalog = signal<CatalogSummaryView | null>(null);
   protected readonly entities = signal<readonly LegalEntityView[]>([]);
   protected readonly rhythms = signal<BillingRhythmsCalendarView | null>(null);
+  /** Le mois de la frise (`AAAA-MM`) ; `null` = le mois en cours, que le serveur choisit. */
+  private readonly rhythmsMonth = signal<string | null>(null);
   protected readonly loading = signal(true);
   protected readonly busy = signal(false);
   /** L'échec d'un GESTE (l'export) : le tableau de bord reste à l'écran. */
@@ -221,17 +223,27 @@ export class TableauDeBordPage {
    * aucune date à poser. Son échec ne coûte que la bande.
    */
   private async loadRhythms(): Promise<void> {
-    this.rhythms.set(null);
+    this.rhythmsError.set(null);
     const entity =
       this.issuer() ?? this.entities().find((candidate) => candidate.archivedAt === null) ?? null;
     if (entity === null) {
+      this.rhythms.set(null);
       return;
     }
     try {
-      this.rhythms.set(await this.api.rhythmsCalendar(entity.id));
+      this.rhythms.set(await this.api.rhythmsCalendar(entity.id, this.rhythmsMonth()));
     } catch (caught) {
       this.rhythmsError.set(httpErrorMessage(caught, 'Rythmes de prélèvement illisibles.'));
     }
+  }
+
+  /**
+   * Une flèche de la frise : le mois voisin, relu au serveur. La frise reste
+   * à l'écran pendant la lecture — elle ne clignote pas entre deux mois.
+   */
+  protected async showRhythmsMonth(month: string): Promise<void> {
+    this.rhythmsMonth.set(month);
+    await this.loadRhythms();
   }
 
   /** L'aperçu de l'émetteur prêt — son échec ne coûte que sa phrase. */

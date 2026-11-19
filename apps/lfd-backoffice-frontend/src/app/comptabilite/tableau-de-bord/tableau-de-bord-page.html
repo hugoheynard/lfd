@@ -43,7 +43,7 @@
     @if (rhythmsError(); as message) {
       <fold-callout appearance="inset" variant="alert">{{ message }}</fold-callout>
     } @else if (rhythms(); as calendar) {
-      <app-rhythm-lanes [calendar]="calendar" />
+      <app-rhythm-lanes [calendar]="calendar" (monthChange)="showRhythmsMonth($event)" />
     }
 
     @if (!loading()) {

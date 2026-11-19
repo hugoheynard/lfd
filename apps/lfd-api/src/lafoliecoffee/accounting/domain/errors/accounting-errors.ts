@@ -38,6 +38,13 @@ export class InvalidSirenError extends DomainError {
  * et c'est ce dont a besoin le personnel qui lit l'écran sans le code sous les
  * yeux.
  */
+/** Un mois calendaire qui n'est pas `AAAA-MM`. */
+export class InvalidCalendarMonthError extends DomainError {
+  constructor(readonly raw: string) {
+    super("accounting.calendar_month.invalid", `Mois « ${raw} » : attendu au format AAAA-MM.`);
+  }
+}
+
 export class InvalidIbanError extends DomainError {
   constructor(readonly reason: string) {
     super("accounting.iban.invalid", `IBAN invalide — ${reason}`);

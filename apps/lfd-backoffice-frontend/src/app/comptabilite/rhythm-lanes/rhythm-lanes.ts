@@ -1,6 +1,6 @@
-import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { FoldBadgeComponent } from 'fold-ng';
+import { FoldBadgeComponent, FoldButtonComponent, FoldButtonIconComponent } from 'fold-ng';
 import {
   BILLING_RHYTHM_KIND_LABELS,
   type BillingRhythmKind,
@@ -10,8 +10,8 @@ import {
 
 import { isPooled, pooledTitle } from '../procedure-de-prelevement/procedure-wording';
 import { DEPOSIT_CUTOFF_ANCHOR } from '../deposit-cutoff-anchor';
+import { addDays, daysBetween, longDay, monthTitle, shiftMonth, shortDay } from './rhythm-days';
 
-const MS_PER_DAY = 86_400_000;
 const DAYS_PER_WEEK = 7;
 const MINUTES_PER_DAY = 1440;
 const MINUTES_PER_HOUR = 60;
@@ -78,7 +78,8 @@ export const RHYTHM_MARK_LEGEND: readonly {
 /**
  * **Les trois rythmes de prélèvement sur un même axe** — hebdomadaire, deux
  * fois par mois, mensuel, chacun avec ses clôtures, ses avis, ses limites de
- * dépôt et ses échéances.
+ * dépôt et ses échéances, sur UN mois calendaire : deux flèches passent au
+ * mois voisin, que la page redemande au serveur.
  *
  * ## Rien n'est calculé ici
  *
@@ -97,12 +98,14 @@ export const RHYTHM_MARK_LEGEND: readonly {
 @Component({
   selector: 'app-rhythm-lanes',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldBadgeComponent, RouterLink],
+  imports: [FoldBadgeComponent, FoldButtonComponent, FoldButtonIconComponent, RouterLink],
   templateUrl: './rhythm-lanes.html',
   styleUrl: './rhythm-lanes.scss',
 })
 export class RhythmLanes {
   readonly calendar = input.required<BillingRhythmsCalendarView>();
+  /** Le mois (`AAAA-MM`) que l'on demande à voir — la page le relit au serveur. */
+  readonly monthChange = output<string>();
 
   protected readonly legend = RHYTHM_MARK_LEGEND;
   protected readonly depositAnchor = DEPOSIT_CUTOFF_ANCHOR;
@@ -111,10 +114,18 @@ export class RhythmLanes {
     Math.max(1, daysBetween(this.calendar().startsOn, this.calendar().endsOn)),
   );
 
-  /** L'axe en clair — « du 5 oct. au 15 nov. 2026 », le dernier jour INCLUS. */
-  protected readonly axisLabel = computed(() => {
-    const { startsOn, endsOn } = this.calendar();
-    return `Du ${shortDay(startsOn)} au ${longDay(addDays(endsOn, -1))}`;
+  /** Le mois montré, « Novembre 2026 ». */
+  protected readonly axisLabel = computed(() => monthTitle(this.calendar().month));
+
+  /** Le mois montré n'est pas celui d'aujourd'hui : « Ce mois-ci » y ramène. */
+  protected readonly awayFromToday = computed(
+    () => this.calendar().month !== this.calendar().today.slice(0, 'AAAA-MM'.length),
+  );
+
+  /** Aujourd'hui tombe-t-il sur l'axe ? Sinon, pas de trait. */
+  protected readonly todayShown = computed(() => {
+    const { today, startsOn, endsOn } = this.calendar();
+    return today >= startsOn && today < endsOn;
   });
 
   protected readonly noticeSentence = computed(
@@ -127,16 +138,29 @@ export class RhythmLanes {
 
   protected readonly todayLabel = computed(() => `Aujourd’hui, ${longDay(this.calendar().today)}`);
 
-  /** Les lundis de l'axe, sauf le premier qui en est le bord. */
+  /** La graduation : le 8, le 15, le 22, le 29 — le 1er est le bord de l'axe. */
   protected readonly weeks = computed(() => {
     const { startsOn } = this.calendar();
     const weeks: { readonly day: string; readonly percent: number; readonly label: string }[] = [];
     for (let offset = DAYS_PER_WEEK; offset < this.span(); offset += DAYS_PER_WEEK) {
-      const monday = addDays(startsOn, offset);
-      weeks.push({ day: monday, percent: (offset / this.span()) * 100, label: shortDay(monday) });
+      const day = addDays(startsOn, offset);
+      weeks.push({ day, percent: (offset / this.span()) * 100, label: shortDay(day) });
     }
     return weeks;
   });
+
+  /** Le mois voisin, ou celui d'aujourd'hui. */
+  protected previous(): void {
+    this.monthChange.emit(shiftMonth(this.calendar().month, -1));
+  }
+
+  protected next(): void {
+    this.monthChange.emit(shiftMonth(this.calendar().month, 1));
+  }
+
+  protected backToToday(): void {
+    this.monthChange.emit(this.calendar().today.slice(0, 'AAAA-MM'.length));
+  }
 
   protected readonly lanes = computed<readonly RhythmLane[]>(() =>
     this.calendar().rhythms.map((lane) => ({
@@ -260,39 +284,6 @@ function followersOf(mode: BillingRhythmKind, followed: boolean, count: number):
 /** « 0 client », « 1 client », « 3 clients ». */
 function clientsOf(count: number): string {
   return `${String(count)} client${count > 1 ? 's' : ''}`;
-}
-
-/** Jours de calendrier entre deux `AAAA-MM-JJ` — arithmétique de dates, sans fuseau. */
-function daysBetween(from: string, to: string): number {
-  return Math.round((utcOf(to) - utcOf(from)) / MS_PER_DAY);
-}
-
-function addDays(day: string, days: number): string {
-  return new Date(utcOf(day) + days * MS_PER_DAY).toISOString().slice(0, 10);
-}
-
-function utcOf(day: string): number {
-  const [year, month, date] = day.split('-').map(Number);
-  return Date.UTC(year ?? 0, (month ?? 1) - 1, date ?? 1);
-}
-
-/** « 16 nov. » — la graduation. */
-function shortDay(day: string): string {
-  return new Date(utcOf(day)).toLocaleDateString('fr-FR', {
-    day: 'numeric',
-    month: 'short',
-    timeZone: 'UTC',
-  });
-}
-
-/** « 16 novembre 2026 » — ce qu'on lit et ce qu'on entend. */
-function longDay(day: string): string {
-  return new Date(utcOf(day)).toLocaleDateString('fr-FR', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-    timeZone: 'UTC',
-  });
 }
 
 /** « dépôt avant le 13 octobre 2026 à 16h00, » — rien si la limite n'est pas réglée. */

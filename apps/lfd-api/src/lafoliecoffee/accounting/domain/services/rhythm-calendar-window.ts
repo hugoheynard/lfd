@@ -1,6 +1,9 @@
-import { addDays, instantToLocal, localToInstant, weekdayOf } from "@lfd/contracts";
+import { addDays, CALENDAR_MONTH_PATTERN, instantToLocal, localToInstant } from "@lfd/contracts";
 
-import { BillingCycleBoundaryError } from "../errors/accounting-errors.js";
+import {
+  BillingCycleBoundaryError,
+  InvalidCalendarMonthError,
+} from "../errors/accounting-errors.js";
 import {
   collectionCalendar,
   type CollectionCalendarSettings,
@@ -8,20 +11,16 @@ import {
 } from "./collection-calendar.js";
 import { closureAfter, lastDayOf, type RhythmTimeline } from "./invoicing-closures.js";
 
-/** L'axe du tableau de bord : six semaines, de quoi voir l'échéance d'une clôture mensuelle. */
-export const RHYTHM_CALENDAR_WEEKS = 6;
-
 /**
  * Au-delà des réglages, la marge du regard en arrière : un report TARGET2
  * (Pâques, Noël) décale une échéance de quelques jours, jamais d'une semaine.
  */
 const LOOKBACK_MARGIN_DAYS = 7;
 
-/** Garde-fou de boucle : six semaines d'un rythme hebdomadaire, plus le regard en arrière. */
+/** Garde-fou de boucle : un mois d'un rythme hebdomadaire, plus le regard en arrière. */
 const MAX_PERIODS = 32;
 
-const MONDAY = 1;
-const DAYS_PER_WEEK = 7;
+const MONTHS_PER_YEAR = 12;
 
 /** Un axe de jours locaux, `[startsOn, endsOn)`. */
 export interface RhythmCalendarWindow {
@@ -39,11 +38,29 @@ export interface RhythmPeriodMilestones {
   readonly depositDeadline: LocalDeadline | null;
 }
 
-/** L'axe qui contient `now` : du lundi (Paris) de sa semaine, six semaines. */
-export function rhythmCalendarWindowAt(now: Date): RhythmCalendarWindow {
-  const today = instantToLocal(now).day;
-  const startsOn = addDays(today, -((weekdayOf(today) - MONDAY + DAYS_PER_WEEK) % DAYS_PER_WEEK));
-  return { startsOn, endsOn: addDays(startsOn, RHYTHM_CALENDAR_WEEKS * DAYS_PER_WEEK) };
+/** Le mois (`AAAA-MM`) de `now` à Paris. */
+export function calendarMonthAt(now: Date): string {
+  return instantToLocal(now).day.slice(0, "AAAA-MM".length);
+}
+
+/**
+ * L'axe du tableau de bord : un mois calendaire, de son 1er au 1er du mois
+ * suivant (exclu). Un mois se lit d'un bloc ; six semaines glissantes
+ * chevauchaient deux mois sans en montrer aucun entier.
+ *
+ * @throws {InvalidCalendarMonthError} le mois n'est pas `AAAA-MM`.
+ */
+export function rhythmCalendarMonth(month: string): RhythmCalendarWindow {
+  if (!CALENDAR_MONTH_PATTERN.test(month)) {
+    throw new InvalidCalendarMonthError(month);
+  }
+  const [year, monthOfYear] = month.split("-").map(Number);
+  const nextYear = (year ?? 0) + (monthOfYear === MONTHS_PER_YEAR ? 1 : 0);
+  const nextMonth = ((monthOfYear ?? 1) % MONTHS_PER_YEAR) + 1;
+  return {
+    startsOn: `${month}-01`,
+    endsOn: `${String(nextYear)}-${String(nextMonth).padStart(2, "0")}-01`,
+  };
 }
 
 /**

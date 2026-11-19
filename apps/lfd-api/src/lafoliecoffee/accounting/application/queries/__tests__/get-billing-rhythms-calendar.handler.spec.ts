@@ -104,14 +104,30 @@ describe("GetBillingRhythmsCalendarHandler — les trois rythmes sur un axe", ()
     expect(view).toMatchObject({
       legalEntityId: "le1",
       today: "2026-10-08",
-      startsOn: "2026-10-05",
-      endsOn: "2026-11-16",
+      month: "2026-10",
+      startsOn: "2026-10-01",
+      endsOn: "2026-11-01",
       preNotificationDays: toView(declaredEntity(), true).preNotificationDays,
     });
     expect(view.rhythms.map((lane) => lane.mode)).toEqual(["weekly", "semimonthly", "monthly"]);
     for (const lane of view.rhythms) {
       expect(lane.periods.length).toBeGreaterThan(0);
     }
+  });
+
+  it("un mois demandé : l'axe de ce mois, et ses jalons seulement", async () => {
+    const view = await handler().execute(new GetBillingRhythmsCalendarQuery("le1", "2026-12"));
+
+    expect(view).toMatchObject({
+      today: "2026-10-08",
+      month: "2026-12",
+      startsOn: "2026-12-01",
+      endsOn: "2027-01-01",
+    });
+    const monthly = view.rhythms.find((lane) => lane.mode === "monthly");
+    // La clôture du 1er décembre (factures du 30 novembre) et son échéance y sont ; celle d'octobre non.
+    expect(monthly?.periods.map((period) => period.invoicedOn)).toContain("2026-11-30");
+    expect(monthly?.periods.some((period) => period.invoicedOn < "2026-10-31")).toBe(false);
   });
 
   it("personne n'a choisi : seul le mensuel est suivi", async () => {

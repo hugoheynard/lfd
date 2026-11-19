@@ -20,7 +20,8 @@ import { procedureIdOf } from "../../domain/services/collection-procedure-id.js"
 import { InvoicingCalendar } from "../../domain/services/invoicing-calendar.js";
 import { collectionSettingsOf } from "../collection-calendar-settings-support.js";
 import {
-  rhythmCalendarWindowAt,
+  calendarMonthAt,
+  rhythmCalendarMonth,
   rhythmPeriodsIn,
 } from "../../domain/services/rhythm-calendar-window.js";
 import type { BillingMode } from "../../domain/value-objects/billing-mode.js";
@@ -95,7 +96,8 @@ export class GetBillingRhythmsCalendarHandler implements IQueryHandler<
       counts,
     );
     const settings = collectionSettingsOf(entity);
-    const window = rhythmCalendarWindowAt(now);
+    const month = query.month ?? calendarMonthAt(now);
+    const window = rhythmCalendarMonth(month);
     const lanes = LANE_ORDER.map((mode) => ({
       mode,
       periods: rhythmPeriodsIn(window, modes[mode], settings),
@@ -109,6 +111,7 @@ export class GetBillingRhythmsCalendarHandler implements IQueryHandler<
     return {
       legalEntityId: entity.id,
       today: instantToLocal(now).day,
+      month,
       startsOn: window.startsOn,
       endsOn: window.endsOn,
       preNotificationDays: entity.preNotificationDays,

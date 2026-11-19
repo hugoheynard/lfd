@@ -1,4 +1,18 @@
+import { z } from "zod";
+
 import type { BillingRhythmKind } from "./legal-entity.js";
+
+/** Un mois calendaire, `AAAA-MM`. */
+export const CALENDAR_MONTH_PATTERN = /^\d{4}-(0[1-9]|1[0-2])$/;
+
+/**
+ * `GET …/billing-modes/calendar?month=AAAA-MM` — le mois à montrer ; sans
+ * lui, le mois en cours à Paris.
+ */
+export const billingRhythmsCalendarQuerySchema = z.strictObject({
+  month: z.string().regex(CALENDAR_MONTH_PATTERN).optional(),
+});
+export type BillingRhythmsCalendarQuery = z.infer<typeof billingRhythmsCalendarQuerySchema>;
 
 /**
  * **Une période d'un rythme, et ses quatre jalons** — calculés par le serveur
@@ -69,9 +83,11 @@ export interface BillingRhythmsCalendarView {
   readonly legalEntityId: string;
   /** Aujourd'hui, à Paris. */
   readonly today: string;
-  /** Premier jour de l'axe (un lundi), inclus. */
+  /** Le mois montré, `AAAA-MM` : l'axe va de son 1er à son dernier jour. */
+  readonly month: string;
+  /** Le 1er du mois, inclus. */
   readonly startsOn: string;
-  /** Dernier jour de l'axe, EXCLU. */
+  /** Le 1er du mois suivant, EXCLU. */
   readonly endsOn: string;
   /** Le délai de pré-notification réglé sur l'entité, en jours. */
   readonly preNotificationDays: number;

@@ -8,15 +8,16 @@ import { RhythmLanes } from './rhythm-lanes';
 
 /**
  * Les jours ci-dessous sont ceux que le serveur rendrait ; ils ne sont comparés
- * qu'entre eux, jamais à l'horloge (règle des dates de fixture). L'axe fait 42
- * jours, du lundi 5 octobre au dimanche 15 novembre inclus.
+ * qu'entre eux, jamais à l'horloge (règle des dates de fixture). L'axe est le
+ * mois d'octobre 2026 : 31 jours, du 1er au 31 inclus.
  */
 function calendar(over: Partial<BillingRhythmsCalendarView> = {}): BillingRhythmsCalendarView {
   return {
     legalEntityId: 'le1',
     today: '2026-10-08',
-    startsOn: '2026-10-05',
-    endsOn: '2026-11-16',
+    month: '2026-10',
+    startsOn: '2026-10-01',
+    endsOn: '2026-11-01',
     preNotificationDays: 14,
     rhythms: [
       {
@@ -145,14 +146,14 @@ describe('RhythmLanes', () => {
       'deposit',
       'collection',
     ]);
-    // Clôture au bord du 12 (7 jours sur 42), dépôt le 22 à 16h (17 + 2/3),
-    // échéance au milieu du 26 (21,5 / 42).
-    expect(Number.parseFloat(weekly[0]?.style.left ?? '')).toBeCloseTo((7 / 42) * 100, 5);
+    // Clôture au bord du 12 (11 jours sur 31), dépôt le 22 à 16h (21 + 2/3),
+    // échéance au milieu du 26 (25,5 / 31).
+    expect(Number.parseFloat(weekly[0]?.style.left ?? '')).toBeCloseTo((11 / 31) * 100, 5);
     expect(Number.parseFloat(weekly[2]?.style.left ?? '')).toBeCloseTo(
-      ((17 + 2 / 3) / 42) * 100,
+      ((21 + 2 / 3) / 31) * 100,
       5,
     );
-    expect(Number.parseFloat(weekly[3]?.style.left ?? '')).toBeCloseTo((21.5 / 42) * 100, 5);
+    expect(Number.parseFloat(weekly[3]?.style.left ?? '')).toBeCloseTo((25.5 / 31) * 100, 5);
     expect(weekly[0]?.title).toBe(
       'PRL-261012-H — clôture le 12 octobre 2026 à 00h00 — factures du 11 octobre 2026',
     );
@@ -194,14 +195,15 @@ describe('RhythmLanes', () => {
     const fixture = await render(calendar());
     const monthly = marks(fixture, 2);
 
-    // Le 1er octobre (clôture et avis) est avant l'axe ; le 16 novembre, après.
+    // La clôture du 1er novembre est le bord droit d'octobre ; son avis, son
+    // dépôt et son échéance tombent en novembre, hors de l'axe.
     expect(monthly.map((mark) => mark.title)).toEqual([
+      'PRL-261001-M — clôture le 1 octobre 2026 à 00h00 — factures du 30 septembre 2026',
+      'Avis de prélèvement le 1 octobre 2026',
       'Dépôt avant le 13 octobre 2026 à 16h00',
       'Prélèvement le 15 octobre 2026',
       'PRL-261101-BM — clôture le 1 novembre 2026 à 00h00 — factures du 31 octobre 2026' +
         ' — mutualisée : deux fois par mois + mensuel : une seule clôture, un seul lot',
-      'Avis de prélèvement le 1 novembre 2026',
-      'Dépôt avant le 12 novembre 2026 à 16h00',
     ]);
     expect(root(fixture).textContent).toContain(
       'PRL-261101-BM — clôture le 1 novembre 2026 — mutualisée : deux fois par mois + mensuel : une seule clôture, un seul lot' +
@@ -219,7 +221,7 @@ describe('RhythmLanes', () => {
     expect(next).toEqual([
       'Prochaine procédure PRL-261012-H : clôture 12 octobre 2026 · dépôt avant 22 octobre 2026 16h00 · ' +
         'prélèvement 26 octobre 2026 · Ouvrir la procédure',
-      'Aucun prélèvement sur la période affichée',
+      'Aucun prélèvement à venir sur ce mois',
       'Prochaine procédure PRL-261001-M : clôture 1 octobre 2026 · dépôt avant 13 octobre 2026 16h00 · ' +
         'prélèvement 15 octobre 2026 · Ouvrir la procédure',
     ]);
@@ -261,15 +263,15 @@ describe('RhythmLanes', () => {
     const fixture = await render(calendar());
     const today = root(fixture).querySelector<HTMLElement>('.lanes-today');
 
-    expect(Number.parseFloat(today?.style.left ?? '')).toBeCloseTo((3.5 / 42) * 100, 5);
+    expect(Number.parseFloat(today?.style.left ?? '')).toBeCloseTo((7.5 / 31) * 100, 5);
     expect(root(fixture).textContent).toContain('Aujourd’hui, 8 octobre 2026');
   });
 
-  it('dit l’axe, le délai réglé et la légende des marques', async () => {
+  it('dit le mois, le délai réglé et la légende des marques', async () => {
     const fixture = await render(calendar({ preNotificationDays: 21 }));
     const body = root(fixture).textContent ?? '';
 
-    expect(body).toContain('Du 5 oct. au 15 novembre 2026');
+    expect(root(fixture).querySelector('[data-month]')?.textContent).toBe('Octobre 2026');
     expect(body).toContain('Délai de pré-notification réglé sur l’entité : 21 jours.');
     expect(body).toContain('Clôture — factures émises la veille à 23h55');
     expect(body).toContain('Avis de prélèvement (pré-notification)');
@@ -277,12 +279,43 @@ describe('RhythmLanes', () => {
     expect(body).toContain('Prélèvement — échéance');
   });
 
-  it('gradue les lundis de l’axe', async () => {
+  it('gradue le mois de sept en sept jours depuis le 1er', async () => {
     const fixture = await render(calendar());
     const weeks = [...root(fixture).querySelectorAll('.lanes-week')].map(
       (week) => week.textContent,
     );
 
-    expect(weeks).toEqual(['12 oct.', '19 oct.', '26 oct.', '2 nov.', '9 nov.']);
+    expect(weeks).toEqual(['8 oct.', '15 oct.', '22 oct.', '29 oct.']);
+  });
+
+  it('les flèches demandent le mois voisin, d’une année à l’autre', async () => {
+    const fixture = await render(
+      calendar({ month: '2026-12', startsOn: '2026-12-01', endsOn: '2027-01-01' }),
+    );
+    const asked: string[] = [];
+    fixture.componentInstance.monthChange.subscribe((month) => asked.push(month));
+
+    root(fixture).querySelector<HTMLButtonElement>('[data-month-next] button')?.click();
+    root(fixture).querySelector<HTMLButtonElement>('[data-month-previous] button')?.click();
+
+    expect(asked).toEqual(['2027-01', '2026-11']);
+  });
+
+  it('un autre mois que celui d’aujourd’hui : pas de trait « aujourd’hui », et « Ce mois-ci » y ramène', async () => {
+    const fixture = await render(
+      calendar({ month: '2026-12', startsOn: '2026-12-01', endsOn: '2027-01-01' }),
+    );
+    const asked: string[] = [];
+    fixture.componentInstance.monthChange.subscribe((month) => asked.push(month));
+
+    expect(root(fixture).querySelector('.lanes-today')).toBeNull();
+    expect(root(fixture).textContent).not.toContain('Aujourd’hui');
+    root(fixture).querySelector<HTMLButtonElement>('[data-month-today]')?.click();
+    expect(asked).toEqual(['2026-10']);
+  });
+
+  it('le mois d’aujourd’hui : pas de « Ce mois-ci »', async () => {
+    const fixture = await render(calendar());
+    expect(root(fixture).querySelector('[data-month-today]')).toBeNull();
   });
 });

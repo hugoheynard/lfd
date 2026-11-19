@@ -1,8 +1,20 @@
-import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Put } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Put,
+  Query,
+} from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import {
+  billingRhythmsCalendarQuerySchema,
   setBillingModeDatesPayloadSchema,
   setPayerBillingModePayloadSchema,
+  type BillingRhythmsCalendarQuery,
   type BillingRhythmsCalendarView,
   type PayerBillingModeView,
   type SetBillingModeDatesPayload,
@@ -11,7 +23,7 @@ import {
 
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
 import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
-import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
+import { ZodBody, ZodQuery } from "../../../platform/shared/http/zod-body.pipe.js";
 import { CancelBillingModeDatesCommand } from "../application/commands/cancel-billing-mode-dates.command.js";
 import { CancelPayerBillingModeCommand } from "../application/commands/cancel-payer-billing-mode.command.js";
 import { ScheduleBillingModeDatesCommand } from "../application/commands/schedule-billing-mode-dates.command.js";
@@ -71,13 +83,18 @@ export class AdminBillingModesController {
   }
 
   /**
-   * Les trois rythmes sur six semaines : clôtures, avis et échéances, calculés
-   * par le calendrier du lot. Lecture seule ; 404 si l'entité n'existe pas.
+   * Les trois rythmes sur un mois calendaire (`?month=AAAA-MM`, le mois en
+   * cours sans lui) : clôtures, avis et échéances, calculés par le calendrier
+   * du lot. Lecture seule ; 404 si l'entité n'existe pas.
    */
   @Get(":id/billing-modes/calendar")
-  async rhythmsCalendar(@Param("id") id: string): Promise<BillingRhythmsCalendarView> {
+  async rhythmsCalendar(
+    @Param("id") id: string,
+    @Query(new ZodQuery<BillingRhythmsCalendarQuery>(billingRhythmsCalendarQuerySchema))
+    params: BillingRhythmsCalendarQuery,
+  ): Promise<BillingRhythmsCalendarView> {
     return this.queries.execute<GetBillingRhythmsCalendarQuery, BillingRhythmsCalendarView>(
-      new GetBillingRhythmsCalendarQuery(id),
+      new GetBillingRhythmsCalendarQuery(id, params.month ?? null),
     );
   }
 

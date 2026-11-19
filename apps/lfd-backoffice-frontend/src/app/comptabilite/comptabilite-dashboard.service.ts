@@ -51,16 +51,21 @@ export class ComptabiliteDashboardService {
   }
 
   /**
-   * Les trois rythmes de prélèvement d'une entité sur six semaines — clôtures,
-   * avis et échéances, tous calculés par le serveur avec le calendrier du lot.
+   * Les trois rythmes de prélèvement d'une entité sur un mois calendaire
+   * (`AAAA-MM`, le mois en cours sans lui) — clôtures, avis et échéances, tous
+   * calculés par le serveur avec le calendrier du lot.
    *
    * Lue après les entités (il lui faut l'émetteur), et hors du `Promise.all` :
    * sa panne coûte la bande, pas le portefeuille ni le catalogue.
    */
-  async rhythmsCalendar(legalEntityId: string): Promise<BillingRhythmsCalendarView> {
+  async rhythmsCalendar(
+    legalEntityId: string,
+    month: string | null = null,
+  ): Promise<BillingRhythmsCalendarView> {
     return firstValueFrom(
       this.http.get<BillingRhythmsCalendarView>(
         `${B2B_API_BASE}/admin/accounting/legal-entities/${encodeURIComponent(legalEntityId)}/billing-modes/calendar`,
+        month === null ? {} : { params: { month } },
       ),
     );
   }

@@ -534,7 +534,12 @@ export type {
 export type {
   BillingRhythmPeriodView,
   BillingRhythmLaneView,
+  BillingRhythmsCalendarQuery,
   BillingRhythmsCalendarView,
+} from "./billing-rhythms-calendar.js";
+export {
+  billingRhythmsCalendarQuerySchema,
+  CALENDAR_MONTH_PATTERN,
 } from "./billing-rhythms-calendar.js";
 export {
   fulfillmentPreferencePayloadSchema,

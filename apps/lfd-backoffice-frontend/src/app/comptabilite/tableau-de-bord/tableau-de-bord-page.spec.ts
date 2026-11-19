@@ -104,12 +104,14 @@ function entity(over: Partial<LegalEntityView> = {}): LegalEntityView {
 }
 
 /** Un calendrier tel que le serveur le rend — l'écran ne recalcule aucune date. */
-function rhythmsCalendar(legalEntityId: string): BillingRhythmsCalendarView {
+function rhythmsCalendar(legalEntityId: string, month = '2026-10'): BillingRhythmsCalendarView {
+  const next = month === '2026-10' ? '2026-11' : '2026-12';
   return {
     legalEntityId,
     today: '2026-10-08',
-    startsOn: '2026-10-05',
-    endsOn: '2026-11-16',
+    month,
+    startsOn: `${month}-01`,
+    endsOn: `${next}-01`,
     preNotificationDays: 14,
     rhythms: [
       { mode: 'weekly', followed: false, payerCount: 0, periods: [] },
@@ -141,13 +143,18 @@ class FakeDashboard {
   catalogValue = catalog();
   rhythmsFails = false;
   readonly rhythmsAskedFor: string[] = [];
+  readonly rhythmsMonths: (string | null)[] = [];
   readonly downloaded: string[] = [];
 
-  rhythmsCalendar(legalEntityId: string): Promise<BillingRhythmsCalendarView> {
+  rhythmsCalendar(
+    legalEntityId: string,
+    month: string | null = null,
+  ): Promise<BillingRhythmsCalendarView> {
     this.rhythmsAskedFor.push(legalEntityId);
+    this.rhythmsMonths.push(month);
     return this.rhythmsFails
       ? Promise.reject(new Error('rythmes indisponibles'))
-      : Promise.resolve(rhythmsCalendar(legalEntityId));
+      : Promise.resolve(rhythmsCalendar(legalEntityId, month ?? '2026-10'));
   }
 
   customers(): Promise<CustomerPortfolioView> {
@@ -321,6 +328,22 @@ describe('TableauDeBordPage', () => {
     expect(body).toContain('Mensuel');
     expect(body).toContain('16 novembre 2026');
     expect(api.rhythmsAskedFor).toHaveLength(1);
+  });
+
+  it('la frise s’ouvre sur le mois en cours, et la flèche relit le mois suivant', async () => {
+    const api = new FakeDashboard();
+    const { fixture } = await render(api);
+    expect(api.rhythmsMonths).toEqual([null]);
+    expect(text(fixture)).toContain('Octobre 2026');
+
+    (fixture.nativeElement as HTMLElement)
+      .querySelector<HTMLButtonElement>('[data-month-next] button')
+      ?.click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(api.rhythmsMonths).toEqual([null, '2026-11']);
+    expect(text(fixture)).toContain('Novembre 2026');
   });
 
   /**

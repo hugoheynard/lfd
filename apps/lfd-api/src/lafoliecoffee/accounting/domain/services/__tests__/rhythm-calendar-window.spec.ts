@@ -1,7 +1,12 @@
 import { ModeDatesTimeline } from "../mode-dates-timeline.js";
 import type { CollectionCalendarSettings } from "../collection-calendar.js";
-import { rhythmCalendarWindowAt, rhythmPeriodsIn } from "../rhythm-calendar-window.js";
+import {
+  calendarMonthAt,
+  rhythmCalendarMonth,
+  rhythmPeriodsIn,
+} from "../rhythm-calendar-window.js";
 import { paris } from "./billing-mode-fixtures.js";
+import { InvalidCalendarMonthError } from "../../errors/accounting-errors.js";
 
 /**
  * Les dates ne sont comparées qu'entre elles et à l'instant donné : aucune
@@ -14,16 +19,32 @@ const SETTINGS: CollectionCalendarSettings = {
   depositCutoff: null,
 };
 
-// Jeudi 8 octobre 2026 → l'axe part du lundi 5, six semaines.
-const WINDOW = rhythmCalendarWindowAt(paris("2026-10-08", "11:00"));
+// Un axe de six semaines, du lundi 5 octobre : les jalons s'y lisent des deux côtés d'un mois.
+const WINDOW = { startsOn: "2026-10-05", endsOn: "2026-11-16" };
 
-describe("rhythmCalendarWindowAt — l'axe du tableau de bord", () => {
-  it("part du lundi de la semaine, à Paris, et dure six semaines", () => {
-    expect(WINDOW).toEqual({ startsOn: "2026-10-05", endsOn: "2026-11-16" });
+describe("rhythmCalendarMonth — l'axe du tableau de bord", () => {
+  it("un mois calendaire, de son 1er au 1er du mois suivant exclu", () => {
+    expect(rhythmCalendarMonth("2026-11")).toEqual({
+      startsOn: "2026-11-01",
+      endsOn: "2026-12-01",
+    });
   });
 
-  it("un dimanche appartient à la semaine qui finit, pas à celle qui commence", () => {
-    expect(rhythmCalendarWindowAt(paris("2026-10-11", "23:30")).startsOn).toBe("2026-10-05");
+  it("décembre finit au 1er janvier de l'année suivante", () => {
+    expect(rhythmCalendarMonth("2026-12")).toEqual({
+      startsOn: "2026-12-01",
+      endsOn: "2027-01-01",
+    });
+  });
+
+  it("refuse un mois mal formé", () => {
+    expect(() => rhythmCalendarMonth("2026-13")).toThrow(InvalidCalendarMonthError);
+    expect(() => rhythmCalendarMonth("2026-1")).toThrow(InvalidCalendarMonthError);
+  });
+
+  it("le mois en cours se lit à Paris : le 31 octobre à 23h30 est encore octobre", () => {
+    expect(calendarMonthAt(paris("2026-10-31", "23:30"))).toBe("2026-10");
+    expect(calendarMonthAt(paris("2026-11-01", "00:00"))).toBe("2026-11");
   });
 });
 

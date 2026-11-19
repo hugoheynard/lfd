@@ -140,6 +140,15 @@ describe("le calendrier des trois rythmes", () => {
     expect((await modeOf(id, "weekly")).payerCount).toBe(0);
   });
 
+  it("un mois demandé borne l'axe à ce mois ; un mois mal formé est refusé en 400", async () => {
+    const id = await declare();
+    const view = jsonBody<BillingRhythmsCalendarView>(
+      await staff().get(`${BASE}/${id}/billing-modes/calendar?month=2027-02`).expect(200),
+    );
+    expect(view).toMatchObject({ month: "2027-02", startsOn: "2027-02-01", endsOn: "2027-03-01" });
+    await staff().get(`${BASE}/${id}/billing-modes/calendar?month=2027-2`).expect(400);
+  });
+
   it("refuse une entité inconnue en 404", async () => {
     await staff().get(`${BASE}/inconnue/billing-modes/calendar`).expect(404);
   });

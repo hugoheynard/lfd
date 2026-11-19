@@ -5,7 +5,28 @@
 <section class="lanes" aria-labelledby="rhythm-lanes-title">
   <div class="lanes-head">
     <span class="lanes-eyebrow" id="rhythm-lanes-title">Rythmes de prélèvement</span>
-    <span class="lanes-axis">{{ axisLabel() }}</span>
+    <span class="lanes-nav">
+      @if (awayFromToday()) {
+        <button foldButton emphasis="outline" size="sm" (click)="backToToday()" data-month-today>
+          Ce mois-ci
+        </button>
+      }
+      <fold-button-icon
+        icon="chevron-left"
+        size="sm"
+        tooltip="Mois précédent"
+        (clicked)="previous()"
+        data-month-previous
+      />
+      <span class="lanes-axis" aria-live="polite" data-month>{{ axisLabel() }}</span>
+      <fold-button-icon
+        icon="chevron-right"
+        size="sm"
+        tooltip="Mois suivant"
+        (clicked)="next()"
+        data-month-next
+      />
+    </span>
   </div>
 
   <ul class="lanes-legend">
@@ -15,10 +36,12 @@
         {{ item.label }}
       </li>
     }
-    <li class="lanes-legend-item">
-      <span class="lanes-today-swatch" aria-hidden="true"></span>
-      {{ todayLabel() }}
-    </li>
+    @if (todayShown()) {
+      <li class="lanes-legend-item">
+        <span class="lanes-today-swatch" aria-hidden="true"></span>
+        {{ todayLabel() }}
+      </li>
+    }
   </ul>
 
   <div class="lanes-grid">
@@ -41,7 +64,9 @@
           @for (week of weeks(); track week.day) {
             <span class="lanes-tick" [style.left.%]="week.percent"></span>
           }
-          <span class="lanes-today" [style.left.%]="todayPercent()"></span>
+          @if (todayShown()) {
+            <span class="lanes-today" [style.left.%]="todayPercent()"></span>
+          }
           @for (mark of lane.marks; track mark.key) {
             <span
               class="lanes-mark"
@@ -74,7 +99,7 @@
             >
           </span>
         } @else {
-          <span class="lanes-next">Aucun prélèvement sur la période affichée</span>
+          <span class="lanes-next">Aucun prélèvement à venir sur ce mois</span>
         }
         <ul class="lanes-sr" [attr.aria-label]="lane.title">
           @for (line of lane.lines; track line.key) {
