@@ -61,6 +61,24 @@
                         (quantityChange)="onQuantity(line, $event)"
                         (remove)="cart.remove(line.sku)"
                       />
+                      @if (limitNotices().get(line.sku); as notice) {
+                        <fold-callout variant="warning" data-item-limit>
+                          <div class="mc-limit">
+                            <span>{{ notice }}</span>
+                            @if (!draft.itemLimitOverriding()) {
+                              <button
+                                foldButton
+                                size="sm"
+                                emphasis="outline"
+                                data-item-limit-override
+                                (click)="draft.itemLimitOverriding.set(true)"
+                              >
+                                Passer outre
+                              </button>
+                            }
+                          </div>
+                        </fold-callout>
+                      }
                       @for (said of refusals().get(line.sku) ?? []; track said) {
                         <fold-callout variant="alert" data-line-refusal>{{ said }}</fold-callout>
                       }
@@ -127,6 +145,21 @@
                 </fold-callout>
               }
 
+              @if (asksReason() && draft.itemLimitOverriding()) {
+                <fold-textarea
+                  label="Motif du dépassement"
+                  required
+                  data-item-limit-reason
+                  placeholder="Pourquoi l'équipe passe outre la limite du produit."
+                  [rows]="2"
+                  [hint]="reasonHint()"
+                  [(value)]="draft.itemLimitReason"
+                />
+              }
+              @if (limitBlocker(); as message) {
+                <fold-callout variant="warning" data-item-limit-blocker>{{ message }}</fold-callout>
+              }
+
               @if (settlementRefund(); as message) {
                 <fold-callout variant="info" data-settlement-refund>{{ message }}</fold-callout>
               }
@@ -166,7 +199,7 @@
                 } @else {
                   <button
                     foldButton
-                    [disabled]="submitting() || stale() || refused()"
+                    [disabled]="submitting() || stale() || refused() || limitBlocker() !== null"
                     (click)="validate()"
                     data-validate
                   >

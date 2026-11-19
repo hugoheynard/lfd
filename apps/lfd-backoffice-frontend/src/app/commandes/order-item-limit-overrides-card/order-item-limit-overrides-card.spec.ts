@@ -8,6 +8,7 @@ import { OrderItemLimitOverridesCard } from './order-item-limit-overrides-card';
 const OVERRIDE: AdminOrderItemLimitOverride = {
   sku: 'PAIN-LEV',
   staffUserId: 'staff_01',
+  staffName: 'Camille Martin',
   reason: 'Le client a appelé avant midi.',
   daysBefore: 2,
   time: '12:00',
@@ -44,8 +45,14 @@ describe('OrderItemLimitOverridesCard', () => {
     expect(text).toContain('Pain au levain');
     expect(text).toContain('2 jours avant, 12:00');
     expect(text).toContain('Le client a appelé avant midi.');
-    expect(text).toContain('staff_01');
+    expect(text).toContain('Camille Martin');
+    expect(text).not.toContain('staff_01');
     expect(text).toContain('à la saisie');
+  });
+
+  it("retombe sur l'identifiant quand le serveur ne connaît pas de nom", async () => {
+    const host = await render([{ ...OVERRIDE, staffName: null }]);
+    expect(host.textContent).toContain('staff_01');
   });
 
   it('retombe sur le SKU quand la ligne est inconnue', async () => {

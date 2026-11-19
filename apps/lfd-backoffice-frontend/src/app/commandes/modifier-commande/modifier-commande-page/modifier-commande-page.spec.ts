@@ -138,6 +138,79 @@ describe('modifier une commande depuis le back-office', () => {
     quoted = QUOTE;
   });
 
+  describe('passer outre la limite d’un produit (plan des dépassements, § 3.5)', () => {
+    const LIMIT = { sku: 'BAG', daysBefore: 1, time: '18:00', limitAt: '2030-01-01T17:00:00.000Z' };
+    const refusal = (code: string, message: string) =>
+      new HttpErrorResponse({ status: 409, error: { code, message } });
+
+    it('la ligne dépassée s’annonce, « Valider » attend le motif, qui part avec la modification', async () => {
+      quoted = { ...QUOTE, itemLimitOverrides: [LIMIT] };
+      const { fixture, page, revise } = await mount();
+      await page['askQuote']();
+      fixture.detectChanges();
+      const el = fixture.nativeElement as HTMLElement;
+      expect(el.querySelector('[data-item-limit]')?.textContent).toContain(
+        'ce produit se commande 1 jour avant, 18:00',
+      );
+      expect(el.querySelector('[data-item-limit-reason]')).toBeNull();
+      expect(el.querySelector<HTMLButtonElement>('[data-validate]')?.disabled).toBe(true);
+      await page['validate']();
+      expect(revise).not.toHaveBeenCalled();
+
+      el.querySelector<HTMLButtonElement>('[data-item-limit-override]')?.click();
+      fixture.detectChanges();
+      expect(el.querySelector('[data-item-limit-reason]')).not.toBeNull();
+      expect(el.querySelector('[data-item-limit-blocker]')?.textContent).toContain(
+        'Indiquez pourquoi',
+      );
+
+      page['draft'].itemLimitReason.set('  Le client a appelé  ');
+      fixture.detectChanges();
+      expect(el.querySelector('[data-item-limit-blocker]')).toBeNull();
+      await page['validate']();
+      expect(revise).toHaveBeenCalledWith(
+        'ord_1',
+        expect.objectContaining({ itemLimitOverrideReason: 'Le client a appelé' }),
+      );
+    });
+
+    it('sans limite passée, aucun motif ne part', async () => {
+      const { page, revise } = await mount();
+      await page['askQuote']();
+      await page['validate']();
+      expect(revise.mock.calls[0]?.[1]).not.toHaveProperty('itemLimitOverrideReason');
+    });
+
+    it('le refus « motif manquant » rouvre le champ du motif', async () => {
+      quoted = QUOTE;
+      const { fixture, page } = await mount(async () => {
+        throw refusal('orders.cutoff.item_limit_reason_required', 'Indiquez pourquoi.');
+      });
+      await page['askQuote']();
+      quoted = { ...QUOTE, itemLimitOverrides: [LIMIT] };
+      await page['validate']();
+      await fixture.whenStable();
+      fixture.detectChanges();
+      const el = fixture.nativeElement as HTMLElement;
+      expect(page['draft'].itemLimitOverriding()).toBe(true);
+      expect(el.querySelector('[data-item-limit-reason]')).not.toBeNull();
+      expect(el.querySelector('[data-revise-refusal]')?.textContent).toContain(
+        'Indiquez pourquoi.',
+      );
+    });
+
+    it('le refus « limite passée » s’affiche dans les mots du serveur', async () => {
+      const said =
+        '« Baguette » ne se commande plus pour cette journée : sa limite de commande est passée.';
+      const { fixture, page, quoteRevision } = await mount();
+      quoteRevision.mockRejectedValueOnce(refusal('orders.cutoff.item_limit_past', said));
+      await page['askQuote']();
+      fixture.detectChanges();
+      const el = fixture.nativeElement as HTMLElement;
+      expect(el.querySelector('[data-revise-refusal]')?.textContent).toContain(said);
+    });
+  });
+
   describe('une commande payée par carte (plan S2, R15)', () => {
     const STAFF =
       "Cette commande est payée par carte : l'équipe ne peut pas l'augmenter. Demandez au client de modifier sa commande, ou passez une seconde commande.";

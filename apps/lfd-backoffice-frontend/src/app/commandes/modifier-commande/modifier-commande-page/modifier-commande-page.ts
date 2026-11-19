@@ -1,6 +1,9 @@
 import {
+  afterNextRender,
   ChangeDetectionStrategy,
   Component,
+  ElementRef,
+  Injector,
   computed,
   effect,
   inject,
@@ -12,6 +15,7 @@ import { Router, RouterLink } from '@angular/router';
 import {
   audienceOf,
   DEFAULT_DELIVERY_AVAILABILITY,
+  ITEM_LIMIT_OVERRIDE_REASON_MAX_LENGTH,
   type AdminOrderView,
   type CatalogItemView,
   type CustomerShelfPricesView,
@@ -71,6 +75,12 @@ import {
   revisionDraftOf,
 } from '../revision-draft';
 import { isTotalChangedRefusal } from '../../nouvelle-commande/total-changed-refusal';
+import {
+  exceededText,
+  isItemLimitReasonRefusal,
+  itemLimitReasonBlockerOf,
+  itemLimitReasonPayloadOf,
+} from '../../nouvelle-commande/item-limits';
 import {
   hasRefusal,
   refusalsBySku,
@@ -147,6 +157,8 @@ export class ModifierCommandePage {
   private readonly zonesService = inject(DeliveryZonesService);
   private readonly notify = inject(NotifyService);
   private readonly router = inject(Router);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly injector = inject(Injector);
 
   protected readonly cart = new CartStore();
   protected readonly draft = new DraftStore();
@@ -341,6 +353,35 @@ export class ModifierCommandePage {
     return quote !== null && (hasRefusal(quote) || this.settlementRefusal() !== null);
   });
 
+  /**
+   * Les limites de produit que la modification passerait (plan
+   * `plan-passer-outre-la-limite-produit.md`, § 3.5), dites par SKU — le
+   * serveur ne les sert qu'à qui a le droit, sur les lignes ajoutées ou
+   * augmentées d'un produit qui le permet.
+   */
+  protected readonly limitNotices = computed(
+    () =>
+      new Map(
+        (this.quote()?.itemLimitOverrides ?? []).map(
+          (limit) => [limit.sku, exceededText(limit)] as const,
+        ),
+      ),
+  );
+  /** Le devis passe une limite de produit : le motif a lieu d'être. */
+  protected readonly asksReason = computed(() => this.limitNotices().size > 0);
+  protected readonly reasonHint = computed(
+    () =>
+      `Obligatoire, consigné sur la commande. ${String(this.draft.itemLimitReason().trim().length)} / ${String(ITEM_LIMIT_OVERRIDE_REASON_MAX_LENGTH)} caractères.`,
+  );
+  /** Ce qui retient « Valider » tant que le motif manque — `null` quand rien. */
+  protected readonly limitBlocker = computed(() =>
+    itemLimitReasonBlockerOf(
+      this.asksReason(),
+      this.draft.itemLimitOverriding(),
+      this.draft.itemLimitReason(),
+    ),
+  );
+
   protected readonly changes = computed(() =>
     (this.quote()?.changes ?? []).map((change: OrderRevisionChange) => ({
       key: change,
@@ -386,6 +427,9 @@ export class ModifierCommandePage {
     this.refusal.set(null);
     this.stale.set(false);
     this.refusedTotal.set(null);
+    // Un motif vaut pour la modification en cours, jamais après une relecture.
+    this.draft.itemLimitOverriding.set(false);
+    this.draft.itemLimitReason.set('');
     try {
       const order = await this.orders.byId(id);
       const companyId = order.companyId;
@@ -462,7 +506,7 @@ export class ModifierCommandePage {
   protected async validate(): Promise<void> {
     const content = this.content();
     const quote = this.quote();
-    if (content === null || quote === null || this.refused()) {
+    if (content === null || quote === null || this.refused() || this.limitBlocker() !== null) {
       return;
     }
     this.submitting.set(true);
@@ -475,6 +519,8 @@ export class ModifierCommandePage {
         ...content,
         expectedRevision: quote.revision,
         expectedTotalCents: quote.totalCents,
+        // Le motif part avec la modification seule : le devis ne le lit pas.
+        ...itemLimitReasonPayloadOf(this.draft.itemLimitOverriding(), this.draft.itemLimitReason()),
       });
       const refund = settlementRefundOf(quote);
       this.notify.success(
@@ -490,10 +536,43 @@ export class ModifierCommandePage {
         void this.askQuote();
         return;
       }
+      if (isItemLimitReasonRefusal(error)) {
+        // Pas une panne : le champ du motif. On l'ouvre et on y ramène ; le
+        // devis se relit pour nommer la ligne.
+        // Le devis relu efface le refus affiché : la phrase se pose après.
+        const said = httpErrorMessage(
+          error,
+          'Indiquez pourquoi vous passez outre la limite du produit.',
+        );
+        this.draft.itemLimitOverriding.set(true);
+        this.quoted.set(null);
+        await this.askQuote();
+        if (this.refusal() === null) {
+          this.refusal.set(said);
+        }
+        this.focusReason();
+        return;
+      }
+      // `orders.cutoff.item_limit_past` compris : son message nomme le
+      // produit et les sorties, sans SKU pour le situer sur une ligne.
       this.refuse(error, "La modification n'a pas abouti. Réessayez.");
     } finally {
       this.submitting.set(false);
     }
+  }
+
+  /** Amène au champ du motif, une fois rendu. */
+  private focusReason(): void {
+    afterNextRender(
+      () => {
+        const field = this.host.nativeElement.querySelector<HTMLElement>(
+          '[data-item-limit-reason] textarea',
+        );
+        // `focus()` amène le champ à l'écran.
+        field?.focus();
+      },
+      { injector: this.injector },
+    );
   }
 
   private refuse(error: unknown, fallback: string): void {

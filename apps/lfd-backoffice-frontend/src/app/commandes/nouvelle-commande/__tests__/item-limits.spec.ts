@@ -6,6 +6,7 @@ import {
   ITEM_LIMIT_CLOSED,
   isItemLimitReasonRefusal,
   itemLimitBlockerOf,
+  itemLimitReasonBlockerOf,
   itemLimitNoticesOf,
   itemLimitReasonPayloadOf,
 } from '../item-limits';
@@ -83,5 +84,14 @@ describe('isItemLimitReasonRefusal', () => {
       true,
     );
     expect(isItemLimitReasonRefusal(refusal('orders.cutoff.grace'))).toBe(false);
+  });
+});
+
+describe('itemLimitReasonBlockerOf', () => {
+  it('ne retient rien sans limite passée, le motif sinon', () => {
+    expect(itemLimitReasonBlockerOf(false, false, '')).toBeNull();
+    expect(itemLimitReasonBlockerOf(true, false, '')).toContain('passez outre');
+    expect(itemLimitReasonBlockerOf(true, true, ' ')).toContain('Indiquez pourquoi');
+    expect(itemLimitReasonBlockerOf(true, true, 'Client fidèle')).toBeNull();
   });
 });

@@ -25,14 +25,14 @@ const ORIGIN: Readonly<Record<AdminOrderItemLimitOverride['origin'], string>> = 
 
 /**
  * **« Limites de produit dépassées »** sur la fiche d'une commande (plan
- * `plan-passer-outre-la-limite-produit.md`, § 3.5) : le produit, la limite
+ * `passer-outre-la-limite-d-un-produit.md`, § 3.5) : le produit, la limite
  * passée, le motif, qui et quand.
  *
  * Rien n'est rendu sans dépassement, ni quand le serveur ne sert pas la liste
  * (sans `lfc_product_limit_override:read`) : il en décide, l'écran se tait.
  *
- * « Qui » est l'identifiant de la fiche d'annuaire : la vue ne porte pas de
- * nom, et l'écran ne sait pas en résoudre un.
+ * « Qui » est le nom que le serveur résout ; l'identifiant de la fiche
+ * d'annuaire seulement quand il n'en a pas (`staffName: null`).
  */
 @Component({
   selector: 'app-order-item-limit-overrides-card',
@@ -57,7 +57,7 @@ export class OrderItemLimitOverridesCard {
       product: names.get(override.sku) ?? override.sku,
       limit: `${String(override.daysBefore)} jour${override.daysBefore > 1 ? 's' : ''} avant, ${override.time}`,
       reason: override.reason,
-      by: override.staffUserId,
+      by: override.staffName ?? override.staffUserId,
       recordedAt: override.recordedAt,
       origin: ORIGIN[override.origin],
     }));

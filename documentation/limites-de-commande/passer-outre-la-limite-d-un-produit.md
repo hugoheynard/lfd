@@ -125,6 +125,11 @@ motif manquant ramène au champ. La fiche d'une commande montre la carte
 - **Une demande du client (M4) appliquée par une personne qui a le droit** :
   aujourd'hui refusée comme sans droit. Lire le droit au contrôleur de M4 la
   laisserait passer avec un motif.
+- **À la modification par l'équipe, une ligne non dépassable ne s'annonce
+  pas avant le refus** : le devis d'une modification ne rend que les
+  dépassements possibles, et le refus `orders.cutoff.item_limit_past` nomme le
+  produit dans sa phrase, sans SKU ; l'écran l'affiche donc en refus clair, pas
+  à côté de la ligne. Le serveur peut servir les lignes fermées au devis.
 - **La phrase du journal du référentiel** dit l'état de la case, pas son
   changement (« peut désormais… ») : le fait ne porte pas l'état d'avant.
 - **Rien ne vérifie qu'un produit se fabrique en moins de temps que sa

@@ -8,7 +8,7 @@ import {
 /**
  * **Les lignes que la limite de leur produit ferme**, lues sur l'avis de
  * l'estimation (`cutoff.closedByItemLimit`, `cutoff.exceeded`) — plan
- * `documentation/limites-de-commande/plan-passer-outre-la-limite-produit.md`,
+ * `documentation/limites-de-commande/passer-outre-la-limite-d-un-produit.md`,
  * § 3.5 et § 3.7.
  *
  * Rien n'est jugé ici : le serveur dit quelle ligne est fermée, si elle est
@@ -72,7 +72,20 @@ export function itemLimitBlockerOf(
   overriding: boolean,
   reason: string,
 ): string | null {
-  if (!asksItemLimitReason(cutoff)) {
+  return itemLimitReasonBlockerOf(asksItemLimitReason(cutoff), overriding, reason);
+}
+
+/**
+ * La même retenue, quand l'écran sait déjà si une limite est passée — la
+ * modification la lit sur `itemLimitOverrides` du devis, pas sur un avis de
+ * l'heure limite.
+ */
+export function itemLimitReasonBlockerOf(
+  asks: boolean,
+  overriding: boolean,
+  reason: string,
+): string | null {
+  if (!asks) {
     return null;
   }
   if (!overriding) {
