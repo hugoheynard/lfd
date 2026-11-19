@@ -49,6 +49,7 @@ export function pimFactsColumns(facts: PimFacts) {
     orderLimitDaysBefore: facts.orderTimeLimit?.daysBefore ?? null,
     orderLimitTime: facts.orderTimeLimit?.time ?? null,
     orderLimitGraceMinutes: facts.orderTimeLimit?.graceMinutes ?? null,
+    orderLimitStaffMayExceed: facts.orderTimeLimit?.staffMayExceed ?? false,
     publicTtcCents: facts.publicTtcCents,
     proPricePerKgMillicents: facts.proPricePerKgMillicents,
     publicPricePerKgTtcCents: facts.publicPricePerKgTtcCents,

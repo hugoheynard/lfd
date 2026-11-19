@@ -53,6 +53,7 @@ function pushWithLimits(): Promise<void> {
           daysBefore: 2,
           time: "12:00",
           graceMinutes: 30,
+          staffMayExceed: false,
         },
         {
           // Une déclinaison n'a plus de limite propre (2026-10-21) : sur le produit.
@@ -60,12 +61,14 @@ function pushWithLimits(): Promise<void> {
           daysBefore: 1,
           time: "18:00",
           graceMinutes: null,
+          staffMayExceed: false,
         },
         {
           scope: { type: "product", id: `prd_${BREAD}` },
           daysBefore: 0,
           time: "09:00",
           graceMinutes: null,
+          staffMayExceed: false,
         },
       ],
     ),

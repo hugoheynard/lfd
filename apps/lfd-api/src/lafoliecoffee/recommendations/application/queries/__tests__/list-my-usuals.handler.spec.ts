@@ -41,7 +41,9 @@ const CATALOG = new InMemoryProductCatalog([
   served("VIE-001"),
   served("BOI-001"),
   // Fermé pour aujourd'hui : la limite est la veille.
-  served("THE-001", { orderTimeLimit: { daysBefore: 1, time: "00:01", graceMinutes: 0 } }),
+  served("THE-001", {
+    orderTimeLimit: { daysBefore: 1, time: "00:01", graceMinutes: 0, staffMayExceed: false },
+  }),
   ...MANY.map((sku) => served(sku)),
 ]);
 

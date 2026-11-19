@@ -48,6 +48,7 @@ interface LimitRow {
   readonly daysBefore: number | null;
   readonly time: string | null;
   readonly graceMinutes: number | null;
+  readonly staffMayExceed: boolean;
   readonly archived: boolean;
 }
 
@@ -60,11 +61,17 @@ const PRODUCT = { type: "product", id: "prd_e2e" } as const;
 describe("poser une limite", () => {
   it("crée la limite d'un produit, puis la REMPLACE au lieu d'en créer une seconde", async () => {
     const first = jsonBody<{ id: string }>(
-      await staff().put(LIMITS).send({ scope: PRODUCT, daysBefore: 1, time: "18:00" }).expect(200),
+      await staff()
+        .put(LIMITS)
+        .send({ scope: PRODUCT, daysBefore: 1, time: "18:00", staffMayExceed: false })
+        .expect(200),
     );
 
     const second = jsonBody<{ id: string }>(
-      await staff().put(LIMITS).send({ scope: PRODUCT, daysBefore: 1, time: "16:00" }).expect(200),
+      await staff()
+        .put(LIMITS)
+        .send({ scope: PRODUCT, daysBefore: 1, time: "16:00", staffMayExceed: false })
+        .expect(200),
     );
 
     // Le MÊME identifiant : un changement d'heure ne fait pas disparaître la
@@ -77,10 +84,18 @@ describe("poser une limite", () => {
   });
 
   it("garde deux produits côte à côte", async () => {
-    await staff().put(LIMITS).send({ scope: PRODUCT, daysBefore: 1, time: "18:00" }).expect(200);
     await staff()
       .put(LIMITS)
-      .send({ scope: { type: "product", id: "prd_autre" }, daysBefore: 2, time: "12:00" })
+      .send({ scope: PRODUCT, daysBefore: 1, time: "18:00", staffMayExceed: false })
+      .expect(200);
+    await staff()
+      .put(LIMITS)
+      .send({
+        scope: { type: "product", id: "prd_autre" },
+        daysBefore: 2,
+        time: "12:00",
+        staffMayExceed: false,
+      })
       .expect(200);
 
     expect(await list()).toHaveLength(2);
@@ -88,7 +103,10 @@ describe("poser une limite", () => {
 
   /** Lot B du plan des phrases (2026-09-19) : la portée se fige en mots au journal. */
   it("fige au journal la portée en mots", async () => {
-    await staff().put(LIMITS).send({ scope: PRODUCT, daysBefore: 1, time: "18:00" }).expect(200);
+    await staff()
+      .put(LIMITS)
+      .send({ scope: PRODUCT, daysBefore: 1, time: "18:00", staffMayExceed: false })
+      .expect(200);
 
     const facts = await ctx.prisma.activityEvent.findMany({
       where: { type: "order_time_limit.set" },
@@ -112,7 +130,7 @@ describe("poser une limite", () => {
   ] as const)("refuse la portée %s, en disant où se règle la générale", async (type, id) => {
     const refusal = await staff()
       .put(LIMITS)
-      .send({ scope: { type, id }, daysBefore: 1, time: "18:00" })
+      .send({ scope: { type, id }, daysBefore: 1, time: "18:00", staffMayExceed: false })
       .expect(400);
 
     expect(refusal.body).toMatchObject({ code: "pim.order_time_limit.scope_retired" });
@@ -120,8 +138,41 @@ describe("poser une limite", () => {
     expect(await list()).toHaveLength(0);
   });
 
+  it("refuse une limite sans la case « l'équipe peut passer outre »", async () => {
+    await staff().put(LIMITS).send({ scope: PRODUCT, daysBefore: 1, time: "18:00" }).expect(400);
+
+    expect(await list()).toHaveLength(0);
+  });
+
+  it("garde la case, et la cocher seule est un changement journalisé", async () => {
+    await staff()
+      .put(LIMITS)
+      .send({ scope: PRODUCT, daysBefore: 1, time: "18:00", staffMayExceed: false })
+      .expect(200);
+    await staff()
+      .put(LIMITS)
+      .send({ scope: PRODUCT, daysBefore: 1, time: "18:00", staffMayExceed: true })
+      .expect(200);
+
+    expect(await list()).toMatchObject([{ staffMayExceed: true }]);
+    const facts = await ctx.prisma.activityEvent.findMany({
+      where: { type: "order_time_limit.set" },
+      select: { payload: true },
+    });
+    expect(facts.map((fact) => fact.payload)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ staffMayExceed: false }),
+        expect.objectContaining({ staffMayExceed: true }),
+      ]),
+    );
+    expect(facts).toHaveLength(2);
+  });
+
   it("refuse une limite de produit sans délai ou sans heure", async () => {
-    const refusal = await staff().put(LIMITS).send({ scope: PRODUCT, time: "16:00" }).expect(400);
+    const refusal = await staff()
+      .put(LIMITS)
+      .send({ scope: PRODUCT, time: "16:00", staffMayExceed: false })
+      .expect(400);
 
     expect(refusal.body).toMatchObject({ code: "pim.order_time_limit.incomplete" });
     expect(await list()).toHaveLength(0);
@@ -131,7 +182,13 @@ describe("poser une limite", () => {
   it("refuse un rattrapage sur une limite de produit", async () => {
     const refusal = await staff()
       .put(LIMITS)
-      .send({ scope: PRODUCT, daysBefore: 1, time: "18:00", graceMinutes: 30 })
+      .send({
+        scope: PRODUCT,
+        daysBefore: 1,
+        time: "18:00",
+        graceMinutes: 30,
+        staffMayExceed: false,
+      })
       .expect(400);
 
     expect(refusal.body).toMatchObject({ code: "pim.order_time_limit.grace_retired" });
@@ -141,7 +198,12 @@ describe("poser une limite", () => {
   it("refuse une portée qui se contredit", async () => {
     await staff()
       .put(LIMITS)
-      .send({ scope: { type: "product", id: null }, daysBefore: 1, time: "16:00" })
+      .send({
+        scope: { type: "product", id: null },
+        daysBefore: 1,
+        time: "16:00",
+        staffMayExceed: false,
+      })
       .expect(400);
 
     expect(await list()).toHaveLength(0);
@@ -152,7 +214,10 @@ describe("poser une limite", () => {
 describe("archiver une limite", () => {
   async function created(): Promise<string> {
     return jsonBody<{ id: string }>(
-      await staff().put(LIMITS).send({ scope: PRODUCT, daysBefore: 1, time: "16:00" }).expect(200),
+      await staff()
+        .put(LIMITS)
+        .send({ scope: PRODUCT, daysBefore: 1, time: "16:00", staffMayExceed: false })
+        .expect(200),
     ).id;
   }
 
@@ -182,7 +247,10 @@ describe("archiver une limite", () => {
     await staff().delete(`${LIMITS}/${id}`).expect(204);
 
     const again = jsonBody<{ id: string }>(
-      await staff().put(LIMITS).send({ scope: PRODUCT, daysBefore: 2, time: "12:00" }).expect(200),
+      await staff()
+        .put(LIMITS)
+        .send({ scope: PRODUCT, daysBefore: 2, time: "12:00", staffMayExceed: false })
+        .expect(200),
     );
 
     expect(again.id).toBe(id);

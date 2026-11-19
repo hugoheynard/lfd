@@ -25,5 +25,6 @@ export function toSyncRule(rule: OrderTimeLimitView): SyncOrderTimeLimitRule {
     daysBefore: rule.daysBefore,
     time: rule.time,
     graceMinutes: rule.graceMinutes,
+    staffMayExceed: rule.staffMayExceed,
   };
 }

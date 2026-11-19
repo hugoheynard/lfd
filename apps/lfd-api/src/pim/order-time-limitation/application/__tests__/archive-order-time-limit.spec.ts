@@ -26,6 +26,7 @@ function payload(over: Partial<OrderTimeLimitPayload> = {}): OrderTimeLimitPaylo
     daysBefore: 1,
     time: "18:00",
     graceMinutes: null,
+    staffMayExceed: false,
     ...over,
   };
 }
@@ -116,6 +117,7 @@ describe("ArchiveOrderTimeLimitHandler", () => {
       daysBefore: 1,
       time: "16:00",
       graceMinutes: 30,
+      staffMayExceed: false,
     });
   });
 

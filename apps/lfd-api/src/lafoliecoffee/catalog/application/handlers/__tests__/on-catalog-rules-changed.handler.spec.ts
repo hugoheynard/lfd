@@ -15,7 +15,13 @@ import { OnCatalogRulesChangedHandler } from "../on-catalog-rules-changed.handle
 
 const EMITTED = "2030-01-01T09:00:00.000Z";
 const RULES: SyncOrderTimeLimitRule[] = [
-  { scope: { type: "global", id: null }, daysBefore: 1, time: "18:00", graceMinutes: null },
+  {
+    scope: { type: "global", id: null },
+    daysBefore: 1,
+    time: "18:00",
+    graceMinutes: null,
+    staffMayExceed: false,
+  },
 ];
 
 class SpyingRules extends CatalogRulesProjection {

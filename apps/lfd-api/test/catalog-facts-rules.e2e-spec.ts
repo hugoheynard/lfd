@@ -51,6 +51,7 @@ function limitOf(sku: string) {
       orderLimitDaysBefore: true,
       orderLimitTime: true,
       orderLimitGraceMinutes: true,
+      orderLimitStaffMayExceed: true,
     },
   });
 }
@@ -68,7 +69,12 @@ describe("les limites de commande voyagent en règles", () => {
 
     await staff()
       .put(LIMITS)
-      .send({ scope: { type: "product", id: fiche.id }, daysBefore: 1, time: "18:00" })
+      .send({
+        scope: { type: "product", id: fiche.id },
+        daysBefore: 1,
+        time: "18:00",
+        staffMayExceed: false,
+      })
       .expect(200);
     await relayAll(ctx);
 
@@ -81,12 +87,41 @@ describe("les limites de commande voyagent en règles", () => {
         daysBefore: 1,
         time: "18:00",
         graceMinutes: null,
+        staffMayExceed: false,
       },
     ]);
     expect(await limitOf(fiche.variantSku)).toMatchObject({
       orderLimitDaysBefore: 1,
       orderLimitTime: "18:00",
       orderLimitGraceMinutes: 0,
+    });
+  });
+
+  /**
+   * La case « l'équipe peut passer outre », cochée seule, descend sur
+   * l'article : délai et heure identiques ne suffisent pas à dire « rien n'a
+   * changé ».
+   */
+  it("la case cochée seule au référentiel descend sur l'article", async () => {
+    const fiche = await anActiveFiche(staff, "Pain de seigle");
+    const limit = { scope: { type: "product", id: fiche.id }, daysBefore: 2, time: "12:00" };
+    await staff()
+      .put(LIMITS)
+      .send({ ...limit, staffMayExceed: false })
+      .expect(200);
+    await relayAll(ctx);
+    expect(await limitOf(fiche.variantSku)).toMatchObject({ orderLimitStaffMayExceed: false });
+
+    await staff()
+      .put(LIMITS)
+      .send({ ...limit, staffMayExceed: true })
+      .expect(200);
+    await relayAll(ctx);
+
+    expect(await limitOf(fiche.variantSku)).toMatchObject({
+      orderLimitDaysBefore: 2,
+      orderLimitTime: "12:00",
+      orderLimitStaffMayExceed: true,
     });
   });
 
@@ -100,7 +135,12 @@ describe("les limites de commande voyagent en règles", () => {
     const { id } = jsonBody<{ id: string }>(
       await staff()
         .put(LIMITS)
-        .send({ scope: { type: "product", id: fiche.id }, daysBefore: 1, time: "18:00" })
+        .send({
+          scope: { type: "product", id: fiche.id },
+          daysBefore: 1,
+          time: "18:00",
+          staffMayExceed: false,
+        })
         .expect(200),
     );
     await relayAll(ctx);
@@ -128,7 +168,12 @@ describe("les limites de commande voyagent en règles", () => {
     const fiche = await anActiveFiche(staff, "Chausson");
     await staff()
       .put(LIMITS)
-      .send({ scope: { type: "product", id: fiche.id }, daysBefore: 2, time: "12:00" })
+      .send({
+        scope: { type: "product", id: fiche.id },
+        daysBefore: 2,
+        time: "12:00",
+        staffMayExceed: false,
+      })
       .expect(200);
     await relayAll(ctx);
 
@@ -148,7 +193,12 @@ describe("les limites de commande voyagent en règles", () => {
 
     await staff()
       .put(LIMITS)
-      .send({ scope: { type: "variant", id: item?.variantId ?? "" }, daysBefore: 3, time: "09:00" })
+      .send({
+        scope: { type: "variant", id: item?.variantId ?? "" },
+        daysBefore: 3,
+        time: "09:00",
+        staffMayExceed: false,
+      })
       .expect(400);
     await relayAll(ctx);
 

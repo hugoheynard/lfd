@@ -52,6 +52,11 @@ export interface OrderTimeLimitFacts {
   readonly time: string;
   /** Le rattrapage après la limite, en minutes. `0` = limite ferme. */
   readonly graceMinutes: number;
+  /**
+   * L'équipe peut passer outre cette limite, avec le droit, en saisissant une
+   * commande pour un client. Décision du référentiel, portée par la limite.
+   */
+  readonly staffMayExceed: boolean;
 }
 
 export type { CatalogSaleUnit } from "../catalog-sale-unit.js";

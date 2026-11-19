@@ -58,13 +58,21 @@ export function orderLimitChanges(
     .map((entry) => ({ sku: entry.sku, limit: entry.limit }));
 }
 
-function sameLimit(left: SyncOrderTimeLimit | null, right: SyncOrderTimeLimit | null): boolean {
+/**
+ * Deux limites identiques. La case « l'équipe peut passer outre » compte :
+ * sans elle, cocher la case seule ne changerait rien sur l'article.
+ */
+export function sameLimit(
+  left: SyncOrderTimeLimit | null,
+  right: SyncOrderTimeLimit | null,
+): boolean {
   if (left === null || right === null) {
     return left === right;
   }
   return (
     left.daysBefore === right.daysBefore &&
     left.time === right.time &&
-    left.graceMinutes === right.graceMinutes
+    left.graceMinutes === right.graceMinutes &&
+    left.staffMayExceed === right.staffMayExceed
   );
 }

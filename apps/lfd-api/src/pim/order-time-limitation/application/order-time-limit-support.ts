@@ -31,5 +31,6 @@ export async function limitFactPayload(
     daysBefore: limit.daysBefore,
     time: limit.time,
     graceMinutes: limit.graceMinutes,
+    staffMayExceed: limit.staffMayExceed,
   };
 }

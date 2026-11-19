@@ -75,6 +75,7 @@ export interface ItemRow extends AccessRow {
   readonly orderLimitDaysBefore: number | null;
   readonly orderLimitTime: string | null;
   readonly orderLimitGraceMinutes: number | null;
+  readonly orderLimitStaffMayExceed: boolean;
   /** À qui l'article se vend — `NULL` lu `both` (cf. `servedTo`). */
   readonly audience: string | null;
   /** À valider pour la boutique publique (lot 3) — cf. `servedTo`. */
@@ -466,7 +467,7 @@ function thumbnailOf(row: ItemRow): ResolvedCatalogItem["thumbnail"] {
 }
 
 /**
- * Les trois colonnes de limite ↔ un objet, ou `null`.
+ * Les colonnes de limite ↔ un objet, ou `null`.
  *
  * **Tout ou rien** : il suffit qu'une des trois manque pour qu'il n'y ait pas de
  * limite. Une limite sans heure ne se compare à rien, et recoller un objet
@@ -481,6 +482,7 @@ function orderTimeLimitOf(row: ItemRow): ResolvedCatalogItem["orderTimeLimit"] {
     daysBefore: orderLimitDaysBefore,
     time: orderLimitTime,
     graceMinutes: orderLimitGraceMinutes,
+    staffMayExceed: row.orderLimitStaffMayExceed,
   };
 }
 

@@ -87,6 +87,12 @@ export const orderTimeLimitPayloadSchema = z.object({
    * comme telle pour rester lisible.
    */
   graceMinutes: z.number().int().min(0).max(720).nullable().default(null),
+  /**
+   * L'équipe peut-elle passer outre cette limite en saisissant une commande
+   * pour un client ? **Obligatoire**, sans défaut : un écran qui ne l'envoie
+   * pas décocherait la case en silence à chaque pose d'heure.
+   */
+  staffMayExceed: z.boolean(),
 });
 export type OrderTimeLimitPayload = z.infer<typeof orderTimeLimitPayloadSchema>;
 
@@ -99,6 +105,8 @@ export interface OrderTimeLimitView {
   readonly daysBefore: number | null;
   readonly time: string | null;
   readonly graceMinutes: number | null;
+  /** L'équipe peut passer outre cette limite (avec le droit, en saisie). */
+  readonly staffMayExceed: boolean;
   /**
    * Archivée : la limite **ne s'applique plus** — ni au référentiel, ni au
    * commerce. Elle reste listée pour pouvoir être restaurée.

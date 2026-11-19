@@ -56,7 +56,9 @@ const CATALOG = new InMemoryProductCatalog([
   served("BOI-001"),
   served("BOI-002"),
   served("PAI-001"),
-  served("THE-001", { orderTimeLimit: { daysBefore: 1, time: "00:01", graceMinutes: 0 } }),
+  served("THE-001", {
+    orderTimeLimit: { daysBefore: 1, time: "00:01", graceMinutes: 0, staffMayExceed: false },
+  }),
 ]);
 
 class NoCutoffs extends RecommendationCutoffReader {

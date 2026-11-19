@@ -448,6 +448,12 @@ export const syncOrderTimeLimitRuleSchema = z.object({
     .nullable(),
   /** Le rattrapage après la limite, en minutes. `0` = limite ferme. */
   graceMinutes: z.number().int().min(0).max(720).nullable(),
+  /**
+   * L'équipe peut-elle passer outre cette limite ? Lue au seul rang du
+   * produit. **Absente = `false`** : une règle émise ou rangée avant que la
+   * case existe dit une limite infranchissable, jamais l'inverse.
+   */
+  staffMayExceed: z.boolean().default(false),
 });
 export type SyncOrderTimeLimitRule = z.infer<typeof syncOrderTimeLimitRuleSchema>;
 
@@ -464,6 +470,8 @@ export interface SyncOrderTimeLimit {
   readonly daysBefore: number;
   readonly time: string;
   readonly graceMinutes: number;
+  /** L'équipe peut passer outre cette limite (avec le droit, en saisie). */
+  readonly staffMayExceed: boolean;
 }
 
 /** Un produit et ses déclinaisons vendables. Au moins une, sinon rien à vendre. */

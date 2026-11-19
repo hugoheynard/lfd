@@ -57,6 +57,12 @@ model OrderTimeLimit {
   /// résolution, c'est-à-dire une limite ferme.
   graceMinutes Int? @map("grace_minutes")
 
+  /// L'équipe peut-elle passer outre cette limite en saisissant une commande
+  /// pour un client ? Une décision de catalogue : le produit répond de sa
+  /// faisabilité au fournil. Décochée par défaut : une limite est
+  /// infranchissable tant que personne n'a dit le contraire.
+  staffMayExceed Boolean @default(false) @map("staff_may_exceed")
+
   /// Archivée : la limite **cesse de s'appliquer** — ni le référentiel ni le
   /// fil vers le commerce ne la lisent plus. `NULL` = en vigueur.
   archivedAt DateTime? @map("archived_at") @db.Timestamptz(6)

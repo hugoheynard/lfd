@@ -24,6 +24,7 @@ function rule(
     time: null,
     graceMinutes: null,
     archived: false,
+    staffMayExceed: false,
     ...values,
   };
 }
@@ -53,6 +54,7 @@ describe("resolveOrderTimeLimit", () => {
       daysBefore: 2,
       time: "12:00",
       graceMinutes: 0,
+      staffMayExceed: false,
     });
   });
 
@@ -74,6 +76,7 @@ describe("resolveOrderTimeLimit", () => {
       daysBefore: 2,
       time: "12:00",
       graceMinutes: 0,
+      staffMayExceed: false,
     });
   });
 

@@ -44,6 +44,8 @@ export interface ResolvedCatalogItem {
     readonly daysBefore: number;
     readonly time: string;
     readonly graceMinutes: number;
+    /** L'équipe peut passer outre cette limite (avec le droit, en saisie). */
+    readonly staffMayExceed: boolean;
   } | null;
   readonly categoryId: string;
   readonly categoryName: string;

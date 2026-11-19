@@ -26,6 +26,7 @@ function view(
     time: null,
     graceMinutes: null,
     archived: false,
+    staffMayExceed: false,
     ...over,
   };
 }
@@ -41,6 +42,7 @@ describe("toSyncRule", () => {
       daysBefore: 2,
       time: "16:00",
       graceMinutes: 30,
+      staffMayExceed: false,
     });
   });
 
@@ -54,8 +56,22 @@ describe("toSyncRule", () => {
   it("ne laisse passer NI l'identifiant de la règle, NI le libellé de sa portée", () => {
     const rule = toSyncRule(view("category", "patisserie", { daysBefore: 1, time: "18:00" }));
 
-    expect(Object.keys(rule).sort()).toEqual(["daysBefore", "graceMinutes", "scope", "time"]);
+    expect(Object.keys(rule).sort()).toEqual([
+      "daysBefore",
+      "graceMinutes",
+      "scope",
+      "staffMayExceed",
+      "time",
+    ]);
     expect(Object.keys(rule.scope).sort()).toEqual(["id", "type"]);
+  });
+
+  it("transporte la case « l'équipe peut passer outre »", () => {
+    const rule = toSyncRule(
+      view("product", "prd_1", { daysBefore: 2, time: "12:00", staffMayExceed: true }),
+    );
+
+    expect(rule.staffMayExceed).toBe(true);
   });
 
   /**
@@ -71,6 +87,7 @@ describe("toSyncRule", () => {
       daysBefore: null,
       time: "16:00",
       graceMinutes: null,
+      staffMayExceed: false,
     });
   });
 

@@ -67,7 +67,7 @@ export class SetOrderTimeLimitHandler implements ICommandHandler<SetOrderTimeLim
         type: PIM_EVENTS.orderTimeLimitSet,
         subjectType: "order_time_limit",
         subjectId: limit.id,
-        // La portée ET les trois valeurs : c'est un réglage, et « qui a changé
+        // La portée ET ses valeurs, case comprise : c'est un réglage, et « qui a changé
         // ça » ne se répond qu'en sachant ce que ça valait. `null` y reste
         // `null` — « ce rang ne se prononce pas » est une décision, pas un vide.
         payload: {
@@ -76,6 +76,7 @@ export class SetOrderTimeLimitHandler implements ICommandHandler<SetOrderTimeLim
           daysBefore: limit.daysBefore,
           time: limit.time,
           graceMinutes: limit.graceMinutes,
+          staffMayExceed: limit.staffMayExceed,
         },
       });
       await this.limits.save(limit, ticket);

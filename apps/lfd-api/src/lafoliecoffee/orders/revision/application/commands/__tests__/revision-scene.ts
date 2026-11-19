@@ -105,7 +105,7 @@ export const CATALOG: readonly UnsealedCatalogItem[] = [
   {
     family: PAINS,
     allergens: null,
-    orderTimeLimit: { daysBefore: 1, time: "18:00", graceMinutes: 0 },
+    orderTimeLimit: { daysBefore: 1, time: "18:00", graceMinutes: 0, staffMayExceed: false },
     sku: "VIE-001",
     name: "Croissant",
     unitPriceMillicents: 200_000,
@@ -114,7 +114,7 @@ export const CATALOG: readonly UnsealedCatalogItem[] = [
   {
     family: PAINS,
     allergens: null,
-    orderTimeLimit: { daysBefore: 1, time: "18:00", graceMinutes: 0 },
+    orderTimeLimit: { daysBefore: 1, time: "18:00", graceMinutes: 0, staffMayExceed: false },
     sku: "PAI-001",
     name: "Pain",
     unitPriceMillicents: 350_000,

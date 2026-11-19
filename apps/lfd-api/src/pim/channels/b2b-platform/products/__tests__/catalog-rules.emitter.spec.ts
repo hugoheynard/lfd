@@ -44,6 +44,7 @@ const RESIDUAL = {
   daysBefore: 1,
   time: "18:00",
   graceMinutes: 60,
+  staffMayExceed: false,
   archived: false,
 } as const;
 
@@ -68,6 +69,7 @@ class TableLimits extends OrderTimeLimitRepository {
         daysBefore: 1,
         time: "16:00",
         graceMinutes: null,
+        staffMayExceed: false,
         archived: false,
       },
       // Des lignes d'avant le 2026-10-21, que la décision de Hugo a retirées.
@@ -122,6 +124,7 @@ describe("B2bCatalogRulesEmitter", () => {
         daysBefore: 1,
         time: "16:00",
         graceMinutes: null,
+        staffMayExceed: false,
       },
     ]);
   });

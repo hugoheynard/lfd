@@ -274,9 +274,15 @@ describe("ReadShopCatalogueHandler", () => {
     const EVE_18 = "TAR-001";
     const SAME_DAY = "PAI-002";
     const items = [
-      catalogItem(BUCHE, { orderTimeLimit: { daysBefore: 2, time: "12:00", graceMinutes: 15 } }),
-      catalogItem(EVE_18, { orderTimeLimit: { daysBefore: 1, time: "18:00", graceMinutes: 0 } }),
-      catalogItem(SAME_DAY, { orderTimeLimit: { daysBefore: 0, time: "09:00", graceMinutes: 0 } }),
+      catalogItem(BUCHE, {
+        orderTimeLimit: { daysBefore: 2, time: "12:00", graceMinutes: 15, staffMayExceed: false },
+      }),
+      catalogItem(EVE_18, {
+        orderTimeLimit: { daysBefore: 1, time: "18:00", graceMinutes: 0, staffMayExceed: false },
+      }),
+      catalogItem(SAME_DAY, {
+        orderTimeLimit: { daysBefore: 0, time: "09:00", graceMinutes: 0, staffMayExceed: false },
+      }),
       catalogItem(BAGUETTE),
     ];
     const limitsOf = (view: Awaited<ReturnType<ReadShopCatalogueHandler["execute"]>>) =>

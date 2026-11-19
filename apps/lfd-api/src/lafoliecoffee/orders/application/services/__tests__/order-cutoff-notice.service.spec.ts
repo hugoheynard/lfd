@@ -66,8 +66,8 @@ const NO_FEE: LateFeeSettingReader = {
 
 const CATALOG = new InMemoryProductCatalog([
   item("PLAIN", null),
-  item("EARLY", { daysBefore: 1, time: "09:00", graceMinutes: 0 }),
-  item("LATE", { daysBefore: 0, time: "12:00", graceMinutes: 0 }),
+  item("EARLY", { daysBefore: 1, time: "09:00", graceMinutes: 0, staffMayExceed: false }),
+  item("LATE", { daysBefore: 0, time: "12:00", graceMinutes: 0, staffMayExceed: false }),
 ]);
 
 function notice(rules: readonly OrderCutoffView[], now: Date): OrderCutoffNotice {

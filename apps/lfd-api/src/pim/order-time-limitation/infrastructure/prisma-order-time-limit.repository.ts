@@ -20,6 +20,7 @@ interface LimitRow {
   readonly daysBefore: number | null;
   readonly time: string | null;
   readonly graceMinutes: number | null;
+  readonly staffMayExceed: boolean;
   readonly archivedAt: Date | null;
 }
 
@@ -71,6 +72,7 @@ export class PrismaOrderTimeLimitRepository extends OrderTimeLimitRepository {
       daysBefore: limit.daysBefore,
       time: limit.time,
       graceMinutes: limit.graceMinutes,
+      staffMayExceed: limit.staffMayExceed,
       archivedAt: limit.archivedAt,
     };
     await this.prisma.orderTimeLimit.upsert({
@@ -108,6 +110,7 @@ function toView(row: LimitRow, labels: ReadonlyMap<string, string>): OrderTimeLi
     daysBefore: row.daysBefore,
     time: row.time,
     graceMinutes: row.graceMinutes,
+    staffMayExceed: row.staffMayExceed,
     archived: row.archivedAt !== null,
   };
 }
@@ -128,6 +131,7 @@ function toDomain(row: LimitRow): OrderTimeLimit | null {
       daysBefore: row.daysBefore,
       time: row.time,
       graceMinutes: row.graceMinutes,
+      staffMayExceed: row.staffMayExceed,
     },
     row.archivedAt,
   );

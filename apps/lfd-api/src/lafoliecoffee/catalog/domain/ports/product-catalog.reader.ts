@@ -14,6 +14,18 @@ export interface PricedSku {
   readonly unitPriceMillicents: number;
 }
 
+/**
+ * **La limite d'un article, telle que le commerce la tient** : la règle
+ * partagée (`OrderLimitSpec`) et la case « l'équipe peut passer outre ».
+ *
+ * Un type du commerce qui étend le contrat plutôt qu'un champ ajouté au
+ * contrat : la case est une décision du catalogue, que ni la boutique ni les
+ * avis servis ne lisent.
+ */
+export interface CatalogItemOrderLimit extends OrderLimitSpec {
+  readonly staffMayExceed: boolean;
+}
+
 /** Un article du catalogue, tel que le checkout en a besoin. Prix unitaire **HT**. */
 export interface CatalogItem extends PricedSku {
   /** Taux de TVA du **produit** en %, ex. 5.5 (alimentaire) ou 20 (non-alimentaire). */
@@ -47,7 +59,7 @@ export interface CatalogItem extends PricedSku {
    * fil ne transporte les limites : dans les deux cas, on retombe sur la règle
    * du commerce, ce qui est le comportement d'hier.
    */
-  readonly orderTimeLimit: OrderLimitSpec | null;
+  readonly orderTimeLimit: CatalogItemOrderLimit | null;
   /**
    * **Comment il se vend** (`vente-au-poids.md`, P3) : à la pièce, ou au
    * poids — la quantité commandée compte alors des grammes et se valide contre

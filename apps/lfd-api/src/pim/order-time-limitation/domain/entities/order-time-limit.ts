@@ -12,6 +12,8 @@ export interface LimitValues {
   readonly daysBefore: number | null;
   readonly time: string | null;
   readonly graceMinutes: number | null;
+  /** L'équipe peut passer outre cette limite (avec le droit, en saisie). */
+  readonly staffMayExceed: boolean;
 }
 
 /**
@@ -64,7 +66,8 @@ export class OrderTimeLimit {
   }
 
   /**
-   * Réécrit les trois réglages. La **portée ne bouge pas** : déplacer une règle
+   * Réécrit les réglages — délai, heure, rattrapage et la case « l'équipe peut
+   * passer outre ». La **portée ne bouge pas** : déplacer une règle
    * d'une famille à l'autre n'est pas une modification, c'est une suppression et
    * une création — et le confondre ferait perdre la trace de ce qui s'appliquait
    * à l'ancienne portée.
@@ -75,7 +78,8 @@ export class OrderTimeLimit {
    *
    * @throws {RetiredOrderTimeLimitScopeError} la règle vise une portée retirée.
    * @throws {IncompleteOrderTimeLimitError} le délai ou l'heure manque.
-   * @returns `false` si les réglages reposés sont ceux qu'elle porte déjà, en vigueur.
+   * @returns `false` si les réglages reposés sont ceux qu'elle porte déjà, en
+   *   vigueur — la case seule changée est un changement.
    */
   reset(payload: OrderTimeLimitPayload): boolean {
     ensureProduct(this.scope);
@@ -87,7 +91,8 @@ export class OrderTimeLimit {
       revived ||
       before.daysBefore !== next.daysBefore ||
       before.time !== next.time ||
-      before.graceMinutes !== next.graceMinutes
+      before.graceMinutes !== next.graceMinutes ||
+      before.staffMayExceed !== next.staffMayExceed
     );
   }
 
@@ -134,6 +139,10 @@ export class OrderTimeLimit {
   get graceMinutes(): number | null {
     return this.values.graceMinutes;
   }
+
+  get staffMayExceed(): boolean {
+    return this.values.staffMayExceed;
+  }
 }
 
 function valuesOf(payload: OrderTimeLimitPayload): LimitValues {
@@ -141,6 +150,7 @@ function valuesOf(payload: OrderTimeLimitPayload): LimitValues {
     daysBefore: payload.daysBefore,
     time: payload.time,
     graceMinutes: payload.graceMinutes,
+    staffMayExceed: payload.staffMayExceed,
   };
 }
 

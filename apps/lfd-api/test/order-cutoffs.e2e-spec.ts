@@ -352,7 +352,12 @@ describe("la limite portée par l'ARTICLE, reçue du référentiel", () => {
     await ctx
       .asSub(STAFF)
       .put("/pim/order-time-limits")
-      .send({ scope: { type: "product", id: fiche.id }, daysBefore: 14, time: "23:59" })
+      .send({
+        scope: { type: "product", id: fiche.id },
+        daysBefore: 14,
+        time: "23:59",
+        staffMayExceed: false,
+      })
       .expect(200);
     await relayAll(ctx);
     await ctx

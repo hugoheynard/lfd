@@ -49,6 +49,7 @@ export interface ItemRow {
   readonly orderLimitDaysBefore: number | null;
   readonly orderLimitTime: string | null;
   readonly orderLimitGraceMinutes: number | null;
+  readonly orderLimitStaffMayExceed: boolean;
   readonly operationOnly: boolean;
   readonly requiresCold: boolean;
   readonly variantsAsTiles: boolean;
@@ -71,7 +72,7 @@ export interface ItemRow {
 }
 
 /**
- * Les trois colonnes de limite ↔ un objet, ou `null`.
+ * Les colonnes de limite ↔ un objet, ou `null`.
  *
  * **Tout ou rien** : il suffit qu'une des trois manque pour qu'il n'y ait pas de
  * limite. Une limite sans heure ne se compare à rien, et reconstruire un objet
@@ -88,6 +89,7 @@ function orderTimeLimitOf(row: ItemRow) {
     daysBefore: orderLimitDaysBefore,
     time: orderLimitTime,
     graceMinutes: orderLimitGraceMinutes,
+    staffMayExceed: row.orderLimitStaffMayExceed,
   };
 }
 

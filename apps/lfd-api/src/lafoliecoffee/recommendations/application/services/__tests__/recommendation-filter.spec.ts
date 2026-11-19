@@ -46,8 +46,8 @@ function clock(): FixedClock {
 }
 
 const catalog = new InMemoryProductCatalog([
-  item("OPEN", { daysBefore: 1, time: "18:00", graceMinutes: 0 }),
-  item("CLOSED", { daysBefore: 1, time: "09:00", graceMinutes: 0 }),
+  item("OPEN", { daysBefore: 1, time: "18:00", graceMinutes: 0, staffMayExceed: false }),
+  item("CLOSED", { daysBefore: 1, time: "09:00", graceMinutes: 0, staffMayExceed: false }),
   item("COMMERCE", null),
   item("IN_CART", null),
 ]);

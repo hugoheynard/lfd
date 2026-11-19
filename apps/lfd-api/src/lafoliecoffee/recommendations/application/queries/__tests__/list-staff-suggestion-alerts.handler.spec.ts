@@ -45,7 +45,7 @@ function served(sku: string, over: Partial<UnsealedCatalogItem> = {}): UnsealedC
 }
 
 /** Une limite à soixante jours : fermée sur tout l'horizon de 31 jours. */
-const FAR_LIMIT = { daysBefore: 60, time: "10:00", graceMinutes: 0 };
+const FAR_LIMIT = { daysBefore: 60, time: "10:00", graceMinutes: 0, staffMayExceed: false };
 
 /** Le catalogue servi, une vitrine par clientèle. */
 class TwoShelves extends ProductCatalogReader {

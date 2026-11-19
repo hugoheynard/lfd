@@ -135,6 +135,7 @@ export class PrismaCatalogProductFactsProjection extends CatalogProductFactsProj
         "orderLimitDaysBefore",
         "orderLimitTime",
         "orderLimitGraceMinutes",
+        "orderLimitStaffMayExceed",
       ],
     );
     await this.tracePrices(items);

@@ -2,8 +2,8 @@ import { orderLimitGroups } from "../prisma-catalog-order-limits.js";
 
 /** La descente des limites, regroupée par limite identique. */
 
-const NOON = { daysBefore: 1, time: "12:00", graceMinutes: 0 };
-const EVENING = { daysBefore: 1, time: "18:00", graceMinutes: 15 };
+const NOON = { daysBefore: 1, time: "12:00", graceMinutes: 0, staffMayExceed: false };
+const EVENING = { daysBefore: 1, time: "18:00", graceMinutes: 15, staffMayExceed: false };
 
 describe("orderLimitGroups", () => {
   // P2028 (2026-10-17) : une écriture par article sur tout le catalogue allongeait la transaction.
@@ -21,5 +21,17 @@ describe("orderLimitGroups", () => {
 
   it("garde « aucune limite » comme une valeur à écrire", () => {
     expect(orderLimitGroups([{ sku: "A", limit: null }])).toEqual([{ limit: null, skus: ["A"] }]);
+  });
+
+  it("sépare deux produits de même délai dont les cases diffèrent", () => {
+    const groups = orderLimitGroups([
+      { sku: "A", limit: NOON },
+      { sku: "B", limit: { ...NOON, staffMayExceed: true } },
+    ]);
+
+    expect(groups).toEqual([
+      { limit: NOON, skus: ["A"] },
+      { limit: { ...NOON, staffMayExceed: true }, skus: ["B"] },
+    ]);
   });
 });

@@ -12,6 +12,7 @@ const GLOBAL = {
   daysBefore: 2,
   time: "12:00",
   graceMinutes: null,
+  staffMayExceed: false,
 };
 const ITEM = {
   sku: "VIE-1-1",
@@ -39,7 +40,10 @@ describe("OrderLimitsRefresher", () => {
 
     expect(limits.asked).toEqual(["prd_1"]);
     expect(limits.written).toEqual([
-      { sku: "VIE-1-1", limit: { daysBefore: 2, time: "12:00", graceMinutes: 0 } },
+      {
+        sku: "VIE-1-1",
+        limit: { daysBefore: 2, time: "12:00", graceMinutes: 0, staffMayExceed: false },
+      },
     ]);
   });
 
@@ -47,7 +51,12 @@ describe("OrderLimitsRefresher", () => {
     const limits = new RecordingOrderLimits(
       [GLOBAL],
       [],
-      [{ ...ITEM, current: { daysBefore: 2, time: "12:00", graceMinutes: 0 } }],
+      [
+        {
+          ...ITEM,
+          current: { daysBefore: 2, time: "12:00", graceMinutes: 0, staffMayExceed: false },
+        },
+      ],
     );
 
     await new OrderLimitsRefresher(limits).refresh(null);

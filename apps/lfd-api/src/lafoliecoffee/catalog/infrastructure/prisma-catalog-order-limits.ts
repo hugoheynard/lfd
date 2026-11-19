@@ -22,7 +22,7 @@ const storedRules = z.array(syncOrderTimeLimitRuleSchema);
 /**
  * L'adaptateur de la descente des limites de commande (lot 2b).
  *
- * N'écrit QUE les trois colonnes de limite de `catalog_items` : ni fait du
+ * N'écrit QUE les quatre colonnes de limite de `catalog_items` : ni fait du
  * référentiel, ni décision locale, ni retrait. Ne lit que les articles en
  * vente (`STILL_SOLD`) : un article retiré reçoit ses limites quand le fait de
  * sa fiche le remet en vente.
@@ -66,6 +66,7 @@ export class PrismaCatalogOrderLimits extends CatalogOrderLimits {
         orderLimitDaysBefore: true,
         orderLimitTime: true,
         orderLimitGraceMinutes: true,
+        orderLimitStaffMayExceed: true,
       },
     });
     return rows.map((row) => ({
@@ -80,6 +81,7 @@ export class PrismaCatalogOrderLimits extends CatalogOrderLimits {
               daysBefore: row.orderLimitDaysBefore,
               time: row.orderLimitTime,
               graceMinutes: row.orderLimitGraceMinutes ?? 0,
+              staffMayExceed: row.orderLimitStaffMayExceed,
             },
     }));
   }
@@ -99,6 +101,7 @@ export class PrismaCatalogOrderLimits extends CatalogOrderLimits {
           orderLimitDaysBefore: group.limit?.daysBefore ?? null,
           orderLimitTime: group.limit?.time ?? null,
           orderLimitGraceMinutes: group.limit?.graceMinutes ?? null,
+          orderLimitStaffMayExceed: group.limit?.staffMayExceed ?? false,
         },
       });
     }
@@ -114,14 +117,23 @@ export interface OrderLimitGroup {
   readonly skus: string[];
 }
 
-/** Les changements regroupés par limite identique — l'ordre d'arrivée des groupes est gardé. */
+/**
+ * Les changements regroupés par limite identique — l'ordre d'arrivée des
+ * groupes est gardé. La case entre dans la clé : deux produits de même délai
+ * et de cases différentes recevraient sinon la même valeur, en silence.
+ */
 export function orderLimitGroups(changes: readonly OrderLimitChange[]): OrderLimitGroup[] {
   const groups = new Map<string, OrderLimitGroup>();
   for (const change of changes) {
     const key =
       change.limit === null
         ? "none"
-        : `${String(change.limit.daysBefore)}|${change.limit.time}|${String(change.limit.graceMinutes)}`;
+        : [
+            String(change.limit.daysBefore),
+            change.limit.time,
+            String(change.limit.graceMinutes),
+            String(change.limit.staffMayExceed),
+          ].join("|");
     const group = groups.get(key) ?? { limit: change.limit, skus: [] };
     group.skus.push(change.sku);
     groups.set(key, group);

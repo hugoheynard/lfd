@@ -59,6 +59,7 @@ const SQL_NAMES = {
   orderLimitDaysBefore: "order_limit_days_before",
   orderLimitTime: "order_limit_time",
   orderLimitGraceMinutes: "order_limit_grace_minutes",
+  orderLimitStaffMayExceed: "order_limit_staff_may_exceed",
   publicTtcCents: "public_ttc_cents",
   proPricePerKgMillicents: "pro_price_per_kg_millicents",
   publicPricePerKgTtcCents: "public_price_per_kg_ttc_cents",

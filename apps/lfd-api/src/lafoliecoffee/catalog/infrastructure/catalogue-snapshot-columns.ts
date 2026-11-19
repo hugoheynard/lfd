@@ -85,6 +85,7 @@ export const CATALOGUE_SNAPSHOT_COLUMNS = {
       "orderLimitDaysBefore",
       "orderLimitTime",
       "orderLimitGraceMinutes",
+      "orderLimitStaffMayExceed",
       "withdrawnAt",
       "operationOnly",
       "variantsAsTiles",

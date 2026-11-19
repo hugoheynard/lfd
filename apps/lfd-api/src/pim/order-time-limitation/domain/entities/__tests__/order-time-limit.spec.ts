@@ -13,6 +13,7 @@ function payload(over: Partial<OrderTimeLimitPayload> = {}): OrderTimeLimitPaylo
     daysBefore: 2,
     time: "12:00",
     graceMinutes: null,
+    staffMayExceed: false,
     ...over,
   };
 }
@@ -109,5 +110,32 @@ describe("l'archive d'une limite", () => {
     );
 
     expect(residual.archive(AT)).toBe(true);
+  });
+});
+
+describe("la case « l'équipe peut passer outre »", () => {
+  it("se pose avec la limite, décochée si on ne la coche pas", () => {
+    expect(OrderTimeLimit.set("l1", payload()).staffMayExceed).toBe(false);
+    expect(OrderTimeLimit.set("l1", payload({ staffMayExceed: true })).staffMayExceed).toBe(true);
+  });
+
+  it("cochée seule, sans autre réglage changé, est un changement", () => {
+    const limit = OrderTimeLimit.set("l1", payload());
+
+    expect(limit.reset(payload({ staffMayExceed: true }))).toBe(true);
+    expect(limit.staffMayExceed).toBe(true);
+  });
+
+  it("reposée identique, ne change rien", () => {
+    const limit = OrderTimeLimit.set("l1", payload({ staffMayExceed: true }));
+
+    expect(limit.reset(payload({ staffMayExceed: true }))).toBe(false);
+  });
+
+  it("décochée seule est un changement", () => {
+    const limit = OrderTimeLimit.set("l1", payload({ staffMayExceed: true }));
+
+    expect(limit.reset(payload())).toBe(true);
+    expect(limit.staffMayExceed).toBe(false);
   });
 });

@@ -49,6 +49,11 @@ const orderTimeLimit = () =>
     daysBefore: days().nullable(),
     time: clockTime().nullable(),
     graceMinutes: minutes().nullable(),
+    /**
+     * La case « l'équipe peut passer outre ». Absente des faits écrits avant
+     * qu'elle existe : ils disent une limite infranchissable.
+     */
+    staffMayExceed: z.boolean().optional(),
   });
 
 /**

@@ -32,7 +32,7 @@ function florentins(variantsAsTiles: boolean) {
       saleUnit: "weight",
       weightStepGrams: 50,
       weightMinGrams: 100,
-      orderTimeLimit: { daysBefore: 3, time: "12:00", graceMinutes: 0 },
+      orderTimeLimit: { daysBefore: 3, time: "12:00", graceMinutes: 0, staffMayExceed: false },
     }),
   ];
 }

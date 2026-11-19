@@ -1,5 +1,5 @@
 import { categoryPathOf, resolveOrderTimeLimit } from "../order-time-limit-resolution.js";
-import type { SyncOrderTimeLimitRule } from "../snapshot.js";
+import { syncOrderTimeLimitRuleSchema, type SyncOrderTimeLimitRule } from "../snapshot.js";
 
 /**
  * La résolution, éprouvée **là où elle vit** — partagée par les deux rives.
@@ -20,6 +20,7 @@ function rule(over: Partial<SyncOrderTimeLimitRule> = {}): SyncOrderTimeLimitRul
     daysBefore: null,
     time: null,
     graceMinutes: null,
+    staffMayExceed: false,
     ...over,
   };
 }
@@ -74,6 +75,7 @@ describe("resolveOrderTimeLimit — le produit seulement", () => {
       daysBefore: 2,
       time: "12:00",
       graceMinutes: 0,
+      staffMayExceed: false,
     });
   });
 
@@ -112,5 +114,34 @@ describe("resolveOrderTimeLimit — le produit seulement", () => {
 
   it("ne rend rien sans aucune règle", () => {
     expect(resolveOrderTimeLimit([], target)).toBeNull();
+  });
+});
+
+describe("la case « l'équipe peut passer outre »", () => {
+  const TARGET = { variantId: null, productId: "p1", categoryPath: ["pain"] };
+
+  it("est celle de la règle du produit", () => {
+    const rules = [
+      rule({
+        scope: { type: "product", id: "p1" },
+        daysBefore: 2,
+        time: "12:00",
+        staffMayExceed: true,
+      }),
+    ];
+
+    expect(resolveOrderTimeLimit(rules, TARGET)?.staffMayExceed).toBe(true);
+  });
+
+  /** Une règle rangée ou émise avant que la case existe dit une limite infranchissable. */
+  it("se lit `false` sur une règle d'avant, qui ne la porte pas", () => {
+    const stored: unknown = {
+      scope: { type: "product", id: "p1" },
+      daysBefore: 2,
+      time: "12:00",
+      graceMinutes: null,
+    };
+
+    expect(syncOrderTimeLimitRuleSchema.parse(stored).staffMayExceed).toBe(false);
   });
 });

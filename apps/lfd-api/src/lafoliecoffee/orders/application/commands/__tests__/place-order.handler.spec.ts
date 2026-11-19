@@ -2764,12 +2764,16 @@ describe("PlaceOrderHandler — limite d'article et règle générale", () => {
           daysBefore: 1,
           time: "09:00",
           graceMinutes: 0,
+          staffMayExceed: false,
         },
       ]),
   };
   /** Le jour même à 23 h : bien plus tard que la règle générale. */
   const lateLimits = new InMemoryProductCatalog([
-    { ...CATALOG["VIE-001"]!, orderTimeLimit: { daysBefore: 0, time: "23:00", graceMinutes: 0 } },
+    {
+      ...CATALOG["VIE-001"]!,
+      orderTimeLimit: { daysBefore: 0, time: "23:00", graceMinutes: 0, staffMayExceed: false },
+    },
   ]);
 
   function lateHandler(cutoffs: OrderCutoffsInForce, sink: { placed: OrderToPlace | null }) {

@@ -56,7 +56,9 @@ export interface LimitTarget {
  * - plus d'héritage champ par champ : la règle du produit dit le délai ET
  *   l'heure, sinon il n'y a pas de limite ;
  * - le rattrapage vaut toujours `0` : le seul rattrapage est celui de la règle
- *   générale. Une grâce résiduelle sur une ligne produit est ignorée.
+ *   générale. Une grâce résiduelle sur une ligne produit est ignorée ;
+ * - la case « l'équipe peut passer outre » est celle de la règle du produit :
+ *   aucun autre rang ne la porte.
  *
  * `variantId` et `categoryPath` restent dans {@link LimitTarget} : les
  * appelants les portent encore, et la forme ne change pas pour eux.
@@ -71,7 +73,12 @@ export function resolveOrderTimeLimit(
   if (rule === undefined || rule.daysBefore === null || rule.time === null) {
     return null;
   }
-  return { daysBefore: rule.daysBefore, time: rule.time, graceMinutes: 0 };
+  return {
+    daysBefore: rule.daysBefore,
+    time: rule.time,
+    graceMinutes: 0,
+    staffMayExceed: rule.staffMayExceed,
+  };
 }
 
 /** La règle posée sur le produit de l'article, s'il y en a une. */
