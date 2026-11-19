@@ -76,7 +76,7 @@ flowchart TB
   Le port, par exemple, vient de la route (`deliveryFeeOf`, dans
   `price-basket.ts`). Un terme qui dépend d'un **jugement** arrive par
   `verdicts`, comme la surtaxe (`verdicts.lateFee`, jugée par
-  `LateFeeJudgement`, `application/services/late-fee-judgement.service.ts`).
+  `LateFeeJudgement`, `apps/lfd-api/src/lafoliecoffee/orders/application/services/foreseen-late-fee.service.ts`).
 - **Calculer** : `priceBasket` assemble les termes (`basketTermsOf`,
   `domain/services/basket-terms.ts`, plus `lateFeeOf` dans
   `price-basket.ts`). L'agrégat l'appelle (`Order.draft`, `recompose`) et le

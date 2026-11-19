@@ -1,4 +1,4 @@
-import type { LateFeeSetting } from "../../orders/domain/ports/order-late-fee.reader.js";
+import type { LateFeeSetting } from "../domain/late-fee-setting.js";
 
 /** Pose ou remplace la surtaxe de commande tardive. */
 export class SaveOrderLateFeeCommand {

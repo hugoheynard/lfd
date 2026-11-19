@@ -1,6 +1,6 @@
 import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingPublisher } from "../../../../platform/events/__tests__/recording-publisher.js";
-import type { LateFeeSetting } from "../../../orders/domain/ports/order-late-fee.reader.js";
+import type { LateFeeSetting } from "../../domain/late-fee-setting.js";
 import { SaveOrderLateFeeCommand } from "../save-order-late-fee.command.js";
 import { SaveOrderLateFeeHandler } from "../save-order-late-fee.handler.js";
 import { FIVE_EUROS, InMemoryLateFee } from "./order-late-fee-doubles.js";

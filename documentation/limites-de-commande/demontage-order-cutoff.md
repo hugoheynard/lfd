@@ -30,7 +30,7 @@ Le retrait de `OrderCutoff` n'est pas la suppression d'un code mort. C'est,
 aujourd'hui encore, **la seule règle qui refuse une commande en retard** pour
 tout article dont le référentiel ne dit rien.
 
-`ensureWithinOrderCutoff` (`src/lafoliecoffee/orders/domain/services/order-cutoff-guard.ts`)
+`ensureWithinOrderCutoff` (`apps/lfd-api/src/lafoliecoffee/order-cutoffs/domain/deadline/judge-order-deadline.ts`)
 tranche ligne par ligne :
 
 - l'article porte une limite venue du fil → elle décide **seule** ;
@@ -202,7 +202,7 @@ matrice de rôles : ils se reportent sur une autre route `b2b_settings`.
 - contrats : 🔴 **`order-cutoff.ts` ne se supprime pas.** Le fichier porte, sous
   le nom de l'ancien mécanisme, le cœur du **nouveau** : `OrderLimitSpec`,
   `OrderCutoffDecision`, `decideOrderLimit`, `orderLimitInstant`,
-  `weekdayOfDate` — tous lus par `order-cutoff-guard.ts` et
+  `weekdayOfDate` — tous lus par `judge-order-deadline.ts` et
   `product-catalog.reader.ts`. Il faut le **découper** (ce qui reste, où, sous
   quel nom), et ce découpage n'est ni décidé ni chiffré ici. Seuls
   `OrderCutoffView`, `OrderCutoffPayload` et `decideOrderCutoff` partent ;

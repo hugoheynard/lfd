@@ -17,7 +17,7 @@
  */
 import { OrderDeadline } from "../src/lafoliecoffee/order-cutoffs/index.js";
 import { OrderPlanGate } from "../src/lafoliecoffee/orders/application/services/order-plan-gate.service.js";
-import { OrderCutoffWaiverGate } from "../src/lafoliecoffee/orders/domain/ports/order-cutoff-waiver.gate.js";
+import { OpenWaiverReader } from "../src/lafoliecoffee/order-cutoffs/domain/deadline/ports/deadline-sources.js";
 import { UnitOfWork } from "../src/platform/database/unit-of-work.js";
 import { E2E_STAFF_SUB, type E2eContext } from "./e2e-harness.js";
 import { staffBody, type Agents } from "./pricing-golden-master-bodies.js";
@@ -76,7 +76,7 @@ export async function waiverPair(
   const day = anchoredDay(2);
   const pro = scene.proWithoutCredit;
   const skus = FIXED.lines.map((line) => line.sku);
-  const waivers = ctx.app.get(OrderCutoffWaiverGate);
+  const waivers = ctx.app.get(OpenWaiverReader);
   const deadline = ctx.app.get(OrderDeadline);
   // La dérogation que la passation dépenserait, lue sans être dépensée : le
   // verdict que la surtaxe prévue lit.

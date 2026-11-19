@@ -1,4 +1,4 @@
-import type { LateFeeSetting } from "../../../orders/domain/ports/order-late-fee.reader.js";
+import type { LateFeeSetting } from "../../domain/late-fee-setting.js";
 import { OrderLateFeeRepository } from "../../domain/order-late-fee.repository.js";
 
 /**

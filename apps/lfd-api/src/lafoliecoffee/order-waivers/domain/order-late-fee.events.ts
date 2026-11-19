@@ -1,7 +1,7 @@
 import type { JournalFactType } from "@lfd/contracts/journal-facts";
 
 import type { JournalFact, JournaledEvent } from "../../../platform/journal/journal-fact.js";
-import type { LateFeeSetting } from "../../orders/domain/ports/order-late-fee.reader.js";
+import type { LateFeeSetting } from "./late-fee-setting.js";
 
 /**
  * **Les faits de la surtaxe de commande tardive** (plan

@@ -91,11 +91,12 @@ ne bouge.
 
 ## 3. À la passation
 
-`OrderDrafting.ensureNotTooLate` relit le catalogue sur les SKU du panier
-(`resolveMany(skus, "pro")`) et passe à `ensureWithinOrderCutoff` la limite de
-chaque ligne. Depuis le 2026-10-21, une limite d'article **n'a jamais de
-grâce** : la garde la force à `0` (`withoutGrace`,
-`order-cutoff-guard.ts`), même si une grâce est encore rangée sur l'article —
+`OrderDrafting.ensureNotTooLate` demande le verdict du délai de commande
+(`OrderDeadline`), qui relit le catalogue sur les SKU du panier en clientèle
+`pro` et juge la limite de chaque ligne
+([`le-verdict-de-l-heure-limite.md`](le-verdict-de-l-heure-limite.md)). Une limite
+d'article **n'a jamais de grâce** : le juge la force à `0`
+(`judge-order-deadline.ts`), même si une grâce est encore rangée sur l'article —
 passée l'heure, refus sec. 🔴 **La plus stricte gagne toujours** (décision de Hugo,
 2026-10-21) : chaque ligne est jugée par la plus fermée entre la limite de
 l'article (s'il en porte une) et la règle générale en vigueur pour ce jour et ce

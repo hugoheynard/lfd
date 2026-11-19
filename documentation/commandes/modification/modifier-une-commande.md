@@ -205,7 +205,7 @@ sequenceDiagram
   (+ `/quote`) côté équipe, droit `b2b_place_order:write`.
 - Recomposition : `application/services/order-revising.service.ts`, sur le
   calcul partagé avec la passation (`order-composition.service.ts`,
-  `order-cutoff-gate.service.ts`).
+  `judging-order-deadline.service.ts`).
 - Règles pures : `domain/entities/order-revision.ts`,
   `domain/services/revised-lines.ts`, `domain/services/order-revisability.ts`.
 - Lecture « se modifie-t-elle ? » : `revisability` et `revision` sur les vues
@@ -222,8 +222,8 @@ sequenceDiagram
   inscrite, engagée en comptabilité, remboursement en vol → refus. Puis le
   règlement, puis les CGV figées (une commande sans CGV figées ne se modifie
   pas). Pour le client seulement : le plan de la journée arrêté
-  (`plan_closed`) et l'heure limite (`past_cutoff`, la même
-  `decideStrictestOrderCutoff` qu'à la passation, sans dérogation), de
+  (`plan_closed`) et l'heure limite (`past_cutoff`, le même verdict
+  `OrderDeadline` qu'à la passation, sans dérogation), de
   l'ancienne ET de la nouvelle date. Un départ incomplet décidé refuse
   (`ShortfallDecidedRevisionError`).
 - **R2 — Ce qui se modifie.** Lignes, date, créneau, mode, point, adresse,

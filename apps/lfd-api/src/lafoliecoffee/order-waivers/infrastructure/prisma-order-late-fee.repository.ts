@@ -5,10 +5,7 @@ import {
   toAdjustmentColumns,
 } from "../../pricing/cart-adjustment.mapper.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
-import {
-  OrderLateFeeReader,
-  type LateFeeSetting,
-} from "../../orders/domain/ports/order-late-fee.reader.js";
+import type { LateFeeSetting } from "../domain/late-fee-setting.js";
 import { OrderLateFeeRepository } from "../domain/order-late-fee.repository.js";
 
 /**
@@ -69,21 +66,5 @@ export class PrismaOrderLateFeeRepository extends OrderLateFeeRepository {
    */
   async clear(): Promise<void> {
     await this.prisma.orderLateFee.deleteMany({ where: { id: SINGLETON } });
-  }
-}
-
-/**
- * Le même adaptateur, vu par la **passation** : elle ne lit que le réglage
- * courant. `useExisting` sur le repository — une seule instance, une seule
- * lecture de la table.
- */
-@Injectable()
-export class PrismaOrderLateFeeReader extends OrderLateFeeReader {
-  constructor(private readonly repository: OrderLateFeeRepository) {
-    super();
-  }
-
-  async current(): Promise<LateFeeSetting | null> {
-    return this.repository.read();
   }
 }

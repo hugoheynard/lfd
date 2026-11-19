@@ -1,6 +1,6 @@
 import type { OrderCutoffView, ShopQuotePayload } from "@lfd/contracts";
 
-import type { LateFeeSetting } from "../../../domain/ports/order-late-fee.reader.js";
+import type { LateFeeSetting } from "../../../../order-waivers/domain/late-fee-setting.js";
 import { foreseenLateFeeOf, RecordingWaivers } from "./foreseen-late-fee.doubles.js";
 import { catalogItem, PRICED_AT, quotingOf } from "./shop-cart-quoting.doubles.js";
 
@@ -70,7 +70,6 @@ describe("ShopCartQuoting — la surtaxe de retard prévue (T1)", () => {
     expect(withWaiver.lateFee).toBe(500);
     expect(withWaiver.total - without.total).toBe(600);
     expect(withWaiver.waivers.asked).toEqual([`co_1@${DAY}`]);
-    expect(withWaiver.waivers.consumed).toEqual([]);
   });
 
   it("réglage à 0 € : rien ne change", async () => {

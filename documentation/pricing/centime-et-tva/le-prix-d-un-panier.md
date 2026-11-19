@@ -76,7 +76,8 @@ Le supplément de retard dépend d'un verdict (l'heure limite et la dérogation,
 jugées sur le point retenu). `priceBasket` le reçoit (`verdicts.lateFee`). À
 la passation, le jugement consomme la dérogation ; au devis d'un client
 rattaché à une société, le **même jugement sans consommation**
-(`LateFeeJudgement`, `OrderCutoffGate.foresee`) chiffre la surtaxe prévue
+(`ForeseenLateFee`, sur le verdict `OrderDeadline` qui considère la dérogation)
+chiffre la surtaxe prévue
 (É11 fermé). Un supplément nul ou absent n'ajoute rien et ne dit rien.
 
 ### 2.4 Juger — l'ordre des refus, écrit ici et mesuré
@@ -104,7 +105,7 @@ Les règles à deux implémentations (sans verrou en conseil, sous verrou en
 exécution) sont prouvées concordantes : plan et dérogation
 (`test/pricing-golden-master-pairs.ts`), vitrine
 (`shelf-circuit-concordance.spec.ts`), heure limite (balayage minute à
-minute, `order-cutoff-guard-foreseen.spec.ts`).
+minute, `judging-order-deadline.service.spec.ts`).
 
 Une société **suspendue** est servie comme une active (prix, clientèle, CGV),
 sauf le crédit : pas de règlement au compte (S1,

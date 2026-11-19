@@ -37,14 +37,12 @@ flowchart LR
 
 ## Partie 2 — les candidats
 
-### 2.1 Le délai de commande (l'heure limite) — le plus utile
+### 2.1 Le délai de commande (l'heure limite) — bâti
 
-Extrait le 2026-11-19 dans son document :
-[`../limites-de-commande/extraire-le-jugement-de-l-heure-limite.md`](../limites-de-commande/extraire-le-jugement-de-l-heure-limite.md).
-En bref : les réglages vivent dans `lafoliecoffee/order-cutoffs`, le jugement
-(garde, porte, surtaxe de retard, tolérance) dans `orders`, lu par 39 fichiers.
-La piste : `order-cutoffs` devient propriétaire du jugement et rend un verdict
-unique — ouverte, en rattrapage avec la surtaxe, ou fermée avec la raison.
+Bâti le 2026-11-19 : le jugement vit dans `lafoliecoffee/order-cutoffs`
+derrière une seule question, `OrderDeadline`, et ceux qui l'appliquent restent
+dans `orders`. État :
+[`../limites-de-commande/le-verdict-de-l-heure-limite.md`](../limites-de-commande/le-verdict-de-l-heure-limite.md).
 
 ### 2.2 Le départ incomplet — le plus proche du paiement
 

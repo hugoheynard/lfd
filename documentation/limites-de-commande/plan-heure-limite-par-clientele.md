@@ -110,7 +110,7 @@ gâteau demande : `daysBefore`, `time`, `graceMinutes`, sur l'échelle
 (un rang pose ce qu'il change et hérite du reste).
 
 Elle traverse jusqu'au panier : snapshot-limits.ts (retiré en X2) descend l'échelle côté
-plateforme depuis la v7 du fil, et `order-cutoff-guard.ts` l'oppose ligne par
+plateforme depuis la v7 du fil, et `judge-order-deadline.ts` l'oppose ligne par
 ligne. **Rien n'est à construire pour le gâteau** — il suffit de ne pas
 l'effacer, ce que la version précédente de ce plan faisait.
 
@@ -150,7 +150,7 @@ ce qui sera **fabriqué pour lui**.
 - l'ouverture de l'écran :
   `apps/lfd-api/src/lafoliecoffee/order-cutoffs/application/list-fulfillment-days.handler.ts` ;
 - le refus à la caisse :
-  `apps/lfd-api/src/lafoliecoffee/orders/domain/services/order-cutoff-guard.ts` ;
+  `apps/lfd-api/src/lafoliecoffee/order-cutoffs/domain/deadline/judge-order-deadline.ts` ;
 - l'unicité, tenue par **quatre** objets :
   `@@unique([pickupAddressId, weekday])` dans
   `apps/lfd-api/prisma/schema/public/orders.prisma`, plus trois index partiels
@@ -248,7 +248,7 @@ toute la correction : `strictestOf` demande `commerce()` uniquement pour les
 lignes **sans** limite d'article, et c'est cet appel-là — lui seul — que la
 branche publique neutralise à J+N.
 
-Le code existant s'y prête sans être retourné : `order-cutoff-guard.ts` calcule
+Le code existant s'y prête sans être retourné : `judge-order-deadline.ts` calcule
 déjà le repli du commerce paresseusement, une fois par panier. Il devient
 conditionnel au lieu d'être inconditionnel.
 
@@ -268,7 +268,7 @@ Il ne reste **aucune migration**. Ce qui se livre tient en trois endroits :
 
 - **le contrat** — de quoi dire « ce repli-ci ne s'oppose pas », à côté de
   `decideOrderCutoff` ;
-- **le serveur** — `order-cutoff-guard.ts` prend l'audience et la date du jour
+- **le serveur** — `judge-order-deadline.ts` prend l'audience et la date du jour
   en entrée, et `order-drafting.service.ts` **hisse** l'audience hors de
   `resolveFulfillment`, où elle est déjà calculée sans être rendue (sinon : une
   seconde lecture du statut de société par commande) ;
@@ -328,7 +328,7 @@ journée fermée : c'est un client qui se déplace pour rien, avec un QR valide.
 > resserrer — cf. [`README.md`](README.md) §2. Le texte ci-dessous décrit l'état
 > antérieur.
 
-`order-cutoff-guard.ts` le dit en rouge : **« L'article ne peut pas RELÂCHER la
+`judge-order-deadline.ts` le dit en rouge : **« L'article ne peut pas RELÂCHER la
 règle du commerce, il la remplace. »** Un article portant son `orderTimeLimit`
 décide seul.
 
@@ -380,7 +380,7 @@ sinon la date d'en-tête promet ce qu'une ligne refusera.
 portent tous sur la branche pro et doivent rester verts sans retouche : c'est la
 preuve que rien n'a bougé pour les clients en service.
 
-**Le serveur** : `order-cutoff-guard.ts` (l'audience et la date du jour en
+**Le serveur** : `judge-order-deadline.ts` (l'audience et la date du jour en
 entrée ; le repli du commerce devient conditionnel — §4.1),
 `order-drafting.service.ts` (hisser l'audience hors de `resolveFulfillment`),
 `list-fulfillment-days.handler.ts`.

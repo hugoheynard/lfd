@@ -70,7 +70,7 @@ Il y a **deux** systèmes, et la garde les compose.
 | Comment elle atteint la commande | résolue par `resolveOrderTimeLimit`, figée à l'ingestion dans `CatalogItem.orderLimit*` | lue à chaque passation par `OrderDrafting` (port `OrderCutoffReader`)              |
 
 **La garde** — `ensureWithinOrderCutoff`
-(`apps/lfd-api/src/lafoliecoffee/orders/domain/services/order-cutoff-guard.ts`) :
+(`apps/lfd-api/src/lafoliecoffee/order-cutoffs/domain/deadline/judge-order-deadline.ts`) :
 ligne par ligne, une limite d'article décide **seule** ; un article sans
 limite retombe sur le commerce (`decideOrderCutoff`,
 `packages/contracts/src/order-cutoff.ts`), calculé une fois par panier ; la
@@ -444,7 +444,7 @@ fichier la cite, son usage n'est pas relu).
 > soient pris en compte ? » — Hugo, puis « oui fais-le ».
 
 **Ce qui existe (vérifié le 2026-10-14)** : `ensureWithinOrderCutoff`
-(`lafoliecoffee/orders/domain/services/order-cutoff-guard.ts`) — un article qui porte
+(`apps/lfd-api/src/lafoliecoffee/order-cutoffs/domain/deadline/judge-order-deadline.ts`) — un article qui porte
 une limite produit décide seul ; sinon il retombe sur `OrderCutoff` ; **rien
 nulle part → tout passe**. La passation ne lit pas l'état de la journée du
 fournil : une commande a été acceptée sur un plan arrêté (observation O5,

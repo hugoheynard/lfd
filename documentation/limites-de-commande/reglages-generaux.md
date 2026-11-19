@@ -105,8 +105,8 @@ qu'on coupe ne l'arrêterait plus. Elle est donc **toujours en vigueur** dès
 qu'elle est posée : `OrderCutoffsInForce`
 (`lafoliecoffee/order-cutoffs/domain/order-cutoffs-in-force.ts`, implémenté par
 `GeneralOrderCutoffInForce`) rend la règle générale enregistrée sans lire
-`enabled`, pour la passation (`OrderCutoffReader`, donc aussi la relance de
-règlement), la boutique (`ListFulfillmentDaysHandler`, catalogue) et le fournil
+`enabled`, pour le verdict du délai de commande (`OrderDeadline` : passation,
+avis, modification, relance de règlement), la boutique (`ListFulfillmentDaysHandler`, catalogue) et le fournil
 (`ProductionOrderCutoffRulesReader`). Le geste et l'affichage sont retirés du
 back-office ; la page `/pim/limites-de-commande` ne dit plus « désactivée ».
 Une ligne résiduelle à `enabled = false` ne coupe rien (e2e

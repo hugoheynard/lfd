@@ -108,7 +108,7 @@ flowchart TD
 | Ouverture par clientèle | `order-intake.service.ts`                                 | réglage d'ouverture de la boutique, par audience                                                                   | ✅   |
 | Plan arrêté             | `order-drafting.service.ts` (`ensureDayOpen`, `holdPlan`) | client refusé ; équipe acceptée, la commande est marquée hors plan                                                 | ✅   |
 | Jour même               | `order-plan-gate.service.ts`                              | réglage « commande le jour même » ; sinon refus                                                                    | ✅   |
-| Heure limite            | `order-cutoff-guard.ts` (la plus stricte des lignes)      | ouverte : passe ; grâce : seulement avec une dérogation, qui ajoute la surtaxe de retard ; passée : refus          | ✅   |
+| Heure limite            | `judge-order-deadline.ts` (la plus stricte des lignes)    | ouverte : passe ; grâce : seulement avec une dérogation, qui ajoute la surtaxe de retard ; passée : refus          | ✅   |
 | Carte ou au compte      | `order-settlement.ts`                                     | au compte accordé ou total nul → `not_required` ; sinon carte → `pending` ; « au compte » forcé sans droit → refus | ✅   |
 
 ## 2. L'arrêt du plan et le fournil

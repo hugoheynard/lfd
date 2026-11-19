@@ -203,7 +203,7 @@ prix » : le prix est figé sur la ligne.
   plus en silence : `default` dit désormais « le client a choisi ce que son
   adresse propose », jamais « personne n'a choisi ». Les commandes antérieures
   sans créneau restent en base, et les écrans les montrent toujours.
-- La date passe aussi l'**heure limite** (`ensureWithinOrderCutoff`) : au-delà,
+- La date passe aussi l'**heure limite** (le verdict `OrderDeadline`) : au-delà,
   la commande est refusée, sauf dérogation (§3.5, surtaxe).
 
 ### 3.5 L'argent — en centimes, figé

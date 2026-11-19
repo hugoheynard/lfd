@@ -67,10 +67,8 @@ import {
   GuestBuyerRegistrar,
   type GuestBuyer,
 } from "../../../domain/ports/guest-buyer.registrar.js";
-import { OrderCutoffReader } from "../../../domain/ports/order-cutoff.reader.js";
+import { OrderCutoffsInForce } from "../../../../order-cutoffs/domain/order-cutoffs-in-force.js";
 import { deadlineOf } from "../../services/__tests__/order-deadline-of.js";
-import { OrderCutoffWaiverGate } from "../../../domain/ports/order-cutoff-waiver.gate.js";
-import { OrderLateFeeReader } from "../../../domain/ports/order-late-fee.reader.js";
 import { FixedDeliveryVat } from "./fixed-delivery-vat.js";
 import { FixedSalesTerms } from "./fixed-sales-terms.js";
 import { OrderPlanGate } from "../../services/order-plan-gate.service.js";
@@ -212,19 +210,7 @@ const noDeliveryDefaults: DeliveryDefaultsReader = {
   of: (): Promise<DeliveryDefaults> => Promise.resolve(NO_DELIVERY_DEFAULTS),
 };
 
-const noOrderCutoffs: OrderCutoffReader = { list: () => Promise.resolve([]) };
-
-const noLateFee: OrderLateFeeReader = { current: () => Promise.resolve(null) };
-
-/**
- * **Aucune dérogation, et il ne peut pas y en avoir.** Une commande publique n'a
- * pas de société, donc rien à qui en accorder une : `OrderDrafting` ne consulte
- * même pas ce registre. Le double existe pour que la construction tienne.
- */
-const noWaivers: OrderCutoffWaiverGate = {
-  openFor: () => Promise.resolve(null),
-  consume: () => Promise.reject(new Error("une commande publique ne consomme aucune dérogation")),
-};
+const noOrderCutoffs: OrderCutoffsInForce = { list: () => Promise.resolve([]) };
 
 const deliveryAvailability = (
   view: DeliveryAvailabilityView = DEFAULT_DELIVERY_AVAILABILITY,
@@ -303,8 +289,6 @@ function drafting(
     deadlineOf({
       cutoffs: noOrderCutoffs,
       catalog: catalog,
-      waivers: noWaivers,
-      lateFees: noLateFee,
     }),
     new FixedClock(PRICED_AT),
     new CustomerAudiences(noCompanies),

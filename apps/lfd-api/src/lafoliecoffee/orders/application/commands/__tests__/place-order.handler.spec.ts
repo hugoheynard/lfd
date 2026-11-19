@@ -96,13 +96,12 @@ import {
   OperationClosedError,
   OperationDayOutsideError,
 } from "../../../domain/errors/order-operation-errors.js";
-import { OrderCutoffReader } from "../../../domain/ports/order-cutoff.reader.js";
+import { OrderCutoffsInForce } from "../../../../order-cutoffs/domain/order-cutoffs-in-force.js";
 import { deadlineOf } from "../../services/__tests__/order-deadline-of.js";
 import { OrderCutoffWaiverGate } from "../../../domain/ports/order-cutoff-waiver.gate.js";
 import { OrderIdempotencyStore } from "../../../domain/ports/order-idempotency.store.js";
 import { OrderReader } from "../../../domain/ports/order.reader.js";
 import { UnitOfWork } from "../../../../../platform/database/unit-of-work.js";
-import { OrderLateFeeReader } from "../../../domain/ports/order-late-fee.reader.js";
 import { FixedDeliveryVat } from "./fixed-delivery-vat.js";
 import { FixedSalesTerms } from "./fixed-sales-terms.js";
 import { OrderPlanGate } from "../../services/order-plan-gate.service.js";
@@ -449,7 +448,7 @@ function zones(found: DeliveryZoneView | null = null): DeliveryZoneFeeReader {
  * pour cause de limite dépassée s'éprouvent dans `order-cutoff-guard.spec.ts`
  * (la règle, pure) et dans `orders.e2e-spec.ts` (la porte HTTP).
  */
-const noOrderCutoffs: OrderCutoffReader = { list: () => Promise.resolve([]) };
+const noOrderCutoffs: OrderCutoffsInForce = { list: () => Promise.resolve([]) };
 
 /**
  * **Aucune dérogation ouverte**, et rien à consommer : ces spécifications-ci ne
@@ -460,10 +459,8 @@ const noOrderCutoffs: OrderCutoffReader = { list: () => Promise.resolve([]) };
  * **Aucune surtaxe réglée** — l'état par défaut, et un état valable : rattraper
  * sans facturer est un choix. Ces spécifications ne parlent pas d'argent tardif.
  */
-const noLateFee: OrderLateFeeReader = { current: () => Promise.resolve(null) };
 
 const noWaivers: OrderCutoffWaiverGate = {
-  openFor: () => Promise.resolve(null),
   consume: () => Promise.resolve(),
 };
 
@@ -524,7 +521,7 @@ function drafting(
     readonly deliveryVat?: FixedDeliveryVat;
     readonly plans?: OrderPlanGate;
     readonly salesTerms?: FixedSalesTerms;
-    readonly cutoffs?: OrderCutoffReader;
+    readonly cutoffs?: OrderCutoffsInForce;
     readonly limits?: InMemoryProductCatalog;
     readonly classifications?: FixedLineClassifications;
     readonly shelf?: ShelfCircuit;
@@ -567,8 +564,6 @@ function drafting(
     deadlineOf({
       cutoffs: audience.cutoffs ?? noOrderCutoffs,
       catalog: audience.limits ?? catalog,
-      waivers: noWaivers,
-      lateFees: noLateFee,
     }),
     new FixedClock(PRICED_AT),
     new CustomerAudiences(companiesAt(audience.status === undefined ? "active" : audience.status)),
@@ -2758,7 +2753,7 @@ describe("PlaceOrderHandler — limite d'article et règle générale", () => {
   /** 2026-01-15 09:00Z = 10 h à Paris ; la livraison est demandée le lendemain. */
   const NEXT_DAY = "2026-01-16";
   /** La veille à 9 h (Paris) : déjà passée à PRICED_AT. */
-  const GENERAL: OrderCutoffReader = {
+  const GENERAL: OrderCutoffsInForce = {
     list: () =>
       Promise.resolve([
         {
@@ -2777,7 +2772,7 @@ describe("PlaceOrderHandler — limite d'article et règle générale", () => {
     { ...CATALOG["VIE-001"]!, orderTimeLimit: { daysBefore: 0, time: "23:00", graceMinutes: 0 } },
   ]);
 
-  function lateHandler(cutoffs: OrderCutoffReader, sink: { placed: OrderToPlace | null }) {
+  function lateHandler(cutoffs: OrderCutoffsInForce, sink: { placed: OrderToPlace | null }) {
     return new SeeingPlaceOrderHandler(
       guard(null, null),
       drafting(pickups(LABO_POINT), zones(), { cutoffs, limits: lateLimits }),

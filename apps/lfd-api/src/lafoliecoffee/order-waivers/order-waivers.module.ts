@@ -2,7 +2,6 @@ import { Module } from "@nestjs/common";
 
 import { OrderCutoffWaiverGate } from "../orders/domain/ports/order-cutoff-waiver.gate.js";
 import { OrderDeliveryVatReader } from "../orders/domain/ports/order-delivery-vat.reader.js";
-import { OrderLateFeeReader } from "../orders/domain/ports/order-late-fee.reader.js";
 import { OrderDeliveryVatRepository } from "./domain/order-delivery-vat.repository.js";
 import { ReadOrderDeliveryVatHandler } from "./application/read-order-delivery-vat.handler.js";
 import { SaveOrderDeliveryVatHandler } from "./application/save-order-delivery-vat.handler.js";
@@ -25,10 +24,7 @@ import { OrderCutoffWaiverRepository } from "./domain/order-cutoff-waiver.reposi
 import { AdminOrderCutoffWaiversController } from "./http/admin-order-cutoff-waivers.controller.js";
 import { AdminOrderLateFeeController } from "./http/admin-order-late-fee.controller.js";
 import { PrismaOrderCutoffWaiverGate } from "./infrastructure/prisma-order-cutoff-waiver.gate.js";
-import {
-  PrismaOrderLateFeeReader,
-  PrismaOrderLateFeeRepository,
-} from "./infrastructure/prisma-order-late-fee.repository.js";
+import { PrismaOrderLateFeeRepository } from "./infrastructure/prisma-order-late-fee.repository.js";
 import { PrismaOrderCutoffWaiverRepository } from "./infrastructure/prisma-order-cutoff-waiver.repository.js";
 import { PrismaOpenWaiverReader } from "./infrastructure/prisma-open-waiver.reader.js";
 import { RepositoryLateFeeSettingReader } from "./infrastructure/repository-late-fee-setting.reader.js";
@@ -61,10 +57,9 @@ import {
     // un port de lecture à part, la liste ne fait que lire.
     { provide: OpenOrderCutoffWaiverReader, useClass: PrismaOpenOrderCutoffWaiverReader },
     // La surtaxe vit ici parce qu'elle n'existe QUE par la dérogation : c'est ce
-    // qu'une dérogation coûte. Deux ports, encore — l'administration la règle,
-    // la passation la lit.
+    // qu'une dérogation coûte. Deux ports — l'administration la règle par le
+    // repository, le verdict du délai de commande la lit (`LateFeeSettingReader`).
     { provide: OrderLateFeeRepository, useClass: PrismaOrderLateFeeRepository },
-    { provide: OrderLateFeeReader, useClass: PrismaOrderLateFeeReader },
     // Ce que le délai de commande lit d'ici pour son verdict : la dérogation
     // ouverte et le prix d'un retard, chacun par sa lecture.
     { provide: OpenWaiverReader, useClass: PrismaOpenWaiverReader },
@@ -84,12 +79,6 @@ import {
     ClearOrderLateFeeHandler,
     ReadOrderLateFeeHandler,
   ],
-  exports: [
-    OrderCutoffWaiverGate,
-    OrderLateFeeReader,
-    OrderDeliveryVatReader,
-    OpenWaiverReader,
-    LateFeeSettingReader,
-  ],
+  exports: [OrderCutoffWaiverGate, OrderDeliveryVatReader, OpenWaiverReader, LateFeeSettingReader],
 })
 export class OrderWaiversModule {}

@@ -2,7 +2,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../platform/events/domain-event-publisher.js";
-import type { LateFeeSetting } from "../../orders/domain/ports/order-late-fee.reader.js";
+import type { LateFeeSetting } from "../domain/late-fee-setting.js";
 import { OrderLateFeeSetEvent } from "../domain/order-late-fee.events.js";
 import { OrderLateFeeRepository } from "../domain/order-late-fee.repository.js";
 import { SaveOrderLateFeeCommand } from "./save-order-late-fee.command.js";

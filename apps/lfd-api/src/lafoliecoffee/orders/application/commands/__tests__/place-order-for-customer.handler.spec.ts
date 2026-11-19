@@ -56,10 +56,9 @@ import { DEFAULT_DELIVERY_AVAILABILITY, type DeliveryAvailabilityView } from "@l
 import { OrderDrafting } from "../../services/order-drafting.service.js";
 import { OrderOperations } from "../../services/order-operations.service.js";
 import { noSaleOperations } from "../../../../catalog/application/__tests__/sale-operations-doubles.js";
-import { OrderCutoffReader } from "../../../domain/ports/order-cutoff.reader.js";
+import { OrderCutoffsInForce } from "../../../../order-cutoffs/domain/order-cutoffs-in-force.js";
 import { deadlineOf } from "../../services/__tests__/order-deadline-of.js";
 import { OrderCutoffWaiverGate } from "../../../domain/ports/order-cutoff-waiver.gate.js";
-import { OrderLateFeeReader } from "../../../domain/ports/order-late-fee.reader.js";
 import { FixedDeliveryVat } from "./fixed-delivery-vat.js";
 import { FixedSalesTerms } from "./fixed-sales-terms.js";
 import { OrderPlanGate } from "../../services/order-plan-gate.service.js";
@@ -449,8 +448,6 @@ function draftingFor(guardDouble: OrderGuardReader, options: DraftingOptions = {
     deadlineOf({
       cutoffs: noOrderCutoffs,
       catalog: catalog,
-      waivers: noWaivers,
-      lateFees: noLateFee,
     }),
     new FixedClock(PRICED_AT),
     new CustomerAudiences(guardDouble),
@@ -517,7 +514,7 @@ function placement(
  * pour cause de limite dépassée s'éprouvent dans `order-cutoff-guard.spec.ts`
  * (la règle, pure) et dans `orders.e2e-spec.ts` (la porte HTTP).
  */
-const noOrderCutoffs: OrderCutoffReader = { list: () => Promise.resolve([]) };
+const noOrderCutoffs: OrderCutoffsInForce = { list: () => Promise.resolve([]) };
 
 /**
  * **Aucune dérogation ouverte**, et rien à consommer : ces spécifications-ci ne
@@ -528,10 +525,8 @@ const noOrderCutoffs: OrderCutoffReader = { list: () => Promise.resolve([]) };
  * **Aucune surtaxe réglée** — l'état par défaut, et un état valable : rattraper
  * sans facturer est un choix. Ces spécifications ne parlent pas d'argent tardif.
  */
-const noLateFee: OrderLateFeeReader = { current: () => Promise.resolve(null) };
 
 const noWaivers: OrderCutoffWaiverGate = {
-  openFor: () => Promise.resolve(null),
   consume: () => Promise.resolve(),
 };
 
@@ -1092,8 +1087,6 @@ describe("PlaceOrderForCustomerHandler — le règlement", () => {
         deadlineOf({
           cutoffs: noOrderCutoffs,
           catalog: catalog,
-          waivers: noWaivers,
-          lateFees: noLateFee,
         }),
         new FixedClock(PRICED_AT),
         new CustomerAudiences(guard("orders")),
@@ -1260,7 +1253,7 @@ describe("EstimateOrderForCustomerHandler", () => {
       draftingFor(guardDouble, { ...options, plans, shelf }),
       shelf,
       new OrderCutoffNotice(
-        deadlineOf({ cutoffs: noOrderCutoffs, catalog, waivers: noWaivers, lateFees: noLateFee }),
+        deadlineOf({ cutoffs: noOrderCutoffs, catalog }),
         new FixedClock(PRICED_AT),
       ),
     );

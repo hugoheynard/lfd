@@ -142,7 +142,7 @@ donner l'axe qui lui manque. Un écran de réglages qui ne refuse rien est pire
 qu'une absence de règle — quelqu'un le remplit et croit la limite tenue.
 
 **Depuis, la garde existe** : `ensureWithinOrderCutoff`
-(`src/lafoliecoffee/orders/domain/services/order-cutoff-guard.ts`), appelée par
+(`apps/lfd-api/src/lafoliecoffee/order-cutoffs/domain/deadline/judge-order-deadline.ts`), appelée par
 `OrderDrafting` après la résolution de l'acheminement, sur les deux portes
 d'entrée. Elle refuse en **409 `orders.cutoff.past`** et n'écrit rien.
 
@@ -1054,7 +1054,7 @@ Deux écarts subsistent, et ils sont assumés :
 | Une règle globale unique, tenue par `coalesce(scope_id,'')`                  | `test/pim-order-time-limits.e2e-spec.ts`                                                                                                           |
 | Une portée contradictoire refusée par la base                                | idem, `CHECK order_time_limit_scope_id_iff_not_global`                                                                                             |
 | Écrire sans journaliser est inexprimable (`WriteTicket`)                     | `src/pim/order-time-limitation/domain/ports/`                                                                                                      |
-| Une dérogation n'ouvre que la grâce, jamais une journée close                | `src/lafoliecoffee/orders/domain/services/__tests__/order-cutoff-guard.spec.ts`                                                                    |
+| Une dérogation n'ouvre que la grâce, jamais une journée close                | `apps/lfd-api/src/lafoliecoffee/order-cutoffs/domain/deadline/__tests__/judge-order-deadline.spec.ts`                                              |
 | Une seule autorisation ouverte par client et par jour                        | `order_cutoff_waiver_one_open` ; `test/order-cutoffs.e2e-spec.ts`                                                                                  |
 | Une consommée ne rouvre rien et ne se retire pas                             | idem                                                                                                                                               |
 | L'écran a sa propre entrée, section « Général »                              | `src/app/shared/workspace-rail/workspaces.ts` ; `pim.routes.ts`                                                                                    |

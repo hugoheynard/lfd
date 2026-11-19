@@ -26,10 +26,11 @@ ne passe ([`reglages-generaux.md`](reglages-generaux.md) §3).
 
 ## 2. Comment elles se combinent
 
-La garde est `ensureWithinOrderCutoff`
-(`apps/lfd-api/src/lafoliecoffee/orders/domain/services/order-cutoff-guard.ts`, lue le
-2026-10-21), appelée par `OrderDrafting.ensureNotTooLate` pour les passations
-client, invité et équipe :
+Un seul juge, `judgeOrderDeadline`
+(`apps/lfd-api/src/lafoliecoffee/order-cutoffs/domain/deadline/judge-order-deadline.ts`),
+derrière une seule question, `OrderDeadline` ; la passation (client, invité,
+boutique, équipe) l'applique par `admitWithinDeadline`
+([`le-verdict-de-l-heure-limite.md`](le-verdict-de-l-heure-limite.md)) :
 
 1. **Une seule limite pour tout le catalogue : la règle générale du commerce**
    (décision de Hugo, 2026-10-21) ; le référentiel n'a plus qu'une limite par
@@ -39,8 +40,8 @@ client, invité et équipe :
    l'article, si elle existe (`decideOrderLimit`), et la règle générale en
    vigueur (`decideOrderCutoff`, calculée une fois par panier ; la seule règle
    depuis le 2026-10-21, les règles par point × jour sont retirées). Une limite d'article plus tardive ne relâche jamais la règle
-   générale. Règle générale désactivée (interrupteur) : seule la limite
-   d'article compte. **Seule la règle générale a une grâce** : une limite
+   générale. Aucune règle générale posée : seule la limite d'article compte.
+   **Seule la règle générale a une grâce** : une limite
    d'article ferme sèchement à son heure (2026-10-21), et l'on compare des
    décisions grâce comprise. (Jusqu'au 2026-10-21, l'article **remplaçait** la
    règle, et chaque limite gardait sa grâce.)
@@ -50,10 +51,11 @@ client, invité et équipe :
    `orders.cutoff.grace` (« appelez-nous »). Au-delà : `orders.cutoff.past`.
 4. **Rien nulle part → tout passe.**
 
-La même décision (`decideStrictestOrderCutoff`, exportée de la garde le
-2026-10-21) sert aussi ceux qui **annoncent** sans refuser : les suggestions
-(`keepOrderable`, qui ne garde qu'un article `open`) et le devis du comptoir
-(`cutoff` de `OrderQuoteView`, [`reglages-generaux.md`](reglages-generaux.md) §3).
+Le même verdict sert aussi ceux qui **annoncent** sans refuser : les
+suggestions (`keepOrderable`, qui ne garde qu'un article `open`), l'avis du
+devis du comptoir et de l'estimation (`cutoff` de `OrderQuoteView`,
+[`reglages-generaux.md`](reglages-generaux.md) §3), la révisabilité, la hausse
+et la relance de règlement.
 
 À côté de cette garde : le **jour même** non autorisé refuse
 (`orders.same_day_closed`), le **plan arrêté** refuse le client
@@ -132,7 +134,7 @@ flowchart LR
     CR["catalog_rules → CatalogItem.orderLimit*"]
     FD["GET /fulfillment-days<br/>date + orderUntil"]
     CAT["GET /shop/catalogue(/mine), /vitrine/*<br/>orderTimeLimit si plus stricte"]
-    G["passation → OrderDrafting<br/>→ ensureWithinOrderCutoff"]
+    G["passation → OrderDrafting<br/>→ OrderDeadline.verdict"]
   end
   P["Fournil : plan arrêté<br/>(ClosedPlansReader, PlanAdmissionDesk)"]
   OTL -- "pim.catalog_rules_changed" --> CR

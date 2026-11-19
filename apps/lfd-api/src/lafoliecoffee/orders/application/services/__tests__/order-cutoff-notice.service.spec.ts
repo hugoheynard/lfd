@@ -3,11 +3,13 @@ import { addDays, localToInstant, type OrderCutoffView } from "@lfd/contracts";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import type { UnsealedCatalogItem } from "../../../../catalog/domain/ports/product-catalog.reader.js";
 import { InMemoryProductCatalog } from "../../../../catalog/infrastructure/in-memory-product-catalog.js";
-import { OrderCutoffReader } from "../../../domain/ports/order-cutoff.reader.js";
+import { OrderCutoffsInForce } from "../../../../order-cutoffs/domain/order-cutoffs-in-force.js";
 import { OrderCutoffNotice } from "../order-cutoff-notice.service.js";
 import { deadlineOf } from "./order-deadline-of.js";
-import type { OrderCutoffWaiverGate } from "../../../domain/ports/order-cutoff-waiver.gate.js";
-import type { OrderLateFeeReader } from "../../../domain/ports/order-late-fee.reader.js";
+import type {
+  LateFeeSettingReader,
+  OpenWaiverReader,
+} from "../../../../order-cutoffs/domain/deadline/ports/deadline-sources.js";
 
 // Dates comparées entre elles seulement : l'horloge est celle de la fixture.
 const TODAY = "2026-03-10";
@@ -21,7 +23,7 @@ function at(day: string, time: string): Date {
   return instant;
 }
 
-class Rules extends OrderCutoffReader {
+class Rules extends OrderCutoffsInForce {
   constructor(private readonly rules: readonly OrderCutoffView[]) {
     super();
   }
@@ -55,11 +57,10 @@ function item(sku: string, limit: UnsealedCatalogItem["orderTimeLimit"]): Unseal
 }
 
 /** L'avis ne lit ni dérogation ni surtaxe : ces doubles refusent d'être lus. */
-const NO_WAIVERS: OrderCutoffWaiverGate = {
+const NO_WAIVERS: OpenWaiverReader = {
   openFor: () => Promise.reject(new Error("l'avis ne lit pas les dérogations")),
-  consume: () => Promise.reject(new Error("l'avis ne dépense rien")),
 };
-const NO_FEE: OrderLateFeeReader = {
+const NO_FEE: LateFeeSettingReader = {
   current: () => Promise.reject(new Error("l'avis ne lit pas la surtaxe")),
 };
 

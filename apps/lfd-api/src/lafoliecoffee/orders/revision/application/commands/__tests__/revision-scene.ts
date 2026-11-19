@@ -263,8 +263,6 @@ export function revisingAt(
   const cutoffs = deadlineOf({
     cutoffs: { list: () => Promise.resolve([]) },
     catalog: catalog,
-    waivers: { openFor: () => Promise.resolve(null), consume: () => Promise.resolve() },
-    lateFees: { current: () => Promise.resolve(null) },
   });
   const plans = options.plans ?? openPlanGate();
   return new OrderRevising(

@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /**
  * Gate : **« trop tard ? » se demande au délai de commande** (plan
- * `documentation/limites-de-commande/extraire-le-jugement-de-l-heure-limite.md`,
- * § 3.7).
+ * `documentation/limites-de-commande/le-verdict-de-l-heure-limite.md`,
+ * § 2.5).
  *
  * Le jugement de l'heure limite vit dans `order-cutoffs/domain/deadline/` (le
  * juge pur) et se demande par `OrderDeadline`. Recopier la décision ailleurs —
@@ -23,10 +23,9 @@
  *
  * - **ADMITTED** : le juge, et les annonceurs qui lisent une règle sans juger
  *   de panier, chacun avec sa raison.
- * - **DEBT** : les fichiers qui importent encore l'ancien jugement, relevés le
- *   2026-11-19 au lot V3. Un fichier hors des deux listes échoue ; un fichier
- *   de la dette devenu propre échoue aussi, pour qu'on le raye. La liste ne
- *   grandit pas, elle se vide — vide au lot V7.
+ * - **DEBT** : les fichiers qui importeraient encore l'ancien jugement. Vide
+ *   depuis le lot V7 : un fichier hors des deux listes échoue ; un fichier de
+ *   la dette devenu propre échoue aussi, pour qu'on le raye.
  *
  * Elle ne voit pas un lecteur qui recopierait la comparaison à la main : il
  * n'y aura plus rien à recopier, les trois états vivant dans
@@ -48,13 +47,12 @@ export const ADMITTED = {
   [DEADLINE]: "le juge pur : la décision vit ici",
 };
 
-/** Les fichiers qui importent encore l'ancien jugement (relevés le 2026-11-19, V3). */
-export const DEBT = [
-  "apps/lfd-api/src/lafoliecoffee/orders/application/services/order-cutoff-gate.service.ts",
-  "apps/lfd-api/src/lafoliecoffee/orders/domain/services/__tests__/order-cutoff-guard-foreseen.spec.ts",
-  "apps/lfd-api/src/lafoliecoffee/orders/domain/services/__tests__/order-cutoff-guard.spec.ts",
-  "apps/lfd-api/src/lafoliecoffee/orders/domain/services/order-cutoff-guard.ts",
-];
+/**
+ * Les fichiers qui importent encore l'ancien jugement : relevés à dix-huit le
+ * 2026-11-19 (lot V3), rayés lot par lot jusqu'au retrait de l'ancien jugement
+ * (V7). Liste VIDE : tout import neuf échoue.
+ */
+export const DEBT = [];
 
 /** Les modules de l'ancien jugement, par la fin de leur chemin. */
 const OLD_JUDGEMENT =
@@ -157,7 +155,7 @@ function main() {
     for (const failure of failures) console.error(`  ${failure}`);
     console.error(
       `\n  ${failures.length} écart(s). « Trop tard ? » se demande au délai de commande ` +
-        "(extraire-le-jugement-de-l-heure-limite.md, § 3.7).\n",
+        "(le-verdict-de-l-heure-limite.md, § 2.5).\n",
     );
     process.exit(1);
   }

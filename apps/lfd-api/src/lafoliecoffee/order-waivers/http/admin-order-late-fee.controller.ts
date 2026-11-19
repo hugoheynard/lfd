@@ -20,7 +20,7 @@ import type { AuthenticatedStaffRequest } from "../../../platform/auth/staff-pri
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
-import type { LateFeeSetting } from "../../orders/domain/ports/order-late-fee.reader.js";
+import type { LateFeeSetting } from "../domain/late-fee-setting.js";
 import { ClearOrderLateFeeCommand } from "../application/clear-order-late-fee.command.js";
 import { ReadOrderLateFeeQuery } from "../application/read-order-late-fee.query.js";
 import { SaveOrderLateFeeCommand } from "../application/save-order-late-fee.command.js";

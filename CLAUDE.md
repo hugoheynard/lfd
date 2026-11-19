@@ -210,11 +210,11 @@
 >   le référentiel, un sous-contexte ne lit en Prisma que les tables qu'il
 >   écrit — le propriétaire publie une lecture nommée, le lecteur la compose.
 >   Et **78** depuis le
->   2026-11-19 avec `lint:order-deadline-door` (plan
->   `documentation/limites-de-commande/extraire-le-jugement-de-l-heure-limite.md`) :
+>   2026-11-19 avec `lint:order-deadline-door` (doc
+>   `documentation/limites-de-commande/le-verdict-de-l-heure-limite.md`) :
 >   « trop tard ? » se demande au délai de commande, `OrderDeadline` — personne
 >   n'importe l'ancien jugement ni une fonction de décision du contrat hors du
->   juge pur ; les lecteurs pas encore basculés sont une dette comptée.
+>   juge pur ; la dette, comptée au départ, est vide.
 >   C'est la
 >   **seule** correction faite dans le corps, parce qu'un chiffre faux se vérifie
 >   en une commande et trompe tout de suite ;

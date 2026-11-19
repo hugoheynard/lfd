@@ -4,7 +4,6 @@ import { CatalogModule } from "../catalog/catalog.module.js";
 import { DeliveryAvailabilityModule } from "../delivery-availability/delivery-availability.module.js";
 import { OrderOpeningModule } from "../order-opening/order-opening.module.js";
 import { DeliveryZonesModule } from "../delivery-zones/delivery-zones.module.js";
-import { OrderCutoffsInForce } from "../order-cutoffs/domain/order-cutoffs-in-force.js";
 import { OrderCutoffsModule } from "../order-cutoffs/order-cutoffs.module.js";
 import { OrderWaiversModule } from "../order-waivers/order-waivers.module.js";
 import { PlatformContentModule } from "../content/content.module.js";
@@ -238,7 +237,6 @@ import { ExportCompanyOrderSummaryCsvHandler } from "./application/queries/expor
 import { ExportCompanyOrderSummaryPdfHandler } from "./application/queries/export-company-order-summary-pdf.handler.js";
 import { ListPersonalOrdersHandler } from "./application/queries/list-personal-orders.handler.js";
 import { CustomerSkuReader } from "./domain/ports/customer-sku.reader.js";
-import { OrderCutoffReader } from "./domain/ports/order-cutoff.reader.js";
 import { CompanyOrderListReader } from "./domain/ports/company-order-list.reader.js";
 import { CompanyOrderSummaryReader } from "./domain/ports/company-order-summary.reader.js";
 import { OrderSummaryRequesterReader } from "./domain/ports/order-summary-requester.reader.js";
@@ -693,14 +691,6 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     DiscardOrderDraftHandler,
     GetShopCartHandler,
     SaveShopCartHandler,
-    // `useExisting` et non `useClass` : une SEULE instance lit la table des
-    // règles. Le contexte `orders` n'en voit que `list()` — le port étroit —
-    // pendant que les réglages gardent le repository complet. Depuis le lot O3
-    // (2026-10-14), ce sont les règles EN VIGUEUR : l'heure limite générale
-    // désactivée, la passation et la relance n'en voient plus aucune. Deux instances
-    // n'auraient rien cassé aujourd'hui, mais auraient rendu légitime, demain,
-    // d'ajouter un cache à l'une et pas à l'autre.
-    { provide: OrderCutoffReader, useExisting: OrderCutoffsInForce },
     { provide: OrderGuardReader, useClass: PrismaOrderGuardReader },
     // Le mur des gestes sur une commande EXISTANTE, héritage du principal
     // compris (lot C1 de `plan-commandes-des-sites.md`) ; distinct de

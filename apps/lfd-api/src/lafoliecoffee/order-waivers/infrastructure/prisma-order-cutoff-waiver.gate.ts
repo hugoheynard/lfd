@@ -10,17 +10,6 @@ export class PrismaOrderCutoffWaiverGate extends OrderCutoffWaiverGate {
     super();
   }
 
-  async openFor(companyId: string, fulfillmentDate: string): Promise<{ id: string } | null> {
-    return this.prisma.orderCutoffWaiver.findFirst({
-      where: {
-        companyId,
-        fulfillmentDate: new Date(`${fulfillmentDate}T00:00:00.000Z`),
-        usedByOrderId: null,
-      },
-      select: { id: true },
-    });
-  }
-
   /**
    * Le `where` porte `usedByOrderId: null` : de deux passations qui ont lu la
    * même autorisation, une seule l'écrit. L'autre ne touche aucune ligne, et

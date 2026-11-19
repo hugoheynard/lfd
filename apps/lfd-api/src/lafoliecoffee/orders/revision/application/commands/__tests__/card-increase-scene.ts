@@ -171,8 +171,6 @@ export function increaseScene(
   const cutoffs = deadlineOf({
     cutoffs: { list: () => Promise.resolve([]) },
     catalog: new InMemoryProductCatalog(CATALOG),
-    waivers: { openFor: () => Promise.resolve(null), consume: () => Promise.resolve() },
-    lateFees: { current: () => Promise.resolve(null) },
   });
   const handler = new ProposeCardIncreaseHandler(
     wall,
