@@ -109,8 +109,22 @@ l'écran lit aussi l'état de la ligne.
 - **La hausse carte** est un geste du client seul (l'équipe ne fait pas de
   hausse carte, Q3 a, Hugo, 2026-11-10) : rien à figer, elle suit la règle du
   client ci-dessus.
-- **Une demande de modification du client** (M4), appliquée par l'équipe,
-  passe sans le droit : un produit à limite passée qu'elle ajoute est refusé.
+- **Le devis d'une modification par l'équipe** annonce, sans refuser, les
+  lignes soumises que leur limite ferme (`closedByItemLimit` : sku, délai,
+  heure, `limitAt`, `exceedable`), lues sur le verdict
+  (`staffItemLimitsOf`) ; `exceedable` dit que la modification la fera passer
+  avec un motif (la case, le droit, une règle générale ce jour-là qui ne
+  ferme pas). La modification, elle, refuse (`admitStaffItemLimits`). Le
+  refus `orders.cutoff.item_limit_past` nomme le produit dans sa phrase, sans
+  SKU : les faits publiables d'une erreur ne sont que des nombres
+  (`PublicErrorFacts`).
+- **Une demande de modification du client** (M4), appliquée par l'équipe, lit
+  le droit de la personne qui l'applique (`@StaffPermissions()` au devis et
+  à l'application de la demande, `admin-order-change-requests.controller.ts`)
+  et son motif (`itemLimitOverrideReason`, au corps de l'application) : même
+  règle et même trace `revision` que la modification par l'équipe (Hugo,
+  2026-11-19). Le devis indicatif du client, lui, refuse un produit que sa
+  limite ferme.
 
 ### 2.6 Les écrans
 
@@ -122,15 +136,9 @@ motif manquant ramène au champ. La fiche d'une commande montre la carte
 
 ## 3. Ce qui reste
 
-- **Une demande du client (M4) appliquée par une personne qui a le droit** :
-  aujourd'hui refusée comme sans droit. Lire le droit au contrôleur de M4 la
-  laisserait passer avec un motif.
-- **À la modification par l'équipe, une ligne non dépassable ne s'annonce
-  pas avant le refus** : le devis d'une modification ne rend que les
-  dépassements possibles, et le refus `orders.cutoff.item_limit_past` nomme le
-  produit dans sa phrase, sans SKU ; l'écran l'affiche donc en refus clair, pas
-  à côté de la ligne. Le serveur peut servir les lignes fermées au devis.
-- **La phrase du journal du référentiel** dit l'état de la case, pas son
-  changement (« peut désormais… ») : le fait ne porte pas l'état d'avant.
+- **Les écrans** : le back-office ne lit encore ni `closedByItemLimit` au
+  devis d'une modification, ni le motif à l'application d'une demande ; la
+  phrase du journal ne lit pas encore `previousStaffMayExceed` (le fait
+  `order_time_limit.set` le porte, absent quand la limite naît).
 - **Rien ne vérifie qu'un produit se fabrique en moins de temps que sa
   limite** : la case du produit en répond.

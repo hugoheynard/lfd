@@ -10,6 +10,7 @@ import { OrderRevisabilityReading } from "../../revision/application/services/or
 import { OrderRevising } from "../../revision/application/services/order-revising.service.js";
 import { quoteViewOf } from "../../revision/application/services/revision-quote-view.js";
 import { RevisionWall } from "../../revision/application/services/revision-wall.js";
+import { admitStaffItemLimits } from "../../revision/domain/services/revision-item-limits.js";
 import { QuoteOrderChangeRequestQuery } from "./quote-order-change-request.query.js";
 
 /**
@@ -48,6 +49,10 @@ export class QuoteOrderChangeRequestHandler implements IQueryHandler<
       rulesOf: "staff",
       decidedAt: this.clock.now(),
     });
+    // Le devis du client ne passe outre aucune limite de produit : il refuse
+    // la ligne qu'elle ferme. Seule l'équipe qui applique la demande le peut,
+    // avec le droit et un motif.
+    admitStaffItemLimits(quoted.itemLimits, quoted.revision.state.lines);
     return quoteViewOf(current, quoted);
   }
 }

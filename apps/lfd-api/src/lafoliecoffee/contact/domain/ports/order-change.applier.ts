@@ -19,6 +19,17 @@ export interface AppliedOrderChange {
 }
 
 /**
+ * **Passer outre la limite d'un produit en appliquant une demande** : le droit
+ * `lfc_product_limit_override` de la personne qui applique, lu en base par
+ * son contrôleur, et le motif qu'elle écrit. Même règle que « Modifier la
+ * commande » : sans le droit, un produit que sa limite ferme est refusé.
+ */
+export interface ChangeItemLimits {
+  readonly exceedItemLimits: boolean;
+  readonly overrideReason: string | undefined;
+}
+
+/**
  * Port d'**écriture** : appliquer une modification demandée — c'est une
  * RÉVISION de la commande au nom de l'équipe (voir
  * `documentation/commandes/modification/modifier-une-commande.md`, § 2.5 « La demande après l'heure limite » (M4)), par
@@ -30,7 +41,8 @@ export abstract class OrderChangeApplier {
   /**
    * Rend la révision produite et ses totaux. `expectedTotalCents` est le TTC
    * que l'équipe a vu au devis (doc `modifier-une-commande.md`, §2.3 (R14)) : un écart
-   * refuse, et l'adaptateur ne le recalcule jamais.
+   * refuse, et l'adaptateur ne le recalcule jamais. `itemLimits` : le droit
+   * de celle qui applique et son motif.
    */
   abstract apply(
     orderId: string,
@@ -38,5 +50,6 @@ export abstract class OrderChangeApplier {
     baseRevision: number,
     change: RequestedOrderChange,
     expectedTotalCents: number,
+    itemLimits: ChangeItemLimits,
   ): Promise<AppliedOrderChange>;
 }

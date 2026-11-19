@@ -55,6 +55,25 @@ describe("les noms figés du référentiel et de la tarification (lot B)", () =>
     }
   });
 
+  it("dit la case d'avant d'une heure limite posée, et lit encore un fait qui ne la porte pas", () => {
+    const set = {
+      subjectLabel: "Produit « Levain »",
+      scope: "product:p1",
+      daysBefore: 2,
+      time: "12:00",
+      graceMinutes: null,
+      staffMayExceed: true,
+    };
+
+    expect(
+      checkJournalFact("order_time_limit.set", { ...set, previousStaffMayExceed: false }),
+    ).toBeNull();
+    expect(checkJournalFact("order_time_limit.set", set)).toBeNull();
+    expect(
+      checkJournalFact("order_time_limit.set", { ...set, previousStaffMayExceed: "non" }),
+    ).toMatchObject({ kind: "invalid_payload" });
+  });
+
   it("aligne les contextes d'un point de vente : un tableau nommé, à la création comme à la modification", () => {
     const contexts = [{ id: "takeaway", name: "À emporter" }];
 

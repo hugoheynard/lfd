@@ -54,6 +54,11 @@ import { OrderIntake } from "../../../application/services/order-intake.service.
 import type { OrderParties } from "../../../application/services/order-parties.js";
 import { OrderPlanGate } from "../../../application/services/order-plan-gate.service.js";
 import type { FrozenDeliveryFee } from "../../../application/services/pricing-context.service.js";
+import {
+  admitStaffItemLimits,
+  NO_STAFF_ITEM_LIMITS,
+  type StaffItemLimits,
+} from "../../domain/services/revision-item-limits.js";
 import { RevisionCutoffs } from "./revision-cutoffs.js";
 import { ShelfRevising } from "./shelf-revising.service.js";
 
@@ -225,7 +230,7 @@ export class OrderRevising {
     author: RevisionActor,
     options: RevisionOptions,
   ): Promise<ComposedRevision> {
-    const { revision, settlement, refusals, exceeded } = await this.quote(
+    const { revision, settlement, refusals, itemLimits } = await this.quote(
       order,
       content,
       author,
@@ -235,6 +240,8 @@ export class OrderRevising {
     if (first !== undefined) {
       throw revisionPriceErrorOf(first);
     }
+    // Sur les lignes chiffrées, pour nommer le produit d'un refus.
+    const exceeded = admitStaffItemLimits(itemLimits, revision.state.lines);
     // Plan S1, R5 bis : le règlement de l'agrégat remonte — seule source du
     // montant que M1 rendra (`card_refund`).
     return { revision, settlement, exceeded };
@@ -314,11 +321,10 @@ export class OrderRevising {
       }),
     );
     const { revision, settlement } = recomposedOf(order, input, author, options);
-    // Sur les lignes chiffrées, pour nommer le produit d'un refus.
-    const exceeded =
+    const itemLimits =
       fromShelf || actor === "customer"
-        ? []
-        : await this.cutoffs.staffExceeded(order, content, revision.state.lines, {
+        ? NO_STAFF_ITEM_LIMITS
+        : await this.cutoffs.staffItemLimits(order, content, {
             decidedAt: options.decidedAt,
             exceedItemLimits: options.exceedItemLimits ?? false,
           });
@@ -330,7 +336,7 @@ export class OrderRevising {
       revision,
       settlement,
       refusals: [...loaded.keptRefusals, ...notes.refusals],
-      exceeded,
+      itemLimits,
     };
   }
 
@@ -464,10 +470,11 @@ export interface QuotedRevision {
   readonly settlement: RevisionSettlement;
   readonly refusals: readonly RevisionPriceRefusal[];
   /**
-   * Les limites d'article que l'équipe dépasse sur les lignes ajoutées ou
-   * augmentées — à justifier par un motif et à consigner ; vide pour le client.
+   * La limite d'article des lignes que l'équipe soumet : celles qu'elle
+   * ferme et celles qu'elle dépasse. Le devis les annonce sans refuser ;
+   * {@link OrderRevising.compose} refuse. Vide pour le client.
    */
-  readonly exceeded: readonly ExceededItemLimit[];
+  readonly itemLimits: StaffItemLimits;
 }
 
 /** Une révision recomposée, et les limites d'article qu'elle dépasse. */

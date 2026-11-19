@@ -11,6 +11,7 @@ import {
 import type {
   DeadlineSource,
   ExceededItemLimit,
+  ItemLimitOfDay,
   ItemOrderLimit,
   LineVerdict,
   OrderDeadlineVerdict,
@@ -97,6 +98,7 @@ export function judgeOrderDeadline(facts: DeadlineFacts): OrderDeadlineVerdict {
       source: judged.source,
       limit: judged.decision.limit,
       itemStatus: own.decision.status,
+      itemLimit: itemLimitOfDay(line, own),
       exceeded: passed !== null,
       exceedable: isExceedable(line, general, facts),
     });
@@ -122,18 +124,25 @@ function exceededBy(
   general: Sourced,
   facts: DeadlineFacts,
 ): ExceededItemLimit | null {
-  const limit = own.decision.limit;
+  const ofDay = itemLimitOfDay(line, own);
   if (
-    line.limit === null ||
+    ofDay === null ||
     !isExceedable(line, general, facts) ||
     general.decision.status === "closed" ||
-    own.decision.status !== "closed" ||
-    limit === null
+    own.decision.status !== "closed"
   ) {
     return null;
   }
+  return { sku: line.sku, ...ofDay };
+}
+
+/** La limite propre de la ligne ce jour-là, telle qu'elle juge : rattrapage 0. */
+function itemLimitOfDay(line: DeadlineLine, own: Sourced): ItemLimitOfDay | null {
+  const limit = own.decision.limit;
+  if (line.limit === null || limit === null) {
+    return null;
+  }
   return {
-    sku: line.sku,
     rule: { daysBefore: line.limit.daysBefore, time: line.limit.time, graceMinutes: 0 },
     limit,
   };

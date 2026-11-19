@@ -27,6 +27,16 @@ export interface ExceededItemLimit {
   readonly limit: Date;
 }
 
+/**
+ * **La limite propre d'un article pour la journée demandée** : sa règle
+ * (rattrapage 0) et l'instant où elle tombe. De quoi la dire à l'écran sans
+ * relire le catalogue, qu'elle ferme la ligne ou non.
+ */
+export interface ItemLimitOfDay {
+  readonly rule: OrderLimitSpec;
+  readonly limit: Date;
+}
+
 /** Une dérogation ouverte, telle que la question l'a trouvée. */
 export interface WaiverAvailable {
   readonly id: string;
@@ -47,6 +57,11 @@ export interface LineVerdict {
    * l'équipe le lit — la règle générale ne lui est pas opposée.
    */
   readonly itemStatus: OrderCutoffStatus;
+  /**
+   * La limite propre de l'article ce jour-là, ou `null` : sans limite propre,
+   * ou une heure qui n'existe pas ce jour-là.
+   */
+  readonly itemLimit: ItemLimitOfDay | null;
   /** La ligne a dépassé sa limite d'article (cf. {@link ExceededItemLimit}). */
   readonly exceeded: boolean;
   /**

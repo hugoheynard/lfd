@@ -8,6 +8,7 @@ import {
 import type { RequestedOrderChange } from "../domain/customer-request-details.js";
 import {
   type AppliedOrderChange,
+  type ChangeItemLimits,
   OrderChangeApplier,
 } from "../domain/ports/order-change.applier.js";
 
@@ -32,6 +33,7 @@ export class BusOrderChangeApplier extends OrderChangeApplier {
     baseRevision: number,
     change: RequestedOrderChange,
     expectedTotalCents: number,
+    itemLimits: ChangeItemLimits,
   ): Promise<AppliedOrderChange> {
     const result = await this.commands.execute<ReviseOrderCommand, ReviseOrderResult>(
       new ReviseOrderCommand(
@@ -43,6 +45,9 @@ export class BusOrderChangeApplier extends OrderChangeApplier {
         // L'e-mail de la réponse part de `contact` (`customer.order-change-applied`) :
         // la révision ne doit pas en écrire un second.
         "change_request",
+        // Le droit de celle qui applique et son motif : la même règle que
+        // « Modifier la commande », trace `revision` comprise.
+        itemLimits,
       ),
     );
     return {

@@ -4,6 +4,7 @@ import { RevisionLosesBasketDiscountError } from "../../../domain/errors/revisio
 import type { RevisableDiscount } from "../../../../domain/services/basket-discount-replay.js";
 import { RevisionWall } from "../../services/revision-wall.js";
 import {
+  CATALOG,
   content,
   FixedRevisableOrders,
   NOW,
@@ -199,6 +200,81 @@ describe("QuoteOrderRevisionHandler", () => {
           decidedAt: NOW,
         }),
       ).rejects.toBeInstanceOf(RevisionLosesBasketDiscountError);
+    });
+  });
+
+  describe("la limite d'un produit, annoncée à l'équipe sans refuser", () => {
+    const STAFF = { kind: "staff", staffId: "stf_1" } as const;
+    /** La règle générale ferme la veille à 18 h : ouverte à `NOW`. */
+    const GENERAL_RULE = {
+      list: () =>
+        Promise.resolve([
+          {
+            id: "general",
+            pickupAddressId: null,
+            pickupLabel: null,
+            weekday: null,
+            daysBefore: 1,
+            time: "18:00",
+            graceMinutes: 0,
+          },
+        ]),
+    };
+    /** Trois jours avant, midi — passée à `NOW` ; seul le croissant se laisse passer. */
+    const CLOSED_ITEMS = CATALOG.map((item) => ({
+      ...item,
+      orderTimeLimit: {
+        daysBefore: 3,
+        time: "12:00",
+        graceMinutes: 0,
+        staffMayExceed: item.sku === "VIE-001",
+      },
+    }));
+
+    function staffHandlerFor(order: RevisableOrder): QuoteOrderRevisionHandler {
+      return new QuoteOrderRevisionHandler(
+        new RevisionWall(new FixedRevisableOrders(order), new OneRoleAccess("orders")),
+        revisingAt(new FixedClock(NOW), { cutoffs: GENERAL_RULE, catalogItems: CLOSED_ITEMS }),
+        new FixedClock(NOW),
+      );
+    }
+
+    it("annonce une ligne fermée dépassable et une qui ne l'est pas, avec leur limite", async () => {
+      const order = await placedOrder();
+
+      const quote = await staffHandlerFor(order).execute(
+        new QuoteOrderRevisionQuery(
+          "ord_1",
+          STAFF,
+          content({
+            lines: [
+              { sku: "VIE-001", quantity: 12 },
+              { sku: "PAI-001", quantity: 1 },
+            ],
+          }),
+          true,
+        ),
+      );
+
+      const closed = quote.closedByItemLimit ?? [];
+      expect(closed.map(({ limitAt: _limitAt, ...line }) => line)).toEqual([
+        { sku: "VIE-001", daysBefore: 3, time: "12:00", exceedable: true },
+        { sku: "PAI-001", daysBefore: 3, time: "12:00", exceedable: false },
+      ]);
+      // Trois jours avant la journée, à midi : la même limite pour les deux.
+      expect(new Set(closed.map((line) => line.limitAt)).size).toBe(1);
+      expect(quote.itemLimitOverrides?.map((passed) => passed.sku)).toEqual(["VIE-001"]);
+    });
+
+    it("ne sert rien de la limite au client", async () => {
+      const order = await placedOrder();
+
+      const quote = await handlerFor(order).execute(
+        new QuoteOrderRevisionQuery("ord_1", CUSTOMER, content()),
+      );
+
+      expect(quote).not.toHaveProperty("closedByItemLimit");
+      expect(quote).not.toHaveProperty("itemLimitOverrides");
     });
   });
 });

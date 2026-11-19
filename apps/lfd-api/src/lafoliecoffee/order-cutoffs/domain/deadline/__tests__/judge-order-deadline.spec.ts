@@ -102,6 +102,10 @@ describe("chaque ligne dit ce qui la juge", () => {
       source: "item_limit",
       limit: new Date(ITEM_LIMIT),
       itemStatus: "closed",
+      itemLimit: {
+        rule: { daysBefore: 2, time: "12:00", graceMinutes: 0 },
+        limit: new Date(ITEM_LIMIT),
+      },
       exceeded: false,
       exceedable: false,
     });
@@ -110,6 +114,7 @@ describe("chaque ligne dit ce qui la juge", () => {
       source: "general_rule",
       limit: new Date(GENERAL_LIMIT),
       itemStatus: "open",
+      itemLimit: null,
       exceeded: false,
       exceedable: false,
     });
@@ -145,6 +150,19 @@ describe("passer outre la limite d'un produit", () => {
       status: "open",
       itemStatus: "closed",
       exceeded: true,
+    });
+  });
+
+  it("dit la limite propre d'une ligne qu'elle ferme sans la dépasser : de quoi l'annoncer", () => {
+    const verdict = judge({ lines: levain(TWO_DAYS_NOON), at: AFTER_ITEM, exceedItemLimits: true });
+    expect(verdict.lines.get("LEVAIN")).toMatchObject({
+      itemStatus: "closed",
+      exceeded: false,
+      exceedable: false,
+      itemLimit: {
+        rule: { daysBefore: 2, time: "12:00", graceMinutes: 0 },
+        limit: new Date(ITEM_LIMIT),
+      },
     });
   });
 

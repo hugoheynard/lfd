@@ -1629,6 +1629,16 @@ export interface OrderQuoteExceededLimitView {
   readonly limitAt: string;
 }
 
+/**
+ * Une ligne qu'une modification de l'équipe soumet et que sa limite de
+ * produit ferme, avec cette limite. `exceedable` : la modification la fera
+ * passer avec un motif (la case du produit, le droit, et une limite générale
+ * ce jour-là qui ne ferme pas) ; faux, elle sera refusée tant qu'elle la garde.
+ */
+export interface OrderRevisionClosedItemLimitView extends OrderQuoteExceededLimitView {
+  readonly exceedable: boolean;
+}
+
 /** Une ligne fermée par sa limite de produit. */
 export interface OrderQuoteItemLimitLineView {
   readonly sku: string;

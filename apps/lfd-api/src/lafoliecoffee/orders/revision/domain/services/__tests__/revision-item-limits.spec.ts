@@ -6,9 +6,10 @@ import type {
 import { ItemLimitPassedOnRevisionError } from "../../../../domain/errors/item-limit-override-errors.js";
 import type { ItemLimitOverride } from "../../../../domain/services/item-limit-overrides.js";
 import {
-  admitRaisedLines,
+  admitStaffItemLimits,
   raisedSkus,
   settledSkusOn,
+  staffItemLimitsOf,
   staffJudgedSkus,
 } from "../revision-item-limits.js";
 
@@ -27,6 +28,7 @@ function line(over: Partial<LineVerdict> = {}): LineVerdict {
     source: "none",
     limit: null,
     itemStatus: "open",
+    itemLimit: null,
     exceeded: false,
     exceedable: false,
     ...over,
@@ -154,33 +156,55 @@ describe("settledSkusOn — les limites consignées qu'un jugement du client éc
   });
 });
 
-describe("admitRaisedLines — la limite d'article des lignes ajoutées par l'équipe", () => {
+describe("staffItemLimitsOf et admitStaffItemLimits — la limite d'article des lignes soumises par l'équipe", () => {
   const LINES = [{ sku: "PAIN", productName: "Pain au levain" }];
+  const RULE = { daysBefore: 3, time: "12:00", graceMinutes: 0 };
+  const OWN = { rule: RULE, limit: LIMIT };
+  const passed: ExceededItemLimit = { sku: "PAIN", ...OWN };
 
-  it("refuse en nommant le produit une ligne que sa limite ferme, non dépassée", () => {
-    const judged = verdict([["PAIN", line({ itemStatus: "closed", status: "closed" })]]);
-
-    expect(() => admitRaisedLines(judged, LINES)).toThrow(ItemLimitPassedOnRevisionError);
-    expect(() => admitRaisedLines(judged, LINES)).toThrow("« Pain au levain »");
-  });
-
-  it("rend le dépassement d'une ligne dépassée", () => {
-    const passed: ExceededItemLimit = {
-      sku: "PAIN",
-      rule: { daysBefore: 3, time: "12:00", graceMinutes: 0 },
-      limit: LIMIT,
-    };
-    const judged = verdict(
-      [["PAIN", line({ itemStatus: "closed", exceeded: true, exceedable: true })]],
-      [passed],
+  it("annonce une ligne fermée non dépassable, et la modification la refuse en nommant le produit", () => {
+    const limits = staffItemLimitsOf(
+      verdict([["PAIN", line({ itemStatus: "closed", status: "closed", itemLimit: OWN })]]),
     );
 
-    expect(admitRaisedLines(judged, LINES)).toEqual([passed]);
+    expect(limits.closed).toEqual([{ sku: "PAIN", ...OWN, exceedable: false }]);
+    expect(() => admitStaffItemLimits(limits, LINES)).toThrow(ItemLimitPassedOnRevisionError);
+    expect(() => admitStaffItemLimits(limits, LINES)).toThrow("« Pain au levain »");
   });
 
-  it("laisse passer sans rien rendre une ligne que sa limite n'oppose pas, règle générale fermée ou non", () => {
-    const judged = verdict([["PAIN", line({ status: "closed", source: "general_rule" })]]);
+  it("annonce une ligne dépassée comme dépassable, et la modification rend le dépassement", () => {
+    const limits = staffItemLimitsOf(
+      verdict(
+        [
+          [
+            "PAIN",
+            line({ itemStatus: "closed", exceeded: true, exceedable: true, itemLimit: OWN }),
+          ],
+        ],
+        [passed],
+      ),
+    );
 
-    expect(admitRaisedLines(judged, LINES)).toEqual([]);
+    expect(limits.closed).toEqual([{ sku: "PAIN", ...OWN, exceedable: true }]);
+    expect(admitStaffItemLimits(limits, LINES)).toEqual([passed]);
+  });
+
+  it("dit non dépassable une ligne que le produit permettrait de passer, mais que la règle générale ferme", () => {
+    const limits = staffItemLimitsOf(
+      verdict([
+        ["PAIN", line({ itemStatus: "closed", exceeded: false, exceedable: true, itemLimit: OWN })],
+      ]),
+    );
+
+    expect(limits.closed.map((closed) => closed.exceedable)).toEqual([false]);
+  });
+
+  it("n'annonce ni ne refuse une ligne que sa limite n'oppose pas, règle générale fermée ou non", () => {
+    const limits = staffItemLimitsOf(
+      verdict([["PAIN", line({ status: "closed", source: "general_rule" })]]),
+    );
+
+    expect(limits.closed).toEqual([]);
+    expect(admitStaffItemLimits(limits, LINES)).toEqual([]);
   });
 });

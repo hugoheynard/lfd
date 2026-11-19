@@ -13,8 +13,15 @@
  *   passer, avec un motif, et une trace `revision`.
  * - Le client : une limite passée outre et consignée ne fige pas la commande ;
  *   l'augmenter se juge comme un ajout.
+ * - Une demande de modification du client (M4), appliquée par l'équipe : le
+ *   droit est celui de la personne qui applique, la même règle.
  */
-import type { AdminPlacedOrderResponse, OrderRevisionQuoteView } from "@lfd/contracts";
+import type {
+  AdminPlacedOrderResponse,
+  CreatedIdResponse,
+  OrderRevisionQuoteView,
+  RequestReasonPayload,
+} from "@lfd/contracts";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import {
@@ -329,5 +336,140 @@ describe("le client modifie une commande dont le levain a été passé outre", (
 
     expect(response.body).toMatchObject({ code: "orders.cutoff.past" });
     expect(await state()).toEqual([1, 1]);
+  });
+});
+
+describe("le devis de l'équipe annonce les lignes que leur limite ferme", () => {
+  function staffQuote(sub: string, lines: typeof MORE_LEVAIN) {
+    return ctx.asSub(sub).post(`/admin/orders/${orderId}/revisions/quote`).send(content(lines));
+  }
+
+  it("dépassable avec la case et le droit, sans refuser", async () => {
+    await seedLimit(true);
+
+    const view = jsonBody<OrderRevisionQuoteView>(
+      await staffQuote(E2E_STAFF_SUB, MORE_LEVAIN).expect(200),
+    );
+
+    expect(view.closedByItemLimit).toEqual([
+      expect.objectContaining({ sku: LEVAIN, daysBefore: 60, time: "23:59", exceedable: true }),
+    ]);
+  });
+
+  it("non dépassable, case décochée : annoncée au devis, refusée à la modification", async () => {
+    await seedLimit(false);
+
+    const view = jsonBody<OrderRevisionQuoteView>(
+      await staffQuote(E2E_STAFF_SUB, MORE_LEVAIN).expect(200),
+    );
+
+    expect(view.closedByItemLimit).toEqual([
+      expect.objectContaining({ sku: LEVAIN, daysBefore: 60, time: "23:59", exceedable: false }),
+    ]);
+    expect(view.itemLimitOverrides).toEqual([]);
+    expect(typeof view.closedByItemLimit?.[0]?.limitAt).toBe("string");
+  });
+});
+
+describe("une demande de modification du client, appliquée par l'équipe", () => {
+  const CHANGE_REASON: RequestReasonPayload = {
+    kind: "order_change",
+    label: { fr: "Modifier ma commande", en: "", it: "" },
+    recipientEmail: "commandes@lfc.test",
+    position: 0,
+    active: true,
+    audience: "both",
+    priority: "medium",
+  };
+
+  /**
+   * Le levain ferme la commande au client (sa limite est passée, la règle
+   * générale ne l'est pas) : il demande un levain de plus.
+   */
+  beforeEach(async () => {
+    await seedLimit(true);
+    await ctx
+      .asSub(E2E_STAFF_SUB)
+      .post("/admin/request-reasons")
+      .set(INTENT_KEY, freshIntent())
+      .send(CHANGE_REASON)
+      .expect(201);
+  });
+
+  async function requested(): Promise<string> {
+    return jsonBody<CreatedIdResponse>(
+      await ctx
+        .asSub(MEMBER)
+        .post(`/me/orders/${orderId}/change-request`)
+        .send({
+          change: { expectedRevision: 0, ...content(MORE_LEVAIN) },
+          message: "Un levain de plus, s'il vous plaît.",
+        })
+        .expect(201),
+    ).id;
+  }
+
+  async function apply(sub: string, requestId: string, reason?: string) {
+    const quote = jsonBody<OrderRevisionQuoteView>(
+      await ctx
+        .asSub(sub)
+        .get(`/admin/customer-requests/${requestId}/order-change/quote`)
+        .expect(200),
+    );
+    return {
+      quote,
+      response: await ctx
+        .asSub(sub)
+        .post(`/admin/customer-requests/${requestId}/order-change/apply`)
+        .send({
+          expectedTotalCents: quote.totalCents,
+          ...(reason === undefined ? {} : { itemLimitOverrideReason: reason }),
+        }),
+    };
+  }
+
+  it("sans le droit : le devis annonce le levain non dépassable, l'application est refusée", async () => {
+    const requestId = await requested();
+
+    const { quote, response } = await apply(WITHOUT_RIGHT, requestId, "Salon");
+
+    expect(quote.closedByItemLimit).toEqual([
+      expect.objectContaining({ sku: LEVAIN, exceedable: false }),
+    ]);
+    expect(response.status).toBe(409);
+    expect(response.body).toMatchObject({ code: "orders.cutoff.item_limit_past" });
+    expect(await state()).toEqual([0, 0]);
+  });
+
+  it("avec le droit, sans motif : refusée, rien d'écrit", async () => {
+    const requestId = await requested();
+
+    const { response } = await apply(E2E_STAFF_SUB, requestId);
+
+    expect(response.status).toBe(409);
+    expect(response.body).toMatchObject({ code: "orders.cutoff.item_limit_reason_required" });
+    expect(await state()).toEqual([0, 0]);
+  });
+
+  it("avec le droit et un motif : appliquée, et le dépassement consigné `revision`", async () => {
+    const requestId = await requested();
+
+    const { quote, response } = await apply(E2E_STAFF_SUB, requestId, "Le client a appelé");
+
+    expect(quote.itemLimitOverrides).toEqual([expect.objectContaining({ sku: LEVAIN })]);
+    expect(response.status).toBe(200);
+    expect(await state()).toEqual([1, 1]);
+    const staff = await ctx.prisma.staffUser.findFirstOrThrow({
+      where: { auth0Id: E2E_STAFF_SUB },
+      select: { id: true },
+    });
+    expect(await ctx.prisma.orderItemLimitOverride.findMany({ where: { orderId } })).toEqual([
+      expect.objectContaining({
+        sku: LEVAIN,
+        staffUserId: staff.id,
+        reason: "Le client a appelé",
+        origin: "revision",
+      }),
+    ]);
   });
 });

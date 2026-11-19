@@ -33,6 +33,11 @@ export class QuoteOrderChangeHandler implements IQueryHandler<
     if (pending.change === null) {
       throw new OrderChangeUnreadableError(request.id);
     }
-    return this.quoter.quote(pending.order.id, query.staffUserId, pending.change);
+    return this.quoter.quote(
+      pending.order.id,
+      query.staffUserId,
+      pending.change,
+      query.exceedItemLimits,
+    );
   }
 }

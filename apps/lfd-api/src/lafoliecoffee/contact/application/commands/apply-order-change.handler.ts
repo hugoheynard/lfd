@@ -62,6 +62,7 @@ export class ApplyOrderChangeHandler implements ICommandHandler<ApplyOrderChange
         pending.baseRevision,
         pending.change,
         command.expectedTotalCents,
+        command.itemLimits,
       );
       request.recordChangeApplied(applied.revision, author, this.clock.now());
       await this.requests.save(request);

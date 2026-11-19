@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { CONTACT_BOUNDS } from "./contact.values.js";
+import { itemLimitOverrideReasonSchema } from "./admin-order.js";
 import { expectedTotalCentsSchema } from "./order.js";
 import { requestedOrderRevisionSchema } from "./order-revision.js";
 
@@ -191,8 +192,16 @@ export type OrderChangeRefusalPayload = z.infer<typeof orderChangeRefusalPayload
  * appliquer est une délégation, le total vu est celui de l'équipe. Un écart
  * refuse (`409` `orders.total_changed`) ; jamais recalculé par le serveur,
  * une comparaison avec son propre calcul serait vide.
+ *
+ * `itemLimitOverrideReason` : pourquoi l'équipe passe outre la limite d'un
+ * produit que la demande ajoute — exigé quand la personne qui applique en a
+ * le droit et qu'une limite est passée, ignoré sinon (comme « Modifier la
+ * commande »).
  */
 export const orderChangeApplyPayloadSchema = z
-  .object({ expectedTotalCents: expectedTotalCentsSchema })
+  .object({
+    expectedTotalCents: expectedTotalCentsSchema,
+    itemLimitOverrideReason: itemLimitOverrideReasonSchema.optional(),
+  })
   .strict();
 export type OrderChangeApplyPayload = z.infer<typeof orderChangeApplyPayloadSchema>;

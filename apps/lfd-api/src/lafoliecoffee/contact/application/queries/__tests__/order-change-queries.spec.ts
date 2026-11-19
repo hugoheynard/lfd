@@ -34,9 +34,17 @@ describe("QuoteOrderChangeHandler", () => {
     const view = await new QuoteOrderChangeHandler(
       new MemoryRequests([orderChange()]),
       quoter,
-    ).execute(new QuoteOrderChangeQuery("q1", "staff_1"));
+    ).execute(new QuoteOrderChangeQuery("q1", "staff_1", false));
     expect(view).toBe(QUOTE);
     expect(quoter.asked).toEqual(["o1 staff_1"]);
+  });
+
+  it("passe au devis le droit de passer outre de celle qui lit", async () => {
+    const quoter = new FixedQuoter(QUOTE);
+    await new QuoteOrderChangeHandler(new MemoryRequests([orderChange()]), quoter).execute(
+      new QuoteOrderChangeQuery("q1", "staff_1", true),
+    );
+    expect(quoter.asked).toEqual(["o1 staff_1 (passe outre)"]);
   });
 
   it("ne chiffre pas une demande déjà répondue, ni une demande inconnue", async () => {
@@ -45,12 +53,12 @@ describe("QuoteOrderChangeHandler", () => {
     const quoter = new FixedQuoter(QUOTE);
     await expect(
       new QuoteOrderChangeHandler(new MemoryRequests([answered]), quoter).execute(
-        new QuoteOrderChangeQuery("q1", "staff_1"),
+        new QuoteOrderChangeQuery("q1", "staff_1", false),
       ),
     ).rejects.toThrow("déjà traitée");
     await expect(
       new QuoteOrderChangeHandler(new MemoryRequests(), quoter).execute(
-        new QuoteOrderChangeQuery("q404", "staff_1"),
+        new QuoteOrderChangeQuery("q404", "staff_1", false),
       ),
     ).rejects.toThrow(CustomerRequestNotFoundError);
     expect(quoter.asked).toEqual([]);

@@ -8,7 +8,10 @@ import { OrderRevising } from "../services/order-revising.service.js";
 import { quoteViewOf } from "../services/revision-quote-view.js";
 import { RevisionWall } from "../services/revision-wall.js";
 import { QuoteOrderRevisionQuery } from "./quote-order-revision.query.js";
-import { exceededViewOf } from "../../../application/services/exceeded-limit-view.js";
+import {
+  closedLimitViewOf,
+  exceededViewOf,
+} from "../../../application/services/exceeded-limit-view.js";
 
 /**
  * **Le devis de révision** (voir `documentation/commandes/modification/modifier-une-commande.md`,
@@ -16,7 +19,9 @@ import { exceededViewOf } from "../../../application/services/exceeded-limit-vie
  * modification, et l'écart avec la révision courante. Ne mute rien.
  *
  * Il refuse comme la modification — mur, règle, carte, heure limite du
- * client, bon imputé —, sauf le « rien n'a changé » (R6) : un devis montre
+ * client, bon imputé —, sauf le « rien n'a changé » (R6) et la limite d'un
+ * produit que l'équipe soumet : il annonce la ligne fermée au lieu de la
+ * refuser : un devis montre
  * aussi le panier qu'on n'a pas encore touché. Après l'arrêt du plan (plan
  * A2, § 7), il refuse aussi ce qui n'est pas un changement de quantités —
  * un panier encore intact passe.
@@ -46,9 +51,15 @@ export class QuoteOrderRevisionHandler implements IQueryHandler<
       throw new QuantitiesOnlyAfterArrestError(current.orderId);
     }
     const view = quoteViewOf(current, quoted);
-    // L'annonce des dépassements n'est servie qu'à l'équipe (§ 3.6).
-    return query.actor.kind === "staff"
-      ? { ...view, itemLimitOverrides: quoted.exceeded.map(exceededViewOf) }
-      : view;
+    // L'annonce des limites de produit n'est servie qu'à l'équipe : le devis
+    // les rend sans refuser, la modification refuse une ligne non dépassable.
+    if (query.actor.kind !== "staff") {
+      return view;
+    }
+    return {
+      ...view,
+      itemLimitOverrides: quoted.itemLimits.exceeded.map(exceededViewOf),
+      closedByItemLimit: quoted.itemLimits.closed.map(closedLimitViewOf),
+    };
   }
 }

@@ -3,20 +3,20 @@ import { Injectable } from "@nestjs/common";
 import type { Instant } from "../../../../../platform/context/request-context.js";
 import {
   OrderDeadline,
-  type ExceededItemLimit,
   type OrderDeadlineAsker,
   type OrderDeadlineVerdict,
 } from "../../../../order-cutoffs/index.js";
 import { ItemLimitOverrideReader } from "../../../domain/ports/item-limit-override.reader.js";
 import { admitWithinDeadline } from "../../../domain/services/admit-within-deadline.js";
-import type { NamedLine } from "../../../domain/services/item-limit-overrides.js";
 import type { OrderContent } from "../../../application/services/order-content.js";
 import type { RevisableOrder } from "../../domain/entities/order-revision.js";
 import {
-  admitRaisedLines,
+  NO_STAFF_ITEM_LIMITS,
   raisedSkus,
   settledSkusOn,
+  staffItemLimitsOf,
   staffJudgedSkus,
+  type StaffItemLimits,
 } from "../../domain/services/revision-item-limits.js";
 
 /**
@@ -79,27 +79,25 @@ export class RevisionCutoffs {
   /**
    * L'équipe : la limite d'article des lignes ajoutées ou augmentées — de
    * toutes, quand la journée change —, sur la nouvelle journée ; la règle
-   * générale ne lui est pas opposée. Rend
-   * les limites qu'elle dépasse, à justifier et à consigner.
+   * générale ne lui est pas opposée. Rend les lignes que leur limite ferme et
+   * celles qu'elle dépasse, sans refuser : le devis les annonce, la
+   * modification refuse (`admitStaffItemLimits`).
    *
    * `exceedItemLimits` : le droit `lfc_product_limit_override`, lu au
-   * contrôleur. `lines` : la composition chiffrée, pour nommer un refus.
-   *
-   * @throws {ItemLimitPassedOnRevisionError} un produit ajouté que sa limite ferme, non dépassé.
+   * contrôleur.
    */
-  async staffExceeded(
+  async staffItemLimits(
     order: RevisableOrder,
     content: OrderContent,
-    lines: readonly NamedLine[],
     judged: { readonly decidedAt: Instant; readonly exceedItemLimits: boolean },
-  ): Promise<readonly ExceededItemLimit[]> {
+  ): Promise<StaffItemLimits> {
     const day = content.requestedDeliveryDate;
     const submitted = staffJudgedSkus(
       { serviceDay: order.serviceDay, lines: order.lines },
       { serviceDay: day, lines: content.lines },
     );
     if (day === null || submitted.length === 0) {
-      return [];
+      return NO_STAFF_ITEM_LIMITS;
     }
     const verdict = await this.deadline.verdict({
       skus: submitted,
@@ -107,7 +105,7 @@ export class RevisionCutoffs {
       at: judged.decidedAt,
       asker: revisionAsker(judged.exceedItemLimits),
     });
-    return admitRaisedLines(verdict, lines);
+    return staffItemLimitsOf(verdict);
   }
 
   /**

@@ -15,6 +15,7 @@ import {
 } from "../../../domain/ports/changeable-order.reader.js";
 import {
   type AppliedOrderChange,
+  type ChangeItemLimits,
   OrderChangeApplier,
 } from "../../../domain/ports/order-change.applier.js";
 import { OrderChangeQuoter } from "../../../domain/ports/order-change.quoter.js";
@@ -80,6 +81,12 @@ export const APPLIED_PREVIOUS_TOTAL_CENTS = 3800;
 export const APPLIED_PRETAX_CENTS = 4028;
 export const APPLIED_PREVIOUS_PRETAX_CENTS = 3602;
 
+/** Celle qui applique n'a pas le droit de passer outre la limite d'un produit. */
+export const WITHOUT_OVERRIDE: ChangeItemLimits = {
+  exceedItemLimits: false,
+  overrideReason: undefined,
+};
+
 /** La révision, notée ; `refuse` la fait refuser comme la règle des commandes. */
 export class RecordingApplier extends OrderChangeApplier {
   readonly applied: {
@@ -88,6 +95,7 @@ export class RecordingApplier extends OrderChangeApplier {
     readonly baseRevision: number;
     readonly change: RequestedOrderChange;
     readonly expectedTotalCents: number;
+    readonly itemLimits: ChangeItemLimits;
   }[] = [];
 
   constructor(
@@ -103,12 +111,20 @@ export class RecordingApplier extends OrderChangeApplier {
     baseRevision: number,
     change: RequestedOrderChange,
     expectedTotalCents: number,
+    itemLimits: ChangeItemLimits,
   ): Promise<AppliedOrderChange> {
     this.log.push(`revise ${orderId}@${String(baseRevision)}`);
     if (this.refuse) {
       return Promise.reject(new RevisionRefused());
     }
-    this.applied.push({ orderId, staffUserId, baseRevision, change, expectedTotalCents });
+    this.applied.push({
+      orderId,
+      staffUserId,
+      baseRevision,
+      change,
+      expectedTotalCents,
+      itemLimits,
+    });
     return Promise.resolve({
       revision: baseRevision + 1,
       totalCents: APPLIED_TOTAL_CENTS,
@@ -129,8 +145,13 @@ export class FixedQuoter extends OrderChangeQuoter {
     super();
   }
 
-  quote(orderId: string, staffUserId: string): Promise<OrderRevisionQuoteView> {
-    this.asked.push(`${orderId} ${staffUserId}`);
+  quote(
+    orderId: string,
+    staffUserId: string,
+    _change: RequestedOrderChange,
+    exceedItemLimits: boolean,
+  ): Promise<OrderRevisionQuoteView> {
+    this.asked.push(`${orderId} ${staffUserId}${exceedItemLimits ? " (passe outre)" : ""}`);
     return Promise.resolve(this.view);
   }
 }

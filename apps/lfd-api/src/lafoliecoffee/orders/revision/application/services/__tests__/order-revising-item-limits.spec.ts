@@ -193,7 +193,29 @@ describe("OrderRevising — l'équipe et la limite d'un produit ajouté", () => 
       exceedItemLimits: true,
     });
 
-    expect(quoted.exceeded.map((passed) => passed.sku)).toEqual(["PAI-001"]);
+    expect(quoted.itemLimits.exceeded.map((passed) => passed.sku)).toEqual(["PAI-001"]);
+    expect(quoted.itemLimits.closed).toEqual([
+      expect.objectContaining({
+        sku: "PAI-001",
+        rule: { daysBefore: 3, time: "12:00", graceMinutes: 0 },
+        exceedable: true,
+      }),
+    ]);
+  });
+
+  it("le devis de l'équipe annonce, sans refuser, un produit que sa limite ferme et que la case interdit", async () => {
+    const order = await placedOrder();
+
+    const quoted = await revising({ staffMayExceed: false }).quote(order, ADD_BREAD, STAFF, {
+      requireChange: false,
+      decidedAt: NOW,
+      exceedItemLimits: true,
+    });
+
+    expect(quoted.itemLimits.exceeded).toEqual([]);
+    expect(quoted.itemLimits.closed.map(({ sku, exceedable }) => [sku, exceedable])).toEqual([
+      ["PAI-001", false],
+    ]);
   });
 });
 

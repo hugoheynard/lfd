@@ -30,6 +30,7 @@ import {
   APPLIED_TOTAL_CENTS,
   RecordingApplier,
   RevisionRefused,
+  WITHOUT_OVERRIDE,
 } from "./order-change-doubles.js";
 
 const STAFF = { name: "Camille Durand", role: "commercial" };
@@ -83,7 +84,7 @@ describe("ApplyOrderChangeHandler", () => {
     const events = new RecordingPublisher();
 
     const revision = await applying(requests, applier, events).execute(
-      new ApplyOrderChangeCommand("q1", "staff_1", APPLIED_TOTAL_CENTS),
+      new ApplyOrderChangeCommand("q1", "staff_1", APPLIED_TOTAL_CENTS, WITHOUT_OVERRIDE),
     );
 
     expect(revision).toBe(2);
@@ -95,6 +96,7 @@ describe("ApplyOrderChangeHandler", () => {
         baseRevision: 1,
         change: CHANGE,
         expectedTotalCents: APPLIED_TOTAL_CENTS,
+        itemLimits: WITHOUT_OVERRIDE,
       },
     ]);
     expect(requests.saved[0]?.toPersistence().handling?.by.name).toBe("Camille Durand");
@@ -107,15 +109,25 @@ describe("ApplyOrderChangeHandler", () => {
     const applier = new RecordingApplier();
     const seenByStaff = APPLIED_TOTAL_CENTS - 1;
     await applying(new MemoryRequests([orderChange()]), applier, new RecordingPublisher()).execute(
-      new ApplyOrderChangeCommand("q1", "staff_1", seenByStaff),
+      new ApplyOrderChangeCommand("q1", "staff_1", seenByStaff, WITHOUT_OVERRIDE),
     );
     expect(applier.applied.map((call) => call.expectedTotalCents)).toEqual([seenByStaff]);
+  });
+
+  /** Le droit de celle qui applique et son motif vont à la révision, tels quels. */
+  it("transmet à la révision le droit de passer outre et le motif de celle qui applique", async () => {
+    const applier = new RecordingApplier();
+    const itemLimits = { exceedItemLimits: true, overrideReason: "Le client l'a demandé au salon" };
+    await applying(new MemoryRequests([orderChange()]), applier, new RecordingPublisher()).execute(
+      new ApplyOrderChangeCommand("q1", "staff_1", APPLIED_TOTAL_CENTS, itemLimits),
+    );
+    expect(applier.applied.map((call) => call.itemLimits)).toEqual([itemLimits]);
   });
 
   it("le fait publié porte les totaux de la révision appliquée, tels qu'elle les rend", async () => {
     const events = new RecordingPublisher();
     await applying(new MemoryRequests([orderChange()]), new RecordingApplier(), events).execute(
-      new ApplyOrderChangeCommand("q1", "staff_1", APPLIED_TOTAL_CENTS),
+      new ApplyOrderChangeCommand("q1", "staff_1", APPLIED_TOTAL_CENTS, WITHOUT_OVERRIDE),
     );
     const applied = events.traced[0];
     expect(applied).toBeInstanceOf(OrderChangeAppliedEvent);
@@ -139,7 +151,7 @@ describe("ApplyOrderChangeHandler", () => {
       new RecordingPublisher(),
       uow,
       mails,
-    ).execute(new ApplyOrderChangeCommand("q1", "staff_1", APPLIED_TOTAL_CENTS));
+    ).execute(new ApplyOrderChangeCommand("q1", "staff_1", APPLIED_TOTAL_CENTS, WITHOUT_OVERRIDE));
     expect(mails.queued).toEqual([
       expect.objectContaining({
         template: "customer.order-change-applied",
@@ -167,7 +179,7 @@ describe("ApplyOrderChangeHandler", () => {
     const requests = new MemoryRequests([orderChange()]);
     await expect(
       applying(requests, new RecordingApplier(), events, uow, mails).execute(
-        new ApplyOrderChangeCommand("q1", "staff_1", APPLIED_TOTAL_CENTS),
+        new ApplyOrderChangeCommand("q1", "staff_1", APPLIED_TOTAL_CENTS, WITHOUT_OVERRIDE),
       ),
     ).rejects.toThrow("boîte d'envoi indisponible");
     expect(events.traced).toHaveLength(0);
@@ -179,7 +191,7 @@ describe("ApplyOrderChangeHandler", () => {
     const events = new RecordingPublisher();
     await expect(
       applying(requests, new RecordingApplier([], true), events).execute(
-        new ApplyOrderChangeCommand("q1", "staff_1", APPLIED_TOTAL_CENTS),
+        new ApplyOrderChangeCommand("q1", "staff_1", APPLIED_TOTAL_CENTS, WITHOUT_OVERRIDE),
       ),
     ).rejects.toThrow(RevisionRefused);
     expect(requests.saved).toHaveLength(0);
@@ -193,7 +205,7 @@ describe("ApplyOrderChangeHandler", () => {
     const applier = new RecordingApplier();
     await expect(
       applying(new MemoryRequests([request]), applier, new RecordingPublisher()).execute(
-        new ApplyOrderChangeCommand("q1", "staff_1", APPLIED_TOTAL_CENTS),
+        new ApplyOrderChangeCommand("q1", "staff_1", APPLIED_TOTAL_CENTS, WITHOUT_OVERRIDE),
       ),
     ).rejects.toThrow("déjà traitée");
     expect(applier.applied).toHaveLength(0);
@@ -203,12 +215,12 @@ describe("ApplyOrderChangeHandler", () => {
     const applier = new RecordingApplier();
     await expect(
       applying(new MemoryRequests([contactRequest()]), applier, new RecordingPublisher()).execute(
-        new ApplyOrderChangeCommand("q1", "staff_1", APPLIED_TOTAL_CENTS),
+        new ApplyOrderChangeCommand("q1", "staff_1", APPLIED_TOTAL_CENTS, WITHOUT_OVERRIDE),
       ),
     ).rejects.toThrow(NotAnOrderChangeRequestError);
     await expect(
       applying(new MemoryRequests(), applier, new RecordingPublisher()).execute(
-        new ApplyOrderChangeCommand("q404", "staff_1", APPLIED_TOTAL_CENTS),
+        new ApplyOrderChangeCommand("q404", "staff_1", APPLIED_TOTAL_CENTS, WITHOUT_OVERRIDE),
       ),
     ).rejects.toThrow(CustomerRequestNotFoundError);
     expect(applier.applied).toHaveLength(0);

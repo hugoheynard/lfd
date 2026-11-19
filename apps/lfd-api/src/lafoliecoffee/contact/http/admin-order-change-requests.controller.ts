@@ -5,12 +5,14 @@ import {
   type OrderChangeRefusalPayload,
   orderChangeRefusalPayloadSchema,
   type OrderRevisionQuoteView,
+  type StaffPermission,
 } from "@lfd/contracts";
 import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
-import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
+import { StaffPermissions, StaffUserId } from "../../../platform/auth/staff.decorator.js";
+import { mayExceedItemLimits } from "../../orders/http/item-limit-override-permissions.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { ApplyOrderChangeCommand } from "../application/commands/apply-order-change.command.js";
 import { RefuseOrderChangeCommand } from "../application/commands/refuse-order-change.command.js";
@@ -31,20 +33,27 @@ export class AdminOrderChangeRequestsController {
     private readonly queries: QueryBus,
   ) {}
 
-  /** Le devis de révision de la demande en attente, ou le refus de la règle (`409`). */
+  /**
+   * Le devis de révision de la demande en attente, ou le refus de la règle
+   * (`409`). Il lit le droit de passer outre la limite d'un produit
+   * (`@StaffPermissions()`) pour annoncer ce que l'application dépasserait.
+   */
   @Get("quote")
   quote(
     @Param("id") id: string,
     @StaffUserId() staffUserId: string,
+    @StaffPermissions() permissions: readonly StaffPermission[],
   ): Promise<OrderRevisionQuoteView> {
     return this.queries.execute<QuoteOrderChangeQuery, OrderRevisionQuoteView>(
-      new QuoteOrderChangeQuery(id, staffUserId),
+      new QuoteOrderChangeQuery(id, staffUserId, mayExceedItemLimits(permissions)),
     );
   }
 
   /**
    * `200` avec la révision produite ; `409` avec la phrase de la règle
-   * (inscrite, modifiée ailleurs, total changé depuis le devis vu…).
+   * (inscrite, modifiée ailleurs, total changé depuis le devis vu…). Le
+   * droit de passer outre la limite d'un produit est celui de la personne
+   * qui applique, lu en base ; le motif vient du corps.
    */
   @Post("apply")
   @HttpCode(HttpStatus.OK)
@@ -55,9 +64,13 @@ export class AdminOrderChangeRequestsController {
     @Param("id") id: string,
     @StaffUserId() staffUserId: string,
     @Body(new ZodBody(orderChangeApplyPayloadSchema)) payload: OrderChangeApplyPayload,
+    @StaffPermissions() permissions: readonly StaffPermission[],
   ): Promise<OrderChangeAppliedResponse> {
     const revision = await this.commands.execute<ApplyOrderChangeCommand, number>(
-      new ApplyOrderChangeCommand(id, staffUserId, payload.expectedTotalCents),
+      new ApplyOrderChangeCommand(id, staffUserId, payload.expectedTotalCents, {
+        exceedItemLimits: mayExceedItemLimits(permissions),
+        overrideReason: payload.itemLimitOverrideReason,
+      }),
     );
     return { revision };
   }

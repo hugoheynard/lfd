@@ -17,9 +17,15 @@ export class BusOrderChangeQuoter extends OrderChangeQuoter {
     orderId: string,
     staffUserId: string,
     change: RequestedOrderChange,
+    exceedItemLimits: boolean,
   ): Promise<OrderRevisionQuoteView> {
     return this.queries.execute<QuoteOrderRevisionQuery, OrderRevisionQuoteView>(
-      new QuoteOrderRevisionQuery(orderId, { kind: "staff", staffId: staffUserId }, change),
+      new QuoteOrderRevisionQuery(
+        orderId,
+        { kind: "staff", staffId: staffUserId },
+        change,
+        exceedItemLimits,
+      ),
     );
   }
 }

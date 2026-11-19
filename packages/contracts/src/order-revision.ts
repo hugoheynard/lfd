@@ -9,6 +9,7 @@ import {
   hasPickupPointWhenPickedUp,
   orderContentShape,
   type OrderQuoteExceededLimitView,
+  type OrderRevisionClosedItemLimitView,
   type OrderSaleUnit,
   pickupPointIssue,
 } from "./order.js";
@@ -169,6 +170,13 @@ export interface OrderRevisionQuoteView {
    * pour le client, qui ne passe jamais outre.
    */
   readonly itemLimitOverrides?: readonly OrderQuoteExceededLimitView[];
+  /**
+   * Les lignes que la modification de l'équipe soumet (ajoutées, augmentées,
+   * ou toutes si la date change) et que leur limite de produit ferme,
+   * dépassables ou non, dans l'ordre du panier : l'écran les montre avant
+   * le refus. Servi au devis de l'équipe seulement.
+   */
+  readonly closedByItemLimit?: readonly OrderRevisionClosedItemLimitView[];
 }
 
 /** Ce que la modification rend : la commande se relit ensuite (`GET :id`). */

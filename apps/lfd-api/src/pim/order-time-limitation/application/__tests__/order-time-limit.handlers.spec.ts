@@ -174,6 +174,41 @@ describe("SetOrderTimeLimitHandler", () => {
     expect(saved[0]?.time).toBe("16:00");
   });
 
+  it("cocher seule la case : le fait porte la case d'avant, décochée", async () => {
+    const existing = OrderTimeLimit.set("deja_la", payload({ staffMayExceed: false }));
+    const { handler, journal } = doubles(existing);
+
+    await handler.execute(new SetOrderTimeLimitCommand(payload({ staffMayExceed: true })));
+
+    expect(journal.entries[0]?.payload).toMatchObject({
+      staffMayExceed: true,
+      previousStaffMayExceed: false,
+    });
+  });
+
+  it("changer l'heure d'une limite cochée : le fait dit que la case l'était déjà", async () => {
+    const existing = OrderTimeLimit.set("deja_la", payload({ staffMayExceed: true }));
+    const { handler, journal } = doubles(existing);
+
+    await handler.execute(
+      new SetOrderTimeLimitCommand(payload({ time: "16:00", staffMayExceed: true })),
+    );
+
+    expect(journal.entries[0]?.payload).toMatchObject({
+      time: "16:00",
+      staffMayExceed: true,
+      previousStaffMayExceed: true,
+    });
+  });
+
+  it("une limite neuve n'a pas de case d'avant", async () => {
+    const { handler, journal } = doubles(null);
+
+    await handler.execute(new SetOrderTimeLimitCommand(payload({ staffMayExceed: true })));
+
+    expect(journal.entries[0]?.payload).not.toHaveProperty("previousStaffMayExceed");
+  });
+
   /** Régression : reposer la même règle réécrivait la ligne, un fait au journal et l'échelle. */
   it("rejouée à l'identique, n'écrit rien, ne trace rien et n'émet rien", async () => {
     const existing = OrderTimeLimit.set("deja_la", payload({ time: "18:00" }));

@@ -57,6 +57,19 @@ const orderTimeLimit = () =>
   });
 
 /**
+ * La pose d'une heure limite : ses valeurs, et ce que la case valait avant le
+ * geste — la phrase dit alors le changement de la case, pas seulement son état.
+ */
+const orderTimeLimitSet = () =>
+  orderTimeLimit().extend({
+    /**
+     * La case « l'équipe peut passer outre » avant ce geste. Absente quand la
+     * limite naît, et des faits écrits avant qu'on la garde.
+     */
+    previousStaffMayExceed: z.boolean().optional(),
+  });
+
+/**
  * Les méthodes de calcul du prix professionnel **telles que les faits passés
  * les portent**. Depuis le lot R3 de `saisir-un-prix.md`
  * (2026-10-27), le prix pro est toujours saisi : plus aucun fait
@@ -334,7 +347,7 @@ export const REFERENTIAL_SETTINGS_FACTS = {
    * article s'y nomme par son SKU). Une cible que le référentiel ne nomme plus
    * s'y dit par son identifiant, jamais par un nom inventé (lot B, 2026-09-19).
    */
-  "order_time_limit.set": labelled(orderTimeLimit()),
+  "order_time_limit.set": labelled(orderTimeLimitSet()),
   "order_time_limit.removed": labelled(orderTimeLimit()),
   "order_time_limit.archived": labelled(orderTimeLimit()),
   "order_time_limit.restored": labelled(orderTimeLimit()),

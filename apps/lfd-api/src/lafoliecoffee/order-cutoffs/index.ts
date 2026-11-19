@@ -19,6 +19,7 @@ export type {
   DeadlineBounds,
   DeadlineSource,
   ExceededItemLimit,
+  ItemLimitOfDay,
   ItemOrderLimit,
   LineVerdict,
   OrderDeadlineVerdict,

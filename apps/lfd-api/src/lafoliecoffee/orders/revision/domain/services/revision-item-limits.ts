@@ -79,28 +79,62 @@ export function settledSkusOn(
 }
 
 /**
- * **Ce que la limite d'article dit des lignes que l'équipe soumet** (ajoutées,
- * augmentées, ou toutes quand la journée change) — la
- * règle générale ne lui est pas opposée, la limite d'article l'est. Une ligne
- * que sa propre limite ferme passe seulement si le verdict la dit dépassée
- * (la case du produit, le droit, une limite générale ce jour-là) ; elle rend
- * alors le dépassement, à justifier et à consigner.
- *
- * `verdict` est celui des seuls SKU soumis ({@link staffJudgedSkus}).
- *
- * @throws {ItemLimitPassedOnRevisionError} une ligne ajoutée que sa limite ferme, non dépassée.
+ * **Une ligne soumise que sa propre limite ferme** : la limite, et si la
+ * modification la fera passer (`exceedable` : le verdict la dit dépassée —
+ * la case du produit, le droit, une limite générale ce jour-là qui ne ferme
+ * pas). Faux : la modification sera refusée tant qu'elle la garde.
  */
-export function admitRaisedLines(
-  verdict: OrderDeadlineVerdict,
+export interface ClosedItemLimit extends ExceededItemLimit {
+  readonly exceedable: boolean;
+}
+
+/**
+ * **Ce que la limite d'article dit des lignes que l'équipe soumet** (ajoutées,
+ * augmentées, ou toutes quand la journée change) — la règle générale ne lui
+ * est pas opposée, la limite d'article l'est. Le devis les annonce ; la
+ * modification refuse ({@link admitStaffItemLimits}).
+ */
+export interface StaffItemLimits {
+  /** Les limites dépassées, à justifier par un motif et à consigner. */
+  readonly exceeded: readonly ExceededItemLimit[];
+  /** Les lignes que leur limite ferme, dépassables ou non, dans l'ordre du panier. */
+  readonly closed: readonly ClosedItemLimit[];
+}
+
+/** Rien de soumis : le client, une commande sur stock, aucune ligne jugée. */
+export const NO_STAFF_ITEM_LIMITS: StaffItemLimits = { exceeded: [], closed: [] };
+
+/**
+ * Lu sur le verdict des seuls SKU soumis ({@link staffJudgedSkus}), sans
+ * rien recalculer.
+ */
+export function staffItemLimitsOf(verdict: OrderDeadlineVerdict): StaffItemLimits {
+  const closed = [...verdict.lines].flatMap(([sku, line]): ClosedItemLimit[] =>
+    line.itemStatus === "closed" && line.itemLimit !== null
+      ? [{ sku, ...line.itemLimit, exceedable: line.exceeded }]
+      : [],
+  );
+  return { exceeded: verdict.exceeded, closed };
+}
+
+/**
+ * **La modification de l'équipe admet-elle ses lignes soumises ?** Une ligne
+ * que sa propre limite ferme passe seulement si elle est dépassable ; rend
+ * alors les dépassements, à justifier et à consigner.
+ *
+ * `lines` : la composition chiffrée, pour nommer le produit d'un refus.
+ *
+ * @throws {ItemLimitPassedOnRevisionError} une ligne soumise que sa limite ferme, non dépassable.
+ */
+export function admitStaffItemLimits(
+  limits: StaffItemLimits,
   lines: readonly NamedLine[],
 ): readonly ExceededItemLimit[] {
-  const passed = [...verdict.lines].filter(
-    ([, line]) => line.itemStatus === "closed" && !line.exceeded,
-  );
-  if (passed.length > 0) {
+  const refused = limits.closed.filter((closed) => !closed.exceedable);
+  if (refused.length > 0) {
     throw new ItemLimitPassedOnRevisionError(
-      passed.map(([sku]) => lines.find((line) => line.sku === sku)?.productName ?? sku),
+      refused.map(({ sku }) => lines.find((line) => line.sku === sku)?.productName ?? sku),
     );
   }
-  return verdict.exceeded;
+  return limits.exceeded;
 }

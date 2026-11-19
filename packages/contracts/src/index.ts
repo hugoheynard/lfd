@@ -1437,6 +1437,7 @@ export type {
   OrderQuoteView,
   OrderQuoteCutoffView,
   OrderQuoteExceededLimitView,
+  OrderRevisionClosedItemLimitView,
   OrderQuoteItemLimitLineView,
   CustomerOrderQuoteLineView,
   CustomerOrderQuoteView,
