@@ -40,6 +40,7 @@ import { BakehouseResupplyDraftReader } from "./domain/bakehouse-resupply-draft.
 import { PrismaBakehouseResupplyDraftRepository } from "./infrastructure/prisma-bakehouse-resupply-draft.repository.js";
 import { PrismaBakehouseResupplyDraftReader } from "./infrastructure/prisma-bakehouse-resupply-draft.reader.js";
 import { CreateResupplyTemplateHandler } from "./application/create-resupply-template.handler.js";
+import { ApplyResupplyTemplateHandler } from "./application/apply-resupply-template.handler.js";
 import { AdjustResupplyTemplateHandler } from "./application/adjust-resupply-template.handler.js";
 import { ArchiveResupplyTemplateHandler } from "./application/archive-resupply-template.handler.js";
 import { ListResupplyTemplatesHandler } from "./application/list-resupply-templates.handler.js";
@@ -190,6 +191,7 @@ import { ResupplyArrival } from "./application/resupply-arrival.js";
     ListBakehouseResupplyDraftsHandler,
     CreateResupplyTemplateHandler,
     AdjustResupplyTemplateHandler,
+    ApplyResupplyTemplateHandler,
     ArchiveResupplyTemplateHandler,
     ListResupplyTemplatesHandler,
     // « Envoyer en boutique » depuis la réserve du colisage (A1.4).

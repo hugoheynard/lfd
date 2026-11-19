@@ -1,6 +1,9 @@
 import {
   type AddSiteResupplyLinePayload,
   addSiteResupplyLineSchema,
+  type AppliedResupplyTemplateResponse,
+  type ApplyResupplyTemplatePayload,
+  applyResupplyTemplateSchema,
   type CorrectSiteResupplyLinePayload,
   correctSiteResupplyLineSchema,
   type NameSiteResupplyPayload,
@@ -32,6 +35,7 @@ import { IntentKey } from "../../../platform/shared/http/intent-key.decorator.js
 import { ZodBody, ZodParam } from "../../../platform/shared/http/zod-body.pipe.js";
 
 import { AddSiteResupplyLineCommand } from "../application/add-site-resupply-line.command.js";
+import { ApplyResupplyTemplateCommand } from "../application/apply-resupply-template.command.js";
 import { CancelSiteResupplyCommand } from "../application/cancel-site-resupply.command.js";
 import { CorrectSiteResupplyLineCommand } from "../application/correct-site-resupply-line.command.js";
 import { NameSiteResupplyCommand } from "../application/name-site-resupply.command.js";
@@ -114,6 +118,32 @@ export class AdminSiteResuppliesController {
       ),
     );
     return { id };
+  }
+
+  /**
+   * Applique un modèle du point à la demande en cours de la visée, ouverte au
+   * besoin — une fois par intention (`Idempotency-Key`) : rejouée en `add`,
+   * elle doublerait les quantités.
+   */
+  @Post(":siteId/drafts/:target/apply-template")
+  @RequirePermission("handover_counter:write")
+  applyTemplate(
+    @Param("siteId") siteId: string,
+    @Param("target", new ZodParam(targetParamSchema, "target")) target: ResupplyTarget,
+    @Body(new ZodBody(applyResupplyTemplateSchema)) body: ApplyResupplyTemplatePayload,
+    @StaffUserId() staffUserId: string,
+    @IntentKey() intentKey: string,
+  ): Promise<AppliedResupplyTemplateResponse> {
+    return this.commands.execute<ApplyResupplyTemplateCommand, AppliedResupplyTemplateResponse>(
+      new ApplyResupplyTemplateCommand(
+        siteId,
+        target,
+        body.templateId,
+        body.mode,
+        staffUserId,
+        intentKey,
+      ),
+    );
   }
 
   /** Nomme la demande en cours de la visée, ouverte au besoin (R1g). */

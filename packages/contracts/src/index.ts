@@ -3242,20 +3242,26 @@ export type {
 } from "./bakehouse-resupply-draft.js";
 export {
   adjustResupplyTemplateSchema,
+  applyResupplyTemplateSchema,
   createResupplyTemplateSchema,
+  RESUPPLY_TEMPLATE_APPLY_MODES,
   RESUPPLY_TEMPLATE_LINE_ISSUES,
   resupplyTemplateContentSchema,
   resupplyTemplateLineSchema,
 } from "./resupply-template.js";
 export type {
   AdjustResupplyTemplatePayload,
+  AppliedResupplyTemplateResponse,
+  ApplyResupplyTemplatePayload,
   CreateResupplyTemplatePayload,
+  ResupplyTemplateApplyMode,
   ResupplyTemplateContentPayload,
   ResupplyTemplateLine,
   ResupplyTemplateLineIssue,
   ResupplyTemplateLineView,
   ResupplyTemplateView,
   SavedResupplyTemplateResponse,
+  SkippedResupplyTemplateLine,
 } from "./resupply-template.js";
 export type {
   SaleReferenceDecisionKind,

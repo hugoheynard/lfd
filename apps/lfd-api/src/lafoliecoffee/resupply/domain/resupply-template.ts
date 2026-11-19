@@ -130,6 +130,15 @@ export class ResupplyTemplate {
     this.updatedTrace = trace;
   }
 
+  /**
+   * Appliquer à une demande : un modèle archivé ne remplit plus rien.
+   *
+   * @throws {ResupplyTemplateArchivedError} le modèle est archivé.
+   */
+  assertApplicable(): void {
+    this.ensureActive();
+  }
+
   snapshot(): ResupplyTemplateSnapshot {
     return {
       id: this.id,

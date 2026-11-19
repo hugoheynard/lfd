@@ -115,6 +115,13 @@ describe("un modèle de réassort", () => {
     expect(() => template.adjust(CONTENT, 1, LATER_TRACE)).toThrow(ResupplyTemplateArchivedError);
   });
 
+  it("s'applique tant qu'il est actif, plus une fois archivé", () => {
+    const template = stored();
+    expect(() => template.assertApplicable()).not.toThrow();
+    template.archive(LATER_TRACE);
+    expect(() => template.assertApplicable()).toThrow(ResupplyTemplateArchivedError);
+  });
+
   it("ne se rejoue que pour le point qui l'a créé", () => {
     expect(() => stored().assertReplayableFor("site_1")).not.toThrow();
     expect(() => stored().assertReplayableFor("site_2")).toThrow(ResupplyTemplateKeyTakenError);

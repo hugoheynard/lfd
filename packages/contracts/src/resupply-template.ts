@@ -97,3 +97,36 @@ export interface SavedResupplyTemplateResponse {
   readonly id: string;
   readonly version: number;
 }
+
+/**
+ * Appliquer un modèle à la demande en cours : `replace` retire de la demande
+ * les articles absents du modèle et pose les quantités du modèle ; `add`
+ * ajoute chaque ligne (les quantités s'additionnent).
+ */
+export const RESUPPLY_TEMPLATE_APPLY_MODES = ["replace", "add"] as const;
+export type ResupplyTemplateApplyMode = (typeof RESUPPLY_TEMPLATE_APPLY_MODES)[number];
+
+/**
+ * `POST /admin/site-resupplies/sites/:siteId/drafts/:target/apply-template`,
+ * sous la clé d'intention de l'écran (en-tête `Idempotency-Key`) : la même
+ * requête renvoyée n'applique pas deux fois.
+ */
+export const applyResupplyTemplateSchema = z
+  .object({
+    templateId: z.string().trim().min(1),
+    mode: z.enum(RESUPPLY_TEMPLATE_APPLY_MODES),
+  })
+  .strict();
+export type ApplyResupplyTemplatePayload = z.infer<typeof applyResupplyTemplateSchema>;
+
+/** Une ligne du modèle écartée à l'application, et pourquoi. */
+export interface SkippedResupplyTemplateLine {
+  readonly sku: string;
+  readonly reason: ResupplyTemplateLineIssue;
+}
+
+/** La demande en cours remplie, et les lignes du modèle qui ne s'y sont pas posées. */
+export interface AppliedResupplyTemplateResponse {
+  readonly resupplyId: string;
+  readonly skipped: readonly SkippedResupplyTemplateLine[];
+}
