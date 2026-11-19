@@ -19,7 +19,7 @@ export class PrismaProductPlacementReader extends ProductPlacementReader {
       select: {
         id: true,
         categoryId: true,
-        contextVat: { select: { contextId: true, vatRateId: true } },
+        contextVat: { select: { vatRateId: true, context: { select: { key: true } } } },
         variants: { select: { sku: true } },
       },
     });
@@ -30,7 +30,7 @@ export class PrismaProductPlacementReader extends ProductPlacementReader {
       productId: product.id,
       categoryId: product.categoryId,
       vatByContext: Object.fromEntries(
-        product.contextVat.map((row) => [row.contextId, row.vatRateId] as const),
+        product.contextVat.map((row) => [row.context.key, row.vatRateId] as const),
       ),
       variantSkus: product.variants.map((variant) => variant.sku),
     };
