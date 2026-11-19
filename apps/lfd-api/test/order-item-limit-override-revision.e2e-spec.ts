@@ -1,6 +1,6 @@
 /**
  * E2E du **dépassement de la limite d'un produit en modification** (plan
- * `documentation/limites-de-commande/plan-passer-outre-la-limite-produit.md`,
+ * `documentation/limites-de-commande/passer-outre-la-limite-d-un-produit.md`,
  * § 3.6, lot O5).
  *
  * La scène, vraie à toute heure : la règle générale ferme la veille à 00:01

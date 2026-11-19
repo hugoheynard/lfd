@@ -340,7 +340,7 @@ export const staffResourceSchema = z.enum([
    * une commande pour un client, ignorer la limite de commande d'un produit
    * dont la case « l'équipe peut passer outre » est cochée ; l'heure limite
    * générale reste opposée (2026-11-19, plan
-   * `limites-de-commande/plan-passer-outre-la-limite-produit.md`).
+   * `limites-de-commande/passer-outre-la-limite-d-un-produit.md`).
    *
    * Une ressource à elle, et pas `b2b_order_waivers` : une dérogation rouvre
    * une journée pour une société pendant le rattrapage ; ce droit efface la

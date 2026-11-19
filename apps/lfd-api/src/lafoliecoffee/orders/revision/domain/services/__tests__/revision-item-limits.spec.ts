@@ -9,7 +9,7 @@ import { admitRaisedLines, raisedSkus, settledSkusOn } from "../revision-item-li
 
 /**
  * La limite d'article dans une modification (plan
- * `documentation/limites-de-commande/plan-passer-outre-la-limite-produit.md`,
+ * `documentation/limites-de-commande/passer-outre-la-limite-d-un-produit.md`,
  * § 3.6). Les dates ne sont comparées qu'entre elles : aucune horloge.
  */
 const DAY = "2026-12-10";

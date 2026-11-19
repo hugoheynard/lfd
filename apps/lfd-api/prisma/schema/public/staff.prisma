@@ -122,7 +122,7 @@ enum StaffResource {
   b2b_order_waivers
   /// PASSER OUTRE LA LIMITE D'UN PRODUIT — en saisissant ou en modifiant une
   /// commande pour un client, ignorer la limite d'un produit dont la case le
-  /// permet (2026-11-19, `limites-de-commande/plan-passer-outre-la-limite-produit.md`).
+  /// permet (2026-11-19, `limites-de-commande/passer-outre-la-limite-d-un-produit.md`).
   /// Accordée à l'écran.
   lfc_product_limit_override
   b2b_feature_access

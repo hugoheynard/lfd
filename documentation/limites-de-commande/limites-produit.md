@@ -110,6 +110,10 @@ Jusqu'au 2026-10-21, la limite d'article **remplaçait** la règle générale : 
 rang global posé au référentiel la neutralisait à la passation. Ce rang n'existe
 plus (§1).
 
+**L'équipe peut passer outre** la limite d'un produit dont la case le permet,
+avec le droit et un motif ; la règle générale reste le plancher
+([`passer-outre-la-limite-d-un-produit.md`](passer-outre-la-limite-d-un-produit.md)).
+
 ## 4. Ce que sert la boutique (depuis `a1e1c62f5`, 2026-10-21)
 
 `ShopItemView.orderTimeLimit` (`packages/contracts/src/shop-catalogue.ts`),

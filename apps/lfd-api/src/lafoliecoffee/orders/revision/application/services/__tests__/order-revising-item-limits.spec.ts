@@ -18,7 +18,7 @@ import {
 
 /**
  * **La limite d'un produit dans une modification** (plan
- * `documentation/limites-de-commande/plan-passer-outre-la-limite-produit.md`,
+ * `documentation/limites-de-commande/passer-outre-la-limite-d-un-produit.md`,
  * § 3.6, lot O5).
  *
  * La scène : la règle générale ferme la veille à 18 h (ouverte à `NOW`,

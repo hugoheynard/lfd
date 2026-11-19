@@ -1938,7 +1938,7 @@
       "colonne": "public.order_item_limit_overrides.staff_user_id",
       "personne": "staff",
       "categorie": "auteur-geste",
-      "finalite": "Tracer quel membre du staff a passé outre la limite de commande d'un produit en saisissant ou modifiant une commande (plan-passer-outre-la-limite-produit, § 3.5). Conservée aussi longtemps que la commande, dont aucune durée n'est encore décidée.",
+      "finalite": "Tracer quel membre du staff a passé outre la limite de commande d'un produit en saisissant ou modifiant une commande (passer-outre-la-limite-d-un-produit, § 2.4). Conservée aussi longtemps que la commande, dont aucune durée n'est encore décidée.",
       "conservation": "aucune-limite-decidee",
       "purge": null,
       "information": false

@@ -140,10 +140,10 @@ hors du juge, personne n'importe une fonction de décision du contrat
 - Les pistes P1 et P2 ci-dessous : à inventorier sur ce code avant d'en faire
   un plan (Hugo, 2026-11-19 : « bâtir d'abord, puis faire l'inventaire des
   capacités »).
-- Le dépassement d'une limite de produit par la commerciale
-  ([`plan-passer-outre-la-limite-produit.md`](plan-passer-outre-la-limite-produit.md)) :
-  à réécrire sur le verdict, où il devient une donnée de `asker` et une
-  propriété de la limite d'un article.
+- Le dépassement d'une limite de produit par la commerciale est **bâti**
+  sur le verdict ([`passer-outre-la-limite-d-un-produit.md`](passer-outre-la-limite-d-un-produit.md)) :
+  `asker.exceedItemLimits`, `exceeded`, et par ligne `exceedable` et
+  `itemStatus`.
 - **Le « jour même » dans le verdict** ? « Trop tôt » plutôt que « trop tard ».
 - **Fusionner `order-waivers` dans `order-cutoffs`** ? La dérogation et la
   surtaxe n'existent que par l'heure limite ; les fusionner déménage des tables
@@ -221,7 +221,7 @@ débloquent**, dérivés par le domaine, jamais par l'écran :
 | **Retirer ces articles** (`remove_lines`, avec leurs SKU)                                        | des lignes `item_limit` ferment, et le reste du panier passe sans elles                        | tous                                     |
 | **Choisir une autre journée** (`move_day`, avec la première journée où **tout** le panier passe) | toujours, si une journée de l'horizon convient                                                 | tous                                     |
 | **Accorder une dérogation** (`grant_waiver`)                                                     | `grace` venu de la règle générale, sans dérogation ouverte, avec une société                   | l'équipe, avec `b2b_order_waivers:write` |
-| **Passer outre la limite** (`exceed_item_limit`)                                                 | plus tard : [`plan-passer-outre-la-limite-produit.md`](plan-passer-outre-la-limite-produit.md) | l'équipe, avec son droit                 |
+| **Passer outre la limite** (`exceed_item_limit`)                                                 | plus tard : [`passer-outre-la-limite-d-un-produit.md`](passer-outre-la-limite-d-un-produit.md) | l'équipe, avec son droit                 |
 
 Le geste dit ce qui est **possible**. Les droits n'entrent pas dans le juge
 pur : la question porte `asker.remedies`, **la liste des gestes que cet

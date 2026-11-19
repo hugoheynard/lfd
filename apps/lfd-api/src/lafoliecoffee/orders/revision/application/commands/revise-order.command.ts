@@ -31,7 +31,7 @@ export class ReviseOrderCommand {
 
 /**
  * **Passer outre la limite d'un produit en modifiant** (plan
- * `documentation/limites-de-commande/plan-passer-outre-la-limite-produit.md`,
+ * `documentation/limites-de-commande/passer-outre-la-limite-d-un-produit.md`,
  * § 3.6) : le droit, lu en base par le contrôleur de l'équipe, et le motif du
  * corps. Le client, une demande appliquée : ni l'un ni l'autre.
  */

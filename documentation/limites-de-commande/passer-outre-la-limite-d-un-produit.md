@@ -1,0 +1,131 @@
+# Passer outre la limite d'un produit
+
+> ✅ **État, bâti le 2026-11-19** (lots O1 à O6, commits `c0e825b1d` à
+> `237fb6885`). Le plan qui l'a bâti est retiré ; ses trois contradictions par
+> `vitruve` et les décisions de Hugo sont dans l'historique git.
+
+## 1. En deux mots
+
+Un produit peut demander d'être commandé longtemps à l'avance : « 2 jours
+avant, 12 h ». Une commerciale peut passer outre, si **deux clés** sont réunies :
+
+1. **le produit le permet** — une case « L'équipe peut passer outre cette
+   limite », sur la limite du produit, au référentiel, décochée par défaut ;
+2. **la personne en a le droit** — `lfc_product_limit_override`, donné à l'écran
+   des rôles.
+
+```mermaid
+flowchart TD
+  L["Ligne : pain au levain<br/>limite 2 jours avant, 12 h, passée"] --> P{"Le produit le permet ?"}
+  P -->|non| A["Refusée"]
+  P -->|oui| D{"La personne a le droit ?"}
+  D -->|non| A
+  D -->|oui| R{"La règle générale pose une limite ce jour-là<br/>et ne ferme pas ?"}
+  R -->|non| A
+  R -->|oui| M["Passe, jugée par la règle générale seule<br/>motif obligatoire, dépassement consigné"]
+```
+
+**Le plancher, c'est la règle générale.** Passer outre la limite d'un produit
+laisse l'heure limite générale juger la ligne, avec son rattrapage, sa
+dérogation et sa surtaxe. Sans limite générale ce jour-là, pas de dépassement :
+**un dépassement remplace une limite par une autre, jamais par rien** (Hugo,
+2026-11-19 : « on essaye d'avoir un comportement prévisible »).
+
+**La même réponse partout.** La case et le droit valent en saisie d'une
+commande, en estimation et en modification par l'équipe. Le client, l'invité
+et la boutique ne passent jamais outre.
+
+## 2. La technique
+
+### 2.1 La case, du référentiel au commerce
+
+- `pim.order_time_limit.staff_may_exceed` (référentiel) et
+  `public.catalog_items.order_limit_staff_may_exceed` (commerce), `false` par
+  défaut ; une règle rangée avant se lit `false`. Migration
+  `20261119140000_la_limite_que_l_equipe_peut_passer`.
+- `OrderTimeLimitPayload` la rend obligatoire ; le panneau des limites du
+  back-office (`pim/order-time-limits/limit-panel/`, ouvert par la page des
+  limites et par la fiche produit) l'envoie.
+- Le fil du catalogue la porte (`SyncOrderTimeLimit`, au seul rang du produit),
+  `sameLimit` la compare, `orderLimitGroups` la met dans sa clé, et le
+  déclencheur des versions du catalogue la lit.
+
+### 2.2 Le droit
+
+`lfc_product_limit_override` (migration
+`20261119140100_le_droit_de_passer_outre_la_limite_d_un_produit`, aucun droit
+accordé ; la graine ne le donne qu'à l'administrateur). Lu **au contrôleur**
+par `@StaffPermissions()` et passé en booléen : la requête de l'écran ne peut
+pas le forger (`orders/http/item-limit-override-permissions.ts`).
+
+### 2.3 Le juge décide, une seule fois
+
+Dans le verdict de l'heure limite
+([`le-verdict-de-l-heure-limite.md`](le-verdict-de-l-heure-limite.md)) :
+`exceededBy` et `isExceedable`
+(`order-cutoffs/domain/deadline/judge-order-deadline.ts`). La question porte
+`asker.exceedItemLimits` (obligatoire, sans défaut) ; le verdict rend
+`exceeded` (sku, limite, instant) et, par ligne, `exceeded`, `exceedable` et
+`itemStatus` (l'état de la seule limite d'article). Une ligne dépassée est
+jugée par la règle générale seule. « Dépassable » ne regarde pas l'instant :
+l'écran lit aussi l'état de la ligne.
+
+### 2.4 Saisie et estimation de l'équipe
+
+- Le droit va du contrôleur aux `OrderParties`, puis à l'asker
+  (`OrderDrafting.ensureNotTooLate`) ; `DraftedOrder` rend `exceeded`.
+- **Motif** : `itemLimitOverrideReason` (1 à 280, un seul pour la commande),
+  dans `adminOrderEntryShape`. Sans lui, la passation refuse
+  (`orders.cutoff.item_limit_reason_required`) juste après la préparation,
+  **avant** le budget et toute intention de paiement ; la clé d'intention est
+  rendue. L'estimation ne refuse pas : elle rend les dépassements. Le motif
+  n'entre pas dans l'empreinte d'intention.
+- **Trace** : `public.order_item_limit_overrides` (migration
+  `20261119170000_les_depassements_de_limite_produit`), une ligne par produit
+  dépassé, écrite dans la transaction de la commande, `origin` = `placement`
+  ou `revision`. Au registre RGPD (`staff_user_id`, `reason`).
+- La fiche d'une commande rend les dépassements, avec le nom de la personne, à
+  qui a `lfc_product_limit_override:read`. L'avis du comptoir rend les
+  dépassements et les lignes dépassables.
+
+### 2.5 Modification
+
+- **Par l'équipe** (`RevisionCutoffs`, `orders/revision/application/services/`) :
+  les lignes **ajoutées ou augmentées** sont jugées par la limite de leur
+  produit sur la nouvelle journée — refus `orders.cutoff.item_limit_past`
+  (qui nomme le produit et les sorties) sauf dépassement avec les deux clés,
+  motif, trace `revision`. La règle générale ne lui est toujours pas opposée.
+  Une ligne existante non augmentée passe comme avant.
+- **Par le client**, sur une commande qui porte un dépassement : pour sa
+  journée, la ligne consignée n'est jugée que par la règle générale
+  (`settledItemLimits` de la question), sans quitter le panier — un panier
+  vidé n'opposerait plus rien. Écartée aussi de la borne de paiement d'une
+  hausse carte. Une ligne augmentée se juge comme un ajout ; une autre journée
+  la rejuge.
+- **La hausse carte** est un geste du client seul (l'équipe ne fait pas de
+  hausse carte, Q3 a, Hugo, 2026-11-10) : rien à figer, elle suit la règle du
+  client ci-dessus.
+- **Une demande de modification du client** (M4), appliquée par l'équipe,
+  passe sans le droit : un produit à limite passée qu'elle ajoute est refusé.
+
+### 2.6 Les écrans
+
+La saisie et la modification d'une commande au back-office annoncent les
+lignes fermées par leur produit : « Passer outre » (si dépassable) ouvre le
+motif, sinon « Ce produit ne se commande plus pour ce jour ». Le refus pour
+motif manquant ramène au champ. La fiche d'une commande montre la carte
+« Limites de produit dépassées ».
+
+## 3. Ce qui reste
+
+- **L'équipe qui déplace la date d'une commande** n'est pas jugée sur les
+  produits qu'elle n'ajoute ni n'augmente : un produit à 48 h déjà au panier
+  passe à une date plus proche. À fermer si Hugo le veut (juger toutes les
+  lignes sur la nouvelle journée quand la date change).
+- **Une demande du client (M4) appliquée par une personne qui a le droit** :
+  aujourd'hui refusée comme sans droit. Lire le droit au contrôleur de M4 la
+  laisserait passer avec un motif.
+- **La phrase du journal du référentiel** dit l'état de la case, pas son
+  changement (« peut désormais… ») : le fait ne porte pas l'état d'avant.
+- **Rien ne vérifie qu'un produit se fabrique en moins de temps que sa
+  limite** : la case du produit en répond.

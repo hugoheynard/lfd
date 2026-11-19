@@ -28,7 +28,7 @@ function revisionAsker(exceedItemLimits: boolean): OrderDeadlineAsker {
 
 /**
  * **L'heure limite d'une modification** (plan
- * `documentation/limites-de-commande/plan-passer-outre-la-limite-produit.md`,
+ * `documentation/limites-de-commande/passer-outre-la-limite-d-un-produit.md`,
  * § 3.6) — les trois endroits qui jugent une modification la demandent ici :
  * le geste et son devis, la révisabilité, la borne de paiement d'une hausse.
  *

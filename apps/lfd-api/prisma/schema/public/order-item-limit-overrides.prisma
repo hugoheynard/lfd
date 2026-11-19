@@ -1,5 +1,5 @@
 /// **Une limite de produit que l'équipe a passée sur une commande** — plan
-/// `documentation/limites-de-commande/plan-passer-outre-la-limite-produit.md`,
+/// `documentation/limites-de-commande/passer-outre-la-limite-d-un-produit.md`,
 /// § 3.5. Une ligne par SKU dépassé, écrite dans la transaction de la
 /// commande, jamais modifiée ni supprimée.
 ///

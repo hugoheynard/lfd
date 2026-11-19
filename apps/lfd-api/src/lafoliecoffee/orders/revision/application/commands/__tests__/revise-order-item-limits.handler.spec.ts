@@ -13,7 +13,7 @@ import { CATALOG, content, DAY, NOW, placedOrder, reviseScene } from "./revision
 
 /**
  * **La modification de l'équipe qui passe outre la limite d'un produit**
- * (plan `documentation/limites-de-commande/plan-passer-outre-la-limite-produit.md`,
+ * (plan `documentation/limites-de-commande/passer-outre-la-limite-d-un-produit.md`,
  * § 3.6, lot O5) : le droit et le motif, puis une trace `revision` par SKU
  * dépassé, écrite dans la transaction de la révision, après elle.
  *

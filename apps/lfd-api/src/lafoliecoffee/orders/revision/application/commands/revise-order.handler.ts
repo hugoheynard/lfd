@@ -44,7 +44,7 @@ import { ReviseOrderCommand, type ReviseOrderResult } from "./revise-order.comma
  *    d'encaissement recalée (au compte), et les deux faits durables.
  *
  * ## La limite d'un produit passée par l'équipe (plan
- * `documentation/limites-de-commande/plan-passer-outre-la-limite-produit.md`, § 3.6)
+ * `documentation/limites-de-commande/passer-outre-la-limite-d-un-produit.md`, § 3.6)
  *
  * Une ligne ajoutée ou augmentée que l'équipe fait passer outre sa limite
  * exige un motif, refusé hors verrou ; chaque dépassement est consigné

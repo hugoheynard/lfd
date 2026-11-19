@@ -16,7 +16,7 @@ import { RevisionCutoffs } from "../revision-cutoffs.js";
 
 /**
  * **La borne de paiement d'une hausse** (plan
- * `documentation/limites-de-commande/plan-passer-outre-la-limite-produit.md`,
+ * `documentation/limites-de-commande/passer-outre-la-limite-d-un-produit.md`,
  * § 3.6) : une limite d'article passée outre et consignée n'y compte pas,
  * sans quoi la hausse naîtrait échue. Instants de la scène, horloge FIXE.
  *
