@@ -30,6 +30,12 @@ import {
   PrismaOrderLateFeeRepository,
 } from "./infrastructure/prisma-order-late-fee.repository.js";
 import { PrismaOrderCutoffWaiverRepository } from "./infrastructure/prisma-order-cutoff-waiver.repository.js";
+import { PrismaOpenWaiverReader } from "./infrastructure/prisma-open-waiver.reader.js";
+import { RepositoryLateFeeSettingReader } from "./infrastructure/repository-late-fee-setting.reader.js";
+import {
+  LateFeeSettingReader,
+  OpenWaiverReader,
+} from "../order-cutoffs/domain/deadline/ports/deadline-sources.js";
 
 /**
  * **Dérogations d'heure limite** — l'autorisation de commander en retard.
@@ -59,6 +65,10 @@ import { PrismaOrderCutoffWaiverRepository } from "./infrastructure/prisma-order
     // la passation la lit.
     { provide: OrderLateFeeRepository, useClass: PrismaOrderLateFeeRepository },
     { provide: OrderLateFeeReader, useClass: PrismaOrderLateFeeReader },
+    // Ce que le délai de commande lit d'ici pour son verdict : la dérogation
+    // ouverte et le prix d'un retard, chacun par sa lecture.
+    { provide: OpenWaiverReader, useClass: PrismaOpenWaiverReader },
+    { provide: LateFeeSettingReader, useClass: RepositoryLateFeeSettingReader },
     // La TVA de la livraison vit à côté de la surtaxe, son précédent (plan
     // `architecture-tva-des-frais-de-port.md`, V2) : un réglage unique que la
     // passation lit. Deux ports, encore.
@@ -74,6 +84,12 @@ import { PrismaOrderCutoffWaiverRepository } from "./infrastructure/prisma-order
     ClearOrderLateFeeHandler,
     ReadOrderLateFeeHandler,
   ],
-  exports: [OrderCutoffWaiverGate, OrderLateFeeReader, OrderDeliveryVatReader],
+  exports: [
+    OrderCutoffWaiverGate,
+    OrderLateFeeReader,
+    OrderDeliveryVatReader,
+    OpenWaiverReader,
+    LateFeeSettingReader,
+  ],
 })
 export class OrderWaiversModule {}

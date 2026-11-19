@@ -22,6 +22,11 @@ import { OrderShelfTodaySites } from "../orders/application/services/order-shelf
 import { SiteDaySettingsReader } from "../orders/domain/ports/site-day-settings.reader.js";
 import { PrismaSiteDaySettingsReader } from "../orders/infrastructure/prisma-site-day-settings.reader.js";
 import { ResupplyModule } from "../resupply/resupply.module.js";
+import { OrderWaiversModule } from "../order-waivers/order-waivers.module.js";
+import { OrderDeadline } from "./application/deadline/order-deadline.js";
+import { JudgingOrderDeadline } from "./application/deadline/judging-order-deadline.service.js";
+import { ItemOrderLimitsReader } from "./domain/deadline/ports/deadline-sources.js";
+import { CatalogItemOrderLimitsReader } from "./infrastructure/deadline/catalog-item-order-limits.reader.js";
 
 /**
  * **Heures limites de commande** — jusqu'à quand on commande pour un
@@ -47,6 +52,8 @@ import { ResupplyModule } from "../resupply/resupply.module.js";
     AccountModule,
     OrderCutoffsInForceModule,
     ResupplyModule,
+    // La dérogation ouverte et le prix d'un retard, pour le verdict.
+    OrderWaiversModule,
   ],
   controllers: [
     AdminOrderCutoffsController,
@@ -64,9 +71,13 @@ import { ResupplyModule } from "../resupply/resupply.module.js";
     { provide: OrderCutoffSettingsRepository, useClass: PrismaOrderCutoffSettingsRepository },
     GetOrderCutoffSettingsHandler,
     UpdateOrderCutoffSettingsHandler,
+    // Le verdict de l'heure limite : ici, et pas dans `OrderCutoffsInForceModule`,
+    // que le catalogue importe — y lire le catalogue fermerait un cycle.
+    { provide: ItemOrderLimitsReader, useClass: CatalogItemOrderLimitsReader },
+    { provide: OrderDeadline, useClass: JudgingOrderDeadline },
   ],
   // Les règles en vigueur vivent dans leur module (cf. `OrderCutoffsInForceModule`) ;
   // réexportées pour que les lecteurs d'avant n'aient rien à changer.
-  exports: [OrderCutoffsInForceModule],
+  exports: [OrderCutoffsInForceModule, OrderDeadline],
 })
 export class OrderCutoffsModule {}
