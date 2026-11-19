@@ -139,9 +139,11 @@ describe('grantGroups', () => {
    * 73 le 2026-11-14 : `b2b_sales_oversight`, le suivi commercial
    * (b2b/plan-suivi-commercial.md, S3). 74 le 2026-11-16 :
    * `production_workstations`, les postes du fournil
-   * (documentation/fournil/les-postes-du-fournil.md, W1).
+   * (documentation/fournil/les-postes-du-fournil.md, W1). 76 le 2026-11-19 :
+   * `lfc_product_limit_override` (limites-de-commande/passer-outre-la-limite-d-un-produit.md)
+   * et les modèles de réassort (reassort-boutiques).
    */
   it('compte les domaines du catalogue', () => {
-    expect(RESOURCE_COUNT).toBe(74);
+    expect(RESOURCE_COUNT).toBe(76);
   });
 });

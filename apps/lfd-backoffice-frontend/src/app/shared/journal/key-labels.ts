@@ -338,6 +338,7 @@ export const KEY_LABELS: Readonly<Record<string, string>> = {
   startAt: 'Début',
   startDate: 'Début',
   startsOn: 'Premier jour',
+  staffMayExceed: 'L’équipe peut passer outre',
   status: 'Statut',
   step: 'Étape',
   // Plan E9 : un remboursement arrêté attend un geste (`order.shortfall_refund_blocked`).
