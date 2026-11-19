@@ -5,7 +5,9 @@ import type { InvoicePeriodsReader } from "../domain/ports/invoice-periods.reade
 import { procedureCodeOfDay } from "../domain/services/collection-procedure-code.js";
 import { closureDayOf } from "../domain/services/collection-procedure-id.js";
 import type { InvoicingCalendar } from "../domain/services/invoicing-calendar.js";
+import type { ModeTimelines } from "../domain/services/payer-timeline.js";
 import { readLotsPayerModeCounts } from "./lot-payer-modes-support.js";
+import { procedurePeriodsOf } from "./procedure-periods-support.js";
 import type { ProcedureRhythmsOf } from "./procedure-rhythms-support.js";
 import { isDeadBatchStatus } from "../domain/entities/collection-batch-status.js";
 
@@ -32,6 +34,7 @@ export async function procedureIdentityOf(
   closureDay: string,
   ofClosure: readonly StoredBatchView[],
   rhythmsOf: ProcedureRhythmsOf,
+  modeTimelines: ModeTimelines,
 ): Promise<CollectionProcedureIdentityView> {
   const closesAt = localToInstant(closureDay, CLOSURE_TIME);
   const closureModes = closesAt === null ? [] : rhythmsOf(closesAt);
@@ -40,6 +43,7 @@ export async function procedureIdentityOf(
     code: procedureCodeOfDay(closureDay, closureModes),
     closureDay,
     closureModes,
+    periods: closesAt === null ? [] : procedurePeriodsOf(closesAt, closureModes, modeTimelines),
     payerCounts:
       live.length === 0
         ? null

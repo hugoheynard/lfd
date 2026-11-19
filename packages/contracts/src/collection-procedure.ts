@@ -4,6 +4,7 @@ import type { CollectionBatchAttestationsView } from "./collection-batch-attesta
 import type { CollectionBatchStatusView } from "./collection-batch.js";
 import type { CollectionProcedureBankLimitsView } from "./collection-procedure-bank-limits.js";
 import type { CollectionProcedureInvoicesView } from "./collection-procedure-invoices.js";
+import type { CollectionProcedurePeriodView } from "./collection-procedure-list.js";
 import type { BillingRhythmKind, LocalDeadlineView } from "./legal-entity.js";
 
 /**
@@ -257,6 +258,8 @@ export interface CollectionProcedureIdentityView {
   readonly closureDay: string;
   /** Les rythmes de la procédure qui ont des clients (`procedureRhythms`) ; deux ou plus : mutualisée. */
   readonly closureModes: readonly BillingRhythmKind[];
+  /** La période de chaque rythme de `closureModes`, dans le même ordre (`procedurePeriodsOf`). */
+  readonly periods: readonly CollectionProcedurePeriodView[];
   /**
    * Les clients prélevés par rythme, lus des factures des lots non annulés
    * de la clôture (le mode sous lequel chacun a clos SA période) ; `null`

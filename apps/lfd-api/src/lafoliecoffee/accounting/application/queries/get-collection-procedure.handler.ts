@@ -221,6 +221,7 @@ export class GetCollectionProcedureHandler implements IQueryHandler<
                 lotModesByClosureDay(stored, modes),
                 payerCountsAt(dates.modes, dates.payers, payerIds, now),
               ),
+              dates.modes,
             ),
       procedureBatches: viewsOf(views, procedureBatches),
       followed: viewsOf(views, followed === null ? [] : [followed])[0] ?? null,

@@ -18,12 +18,9 @@ import type {
 import { procedureCodeOf } from "../domain/services/collection-procedure-code.js";
 import { closureDayOf } from "../domain/services/collection-procedure-id.js";
 import type { InvoicingCalendar } from "../domain/services/invoicing-calendar.js";
-import {
-  closureAfter,
-  periodLabelOf,
-  previousClosureOf,
-} from "../domain/services/invoicing-closures.js";
+import { closureAfter, periodLabelOf } from "../domain/services/invoicing-closures.js";
 import type { ModeTimelines } from "../domain/services/payer-timeline.js";
+import { procedurePeriodsOf } from "./procedure-periods-support.js";
 import type { ProcedureRhythmsOf } from "./procedure-rhythms-support.js";
 import { BILLING_MODES, type BillingMode } from "../domain/value-objects/billing-mode.js";
 
@@ -109,13 +106,7 @@ export function procedureRowView(
     modes: row.modes,
     code: procedureCodeOf(row.closesAt, closureModes),
     closureModes,
-    periods: closureModes.map((mode) => ({
-      mode,
-      label: periodLabelOf({
-        startsAt: previousClosureOf(row.closesAt, modeTimelines[mode]),
-        closesAt: row.closesAt,
-      }),
-    })),
+    periods: procedurePeriodsOf(row.closesAt, closureModes, modeTimelines),
     phase: row.phase,
     stage: row.stage,
     batches: row.batches.map((batch) => ({

@@ -250,6 +250,7 @@ export {
 export type {
   CollectionProcedureListBatchView,
   CollectionProcedureListView,
+  CollectionProcedurePeriodView,
   CollectionProcedurePhaseView,
   CollectionProcedureRowView,
   CollectionProcedureStageView,

@@ -53,6 +53,7 @@ export function procedureView(
       code: 'PRL-261101-M',
       closureDay: '2026-11-01',
       closureModes: ['monthly'],
+      periods: [{ mode: 'monthly', label: 'du 1er au 31 octobre 2026' }],
       payerCounts: [{ mode: 'monthly', count: 1 }],
     },
     procedureBatches: [procedureBatch()],

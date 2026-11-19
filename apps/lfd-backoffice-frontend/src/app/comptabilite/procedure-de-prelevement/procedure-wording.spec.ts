@@ -6,9 +6,10 @@ import {
   procedureView,
 } from '../__tests__/collection-procedure-fixture';
 import {
-  batchShortLabel,
+  followedHeadline,
   isPooled,
   pageTitle,
+  periodsTitle,
   pooledSentence,
   pooledTitle,
   procedureTabs,
@@ -18,42 +19,69 @@ import {
 /** Les mots de la page : le titre dit le lot suivi (Hugo, 2026-10-23), les onglets leur état. */
 
 describe('le titre de la procédure', () => {
-  it('dit le rythme et la période du lot suivi', () => {
+  const OCTOBER = 'du 1er au 31 octobre 2026';
+
+  it('dit le rythme et la période de la procédure', () => {
     expect(pageTitle(procedureView())).toBe(
-      'Procédure de prélèvement PRL-261101-M — Mensuel — période du 1er au 31 octobre 2026',
+      `Procédure de prélèvement PRL-261101-M — Mensuel · période ${OCTOBER}`,
     );
   });
 
-  it('une clôture qui réunit deux rythmes les nomme tous les deux, mensuel d’abord', () => {
-    const followed = procedureBatch({ payerModes: ['semimonthly', 'monthly'] });
-    expect(pageTitle(procedureView({ followed }))).toBe(
-      'Procédure de prélèvement PRL-261101-M — Mensuel et deux fois par mois — période du 1er au 31 octobre 2026',
+  /**
+   * Régression : une clôture mutualisée au 1er décembre, le lendemain d'une
+   * clôture hebdomadaire, se titrait « période du 30 au 30 novembre ».
+   */
+  it('une clôture mutualisée dit la période de chacun de ses rythmes, mensuel d’abord', () => {
+    const base = procedureView();
+    const procedure =
+      base.procedure === null
+        ? null
+        : {
+            ...base.procedure,
+            code: 'PRL-261201-BM',
+            periods: [
+              { mode: 'monthly' as const, label: 'du 1er au 30 novembre 2026' },
+              { mode: 'semimonthly' as const, label: 'du 16 au 30 novembre 2026' },
+            ],
+          };
+    expect(pageTitle({ ...base, procedure })).toBe(
+      'Procédure de prélèvement PRL-261201-BM — Mensuel : du 1er au 30 novembre 2026 · Deux fois par mois : du 16 au 30 novembre 2026',
     );
     expect(rhythmsLabel(['weekly', 'semimonthly', 'monthly'])).toBe(
       'Mensuel, deux fois par mois et hebdomadaire',
     );
   });
 
-  it('aucun lot ouvert, ou un lot annulé : le seul nom de la page', () => {
+  it('la période se dit même sans lot ouvert', () => {
     expect(pageTitle(procedureView({ followed: null }))).toBe(
-      'Procédure de prélèvement PRL-261101-M',
+      `Procédure de prélèvement PRL-261101-M — Mensuel · période ${OCTOBER}`,
     );
+  });
+
+  it('sans procédure : le seul nom de la page', () => {
     expect(pageTitle(null)).toBe('Procédure de prélèvement');
     expect(pageTitle(procedureView({ procedure: null, followed: null }))).toBe(
       'Procédure de prélèvement',
     );
+  });
+
+  it('sans période servie : celle du lot suivi, sans inventer de rythme', () => {
+    expect(periodsTitle([], [], OCTOBER)).toBe(`période ${OCTOBER}`);
+    expect(periodsTitle([], ['weekly'], OCTOBER)).toBe(`Hebdomadaire · période ${OCTOBER}`);
+    const base = procedureView();
+    const procedure = base.procedure === null ? null : { ...base.procedure, periods: [] };
+    expect(pageTitle({ ...base, procedure })).toBe(
+      `Procédure de prélèvement PRL-261101-M — Mensuel · période ${OCTOBER}`,
+    );
     const cancelled = procedureBatch({ status: 'cancelled' });
-    expect(pageTitle(procedureView({ followed: cancelled }))).toBe(
+    expect(pageTitle({ ...base, procedure, followed: cancelled })).toBe(
       'Procédure de prélèvement PRL-261101-M',
     );
   });
 
-  it('un lot sans rythme connu garde sa période, sans inventer de rythme', () => {
-    expect(batchShortLabel(procedureBatch({ payerModes: [] }))).toBe(
-      'période du 1er au 31 octobre 2026',
-    );
-    expect(batchShortLabel(procedureBatch({ payerModes: ['weekly'] }))).toBe(
-      'Hebdomadaire · période du 1er au 31 octobre 2026',
+  it('l’en-tête du lot suivi : quand on prélève, puis jusqu’à quand déposer', () => {
+    expect(followedHeadline(procedureBatch())).toMatch(
+      /^Prélèvement SEPA (CORE|B2B) (le .+ )?· (déposer avant le .+ à .+|limite de dépôt à renseigner)\.$/,
     );
   });
 });
@@ -125,6 +153,7 @@ describe('la clôture mutualisée', () => {
         code: 'PRL-261102-HM',
         closureDay: '2026-11-02',
         closureModes: ['monthly', 'weekly'],
+        periods: [],
         payerCounts: [
           { mode: 'monthly', count: 12 },
           { mode: 'weekly', count: 1 },
@@ -141,6 +170,7 @@ describe('la clôture mutualisée', () => {
         code: 'PRL-261102-HM',
         closureDay: '2026-11-02',
         closureModes: ['monthly', 'weekly'],
+        periods: [],
         payerCounts: null,
       }),
     ).toContain('se lira une fois le lot préparé');

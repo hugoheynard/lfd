@@ -6,7 +6,7 @@ import type {
 import type { FoldBadgeVariant, FoldTableTone } from 'fold-ng';
 
 import { day } from '../invoice-dossier-format';
-import { rhythmsLabel } from './procedure-wording';
+import { periodsTitle } from './procedure-wording';
 
 /**
  * Les mots de la **table des procédures de prélèvement** (plan
@@ -27,13 +27,31 @@ const STAGE_LABELS: Readonly<Record<CollectionProcedureStageView, string>> = {
 };
 
 /**
- * L'étape, « Manquée » pour une clôture jamais préparée, « à venir » avant la
- * clôture, et « déposé · signature à attester » quand l'onglet 3 n'attend
- * plus que la remise signée cochée (P3, 2026-10-24).
+ * Une clôture ouverte, sans lot vivant ni commande : il n'y a rien à
+ * prélever, donc ni fichier à préparer ni limite à tenir.
+ */
+export function nothingToCollect(row: CollectionProcedureRowView): boolean {
+  return (
+    row.phase === 'open' &&
+    row.orderCount === 0 &&
+    row.batches.every(
+      (batch) => batch.status === 'cancelled' || batch.status === 'rejected_by_bank',
+    )
+  );
+}
+
+/**
+ * L'étape, « Manquée » pour une clôture jamais préparée, « Rien à prélever »
+ * pour une période sans commande, « à venir » avant la clôture, et « déposé ·
+ * signature à attester » quand l'onglet 3 n'attend plus que la remise signée
+ * cochée (P3, 2026-10-24).
  */
 export function stageLabel(row: CollectionProcedureRowView): string {
   if (row.phase === 'missed') {
     return 'Manquée';
+  }
+  if (nothingToCollect(row)) {
+    return 'Rien à prélever';
   }
   const label = STAGE_LABELS[row.stage];
   if (row.phase === 'upcoming') {
@@ -52,7 +70,7 @@ export function stageVariant(row: CollectionProcedureRowView): FoldBadgeVariant 
   if (row.phase === 'closed') {
     return 'success';
   }
-  return row.phase === 'upcoming' ? 'neutral' : 'accent';
+  return row.phase === 'upcoming' || nothingToCollect(row) ? 'neutral' : 'accent';
 }
 
 /**
@@ -67,36 +85,35 @@ export function rejectedByBankLabel(row: CollectionProcedureRowView): string | n
   return rejected && !live ? 'Rejeté par la banque — préparer de nouveau' : null;
 }
 
-/**
- * « Mensuel · période du 1er au 31 octobre 2026 » — comme le titre du détail.
- * Une clôture mutualisée dit la période de chacun de ses rythmes :
- * « Mensuel : du 1er au 30 novembre 2026 · Deux fois par mois : du 16 au 30 novembre 2026 ».
- */
+/** « Mensuel · période du 1er au 31 octobre 2026 » — comme le titre du détail (`periodsTitle`). */
 export function procedureRowTitle(row: CollectionProcedureRowView): string {
-  if (row.periods.length > 1) {
-    return row.periods
-      .map((period) => `${rhythmsLabel([period.mode])} : ${period.label}`)
-      .join(' · ');
+  return periodsTitle(row.periods, row.modes, row.periodLabel);
+}
+
+/**
+ * « déposer avant le 12 nov. 2026 à 13:45 », la limite à régler, ou rien
+ * quand il n'y a rien à déposer (période vide, procédure close).
+ */
+export function rowDeadlineLabel(row: CollectionProcedureRowView): string | null {
+  if (nothingToCollect(row) || row.phase === 'closed') {
+    return null;
   }
-  const rhythms = rhythmsLabel(row.modes);
-  const period = `période ${row.periodLabel}`;
-  return rhythms === '' ? period : `${rhythms} · ${period}`;
-}
-
-/** « 12 nov. 2026 à 13:45 », ou la limite à régler. */
-export function rowDeadlineLabel(row: CollectionProcedureRowView): string {
   const deadline = row.depositDeadline;
-  return deadline === null ? 'Non réglée' : `${day(deadline.day)} à ${deadline.time}`;
+  return deadline === null
+    ? 'limite de dépôt non réglée'
+    : `déposer avant le ${day(deadline.day)} à ${deadline.time}`;
 }
 
-/** Le jour de la clôture : les factures de la période sont émises la veille. */
+/** « clos le 1 déc. 2026 » — les factures de la période sont émises la veille. */
 export function rowClosureLabel(row: CollectionProcedureRowView): string {
-  return day(row.closureDay);
+  return `clos le ${day(row.closureDay)}`;
 }
 
-/** L'échéance, ou un tiret pour un lot d'avant l'échéance figée. */
-export function rowCollectionLabel(row: CollectionProcedureRowView): string {
-  return row.collectionDay === null ? '—' : day(row.collectionDay);
+/** « prélevé le 4 déc. 2026 », ou rien sans échéance (période vide, lot d'avant l'échéance figée). */
+export function rowCollectionLabel(row: CollectionProcedureRowView): string | null {
+  return row.collectionDay === null || nothingToCollect(row)
+    ? null
+    : `prélevé le ${day(row.collectionDay)}`;
 }
 
 /** La limite est dépassée sans dépôt : la cellule se dit en rouge. */
@@ -114,6 +131,16 @@ export function rowTone(row: CollectionProcedureRowView): FoldTableTone {
 
 function plural(count: number, one: string, many: string): string {
   return `${String(count)} ${count > 1 ? many : one}`;
+}
+
+/**
+ * Les avertissements que la colonne montre : la limite dépassée se dit déjà
+ * en rouge dans la date, elle n'y revient pas en badge.
+ */
+export function shownWarnings(
+  row: CollectionProcedureRowView,
+): readonly CollectionProcedureWarningView[] {
+  return row.warnings.filter((warning) => warning.code !== 'deadline_passed');
 }
 
 /** Un avertissement en quelques mots. */

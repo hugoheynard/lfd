@@ -32,22 +32,21 @@ import {
   rowCollectionLabel,
   rowDeadlineLabel,
   rowTone,
+  shownWarnings,
   stageLabel,
   stageVariant,
   warningText,
   warningVariant,
 } from '../procedure-list-wording';
 import { DEPOSIT_CUTOFF_ANCHOR } from '../../deposit-cutoff-anchor';
+import { nextActionOf } from '../procedure-next-action';
 import { PAGE_TITLE, POOLED_BADGE, isPooled, pooledTitle } from '../procedure-wording';
 
 const COLUMNS: readonly FoldTableColumn<CollectionProcedureRowView>[] = [
-  { key: 'code', label: 'Code' },
   { key: 'period', label: 'Rythme · période' },
   { key: 'orders', label: 'Commandes', numeric: true },
   { key: 'stage', label: 'Étape en cours' },
-  { key: 'closure', label: 'Clôture' },
-  { key: 'deadline', label: 'Limite de dépôt' },
-  { key: 'collection', label: 'Prélèvement' },
+  { key: 'dates', label: 'Calendrier' },
   { key: 'warnings', label: 'Avertissements' },
 ];
 
@@ -108,6 +107,8 @@ export class ProcedureListPage {
     this.entities().map((entity) => ({ value: entity.id, label: entity.name })),
   );
   protected readonly rows = computed(() => this.list()?.rows ?? []);
+  /** La ligne à traiter d'abord et son geste, en tête de la table. */
+  protected readonly nextAction = computed(() => nextActionOf(this.rows()));
   /**
    * La limite de dépôt de l'entité affichée n'est pas réglée (Hugo,
    * 2026-10-24) — lue sur l'entité que la page a déjà chargée.
@@ -131,6 +132,7 @@ export class ProcedureListPage {
   protected readonly deadlineMissed = deadlineMissed;
   protected readonly collectionLabel = rowCollectionLabel;
   protected readonly closureLabel = rowClosureLabel;
+  protected readonly shownWarnings = shownWarnings;
   protected readonly warningText = warningText;
   protected readonly warningVariant = warningVariant;
   protected readonly nothing = {

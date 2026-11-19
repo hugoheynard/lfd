@@ -23,8 +23,16 @@
 }
 
 .pl-code {
+  display: block;
   font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-xs);
+  color: var(--fold-color-text-muted);
   white-space: nowrap;
+}
+
+.pl-dates {
+  display: flex;
+  flex-direction: column;
 }
 
 .pl-pooled {

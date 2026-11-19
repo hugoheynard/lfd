@@ -3,6 +3,7 @@ import type {
   CollectionProcedureBatchView,
   CollectionProcedureIdentityView,
   CollectionProcedureInvoicesStateView,
+  CollectionProcedurePeriodView,
   CollectionProcedureStepKeyView,
   CollectionProcedureStepStateView,
   CollectionProcedureView,
@@ -72,28 +73,54 @@ export function rhythmsLabel(modes: readonly BillingRhythmKind[]): string {
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
-/** « Mensuel · période du 1er au 31 octobre 2026 » — le libellé court d'un lot. */
-export function batchShortLabel(batch: CollectionProcedureBatchView): string {
-  const rhythms = rhythmsLabel(batch.payerModes);
-  const period = `période ${batch.periodLabel}`;
+/**
+ * Les périodes d'une procédure : « Mensuel · période du 1er au 31 octobre
+ * 2026 » pour un rythme ; « Mensuel : du 1er au 30 novembre 2026 · Deux fois
+ * par mois : du 16 au 30 novembre 2026 » pour une clôture mutualisée. Sans
+ * période servie, le rythme et le libellé donnés.
+ */
+export function periodsTitle(
+  periods: readonly CollectionProcedurePeriodView[],
+  fallbackModes: readonly BillingRhythmKind[],
+  fallbackLabel: string,
+): string {
+  if (periods.length > 1) {
+    return periods.map((period) => `${rhythmsLabel([period.mode])} : ${period.label}`).join(' · ');
+  }
+  const [only] = periods;
+  const rhythms = rhythmsLabel(only === undefined ? fallbackModes : [only.mode]);
+  const period = `période ${only?.label ?? fallbackLabel}`;
   return rhythms === '' ? period : `${rhythms} · ${period}`;
 }
 
 /**
  * Le titre de la page : le code court de la procédure (`PRL-261031-M`), puis
- * le contexte du lot suivi, ou le seul nom quand aucun lot n'est ouvert
- * (Hugo, 2026-10-23).
+ * ses périodes — celles de chaque rythme, lues de la procédure plutôt que du
+ * lot, dont la période part de la clôture précédente tous rythmes confondus.
+ * Sans période servie, celle du lot suivi ; le seul nom sinon.
  */
 export function pageTitle(view: CollectionProcedureView | null): string {
-  const code = view?.procedure?.code;
-  const title = code === undefined ? PAGE_TITLE : `${PAGE_TITLE} ${code}`;
+  const procedure = view?.procedure ?? null;
+  const title = procedure === null ? PAGE_TITLE : `${PAGE_TITLE} ${procedure.code}`;
+  if (procedure !== null && procedure.periods.length > 0) {
+    return `${title} — ${periodsTitle(procedure.periods, [], '')}`;
+  }
   const followed = view?.followed;
   if (followed === undefined || followed === null || isDeadBatch(followed)) {
     return title;
   }
-  const rhythms = rhythmsLabel(followed.payerModes);
-  const period = `période ${followed.periodLabel}`;
-  return rhythms === '' ? `${title} — ${period}` : `${title} — ${rhythms} — ${period}`;
+  return `${title} — ${periodsTitle([], followed.payerModes, followed.periodLabel)}`;
+}
+
+/**
+ * L'en-tête du lot suivi, dans l'ordre où on le vit : quand les clients sont
+ * prélevés, puis jusqu'à quand déposer — « Prélèvement SEPA CORE le 4 déc.
+ * 2026 · déposer avant le 26 nov. 2026 à 13:45 ».
+ */
+export function followedHeadline(batch: CollectionProcedureBatchView): string {
+  const when =
+    batch.requestedCollectionDay === null ? '' : ` le ${day(batch.requestedCollectionDay)}`;
+  return `Prélèvement SEPA ${batch.scheme}${when} · ${deadlineLabel(batch)}.`;
 }
 
 /** La barre d'onglets : l'état en icône, le nombre en attente en badge (§ 4.2). */

@@ -52,6 +52,7 @@ class FakeProcedures {
         code: 'PRL-261201-BM',
         closureModes: ['monthly', 'semimonthly'],
         periodLabel: 'du 1er au 30 novembre 2026',
+        periods: [{ mode: 'monthly', label: 'du 1er au 30 novembre 2026' }],
         phase: 'upcoming',
         stage: 'file',
         batches: [],
@@ -157,12 +158,12 @@ describe('la table « Procédure de prélèvement »', () => {
     expect(procedures.listed).toEqual([false]);
   });
 
-  it('dit l’étape, la limite dépassée en rouge et les avertissements', async () => {
+  it('dit l’étape, la limite dépassée en rouge — une seule fois — et les autres avertissements', async () => {
     const fixture = await render();
     const text = root(fixture).textContent ?? '';
     expect(text).toContain('4 Fichier');
     expect(text).toContain('4 Fichier de prélèvement · à venir');
-    expect(text).toContain('Limite de dépôt dépassée');
+    expect(text).not.toContain('Limite de dépôt dépassée');
     expect(text).toContain('2 mandats non importés');
     const deadlines = root(fixture).querySelectorAll('[data-deadline]');
     expect(deadlines[0]?.classList.contains('pl-late')).toBe(true);
@@ -223,6 +224,35 @@ describe('la table « Procédure de prélèvement »', () => {
       { queryParams: { lot: 'b1' }, replaceUrl: true },
     ]);
     expect(procedures.listed).toEqual([]);
+  });
+
+  it('« À faire » en tête : la procédure la plus urgente, son geste et sa limite, et l’ouvre', async () => {
+    const fixture = await render();
+    const callout = root(fixture).querySelector('[data-next-action]');
+    expect(callout?.textContent).toContain('À faire');
+    expect(callout?.textContent).toContain('Déposer le fichier avant le');
+    expect(callout?.textContent).toContain('la limite est dépassée');
+    root(fixture).querySelector<HTMLButtonElement>('[data-open-next]')?.click();
+    await fixture.whenStable();
+    expect(navigations.at(-1)).toEqual([
+      ['/comptabilite/procedure-de-prelevement', 'le1~2026-11-01'],
+    ]);
+  });
+
+  /** Régression : une période sans commande se disait « 4 Fichier de prélèvement », limite comprise. */
+  it('une période sans commande : « Rien à prélever », sans limite ni échéance, et rien à faire', async () => {
+    procedures.list = {
+      ...procedures.list,
+      rows: [procedureRow({ orderCount: 0, batches: [], followedBatchId: null })],
+    };
+    const fixture = await render();
+    const text = root(fixture).textContent ?? '';
+    expect(text).toContain('Rien à prélever');
+    expect(root(fixture).querySelector('[data-deadline]')).toBeNull();
+    expect(root(fixture).querySelector('[data-collection]')).toBeNull();
+    expect(root(fixture).querySelector('[data-next-action]')?.textContent).toContain(
+      'Rien à faire pour l’instant.',
+    );
   });
 
   it('la colonne « Commandes » : le compte servi, « — » quand il n’est pas calculé', async () => {

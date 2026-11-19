@@ -185,18 +185,21 @@ beforeEach(() => {
 });
 
 describe('la page « Procédure de prélèvement »', () => {
-  it('le titre dit le code de la procédure, le rythme et la période du lot suivi', async () => {
+  it('le titre dit le code de la procédure, le rythme et la période ; l’en-tête, le prélèvement et la limite', async () => {
     const fixture = await render();
     expect(text(fixture)).toContain(
-      'Procédure de prélèvement PRL-261101-M — Mensuel — période du 1er au 31 octobre 2026',
+      'Procédure de prélèvement PRL-261101-M — Mensuel · période du 1er au 31 octobre 2026',
     );
+    expect(text(fixture)).toContain('Prélèvement SEPA');
+    expect(text(fixture)).not.toContain('Lot suivi');
   });
 
-  it('sans lot ouvert : le seul nom de la page, et la prochaine clôture', async () => {
+  it('sans lot ouvert : la période de la procédure, et la prochaine clôture', async () => {
     procedure.view = procedureView({ followed: null, openBatches: [] });
     const fixture = await render();
-    expect(text(fixture)).not.toContain('PRL-261101-M —');
-    expect(text(fixture)).toContain('Procédure de prélèvement PRL-261101-M');
+    expect(text(fixture)).toContain(
+      'Procédure de prélèvement PRL-261101-M — Mensuel · période du 1er au 31 octobre 2026',
+    );
     expect(text(fixture)).toContain('Prochaine clôture le');
   });
 
@@ -268,6 +271,10 @@ describe('la page « Procédure de prélèvement »', () => {
         code: 'PRL-261102-HM',
         closureDay: '2026-11-02',
         closureModes: ['monthly', 'weekly'],
+        periods: [
+          { mode: 'monthly', label: 'du 1er au 31 octobre 2026' },
+          { mode: 'weekly', label: 'du 26 octobre au 1er novembre 2026' },
+        ],
         payerCounts: [
           { mode: 'monthly', count: 12 },
           { mode: 'weekly', count: 3 },
@@ -308,7 +315,7 @@ describe('la page « Procédure de prélèvement »', () => {
     const router = TestBed.inject(Router);
     router.navigate = (): Promise<boolean> => Promise.resolve(true);
     const callout = query(fixture, '[data-missed]')?.textContent ?? '';
-    expect(callout).toContain('la période du 1er au 31 août 2026 n’a jamais été préparée');
+    expect(callout).toContain('La période du 1er au 31 août 2026 n’a jamais été préparée');
     expect(callout).toContain('période du 1er au 30 septembre 2026');
 
     click(fixture, '[data-open-latest]');

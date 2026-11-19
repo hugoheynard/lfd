@@ -26,6 +26,20 @@
           >
         </fold-callout>
       }
+      @if (list() !== null) {
+        @let action = nextAction();
+        <fold-callout
+          [variant]="action.tone"
+          [icon]="action.row === null ? 'check' : 'alert'"
+          data-next-action
+        >
+          <strong>{{ action.row === null ? 'Rien à faire' : 'À faire' }}&nbsp;:</strong>
+          {{ action.text }}
+          @if (action.row; as row) {
+            <button actions foldButton (click)="open(row)" data-open-next>Ouvrir</button>
+          }
+        </fold-callout>
+      }
       <div class="pl-filters">
         @if (entityOptions().length > 1) {
           <fold-listbox
@@ -56,10 +70,6 @@
         [empty]="nothing"
         (rowClick)="open($event)"
       >
-        <ng-template foldCell="code" let-row>
-          <code class="pl-code" data-code>{{ row.code }}</code>
-        </ng-template>
-
         <ng-template foldCell="period" let-row>
           <span data-row-title>{{ rowTitle(row) }}</span>
           @if (pooled(row.closureModes)) {
@@ -68,6 +78,7 @@
               <fold-badge radius="square" variant="info" [content]="pooledBadge" />
             </span>
           }
+          <code class="pl-code" data-code>{{ row.code }}</code>
         </ng-template>
 
         <ng-template foldCell="orders" let-row>
@@ -86,17 +97,22 @@
           }
         </ng-template>
 
-        <ng-template foldCell="closure" let-row>{{ closureLabel(row) }}</ng-template>
-
-        <ng-template foldCell="deadline" let-row>
-          <span [class.pl-late]="deadlineMissed(row)" data-deadline>{{ deadlineLabel(row) }}</span>
+        <ng-template foldCell="dates" let-row>
+          <!-- Dans l'ordre où on les vit : la clôture, le dépôt, le prélèvement. -->
+          <span class="pl-dates">
+            <span data-closure>{{ closureLabel(row) }}</span>
+            @if (deadlineLabel(row); as deadline) {
+              <span [class.pl-late]="deadlineMissed(row)" data-deadline>{{ deadline }}</span>
+            }
+            @if (collectionLabel(row); as collection) {
+              <span data-collection>{{ collection }}</span>
+            }
+          </span>
         </ng-template>
-
-        <ng-template foldCell="collection" let-row>{{ collectionLabel(row) }}</ng-template>
 
         <ng-template foldCell="warnings" let-row>
           <span class="pl-warnings">
-            @for (warning of row.warnings; track warning.code) {
+            @for (warning of shownWarnings(row); track warning.code) {
               <fold-badge
                 radius="square"
                 [variant]="warningVariant(warning)"

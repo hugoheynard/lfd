@@ -49,8 +49,7 @@ import { PROCEDURE_TAB_PARAM, requestedTab } from './procedure-tab-param';
 import {
   LOCK_REASONS,
   STEP_ORDER,
-  batchShortLabel,
-  deadlineLabel,
+  followedHeadline,
   pageTitle,
   isPooled,
   pooledSentence,
@@ -169,8 +168,7 @@ export class ProcedureDePrelevementPage {
     () => STEP_ORDER.indexOf(this.tab()) < STEP_ORDER.length - 1,
   );
 
-  protected readonly shortLabel = batchShortLabel;
-  protected readonly deadline = deadlineLabel;
+  protected readonly headline = followedHeadline;
   protected readonly longDay = longDay;
   protected readonly pooled = isPooled;
   protected readonly pooledSentence = pooledSentence;
