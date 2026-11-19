@@ -265,6 +265,10 @@ reste non opposée à l'équipe, comme aujourd'hui. Ce que ça demande :
   dans `CardIncreaseProposal`** (l'objet et sa ligne), et l'application les
   relit : elle ne rejuge pas un droit qu'elle ne peut pas lire, et ne passe
   pas sans trace.
+  **Figé à la proposition, décidé par Hugo le 2026-11-19** : si le produit est
+  décoché ou le droit retiré entre la proposition et le paiement, la hausse
+  s'applique telle qu'elle a été proposée — le client paie ce qu'on lui a
+  proposé. Un test l'épingle.
 
 **Côté client**, une commande qui porte un dépassement serait figée : la ligne
 dépassée, déjà passée, ferme tout jugement qui la voit. Les SKU consignés pour
