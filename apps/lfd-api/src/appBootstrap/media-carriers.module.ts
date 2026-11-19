@@ -5,7 +5,7 @@ import { CommerceOperationsModule } from "../lafoliecoffee/operations/operations
 import { StorefrontModule } from "../lafoliecoffee/storefront/storefront.module.js";
 import { MediaCarriers } from "../media/channels/carriers/media-carriers.js";
 import { CatalogueModule } from "../pim/catalogue/catalogue.module.js";
-import { PrismaMediaCarriers } from "../pim/catalogue/shared/infrastructure/prisma-media-carriers.js";
+import { PimCatalogueMediaCarriers } from "./pim-catalogue-media-carriers.js";
 import { CommerceOperationMediaCarriers } from "./commerce-operation-media-carriers.js";
 import { CompositeMediaCarriers } from "./composite-media-carriers.js";
 import { RefocusCommerceOperationsOnMediaDescribed } from "./operation-media-focus.js";
@@ -41,22 +41,24 @@ import { RefocusStorefrontOnMediaDescribed } from "./storefront-media-focus.js";
 @Module({
   imports: [CatalogueModule, StorefrontModule, CommerceCatalogModule, CommerceOperationsModule],
   providers: [
+    PimCatalogueMediaCarriers,
     StorefrontMediaCarriers,
     CommerceOperationMediaCarriers,
     // Le point focal suit jusqu'à l'opération du commerce.
     RefocusCommerceOperationsOnMediaDescribed,
     // Depuis le 2026-10-11 (§7 bis de la médiathèque) : le point focal suit jusqu'à la vitrine, par un fait durable.
     RefocusStorefrontOnMediaDescribed,
-    // L'adaptateur du référentiel vient du module qui le construit ; celui de
-    // la vitrine vit ici, faute de droit `b2b → media` dans la matrice.
+    // Les deux adaptateurs vivent ici : celui du référentiel compose les
+    // lectures que la fiche et la famille publient ; celui de la vitrine, faute
+    // de droit `b2b → media` dans la matrice.
     {
       provide: MediaCarriers,
       useFactory: (
-        pimCatalogue: PrismaMediaCarriers,
+        pimCatalogue: PimCatalogueMediaCarriers,
         storefront: StorefrontMediaCarriers,
         commerceOperations: CommerceOperationMediaCarriers,
       ) => new CompositeMediaCarriers([pimCatalogue, storefront, commerceOperations]),
-      inject: [PrismaMediaCarriers, StorefrontMediaCarriers, CommerceOperationMediaCarriers],
+      inject: [PimCatalogueMediaCarriers, StorefrontMediaCarriers, CommerceOperationMediaCarriers],
     },
   ],
   exports: [MediaCarriers],

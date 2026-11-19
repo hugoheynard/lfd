@@ -1,13 +1,11 @@
-import type { ProductSnapshot } from "../../../product/domain/entities/product.js";
+import type { ProductSnapshot } from "../../domain/entities/product.js";
 import { Test } from "@nestjs/testing";
 
 import { VatRateRepository } from "../../../../reference/vat-rates/domain/ports/vat-rate.repository.js";
-import { CatalogueReader } from "../../domain/ports/catalogue-reader.js";
-import { CategoryRepository } from "../../../category/domain/ports/category.repository.js";
-import { ProductRepository } from "../../../product/domain/ports/product.repository.js";
+import { EffectiveVatReader } from "../../domain/ports/effective-vat.reader.js";
+import { FamilyVatReader } from "../../../category/domain/ports/family-vat.reader.js";
 import { CategoryNotFoundError } from "../../../category/domain/errors/category-errors.js";
-import { EditorialReader } from "../../../product/domain/ports/editorial-reader.js";
-import { PrismaCatalogueReader } from "../prisma-catalogue-reader.js";
+import { ResolvedEffectiveVatReader } from "../resolved-effective-vat.reader.js";
 
 /** Le peu de l'agrégat que le lecteur touche : ses taux, d'un bloc. */
 interface CategoryLike {
@@ -43,21 +41,13 @@ function product(vatByContext: Readonly<Record<string, string>> = {}): ProductSn
 async function build(
   category: CategoryLike | null,
   rates: Record<string, number>,
-): Promise<CatalogueReader> {
+): Promise<EffectiveVatReader> {
   const moduleRef = await Test.createTestingModule({
     providers: [
-      { provide: CatalogueReader, useClass: PrismaCatalogueReader },
+      { provide: EffectiveVatReader, useClass: ResolvedEffectiveVatReader },
       {
-        provide: ProductRepository,
-        useValue: { listAll: () => Promise.resolve([]) },
-      },
-      {
-        provide: CategoryRepository,
-        useValue: { findById: () => Promise.resolve(category) },
-      },
-      {
-        provide: EditorialReader,
-        useValue: { findByProducts: () => Promise.resolve(new Map()) },
+        provide: FamilyVatReader,
+        useValue: { vatOf: () => Promise.resolve(category?.vatByContext) },
       },
       {
         provide: VatRateRepository,
@@ -69,10 +59,10 @@ async function build(
       },
     ],
   }).compile();
-  return moduleRef.get(CatalogueReader);
+  return moduleRef.get(EffectiveVatReader);
 }
 
-describe("PrismaCatalogueReader.vatPercents", () => {
+describe("ResolvedEffectiveVatReader.vatPercents", () => {
   it("résout le TAUX par contexte depuis les taux de la catégorie", async () => {
     const reader = await build(
       { vatByContext: { takeaway: "r1", eatIn: "r2" } },
@@ -118,9 +108,7 @@ describe("PrismaCatalogueReader.vatPercents", () => {
   /**
    * Il rendait `null/null` — exactement ce que rend une famille bien réelle
    * dont personne n'a réglé la TVA. Deux causes (un rattachement cassé / un
-   * taux à régler), deux gestes, et un seul symptôme à l'écran. Le pousseur
-   * de l'ancien canal, seul appelant d'alors, attrape déjà les erreurs de cette lecture et les
-   * rend visibles dans son rapport plutôt que de tomber.
+   * taux à régler), deux gestes, et un seul symptôme à l'écran.
    */
   it("REFUSE une catégorie introuvable, au lieu de la dire non réglée", async () => {
     const reader = await build(null, {});
@@ -128,7 +116,7 @@ describe("PrismaCatalogueReader.vatPercents", () => {
   });
 });
 
-/** Une famille telle que `CategoryRepository.listAll()` la rend, réduite à ce que la TVA lit. */
+/** Une famille telle que `AllCategoriesReader` la rend, réduite à ce que la TVA lit. */
 interface FamilyLike {
   readonly id: string;
   readonly isArchived: boolean;
@@ -139,22 +127,20 @@ interface FamilyLike {
 async function buildCatalogue(
   families: readonly FamilyLike[],
   rates: Record<string, number>,
-): Promise<{ reader: CatalogueReader; findByIdCalls: string[] }> {
+): Promise<{ reader: EffectiveVatReader; findByIdCalls: string[] }> {
   const findByIdCalls: string[] = [];
   const moduleRef = await Test.createTestingModule({
     providers: [
-      { provide: CatalogueReader, useClass: PrismaCatalogueReader },
-      { provide: ProductRepository, useValue: { listAll: () => Promise.resolve([]) } },
+      { provide: EffectiveVatReader, useClass: ResolvedEffectiveVatReader },
       {
-        provide: CategoryRepository,
+        provide: FamilyVatReader,
         useValue: {
-          findById: (id: string) => {
+          vatOf: (id: string) => {
             findByIdCalls.push(id);
-            return Promise.resolve(families.find((family) => family.id === id) ?? null);
+            return Promise.resolve(families.find((family) => family.id === id)?.vatByContext);
           },
         },
       },
-      { provide: EditorialReader, useValue: { findByProducts: () => Promise.resolve(new Map()) } },
       {
         provide: VatRateRepository,
         useValue: {
@@ -164,7 +150,7 @@ async function buildCatalogue(
       },
     ],
   }).compile();
-  return { reader: moduleRef.get(CatalogueReader), findByIdCalls };
+  return { reader: moduleRef.get(EffectiveVatReader), findByIdCalls };
 }
 
 function productIn(
@@ -175,7 +161,7 @@ function productIn(
   return { ...product(vatByContext), id, categoryId };
 }
 
-describe("PrismaCatalogueReader.vatPercents — familles passées par l'appelant", () => {
+describe("ResolvedEffectiveVatReader.vatPercents — familles passées par l'appelant", () => {
   const FAMILIES: readonly FamilyLike[] = [
     { id: "cat_vien", isArchived: false, vatByContext: { takeaway: "r1", b2b: "r1" } },
     { id: "cat_noel", isArchived: true, vatByContext: { takeaway: "r2" } },

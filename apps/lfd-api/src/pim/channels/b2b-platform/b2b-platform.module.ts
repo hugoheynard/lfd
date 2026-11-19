@@ -1,3 +1,5 @@
+import { CatalogFactsReader } from "./domain/ports/catalog-facts.reader.js";
+import { CatalogueCatalogFactsReader } from "./infrastructure/catalogue-catalog-facts.reader.js";
 import { Module } from "@nestjs/common";
 
 import { AllergensModule } from "../../reference/allergens/allergens.module.js";
@@ -36,6 +38,7 @@ import { ReemissionRecoveryOnBoot } from "./infrastructure/reemission-recovery.o
   imports: [OrderTimeLimitationModule, PimDatabaseModule, CatalogueModule, AllergensModule],
   controllers: [B2bReemitController],
   providers: [
+    { provide: CatalogFactsReader, useClass: CatalogueCatalogFactsReader },
     { provide: ReemissionJobRepository, useClass: PrismaReemissionJobRepository },
     { provide: ReemissionJobReader, useClass: PrismaReemissionJobReader },
     CatalogReemissionRunner,

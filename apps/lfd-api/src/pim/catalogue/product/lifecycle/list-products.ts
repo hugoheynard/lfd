@@ -5,18 +5,16 @@ import { PimContents } from "../../../changes/application/pim-contents.js";
 import { listContent, PIM_CONTENT_KEYS } from "../../../changes/application/pim-content-keys.js";
 import { ActiveSalesContextsReader } from "../../../reference/sales-contexts/domain/ports/active-sales-contexts.reader.js";
 import { CategoryNotFoundError } from "../../category/domain/errors/category-errors.js";
-import { CategoryRepository } from "../../category/domain/ports/category.repository.js";
-import {
-  CatalogueReader,
-  type CategoryVatPercents,
-} from "../../shared/domain/ports/catalogue-reader.js";
+import { AllCategoriesReader } from "../../category/domain/ports/all-categories.reader.js";
+import type { CategoryVatPercents } from "../../shared/domain/value-objects/vat-percents.js";
 import type { Audience } from "../../shared/domain/value-objects/audience.js";
 import type { Product, ProductSnapshot } from "../domain/entities/product.js";
-import { ProductRepository } from "../domain/ports/product.repository.js";
+import { AllProductsReader } from "../domain/ports/all-products.reader.js";
+import { EffectiveVatReader } from "../domain/ports/effective-vat.reader.js";
 import type { ActivationGaps } from "../domain/services/activation-gaps.js";
 import type { CompletenessRules } from "../domain/services/variant-completeness.js";
 import { audienceView, type AudienceView } from "../sale/audience-view.js";
-import { readCompletenessRules } from "../regulatory/completeness-support.js";
+import { readCompletenessRules } from "../domain/services/completeness-rules.js";
 import { complianceFindingsOf } from "../regulatory/compliance-view.js";
 import { CitedAllergensReader } from "../../../reference/ingredients/domain/ports/cited-allergens.reader.js";
 import { IllustratedProductsReader } from "../domain/ports/illustrated-products.reader.js";
@@ -58,9 +56,9 @@ export class ListProductsQuery {}
 @QueryHandler(ListProductsQuery)
 export class ListProductsHandler implements IQueryHandler<ListProductsQuery, ProductListing> {
   constructor(
-    private readonly products: ProductRepository,
-    private readonly categories: CategoryRepository,
-    private readonly catalogue: CatalogueReader,
+    private readonly products: AllProductsReader,
+    private readonly categories: AllCategoriesReader,
+    private readonly vat: EffectiveVatReader,
     private readonly contexts: ActiveSalesContextsReader,
     private readonly cited: CitedAllergensReader,
     private readonly illustrated: IllustratedProductsReader,
@@ -93,8 +91,8 @@ export class ListProductsHandler implements IQueryHandler<ListProductsQuery, Pro
    */
   private async fromBase(): Promise<ProductListItem[]> {
     const [all, categories, rules] = await Promise.all([
-      this.products.listAll(),
-      this.categories.listAll(),
+      this.products.all(),
+      this.categories.all(),
       readCompletenessRules(this.contexts),
     ]);
     // Les archivées restent (l'onglet « Archivées ») ; les supprimées sortent
@@ -105,7 +103,7 @@ export class ListProductsHandler implements IQueryHandler<ListProductsQuery, Pro
     );
     const ids = products.map((product) => product.id);
     const [vat, cited, illustrated] = await Promise.all([
-      this.catalogue.vatPercents(
+      this.vat.vatPercents(
         products.map((product) => product.snapshot()),
         categories,
       ),

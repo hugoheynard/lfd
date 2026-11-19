@@ -41,3 +41,13 @@ export function slugify(source: string): string {
     .replace(/[^a-z0-9]+/gu, "-")
     .replace(/^-+|-+$/gu, "");
 }
+
+/**
+ * Le nom lisible d'un porteur d'image, **jamais vide** : en langue SOURCE (la
+ * liste sert le staff, pas un client), et l'identifiant en repli — une ligne
+ * sans mot ne se clique pas, et « (sans nom) » ne dit pas laquelle c'est.
+ */
+export function sourceLabel(text: LocalizedText | null, fallback: string): string {
+  const label = text?.[SOURCE_LOCALE]?.trim() ?? "";
+  return label === "" ? fallback : label;
+}

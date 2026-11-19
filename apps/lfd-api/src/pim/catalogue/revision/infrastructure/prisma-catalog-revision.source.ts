@@ -1,6 +1,9 @@
 import { Injectable } from "@nestjs/common";
 
-import { CatalogueReader } from "../../shared/domain/ports/catalogue-reader.js";
+import { AllCategoriesReader } from "../../category/domain/ports/all-categories.reader.js";
+import { AllProductsReader } from "../../product/domain/ports/all-products.reader.js";
+import { EffectiveVatReader } from "../../product/domain/ports/effective-vat.reader.js";
+import { isLiveStatus } from "../../product/domain/ports/product.repository.js";
 import { EditorialReader } from "../../product/domain/ports/editorial-reader.js";
 import { ReadinessReader } from "../../product/domain/ports/readiness.reader.js";
 import { ImageCatalogue } from "../../shared/domain/ports/image-catalogue.js";
@@ -24,7 +27,9 @@ import type { VariantSnapshot } from "../../product/domain/entities/variant.js";
 @Injectable()
 export class PrismaCatalogRevisionSource extends CatalogRevisionSource {
   constructor(
-    private readonly catalogue: CatalogueReader,
+    private readonly products: AllProductsReader,
+    private readonly categories: AllCategoriesReader,
+    private readonly vat: EffectiveVatReader,
     private readonly editorials: EditorialReader,
     private readonly readiness: ReadinessReader,
     private readonly prisma: PimPrismaService,
@@ -34,19 +39,28 @@ export class PrismaCatalogRevisionSource extends CatalogRevisionSource {
   }
 
   async snapshotItems(): Promise<readonly RevisionItemInput[]> {
-    const products = await this.catalogue.publishable();
+    // Une fiche archivée ou supprimée ne part sur aucun canal : elle n'entre
+    // pas dans la révision.
+    const products = (await this.products.all())
+      .filter((product) => isLiveStatus(product.status))
+      .map((product) => product.snapshot());
     if (products.length === 0) {
       return [];
     }
     const ids = products.map((product) => product.id);
     const [categories, vatByProduct, editorials, mediaByProduct, signatures] = await Promise.all([
-      this.catalogue.channelCategories(),
-      this.catalogue.vatPercents(products),
+      this.categories.all(),
+      this.vat.vatPercents(products),
       this.editorials.findByProducts(ids),
       this.mediaOf(ids),
       this.readiness.readMany(ids),
     ]);
-    const categoryName = new Map(categories.map((category) => [category.id, category.name]));
+    // Une famille archivée ne nomme plus ses fiches dans la révision.
+    const categoryName = new Map(
+      categories
+        .filter((category) => !category.isArchived)
+        .map((category) => [category.id, category.name]),
+    );
 
     return products.flatMap((product) => {
       const vat = vatByProduct.get(product.id) ?? {};

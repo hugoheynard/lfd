@@ -1,10 +1,6 @@
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingJournal } from "../../../../journal/__tests__/recording-journal.js";
-import {
-  CATEGORY_ID,
-  OneCategory,
-  family,
-} from "../../../product/shared/__tests__/audience-doubles.js";
+import { CATEGORY_ID, OneCategory, family } from "./category-doubles.js";
 import type { Audience } from "../../../shared/domain/value-objects/audience.js";
 import { CategoryFrozenError, CategoryNotFoundError } from "../../domain/errors/category-errors.js";
 import {

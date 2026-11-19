@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 
 import { PimPrismaService } from "../../../infra/database/pim-prisma.service.js";
-import { CategoryRepository } from "../../category/domain/ports/category.repository.js";
+import { AllCategoriesReader } from "../../category/domain/ports/all-categories.reader.js";
 import { isLiveStatus } from "../../product/domain/ports/product.repository.js";
 import { alignedAllergenSheet } from "../../product/domain/services/aligned-allergen-sheet.js";
 import { readLocalizedColumn, readStringArrayColumn } from "../../../shared/json-readers.js";
@@ -29,12 +29,12 @@ const MATRIX_VARIANT_SELECT = {
  * déclinaisons et leurs allergènes — ni nutrition, ni TVA de contexte, que
  * l'agrégat chargerait pour rien. L'alignement sur le défaut reste résolu par
  * la règle du domaine (`alignedAllergenSheet`, celle de `Product.snapshot`),
- * jamais réécrit ici. Les familles passent par leur dépôt.
+ * jamais réécrit ici. Les familles passent par la lecture que la famille publie.
  */
 @Injectable()
 export class RepositoryAllergenMatrixSource extends AllergenMatrixSource {
   constructor(
-    private readonly categoryRepository: CategoryRepository,
+    private readonly categories: AllCategoriesReader,
     private readonly prisma: PimPrismaService,
   ) {
     super();
@@ -63,7 +63,7 @@ export class RepositoryAllergenMatrixSource extends AllergenMatrixSource {
   }
 
   async families(): Promise<readonly MatrixFamilyRecord[]> {
-    const all = await this.categoryRepository.listAll();
+    const all = await this.categories.all();
     return all.map((category) => ({
       id: category.id,
       name: category.name,

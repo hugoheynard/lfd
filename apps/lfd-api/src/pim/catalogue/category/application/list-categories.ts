@@ -3,7 +3,7 @@ import { type IQueryHandler, QueryHandler } from "@nestjs/cqrs";
 import { PimContents } from "../../../changes/application/pim-contents.js";
 import { listContent, PIM_CONTENT_KEYS } from "../../../changes/application/pim-content-keys.js";
 import type { CategorySnapshot } from "../domain/entities/category.js";
-import { CategoryRepository } from "../domain/ports/category.repository.js";
+import { AllCategoriesReader } from "../domain/ports/all-categories.reader.js";
 import { ProductCountReader } from "../domain/ports/product-count.reader.js";
 
 /** Une famille telle que la liste la rend : son état, plus ce que l'écran doit savoir. */
@@ -18,7 +18,7 @@ export class ListCategoriesHandler implements IQueryHandler<
   CategoryListItem[]
 > {
   constructor(
-    private readonly categories: CategoryRepository,
+    private readonly categories: AllCategoriesReader,
     private readonly products: ProductCountReader,
     private readonly contents: PimContents,
   ) {}
@@ -43,12 +43,12 @@ export class ListCategoriesHandler implements IQueryHandler<
    */
   private async fromBase(): Promise<CategoryListItem[]> {
     const [categories, counts] = await Promise.all([
-      this.categories.listAll(),
+      this.categories.all(),
       this.products.countByCategory(),
     ]);
-    return categories.map((category) => {
-      const snapshot = category.snapshot();
-      return { ...snapshot, activeProductCount: counts.get(snapshot.id) ?? 0 };
-    });
+    return categories.map((snapshot) => ({
+      ...snapshot,
+      activeProductCount: counts.get(snapshot.id) ?? 0,
+    }));
   }
 }

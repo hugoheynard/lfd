@@ -1,6 +1,6 @@
-import { PRODUCT_FACT_TYPES } from "../../../revision/domain/attribution.js";
+import { PRODUCT_FACT_TYPES } from "../attribution.js";
 import { PIM_EVENTS } from "../../../../journal/pim-journal.js";
-import { CLASSIFIED_PRODUCT_FACTS, isContentFact } from "../content-facts.js";
+import { CLASSIFIED_PRODUCT_FACTS, isContentFact } from "../../../product/domain/content-facts.js";
 
 describe("les faits de contenu d'une fiche", () => {
   /**

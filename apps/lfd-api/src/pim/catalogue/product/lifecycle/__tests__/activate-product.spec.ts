@@ -1,6 +1,6 @@
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingJournal } from "../../../../journal/__tests__/recording-journal.js";
-import type { CategoryVatPercents } from "../../../shared/domain/ports/catalogue-reader.js";
+import type { CategoryVatPercents } from "../../../shared/domain/value-objects/vat-percents.js";
 import {
   ProductNotActivatableError,
   ProductNotFoundError,

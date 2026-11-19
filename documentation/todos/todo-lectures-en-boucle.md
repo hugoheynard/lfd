@@ -38,7 +38,7 @@ Un fichier touché est un fichier corrigé.
 - **Usage d'une référence de vente** — `lafoliecoffee/catalog/infrastructure/prisma-sale-reference-usage.ts:136-148, 173-181, 195-203` : un `findFirst` par article et par table, environ 10 requêtes par article, au changement d'unité (`pim/catalogue/product/sale/sale-unit-clearance-support.ts:24`) : une requête par table.
 - **Mandats d'un site** — `lafoliecoffee/payments/infrastructure/prisma-site-mandates.reader.ts:27-33` : `findMany` avec `in`.
 - **Blocages du prélèvement** — `lafoliecoffee/account/application/queries/list-direct-debit-blocks.handler.ts:43-47` : un `identifyAll` au lieu d'un `identify` par ligne.
-- **Familles absentes du cache** — `pim/catalogue/shared/infrastructure/prisma-catalogue-reader.ts:84-93` : `listAll` existe déjà (ligne 109).
+- **Familles absentes du cache** — `pim/catalogue/product/infrastructure/resolved-effective-vat.reader.ts` : une famille absente du lot passé se relit une par une (`FamilyVatReader.vatOf`) ; `AllCategoriesReader.all()` existe déjà.
 - **Écritures et tâches planifiées, en série par lot** : tags de médias (`media/infrastructure/prisma-media-tags.ts:59-63`), fidélité (`order-points-crediting.ts`, `credit-pending-welcome-bonuses`, `settle-voucher-remainders`, `expire-loyalty-vouchers`), réouverture d'un plan de tournée (`delivery/application/handlers/forget-reopened-plan.handler.ts:87-108`), opérations post-déploiement, PDF du dossier des tournées, révisions de production.
 
 ## 4. Vérifié sans lecture en boucle

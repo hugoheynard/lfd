@@ -1,3 +1,5 @@
+import { CatalogFactsReader } from "./domain/ports/catalog-facts.reader.js";
+import { CatalogueCatalogFactsReader } from "./infrastructure/catalogue-catalog-facts.reader.js";
 import { Global, Module } from "@nestjs/common";
 
 import { AllergensModule } from "../../reference/allergens/allergens.module.js";
@@ -42,6 +44,7 @@ import { PublicationSequence } from "./products/publication-sequence.js";
     OrderTimeLimitationModule,
   ],
   providers: [
+    { provide: CatalogFactsReader, useClass: CatalogueCatalogFactsReader },
     { provide: CatalogSnapshots, useClass: CatalogFactsSource },
     { provide: PublicationSequence, useClass: PrismaPublicationSequence },
     { provide: CatalogEmitter, useClass: B2bCatalogFactsEmitter },

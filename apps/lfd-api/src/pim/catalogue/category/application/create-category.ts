@@ -11,7 +11,8 @@ import {
   localizedText,
   type LocalizedText,
 } from "../../shared/domain/value-objects/localized-text.js";
-import { assertSlugFree, requireCategory } from "./category-support.js";
+import { requireCategory } from "../domain/services/category-lookup.js";
+import { assertSlugFree } from "./category-support.js";
 import { CatalogEmitter } from "../../../shared/catalog-emitter.js";
 
 export interface CreateCategoryPayload {

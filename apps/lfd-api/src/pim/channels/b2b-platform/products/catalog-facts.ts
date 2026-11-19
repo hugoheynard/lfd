@@ -9,8 +9,8 @@ import {
   variantGaps,
   type CompletenessRules,
 } from "../../../catalogue/product/domain/services/variant-completeness.js";
-import type { CatalogFamilyRecord } from "../../../catalogue/shared/domain/ports/catalog-facts.reader.js";
-import type { CategoryVatPercents } from "../../../catalogue/shared/domain/ports/catalogue-reader.js";
+import type { CatalogFamilyRecord } from "../domain/ports/catalog-facts.reader.js";
+import type { CategoryVatPercents } from "../../../catalogue/shared/domain/value-objects/vat-percents.js";
 import {
   effectiveAudience,
   type Audience,

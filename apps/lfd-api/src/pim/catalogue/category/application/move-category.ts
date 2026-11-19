@@ -3,9 +3,10 @@ import { PIM_EVENTS, PimJournal } from "../../../journal/pim-journal.js";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { CategoryArchivedParentError } from "../domain/errors/category-errors.js";
+import { AllCategoriesReader } from "../domain/ports/all-categories.reader.js";
 import { CategoryRepository } from "../domain/ports/category.repository.js";
 import { assertNoCycle } from "../domain/services/category-tree.js";
-import { namedCategory, requireCategory } from "./category-support.js";
+import { namedCategory, requireCategory } from "../domain/services/category-lookup.js";
 import { CatalogEmitter } from "../../../shared/catalog-emitter.js";
 
 export class MoveCategoryCommand {
@@ -34,6 +35,7 @@ export class MoveCategoryHandler implements ICommandHandler<MoveCategoryCommand,
     private readonly journal: PimJournal,
     private readonly uow: UnitOfWork,
     private readonly emitter: CatalogEmitter,
+    private readonly tree: AllCategoriesReader,
   ) {}
 
   async execute(command: MoveCategoryCommand): Promise<void> {
@@ -45,8 +47,7 @@ export class MoveCategoryHandler implements ICommandHandler<MoveCategoryCommand,
       if (parent.isArchived) {
         throw new CategoryArchivedParentError(parent.id);
       }
-      const tree = await this.categories.listAll();
-      assertNoCycle(tree, command.id, parent.id);
+      assertNoCycle(await this.tree.all(), command.id, parent.id);
     }
 
     // L'ancien parent, lu pour son NOM : la ligne doit dire d'où la famille

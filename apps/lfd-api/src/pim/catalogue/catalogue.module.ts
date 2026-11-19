@@ -1,3 +1,4 @@
+import { CATALOGUE_READINGS, CATALOGUE_READING_PORTS } from "./catalogue-readings.providers.js";
 import { ListProductComplianceWarningsHandler } from "./product/regulatory/list-product-compliance-warnings.js";
 import { ApplyIngredientAllergenPropagationHandler } from "./product/regulatory/apply-ingredient-allergen-propagation.js";
 import { PreviewIngredientAllergenPropagationHandler } from "./product/regulatory/preview-ingredient-allergen-propagation.js";
@@ -15,7 +16,6 @@ import { AllergenMatrixController } from "./allergen-matrix/http/allergen-matrix
 import { PdfAllergenMatrixRenderer } from "./allergen-matrix/infrastructure/pdf-allergen-matrix.renderer.js";
 import { RepositoryAllergenMatrixSource } from "./allergen-matrix/infrastructure/repository-allergen-matrix.source.js";
 import { VatRatesModule } from "../reference/vat-rates/vat-rates.module.js";
-import { PrismaMediaCarriers } from "./shared/infrastructure/prisma-media-carriers.js";
 import { PimDatabaseModule } from "../infra/database/pim-database.module.js";
 import { PimChangesModule } from "../changes/pim-changes.module.js";
 import { ArchiveCategoryHandler } from "./category/application/archive-category.js";
@@ -72,9 +72,6 @@ import { SetProductVatHandler } from "./product/sale/set-product-vat.js";
 import { UpdateProductEditorialHandler } from "./product/media/update-product-editorial.js";
 import { UpdateProductIdentityHandler } from "./product/lifecycle/update-product-identity.js";
 import { UpdateVariantPricingHandler } from "./product/sale/update-variant-pricing.js";
-import { CatalogueReader } from "./shared/domain/ports/catalogue-reader.js";
-import { CatalogFactsReader } from "./shared/domain/ports/catalog-facts.reader.js";
-import { RepositoryCatalogFactsReader } from "./shared/infrastructure/repository-catalog-facts.reader.js";
 import { SalesContextsModule } from "../reference/sales-contexts/sales-contexts.module.js";
 import { CategoryRepository } from "./category/domain/ports/category.repository.js";
 import { ProductCountReader } from "./category/domain/ports/product-count.reader.js";
@@ -108,7 +105,6 @@ import { ProductDeletionController } from "./product/http/product-deletion.contr
 import { VariantCustomRecipeController } from "./product/http/variant-custom-recipe.controller.js";
 import { ProductVariantLifecycleController } from "./product/http/product-variant-lifecycle.controller.js";
 import { ReferenceController } from "./shared/http/reference.controller.js";
-import { PrismaCatalogueReader } from "./shared/infrastructure/prisma-catalogue-reader.js";
 import { PrismaCategoryRepository } from "./category/infrastructure/prisma-category.repository.js";
 import { PrismaProductCountReader } from "./category/infrastructure/prisma-product-count.reader.js";
 import { PrismaEditorialReader } from "./product/infrastructure/prisma-editorial-reader.js";
@@ -167,7 +163,6 @@ import { PrismaSkuAvailability } from "./product/infrastructure/prisma-sku-avail
   providers: [
     // L'adaptateur du canal que la MÉDIATHÈQUE déclare. Exporté, pas fourni
     // sous son token : c'est la racine qui relie les deux côtés.
-    PrismaMediaCarriers,
     // Familles (CQRS) — un handler par cas.
     CreateCategoryHandler,
     RenameCategoryHandler,
@@ -235,8 +230,7 @@ import { PrismaSkuAvailability } from "./product/infrastructure/prisma-sku-avail
     // de la médiathèque parcourt, il ne ramasse pas d'orphelins.
     { provide: ProductRepository, useClass: PrismaProductRepository },
     { provide: SKU_AVAILABILITY, useClass: PrismaSkuAvailability },
-    { provide: CatalogueReader, useClass: PrismaCatalogueReader },
-    { provide: CatalogFactsReader, useClass: RepositoryCatalogFactsReader },
+    ...CATALOGUE_READINGS,
     { provide: VariantAllergensRepository, useClass: PrismaVariantAllergensRepository },
     { provide: NutritionValuesRepository, useClass: PrismaNutritionValuesRepository },
     { provide: EditorialRepository, useClass: PrismaEditorialRepository },
@@ -274,9 +268,7 @@ import { PrismaSkuAvailability } from "./product/infrastructure/prisma-sku-avail
   // de vitrine et le packshot, et les lit en LOT pour tout le catalogue. Il
   // sort en lecture seule — l'écriture reste ici.
   exports: [
-    PrismaMediaCarriers,
-    CatalogueReader,
-    CatalogFactsReader,
+    ...CATALOGUE_READING_PORTS,
     EditorialReader,
     PublishedAllergensReader,
     // L7 de `plan-pro-voit-les-declinaisons.md` : le fait d'une fiche née

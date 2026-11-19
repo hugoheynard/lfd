@@ -15,7 +15,7 @@ import { RecordingCatalogEmitter } from "../../../../shared/__tests__/catalog-em
 import {
   CatalogFactsReader,
   type CatalogFamilyRecord,
-} from "../../../../catalogue/shared/domain/ports/catalog-facts.reader.js";
+} from "../../domain/ports/catalog-facts.reader.js";
 import {
   CatalogReemission,
   type ReemissionProgress,

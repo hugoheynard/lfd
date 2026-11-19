@@ -14,7 +14,8 @@ import {
 } from "../../../shared/json-readers.js";
 import { audience } from "../../shared/domain/value-objects/audience.js";
 
-interface CategoryRow {
+/** Une ligne de famille avec ses taux joints — ce que `toCategory` relit. */
+export interface CategoryRow {
   id: string;
   name: unknown;
   slug: unknown;
@@ -29,11 +30,11 @@ interface CategoryRow {
  * Les taux viennent de la jointure. La matrice des canaux (`category_channel`)
  * n'existe plus : figée depuis X4, supprimée en base par `20261017120000`.
  */
-const CATEGORY_WITH_VAT = {
+export const CATEGORY_WITH_VAT = {
   contextVat: { select: { vatRateId: true, context: { select: { key: true } } } },
 } as const;
 
-function toCategory(row: CategoryRow): Category {
+export function toCategory(row: CategoryRow): Category {
   const vatByContext: Record<string, string> = {};
   for (const line of row.contextVat) {
     vatByContext[line.context.key] = line.vatRateId;
@@ -89,14 +90,6 @@ export class PrismaCategoryRepository extends CategoryRepository {
   async listChildren(parentId: string | null): Promise<Category[]> {
     const rows = await this.prisma.category.findMany({
       where: { parentId },
-      orderBy: [{ position: "asc" }],
-      include: CATEGORY_WITH_VAT,
-    });
-    return rows.map(toCategory);
-  }
-
-  async listAll(): Promise<Category[]> {
-    const rows = await this.prisma.category.findMany({
       orderBy: [{ position: "asc" }],
       include: CATEGORY_WITH_VAT,
     });

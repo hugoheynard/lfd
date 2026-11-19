@@ -19,7 +19,7 @@
 > son port d'écriture `load`/`save` séparé de `ReadinessReader` (les lectures,
 > dont `contentUpdatedAt` réutilisée comme fraîcheur). Un seul refus est neuf :
 > une fiche plus récente que sa preuve (`ProductChangedAfterReadinessError`).
-> `prisma-media-carriers.ts` garde son SQL, la raison est écrite au-dessus.
+> Les porteurs d'images gardaient leur SQL ; L9.b les a rendus à leurs propriétaires.
 >
 > 🟨 **L4 bâti le 2026-11-18, non commité** — en attente de `vitruve` sur le lot
 > bâti (§ L4, « Tel que bâti »).
@@ -211,7 +211,7 @@ pim/
 - `get-product-detail.ts:163` : plus de `new Date(0)` inventée — le champ
   devient nullable dans la vue.
 - La garde d'unicité recopiée cinq fois (`vat-support.ts:11`,
-  `sales-context-support.ts:25`, `category-support.ts:43`,
+  `sales-context-support.ts:25`, `category-support.ts`,
   `allergen-support.ts:65,75`) : un helper unique dans `pim/shared/`.
 - `create-product.ts:116-207` (92 lignes) : découpé en étapes nommées.
 - 🔴 **À trancher par Hugo** : `rename`, `changeKind`, `reclassify` acceptent
@@ -454,29 +454,38 @@ port), jamais son `application/` ; `revision`, `history` et
 par des ports ou des `index.ts`, jamais un fichier d'application. Ce qui
 viole est compté en dette décroissante, comme L0.
 
-**L9.b — Défaire les liens à contresens** (vérifiés le 2026-11-19) :
+**L9.b et L9.c — Bâtis le 2026-11-19.** Décidé par Hugo ce jour-là : pas de
+module de lecture partagé. Chaque consommateur déclare son port étroit et
+l'implémente en composant les lectures que les propriétaires publient.
 
-- `shared/domain/ports/catalogue-reader.ts` et `catalog-facts.reader.ts`
-  importent `ProductRecord` et `ProductEditorialView` de `product/` : ces
-  types de lecture sont soit déplacés dans `shared/`, soit les ports montent
-  dans `product/` — on choisit au bâti selon qui les lit, et `shared` cesse
-  d'importer `product`.
-- `product/lifecycle/{activate-product,update-product-identity,
-get-product-detail}.ts` importent `category/application/category-support.js`
-  (`requireCategory`) : la garde passe derrière une lecture nommée que
-  `category` publie dans son `index.ts`.
-- `channels/b2b-platform/products/catalog-facts.source.ts:3` importe
-  `product/regulatory/completeness-support.js` : les règles de complétude
-  sont publiées par la porte de `product`.
-- `shared/infrastructure/prisma-catalogue-reader.ts` relit la TVA de la
-  famille en SQL (`familyVat`) : il appelle la lecture que `category` publie.
+- **Ce que les propriétaires publient** (ports de lecture dans leur
+  `domain/ports/`, adaptateurs dans leur `infrastructure/`) : `category` —
+  `AllCategoriesReader`, `FamilyVatReader`, `CategorySnapshotsReader`,
+  `CategoryImageHolders` ; `product` — `AllProductsReader`,
+  `EffectiveVatReader`, `ProductRecordsReader`, `ProductImageHolders`. Le
+  repointage des images est une écriture étroite par propriétaire
+  (`*ImageRepointing`).
+- **`listAll` a quitté** `ProductRepository` et `CategoryRepository`.
+- **Les consommateurs** : la révision et la matrice des allergènes
+  composent ces lectures ; le canal B2B déclare `CatalogFactsReader` chez lui
+  (`channels/b2b-platform/domain/ports/`) ; le port des porteurs d'images de
+  la médiathèque est implémenté à la racine
+  (`appBootstrap/pim-catalogue-media-carriers.ts`), qui compose les deux
+  propriétaires.
+- **Supprimés** : `CatalogueReader` et son adaptateur, le lecteur des faits
+  partagé, `shared/application/`. `requireCategory` vit dans
+  `category/domain/services/`, les règles de complétude dans
+  `product/domain/services/`, `vatChangePayload` dans `shared/domain/`.
+- **Porte** : `pim-subcontexts` à dette nulle, sous-contextes du catalogue
+  compris.
 
-**L9.c — Les lecteurs ne passent plus par le port d'écriture.**
-`ProductRepository.listAll()` sert de lecture à `list-products`,
-`list-product-compliance-warnings`, `allergen-matrix`, `catalog-facts` et
-`catalogue-reader` (cinq lecteurs). Une lecture nommée par capacité les
-remplace, avec la même requête ; `listAll` disparaît du port d'écriture.
-Même geste pour `CategoryRepository.listAll()` côté lecture.
+**Reste pour la suite de L9** (constaté au bâti) : trois adaptateurs lisent
+encore des tables d'un voisin — `revision/infrastructure/prisma-catalog-revision.source.ts`
+(médias), `revision/infrastructure/prisma-catalog-overview.reader.ts`
+(fiches et familles), `history/infrastructure/prisma-product-lineage.reader.ts`
+(fiche, TVA de famille, taux) ; la porte d'appartenance des modèles ne les
+voit pas, elle raisonne au niveau du bloc. Et `vatChangePayload` lit
+`contextLabelsOf` dans l'application des contextes de vente.
 
 **L9.d — Les satellites portés par leur agrégat.** Médias
 (`EditorialRepository.replaceMedia`), textes éditoriaux, composition et

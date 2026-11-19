@@ -76,7 +76,8 @@ interface VariantRow extends MinQuantityColumns {
   nutritionValues: NutritionRow | null;
 }
 
-interface ProductRow {
+/** Une fiche lue avec ses déclinaisons et ses taux joints — ce que `toProduct` relit. */
+export interface ProductRow {
   id: string;
   sku: string;
   name: unknown;
@@ -100,7 +101,7 @@ interface ProductRow {
  * photographie plus `soldContexts` (2026-10-17, suite de X4) : ses tables
  * restent, figées.
  */
-const PRODUCT_INCLUDE = {
+export const PRODUCT_INCLUDE = {
   // Les DEUX tables de la fiche réglementaire depuis le 2026-09-22, et plus
   // `nutrition_declaration`, qui n'est plus ni lue ni écrite nulle part.
   // Leur absence est une information : personne ne s'est prononcé.
@@ -185,7 +186,7 @@ function toNutrition(row: NutritionRow | null): VariantSnapshot["nutrition"] {
   };
 }
 
-function toProduct(row: ProductRow): Product {
+export function toProduct(row: ProductRow): Product {
   return Product.reconstitute({
     id: row.id,
     sku: row.sku,
@@ -254,14 +255,6 @@ export class PrismaProductRepository extends ProductRepository {
       include: PRODUCT_INCLUDE,
     });
     return row === null ? null : toProduct(row);
-  }
-
-  async listAll(): Promise<Product[]> {
-    const rows = await this.prisma.product.findMany({
-      include: PRODUCT_INCLUDE,
-      orderBy: { sku: "asc" },
-    });
-    return rows.map(toProduct);
   }
 
   /**

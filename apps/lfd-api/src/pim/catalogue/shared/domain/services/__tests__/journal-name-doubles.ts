@@ -1,8 +1,8 @@
-import { VatRate } from "../../../../reference/vat-rates/domain/entities/vat-rate.js";
+import { VatRate } from "../../../../../reference/vat-rates/domain/entities/vat-rate.js";
 import {
   VatRateRepository,
   type VatRateUsage,
-} from "../../../../reference/vat-rates/domain/ports/vat-rate.repository.js";
+} from "../../../../../reference/vat-rates/domain/ports/vat-rate.repository.js";
 
 /**
  * Les doubles de ce que les faits du catalogue NOMMENT (plan des phrases du

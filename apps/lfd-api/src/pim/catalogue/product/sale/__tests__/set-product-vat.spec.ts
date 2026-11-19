@@ -1,5 +1,5 @@
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
-import { KnownVatRates } from "../../../shared/application/__tests__/journal-name-doubles.js";
+import { KnownVatRates } from "../../../shared/domain/services/__tests__/journal-name-doubles.js";
 import { RecordingJournal } from "../../../../journal/__tests__/recording-journal.js";
 import { VatRateNotFoundError } from "../../../../reference/vat-rates/domain/errors/vat-rate-errors.js";
 import { VatRateRepository } from "../../../../reference/vat-rates/domain/ports/vat-rate.repository.js";

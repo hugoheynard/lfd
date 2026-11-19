@@ -5,7 +5,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 import type { Category } from "../domain/entities/category.js";
 import { CategoryRepository } from "../domain/ports/category.repository.js";
 import { assertCompleteOrder } from "../domain/services/category-tree.js";
-import { requireCategory } from "./category-support.js";
+import { requireCategory } from "../domain/services/category-lookup.js";
 import { CatalogEmitter } from "../../../shared/catalog-emitter.js";
 
 /** L'identifiant conventionnel du premier niveau, qui n'a pas de famille parente. */

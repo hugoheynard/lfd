@@ -5,7 +5,7 @@ import { CatalogEmitter } from "../../../../shared/catalog-emitter.js";
 import {
   CatalogFactsReader,
   type CatalogFamilyRecord,
-} from "../../../../catalogue/shared/domain/ports/catalog-facts.reader.js";
+} from "../../domain/ports/catalog-facts.reader.js";
 import { CatalogRulesEmitter } from "../../../../order-time-limitation/domain/ports/catalog-rules.emitter.js";
 import { ReemissionProgress } from "../../../../shared/catalog-reemission.js";
 import {

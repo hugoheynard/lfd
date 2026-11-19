@@ -6,7 +6,7 @@ import { PIM_EVENTS, PimJournal } from "../../../journal/pim-journal.js";
 import type { Audience } from "../../shared/domain/value-objects/audience.js";
 import type { Category } from "../domain/entities/category.js";
 import { CategoryRepository } from "../domain/ports/category.repository.js";
-import { requireCategory } from "./category-support.js";
+import { requireCategory } from "../domain/services/category-lookup.js";
 import { CatalogEmitter } from "../../../shared/catalog-emitter.js";
 import { CatalogReemission } from "../../../shared/catalog-reemission.js";
 

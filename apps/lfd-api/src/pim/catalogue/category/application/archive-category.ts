@@ -8,7 +8,7 @@ import {
 } from "../domain/errors/category-errors.js";
 import { CategoryRepository } from "../domain/ports/category.repository.js";
 import { ProductCountReader } from "../domain/ports/product-count.reader.js";
-import { requireCategory } from "./category-support.js";
+import { requireCategory } from "../domain/services/category-lookup.js";
 import { CatalogEmitter } from "../../../shared/catalog-emitter.js";
 
 export class ArchiveCategoryCommand {

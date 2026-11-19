@@ -5,6 +5,8 @@ import { ListProductsHandler, type ProductListItem } from "../list-products.js";
 import {
   BOTH_RATES,
   FixedVatPercents,
+  ListedCategories,
+  ListedProducts,
   OneCategory,
   OneProduct,
   SELLABLE_VARIANT,
@@ -25,8 +27,8 @@ function listing(
   version = 0,
 ): ListProductsHandler {
   return new ListProductsHandler(
-    new OneProduct(product),
-    new OneCategory(category),
+    new ListedProducts(new OneProduct(product)),
+    new ListedCategories(new OneCategory(category)),
     new FixedVatPercents(BOTH_RATES),
     new FixedActiveContexts(["b2b", "takeaway"]),
     new FixedCitedAllergens(),

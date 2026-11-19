@@ -1,4 +1,4 @@
-import { CatalogFactsReader } from "../../../catalogue/shared/domain/ports/catalog-facts.reader.js";
+import { CatalogFactsReader } from "../domain/ports/catalog-facts.reader.js";
 import { ReemissionProgress } from "../../../shared/catalog-reemission.js";
 import {
   readLocalized,

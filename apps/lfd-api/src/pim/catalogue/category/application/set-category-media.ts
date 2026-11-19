@@ -7,7 +7,7 @@ import { mediaItems, type MediaInput } from "../../shared/domain/value-objects/m
 import { CategoryEditorialReader } from "../domain/ports/category-editorial-reader.js";
 import { CategoryEditorialRepository } from "../domain/ports/category-editorial.repository.js";
 import { CategoryRepository } from "../domain/ports/category.repository.js";
-import { requireCategory } from "./category-support.js";
+import { requireCategory } from "../domain/services/category-lookup.js";
 import { CatalogEmitter } from "../../../shared/catalog-emitter.js";
 
 export class SetCategoryMediaCommand {

@@ -9,10 +9,10 @@ import type { WriteTicket } from "../../../../platform/journal/scoped-journal.js
 import { PIM_EVENTS, PimJournal } from "../../../journal/pim-journal.js";
 import { SalesContextRegistry } from "../../../reference/sales-contexts/domain/ports/sales-context.registry.js";
 import type { ContextVat } from "../../shared/domain/value-objects/context-vat.js";
-import { vatChangePayload } from "../../shared/application/journal-names.js";
+import { vatChangePayload } from "../../shared/domain/services/vat-change-payload.js";
 import type { Category } from "../domain/entities/category.js";
 import { CategoryRepository } from "../domain/ports/category.repository.js";
-import { requireCategory } from "./category-support.js";
+import { requireCategory } from "../domain/services/category-lookup.js";
 import { CatalogEmitter } from "../../../shared/catalog-emitter.js";
 import { CatalogReemission } from "../../../shared/catalog-reemission.js";
 

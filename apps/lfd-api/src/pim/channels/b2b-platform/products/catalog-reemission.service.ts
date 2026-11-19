@@ -2,7 +2,7 @@ import { Injectable, Logger } from "@nestjs/common";
 
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { CatalogEmitter } from "../../../shared/catalog-emitter.js";
-import { CatalogFactsReader } from "../../../catalogue/shared/domain/ports/catalog-facts.reader.js";
+import { CatalogFactsReader } from "../domain/ports/catalog-facts.reader.js";
 import { CatalogRulesEmitter } from "../../../order-time-limitation/domain/ports/catalog-rules.emitter.js";
 import {
   CatalogReemission,

@@ -2,16 +2,16 @@ import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { PIM_EVENTS, PimJournal } from "../../../journal/pim-journal.js";
-import { CatalogueReader } from "../../shared/domain/ports/catalogue-reader.js";
 import type { Product } from "../domain/entities/product.js";
+import { EffectiveVatReader } from "../domain/ports/effective-vat.reader.js";
 import { ProductRepository } from "../domain/ports/product.repository.js";
 import { requireProduct } from "../shared/product-support.js";
 import { CatalogEmitter } from "../../../shared/catalog-emitter.js";
 import { ActiveSalesContextsReader } from "../../../reference/sales-contexts/domain/ports/active-sales-contexts.reader.js";
-import { readCompletenessRules } from "../regulatory/completeness-support.js";
+import { readCompletenessRules } from "../domain/services/completeness-rules.js";
 import { CitedAllergensReader } from "../../../reference/ingredients/domain/ports/cited-allergens.reader.js";
 import { CategoryRepository } from "../../category/domain/ports/category.repository.js";
-import { requireCategory } from "../../category/application/category-support.js";
+import { requireCategory } from "../../category/domain/services/category-lookup.js";
 
 export class ActivateProductCommand {
   constructor(readonly id: string) {}
@@ -25,8 +25,8 @@ export class ActivateProductCommand {
  *
  * Le refus appartient à l'agrégat : au moins une déclinaison complète (lot 2b,
  * C1). Le handler ne fait que lui montrer ce qu'il ne voit pas : le taux
- * effectif résolu comme la projection le résout (`CatalogueReader.vatPercents`,
- * la même lecture que `feed-projection.service.ts`), les contextes de vente en
+ * effectif résolu comme la projection le résout (`EffectiveVatReader`, la
+ * même lecture que la révision et les faits du catalogue), les contextes de vente en
  * service, la règle du prix pro (`readCompletenessRules`) et les allergènes
  * que sa composition cite (`CitedAllergensReader`, jugement unique). L'audience
  * de la famille y entre de nouveau depuis le 2026-10-27, pour le seul prix :
@@ -42,7 +42,7 @@ export class ActivateProductCommand {
 export class ActivateProductHandler implements ICommandHandler<ActivateProductCommand, void> {
   constructor(
     private readonly products: ProductRepository,
-    private readonly catalogue: CatalogueReader,
+    private readonly vat: EffectiveVatReader,
     private readonly journal: PimJournal,
     private readonly uow: UnitOfWork,
     private readonly emitter: CatalogEmitter,
@@ -77,7 +77,7 @@ export class ActivateProductHandler implements ICommandHandler<ActivateProductCo
   private async activate(product: Product): Promise<boolean> {
     const record = product.snapshot();
     const [vat, rules, cited, category] = await Promise.all([
-      this.catalogue.vatPercents([record]),
+      this.vat.vatPercents([record]),
       readCompletenessRules(this.contexts),
       this.cited.ofProducts([record.id]),
       requireCategory(this.categories, record.categoryId),

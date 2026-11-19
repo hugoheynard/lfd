@@ -3,7 +3,7 @@ import { Injectable } from "@nestjs/common";
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import { CatalogEmitter } from "../../../shared/catalog-emitter.js";
-import { CatalogFactsReader } from "../../../catalogue/shared/domain/ports/catalog-facts.reader.js";
+import { CatalogFactsReader } from "../domain/ports/catalog-facts.reader.js";
 import { CatalogReemission } from "../../../shared/catalog-reemission.js";
 import type { CatalogReemissionJob } from "../domain/entities/catalog-reemission-job.js";
 import { messageOf } from "../domain/errors/reemission-errors.js";

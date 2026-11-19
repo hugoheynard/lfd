@@ -9,7 +9,7 @@ import type { WriteTicket } from "../../../../platform/journal/scoped-journal.js
 import { PIM_EVENTS, PimJournal } from "../../../journal/pim-journal.js";
 import { SalesContextRegistry } from "../../../reference/sales-contexts/domain/ports/sales-context.registry.js";
 import type { ContextVat } from "../../shared/domain/value-objects/context-vat.js";
-import { vatChangePayload } from "../../shared/application/journal-names.js";
+import { vatChangePayload } from "../../shared/domain/services/vat-change-payload.js";
 import type { Product } from "../domain/entities/product.js";
 import { ProductRepository } from "../domain/ports/product.repository.js";
 import { requireProduct } from "../shared/product-support.js";

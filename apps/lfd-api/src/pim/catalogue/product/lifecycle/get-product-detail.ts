@@ -15,7 +15,7 @@ import {
 } from "../domain/ports/product.repository.js";
 import { ReadinessReader } from "../domain/ports/readiness.reader.js";
 import { StaffAuthorDirectory } from "../../../../staff/directory/domain/staff-author-directory.js";
-import { requireCategory } from "../../category/application/category-support.js";
+import { requireCategory } from "../../category/domain/services/category-lookup.js";
 import { CategoryRepository } from "../../category/domain/ports/category.repository.js";
 import { audienceView, type AudienceView } from "../sale/audience-view.js";
 import { DetachmentLineageReader } from "../domain/ports/detachment-lineage.reader.js";

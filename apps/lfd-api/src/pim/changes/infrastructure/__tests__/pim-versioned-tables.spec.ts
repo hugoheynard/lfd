@@ -26,7 +26,8 @@ const SERVED_ADAPTERS = [
   // La liste des produits et ses alertes.
   "catalogue/product/infrastructure/prisma-product.repository.ts",
   "catalogue/category/infrastructure/prisma-category.repository.ts",
-  "catalogue/shared/infrastructure/prisma-catalogue-reader.ts",
+  "catalogue/product/infrastructure/prisma-all-products.reader.ts",
+  "catalogue/category/infrastructure/prisma-all-categories.reader.ts",
   "catalogue/product/infrastructure/prisma-illustrated-products.reader.ts",
   "reference/ingredients/infrastructure/prisma-cited-allergens.reader.ts",
   "reference/sales-contexts/infrastructure/prisma-sales-context.registry.ts",

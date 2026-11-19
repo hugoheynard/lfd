@@ -1,4 +1,4 @@
-import type { CategoryVatPercents } from "../../../shared/domain/ports/catalogue-reader.js";
+import type { CategoryVatPercents } from "../../../shared/domain/value-objects/vat-percents.js";
 import type { Audience } from "../../../shared/domain/value-objects/audience.js";
 import type { VariantSnapshot } from "../entities/variant.js";
 import { productCompliance, type ComplianceFinding } from "./product-compliance.js";

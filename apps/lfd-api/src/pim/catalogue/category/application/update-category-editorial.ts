@@ -14,7 +14,7 @@ import {
   type CategoryEditorial,
   type CategoryEditorialInput,
 } from "../domain/value-objects/category-editorial.js";
-import { requireCategory } from "./category-support.js";
+import { requireCategory } from "../domain/services/category-lookup.js";
 import { CatalogEmitter } from "../../../shared/catalog-emitter.js";
 
 export class UpdateCategoryEditorialCommand {

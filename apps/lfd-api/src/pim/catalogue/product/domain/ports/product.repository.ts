@@ -25,7 +25,6 @@ export { isLiveStatus } from "../entities/product.js";
  */
 export abstract class ProductRepository {
   abstract findById(id: string): Promise<Product | null>;
-  abstract listAll(): Promise<Product[]>;
   /**
    * Écrit le produit, sa déclinaison par défaut **et** la réservation des deux
    * références, en une transaction : l'invariant 2 n'est jamais faux, même une

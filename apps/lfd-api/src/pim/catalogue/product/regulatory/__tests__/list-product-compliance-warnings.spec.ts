@@ -9,6 +9,8 @@ import { ProductNotFoundError } from "../../domain/errors/product-errors.js";
 import {
   BOTH_RATES,
   FixedVatPercents,
+  ListedCategories,
+  ListedProducts,
   OneProduct,
   PRODUCT_ID,
   OneCategory,
@@ -24,12 +26,16 @@ function listing(
   cited: FixedCitedAllergens = new FixedCitedAllergens(),
   audience: Audience = "both",
 ): ListProductComplianceWarningsHandler {
+  const products = new OneProduct(product);
+  const categories = new OneCategory(family(audience));
   return new ListProductComplianceWarningsHandler(
-    new OneProduct(product),
+    products,
     new FixedVatPercents(BOTH_RATES),
     new FixedActiveContexts(["b2b", "takeaway"]),
     cited,
-    new OneCategory(family(audience)),
+    categories,
+    new ListedProducts(products),
+    new ListedCategories(categories),
   );
 }
 

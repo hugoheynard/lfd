@@ -9,7 +9,7 @@ import {
   CategoryArchivedError,
   CategoryNotFoundError,
 } from "../../category/domain/errors/category-errors.js";
-import { namedCategory, requireCategory } from "../../category/application/category-support.js";
+import { namedCategory, requireCategory } from "../../category/domain/services/category-lookup.js";
 import type { Category } from "../../category/domain/entities/category.js";
 import { CategoryRepository } from "../../category/domain/ports/category.repository.js";
 import { ProductRepository, type ProductKind } from "../domain/ports/product.repository.js";

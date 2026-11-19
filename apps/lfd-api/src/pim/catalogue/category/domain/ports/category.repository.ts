@@ -23,7 +23,6 @@ export abstract class CategoryRepository {
    * leur préfixe de SKU reste pris.
    */
   abstract findBySlugFr(slugFr: string): Promise<Category | null>;
-  abstract listAll(): Promise<Category[]>;
   /**
    * Les familles d'UN niveau, rangées. Réordonner ou renuméroter une fratrie
    * chargeait l'arbre entier pour en garder une poignée.

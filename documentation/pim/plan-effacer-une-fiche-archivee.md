@@ -61,7 +61,7 @@ partira d'un statut déjà posé.
   hors tests, grep du 2026-11-10) : `list-products.ts`,
   `list-product-compliance-warnings.ts`, `declare-product-ready.ts`,
   `withdraw-product-readiness.ts`, `ingredient-allergen-propagation*`,
-  `prisma-catalogue-reader.ts`, `prisma-product-count.reader.ts`,
+  `prisma-product-count.reader.ts`,
   `prisma-published-allergens.reader.ts`, `repository-allergen-matrix.source.ts`,
   `allergen-matrix.ts`, `catalog-facts.ts`, `catalog-product-changed.fact.ts`.
 - Journal : `"product.archived": labelled(skuAndName())`

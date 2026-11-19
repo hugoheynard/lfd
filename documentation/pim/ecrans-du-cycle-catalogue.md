@@ -219,7 +219,7 @@ choix des candidats.
 
 **Le défaut est donc B2B, et seulement B2B.** Sa projection ne consulte le statut
 nulle part : `byIds()` ne filtre rien
-([`prisma-catalogue-reader.ts:59`](../../apps/lfd-api/src/pim/catalogue/shared/infrastructure/prisma-catalogue-reader.ts)),
+([`repository-product-records.reader.ts`](../../apps/lfd-api/src/pim/catalogue/product/infrastructure/repository-product-records.reader.ts)),
 et rien en aval ne rattrape. Un brouillon présent dans le binding **est vendu aux
 professionnels** — et c'est exactement l'unique ligne de binding de la base de
 dev : `prd_gros-florentin-lait`, statut `draft`.

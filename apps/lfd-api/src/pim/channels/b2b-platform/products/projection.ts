@@ -11,7 +11,7 @@ import type { AllergenNaming } from "../../../reference/allergens/domain/service
 import type { IncoProjector } from "../../../reference/allergens/domain/services/inco-projector.js";
 import { effectiveAllergens } from "../../../catalogue/product/domain/services/effective-allergens.js";
 import type { CatalogTranslations } from "./translations.js";
-import type { CategoryVatPercents } from "../../../catalogue/shared/domain/ports/catalogue-reader.js";
+import type { CategoryVatPercents } from "../../../catalogue/shared/domain/value-objects/vat-percents.js";
 import type { VariantRecord } from "../../../catalogue/product/domain/ports/product.repository.js";
 
 /**

@@ -8,7 +8,7 @@ import { CREATED_ID_REPLAY, OncePerIntent } from "../../../../platform/intent/on
 import { intentSubject } from "../../../../platform/intent/intent-subject.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import { ProductNotFoundError } from "../../../catalogue/product/domain/errors/product-errors.js";
-import { CatalogFactsReader } from "../../../catalogue/shared/domain/ports/catalog-facts.reader.js";
+import { CatalogFactsReader } from "../domain/ports/catalog-facts.reader.js";
 import { CatalogReemissionJob } from "../domain/entities/catalog-reemission-job.js";
 import {
   AnonymousReemissionError,

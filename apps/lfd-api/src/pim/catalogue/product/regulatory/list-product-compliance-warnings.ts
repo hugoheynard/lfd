@@ -2,12 +2,14 @@ import { type IQueryHandler, QueryHandler } from "@nestjs/cqrs";
 import type { ProductComplianceWarningView } from "@lfd/pim-contracts";
 
 import { ActiveSalesContextsReader } from "../../../reference/sales-contexts/domain/ports/active-sales-contexts.reader.js";
-import { CatalogueReader } from "../../shared/domain/ports/catalogue-reader.js";
 import { CitedAllergensReader } from "../../../reference/ingredients/domain/ports/cited-allergens.reader.js";
 import { isLiveStatus, ProductRepository } from "../domain/ports/product.repository.js";
+import { AllProductsReader } from "../domain/ports/all-products.reader.js";
+import { EffectiveVatReader } from "../domain/ports/effective-vat.reader.js";
+import { AllCategoriesReader } from "../../category/domain/ports/all-categories.reader.js";
 import type { Product } from "../domain/entities/product.js";
 import { ProductNotFoundError } from "../domain/errors/product-errors.js";
-import { readCompletenessRules } from "./completeness-support.js";
+import { readCompletenessRules } from "../domain/services/completeness-rules.js";
 import { complianceFindingsOf } from "./compliance-view.js";
 import { CategoryNotFoundError } from "../../category/domain/errors/category-errors.js";
 import { CategoryRepository } from "../../category/domain/ports/category.repository.js";
@@ -44,10 +46,12 @@ export class ListProductComplianceWarningsHandler implements IQueryHandler<
 > {
   constructor(
     private readonly products: ProductRepository,
-    private readonly catalogue: CatalogueReader,
+    private readonly vat: EffectiveVatReader,
     private readonly contexts: ActiveSalesContextsReader,
     private readonly cited: CitedAllergensReader,
     private readonly categories: CategoryRepository,
+    private readonly allProducts: AllProductsReader,
+    private readonly allCategories: AllCategoriesReader,
   ) {}
 
   async execute(
@@ -59,9 +63,9 @@ export class ListProductComplianceWarningsHandler implements IQueryHandler<
   /** Tout le catalogue : les familles lues une fois servent aussi aux taux. */
   private async all(): Promise<ProductComplianceWarningView[]> {
     const [all, rules, categories] = await Promise.all([
-      this.products.listAll(),
+      this.allProducts.all(),
       readCompletenessRules(this.contexts),
-      this.categories.listAll(),
+      this.allCategories.all(),
     ]);
     const audiences = new Map<string, Audience>(
       categories.map((category) => [category.id, category.audience]),
@@ -69,7 +73,7 @@ export class ListProductComplianceWarningsHandler implements IQueryHandler<
     // Archivées et supprimées n'ont rien à corriger : elles ne partent nulle part.
     const live = all.filter((product) => isLiveStatus(product.status));
     const [vat, cited] = await Promise.all([
-      this.catalogue.vatPercents(
+      this.vat.vatPercents(
         live.map((product) => product.snapshot()),
         categories,
       ),
@@ -100,7 +104,7 @@ export class ListProductComplianceWarningsHandler implements IQueryHandler<
     const [rules, category, vat, cited] = await Promise.all([
       readCompletenessRules(this.contexts),
       this.categories.findById(product.categoryId),
-      this.catalogue.vatPercents([product.snapshot()]),
+      this.vat.vatPercents([product.snapshot()]),
       this.cited.ofProducts([product.id]),
     ]);
     if (category === null) {

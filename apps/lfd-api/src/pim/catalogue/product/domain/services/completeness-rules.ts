@@ -1,5 +1,5 @@
-import type { ActiveSalesContextsReader } from "../../../reference/sales-contexts/domain/ports/active-sales-contexts.reader.js";
-import type { CompletenessRules } from "../domain/services/variant-completeness.js";
+import type { ActiveSalesContextsReader } from "../../../../reference/sales-contexts/domain/ports/active-sales-contexts.reader.js";
+import type { CompletenessRules } from "./variant-completeness.js";
 
 /**
  * **Lit ce que la règle de complétude ne voit pas d'une fiche** : les

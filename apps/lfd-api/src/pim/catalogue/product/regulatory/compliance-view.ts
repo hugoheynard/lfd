@@ -1,6 +1,6 @@
 import type { ProductComplianceFinding } from "@lfd/pim-contracts";
 
-import type { CategoryVatPercents } from "../../shared/domain/ports/catalogue-reader.js";
+import type { CategoryVatPercents } from "../../shared/domain/value-objects/vat-percents.js";
 import type { Audience } from "../../shared/domain/value-objects/audience.js";
 import type { Product } from "../domain/entities/product.js";
 import { isLiveStatus } from "../domain/ports/product.repository.js";

@@ -30,13 +30,12 @@
  * ## L'intérieur du catalogue (L9)
  *
  * `catalogue/` se découpe à son tour : `shared` (le noyau du catalogue, qui
- * ne lit aucun voisin), `category`, `product`, `revision`, `history`,
- * `allergen-matrix` et `reading` (les lectures qui croisent fiches et
- * familles). Le sens admis :
+ * ne lit aucun voisin), `category`, `product`, `revision`, `history`
+ * et `allergen-matrix`. Le sens admis :
  *
  * - `category` lit `shared` ;
  * - `product` lit `shared` et `category` ;
- * - `revision`, `history`, `allergen-matrix` et `reading` lisent `shared`,
+ * - `revision`, `history` et `allergen-matrix` lisent `shared`,
  *   `category` et `product`.
  *
  * Entre deux sous-contextes du catalogue, et de `channels` vers le
@@ -70,15 +69,7 @@ const CORE = ["shared", "journal", "changes", "infra"];
 const REFERENCES = ["vat-rates", "sales-contexts", "allergens", "ingredients"];
 const OTL = "order-time-limitation";
 const isReference = (context) => context.startsWith("reference/");
-const CATALOGUE = [
-  "shared",
-  "category",
-  "product",
-  "revision",
-  "history",
-  "allergen-matrix",
-  "reading",
-];
+const CATALOGUE = ["shared", "category", "product", "revision", "history", "allergen-matrix"];
 const isCatalogue = (context) => context === "catalogue" || context.startsWith("catalogue/");
 /** Ce que chaque sous-contexte du catalogue lit chez ses voisins du catalogue. */
 const CATALOGUE_READS = {
@@ -88,7 +79,6 @@ const CATALOGUE_READS = {
   "catalogue/revision": ["catalogue/shared", "catalogue/category", "catalogue/product"],
   "catalogue/history": ["catalogue/shared", "catalogue/category", "catalogue/product"],
   "catalogue/allergen-matrix": ["catalogue/shared", "catalogue/category", "catalogue/product"],
-  "catalogue/reading": ["catalogue/shared", "catalogue/category", "catalogue/product"],
 };
 
 /** La surface publique d'un sous-contexte du catalogue : `index.ts`, `domain/`, les faits. */
