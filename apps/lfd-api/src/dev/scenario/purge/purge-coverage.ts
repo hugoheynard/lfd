@@ -55,6 +55,7 @@ export const SCENARIO_PURGED_TABLES: readonly PurgedTable[] = [
     referencedBy: [
       "public.delivery_note",
       "public.order_discounts",
+      "public.order_item_limit_overrides",
       "public.order_revision",
       "public.order_revision_proposal",
       "public.order_shortfall",
@@ -64,6 +65,7 @@ export const SCENARIO_PURGED_TABLES: readonly PurgedTable[] = [
   // Les lignes partent en cascade avec leur commande.
   { table: "public.order_lines", purgedIn: COMMERCE, referencedBy: [] },
   { table: "public.order_idempotency", purgedIn: COMMERCE, referencedBy: [] },
+  { table: "public.order_item_limit_overrides", purgedIn: COMMERCE, referencedBy: [] },
   { table: "public.account_alerts", purgedIn: COMMERCE, referencedBy: [] },
   { table: "public.staff_notifications", purgedIn: COMMERCE, referencedBy: [] },
   { table: "public.day_change", purgedIn: COMMERCE, referencedBy: [] },

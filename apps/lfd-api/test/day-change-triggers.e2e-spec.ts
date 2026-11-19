@@ -55,6 +55,8 @@ const UNWATCHED: Readonly<Record<string, string>> = {
     "le retrait d'une commande annulée par l'équipe (plan d'annulation, C3.4, 2026-10-12) : écrit dans la transaction qui passe la commande `cancelled`, dont `orders` fait déjà bouger la journée du commerce ; aucun écran du fournil ne le lit, seuls la clôture et le retirage, sous le verrou",
   "production.order_revision_notice":
     "la note d'une modification de commande (plan de modification, §9.1, 2026-10-23) : écrite dans la transaction qui réécrit `orders`, dont le déclencheur fait déjà bouger l'ancien et le nouveau jour du commerce ; aucun écran du fournil ne la lit, seuls la clôture et le retirage, sous le verrou",
+  "public.order_item_limit_overrides":
+    "la trace d'un dépassement de limite produit, écrite dans la transaction de la commande, dont `orders` fait déjà bouger la journée ; elle ne change rien de ce que la journée fabrique",
   "production.production_container": "un réglage par SKU, sans journée",
   // Les réglages du fournil (plan d'arrêt du plan, A1, 2026-10-06).
   "production.production_settings": "le réglage unique de l'arrêt du plan, sans journée",

@@ -81,12 +81,14 @@ export const RESET_WIPED_TABLES: readonly CoveredTable[] = [
     referencedBy: [
       "public.delivery_note",
       "public.order_discounts",
+      "public.order_item_limit_overrides",
       "public.order_revision",
       "public.order_revision_proposal",
       "public.order_shortfall",
       "public.order_shortfall_decision",
     ],
   },
+  { table: "public.order_item_limit_overrides", referencedBy: [] },
   { table: "public.payment_links", referencedBy: [] },
   { table: "public.payment_mandates", referencedBy: [] },
   {

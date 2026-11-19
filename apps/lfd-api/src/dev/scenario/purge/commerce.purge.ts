@@ -49,6 +49,7 @@ export async function purgeCommerce(
       where: { orderDiscount: { orderId: { in: orderIds } } },
     }),
     await tx.orderDiscount.deleteMany({ where: { orderId: { in: orderIds } } }),
+    await tx.orderItemLimitOverride.deleteMany({ where: { orderId: { in: orderIds } } }),
     await tx.deliveryNoteLine.deleteMany({ where: { note: { orderId: { in: orderIds } } } }),
     await tx.deliveryNote.deleteMany({ where: { orderId: { in: orderIds } } }),
   ];
