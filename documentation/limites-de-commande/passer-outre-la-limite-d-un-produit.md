@@ -143,5 +143,19 @@ change (« l'équipe peut désormais passer outre… »).
 
 ## 3. Ce qui reste
 
+Comparé aux logiciels du marché (Odoo, SAP, Shopify — de mémoire, non
+vérifié le 2026-11-19), la règle elle-même est plus stricte : un seul juge
+pour tous les gestes, aucun geste qui la contourne, et la limite générale
+toujours opposée. Ce qui manque est autour de la règle :
+
 - **Rien ne vérifie qu'un produit se fabrique en moins de temps que sa
-  limite** : la case du produit en répond.
+  limite** : la case du produit en répond. Le juge regarde le temps, jamais
+  la capacité (un four plein ce jour-là ne refuse rien).
+- **Aucun écran ne résume les dépassements** (qui, combien, quels produits) :
+  la trace `order_item_limit_overrides` existe, le rapport non.
+- **Le fournil n'est pas prévenu** d'un dépassement : il le lit sur la fiche
+  de la commande, pas en alerte.
+- **Le sélecteur de jour de la boutique propose encore un jour que le panier
+  interdit** : le refus vient après le choix.
+- **Les limites ne sont pas annoncées en cache à la boutique** (« on verra ça
+  après », Hugo, 2026-11-19).
