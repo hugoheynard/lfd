@@ -1,3 +1,4 @@
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, Router, provideRouter } from '@angular/router';
@@ -82,6 +83,7 @@ async function mount(rows: Category[], id: string | null): Promise<Mounted> {
   TestBed.configureTestingModule({
     providers: [
       provideHttpClient(),
+      provideHttpClientTesting(),
       provideRouter([]),
       provideTestSalesContexts(),
       // Les mêmes libellés qu'en production : les défauts de fold sont anglais,

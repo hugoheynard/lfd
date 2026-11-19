@@ -1,3 +1,4 @@
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { beforeEach, describe, expect, it } from 'vitest';
@@ -28,7 +29,9 @@ describe('la composition en regard de la déclaration', () => {
   }
 
   beforeEach(() => {
-    TestBed.configureTestingModule({ providers: [ProductFormStore, provideHttpClient()] });
+    TestBed.configureTestingModule({
+      providers: [ProductFormStore, provideHttpClient(), provideHttpClientTesting()],
+    });
     store = TestBed.inject(ProductFormStore);
     store.entries.set(reference);
   });

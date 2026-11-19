@@ -1,3 +1,4 @@
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
@@ -29,6 +30,7 @@ describe('SalesContextsPage', () => {
     TestBed.configureTestingModule({
       providers: [
         provideHttpClient(),
+        provideHttpClientTesting(),
         { provide: PermissionsStore, useValue: { can: () => canWrite } },
         {
           provide: SalesContextAdminStore,

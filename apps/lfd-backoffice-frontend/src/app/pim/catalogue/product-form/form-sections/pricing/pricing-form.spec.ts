@@ -1,3 +1,4 @@
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
@@ -9,7 +10,12 @@ import { PricingForm } from './pricing-form';
 
 function setup(): ProductFormStore {
   TestBed.configureTestingModule({
-    providers: [ProductFormStore, provideHttpClient(), provideTestSalesContexts()],
+    providers: [
+      ProductFormStore,
+      provideHttpClient(),
+      provideHttpClientTesting(),
+      provideTestSalesContexts(),
+    ],
   });
   return TestBed.inject(ProductFormStore);
 }

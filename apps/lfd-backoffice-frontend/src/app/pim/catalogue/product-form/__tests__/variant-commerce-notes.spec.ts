@@ -1,3 +1,4 @@
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
 import type { Type } from '@angular/core';
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
@@ -167,6 +168,7 @@ async function setup(api = new FakeApi()) {
     providers: [
       ProductFormStore,
       provideHttpClient(),
+      provideHttpClientTesting(),
       provideRouter([]),
       provideTestSalesContexts(),
       { provide: ProductHttpApi, useValue: api },

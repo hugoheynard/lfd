@@ -1,3 +1,4 @@
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import { describe, expect, it } from 'vitest';
@@ -31,7 +32,7 @@ function legends(host: HTMLElement): string[] {
 
 function setup(): ProductFormStore {
   TestBed.configureTestingModule({
-    providers: [ProductFormStore, provideHttpClient()],
+    providers: [ProductFormStore, provideHttpClient(), provideHttpClientTesting()],
   });
   return TestBed.inject(ProductFormStore);
 }

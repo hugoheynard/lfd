@@ -1,3 +1,4 @@
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
@@ -104,6 +105,7 @@ function setup(read: ApiDouble['read']): ApiDouble {
   TestBed.configureTestingModule({
     providers: [
       provideHttpClient(),
+      provideHttpClientTesting(),
       provideRouter([]),
       { provide: AllergenMatrixHttpApi, useValue: api },
     ],

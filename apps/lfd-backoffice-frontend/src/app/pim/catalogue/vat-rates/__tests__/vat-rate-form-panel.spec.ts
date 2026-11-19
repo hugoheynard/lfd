@@ -1,3 +1,4 @@
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import { FoldPanelRef, FoldToastService } from 'fold-ng';
@@ -43,6 +44,7 @@ describe('VatRateFormPanel — un taux déjà pris', () => {
     TestBed.configureTestingModule({
       providers: [
         provideHttpClient(),
+        provideHttpClientTesting(),
         { provide: FoldPanelRef, useValue: { close: (v: unknown) => closed.push(v) } },
       ],
     });
@@ -76,6 +78,7 @@ describe('VatRateFormPanel — un taux visé par le SEUL contexte B2B', () => {
     TestBed.configureTestingModule({
       providers: [
         provideHttpClient(),
+        provideHttpClientTesting(),
         { provide: FoldPanelRef, useValue: { close: () => undefined } },
       ],
     });
@@ -109,6 +112,7 @@ describe('VatRateFormPanel — un taux que rien ne vise', () => {
     TestBed.configureTestingModule({
       providers: [
         provideHttpClient(),
+        provideHttpClientTesting(),
         { provide: FoldPanelRef, useValue: { close: () => undefined } },
         {
           provide: VatRateStore,

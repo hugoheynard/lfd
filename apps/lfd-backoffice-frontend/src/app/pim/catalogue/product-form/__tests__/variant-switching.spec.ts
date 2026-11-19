@@ -1,3 +1,4 @@
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import { describe, expect, it } from 'vitest';
@@ -166,6 +167,7 @@ async function setup(api = new FakeApi()) {
     providers: [
       ProductFormStore,
       provideHttpClient(),
+      provideHttpClientTesting(),
       provideTestSalesContexts(),
       { provide: ProductHttpApi, useValue: api },
       // Le magasin charge aussi familles, taux et référentiel d'allergènes :

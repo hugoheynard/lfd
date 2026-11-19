@@ -1,3 +1,4 @@
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import { describe, expect, it } from 'vitest';
@@ -5,7 +6,9 @@ import { describe, expect, it } from 'vitest';
 import { ProductFormStore } from '../product-form-store';
 
 function store(): ProductFormStore {
-  TestBed.configureTestingModule({ providers: [ProductFormStore, provideHttpClient()] });
+  TestBed.configureTestingModule({
+    providers: [ProductFormStore, provideHttpClient(), provideHttpClientTesting()],
+  });
   return TestBed.inject(ProductFormStore);
 }
 

@@ -1,3 +1,4 @@
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import type { ProductComplianceWarningView, ProductStatus } from '@lfd/pim-contracts';
@@ -56,6 +57,7 @@ async function setup(
     providers: [
       ProductFormStore,
       provideHttpClient(),
+      provideHttpClientTesting(),
       provideTestSalesContexts(),
       {
         provide: ProductHttpApi,

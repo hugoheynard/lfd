@@ -1,3 +1,4 @@
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import { describe, expect, it } from 'vitest';
@@ -12,7 +13,7 @@ import { NutritionForm } from './nutrition-form';
  */
 function setup(mode: 'creation' | 'edition' = 'edition'): ProductFormStore {
   TestBed.configureTestingModule({
-    providers: [ProductFormStore, provideHttpClient()],
+    providers: [ProductFormStore, provideHttpClient(), provideHttpClientTesting()],
   });
   const store = TestBed.inject(ProductFormStore);
   store.isEdit.set(mode === 'edition');

@@ -1,3 +1,4 @@
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideHttpClient } from '@angular/common/http';
 import type { Type } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
@@ -46,6 +47,7 @@ function setup(canWrite: boolean, ingredients: readonly IngredientView[] = [BEUR
   TestBed.configureTestingModule({
     providers: [
       provideHttpClient(),
+      provideHttpClientTesting(),
       { provide: PermissionsStore, useValue: { can: () => canWrite } },
       {
         provide: ProvenanceStore,

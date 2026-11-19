@@ -1,3 +1,4 @@
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
@@ -27,6 +28,7 @@ function setup(view: CatalogOverviewView) {
   TestBed.configureTestingModule({
     providers: [
       provideHttpClient(),
+      provideHttpClientTesting(),
       provideRouter([]),
       { provide: CatalogueOverviewHttpApi, useValue: { read: vi.fn().mockResolvedValue(view) } },
     ],

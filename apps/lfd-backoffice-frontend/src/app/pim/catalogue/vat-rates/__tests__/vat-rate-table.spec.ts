@@ -1,3 +1,4 @@
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import { FoldDataTableComponent } from 'fold-ng';
@@ -18,7 +19,9 @@ import { VatRateTable } from '../vat-rate-table/vat-rate-table';
  */
 describe('VatRateTable', () => {
   it('projette sa carte mobile jusqu’au tableau', () => {
-    TestBed.configureTestingModule({ providers: [provideHttpClient()] });
+    TestBed.configureTestingModule({
+      providers: [provideHttpClient(), provideHttpClientTesting()],
+    });
     const fixture = TestBed.createComponent(VatRateTable);
     fixture.detectChanges();
 

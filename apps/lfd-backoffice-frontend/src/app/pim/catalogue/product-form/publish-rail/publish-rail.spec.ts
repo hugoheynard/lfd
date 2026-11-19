@@ -1,3 +1,4 @@
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import { describe, expect, it } from 'vitest';
@@ -18,7 +19,12 @@ import { PublishRail } from './publish-rail';
  */
 function setup(): ProductFormStore {
   TestBed.configureTestingModule({
-    providers: [ProductFormStore, provideHttpClient(), provideTestSalesContexts()],
+    providers: [
+      ProductFormStore,
+      provideHttpClient(),
+      provideHttpClientTesting(),
+      provideTestSalesContexts(),
+    ],
   });
   return TestBed.inject(ProductFormStore);
 }

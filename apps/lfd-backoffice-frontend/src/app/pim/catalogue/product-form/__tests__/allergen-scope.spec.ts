@@ -1,3 +1,4 @@
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import { describe, expect, it } from 'vitest';
@@ -31,6 +32,7 @@ function setup(onWorld: () => Promise<AllergenReference>): ProductFormStore {
     providers: [
       ProductFormStore,
       provideHttpClient(),
+      provideHttpClientTesting(),
       {
         provide: ReferenceApi,
         useValue: {

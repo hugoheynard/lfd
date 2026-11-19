@@ -1,3 +1,4 @@
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
@@ -101,6 +102,7 @@ function renderPage(options: {
   TestBed.configureTestingModule({
     providers: [
       provideHttpClient(),
+      provideHttpClientTesting(),
       { provide: AllergenStore, useValue: store },
       { provide: PermissionsStore, useValue: { can: () => options.canWrite !== false } },
     ],
@@ -213,6 +215,7 @@ function renderCategoryPanel(category: AllergenCategoryAdminView): {
   TestBed.configureTestingModule({
     providers: [
       provideHttpClient(),
+      provideHttpClientTesting(),
       { provide: AllergenStore, useValue: store },
       { provide: FoldPanelRef, useValue: { close: () => undefined } },
     ],
@@ -269,6 +272,7 @@ function renderEntryPanel(
   TestBed.configureTestingModule({
     providers: [
       provideHttpClient(),
+      provideHttpClientTesting(),
       { provide: AllergenStore, useValue: store },
       { provide: FoldPanelRef, useValue: { close: () => undefined } },
     ],
