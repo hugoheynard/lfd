@@ -211,6 +211,18 @@
       ]
     },
     {
+      "name": "spec-http-offline",
+      "script": "dev-toolbox/gates/spec-http-offline.mjs",
+      "holds": "Une spec front ne joint pas le réseau : qui fournit `provideHttpClient()` fournit aussi `provideHttpClientTesting()`, sauf un faux serveur admis avec sa raison — sans quoi l'API de dev, quand elle tourne, répond à la place de la fixture.",
+      "since": "2026-11-19",
+      "watch": [
+        "apps/lfc-ecommerce-frontend/**/*.spec.ts",
+        "apps/lfd-backoffice-frontend/**/*.spec.ts",
+        "packages/**/*.spec.ts",
+        "dev-toolbox/gates/spec-http-offline*"
+      ]
+    },
+    {
       "name": "mail-through-block",
       "script": "dev-toolbox/gates/mail-through-block.mjs",
       "holds": "Un e-mail s'envoie par la porte `Mail` du bloc `mail` ; personne d'autre n'injecte le mailer.",

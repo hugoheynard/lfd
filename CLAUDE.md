@@ -215,6 +215,10 @@
 >   « trop tard ? » se demande au délai de commande, `OrderDeadline` — personne
 >   n'importe l'ancien jugement ni une fonction de décision du contrat hors du
 >   juge pur ; la dette, comptée au départ, est vide.
+>   Et **79** le même jour avec `lint:spec-http-offline` : une spec front qui
+>   fournit le vrai `HttpClient` fournit aussi `provideHttpClientTesting()` —
+>   sans quoi l'API de dev, quand elle tourne, répond à la place de la
+>   fixture (quatorze tests de la boutique rouges en local, verts en CI).
 >   C'est la
 >   **seule** correction faite dans le corps, parce qu'un chiffre faux se vérifie
 >   en une commande et trompe tout de suite ;
@@ -1495,7 +1499,7 @@ pnpm --filter lfd-api seed:pim       # catalogue rejoué PAR LE BUS (cible local
 pnpm lint               # turbo, toutes les apps
 pnpm test
 pnpm build
-pnpm lint:gates         # les 78 portes du dépôt, toutes, et un résumé à la fin
+pnpm lint:gates         # les 79 portes du dépôt, toutes, et un résumé à la fin
 pnpm gate <nom>         # une porte (pnpm gate --list : la liste, avec ce qu'elle tient)
 pnpm lint:watch         # relance les portes dont un fichier lu change
 pnpm tool               # les outils occasionnels (digests, carte, axe…) ; pnpm tool <nom>
