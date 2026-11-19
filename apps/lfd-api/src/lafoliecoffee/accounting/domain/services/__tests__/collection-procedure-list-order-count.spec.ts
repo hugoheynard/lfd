@@ -127,4 +127,19 @@ describe("procedureRowsOf — la colonne « Commandes »", () => {
     expect(countOf(rows, "le1~2026-09-01")).toBeNull();
     expect(countOf(rows, "le1~2026-11-01")).toBeNull();
   });
+
+  /**
+   * Régression : une période sans aucune commande passait au rouge « Limite de
+   * dépôt dépassée » dès l'heure limite franchie — il n'y avait rien à déposer.
+   */
+  it("une clôture à préparer sans commande : aucune limite de dépôt à tenir", () => {
+    const passed = { ...closure(OCT), depositDeadline: { day: addDays(TODAY, -1), time: "16:00" } };
+    const empty = procedureRowsOf(
+      input({ toPrepare: passed, candidateOrderCounts: new Map([["2026-10-01", 0]]) }),
+    );
+    const unknown = procedureRowsOf(input({ toPrepare: passed }));
+
+    expect(empty[0]?.warnings).toEqual([]);
+    expect(unknown[0]?.warnings).toEqual([{ code: "deadline_passed", count: null }]);
+  });
 });

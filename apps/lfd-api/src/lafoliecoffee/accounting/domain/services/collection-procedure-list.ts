@@ -219,9 +219,13 @@ function closureRow(
   if (phase === "missed") {
     return { ...missedRow(input.legalEntityId, closure), orderCount };
   }
+  // Sans commande, rien à déposer : aucune limite à tenir. Un compte inconnu
+  // (`null`) garde l'avertissement — dans le doute, on prévient.
   const deposit =
     phase === "open"
-      ? depositWarnings({ fromDay: input.now.day, deadline: closure.depositDeadline }, input.now)
+      ? orderCount === 0
+        ? []
+        : depositWarnings({ fromDay: input.now.day, deadline: closure.depositDeadline }, input.now)
       : closure.depositDeadline === null
         ? [{ code: "deadline_not_set" as const, count: null }]
         : [];
