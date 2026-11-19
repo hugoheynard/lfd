@@ -205,7 +205,11 @@
 >   vers le catalogue, du catalogue vers les canaux, le noyau lu par tous —,
 >   la carte connaît l'arborescence d'avant et d'après le déménagement, et
 >   aucun fichier n'y dépasse 300 lignes hors liste admise ; ce qui viole
->   aujourd'hui est une dette comptée qui ne peut que décroître. C'est la
+>   aujourd'hui est une dette comptée qui ne peut que décroître. Et **77**
+>   depuis le 2026-11-19 avec `lint:pim-table-owners` (même plan, L9) : dans
+>   le référentiel, un sous-contexte ne lit en Prisma que les tables qu'il
+>   écrit — le propriétaire publie une lecture nommée, le lecteur la compose.
+>   C'est la
 >   **seule** correction faite dans le corps, parce qu'un chiffre faux se vérifie
 >   en une commande et trompe tout de suite ;
 > - le dossier **`documentation/pricing/`** (ouvert le 2026-09-06) et le dossier
@@ -1485,7 +1489,7 @@ pnpm --filter lfd-api seed:pim       # catalogue rejoué PAR LE BUS (cible local
 pnpm lint               # turbo, toutes les apps
 pnpm test
 pnpm build
-pnpm lint:gates         # les 76 portes du dépôt, toutes, et un résumé à la fin
+pnpm lint:gates         # les 77 portes du dépôt, toutes, et un résumé à la fin
 pnpm gate <nom>         # une porte (pnpm gate --list : la liste, avec ce qu'elle tient)
 pnpm lint:watch         # relance les portes dont un fichier lu change
 pnpm tool               # les outils occasionnels (digests, carte, axe…) ; pnpm tool <nom>

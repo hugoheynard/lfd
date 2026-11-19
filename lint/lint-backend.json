@@ -193,6 +193,13 @@
       "watch": ["apps/lfd-api/src/pim/**", "dev-toolbox/gates/pim-file-size*"]
     },
     {
+      "name": "pim-table-owners",
+      "script": "dev-toolbox/gates/pim-table-owners.mjs",
+      "holds": "Dans le référentiel, un sous-contexte ne lit en Prisma que les tables qu'il écrit : le propriétaire publie une lecture nommée et le lecteur la compose ; les lectures étrangères d'aujourd'hui sont une dette comptée par fichier et par modèle, qui ne peut que décroître.",
+      "since": "2026-11-19",
+      "watch": ["apps/lfd-api/src/pim/**", "dev-toolbox/gates/pim-table-owners*"]
+    },
+    {
       "name": "mail-through-block",
       "script": "dev-toolbox/gates/mail-through-block.mjs",
       "holds": "Un e-mail s'envoie par la porte `Mail` du bloc `mail` ; personne d'autre n'injecte le mailer.",
