@@ -47,7 +47,6 @@ const BASKET: GoldenBasket = {
     { sku: PAIN, quantity: 2 },
   ],
   fulfillment: "pickup",
-  deliveryVat: "standard",
   promotions: [],
   voucherSteps: 0,
   clientRevision: [],

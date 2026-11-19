@@ -219,21 +219,21 @@ async function coldOperationsOf(run: () => Promise<unknown>): Promise<number> {
  * ou 8, c'est que dix lignes coûtent le même nombre qu'une seule. C'est
  * l'égalité qui attrape un N+1, pas la valeur absolue.
  */
-const COLD_QUOTE_OPS = 9;
+// Le mode de TVA du port ne se lit plus : il suit toujours la marchandise (Hugo, 2026-11-19).
+const COLD_QUOTE_OPS = 8;
 
 /**
  * **Le même devis, à chaud** (2026-11-04) : les matériaux sont en mémoire, il
  * reste le catalogue (prix de ligne, articles réservés aux opérations,
- * classement), le mode de TVA du port — et UNE estampille. Ce chiffre garde
+ * classement) — et UNE estampille. Ce chiffre garde
  * l'estampille par requête : une question de plus au cache qui relirait le
  * journal le ferait monter.
  *
  * 🔴 **De 5 à 3 le 2026-11-06** (lot M1b, plan des matériaux du catalogue) :
  * à chaud, le catalogue ne coûte plus que les numéros de `context_versions`
- * (un visiteur n'a pas de réservations à lire). Restent le mode de TVA du port
- * et l'estampille des prix.
+ * (un visiteur n'a pas de réservations à lire). Reste l'estampille des prix.
  */
-const WARM_QUOTE_OPS = 3;
+const WARM_QUOTE_OPS = 2;
 
 /**
  * Sème `count` règles **distinctes** — d'étage `geste` depuis L12
@@ -643,7 +643,7 @@ describe("le cache des matériaux, vu d'une autre instance", () => {
  * d'inactivité. Ce qui compte ici, comme pour le devis, est qu'il ne suive
  * pas la taille du panier.
  */
-const COLD_ESTIMATE_OPS = 28;
+const COLD_ESTIMATE_OPS = 27;
 
 describe("l'estimation de la saisie", () => {
   async function seedBuyer(): Promise<Record<string, unknown>> {
@@ -729,7 +729,7 @@ describe("l'estimation de la saisie", () => {
  * limite (cinq lectures) deviennent les numéros, les réservations de la
  * société, les articles et l'heure limite (quatre).
  */
-const COLD_COMPANY_QUOTE_OPS = 20;
+const COLD_COMPANY_QUOTE_OPS = 19;
 
 describe("le devis d'une société, un jour choisi", () => {
   async function seedBuyer(): Promise<string> {

@@ -6,6 +6,8 @@ import { OrderOpeningModule } from "../order-opening/order-opening.module.js";
 import { DeliveryZonesModule } from "../delivery-zones/delivery-zones.module.js";
 import { OrderCutoffsModule } from "../order-cutoffs/order-cutoffs.module.js";
 import { OrderWaiversModule } from "../order-waivers/order-waivers.module.js";
+import { OrderDeliveryVatReader } from "./domain/ports/order-delivery-vat.reader.js";
+import { ProrataDeliveryVatReader } from "./infrastructure/prorata-delivery-vat.reader.js";
 import { PlatformContentModule } from "../content/content.module.js";
 import { PricerModule } from "../pricing/pricer.module.js";
 import { PickupAddressesModule } from "../pickup-addresses/pickup-addresses.module.js";
@@ -430,6 +432,8 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     ShopOrdersController,
   ],
   providers: [
+    // Le port d'une commande neuve suit toujours la marchandise, au prorata.
+    { provide: OrderDeliveryVatReader, useClass: ProrataDeliveryVatReader },
     OrderDrafting,
     OrderCutoffNotice,
     // L'arrêt du plan opposé à la passation (lot O3) ; ses deux ports viennent

@@ -78,11 +78,6 @@ export async function arrange(run: Run): Promise<void> {
       );
     }
   }
-  await http
-    .as(E2E_STAFF_SUB)
-    .put("/admin/order-delivery-vat")
-    .send({ mode: basket.deliveryVat })
-    .expect(204);
   ctx.app.get(PricingMaterialsCache).invalidate();
 }
 

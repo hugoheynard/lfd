@@ -39,9 +39,7 @@ import { fileURLToPath } from "node:url";
 export const DEBT = [
   "apps/lfc-ecommerce-frontend/src/app/client/mes-commandes/order-ticket.ts",
   "apps/lfc-ecommerce-frontend/src/app/client/mes-factures/invoices-page/invoices-page.ts",
-  "apps/lfd-backoffice-frontend/src/app/comptabilite/delivery-vat-examples.ts",
   "apps/lfd-backoffice-frontend/src/app/comptabilite/invoice-dossier/dossier-orders/dossier-orders.ts",
-  "apps/lfd-backoffice-frontend/src/app/comptabilite/order-delivery-vat/order-delivery-vat-page.ts",
   "apps/lfd-backoffice-frontend/src/app/fiche-client/detached-unpaid-card/detached-unpaid-card.ts",
   "apps/lfd-backoffice-frontend/src/app/fiche-client/facturation/billing-csv.ts",
   "apps/lfd-backoffice-frontend/src/app/fiche-client/facturation/billing-periods.ts",

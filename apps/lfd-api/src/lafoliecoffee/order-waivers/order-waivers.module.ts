@@ -1,15 +1,6 @@
 import { Module } from "@nestjs/common";
 
 import { OrderCutoffWaiverGate } from "../orders/domain/ports/order-cutoff-waiver.gate.js";
-import { OrderDeliveryVatReader } from "../orders/domain/ports/order-delivery-vat.reader.js";
-import { OrderDeliveryVatRepository } from "./domain/order-delivery-vat.repository.js";
-import { ReadOrderDeliveryVatHandler } from "./application/read-order-delivery-vat.handler.js";
-import { SaveOrderDeliveryVatHandler } from "./application/save-order-delivery-vat.handler.js";
-import { AdminOrderDeliveryVatController } from "./http/admin-order-delivery-vat.controller.js";
-import {
-  PrismaOrderDeliveryVatReader,
-  PrismaOrderDeliveryVatRepository,
-} from "./infrastructure/prisma-order-delivery-vat.repository.js";
 import { OrderLateFeeRepository } from "./domain/order-late-fee.repository.js";
 import { ClearOrderLateFeeHandler } from "./application/clear-order-late-fee.handler.js";
 import { GrantOrderCutoffWaiverHandler } from "./application/grant-order-cutoff-waiver.handler.js";
@@ -45,11 +36,7 @@ import {
  * Le second est exporté : c'est le contexte `orders` qui l'appelle.
  */
 @Module({
-  controllers: [
-    AdminOrderCutoffWaiversController,
-    AdminOrderLateFeeController,
-    AdminOrderDeliveryVatController,
-  ],
+  controllers: [AdminOrderCutoffWaiversController, AdminOrderLateFeeController],
   providers: [
     { provide: OrderCutoffWaiverRepository, useClass: PrismaOrderCutoffWaiverRepository },
     { provide: OrderCutoffWaiverGate, useClass: PrismaOrderCutoffWaiverGate },
@@ -64,13 +51,6 @@ import {
     // ouverte et le prix d'un retard, chacun par sa lecture.
     { provide: OpenWaiverReader, useClass: PrismaOpenWaiverReader },
     { provide: LateFeeSettingReader, useClass: RepositoryLateFeeSettingReader },
-    // La TVA de la livraison vit à côté de la surtaxe, son précédent (plan
-    // `architecture-tva-des-frais-de-port.md`, V2) : un réglage unique que la
-    // passation lit. Deux ports, encore.
-    { provide: OrderDeliveryVatRepository, useClass: PrismaOrderDeliveryVatRepository },
-    { provide: OrderDeliveryVatReader, useClass: PrismaOrderDeliveryVatReader },
-    SaveOrderDeliveryVatHandler,
-    ReadOrderDeliveryVatHandler,
     GrantOrderCutoffWaiverHandler,
     RevokeOrderCutoffWaiverHandler,
     ListOrderCutoffWaiversHandler,
@@ -79,6 +59,6 @@ import {
     ClearOrderLateFeeHandler,
     ReadOrderLateFeeHandler,
   ],
-  exports: [OrderCutoffWaiverGate, OrderDeliveryVatReader, OpenWaiverReader, LateFeeSettingReader],
+  exports: [OrderCutoffWaiverGate, OpenWaiverReader, LateFeeSettingReader],
 })
 export class OrderWaiversModule {}

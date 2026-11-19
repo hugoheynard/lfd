@@ -37,7 +37,6 @@ export const FIXED: GoldenBasket = {
     { sku: "SAL-001-1", quantity: 1 },
   ],
   fulfillment: "pickup",
-  deliveryVat: "standard",
   promotions: [],
   voucherSteps: 0,
   clientRevision: [],

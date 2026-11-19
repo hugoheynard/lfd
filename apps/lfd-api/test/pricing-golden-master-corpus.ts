@@ -31,8 +31,6 @@ const SKUS = [
 const REVISION_SKUS = ["VIE-004-1", "PAI-004-1"] as const;
 
 export type GoldenFulfillment = "pickup" | "courier_flat" | "courier_percent";
-export type DeliveryVatMode = "standard" | "follows_goods";
-
 export interface GoldenLine {
   readonly sku: string;
   readonly quantity: number;
@@ -42,7 +40,6 @@ export interface GoldenBasket {
   readonly key: string;
   readonly lines: readonly GoldenLine[];
   readonly fulfillment: GoldenFulfillment;
-  readonly deliveryVat: DeliveryVatMode;
   readonly promotions: readonly PromotionTermsPayload[];
   /** Paliers de bon de fidélité du particulier ; 0 = pas de bon. */
   readonly voucherSteps: number;
@@ -150,7 +147,9 @@ function drawBasket(rng: Drawer, index: number): GoldenBasket {
   const key = `b${String(index).padStart(2, "0")}`;
   const lines = drawLines(rng, SKUS, 4);
   const fulfillment = pick(rng, FULFILLMENTS);
-  const deliveryVat = rng.next() < 0.5 ? "standard" : "follows_goods";
+  // L'ancien tirage du mode de TVA du port, gardé pour que la graine tire les
+  // mêmes paniers : le port suit toujours la marchandise (Hugo, 2026-11-19).
+  rng.next();
   const promotions = drawPromotions(rng, key);
   const voucherSteps = rng.next() < 0.35 ? rng.int(1, 3) : 0;
   const added = drawLines(rng, REVISION_SKUS, 1);
@@ -164,7 +163,6 @@ function drawBasket(rng: Drawer, index: number): GoldenBasket {
     key,
     lines,
     fulfillment,
-    deliveryVat,
     promotions,
     voucherSteps,
     clientRevision,

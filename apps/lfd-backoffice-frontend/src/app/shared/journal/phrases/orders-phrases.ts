@@ -547,10 +547,10 @@ export const ORDERS_PHRASES = {
       ['before'],
     ),
 
-  // Le serveur ne publie le fait que sur un CHANGEMENT, et `before` vaut
-  // toujours un mode — le repli `standard` quand rien n'était réglé (handler
-  // `save-order-delivery-vat`, vérifié le 2026-10-08). « de … à … » donnerait
-  // « à au prorata » : la flèche dit l'avant → après sans buter sur l'article.
+  // Un fait du réglage retiré : la livraison suit toujours le prorata depuis le
+  // 2026-11-19, et ces faits ne se lisent plus que dans l'historique. `before`
+  // vaut toujours un mode. « de … à … » donnerait « à au prorata » : la flèche
+  // dit l'avant → après sans buter sur l'article.
   'order_delivery_vat.mode_set': (fact) =>
     byActor(
       fact,

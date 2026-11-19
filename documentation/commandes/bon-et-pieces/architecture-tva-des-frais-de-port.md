@@ -1,34 +1,31 @@
 # La TVA des frais de port
 
-**État : ✅ bâti le 2026-10-08, relu contre le code le 2026-10-12.** Ce document
-remplace `plan-tva-des-frais-de-port` (supprimé le 2026-10-12, historique
-dans git), dont la décision et la contradiction de `vitruve` sont reprises ici.
-Il touche **l'argent** : une phrase fausse ici se paie en TVA.
+**État : ✅ bâti.** Il touche **l'argent** : une phrase fausse ici se paie en TVA.
 
 ## 1. Ce que fait le système
 
-L'admin choisit, **globalement** (pas par zone), comment la TVA des frais de
-livraison est calculée :
+Les frais de livraison d'une commande **suivent toujours le taux de ce qu'ils
+transportent**, répartis au prorata de la base hors taxe de chaque taux (décidé
+par Hugo le 2026-11-19). Livrer ses propres marchandises est l'accessoire de la
+vente : le port entre dans le prix de la vente (CGI, art. 267) et suit le taux
+des produits. Aucun réglage ne le change.
 
-| Mode (`order_delivery_vat.mode`) | Effet                                                                                   |
-| -------------------------------- | --------------------------------------------------------------------------------------- |
-| `standard`                       | le port est taxé au taux normal, `DELIVERY_VAT_RATE = 20` (`packages/money/src/vat.ts`) |
-| `follows_goods`                  | le port, accessoire de la vente, **suit le taux de ce qu'il transporte**, au prorata    |
-
-Décisions de Hugo : le choix (2026-09-21), global et non par zone (2026-10-08).
-Le mode est **figé sur chaque commande** à la passation ; une commande passée ne
-se réécrit jamais.
+Un panier tout à 5,5 % a donc un port à 5,5 % ; un panier mêlé répartit le port
+entre ses taux, au poids hors taxe de chacun.
 
 ```mermaid
 flowchart LR
-    A["Comptabilité › TVA de la livraison<br/>PUT /admin/order-delivery-vat<br/>(b2b_accounting)"] --> T[("order_delivery_vat<br/>1 ligne, id = singleton")]
-    T --> R["OrderDeliveryVatReader.current()<br/>pas de ligne = standard"]
-    R --> D["OrderDrafting<br/>passation, 4 portes"]
-    R --> Q["ShopCartQuotingService<br/>devis de la boutique"]
-    D --> O[("orders.delivery_vat_mode<br/>figé · NULL = standard")]
+    P["ProrataDeliveryVatReader<br/>toujours follows_goods"] --> D["OrderDrafting<br/>passation, 4 portes"]
+    P --> Q["ShopCartQuotingService<br/>devis de la boutique"]
+    D --> O[("orders.delivery_vat_mode<br/>figé")]
     D --> V["ventilateVat (@lfd/money)<br/>seule définition du TTC"]
     Q --> V
 ```
+
+Le mode reste **figé sur chaque commande** à sa passation, et une commande
+passée ne se réécrit jamais : celles passées sous le taux normal gardent
+`standard` (ou `NULL`, d'avant tout mode), et le moteur sait toujours les
+calculer.
 
 ## 2. Le calcul — un seul endroit
 
@@ -43,22 +40,22 @@ quand une remise ou un bon de fidélité absorbe toute la marchandise, le résul
 reste défini. **Aucun arrondi neuf** : la TVA de chaque taux est arrondie une
 fois. Sous-total nul : l'extra prend le taux normal.
 
-## 3. Le réglage
+## 3. Le mode des commandes neuves
 
-- **Table `order_delivery_vat`** (`orders.prisma`, modèle `OrderDeliveryVat`), une
-  ligne `singleton`, colonne `mode` tenue par un CHECK
-  (`standard` | `follows_goods`) ; migration `20261008120000_la_tva_de_la_livraison`.
-- **Le lecteur fait le repli** : pas de ligne = `standard`. Enregistrer le taux
-  normal sur un réglage jamais posé n'écrit aucun fait.
-- **Droit : `b2b_accounting`**, aucune ressource neuve. Routes
-  `GET` / `PUT /admin/order-delivery-vat` (`order-waivers/http/admin-order-delivery-vat.controller.ts`).
-- **Fait de journal** : `order_delivery_vat.mode_set`
-  (`packages/contracts/src/journal-facts/orders-production.ts`).
-- **Écran** : `apps/lfd-backoffice-frontend/src/app/comptabilite/order-delivery-vat/`.
+- **Le port de lecture** `OrderDeliveryVatReader`
+  (`orders/domain/ports/order-delivery-vat.reader.ts`) n'a qu'une
+  implémentation, `ProrataDeliveryVatReader`, liée dans `orders.module.ts` :
+  elle rend toujours `follows_goods`. Le port reste pour que les tests du moteur
+  éprouvent aussi `standard`.
+- **Aucun écran, aucune route** : l'ancien réglage de la comptabilité
+  (Comptabilité › « TVA de la livraison », `GET` / `PUT /admin/order-delivery-vat`)
+  est retiré. La table `order_delivery_vat` reste en base, plus lue ni écrite.
+- **Les faits passés** `order_delivery_vat.mode_set` se lisent encore dans le
+  journal (`orders-phrases.ts`) ; aucun nouveau n'est écrit.
 
 ## 4. Figé sur la commande
 
-`orders.delivery_vat_mode` est nullable : `NULL` = commande d'avant le réglage =
+`orders.delivery_vat_mode` est nullable : `NULL` = commande d'avant tout mode =
 taux normal. Les quatre portes de passation (client, équipe, boutique, devis pro)
 passent par `OrderDrafting`, qui lit le mode courant (`order-drafting.service.ts`)
 et le fait persister (`prisma-order.repository.ts`).
@@ -76,17 +73,18 @@ recalcule.
 
 ## 5. Le devis répond comme la passation
 
-`shop-cart-quoting.service.ts` lit le même lecteur (`deliveryExtraOf`) ; l'effet
-d'un bon de fidélité hérite de l'entrée du devis. Si le réglage change entre un
-devis et sa passation, le total change — comme pour un prix : la passation fait
-foi. Éprouvé : `quote-order-parity.e2e-spec.ts` et `order-delivery-vat.e2e-spec.ts`
-(`apps/lfd-api/test/`).
+`shop-cart-quoting.service.ts` lit le même port (`deliveryExtraOf`) ; l'effet
+d'un bon de fidélité hérite de l'entrée du devis. Éprouvé :
+`quote-order-parity.e2e-spec.ts` (`apps/lfd-api/test/`), et le golden master du
+chiffrage, dont chaque panier livré a son port au prorata.
 
-## 6. Reste à faire (relevé le 2026-10-12)
+## 6. Reste à faire
 
 - **Non vérifié, à confirmer par le cabinet comptable** : la justesse fiscale du
   prorata sur la base **brute** plutôt que nette. Identiques tant que le net est
   positif.
+- **Un transporteur externe**, facturé comme une prestation distincte, relèverait
+  du taux normal : le système ne le connaît pas aujourd'hui.
 - **La surtaxe de retard** reste hors de ce chantier : son taux est figé à part
   (`late_fee_adjustment`) et sa nature — indemnité ou supplément de prix — est
   une autre question.

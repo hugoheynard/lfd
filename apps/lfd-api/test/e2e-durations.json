@@ -368,7 +368,6 @@
   "test/order-customer-cancel.e2e-spec.ts": 15810,
   "test/order-cutoff-switch.e2e-spec.ts": 7887,
   "test/order-cutoffs.e2e-spec.ts": 12512,
-  "test/order-delivery-vat.e2e-spec.ts": 3231,
   "test/order-discounts-backfill.e2e-spec.ts": 6730,
   "test/order-discounts-control.e2e-spec.ts": 6219,
   "test/order-discounts-read.e2e-spec.ts": 5292,

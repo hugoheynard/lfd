@@ -272,7 +272,7 @@ describe("le devis de la vitrine", () => {
     expect(view.discountAdjustment).toEqual({ mode: "amount", cents: 5_000 });
   });
 
-  it("taxe le coursier, HORS remise, au taux du transport", async () => {
+  it("taxe le coursier, HORS remise, au taux de ce qu'il transporte", async () => {
     await seedCatalogue();
     await seedZone();
 
@@ -285,12 +285,15 @@ describe("le devis de la vitrine", () => {
 
     expect(view.deliveryFeeCents).toBe(2_000);
     expect(view.discountCents).toBe(0);
-    // La ligne à 20 % est celle du transport, et elle n'existait pas au panier :
-    // le coursier n'était pas taxé, d'où quatre euros d'écart sur vingt.
-    expect(view.vat).toContainEqual({ rate: 20, amountCents: 400 });
-    // Voie B (2026-10-27, plan du centime § 4) : 25,92 € TTC de marchandises + 20 € HT
-    // de port convertis à 20 % = 24,00 € TTC.
-    expect(view.totalCents).toBe(2_592 + 2_400);
+    // Le port suit la marchandise : il se répartit entre les taux du panier
+    // (5,5 % et 10 %), et aucune ligne à 20 % n'apparaît.
+    expect(view.vat).toEqual([
+      { rate: 5.5, amountCents: 121 },
+      { rate: 10, amountCents: 222 },
+    ]);
+    // 25,92 € TTC de marchandises + 20 € HT de port à leurs taux = 21,56 € TTC
+    // (7,8 % en moyenne, entre 5,5 % et 10 %).
+    expect(view.totalCents).toBe(2_592 + 2_156);
   });
 
   /**

@@ -53,7 +53,6 @@ const PICKUP: GoldenBasket = {
     { sku: "PAI-001-1", quantity: 2 },
   ],
   fulfillment: "pickup",
-  deliveryVat: "standard",
   promotions: [],
   voucherSteps: 0,
   clientRevision: [],

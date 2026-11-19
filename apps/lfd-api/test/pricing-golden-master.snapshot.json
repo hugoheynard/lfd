@@ -3718,7 +3718,7 @@
       "code": null,
       "amounts": {
         "vatMethod": null,
-        "subtotalCents": 18772,
+        "subtotalCents": 18773,
         "discountCents": 0,
         "discounts": [],
         "voucherCents": 0,
@@ -3727,19 +3727,15 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 895
+            "amountCents": 989
           },
           {
             "rate": 10,
-            "amountCents": 252
-          },
-          {
-            "rate": 20,
-            "amountCents": 400
+            "amountCents": 280
           }
         ],
-        "vatCents": 1547,
-        "totalCents": 22319,
+        "vatCents": 1269,
+        "totalCents": 22042,
         "lines": [
           {
             "sku": "SAL-001-1",
@@ -3752,7 +3748,7 @@
             "sku": "VIE-003-1",
             "quantity": 10,
             "unitPriceMillicents": 375355,
-            "lineTotalCents": 3753,
+            "lineTotalCents": 3754,
             "lineTotalTtcCents": 3960
           },
           {
@@ -3783,19 +3779,15 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 715
+            "amountCents": 810
           },
           {
             "rate": 10,
-            "amountCents": 210
-          },
-          {
-            "rate": 20,
-            "amountCents": 400
+            "amountCents": 238
           }
         ],
-        "vatCents": 1325,
-        "totalCents": 18425,
+        "vatCents": 1048,
+        "totalCents": 18148,
         "lines": [
           {
             "sku": "SAL-001-1",
@@ -3839,19 +3831,15 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 715
+            "amountCents": 810
           },
           {
             "rate": 10,
-            "amountCents": 210
-          },
-          {
-            "rate": 20,
-            "amountCents": 400
+            "amountCents": 238
           }
         ],
-        "vatCents": 1325,
-        "totalCents": 18425,
+        "vatCents": 1048,
+        "totalCents": 18148,
         "lines": [
           {
             "sku": "SAL-001-1",
@@ -3886,7 +3874,7 @@
       "code": null,
       "amounts": {
         "vatMethod": null,
-        "subtotalCents": 18772,
+        "subtotalCents": 18773,
         "discountCents": 0,
         "discounts": [],
         "voucherCents": 0,
@@ -3895,19 +3883,15 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 895
+            "amountCents": 989
           },
           {
             "rate": 10,
-            "amountCents": 252
-          },
-          {
-            "rate": 20,
-            "amountCents": 400
+            "amountCents": 280
           }
         ],
-        "vatCents": 1547,
-        "totalCents": 22319,
+        "vatCents": 1269,
+        "totalCents": 22042,
         "lines": [
           {
             "sku": "SAL-001-1",
@@ -3920,7 +3904,7 @@
             "sku": "VIE-003-1",
             "quantity": 10,
             "unitPriceMillicents": 375355,
-            "lineTotalCents": 3753,
+            "lineTotalCents": 3754,
             "lineTotalTtcCents": 3960
           },
           {
@@ -4077,19 +4061,15 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 715
+            "amountCents": 810
           },
           {
             "rate": 10,
-            "amountCents": 210
-          },
-          {
-            "rate": 20,
-            "amountCents": 400
+            "amountCents": 238
           }
         ],
-        "vatCents": 1325,
-        "totalCents": 18425,
+        "vatCents": 1048,
+        "totalCents": 18148,
         "lines": [
           {
             "sku": "SAL-001-1",
@@ -4130,19 +4110,15 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 715
+            "amountCents": 810
           },
           {
             "rate": 10,
-            "amountCents": 210
-          },
-          {
-            "rate": 20,
-            "amountCents": 400
+            "amountCents": 238
           }
         ],
-        "vatCents": 1325,
-        "totalCents": 18425,
+        "vatCents": 1048,
+        "totalCents": 18148,
         "lines": [
           {
             "sku": "SAL-001-1",
@@ -4183,19 +4159,15 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 715
+            "amountCents": 810
           },
           {
             "rate": 10,
-            "amountCents": 210
-          },
-          {
-            "rate": 20,
-            "amountCents": 400
+            "amountCents": 238
           }
         ],
-        "vatCents": 1325,
-        "totalCents": 18425,
+        "vatCents": 1048,
+        "totalCents": 18148,
         "lines": [
           {
             "sku": "SAL-001-1",
@@ -4236,19 +4208,15 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 715
+            "amountCents": 810
           },
           {
             "rate": 10,
-            "amountCents": 210
-          },
-          {
-            "rate": 20,
-            "amountCents": 400
+            "amountCents": 238
           }
         ],
-        "vatCents": 1325,
-        "totalCents": 18425,
+        "vatCents": 1048,
+        "totalCents": 18148,
         "lines": [
           {
             "sku": "SAL-001-1",
@@ -4289,19 +4257,15 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 715
+            "amountCents": 810
           },
           {
             "rate": 10,
-            "amountCents": 210
-          },
-          {
-            "rate": 20,
-            "amountCents": 400
+            "amountCents": 238
           }
         ],
-        "vatCents": 1325,
-        "totalCents": 18425,
+        "vatCents": 1048,
+        "totalCents": 18148,
         "lines": [
           {
             "sku": "SAL-001-1",
@@ -4333,7 +4297,7 @@
       "code": null,
       "amounts": {
         "vatMethod": "exact_ht",
-        "subtotalCents": 18772,
+        "subtotalCents": 18773,
         "discountCents": 0,
         "discounts": [],
         "voucherCents": 0,
@@ -4342,19 +4306,15 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 895
+            "amountCents": 989
           },
           {
             "rate": 10,
-            "amountCents": 252
-          },
-          {
-            "rate": 20,
-            "amountCents": 400
+            "amountCents": 280
           }
         ],
-        "vatCents": 1547,
-        "totalCents": 22319,
+        "vatCents": 1269,
+        "totalCents": 22042,
         "lines": [
           {
             "sku": "SAL-001-1",
@@ -4367,7 +4327,7 @@
             "sku": "VIE-003-1",
             "quantity": 10,
             "unitPriceMillicents": 375355,
-            "lineTotalCents": 3753,
+            "lineTotalCents": 3754,
             "lineTotalTtcCents": 3960
           },
           {
@@ -4386,7 +4346,7 @@
       "code": null,
       "amounts": {
         "vatMethod": "exact_ht",
-        "subtotalCents": 18772,
+        "subtotalCents": 18773,
         "discountCents": 0,
         "discounts": [],
         "voucherCents": 0,
@@ -4395,19 +4355,15 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 895
+            "amountCents": 989
           },
           {
             "rate": 10,
-            "amountCents": 252
-          },
-          {
-            "rate": 20,
-            "amountCents": 400
+            "amountCents": 280
           }
         ],
-        "vatCents": 1547,
-        "totalCents": 22319,
+        "vatCents": 1269,
+        "totalCents": 22042,
         "lines": [
           {
             "sku": "SAL-001-1",
@@ -4420,7 +4376,7 @@
             "sku": "VIE-003-1",
             "quantity": 10,
             "unitPriceMillicents": 375355,
-            "lineTotalCents": 3753,
+            "lineTotalCents": 3754,
             "lineTotalTtcCents": 3960
           },
           {
@@ -4446,8 +4402,8 @@
         "deliveryFeeCents": 2000,
         "lateFeeCents": 0,
         "vat": null,
-        "vatCents": 1518,
-        "totalCents": 22118,
+        "vatCents": 1238,
+        "totalCents": 21838,
         "lines": [
           {
             "sku": "SAL-001-1",
@@ -4480,8 +4436,8 @@
         ]
       },
       "notes": {
-        "previousTotalCents": 18425,
-        "differenceCents": 3693,
+        "previousTotalCents": 18148,
+        "differenceCents": 3690,
         "lineRefusals": 0
       }
     },
@@ -4497,8 +4453,8 @@
         "deliveryFeeCents": 2000,
         "lateFeeCents": 0,
         "vat": null,
-        "vatCents": 775,
-        "totalCents": 7875,
+        "vatCents": 522,
+        "totalCents": 7622,
         "lines": [
           {
             "sku": "SAL-001-1",
@@ -4517,8 +4473,8 @@
         ]
       },
       "notes": {
-        "previousTotalCents": 22118,
-        "differenceCents": -14243,
+        "previousTotalCents": 21838,
+        "differenceCents": -14216,
         "lineRefusals": 0
       }
     },
@@ -4536,19 +4492,15 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 908
+            "amountCents": 1005
           },
           {
             "rate": 10,
-            "amountCents": 210
-          },
-          {
-            "rate": 20,
-            "amountCents": 400
+            "amountCents": 233
           }
         ],
-        "vatCents": 1518,
-        "totalCents": 22118,
+        "vatCents": 1238,
+        "totalCents": 21838,
         "lines": [
           {
             "sku": "SAL-001-1",
@@ -4596,19 +4548,15 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 165
+            "amountCents": 230
           },
           {
             "rate": 10,
-            "amountCents": 210
-          },
-          {
-            "rate": 20,
-            "amountCents": 400
+            "amountCents": 292
           }
         ],
-        "vatCents": 775,
-        "totalCents": 7875,
+        "vatCents": 522,
+        "totalCents": 7622,
         "lines": [
           {
             "sku": "SAL-001-1",
@@ -4642,19 +4590,15 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 715
+            "amountCents": 810
           },
           {
             "rate": 10,
-            "amountCents": 210
-          },
-          {
-            "rate": 20,
-            "amountCents": 400
+            "amountCents": 238
           }
         ],
-        "vatCents": 1325,
-        "totalCents": 18425,
+        "vatCents": 1048,
+        "totalCents": 18148,
         "lines": [
           {
             "sku": "SAL-001-1",
@@ -5428,15 +5372,11 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 610
-          },
-          {
-            "rate": 20,
-            "amountCents": 400
+            "amountCents": 720
           }
         ],
-        "vatCents": 1010,
-        "totalCents": 14084,
+        "vatCents": 720,
+        "totalCents": 13794,
         "lines": [
           {
             "sku": "PAI-002-1",
@@ -5487,15 +5427,11 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 487
-          },
-          {
-            "rate": 20,
-            "amountCents": 400
+            "amountCents": 597
           }
         ],
-        "vatCents": 887,
-        "totalCents": 11747,
+        "vatCents": 597,
+        "totalCents": 11457,
         "lines": [
           {
             "sku": "PAI-002-1",
@@ -5546,15 +5482,11 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 487
-          },
-          {
-            "rate": 20,
-            "amountCents": 400
+            "amountCents": 597
           }
         ],
-        "vatCents": 887,
-        "totalCents": 11747,
+        "vatCents": 597,
+        "totalCents": 11457,
         "lines": [
           {
             "sku": "PAI-002-1",
@@ -5605,15 +5537,11 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 610
-          },
-          {
-            "rate": 20,
-            "amountCents": 400
+            "amountCents": 720
           }
         ],
-        "vatCents": 1010,
-        "totalCents": 14084,
+        "vatCents": 720,
+        "totalCents": 13794,
         "lines": [
           {
             "sku": "PAI-002-1",
@@ -5811,15 +5739,11 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 487
-          },
-          {
-            "rate": 20,
-            "amountCents": 400
+            "amountCents": 597
           }
         ],
-        "vatCents": 887,
-        "totalCents": 11747,
+        "vatCents": 597,
+        "totalCents": 11457,
         "lines": [
           {
             "sku": "PAI-002-1",
@@ -5867,15 +5791,11 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 487
-          },
-          {
-            "rate": 20,
-            "amountCents": 400
+            "amountCents": 597
           }
         ],
-        "vatCents": 887,
-        "totalCents": 11747,
+        "vatCents": 597,
+        "totalCents": 11457,
         "lines": [
           {
             "sku": "PAI-002-1",
@@ -5923,15 +5843,11 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 487
-          },
-          {
-            "rate": 20,
-            "amountCents": 400
+            "amountCents": 597
           }
         ],
-        "vatCents": 887,
-        "totalCents": 11747,
+        "vatCents": 597,
+        "totalCents": 11457,
         "lines": [
           {
             "sku": "PAI-002-1",
@@ -5979,15 +5895,11 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 487
-          },
-          {
-            "rate": 20,
-            "amountCents": 400
+            "amountCents": 597
           }
         ],
-        "vatCents": 887,
-        "totalCents": 11747,
+        "vatCents": 597,
+        "totalCents": 11457,
         "lines": [
           {
             "sku": "PAI-002-1",
@@ -6035,15 +5947,11 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 487
-          },
-          {
-            "rate": 20,
-            "amountCents": 400
+            "amountCents": 597
           }
         ],
-        "vatCents": 887,
-        "totalCents": 11747,
+        "vatCents": 597,
+        "totalCents": 11457,
         "lines": [
           {
             "sku": "PAI-002-1",
@@ -6091,15 +5999,11 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 610
-          },
-          {
-            "rate": 20,
-            "amountCents": 400
+            "amountCents": 720
           }
         ],
-        "vatCents": 1010,
-        "totalCents": 14084,
+        "vatCents": 720,
+        "totalCents": 13794,
         "lines": [
           {
             "sku": "PAI-002-1",
@@ -6147,15 +6051,11 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 610
-          },
-          {
-            "rate": 20,
-            "amountCents": 400
+            "amountCents": 720
           }
         ],
-        "vatCents": 1010,
-        "totalCents": 14084,
+        "vatCents": 720,
+        "totalCents": 13794,
         "lines": [
           {
             "sku": "PAI-002-1",
@@ -6201,8 +6101,8 @@
         "deliveryFeeCents": 2000,
         "lateFeeCents": 0,
         "vat": null,
-        "vatCents": 1080,
-        "totalCents": 15440,
+        "vatCents": 790,
+        "totalCents": 15150,
         "lines": [
           {
             "sku": "PAI-002-1",
@@ -6242,7 +6142,7 @@
         ]
       },
       "notes": {
-        "previousTotalCents": 11747,
+        "previousTotalCents": 11457,
         "differenceCents": 3693,
         "lineRefusals": 0
       }
@@ -6259,8 +6159,8 @@
         "deliveryFeeCents": 2000,
         "lateFeeCents": 0,
         "vat": null,
-        "vatCents": 828,
-        "totalCents": 10608,
+        "vatCents": 538,
+        "totalCents": 10318,
         "lines": [
           {
             "sku": "VIE-001-1",
@@ -6286,7 +6186,7 @@
         ]
       },
       "notes": {
-        "previousTotalCents": 15440,
+        "previousTotalCents": 15150,
         "differenceCents": -4832,
         "lineRefusals": 0
       }
@@ -6305,15 +6205,11 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 680
-          },
-          {
-            "rate": 20,
-            "amountCents": 400
+            "amountCents": 790
           }
         ],
-        "vatCents": 1080,
-        "totalCents": 15440,
+        "vatCents": 790,
+        "totalCents": 15150,
         "lines": [
           {
             "sku": "PAI-002-1",
@@ -6368,15 +6264,11 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 428
-          },
-          {
-            "rate": 20,
-            "amountCents": 400
+            "amountCents": 538
           }
         ],
-        "vatCents": 828,
-        "totalCents": 10608,
+        "vatCents": 538,
+        "totalCents": 10318,
         "lines": [
           {
             "sku": "VIE-001-1",
@@ -6417,15 +6309,11 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 487
-          },
-          {
-            "rate": 20,
-            "amountCents": 400
+            "amountCents": 597
           }
         ],
-        "vatCents": 887,
-        "totalCents": 11747,
+        "vatCents": 597,
+        "totalCents": 11457,
         "lines": [
           {
             "sku": "PAI-002-1",
@@ -7258,15 +7146,11 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 359
-          },
-          {
-            "rate": 20,
-            "amountCents": 400
+            "amountCents": 469
           }
         ],
-        "vatCents": 759,
-        "totalCents": 9271,
+        "vatCents": 469,
+        "totalCents": 8981,
         "lines": [
           {
             "sku": "PAI-002-1",
@@ -7317,15 +7201,11 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 332
-          },
-          {
-            "rate": 20,
-            "amountCents": 400
+            "amountCents": 442
           }
         ],
-        "vatCents": 732,
-        "totalCents": 8772,
+        "vatCents": 442,
+        "totalCents": 8482,
         "lines": [
           {
             "sku": "PAI-002-1",
@@ -7376,15 +7256,11 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 287
-          },
-          {
-            "rate": 20,
-            "amountCents": 400
+            "amountCents": 397
           }
         ],
-        "vatCents": 687,
-        "totalCents": 7899,
+        "vatCents": 397,
+        "totalCents": 7609,
         "lines": [
           {
             "sku": "PAI-002-1",
@@ -7435,15 +7311,11 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 359
-          },
-          {
-            "rate": 20,
-            "amountCents": 400
+            "amountCents": 469
           }
         ],
-        "vatCents": 759,
-        "totalCents": 9271,
+        "vatCents": 469,
+        "totalCents": 8981,
         "lines": [
           {
             "sku": "PAI-002-1",
@@ -7641,15 +7513,11 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 332
-          },
-          {
-            "rate": 20,
-            "amountCents": 400
+            "amountCents": 442
           }
         ],
-        "vatCents": 732,
-        "totalCents": 8772,
+        "vatCents": 442,
+        "totalCents": 8482,
         "lines": [
           {
             "sku": "PAI-002-1",
@@ -7697,15 +7565,11 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 332
-          },
-          {
-            "rate": 20,
-            "amountCents": 400
+            "amountCents": 442
           }
         ],
-        "vatCents": 732,
-        "totalCents": 8772,
+        "vatCents": 442,
+        "totalCents": 8482,
         "lines": [
           {
             "sku": "PAI-002-1",
@@ -7753,15 +7617,11 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 332
-          },
-          {
-            "rate": 20,
-            "amountCents": 400
+            "amountCents": 442
           }
         ],
-        "vatCents": 732,
-        "totalCents": 8772,
+        "vatCents": 442,
+        "totalCents": 8482,
         "lines": [
           {
             "sku": "PAI-002-1",
@@ -7809,15 +7669,11 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 332
-          },
-          {
-            "rate": 20,
-            "amountCents": 400
+            "amountCents": 442
           }
         ],
-        "vatCents": 732,
-        "totalCents": 8772,
+        "vatCents": 442,
+        "totalCents": 8482,
         "lines": [
           {
             "sku": "PAI-002-1",
@@ -7865,15 +7721,11 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 287
-          },
-          {
-            "rate": 20,
-            "amountCents": 400
+            "amountCents": 397
           }
         ],
-        "vatCents": 687,
-        "totalCents": 7899,
+        "vatCents": 397,
+        "totalCents": 7609,
         "lines": [
           {
             "sku": "PAI-002-1",
@@ -7921,15 +7773,11 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 359
-          },
-          {
-            "rate": 20,
-            "amountCents": 400
+            "amountCents": 469
           }
         ],
-        "vatCents": 759,
-        "totalCents": 9271,
+        "vatCents": 469,
+        "totalCents": 8981,
         "lines": [
           {
             "sku": "PAI-002-1",
@@ -7977,15 +7825,11 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 359
-          },
-          {
-            "rate": 20,
-            "amountCents": 400
+            "amountCents": 469
           }
         ],
-        "vatCents": 759,
-        "totalCents": 9271,
+        "vatCents": 469,
+        "totalCents": 8981,
         "lines": [
           {
             "sku": "PAI-002-1",
@@ -8031,8 +7875,8 @@
         "deliveryFeeCents": 2000,
         "lateFeeCents": 0,
         "vat": null,
-        "vatCents": 864,
-        "totalCents": 11304,
+        "vatCents": 574,
+        "totalCents": 11014,
         "lines": [
           {
             "sku": "PAI-002-1",
@@ -8072,7 +7916,7 @@
         ]
       },
       "notes": {
-        "previousTotalCents": 8772,
+        "previousTotalCents": 8482,
         "differenceCents": 2532,
         "lineRefusals": 0
       }
@@ -8089,8 +7933,8 @@
         "deliveryFeeCents": 2000,
         "lateFeeCents": 0,
         "vat": null,
-        "vatCents": 677,
-        "totalCents": 7717,
+        "vatCents": 387,
+        "totalCents": 7427,
         "lines": [
           {
             "sku": "PAI-002-1",
@@ -8116,7 +7960,7 @@
         ]
       },
       "notes": {
-        "previousTotalCents": 11304,
+        "previousTotalCents": 11014,
         "differenceCents": -3587,
         "lineRefusals": 0
       }
@@ -8135,15 +7979,11 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 464
-          },
-          {
-            "rate": 20,
-            "amountCents": 400
+            "amountCents": 574
           }
         ],
-        "vatCents": 864,
-        "totalCents": 11304,
+        "vatCents": 574,
+        "totalCents": 11014,
         "lines": [
           {
             "sku": "PAI-002-1",
@@ -8198,15 +8038,11 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 277
-          },
-          {
-            "rate": 20,
-            "amountCents": 400
+            "amountCents": 387
           }
         ],
-        "vatCents": 677,
-        "totalCents": 7717,
+        "vatCents": 387,
+        "totalCents": 7427,
         "lines": [
           {
             "sku": "PAI-002-1",
@@ -8247,15 +8083,11 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 332
-          },
-          {
-            "rate": 20,
-            "amountCents": 400
+            "amountCents": 442
           }
         ],
-        "vatCents": 732,
-        "totalCents": 8772,
+        "vatCents": 442,
+        "totalCents": 8482,
         "lines": [
           {
             "sku": "PAI-002-1",
@@ -9083,23 +8915,19 @@
         "discountCents": 0,
         "discounts": [],
         "voucherCents": 0,
-        "deliveryFeeCents": 656,
+        "deliveryFeeCents": 736,
         "lateFeeCents": null,
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 267
+            "amountCents": 294
           },
           {
             "rate": 10,
-            "amountCents": 252
-          },
-          {
-            "rate": 20,
-            "amountCents": 132
+            "amountCents": 277
           }
         ],
-        "vatCents": 651,
+        "vatCents": 571,
         "totalCents": 8670,
         "lines": [
           {
@@ -9151,19 +8979,15 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 213
+            "amountCents": 235
           },
           {
             "rate": 10,
-            "amountCents": 210
-          },
-          {
-            "rate": 20,
-            "amountCents": 120
+            "amountCents": 231
           }
         ],
-        "vatCents": 543,
-        "totalCents": 7121,
+        "vatCents": 466,
+        "totalCents": 7044,
         "lines": [
           {
             "sku": "PAI-002-1",
@@ -9214,19 +9038,15 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 213
+            "amountCents": 235
           },
           {
             "rate": 10,
-            "amountCents": 210
-          },
-          {
-            "rate": 20,
-            "amountCents": 120
+            "amountCents": 231
           }
         ],
-        "vatCents": 543,
-        "totalCents": 7121,
+        "vatCents": 466,
+        "totalCents": 7044,
         "lines": [
           {
             "sku": "PAI-002-1",
@@ -9272,23 +9092,19 @@
         "discountCents": 199,
         "discounts": [199],
         "voucherCents": 0,
-        "deliveryFeeCents": 656,
+        "deliveryFeeCents": 736,
         "lateFeeCents": null,
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 256
+            "amountCents": 283
           },
           {
             "rate": 10,
-            "amountCents": 252
-          },
-          {
-            "rate": 20,
-            "amountCents": 132
+            "amountCents": 277
           }
         ],
-        "vatCents": 640,
+        "vatCents": 560,
         "totalCents": 8460,
         "lines": [
           {
@@ -9487,19 +9303,15 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 213
+            "amountCents": 235
           },
           {
             "rate": 10,
-            "amountCents": 210
-          },
-          {
-            "rate": 20,
-            "amountCents": 120
+            "amountCents": 231
           }
         ],
-        "vatCents": 543,
-        "totalCents": 7121,
+        "vatCents": 466,
+        "totalCents": 7044,
         "lines": [
           {
             "sku": "PAI-002-1",
@@ -9547,19 +9359,15 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 213
+            "amountCents": 235
           },
           {
             "rate": 10,
-            "amountCents": 210
-          },
-          {
-            "rate": 20,
-            "amountCents": 120
+            "amountCents": 231
           }
         ],
-        "vatCents": 543,
-        "totalCents": 7121,
+        "vatCents": 466,
+        "totalCents": 7044,
         "lines": [
           {
             "sku": "PAI-002-1",
@@ -9607,19 +9415,15 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 213
+            "amountCents": 235
           },
           {
             "rate": 10,
-            "amountCents": 210
-          },
-          {
-            "rate": 20,
-            "amountCents": 120
+            "amountCents": 231
           }
         ],
-        "vatCents": 543,
-        "totalCents": 7121,
+        "vatCents": 466,
+        "totalCents": 7044,
         "lines": [
           {
             "sku": "PAI-002-1",
@@ -9667,19 +9471,15 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 213
+            "amountCents": 235
           },
           {
             "rate": 10,
-            "amountCents": 210
-          },
-          {
-            "rate": 20,
-            "amountCents": 120
+            "amountCents": 231
           }
         ],
-        "vatCents": 543,
-        "totalCents": 7121,
+        "vatCents": 466,
+        "totalCents": 7044,
         "lines": [
           {
             "sku": "PAI-002-1",
@@ -9727,19 +9527,15 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 213
+            "amountCents": 235
           },
           {
             "rate": 10,
-            "amountCents": 210
-          },
-          {
-            "rate": 20,
-            "amountCents": 120
+            "amountCents": 231
           }
         ],
-        "vatCents": 543,
-        "totalCents": 7121,
+        "vatCents": 466,
+        "totalCents": 7044,
         "lines": [
           {
             "sku": "PAI-002-1",
@@ -9782,23 +9578,19 @@
         "discountCents": 199,
         "discounts": [199],
         "voucherCents": 0,
-        "deliveryFeeCents": 656,
+        "deliveryFeeCents": 736,
         "lateFeeCents": 0,
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 256
+            "amountCents": 283
           },
           {
             "rate": 10,
-            "amountCents": 252
-          },
-          {
-            "rate": 20,
-            "amountCents": 132
+            "amountCents": 277
           }
         ],
-        "vatCents": 640,
+        "vatCents": 560,
         "totalCents": 8460,
         "lines": [
           {
@@ -9842,23 +9634,19 @@
         "discountCents": 0,
         "discounts": [],
         "voucherCents": 0,
-        "deliveryFeeCents": 656,
+        "deliveryFeeCents": 736,
         "lateFeeCents": 0,
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 267
+            "amountCents": 294
           },
           {
             "rate": 10,
-            "amountCents": 252
-          },
-          {
-            "rate": 20,
-            "amountCents": 132
+            "amountCents": 277
           }
         ],
-        "vatCents": 651,
+        "vatCents": 571,
         "totalCents": 8670,
         "lines": [
           {
@@ -9905,8 +9693,8 @@
         "deliveryFeeCents": 1038,
         "lateFeeCents": 0,
         "vat": null,
-        "vatCents": 873,
-        "totalCents": 12291,
+        "vatCents": 732,
+        "totalCents": 12150,
         "lines": [
           {
             "sku": "PAI-002-1",
@@ -9946,8 +9734,8 @@
         ]
       },
       "notes": {
-        "previousTotalCents": 7121,
-        "differenceCents": 5170,
+        "previousTotalCents": 7044,
+        "differenceCents": 5106,
         "lineRefusals": 0
       }
     },
@@ -9963,8 +9751,8 @@
         "deliveryFeeCents": 388,
         "lateFeeCents": 0,
         "vat": null,
-        "vatCents": 291,
-        "totalCents": 4559,
+        "vatCents": 235,
+        "totalCents": 4503,
         "lines": [
           {
             "sku": "PAI-002-1",
@@ -9990,8 +9778,8 @@
         ]
       },
       "notes": {
-        "previousTotalCents": 12291,
-        "differenceCents": -7732,
+        "previousTotalCents": 12150,
+        "differenceCents": -7647,
         "lineRefusals": 0
       }
     },
@@ -10009,19 +9797,15 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 455
+            "amountCents": 501
           },
           {
             "rate": 10,
-            "amountCents": 210
-          },
-          {
-            "rate": 20,
-            "amountCents": 208
+            "amountCents": 231
           }
         ],
-        "vatCents": 873,
-        "totalCents": 12291,
+        "vatCents": 732,
+        "totalCents": 12150,
         "lines": [
           {
             "sku": "PAI-002-1",
@@ -10076,15 +9860,11 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 213
-          },
-          {
-            "rate": 20,
-            "amountCents": 78
+            "amountCents": 235
           }
         ],
-        "vatCents": 291,
-        "totalCents": 4559,
+        "vatCents": 235,
+        "totalCents": 4503,
         "lines": [
           {
             "sku": "PAI-002-1",
@@ -10125,19 +9905,15 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 213
+            "amountCents": 235
           },
           {
             "rate": 10,
-            "amountCents": 210
-          },
-          {
-            "rate": 20,
-            "amountCents": 120
+            "amountCents": 231
           }
         ],
-        "vatCents": 543,
-        "totalCents": 7121,
+        "vatCents": 466,
+        "totalCents": 7044,
         "lines": [
           {
             "sku": "PAI-002-1",
@@ -15520,15 +15296,11 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 382
-          },
-          {
-            "rate": 20,
-            "amountCents": 400
+            "amountCents": 492
           }
         ],
-        "vatCents": 782,
-        "totalCents": 9710,
+        "vatCents": 492,
+        "totalCents": 9420,
         "lines": [
           {
             "sku": "PAI-001-1",
@@ -15579,15 +15351,11 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 305
-          },
-          {
-            "rate": 20,
-            "amountCents": 400
+            "amountCents": 415
           }
         ],
-        "vatCents": 705,
-        "totalCents": 8245,
+        "vatCents": 415,
+        "totalCents": 7955,
         "lines": [
           {
             "sku": "PAI-001-1",
@@ -15638,15 +15406,11 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 305
-          },
-          {
-            "rate": 20,
-            "amountCents": 400
+            "amountCents": 415
           }
         ],
-        "vatCents": 705,
-        "totalCents": 8245,
+        "vatCents": 415,
+        "totalCents": 7955,
         "lines": [
           {
             "sku": "PAI-001-1",
@@ -15697,15 +15461,11 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 382
-          },
-          {
-            "rate": 20,
-            "amountCents": 400
+            "amountCents": 492
           }
         ],
-        "vatCents": 782,
-        "totalCents": 9710,
+        "vatCents": 492,
+        "totalCents": 9420,
         "lines": [
           {
             "sku": "PAI-001-1",
@@ -15903,15 +15663,11 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 305
-          },
-          {
-            "rate": 20,
-            "amountCents": 400
+            "amountCents": 415
           }
         ],
-        "vatCents": 705,
-        "totalCents": 8245,
+        "vatCents": 415,
+        "totalCents": 7955,
         "lines": [
           {
             "sku": "PAI-001-1",
@@ -15959,15 +15715,11 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 305
-          },
-          {
-            "rate": 20,
-            "amountCents": 400
+            "amountCents": 415
           }
         ],
-        "vatCents": 705,
-        "totalCents": 8245,
+        "vatCents": 415,
+        "totalCents": 7955,
         "lines": [
           {
             "sku": "PAI-001-1",
@@ -16015,15 +15767,11 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 305
-          },
-          {
-            "rate": 20,
-            "amountCents": 400
+            "amountCents": 415
           }
         ],
-        "vatCents": 705,
-        "totalCents": 8245,
+        "vatCents": 415,
+        "totalCents": 7955,
         "lines": [
           {
             "sku": "PAI-001-1",
@@ -16071,15 +15819,11 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 305
-          },
-          {
-            "rate": 20,
-            "amountCents": 400
+            "amountCents": 415
           }
         ],
-        "vatCents": 705,
-        "totalCents": 8245,
+        "vatCents": 415,
+        "totalCents": 7955,
         "lines": [
           {
             "sku": "PAI-001-1",
@@ -16127,15 +15871,11 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 305
-          },
-          {
-            "rate": 20,
-            "amountCents": 400
+            "amountCents": 415
           }
         ],
-        "vatCents": 705,
-        "totalCents": 8245,
+        "vatCents": 415,
+        "totalCents": 7955,
         "lines": [
           {
             "sku": "PAI-001-1",
@@ -16183,15 +15923,11 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 382
-          },
-          {
-            "rate": 20,
-            "amountCents": 400
+            "amountCents": 492
           }
         ],
-        "vatCents": 782,
-        "totalCents": 9710,
+        "vatCents": 492,
+        "totalCents": 9420,
         "lines": [
           {
             "sku": "PAI-001-1",
@@ -16239,15 +15975,11 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 382
-          },
-          {
-            "rate": 20,
-            "amountCents": 400
+            "amountCents": 492
           }
         ],
-        "vatCents": 782,
-        "totalCents": 9710,
+        "vatCents": 492,
+        "totalCents": 9420,
         "lines": [
           {
             "sku": "PAI-001-1",
@@ -16293,8 +16025,8 @@
         "deliveryFeeCents": 2000,
         "lateFeeCents": 0,
         "vat": null,
-        "vatCents": 842,
-        "totalCents": 10882,
+        "vatCents": 552,
+        "totalCents": 10592,
         "lines": [
           {
             "sku": "PAI-001-1",
@@ -16334,7 +16066,7 @@
         ]
       },
       "notes": {
-        "previousTotalCents": 8245,
+        "previousTotalCents": 7955,
         "differenceCents": 2637,
         "lineRefusals": 0
       }
@@ -16351,8 +16083,8 @@
         "deliveryFeeCents": 2000,
         "lateFeeCents": 0,
         "vat": null,
-        "vatCents": 507,
-        "totalCents": 4447,
+        "vatCents": 217,
+        "totalCents": 4157,
         "lines": [
           {
             "sku": "PAI-001-1",
@@ -16378,7 +16110,7 @@
         ]
       },
       "notes": {
-        "previousTotalCents": 10882,
+        "previousTotalCents": 10592,
         "differenceCents": -6435,
         "lineRefusals": 0
       }
@@ -16397,15 +16129,11 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 442
-          },
-          {
-            "rate": 20,
-            "amountCents": 400
+            "amountCents": 552
           }
         ],
-        "vatCents": 842,
-        "totalCents": 10882,
+        "vatCents": 552,
+        "totalCents": 10592,
         "lines": [
           {
             "sku": "PAI-001-1",
@@ -16460,15 +16188,11 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 107
-          },
-          {
-            "rate": 20,
-            "amountCents": 400
+            "amountCents": 217
           }
         ],
-        "vatCents": 507,
-        "totalCents": 4447,
+        "vatCents": 217,
+        "totalCents": 4157,
         "lines": [
           {
             "sku": "PAI-001-1",
@@ -16509,15 +16233,11 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 305
-          },
-          {
-            "rate": 20,
-            "amountCents": 400
+            "amountCents": 415
           }
         ],
-        "vatCents": 705,
-        "totalCents": 8245,
+        "vatCents": 415,
+        "totalCents": 7955,
         "lines": [
           {
             "sku": "PAI-001-1",
@@ -16565,19 +16285,15 @@
         "discountCents": 0,
         "discounts": [],
         "voucherCents": 0,
-        "deliveryFeeCents": 110,
+        "deliveryFeeCents": 125,
         "lateFeeCents": null,
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 69
-          },
-          {
-            "rate": 20,
-            "amountCents": 22
+            "amountCents": 76
           }
         ],
-        "vatCents": 91,
+        "vatCents": 76,
         "totalCents": 1451,
         "lines": [
           {
@@ -16608,15 +16324,11 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 55
-          },
-          {
-            "rate": 20,
-            "amountCents": 20
+            "amountCents": 61
           }
         ],
-        "vatCents": 75,
-        "totalCents": 1175,
+        "vatCents": 61,
+        "totalCents": 1161,
         "lines": [
           {
             "sku": "VIE-011-1",
@@ -16646,15 +16358,11 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 55
-          },
-          {
-            "rate": 20,
-            "amountCents": 20
+            "amountCents": 61
           }
         ],
-        "vatCents": 75,
-        "totalCents": 1175,
+        "vatCents": 61,
+        "totalCents": 1161,
         "lines": [
           {
             "sku": "VIE-011-1",
@@ -16679,19 +16387,15 @@
         "discountCents": 0,
         "discounts": [],
         "voucherCents": 474,
-        "deliveryFeeCents": 110,
+        "deliveryFeeCents": 125,
         "lateFeeCents": null,
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 43
-          },
-          {
-            "rate": 20,
-            "amountCents": 22
+            "amountCents": 50
           }
         ],
-        "vatCents": 65,
+        "vatCents": 50,
         "totalCents": 951,
         "lines": [
           {
@@ -16806,15 +16510,11 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 55
-          },
-          {
-            "rate": 20,
-            "amountCents": 20
+            "amountCents": 61
           }
         ],
-        "vatCents": 75,
-        "totalCents": 1175,
+        "vatCents": 61,
+        "totalCents": 1161,
         "lines": [
           {
             "sku": "VIE-011-1",
@@ -16841,15 +16541,11 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 55
-          },
-          {
-            "rate": 20,
-            "amountCents": 20
+            "amountCents": 61
           }
         ],
-        "vatCents": 75,
-        "totalCents": 1175,
+        "vatCents": 61,
+        "totalCents": 1161,
         "lines": [
           {
             "sku": "VIE-011-1",
@@ -16876,15 +16572,11 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 55
-          },
-          {
-            "rate": 20,
-            "amountCents": 20
+            "amountCents": 61
           }
         ],
-        "vatCents": 75,
-        "totalCents": 1175,
+        "vatCents": 61,
+        "totalCents": 1161,
         "lines": [
           {
             "sku": "VIE-011-1",
@@ -16911,15 +16603,11 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 55
-          },
-          {
-            "rate": 20,
-            "amountCents": 20
+            "amountCents": 61
           }
         ],
-        "vatCents": 75,
-        "totalCents": 1175,
+        "vatCents": 61,
+        "totalCents": 1161,
         "lines": [
           {
             "sku": "VIE-011-1",
@@ -16946,15 +16634,11 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 55
-          },
-          {
-            "rate": 20,
-            "amountCents": 20
+            "amountCents": 61
           }
         ],
-        "vatCents": 75,
-        "totalCents": 1175,
+        "vatCents": 61,
+        "totalCents": 1161,
         "lines": [
           {
             "sku": "VIE-011-1",
@@ -16976,19 +16660,15 @@
         "discountCents": 0,
         "discounts": [],
         "voucherCents": 474,
-        "deliveryFeeCents": 110,
+        "deliveryFeeCents": 125,
         "lateFeeCents": 0,
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 43
-          },
-          {
-            "rate": 20,
-            "amountCents": 22
+            "amountCents": 50
           }
         ],
-        "vatCents": 65,
+        "vatCents": 50,
         "totalCents": 951,
         "lines": [
           {
@@ -17011,19 +16691,15 @@
         "discountCents": 0,
         "discounts": [],
         "voucherCents": 0,
-        "deliveryFeeCents": 110,
+        "deliveryFeeCents": 125,
         "lateFeeCents": 0,
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 69
-          },
-          {
-            "rate": 20,
-            "amountCents": 22
+            "amountCents": 76
           }
         ],
-        "vatCents": 91,
+        "vatCents": 76,
         "totalCents": 1451,
         "lines": [
           {
@@ -17049,8 +16725,8 @@
         "deliveryFeeCents": 300,
         "lateFeeCents": 0,
         "vat": null,
-        "vatCents": 225,
-        "totalCents": 3525,
+        "vatCents": 182,
+        "totalCents": 3482,
         "lines": [
           {
             "sku": "VIE-004-1",
@@ -17069,8 +16745,8 @@
         ]
       },
       "notes": {
-        "previousTotalCents": 1175,
-        "differenceCents": 2350,
+        "previousTotalCents": 1161,
+        "differenceCents": 2321,
         "lineRefusals": 0
       }
     },
@@ -17086,8 +16762,8 @@
         "deliveryFeeCents": 200,
         "lateFeeCents": 0,
         "vat": null,
-        "vatCents": 150,
-        "totalCents": 2350,
+        "vatCents": 121,
+        "totalCents": 2321,
         "lines": [
           {
             "sku": "VIE-011-1",
@@ -17099,8 +16775,8 @@
         ]
       },
       "notes": {
-        "previousTotalCents": 3525,
-        "differenceCents": -1175,
+        "previousTotalCents": 3482,
+        "differenceCents": -1161,
         "lineRefusals": 0
       }
     },
@@ -17118,15 +16794,11 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 165
-          },
-          {
-            "rate": 20,
-            "amountCents": 60
+            "amountCents": 182
           }
         ],
-        "vatCents": 225,
-        "totalCents": 3525,
+        "vatCents": 182,
+        "totalCents": 3482,
         "lines": [
           {
             "sku": "VIE-004-1",
@@ -17160,15 +16832,11 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 110
-          },
-          {
-            "rate": 20,
-            "amountCents": 40
+            "amountCents": 121
           }
         ],
-        "vatCents": 150,
-        "totalCents": 2350,
+        "vatCents": 121,
+        "totalCents": 2321,
         "lines": [
           {
             "sku": "VIE-011-1",
@@ -17195,15 +16863,11 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 55
-          },
-          {
-            "rate": 20,
-            "amountCents": 20
+            "amountCents": 61
           }
         ],
-        "vatCents": 75,
-        "totalCents": 1175,
+        "vatCents": 61,
+        "totalCents": 1161,
         "lines": [
           {
             "sku": "VIE-011-1",
@@ -18276,30 +17940,26 @@
       "code": null,
       "amounts": {
         "vatMethod": null,
-        "subtotalCents": 8390,
+        "subtotalCents": 8391,
         "discountCents": 0,
         "discounts": [],
         "voucherCents": 0,
-        "deliveryFeeCents": 769,
+        "deliveryFeeCents": 839,
         "lateFeeCents": null,
         "vat": [
           {
             "rate": 10,
-            "amountCents": 840
-          },
-          {
-            "rate": 20,
-            "amountCents": 154
+            "amountCents": 923
           }
         ],
-        "vatCents": 994,
+        "vatCents": 923,
         "totalCents": 10153,
         "lines": [
           {
             "sku": "SAL-001-1",
             "quantity": 10,
             "unitPriceMillicents": 839091,
-            "lineTotalCents": 8390,
+            "lineTotalCents": 8391,
             "lineTotalTtcCents": 9230
           }
         ]
@@ -18323,15 +17983,11 @@
         "vat": [
           {
             "rate": 10,
-            "amountCents": 700
-          },
-          {
-            "rate": 20,
-            "amountCents": 140
+            "amountCents": 770
           }
         ],
-        "vatCents": 840,
-        "totalCents": 8540,
+        "vatCents": 770,
+        "totalCents": 8470,
         "lines": [
           {
             "sku": "SAL-001-1",
@@ -18361,15 +18017,11 @@
         "vat": [
           {
             "rate": 10,
-            "amountCents": 700
-          },
-          {
-            "rate": 20,
-            "amountCents": 140
+            "amountCents": 770
           }
         ],
-        "vatCents": 840,
-        "totalCents": 8540,
+        "vatCents": 770,
+        "totalCents": 8470,
         "lines": [
           {
             "sku": "SAL-001-1",
@@ -18394,19 +18046,15 @@
         "discountCents": 0,
         "discounts": [],
         "voucherCents": 909,
-        "deliveryFeeCents": 769,
+        "deliveryFeeCents": 839,
         "lateFeeCents": null,
         "vat": [
           {
             "rate": 10,
-            "amountCents": 749
-          },
-          {
-            "rate": 20,
-            "amountCents": 154
+            "amountCents": 833
           }
         ],
-        "vatCents": 903,
+        "vatCents": 833,
         "totalCents": 9153,
         "lines": [
           {
@@ -18521,15 +18169,11 @@
         "vat": [
           {
             "rate": 10,
-            "amountCents": 700
-          },
-          {
-            "rate": 20,
-            "amountCents": 140
+            "amountCents": 770
           }
         ],
-        "vatCents": 840,
-        "totalCents": 8540,
+        "vatCents": 770,
+        "totalCents": 8470,
         "lines": [
           {
             "sku": "SAL-001-1",
@@ -18556,15 +18200,11 @@
         "vat": [
           {
             "rate": 10,
-            "amountCents": 700
-          },
-          {
-            "rate": 20,
-            "amountCents": 140
+            "amountCents": 770
           }
         ],
-        "vatCents": 840,
-        "totalCents": 8540,
+        "vatCents": 770,
+        "totalCents": 8470,
         "lines": [
           {
             "sku": "SAL-001-1",
@@ -18591,15 +18231,11 @@
         "vat": [
           {
             "rate": 10,
-            "amountCents": 700
-          },
-          {
-            "rate": 20,
-            "amountCents": 140
+            "amountCents": 770
           }
         ],
-        "vatCents": 840,
-        "totalCents": 8540,
+        "vatCents": 770,
+        "totalCents": 8470,
         "lines": [
           {
             "sku": "SAL-001-1",
@@ -18626,15 +18262,11 @@
         "vat": [
           {
             "rate": 10,
-            "amountCents": 700
-          },
-          {
-            "rate": 20,
-            "amountCents": 140
+            "amountCents": 770
           }
         ],
-        "vatCents": 840,
-        "totalCents": 8540,
+        "vatCents": 770,
+        "totalCents": 8470,
         "lines": [
           {
             "sku": "SAL-001-1",
@@ -18661,15 +18293,11 @@
         "vat": [
           {
             "rate": 10,
-            "amountCents": 700
-          },
-          {
-            "rate": 20,
-            "amountCents": 140
+            "amountCents": 770
           }
         ],
-        "vatCents": 840,
-        "totalCents": 8540,
+        "vatCents": 770,
+        "totalCents": 8470,
         "lines": [
           {
             "sku": "SAL-001-1",
@@ -18691,19 +18319,15 @@
         "discountCents": 0,
         "discounts": [],
         "voucherCents": 909,
-        "deliveryFeeCents": 769,
+        "deliveryFeeCents": 839,
         "lateFeeCents": 0,
         "vat": [
           {
             "rate": 10,
-            "amountCents": 749
-          },
-          {
-            "rate": 20,
-            "amountCents": 154
+            "amountCents": 833
           }
         ],
-        "vatCents": 903,
+        "vatCents": 833,
         "totalCents": 9153,
         "lines": [
           {
@@ -18722,30 +18346,26 @@
       "code": null,
       "amounts": {
         "vatMethod": "exact_ht",
-        "subtotalCents": 8390,
+        "subtotalCents": 8391,
         "discountCents": 0,
         "discounts": [],
         "voucherCents": 0,
-        "deliveryFeeCents": 769,
+        "deliveryFeeCents": 839,
         "lateFeeCents": 0,
         "vat": [
           {
             "rate": 10,
-            "amountCents": 840
-          },
-          {
-            "rate": 20,
-            "amountCents": 154
+            "amountCents": 923
           }
         ],
-        "vatCents": 994,
+        "vatCents": 923,
         "totalCents": 10153,
         "lines": [
           {
             "sku": "SAL-001-1",
             "quantity": 10,
             "unitPriceMillicents": 839091,
-            "lineTotalCents": 8390,
+            "lineTotalCents": 8391,
             "lineTotalTtcCents": 9230
           }
         ]
@@ -18764,8 +18384,8 @@
         "deliveryFeeCents": 1300,
         "lateFeeCents": 0,
         "vat": null,
-        "vatCents": 1290,
-        "totalCents": 15590,
+        "vatCents": 1133,
+        "totalCents": 15433,
         "lines": [
           {
             "sku": "PAI-004-1",
@@ -18784,8 +18404,8 @@
         ]
       },
       "notes": {
-        "previousTotalCents": 8540,
-        "differenceCents": 7050,
+        "previousTotalCents": 8470,
+        "differenceCents": 6963,
         "lineRefusals": 0
       }
     },
@@ -18801,8 +18421,8 @@
         "deliveryFeeCents": 1400,
         "lateFeeCents": 0,
         "vat": null,
-        "vatCents": 1680,
-        "totalCents": 17080,
+        "vatCents": 1540,
+        "totalCents": 16940,
         "lines": [
           {
             "sku": "SAL-001-1",
@@ -18814,8 +18434,8 @@
         ]
       },
       "notes": {
-        "previousTotalCents": 15590,
-        "differenceCents": 1490,
+        "previousTotalCents": 15433,
+        "differenceCents": 1507,
         "lineRefusals": 0
       }
     },
@@ -18833,19 +18453,15 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 330
+            "amountCents": 363
           },
           {
             "rate": 10,
-            "amountCents": 700
-          },
-          {
-            "rate": 20,
-            "amountCents": 260
+            "amountCents": 770
           }
         ],
-        "vatCents": 1290,
-        "totalCents": 15590,
+        "vatCents": 1133,
+        "totalCents": 15433,
         "lines": [
           {
             "sku": "PAI-004-1",
@@ -18879,15 +18495,11 @@
         "vat": [
           {
             "rate": 10,
-            "amountCents": 1400
-          },
-          {
-            "rate": 20,
-            "amountCents": 280
+            "amountCents": 1540
           }
         ],
-        "vatCents": 1680,
-        "totalCents": 17080,
+        "vatCents": 1540,
+        "totalCents": 16940,
         "lines": [
           {
             "sku": "SAL-001-1",
@@ -18914,15 +18526,11 @@
         "vat": [
           {
             "rate": 10,
-            "amountCents": 700
-          },
-          {
-            "rate": 20,
-            "amountCents": 140
+            "amountCents": 770
           }
         ],
-        "vatCents": 840,
-        "totalCents": 8540,
+        "vatCents": 770,
+        "totalCents": 8470,
         "lines": [
           {
             "sku": "SAL-001-1",
@@ -18949,19 +18557,15 @@
         "discountCents": 0,
         "discounts": [],
         "voucherCents": 0,
-        "deliveryFeeCents": 845,
+        "deliveryFeeCents": 962,
         "lateFeeCents": null,
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 530
-          },
-          {
-            "rate": 20,
-            "amountCents": 170
+            "amountCents": 583
           }
         ],
-        "vatCents": 700,
+        "vatCents": 583,
         "totalCents": 11169,
         "lines": [
           {
@@ -19006,15 +18610,11 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 424
-          },
-          {
-            "rate": 20,
-            "amountCents": 154
+            "amountCents": 466
           }
         ],
-        "vatCents": 578,
-        "totalCents": 9048,
+        "vatCents": 466,
+        "totalCents": 8936,
         "lines": [
           {
             "sku": "VIE-001-1",
@@ -19058,15 +18658,11 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 424
-          },
-          {
-            "rate": 20,
-            "amountCents": 154
+            "amountCents": 466
           }
         ],
-        "vatCents": 578,
-        "totalCents": 9048,
+        "vatCents": 466,
+        "totalCents": 8936,
         "lines": [
           {
             "sku": "VIE-001-1",
@@ -19105,19 +18701,15 @@
         "discountCents": 0,
         "discounts": [],
         "voucherCents": 948,
-        "deliveryFeeCents": 845,
+        "deliveryFeeCents": 962,
         "lateFeeCents": null,
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 478
-          },
-          {
-            "rate": 20,
-            "amountCents": 170
+            "amountCents": 531
           }
         ],
-        "vatCents": 648,
+        "vatCents": 531,
         "totalCents": 10169,
         "lines": [
           {
@@ -19288,15 +18880,11 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 424
-          },
-          {
-            "rate": 20,
-            "amountCents": 154
+            "amountCents": 466
           }
         ],
-        "vatCents": 578,
-        "totalCents": 9048,
+        "vatCents": 466,
+        "totalCents": 8936,
         "lines": [
           {
             "sku": "VIE-001-1",
@@ -19337,15 +18925,11 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 424
-          },
-          {
-            "rate": 20,
-            "amountCents": 154
+            "amountCents": 466
           }
         ],
-        "vatCents": 578,
-        "totalCents": 9048,
+        "vatCents": 466,
+        "totalCents": 8936,
         "lines": [
           {
             "sku": "VIE-001-1",
@@ -19386,15 +18970,11 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 424
-          },
-          {
-            "rate": 20,
-            "amountCents": 154
+            "amountCents": 466
           }
         ],
-        "vatCents": 578,
-        "totalCents": 9048,
+        "vatCents": 466,
+        "totalCents": 8936,
         "lines": [
           {
             "sku": "VIE-001-1",
@@ -19435,15 +19015,11 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 424
-          },
-          {
-            "rate": 20,
-            "amountCents": 154
+            "amountCents": 466
           }
         ],
-        "vatCents": 578,
-        "totalCents": 9048,
+        "vatCents": 466,
+        "totalCents": 8936,
         "lines": [
           {
             "sku": "VIE-001-1",
@@ -19484,15 +19060,11 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 424
-          },
-          {
-            "rate": 20,
-            "amountCents": 154
+            "amountCents": 466
           }
         ],
-        "vatCents": 578,
-        "totalCents": 9048,
+        "vatCents": 466,
+        "totalCents": 8936,
         "lines": [
           {
             "sku": "VIE-001-1",
@@ -19528,19 +19100,15 @@
         "discountCents": 0,
         "discounts": [],
         "voucherCents": 948,
-        "deliveryFeeCents": 845,
+        "deliveryFeeCents": 962,
         "lateFeeCents": 0,
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 478
-          },
-          {
-            "rate": 20,
-            "amountCents": 170
+            "amountCents": 531
           }
         ],
-        "vatCents": 648,
+        "vatCents": 531,
         "totalCents": 10169,
         "lines": [
           {
@@ -19577,19 +19145,15 @@
         "discountCents": 0,
         "discounts": [],
         "voucherCents": 0,
-        "deliveryFeeCents": 845,
+        "deliveryFeeCents": 962,
         "lateFeeCents": 0,
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 530
-          },
-          {
-            "rate": 20,
-            "amountCents": 170
+            "amountCents": 583
           }
         ],
-        "vatCents": 700,
+        "vatCents": 583,
         "totalCents": 11169,
         "lines": [
           {
@@ -19629,8 +19193,8 @@
         "deliveryFeeCents": 810,
         "lateFeeCents": 0,
         "vat": null,
-        "vatCents": 608,
-        "totalCents": 9518,
+        "vatCents": 490,
+        "totalCents": 9400,
         "lines": [
           {
             "sku": "PAI-004-1",
@@ -19663,8 +19227,8 @@
         ]
       },
       "notes": {
-        "previousTotalCents": 9048,
-        "differenceCents": 470,
+        "previousTotalCents": 8936,
+        "differenceCents": 464,
         "lineRefusals": 0
       }
     },
@@ -19680,8 +19244,8 @@
         "deliveryFeeCents": 500,
         "lateFeeCents": 0,
         "vat": null,
-        "vatCents": 375,
-        "totalCents": 5875,
+        "vatCents": 303,
+        "totalCents": 5803,
         "lines": [
           {
             "sku": "VIE-001-1",
@@ -19700,8 +19264,8 @@
         ]
       },
       "notes": {
-        "previousTotalCents": 9518,
-        "differenceCents": -3643,
+        "previousTotalCents": 9400,
+        "differenceCents": -3597,
         "lineRefusals": 0
       }
     },
@@ -19719,15 +19283,11 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 446
-          },
-          {
-            "rate": 20,
-            "amountCents": 162
+            "amountCents": 490
           }
         ],
-        "vatCents": 608,
-        "totalCents": 9518,
+        "vatCents": 490,
+        "totalCents": 9400,
         "lines": [
           {
             "sku": "PAI-004-1",
@@ -19775,15 +19335,11 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 275
-          },
-          {
-            "rate": 20,
-            "amountCents": 100
+            "amountCents": 303
           }
         ],
-        "vatCents": 375,
-        "totalCents": 5875,
+        "vatCents": 303,
+        "totalCents": 5803,
         "lines": [
           {
             "sku": "VIE-001-1",
@@ -19817,15 +19373,11 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 424
-          },
-          {
-            "rate": 20,
-            "amountCents": 154
+            "amountCents": 466
           }
         ],
-        "vatCents": 578,
-        "totalCents": 9048,
+        "vatCents": 466,
+        "totalCents": 8936,
         "lines": [
           {
             "sku": "VIE-001-1",
@@ -24780,19 +24332,15 @@
         "discountCents": 0,
         "discounts": [],
         "voucherCents": 0,
-        "deliveryFeeCents": 1076,
+        "deliveryFeeCents": 1174,
         "lateFeeCents": null,
         "vat": [
           {
             "rate": 10,
-            "amountCents": 1175
-          },
-          {
-            "rate": 20,
-            "amountCents": 216
+            "amountCents": 1293
           }
         ],
-        "vatCents": 1391,
+        "vatCents": 1293,
         "totalCents": 14214,
         "lines": [
           {
@@ -24823,15 +24371,11 @@
         "vat": [
           {
             "rate": 10,
-            "amountCents": 980
-          },
-          {
-            "rate": 20,
-            "amountCents": 196
+            "amountCents": 1078
           }
         ],
-        "vatCents": 1176,
-        "totalCents": 11956,
+        "vatCents": 1078,
+        "totalCents": 11858,
         "lines": [
           {
             "sku": "SAL-001-1",
@@ -24861,15 +24405,11 @@
         "vat": [
           {
             "rate": 10,
-            "amountCents": 980
-          },
-          {
-            "rate": 20,
-            "amountCents": 196
+            "amountCents": 1078
           }
         ],
-        "vatCents": 1176,
-        "totalCents": 11956,
+        "vatCents": 1078,
+        "totalCents": 11858,
         "lines": [
           {
             "sku": "SAL-001-1",
@@ -24894,19 +24434,15 @@
         "discountCents": 3524,
         "discounts": [2349, 1175],
         "voucherCents": 909,
-        "deliveryFeeCents": 1076,
+        "deliveryFeeCents": 1175,
         "lateFeeCents": null,
         "vat": [
           {
             "rate": 10,
-            "amountCents": 732
-          },
-          {
-            "rate": 20,
-            "amountCents": 216
+            "amountCents": 849
           }
         ],
-        "vatCents": 948,
+        "vatCents": 849,
         "totalCents": 9338,
         "lines": [
           {
@@ -25021,15 +24557,11 @@
         "vat": [
           {
             "rate": 10,
-            "amountCents": 980
-          },
-          {
-            "rate": 20,
-            "amountCents": 196
+            "amountCents": 1078
           }
         ],
-        "vatCents": 1176,
-        "totalCents": 11956,
+        "vatCents": 1078,
+        "totalCents": 11858,
         "lines": [
           {
             "sku": "SAL-001-1",
@@ -25056,15 +24588,11 @@
         "vat": [
           {
             "rate": 10,
-            "amountCents": 980
-          },
-          {
-            "rate": 20,
-            "amountCents": 196
+            "amountCents": 1078
           }
         ],
-        "vatCents": 1176,
-        "totalCents": 11956,
+        "vatCents": 1078,
+        "totalCents": 11858,
         "lines": [
           {
             "sku": "SAL-001-1",
@@ -25091,15 +24619,11 @@
         "vat": [
           {
             "rate": 10,
-            "amountCents": 980
-          },
-          {
-            "rate": 20,
-            "amountCents": 196
+            "amountCents": 1078
           }
         ],
-        "vatCents": 1176,
-        "totalCents": 11956,
+        "vatCents": 1078,
+        "totalCents": 11858,
         "lines": [
           {
             "sku": "SAL-001-1",
@@ -25126,15 +24650,11 @@
         "vat": [
           {
             "rate": 10,
-            "amountCents": 980
-          },
-          {
-            "rate": 20,
-            "amountCents": 196
+            "amountCents": 1078
           }
         ],
-        "vatCents": 1176,
-        "totalCents": 11956,
+        "vatCents": 1078,
+        "totalCents": 11858,
         "lines": [
           {
             "sku": "SAL-001-1",
@@ -25161,15 +24681,11 @@
         "vat": [
           {
             "rate": 10,
-            "amountCents": 980
-          },
-          {
-            "rate": 20,
-            "amountCents": 196
+            "amountCents": 1078
           }
         ],
-        "vatCents": 1176,
-        "totalCents": 11956,
+        "vatCents": 1078,
+        "totalCents": 11858,
         "lines": [
           {
             "sku": "SAL-001-1",
@@ -25191,19 +24707,15 @@
         "discountCents": 3524,
         "discounts": [2349, 1175],
         "voucherCents": 909,
-        "deliveryFeeCents": 1076,
+        "deliveryFeeCents": 1175,
         "lateFeeCents": 0,
         "vat": [
           {
             "rate": 10,
-            "amountCents": 732
-          },
-          {
-            "rate": 20,
-            "amountCents": 216
+            "amountCents": 849
           }
         ],
-        "vatCents": 948,
+        "vatCents": 849,
         "totalCents": 9338,
         "lines": [
           {
@@ -25226,19 +24738,15 @@
         "discountCents": 0,
         "discounts": [],
         "voucherCents": 0,
-        "deliveryFeeCents": 1076,
+        "deliveryFeeCents": 1174,
         "lateFeeCents": 0,
         "vat": [
           {
             "rate": 10,
-            "amountCents": 1175
-          },
-          {
-            "rate": 20,
-            "amountCents": 216
+            "amountCents": 1293
           }
         ],
-        "vatCents": 1391,
+        "vatCents": 1293,
         "totalCents": 14214,
         "lines": [
           {
@@ -25264,8 +24772,8 @@
         "deliveryFeeCents": 1055,
         "lateFeeCents": 0,
         "vat": null,
-        "vatCents": 1232,
-        "totalCents": 12837,
+        "vatCents": 1123,
+        "totalCents": 12728,
         "lines": [
           {
             "sku": "SAL-001-1",
@@ -25284,8 +24792,8 @@
         ]
       },
       "notes": {
-        "previousTotalCents": 11956,
-        "differenceCents": 881,
+        "previousTotalCents": 11858,
+        "differenceCents": 870,
         "lineRefusals": 0
       }
     },
@@ -25301,8 +24809,8 @@
         "deliveryFeeCents": 1960,
         "lateFeeCents": 0,
         "vat": null,
-        "vatCents": 2352,
-        "totalCents": 23912,
+        "vatCents": 2156,
+        "totalCents": 23716,
         "lines": [
           {
             "sku": "SAL-001-1",
@@ -25314,8 +24822,8 @@
         ]
       },
       "notes": {
-        "previousTotalCents": 12837,
-        "differenceCents": 11075,
+        "previousTotalCents": 12728,
+        "differenceCents": 10988,
         "lineRefusals": 0
       }
     },
@@ -25333,19 +24841,15 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 41
+            "amountCents": 45
           },
           {
             "rate": 10,
-            "amountCents": 980
-          },
-          {
-            "rate": 20,
-            "amountCents": 211
+            "amountCents": 1078
           }
         ],
-        "vatCents": 1232,
-        "totalCents": 12837,
+        "vatCents": 1123,
+        "totalCents": 12728,
         "lines": [
           {
             "sku": "SAL-001-1",
@@ -25379,15 +24883,11 @@
         "vat": [
           {
             "rate": 10,
-            "amountCents": 1960
-          },
-          {
-            "rate": 20,
-            "amountCents": 392
+            "amountCents": 2156
           }
         ],
-        "vatCents": 2352,
-        "totalCents": 23912,
+        "vatCents": 2156,
+        "totalCents": 23716,
         "lines": [
           {
             "sku": "SAL-001-1",
@@ -25414,15 +24914,11 @@
         "vat": [
           {
             "rate": 10,
-            "amountCents": 980
-          },
-          {
-            "rate": 20,
-            "amountCents": 196
+            "amountCents": 1078
           }
         ],
-        "vatCents": 1176,
-        "totalCents": 11956,
+        "vatCents": 1078,
+        "totalCents": 11858,
         "lines": [
           {
             "sku": "SAL-001-1",
@@ -25454,15 +24950,11 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 1060
-          },
-          {
-            "rate": 20,
-            "amountCents": 400
+            "amountCents": 1170
           }
         ],
-        "vatCents": 1460,
-        "totalCents": 22714,
+        "vatCents": 1170,
+        "totalCents": 22424,
         "lines": [
           {
             "sku": "PAI-001-1",
@@ -25499,15 +24991,11 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 565
-          },
-          {
-            "rate": 20,
-            "amountCents": 400
+            "amountCents": 675
           }
         ],
-        "vatCents": 965,
-        "totalCents": 13232,
+        "vatCents": 675,
+        "totalCents": 12942,
         "lines": [
           {
             "sku": "PAI-001-1",
@@ -25544,15 +25032,11 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 847
-          },
-          {
-            "rate": 20,
-            "amountCents": 400
+            "amountCents": 957
           }
         ],
-        "vatCents": 1247,
-        "totalCents": 18647,
+        "vatCents": 957,
+        "totalCents": 18357,
         "lines": [
           {
             "sku": "PAI-001-1",
@@ -25589,15 +25073,11 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 1060
-          },
-          {
-            "rate": 20,
-            "amountCents": 400
+            "amountCents": 1170
           }
         ],
-        "vatCents": 1460,
-        "totalCents": 22714,
+        "vatCents": 1170,
+        "totalCents": 22424,
         "lines": [
           {
             "sku": "PAI-001-1",
@@ -25739,15 +25219,11 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 565
-          },
-          {
-            "rate": 20,
-            "amountCents": 400
+            "amountCents": 675
           }
         ],
-        "vatCents": 965,
-        "totalCents": 13232,
+        "vatCents": 675,
+        "totalCents": 12942,
         "lines": [
           {
             "sku": "PAI-001-1",
@@ -25781,15 +25257,11 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 565
-          },
-          {
-            "rate": 20,
-            "amountCents": 400
+            "amountCents": 675
           }
         ],
-        "vatCents": 965,
-        "totalCents": 13232,
+        "vatCents": 675,
+        "totalCents": 12942,
         "lines": [
           {
             "sku": "PAI-001-1",
@@ -25823,15 +25295,11 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 565
-          },
-          {
-            "rate": 20,
-            "amountCents": 400
+            "amountCents": 675
           }
         ],
-        "vatCents": 965,
-        "totalCents": 13232,
+        "vatCents": 675,
+        "totalCents": 12942,
         "lines": [
           {
             "sku": "PAI-001-1",
@@ -25865,15 +25333,11 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 565
-          },
-          {
-            "rate": 20,
-            "amountCents": 400
+            "amountCents": 675
           }
         ],
-        "vatCents": 965,
-        "totalCents": 13232,
+        "vatCents": 675,
+        "totalCents": 12942,
         "lines": [
           {
             "sku": "PAI-001-1",
@@ -25907,15 +25371,11 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 847
-          },
-          {
-            "rate": 20,
-            "amountCents": 400
+            "amountCents": 957
           }
         ],
-        "vatCents": 1247,
-        "totalCents": 18647,
+        "vatCents": 957,
+        "totalCents": 18357,
         "lines": [
           {
             "sku": "PAI-001-1",
@@ -25949,15 +25409,11 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 1060
-          },
-          {
-            "rate": 20,
-            "amountCents": 400
+            "amountCents": 1170
           }
         ],
-        "vatCents": 1460,
-        "totalCents": 22714,
+        "vatCents": 1170,
+        "totalCents": 22424,
         "lines": [
           {
             "sku": "PAI-001-1",
@@ -25991,15 +25447,11 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 1060
-          },
-          {
-            "rate": 20,
-            "amountCents": 400
+            "amountCents": 1170
           }
         ],
-        "vatCents": 1460,
-        "totalCents": 22714,
+        "vatCents": 1170,
+        "totalCents": 22424,
         "lines": [
           {
             "sku": "PAI-001-1",
@@ -26031,8 +25483,8 @@
         "deliveryFeeCents": 2000,
         "lateFeeCents": 0,
         "vat": null,
-        "vatCents": 1009,
-        "totalCents": 14076,
+        "vatCents": 719,
+        "totalCents": 13786,
         "lines": [
           {
             "sku": "PAI-001-1",
@@ -26058,7 +25510,7 @@
         ]
       },
       "notes": {
-        "previousTotalCents": 13232,
+        "previousTotalCents": 12942,
         "differenceCents": 844,
         "lineRefusals": 0
       }
@@ -26075,8 +25527,8 @@
         "deliveryFeeCents": 2000,
         "lateFeeCents": 0,
         "vat": null,
-        "vatCents": 451,
-        "totalCents": 3384,
+        "vatCents": 161,
+        "totalCents": 3094,
         "lines": [
           {
             "sku": "PAI-001-1",
@@ -26088,7 +25540,7 @@
         ]
       },
       "notes": {
-        "previousTotalCents": 14076,
+        "previousTotalCents": 13786,
         "differenceCents": -10692,
         "lineRefusals": 0
       }
@@ -26107,15 +25559,11 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 609
-          },
-          {
-            "rate": 20,
-            "amountCents": 400
+            "amountCents": 719
           }
         ],
-        "vatCents": 1009,
-        "totalCents": 14076,
+        "vatCents": 719,
+        "totalCents": 13786,
         "lines": [
           {
             "sku": "PAI-001-1",
@@ -26156,15 +25604,11 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 51
-          },
-          {
-            "rate": 20,
-            "amountCents": 400
+            "amountCents": 161
           }
         ],
-        "vatCents": 451,
-        "totalCents": 3384,
+        "vatCents": 161,
+        "totalCents": 3094,
         "lines": [
           {
             "sku": "PAI-001-1",
@@ -26191,15 +25635,11 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 565
-          },
-          {
-            "rate": 20,
-            "amountCents": 400
+            "amountCents": 675
           }
         ],
-        "vatCents": 965,
-        "totalCents": 13232,
+        "vatCents": 675,
+        "totalCents": 12942,
         "lines": [
           {
             "sku": "PAI-001-1",
@@ -26767,15 +26207,11 @@
         "vat": [
           {
             "rate": 5.5,
-            "amountCents": 55
-          },
-          {
-            "rate": 20,
-            "amountCents": 400
+            "amountCents": 165
           }
         ],
-        "vatCents": 455,
-        "totalCents": 3455,
+        "vatCents": 165,
+        "totalCents": 3165,
         "lines": [
           {
             "sku": "PAI-001-1",

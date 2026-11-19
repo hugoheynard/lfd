@@ -512,18 +512,7 @@ describe("le devis et la facture, selon le mode de TVA du port", () => {
     });
   }
 
-  it("🔴 s'accordent au taux normal sans réglage posé, et la commande fige `standard`", async () => {
-    await courierParity();
-
-    const order = await ctx.prisma.order.findFirstOrThrow({ select: { deliveryVatMode: true } });
-    expect(order.deliveryVatMode).toBe("standard");
-  });
-
-  it("🔴 s'accordent quand le port suit la marchandise, et la commande fige `follows_goods`", async () => {
-    await ctx.prisma.orderDeliveryVat.create({
-      data: { id: "singleton", mode: "follows_goods", updatedBy: "e2e" },
-    });
-
+  it("🔴 s'accordent : le port suit toujours la marchandise, et la commande fige `follows_goods`", async () => {
     const view = jsonBody<ShopQuoteView>(
       await quote({
         lines: [...PANIER],
@@ -536,5 +525,7 @@ describe("le devis et la facture, selon le mode de TVA du port", () => {
     expect(view.vat.map((share) => share.rate)).not.toContain(20);
 
     await courierParity();
+    const order = await ctx.prisma.order.findFirstOrThrow({ select: { deliveryVatMode: true } });
+    expect(order.deliveryVatMode).toBe("follows_goods");
   });
 });

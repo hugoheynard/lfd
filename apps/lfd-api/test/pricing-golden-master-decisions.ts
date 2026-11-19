@@ -42,7 +42,6 @@ const COURIER: GoldenBasket = {
   key: "decision-courier",
   lines: [...LINES],
   fulfillment: "courier_flat",
-  deliveryVat: "standard",
   promotions: [],
   voucherSteps: 0,
   clientRevision: [],

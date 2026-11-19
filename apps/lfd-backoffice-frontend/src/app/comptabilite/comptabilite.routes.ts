@@ -180,18 +180,6 @@ export const comptabiliteRoutes: Routes = [
           import('./order-late-fee/order-late-fee-page').then((m) => m.OrderLateFeePage),
       },
       {
-        // La TVA de la livraison — taux normal ou au prorata des produits.
-        // Sous `b2b_accounting`, comme la coquille : pas de garde propre. Les
-        // gestes demandent `b2b_accounting:write` ; l'écran les masque sans lui.
-        // Plan : documentation/commandes/bon-et-pieces/architecture-tva-des-frais-de-port.md (V2).
-        path: 'tva-de-la-livraison',
-        title: 'TVA de la livraison — LFC B2B admin',
-        loadComponent: () =>
-          import('./order-delivery-vat/order-delivery-vat-page').then(
-            (m) => m.OrderDeliveryVatPage,
-          ),
-      },
-      {
         // Le dossier de facturation SIMULÉ d'un payeur pour un cycle : la
         // facture en une fois, les bons, les écarts. Sous `b2b_accounting`,
         // comme la coquille ; la route serveur n'admet que ce droit.
