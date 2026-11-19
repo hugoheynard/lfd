@@ -93,6 +93,9 @@ function world(payerModes: PayerBillingModesReader = new FixedPayerModes(), paye
 describe("ListCollectionProceduresHandler — la liste des procédures", () => {
   it("sans lot : la prochaine du mensuel, puis la dernière clôture à préparer", async () => {
     const w = world();
+    // Une commande à prélever : sans elle, il n'y aurait aucune limite à tenir.
+    w.assembly.candidates.orders = [order("c_port")];
+    w.assembly.mandates.mandates = [mandate("c_port", { creditorId: w.id })];
 
     const view = await w.list();
 

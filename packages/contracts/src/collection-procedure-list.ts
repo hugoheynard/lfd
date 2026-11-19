@@ -60,6 +60,12 @@ export interface CollectionProcedureListBatchView {
   readonly status: CollectionBatchStatusView;
 }
 
+/** La période qu'un rythme clôt ici : « du 1er au 30 novembre 2026 » pour le mensuel. */
+export interface CollectionProcedurePeriodView {
+  readonly mode: BillingRhythmKind;
+  readonly label: string;
+}
+
 /** Une ligne de la table. */
 export interface CollectionProcedureRowView {
   /** Stable : l'entité et le jour de la clôture — il ne change pas quand le lot est préparé. */
@@ -82,6 +88,13 @@ export interface CollectionProcedureRowView {
    * ou plus : la clôture est MUTUALISÉE (un seul lot).
    */
   readonly closureModes: readonly BillingRhythmKind[];
+  /**
+   * La période de chaque rythme de `closureModes`, dans le même ordre : une
+   * clôture mutualisée en dit plusieurs (le mensuel du 1er au 30, le « deux
+   * fois par mois » du 16 au 30), là où `periodLabel` ne part que de la
+   * clôture précédente du calendrier, tous rythmes confondus.
+   */
+  readonly periods: readonly CollectionProcedurePeriodView[];
   readonly phase: CollectionProcedurePhaseView;
   readonly stage: CollectionProcedureStageView;
   readonly batches: readonly CollectionProcedureListBatchView[];

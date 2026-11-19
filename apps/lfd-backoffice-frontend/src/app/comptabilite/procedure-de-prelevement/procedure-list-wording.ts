@@ -67,8 +67,17 @@ export function rejectedByBankLabel(row: CollectionProcedureRowView): string | n
   return rejected && !live ? 'Rejeté par la banque — préparer de nouveau' : null;
 }
 
-/** « Mensuel · période du 1er au 31 octobre 2026 » — comme le titre du détail. */
+/**
+ * « Mensuel · période du 1er au 31 octobre 2026 » — comme le titre du détail.
+ * Une clôture mutualisée dit la période de chacun de ses rythmes :
+ * « Mensuel : du 1er au 30 novembre 2026 · Deux fois par mois : du 16 au 30 novembre 2026 ».
+ */
 export function procedureRowTitle(row: CollectionProcedureRowView): string {
+  if (row.periods.length > 1) {
+    return row.periods
+      .map((period) => `${rhythmsLabel([period.mode])} : ${period.label}`)
+      .join(' · ');
+  }
   const rhythms = rhythmsLabel(row.modes);
   const period = `période ${row.periodLabel}`;
   return rhythms === '' ? period : `${rhythms} · ${period}`;

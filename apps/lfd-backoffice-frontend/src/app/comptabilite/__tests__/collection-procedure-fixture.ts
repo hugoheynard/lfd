@@ -99,6 +99,7 @@ export function procedureRow(
     modes: ['monthly'],
     code: 'PRL-261101-M',
     closureModes: ['monthly'],
+    periods: [{ mode: 'monthly', label: 'du 1er au 31 octobre 2026' }],
     phase: 'open',
     stage: 'file',
     batches: [{ id: 'b1', scheme: 'B2B', status: 'constituted' }],
