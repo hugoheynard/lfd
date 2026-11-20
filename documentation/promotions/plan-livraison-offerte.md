@@ -625,7 +625,7 @@ l'agrégat `Invoice` et ses tables, jamais depuis `orders`
 La phrase rendue cite le bon, parce qu'une facture du mois en couvre
 plusieurs et que la ligne de référence est unique : « Livraison offerte —
 24,00 € HT (ORD-1042). » — le barème HT, une facture pro se lisant en HT.
-À confirmer par Hugo.
+Confirmé par Hugo le 2026-11-20.
 
 ## 2.10 Contradiction (`vitruve`, 2026-11-20)
 
