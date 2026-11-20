@@ -396,7 +396,7 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   // Réglages › Colisage (2026-10-25) : le droit des bacs.
   'reglages/colisage': 'delivery_settings:read',
   // Réglages › Comptoir (2026-11-19) : le droit des réglages de commande.
-  'reglages/comptoir': 'lfc_order_settings:read',
+  'reglages/comptoir/suivi-du-stock': 'lfc_order_settings:read',
   // Un QR de sa propre origine et un mode d'emploi : rien à garder.
   'app-mobile': OPEN,
   // 🔴 **L'outillage de développement**, et son absence de garde est le point.

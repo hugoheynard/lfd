@@ -193,7 +193,7 @@ describe("la déclaration d'un état au comptoir", () => {
     await declare(siteId, sku).expect(409);
   });
 
-  it("l'alerte ouverte avant la désactivation reste lisible au comptoir et au fournil", async () => {
+  it("l'alerte ouverte avant la désactivation reste lisible au comptoir et au fournil, et se lève à la main", async () => {
     const siteId = await seedSite("Val Village");
     const sku = await firstArticleSku();
     await setTracking(siteId, true).expect(204);
@@ -211,6 +211,6 @@ describe("la déclaration d'un état au comptoir", () => {
     expect(live.sites).toEqual([expect.objectContaining({ siteId })]);
     await admin()
       .post(`/admin/site-stock-alerts/sites/${siteId}/${site.alerts[0]?.id ?? ""}/lift`)
-      .expect(409);
+      .expect(204);
   });
 });

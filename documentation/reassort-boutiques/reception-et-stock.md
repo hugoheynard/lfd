@@ -194,8 +194,9 @@ alertes) se règle **point par point**, dans **Réglages › Comptoir**.
 - **Le comptoir l'apprend** par `stockTracking` de la vue
   `GET admin/site-resupplies/sites/:siteId` (`SiteResuppliesView`).
 - **Désactivé**, déclarer un état (`POST admin/site-stock-alerts/sites/:siteId`)
-  et le lever à la main (le « OK », `…/:alertId/lift`) rendent 409
-  `resupply.stock_tracking.disabled`. Les alertes déjà ouvertes restent
-  ouvertes et lisibles (comptoir, fournil, Supervision), et la réception
-  d'un réassort de l'article les lève toujours (§ 3). Le stock du jour, la
+  rend 409 `resupply.stock_tracking.disabled`. Les alertes déjà ouvertes
+  restent ouvertes et lisibles (comptoir, fournil, Supervision) ; elles se
+  lèvent encore à la main (le « OK », `…/:alertId/lift`, décidé par Hugo le
+  2026-11-19 — l'encadré du comptoir le propose) et par la réception d'un
+  réassort de l'article (§ 3). Le stock du jour, la
   réception et le jour même qui y puise ne changent pas.

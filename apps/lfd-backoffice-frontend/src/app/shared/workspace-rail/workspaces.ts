@@ -420,13 +420,14 @@ export const EXPLOITATION_VIEWS: readonly WorkspaceView[] = [
     section: 'Colisage',
     needs: 'delivery_settings:read',
   },
-  // RÉGLAGES › COMPTOIR (Hugo, 2026-11-19) — le suivi de l'état du stock, par
-  // point. Après le Colisage. Une table pour le rail ET le lanceur mobile.
+  // RÉGLAGES › COMPTOIR (Hugo, 2026-11-19) — une section après le Colisage ;
+  // sa vue « Suivi du stock » règle l'état du stock par point. Une table pour
+  // le rail ET le lanceur mobile.
   {
-    key: 'reglages-comptoir',
-    label: 'Comptoir',
-    link: '/reglages/comptoir',
-    icon: 'store',
+    key: 'reglages-comptoir-suivi-du-stock',
+    label: 'Suivi du stock',
+    link: '/reglages/comptoir/suivi-du-stock',
+    icon: 'package-check',
     section: 'Comptoir',
     needs: 'lfc_order_settings:read',
   },

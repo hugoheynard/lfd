@@ -46,3 +46,18 @@
   color: var(--fold-color-text-muted);
   font-size: var(--fold-text-2xs);
 }
+
+.untracked-alerts {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+  margin: var(--fold-space-sm) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.untracked-alerts li {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+}

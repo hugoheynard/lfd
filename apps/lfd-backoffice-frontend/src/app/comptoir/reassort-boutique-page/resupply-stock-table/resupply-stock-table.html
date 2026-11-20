@@ -52,8 +52,28 @@
 
   @if (untrackedAlerts().length > 0) {
     <fold-callout variant="warning" data-resupply-untracked-alerts>
-      Ce point ne suit plus l'état de son stock ; alertes encore ouvertes :
-      {{ untrackedAlerts().join(', ') }}. La réception d'un réassort de l'article les lève.
+      Ce point ne suit plus l'état de son stock ; alertes encore ouvertes. Levez-les quand l'article
+      est revenu, ou la réception d'un réassort de l'article les lèvera.
+      <ul class="untracked-alerts">
+        @for (open of untrackedAlerts(); track open.alert.id) {
+          <li [attr.data-resupply-untracked-alert]="open.alert.sku">
+            {{ open.label }}
+            @if (canWrite()) {
+              <button
+                foldButton
+                type="button"
+                emphasis="soft"
+                intent="neutral"
+                size="sm"
+                [attr.data-resupply-lift]="open.alert.sku"
+                (click)="liftUntracked(open.alert)"
+              >
+                Lever
+              </button>
+            }
+          </li>
+        }
+      </ul>
     </fold-callout>
   }
 

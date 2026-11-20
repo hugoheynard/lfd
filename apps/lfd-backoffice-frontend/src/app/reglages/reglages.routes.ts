@@ -282,13 +282,16 @@ export const reglagesRoutes: Routes = [
           ),
       },
 
-      // RÉGLAGES › COMPTOIR (Hugo, 2026-11-19) — le suivi de l'état du stock,
-      // point par point, désactivé par défaut. Sous `lfc_order_settings`,
-      // comme la route `admin/counter-settings` ; la page se fige sans `:write`.
+      // RÉGLAGES › COMPTOIR (Hugo, 2026-11-19) — une section, et sa première
+      // vue : le suivi de l'état du stock, point par point, désactivé par
+      // défaut. Sous `lfc_order_settings`, comme la route
+      // `admin/counter-settings` ; la page se fige sans `:write`.
+      // `pathMatch: 'full'` sur l'entrée : en préfixe, elle avalerait ses vues.
+      { path: 'comptoir', pathMatch: 'full', redirectTo: '/reglages/comptoir/suivi-du-stock' },
       {
-        path: 'comptoir',
+        path: 'comptoir/suivi-du-stock',
         canActivate: [permissionGuard('lfc_order_settings:read')],
-        title: 'Comptoir — LFC B2B admin',
+        title: 'Suivi du stock — LFC B2B admin',
         loadComponent: () =>
           import('./comptoir/counter-settings-page/counter-settings-page').then(
             (m) => m.CounterSettingsPage,

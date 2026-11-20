@@ -16,6 +16,7 @@ import type {
   ResupplyTarget,
   SiteResupplyDraftView,
   StockAlertLevel,
+  StockAlertView,
   UnorderedReceiptLineView,
 } from '@lfd/contracts';
 import {
@@ -153,13 +154,22 @@ export class ResupplyStockTable {
 
   /**
    * Les alertes déjà ouvertes d'un point qui ne suit plus son stock : lues,
-   * jamais levées ici (la réception d'un réassort de l'article les lève).
+   * et levées à la main d'un clic (décidé par Hugo le 2026-11-19), comme la
+   * réception d'un réassort de l'article les lève aussi.
    */
   protected readonly untrackedAlerts = computed(() =>
     this.tracking()
       ? []
-      : this.alerts.alerts().map((alert) => `${alert.label} (${rowStateLabel(alert.level)})`),
+      : this.alerts.alerts().map((alert) => ({
+          alert,
+          label: `${alert.label} (${rowStateLabel(alert.level)})`,
+        })),
   );
+
+  /** Lève une alerte restée ouverte sur un point qui ne suit plus son stock. */
+  protected async liftUntracked(alert: StockAlertView): Promise<void> {
+    await this.alerts.lift(alert);
+  }
 
   /** Les colonnes ; « Actions » seulement quand le reçu sans commande s'écrit. */
   protected readonly columns = computed<readonly FoldTableColumn<StockRow>[]>(() => [

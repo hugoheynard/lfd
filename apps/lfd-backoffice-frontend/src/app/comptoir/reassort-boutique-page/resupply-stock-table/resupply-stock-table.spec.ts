@@ -548,7 +548,7 @@ describe('ResupplyStockTable — sans suivi du stock', () => {
     expect(root(fixture).querySelector('[data-resupply-quantity]')).not.toBeNull();
   });
 
-  it('sans le suivi : une alerte déjà ouverte se lit, sans teinte ni geste', async () => {
+  it('sans le suivi : une alerte déjà ouverte se lit, sans teinte, et se lève à la main', async () => {
     const alerts = new FakeAlerts();
     await alerts.declare('site_v', 'CRO', 'out_of_stock');
     alerts.calls.length = 0;
@@ -559,5 +559,9 @@ describe('ResupplyStockTable — sans suivi du stock', () => {
     expect(rowOf(table, 'CRO').state).toBe('ok');
     expect(table['toneOf']()(rowOf(table, 'CRO'))).toBeNull();
     expect(alerts.calls).toEqual([]);
+
+    root(fixture).querySelector<HTMLButtonElement>('[data-resupply-lift="CRO"]')?.click();
+    await fixture.whenStable();
+    expect(alerts.calls).toEqual(['lift alert_CRO']);
   });
 });

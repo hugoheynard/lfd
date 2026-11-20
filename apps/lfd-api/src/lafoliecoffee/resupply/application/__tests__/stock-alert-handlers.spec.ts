@@ -62,7 +62,7 @@ function bench() {
       uow,
       tracking,
     ),
-    lift: new LiftStockAlertHandler(store, staff, clock, tracking),
+    lift: new LiftStockAlertHandler(store, staff, clock),
     receive: new ReceiveUnorderedReceiptLineHandler(
       new InMemoryReceipts(),
       store,
@@ -280,7 +280,7 @@ describe("le suivi du stock désactivé (Réglages › Comptoir)", () => {
     expect(store.all()).toHaveLength(1);
   });
 
-  it("l'alerte ouverte reste lisible, au comptoir et au fournil ; la lever à la main est refusé", async () => {
+  it("l'alerte ouverte reste lisible, au comptoir et au fournil, et se lève encore à la main", async () => {
     const { declare, lift, list, live, trackStock } = bench();
     await trackStock(VILLAGE, true);
     await declare.execute(
@@ -290,12 +290,15 @@ describe("le suivi du stock désactivé (Réglages › Comptoir)", () => {
 
     await trackStock(VILLAGE, false);
 
-    await expect(lift.execute(new LiftStockAlertCommand(VILLAGE, id, "staff_lou"))).rejects.toThrow(
-      StockTrackingDisabledError,
-    );
     await expect(onlyAlertOf(list, VILLAGE)).resolves.toMatchObject({ level: "out_of_stock" });
     await expect(live.execute()).resolves.toMatchObject({
       sites: [{ siteId: VILLAGE, alerts: [{ sku: "CRO" }] }],
+    });
+
+    await lift.execute(new LiftStockAlertCommand(VILLAGE, id, "staff_lou"));
+
+    await expect(list.execute(new ListSiteStockAlertsQuery(VILLAGE))).resolves.toMatchObject({
+      alerts: [],
     });
   });
 
