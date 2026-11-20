@@ -95,6 +95,8 @@ l'envoi lui-même.
 
 ### 2.4 Le panier de la boutique
 
+**Plan** : [`plan-bloc-panier.md`](plan-bloc-panier.md) (2026-11-20).
+
 **Aujourd'hui.** Une douzaine de fichiers : `shop-cart.repository`,
 `shop-cart-quoting.service`, `cart-adjustments`, l'enregistrement et le
 chiffrage du panier.
