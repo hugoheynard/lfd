@@ -288,10 +288,21 @@ export interface ShopQuoteView {
 
 /**
  * Le franco vu du panier : offert (« Coursier offert », sans montant — Hugo,
- * 2026-11-05), ou ce qu'il manque pour l'atteindre.
+ * 2026-11-05), ou ce qu'il manque pour l'atteindre. Le seuil retenu est le
+ * plus favorable entre le franco de la route et les promotions « Sur la
+ * livraison » qui admettent l'appelant (`plan-livraison-offerte.md`, § 2.4).
  */
 export type ShopQuoteFreeDeliveryView =
-  | { readonly status: "offered" }
+  | {
+      readonly status: "offered";
+      /**
+       * Le libellé de la promotion qui offre la livraison, dans l'audience de
+       * l'appelant (« Livraison offerte — client fidèle ») ; **absent** quand
+       * c'est le franco de la route. Servi seulement à l'appelant que la
+       * promotion admet : le devis est calculé sur ses faits.
+       */
+      readonly label?: DiscountLabelView;
+    }
   | {
       readonly status: "short";
       /** Ce qu'il manque pour atteindre le seuil, HT, en centimes, strictement positif. */

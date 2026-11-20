@@ -15,6 +15,8 @@ import type { PickupAddressRepository } from "../../../../pickup-addresses/domai
 import { FixedLineClassifications } from "../../../domain/ports/__tests__/line-classification-doubles.js";
 import type { OrderLineClassificationReader } from "../../../domain/ports/order-line-classification.reader.js";
 import { BasketPromotions } from "../basket-promotions.service.js";
+import { DeliveryFeePromotions } from "../delivery-fee-promotions.service.js";
+import { DeliveryFeePromotionReader } from "../../../../promotions/domain/ports/delivery-fee-promotion.reader.js";
 import { DeliveryZoneOfPostalCodeReader } from "../../../domain/ports/delivery-zone-of-postal-code.reader.js";
 import { GuestSignInOffer } from "../guest-sign-in-offer.service.js";
 import type { PickupBuyer } from "../cart-adjustments.service.js";
@@ -36,6 +38,32 @@ export function basketPromotions(
     new FixedBasketPromotions(promotions),
     new PromotionAudienceFactsResolver(new FixedCompanyStatuses(), new FixedPrincipals()),
     classifications,
+    clock,
+  );
+}
+
+/** Les promotions « Sur la livraison » vivantes — fixées par la suite. */
+export class FixedDeliveryFeePromotions extends DeliveryFeePromotionReader {
+  constructor(private readonly promotions: readonly LivePromotion[] = []) {
+    super();
+  }
+
+  live(): Promise<readonly LivePromotion[]> {
+    return Promise.resolve(this.promotions);
+  }
+}
+
+/**
+ * **Le point « sur la livraison » sur ces promotions** — par défaut aucune :
+ * la livraison n'est offerte que par le franco de la route.
+ */
+export function deliveryFeePromotions(
+  promotions: readonly LivePromotion[] = [],
+  clock: FixedClock = new FixedClock(NOW),
+): DeliveryFeePromotions {
+  return new DeliveryFeePromotions(
+    new FixedDeliveryFeePromotions(promotions),
+    new PromotionAudienceFactsResolver(new FixedCompanyStatuses(), new FixedPrincipals()),
     clock,
   );
 }

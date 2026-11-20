@@ -300,7 +300,12 @@ describe("une commande exact_ht", () => {
     const offered = recoverOrderDiscount({
       ...placed,
       deliveryFeeAdjustment: fee,
-      freeDelivery: { thresholdCents: 1_000, waivedCents: 1_200, waivedTtcCents: 1_440 },
+      freeDelivery: {
+        thresholdCents: 1_000,
+        waivedCents: 1_200,
+        waivedTtcCents: 1_440,
+        promotion: null,
+      },
     });
     const billed = recoverOrderDiscount({ ...placed, deliveryFeeAdjustment: fee });
 

@@ -1,11 +1,16 @@
-import { freeDeliveryOf, type FreeDelivery } from "../value-objects/free-delivery.js";
+import {
+  freeDeliveryOf,
+  type FreeDelivery,
+  type FreeDeliveryLabel,
+} from "../value-objects/free-delivery.js";
 
 /**
- * Ce que le jugement du franco lit d'un panier déjà chiffré : le seuil de la
- * route, la base, et le frais que la zone facturerait.
+ * Ce que le jugement du franco lit d'un panier déjà chiffré : le seuil retenu
+ * (celui de la route ou d'une promotion « Sur la livraison »), la base, et le
+ * frais que la zone facturerait.
  */
 export interface FreeDeliveryJudgementInput {
-  /** Le seuil HT de la route ; `null` = pas de franco. */
+  /** Le seuil HT retenu ; `null` = aucun candidat. */
   readonly thresholdCents: number | null;
   /**
    * **La base du seuil** (Hugo, 2026-11-05) : les marchandises HT, APRÈS les
@@ -46,6 +51,7 @@ export function judgedFreeDelivery(input: FreeDeliveryJudgementInput): FreeDeliv
     thresholdCents,
     waivedCents: input.feeHtCents,
     waivedTtcCents: input.feeTtcCents,
+    promotion: null,
   });
 }
 
@@ -60,7 +66,16 @@ export function judgedFreeDelivery(input: FreeDeliveryJudgementInput): FreeDeliv
  * 2026-11-05).
  */
 export type FreeDeliveryProgress =
-  | { readonly status: "offered" }
+  | {
+      readonly status: "offered";
+      /**
+       * Le libellé de la promotion qui offre, dans l'audience de l'acheteur
+       * (`plan-livraison-offerte.md`, § 2.8) ; absent quand c'est le franco de
+       * la route. Le devis le sert à l'appelant que la promotion admet, et à
+       * lui seul : il est calculé sur ses faits.
+       */
+      readonly label?: FreeDeliveryLabel;
+    }
   | {
       readonly status: "short";
       /** Ce qu'il manque à la base pour atteindre le seuil, HT, strictement positif. */

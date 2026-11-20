@@ -8,6 +8,7 @@ import {
 } from "../../pricing/infrastructure/pricing-materials.cache.js";
 import { livePromotionOf, type LivePromotion } from "../domain/live-promotion.js";
 import { BasketPromotionReader } from "../domain/ports/basket-promotion.reader.js";
+import { DeliveryFeePromotionReader } from "../domain/ports/delivery-fee-promotion.reader.js";
 import { LinePromotionReader } from "../domain/ports/line-promotion.reader.js";
 import type { PromotionApplicationPoint } from "../domain/promotion-fulfillment.js";
 import { FULFILLMENT_LINKS } from "./promotion-fulfillment-rows.js";
@@ -80,5 +81,27 @@ export class PrismaBasketPromotionReader extends BasketPromotionReader {
 
   liveAt(at: Date): Promise<readonly LivePromotion[]> {
     return promotionsAt(this.prisma, "basket", at);
+  }
+}
+
+/**
+ * Le point « sur la livraison » (`plan-livraison-offerte.md`, § 2.4), par le
+ * même cache que les deux autres : l'estampille de `pricing_events` couvre
+ * aussi ses actes. Aucune lecture datée : la livraison offerte se juge au
+ * présent, à la passation comme en révision (rejugée, décision (d)).
+ */
+@Injectable()
+export class PrismaDeliveryFeePromotionReader extends DeliveryFeePromotionReader {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly cache: PricingMaterialsCache,
+  ) {
+    super();
+  }
+
+  live(): Promise<readonly LivePromotion[]> {
+    return this.cache.of(PRICING_CACHE_KEYS.deliveryFeePromotions, () =>
+      promotionsAt(this.prisma, "delivery_fee", null),
+    );
   }
 }

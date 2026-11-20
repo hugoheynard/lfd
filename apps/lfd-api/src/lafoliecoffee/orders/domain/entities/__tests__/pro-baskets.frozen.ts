@@ -362,7 +362,12 @@ export const FROZEN_FRANCO_PRO_DRAFTS = [
       [2100, null, null],
       [1780, null, null],
     ],
-    freeDelivery: { thresholdCents: 3880, waivedCents: 1500, waivedTtcCents: null },
+    freeDelivery: {
+      thresholdCents: 3880,
+      waivedCents: 1500,
+      waivedTtcCents: null,
+      promotion: null,
+    },
   },
   {
     name: "franco manqué de peu",

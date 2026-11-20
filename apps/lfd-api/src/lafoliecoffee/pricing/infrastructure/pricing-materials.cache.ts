@@ -259,5 +259,6 @@ export const PRICING_CACHE_KEYS = {
   //   l'API — aucun acte ne bouge l'estampille.
   linePromotions: "line-promotions",
   basketPromotions: "basket-promotions",
+  deliveryFeePromotions: "delivery-fee-promotions",
   promotionsSource: "promotions-source",
 } as const;

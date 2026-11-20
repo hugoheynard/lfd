@@ -182,6 +182,7 @@ function adjustmentOf(effect: PromotionEffect): CartAdjustment | null {
       return { mode: "amount", cents: effect.cents };
     case "unit_amount_off":
     case "fixed_unit_price":
+    case "free_delivery":
       return null;
   }
 }

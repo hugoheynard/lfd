@@ -29,7 +29,9 @@ import { PreferredPickupReader } from "../../domain/ports/preferred-pickup.reade
 import type { BasketLine } from "../../domain/services/basket-promotion-choice.js";
 import type { KnownBuyerFacts } from "../../../promotions/application/promotion-audience-facts.resolver.js";
 import type { LoadedBasketPromotions } from "../../domain/services/loaded-basket-promotions.js";
+import type { LoadedDeliveryFeePromotions } from "../../domain/services/free-delivery-candidates.js";
 import { BasketPromotions } from "./basket-promotions.service.js";
+import { DeliveryFeePromotions } from "./delivery-fee-promotions.service.js";
 import type { PickupBuyer, ResolvedPickup } from "./cart-adjustments.types.js";
 
 export type { PickupBuyer, ResolvedPickup } from "./cart-adjustments.types.js";
@@ -77,6 +79,7 @@ export class CartAdjustments {
     private readonly delivery: DeliveryAvailabilityReader,
     private readonly preferences: PreferredPickupReader,
     private readonly basket: BasketPromotions,
+    private readonly deliveryFee: DeliveryFeePromotions,
   ) {}
 
   /**
@@ -231,6 +234,14 @@ export class CartAdjustments {
    */
   promotionsFor(buyer: KnownBuyerFacts): Promise<LoadedBasketPromotions> {
     return this.basket.load(buyer);
+  }
+
+  /**
+   * Les promotions « Sur la livraison » que le calcul jugera pour CET acheteur
+   * et CETTE zone (`plan-livraison-offerte.md`, § 2.4).
+   */
+  deliveryFeePromotionsFor(buyer: KnownBuyerFacts): Promise<LoadedDeliveryFeePromotions> {
+    return this.deliveryFee.load(buyer);
   }
 
   /**

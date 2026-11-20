@@ -12,7 +12,11 @@ import { FixedLineClassifications } from "../../../domain/ports/__tests__/line-c
 import { PreferredPickupReader } from "../../../domain/ports/preferred-pickup.reader.js";
 import { CartAdjustments } from "../cart-adjustments.service.js";
 import { pickupDiscountPromotions } from "../../../../promotions/domain/__tests__/pickup-discount-reprise.fixture.js";
-import { basketPromotions, pickupBuyer } from "./basket-promotions.doubles.js";
+import {
+  basketPromotions,
+  pickupBuyer,
+  deliveryFeePromotions,
+} from "./basket-promotions.doubles.js";
 
 /**
  * La remise du point sur ses seules lignes éligibles (`documentation/promotions/promotions.md`, § 2.17,
@@ -91,6 +95,7 @@ function adjustments(
     new Open(),
     new NoPreference(),
     basketPromotions(pickupDiscountPromotions([point]), classifications),
+    deliveryFeePromotions(),
   );
 }
 

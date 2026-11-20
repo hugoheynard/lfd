@@ -21,6 +21,12 @@ import {
 } from "./basket-pricing-context.js";
 import { basketTermsOf, type BasketDeliveryFee, type BasketDiscount } from "./basket-terms.js";
 import { exactLineTtcsOf } from "./exact-order-composition.js";
+import {
+  deliveryFeePromotionCandidates,
+  freeDeliveryCandidatesOf,
+  NO_DELIVERY_FEE_PROMOTIONS,
+  type FreeDeliveryCandidate,
+} from "./free-delivery-candidates.js";
 import { basketHourNotices } from "./loaded-basket-promotions.js";
 
 /**
@@ -70,7 +76,7 @@ export function priceBasket(
     deliveryVatMode: context.deliveryVatMode,
     vatMethod: cart.vatMethod,
     subtotalCents,
-    freeDeliveryThresholdCents: freeDeliveryThresholdOf(context.route),
+    freeDeliveryCandidates: freeDeliveryCandidatesFor(context.route, cart),
   });
   return {
     terms: { ...terms, ...lateFeeOf(verdicts.lateFee, subtotalCents) },
@@ -142,9 +148,23 @@ function deliveryFeeOf(route: PricedRoute | null, subtotalCents: number): Basket
   return { cents: cartAdjustmentCents(route.fee, subtotalCents), adjustment: route.fee };
 }
 
-/** Le seuil du franco de la zone (1b) ; aucun en retrait ni sans acheminement. */
-function freeDeliveryThresholdOf(route: PricedRoute | null): number | null {
-  return route === null || route.method === "pickup" ? null : route.freeDeliveryThresholdCents;
+/**
+ * Les seuils candidats de la livraison offerte : le franco de la zone (1b)
+ * et les promotions « Sur la livraison » qui admettent l'acheteur, jugées au
+ * créneau du panier (§ 2.4). Aucun en retrait ni sans acheminement.
+ */
+function freeDeliveryCandidatesFor(
+  route: PricedRoute | null,
+  cart: BasketCart,
+): readonly FreeDeliveryCandidate[] {
+  if (route === null || route.method === "pickup") {
+    return NO_DELIVERY_FEE_PROMOTIONS;
+  }
+  const promotions =
+    route.deliveryFeePromotions === undefined
+      ? NO_DELIVERY_FEE_PROMOTIONS
+      : deliveryFeePromotionCandidates(route.deliveryFeePromotions, cart.handoverAt);
+  return freeDeliveryCandidatesOf(route.freeDeliveryThresholdCents, promotions);
 }
 
 /**

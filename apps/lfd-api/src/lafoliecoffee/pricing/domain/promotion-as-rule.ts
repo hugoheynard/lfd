@@ -157,7 +157,7 @@ type RuleNature =
 
 /**
  * L'effet, dans la nature d'une règle : prix posé, ou baisse. `null` pour
- * une remise de panier, qui n'a pas de lecture à l'unité — l'agrégat la
+ * une remise de panier ou la livraison offerte, qui n'ont pas de lecture à l'unité — l'agrégat la
  * refuse au point ligne (`EFFECTS_AT`) ; la refuser ici aussi plutôt que
  * d'inventer une valeur.
  */
@@ -176,6 +176,7 @@ function natureOf(effect: PromotionEffect): RuleNature | null {
         alteration: { direction: "decrease", mode: "amount", millicents: effect.millicents },
       };
     case "basket_amount_off":
+    case "free_delivery":
       return null;
   }
 }

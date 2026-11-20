@@ -1,6 +1,7 @@
 import type { CartAdjustment, PickupAddressView, PickupSnapshot, WindowMode } from "@lfd/contracts";
 
 import { AppError } from "../../../../platform/shared/errors/app-error.js";
+import type { LoadedDeliveryFeePromotions } from "../../domain/services/free-delivery-candidates.js";
 import type { LoadedBasketPromotions } from "../../domain/services/loaded-basket-promotions.js";
 import type { CartAdjustments, PickupBuyer } from "./cart-adjustments.service.js";
 
@@ -70,11 +71,15 @@ export interface LoadedDeliveryZone {
   readonly freeDeliveryThresholdCents: number | null;
   readonly globalWindowMode: WindowMode;
   readonly promotions: LoadedBasketPromotions;
+  /** Les promotions « Sur la livraison » de cet acheteur dans cette zone (§ 2.4). */
+  readonly deliveryFeePromotions: LoadedDeliveryFeePromotions;
 }
 
 /**
  * La zone du code postal livré — la livraison ouverte à la clientèle d'abord
- * —, puis les promotions de cette zone (`promotions.md`, § 2.14). Le code
+ * —, puis les promotions de cette zone (`promotions.md`, § 2.14), celles du
+ * panier et celles « Sur la livraison », pour les faits de CET acheteur — le
+ * client, quand l'équipe commande pour lui. Le code
  * postal suffit au prix (É4) : l'adresse complète est un contrôle de la
  * commande.
  */
@@ -90,12 +95,23 @@ export async function loadDeliveryZone(
     return delivery;
   }
   const { zone, fee, freeDeliveryThresholdCents, globalWindowMode } = delivery.value;
-  const promotions = await adjustments.promotionsFor({
+  const known = {
     ...factsOf(buyer),
     fulfillment: { method: "delivery", zoneId: zone.id },
-  });
+  } as const;
+  const [promotions, deliveryFeePromotions] = await Promise.all([
+    adjustments.promotionsFor(known),
+    adjustments.deliveryFeePromotionsFor(known),
+  ]);
   return {
-    value: { zoneId: zone.id, fee, freeDeliveryThresholdCents, globalWindowMode, promotions },
+    value: {
+      zoneId: zone.id,
+      fee,
+      freeDeliveryThresholdCents,
+      globalWindowMode,
+      promotions,
+      deliveryFeePromotions,
+    },
   };
 }
 

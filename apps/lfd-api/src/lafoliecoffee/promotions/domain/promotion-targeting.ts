@@ -251,6 +251,10 @@ export function fulfillmentRankOf(
     return null;
   }
   if (fact.method === "pickup") {
+    // Le retrait n'a pas de frais : « sur la livraison » ne l'admet jamais.
+    if (fulfillment.kind === "delivery_fee") {
+      return null;
+    }
     const { pickup } = fulfillment;
     if (pickup === "none") {
       return null;

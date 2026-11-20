@@ -25,7 +25,7 @@ import { FixedDeliveryVat } from "../../commands/__tests__/fixed-delivery-vat.js
 import { CartAdjustments } from "../cart-adjustments.service.js";
 import { CustomerAudiences } from "../customer-audiences.service.js";
 import { PricingContext } from "../pricing-context.service.js";
-import { basketPromotions } from "./basket-promotions.doubles.js";
+import { basketPromotions, deliveryFeePromotions } from "./basket-promotions.doubles.js";
 import { catalogItem, pricingOf, PRICED_AT } from "./shop-cart-quoting.doubles.js";
 
 /**
@@ -100,6 +100,8 @@ class StatusOf extends CompanyStatusReader {
 export interface PricingContextSetup {
   readonly points?: CountedPoints;
   readonly promotions?: readonly LivePromotion[];
+  /** Les promotions « Sur la livraison » vivantes ; aucune par défaut. */
+  readonly deliveryFeePromotions?: readonly LivePromotion[];
   readonly deliveryVatMode?: DeliveryVatMode;
   readonly companyStatus?: OrderCompanyStatus | null;
   /** La zone avec ses remplacements par audience (0b) ; {@link ZONE} sans remplacement sinon. */
@@ -129,6 +131,7 @@ export function pricingContextOf(setup: PricingContextSetup = {}) {
       new Open(),
       new NoPreference(),
       basketPromotions(setup.promotions ?? [], classifications, new FixedClock(PRICED_AT)),
+      deliveryFeePromotions(setup.deliveryFeePromotions ?? [], new FixedClock(PRICED_AT)),
     ),
     classifications,
     new CustomerAudiences(new StatusOf(setup.companyStatus ?? null)),

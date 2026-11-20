@@ -95,6 +95,11 @@ export function overlapOf(
     return null;
   }
   const point = applicationPointOf(candidate.terms.fulfillment);
+  // Deux livraisons offertes ne se disputent rien : la commande retient le
+  // seuil le plus favorable (`plan-livraison-offerte.md`, § 2.3).
+  if (point === "delivery_fee") {
+    return null;
+  }
   const witness = sharedArticleOf(candidate.terms, rival.terms, articles, point);
   return witness === null ? null : { crossing, period, witness };
 }

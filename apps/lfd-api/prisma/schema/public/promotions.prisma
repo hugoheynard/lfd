@@ -33,11 +33,14 @@ model Promotion {
   tileTextEn           String?   @map("tile_text_en")
   tileTextIt           String?   @map("tile_text_it")
   reason               String?
-  /// `line` | `basket` — miroir de `fulfillment_kind`, dérivé par l'agrégat.
+  /// `line` | `basket` | `delivery_fee` — dérivé de l'acheminement par
+  /// l'agrégat (`delivery_fee` : la livraison offerte, migration
+  /// `20261120120000`).
   applicationPoint     String    @map("application_point")
-  /// `percent_off` | `unit_amount_off` | `fixed_unit_price` | `basket_amount_off`.
+  /// `percent_off` | `unit_amount_off` | `fixed_unit_price` | `basket_amount_off`
+  /// | `free_delivery` (sur la livraison seulement, valeur 0).
   effectKind           String    @map("effect_kind")
-  /// bp, millicentimes ou centimes selon `effect_kind`.
+  /// bp, millicentimes ou centimes selon `effect_kind` ; 0 pour `free_delivery`.
   effectValue          Int       @map("effect_value")
   ownFloorMode         String?   @map("own_floor_mode")
   ownFloorValue        Int?      @map("own_floor_value")
@@ -80,7 +83,8 @@ model Promotion {
   fulfillmentDelivery  String?   @map("fulfillment_delivery")
   /// `all_except` | `only`.
   scopeMode            String    @map("scope_mode")
-  /// Liste typée, toutes doivent tenir ; `[]` = aucune.
+  /// Liste typée, toutes doivent tenir ; `[]` = aucune. `min_basket`
+  /// (`{kind, cents}`) sur `delivery_fee` seulement (CHECK).
   conditions           Json      @default("[]")
   /// `NULL` = saisie ; sinon la mémoire de la source reprise.
   origin               Json?

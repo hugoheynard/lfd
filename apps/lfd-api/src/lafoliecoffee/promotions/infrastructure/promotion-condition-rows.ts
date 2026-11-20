@@ -34,14 +34,21 @@ export type WeeklyHoursRow = {
 
 /** Une condition, telle qu'elle s'écrit. */
 export type PromotionConditionRow =
-  { readonly kind: "min_quantity"; readonly value: number } | WeeklyHoursRow;
+  | { readonly kind: "min_quantity"; readonly value: number }
+  | WeeklyHoursRow
+  | { readonly kind: "min_basket"; readonly cents: number };
 
 const WEEKDAYS: readonly Weekday[] = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
 
 export function conditionRowOf(condition: PromotionCondition): PromotionConditionRow {
-  return condition.kind === "min_quantity"
-    ? { kind: condition.kind, value: condition.value }
-    : weeklyHoursRowOf(condition);
+  switch (condition.kind) {
+    case "min_quantity":
+      return { kind: condition.kind, value: condition.value };
+    case "min_basket":
+      return { kind: condition.kind, cents: condition.cents };
+    case "weekly_hours":
+      return weeklyHoursRowOf(condition);
+  }
 }
 
 export function weeklyHoursRowOf(hours: PromotionWeeklyHours): WeeklyHoursRow {
@@ -64,6 +71,9 @@ export function conditionFromJson(entry: unknown): PromotionCondition | null {
   }
   if (entry["kind"] === "min_quantity" && typeof entry["value"] === "number") {
     return { kind: "min_quantity", value: entry["value"] };
+  }
+  if (entry["kind"] === "min_basket" && typeof entry["cents"] === "number") {
+    return { kind: "min_basket", cents: entry["cents"] };
   }
   return weeklyHoursFromJson(entry);
 }

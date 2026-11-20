@@ -51,6 +51,7 @@ const PRO_FRANCO: FreeDelivery = {
   thresholdCents: 8_000,
   waivedCents: 1_500,
   waivedTtcCents: null,
+  promotion: null,
 };
 
 describe("le bon partiel `line_ht` d'une commande au franco figé", () => {
@@ -87,7 +88,12 @@ describe("le bon partiel `line_ht` d'une commande au franco figé", () => {
 });
 
 describe("le bon partiel `exact_ht` d'une commande au franco figé", () => {
-  const FRANCO: FreeDelivery = { thresholdCents: 8_000, waivedCents: 1_250, waivedTtcCents: 1_500 };
+  const FRANCO: FreeDelivery = {
+    thresholdCents: 8_000,
+    waivedCents: 1_250,
+    waivedTtcCents: 1_500,
+    promotion: null,
+  };
   // La commande au franco porte un port TTC nul (CHECK `orders_free_delivery_waives_fee`).
   const EXACT = { voucherTtcCents: 0, deliveryFeeTtcCents: 0 };
 

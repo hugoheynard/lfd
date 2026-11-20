@@ -8,7 +8,16 @@ import {
 import { PromotionAudienceLabelWithoutAudienceError } from "./errors/promotion-audience-errors.js";
 import type { LabelAudience, PromotionAudienceSet } from "./promotion-audience-set.js";
 import { PromotionHoursAtDisplayedPriceError } from "./errors/promotion-hours-errors.js";
-import { assertConditions, weeklyHoursOf, type PromotionCondition } from "./promotion-condition.js";
+import {
+  assertConditions,
+  minBasketCentsOf,
+  weeklyHoursOf,
+  type PromotionCondition,
+} from "./promotion-condition.js";
+import {
+  PromotionDeliveryFeeForeignOptionError,
+  PromotionMinBasketOutsideDeliveryFeeError,
+} from "./errors/promotion-delivery-fee-errors.js";
 import {
   EFFECTS_AT,
   assertEffectValue,
@@ -96,6 +105,8 @@ export interface PromotionTerms extends PromotionWindow {
  * @throws {PromotionProductTargetAtLineError} un produit entier visé au point ligne.
  * @throws {PromotionAudienceLabelWithoutAudienceError} un libellé d'audience que le public ne touche pas.
  * @throws {PromotionHoursAtDisplayedPriceError} des jours et heures « dans le prix affiché ».
+ * @throws {PromotionDeliveryFeeForeignOptionError} portée, cumul ou quantité sur la livraison.
+ * @throws {PromotionMinBasketOutsideDeliveryFeeError} un panier minimum hors de la livraison.
  * @throws les refus de `assertFulfillment`, `assertEffectValue`, `assertOwnFloor`, `assertScope`, `assertConditions`.
  */
 export function assertTerms(terms: PromotionTerms): void {
@@ -117,7 +128,7 @@ export function assertTerms(terms: PromotionTerms): void {
     throw new PromotionEffectPointMismatchError(terms.effect.kind, point);
   }
   if (terms.ownFloor !== null) {
-    if (point === "basket") {
+    if (point !== "line") {
       throw new PromotionLineOnlyOptionError("own_floor");
     }
     assertOwnFloor(terms.ownFloor);
@@ -132,6 +143,33 @@ export function assertTerms(terms: PromotionTerms): void {
   // heures, § 11) : le rayon ne connaît pas de créneau.
   if (point === "line" && weeklyHoursOf(terms.conditions) !== null) {
     throw new PromotionHoursAtDisplayedPriceError();
+  }
+  assertDeliveryFeeTerms(terms, point === "delivery_fee");
+}
+
+/**
+ * **Ce que porte une promotion « Sur la livraison »** (`plan-livraison-offerte.md`,
+ * § 2.3) : ni portée sur le catalogue, ni cumul, ni quantité minimum — et le
+ * panier minimum n'existe que chez elle.
+ *
+ * @throws {PromotionDeliveryFeeForeignOptionError} une option étrangère au frais.
+ * @throws {PromotionMinBasketOutsideDeliveryFeeError} un panier minimum ailleurs.
+ */
+function assertDeliveryFeeTerms(terms: PromotionTerms, onDeliveryFee: boolean): void {
+  if (!onDeliveryFee) {
+    if (minBasketCentsOf(terms.conditions) !== null) {
+      throw new PromotionMinBasketOutsideDeliveryFeeError();
+    }
+    return;
+  }
+  if (terms.scope.mode !== "all_except" || terms.scope.rules.length > 0) {
+    throw new PromotionDeliveryFeeForeignOptionError("scope");
+  }
+  if (terms.cumulative) {
+    throw new PromotionDeliveryFeeForeignOptionError("cumulative");
+  }
+  if (terms.conditions.some((condition) => condition.kind === "min_quantity")) {
+    throw new PromotionDeliveryFeeForeignOptionError("min_quantity");
   }
 }
 

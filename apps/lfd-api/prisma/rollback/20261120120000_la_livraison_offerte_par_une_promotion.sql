@@ -1,0 +1,28 @@
+-- RETOUR ARRIÈRE de 20261120120000_la_livraison_offerte_par_une_promotion
+-- (plan `documentation/promotions/plan-livraison-offerte.md`, Partie 3).
+--
+-- 🔴 NON APPLIQUÉ, et Prisma ne le lit pas. La migration reste inscrite
+-- « appliquée ».
+--
+-- Tant qu'aucune promotion « Sur la livraison » n'a été posée, le retour du
+-- code seul suffit : les CHECK élargis admettent tout ce que le code d'avant
+-- écrit, et les colonnes neuves restent NULL.
+--
+-- Après une première pose, le code d'avant ne sait plus relire la ligne
+-- (point `delivery_fee` inconnu de son mapper) : l'écran Promotions et la
+-- caisse échoueraient en la nommant. Le geste, sur décision de Hugo, est
+-- d'archiver ces promotions AVANT de revenir au code d'avant :
+--
+--   UPDATE public.promotions
+--      SET archived_at = now(), archived_by = 'rollback',
+--          archive_reason = 'Retour arrière de la livraison offerte par promotion'
+--    WHERE application_point = 'delivery_fee' AND archived_at IS NULL;
+--
+-- ⚠️ Archiver ne suffit pas à l'écran, qui relit aussi les archivées. Une
+-- commande offerte par une promotion porte `free_delivery_threshold_cents`
+-- NULL et `free_delivery_waived_cents` présent : le code d'avant refuserait
+-- de la relire (« livraison offerte » illisible). Aucune remise en arrière
+-- des CHECK ni des colonnes n'est proposée : elle supposerait de réécrire des
+-- commandes passées.
+
+SELECT 1;

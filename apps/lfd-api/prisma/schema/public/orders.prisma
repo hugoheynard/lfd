@@ -334,18 +334,31 @@ model Order {
   /// `NULL` = retrait (aucun frais) ou commande antérieure au 2026-09-09 ; les
   /// deux se distinguent par `delivery_fee_cents`, nul dans le premier cas.
   deliveryFeeAdjustment      Json?           @map("delivery_fee_adjustment")
-  /// **Le franco figé à la passation** (plan
-  /// `documentation/promotions/plan-livraison-offerte.md`, 1a) : le seuil HT
-  /// appliqué, et ce que la livraison aurait coûté — HT, et TTC pour une
-  /// commande `exact_ht`. `NULL` = pas de franco (toute commande d'avant 1b).
-  /// Présent : `delivery_fee_cents` vaut 0 et `delivery_fee_adjustment` garde
-  /// le barème offert. CHECK `orders_free_delivery_*` (migration
-  /// `20261105160000`). Le franco se juge sur le panier COMMANDÉ : un départ
-  /// incomplet ne le fait pas perdre.
+  /// **La livraison offerte figée à la passation** (plan
+  /// `documentation/promotions/plan-livraison-offerte.md`, 1a et § 2.8) : le
+  /// seuil HT du **franco de la route**, et ce que la livraison aurait coûté —
+  /// HT, et TTC pour une commande `exact_ht`. `waived` présent = offerte (par
+  /// la route ou par une promotion) : `delivery_fee_cents` vaut 0 et
+  /// `delivery_fee_adjustment` garde le barème offert. Le seuil est `NULL`
+  /// quand une promotion a offert sans franco de route. CHECK
+  /// `orders_free_delivery_*` (migrations `20261105160000`, `20261120120000`).
+  /// Le franco se juge sur le panier COMMANDÉ : un départ incomplet ne le fait
+  /// pas perdre.
   freeDeliveryThresholdCents Int?            @map("free_delivery_threshold_cents")
   freeDeliveryWaivedCents    Int?            @map("free_delivery_waived_cents")
   freeDeliveryWaivedTtcCents Int?            @map("free_delivery_waived_ttc_cents")
-  vatCents                   Int             @default(0) @map("vat_cents")
+
+  /// **La promotion « Sur la livraison » qui a offert** (§ 2.8, B3) — son
+  /// identifiant (opaque, sans clé étrangère), son panier minimum HT (0 =
+  /// « toujours offerte ») et son libellé `{fr, en, it}` dans l'audience de
+  /// l'acheteur, la forme de `discount_label`. Les trois ensemble, et
+  /// seulement sur une commande offerte. `NULL` = le franco de la route.
+  /// Figés pour les documents ; la révision rejuge la promotion.
+  freeDeliveryPromotionId             String? @map("free_delivery_promotion_id")
+  freeDeliveryPromotionThresholdCents Int?    @map("free_delivery_promotion_threshold_cents")
+  freeDeliveryLabel                   Json?   @map("free_delivery_label")
+
+  vatCents   Int    @default(0) @map("vat_cents")
   /// La TVA **par taux**, figée à la passation — `[{ rate, amountCents }]`.
   ///
   /// `vatCents` est le total ; celle-ci en est le DÉTAIL, et elle est figée pour
@@ -355,9 +368,9 @@ model Order {
   ///
   /// `null` = commande antérieure au 2026-09-07. Non rétro-remplie volontairement :
   /// le bon n'affiche alors qu'une ligne « dont TVA », ce qui est vrai.
-  vatShares                  Json?           @map("vat_shares")
-  totalCents                 Int             @map("total_cents")
-  currency                   String          @default("EUR")
+  vatShares  Json?  @map("vat_shares")
+  totalCents Int    @map("total_cents")
+  currency   String @default("EUR")
 
   // Règlement. `paymentStatus` est fixé à la passation d'après le terme de la
   // société (cf. enum PaymentStatus). `stripePaymentIntentId` relie la commande

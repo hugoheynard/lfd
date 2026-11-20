@@ -47,6 +47,16 @@ export class PromotionInvalidEffectError extends DomainError {
   }
 }
 
+const EFFECT_LINE_MESSAGE =
+  "Une promotion sans acheminement s'applique à la ligne : un montant sur le panier ou la livraison offerte n'y ont pas de sens — choisissez un pourcentage, une remise unitaire ou un prix posé.";
+
+const EFFECT_POINT_MESSAGES: Readonly<Record<string, string>> = {
+  basket:
+    "Une promotion liée à un acheminement s'applique au panier : elle ne peut être qu'un pourcentage ou un montant sur le panier. Pour offrir la livraison, choisissez « Sur la livraison ».",
+  delivery_fee:
+    "Une promotion « Sur la livraison » offre le frais de livraison, et rien d'autre : pour un pourcentage ou un montant, choisissez « Au panier » ou « Dans le prix affiché ».",
+};
+
 /**
  * Un effet qui n'existe pas à ce point d'application : un prix posé ou une
  * remise unitaire n'a pas de sens sur un panier, un montant de panier n'en a
@@ -57,12 +67,7 @@ export class PromotionEffectPointMismatchError extends DomainError {
     readonly effectKind: string,
     readonly point: string,
   ) {
-    super(
-      "promotions.effect_point_mismatch",
-      point === "basket"
-        ? "Une promotion liée à un acheminement s'applique au panier : elle ne peut être qu'un pourcentage ou un montant sur le panier."
-        : "Une promotion sans acheminement s'applique à la ligne : un montant sur le panier n'y a pas de sens — choisissez un pourcentage, une remise unitaire ou un prix posé.",
-    );
+    super("promotions.effect_point_mismatch", EFFECT_POINT_MESSAGES[point] ?? EFFECT_LINE_MESSAGE);
   }
 }
 

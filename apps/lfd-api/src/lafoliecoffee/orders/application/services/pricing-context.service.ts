@@ -109,9 +109,10 @@ export interface FrozenDeliveryFee {
   readonly zoneId: string;
   readonly fee: CartAdjustment;
   /**
-   * Le seuil du franco figé (1b) ; `null` = la commande n'a pas eu de franco,
-   * et une révision dans la même zone n'en gagne pas : le seuil du jour
-   * n'entre jamais dans une révision.
+   * Le seuil du franco de la ROUTE figé (1b) ; `null` = aucun n'a été figé,
+   * et une révision dans la même zone prend le seuil du jour — elle ne peut
+   * qu'y gagner. Une promotion qui a offert n'y entre jamais : elle est
+   * rejugée (`plan-livraison-offerte.md`, § 2.8, B3).
    */
   readonly freeDeliveryThresholdCents: number | null;
 }
@@ -249,10 +250,17 @@ export class PricingContext {
     if ("refusal" in zone) {
       return zone;
     }
-    const { zoneId, fee, freeDeliveryThresholdCents, promotions } = zone.value;
+    const { zoneId, fee, freeDeliveryThresholdCents, promotions, deliveryFeePromotions } =
+      zone.value;
     return {
       value: {
-        route: { method: "delivery", zoneId, fee, freeDeliveryThresholdCents },
+        route: {
+          method: "delivery",
+          zoneId,
+          fee,
+          freeDeliveryThresholdCents,
+          deliveryFeePromotions,
+        },
         promotions,
       },
     };
@@ -302,13 +310,16 @@ export class PricingContext {
     if ("refusal" in zone) {
       return zone;
     }
-    const { zoneId, globalWindowMode, promotions } = zone.value;
+    const { zoneId, globalWindowMode, promotions, deliveryFeePromotions } = zone.value;
     // Même zone : le tarif de la passation, barème et franco. Autre zone :
     // ceux du jour de la nouvelle zone (Hugo, 2026-11-05).
     const tariff = frozenFee !== null && frozenFee.zoneId === zoneId ? frozenFee : zone.value;
     // Une commande passée SANS franco n'a figé aucun seuil : elle prend celui
     // du jour, et ne peut qu'y gagner (tranché le 2026-11-05, Hugo n'en fait
-    // pas un réglage). Un seuil figé, lui, reste celui de la passation.
+    // pas un réglage). Un seuil figé, lui, reste celui de la passation. Le
+    // seuil figé est celui de la ROUTE : une promotion qui a offert n'y entre
+    // jamais (§ 2.8, B3). Elle est rejugée avec celles du jour — vivante,
+    // éligible, dans la zone —, et n'offre plus si elle a pris fin.
     const threshold = tariff.freeDeliveryThresholdCents ?? zone.value.freeDeliveryThresholdCents;
     const route: BasketRoute = {
       method: "delivery",
@@ -316,6 +327,7 @@ export class PricingContext {
       address,
       fee: tariff.fee,
       freeDeliveryThresholdCents: threshold,
+      deliveryFeePromotions,
       globalWindowMode,
     };
     return { value: { route, promotions } };

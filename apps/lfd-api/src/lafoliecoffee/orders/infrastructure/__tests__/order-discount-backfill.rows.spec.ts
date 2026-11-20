@@ -30,6 +30,9 @@ function row(over: Partial<BackfillOrderRow> = {}): BackfillOrderRow {
     freeDeliveryThresholdCents: null,
     freeDeliveryWaivedCents: null,
     freeDeliveryWaivedTtcCents: null,
+    freeDeliveryPromotionId: null,
+    freeDeliveryPromotionThresholdCents: null,
+    freeDeliveryLabel: null,
     lines: [
       {
         id: "l1",

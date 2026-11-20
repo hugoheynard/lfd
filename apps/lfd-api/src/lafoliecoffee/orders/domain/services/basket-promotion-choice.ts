@@ -248,8 +248,8 @@ export function needsClassifications(candidates: readonly LivePromotion[]): bool
 }
 
 /**
- * L'effet, en ajustement de panier. `null` pour un effet de ligne, que
- * l'agrégat refuse au panier (`EFFECTS_AT`) — refusé ici aussi plutôt
+ * L'effet, en ajustement de panier. `null` pour un effet de ligne ou la
+ * livraison offerte, que l'agrégat refuse au panier (`EFFECTS_AT`) — refusé ici aussi plutôt
  * qu'inventé.
  */
 function adjustmentOf(effect: PromotionEffect): CartAdjustment | null {
@@ -260,6 +260,7 @@ function adjustmentOf(effect: PromotionEffect): CartAdjustment | null {
       return { mode: "amount", cents: effect.cents };
     case "unit_amount_off":
     case "fixed_unit_price":
+    case "free_delivery":
       return null;
   }
 }

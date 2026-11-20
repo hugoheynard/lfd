@@ -46,3 +46,15 @@ export function basketTerms(overrides: TermsOverrides = {}): PromotionTerms {
     ...overrides,
   });
 }
+
+/** « Livraison offerte · une société · toutes les zones », sans fin : une promotion sur la livraison. */
+export function deliveryFeeTerms(overrides: TermsOverrides = {}): PromotionTerms {
+  return lineTerms({
+    internalName: "Livraison offerte — client fidèle",
+    label: { fr: "Client fidèle", en: null, it: null },
+    effect: { kind: "free_delivery" },
+    audience: { kind: "company", companyId: "co_fidele" },
+    fulfillment: { kind: "delivery_fee", delivery: "all" },
+    ...overrides,
+  });
+}

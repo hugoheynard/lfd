@@ -49,7 +49,7 @@ function draftLine(
     deliveryVatMode: "standard",
     vatMethod: "line_ht",
     subtotalCents: 0,
-    freeDeliveryThresholdCents: null,
+    freeDeliveryCandidates: [],
   }).lines[0];
 }
 

@@ -1,6 +1,8 @@
 import type { AdminDeliveryZoneView, CartAdjustment, ShopQuotePayload } from "@lfd/contracts";
 
-import { catalogItem, quotingOf } from "./shop-cart-quoting.doubles.js";
+import { livePromotion } from "../../../../promotions/domain/__tests__/live-promotion.fixture.js";
+import type { LivePromotion } from "../../../../promotions/domain/live-promotion.js";
+import { catalogItem, PRICED_AT, quotingOf } from "./shop-cart-quoting.doubles.js";
 
 /**
  * **La livraison offerte au panier** (plan `plan-livraison-offerte.md`, 1c) :
@@ -29,6 +31,7 @@ async function quoteOf(
     readonly zone?: AdminDeliveryZoneView;
     readonly fulfillment?: ShopQuotePayload["fulfillment"];
     readonly companyId?: string | null;
+    readonly deliveryFeePromotions?: readonly LivePromotion[];
   } = {},
 ) {
   const companyId = options.companyId === undefined ? "co_1" : options.companyId;
@@ -36,6 +39,7 @@ async function quoteOf(
     catalog: [catalogItem("PAI-001", "Pain", 500_000, 5.5)],
     companyStatus: "active",
     zone: options.zone ?? zone(THRESHOLD),
+    deliveryFeePromotions: options.deliveryFeePromotions ?? [],
   }).quote({
     payload: {
       lines: [{ sku: "PAI-001", quantity }],
@@ -97,5 +101,38 @@ describe("ShopCartQuoting — la livraison offerte (1c)", () => {
   it("une zone gratuite : rien à promettre, la clé est absente", async () => {
     const view = await quoteOf(2, { zone: zone(THRESHOLD, { mode: "amount", cents: 0 }) });
     expect(view).not.toHaveProperty("freeDelivery");
+  });
+});
+
+describe("ShopCartQuoting — la livraison offerte par une promotion (`plan-livraison-offerte.md`, § 2.8)", () => {
+  const LOYAL = livePromotion({
+    id: "promo_livraison",
+    label: "Client fidèle",
+    effect: { kind: "free_delivery" },
+    audience: { kind: "company", companyId: "co_1" },
+    fulfillment: { kind: "delivery_fee", delivery: "all" },
+    validFrom: new Date(PRICED_AT.getTime() - 86_400_000),
+  });
+  const LABEL = { fr: "Client fidèle", en: "Client fidèle", it: "Client fidèle" };
+
+  it("à la société qu'elle vise : offert, avec le libellé de la promotion", async () => {
+    const view = await quoteOf(1, { zone: zone(null), deliveryFeePromotions: [LOYAL] });
+    expect(view.freeDelivery).toEqual({ status: "offered", label: LABEL });
+    expect(view.deliveryFeeCents).toBe(0);
+  });
+
+  it("à un autre appelant : ni livraison offerte, ni libellé", async () => {
+    const view = await quoteOf(1, {
+      zone: zone(null),
+      companyId: null,
+      deliveryFeePromotions: [LOYAL],
+    });
+    expect(view).not.toHaveProperty("freeDelivery");
+    expect(view.deliveryFeeCents).toBeGreaterThan(0);
+  });
+
+  it("offert par le franco de la route : « Coursier offert », sans libellé", async () => {
+    const view = await quoteOf(5, { companyId: null, deliveryFeePromotions: [LOYAL] });
+    expect(view.freeDelivery).toEqual({ status: "offered" });
   });
 });

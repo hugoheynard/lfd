@@ -97,6 +97,7 @@ describe("Order.draft — le franco d'une commande pro (line_ht)", () => {
       thresholdCents: 2_000,
       waivedCents: 1_200,
       waivedTtcCents: null,
+      promotion: null,
     });
     // 20,00 € HT + 1,10 € de TVA, sans course.
     expect(state.totalCents).toBe(2_110);
@@ -162,6 +163,7 @@ describe("Order.draft — le franco d'une commande de particulier (exact_ht)", (
       thresholdCents: 2_000,
       waivedCents: 1_200,
       waivedTtcCents: 1_440,
+      promotion: null,
     });
     expect(state.totalCents).toBe(2_110);
   });
@@ -282,6 +284,7 @@ describe("Order.revise — le franco rejugé contre le seuil figé", () => {
       thresholdCents: 2_000,
       waivedCents: 1_200,
       waivedTtcCents: null,
+      promotion: null,
     });
   });
 });

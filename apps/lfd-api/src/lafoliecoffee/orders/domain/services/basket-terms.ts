@@ -4,9 +4,14 @@ import type { DraftBasketDiscount } from "../entities/order-shapes.js";
 import type { OrderLineClassification } from "../ports/order-line-classification.reader.js";
 import type { OrderLineInput } from "../value-objects/order-line.js";
 import type { OrderVatMethod } from "../value-objects/order-vat-method.js";
+import { freeDeliveryOf, type FreeDelivery } from "../value-objects/free-delivery.js";
 import type { ReplayedBasket } from "./basket-discount-replay.js";
 import type { BasketTerms } from "./basket-pricing-context.js";
 import { composeExactOrder } from "./exact-order-composition.js";
+import {
+  chosenFreeDeliveryCandidate,
+  type FreeDeliveryCandidate,
+} from "./free-delivery-candidates.js";
 import {
   freeDeliveryProgressOf,
   judgedFreeDelivery,
@@ -33,8 +38,12 @@ export interface BasketTermsInput {
   readonly vatMethod: OrderVatMethod;
   /** Le sous-total HT arrondi par ligne (`priceBasket`) — la base `line_ht` du franco. */
   readonly subtotalCents: number;
-  /** Le seuil du franco de la route ; `null` = aucun (retrait, ou rien de réglé). */
-  readonly freeDeliveryThresholdCents: number | null;
+  /**
+   * **Les seuils candidats de la livraison offerte** (`plan-livraison-offerte.md`,
+   * § 2.4) : le franco de la route et les promotions « Sur la livraison » qui
+   * admettent l'acheteur ; vide en retrait ou sans rien de réglé.
+   */
+  readonly freeDeliveryCandidates: readonly FreeDeliveryCandidate[];
 }
 
 /** Les montants d'une méthode, et ce que le franco en lit. */
@@ -64,6 +73,10 @@ interface MethodAmounts {
  * `exact_ht`, Σ HT des lignes composées moins la remise HT composée, lus sur
  * LA composition qui chiffre déjà la remise et le port. Au franco, le frais
  * facturé vaut 0 et le barème offert reste figé.
+ *
+ * Le seuil jugé est celui que {@link chosenFreeDeliveryCandidate} retient
+ * parmi la route et les promotions ; `judgedFreeDelivery` ne change pas. La
+ * commande fige ensuite qui a offert ({@link withSource}).
  */
 export function basketTermsOf(input: BasketTermsInput): Omit<
   BasketTerms,
@@ -79,15 +92,20 @@ export function basketTermsOf(input: BasketTermsInput): Omit<
     input.vatMethod === "exact_ht"
       ? exactTermsOf(lines, discount, cumulated, deliveryFee, input.deliveryVatMode)
       : lineHtTermsOf(input.subtotalCents, discount, deliveryFee);
+  const chosen = chosenFreeDeliveryCandidate(input.freeDeliveryCandidates, amounts.goodsNetHtCents);
   const judgement: FreeDeliveryJudgementInput = {
-    thresholdCents: input.freeDeliveryThresholdCents,
+    thresholdCents: chosen?.thresholdCents ?? null,
     goodsNetHtCents: amounts.goodsNetHtCents,
     goodsNetTtcCents: amounts.goodsNetTtcCents,
     feeHtCents: amounts.feeHtCents,
     feeTtcCents: amounts.feeTtcCents,
   };
   const charged = deliveryFee.adjustment !== null;
-  const freeDelivery = charged ? judgedFreeDelivery(judgement) : null;
+  const judged = charged ? judgedFreeDelivery(judgement) : null;
+  const freeDelivery =
+    judged === null || chosen === null
+      ? null
+      : withSource(judged, chosen, input.freeDeliveryCandidates);
   return {
     lines,
     discountCents: amounts.discountCents,
@@ -100,8 +118,48 @@ export function basketTermsOf(input: BasketTermsInput): Omit<
     deliveryFeeCents: freeDelivery === null ? amounts.deliveryFeeCents : 0,
     freeDelivery,
     deliveryVatMode: input.deliveryVatMode,
-    freeDeliveryProgress: charged ? freeDeliveryProgressOf(judgement, freeDelivery) : null,
+    freeDeliveryProgress: charged ? progressOf(judgement, freeDelivery) : null,
   };
+}
+
+/**
+ * **Qui a offert**, figé (§ 2.8, B3) : le seuil de la ROUTE reste celui de la
+ * route — la révision le relit dans la même zone —, et la promotion qui a
+ * offert a ses propres champs. Une promotion n'est jamais relue comme un
+ * franco de route.
+ */
+function withSource(
+  judged: FreeDelivery,
+  chosen: FreeDeliveryCandidate,
+  candidates: readonly FreeDeliveryCandidate[],
+): FreeDelivery {
+  const route = candidates.find((candidate) => candidate.source.kind === "route");
+  const { source } = chosen;
+  return freeDeliveryOf({
+    thresholdCents: route?.thresholdCents ?? null,
+    waivedCents: judged.waivedCents,
+    waivedTtcCents: judged.waivedTtcCents,
+    promotion:
+      source.kind === "promotion"
+        ? {
+            promotionId: source.promotionId,
+            thresholdCents: chosen.thresholdCents,
+            label: source.label,
+          }
+        : null,
+  });
+}
+
+/** L'avancement, et le libellé de la promotion qui offre — à l'appelant, qu'elle admet. */
+function progressOf(
+  judgement: FreeDeliveryJudgementInput,
+  freeDelivery: FreeDelivery | null,
+): FreeDeliveryProgress | null {
+  const progress = freeDeliveryProgressOf(judgement, freeDelivery);
+  const promotion = freeDelivery?.promotion ?? null;
+  return progress?.status === "offered" && promotion !== null
+    ? { status: "offered", label: promotion.label }
+    : progress;
 }
 
 /** `line_ht` : les montants tels que la caisse les rend, en HT. */

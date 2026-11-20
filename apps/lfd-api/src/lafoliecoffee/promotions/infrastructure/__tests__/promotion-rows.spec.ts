@@ -1,7 +1,12 @@
 import { UnreadablePromotionRowError } from "../../domain/errors/promotion-errors.js";
 import { Promotion } from "../../domain/promotion.js";
 import { PromotionAudienceSet } from "../../domain/promotion-audience-set.js";
-import { FROM, basketTerms, lineTerms } from "../../domain/__tests__/promotion-terms.fixture.js";
+import {
+  FROM,
+  basketTerms,
+  deliveryFeeTerms,
+  lineTerms,
+} from "../../domain/__tests__/promotion-terms.fixture.js";
 import {
   audienceTargetRowsOf,
   type PromotionAudienceTargetRow,
@@ -101,6 +106,17 @@ describe("les mappers de la promotion", () => {
     [
       "une société et ses sites",
       lineTerms({ audience: { kind: "company_and_sites", companyId: "co_1" } }),
+    ],
+    [
+      "une livraison offerte, toutes zones, sans panier minimum (`plan-livraison-offerte.md`, § 2.3)",
+      deliveryFeeTerms(),
+    ],
+    [
+      "une livraison offerte dans deux zones, dès 50 € HT",
+      deliveryFeeTerms({
+        fulfillment: { kind: "delivery_fee", delivery: { zones: ["zone_b", "zone_a"] } },
+        conditions: [{ kind: "min_basket", cents: 5_000 }],
+      }),
     ],
   ])("aller-retour sans perte : %s", (_case, terms) => {
     const promotion = Promotion.pose("promo_1", terms, "staff_1", FROM)
@@ -203,6 +219,29 @@ describe("les mappers de la promotion", () => {
     const promotion = Promotion.pose("promo_1", basketTerms(), "staff_1", FROM);
     const row = { ...rowOf(promotion), pickupPoints: [] };
     expect(() => reread(promotion, row)).toThrow(UnreadablePromotionRowError);
+  });
+
+  /** B2 (§ 2.8) : le mapper connaît `delivery_fee`, et le CHECK n'est pas sa seule garde. */
+  it("écrit une livraison offerte au point `delivery_fee`, retrait « aucun », effet 0", () => {
+    const row = rowOf(Promotion.pose("promo_1", deliveryFeeTerms(), "staff_1", FROM));
+    expect(row).toMatchObject({
+      applicationPoint: "delivery_fee",
+      effectKind: "free_delivery",
+      effectValue: 0,
+      fulfillmentPickup: "none",
+      fulfillmentDelivery: "all",
+    });
+  });
+
+  it.each([
+    ["un retrait coché", { fulfillmentPickup: "all" }],
+    ["aucune zone", { fulfillmentDelivery: "none" }],
+    ["une valeur d'effet non nulle", { effectValue: 100 }],
+  ])("refuse en la nommant une livraison offerte avec %s", (_case, patch) => {
+    const promotion = Promotion.pose("promo_1", deliveryFeeTerms(), "staff_1", FROM);
+    expect(() => reread(promotion, { ...rowOf(promotion), ...patch })).toThrow(
+      UnreadablePromotionRowError,
+    );
   });
 
   it.each([

@@ -52,16 +52,42 @@ export function fulfillmentFromRow(
     }
     return { kind: "displayed_price" };
   }
+  const points = links.pickupPoints.map((link) => link.pickupId);
+  const zones = links.deliveryZones.map((link) => link.zoneId);
+  if (applicationPoint === "delivery_fee") {
+    return deliveryFeeFulfillmentOf(columns, points, zones, unreadable);
+  }
   if (applicationPoint !== "basket") {
     throw unreadable(`point d'application ${applicationPoint}`);
   }
-  const points = links.pickupPoints.map((link) => link.pickupId);
-  const zones = links.deliveryZones.map((link) => link.zoneId);
   const pickup = reachOf("retrait", columns.fulfillmentPickup, points, unreadable);
   const delivery = reachOf("livraison", columns.fulfillmentDelivery, zones, unreadable);
   return {
     kind: "basket",
     pickup: typeof pickup === "object" ? { points: pickup.ids } : pickup,
+    delivery: typeof delivery === "object" ? { zones: delivery.ids } : delivery,
+  };
+}
+
+/**
+ * « Sur la livraison » : aucun retrait, et toutes les zones ou celles-là —
+ * ce que les CHECK `promotions_delivery_fee_*` tiennent aussi.
+ */
+function deliveryFeeFulfillmentOf(
+  columns: PromotionFulfillmentColumns,
+  points: readonly string[],
+  zones: readonly string[],
+  unreadable: Unreadable,
+): PromotionFulfillment {
+  if (columns.fulfillmentPickup !== "none" || points.length > 0) {
+    throw unreadable("retrait coché sur une promotion « sur la livraison »");
+  }
+  const delivery = reachOf("livraison", columns.fulfillmentDelivery, zones, unreadable);
+  if (delivery === "none") {
+    throw unreadable("aucune zone sur une promotion « sur la livraison »");
+  }
+  return {
+    kind: "delivery_fee",
     delivery: typeof delivery === "object" ? { zones: delivery.ids } : delivery,
   };
 }
@@ -93,6 +119,9 @@ export function fulfillmentColumnsOf(
 ): PromotionFulfillmentColumns {
   if (fulfillment.kind === "displayed_price") {
     return { fulfillmentPickup: null, fulfillmentDelivery: null };
+  }
+  if (fulfillment.kind === "delivery_fee") {
+    return { fulfillmentPickup: "none", fulfillmentDelivery: reachModeOf(fulfillment.delivery) };
   }
   return {
     fulfillmentPickup: reachModeOf(fulfillment.pickup satisfies PickupReach),

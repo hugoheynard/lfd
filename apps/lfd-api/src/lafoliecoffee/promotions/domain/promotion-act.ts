@@ -1,5 +1,5 @@
 import { AUDIENCE_LABEL, type PromotionAudience } from "./promotion-audience.js";
-import { weeklyHoursOf } from "./promotion-condition.js";
+import { minBasketCentsOf, weeklyHoursOf } from "./promotion-condition.js";
 import type { PromotionEffect } from "./promotion-effect.js";
 import type { PromotionFulfillment } from "./promotion-fulfillment.js";
 import type { Promotion } from "./promotion.js";
@@ -118,6 +118,7 @@ export function describePromotion(
     describeWindow(terms.validFrom, terms.validTo),
     // Dit seulement quand posés : les phrases déjà figées n'en parlent pas.
     ...describeHoursOf(terms),
+    ...describeMinBasketOf(terms),
     // Dit seulement quand coché (§ 16) : les phrases déjà figées n'en parlent pas.
     ...(terms.cumulative ? ["cumulable"] : []),
   ].join(" · ");
@@ -127,6 +128,12 @@ export function describePromotion(
 function describeHoursOf(terms: PromotionTerms): string[] {
   const hours = weeklyHoursOf(terms.conditions);
   return hours === null ? [] : [describeWeeklyHours(hours)];
+}
+
+/** « dès 80,00 € HT » — le panier minimum d'une promotion sur la livraison. */
+function describeMinBasketOf(terms: PromotionTerms): string[] {
+  const cents = minBasketCentsOf(terms.conditions);
+  return cents === null ? [] : [`dès ${euros(cents / CENTS_PER_EURO)} HT`];
 }
 
 function describeEffect(effect: PromotionEffect): string {
@@ -139,6 +146,8 @@ function describeEffect(effect: PromotionEffect): string {
       return `prix posé ${euros(effect.millicents / MILLICENTS_PER_EURO)}`;
     case "basket_amount_off":
       return `−${euros(effect.cents / CENTS_PER_EURO)} sur le panier`;
+    case "free_delivery":
+      return "livraison offerte";
   }
 }
 
@@ -153,6 +162,11 @@ function describeFulfillment(fulfillment: PromotionFulfillment, names: Fulfillme
   if (fulfillment.kind === "displayed_price") {
     return "dans le prix affiché";
   }
+  if (fulfillment.kind === "delivery_fee") {
+    return fulfillment.delivery === "all"
+      ? "sur la livraison"
+      : `sur la livraison ${zonesOf(fulfillment.delivery.zones, names)}`;
+  }
   const parts: string[] = [];
   const { pickup, delivery } = fulfillment;
   if (pickup !== "none") {
@@ -163,13 +177,13 @@ function describeFulfillment(fulfillment: PromotionFulfillment, names: Fulfillme
     );
   }
   if (delivery !== "none") {
-    parts.push(
-      delivery === "all"
-        ? "livraison"
-        : `livraison ${delivery.zones.length === 1 ? "en zone" : "dans les zones"} ${named(delivery.zones, names.zones)}`,
-    );
+    parts.push(delivery === "all" ? "livraison" : `livraison ${zonesOf(delivery.zones, names)}`);
   }
   return parts.join(" et ");
+}
+
+function zonesOf(zones: readonly string[], names: FulfillmentNames): string {
+  return `${zones.length === 1 ? "en zone" : "dans les zones"} ${named(zones, names.zones)}`;
 }
 
 function named(ids: readonly string[], names: ReadonlyMap<string, string>): string {

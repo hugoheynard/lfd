@@ -88,7 +88,7 @@ export interface PromotionScopeFacts {
  * dépendance.
  */
 export type PromotionScopeEffectKind =
-  "percent_off" | "unit_amount_off" | "fixed_unit_price" | "basket_amount_off";
+  "percent_off" | "unit_amount_off" | "fixed_unit_price" | "basket_amount_off" | "free_delivery";
 
 /**
  * **Le point d'application** où la question est posée.

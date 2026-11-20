@@ -88,7 +88,10 @@ import { seenRevisions } from "./revision-seen.js";
 import { CatalogViewers } from "../../../../../catalog/application/catalog-viewers.service.js";
 import { InMemoryServedCompanies } from "../../../../../catalog/infrastructure/in-memory-served-companies.js";
 import { noLinePromotionSupply } from "../../../../../promotions/application/__tests__/promotion-supply.doubles.js";
-import { pointDiscountPromotions } from "../../../../application/services/__tests__/basket-promotions.doubles.js";
+import {
+  pointDiscountPromotions,
+  deliveryFeePromotions,
+} from "../../../../application/services/__tests__/basket-promotions.doubles.js";
 
 /**
  * **La scène de la modification d'une commande** (voir
@@ -265,6 +268,7 @@ export function revisingAt(
       { current: () => Promise.resolve(DEFAULT_DELIVERY_AVAILABILITY) },
       { preferredPickupOf: () => Promise.resolve(null) },
       pointDiscountPromotions(pickups, classifications),
+      deliveryFeePromotions(),
     ),
     { of: () => Promise.resolve(BOOK_ADDRESS_DEFAULTS) },
     new OrderOperations(noSaleOperations(clock.now())),

@@ -51,7 +51,7 @@ function termsOf(
     deliveryVatMode: over.deliveryVatMode ?? "standard",
     vatMethod,
     subtotalCents: 0,
-    freeDeliveryThresholdCents: null,
+    freeDeliveryCandidates: [],
   });
 }
 

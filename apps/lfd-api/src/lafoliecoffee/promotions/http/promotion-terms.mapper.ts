@@ -50,6 +50,9 @@ function effectOf(effect: PromotionTermsPayload["effect"]): PromotionEffect {
       return { kind: effect.kind, millicents: effect.value };
     case "basket_amount_off":
       return { kind: effect.kind, cents: effect.value };
+    // Sans valeur : la valeur reçue est ignorée, la colonne vaut 0.
+    case "free_delivery":
+      return { kind: effect.kind };
   }
 }
 
@@ -70,6 +73,9 @@ function audienceOf(audience: PromotionTermsPayload["audiences"][number]): Promo
 function fulfillmentOf(fulfillment: PromotionTermsPayload["fulfillment"]): PromotionFulfillment {
   if (fulfillment.kind === "displayed_price") {
     return { kind: "displayed_price" };
+  }
+  if (fulfillment.kind === "delivery_fee") {
+    return { kind: "delivery_fee", delivery: fulfillment.delivery };
   }
   return { kind: "basket", pickup: fulfillment.pickup, delivery: fulfillment.delivery };
 }

@@ -25,12 +25,14 @@ import { LinePromotionSupply } from "../promotions/application/line-promotion-su
 import { ShelfPromotionOffers } from "../promotions/application/shelf-promotion-offers.js";
 import { PromotionAudienceFactsResolver } from "../promotions/application/promotion-audience-facts.resolver.js";
 import { BasketPromotionReader } from "../promotions/domain/ports/basket-promotion.reader.js";
+import { DeliveryFeePromotionReader } from "../promotions/domain/ports/delivery-fee-promotion.reader.js";
 import { LinePromotionReader } from "../promotions/domain/ports/line-promotion.reader.js";
 import { PromotionCompanyStatusReader } from "../promotions/domain/ports/promotion-company-status.reader.js";
 import { PromotionPrincipalReader } from "../promotions/domain/ports/promotion-principal.reader.js";
 import { PromotionsSourceReader } from "../promotions/domain/ports/promotions-source.reader.js";
 import {
   PrismaBasketPromotionReader,
+  PrismaDeliveryFeePromotionReader,
   PrismaLinePromotionReader,
 } from "../promotions/infrastructure/prisma-live-promotion.readers.js";
 import { PrismaPromotionCompanyStatusReader } from "../promotions/infrastructure/prisma-promotion-company-status.reader.js";
@@ -80,6 +82,7 @@ import { PrismaPromotionsSourceReader } from "../promotions/infrastructure/prism
     { provide: PromotionsSourceReader, useClass: PrismaPromotionsSourceReader },
     { provide: LinePromotionReader, useClass: PrismaLinePromotionReader },
     { provide: BasketPromotionReader, useClass: PrismaBasketPromotionReader },
+    { provide: DeliveryFeePromotionReader, useClass: PrismaDeliveryFeePromotionReader },
     { provide: PromotionCompanyStatusReader, useClass: PrismaPromotionCompanyStatusReader },
     { provide: PromotionPrincipalReader, useClass: PrismaPromotionPrincipalReader },
   ],
@@ -102,6 +105,8 @@ import { PrismaPromotionsSourceReader } from "../promotions/infrastructure/prism
     // le point ligne ; la source reste lue par l'écran Promotions (garde-fou, L12).
     PromotionsSourceReader,
     BasketPromotionReader,
+    // La livraison offerte par une promotion (`plan-livraison-offerte.md`, § 2.4).
+    DeliveryFeePromotionReader,
     PromotionAudienceFactsResolver,
     // Le tableau de tarification lit les promotions de ligne comme la caisse (L8).
     LinePromotionSupply,

@@ -382,3 +382,208 @@ des promotions.
 - Facture : la ligne de réduction, sa TVA, le total ; e-mail et bon.
 - Passation : un seuil perdu entre le devis et la commande est refusé
   (`orders.total_changed`).
+
+# Partie 3 — Lot 2 : la livraison offerte par une promotion
+
+> 📝 **Plan écrit le 2026-11-20**, demande de Hugo (« pour certains clients,
+> offrir les frais de livraison, depuis l'espace promotion »). Rien n'est
+> bâti. Touche l'argent : contredit par `vitruve` avant Hugo (§ 2.8).
+
+## 2.1 Le besoin, et la règle qui le range
+
+Offrir la livraison à **certains clients** — une société (± ses sites), une
+clientèle, une zone, une période. Décidé par Hugo le 2026-11-20 : **deux
+endroits seulement** décident du frais, jamais trois.
+
+| Où                                   | Ce qu'il dit          | Pour qui              |
+| ------------------------------------ | --------------------- | --------------------- |
+| Réglage de livraison (global → zone) | le tarif et le franco | une clientèle entière |
+| Promotion                            | le cadeau             | un public ciblé       |
+
+Les conditions commerciales d'une société ne portent **pas** de frais de
+livraison : une société qui ne paie jamais la livraison a une promotion
+**sans fin** (`valid_to` NULL, déjà admis — `promotions.prisma`) dont le
+public est cette société. L'espace promotions montre alors d'un coup d'œil
+tous les gestes faits sur la livraison.
+
+## 2.2 L'idée : une promotion « livraison offerte » est un franco ciblé
+
+Le franco (lot 1) sait déjà **offrir toute la livraison** au-delà d'un seuil,
+et tout ce qui suit est bâti : le jugement (`judgedFreeDelivery`,
+`orders/domain/services/free-delivery-judgement.ts`), la base du seuil
+(`basket-terms.ts`), le figé sur la commande (`free_delivery_threshold_cents`,
+`free_delivery_waived_cents`, `free_delivery_waived_ttc_cents`, frais facturé
+à 0 et barème gardé dans `delivery_fee_adjustment`), la révision rejugée, le
+« Plus que … » servi par le serveur.
+
+Une promotion « livraison offerte » n'est rien d'autre qu'**un seuil de plus,
+pour un public** — 0 € (« toujours offerte ») ou X € (« offerte dès X € »).
+Le calcul prend **le seuil le plus favorable** parmi le franco de la route
+et les promotions éligibles :
+
+```mermaid
+flowchart LR
+  R["Franco de la route<br/>(global ou zone, par clientèle)"] --> M{"Seuil le plus bas<br/>parmi les candidats"}
+  P["Promotions « livraison offerte »<br/>éligibles : public, zone,<br/>période, heures"] --> M
+  M --> J["judgedFreeDelivery<br/>(inchangé)"]
+  J -->|atteint| O["Frais 0, barème offert figé,<br/>+ qui l'a offert"]
+  J -->|pas atteint| F["Frais du barème,<br/>« Plus que … »"]
+```
+
+Ce que ça évite : un nouveau terme du panier, sa TVA, sa ventilation
+Factur-X, sa place dans le plafond des cinq remises (§ 2.6). Le cadeau a
+déjà sa forme, celle du franco.
+
+**Hors du lot : réduire sans offrir** (« −5 € de livraison »). C'est le seul
+cas qui demande le vrai terme neuf (bloquants 1 et TVA `follows_goods` de la
+contradiction du 2026-11-05). Personne ne l'a demandé ; il reste au TODO.
+
+## 2.3 La promotion
+
+- **Un troisième acheminement**, `delivery_fee` : la promotion agit sur le
+  frais. `applicationPointOf` (`promotion-fulfillment.ts`) rend aujourd'hui
+  `line | basket` ; il gagne `delivery_fee`. ⚠️ Quatre CHECK le refusent
+  aujourd'hui et se réécrivent (§ 2.8, B1). La portée réutilise `DeliveryReach`
+  (toutes les zones ou celles-là) ; le retrait n'a pas de sens.
+- **Un seul effet**, `free_delivery` (valeur 0, sans unité) — pas
+  `percent_off` à 100 % : un pourcentage laisserait croire qu'on sait
+  réduire en partie, ce que ce lot ne sait pas figer. `EFFECTS_AT`
+  (`promotion-effect.ts`) : `delivery_fee: ["free_delivery"]`.
+- **La condition `min_basket`** (`{ kind: "min_basket", cents }`, HT, ≥ 0)
+  — réservée à `delivery_fee` (décision (c) du 2026-11-05). Absente = 0 :
+  toujours offerte. Comptée sur **la base du franco**, rien de neuf.
+  `weekly_hours` s'applique tel quel.
+- **Public, période, pause, archivage, libellés, vignette** : inchangés. La
+  portée sur le catalogue (articles) est refusée pour ce point.
+- **Pas de cumul à régler** : deux livraisons offertes ne se cumulent pas,
+  on retient le seuil le plus bas ; à seuil égal, la promotion l'emporte sur
+  le franco de la route (pour nommer le cadeau), puis l'ordre déterministe
+  de `basket-promotion-choice.ts` départage.
+
+## 2.4 Le calcul
+
+- Les promotions `delivery_fee` ont **leur propre lecteur** : les lecteurs
+  d'aujourd'hui filtrent par point et le mapper lève sur un point inconnu
+  (§ 2.8, B2).
+- `basketTermsOf` reçoit, au lieu d'un `freeDeliveryThresholdCents`, une
+  liste de **candidats** `{ thresholdCents, source }` où `source` vaut
+  `route` ou `{ promotionId, label }` ; il retient le meilleur atteint, sinon
+  le plus bas non atteint pour « Plus que … ». `judgedFreeDelivery` ne
+  change pas.
+- Le staff qui commande pour un client (saisie) passe par le même calcul.
+
+## 2.5 Ce que la commande garde
+
+Migration additive, deux colonnes nullables sur `orders` :
+
+- `free_delivery_promotion_id` — la promotion qui a offert ; `NULL` = le
+  franco de la route ;
+- `free_delivery_label` (jsonb, libellé figé dans les langues de la
+  promotion, comme `discount_label`).
+
+CHECK : les deux ne sont présentes qu'avec `free_delivery_threshold_cents`.
+Le seuil figé reste celui qui a offert (0 pour « toujours offerte »).
+
+## 2.6 Révision, documents, écrans
+
+- **Révision** : rejugée (décision (d)). Le seuil figé du lot 1 vaut pour
+  la même zone ; une promotion figée qui a offert est relue comme candidat,
+  même suspendue ou finie depuis (comme une remise au panier figée,
+  `frozen-basket-discounts.ts`, à confirmer au bâti), et les promotions du
+  jour s'ajoutent — on ne peut qu'y gagner.
+- **Plafond des cinq remises au panier** : non concerné, ce n'est pas une
+  remise.
+- **Bon, facture, e-mail** : la ligne « Livraison offerte » que le lot 1
+  n'a pas encore (À faire de l'état) se bâtit ici, avec le libellé de la
+  promotion quand il existe (« Livraison offerte — client fidèle »).
+- **Boutique** : « Coursier offert » / « Plus que … » inchangés ; le seuil
+  annoncé est celui retenu.
+- **Back-office › Promotions** : le choix « Sur la livraison » à côté de
+  « Dans le prix affiché » et « Au panier » ; pas d'effet à saisir ; le
+  panier minimum facultatif.
+
+## 2.7 Tests
+
+- Domaine : `free_delivery` refusé hors de `delivery_fee` et inversement ;
+  `min_basket` refusé ailleurs ; portée catalogue refusée.
+- Choix : franco 80 € + promotion société 0 € → offerte, promotion nommée ;
+  promotion 50 € + franco 80 €, panier 60 € → offerte par la promotion ;
+  panier 40 € → « Plus que 10 € » ; promotion d'une autre société → rien ;
+  retrait → rien ; frais nul → rien.
+- Commande : colonnes figées, CHECK ; révision qui passe sous le seuil de
+  la promotion → frais revenu.
+- E2E : le mur — une promotion d'une société n'offre rien à une autre.
+
+## 2.8 Contradiction (`vitruve`, 2026-11-20)
+
+Trois bloquants, tous vérifiés et corrigés ou tranchés ci-dessous.
+
+**B1 — quatre CHECK refusent la ligne** (le plan disait « s'il en a un »).
+`promotions_application_point_known` et `promotions_effect_fits_point`
+(`20261031110000_les_promotions`), `promotions_effect_value_in_range`
+(même migration), `promotions_point_follows_modes`
+(`20261031200000_les_acheminements_a_cocher`, « livraison non nulle ssi
+`basket` »). **Correction** : une migration additive les remplace —
+`delivery_fee` admis ; `free_delivery` seulement sur `delivery_fee`, valeur
+0 ; pour `delivery_fee`, `fulfillment_delivery` non nul et
+`fulfillment_pickup = 'none'` ; `promotions_basket_reaches_something`
+relu au bâti.
+
+**B2 — personne ne lit ces promotions, et une seule ligne casse les
+lecteurs** : `fulfillmentFromRow` lève sur un point inconnu
+(`promotion-fulfillment-rows.ts:55`) ; les lecteurs filtrent par point
+(`prisma-live-promotion.readers.ts:38`). **Correction** : le mapper connaît
+`delivery_fee` dans le même commit que la migration ; un lecteur nommé
+« promotions de livraison vivantes pour cet acheteur dans cette zone » ;
+inventaire des `switch` sur le point et l'effet (écran Promotions, contrats
+servis, libellés) chiffré en tête du bâti.
+
+**B3 — la révision perdait la source et figeait le mauvais seuil** :
+`routeOf` (`pricing-context.service.ts:303`) réinjecte le seuil figé comme
+seuil **de la route** ; un 0 venu d'une promotion y deviendrait un franco
+perpétuel, et le franco réel de la route ne serait plus connu.
+**Tranché** (application de la décision (d), « rejugée ») :
+
+- `free_delivery_threshold_cents` reste **le seuil de la route** figé (lot
+  1, sens inchangé) ; une commande offerte par une promotion sans franco de
+  route l'a à NULL ;
+- la promotion figée a ses colonnes : `free_delivery_promotion_id`,
+  `free_delivery_promotion_threshold_cents`, `free_delivery_label` ;
+- en révision, la promotion est **rejugée comme aujourd'hui** : relue si
+  elle est encore vivante, éligible pour ce public et dans la zone ; une
+  promotion archivée, en pause ou finie n'offre plus — le frais revient
+  (le total monte, comme pour le franco perdu). Elle n'est pas « acquise ».
+- les CHECK du franco (`orders_free_delivery_together`, `…_waives_fee`) se
+  réécrivent : offerte ⇔ (seuil de route atteint OU promotion figée).
+
+Sérieux, intégrés au plan de bâti :
+
+- **`min_basket` est neuf** (`promotion-condition.ts:22` ne connaît que
+  `min_quantity | weekly_hours`) : variante, validation, stockage, CHECK,
+  interdit hors `delivery_fee`.
+- **Un effet sans valeur** touche `effectValueOf` et chaque `switch` sur
+  `effect.kind` ; compté avec B2.
+- **L'agrégat** : `ensureFreeDeliveryHolds`
+  (`order-amount-guards.ts:149`) gagne la forme « promotion » (id, seuil et
+  libellé ensemble ; base ≥ seuil de la promotion) ; l'éligibilité, elle,
+  est jugée au calcul — l'agrégat ne voit pas le public. Test sur
+  l'agrégat et sur le CHECK SQL, pas seulement sur le choix.
+- **Frais nul** : rien n'est figé (`charged` faux dans `basketTermsOf`),
+  ni source ni libellé.
+- **Saisie staff** : les faits d'acheteur (`companyId`, statut, clientèle,
+  `basket-route-loading.ts:93`) sont ceux **du client** ; e2e dédié.
+- **Documents** : bon, facture PDF, e-mail (`pnpm tool mail-copy:digest`),
+  planche des PDF, `order-sheet`, `specimen-pricing.ts:76` — la ligne
+  « Livraison offerte » reste **affichée, pas comptable**
+  (`value-objects/free-delivery.ts:11`) : frais facturé 0, aucun Factur-X
+  neuf.
+- **Audience du libellé** : le libellé d'une promotion réservée n'est servi
+  qu'à l'appelant éligible (devis de son panier), jamais sur une route
+  publique ; le visiteur ne voit que « Coursier offert ».
+- **Cache** : une promotion de livraison ne touche aucun rayon ; à vérifier
+  au bâti que `lint:shelf-writes` ne l'exige pas, et qu'aucun cache de
+  promotions servies n'est à purger.
+
+Mineurs : forme jsonb de `discount_label` à vérifier avant d'en copier la
+forme ; le départage à seuil égal est écrit dans le nouveau choix, pas
+emprunté à `basket-promotion-choice.ts`.

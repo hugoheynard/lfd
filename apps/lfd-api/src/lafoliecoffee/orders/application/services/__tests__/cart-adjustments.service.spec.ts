@@ -32,7 +32,11 @@ import { FixedLineClassifications } from "../../../domain/ports/__tests__/line-c
 import { CartAdjustments } from "../cart-adjustments.service.js";
 import { pickupDiscountPromotions } from "../../../../promotions/domain/__tests__/pickup-discount-reprise.fixture.js";
 import type { LivePromotion } from "../../../../promotions/domain/live-promotion.js";
-import { basketPromotions, pickupBuyer } from "./basket-promotions.doubles.js";
+import {
+  basketPromotions,
+  pickupBuyer,
+  deliveryFeePromotions,
+} from "./basket-promotions.doubles.js";
 
 const TEN_PERCENT: AudiencePickupDiscount = {
   adjustment: { mode: "percent", bp: 1_000 },
@@ -152,6 +156,7 @@ function cartAdjustments(
       [...pickupDiscountPromotions(points.points), ...extra],
       new FixedLineClassifications(),
     ),
+    deliveryFeePromotions(),
   );
 }
 

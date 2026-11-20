@@ -13,13 +13,18 @@ import type { PromotionApplicationPoint } from "./promotion-fulfillment.js";
  * - `fixed_unit_price` : prix unitaire posé, millicentimes — ligne (la règle
  *   `replace` d'aujourd'hui) ;
  * - `basket_amount_off` : centimes retirés de l'assiette — panier (la remise
- *   de retrait en montant fixe).
+ *   de retrait en montant fixe) ;
+ * - `free_delivery` : la livraison offerte, sans valeur — sur la livraison
+ *   seulement (`plan-livraison-offerte.md`, § 2.3). Pas un `percent_off` à
+ *   100 % : un pourcentage laisserait croire qu'on sait réduire le frais en
+ *   partie, ce que la commande ne sait pas figer. Sa colonne vaut 0.
  */
 export type PromotionEffect =
   | { readonly kind: "percent_off"; readonly basisPoints: number }
   | { readonly kind: "unit_amount_off"; readonly millicents: number }
   | { readonly kind: "fixed_unit_price"; readonly millicents: number }
-  | { readonly kind: "basket_amount_off"; readonly cents: number };
+  | { readonly kind: "basket_amount_off"; readonly cents: number }
+  | { readonly kind: "free_delivery" };
 
 export type PromotionEffectKind = PromotionEffect["kind"];
 
@@ -31,7 +36,11 @@ export const EFFECTS_AT: Readonly<
 > = {
   line: ["percent_off", "unit_amount_off", "fixed_unit_price"],
   basket: ["percent_off", "basket_amount_off"],
+  delivery_fee: ["free_delivery"],
 };
+
+/** La colonne `effect_value` d'un effet sans valeur. */
+const NO_VALUE = 0;
 
 /** La valeur de la colonne `effect_value`, dans l'unité de la variante. */
 export function effectValueOf(effect: PromotionEffect): number {
@@ -43,6 +52,8 @@ export function effectValueOf(effect: PromotionEffect): number {
       return effect.millicents;
     case "basket_amount_off":
       return effect.cents;
+    case "free_delivery":
+      return NO_VALUE;
   }
 }
 
@@ -56,6 +67,8 @@ export function effectOf(kind: string, value: number): PromotionEffect | null {
       return { kind, millicents: value };
     case "basket_amount_off":
       return { kind, cents: value };
+    case "free_delivery":
+      return value === NO_VALUE ? { kind } : null;
     default:
       return null;
   }
@@ -85,6 +98,8 @@ export function assertEffectValue(effect: PromotionEffect): void {
       if (value <= 0) {
         throw new PromotionInvalidEffectError(effect.kind, value, "un montant strictement positif");
       }
+      return;
+    case "free_delivery":
       return;
   }
 }

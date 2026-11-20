@@ -16,6 +16,7 @@ describe("judgedFreeDelivery", () => {
       thresholdCents: 8_000,
       waivedCents: 1_200,
       waivedTtcCents: null,
+      promotion: null,
     });
   });
 
@@ -52,7 +53,7 @@ describe("judgedFreeDelivery", () => {
         feeHtCents: 1_000,
         feeTtcCents: 1_200,
       }),
-    ).toEqual({ thresholdCents: 0, waivedCents: 1_000, waivedTtcCents: 1_200 });
+    ).toEqual({ thresholdCents: 0, waivedCents: 1_000, waivedTtcCents: 1_200, promotion: null });
   });
 });
 

@@ -161,6 +161,7 @@ import { OrderNumberReader } from "./domain/ports/order-number.reader.js";
 import { PrismaOrderNumberReader } from "./infrastructure/prisma-order-number.reader.js";
 import { CartAdjustments } from "./application/services/cart-adjustments.service.js";
 import { BasketPromotions } from "./application/services/basket-promotions.service.js";
+import { DeliveryFeePromotions } from "./application/services/delivery-fee-promotions.service.js";
 import { PricingModule } from "../pricing/pricing.module.js";
 import { CustomerAudiences } from "./application/services/customer-audiences.service.js";
 import { OrderIntake } from "./application/services/order-intake.service.js";
@@ -448,6 +449,7 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     OrderLinePricing,
     CartAdjustments,
     BasketPromotions,
+    DeliveryFeePromotions,
     CustomerAudiences,
     ListCustomerPickupsHandler,
     ListMyShopPickupsHandler,

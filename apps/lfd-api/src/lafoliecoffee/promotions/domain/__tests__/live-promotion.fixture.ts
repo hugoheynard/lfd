@@ -50,6 +50,9 @@ function soleSideRank(fulfillment: PromotionFulfillment): number {
   if (fulfillment.kind === "displayed_price") {
     return 0;
   }
+  if (fulfillment.kind === "delivery_fee") {
+    return typeof fulfillment.delivery === "object" ? 2 : 1;
+  }
   const listed = typeof fulfillment.pickup === "object" || typeof fulfillment.delivery === "object";
   return listed ? 2 : 1;
 }

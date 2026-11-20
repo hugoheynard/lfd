@@ -121,7 +121,10 @@ import {
 import { CatalogViewers } from "../../../../catalog/application/catalog-viewers.service.js";
 import { InMemoryServedCompanies } from "../../../../catalog/infrastructure/in-memory-served-companies.js";
 import { noLinePromotionSupply } from "../../../../promotions/application/__tests__/promotion-supply.doubles.js";
-import { pointDiscountPromotions } from "../../services/__tests__/basket-promotions.doubles.js";
+import {
+  pointDiscountPromotions,
+  deliveryFeePromotions,
+} from "../../services/__tests__/basket-promotions.doubles.js";
 
 /**
  * **La commande sans compte**, éprouvée là où elle décide — plan
@@ -284,6 +287,7 @@ function drafting(
       deliveryAvailability(delivery),
       noPreferredPickup,
       pointDiscountPromotions(pickups()),
+      deliveryFeePromotions(),
     ),
     noDeliveryDefaults,
     deadlineOf({

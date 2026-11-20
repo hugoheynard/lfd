@@ -15,6 +15,7 @@ import type { OrderVatMethod } from "../value-objects/order-vat-method.js";
 import type { BasketDiscountRefusal, RevisableDiscount } from "./basket-discount-replay.js";
 import type { LineSealing } from "./basket-promotion-choice.js";
 import type { EndedBasketPromotion } from "./ended-basket-promotions.js";
+import type { LoadedDeliveryFeePromotions } from "./free-delivery-candidates.js";
 import type { FreeDeliveryProgress } from "./free-delivery-judgement.js";
 import type { LoadedBasketPromotions } from "./loaded-basket-promotions.js";
 
@@ -46,6 +47,13 @@ export interface DeliveryBasketRoute {
    * passation, le FIGÉ en révision dans la même zone.
    */
   readonly freeDeliveryThresholdCents: number | null;
+  /**
+   * Les promotions « Sur la livraison » lues pour cet acheteur dans cette
+   * zone (`plan-livraison-offerte.md`, § 2.4) — jugées au calcul, avec le
+   * créneau. Absentes = aucune : les chargements de la commande et du devis
+   * les posent toujours, en passation comme en révision (rejugées).
+   */
+  readonly deliveryFeePromotions?: LoadedDeliveryFeePromotions;
   /** Le mode créneau / échéance global (CA-D2) — l'acheminement convenu le lit. */
   readonly globalWindowMode: WindowMode;
 }
@@ -60,7 +68,10 @@ export type BasketRoute = PickupBasketRoute | DeliveryBasketRoute;
  */
 export type PricedRoute =
   | Pick<PickupBasketRoute, "method">
-  | Pick<DeliveryBasketRoute, "method" | "zoneId" | "fee" | "freeDeliveryThresholdCents">;
+  | Pick<
+      DeliveryBasketRoute,
+      "method" | "zoneId" | "fee" | "freeDeliveryThresholdCents" | "deliveryFeePromotions"
+    >;
 
 /** La commande qu'on révise : ses lignes figées et ses remises, REJOUÉES (§ 10.2 des remises acquises). */
 export interface ReplayedFrom {

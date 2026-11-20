@@ -28,10 +28,16 @@ export type PromotionAudienceKindValue = (typeof PROMOTION_AUDIENCE_KIND_VALUES)
 
 /**
  * « Dans le prix affiché » (le prix de l'article baisse au catalogue, pour
- * tous les acheminements) ou « en remise au panier », où retrait et
- * livraison se cochent (`documentation/promotions/promotions.md`, § 2.14).
+ * tous les acheminements), « en remise au panier », où retrait et
+ * livraison se cochent (`documentation/promotions/promotions.md`, § 2.14), ou
+ * « sur la livraison », qui offre le frais de livraison
+ * (`documentation/promotions/plan-livraison-offerte.md`, § 2.3).
  */
-export const PROMOTION_FULFILLMENT_KIND_VALUES = ["displayed_price", "basket"] as const;
+export const PROMOTION_FULFILLMENT_KIND_VALUES = [
+  "displayed_price",
+  "basket",
+  "delivery_fee",
+] as const;
 export type PromotionFulfillmentKindValue = (typeof PROMOTION_FULFILLMENT_KIND_VALUES)[number];
 
 export const PROMOTION_EFFECT_KIND_VALUES = [
@@ -39,6 +45,8 @@ export const PROMOTION_EFFECT_KIND_VALUES = [
   "unit_amount_off",
   "fixed_unit_price",
   "basket_amount_off",
+  /** La livraison offerte — « sur la livraison » seulement, valeur 0. */
+  "free_delivery",
 ] as const;
 export type PromotionEffectKindValue = (typeof PROMOTION_EFFECT_KIND_VALUES)[number];
 
@@ -101,6 +109,11 @@ const weeklyHoursWindowSchema = z.object({
 /** Une condition de promotion ; toutes doivent tenir. */
 export const promotionConditionSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("min_quantity"), value: z.number().int() }),
+  /**
+   * Le panier minimum, en centimes HT — « sur la livraison » seulement ; le
+   * domaine refuse un négatif et le pose ailleurs, en le nommant.
+   */
+  z.object({ kind: z.literal("min_basket"), cents: z.number().int() }),
   z.object({
     kind: z.literal("weekly_hours"),
     moment: z.enum(PROMOTION_HOURS_MOMENT_VALUES),
@@ -112,6 +125,7 @@ export const promotionConditionSchema = z.discriminatedUnion("kind", [
 /** Une condition, telle que la fiche la lit. */
 export type PromotionConditionView =
   | { readonly kind: "min_quantity"; readonly value: number }
+  | { readonly kind: "min_basket"; readonly cents: number }
   | {
       readonly kind: "weekly_hours";
       readonly moment: PromotionHoursMomentValue;
@@ -130,12 +144,21 @@ const fulfillmentSchema = z.discriminatedUnion("kind", [
     pickup: z.union([z.enum(["none", "all"]), z.object({ points: reachIdsSchema })]),
     delivery: z.union([z.enum(["none", "all"]), z.object({ zones: reachIdsSchema })]),
   }),
+  z.object({
+    kind: z.literal("delivery_fee"),
+    delivery: z.union([z.literal("all"), z.object({ zones: reachIdsSchema })]),
+  }),
 ]);
 
 /** L'acheminement d'une promotion, tel que l'éditeur l'envoie et que la fiche le relit. */
 export type PromotionFulfillmentView =
   | { readonly kind: "displayed_price" }
-  | ({ readonly kind: "basket" } & PromotionOfferFulfillmentView);
+  | ({ readonly kind: "basket" } & PromotionOfferFulfillmentView)
+  | {
+      readonly kind: "delivery_fee";
+      /** Toutes les zones, ou celles-là — le retrait n'a pas de frais à offrir. */
+      readonly delivery: "all" | { readonly zones: readonly string[] };
+    };
 
 /**
  * La projection d'un public à plusieurs cibles sur une seule (`audience` de
@@ -261,7 +284,7 @@ export interface PromotionView {
   readonly tileText: PromotionLabelView | null;
   readonly reason: string | null;
   readonly state: PromotionLifecycleState;
-  readonly applicationPoint: "line" | "basket";
+  readonly applicationPoint: "line" | "basket" | "delivery_fee";
   readonly effect: { readonly kind: PromotionEffectKindValue; readonly value: number };
   readonly ownFloor: { readonly mode: "percent" | "amount"; readonly value: number } | null;
   /** « Cumulable » (§ 16) ; `false` pour toute promotion d'avant la case. */

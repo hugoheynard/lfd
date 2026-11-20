@@ -129,7 +129,10 @@ import {
 import { CatalogViewers } from "../../../../catalog/application/catalog-viewers.service.js";
 import { InMemoryServedCompanies } from "../../../../catalog/infrastructure/in-memory-served-companies.js";
 import { noLinePromotionSupply } from "../../../../promotions/application/__tests__/promotion-supply.doubles.js";
-import { pointDiscountPromotions } from "../../services/__tests__/basket-promotions.doubles.js";
+import {
+  pointDiscountPromotions,
+  deliveryFeePromotions,
+} from "../../services/__tests__/basket-promotions.doubles.js";
 
 /**
  * L'historique du tarif canonique — **jamais consulté ici** : ces cas ne posent
@@ -453,6 +456,7 @@ function draftingFor(guardDouble: OrderGuardReader, options: DraftingOptions = {
       deliveryAvailability(options.delivery),
       noPreferredPickup,
       pointDiscountPromotions(pickups),
+      deliveryFeePromotions(),
     ),
     noDeliveryDefaults(),
     deadlineOf({
@@ -1095,6 +1099,7 @@ describe("PlaceOrderForCustomerHandler — le règlement", () => {
           deliveryAvailability(),
           noPreferredPickup,
           pointDiscountPromotions(pickups),
+          deliveryFeePromotions(),
         ),
         noDeliveryDefaults(),
         deadlineOf({

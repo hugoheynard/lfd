@@ -69,7 +69,10 @@ export interface FulfillmentOffer {
 
 const MILLICENTS_PER_CENT = 1_000;
 
-/** L'effet tel qu'il se dit ; `null` pour un prix posé, qui n'est pas un « −X ». */
+/**
+ * L'effet tel qu'il se dit ; `null` pour un prix posé, qui n'est pas un « −X »,
+ * et pour la livraison offerte, que le rayon ne dit pas.
+ */
 export function offerEffectOf(effect: PromotionEffect): OfferEffect | null {
   switch (effect.kind) {
     case "percent_off":
@@ -79,6 +82,7 @@ export function offerEffectOf(effect: PromotionEffect): OfferEffect | null {
     case "basket_amount_off":
       return { kind: "amount", millicents: effect.cents * MILLICENTS_PER_CENT };
     case "fixed_unit_price":
+    case "free_delivery":
       return null;
   }
 }
@@ -183,7 +187,7 @@ export function fulfillmentOffersFor(
     if (
       effect === null ||
       hours === "silent" ||
-      fulfillment.kind === "displayed_price" ||
+      fulfillment.kind !== "basket" ||
       !promotionScopeCovers(promotion.scope, article, { kind: "basket" })
     ) {
       continue;

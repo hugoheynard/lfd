@@ -14,7 +14,7 @@ import {
   InvalidOrderVoucherError,
   VoucherNotForCompanyOrderError,
 } from "../errors/order-voucher-errors.js";
-import type { FreeDelivery } from "../value-objects/free-delivery.js";
+import { freeDeliveryReached, type FreeDelivery } from "../value-objects/free-delivery.js";
 import { ensureBuyerKindFits } from "../value-objects/order-buyer-kind.js";
 import type { OrderVatMethod } from "../value-objects/order-vat-method.js";
 import { voucherImputationCents } from "../services/voucher-imputation.js";
@@ -139,7 +139,10 @@ export function ensureDeliveryFeeMatches(
  * **Le franco tient-il ?** (plan `plan-livraison-offerte.md`, 1b) — la
  * barrière de l'agrégat, qui ne fait confiance à aucun appelant : une
  * livraison offerte suppose un barème à offrir, rien de facturé, le TTC offert
- * dans la seule méthode qui en a un, et une base qui atteint le seuil.
+ * dans la seule méthode qui en a un, et une base qui atteint le seuil qui
+ * l'offre — celui de la route, ou celui de la promotion figée avec son
+ * identifiant et son libellé (`plan-livraison-offerte.md`, § 2.8). Le public
+ * de la promotion, lui, est jugé au calcul : l'agrégat ne le voit pas.
  *
  * `goodsNetHtCents` est la base de la décision du 2026-11-05 : marchandises HT
  * après les remises, avant le bon.
@@ -160,7 +163,7 @@ export function ensureFreeDeliveryHolds(
     input.deliveryFeeAdjustment === null ||
     input.deliveryFeeCents !== 0 ||
     (free.waivedTtcCents !== null) !== ttcExpected ||
-    goodsNetHtCents < free.thresholdCents
+    !freeDeliveryReached(free, goodsNetHtCents)
   ) {
     throw new InvalidOrderPaymentError(
       "La livraison offerte n'est pas justifiée : le panier remisé n'atteint pas le seuil, ou la commande n'a pas de livraison à offrir.",

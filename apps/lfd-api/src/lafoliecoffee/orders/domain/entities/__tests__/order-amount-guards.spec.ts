@@ -135,7 +135,12 @@ describe("ensureDeliveryFeeMatches — le barème reproduit les frais", () => {
   });
 
   it("au franco (1b) : accepte un frais nul, quand le barème reproduit le montant offert", () => {
-    const offered = { thresholdCents: 300, waivedCents: 1_500, waivedTtcCents: null };
+    const offered = {
+      thresholdCents: 300,
+      waivedCents: 1_500,
+      waivedTtcCents: null,
+      promotion: null,
+    };
     const fee = { mode: "amount", cents: 1_500 } as const;
 
     expect(() =>
@@ -165,7 +170,7 @@ describe("ensureDeliveryFeeMatches — le barème reproduit les frais", () => {
 
 describe("ensureFreeDeliveryHolds — un franco que le panier justifie (1b)", () => {
   const FEE = { mode: "amount", cents: 1_500 } as const;
-  const FREE = { thresholdCents: 400, waivedCents: 1_500, waivedTtcCents: null };
+  const FREE = { thresholdCents: 400, waivedCents: 1_500, waivedTtcCents: null, promotion: null };
   const ok = input({ deliveryFeeAdjustment: FEE, freeDelivery: FREE });
 
   it("accepte une base qui atteint le seuil", () => {
@@ -189,10 +194,43 @@ describe("ensureFreeDeliveryHolds — un franco que le panier justifie (1b)", ()
     expect(() => ensureFreeDeliveryHolds(ok, 400, "exact_ht")).toThrow(InvalidOrderPaymentError);
     const exact = input({
       deliveryFeeAdjustment: FEE,
-      freeDelivery: { ...FREE, waivedTtcCents: 1_800 },
+      freeDelivery: { ...FREE, waivedTtcCents: 1_800, promotion: null },
     });
     expect(() => ensureFreeDeliveryHolds(exact, 400, "exact_ht")).not.toThrow();
     expect(() => ensureFreeDeliveryHolds(exact, 400, "line_ht")).toThrow(InvalidOrderPaymentError);
+  });
+
+  describe("offerte par une promotion « Sur la livraison » (§ 2.8)", () => {
+    const LABEL = { fr: "Client fidèle", en: "Client fidèle", it: "Client fidèle" };
+    const BY_PROMOTION = {
+      thresholdCents: 8_000,
+      waivedCents: 1_500,
+      waivedTtcCents: null,
+      promotion: { promotionId: "promo_1", thresholdCents: 5_000, label: LABEL },
+    };
+    const promoted = input({ deliveryFeeAdjustment: FEE, freeDelivery: BY_PROMOTION });
+
+    it("accepte une base qui atteint le seuil de la promotion, sous celui de la route", () => {
+      expect(() => ensureFreeDeliveryHolds(promoted, 5_000, "line_ht")).not.toThrow();
+    });
+
+    it("refuse une base sous les deux seuils", () => {
+      expect(() => ensureFreeDeliveryHolds(promoted, 4_999, "line_ht")).toThrow(
+        InvalidOrderPaymentError,
+      );
+    });
+
+    it("sans franco de route : la promotion seule justifie, « toujours offerte » à 0", () => {
+      const always = input({
+        deliveryFeeAdjustment: FEE,
+        freeDelivery: {
+          ...BY_PROMOTION,
+          thresholdCents: null,
+          promotion: { ...BY_PROMOTION.promotion, thresholdCents: 0 },
+        },
+      });
+      expect(() => ensureFreeDeliveryHolds(always, 0, "line_ht")).not.toThrow();
+    });
   });
 });
 

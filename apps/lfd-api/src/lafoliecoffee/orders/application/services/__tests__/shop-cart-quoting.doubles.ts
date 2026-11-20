@@ -50,6 +50,7 @@ import {
   basketPromotions,
   guestSignInOffer,
   pointDiscountPromotions,
+  deliveryFeePromotions,
 } from "./basket-promotions.doubles.js";
 import type { GuestSignInOffer } from "../guest-sign-in-offer.service.js";
 import type { ForeseenLateFee } from "../foreseen-late-fee.service.js";
@@ -217,6 +218,8 @@ export interface QuotingSetup {
    * remises `b2c` / `b2b` du point, lues en promotions.
    */
   readonly basketPromotions?: readonly LivePromotion[];
+  /** Les promotions « Sur la livraison » vivantes ; aucune par défaut. */
+  readonly deliveryFeePromotions?: readonly LivePromotion[];
   /** La surtaxe prévue (plan `le-prix-d-un-panier.md`, T1) ; par défaut, aucune règle d'heure. */
   readonly lateFee?: ForeseenLateFee;
 }
@@ -246,6 +249,7 @@ export function cartAdjustmentsOf(setup: QuotingSetup): CartAdjustments {
     setup.basketPromotions === undefined
       ? pointDiscountPromotions(new OnePoint(point), classifications)
       : basketPromotions(setup.basketPromotions, classifications, new FixedClock(PRICED_AT)),
+    deliveryFeePromotions(setup.deliveryFeePromotions ?? [], new FixedClock(PRICED_AT)),
   );
 }
 

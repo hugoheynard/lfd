@@ -248,6 +248,7 @@
   "test/feature-access.e2e-spec.ts": 4227,
   "test/featured-by-audience-migration.e2e-spec.ts": 4272,
   "test/first-mandate-ledger.e2e-spec.ts": 4413,
+  "test/free-delivery-promotion.e2e-spec.ts": 5000,
   "test/free-delivery.e2e-spec.ts": 4970,
   "test/fulfillment-days.e2e-spec.ts": 3027,
   "test/gesture-intent-lease.e2e-spec.ts": 3944,
