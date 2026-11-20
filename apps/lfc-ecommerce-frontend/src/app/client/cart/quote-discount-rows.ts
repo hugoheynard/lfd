@@ -62,6 +62,6 @@ export function adjustmentValue(adjustment: CartAdjustment | null): string {
  * (`@lfd/contracts`), recopiée comme au ticket : une valeur du baril n'entre
  * pas dans la boutique pour une ligne.
  */
-function labelIn(label: DiscountLabelView, locale: string): string {
+export function labelIn(label: DiscountLabelView, locale: string): string {
   return locale === 'en' ? label.en : locale === 'it' ? label.it : label.fr;
 }

@@ -117,28 +117,32 @@
             variant="title"
             title="Que reçoit le client (valeur de la réduction) ?"
             [subtitle]="
-              atLine()
-                ? 'Une baisse du prix de chaque article.'
-                : 'Une remise sur son panier, une fois les articles chiffrés.'
+              onDeliveryFee()
+                ? 'Livraison offerte : le frais de livraison de la commande n\'est pas facturé.'
+                : atLine()
+                  ? 'Une baisse du prix de chaque article.'
+                  : 'Une remise sur son panier, une fois les articles chiffrés.'
             "
           />
-          <div class="pair">
-            <fold-listbox
-              label="Remise"
-              [hint]="effectHint()"
-              [options]="effectOptions()"
-              [value]="draft().effectKind"
-              [disabled]="readOnly()"
-              (selectionChange)="edit({ effectKind: $event })"
-            />
-            <fold-input
-              label="Valeur"
-              placeholder="20"
-              [value]="draft().effectValue"
-              [disabled]="readOnly()"
-              (valueChange)="edit({ effectValue: $event })"
-            />
-          </div>
+          @if (!onDeliveryFee()) {
+            <div class="pair">
+              <fold-listbox
+                label="Remise"
+                [hint]="effectHint()"
+                [options]="effectOptions()"
+                [value]="draft().effectKind"
+                [disabled]="readOnly()"
+                (selectionChange)="edit({ effectKind: $event })"
+              />
+              <fold-input
+                label="Valeur"
+                placeholder="20"
+                [value]="draft().effectValue"
+                [disabled]="readOnly()"
+                (valueChange)="edit({ effectValue: $event })"
+              />
+            </div>
+          }
           @if (atLine()) {
             <app-promotion-decimals-callout [decimals]="decimals()" />
           }
@@ -165,7 +169,7 @@
               (valueChange)="edit({ labelIt: $event })"
             />
           </div>
-          @if (!atLine()) {
+          @if (!atLine() && !onDeliveryFee()) {
             <app-promotion-tile-text-fieldset
               [text]="draft().tileText"
               [preview]="tileTextPreview()"
@@ -195,13 +199,25 @@
               (valueChange)="edit({ validTo: $event })"
             />
           </div>
-          <fold-input
-            label="Quantité minimum par article"
-            hint="Le client la reçoit à partir de cette quantité sur la ligne. Vide : dès un."
-            [value]="draft().minQuantity"
-            [disabled]="readOnly()"
-            (valueChange)="edit({ minQuantity: $event })"
-          />
+          @if (onDeliveryFee()) {
+            <fold-input
+              label="Panier minimum (€ HT)"
+              optional
+              hint="La livraison est offerte à partir de ce montant d'articles, hors taxes. Vide : toujours offerte."
+              placeholder="50"
+              [value]="draft().minBasket"
+              [disabled]="readOnly()"
+              (valueChange)="edit({ minBasket: $event })"
+            />
+          } @else {
+            <fold-input
+              label="Quantité minimum par article"
+              hint="Le client la reçoit à partir de cette quantité sur la ligne. Vide : dès un."
+              [value]="draft().minQuantity"
+              [disabled]="readOnly()"
+              (valueChange)="edit({ minQuantity: $event })"
+            />
+          }
           @if (!atLine()) {
             <app-promotion-hours-fieldset
               [hours]="draft().hours"
@@ -237,13 +253,15 @@
               Les mercuriales qui acceptent cette promotion n'ont pas pu être lues.
             </fold-callout>
           }
-          <fold-checkbox
-            label="S'ajoute aux autres promotions"
-            [hint]="cumulativeHint()"
-            [checked]="draft().cumulative"
-            [disabled]="readOnly()"
-            (checkedChange)="edit({ cumulative: $event })"
-          />
+          @if (!onDeliveryFee()) {
+            <fold-checkbox
+              label="S'ajoute aux autres promotions"
+              [hint]="cumulativeHint()"
+              [checked]="draft().cumulative"
+              [disabled]="readOnly()"
+              (checkedChange)="edit({ cumulative: $event })"
+            />
+          }
           @if (writable()) {
             <fold-input
               [label]="isNew() ? 'Motif de la pose' : 'Motif de la modification'"
@@ -313,7 +331,37 @@
         </div>
       </fold-card>
 
-      @if (!atLine()) {
+      @if (onDeliveryFee()) {
+        <fold-card>
+          <div class="block">
+            <fold-element-title
+              variant="title"
+              title="Dans quelles zones de livraison ?"
+              subtitle="Le retrait n'a pas de frais à offrir."
+            />
+            <div class="pair">
+              <fold-listbox
+                label="Zones de livraison"
+                [options]="deliveryReachOptions"
+                [value]="draft().delivery.all"
+                [disabled]="readOnly()"
+                (selectionChange)="setReach('delivery', { all: $event })"
+              />
+              @if (!draft().delivery.all) {
+                <fold-multiselect
+                  searchable
+                  label="Lesquelles"
+                  placeholder="Aucune"
+                  [options]="zoneOptions()"
+                  [value]="draft().delivery.ids"
+                  [disabled]="readOnly()"
+                  (valueChange)="setReach('delivery', { ids: $event })"
+                />
+              }
+            </div>
+          </div>
+        </fold-card>
+      } @else if (!atLine()) {
         <fold-card>
           <div class="block">
             <fold-element-title
@@ -386,98 +434,104 @@
         </fold-card>
       }
 
-      <fold-card>
-        <div class="block">
-          <fold-element-title
-            variant="title"
-            title="Sur quels articles ?"
-            [subtitle]="scopeSubtitle()"
-          />
-          <fold-listbox
-            label="Étendue"
-            [options]="scopeOptions"
-            [value]="draft().scopeMode"
-            [disabled]="readOnly()"
-            (selectionChange)="setScopeMode($event)"
-          />
-
-          @for (stray of strayFamilies(); track stray.rule.targetId) {
-            <fold-callout variant="alert">
-              {{ stray.message }}
-              @if (!readOnly()) {
-                <button
-                  foldButton
-                  actions
-                  size="sm"
-                  emphasis="soft"
-                  type="button"
-                  (click)="removeRule(stray.rule)"
-                >
-                  Retirer
-                </button>
-              }
-            </fold-callout>
-          }
-
-          @for (line of familyLines(); track line.familyId) {
-            <fold-card surface="sunken" padding="sm">
-              <div class="reach">
-                <fold-element-title variant="title" [title]="line.name" [subtitle]="line.subtitle">
-                  @if (!readOnly()) {
-                    <button
-                      foldButton
-                      titleAction
-                      size="sm"
-                      emphasis="soft"
-                      type="button"
-                      (click)="removeFamily(line.familyId)"
-                    >
-                      Retirer
-                    </button>
-                  }
-                </fold-element-title>
-                <fold-multiselect
-                  searchable
-                  [label]="line.exceptLabel"
-                  placeholder="Aucun"
-                  emptyText="Aucun article de cette famille au catalogue publié."
-                  [options]="line.options"
-                  [value]="line.value"
-                  [disabled]="readOnly()"
-                  (valueChange)="setExceptions(line.familyId, $event)"
-                />
-              </div>
-            </fold-card>
-          }
-
-          @if (!readOnly() && addableFamilies().length > 0) {
+      @if (!onDeliveryFee()) {
+        <fold-card>
+          <div class="block">
+            <fold-element-title
+              variant="title"
+              title="Sur quels articles ?"
+              [subtitle]="scopeSubtitle()"
+            />
             <fold-listbox
-              label="Ajouter une famille"
-              placeholder="Choisir une famille"
-              [options]="addableFamilies()"
-              [(value)]="familyToAdd"
-              (selectionChange)="addFamily($event)"
-            />
-          }
-
-          <fold-element-title
-            variant="caps"
-            title="Articles à part"
-            subtitle="Hors des familles réglées ci-dessus."
-          />
-          @for (list of apartLists(); track list.label) {
-            <fold-multiselect
-              searchable
-              [label]="list.label"
-              placeholder="Aucune"
-              [options]="list.options"
-              [value]="list.value"
+              label="Étendue"
+              [options]="scopeOptions"
+              [value]="draft().scopeMode"
               [disabled]="readOnly()"
-              (valueChange)="setApart(list.target, list.eligible, $event)"
+              (selectionChange)="setScopeMode($event)"
             />
-          }
-        </div>
-      </fold-card>
+
+            @for (stray of strayFamilies(); track stray.rule.targetId) {
+              <fold-callout variant="alert">
+                {{ stray.message }}
+                @if (!readOnly()) {
+                  <button
+                    foldButton
+                    actions
+                    size="sm"
+                    emphasis="soft"
+                    type="button"
+                    (click)="removeRule(stray.rule)"
+                  >
+                    Retirer
+                  </button>
+                }
+              </fold-callout>
+            }
+
+            @for (line of familyLines(); track line.familyId) {
+              <fold-card surface="sunken" padding="sm">
+                <div class="reach">
+                  <fold-element-title
+                    variant="title"
+                    [title]="line.name"
+                    [subtitle]="line.subtitle"
+                  >
+                    @if (!readOnly()) {
+                      <button
+                        foldButton
+                        titleAction
+                        size="sm"
+                        emphasis="soft"
+                        type="button"
+                        (click)="removeFamily(line.familyId)"
+                      >
+                        Retirer
+                      </button>
+                    }
+                  </fold-element-title>
+                  <fold-multiselect
+                    searchable
+                    [label]="line.exceptLabel"
+                    placeholder="Aucun"
+                    emptyText="Aucun article de cette famille au catalogue publié."
+                    [options]="line.options"
+                    [value]="line.value"
+                    [disabled]="readOnly()"
+                    (valueChange)="setExceptions(line.familyId, $event)"
+                  />
+                </div>
+              </fold-card>
+            }
+
+            @if (!readOnly() && addableFamilies().length > 0) {
+              <fold-listbox
+                label="Ajouter une famille"
+                placeholder="Choisir une famille"
+                [options]="addableFamilies()"
+                [(value)]="familyToAdd"
+                (selectionChange)="addFamily($event)"
+              />
+            }
+
+            <fold-element-title
+              variant="caps"
+              title="Articles à part"
+              subtitle="Hors des familles réglées ci-dessus."
+            />
+            @for (list of apartLists(); track list.label) {
+              <fold-multiselect
+                searchable
+                [label]="list.label"
+                placeholder="Aucune"
+                [options]="list.options"
+                [value]="list.value"
+                [disabled]="readOnly()"
+                (valueChange)="setApart(list.target, list.eligible, $event)"
+              />
+            }
+          </div>
+        </fold-card>
+      }
 
       @if (promotion(); as promotion) {
         <fold-card>

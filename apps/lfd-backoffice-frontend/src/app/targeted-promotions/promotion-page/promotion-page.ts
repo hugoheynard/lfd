@@ -271,6 +271,10 @@ export class PromotionPage {
   protected readonly origin = computed(() => originPhrase(this.promotion()?.legacySource ?? null));
 
   protected readonly atLine = computed(() => this.draft().fulfillmentKind === 'displayed_price');
+  /** Sur la livraison : ni effet à saisir, ni articles, ni cumul, ni retrait. */
+  protected readonly onDeliveryFee = computed(
+    () => this.draft().fulfillmentKind === 'delivery_fee',
+  );
   /** Ce que la vignette dira de cette remise au panier (`plan-texte-de-la-vignette.md`). */
   protected readonly tileTextPreview = computed(() => {
     const draft = this.draft();

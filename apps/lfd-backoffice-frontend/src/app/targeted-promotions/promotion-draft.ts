@@ -25,10 +25,12 @@ import {
 
 /**
  * **Où la promotion joue** : dans le prix affiché (le prix de l'article baisse
- * au catalogue, pour tous les acheminements), ou en remise au panier selon
- * l'acheminement coché (`documentation/promotions/promotions.md`, § 2.14).
+ * au catalogue, pour tous les acheminements), en remise au panier selon
+ * l'acheminement coché (`documentation/promotions/promotions.md`, § 2.14), ou
+ * sur la livraison, dont elle offre le frais
+ * (`documentation/promotions/plan-livraison-offerte.md`, § 2.3).
  */
-export type DraftFulfillmentKind = 'displayed_price' | 'basket';
+export type DraftFulfillmentKind = 'displayed_price' | 'basket' | 'delivery_fee';
 
 /**
  * Un côté de l'acheminement d'une remise au panier — le retrait ou la
@@ -69,6 +71,14 @@ export function draftFulfillmentOf(fulfillment: PromotionView['fulfillment']): {
   if (fulfillment.kind === 'displayed_price') {
     return { fulfillmentKind: 'displayed_price', pickup: REACH_OFF, delivery: REACH_OFF };
   }
+  if (fulfillment.kind === 'delivery_fee') {
+    const { delivery } = fulfillment;
+    return {
+      fulfillmentKind: 'delivery_fee',
+      pickup: REACH_OFF,
+      delivery: draftReachOf(typeof delivery === 'object' ? delivery.zones : delivery),
+    };
+  }
   const { pickup, delivery } = fulfillment;
   return {
     fulfillmentKind: 'basket',
@@ -83,6 +93,14 @@ export function payloadFulfillmentOf(
 ): PromotionTermsPayload['fulfillment'] {
   if (draft.fulfillmentKind === 'displayed_price') {
     return { kind: 'displayed_price' };
+  }
+  if (draft.fulfillmentKind === 'delivery_fee') {
+    // Le retrait n'a pas de frais à offrir : seule la livraison part, et
+    // toujours cochée — la case n'est pas montrée.
+    return {
+      kind: 'delivery_fee',
+      delivery: draft.delivery.all ? 'all' : { zones: [...draft.delivery.ids].sort() },
+    };
   }
   const pickup = payloadReachOf(draft.pickup);
   const delivery = payloadReachOf(draft.delivery);
@@ -146,6 +164,11 @@ export interface PromotionDraft {
   /** Vide = aucune condition de quantité. */
   readonly minQuantity: string;
   /**
+   * Le panier minimum, en euros HT — « sur la livraison » seulement ; vide =
+   * toujours offerte. Gardé ailleurs, mais pas envoyé.
+   */
+  readonly minBasket: string;
+  /**
    * Les jours et heures (`plan-jours-et-heures.md`) — remise au panier
    * seulement : gardés au prix affiché, mais pas envoyés.
    */
@@ -162,16 +185,39 @@ export interface PromotionDraft {
 
 /** Les effets d'un point : une promotion d'acheminement s'applique au panier. */
 export function effectsFor(fulfillment: DraftFulfillmentKind): readonly PromotionEffectKindValue[] {
-  return fulfillment === 'displayed_price'
-    ? ['percent_off', 'unit_amount_off', 'fixed_unit_price']
-    : ['percent_off', 'basket_amount_off'];
+  switch (fulfillment) {
+    case 'displayed_price':
+      return ['percent_off', 'unit_amount_off', 'fixed_unit_price'];
+    case 'basket':
+      return ['percent_off', 'basket_amount_off'];
+    case 'delivery_fee':
+      return ['free_delivery'];
+  }
+}
+
+/** L'effet d'un genre qu'on rejoint sans rien à reprendre : la livraison offerte n'a rien à saisir. */
+function defaultEffectOf(fulfillment: DraftFulfillmentKind): {
+  readonly effectKind: PromotionEffectKindValue;
+  readonly effectValue: string;
+} {
+  return fulfillment === 'delivery_fee'
+    ? { effectKind: 'free_delivery', effectValue: '0' }
+    : { effectKind: 'percent_off', effectValue: '' };
 }
 
 /** Les cibles d'un point : le tarif ne connaît que le SKU, le panier connaît le produit. */
 export function targetsFor(
   fulfillment: DraftFulfillmentKind,
 ): readonly PromotionScopeTargetValue[] {
-  return fulfillment === 'displayed_price' ? ['category', 'variant'] : ['category', 'product'];
+  switch (fulfillment) {
+    case 'displayed_price':
+      return ['category', 'variant'];
+    case 'basket':
+      return ['category', 'product'];
+    case 'delivery_fee':
+      // La commande entière : aucun article à viser.
+      return [];
+  }
 }
 
 const NO_AUDIENCE_LABELS = {
@@ -210,6 +256,7 @@ export function emptyDraft(today: string, pickupId: string | null): PromotionDra
     scopeMode: 'all_except',
     rules: [],
     minQuantity: '',
+    minBasket: '',
     hours: NO_HOURS,
     cumulative: false,
     tileText: NO_TILE_TEXT,
@@ -226,6 +273,8 @@ export const EFFECT_FACTOR: Readonly<Record<PromotionEffectKindValue, number>> =
   unit_amount_off: MILLICENTS_PER_EURO,
   fixed_unit_price: MILLICENTS_PER_EURO,
   basket_amount_off: CENTS_PER_EURO,
+  // Sans valeur : envoyée à 0.
+  free_delivery: 1,
 };
 
 /** Un nombre français (« 0,50 ») ; `null` s'il ne se lit pas. */
@@ -240,6 +289,7 @@ export function decimalOf(text: string): number | null {
 /** Le brouillon d'une promotion existante — pour la modifier. */
 export function draftOf(view: PromotionView): PromotionDraft {
   const quantity = view.conditions.find((condition) => condition.kind === 'min_quantity');
+  const basket = view.conditions.find((condition) => condition.kind === 'min_basket');
   return {
     internalName: view.internalName,
     description: view.description ?? '',
@@ -266,6 +316,7 @@ export function draftOf(view: PromotionView): PromotionDraft {
       eligible,
     })),
     minQuantity: quantity === undefined ? '' : String(quantity.value),
+    minBasket: basket === undefined ? '' : String(basket.cents / CENTS_PER_EURO).replace('.', ','),
     hours: draftHoursOf(view.conditions),
     cumulative: view.cumulative,
     tileText: draftTileTextOf(view),
@@ -296,10 +347,21 @@ export function draftProblem(draft: PromotionDraft): string | null {
   if (reachProblem !== null) {
     return reachProblem;
   }
+  if (draft.fulfillmentKind === 'delivery_fee') {
+    if (draft.minBasket.trim() !== '' && !centsReadable(draft.minBasket)) {
+      return 'Le panier minimum est un montant en euros, au centime près.';
+    }
+    return hoursProblem(draft.hours);
+  }
   if (draft.minQuantity.trim() !== '' && !/^\d+$/u.test(draft.minQuantity.trim())) {
     return 'La quantité minimum est un nombre entier.';
   }
   return draft.fulfillmentKind === 'basket' ? hoursProblem(draft.hours) : null;
+}
+
+/** Un montant qui tombe au centime : « 50 », « 49,90 » ; pas « 49,999 ». */
+function centsReadable(text: string): boolean {
+  return /^\d+([.,]\d{1,2})?$/u.test(text.trim());
 }
 
 /**
@@ -309,6 +371,11 @@ export function draftProblem(draft: PromotionDraft): string | null {
 function fulfillmentProblem(draft: PromotionDraft): string | null {
   if (draft.fulfillmentKind === 'displayed_price') {
     return null;
+  }
+  if (draft.fulfillmentKind === 'delivery_fee') {
+    return !draft.delivery.all && draft.delivery.ids.length === 0
+      ? 'Choisissez au moins une zone de livraison, ou toutes les zones.'
+      : null;
   }
   if (!draft.pickup.on && !draft.delivery.on) {
     return 'Cochez le retrait, la livraison, ou les deux.';
@@ -328,6 +395,7 @@ function fulfillmentProblem(draft: PromotionDraft): string | null {
  * refuserait en le nommant.
  */
 export function termsOf(draft: PromotionDraft): PromotionTermsPayload {
+  const onDeliveryFee = draft.fulfillmentKind === 'delivery_fee';
   return {
     internalName: draft.internalName.trim(),
     description: draft.description.trim() === '' ? null : draft.description.trim(),
@@ -350,8 +418,9 @@ export function termsOf(draft: PromotionDraft): PromotionTermsPayload {
     },
     ownFloor: null,
     // Le cumul vaut aux deux points depuis M7 (plan des promotions, § 18.6) :
-    // au panier, les remises cumulables s'enchaînent sur la commande.
-    cumulative: draft.cumulative,
+    // au panier, les remises cumulables s'enchaînent sur la commande. Sur la
+    // livraison, deux livraisons offertes n'en font qu'une : jamais cumulable.
+    cumulative: onDeliveryFee ? false : draft.cumulative,
     validFrom: businessDayStart(draft.validFrom) ?? '',
     validTo: draft.validTo === '' ? null : businessDayStart(draft.validTo),
     audiences: draft.audiences.map((target) => ({
@@ -359,7 +428,10 @@ export function termsOf(draft: PromotionDraft): PromotionTermsPayload {
       companyId: target.companyId === null ? null : target.companyId.trim(),
     })),
     fulfillment: payloadFulfillmentOf(draft),
-    scope: { mode: draft.scopeMode, rules: [...draft.rules] },
+    // Sur la livraison, la commande entière : aucune portée sur le catalogue.
+    scope: onDeliveryFee
+      ? { mode: 'all_except', rules: [] }
+      : { mode: draft.scopeMode, rules: [...draft.rules] },
     conditions: conditionsOf(draft),
   };
 }
@@ -367,14 +439,20 @@ export function termsOf(draft: PromotionDraft): PromotionTermsPayload {
 /**
  * Toutes les conditions du brouillon. Régression (2026-10-31) : elles se
  * réécrivaient depuis la seule quantité minimum, et une promotion à heures
- * ré-enregistrée perdait ses heures. Les heures ne partent qu'au panier :
- * l'agrégat les refuse au prix affiché.
+ * ré-enregistrée perdait ses heures. Les heures ne partent qu'au panier et sur
+ * la livraison : l'agrégat les refuse au prix affiché. Le panier minimum ne
+ * part que sur la livraison, la quantité minimum jamais.
  */
 function conditionsOf(draft: PromotionDraft): PromotionTermsPayload['conditions'] {
-  const minQuantity = draft.minQuantity.trim();
+  const onDeliveryFee = draft.fulfillmentKind === 'delivery_fee';
+  const minQuantity = onDeliveryFee ? '' : draft.minQuantity.trim();
+  const minBasket = onDeliveryFee ? decimalOf(draft.minBasket) : null;
   return [
     ...(minQuantity === '' ? [] : [{ kind: 'min_quantity' as const, value: Number(minQuantity) }]),
-    ...(draft.fulfillmentKind === 'basket' && draft.hours.on
+    ...(minBasket === null
+      ? []
+      : [{ kind: 'min_basket' as const, cents: Math.round(minBasket * CENTS_PER_EURO) }]),
+    ...(draft.fulfillmentKind !== 'displayed_price' && draft.hours.on
       ? [hoursConditionOf(draft.hours)]
       : []),
   ];
@@ -396,7 +474,9 @@ export function withFulfillment(draft: PromotionDraft, kind: DraftFulfillmentKin
   return {
     ...draft,
     fulfillmentKind: kind,
-    effectKind: effectsFor(kind).includes(draft.effectKind) ? draft.effectKind : 'percent_off',
+    effectKind: effectsFor(kind).includes(draft.effectKind)
+      ? draft.effectKind
+      : defaultEffectOf(kind).effectKind,
     rules: draft.rules.filter((rule) => targets.includes(rule.target)),
   };
 }
@@ -443,7 +523,7 @@ export function switchType(
       ? { effectKind: found.effect.kind, effectValue: found.effect.value }
       : effectFollows
         ? {}
-        : { effectKind: 'percent_off' as const, effectValue: '' };
+        : defaultEffectOf(kind);
   return {
     draft: {
       ...moved,

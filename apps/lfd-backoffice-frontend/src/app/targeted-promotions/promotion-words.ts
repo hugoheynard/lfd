@@ -9,6 +9,7 @@ export const EFFECT_LABEL: Readonly<Record<PromotionEffectKindValue, string>> = 
   unit_amount_off: "Montant à l'unité (€ HT)",
   fixed_unit_price: 'Prix posé (€ HT)',
   basket_amount_off: 'Montant sur le panier (€ HT)',
+  free_delivery: 'Livraison offerte',
 };
 
 /**
@@ -20,7 +21,7 @@ export const EFFECT_LABEL: Readonly<Record<PromotionEffectKindValue, string>> = 
 export const FULFILLMENT_OPTIONS: readonly {
   readonly value: DraftFulfillmentKind;
   readonly label: string;
-  readonly icon: 'tag' | 'shopping-cart';
+  readonly icon: 'tag' | 'shopping-cart' | 'truck';
   readonly hint: string;
 }[] = [
   {
@@ -34,6 +35,12 @@ export const FULFILLMENT_OPTIONS: readonly {
     label: 'Remise sur le panier',
     icon: 'shopping-cart',
     hint: 'Le prix au catalogue ne bouge pas : la remise s’applique au panier, et peut se limiter au retrait, à certains points, à la livraison ou à certaines zones.',
+  },
+  {
+    value: 'delivery_fee',
+    label: 'Sur la livraison',
+    icon: 'truck',
+    hint: 'Les articles ne bougent pas : le client ne paie pas le frais de livraison, dans toutes les zones ou certaines, dès un panier minimum si vous en posez un.',
   },
 ];
 

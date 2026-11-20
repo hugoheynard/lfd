@@ -38,6 +38,7 @@ import { PieceRequest } from '../../shop/piece-request.service';
 import { OrderContextStore } from '../../order-context.store';
 import { ServicePoints } from '../../shop/pickup-points.store';
 import { CartSummary } from './cart-summary';
+import { ClientLocale } from '../../client-locale.service';
 
 describe('CartSummary', () => {
   let fixture: ComponentFixture<CartSummary>;
@@ -1056,6 +1057,23 @@ describe('CartSummary — la livraison offerte (1c)', () => {
     expect(row?.textContent?.trim()).toBe(FR.cart.courierOffered);
     expect(row?.querySelector('fold-icon')).not.toBeNull();
     expect(row?.querySelector('dd')).toBeNull();
+  });
+
+  it('dit le libellé de la promotion qui offre la livraison, dans la langue de l’écran', () => {
+    const label = {
+      fr: 'Livraison offerte — client fidèle',
+      en: 'Free delivery — loyal customer',
+      it: 'Consegna gratuita — cliente fedele',
+    };
+    const el = quotedIn(PRO(), { ...VIEW, freeDelivery: { status: 'offered', label } });
+
+    const row = el.querySelector('.courier-offered')?.closest('.row');
+    expect(row?.textContent?.trim()).toBe(label.fr);
+    expect(row?.querySelector('fold-icon')).not.toBeNull();
+
+    TestBed.inject(ClientLocale).current.set('en');
+    TestBed.tick();
+    expect(el.querySelector('.courier-offered')?.textContent?.trim()).toBe(label.en);
   });
 
   it('dit au pro ce qu’il manque, tel que le serveur le sert', () => {

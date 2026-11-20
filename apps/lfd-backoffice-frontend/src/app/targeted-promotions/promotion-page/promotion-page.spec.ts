@@ -242,6 +242,21 @@ describe('PromotionPage', () => {
       expect(text).toContain('Le prix au catalogue ne bouge pas');
     });
 
+    it('sur la livraison : ni effet, ni articles, ni cumul, ni retrait ; le panier minimum apparaît', async () => {
+      const { root, fixture } = await render({ inputs: {} });
+      typeChoice(root, 'Sur la livraison')?.click();
+      fixture.detectChanges();
+      const text = root.textContent ?? '';
+      expect(text).toContain('Dans quelles zones de livraison ?');
+      expect(text).toContain('Panier minimum (€ HT)');
+      expect(text).toContain('Livraison offerte pour tout le monde');
+      expect(text).not.toContain('Sur quels articles ?');
+      expect(text).not.toContain("S'ajoute aux autres promotions");
+      expect(text).not.toContain('Quantité minimum par article');
+      expect(text).not.toContain('Points de retrait');
+      expect(text).not.toContain('Valeur');
+    });
+
     it('un aller-retour ne perd pas ce qui était propre au genre, et le résumé suit', async () => {
       const { root, fixture } = await render({
         get: async () =>
@@ -265,7 +280,7 @@ describe('PromotionPage', () => {
     it('en lecture seule, le genre se lit et ne se change pas', async () => {
       const { root } = await render({ permissions: ['lfc_site_settings:read'] });
       const choices = [...root.querySelectorAll<HTMLButtonElement>('fold-view-toggle button')];
-      expect(choices).toHaveLength(2);
+      expect(choices).toHaveLength(3);
       expect(choices.every((choice) => choice.disabled)).toBe(true);
       expect(root.textContent).toContain('Baisser le prix des articles');
     });

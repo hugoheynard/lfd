@@ -128,6 +128,12 @@ export function fulfillmentPhrase(
   if (fulfillment.kind === 'displayed_price') {
     return 'Tous les acheminements';
   }
+  if (fulfillment.kind === 'delivery_fee') {
+    const { delivery } = fulfillment;
+    return delivery === 'all'
+      ? 'Livraison · toutes les zones'
+      : `Livraison · ${delivery.zones.map((id) => zoneNames.get(id) ?? id).join(', ')}`;
+  }
   const parts: string[] = [];
   const { pickup, delivery } = fulfillment;
   if (pickup === 'all') {
@@ -161,6 +167,8 @@ export function effectPhrase(effect: PromotionView['effect']): string {
       return `Prix posé ${EUROS.format(effect.value / MILLICENTS_PER_EURO)}`;
     case 'basket_amount_off':
       return `−${EUROS.format(effect.value / CENTS_PER_EURO)} sur le panier`;
+    case 'free_delivery':
+      return 'Livraison offerte';
   }
 }
 
@@ -190,11 +198,18 @@ export function summaryPhrase(
   pickupNames: ReadonlyMap<string, string>,
   zoneNames: ReadonlyMap<string, string> = new Map(),
 ): string {
+  const minBasket = view.conditions.find((condition) => condition.kind === 'min_basket');
   return [
     effectPhrase(view.effect),
+    ...(minBasket === undefined ? [] : [minBasketPhrase(minBasket.cents)]),
     audiencesPhrase(view.audiences),
     fulfillmentPhrase(view.fulfillment, pickupNames, zoneNames),
   ].join(' · ');
+}
+
+/** Le panier minimum d'une livraison offerte : « dès 50,00 € HT ». */
+export function minBasketPhrase(cents: number): string {
+  return `dès ${EUROS.format(cents / CENTS_PER_EURO)} HT`;
 }
 
 /** L'origine d'une promotion reprise, en mots ; `null` pour une saisie. */

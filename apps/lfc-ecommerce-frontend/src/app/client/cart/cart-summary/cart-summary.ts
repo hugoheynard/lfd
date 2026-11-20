@@ -16,7 +16,7 @@ import {
 } from 'fold-ng';
 
 import { formatCents, formatRate } from '../../format-money';
-import { adjustmentValue, quoteDiscountRows } from '../quote-discount-rows';
+import { adjustmentValue, labelIn, quoteDiscountRows } from '../quote-discount-rows';
 import { CartProductLine } from '../cart-product-line/cart-product-line';
 import { StaffCartSuggestion } from '../staff-cart-suggestion.service';
 import { StaffSuggestionCard } from '../../suggestions/staff-suggestion-card/staff-suggestion-card';
@@ -263,6 +263,20 @@ export class CartSummary implements OnInit {
   protected readonly courierOffered = computed(
     () => this.deliveryOffered() && this.totals().freeDelivery?.status === 'offered',
   );
+
+  /**
+   * Le mot de la livraison offerte : le libellé de la promotion qui l'offre,
+   * dans la langue de l'écran (« Livraison offerte — client fidèle »), ou
+   * « Coursier offert » quand c'est le franco de la route
+   * (`plan-livraison-offerte.md`, § 2.6). Le serveur ne sert le libellé qu'à
+   * l'appelant que la promotion admet.
+   */
+  protected readonly courierOfferedLabel = computed(() => {
+    const free = this.totals().freeDelivery;
+    return free?.status === 'offered' && free.label !== undefined
+      ? labelIn(free.label, this.locale.current())
+      : this.t().cart.courierOffered;
+  });
 
   /**
    * Ce qu'il manque pour la livraison offerte, tel que le serveur le sert —

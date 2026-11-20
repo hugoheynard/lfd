@@ -3,7 +3,7 @@ import type { PromotionAudienceTargetView } from '@lfd/contracts';
 import { businessDayStart } from '../shared/business-day';
 import { decimalOf, EFFECT_FACTOR, type PromotionDraft } from './promotion-draft';
 import type { ScopeArticle } from './catalogue-choices';
-import { effectPhrase } from './promotion-format';
+import { effectPhrase, minBasketPhrase } from './promotion-format';
 import { hoursPhrase } from './promotion-hours';
 import { scopeLayout } from './scope-lines';
 
@@ -22,13 +22,26 @@ export function draftSummary(
 ): string {
   return [
     `${effectPart(draft)} pour ${audiencePart(draft.audiences)}`,
-    scopePart(draft, names, articles),
+    ...(draft.fulfillmentKind === 'delivery_fee'
+      ? [minBasketPart(draft)]
+      : [scopePart(draft, names, articles)]),
     fulfillmentPart(draft, pickupNames, zoneNames),
     windowPart(draft),
-    ...(draft.fulfillmentKind === 'basket' ? [hoursPhrase(draft.hours)] : []),
+    ...(draft.fulfillmentKind === 'displayed_price' ? [] : [hoursPhrase(draft.hours)]),
   ]
     .filter((part) => part !== null)
     .join(', ');
+}
+
+/** « dès 50,00 € HT », ou « quel que soit le panier » ; « à préciser » s'il ne se lit pas. */
+function minBasketPart(draft: PromotionDraft): string {
+  if (draft.minBasket.trim() === '') {
+    return 'quel que soit le panier';
+  }
+  const value = decimalOf(draft.minBasket);
+  return value === null
+    ? 'dès un panier minimum à préciser'
+    : minBasketPhrase(Math.round(value * EFFECT_FACTOR.basket_amount_off));
 }
 
 function effectPart(draft: PromotionDraft): string {
@@ -119,6 +132,14 @@ function fulfillmentPart(
 ): string {
   if (draft.fulfillmentKind === 'displayed_price') {
     return "dans le prix affiché, quel que soit l'acheminement";
+  }
+  if (draft.fulfillmentKind === 'delivery_fee') {
+    const zones = draft.delivery.ids.map((id) => zoneNames.get(id) ?? id);
+    return draft.delivery.all
+      ? 'dans toutes les zones de livraison'
+      : zones.length === 0
+        ? 'dans une zone à choisir'
+        : `dans ${zones.length === 1 ? 'la zone' : 'les zones'} ${listed(zones)}`;
   }
   const parts: string[] = [];
   const { pickup, delivery } = draft;
