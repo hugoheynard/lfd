@@ -26,6 +26,7 @@ const DRAFT: OrderDraft = {
   fulfillmentMethod: 'pickup',
   pickupAddressId: 'pk_1',
   deliveryAddress: null,
+  deliveryAddressId: null,
   saveAddressToBook: false,
   requestedDeliveryDate: '2030-01-02',
   requestedWindow: null,

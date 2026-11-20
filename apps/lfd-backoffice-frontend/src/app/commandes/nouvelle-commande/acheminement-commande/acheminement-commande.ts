@@ -55,6 +55,12 @@ export interface FulfillmentChoice {
    */
   readonly saveToBook: boolean;
   /**
+   * L'entrée du carnet livrée — absente pour une adresse dictée ou un retrait.
+   * C'est elle qui porte le mode de l'adresse (créneau ou échéance) : sans
+   * elle, le serveur juge la fenêtre au réglage général.
+   */
+  readonly bookAddressId?: string;
+  /**
    * La tranche de retrait convenue. `null` = **pas encore choisie**, et
    * `issue` le dit alors — le créneau est obligatoire en retrait.
    *
@@ -599,6 +605,7 @@ export class AcheminementCommande {
       };
     }
     const address = this.address();
+    const book = this.bookEntry();
     const timing = this.courierWindow();
     if (!this.addressComplete()) {
       return {
@@ -626,6 +633,7 @@ export class AcheminementCommande {
       // Décochée par défaut, et sans effet sur une entrée du carnet : c'est un
       // geste explicite, pas une conséquence d'avoir tapé une adresse.
       saveToBook: this.canKeepAddress() && this.isNewAddress() && this.keepAddress(),
+      ...(book === null ? {} : { bookAddressId: book.id }),
       // La fenêtre CHOISIE part toujours — une échéance ou un créneau du
       // carnet, ou celle convenue au téléphone (2026-10-14 : le serveur ne
       // reprend plus le carnet en silence).

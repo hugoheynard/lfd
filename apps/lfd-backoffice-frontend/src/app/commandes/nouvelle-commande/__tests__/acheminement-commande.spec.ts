@@ -276,6 +276,17 @@ describe("le sélecteur d'acheminement de la saisie staff", () => {
     expect(choiceOf({ courier: true, addresses: [], dictate, keep: true }).saveToBook).toBe(true);
   });
 
+  /**
+   * Régression : la passation partait sans l'adresse du carnet, et le serveur
+   * jugeait une adresse réglée en créneau au réglage général (échéance).
+   */
+  it('transmet l’entrée du carnet livrée, et rien pour une adresse dictée', () => {
+    const dictate = { ligne1: '5 rue Neuve', codePostal: '92200', ville: 'Neuilly' };
+
+    expect(choiceOf({ courier: true }).bookAddressId).toBe(ADRESSE.id);
+    expect(choiceOf({ courier: true, addresses: [], dictate }).bookAddressId).toBeUndefined();
+  });
+
   it('ne propose pas de garder une adresse qui vient déjà du carnet', () => {
     // La case n'est pas rendue dans ce cas ; le choix le redit, pour que le jour
     // où le gabarit changerait, le carnet ne se duplique pas en silence.

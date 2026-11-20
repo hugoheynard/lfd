@@ -25,6 +25,8 @@ export interface OrderDraft {
   readonly fulfillmentMethod: FulfillmentMethod;
   readonly pickupAddressId: string | null;
   readonly deliveryAddress: BillingAddressPayload | null;
+  /** L'entrée du carnet livrée, `null` pour une adresse dictée ou un retrait. */
+  readonly deliveryAddressId: string | null;
   /** L'adresse dictée rejoint-elle le carnet du compte ? */
   readonly saveAddressToBook: boolean;
   /** Jour de retrait/livraison. Obligatoire : c'est la journée de production. */
@@ -245,6 +247,7 @@ export function composedDraftOf(decisions: DraftDecisions): OrderDraft | null {
     fulfillmentMethod: fulfillment.method,
     pickupAddressId: fulfillment.pickupAddressId,
     deliveryAddress: fulfillment.deliveryAddress,
+    deliveryAddressId: fulfillment.bookAddressId ?? null,
     saveAddressToBook: fulfillment.saveToBook,
     requestedDeliveryDate: decisions.requestedDate,
     requestedWindow: fulfillment.window,
@@ -273,10 +276,9 @@ export function placePayloadOf(
     deliveryAddress: draft.deliveryAddress,
     pickupAddressId: draft.pickupAddressId,
     // L'adresse du carnet, quand elle en vient : c'est elle qui porte les
-    // consignes dont la commande se prérempli. Une adresse dictée n'en a
-    // aucune. Le sélecteur d'acheminement ne remonte pas encore l'id — il le
-    // fera avec l'écran d'override.
-    deliveryAddressId: null,
+    // consignes et le mode (créneau ou échéance) que le serveur applique. Une
+    // adresse dictée n'en a aucune, et le réglage général s'applique.
+    deliveryAddressId: draft.deliveryAddressId,
     requestedDeliveryDate: draft.requestedDeliveryDate,
     // 🔴 **La clé est OMISE quand aucune tranche n'est convenue**, jamais
     // mise à `null` : le serveur lit l'absence comme « prends le défaut »
