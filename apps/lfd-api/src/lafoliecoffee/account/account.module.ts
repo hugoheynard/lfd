@@ -89,6 +89,13 @@ import { GetCounterCustomerHandler } from "./application/queries/get-counter-cus
 import { CounterCustomerReader } from "./domain/ports/counter-customer.reader.js";
 import { PrismaCounterCustomerReader } from "./infrastructure/prisma-counter-customer.reader.js";
 import { AdminCounterCustomersController } from "./http/admin-counter-customers.controller.js";
+import { AdminCounterParticularsController } from "./http/admin-counter-particulars.controller.js";
+import { SearchCounterParticularsHandler } from "./application/queries/search-counter-particulars.handler.js";
+import { RegisterCounterParticularHandler } from "./application/commands/register-counter-particular.handler.js";
+import { ParticularFinder } from "./domain/ports/particular-finder.js";
+import { ParticularRegistry } from "./domain/ports/particular-registry.js";
+import { PrismaParticularFinder } from "./infrastructure/prisma-particular.finder.js";
+import { PrismaParticularRegistry } from "./infrastructure/prisma-particular.registry.js";
 import { ListCompanyAddressesHandler } from "./application/queries/list-company-addresses.handler.js";
 import { GetMyCompanyActivationHandler } from "./application/queries/get-my-company-activation.handler.js";
 import { AccountReader } from "./domain/ports/account.reader.js";
@@ -285,6 +292,7 @@ import {
     AdminCompaniesController,
     AdminDirectDebitBlocksController,
     AdminCounterCustomersController,
+    AdminCounterParticularsController,
     AdminCompanyMembersController,
     AdminCompanyContactsController,
     AdminCompanyNotedContactsController,
@@ -418,6 +426,8 @@ import {
     { provide: CompanyWarningsCounter, useClass: PrismaCompanyWarningsCounter },
     ListDirectDebitBlocksHandler,
     ListCounterCustomersHandler,
+    SearchCounterParticularsHandler,
+    RegisterCounterParticularHandler,
     GetCounterCustomerHandler,
     GetCustomerPortfolioHandler,
     ExportCustomersCsvHandler,
@@ -426,6 +436,8 @@ import {
     { provide: AdminCompanyReader, useClass: PrismaAdminCompanyReader },
     { provide: DirectDebitBlockReader, useClass: PrismaDirectDebitBlockReader },
     { provide: CounterCustomerReader, useClass: PrismaCounterCustomerReader },
+    { provide: ParticularFinder, useClass: PrismaParticularFinder },
+    { provide: ParticularRegistry, useClass: PrismaParticularRegistry },
     { provide: PendingAccessReader, useClass: PrismaPendingAccessReader },
     { provide: InvitationRenewal, useClass: PrismaInvitationRenewal },
     ListPendingAccessHandler,

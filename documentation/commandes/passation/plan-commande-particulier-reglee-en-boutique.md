@@ -95,6 +95,16 @@ Donc, pour cette surface :
   nommés déclarés et implémentés par `account`, que `orders` appelle. Le
   registrar des invités, qui écrit `users` depuis `orders`, n'est pas étendu
   (`lint:prisma-model-ownership` raisonne par bloc et ne verrait pas l'écart) ;
+- **bâti (B2, 2026-11-20)** : `GET /admin/counter/particulars?q=` (2
+  caractères minimum, 10 fiches) et `POST /admin/counter/particulars` (clé
+  d'intention), sous `b2b_place_order:write`. Est particulier toute fiche non
+  désactivée sans aucune adhésion à une société, en attente comprise. La
+  carte montre le nom quand la fiche en a un (compte connectable) ; la date de
+  dernière commande n'y est pas — elle vit dans `orders`, et `account` ne la
+  lit pas sans une lecture nommée que `orders` publierait (reste à faire). Le
+  409 « contact déjà pris » nomme le prénom de la fiche ; l'enveloppe
+  d'erreur ne publie aucun identifiant, donc **l'écran relance la recherche
+  avec l'e-mail ou le téléphone saisi**, et la fiche apparaît à choisir ;
 - un compte connectable choisi n'ouvre aucun accès à l'équipe : on commande
   **pour** lui ([`commande-passee-par-l-equipe.md`](commande-passee-par-l-equipe.md) § 1).
 

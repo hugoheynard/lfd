@@ -2734,6 +2734,18 @@ export type {
   SetCommerceOperationVisibilityPayload,
 } from "./commerce-operations.js";
 export {
+  COUNTER_PARTICULAR_SEARCH_MAX_LENGTH,
+  COUNTER_PARTICULAR_SEARCH_MIN_LENGTH,
+  counterParticularCardSchema,
+  counterParticularCreatePayloadSchema,
+  counterParticularSearchQuerySchema,
+} from "./counter-particular.js";
+export type {
+  CounterParticularCard,
+  CounterParticularCreatePayload,
+  CounterParticularSearchQuery,
+} from "./counter-particular.js";
+export {
   counterCustomerCardSchema,
   counterCustomerBuyerSchema,
   counterDeliveryAddressSchema,
