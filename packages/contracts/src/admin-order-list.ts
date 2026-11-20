@@ -14,6 +14,7 @@ import {
   type PaymentStatus,
 } from "./order.js";
 import type { OrderClientele } from "./order-handover.js";
+import type { SettlementRegime } from "./order-sheet.js";
 
 /**
  * **La liste staff des commandes** — `GET /admin/orders`.
@@ -54,6 +55,12 @@ export interface AdminOrderRow {
    */
   readonly shortfallReportedAt: string | null;
   readonly paymentStatus: PaymentStatus;
+  /**
+   * Le régime de règlement, calculé au serveur (`settlementRegimeOf`) : seul
+   * il distingue une commande à régler à la caisse de la boutique
+   * (`shop_till`) d'une commande au compte — les deux sont `not_required`.
+   */
+  readonly settlement: SettlementRegime;
   readonly fulfillmentMethod: FulfillmentMethod;
   /**
    * Le jour de retrait ou de livraison, `AAAA-MM-JJ` — `null` sur une commande

@@ -30,7 +30,9 @@ import { LATER_SHIPMENTS_SELECT, laterShipmentsOf } from "./handover-later-shipm
  *
  * ## Ce qui ne franchit PAS ce port
  *
- * Ni montant, ni jeton, ni `OrderView`. Et surtout **aucun champ de remise** :
+ * Ni montant — sauf le TTC qu'une commande à régler en boutique fera
+ * encaisser sur la caisse de la boutique, affiché et jamais écrit —, ni
+ * jeton, ni `OrderView`. Et surtout **aucun champ de remise** :
  * `orders.handed_over_*` existe toujours, mais c'est un **snapshot** que le
  * commerce tient de l'événement du fournil. Le lui renvoyer ferait de la copie
  * la source, et deux vérités finiraient par diverger sur le seul fait que

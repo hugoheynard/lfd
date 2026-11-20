@@ -13,6 +13,7 @@ export const ORDER_MAILS_EN: OrderMailsCopy = {
       paid: "Paid online",
       due: "Left to pay",
       account: "Charged to your account",
+      shopTill: "To pay at the shop",
     },
     recapDay: "Day",
     recapPickup: "Pickup",

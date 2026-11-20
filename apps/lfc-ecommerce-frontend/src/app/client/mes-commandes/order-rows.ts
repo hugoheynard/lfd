@@ -188,7 +188,9 @@ export function originLabelOf(
  * - `account` — portée au compte (ou gratuite) : la facture du mois la porte ;
  * - `card` — encaissée par carte (une remboursée en reste une) ;
  * - `due` — passée par carte, paiement pas encore abouti ;
- * - `refused` — passée par carte, paiement refusé par la banque.
+ * - `refused` — passée par carte, paiement refusé par la banque ;
+ * - `shop_till` — notée par l'équipe, à régler à la caisse de la boutique au
+ *   retrait : jamais « réglée », notre système ne sait pas qu'elle l'est.
  *
  * ⚠️ Ce type disait « il n'y a QUE deux états » jusqu'au 2026-10-09, et
  * l'étiquette « Réglée · CB » se lisait sur le régime : une commande carte
@@ -197,7 +199,7 @@ export function originLabelOf(
  * se règlent depuis l'écran de règlement de la même commande ; le serveur
  * annule celles qui restent en l'air.
  */
-export type OrderPayment = 'account' | 'card' | 'due' | 'refused';
+export type OrderPayment = 'account' | 'card' | 'due' | 'refused' | 'shop_till';
 
 /**
  * Ce que Stripe a rendu sur la commande (lot R1 du plan
@@ -497,6 +499,10 @@ function authorOf(author: CompanyOrderAuthorView | null, copy: RowCopy): string 
 
 /** Le règlement de la ligne : le régime d'abord, puis l'état réel de la carte. */
 function paymentOf(order: CustomerOrderView): OrderPayment {
+  // Avant tout : son `paymentStatus` (`not_required`) se lirait « réglée ».
+  if (order.settlement === 'shop_till') {
+    return 'shop_till';
+  }
   if (order.settlement === 'account' || order.settlement === 'free') {
     return 'account';
   }

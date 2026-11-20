@@ -1548,6 +1548,7 @@ export type {
   OrderHandoverLine,
   OrderHandoverShipmentView,
   OrderHandoverView,
+  ShopTillSettlementView,
 } from "./order-handover.js";
 export type { CockpitHandoverSplitView, CockpitHandoversView } from "./cockpit-handovers.js";
 // Le retrait par envoi, plan E7 reliquat, lot L4c (2026-10-26).
@@ -3088,6 +3089,13 @@ export {
   type AudiencesView,
   type AudienceTopFamily,
 } from "./audiences.js";
+export {
+  SHOP_TILL_ORDERS_MAX_PERIOD_DAYS,
+  shopTillOrdersReportQuerySchema,
+  type ShopTillOrdersDay,
+  type ShopTillOrdersReportQuery,
+  type ShopTillOrdersReportView,
+} from "./shop-till-orders-report.js";
 export {
   DEFAULT_MADE_TO_ORDER_MONTH_WINDOW,
   MADE_TO_ORDER_MAX_PERIOD_DAYS,

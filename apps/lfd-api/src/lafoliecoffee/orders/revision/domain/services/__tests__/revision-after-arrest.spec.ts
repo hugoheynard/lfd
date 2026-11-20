@@ -15,7 +15,17 @@ function revisionWith(changes: readonly RevisionChange[], lines: readonly Line[]
 
 describe("quantitiesAfterArrestAllowed", () => {
   it("l'équipe, sur une commande au compte", () => {
-    expect(quantitiesAfterArrestAllowed("staff", "not_required", 1_000)).toBe(true);
+    expect(quantitiesAfterArrestAllowed("staff", "not_required", 1_000, null)).toBe(true);
+  });
+
+  it("l'équipe, sur une commande à régler à la caisse de la boutique", () => {
+    expect(quantitiesAfterArrestAllowed("staff", "not_required", 1_000, "shop_till")).toBe(true);
+  });
+
+  it("jamais le client, même sur une commande à régler en boutique", () => {
+    expect(quantitiesAfterArrestAllowed("customer", "not_required", 1_000, "shop_till")).toBe(
+      false,
+    );
   });
 
   it.each([
@@ -24,7 +34,7 @@ describe("quantitiesAfterArrestAllowed", () => {
     ["une carte payée", "staff", "paid", 1_000],
     ["une carte attendue", "staff", "pending", 1_000],
   ] as const)("refuse %s", (_case, actor, payment, total) => {
-    expect(quantitiesAfterArrestAllowed(actor, payment, total)).toBe(false);
+    expect(quantitiesAfterArrestAllowed(actor, payment, total, null)).toBe(false);
   });
 });
 
@@ -125,6 +135,6 @@ describe("isQuantitiesOnly — les frontières de la promesse « au moins 1, mê
   });
 
   it("une carte remboursée (descendue de « payée ») n'ouvre pas la révision après l'arrêt", () => {
-    expect(quantitiesAfterArrestAllowed("staff", "refunded", 1_000)).toBe(false);
+    expect(quantitiesAfterArrestAllowed("staff", "refunded", 1_000, null)).toBe(false);
   });
 });

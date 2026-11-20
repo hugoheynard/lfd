@@ -10,6 +10,7 @@ import {
   type AdminOrderListSlice,
 } from "../domain/ports/admin-order-list.reader.js";
 import { orderEntryOriginOf, orderOriginOf } from "../domain/services/order-origin.js";
+import { settlementRegimeOf } from "../domain/services/settlement-regime.js";
 import { abandonedAttemptWhere, notAbandonedAttemptWhere } from "./abandoned-attempt.where.js";
 import { customerLabelOf } from "./handover-order.query.js";
 import { fulfillmentOf, windowOf } from "./order-fulfillment.parse.js";
@@ -28,6 +29,7 @@ const ADMIN_ROW_SELECT = {
     select: { reportedAt: true, decidedAt: true },
   },
   paymentStatus: true,
+  settlementVenue: true,
   fulfillmentMethod: true,
   requestedDeliveryDate: true,
   clientele: true,
@@ -194,6 +196,7 @@ function toAdminRow(row: AdminRow): AdminOrderRow {
         ? (shortfall.reportedAt?.toISOString() ?? null)
         : null,
     paymentStatus: row.paymentStatus,
+    settlement: settlementRegimeOf(row.paymentStatus, row.totalCents, row.settlementVenue),
     fulfillmentMethod: row.fulfillmentMethod,
     fulfillmentDay:
       row.requestedDeliveryDate === null

@@ -26,6 +26,7 @@ import {
   FoldPanelHostService,
   FoldSurfaceDirective,
 } from 'fold-ng';
+import { formatCents } from '@lfd/b2b-ui/order';
 
 import { CounterIncompleteHandoverService } from '../../comptoir/counter-incomplete-handover.service';
 import { CounterPackingSheetService } from '../../comptoir/counter-packing-sheet.service';
@@ -191,6 +192,12 @@ export class HandoverDetail {
   /** Le reste abandonné d'un départ incomplet décidé — vide sinon. */
   /** Le résumé du départ incomplet, commun à la file et au rail. */
   protected readonly missingSummary = missingSummary;
+
+  /** Le TTC à encaisser sur la caisse de la boutique, `null` pour toute autre commande. */
+  protected readonly shopTillAmount = computed<string | null>(() => {
+    const till = this.order()?.settleAtShopTill ?? null;
+    return till === null ? null : formatCents(till.totalCents);
+  });
 
   protected readonly abandoned = computed<readonly PackingAbandonedLine[]>(
     () => this.entry()?.abandonedRemainder ?? [],

@@ -12,8 +12,8 @@ import {
   formatOrderDate,
   orderStatusLabel,
   orderStatusVariant,
-  paymentStatusLabel,
-  paymentStatusVariant,
+  settlementStatusLabel,
+  settlementStatusVariant,
 } from '@lfd/b2b-ui/order';
 
 import { fulfillmentModeOf } from '../../shared/logistics-colors/fulfillment-mode';
@@ -164,11 +164,11 @@ export class OrdersTable {
   }
 
   protected payment(row: AdminOrderRow): string {
-    return paymentStatusLabel(row.paymentStatus);
+    return settlementStatusLabel(row);
   }
 
-  protected paymentTone(row: AdminOrderRow): ReturnType<typeof paymentStatusVariant> {
-    return paymentStatusVariant(row.paymentStatus);
+  protected paymentTone(row: AdminOrderRow): ReturnType<typeof settlementStatusVariant> {
+    return settlementStatusVariant(row);
   }
 
   /**

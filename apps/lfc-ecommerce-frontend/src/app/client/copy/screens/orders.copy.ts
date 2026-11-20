@@ -596,6 +596,12 @@ export interface OrdersCopy {
   readonly payCardNote: string;
   readonly payDueNote: string;
   readonly payRefusedNote: string;
+  /**
+   * Une commande notée par l'équipe, que le client règle à la caisse de la
+   * boutique en venant la chercher — jamais « réglée » : nous ne le savons pas.
+   */
+  readonly payShopTill: string;
+  readonly payShopTillNote: string;
   /** Le bouton qui rouvre l'écran de règlement de la MÊME commande. */
   readonly settle: string;
   /** L'intitulé de la ligne « Remboursement » — absente sans remboursement. */
@@ -773,6 +779,8 @@ export const ORDERS_FR: OrdersCopy = {
   payCardNote: 'réglée à la commande',
   payDueNote: 'le paiement par carte n’a pas abouti',
   payRefusedNote: 'votre banque a refusé la carte',
+  payShopTill: 'À régler en boutique',
+  payShopTillNote: 'à la caisse de la boutique, au retrait',
   settle: 'Régler',
   detailRefund: 'Remboursement',
   detailCommitment: 'Bon de commande',
@@ -913,6 +921,8 @@ export const ORDERS_EN: OrdersCopy = {
   payCardNote: 'paid at checkout',
   payDueNote: 'the card payment did not go through',
   payRefusedNote: 'your bank declined the card',
+  payShopTill: 'To pay at the shop',
+  payShopTillNote: 'at the shop till, on collection',
   settle: 'Pay',
   detailRefund: 'Refund',
   detailCommitment: 'Purchase order',
@@ -1053,6 +1063,8 @@ export const ORDERS_IT: OrdersCopy = {
   payCardNote: 'pagato all’ordine',
   payDueNote: 'il pagamento con carta non è andato a buon fine',
   payRefusedNote: 'la tua banca ha rifiutato la carta',
+  payShopTill: 'Da pagare in negozio',
+  payShopTillNote: 'alla cassa del negozio, al ritiro',
   settle: 'Paga',
   detailRefund: 'Rimborso',
   detailCommitment: 'Buono d’ordine',

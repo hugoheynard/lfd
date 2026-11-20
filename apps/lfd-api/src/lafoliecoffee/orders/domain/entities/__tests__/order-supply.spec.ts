@@ -104,6 +104,7 @@ function placed(
     buyerKind: "registered",
     status: "placed",
     paymentStatus: "not_required",
+    settlementVenue: null,
     shortfallDecided: false,
     discountPromotionId: null,
     discountAdjustment: null,

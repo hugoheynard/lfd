@@ -367,6 +367,7 @@ function seed(): RevisableOrder {
     buyerKind: "registered",
     status: "placed",
     paymentStatus: "not_required",
+    settlementVenue: null,
     shortfallDecided: false,
     // Déjà au Labo, avec sa remise : composer le squelette ne change donc
     // pas d'acheminement, et la règle L9 (§ 13.8) n'a rien à juger.

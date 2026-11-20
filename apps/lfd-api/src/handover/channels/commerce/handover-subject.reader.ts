@@ -49,6 +49,13 @@ export interface HandoverSubject {
   readonly fulfillmentMethod: FulfillmentMethod;
   /** La note du client — elle est sur le bon, donc elle traverse. */
   readonly note: string;
+  /**
+   * Le TTC à encaisser sur la caisse de la boutique, quand la commande s'y
+   * règle ; `null` sinon. Le seul montant qui traverse ce port : le comptoir
+   * l'AFFICHE, il ne l'écrit nulle part et ne juge rien dessus — la commande
+   * est remise comme une commande au compte (`settled`).
+   */
+  readonly settleAtShopTill: { readonly totalCents: number } | null;
   readonly lines: readonly HandoverSubjectLine[];
   /**
    * Les **restes** de la commande (rang > 1) dont le bon de livraison est

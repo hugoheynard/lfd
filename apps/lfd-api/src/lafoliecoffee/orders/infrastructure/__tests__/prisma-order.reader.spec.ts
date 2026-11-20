@@ -11,6 +11,7 @@ function row(overrides: Partial<OrderRow> = {}): OrderRow {
     orderNumber: "ORD-1",
     status: "placed",
     paymentStatus: "not_required",
+    settlementVenue: null,
     requestedDeliveryDate: null,
     fulfillmentMethod: "pickup",
     deliveryAddressId: null,

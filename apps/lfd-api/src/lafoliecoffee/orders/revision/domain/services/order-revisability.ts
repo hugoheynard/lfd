@@ -89,7 +89,7 @@ export function standingBlockOf(
     return { kind: "order", block: decision.block };
   }
   if (isCardSettlement(subject.paymentStatus, subject.totalCents)) {
-    const unsettled = settlementRegimeOf(subject.paymentStatus, subject.totalCents) === "due";
+    const unsettled = settlementRegimeOf(subject.paymentStatus, subject.totalCents, null) === "due";
     if (purpose === "request" || unsettled) {
       return { kind: "card_settled", unsettled: purpose === "revise" };
     }
@@ -97,9 +97,13 @@ export function standingBlockOf(
   return subject.hasSalesTerms ? null : { kind: "without_sales_terms" };
 }
 
-/** § 2.7 : règlement par carte attendu (`due`) ou encaissé (`paid`). */
+/**
+ * § 2.7 : règlement par carte attendu (`due`) ou encaissé (`paid`). Le lieu de
+ * règlement n'y entre pas : il ne distingue que des commandes `not_required`,
+ * qui ne sont jamais une carte (`orders_shop_till_shape`).
+ */
 export function isCardSettlement(paymentStatus: PaymentStatus, totalCents: number): boolean {
-  const regime = settlementRegimeOf(paymentStatus, totalCents);
+  const regime = settlementRegimeOf(paymentStatus, totalCents, null);
   return regime === "due" || regime === "paid";
 }
 

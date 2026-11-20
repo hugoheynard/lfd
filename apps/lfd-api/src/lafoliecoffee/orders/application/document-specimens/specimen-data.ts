@@ -214,7 +214,7 @@ export function specimenClientSheet(variant: SheetVariant, now: Date): ClientShe
   }
   const state = order.toPersistence();
   const settlement =
-    variant === "pro" ? order.settlementRegime : settlementRegimeOf("paid", state.totalCents);
+    variant === "pro" ? order.settlementRegime : settlementRegimeOf("paid", state.totalCents, null);
   return sheetOf(state, variant, settlement, now);
 }
 

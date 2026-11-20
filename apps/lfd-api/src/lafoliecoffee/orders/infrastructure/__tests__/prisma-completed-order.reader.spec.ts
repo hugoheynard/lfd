@@ -1,5 +1,9 @@
 import { CompletedOrderUnsettledError } from "../../domain/errors/completed-order-errors.js";
-import { toCompleted, type CompletedRow } from "../prisma-completed-order.reader.js";
+import {
+  COMPLETED_WHERE,
+  toCompleted,
+  type CompletedRow,
+} from "../prisma-completed-order.reader.js";
 
 /** Une commande de 30 € HT dont seuls 10 € sont partis : le reste a été abandonné. */
 const PARTIAL: CompletedRow = {
@@ -37,5 +41,15 @@ describe("toCompleted — l'assiette des points est ce qui est PARTI", () => {
 
   it("rend `null` pour une clientèle nulle, avant même de lire le solde", () => {
     expect(toCompleted({ ...PARTIAL, clientele: null, billableSubtotalCents: null })).toBeNull();
+  });
+});
+
+describe("COMPLETED_WHERE — ce qui rapporte des points", () => {
+  it("n'est jamais une commande à régler à la caisse de la boutique : on ne sait pas qu'elle est payée", () => {
+    expect(COMPLETED_WHERE).toMatchObject({
+      status: "fulfilled",
+      paymentStatus: "paid",
+      settlementVenue: null,
+    });
   });
 });

@@ -87,6 +87,10 @@ import { AppointmentsController } from "./http/appointments.controller.js";
 import { AdminCockpitController } from "./http/admin-cockpit.controller.js";
 import { AdminGrowthController } from "./http/admin-growth.controller.js";
 import { AdminMadeToOrderReportsController } from "./http/admin-made-to-order-reports.controller.js";
+import { AdminShopTillOrdersController } from "./http/admin-shop-till-orders.controller.js";
+import { GetShopTillOrdersReportHandler } from "./application/queries/get-shop-till-orders-report.handler.js";
+import { ShopTillOrdersReader } from "./domain/ports/shop-till-orders.reader.js";
+import { PrismaShopTillOrdersReader } from "./infrastructure/prisma-shop-till-orders.reader.js";
 import { GetMadeToOrderByClientHandler } from "./application/queries/get-made-to-order-by-client.handler.js";
 import { GetMadeToOrderMonthlyHandler } from "./application/queries/get-made-to-order-monthly.handler.js";
 import { MadeToOrderClientReader } from "./domain/ports/made-to-order-client.reader.js";
@@ -152,6 +156,7 @@ import { PrismaLeadScoreStore } from "./infrastructure/prisma-lead-score.store.j
     AdminLeadsController,
     AdminGrowthController,
     AdminMadeToOrderReportsController,
+    AdminShopTillOrdersController,
     AdminMarketController,
     AdminAppointmentsController,
     AdminAvailabilityController,
@@ -200,6 +205,7 @@ import { PrismaLeadScoreStore } from "./infrastructure/prisma-lead-score.store.j
     { provide: SectorRevenueReader, useClass: PrismaSectorRevenueReader },
     { provide: MadeToOrderMonthlyReader, useClass: PrismaMadeToOrderMonthlyReader },
     { provide: MadeToOrderClientReader, useClass: PrismaMadeToOrderClientReader },
+    { provide: ShopTillOrdersReader, useClass: PrismaShopTillOrdersReader },
     { provide: TerminationStatsReader, useClass: PrismaTerminationStatsReader },
     { provide: AvailabilityStore, useClass: PrismaAvailabilityStore },
     { provide: AppointmentRepository, useClass: PrismaAppointmentRepository },
@@ -221,6 +227,7 @@ import { PrismaLeadScoreStore } from "./infrastructure/prisma-lead-score.store.j
     GetSectorRevenueHandler,
     GetMadeToOrderMonthlyHandler,
     GetMadeToOrderByClientHandler,
+    GetShopTillOrdersReportHandler,
     GetTerminationStatsHandler,
     AddMarketZoneHandler,
     RemoveMarketZoneHandler,

@@ -9,7 +9,8 @@ export const LOCAL_PLACED_AT = Prisma.sql`(("o"."created_at" AT TIME ZONE 'UTC')
 /**
  * **Les lignes des rapports du sur mesure** (lot R) : `FROM order_lines "l"
  * JOIN orders "o"`, sous le périmètre du chiffre d'affaires
- * (`revenue-scope.ts` — la même règle que `revenueWhere`, en SQL), sur les
+ * (`revenue-scope.ts` — la même règle que `revenueWhere`, en SQL : statut,
+ * règlement, et `REVENUE_SETTLEMENT_VENUE` nul), sur les
  * jours de passation à Paris de `from` à `to` compris. La borne brute sur
  * `created_at`, élargie d'un jour de chaque côté, garde l'index — la figure
  * de `prisma-audience-order.reader.ts`. `joins` s'insère avant le `WHERE`.
@@ -27,5 +28,6 @@ export function madeToOrderLinesFrom(
       AND "o"."created_at" < ${to}::date + 2
       AND ${LOCAL_PLACED_AT}::date BETWEEN ${from}::date AND ${to}::date
       AND "o"."status"::text IN (${Prisma.join([...REVENUE_ORDER_STATUSES])})
-      AND "o"."payment_status"::text IN (${Prisma.join([...REVENUE_PAYMENT_STATUSES])})`;
+      AND "o"."payment_status"::text IN (${Prisma.join([...REVENUE_PAYMENT_STATUSES])})
+      AND "o"."settlement_venue" IS NULL`;
 }

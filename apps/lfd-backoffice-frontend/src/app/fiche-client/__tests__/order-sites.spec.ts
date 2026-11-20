@@ -14,6 +14,7 @@ function row(companyId: string | null, companyDisplayName: string | null): Admin
     supply: 'planned',
     shortfallReportedAt: null,
     paymentStatus: 'not_required',
+    settlement: 'account',
     fulfillmentMethod: 'pickup',
     subtotalCents: 1_000,
     vatCents: 55,

@@ -32,6 +32,23 @@ export const REVENUE_ORDER_STATUSES = [
 export const REVENUE_PAYMENT_STATUSES = ["not_required", "paid"] as const;
 
 /**
+ * **Le CA web ne compte que ce qui se règle chez nous** (Hugo, 2026-11-20 ;
+ * `plan-commande-particulier-reglee-en-boutique.md`, § 4.2) : une commande
+ * dont le lieu de règlement est ailleurs (`settlement_venue` non nul — à ce
+ * jour la caisse de la boutique, `shop_till`) en est exclue. Elle est suivie
+ * à part, comme un montant **commandé**, jamais encaissé.
+ *
+ * Écrit en « le lieu est nul » et non en « le lieu n'est pas `shop_till` » :
+ * sur une colonne nullable, `NOT IN` rend `NULL` pour toutes les autres
+ * commandes, et le CA web tomberait à zéro.
+ *
+ * Seul le CA lit cette condition : la production, les habitudes d'achat et
+ * les co-achats comptent la commande — elle se fabrique, et c'est ce que le
+ * client a acheté.
+ */
+export const REVENUE_SETTLEMENT_VENUE = null;
+
+/**
  * **CA marchandises HT** d'une commande, en centimes :
  * `subtotal − discount − voucherDiscount`.
  *

@@ -86,6 +86,8 @@ class FakeHandovers {
   lines: readonly OrderHandoverLine[] = [line()];
   /** Les envois prêts (plan E7 reliquat, L4c) — vide : la vue d'avant. */
   shipments: OrderHandoverView['shipments'] = [];
+  /** À régler à la caisse de la boutique — `null` : toute autre commande. */
+  settleAtShopTill: OrderHandoverView['settleAtShopTill'] = null;
   fails = false;
   readonly remitted: string[] = [];
   /** Les rangs envoyés à chaque « Remettre » — `null` : le corps d'avant. */
@@ -114,6 +116,7 @@ class FakeHandovers {
       rank: 1,
       reference: 'CMD-1042',
       shipments: this.shipments,
+      settleAtShopTill: this.settleAtShopTill,
     });
   }
 
@@ -332,6 +335,23 @@ describe('HandoverDetail', () => {
 
     expect(text(fixture)).toContain('Ni fournil ni colisage à suivre');
     expect(element.querySelector('[data-action="remit"]')?.classList).toContain('neutral');
+  });
+
+  it('une commande à régler en boutique dit le TTC à encaisser sur la caisse, sans geste', async () => {
+    const handovers = new FakeHandovers();
+    handovers.settleAtShopTill = { totalCents: 1_840 };
+    const fixture = await render(entry(), { handovers });
+    const banner = (fixture.nativeElement as HTMLElement).querySelector('[data-shop-till]');
+
+    expect(banner?.textContent).toContain('encaisser sur la caisse de la boutique');
+    expect(banner?.textContent?.replace(/\s/gu, ' ')).toContain('18,40 € TTC');
+    expect(banner?.querySelector('button')).toBeNull();
+  });
+
+  it('aucune mention de caisse pour une autre commande', async () => {
+    const fixture = await render(entry());
+
+    expect((fixture.nativeElement as HTMLElement).querySelector('[data-shop-till]')).toBeNull();
   });
 
   it('montre ce qu’il y a dans le sac', async () => {

@@ -61,6 +61,7 @@ import {
 } from "../../domain/services/revision-item-limits.js";
 import { RevisionCutoffs } from "./revision-cutoffs.js";
 import { ShelfRevising } from "./shelf-revising.service.js";
+import { ensureShopTillStaysPickup } from "../../domain/services/shop-till-revision.js";
 
 /**
  * **Recomposer une commande passée** (voir
@@ -202,7 +203,12 @@ export class OrderRevising {
     const quantities =
       !decision.cancellable &&
       decision.block.kind === "inscribed" &&
-      quantitiesAfterArrestAllowed(actorKind, order.paymentStatus, order.totalCents);
+      quantitiesAfterArrestAllowed(
+        actorKind,
+        order.paymentStatus,
+        order.totalCents,
+        order.settlementVenue,
+      );
     const block = standingBlockOf(
       quantities ? { cancellable: true, regime: "account" } : decision,
       {
@@ -260,6 +266,10 @@ export class OrderRevising {
     options: RevisionOptions,
   ): Promise<QuotedRevision> {
     const actor = options.rulesOf ?? author.kind;
+    // Avant toute composition : une livraison ferait chercher une zone et un
+    // tarif pour une commande qui ne peut que se retirer. L'agrégat le
+    // rejuge (`revisionOf`).
+    ensureShopTillStaysPickup(order, content.fulfillmentMethod);
     // Une commande sur stock n'a ni plan ni heure limite : les gardes du
     // circuit les remplacent (plan du jour J, §13, lot L5).
     const fromShelf = order.supply === "shelf";
@@ -549,6 +559,7 @@ function subjectOf(order: RevisableOrder) {
     status: order.status,
     paymentStatus: order.paymentStatus,
     totalCents: order.totalCents,
+    settlementVenue: order.settlementVenue,
     serviceDay: order.serviceDay,
     cancelledAt: order.cancelledAt,
     stripePaymentIntentId: order.stripePaymentIntentId,

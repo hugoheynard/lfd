@@ -2,6 +2,7 @@ import type { OrderStatus, PaymentStatus } from "@lfd/contracts";
 
 import type { RefundPosition } from "../../../domain/value-objects/refund-position.js";
 import type { OrderSupply } from "../../../domain/value-objects/order-supply.js";
+import type { SettlementVenue } from "../../../domain/value-objects/settlement-venue.js";
 
 /**
  * **Une commande, vue de l'annulation staff** — ce que la règle lit, et ce
@@ -32,6 +33,8 @@ export interface CancellationSubject {
   readonly status: OrderStatus;
   readonly paymentStatus: PaymentStatus;
   readonly totalCents: number;
+  /** Où le règlement se fera hors de chez nous — `shop_till`, ou `null`. */
+  readonly settlementVenue: SettlementVenue | null;
   /** `AAAA-MM-JJ`, ou `null` : commande sans jour de service. */
   readonly serviceDay: string | null;
   /** L'instant d'une annulation staff ; `null` pour une annulation automatique. */

@@ -1,5 +1,7 @@
 import type { PaymentStatus, SettlementRegime } from "@lfd/contracts";
 
+import type { SettlementVenue } from "../value-objects/settlement-venue.js";
+
 const DUE: ReadonlySet<PaymentStatus> = new Set<PaymentStatus>(["pending", "failed"]);
 
 /**
@@ -10,7 +12,11 @@ const DUE: ReadonlySet<PaymentStatus> = new Set<PaymentStatus>(["pending", "fail
  * - `due` — un règlement par carte est attendu (`pending`) ou à reprendre
  *   (`failed`) ;
  * - `paid` — encaissé par carte (`refunded` en descend : il a été payé) ;
- * - `free` — total nul, rien à régler.
+ * - `free` — total nul, rien à régler ;
+ * - `shop_till` — notée au comptoir pour un particulier, à régler à la caisse
+ *   de la boutique. Son `paymentStatus` est `not_required`, comme une commande
+ *   au compte : c'est le LIEU (`settlement_venue`, figé en base à la passation)
+ *   qui la distingue, et il prime sur tout le reste.
  *
  * Pourquoi c'est une DÉDUCTION et pas une colonne : `not_required` n'est écrit
  * que par `Order.deferPayment()` à la passation, et aucune écriture postérieure
@@ -36,7 +42,11 @@ const DUE: ReadonlySet<PaymentStatus> = new Set<PaymentStatus>(["pending", "fail
 export function settlementRegimeOf(
   paymentStatus: PaymentStatus,
   totalCents: number,
+  venue: SettlementVenue | null,
 ): SettlementRegime {
+  if (venue === "shop_till") {
+    return "shop_till";
+  }
   if (paymentStatus === "not_required") {
     return totalCents > 0 ? "account" : "free";
   }

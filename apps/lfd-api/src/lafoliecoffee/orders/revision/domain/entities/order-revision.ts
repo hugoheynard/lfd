@@ -24,6 +24,8 @@ import type { RevisableDiscount } from "../../../domain/services/basket-discount
 import type { FixedCustomerCancellation } from "../../../cancellation/domain/services/customer-cancellation-window.js";
 import { isCardSettlement } from "../services/order-revisability.js";
 import { settlementRegimeOf } from "../../../domain/services/settlement-regime.js";
+import type { SettlementVenue } from "../../../domain/value-objects/settlement-venue.js";
+import { ensureShopTillStaysPickup } from "../services/shop-till-revision.js";
 import type { OrderLineSnapshot } from "../../../domain/value-objects/order-line.js";
 import type { OrderBuyerKind } from "../../../domain/value-objects/order-buyer-kind.js";
 import type { OrderVatMethod } from "../../../domain/value-objects/order-vat-method.js";
@@ -63,6 +65,8 @@ export interface RevisableOrder {
   readonly status: OrderStatus;
   readonly paymentStatus: PaymentStatus;
   readonly totalCents: number;
+  /** Où le règlement se fera hors de chez nous, figé à la passation — `shop_till`, ou `null`. */
+  readonly settlementVenue: SettlementVenue | null;
   /** Le HT de la composition écrite (`orderPretaxCents`), relu pour l'ancien HT de l'e-mail. */
   readonly pretaxCents: number;
   /**
@@ -225,6 +229,7 @@ export function ensureNoShortfallDecision(order: RevisableOrder): void {
  * @throws {RevisionBelowVoucherError} le total passerait sous le bon imputé.
  * @throws {RevisionRequiresPaymentError} une commande gratuite deviendrait payante.
  * @throws {RevisionFreesAccountOrderError} une commande au compte deviendrait gratuite.
+ * @throws {ShopTillOrderRevisedToDeliveryError} une commande à régler en boutique passerait en livraison.
  */
 export function revisionOf(
   order: RevisableOrder,
@@ -232,8 +237,10 @@ export function revisionOf(
 ): Omit<OrderRevisionToSave, "pricingNotes"> {
   ensureFrozenPrices(order.lines, state);
   ensureVoucherCovered(order, state);
-  const before = settlementRegimeOf(order.paymentStatus, order.totalCents);
-  const after = settlementRegimeOf(state.paymentStatus, state.totalCents);
+  ensureShopTillStaysPickup(order, state.fulfillmentMethod);
+  // Le lieu est figé en base à la passation : la composition révisée le garde.
+  const before = settlementRegimeOf(order.paymentStatus, order.totalCents, order.settlementVenue);
+  const after = settlementRegimeOf(state.paymentStatus, state.totalCents, order.settlementVenue);
   if (before === "free" && after !== "free") {
     throw new RevisionRequiresPaymentError(order.orderId, state.totalCents);
   }

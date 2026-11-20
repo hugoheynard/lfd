@@ -2,6 +2,7 @@ import type { PaymentStatus } from "@lfd/contracts";
 
 import type { RevisionChange } from "../entities/order-revision.js";
 import { settlementRegimeOf } from "../../../domain/services/settlement-regime.js";
+import type { SettlementVenue } from "../../../domain/value-objects/settlement-venue.js";
 
 /**
  * **Changer les quantités d'une commande inscrite** (A2,
@@ -22,13 +23,19 @@ export const QUANTITIES_ONLY_NOTE =
   "(au moins 1 chacun). La date, l'acheminement, la note et les articles ne changent plus ; " +
   "pour retirer un article, laissez-en 1 ou annulez la commande.";
 
-/** § 7 : l'équipe, et une commande au compte (`account`) — rien d'autre. */
+/**
+ * § 7 : l'équipe, et une commande sans carte à suivre — au compte (`account`)
+ * ou à régler à la caisse de la boutique (`shop_till`, dont la caisse
+ * encaisse le total du jour du retrait). Rien d'autre.
+ */
 export function quantitiesAfterArrestAllowed(
   actorKind: "customer" | "staff",
   paymentStatus: PaymentStatus,
   totalCents: number,
+  venue: SettlementVenue | null,
 ): boolean {
-  return actorKind === "staff" && settlementRegimeOf(paymentStatus, totalCents) === "account";
+  const regime = settlementRegimeOf(paymentStatus, totalCents, venue);
+  return actorKind === "staff" && (regime === "account" || regime === "shop_till");
 }
 
 /** Ce que la règle lit d'une révision : ses changements et sa composition (un `OrderRevisionToSave`). */

@@ -26,6 +26,7 @@ const SUBJECT_SELECT = {
   placedByUserId: true,
   status: true,
   paymentStatus: true,
+  settlementVenue: true,
   totalCents: true,
   voucherDiscountCents: true,
   discountCents: true,
@@ -59,7 +60,7 @@ function lockedOf(row: SubjectRow, shipment: ShipmentRows): LockedShortfallSubje
       rank: shipment.rank,
       status: row.status,
       remainderNoteStatus: shipment.remainderNoteStatus,
-      settlementRegime: settlementRegimeOf(row.paymentStatus, row.totalCents),
+      settlementRegime: settlementRegimeOf(row.paymentStatus, row.totalCents, row.settlementVenue),
       increasePending: shipment.increasePending,
       voucherDiscountCents: row.voucherDiscountCents,
       frozenTerms: [

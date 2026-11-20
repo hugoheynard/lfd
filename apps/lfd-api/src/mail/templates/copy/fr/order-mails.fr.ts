@@ -18,6 +18,7 @@ export const ORDER_MAILS_FR: OrderMailsCopy = {
       paid: "Réglé en ligne",
       due: "Reste à régler",
       account: "Porté à votre compte",
+      shopTill: "À régler en boutique",
     },
     recapDay: "Jour",
     recapPickup: "Retrait",

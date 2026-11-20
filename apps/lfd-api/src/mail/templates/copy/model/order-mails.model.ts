@@ -12,6 +12,8 @@ export interface OrderSettlementCopy {
   readonly due: string;
   /** Portée au compte, rien à encaisser maintenant. */
   readonly account: string;
+  /** Notée au comptoir pour un particulier : il réglera à la caisse de la boutique. */
+  readonly shopTill: string;
 }
 
 /** Ce que dit le courriel de confirmation d'une commande. */

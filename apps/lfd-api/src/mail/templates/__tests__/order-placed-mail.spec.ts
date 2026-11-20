@@ -288,6 +288,14 @@ describe("le régime de règlement du courriel de confirmation", () => {
     expect(render({ sheet: withSettlement("due") }).html).toContain("Reste à régler");
   });
 
+  it("une commande à régler à la caisse de la boutique le dit, sans compte ni carte", () => {
+    const html = render({ sheet: withSettlement("shop_till") }).html;
+
+    expect(html).toContain("À régler en boutique");
+    expect(html).not.toContain("Porté à votre compte");
+    expect(html).not.toContain("Réglé en ligne");
+  });
+
   it("un total nul garde le libellé du compte", () => {
     const html = render({ sheet: withSettlement("free") }).html;
 

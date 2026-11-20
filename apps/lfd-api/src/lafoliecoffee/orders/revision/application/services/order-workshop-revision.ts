@@ -70,6 +70,7 @@ export class OrderWorkshopRevision {
       actor.kind,
       current.paymentStatus,
       current.totalCents,
+      current.settlementVenue,
     );
     const quantities = eligible && isQuantitiesOnly(current.lines, revision);
     const outcome = await this.bakery.note(

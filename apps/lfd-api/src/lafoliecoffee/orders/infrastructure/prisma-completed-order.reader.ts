@@ -9,10 +9,20 @@ import {
   type CompletedOrderPage,
 } from "../domain/ports/completed-order.reader.js";
 
-/** La règle « définitive », écrite une fois pour les trois lectures. */
-const COMPLETED_WHERE = {
+/**
+ * La règle « définitive », écrite une fois pour les trois lectures.
+ *
+ * Une commande à régler à la caisse de la boutique (`settlement_venue`) n'est
+ * jamais définitive ici : on ne sait pas qu'elle est payée, elle ne rapporte
+ * aucun point (`plan-commande-particulier-reglee-en-boutique.md`, § 4.2).
+ * `paid` l'écarte déjà (`orders_shop_till_shape` la tient `not_required`) ;
+ * le lieu est écrit quand même, pour que la règle ne tienne pas à une
+ * contrainte lue ailleurs.
+ */
+export const COMPLETED_WHERE = {
   status: OrderStatus.fulfilled,
   paymentStatus: PaymentStatus.paid,
+  settlementVenue: null,
   clientele: { not: null },
 } as const;
 

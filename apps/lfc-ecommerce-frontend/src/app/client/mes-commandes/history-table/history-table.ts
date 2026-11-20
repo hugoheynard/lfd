@@ -203,6 +203,7 @@ export class HistoryTable {
       card: copy.payCard,
       due: copy.payDue,
       refused: copy.payRefused,
+      shop_till: copy.payShopTill,
     };
     return labels[payment];
   }

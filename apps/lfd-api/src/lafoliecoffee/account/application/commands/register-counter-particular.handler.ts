@@ -25,6 +25,13 @@ const NEW_PARTICULAR_TARGET = "new-counter-particular";
  * transaction de l'écriture ; un double envoi rend la fiche déjà créée, sans
  * seconde fiche. Le sujet ne range aucune coordonnée, seulement son empreinte.
  *
+ * `@sans-journal` l'auteur et l'instant sont écrits sur la fiche elle-même
+ * (`users.invited_by`, `created_at`, posés par `ParticularRegistry.register`)
+ * et dans le registre des intentions, dans la même transaction. Le fait
+ * `user.registered` n'est pas réutilisé : ses abonnés (bonus de bienvenue,
+ * rattachement aux prospects) suivent une inscription par la personne
+ * elle-même, pas une fiche que l'équipe ouvre pour elle.
+ *
  * @throws {ParticularContactTakenError} l'adresse ou le téléphone est déjà celui d'un particulier.
  * @throws {InvalidEmailError | InvalidPersonNameError | InvalidPhoneError} saisie invalide.
  */

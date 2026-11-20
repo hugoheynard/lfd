@@ -13,6 +13,7 @@ const SETTLEMENTS = {
   paid: "Commande payée par carte",
   due: "Commande à régler",
   account: "Commande au compte",
+  shopTill: "Commande à régler à la caisse de la boutique",
 };
 
 /** Le QR de retrait : sa légende et son texte de repli. `qrTitle` n'est rendu nulle part (vu le 2026-10-23). */

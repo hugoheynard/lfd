@@ -91,6 +91,7 @@ export const REVISABLE_ORDER_SELECT = {
   buyerKind: true,
   status: true,
   paymentStatus: true,
+  settlementVenue: true,
   totalCents: true,
   // Les gestes du HT (`orderPretaxCents`) : l'e-mail « commande modifiée » dit l'ancien HT d'un pro.
   subtotalCents: true,
@@ -159,6 +160,7 @@ export interface RevisableOrderRow {
   readonly buyerKind: string;
   readonly status: OrderStatus;
   readonly paymentStatus: PaymentStatus;
+  readonly settlementVenue: RevisableOrder["settlementVenue"];
   readonly totalCents: number;
   readonly subtotalCents: number;
   readonly deliveryFeeCents: number;
@@ -222,6 +224,7 @@ export function toRevisableOrder(row: RevisableOrderRow, refunds: RefundPosition
     buyerKind: buyerKindOf(row.id, row.buyerKind),
     status: row.status,
     paymentStatus: row.paymentStatus,
+    settlementVenue: row.settlementVenue,
     totalCents: row.totalCents,
     pretaxCents: orderPretaxCents(row),
     shortfallDecided: row.shortfallDecisions.length > 0,

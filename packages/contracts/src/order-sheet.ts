@@ -155,9 +155,11 @@ export interface SheetFulfillment {
  * (`settlementRegimeOf`) et lu par chaque rendu au lieu d'être deviné :
  * `account` — un pro au compte, prélevé en fin de cycle ; `due` — un
  * règlement par carte attendu ou à reprendre ; `paid` — encaissé ; `free` —
- * total nul. Un particulier n'est jamais `account`.
+ * total nul ; `shop_till` — notée au comptoir pour un particulier, à régler
+ * à la caisse de la boutique : notre système ne sait jamais qu'elle est
+ * payée. Un particulier n'est jamais `account`.
  */
-export const settlementRegimeSchema = z.enum(["paid", "due", "account", "free"]);
+export const settlementRegimeSchema = z.enum(["paid", "due", "account", "free", "shop_till"]);
 export type SettlementRegime = z.infer<typeof settlementRegimeSchema>;
 
 export const sheetMoneySchema = z.object({

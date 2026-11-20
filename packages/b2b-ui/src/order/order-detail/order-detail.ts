@@ -30,8 +30,8 @@ import {
   fulfillmentLabel,
   orderStatusLabel,
   orderStatusVariant,
-  paymentStatusLabel,
-  paymentStatusVariant,
+  settlementStatusLabel,
+  settlementStatusVariant,
 } from '../order-format';
 import {
   buildTimeline,
@@ -223,10 +223,8 @@ export class OrderDetail {
 
   protected readonly statusLabel = computed(() => orderStatusLabel(this.order().status));
   protected readonly statusVariant = computed(() => orderStatusVariant(this.order().status));
-  protected readonly paymentLabel = computed(() => paymentStatusLabel(this.order().paymentStatus));
-  protected readonly paymentVariant = computed(() =>
-    paymentStatusVariant(this.order().paymentStatus),
-  );
+  protected readonly paymentLabel = computed(() => settlementStatusLabel(this.order()));
+  protected readonly paymentVariant = computed(() => settlementStatusVariant(this.order()));
   protected readonly fulfillment = computed(() => fulfillmentLabel(this.order().fulfillmentMethod));
 
   /** L'adresse figée de l'acheminement : celle du coursier, ou celle du retrait. */

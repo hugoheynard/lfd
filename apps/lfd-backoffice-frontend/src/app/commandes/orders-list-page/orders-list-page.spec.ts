@@ -31,6 +31,7 @@ function row(id: string): AdminOrderRow {
     supply: 'planned',
     shortfallReportedAt: null,
     paymentStatus: 'paid',
+    settlement: 'paid',
     fulfillmentMethod: 'pickup',
     fulfillmentDay: '2026-10-14',
     clientele: 'pro',

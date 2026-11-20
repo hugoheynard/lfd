@@ -15,6 +15,7 @@ import {
   remainderEngagedRefusalOf,
 } from "./order-cancellation-voucher.js";
 import { settlementRegimeOf } from "../../../domain/services/settlement-regime.js";
+import type { SettlementVenue } from "../../../domain/value-objects/settlement-venue.js";
 
 /**
  * **La règle de l'annulation staff** (doc
@@ -31,6 +32,8 @@ export interface CancellationState {
   readonly status: OrderStatus;
   readonly paymentStatus: PaymentStatus;
   readonly totalCents: number;
+  /** Où le règlement se fera hors de chez nous — `shop_till`, ou `null`. */
+  readonly settlementVenue: SettlementVenue | null;
   /** Le jour de service `AAAA-MM-JJ`, ou `null` (commande sans jour). */
   readonly serviceDay: string | null;
   /** Retrait ou livraison : une livraison inscrite ne se retire pas (plan A1, § 1). */
@@ -74,6 +77,7 @@ export function cancellationStateOf(
     status: subject.status,
     paymentStatus: subject.paymentStatus,
     totalCents: subject.totalCents,
+    settlementVenue: subject.settlementVenue,
     serviceDay: subject.serviceDay,
     fulfillmentMethod: subject.fulfillmentMethod,
     cancelledAt: subject.cancelledAt,
@@ -135,6 +139,17 @@ export type CancellationBlock =
  */
 export type CancellableRegime = "free" | "due" | "account" | "paid";
 
+/**
+ * Le régime sous lequel l'annulation se lit. Une commande à régler à la caisse
+ * de la boutique s'annule comme une commande à total nul (`free`) : rien n'a
+ * été encaissé chez nous, rien ne sera facturé ni prélevé, et la comptabilité
+ * n'a aucun engagement à fermer — elle n'est jamais au compte.
+ */
+function cancellableRegimeOf(state: CancellationState): CancellableRegime {
+  const regime = settlementRegimeOf(state.paymentStatus, state.totalCents, state.settlementVenue);
+  return regime === "shop_till" ? "free" : regime;
+}
+
 /** La décision : annulable sous tel régime, ou bloquée, et pourquoi. */
 export type CancellationDecision =
   | { readonly cancellable: true; readonly regime: CancellableRegime }
@@ -158,7 +173,7 @@ export function cancellationOf(
   if (byStatus !== null) {
     return { cancellable: false, block: byStatus };
   }
-  const regime = settlementRegimeOf(state.paymentStatus, state.totalCents);
+  const regime = cancellableRegimeOf(state);
   if (regime === "paid" && state.refunds.inFlightCents > 0) {
     return {
       cancellable: false,

@@ -46,6 +46,7 @@ export function cancellationSubject(
     supply: "planned",
     status: "placed",
     paymentStatus: "pending",
+    settlementVenue: null,
     totalCents: 2_110,
     serviceDay: "2026-10-13",
     cancelledAt: null,

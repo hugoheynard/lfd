@@ -58,7 +58,7 @@ export function revisionSettlementOf(
   if (order.paymentStatus === "refunded") {
     return { kind: "card_not_revisable", reason: "refunded" };
   }
-  if (settlementRegimeOf(order.paymentStatus, order.totalCents) === "due") {
+  if (settlementRegimeOf(order.paymentStatus, order.totalCents, order.settlementVenue) === "due") {
     return { kind: "card_not_revisable", reason: "unsettled" };
   }
   if (totalAfterCents > order.totalCents) {

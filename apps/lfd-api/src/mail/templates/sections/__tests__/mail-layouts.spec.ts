@@ -40,6 +40,8 @@ const NOT_SHOWN_AS_TEXT = new Set([
   "customer.sub-account-gesture|bodyByTeam",
   "staff.production-dossier|arrestedWithoutAuthor",
   "customer.order-placed|recapDiscountBase",
+  // Le libellé d'une commande à régler en boutique : `order-placed-mail.spec.ts` le rend.
+  "customer.order-placed|totalLabel.shopTill",
   // Le créneau du trajet au récapitulatif (§ 23) :
   // `order-placed-route-rows.spec.ts` le parcourt, aucun cas de l'empreinte.
   "customer.order-placed|windowBetween",

@@ -108,6 +108,11 @@ const ADMITTED = new Map([
     "dit si l'acheteur peut se connecter : le lien d'annulation d'un invité ne vaut que sans " +
       "compte (plan d'annulation, C6.4, S3, 2026-10-13) ; un booléen en sort, le `sub` jamais",
   ],
+  [
+    `${ACCOUNT_DIR}infrastructure/prisma-particular.finder.ts`,
+    "dit, sur la carte de recherche du comptoir, si le particulier a un compte connectable " +
+      "(`auth0_sub IS NOT NULL` en SQL, 2026-11-20) ; un booléen en sort, le `sub` jamais",
+  ],
   ["apps/lfd-api/src/dev/seeding/client.seed.ts", "le semis de développement crée des comptes"],
   [
     "apps/lfd-api/src/dev/seeding/neighbour-clients.seed.ts",

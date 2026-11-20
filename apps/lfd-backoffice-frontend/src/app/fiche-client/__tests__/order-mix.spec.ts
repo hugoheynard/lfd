@@ -24,6 +24,7 @@ function order(shape: OrderShape): AdminOrderRow {
     supply: 'planned',
     shortfallReportedAt: null,
     paymentStatus: shape.paymentStatus ?? 'paid',
+    settlement: shape.paymentStatus === 'not_required' ? 'account' : 'paid',
     fulfillmentMethod: 'pickup',
     subtotalCents: shape.totalCents,
     vatCents: 0,

@@ -27,6 +27,7 @@ function subjectOf(orderId: string, requestedDeliveryDate: Date | null): Handove
     status: "ready",
     settled: true,
     awaitingShortfallDecision: false,
+    settleAtShopTill: null,
     fulfillmentMethod: "delivery",
     note: "",
     lines: [],

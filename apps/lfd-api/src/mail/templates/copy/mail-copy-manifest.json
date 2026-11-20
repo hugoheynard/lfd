@@ -65,6 +65,11 @@
         "required": [],
         "fr": "Porté à votre compte"
       },
+      "totalLabel.shopTill": {
+        "variables": [],
+        "required": [],
+        "fr": "À régler en boutique"
+      },
       "recapDay": {
         "variables": [],
         "required": [],

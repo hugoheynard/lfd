@@ -30,6 +30,7 @@ function subject(laterShipments: HandoverSubject["laterShipments"] = []): Handov
     status: "placed",
     settled: true,
     awaitingShortfallDecision: false,
+    settleAtShopTill: null,
     fulfillmentMethod: "pickup",
     note: "",
     lines: ORDER_LINES,

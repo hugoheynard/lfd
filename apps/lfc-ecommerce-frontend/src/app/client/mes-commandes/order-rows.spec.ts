@@ -82,6 +82,12 @@ describe('les lignes de l’écran des commandes', () => {
     ).toBe('card');
   });
 
+  it('une commande à régler à la caisse de la boutique ne se dit jamais réglée ni au compte', () => {
+    const shopTill = { ...ORDER, paymentStatus: 'not_required', settlement: 'shop_till' } as const;
+
+    expect(historyRowOf(shopTill, '', COPY).payment).toBe('shop_till');
+  });
+
   /**
    * Régression : « Réglée · CB » se lisait sur le régime, et une commande carte
    * jamais payée s'affichait réglée (plan commandes non réglées, 2026-10-09).

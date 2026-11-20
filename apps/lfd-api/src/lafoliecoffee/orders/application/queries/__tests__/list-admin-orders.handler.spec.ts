@@ -24,6 +24,7 @@ function rowOf(id: string, placedAt: string): AdminOrderRow {
     supply: "planned",
     shortfallReportedAt: null,
     paymentStatus: "paid",
+    settlement: "paid",
     fulfillmentMethod: "pickup",
     fulfillmentDay: "2026-10-13",
     clientele: "public",

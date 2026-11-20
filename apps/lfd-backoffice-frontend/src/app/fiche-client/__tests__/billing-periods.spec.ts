@@ -23,6 +23,7 @@ function order(
     placedAt,
     status,
     paymentStatus,
+    settlement: paymentStatus === 'not_required' ? 'account' : 'paid',
     offPlan: false,
     supply: 'planned',
     shortfallReportedAt: null,

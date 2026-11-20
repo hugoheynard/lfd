@@ -54,6 +54,7 @@ import { companyDisplayName, vatSharesSchema, type VatShareView } from "@lfd/con
 import { orderEntryOriginOf, orderOriginOf } from "../domain/services/order-origin.js";
 import { pickupDiscountBaseOf } from "../domain/services/pickup-discount-base.js";
 import { settlementRegimeOf } from "../domain/services/settlement-regime.js";
+import type { SettlementVenue } from "../domain/value-objects/settlement-venue.js";
 import { ORDER_TTC_TERMS_SELECT, orderTtcTermsFieldOf } from "./order-ttc-terms.columns.js";
 import {
   ORDER_DISCOUNT_AMOUNTS_SELECT,
@@ -72,6 +73,7 @@ export interface OrderRow extends FreeDeliveryRow {
   readonly orderNumber: string;
   readonly status: OrderStatus;
   readonly paymentStatus: PaymentStatus;
+  readonly settlementVenue: SettlementVenue | null;
   readonly requestedDeliveryDate: Date | null;
   readonly fulfillmentMethod: FulfillmentMethod;
   readonly deliveryAddressId: string | null;
@@ -125,6 +127,7 @@ export const ORDER_SELECT = {
   orderNumber: true,
   status: true,
   paymentStatus: true,
+  settlementVenue: true,
   requestedDeliveryDate: true,
   fulfillmentMethod: true,
   deliveryAddressId: true,
@@ -553,7 +556,7 @@ export function toOrderView(row: OrderRow, refunds: OrderRefundsReading): OrderV
     orderNumber: row.orderNumber,
     status: row.status,
     paymentStatus: row.paymentStatus,
-    settlement: settlementRegimeOf(row.paymentStatus, row.totalCents),
+    settlement: settlementRegimeOf(row.paymentStatus, row.totalCents, row.settlementVenue),
     requestedDeliveryDate: toIsoDate(row.requestedDeliveryDate),
     fulfillmentMethod: row.fulfillmentMethod,
     deliveryAddressId: row.deliveryAddressId,

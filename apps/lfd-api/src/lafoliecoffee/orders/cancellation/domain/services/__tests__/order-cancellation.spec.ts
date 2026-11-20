@@ -18,6 +18,7 @@ function state(overrides: Partial<CancellationState> = {}): CancellationState {
   return {
     status: "placed",
     paymentStatus: "pending",
+    settlementVenue: null,
     totalCents: 2_110,
     serviceDay: "2026-10-13",
     fulfillmentMethod: "pickup",
@@ -128,6 +129,15 @@ describe("cancellationBlocker — les refus, dans l'ordre du plan (C3.3)", () =>
 
   it("un engagement `null` hors du compte ne refuse rien : seule la carte et le total nul y ont droit", () => {
     expect(cancellationBlocker(state({ engagement: null }), BEFORE_INSCRIPTION)).toBeNull();
+  });
+
+  it("une commande à régler à la caisse de la boutique s'annule comme un total nul, sans engagement comptable", () => {
+    const shopTill = state({ paymentStatus: "not_required", settlementVenue: "shop_till" });
+
+    expect(cancellationOf(shopTill, BEFORE_INSCRIPTION)).toEqual({
+      cancellable: true,
+      regime: "free",
+    });
   });
 
   it("au compte, le statut l'emporte sur l'engagement", () => {

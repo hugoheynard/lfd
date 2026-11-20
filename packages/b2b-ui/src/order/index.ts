@@ -8,6 +8,8 @@ export {
   orderStatusVariant,
   paymentStatusLabel,
   paymentStatusVariant,
+  settlementStatusLabel,
+  settlementStatusVariant,
   fulfillmentLabel,
   formatAdjustment,
   formatCents,

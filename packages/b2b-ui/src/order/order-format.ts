@@ -6,6 +6,7 @@ import type {
   LateFeeAdjustment,
   OrderStatus,
   PaymentStatus,
+  SettlementRegime,
 } from '@lfd/contracts';
 import type { FoldBadgeVariant } from 'fold-ng';
 
@@ -79,6 +80,33 @@ export function paymentStatusLabel(status: PaymentStatus): string {
 
 export function paymentStatusVariant(status: PaymentStatus): FoldBadgeVariant {
   return PAYMENT[status].variant;
+}
+
+/**
+ * Une commande à régler à la caisse de la boutique est `not_required` chez
+ * nous, comme une commande au compte — mais elle n'est pas « au compte » :
+ * le régime calculé au serveur le dit, et le libellé le suit. Jamais
+ * « payée » : notre système ne le sait pas.
+ */
+const SHOP_TILL: Labelled = { label: 'À régler en boutique', variant: 'neutral' };
+
+/** Ce qu'on lit d'une commande pour dire son règlement. */
+export interface SettlementShown {
+  readonly paymentStatus: PaymentStatus;
+  readonly settlement: SettlementRegime;
+}
+
+function settlementShownOf(order: SettlementShown): Labelled {
+  return order.settlement === 'shop_till' ? SHOP_TILL : PAYMENT[order.paymentStatus];
+}
+
+/** Le libellé du règlement d'une commande : son état, ou « À régler en boutique ». */
+export function settlementStatusLabel(order: SettlementShown): string {
+  return settlementShownOf(order).label;
+}
+
+export function settlementStatusVariant(order: SettlementShown): FoldBadgeVariant {
+  return settlementShownOf(order).variant;
 }
 
 export function fulfillmentLabel(method: FulfillmentMethod): string {

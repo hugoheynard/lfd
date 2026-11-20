@@ -24,7 +24,7 @@ export function orderView(
     orderNumber: "ORD-4812",
     status,
     paymentStatus,
-    settlement: settlementRegimeOf(paymentStatus, 1_519),
+    settlement: settlementRegimeOf(paymentStatus, 1_519, null),
     requestedDeliveryDate: null,
     fulfillmentMethod: "pickup",
     deliveryAddressId: null,

@@ -162,6 +162,9 @@ export const HANDOVER_SELECT = {
   status: true,
   // Le comptoir refuse une commande non réglée (`isSettled`, 2026-10-09).
   paymentStatus: true,
+  // Une commande à régler en boutique : le comptoir dit le TTC à encaisser.
+  settlementVenue: true,
+  totalCents: true,
   fulfillmentMethod: true,
   requestedDeliveryDate: true,
   pickupAddress: true,
@@ -210,6 +213,7 @@ export function toHandoverSubject(row: HandoverRow): {
   readonly awaitingShortfallDecision: boolean;
   readonly fulfillmentMethod: HandoverRow["fulfillmentMethod"];
   readonly note: string;
+  readonly settleAtShopTill: { readonly totalCents: number } | null;
   readonly lines: readonly DepartureLine[];
 } {
   return {
@@ -227,6 +231,7 @@ export function toHandoverSubject(row: HandoverRow): {
     awaitingShortfallDecision: awaitingShortfallDecisionOf(row),
     fulfillmentMethod: row.fulfillmentMethod,
     note: row.note,
+    settleAtShopTill: row.settlementVenue === "shop_till" ? { totalCents: row.totalCents } : null,
     lines: departureOf(row).lines,
   };
 }

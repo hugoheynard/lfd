@@ -151,6 +151,7 @@ function toHandoverView(
     rank,
     reference: shipmentReference(subject.orderNumber, rank),
     shipments: ready.map(toShipmentView),
+    settleAtShopTill: subject.settleAtShopTill,
   };
 }
 

@@ -460,7 +460,11 @@ export class Order {
     if (this.payment === null) {
       throw new InvalidOrderPaymentError("Le règlement de la commande n'est pas décidé.");
     }
-    return settlementRegimeOf(this.payment.status, this.drafted.totalCents);
+    return settlementRegimeOf(
+      this.payment.status,
+      this.drafted.totalCents,
+      this.settlementVenueValue,
+    );
   }
 
   /**

@@ -234,7 +234,10 @@ function customerNoticeViewOf(
 
 /** Lot C4 (C4.9) : ce que l'annulation d'une payée rendra — `null` hors carte payée. */
 function refundPreviewOf(subject: CancellationSubject): AdminCancellationRefund | null {
-  if (settlementRegimeOf(subject.paymentStatus, subject.totalCents) !== "paid") {
+  if (
+    settlementRegimeOf(subject.paymentStatus, subject.totalCents, subject.settlementVenue) !==
+    "paid"
+  ) {
     return null;
   }
   const amountCents = subject.refunds.refundableCents;

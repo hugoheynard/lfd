@@ -21,6 +21,7 @@ function order(
     supply: 'planned',
     shortfallReportedAt: null,
     paymentStatus,
+    settlement: paymentStatus === 'not_required' ? 'account' : 'paid',
     fulfillmentMethod: 'pickup',
     subtotalCents: Math.round(totalCents / 1.055),
     vatCents: totalCents - Math.round(totalCents / 1.055),

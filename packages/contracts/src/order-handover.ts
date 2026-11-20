@@ -142,6 +142,19 @@ export interface OrderHandoverView {
    * (`ConfirmHandoverPayload`). Zéro ou un : rien à choisir.
    */
   readonly shipments: readonly OrderHandoverShipmentView[];
+  /**
+   * La commande se règle à la caisse de la boutique : le comptoir montre
+   * « encaisser sur la caisse de la boutique — X € TTC ». Une **information**,
+   * pas un geste : rien à cocher, rien d'écrit, et notre système ne sait
+   * jamais qu'elle est payée (`plan-commande-particulier-reglee-en-boutique.md`,
+   * § 4.2). `null` pour toute autre commande.
+   */
+  readonly settleAtShopTill: ShopTillSettlementView | null;
+}
+
+/** Ce que le comptoir encaissera sur la caisse de la boutique : le TTC de la commande. */
+export interface ShopTillSettlementView {
+  readonly totalCents: number;
 }
 
 /** Un envoi prêt à retirer — ce qu'on recompte, jamais un montant. */

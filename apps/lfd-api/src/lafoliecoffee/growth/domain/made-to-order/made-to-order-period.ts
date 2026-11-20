@@ -4,7 +4,7 @@ const DAY_MS = 86_400_000;
 const ISO_DAY = /^(\d{4})-(\d{2})-(\d{2})$/u;
 
 /** Le rang d'un jour `AAAA-MM-JJ` en jours depuis l'époque, ou `null` s'il n'existe pas. */
-function dayNumberOf(day: string): number | null {
+export function dayNumberOf(day: string): number | null {
   const match = ISO_DAY.exec(day);
   if (match === null) {
     return null;

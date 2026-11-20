@@ -36,6 +36,7 @@ function subject(overrides: Partial<HandoverSubject> = {}): HandoverSubject {
     status: "ready",
     settled: true,
     awaitingShortfallDecision: false,
+    settleAtShopTill: null,
     fulfillmentMethod: "pickup",
     note: "",
     lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 2, saleUnit: "piece" }],
@@ -187,6 +188,25 @@ describe.each(READERS)("$name — la retenue qualité", ({ read }) => {
 
     expect(view.blockedReason).toBeNull();
     expect(holds.asked).toEqual([]);
+  });
+});
+
+describe.each(READERS)("$name — la commande à régler en boutique", ({ read }) => {
+  it("dit au comptoir le TTC à encaisser sur la caisse de la boutique, et la laisse remettre", async () => {
+    const view = await read(
+      subject({ settleAtShopTill: { totalCents: 1_840 } }),
+      null,
+      new FixedQualityHolds(),
+    );
+
+    expect(view.settleAtShopTill).toEqual({ totalCents: 1_840 });
+    expect(view.blockedReason).toBeNull();
+  });
+
+  it("ne dit rien d'une autre commande", async () => {
+    const view = await read(subject(), null, new FixedQualityHolds());
+
+    expect(view.settleAtShopTill).toBeNull();
   });
 });
 

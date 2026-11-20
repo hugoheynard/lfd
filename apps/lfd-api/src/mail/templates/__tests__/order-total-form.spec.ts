@@ -22,6 +22,7 @@ describe("orderTotalFormOf", () => {
     ["public", "paid", "with_tax"],
     ["public", "due", "with_tax"],
     ["public", "free", "with_tax"],
+    ["public", "shop_till", "with_tax"],
   ] as const)("%s réglé %s → %s", (variant, settlement, form) => {
     expect(orderTotalFormOf(sheetOf(variant, settlement))).toBe(form);
   });

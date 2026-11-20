@@ -162,6 +162,38 @@ boutique » lisent la colonne.
 - Pas de points de fidélité : on ne sait pas qu'elle est payée.
 - Habitudes et co-achats du particulier (`prisma-purchase-history.reader.ts`,
   `prisma-co-purchase.reader.ts`) : elle y compte — c'est ce qu'il a acheté.
+- **bâti (B4, 2026-11-20)** :
+  - `settlementRegimeOf(paymentStatus, totalCents, venue)` rend `shop_till`
+    dès que le lieu l'est ; `settlementRegimeSchema` l'admet. Chaque lecteur
+    du régime lit la colonne (vue commande, liste staff — `AdminOrderRow`
+    gagne `settlement` —, manques, annulation, révision). Les libellés : la
+    fiche et la liste staff disent « À régler en boutique »
+    (`settlementStatusLabel`, `@lfd/b2b-ui`), l'espace client aussi
+    (`payShopTill`), l'accusé de commande aussi (`totalLabel.shopTill`). Le
+    **bon PDF** n'est pas touché : `order-sheet*.ts` porte le travail d'un
+    autre chantier ; la feuille transporte déjà `shop_till`, son rendu reste
+    à décider ;
+  - l'annulation lit une commande `shop_till` comme un total nul (`free`) :
+    rien d'encaissé, rien à facturer, aucun engagement comptable à fermer —
+    auparavant elle se lisait « au compte » et tombait sur
+    `engagement_unknown` ;
+  - après l'arrêt du plan, l'équipe garde la révision des quantités d'une
+    commande `shop_till`, comme d'une commande au compte ; une révision vers
+    une livraison est refusée (`orders.revision.shop_till_delivery`), tôt par
+    le service et de nouveau par l'agrégat ;
+  - le retrait : `OrderHandoverView.settleAtShopTill = { totalCents }`, lu
+    par le comptoir (« encaisser sur la caisse de la boutique — X € TTC »),
+    seul montant qui traverse `HandoverSubject` ; la remise n'est pas bloquée
+    (`isSettled(not_required)`) ;
+  - CA web : `REVENUE_SETTLEMENT_VENUE = null` (`revenue-scope.ts`), écrit
+    « le lieu est nul » et non « ≠ `shop_till` » (piège du `NULL`), traduit par
+    `revenueWhere` et `madeToOrderLinesFrom`. Non exclue : audiences,
+    habitudes, co-achats, production ;
+  - CA parallèle : `GET /admin/growth/shop-till-orders?from=&to=` (sous
+    `b2b_growth`), par **jour de retrait** et par point, TTC commandé et part
+    remise (`fulfilled`), au plus 366 jours ;
+  - fidélité : `COMPLETED_WHERE` porte `settlementVenue: null` en plus de
+    `paid`.
 
 #### 4.3 Ce que la base tient
 
