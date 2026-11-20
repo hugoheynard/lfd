@@ -212,14 +212,14 @@ describe("la commande offerte par une promotion, de la passation à la révision
       freeDeliveryWaivedCents: 2_000,
       freeDeliveryPromotionId: promotionId,
       freeDeliveryPromotionThresholdCents: 0,
-      freeDeliveryLabel: { fr: LABEL.fr, en: LABEL.fr, it: LABEL.fr },
+      freeDeliveryLabel: LABEL,
     });
 
     await staff()
       .post(`/admin/promotions/${promotionId}/archive`)
       .set(INTENT_KEY, freshIntent())
       .send({ reason: "fin du geste commercial" })
-      .expect(201);
+      .expect(204);
     ctx.app.get(PricingMaterialsCache).invalidate();
 
     await ctx
