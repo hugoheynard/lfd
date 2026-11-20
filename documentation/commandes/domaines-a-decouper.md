@@ -1,15 +1,17 @@
 # Les domaines à découper dans `lafoliecoffee/orders`
 
-> **Doc-first, 2026-11-10.** Un inventaire, pas un plan : ce qui, dans le bloc
-> des commandes, mériterait d'être isolé comme le paiement l'a été dans
-> `card-payment`. Rien n'est décidé ni bâti. Les comptes ont été lus dans
-> l'arborescence le 2026-11-10 ; les couplages fins (qui lit quoi, qui écrit
-> quoi) ne l'ont **pas** été — c'est la première étape de chaque chantier.
+> **Inventaire, relu le 2026-11-20.** Ce qui, dans le bloc des commandes,
+> mériterait d'être isolé comme le paiement l'a été dans `card-payment`. Un
+> candidat est bâti (le délai de commande, §2.1) ; les trois autres ne sont ni
+> décidés ni bâtis. Les comptes de fichiers ont été lus dans l'arborescence le
+> 2026-11-20 (ceux des §2.2 à 2.4, le 2026-11-10) ; les couplages fins (qui lit
+> quoi, qui écrit quoi) ne l'ont **pas** été — c'est la première étape de
+> chaque chantier.
 
 ## Partie 1 — l'idée simple
 
-`lafoliecoffee/orders` est le plus gros bloc du dépôt : **716 fichiers** hors tests au
-2026-11-10. Tout ce qui touche une commande y a été rangé, y compris ce qui a
+`lafoliecoffee/orders` est le plus gros bloc du dépôt : **839 fichiers** hors tests au
+2026-11-20. Tout ce qui touche une commande y a été rangé, y compris ce qui a
 son propre métier.
 
 Le paiement en est sorti (plan M2, bloc `card-payment`) parce qu'il avait son
@@ -24,8 +26,8 @@ par un canal — un seul endroit à changer quand sa règle change.
 
 ```mermaid
 flowchart LR
-  O["b2b/orders<br/>la commande"]
-  D["Délai de commande<br/>trop tard ? surtaxe ?"]
+  O["lafoliecoffee/orders<br/>la commande"]
+  D["lafoliecoffee/order-cutoffs<br/>trop tard ? surtaxe ? (bâti)"]
   S["Départ incomplet<br/>manque, décision, reliquat"]
   M["Avis à la clientèle<br/>e-mails et relances"]
   P["Panier<br/>avant la commande"]
@@ -39,10 +41,28 @@ flowchart LR
 
 ### 2.1 Le délai de commande (l'heure limite) — bâti
 
-Bâti le 2026-11-19 : le jugement vit dans `lafoliecoffee/order-cutoffs`
-derrière une seule question, `OrderDeadline`, et ceux qui l'appliquent restent
-dans `orders`. État :
-[`../limites-de-commande/le-verdict-de-l-heure-limite.md`](../limites-de-commande/le-verdict-de-l-heure-limite.md).
+**Fait** (lots V1 à V7 du verdict, 2026-11-19). Le jugement vit dans
+`lafoliecoffee/order-cutoffs`, derrière une seule question, `OrderDeadline`
+(`order-cutoffs/{domain,application,infrastructure}/deadline/`) : un juge pur
+et ses sources. Ceux qui appliquent le verdict restent dans `orders` — la
+passation, l'avis d'heure limite, la surtaxe prévue, la modification et la
+hausse, la relance et les suggestions. L'ancien jugement est retiré (V7), et
+`lint:order-deadline-door` refuse qu'on le réimporte ou qu'on appelle une
+fonction de décision hors du juge ; sa dette est vide.
+
+Le même jour, le verdict a appris le **dépassement d'une limite de produit**
+(lots O1 à O7) : l'équipe passe outre, avec un droit, un motif et une trace,
+à la saisie comme à la modification ; le plancher suit le geste (J6).
+
+**Ce qui reste couplé** (relevé du 2026-11-20) : 23 fichiers de `orders` hors
+tests importent `order-cutoffs/`, dont 8 citent `OrderDeadline`. Le canal
+reste à l'intérieur du bloc `lafoliecoffee`, sans porte de frontière : c'est la
+discipline de l'`index.ts` qui le tient, pas la matrice.
+
+Doc d'état :
+[`../limites-de-commande/le-verdict-de-l-heure-limite.md`](../limites-de-commande/le-verdict-de-l-heure-limite.md) ;
+le dépassement :
+[`../limites-de-commande/passer-outre-la-limite-d-un-produit.md`](../limites-de-commande/passer-outre-la-limite-d-un-produit.md).
 
 ### 2.2 Le départ incomplet — le plus proche du paiement
 
@@ -109,9 +129,9 @@ mêmes couches que le reste des commandes.
 
 ## L'ordre proposé
 
-1. **Le délai de commande** — le plus de profit, il est traversé par chaque
-   geste ; à faire hors d'un chantier qui modifie la même porte.
-2. **Le départ incomplet** — le cas le plus net, et un canal à concevoir.
+1. ~~**Le délai de commande**~~ — bâti le 2026-11-19 (§2.1).
+2. **Le départ incomplet** — le prochain : le cas le plus net, et un canal à
+   concevoir.
 3. **Les avis à la clientèle** et **le panier** — plus simples, à faire
    quand on y touche.
 
