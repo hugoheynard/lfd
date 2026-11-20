@@ -39,6 +39,8 @@ import { CancellationPreview } from "../../cancellation/application/services/can
 import { VoucherRestitutionRefusal } from "../services/voucher-restitution-refusal.js";
 import { GetAdminOrderQuery } from "./get-admin-order.query.js";
 import { ItemLimitOverrideReader } from "../../domain/ports/item-limit-override.reader.js";
+import { OrderNoShowReader } from "../../domain/ports/order-no-show.reader.js";
+import { noShowAuthorsOf, noShowViewOf } from "./admin-order-no-show-view.js";
 import type { ItemLimitOverride } from "../../domain/services/item-limit-overrides.js";
 
 /**
@@ -93,6 +95,7 @@ export class GetAdminOrderHandler implements IQueryHandler<GetAdminOrderQuery, A
     private readonly cardIncreases: CardIncreaseProposalReader,
     private readonly shortfallRefunds: AdminShortfallRefundView,
     private readonly itemLimitOverrides: ItemLimitOverrideReader,
+    private readonly noShows: OrderNoShowReader,
   ) {}
 
   async execute(query: GetAdminOrderQuery): Promise<AdminOrderView> {
@@ -106,6 +109,7 @@ export class GetAdminOrderHandler implements IQueryHandler<GetAdminOrderQuery, A
       increase,
       shortfallRefund,
       overrides,
+      noShow,
     ] = await Promise.all([
       this.orders.findById(query.orderId),
       this.authors.authorOf(query.orderId),
@@ -116,17 +120,19 @@ export class GetAdminOrderHandler implements IQueryHandler<GetAdminOrderQuery, A
       this.cardIncreases.liveOf(query.orderId),
       this.shortfallRefunds.of(query.orderId),
       query.withItemLimitOverrides ? this.itemLimitOverrides.forOrder(query.orderId) : null,
+      this.noShows.of(query.orderId),
     ]);
     if (owned === null || author === null || cancellability === null || revision === null) {
       throw new OrderNotFoundError(query.orderId);
     }
     const notifier = shortfall?.decision?.customerNotice?.byStaffId;
     // Une seule lecture de l'annuaire : qui a saisi, qui a prévenu, qui a
-    // passé outre une limite de produit.
+    // passé outre une limite de produit, qui a déclaré la commande non retirée.
     const staffAuthors = await this.staff.identify([
       author.placedByStaffId,
       ...(notifier === undefined ? [] : [notifier]),
       ...(overrides ?? []).map((override) => override.staffUserId),
+      ...noShowAuthorsOf(noShow),
     ]);
     return {
       ...owned.view,
@@ -144,6 +150,7 @@ export class GetAdminOrderHandler implements IQueryHandler<GetAdminOrderQuery, A
       shortfall: shortfall === null ? null : shortfallViewOf(shortfall, staffAuthors),
       cardIncrease: adminCardIncreaseOf(increase),
       shortfallRefund,
+      noShow: noShowViewOf(noShow, staffAuthors),
       ...(overrides === null
         ? {}
         : {

@@ -48,6 +48,7 @@ export const ORDER_CASE_TABLES: Pick<
   | "customer.order-ready"
   | "customer.delivery-en-route"
   | "customer.order-delayed"
+  | "customer.order-not-collected"
   | "customer.order-placed-with-your-email"
   | "customer.payment-failed"
   | "customer.payment-expired"
@@ -117,6 +118,16 @@ export const ORDER_CASE_TABLES: Pick<
     cases: [
       specimenCase("customer.order-delayed", "Avec le site de retrait"),
       variantCase("customer.order-delayed", "no-site", "Sans site de retrait", (data) => ({
+        ...data,
+        pickupLabel: null,
+      })),
+    ],
+    axes: [{ id: "pickupLabel", values: PRESENCE, of: (data) => presence(data.pickupLabel) }],
+  },
+  "customer.order-not-collected": {
+    cases: [
+      specimenCase("customer.order-not-collected", "Avec le site de retrait"),
+      variantCase("customer.order-not-collected", "no-site", "Sans site de retrait", (data) => ({
         ...data,
         pickupLabel: null,
       })),

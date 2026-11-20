@@ -277,6 +277,8 @@ export const KEY_LABELS: Readonly<Record<string, string>> = {
   ratioBp: 'Rapport prix pro / prix public',
   quantity: 'Quantité',
   raisonSociale: 'Raison sociale',
+  noShowAt: 'Déclarée non retirée le',
+  noShowBy: 'Déclarée non retirée par',
   readyAt: 'Prête le',
   readyBy: 'Préparée par',
   reason: 'Motif',

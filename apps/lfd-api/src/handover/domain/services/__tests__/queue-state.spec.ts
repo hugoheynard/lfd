@@ -39,6 +39,10 @@ describe("showsInQueue", () => {
     expect(showsInQueue({ status: "placed", settled: false }, ATTESTED)).toBe(true);
   });
 
+  it("sort de la file une commande déclarée non retirée : elle est close, personne ne l'attend", () => {
+    expect(showsInQueue({ status: "no_show", settled: true }, undefined)).toBe(false);
+  });
+
   it("montre une commande annulée, réglée ou non", () => {
     expect(showsInQueue({ status: "cancelled", settled: false }, undefined)).toBe(true);
     expect(showsInQueue({ status: "cancelled", settled: true }, undefined)).toBe(true);

@@ -2061,6 +2061,24 @@
       "information": false
     },
     {
+      "colonne": "public.orders.no_show_by_staff_id",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du comptoir a déclaré qu'un client n'est pas venu retirer sa commande à régler en boutique (« Non retirée, déclarée le … par … », fiche de la commande, 2026-11-20) — une fois par commande.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.orders.no_show_notice_requested_by_staff_id",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre de la supervision du comptoir a demandé l'e-mail « commande non retirée » au client (« Client prévenu, demandé le … par … », fiche de la commande, 2026-11-20) — une fois par commande.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
       "colonne": "public.order_revision.revised_by_staff_id",
       "personne": "staff",
       "categorie": "auteur-geste",

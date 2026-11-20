@@ -1,0 +1,11 @@
+-- Retour arrière de 20261120160000_la_commande_non_retiree, après celui de
+-- 20261120160100.
+--
+-- 🔴 NON APPLIQUÉ, et Prisma ne le lit pas. La migration reste inscrite
+-- « appliquée ».
+--
+-- Postgres ne retire pas une valeur d'un enum : il faudrait recréer le type
+-- `OrderStatus` sans `no_show` et y rebasculer `orders.status`. Ne se joue
+-- que si aucune ligne n'est `no_show` — elle perdrait son état terminal.
+-- La valeur peut rester, inutilisée : c'est le retour arrière recommandé.
+SELECT 1;

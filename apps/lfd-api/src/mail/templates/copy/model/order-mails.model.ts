@@ -244,11 +244,31 @@ export interface OrderPlacedWithYourEmailCopy {
   readonly footer: string;
 }
 
+/**
+ * « Votre commande n'a pas été retirée » — « Prévenir le client », décidé par
+ * la supervision du comptoir. Aucun montant ni somme due : rien n'a été
+ * encaissé.
+ */
+export interface OrderNotCollectedCopy {
+  /** Le sous-titre du bandeau d'en-tête, sous l'enseigne — rendu en capitales. */
+  readonly kicker: string;
+  /** Objet du message. `{ref}` = le numéro de commande. */
+  readonly subject: string;
+  readonly title: string;
+  /** Ce qui s'est passé : le créneau est passé, rien n'a été encaissé. */
+  readonly intro: string;
+  /** La sortie : contacter la boutique. */
+  readonly contact: string;
+  readonly referenceLabel: string;
+  readonly whereLabel: string;
+}
+
 /** La famille « commande », une section par clé du registre. */
 export interface OrderMailsCopy {
   readonly "customer.order-placed": OrderPlacedCopy;
   readonly "customer.order-ready": OrderReadyCopy;
   readonly "customer.delivery-en-route": DeliveryEnRouteCopy;
   readonly "customer.order-delayed": OrderDelayedCopy;
+  readonly "customer.order-not-collected": OrderNotCollectedCopy;
   readonly "customer.order-placed-with-your-email": OrderPlacedWithYourEmailCopy;
 }

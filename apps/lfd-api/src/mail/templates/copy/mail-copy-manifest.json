@@ -477,6 +477,47 @@
         "fr": "Voir ma commande"
       }
     },
+    "customer.order-not-collected": {
+      "kicker": {
+        "variables": [],
+        "required": [],
+        "fr": "Commande non retirée"
+      },
+      "subject": {
+        "variables": [
+          "ref"
+        ],
+        "required": [
+          "ref"
+        ],
+        "fr": "Votre commande {ref} n'a pas été retirée"
+      },
+      "title": {
+        "variables": [],
+        "required": [],
+        "fr": "Votre commande n'a pas été retirée."
+      },
+      "intro": {
+        "variables": [],
+        "required": [],
+        "fr": "Elle vous attendait au point de retrait, et le créneau est passé sans qu'elle soit retirée. Rien n'a été encaissé."
+      },
+      "contact": {
+        "variables": [],
+        "required": [],
+        "fr": "Pour toute question, contactez la boutique."
+      },
+      "referenceLabel": {
+        "variables": [],
+        "required": [],
+        "fr": "Commande"
+      },
+      "whereLabel": {
+        "variables": [],
+        "required": [],
+        "fr": "Point de retrait"
+      }
+    },
     "customer.order-placed-with-your-email": {
       "kicker": {
         "variables": [],

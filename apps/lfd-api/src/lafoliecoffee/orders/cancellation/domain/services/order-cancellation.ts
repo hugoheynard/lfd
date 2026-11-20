@@ -94,6 +94,8 @@ export type CancellationBlock =
   | { readonly kind: "draft" }
   | { readonly kind: "ready" }
   | { readonly kind: "fulfilled" }
+  /** Le client n'est pas venu : la commande est close, rien à annuler. */
+  | { readonly kind: "no_show" }
   /** Plan E7 reliquat (L5a) : un envoi est retiré, un reste ne l'est pas. */
   | { readonly kind: "partially_handed_over" }
   /** L5a : seul un reste est retiré — lu sous verrou (`ShipmentHandoverReader`). */
@@ -248,6 +250,8 @@ function statusBlock(state: CancellationState): CancellationBlock | null {
       return { kind: "partially_handed_over" };
     case "fulfilled":
       return { kind: "fulfilled" };
+    case "no_show":
+      return { kind: "no_show" };
   }
 }
 
@@ -284,6 +288,8 @@ export function cancellationRefusalOf(block: CancellationBlock): string {
       return "Cette commande est déjà prête : elle ne s'annule plus. Voyez avec le fournil.";
     case "fulfilled":
       return "Cette commande est déjà retirée : elle ne s'annule plus.";
+    case "no_show":
+      return "Le client n'est pas venu retirer cette commande, et elle a été déclarée non retirée : elle est close, elle ne s'annule plus.";
     case "partially_handed_over":
       return "Une partie de cette commande est déjà retirée : elle ne s'annule plus. Voyez avec la Supervision pour le reste.";
     case "remainder_handed_over":

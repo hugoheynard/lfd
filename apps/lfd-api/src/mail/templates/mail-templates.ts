@@ -25,6 +25,7 @@ import {
   renderOrderChangeRefusedMail,
 } from "./order-change-answer-mail.js";
 import { renderOrderDelayedMail } from "./order-delayed-mail.js";
+import { renderOrderNotCollectedMail } from "./order-not-collected-mail.js";
 import { renderOrderRevisedMail } from "./order-revised-mail.js";
 import { totalIsPretaxOnly } from "./order-total-form.js";
 import { renderDeliveryEnRouteMail } from "./delivery-en-route-mail.js";
@@ -370,6 +371,7 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
     },
     "customer.delivery-en-route": (data) => renderDeliveryEnRouteMail(data, customerMail),
     "customer.order-delayed": (data) => renderOrderDelayedMail(data, customerMail),
+    "customer.order-not-collected": (data) => renderOrderNotCollectedMail(data, customerMail),
     "customer.collection-notice": (data) => renderCollectionNoticeMail(data, customerMail),
     "customer.invoice-issued": (data) => renderInvoiceIssuedMail(data, customerMail),
     "customer.order-cancelled": (data) => renderOrderCancelledMail(data, customerMail),

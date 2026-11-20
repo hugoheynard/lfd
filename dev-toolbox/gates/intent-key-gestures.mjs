@@ -100,6 +100,16 @@ export const GESTURES = [
     "ChangeMailSenderCommand",
     "mail/senders/http/admin-mail-senders.controller.ts",
   ],
+  [
+    "lafoliecoffee/account/application/commands/set-sub-account-menu-by-staff.command.ts",
+    "SetSubAccountMenuByStaffCommand",
+    "lafoliecoffee/account/http/admin-company-sub-account-menu.controller.ts",
+  ],
+  [
+    "lafoliecoffee/orders/application/commands/request-no-show-notice.command.ts",
+    "RequestNoShowNoticeCommand",
+    "lafoliecoffee/orders/http/admin-counter-no-show.controller.ts",
+  ],
 ].map(([command, className, controller]) => ({
   command: `${SRC}/${command}`,
   className,

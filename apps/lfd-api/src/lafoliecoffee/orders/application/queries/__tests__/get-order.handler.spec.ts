@@ -1,6 +1,10 @@
 import type { AdminOrderCancellability, OrderView } from "@lfd/contracts";
 
 import {
+  OrderNoShowReader,
+  type OrderNoShowTraces,
+} from "../../../domain/ports/order-no-show.reader.js";
+import {
   StaffAuthors,
   type StaffAuthorDirectory,
 } from "../../../../../staff/directory/domain/staff-author-directory.js";
@@ -257,6 +261,13 @@ function said(cancellability: AdminOrderCancellability): string {
 /** Une date limite sans rapport avec l'horloge du test : seule sa mise en forme est lue. */
 const VOUCHER_EXPIRES = new Date(Date.UTC(2030, 10, 30, 12));
 
+/** Aucune commande ici n'est déclarée non retirée (sa vue a sa suite). */
+class NoNoShow extends OrderNoShowReader {
+  override of(): Promise<OrderNoShowTraces | null> {
+    return Promise.resolve(null);
+  }
+}
+
 /** Le détail staff, avec ce que l'annulation lit d'elle (par défaut : annulable). */
 function adminHandler(
   owned: OwnedOrder | null,
@@ -274,6 +285,7 @@ function adminHandler(
   packing: FixedPackingStates = new FixedPackingStates(),
   increase: CardIncreaseProposal | null = null,
   overrides: ItemLimitOverrideReader = new RecordedOverrides([]),
+  noShows: OrderNoShowReader = new NoNoShow(),
 ): GetAdminOrderHandler {
   const subjects = new FixedSubjects(subject, others);
   const inscriptions = new FixedInscription(inscribedDay);
@@ -305,6 +317,7 @@ function adminHandler(
       ),
     ),
     overrides,
+    noShows,
   );
 }
 
@@ -335,6 +348,7 @@ describe("GetAdminOrderHandler", () => {
       shortfall: null,
       cardIncrease: null,
       shortfallRefund: null,
+      noShow: null,
     });
   });
 

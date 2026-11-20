@@ -881,6 +881,8 @@ export type {
   AdminOrderShortfallDecision,
   AdminOrderShortfallLine,
   AdminOrderView,
+  AdminOrderNoShow,
+  AdminOrderNoShowNoticeRequest,
   AdminOrderItemLimitOverride,
   AdminShortfallCustomerNotice,
   AdminShortfallDecisionPayload,

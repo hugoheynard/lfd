@@ -202,6 +202,8 @@ function customerCodeOf(block: CancellationBlock): OrderRevisionRefusal {
     case "returned_before":
     case "settled_otherwise":
       return "accounting";
+    case "no_show":
+      return "too_late";
     case "draft":
     case "engagement_unknown":
     case "voucher_remainder_engaged":

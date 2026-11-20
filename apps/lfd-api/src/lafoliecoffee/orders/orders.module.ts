@@ -63,6 +63,7 @@ import {
   ORDER_BUDGET_COMMITMENT_PROVIDERS,
 } from "./order-budget-commitment.providers.js";
 import { ORDER_CUSTOMER_NUDGES_PROVIDERS } from "./order-customer-nudges.providers.js";
+import { ORDER_NO_SHOW_PROVIDERS } from "./order-no-show.providers.js";
 import { ORDER_LATE_TOLERANCE_PROVIDERS } from "./order-late-tolerance.providers.js";
 import { ORDER_ITEM_LIMIT_OVERRIDE_PROVIDERS } from "./order-item-limit-override.providers.js";
 import {
@@ -152,6 +153,7 @@ import { QuoteOrderHandler } from "./application/queries/quote-order.handler.js"
 import { EstimateOrderForCustomerHandler } from "./application/queries/estimate-order-for-customer.handler.js";
 import { AdminOrderEstimatesController } from "./http/admin-order-estimates.controller.js";
 import { AdminCounterParticularOrdersController } from "./http/admin-counter-particular-orders.controller.js";
+import { AdminCounterNoShowController } from "./http/admin-counter-no-show.controller.js";
 import { PlaceParticularOrderAtCounterHandler } from "./application/commands/place-particular-order-at-counter.handler.js";
 import { EstimateParticularOrderAtCounterHandler } from "./application/queries/estimate-particular-order-at-counter.handler.js";
 import { AccountModule } from "../account/account.module.js";
@@ -400,6 +402,7 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     AdminOrderEstimatesController,
     // La commande d'un particulier notée au comptoir, réglée à la caisse de la boutique.
     AdminCounterParticularOrdersController,
+    AdminCounterNoShowController,
     AdminCounterOrderSheetController,
     AdminCounterLateToleranceController,
     AdminOrderSalesTermsController,
@@ -640,6 +643,7 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     DeliveryEnRouteMail,
     MailDeliveryEnRoute,
     ...ORDER_CUSTOMER_NUDGES_PROVIDERS,
+    ...ORDER_NO_SHOW_PROVIDERS,
     ...ORDER_LATE_TOLERANCE_PROVIDERS,
     ...ORDER_ITEM_LIMIT_OVERRIDE_PROVIDERS,
     { provide: OrderPaymentLinkReader, useClass: PrismaOrderPaymentLinkReader },

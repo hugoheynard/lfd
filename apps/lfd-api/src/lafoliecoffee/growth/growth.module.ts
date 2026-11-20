@@ -22,6 +22,7 @@ import { OnOrderHandedOver } from "./application/handlers/on-order-handed-over.h
 import { OnOrderPlaced } from "./application/handlers/on-order-placed.handler.js";
 import { OnOrderAbandoned } from "./application/handlers/on-order-abandoned.handler.js";
 import { OnOrderCancelled } from "./application/handlers/on-order-cancelled.handler.js";
+import { OnOrderNoShow } from "./application/handlers/on-order-no-show.handler.js";
 import { OnOrderRevised } from "./application/handlers/on-order-revised.handler.js";
 import { OnOrderShortfallDecided } from "./application/handlers/on-order-shortfall-decided.handler.js";
 import { OnOrderBudgetCommitmentCorrected } from "./application/handlers/on-order-budget-commitment-corrected.handler.js";
@@ -241,6 +242,7 @@ import { PrismaLeadScoreStore } from "./infrastructure/prisma-lead-score.store.j
     OnOrderReady,
     OnOrderAbandoned,
     OnOrderCancelled,
+    OnOrderNoShow,
     OnOrderRevised,
     OnOrderShortfallDecided,
     OnOrderBudgetCommitmentCorrected,

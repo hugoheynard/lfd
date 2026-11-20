@@ -13,6 +13,7 @@ import type {
   OrderChangeRefusedMailData,
 } from "../../templates/order-change-answer-mail.js";
 import type { OrderDelayedMailData } from "../../templates/order-delayed-mail.js";
+import type { OrderNotCollectedMailData } from "../../templates/order-not-collected-mail.js";
 import type {
   OrderRevisedMailData,
   OrderRevisedMoneyNote,
@@ -116,6 +117,12 @@ export interface B2bMails {
    * Supervision. Destinataire : le client. Cf. `order-delayed-mail.ts`.
    */
   "customer.order-delayed": OrderDelayedMailData;
+  /**
+   * **« Votre commande n'a pas été retirée »** — « Prévenir le client »,
+   * décidé par la supervision du comptoir. Destinataire : le client. Cf.
+   * `order-not-collected-mail.ts`.
+   */
+  "customer.order-not-collected": OrderNotCollectedMailData;
   /**
    * **Le paiement a été refusé.** Destinataire : le client.
    *

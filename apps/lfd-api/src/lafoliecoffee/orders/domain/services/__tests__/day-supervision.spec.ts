@@ -40,6 +40,10 @@ describe("stageOf", () => {
   it("plan E7 reliquat : en partie retirée, le jour de la commande la voit retirée", () => {
     expect(stageOf("partially_handed_over")).toBe("handed_over");
   });
+
+  it("range la commande non retirée avec les annulées : close, jamais en retard", () => {
+    expect(stageOf("no_show")).toBe("cancelled");
+  });
 });
 
 describe("latenessOf — pas retirée après son créneau", () => {

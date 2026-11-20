@@ -33,6 +33,11 @@ export const counterParticularCardSchema = z.object({
   maskedPhone: z.string(),
   /** `true` : un compte où la personne se connecte ; `false` : une fiche invitée. */
   connectable: z.boolean(),
+  /**
+   * Les commandes à régler en boutique que la personne n'est pas venue
+   * retirer (« 2 commandes non retirées »). Lu, jamais bloquant.
+   */
+  noShowCount: z.number().int().nonnegative(),
 });
 export type CounterParticularCard = z.infer<typeof counterParticularCardSchema>;
 

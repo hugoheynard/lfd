@@ -34,12 +34,18 @@ export interface ShopTillOrdersDay {
   readonly siteId: string | null;
   /** Le nom du point de retrait figé à la commande, `null` s'il est illisible. */
   readonly pickupLabel: string | null;
-  /** Commandes passées (ni brouillon ni annulée) : leur TTC commandé. */
+  /** Commandes passées (ni brouillon ni annulée), non retirées comprises : leur TTC commandé. */
   readonly orderedTtcCents: number;
   readonly orderedCount: number;
   /** Parmi elles, celles qui ont été remises : leur TTC commandé. */
   readonly handedOverTtcCents: number;
   readonly handedOverCount: number;
+  /**
+   * Parmi elles, celles que le client n'est pas venu retirer (`no_show`) :
+   * leur TTC commandé — un montant perdu, jamais encaissé ni réclamé.
+   */
+  readonly notCollectedTtcCents: number;
+  readonly notCollectedCount: number;
 }
 
 export interface ShopTillOrdersReportView {

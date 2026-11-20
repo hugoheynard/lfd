@@ -62,6 +62,12 @@ export const orderStatusSchema = z.enum([
   "partially_handed_over",
   "fulfilled",
   "cancelled",
+  /**
+   * **Le client n'est pas venu** : une commande à régler en boutique, jamais
+   * retirée, déclarée au comptoir après la fin du créneau. Ni annulée, ni
+   * remise ; terminale. Réservée au lieu de règlement `shop_till` (CHECK).
+   */
+  "no_show",
 ]);
 export type OrderStatus = z.infer<typeof orderStatusSchema>;
 

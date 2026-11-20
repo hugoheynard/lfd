@@ -26,6 +26,8 @@ export function revisionRefusalOf(block: CancellationBlock): string {
       return "Cette commande est déjà prête : elle ne se modifie plus. Voyez avec le fournil.";
     case "fulfilled":
       return "Cette commande est déjà retirée : elle ne se modifie plus.";
+    case "no_show":
+      return "Le client n'est pas venu retirer cette commande, et elle a été déclarée non retirée : elle est close, elle ne se modifie plus. Notez une nouvelle commande si le client la redemande.";
     case "partially_handed_over":
       return "Une partie de cette commande est déjà retirée : elle ne se modifie plus.";
     case "remainder_handed_over":

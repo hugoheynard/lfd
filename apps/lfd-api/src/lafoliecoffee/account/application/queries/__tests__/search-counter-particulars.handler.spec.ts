@@ -1,3 +1,4 @@
+import { ParticularNoShowCountsReader } from "../../../../orders/domain/ports/particular-no-show-counts.reader.js";
 import { ParticularSearchTooShortError } from "../../../domain/errors/particular-errors.js";
 import {
   ParticularFinder,
@@ -21,6 +22,20 @@ class FixedParticularFinder extends ParticularFinder {
   }
 }
 
+/** Les commandes non retirées, fixées par le test ; retient les fiches demandées. */
+class FixedNoShowCounts extends ParticularNoShowCountsReader {
+  readonly asked: (readonly string[])[] = [];
+
+  constructor(private readonly counts: ReadonlyMap<string, number> = new Map()) {
+    super();
+  }
+
+  countsOf(userIds: readonly string[]): Promise<ReadonlyMap<string, number>> {
+    this.asked.push(userIds);
+    return Promise.resolve(this.counts);
+  }
+}
+
 const JEAN: ParticularRecord = {
   id: "u1",
   firstName: "Jean",
@@ -32,7 +47,10 @@ const JEAN: ParticularRecord = {
 
 describe("chercher un particulier au comptoir", () => {
   it("sert des cartes aux coordonnées masquées", async () => {
-    const handler = new SearchCounterParticularsHandler(new FixedParticularFinder([JEAN]));
+    const handler = new SearchCounterParticularsHandler(
+      new FixedParticularFinder([JEAN]),
+      new FixedNoShowCounts(),
+    );
 
     const cards = await handler.execute(new SearchCounterParticularsQuery("jean"));
 
@@ -44,14 +62,31 @@ describe("chercher un particulier au comptoir", () => {
         maskedEmail: "j***@gmail.com",
         maskedPhone: "06 •• •• •• 78",
         connectable: false,
+        noShowCount: 0,
       },
     ]);
+  });
+
+  it("dit combien de commandes la personne n'est pas venue retirer, en une lecture", async () => {
+    const counts = new FixedNoShowCounts(new Map([["u1", 2]]));
+    const handler = new SearchCounterParticularsHandler(
+      new FixedParticularFinder([JEAN, { ...JEAN, id: "u2", firstName: "Jeanne" }]),
+      counts,
+    );
+
+    const cards = await handler.execute(new SearchCounterParticularsQuery("jean"));
+
+    expect(cards.map((card) => [card.id, card.noShowCount])).toEqual([
+      ["u1", 2],
+      ["u2", 0],
+    ]);
+    expect(counts.asked).toEqual([["u1", "u2"]]);
   });
 
   it("borne la recherche à dix particuliers", async () => {
     const finder = new FixedParticularFinder([]);
 
-    await new SearchCounterParticularsHandler(finder).execute(
+    await new SearchCounterParticularsHandler(finder, new FixedNoShowCounts()).execute(
       new SearchCounterParticularsQuery("06 12"),
     );
 
@@ -62,7 +97,9 @@ describe("chercher un particulier au comptoir", () => {
     const finder = new FixedParticularFinder([JEAN]);
 
     await expect(
-      new SearchCounterParticularsHandler(finder).execute(new SearchCounterParticularsQuery("j")),
+      new SearchCounterParticularsHandler(finder, new FixedNoShowCounts()).execute(
+        new SearchCounterParticularsQuery("j"),
+      ),
     ).rejects.toBeInstanceOf(ParticularSearchTooShortError);
     expect(finder.asked).toHaveLength(0);
   });

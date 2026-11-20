@@ -405,11 +405,12 @@ export class PrismaOrderRepository extends OrderRepository {
     //
     // 🔴 Et le STATUT, depuis le 2026-10-12 (plan d'annulation, S1) : une
     // commande annulée ne devient jamais `fulfilled` — un fait de retrait
-    // tardif sur une annulée ne la ressuscite pas, il rend `false`.
+    // tardif sur une annulée ne la ressuscite pas, il rend `false`. Ni sur
+    // une commande déclarée non retirée (`no_show`) : close sans remise.
     const where = {
       orderNumber: reference,
       handedOverAt: null,
-      status: { not: OrderStatus.cancelled },
+      status: { notIn: [OrderStatus.cancelled, OrderStatus.no_show] },
     };
     const handedOver = {
       handedOverAt: at,

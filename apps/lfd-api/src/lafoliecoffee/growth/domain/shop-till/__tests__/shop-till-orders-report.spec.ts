@@ -12,6 +12,7 @@ const entry = (over: Partial<ShopTillOrderEntry> = {}): ShopTillOrderEntry => ({
   pickupLabel: "Boutique Croix-Rousse",
   totalCents: 1_000,
   handedOver: false,
+  notCollected: false,
   ...over,
 });
 
@@ -31,7 +32,28 @@ describe("shopTillOrdersRowsOf — le montant commandé, par jour et par point",
         orderedCount: 2,
         handedOverTtcCents: 1_840,
         handedOverCount: 1,
+        notCollectedTtcCents: 0,
+        notCollectedCount: 0,
       },
+    ]);
+  });
+
+  it("compte au commandé la commande non retirée, et la range dans sa propre colonne", () => {
+    const rows = shopTillOrdersRowsOf([
+      entry({ totalCents: 1_840, handedOver: true }),
+      entry({ totalCents: 920, notCollected: true }),
+      entry({ totalCents: 500, notCollected: true }),
+    ]);
+
+    expect(rows).toEqual([
+      expect.objectContaining({
+        orderedTtcCents: 3_260,
+        orderedCount: 3,
+        handedOverTtcCents: 1_840,
+        handedOverCount: 1,
+        notCollectedTtcCents: 1_420,
+        notCollectedCount: 2,
+      }),
     ]);
   });
 

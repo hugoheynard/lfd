@@ -71,6 +71,12 @@ export const ACTIVITY_TYPES = {
    * 2026-10-12.
    */
   orderCancelled: "order.cancelled",
+  /**
+   * Le client n'est **pas venu retirer** sa commande à régler en boutique
+   * (`plan-commande-particulier-reglee-en-boutique.md`, § 5 bis). Un fait de
+   * cycle de vie : aucun score ne le lit.
+   */
+  orderNoShow: "order.no_show",
   orderRevised: "order.revised",
   /**
    * L'équipe a **décidé d'un départ incomplet** (plan

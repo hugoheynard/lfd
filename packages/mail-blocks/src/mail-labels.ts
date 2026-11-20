@@ -30,6 +30,12 @@ const MAIL_LABELS: Readonly<Record<string, MailLabel>> = {
     moment:
       "« Avertir le client » à la Supervision, quand un retrait n’est pas prêt à la fin du créneau",
   },
+  "customer.order-not-collected": {
+    title: "Commande non retirée",
+    recipient: "Le client",
+    moment:
+      "« Prévenir le client » au comptoir, décidé par la supervision après qu’une commande à régler en boutique a été déclarée non retirée",
+  },
   "customer.delivery-en-route": {
     title: "Livraison en route",
     recipient: "Le client",

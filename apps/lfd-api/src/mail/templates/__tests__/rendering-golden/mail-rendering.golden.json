@@ -572,6 +572,18 @@
       "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
     }
   },
+  "customer.order-not-collected": {
+    "full": {
+      "subject": "Votre commande ORD-4812 n'a pas été retirée",
+      "htmlSha256": "c34a7f2310932960f7c1b46a6cb9443301a6d77face4274c584757b637e3787c",
+      "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
+    },
+    "bare": {
+      "subject": "Votre commande ORD-4812 n'a pas été retirée",
+      "htmlSha256": "5cd8c83d409a6b42290cf3b7f46caf2d2f27058902d8153846f41bbdfeeb99b9",
+      "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
+    }
+  },
   "customer.marketing-confirm": {
     "fr": {
       "subject": "Confirmez votre inscription à nos nouvelles",

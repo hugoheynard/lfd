@@ -26,6 +26,7 @@ export const MAIL_LINK_CARDS: { readonly [K in keyof B2bMails]: MailLinkCards } 
   "customer.order-ready": { cta: ORDER_LIST },
   "customer.delivery-en-route": { cta: ORDER_LIST },
   "customer.order-delayed": { cta: ORDER_LIST },
+  "customer.order-not-collected": {},
   "customer.order-placed-with-your-email": {},
   "customer.payment-failed": { cta: { label: "Reprendre le règlement" } },
   "customer.payment-expired": {},

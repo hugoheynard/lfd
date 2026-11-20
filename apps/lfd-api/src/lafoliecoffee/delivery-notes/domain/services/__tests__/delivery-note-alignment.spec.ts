@@ -195,6 +195,16 @@ describe("alignmentOf — annulation", () => {
   it("sans BL vivant, ne fait rien", () => {
     expect(alignmentOf(order({ status: "cancelled" }), [], context)).toEqual({ change: "none" });
   });
+
+  it("une commande non retirée annule son BL vivant, comme une annulée : rien n'est parti", () => {
+    const note = planned();
+    note.prepare(READY_AT);
+
+    const result = alignmentOf(order({ status: "no_show" }), [note], context);
+
+    expect(result.change).toBe("voided");
+    expect(note.toState()).toMatchObject({ status: "voided", voidedAt: NOW });
+  });
 });
 
 describe("alignmentOf — hors champ, rien", () => {

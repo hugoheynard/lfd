@@ -47,6 +47,7 @@ const DECLARED_VARIABLES = {
   },
   "customer.delivery-en-route": { windowBetween: ["start", "end"], windowBefore: ["end"] },
   "customer.order-delayed": { subject: ["ref"] },
+  "customer.order-not-collected": { subject: ["ref"] },
   "customer.order-placed-with-your-email": { title: ["firstName"] },
   "customer.payment-failed": { subject: ["ref"] },
   "customer.payment-expired": { subject: ["ref"] },

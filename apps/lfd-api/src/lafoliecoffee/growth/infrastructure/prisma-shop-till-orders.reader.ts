@@ -8,11 +8,17 @@ import type { ShopTillOrderEntry } from "../domain/shop-till/shop-till-orders-re
 
 /** Le statut d'une commande remise au client. */
 const HANDED_OVER = "fulfilled";
+/**
+ * Le statut d'une commande que le client n'est pas venu retirer. Hors du
+ * périmètre du CA (`REVENUE_ORDER_STATUSES`) — rien n'a été vendu —, mais
+ * commandée : ce rapport la compte, à part.
+ */
+const NOT_COLLECTED = "no_show";
 
 /**
  * Les commandes à régler en boutique d'une période de retrait — une requête,
  * bornée par le jour demandé (`@db.Date`). Statuts : ceux d'une commande
- * passée (`REVENUE_ORDER_STATUSES`), le lieu `shop_till` en plus.
+ * passée (`REVENUE_ORDER_STATUSES`) et la non retirée, le lieu `shop_till` en plus.
  */
 @Injectable()
 export class PrismaShopTillOrdersReader extends ShopTillOrdersReader {
@@ -24,7 +30,7 @@ export class PrismaShopTillOrdersReader extends ShopTillOrdersReader {
     const rows = await this.prisma.order.findMany({
       where: {
         settlementVenue: "shop_till",
-        status: { in: [...REVENUE_ORDER_STATUSES] },
+        status: { in: [...REVENUE_ORDER_STATUSES, NOT_COLLECTED] },
         requestedDeliveryDate: {
           gte: new Date(`${from}T00:00:00.000Z`),
           lte: new Date(`${to}T00:00:00.000Z`),
@@ -44,6 +50,7 @@ export class PrismaShopTillOrdersReader extends ShopTillOrdersReader {
           pickupLabel: pickup.success && pickup.data.label !== "" ? pickup.data.label : null,
           totalCents: row.totalCents,
           handedOver: row.status === HANDED_OVER,
+          notCollected: row.status === NOT_COLLECTED,
         },
       ];
     });

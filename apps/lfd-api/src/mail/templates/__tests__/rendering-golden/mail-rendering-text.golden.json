@@ -61,6 +61,14 @@
       "textSha256": "3de12569c10bb22f43712750c122ef18e7b8076749597bcb97a7d2588444136e"
     }
   },
+  "customer.order-not-collected": {
+    "full": {
+      "textSha256": "aa2546e68ad666583f281c7edf3559a69fd2e9fbf6741c6714d9b0dd6801b6d3"
+    },
+    "bare": {
+      "textSha256": "dba40666717404faa269b1c10dc16fbf0edc39869b897c3447e49130c129c365"
+    }
+  },
   "customer.payment-failed": {
     "withLink": {
       "textSha256": "001a0fd2b8f9913af6efcf0cad2d6d31d1481af9db3b834076a92ce1fa6ffb85"

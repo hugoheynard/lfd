@@ -27,6 +27,7 @@ export function awaitingShortfallDecisionOf(row: AwaitingShortfallRow): boolean 
   const shortfall = row.shortfalls[0];
   return (
     row.status !== "cancelled" &&
+    row.status !== "no_show" &&
     shortfall !== undefined &&
     shortfall.reportedAt !== null &&
     shortfall.decidedAt === null

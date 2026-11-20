@@ -117,6 +117,15 @@ describe('buildTimeline — annulation', () => {
   });
 });
 
+describe('buildTimeline — commande non retirée', () => {
+  it('s’arrête sur la commande non retirée, en échec, sans étape de retrait', () => {
+    const steps = buildTimeline(order('no_show', 'not_required', 'pickup'));
+
+    expect(keys(steps)).toEqual(['payment', 'no_show']);
+    expect(steps[1]).toMatchObject({ label: 'Commande non retirée', state: 'failed' });
+  });
+});
+
 describe('buildTimeline — invariants sur toute la matrice', () => {
   const STATUSES: readonly OrderStatus[] = [
     'draft',
@@ -125,6 +134,7 @@ describe('buildTimeline — invariants sur toute la matrice', () => {
     'in_production',
     'fulfilled',
     'cancelled',
+    'no_show',
   ];
   const PAYMENTS: readonly PaymentStatus[] = [
     'not_required',

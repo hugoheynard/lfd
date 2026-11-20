@@ -46,6 +46,7 @@ export const ORDER_VALUE_CARDS: Pick<
       "customer.order-placed": ORDER_REFERENCE,
       "customer.order-ready": ORDER_REFERENCE,
       "customer.order-delayed": ORDER_REFERENCE,
+      "customer.order-not-collected": ORDER_REFERENCE,
       "customer.payment-failed": ORDER_REFERENCE,
       "customer.payment-expired": ORDER_REFERENCE,
       "customer.order-modification-failed": ORDER_REFERENCE,

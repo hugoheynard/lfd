@@ -12,6 +12,13 @@ describe('orderStatusLabel — plan E7 reliquat', () => {
   });
 });
 
+describe('orderStatusLabel — la commande que le client n’est pas venu retirer', () => {
+  it('dit « Non retirée », en échec comme une annulée', () => {
+    expect(orderStatusLabel('no_show')).toBe('Non retirée');
+    expect(orderStatusVariant('no_show')).toBe('alert');
+  });
+});
+
 describe('settlementStatusLabel — une commande à régler à la caisse de la boutique', () => {
   it('dit « À régler en boutique », jamais « au compte » ni « payée »', () => {
     const order = { paymentStatus: 'not_required', settlement: 'shop_till' } as const;

@@ -75,6 +75,20 @@ function orderReady(fact: PhraseFact): Said {
   );
 }
 
+/** « Cécile Martin a déclaré la commande ORD-142 non retirée » : le client n'est pas venu. */
+function orderNoShow(fact: PhraseFact): Said {
+  return staffGesture(
+    fact,
+    'noShowBy',
+    [
+      text(' a déclaré la commande '),
+      name(orDash(fact.payload['orderNumber'])),
+      text(' non retirée'),
+    ],
+    ['orderNumber'],
+  );
+}
+
 /** Comment le retrait a été validé, en fin de phrase ; une valeur inconnue reste au détail. */
 const HANDOVER_HOW: Readonly<Record<string, string>> = {
   scan: ' en scannant le QR du client',
@@ -511,6 +525,7 @@ export const ORDERS_PHRASES = {
   'order.budget_commitment_corrected': orderBudgetCommitmentCorrected,
   'order.shortfall_decided': orderShortfallDecided,
   'order.handed_over': orderHandedOver,
+  'order.no_show': orderNoShow,
 
   'order_cutoff_waiver.granted': (fact) =>
     byActor(

@@ -29,4 +29,18 @@ describe("contrat de la saisie particulier au comptoir", () => {
     });
     expect(parsed.success).toBe(false);
   });
+
+  it("porte le compte des commandes non retirées, entier et jamais négatif", () => {
+    const card = {
+      id: "u1",
+      firstName: "Jean",
+      lastName: "",
+      maskedEmail: "j***@x.fr",
+      maskedPhone: "06 •• •• •• 12",
+      connectable: false,
+    };
+    expect(counterParticularCardSchema.safeParse({ ...card, noShowCount: 2 }).success).toBe(true);
+    expect(counterParticularCardSchema.safeParse({ ...card, noShowCount: -1 }).success).toBe(false);
+    expect(counterParticularCardSchema.safeParse(card).success).toBe(false);
+  });
 });

@@ -69,6 +69,7 @@ import { ProductionFeedModule } from "./production-feed.module.js";
 import { PackingModule } from "../packing/packing.module.js";
 import { MailModule } from "../mail/mail.module.js";
 import { AccountFeatureLevelsModule } from "./account-feature-levels.module.js";
+import { ParticularNoShowCountsModule } from "./particular-no-show-counts.module.js";
 import { PackingFeedModule } from "./packing-feed.module.js";
 import { ShelfDrawsFeedModule } from "./shelf-draws-feed.module.js";
 import { PackingCommerceFeedModule } from "./packing-commerce-feed.module.js";
@@ -261,6 +262,7 @@ import { DevImpersonation } from "../platform/auth/dev-impersonation.js";
     // Le colisage, en ombre (plan `colisage/colisage.md`, K1).
     PackingModule,
     AccountFeatureLevelsModule,
+    ParticularNoShowCountsModule,
     PackingFeedModule,
     ShelfDrawsFeedModule,
     PackingDeliveryFeedModule,

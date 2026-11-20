@@ -79,6 +79,9 @@ export function customerRefusalOf(block: CancellationBlock): CustomerCancellatio
       return "in_preparation";
     case "packed":
       return "ready";
+    // Le créneau est passé sans retrait : l'annulation n'a plus d'objet.
+    case "no_show":
+      return "too_late";
     case "partially_handed_over":
     case "remainder_handed_over":
       return "partially_handed_over";

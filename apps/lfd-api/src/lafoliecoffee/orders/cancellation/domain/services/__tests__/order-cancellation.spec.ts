@@ -59,6 +59,7 @@ describe("cancellationBlocker — les refus, dans l'ordre du plan (C3.3)", () =>
     ["brouillon", state({ status: "draft" }), "draft"],
     ["prête", state({ status: "ready" }), "ready"],
     ["retirée", state({ status: "fulfilled" }), "fulfilled"],
+    ["non retirée", state({ status: "no_show" }), "no_show"],
     [
       "au compte, facturée",
       state({
@@ -169,6 +170,12 @@ describe("cancellationRefusalOf — les phrases (C3.7)", () => {
   it("dit quand elle a été annulée, à l'heure de Paris", () => {
     expect(cancellationRefusalOf({ kind: "already_cancelled", at: CANCELLED_AT })).toBe(
       "Cette commande est déjà annulée (le 12/10 à 17:05).",
+    );
+  });
+
+  it("dit d'une commande non retirée qu'elle est close", () => {
+    expect(cancellationRefusalOf({ kind: "no_show" })).toContain(
+      "déclarée non retirée : elle est close",
     );
   });
 

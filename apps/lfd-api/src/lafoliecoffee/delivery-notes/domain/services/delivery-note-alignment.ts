@@ -14,7 +14,8 @@ export type FollowedOrderStatus =
   | "ready"
   | "partially_handed_over"
   | "fulfilled"
-  | "cancelled";
+  | "cancelled"
+  | "no_show";
 
 /** Une commande, vue du BL qui la suit : ses lignes, son statut, ses instants. */
 export interface FollowedOrder extends DeliveryNoteSource {
@@ -119,7 +120,8 @@ export function alignmentOf(
   context: AlignmentContext,
 ): DeliveryNoteAlignment {
   const notes = allRanks.filter((note) => note.followsItsOrder);
-  if (order.status === "cancelled") {
+  // Non retirée : rien n'est parti, le BL tombe comme celui d'une annulée.
+  if (order.status === "cancelled" || order.status === "no_show") {
     return voidingOf(notes, context.now);
   }
   if (order.status === "draft" || order.status === "in_production") {
@@ -273,6 +275,7 @@ function targetOf(order: FollowedOrder): Target | null {
     case "placed":
     case "in_production":
     case "cancelled":
+    case "no_show":
       return null;
   }
 }

@@ -119,7 +119,7 @@ export class PrismaDaySupervisionReader extends DaySupervisionReader {
     return this.prisma.order.count({
       where: {
         requestedDeliveryDate: null,
-        status: { notIn: ["draft", "fulfilled", "cancelled"] },
+        status: { notIn: ["draft", "fulfilled", "cancelled", "no_show"] },
         ...settlementWhere(),
       },
     });

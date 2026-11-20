@@ -10,6 +10,8 @@ describe("les refus de la règle staff, dits à un client (C6.7)", () => {
     [{ kind: "already_cancelled", at: null } as const, "already_cancelled"],
     [{ kind: "ready" } as const, "ready"],
     [{ kind: "fulfilled" } as const, "fulfilled"],
+    // Non retirée : le créneau est passé, l'annulation n'a plus d'objet.
+    [{ kind: "no_show" } as const, "too_late"],
     // Plan E7 reliquat (L5a) : la partie retirée a son code, quel que soit le rang parti.
     [{ kind: "partially_handed_over" } as const, "partially_handed_over"],
     [{ kind: "remainder_handed_over" } as const, "partially_handed_over"],

@@ -94,6 +94,33 @@ export interface AdminOrderView extends OrderView {
    * et absent d'un serveur plus ancien.
    */
   readonly itemLimitOverrides?: readonly AdminOrderItemLimitOverride[];
+  /**
+   * **Le client n'est pas venu** (`plan-commande-particulier-reglee-en-boutique.md`,
+   * § 5 bis) — qui l'a déclarée non retirée, et quand ; `null` pour toute
+   * autre commande. Facultatif : un serveur plus ancien ne le sert pas.
+   */
+  readonly noShow?: AdminOrderNoShow | null;
+}
+
+/** Une commande déclarée non retirée, telle que la fiche la raconte. */
+export interface AdminOrderNoShow {
+  /** ISO 8601. */
+  readonly declaredAt: string;
+  /** Le nom, lu dans l'annuaire ; `null` si la fiche n'y est plus. */
+  readonly declaredByName: string | null;
+  /**
+   * « Prévenir le client » : l'e-mail « commande non retirée » DEMANDÉ — qui
+   * et quand —, jamais attesté reçu (le suivi des e-mails dit la suite).
+   * `null` tant que la supervision ne l'a pas demandé.
+   */
+  readonly noticeRequest: AdminOrderNoShowNoticeRequest | null;
+}
+
+/** Une demande d'e-mail : son instant et son auteur, rien de plus. */
+export interface AdminOrderNoShowNoticeRequest {
+  /** ISO 8601. */
+  readonly requestedAt: string;
+  readonly requestedByName: string | null;
 }
 
 /** Un dépassement consigné : la limite passée, qui, pourquoi, par quel geste. */

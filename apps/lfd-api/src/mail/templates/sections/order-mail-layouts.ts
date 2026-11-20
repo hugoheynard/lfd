@@ -39,6 +39,7 @@ export const ORDER_MAIL_LAYOUTS: Readonly<
     | "customer.order-ready"
     | "customer.delivery-en-route"
     | "customer.order-delayed"
+    | "customer.order-not-collected"
     | "customer.order-placed-with-your-email"
     | "customer.payment-failed"
     | "customer.payment-expired"
@@ -149,6 +150,15 @@ export const ORDER_MAIL_LAYOUTS: Readonly<
       { id: "body", texts: texts("intro", "apology") },
       { id: "summary", texts: texts("referenceLabel", "whereLabel") },
       { id: "cta", texts: texts("cta") },
+    ],
+  },
+  "customer.order-not-collected": {
+    subject: SUBJECT,
+    header: KICKER,
+    sections: [
+      { id: "title", texts: texts("title") },
+      { id: "body", texts: texts("intro", "contact") },
+      { id: "summary", texts: texts("referenceLabel", "whereLabel") },
     ],
   },
   "customer.order-placed-with-your-email": {

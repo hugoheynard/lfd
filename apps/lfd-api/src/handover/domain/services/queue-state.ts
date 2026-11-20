@@ -29,12 +29,22 @@ export interface QueuePresenceSource {
  *   dans la journée qu'elle a faite ;
  * - **annulée** : la file les montrait déjà, réglées ou non — rien ne change
  *   pour elles.
+ *
+ * Une commande **non retirée** (`no_show`) n'y est jamais : elle est close.
  */
 export function showsInQueue(
   entry: QueuePresenceSource,
   attestation: AttestedHandover | undefined,
 ): boolean {
-  return attestation !== undefined || entry.settled || entry.status === "cancelled";
+  if (attestation !== undefined) {
+    return true;
+  }
+  // Déclarée non retirée : le client n'est pas venu, la commande est close et
+  // sort de la file — personne ne l'attend plus au comptoir.
+  if (entry.status === "no_show") {
+    return false;
+  }
+  return entry.settled || entry.status === "cancelled";
 }
 
 /**

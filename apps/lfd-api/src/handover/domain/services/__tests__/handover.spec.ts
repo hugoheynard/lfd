@@ -1,5 +1,6 @@
 import {
   AWAITING_SHORTFALL_DECISION_REASON,
+  NO_SHOW_REASON,
   QUALITY_HOLD_REASON,
   UNSETTLED_REASON,
   counterHandoverBlocker,
@@ -77,6 +78,11 @@ describe("handoverBlocker", () => {
 
   it("refuse une commande annulée, et le DIT", () => {
     expect(handoverBlocker(candidate({ status: "cancelled" }))).toBe("Cette commande est annulée.");
+  });
+
+  it("refuse une commande déclarée non retirée, même réglée et prête, en disant de ne pas la remettre", () => {
+    expect(handoverBlocker(candidate({ status: "no_show" }))).toBe(NO_SHOW_REASON);
+    expect(NO_SHOW_REASON).toContain("Ne la remettez pas");
   });
 
   it("refuse une commande en brouillon", () => {

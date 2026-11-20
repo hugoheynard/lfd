@@ -44,6 +44,9 @@ const STATUS: Readonly<Record<OrderStatus, Labelled>> = {
   partially_handed_over: { label: 'En partie retirée', variant: 'warning' },
   fulfilled: { label: 'Livrée', variant: 'success' },
   cancelled: { label: 'Annulée', variant: 'alert' },
+  // Le client n'est pas venu : une commande à régler en boutique, close sans
+  // retrait. `alert`, comme une annulée : rien n'est parti.
+  no_show: { label: 'Non retirée', variant: 'alert' },
 };
 
 /**

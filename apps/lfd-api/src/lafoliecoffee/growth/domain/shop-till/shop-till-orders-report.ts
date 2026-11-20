@@ -46,6 +46,8 @@ export interface ShopTillOrderEntry {
   readonly totalCents: number;
   /** Remise au client (`fulfilled`). */
   readonly handedOver: boolean;
+  /** Le client n'est pas venu la retirer (`no_show`). */
+  readonly notCollected: boolean;
 }
 
 /** La clé d'une ligne : un jour, un point (le site, à défaut son nom). */
@@ -55,7 +57,7 @@ function keyOf(entry: ShopTillOrderEntry): string {
 
 /**
  * **Les commandes à régler en boutique, par jour et par point de retrait** —
- * le montant commandé, et la part remise. Par jour croissant, puis par nom de
+ * le montant commandé, la part remise, et la part non retirée. Par jour croissant, puis par nom de
  * point.
  */
 export function shopTillOrdersRowsOf(
@@ -71,6 +73,8 @@ export function shopTillOrdersRowsOf(
       orderedCount: row.orderedCount + 1,
       handedOverTtcCents: row.handedOverTtcCents + (entry.handedOver ? entry.totalCents : 0),
       handedOverCount: row.handedOverCount + (entry.handedOver ? 1 : 0),
+      notCollectedTtcCents: row.notCollectedTtcCents + (entry.notCollected ? entry.totalCents : 0),
+      notCollectedCount: row.notCollectedCount + (entry.notCollected ? 1 : 0),
     });
   }
   return [...rows.values()].sort(
@@ -88,5 +92,7 @@ function emptyRowOf(entry: ShopTillOrderEntry): ShopTillOrdersDay {
     orderedCount: 0,
     handedOverTtcCents: 0,
     handedOverCount: 0,
+    notCollectedTtcCents: 0,
+    notCollectedCount: 0,
   };
 }

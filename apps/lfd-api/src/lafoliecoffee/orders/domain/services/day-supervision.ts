@@ -59,6 +59,8 @@ const STAGE_OF_STATUS: Readonly<Record<OrderStatus, SupervisionStage | null>> = 
   partially_handed_over: "handed_over",
   fulfilled: "handed_over",
   cancelled: "cancelled",
+  // Non retirée : close sans remise, abandonnée comme une annulée.
+  no_show: "cancelled",
 };
 
 /**
@@ -214,6 +216,8 @@ export function awaitingDecisionOf(
 ): readonly (SupervisedOrder & { readonly shortfallReportedAt: Date })[] {
   return orders.filter(
     (order): order is SupervisedOrder & { readonly shortfallReportedAt: Date } =>
-      order.shortfallReportedAt !== null && order.status !== "cancelled",
+      order.shortfallReportedAt !== null &&
+      order.status !== "cancelled" &&
+      order.status !== "no_show",
   );
 }

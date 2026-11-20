@@ -88,6 +88,16 @@ export const ORDER_MAILS_IT: OrderMailsCopy = {
     apology: "Ci scusiamo per l'attesa.",
     cta: "Vedere il mio ordine",
   },
+  "customer.order-not-collected": {
+    kicker: "Ordine non ritirato",
+    subject: "Il tuo ordine {ref} non è stato ritirato",
+    title: "Il tuo ordine non è stato ritirato.",
+    intro:
+      "Ti aspettava al punto di ritiro, e la fascia oraria è passata senza che fosse ritirato. Non è stato addebitato nulla.",
+    contact: "Per qualsiasi domanda, contatta il negozio.",
+    referenceLabel: "Ordine",
+    whereLabel: "Punto di ritiro",
+  },
   "customer.order-placed-with-your-email": {
     kicker: "Ordine effettuato",
     subject: "È appena stato effettuato un ordine con il suo indirizzo",

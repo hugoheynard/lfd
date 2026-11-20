@@ -27,6 +27,7 @@ describe("GetShopTillOrdersReportHandler", () => {
         pickupLabel: "Boutique",
         totalCents: 1_500,
         handedOver: true,
+        notCollected: false,
       },
     ]);
 
@@ -47,6 +48,8 @@ describe("GetShopTillOrdersReportHandler", () => {
           orderedCount: 1,
           handedOverTtcCents: 1_500,
           handedOverCount: 1,
+          notCollectedTtcCents: 0,
+          notCollectedCount: 0,
         },
       ],
     });

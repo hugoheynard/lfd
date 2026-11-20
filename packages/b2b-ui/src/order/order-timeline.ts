@@ -92,6 +92,8 @@ const STATUS_RANK: Readonly<Record<OrderStatus, number>> = {
   partially_handed_over: 5,
   fulfilled: 5,
   cancelled: -1,
+  // Non retirée : la frise s'arrête sur son nœud de clôture, comme une annulée.
+  no_show: -1,
 };
 
 /** Le rang de la remise — celui auquel les jalons non suivis s'allument. */
@@ -290,6 +292,24 @@ function detailFor(detail: string, audience: OrderAudience): string | null {
   return audience === 'staff' ? detail : null;
 }
 
+/** Le nœud qui clôt une commande sans retrait : annulée, ou non retirée. */
+function closedStep(status: 'cancelled' | 'no_show', audience: OrderAudience): TimelineStep {
+  const cancelled = status === 'cancelled';
+  return {
+    key: status,
+    label: cancelled ? 'Commande annulée' : 'Commande non retirée',
+    icon: 'x-circle',
+    state: 'failed',
+    tracked: true,
+    detail: detailFor(
+      cancelled ? 'sortie du compte à produire' : 'le client n’est pas venu la retirer',
+      audience,
+    ),
+    at: null,
+    expectedAt: null,
+  };
+}
+
 /**
  * La frise d'une commande, dérivée de ses seuls vrais champs (`status`,
  * `paymentStatus`, `fulfillmentMethod`, `placedAt`) — aucune invention.
@@ -310,20 +330,8 @@ export function buildTimeline(
     expectedAt: null,
   };
 
-  if (order.status === 'cancelled') {
-    return [
-      payment,
-      {
-        key: 'cancelled',
-        label: 'Commande annulée',
-        icon: 'x-circle',
-        state: 'failed',
-        tracked: true,
-        detail: detailFor('sortie du compte à produire', audience),
-        at: null,
-        expectedAt: null,
-      },
-    ];
+  if (order.status === 'cancelled' || order.status === 'no_show') {
+    return [payment, closedStep(order.status, audience)];
   }
 
   const rank = STATUS_RANK[order.status];

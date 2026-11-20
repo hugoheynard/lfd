@@ -32,6 +32,11 @@ enum OrderStatus {
   partially_handed_over
   fulfilled
   cancelled
+  /// Le client n'est pas venu retirer une commande à régler en boutique : ni
+  /// annulée (personne ne l'a décidé), ni remise. Terminal. Déclaré au comptoir
+  /// après la fin du créneau ; réservé à `settlement_venue = 'shop_till'`
+  /// (CHECK `orders_no_show_shop_till`).
+  no_show
 
   @@schema("public")
 }
@@ -452,6 +457,16 @@ model Order {
   pickupRemindedByStaffId String?   @map("pickup_reminded_by_staff_id")
   delayWarnedAt           DateTime? @map("delay_warned_at") @db.Timestamptz(6)
   delayWarnedByStaffId    String?   @map("delay_warned_by_staff_id")
+
+  // « Le client n'est pas venu » (statut `no_show`), et « Prévenir le client »
+  // qui le suit, décidé par la supervision du comptoir. Chaque instant va avec
+  // l'id de la fiche staff qui a fait le geste (pas une clé étrangère) — CHECK
+  // `orders_no_show_together` / `orders_no_show_notice_together`. L'e-mail est
+  // DEMANDÉ à l'instant écrit, jamais attesté reçu.
+  noShowAt                        DateTime? @map("no_show_at") @db.Timestamptz(6)
+  noShowByStaffId                 String?   @map("no_show_by_staff_id")
+  noShowNoticeRequestedAt         DateTime? @map("no_show_notice_requested_at") @db.Timestamptz(6)
+  noShowNoticeRequestedByStaffId  String?   @map("no_show_notice_requested_by_staff_id")
 
   // 🔴 COLONNES MORTES depuis le 2026-10-26 (plan E7 reliquat, lot LB,
   // choix 15) : le manque est PAR ENVOI, dans `order_shortfall` — ces quatre

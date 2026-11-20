@@ -171,6 +171,8 @@ const BARE_REFS: Readonly<Record<string, string>> = {
   "order.change_refused:orderId": "voisine son nom figé (`orderNumber`)",
   "order.change_refused:requestId":
     "la demande s'anonymise : on ne recopie au journal ni son auteur ni son texte",
+  "order.no_show:orderId": "voisine son nom figé (`orderNumber`)",
+  "order.no_show:noShowBy": "une fiche staff que l'annuaire ne nomme pas se cite par son id",
   "order.handed_over:orderId": "voisine son nom figé (`orderNumber`)",
   "order.handed_over:handedOverBy":
     "une fiche staff que l'annuaire ne nomme pas se cite par son id",

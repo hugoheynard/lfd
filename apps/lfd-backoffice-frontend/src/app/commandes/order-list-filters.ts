@@ -69,6 +69,7 @@ const STATUSES: Readonly<Record<OrderStatus, true>> = {
   partially_handed_over: true,
   fulfilled: true,
   cancelled: true,
+  no_show: true,
 };
 
 const PAYMENT_STATUSES: Readonly<Record<PaymentStatus, true>> = {

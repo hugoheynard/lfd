@@ -9,7 +9,9 @@ export type DeliveryNoteOrderStatus =
   | "ready"
   | "partially_handed_over"
   | "fulfilled"
-  | "cancelled";
+  | "cancelled"
+  /** Le client n'est pas venu : rien n'est parti, le BL tombe comme pour une annulée. */
+  | "no_show";
 
 /** Une commande, vue du BL qui la suit : ses lignes, son statut, les instants qui le datent. */
 export interface DeliveryNoteOrderProgress extends DeliveryNoteOrder {

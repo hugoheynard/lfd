@@ -94,6 +94,16 @@ export const ORDER_MAILS_FR: OrderMailsCopy = {
     apology: "Toutes nos excuses pour l'attente.",
     cta: "Voir ma commande",
   },
+  "customer.order-not-collected": {
+    kicker: "Commande non retirée",
+    subject: "Votre commande {ref} n'a pas été retirée",
+    title: "Votre commande n'a pas été retirée.",
+    intro:
+      "Elle vous attendait au point de retrait, et le créneau est passé sans qu'elle soit retirée. Rien n'a été encaissé.",
+    contact: "Pour toute question, contactez la boutique.",
+    referenceLabel: "Commande",
+    whereLabel: "Point de retrait",
+  },
   "customer.order-placed-with-your-email": {
     kicker: "Commande passée",
     subject: "Une commande vient d'être passée avec votre adresse",

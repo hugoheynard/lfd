@@ -77,7 +77,12 @@ class Tally {
 
   /** Le contrôle des totaux d'une commande dont le BL est déjà juste (plan E4a, § 2). */
   control(order: FollowedOrder, notes: readonly DeliveryNote[]): void {
-    if (order.status === "cancelled" || order.status === "placed" || order.lines.length === 0) {
+    if (
+      order.status === "cancelled" ||
+      order.status === "no_show" ||
+      order.status === "placed" ||
+      order.lines.length === 0
+    ) {
       return;
     }
     this.compared += 1;

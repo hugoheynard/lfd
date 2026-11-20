@@ -283,6 +283,41 @@ lui.
 - Le statut `failed` de l'annulation des non-réglées
   (`prisma-unsettled-shop-order.canceller.ts:21`) ne s'applique jamais ici : le
   déclencheur du § 4.3 l'interdit.
+- **bâti (B4b, 2026-11-20)** :
+  - base : `OrderStatus.no_show` seul dans son dossier
+    (`20261120160000_la_commande_non_retiree`), puis
+    `20261120160100_la_trace_de_la_commande_non_retiree` — quatre colonnes
+    (`no_show_at`/`_by_staff_id`, `no_show_notice_requested_at`/`_by_staff_id`)
+    et trois `CHECK` : `no_show` ⇒ `settlement_venue IS NOT NULL AND =
+'shop_till'`, déclaration posée si et seulement si `no_show`, demande
+    d'e-mail seulement sur une `no_show`. Retours arrière dans `prisma/rollback/` ;
+  - « Le client n'est pas venu » : `POST /admin/counter/particular-orders/:id/no-show`
+    (clé d'intention, `b2b_place_order:write`, surface du comptoir). L'agrégat
+    `OrderNoShow` refuse hors `shop_till`, annulée, retirée (ou retrait
+    attesté par le retrait, lu sous le verrou de la commande), déjà déclarée,
+    et avant la fin du créneau — sans créneau, la fin du jour de retrait
+    (23:59). Une commande pas encore prête se déclare aussi : le créneau seul
+    décide. Fait durable `order.no_show` → journal ; aucun e-mail ;
+  - effets : sortie de la file du comptoir (`showsInQueue`), retrait refusé
+    (`NO_SHOW_REASON`), Supervision la range avec les annulées, BL annulé
+    comme pour une annulée, ni annulable ni modifiable (`too_late` côté
+    client), jamais `fulfilled` par un fait de retrait tardif. Libellé
+    « Non retirée » (`@lfd/b2b-ui`), filtre de la liste, phrase du journal ;
+  - CA parallèle : `notCollectedTtcCents` / `notCollectedCount` par jour et par
+    point ; le commandé compte la non retirée. Le CA web l'ignore (statut hors
+    `REVENUE_ORDER_STATUSES`, lieu non nul) ;
+  - fiche du particulier : `CounterParticularCard.noShowCount`, lu par
+    `ParticularNoShowCountsReader` — déclaré et implémenté par `orders`
+    (lui seul sait ce qu'est une non retirée), composé par la recherche de
+    `account`, relié par `apps/lfd-api/src/appBootstrap/particular-no-show-counts.module.ts`
+    (`@Global` : `orders` importe déjà `account`) ;
+  - « Prévenir le client » : `POST …/:id/no-show-notice`, sous
+    `b2b_supervision:write` — la ressource de supervision existante, qui juge
+    déjà au comptoir (contrôle qualité) ; aucune ressource neuve. E-mail
+    `customer.order-not-collected` (fr/en/it, sans montant ni moyen de
+    paiement) par `mail.send`, clé `order.no-show-notice:<commande>`, une
+    fois par commande ; la fiche (`AdminOrderView.noShow`) dit qui l'a
+    déclarée et qui a **demandé** l'e-mail, et quand.
 
 ### 6. Lots
 

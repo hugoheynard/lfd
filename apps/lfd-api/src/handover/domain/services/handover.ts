@@ -78,6 +78,14 @@ export const UNSETTLED_REASON =
   "Cette commande n'est pas réglée : son paiement par carte n'est pas encaissé. Ne la remettez pas ; le client peut la régler depuis « Mes commandes », sinon appelez le bureau.";
 
 /**
+ * La phrase d'une commande déclarée non retirée : le client n'est pas venu au
+ * créneau, elle est close. Elle dit le geste : ne pas la remettre, la noter de
+ * nouveau si le client la redemande.
+ */
+export const NO_SHOW_REASON =
+  "Cette commande a été déclarée non retirée : le client n'est pas venu à son créneau, elle est close. Ne la remettez pas ; notez une nouvelle commande s'il la redemande.";
+
+/**
  * Ce qui **empêche** le retrait, en clair — ou `null` si rien ne l'empêche.
  *
  * Volontairement permissif sur l'avancement : tout état autre que `draft` et
@@ -112,6 +120,9 @@ export const UNSETTLED_REASON =
 export function handoverBlocker(candidate: HandoverCandidate): string | null {
   if (candidate.status === "cancelled") {
     return "Cette commande est annulée.";
+  }
+  if (candidate.status === "no_show") {
+    return NO_SHOW_REASON;
   }
   if (candidate.status === "draft") {
     return "Cette commande n'est pas encore passée.";

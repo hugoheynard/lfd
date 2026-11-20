@@ -88,6 +88,16 @@ export const ORDER_MAILS_EN: OrderMailsCopy = {
     apology: "We are sorry for the wait.",
     cta: "View my order",
   },
+  "customer.order-not-collected": {
+    kicker: "Not collected",
+    subject: "Your order {ref} was not collected",
+    title: "Your order was not collected.",
+    intro:
+      "It was waiting for you at the pickup point, and the time slot has passed without it being collected. Nothing has been charged.",
+    contact: "If you have any questions, please contact the shop.",
+    referenceLabel: "Order",
+    whereLabel: "Pickup point",
+  },
   "customer.order-placed-with-your-email": {
     kicker: "Order placed",
     subject: "An order has just been placed with your address",
