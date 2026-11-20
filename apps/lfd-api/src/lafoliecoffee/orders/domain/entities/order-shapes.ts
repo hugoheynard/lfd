@@ -17,6 +17,7 @@ import type {
 import type { VatShare } from "@lfd/money";
 
 import type { FixedCustomerCancellation } from "../../cancellation/domain/services/customer-cancellation-window.js";
+import type { SettlementVenue } from "../value-objects/settlement-venue.js";
 import type { FrozenDiscountTerms } from "../services/frozen-discount-terms.js";
 import type { FreeDelivery } from "../value-objects/free-delivery.js";
 import type { OrderBuyerKind } from "../value-objects/order-buyer-kind.js";
@@ -311,6 +312,8 @@ export interface OrderToPlace {
   readonly ttcByRate: readonly OrderRateAmounts[] | null;
   readonly totalCents: number;
   readonly paymentStatus: PaymentStatus;
+  /** Où le règlement se fera hors de chez nous, `null` sinon (cf. `SettlementVenue`). */
+  readonly settlementVenue: SettlementVenue | null;
   readonly stripePaymentIntentId: string | null;
   /** Les CGV figées (cf. {@link DraftOrderInput.salesTerms}). */
   readonly salesTerms: OrderSalesTerms;

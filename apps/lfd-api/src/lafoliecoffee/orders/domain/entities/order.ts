@@ -75,6 +75,7 @@ import type {
 } from "../value-objects/budget-commitment.js";
 import type { OrderBuyerKind } from "../value-objects/order-buyer-kind.js";
 import type { OrderLocale } from "../value-objects/order-locale.js";
+import type { SettlementVenue } from "../value-objects/settlement-venue.js";
 import { placementVatMethodOf, type OrderVatMethod } from "../value-objects/order-vat-method.js";
 import {
   PLANNED_SUPPLY,
@@ -120,6 +121,8 @@ export class Order {
   private customerCancellation: FixedCustomerCancellation = NOT_FIXED_CANCELLATION;
   private customerCancellableUntil: Date | null = null;
   private budgetCommitment: BudgetCommitment | null = null;
+  // Aucune passation ne le pose encore : seul un lieu `null` s'écrit.
+  private readonly settlementVenueValue: SettlementVenue | null = null;
   private constructor(
     private readonly companyId: string | null,
     private readonly billedCompanyIdValue: string | null,
@@ -432,6 +435,15 @@ export class Order {
     return settlementRegimeOf(this.payment.status, this.drafted.totalCents);
   }
 
+  /**
+   * Où le règlement se fera hors de chez nous, `null` s'il se fait chez nous
+   * (carte, compte) ou s'il n'y a rien à régler. Lu par la persistance ; figé
+   * à la passation.
+   */
+  get settlementVenue(): SettlementVenue | null {
+    return this.settlementVenueValue;
+  }
+
   /** Prise sur la vitrine (`shelf`) — lu avant que le règlement soit décidé (Q7, lot L4). */
   get isFromShelf(): boolean {
     return this.supplyMark.supply === "shelf";
@@ -539,6 +551,7 @@ export class Order {
       ttcByRate: this.drafted.ttcByRate,
       totalCents: this.drafted.totalCents,
       paymentStatus: this.payment.status,
+      settlementVenue: this.settlementVenueValue,
       stripePaymentIntentId: this.payment.intentId,
       salesTerms: this.salesTerms,
       locale: this.locale?.code ?? null,

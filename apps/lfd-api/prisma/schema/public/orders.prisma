@@ -95,6 +95,19 @@ enum OrderEntryOrigin {
   @@schema("public")
 }
 
+/// **Où le règlement se fera, quand ce n'est pas chez nous** (Hugo,
+/// 2026-11-20) : `shop_till`, à la caisse de la boutique — une commande d'un
+/// particulier notée au comptoir. Notre système ne sait JAMAIS qu'elle est
+/// payée (`documentation/comptabilite/caisse/pas-de-logiciel-de-caisse.md`) :
+/// `payment_status` reste `not_required`, et le lieu dit où l'argent sera
+/// pris. `NULL` sur toute autre commande. Forme tenue par le CHECK
+/// `orders_shop_till_shape` ; figé à la passation par un déclencheur.
+enum SettlementVenue {
+  shop_till
+
+  @@schema("public")
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Order — une commande, tenant-scoped
 // ─────────────────────────────────────────────────────────────────────────────
@@ -417,6 +430,10 @@ model Order {
 
   // D'où vient la saisie de l'équipe, `null` sinon ou si on ne le sait pas.
   entryOrigin OrderEntryOrigin? @map("entry_origin")
+
+  // Où le règlement se fera hors de chez nous (`SettlementVenue`), `null`
+  // sinon. Figé à la passation : un déclencheur refuse sa modification.
+  settlementVenue SettlementVenue? @map("settlement_venue")
 
   // Le COLISAGE : la fabrication est finie. Écrit par l'atelier, au scan du QR
   // de la fiche — lequel n'encode que le NUMÉRO de commande, déjà imprimé en
