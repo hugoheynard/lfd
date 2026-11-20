@@ -85,7 +85,7 @@ export class PrismaBasketPromotionReader extends BasketPromotionReader {
 }
 
 /**
- * Le point « sur la livraison » (`plan-livraison-offerte.md`, § 2.4), par le
+ * Le point « sur la livraison » (`frais-et-livraison-offerte.md`), par le
  * même cache que les deux autres : l'estampille de `pricing_events` couvre
  * aussi ses actes. Aucune lecture datée : la livraison offerte se juge au
  * présent, à la passation comme en révision (rejugée, décision (d)).

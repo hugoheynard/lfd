@@ -30,7 +30,7 @@ export const deliveryZonePayloadSchema = z.object({
   fee: cartAdjustmentSchema,
   /**
    * Les REMPLACEMENTS du réglage global, par audience (plan
-   * `plan-livraison-offerte.md`, 0a/0b). Facultatif : absent, une création
+   * `frais-et-livraison-offerte.md`). Facultatif : absent, une création
    * les laisse vides et une modification n'y touche pas ; présent, il les
    * remplace tous, `null` = la zone reprend le global. Lus par le calcul du
    * frais depuis 0b ; rendus par la vue ADMIN seule ({@link AdminDeliveryZoneView}) —
@@ -59,7 +59,7 @@ export interface AdminDeliveryZoneView extends DeliveryZoneView {
 
 /**
  * Une zone telle que la route publique la sert à UNE clientèle
- * (`GET /delivery-zones?audience=b2b|b2c`, plan `plan-livraison-offerte.md`,
+ * (`GET /delivery-zones?audience=b2b|b2c`, doc `frais-et-livraison-offerte.md`,
  * 0c) : `fee` y est le frais RÉSOLU pour cette clientèle (remplacement de la
  * zone, sinon réglage global, sinon ancien frais unique) — celui que le devis
  * facture —, et non plus l'ancien frais unique de la zone.

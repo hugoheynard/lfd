@@ -2,7 +2,7 @@ import { DomainError } from "../../../../platform/shared/errors/app-error.js";
 
 /**
  * **Les refus d'une promotion « Sur la livraison »**
- * (`documentation/promotions/plan-livraison-offerte.md`, § 2.3). Lus par du
+ * (`documentation/livraisons/frais-et-livraison-offerte.md`). Lus par du
  * personnel qui n'a pas le code sous les yeux : chaque message nomme le cas
  * et le geste de sortie.
  */

@@ -14,7 +14,7 @@ import { DeliveryPricingRepository } from "../domain/ports/delivery-pricing.repo
 import { UpdateDeliveryPricingCommand } from "./update-delivery-pricing.command.js";
 
 /**
- * Pose le réglage global de livraison (plan `plan-livraison-offerte.md`,
+ * Pose le réglage global de livraison (doc `frais-et-livraison-offerte.md`,
  * sous-lot 0a). L'état remplacé est relu DANS la transaction : un patch ne
  * dit qu'une valeur, et les autres doivent être celles qui sont écrites, pas
  * celles qu'un écran a vues.

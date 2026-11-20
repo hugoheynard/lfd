@@ -987,7 +987,7 @@ describe('CartSummary — pendant la relecture du catalogue', () => {
 });
 
 /**
- * Plan `plan-livraison-offerte.md`, 1c : la livraison offerte telle que le
+ * Doc `frais-et-livraison-offerte.md` : la livraison offerte telle que le
  * devis la juge — « Coursier offert » sans montant, « Plus que… » aux pros.
  */
 describe('CartSummary — la livraison offerte (1c)', () => {

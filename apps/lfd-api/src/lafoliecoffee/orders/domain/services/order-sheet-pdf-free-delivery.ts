@@ -10,7 +10,7 @@ export const FREE_DELIVERY_LABEL = "Livraison offerte";
 const DELIVERY_LABEL = "Livraison";
 
 /**
- * **La livraison offerte sur un papier** (plan `plan-livraison-offerte.md`,
+ * **La livraison offerte sur un papier** (doc `frais-et-livraison-offerte.md`,
  * § 2.6 et § 2.8) : deux lignes qui s'annulent — « Livraison » au barème,
  * puis « Livraison offerte » (ou le libellé français de la promotion, figé)
  * au même montant, négatif. C'est la forme d'une remise : un libellé, un

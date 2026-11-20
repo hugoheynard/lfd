@@ -525,7 +525,7 @@ function frozenAudienceOf(order: RevisableOrder): CustomerAudience | null {
 
 /**
  * Le tarif de livraison figé à la passation, et sa zone (plan
- * `plan-livraison-offerte.md`, 1a, Hugo, 2026-11-05) ; `null` en retrait ou
+ * `frais-et-livraison-offerte.md`, Hugo, 2026-11-05) ; `null` en retrait ou
  * sur une commande d'avant le barème figé. Le seuil du franco figé l'accompagne
  * (1b) : la révision rejuge le franco contre lui.
  */

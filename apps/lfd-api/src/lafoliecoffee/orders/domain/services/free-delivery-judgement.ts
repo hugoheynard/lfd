@@ -31,7 +31,7 @@ export interface FreeDeliveryJudgementInput {
 }
 
 /**
- * **Le franco est-il atteint ?** (plan `plan-livraison-offerte.md`, 1b) —
+ * **Le franco est-il atteint ?** (doc `frais-et-livraison-offerte.md`) —
  * « dès 80 € » : atteint quand la base vaut le seuil ou plus.
  *
  * Rend `null` sans seuil, sous le seuil, ou quand la livraison ne coûte rien :
@@ -56,7 +56,7 @@ export function judgedFreeDelivery(input: FreeDeliveryJudgementInput): FreeDeliv
 }
 
 /**
- * **Où en est le panier du franco** (plan `plan-livraison-offerte.md`, 1c) —
+ * **Où en est le panier du franco** (doc `frais-et-livraison-offerte.md`) —
  * ce que le devis dit au client : la livraison offerte, ou ce qu'il manque
  * pour l'obtenir (« Plus que 12 € pour la livraison offerte »).
  *
@@ -70,7 +70,7 @@ export type FreeDeliveryProgress =
       readonly status: "offered";
       /**
        * Le libellé de la promotion qui offre, dans l'audience de l'acheteur
-       * (`plan-livraison-offerte.md`, § 2.8) ; absent quand c'est le franco de
+       * (`frais-et-livraison-offerte.md`) ; absent quand c'est le franco de
        * la route. Le devis le sert à l'appelant que la promotion admet, et à
        * lui seul : il est calculé sur ses faits.
        */

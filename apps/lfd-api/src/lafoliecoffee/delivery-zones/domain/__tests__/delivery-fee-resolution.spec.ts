@@ -8,7 +8,7 @@ import {
 import { zoneOfPostalCode } from "../zone-of-postal-code.js";
 
 /**
- * La résolution du frais par audience (plan `plan-livraison-offerte.md`, 0b) :
+ * La résolution du frais par audience (doc `frais-et-livraison-offerte.md`) :
  * zone > global > ancien frais de la zone, chaque audience pour elle-même.
  */
 

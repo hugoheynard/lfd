@@ -1,6 +1,6 @@
 /**
  * E2E de la route publique des zones par clientèle (plan
- * `documentation/promotions/plan-livraison-offerte.md`, sous-lot 0c) :
+ * `documentation/livraisons/frais-et-livraison-offerte.md`) :
  * `GET /delivery-zones?audience=b2b|b2c` sert le frais et le seuil de
  * livraison offerte RÉSOLUS — zone, sinon global, sinon ancien frais —, ceux
  * que le devis facture.

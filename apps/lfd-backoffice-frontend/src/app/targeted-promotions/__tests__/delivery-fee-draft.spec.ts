@@ -12,7 +12,7 @@ import { fulfillmentPhrase, summaryPhrase } from '../promotion-format';
 import { draftSummary } from '../promotion-summary';
 import { promotionView } from '../promotion.testing';
 
-/** La promotion « Sur la livraison » (`plan-livraison-offerte.md`, § 2.3). */
+/** La promotion « Sur la livraison » (`frais-et-livraison-offerte.md`). */
 const TODAY = '2026-11-02';
 const named = (): PromotionDraft => ({
   ...emptyDraft(TODAY, null),

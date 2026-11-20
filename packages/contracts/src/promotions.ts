@@ -31,7 +31,7 @@ export type PromotionAudienceKindValue = (typeof PROMOTION_AUDIENCE_KIND_VALUES)
  * tous les acheminements), « en remise au panier », où retrait et
  * livraison se cochent (`documentation/promotions/promotions.md`, § 2.14), ou
  * « sur la livraison », qui offre le frais de livraison
- * (`documentation/promotions/plan-livraison-offerte.md`, § 2.3).
+ * (`documentation/livraisons/frais-et-livraison-offerte.md`).
  */
 export const PROMOTION_FULFILLMENT_KIND_VALUES = [
   "displayed_price",

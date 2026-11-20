@@ -63,7 +63,7 @@ export class ServicePoints {
 
   /**
    * La clientèle pour qui {@link zoneList} a été demandée, ou `null`. Depuis
-   * le 2026-11-05 (plan `plan-livraison-offerte.md`, 0c), `fee` est le frais
+   * le 2026-11-05 (doc `frais-et-livraison-offerte.md`), `fee` est le frais
    * RÉSOLU de la clientèle : la liste d'un particulier ne vaut pas pour un
    * pro. C'est l'audience de l'espace MONTRÉ (`ClientAudience.current`), pas
    * celle de l'espace demandé : le frais suit l'écran qu'on voit.

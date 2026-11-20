@@ -124,7 +124,7 @@ describe('DeliveryAddressDialog', () => {
    * panier. Les frais viennent de la ZONE, jamais du contenu.
    */
   /**
-   * Défaut de production (2026-11-05, plan `plan-livraison-offerte.md`, 0c) :
+   * Défaut de production (2026-11-05, doc `frais-et-livraison-offerte.md`) :
    * la rangée disait « 0 € », l'ancien frais de zone. Elle dit le frais que
    * `ServicePoints` a lu pour la clientèle montrée — celui que le devis facture.
    */

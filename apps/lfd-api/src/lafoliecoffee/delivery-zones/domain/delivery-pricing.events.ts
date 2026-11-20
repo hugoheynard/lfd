@@ -5,7 +5,7 @@ import type { JournalFact, JournaledEvent } from "../../../platform/journal/jour
 import { audienceTermsOfFact, pricingTermsOfFact } from "./delivery-pricing-fact.js";
 
 /**
- * **Le fait du réglage global de livraison** (plan `plan-livraison-offerte.md`,
+ * **Le fait du réglage global de livraison** (doc `frais-et-livraison-offerte.md`,
  * 0b). Depuis 0b, ce réglage décide du frais que paie toute une clientèle dans
  * chaque zone qui ne le remplace pas : la réclamation qui suit demande « depuis
  * quand, et qui ». Le préfixe `delivery_pricing.` est rangé sous `commandes`

@@ -337,7 +337,7 @@ describe('modifier une commande depuis le back-office', () => {
   });
 
   /**
-   * Plan `plan-livraison-offerte.md`, 0c (2026-11-05) : le frais d'une zone
+   * Doc `frais-et-livraison-offerte.md` (2026-11-05) : le frais d'une zone
    * est celui de la clientèle du client pour qui l'on commande.
    */
   it('lit les zones pour un particulier en b2c', async () => {

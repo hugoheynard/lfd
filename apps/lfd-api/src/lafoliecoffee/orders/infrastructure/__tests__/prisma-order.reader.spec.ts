@@ -113,7 +113,7 @@ describe("toOrderView — l'engagement budgétaire (P2)", () => {
 });
 
 /**
- * Plan `plan-livraison-offerte.md`, § 2.6 : la vue sert aux documents la
+ * Doc `frais-et-livraison-offerte.md` : la vue sert aux documents la
  * livraison offerte — le barème, et le libellé de la promotion qui l'a
  * offerte —, sans toucher au frais facturé.
  */

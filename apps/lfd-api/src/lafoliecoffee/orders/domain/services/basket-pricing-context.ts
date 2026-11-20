@@ -41,7 +41,7 @@ export interface DeliveryBasketRoute {
   /** Le barème de la zone, figé avec le montant qu'il produit : `zone.fee` est mutable. */
   readonly fee: CartAdjustment;
   /**
-   * Le franco (plan `plan-livraison-offerte.md`, 1b) : le seuil HT, en
+   * Le franco (doc `frais-et-livraison-offerte.md`) : le seuil HT, en
    * centimes, que les marchandises remisées doivent atteindre pour que la
    * livraison soit offerte ; `null` = pas de franco. Celui du jour à la
    * passation, le FIGÉ en révision dans la même zone.
@@ -49,7 +49,7 @@ export interface DeliveryBasketRoute {
   readonly freeDeliveryThresholdCents: number | null;
   /**
    * Les promotions « Sur la livraison » lues pour cet acheteur dans cette
-   * zone (`plan-livraison-offerte.md`, § 2.4) — jugées au calcul, avec le
+   * zone (`frais-et-livraison-offerte.md`) — jugées au calcul, avec le
    * créneau. Absentes = aucune : les chargements de la commande et du devis
    * les posent toujours, en passation comme en révision (rejugées).
    */
@@ -173,7 +173,7 @@ export interface BasketAmounts {
   /** Vide : ce chiffrage est le prix de la commande. Sinon, ce qui manque (§ 2.5). */
   readonly awaiting: readonly BasketAwaiting[];
   /**
-   * Où en est le panier du franco (plan `plan-livraison-offerte.md`, 1c) :
+   * Où en est le panier du franco (doc `frais-et-livraison-offerte.md`) :
    * offert, ou ce qu'il manque. `null` en retrait, sans seuil, à frais nul.
    * Le devis le sert ; la commande n'en fige que le franco atteint.
    */

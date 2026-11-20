@@ -180,7 +180,7 @@ export interface DraftOrderInput {
    */
   readonly deliveryFeeAdjustment: CartAdjustment | null;
   /**
-   * **Le franco atteint** (plan `plan-livraison-offerte.md`, 1b) : le seuil
+   * **Le franco atteint** (doc `frais-et-livraison-offerte.md`) : le seuil
    * appliqué et ce que la livraison aurait coûté, ou `null` — pas de franco,
    * ou seuil manqué. Décidé par `priceBasket`, jamais par un appelant.
    */

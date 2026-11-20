@@ -17,7 +17,7 @@ export interface FreeDeliveryMailRow {
 
 /**
  * **La livraison offerte dans le récapitulatif d'un e-mail** (plan
- * `plan-livraison-offerte.md`, § 2.6 et § 2.8) : nommée par le libellé figé
+ * `frais-et-livraison-offerte.md`) : nommée par le libellé figé
  * de la promotion dans la langue du destinataire, sinon « Livraison offerte »
  * (le franco de la route), et le barème offert — TTC figé d'une commande
  * composée en TTC, sinon HT.

@@ -199,7 +199,7 @@ model DeliveryZone {
 
   /// Le frais d'avant le réglage par audience : relu en repli tant que ni la
   /// zone ni le réglage global ne disent rien pour l'audience (plan
-  /// `documentation/promotions/plan-livraison-offerte.md`, sous-lot 0b).
+  /// `documentation/livraisons/frais-et-livraison-offerte.md`).
   feeMode  CartAdjustmentMode @map("fee_mode")
   feeValue Int                @map("fee_value")
 
@@ -225,7 +225,7 @@ model DeliveryZone {
 }
 
 /// **Le réglage global de livraison, par audience** (plan
-/// `documentation/promotions/plan-livraison-offerte.md`, sous-lot 0a, Hugo
+/// `documentation/livraisons/frais-et-livraison-offerte.md`, Hugo
 /// 2026-11-05) : le frais de base et le franco (seuil HT en centimes au-delà
 /// duquel la livraison est offerte), pour les pros (`b2b`) et les particuliers
 /// (`b2c`). Chaque zone en hérite et peut le remplacer (`delivery_zones.b2b_*`).

@@ -148,7 +148,7 @@ export function assertTerms(terms: PromotionTerms): void {
 }
 
 /**
- * **Ce que porte une promotion « Sur la livraison »** (`plan-livraison-offerte.md`,
+ * **Ce que porte une promotion « Sur la livraison »** (`frais-et-livraison-offerte.md`,
  * § 2.3) : ni portée sur le catalogue, ni cumul, ni quantité minimum — et le
  * panier minimum n'existe que chez elle.
  *

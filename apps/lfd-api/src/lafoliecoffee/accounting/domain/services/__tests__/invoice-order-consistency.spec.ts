@@ -53,7 +53,7 @@ describe("simulateInvoiceDossier — les bons incohérents", () => {
   });
 
   /**
-   * Franco figé (plan `plan-livraison-offerte.md`, 1a) : la ligne « Livraison
+   * Franco figé (doc `frais-et-livraison-offerte.md`) : la ligne « Livraison
    * offerte » est affichée, pas comptable — le bon porte un port nul, et la
    * facture le recompose tel quel, sans écart.
    */

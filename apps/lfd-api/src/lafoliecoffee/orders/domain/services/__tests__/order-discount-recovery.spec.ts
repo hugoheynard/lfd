@@ -289,7 +289,7 @@ describe("une commande exact_ht", () => {
   });
 
   /**
-   * Franco figé (plan `plan-livraison-offerte.md`, 1a) : la commande a gardé
+   * Franco figé (doc `frais-et-livraison-offerte.md`) : la commande a gardé
    * le barème offert, mais n'a facturé aucun frais. Recomposer depuis le seul
    * barème remettrait le port dans les parts par taux — un écart inventé.
    */

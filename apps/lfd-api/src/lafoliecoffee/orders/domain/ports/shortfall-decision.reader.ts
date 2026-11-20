@@ -20,7 +20,7 @@ export interface FrozenOrderAdjustments {
   /** Le barème figé — celui qu'un franco a offert compris : le facturé passe par `billedDeliveryFeeOf`. */
   readonly deliveryFee: CartAdjustment | null;
   /**
-   * Le franco figé (plan `plan-livraison-offerte.md`, 1a), `null` sans
+   * Le franco figé (doc `frais-et-livraison-offerte.md`), `null` sans
    * franco : présent, le bon facture un frais nul, quoi qu'il parte.
    */
   readonly freeDelivery: FreeDelivery | null;

@@ -15,7 +15,7 @@ import { Promotion } from "../promotion.js";
 import { FROM, basketTerms, deliveryFeeTerms, lineTerms } from "./promotion-terms.fixture.js";
 
 /**
- * **La promotion « Sur la livraison »** (`plan-livraison-offerte.md`, § 2.3,
+ * **La promotion « Sur la livraison »** (`frais-et-livraison-offerte.md`,
  * § 2.7) : son point, son effet sans valeur, son panier minimum, et ce
  * qu'elle refuse de porter.
  */

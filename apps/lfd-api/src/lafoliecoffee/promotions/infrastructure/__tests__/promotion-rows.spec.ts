@@ -108,7 +108,7 @@ describe("les mappers de la promotion", () => {
       lineTerms({ audience: { kind: "company_and_sites", companyId: "co_1" } }),
     ],
     [
-      "une livraison offerte, toutes zones, sans panier minimum (`plan-livraison-offerte.md`, § 2.3)",
+      "une livraison offerte, toutes zones, sans panier minimum (`frais-et-livraison-offerte.md`)",
       deliveryFeeTerms(),
     ],
     [

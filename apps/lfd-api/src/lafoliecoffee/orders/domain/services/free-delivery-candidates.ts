@@ -10,7 +10,7 @@ import type { OrderDiscountLabel } from "../entities/order-shapes.js";
 
 /**
  * **Ce que le calcul a LU des promotions « Sur la livraison »**
- * (`documentation/promotions/plan-livraison-offerte.md`, § 2.4) — la forme
+ * (`documentation/livraisons/frais-et-livraison-offerte.md`) — la forme
  * de `LoadedBasketPromotions` : l'instant, les vivantes, les faits de
  * l'acheteur, l'acheminement (la zone) compris.
  */
@@ -68,7 +68,7 @@ export function freeDeliveryCandidatesOf(
 }
 
 /**
- * **Le seuil retenu** (`plan-livraison-offerte.md`, § 2.3) : le plus bas
+ * **Le seuil retenu** (`frais-et-livraison-offerte.md`) : le plus bas
  * parmi ceux que la base atteint ; sinon le plus bas de tous, pour « Plus
  * que … ». `null` sans candidat. Deux livraisons offertes ne se cumulent pas.
  *

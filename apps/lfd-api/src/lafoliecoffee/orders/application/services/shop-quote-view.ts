@@ -212,7 +212,7 @@ function withAwaiting(view: ShopQuoteView, priced: BasketAmounts): ShopQuoteView
 
 /**
  * La livraison offerte, ou ce qu'il manque pour l'obtenir (plan
- * `plan-livraison-offerte.md`, 1c) — telle que `priceBasket` l'a jugée ;
+ * `frais-et-livraison-offerte.md`) — telle que `priceBasket` l'a jugée ;
  * absente sans franco à dire.
  */
 function withFreeDelivery(view: ShopQuoteView, priced: BasketAmounts): ShopQuoteView {

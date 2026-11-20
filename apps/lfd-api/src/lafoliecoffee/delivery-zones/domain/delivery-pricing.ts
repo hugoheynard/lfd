@@ -11,7 +11,7 @@ type AudienceTermsPatch = NonNullable<DeliveryPricingPatch["b2b"]>;
 
 /**
  * **Le réglage global de livraison, par audience**, tel qu'on l'écrit (plan
- * `documentation/promotions/plan-livraison-offerte.md`, sous-lot 0a) : le
+ * `documentation/livraisons/frais-et-livraison-offerte.md`) : le
  * frais de base et le franco des pros et des particuliers, dont chaque zone
  * hérite.
  *

@@ -98,7 +98,7 @@ export interface RevisableOrder {
   /**
    * Le barème de livraison figé à la passation (`delivery_fee_adjustment`),
    * que la révision reprend au lieu de résoudre celui du jour (plan
-   * `plan-livraison-offerte.md`, 1a, Hugo, 2026-11-05). `null` : retrait, ou
+   * `frais-et-livraison-offerte.md`, Hugo, 2026-11-05). `null` : retrait, ou
    * commande d'avant le 2026-09-09 — la révision résout alors celui du jour.
    */
   readonly deliveryFeeAdjustment: CartAdjustment | null;

@@ -6,7 +6,7 @@ import { formatUnit } from '../units';
 
 /**
  * **Le réglage global de livraison par audience** (`delivery_pricing.updated`,
- * plan `plan-livraison-offerte.md`, 0b) — le miroir du fait dans
+ * doc `frais-et-livraison-offerte.md`) — le miroir du fait dans
  * `@lfd/contracts`.
  *
  * La phrase dit le frais de chaque clientèle qui a CHANGÉ, avec sa nouvelle

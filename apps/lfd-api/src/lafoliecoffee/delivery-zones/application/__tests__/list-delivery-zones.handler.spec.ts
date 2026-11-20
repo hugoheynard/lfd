@@ -5,7 +5,7 @@ import { ListDeliveryZonesQuery } from "../list-delivery-zones.query.js";
 import { FixedDeliveryPricing, FixedZoneTerms, NO_OVERRIDES } from "./delivery-zone-fee.doubles.js";
 
 /**
- * La route publique des zones (plan `plan-livraison-offerte.md`, 0c) sert le
+ * La route publique des zones (doc `frais-et-livraison-offerte.md`) sert le
  * frais RÉSOLU pour la clientèle déclarée. Régression du 2026-11-05 : elle
  * servait l'ancien frais unique de la zone, et la boutique affichait « 0 € »
  * quand le devis facturait le frais global.

@@ -4,7 +4,7 @@ import { DomainError } from "../../../../platform/shared/errors/app-error.js";
 
 /**
  * **La livraison offerte figée sur une commande** (plan
- * `documentation/promotions/plan-livraison-offerte.md`, 1a et § 2.8 ;
+ * `documentation/livraisons/frais-et-livraison-offerte.md` et § 2.8 ;
  * décisions de Hugo du 2026-11-05) : la livraison est offerte — par le franco
  * de la route ou par une promotion « Sur la livraison » — et la commande
  * retient ce qu'elle aurait coûté, le seuil de la route et la promotion qui

@@ -348,7 +348,7 @@ model Order {
   /// deux se distinguent par `delivery_fee_cents`, nul dans le premier cas.
   deliveryFeeAdjustment      Json?           @map("delivery_fee_adjustment")
   /// **La livraison offerte figée à la passation** (plan
-  /// `documentation/promotions/plan-livraison-offerte.md`, 1a et § 2.8) : le
+  /// `documentation/livraisons/frais-et-livraison-offerte.md` et § 2.8) : le
   /// seuil HT du **franco de la route**, et ce que la livraison aurait coûté —
   /// HT, et TTC pour une commande `exact_ht`. `waived` présent = offerte (par
   /// la route ou par une promotion) : `delivery_fee_cents` vaut 0 et

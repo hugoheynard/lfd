@@ -5,7 +5,7 @@ import type { InvoiceFreeDelivery } from "../domain/entities/invoice.types.js";
 
 /**
  * **La livraison offerte d'un bon, relue pour sa facture** (plan
- * `plan-livraison-offerte.md`, § 2.9). La comptabilité a sa propre lecture
+ * `frais-et-livraison-offerte.md`). La comptabilité a sa propre lecture
  * des colonnes figées de la commande (`orders.free_delivery_*`) — elle
  * n'importe pas l'infrastructure des commandes — et sa propre colonne figée
  * sur la pièce (`invoice_order.free_delivery`).

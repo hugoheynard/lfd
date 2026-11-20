@@ -27,7 +27,7 @@ const VISITOR_AUDIENCE: CustomerAudience = "b2c";
  * staff en ont besoin pour afficher le frais d'une zone. L'écriture est staff
  * ({@link AdminDeliveryZonesController}).
  *
- * Depuis le 0c (`plan-livraison-offerte.md`, 2026-11-05) : chaque zone porte le
+ * Depuis le 0c (`frais-et-livraison-offerte.md`, 2026-11-05) : chaque zone porte le
  * frais et le seuil de livraison offerte RÉSOLUS pour la clientèle déclarée —
  * ceux que le devis facture. L'audience se DÉCLARE, elle ne se lit pas sur
  * l'appelant : le tarif pro est public par choix (Hugo, décision f), comme la

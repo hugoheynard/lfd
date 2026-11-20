@@ -52,7 +52,7 @@ describe("Order.draft — vingt paniers pro figés (voie B, lot C2)", () => {
 });
 
 /**
- * **Le franco** (plan `plan-livraison-offerte.md`, 1b) : le même relevé, sur
+ * **Le franco** (doc `frais-et-livraison-offerte.md`) : le même relevé, sur
  * deux paniers de plus — au seuil pile, la course disparaît avec sa TVA ; un
  * centime sous le seuil, le panier est celui des vingt, au centime.
  */

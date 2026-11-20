@@ -8,7 +8,7 @@ import { PRICED_AT } from "./shop-cart-quoting.doubles.js";
 
 /**
  * **Les promotions « Sur la livraison » au chargement du chiffrage**
- * (`plan-livraison-offerte.md`, § 2.4, § 2.8) : lues pour les faits du CLIENT
+ * (`frais-et-livraison-offerte.md`) : lues pour les faits du CLIENT
  * — quand l'équipe commande pour lui comme quand il commande —, dans la zone
  * livrée, et rejugées en révision : une promotion finie n'offre plus.
  */

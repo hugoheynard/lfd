@@ -10,7 +10,7 @@ import { TEST_FONTS } from "./invoice-fonts-fixture.js";
 import { drawnUnicodeText } from "./pdf-objects.js";
 
 /**
- * La livraison offerte sur la facture (plan `plan-livraison-offerte.md`,
+ * La livraison offerte sur la facture (doc `frais-et-livraison-offerte.md`,
  * § 2.9) : figée sur le bon, dite sous la ligne de référence et en note BG-1
  * `AAI`, recopiée par l'avoir — sans qu'aucun montant ne bouge. Les jours ne
  * sont comparés à aucune horloge.

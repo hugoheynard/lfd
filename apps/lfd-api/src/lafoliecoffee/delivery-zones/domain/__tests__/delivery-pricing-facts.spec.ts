@@ -5,7 +5,7 @@ import { DeliveryPricingUpdatedEvent } from "../delivery-pricing.events.js";
 import { DeliveryZoneCreatedEvent, DeliveryZoneUpdatedEvent } from "../delivery-zone.events.js";
 
 /**
- * Les faits du 0b (plan `plan-livraison-offerte.md`) : le réglage global a le
+ * Les faits du 0b (doc `frais-et-livraison-offerte.md`) : le réglage global a le
  * sien, et les remplacements d'une zone entrent dans le fait de la zone. Les
  * charges sont éprouvées contre le catalogue STRICT des faits — une clé que le
  * schéma ne connaît pas serait refusée à l'écriture du journal.

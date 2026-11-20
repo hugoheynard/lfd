@@ -56,7 +56,7 @@ function sameFee(a: CartAdjustment | null, b: CartAdjustment | null): boolean {
 }
 
 /**
- * **Le réglage global de livraison** (plan `plan-livraison-offerte.md`, 0b) :
+ * **Le réglage global de livraison** (doc `frais-et-livraison-offerte.md`) :
  * le frais de base de chaque clientèle ouverte, dont chaque zone hérite sauf
  * si elle le remplace. Vide = « rien de réglé » : chaque zone garde alors son
  * ancien frais. Sous le frais, le seuil de livraison offerte (lot 1), en euros

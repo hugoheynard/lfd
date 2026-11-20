@@ -4,7 +4,7 @@ import type { CustomerAudience } from '@lfd/contracts';
 export type InputSide = 'center' | 'bottom';
 
 /**
- * Les clientèles de la livraison (plan `plan-livraison-offerte.md`, 0b). Le
+ * Les clientèles de la livraison (doc `frais-et-livraison-offerte.md`). Le
  * réglage global les montre TOUTES, une clientèle fermée dans la
  * disponibilité de la livraison grisée (Hugo, 2026-11-05) ; les zones ne
  * montrent que les ouvertes. Une clientèle fermée garde ses valeurs —

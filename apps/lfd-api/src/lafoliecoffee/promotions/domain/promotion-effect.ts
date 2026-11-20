@@ -15,7 +15,7 @@ import type { PromotionApplicationPoint } from "./promotion-fulfillment.js";
  * - `basket_amount_off` : centimes retirés de l'assiette — panier (la remise
  *   de retrait en montant fixe) ;
  * - `free_delivery` : la livraison offerte, sans valeur — sur la livraison
- *   seulement (`plan-livraison-offerte.md`, § 2.3). Pas un `percent_off` à
+ *   seulement (`frais-et-livraison-offerte.md`). Pas un `percent_off` à
  *   100 % : un pourcentage laisserait croire qu'on sait réduire le frais en
  *   partie, ce que la commande ne sait pas figer. Sa colonne vaut 0.
  */

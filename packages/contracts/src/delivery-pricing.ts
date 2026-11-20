@@ -4,7 +4,7 @@ import { cartAdjustmentSchema } from "./cart-adjustment.js";
 
 /**
  * Contrat de fil du **réglage de livraison par audience** (plan
- * `documentation/promotions/plan-livraison-offerte.md`, sous-lot 0a) : le frais
+ * `documentation/livraisons/frais-et-livraison-offerte.md`) : le frais
  * de base et le franco — le seuil HT, en centimes, au-delà duquel la livraison
  * est offerte — pour les pros (`b2b`) et les particuliers (`b2c`).
  *

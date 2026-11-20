@@ -39,7 +39,7 @@ export class DeliveryZonesService {
 
   /**
    * Les zones avec le frais RÉSOLU pour `audience` (plan
-   * `plan-livraison-offerte.md`, 0c) — celui que le devis facture. La saisie
+   * `frais-et-livraison-offerte.md`) — celui que le devis facture. La saisie
    * de commande passe la clientèle du client pour qui l'on commande.
    */
   listFor(audience: CustomerAudience): Promise<readonly AudienceDeliveryZoneView[]> {
@@ -52,7 +52,7 @@ export class DeliveryZonesService {
 
   /**
    * Les zones AVEC leurs remplacements par audience (staff, plan
-   * `plan-livraison-offerte.md`, 0b) — ce que la route publique ne sert pas.
+   * `frais-et-livraison-offerte.md`) — ce que la route publique ne sert pas.
    */
   listAdmin(): Promise<readonly AdminDeliveryZoneView[]> {
     return firstValueFrom(

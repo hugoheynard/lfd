@@ -4,7 +4,7 @@ import { totalRows } from "../../../../orders/domain/services/order-sheet-pdf-to
 import { money } from "../../../../orders/domain/services/order-sheet-pdf-format.js";
 import { handedOverNote, HEAD, PRO_BILLING } from "./delivery-note-sheet.fixture.js";
 
-/** La livraison offerte sur le bon de livraison chiffré (plan-livraison-offerte.md, § 2.6). */
+/** La livraison offerte sur le bon de livraison chiffré (frais-et-livraison-offerte.md). */
 
 const WAIVED = 1_200;
 

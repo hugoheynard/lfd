@@ -6,7 +6,7 @@ import { exactDepartureOf } from "../exact-departure.js";
 
 /**
  * **Le bon partiel d'une commande au franco figé** (plan
- * `documentation/promotions/plan-livraison-offerte.md`, 1a) : le franco se
+ * `documentation/livraisons/frais-et-livraison-offerte.md`) : le franco se
  * juge sur le panier COMMANDÉ, donc ce qui part ne paie jamais de frais —
  * le barème figé, lui, reste celui que la zone aurait facturé.
  *

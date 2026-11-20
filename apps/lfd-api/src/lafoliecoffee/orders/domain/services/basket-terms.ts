@@ -39,7 +39,7 @@ export interface BasketTermsInput {
   /** Le sous-total HT arrondi par ligne (`priceBasket`) — la base `line_ht` du franco. */
   readonly subtotalCents: number;
   /**
-   * **Les seuils candidats de la livraison offerte** (`plan-livraison-offerte.md`,
+   * **Les seuils candidats de la livraison offerte** (`frais-et-livraison-offerte.md`,
    * § 2.4) : le franco de la route et les promotions « Sur la livraison » qui
    * admettent l'acheteur ; vide en retrait ou sans rien de réglé.
    */
@@ -66,7 +66,7 @@ interface MethodAmounts {
  * la révision y passent par `priceBasket`. La surtaxe n'y est pas : elle
  * dépend d'un verdict (§ 2.3).
  *
- * 🔴 **Le franco se juge ICI** (plan `plan-livraison-offerte.md`, 1b) : c'est
+ * 🔴 **Le franco se juge ICI** (doc `frais-et-livraison-offerte.md`) : c'est
  * le seul endroit où la base du seuil — les marchandises HT après les remises
  * — est connue dans les deux méthodes sans composer deux fois. En `line_ht`,
  * le sous-total moins la remise HT (la base même où le bon s'impute) ; en

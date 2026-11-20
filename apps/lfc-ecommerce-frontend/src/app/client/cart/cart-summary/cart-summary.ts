@@ -257,7 +257,7 @@ export class CartSummary implements OnInit {
 
   /**
    * La livraison offerte, telle que le devis la juge (plan
-   * `plan-livraison-offerte.md`, 1c) : « Coursier offert », SANS montant
+   * `frais-et-livraison-offerte.md`) : « Coursier offert », SANS montant
    * (Hugo, 2026-11-05). Le frais vaut alors zéro, et {@link feeLabel} se tait.
    */
   protected readonly courierOffered = computed(
@@ -268,7 +268,7 @@ export class CartSummary implements OnInit {
    * Le mot de la livraison offerte : le libellé de la promotion qui l'offre,
    * dans la langue de l'écran (« Livraison offerte — client fidèle »), ou
    * « Coursier offert » quand c'est le franco de la route
-   * (`plan-livraison-offerte.md`, § 2.6). Le serveur ne sert le libellé qu'à
+   * (`frais-et-livraison-offerte.md`). Le serveur ne sert le libellé qu'à
    * l'appelant que la promotion admet.
    */
   protected readonly courierOfferedLabel = computed(() => {

@@ -13,7 +13,7 @@ import { FrozenAdjustmentUnreadableError } from "./frozen-adjustment-unreadable.
 /**
  * Les colonnes de la livraison offerte figée (`orders.free_delivery_*`,
  * migrations `20261105160000` et `20261120120000`, plan
- * `plan-livraison-offerte.md`, 1a et § 2.8) — une seule traduction, pour que
+ * `frais-et-livraison-offerte.md` et § 2.8) — une seule traduction, pour que
  * le bon partiel, le soldé, la reprise des remises et les documents lisent la
  * même chose.
  */

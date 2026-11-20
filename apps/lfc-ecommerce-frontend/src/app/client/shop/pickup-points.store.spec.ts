@@ -376,7 +376,7 @@ describe('ServicePoints — la liste des points, par lecteur', () => {
   });
 
   /**
-   * Défaut de production (2026-11-05, plan `plan-livraison-offerte.md`, 0c) :
+   * Défaut de production (2026-11-05, doc `frais-et-livraison-offerte.md`) :
    * le dialogue d'adresse montrait « 0 € », l'ancien frais de zone. Les zones
    * se lisent pour la clientèle de l'espace MONTRÉ, et se relisent quand elle
    * change — vidées d'abord : le frais d'une clientèle n'est pas l'autre.

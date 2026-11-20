@@ -141,7 +141,7 @@ export const INVOICE_FREE_DELIVERY_LABEL = "Livraison offerte";
 
 /**
  * **La livraison offerte, une phrase par bon concerné** (plan
- * `plan-livraison-offerte.md`, § 2.9) : « Livraison offerte — 24,00 € HT
+ * `frais-et-livraison-offerte.md`) : « Livraison offerte — 24,00 € HT
  * (ORD-1042). », ou le libellé français de la promotion qui l'a offerte. Le
  * montant est le barème HT que la livraison aurait coûté ; il n'entre dans
  * aucun total. La même phrase part en note BG-1 (`AAI`) et sous la ligne de

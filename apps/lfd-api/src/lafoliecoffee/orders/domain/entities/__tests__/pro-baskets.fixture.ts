@@ -20,7 +20,7 @@ export interface ProBasket {
   readonly fee?: CartAdjustment;
   readonly vatMode?: DeliveryVatMode;
   readonly lateFee?: { readonly adjustment: CartAdjustment; readonly rate: number };
-  /** Le seuil HT du franco de la zone (plan `plan-livraison-offerte.md`, 1b). */
+  /** Le seuil HT du franco de la zone (doc `frais-et-livraison-offerte.md`). */
   readonly freeDeliveryThreshold?: number;
 }
 
@@ -158,7 +158,7 @@ export const PRO_BASKETS: readonly ProBasket[] = [
 ];
 
 /**
- * **Le franco** (plan `plan-livraison-offerte.md`, 1b) : le panier « port qui
+ * **Le franco** (doc `frais-et-livraison-offerte.md`) : le panier « port qui
  * suit, deux taux » (38,80 € HT), au seuil pile puis manqué d'un centime.
  * À part des vingt : ceux-là tiennent le code d'avant la voie B, ceux-ci le
  * premier calcul du franco (2026-11-05).

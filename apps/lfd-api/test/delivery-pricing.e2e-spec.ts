@@ -1,6 +1,6 @@
 /**
  * E2E du **réglage global de livraison par audience** et des remplacements par
- * zone (plan `documentation/promotions/plan-livraison-offerte.md`, sous-lot
+ * zone (doc `documentation/livraisons/frais-et-livraison-offerte.md`, sous-lot
  * 0a) : lecture et écriture staff, ligne absente = rien de réglé, auteur figé,
  * refus nommés, colonnes de zone nulles.
  *

@@ -5,7 +5,7 @@ import {
 } from "../free-delivery-judgement.js";
 
 /**
- * Le jugement du franco (plan `plan-livraison-offerte.md`, 1b) : « dès le
+ * Le jugement du franco (doc `frais-et-livraison-offerte.md`) : « dès le
  * seuil », sur la base qu'on lui donne, et jamais un cadeau de zéro.
  */
 const FEE = { feeHtCents: 1_200, feeTtcCents: null, goodsNetTtcCents: null } as const;

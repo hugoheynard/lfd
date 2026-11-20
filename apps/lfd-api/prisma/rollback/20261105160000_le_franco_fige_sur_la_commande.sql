@@ -1,5 +1,5 @@
 -- RETOUR ARRIÈRE de 20261105160000_le_franco_fige_sur_la_commande (sous-lot 1a
--- du plan `documentation/promotions/plan-livraison-offerte.md`).
+-- du doc `documentation/livraisons/frais-et-livraison-offerte.md`).
 --
 -- 🔴 NON APPLIQUÉ, et Prisma ne le lit pas. La migration reste inscrite
 -- « appliquée ».

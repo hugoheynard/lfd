@@ -192,7 +192,7 @@ export class CartAdjustments {
    * se juge AVANT la zone : fermée, la livraison l'est partout, et répondre
    * « on ne livre pas ce code postal » mentirait sur la raison.
    *
-   * Le barème est RÉSOLU par audience (plan `plan-livraison-offerte.md`, 0b) :
+   * Le barème est RÉSOLU par audience (doc `frais-et-livraison-offerte.md`) :
    * remplacement de la zone, sinon réglage global, sinon l'ancien frais de la
    * zone. Il n'est pas APPLIQUÉ ici : `price-basket.ts` (`deliveryFeeOf`) est
    * le seul endroit qui chiffre le frais — l'ancien `forDelivery`, qui le
@@ -238,7 +238,7 @@ export class CartAdjustments {
 
   /**
    * Les promotions « Sur la livraison » que le calcul jugera pour CET acheteur
-   * et CETTE zone (`plan-livraison-offerte.md`, § 2.4).
+   * et CETTE zone (`frais-et-livraison-offerte.md`).
    */
   deliveryFeePromotionsFor(buyer: KnownBuyerFacts): Promise<LoadedDeliveryFeePromotions> {
     return this.deliveryFee.load(buyer);

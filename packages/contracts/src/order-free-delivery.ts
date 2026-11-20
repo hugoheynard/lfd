@@ -2,7 +2,7 @@ import type { DiscountLabelView } from "./discount-label.js";
 
 /**
  * **La livraison offerte d'une commande, telle qu'un document la lit** (plan
- * `documentation/promotions/plan-livraison-offerte.md`, § 2.6 et § 2.8) :
+ * `documentation/livraisons/frais-et-livraison-offerte.md`) :
  * ce que la livraison aurait coûté, et qui l'a offerte.
  *
  * AFFICHÉE, jamais comptable : le frais facturé de la commande vaut 0, et

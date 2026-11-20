@@ -271,7 +271,7 @@ export interface ShopQuoteView {
    */
   readonly awaiting?: readonly ShopQuoteAwaiting[];
   /**
-   * **La livraison offerte** (plan `documentation/promotions/plan-livraison-offerte.md`,
+   * **La livraison offerte** (doc `documentation/livraisons/frais-et-livraison-offerte.md`,
    * 1c) — le seuil du franco de la zone, et où en est le panier :
    * `offered`, la livraison est offerte (`deliveryFeeCents` vaut alors 0 ;
    * l'écran dit « Coursier offert », sans montant — Hugo, 2026-11-05) ;
@@ -290,7 +290,7 @@ export interface ShopQuoteView {
  * Le franco vu du panier : offert (« Coursier offert », sans montant — Hugo,
  * 2026-11-05), ou ce qu'il manque pour l'atteindre. Le seuil retenu est le
  * plus favorable entre le franco de la route et les promotions « Sur la
- * livraison » qui admettent l'appelant (`plan-livraison-offerte.md`, § 2.4).
+ * livraison » qui admettent l'appelant (`frais-et-livraison-offerte.md`).
  */
 export type ShopQuoteFreeDeliveryView =
   | {

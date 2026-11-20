@@ -35,7 +35,7 @@ export interface OrderTicket {
   readonly voucherCents: number;
   readonly deliveryFeeCents: number;
   /**
-   * La livraison offerte (plan `plan-livraison-offerte.md`, § 2.6) : le
+   * La livraison offerte (doc `frais-et-livraison-offerte.md`) : le
    * barème offert, à son TTC figé, et le libellé figé de la promotion qui
    * l'a offerte (absent : le franco de la route). AFFICHÉE, pas comptable —
    * le port facturé vaut 0 et le total n'en dépend pas.

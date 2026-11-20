@@ -14,7 +14,7 @@ import {
 
 /**
  * **Le franco, chiffré par l'agrégat** (plan
- * `documentation/promotions/plan-livraison-offerte.md`, 1b ; décisions de
+ * `documentation/livraisons/frais-et-livraison-offerte.md` ; décisions de
  * Hugo du 2026-11-05) : la base du seuil est le HT des marchandises APRÈS les
  * remises et AVANT le bon ; au franco, le frais facturé vaut 0 et la commande
  * fige le seuil et ce que la livraison aurait coûté ; une révision rejuge le

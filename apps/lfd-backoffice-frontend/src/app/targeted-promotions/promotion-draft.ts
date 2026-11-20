@@ -28,7 +28,7 @@ import {
  * au catalogue, pour tous les acheminements), en remise au panier selon
  * l'acheminement coché (`documentation/promotions/promotions.md`, § 2.14), ou
  * sur la livraison, dont elle offre le frais
- * (`documentation/promotions/plan-livraison-offerte.md`, § 2.3).
+ * (`documentation/livraisons/frais-et-livraison-offerte.md`).
  */
 export type DraftFulfillmentKind = 'displayed_price' | 'basket' | 'delivery_fee';
 

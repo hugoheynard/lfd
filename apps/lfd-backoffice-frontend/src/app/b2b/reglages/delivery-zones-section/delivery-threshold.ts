@@ -1,5 +1,5 @@
 /**
- * Le seuil de livraison offerte à l'écran (plan `plan-livraison-offerte.md`,
+ * Le seuil de livraison offerte à l'écran (doc `frais-et-livraison-offerte.md`,
  * lot 1) : saisi en euros HT, écrit en centimes entiers. Vide = pas de
  * livraison offerte — `null`, jamais `0`, qui dirait « offerte dès le premier
  * euro ».

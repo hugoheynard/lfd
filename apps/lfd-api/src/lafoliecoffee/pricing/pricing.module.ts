@@ -105,7 +105,7 @@ import { PrismaPromotionsSourceReader } from "../promotions/infrastructure/prism
     // le point ligne ; la source reste lue par l'écran Promotions (garde-fou, L12).
     PromotionsSourceReader,
     BasketPromotionReader,
-    // La livraison offerte par une promotion (`plan-livraison-offerte.md`, § 2.4).
+    // La livraison offerte par une promotion (`frais-et-livraison-offerte.md`).
     DeliveryFeePromotionReader,
     PromotionAudienceFactsResolver,
     // Le tableau de tarification lit les promotions de ligne comme la caisse (L8).

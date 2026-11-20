@@ -213,7 +213,7 @@ const deliveryZoneBeforeLabel = () =>
 
 /**
  * Ce qu'une audience paie pour être livrée, à un niveau (plan
- * `plan-livraison-offerte.md`, 0b) : `null` = rien de réglé à ce niveau.
+ * `frais-et-livraison-offerte.md`) : `null` = rien de réglé à ce niveau.
  */
 const deliveryAudienceTerms = () =>
   payload({ fee: percentOrAmount().nullable(), freeDeliveryThresholdCents: cents().nullable() });
@@ -675,7 +675,7 @@ export const ORDERS_PRODUCTION_FACTS = {
    */
   /**
    * **Le réglage global de livraison par audience** (plan
-   * `plan-livraison-offerte.md`, 0b) : l'état posé et celui qu'il remplace —
+   * `frais-et-livraison-offerte.md`) : l'état posé et celui qu'il remplace —
    * un geste ne touche qu'une valeur, et un frais se relit avec l'avant.
    */
   "delivery_pricing.updated": fact(

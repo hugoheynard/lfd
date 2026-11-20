@@ -17,8 +17,8 @@
 ## 0. Décision de Hugo du 2026-11-05 — un pending est un pro, partout — ✅ bâti le 2026-11-05, en production
 
 > 🔴 L'emporte sur le § 1 là où ils divergent. Posée en concevant la
-> livraison offerte ([`../promotions/plan-livraison-offerte.md`](../promotions/plan-livraison-offerte.md),
-> décision g) : « une société en attente reçoit le tarif des pros —
+> livraison offerte ([`../livraisons/frais-et-livraison-offerte.md`](../livraisons/frais-et-livraison-offerte.md),
+> « Un pro dont la société attend sa validation ») : « une société en attente reçoit le tarif des pros —
 > partout — et elle peut commander ».
 
 - **Plus de case « traiter en pro »** : une société `pending` est pro, sans

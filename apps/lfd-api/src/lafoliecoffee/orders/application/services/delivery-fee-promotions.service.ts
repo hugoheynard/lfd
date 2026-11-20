@@ -10,7 +10,7 @@ import type { LoadedDeliveryFeePromotions } from "../../domain/services/free-del
 
 /**
  * **Les promotions « Sur la livraison » de cet acheteur, chargées**
- * (`documentation/promotions/plan-livraison-offerte.md`, § 2.4) : l'instant,
+ * (`documentation/livraisons/frais-et-livraison-offerte.md`) : l'instant,
  * les promotions vivantes et les faits de l'acheteur — ceux du CLIENT, y
  * compris quand l'équipe commande pour lui (`KnownBuyerFacts` est établi par
  * l'appelant à partir des parties de la commande).

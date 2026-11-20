@@ -8,7 +8,7 @@ import type {
 
 /**
  * **Le frais de livraison d'une audience dans une zone** (plan
- * `documentation/promotions/plan-livraison-offerte.md`, sous-lot 0b) : le
+ * `documentation/livraisons/frais-et-livraison-offerte.md`) : le
  * remplacement de la zone pour cette audience, sinon le réglage global de
  * l'audience, sinon l'ancien frais unique de la zone (`fee_mode`/`fee_value`).
  *
@@ -29,7 +29,7 @@ export function resolvedDeliveryFee(
 
 /**
  * **Le franco d'une audience dans une zone** (plan
- * `plan-livraison-offerte.md`, sous-lot 1b) : le seuil HT, en centimes, au-delà
+ * `frais-et-livraison-offerte.md`) : le seuil HT, en centimes, au-delà
  * duquel la livraison est offerte — le remplacement de la zone pour cette
  * audience, sinon le réglage global de l'audience.
  *

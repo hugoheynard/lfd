@@ -20,7 +20,7 @@ import {
  * spécificité) ; `weekly_hours`, les jours et heures
  * (`documentation/promotions/plan-jours-et-heures.md`) ; `min_basket`, le
  * panier minimum d'une promotion « Sur la livraison », en centimes HT, jugé
- * sur la base du franco (`plan-livraison-offerte.md`, § 2.3). Première
+ * sur la base du franco (`frais-et-livraison-offerte.md`). Première
  * commande, code promo, limite d'usage sont prévus : chacun sera une variante
  * et son évaluateur, sans toucher aux autres.
  */

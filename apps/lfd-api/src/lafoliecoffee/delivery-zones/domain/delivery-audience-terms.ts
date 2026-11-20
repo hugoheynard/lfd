@@ -13,7 +13,7 @@ const AUDIENCE_LABELS: Readonly<Record<CustomerAudience, string>> = {
 /**
  * **Ce qu'une audience paie pour être livrée**, à un niveau (le réglage global
  * ou le remplacement d'une zone), refusé s'il est invalide (plan
- * `documentation/promotions/plan-livraison-offerte.md`, sous-lot 0a).
+ * `documentation/livraisons/frais-et-livraison-offerte.md`).
  *
  * `null` est permis partout : rien de réglé à ce niveau. Ce qui est refusé, ce
  * sont les valeurs qu'aucun calcul ne saurait appliquer — un frais négatif, un

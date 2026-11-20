@@ -1,6 +1,6 @@
 /**
  * E2E de la **livraison offerte par une promotion** (plan
- * `documentation/promotions/plan-livraison-offerte.md`, Partie 3, § 2.7 et
+ * `documentation/livraisons/frais-et-livraison-offerte.md`
  * § 2.8) : une promotion « Sur la livraison » posée par l'écran Promotions
  * pour UNE société offre sa livraison — au devis, à la passation, à la saisie
  * de l'équipe —, et à elle seule ; la commande fige la promotion et son

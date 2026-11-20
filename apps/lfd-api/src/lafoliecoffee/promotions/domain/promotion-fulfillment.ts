@@ -18,7 +18,7 @@ import {
  *   chacun vise tout, une sélection, ou rien. Un point ET une zone tiennent
  *   dans UNE promotion ;
  * - `delivery_fee` — « sur la livraison » : la promotion offre le frais de
- *   livraison (`plan-livraison-offerte.md`, § 2.3). Toutes les zones ou
+ *   livraison (`frais-et-livraison-offerte.md`). Toutes les zones ou
  *   celles-là ; le retrait n'a pas de frais à offrir.
  *
  * Il décide du **point d'application** : la ligne pour `displayed_price`, le

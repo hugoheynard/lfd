@@ -89,7 +89,7 @@ export interface InvoiceOrderReference {
 
 /**
  * **La livraison offerte d'un bon, telle que la facture la cite** (plan
- * `plan-livraison-offerte.md`, § 2.9). AFFICHÉE, pas comptable : le frais
+ * `frais-et-livraison-offerte.md`). AFFICHÉE, pas comptable : le frais
  * facturé vaut déjà 0, aucun montant, aucune TVA, aucun total n'en dépend.
  */
 export interface InvoiceFreeDelivery {

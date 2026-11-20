@@ -90,7 +90,7 @@ export interface PricingRequest {
   readonly frozenAudience: CustomerAudience | null;
   /**
    * Le barème de livraison figé sur la commande qu'on révise (plan
-   * `documentation/promotions/plan-livraison-offerte.md`, 1a, Hugo,
+   * `documentation/livraisons/frais-et-livraison-offerte.md`, Hugo,
    * 2026-11-05) ; `null` à la passation, en retrait, ou sur une commande
    * d'avant le barème figé — le chargement résout alors celui du jour.
    */
@@ -112,7 +112,7 @@ export interface FrozenDeliveryFee {
    * Le seuil du franco de la ROUTE figé (1b) ; `null` = aucun n'a été figé,
    * et une révision dans la même zone prend le seuil du jour — elle ne peut
    * qu'y gagner. Une promotion qui a offert n'y entre jamais : elle est
-   * rejugée (`plan-livraison-offerte.md`, § 2.8, B3).
+   * rejugée (`frais-et-livraison-offerte.md`).
    */
   readonly freeDeliveryThresholdCents: number | null;
 }

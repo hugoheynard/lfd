@@ -15,7 +15,7 @@ import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.j
 
 /**
  * Réglage **staff** global de livraison, par audience (plan
- * `documentation/promotions/plan-livraison-offerte.md`, sous-lot 0a) : le frais
+ * `documentation/livraisons/frais-et-livraison-offerte.md`) : le frais
  * de base et le franco dont chaque zone hérite. Sous `delivery_fee`, la
  * ressource des zones : c'est un frais, comme elles.
  *

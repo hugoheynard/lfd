@@ -5,7 +5,7 @@ import type { LivePromotion } from "../../../../promotions/domain/live-promotion
 import { catalogItem, PRICED_AT, quotingOf } from "./shop-cart-quoting.doubles.js";
 
 /**
- * **La livraison offerte au panier** (plan `plan-livraison-offerte.md`, 1c) :
+ * **La livraison offerte au panier** (doc `frais-et-livraison-offerte.md`) :
  * le devis dit « offert » (sans montant — « Coursier offert », Hugo,
  * 2026-11-05) ou ce qu'il manque, en HT comme le seuil ; et rien quand il
  * n'y a rien à dire. Le pain vaut 5,00 € HT.
@@ -104,7 +104,7 @@ describe("ShopCartQuoting — la livraison offerte (1c)", () => {
   });
 });
 
-describe("ShopCartQuoting — la livraison offerte par une promotion (`plan-livraison-offerte.md`, § 2.8)", () => {
+describe("ShopCartQuoting — la livraison offerte par une promotion (`frais-et-livraison-offerte.md`)", () => {
   const LOYAL = livePromotion({
     id: "promo_livraison",
     label: "Client fidèle",

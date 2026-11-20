@@ -5,7 +5,7 @@ import { FREE_DELIVERY_LABEL } from "../order-sheet-pdf-free-delivery.js";
 import { LINE, sheet } from "./client-sheet.fixture.js";
 
 /**
- * La livraison offerte sur le bon (plan `plan-livraison-offerte.md`, § 2.6 et
+ * La livraison offerte sur le bon (doc `frais-et-livraison-offerte.md` et
  * § 2.8) : « Livraison » au barème, puis « Livraison offerte » ou le libellé
  * de la promotion au même montant, négatif — affichée, jamais comptée : le
  * total et la répartition des gestes n'en bougent pas.

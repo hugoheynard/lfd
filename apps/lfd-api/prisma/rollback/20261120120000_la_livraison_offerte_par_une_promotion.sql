@@ -1,5 +1,5 @@
 -- RETOUR ARRIÈRE de 20261120120000_la_livraison_offerte_par_une_promotion
--- (plan `documentation/promotions/plan-livraison-offerte.md`, Partie 3).
+-- (doc `documentation/livraisons/frais-et-livraison-offerte.md`).
 --
 -- 🔴 NON APPLIQUÉ, et Prisma ne le lit pas. La migration reste inscrite
 -- « appliquée ».

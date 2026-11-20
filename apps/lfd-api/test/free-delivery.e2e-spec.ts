@@ -1,5 +1,5 @@
 /**
- * E2E du **franco** (plan `documentation/promotions/plan-livraison-offerte.md`,
+ * E2E du **franco** (doc `documentation/livraisons/frais-et-livraison-offerte.md`,
  * sous-lot 1b) : le seuil se résout comme le frais (zone, sinon réglage global
  * de l'audience), se compte sur les marchandises HT remisées, et rend la
  * livraison gratuite au devis comme à la passation. La commande fige le seuil

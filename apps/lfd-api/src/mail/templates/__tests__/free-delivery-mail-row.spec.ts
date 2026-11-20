@@ -5,7 +5,7 @@ import { freeDeliveryMailRows } from "../free-delivery-mail-row.js";
 
 /**
  * La livraison offerte dans le récapitulatif de l'e-mail (plan
- * `plan-livraison-offerte.md`, § 2.6) : nommée dans la langue du
+ * `frais-et-livraison-offerte.md`) : nommée dans la langue du
  * destinataire, sans signe — le total n'en dépend pas.
  */
 const MONEY: SheetMoney = {

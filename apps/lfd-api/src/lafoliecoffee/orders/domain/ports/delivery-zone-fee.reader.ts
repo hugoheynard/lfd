@@ -14,7 +14,7 @@ export interface PricedDeliveryZone {
 
 /**
  * **« Quelle zone livre ce code postal, et que paie cette audience ? »** (plan
- * `plan-livraison-offerte.md`, 0b). Déclaré par les commandes, implémenté par
+ * `frais-et-livraison-offerte.md`). Déclaré par les commandes, implémenté par
  * les zones de livraison : la règle de résolution vit chez elles, et le
  * chiffrage reçoit un barème déjà résolu, que `price-basket.ts` est seul à
  * appliquer.

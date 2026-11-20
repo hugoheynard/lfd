@@ -99,7 +99,7 @@ export function ensureLateFeeMatches(
  * en RETRAIT n'en a aucun, et lui en exiger un serait exiger la trace d'un
  * geste qui n'a pas eu lieu.
  *
- * **Au franco** (plan `plan-livraison-offerte.md`, 1b), le barème est celui
+ * **Au franco** (doc `frais-et-livraison-offerte.md`), le barème est celui
  * qu'on OFFRE : le frais facturé vaut 0, et c'est le montant offert que le
  * barème doit reproduire. Le seuil, lui, se juge par
  * {@link ensureFreeDeliveryHolds}. Le bon partiel n'en passe pas : il reçoit
@@ -136,12 +136,12 @@ export function ensureDeliveryFeeMatches(
 }
 
 /**
- * **Le franco tient-il ?** (plan `plan-livraison-offerte.md`, 1b) — la
+ * **Le franco tient-il ?** (doc `frais-et-livraison-offerte.md`) — la
  * barrière de l'agrégat, qui ne fait confiance à aucun appelant : une
  * livraison offerte suppose un barème à offrir, rien de facturé, le TTC offert
  * dans la seule méthode qui en a un, et une base qui atteint le seuil qui
  * l'offre — celui de la route, ou celui de la promotion figée avec son
- * identifiant et son libellé (`plan-livraison-offerte.md`, § 2.8). Le public
+ * identifiant et son libellé (`frais-et-livraison-offerte.md`). Le public
  * de la promotion, lui, est jugé au calcul : l'agrégat ne le voit pas.
  *
  * `goodsNetHtCents` est la base de la décision du 2026-11-05 : marchandises HT

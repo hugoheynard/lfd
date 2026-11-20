@@ -7,7 +7,7 @@ import { LABO, pricingContextOf, ZONE } from "./pricing-context.doubles.js";
 
 /**
  * **Le frais de livraison résolu par audience** au chargement du chiffrage
- * (plan `documentation/promotions/plan-livraison-offerte.md`, 0b) : zone >
+ * (doc `documentation/livraisons/frais-et-livraison-offerte.md`) : zone >
  * global > ancien frais, avec la clientèle que le SERVEUR attribue — le
  * statut de la société à la passation (pending = pro), la clientèle figée en
  * révision. Le chargement ne chiffre rien : il rend le barème, que

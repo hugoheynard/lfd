@@ -55,7 +55,7 @@ type LoadState = 'loading' | 'ready' | 'error';
  * zone ne couvre (2026-10-20) ; « Ajouter un tarif » ouvre le panneau en
  * création, prérempli. La fiche client y envoie par `?addPostalCode=73320`.
  *
- * Depuis 0b (plan `plan-livraison-offerte.md`), le **réglage global** par
+ * Depuis 0b (doc `frais-et-livraison-offerte.md`), le **réglage global** par
  * clientèle (frais de base) se lit et se règle en tête, et chaque zone dit
  * ses remplacements. Le réglage global montre aussi le seuil de livraison
  * offerte (lot 1) et TOUTES les clientèles, une fermée grisée avec où
