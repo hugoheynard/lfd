@@ -25,7 +25,7 @@ import { ReadCounterParticularShelfPricesQuery } from "../application/queries/re
 /**
  * Surface de la **commande d'un particulier notée au comptoir**, à régler à
  * la caisse de la boutique
- * (`documentation/commandes/passation/plan-commande-particulier-reglee-en-boutique.md`, § 4–5).
+ * (`documentation/commandes/passation/commande-particulier-reglee-en-boutique.md`, § 4–5).
  *
  * Ses routes à elle, distinctes de la saisie pro (§ 2 : ne pas mélanger les
  * deux saisies), sous le même droit (`b2b_place_order:write`) et la surface

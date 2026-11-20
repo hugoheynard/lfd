@@ -604,7 +604,7 @@ import { PrismaSubAccountMenuAccessReader } from "./infrastructure/prisma-sub-ac
     // le compte d'une adresse, par la règle des comptes (`findAccountByEmail`).
     CompanyMemberRepository,
     // La commande d'un particulier notée au comptoir vérifie la fiche choisie
-    // (plan-commande-particulier-reglee-en-boutique.md, § 3).
+    // (commande-particulier-reglee-en-boutique.md, § 3).
     ParticularStandingReader,
   ],
 })

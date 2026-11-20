@@ -95,7 +95,7 @@ export interface AdminOrderView extends OrderView {
    */
   readonly itemLimitOverrides?: readonly AdminOrderItemLimitOverride[];
   /**
-   * **Le client n'est pas venu** (`plan-commande-particulier-reglee-en-boutique.md`,
+   * **Le client n'est pas venu** (`commande-particulier-reglee-en-boutique.md`,
    * § 5 bis) — qui l'a déclarée non retirée, et quand ; `null` pour toute
    * autre commande. Facultatif : un serveur plus ancien ne le sert pas.
    */

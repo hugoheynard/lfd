@@ -1,7 +1,7 @@
 /**
  * E2E des **lecteurs du lieu de règlement** d'une commande d'un particulier
  * notée au comptoir, à régler à la caisse de la boutique — plan
- * `documentation/commandes/passation/plan-commande-particulier-reglee-en-boutique.md`,
+ * `documentation/commandes/passation/commande-particulier-reglee-en-boutique.md`,
  * § 4.2 et § 5.
  *
  * Ce qui ne se prouve qu'ici : la fiche et la liste staff qui disent

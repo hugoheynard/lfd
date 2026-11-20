@@ -1,6 +1,6 @@
 /**
  * E2E de la **saisie particulier au comptoir** (`/admin/counter/particulars`) —
- * plan `documentation/commandes/passation/plan-commande-particulier-reglee-en-boutique.md`, § 3.
+ * plan `documentation/commandes/passation/commande-particulier-reglee-en-boutique.md`, § 3.
  *
  * Ce qui ne se prouve qu'ici : le SQL de la recherche et du refus des doublons
  * (normalisation de l'adresse et du téléphone, aucun motif `ILIKE`, exclusion

@@ -40,7 +40,7 @@ export interface OrderNoShowSnapshot {
 /**
  * **La commande que le client n'est pas venu retirer** — la part de la commande
  * que les gestes « Le client n'est pas venu » et « Prévenir le client » écrivent
- * (`plan-commande-particulier-reglee-en-boutique.md`, § 5 bis).
+ * (`commande-particulier-reglee-en-boutique.md`, § 5 bis).
  *
  * Ses invariants, et c'est pour eux qu'elle existe :
  *

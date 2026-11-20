@@ -7,7 +7,7 @@ import { ensureShopTillStaysPickup } from "../shop-till-revision.js";
 /**
  * Une commande à régler à la caisse de la boutique se retire : aucune
  * révision ne la fait passer en livraison
- * (`plan-commande-particulier-reglee-en-boutique.md`, § 5).
+ * (`commande-particulier-reglee-en-boutique.md`, § 5).
  */
 describe("ensureShopTillStaysPickup", () => {
   it("refuse une livraison sur une commande à régler en boutique", () => {

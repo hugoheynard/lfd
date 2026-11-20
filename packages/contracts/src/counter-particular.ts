@@ -3,7 +3,7 @@ import { z } from "zod";
 /**
  * Contrat de fil de la **saisie particulier au comptoir** : retrouver LA
  * personne, ou créer sa fiche explicitement
- * (`documentation/commandes/passation/plan-commande-particulier-reglee-en-boutique.md`, § 3).
+ * (`documentation/commandes/passation/commande-particulier-reglee-en-boutique.md`, § 3).
  *
  * Servi sous le droit de passation de l'équipe (`b2b_place_order:write`). Un
  * vendeur y lit des particuliers qu'il ne connaît pas : l'e-mail et le

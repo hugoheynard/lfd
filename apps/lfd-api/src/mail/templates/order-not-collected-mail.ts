@@ -8,7 +8,7 @@ import type { MailBody } from "./mail-logo.js";
  * Les données du courriel **« Votre commande n'a pas été retirée »** — le
  * geste « Prévenir le client », décidé par la supervision du comptoir après
  * qu'une commande à régler en boutique a été déclarée non retirée
- * (`plan-commande-particulier-reglee-en-boutique.md`, § 5 bis). Destinataire :
+ * (`commande-particulier-reglee-en-boutique.md`, § 5 bis). Destinataire :
  * le client de la commande.
  */
 export interface OrderNotCollectedMailData {

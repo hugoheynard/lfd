@@ -12,7 +12,7 @@ import {
 /**
  * **La saisie d'une commande particulier au comptoir, sans les articles** —
  * ce que la page compose pour le devis et la passation
- * (`plan-commande-particulier-reglee-en-boutique.md`, § 5).
+ * (`commande-particulier-reglee-en-boutique.md`, § 5).
  *
  * Retrait seulement : aucun mode d'acheminement ne se choisit, aucun champ de
  * règlement n'existe — le lieu (la caisse de la boutique) est implicite à la

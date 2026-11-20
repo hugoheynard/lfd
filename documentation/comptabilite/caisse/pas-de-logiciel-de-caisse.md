@@ -107,7 +107,7 @@ D4 : une commande non réglée expire, elle ne se règle jamais au comptoir.
    poserait question.
 4. **La commande notée chez nous, encaissée sur la caisse de la boutique**
    (bâtie le 2026-11-20,
-   [`plan-commande-particulier-reglee-en-boutique.md`](../../commandes/passation/plan-commande-particulier-reglee-en-boutique.md)) :
+   [`commande-particulier-reglee-en-boutique.md`](../../commandes/passation/commande-particulier-reglee-en-boutique.md)) :
    un particulier commande au téléphone ou au comptoir, l'équipe la note dans
    notre logiciel, et il paie au retrait sur la caisse **certifiée** de la
    boutique. Notre logiciel n'enregistre jamais ce paiement. Reste-t-il hors

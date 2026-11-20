@@ -21,7 +21,7 @@ type LoadState = 'loading' | 'error' | 'ready';
 
 /**
  * **Analytics › À régler en boutique** — les commandes notées au comptoir,
- * réglées à la caisse de la boutique (`plan-commande-particulier-reglee-en-boutique.md`,
+ * réglées à la caisse de la boutique (`commande-particulier-reglee-en-boutique.md`,
  * § 4.2), sous `b2b_growth:read`.
  *
  * Un suivi À PART : le CA web ne les compte pas, et aucun total d'ici ne s'y

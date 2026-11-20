@@ -34,7 +34,7 @@ export const SHOP_TILL_MENTION = 'À régler à la caisse de la boutique, au ret
 
 /**
  * **Le panier d'une commande particulier** — le point, le jour, le créneau, la
- * note, les lignes et le devis (`plan-commande-particulier-reglee-en-boutique.md`, § 5).
+ * note, les lignes et le devis (`commande-particulier-reglee-en-boutique.md`, § 5).
  *
  * Retrait seulement, aucun champ de règlement : la mention le dit une fois.
  * Les montants sont ceux du devis, rendus par la règle de toute commande

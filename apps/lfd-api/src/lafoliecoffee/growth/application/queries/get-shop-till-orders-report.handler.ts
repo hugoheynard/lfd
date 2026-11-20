@@ -10,7 +10,7 @@ import { GetShopTillOrdersReportQuery } from "./get-shop-till-orders-report.quer
 
 /**
  * **Les commandes notées au comptoir, à régler en boutique** — le suivi à
- * part du CA web (`plan-commande-particulier-reglee-en-boutique.md`, § 4.2) :
+ * part du CA web (`commande-particulier-reglee-en-boutique.md`, § 4.2) :
  * la période est validée par le domaine AVANT toute lecture, puis les
  * commandes sont rangées par jour et par point. Des montants commandés,
  * jamais encaissés.

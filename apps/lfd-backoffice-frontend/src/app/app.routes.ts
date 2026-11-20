@@ -590,7 +590,7 @@ export const routes: Routes = [
   },
   {
     // LES COMMANDES À RÉGLER EN BOUTIQUE
-    // (`plan-commande-particulier-reglee-en-boutique.md`, § 4.2) — un suivi À
+    // (`commande-particulier-reglee-en-boutique.md`, § 4.2) — un suivi À
     // PART du CA web, sous le même droit. Déclarée avant `analytics`.
     path: 'analytics/a-regler-en-boutique',
     canActivate: [permissionGuard('b2b_growth:read')],
@@ -1034,7 +1034,7 @@ export const routes: Routes = [
       },
       {
         // « Nouvelle commande » : deux cartes, pro et particulier
-        // (`plan-commande-particulier-reglee-en-boutique.md`, § 2). Les deux
+        // (`commande-particulier-reglee-en-boutique.md`, § 2). Les deux
         // saisies sont sous les mêmes gardes, et AVANT `nouvelle-commande/:id`,
         // qui lirait sinon `pro` ou `particulier` comme un identifiant de société.
         path: 'nouvelle-commande',

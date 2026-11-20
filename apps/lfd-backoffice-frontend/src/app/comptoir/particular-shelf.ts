@@ -2,7 +2,7 @@ import type { CatalogItemView, CustomerShelfPricesView } from '@lfd/contracts';
 
 /**
  * **La liste d'un particulier au comptoir : son rayon, et rien d'autre**
- * (`plan-commande-particulier-reglee-en-boutique.md`, § 5 — ne pas mélanger
+ * (`commande-particulier-reglee-en-boutique.md`, § 5 — ne pas mélanger
  * les prix des deux clientèles).
  *
  * Le rayon public décide CE QUI se propose et À QUEL PRIX ; le catalogue de

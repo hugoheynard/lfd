@@ -36,7 +36,7 @@ const CREATE_INTENT = 'create';
 type SearchState = 'idle' | 'loading' | 'ready' | 'error';
 
 /**
- * **Trouver LA personne, ou créer sa fiche** (`plan-commande-particulier-reglee-en-boutique.md`, § 3).
+ * **Trouver LA personne, ou créer sa fiche** (`commande-particulier-reglee-en-boutique.md`, § 3).
  *
  * L'équipe CLIQUE sur la personne : aucun choix automatique, pas même à
  * résultat unique — une adresse mal entendue au téléphone rattacherait la

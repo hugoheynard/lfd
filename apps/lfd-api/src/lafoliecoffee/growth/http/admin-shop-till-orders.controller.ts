@@ -13,7 +13,7 @@ import { GetShopTillOrdersReportQuery } from "../application/queries/get-shop-ti
 /**
  * **Les commandes notées au comptoir, à régler en boutique** —
  * `GET /admin/growth/shop-till-orders?from=&to=`
- * (`plan-commande-particulier-reglee-en-boutique.md`, § 4.2).
+ * (`commande-particulier-reglee-en-boutique.md`, § 4.2).
  *
  * Sous `b2b_growth`, le droit des autres rapports de la croissance : des
  * chiffres lus pour comprendre. Aucune ressource neuve.

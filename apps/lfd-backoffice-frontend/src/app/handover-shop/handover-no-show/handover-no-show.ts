@@ -10,7 +10,7 @@ const DECLARE_INTENT = 'no-show';
 
 /**
  * **« Le client n'est pas venu », au retrait du comptoir**
- * (`plan-commande-particulier-reglee-en-boutique.md`, § 5 bis).
+ * (`commande-particulier-reglee-en-boutique.md`, § 5 bis).
  *
  * Le geste de la fiche commande (`commandes/order-no-show/`), réduit à la
  * déclaration : le rail du retrait ne connaît pas le statut de la commande,

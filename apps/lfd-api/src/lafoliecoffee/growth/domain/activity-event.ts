@@ -73,7 +73,7 @@ export const ACTIVITY_TYPES = {
   orderCancelled: "order.cancelled",
   /**
    * Le client n'est **pas venu retirer** sa commande à régler en boutique
-   * (`plan-commande-particulier-reglee-en-boutique.md`, § 5 bis). Un fait de
+   * (`commande-particulier-reglee-en-boutique.md`, § 5 bis). Un fait de
    * cycle de vie : aucun score ne le lit.
    */
   orderNoShow: "order.no_show",

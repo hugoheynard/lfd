@@ -487,7 +487,7 @@ export const ORDERS_PRODUCTION_FACTS = {
   ),
   /**
    * L'équipe du comptoir a déclaré la commande **non retirée** : le client
-   * n'est pas venu à son créneau (`plan-commande-particulier-reglee-en-boutique.md`,
+   * n'est pas venu à son créneau (`commande-particulier-reglee-en-boutique.md`,
    * § 5 bis). Réservé à une commande à régler en boutique. Le sujet est le
    * client ; `noShowBy` la fiche staff qui l'a déclarée, sous son nom du
    * moment. Aucun montant : rien n'a été encaissé.

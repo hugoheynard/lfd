@@ -424,7 +424,7 @@ export class Order {
   /**
    * Règlement **à la caisse de la boutique** : rien n'est attendu chez nous
    * (`not_required`), et le lieu dit où l'argent sera pris
-   * (`plan-commande-particulier-reglee-en-boutique.md`, § 4.1). Seulement pour
+   * (`commande-particulier-reglee-en-boutique.md`, § 4.1). Seulement pour
    * un particulier, saisi par l'équipe au comptoir, en retrait — image du CHECK
    * `orders_shop_till_shape` — et seulement tant que le règlement n'est pas
    * décidé : la base fige ensuite le lieu.

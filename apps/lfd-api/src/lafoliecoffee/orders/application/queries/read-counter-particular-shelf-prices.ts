@@ -6,7 +6,7 @@ import { shelfPriceOf } from "./read-customer-shelf-prices.js";
 
 /**
  * **Le rayon d'un particulier, pour la saisie du comptoir**
- * (`plan-commande-particulier-reglee-en-boutique.md`, § 5 : ne pas mélanger
+ * (`commande-particulier-reglee-en-boutique.md`, § 5 : ne pas mélanger
  * les prix des deux clientèles).
  *
  * La table ne recalcule rien : elle lit le MÊME rayon, sous la MÊME clé et au

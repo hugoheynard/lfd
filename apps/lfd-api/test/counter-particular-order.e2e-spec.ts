@@ -1,7 +1,7 @@
 /**
  * E2E de la **commande d'un particulier notée au comptoir**, réglée à la caisse
  * de la boutique (`/admin/counter/particular-orders`) — plan
- * `documentation/commandes/passation/plan-commande-particulier-reglee-en-boutique.md`, § 4–5.
+ * `documentation/commandes/passation/commande-particulier-reglee-en-boutique.md`, § 4–5.
  *
  * Ce qui ne se prouve qu'ici : le prix que le particulier verrait dans son
  * espace, une promotion réservée aux pros qui ne l'atteint pas, la forme

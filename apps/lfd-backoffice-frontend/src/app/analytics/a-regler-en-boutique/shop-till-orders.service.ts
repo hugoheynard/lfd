@@ -8,7 +8,7 @@ import { B2B_API_BASE } from '../../api/api-config';
 /**
  * **Les commandes notées au comptoir, à régler en boutique** —
  * `GET /admin/growth/shop-till-orders`, sous `b2b_growth:read`
- * (`plan-commande-particulier-reglee-en-boutique.md`, § 4.2). Transport pur :
+ * (`commande-particulier-reglee-en-boutique.md`, § 4.2). Transport pur :
  * les sommes sont faites par le serveur.
  */
 @Injectable({ providedIn: 'root' })

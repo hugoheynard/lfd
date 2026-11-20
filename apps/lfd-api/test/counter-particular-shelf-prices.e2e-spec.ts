@@ -1,7 +1,7 @@
 /**
  * E2E du **rayon d'un particulier au comptoir**
  * (`GET /admin/counter/particular-orders/shelf-prices`) — plan
- * `documentation/commandes/passation/plan-commande-particulier-reglee-en-boutique.md`, § 5 :
+ * `documentation/commandes/passation/commande-particulier-reglee-en-boutique.md`, § 5 :
  * ne pas mélanger les prix des deux clientèles.
  *
  * Ce que seule la vraie application prouve : la table de l'équipe est, SKU par

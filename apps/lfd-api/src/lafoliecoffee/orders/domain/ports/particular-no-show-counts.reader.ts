@@ -1,7 +1,7 @@
 /**
  * **Combien de commandes chacun de ces clients n'est pas venu retirer** — la
  * lecture nommée que les commandes publient pour la recherche des
- * particuliers au comptoir (`plan-commande-particulier-reglee-en-boutique.md`,
+ * particuliers au comptoir (`commande-particulier-reglee-en-boutique.md`,
  * § 5 bis : « 2 commandes non retirées » en choisissant la personne).
  *
  * Les commandes la DÉCLARENT et l'IMPLÉMENTENT : elles seules savent ce qu'est

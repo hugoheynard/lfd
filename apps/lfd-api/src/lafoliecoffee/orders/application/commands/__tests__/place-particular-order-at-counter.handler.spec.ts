@@ -23,7 +23,7 @@ import {
 
 /**
  * **La commande d'un particulier notée au comptoir**, réglée à la caisse de
- * la boutique (`plan-commande-particulier-reglee-en-boutique.md`, § 4–5) :
+ * la boutique (`commande-particulier-reglee-en-boutique.md`, § 4–5) :
  * la composition réelle, les ports doublés.
  */
 

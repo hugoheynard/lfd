@@ -13,7 +13,7 @@ import { hasWindowWhenPickedUp, pickupWindowIssue } from "./admin-order.js";
 /**
  * Contrat de fil de la **commande d'un particulier notée au comptoir**, à
  * régler à la caisse de la boutique
- * (`documentation/commandes/passation/plan-commande-particulier-reglee-en-boutique.md`, § 4–5).
+ * (`documentation/commandes/passation/commande-particulier-reglee-en-boutique.md`, § 4–5).
  *
  * Aucun champ de règlement : le lieu (la caisse de la boutique) est implicite
  * à la route, donc inexprimable autrement (§ 4.4). Ni société, ni origine de

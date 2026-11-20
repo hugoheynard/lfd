@@ -10,7 +10,7 @@ import { draftFrom, type DraftSpec } from "./priced-input.fixture.js";
 
 /**
  * **Le lieu de règlement** (plan
- * `documentation/commandes/passation/plan-commande-particulier-reglee-en-boutique.md`,
+ * `documentation/commandes/passation/commande-particulier-reglee-en-boutique.md`,
  * § 4.1) : `shop_till` ne naît que d'une passation au comptoir pour un
  * particulier. Aucune des passations existantes ne le pose — une commande
  * réglée chez nous (carte) ou au compte garde un lieu `null`, et c'est ce que

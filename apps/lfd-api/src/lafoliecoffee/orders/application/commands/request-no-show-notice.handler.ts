@@ -23,7 +23,7 @@ const NO_SHOW_NOTICE = "order.no-show-notice";
 
 /**
  * **« Prévenir le client »** — l'e-mail « commande non retirée », décidé par
- * la supervision du comptoir (`plan-commande-particulier-reglee-en-boutique.md`,
+ * la supervision du comptoir (`commande-particulier-reglee-en-boutique.md`,
  * § 5 bis).
  *
  * Une transaction : la commande verrouillée, la demande tracée par l'agrégat

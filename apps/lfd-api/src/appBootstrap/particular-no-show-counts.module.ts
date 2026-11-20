@@ -5,7 +5,7 @@ import { PrismaParticularNoShowCountsReader } from "../lafoliecoffee/orders/infr
 
 /**
  * **Le compte des commandes non retirées, relié à la recherche des
- * particuliers** (`plan-commande-particulier-reglee-en-boutique.md`, § 5 bis).
+ * particuliers** (`commande-particulier-reglee-en-boutique.md`, § 5 bis).
  *
  * Les commandes DÉCLARENT et IMPLÉMENTENT la lecture — elles seules savent ce
  * qu'est une commande non retirée —, le compte la compose. `@Global` parce que

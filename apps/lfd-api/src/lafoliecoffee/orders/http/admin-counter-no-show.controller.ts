@@ -10,7 +10,7 @@ import { RequestNoShowNoticeCommand } from "../application/commands/request-no-s
 /**
  * **La commande que le client n'est pas venu retirer** — deux gestes du
  * comptoir sur une commande à régler en boutique
- * (`plan-commande-particulier-reglee-en-boutique.md`, § 5 bis, § 7 Q5).
+ * (`commande-particulier-reglee-en-boutique.md`, § 5 bis, § 7 Q5).
  *
  * Surface du comptoir. « Le client n'est pas venu » est sous le droit de la
  * saisie (`b2b_place_order:write`), comme la commande qu'il clôt ;

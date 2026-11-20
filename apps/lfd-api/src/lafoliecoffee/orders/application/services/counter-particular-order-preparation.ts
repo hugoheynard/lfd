@@ -24,7 +24,7 @@ export interface CounterParticularOrderPreparationPorts {
  * **La commande d'un particulier notée au comptoir, composée et pas encore
  * écrite** — partagée par la passation (`PlaceParticularOrderAtCounterHandler`)
  * et son estimation, pour qu'elles ne divergent pas
- * (`plan-commande-particulier-reglee-en-boutique.md`, § 5).
+ * (`commande-particulier-reglee-en-boutique.md`, § 5).
  *
  * Le particulier commande **comme dans son espace** : la composition est
  * {@link OrderDrafting}, celle de toutes les passations, sans société — la

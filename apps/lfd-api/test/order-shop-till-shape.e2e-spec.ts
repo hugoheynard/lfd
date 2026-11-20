@@ -20,7 +20,7 @@ import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 /**
  * E2E — **ce que la base tient d'une commande réglée à la caisse de la
- * boutique** (plan `documentation/commandes/passation/plan-commande-particulier-reglee-en-boutique.md`,
+ * boutique** (plan `documentation/commandes/passation/commande-particulier-reglee-en-boutique.md`,
  * § 4.3 ; migrations `20261120130000_le_lieu_de_reglement` et
  * `20261120130100_la_forme_du_reglement_en_boutique`).
  *

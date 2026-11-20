@@ -25,7 +25,7 @@ import {
 
 /**
  * **La commande d'un particulier notée au comptoir, réglée à la caisse de la
- * boutique** (`plan-commande-particulier-reglee-en-boutique.md`, § 4–5).
+ * boutique** (`commande-particulier-reglee-en-boutique.md`, § 4–5).
  *
  * La composition est celle du particulier dans son espace
  * ({@link prepareCounterParticularOrder}, partagée avec l'estimation) ; le

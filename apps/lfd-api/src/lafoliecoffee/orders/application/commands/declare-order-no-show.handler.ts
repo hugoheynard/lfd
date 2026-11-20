@@ -15,7 +15,7 @@ import { DeclareOrderNoShowCommand } from "./declare-order-no-show.command.js";
 export const DECLARE_NO_SHOW_GESTURE = "orders.declare-no-show";
 
 /**
- * **« Le client n'est pas venu »** (`plan-commande-particulier-reglee-en-boutique.md`,
+ * **« Le client n'est pas venu »** (`commande-particulier-reglee-en-boutique.md`,
  * § 5 bis).
  *
  * Une transaction : la commande verrouillée — le verrou que le retrait prend

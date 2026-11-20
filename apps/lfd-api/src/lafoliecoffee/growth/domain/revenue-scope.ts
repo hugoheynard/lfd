@@ -33,7 +33,7 @@ export const REVENUE_PAYMENT_STATUSES = ["not_required", "paid"] as const;
 
 /**
  * **Le CA web ne compte que ce qui se règle chez nous** (Hugo, 2026-11-20 ;
- * `plan-commande-particulier-reglee-en-boutique.md`, § 4.2) : une commande
+ * `commande-particulier-reglee-en-boutique.md`, § 4.2) : une commande
  * dont le lieu de règlement est ailleurs (`settlement_venue` non nul — à ce
  * jour la caisse de la boutique, `shop_till`) en est exclue. Elle est suivie
  * à part, comme un montant **commandé**, jamais encaissé.

@@ -3,7 +3,7 @@ import type { CounterParticularOrderPayload } from "@lfd/contracts";
 /**
  * L'équipe du comptoir **note la commande d'un particulier**, à régler à la
  * caisse de la boutique
- * (`documentation/commandes/passation/plan-commande-particulier-reglee-en-boutique.md`, § 4–5).
+ * (`documentation/commandes/passation/commande-particulier-reglee-en-boutique.md`, § 4–5).
  *
  * Deux identités : `staffUserId`, celui qui saisit (posé par la porte staff),
  * et `payload.buyerUserId`, la fiche choisie à la recherche — vérifiée par le

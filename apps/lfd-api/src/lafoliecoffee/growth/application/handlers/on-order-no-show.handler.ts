@@ -20,7 +20,7 @@ export const RECORD_ORDER_NO_SHOW = "b2b.growth.record-order-no-show";
 
 /**
  * Abonné du journal : `order.no_show` → **le témoin immuable d'une commande
- * que le client n'est pas venu retirer** (`plan-commande-particulier-reglee-en-boutique.md`,
+ * que le client n'est pas venu retirer** (`commande-particulier-reglee-en-boutique.md`,
  * § 5 bis). Le sujet est le client ; la charge dit qui l'a déclarée (la fiche,
  * sous son nom du moment), et quand. Visible dans l'historique du détail staff,
  * qui lit le journal par `orderId`.

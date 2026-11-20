@@ -21,7 +21,7 @@ const PARTICULAR_ORDERS = `${B2B_API_BASE}/admin/counter/particular-orders`;
 
 /**
  * **La commande d'un particulier notée au comptoir**, à régler à la caisse
- * de la boutique (`plan-commande-particulier-reglee-en-boutique.md`, § 3,
+ * de la boutique (`commande-particulier-reglee-en-boutique.md`, § 3,
  * § 5, § 5 bis) — transport pur, sous la surface du comptoir.
  *
  * Deux routes à elle, distinctes de la saisie pro : la recherche et la

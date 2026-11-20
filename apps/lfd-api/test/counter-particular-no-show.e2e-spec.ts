@@ -1,7 +1,7 @@
 /**
  * E2E de la **commande non retirée** d'un particulier, à régler à la caisse de
  * la boutique — plan
- * `documentation/commandes/passation/plan-commande-particulier-reglee-en-boutique.md`,
+ * `documentation/commandes/passation/commande-particulier-reglee-en-boutique.md`,
  * § 5 bis et § 7 Q5. Mailer et horloge doublés.
  *
  * Ce qui ne se prouve qu'ici : le refus avant la fin du créneau et l'accord

@@ -36,7 +36,7 @@ const DECLARE_INTENT = 'no-show';
 const NOTICE_INTENT = 'no-show-notice';
 
 /**
- * **Le client n'est pas venu** (`plan-commande-particulier-reglee-en-boutique.md`, § 5 bis)
+ * **Le client n'est pas venu** (`commande-particulier-reglee-en-boutique.md`, § 5 bis)
  * — sur la fiche d'une commande à régler en boutique, et sur elle seule.
  *
  * Deux gestes, deux droits : déclarer la commande non retirée relève de la

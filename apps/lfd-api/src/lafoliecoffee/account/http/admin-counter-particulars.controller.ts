@@ -19,7 +19,7 @@ import { SearchCounterParticularsQuery } from "../application/queries/search-cou
 /**
  * Surface de la **saisie particulier au comptoir** : retrouver LA personne, ou
  * inscrire sa fiche explicitement
- * (`documentation/commandes/passation/plan-commande-particulier-reglee-en-boutique.md`, § 3).
+ * (`documentation/commandes/passation/commande-particulier-reglee-en-boutique.md`, § 3).
  *
  * Chaque route exige le droit de passation de l'équipe
  * (`b2b_place_order:write`), celui de la saisie pro : chercher un particulier

@@ -8,7 +8,7 @@ export const PARTICULAR_ORDER_LINK = '/comptoir/nouvelle-commande/particulier';
 
 /**
  * **Nouvelle commande** — le choix entre la saisie pro et la saisie
- * particulier (`plan-commande-particulier-reglee-en-boutique.md`, § 2).
+ * particulier (`commande-particulier-reglee-en-boutique.md`, § 2).
  *
  * Deux cartes, deux écrans, deux routes d'API : les deux saisies ne se
  * mélangent pas. Chaque carte est un contrôle unique, d'où `interactive`.

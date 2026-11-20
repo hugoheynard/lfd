@@ -7,7 +7,7 @@ import {
 /**
  * Une commande à régler à la caisse de la boutique se **retire** : la saisie
  * particulier du comptoir ne propose pas la livraison
- * (`plan-commande-particulier-reglee-en-boutique.md`, § 5).
+ * (`commande-particulier-reglee-en-boutique.md`, § 5).
  */
 export class ShopTillOrderNotPickupError extends DomainError {
   constructor() {

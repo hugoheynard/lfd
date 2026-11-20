@@ -8,7 +8,7 @@ import { PrismaOrderNoShowReader } from "./infrastructure/prisma-order-no-show.r
 import { PrismaOrderNoShowRepository } from "./infrastructure/prisma-order-no-show.repository.js";
 
 /**
- * Les providers de la **commande non retirée** (`plan-commande-particulier-reglee-en-boutique.md`,
+ * Les providers de la **commande non retirée** (`commande-particulier-reglee-en-boutique.md`,
  * § 5 bis) — « Le client n'est pas venu », « Prévenir le client », et la
  * lecture de leurs traces par la fiche. À part du module, qui dépasse déjà la
  * taille d'un fichier. Les routes vivent dans `AdminCounterNoShowController`.

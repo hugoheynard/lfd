@@ -3,7 +3,7 @@ import { z } from "zod";
 /**
  * ── Les commandes notées au comptoir, à régler en boutique ─────────────────
  *
- * `documentation/commandes/passation/plan-commande-particulier-reglee-en-boutique.md`,
+ * `documentation/commandes/passation/commande-particulier-reglee-en-boutique.md`,
  * § 4.2 : un suivi **à part** du chiffre d'affaires web, qui ne les compte
  * pas. `GET /admin/growth/shop-till-orders?from=&to=` → `ShopTillOrdersReportView`,
  * sous `b2b_growth:read`, comme les autres rapports de la croissance.

@@ -57,7 +57,7 @@ const PLACE_INTENT = 'place';
 
 /**
  * **Nouvelle commande particulier, au comptoir** — à régler à la caisse de la
- * boutique (`plan-commande-particulier-reglee-en-boutique.md`, § 2, § 3, § 5).
+ * boutique (`commande-particulier-reglee-en-boutique.md`, § 2, § 3, § 5).
  *
  * D'abord LA personne, choisie à l'écran ; ensuite le panier, au retrait
  * seulement, au prix et aux promotions de son espace — la liste montre son
