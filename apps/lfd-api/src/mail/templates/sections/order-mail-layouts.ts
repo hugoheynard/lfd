@@ -68,6 +68,8 @@ export const ORDER_MAIL_LAYOUTS: Readonly<
             "recapWeighed",
             "recapDiscount",
             "recapDiscountBase",
+            "recapFreeDelivery",
+            "recapFreeDeliveryValue",
             "recapVoucher",
             "recapVat",
             "recapVatRate",
