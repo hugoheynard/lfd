@@ -1,0 +1,52 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// CART — le panier de la boutique, son propre schéma
+// ─────────────────────────────────────────────────────────────────────────────
+//
+// Propriétaire : le bloc `src/shop-cart/`. Plan
+// `documentation/commandes/le-panier.md`. Aucune clé étrangère ne sort
+// de `cart`, aucune n'y entre : une personne et une société s'y désignent par
+// identifiant. L'unicité `NULLS NOT DISTINCT` vit dans le `migration.sql`.
+
+/// Le **panier en cours** d'un client, gardé chez nous.
+///
+/// Frère de `OrderDraft`, et la différence est tout le sujet : le brouillon
+/// appartient à une SOCIÉTÉ et se partage dans l'équipe qui la sert ; ce
+/// panier-ci appartient à la PERSONNE qui le compose, **dans un espace de
+/// travail** (depuis le 2026-09-15). `company_id` vide = le perso, comme les
+/// commandes ; sinon la société pour laquelle elle compose. Un client qui
+/// travaille pour deux sociétés a donc trois paniers, et en changer d'espace ne
+/// mélange pas ses lignes. Cf. `documentation/comptes-client/espace-de-travail.md`.
+///
+/// `user_id` et `company_id` sont des identifiants **opaques** : aucune clé
+/// étrangère ne sort du schéma `cart`. Effacer un compte ne vide donc pas ses
+/// paniers par cascade ; aucun compte n'est effacé physiquement en production,
+/// et l'effacement, le jour où il existera, videra les paniers par un abonné.
+///
+/// L'unicité `(user_id, company_id) NULLS NOT DISTINCT` n'est PAS déclarée ici :
+/// Prisma ne sait pas l'exprimer, et un `@@unique` ordinaire laisserait passer
+/// deux paniers perso (deux `NULL` sont distincts par défaut). Elle vit dans
+/// `migrations/20260915180000_panier_par_espace` sous le nom
+/// `shop_carts_user_company_unique`, et l'écriture en `ON CONFLICT` s'appuie
+/// dessus. ⚠️ Une `prisma migrate dev` ultérieure proposera de la SUPPRIMER
+/// (elle ne voit que ce fichier) : refuser la ligne.
+///
+/// `payload` en `jsonb` pour la même raison que le brouillon : un panier n'a
+/// aucun invariant à protéger en base, et une table de lignes ne rendrait ici
+/// que des jointures. La forme est tenue par `shopCartPayloadSchema`, validée à
+/// l'écriture ET à la relecture.
+///
+/// `updated_at` n'est pas de la tenue de registre : c'est lui qui rend un panier
+/// **abandonné** reconnaissable, ce qu'aucune clé de `localStorage` ne pouvait
+/// faire.
+model ShopCart {
+  id        String  @id @default(uuid())
+  userId    String  @map("user_id")
+  companyId String? @map("company_id")
+  payload   Json
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("shop_carts")
+  @@schema("cart")
+}

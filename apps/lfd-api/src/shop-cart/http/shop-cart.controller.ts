@@ -7,13 +7,13 @@ import {
 import { Body, Controller, Get, Put } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
-import { ActingCompany } from "../../../platform/auth/acting-company.decorator.js";
-import { CurrentUser } from "../../../platform/auth/current-user.decorator.js";
-import type { Principal } from "../../../platform/auth/principal.js";
-import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
+import { ActingCompany } from "../../platform/auth/acting-company.decorator.js";
+import { CurrentUser } from "../../platform/auth/current-user.decorator.js";
+import type { Principal } from "../../platform/auth/principal.js";
+import { ZodBody } from "../../platform/shared/http/zod-body.pipe.js";
 import { SaveShopCartCommand } from "../application/commands/save-shop-cart.command.js";
 import { GetShopCartQuery } from "../application/queries/get-shop-cart.query.js";
-import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
+import { Idempotent } from "../../platform/shared/http/idempotent.decorator.js";
 
 /**
  * **Le panier en cours du client**, gardé chez nous — un par espace de travail.

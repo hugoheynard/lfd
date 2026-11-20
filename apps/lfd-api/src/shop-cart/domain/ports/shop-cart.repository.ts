@@ -14,8 +14,8 @@ import type { ShopCartPayload, ShopCartView } from "@lfd/contracts";
  * panier vidé est un panier À ZÉRO LIGNE, pas un panier absent. La distinction
  * porte tout le multi-appareil — sans ligne en base, « j'ai tout retiré sur mon
  * téléphone » ne se distingue pas de « je n'ai jamais rien composé », et
- * l'ordinateur ressusciterait le panier de la veille. Le compte effacé, lui,
- * emporte la ligne par cascade.
+ * l'ordinateur ressusciterait le panier de la veille. Aucune clé étrangère ne
+ * sort du schéma `cart` : effacer un compte ne vide pas ses paniers d'office.
  *
  * **Un panier par personne ET par espace de travail** (depuis le 2026-09-15) :
  * `companyId` `null` est le perso, sinon la société pour laquelle elle compose.

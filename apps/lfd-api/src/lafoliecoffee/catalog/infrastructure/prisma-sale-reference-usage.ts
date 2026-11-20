@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
+import { ShopCartSkuUsage } from "../../../shop-cart/channels/commerce/index.js";
 import {
   SaleReferenceUsage,
   type SaleReferenceQuery,
@@ -28,7 +29,10 @@ type Lookup = (skus: readonly string[]) => Promise<ReadonlySet<string>>;
  */
 @Injectable()
 export class PrismaSaleReferenceUsage extends SaleReferenceUsage {
-  constructor(private readonly prisma: PrismaService) {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly carts: ShopCartSkuUsage,
+  ) {
     super();
   }
 
@@ -51,7 +55,7 @@ export class PrismaSaleReferenceUsage extends SaleReferenceUsage {
     return [
       ["order", (skus) => this.scalar(this.prisma.orderLine, skus)],
       ["order_draft", (skus) => this.inPayloads(this.prisma.orderDraft, skus)],
-      ["shop_cart", (skus) => this.inPayloads(this.prisma.shopCart, skus)],
+      ["shop_cart", (skus) => this.carts.skusInCarts(skus)],
       ["subscription", (skus) => this.scalar(this.prisma.subscriptionLine, skus)],
       ["resupply", (skus) => this.resupplies(skus)],
       ["bundle", (skus) => this.scalar(this.prisma.bundleChoice, skus)],

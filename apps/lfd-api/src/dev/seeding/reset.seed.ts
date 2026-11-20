@@ -231,6 +231,11 @@ async function wipe(prisma: PrismaClient, companyIds: string[], userIds: string[
   await prisma.membership.deleteMany({
     where: { OR: [{ companyId: { in: companyIds } }, { userId: { in: userIds } }] },
   });
+  // Le panier n'a pas de clé étrangère (schéma `cart`) : sans cette ligne, les
+  // paniers des comptes semés survivraient à leur propriétaire.
+  await prisma.shopCart.deleteMany({
+    where: { OR: [{ companyId: { in: companyIds } }, { userId: { in: userIds } }] },
+  });
   await prisma.company.deleteMany({ where: { id: { in: companyIds } } });
   await prisma.user.deleteMany({ where: { id: { in: userIds } } });
 }

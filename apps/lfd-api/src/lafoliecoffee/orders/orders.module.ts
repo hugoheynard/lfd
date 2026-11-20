@@ -147,7 +147,6 @@ import { PrismaOrderCardStandingReader } from "./infrastructure/prisma-order-car
 import { DiscardOrderDraftHandler } from "./application/commands/discard-order-draft.handler.js";
 import { PlaceOrderForCustomerHandler } from "./application/commands/place-order-for-customer.handler.js";
 import { SaveOrderDraftHandler } from "./application/commands/save-order-draft.handler.js";
-import { SaveShopCartHandler } from "./application/commands/save-shop-cart.handler.js";
 import { PlaceOrderHandler } from "./application/commands/place-order.handler.js";
 import { QuoteOrderHandler } from "./application/queries/quote-order.handler.js";
 import { EstimateOrderForCustomerHandler } from "./application/queries/estimate-order-for-customer.handler.js";
@@ -173,7 +172,6 @@ import { CustomerAudiences } from "./application/services/customer-audiences.ser
 import { OrderIntake } from "./application/services/order-intake.service.js";
 import { CompanyStatusReader } from "./domain/ports/company-status.reader.js";
 import { PreferredPickupReader } from "./domain/ports/preferred-pickup.reader.js";
-import { ShopCartController } from "./http/shop-cart.controller.js";
 import { ShopQuoteController } from "./http/shop-quote.controller.js";
 import { OrderOperations } from "./application/services/order-operations.service.js";
 import { OrderDrafting } from "./application/services/order-drafting.service.js";
@@ -190,7 +188,6 @@ import { GetOrderHandoverProofImageHandler } from "./application/queries/get-ord
 import { GetOrderHandoverProofHandler } from "./application/queries/get-order-handover-proof.handler.js";
 import { GetOrderDraftHandler } from "./application/queries/get-order-draft.handler.js";
 import { ListOrderDraftSummariesHandler } from "./application/queries/list-order-draft-summaries.handler.js";
-import { GetShopCartHandler } from "./application/queries/get-shop-cart.handler.js";
 import { ListCatalogHandler } from "./application/queries/list-catalog.handler.js";
 import { ListCustomerSkusHandler } from "./application/queries/list-customer-skus.handler.js";
 import { GetPackingHandler } from "./application/queries/get-packing.handler.js";
@@ -262,7 +259,6 @@ import { GetAdminOrderHistoryHandler } from "./application/queries/get-admin-ord
 import { PrismaAdminOrderListReader } from "./infrastructure/prisma-admin-order-list.reader.js";
 import { PrismaAdminOrderAuthorReader } from "./infrastructure/prisma-admin-order-author.reader.js";
 import { OrderDraftRepository } from "./domain/ports/order-draft.repository.js";
-import { ShopCartRepository } from "./domain/ports/shop-cart.repository.js";
 import { OrderIdempotencyStore } from "./domain/ports/order-idempotency.store.js";
 import { OrderRepository } from "./domain/ports/order.repository.js";
 import { PrismaCustomerSkuReader } from "./infrastructure/prisma-customer-sku.reader.js";
@@ -282,7 +278,6 @@ import { PrismaOrderGuardReader } from "./infrastructure/prisma-order-guard.read
 import { PrismaPreferredPickupReader } from "./infrastructure/prisma-preferred-pickup.reader.js";
 import { PrismaOrderPayerReader } from "./infrastructure/prisma-order-payer.reader.js";
 import { PrismaOrderDraftRepository } from "./infrastructure/prisma-order-draft.repository.js";
-import { PrismaShopCartRepository } from "./infrastructure/prisma-shop-cart.repository.js";
 import { PrismaOrderReader } from "./infrastructure/prisma-order.reader.js";
 import { PrismaOrderIdempotencyStore } from "./infrastructure/prisma-order-idempotency.store.js";
 import { PrismaShopOrderIdempotencyStore } from "./infrastructure/prisma-shop-order-idempotency.store.js";
@@ -432,7 +427,6 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     ShopQuoteController,
     // Murée, elle : un panier a un propriétaire. Rangée près de la vitrine
     // parce qu'elle sert le même écran, pas parce qu'elle a le même public.
-    ShopCartController,
     // Porte machine-à-machine (jeton du Cron Trigger), pas une surface staff :
     // le rappel horaire des liens de paiement non réglés (plan d'abandon, Q6).
     SettlementRemindersController,
@@ -713,8 +707,6 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     ListOrderDraftSummariesHandler,
     SaveOrderDraftHandler,
     DiscardOrderDraftHandler,
-    GetShopCartHandler,
-    SaveShopCartHandler,
     { provide: OrderGuardReader, useClass: PrismaOrderGuardReader },
     // Le mur des gestes sur une commande EXISTANTE, héritage du principal
     // compris (lot C1 de `plan-commandes-des-sites.md`) ; distinct de
@@ -752,7 +744,6 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     { provide: GuestBuyerRegistrar, useClass: PrismaGuestBuyerRegistrar },
     { provide: GuestOrderNoticeReader, useClass: PrismaGuestOrderNoticeReader },
     { provide: OrderDraftRepository, useClass: PrismaOrderDraftRepository },
-    { provide: ShopCartRepository, useClass: PrismaShopCartRepository },
     { provide: OrderReader, useClass: PrismaOrderReader },
     { provide: AdminOrderListReader, useClass: PrismaAdminOrderListReader },
     { provide: AdminOrderAuthorReader, useClass: PrismaAdminOrderAuthorReader },

@@ -1,10 +1,10 @@
 import { shopCartPayloadSchema, type ShopCartPayload, type ShopCartView } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
-import type { Prisma } from "../../../platform/database/client/client.js";
-import { PrismaService } from "../../../platform/database/prisma.service.js";
-import { IdGenerator } from "../../../platform/id/id-generator.js";
-import { Clock } from "../../../platform/time/clock.js";
+import type { Prisma } from "../../platform/database/client/client.js";
+import { PrismaService } from "../../platform/database/prisma.service.js";
+import { IdGenerator } from "../../platform/id/id-generator.js";
+import { Clock } from "../../platform/time/clock.js";
 import { ShopCartRepository } from "../domain/ports/shop-cart.repository.js";
 
 /** Une ligne de `shop_carts` telle qu'on la relit. */
@@ -68,7 +68,7 @@ export class PrismaShopCartRepository extends ShopCartRepository {
   ): Promise<ShopCartView> {
     const now = this.clock.now();
     const [row] = await this.prisma.$queryRaw<WrittenRow[]>`
-      INSERT INTO "public"."shop_carts"
+      INSERT INTO "cart"."shop_carts"
         ("id", "user_id", "company_id", "payload", "created_at", "updated_at")
       VALUES
         (${this.ids.next()}, ${userId}, ${companyId}, ${JSON.stringify(payload)}::jsonb, ${now}, ${now})

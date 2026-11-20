@@ -68,6 +68,7 @@ import { IssuedMandatesModule } from "./issued-mandates.module.js";
 import { ProductionFeedModule } from "./production-feed.module.js";
 import { PackingModule } from "../packing/packing.module.js";
 import { MailModule } from "../mail/mail.module.js";
+import { ShopCartModule } from "../shop-cart/shop-cart.module.js";
 import { AccountFeatureLevelsModule } from "./account-feature-levels.module.js";
 import { ParticularNoShowCountsModule } from "./particular-no-show-counts.module.js";
 import { PackingFeedModule } from "./packing-feed.module.js";
@@ -274,6 +275,7 @@ import { DevImpersonation } from "../platform/auth/dev-impersonation.js";
     // Le bloc des e-mails : sa porte et le suivi des demandes
     // (plan `mail/plan-service-e-mails.md`, S1).
     MailModule,
+    ShopCartModule,
     // La livraison : la flotte et le départ des tournées (lot 2 du plan de
     // tournée). Le fil relie les points de retrait du commerce à son port.
     DeliveryModule,

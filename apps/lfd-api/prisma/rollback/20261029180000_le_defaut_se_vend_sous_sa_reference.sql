@@ -269,7 +269,7 @@ INSERT INTO switch_json_columns (tbl, col) VALUES
   ('public.order_shortfall_decision', 'departing'),
   ('public.order_revision', 'composition'),
   ('public.order_drafts', 'payload'),
-  ('public.shop_carts', 'payload'),
+  ('cart.shop_carts', 'payload'),
   ('public.subscription_occurrences', 'lines'),
   ('public.bakehouse_resupply_drafts', 'lines'),
   ('public.account_alerts', 'findings'),

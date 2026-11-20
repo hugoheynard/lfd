@@ -170,6 +170,8 @@ const NON_PUBLIC_SCHEMA_OF_MODEL: Readonly<Record<string, string>> = {
   // carnet, sortis de `public` (`order_refund_request`, `order_refund`).
   CardRefundRequest: "card_payment",
   CardRefund: "card_payment",
+  // Le panier de la boutique, sorti de `public` dans son bloc `src/shop-cart/`.
+  ShopCart: "cart",
   // Le référentiel, depuis B4. Il avait sa propre BASE : ses opérations
   // n'apparaissaient donc nulle part dans ce compteur, et le forfait qu'elles
   // consommaient se lisait sur une autre facture. Elles comptent ici désormais,
