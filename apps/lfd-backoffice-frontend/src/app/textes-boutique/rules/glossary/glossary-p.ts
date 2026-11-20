@@ -21,6 +21,8 @@ export const GLOSSARY_P: Readonly<Record<string, string>> = {
   payOnAccount: 'Ajouter au compte',
   payRefused: 'Paiement refusé',
   payRefusedNote: 'Paiement refusé — note',
+  payShopTill: 'Règlement — en boutique',
+  payShopTillNote: 'Règlement — en boutique, note',
   payment: 'Paiement',
   paymentNote: 'Paiement — note',
   pdfPending: 'PDF en préparation',

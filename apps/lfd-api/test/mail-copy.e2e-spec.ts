@@ -15,11 +15,12 @@ const scene = mailCopyScene();
 const { staff, draft, sendPasswordReset } = scene;
 
 describe("l'écran des textes des e-mails", () => {
-  it("liste les 36 e-mails, leurs textes, défaut et brouillon par langue", async () => {
+  it("liste les 37 e-mails, leurs textes, défaut et brouillon par langue", async () => {
     await draft("subject", "Merci pour {ref}");
     const view = jsonBody<MailCopyAdminView>(await staff().get(ADMIN).expect(200));
 
-    expect(view.mails).toHaveLength(36);
+    expect(view.mails).toHaveLength(37);
+    expect(view.mails.map((mail) => mail.mail)).toContain("customer.order-not-collected");
     const placed = view.mails.find((mail) => mail.mail === ORDER_PLACED);
     expect(placed).toMatchObject({
       audience: "customer",

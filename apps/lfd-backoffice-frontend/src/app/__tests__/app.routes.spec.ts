@@ -355,6 +355,10 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   // La MÊME saisie que `comptes-clients/:id/nouvelle-commande`, montée sous le
   // comptoir pour que la navigation n'en sorte pas.
   'comptoir/nouvelle-commande/:id': ['b2b_counter:read', 'b2b_place_order:write'],
+  // Le choix « pro ou particulier » ouvre l'une des deux saisies, sous les
+  // mêmes deux droits (commande-particulier-reglee-en-boutique.md).
+  'comptoir/nouvelle-commande/pro': ['b2b_counter:read', 'b2b_place_order:write'],
+  'comptoir/nouvelle-commande/particulier': ['b2b_counter:read', 'b2b_place_order:write'],
   // LA LIVRAISON est un ESPACE dont la coquille n'est PAS gardée : ses vues
   // relèvent de deux droits distincts, et un garde commun fermerait l'une à qui
   // ne tient que l'autre (plan-preparation-de-tournee.md, lot 2). La coquille ne
@@ -432,6 +436,9 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   'analytics/audiences': 'b2b_growth:read',
   // Les rapports du sur mesure (plan-sur-mesure-partout.md, lot R, 2026-10-30).
   'analytics/sur-mesure': 'b2b_growth:read',
+  // Les commandes à régler en boutique, à part du CA web, sous le même droit
+  // (commande-particulier-reglee-en-boutique.md, § 4.2).
+  'analytics/a-regler-en-boutique': 'b2b_growth:read',
   'commercial/calendrier': 'b2b_growth:read',
   // LES DEMANDES CLIENTS, venues de `/b2b/demandes` le 2026-10-17 (Hugo) : le
   // droit du contact (demandes-clients.md, §6.8). Le mur `b2b_settings` de
