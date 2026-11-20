@@ -7,6 +7,10 @@ import { matchesCompanySearch } from '../../comptes-clients/company-search';
 export interface CompanyChoices {
   readonly options: readonly FoldSelectOption<string>[];
   readonly filter: (option: FoldSelectOption<string>, term: string) => boolean;
+  /** Le nom d'une société de la liste, ou `null` si elle n'y est pas. */
+  readonly labelOf: (companyId: string) => string | null;
+  /** Les sites d'une société (ses sous-comptes), nommés et triés. */
+  readonly sitesOf: (companyId: string) => readonly string[];
 }
 
 /**
@@ -20,8 +24,14 @@ export function companyChoicesOf(companies: readonly AdminCompany[]): CompanyCho
   const options = companies
     .map((company) => ({ value: company.id, label: companyLabelOf(company) }))
     .sort((a, b) => a.label.localeCompare(b.label, 'fr'));
+  const labels = new Map(options.map((option) => [option.value, option.label]));
   return {
     options,
+    labelOf: (companyId) => labels.get(companyId) ?? null,
+    sitesOf: (companyId) =>
+      options
+        .filter((option) => byId.get(option.value)?.parent?.id === companyId)
+        .map((option) => option.label),
     filter: (option, term) => {
       const company = byId.get(option.value);
       return company !== undefined && matchesCompanySearch(company, term);

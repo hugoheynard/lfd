@@ -7,6 +7,43 @@ import type { AdminCompany } from '../../comptes-clients/admin-company';
 import { AdminCompaniesService } from '../../comptes-clients/admin-companies.service';
 import { PromotionAudienceTree } from './promotion-audience-tree';
 
+function company(overrides: Partial<AdminCompany> = {}): AdminCompany {
+  return {
+    id: 'c1',
+    reference: 'C-000123',
+    raisonSociale: 'Boulangerie Périn',
+    enseigne: 'Le Fournil du Coin',
+    formeJuridique: 'SARL',
+    siret: '81234567800019',
+    siren: '',
+    vatNumber: '',
+    status: 'active',
+    grantedTerms: [],
+    requestedTerm: null,
+    directDebitBlocked: false,
+    primaryContact: {
+      id: null,
+      // L'API renvoie le rôle du contact ; la fixture le portait pas.
+      role: null,
+      firstName: 'Claire',
+      lastName: 'Martin',
+      fonction: '',
+      email: 'claire@fournil.fr',
+      phone: '',
+    },
+    owner: { firstName: 'Julien', lastName: 'Deschamps', email: 'julien@fournil.fr' },
+    kbis: null,
+    hasOpenSupportRequest: false,
+    parent: null,
+    createdAt: '2026-08-01T09:00:00.000Z',
+    declaredVia: null,
+    piecesReached: [],
+    activatedAt: null,
+    warnings: [],
+    ...overrides,
+  };
+}
+
 /** La liste des comptes clients, servie ou refusée selon le test. */
 class FakeCompanies {
   answer: () => Promise<readonly AdminCompany[]> = () => Promise.resolve([]);
@@ -80,17 +117,47 @@ describe('PromotionAudienceTree', () => {
     expect(box('Pros').disabled).toBe(true);
   });
 
-  it('« Une société » se choisit dans la liste des comptes clients', async () => {
+  it('plusieurs sociétés : une ligne chacune, nommée, avec ses sites, et retirable', async () => {
+    companies.answer = () =>
+      Promise.resolve([
+        company({ id: 'c1' }),
+        company({ id: 'c2', enseigne: 'Chalet Blanc', reference: 'C-000456' }),
+        company({
+          id: 'c3',
+          enseigne: 'Chalet Rouge',
+          reference: 'C-000789',
+          parent: { id: 'c2', enseigne: 'Chalet Blanc' },
+        }),
+      ]);
     const { fixture, root, box } = render();
-    box('Une société').click();
+    fixture.componentInstance.audiences.set([
+      { kind: 'company', companyId: 'c1' },
+      { kind: 'company_and_sites', companyId: 'c2' },
+    ]);
     fixture.detectChanges();
     await fixture.whenStable();
     fixture.detectChanges();
+    const rows = (): HTMLElement[] => [
+      ...root.querySelectorAll<HTMLElement>('[data-audience-company]'),
+    ];
+    expect(rows().map((row) => row.textContent)).toEqual([
+      expect.stringContaining('Le Fournil du Coin · C-000123'),
+      expect.stringContaining('Chalet Blanc · C-000456'),
+    ]);
+    expect(box('Une société').checked).toBe(true);
+    expect(rows()[1]?.querySelector('input')?.checked).toBe(true);
     expect(root.querySelector('fold-combobox')).not.toBeNull();
-    expect(root.textContent).not.toContain('Identifiant de la société');
+    expect(root.querySelector('[data-audience-sites]')?.textContent).toContain(
+      'Chalet Rouge · C-000789',
+    );
+    rows()[0]?.querySelector('button')?.click();
+    fixture.detectChanges();
+    expect(fixture.componentInstance.audiences()).toEqual([
+      { kind: 'company_and_sites', companyId: 'c2' },
+    ]);
   });
 
-  it('sans la liste (droit absent), on colle l’identifiant, et on le dit', async () => {
+  it('sans la liste (droit absent), on ajoute par identifiant, et on le dit', async () => {
     companies.answer = () => Promise.reject(new Error('403'));
     const { fixture, root, box } = render();
     box('Une société').click();
@@ -100,5 +167,21 @@ describe('PromotionAudienceTree', () => {
     expect(root.querySelector('fold-combobox')).toBeNull();
     expect(root.textContent).toContain('Identifiant de la société');
     expect(root.textContent).toContain('La liste des sociétés n');
+  });
+
+  it('décocher « Une société » retire toutes les sociétés', async () => {
+    const { fixture, box } = render();
+    fixture.componentInstance.audiences.set([
+      { kind: 'pros_active', companyId: null },
+      { kind: 'company', companyId: 'c1' },
+      { kind: 'company', companyId: 'c2' },
+    ]);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    box('Une société').click();
+    fixture.detectChanges();
+    expect(fixture.componentInstance.audiences()).toEqual([
+      { kind: 'pros_active', companyId: null },
+    ]);
   });
 });

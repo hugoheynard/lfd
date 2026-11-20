@@ -4,10 +4,13 @@ import { describe, expect, it } from 'vitest';
 import {
   boxStateOf,
   minimalAudiences,
-  namedCompanyOf,
+  companiesOf,
   toggledAudiences,
   touchesBranch,
-  withCompany,
+  withCompanyAdded,
+  withCompanyRemoved,
+  withCompanySites,
+  withoutCompanies,
   type AudienceLeaf,
 } from './audience-selection';
 
@@ -77,13 +80,11 @@ describe('les cases en étages', () => {
     ]);
   });
 
-  it('une société se pose, avec ou sans ses sites, et se retire', () => {
-    const named = withCompany([t('pros_active')], { companyId: 'co_1', withSites: true });
+  it('une société se pose, prend ses sites, et se retire', () => {
+    const named = withCompanySites(withCompanyAdded([t('pros_active')], 'co_1'), 'co_1', true);
     expect(named).toEqual([t('pros_active'), t('company_and_sites', 'co_1')]);
-    expect(touchesBranch(withCompany([], { companyId: 'co_1', withSites: false }), 'pros')).toBe(
-      true,
-    );
-    expect(withCompany(named, null)).toEqual([t('pros_active')]);
+    expect(touchesBranch(withCompanyAdded([], 'co_1'), 'pros')).toBe(true);
+    expect(withCompanyRemoved(named, 'co_1')).toEqual([t('pros_active')]);
   });
 });
 
@@ -175,16 +176,21 @@ describe('les bords de l’arbre des publics', () => {
     ]);
   });
 
-  it('nommer une société sous « Tout le monde » ne la garde pas ; une seule société à la fois', () => {
-    expect(withCompany([t('everyone')], { companyId: 'co_1', withSites: false })).toEqual([
-      t('everyone'),
-    ]);
-    const first = withCompany([t('pros')], { companyId: 'co_1', withSites: false });
-    expect(withCompany(first, { companyId: 'co_2', withSites: true })).toEqual([
-      t('pros'),
+  it('nommer une société sous « Tout le monde » ne la garde pas', () => {
+    expect(withCompanyAdded([t('everyone')], 'co_1')).toEqual([t('everyone')]);
+  });
+
+  it('plusieurs sociétés, chacune avec ou sans ses sites, sans doublon', () => {
+    const two = withCompanyAdded(withCompanyAdded([t('pros_pending')], 'co_1'), 'co_2');
+    expect(withCompanyAdded(two, 'co_1')).toEqual(two);
+    expect(withCompanyAdded(two, '  ')).toEqual(two);
+    const sited = withCompanySites(two, 'co_2', true);
+    expect(companiesOf(sited)).toEqual([t('company', 'co_1'), t('company_and_sites', 'co_2')]);
+    expect(withCompanyRemoved(sited, 'co_1')).toEqual([
+      t('pros_pending'),
       t('company_and_sites', 'co_2'),
     ]);
-    expect(namedCompanyOf(first)).toEqual(t('company', 'co_1'));
-    expect(namedCompanyOf([t('pros')])).toBeNull();
+    expect(withoutCompanies(sited)).toEqual([t('pros_pending')]);
+    expect(companiesOf([t('pros')])).toEqual([]);
   });
 });

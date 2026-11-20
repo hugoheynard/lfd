@@ -72,4 +72,16 @@ describe('companyChoicesOf', () => {
     const { filter } = companyChoicesOf([fournil]);
     expect(filter({ value: 'ailleurs', label: 'Ailleurs' }, 'a')).toBe(false);
   });
+
+  it('les sites d’une société sont ses sous-comptes, nommés et triés', () => {
+    const chalet = company({
+      id: 'c3',
+      enseigne: 'Chalet Blanc',
+      reference: 'C-000789',
+      parent: { id: 'c2', enseigne: '' },
+    });
+    const { sitesOf } = companyChoicesOf([fournil, alpes, chalet]);
+    expect(sitesOf('c2')).toEqual(['Chalet Blanc · C-000789']);
+    expect(sitesOf('c1')).toEqual([]);
+  });
 });

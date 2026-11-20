@@ -135,32 +135,58 @@ export function toggledAudiences(
   return minimalAudiences(leaves, audiences.filter(isCompany));
 }
 
-/** La société nommée du public, s'il y en a une : l'éditeur en propose une. */
-export function namedCompanyOf(
+/** Les sociétés nommées du public, dans l'ordre où elles ont été posées. */
+export function companiesOf(
   audiences: readonly PromotionAudienceTargetView[],
-): PromotionAudienceTargetView | null {
-  return audiences.find(isCompany) ?? null;
+): PromotionAudienceTargetView[] {
+  return audiences.filter(isCompany);
 }
 
 /**
- * Nommer (ou retirer) LA société du public : `null` la retire ; sinon son
- * identifiant tel que saisi, et « ± ses sites ».
+ * Ajouter une société au public, sans ses sites. Déjà là : rien ne change.
+ * Sous « Tout le monde », une société n'ajoute rien : elle n'est pas gardée.
  */
-export function withCompany(
+export function withCompanyAdded(
   audiences: readonly PromotionAudienceTargetView[],
-  company: { readonly companyId: string; readonly withSites: boolean } | null,
+  companyId: string,
 ): PromotionAudienceTargetView[] {
-  const kept = audiences.filter((target) => !isCompany(target));
-  if (company === null || leavesOf('everyone').every((leaf) => coveredLeaves(kept).has(leaf))) {
-    return kept;
+  const covered = coveredLeaves(audiences);
+  if (
+    companyId.trim() === '' ||
+    ALL_LEAVES.every((leaf) => covered.has(leaf)) ||
+    audiences.some((target) => isCompany(target) && target.companyId === companyId)
+  ) {
+    return [...audiences];
   }
-  return [
-    ...kept,
-    {
-      kind: company.withSites ? 'company_and_sites' : 'company',
-      companyId: company.companyId,
-    },
-  ];
+  return [...audiences, { kind: 'company', companyId }];
+}
+
+/** Retirer une société du public. */
+export function withCompanyRemoved(
+  audiences: readonly PromotionAudienceTargetView[],
+  companyId: string,
+): PromotionAudienceTargetView[] {
+  return audiences.filter((target) => !(isCompany(target) && target.companyId === companyId));
+}
+
+/** Une société avec ou sans ses sites, à sa place dans la liste. */
+export function withCompanySites(
+  audiences: readonly PromotionAudienceTargetView[],
+  companyId: string,
+  withSites: boolean,
+): PromotionAudienceTargetView[] {
+  return audiences.map((target) =>
+    isCompany(target) && target.companyId === companyId
+      ? { kind: withSites ? 'company_and_sites' : 'company', companyId }
+      : target,
+  );
+}
+
+/** Retirer toutes les sociétés : « Une société » décochée. */
+export function withoutCompanies(
+  audiences: readonly PromotionAudienceTargetView[],
+): PromotionAudienceTargetView[] {
+  return audiences.filter((target) => !isCompany(target));
 }
 
 /** Le public touche-t-il cette branche ? Une société est sous Pros. */

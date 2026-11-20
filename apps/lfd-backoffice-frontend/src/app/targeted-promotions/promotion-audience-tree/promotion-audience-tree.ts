@@ -10,6 +10,7 @@ import {
 } from '@angular/core';
 import type { PromotionAudienceTargetView } from '@lfd/contracts';
 import {
+  FoldButtonComponent,
   FoldCalloutComponent,
   FoldCheckboxComponent,
   FoldComboboxComponent,
@@ -19,14 +20,26 @@ import {
 import { AdminCompaniesService } from '../../comptes-clients/admin-companies.service';
 import {
   boxStateOf,
-  namedCompanyOf,
+  companiesOf,
   toggledAudiences,
   touchesBranch,
-  withCompany,
+  withCompanyAdded,
+  withCompanyRemoved,
+  withCompanySites,
+  withoutCompanies,
   type AudienceBox,
   type BoxState,
 } from './audience-selection';
 import { companyChoicesOf, type CompanyChoices } from './company-choices';
+
+/** Une société du public, telle que l'arbre la montre. */
+interface CompanyRow {
+  readonly companyId: string;
+  readonly label: string;
+  readonly withSites: boolean;
+  /** Ses sites aujourd'hui ; `null` quand la liste des sociétés n'est pas lue. */
+  readonly sites: readonly string[] | null;
+}
 
 /** Une case, et son libellé. */
 interface Box {
@@ -52,14 +65,20 @@ const PROS: readonly Box[] = [
  * (`audience-selection.ts`). Sous chaque branche touchée, l'appelant projette
  * ses libellés (`[individualsLabels]`, `[prosLabels]`).
  *
- * « Une société » se choisit dans la liste des comptes clients, lue au premier
- * cochage. Cette liste demande le droit des comptes clients, que l'écran des
+ * « Une société » ouvre une liste de sociétés : chacune avec ou sans ses
+ * sites, ajoutées depuis la liste des comptes clients, lue au premier cochage. Cette liste demande le droit des comptes clients, que l'écran des
  * promotions ne demande pas : sans elle, on colle l'identifiant de la fiche.
  */
 @Component({
   selector: 'app-promotion-audience-tree',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldCalloutComponent, FoldCheckboxComponent, FoldComboboxComponent, FoldInputComponent],
+  imports: [
+    FoldButtonComponent,
+    FoldCalloutComponent,
+    FoldCheckboxComponent,
+    FoldComboboxComponent,
+    FoldInputComponent,
+  ],
   templateUrl: './promotion-audience-tree.html',
   styleUrl: './promotion-audience-tree.scss',
 })
@@ -73,10 +92,31 @@ export class PromotionAudienceTree {
   protected readonly companyChoices = signal<CompanyChoices | null>(null);
   protected readonly companiesFailed = signal(false);
   private companiesAsked = false;
+  /** « Une société » cochée avant qu'une société soit choisie. */
+  private readonly companyOpen = signal(false);
+  /** L'identifiant tapé, quand la liste n'a pas pu être lue. */
+  protected readonly pendingId = signal('');
 
   protected readonly individuals = INDIVIDUALS;
   protected readonly pros = PROS;
-  protected readonly company = computed(() => namedCompanyOf(this.audiences()));
+  private readonly named = computed(() => companiesOf(this.audiences()));
+  protected readonly companyChecked = computed(() => this.companyOpen() || this.named().length > 0);
+  protected readonly companyRows = computed<readonly CompanyRow[]>(() =>
+    this.named().map((target) => {
+      const companyId = target.companyId ?? '';
+      return {
+        companyId,
+        label: this.companyChoices()?.labelOf(companyId) ?? companyId,
+        withSites: target.kind === 'company_and_sites',
+        sites: this.companyChoices()?.sitesOf(companyId) ?? null,
+      };
+    }),
+  );
+  /** Les sociétés qu'on peut encore ajouter : pas celles déjà choisies. */
+  protected readonly addableCompanies = computed(() => {
+    const taken = new Set(this.named().map((target) => target.companyId));
+    return (this.companyChoices()?.options ?? []).filter((option) => !taken.has(option.value));
+  });
   protected readonly touchesIndividuals = computed(() =>
     touchesBranch(this.audiences(), 'individuals'),
   );
@@ -89,7 +129,7 @@ export class PromotionAudienceTree {
 
   constructor() {
     effect(() => {
-      if (this.company() !== null) {
+      if (this.companyChecked()) {
         void this.loadCompanies();
       }
     });
@@ -117,18 +157,26 @@ export class PromotionAudienceTree {
   }
 
   protected toggleCompany(checked: boolean): void {
-    this.audiencesChange.emit(
-      withCompany(this.audiences(), checked ? { companyId: '', withSites: false } : null),
-    );
+    this.companyOpen.set(checked);
+    if (!checked) {
+      this.audiencesChange.emit(withoutCompanies(this.audiences()));
+    }
   }
 
-  protected setCompany(companyId: string): void {
-    const withSites = this.company()?.kind === 'company_and_sites';
-    this.audiencesChange.emit(withCompany(this.audiences(), { companyId, withSites }));
+  protected addCompany(companyId: string): void {
+    this.audiencesChange.emit(withCompanyAdded(this.audiences(), companyId.trim()));
   }
 
-  protected setSites(withSites: boolean): void {
-    const companyId = this.company()?.companyId ?? '';
-    this.audiencesChange.emit(withCompany(this.audiences(), { companyId, withSites }));
+  protected addPending(): void {
+    this.addCompany(this.pendingId());
+    this.pendingId.set('');
+  }
+
+  protected removeCompany(companyId: string): void {
+    this.audiencesChange.emit(withCompanyRemoved(this.audiences(), companyId));
+  }
+
+  protected setSites(companyId: string, withSites: boolean): void {
+    this.audiencesChange.emit(withCompanySites(this.audiences(), companyId, withSites));
   }
 }
