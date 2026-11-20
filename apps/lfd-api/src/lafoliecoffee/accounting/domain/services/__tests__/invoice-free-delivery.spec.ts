@@ -12,7 +12,7 @@ import { drawnUnicodeText } from "./pdf-objects.js";
 /**
  * La livraison offerte sur la facture (doc `frais-et-livraison-offerte.md`,
  * § 2.9) : figée sur le bon, dite sous la ligne de référence et en note BG-1
- * `AAI`, recopiée par l'avoir — sans qu'aucun montant ne bouge. Les jours ne
+ * `AAI`, jamais reprise par un avoir — sans qu'aucun montant ne bouge. Les jours ne
  * sont comparés à aucune horloge.
  */
 
@@ -78,7 +78,11 @@ describe("Invoice — la livraison offerte d'un bon", () => {
     expect(() => Invoice.issue(issueInput({ orders: broken }))).toThrow(InvalidInvoiceError);
   });
 
-  it("l'avoir recopie la mention de la facture qu'il corrige, bon par bon", () => {
+  /**
+   * Régression : l'avoir recopiait la mention de la facture corrigée, et un
+   * avoir partiel semblait annuler la livraison offerte.
+   */
+  it("l'avoir ne reprend jamais la mention, même si l'appelant la cite", () => {
     const corrected = offered();
     const note = Invoice.creditNote({
       id: "cn_1",
@@ -86,13 +90,15 @@ describe("Invoice — la livraison offerte d'un bon", () => {
       issuedOn: "2026-10-03",
       corrected,
       priorCreditNotes: [],
-      // L'appelant cite le bon sans sa mention : c'est la facture qui la donne.
-      orders: [{ orderId: "o_2", reference: "ORD-002", receivedOn: "2026-09-13" }],
+      orders: [ORDERS[1]!],
       lines: corrected.toState().lines,
       vat: corrected.toState().vat,
     });
 
-    expect(note.toState().orders).toEqual([ORDERS[1]]);
+    expect(note.toState().orders).toEqual([
+      { orderId: "o_2", reference: "ORD-002", receivedOn: "2026-09-13" },
+    ]);
+    expect(freeDeliveryTexts(note.toState().orders)).toEqual([]);
   });
 });
 

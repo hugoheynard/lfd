@@ -433,8 +433,10 @@ Une facture se rend depuis l'agrégat `Invoice` et ses tables, jamais depuis
   en HT. La même phrase part en note BG-1, sujet `AAI` (information générale),
   et sous les commandes facturées du PDF (`invoice-pdf-summary.ts`) — la règle
   « les phrases des mentions sont celles du XML » tient. Aucun montant XML neuf.
-- **Avoir** : `creditedOrdersOf` (`invoice-shape.ts`) recopie le champ de chaque
-  bon qu'il reprend.
+- **Avoir** : jamais de mention. `creditedOrdersOf` (`invoice-shape.ts`) reprend
+  les bons sans leur livraison offerte, même si l'appelant la cite : sur un avoir
+  partiel, elle ferait croire qu'on annule ou rembourse la livraison (décidé par
+  Hugo le 2026-11-20).
 - **Affichée, pas comptable** : aucun montant, aucune TVA, aucun total ne bouge ;
   `invoice-order-consistency.ts` n'est pas touché (le frais vaut déjà 0).
 - **Révision après facturation** : sans effet sur la pièce, la mention est

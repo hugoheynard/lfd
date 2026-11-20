@@ -63,25 +63,21 @@ export function assertOrders(orders: readonly InvoiceOrderReference[]): void {
 }
 
 /**
- * Les bons qu'un avoir reprend, chacun avec la livraison offerte que la
- * facture corrigée a figée pour lui : l'avoir cite ce que la pièce citait,
- * jamais ce que l'appelant aurait relu ailleurs.
+ * Les bons qu'un avoir reprend, sans la livraison offerte : un avoir rend un
+ * montant, et la mention ferait croire, sur un avoir partiel, qu'il annule ou
+ * rembourse la livraison (décidé par Hugo le 2026-11-20).
  */
 export function creditedOrdersOf(
-  corrected: InvoiceState,
   orders: readonly InvoiceOrderReference[],
 ): InvoiceOrderReference[] {
-  const frozen = new Map(corrected.orders.map((order) => [order.orderId, order.freeDelivery]));
   return orders.map((order) => {
     const { orderId, reference, receivedOn, deliveryNoteNumbers, unsettled } = order;
-    const freeDelivery = frozen.get(orderId);
     return {
       orderId,
       reference,
       receivedOn,
       ...(deliveryNoteNumbers === undefined ? {} : { deliveryNoteNumbers }),
       ...(unsettled === undefined ? {} : { unsettled }),
-      ...(freeDelivery === undefined ? {} : { freeDelivery }),
     };
   });
 }

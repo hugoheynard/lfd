@@ -197,8 +197,8 @@ export class Invoice {
         // ce qui aurait été payé.
         paymentMeans: null,
         prepayment: null,
-        // La livraison offerte de chaque bon repris, recopiée de la facture.
-        orders: creditedOrdersOf(corrected, input.orders),
+        // Les bons repris, sans la livraison offerte : un avoir ne la cite pas.
+        orders: creditedOrdersOf(input.orders),
         lines: [...input.lines],
         vat: input.vat,
         documentKey: null,
