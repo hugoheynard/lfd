@@ -1,4 +1,5 @@
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 import { describe, expect, it } from 'vitest';
 
 import { FoldPanelHostService } from 'fold-ng';
@@ -11,8 +12,11 @@ import type {
   OrderHandoverView,
 } from '@lfd/contracts';
 
+import { PermissionsStore } from '../../auth/permissions.store';
 import { CounterIncompleteHandoverService } from '../../comptoir/counter-incomplete-handover.service';
+import { CounterParticularsService } from '../../comptoir/counter-particulars.service';
 import { CounterPackingSheetService } from '../../comptoir/counter-packing-sheet.service';
+import { HandoverNoShow } from '../handover-no-show/handover-no-show';
 import { HandoverQueueService } from '../handover-queue.service';
 import { HandoverDetail } from './handover-detail';
 
@@ -210,6 +214,8 @@ interface Doubles {
   readonly packing?: FakePackingSheets;
   readonly incomplete?: FakeIncomplete;
   readonly panels?: FakePanels;
+  /** Les déclarations « le client n'est pas venu » reçues, par commande. */
+  readonly noShows?: string[];
 }
 
 async function render(
@@ -228,6 +234,16 @@ async function render(
       ...(doubles.panels === undefined
         ? []
         : [{ provide: FoldPanelHostService, useValue: doubles.panels }]),
+      {
+        provide: CounterParticularsService,
+        useValue: {
+          declareNoShow: (orderId: string) => {
+            doubles.noShows?.push(orderId);
+            return Promise.resolve();
+          },
+        },
+      },
+      { provide: PermissionsStore, useValue: { can: () => true } },
     ],
   });
   const fixture: ComponentFixture<HandoverDetail> = TestBed.createComponent(HandoverDetail);
@@ -352,6 +368,33 @@ describe('HandoverDetail', () => {
     const fixture = await render(entry());
 
     expect((fixture.nativeElement as HTMLElement).querySelector('[data-shop-till]')).toBeNull();
+    expect(buttonSaying(fixture, 'Le client n’est pas venu')).toBeNull();
+  });
+
+  it('à régler en boutique : « Le client n’est pas venu » déclare, puis la file se relit', async () => {
+    const handovers = new FakeHandovers();
+    handovers.settleAtShopTill = { totalCents: 1_840 };
+    const noShows: string[] = [];
+    const fixture = await render(entry(), { handovers, noShows });
+    let declared = 0;
+    fixture.componentInstance.noShowDeclared.subscribe(() => (declared += 1));
+
+    expect(buttonSaying(fixture, 'Le client n’est pas venu')).not.toBeNull();
+    const gesture = fixture.debugElement
+      .query(By.directive(HandoverNoShow))
+      .injector.get(HandoverNoShow);
+    await gesture['declare']();
+
+    expect(noShows).toEqual([entry().orderId]);
+    expect(declared).toBe(1);
+  });
+
+  it('une commande à régler en boutique déjà retirée n’offre plus le geste', async () => {
+    const handovers = new FakeHandovers();
+    handovers.settleAtShopTill = { totalCents: 1_840 };
+    const fixture = await render(entry({ state: 'handed_over' }), { handovers });
+
+    expect(buttonSaying(fixture, 'Le client n’est pas venu')).toBeNull();
   });
 
   it('montre ce qu’il y a dans le sac', async () => {

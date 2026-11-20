@@ -110,6 +110,11 @@
             <strong>À régler en boutique</strong> · encaisser sur la caisse de la boutique —
             {{ amount }} TTC
           </fold-callout>
+          <!-- Le serveur juge l'heure : avant la fin du créneau, il refuse et
+               l'écran affiche sa phrase. -->
+          @if (row.state !== 'handed_over') {
+            <app-handover-no-show [orderId]="row.orderId" (declared)="noShowDeclared.emit()" />
+          }
         }
         <!-- Départ incomplet décidé (2026-10-25) : ce qui ne part pas, lu
              AVANT de tendre le sac. Il informe le vendeur ; prévenir le client

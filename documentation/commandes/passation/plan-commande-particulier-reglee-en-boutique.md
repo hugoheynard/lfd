@@ -89,12 +89,9 @@ les titres de route de `app.routes.ts`.
     (`analytics/a-regler-en-boutique/`), sous `b2b_growth:read` ;
   - l'onglet « Modèles de réassort » quitte la barre du comptoir : la page
     Réassort y mène, sous `resupply_templates:read`.
-  - **Reste** : la liste des articles montre le prix d'étiquette du
-    catalogue (`/admin/catalog/sellable`) et tout le catalogue — aucune route
-    admin ne sert le rayon public d'un particulier ; le prix du particulier ne
-    se lit qu'au panier, par le devis, et un article hors du rayon public n'est
-    refusé que par lui. Ses commandes passées et habitudes ne sont pas
-    proposées (aucune lecture admin pour une fiche sans société).
+  - **Reste** : ses commandes passées et habitudes ne sont pas proposées
+    (aucune lecture admin pour une fiche sans société). La liste au rayon
+    public est bâtie en B6 (§ 6).
 
 ### 3. La personne — ne jamais mélanger deux particuliers
 
@@ -352,7 +349,7 @@ lui.
 
 | Lot | Contenu                                                                                                                                      |
 | --- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| B0  | question au cabinet dans la doc caisse ; **bloque B5** (rien ne s'ouvre à l'équipe avant la réponse)                                         |
+| B0  | question au cabinet dans la doc caisse ; **ne bloque pas l'ouverture** (Hugo, 2026-11-20 : « le cabinet c'est pour moi »)                    |
 | B1  | migrations `settlement_venue` + `CHECK` + déclencheur                                                                                        |
 | B2  | `account` : recherche des particuliers (normalisation e-mail/téléphone) et création explicite, deux ports nommés                             |
 | B3  | `PlaceParticularOrderAtCounter` (commande + handler, idempotent par intention) et son devis, même arithmétique que `PlaceShopOrderHandler`   |
@@ -360,6 +357,26 @@ lui.
 | B4b | `no_show` : migration, geste du comptoir, fait au journal, compte sur la fiche ; « Prévenir le client » (superviseur) et son modèle d'e-mail |
 | B5  | front : « Nouvelle commande », deux cartes, écran particulier                                                                                |
 | B6  | e2e : deux particuliers de même nom, aucun prix pro, retrait permis, jamais `paid`, pas de prélèvement                                       |
+
+- **bâti (B6, 2026-11-20)** — deux trous fermés :
+  - le rayon du particulier : `GET /admin/counter/particular-orders/shelf-prices`
+    (surface du comptoir, `b2b_place_order:write`) rend `CustomerShelfPricesView`
+    au public, tiré de `RecognisedShelf.read(null)` — le rayon, la clé et le
+    cache d'un particulier connecté (`/shop/catalogue/mine`), sans recalcul.
+    La saisie particulier ne montre que les articles de ce rayon, à son TTC
+    (promotion publique barrée) ; sans rayon, elle ne s'ouvre pas. Le callout
+    « le prix se lit au panier » est retiré. E2e
+    `counter-particular-shelf-prices` : parité SKU par SKU avec la boutique,
+    article réservé à une société absent, promotion des pros sans effet. Le
+    rayon de la boutique ne dépend ni du point ni du jour : la table non plus ;
+  - « Le client n'est pas venu » au rail du retrait (`handover-shop/handover-no-show/`),
+    sur une commande à régler en boutique pas encore remise ; la file se relit
+    après la déclaration. « Prévenir le client » reste sur la fiche commande.
+  - les e2e annoncés au tableau sont tenus par les lots : deux particuliers de
+    même prénom (`counter-particulars`, B2), jamais `paid` (`order-shop-till-shape`,
+    B1, refus en base), retrait permis (`counter-particular-order-readers`, B4).
+    Le prélèvement exige `company_id IS NOT NULL` (`billable-order-criterion.ts`) :
+    une commande à régler en boutique n'en a jamais (CHECK), sans e2e propre.
 
 ### 7. Questions
 
@@ -372,4 +389,4 @@ au choix, défaut le comptoir qui saisit), Q3 (hors CA web, CA parallèle), Q4
   (`COUNTER_ORDER_GUARDS` côté écran, le droit de passation de l'équipe côté
   API). Seul « Prévenir le client » demande la supervision : le droit qui la
   porte se lit dans `StaffResource` au lot B4b, avant d'en créer un.
-- **Cabinet** — la question du § 1, qui bloque l'ouverture (B0).
+- **Cabinet** — la question du § 1, que Hugo pose lui-même ; l'écran reste ouvert d'ici là (Hugo, 2026-11-20).

@@ -52,11 +52,16 @@ export class ReadCustomerShelfPricesHandler implements IQueryHandler<
       throw new StaffEntryCompanyClosedError(companyId);
     }
     const view = await this.shelf.read(companyId);
-    return { items: view.items.map(priceOf), audience: service };
+    return { items: view.items.map(shelfPriceOf), audience: service };
   }
 }
 
-function priceOf(item: ShopItemView): CustomerShelfPricesView["items"][number] {
+/**
+ * Une ligne du rayon, telle que la liste de l'équipe la pose — partagée avec
+ * le rayon du particulier au comptoir (`read-counter-particular-shelf-prices.ts`) :
+ * les deux tables tirent le même nombre du même rayon.
+ */
+export function shelfPriceOf(item: ShopItemView): CustomerShelfPricesView["items"][number] {
   return {
     sku: item.sku,
     unitPriceMillicents: item.unitPriceMillicents,

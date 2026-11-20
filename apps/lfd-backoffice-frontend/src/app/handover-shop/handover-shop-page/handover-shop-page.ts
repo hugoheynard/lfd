@@ -311,6 +311,12 @@ export class HandoverShopPage {
     void this.store.load();
   }
 
+  /** La commande est déclarée non retirée : elle quitte la file, le rail se vide. */
+  protected noShowDeclared(): void {
+    this.clearSelection();
+    void this.store.load();
+  }
+
   /** Referme le rail. Il reste à l'écran, vide — rien ne disparaît. */
   protected clearSelection(): void {
     this.selectedId.set(null);

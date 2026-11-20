@@ -2,7 +2,7 @@
 
 > **État au 2026-10-11.** Recherche faite ce jour sur les textes officiels
 > (BOFiP, impots.gouv) et quelques sources professionnelles ; **ce n'est pas un
-> avis juridique**. Un point reste à faire confirmer par le cabinet (§5). Si la
+> avis juridique**. Des points restent à faire confirmer par le cabinet (§5). Si la
 > façon d'encaisser change, ce document est faux — relisez le §4 d'abord.
 
 ## 1. En une phrase
@@ -72,14 +72,15 @@ flowchart LR
   K["Comptoir"] -.->|"remet la commande<br/>au scan du QR<br/>N'ENCAISSE RIEN"| C
 ```
 
-| Ce qui se passe                                                     | Dans la tolérance ?       | Pourquoi                                                           |
-| ------------------------------------------------------------------- | ------------------------- | ------------------------------------------------------------------ |
-| un particulier paie sa commande en ligne par carte                  | ✅                        | la carte passe par Stripe                                          |
-| un lien de paiement Stripe envoyé après coup                        | ✅                        | toujours une carte, en ligne                                       |
-| une société au compte, facturée puis prélevée                       | ✅ (hors champ)           | vente entre professionnels, facturée : l'obligation ne la vise pas |
-| le comptoir scanne le QR et remet la commande                       | ✅                        | il n'enregistre aucun règlement                                    |
-| **le comptoir encaisse** espèces, chèque, ou carte saisie chez nous | ❌ **la tolérance tombe** | « tous les paiements » n'est plus vrai                             |
-| une commande non payée « réglée autrement » hors ligne              | ❌                        | même raison                                                        |
+| Ce qui se passe                                                                                       | Dans la tolérance ?           | Pourquoi                                                                                                                               |
+| ----------------------------------------------------------------------------------------------------- | ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| un particulier paie sa commande en ligne par carte                                                    | ✅                            | la carte passe par Stripe                                                                                                              |
+| un lien de paiement Stripe envoyé après coup                                                          | ✅                            | toujours une carte, en ligne                                                                                                           |
+| une société au compte, facturée puis prélevée                                                         | ✅ (hors champ)               | vente entre professionnels, facturée : l'obligation ne la vise pas                                                                     |
+| le comptoir scanne le QR et remet la commande                                                         | ✅                            | il n'enregistre aucun règlement                                                                                                        |
+| **le comptoir encaisse** espèces, chèque, ou carte saisie chez nous                                   | ❌ **la tolérance tombe**     | « tous les paiements » n'est plus vrai                                                                                                 |
+| une commande non payée « réglée autrement » hors ligne                                                | ❌                            | même raison                                                                                                                            |
+| une commande d'un particulier **notée** au comptoir, encaissée sur la caisse certifiée de la boutique | ⚠️ à confirmer (§ 5, point 4) | notre logiciel n'enregistre jamais le paiement : ni « payé », ni montant reçu, ni moyen (`settlement_venue = shop_till`, figé en base) |
 
 🔴 **Un seul encaissement hors carte en ligne, même ponctuel, suffit.** Le
 jour où le comptoir doit encaisser, il faut **avant** une caisse conforme :
@@ -104,6 +105,15 @@ D4 : une commande non réglée expire, elle ne se règle jamais au comptoir.
 3. **Le prélèvement rejeté puis « réglé autrement »** (`prelevement/retours-bancaires.md`)
    : vérifier qu'il ne crée pas, côté pro, un encaissement hors banque qui
    poserait question.
+4. **La commande notée chez nous, encaissée sur la caisse de la boutique**
+   (bâtie le 2026-11-20,
+   [`plan-commande-particulier-reglee-en-boutique.md`](../../commandes/passation/plan-commande-particulier-reglee-en-boutique.md)) :
+   un particulier commande au téléphone ou au comptoir, l'équipe la note dans
+   notre logiciel, et il paie au retrait sur la caisse **certifiée** de la
+   boutique. Notre logiciel n'enregistre jamais ce paiement. Reste-t-il hors
+   du champ de l'article 286, et la tolérance du § 35 tient-elle pour le
+   reste du site ? Hugo pose la question lui-même ; l'écran est ouvert d'ici
+   là (décidé par Hugo le 2026-11-20).
 
 ## 6. À ne pas confondre
 

@@ -54,13 +54,6 @@
               </fold-element-title>
             </fold-card>
 
-            <!-- La liste porte le prix d'étiquette du catalogue : le prix du
-                 particulier n'est connu que par le devis. -->
-            <fold-callout variant="info" data-list-prices>
-              Les prix de la liste sont ceux du catalogue. Le prix du particulier — TTC, avec les
-              promotions de son espace — s’affiche au panier, par le devis.
-            </fold-callout>
-
             @if (placeError(); as message) {
               <fold-callout variant="alert" announce data-place-error>{{ message }}</fold-callout>
             }
@@ -73,6 +66,7 @@
                 [habits]="[]"
                 [orders]="[]"
                 [cart]="cart"
+                [shelfPrices]="shelfPrices()"
                 (kindChange)="source.set($event)"
                 (add)="onAdd($event)"
                 (addAll)="onAddAll($event)"

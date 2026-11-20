@@ -7,6 +7,7 @@ import type {
   CounterParticularCard,
   CounterParticularOrderEstimatePayload,
   CounterParticularPlacedOrderResponse,
+  CustomerShelfPricesView,
   FulfillmentWindow,
   PickupAddressView,
 } from '@lfd/contracts';
@@ -47,6 +48,7 @@ import {
   particularPickupsOf,
 } from '../particular-order-draft';
 import { ParticularPicker } from '../particular-picker/particular-picker';
+import { particularShelfOf } from '../particular-shelf';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -58,8 +60,8 @@ const PLACE_INTENT = 'place';
  * boutique (`plan-commande-particulier-reglee-en-boutique.md`, § 2, § 3, § 5).
  *
  * D'abord LA personne, choisie à l'écran ; ensuite le panier, au retrait
- * seulement, au prix et aux promotions de son espace — le serveur les
- * applique, le devis les montre. Les briques sont celles de la saisie pro :
+ * seulement, au prix et aux promotions de son espace — la liste montre son
+ * rayon public, le serveur les applique, le devis les confirme. Les briques sont celles de la saisie pro :
  * la colonne des articles, le panier, le flux du devis. Aucun champ de
  * règlement : notre système ne sait jamais que la commande est payée.
  */
@@ -95,7 +97,10 @@ export class ParticularOrderPage {
 
   protected readonly cart = new CartStore();
   protected readonly state = signal<LoadState>('loading');
+  /** La liste : le rayon du particulier seul, jamais le catalogue entier. */
   protected readonly catalogue = signal<readonly CatalogItemView[]>([]);
+  /** Ses prix : TTC et promotions publiques, tels que son espace les montre. */
+  protected readonly shelfPrices = signal<CustomerShelfPricesView | null>(null);
   protected readonly pickups = signal<readonly PickupAddressView[]>([]);
   protected readonly source = signal<SourceKind>('catalogue');
 
@@ -148,12 +153,16 @@ export class ParticularOrderPage {
   protected async load(): Promise<void> {
     this.state.set('loading');
     try {
-      const [catalogue, points] = await Promise.all([
+      // Sans son rayon, pas de liste : l'écran ne retombe jamais sur le
+      // catalogue entier et ses prix d'étiquette.
+      const [catalogue, prices, points] = await Promise.all([
         this.catalogService.list(),
+        this.api.shelfPrices(),
         this.pickupsService.list(),
       ]);
       const open = particularPickupsOf(points);
-      this.catalogue.set(catalogue);
+      this.catalogue.set(particularShelfOf(catalogue, prices));
+      this.shelfPrices.set(prices);
       this.pickups.set(open);
       const here = this.counterQueue?.activePlace()?.id ?? null;
       // Le point du comptoir qui saisit ; sinon le seul ouvert ; sinon on choisit.

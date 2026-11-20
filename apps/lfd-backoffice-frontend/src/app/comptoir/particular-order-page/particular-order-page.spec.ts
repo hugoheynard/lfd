@@ -3,7 +3,9 @@ import { provideRouter } from '@angular/router';
 import {
   NO_PICKUP_DISCOUNTS,
   type AdminOrderEstimateView,
+  type CatalogItemView,
   type CounterParticularCard,
+  type CustomerShelfPricesView,
   type PickupAddressView,
   type StaffPermission,
 } from '@lfd/contracts';
@@ -64,15 +66,43 @@ const ESTIMATE: AdminOrderEstimateView = {
   warnings: [],
 };
 
-function mount(granted: readonly StaffPermission[] = ['handover_counter:read']) {
+function catalogItem(sku: string, name: string): CatalogItemView {
+  return { sku, name, unitPriceMillicents: 100_000, vatRate: 5.5, family: null, category: null };
+}
+
+/** Le catalogue de l'équipe : un article ouvert, un article réservé aux pros. */
+const CATALOGUE = [catalogItem('OPEN', 'Croissant'), catalogItem('PRO', 'Pain réservé')];
+
+/** Le rayon public : le seul croissant, à son TTC barré par une promotion publique. */
+const SHELF: CustomerShelfPricesView = {
+  audience: 'public',
+  items: [
+    {
+      sku: 'OPEN',
+      unitPriceMillicents: 90_000,
+      struckFromMillicents: 100_000,
+      unitPriceTtcCents: 95,
+      struckFromTtcCents: 106,
+      lockedReason: null,
+    },
+  ],
+};
+
+function mount(
+  granted: readonly StaffPermission[] = ['handover_counter:read'],
+  shelfPrices: () => Promise<CustomerShelfPricesView> = () => Promise.resolve(SHELF),
+) {
   const place = vi.fn(() => Promise.resolve({ id: 'o1', orderNumber: 'CMD-1', totalCents: 528 }));
   const estimate = vi.fn(() => of(ESTIMATE));
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     providers: [
       provideRouter([]),
-      { provide: CounterParticularsService, useValue: { place, estimate, search: vi.fn() } },
-      { provide: AdminCatalogService, useValue: { list: () => Promise.resolve([]) } },
+      {
+        provide: CounterParticularsService,
+        useValue: { place, estimate, shelfPrices, search: vi.fn() },
+      },
+      { provide: AdminCatalogService, useValue: { list: () => Promise.resolve(CATALOGUE) } },
       {
         provide: PickupAddressesService,
         useValue: { list: () => Promise.resolve([point('a'), point('b'), point('pro', false)]) },
@@ -133,5 +163,27 @@ describe('ParticularOrderPage — la commande d’un particulier au comptoir', (
     const el = fixture.nativeElement as HTMLElement;
     expect(el.querySelector('[data-placed]')?.textContent).toContain('CMD-1');
     expect(el.querySelector('[data-placed-link]')?.getAttribute('href')).toBe('/commandes/o1');
+  });
+
+  it('ne propose que son rayon, à son TTC — jamais un article réservé aux pros', async () => {
+    const { fixture } = mount();
+    await settle(fixture);
+    fixture.componentInstance['choose'](JEANNE);
+    await settle(fixture);
+
+    const el = fixture.nativeElement as HTMLElement;
+    expect(fixture.componentInstance['catalogue']().map((item) => item.sku)).toEqual(['OPEN']);
+    expect(el.textContent).toContain('Croissant');
+    expect(el.textContent).not.toContain('Pain réservé');
+    expect(el.textContent).toContain('0,95');
+    expect(el.querySelector('[data-list-prices]')).toBeNull();
+  });
+
+  it('sans son rayon, n’ouvre pas la saisie : jamais le catalogue entier en repli', async () => {
+    const { fixture } = mount(['handover_counter:read'], () => Promise.reject(new Error('503')));
+    await settle(fixture);
+
+    expect(fixture.componentInstance['state']()).toBe('error');
+    expect(fixture.componentInstance['catalogue']()).toEqual([]);
   });
 });

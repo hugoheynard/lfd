@@ -5,8 +5,9 @@ import {
   type CounterParticularOrderPayload,
   counterParticularOrderPayloadSchema,
   type CounterParticularPlacedOrderResponse,
+  type CustomerShelfPricesView,
 } from "@lfd/contracts";
-import { Body, Controller, HttpCode, HttpStatus, Post } from "@nestjs/common";
+import { Body, Controller, Get, HttpCode, HttpStatus, Post } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
 import { AdminSurface, RequirePermission } from "../../../platform/auth/admin-surface.decorator.js";
@@ -19,13 +20,14 @@ import {
   type PlaceParticularOrderAtCounterResult,
 } from "../application/commands/place-particular-order-at-counter.command.js";
 import { EstimateParticularOrderAtCounterQuery } from "../application/queries/estimate-particular-order-at-counter.query.js";
+import { ReadCounterParticularShelfPricesQuery } from "../application/queries/read-counter-particular-shelf-prices.js";
 
 /**
  * Surface de la **commande d'un particulier notée au comptoir**, à régler à
  * la caisse de la boutique
  * (`documentation/commandes/passation/plan-commande-particulier-reglee-en-boutique.md`, § 4–5).
  *
- * Deux routes à elle, distinctes de la saisie pro (§ 2 : ne pas mélanger les
+ * Ses routes à elle, distinctes de la saisie pro (§ 2 : ne pas mélanger les
  * deux saisies), sous le même droit (`b2b_place_order:write`) et la surface
  * du comptoir, comme la recherche des particuliers.
  */
@@ -36,6 +38,19 @@ export class AdminCounterParticularOrdersController {
     private readonly queries: QueryBus,
     private readonly commands: CommandBus,
   ) {}
+
+  /**
+   * Le rayon d'un particulier, tel qu'il le verrait dans son espace : mêmes
+   * articles, mêmes prix TTC, mêmes promotions publiques — jamais le
+   * catalogue entier ni un prix pro (§ 5).
+   */
+  @Get("shelf-prices")
+  @RequirePermission("b2b_place_order:write")
+  shelfPrices(): Promise<CustomerShelfPricesView> {
+    return this.queries.execute<ReadCounterParticularShelfPricesQuery, CustomerShelfPricesView>(
+      new ReadCounterParticularShelfPricesQuery(),
+    );
+  }
 
   /** Ce que la commande coûterait, au centime — `POST` : le panier ne tient pas dans une URL. */
   @Post("estimate")

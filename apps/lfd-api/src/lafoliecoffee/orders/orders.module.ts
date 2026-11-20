@@ -318,6 +318,7 @@ import { GetMyOrderAdmissionHandler } from "./application/queries/get-my-order-a
 import { GetGuestOrderAdmissionHandler } from "./application/queries/get-guest-order-admission.handler.js";
 import { ReadMyShopCatalogueHandler } from "./application/queries/read-my-shop-catalogue.js";
 import { ReadCustomerShelfPricesHandler } from "./application/queries/read-customer-shelf-prices.js";
+import { ReadCounterParticularShelfPricesHandler } from "./application/queries/read-counter-particular-shelf-prices.js";
 import { GetDaySupervisionHandler } from "./application/queries/get-day-supervision.handler.js";
 import { DaySupervisionReader } from "./domain/ports/day-supervision.reader.js";
 import { PrismaDaySupervisionReader } from "./infrastructure/prisma-day-supervision.reader.js";
@@ -701,6 +702,7 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     EstimateParticularOrderAtCounterHandler,
     ReadMyShopCatalogueHandler,
     ReadCustomerShelfPricesHandler,
+    ReadCounterParticularShelfPricesHandler,
     ShopCartQuoting,
     // La surtaxe prévue au devis d'une société (plan `le-prix-d-un-panier.md`, T1).
     ForeseenLateFee,

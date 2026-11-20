@@ -54,6 +54,7 @@ import {
   readyVerdict,
 } from './bag-readiness';
 import { SaleQuantityPipe } from '../../shared/sale-quantity/sale-quantity.pipe';
+import { HandoverNoShow } from '../handover-no-show/handover-no-show';
 
 type LoadState = 'idle' | 'loading' | 'ready' | 'error';
 
@@ -104,6 +105,7 @@ const PLACED_AT = new Intl.DateTimeFormat('fr-FR', {
   selector: 'app-handover-detail',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    HandoverNoShow,
     SaleQuantityPipe,
     ShipmentChoice,
     FoldBadgeComponent,
@@ -144,6 +146,9 @@ export class HandoverDetail {
 
   /** L'équipe referme le rail. La file reste, et rien n'est sélectionné. */
   readonly cleared = output<void>();
+
+  /** Le client n'est pas venu : la commande sort de la file, qui se relit chez l'appelant. */
+  readonly noShowDeclared = output<void>();
 
   private readonly handovers = inject(HandoverQueueService);
   private readonly packingSheets = inject(CounterPackingSheetService);

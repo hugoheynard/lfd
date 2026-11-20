@@ -1,0 +1,19 @@
+@if (allowed) {
+  <div class="no-show" data-handover-no-show>
+    <fold-inline-confirm
+      message="La commande sort de la file du retrait. Aucun e-mail ne part."
+      [labels]="{ confirm: 'Confirmer', cancel: 'Garder la commande' }"
+      [loading]="saving()"
+      (confirmed)="declare()"
+    >
+      <button foldButton size="sm" emphasis="outline" intent="danger" data-no-show-declare>
+        Le client n’est pas venu
+      </button>
+    </fold-inline-confirm>
+    @if (error(); as message) {
+      <fold-callout appearance="inset" variant="alert" announce data-no-show-error>{{
+        message
+      }}</fold-callout>
+    }
+  </div>
+}

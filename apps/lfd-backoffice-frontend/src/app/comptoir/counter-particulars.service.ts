@@ -10,6 +10,7 @@ import type {
   CounterParticularOrderPayload,
   CounterParticularPlacedOrderResponse,
   CreatedIdResponse,
+  CustomerShelfPricesView,
 } from '@lfd/contracts';
 
 import { B2B_API_BASE } from '../api/api-config';
@@ -45,6 +46,13 @@ export class CounterParticularsService {
       this.http.post<CreatedIdResponse>(PARTICULARS, payload, intentOptions(intentKey)),
     );
     return created.id;
+  }
+
+  /** Le rayon d'un particulier : ses articles, au TTC et aux promotions de son espace. */
+  shelfPrices(): Promise<CustomerShelfPricesView> {
+    return firstValueFrom(
+      this.http.get<CustomerShelfPricesView>(`${PARTICULAR_ORDERS}/shelf-prices`),
+    );
   }
 
   /** Le devis : ce que la passation écrirait, au centime. Un flux, pour l'annuler en vol. */
