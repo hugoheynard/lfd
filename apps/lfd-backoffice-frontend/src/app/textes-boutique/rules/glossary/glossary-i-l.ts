@@ -140,4 +140,9 @@ export const GLOSSARY_I_L: Readonly<Record<string, string>> = {
   longitudePlaceholder: 'Longitude — exemple',
   loyalty: 'Fidélité',
   loginPage: 'Page de connexion',
+  include: 'Carte d’un site — inclus',
+  inherit: 'Carte d’un site — hérite',
+  levelFamily: 'Carte d’un site — niveau famille',
+  levelProduct: 'Carte d’un site — niveau produit',
+  levelSku: 'Carte d’un site — niveau déclinaison',
 };

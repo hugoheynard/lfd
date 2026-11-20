@@ -154,4 +154,8 @@ export const GLOSSARY_T_W: Readonly<Record<string, string>> = {
   ticketVat: 'Ticket — TVA',
   ticketTaxed: 'Ticket — TTC',
   usersHolderYou: "Détenteur du compte — quand c'est vous",
+  ticketFreeDelivery: 'Ticket — livraison offerte',
+  ticketPretaxSuffix: 'Ticket — mention HT',
+  unknownSiteTitle: 'Carte d’un site — site introuvable, titre',
+  unknownSiteBody: 'Carte d’un site — site introuvable, texte',
 };

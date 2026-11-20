@@ -182,6 +182,20 @@ export const ACCOUNT_SCENARIOS: ScenarioSet = {
     };
   },
 
+  [routeKey(`${HTTP}/admin-company-sub-account-menu.controller.ts`, "set")]: async ({ ctx }) => {
+    const group = await createCompany(ctx.prisma, { enseigne: "Club du Rejeu" });
+    const site = await createCompany(ctx.prisma, { enseigne: "Chalet du Rejeu" });
+    await ctx.prisma.company.update({
+      where: { id: site.id },
+      data: { parentCompanyId: group.id },
+    });
+    return {
+      sub: STAFF,
+      path: `/admin/companies/${site.id}/menu`,
+      body: { mode: "except", offMenu: "hidden", entries: [] },
+    };
+  },
+
   [routeKey(`${HTTP}/company-delivery-procedure.controller.ts`, "addStep")]: ({ ctx }) =>
     addStepScenario(ctx, ""),
   [routeKey(`${HTTP}/admin-company-delivery-procedure.controller.ts`, "addStep")]: ({ ctx }) =>

@@ -109,6 +109,8 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   // Le seul onglet de la fiche qui ne suit PAS le droit du parent : voir ce
   // qu'un client a négocié n'est pas voir sa fiche.
   'comptes-clients/:id/tarifs': 'b2b_pricing:read',
+  // La carte d'un site : la lire demande le catalogue qu'elle restreint.
+  'comptes-clients/:id/carte': 'lfc_catalog:read',
   // Le sur mesure a son droit à part (Hugo, 2026-10-30) : ni celui du
   // compte, ni celui du catalogue.
   'comptes-clients/:id/articles-reserves': 'lfc_made_to_order:read',
@@ -577,6 +579,8 @@ describe("l'arbre de routes du back-office", () => {
       ['commandes', '/reglages/commandes/heure-limite'],
       // Réglages › Production (2026-10-13) : l'entrée de la section.
       ['production', '/reglages/production/fournil'],
+      // Réglages › Comptoir : l'entrée de la section, le suivi du stock.
+      ['comptoir', '/reglages/comptoir/suivi-du-stock'],
       // Revenus en Réglages › Commercial le 2026-10-13 : l'entrée de la section.
       ['commercial', '/reglages/commercial/disponibilite'],
     ]);

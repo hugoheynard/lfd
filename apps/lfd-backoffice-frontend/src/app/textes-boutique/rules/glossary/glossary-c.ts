@@ -142,4 +142,13 @@ export const GLOSSARY_C: Readonly<Record<string, string>> = {
   correctionInProgress: 'Correction — en cours',
   correctionPlanned: 'Correction — prévue',
   change: 'Changer',
+  catalogueTitle: 'Carte d’un site — titre du catalogue',
+  catalogueSubtitle: 'Carte d’un site — aide du catalogue',
+  catalogueEmpty: 'Carte d’un site — catalogue vide',
+  closedAll: 'Carte d’un site — rien d’ouvert',
+  copyLabel: 'Carte d’un site — copier depuis un autre site',
+  copyPlaceholder: 'Carte d’un site — copier, exemple dans le champ',
+  copied: 'Carte d’un site — carte reprise',
+  copyEmpty: 'Carte d’un site — rien à copier',
+  copyFailed: 'Carte d’un site — copie impossible',
 };

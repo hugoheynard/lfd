@@ -182,4 +182,6 @@ export const GLOSSARY_D_H: Readonly<Record<string, string>> = {
   dateToCome: 'Date encore à fixer',
   directions: "Bouton d'itinéraire d'une maison",
   filterAll: 'Filtre — tout',
+  exclude: 'Carte d’un site — exclu',
+  familyWhole: 'Carte d’un site — toute la famille',
 };
