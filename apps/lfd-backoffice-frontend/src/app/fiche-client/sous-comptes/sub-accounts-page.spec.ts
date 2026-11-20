@@ -126,6 +126,7 @@ describe('ClientSubAccountsPage', () => {
           status: 'pending',
           followedAspects: [],
           follows: [],
+          menu: null,
         },
       ],
     });

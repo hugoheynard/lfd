@@ -144,6 +144,10 @@
   <ng-template foldCell="article" let-row>
     <span class="tf-article-name">{{ row.name }}</span>
     <span class="tf-article-meta">{{ row.sku }}</span>
+    <!-- Le prix reste réglable : la carte peut changer, le prix négocié doit survivre. -->
+    @if (row.offMenu) {
+      <fold-badge variant="warning" content="Hors carte" data-off-menu />
+    }
   </ng-template>
 
   <!-- Le tarif catalogue pro, d'où part la négociation : une colonne à

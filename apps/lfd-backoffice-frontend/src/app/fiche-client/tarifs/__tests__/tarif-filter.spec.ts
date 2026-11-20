@@ -33,7 +33,7 @@ function family(
   name: string,
   items: readonly PricingItemView[],
 ): CompanyPricingCategoryView {
-  return { id, name, family: { id, name, position: 1 }, items };
+  return { id, name, family: { id, name, position: 1 }, items, offMenuSkus: [] };
 }
 
 const SHELVES = tarifShelves(

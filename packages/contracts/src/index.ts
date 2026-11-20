@@ -2150,6 +2150,7 @@ export type {
   PosedMercurialeStatus,
   PosedMercurialeView,
   PosedMercurialeLineView,
+  PosedMercurialeLockedReason,
   CompanyMercurialeLinePayload,
   PoseCompanyMercurialePayload,
   CloseCompanyMercurialePayload,
@@ -3481,4 +3482,5 @@ export type {
   SubAccountMenuPayload,
   SubAccountMenuBody,
   SubAccountMenuView,
+  SubAccountMenuSummary,
 } from "./sub-account-menu.js";

@@ -13,6 +13,7 @@ const CHALET: SubAccountView = {
   status: 'active',
   followedAspects: ['billing'],
   follows: [{ aspect: 'billing', since: '2026-09-10T08:00:00.000Z' }],
+  menu: null,
 };
 
 async function render(

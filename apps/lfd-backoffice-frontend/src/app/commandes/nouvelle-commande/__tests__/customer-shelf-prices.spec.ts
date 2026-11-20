@@ -5,6 +5,8 @@ import { describe, expect, it } from 'vitest';
 
 import {
   loadShelfPrices,
+  LOCKED_LABEL,
+  OFF_MENU_LABEL,
   SHELF_PRICES_UNAVAILABLE,
   shelfPriceIndexOf,
   shelfPricingOf,
@@ -59,7 +61,12 @@ describe('la jointure de la table du client sur la liste', () => {
 
   it('un article réservé à un autre compte est verrouillé', () => {
     const index = shelfPriceIndexOf(table([price({ lockedReason: 'reserved_to_other_account' })]));
-    expect(shelfPricingOf(index, 'BAG')).toEqual({ kind: 'locked' });
+    expect(shelfPricingOf(index, 'BAG')).toEqual({ kind: 'locked', label: LOCKED_LABEL });
+  });
+
+  it('un article hors de la carte du site est verrouillé, sous son propre libellé', () => {
+    const index = shelfPriceIndexOf(table([price({ lockedReason: 'off_menu' })]));
+    expect(shelfPricingOf(index, 'BAG')).toEqual({ kind: 'locked', label: OFF_MENU_LABEL });
   });
 
   it('un SKU absent de la table n’est pas au rayon du client', () => {

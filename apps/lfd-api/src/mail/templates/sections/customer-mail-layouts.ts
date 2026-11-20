@@ -33,6 +33,7 @@ const GESTURES = {
   subscription_paused: "Abonnement en pause",
   subscription_resumed: "Abonnement repris",
   subscription_stopped: "Abonnement arrêté",
+  menu_changed: "Carte modifiée",
 };
 
 /** Les deux schémas SEPA d'un mandat. */

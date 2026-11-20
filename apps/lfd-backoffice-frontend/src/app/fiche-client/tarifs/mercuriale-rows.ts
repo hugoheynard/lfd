@@ -59,6 +59,9 @@ const DAY = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'short', timeZone: 'Eu
 /** La note d'une ligne sur un article réservé depuis à un autre compte. */
 export const RESERVED_ELSEWHERE_NOTE = 'Réservé à un autre compte';
 
+/** La note d'une ligne sur un article hors de la carte du sous-compte (§ 3.6). */
+export const OFF_MENU_NOTE = 'Hors carte';
+
 /** La note d'une ligne datée à part (2026-10-29 : avenants et arrêts). */
 export function lineNoteOf(line: PosedMercurialeLineView): string | null {
   const parts: string[] = [];
@@ -75,6 +78,11 @@ export function lineNoteOf(line: PosedMercurialeLineView): string | null {
   // ligne reste, le client ne peut plus le commander — l'écran le dit.
   if (line.lockedReason === 'reserved_to_other_account') {
     parts.push(RESERVED_ELSEWHERE_NOTE);
+  }
+  // Hors de la carte du site (`plan-carte-des-sites.md`, § 3.6) : le prix
+  // reste posé, le site ne peut pas le commander.
+  if (line.lockedReason === 'off_menu') {
+    parts.push(OFF_MENU_NOTE);
   }
   return parts.length === 0 ? null : parts.join(' · ');
 }

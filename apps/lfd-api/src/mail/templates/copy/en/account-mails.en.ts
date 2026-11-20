@@ -122,6 +122,7 @@ export const ACCOUNT_MAILS_EN: AccountMailsCopy = {
       subscription_paused: "Recurring basket paused at one of your sites",
       subscription_resumed: "Recurring basket resumed at one of your sites",
       subscription_stopped: "Recurring basket stopped at one of your sites",
+      menu_changed: "Menu changed at one of your sites",
     },
     action: {
       problem_reported: "reported a problem with order",
@@ -139,6 +140,7 @@ export const ACCOUNT_MAILS_EN: AccountMailsCopy = {
       subscription_paused: "paused a recurring basket",
       subscription_resumed: "resumed a recurring basket",
       subscription_stopped: "stopped a recurring basket",
+      menu_changed: "had its menu changed",
     },
     subject: "{site} — {title}",
     subjectWithReference: "{site} — {title} ({reference})",

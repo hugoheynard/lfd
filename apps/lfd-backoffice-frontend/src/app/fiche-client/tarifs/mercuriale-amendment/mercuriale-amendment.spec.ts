@@ -47,6 +47,7 @@ const CATEGORIES: readonly CompanyPricingCategoryView[] = [
     name: 'Viennoiserie',
     family: { id: 'vien', name: 'Viennoiserie', position: 0, path: ['vien'] },
     items: [item('CRO', 150_000), item('BRI', 200_000)],
+    offMenuSkus: [],
   },
 ];
 

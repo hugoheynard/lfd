@@ -26,6 +26,7 @@ import { PermissionsStore } from '../../auth/permissions.store';
 import { NotifyService } from '../../notify.service';
 import { AdminCompanyHierarchyService } from '../../comptes-clients/admin-company-hierarchy.service';
 import { FOLLOW_ASPECT_LABELS, STATUS_LABELS } from '../../comptes-clients/admin-company';
+import { SubAccountMenuIndicator } from '../sub-account-menu-indicator/sub-account-menu-indicator';
 
 /** Les colonnes de suivi, dans l'ordre où on règle un site : qui paie, à quel prix, qui joindre. */
 const ASPECTS: readonly CompanyFollowAspect[] = ['billing', 'pricing', 'contacts'];
@@ -113,6 +114,7 @@ interface PendingFollow {
     FoldDataTableRowNoteDirective,
     FoldInlineConfirmComponent,
     FoldStatusBadgeComponent,
+    SubAccountMenuIndicator,
   ],
   templateUrl: './follow-grid.html',
   styleUrl: './follow-grid.scss',

@@ -219,6 +219,9 @@
     },
     "subscription_stopped": {
       "textSha256": "e427878bf996adb53fff7a3aa4648b99a6c42e794df68ae9ebc6896a097dba84"
+    },
+    "menu_changed": {
+      "textSha256": "13d115ba666a63235df051adf3ef58909167e56cbe158f8148bf5032d861066a"
     }
   },
   "customer.access-opened": {

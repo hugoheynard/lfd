@@ -6,7 +6,7 @@
  */
 import { StaffAuthors } from "../../../../staff/directory/domain/staff-author-directory.js";
 import { CompanyMercuriale } from "../../domain/entities/company-mercuriale.js";
-import { posedMercurialeView } from "../posed-mercuriale-view.js";
+import { lockedReasonOf, posedMercurialeView } from "../posed-mercuriale-view.js";
 
 const NOW = new Date("2026-03-01T00:00:00.000Z");
 const APRIL = new Date("2026-04-01T00:00:00.000Z");
@@ -152,5 +152,34 @@ describe("posedMercurialeView — la remise générale", () => {
   it("une mercuriale sans remise rend `null`", () => {
     expect(view(posed()).generalDiscount).toBeNull();
     expect(view(posed()).initialGeneralDiscount).toBeNull();
+  });
+});
+
+describe("posedMercurialeView — les lignes que le client ne peut plus commander", () => {
+  it("étiquette chaque palier d'une ligne verrouillée, et laisse les autres sans étiquette", () => {
+    const lines = posedMercurialeView(
+      posed(),
+      AT,
+      (sku) => sku,
+      StaffAuthors.none(),
+      (sku) => (sku === "VIE-012" ? "off_menu" : null),
+    ).lines;
+
+    expect(lines.find((line) => line.sku === "VIE-012")?.lockedReason).toBe("off_menu");
+    expect(lines.find((line) => line.sku === "CRO-001")).not.toHaveProperty("lockedReason");
+  });
+});
+
+describe("lockedReasonOf — la cause, dans les mots de la mercuriale (§ 3.6)", () => {
+  it("hors carte → `off_menu`", () => {
+    expect(lockedReasonOf({ reservation: "none", menu: "off" })).toBe("off_menu");
+  });
+
+  it("réservé ailleurs l'emporte sur la carte", () => {
+    expect(lockedReasonOf({ reservation: "other", menu: "off" })).toBe("reserved_to_other_account");
+  });
+
+  it("commandable → aucune étiquette", () => {
+    expect(lockedReasonOf({ reservation: "none", menu: "on" })).toBeNull();
   });
 });

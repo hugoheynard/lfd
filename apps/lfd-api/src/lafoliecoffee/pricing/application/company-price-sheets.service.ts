@@ -1,4 +1,4 @@
-import { isReservedElsewhere } from "../../catalog/domain/orderable.js";
+import { isReservedElsewhere, unorderableCause } from "../../catalog/domain/orderable.js";
 import type { CompanyPricingCategoryView } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
@@ -84,6 +84,11 @@ export class PortsCompanyPriceSheets extends CompanyPriceSheets {
           id: shelf.family.id,
           name: shelf.family.name,
           family: familyView(shelf.family),
+          // Les articles déjà réservés ailleurs ont quitté la grille : la
+          // seule cause qui reste est la carte (§ 3.6).
+          offMenuSkus: shelf.articles
+            .filter((article) => unorderableCause(article) === "off_menu")
+            .map((article) => article.sku),
           items: shelf.articles.map((article) =>
             itemView(
               article.article,

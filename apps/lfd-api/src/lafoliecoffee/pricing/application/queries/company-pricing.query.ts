@@ -1,8 +1,8 @@
-import { isReservedElsewhere } from "../../../catalog/domain/orderable.js";
 import { averageGapBp as averageBp, gapBp } from "@lfd/money";
 import {
   type CompanyPricingCategoryView,
   type CompanyPricingView,
+  type PosedMercurialeLockedReason,
   type PricingItemView,
 } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
@@ -13,10 +13,11 @@ import { CustomerVolumeReader } from "../../domain/ports/customer-volume.reader.
 import { PricedCompanyNotFoundError } from "../../domain/pricing-errors.js";
 import { BoardElasticityService } from "../board-elasticity.service.js";
 import { PricedCompanyReader } from "../../domain/ports/priced-company.reader.js";
-import { posedMercurialeView } from "../posed-mercuriale-view.js";
+import { lockedReasonOf, posedMercurialeView } from "../posed-mercuriale-view.js";
 import { CompanyMercurialeReader } from "../../domain/ports/company-mercuriale.reader.js";
 import type { CompanyMercuriale } from "../../domain/entities/company-mercuriale.js";
 import { PricingPartiesResolver } from "../pricing-parties.resolver.js";
+import type { CatalogItem } from "../../../catalog/domain/ports/product-catalog.reader.js";
 import { CompanyPriceSheets } from "../ports/company-price-sheet.js";
 
 /**
@@ -87,9 +88,7 @@ export class CompanyPricingQuery {
       this.mercuriales.liveFor(parties.pricingCompanyId, at),
     ]);
     const { catalogue, rules } = sheet;
-    const reservedElsewhere = new Set(
-      catalogue.filter(isReservedElsewhere).map((article) => article.sku),
-    );
+    const locks = lineLocks(catalogue);
     const names = new Map(catalogue.map((article) => [article.sku, article.name]));
     const categories = await sheet.categoriesWith(live);
 
@@ -139,7 +138,7 @@ export class CompanyPricingQuery {
           // qu'elle ne vise plus rien.
           (sku) => names.get(sku) ?? sku,
           mercurialeAuthors,
-          (sku) => reservedElsewhere.has(sku),
+          (sku) => locks.get(sku) ?? null,
         ),
       ),
       negotiatedSkuCount: firm.length,
@@ -159,6 +158,24 @@ export class CompanyPricingQuery {
       throw new PricedCompanyNotFoundError(companyId);
     }
   }
+}
+
+/**
+ * Les articles que ce client ne peut plus commander, et pourquoi : réservé
+ * ailleurs l'emporte sur la carte (`lockedReasonOf`). Une ligne posée sur
+ * un article hors carte reste et s'étiquette (`plan-carte-des-sites.md`, § 3.6).
+ */
+function lineLocks(
+  catalogue: readonly CatalogItem[],
+): ReadonlyMap<string, PosedMercurialeLockedReason> {
+  const locks = new Map<string, PosedMercurialeLockedReason>();
+  for (const article of catalogue) {
+    const reason = lockedReasonOf(article);
+    if (reason !== null) {
+      locks.set(article.sku, reason);
+    }
+  }
+  return locks;
 }
 
 /**

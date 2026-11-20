@@ -34,6 +34,11 @@ export interface TarifRow extends MercurialeRow {
   readonly chain: PriceChain;
   /** Le prix accordé **en euros**, tel que le champ le porte. `null` = non tarifé. */
   readonly priceEuros: number | null;
+  /**
+   * Hors de la carte du sous-compte (`plan-carte-des-sites.md`, § 3.6) : le
+   * prix se règle quand même, mais le site ne peut pas le commander.
+   */
+  readonly offMenu: boolean;
 }
 
 /** Un rayon, prêt pour sa table. */
@@ -48,23 +53,27 @@ export function tarifShelves(
   categories: readonly CompanyPricingCategoryView[],
   draft: DraftPrices,
 ): readonly TarifShelf[] {
-  return categories.map((category) => ({
-    id: category.id,
-    name: category.name,
-    rows: category.items.map((item) => {
-      const row = mercurialeRow(item, millicentsIn(draft, item.sku));
-      return {
-        ...row,
-        // L'effort suit le prix qu'on TAPE, pas celui qui est posé — et il
-        // vise le prix FINAL, celui que la limite a relevé s'il le fallait :
-        // c'est ce qui sera facturé, donc le seul dont l'effort soit réel.
-        elasticity: liveEffort(item.elasticity, row.catalogMillicents, row.finalMillicents),
-        openRoomMillicents: openRoomMillicents(row.catalogMillicents, row.floorMillicents),
-        currentMillicents: item.finalMillicents,
-        chain: chainOf(item),
-        negotiated: item.sealedByRuleId !== null,
-        priceEuros: eurosIn(draft, item.sku),
-      };
-    }),
-  }));
+  return categories.map((category) => {
+    const offMenu = new Set(category.offMenuSkus);
+    return {
+      id: category.id,
+      name: category.name,
+      rows: category.items.map((item) => {
+        const row = mercurialeRow(item, millicentsIn(draft, item.sku));
+        return {
+          ...row,
+          // L'effort suit le prix qu'on TAPE, pas celui qui est posé — et il
+          // vise le prix FINAL, celui que la limite a relevé s'il le fallait :
+          // c'est ce qui sera facturé, donc le seul dont l'effort soit réel.
+          elasticity: liveEffort(item.elasticity, row.catalogMillicents, row.finalMillicents),
+          openRoomMillicents: openRoomMillicents(row.catalogMillicents, row.floorMillicents),
+          currentMillicents: item.finalMillicents,
+          chain: chainOf(item),
+          negotiated: item.sealedByRuleId !== null,
+          priceEuros: eurosIn(draft, item.sku),
+          offMenu: offMenu.has(item.sku),
+        };
+      }),
+    };
+  });
 }

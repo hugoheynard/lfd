@@ -23,7 +23,8 @@ export type SubAccountGestureKind =
   | "subscription_created"
   | "subscription_paused"
   | "subscription_resumed"
-  | "subscription_stopped";
+  | "subscription_stopped"
+  | "menu_changed";
 
 /**
  * **« Votre accès à l'espace pro »** — l'invitation d'un client. Le code

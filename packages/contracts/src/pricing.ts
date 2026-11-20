@@ -1757,6 +1757,12 @@ export interface CompanyPricingCategoryView {
   readonly name: string;
   readonly family: CatalogFamilyView;
   readonly items: readonly PricingItemView[];
+  /**
+   * Les SKU de `items` **hors de la carte** du sous-compte
+   * (`plan-carte-des-sites.md`, § 3.6) : la ligne reste, son prix se règle,
+   * mais le site ne peut pas la commander. Vide hors sous-compte ou sans carte.
+   */
+  readonly offMenuSkus: readonly string[];
 }
 
 /**
@@ -1791,6 +1797,14 @@ export const POSED_MERCURIALE_STATUS_LABELS: Readonly<Record<PosedMercurialeStat
  * pose plutôt que de la déduire.
  */
 /**
+ * Pourquoi le client ne peut plus commander l'article d'une ligne posée :
+ * réservé à un autre compte (`plan-articles-sur-mesure.md`, Q1), ou hors de
+ * la carte du sous-compte (`plan-carte-des-sites.md`, § 3.6). Réservé
+ * ailleurs l'emporte.
+ */
+export type PosedMercurialeLockedReason = "reserved_to_other_account" | "off_menu";
+
+/**
  * **Une ligne d'une mercuriale posée** — ce qu'on a réellement accordé.
  *
  * Une par RÈGLE et non par article : une mercuriale à paliers en porte
@@ -1819,11 +1833,11 @@ export interface PosedMercurialeLineView {
   readonly amendmentId?: string;
   readonly amendmentReason?: string;
   /**
-   * **L'article est réservé à un autre compte** depuis la pose
-   * (`documentation/catalogue/plan-articles-sur-mesure.md`, Q1) : la ligne
-   * reste, mais le client ne peut plus le commander. Absent sinon.
+   * **L'article n'est plus commandable par ce client** — réservé à un autre
+   * compte, ou hors de la carte du sous-compte : la ligne reste, le prix
+   * négocié survit. Absent sinon.
    */
-  readonly lockedReason?: "reserved_to_other_account";
+  readonly lockedReason?: PosedMercurialeLockedReason;
 }
 
 /** **Un avenant daté**, tel que le dossier staff le liste sous la grille. */

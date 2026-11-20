@@ -8,7 +8,7 @@ import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
 import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
-import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
+import { IntentKey } from "../../../platform/shared/http/intent-key.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { SetSubAccountMenuByStaffCommand } from "../application/commands/set-sub-account-menu-by-staff.command.js";
 import { GetSubAccountMenuForStaffQuery } from "../application/queries/get-sub-account-menu-for-staff.query.js";
@@ -33,19 +33,21 @@ export class AdminCompanySubAccountMenuController {
     );
   }
 
-  /** Pose la carte entière ; `204`. `409` si la société n'a pas de principal. */
+  /**
+   * Pose la carte entière ; `204`. `409` si la société n'a pas de principal.
+   * Le geste prévient le principal par e-mail (Q3) : une fois par intention
+   * de l'écran (en-tête `Idempotency-Key`, obligatoire).
+   */
   @Put(":companyId/menu")
   @HttpCode(HttpStatus.NO_CONTENT)
-  @Idempotent(
-    "pose la carte entière : rejouée, la carte est déjà dans cet état et rien n'est écrit, journalisé ni purgé",
-  )
   async set(
     @Param("companyId") companyId: string,
     @StaffUserId() staffUserId: string,
+    @IntentKey() intentKey: string,
     @Body(new ZodBody(subAccountMenuPayloadSchema)) payload: SubAccountMenuPayload,
   ): Promise<void> {
     await this.commands.execute<SetSubAccountMenuByStaffCommand, void>(
-      new SetSubAccountMenuByStaffCommand(companyId, staffUserId, payload),
+      new SetSubAccountMenuByStaffCommand(companyId, staffUserId, payload, intentKey),
     );
   }
 }

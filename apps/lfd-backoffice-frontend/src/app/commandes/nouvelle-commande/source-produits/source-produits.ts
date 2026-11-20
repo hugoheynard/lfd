@@ -38,7 +38,7 @@ import { HistoriqueCommandes } from '../historique-commandes/historique-commande
 import { shelfHintOf } from '../immediate-pickup';
 import {
   ABSENT_LABEL,
-  LOCKED_LABEL,
+  lockedLabelOf,
   shelfPriceIndexOf,
   shelfPricingOf,
   type ShelfPriceIndex,
@@ -307,7 +307,7 @@ function withShelfPricing(line: ProposedLine, pricing: ShelfPricing | null): Pro
       ...line,
       product: { ...line.product, outOfStock: true },
       available: false,
-      unavailableLabel: pricing.kind === 'locked' ? LOCKED_LABEL : ABSENT_LABEL,
+      unavailableLabel: pricing.kind === 'locked' ? pricing.label : ABSENT_LABEL,
     };
   }
   return {
@@ -416,7 +416,9 @@ function fromHabit(
     quantity: averageQuantityOf(stat, item),
     available: stat.stillAvailable,
     priceSuffix: 'HT',
-    unavailableLabel: RETIRED_LABEL,
+    // Verrouillé (réservé ailleurs, hors carte) n'est pas « retiré » : le dire.
+    unavailableLabel:
+      stat.lockedReason === undefined ? RETIRED_LABEL : lockedLabelOf(stat.lockedReason),
   };
   return stat.stillAvailable ? withShelfPricing(line, shelfPricingOf(prices, stat.sku)) : line;
 }

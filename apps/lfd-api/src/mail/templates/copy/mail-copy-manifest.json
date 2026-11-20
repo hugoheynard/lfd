@@ -1773,6 +1773,11 @@
         "required": [],
         "fr": "Panier récurrent arrêté sur un de vos sites"
       },
+      "title.menu_changed": {
+        "variables": [],
+        "required": [],
+        "fr": "Carte modifiée sur un de vos sites"
+      },
       "action.problem_reported": {
         "variables": [],
         "required": [],
@@ -1847,6 +1852,11 @@
         "variables": [],
         "required": [],
         "fr": "a arrêté un panier récurrent"
+      },
+      "action.menu_changed": {
+        "variables": [],
+        "required": [],
+        "fr": "a vu sa carte modifiée"
       },
       "subject": {
         "variables": [

@@ -18,6 +18,7 @@ const CHALET: SubAccountView = {
   status: 'active',
   followedAspects: ['billing'],
   follows: [{ aspect: 'billing', since: SINCE }],
+  menu: { mode: 'except', offMenu: 'visible_locked', entryCount: 2 },
 };
 
 interface Wire {
@@ -166,5 +167,18 @@ describe('FollowGrid', () => {
     await fixture.componentInstance['detach'](CHALET);
     expect(wire.calls).toEqual(['detach c1']);
     expect(wire.changed).toBe(1);
+  });
+
+  it('le nom d’un site mène droit à l’onglet Carte de sa fiche', async () => {
+    const { fixture } = await boot();
+    const link = (fixture.nativeElement as HTMLElement).querySelector('[data-site-link]');
+    expect(link?.getAttribute('href')).toBe('/comptes-clients/c1/carte');
+  });
+
+  it('dit la carte du site sans la relire', async () => {
+    const { fixture } = await boot();
+    expect((fixture.nativeElement as HTMLElement).textContent).toContain(
+      'Carte : liste noire, 2 entrées',
+    );
   });
 });

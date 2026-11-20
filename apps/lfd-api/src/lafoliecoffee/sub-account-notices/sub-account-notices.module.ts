@@ -21,6 +21,7 @@ import { NotifyPrincipalOnMandateProofAttached } from "./application/handlers/no
 import { NotifyPrincipalOnSubscriptionCreated } from "./application/handlers/notify-principal-on-subscription-created.handler.js";
 import { NotifyPrincipalOnSubscriptionStatusChanged } from "./application/handlers/notify-principal-on-subscription-status-changed.handler.js";
 import { NotifyPrincipalOnSubscriptionDeleted } from "./application/handlers/notify-principal-on-subscription-deleted.handler.js";
+import { NotifyPrincipalOnMenuChangedByTeam } from "./application/handlers/notify-principal-on-menu-changed-by-team.handler.js";
 import { NotifyPrincipalOnOrderProblemReported } from "./application/handlers/notify-principal-on-order-problem-reported.handler.js";
 import { SubAccountNoticeDispatcher } from "./application/services/sub-account-notice.dispatcher.js";
 import { NoticeSendJournal } from "./domain/ports/notice-send.journal.js";
@@ -43,7 +44,8 @@ import { AdminSubAccountNoticesController } from "./http/admin-sub-account-notic
  * N4a : le premier geste hors commande (problème signalé), dont le fait
  * durable porte le principal figé. N4b : les quatre gestes du carnet de
  * livraison, client et équipe. N4c : les quatre gestes sur les contacts.
- * N4d : le RIB et la preuve de mandat. N4e : les paniers récurrents.
+ * N4d : le RIB et la preuve de mandat. N4e : les paniers récurrents. La
+ * carte d'un site posée par l'équipe (`plan-carte-des-sites.md`, Q3).
  */
 @Module({
   imports: [AccountModule, OrdersModule],
@@ -74,6 +76,7 @@ import { AdminSubAccountNoticesController } from "./http/admin-sub-account-notic
     NotifyPrincipalOnSubscriptionCreated,
     NotifyPrincipalOnSubscriptionStatusChanged,
     NotifyPrincipalOnSubscriptionDeleted,
+    NotifyPrincipalOnMenuChangedByTeam,
     { provide: NoticeSendJournal, useClass: PrismaNoticeSendJournal },
   ],
 })

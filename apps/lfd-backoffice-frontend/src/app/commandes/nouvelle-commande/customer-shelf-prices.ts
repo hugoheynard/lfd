@@ -1,6 +1,10 @@
 import { HttpErrorResponse } from '@angular/common/http';
 
-import type { CustomerShelfPriceView, CustomerShelfPricesView } from '@lfd/contracts';
+import type {
+  CustomerShelfPriceView,
+  CustomerShelfPricesView,
+  ShopItemLockedReason,
+} from '@lfd/contracts';
 import { formatCents, formatMillicents } from '@lfd/b2b-ui/order';
 
 import { serverMessageOf } from '../../production/server-message';
@@ -26,11 +30,18 @@ export type ShelfPricing =
       /** Le prix HT du client, en millicentimes — ce que la ligne du panier garde en attendant l'estimation. */
       readonly unitPriceMillicents: number;
     }
-  | { readonly kind: 'locked' }
+  | { readonly kind: 'locked'; readonly label: string }
   | { readonly kind: 'absent' };
 
 /** Les mots d'une rangée qui ne s'ajoute pas, selon la raison. */
 export const LOCKED_LABEL = 'Réservé à un autre compte';
+/** Hors de la carte que le principal a posée sur ce site (`plan-carte-des-sites.md`, § 3.4). */
+export const OFF_MENU_LABEL = 'Hors de la carte du site';
+
+/** Les mots d'un article verrouillé, selon la raison que le serveur en donne. */
+export function lockedLabelOf(reason: ShopItemLockedReason): string {
+  return reason === 'off_menu' ? OFF_MENU_LABEL : LOCKED_LABEL;
+}
 export const ABSENT_LABEL = 'Pas proposé à ce client';
 
 /** Le bandeau quand la table n'a pas pu être lue : la liste reste au prix d'étiquette. */
@@ -48,7 +59,7 @@ export function shelfPriceIndexOf(view: CustomerShelfPricesView | null): ShelfPr
   return new Map(
     view.items.map((item): [string, ShelfPricing] => {
       if (item.lockedReason !== null) {
-        return [item.sku, { kind: 'locked' }];
+        return [item.sku, { kind: 'locked', label: lockedLabelOf(item.lockedReason) }];
       }
       return [
         item.sku,

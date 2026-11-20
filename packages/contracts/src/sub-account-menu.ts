@@ -55,6 +55,17 @@ export interface SubAccountMenuBody {
   readonly updatedBy: "staff" | "principal";
 }
 
+/**
+ * Le résumé d'une carte, tel que la liste des sites du principal le montre
+ * (fiche client) : de quoi dire « carte posée », son sens et son nombre
+ * d'entrées sans relire chaque carte.
+ */
+export interface SubAccountMenuSummary {
+  readonly mode: SubAccountMenuMode;
+  readonly offMenu: SubAccountOffMenuDisplay;
+  readonly entryCount: number;
+}
+
 /** `GET …/menu` : `menu` vaut `null` tant qu'aucune carte n'a été posée. */
 export interface SubAccountMenuView {
   readonly companyId: string;

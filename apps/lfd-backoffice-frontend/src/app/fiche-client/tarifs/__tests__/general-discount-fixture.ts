@@ -51,6 +51,7 @@ export const CATEGORIES: CompanyPricingCategoryView[] = [
     name: 'Pains',
     family: { id: 'pain', name: 'Pains', position: 1, path: ['pain'] },
     items: [item('BAG'), item('PAV')],
+    offMenuSkus: [],
   },
   {
     id: 'pain_spe',
@@ -63,12 +64,14 @@ export const CATEGORIES: CompanyPricingCategoryView[] = [
       ancestors: [{ id: 'pain', name: 'Pains', position: 1 }],
     },
     items: [item('SEI')],
+    offMenuSkus: [],
   },
   {
     id: 'choco',
     name: 'Chocolat',
     family: { id: 'choco', name: 'Chocolat', position: 3 },
     items: [item('TAB', 100_000, 90_000)],
+    offMenuSkus: [],
   },
 ];
 

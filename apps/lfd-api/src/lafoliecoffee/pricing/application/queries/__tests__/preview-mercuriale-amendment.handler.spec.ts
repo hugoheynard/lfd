@@ -122,7 +122,13 @@ function categoriesAt(
     return item(sku, canonical, null);
   });
   return [
-    { id: "fam", name: "Famille", family: { id: "fam", name: "Famille", position: 0 }, items },
+    {
+      id: "fam",
+      name: "Famille",
+      family: { id: "fam", name: "Famille", position: 0 },
+      items,
+      offMenuSkus: [],
+    },
   ];
 }
 

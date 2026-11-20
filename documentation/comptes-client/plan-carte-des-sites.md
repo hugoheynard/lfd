@@ -232,8 +232,8 @@ sub_account_menu_entry   (id, company_id → sub_account_menu RESTRICT, level, r
 | C2  | ✅ bâti le 2026-11-20. `servedToViewer` + marque `menu` ; `isOrderable` et les huit lecteurs ; `lint:orderable-door` ; refus ; lecteur staff ; budget tenu                 |
 | C3  | ✅ bâti le 2026-11-20. Routes principal (`/companies/:subAccountId/menu`, prédicat `canSetMenuOf`) et staff (`/admin/companies/:id/menu`)                                  |
 | C4  | ✅ bâti le 2026-11-20. Boutique : écran du principal, mention sur le rayon et au panier du sous-compte                                                                     |
-| C5  | Back-office : onglet de la fiche, indicateur sur la liste des sites, étiquettes grille et mercuriale                                                                       |
-| C6  | Avis (Q3) ; doc d'état, ce plan supprimé                                                                                                                                   |
+| C5  | ✅ bâti le 2026-11-20. Back-office : onglet de la fiche, indicateur sur la liste des sites, étiquettes de la saisie, de la grille et de la mercuriale                      |
+| C6  | Avis (Q3) ✅ bâti le 2026-11-20 ; doc d'état, ce plan supprimé                                                                                                             |
 
 ## 7. Les tests qui tiennent la frontière
 
@@ -313,6 +313,42 @@ sub_account_menu_entry   (id, company_id → sub_account_menu RESTRICT, level, r
   la carte de votre site », une mention coiffe le rayon quand un article est
   verrouillé hors carte, et le devis montre tel quel le refus
   `catalog.article_off_menu` ; la passation montrait déjà le message du serveur.
+- **C5** — l'onglet « Carte » de la fiche n'est proposé que sur un sous-compte
+  (`parent` de la fiche), derrière `lfc_catalog:read` : son arbre est le
+  catalogue publié (`/admin/catalog/published`), filtré aux déclinaisons en
+  vente aux pros, qui porte `productSku` et les SKU — le staff règle donc les
+  trois grains. Lecture seule sans `b2b_companies:write`. Le brouillon est
+  propre au back-office (`apps/lfd-backoffice-frontend/src/app/fiche-client/carte/sub-account-menu-draft.ts`) : celui
+  de la boutique lit la vue du rayon, d'une autre forme ; le jugement rejoué
+  est le même. « Copier » liste les frères par la fiche du principal.
+  L'indicateur de la liste des sites lit `SubAccountView.menu`, sans lecture
+  par site. Le `PUT` staff porte la clé d'une `GestureIntents` dont le sujet
+  est le site et la carte envoyée : le même brouillon renvoyé garde sa clé, un
+  autre en prend une neuve. La saisie staff dit « Hors de la carte du site »
+  (rayon du client et SKU déjà commandés) ; la composition des tarifs marque
+  « Hors carte » les SKU de `offMenuSkus`, la mercuriale posée note
+  « Hors carte » une ligne `lockedReason: "off_menu"`.
+  Sur la fiche du principal, le nom de chaque site de la liste mène
+  directement à l'onglet « Carte » de sa fiche (`/comptes-clients/:id/carte`)
+  — décidé par Hugo le 2026-11-20 ; pas d'autre vue sur le principal.
+- **Après C5, côté serveur** — (A) `SubAccountView.menu` :
+  `{ mode, offMenu, entryCount } | null`, lu par relation dans la requête de
+  la liste des sites (`company-hierarchy.projection.ts`). (B) La grille porte
+  `CompanyPricingCategoryView.offMenuSkus` (les SKU hors carte de la famille,
+  article gardé) ; une ligne de mercuriale porte
+  `lockedReason: "off_menu"` (`lockedReasonOf`, réservé ailleurs l'emporte) ;
+  la pose reste permise ; budget inchangé.
+- **C6** — les deux poses écrivent le fait durable
+  `company.sub_account_menu_set` (`SiteGesturePublisher`, principal figé sous
+  verrou) ; l'abonné `NotifyPrincipalOnMenuChangedByTeam`
+  (`sub-account-notices/`) ne prévient que si l'équipe a posé : owner et admin
+  ACCEPTÉS du principal, hors tableau des avis et hors interrupteur (ils
+  règlent ce que font les sites), une fois chacun (journal d'envoi). Gabarit
+  `customer.sub-account-gesture`, geste `menu_changed`, rien de la carte. Le
+  `PUT` staff passe de `@Idempotent` à `@IntentKey()` (`runSealed`,
+  `lint:intent-key-gestures`) ; celui du principal reste `@Idempotent`. ⚠️ Le
+  pied du gabarit dit « nous réglons ces avis rôle par rôle », inexact pour
+  cet avis-là.
 
 ## 9. Ce que la contradiction a changé (vitruve, 2026-11-20)
 

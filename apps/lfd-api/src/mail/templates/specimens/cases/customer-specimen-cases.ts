@@ -46,6 +46,7 @@ const GESTURE_LABELS: Readonly<Record<SubAccountGesture, string>> = {
   subscription_paused: "Abonnement en pause",
   subscription_resumed: "Abonnement repris",
   subscription_stopped: "Abonnement arrêté",
+  menu_changed: "Carte du site modifiée",
 };
 
 const GESTURES = Object.keys(GESTURE_LABELS).filter((gesture): gesture is SubAccountGesture =>

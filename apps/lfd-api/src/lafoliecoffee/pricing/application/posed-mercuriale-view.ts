@@ -1,11 +1,17 @@
 import type {
   PosedMercurialeAmendmentView,
   PosedMercurialeLineView,
+  PosedMercurialeLockedReason,
   PosedMercurialeStatus,
   PosedMercurialeView,
 } from "@lfd/contracts";
 
 import type { GeneralDiscountView, MercurialePromotionPolicyView } from "@lfd/contracts";
+import {
+  type OrderabilityMarks,
+  type UnorderableCause,
+  unorderableCause,
+} from "../../catalog/domain/orderable.js";
 import type { PromotionAdmission } from "../domain/entities/mercuriale-promotion-policy.js";
 import type { StaffAuthors } from "../../../staff/directory/domain/staff-author-directory.js";
 
@@ -37,13 +43,29 @@ import type {
 export type ProductNamer = (sku: string) => string;
 
 /**
- * L'article est-il réservé à un autre compte que celui de la mercuriale ?
- * (`plan-articles-sur-mesure.md`, Q1) — rendu par l'appelant, qui a lu le
- * catalogue au nom du client.
+ * Pourquoi le client ne peut plus commander l'article d'une ligne, ou `null`
+ * — réservé à un autre compte (`plan-articles-sur-mesure.md`, Q1), hors de la
+ * carte du sous-compte (`plan-carte-des-sites.md`, § 3.6). Rendu par
+ * l'appelant, qui a lu le catalogue au nom du client.
  */
-export type ReservedElsewhere = (sku: string) => boolean;
+export type LineLock = (sku: string) => PosedMercurialeLockedReason | null;
 
-const NOWHERE: ReservedElsewhere = () => false;
+const UNLOCKED: LineLock = () => null;
+
+/** Ce que la mercuriale dit d'une cause, dans les mots de son contrat. */
+const LOCK_OF_CAUSE = {
+  reserved_elsewhere: "reserved_to_other_account",
+  off_menu: "off_menu",
+} as const satisfies Record<UnorderableCause, PosedMercurialeLockedReason>;
+
+/**
+ * Pourquoi ce client ne peut plus commander l'article, dans les mots de la
+ * mercuriale — réservé ailleurs l'emporte sur la carte (`unorderableCause`).
+ */
+export function lockedReasonOf(item: OrderabilityMarks): PosedMercurialeLockedReason | null {
+  const cause = unorderableCause(item);
+  return cause === null ? null : LOCK_OF_CAUSE[cause];
+}
 
 /**
  * L'état de la mercuriale **à l'instant lu**.
@@ -94,21 +116,20 @@ function linesOf(
   mercuriale: CompanyMercuriale,
   at: Date,
   nameOf: ProductNamer,
-  reservedElsewhere: ReservedElsewhere,
+  lockOf: LineLock,
 ): readonly PosedMercurialeLineView[] {
   return mercuriale.segments
-    .flatMap((segment) =>
-      segment.line.tiers.map((tier) => ({
+    .flatMap((segment) => {
+      const lockedReason = lockOf(segment.line.sku);
+      return segment.line.tiers.map((tier) => ({
         sku: segment.line.sku,
         productName: nameOf(segment.line.sku),
         unitPriceMillicents: tier.unitPriceMillicents,
         minQuantity: tier.minQuantity,
         ...ownWindowOf(mercuriale, segment, at),
-        ...(reservedElsewhere(segment.line.sku)
-          ? { lockedReason: "reserved_to_other_account" as const }
-          : {}),
-      })),
-    )
+        ...(lockedReason === null ? {} : { lockedReason }),
+      }));
+    })
     .sort((left, right) => left.unitPriceMillicents - right.unitPriceMillicents);
 }
 
@@ -165,18 +186,18 @@ function amendmentsOf(
  *   qu'elle ne vise plus rien.
  * @param authors nomme qui l'a établie — résolu d'un coup pour toutes les
  *   mercuriales de la lecture (`architecture-journalisation.md` §12, D3).
- * @param reservedElsewhere étiquette une ligne dont l'article a été réservé à
- *   un autre compte après la pose (Q1) ; personne par défaut.
+ * @param lockOf étiquette une ligne dont l'article n'est plus commandable par
+ *   le client — réservé ailleurs, ou hors carte ; aucune par défaut.
  */
 export function posedMercurialeView(
   mercuriale: CompanyMercuriale,
   at: Date,
   nameOf: ProductNamer,
   authors: StaffAuthors,
-  reservedElsewhere: ReservedElsewhere = NOWHERE,
+  lockOf: LineLock = UNLOCKED,
 ): PosedMercurialeView {
   const state = mercuriale.toPersistence();
-  const lines = linesOf(mercuriale, at, nameOf, reservedElsewhere);
+  const lines = linesOf(mercuriale, at, nameOf, lockOf);
   return {
     id: state.id,
     label: state.label,

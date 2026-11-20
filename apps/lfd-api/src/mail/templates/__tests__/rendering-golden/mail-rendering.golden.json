@@ -323,6 +323,11 @@
       "subject": "Chalet — Panier récurrent arrêté sur un de vos sites",
       "htmlSha256": "62159faf80be2d7e9087e6df9ec3d7ab3d510063ef9be341443f83ab48ed4021",
       "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
+    },
+    "menu_changed": {
+      "subject": "Chalet — Carte modifiée sur un de vos sites",
+      "htmlSha256": "d4b859b8eb837d97ae557558afbc47760110df99e750fa482fedfc77435f46f2",
+      "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
     }
   },
   "customer.access-opened": {

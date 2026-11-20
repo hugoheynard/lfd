@@ -120,6 +120,15 @@ const ALL_TABS: readonly GuardedTab[] = [
     icon: 'lock',
     permission: 'lfc_made_to_order:read',
   },
+  // Juste après les articles réservés : ce que le principal lui laisse
+  // commander. Seulement sur un sous-compte (filtré dans `tabs`).
+  {
+    key: 'carte',
+    label: 'Carte',
+    link: 'carte',
+    icon: 'list',
+    permission: 'lfc_catalog:read',
+  },
   {
     key: 'paniers-recurrents',
     label: 'Paniers récurrents',
@@ -205,7 +214,12 @@ export class FicheClientShell {
    * le vrai mur.
    */
   protected readonly tabs = computed<FoldViewNavItem[]>(() =>
-    ALL_TABS.filter((tab) => tab.permission === null || this.permissions.can(tab.permission)),
+    ALL_TABS.filter(
+      (tab) =>
+        (tab.permission === null || this.permissions.can(tab.permission)) &&
+        // Un compte sans principal n'a pas de carte (`plan-carte-des-sites.md`, § 3.1).
+        (tab.key !== 'carte' || (this.sheet()?.parent ?? null) !== null),
+    ),
   );
 
   protected readonly title = computed<string>(() => {

@@ -126,6 +126,7 @@ export const ACCOUNT_MAILS_FR: AccountMailsCopy = {
       subscription_paused: "Panier récurrent mis en pause sur un de vos sites",
       subscription_resumed: "Panier récurrent repris sur un de vos sites",
       subscription_stopped: "Panier récurrent arrêté sur un de vos sites",
+      menu_changed: "Carte modifiée sur un de vos sites",
     },
     action: {
       problem_reported: "a signalé un problème sur la commande",
@@ -147,6 +148,9 @@ export const ACCOUNT_MAILS_FR: AccountMailsCopy = {
       subscription_paused: "a mis en pause un panier récurrent",
       subscription_resumed: "a repris un panier récurrent",
       subscription_stopped: "a arrêté un panier récurrent",
+      // Rien de la carte : ni mode, ni article, ni famille — le principal la relit
+      // dans « Mes sites » (`plan-carte-des-sites.md`, Q3).
+      menu_changed: "a vu sa carte modifiée",
     },
     subject: "{site} — {title}",
     subjectWithReference: "{site} — {title} ({reference})",

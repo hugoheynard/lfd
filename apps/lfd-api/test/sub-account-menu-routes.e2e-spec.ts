@@ -19,6 +19,7 @@ import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js
 import { CustomerRole } from "../src/platform/database/client/client.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
+import { freshIntent, INTENT_KEY } from "./intent-key.js";
 
 const stubAdminVerifier = {
   verify: (sub: string): Promise<{ subject: string; scopes: string[] }> =>
@@ -133,7 +134,11 @@ describe("la carte d'un site, sur sa fiche client", () => {
 
   it("le staff l'écrit, la relit, et le fait est au journal du site", async () => {
     const payload = await closingFamilyOfX();
-    await staff().put(`/admin/companies/${site}/menu`).send(payload).expect(204);
+    await staff()
+      .put(`/admin/companies/${site}/menu`)
+      .set(INTENT_KEY, freshIntent())
+      .send(payload)
+      .expect(204);
 
     const view = jsonBody<SubAccountMenuView>(
       await staff().get(`/admin/companies/${site}/menu`).expect(200),
@@ -148,8 +153,13 @@ describe("la carte d'un site, sur sa fiche client", () => {
 
   it("rejouée à l'identique, n'écrit pas une seconde trace", async () => {
     const payload = await closingFamilyOfX();
-    await staff().put(`/admin/companies/${site}/menu`).send(payload).expect(204);
-    await staff().put(`/admin/companies/${site}/menu`).send(payload).expect(204);
+    for (const intent of [freshIntent(), freshIntent()]) {
+      await staff()
+        .put(`/admin/companies/${site}/menu`)
+        .set(INTENT_KEY, intent)
+        .send(payload)
+        .expect(204);
+    }
     expect(
       await ctx.prisma.activityEvent.count({
         where: { subjectId: site, type: "company.sub_account_menu_set" },
@@ -157,10 +167,19 @@ describe("la carte d'un site, sur sa fiche client", () => {
     ).toBe(1);
   });
 
+  it("refuse un geste sans clé d'intention : il prévient le principal par e-mail", async () => {
+    await staff()
+      .put(`/admin/companies/${site}/menu`)
+      .send(await closingFamilyOfX())
+      .expect(400);
+    expect(await ctx.prisma.subAccountMenu.count({ where: { companyId: site } })).toBe(0);
+  });
+
   it("refuse une société sans principal", async () => {
     const alone = (await createCompany(ctx.prisma)).id;
     await staff()
       .put(`/admin/companies/${alone}/menu`)
+      .set(INTENT_KEY, freshIntent())
       .send({ mode: "except", offMenu: "hidden", entries: [] })
       .expect(409);
   });

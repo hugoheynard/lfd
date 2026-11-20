@@ -122,6 +122,7 @@ export const ACCOUNT_MAILS_IT: AccountMailsCopy = {
       subscription_paused: "Paniere ricorrente messo in pausa su uno dei suoi siti",
       subscription_resumed: "Paniere ricorrente ripreso su uno dei suoi siti",
       subscription_stopped: "Paniere ricorrente interrotto su uno dei suoi siti",
+      menu_changed: "Assortimento modificato su uno dei suoi siti",
     },
     action: {
       problem_reported: "ha segnalato un problema sull'ordine",
@@ -139,6 +140,7 @@ export const ACCOUNT_MAILS_IT: AccountMailsCopy = {
       subscription_paused: "ha messo in pausa un paniere ricorrente",
       subscription_resumed: "ha ripreso un paniere ricorrente",
       subscription_stopped: "ha interrotto un paniere ricorrente",
+      menu_changed: "ha avuto il suo assortimento modificato",
     },
     subject: "{site} — {title}",
     subjectWithReference: "{site} — {title} ({reference})",

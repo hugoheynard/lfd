@@ -28,6 +28,7 @@ const CATEGORIES: CompanyPricingCategoryView[] = [
       elasticity: null,
       negotiationRoom: null,
     })),
+    offMenuSkus: [],
   },
 ];
 

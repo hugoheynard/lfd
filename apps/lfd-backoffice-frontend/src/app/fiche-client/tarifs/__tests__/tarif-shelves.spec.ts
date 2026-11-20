@@ -30,13 +30,17 @@ function item(overrides: Partial<PricingItemView> & { sku: string }): PricingIte
   };
 }
 
-function shelfOf(items: readonly PricingItemView[]): CompanyPricingCategoryView[] {
+function shelfOf(
+  items: readonly PricingItemView[],
+  offMenuSkus: readonly string[] = [],
+): CompanyPricingCategoryView[] {
   return [
     {
       id: 'fam_01J9V1',
       name: 'Viennoiseries',
       family: { id: 'fam_01J9V1', name: 'Viennoiseries', position: 1 },
       items,
+      offMenuSkus,
     },
   ];
 }
@@ -91,5 +95,13 @@ describe('le prix de ce client', () => {
     );
 
     expect(shelf!.rows[0]!.currentMillicents).toBe(170_000);
+  });
+
+  it('marque « hors carte » la ligne dont le serveur dit le SKU hors de la carte du site', () => {
+    const [shelf] = tarifShelves(
+      shelfOf([item({ sku: 'CRO' }), item({ sku: 'PAC' })], ['PAC']),
+      new Map(),
+    );
+    expect(shelf!.rows.map((row) => row.offMenu)).toEqual([false, true]);
   });
 });

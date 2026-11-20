@@ -42,6 +42,7 @@ const CATEGORIES: readonly CompanyPricingCategoryView[] = [
     name: 'Viennoiseries',
     family: { id: 'fam_01J9V1', name: 'Viennoiseries', position: 1 },
     items: [item('VIE-012', 213_270)],
+    offMenuSkus: [],
   },
 ];
 
@@ -181,5 +182,9 @@ describe('lineNoteOf — un article réservé depuis à un autre compte', () => 
 
   it('ne dit rien d’une ligne ordinaire', () => {
     expect(lineNoteOf(line)).toBeNull();
+  });
+
+  it('étiquette « Hors carte » un article hors de la carte du site', () => {
+    expect(lineNoteOf({ ...line, lockedReason: 'off_menu' })).toBe('Hors carte');
   });
 });

@@ -112,6 +112,15 @@ export const ficheClientRoutes: Routes = [
           ),
       },
       {
+        // La carte d'un sous-compte (`plan-carte-des-sites.md`, § 5). Le
+        // catalogue publié qu'elle parcourt est derrière `lfc_catalog:read`,
+        // que la fiche (`b2b_companies:read`) ne garantit pas.
+        path: 'carte',
+        canActivate: [permissionGuard('lfc_catalog:read')],
+        loadComponent: () =>
+          import('./carte/client-menu-page/client-menu-page').then((m) => m.ClientMenuPage),
+      },
+      {
         path: 'facturation',
         loadComponent: () =>
           import('./facturation/facturation-page').then((m) => m.ClientFacturationPage),

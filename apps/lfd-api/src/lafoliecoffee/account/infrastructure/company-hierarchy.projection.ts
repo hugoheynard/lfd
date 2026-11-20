@@ -2,10 +2,15 @@ import type {
   CompanyFollowAspect,
   CompanyHierarchyView,
   FollowedAspectView,
+  SubAccountMenuSummary,
   SubAccountView,
 } from "@lfd/contracts";
 
 import type { PrismaService } from "../../../platform/database/prisma.service.js";
+import {
+  parseMenuMode,
+  parseOffMenuDisplay,
+} from "../domain/value-objects/sub-account-menu-terms.js";
 
 /** Une période de suivi telle que la fiche la lit. */
 interface FollowRow {
@@ -23,6 +28,18 @@ export interface HierarchyRow {
     readonly enseigne: string;
     readonly status: CompanyHierarchyView["subAccounts"][number]["status"];
   } | null;
+}
+
+/** L'en-tête de la carte d'un site et son nombre d'entrées — relation de la même requête. */
+const MENU_SUMMARY = {
+  select: { mode: true, offMenu: true, _count: { select: { entries: true } } },
+} as const;
+
+/** La carte lue par {@link MENU_SUMMARY}. */
+interface MenuSummaryRow {
+  readonly mode: string;
+  readonly offMenu: string;
+  readonly _count: { readonly entries: number };
 }
 
 /** Les périodes ouvertes — `findMany` filtre, `inForce` tranche à l'instant. */
@@ -61,6 +78,7 @@ export async function readHierarchy(
           take: 1,
         },
         follows: OPEN_FOLLOWS,
+        subAccountMenu: MENU_SUMMARY,
       },
     }),
     // La forme qui couvre `now` (début inclus, fin exclue) — un sous-compte seulement.
@@ -84,10 +102,20 @@ export async function readHierarchy(
       status: child.status,
       followedAspects: inForce(child.follows, now).map((follow) => follow.aspect),
       follows: inForce(child.follows, now),
+      menu: child.subAccountMenu === null ? null : menuSummary(child.subAccountMenu),
     })),
     follows: inForce(follows, now),
     groupWithoutDelivery: row.groupWithoutDelivery,
     collectionForm: form === null ? null : { form: form.form, since: form.validFrom.toISOString() },
+  };
+}
+
+// Les valeurs revalident comme au dépôt : le CHECK les tient, le parseur le dit.
+function menuSummary(row: MenuSummaryRow): SubAccountMenuSummary {
+  return {
+    mode: parseMenuMode(row.mode),
+    offMenu: parseOffMenuDisplay(row.offMenu),
+    entryCount: row._count.entries,
   };
 }
 

@@ -38,6 +38,13 @@ export const SUBSCRIPTION_CREATED = "subscription.created";
 export const SUBSCRIPTION_STATUS_CHANGED = "subscription.status_changed";
 export const SUBSCRIPTION_DELETED = "subscription.deleted";
 
+/**
+ * La carte d'un site est posée (`plan-carte-des-sites.md`, Q3) — même nom
+ * qu'au journal. Le geste est fait SUR le site, par le staff ou par son
+ * principal ; l'avis au principal ne part que quand l'équipe l'a fait.
+ */
+export const SUB_ACCOUNT_MENU_SET = "company.sub_account_menu_set";
+
 /** L'état d'un panier récurrent APRÈS un changement de statut. */
 export type GestureStatus = "active" | "paused";
 
@@ -55,7 +62,8 @@ export type SiteGestureType =
   | typeof MANDATE_PROOF_ATTACHED
   | typeof SUBSCRIPTION_CREATED
   | typeof SUBSCRIPTION_STATUS_CHANGED
-  | typeof SUBSCRIPTION_DELETED;
+  | typeof SUBSCRIPTION_DELETED
+  | typeof SUB_ACCOUNT_MENU_SET;
 
 /** Qui a fait le geste : un client nommé par son id, ou l'équipe. */
 export type GestureActor =

@@ -9,6 +9,7 @@ import {
   signal,
 } from '@angular/core';
 import {
+  FoldBadgeComponent,
   FoldButtonComponent,
   FoldCalloutComponent,
   FoldDataTableCellDirective,
@@ -77,6 +78,7 @@ import {
   selector: 'app-mercuriale-composer',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    FoldBadgeComponent,
     FoldButtonComponent,
     FoldCalloutComponent,
     FoldDataTableComponent,

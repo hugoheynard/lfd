@@ -53,6 +53,7 @@ function view(items: readonly PricingItemView[]): CompanyPricingView {
         name: 'Viennoiseries',
         family: { id: 'fam_01J9V1', name: 'Viennoiseries', position: 1 },
         items,
+        offMenuSkus: [],
       },
     ],
     mercuriales: [],

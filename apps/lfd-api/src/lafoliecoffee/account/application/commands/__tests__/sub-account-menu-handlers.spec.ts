@@ -1,6 +1,8 @@
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
 import { FixedIdGenerator } from "../../../../../platform/id/fixed-id-generator.js";
+import { InMemoryGestureIntentLedger } from "../../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
+import { OncePerIntent } from "../../../../../platform/intent/once-per-intent.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import type { CompanyStanding } from "../../../../shared/company-standing/domain/company-standing.js";
 import type { StandingRole } from "../../../../shared/company-standing/domain/standing-role.js";
@@ -20,8 +22,11 @@ import { SetSubAccountMenuByStaffCommand } from "../set-sub-account-menu-by-staf
 import { SetSubAccountMenuByStaffHandler } from "../set-sub-account-menu-by-staff.handler.js";
 import { SetSubAccountMenuCommand } from "../set-sub-account-menu.command.js";
 import { SetSubAccountMenuHandler } from "../set-sub-account-menu.handler.js";
+import { recordedGestures } from "./site-gesture-doubles.js";
 
 const SITE = "co_site";
+const INTENT = "1b4e28ba-2fa1-41d2-883f-0016d3cca427";
+const OTHER_INTENT = "6ec0bd7f-11c0-43da-975e-2a8ad9ebae0b";
 const NOW = new Date(Date.UTC(2030, 0, 1));
 
 function site(parentCompanyId: string | null): Company {
@@ -119,11 +124,28 @@ function scene(company: Company | null, place: CompanyStanding | null = null) {
     new FixedClock(NOW),
   );
   const uow = new DirectUnitOfWork();
+  const gestures = recordedGestures(new Map([[SITE, "co_principal"]]));
+  const intents = new OncePerIntent(new InMemoryGestureIntentLedger(), new FixedClock(NOW));
   return {
     menus,
     events,
-    principal: new SetSubAccountMenuHandler(new FixedStanding(place), writing, menus, events, uow),
-    staff: new SetSubAccountMenuByStaffHandler(writing, menus, events, uow),
+    durable: gestures.durable,
+    principal: new SetSubAccountMenuHandler(
+      new FixedStanding(place),
+      writing,
+      menus,
+      events,
+      gestures.publisher,
+      uow,
+    ),
+    staff: new SetSubAccountMenuByStaffHandler(
+      writing,
+      menus,
+      events,
+      gestures.publisher,
+      intents,
+      uow,
+    ),
   };
 }
 
@@ -156,6 +178,24 @@ describe("SetSubAccountMenuHandler — le principal pose la carte d'un site", ()
       ]);
     },
   );
+
+  it("écrit le fait du geste, signé du client et non de l'équipe : l'avis ne partira pas (Q3)", async () => {
+    const { principal, durable } = scene(site("co_principal"), standing(null, "owner"));
+
+    await principal.execute(new SetSubAccountMenuCommand("usr_1", SITE, NO_PASTRY));
+
+    expect(durable.facts.map((fact) => [fact.type, fact.payload])).toEqual([
+      [
+        "company.sub_account_menu_set",
+        expect.objectContaining({
+          siteCompanyId: SITE,
+          principalCompanyId: "co_principal",
+          authorUserId: "usr_1",
+          byTeam: false,
+        }),
+      ],
+    ]);
+  });
 
   it("🔴 le propriétaire PROPRE du site est refusé, et rien n'est écrit", async () => {
     const { principal, menus, events } = scene(site("co_principal"), standing("owner", null));
@@ -196,7 +236,7 @@ describe("SetSubAccountMenuByStaffHandler — le staff pose la carte depuis la f
   it("la pose signée du staff, et l'événement le dit à ses abonnés", async () => {
     const { staff, menus, events } = scene(site("co_principal"));
 
-    await staff.execute(new SetSubAccountMenuByStaffCommand(SITE, "stf_1", NO_PASTRY));
+    await staff.execute(new SetSubAccountMenuByStaffCommand(SITE, "stf_1", NO_PASTRY, INTENT));
 
     expect(menus.saved[0]?.stamp.author).toEqual({ kind: "staff", staffId: "stf_1" });
     expect(menus.saved[0]?.entries).toEqual([
@@ -207,10 +247,52 @@ describe("SetSubAccountMenuByStaffHandler — le staff pose la carte depuis la f
     expect(event instanceof SubAccountMenuSetEvent ? event.author.kind : null).toBe("staff");
   });
 
+  it("écrit le fait du geste par l'équipe, principal figé : l'avis au principal s'y abonne (Q3)", async () => {
+    const { staff, durable } = scene(site("co_principal"));
+
+    await staff.execute(new SetSubAccountMenuByStaffCommand(SITE, "stf_1", NO_PASTRY, INTENT));
+
+    expect(durable.facts.map((fact) => [fact.type, fact.payload])).toEqual([
+      [
+        "company.sub_account_menu_set",
+        expect.objectContaining({
+          siteCompanyId: SITE,
+          siteName: "Chalet du Club",
+          principalCompanyId: "co_principal",
+          authorUserId: null,
+          byTeam: true,
+        }),
+      ],
+    ]);
+  });
+
+  it("un second clic de même intention ne réécrit ni ne réannonce rien", async () => {
+    const { staff, menus, durable } = scene(site("co_principal"));
+    const command = new SetSubAccountMenuByStaffCommand(SITE, "stf_1", NO_PASTRY, INTENT);
+
+    await staff.execute(command);
+    await staff.execute(command);
+
+    expect(menus.saved).toHaveLength(1);
+    expect(durable.facts).toHaveLength(1);
+  });
+
+  it("la même carte reposée sous une autre intention n'écrit ni n'annonce rien", async () => {
+    const { staff, menus, durable } = scene(site("co_principal"));
+
+    await staff.execute(new SetSubAccountMenuByStaffCommand(SITE, "stf_1", NO_PASTRY, INTENT));
+    await staff.execute(
+      new SetSubAccountMenuByStaffCommand(SITE, "stf_1", NO_PASTRY, OTHER_INTENT),
+    );
+
+    expect(menus.saved).toHaveLength(1);
+    expect(durable.facts).toHaveLength(1);
+  });
+
   it("refuse une société sans principal", async () => {
     const { staff, menus } = scene(site(null));
     await expect(
-      staff.execute(new SetSubAccountMenuByStaffCommand(SITE, "stf_1", NO_PASTRY)),
+      staff.execute(new SetSubAccountMenuByStaffCommand(SITE, "stf_1", NO_PASTRY, INTENT)),
     ).rejects.toThrow(NotASubAccountError);
     expect(menus.saved).toHaveLength(0);
   });
@@ -218,7 +300,7 @@ describe("SetSubAccountMenuByStaffHandler — le staff pose la carte depuis la f
   it("refuse une société inconnue", async () => {
     const { staff } = scene(null);
     await expect(
-      staff.execute(new SetSubAccountMenuByStaffCommand(SITE, "stf_1", NO_PASTRY)),
+      staff.execute(new SetSubAccountMenuByStaffCommand(SITE, "stf_1", NO_PASTRY, INTENT)),
     ).rejects.toThrow(CompanyNotFoundError);
   });
 });
