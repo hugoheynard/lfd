@@ -101,6 +101,10 @@ const BLOCK_OF = {
   //   comme `production/channels/commerce/`. Le commerce l'atteint par
   //   `card-payment/channels/` SEULEMENT.
   "card-payment": "card-payment",
+  // ▸ LE PANIER (2026-11-20, `documentation/commandes/le-panier.md`).
+  //   Son schéma `cart`, sans clé étrangère. Le commerce l'atteint par
+  //   `shop-cart/channels/` SEULEMENT ; lui n'importe que la plateforme.
+  "shop-cart": "shop-cart",
 
   // ▸ LA RACINE DE COMPOSITION — le seul endroit qui a le droit de connaître
   //   tout le monde, parce que son unique travail est de relier les blocs
@@ -181,6 +185,9 @@ const ALLOWED = {
     "mail",
     // Depuis le 2026-11-09 (plan M2, §3.1) : par son canal SEULEMENT.
     "card-payment",
+    // Le catalogue demande au panier si un article y est (2026-11-20) : par
+    // son canal SEULEMENT.
+    "shop-cart",
   ]),
   production: new Set(["staff", "platform", "mail"]),
   // `delivery` depuis le 2026-10-01 (a-la-porte.md, BQ) : le retrait
@@ -209,6 +216,9 @@ const ALLOWED = {
   // métier : il ne sait pas pour qui il encaisse, il déclare `channels/subjects/`
   // et `appBootstrap` y branche chaque sujet (2026-11-09, plan M2, §3.1).
   "card-payment": new Set(["staff", "platform"]),
+  // La plateforme seulement : le panier ne sait pas ce qu'est une commande, ni
+  // qui lui demande ce qu'il contient.
+  "shop-cart": new Set(["platform"]),
   platform: new Set([]),
   ops: new Set(["platform"]),
   root: new Set([
@@ -224,6 +234,7 @@ const ALLOWED = {
     "packing",
     "mail",
     "card-payment",
+    "shop-cart",
   ]),
 };
 
@@ -372,6 +383,9 @@ const PORT_SURFACE = {
   // `b2b→production` (2026-11-09, plan M2, §3.3). `card-payment → b2b` reste
   // INTERDIT : il ne sait pas pour qui il encaisse.
   "lafoliecoffee→card-payment": "card-payment/channels/",
+  // Le panier publie ce qu'il sait répondre au commerce (`channels/commerce/`),
+  // déclaré et implémenté par lui. `shop-cart → lafoliecoffee` reste INTERDIT.
+  "lafoliecoffee→shop-cart": "shop-cart/channels/",
 };
 
 /**

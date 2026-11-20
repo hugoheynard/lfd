@@ -90,6 +90,10 @@ const BLOCKS = new Set([
   //   ligne, `src/card-payment/` serait ignoré, et le commerce pourrait lire
   //   ou écrire l'état de l'argent carte sans que rien ne rougisse.
   "card-payment",
+  // ▸ LE PANIER (2026-11-20, `le-panier.md`). Sans cette ligne,
+  //   `src/shop-cart/` serait ignoré et le catalogue pourrait relire
+  //   `shop_carts` en direct sans que rien ne rougisse.
+  "shop-cart",
 ]);
 
 /**
@@ -107,6 +111,50 @@ const NOT_A_BLOCK = new Set(["dev", "appBootstrap", "ops"]);
 const WRITE =
   /\bprisma\s*\.\s*([a-z][A-Za-z0-9]*)\s*\.\s*(?:create|createMany|update|updateMany|upsert|delete|deleteMany|createManyAndReturn)\b/gu;
 const READ = /\bprisma\s*\.\s*([a-z][A-Za-z0-9]*)\s*\.\s*(?:find\w*|count|aggregate|groupBy)\b/gu;
+
+/**
+ * **Une écriture en SQL brut** (`INSERT INTO "schema"."table"`, `UPDATE …`).
+ * Une table qu'on n'écrit qu'ainsi — un `ON CONFLICT` que Prisma ne sait pas
+ * exprimer, comme le panier — aurait sinon un propriétaire introuvable, et la
+ * porte se tairait sur ses lecteurs. La table est rendue à son modèle par le
+ * `@@map` du schéma.
+ */
+const RAW_WRITE = /\b(?:INSERT\s+INTO|UPDATE)\s+"([a-z_]+)"\s*\.\s*"([a-z_0-9]+)"/gu;
+
+/**
+ * **Un délégué passé en valeur** (`helper(this.prisma.shopCart, …)`) : la
+ * méthode est appelée plus loin, sur un paramètre, et `READ` ne la voit pas.
+ * Passer le délégué d'un modèle, c'est le lire.
+ */
+const DELEGATE = /\bprisma\s*\.\s*([a-z][A-Za-z0-9]*)\b(?!\s*\.)/gu;
+
+/** `schéma.table` → nom du modèle, lu dans les `@@map` / `@@schema` de Prisma. */
+function modelsByTable() {
+  const byTable = new Map();
+  const walk = (directory) => {
+    for (const entry of readdirSync(directory, { withFileTypes: true })) {
+      const path = join(directory, entry.name);
+      if (entry.isDirectory()) {
+        walk(path);
+        continue;
+      }
+      if (!entry.name.endsWith(".prisma")) {
+        continue;
+      }
+      for (const match of readFileSync(path, "utf8").matchAll(
+        /^model\s+(\w+)\s*\{([\s\S]*?)^\}/gmu,
+      )) {
+        const name = match[1];
+        const body = match[2];
+        const table = /@@map\("([^"]+)"\)/u.exec(body)?.[1] ?? name;
+        const schema = /@@schema\("([^"]+)"\)/u.exec(body)?.[1] ?? "public";
+        byTable.set(`${schema}.${table}`, name.charAt(0).toLowerCase() + name.slice(1));
+      }
+    }
+  };
+  walk(join(ROOT, "apps/lfd-api/prisma/schema"));
+  return byTable;
+}
 
 /**
  * **Les accès hors bloc encore tolérés**, chacun avec sa raison et sa date.
@@ -146,6 +194,8 @@ if (!statSync(root, { throwIfNoEntry: false })?.isDirectory()) {
   process.exit(1);
 }
 
+const TABLES = modelsByTable();
+
 /** modèle → bloc → { writes, reads, exemples de fichiers } */
 const usage = new Map();
 for (const file of sourceFiles(root)) {
@@ -170,6 +220,15 @@ for (const file of sourceFiles(root)) {
     note(match[1], "writes");
   }
   for (const match of source.matchAll(READ)) {
+    note(match[1], "reads");
+  }
+  for (const match of source.matchAll(RAW_WRITE)) {
+    const model = TABLES.get(`${match[1]}.${match[2]}`);
+    if (model !== undefined) {
+      note(model, "writes");
+    }
+  }
+  for (const match of source.matchAll(DELEGATE)) {
     note(match[1], "reads");
   }
 }
