@@ -6958,6 +6958,20 @@
           "variables": []
         },
         {
+          "key": "orders.ticketFreeDelivery",
+          "fr": "Livraison offerte",
+          "en": "Free delivery",
+          "it": "Consegna gratuita",
+          "variables": []
+        },
+        {
+          "key": "orders.ticketPretaxSuffix",
+          "fr": "(HT)",
+          "en": "(excl. VAT)",
+          "it": "(IVA esclusa)",
+          "variables": []
+        },
+        {
           "key": "orders.ticketTotal",
           "fr": "Total TTC",
           "en": "Total incl. VAT",

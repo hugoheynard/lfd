@@ -232,6 +232,12 @@ describe("toCustomerOrder", () => {
     expect(toCustomerOrder(STAFF_ORDER)).not.toHaveProperty("discountLabel");
   });
 
+  it("laisse passer la livraison offerte, et l'omet quand rien n'est offert", () => {
+    const free = { waivedCents: 1_500, waivedTtcCents: null };
+    expect(toCustomerOrder({ ...STAFF_ORDER, freeDelivery: free }).freeDelivery).toEqual(free);
+    expect(toCustomerOrder(STAFF_ORDER)).not.toHaveProperty("freeDelivery");
+  });
+
   it("n'ajoute aucune clé quand rien n'est exclu", () => {
     const order = toCustomerOrder(STAFF_ORDER);
 

@@ -15,6 +15,7 @@ import {
   fulfillmentLabel,
 } from './order-format';
 import { discountTextLines } from './order-sheet-discount-text';
+import { freeDeliveryTextLines } from './order-sheet-free-delivery-text';
 import { ticketSections } from './order-sheet-ticket-text';
 
 /**
@@ -125,6 +126,7 @@ function moneyLines(money: SheetMoney): readonly string[] {
     ...(money.deliveryFeeCents === 0
       ? []
       : [`  Coursier      ${amount(formatCents(money.deliveryFeeCents), 26)}`]),
+    ...freeDeliveryTextLines(money, 'Coursier', false),
     // La surtaxe s'ajoute APRÈS la remise : on ne fait pas de geste commercial
     // sur une pénalité de retard.
     ...(money.lateFeeCents === 0

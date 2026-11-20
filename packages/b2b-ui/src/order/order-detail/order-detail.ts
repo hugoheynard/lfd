@@ -248,7 +248,9 @@ export class OrderDetail {
   });
 
   /** Le récapitulatif des montants — assemblé par `orderTotalRows`, pas ici. */
-  protected readonly totals = computed<readonly TotalRow[]>(() => orderTotalRows(this.order()));
+  protected readonly totals = computed<readonly TotalRow[]>(() =>
+    orderTotalRows(this.order(), this.locale()),
+  );
 
   /** SKU ajoutés pour cette échéance vis-à-vis du gabarit récurrent. */
   protected readonly addedSkus = computed<ReadonlySet<string>>(

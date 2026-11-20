@@ -34,6 +34,13 @@ export interface OrderTicket {
   readonly discountLabel?: DiscountLabelView;
   readonly voucherCents: number;
   readonly deliveryFeeCents: number;
+  /**
+   * La livraison offerte (plan `plan-livraison-offerte.md`, § 2.6) : le
+   * barème offert, à son TTC figé, et le libellé figé de la promotion qui
+   * l'a offerte (absent : le franco de la route). AFFICHÉE, pas comptable —
+   * le port facturé vaut 0 et le total n'en dépend pas.
+   */
+  readonly freeDelivery?: OrderTicketFreeDelivery;
   /** Le total payé : `articles − remise − bon + port`. */
   readonly totalCents: number;
   readonly byRate: readonly OrderRateAmounts[];
@@ -43,6 +50,13 @@ export interface OrderTicket {
 export interface OrderTicketDiscount {
   readonly label?: DiscountLabelView;
   readonly ttcCents: number;
+}
+
+/** Le barème offert au ticket ; `pretax` quand son TTC n'a pas été figé. */
+export interface OrderTicketFreeDelivery {
+  readonly cents: number;
+  readonly pretax: boolean;
+  readonly label?: DiscountLabelView;
 }
 
 export interface OrderTicketLine {
@@ -81,6 +95,7 @@ export function ticketOf(order: CustomerOrderView): OrderTicket | null {
     ...ticketDiscountsOf(order),
     voucherCents: ttcTerms.voucherCents,
     deliveryFeeCents: ttcTerms.deliveryFeeCents,
+    ...ticketFreeDeliveryOf(order),
     totalCents: order.totalCents,
     byRate: ttcByRate,
   };
@@ -109,4 +124,20 @@ function ticketDiscountsOf(order: CustomerOrderView): {
     });
   }
   return { discounts: lines };
+}
+
+function ticketFreeDeliveryOf(order: CustomerOrderView): {
+  readonly freeDelivery?: OrderTicketFreeDelivery;
+} {
+  const free = order.freeDelivery;
+  if (free === undefined || free.waivedCents <= 0) {
+    return {};
+  }
+  return {
+    freeDelivery: {
+      cents: free.waivedTtcCents ?? free.waivedCents,
+      pretax: free.waivedTtcCents === null,
+      ...(free.label === undefined ? {} : { label: free.label }),
+    },
+  };
 }

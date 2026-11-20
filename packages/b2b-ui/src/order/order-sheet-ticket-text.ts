@@ -9,6 +9,7 @@ import type {
 import { saleQuantityLabel } from '../catalog/sale-terms';
 import { formatCents, formatVatPercent } from './order-format';
 import { discountTextLines } from './order-sheet-discount-text';
+import { freeDeliveryTextLines } from './order-sheet-free-delivery-text';
 
 /**
  * **Le bon texte d'une commande composée en TTC, au format du ticket** (plan
@@ -95,6 +96,7 @@ function gestureLines(
     ...(ttc.deliveryFeeCents === 0
       ? []
       : [`  Livraison     ${amount(formatCents(ttc.deliveryFeeCents), 26)}`]),
+    ...freeDeliveryTextLines(money, 'Livraison', true),
     `  Total TTC     ${amount(formatCents(money.totalCents), 26)}`,
   ];
 }

@@ -1,4 +1,9 @@
-import { stepLabelIn, type CustomerOrderLineView, type CustomerOrderView } from '@lfd/contracts';
+import {
+  discountLabelIn,
+  stepLabelIn,
+  type CustomerOrderLineView,
+  type CustomerOrderView,
+} from '@lfd/contracts';
 
 import { formatAdjustment, formatCents, formatLateFeeTerms } from './order-format';
 
@@ -76,6 +81,7 @@ export type OrderTotalsSource = Pick<
   | 'voucherDiscountCents'
   | 'deliveryFeeCents'
   | 'deliveryVatMode'
+  | 'freeDelivery'
   | 'lateFeeCents'
   | 'lateFeeAdjustment'
   | 'vatCents'
@@ -159,7 +165,7 @@ function discountRows(order: OrderTotalsSource): readonly TotalRow[] {
  * Hors du composant, comme le reste de ce module : c'est de l'arithmétique de
  * lecture, et l'arithmétique se teste sans monter un gabarit.
  */
-export function orderTotalRows(order: OrderTotalsSource): readonly TotalRow[] {
+export function orderTotalRows(order: OrderTotalsSource, locale = 'fr'): readonly TotalRow[] {
   const rows: TotalRow[] = [
     {
       key: 'subtotal',
@@ -188,6 +194,7 @@ export function orderTotalRows(order: OrderTotalsSource): readonly TotalRow[] {
       ...deliveryVatHint(order),
     });
   }
+  rows.push(...freeDeliveryRows(order, locale));
   if (order.lateFeeCents > 0) {
     // Son taux de TVA est dit ici et nulle part ailleurs : les marchandises
     // portent le leur ligne à ligne, la surtaxe porte le sien, et c'est la
@@ -218,6 +225,36 @@ function deliveryVatHint(order: OrderTotalsSource): { readonly hint?: string } {
     return order.settlement === 'account' ? {} : { hint: 'TVA au prorata des produits' };
   }
   return { hint: 'TVA 20 %' };
+}
+
+/** Le libellé de la ligne quand la livraison est offerte par le franco de la route. */
+const FREE_DELIVERY_LABEL = 'Livraison offerte';
+
+/**
+ * **La livraison offerte** — la forme du bon PDF : « Livraison HT » au barème
+ * offert, puis « Livraison offerte » (ou le libellé figé de la promotion,
+ * dans la langue de l'écran) au même montant, négatif. AFFICHÉE, pas
+ * comptable : le frais facturé vaut 0, et aucun total n'en dépend.
+ */
+function freeDeliveryRows(order: OrderTotalsSource, locale: string): readonly TotalRow[] {
+  const free = order.freeDelivery;
+  if (free === undefined || free.waivedCents <= 0) {
+    return [];
+  }
+  return [
+    {
+      key: 'delivery-waived',
+      label: 'Livraison HT',
+      value: formatCents(free.waivedCents),
+      strong: false,
+    },
+    {
+      key: 'free-delivery',
+      label: free.label === undefined ? FREE_DELIVERY_LABEL : discountLabelIn(free.label, locale),
+      value: `− ${formatCents(free.waivedCents)}`,
+      strong: false,
+    },
+  ];
 }
 
 /** La mention d'un bon au compte, sous son total HT (F5). */

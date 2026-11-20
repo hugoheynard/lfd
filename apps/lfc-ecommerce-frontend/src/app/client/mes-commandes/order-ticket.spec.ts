@@ -160,3 +160,31 @@ describe('le ticket et une seule remise de promotion (2026-11-01)', () => {
     expect(ticketOf(exact())?.discountLabel).toBeUndefined();
   });
 });
+
+describe('le ticket et la livraison offerte (plan livraison offerte, § 2.6)', () => {
+  it('la livraison au barème TTC puis le libellé de la promotion, total inchangé', () => {
+    const ticket = ticketOf(
+      exact({
+        freeDelivery: {
+          waivedCents: 1_000,
+          waivedTtcCents: 1_200,
+          label: { fr: 'Port offert', en: 'Free shipping', it: 'Spedizione' },
+        },
+      }),
+    );
+    const rows = ticket === null ? [] : ticketRowsOf(ticket, FR.orders, 'en');
+    const text = rows.map((row) => `${row.label}=${row.value}`).join('\n');
+
+    expect(text).toContain(`${FR.orders.ticketDelivery}=12,00`);
+    expect(text).toContain('Free shipping=−12,00');
+    expect(ticket?.totalCents).toBe(2_430);
+  });
+
+  it('offerte par le franco, sans TTC figé : le mot de l’écran, en HT et dit', () => {
+    const ticket = ticketOf(exact({ freeDelivery: { waivedCents: 1_000, waivedTtcCents: null } }));
+    const rows = ticket === null ? [] : ticketRowsOf(ticket, FR.orders, 'fr');
+    const text = rows.map((row) => `${row.label}=${row.value}`).join('\n');
+
+    expect(text).toContain('Livraison offerte (HT)=−10,00');
+  });
+});

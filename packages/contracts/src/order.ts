@@ -1204,6 +1204,11 @@ export interface CustomerOrderView {
   readonly voucherDiscountCents: number;
   readonly deliveryFeeCents: number;
   readonly deliveryFeeAdjustment: CartAdjustment | null;
+  /**
+   * Cf. {@link OrderView.freeDelivery} — le client relit ce qui lui a été
+   * offert, comme sur son bon. Absente : rien d'offert.
+   */
+  readonly freeDelivery?: OrderFreeDeliveryView;
   readonly lateFeeCents: number;
   readonly lateFeeAdjustment: LateFeeAdjustment | null;
   readonly deliveryVatMode: DeliveryVatMode | null;
@@ -1281,6 +1286,7 @@ export function toCustomerOrder(view: OrderView): CustomerOrderView {
     voucherDiscountCents: view.voucherDiscountCents,
     deliveryFeeCents: view.deliveryFeeCents,
     deliveryFeeAdjustment: view.deliveryFeeAdjustment,
+    ...(view.freeDelivery === undefined ? {} : { freeDelivery: view.freeDelivery }),
     lateFeeCents: view.lateFeeCents,
     lateFeeAdjustment: view.lateFeeAdjustment,
     deliveryVatMode: view.deliveryVatMode,

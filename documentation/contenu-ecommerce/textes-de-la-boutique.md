@@ -4,7 +4,7 @@
 >
 > La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.
 
-## Sommaire — 1838 textes
+## Sommaire — 1840 textes
 
 Clés présentes dans une langue et absentes d'une autre : 0.
 
@@ -39,7 +39,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Le cadre — bandeaux et erreurs générales](#espace-chrome) | `chrome` | 56 |
 | [La navigation](#espace-nav) | `nav` | 16 |
 | [La colonne d’accompagnement](#espace-aside) | `aside` | 4 |
-| [Mes commandes (récapitulatif compris)](#espace-orders) | `orders` | 285 |
+| [Mes commandes (récapitulatif compris)](#espace-orders) | `orders` | 287 |
 | [Annuler une commande — Mes commandes et la page invité](#espace-ordercancel) | `orderCancel` | 57 |
 | [Fidélité](#espace-loyalty) | `loyalty` | 38 |
 | [Mon compte (factures comprises)](#espace-account) | `account` | 534 |
@@ -50,7 +50,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Les cases des e-mails marketing, « Mes e-mails » et le pied de page](#espace-marketingconsent) | `marketingConsent` | 29 |
 | [Les documents légaux](#espace-legaldocument) | `legalDocument` | 14 |
 | [Le suivi des corrections d’accessibilité — sous la déclaration](#espace-accessibilityfollowup) | `accessibilityFollowUp` | 28 |
-| **Total** | | **1838** |
+| **Total** | | **1840** |
 
 ## Le parcours de commande
 
@@ -1049,7 +1049,7 @@ Source : `fr.ts · en.ts · it.ts` · 4 textes.
 
 ### Mes commandes (récapitulatif compris) — `orders`
 
-Source : `screens/orders.copy.ts · screens/order-summary.copy.ts · screens/order-change-request.copy.ts` · 285 textes.
+Source : `screens/orders.copy.ts · screens/order-summary.copy.ts · screens/order-change-request.copy.ts` · 287 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -1289,6 +1289,8 @@ Source : `screens/orders.copy.ts · screens/order-summary.copy.ts · screens/ord
 | `orders.ticketPerKilogram` | / kg | / kg | / kg |  |
 | `orders.ticketVoucher` | Bon de fidélité | Loyalty voucher | Buono fedeltà |  |
 | `orders.ticketDelivery` | Livraison | Delivery | Consegna |  |
+| `orders.ticketFreeDelivery` | Livraison offerte | Free delivery | Consegna gratuita |  |
+| `orders.ticketPretaxSuffix` | (HT) | (excl. VAT) | (IVA esclusa) |  |
 | `orders.ticketTotal` | Total TTC | Total incl. VAT | Totale IVA inclusa |  |
 | `orders.ticketRate` | Taux | Rate | Aliquota |  |
 | `orders.ticketPretax` | HT | Excl. VAT | Imponibile |  |

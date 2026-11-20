@@ -261,3 +261,33 @@ describe('plusieurs remises de panier (plan des promotions, M6)', () => {
     expect(row(one, 'discount')?.label).toBe('Remise retrait');
   });
 });
+
+describe('la livraison offerte (plan livraison offerte, § 2.6)', () => {
+  const free = order({
+    fulfillmentMethod: 'delivery',
+    freeDelivery: { waivedCents: 1_500, waivedTtcCents: null },
+  });
+
+  it('« Livraison HT » au barème puis « Livraison offerte » au même montant négatif, total inchangé', () => {
+    expect(keys(free)).toEqual(['subtotal', 'delivery-waived', 'free-delivery', 'vat', 'total']);
+    expect(row(free, 'delivery-waived')).toMatchObject({ value: `15,00${EUR}` });
+    expect(row(free, 'free-delivery')).toMatchObject({
+      label: 'Livraison offerte',
+      value: `− 15,00${EUR}`,
+    });
+    expect(row(free, 'total')?.value).toBe(`105,50${EUR}`);
+  });
+
+  it('le libellé de la promotion, dans la langue de l’écran', () => {
+    const promo = order({
+      freeDelivery: {
+        waivedCents: 1_500,
+        waivedTtcCents: null,
+        label: { fr: 'Port offert', en: 'Free shipping', it: 'Spedizione' },
+      },
+    });
+    expect(orderTotalRows(promo, 'en').find((r) => r.key === 'free-delivery')?.label).toBe(
+      'Free shipping',
+    );
+  });
+});

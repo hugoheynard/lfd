@@ -627,6 +627,10 @@ export interface OrdersCopy {
   readonly ticketPerKilogram: string;
   readonly ticketVoucher: string;
   readonly ticketDelivery: string;
+  /** La ligne de la livraison offerte par le franco, au ticket. */
+  readonly ticketFreeDelivery: string;
+  /** Le suffixe d'un montant du ticket resté en HT. */
+  readonly ticketPretaxSuffix: string;
   readonly ticketTotal: string;
   readonly ticketRate: string;
   readonly ticketPretax: string;
@@ -785,6 +789,8 @@ export const ORDERS_FR: OrdersCopy = {
   ticketPerKilogram: '/ kg',
   ticketVoucher: 'Bon de fidélité',
   ticketDelivery: 'Livraison',
+  ticketFreeDelivery: 'Livraison offerte',
+  ticketPretaxSuffix: '(HT)',
   ticketTotal: 'Total TTC',
   ticketRate: 'Taux',
   ticketPretax: 'HT',
@@ -923,6 +929,8 @@ export const ORDERS_EN: OrdersCopy = {
   ticketPerKilogram: '/ kg',
   ticketVoucher: 'Loyalty voucher',
   ticketDelivery: 'Delivery',
+  ticketFreeDelivery: 'Free delivery',
+  ticketPretaxSuffix: '(excl. VAT)',
   ticketTotal: 'Total incl. VAT',
   ticketRate: 'Rate',
   ticketPretax: 'Excl. VAT',
@@ -1061,6 +1069,8 @@ export const ORDERS_IT: OrdersCopy = {
   ticketPerKilogram: '/ kg',
   ticketVoucher: 'Buono fedeltà',
   ticketDelivery: 'Consegna',
+  ticketFreeDelivery: 'Consegna gratuita',
+  ticketPretaxSuffix: '(IVA esclusa)',
   ticketTotal: 'Totale IVA inclusa',
   ticketRate: 'Aliquota',
   ticketPretax: 'Imponibile',

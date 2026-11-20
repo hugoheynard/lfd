@@ -180,3 +180,22 @@ describe("le bon d'un pro (line_ht) ne change pas", () => {
     expect(text).not.toContain('DÉCOMPTE (TTC)');
   });
 });
+
+describe('la livraison offerte au ticket (plan livraison offerte, § 2.6)', () => {
+  it('la livraison au barème TTC puis le libellé de la promotion au même montant négatif, total inchangé', () => {
+    const text = renderOrderSheetText(
+      sheet([BANANA, JUICE], {
+        ttcTerms: NO_GESTURE,
+        ttcByRate: BY_RATE,
+        freeDelivery: {
+          waivedCents: 1_000,
+          waivedTtcCents: 1_200,
+          label: { fr: 'Port offert', en: 'Free', it: 'Gratis' },
+        },
+      }),
+    );
+    expect(amountOn(text, 'Livraison')).toBe(1_200);
+    expect(amountOn(text, 'Port offert')).toBe(-1_200);
+    expect(amountOn(text, 'Total TTC')).toBe(2_700);
+  });
+});

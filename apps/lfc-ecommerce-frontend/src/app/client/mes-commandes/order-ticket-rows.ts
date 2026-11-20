@@ -18,6 +18,8 @@ export interface TicketCopy {
   readonly detailPickupDiscount: string;
   readonly ticketVoucher: string;
   readonly ticketDelivery: string;
+  readonly ticketFreeDelivery: string;
+  readonly ticketPretaxSuffix: string;
   readonly ticketTotal: string;
   readonly ticketRate: string;
   readonly ticketPretax: string;
@@ -39,6 +41,7 @@ export function ticketRowsOf(
     ...discountGestures(ticket, copy, locale),
     [copy.ticketVoucher, -ticket.voucherCents],
     [copy.ticketDelivery, ticket.deliveryFeeCents],
+    ...freeDeliveryGestures(ticket, copy, locale),
   ];
   return [
     ...ticket.lines.map((line) => ({
@@ -61,6 +64,29 @@ export function ticketRowsOf(
         `${copy.ticketVat} ${formatCents(part.vatCents)} · ` +
         `${copy.ticketTaxed} ${formatCents(part.ttcCents)}`,
     })),
+  ];
+}
+
+/**
+ * La livraison offerte, comme au bon PDF : la livraison au barème offert,
+ * puis « Livraison offerte » (ou le libellé figé de la promotion, dans la
+ * langue de l'écran) au même montant, négatif. Hors du total.
+ */
+function freeDeliveryGestures(
+  ticket: OrderTicket,
+  copy: TicketCopy,
+  locale: string,
+): readonly (readonly [string, number])[] {
+  const free = ticket.freeDelivery;
+  if (free === undefined) {
+    return [];
+  }
+  const suffix = free.pretax ? ` ${copy.ticketPretaxSuffix}` : '';
+  const label =
+    free.label === undefined ? copy.ticketFreeDelivery : discountLabelIn(free.label, locale);
+  return [
+    [`${copy.ticketDelivery}${suffix}`, free.cents],
+    [`${label}${suffix}`, -free.cents],
   ];
 }
 
