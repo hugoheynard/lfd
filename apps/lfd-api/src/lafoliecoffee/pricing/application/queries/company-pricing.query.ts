@@ -1,3 +1,4 @@
+import { isReservedElsewhere } from "../../../catalog/domain/orderable.js";
 import { averageGapBp as averageBp, gapBp } from "@lfd/money";
 import {
   type CompanyPricingCategoryView,
@@ -87,7 +88,7 @@ export class CompanyPricingQuery {
     ]);
     const { catalogue, rules } = sheet;
     const reservedElsewhere = new Set(
-      catalogue.filter((article) => article.reservation === "other").map((article) => article.sku),
+      catalogue.filter(isReservedElsewhere).map((article) => article.sku),
     );
     const names = new Map(catalogue.map((article) => [article.sku, article.name]));
     const categories = await sheet.categoriesWith(live);

@@ -2,6 +2,7 @@ import {
   holderIds,
   type ReservationHolders,
 } from "../../shared/company-standing/domain/reservation-holders.js";
+import type { MenuReading } from "../../shared/company-standing/domain/sub-account-menu-reading.js";
 import type { ShopAudience } from "./ports/catalog.reader.js";
 
 /**
@@ -37,6 +38,12 @@ export interface ProCatalogViewer {
   readonly holders: ReservationHolders;
   readonly show: ProCatalogShow;
   /**
+   * La carte du sous-compte qui COMPTE pour cette société
+   * (`plan-carte-des-sites.md`, § 3.4) — `null` sans carte, ou quand son
+   * principal n'est pas actif. Lue avec la société, jamais recomposée.
+   */
+  readonly menu: MenuReading | null;
+  /**
    * Les lignes GARDÉES d'une révision : un article déjà commandé par cette
    * commande reste lu même si sa réservation a changé depuis (§ 5, Q4). Seul
    * `OrderLinePricing.minimumsOf` le construit, par {@link keptLinesViewer}.
@@ -58,6 +65,11 @@ export interface StaffCatalogViewer {
    * réservé au principal est « à ce compte » pour ses sites (Q3).
    */
   readonly regarding: ReservationHolders | null;
+  /**
+   * La carte du compte regardé (§ 3.6) : l'article hors carte reçoit la
+   * marque `menu: "off"` sans être retiré.
+   */
+  readonly menu: MenuReading | null;
 }
 
 export const PUBLIC_VIEWER: CatalogViewer = { kind: "public" };
@@ -67,21 +79,28 @@ export const PRO_ANONYMOUS_VIEWER: CatalogViewer = { kind: "pro_anonymous" };
 export function staffViewer(
   audience: ShopAudience,
   regarding: ReservationHolders | null = null,
+  menu: MenuReading | null = null,
 ): StaffCatalogViewer {
-  return { kind: "staff", audience, regarding };
+  return { kind: "staff", audience, regarding, menu };
 }
 
-/** Un pro reconnu pour cette société. */
+/**
+ * Un pro reconnu pour cette société. `menu` vient de la même lecture que
+ * `holders` (`readServedCompany`, `readReservationHolders`) : seuls
+ * `CatalogViewers` et la garde des réservés le passent.
+ */
 export function proViewer(
   holders: ReservationHolders,
   show: ProCatalogShow = "served",
+  menu: MenuReading | null = null,
 ): ProCatalogViewer {
-  return { kind: "pro", holders, show };
+  return { kind: "pro", holders, show, menu };
 }
 
 /** Le lecteur des lignes gardées d'une révision (§ 5) — `minimumsOf` seulement. */
 export function keptLinesViewer(holders: ReservationHolders): ProCatalogViewer {
-  return { kind: "pro", holders, show: "served", waiveReservation: true };
+  // Gardées : ni la réservation ni la carte ne se relisent (§ 3.4).
+  return { kind: "pro", holders, show: "served", menu: null, waiveReservation: true };
 }
 
 /** Un visiteur sans société : le public, ou le pro anonyme. */

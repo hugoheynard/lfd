@@ -1,11 +1,13 @@
 import { viewerHolderIds, type CatalogViewer } from "../domain/catalog-viewer.js";
 import { catalogAudienceOf, type ServableItem } from "../domain/served-to.js";
 import {
+  menuMarkFor,
   reservationMarkOf,
   servedToViewer,
   type CatalogReservationMark,
   type ItemReservation,
 } from "../domain/served-to-viewer.js";
+import type { MenuMark } from "../domain/sub-account-menu-verdict.js";
 import { DECISION_COLUMNS } from "./catalog-decision-columns.js";
 import { reservedVisibilityOf } from "./reserved-visibility-column.js";
 
@@ -59,10 +61,22 @@ export interface AccessRow {
 export interface ItemAccess {
   readonly verdict: "served" | "locked" | "absent";
   readonly mark: CatalogReservationMark;
+  /** La carte du sous-compte (`plan-carte-des-sites.md`, § 3.4). */
+  readonly menu: MenuMark;
+}
+
+/** Ce que la carte lit d'une ligne : ses deux SKU, et la lignée de sa famille. */
+export interface AccessSubjectRow {
+  readonly sku: string;
+  readonly productSku: string;
 }
 
 /** `servedToViewer`, la règle du domaine, appliquée à une ligne lue. */
-export function accessOf(row: AccessRow, viewer: CatalogViewer): ItemAccess {
+export function accessOf(
+  row: AccessRow & AccessSubjectRow,
+  viewer: CatalogViewer,
+  familyPath: readonly string[],
+): ItemAccess {
   const item: ServableItem = {
     audience: catalogAudienceOf(row.audience),
     isHidden: row.override?.isHidden ?? false,
@@ -76,8 +90,10 @@ export function accessOf(row: AccessRow, viewer: CatalogViewer): ItemAccess {
     heldBy: row.reservations.map((entry) => entry.companyId),
     visibility: reservedVisibilityOf(row.override?.reservedVisibility),
   };
+  const subject = { sku: row.sku, productSku: row.productSku, familyPath };
   return {
-    verdict: servedToViewer(item, reservation, viewer),
+    verdict: servedToViewer(item, reservation, viewer, subject),
     mark: reservationMarkOf(item, reservation, viewer),
+    menu: menuMarkFor(subject, viewer),
   };
 }

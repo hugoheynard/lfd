@@ -1,3 +1,4 @@
+import { unorderableCause, type UnorderableCause } from "../../../catalog/domain/orderable.js";
 import type { CustomerSkuStat } from "@lfd/contracts";
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
@@ -24,6 +25,14 @@ import { CatalogViewers } from "../../../catalog/application/catalog-viewers.ser
  * facturé et `stillAvailable: false`. Le retirer laisserait croire que le client
  * ne l'a jamais pris, et le commercial le proposerait à nouveau.
  */
+/** La raison servie, par cause (`isOrderable`). */
+const LOCKED_REASONS: Readonly<
+  Record<UnorderableCause, NonNullable<CustomerSkuStat["lockedReason"]>>
+> = {
+  reserved_elsewhere: "reserved_to_other_account",
+  off_menu: "off_menu",
+};
+
 @QueryHandler(ListCustomerSkusQuery)
 export class ListCustomerSkusHandler implements IQueryHandler<
   ListCustomerSkusQuery,
@@ -54,7 +63,8 @@ export class ListCustomerSkusHandler implements IQueryHandler<
     );
     return tallies.map((tally) => {
       const item = items.get(tally.sku) ?? null;
-      const locked = item?.reservation === "other";
+      // Réservé ailleurs ou hors de la carte du site : listé, non commandable.
+      const cause = item === null ? null : unorderableCause(item);
       return {
         sku: tally.sku,
         productName: item?.name ?? tally.lastProductName,
@@ -63,8 +73,8 @@ export class ListCustomerSkusHandler implements IQueryHandler<
         totalQuantity: tally.totalQuantity,
         totalCents: tally.totalCents,
         lastOrderedAt: tally.lastOrderedAt.toISOString(),
-        stillAvailable: item !== null && !locked,
-        ...(locked ? { lockedReason: "reserved_to_other_account" as const } : {}),
+        stillAvailable: item !== null && cause === null,
+        ...(cause === null ? {} : { lockedReason: LOCKED_REASONS[cause] }),
       };
     });
   }

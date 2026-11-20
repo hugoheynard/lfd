@@ -1,10 +1,17 @@
-import type { ContentLocale, ShopCatalogueView, ShopItemView, ShopShelfView } from "@lfd/contracts";
+import type {
+  ContentLocale,
+  ShopCatalogueView,
+  ShopItemLockedReason,
+  ShopItemView,
+  ShopShelfView,
+} from "@lfd/contracts";
 import { lineTotalCents, pieces, ttcCentsFromHtMillicents, ttcCentsOf } from "@lfd/money";
 import { minQuantityFor } from "../domain/catalog-min-quantities.js";
 
 import { CATALOG_SOURCE_LANGUAGE, inLanguage } from "../domain/catalog-translations.js";
 import type { ResolvedCatalogItem, ShopAudience } from "../domain/ports/catalog.reader.js";
 import { shopAllergensOf } from "../domain/shop-allergens.js";
+import { unorderableCause, type UnorderableCause } from "../domain/orderable.js";
 import {
   itemOperationOf,
   shopAccessOf,
@@ -89,8 +96,17 @@ export function ttcCentsFromHtMillicentsFor(
     : ttcCentsOf(lineTotalCents(unitPriceMillicents, pieces(1)), vatRate);
 }
 
+/** La raison servie, par cause (`isOrderable`). */
+const LOCKED_REASONS: Readonly<Record<UnorderableCause, ShopItemLockedReason>> = {
+  reserved_elsewhere: "reserved_to_other_account",
+  off_menu: "off_menu",
+};
+
 /** Les deux clés d'un article verrouillé, absentes du fil sinon. */
-const LOCKED = { orderable: false, lockedReason: "reserved_to_other_account" } as const;
+function lockedOf(item: ResolvedCatalogItem): Pick<ShopItemView, "orderable" | "lockedReason"> {
+  const cause = unorderableCause(item);
+  return cause === null ? {} : { orderable: false, lockedReason: LOCKED_REASONS[cause] };
+}
 
 function toItem(item: ResolvedCatalogItem, audience: ShopAudience): ShopItemView {
   return {
@@ -125,9 +141,10 @@ function toItem(item: ResolvedCatalogItem, audience: ShopAudience): ShopItemView
     // professionnels » se lit `both`. La route publique ne rend jamais `pro` —
     // `servedTo` l'a écarté au lecteur.
     audience: item.audience,
-    // Réservé à un autre compte, réglé « visible, non commandable » : le
-    // lecteur ne le rend qu'au rayon reconnu et aux habituels (S7).
-    ...(item.reservation === "other" ? LOCKED : {}),
+    // Réservé à un autre compte, ou hors de la carte du site, réglé
+    // « visible, non commandable » : le lecteur ne le rend qu'au rayon
+    // reconnu et aux habituels (S7, `plan-carte-des-sites.md` § 3.4).
+    ...lockedOf(item),
     // Absents quand le commerce ne sait pas — jamais « aucun allergène » par
     // défaut, et la clé n'entre pas dans le fil pour rien.
     ...allergensOf(item, CATALOG_SOURCE_LANGUAGE),

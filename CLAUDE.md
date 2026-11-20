@@ -219,6 +219,11 @@
 >   fournit le vrai `HttpClient` fournit aussi `provideHttpClientTesting()` —
 >   sans quoi l'API de dev, quand elle tourne, répond à la place de la
 >   fixture (quatorze tests de la boutique rouges en local, verts en CI).
+>   Et **80** depuis le 2026-11-20 avec `lint:orderable-door` (plan
+>   `documentation/comptes-client/plan-carte-des-sites.md`, C2) : « commandable ? »
+>   se lit par `isOrderable` — un lecteur qui compare `reservation === "other"`
+>   à la main ignore la carte du site et vendrait au sous-compte ce que son
+>   principal lui a fermé.
 >   C'est la
 >   **seule** correction faite dans le corps, parce qu'un chiffre faux se vérifie
 >   en une commande et trompe tout de suite ;
@@ -1499,7 +1504,7 @@ pnpm --filter lfd-api seed:pim       # catalogue rejoué PAR LE BUS (cible local
 pnpm lint               # turbo, toutes les apps
 pnpm test
 pnpm build
-pnpm lint:gates         # les 79 portes du dépôt, toutes, et un résumé à la fin
+pnpm lint:gates         # les 80 portes du dépôt, toutes, et un résumé à la fin
 pnpm gate <nom>         # une porte (pnpm gate --list : la liste, avec ce qu'elle tient)
 pnpm lint:watch         # relance les portes dont un fichier lu change
 pnpm tool               # les outils occasionnels (digests, carte, axe…) ; pnpm tool <nom>

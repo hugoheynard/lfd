@@ -7,6 +7,9 @@ import { ProductCatalogReader } from "../../domain/ports/product-catalog.reader.
 import { InMemoryProductCatalog } from "../../infrastructure/in-memory-product-catalog.js";
 import { InMemoryReservationHolders } from "../../infrastructure/in-memory-reservation-holders.js";
 import { ReservedArticleGuard } from "../reserved-article-guard.service.js";
+import { ArticleOffMenuError } from "../../domain/errors/article-off-menu.error.js";
+import { menuMarkOf } from "../../domain/sub-account-menu-verdict.js";
+import type { MenuReading } from "../../../shared/company-standing/domain/sub-account-menu-reading.js";
 
 /**
  * Un catalogue qui juge comme le vrai lecteur, pour deux articles réservés à
@@ -129,5 +132,60 @@ describe("ReservedArticleGuard — le mur des abonnements", () => {
 
   it("laisse un particulier s'abonner à ce que son rayon sert", async () => {
     await expect(guard().ensureOpenTo(null, ["OPEN", "OPEN"])).resolves.toBeUndefined();
+  });
+});
+
+/**
+ * Un catalogue qui juge la carte comme le vrai lecteur : il lit la carte que
+ * le lecteur porte, sur les seuls SKU (aucune famille ici).
+ */
+class MenuJudging extends ReservedToA {
+  readonly menus: (MenuReading | null)[] = [];
+
+  override async resolveMany(
+    skus: readonly string[],
+    viewer: CatalogViewer,
+  ): Promise<ReadonlyMap<string, CatalogItem>> {
+    const menu = viewer.kind === "pro" ? viewer.menu : null;
+    this.menus.push(menu);
+    const found = new Map<string, CatalogItem>();
+    for (const [sku, item] of await super.resolveMany(skus, viewer)) {
+      const mark = menuMarkOf(menu, { sku, productSku: sku, familyPath: [] });
+      found.set(sku, { ...item, menu: mark });
+    }
+    return found;
+  }
+}
+
+/** La carte du site à l'abonnement (`plan-carte-des-sites.md`, § 3.5, § 3.7). */
+describe("ReservedArticleGuard — la carte du site", () => {
+  // Le site lit comme `co_a` : LOCKED lui est réservé, seule la carte le ferme.
+  const SITE = "co_a";
+  const ONLY_OPEN: MenuReading = {
+    mode: "only",
+    offMenu: "visible_locked",
+    entries: [{ level: "sku", ref: "OPEN", effect: "include" }],
+  };
+  const siteGuard = (catalog: MenuJudging) =>
+    new ReservedArticleGuard(
+      catalog,
+      new InMemoryReservationHolders(
+        new Map([[SITE, "co_principal"]]),
+        new Map([[SITE, ONLY_OPEN]]),
+      ),
+    );
+
+  it("refuse par son nom un article hors de la carte, avec la carte lue avec les porteurs", async () => {
+    const catalog = new MenuJudging();
+    const refusal = siteGuard(catalog).ensureOpenTo(SITE, ["OPEN", "LOCKED"]);
+    await expect(refusal).rejects.toThrow(ArticleOffMenuError);
+    await expect(refusal).rejects.toMatchObject({ sku: "LOCKED" });
+    expect(catalog.menus).toEqual([ONLY_OPEN]);
+  });
+
+  it("laisse passer ce que la carte ouvre", async () => {
+    await expect(
+      siteGuard(new MenuJudging()).ensureOpenTo(SITE, ["OPEN"]),
+    ).resolves.toBeUndefined();
   });
 });

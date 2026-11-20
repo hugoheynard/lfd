@@ -3,6 +3,7 @@ import type { ReservedVisibility } from "@lfd/contracts";
 import { holderIds } from "../../shared/company-standing/domain/reservation-holders.js";
 import { viewerAudience, type CatalogViewer } from "./catalog-viewer.js";
 import { servedTo, type ServableItem } from "./served-to.js";
+import { menuMarkOf, type MenuMark, type MenuSubject } from "./sub-account-menu-verdict.js";
 
 /** Ce qu'un article réservé dit au lecteur : est-il des siens, et que voient les autres ? */
 export interface ItemReservation {
@@ -33,9 +34,42 @@ export type ViewerVerdict = "served" | "locked" | "absent";
  * - un pro anonyme ne voit jamais un article réservé (Q2) ;
  * - un pro reconnu le voit s'il est des réservataires, lui ou son principal
  *   actif (S1) ; sinon `visible_locked` le liste verrouillé, au seul lecteur
- *   qui le demande (S7), et `hidden` le fait disparaître (S2).
+ *   qui le demande (S7), et `hidden` le fait disparaître (S2) ;
+ * - enfin la carte de son sous-compte (`plan-carte-des-sites.md`, § 3.4),
+ *   APRÈS la réservation et après les lignes gardées : elle restreint, elle
+ *   n'ouvre jamais. Hors carte, `hidden` rend l'article absent et
+ *   `visible_locked` le verrouille, au seul lecteur qui le demande.
  */
 export function servedToViewer(
+  item: ServableItem,
+  reservation: ItemReservation,
+  viewer: CatalogViewer,
+  subject: MenuSubject,
+): ViewerVerdict {
+  const verdict = reservationVerdict(item, reservation, viewer);
+  if (verdict === "absent" || viewer.kind !== "pro" || menuMarkFor(subject, viewer) === "on") {
+    return verdict;
+  }
+  return viewer.menu?.offMenu === "visible_locked" && viewer.show === "served_and_locked"
+    ? "locked"
+    : "absent";
+}
+
+/**
+ * **La marque de carte** d'un article rendu (§ 3.4, § 3.6) : `off` chez un
+ * pro dont le sous-compte ne l'ouvre pas (verrouillé), et chez le personnel
+ * qui regarde ce sous-compte (étiqueté, jamais retiré). Les lignes gardées
+ * d'une révision ne relisent pas la carte.
+ */
+export function menuMarkFor(subject: MenuSubject, viewer: CatalogViewer): MenuMark {
+  if (viewer.kind === "pro") {
+    return viewer.waiveReservation === true ? "on" : menuMarkOf(viewer.menu, subject);
+  }
+  return viewer.kind === "staff" ? menuMarkOf(viewer.menu, subject) : "on";
+}
+
+/** Audience, masquages, sur mesure et réservation — sans la carte. */
+function reservationVerdict(
   item: ServableItem,
   reservation: ItemReservation,
   viewer: CatalogViewer,

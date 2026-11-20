@@ -60,7 +60,9 @@ export class CatalogViewers {
       return { viewer: PUBLIC_VIEWER, principalId: null };
     }
     const viewer =
-      companyServiceOf(served.status) === "pro" ? proViewer(served.holders, show) : PUBLIC_VIEWER;
+      companyServiceOf(served.status) === "pro"
+        ? proViewer(served.holders, show, served.menu)
+        : PUBLIC_VIEWER;
     return { viewer, principalId: served.principalId };
   }
 
@@ -79,7 +81,7 @@ export class CatalogViewers {
     if (service === "closed" && companyId !== null) {
       throw new CompanyClosedOrderRefusedError(companyId);
     }
-    return service === "pro" ? proViewer(served.holders, show) : PUBLIC_VIEWER;
+    return service === "pro" ? proViewer(served.holders, show, served.menu) : PUBLIC_VIEWER;
   }
 
   /**
@@ -94,10 +96,17 @@ export class CatalogViewers {
       : keptLinesViewer(served.holders);
   }
 
-  /** Le personnel, au nom d'un compte : les étiquettes « à ce compte » / « à un autre ». */
+  /**
+   * Le personnel, au nom d'un compte : les étiquettes « à ce compte » / « à
+   * un autre », et « hors carte » pour un sous-compte (`plan-carte-des-sites.md`, § 3.6).
+   */
   async regarding(companyId: string, audience: ShopAudience = "pro"): Promise<StaffCatalogViewer> {
     const served = await this.companies.servedOf(companyId);
-    return staffViewer(audience, served?.holders ?? { companyId, activePrincipalId: null });
+    return staffViewer(
+      audience,
+      served?.holders ?? { companyId, activePrincipalId: null },
+      served?.menu ?? null,
+    );
   }
 
   private servedOf(companyId: string | null): Promise<ServedCompany | null> {

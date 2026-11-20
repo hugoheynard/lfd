@@ -1,3 +1,4 @@
+import { isReservedElsewhere } from "../../catalog/domain/orderable.js";
 import { Injectable } from "@nestjs/common";
 
 import { CatalogViewers } from "../../catalog/application/catalog-viewers.service.js";
@@ -23,6 +24,11 @@ export class CatalogReservedElsewhereReader extends ReservedElsewhereReader {
       return [];
     }
     const items = await this.catalog.resolveMany(shopSkus, await this.viewers.regarding(companyId));
-    return shopSkus.filter((sku) => items.get(sku)?.reservation === "other");
+    // Réservé ailleurs, et seulement cela : une mercuriale sur un article
+    // hors carte reste permise (`plan-carte-des-sites.md`, § 3.6).
+    return shopSkus.filter((sku) => {
+      const item = items.get(sku);
+      return item !== undefined && isReservedElsewhere(item);
+    });
   }
 }

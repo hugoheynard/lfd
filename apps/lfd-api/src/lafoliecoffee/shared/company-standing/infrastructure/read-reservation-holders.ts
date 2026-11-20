@@ -1,7 +1,11 @@
 import type { PrismaService } from "../../../../platform/database/prisma.service.js";
 import type { StandingCompanyStatus } from "../domain/company-standing.js";
 import type { ReservationHolders } from "../domain/reservation-holders.js";
-import { menuReadingOf, type MenuReading } from "../domain/sub-account-menu-reading.js";
+import {
+  menuReadingOf,
+  type HoldersWithMenu,
+  type MenuReading,
+} from "../domain/sub-account-menu-reading.js";
 
 /** Le seul statut d'un principal qui ouvre ses sites — comme `inheritedSiteWhere` (Q8). */
 const ACTIVE = "active";
@@ -19,14 +23,7 @@ const MENU_SELECT = {
   },
 } as const;
 
-/**
- * Les porteurs de réservation d'une société, et la carte qui COMPTE pour
- * elle — `null` sans carte, ou quand son principal n'est pas `active`
- * (§ 3.1 : la carte dort). Lue, pas encore appliquée.
- */
-export interface HoldersWithMenu extends ReservationHolders {
-  readonly menu: MenuReading | null;
-}
+export type { HoldersWithMenu } from "../domain/sub-account-menu-reading.js";
 
 /** Le principal d'un site, tel que la fiche client le nomme. */
 export interface SitePrincipal {

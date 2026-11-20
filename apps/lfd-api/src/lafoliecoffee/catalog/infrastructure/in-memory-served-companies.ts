@@ -1,4 +1,5 @@
 import type { StandingCompanyStatus } from "../../shared/company-standing/domain/company-standing.js";
+import type { MenuReading } from "../../shared/company-standing/domain/sub-account-menu-reading.js";
 import { ServedCompanyReader, type ServedCompany } from "../domain/ports/served-company.reader.js";
 
 /**
@@ -14,6 +15,8 @@ export class InMemoryServedCompanies extends ServedCompanyReader {
     private readonly activePrincipals: ReadonlyMap<string, string> = new Map(),
     /** Les principaux NON actifs : nommés au rangement du rayon, jamais ouvrants. */
     private readonly inactivePrincipals: ReadonlyMap<string, string> = new Map(),
+    /** La carte qui COMPTE, par société. */
+    private readonly menus: ReadonlyMap<string, MenuReading> = new Map(),
   ) {
     super();
   }
@@ -25,6 +28,7 @@ export class InMemoryServedCompanies extends ServedCompanyReader {
       status: this.statuses.get(companyId) ?? "active",
       holders: { companyId, activePrincipalId },
       principalId: activePrincipalId ?? this.inactivePrincipals.get(companyId) ?? null,
+      menu: this.menus.get(companyId) ?? null,
     });
   }
 }

@@ -31,13 +31,24 @@ export interface MenuReadingEntry {
 }
 
 /**
- * La carte qui COMPTE pour une société servie. Lue, pas encore appliquée :
- * le jugement est dans `servedToViewer`.
+ * La carte qui COMPTE pour une société servie. Jugée dans `servedToViewer`
+ * (`catalog/domain/sub-account-menu-verdict.ts`).
  */
 export interface MenuReading {
   readonly mode: MenuMode;
   readonly offMenu: OffMenuDisplay;
   readonly entries: readonly MenuReadingEntry[];
+}
+
+/**
+ * Les porteurs de réservation d'une société, et la carte qui COMPTE pour
+ * elle — `null` sans carte, ou quand son principal n'est pas `active`
+ * (§ 3.1 : la carte dort).
+ */
+export interface HoldersWithMenu {
+  readonly companyId: string;
+  readonly activePrincipalId: string | null;
+  readonly menu: MenuReading | null;
 }
 
 /** La carte telle que la requête la rend, colonnes texte. */
@@ -56,14 +67,28 @@ function narrow<T extends string>(allowed: readonly T[], value: string): T | und
 }
 
 /**
+ * La carte qu'on applique quand la ligne lue porte une valeur inconnue :
+ * **tout fermé, verrouillé**. Inatteignable sous les CHECK de
+ * `sub_account_menu` et `sub_account_menu_entry` ; si un CHECK venait à
+ * manquer, lire la carte à moitié serait faux dans les deux sens — une
+ * exclusion écartée ouvrirait en `except` ce que le principal a fermé, et
+ * une carte muette ouvrirait tout. Fermée, la panne se voit : chaque article
+ * du sous-compte est refusé par son nom (`ArticleOffMenuError`), et le
+ * principal ou le staff réécrit la carte.
+ */
+export const UNREADABLE_MENU: MenuReading = {
+  mode: "only",
+  offMenu: "visible_locked",
+  entries: [],
+};
+
+/**
  * **La carte compte-t-elle ?** Seulement sous un principal `active` (§ 3.1) :
  * principal suspendu, détaché ou absent, la carte dort en base et le
  * sous-compte commande ce que son rayon lui sert.
  *
- * Une valeur que la carte ne connaît pas (le CHECK l'interdit) rend la carte
- * entière muette plutôt qu'à moitié lue : une liste blanche amputée d'une
- * entrée fermerait un article en silence. Une entrée inconnue, elle, est
- * écartée seule.
+ * Une valeur que la carte ne connaît pas, en tête ou dans une entrée, rend
+ * {@link UNREADABLE_MENU} : jamais une carte à moitié lue.
  */
 export function menuReadingOf(
   row: MenuRow | null,
@@ -74,13 +99,14 @@ export function menuReadingOf(
   }
   const mode = narrow(MENU_MODES, row.mode);
   const offMenu = narrow(OFF_MENU_DISPLAYS, row.offMenu);
-  if (mode === undefined || offMenu === undefined) {
-    return null;
-  }
-  const entries = row.entries.flatMap((entry) => {
+  const entries: MenuReadingEntry[] = [];
+  for (const entry of row.entries) {
     const level = narrow(MENU_LEVELS, entry.level);
     const effect = narrow(MENU_EFFECTS, entry.effect);
-    return level === undefined || effect === undefined ? [] : [{ level, ref: entry.ref, effect }];
-  });
-  return { mode, offMenu, entries };
+    if (level === undefined || effect === undefined) {
+      return UNREADABLE_MENU;
+    }
+    entries.push({ level, ref: entry.ref, effect });
+  }
+  return mode === undefined || offMenu === undefined ? UNREADABLE_MENU : { mode, offMenu, entries };
 }

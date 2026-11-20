@@ -2,6 +2,7 @@ import type { OrderLineAllergens } from "@lfd/contracts";
 
 import type { CatalogFamily } from "../catalog-family.js";
 import type { CatalogSaleUnit } from "../catalog-sale-unit.js";
+import type { MenuMark } from "../sub-account-menu-verdict.js";
 import type { CatalogTranslations } from "../catalog-translations.js";
 import type { ShopAllergenFacts } from "../shop-allergens.js";
 import type { CatalogAudience } from "../served-to.js";
@@ -62,6 +63,12 @@ export interface ResolvedCatalogItem {
    * personnel, l'étiquette « réservé à un autre compte ».
    */
   readonly reservation: CatalogReservationMark;
+  /**
+   * **Dans la carte du sous-compte ?** (`plan-carte-des-sites.md`, § 3.4) —
+   * `off` chez un pro = verrouillé ; chez le personnel qui regarde un compte,
+   * l'étiquette « hors carte ». Se lit avec `reservation` par `isOrderable`.
+   */
+  readonly menu: MenuMark;
   /**
    * Les traductions de `name`, `note` et `categoryName` (lot des langues,
    * 2026-10-18). Vides tant que rien n'est reçu : la vitrine sert alors le

@@ -1,3 +1,4 @@
+import { isReservedElsewhere } from "../../catalog/domain/orderable.js";
 import type { CompanyPricingCategoryView } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
@@ -49,7 +50,9 @@ export class PortsCompanyPriceSheets extends CompanyPriceSheets {
     ]);
     // Après le catalogue : une vue de plancher porte l'écart au tarif de
     // référence, donc a besoin des articles.
-    const articles = catalogue.filter((article) => article.reservation !== "other");
+    // La carte d'un sous-compte n'en retire rien : la grille l'étiquette
+    // (`plan-carte-des-sites.md`, § 3.6).
+    const articles = catalogue.filter((article) => !isReservedElsewhere(article));
     const decided = await this.decisions.decisionsAt(at, { companyId }, articles);
     // Comme la caisse (plan des promotions, L8, L12) : l'étage promotion
     // vient des promotions de CE client.

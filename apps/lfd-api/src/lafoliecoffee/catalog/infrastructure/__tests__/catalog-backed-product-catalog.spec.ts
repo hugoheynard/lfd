@@ -28,6 +28,7 @@ const CROISSANT: ResolvedCatalogItem = {
   categoryName: VIENNOISERIES.name,
   audience: "both",
   reservation: "none",
+  menu: "on",
   translations: { name: NO_TRANSLATIONS, note: NO_TRANSLATIONS, categoryName: NO_TRANSLATIONS },
   family: VIENNOISERIES,
   isDefault: true,

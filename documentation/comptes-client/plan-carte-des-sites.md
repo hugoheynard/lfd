@@ -229,7 +229,7 @@ sub_account_menu_entry   (id, company_id → sub_account_menu RESTRICT, level, r
 | Lot | Contenu                                                                                                                                                                    |
 | --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | C1  | ✅ bâti le 2026-11-20. Migration, agrégat, dépôt ; lecture dans les deux chemins de `shared/company-standing` ; semis, couverture, journal ; porte d'appartenance vérifiée |
-| C2  | `servedToViewer` + marque `menu` ; `isOrderable` et les huit lecteurs ; `lint:orderable-door` ; refus ; lecteur staff ; budget tenu                                        |
+| C2  | ✅ bâti le 2026-11-20. `servedToViewer` + marque `menu` ; `isOrderable` et les huit lecteurs ; `lint:orderable-door` ; refus ; lecteur staff ; budget tenu                 |
 | C3  | Routes principal (`/companies/:subAccountId/menu`, prédicat `canSetMenuOf`) et staff (`/admin/companies/:id/menu`)                                                         |
 | C4  | Boutique : écran du principal, mention sur le rayon et au panier du sous-compte                                                                                            |
 | C5  | Back-office : onglet de la fiche, indicateur sur la liste des sites, étiquettes grille et mercuriale                                                                       |
@@ -269,6 +269,22 @@ sub_account_menu_entry   (id, company_id → sub_account_menu RESTRICT, level, r
   exception. Les entrées retirées sont supprimées physiquement (la carte,
   jamais), comme les étapes d'une procédure de livraison. Le dépôt n'est
   enregistré dans aucun module avant C3, son premier consommateur.
+- **C2** — le jugement est pur (`catalog/domain/sub-account-menu-verdict.ts`),
+  appelé par `servedToViewer` après la réservation ; l'article résolu porte
+  `menu: "on" | "off"` (obligatoire, pour qu'un lecteur ne puisse pas l'ignorer).
+  `catalog/domain/orderable.ts` porte `isOrderable`, `unorderableCause` et
+  `isReservedElsewhere` ; la porte refuse toute comparaison à `"other"` ailleurs.
+  🔴 **Cinq des huit lecteurs lisent `isOrderable`** (rayon, garde de
+  l'abonnement, refus de la passation, stock du jour, SKU du client) ; **trois
+  lisent `isReservedElsewhere`** (grille de prix, tarif du compte, réservé
+  ailleurs) : § 3.6 veut qu'une mercuriale sur un hors-carte reste permise et
+  que la grille l'étiquette, ce que `isOrderable` aurait contredit en le
+  retirant. Le contrat gagne `lockedReason: "off_menu"` (rayon et SKU du
+  client). Une valeur inconnue en base ferme la carte entière, verrouillée
+  (`UNREADABLE_MENU`) : inatteignable sous les CHECK, mais une exclusion écartée
+  seule aurait ouvert l'article en `except`. La saisie staff passe par
+  `forBilling` (`OrderLinePricing.billingViewer`), vérifié par l'e2e
+  `sub-account-menu-wall` ; le budget n'a pas bougé.
 
 ## 9. Ce que la contradiction a changé (vitruve, 2026-11-20)
 
@@ -284,7 +300,5 @@ sub_account_menu_entry   (id, company_id → sub_account_menu RESTRICT, level, r
 | S8 — « site » est pris par nos boutiques                           | `SubAccountMenu`, `sub_account_menu`                |
 | Mineur — `pricing-budget` introuvable                              | **faux** : `test/pricing-budget.e2e-spec.ts` existe |
 
-**Non vérifié, à rouvrir au début du lot qui en dépend** : le chemin exact de
-la saisie staff (C2) ; le signalement au panier d'une ligne devenue non servie
-(C4) ; l'avis de `lint:prisma-model-ownership` (C1) ; le coût réel en lectures
-(C2, par l'e2e).
+**Non vérifié, à rouvrir au début du lot qui en dépend** : le signalement au panier d'une ligne devenue non servie
+(C4) ; l'avis de `lint:prisma-model-ownership` (C1).

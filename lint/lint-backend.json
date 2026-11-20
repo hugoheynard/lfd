@@ -211,6 +211,13 @@
       ]
     },
     {
+      "name": "orderable-door",
+      "script": "dev-toolbox/gates/orderable-door.mjs",
+      "holds": "« Commandable ? » se lit par `isOrderable` (`catalog/domain/orderable.ts`) : aucun fichier servi ne compare la marque `reservation` à `\"other\"` à la main — il ignorerait la carte du site, et vendrait au sous-compte ce que son principal lui a fermé.",
+      "since": "2026-11-20",
+      "watch": ["apps/lfd-api/src/**", "dev-toolbox/gates/orderable-door*"]
+    },
+    {
       "name": "spec-http-offline",
       "script": "dev-toolbox/gates/spec-http-offline.mjs",
       "holds": "Une spec front ne joint pas le réseau : qui fournit `provideHttpClient()` fournit aussi `provideHttpClientTesting()`, sauf un faux serveur admis avec sa raison — sans quoi l'API de dev, quand elle tourne, répond à la place de la fixture.",

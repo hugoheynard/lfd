@@ -1,3 +1,4 @@
+import { isOrderable } from "../../../catalog/domain/orderable.js";
 import type { ShelfStockTodayView } from "@lfd/contracts";
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
@@ -59,13 +60,13 @@ export class GetShelfStockTodayHandler implements IQueryHandler<
     return shelfLeftFor(stock, await this.servedOf(skus, query.caller));
   }
 
-  /** Les articles commandables par cet appelant — un article verrouillé n'en est pas. */
+  /** Les articles commandables par cet appelant — réservé ailleurs ou hors carte n'en sont pas. */
   private async servedOf(
     skus: readonly string[],
     caller: ShelfStockCaller,
   ): Promise<ReadonlyMap<string, ShelfServedArticle>> {
     const items = await this.catalog.resolveMany(skus, await this.viewerOf(caller));
-    return new Map([...items].filter(([, item]) => item.reservation !== "other"));
+    return new Map([...items].filter(([, item]) => isOrderable(item)));
   }
 
   private viewerOf(caller: ShelfStockCaller): Promise<CatalogViewer> {

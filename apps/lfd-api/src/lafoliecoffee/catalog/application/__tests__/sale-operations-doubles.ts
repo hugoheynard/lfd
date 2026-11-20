@@ -36,6 +36,7 @@ export function catalogItem(
     categoryName: "Pâtisseries",
     audience: "both",
     reservation: "none",
+    menu: "on",
     translations: { name: NO_TRANSLATIONS, note: NO_TRANSLATIONS, categoryName: NO_TRANSLATIONS },
     family: {
       id: "fam-patisseries",

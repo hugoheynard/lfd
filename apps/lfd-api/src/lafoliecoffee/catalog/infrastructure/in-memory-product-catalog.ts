@@ -31,7 +31,12 @@ export class InMemoryProductCatalog extends ProductCatalogReader {
     super();
     this.bySku = new Map(
       items.map((declared) => {
-        const item = { ...PIECE_SALE_TERMS, reservation: "none" as const, ...declared };
+        const item = {
+          ...PIECE_SALE_TERMS,
+          reservation: "none" as const,
+          menu: "on" as const,
+          ...declared,
+        };
         return [
           item.sku,
           {

@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
-import type { ReservationHolders } from "../../shared/company-standing/domain/reservation-holders.js";
+import type { HoldersWithMenu } from "../../shared/company-standing/domain/sub-account-menu-reading.js";
 import { readReservationHolders } from "../../shared/company-standing/infrastructure/read-reservation-holders.js";
 import { ReservationHoldersReader } from "../domain/ports/reservation-holders.reader.js";
 
@@ -12,7 +12,7 @@ export class PrismaReservationHoldersReader extends ReservationHoldersReader {
     super();
   }
 
-  holdersOf(companyId: string): Promise<ReservationHolders> {
+  holdersOf(companyId: string): Promise<HoldersWithMenu> {
     return readReservationHolders(this.prisma, companyId);
   }
 }

@@ -7,12 +7,27 @@ import {
   type CatalogViewer,
 } from "../catalog-viewer.js";
 import type { ServableItem } from "../served-to.js";
+import type { MenuReading } from "../../../shared/company-standing/domain/sub-account-menu-reading.js";
 import {
+  menuMarkFor,
   reservationMarkOf,
-  servedToViewer,
+  servedToViewer as servedToViewerOnMenu,
   type ItemReservation,
   type ViewerVerdict,
 } from "../served-to-viewer.js";
+
+/** Un article qu'aucune carte ne touche : ces tables-ci ne jugent que la réservation. */
+function servedToViewer(
+  article: ServableItem,
+  reservation: ItemReservation,
+  viewer: CatalogViewer,
+): ViewerVerdict {
+  return servedToViewerOnMenu(article, reservation, viewer, {
+    sku: "VIE-001-1",
+    productSku: "VIE-001",
+    familyPath: ["fam_viennoiserie"],
+  });
+}
 
 /**
  * La table de vérité du mur (`plan-articles-sur-mesure.md`, § 9) : public,
@@ -234,5 +249,96 @@ describe("reservationMarkOf — l'étiquette", () => {
     expect(
       reservationMarkOf(item({ isReserved: false }), reservedTo(PRO_B, [], "hidden"), PRO_B),
     ).toBe("none");
+  });
+});
+
+/**
+ * **La carte d'un sous-compte** (`plan-carte-des-sites.md`, § 3.4, § 3.6) :
+ * après la réservation et les lignes gardées ; elle restreint, elle n'ouvre
+ * jamais.
+ */
+describe("servedToViewer — la carte du site", () => {
+  const TART = {
+    sku: "PAT-004-2",
+    productSku: "PAT-004",
+    familyPath: ["fam_tartes", "fam_patisserie"],
+  };
+  const OPEN = item({ isReserved: false });
+  const NOT_RESERVED = reservedTo(PRO_A, [], "hidden");
+  const noPastry = (offMenu: MenuReading["offMenu"]): MenuReading => ({
+    mode: "except",
+    offMenu,
+    entries: [{ level: "family", ref: "fam_patisserie", effect: "exclude" }],
+  });
+  const site = (menu: MenuReading, show: "served" | "served_and_locked" = "served_and_locked") =>
+    proViewer({ companyId: SITE_OF_A, activePrincipalId: A }, show, menu);
+
+  it("hors carte, `visible_locked` : verrouillé au lecteur qui le demande, absent ailleurs", () => {
+    expect(servedToViewerOnMenu(OPEN, NOT_RESERVED, site(noPastry("visible_locked")), TART)).toBe(
+      "locked",
+    );
+    expect(
+      servedToViewerOnMenu(OPEN, NOT_RESERVED, site(noPastry("visible_locked"), "served"), TART),
+    ).toBe("absent");
+    expect(menuMarkFor(TART, site(noPastry("visible_locked")))).toBe("off");
+  });
+
+  it("hors carte, `hidden` : absent, comme un SKU inconnu", () => {
+    expect(servedToViewerOnMenu(OPEN, NOT_RESERVED, site(noPastry("hidden")), TART)).toBe("absent");
+  });
+
+  it("dans la carte : servi", () => {
+    const croissant = { sku: "VIE-001-1", productSku: "VIE-001", familyPath: ["fam_viennoiserie"] };
+    expect(servedToViewerOnMenu(OPEN, NOT_RESERVED, site(noPastry("hidden")), croissant)).toBe(
+      "served",
+    );
+  });
+
+  it("la carte n'ouvre pas un article réservé à un autre compte", () => {
+    const allOfIt: MenuReading = {
+      mode: "only",
+      offMenu: "visible_locked",
+      entries: [{ level: "sku", ref: TART.sku, effect: "include" }],
+    };
+    const viewer = site(allOfIt);
+    expect(servedToViewerOnMenu(item(), reservedTo(viewer, [B], "hidden"), viewer, TART)).toBe(
+      "absent",
+    );
+  });
+
+  it("un hors-carte `hidden` reste absent même réservé ailleurs `visible_locked`", () => {
+    const viewer = site(noPastry("hidden"));
+    expect(
+      servedToViewerOnMenu(item(), reservedTo(viewer, [B], "visible_locked"), viewer, TART),
+    ).toBe("absent");
+  });
+
+  it("le principal lui-même, sans carte, n'est pas touché", () => {
+    expect(servedToViewerOnMenu(OPEN, NOT_RESERVED, PRO_A, TART)).toBe("served");
+    expect(menuMarkFor(TART, PRO_A)).toBe("on");
+  });
+
+  it("les lignes gardées d'une révision passent avant la carte", () => {
+    const kept: CatalogViewer = {
+      ...keptLinesViewer({ companyId: SITE_OF_A, activePrincipalId: A }),
+      menu: noPastry("hidden"),
+    };
+    expect(servedToViewerOnMenu(OPEN, NOT_RESERVED, kept, TART)).toBe("served");
+    expect(menuMarkFor(TART, kept)).toBe("on");
+  });
+
+  it("le personnel qui regarde le site : servi, étiqueté hors carte (§ 3.6)", () => {
+    const staff = staffViewer(
+      "pro",
+      { companyId: SITE_OF_A, activePrincipalId: A },
+      noPastry("hidden"),
+    );
+    expect(servedToViewerOnMenu(OPEN, NOT_RESERVED, staff, TART)).toBe("served");
+    expect(menuMarkFor(TART, staff)).toBe("off");
+  });
+
+  it("le public et le pro anonyme ne lisent aucune carte", () => {
+    expect(menuMarkFor(TART, PUBLIC_VIEWER)).toBe("on");
+    expect(menuMarkFor(TART, PRO_ANONYMOUS_VIEWER)).toBe("on");
   });
 });

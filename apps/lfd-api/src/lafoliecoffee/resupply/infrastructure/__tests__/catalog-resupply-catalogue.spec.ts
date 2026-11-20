@@ -18,6 +18,7 @@ function item(sku: string, overrides: Partial<ResolvedCatalogItem> = {}): Resolv
     categoryName: VIENNOISERIES.name,
     audience: "both",
     reservation: "none",
+    menu: "on",
     translations: { name: NO_TRANSLATIONS, note: NO_TRANSLATIONS, categoryName: NO_TRANSLATIONS },
     family: VIENNOISERIES,
     isDefault: false,

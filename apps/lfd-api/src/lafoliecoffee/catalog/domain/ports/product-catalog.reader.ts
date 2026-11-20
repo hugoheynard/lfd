@@ -6,6 +6,7 @@ import { NO_CATALOG_MIN_QUANTITIES, type CatalogMinQuantities } from "../catalog
 import type { CatalogSaleUnit } from "../catalog-sale-unit.js";
 import type { CatalogViewer } from "../catalog-viewer.js";
 import type { CatalogReservationMark } from "../served-to-viewer.js";
+import type { MenuMark } from "../sub-account-menu-verdict.js";
 
 /** Ce que le seed porte pour un SKU : nom + prix unitaire **HT** en millicentimes. */
 export interface PricedSku {
@@ -82,6 +83,8 @@ export interface CatalogItem extends PricedSku {
    * par son nom (`ReservedArticleRefusedError`).
    */
   readonly reservation: CatalogReservationMark;
+  /** Dans la carte du sous-compte ? `off` = refusé par son nom (`ArticleOffMenuError`). */
+  readonly menu: MenuMark;
   /**
    * **Ce qu'il faut pour le tarifer, scellé par le catalogue.**
    *
@@ -108,10 +111,10 @@ export interface CatalogItem extends PricedSku {
  */
 export type UnsealedCatalogItem = Omit<
   CatalogItem,
-  "article" | "reservation" | keyof CatalogSaleTerms
+  "article" | "reservation" | "menu" | keyof CatalogSaleTerms
 > &
   Partial<CatalogSaleTerms> &
-  Partial<Pick<CatalogItem, "reservation">>;
+  Partial<Pick<CatalogItem, "reservation" | "menu">>;
 
 /** Comment un article se vend : l'unité, au poids le pas et le minimum en grammes, et ses minimums en pièces. */
 export type CatalogSaleTerms = Pick<

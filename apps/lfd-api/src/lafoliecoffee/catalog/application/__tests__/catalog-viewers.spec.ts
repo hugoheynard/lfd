@@ -7,6 +7,7 @@ import {
 } from "../../domain/ports/served-company.reader.js";
 import { InMemoryServedCompanies } from "../../infrastructure/in-memory-served-companies.js";
 import { CatalogViewers } from "../catalog-viewers.service.js";
+import type { MenuReading } from "../../../shared/company-standing/domain/sub-account-menu-reading.js";
 
 const COMPANY = "co_1";
 const PRINCIPAL = "co_parent";
@@ -36,6 +37,7 @@ describe("CatalogViewers — la fabrique unique (plan pros en cours d'inscriptio
           kind: "pro",
           holders: { companyId: COMPANY, activePrincipalId: PRINCIPAL },
           show: "served_and_locked",
+          menu: null,
         });
         expect(billed).toEqual(read);
         expect(pricingCompanyOf(billed)).toBe(COMPANY);
@@ -76,11 +78,29 @@ describe("CatalogViewers — la fabrique unique (plan pros en cours d'inscriptio
       kind: "staff",
       audience: "pro",
       regarding: { companyId: COMPANY, activePrincipalId: null },
+      menu: null,
     });
   });
 
   it("étiquette pour le personnel quel que soit le statut", async () => {
     const staff = await viewersAt("terminated").regarding(COMPANY);
     expect(staff.regarding).toEqual({ companyId: COMPANY, activePrincipalId: PRINCIPAL });
+  });
+
+  /** La carte du site voyage avec le lecteur (`plan-carte-des-sites.md`, § 3.4, § 3.6). */
+  it("porte la carte du site au rayon, à la facturation et au personnel — pas aux lignes gardées", async () => {
+    const menu: MenuReading = { mode: "only", offMenu: "hidden", entries: [] };
+    const viewers = new CatalogViewers(
+      new InMemoryServedCompanies(
+        new Map(),
+        new Map([[COMPANY, PRINCIPAL]]),
+        new Map(),
+        new Map([[COMPANY, menu]]),
+      ),
+    );
+    expect(await viewers.forCompany(COMPANY)).toMatchObject({ kind: "pro", menu });
+    expect(await viewers.forBilling(COMPANY, "served_and_locked")).toMatchObject({ menu });
+    expect((await viewers.regarding(COMPANY)).menu).toBe(menu);
+    expect(await viewers.forKeptLines(COMPANY)).toMatchObject({ menu: null });
   });
 });

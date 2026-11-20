@@ -2,8 +2,9 @@ import { Injectable } from "@nestjs/common";
 
 import { PUBLIC_VIEWER, proViewer } from "../domain/catalog-viewer.js";
 import { ArticleNotServedToPublicError } from "../domain/errors/not-served-to-public.error.js";
-import { ReservedArticleRefusedError } from "../domain/errors/reserved-article-refused.error.js";
+import { unorderableError } from "../domain/errors/reserved-article-refused.error.js";
 import { ArticleNotServedToCompanyError } from "../domain/errors/not-served-to-company.error.js";
+import { unorderableCause } from "../domain/orderable.js";
 import { ProductCatalogReader } from "../domain/ports/product-catalog.reader.js";
 import { ReservationHoldersReader } from "../domain/ports/reservation-holders.reader.js";
 
@@ -35,6 +36,7 @@ export class ReservedArticleGuard {
    *   à son rayon.
    * @throws {ArticleNotServedToPublicError} un particulier, un article que son rayon ne sert pas.
    * @throws {ReservedArticleRefusedError} un article réservé à un autre compte, visible.
+   * @throws {ArticleOffMenuError} un article hors de la carte du site, verrouillé (§ 3.7).
    * @throws {ArticleNotServedToCompanyError} un pro, un article que son rayon ne sert pas
    *   (audience, validation, masquage, réservé invisible, inconnu).
    */
@@ -47,14 +49,18 @@ export class ReservedArticleGuard {
     }
     const holders = await this.holders.holdersOf(companyId);
     const wanted = [...new Set(skus)];
-    const seen = await this.catalog.resolveMany(wanted, proViewer(holders, "served_and_locked"));
+    // La carte du site vient avec les porteurs, de la même lecture
+    // (`plan-carte-des-sites.md`, § 3.5) : un hors-carte est refusé ici.
+    const viewer = proViewer(holders, "served_and_locked", holders.menu);
+    const seen = await this.catalog.resolveMany(wanted, viewer);
     for (const sku of wanted) {
       const item = seen.get(sku);
       if (item === undefined) {
         throw new ArticleNotServedToCompanyError(sku);
       }
-      if (item.reservation === "other") {
-        throw new ReservedArticleRefusedError(sku);
+      const cause = unorderableCause(item);
+      if (cause !== null) {
+        throw unorderableError(sku, cause);
       }
     }
   }

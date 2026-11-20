@@ -13,12 +13,12 @@ import { shopAllergenFactsOf } from "./shop-allergen-facts.js";
 import { PUBLIC_SALES_CONTEXT } from "../domain/public-context.js";
 import { catalogAudienceOf } from "../domain/served-to.js";
 import { viewerAudience, type CatalogViewer } from "../domain/catalog-viewer.js";
-import type { CatalogReservationMark } from "../domain/served-to-viewer.js";
 import {
   ACCESS_DECISION_COLUMNS,
   accessOf,
   reservationInclude,
   type AccessRow,
+  type ItemAccess,
 } from "./catalog-item-access.js";
 import { publicByContextOf } from "./public-by-context.js";
 import { STILL_SOLD } from "./sellable-filter.js";
@@ -251,13 +251,13 @@ export function servedItem(
   viewer: CatalogViewer,
   lineage: Lineage,
 ): ResolvedCatalogItem | null {
-  const access = accessOf(row, viewer);
+  const access = accessOf(row, viewer, lineage(row.category.id).path);
   if (access.verdict === "absent") {
     return null;
   }
   const audience = viewerAudience(viewer);
   const served = servedPriceOf(row, audience);
-  return served === null ? null : resolve(row, served, lineage, audience, access.mark);
+  return served === null ? null : resolve(row, served, lineage, audience, access);
 }
 
 /** L'entrée du pipeline de prix, et le taux qui l'accompagne. */
@@ -364,7 +364,7 @@ function resolve(
   served: ServedPrice,
   lineage: Lineage,
   viewer: ShopAudience,
-  reservation: CatalogReservationMark,
+  access: ItemAccess,
 ): ResolvedCatalogItem {
   return {
     sku: row.sku,
@@ -380,7 +380,8 @@ function resolve(
     categoryName: row.category.name,
     // `NULL` lu `both`, comme `servedTo` le lit : une ligne jamais reçue par un fait.
     audience: catalogAudienceOf(row.audience) ?? "both",
-    reservation,
+    reservation: access.mark,
+    menu: access.menu,
     translations: {
       name: nameTranslationsOf(row),
       note: translationsColumnOf(row.noteTranslations),

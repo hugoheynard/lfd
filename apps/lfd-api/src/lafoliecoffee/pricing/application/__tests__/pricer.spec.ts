@@ -89,6 +89,7 @@ function item(sku: string, cents: number, name = `Article ${sku}`): CatalogItem 
     vatRate: 5.5,
     ...PIECE_SALE_TERMS,
     reservation: "none",
+    menu: "on",
     family: VIENNOISERIES,
     allergens: null satisfies OrderLineAllergens | null,
     orderTimeLimit: null satisfies OrderLimitSpec | null,

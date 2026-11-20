@@ -1,5 +1,6 @@
 import { BusinessError } from "../../../../platform/shared/errors/app-error.js";
-import type { CatalogReservationMark } from "../served-to-viewer.js";
+import { unorderableCause, type OrderabilityMarks, type UnorderableCause } from "../orderable.js";
+import { ArticleOffMenuError } from "./article-off-menu.error.js";
 
 /**
  * **Un article réservé à un autre compte**, demandé pour celui-ci
@@ -22,17 +23,31 @@ export class ReservedArticleRefusedError extends BusinessError {
 }
 
 /**
- * Refuse le premier article verrouillé pour ce lecteur, dans l'ordre demandé.
+ * Refuse le premier article non commandable pour ce lecteur, dans l'ordre
+ * demandé — réservé à un autre compte, ou hors de la carte du site.
  *
  * @throws {ReservedArticleRefusedError} un article réservé à un autre compte.
+ * @throws {ArticleOffMenuError} un article hors de la carte du site.
  */
-export function refuseReserved(
-  found: ReadonlyMap<string, { readonly reservation: CatalogReservationMark }>,
+export function refuseUnorderable(
+  found: ReadonlyMap<string, OrderabilityMarks>,
   skus: Iterable<string>,
 ): void {
   for (const sku of skus) {
-    if (found.get(sku)?.reservation === "other") {
-      throw new ReservedArticleRefusedError(sku);
+    const item = found.get(sku);
+    const cause = item === undefined ? null : unorderableCause(item);
+    if (cause !== null) {
+      throw unorderableError(sku, cause);
     }
   }
+}
+
+/** Le refus qui nomme la cause. */
+export function unorderableError(
+  sku: string,
+  cause: UnorderableCause,
+): ReservedArticleRefusedError | ArticleOffMenuError {
+  return cause === "reserved_elsewhere"
+    ? new ReservedArticleRefusedError(sku)
+    : new ArticleOffMenuError(sku);
 }

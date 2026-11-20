@@ -34,7 +34,12 @@ class GivenCompanies extends ServedCompanyReader {
     return Promise.resolve(
       status === undefined
         ? null
-        : { status, holders: { companyId, activePrincipalId: null }, principalId: null },
+        : {
+            status,
+            holders: { companyId, activePrincipalId: null },
+            principalId: null,
+            menu: null,
+          },
     );
   }
 }

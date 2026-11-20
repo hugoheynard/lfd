@@ -25,7 +25,7 @@ import {
   viewerAudience,
   type CatalogViewer,
 } from "../../../catalog/domain/catalog-viewer.js";
-import { refuseReserved } from "../../../catalog/domain/errors/reserved-article-refused.error.js";
+import { refuseUnorderable } from "../../../catalog/domain/errors/reserved-article-refused.error.js";
 import {
   ensureMinimumQuantity,
   ensureSaleQuantity,
@@ -90,6 +90,7 @@ export class OrderLinePricing {
    *
    * @throws {UnknownSkuError} un SKU que le catalogue ne connaît pas.
    * @throws {ReservedArticleRefusedError} un article réservé à un autre compte.
+   * @throws {ArticleOffMenuError} un article hors de la carte du site (`plan-carte-des-sites.md`, § 3.7).
    * @throws {QuantityBelowMinimumError} un SKU sous le minimum de la clientèle.
    * @throws {CompanyClosedOrderRefusedError} la société servie est terminée.
    */
@@ -229,7 +230,7 @@ export class OrderLinePricing {
 
   private billingViewer(parties: ServedCompany): Promise<CatalogViewer> {
     // Verrouillés compris — pour les refuser par leur nom (S2), jamais pour
-    // les tarifer : `refuseReserved` passe avant toute ligne.
+    // les tarifer : `refuseUnorderable` passe avant toute ligne.
     // Et la société terminée y est refusée par son nom (P0) : devis et
     // passation, client comme saisie staff, passent tous ici.
     return this.viewers.forBilling(parties.companyId, "served_and_locked");
@@ -299,7 +300,7 @@ export class OrderLinePricing {
     // article réservé à un autre compte est refusé par son nom, un `hidden`
     // reste inconnu.
     const catalogue = loaded ?? (await this.catalog.resolveMany([...quantities.keys()], viewer));
-    refuseReserved(catalogue, quantities.keys());
+    refuseUnorderable(catalogue, quantities.keys());
     // 🔴 Le SKU inconnu est refusé AVANT le chargement des matériaux. Charger
     // d'abord ferait payer des lectures pour un panier qu'on va refuser.
     //

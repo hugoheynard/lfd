@@ -1,5 +1,6 @@
 import type { StandingCompanyStatus } from "../../../shared/company-standing/domain/company-standing.js";
 import type { ReservationHolders } from "../../../shared/company-standing/domain/reservation-holders.js";
+import type { MenuReading } from "../../../shared/company-standing/domain/sub-account-menu-reading.js";
 
 /** Ce que la fabrique du lecteur lit d'une société, en UNE lecture. */
 export interface ServedCompany {
@@ -12,6 +13,8 @@ export interface ServedCompany {
    * qu'une purge du principal efface ses sites ; jamais à ouvrir un article.
    */
   readonly principalId: string | null;
+  /** La carte qui compte pour cette société (`plan-carte-des-sites.md`, § 3.1), lue avec le reste. */
+  readonly menu: MenuReading | null;
 }
 
 /**
