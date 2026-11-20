@@ -16,17 +16,15 @@
       <fold-back-link [routerLink]="back().link" [label]="back().label" />
       <div class="nc-titles">
         <h1 class="nc-title">Nouvelle commande — {{ companyName() }}</h1>
-        @if (!narrow()) {
-          <button
-            foldButton
-            emphasis="outline"
-            intent="neutral"
-            [disabled]="savingDraft()"
-            (click)="onSaveDraft()"
-          >
-            {{ savingDraft() ? 'Enregistrement…' : 'Enregistrer le brouillon' }}
-          </button>
-        }
+        <button
+          foldButton
+          emphasis="outline"
+          intent="neutral"
+          [disabled]="savingDraft()"
+          (click)="onSaveDraft()"
+        >
+          {{ savingDraft() ? 'Enregistrement…' : 'Enregistrer le brouillon' }}
+        </button>
       </div>
     </header>
 
@@ -194,9 +192,7 @@
         [draft]="draft"
         [pickups]="pickups()"
         [estimate]="estimate()"
-        [saving]="savingDraft()"
         (open)="openPanier()"
-        (save)="onSaveDraft()"
       />
     }
   }

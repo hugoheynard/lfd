@@ -1,5 +1,4 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
-import { FoldButtonComponent } from 'fold-ng';
 import type { AdminOrderEstimateView, PickupAddressView } from '@lfd/contracts';
 
 import type { CartStore } from '../cart.store';
@@ -16,25 +15,19 @@ import { estimateRowsOf, PRICES_PENDING } from '../order-estimate';
  * le sous-total HT tant que l'estimation n'est pas revenue — et une cible
  * large pour ouvrir.
  *
- * À côté, **enregistrer le brouillon** : un appel s'interrompt, et rien n'oblige
- * à finir la commande dans la minute. Le bouton est au même niveau que le
- * panier parce qu'il répond à la même question — « qu'est-ce que je fais de ce
- * que je viens de saisir ? ».
+ * « Enregistrer le brouillon » n'y est pas : il reste dans l'en-tête de la
+ * page à toutes les largeurs, toujours visible (sur iPad, la barre collée en
+ * bas pouvait sortir de l'écran).
  */
 @Component({
   selector: 'app-barre-panier',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldButtonComponent],
   templateUrl: './barre-panier.html',
   styleUrl: './barre-panier.scss',
 })
 export class BarrePanier {
   readonly cart = input.required<CartStore>();
-  /** Vrai pendant l'enregistrement du brouillon — le bouton le dit. */
-  readonly saving = input(false);
-
   readonly open = output<void>();
-  readonly save = output<void>();
 
   protected readonly count = computed(() => this.cart().itemCount());
   /** Le brouillon et les points : le règlement et le retrait que le total lit. */
