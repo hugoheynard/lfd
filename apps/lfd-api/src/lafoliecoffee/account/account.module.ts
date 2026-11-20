@@ -267,6 +267,20 @@ import {
   PrismaSubAccountNoticeRulesReader,
   PrismaSubAccountNoticeRulesWriter,
 } from "./infrastructure/prisma-sub-account-notice-rules.store.js";
+// La carte d'un sous-compte (`plan-carte-des-sites.md`, C3).
+import { CompanySubAccountMenuController } from "./http/company-sub-account-menu.controller.js";
+import { AdminCompanySubAccountMenuController } from "./http/admin-company-sub-account-menu.controller.js";
+import { SetSubAccountMenuHandler } from "./application/commands/set-sub-account-menu.handler.js";
+import { SetSubAccountMenuByStaffHandler } from "./application/commands/set-sub-account-menu-by-staff.handler.js";
+import { GetSubAccountMenuHandler } from "./application/queries/get-sub-account-menu.handler.js";
+import { GetSubAccountMenuForStaffHandler } from "./application/queries/get-sub-account-menu-for-staff.handler.js";
+import { SubAccountMenuWriting } from "./application/services/sub-account-menu-writing.js";
+import { SubAccountMenuRepository } from "./domain/ports/sub-account-menu.repository.js";
+import { SubAccountMenuReader } from "./domain/ports/sub-account-menu.reader.js";
+import { SubAccountMenuAccessReader } from "./domain/ports/sub-account-menu-access.reader.js";
+import { PrismaSubAccountMenuRepository } from "./infrastructure/prisma-sub-account-menu.repository.js";
+import { PrismaSubAccountMenuReader } from "./infrastructure/prisma-sub-account-menu.reader.js";
+import { PrismaSubAccountMenuAccessReader } from "./infrastructure/prisma-sub-account-menu-access.reader.js";
 
 /**
  * Contexte **compte** : la personne (son profil) et ses entreprises.
@@ -307,6 +321,8 @@ import {
     // suivi du tarif derrière le droit de tarification (Q9).
     AdminCompanyHierarchyController,
     AdminCompanyPricingFollowController,
+    CompanySubAccountMenuController,
+    AdminCompanySubAccountMenuController,
   ],
   providers: [
     CompaniesVersionSource,
@@ -451,6 +467,14 @@ import {
     { provide: CustomerSheetReader, useClass: PrismaCustomerSheetReader },
     { provide: CompanyRepository, useClass: PrismaCompanyRepository },
     { provide: ChorusRoutingRepository, useClass: PrismaChorusRoutingRepository },
+    SetSubAccountMenuHandler,
+    SetSubAccountMenuByStaffHandler,
+    GetSubAccountMenuHandler,
+    GetSubAccountMenuForStaffHandler,
+    SubAccountMenuWriting,
+    { provide: SubAccountMenuRepository, useClass: PrismaSubAccountMenuRepository },
+    { provide: SubAccountMenuReader, useClass: PrismaSubAccountMenuReader },
+    { provide: SubAccountMenuAccessReader, useClass: PrismaSubAccountMenuAccessReader },
     { provide: StaffDirectory, useClass: StaffBlockDirectory },
     { provide: CompanyContactRepository, useClass: PrismaCompanyContactRepository },
     { provide: CompanyAddressRepository, useClass: PrismaCompanyAddressRepository },

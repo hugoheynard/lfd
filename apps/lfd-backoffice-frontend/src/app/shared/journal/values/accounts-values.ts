@@ -160,6 +160,12 @@ export const COLLECTION_FORM = domain('forme de prélèvement', {
   own_iban: 'Mandat et compte du site',
 });
 
+/** Le défaut de la carte d'un site (`company.sub_account_menu_set`). */
+export const SUB_ACCOUNT_MENU_MODE = domain('carte du site', {
+  only: 'Seulement les articles inclus',
+  except: 'Tout sauf les articles exclus',
+});
+
 /** Comment un sous-compte a été lié à son principal (`company.parent_attached`). */
 export const PARENT_LINK_VIA = domain('lien vers le compte principal', {
   created: 'Créé comme sous-compte',
@@ -209,6 +215,7 @@ export const ACCOUNTS_VALUES: ValueFamily = {
     FOLLOW_ASPECT,
     PARENT_LINK_VIA,
     COLLECTION_FORM,
+    SUB_ACCOUNT_MENU_MODE,
     CUSTOMER_REQUEST_KIND,
     COMPANY_CONTACT_MODE,
   ],

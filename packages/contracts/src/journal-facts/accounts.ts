@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import { deferredTermSchema } from "../company.js";
 import { COLLECTION_FORMS, companyFollowAspectSchema } from "../sub-accounts.js";
+import { SUB_ACCOUNT_MENU_MODES, SUB_ACCOUNT_OFF_MENU_DISPLAYS } from "../sub-account-menu.js";
 import { DOORSTEP_RULES } from "../delivery-doorstep-rule.js";
 import { ADDRESS_POINT_KINDS } from "../delivery-address-suggestions.js";
 import { companyMemberRoleSchema } from "../company-member.js";
@@ -298,6 +299,20 @@ export const ACCOUNTS_AND_CARTS_FACTS = {
    */
   "company.collection_form_set": fact(
     payload({ subjectLabel: subjectLabel(), form: z.enum(COLLECTION_FORMS), since: instant() }),
+  ),
+  /**
+   * La carte d'un sous-compte est posée, entière — par le staff ou par le
+   * principal (`plan-carte-des-sites.md`, § 4). Le sujet est le SOUS-COMPTE ;
+   * la charge dit le mode et compte les entrées, le détail est sur la fiche.
+   */
+  "company.sub_account_menu_set": fact(
+    payload({
+      subjectLabel: subjectLabel(),
+      mode: z.enum(SUB_ACCOUNT_MENU_MODES),
+      offMenu: z.enum(SUB_ACCOUNT_OFF_MENU_DISPLAYS),
+      included: count(),
+      excluded: count(),
+    }),
   ),
   /** La case « Compte de groupe, sans livraison » (§4), cochée ou décochée. */
   "company.group_without_delivery_set": fact(

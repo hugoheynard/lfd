@@ -230,7 +230,7 @@ sub_account_menu_entry   (id, company_id → sub_account_menu RESTRICT, level, r
 | --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | C1  | ✅ bâti le 2026-11-20. Migration, agrégat, dépôt ; lecture dans les deux chemins de `shared/company-standing` ; semis, couverture, journal ; porte d'appartenance vérifiée |
 | C2  | ✅ bâti le 2026-11-20. `servedToViewer` + marque `menu` ; `isOrderable` et les huit lecteurs ; `lint:orderable-door` ; refus ; lecteur staff ; budget tenu                 |
-| C3  | Routes principal (`/companies/:subAccountId/menu`, prédicat `canSetMenuOf`) et staff (`/admin/companies/:id/menu`)                                                         |
+| C3  | ✅ bâti le 2026-11-20. Routes principal (`/companies/:subAccountId/menu`, prédicat `canSetMenuOf`) et staff (`/admin/companies/:id/menu`)                                  |
 | C4  | Boutique : écran du principal, mention sur le rayon et au panier du sous-compte                                                                                            |
 | C5  | Back-office : onglet de la fiche, indicateur sur la liste des sites, étiquettes grille et mercuriale                                                                       |
 | C6  | Avis (Q3) ; doc d'état, ce plan supprimé                                                                                                                                   |
@@ -285,6 +285,19 @@ sub_account_menu_entry   (id, company_id → sub_account_menu RESTRICT, level, r
   seule aurait ouvert l'article en `except`. La saisie staff passe par
   `forBilling` (`OrderLinePricing.billingViewer`), vérifié par l'e2e
   `sub-account-menu-wall` ; le budget n'a pas bougé.
+- **C3** — `canSetMenuOf` vit dans `shared/company-standing/domain/sub-account-menu-writing.ts`
+  et ne lit que `standing.via`. La lecture (`GET`) a le même mur que
+  l'écriture : un membre du site, même son propriétaire, reçoit 403 ; qui
+  n'atteint pas le site (étranger, `orders` du principal) reçoit 404. Le `PUT`
+  recompose la carte par les méthodes de l'agrégat
+  (`account/domain/services/whole-menu.ts`) : une entrée inchangée garde son
+  id, une carte déjà dans l'état demandé n'écrit, ne journalise ni ne purge
+  rien. **Pas de geste « retirer la carte »** : « aucune restriction » se dit
+  `except` sans entrée, l'en-tête reste. Le staff écrit sous `b2b_companies`
+  (aucune ressource neuve). Chaque pose écrit le fait
+  `company.sub_account_menu_set` (sujet : le site) ; l'événement
+  `SubAccountMenuSetEvent` porte `author` hors de la charge, pour l'abonné de
+  l'avis Q3 (C6).
 
 ## 9. Ce que la contradiction a changé (vitruve, 2026-11-20)
 

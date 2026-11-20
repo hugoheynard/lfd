@@ -12,7 +12,7 @@ import {
   type PhraseFact,
   type Segment,
 } from '../phrase';
-import { COLLECTION_FORM, FOLLOW_ASPECT } from '../values/accounts-values';
+import { COLLECTION_FORM, FOLLOW_ASPECT, SUB_ACCOUNT_MENU_MODE } from '../values/accounts-values';
 
 /**
  * **Les sous-comptes** — le lien d'un client vers son compte principal, et
@@ -163,7 +163,21 @@ const collectionFormSet: Phrase = (fact) =>
     ['subjectLabel', 'form', 'since'],
   );
 
+/** « a posé la carte du client « X » : tout sauf les articles exclus » ; les comptes au détail. */
+const subAccountMenuSet: Phrase = (fact) =>
+  byActor(
+    fact,
+    [
+      text('a posé la carte '),
+      ...ofClient(fact),
+      text(' : '),
+      valueIn(SUB_ACCOUNT_MENU_MODE, fact.payload['mode'], { inSentence: true }),
+    ],
+    ['subjectLabel', 'mode'],
+  );
+
 export const SUB_ACCOUNT_PHRASES = {
+  'company.sub_account_menu_set': subAccountMenuSet,
   'company.parent_attached': parentAttached,
   'company.parent_detached': parentDetached,
   'company.parent_followed': alignment('a aligné', 'since'),

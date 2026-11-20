@@ -1,4 +1,5 @@
 import {
+  AuthorizationError,
   BusinessError,
   DomainError,
   ResourceNotFoundError,
@@ -60,6 +61,20 @@ export class MenuWithoutAuthorError extends TechnicalError {
     super(
       "account.sub_account_menu.without_author",
       "La carte de ce site est enregistrée sans auteur, ce que la base devrait refuser. Signalez-le à l'équipe technique avec la référence de la société.",
+    );
+  }
+}
+
+/**
+ * La personne atteint ce sous-compte, mais n'est ni propriétaire ni
+ * administratrice de son compte principal : la carte d'un site se règle
+ * depuis le principal, jamais depuis le site lui-même (403).
+ */
+export class SubAccountMenuWriterRequiredError extends AuthorizationError {
+  constructor(readonly companyId: string) {
+    super(
+      "account.sub_account_menu.principal_admin_required",
+      "La carte de ce site se règle depuis son compte principal, par son propriétaire ou un de ses administrateurs. Demandez-leur de la modifier.",
     );
   }
 }
