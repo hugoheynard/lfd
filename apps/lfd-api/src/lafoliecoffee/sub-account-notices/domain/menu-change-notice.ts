@@ -3,7 +3,7 @@ import type { CompanyRole } from "../../account/domain/value-objects/company-rol
 
 /**
  * Qui le principal prévient quand l'équipe change la carte d'un de ses sites
- * (`plan-carte-des-sites.md`, Q3) : ceux qui peuvent la régler eux-mêmes
+ * (`carte-des-sites.md`, Q3) : ceux qui peuvent la régler eux-mêmes
  * (§ 3.2), le propriétaire et l'administrateur du principal. Ni le tableau
  * des avis ni son interrupteur n'y jouent : ils règlent ce que FONT les
  * sites, et la carte est un geste fait sur le site par l'équipe.

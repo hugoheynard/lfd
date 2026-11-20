@@ -41,7 +41,7 @@ export interface MenuEntryDraft {
 
 /**
  * **La carte d'un sous-compte** — ce que ce site peut commander
- * (`documentation/comptes-client/plan-carte-des-sites.md`, § 3.3).
+ * (`documentation/comptes-client/carte-des-sites.md`, § 3.3).
  *
  * Elle tient deux règles : une carte ne s'attache qu'à un sous-compte, et un
  * article n'y figure qu'une fois par grain — inclus OU exclu, jamais les deux.

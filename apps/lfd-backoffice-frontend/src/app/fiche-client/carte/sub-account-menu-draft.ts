@@ -14,7 +14,7 @@ import type {
 
 /**
  * **La carte d'un sous-compte, telle que la fiche client la compose** avant de
- * l'envoyer entière (`PUT`, `plan-carte-des-sites.md` § 3.3).
+ * l'envoyer entière (`PUT`, `carte-des-sites.md` § 3.3).
  *
  * La boutique a son propre brouillon (`client/site-menu/site-menu-draft.ts`),
  * bâti sur la vue du rayon, qui ne porte ni `productSku` ni les déclinaisons.

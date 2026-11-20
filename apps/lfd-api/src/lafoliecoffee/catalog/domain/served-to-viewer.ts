@@ -35,7 +35,7 @@ export type ViewerVerdict = "served" | "locked" | "absent";
  * - un pro reconnu le voit s'il est des réservataires, lui ou son principal
  *   actif (S1) ; sinon `visible_locked` le liste verrouillé, au seul lecteur
  *   qui le demande (S7), et `hidden` le fait disparaître (S2) ;
- * - enfin la carte de son sous-compte (`plan-carte-des-sites.md`, § 3.4),
+ * - enfin la carte de son sous-compte (`carte-des-sites.md`, § 3.4),
  *   APRÈS la réservation et après les lignes gardées : elle restreint, elle
  *   n'ouvre jamais. Hors carte, `hidden` rend l'article absent et
  *   `visible_locked` le verrouille, au seul lecteur qui le demande.

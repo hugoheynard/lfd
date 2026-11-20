@@ -589,7 +589,7 @@ export interface ClientCopy {
     readonly reservedToOtherAccountHint: string;
     /**
      * Un article hors de la carte que le compte principal a posée sur ce site
-     * (`plan-carte-des-sites.md`, § 3.4) — sur la vignette.
+     * (`carte-des-sites.md`, § 3.4) — sur la vignette.
      */
     readonly offMenu: string;
     /** La même raison, en phrase, à la place de l'ajout sur la fiche. */
@@ -780,7 +780,7 @@ export interface ClientCopy {
     readonly reservedLine: string;
     /**
      * La même ligne, quand l'article est hors de la carte que le compte
-     * principal a posée sur ce site (`plan-carte-des-sites.md`, § 3.5). `{name}`.
+     * principal a posée sur ce site (`carte-des-sites.md`, § 3.5). `{name}`.
      */
     readonly offMenuLine: string;
     /** Le bouton qui retire ces lignes du panier. */

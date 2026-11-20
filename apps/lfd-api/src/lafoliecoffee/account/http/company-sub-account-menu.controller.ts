@@ -15,7 +15,7 @@ import { GetSubAccountMenuQuery } from "../application/queries/get-sub-account-m
 
 /**
  * **La carte d'un site**, réglée depuis son compte principal
- * (`documentation/comptes-client/plan-carte-des-sites.md`, § 3.2, § 4). Le
+ * (`documentation/comptes-client/carte-des-sites.md`, § 3.2, § 4). Le
  * mur — propriétaire ou administrateur du principal, jamais un membre du
  * site — vit dans les handlers.
  */

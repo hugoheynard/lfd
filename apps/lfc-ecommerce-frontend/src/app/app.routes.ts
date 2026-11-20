@@ -238,7 +238,7 @@ export const routes: Routes = [
       },
       {
         // LES SITES D'UN COMPTE PRINCIPAL, et la carte de chacun
-        // (`plan-carte-des-sites.md`, § 5). L'écran ne liste que les sites que
+        // (`carte-des-sites.md`, § 2). L'écran ne liste que les sites que
         // son propriétaire ou son administrateur règle ; le serveur tient le mur.
         path: 'mes-sites',
         canActivate: [companyWorkspaceGuard],

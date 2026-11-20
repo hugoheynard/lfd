@@ -1,6 +1,6 @@
 /**
  * E2E : **le staff voit la carte d'un site sur sa grille de prix et ses
- * mercuriales** (plan `documentation/comptes-client/plan-carte-des-sites.md`,
+ * mercuriales** (plan `documentation/comptes-client/carte-des-sites.md`,
  * § 3.6).
  *
  * - l'article hors carte reste dans la grille, nommé dans `offMenuSkus` de

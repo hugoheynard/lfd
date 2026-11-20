@@ -14,7 +14,7 @@ import { SetSubAccountMenuByStaffCommand } from "../application/commands/set-sub
 import { GetSubAccountMenuForStaffQuery } from "../application/queries/get-sub-account-menu-for-staff.query.js";
 
 /**
- * **La carte d'un sous-compte**, sur sa fiche client (`plan-carte-des-sites.md`,
+ * **La carte d'un sous-compte**, sur sa fiche client (`carte-des-sites.md`,
  * § 3.2) : sous `b2b_companies`, comme la fiche elle-même — lecture pour la
  * lire, écriture pour la poser.
  */

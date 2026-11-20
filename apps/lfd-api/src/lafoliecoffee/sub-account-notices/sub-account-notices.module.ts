@@ -45,7 +45,7 @@ import { AdminSubAccountNoticesController } from "./http/admin-sub-account-notic
  * durable porte le principal figé. N4b : les quatre gestes du carnet de
  * livraison, client et équipe. N4c : les quatre gestes sur les contacts.
  * N4d : le RIB et la preuve de mandat. N4e : les paniers récurrents. La
- * carte d'un site posée par l'équipe (`plan-carte-des-sites.md`, Q3).
+ * carte d'un site posée par l'équipe (`carte-des-sites.md`, Q3).
  */
 @Module({
   imports: [AccountModule, OrdersModule],

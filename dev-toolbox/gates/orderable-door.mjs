@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Gate : **« commandable ? » se lit par `isOrderable`** (plan
- * `documentation/comptes-client/plan-carte-des-sites.md`, § 3.4).
+ * `documentation/comptes-client/carte-des-sites.md`, § 3.4).
  *
  * Un article verrouillé sort du lecteur du catalogue comme un article
  * résolu, avec ses marques : `reservation` (réservé à un autre compte) et
@@ -107,7 +107,7 @@ function main() {
     for (const failure of failures) console.error(`  ${failure}`);
     console.error(
       `\n  ${failures.length} écart(s). « Commandable ? » se lit par isOrderable ` +
-        "(plan-carte-des-sites.md, § 3.4).\n",
+        "(carte-des-sites.md, § 3.4).\n",
     );
     process.exit(1);
   }

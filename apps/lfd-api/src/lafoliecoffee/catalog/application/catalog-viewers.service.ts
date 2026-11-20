@@ -98,7 +98,7 @@ export class CatalogViewers {
 
   /**
    * Le personnel, au nom d'un compte : les étiquettes « à ce compte » / « à
-   * un autre », et « hors carte » pour un sous-compte (`plan-carte-des-sites.md`, § 3.6).
+   * un autre », et « hors carte » pour un sous-compte (`carte-des-sites.md`, § 3.6).
    */
   async regarding(companyId: string, audience: ShopAudience = "pro"): Promise<StaffCatalogViewer> {
     const served = await this.companies.servedOf(companyId);

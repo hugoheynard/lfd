@@ -157,7 +157,7 @@ class MenuJudging extends ReservedToA {
   }
 }
 
-/** La carte du site à l'abonnement (`plan-carte-des-sites.md`, § 3.5, § 3.7). */
+/** La carte du site à l'abonnement (`carte-des-sites.md`, § 3.5, § 3.7). */
 describe("ReservedArticleGuard — la carte du site", () => {
   // Le site lit comme `co_a` : LOCKED lui est réservé, seule la carte le ferme.
   const SITE = "co_a";

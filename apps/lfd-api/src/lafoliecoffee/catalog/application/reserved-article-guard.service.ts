@@ -50,7 +50,7 @@ export class ReservedArticleGuard {
     const holders = await this.holders.holdersOf(companyId);
     const wanted = [...new Set(skus)];
     // La carte du site vient avec les porteurs, de la même lecture
-    // (`plan-carte-des-sites.md`, § 3.5) : un hors-carte est refusé ici.
+    // (`carte-des-sites.md`, § 3.5) : un hors-carte est refusé ici.
     const viewer = proViewer(holders, "served_and_locked", holders.menu);
     const seen = await this.catalog.resolveMany(wanted, viewer);
     for (const sku of wanted) {

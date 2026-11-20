@@ -5,7 +5,7 @@ import type { RequestedMenu } from "../../domain/services/whole-menu.js";
  * **staff**, sans mur membership : la surface admin porte l'autorisation
  * (`b2b_companies`, en écriture).
  *
- * Le geste prévient le principal par e-mail (`plan-carte-des-sites.md`, Q3) :
+ * Le geste prévient le principal par e-mail (`carte-des-sites.md`, Q3) :
  * il porte donc la clé d'intention de l'écran, et un second clic de même clé
  * ne réexécute rien.
  */

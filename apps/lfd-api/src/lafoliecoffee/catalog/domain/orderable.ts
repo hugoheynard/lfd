@@ -10,7 +10,7 @@ export interface OrderabilityMarks {
 /**
  * Pourquoi un article rendu n'est pas commandable par ce lecteur, ou `null`
  * — la réservation d'abord (elle se dit déjà par son nom), puis la carte du
- * sous-compte (`plan-carte-des-sites.md`, § 3.4).
+ * sous-compte (`carte-des-sites.md`, § 3.4).
  */
 export type UnorderableCause = "reserved_elsewhere" | "off_menu";
 

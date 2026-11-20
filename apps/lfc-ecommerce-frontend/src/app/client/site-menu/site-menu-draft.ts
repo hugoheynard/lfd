@@ -12,7 +12,7 @@ import type {
 
 /**
  * **La carte d'un site, telle que l'écran la compose** avant de l'envoyer
- * entière (`PUT`, `plan-carte-des-sites.md` § 3.3, § 4).
+ * entière (`PUT`, `carte-des-sites.md` § 3.3, § 4).
  */
 export interface MenuDraft {
   readonly mode: SubAccountMenuMode;

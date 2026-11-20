@@ -200,7 +200,7 @@ describe('Les destinations du menu, selon l’espace', () => {
     expect(idsIn(TOMMEUSES.id, [TOMMEUSES])).toEqual(ORDER);
   });
 
-  /** `plan-carte-des-sites.md` § 5 : « Mes sites », en dernier, au seul qui règle une carte. */
+  /** `carte-des-sites.md` § 2 : « Mes sites », en dernier, au seul qui règle une carte. */
   it('ajoute Mes sites, en dernier, au principal qui règle la carte d’un site', () => {
     const chalet = { ...TOMMEUSES, id: 'cmp_chalet' };
     expect(idsIn(TOMMEUSES.id, [TOMMEUSES], [chalet])).toEqual([...ORDER, 'sites']);

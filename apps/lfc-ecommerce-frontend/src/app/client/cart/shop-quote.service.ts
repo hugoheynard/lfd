@@ -108,7 +108,7 @@ const OPERATION_REFUSAL_PREFIX = 'orders.operation.';
 const LINE_REFUSAL_PREFIX = 'orders.line.';
 
 /**
- * Le refus d'un article hors de la carte du site (409, `plan-carte-des-sites.md`
+ * Le refus d'un article hors de la carte du site (409, `carte-des-sites.md`
  * § 3.7) : le rayon l'a vu commandable, la carte a changé depuis. Le message du
  * serveur nomme l'article et le geste de sortie : il se montre tel quel.
  */

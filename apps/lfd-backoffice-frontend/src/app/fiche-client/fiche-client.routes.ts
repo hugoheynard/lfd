@@ -112,7 +112,7 @@ export const ficheClientRoutes: Routes = [
           ),
       },
       {
-        // La carte d'un sous-compte (`plan-carte-des-sites.md`, § 5). Le
+        // La carte d'un sous-compte (`carte-des-sites.md`, § 2). Le
         // catalogue publié qu'elle parcourt est derrière `lfc_catalog:read`,
         // que la fiche (`b2b_companies:read`) ne garantit pas.
         path: 'carte',

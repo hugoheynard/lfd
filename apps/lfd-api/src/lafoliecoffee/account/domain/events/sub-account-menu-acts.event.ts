@@ -7,7 +7,7 @@ import type { NamedRef } from "./journal-names.js";
 import { CompanyStaffAct } from "./staff-acts.event.js";
 
 /**
- * **La carte d'un sous-compte est posée** (`plan-carte-des-sites.md`, § 4) —
+ * **La carte d'un sous-compte est posée** (`carte-des-sites.md`, § 4) —
  * un geste sur le compte d'un AUTRE que son auteur, qu'il vienne du staff ou
  * du principal : d'où la forme des actes du staff. Le sujet est le
  * sous-compte.

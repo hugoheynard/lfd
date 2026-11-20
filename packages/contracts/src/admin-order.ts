@@ -244,7 +244,7 @@ export interface CustomerSkuStat {
    * Faux aussi pour un article réservé à un autre compte et réglé « visible,
    * non commandable » — {@link lockedReason} le dit alors
    * (`documentation/catalogue/plan-articles-sur-mesure.md`, S7) ; et pour un
-   * article hors de la carte du site (`plan-carte-des-sites.md`, § 3.4).
+   * article hors de la carte du site (`carte-des-sites.md`, § 3.4).
    */
   readonly stillAvailable: boolean;
   /** Présent seulement quand l'article est verrouillé pour ce client ; absent sinon. */

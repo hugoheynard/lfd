@@ -90,7 +90,7 @@ export class OrderLinePricing {
    *
    * @throws {UnknownSkuError} un SKU que le catalogue ne connaît pas.
    * @throws {ReservedArticleRefusedError} un article réservé à un autre compte.
-   * @throws {ArticleOffMenuError} un article hors de la carte du site (`plan-carte-des-sites.md`, § 3.7).
+   * @throws {ArticleOffMenuError} un article hors de la carte du site (`carte-des-sites.md`, § 3.7).
    * @throws {QuantityBelowMinimumError} un SKU sous le minimum de la clientèle.
    * @throws {CompanyClosedOrderRefusedError} la société servie est terminée.
    */

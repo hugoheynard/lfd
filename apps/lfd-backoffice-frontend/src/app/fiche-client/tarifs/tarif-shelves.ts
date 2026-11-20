@@ -35,7 +35,7 @@ export interface TarifRow extends MercurialeRow {
   /** Le prix accordé **en euros**, tel que le champ le porte. `null` = non tarifé. */
   readonly priceEuros: number | null;
   /**
-   * Hors de la carte du sous-compte (`plan-carte-des-sites.md`, § 3.6) : le
+   * Hors de la carte du sous-compte (`carte-des-sites.md`, § 3.6) : le
    * prix se règle quand même, mais le site ne peut pas le commander.
    */
   readonly offMenu: boolean;

@@ -125,7 +125,7 @@ export class ShopPage {
 
   /**
    * Une carte du compte principal verrouille-t-elle des articles de ce rayon
-   * (`plan-carte-des-sites.md`, § 3.4, § 5) ? Réglée « masqué », elle ne
+   * (`carte-des-sites.md`, § 3.4, § 2) ? Réglée « masqué », elle ne
    * se voit pas : rien n'est montré, rien n'est annoncé.
    */
   protected readonly siteMenuShown = computed(() =>

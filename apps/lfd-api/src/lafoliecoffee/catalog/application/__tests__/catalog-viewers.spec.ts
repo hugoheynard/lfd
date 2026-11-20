@@ -87,7 +87,7 @@ describe("CatalogViewers — la fabrique unique (plan pros en cours d'inscriptio
     expect(staff.regarding).toEqual({ companyId: COMPANY, activePrincipalId: PRINCIPAL });
   });
 
-  /** La carte du site voyage avec le lecteur (`plan-carte-des-sites.md`, § 3.4, § 3.6). */
+  /** La carte du site voyage avec le lecteur (`carte-des-sites.md`, § 3.4, § 3.6). */
   it("porte la carte du site au rayon, à la facturation et au personnel — pas aux lignes gardées", async () => {
     const menu: MenuReading = { mode: "only", offMenu: "hidden", entries: [] };
     const viewers = new CatalogViewers(

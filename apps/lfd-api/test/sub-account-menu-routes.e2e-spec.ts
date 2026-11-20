@@ -1,6 +1,6 @@
 /**
  * E2E : **les routes de la carte d'un sous-compte** (plan
- * `documentation/comptes-client/plan-carte-des-sites.md`, § 3.2, § 4, § 7,
+ * `documentation/comptes-client/carte-des-sites.md`, § 3.2, § 4, § 7,
  * lot C3).
  *
  * - le propriétaire et l'admin du principal l'écrivent ; un membre du site,

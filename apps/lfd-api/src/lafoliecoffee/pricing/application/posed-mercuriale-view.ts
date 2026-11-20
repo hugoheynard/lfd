@@ -45,7 +45,7 @@ export type ProductNamer = (sku: string) => string;
 /**
  * Pourquoi le client ne peut plus commander l'article d'une ligne, ou `null`
  * — réservé à un autre compte (`plan-articles-sur-mesure.md`, Q1), hors de la
- * carte du sous-compte (`plan-carte-des-sites.md`, § 3.6). Rendu par
+ * carte du sous-compte (`carte-des-sites.md`, § 3.6). Rendu par
  * l'appelant, qui a lu le catalogue au nom du client.
  */
 export type LineLock = (sku: string) => PosedMercurialeLockedReason | null;

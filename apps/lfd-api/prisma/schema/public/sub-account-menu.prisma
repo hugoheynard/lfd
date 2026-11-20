@@ -1,5 +1,5 @@
 /// La **carte d'un sous-compte** : ce que ce site peut commander
-/// (`documentation/comptes-client/plan-carte-des-sites.md`, § 3.3, § 4).
+/// (`documentation/comptes-client/carte-des-sites.md`, § 3.3, § 4).
 /// Clée par le `company_id` DU SOUS-COMPTE. Écrite par l'agrégat
 /// `SubAccountMenu` (`lafoliecoffee/account`) ; lue dans la même requête que
 /// le lecteur pro (`shared/company-standing`), et seulement sous un principal

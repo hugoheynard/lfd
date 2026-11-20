@@ -267,7 +267,7 @@ import {
   PrismaSubAccountNoticeRulesReader,
   PrismaSubAccountNoticeRulesWriter,
 } from "./infrastructure/prisma-sub-account-notice-rules.store.js";
-// La carte d'un sous-compte (`plan-carte-des-sites.md`, C3).
+// La carte d'un sous-compte (`carte-des-sites.md`, C3).
 import { CompanySubAccountMenuController } from "./http/company-sub-account-menu.controller.js";
 import { AdminCompanySubAccountMenuController } from "./http/admin-company-sub-account-menu.controller.js";
 import { SetSubAccountMenuHandler } from "./application/commands/set-sub-account-menu.handler.js";

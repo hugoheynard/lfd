@@ -25,7 +25,7 @@ export class CatalogReservedElsewhereReader extends ReservedElsewhereReader {
     }
     const items = await this.catalog.resolveMany(shopSkus, await this.viewers.regarding(companyId));
     // Réservé ailleurs, et seulement cela : une mercuriale sur un article
-    // hors carte reste permise (`plan-carte-des-sites.md`, § 3.6).
+    // hors carte reste permise (`carte-des-sites.md`, § 3.6).
     return shopSkus.filter((sku) => {
       const item = items.get(sku);
       return item !== undefined && isReservedElsewhere(item);

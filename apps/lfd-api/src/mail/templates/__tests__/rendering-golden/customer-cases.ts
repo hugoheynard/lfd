@@ -165,7 +165,7 @@ export const CUSTOMER_CASES: Pick<
         { gesture, siteName: "Chalet", reference: null, byTeam: false },
       ]),
     ),
-    // La carte n'est annoncée que posée par l'équipe (`plan-carte-des-sites.md`, Q3).
+    // La carte n'est annoncée que posée par l'équipe (`carte-des-sites.md`, Q3).
     menu_changed: { gesture: "menu_changed", siteName: "Chalet", reference: null, byTeam: true },
   },
   "customer.access-opened": {

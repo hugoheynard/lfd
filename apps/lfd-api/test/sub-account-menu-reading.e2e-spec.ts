@@ -1,6 +1,6 @@
 /**
  * E2E de **la lecture de la carte d'un sous-compte** (plan
- * `documentation/comptes-client/plan-carte-des-sites.md`, § 3.1 et § 4, lot
+ * `documentation/comptes-client/carte-des-sites.md`, § 3.1 et § 4, lot
  * C1) — sur la base migrée, par les deux requêtes partagées du lecteur pro.
  *
  * - la carte, écrite par le dépôt de l'agrégat, se relit telle qu'écrite ;

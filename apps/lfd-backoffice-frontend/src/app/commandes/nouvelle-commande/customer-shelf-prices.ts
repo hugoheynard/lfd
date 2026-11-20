@@ -35,7 +35,7 @@ export type ShelfPricing =
 
 /** Les mots d'une rangée qui ne s'ajoute pas, selon la raison. */
 export const LOCKED_LABEL = 'Réservé à un autre compte';
-/** Hors de la carte que le principal a posée sur ce site (`plan-carte-des-sites.md`, § 3.4). */
+/** Hors de la carte que le principal a posée sur ce site (`carte-des-sites.md`, § 3.4). */
 export const OFF_MENU_LABEL = 'Hors de la carte du site';
 
 /** Les mots d'un article verrouillé, selon la raison que le serveur en donne. */

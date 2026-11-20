@@ -6,7 +6,7 @@ const ROW: MenuRow = {
   entries: [{ level: "family", ref: "fam_a", effect: "exclude" }],
 };
 
-/** La carte ne compte que sous un principal actif (`plan-carte-des-sites.md`, § 3.1). */
+/** La carte ne compte que sous un principal actif (`carte-des-sites.md`, § 3.1). */
 describe("menuReadingOf", () => {
   it("rend la carte d'un sous-compte sous un principal actif", () => {
     expect(menuReadingOf(ROW, "co_principal")).toEqual(ROW);

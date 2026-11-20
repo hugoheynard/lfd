@@ -3,7 +3,7 @@ import { INHERITING_PARENT_ROLES } from "./effective-role.js";
 
 /**
  * **Qui écrit la carte d'un sous-compte, côté client**
- * (`documentation/comptes-client/plan-carte-des-sites.md`, § 3.2) : le
+ * (`documentation/comptes-client/carte-des-sites.md`, § 3.2) : le
  * propriétaire ou un administrateur du principal ACTIF qui ouvre ce
  * sous-compte — `standing.via`, déjà réduit par la requête partagée à un
  * principal `active`, un site non suspendu et une membership acceptée.

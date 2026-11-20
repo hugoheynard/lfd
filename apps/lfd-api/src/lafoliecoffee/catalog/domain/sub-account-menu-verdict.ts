@@ -6,7 +6,7 @@ import type {
 
 /**
  * Ce que la carte d'un sous-compte lit d'un article : ses trois grains
- * (`documentation/comptes-client/plan-carte-des-sites.md`, § 3.3).
+ * (`documentation/comptes-client/carte-des-sites.md`, § 3.3).
  */
 export interface MenuSubject {
   readonly sku: string;

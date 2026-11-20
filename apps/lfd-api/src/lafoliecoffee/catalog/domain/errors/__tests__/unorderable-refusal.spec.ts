@@ -4,7 +4,7 @@ import {
   ReservedArticleRefusedError,
 } from "../reserved-article-refused.error.js";
 
-/** Le refus du chemin qui facture (`plan-carte-des-sites.md`, § 3.7). */
+/** Le refus du chemin qui facture (`carte-des-sites.md`, § 3.7). */
 describe("refuseUnorderable", () => {
   const found = new Map([
     ["OPEN", { reservation: "none", menu: "on" }],

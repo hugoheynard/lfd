@@ -64,7 +64,7 @@ export interface ResolvedCatalogItem {
    */
   readonly reservation: CatalogReservationMark;
   /**
-   * **Dans la carte du sous-compte ?** (`plan-carte-des-sites.md`, § 3.4) —
+   * **Dans la carte du sous-compte ?** (`carte-des-sites.md`, § 3.4) —
    * `off` chez un pro = verrouillé ; chez le personnel qui regarde un compte,
    * l'étiquette « hors carte ». Se lit avec `reservation` par `isOrderable`.
    */

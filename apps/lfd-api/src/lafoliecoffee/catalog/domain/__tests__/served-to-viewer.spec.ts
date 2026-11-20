@@ -253,7 +253,7 @@ describe("reservationMarkOf — l'étiquette", () => {
 });
 
 /**
- * **La carte d'un sous-compte** (`plan-carte-des-sites.md`, § 3.4, § 3.6) :
+ * **La carte d'un sous-compte** (`carte-des-sites.md`, § 3.4, § 3.6) :
  * après la réservation et les lignes gardées ; elle restreint, elle n'ouvre
  * jamais.
  */

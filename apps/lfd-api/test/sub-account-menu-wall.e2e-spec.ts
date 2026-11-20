@@ -1,6 +1,6 @@
 /**
  * E2E : **la carte d'un sous-compte, jugée** (plan
- * `documentation/comptes-client/plan-carte-des-sites.md`, § 3.4 à § 3.7,
+ * `documentation/comptes-client/carte-des-sites.md`, § 3.4 à § 3.7,
  * lot C2).
  *
  * Ce que seul le vrai SQL prouve : la carte lue dans la même requête que la

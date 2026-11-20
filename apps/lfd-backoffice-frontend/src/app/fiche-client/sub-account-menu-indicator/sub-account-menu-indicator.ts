@@ -6,7 +6,7 @@ import { menuIndicator } from '../carte/sub-account-menu-draft';
 
 /**
  * **Ce que la liste des sites d'un principal dit de la carte d'un site**
- * (`plan-carte-des-sites.md`, § 5) : « Carte : liste blanche, 3 entrées », ou
+ * (`carte-des-sites.md`, § 2) : « Carte : liste blanche, 3 entrées », ou
  * rien sans carte. Le résumé vient avec la hiérarchie (`SubAccountView.menu`) :
  * aucune lecture par site.
  */

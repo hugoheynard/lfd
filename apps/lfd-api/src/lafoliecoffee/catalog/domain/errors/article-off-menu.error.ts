@@ -2,7 +2,7 @@ import { BusinessError } from "../../../../platform/shared/errors/app-error.js";
 
 /**
  * **Un article hors de la carte du site**, demandé pour ce sous-compte
- * (`documentation/comptes-client/plan-carte-des-sites.md`, § 3.7) — la carte
+ * (`documentation/comptes-client/carte-des-sites.md`, § 3.7) — la carte
  * est réglée « visible, verrouillé », le site l'a vu et la phrase doit dire
  * pourquoi la demande échoue. En `hidden`, le refus reste celui d'un article
  * inconnu : un hors-carte invisible ne se distingue pas d'un inexistant.

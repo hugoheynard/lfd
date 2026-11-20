@@ -13,7 +13,7 @@ export interface ServedCompany {
    * qu'une purge du principal efface ses sites ; jamais à ouvrir un article.
    */
   readonly principalId: string | null;
-  /** La carte qui compte pour cette société (`plan-carte-des-sites.md`, § 3.1), lue avec le reste. */
+  /** La carte qui compte pour cette société (`carte-des-sites.md`, § 3.1), lue avec le reste. */
   readonly menu: MenuReading | null;
 }
 

@@ -220,7 +220,7 @@
 >   sans quoi l'API de dev, quand elle tourne, répond à la place de la
 >   fixture (quatorze tests de la boutique rouges en local, verts en CI).
 >   Et **80** depuis le 2026-11-20 avec `lint:orderable-door` (plan
->   `documentation/comptes-client/plan-carte-des-sites.md`, C2) : « commandable ? »
+>   `documentation/comptes-client/carte-des-sites.md`, C2) : « commandable ? »
 >   se lit par `isOrderable` — un lecteur qui compare `reservation === "other"`
 >   à la main ignore la carte du site et vendrait au sous-compte ce que son
 >   principal lui a fermé.

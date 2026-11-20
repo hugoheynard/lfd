@@ -2,7 +2,7 @@ import { z } from "zod";
 
 /**
  * **La carte d'un sous-compte** — ce que ce site peut commander (plan
- * `documentation/comptes-client/plan-carte-des-sites.md`, § 3.3).
+ * `documentation/comptes-client/carte-des-sites.md`, § 3.3).
  *
  * L'écran envoie la carte ENTIÈRE (`PUT`) : un enregistrement par geste.
  * « Pas de restriction » se dit `except` sans entrée. Le contrat ne valide

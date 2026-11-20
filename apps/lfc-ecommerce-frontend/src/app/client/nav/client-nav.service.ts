@@ -41,7 +41,7 @@ interface Destination {
   /**
    * Un écran du compte PRINCIPAL : « Mes sites », qui ne paraît qu'à qui règle
    * la carte d'au moins un site depuis l'espace affiché
-   * (`plan-carte-des-sites.md`, § 5). En dernier : les autres ne bougent pas.
+   * (`carte-des-sites.md`, § 2). En dernier : les autres ne bougent pas.
    */
   readonly sitesOnly?: true;
 }

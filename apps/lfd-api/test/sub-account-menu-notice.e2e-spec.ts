@@ -1,7 +1,7 @@
 /**
  * E2E : **l'avis au principal quand l'équipe change la carte d'un site**, et
  * le résumé de la carte sur la liste des sites (plan
- * `documentation/comptes-client/plan-carte-des-sites.md`, Q3, § 8 bis).
+ * `documentation/comptes-client/carte-des-sites.md`, Q3, § 4).
  *
  * - pose par l'équipe : le propriétaire et l'administrateur ACCEPTÉS du
  *   principal sont prévenus, interrupteur des avis coupé ou non ; ni

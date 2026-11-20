@@ -143,7 +143,7 @@ function toItem(item: ResolvedCatalogItem, audience: ShopAudience): ShopItemView
     audience: item.audience,
     // Réservé à un autre compte, ou hors de la carte du site, réglé
     // « visible, non commandable » : le lecteur ne le rend qu'au rayon
-    // reconnu et aux habituels (S7, `plan-carte-des-sites.md` § 3.4).
+    // reconnu et aux habituels (S7, `carte-des-sites.md` § 3.4).
     ...lockedOf(item),
     // Absents quand le commerce ne sait pas — jamais « aucun allergène » par
     // défaut, et la clé n'entre pas dans le fil pour rien.

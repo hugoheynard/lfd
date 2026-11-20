@@ -302,7 +302,7 @@ export const ACCOUNTS_AND_CARTS_FACTS = {
   ),
   /**
    * La carte d'un sous-compte est posée, entière — par le staff ou par le
-   * principal (`plan-carte-des-sites.md`, § 4). Le sujet est le SOUS-COMPTE ;
+   * principal (`carte-des-sites.md`, § 4). Le sujet est le SOUS-COMPTE ;
    * la charge dit le mode et compte les entrées, le détail est sur la fiche.
    */
   "company.sub_account_menu_set": fact(

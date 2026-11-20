@@ -1,6 +1,6 @@
 import { isOrderable, isReservedElsewhere, unorderableCause } from "../orderable.js";
 
-/** La seule lecture des marques (`plan-carte-des-sites.md`, § 3.4). */
+/** La seule lecture des marques (`carte-des-sites.md`, § 3.4). */
 describe("isOrderable", () => {
   it.each([
     ["none", "on", true],

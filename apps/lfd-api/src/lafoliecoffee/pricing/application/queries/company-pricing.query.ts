@@ -163,7 +163,7 @@ export class CompanyPricingQuery {
 /**
  * Les articles que ce client ne peut plus commander, et pourquoi : réservé
  * ailleurs l'emporte sur la carte (`lockedReasonOf`). Une ligne posée sur
- * un article hors carte reste et s'étiquette (`plan-carte-des-sites.md`, § 3.6).
+ * un article hors carte reste et s'étiquette (`carte-des-sites.md`, § 3.6).
  */
 function lineLocks(
   catalogue: readonly CatalogItem[],

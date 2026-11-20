@@ -107,7 +107,7 @@ const LEVEL_LABELS: Readonly<Record<SubAccountMenuLevel, string>> = {
 };
 
 /**
- * **L'onglet Carte d'un sous-compte** (`plan-carte-des-sites.md`, § 3.3, § 5) :
+ * **L'onglet Carte d'un sous-compte** (`carte-des-sites.md`, § 3.3, § 2) :
  * ce que ce site peut commander, réglé par le staff sous `b2b_companies:write`.
  *
  * L'écran compose la carte entière et l'envoie d'un geste (`PUT`). L'arbre est

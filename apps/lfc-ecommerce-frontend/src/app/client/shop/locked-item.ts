@@ -7,7 +7,7 @@ import type { ClientCopy } from '../copy/client-copy.model';
  * réglé « visible, non commandable »
  * (`documentation/catalogue/plan-articles-sur-mesure.md`, S2, S7, L3), ou hors
  * de la carte du site réglée « visible, verrouillé »
- * (`documentation/comptes-client/plan-carte-des-sites.md`, § 3.4).
+ * (`documentation/comptes-client/carte-des-sites.md`, § 3.4).
  *
  * Le serveur le dit par `orderable: false` ; l'absence vaut « commandable ».
  * Seul le rayon reconnu le sert, et le devis comme la commande le refusent :
@@ -25,7 +25,7 @@ export interface LockedReasonCopy {
 
 /**
  * La raison d'un article verrouillé, ou `null` s'il est commandable. Hors de la
- * carte du site (`off_menu`, `plan-carte-des-sites.md` § 3.4) se dit pour
+ * carte du site (`off_menu`, `carte-des-sites.md` § 3.4) se dit pour
  * elle-même ; réservé à un autre compte, ou verrouillé sans raison servie,
  * prend la phrase de la réservation plutôt que de rester muet.
  */

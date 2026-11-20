@@ -1759,7 +1759,7 @@ export interface CompanyPricingCategoryView {
   readonly items: readonly PricingItemView[];
   /**
    * Les SKU de `items` **hors de la carte** du sous-compte
-   * (`plan-carte-des-sites.md`, § 3.6) : la ligne reste, son prix se règle,
+   * (`carte-des-sites.md`, § 3.6) : la ligne reste, son prix se règle,
    * mais le site ne peut pas la commander. Vide hors sous-compte ou sans carte.
    */
   readonly offMenuSkus: readonly string[];
@@ -1799,7 +1799,7 @@ export const POSED_MERCURIALE_STATUS_LABELS: Readonly<Record<PosedMercurialeStat
 /**
  * Pourquoi le client ne peut plus commander l'article d'une ligne posée :
  * réservé à un autre compte (`plan-articles-sur-mesure.md`, Q1), ou hors de
- * la carte du sous-compte (`plan-carte-des-sites.md`, § 3.6). Réservé
+ * la carte du sous-compte (`carte-des-sites.md`, § 3.6). Réservé
  * ailleurs l'emporte.
  */
 export type PosedMercurialeLockedReason = "reserved_to_other_account" | "off_menu";

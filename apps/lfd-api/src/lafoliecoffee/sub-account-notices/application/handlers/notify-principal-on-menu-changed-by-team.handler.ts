@@ -26,7 +26,7 @@ export const NOTIFY_PRINCIPAL_ON_MENU_CHANGED_BY_TEAM =
 
 /**
  * **L'équipe a changé la carte d'un site → son principal est prévenu**
- * (`plan-carte-des-sites.md`, Q3). Rien quand le principal l'a posée
+ * (`carte-des-sites.md`, Q3). Rien quand le principal l'a posée
  * lui-même. Destinataires : le propriétaire et l'administrateur ACCEPTÉS du
  * principal figé au geste, une fois chacun (journal d'envoi). Le mail ne dit
  * rien de la carte : il nomme le site et renvoie à « Mes sites ».

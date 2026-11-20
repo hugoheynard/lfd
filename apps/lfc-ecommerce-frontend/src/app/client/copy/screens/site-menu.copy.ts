@@ -3,7 +3,7 @@ import type { LocaleCode } from '../../client-locale.service';
 /**
  * **Ce que disent « Mes sites » et la carte d'un site** — l'écran où le
  * propriétaire ou l'administrateur d'un compte principal dit ce que chacun de
- * ses sites peut commander (`documentation/comptes-client/plan-carte-des-sites.md`,
+ * ses sites peut commander (`documentation/comptes-client/carte-des-sites.md`,
  * § 3.3, § 5).
  */
 export interface SiteMenuCopy {

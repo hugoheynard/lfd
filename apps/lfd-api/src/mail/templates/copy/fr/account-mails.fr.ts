@@ -149,7 +149,7 @@ export const ACCOUNT_MAILS_FR: AccountMailsCopy = {
       subscription_resumed: "a repris un panier récurrent",
       subscription_stopped: "a arrêté un panier récurrent",
       // Rien de la carte : ni mode, ni article, ni famille — le principal la relit
-      // dans « Mes sites » (`plan-carte-des-sites.md`, Q3).
+      // dans « Mes sites » (`carte-des-sites.md`, Q3).
       menu_changed: "a vu sa carte modifiée",
     },
     subject: "{site} — {title}",

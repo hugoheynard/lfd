@@ -79,7 +79,7 @@ export function lineNoteOf(line: PosedMercurialeLineView): string | null {
   if (line.lockedReason === 'reserved_to_other_account') {
     parts.push(RESERVED_ELSEWHERE_NOTE);
   }
-  // Hors de la carte du site (`plan-carte-des-sites.md`, § 3.6) : le prix
+  // Hors de la carte du site (`carte-des-sites.md`, § 3.6) : le prix
   // reste posé, le site ne peut pas le commander.
   if (line.lockedReason === 'off_menu') {
     parts.push(OFF_MENU_NOTE);

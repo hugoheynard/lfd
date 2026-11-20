@@ -18,7 +18,7 @@ import { ManageableSites } from '../manageable-sites';
 
 /**
  * `/mes-sites` — **les sites d'un compte principal**, chacun vers sa carte
- * (`plan-carte-des-sites.md`, § 5). Au propriétaire et à l'administrateur du
+ * (`carte-des-sites.md`, § 2). Au propriétaire et à l'administrateur du
  * principal seulement ; le menu n'y mène pas les autres.
  */
 @Component({

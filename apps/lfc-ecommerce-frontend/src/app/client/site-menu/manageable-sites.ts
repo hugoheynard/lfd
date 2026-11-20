@@ -6,7 +6,7 @@ import { ClientContext } from '../client-context.service';
 
 /**
  * Les rôles du principal qui règlent la carte de ses sites
- * (`plan-carte-des-sites.md`, § 3.2) — le serveur les tient
+ * (`carte-des-sites.md`, § 3.2) — le serveur les tient
  * (`canSetMenuOf`) ; l'écran ne propose pas un geste qui ne ferait que dire non.
  */
 const MENU_SETTERS: ReadonlySet<CompanyMemberRole> = new Set(['owner', 'admin']);

@@ -5,7 +5,7 @@ import type {
 import { menuMarkOf, type MenuSubject } from "../sub-account-menu-verdict.js";
 
 /**
- * Le grain et les deux modes de la carte (`plan-carte-des-sites.md`, § 3.3,
+ * Le grain et les deux modes de la carte (`carte-des-sites.md`, § 3.3,
  * § 7) : SKU contre produit contre famille contre famille parente, et
  * l'exception d'une exception.
  */

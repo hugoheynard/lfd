@@ -217,7 +217,7 @@ export class FicheClientShell {
     ALL_TABS.filter(
       (tab) =>
         (tab.permission === null || this.permissions.can(tab.permission)) &&
-        // Un compte sans principal n'a pas de carte (`plan-carte-des-sites.md`, § 3.1).
+        // Un compte sans principal n'a pas de carte (`carte-des-sites.md`, § 3.1).
         (tab.key !== 'carte' || (this.sheet()?.parent ?? null) !== null),
     ),
   );

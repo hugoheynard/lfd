@@ -39,7 +39,7 @@ export interface ProCatalogViewer {
   readonly show: ProCatalogShow;
   /**
    * La carte du sous-compte qui COMPTE pour cette société
-   * (`plan-carte-des-sites.md`, § 3.4) — `null` sans carte, ou quand son
+   * (`carte-des-sites.md`, § 3.4) — `null` sans carte, ou quand son
    * principal n'est pas actif. Lue avec la société, jamais recomposée.
    */
   readonly menu: MenuReading | null;

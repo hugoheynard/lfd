@@ -85,7 +85,7 @@ export interface ShopImageFocal {
 /**
  * Pourquoi un article listé n'est pas commandable : réservé à un autre compte
  * (S2 des articles sur mesure), ou hors de la carte que son compte principal
- * a posée sur ce site (`plan-carte-des-sites.md`, § 3.4).
+ * a posée sur ce site (`carte-des-sites.md`, § 3.4).
  */
 export type ShopItemLockedReason = "reserved_to_other_account" | "off_menu";
 

@@ -1,6 +1,6 @@
 /**
  * **La carte d'un sous-compte, telle que le lecteur pro la lit**
- * (`documentation/comptes-client/plan-carte-des-sites.md`, § 3.1, § 4).
+ * (`documentation/comptes-client/carte-des-sites.md`, § 3.1, § 4).
  *
  * Les valeurs sont écrites ici une fois : l'agrégat qui écrit la carte
  * (`lafoliecoffee/account`) les importe, et un CHECK de la base les tient en

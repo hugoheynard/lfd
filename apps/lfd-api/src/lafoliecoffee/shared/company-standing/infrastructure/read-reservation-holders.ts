@@ -12,7 +12,7 @@ const ACTIVE = "active";
 
 /**
  * La carte du sous-compte, lue dans la MÊME requête que son principal
- * (`plan-carte-des-sites.md`, § 4) : une relation de plus, pas un
+ * (`carte-des-sites.md`, § 4) : une relation de plus, pas un
  * aller-retour — le budget de lectures du devis ne bouge pas.
  */
 const MENU_SELECT = {

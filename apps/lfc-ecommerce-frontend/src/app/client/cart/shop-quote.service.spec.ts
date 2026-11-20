@@ -339,7 +339,7 @@ describe('ShopQuote', () => {
     http.verify();
   });
 
-  /** `plan-carte-des-sites.md` § 3.7 : la carte du site a fermé un article du panier. */
+  /** `carte-des-sites.md` § 3.7 : la carte du site a fermé un article du panier. */
   it('montre tel quel le refus d’un article hors de la carte du site', () => {
     const { cart, quote, http } = boot();
     const message =

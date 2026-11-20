@@ -39,7 +39,7 @@ export const SUBSCRIPTION_STATUS_CHANGED = "subscription.status_changed";
 export const SUBSCRIPTION_DELETED = "subscription.deleted";
 
 /**
- * La carte d'un site est posée (`plan-carte-des-sites.md`, Q3) — même nom
+ * La carte d'un site est posée (`carte-des-sites.md`, Q3) — même nom
  * qu'au journal. Le geste est fait SUR le site, par le staff ou par son
  * principal ; l'avis au principal ne part que quand l'équipe l'a fait.
  */

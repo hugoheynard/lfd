@@ -84,7 +84,7 @@ describe("accessOf", () => {
   });
 });
 
-/** La carte du site, lue sur la ligne et la lignée de sa famille (`plan-carte-des-sites.md`, § 3.4). */
+/** La carte du site, lue sur la ligne et la lignée de sa famille (`carte-des-sites.md`, § 3.4). */
 describe("accessOf — la carte d'un sous-compte", () => {
   const withoutViennoiserie = (offMenu: MenuReading["offMenu"]): MenuReading => ({
     mode: "except",

@@ -51,7 +51,7 @@ export class PortsCompanyPriceSheets extends CompanyPriceSheets {
     // Après le catalogue : une vue de plancher porte l'écart au tarif de
     // référence, donc a besoin des articles.
     // La carte d'un sous-compte n'en retire rien : la grille l'étiquette
-    // (`plan-carte-des-sites.md`, § 3.6).
+    // (`carte-des-sites.md`, § 3.6).
     const articles = catalogue.filter((article) => !isReservedElsewhere(article));
     const decided = await this.decisions.decisionsAt(at, { companyId }, articles);
     // Comme la caisse (plan des promotions, L8, L12) : l'étage promotion

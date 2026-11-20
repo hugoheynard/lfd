@@ -9,7 +9,7 @@ import { AuthFacade } from '../../auth/auth.facade';
 
 /**
  * **La carte d'un site**, lue et posée par son compte principal
- * (`GET` / `PUT /companies/:subAccountId/menu`, `plan-carte-des-sites.md` § 4).
+ * (`GET` / `PUT /companies/:subAccountId/menu`, `carte-des-sites.md` § 4).
  *
  * Le site est dans l'adresse : la lecture ne dépend pas de l'espace courant.
  * Le `PUT` est `@Idempotent` (la carte entière, rejouée, n'écrit rien) : pas

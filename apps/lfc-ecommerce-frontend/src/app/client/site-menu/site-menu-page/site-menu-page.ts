@@ -91,7 +91,7 @@ const OFF_MENU_DISPLAYS: readonly SubAccountOffMenuDisplay[] = ['visible_locked'
 /**
  * `/mes-sites/:subAccountId/carte` — **la carte d'un site**, réglée par le
  * propriétaire ou l'administrateur de son compte principal
- * (`documentation/comptes-client/plan-carte-des-sites.md`, § 3.3, § 5).
+ * (`documentation/comptes-client/carte-des-sites.md`, § 3.3, § 2).
  *
  * L'écran compose la carte entière et l'envoie d'un geste (`PUT`) :
  * Enregistrer n'est cliquable que si elle diffère de celle lue. L'arbre est le

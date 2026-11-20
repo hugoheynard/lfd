@@ -61,7 +61,7 @@ export interface AccessRow {
 export interface ItemAccess {
   readonly verdict: "served" | "locked" | "absent";
   readonly mark: CatalogReservationMark;
-  /** La carte du sous-compte (`plan-carte-des-sites.md`, § 3.4). */
+  /** La carte du sous-compte (`carte-des-sites.md`, § 3.4). */
   readonly menu: MenuMark;
 }
 
