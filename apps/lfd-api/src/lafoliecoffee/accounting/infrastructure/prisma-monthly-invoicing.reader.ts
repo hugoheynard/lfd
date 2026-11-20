@@ -19,6 +19,10 @@ import {
   unsettledWhere,
 } from "./billable-order-criterion.js";
 import { toFrozenInvoiceOrder } from "./frozen-invoice-order.mapper.js";
+import {
+  INVOICE_ORDER_FREE_DELIVERY_SELECT,
+  freeDeliveryFieldOf,
+} from "./invoice-free-delivery.columns.js";
 import { ISSUED_OUTCOME, mandateIdOfColumn } from "./prisma-monthly-invoice-outcomes.js";
 
 /** `AAAA-MM-JJ`. */
@@ -49,6 +53,7 @@ export class PrismaMonthlyInvoicingReader extends MonthlyInvoicingReader {
       orderBy: [{ createdAt: "asc" }, { orderNumber: "asc" }],
       select: {
         ...BILLABLE_INVOICE_ORDER_SELECT,
+        ...INVOICE_ORDER_FREE_DELIVERY_SELECT,
         id: true,
         companyId: true,
         billedCompanyId: true,
@@ -80,6 +85,7 @@ export class PrismaMonthlyInvoicingReader extends MonthlyInvoicingReader {
               receivedOn: order.receivedOn?.toISOString().slice(0, DAY_LENGTH) ?? null,
               billedCompanyId: order.billedCompanyId,
               deliveryNoteNumbers: handedOverNoteNumbersOf(order),
+              ...freeDeliveryFieldOf(order),
               budgetCommitment: budgetCommitmentOf(
                 order.budgetCommitmentNumber,
                 order.budgetCommitmentServiceCode,

@@ -11,6 +11,10 @@ import { CardInvoicingReader } from "../domain/ports/card-invoicing.reader.js";
 import type { CardInvoiceCandidate } from "../domain/services/card-invoicing.js";
 import { toFrozenInvoiceOrder } from "./frozen-invoice-order.mapper.js";
 import {
+  INVOICE_ORDER_FREE_DELIVERY_SELECT,
+  freeDeliveryFieldOf,
+} from "./invoice-free-delivery.columns.js";
+import {
   BILLABLE_INVOICE_ORDER_SELECT,
   handedOverNoteNumbersOf,
   toBillableInvoiceOrder,
@@ -43,6 +47,7 @@ export class PrismaCardInvoicingReader extends CardInvoicingReader {
       where: { id: orderId },
       select: {
         ...BILLABLE_INVOICE_ORDER_SELECT,
+        ...INVOICE_ORDER_FREE_DELIVERY_SELECT,
         id: true,
         companyId: true,
         billedCompanyId: true,
@@ -93,6 +98,7 @@ export class PrismaCardInvoicingReader extends CardInvoicingReader {
           ? toFrozenInvoiceOrder(order)
           : toBillableInvoiceOrder(order),
       deliveryNoteNumbers: handedOverNoteNumbersOf(order),
+      ...freeDeliveryFieldOf(order),
     };
   }
 

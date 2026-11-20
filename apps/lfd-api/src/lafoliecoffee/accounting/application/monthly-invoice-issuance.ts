@@ -85,6 +85,7 @@ export function draftOf(
       reference: order.orderNumber,
       receivedOn: context.receivedOn.get(order.orderId) ?? null,
       deliveryNoteNumbers: order.deliveryNoteNumbers,
+      ...(order.freeDelivery === undefined ? {} : { freeDelivery: order.freeDelivery }),
       ...(order.settlement === "unsettled" ? { unsettled: true } : {}),
     })),
     paymentMeans,

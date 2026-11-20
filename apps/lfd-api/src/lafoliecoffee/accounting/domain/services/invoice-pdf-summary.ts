@@ -7,6 +7,7 @@ import {
 } from "../entities/invoice.types.js";
 import {
   dueFactsOf,
+  freeDeliveryTexts,
   latePenaltiesText,
   operationText,
   settledText,
@@ -137,7 +138,10 @@ export function drawMentions(sheet: InvoiceSheet, state: InvoiceState): void {
     operationText(state),
   ]);
   if (state.orders.length > 0) {
-    paragraph(sheet, "Commandes facturées", [ordersText(state.orders)]);
+    paragraph(sheet, "Commandes facturées", [
+      ordersText(state.orders),
+      ...freeDeliveryTexts(state.orders),
+    ]);
   }
 }
 

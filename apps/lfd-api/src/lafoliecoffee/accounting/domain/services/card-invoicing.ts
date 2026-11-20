@@ -1,4 +1,8 @@
-import { BANK_CARD, type InvoicePaymentMeans } from "../entities/invoice.types.js";
+import {
+  BANK_CARD,
+  type InvoiceFreeDelivery,
+  type InvoicePaymentMeans,
+} from "../entities/invoice.types.js";
 import type { BillingFollow } from "../ports/statement-billing.reader.js";
 import type { FrozenInvoiceOrder } from "./invoice-dossier.types.js";
 
@@ -65,6 +69,11 @@ export interface CardInvoiceCandidate {
   readonly frozen: FrozenInvoiceOrder;
   /** Les BL remis, par rang — cités par la ligne de référence (plan E6 § 11). */
   readonly deliveryNoteNumbers: readonly string[];
+  /**
+   * La livraison offerte figée sur la commande, que la facture fige à son
+   * tour (plan livraison offerte, § 2.9). Absente = rien d'offert.
+   */
+  readonly freeDelivery?: InvoiceFreeDelivery;
 }
 
 /**

@@ -141,6 +141,9 @@ export async function prepareCardInvoice(
             // une remise à la porte y prend le jour de la tournée.
             receivedOn: candidate.receivedOn,
             deliveryNoteNumbers: candidate.deliveryNoteNumbers,
+            ...(candidate.freeDelivery === undefined
+              ? {}
+              : { freeDelivery: candidate.freeDelivery }),
           },
         ],
         paymentMeans: CARD_PAYMENT_MEANS,

@@ -18,7 +18,7 @@ import {
   assertTotals,
   assertWithinCorrected,
 } from "./invoice-invariants.js";
-import { assertCorrectable, assertDates, assertOrders } from "./invoice-shape.js";
+import { assertCorrectable, assertDates, assertOrders, creditedOrdersOf } from "./invoice-shape.js";
 import { distinctDeliveryAddress, issuableParties } from "./invoice-parties.js";
 import {
   BANK_CARD,
@@ -197,7 +197,8 @@ export class Invoice {
         // ce qui aurait été payé.
         paymentMeans: null,
         prepayment: null,
-        orders: [...input.orders],
+        // La livraison offerte de chaque bon repris, recopiée de la facture.
+        orders: creditedOrdersOf(corrected, input.orders),
         lines: [...input.lines],
         vat: input.vat,
         documentKey: null,

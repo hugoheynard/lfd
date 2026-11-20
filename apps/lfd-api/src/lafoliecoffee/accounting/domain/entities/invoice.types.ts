@@ -80,6 +80,32 @@ export interface InvoiceOrderReference {
   readonly deliveryNoteNumbers?: readonly string[];
   /** Remis mais pas soldé : le bloqueur arrête la facture (plan E6c2, § 1). Absent = soldé. */
   readonly unsettled?: boolean;
+  /**
+   * La livraison offerte du bon, figée à l'émission : la pièce la dit sans
+   * relire la commande. Absente = rien d'offert, ou pièce émise avant.
+   */
+  readonly freeDelivery?: InvoiceFreeDelivery;
+}
+
+/**
+ * **La livraison offerte d'un bon, telle que la facture la cite** (plan
+ * `plan-livraison-offerte.md`, § 2.9). AFFICHÉE, pas comptable : le frais
+ * facturé vaut déjà 0, aucun montant, aucune TVA, aucun total n'en dépend.
+ */
+export interface InvoiceFreeDelivery {
+  /** Ce que la livraison aurait coûté, HT, en centimes. */
+  readonly waivedCents: number;
+  /** La même chose TTC quand la commande l'a figée, `null` sinon. */
+  readonly waivedTtcCents: number | null;
+  /** Le libellé figé de la promotion qui l'a offerte ; absent = le franco de la route. */
+  readonly label?: InvoiceFreeDeliveryLabel;
+}
+
+/** Un libellé figé, trois langues. */
+export interface InvoiceFreeDeliveryLabel {
+  readonly fr: string;
+  readonly en: string;
+  readonly it: string;
 }
 
 /** UNTDID 4461 — le prélèvement SEPA, le moyen de la facture du mois. */

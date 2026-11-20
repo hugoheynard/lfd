@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import type { Prisma } from "../../../../platform/database/client/client.js";
+import { Prisma } from "../../../../platform/database/client/client.js";
 import { Invoice } from "../../domain/entities/invoice.js";
 import {
   breakdownOf,
@@ -20,6 +20,11 @@ import { toInvoice, toInvoiceCreate, type InvoiceRow } from "../invoice.mapper.j
 /** Ce que Postgres rend d'un `jsonb` : la valeur écrite, relue sans cast. */
 function stored(value: unknown): Prisma.JsonValue {
   return value === undefined ? null : z.json().parse(JSON.parse(JSON.stringify(value)));
+}
+
+/** Une colonne `jsonb` nullable : `Prisma.DbNull` s'écrit NULL. */
+function storedOrNull(value: unknown): Prisma.JsonValue {
+  return value === undefined || value === Prisma.DbNull ? null : stored(value);
 }
 
 function dateOf(value: string | Date | null | undefined): Date | null {
@@ -71,6 +76,7 @@ function rowOf(invoice: Invoice, correctsNumber: string | null = null): InvoiceR
         deliveryNoteNumbers: Array.isArray(order.deliveryNoteNumbers)
           ? [...order.deliveryNoteNumbers]
           : [],
+        freeDelivery: storedOrNull(order.freeDelivery),
         position: order.position,
       }))
       .sort((a, b) => a.position - b.position),
@@ -146,6 +152,54 @@ describe("invoice.mapper — écrire puis relire", () => {
 
     expect(read).toEqual(note.toState());
     expect(read.dueOn).toBeNull();
+  });
+});
+
+describe("invoice.mapper — la livraison offerte figée (plan livraison offerte, § 2.9)", () => {
+  const offered = Invoice.issue(
+    issueInput({
+      orders: [
+        {
+          orderId: "o_1",
+          reference: "ORD-001",
+          receivedOn: "2026-09-12",
+          freeDelivery: {
+            waivedCents: 2_400,
+            waivedTtcCents: null,
+            label: { fr: "Client fidèle", en: "Loyal customer", it: "Cliente fedele" },
+          },
+        },
+        { orderId: "o_2", reference: "ORD-002", receivedOn: "2026-09-13" },
+      ],
+    }),
+  );
+
+  it("l'écrit sur le bon qui l'a, NULL sur l'autre, et la relit à l'identique", () => {
+    const created = toInvoiceCreate(offered).orders?.create;
+    const orders = Array.isArray(created) ? created : [];
+
+    expect(orders.map((order) => order.freeDelivery)).toEqual([
+      {
+        waivedCents: 2_400,
+        waivedTtcCents: null,
+        label: { fr: "Client fidèle", en: "Loyal customer", it: "Cliente fedele" },
+      },
+      Prisma.DbNull,
+    ]);
+    expect(toInvoice(rowOf(offered)).toState()).toEqual(offered.toState());
+  });
+
+  it("une pièce émise avant (colonne NULL) se relit sans mention", () => {
+    const read = toInvoice(rowOf(issuedInvoice())).toState();
+
+    expect(read.orders.every((order) => order.freeDelivery === undefined)).toBe(true);
+  });
+
+  it("refuse une mention hors schéma plutôt que de la taire", () => {
+    const row = rowOf(offered);
+    const orders = row.orders.map((order) => ({ ...order, freeDelivery: { waivedCents: "24" } }));
+
+    expect(() => toInvoice({ ...row, orders })).toThrow(UnreadableInvoiceError);
   });
 });
 

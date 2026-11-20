@@ -24,6 +24,11 @@ import {
   invoiceSellerSchema,
   invoiceTypeSchema,
 } from "./invoice-json.schema.js";
+import {
+  invoiceFreeDeliveryColumn,
+  invoiceFreeDeliveryColumnSchema,
+  invoiceFreeDeliveryOfColumn,
+} from "./invoice-free-delivery.columns.js";
 
 /** Ce que la relecture charge : la ligne, ses bons, et le numéro de la facture corrigée. */
 export const INVOICE_ROW_INCLUDE = {
@@ -90,6 +95,7 @@ export function toInvoiceCreate(invoice: Invoice): Prisma.InvoiceUncheckedCreate
         orderNumber: order.reference,
         receivedOn: order.receivedOn === null ? null : dayColumn(order.receivedOn),
         deliveryNoteNumbers: [...(order.deliveryNoteNumbers ?? [])],
+        freeDelivery: invoiceFreeDeliveryColumn(order.freeDelivery),
       })),
     },
   };
@@ -138,6 +144,18 @@ function toInvoiceState(row: InvoiceRow): InvoiceState {
       ...(order.deliveryNoteNumbers.length === 0
         ? {}
         : { deliveryNoteNumbers: order.deliveryNoteNumbers }),
+      // NULL sur une pièce sans livraison offerte, ou émise avant : elle n'en dit rien.
+      ...(order.freeDelivery === null
+        ? {}
+        : {
+            freeDelivery: invoiceFreeDeliveryOfColumn(
+              read(
+                invoiceFreeDeliveryColumnSchema,
+                order.freeDelivery,
+                "invoice_order.free_delivery",
+              ),
+            ),
+          }),
     })),
     lines: read(invoiceLinesSchema, row.lines, "lines").map(({ priceDiscount, ...line }) =>
       priceDiscount === undefined ? line : { ...line, priceDiscount },

@@ -3,6 +3,7 @@ import { instantToLocal } from "@lfd/contracts";
 import {
   SEPA_CREDIT_TRANSFER,
   SEPA_DIRECT_DEBIT,
+  type InvoiceFreeDelivery,
   type InvoicePaymentMeans,
 } from "../entities/invoice.types.js";
 import type { CollectionMandate } from "../ports/collection-mandates.reader.js";
@@ -45,6 +46,11 @@ export interface InvoiceableOrder {
   readonly frozen: FrozenInvoiceOrder;
   /** Les BL remis, par rang — cités par la ligne de référence de la facture. */
   readonly deliveryNoteNumbers: readonly string[];
+  /**
+   * La livraison offerte figée sur la commande, que la facture fige à son
+   * tour (plan livraison offerte, § 2.9). Absente = rien d'offert.
+   */
+  readonly freeDelivery?: InvoiceFreeDelivery;
   /**
    * Remis mais pas soldé (plan E6c2, § 1, relecture de `vitruve`). Absent = soldé.
    *

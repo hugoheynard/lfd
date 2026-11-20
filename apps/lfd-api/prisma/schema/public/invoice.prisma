@@ -133,6 +133,10 @@ model InvoiceOrder {
   /// l'émission (E6c2, plan E6 § 11) : cités par sa ligne de référence. Vide
   /// pour une pièce émise avant E6c2.
   deliveryNoteNumbers String[]  @default([]) @map("delivery_note_numbers")
+  /// La livraison offerte du bon, figée à l'émission (plan livraison offerte,
+  /// § 2.9) : `{ waivedCents, waivedTtcCents, label? }`. NULL = rien d'offert,
+  /// ou pièce émise avant.
+  freeDelivery        Json?     @map("free_delivery")
   /// Le rang d'écriture du bon sur la pièce — l'ordre de relecture.
   position            Int
 

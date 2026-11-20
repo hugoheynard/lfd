@@ -310,6 +310,41 @@ function promotionInDisplayedPrice(): Invoice {
   return Invoice.issue(realisticInput({ id: "inv_promo_line", lines, vat: breakdownOf(lines) }));
 }
 
+/**
+ * Deux bons dont la livraison a été offerte (plan livraison offerte, § 2.9) :
+ * l'un par le franco de la route, l'autre par une promotion nommée. Deux
+ * notes BG-1 `AAI` de plus, aucun montant XML neuf.
+ */
+function freeDelivery(): Invoice {
+  return Invoice.issue(
+    realisticInput({
+      id: "inv_free_delivery",
+      orders: [
+        {
+          orderId: "o_1",
+          reference: "ORD-001",
+          receivedOn: "2026-09-29",
+          freeDelivery: { waivedCents: 2_400, waivedTtcCents: null },
+        },
+        {
+          orderId: "o_2",
+          reference: "ORD-002",
+          receivedOn: "2026-09-29",
+          freeDelivery: {
+            waivedCents: 1_500,
+            waivedTtcCents: null,
+            label: {
+              fr: "Livraison offerte — client fidèle",
+              en: "Free delivery",
+              it: "Consegna gratuita",
+            },
+          },
+        },
+      ],
+    }),
+  );
+}
+
 export function facturXSamples(): readonly FacturXSample[] {
   return [
     { name: "facture-du-mois", invoice: Invoice.issue(realisticInput({})) },
@@ -324,5 +359,6 @@ export function facturXSamples(): readonly FacturXSample[] {
     { name: "dossier-au-poids", invoice: weighedDossier() },
     { name: "promotions-cumulees-deux-taux", invoice: cumulatedBasketPromotions() },
     { name: "promotion-dans-le-prix", invoice: promotionInDisplayedPrice() },
+    { name: "livraison-offerte", invoice: freeDelivery() },
   ];
 }

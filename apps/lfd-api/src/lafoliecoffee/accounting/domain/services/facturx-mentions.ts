@@ -74,6 +74,7 @@ export function documentNotes(state: InvoiceState): string {
     note(state.mentions.earlyPaymentDiscount, SUBJECT_EARLY_PAYMENT),
     note(operationText(state), SUBJECT_GENERAL),
     note(ordersText(state.orders), SUBJECT_GENERAL),
+    ...freeDeliveryTexts(state.orders).map((text) => note(text, SUBJECT_GENERAL)),
   ].join("");
 }
 
@@ -133,6 +134,29 @@ export function ordersText(orders: readonly InvoiceOrderReference[]): string {
   const notes = orders.flatMap((order) => order.deliveryNoteNumbers ?? []);
   const delivered = notes.length === 0 ? "" : ` — Bons de livraison : ${notes.join(", ")}`;
   return `Commandes : ${listed.join(", ")}${delivered}.`;
+}
+
+/** Le libellé de la mention quand la livraison est offerte par le franco de la route. */
+export const INVOICE_FREE_DELIVERY_LABEL = "Livraison offerte";
+
+/**
+ * **La livraison offerte, une phrase par bon concerné** (plan
+ * `plan-livraison-offerte.md`, § 2.9) : « Livraison offerte — 24,00 € HT
+ * (ORD-1042). », ou le libellé français de la promotion qui l'a offerte. Le
+ * montant est le barème HT que la livraison aurait coûté ; il n'entre dans
+ * aucun total. La même phrase part en note BG-1 (`AAI`) et sous la ligne de
+ * référence du PDF. Une pièce sans livraison offerte figée n'en dit rien.
+ */
+export function freeDeliveryTexts(orders: readonly InvoiceOrderReference[]): readonly string[] {
+  return orders.flatMap((order) => {
+    const free = order.freeDelivery;
+    if (free === undefined || free.waivedCents === 0) {
+      return [];
+    }
+    const label = free.label?.fr ?? INVOICE_FREE_DELIVERY_LABEL;
+    const amount = centsAmount(free.waivedCents).replace(".", ",");
+    return [`${label} — ${amount} € HT (${order.reference}).`];
+  });
 }
 
 function note(content: string, subject: string): string {

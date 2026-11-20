@@ -58,6 +58,46 @@ export function assertOrders(orders: readonly InvoiceOrderReference[]): void {
     if (order.receivedOn !== null) {
       assertCalendarDate(`livraison du bon ${order.reference}`, order.receivedOn);
     }
+    assertFreeDelivery(order);
+  }
+}
+
+/**
+ * Les bons qu'un avoir reprend, chacun avec la livraison offerte que la
+ * facture corrigée a figée pour lui : l'avoir cite ce que la pièce citait,
+ * jamais ce que l'appelant aurait relu ailleurs.
+ */
+export function creditedOrdersOf(
+  corrected: InvoiceState,
+  orders: readonly InvoiceOrderReference[],
+): InvoiceOrderReference[] {
+  const frozen = new Map(corrected.orders.map((order) => [order.orderId, order.freeDelivery]));
+  return orders.map((order) => {
+    const { orderId, reference, receivedOn, deliveryNoteNumbers, unsettled } = order;
+    const freeDelivery = frozen.get(orderId);
+    return {
+      orderId,
+      reference,
+      receivedOn,
+      ...(deliveryNoteNumbers === undefined ? {} : { deliveryNoteNumbers }),
+      ...(unsettled === undefined ? {} : { unsettled }),
+      ...(freeDelivery === undefined ? {} : { freeDelivery }),
+    };
+  });
+}
+
+/** La livraison offerte citée :des centimes entiers positifs ou nuls. */
+function assertFreeDelivery(order: InvoiceOrderReference): void {
+  const free = order.freeDelivery;
+  if (free === undefined) {
+    return;
+  }
+  const amounts = [free.waivedCents, free.waivedTtcCents ?? 0];
+  if (!amounts.every((cents) => Number.isSafeInteger(cents) && cents >= 0)) {
+    throw new InvalidInvoiceError(
+      "bons",
+      `la livraison offerte du bon ${order.reference} n'est pas un nombre entier de centimes positif`,
+    );
   }
 }
 

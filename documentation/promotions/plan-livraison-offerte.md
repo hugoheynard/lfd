@@ -587,3 +587,53 @@ Sérieux, intégrés au plan de bâti :
 Mineurs : forme jsonb de `discount_label` à vérifier avant d'en copier la
 forme ; le départage à seuil égal est écrit dans le nouveau choix, pas
 emprunté à `basket-promotion-choice.ts`.
+
+## 2.9 La facture (décidé par Hugo le 2026-11-20 : « oui, sur la facture »)
+
+Le bon et l'e-mail disent « Livraison offerte » (`66be86d74`). La facture le
+dit aussi, **figé dans la pièce à l'émission** : une facture se rend depuis
+l'agrégat `Invoice` et ses tables, jamais depuis `orders`
+(`invoice-document-renderer.ts`), et son PDF est figé par empreinte.
+
+- **Migration additive** : une colonne nullable `free_delivery` (jsonb) sur
+  `invoice_orders` — `{ waivedCents, waivedTtcCents | null, label? }`, la
+  forme de `OrderFreeDeliveryView`. `NULL` = rien d'offert, et toute pièce
+  émise avant ce lot (lecture tolérante, comme `delivery_note_numbers`) ;
+  pas de nouvelle `bodyVersion`.
+- **À l'émission** : les lecteurs mois et carte
+  (`BILLABLE_INVOICE_ORDER_SELECT`) lisent les colonnes figées du franco et
+  de la promotion ; `accounting` a sa propre sélection et sa propre
+  conversion (comme `invoice-basket-discounts.columns.ts`), sans importer
+  l'infrastructure d'`orders`. `InvoiceOrderReference` gagne le champ ;
+  `invoice.mapper.ts` l'écrit et le relit.
+- **Le rendu** : sous la ligne de référence du bon concerné, « Livraison
+  offerte — 24,00 € » (ou le libellé français de la promotion). Aucun
+  montant, aucune TVA, aucun total, aucune remise ne bouge ;
+  `invoice-order-consistency.ts` n'est pas touché (le frais vaut déjà 0).
+- **Factur-X** : la règle « les phrases des mentions sont celles du XML »
+  (`invoice-pdf-summary.ts`) reste vraie — la même phrase part en note
+  BG-1, sujet `AAI` (information générale, déjà admis), une par bon
+  concerné. Aucun montant XML neuf.
+- **Avoir** : son constructeur (`invoice.ts`) recopie le champ de chaque bon
+  qu'il reprend.
+- **Pièces déjà émises** : inchangées (ni colonne remplie, ni nouveau rendu).
+- **Révision après facturation** : sans effet sur la pièce, la mention est
+  figée ; le dossier de facturation, qui relit `orders`, montre l'état de la
+  commande.
+
+**Bâti le 2026-11-20** (migration `20261120150000_la_livraison_offerte_sur_la_facture`).
+La phrase rendue cite le bon, parce qu'une facture du mois en couvre
+plusieurs et que la ligne de référence est unique : « Livraison offerte —
+24,00 € HT (ORD-1042). » — le barème HT, une facture pro se lisant en HT.
+À confirmer par Hugo.
+
+## 2.10 Contradiction (`vitruve`, 2026-11-20)
+
+Un bloquant, intégré ci-dessus : la première version relisait `orders` au
+rendu, ce que la facture ne fait pas (rendu depuis `Invoice`, PDF figé par
+empreinte) — d'où la colonne figée sur `invoice_orders`. Sérieux intégrés :
+pièces antérieures (lecture tolérante), règle des phrases du XML (note BG-1
+`AAI`), avoir (recopie nommée), frontière (`accounting` ne lit pas
+l'infrastructure d'`orders`), révision après facturation. Mineurs : la
+facture carte suit le même chemin ; la cohérence des montants n'est pas
+touchée.
