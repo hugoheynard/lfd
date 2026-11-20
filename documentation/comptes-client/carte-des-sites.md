@@ -207,3 +207,91 @@ et de l'agrégat.
   « par notre équipe » n'est que dans les rendus de référence.
 - Le grain SKU depuis la boutique demande que la vue du rayon porte les
   déclinaisons.
+
+## 6. Évolution à bâtir : la carte commune des sites
+
+> **Décidé par Hugo le 2026-11-20, pas encore bâti.** « J'ai un compte parent
+> qui a 10 enfants et je veux utiliser la même liste pour tous pour le
+> moment » ; « le parent n'est pas concerné par cette carte, mais c'est lui qui
+> paramètre ses enfants » ; la règlent le principal et le staff. Cette décision
+> remplace Q4 : la carte modèle commune existe maintenant.
+
+### 6.1 Les règles
+
+- **Une carte commune par principal**, de la même forme que celle d'un site
+  (§ 3.3). Elle s'applique à **tous ses sites**, jamais au principal lui-même.
+- **La carte effective d'un site** : sa carte propre s'il en a une **active**,
+  sinon la carte commune de son principal, sinon aucune. Une carte propre
+  **remplace** la carte commune : elles ne se fusionnent pas. Fusionner deux
+  listes blanches ou noires de grains différents n'aurait pas de sens lisible.
+- **Revenir à la carte commune** est un geste : la carte propre passe
+  `follows_common` et ses entrées dorment en base (rien n'est détruit). Le
+  geste inverse la réactive.
+- Comme la carte d'un site, la carte commune **ne compte que sous un principal
+  actif** (§ 3.1) et **n'ouvre jamais** (§ 3.3).
+- **Qui l'écrit** : le client dont le rôle **propre** sur le principal est
+  `owner` ou `admin` (c'est sa propre société : ici, le rôle propre est le
+  bon), et le staff sous `b2b_companies:write`. Le droit d'écrire la carte
+  propre d'un site ne change pas (§ 3.2, `via.role`).
+- **Effets d'une pose** : un fait au journal du principal, `ShelfChanges` pour
+  **chacun** de ses sites (après validation), et l'avis Q3 quand l'équipe pose.
+
+### 6.2 La partie technique
+
+- Deux tables additives, `principal_sites_menu` (PK `company_id` du principal)
+  et `principal_sites_menu_entry`, de la forme de `sub_account_menu` ; les
+  valeurs, les CHECK et le jugement sont partagés. `sub_account_menu` gagne
+  `state` (`own` | `follows_common`, défaut `own`).
+- La lecture reste **dans la même requête** que le lecteur pro, sur les deux
+  chemins de `shared/company-standing/` : la carte du site et celle de
+  `parentCompany`. `menuReadingOf` choisit la carte effective. Le budget de
+  `test/pricing-budget.e2e-spec.ts` ne bouge pas.
+- Routes : `GET/PUT /companies/:principalId/sites-menu` (principal) et
+  `GET/PUT /admin/companies/:id/sites-menu` (staff, clé d'intention) ; la carte
+  d'un site gagne le geste « suivre la carte commune » / « reprendre sa carte
+  propre ». La lecture d'un site dit s'il suit la carte commune.
+- Écrans : en tête de « Mes sites », la carte commune ; sur chaque site,
+  « suit la carte commune » ou « carte propre », avec le geste de bascule. Au
+  back-office, un onglet « Carte des sites » sur la fiche du principal ;
+  l'onglet « Carte » d'un site montre la carte héritée en lecture et propose
+  d'en faire une propre. L'indicateur de la liste dit « carte commune » ou
+  « carte propre ».
+
+### 6.3 Lots
+
+| Lot | Contenu                                                                                      |
+| --- | -------------------------------------------------------------------------------------------- |
+| K1  | Migration, agrégat de la carte commune, état de la carte propre, lecture effective, jugement |
+| K2  | Routes principal et staff, bascule d'un site, faits, purge des rayons des sites, avis        |
+| K3  | Boutique et back-office                                                                      |
+
+### 6.4 Ce que la contradiction a ajouté (vitruve, 2026-11-20)
+
+- **Droit d'écrire la carte commune** : `canSetSitesMenuOf(standing)` (dans
+  `shared/company-standing/domain/sub-account-menu-writing.ts`) exige un rôle
+  propre `owner` ou `admin` **accepté** (`ownAccepted`) sur un principal
+  **actif** ; un invité qui n'est pas entré, ou un principal suspendu, est
+  refusé. Testé par ses refus.
+- **Changement de principal** : au rattachement d'un site
+  (`attach-to-parent.handler.ts`), sa carte propre repasse `follows_common`
+  (une décision d'une autre société ne revient pas en vigueur) et
+  `ShelfChanges` part pour le site.
+- **Purge** : un seul `companyShelves(principalId)`, qui couvre déjà la
+  société et ses sites, posé par `DeferredShelfChanges` : pas d'énumération,
+  pas de course avec un rattachement.
+- **Bascule** : un état visé, `PUT …/menu/state { state }`, `@Idempotent` côté
+  client, `@IntentKey` côté staff ; rien n'est fait si l'état est déjà atteint.
+- **Exempter un site** : une carte propre `except` sans entrée (« aucune
+  restriction ») masque la carte commune. Une carte propre qui existait avant
+  la carte commune continue de la masquer ; l'écran le dit.
+- **Trois états lus** pour un site : `none` (pas de carte), `common`, `own`
+  — nommés dans le contrat.
+- **RGPD, semis, journal** : `principal_sites_menu.updated_by_staff_id` au
+  registre ; les deux tables au semis et à sa couverture ; les déclencheurs
+  `record_company_change` recopiés.
+- **Modèles écartés** : une ligne de `sub_account_menu` posée sur le principal
+  se confondrait avec « la carte du principal », que § 6.1 exclut ; une
+  recopie dans N sites demanderait de resynchroniser N cartes.
+- **À prouver en K1** : que le budget ne bouge pas avec la relation imbriquée
+  `parentCompany.principalSitesMenu.entries`, et qu'un principal ne peut pas
+  être lui-même un site (pas de cartes communes en cascade).
