@@ -339,6 +339,26 @@ describe('ShopQuote', () => {
     http.verify();
   });
 
+  /** `plan-carte-des-sites.md` § 3.7 : la carte du site a fermé un article du panier. */
+  it('montre tel quel le refus d’un article hors de la carte du site', () => {
+    const { cart, quote, http } = boot();
+    const message =
+      "L'article CRO-001 n'est pas ouvert à ce site par son compte principal : retirez-le de la demande.";
+
+    cart.setQuantity(SKU, 1);
+    quiet();
+    http
+      .expectOne(QUOTE)
+      .flush(
+        { code: 'catalog.article_off_menu', message },
+        { status: 409, statusText: 'Conflict' },
+      );
+
+    expect(quote.status()).toBe('refused');
+    expect(quote.refusal()).toBe(message);
+    http.verify();
+  });
+
   /** P4 de `vente-au-poids.md` : le saumon se vend au poids, par 50 g, dès 200 g. */
   const SALMON = {
     ...(TEST_ITEMS[0] as ShopItemView),

@@ -135,6 +135,13 @@ export const OTHER_SPACES = [
   },
   {
     kind: "screen",
+    space: "siteMenu",
+    title: "Mes sites — la carte de chaque site, réglée par le compte principal",
+    file: "screens/site-menu.copy.ts",
+    fn: "siteMenuCopy",
+  },
+  {
+    kind: "screen",
     space: "deliveryProcedure",
     title: "La procédure de livraison d’une adresse",
     file: "screens/delivery-procedure.copy.ts · .fr/.en/.it.ts",

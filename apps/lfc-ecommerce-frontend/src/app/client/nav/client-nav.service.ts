@@ -11,10 +11,11 @@ import { ClientWorkspace } from '../client-workspace.service';
 import { AccountService } from '../../account/account.service';
 import { companyScreensClosed } from '../company-screens';
 import { ProOnboarding } from '../pro-onboarding.service';
+import { ManageableSites } from '../site-menu/manageable-sites';
 
 /** Une destination du menu, telle qu'elle est DÉCLARÉE — sans compteur ni libellé. */
 interface Destination {
-  readonly id: 'shop' | 'orders' | 'loyalty' | 'invoices' | 'baskets' | 'account';
+  readonly id: 'shop' | 'orders' | 'loyalty' | 'invoices' | 'baskets' | 'account' | 'sites';
   readonly route: string;
   /**
    * L'écran existe-t-il ?
@@ -37,6 +38,12 @@ interface Destination {
    * public (plan des points, §12). Fermé, rien ne dit « bientôt ».
    */
   readonly loyaltyOnly?: true;
+  /**
+   * Un écran du compte PRINCIPAL : « Mes sites », qui ne paraît qu'à qui règle
+   * la carte d'au moins un site depuis l'espace affiché
+   * (`plan-carte-des-sites.md`, § 5). En dernier : les autres ne bougent pas.
+   */
+  readonly sitesOnly?: true;
 }
 
 /**
@@ -73,6 +80,7 @@ const DESTINATIONS: readonly Destination[] = [
   { id: 'invoices', route: '/mes-factures', ready: true, companyOnly: true },
   { id: 'baskets', route: '/paniers-recurrents', ready: false, companyOnly: true },
   { id: 'account', route: '/mon-compte', ready: true, companyOnly: true },
+  { id: 'sites', route: '/mes-sites', ready: true, companyOnly: true, sitesOnly: true },
 ];
 
 /**
@@ -132,6 +140,7 @@ export class ClientNav {
   private readonly t = inject(ClientCopyService).t;
   private readonly router = inject(Router);
   private readonly loyalty = inject(ClientLoyalty);
+  private readonly sites = inject(ManageableSites);
 
   /**
    * L'adresse courante, en SIGNAL.
@@ -159,7 +168,8 @@ export class ClientNav {
         !(d.companyOnly === true && this.companyScreensClosed()) &&
         // `isOpen` n'est vrai qu'en espace personnel connecté : le service rend
         // `{ open: false }` ailleurs sans appel, et lit une seule fois sinon.
-        (d.loyaltyOnly !== true || this.loyalty.isOpen()),
+        (d.loyaltyOnly !== true || this.loyalty.isOpen()) &&
+        (d.sitesOnly !== true || this.sites.sites().length > 0),
     ).map((d) => ({
       id: d.id,
       route: d.route,

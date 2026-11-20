@@ -16,6 +16,7 @@ import { provideRecognised } from '../client-orders.fixture';
 import { ClientOrderHistory } from '../mes-commandes/client-order-history.service';
 import { LIVE_PICKUP } from '../mes-commandes/order-view.fixture';
 import { ClientNav } from './client-nav.service';
+import { ManageableSites } from '../site-menu/manageable-sites';
 import { provideWorkspace, workspaceDouble } from '../client-workspace.fixture';
 import { TOMMEUSES } from '../mon-compte/account.fixture';
 
@@ -158,7 +159,11 @@ describe('Les destinations du menu', () => {
  * mais seulement pour qui en a une : sans société, Mon compte est la porte pro.
  */
 describe('Les destinations du menu, selon l’espace', () => {
-  const idsIn = (current: string, companies: readonly CompanyView[]): readonly string[] => {
+  const idsIn = (
+    current: string,
+    companies: readonly CompanyView[],
+    sites: readonly CompanyView[] = [],
+  ): readonly string[] => {
     localStorage.clear();
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
@@ -179,6 +184,7 @@ describe('Les destinations du menu, selon l’espace', () => {
             hasNoCompany: () => companies.length === 0,
           },
         },
+        { provide: ManageableSites, useValue: { sites: signal(sites) } },
       ],
     });
     return TestBed.inject(ClientNav)
@@ -192,6 +198,12 @@ describe('Les destinations du menu, selon l’espace', () => {
 
   it('les rend dans l’espace de la société', () => {
     expect(idsIn(TOMMEUSES.id, [TOMMEUSES])).toEqual(ORDER);
+  });
+
+  /** `plan-carte-des-sites.md` § 5 : « Mes sites », en dernier, au seul qui règle une carte. */
+  it('ajoute Mes sites, en dernier, au principal qui règle la carte d’un site', () => {
+    const chalet = { ...TOMMEUSES, id: 'cmp_chalet' };
+    expect(idsIn(TOMMEUSES.id, [TOMMEUSES], [chalet])).toEqual([...ORDER, 'sites']);
   });
 
   /**

@@ -5,7 +5,9 @@ import type { ClientCopy } from '../copy/client-copy.model';
 /**
  * **Un article listé mais non commandable** — réservé à un autre compte et
  * réglé « visible, non commandable »
- * (`documentation/catalogue/plan-articles-sur-mesure.md`, S2, S7, L3).
+ * (`documentation/catalogue/plan-articles-sur-mesure.md`, S2, S7, L3), ou hors
+ * de la carte du site réglée « visible, verrouillé »
+ * (`documentation/comptes-client/plan-carte-des-sites.md`, § 3.4).
  *
  * Le serveur le dit par `orderable: false` ; l'absence vaut « commandable ».
  * Seul le rayon reconnu le sert, et le devis comme la commande le refusent :
@@ -22,13 +24,17 @@ export interface LockedReasonCopy {
 }
 
 /**
- * La raison d'un article verrouillé, ou `null` s'il est commandable. Une seule
- * raison existe aujourd'hui (`reserved_to_other_account`) ; un article
- * verrouillé sans raison servie la prend aussi, plutôt que de rester muet.
+ * La raison d'un article verrouillé, ou `null` s'il est commandable. Hors de la
+ * carte du site (`off_menu`, `plan-carte-des-sites.md` § 3.4) se dit pour
+ * elle-même ; réservé à un autre compte, ou verrouillé sans raison servie,
+ * prend la phrase de la réservation plutôt que de rester muet.
  */
 export function lockedReason(item: ShopItemView, copy: ClientCopy): LockedReasonCopy | null {
   if (!isLocked(item)) {
     return null;
+  }
+  if (item.lockedReason === 'off_menu') {
+    return { short: copy.shop.offMenu, sentence: copy.shop.offMenuHint };
   }
   return {
     short: copy.shop.reservedToOtherAccount,

@@ -111,6 +111,18 @@
             />
           }
         </div>
+      } @else if (siteMenuShown()) {
+        <!-- LA CARTE DU SITE : les articles grisés le sont par le compte
+             principal, et la mention le dit une fois, au-dessus du rayon. -->
+        <div class="grid shelf">
+          <fold-callout variant="info">{{ t().shop.siteMenuNotice }}</fold-callout>
+          <app-shelf-grid
+            [products]="shop.products()"
+            [page]="page()"
+            (opened)="pieceAddress.show($event)"
+            (shelfOpened)="shop.browse($event)"
+          />
+        </div>
       } @else {
         <app-shelf-grid
           class="grid"

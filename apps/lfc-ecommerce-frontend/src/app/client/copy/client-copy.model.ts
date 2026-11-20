@@ -33,6 +33,10 @@ export interface PageTitles {
   readonly salesTerms: string;
   readonly orderConfirmed: string;
   readonly connection: string;
+  /** La liste des sites d'un compte principal (`/mes-sites`). */
+  readonly sites: string;
+  /** La carte d'un site (`/mes-sites/:id/carte`). */
+  readonly siteMenu: string;
 }
 
 /** La clé d'un titre d'onglet — ce qu'une route porte en `data.pageTitle`. */
@@ -157,6 +161,8 @@ export interface ClientCopy {
       readonly baskets: string;
       readonly account: string;
       readonly loyalty: string;
+      /** Les sites d'un compte principal — à son propriétaire et à son administrateur. */
+      readonly sites: string;
     };
     /** `{n}` est remplacé par le nombre de factures en attente. */
     readonly invoicesDue: string;
@@ -582,6 +588,15 @@ export interface ClientCopy {
     /** La même raison, en phrase, à la place de l'ajout sur la fiche. */
     readonly reservedToOtherAccountHint: string;
     /**
+     * Un article hors de la carte que le compte principal a posée sur ce site
+     * (`plan-carte-des-sites.md`, § 3.4) — sur la vignette.
+     */
+    readonly offMenu: string;
+    /** La même raison, en phrase, à la place de l'ajout sur la fiche. */
+    readonly offMenuHint: string;
+    /** La mention du rayon d'un site dont une carte verrouille des articles. */
+    readonly siteMenuNotice: string;
+    /**
      * Le jour J sur stock (`jour-meme-sur-stock.md`, L7) : le reste en
      * vitrine aujourd'hui sur la vignette. `{left}` = « 3 » ou « 1,2 kg ».
      */
@@ -763,6 +778,11 @@ export interface ClientCopy {
      * exclue du décompte et de la commande. `{name}` = l'article.
      */
     readonly reservedLine: string;
+    /**
+     * La même ligne, quand l'article est hors de la carte que le compte
+     * principal a posée sur ce site (`plan-carte-des-sites.md`, § 3.5). `{name}`.
+     */
+    readonly offMenuLine: string;
     /** Le bouton qui retire ces lignes du panier. */
     readonly dropReservedLines: string;
     /** Le renvoi de la marque `*` posée sur une ligne exclue de la remise. */

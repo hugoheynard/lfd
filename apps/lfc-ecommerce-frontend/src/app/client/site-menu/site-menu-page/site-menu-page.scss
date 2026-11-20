@@ -1,0 +1,51 @@
+:host {
+  display: block;
+  background: var(--fold-color-bg-page);
+}
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-lg);
+  padding: var(--fold-space-2xl) var(--lfc-inset) var(--fold-space-4xl);
+}
+
+.settings,
+.families,
+.rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.setting {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+}
+
+.setting-label {
+  color: var(--fold-color-text-muted);
+}
+
+/* Une famille fille s'indente sous sa parente : le catalogue est un arbre. */
+.family {
+  padding-inline-start: calc(var(--depth, 0) * var(--fold-space-lg));
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-sm);
+}
+
+.row-name {
+  flex: 1 1 12rem;
+  min-width: 0;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+}

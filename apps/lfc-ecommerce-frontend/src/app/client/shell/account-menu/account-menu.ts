@@ -50,6 +50,7 @@ const DESTINATION_ICONS: Readonly<Record<string, FoldIconName>> = {
   invoices: 'receipt',
   baskets: 'repeat',
   account: 'company',
+  sites: 'store',
 };
 
 /**

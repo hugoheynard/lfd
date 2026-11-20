@@ -98,6 +98,8 @@ const KEYS: Readonly<Record<PageTitleKey, true>> = {
   salesTerms: true,
   orderConfirmed: true,
   connection: true,
+  sites: true,
+  siteMenu: true,
 };
 
 function isPageTitleKey(value: unknown): value is PageTitleKey {

@@ -1,0 +1,34 @@
+<ng-template clientBanner>
+  <app-client-banner-block [title]="copy().sitesTitle" [lead]="copy().sitesLead" />
+</ng-template>
+
+<div class="page">
+  @if (!manageable.settled()) {
+    <fold-loading [message]="copy().loading" />
+  } @else {
+    @for (site of manageable.sites(); track site.id) {
+      <fold-card data-site>
+        <fold-element-title
+          cardHeader
+          variant="title"
+          [title]="nameOf(site)"
+          [subtitle]="site.raisonSociale"
+        >
+          <a
+            titleAction
+            foldButton
+            size="sm"
+            emphasis="outline"
+            [routerLink]="['/mes-sites', site.id, 'carte']"
+          >
+            {{ copy().openMenu }}
+          </a>
+        </fold-element-title>
+      </fold-card>
+    } @empty {
+      <fold-empty-state [title]="copy().sitesEmptyTitle" [subtitle]="copy().sitesEmptyBody">
+        <fold-icon empty-icon name="company" />
+      </fold-empty-state>
+    }
+  }
+</div>

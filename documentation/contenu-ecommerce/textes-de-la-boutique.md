@@ -4,7 +4,7 @@
 >
 > La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.
 
-## Sommaire — 1840 textes
+## Sommaire — 1894 textes
 
 Clés présentes dans une langue et absentes d'une autre : 0.
 
@@ -18,7 +18,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Accueil — la carte d'événement](#espace-event) | `event` | 5 |
 | [Connexion et création de compte](#espace-signup) | `signup` | 24 |
 | [Commander — l'écran d'entrée de la commande](#espace-commande) | `commande` | 39 |
-| [Rayon / boutique](#espace-shop) | `shop` | 85 |
+| [Rayon / boutique](#espace-shop) | `shop` | 88 |
 | [Rayon — la fiche produit](#espace-product) | `product` | 34 |
 | [Barre de commande — la maison et l’heure retenues](#espace-commandterms) | `commandTerms` | 39 |
 | [Choix du jour — la première question d’une commande](#espace-daypicker) | `dayPicker` | 20 |
@@ -31,26 +31,27 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Choix de l’heure — le sélecteur de créneau](#espace-slotpicker) | `slotPicker` | 15 |
 | [Choix de l’heure — l’étape du créneau](#espace-slotstep) | `slotStep` | 11 |
 | [Choix de l’heure — le rappel téléphonique](#espace-rappel) | `rappel` | 12 |
-| [Panier, connexion et saisie invité](#espace-cart) | `cart` | 112 |
+| [Panier, connexion et saisie invité](#espace-cart) | `cart` | 113 |
 | [Règlement](#espace-pay) | `pay` | 21 |
 | [Confirmation](#espace-done) | `done` | 31 |
 | [Confirmation — le QR de retrait](#espace-qr) | `qr` | 12 |
 | **Le reste de la boutique** | | |
-| [Le cadre — bandeaux et erreurs générales](#espace-chrome) | `chrome` | 56 |
-| [La navigation](#espace-nav) | `nav` | 16 |
+| [Le cadre — bandeaux et erreurs générales](#espace-chrome) | `chrome` | 58 |
+| [La navigation](#espace-nav) | `nav` | 17 |
 | [La colonne d’accompagnement](#espace-aside) | `aside` | 4 |
-| [Mes commandes (récapitulatif compris)](#espace-orders) | `orders` | 287 |
+| [Mes commandes (récapitulatif compris)](#espace-orders) | `orders` | 289 |
 | [Annuler une commande — Mes commandes et la page invité](#espace-ordercancel) | `orderCancel` | 57 |
 | [Fidélité](#espace-loyalty) | `loyalty` | 38 |
 | [Mon compte (factures comprises)](#espace-account) | `account` | 534 |
 | [Le compte pro — le dictionnaire général](#espace-pro) | `pro` | 8 |
 | [Le compte pro — l’écran](#espace-proaccount) | `proAccount` | 27 |
+| [Mes sites — la carte de chaque site, réglée par le compte principal](#espace-sitemenu) | `siteMenu` | 45 |
 | [La procédure de livraison d’une adresse](#espace-deliveryprocedure) | `deliveryProcedure` | 47 (+ 3 non recensé) |
 | [Le dialogue « Nous écrire »](#espace-contactdialog) | `contactDialog` | 25 |
 | [Les cases des e-mails marketing, « Mes e-mails » et le pied de page](#espace-marketingconsent) | `marketingConsent` | 29 |
 | [Les documents légaux](#espace-legaldocument) | `legalDocument` | 14 |
 | [Le suivi des corrections d’accessibilité — sous la déclaration](#espace-accessibilityfollowup) | `accessibilityFollowUp` | 28 |
-| **Total** | | **1840** |
+| **Total** | | **1894** |
 
 ## Le parcours de commande
 
@@ -309,7 +310,7 @@ Source : `fr.ts · en.ts · it.ts` · 39 textes.
 
 ### Rayon / boutique — `shop`
 
-Source : `fr.ts · en.ts · it.ts` · 85 textes.
+Source : `fr.ts · en.ts · it.ts` · 88 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -385,6 +386,9 @@ Source : `fr.ts · en.ts · it.ts` · 85 textes.
 | `shop.operationClosed` | Commandes closes | Orders closed | Ordini chiusi |  |
 | `shop.reservedToOtherAccount` | Réservé à un autre compte | Reserved for another account | Riservato a un altro account |  |
 | `shop.reservedToOtherAccountHint` | Cet article est réservé à un autre compte : vous ne pouvez pas le commander. | This item is reserved for another account: you cannot order it. | Questo articolo è riservato a un altro account: non puoi ordinarlo. |  |
+| `shop.offMenu` | Hors de la carte de votre site | Not on your site’s menu | Fuori dalla carta del tuo sito |  |
+| `shop.offMenuHint` | Cet article est hors de la carte que votre compte principal a posée sur ce site : vous ne pouvez pas le commander. | This item is not on the menu your main account has set for this site: you cannot order it. | Questo articolo è fuori dalla carta che il tuo account principale ha impostato per questo sito: non puoi ordinarlo. |  |
+| `shop.siteMenuNotice` | Votre compte principal a posé une carte sur ce site : les articles grisés n’y sont pas ouverts. | Your main account has set a menu for this site: greyed-out items are not open to it. | Il tuo account principale ha impostato una carta per questo sito: gli articoli in grigio non vi sono aperti. |  |
 | `shop.shelfLeft` | Plus que {left} aujourd’hui | Only {left} left today | Ne restano solo {left} oggi | `{left}` |
 | `shop.shelfAllTaken` | Tout le reste d’aujourd’hui est au panier ({left}) | All that is left today is in your basket ({left}) | Tutto ciò che resta oggi è nel carrello ({left}) | `{left}` |
 | `shop.shelfGone` | Épuisé pour aujourd’hui | Sold out for today | Esaurito per oggi |  |
@@ -732,7 +736,7 @@ Source : `fr.ts · en.ts · it.ts` · 12 textes.
 
 ### Panier, connexion et saisie invité — `cart`
 
-Source : `fr.ts · en.ts · it.ts` · 112 textes.
+Source : `fr.ts · en.ts · it.ts` · 113 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -756,6 +760,7 @@ Source : `fr.ts · en.ts · it.ts` · 112 textes.
 | `cart.signInOffer` | Vous avez un compte ? Connectez-vous pour profiter de {discount}. | Have an account? Sign in to enjoy {discount}. | Hai un account? Accedi per approfittare di {discount}. | `{discount}` |
 | `cart.signInOfferPrices` | Vous avez un compte ? Connectez-vous pour profiter de vos prix d’inscrit. | Have an account? Sign in to enjoy your member prices. | Hai un account? Accedi per approfittare dei tuoi prezzi da iscritto. |  |
 | `cart.reservedLine` | L’article {name} est réservé à un autre compte : il ne sera pas commandé. | {name} is reserved for another account: it will not be ordered. | L’articolo {name} è riservato a un altro account: non verrà ordinato. | `{name}` |
+| `cart.offMenuLine` | L’article {name} est hors de la carte de votre site : il ne sera pas commandé. | {name} is not on your site’s menu: it will not be ordered. | L’articolo {name} è fuori dalla carta del tuo sito: non verrà ordinato. | `{name}` |
 | `cart.dropReservedLines` | Le retirer du panier | Remove it from the cart | Rimuovilo dal carrello |  |
 | `cart.excludedNote` | * Non concerné par la remise retrait. | * Not covered by the collection discount. | * Non coperto dallo sconto ritiro. |  |
 | `cart.excludedLineAria` | {name}, non concerné par la remise retrait | {name}, not covered by the collection discount | {name}, non coperto dallo sconto ritiro | `{name}` |
@@ -946,7 +951,7 @@ Source : `fr.ts · en.ts · it.ts` · 12 textes.
 
 ### Le cadre — bandeaux et erreurs générales — `chrome`
 
-Source : `fr.ts · en.ts · it.ts` · 56 textes.
+Source : `fr.ts · en.ts · it.ts` · 58 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -1006,12 +1011,14 @@ Source : `fr.ts · en.ts · it.ts` · 56 textes.
 | `chrome.pageTitles.salesTerms` | Conditions générales de vente — La Folie Coffee | General terms of sale — La Folie Coffee | Condizioni generali di vendita — La Folie Coffee |  |
 | `chrome.pageTitles.orderConfirmed` | Commande confirmée — La Folie Coffee | Order confirmed — La Folie Coffee | Ordine confermato — La Folie Coffee |  |
 | `chrome.pageTitles.connection` | Connexion — La Folie Coffee | Sign in — La Folie Coffee | Accesso — La Folie Coffee |  |
+| `chrome.pageTitles.sites` | Mes sites — La Folie Coffee | My sites — La Folie Coffee | I miei siti — La Folie Coffee |  |
+| `chrome.pageTitles.siteMenu` | Carte du site — La Folie Coffee | Site menu — La Folie Coffee | Carta del sito — La Folie Coffee |  |
 
 <a id="espace-nav"></a>
 
 ### La navigation — `nav`
 
-Source : `fr.ts · en.ts · it.ts` · 16 textes.
+Source : `fr.ts · en.ts · it.ts` · 17 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -1021,6 +1028,7 @@ Source : `fr.ts · en.ts · it.ts` · 16 textes.
 | `nav.destinations.baskets` | Paniers récurrents | Recurring baskets | Carrelli ricorrenti |  |
 | `nav.destinations.account` | Mon compte | My account | Il mio account |  |
 | `nav.destinations.loyalty` | Ma fidélité | My loyalty | La mia fedeltà |  |
+| `nav.destinations.sites` | Mes sites | My sites | I miei siti |  |
 | `nav.invoicesDue` | {n} à régler | {n} to settle | {n} da saldare | `{n}` |
 | `nav.basketsCount` | {n} modèles | {n} templates | {n} modelli | `{n}` |
 | `nav.cart` | Mon panier | My basket | Il mio carrello |  |
@@ -1049,7 +1057,7 @@ Source : `fr.ts · en.ts · it.ts` · 4 textes.
 
 ### Mes commandes (récapitulatif compris) — `orders`
 
-Source : `screens/orders.copy.ts · screens/order-summary.copy.ts · screens/order-change-request.copy.ts` · 287 textes.
+Source : `screens/orders.copy.ts · screens/order-summary.copy.ts · screens/order-change-request.copy.ts` · 289 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -1273,6 +1281,8 @@ Source : `screens/orders.copy.ts · screens/order-summary.copy.ts · screens/ord
 | `orders.payCardNote` | réglée à la commande | paid at checkout | pagato all’ordine |  |
 | `orders.payDueNote` | le paiement par carte n’a pas abouti | the card payment did not go through | il pagamento con carta non è andato a buon fine |  |
 | `orders.payRefusedNote` | votre banque a refusé la carte | your bank declined the card | la tua banca ha rifiutato la carta |  |
+| `orders.payShopTill` | À régler en boutique | To pay at the shop | Da pagare in negozio |  |
+| `orders.payShopTillNote` | à la caisse de la boutique, au retrait | at the shop till, on collection | alla cassa del negozio, al ritiro |  |
 | `orders.settle` | Régler | Pay | Paga |  |
 | `orders.detailRefund` | Remboursement | Refund | Rimborso |  |
 | `orders.detailCommitment` | Bon de commande | Purchase order | Buono d’ordine |  |
@@ -2049,6 +2059,60 @@ Source : `screens/pro-account.copy.ts` · 27 textes.
 | `proAccount.dossier.subtitle` | Votre établissement | Your venue | Il vostro locale |  |
 | `proAccount.dossier.pitch` | Il nous manque de quoi ouvrir le dossier de votre établissement. Une fois envoyé, nous le vérifions. | We still need a few details to open your venue’s file. Once sent, we review it. | Ci mancano alcuni dati per aprire la pratica del vostro locale. Una volta inviata, la verifichiamo. |  |
 | `proAccount.dossier.submit` | Envoyer mon dossier | Send my file | Invia la pratica |  |
+
+<a id="espace-sitemenu"></a>
+
+### Mes sites — la carte de chaque site, réglée par le compte principal — `siteMenu`
+
+Source : `screens/site-menu.copy.ts` · 45 textes.
+
+| Clé | FR | EN | IT | Variables |
+| --- | --- | --- | --- | --- |
+| `siteMenu.sitesTitle` | Mes sites | My sites | I miei siti |  |
+| `siteMenu.sitesLead` | Les sites rattachés à votre compte, et ce que chacun peut commander. | The sites attached to your account, and what each one may order. | I siti collegati al tuo account, e ciò che ciascuno può ordinare. |  |
+| `siteMenu.sitesEmptyTitle` | Aucun site | No site | Nessun sito |  |
+| `siteMenu.sitesEmptyBody` | Aucun site n’est rattaché à ce compte. | No site is attached to this account. | Nessun sito è collegato a questo account. |  |
+| `siteMenu.openMenu` | Régler la carte | Set the menu | Imposta la carta |  |
+| `siteMenu.title` | Carte du site | Site menu | Carta del sito |  |
+| `siteMenu.lead` | Ce que {site} peut commander. | What {site} may order. | Ciò che {site} può ordinare. | `{site}` |
+| `siteMenu.back` | Mes sites | My sites | I miei siti |  |
+| `siteMenu.loading` | Chargement de la carte… | Loading the menu… | Caricamento della carta… |  |
+| `siteMenu.loadFailedTitle` | La carte n’a pas pu être lue | The menu could not be read | Non è stato possibile leggere la carta |  |
+| `siteMenu.loadFailedBody` | Vérifiez votre connexion, puis réessayez. | Check your connection, then try again. | Controlla la connessione, poi riprova. |  |
+| `siteMenu.retry` | Réessayer | Try again | Riprova |  |
+| `siteMenu.unknownSiteTitle` | Site introuvable | Site not found | Sito non trovato |  |
+| `siteMenu.unknownSiteBody` | Ce site n’est pas rattaché au compte où vous êtes, ou vous ne pouvez pas régler sa carte. | This site is not attached to the account you are in, or you cannot set its menu. | Questo sito non è collegato all’account in cui ti trovi, oppure non puoi impostarne la carta. |  |
+| `siteMenu.summary` | {open} articles ouverts sur {total} | {open} items open out of {total} | {open} articoli aperti su {total} | `{open}` `{total}` |
+| `siteMenu.closedAll` | Aucune entrée en mode « Seulement » : ce site ne peut rien commander. | No entry in “Only” mode: this site cannot order anything. | Nessuna voce in modalità «Solo»: questo sito non può ordinare nulla. |  |
+| `siteMenu.settingsTitle` | Réglages | Settings | Impostazioni |  |
+| `siteMenu.modeLabel` | Ce que le site commande | What the site orders | Ciò che il sito ordina |  |
+| `siteMenu.modeExcept` | Tout, sauf… | Everything except… | Tutto, tranne… |  |
+| `siteMenu.modeOnly` | Seulement… | Only… | Solo… |  |
+| `siteMenu.offMenuLabel` | Un article hors de la carte | An item off the menu | Un articolo fuori carta |  |
+| `siteMenu.offMenuHidden` | est masqué | is hidden | è nascosto |  |
+| `siteMenu.offMenuLocked` | reste visible, verrouillé | stays visible, locked | resta visibile, bloccato |  |
+| `siteMenu.copyLabel` | Copier la carte d’un autre site | Copy another site’s menu | Copia la carta di un altro sito |  |
+| `siteMenu.copyPlaceholder` | Choisir un site | Choose a site | Scegli un sito |  |
+| `siteMenu.copied` | La carte de {site} est reprise : enregistrez pour l’appliquer. | The menu of {site} is copied: save to apply it. | La carta di {site} è ripresa: salva per applicarla. | `{site}` |
+| `siteMenu.copyEmpty` | {site} n’a pas de carte : il n’y a rien à copier. | {site} has no menu: there is nothing to copy. | {site} non ha una carta: non c’è nulla da copiare. | `{site}` |
+| `siteMenu.copyFailed` | La carte de ce site n’a pas pu être lue. | The menu of this site could not be read. | Non è stato possibile leggere la carta di questo sito. |  |
+| `siteMenu.catalogueTitle` | Le catalogue | The catalogue | Il catalogo |  |
+| `siteMenu.catalogueSubtitle` | Hérite : suit le réglage au-dessus. Inclus ou Exclu : l’emporte sur lui. | Inherit: follows the setting above. Included or Excluded: overrides it. | Eredita: segue l’impostazione sopra. Incluso o Escluso: la sostituisce. |  |
+| `siteMenu.catalogueEmpty` | Le catalogue est vide. | The catalogue is empty. | Il catalogo è vuoto. |  |
+| `siteMenu.familyWhole` | Toute la famille | The whole family | Tutta la famiglia |  |
+| `siteMenu.inherit` | Hérite | Inherit | Eredita |  |
+| `siteMenu.include` | Inclus | Included | Incluso |  |
+| `siteMenu.exclude` | Exclu | Excluded | Escluso |  |
+| `siteMenu.open` | ouvert | open | aperto |  |
+| `siteMenu.closed` | fermé | closed | chiuso |  |
+| `siteMenu.staleTitle` | Plus au catalogue | No longer in the catalogue | Non più nel catalogo |  |
+| `siteMenu.staleSubtitle` | Ces entrées ne désignent plus rien que votre catalogue montre : elles dorment. | These entries no longer point to anything your catalogue shows: they are dormant. | Queste voci non indicano più nulla che il tuo catalogo mostri: restano inattive. |  |
+| `siteMenu.staleRemove` | Retirer | Remove | Rimuovi |  |
+| `siteMenu.levelFamily` | Famille | Family | Famiglia |  |
+| `siteMenu.levelProduct` | Produit | Product | Prodotto |  |
+| `siteMenu.levelSku` | Déclinaison | Variant | Variante |  |
+| `siteMenu.save` | Enregistrer | Save | Salva |  |
+| `siteMenu.saved` | Carte enregistrée. | Menu saved. | Carta salvata. |  |
 
 <a id="espace-deliveryprocedure"></a>
 

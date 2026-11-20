@@ -231,7 +231,7 @@ sub_account_menu_entry   (id, company_id → sub_account_menu RESTRICT, level, r
 | C1  | ✅ bâti le 2026-11-20. Migration, agrégat, dépôt ; lecture dans les deux chemins de `shared/company-standing` ; semis, couverture, journal ; porte d'appartenance vérifiée |
 | C2  | ✅ bâti le 2026-11-20. `servedToViewer` + marque `menu` ; `isOrderable` et les huit lecteurs ; `lint:orderable-door` ; refus ; lecteur staff ; budget tenu                 |
 | C3  | ✅ bâti le 2026-11-20. Routes principal (`/companies/:subAccountId/menu`, prédicat `canSetMenuOf`) et staff (`/admin/companies/:id/menu`)                                  |
-| C4  | Boutique : écran du principal, mention sur le rayon et au panier du sous-compte                                                                                            |
+| C4  | ✅ bâti le 2026-11-20. Boutique : écran du principal, mention sur le rayon et au panier du sous-compte                                                                     |
 | C5  | Back-office : onglet de la fiche, indicateur sur la liste des sites, étiquettes grille et mercuriale                                                                       |
 | C6  | Avis (Q3) ; doc d'état, ce plan supprimé                                                                                                                                   |
 
@@ -298,6 +298,21 @@ sub_account_menu_entry   (id, company_id → sub_account_menu RESTRICT, level, r
   `company.sub_account_menu_set` (sujet : le site) ; l'événement
   `SubAccountMenuSetEvent` porte `author` hors de la charge, pour l'abonné de
   l'avis Q3 (C6).
+- **C4** — l'écran vit sous une destination neuve du menu, **« Mes sites »**
+  (`/mes-sites`, puis `/mes-sites/:id/carte`), montrée au seul propriétaire ou
+  administrateur du principal tenu en propre ; la boutique n'avait aucune liste
+  des sites. L'arbre est le catalogue **de l'espace du principal** (le rayon du
+  site, carte comprise, cacherait ce que la carte masque) ; un article s'y
+  règle au grain **produit** (`ShopItemView.sku`) : la vue du rayon ne porte ni
+  `productSku` ni ses déclinaisons, donc le grain SKU ne se pose pas depuis la
+  boutique — une entrée SKU posée ailleurs s'affiche et se retire. Sans carte,
+  l'écran part de `except`, `visible_locked`, sans entrée. Le résumé rejoue le
+  jugement du serveur. « Copier » reprend la carte d'un frère dans le
+  brouillon, sans l'enregistrer. Le `PUT` est `@Idempotent` : pas de clé
+  d'intention. Côté site : vignette, fiche et ligne de panier disent « hors de
+  la carte de votre site », une mention coiffe le rayon quand un article est
+  verrouillé hors carte, et le devis montre tel quel le refus
+  `catalog.article_off_menu` ; la passation montrait déjà le message du serveur.
 
 ## 9. Ce que la contradiction a changé (vitruve, 2026-11-20)
 
@@ -313,5 +328,8 @@ sub_account_menu_entry   (id, company_id → sub_account_menu RESTRICT, level, r
 | S8 — « site » est pris par nos boutiques                           | `SubAccountMenu`, `sub_account_menu`                |
 | Mineur — `pricing-budget` introuvable                              | **faux** : `test/pricing-budget.e2e-spec.ts` existe |
 
-**Non vérifié, à rouvrir au début du lot qui en dépend** : le signalement au panier d'une ligne devenue non servie
-(C4) ; l'avis de `lint:prisma-model-ownership` (C1).
+**Non vérifié, à rouvrir au début du lot qui en dépend** : l'avis de
+`lint:prisma-model-ownership` (C1). Le signalement au panier (C4) : une ligne
+verrouillée hors carte est retirée du devis et nommée par l'encadré des lignes
+verrouillées ; une ligne devenue **masquée** (`hidden`) sort du catalogue et
+n'est pas nommée — le comportement d'un article retiré, non changé ici.

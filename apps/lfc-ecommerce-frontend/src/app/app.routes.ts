@@ -237,6 +237,23 @@ export const routes: Routes = [
           import('./client/mon-compte/compte-page/compte-page').then((m) => m.ComptePage),
       },
       {
+        // LES SITES D'UN COMPTE PRINCIPAL, et la carte de chacun
+        // (`plan-carte-des-sites.md`, § 5). L'écran ne liste que les sites que
+        // son propriétaire ou son administrateur règle ; le serveur tient le mur.
+        path: 'mes-sites',
+        canActivate: [companyWorkspaceGuard],
+        data: pageTitle('sites'),
+        loadComponent: () =>
+          import('./client/site-menu/sites-page/sites-page').then((m) => m.SitesPage),
+      },
+      {
+        path: 'mes-sites/:subAccountId/carte',
+        canActivate: [companyWorkspaceGuard],
+        data: pageTitle('siteMenu'),
+        loadComponent: () =>
+          import('./client/site-menu/site-menu-page/site-menu-page').then((m) => m.SiteMenuPage),
+      },
+      {
         // LA PAGE DE LA PERSONNE. `authenticatedGuard` et RIEN D'AUTRE : aucune
         // garde de société, parce que ce sujet — qui je suis, comment j'entre —
         // existe pour tout le monde, avec ou sans entreprise (plan

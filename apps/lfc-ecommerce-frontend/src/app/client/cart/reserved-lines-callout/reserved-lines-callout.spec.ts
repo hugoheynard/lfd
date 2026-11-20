@@ -34,6 +34,14 @@ describe('ReservedLinesCallout', () => {
     ]);
   });
 
+  it('dit d’un article hors de la carte du site qu’il n’y est pas ouvert', () => {
+    const { host } = render([{ ...LOCKED_ITEM, lockedReason: 'off_menu' }]);
+
+    expect(host.querySelector('[data-reserved-line]')?.textContent?.trim()).toBe(
+      'L’article Entremets sur mesure est hors de la carte de votre site : il ne sera pas commandé.',
+    );
+  });
+
   it('s’annonce au lecteur d’écran', () => {
     const { host } = render([LOCKED_ITEM]);
 

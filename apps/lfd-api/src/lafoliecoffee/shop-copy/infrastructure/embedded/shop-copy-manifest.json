@@ -1868,6 +1868,27 @@
           "variables": []
         },
         {
+          "key": "shop.offMenu",
+          "fr": "Hors de la carte de votre site",
+          "en": "Not on your site’s menu",
+          "it": "Fuori dalla carta del tuo sito",
+          "variables": []
+        },
+        {
+          "key": "shop.offMenuHint",
+          "fr": "Cet article est hors de la carte que votre compte principal a posée sur ce site : vous ne pouvez pas le commander.",
+          "en": "This item is not on the menu your main account has set for this site: you cannot order it.",
+          "it": "Questo articolo è fuori dalla carta che il tuo account principale ha impostato per questo sito: non puoi ordinarlo.",
+          "variables": []
+        },
+        {
+          "key": "shop.siteMenuNotice",
+          "fr": "Votre compte principal a posé une carte sur ce site : les articles grisés n’y sont pas ouverts.",
+          "en": "Your main account has set a menu for this site: greyed-out items are not open to it.",
+          "it": "Il tuo account principale ha impostato una carta per questo sito: gli articoli in grigio non vi sono aperti.",
+          "variables": []
+        },
+        {
           "key": "shop.shelfLeft",
           "fr": "Plus que {left} aujourd’hui",
           "en": "Only {left} left today",
@@ -3721,6 +3742,13 @@
           "variables": ["name"]
         },
         {
+          "key": "cart.offMenuLine",
+          "fr": "L’article {name} est hors de la carte de votre site : il ne sera pas commandé.",
+          "en": "{name} is not on your site’s menu: it will not be ordered.",
+          "it": "L’articolo {name} è fuori dalla carta del tuo sito: non verrà ordinato.",
+          "variables": ["name"]
+        },
+        {
           "key": "cart.dropReservedLines",
           "fr": "Le retirer du panier",
           "en": "Remove it from the cart",
@@ -5209,6 +5237,20 @@
           "en": "Sign in — La Folie Coffee",
           "it": "Accesso — La Folie Coffee",
           "variables": []
+        },
+        {
+          "key": "chrome.pageTitles.sites",
+          "fr": "Mes sites — La Folie Coffee",
+          "en": "My sites — La Folie Coffee",
+          "it": "I miei siti — La Folie Coffee",
+          "variables": []
+        },
+        {
+          "key": "chrome.pageTitles.siteMenu",
+          "fr": "Carte du site — La Folie Coffee",
+          "en": "Site menu — La Folie Coffee",
+          "it": "Carta del sito — La Folie Coffee",
+          "variables": []
         }
       ],
       "unrecorded": []
@@ -5259,6 +5301,13 @@
           "fr": "Ma fidélité",
           "en": "My loyalty",
           "it": "La mia fedeltà",
+          "variables": []
+        },
+        {
+          "key": "nav.destinations.sites",
+          "fr": "Mes sites",
+          "en": "My sites",
+          "it": "I miei siti",
           "variables": []
         },
         {
@@ -6849,6 +6898,20 @@
           "fr": "votre banque a refusé la carte",
           "en": "your bank declined the card",
           "it": "la tua banca ha rifiutato la carta",
+          "variables": []
+        },
+        {
+          "key": "orders.payShopTill",
+          "fr": "À régler en boutique",
+          "en": "To pay at the shop",
+          "it": "Da pagare in negozio",
+          "variables": []
+        },
+        {
+          "key": "orders.payShopTillNote",
+          "fr": "à la caisse de la boutique, au retrait",
+          "en": "at the shop till, on collection",
+          "it": "alla cassa del negozio, al ritiro",
           "variables": []
         },
         { "key": "orders.settle", "fr": "Régler", "en": "Pay", "it": "Paga", "variables": [] },
@@ -11963,6 +12026,324 @@
           "fr": "Envoyer mon dossier",
           "en": "Send my file",
           "it": "Invia la pratica",
+          "variables": []
+        }
+      ],
+      "unrecorded": []
+    },
+    {
+      "space": "siteMenu",
+      "title": "Mes sites — la carte de chaque site, réglée par le compte principal",
+      "source": "screens/site-menu.copy.ts",
+      "journey": false,
+      "entries": [
+        {
+          "key": "siteMenu.sitesTitle",
+          "fr": "Mes sites",
+          "en": "My sites",
+          "it": "I miei siti",
+          "variables": []
+        },
+        {
+          "key": "siteMenu.sitesLead",
+          "fr": "Les sites rattachés à votre compte, et ce que chacun peut commander.",
+          "en": "The sites attached to your account, and what each one may order.",
+          "it": "I siti collegati al tuo account, e ciò che ciascuno può ordinare.",
+          "variables": []
+        },
+        {
+          "key": "siteMenu.sitesEmptyTitle",
+          "fr": "Aucun site",
+          "en": "No site",
+          "it": "Nessun sito",
+          "variables": []
+        },
+        {
+          "key": "siteMenu.sitesEmptyBody",
+          "fr": "Aucun site n’est rattaché à ce compte.",
+          "en": "No site is attached to this account.",
+          "it": "Nessun sito è collegato a questo account.",
+          "variables": []
+        },
+        {
+          "key": "siteMenu.openMenu",
+          "fr": "Régler la carte",
+          "en": "Set the menu",
+          "it": "Imposta la carta",
+          "variables": []
+        },
+        {
+          "key": "siteMenu.title",
+          "fr": "Carte du site",
+          "en": "Site menu",
+          "it": "Carta del sito",
+          "variables": []
+        },
+        {
+          "key": "siteMenu.lead",
+          "fr": "Ce que {site} peut commander.",
+          "en": "What {site} may order.",
+          "it": "Ciò che {site} può ordinare.",
+          "variables": ["site"]
+        },
+        {
+          "key": "siteMenu.back",
+          "fr": "Mes sites",
+          "en": "My sites",
+          "it": "I miei siti",
+          "variables": []
+        },
+        {
+          "key": "siteMenu.loading",
+          "fr": "Chargement de la carte…",
+          "en": "Loading the menu…",
+          "it": "Caricamento della carta…",
+          "variables": []
+        },
+        {
+          "key": "siteMenu.loadFailedTitle",
+          "fr": "La carte n’a pas pu être lue",
+          "en": "The menu could not be read",
+          "it": "Non è stato possibile leggere la carta",
+          "variables": []
+        },
+        {
+          "key": "siteMenu.loadFailedBody",
+          "fr": "Vérifiez votre connexion, puis réessayez.",
+          "en": "Check your connection, then try again.",
+          "it": "Controlla la connessione, poi riprova.",
+          "variables": []
+        },
+        {
+          "key": "siteMenu.retry",
+          "fr": "Réessayer",
+          "en": "Try again",
+          "it": "Riprova",
+          "variables": []
+        },
+        {
+          "key": "siteMenu.unknownSiteTitle",
+          "fr": "Site introuvable",
+          "en": "Site not found",
+          "it": "Sito non trovato",
+          "variables": []
+        },
+        {
+          "key": "siteMenu.unknownSiteBody",
+          "fr": "Ce site n’est pas rattaché au compte où vous êtes, ou vous ne pouvez pas régler sa carte.",
+          "en": "This site is not attached to the account you are in, or you cannot set its menu.",
+          "it": "Questo sito non è collegato all’account in cui ti trovi, oppure non puoi impostarne la carta.",
+          "variables": []
+        },
+        {
+          "key": "siteMenu.summary",
+          "fr": "{open} articles ouverts sur {total}",
+          "en": "{open} items open out of {total}",
+          "it": "{open} articoli aperti su {total}",
+          "variables": ["open", "total"]
+        },
+        {
+          "key": "siteMenu.closedAll",
+          "fr": "Aucune entrée en mode « Seulement » : ce site ne peut rien commander.",
+          "en": "No entry in “Only” mode: this site cannot order anything.",
+          "it": "Nessuna voce in modalità «Solo»: questo sito non può ordinare nulla.",
+          "variables": []
+        },
+        {
+          "key": "siteMenu.settingsTitle",
+          "fr": "Réglages",
+          "en": "Settings",
+          "it": "Impostazioni",
+          "variables": []
+        },
+        {
+          "key": "siteMenu.modeLabel",
+          "fr": "Ce que le site commande",
+          "en": "What the site orders",
+          "it": "Ciò che il sito ordina",
+          "variables": []
+        },
+        {
+          "key": "siteMenu.modeExcept",
+          "fr": "Tout, sauf…",
+          "en": "Everything except…",
+          "it": "Tutto, tranne…",
+          "variables": []
+        },
+        {
+          "key": "siteMenu.modeOnly",
+          "fr": "Seulement…",
+          "en": "Only…",
+          "it": "Solo…",
+          "variables": []
+        },
+        {
+          "key": "siteMenu.offMenuLabel",
+          "fr": "Un article hors de la carte",
+          "en": "An item off the menu",
+          "it": "Un articolo fuori carta",
+          "variables": []
+        },
+        {
+          "key": "siteMenu.offMenuHidden",
+          "fr": "est masqué",
+          "en": "is hidden",
+          "it": "è nascosto",
+          "variables": []
+        },
+        {
+          "key": "siteMenu.offMenuLocked",
+          "fr": "reste visible, verrouillé",
+          "en": "stays visible, locked",
+          "it": "resta visibile, bloccato",
+          "variables": []
+        },
+        {
+          "key": "siteMenu.copyLabel",
+          "fr": "Copier la carte d’un autre site",
+          "en": "Copy another site’s menu",
+          "it": "Copia la carta di un altro sito",
+          "variables": []
+        },
+        {
+          "key": "siteMenu.copyPlaceholder",
+          "fr": "Choisir un site",
+          "en": "Choose a site",
+          "it": "Scegli un sito",
+          "variables": []
+        },
+        {
+          "key": "siteMenu.copied",
+          "fr": "La carte de {site} est reprise : enregistrez pour l’appliquer.",
+          "en": "The menu of {site} is copied: save to apply it.",
+          "it": "La carta di {site} è ripresa: salva per applicarla.",
+          "variables": ["site"]
+        },
+        {
+          "key": "siteMenu.copyEmpty",
+          "fr": "{site} n’a pas de carte : il n’y a rien à copier.",
+          "en": "{site} has no menu: there is nothing to copy.",
+          "it": "{site} non ha una carta: non c’è nulla da copiare.",
+          "variables": ["site"]
+        },
+        {
+          "key": "siteMenu.copyFailed",
+          "fr": "La carte de ce site n’a pas pu être lue.",
+          "en": "The menu of this site could not be read.",
+          "it": "Non è stato possibile leggere la carta di questo sito.",
+          "variables": []
+        },
+        {
+          "key": "siteMenu.catalogueTitle",
+          "fr": "Le catalogue",
+          "en": "The catalogue",
+          "it": "Il catalogo",
+          "variables": []
+        },
+        {
+          "key": "siteMenu.catalogueSubtitle",
+          "fr": "Hérite : suit le réglage au-dessus. Inclus ou Exclu : l’emporte sur lui.",
+          "en": "Inherit: follows the setting above. Included or Excluded: overrides it.",
+          "it": "Eredita: segue l’impostazione sopra. Incluso o Escluso: la sostituisce.",
+          "variables": []
+        },
+        {
+          "key": "siteMenu.catalogueEmpty",
+          "fr": "Le catalogue est vide.",
+          "en": "The catalogue is empty.",
+          "it": "Il catalogo è vuoto.",
+          "variables": []
+        },
+        {
+          "key": "siteMenu.familyWhole",
+          "fr": "Toute la famille",
+          "en": "The whole family",
+          "it": "Tutta la famiglia",
+          "variables": []
+        },
+        {
+          "key": "siteMenu.inherit",
+          "fr": "Hérite",
+          "en": "Inherit",
+          "it": "Eredita",
+          "variables": []
+        },
+        {
+          "key": "siteMenu.include",
+          "fr": "Inclus",
+          "en": "Included",
+          "it": "Incluso",
+          "variables": []
+        },
+        {
+          "key": "siteMenu.exclude",
+          "fr": "Exclu",
+          "en": "Excluded",
+          "it": "Escluso",
+          "variables": []
+        },
+        { "key": "siteMenu.open", "fr": "ouvert", "en": "open", "it": "aperto", "variables": [] },
+        {
+          "key": "siteMenu.closed",
+          "fr": "fermé",
+          "en": "closed",
+          "it": "chiuso",
+          "variables": []
+        },
+        {
+          "key": "siteMenu.staleTitle",
+          "fr": "Plus au catalogue",
+          "en": "No longer in the catalogue",
+          "it": "Non più nel catalogo",
+          "variables": []
+        },
+        {
+          "key": "siteMenu.staleSubtitle",
+          "fr": "Ces entrées ne désignent plus rien que votre catalogue montre : elles dorment.",
+          "en": "These entries no longer point to anything your catalogue shows: they are dormant.",
+          "it": "Queste voci non indicano più nulla che il tuo catalogo mostri: restano inattive.",
+          "variables": []
+        },
+        {
+          "key": "siteMenu.staleRemove",
+          "fr": "Retirer",
+          "en": "Remove",
+          "it": "Rimuovi",
+          "variables": []
+        },
+        {
+          "key": "siteMenu.levelFamily",
+          "fr": "Famille",
+          "en": "Family",
+          "it": "Famiglia",
+          "variables": []
+        },
+        {
+          "key": "siteMenu.levelProduct",
+          "fr": "Produit",
+          "en": "Product",
+          "it": "Prodotto",
+          "variables": []
+        },
+        {
+          "key": "siteMenu.levelSku",
+          "fr": "Déclinaison",
+          "en": "Variant",
+          "it": "Variante",
+          "variables": []
+        },
+        {
+          "key": "siteMenu.save",
+          "fr": "Enregistrer",
+          "en": "Save",
+          "it": "Salva",
+          "variables": []
+        },
+        {
+          "key": "siteMenu.saved",
+          "fr": "Carte enregistrée.",
+          "en": "Menu saved.",
+          "it": "Carta salvata.",
           "variables": []
         }
       ],

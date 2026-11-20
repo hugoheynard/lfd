@@ -107,6 +107,17 @@ const OPERATION_REFUSAL_PREFIX = 'orders.operation.';
  */
 const LINE_REFUSAL_PREFIX = 'orders.line.';
 
+/**
+ * Le refus d'un article hors de la carte du site (409, `plan-carte-des-sites.md`
+ * § 3.7) : le rayon l'a vu commandable, la carte a changé depuis. Le message du
+ * serveur nomme l'article et le geste de sortie : il se montre tel quel.
+ */
+const ARTICLE_OFF_MENU = 'catalog.article_off_menu';
+
+/** Le repli d'un refus hors carte sans message lisible. */
+const OFF_MENU_REFUSAL_FALLBACK =
+  "Un article du panier n'est pas ouvert à ce site par son compte principal.";
+
 /** Le repli d'un refus d'opération sans message lisible. */
 const OPERATION_REFUSAL_FALLBACK =
   "Un article du panier n'est vendu que pendant une opération qui n'est pas ouverte.";
@@ -454,6 +465,7 @@ export class ShopQuote {
           return of(null);
         }
         if (
+          code === ARTICLE_OFF_MENU ||
           code?.startsWith(OPERATION_REFUSAL_PREFIX) === true ||
           code?.startsWith(LINE_REFUSAL_PREFIX) === true
         ) {
@@ -464,7 +476,12 @@ export class ShopQuote {
           this.voucherEffect.set(0);
           this.voucherRest.set(null);
           this.state.set('refused');
-          this.refused.set(httpErrorMessage(error, OPERATION_REFUSAL_FALLBACK));
+          this.refused.set(
+            httpErrorMessage(
+              error,
+              code === ARTICLE_OFF_MENU ? OFF_MENU_REFUSAL_FALLBACK : OPERATION_REFUSAL_FALLBACK,
+            ),
+          );
           return of(null);
         }
         this.state.set('failed');

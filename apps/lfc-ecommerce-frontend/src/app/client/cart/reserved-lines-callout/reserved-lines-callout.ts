@@ -7,7 +7,7 @@ import { ClientCart } from '../client-cart.service';
 /**
  * **Les articles du panier gardé que ce compte ne peut pas commander** —
  * réservés à un autre compte (`documentation/catalogue/plan-articles-sur-mesure.md`,
- * L3). Le panier les a déjà exclus du décompte et de la commande ; l'encadré le
+ * L3), ou hors de la carte du site (`plan-carte-des-sites.md`, § 3.5). Le panier les a déjà exclus du décompte et de la commande ; l'encadré le
  * dit, article par article, et propose de les retirer.
  */
 @Component({
@@ -25,7 +25,10 @@ export class ReservedLinesCallout {
   protected readonly messages = computed(() =>
     this.cart.reservedLines().map((item) => ({
       sku: item.sku,
-      text: fill(this.t().cart.reservedLine, { name: item.name }),
+      text: fill(
+        item.lockedReason === 'off_menu' ? this.t().cart.offMenuLine : this.t().cart.reservedLine,
+        { name: item.name },
+      ),
     })),
   );
 

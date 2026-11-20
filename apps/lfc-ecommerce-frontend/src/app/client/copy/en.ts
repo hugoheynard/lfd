@@ -70,6 +70,8 @@ export const EN: ClientCopy = {
       salesTerms: 'General terms of sale — La Folie Coffee',
       orderConfirmed: 'Order confirmed — La Folie Coffee',
       connection: 'Sign in — La Folie Coffee',
+      sites: 'My sites — La Folie Coffee',
+      siteMenu: 'Site menu — La Folie Coffee',
     },
   },
 
@@ -81,6 +83,7 @@ export const EN: ClientCopy = {
       baskets: 'Recurring baskets',
       account: 'My account',
       loyalty: 'My loyalty',
+      sites: 'My sites',
     },
     invoicesDue: '{n} to settle',
     basketsCount: '{n} templates',
@@ -304,6 +307,11 @@ export const EN: ClientCopy = {
     operationClosed: 'Orders closed',
     reservedToOtherAccount: 'Reserved for another account',
     reservedToOtherAccountHint: 'This item is reserved for another account: you cannot order it.',
+    offMenu: 'Not on your site’s menu',
+    offMenuHint:
+      'This item is not on the menu your main account has set for this site: you cannot order it.',
+    siteMenuNotice:
+      'Your main account has set a menu for this site: greyed-out items are not open to it.',
     shelfLeft: 'Only {left} left today',
     shelfAllTaken: 'All that is left today is in your basket ({left})',
     shelfGone: 'Sold out for today',
@@ -375,6 +383,7 @@ export const EN: ClientCopy = {
     signInOffer: 'Have an account? Sign in to enjoy {discount}.',
     signInOfferPrices: 'Have an account? Sign in to enjoy your member prices.',
     reservedLine: '{name} is reserved for another account: it will not be ordered.',
+    offMenuLine: '{name} is not on your site’s menu: it will not be ordered.',
     dropReservedLines: 'Remove it from the cart',
     excludedNote: '* Not covered by the collection discount.',
     excludedLineAria: '{name}, not covered by the collection discount',

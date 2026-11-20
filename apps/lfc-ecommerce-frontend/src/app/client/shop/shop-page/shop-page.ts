@@ -11,6 +11,7 @@ import {
 } from '@angular/core';
 import {
   FoldButtonComponent,
+  FoldCalloutComponent,
   FoldEmptyStateComponent,
   FoldLoadingStateComponent,
   FoldPanelHostService,
@@ -79,6 +80,7 @@ import { NARROW_QUERY } from '../../panel-side';
     OrderBar,
     ClientBannerOutlet,
     FoldButtonComponent,
+    FoldCalloutComponent,
     FoldEmptyStateComponent,
     FoldLoadingStateComponent,
     FoldSearchComponent,
@@ -120,6 +122,15 @@ export class ShopPage {
 
   /** L'état du chargement, tel que l'écran le rend. */
   protected readonly status = this.catalogue.status;
+
+  /**
+   * Une carte du compte principal verrouille-t-elle des articles de ce rayon
+   * (`plan-carte-des-sites.md`, § 3.4, § 5) ? Réglée « masqué », elle ne
+   * se voit pas : rien n'est montré, rien n'est annoncé.
+   */
+  protected readonly siteMenuShown = computed(() =>
+    this.catalogue.items().some((item) => item.lockedReason === 'off_menu'),
+  );
 
   private readonly storefront = inject(ShopStorefront);
   private readonly audience = inject(ProductAudience);

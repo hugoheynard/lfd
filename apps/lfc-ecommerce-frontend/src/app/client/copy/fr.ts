@@ -64,6 +64,8 @@ export const FR: ClientCopy = {
       salesTerms: 'Conditions générales de vente — La Folie Coffee',
       orderConfirmed: 'Commande confirmée — La Folie Coffee',
       connection: 'Connexion — La Folie Coffee',
+      sites: 'Mes sites — La Folie Coffee',
+      siteMenu: 'Carte du site — La Folie Coffee',
     },
   },
 
@@ -75,6 +77,7 @@ export const FR: ClientCopy = {
       baskets: 'Paniers récurrents',
       account: 'Mon compte',
       loyalty: 'Ma fidélité',
+      sites: 'Mes sites',
     },
     invoicesDue: '{n} à régler',
     basketsCount: '{n} modèles',
@@ -303,6 +306,11 @@ export const FR: ClientCopy = {
     reservedToOtherAccount: 'Réservé à un autre compte',
     reservedToOtherAccountHint:
       'Cet article est réservé à un autre compte : vous ne pouvez pas le commander.',
+    offMenu: 'Hors de la carte de votre site',
+    offMenuHint:
+      'Cet article est hors de la carte que votre compte principal a posée sur ce site : vous ne pouvez pas le commander.',
+    siteMenuNotice:
+      'Votre compte principal a posé une carte sur ce site : les articles grisés n’y sont pas ouverts.',
     shelfLeft: 'Plus que {left} aujourd’hui',
     shelfAllTaken: 'Tout le reste d’aujourd’hui est au panier ({left})',
     shelfGone: 'Épuisé pour aujourd’hui',
@@ -375,6 +383,7 @@ export const FR: ClientCopy = {
     signInOffer: 'Vous avez un compte ? Connectez-vous pour profiter de {discount}.',
     signInOfferPrices: 'Vous avez un compte ? Connectez-vous pour profiter de vos prix d’inscrit.',
     reservedLine: 'L’article {name} est réservé à un autre compte : il ne sera pas commandé.',
+    offMenuLine: 'L’article {name} est hors de la carte de votre site : il ne sera pas commandé.',
     dropReservedLines: 'Le retirer du panier',
     excludedNote: '* Non concerné par la remise retrait.',
     excludedLineAria: '{name}, non concerné par la remise retrait',
