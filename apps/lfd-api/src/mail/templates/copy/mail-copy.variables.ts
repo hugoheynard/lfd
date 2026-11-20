@@ -32,6 +32,7 @@ const DECLARED_VARIABLES = {
     recapPieces: ["count"],
     recapWeighed: ["name", "weight"],
     recapDiscountBase: ["base"],
+    recapFreeDeliveryValue: ["amount"],
     recapVatRate: ["rate"],
     qrAlt: ["ref"],
   },

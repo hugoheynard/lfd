@@ -115,6 +115,7 @@ function moneyOf(order: OrderView): SheetMoney {
     ...orderDiscountLinesOf(order),
     voucherDiscountCents: order.voucherDiscountCents,
     deliveryFeeCents: order.deliveryFeeCents,
+    ...(order.freeDelivery === undefined ? {} : { freeDelivery: order.freeDelivery }),
     lateFeeCents: order.lateFeeCents,
     vatCents: order.vatCents,
     vatShares: order.vatShares,

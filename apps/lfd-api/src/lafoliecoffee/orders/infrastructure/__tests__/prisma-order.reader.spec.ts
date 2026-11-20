@@ -31,6 +31,12 @@ function row(overrides: Partial<OrderRow> = {}): OrderRow {
     ttcByRate: null,
     deliveryFeeAdjustment: null,
     deliveryFeeCents: 300,
+    freeDeliveryThresholdCents: null,
+    freeDeliveryWaivedCents: null,
+    freeDeliveryWaivedTtcCents: null,
+    freeDeliveryPromotionId: null,
+    freeDeliveryPromotionThresholdCents: null,
+    freeDeliveryLabel: null,
     lateFeeCents: 200,
     lateFeeAdjustment: null,
     deliveryVatMode: null,
@@ -103,5 +109,46 @@ describe("toOrderView — l'engagement budgétaire (P2)", () => {
     );
 
     expect(view.budgetCommitment).toEqual({ number: "1300012345", serviceCode: "" });
+  });
+});
+
+/**
+ * Plan `plan-livraison-offerte.md`, § 2.6 : la vue sert aux documents la
+ * livraison offerte — le barème, et le libellé de la promotion qui l'a
+ * offerte —, sans toucher au frais facturé.
+ */
+describe("toOrderView — la livraison offerte", () => {
+  const offered = {
+    deliveryFeeCents: 0,
+    freeDeliveryThresholdCents: 8_000,
+    freeDeliveryWaivedCents: 2_400,
+    freeDeliveryWaivedTtcCents: null,
+  } as const;
+
+  it("absente quand rien n'est offert", () => {
+    expect(toOrderView(row(), NO_REFUNDS).freeDelivery).toBeUndefined();
+  });
+
+  it("offerte par le franco de la route : le barème, sans libellé", () => {
+    const view = toOrderView(row(offered), NO_REFUNDS);
+
+    expect(view.freeDelivery).toEqual({ waivedCents: 2_400, waivedTtcCents: null });
+    expect(view.deliveryFeeCents).toBe(0);
+  });
+
+  it("offerte par une promotion : son libellé figé, jamais son identifiant", () => {
+    const label = { fr: "Client fidèle", en: "Loyal customer", it: "Cliente fedele" };
+    const view = toOrderView(
+      row({
+        ...offered,
+        freeDeliveryThresholdCents: null,
+        freeDeliveryPromotionId: "promo_1",
+        freeDeliveryPromotionThresholdCents: 0,
+        freeDeliveryLabel: label,
+      }),
+      NO_REFUNDS,
+    );
+
+    expect(view.freeDelivery).toEqual({ waivedCents: 2_400, waivedTtcCents: null, label });
   });
 });

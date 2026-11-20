@@ -124,6 +124,20 @@
         "required": [],
         "fr": "Bon de fidélité"
       },
+      "recapFreeDelivery": {
+        "variables": [],
+        "required": [],
+        "fr": "Livraison offerte"
+      },
+      "recapFreeDeliveryValue": {
+        "variables": [
+          "amount"
+        ],
+        "required": [
+          "amount"
+        ],
+        "fr": "{amount} offerts"
+      },
       "recapVat": {
         "variables": [],
         "required": [],

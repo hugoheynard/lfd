@@ -31,6 +31,12 @@ export const BILLING_VALUE_CARDS: Pick<
     example: "1 234,56 €",
     senses: {
       "customer.collection-notice": SAME_SENSE,
+      "customer.order-placed": {
+        label: "Livraison offerte",
+        description:
+          "Ce que la livraison aurait coûté, offerte par le franco ou par une promotion : affiché, jamais déduit du total.",
+        example: "24,00 €",
+      },
       "customer.order-cancelled": {
         label: "Montant remboursé",
         description:

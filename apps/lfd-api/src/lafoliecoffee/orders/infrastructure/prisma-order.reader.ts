@@ -60,9 +60,14 @@ import {
   orderDiscountsFieldOf,
   type OrderDiscountAmountRow,
 } from "./order-discount-amounts.columns.js";
+import {
+  FREE_DELIVERY_SELECT,
+  orderFreeDeliveryFieldOf,
+  type FreeDeliveryRow,
+} from "./free-delivery.columns.js";
 
 /** Une commande telle que Prisma la sélectionne. */
-export interface OrderRow {
+export interface OrderRow extends FreeDeliveryRow {
   readonly id: string;
   readonly orderNumber: string;
   readonly status: OrderStatus;
@@ -137,6 +142,7 @@ export const ORDER_SELECT = {
   ...ORDER_TTC_TERMS_SELECT,
   deliveryFeeCents: true,
   deliveryFeeAdjustment: true,
+  ...FREE_DELIVERY_SELECT,
   lateFeeCents: true,
   lateFeeAdjustment: true,
   deliveryVatMode: true,
@@ -571,6 +577,8 @@ export function toOrderView(row: OrderRow, refunds: OrderRefundsReading): OrderV
     // facture perd le libellé de ses frais, pas son montant.
     deliveryFeeAdjustment: parseAdjustment(row.deliveryFeeAdjustment),
     deliveryFeeCents: row.deliveryFeeCents,
+    // Affichée, pas comptable : le frais facturé reste `deliveryFeeCents`.
+    ...orderFreeDeliveryFieldOf(row.id, row),
     lateFeeCents: row.lateFeeCents,
     lateFeeAdjustment: parseLateFee(row.lateFeeAdjustment),
     deliveryVatMode: parseDeliveryVatMode(row.deliveryVatMode),

@@ -16,6 +16,7 @@ import { frozenPickupDiscountBaseOf } from "../../domain/services/pickup-discoun
 import { settlementRegimeOf } from "../../domain/services/settlement-regime.js";
 import type { OrderLineInput } from "../../domain/value-objects/order-line.js";
 import { REGISTERED_BUYER } from "../../domain/value-objects/order-buyer-kind.js";
+import { freeDeliveryViewOf, type FreeDelivery } from "../../domain/value-objects/free-delivery.js";
 import {
   specimenDeliveryRoute,
   specimenPickupPromotion,
@@ -271,6 +272,7 @@ function sheetOf(
       discountAdjustment: state.discountAdjustment,
       voucherDiscountCents: state.voucherDiscountCents,
       deliveryFeeCents: state.deliveryFeeCents,
+      ...freeDeliveryFieldOf(state.freeDelivery),
       lateFeeCents: state.lateFeeCents,
       vatCents: state.vatCents,
       vatShares: state.vatShares,
@@ -305,4 +307,12 @@ export function specimenProOrderState(now: Date): OrderToPlace {
 /** Le lendemain de `now` à Paris, en jour de service (minuit UTC, comme la colonne). */
 function tomorrowOf(now: Date): Date {
   return new Date(`${addDays(instantToLocal(now).day, 1)}T00:00:00.000Z`);
+}
+
+/** La livraison offerte figée, comme le lecteur la sert ; absente sans elle. */
+function freeDeliveryFieldOf(
+  freeDelivery: FreeDelivery | null,
+): Pick<ClientSheet["money"], "freeDelivery"> {
+  const view = freeDeliveryViewOf(freeDelivery);
+  return view === null ? {} : { freeDelivery: view };
 }

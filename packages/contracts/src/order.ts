@@ -13,6 +13,7 @@ import {
 import type { CartAdjustment } from "./cart-adjustment.js";
 import type { DiscountLabelView } from "./discount-label.js";
 import type { OrderDiscountView } from "./order-discount.js";
+import type { OrderFreeDeliveryView } from "./order-free-delivery.js";
 import type { DeliveryVatMode } from "./order-delivery-vat.js";
 import type { LateFeeAdjustment } from "./order-late-fee.js";
 import type { SettlementRegime } from "./order-sheet.js";
@@ -908,6 +909,13 @@ export interface OrderView {
    * Les deux se distinguent par `deliveryFeeCents` : nul dans le premier cas.
    */
   readonly deliveryFeeAdjustment: CartAdjustment | null;
+  /**
+   * **La livraison offerte**, figée à la passation — par le franco de la
+   * route ou par une promotion « Sur la livraison ». Affichée, pas
+   * comptable : `deliveryFeeCents` vaut alors 0 et aucun total n'en dépend.
+   * Absente : livraison payée, retrait, ou rien d'offert.
+   */
+  readonly freeDelivery?: OrderFreeDeliveryView;
   /**
    * Surtaxe de commande tardive, HT, en centimes. `0` si aucune — c'est-à-dire
    * dans l'immense majorité des cas : elle n'existe que si un commercial a

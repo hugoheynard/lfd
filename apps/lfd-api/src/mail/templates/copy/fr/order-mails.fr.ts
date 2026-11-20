@@ -28,6 +28,8 @@ export const ORDER_MAILS_FR: OrderMailsCopy = {
     recapDiscount: "Remise retrait",
     recapDiscountBase: "sur {base} éligibles",
     recapVoucher: "Bon de fidélité",
+    recapFreeDelivery: "Livraison offerte",
+    recapFreeDeliveryValue: "{amount} offerts",
     recapVat: "dont TVA",
     recapVatRate: "dont TVA {rate} %",
     totalPretax: "Porté à votre compte, HT",

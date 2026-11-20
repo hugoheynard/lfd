@@ -34,6 +34,7 @@ import { renderOrderShortfallRefundedMail } from "./order-shortfall-refunded-mai
 import { withAttachments } from "./order-sheet-mail-document.js";
 import { pickupItinerary } from "./pickup-itinerary.js";
 import { discountMailRows } from "./pickup-discount-mail-label.js";
+import { freeDeliveryMailRows } from "./free-delivery-mail-row.js";
 import { qrPng } from "./qr-image.js";
 import { renderVitrineNoticeMail } from "./vitrine-notice-mail.js";
 import { renderSubAccountActivityMail } from "./sub-account-activity-mail.js";
@@ -109,6 +110,7 @@ function recapRows(
     ...(voucherCents === 0
       ? []
       : [{ label: copy.recapVoucher, value: `−${money(voucherCents, locale)}` }]),
+    ...freeDeliveryMailRows(sheet.money, copy, (cents) => money(cents, locale), locale),
     ...(totalIsPretaxOnly(sheet)
       ? pretaxTotalRows(sheet, locale)
       : sheet.money.ttcByRate === undefined

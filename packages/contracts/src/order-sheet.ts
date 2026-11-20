@@ -8,6 +8,7 @@ import {
 } from "./address.js";
 import { cartAdjustmentSchema, type CartAdjustment } from "./cart-adjustment.js";
 import type { DiscountLabelView } from "./discount-label.js";
+import type { OrderFreeDeliveryView } from "./order-free-delivery.js";
 import {
   type FulfillmentMethod,
   fulfillmentMethodSchema,
@@ -180,6 +181,14 @@ export const sheetMoneySchema = z.object({
   /** La part du bon de fidélité — absente d'une feuille d'avant le lot C, lue zéro. */
   voucherDiscountCents: z.number().int().default(0),
   deliveryFeeCents: z.number().int(),
+  /** Cf. {@link SheetMoney.freeDelivery} — absente : rien d'offert. */
+  freeDelivery: z
+    .object({
+      waivedCents: z.number().int(),
+      waivedTtcCents: z.number().int().nullable(),
+      label: z.object({ fr: z.string(), en: z.string(), it: z.string() }).optional(),
+    })
+    .optional(),
   lateFeeCents: z.number().int(),
   vatCents: z.number().int(),
   vatShares: vatSharesSchema.nullable(),
@@ -236,6 +245,12 @@ export interface SheetMoney {
    */
   readonly voucherDiscountCents: number;
   readonly deliveryFeeCents: number;
+  /**
+   * La livraison offerte, recopiée de la commande ({@link OrderFreeDeliveryView}) :
+   * deux lignes affichées qui s'annulent, jamais un terme du total —
+   * `deliveryFeeCents` vaut 0. Absente : rien d'offert.
+   */
+  readonly freeDelivery?: OrderFreeDeliveryView | undefined;
   readonly lateFeeCents: number;
   readonly vatCents: number;
   /**

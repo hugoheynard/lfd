@@ -58,6 +58,17 @@ export interface OrderPlacedCopy {
   readonly recapDiscountBase: string;
   /** La ligne du bon de fidélité, distincte de la remise (plan des points, C7). */
   readonly recapVoucher: string;
+  /**
+   * La livraison offerte, quand aucune promotion ne la nomme (le franco de
+   * la route) ; une promotion figée la nomme par son propre libellé.
+   */
+  readonly recapFreeDelivery: string;
+  /**
+   * `{amount}` = le barème offert. Pas de signe : la ligne est affichée, pas
+   * comptable — le total n'en dépend pas, et le récapitulatif ne montre pas
+   * de frais de livraison dont elle serait la déduction.
+   */
+  readonly recapFreeDeliveryValue: string;
   readonly recapVat: string;
   /** « dont TVA 5,5 % » — une ligne par taux d'une commande composée en TTC. */
   readonly recapVatRate: string;

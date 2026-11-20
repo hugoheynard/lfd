@@ -23,6 +23,8 @@ export const ORDER_MAILS_EN: OrderMailsCopy = {
     recapDiscount: "Pickup discount",
     recapDiscountBase: "on {base} eligible",
     recapVoucher: "Loyalty voucher",
+    recapFreeDelivery: "Free delivery",
+    recapFreeDeliveryValue: "{amount} waived",
     recapVat: "incl. VAT",
     recapVatRate: "incl. VAT {rate}%",
     totalPretax: "Charged to your account, excl. VAT",

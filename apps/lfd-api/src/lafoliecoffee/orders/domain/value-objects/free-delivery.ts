@@ -1,4 +1,4 @@
-import type { CartAdjustment } from "@lfd/contracts";
+import type { CartAdjustment, OrderFreeDeliveryView } from "@lfd/contracts";
 
 import { DomainError } from "../../../../platform/shared/errors/app-error.js";
 
@@ -104,6 +104,26 @@ export function billedDeliveryFeeOf(
   freeDelivery: FreeDelivery | null,
 ): CartAdjustment | null {
   return freeDelivery === null ? frozenFee : null;
+}
+
+/**
+ * **Ce que les documents lisent de la livraison offerte** : le barème offert
+ * et, quand une promotion l'a offert, son libellé figé — jamais son
+ * identifiant ni les seuils, qui restent au serveur. `null` sans livraison
+ * offerte.
+ */
+export function freeDeliveryViewOf(
+  freeDelivery: FreeDelivery | null,
+): OrderFreeDeliveryView | null {
+  if (freeDelivery === null) {
+    return null;
+  }
+  const label = freeDelivery.promotion?.label;
+  return {
+    waivedCents: freeDelivery.waivedCents,
+    waivedTtcCents: freeDelivery.waivedTtcCents,
+    ...(label === undefined ? {} : { label: { fr: label.fr, en: label.en, it: label.it } }),
+  };
 }
 
 /** Un franco qui ne se compte pas en centimes entiers et positifs — 400. */

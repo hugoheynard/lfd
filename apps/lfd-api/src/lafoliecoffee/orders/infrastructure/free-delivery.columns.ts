@@ -1,8 +1,10 @@
+import type { OrderFreeDeliveryView } from "@lfd/contracts";
 import { z } from "zod";
 
 import { Prisma } from "../../../platform/database/client/client.js";
 import {
   freeDeliveryOf,
+  freeDeliveryViewOf,
   type FreeDelivery,
   type FreeDeliveryPromotion,
 } from "../domain/value-objects/free-delivery.js";
@@ -100,4 +102,19 @@ function promotionOfRow(orderId: string, row: FreeDeliveryRow): FreeDeliveryProm
     throw new FrozenAdjustmentUnreadableError(orderId, "promotion de la livraison offerte");
   }
   return { promotionId, thresholdCents, label: label.data };
+}
+
+/**
+ * La livraison offerte, telle que la vue d'une commande la sert aux
+ * documents : le barème offert, et le libellé de la promotion quand c'est
+ * elle qui a offert. Absente sans livraison offerte.
+ *
+ * @throws {FrozenAdjustmentUnreadableError}
+ */
+export function orderFreeDeliveryFieldOf(
+  orderId: string,
+  row: FreeDeliveryRow,
+): { readonly freeDelivery?: OrderFreeDeliveryView } {
+  const view = freeDeliveryViewOf(freeDeliveryOfRow(orderId, row));
+  return view === null ? {} : { freeDelivery: view };
 }

@@ -2,6 +2,7 @@ import type { ClientSheet, ClientSheetLine, SheetFulfillment, SheetMoney } from 
 
 import { sheetShowsTtc } from "./order-sheet.js";
 import { money } from "./order-sheet-pdf-format.js";
+import { freeDeliveryRows } from "./order-sheet-pdf-free-delivery.js";
 import { orderPretaxCents } from "@lfd/money";
 import { eligibleBaseCentsOf, pickupDiscountLabel, pickupSiteOf } from "./pickup-discount-label.js";
 
@@ -111,6 +112,7 @@ function adjustmentRows(sheet: PricedPaper): readonly TotalRow[] {
     ...(totals.deliveryFeeCents === 0
       ? []
       : [{ label: "Livraison", value: money(totals.deliveryFeeCents) }]),
+    ...freeDeliveryRows(totals, false),
     // La surtaxe s'ajoute APRÈS la remise : on ne fait pas de geste commercial
     // sur une pénalité de retard.
     ...(totals.lateFeeCents === 0
@@ -271,6 +273,8 @@ function publicRows(sheet: PricedPaper): readonly TotalRow[] {
   return [
     { label: "Articles", value: money(articlesCents(sheet)) },
     ...taxedGestureRows(sheet),
+    // Hors de la répartition TTC : ces deux lignes s'annulent.
+    ...freeDeliveryRows(totals, true),
     { label: "Total TTC", value: money(totals.totalCents), rule: true, strong: true },
     ...(totals.ttcByRate === undefined ? vatRows(totals) : rateRows(totals.ttcByRate)),
   ];
