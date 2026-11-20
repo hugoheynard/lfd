@@ -12,6 +12,7 @@ import { GLOSSARY_ORDERS_SUMMARY } from './glossary-orders-summary';
 import { GLOSSARY_P } from './glossary-p';
 import { GLOSSARY_Q_R } from './glossary-q-r';
 import { GLOSSARY_S } from './glossary-s';
+import { GLOSSARY_SITE_MENU } from './glossary-site-menu';
 import { GLOSSARY_T_W } from './glossary-t-w';
 
 /**
@@ -27,6 +28,7 @@ export const SHOP_COPY_GLOSSARY: Readonly<Record<string, string>> = {
   ...GLOSSARY_INVOICES,
   ...GLOSSARY_PUBLIC_BUYER,
   ...GLOSSARY_MARKETING_CONSENT,
+  ...GLOSSARY_SITE_MENU,
   ...GLOSSARY_A_B,
   ...GLOSSARY_C,
   ...GLOSSARY_D_H,

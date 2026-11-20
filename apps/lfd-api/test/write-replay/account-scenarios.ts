@@ -196,6 +196,43 @@ export const ACCOUNT_SCENARIOS: ScenarioSet = {
     };
   },
 
+  [routeKey(`${HTTP}/admin-company-sites-menu.controller.ts`, "set")]: async ({ ctx }) => {
+    const group = await createCompany(ctx.prisma, { enseigne: "Club Commun du Rejeu" });
+    const site = await createCompany(ctx.prisma, { enseigne: "Chalet Commun du Rejeu" });
+    await ctx.prisma.company.update({
+      where: { id: site.id },
+      data: { parentCompanyId: group.id },
+    });
+    return {
+      sub: STAFF,
+      path: `/admin/companies/${group.id}/sites-menu`,
+      body: { mode: "except", offMenu: "hidden", entries: [] },
+    };
+  },
+
+  // Le site a d'abord sa carte propre : le rejeu porte sur le retour à la commune.
+  [routeKey(`${HTTP}/admin-company-sub-account-menu.controller.ts`, "setState")]: async ({
+    ctx,
+  }) => {
+    const group = await createCompany(ctx.prisma, { enseigne: "Club État du Rejeu" });
+    const site = await createCompany(ctx.prisma, { enseigne: "Chalet État du Rejeu" });
+    await ctx.prisma.company.update({
+      where: { id: site.id },
+      data: { parentCompanyId: group.id },
+    });
+    await ctx
+      .asSub(STAFF)
+      .put(`/admin/companies/${site.id}/menu`)
+      .set(INTENT_KEY, freshIntent())
+      .send({ mode: "except", offMenu: "hidden", entries: [] })
+      .expect(204);
+    return {
+      sub: STAFF,
+      path: `/admin/companies/${site.id}/menu/state`,
+      body: { state: "follows_common" },
+    };
+  },
+
   [routeKey(`${HTTP}/company-delivery-procedure.controller.ts`, "addStep")]: ({ ctx }) =>
     addStepScenario(ctx, ""),
   [routeKey(`${HTTP}/admin-company-delivery-procedure.controller.ts`, "addStep")]: ({ ctx }) =>

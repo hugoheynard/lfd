@@ -111,6 +111,8 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   'comptes-clients/:id/tarifs': 'b2b_pricing:read',
   // La carte d'un site : la lire demande le catalogue qu'elle restreint.
   'comptes-clients/:id/carte': 'lfc_catalog:read',
+  // La carte commune des sites : le même droit que la carte d'un site.
+  'comptes-clients/:id/carte-des-sites': 'lfc_catalog:read',
   // Le sur mesure a son droit à part (Hugo, 2026-10-30) : ni celui du
   // compte, ni celui du catalogue.
   'comptes-clients/:id/articles-reserves': 'lfc_made_to_order:read',
