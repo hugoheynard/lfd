@@ -1,6 +1,6 @@
 # La commande d'un particulier, notée au comptoir, réglée à la caisse de la boutique
 
-> **Doc d'état, 2026-11-20.** Bâti et poussé sur `dev` le 2026-11-20. Les
+> **Doc d'état, 2026-11-20.** Bâti le 2026-11-20, en production le même jour (`e30880295`). Les
 > décisions de Hugo sont datées ; ce qui reste à faire est au § 7.
 
 ## Partie 1 — en simple
