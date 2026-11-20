@@ -24,9 +24,7 @@ export class SubAccountMenuService {
 
   /** `204` ; `409` sur une société sans principal. Un refus est relancé. */
   async save(companyId: string, payload: SubAccountMenuPayload, intentKey: string): Promise<void> {
-    await firstValueFrom(
-      this.http.put<null>(this.url(companyId), payload, intentOptions(intentKey)),
-    );
+    await firstValueFrom(this.http.put(this.url(companyId), payload, intentOptions(intentKey)));
   }
 
   private url(companyId: string): string {
