@@ -124,8 +124,18 @@ describe('ComptoirWorkspacePage — les onglets du comptoir', () => {
     expect(labels).toHaveLength(3);
     // Ordre revu par Hugo le 2026-10-12 : le retrait en tête.
     expect(labels[0]).toContain('Retrait commande');
-    expect(labels[1]).toContain('Nouvelle commande pro');
+    // « Nouvelle commande » mène au choix pro / particulier (B5, 2026-11-20).
+    expect(labels[1]).toContain('Nouvelle commande');
+    expect(labels[1]).not.toContain('pro');
     expect(labels[2]).toContain('Réassort');
+  });
+
+  it('ne montre plus les modèles de réassort en onglet, même à qui les lit', async () => {
+    const harness = await open(
+      [...RETRAIT, ...COMMANDE, 'resupply_templates:read'],
+      '/comptoir/retrait',
+    );
+    expect(tabLabels(harness).some((label) => label.includes('Modèles'))).toBe(false);
   });
 
   it('cache la commande pro à qui ne tient que le retrait', async () => {

@@ -1,0 +1,102 @@
+<!-- Pas de titre : l'onglet « Nouvelle commande » nomme déjà l'écran. -->
+<fold-page-layout>
+  @if (placed(); as order) {
+    <fold-card data-placed>
+      <fold-element-title
+        variant="title"
+        [title]="'Commande ' + order.orderNumber + ' notée'"
+        [subtitle]="
+          'Total ' +
+          cents(order.totalCents) +
+          ' TTC — à régler à la caisse de la boutique, au retrait.'
+        "
+      />
+      <div class="row">
+        <a foldButton emphasis="outline" [routerLink]="['/commandes', order.id]" data-placed-link>
+          Voir la commande
+        </a>
+        <button foldButton type="button" (click)="next()">Client suivant</button>
+      </div>
+    </fold-card>
+  } @else {
+    @switch (state()) {
+      @case ('loading') {
+        <fold-loading message="Préparation de la saisie…" />
+      }
+      @case ('error') {
+        <fold-empty-state tone="alert" title="Impossible d’ouvrir la saisie">
+          <button foldButton type="button" (click)="load()">Réessayer</button>
+        </fold-empty-state>
+      }
+      @case ('ready') {
+        @if (person(); as who) {
+          <div class="page">
+            <fold-card>
+              <fold-element-title
+                variant="title"
+                [title]="'Pour ' + (who.firstName + ' ' + who.lastName).trim()"
+                [subtitle]="
+                  who.maskedEmail + (who.maskedPhone === '' ? '' : ' · ' + who.maskedPhone)
+                "
+              >
+                <button
+                  titleAction
+                  foldButton
+                  type="button"
+                  size="sm"
+                  emphasis="outline"
+                  intent="neutral"
+                  (click)="changePerson()"
+                  data-change-person
+                >
+                  Changer de personne
+                </button>
+              </fold-element-title>
+            </fold-card>
+
+            <!-- La liste porte le prix d'étiquette du catalogue : le prix du
+                 particulier n'est connu que par le devis. -->
+            <fold-callout variant="info" data-list-prices>
+              Les prix de la liste sont ceux du catalogue. Le prix du particulier — TTC, avec les
+              promotions de son espace — s’affiche au panier, par le devis.
+            </fold-callout>
+
+            @if (placeError(); as message) {
+              <fold-callout variant="alert" announce data-place-error>{{ message }}</fold-callout>
+            }
+
+            <div class="columns">
+              <app-source-produits
+                class="col"
+                [kind]="source()"
+                [catalogue]="catalogue()"
+                [habits]="[]"
+                [orders]="[]"
+                [cart]="cart"
+                (kindChange)="source.set($event)"
+                (add)="onAdd($event)"
+                (addAll)="onAddAll($event)"
+                (quantityChange)="cart.setQuantity($event.product.id, $event.quantity)"
+              />
+              <app-particular-cart
+                class="col"
+                [cart]="cart"
+                [pickups]="pickups()"
+                [(pickupId)]="pickupId"
+                [(requestedDate)]="requestedDate"
+                [(window)]="window"
+                [(note)]="note"
+                [estimate]="estimate()"
+                [estimateReady]="estimateReady()"
+                [submitting]="submitting()"
+                (place)="onPlace()"
+              />
+            </div>
+          </div>
+        } @else {
+          <app-particular-picker (chosen)="choose($event)" />
+        }
+      }
+    }
+  }
+</fold-page-layout>

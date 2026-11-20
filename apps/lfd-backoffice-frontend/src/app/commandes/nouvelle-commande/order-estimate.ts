@@ -30,9 +30,14 @@ import type { PricedCartLine } from './cart.store';
 export const ESTIMATE_DEBOUNCE_MS = 400;
 
 /** Une estimation à demander : le corps, et la clé qui le résume. */
-export interface EstimateRequest {
+export interface EstimateRequest<P = AdminOrderEstimatePayload> {
   readonly key: string;
-  readonly payload: AdminOrderEstimatePayload;
+  readonly payload: P;
+}
+
+/** Ce qu'un corps d'estimation doit porter pour avoir une clé : ses lignes. */
+interface EstimateBody {
+  readonly lines: readonly unknown[];
 }
 
 /**
@@ -43,7 +48,7 @@ export interface EstimateRequest {
  * (le règlement décide du crédit). Seul l'ordre des lignes est neutralisé —
  * le prix d'un panier ne dépend pas de l'ordre où on l'a rempli.
  */
-export function estimateKeyOf(payload: AdminOrderEstimatePayload): string {
+export function estimateKeyOf(payload: EstimateBody): string {
   const lines = payload.lines
     .map((line) => JSON.stringify(line))
     .sort()
@@ -66,11 +71,12 @@ export function estimateKeyOf(payload: AdminOrderEstimatePayload): string {
  * - un échec émet `null` : un total faux est pire qu'un sous-total, et la
  *   validation, elle, parle.
  */
-export function estimatesOf(
-  requests: Observable<EstimateRequest | null>,
+export function estimatesOf<P = AdminOrderEstimatePayload>(
+  requests: Observable<EstimateRequest<P> | null>,
   // La clé suit le corps : l'appelant sait ainsi À QUELLE saisie une réponse
   // appartient (plan total vu, T3 — la validation attend l'estimation courante).
-  estimate: (payload: AdminOrderEstimatePayload, key: string) => Observable<AdminOrderEstimateView>,
+  // Générique : la saisie particulier passe par le même flux, vers sa propre route de devis.
+  estimate: (payload: P, key: string) => Observable<AdminOrderEstimateView>,
   debounceMs: number = ESTIMATE_DEBOUNCE_MS,
 ): Observable<AdminOrderEstimateView | null> {
   return requests.pipe(

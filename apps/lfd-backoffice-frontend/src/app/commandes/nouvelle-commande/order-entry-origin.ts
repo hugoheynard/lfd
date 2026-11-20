@@ -13,7 +13,10 @@ export type OrderEntryOrigin = 'commercial' | 'counter';
 export const ORDER_ENTRY_ORIGIN_KEY = 'origin';
 
 /** Le sélecteur de compte du comptoir — le retour de la saisie en contexte comptoir. */
-export const COUNTER_ORDER_PICKER_LINK = '/comptoir/nouvelle-commande';
+export const COUNTER_ORDER_PICKER_LINK = '/comptoir/nouvelle-commande/pro';
+
+/** La saisie d'un compte au comptoir : `/comptoir/nouvelle-commande/:id`. */
+export const COUNTER_ORDER_ENTRY_LINK = '/comptoir/nouvelle-commande';
 
 /**
  * Lit l'origine dans la `data` d'une route. L'absence vaut `commercial` : c'est

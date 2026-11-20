@@ -1,3 +1,4 @@
+import { provideRouter } from '@angular/router';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
 import type {
@@ -224,6 +225,7 @@ async function mount(
   TestBed.configureTestingModule({
     imports: [ReassortBoutiquePage],
     providers: [
+      provideRouter([]),
       { provide: ResupplyReceiptsService, useValue: api },
       { provide: SiteResuppliesService, useValue: resupplies },
       { provide: SiteStockAlertsService, useValue: alerts },
@@ -252,6 +254,15 @@ function clickOn(fixture: ComponentFixture<ReassortBoutiquePage>, selector: stri
 }
 
 describe('ReassortBoutiquePage', () => {
+  it('ouvre les modèles de réassort à qui peut les lire, et à lui seul', async () => {
+    const reader = await mount(['handover_counter:read', 'resupply_templates:read']);
+    const link = root(reader.fixture).querySelector('[data-templates-link]');
+    expect(link?.getAttribute('href')).toBe('/comptoir/modeles-reassort');
+
+    const other = await mount(['handover_counter:read']);
+    expect(root(other.fixture).querySelector('[data-templates-link]')).toBeNull();
+  });
+
   it('lit le point ouvert dans la bande pour aujourd’hui, et montre tous les produits', async () => {
     const { fixture, api } = await mount(['handover_counter:read']);
 

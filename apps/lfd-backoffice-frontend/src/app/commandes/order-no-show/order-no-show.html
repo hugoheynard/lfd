@@ -1,0 +1,44 @@
+@if (shopTill() && (canDeclare() || noShow() !== null)) {
+  <fold-card>
+    <fold-element-title
+      variant="title"
+      title="Retrait en boutique"
+      subtitle="À régler à la caisse de la boutique, au retrait."
+    />
+    <div class="body">
+      @if (declaredLine(); as line) {
+        <p class="line" data-no-show-declared>{{ line }}</p>
+        @if (noticeLine(); as notice) {
+          <p class="line" data-no-show-notice>{{ notice }}</p>
+        } @else if (canNotify()) {
+          <fold-inline-confirm
+            message="Le client recevra l’e-mail « commande non retirée »."
+            [labels]="{ confirm: 'Prévenir', cancel: 'Ne pas prévenir' }"
+            [loading]="saving()"
+            (confirmed)="notify()"
+          >
+            <button foldButton size="sm" emphasis="outline" data-no-show-notify>
+              Prévenir le client
+            </button>
+          </fold-inline-confirm>
+        }
+      } @else if (canDeclare()) {
+        <fold-inline-confirm
+          message="La commande sort de la file du retrait. Aucun e-mail ne part."
+          [labels]="{ confirm: 'Confirmer', cancel: 'Garder la commande' }"
+          [loading]="saving()"
+          (confirmed)="declare()"
+        >
+          <button foldButton size="sm" emphasis="outline" intent="danger" data-no-show-declare>
+            Le client n’est pas venu
+          </button>
+        </fold-inline-confirm>
+      }
+      @if (error(); as message) {
+        <fold-callout appearance="inset" variant="alert" announce data-no-show-error>{{
+          message
+        }}</fold-callout>
+      }
+    </div>
+  </fold-card>
+}

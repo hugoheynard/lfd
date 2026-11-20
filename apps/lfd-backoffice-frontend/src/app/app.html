@@ -558,6 +558,16 @@
             [active]="madeToOrderRla.isActive"
             (click)="mobileNavOpen.set(false)"
           ></a>
+          <a
+            fold-menu-item
+            icon="store"
+            label="À régler en boutique"
+            routerLink="/analytics/a-regler-en-boutique"
+            routerLinkActive
+            #shopTillRla="routerLinkActive"
+            [active]="shopTillRla.isActive"
+            (click)="mobileNavOpen.set(false)"
+          ></a>
         </fold-menu-section>
       }
 
@@ -1300,6 +1310,16 @@
             routerLinkActive
             #madeToOrderTile="routerLinkActive"
             [active]="madeToOrderTile.isActive"
+            (click)="mobileNavOpen.set(false)"
+          ></a>
+          <a
+            fold-nav-tile
+            icon="store"
+            label="À régler en boutique"
+            routerLink="/analytics/a-regler-en-boutique"
+            routerLinkActive
+            #shopTillTile="routerLinkActive"
+            [active]="shopTillTile.isActive"
             (click)="mobileNavOpen.set(false)"
           ></a>
         </fold-nav-section>

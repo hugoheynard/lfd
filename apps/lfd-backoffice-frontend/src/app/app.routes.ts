@@ -589,6 +589,18 @@ export const routes: Routes = [
       import('./analytics/audiences/audiences-page/audiences-page').then((m) => m.AudiencesPage),
   },
   {
+    // LES COMMANDES À RÉGLER EN BOUTIQUE
+    // (`plan-commande-particulier-reglee-en-boutique.md`, § 4.2) — un suivi À
+    // PART du CA web, sous le même droit. Déclarée avant `analytics`.
+    path: 'analytics/a-regler-en-boutique',
+    canActivate: [permissionGuard('b2b_growth:read')],
+    title: 'À régler en boutique — LFC B2B admin',
+    loadComponent: () =>
+      import('./analytics/a-regler-en-boutique/shop-till-orders-page/shop-till-orders-page').then(
+        (m) => m.ShopTillOrdersPage,
+      ),
+  },
+  {
     // LE SUR MESURE (plan-sur-mesure-partout.md, lot R, 2026-10-30) — la
     // troisième vue d'Analytics, sous le même droit : des ventes lues pour
     // comprendre. Déclarée avant `analytics`, comme les audiences.
@@ -1021,12 +1033,35 @@ export const routes: Routes = [
           ),
       },
       {
+        // « Nouvelle commande » : deux cartes, pro et particulier
+        // (`plan-commande-particulier-reglee-en-boutique.md`, § 2). Les deux
+        // saisies sont sous les mêmes gardes, et AVANT `nouvelle-commande/:id`,
+        // qui lirait sinon `pro` ou `particulier` comme un identifiant de société.
         path: 'nouvelle-commande',
+        pathMatch: 'full',
+        canActivate: COUNTER_ORDER_GUARDS,
+        title: 'Nouvelle commande — LFC B2B admin',
+        loadComponent: () =>
+          import('./comptoir/order-kind-choice-page/order-kind-choice-page').then(
+            (m) => m.OrderKindChoicePage,
+          ),
+      },
+      {
+        path: 'nouvelle-commande/pro',
         canActivate: COUNTER_ORDER_GUARDS,
         title: 'Nouvelle commande pro — LFC B2B admin',
         loadComponent: () =>
           import('./comptoir/nouvelle-commande-pro/nouvelle-commande-pro-page').then(
             (m) => m.NouvelleCommandeProPage,
+          ),
+      },
+      {
+        path: 'nouvelle-commande/particulier',
+        canActivate: COUNTER_ORDER_GUARDS,
+        title: 'Nouvelle commande particulier — LFC B2B admin',
+        loadComponent: () =>
+          import('./comptoir/particular-order-page/particular-order-page').then(
+            (m) => m.ParticularOrderPage,
           ),
       },
       {

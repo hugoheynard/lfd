@@ -1,0 +1,16 @@
+.picker,
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.hint {
+  margin: 0;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-sm);
+}

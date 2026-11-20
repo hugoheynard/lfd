@@ -20,6 +20,7 @@ import {
 import { NotifyService } from '../../notify.service';
 import { HandoverProofCard } from '../handover-proof-card/handover-proof-card';
 import { OrderCancelComponent } from '../order-cancel/order-cancel';
+import { OrderNoShow } from '../order-no-show/order-no-show';
 import { OrderCardIncreaseBanner } from '../order-card-increase-banner/order-card-increase-banner';
 import { OrderReviseAction } from '../order-revise-action/order-revise-action';
 import { OrderHistoryCard } from '../order-history-card/order-history-card';
@@ -69,6 +70,7 @@ type LoadState = 'loading' | 'ready' | 'error';
     FoldEmptyStateComponent,
     HandoverProofCard,
     OrderCancelComponent,
+    OrderNoShow,
     OrderCardIncreaseBanner,
     OrderReviseAction,
     OrderDetail,

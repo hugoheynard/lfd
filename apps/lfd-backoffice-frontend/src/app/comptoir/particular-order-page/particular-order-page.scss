@@ -1,0 +1,27 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.columns {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(20rem, 1fr);
+  gap: var(--fold-space-lg);
+}
+
+@media (max-width: 1279px) {
+  .columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.col {
+  min-width: 0;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-sm);
+}

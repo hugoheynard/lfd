@@ -9,6 +9,20 @@
       point dans Réglages › Comptoir.
     }
   </p>
+  <!-- Les modèles de réassort s'ouvrent d'ici, plus d'un onglet du comptoir
+       (Hugo, 2026-11-20) : sous leur droit de lecture. -->
+  @if (canReadTemplates()) {
+    <a
+      foldButton
+      size="sm"
+      emphasis="outline"
+      intent="neutral"
+      routerLink="/comptoir/modeles-reassort"
+      data-templates-link
+    >
+      Modèles de réassort
+    </a>
+  }
   @switch (state()) {
     @case ('loading') {
       <fold-loading message="Chargement du réassort…" />

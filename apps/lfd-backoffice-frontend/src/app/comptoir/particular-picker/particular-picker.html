@@ -1,0 +1,92 @@
+<div class="picker">
+  <p class="hint">
+    Cherchez la personne par son téléphone, son prénom ou son e-mail, puis cliquez sur sa fiche.
+    Rien n’est choisi à votre place.
+  </p>
+  <fold-search
+    placeholder="Téléphone, prénom, e-mail…"
+    ariaLabel="Chercher un particulier"
+    [delayMs]="delayMs"
+    [value]="query()"
+    [resultCount]="state() === 'ready' ? results().length : null"
+    (searchChange)="search($event)"
+  />
+
+  @switch (state()) {
+    @case ('loading') {
+      <fold-loading message="Recherche…" />
+    }
+    @case ('error') {
+      <fold-empty-state tone="alert" title="La recherche n’a pas abouti">
+        <button foldButton type="button" (click)="retry()">Réessayer</button>
+      </fold-empty-state>
+    }
+    @case ('ready') {
+      @for (card of results(); track card.id) {
+        <fold-card
+          interactive
+          [ariaLabel]="'Commander pour ' + nameOf(card)"
+          (activated)="choose(card)"
+          data-particular-card
+        >
+          <fold-element-title variant="title" [title]="nameOf(card)" [subtitle]="detailOf(card)">
+            @if (card.noShowCount > 0) {
+              <fold-badge
+                titleAction
+                variant="alert"
+                radius="pill"
+                [content]="noShowLabel(card.noShowCount)"
+                data-no-show-badge
+              />
+            }
+          </fold-element-title>
+        </fold-card>
+      } @empty {
+        <fold-empty-state
+          title="Personne ne correspond"
+          subtitle="Essayez le téléphone ou l’e-mail. Toujours rien ? Créez sa fiche."
+        >
+          <fold-icon empty-icon name="search" />
+        </fold-empty-state>
+      }
+    }
+  }
+
+  @if (creating()) {
+    <fold-card>
+      <fold-element-title
+        variant="title"
+        title="Nouvelle fiche"
+        subtitle="Les trois champs sont obligatoires : la confirmation de la commande part par e-mail."
+      />
+      <form class="form" (submit)="$event.preventDefault(); create()">
+        <fold-input label="Prénom" required autocomplete="off" [(value)]="firstName" />
+        <fold-input label="E-mail" type="email" required autocomplete="off" [(value)]="email" />
+        <fold-input label="Téléphone" type="tel" required autocomplete="off" [(value)]="phone" />
+        @if (createError(); as message) {
+          <fold-callout variant="alert" announce data-create-error>{{ message }}</fold-callout>
+        }
+        <div class="actions">
+          <button foldButton type="submit" [disabled]="!canCreate()" [loading]="saving()">
+            Créer la fiche
+          </button>
+          <button
+            foldButton
+            type="button"
+            emphasis="outline"
+            intent="neutral"
+            (click)="closeCreate()"
+          >
+            Annuler
+          </button>
+        </div>
+      </form>
+    </fold-card>
+  } @else {
+    <div class="actions">
+      <button foldButton type="button" emphasis="outline" (click)="openCreate()" data-open-create>
+        Nouvelle fiche
+      </button>
+    </div>
+  }
+</div>

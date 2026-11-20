@@ -1,0 +1,106 @@
+<fold-element-title
+  variant="title"
+  title="Panier"
+  [level]="2"
+  [subtitle]="cart().isEmpty() ? undefined : summary()"
+/>
+
+<div class="form">
+  <fold-listbox
+    label="Point de retrait"
+    placeholder="Où le client retire-t-il ?"
+    [options]="pickupOptions()"
+    [value]="pickupId()"
+    (selectionChange)="onPickup($event)"
+    data-pickup
+  />
+  <fold-date label="Retrait le" required [(value)]="requestedDate" />
+  @if (slotOptions().length > 0) {
+    <!-- Obligatoire et jamais prérempli : une heure suggérée devient une promesse. -->
+    <fold-listbox
+      label="Créneau de retrait"
+      required
+      placeholder="Quand le client passe-t-il ?"
+      [options]="slotOptions()"
+      [value]="slotId()"
+      (selectionChange)="onSlot($event)"
+      data-slot
+    />
+  }
+  <fold-textarea
+    label="Note"
+    placeholder="Ce que l'atelier doit savoir."
+    [rows]="2"
+    [(value)]="note"
+  />
+</div>
+
+<fold-callout variant="info" data-shop-till-mention>{{ mention }}</fold-callout>
+
+@if (cart().isEmpty()) {
+  <p class="empty">Ajoutez des articles depuis la colonne de gauche.</p>
+} @else {
+  <ul class="lines">
+    @for (line of shownLines(); track line.sku) {
+      <li>
+        <lfd-cart-row
+          [name]="line.name"
+          [unitPriceMillicents]="line.unitPriceMillicents"
+          [canonicalPriceMillicents]="line.canonicalPriceMillicents"
+          [quantity]="line.quantity"
+          [saleUnit]="line.saleUnit ?? 'piece'"
+          [unit]="line.saleUnit === 'weight' ? '/ kg' : ''"
+          [step]="line.step ?? 1"
+          [min]="line.minimum ?? 1"
+          stepper
+          (quantityChange)="cart().setQuantity(line.sku, $event)"
+          (remove)="cart().remove(line.sku)"
+        />
+      </li>
+    }
+  </ul>
+  @if (totalRows(); as rows) {
+    <app-montants-panier [rows]="rows" />
+  }
+}
+
+@for (blocker of blockers(); track blocker) {
+  <fold-callout variant="warning" data-blocker>{{ blocker }}</fold-callout>
+}
+@for (warning of warnings(); track warning) {
+  <fold-callout variant="info">{{ warning }}</fold-callout>
+}
+
+@if (blockers().length === 0) {
+  @if (!confirming()) {
+    <button
+      foldButton
+      type="button"
+      [disabled]="submitting() || !estimateReady()"
+      (click)="confirming.set(true)"
+      data-validate
+    >
+      {{ estimateReady() ? 'Valider la commande' : 'Calcul du montant…' }}
+    </button>
+  } @else {
+    <fold-callout variant="accent">
+      <strong>Confirmer.</strong> La commande part au plan du fournil. Le client la règle à la
+      caisse de la boutique en venant la retirer : rien n’est encaissé ici.
+    </fold-callout>
+    <div class="confirm">
+      <button foldButton type="button" [disabled]="!canPlace()" (click)="submit()" data-confirm>
+        {{ submitting() ? 'Envoi…' : 'Confirmer' }}
+      </button>
+      <button
+        foldButton
+        type="button"
+        emphasis="outline"
+        intent="neutral"
+        [disabled]="submitting()"
+        (click)="confirming.set(false)"
+      >
+        Revenir
+      </button>
+    </div>
+  }
+}

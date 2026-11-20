@@ -67,6 +67,35 @@ ceux de `COUNTER_ORDER_GUARDS`, pour les deux cartes (§ 7, Q5).
 À reprendre : `comptoir-workspace-page.spec.ts` (le libellé y est attendu) et
 les titres de route de `app.routes.ts`.
 
+- **bâti (B5, 2026-11-20)** — le front, dans `lfd-backoffice-frontend` :
+  - l'onglet `Nouvelle commande` ouvre deux cartes
+    (`comptoir/order-kind-choice-page/`) ; la saisie pro vit sous
+    `nouvelle-commande/pro` (son retour aussi), la particulier sous
+    `nouvelle-commande/particulier`, toutes deux sous `COUNTER_ORDER_GUARDS` ;
+    `nouvelle-commande/:id` (la saisie d'un compte) ne bouge pas ;
+  - la saisie particulier (`comptoir/particular-order-page/`) : la recherche
+    (`particular-picker/`, deux caractères, les non retirées en badge, l'équipe
+    clique toujours), la fiche neuve sous clé d'intention et, sur un 409
+    « contact déjà pris », la recherche relancée avec l'e-mail saisi ; puis la
+    colonne des articles de la saisie pro, et un panier à elle
+    (`particular-cart/`) — point (par défaut celui du comptoir), jour, créneau
+    public, devis par `/estimate` au régime `shop_till`, la mention « À régler
+    à la caisse de la boutique, au retrait », aucun champ de règlement ;
+    confirmation avec numéro, total TTC et lien vers la fiche ;
+  - le no-show sur la fiche commande (`commandes/order-no-show/`) : « Le client
+    n'est pas venu » sous `b2b_place_order:write`, « Prévenir le client » sous
+    `b2b_supervision:write`, « E-mail demandé le … par … » ;
+  - le rapport, Analytics › À régler en boutique
+    (`analytics/a-regler-en-boutique/`), sous `b2b_growth:read` ;
+  - l'onglet « Modèles de réassort » quitte la barre du comptoir : la page
+    Réassort y mène, sous `resupply_templates:read`.
+  - **Reste** : la liste des articles montre le prix d'étiquette du
+    catalogue (`/admin/catalog/sellable`) et tout le catalogue — aucune route
+    admin ne sert le rayon public d'un particulier ; le prix du particulier ne
+    se lit qu'au panier, par le devis, et un article hors du rayon public n'est
+    refusé que par lui. Ses commandes passées et habitudes ne sont pas
+    proposées (aucune lecture admin pour une fiche sans société).
+
 ### 3. La personne — ne jamais mélanger deux particuliers
 
 Aujourd'hui, `PrismaGuestBuyerRegistrar.register` **retrouve un invité par

@@ -7,6 +7,7 @@ import {
   signal,
   untracked,
 } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import type { ResupplyArticleView, ResupplyReceiptView } from '@lfd/contracts';
 import {
   FoldButtonComponent,
@@ -77,6 +78,7 @@ type LoadState = 'loading' | 'ready' | 'error';
   selector: 'app-reassort-boutique-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    RouterLink,
     FoldButtonComponent,
     FoldCalloutComponent,
     FoldCardComponent,
@@ -99,6 +101,9 @@ export class ReassortBoutiquePage {
   private readonly resupplies = inject(SiteResuppliesStore);
 
   protected readonly canWrite = computed(() => this.permissions.can('handover_counter:write'));
+  protected readonly canReadTemplates = computed(() =>
+    this.permissions.can('resupply_templates:read'),
+  );
   protected readonly canWriteTemplates = computed(() =>
     this.permissions.can('resupply_templates:write'),
   );

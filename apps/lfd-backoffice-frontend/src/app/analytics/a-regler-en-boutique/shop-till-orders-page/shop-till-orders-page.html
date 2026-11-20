@@ -1,0 +1,52 @@
+<fold-page-layout icon="stats" title="À régler en boutique">
+  <p description>
+    Les commandes de particuliers notées au comptoir et réglées à la caisse de la boutique, par jour
+    de retrait et par point. Montants commandés et remis, TTC : jamais encaissés chez nous, et
+    jamais comptés dans le chiffre d’affaires web.
+  </p>
+
+  <fold-card>
+    <fold-element-title
+      variant="title"
+      title="Commandes notées au comptoir, à régler en boutique"
+      subtitle="Les non retirées sont commandées, jamais remises : un montant perdu, pas une dette."
+    />
+    <form class="period" (submit)="$event.preventDefault(); load()">
+      <fold-date label="Du" [(value)]="from" required />
+      <fold-date label="Au" [(value)]="to" required />
+      <button foldButton type="submit">Afficher</button>
+    </form>
+    @if (refusal(); as message) {
+      <fold-callout variant="alert" announce data-period-refusal>{{ message }}</fold-callout>
+    }
+    @switch (state()) {
+      @case ('loading') {
+        <fold-loading message="Chargement des commandes à régler en boutique…" />
+      }
+      @case ('error') {
+        <fold-empty-state tone="alert" title="Impossible de charger le rapport">
+          <button foldButton type="button" (click)="load()">Réessayer</button>
+        </fold-empty-state>
+      }
+      @default {
+        @if (report(); as view) {
+          @if (view.rows.length === 0) {
+            <fold-empty-state
+              title="Aucune commande sur la période"
+              subtitle="Aucune commande de particulier notée au comptoir n’est à retirer sur ces jours."
+            />
+          } @else {
+            <fold-data-table
+              density="compact"
+              narrowLayout="cards"
+              caption="Commandes à régler en boutique, par jour et par point"
+              [columns]="columns"
+              [rows]="view.rows"
+              [rowKey]="rowKey"
+            />
+          }
+        }
+      }
+    }
+  </fold-card>
+</fold-page-layout>

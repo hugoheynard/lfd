@@ -43,6 +43,10 @@
         />
       </lfd-order-detail>
 
+      <!-- À régler en boutique : « Le client n'est pas venu », puis « Prévenir
+           le client » (§ 5 bis). Rien pour une autre commande. -->
+      <app-order-no-show [order]="o" (changed)="load()" />
+
       <!-- Le manque signalé au colisage (E6a) : rien sans signalement en vigueur. -->
       <app-order-shortfall-banner
         [shortfall]="o.shortfall"

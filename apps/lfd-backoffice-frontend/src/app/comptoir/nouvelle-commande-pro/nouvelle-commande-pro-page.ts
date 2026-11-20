@@ -20,7 +20,7 @@ import {
 
 import { copyLink } from '../../comptabilite/copy-link';
 import {
-  COUNTER_ORDER_PICKER_LINK,
+  COUNTER_ORDER_ENTRY_LINK,
   counterPlacedOrderOf,
 } from '../../commandes/nouvelle-commande/order-entry-origin';
 import { OrderDraftsService } from '../../commandes/order-drafts.service';
@@ -157,7 +157,7 @@ export class NouvelleCommandeProPage {
   }
 
   protected choose(companyId: string): void {
-    void this.router.navigate([COUNTER_ORDER_PICKER_LINK, companyId]);
+    void this.router.navigate([COUNTER_ORDER_ENTRY_LINK, companyId]);
   }
 
   protected copy(url: string): void {

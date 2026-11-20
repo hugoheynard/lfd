@@ -1,0 +1,137 @@
+import { TestBed, type ComponentFixture } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
+import {
+  NO_PICKUP_DISCOUNTS,
+  type AdminOrderEstimateView,
+  type CounterParticularCard,
+  type PickupAddressView,
+  type StaffPermission,
+} from '@lfd/contracts';
+import { of } from 'rxjs';
+import { describe, expect, it, vi } from 'vitest';
+
+import { PermissionsStore } from '../../auth/permissions.store';
+import { PickupAddressesService } from '../../b2b/reglages/pickup-addresses.service';
+import { AdminCatalogService } from '../../commandes/catalog.service';
+import { HandoverQueueStore } from '../../handover-shop/handover-queue.store';
+import { CounterParticularsService } from '../counter-particulars.service';
+import { ParticularOrderPage } from './particular-order-page';
+
+function point(id: string, b2c = true): PickupAddressView {
+  return {
+    id,
+    label: id,
+    ligne1: '1 rue',
+    ligne2: '',
+    codePostal: '73000',
+    ville: 'Chambéry',
+    pays: 'FR',
+    discounts: NO_PICKUP_DISCOUNTS,
+    pickupAudiences: { b2b: true, b2c },
+    opening: { publicOpening: { start: '08:00', end: '10:00' }, proPickup: null },
+  };
+}
+
+const JEANNE: CounterParticularCard = {
+  id: 'u1',
+  firstName: 'Jeanne',
+  lastName: '',
+  maskedEmail: 'j***@exemple.fr',
+  maskedPhone: '',
+  connectable: false,
+  noShowCount: 0,
+};
+
+const ESTIMATE: AdminOrderEstimateView = {
+  amounts: {
+    vatMethod: 'line_ht',
+    lines: [],
+    subtotalCents: 500,
+    discountCents: 0,
+    discountTtcCents: null,
+    discounts: [],
+    deliveryFeeCents: 0,
+    deliveryFeeTtcCents: null,
+    lateFeeCents: 0,
+    lateFeeVatRatePercent: null,
+    vatCents: 28,
+    vatShares: [],
+    pretaxCents: 500,
+    totalCents: 528,
+  },
+  cutoff: null,
+  refusal: null,
+  warnings: [],
+};
+
+function mount(granted: readonly StaffPermission[] = ['handover_counter:read']) {
+  const place = vi.fn(() => Promise.resolve({ id: 'o1', orderNumber: 'CMD-1', totalCents: 528 }));
+  const estimate = vi.fn(() => of(ESTIMATE));
+  TestBed.resetTestingModule();
+  TestBed.configureTestingModule({
+    providers: [
+      provideRouter([]),
+      { provide: CounterParticularsService, useValue: { place, estimate, search: vi.fn() } },
+      { provide: AdminCatalogService, useValue: { list: () => Promise.resolve([]) } },
+      {
+        provide: PickupAddressesService,
+        useValue: { list: () => Promise.resolve([point('a'), point('b'), point('pro', false)]) },
+      },
+      { provide: HandoverQueueStore, useValue: { activePlace: () => ({ id: 'b', label: 'b' }) } },
+      { provide: PermissionsStore, useValue: { can: (p: StaffPermission) => granted.includes(p) } },
+    ],
+  });
+  const fixture = TestBed.createComponent(ParticularOrderPage);
+  return { fixture, place, estimate };
+}
+
+async function settle(fixture: ComponentFixture<ParticularOrderPage>): Promise<void> {
+  await fixture.whenStable();
+  fixture.detectChanges();
+}
+
+describe('ParticularOrderPage — la commande d’un particulier au comptoir', () => {
+  it('commence par chercher la personne, et ne propose que les points des particuliers', async () => {
+    const { fixture } = mount();
+    await settle(fixture);
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('app-particular-picker')).not.toBeNull();
+    expect(fixture.componentInstance['pickups']().map((p) => p.id)).toEqual(['a', 'b']);
+  });
+
+  it('prend par défaut le point du comptoir qui saisit', async () => {
+    const { fixture } = mount();
+    await settle(fixture);
+    expect(fixture.componentInstance['pickupId']()).toBe('b');
+  });
+
+  it('note la commande sous une clé d’intention, au total du devis, puis la confirme', async () => {
+    const { fixture, place } = mount();
+    await settle(fixture);
+    const page = fixture.componentInstance;
+    page['choose'](JEANNE);
+    page['cart'].add({ sku: 'S1', name: 'Baguette', unitPriceMillicents: 100_000 }, 2);
+    page['window'].set({ start: '08:00', end: '09:00' });
+    fixture.detectChanges();
+    TestBed.tick();
+    // L'accalmie du devis (400 ms), en vrai temps.
+    await new Promise((resolve) => setTimeout(resolve, 600));
+    expect(page['estimateReady']()).toBe(true);
+
+    await page['onPlace']();
+    fixture.detectChanges();
+
+    expect(place).toHaveBeenCalledWith(
+      expect.objectContaining({
+        buyerUserId: 'u1',
+        fulfillmentMethod: 'pickup',
+        pickupAddressId: 'b',
+        expectedTotalCents: 528,
+      }),
+      expect.any(String),
+    );
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('[data-placed]')?.textContent).toContain('CMD-1');
+    expect(el.querySelector('[data-placed-link]')?.getAttribute('href')).toBe('/commandes/o1');
+  });
+});

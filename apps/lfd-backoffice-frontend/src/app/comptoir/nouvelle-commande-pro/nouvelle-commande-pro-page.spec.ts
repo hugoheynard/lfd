@@ -150,7 +150,9 @@ async function arriveWith(
   TestBed.configureTestingModule({
     providers: [
       draftsProvider(drafts),
-      provideRouter([{ path: 'comptoir/nouvelle-commande', component: NouvelleCommandeProPage }]),
+      provideRouter([
+        { path: 'comptoir/nouvelle-commande/pro', component: NouvelleCommandeProPage },
+      ]),
       {
         provide: CounterDeliveryNoteService,
         useValue: { openCarrier: () => Promise.resolve() } satisfies Pick<
@@ -167,7 +169,7 @@ async function arriveWith(
     ],
   });
   const harness = await RouterTestingHarness.create();
-  await TestBed.inject(Router).navigate(['/comptoir/nouvelle-commande'], { state });
+  await TestBed.inject(Router).navigate(['/comptoir/nouvelle-commande/pro'], { state });
   harness.detectChanges();
   return harness.routeNativeElement ?? document.createElement('div');
 }

@@ -556,7 +556,7 @@ export const COMPTOIR_VIEWS: readonly WorkspaceView[] = [
   },
   {
     key: 'nouvelle-commande',
-    label: 'Nouvelle commande pro',
+    label: 'Nouvelle commande',
     link: '/comptoir/nouvelle-commande',
     icon: 'shopping-cart',
     needs: ['b2b_counter:read', 'b2b_place_order:write'],
@@ -569,15 +569,8 @@ export const COMPTOIR_VIEWS: readonly WorkspaceView[] = [
     icon: 'croissant',
     needs: 'handover_counter:read',
   },
-  // La bibliothèque des modèles de réassort : un droit à part, l'administrateur
-  // seul tant qu'il n'est pas accordé à l'écran (commander.md § 6).
-  {
-    key: 'modeles-de-reassort',
-    label: 'Modèles de réassort',
-    link: '/comptoir/modeles-reassort',
-    icon: 'library',
-    needs: 'resupply_templates:read',
-  },
+  // La bibliothèque des modèles de réassort n'est plus un onglet (Hugo,
+  // 2026-11-20) : elle s'ouvre depuis la page Réassort, sous son droit.
 ];
 
 /**
