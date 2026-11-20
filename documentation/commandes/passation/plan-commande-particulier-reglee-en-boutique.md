@@ -126,13 +126,13 @@ cassait d'un coup, et en silence, vingt lecteurs qui dérivent tout de
 
 | Lecteur (vérifié le 2026-11-20)                                           | Avec `at_shop_till`                        | Avec `not_required` + lieu      |
 | ------------------------------------------------------------------------- | ------------------------------------------ | ------------------------------- |
-| `isSettled` (`contracts/order-settlement.values.ts:21`) → retrait         | **retrait refusé** (`handover.ts:127`)     | retrait permis, QR affiché      |
+| `isSettled` (`order-settlement.values.ts:21` (contrats)) → retrait        | **retrait refusé** (`handover.ts:127`)     | retrait permis, QR affiché      |
 | `settlementRegimeOf` (`settlement-regime.ts:43`)                          | **« payée »**                              | « au compte » — **à corriger**  |
 | `settlementDecidedAtPlacement` → accusé de commande                       | **aucun e-mail**                           | accusé envoyé                   |
 | périmètres SQL du CA (`revenue-scope.ts:32`, habitudes, co-achats)        | exclue sans le dire                        | comptée — **à exclure** (§ 4.2) |
 | prélèvement (`billable-order-criterion.ts:157`, `company_id IS NOT NULL`) | —                                          | exclue (pas de société)         |
 | facture carte (`card-invoicing.ts:123`, exclut `public`)                  | —                                          | exclue                          |
-| `paymentStatusSchema` (`contracts/order.ts:73`, `z.enum` fermé)           | **parse cassé** sur un front non redéployé | inchangé                        |
+| `paymentStatusSchema` (`order.ts:73` (contrats), `z.enum` fermé)          | **parse cassé** sur un front non redéployé | inchangé                        |
 | remboursement (`prisma-order-refund-status.writer.ts:20`, `where paid`)   | —                                          | jamais atteinte                 |
 
 Donc : **`payment_status = 'not_required'`** (rien n'est attendu chez nous, ce
@@ -184,7 +184,7 @@ NULL` ferment le trou de `NULL` (`clientele` et `entry_origin` sont
 
 #### 4.4 Ce qui ne bouge pas
 
-`StaffSettlement` (`contracts/admin-order.ts:48`) **ne grandit pas** : la
+`StaffSettlement` (`admin-order.ts:48` (contrats)) **ne grandit pas** : la
 surface particulier a son propre contrat, sans champ de règlement — le lieu
 est implicite, donc inexprimable autrement.
 
@@ -202,6 +202,27 @@ l'acheteur n'a pas de société, la résolution d'audience le dit au serveur.
   **par défaut, le point du comptoir qui saisit** (H, 2026-11-20). Mêmes
   créneaux et capacités que si le client le choisissait en ligne.
 - Pas de fidélité dépensée par l'équipe, et aucun point crédité (§ 4.2).
+- **bâti (B3, 2026-11-20)** : `POST /admin/counter/particular-orders/estimate`
+  et `POST /admin/counter/particular-orders` (clé d'intention), surface du
+  comptoir, sous `b2b_place_order:write`. La composition est celle de toutes
+  les passations, sans société ; la fiche est vérifiée par
+  `ParticularStandingReader` (`account`) ; `Order.settleAtShopTill` pose
+  `not_required` et `shop_till`. Une livraison est refusée
+  (`orders.shop_till.not_pickup`), un membre de société aussi (409). Aucune
+  dérogation d'heure limite : elles sont tenues par société, un particulier
+  n'en a pas. Une révision par l'équipe garde `not_required` et le lieu.
+- **Tranché au bâti (2026-11-20)** :
+  - pas de dérogation par personne en v1 — l'exception d'un particulier se
+    traite par le geste « hors plan » que l'équipe a déjà ;
+  - la composition applique les règles de l'**équipe** (créneau jugé côté
+    équipe, jour même par la porte du comptoir, plan arrêté → hors plan),
+    exactement comme la saisie pro : « comme dans son espace » vaut pour le
+    PRIX et les PROMOTIONS, pas pour les gestes nommés du comptoir ;
+  - `buyerKind` vaut `registered` même pour une fiche invitée
+    (`orders_buyer_kind_guest_shape` interdit `guest` avec un auteur de
+    l'équipe) : une promotion « invités seulement » ne l'atteint pas ;
+  - une révision ne doit jamais passer une commande `shop_till` en
+    livraison : garde ajoutée au lot B4.
 
 ### 5 bis. Le client ne vient pas : un no-show (H, 2026-11-20)
 

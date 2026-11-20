@@ -146,8 +146,11 @@ function isCompositionRefusal(error: unknown): error is DomainError | BusinessEr
   return error instanceof DomainError || error instanceof BusinessError;
 }
 
-/** La lecture de l'agrégat → la vue du contrat. */
-function amountsViewOf(reading: OrderAmountsReading): AdminOrderEstimateAmountsView {
+/**
+ * La lecture de l'agrégat → la vue du contrat. Partagée avec l'estimation de
+ * la commande d'un particulier notée au comptoir : une seule vue des montants.
+ */
+export function amountsViewOf(reading: OrderAmountsReading): AdminOrderEstimateAmountsView {
   return {
     vatMethod: reading.vatMethod,
     lines: reading.lines,

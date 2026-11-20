@@ -151,6 +151,10 @@ import { PlaceOrderHandler } from "./application/commands/place-order.handler.js
 import { QuoteOrderHandler } from "./application/queries/quote-order.handler.js";
 import { EstimateOrderForCustomerHandler } from "./application/queries/estimate-order-for-customer.handler.js";
 import { AdminOrderEstimatesController } from "./http/admin-order-estimates.controller.js";
+import { AdminCounterParticularOrdersController } from "./http/admin-counter-particular-orders.controller.js";
+import { PlaceParticularOrderAtCounterHandler } from "./application/commands/place-particular-order-at-counter.handler.js";
+import { EstimateParticularOrderAtCounterHandler } from "./application/queries/estimate-particular-order-at-counter.handler.js";
+import { AccountModule } from "../account/account.module.js";
 import { QuoteShopCartHandler } from "./application/queries/quote-shop-cart.handler.js";
 import { QuoteMyShopCartHandler } from "./application/queries/quote-my-shop-cart.handler.js";
 import { ShopCartQuoting } from "./application/services/shop-cart-quoting.service.js";
@@ -375,6 +379,8 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     // Le reste de la vitrine et son verrou, pour la passation sur stock (plan
     // du jour J, lot L4).
     ResupplyModule,
+    // La fiche choisie au comptoir est-elle un particulier ? (`ParticularStandingReader`)
+    AccountModule,
   ],
   controllers: [
     ...CUSTOMER_CANCELLATION_CONTROLLERS,
@@ -392,6 +398,8 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     CompanyOrdersController,
     AdminOrdersController,
     AdminOrderEstimatesController,
+    // La commande d'un particulier notée au comptoir, réglée à la caisse de la boutique.
+    AdminCounterParticularOrdersController,
     AdminCounterOrderSheetController,
     AdminCounterLateToleranceController,
     AdminOrderSalesTermsController,
@@ -459,6 +467,7 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     GetGuestOrderAdmissionHandler,
     PlaceOrderHandler,
     PlaceOrderForCustomerHandler,
+    PlaceParticularOrderAtCounterHandler,
     AbandonOrderHandler,
     // Le paiement par carte, par le bloc `card-payment` (plan M2, lot P0.c2) :
     // les gestes du commerce sur le premier paiement, l'adoption d'une
@@ -685,6 +694,7 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     // Le devis B, sur le chemin de la passation (plan `le-prix-d-un-panier.md`, L3).
     OrderQuoting,
     EstimateOrderForCustomerHandler,
+    EstimateParticularOrderAtCounterHandler,
     ReadMyShopCatalogueHandler,
     ReadCustomerShelfPricesHandler,
     ShopCartQuoting,

@@ -37,6 +37,9 @@ export const ORDER_ENTRY_ORIGINS = ["commercial", "counter"] as const;
 
 export type OrderEntryOrigin = (typeof ORDER_ENTRY_ORIGINS)[number];
 
+/** La saisie au comptoir — la seule origine d'une commande réglée à la caisse de la boutique. */
+export const COUNTER_ENTRY: OrderEntryOrigin = "counter";
+
 /**
  * **La marque décidée par l'appelant**, telle que `Order.draft` la reçoit.
  *

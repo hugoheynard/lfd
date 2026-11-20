@@ -76,8 +76,11 @@ import type {
 import type { OrderBuyerKind } from "../value-objects/order-buyer-kind.js";
 import type { OrderLocale } from "../value-objects/order-locale.js";
 import type { SettlementVenue } from "../value-objects/settlement-venue.js";
+import { ShopTillOrderShapeError } from "../errors/shop-till-order-errors.js";
+import { ensureShopTillPickup } from "../services/shop-till-rules.js";
 import { placementVatMethodOf, type OrderVatMethod } from "../value-objects/order-vat-method.js";
 import {
+  COUNTER_ENTRY,
   PLANNED_SUPPLY,
   supplyMarkOf,
   type OrderEntryOrigin,
@@ -121,8 +124,8 @@ export class Order {
   private customerCancellation: FixedCustomerCancellation = NOT_FIXED_CANCELLATION;
   private customerCancellableUntil: Date | null = null;
   private budgetCommitment: BudgetCommitment | null = null;
-  // Aucune passation ne le pose encore : seul un lieu `null` s'écrit.
-  private readonly settlementVenueValue: SettlementVenue | null = null;
+  // Posé par `settleAtShopTill` seulement, à la passation ; `null` sinon.
+  private settlementVenueValue: SettlementVenue | null = null;
   private constructor(
     private readonly companyId: string | null,
     private readonly billedCompanyIdValue: string | null,
@@ -416,6 +419,31 @@ export class Order {
       throw new InvalidOrderPaymentError("Une carte ne peut régler un total nul.");
     }
     this.payment = { status: "pending", intentId: paymentIntentId };
+  }
+
+  /**
+   * Règlement **à la caisse de la boutique** : rien n'est attendu chez nous
+   * (`not_required`), et le lieu dit où l'argent sera pris
+   * (`plan-commande-particulier-reglee-en-boutique.md`, § 4.1). Seulement pour
+   * un particulier, saisi par l'équipe au comptoir, en retrait — image du CHECK
+   * `orders_shop_till_shape` — et seulement tant que le règlement n'est pas
+   * décidé : la base fige ensuite le lieu.
+   *
+   * @throws {ShopTillOrderShapeError} société, saisie hors comptoir, ou règlement déjà décidé.
+   * @throws {ShopTillOrderNotPickupError} une livraison.
+   */
+  settleAtShopTill(): void {
+    if (
+      this.payment !== null ||
+      this.companyId !== null ||
+      this.placedByStaffId === null ||
+      this.supplyMark.entryOrigin !== COUNTER_ENTRY
+    ) {
+      throw new ShopTillOrderShapeError();
+    }
+    ensureShopTillPickup(this.fulfillment.method);
+    this.payment = { status: "not_required", intentId: null };
+    this.settlementVenueValue = "shop_till";
   }
 
   /** Règlement **différé** (terme d'entreprise) ou gratuit : rien à encaisser. */

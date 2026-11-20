@@ -120,7 +120,8 @@ export class OrderIntake {
    * @throws {ServiceDayBeforeFirstOrderableDayError} cf. {@link ensureServiceDayFor}.
    */
   async admitStaffEntry(
-    companyId: string,
+    // `null` : un particulier noté au comptoir — la clientèle publique.
+    companyId: string | null,
     buyer: IntakeBuyer,
     serviceDay: string | null,
   ): Promise<void> {

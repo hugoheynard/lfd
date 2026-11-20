@@ -96,6 +96,8 @@ import { ParticularFinder } from "./domain/ports/particular-finder.js";
 import { ParticularRegistry } from "./domain/ports/particular-registry.js";
 import { PrismaParticularFinder } from "./infrastructure/prisma-particular.finder.js";
 import { PrismaParticularRegistry } from "./infrastructure/prisma-particular.registry.js";
+import { ParticularStandingReader } from "./domain/ports/particular-standing.reader.js";
+import { PrismaParticularStandingReader } from "./infrastructure/prisma-particular-standing.reader.js";
 import { ListCompanyAddressesHandler } from "./application/queries/list-company-addresses.handler.js";
 import { GetMyCompanyActivationHandler } from "./application/queries/get-my-company-activation.handler.js";
 import { AccountReader } from "./domain/ports/account.reader.js";
@@ -438,6 +440,8 @@ import {
     { provide: CounterCustomerReader, useClass: PrismaCounterCustomerReader },
     { provide: ParticularFinder, useClass: PrismaParticularFinder },
     { provide: ParticularRegistry, useClass: PrismaParticularRegistry },
+    // La fiche choisie est-elle un particulier ? Lu par la commande notée au comptoir.
+    { provide: ParticularStandingReader, useClass: PrismaParticularStandingReader },
     { provide: PendingAccessReader, useClass: PrismaPendingAccessReader },
     { provide: InvitationRenewal, useClass: PrismaInvitationRenewal },
     ListPendingAccessHandler,
@@ -575,6 +579,9 @@ import {
     // Les réponses par e-mail (plan `plan-reponses-par-e-mail.md`, R2) :
     // le compte d'une adresse, par la règle des comptes (`findAccountByEmail`).
     CompanyMemberRepository,
+    // La commande d'un particulier notée au comptoir vérifie la fiche choisie
+    // (plan-commande-particulier-reglee-en-boutique.md, § 3).
+    ParticularStandingReader,
   ],
 })
 export class AccountModule {}
