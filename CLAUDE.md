@@ -317,7 +317,7 @@ Bounded contexts distincts, **schémas Postgres séparés dans UNE seule base** 
 | `User` désigne      | le staff                                            | le client (customer)           |
 
 🔴 **Une seule base, une seule URL, un seul client Prisma.** `prisma/schema/datasource.prisma`
-déclare `schemas = ["public", "growth", "ops", "pim"]`, et `AppConfig` ne lit
+déclare tous les schémas (`public`, `growth`, `ops`, `pim` et ceux des blocs, `cart` compris — la liste fait foi), et `AppConfig` ne lit
 que `DATABASE_LFD_URL`. Le référentiel a eu sa propre base ; il ne l'a plus
 depuis B4 (`test/setup-test-database.ts` le dit à sa première ligne de
 commentaire).
@@ -465,6 +465,11 @@ src/
 │                   un sujet opaque, sans métier propre. Annoncé le 2026-11-09
 │                   (plan M2, lot P0) : portes armées, dossier pas encore créé.
 │                   Cf. commandes/modification/plan-m2-historique-de-transactions.md
+├── shop-cart/    ▸ LE PANIER — enregistrer et relire le panier en cours, dans
+│                   son schéma `cart`, sans clé étrangère. Sorti des commandes
+│                   le 2026-11-20 ; le chiffrage reste au commerce, qui
+│                   l'atteint par `shop-cart/channels/` SEULEMENT.
+│                   Cf. commandes/le-panier.md
 ├── ops/          ▸ LA CARTE DE SANTÉ — health, sondes, journal, trafic, vitals
 │                   il OBSERVE et ne possède rien
 ├── platform/     ▸ TECHNIQUE PURE — zéro connaissance métier
@@ -476,22 +481,23 @@ src/
 └── main.ts
 ```
 
-| Depuis ↓ vers →     | `staff`          | `pim`               | `media`             | `lafoliecoffee` | `production`        | `handover`          | `ops` | `delivery`          | `packing`           | `mail`              | `card-payment`      | `platform` |
-| ------------------- | ---------------- | ------------------- | ------------------- | --------------- | ------------------- | ------------------- | ----- | ------------------- | ------------------- | ------------------- | ------------------- | ---------- |
-| **`staff`**         | —                | ✗                   | ✗                   | ✗               | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | **port uniquement** | ✗                   | ✓          |
-| **`pim`**           | ✓ (autorisation) | —                   | **port uniquement** | ✗               | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | **port uniquement** | ✗                   | ✓          |
-| **`media`**         | ✓ (autorisation) | **port uniquement** | —                   | ✗               | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | **port uniquement** | ✗                   | ✓          |
-| **`lafoliecoffee`** | ✓ (autorisation) | **port uniquement** | ✗                   | —               | **port uniquement** | **port uniquement** | ✗     | **port uniquement** | **port uniquement** | **port uniquement** | **port uniquement** | ✓          |
-| **`production`**    | ✓ (autorisation) | ✗                   | ✗                   | **✗**           | —                   | ✗                   | ✗     | ✗                   | **✗**               | **port uniquement** | ✗                   | ✓          |
-| **`handover`**      | ✓ (autorisation) | ✗                   | ✗                   | **✗**           | **port uniquement** | —                   | ✗     | **port uniquement** | ✗                   | **port uniquement** | ✗                   | ✓          |
-| **`delivery`**      | ✓ (autorisation) | ✗                   | ✗                   | **✗**           | **port uniquement** | ✗                   | ✗     | —                   | **port uniquement** | **port uniquement** | ✗                   | ✓          |
-| **`packing`**       | ✓ (autorisation) | ✗                   | ✗                   | ✗               | **port uniquement** | **port uniquement** | ✗     | ✗                   | —                   | **port uniquement** | ✗                   | ✓          |
-| **`mail`**          | ✓ (autorisation) | ✗                   | ✗                   | ✗               | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | —                   | ✗                   | ✓          |
-| **`card-payment`**  | ✓ (autorisation) | ✗                   | ✗                   | ✗               | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | ✗                   | —                   | ✓          |
-| **`ops`**           | ✗                | ✗                   | ✗                   | ✗               | ✗                   | ✗                   | —     | ✗                   | ✗                   | ✗                   | ✗                   | ✓          |
-| **`platform`**      | ✗                | ✗                   | ✗                   | ✗               | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | ✗                   | ✗                   | —          |
-| **`appBootstrap`**  | ✓                | ✓                   | ✓                   | ✓               | ✓                   | ✓                   | ✓     | ✓                   | ✓                   | ✓                   | ✓                   | ✓          |
-| **`dev`**           | ✓                | ✓                   | ✓                   | ✓               | ✓                   | ✓                   | ✓     | ✓                   | ✓                   | ✓                   | ✓                   | ✓          |
+| Depuis ↓ vers →     | `staff`          | `pim`               | `media`             | `lafoliecoffee` | `production`        | `handover`          | `ops` | `delivery`          | `packing`           | `mail`              | `card-payment`      | `shop-cart`         | `platform` |
+| ------------------- | ---------------- | ------------------- | ------------------- | --------------- | ------------------- | ------------------- | ----- | ------------------- | ------------------- | ------------------- | ------------------- | ------------------- | ---------- |
+| **`staff`**         | —                | ✗                   | ✗                   | ✗               | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | **port uniquement** | ✗                   | ✗                   | ✓          |
+| **`pim`**           | ✓ (autorisation) | —                   | **port uniquement** | ✗               | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | **port uniquement** | ✗                   | ✗                   | ✓          |
+| **`media`**         | ✓ (autorisation) | **port uniquement** | —                   | ✗               | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | **port uniquement** | ✗                   | ✗                   | ✓          |
+| **`lafoliecoffee`** | ✓ (autorisation) | **port uniquement** | ✗                   | —               | **port uniquement** | **port uniquement** | ✗     | **port uniquement** | **port uniquement** | **port uniquement** | **port uniquement** | **port uniquement** | ✓          |
+| **`production`**    | ✓ (autorisation) | ✗                   | ✗                   | **✗**           | —                   | ✗                   | ✗     | ✗                   | **✗**               | **port uniquement** | ✗                   | ✗                   | ✓          |
+| **`handover`**      | ✓ (autorisation) | ✗                   | ✗                   | **✗**           | **port uniquement** | —                   | ✗     | **port uniquement** | ✗                   | **port uniquement** | ✗                   | ✗                   | ✓          |
+| **`delivery`**      | ✓ (autorisation) | ✗                   | ✗                   | **✗**           | **port uniquement** | ✗                   | ✗     | —                   | **port uniquement** | **port uniquement** | ✗                   | ✗                   | ✓          |
+| **`packing`**       | ✓ (autorisation) | ✗                   | ✗                   | ✗               | **port uniquement** | **port uniquement** | ✗     | ✗                   | —                   | **port uniquement** | ✗                   | ✗                   | ✓          |
+| **`mail`**          | ✓ (autorisation) | ✗                   | ✗                   | ✗               | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | —                   | ✗                   | ✗                   | ✓          |
+| **`card-payment`**  | ✓ (autorisation) | ✗                   | ✗                   | ✗               | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | ✗                   | —                   | ✗                   | ✓          |
+| **`shop-cart`**     | ✗                | ✗                   | ✗                   | ✗               | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | ✗                   | ✗                   | —                   | ✓          |
+| **`ops`**           | ✗                | ✗                   | ✗                   | ✗               | ✗                   | ✗                   | —     | ✗                   | ✗                   | ✗                   | ✗                   | ✗                   | ✓          |
+| **`platform`**      | ✗                | ✗                   | ✗                   | ✗               | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | ✗                   | ✗                   | ✗                   | —          |
+| **`appBootstrap`**  | ✓                | ✓                   | ✓                   | ✓               | ✓                   | ✓                   | ✓     | ✓                   | ✓                   | ✓                   | ✓                   | ✓                   | ✓          |
+| **`dev`**           | ✓                | ✓                   | ✓                   | ✓               | ✓                   | ✓                   | ✓     | ✓                   | ✓                   | ✓                   | ✓                   | ✓                   | ✓          |
 
 🔴 **`pim` et `media` sont les deux aux DEUX CÔTÉS d'un canal** — le cas que
 `handover` était seul à connaître. Chacun déclare ce dont il a besoin et

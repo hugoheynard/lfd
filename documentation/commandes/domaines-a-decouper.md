@@ -1,10 +1,10 @@
 # Les domaines à découper dans `lafoliecoffee/orders`
 
 > **Inventaire, relu le 2026-11-20.** Ce qui, dans le bloc des commandes,
-> mériterait d'être isolé comme le paiement l'a été dans `card-payment`. Un
-> candidat est bâti (le délai de commande, §2.1) ; les trois autres ne sont ni
-> décidés ni bâtis. Les comptes de fichiers ont été lus dans l'arborescence le
-> 2026-11-20 (ceux des §2.2 à 2.4, le 2026-11-10) ; les couplages fins (qui lit
+> mériterait d'être isolé comme le paiement l'a été dans `card-payment`. Deux
+> candidats sont bâtis (le délai de commande, §2.1 ; le panier, §2.4) ; les deux
+> autres ne sont ni décidés ni bâtis. Les comptes de fichiers ont été lus dans
+> l'arborescence le 2026-11-20 (ceux des §2.2 et 2.3, le 2026-11-10) ; les couplages fins (qui lit
 > quoi, qui écrit quoi) ne l'ont **pas** été — c'est la première étape de
 > chaque chantier.
 
@@ -30,7 +30,7 @@ flowchart LR
   D["lafoliecoffee/order-cutoffs<br/>trop tard ? surtaxe ? (bâti)"]
   S["Départ incomplet<br/>manque, décision, reliquat"]
   M["Avis à la clientèle<br/>e-mails et relances"]
-  P["Panier<br/>avant la commande"]
+  P["src/shop-cart<br/>le panier (bâti)"]
   O -- "demande un verdict" --> D
   S -- "écoute les faits du colisage" --> O
   O -- "publie ses faits" --> M
@@ -93,33 +93,12 @@ décident rien. Les sortir ferait de `orders` un émetteur, et du nouveau
 contexte un abonné : « quoi dire, et quand ». Le bloc `mail` existe déjà pour
 l'envoi lui-même.
 
-### 2.4 Le panier de la boutique
+### 2.4 Le panier de la boutique — bâti
 
-**Plan** : [`plan-bloc-panier.md`](plan-bloc-panier.md) (2026-11-20).
-
-**Aujourd'hui.** Une douzaine de fichiers : `shop-cart.repository`,
-`shop-cart-quoting.service`, `cart-adjustments`, l'enregistrement et le
-chiffrage du panier.
-
-**Le signe.** Un panier vit **avant** la commande, avec son stockage et son
-cycle propres ; la passation le transforme en commande. Le plus simple des
-quatre.
-
-**Ce qui ne part PAS avec lui : le chiffrage.** Le prix du panier
-(`QuoteShopCartQuery` → `ShopCartQuoting`) est le prix qu'aurait la
-commande passée maintenant : il utilise le chargement même de la passation
-(prix des lignes, remises, opérations, clientèle, TVA de livraison, bon,
-surtaxe tardive), et le total vu le vérifie. Le déplacer ferait deux calculs
-du même total. Le bloc panier ne garderait que son contenu (enregistrer,
-relire, deux tables : `shop_cart` et, à décider, `order_drafts`) ; le
-chiffrage reste au commerce.
-
-**Pas de fait durable** : personne n'écoute le panier (les « ajouts au
-panier » comptés par les recommandations viennent de l'écran, pas du
-serveur) ; il n'existe qu'un geste, « enregistrer le panier » (le panier
-entier, sans règle). « Ajouter » et « retirer » ne viendraient qu'avec des
-règles à tenir. **Deux lecteurs extérieurs** : « cet article est-il dans un
-panier ? » (`prisma-sale-reference-usage.ts`) et, à vérifier, la passation.
+**Fait** le 2026-11-20 : un bloc de premier niveau, `src/shop-cart/`, avec son
+schéma Postgres `cart` et sans clé étrangère. Le chiffrage du panier reste au
+commerce ; le catalogue lui demande par `ShopCartSkuUsage` si un article est
+dans un panier. État : [`le-panier.md`](le-panier.md).
 
 ### 2.5 Ce qui reste dans `orders`, rangé en sous-dossiers
 
@@ -134,8 +113,8 @@ mêmes couches que le reste des commandes.
 1. ~~**Le délai de commande**~~ — bâti le 2026-11-19 (§2.1).
 2. **Le départ incomplet** — le prochain : le cas le plus net, et un canal à
    concevoir.
-3. **Les avis à la clientèle** et **le panier** — plus simples, à faire
-   quand on y touche.
+3. ~~**Le panier**~~ — bâti le 2026-11-20 (§2.4).
+4. **Les avis à la clientèle** — plus simple, à faire quand on y touche.
 
 Chacun commence par la lecture des couplages réels, puis un plan court, puis
 `vitruve` (une frontière se déplace), avant tout code.
