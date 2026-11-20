@@ -12,7 +12,7 @@ import { fulfillmentPhrase, summaryPhrase } from '../promotion-format';
 import { draftSummary } from '../promotion-summary';
 import { promotionView } from '../promotion.testing';
 
-/** La promotion « Sur la livraison » (`frais-et-livraison-offerte.md`). */
+/** La promotion « Livraison offerte » (`frais-et-livraison-offerte.md`). */
 const TODAY = '2026-11-02';
 const named = (): PromotionDraft => ({
   ...emptyDraft(TODAY, null),
@@ -39,7 +39,7 @@ const view = promotionView({
   conditions: [{ kind: 'min_basket', cents: 4990 }],
 });
 
-describe('la promotion « Sur la livraison »', () => {
+describe('la promotion « Livraison offerte »', () => {
   it('rejoint le genre sans effet à saisir, ni articles', () => {
     const draft = onDelivery();
     expect(draft).toMatchObject({ effectKind: 'free_delivery', effectValue: '0', rules: [] });

@@ -218,7 +218,7 @@ export interface QuotingSetup {
    * remises `b2c` / `b2b` du point, lues en promotions.
    */
   readonly basketPromotions?: readonly LivePromotion[];
-  /** Les promotions « Sur la livraison » vivantes ; aucune par défaut. */
+  /** Les promotions « Livraison offerte » vivantes ; aucune par défaut. */
   readonly deliveryFeePromotions?: readonly LivePromotion[];
   /** La surtaxe prévue (plan `le-prix-d-un-panier.md`, T1) ; par défaut, aucune règle d'heure. */
   readonly lateFee?: ForeseenLateFee;

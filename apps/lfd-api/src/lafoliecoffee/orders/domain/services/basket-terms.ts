@@ -40,7 +40,7 @@ export interface BasketTermsInput {
   readonly subtotalCents: number;
   /**
    * **Les seuils candidats de la livraison offerte** (`frais-et-livraison-offerte.md`,
-   * § 2.4) : le franco de la route et les promotions « Sur la livraison » qui
+   * § 2.4) : le franco de la route et les promotions « Livraison offerte » qui
    * admettent l'acheteur ; vide en retrait ou sans rien de réglé.
    */
   readonly freeDeliveryCandidates: readonly FreeDeliveryCandidate[];

@@ -1,7 +1,7 @@
 import type { LivePromotion } from "../live-promotion.js";
 
 /**
- * **Les promotions « Sur la livraison » vivantes** (`documentation/livraisons/frais-et-livraison-offerte.md`,
+ * **Les promotions « Livraison offerte » vivantes** (`documentation/livraisons/frais-et-livraison-offerte.md`,
  * § 2.4) — un lecteur à part des lecteurs de ligne et de panier, qui filtrent
  * par point : la livraison offerte n'est ni l'un ni l'autre.
  *

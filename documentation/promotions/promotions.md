@@ -982,7 +982,7 @@ instance ancienne qui lit une promotion à heures fait tomber **toutes** les
 promotions. Au lancement commercial, une variante de condition se livre en
 deux temps (lecteur, puis écriture).
 
-### 2.19 Sur la livraison : offrir le frais
+### 2.19 Livraison offerte
 
 Un **troisième point d'application**, à côté de « Dans le prix affiché » et
 « Au panier ». Il n'agit ni sur un prix ni sur le total des articles : il met

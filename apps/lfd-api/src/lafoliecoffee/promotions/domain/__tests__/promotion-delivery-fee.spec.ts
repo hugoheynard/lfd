@@ -15,14 +15,14 @@ import { Promotion } from "../promotion.js";
 import { FROM, basketTerms, deliveryFeeTerms, lineTerms } from "./promotion-terms.fixture.js";
 
 /**
- * **La promotion « Sur la livraison »** (`frais-et-livraison-offerte.md`,
+ * **La promotion « Livraison offerte »** (`frais-et-livraison-offerte.md`,
  * § 2.7) : son point, son effet sans valeur, son panier minimum, et ce
  * qu'elle refuse de porter.
  */
 const pose = (terms = deliveryFeeTerms()): Promotion =>
   Promotion.pose("p1", terms, "staff_1", FROM);
 
-describe("Promotion « Sur la livraison » — le point et l'effet", () => {
+describe("Promotion « Livraison offerte » — le point et l'effet", () => {
   it("se pose au point `delivery_fee`, avec l'effet `free_delivery` de valeur 0", () => {
     const promotion = pose();
     expect(promotion.applicationPoint).toBe("delivery_fee");
@@ -53,7 +53,7 @@ describe("Promotion « Sur la livraison » — le point et l'effet", () => {
   });
 });
 
-describe("Promotion « Sur la livraison » — ce qu'elle ne porte pas", () => {
+describe("Promotion « Livraison offerte » — ce qu'elle ne porte pas", () => {
   it("refuse une portée sur le catalogue", () => {
     const terms = deliveryFeeTerms({
       scope: {
@@ -144,7 +144,7 @@ describe("Le panier minimum (`min_basket`)", () => {
   });
 });
 
-describe("L'acheminement « Sur la livraison »", () => {
+describe("L'acheminement « Livraison offerte »", () => {
   it("trie ses zones et les rend comme sélection", () => {
     const fulfillment = { kind: "delivery_fee", delivery: { zones: ["z_b", "z_a"] } } as const;
     expect(canonicalFulfillment(fulfillment)).toEqual({

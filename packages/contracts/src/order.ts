@@ -917,7 +917,7 @@ export interface OrderView {
   readonly deliveryFeeAdjustment: CartAdjustment | null;
   /**
    * **La livraison offerte**, figée à la passation — par le franco de la
-   * route ou par une promotion « Sur la livraison ». Affichée, pas
+   * route ou par une promotion « Livraison offerte ». Affichée, pas
    * comptable : `deliveryFeeCents` vaut alors 0 et aucun total n'en dépend.
    * Absente : livraison payée, retrait, ou rien d'offert.
    */

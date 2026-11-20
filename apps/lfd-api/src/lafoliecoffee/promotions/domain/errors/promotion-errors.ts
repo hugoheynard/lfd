@@ -52,9 +52,9 @@ const EFFECT_LINE_MESSAGE =
 
 const EFFECT_POINT_MESSAGES: Readonly<Record<string, string>> = {
   basket:
-    "Une promotion liée à un acheminement s'applique au panier : elle ne peut être qu'un pourcentage ou un montant sur le panier. Pour offrir la livraison, choisissez « Sur la livraison ».",
+    "Une promotion liée à un acheminement s'applique au panier : elle ne peut être qu'un pourcentage ou un montant sur le panier. Pour offrir la livraison, choisissez « Livraison offerte ».",
   delivery_fee:
-    "Une promotion « Sur la livraison » offre le frais de livraison, et rien d'autre : pour un pourcentage ou un montant, choisissez « Au panier » ou « Dans le prix affiché ».",
+    "Une promotion « Livraison offerte » offre le frais de livraison, et rien d'autre : pour un pourcentage ou un montant, choisissez « Au panier » ou « Dans le prix affiché ».",
 };
 
 /**

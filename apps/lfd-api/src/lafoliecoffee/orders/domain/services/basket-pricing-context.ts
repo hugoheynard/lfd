@@ -48,7 +48,7 @@ export interface DeliveryBasketRoute {
    */
   readonly freeDeliveryThresholdCents: number | null;
   /**
-   * Les promotions « Sur la livraison » lues pour cet acheteur dans cette
+   * Les promotions « Livraison offerte » lues pour cet acheteur dans cette
    * zone (`frais-et-livraison-offerte.md`) — jugées au calcul, avec le
    * créneau. Absentes = aucune : les chargements de la commande et du devis
    * les posent toujours, en passation comme en révision (rejugées).

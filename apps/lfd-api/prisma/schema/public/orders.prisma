@@ -366,7 +366,7 @@ model Order {
   freeDeliveryWaivedCents    Int?            @map("free_delivery_waived_cents")
   freeDeliveryWaivedTtcCents Int?            @map("free_delivery_waived_ttc_cents")
 
-  /// **La promotion « Sur la livraison » qui a offert** (§ 2.8, B3) — son
+  /// **La promotion « Livraison offerte » qui a offert** (§ 2.8, B3) — son
   /// identifiant (opaque, sans clé étrangère), son panier minimum HT (0 =
   /// « toujours offerte ») et son libellé `{fr, en, it}` dans l'audience de
   /// l'acheteur, la forme de `discount_label`. Les trois ensemble, et

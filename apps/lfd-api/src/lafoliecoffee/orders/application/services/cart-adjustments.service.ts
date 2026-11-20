@@ -237,7 +237,7 @@ export class CartAdjustments {
   }
 
   /**
-   * Les promotions « Sur la livraison » que le calcul jugera pour CET acheteur
+   * Les promotions « Livraison offerte » que le calcul jugera pour CET acheteur
    * et CETTE zone (`frais-et-livraison-offerte.md`).
    */
   deliveryFeePromotionsFor(buyer: KnownBuyerFacts): Promise<LoadedDeliveryFeePromotions> {

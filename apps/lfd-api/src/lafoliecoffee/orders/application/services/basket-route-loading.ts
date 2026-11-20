@@ -71,14 +71,14 @@ export interface LoadedDeliveryZone {
   readonly freeDeliveryThresholdCents: number | null;
   readonly globalWindowMode: WindowMode;
   readonly promotions: LoadedBasketPromotions;
-  /** Les promotions « Sur la livraison » de cet acheteur dans cette zone (§ 2.4). */
+  /** Les promotions « Livraison offerte » de cet acheteur dans cette zone (§ 2.4). */
   readonly deliveryFeePromotions: LoadedDeliveryFeePromotions;
 }
 
 /**
  * La zone du code postal livré — la livraison ouverte à la clientèle d'abord
  * —, puis les promotions de cette zone (`promotions.md`, § 2.14), celles du
- * panier et celles « Sur la livraison », pour les faits de CET acheteur — le
+ * panier et celles « Livraison offerte », pour les faits de CET acheteur — le
  * client, quand l'équipe commande pour lui. Le code
  * postal suffit au prix (É4) : l'adresse complète est un contrôle de la
  * commande.

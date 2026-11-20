@@ -428,7 +428,7 @@ export function termsOf(draft: PromotionDraft): PromotionTermsPayload {
       companyId: target.companyId === null ? null : target.companyId.trim(),
     })),
     fulfillment: payloadFulfillmentOf(draft),
-    // Sur la livraison, la commande entière : aucune portée sur le catalogue.
+    // Livraison offerte : la commande entière : aucune portée sur le catalogue.
     scope: onDeliveryFee
       ? { mode: 'all_except', rules: [] }
       : { mode: draft.scopeMode, rules: [...draft.rules] },

@@ -7,7 +7,7 @@ import { LABO, pricingContextOf, ZONE } from "./pricing-context.doubles.js";
 import { PRICED_AT } from "./shop-cart-quoting.doubles.js";
 
 /**
- * **Les promotions « Sur la livraison » au chargement du chiffrage**
+ * **Les promotions « Livraison offerte » au chargement du chiffrage**
  * (`frais-et-livraison-offerte.md`) : lues pour les faits du CLIENT
  * — quand l'équipe commande pour lui comme quand il commande —, dans la zone
  * livrée, et rejugées en révision : une promotion finie n'offre plus.

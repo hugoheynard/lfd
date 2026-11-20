@@ -1,7 +1,7 @@
 # Le prix de la livraison et la livraison offerte
 
 > 📍 **État au 2026-11-20.** Ce document dit ce qui **existe** : le frais
-> d'une zone par clientèle, le franco, la promotion « Sur la livraison », ce
+> d'une zone par clientèle, le franco, la promotion « Livraison offerte », ce
 > que la commande fige, et tout ce qui le dit au client (bon, e-mail, facture,
 > écrans). Chaque choix porte sa date et qui l'a pris. Ce qui n'est pas fait
 > est en fin de partie 1. Voisin de
@@ -17,7 +17,7 @@ livraison.
 | Où                                   | Ce qu'il dit                    | Pour qui              |
 | ------------------------------------ | ------------------------------- | --------------------- |
 | Réglage de livraison (global → zone) | le tarif et le franco           | une clientèle entière |
-| Promotion « Sur la livraison »       | le cadeau, la livraison offerte | un public ciblé       |
+| Promotion « Livraison offerte »      | le cadeau, la livraison offerte | un public ciblé       |
 
 Les conditions commerciales d'une société **ne portent pas** de frais de
 livraison. Une société qui ne paie jamais la livraison a une promotion **sans
@@ -58,7 +58,7 @@ retient **le seuil le plus favorable** parmi toutes celles qui s'appliquent :
 ```mermaid
 flowchart LR
   R["Franco de la route<br/>(zone, sinon global, par clientèle)"] --> M{"Seuil le plus bas<br/>parmi les candidats"}
-  P["Promotions « Sur la livraison »<br/>qui admettent l'acheteur"] --> M
+  P["Promotions « Livraison offerte »<br/>qui admettent l'acheteur"] --> M
   M --> J{"Les articles atteignent-ils<br/>ce seuil ?"}
   J -->|oui| O["Frais facturé 0<br/>la commande garde le barème offert<br/>et qui l'a offert"]
   J -->|non| F["Frais du barème<br/>et « Plus que … » au panier"]
@@ -67,7 +67,7 @@ flowchart LR
 - **Le franco de la route** : un seuil par clientèle, global ou remplacé par
   zone, réglé dans **Réglages › Livraison**, avec les frais (Hugo,
   2026-11-05). Il vaut pour **toute une clientèle**.
-- **La promotion « Sur la livraison »** : un cadeau pour un **public ciblé**
+- **La promotion « Livraison offerte »** : un cadeau pour un **public ciblé**
   (une société avec ou sans ses sites, une clientèle, certaines zones, une
   période, des jours et heures), avec un **panier minimum** facultatif — sans
   lui, « toujours offerte ». Réglée dans l'espace Promotions, à côté de « Dans
@@ -216,7 +216,7 @@ vue admin.
 L'audience d'un acheteur — `pending` compris côté pro — est tenue par
 [`customer-audience.ts`](../../packages/contracts/src/customer-audience.ts).
 
-## La promotion « Sur la livraison »
+## La promotion « Livraison offerte »
 
 Dans `lafoliecoffee/promotions/domain/` :
 
@@ -489,7 +489,7 @@ d'erreur : `errors` de `fold-number-input` attend des erreurs de signal forms.
 
 **Promotions** — dossier
 [`targeted-promotions/`](../../apps/lfd-backoffice-frontend/src/app/targeted-promotions/) :
-le choix « Sur la livraison » (`promotion-words.ts`,
+le choix « Livraison offerte » (`promotion-words.ts`,
 `DraftFulfillmentKind = 'displayed_price' | 'basket' | 'delivery_fee'` dans
 `promotion-draft.ts`) ; aucun effet à saisir, ni article, ni cumul, ni retrait ;
 le panier minimum facultatif en euros HT ; au moins une zone, ou toutes.

@@ -244,7 +244,7 @@ describe('PromotionPage', () => {
 
     it('sur la livraison : ni effet, ni articles, ni cumul, ni retrait ; le panier minimum apparaît', async () => {
       const { root, fixture } = await render({ inputs: {} });
-      typeChoice(root, 'Sur la livraison')?.click();
+      typeChoice(root, 'Livraison offerte')?.click();
       fixture.detectChanges();
       const text = root.textContent ?? '';
       expect(text).toContain('Dans quelles zones de livraison ?');

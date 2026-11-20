@@ -150,7 +150,7 @@ function deliveryFeeOf(route: PricedRoute | null, subtotalCents: number): Basket
 
 /**
  * Les seuils candidats de la livraison offerte : le franco de la zone (1b)
- * et les promotions « Sur la livraison » qui admettent l'acheteur, jugées au
+ * et les promotions « Livraison offerte » qui admettent l'acheteur, jugées au
  * créneau du panier (§ 2.4). Aucun en retrait ni sans acheminement.
  */
 function freeDeliveryCandidatesFor(

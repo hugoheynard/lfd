@@ -9,7 +9,7 @@ import type { PromotionAudienceFacts } from "../../../promotions/domain/promotio
 import type { OrderDiscountLabel } from "../entities/order-shapes.js";
 
 /**
- * **Ce que le calcul a LU des promotions « Sur la livraison »**
+ * **Ce que le calcul a LU des promotions « Livraison offerte »**
  * (`documentation/livraisons/frais-et-livraison-offerte.md`) — la forme
  * de `LoadedBasketPromotions` : l'instant, les vivantes, les faits de
  * l'acheteur, l'acheminement (la zone) compris.

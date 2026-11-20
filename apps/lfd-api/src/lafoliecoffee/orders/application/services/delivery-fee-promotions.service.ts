@@ -9,7 +9,7 @@ import { DeliveryFeePromotionReader } from "../../../promotions/domain/ports/del
 import type { LoadedDeliveryFeePromotions } from "../../domain/services/free-delivery-candidates.js";
 
 /**
- * **Les promotions « Sur la livraison » de cet acheteur, chargées**
+ * **Les promotions « Livraison offerte » de cet acheteur, chargées**
  * (`documentation/livraisons/frais-et-livraison-offerte.md`) : l'instant,
  * les promotions vivantes et les faits de l'acheteur — ceux du CLIENT, y
  * compris quand l'équipe commande pour lui (`KnownBuyerFacts` est établi par

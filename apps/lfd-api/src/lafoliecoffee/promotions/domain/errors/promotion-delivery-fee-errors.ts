@@ -1,7 +1,7 @@
 import { DomainError } from "../../../../platform/shared/errors/app-error.js";
 
 /**
- * **Les refus d'une promotion « Sur la livraison »**
+ * **Les refus d'une promotion « Livraison offerte »**
  * (`documentation/livraisons/frais-et-livraison-offerte.md`). Lus par du
  * personnel qui n'a pas le code sous les yeux : chaque message nomme le cas
  * et le geste de sortie.
@@ -12,11 +12,11 @@ export type DeliveryFeeForeignOption = "scope" | "cumulative" | "min_quantity";
 
 const FOREIGN_MESSAGES: Readonly<Record<DeliveryFeeForeignOption, string>> = {
   scope:
-    "Une promotion « Sur la livraison » offre le frais de la commande entière : elle ne vise pas d'articles. Retirez les familles, produits ou déclinaisons de la portée.",
+    "Une promotion « Livraison offerte » offre le frais de la commande entière : elle ne vise pas d'articles. Retirez les familles, produits ou déclinaisons de la portée.",
   cumulative:
-    "Une promotion « Sur la livraison » ne se cumule pas : deux livraisons offertes n'en font qu'une, et la commande retient la plus favorable. Décochez « Cumulable ».",
+    "Une promotion « Livraison offerte » ne se cumule pas : deux livraisons offertes n'en font qu'une, et la commande retient la plus favorable. Décochez « Cumulable ».",
   min_quantity:
-    "Une promotion « Sur la livraison » ne se juge pas sur la quantité d'un article : retirez la quantité minimum, et posez un panier minimum si la livraison n'est offerte qu'à partir d'un montant.",
+    "Une promotion « Livraison offerte » ne se juge pas sur la quantité d'un article : retirez la quantité minimum, et posez un panier minimum si la livraison n'est offerte qu'à partir d'un montant.",
 };
 
 /** Une option qui n'a pas de sens sur le frais de livraison. */
@@ -35,7 +35,7 @@ export class PromotionMinBasketOutsideDeliveryFeeError extends DomainError {
   constructor() {
     super(
       "promotions.min_basket_outside_delivery_fee",
-      "Le panier minimum ne se pose que sur une promotion « Sur la livraison » : sur une remise, il dépendrait du total qu'elle réduit. Retirez-le, ou choisissez « Sur la livraison ».",
+      "Le panier minimum ne se pose que sur une promotion « Livraison offerte » : sur une remise, il dépendrait du total qu'elle réduit. Retirez-le, ou choisissez « Livraison offerte ».",
     );
   }
 }

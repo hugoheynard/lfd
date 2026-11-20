@@ -200,7 +200,7 @@ describe("ensureFreeDeliveryHolds — un franco que le panier justifie (1b)", ()
     expect(() => ensureFreeDeliveryHolds(exact, 400, "line_ht")).toThrow(InvalidOrderPaymentError);
   });
 
-  describe("offerte par une promotion « Sur la livraison » (§ 2.8)", () => {
+  describe("offerte par une promotion « Livraison offerte » (§ 2.8)", () => {
     const LABEL = { fr: "Client fidèle", en: "Client fidèle", it: "Client fidèle" };
     const BY_PROMOTION = {
       thresholdCents: 8_000,

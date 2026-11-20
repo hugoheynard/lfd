@@ -70,7 +70,7 @@ export function fulfillmentFromRow(
 }
 
 /**
- * « Sur la livraison » : aucun retrait, et toutes les zones ou celles-là —
+ * « Livraison offerte » : aucun retrait, et toutes les zones ou celles-là —
  * ce que les CHECK `promotions_delivery_fee_*` tiennent aussi.
  */
 function deliveryFeeFulfillmentOf(

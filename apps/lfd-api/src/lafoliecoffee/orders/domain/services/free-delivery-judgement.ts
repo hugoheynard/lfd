@@ -6,7 +6,7 @@ import {
 
 /**
  * Ce que le jugement du franco lit d'un panier déjà chiffré : le seuil retenu
- * (celui de la route ou d'une promotion « Sur la livraison »), la base, et le
+ * (celui de la route ou d'une promotion « Livraison offerte »), la base, et le
  * frais que la zone facturerait.
  */
 export interface FreeDeliveryJudgementInput {

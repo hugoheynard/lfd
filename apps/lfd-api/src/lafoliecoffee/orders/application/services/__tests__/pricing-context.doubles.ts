@@ -100,7 +100,7 @@ class StatusOf extends CompanyStatusReader {
 export interface PricingContextSetup {
   readonly points?: CountedPoints;
   readonly promotions?: readonly LivePromotion[];
-  /** Les promotions « Sur la livraison » vivantes ; aucune par défaut. */
+  /** Les promotions « Livraison offerte » vivantes ; aucune par défaut. */
   readonly deliveryFeePromotions?: readonly LivePromotion[];
   readonly deliveryVatMode?: DeliveryVatMode;
   readonly companyStatus?: OrderCompanyStatus | null;

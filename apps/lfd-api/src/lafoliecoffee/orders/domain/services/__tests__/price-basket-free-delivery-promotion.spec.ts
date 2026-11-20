@@ -16,7 +16,7 @@ import { BOISSON, PAIN, PICKUP, contextOf } from "./price-basket.fixture.js";
  * **La livraison offerte par une promotion** (`frais-et-livraison-offerte.md`,
  * § 2.2 à § 2.4, § 2.7) — un seuil de plus, pour un public : le calcul
  * retient le plus favorable parmi le franco de la route et les promotions
- * « Sur la livraison » qui admettent l'acheteur.
+ * « Livraison offerte » qui admettent l'acheteur.
  */
 const PRO: BasketCart = { vatMethod: "line_ht", handoverAt: null };
 const NO_VERDICT = { lateFee: null };

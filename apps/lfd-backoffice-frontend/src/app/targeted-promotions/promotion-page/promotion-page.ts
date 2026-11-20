@@ -271,7 +271,7 @@ export class PromotionPage {
   protected readonly origin = computed(() => originPhrase(this.promotion()?.legacySource ?? null));
 
   protected readonly atLine = computed(() => this.draft().fulfillmentKind === 'displayed_price');
-  /** Sur la livraison : ni effet à saisir, ni articles, ni cumul, ni retrait. */
+  /** Livraison offerte : ni effet à saisir, ni articles, ni cumul, ni retrait. */
   protected readonly onDeliveryFee = computed(
     () => this.draft().fulfillmentKind === 'delivery_fee',
   );

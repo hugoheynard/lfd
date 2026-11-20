@@ -38,7 +38,7 @@ export const FULFILLMENT_OPTIONS: readonly {
   },
   {
     value: 'delivery_fee',
-    label: 'Sur la livraison',
+    label: 'Livraison offerte',
     icon: 'truck',
     hint: 'Les articles ne bougent pas : le client ne paie pas le frais de livraison, dans toutes les zones ou certaines, dès un panier minimum si vous en posez un.',
   },

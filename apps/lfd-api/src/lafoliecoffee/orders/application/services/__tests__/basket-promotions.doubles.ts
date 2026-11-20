@@ -42,7 +42,7 @@ export function basketPromotions(
   );
 }
 
-/** Les promotions « Sur la livraison » vivantes — fixées par la suite. */
+/** Les promotions « Livraison offerte » vivantes — fixées par la suite. */
 export class FixedDeliveryFeePromotions extends DeliveryFeePromotionReader {
   constructor(private readonly promotions: readonly LivePromotion[] = []) {
     super();
