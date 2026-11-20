@@ -1,7 +1,22 @@
-import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  input,
+  output,
+  signal,
+} from '@angular/core';
 import type { PromotionAudienceTargetView } from '@lfd/contracts';
-import { FoldCalloutComponent, FoldCheckboxComponent, FoldInputComponent } from 'fold-ng';
+import {
+  FoldCalloutComponent,
+  FoldCheckboxComponent,
+  FoldComboboxComponent,
+  FoldInputComponent,
+} from 'fold-ng';
 
+import { AdminCompaniesService } from '../../comptes-clients/admin-companies.service';
 import {
   boxStateOf,
   namedCompanyOf,
@@ -11,6 +26,7 @@ import {
   type AudienceBox,
   type BoxState,
 } from './audience-selection';
+import { companyChoicesOf, type CompanyChoices } from './company-choices';
 
 /** Une case, et son libellé. */
 interface Box {
@@ -35,11 +51,15 @@ const PROS: readonly Box[] = [
  * rendent partiel. La valeur émise est l'ensemble minimal
  * (`audience-selection.ts`). Sous chaque branche touchée, l'appelant projette
  * ses libellés (`[individualsLabels]`, `[prosLabels]`).
+ *
+ * « Une société » se choisit dans la liste des comptes clients, lue au premier
+ * cochage. Cette liste demande le droit des comptes clients, que l'écran des
+ * promotions ne demande pas : sans elle, on colle l'identifiant de la fiche.
  */
 @Component({
   selector: 'app-promotion-audience-tree',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldCalloutComponent, FoldCheckboxComponent, FoldInputComponent],
+  imports: [FoldCalloutComponent, FoldCheckboxComponent, FoldComboboxComponent, FoldInputComponent],
   templateUrl: './promotion-audience-tree.html',
   styleUrl: './promotion-audience-tree.scss',
 })
@@ -48,6 +68,11 @@ export class PromotionAudienceTree {
   /** Lecture seule : sans droit d'écriture, ou une promotion archivée. */
   readonly disabled = input(false);
   readonly audiencesChange = output<PromotionAudienceTargetView[]>();
+
+  private readonly companies = inject(AdminCompaniesService);
+  protected readonly companyChoices = signal<CompanyChoices | null>(null);
+  protected readonly companiesFailed = signal(false);
+  private companiesAsked = false;
 
   protected readonly individuals = INDIVIDUALS;
   protected readonly pros = PROS;
@@ -61,6 +86,27 @@ export class PromotionAudienceTree {
     this.audiences().some((target) => target.kind === 'everyone_but_active_pros'),
   );
   protected readonly everyoneChecked = computed(() => this.state('everyone').checked);
+
+  constructor() {
+    effect(() => {
+      if (this.company() !== null) {
+        void this.loadCompanies();
+      }
+    });
+  }
+
+  /** Une seule lecture : la liste ne change pas le temps d'une saisie. */
+  private async loadCompanies(): Promise<void> {
+    if (this.companiesAsked) {
+      return;
+    }
+    this.companiesAsked = true;
+    try {
+      this.companyChoices.set(companyChoicesOf(await this.companies.list()));
+    } catch {
+      this.companiesFailed.set(true);
+    }
+  }
 
   protected state(box: AudienceBox): BoxState {
     return boxStateOf(box, this.audiences());

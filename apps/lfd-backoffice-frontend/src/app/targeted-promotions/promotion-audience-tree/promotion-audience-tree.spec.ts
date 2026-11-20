@@ -1,9 +1,19 @@
 import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import type { PromotionAudienceTargetView } from '@lfd/contracts';
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 
+import type { AdminCompany } from '../../comptes-clients/admin-company';
+import { AdminCompaniesService } from '../../comptes-clients/admin-companies.service';
 import { PromotionAudienceTree } from './promotion-audience-tree';
+
+/** La liste des comptes clients, servie ou refusée selon le test. */
+class FakeCompanies {
+  answer: () => Promise<readonly AdminCompany[]> = () => Promise.resolve([]);
+  list(): Promise<readonly AdminCompany[]> {
+    return this.answer();
+  }
+}
 
 @Component({
   imports: [PromotionAudienceTree],
@@ -39,6 +49,15 @@ function render() {
 }
 
 describe('PromotionAudienceTree', () => {
+  let companies: FakeCompanies;
+
+  beforeEach(() => {
+    companies = new FakeCompanies();
+    TestBed.configureTestingModule({
+      providers: [{ provide: AdminCompaniesService, useValue: companies }],
+    });
+  });
+
   it('rend la branche partielle et ne projette que les libellés de la branche touchée', () => {
     const { root, box } = render();
     expect(box('Particuliers').indeterminate).toBe(true);
@@ -59,5 +78,27 @@ describe('PromotionAudienceTree', () => {
     await fixture.whenStable();
     expect(fixture.componentInstance.audiences()).toEqual([{ kind: 'everyone', companyId: null }]);
     expect(box('Pros').disabled).toBe(true);
+  });
+
+  it('« Une société » se choisit dans la liste des comptes clients', async () => {
+    const { fixture, root, box } = render();
+    box('Une société').click();
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(root.querySelector('fold-combobox')).not.toBeNull();
+    expect(root.textContent).not.toContain('Identifiant de la société');
+  });
+
+  it('sans la liste (droit absent), on colle l’identifiant, et on le dit', async () => {
+    companies.answer = () => Promise.reject(new Error('403'));
+    const { fixture, root, box } = render();
+    box('Une société').click();
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(root.querySelector('fold-combobox')).toBeNull();
+    expect(root.textContent).toContain('Identifiant de la société');
+    expect(root.textContent).toContain('La liste des sociétés n');
   });
 });

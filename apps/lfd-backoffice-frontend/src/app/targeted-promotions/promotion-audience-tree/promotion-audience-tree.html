@@ -57,13 +57,33 @@
       (checkedChange)="toggleCompany($event)"
     />
     @if (company(); as named) {
-      <fold-input
-        label="Identifiant de la société"
-        hint="Celui de sa fiche client."
-        [value]="named.companyId ?? ''"
-        [disabled]="disabled()"
-        (valueChange)="setCompany($event)"
-      />
+      @if (companyChoices(); as choices) {
+        <fold-combobox
+          label="Société"
+          placeholder="Choisir une société"
+          hint="Ouvrez la liste, ou tapez une enseigne, une raison sociale, une référence ou un SIRET."
+          emptyText="Aucune société ne correspond."
+          resultLabel="sociétés"
+          [options]="choices.options"
+          [filter]="choices.filter"
+          [value]="named.companyId || null"
+          [disabled]="disabled()"
+          (selectionChange)="setCompany($event)"
+        />
+      } @else {
+        @if (companiesFailed()) {
+          <fold-callout appearance="inset" variant="warning">
+            La liste des sociétés n'a pas pu être lue. Collez l'identifiant de sa fiche client.
+          </fold-callout>
+        }
+        <fold-input
+          label="Identifiant de la société"
+          hint="Celui de sa fiche client."
+          [value]="named.companyId ?? ''"
+          [disabled]="disabled()"
+          (valueChange)="setCompany($event)"
+        />
+      }
       <fold-checkbox
         label="Et ses sites"
         [checked]="named.kind === 'company_and_sites'"
