@@ -222,6 +222,9 @@
     },
     "menu_changed": {
       "textSha256": "13d115ba666a63235df051adf3ef58909167e56cbe158f8148bf5032d861066a"
+    },
+    "sites_menu_changed": {
+      "textSha256": "111343a0db79302511e825b769c30f63497b0abbe4f80361a93f18363fc9ab1c"
     }
   },
   "customer.access-opened": {

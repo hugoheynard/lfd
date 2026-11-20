@@ -167,6 +167,12 @@ export const CUSTOMER_CASES: Pick<
     ),
     // La carte n'est annoncée que posée par l'équipe (`carte-des-sites.md`, Q3).
     menu_changed: { gesture: "menu_changed", siteName: "Chalet", reference: null, byTeam: true },
+    sites_menu_changed: {
+      gesture: "sites_menu_changed",
+      siteName: "Club",
+      reference: null,
+      byTeam: true,
+    },
   },
   "customer.access-opened": {
     code: {

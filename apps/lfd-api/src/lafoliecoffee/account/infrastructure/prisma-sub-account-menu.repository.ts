@@ -35,7 +35,7 @@ export class PrismaSubAccountMenuRepository extends SubAccountMenuRepository {
 
   async save(menu: SubAccountMenu): Promise<void> {
     const companyId = menu.companyId;
-    const header = menuHeaderOf(menu);
+    const header = { ...menuHeaderOf(menu), state: menu.state };
     const kept = menu.entries.map((entry) => entry.id);
     await this.prisma.$transaction(async (tx) => {
       await tx.subAccountMenu.upsert({

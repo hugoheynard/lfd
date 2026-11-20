@@ -9,6 +9,7 @@ import {
   untracked,
   viewChild,
 } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import {
   FoldButtonComponent,
   FoldCalloutComponent,
@@ -87,6 +88,7 @@ import { NARROW_QUERY } from '../../panel-side';
     OperationNotice,
     ProductSheet,
     ProVisitNote,
+    RouterLink,
     ShelfGrid,
     ShelfNav,
   ],

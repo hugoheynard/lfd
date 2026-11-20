@@ -8,7 +8,9 @@ import type {
   SubAccountMenuLevel,
   SubAccountMenuMode,
   SubAccountMenuPayload,
+  SiteMenuStanding,
   SubAccountMenuSummary,
+  SubAccountMenuView,
   SubAccountOffMenuDisplay,
 } from '@lfd/contracts';
 
@@ -162,16 +164,48 @@ export function intentSubjectOf(companyId: string, draft: MenuDraft): string {
 }
 
 /**
- * Ce que la liste des sites d'un principal dit de la carte d'un site — ou
- * `null` sans carte posée.
+ * Ce que la liste des sites d'un principal dit de la carte qui compte pour un
+ * site (`SubAccountView.menuState`, § 6.1) — ou `null` sans carte.
  */
-export function menuIndicator(menu: SubAccountMenuSummary | null): string | null {
-  if (menu === null) {
+export function menuIndicator(
+  state: SiteMenuStanding,
+  menu: SubAccountMenuSummary | null,
+): string | null {
+  if (state === 'none' || menu === null) {
     return null;
   }
+  const origin = state === 'common' ? 'Carte commune' : 'Carte propre';
   const kind = menu.mode === 'only' ? 'liste blanche' : 'liste noire';
   const count = menu.entryCount;
   const entries =
     count === 0 ? 'aucune entrée' : count === 1 ? '1 entrée' : `${String(count)} entrées`;
-  return `Carte : ${kind}, ${entries}`;
+  return `${origin} : ${kind}, ${entries}`;
+}
+
+/** Une carte propre « tout, sans exception » : elle exempte le site de la carte commune (§ 6.4). */
+export function isExemption(draft: MenuDraft): boolean {
+  return draft.mode === 'except' && draft.entries.length === 0;
+}
+
+/**
+ * Ce que l'onglet Carte d'un site dit de la carte qui compte (§ 6.1, § 6.4).
+ */
+export function siteMenuStateLine(view: SubAccountMenuView): string {
+  switch (view.state) {
+    case 'common':
+      return 'Ce site suit la carte commune de son principal. Elle se règle sur la fiche du principal, onglet « Carte des sites ».';
+    case 'own': {
+      const own =
+        view.menu === null
+          ? ''
+          : isExemption(draftOf(view.menu))
+            ? ' Elle ne restreint rien : le site est exempté de la carte commune.'
+            : '';
+      return view.common === null
+        ? `Ce site a sa carte propre.${own}`
+        : `Ce site a sa carte propre : elle masque la carte commune de son principal.${own}`;
+    }
+    case 'none':
+      return 'Ce site n’a pas de carte : il commande tout ce que son rayon lui sert.';
+  }
 }

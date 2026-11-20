@@ -121,6 +121,14 @@ export const ficheClientRoutes: Routes = [
           import('./carte/client-menu-page/client-menu-page').then((m) => m.ClientMenuPage),
       },
       {
+        // La carte commune des sites d'un principal (`carte-des-sites.md`, § 6),
+        // derrière le même droit que la carte d'un site.
+        path: 'carte-des-sites',
+        canActivate: [permissionGuard('lfc_catalog:read')],
+        loadComponent: () =>
+          import('./carte/sites-menu-page/sites-menu-page').then((m) => m.SitesMenuPage),
+      },
+      {
         path: 'facturation',
         loadComponent: () =>
           import('./facturation/facturation-page').then((m) => m.ClientFacturationPage),

@@ -44,11 +44,22 @@ export class ManageableSites {
   private readonly account = inject(AccountService);
   private readonly context = inject(ClientContext);
 
-  readonly sites = computed<readonly CompanyView[]>(() => {
+  private readonly principal = computed(() => {
     const shown = this.context.prefix();
-    const principal = this.account.companies().find((company) => company.id === shown) ?? null;
-    return manageableSites(this.account.account(), principal);
+    return this.account.companies().find((company) => company.id === shown) ?? null;
   });
+
+  readonly sites = computed<readonly CompanyView[]>(() =>
+    manageableSites(this.account.account(), this.principal()),
+  );
+
+  /**
+   * Le principal dont la personne règle la carte commune (§ 6.1) — l'espace
+   * affiché, s'il a des sites qu'elle règle —, ou `null`.
+   */
+  readonly principalId = computed(() =>
+    this.sites().length > 0 ? (this.principal()?.id ?? null) : null,
+  );
 
   /** Le compte est-il lu ? Un site inconnu ne se juge qu'après. */
   readonly settled = computed(() => {

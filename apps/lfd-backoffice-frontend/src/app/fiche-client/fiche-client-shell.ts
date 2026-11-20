@@ -129,6 +129,14 @@ const ALL_TABS: readonly GuardedTab[] = [
     icon: 'list',
     permission: 'lfc_catalog:read',
   },
+  // La carte commune de ses sites : seulement sur un principal (filtré dans `tabs`).
+  {
+    key: 'carte-des-sites',
+    label: 'Carte des sites',
+    link: 'carte-des-sites',
+    icon: 'list',
+    permission: 'lfc_catalog:read',
+  },
   {
     key: 'paniers-recurrents',
     label: 'Paniers récurrents',
@@ -218,7 +226,9 @@ export class FicheClientShell {
       (tab) =>
         (tab.permission === null || this.permissions.can(tab.permission)) &&
         // Un compte sans principal n'a pas de carte (`carte-des-sites.md`, § 3.1).
-        (tab.key !== 'carte' || (this.sheet()?.parent ?? null) !== null),
+        (tab.key !== 'carte' || (this.sheet()?.parent ?? null) !== null) &&
+        // La carte commune n'existe que sur un principal (§ 6.1).
+        (tab.key !== 'carte-des-sites' || (this.sheet()?.parent ?? null) === null),
     ),
   );
 

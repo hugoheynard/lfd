@@ -1778,6 +1778,11 @@
         "required": [],
         "fr": "Carte modifiée sur un de vos sites"
       },
+      "title.sites_menu_changed": {
+        "variables": [],
+        "required": [],
+        "fr": "Carte commune de vos sites modifiée"
+      },
       "action.problem_reported": {
         "variables": [],
         "required": [],
@@ -1857,6 +1862,11 @@
         "variables": [],
         "required": [],
         "fr": "a vu sa carte modifiée"
+      },
+      "action.sites_menu_changed": {
+        "variables": [],
+        "required": [],
+        "fr": "a été modifiée par notre équipe"
       },
       "subject": {
         "variables": [
@@ -1944,6 +1954,22 @@
         "variables": [],
         "required": [],
         "fr": "Commande"
+      },
+      "bodyByTeamOf.sites_menu_changed": {
+        "variables": [
+          "site",
+          "action"
+        ],
+        "required": [
+          "site",
+          "action"
+        ],
+        "fr": "La carte commune des sites de {site} {action}. Elle s'applique à chaque site qui n'a pas de carte propre."
+      },
+      "siteLabelOf.sites_menu_changed": {
+        "variables": [],
+        "required": [],
+        "fr": "Compte"
       },
       "footer": {
         "variables": [],

@@ -1,7 +1,8 @@
 import type { JournalFactType } from "@lfd/contracts/journal-facts";
 
+import type { MenuBody } from "../entities/menu-body.js";
 import type { SubAccountMenu } from "../entities/sub-account-menu.js";
-import type { MenuAuthor } from "../value-objects/sub-account-menu-terms.js";
+import type { MenuAuthor, SiteMenuState } from "../value-objects/sub-account-menu-terms.js";
 import { ACCOUNT_FACTS } from "./account-facts.js";
 import type { NamedRef } from "./journal-names.js";
 import { CompanyStaffAct } from "./staff-acts.event.js";
@@ -23,7 +24,7 @@ export class SubAccountMenuSetEvent extends CompanyStaffAct {
   private readonly included: number;
   private readonly excluded: number;
 
-  constructor(company: NamedRef, menu: SubAccountMenu) {
+  constructor(company: NamedRef, menu: MenuBody) {
     super(company);
     this.author = menu.stamp.author;
     this.mode = menu.mode;
@@ -43,5 +44,33 @@ export class SubAccountMenuSetEvent extends CompanyStaffAct {
       included: this.included,
       excluded: this.excluded,
     };
+  }
+}
+
+/**
+ * **La carte commune des sites d'un principal est posée** (§ 6) — même
+ * charge que la carte d'un site ; le sujet est le PRINCIPAL.
+ */
+export class PrincipalSitesMenuSetEvent extends SubAccountMenuSetEvent {
+  protected override type(): JournalFactType {
+    return ACCOUNT_FACTS.principalSitesMenuSet;
+  }
+}
+
+/** **Un site suit la carte commune, ou reprend la sienne** (§ 6.1). Le sujet est le site. */
+export class SubAccountMenuStateSetEvent extends CompanyStaffAct {
+  private readonly state: SiteMenuState;
+
+  constructor(company: NamedRef, menu: SubAccountMenu) {
+    super(company);
+    this.state = menu.state;
+  }
+
+  protected type(): JournalFactType {
+    return ACCOUNT_FACTS.subAccountMenuStateSet;
+  }
+
+  protected override details(): Record<string, unknown> {
+    return { state: this.state };
   }
 }

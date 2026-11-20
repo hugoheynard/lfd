@@ -166,6 +166,12 @@ export const SUB_ACCOUNT_MENU_MODE = domain('carte du site', {
   except: 'Tout sauf les articles exclus',
 });
 
+/** Ce qui compte pour un site (`company.sub_account_menu_state_set`, § 6.1). */
+export const SITE_MENU_STATE = domain('carte du site', {
+  own: 'Sa carte propre',
+  follows_common: 'La carte commune des sites',
+});
+
 /** Comment un sous-compte a été lié à son principal (`company.parent_attached`). */
 export const PARENT_LINK_VIA = domain('lien vers le compte principal', {
   created: 'Créé comme sous-compte',
@@ -216,6 +222,7 @@ export const ACCOUNTS_VALUES: ValueFamily = {
     PARENT_LINK_VIA,
     COLLECTION_FORM,
     SUB_ACCOUNT_MENU_MODE,
+    SITE_MENU_STATE,
     CUSTOMER_REQUEST_KIND,
     COMPANY_CONTACT_MODE,
   ],

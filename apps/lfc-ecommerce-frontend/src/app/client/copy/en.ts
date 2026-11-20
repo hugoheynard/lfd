@@ -72,6 +72,8 @@ export const EN: ClientCopy = {
       connection: 'Sign in — La Folie Coffee',
       sites: 'My sites — La Folie Coffee',
       siteMenu: 'Site menu — La Folie Coffee',
+      commonMenu: 'Shared site menu — La Folie Coffee',
+      myMenu: 'My menu — La Folie Coffee',
     },
   },
 
@@ -312,6 +314,7 @@ export const EN: ClientCopy = {
       'This item is not on the menu your main account has set for this site: you cannot order it.',
     siteMenuNotice:
       'Your main account has set a menu for this site: greyed-out items are not open to it.',
+    siteMenuLink: 'See my site’s menu',
     shelfLeft: 'Only {left} left today',
     shelfAllTaken: 'All that is left today is in your basket ({left})',
     shelfGone: 'Sold out for today',

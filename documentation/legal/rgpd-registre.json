@@ -963,6 +963,15 @@
       "information": false
     },
     {
+      "colonne": "public.principal_sites_menu.updated_by_staff_id",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a posé ou modifié la carte commune des sites d'un principal (`updated_by_staff_id`) sur `principal_sites_menu`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
       "colonne": "public.sub_account_notice_settings.updated_by",
       "personne": "staff",
       "categorie": "auteur-geste",

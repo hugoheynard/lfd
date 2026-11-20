@@ -8,6 +8,7 @@ import type {
   SubAccountMenuMode,
   SubAccountOffMenuDisplay,
   SubAccountMenuPayload,
+  SubAccountMenuView,
 } from '@lfd/contracts';
 
 /**
@@ -138,4 +139,24 @@ export function staleEntries(
   return draft.entries.filter((entry) =>
     entry.level === 'family' ? !families.has(entry.ref) : !skus.has(entry.ref),
   );
+}
+
+/** Une carte « tout, sans exception » : posée en propre, elle exempte le site de la carte commune (§ 6.4). */
+export function isExemption(draft: MenuDraft): boolean {
+  return draft.mode === 'except' && draft.entries.length === 0;
+}
+
+/**
+ * La carte qui compte pour un site (§ 6.1) : sa carte propre active, sinon la
+ * carte commune qu'il suit, sinon aucune.
+ */
+export function effectiveMenuOf(view: SubAccountMenuView): SubAccountMenuBody | null {
+  switch (view.state) {
+    case 'own':
+      return view.menu;
+    case 'common':
+      return view.common;
+    case 'none':
+      return null;
+  }
 }

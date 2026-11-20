@@ -190,6 +190,9 @@ async function wipe(prisma: PrismaClient, companyIds: string[], userIds: string[
   // carte (clés `Restrict`) : les entrées, puis la carte, avant la société.
   await prisma.subAccountMenuEntry.deleteMany({ where: { companyId: { in: companyIds } } });
   await prisma.subAccountMenu.deleteMany({ where: { companyId: { in: companyIds } } });
+  // La carte commune des sites, même forme, clée par le principal.
+  await prisma.principalSitesMenuEntry.deleteMany({ where: { companyId: { in: companyIds } } });
+  await prisma.principalSitesMenu.deleteMany({ where: { companyId: { in: companyIds } } });
   const ofOrders = {
     OR: [
       { companyId: { in: companyIds } },

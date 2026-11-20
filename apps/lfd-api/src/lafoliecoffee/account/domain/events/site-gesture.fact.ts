@@ -45,6 +45,14 @@ export const SUBSCRIPTION_DELETED = "subscription.deleted";
  */
 export const SUB_ACCOUNT_MENU_SET = "company.sub_account_menu_set";
 
+/**
+ * La carte commune des sites d'un principal est posée (`carte-des-sites.md`,
+ * § 6.1) — même nom qu'au journal. Le geste est fait sur le PRINCIPAL : son
+ * fait a la forme d'un geste de site dont le « site » est le principal
+ * lui-même (`siteCompanyId` = `principalCompanyId`).
+ */
+export const PRINCIPAL_SITES_MENU_SET = "company.principal_sites_menu_set";
+
 /** L'état d'un panier récurrent APRÈS un changement de statut. */
 export type GestureStatus = "active" | "paused";
 
@@ -63,7 +71,8 @@ export type SiteGestureType =
   | typeof SUBSCRIPTION_CREATED
   | typeof SUBSCRIPTION_STATUS_CHANGED
   | typeof SUBSCRIPTION_DELETED
-  | typeof SUB_ACCOUNT_MENU_SET;
+  | typeof SUB_ACCOUNT_MENU_SET
+  | typeof PRINCIPAL_SITES_MENU_SET;
 
 /** Qui a fait le geste : un client nommé par son id, ou l'équipe. */
 export type GestureActor =

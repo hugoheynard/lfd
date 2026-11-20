@@ -1,5 +1,6 @@
 import type { AcceptedMember } from "../../../../account/domain/ports/accepted-members.reader.js";
 import {
+  PRINCIPAL_SITES_MENU_SET,
   SiteGestureFact,
   SiteGesturePayloadError,
   SUB_ACCOUNT_MENU_SET,
@@ -13,7 +14,10 @@ import {
   MemoryNoticeJournal,
   RecordingNoticeMails,
 } from "../../__tests__/order-notice-doubles.js";
-import { NotifyPrincipalOnMenuChangedByTeam } from "../notify-principal-on-menu-changed-by-team.handler.js";
+import {
+  NotifyPrincipalOnMenuChangedByTeam,
+  NotifyPrincipalOnSitesMenuChangedByTeam,
+} from "../notify-principal-on-menu-changed-by-team.handler.js";
 
 const member = (userId: string, role: AcceptedMember["role"]): AcceptedMember => ({
   userId,
@@ -100,5 +104,50 @@ describe("NotifyPrincipalOnMenuChangedByTeam — l'équipe change la carte d'un 
     await expect(
       handler.handle({ eventId: "evt_x", type: SUB_ACCOUNT_MENU_SET, payload: {} }),
     ).rejects.toThrow(SiteGesturePayloadError);
+  });
+});
+
+describe("NotifyPrincipalOnSitesMenuChangedByTeam — l'équipe change la carte commune (§ 6.1)", () => {
+  function sitesBuild() {
+    const mailer = new RecordingNoticeMails();
+    const handler = new NotifyPrincipalOnSitesMenuChangedByTeam(
+      new FixedLifecycle(new Map([["alpes", "active" as const]])),
+      new FixedMembers(new Map([["alpes", ALPES]])),
+      new MemoryNoticeJournal(),
+      new FixedClock(new Date(Date.UTC(2030, 0, 1, 10))),
+      mailer,
+    );
+    return { handler, mailer };
+  }
+
+  function sitesMenuSet(byTeam: boolean) {
+    const fact = new SiteGestureFact(PRINCIPAL_SITES_MENU_SET, "g_2", "alpes", {
+      siteCompanyId: "alpes",
+      siteName: "Alpes",
+      principalCompanyId: "alpes",
+      authorUserId: byTeam ? null : "owner",
+      byTeam,
+    });
+    return {
+      eventId: "evt_common",
+      type: PRINCIPAL_SITES_MENU_SET,
+      payload: fact.durableFact().payload,
+    };
+  }
+
+  it("prévient le propriétaire et l'administrateur, par un e-mail qui nomme le principal", async () => {
+    const { handler, mailer } = sitesBuild();
+    await handler.handle(sitesMenuSet(true));
+    expect(recipients(mailer)).toEqual(["admin@alpes.test", "owner@alpes.test"]);
+    expect(mailer.sent[0]).toMatchObject({
+      data: { gesture: "sites_menu_changed", siteName: "Alpes", reference: null, byTeam: true },
+      idempotencyKey: "principal-sites-menu-notice:evt_common:owner",
+    });
+  });
+
+  it("ne prévient personne quand le principal l'a posée lui-même", async () => {
+    const { handler, mailer } = sitesBuild();
+    await handler.handle(sitesMenuSet(false));
+    expect(mailer.sent).toEqual([]);
   });
 });

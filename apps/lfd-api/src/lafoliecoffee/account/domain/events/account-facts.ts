@@ -78,6 +78,8 @@ export const ACCOUNT_FACTS = {
   collectionFormSet: "company.collection_form_set",
   /** La carte d'un sous-compte posée, entière — par le staff ou le principal. */
   subAccountMenuSet: "company.sub_account_menu_set",
+  principalSitesMenuSet: "company.principal_sites_menu_set",
+  subAccountMenuStateSet: "company.sub_account_menu_state_set",
   /** « Compte de groupe, sans livraison », coché ou décoché. */
   groupWithoutDeliverySet: "company.group_without_delivery_set",
   /** Un agent écrit l'adresse de facturation — celle qui part sur les factures. */

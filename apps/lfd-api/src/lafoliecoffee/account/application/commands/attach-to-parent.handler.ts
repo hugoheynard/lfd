@@ -5,6 +5,7 @@ import { DomainEventPublisher } from "../../../../platform/events/domain-event-p
 import { ParentAttachedEvent } from "../../domain/events/hierarchy-acts.event.js";
 import { AccountHierarchyLock } from "../../domain/ports/account-hierarchy.lock.js";
 import { CompanyRepository } from "../../domain/ports/company.repository.js";
+import { SubAccountMenuRepository } from "../../domain/ports/sub-account-menu.repository.js";
 import { loadCompany, named } from "../services/account-hierarchy-support.js";
 import { AttachToParentCommand } from "./attach-to-parent.command.js";
 
@@ -16,12 +17,17 @@ import { AttachToParentCommand } from "./attach-to-parent.command.js";
  *
  * Idempotent : rattacher au principal qu'on a déjà ne change rien et ne
  * s'inscrit pas au journal.
+ *
+ * La carte propre du site, décidée sous un autre principal, ne revient pas en
+ * vigueur d'elle-même : elle dort et le site suit la carte commune du nouveau
+ * (`carte-des-sites.md`, § 6.4). Son dépôt purge le rayon du site.
  */
 @CommandHandler(AttachToParentCommand)
 export class AttachToParentHandler implements ICommandHandler<AttachToParentCommand, void> {
   constructor(
     private readonly companies: CompanyRepository,
     private readonly lock: AccountHierarchyLock,
+    private readonly menus: SubAccountMenuRepository,
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
   ) {}
@@ -37,6 +43,10 @@ export class AttachToParentHandler implements ICommandHandler<AttachToParentComm
         return;
       }
       await this.companies.save(child.company);
+      const menu = await this.menus.load(child.id);
+      if (menu?.fallBackToCommon() === true) {
+        await this.menus.save(menu);
+      }
       await this.events.publishTraced(
         new ParentAttachedEvent(named(child), named(parent), "attached"),
       );

@@ -10,17 +10,26 @@ import {
 /** Le seul statut d'un principal qui ouvre ses sites — comme `inheritedSiteWhere` (Q8). */
 const ACTIVE = "active";
 
+/** Le corps d'une carte : en-tête et entrées. */
+const MENU_BODY = {
+  mode: true,
+  offMenu: true,
+  entries: { orderBy: { id: "asc" }, select: { level: true, ref: true, effect: true } },
+} as const;
+
 /**
- * La carte du sous-compte, lue dans la MÊME requête que son principal
- * (`carte-des-sites.md`, § 4) : une relation de plus, pas un
- * aller-retour — le budget de lectures du devis ne bouge pas.
+ * La carte propre du sous-compte, lue dans la MÊME requête que son principal
+ * (`carte-des-sites.md`, § 4) : une relation de plus, pas un aller-retour.
  */
-const MENU_SELECT = {
-  select: {
-    mode: true,
-    offMenu: true,
-    entries: { orderBy: { id: "asc" }, select: { level: true, ref: true, effect: true } },
-  },
+const MENU_SELECT = { select: { ...MENU_BODY, state: true } } as const;
+
+/**
+ * Le principal et sa carte commune des sites (§ 6.2), dans la même requête :
+ * une relation imbriquée, pas un aller-retour — le budget de lectures du
+ * devis ne bouge pas (`test/pricing-budget.e2e-spec.ts`).
+ */
+const PRINCIPAL_SELECT = {
+  select: { id: true, status: true, principalSitesMenu: { select: MENU_BODY } },
 } as const;
 
 export type { HoldersWithMenu } from "../domain/sub-account-menu-reading.js";
@@ -73,12 +82,17 @@ export async function readReservationHolders(
 ): Promise<HoldersWithMenu> {
   const company = await prisma.company.findUnique({
     where: { id: companyId },
-    select: { parentCompany: { select: { id: true, status: true } }, subAccountMenu: MENU_SELECT },
+    select: { parentCompany: PRINCIPAL_SELECT, subAccountMenu: MENU_SELECT },
   });
-  const holders = reservationHoldersOf(companyId, company?.parentCompany ?? null);
+  const principal = company?.parentCompany ?? null;
+  const holders = reservationHoldersOf(companyId, principal);
   return {
     ...holders,
-    menu: menuReadingOf(company?.subAccountMenu ?? null, holders.activePrincipalId),
+    menu: menuReadingOf(
+      company?.subAccountMenu ?? null,
+      principal?.principalSitesMenu ?? null,
+      holders.activePrincipalId,
+    ),
   };
 }
 
@@ -126,7 +140,7 @@ export async function readServedCompany(
     where: { id: companyId },
     select: {
       status: true,
-      parentCompany: { select: { id: true, status: true } },
+      parentCompany: PRINCIPAL_SELECT,
       subAccountMenu: MENU_SELECT,
     },
   });
@@ -138,6 +152,10 @@ export async function readServedCompany(
     status: company.status,
     holders,
     principalId: company.parentCompany?.id ?? null,
-    menu: menuReadingOf(company.subAccountMenu, holders.activePrincipalId),
+    menu: menuReadingOf(
+      company.subAccountMenu,
+      company.parentCompany?.principalSitesMenu ?? null,
+      holders.activePrincipalId,
+    ),
   };
 }

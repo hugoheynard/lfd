@@ -13,6 +13,7 @@ import {
   type MenuArticle,
   type MenuDraft,
   menuIndicator,
+  siteMenuStateLine,
   OPEN_DRAFT,
   sameDraft,
   staleEntries,
@@ -137,14 +138,39 @@ describe('staleEntries', () => {
 });
 
 describe('menuIndicator', () => {
-  it('rien sans carte ; sinon la forme et le nombre d’entrées', () => {
-    expect(menuIndicator(null)).toBeNull();
-    expect(menuIndicator({ mode: 'only', offMenu: 'hidden', entryCount: 0 })).toBe(
-      'Carte : liste blanche, aucune entrée',
+  it('rien sans carte ; sinon son origine, sa forme et son nombre d’entrées', () => {
+    expect(menuIndicator('none', null)).toBeNull();
+    expect(menuIndicator('own', { mode: 'only', offMenu: 'hidden', entryCount: 0 })).toBe(
+      'Carte propre : liste blanche, aucune entrée',
     );
-    expect(menuIndicator({ mode: 'except', offMenu: 'hidden', entryCount: 2 })).toBe(
-      'Carte : liste noire, 2 entrées',
+    expect(menuIndicator('common', { mode: 'except', offMenu: 'hidden', entryCount: 2 })).toBe(
+      'Carte commune : liste noire, 2 entrées',
     );
+  });
+});
+
+describe('siteMenuStateLine', () => {
+  const body = {
+    mode: 'except' as const,
+    offMenu: 'hidden' as const,
+    entries: [],
+    updatedAt: '2026-11-20T00:00:00.000Z',
+    updatedBy: 'staff' as const,
+  };
+
+  it('une carte propre « tout, sans exception » posée sous une carte commune exempte le site', () => {
+    const line = siteMenuStateLine({ companyId: 's', state: 'own', menu: body, common: body });
+    expect(line).toContain('masque la carte commune');
+    expect(line).toContain('exempté');
+  });
+
+  it('dit le site qui suit la carte commune, et celui qui n’a pas de carte', () => {
+    expect(
+      siteMenuStateLine({ companyId: 's', state: 'common', menu: null, common: body }),
+    ).toContain('suit la carte commune');
+    expect(
+      siteMenuStateLine({ companyId: 's', state: 'none', menu: null, common: null }),
+    ).toContain('pas de carte');
   });
 });
 

@@ -123,6 +123,7 @@ export const ACCOUNT_MAILS_IT: AccountMailsCopy = {
       subscription_resumed: "Paniere ricorrente ripreso su uno dei suoi siti",
       subscription_stopped: "Paniere ricorrente interrotto su uno dei suoi siti",
       menu_changed: "Assortimento modificato su uno dei suoi siti",
+      sites_menu_changed: "Assortimento comune dei suoi siti modificato",
     },
     action: {
       problem_reported: "ha segnalato un problema sull'ordine",
@@ -141,6 +142,7 @@ export const ACCOUNT_MAILS_IT: AccountMailsCopy = {
       subscription_resumed: "ha ripreso un paniere ricorrente",
       subscription_stopped: "ha interrotto un paniere ricorrente",
       menu_changed: "ha avuto il suo assortimento modificato",
+      sites_menu_changed: "è stato modificato dal nostro team",
     },
     subject: "{site} — {title}",
     subjectWithReference: "{site} — {title} ({reference})",
@@ -151,6 +153,11 @@ export const ACCOUNT_MAILS_IT: AccountMailsCopy = {
     siteLabel: "Sito",
     referenceLabel: "Riferimento",
     referenceLabelOf: { problem_reported: "Ordine" },
+    bodyByTeamOf: {
+      sites_menu_changed:
+        "L'assortimento comune dei siti di {site} {action}. Si applica a ogni sito senza un assortimento proprio.",
+    },
+    siteLabelOf: { sites_menu_changed: "Account" },
     footer:
       "Riceve questo messaggio perché questo sito è collegato al suo account. " +
       "Per non riceverlo più, ci scriva: regoliamo questi avvisi ruolo per ruolo.",

@@ -115,7 +115,18 @@
         <!-- LA CARTE DU SITE : les articles grisés le sont par le compte
              principal, et la mention le dit une fois, au-dessus du rayon. -->
         <div class="grid shelf">
-          <fold-callout variant="info">{{ t().shop.siteMenuNotice }}</fold-callout>
+          <fold-callout variant="info">
+            {{ t().shop.siteMenuNotice }}
+            <a
+              actions
+              foldButton
+              size="sm"
+              emphasis="outline"
+              data-my-menu
+              routerLink="/ma-carte"
+              >{{ t().shop.siteMenuLink }}</a
+            >
+          </fold-callout>
           <app-shelf-grid
             [products]="shop.products()"
             [page]="page()"

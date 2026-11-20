@@ -14,7 +14,7 @@
       row.enseigne
     }}</a>
     <span class="city">{{ row.city ?? 'Sans adresse de livraison' }}</span>
-    <app-sub-account-menu-indicator [menu]="row.menu" />
+    <app-sub-account-menu-indicator [state]="row.menuState" [menu]="row.menu" />
   </ng-template>
 
   <ng-template foldCell="status" let-row>

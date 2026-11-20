@@ -498,6 +498,7 @@
   "test/pricing-golden-master.e2e-spec.ts": 27913,
   "test/pricing-journal-pages.e2e-spec.ts": 4225,
   "test/pricing-sale-references.e2e-spec.ts": 3241,
+  "test/principal-sites-menu.e2e-spec.ts": 9000,
   "test/principal-stamp.e2e-spec.ts": 5258,
   "test/prisma-connection-release.e2e-spec.ts": 3638,
   "test/product-audience.e2e-spec.ts": 3105,

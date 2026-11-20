@@ -281,6 +281,18 @@ import { SubAccountMenuAccessReader } from "./domain/ports/sub-account-menu-acce
 import { PrismaSubAccountMenuRepository } from "./infrastructure/prisma-sub-account-menu.repository.js";
 import { PrismaSubAccountMenuReader } from "./infrastructure/prisma-sub-account-menu.reader.js";
 import { PrismaSubAccountMenuAccessReader } from "./infrastructure/prisma-sub-account-menu-access.reader.js";
+import { CompanySitesMenuController } from "./http/company-sites-menu.controller.js";
+import { AdminCompanySitesMenuController } from "./http/admin-company-sites-menu.controller.js";
+import { SetPrincipalSitesMenuHandler } from "./application/commands/set-principal-sites-menu.handler.js";
+import { SetPrincipalSitesMenuByStaffHandler } from "./application/commands/set-principal-sites-menu-by-staff.handler.js";
+import { SetSubAccountMenuStateHandler } from "./application/commands/set-sub-account-menu-state.handler.js";
+import { SetSubAccountMenuStateByStaffHandler } from "./application/commands/set-sub-account-menu-state-by-staff.handler.js";
+import { GetPrincipalSitesMenuHandler } from "./application/queries/get-principal-sites-menu.handler.js";
+import { GetPrincipalSitesMenuForStaffHandler } from "./application/queries/get-principal-sites-menu-for-staff.handler.js";
+import { PrincipalSitesMenuRepository } from "./domain/ports/principal-sites-menu.repository.js";
+import { PrincipalSitesMenuReader } from "./domain/ports/principal-sites-menu.reader.js";
+import { PrismaPrincipalSitesMenuRepository } from "./infrastructure/prisma-principal-sites-menu.repository.js";
+import { PrismaPrincipalSitesMenuReader } from "./infrastructure/prisma-principal-sites-menu.reader.js";
 
 /**
  * Contexte **compte** : la personne (son profil) et ses entreprises.
@@ -323,6 +335,8 @@ import { PrismaSubAccountMenuAccessReader } from "./infrastructure/prisma-sub-ac
     AdminCompanyPricingFollowController,
     CompanySubAccountMenuController,
     AdminCompanySubAccountMenuController,
+    CompanySitesMenuController,
+    AdminCompanySitesMenuController,
   ],
   providers: [
     CompaniesVersionSource,
@@ -475,6 +489,14 @@ import { PrismaSubAccountMenuAccessReader } from "./infrastructure/prisma-sub-ac
     { provide: SubAccountMenuRepository, useClass: PrismaSubAccountMenuRepository },
     { provide: SubAccountMenuReader, useClass: PrismaSubAccountMenuReader },
     { provide: SubAccountMenuAccessReader, useClass: PrismaSubAccountMenuAccessReader },
+    SetPrincipalSitesMenuHandler,
+    SetPrincipalSitesMenuByStaffHandler,
+    SetSubAccountMenuStateHandler,
+    SetSubAccountMenuStateByStaffHandler,
+    GetPrincipalSitesMenuHandler,
+    GetPrincipalSitesMenuForStaffHandler,
+    { provide: PrincipalSitesMenuRepository, useClass: PrismaPrincipalSitesMenuRepository },
+    { provide: PrincipalSitesMenuReader, useClass: PrismaPrincipalSitesMenuReader },
     { provide: StaffDirectory, useClass: StaffBlockDirectory },
     { provide: CompanyContactRepository, useClass: PrismaCompanyContactRepository },
     { provide: CompanyAddressRepository, useClass: PrismaCompanyAddressRepository },

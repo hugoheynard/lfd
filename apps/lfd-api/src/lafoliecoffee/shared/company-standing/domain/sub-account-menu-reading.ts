@@ -23,6 +23,13 @@ export type MenuLevel = (typeof MENU_LEVELS)[number];
 export const MENU_EFFECTS = ["include", "exclude"] as const;
 export type MenuEffect = (typeof MENU_EFFECTS)[number];
 
+/**
+ * L'état de la carte propre d'un site (§ 6.1) : `own`, elle compte ;
+ * `follows_common`, elle dort et la carte commune du principal compte.
+ */
+export const SITE_MENU_STATES = ["own", "follows_common"] as const;
+export type SiteMenuState = (typeof SITE_MENU_STATES)[number];
+
 /** Une entrée lue, sans son identifiant : le jugement n'en a pas besoin. */
 export interface MenuReadingEntry {
   readonly level: MenuLevel;
@@ -51,7 +58,7 @@ export interface HoldersWithMenu {
   readonly menu: MenuReading | null;
 }
 
-/** La carte telle que la requête la rend, colonnes texte. */
+/** Le corps d'une carte tel que la requête le rend, colonnes texte. */
 export interface MenuRow {
   readonly mode: string;
   readonly offMenu: string;
@@ -60,6 +67,11 @@ export interface MenuRow {
     readonly ref: string;
     readonly effect: string;
   }[];
+}
+
+/** La carte propre d'un site telle que la requête la rend : le corps et son état. */
+export interface SiteMenuRow extends MenuRow {
+  readonly state: string;
 }
 
 function narrow<T extends string>(allowed: readonly T[], value: string): T | undefined {
@@ -83,20 +95,40 @@ export const UNREADABLE_MENU: MenuReading = {
 };
 
 /**
- * **La carte compte-t-elle ?** Seulement sous un principal `active` (§ 3.1) :
- * principal suspendu, détaché ou absent, la carte dort en base et le
- * sous-compte commande ce que son rayon lui sert.
+ * **Quelle carte compte pour ce site ?** (§ 3.1, § 6.1) — sa carte propre si
+ * elle est active (`own`), sinon la carte commune de son principal, sinon
+ * aucune. Les deux ne se fusionnent pas : une carte propre REMPLACE la
+ * commune, même `except` sans entrée (le site est alors exempté).
  *
- * Une valeur que la carte ne connaît pas, en tête ou dans une entrée, rend
- * {@link UNREADABLE_MENU} : jamais une carte à moitié lue.
+ * Rien ne compte hors d'un principal `active` : la carte dort en base et le
+ * sous-compte commande ce que son rayon lui sert. La carte commune n'est lue
+ * que par `parentCompany` : elle ne s'applique jamais au principal lui-même.
+ *
+ * Une valeur que la carte ne connaît pas, en tête, dans l'état ou dans une
+ * entrée, rend {@link UNREADABLE_MENU} : jamais une carte à moitié lue.
  */
 export function menuReadingOf(
-  row: MenuRow | null,
+  own: SiteMenuRow | null,
+  common: MenuRow | null,
   activePrincipalId: string | null,
 ): MenuReading | null {
-  if (row === null || activePrincipalId === null) {
+  if (activePrincipalId === null) {
     return null;
   }
+  if (own !== null) {
+    const state = narrow(SITE_MENU_STATES, own.state);
+    if (state === undefined) {
+      return UNREADABLE_MENU;
+    }
+    if (state === "own") {
+      return bodyReadingOf(own);
+    }
+  }
+  return common === null ? null : bodyReadingOf(common);
+}
+
+/** Le corps d'une carte, revalidé — fermé entier sur une valeur inconnue. */
+function bodyReadingOf(row: MenuRow): MenuReading {
   const mode = narrow(MENU_MODES, row.mode);
   const offMenu = narrow(OFF_MENU_DISPLAYS, row.offMenu);
   const entries: MenuReadingEntry[] = [];

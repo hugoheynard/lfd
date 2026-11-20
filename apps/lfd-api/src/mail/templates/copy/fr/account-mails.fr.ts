@@ -127,6 +127,7 @@ export const ACCOUNT_MAILS_FR: AccountMailsCopy = {
       subscription_resumed: "Panier récurrent repris sur un de vos sites",
       subscription_stopped: "Panier récurrent arrêté sur un de vos sites",
       menu_changed: "Carte modifiée sur un de vos sites",
+      sites_menu_changed: "Carte commune de vos sites modifiée",
     },
     action: {
       problem_reported: "a signalé un problème sur la commande",
@@ -151,6 +152,8 @@ export const ACCOUNT_MAILS_FR: AccountMailsCopy = {
       // Rien de la carte : ni mode, ni article, ni famille — le principal la relit
       // dans « Mes sites » (`carte-des-sites.md`, Q3).
       menu_changed: "a vu sa carte modifiée",
+      // Lu dans `bodyByTeamOf` : « la carte commune des sites de {site} {action} ».
+      sites_menu_changed: "a été modifiée par notre équipe",
     },
     subject: "{site} — {title}",
     subjectWithReference: "{site} — {title} ({reference})",
@@ -161,6 +164,11 @@ export const ACCOUNT_MAILS_FR: AccountMailsCopy = {
     siteLabel: "Site",
     referenceLabel: "Référence",
     referenceLabelOf: { problem_reported: "Commande" },
+    bodyByTeamOf: {
+      sites_menu_changed:
+        "La carte commune des sites de {site} {action}. Elle s'applique à chaque site qui n'a pas de carte propre.",
+    },
+    siteLabelOf: { sites_menu_changed: "Compte" },
     footer:
       "Vous recevez ce message parce que ce site est rattaché à votre compte. " +
       "Pour ne plus le recevoir, écrivez-nous : nous réglons ces avis rôle par rôle.",

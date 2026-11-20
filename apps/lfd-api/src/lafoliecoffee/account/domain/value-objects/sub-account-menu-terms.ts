@@ -3,10 +3,12 @@ import {
   MENU_LEVELS,
   MENU_MODES,
   OFF_MENU_DISPLAYS,
+  SITE_MENU_STATES,
   type MenuEffect,
   type MenuLevel,
   type MenuMode,
   type OffMenuDisplay,
+  type SiteMenuState,
 } from "../../../shared/company-standing/domain/sub-account-menu-reading.js";
 import {
   EmptyMenuReferenceError,
@@ -18,10 +20,12 @@ export {
   MENU_LEVELS,
   MENU_MODES,
   OFF_MENU_DISPLAYS,
+  SITE_MENU_STATES,
   type MenuEffect,
   type MenuLevel,
   type MenuMode,
   type OffMenuDisplay,
+  type SiteMenuState,
 } from "../../../shared/company-standing/domain/sub-account-menu-reading.js";
 
 function parseOne<T extends string>(field: string, allowed: readonly T[], value: string): T {
@@ -40,6 +44,11 @@ export function parseMenuMode(value: string): MenuMode {
 /** @throws {UnknownMenuValueError} */
 export function parseOffMenuDisplay(value: string): OffMenuDisplay {
   return parseOne("offMenu", OFF_MENU_DISPLAYS, value);
+}
+
+/** @throws {UnknownMenuValueError} */
+export function parseSiteMenuState(value: string): SiteMenuState {
+  return parseOne("state", SITE_MENU_STATES, value);
 }
 
 /** @throws {UnknownMenuValueError} */

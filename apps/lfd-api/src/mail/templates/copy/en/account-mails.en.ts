@@ -123,6 +123,7 @@ export const ACCOUNT_MAILS_EN: AccountMailsCopy = {
       subscription_resumed: "Recurring basket resumed at one of your sites",
       subscription_stopped: "Recurring basket stopped at one of your sites",
       menu_changed: "Menu changed at one of your sites",
+      sites_menu_changed: "Common menu of your sites changed",
     },
     action: {
       problem_reported: "reported a problem with order",
@@ -141,6 +142,7 @@ export const ACCOUNT_MAILS_EN: AccountMailsCopy = {
       subscription_resumed: "resumed a recurring basket",
       subscription_stopped: "stopped a recurring basket",
       menu_changed: "had its menu changed",
+      sites_menu_changed: "was changed by our team",
     },
     subject: "{site} — {title}",
     subjectWithReference: "{site} — {title} ({reference})",
@@ -151,6 +153,11 @@ export const ACCOUNT_MAILS_EN: AccountMailsCopy = {
     siteLabel: "Site",
     referenceLabel: "Reference",
     referenceLabelOf: { problem_reported: "Order" },
+    bodyByTeamOf: {
+      sites_menu_changed:
+        "The common menu of the sites of {site} {action}. It applies to every site without a menu of its own.",
+    },
+    siteLabelOf: { sites_menu_changed: "Account" },
     footer:
       "You are receiving this message because this site is linked to your account. " +
       "To stop receiving it, write to us: we set these notices role by role.",

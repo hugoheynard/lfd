@@ -78,3 +78,43 @@ export class SubAccountMenuWriterRequiredError extends AuthorizationError {
     );
   }
 }
+
+/**
+ * La carte commune des sites se pose sur un compte principal ; cette société
+ * est elle-même le site d'un principal, et un site n'a pas de sites (409).
+ */
+export class NotAPrincipalError extends BusinessError {
+  constructor(readonly companyId: string) {
+    super(
+      "account.principal_sites_menu.not_a_principal",
+      "Ce compte est le site d'un compte principal : la carte commune des sites se règle sur le principal. Ouvrez la fiche du principal pour la régler, ou réglez la carte propre de ce site.",
+    );
+  }
+}
+
+/**
+ * Le site doit reprendre sa carte propre, mais il n'en a jamais eu : il n'y
+ * a rien à réactiver (409).
+ */
+export class NoOwnMenuToResumeError extends BusinessError {
+  constructor(readonly companyId: string) {
+    super(
+      "account.sub_account_menu.no_own_menu",
+      "Ce site n'a pas de carte propre à reprendre : il suit la carte commune de son principal. Pour lui en donner une, réglez sa carte et enregistrez-la.",
+    );
+  }
+}
+
+/**
+ * La personne atteint ce compte principal sans en être propriétaire ou
+ * administratrice acceptée, ou le principal n'est pas actif : la carte
+ * commune des sites ne se règle pas d'ici (403).
+ */
+export class SitesMenuWriterRequiredError extends AuthorizationError {
+  constructor(readonly companyId: string) {
+    super(
+      "account.principal_sites_menu.owner_or_admin_required",
+      "La carte commune des sites se règle par le propriétaire ou un administrateur du compte principal, une fois leur accès accepté et le compte actif. Demandez-leur de la modifier.",
+    );
+  }
+}

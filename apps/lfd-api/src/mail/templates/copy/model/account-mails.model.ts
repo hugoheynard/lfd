@@ -24,7 +24,8 @@ export type SubAccountGestureKind =
   | "subscription_paused"
   | "subscription_resumed"
   | "subscription_stopped"
-  | "menu_changed";
+  | "menu_changed"
+  | "sites_menu_changed";
 
 /**
  * **« Votre accès à l'espace pro »** — l'invitation d'un client. Le code
@@ -148,6 +149,13 @@ export interface SubAccountGestureCopy {
   readonly referenceLabel: string;
   /** Les gestes dont la référence a un nom (un signalement porte une commande). */
   readonly referenceLabelOf: Readonly<Partial<Record<SubAccountGestureKind, string>>>;
+  /**
+   * Les gestes faits sur le PRINCIPAL et non sur un site (la carte commune
+   * des sites) : leur phrase, `{site}` = le principal, à la place de `bodyByTeam`.
+   */
+  readonly bodyByTeamOf: Readonly<Partial<Record<SubAccountGestureKind, string>>>;
+  /** Les mêmes gestes : le libellé de la ligne qui nomme le principal, à la place de `siteLabel`. */
+  readonly siteLabelOf: Readonly<Partial<Record<SubAccountGestureKind, string>>>;
   readonly footer: string;
 }
 

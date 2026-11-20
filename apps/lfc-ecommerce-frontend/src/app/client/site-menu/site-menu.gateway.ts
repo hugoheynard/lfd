@@ -1,6 +1,11 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import type { SubAccountMenuPayload, SubAccountMenuView } from '@lfd/contracts';
+import type {
+  PrincipalSitesMenuView,
+  SiteMenuState,
+  SubAccountMenuPayload,
+  SubAccountMenuView,
+} from '@lfd/contracts';
 import { httpErrorMessage } from '@lfd/endpoints';
 import { firstValueFrom } from 'rxjs';
 
@@ -8,12 +13,13 @@ import { AUTH_CONFIG } from '../../auth/auth.config';
 import { AuthFacade } from '../../auth/auth.facade';
 
 /**
- * **La carte d'un site**, lue et posée par son compte principal
- * (`GET` / `PUT /companies/:subAccountId/menu`, `carte-des-sites.md` § 4).
+ * **La carte d'un site et la carte commune de ses sites**
+ * (`carte-des-sites.md` § 4, § 6) : `GET` / `PUT /companies/:subAccountId/menu`,
+ * `PUT …/menu/state` (la bascule), `GET` / `PUT /companies/:principalId/sites-menu`.
  *
- * Le site est dans l'adresse : la lecture ne dépend pas de l'espace courant.
- * Le `PUT` est `@Idempotent` (la carte entière, rejouée, n'écrit rien) : pas
- * de clé d'intention.
+ * La société est dans l'adresse : la lecture ne dépend pas de l'espace courant.
+ * Les trois `PUT` sont `@Idempotent` (un état visé, rejoué, n'écrit rien) : pas
+ * de clé d'intention. Un membre du site lit sa carte, il ne l'écrit pas.
  */
 @Injectable({ providedIn: 'root' })
 export class SiteMenuGateway {
@@ -38,6 +44,46 @@ export class SiteMenuGateway {
     } catch (error) {
       return httpErrorMessage(error);
     }
+  }
+
+  /** Le site suit la carte commune, ou reprend sa carte propre : `null` au succès, le refus sinon. */
+  async setState(subAccountId: string, state: SiteMenuState): Promise<string | null> {
+    try {
+      await firstValueFrom(
+        this.http.put(
+          `${this.url(subAccountId)}/state`,
+          { state },
+          { headers: await this.headers() },
+        ),
+      );
+      return null;
+    } catch (error) {
+      return httpErrorMessage(error);
+    }
+  }
+
+  async readSitesMenu(principalId: string): Promise<PrincipalSitesMenuView> {
+    return firstValueFrom(
+      this.http.get<PrincipalSitesMenuView>(this.sitesUrl(principalId), {
+        headers: await this.headers(),
+      }),
+    );
+  }
+
+  /** Pose la carte commune entière : `null` au succès, le message du serveur au refus. */
+  async saveSitesMenu(principalId: string, payload: SubAccountMenuPayload): Promise<string | null> {
+    try {
+      await firstValueFrom(
+        this.http.put(this.sitesUrl(principalId), payload, { headers: await this.headers() }),
+      );
+      return null;
+    } catch (error) {
+      return httpErrorMessage(error);
+    }
+  }
+
+  private sitesUrl(principalId: string): string {
+    return `${AUTH_CONFIG.apiBaseUrl}/companies/${encodeURIComponent(principalId)}/sites-menu`;
   }
 
   private url(subAccountId: string): string {

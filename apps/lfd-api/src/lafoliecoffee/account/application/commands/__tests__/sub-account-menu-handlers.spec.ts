@@ -7,14 +7,12 @@ import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import type { CompanyStanding } from "../../../../shared/company-standing/domain/company-standing.js";
 import type { StandingRole } from "../../../../shared/company-standing/domain/standing-role.js";
 import { Company } from "../../../domain/entities/company.js";
-import type { SubAccountMenu } from "../../../domain/entities/sub-account-menu.js";
 import { CompanyNotFoundError } from "../../../domain/errors/account-errors.js";
 import { NotASubAccountError } from "../../../domain/errors/hierarchy-errors.js";
 import { SubAccountMenuWriterRequiredError } from "../../../domain/errors/sub-account-menu-errors.js";
 import { SubAccountMenuSetEvent } from "../../../domain/events/sub-account-menu-acts.event.js";
 import { CompanyRepository, type KbisLocation } from "../../../domain/ports/company.repository.js";
 import { SubAccountMenuAccessReader } from "../../../domain/ports/sub-account-menu-access.reader.js";
-import { SubAccountMenuRepository } from "../../../domain/ports/sub-account-menu.repository.js";
 import type { RequestedMenu } from "../../../domain/services/whole-menu.js";
 import { HierarchyPlace } from "../../../domain/value-objects/hierarchy-place.js";
 import { SubAccountMenuWriting } from "../../services/sub-account-menu-writing.js";
@@ -22,6 +20,7 @@ import { SetSubAccountMenuByStaffCommand } from "../set-sub-account-menu-by-staf
 import { SetSubAccountMenuByStaffHandler } from "../set-sub-account-menu-by-staff.handler.js";
 import { SetSubAccountMenuCommand } from "../set-sub-account-menu.command.js";
 import { SetSubAccountMenuHandler } from "../set-sub-account-menu.handler.js";
+import { InMemoryMenus, InMemorySitesMenus } from "./menu-doubles.js";
 import { recordedGestures } from "./site-gesture-doubles.js";
 
 const SITE = "co_site";
@@ -77,19 +76,6 @@ class OneCompany extends CompanyRepository {
   }
 }
 
-class InMemoryMenus extends SubAccountMenuRepository {
-  readonly saved: SubAccountMenu[] = [];
-  private stored: SubAccountMenu | null = null;
-  load(): Promise<SubAccountMenu | null> {
-    return Promise.resolve(this.stored);
-  }
-  save(menu: SubAccountMenu): Promise<void> {
-    this.saved.push(menu);
-    this.stored = menu;
-    return Promise.resolve();
-  }
-}
-
 class FixedStanding extends SubAccountMenuAccessReader {
   constructor(private readonly standing: CompanyStanding | null) {
     super();
@@ -120,6 +106,7 @@ function scene(company: Company | null, place: CompanyStanding | null = null) {
   const writing = new SubAccountMenuWriting(
     new OneCompany(company),
     menus,
+    new InMemorySitesMenus(),
     new FixedIdGenerator("ent"),
     new FixedClock(NOW),
   );

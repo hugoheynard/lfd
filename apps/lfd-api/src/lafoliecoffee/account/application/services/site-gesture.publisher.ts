@@ -42,6 +42,19 @@ export class SiteGesturePublisher {
 
   async publish(gesture: SiteGesture): Promise<void> {
     const locked = await this.principals.lockedPrincipalOf(gesture.site.id);
+    await this.write(gesture, locked?.principalCompanyId ?? null);
+  }
+
+  /**
+   * Un geste fait sur le PRINCIPAL lui-même pour ses sites (la carte commune,
+   * § 6.1) : le principal à prévenir est la société du geste, sans verrou —
+   * il n'y a pas de rattachement à figer.
+   */
+  async publishOnPrincipal(gesture: SiteGesture): Promise<void> {
+    await this.write(gesture, gesture.site.id);
+  }
+
+  private async write(gesture: SiteGesture, principalCompanyId: string | null): Promise<void> {
     const fact = new SiteGestureFact(
       gesture.type,
       this.ids.next(),
@@ -49,7 +62,7 @@ export class SiteGesturePublisher {
       {
         siteCompanyId: gesture.site.id,
         siteName: gesture.site.name,
-        principalCompanyId: locked?.principalCompanyId ?? null,
+        principalCompanyId,
         authorUserId: gesture.actor.kind === "customer" ? gesture.actor.userId : null,
         byTeam: gesture.actor.kind === "team",
       },

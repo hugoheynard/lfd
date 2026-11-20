@@ -18,6 +18,7 @@ const CHALET: SubAccountView = {
   status: 'active',
   followedAspects: ['billing'],
   follows: [{ aspect: 'billing', since: SINCE }],
+  menuState: 'own',
   menu: { mode: 'except', offMenu: 'visible_locked', entryCount: 2 },
 };
 
@@ -178,7 +179,7 @@ describe('FollowGrid', () => {
   it('dit la carte du site sans la relire', async () => {
     const { fixture } = await boot();
     expect((fixture.nativeElement as HTMLElement).textContent).toContain(
-      'Carte : liste noire, 2 entrées',
+      'Carte propre : liste noire, 2 entrées',
     );
   });
 });

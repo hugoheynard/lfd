@@ -32,11 +32,21 @@ const POSED_MENU: SubAccountMenuBody = {
   updatedAt: '2026-11-20T08:00:00.000Z',
   updatedBy: 'principal',
 };
-const POSED: SubAccountMenuView = { companyId: 'cmp_chalet', menu: POSED_MENU };
+const POSED: SubAccountMenuView = {
+  companyId: 'cmp_chalet',
+  state: 'own',
+  menu: POSED_MENU,
+  common: null,
+};
+const COMMON_MENU: SubAccountMenuBody = {
+  ...POSED_MENU,
+  entries: [{ level: 'product', ref: 'PAT-TAR', effect: 'exclude' }],
+};
 
 let menus: Record<string, SubAccountMenuView>;
 let saved: { id: string; payload: SubAccountMenuPayload }[];
 let saveAnswer: string | null;
+let states: string[];
 let success: ReturnType<typeof vi.fn>;
 let fixture: ComponentFixture<SiteMenuPage>;
 
@@ -85,7 +95,19 @@ async function render(siteId = 'cmp_chalet'): Promise<HTMLElement> {
           },
           save: (id: string, payload: SubAccountMenuPayload) => {
             saved.push({ id, payload });
+            const before = menus[id];
+            if (saveAnswer === null && before !== undefined) {
+              menus[id] = { ...before, state: 'own', menu: { ...POSED_MENU, ...payload } };
+            }
             return Promise.resolve(saveAnswer);
+          },
+          setState: (id: string, state: string) => {
+            states.push(state);
+            const before = menus[id];
+            if (before !== undefined) {
+              menus[id] = { ...before, state: before.common === null ? 'none' : 'common' };
+            }
+            return Promise.resolve(null);
           },
         },
       },
@@ -108,9 +130,13 @@ function saveButton(host: HTMLElement): HTMLButtonElement | null {
 }
 
 beforeEach(() => {
-  menus = { cmp_chalet: POSED, cmp_refuge: { companyId: 'cmp_refuge', menu: null } };
+  menus = {
+    cmp_chalet: POSED,
+    cmp_refuge: { companyId: 'cmp_refuge', state: 'none', menu: null, common: null },
+  };
   saved = [];
   saveAnswer = null;
+  states = [];
 });
 
 describe('SiteMenuPage', () => {
@@ -175,10 +201,7 @@ describe('SiteMenuPage', () => {
   });
 
   it('dit en clair qu’une carte « Seulement » sans entrée ferme tout', async () => {
-    menus['cmp_chalet'] = {
-      companyId: 'cmp_chalet',
-      menu: { ...POSED_MENU, mode: 'only', entries: [] },
-    };
+    menus['cmp_chalet'] = { ...POSED, menu: { ...POSED_MENU, mode: 'only', entries: [] } };
     const host = await render();
     expect(host.querySelector('[data-closed-all]')).not.toBeNull();
   });
@@ -186,7 +209,9 @@ describe('SiteMenuPage', () => {
   it('copie la carte d’un autre site dans le brouillon (Q4)', async () => {
     menus['cmp_refuge'] = {
       companyId: 'cmp_refuge',
+      state: 'own',
       menu: { ...POSED_MENU, mode: 'only', entries: [] },
+      common: null,
     };
     const host = await render();
     const listbox = fixture.debugElement.query(By.directive(FoldListboxComponent))
@@ -213,7 +238,7 @@ describe('SiteMenuPage', () => {
 
   it('montre une entrée que le catalogue ne livre plus, et la retire', async () => {
     menus['cmp_chalet'] = {
-      companyId: 'cmp_chalet',
+      ...POSED,
       menu: { ...POSED_MENU, entries: [{ level: 'sku', ref: 'GONE-1', effect: 'exclude' }] },
     };
     const host = await render();
@@ -235,5 +260,53 @@ describe('SiteMenuPage', () => {
     delete menus['cmp_chalet'];
     const host = await render();
     expect(host.querySelector('[data-menu-failed]')).not.toBeNull();
+  });
+
+  it('un site qui suit la carte commune part d’elle : enregistrer lui fait une carte propre', async () => {
+    menus['cmp_chalet'] = {
+      companyId: 'cmp_chalet',
+      state: 'common',
+      menu: null,
+      common: COMMON_MENU,
+    };
+    const host = await render();
+    expect(host.querySelector('[data-menu-state]')?.textContent).toContain('suit la carte commune');
+    expect(saveButton(host)?.disabled).toBe(false);
+
+    saveButton(host)?.click();
+    await settle();
+
+    expect(saved).toEqual([
+      {
+        id: 'cmp_chalet',
+        payload: { mode: 'except', offMenu: 'visible_locked', entries: COMMON_MENU.entries },
+      },
+    ]);
+    expect(host.querySelector('[data-menu-state]')?.textContent).toContain(
+      'masque la carte commune',
+    );
+    expect(saveButton(host)?.disabled).toBe(true);
+  });
+
+  it('dit qu’une carte propre « tout, sans exception » exempte le site', async () => {
+    menus['cmp_chalet'] = {
+      companyId: 'cmp_chalet',
+      state: 'own',
+      menu: { ...POSED_MENU, entries: [] },
+      common: COMMON_MENU,
+    };
+    const host = await render();
+    expect(host.querySelector('[data-menu-state]')?.textContent).toContain('exempté');
+  });
+
+  it('revient à la carte commune', async () => {
+    menus['cmp_chalet'] = { ...POSED, common: COMMON_MENU };
+    const host = await render();
+    host.querySelector<HTMLButtonElement>('[data-follow-common]')?.click();
+    await settle();
+
+    expect(states).toEqual(['follows_common']);
+    expect(success).toHaveBeenCalledWith('Le site suit de nouveau la carte commune.');
+    expect(host.querySelector('[data-follow-common]')).toBeNull();
   });
 });

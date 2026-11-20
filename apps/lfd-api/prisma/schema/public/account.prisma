@@ -297,6 +297,7 @@ model Company {
   subAccountNoticeSetting SubAccountNoticeSetting?
   /// La carte de ce sous-compte (`carte-des-sites.md`) ; absente = tout le rayon.
   subAccountMenu          SubAccountMenu?
+  principalSitesMenu      PrincipalSitesMenu?
   /// Les paniers récurrents créés dans l'espace de cette société (N4e).
   subscriptions           Subscription[]
   /// Les dérogations d'heure limite accordées à ce client.

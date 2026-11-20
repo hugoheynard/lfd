@@ -17,6 +17,9 @@ model SubAccountMenu {
   updatedByStaffId String?               @map("updated_by_staff_id")
   /// L'utilisateur du principal qui a posé la carte ; `null` si c'est le staff.
   updatedByUserId  String?               @map("updated_by_user_id")
+  /// `own` (la carte du site compte) | `follows_common` (elle dort, et la
+  /// carte commune du principal compte) — § 6.1. Tenu par un CHECK.
+  state            String                @default("own")
   entries          SubAccountMenuEntry[]
 
   @@map("sub_account_menu")
@@ -38,5 +41,44 @@ model SubAccountMenuEntry {
 
   @@unique([companyId, level, ref])
   @@map("sub_account_menu_entry")
+  @@schema("public")
+}
+
+/// La **carte commune des sites** d'un principal (`carte-des-sites.md`, § 6) :
+/// elle s'applique à chacun de ses sites qui n'a pas de carte propre active,
+/// jamais au principal lui-même. Clée par le `company_id` DU PRINCIPAL.
+/// Écrite par l'agrégat `PrincipalSitesMenu` (`lafoliecoffee/account`) ; lue
+/// dans la même requête que le lecteur pro, par `parentCompany`.
+model PrincipalSitesMenu {
+  companyId        String                    @id @map("company_id")
+  company          Company                   @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  /// `only` | `except`, comme la carte d'un site.
+  mode             String
+  /// `hidden` | `visible_locked`.
+  offMenu          String                    @map("off_menu")
+  updatedAt        DateTime                  @map("updated_at") @db.Timestamptz(3)
+  /// L'id de fiche du staff qui a posé la carte ; `null` si c'est le principal.
+  updatedByStaffId String?                   @map("updated_by_staff_id")
+  /// L'utilisateur du principal qui a posé la carte ; `null` si c'est le staff.
+  updatedByUserId  String?                   @map("updated_by_user_id")
+  entries          PrincipalSitesMenuEntry[]
+
+  @@map("principal_sites_menu")
+  @@schema("public")
+}
+
+/// Une entrée de la carte commune, de la forme de {@link SubAccountMenuEntry}.
+model PrincipalSitesMenuEntry {
+  id        String             @id
+  companyId String             @map("company_id")
+  menu      PrincipalSitesMenu @relation(fields: [companyId], references: [companyId], onDelete: Restrict)
+  /// `family` | `product` | `sku`.
+  level     String
+  ref       String
+  /// `include` | `exclude`.
+  effect    String
+
+  @@unique([companyId, level, ref])
+  @@map("principal_sites_menu_entry")
   @@schema("public")
 }

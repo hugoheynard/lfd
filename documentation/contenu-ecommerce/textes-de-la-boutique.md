@@ -4,7 +4,7 @@
 >
 > La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.
 
-## Sommaire — 1894 textes
+## Sommaire — 1930 textes
 
 Clés présentes dans une langue et absentes d'une autre : 0.
 
@@ -18,7 +18,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Accueil — la carte d'événement](#espace-event) | `event` | 5 |
 | [Connexion et création de compte](#espace-signup) | `signup` | 24 |
 | [Commander — l'écran d'entrée de la commande](#espace-commande) | `commande` | 39 |
-| [Rayon / boutique](#espace-shop) | `shop` | 88 |
+| [Rayon / boutique](#espace-shop) | `shop` | 89 |
 | [Rayon — la fiche produit](#espace-product) | `product` | 34 |
 | [Barre de commande — la maison et l’heure retenues](#espace-commandterms) | `commandTerms` | 39 |
 | [Choix du jour — la première question d’une commande](#espace-daypicker) | `dayPicker` | 20 |
@@ -36,7 +36,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Confirmation](#espace-done) | `done` | 31 |
 | [Confirmation — le QR de retrait](#espace-qr) | `qr` | 12 |
 | **Le reste de la boutique** | | |
-| [Le cadre — bandeaux et erreurs générales](#espace-chrome) | `chrome` | 58 |
+| [Le cadre — bandeaux et erreurs générales](#espace-chrome) | `chrome` | 60 |
 | [La navigation](#espace-nav) | `nav` | 17 |
 | [La colonne d’accompagnement](#espace-aside) | `aside` | 4 |
 | [Mes commandes (récapitulatif compris)](#espace-orders) | `orders` | 289 |
@@ -45,13 +45,13 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Mon compte (factures comprises)](#espace-account) | `account` | 534 |
 | [Le compte pro — le dictionnaire général](#espace-pro) | `pro` | 8 |
 | [Le compte pro — l’écran](#espace-proaccount) | `proAccount` | 27 |
-| [Mes sites — la carte de chaque site, réglée par le compte principal](#espace-sitemenu) | `siteMenu` | 45 |
+| [Mes sites — la carte de chaque site, réglée par le compte principal](#espace-sitemenu) | `siteMenu` | 78 |
 | [La procédure de livraison d’une adresse](#espace-deliveryprocedure) | `deliveryProcedure` | 47 (+ 3 non recensé) |
 | [Le dialogue « Nous écrire »](#espace-contactdialog) | `contactDialog` | 25 |
 | [Les cases des e-mails marketing, « Mes e-mails » et le pied de page](#espace-marketingconsent) | `marketingConsent` | 29 |
 | [Les documents légaux](#espace-legaldocument) | `legalDocument` | 14 |
 | [Le suivi des corrections d’accessibilité — sous la déclaration](#espace-accessibilityfollowup) | `accessibilityFollowUp` | 28 |
-| **Total** | | **1894** |
+| **Total** | | **1930** |
 
 ## Le parcours de commande
 
@@ -310,7 +310,7 @@ Source : `fr.ts · en.ts · it.ts` · 39 textes.
 
 ### Rayon / boutique — `shop`
 
-Source : `fr.ts · en.ts · it.ts` · 88 textes.
+Source : `fr.ts · en.ts · it.ts` · 89 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -389,6 +389,7 @@ Source : `fr.ts · en.ts · it.ts` · 88 textes.
 | `shop.offMenu` | Hors de la carte de votre site | Not on your site’s menu | Fuori dalla carta del tuo sito |  |
 | `shop.offMenuHint` | Cet article est hors de la carte que votre compte principal a posée sur ce site : vous ne pouvez pas le commander. | This item is not on the menu your main account has set for this site: you cannot order it. | Questo articolo è fuori dalla carta che il tuo account principale ha impostato per questo sito: non puoi ordinarlo. |  |
 | `shop.siteMenuNotice` | Votre compte principal a posé une carte sur ce site : les articles grisés n’y sont pas ouverts. | Your main account has set a menu for this site: greyed-out items are not open to it. | Il tuo account principale ha impostato una carta per questo sito: gli articoli in grigio non vi sono aperti. |  |
+| `shop.siteMenuLink` | Voir la carte de mon site | See my site’s menu | Vedi la carta del mio sito |  |
 | `shop.shelfLeft` | Plus que {left} aujourd’hui | Only {left} left today | Ne restano solo {left} oggi | `{left}` |
 | `shop.shelfAllTaken` | Tout le reste d’aujourd’hui est au panier ({left}) | All that is left today is in your basket ({left}) | Tutto ciò che resta oggi è nel carrello ({left}) | `{left}` |
 | `shop.shelfGone` | Épuisé pour aujourd’hui | Sold out for today | Esaurito per oggi |  |
@@ -951,7 +952,7 @@ Source : `fr.ts · en.ts · it.ts` · 12 textes.
 
 ### Le cadre — bandeaux et erreurs générales — `chrome`
 
-Source : `fr.ts · en.ts · it.ts` · 58 textes.
+Source : `fr.ts · en.ts · it.ts` · 60 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -1013,6 +1014,8 @@ Source : `fr.ts · en.ts · it.ts` · 58 textes.
 | `chrome.pageTitles.connection` | Connexion — La Folie Coffee | Sign in — La Folie Coffee | Accesso — La Folie Coffee |  |
 | `chrome.pageTitles.sites` | Mes sites — La Folie Coffee | My sites — La Folie Coffee | I miei siti — La Folie Coffee |  |
 | `chrome.pageTitles.siteMenu` | Carte du site — La Folie Coffee | Site menu — La Folie Coffee | Carta del sito — La Folie Coffee |  |
+| `chrome.pageTitles.commonMenu` | Carte commune des sites — La Folie Coffee | Shared site menu — La Folie Coffee | Carta comune dei siti — La Folie Coffee |  |
+| `chrome.pageTitles.myMenu` | Ma carte — La Folie Coffee | My menu — La Folie Coffee | La mia carta — La Folie Coffee |  |
 
 <a id="espace-nav"></a>
 
@@ -2064,7 +2067,7 @@ Source : `screens/pro-account.copy.ts` · 27 textes.
 
 ### Mes sites — la carte de chaque site, réglée par le compte principal — `siteMenu`
 
-Source : `screens/site-menu.copy.ts` · 45 textes.
+Source : `screens/site-menu.copy.ts` · 78 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -2113,6 +2116,39 @@ Source : `screens/site-menu.copy.ts` · 45 textes.
 | `siteMenu.levelSku` | Déclinaison | Variant | Variante |  |
 | `siteMenu.save` | Enregistrer | Save | Salva |  |
 | `siteMenu.saved` | Carte enregistrée. | Menu saved. | Carta salvata. |  |
+| `siteMenu.catalogueReadSubtitle` | Ouvert : le site peut le commander. Fermé : il est hors de la carte. | Open: the site may order it. Closed: it is off the menu. | Aperto: il sito può ordinarlo. Chiuso: è fuori carta. |  |
+| `siteMenu.commonTitle` | Carte commune des sites | Shared site menu | Carta comune dei siti |  |
+| `siteMenu.commonNone` | Aucune carte commune : les sites sans carte propre commandent tout ce que la boutique leur sert. | No shared menu: sites without their own menu may order everything the shop serves them. | Nessuna carta comune: i siti senza carta propria possono ordinare tutto ciò che il negozio offre loro. |  |
+| `siteMenu.commonSet` | Une carte commune est posée ({entries} entrées) : elle vaut pour chaque site sans carte propre. | A shared menu is set ({entries} entries): it applies to every site without its own menu. | È impostata una carta comune ({entries} voci): vale per ogni sito senza carta propria. | `{entries}` |
+| `siteMenu.commonExplain` | Une carte propre posée sur un site masque la carte commune. Pour exempter un site, faites-lui une carte propre « Tout, sauf… » sans exclusion. | A site’s own menu hides the shared menu. To exempt a site, give it its own “Everything except…” menu with no exclusion. | La carta propria di un sito nasconde la carta comune. Per esentare un sito, dagli una carta propria «Tutto, tranne…» senza esclusioni. |  |
+| `siteMenu.openCommon` | Régler la carte commune | Set the shared menu | Imposta la carta comune |  |
+| `siteMenu.stateCommon` | Carte commune | Shared menu | Carta comune |  |
+| `siteMenu.stateOwn` | Carte propre | Own menu | Carta propria |  |
+| `siteMenu.stateNone` | Pas de carte | No menu | Nessuna carta |  |
+| `siteMenu.statesFailed` | La carte de certains sites n’a pas pu être lue. | The menu of some sites could not be read. | Non è stato possibile leggere la carta di alcuni siti. |  |
+| `siteMenu.makeOwn` | Faire une carte propre | Give it its own menu | Crea una carta propria |  |
+| `siteMenu.editOwn` | Régler sa carte | Set its menu | Imposta la sua carta |  |
+| `siteMenu.followCommon` | Revenir à la carte commune | Back to the shared menu | Torna alla carta comune |  |
+| `siteMenu.followed` | Le site suit de nouveau la carte commune. | The site follows the shared menu again. | Il sito segue di nuovo la carta comune. |  |
+| `siteMenu.lineCommon` | Ce site suit la carte commune. Enregistrer ici lui fait une carte propre, qui remplace la commune. | This site follows the shared menu. Saving here gives it its own menu, which replaces the shared one. | Questo sito segue la carta comune. Salvare qui gli dà una carta propria, che sostituisce quella comune. |  |
+| `siteMenu.lineOwn` | Ce site a sa carte propre. | This site has its own menu. | Questo sito ha una carta propria. |  |
+| `siteMenu.lineOwnMasks` | Ce site a sa carte propre : elle masque la carte commune. | This site has its own menu: it hides the shared menu. | Questo sito ha una carta propria: nasconde la carta comune. |  |
+| `siteMenu.lineExempt` | Elle ne restreint rien : ce site est exempté de la carte commune. | It restricts nothing: this site is exempt from the shared menu. | Non limita nulla: questo sito è esentato dalla carta comune. |  |
+| `siteMenu.lineNone` | Ce site n’a pas de carte : il commande tout ce que la boutique lui sert. | This site has no menu: it may order everything the shop serves it. | Questo sito non ha una carta: può ordinare tutto ciò che il negozio gli offre. |  |
+| `siteMenu.commonPageTitle` | Carte commune des sites | Shared site menu | Carta comune dei siti |  |
+| `siteMenu.commonPageLead` | Ce que vos sites commandent, sauf ceux qui ont leur carte propre. | What your sites may order, except those with their own menu. | Ciò che i tuoi siti ordinano, tranne quelli con una carta propria. |  |
+| `siteMenu.commonSaved` | Carte commune enregistrée. | Shared menu saved. | Carta comune salvata. |  |
+| `siteMenu.notPrincipalTitle` | Pas de carte commune ici | No shared menu here | Nessuna carta comune qui |  |
+| `siteMenu.notPrincipalBody` | Vous ne réglez pas la carte des sites de ce compte, ou il n’a pas de sites. | You do not set the menu of this account’s sites, or it has no sites. | Non imposti la carta dei siti di questo account, oppure non ha siti. |  |
+| `siteMenu.myTitle` | Ma carte | My menu | La mia carta |  |
+| `siteMenu.myLead` | Ce que votre site peut commander. | What your site may order. | Ciò che il tuo sito può ordinare. |  |
+| `siteMenu.myFromCommon` | Cette carte est la carte commune des sites de votre compte principal. | This menu is the shared menu of your main account’s sites. | Questa carta è la carta comune dei siti del tuo account principale. |  |
+| `siteMenu.myOwn` | Cette carte est propre à votre site. | This menu is your site’s own. | Questa carta è propria del tuo sito. |  |
+| `siteMenu.myReadOnly` | Seul votre compte principal règle cette carte. | Only your main account sets this menu. | Solo il tuo account principale imposta questa carta. |  |
+| `siteMenu.myNoneTitle` | Pas de carte | No menu | Nessuna carta |  |
+| `siteMenu.myNoneBody` | Votre site commande tout ce que la boutique lui sert. | Your site may order everything the shop serves it. | Il tuo sito può ordinare tutto ciò che il negozio gli offre. |  |
+| `siteMenu.myUnavailableTitle` | Pas de carte à lire ici | No menu to read here | Nessuna carta da leggere qui |  |
+| `siteMenu.myUnavailableBody` | Cet espace n’est pas un site rattaché à un compte principal. | This space is not a site attached to a main account. | Questo spazio non è un sito collegato a un account principale. |  |
 
 <a id="espace-deliveryprocedure"></a>
 

@@ -12,7 +12,12 @@ import {
   type PhraseFact,
   type Segment,
 } from '../phrase';
-import { COLLECTION_FORM, FOLLOW_ASPECT, SUB_ACCOUNT_MENU_MODE } from '../values/accounts-values';
+import {
+  COLLECTION_FORM,
+  FOLLOW_ASPECT,
+  SITE_MENU_STATE,
+  SUB_ACCOUNT_MENU_MODE,
+} from '../values/accounts-values';
 
 /**
  * **Les sous-comptes** — le lien d'un client vers son compte principal, et
@@ -176,8 +181,36 @@ const subAccountMenuSet: Phrase = (fact) =>
     ['subjectLabel', 'mode'],
   );
 
+/** « a posé la carte commune des sites du client « X » : seulement les articles inclus ». */
+const principalSitesMenuSet: Phrase = (fact) =>
+  byActor(
+    fact,
+    [
+      text('a posé la carte commune des sites '),
+      ...ofClient(fact),
+      text(' : '),
+      valueIn(SUB_ACCOUNT_MENU_MODE, fact.payload['mode'], { inSentence: true }),
+    ],
+    ['subjectLabel', 'mode'],
+  );
+
+/** « a fait suivre la carte commune au client « X » » / « a rendu sa carte propre au client « X » ». */
+const subAccountMenuStateSet: Phrase = (fact) =>
+  byActor(
+    fact,
+    [
+      text('a réglé la carte '),
+      ...ofClient(fact),
+      text(' : '),
+      valueIn(SITE_MENU_STATE, fact.payload['state'], { inSentence: true }),
+    ],
+    ['subjectLabel', 'state'],
+  );
+
 export const SUB_ACCOUNT_PHRASES = {
   'company.sub_account_menu_set': subAccountMenuSet,
+  'company.principal_sites_menu_set': principalSitesMenuSet,
+  'company.sub_account_menu_state_set': subAccountMenuStateSet,
   'company.parent_attached': parentAttached,
   'company.parent_detached': parentDetached,
   'company.parent_followed': alignment('a aligné', 'since'),

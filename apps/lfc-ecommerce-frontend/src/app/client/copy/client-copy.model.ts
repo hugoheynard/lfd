@@ -37,6 +37,10 @@ export interface PageTitles {
   readonly sites: string;
   /** La carte d'un site (`/mes-sites/:id/carte`). */
   readonly siteMenu: string;
+  /** La carte commune des sites d'un principal (`/mes-sites/carte-commune`). */
+  readonly commonMenu: string;
+  /** La carte de son site, lue par ses membres (`/ma-carte`). */
+  readonly myMenu: string;
 }
 
 /** La clé d'un titre d'onglet — ce qu'une route porte en `data.pageTitle`. */
@@ -596,6 +600,8 @@ export interface ClientCopy {
     readonly offMenuHint: string;
     /** La mention du rayon d'un site dont une carte verrouille des articles. */
     readonly siteMenuNotice: string;
+    /** Le lien de cette mention, vers la carte du site en lecture (`/ma-carte`). */
+    readonly siteMenuLink: string;
     /**
      * Le jour J sur stock (`jour-meme-sur-stock.md`, L7) : le reste en
      * vitrine aujourd'hui sur la vignette. `{left}` = « 3 » ou « 1,2 kg ».

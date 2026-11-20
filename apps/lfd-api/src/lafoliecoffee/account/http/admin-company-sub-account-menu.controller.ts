@@ -1,4 +1,6 @@
 import {
+  type SiteMenuStatePayload,
+  siteMenuStatePayloadSchema,
   type SubAccountMenuPayload,
   subAccountMenuPayloadSchema,
   type SubAccountMenuView,
@@ -10,6 +12,7 @@ import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js"
 import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { IntentKey } from "../../../platform/shared/http/intent-key.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
+import { SetSubAccountMenuStateByStaffCommand } from "../application/commands/set-sub-account-menu-state-by-staff.command.js";
 import { SetSubAccountMenuByStaffCommand } from "../application/commands/set-sub-account-menu-by-staff.command.js";
 import { GetSubAccountMenuForStaffQuery } from "../application/queries/get-sub-account-menu-for-staff.query.js";
 
@@ -48,6 +51,24 @@ export class AdminCompanySubAccountMenuController {
   ): Promise<void> {
     await this.commands.execute<SetSubAccountMenuByStaffCommand, void>(
       new SetSubAccountMenuByStaffCommand(companyId, staffUserId, payload, intentKey),
+    );
+  }
+
+  /**
+   * Le site suit la carte commune, ou reprend sa carte propre ; `204`. `409`
+   * pour reprendre une carte propre qui n'existe pas. Le principal en est
+   * prévenu (Q3) : une fois par intention (`Idempotency-Key`, obligatoire).
+   */
+  @Put(":companyId/menu/state")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async setState(
+    @Param("companyId") companyId: string,
+    @StaffUserId() staffUserId: string,
+    @IntentKey() intentKey: string,
+    @Body(new ZodBody(siteMenuStatePayloadSchema)) payload: SiteMenuStatePayload,
+  ): Promise<void> {
+    await this.commands.execute<SetSubAccountMenuStateByStaffCommand, void>(
+      new SetSubAccountMenuStateByStaffCommand(companyId, staffUserId, payload.state, intentKey),
     );
   }
 }

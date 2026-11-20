@@ -1,11 +1,13 @@
 import { SubAccountMenu } from "../../entities/sub-account-menu.js";
 import { NotASubAccountError } from "../../errors/hierarchy-errors.js";
+import { PrincipalSitesMenu } from "../../entities/principal-sites-menu.js";
 import {
   DuplicateMenuEntryError,
   EmptyMenuReferenceError,
+  NotAPrincipalError,
 } from "../../errors/sub-account-menu-errors.js";
 import type { MenuStamp } from "../../value-objects/sub-account-menu-terms.js";
-import { setWholeMenu, type WholeMenuContext } from "../whole-menu.js";
+import { setWholeMenu, setWholeSitesMenu, type WholeMenuContext } from "../whole-menu.js";
 
 const BEFORE: MenuStamp = { author: { kind: "staff", staffId: "stf_1" }, at: new Date(0) };
 const NOW: MenuStamp = { author: { kind: "customer", userId: "usr_1" }, at: new Date(1000) };
@@ -118,5 +120,64 @@ describe("setWholeMenu — la carte entière, mise à l'état demandé", () => {
         entries: [{ level: "sku", ref: "  ", effect: "include" }],
       }),
     ).toThrow(EmptyMenuReferenceError);
+  });
+});
+
+describe("setWholeMenu — la carte propre d'un site qui suivait la carte commune", () => {
+  const SAME = {
+    mode: "except",
+    offMenu: "visible_locked",
+    entries: [
+      { level: "family", ref: "fam_patisserie", effect: "exclude" },
+      { level: "product", ref: "TARTE", effect: "include" },
+    ],
+  } as const;
+
+  it("enregistrer la même carte la réactive : ce n'est pas un rejeu", () => {
+    const current = existing();
+    current.switchState("follows_common", BEFORE);
+    const menu = setWholeMenu(current, context(), SAME);
+    expect(menu?.state).toBe("own");
+    expect(menu?.entries.map((entry) => entry.id)).toEqual(["ent_fam", "ent_tarte"]);
+  });
+
+  it("la même carte active, rejouée, n'écrit rien", () => {
+    expect(setWholeMenu(existing(), context(), SAME)).toBeNull();
+  });
+});
+
+describe("setWholeSitesMenu — la carte commune entière", () => {
+  const ctx = (parentCompanyId: string | null) => {
+    let n = 0;
+    return { companyId: "co_principal", parentCompanyId, stamp: NOW, nextId: () => `c_${++n}` };
+  };
+  const REQUESTED = {
+    mode: "only",
+    offMenu: "hidden",
+    entries: [{ level: "family", ref: "fam_vienno", effect: "include" }],
+  } as const;
+
+  it("compose une carte commune absente, et ne réécrit pas la même", () => {
+    const menu = setWholeSitesMenu(null, ctx(null), REQUESTED);
+    expect(menu?.entries).toEqual([
+      { id: "c_1", level: "family", ref: "fam_vienno", effect: "include" },
+    ]);
+    expect(setWholeSitesMenu(menu, ctx(null), REQUESTED)).toBeNull();
+  });
+
+  it("recompose par les mêmes méthodes que la carte d'un site", () => {
+    const current = setWholeSitesMenu(null, ctx(null), REQUESTED);
+    const menu = setWholeSitesMenu(current, ctx(null), {
+      ...REQUESTED,
+      mode: "except",
+      entries: [],
+    });
+    expect(menu).toBeInstanceOf(PrincipalSitesMenu);
+    expect(menu?.mode).toBe("except");
+    expect(menu?.entries).toEqual([]);
+  });
+
+  it("refuse une carte commune sur un site", () => {
+    expect(() => setWholeSitesMenu(null, ctx("co_other"), REQUESTED)).toThrow(NotAPrincipalError);
   });
 });

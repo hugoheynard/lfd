@@ -4,6 +4,8 @@ import type {
   CustomerSheetView,
   PublishedCatalogView,
   StaffPermission,
+  SiteMenuState,
+  SubAccountMenuBody,
   SubAccountMenuPayload,
   SubAccountMenuView,
 } from '@lfd/contracts';
@@ -68,15 +70,36 @@ const CATALOGUE: PublishedCatalogView = {
 interface Wire {
   readonly saved: SubAccountMenuPayload[];
   readonly keys: string[];
+  readonly states: SiteMenuState[];
+  state: SubAccountMenuView['state'];
   menu: SubAccountMenuView['menu'];
+  common: SubAccountMenuView['common'];
   refuse: boolean;
 }
+
+const COMMON: SubAccountMenuBody = {
+  mode: 'except',
+  offMenu: 'visible_locked',
+  entries: [{ level: 'product', ref: 'TAR', effect: 'exclude' }],
+  updatedAt: '2026-11-01T00:00:00.000Z',
+  updatedBy: 'principal',
+};
 
 async function boot(
   parent: CustomerSheetView['parent'],
   granted: readonly StaffPermission[] = ['b2b_companies:write'],
+  start: Partial<Pick<Wire, 'state' | 'menu' | 'common'>> = {},
 ): Promise<{ fixture: ComponentFixture<ClientMenuPage>; wire: Wire; host: HTMLElement }> {
-  const wire: Wire = { saved: [], keys: [], menu: null, refuse: false };
+  const wire: Wire = {
+    saved: [],
+    keys: [],
+    states: [],
+    state: 'none',
+    menu: null,
+    common: null,
+    refuse: false,
+    ...start,
+  };
   const sheet = { companyId: 'site', parent };
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
@@ -110,13 +133,21 @@ async function boot(
         provide: SubAccountMenuService,
         useValue: {
           read: (companyId: string): Promise<SubAccountMenuView> =>
-            Promise.resolve({ companyId, menu: wire.menu }),
+            Promise.resolve({ companyId, state: wire.state, menu: wire.menu, common: wire.common }),
           save: (_id: string, payload: SubAccountMenuPayload, key: string): Promise<void> => {
             wire.keys.push(key);
             if (wire.refuse) {
               return Promise.reject(new Error('refus'));
             }
             wire.saved.push(payload);
+            wire.state = 'own';
+            wire.menu = { ...payload, updatedAt: COMMON.updatedAt, updatedBy: 'staff' };
+            return Promise.resolve();
+          },
+          setState: (_id: string, state: SiteMenuState, key: string): Promise<void> => {
+            wire.keys.push(key);
+            wire.states.push(state);
+            wire.state = state === 'own' ? 'own' : wire.common === null ? 'none' : 'common';
             return Promise.resolve();
           },
         },
@@ -129,8 +160,11 @@ async function boot(
 }
 
 async function settle(fixture: ComponentFixture<ClientMenuPage>): Promise<void> {
-  fixture.detectChanges();
-  await fixture.whenStable();
+  // Un geste passe par l'éditeur, puis la page relit l'état : plusieurs tours.
+  for (let turn = 0; turn < 3; turn += 1) {
+    fixture.detectChanges();
+    await fixture.whenStable();
+  }
   fixture.detectChanges();
 }
 
@@ -194,5 +228,48 @@ describe('ClientMenuPage', () => {
     const { host } = await boot({ id: 'p', enseigne: 'Club', kind: 'site' }, []);
     expect(host.querySelector('[data-save]')).toBeNull();
     expect(host.querySelector('[data-sku="TAR-8"] fold-view-toggle')).toBeNull();
+  });
+
+  it('un site qui suit la carte commune la lit, sans la régler', async () => {
+    const { host } = await boot({ id: 'p', enseigne: 'Club', kind: 'site' }, undefined, {
+      state: 'common',
+      common: COMMON,
+    });
+    expect(host.querySelector('[data-menu-state]')?.textContent).toContain('suit la carte commune');
+    expect(host.querySelector('[data-common-read]')).not.toBeNull();
+    expect(host.querySelector('[data-save]')).toBeNull();
+    expect(host.querySelector('[data-follow-common]')).toBeNull();
+  });
+
+  it('« faire une carte propre » part de la carte commune et l’enregistre telle quelle', async () => {
+    const { fixture, wire, host } = await boot(
+      { id: 'p', enseigne: 'Club', kind: 'site' },
+      undefined,
+      { state: 'common', common: COMMON },
+    );
+    host.querySelector<HTMLElement>('[data-make-own]')?.click();
+    await settle(fixture);
+    expect(saveButton(host).disabled).toBe(false);
+    saveButton(host).click();
+    await settle(fixture);
+    expect(wire.saved).toEqual([
+      { mode: 'except', offMenu: 'visible_locked', entries: COMMON.entries },
+    ]);
+    expect(host.querySelector('[data-menu-state]')?.textContent).toContain(
+      'masque la carte commune',
+    );
+  });
+
+  it('« revenir à la carte commune » vise l’état, sous une clé d’intention', async () => {
+    const { fixture, wire, host } = await boot(
+      { id: 'p', enseigne: 'Club', kind: 'site' },
+      undefined,
+      { state: 'own', menu: COMMON, common: COMMON },
+    );
+    host.querySelector<HTMLElement>('[data-follow-common]')?.click();
+    await settle(fixture);
+    expect(wire.states).toEqual(['follows_common']);
+    expect(wire.keys).toHaveLength(1);
+    expect(host.querySelector('[data-common-read]')).not.toBeNull();
   });
 });

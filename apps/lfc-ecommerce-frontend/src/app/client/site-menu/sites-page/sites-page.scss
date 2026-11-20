@@ -9,3 +9,15 @@
   gap: var(--fold-space-lg);
   padding: var(--fold-space-2xl) var(--lfc-inset) var(--fold-space-4xl);
 }
+
+.body {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-sm);
+}
+
+.line {
+  margin: 0;
+  flex-basis: 100%;
+}

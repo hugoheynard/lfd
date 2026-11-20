@@ -39,18 +39,38 @@ votre site », et ne peuvent pas les commander. Le siège commande tout.
 ## 2. Où le régler
 
 - **Boutique, principal** : menu « Mes sites » (`/mes-sites`), montré au seul
-  propriétaire ou admin du principal ; un site → « Régler la carte »
-  (`/mes-sites/:id/carte`). Arbre famille → produit, chaque nœud à trois états
-  (hérite, inclus, exclu), résumé « N articles ouverts sur M ». Le grain SKU ne
-  se pose pas depuis la boutique (la vue du rayon ne porte pas les
-  déclinaisons) ; une entrée SKU posée par le staff s'y affiche et se retire.
+  propriétaire ou admin du principal. En tête, la **carte commune** : ce
+  qu'elle dit, et « Régler la carte commune » (`/mes-sites/carte-commune`).
+  Puis chaque site, avec ce qui compte pour lui — « Carte commune », « Carte
+  propre » ou « Pas de carte » (lu par `GET /companies/:id/menu`, une lecture
+  par site) —, « Faire une carte propre » ou « Régler sa carte »
+  (`/mes-sites/:id/carte`), et « Revenir à la carte commune » sur un site qui
+  a sa carte propre. La page d'un site dit si sa carte propre masque la carte
+  commune, et qu'une carte propre « Tout, sauf… » sans exclusion l'en exempte ;
+  un site qui suit la carte commune part d'elle, et enregistrer lui fait une
+  carte propre. Les deux cartes se règlent avec le même éditeur
+  (`client/site-menu/site-menu-editor/`) : arbre famille → produit, chaque nœud
+  à trois états (hérite, inclus, exclu), résumé « N articles ouverts sur M ».
+  Le grain SKU ne se pose pas depuis la boutique (la vue du rayon ne porte pas
+  les déclinaisons) ; une entrée SKU posée par le staff s'y affiche et se
+  retire.
 - **Boutique, site** : vignette, fiche et ligne de panier disent « hors de la
-  carte de votre site » ; une mention coiffe le rayon.
+  carte de votre site » ; une mention coiffe le rayon, avec le lien « Voir la
+  carte de mon site » vers **« Ma carte »** (`/ma-carte`). Cette page lit, en
+  lecture seule, la carte qui compte pour l'espace affiché — ce qu'elle ouvre
+  et ferme, et si elle est la carte commune ou propre au site. Aucun réglage
+  (§ 3.2).
 - **Back-office** : onglet « Carte » de la fiche d'un sous-compte
   (`/comptes-clients/:id/carte`, derrière `lfc_catalog:read`, en lecture seule
-  sans `b2b_companies:write`), aux trois grains. Sur la fiche du principal,
-  chaque site de la liste montre sa carte (« liste blanche, 12 entrées ») et
-  son nom mène à l'onglet (décidé par Hugo le 2026-11-20). La saisie staff, la
+  sans `b2b_companies:write`), aux trois grains. Il dit ce qui compte pour le
+  site ; la carte commune qu'il suit s'y lit sans se régler, avec « Faire une
+  carte propre » ; une carte propre propose « Revenir à la carte commune »
+  (clé d'intention). Sur la fiche d'un principal, l'onglet **« Carte des
+  sites »** (`/comptes-clients/:id/carte-des-sites`) règle la carte commune,
+  sous clé d'intention. Chaque site de la liste du principal dit « Carte
+  commune : … » ou « Carte propre : … » (`SubAccountView.menuState`), ou rien,
+  et son nom mène à l'onglet (décidé par Hugo le 2026-11-20). Les deux onglets
+  partagent l'éditeur `fiche-client/carte/menu-editor/`. La saisie staff, la
   grille de prix et la mercuriale étiquettent « hors carte ».
 
 ## 3. Les règles
@@ -75,7 +95,10 @@ geste lit donc `canSetMenuOf(standing)`
   n'est jamais lu ;
 - un membre du site, même son propriétaire, reçoit 403 ; qui n'atteint pas le
   site (principal étranger, membre `orders` du principal) reçoit 404 ;
-- la lecture de la carte a le même mur ;
+- la carte d'un site se lit là où elle se règle, **et depuis le site** : tout
+  membre accepté du site la lit, en lecture seule (`canReadSiteMenuOf`,
+  `GET /companies/:id/menu` ; décidé par Hugo le 2026-11-20 : « le site lit
+  mais ne paramètre pas ») ;
 - le staff écrit sous `b2b_companies:write`.
 
 L'admin du principal qui **entre** dans un site commande avec le lecteur du
@@ -259,11 +282,11 @@ et de l'agrégat.
 
 ### 6.3 Lots
 
-| Lot | Contenu                                                                                      |
-| --- | -------------------------------------------------------------------------------------------- |
-| K1  | Migration, agrégat de la carte commune, état de la carte propre, lecture effective, jugement |
-| K2  | Routes principal et staff, bascule d'un site, faits, purge des rayons des sites, avis        |
-| K3  | Boutique et back-office                                                                      |
+| Lot | Contenu                                                                                                              |
+| --- | -------------------------------------------------------------------------------------------------------------------- |
+| K1  | Migration, agrégat de la carte commune, état de la carte propre, lecture effective, jugement — ✅ bâti le 2026-11-20 |
+| K2  | Routes principal et staff, bascule d'un site, faits, purge des rayons des sites, avis — ✅ bâti le 2026-11-20        |
+| K3  | Boutique et back-office — ✅ bâti le 2026-11-20                                                                      |
 
 ### 6.4 Ce que la contradiction a ajouté (vitruve, 2026-11-20)
 
@@ -295,3 +318,40 @@ et de l'agrégat.
 - **À prouver en K1** : que le budget ne bouge pas avec la relation imbriquée
   `parentCompany.principalSitesMenu.entries`, et qu'un principal ne peut pas
   être lui-même un site (pas de cartes communes en cascade).
+- **Tranché au bâti de K1** (2026-11-20) : le corps commun des deux cartes
+  est `MenuBody` (`apps/lfd-api/src/lafoliecoffee/account/domain/entities/menu-body.ts`) ; `SubAccountMenu`
+  y ajoute `state`, `PrincipalSitesMenu` le refus d'un site
+  (`NotAPrincipalError`, 409). La recomposition est la même
+  (`whole-menu.ts`). Enregistrer la carte propre d'un site la rend active
+  (`own`) : c'est « en faire une propre ». `menuReadingOf(own, common,
+activePrincipalId)` choisit ; un état inconnu ferme tout. Le budget de
+  `pricing-budget.e2e-spec.ts` n'a pas bougé (14/14, chiffres inchangés). Pas
+  de cascade : la carte commune n'est lue que par `parentCompany`, un site ne
+  peut pas avoir de sites (`HierarchyPlace.attachTo`), et la composer sur un
+  site est refusé.
+- **Tranché au bâti de K2** (2026-11-20) : la bascule vers `own` sans carte
+  propre est refusée (409, `NoOwnMenuToResumeError`) ; vers `follows_common`
+  sans carte propre, rien n'est fait. La bascule écrit le fait
+  `company.sub_account_menu_state_set` au journal du site et le fait durable
+  `company.sub_account_menu_set` (la carte qui compte a changé : l'avis Q3
+  part quand l'équipe bascule). La carte commune écrit
+  `company.principal_sites_menu_set` au journal du principal et en durable ;
+  l'avis est un second abonné (`NotifyPrincipalOnSitesMenuChangedByTeam` : un
+  abonné durable écoute un seul fait), même gabarit, geste e-mail distinct
+  `sites_menu_changed` qui nomme le principal. Au rattachement, la carte
+  propre dort sans changer d'auteur. Les trois états (`SiteMenuStanding`)
+  sont écrits sur ce qui est posé, pas sur l'activité du principal ; la vue
+  d'un site (`SubAccountMenuView`) porte `state`, `menu` (la carte propre,
+  même endormie) et `common`, et `SubAccountView` porte `menuState` et le
+  résumé de la carte qui compte.
+- **Le site lit, il ne règle pas** (décidé par Hugo le 2026-11-20) : un
+  membre accepté du site lit la carte de son site par
+  `GET /companies/:id/menu` ; il n'écrit ni la carte propre, ni la bascule,
+  ni la carte commune (403, ou 404 sur le principal qu'il n'atteint pas).
+- **Tranché au bâti de K3** (2026-11-20) : « Ma carte » s'atteint par le
+  lien de la mention du rayon, pas par le menu — la boutique ne sait pas
+  qu'un espace est un site sans lire sa carte. Conséquence : un site dont la
+  carte est réglée « masqué » n'a pas de mention, donc pas de lien ; la page
+  reste à son adresse. « Mes sites » lit l'état de chaque site par sa carte
+  (une lecture par site) : la boutique n'a pas de liste des sites qui porte
+  `menuState`.

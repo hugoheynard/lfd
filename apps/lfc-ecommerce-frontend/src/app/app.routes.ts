@@ -247,6 +247,25 @@ export const routes: Routes = [
           import('./client/site-menu/sites-page/sites-page').then((m) => m.SitesPage),
       },
       {
+        // LA CARTE COMMUNE des sites du principal affiché (`carte-des-sites.md`, § 6).
+        path: 'mes-sites/carte-commune',
+        canActivate: [companyWorkspaceGuard],
+        data: pageTitle('commonMenu'),
+        loadComponent: () =>
+          import('./client/site-menu/common-menu-page/common-menu-page').then(
+            (m) => m.CommonMenuPage,
+          ),
+      },
+      {
+        // LA CARTE DE SON SITE, lue par ses membres (§ 3.2 : le site lit, il ne
+        // règle pas). Atteinte par la mention du rayon.
+        path: 'ma-carte',
+        canActivate: [companyWorkspaceGuard],
+        data: pageTitle('myMenu'),
+        loadComponent: () =>
+          import('./client/site-menu/my-menu-page/my-menu-page').then((m) => m.MyMenuPage),
+      },
+      {
         path: 'mes-sites/:subAccountId/carte',
         canActivate: [companyWorkspaceGuard],
         data: pageTitle('siteMenu'),

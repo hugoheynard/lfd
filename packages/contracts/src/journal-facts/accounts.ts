@@ -2,7 +2,11 @@ import { z } from "zod";
 
 import { deferredTermSchema } from "../company.js";
 import { COLLECTION_FORMS, companyFollowAspectSchema } from "../sub-accounts.js";
-import { SUB_ACCOUNT_MENU_MODES, SUB_ACCOUNT_OFF_MENU_DISPLAYS } from "../sub-account-menu.js";
+import {
+  SITE_MENU_STATES,
+  SUB_ACCOUNT_MENU_MODES,
+  SUB_ACCOUNT_OFF_MENU_DISPLAYS,
+} from "../sub-account-menu.js";
 import { DOORSTEP_RULES } from "../delivery-doorstep-rule.js";
 import { ADDRESS_POINT_KINDS } from "../delivery-address-suggestions.js";
 import { companyMemberRoleSchema } from "../company-member.js";
@@ -313,6 +317,27 @@ export const ACCOUNTS_AND_CARTS_FACTS = {
       included: count(),
       excluded: count(),
     }),
+  ),
+  /**
+   * La carte commune des sites d'un principal est posée, entière — par le
+   * staff ou par le principal (`carte-des-sites.md`, § 6). Le sujet est le
+   * PRINCIPAL ; la charge a la forme de `company.sub_account_menu_set`.
+   */
+  "company.principal_sites_menu_set": fact(
+    payload({
+      subjectLabel: subjectLabel(),
+      mode: z.enum(SUB_ACCOUNT_MENU_MODES),
+      offMenu: z.enum(SUB_ACCOUNT_OFF_MENU_DISPLAYS),
+      included: count(),
+      excluded: count(),
+    }),
+  ),
+  /**
+   * Un site suit la carte commune de son principal (`follows_common`) ou
+   * reprend sa carte propre (`own`) — § 6.1. Le sujet est le SITE.
+   */
+  "company.sub_account_menu_state_set": fact(
+    payload({ subjectLabel: subjectLabel(), state: z.enum(SITE_MENU_STATES) }),
   ),
   /** La case « Compte de groupe, sans livraison » (§4), cochée ou décochée. */
   "company.group_without_delivery_set": fact(

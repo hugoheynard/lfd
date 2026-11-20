@@ -100,6 +100,8 @@ const KEYS: Readonly<Record<PageTitleKey, true>> = {
   connection: true,
   sites: true,
   siteMenu: true,
+  commonMenu: true,
+  myMenu: true,
 };
 
 function isPageTitleKey(value: unknown): value is PageTitleKey {

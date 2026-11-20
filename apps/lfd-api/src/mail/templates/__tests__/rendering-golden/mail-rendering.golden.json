@@ -328,6 +328,11 @@
       "subject": "Chalet — Carte modifiée sur un de vos sites",
       "htmlSha256": "d4b859b8eb837d97ae557558afbc47760110df99e750fa482fedfc77435f46f2",
       "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
+    },
+    "sites_menu_changed": {
+      "subject": "Club — Carte commune de vos sites modifiée",
+      "htmlSha256": "d041a797660c04c3fbf08974a2f8d7265ae4d4c65d98810f89a28e167954405a",
+      "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
     }
   },
   "customer.access-opened": {

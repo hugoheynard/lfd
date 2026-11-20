@@ -1,0 +1,41 @@
+<ng-template clientBanner>
+  <app-client-banner-block [title]="copy().myTitle" [lead]="copy().myLead" />
+</ng-template>
+
+<div class="page">
+  @switch (screen()) {
+    @case ('loading') {
+      <fold-loading [message]="copy().loading" />
+    }
+    @case ('unavailable') {
+      <fold-empty-state
+        data-unavailable
+        [title]="copy().myUnavailableTitle"
+        [subtitle]="copy().myUnavailableBody"
+      >
+        <fold-icon empty-icon name="store" />
+      </fold-empty-state>
+    }
+    @case ('failed') {
+      <fold-empty-state
+        tone="alert"
+        data-menu-failed
+        [title]="copy().loadFailedTitle"
+        [subtitle]="copy().loadFailedBody"
+      >
+        <button foldButton emphasis="solid" intent="primary" type="button" (click)="retry()">
+          {{ copy().retry }}
+        </button>
+      </fold-empty-state>
+    }
+    @case ('none') {
+      <fold-empty-state data-no-menu [title]="copy().myNoneTitle" [subtitle]="copy().myNoneBody">
+        <fold-icon empty-icon name="store" />
+      </fold-empty-state>
+    }
+    @default {
+      <fold-callout variant="info" data-origin>{{ origin() }} {{ copy().myReadOnly }}</fold-callout>
+      <app-site-menu-editor [initial]="menu()" [canWrite]="false" />
+    }
+  }
+</div>

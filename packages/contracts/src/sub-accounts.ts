@@ -2,7 +2,7 @@ import { z } from "zod";
 
 import type { CompanyStatus } from "./customer-sheet.js";
 import { deliveryAddressPayloadSchema } from "./address.js";
-import type { SubAccountMenuSummary } from "./sub-account-menu.js";
+import type { SiteMenuStanding, SubAccountMenuSummary } from "./sub-account-menu.js";
 
 /**
  * **Les sous-comptes d'un compte pro** — plan
@@ -77,9 +77,11 @@ export interface SubAccountView {
    * la page Sous-comptes du principal les règle et les date (2026-10-20).
    */
   readonly follows: readonly FollowedAspectView[];
+  /** Quelle carte compte pour ce site : la sienne, la commune, ou aucune (§ 6.1). */
+  readonly menuState: SiteMenuStanding;
   /**
-   * La carte du site, résumée ; `null` tant qu'aucune carte n'a été posée.
-   * Lue dans la même requête que la liste.
+   * La carte qui compte pour ce site (`menuState`), résumée — sa carte propre
+   * ou la carte commune du principal ; `null` quand `menuState` vaut `none`.
    */
   readonly menu: SubAccountMenuSummary | null;
 }

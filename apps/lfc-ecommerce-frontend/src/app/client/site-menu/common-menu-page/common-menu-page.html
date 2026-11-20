@@ -1,0 +1,38 @@
+<ng-template clientBanner>
+  <app-client-banner-block [title]="copy().commonPageTitle" [lead]="copy().commonPageLead" />
+</ng-template>
+
+<div class="page">
+  <fold-back-link routerLink="/mes-sites" [label]="copy().back" />
+
+  @switch (screen()) {
+    @case ('loading') {
+      <fold-loading [message]="copy().loading" />
+    }
+    @case ('unknown') {
+      <fold-empty-state
+        data-not-principal
+        [title]="copy().notPrincipalTitle"
+        [subtitle]="copy().notPrincipalBody"
+      >
+        <fold-icon empty-icon name="lock" />
+      </fold-empty-state>
+    }
+    @case ('failed') {
+      <fold-empty-state
+        tone="alert"
+        data-menu-failed
+        [title]="copy().loadFailedTitle"
+        [subtitle]="copy().loadFailedBody"
+      >
+        <button foldButton emphasis="solid" intent="primary" type="button" (click)="retry()">
+          {{ copy().retry }}
+        </button>
+      </fold-empty-state>
+    }
+    @default {
+      <fold-callout variant="info" data-common-explain>{{ copy().commonExplain }}</fold-callout>
+      <app-site-menu-editor [initial]="initial()" [save]="save" />
+    }
+  }
+</div>

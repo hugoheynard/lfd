@@ -4,7 +4,7 @@
  * lot C3).
  *
  * - le propriétaire et l'admin du principal l'écrivent ; un membre du site,
- *   même son propriétaire, est refusé (403) — le test qui tombe si quelqu'un
+ *   même son propriétaire, est refusé en écriture (403) et la lit — le test qui tombe si quelqu'un
  *   juge par le rôle effectif ; un `orders` du principal aussi ;
  * - un principal étranger reçoit le refus d'une société inconnue (mur tenant) ;
  * - le staff l'écrit depuis la fiche, et la relit ;
@@ -100,12 +100,12 @@ describe("la carte d'un site, réglée depuis son principal", () => {
     expect(view.menu).toMatchObject({ ...payload, updatedBy: "principal" });
   });
 
-  it("🔴 le propriétaire du site lui-même est refusé, en écriture comme en lecture", async () => {
+  it("🔴 le propriétaire du site lui-même est refusé en écriture ; il la lit (Hugo, 2026-11-20)", async () => {
     const refused = await putAs(SITE_OWNER, await closingFamilyOfX()).expect(403);
     expect(jsonBody<{ code: string }>(refused).code).toBe(
       "account.sub_account_menu.principal_admin_required",
     );
-    await ctx.asSub(SITE_OWNER).get(`/companies/${site}/menu`).expect(403);
+    await ctx.asSub(SITE_OWNER).get(`/companies/${site}/menu`).expect(200);
     expect(await ctx.prisma.subAccountMenu.count({ where: { companyId: site } })).toBe(0);
   });
 

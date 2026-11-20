@@ -1889,6 +1889,13 @@
           "variables": []
         },
         {
+          "key": "shop.siteMenuLink",
+          "fr": "Voir la carte de mon site",
+          "en": "See my site’s menu",
+          "it": "Vedi la carta del mio sito",
+          "variables": []
+        },
+        {
           "key": "shop.shelfLeft",
           "fr": "Plus que {left} aujourd’hui",
           "en": "Only {left} left today",
@@ -5250,6 +5257,20 @@
           "fr": "Carte du site — La Folie Coffee",
           "en": "Site menu — La Folie Coffee",
           "it": "Carta del sito — La Folie Coffee",
+          "variables": []
+        },
+        {
+          "key": "chrome.pageTitles.commonMenu",
+          "fr": "Carte commune des sites — La Folie Coffee",
+          "en": "Shared site menu — La Folie Coffee",
+          "it": "Carta comune dei siti — La Folie Coffee",
+          "variables": []
+        },
+        {
+          "key": "chrome.pageTitles.myMenu",
+          "fr": "Ma carte — La Folie Coffee",
+          "en": "My menu — La Folie Coffee",
+          "it": "La mia carta — La Folie Coffee",
           "variables": []
         }
       ],
@@ -12344,6 +12365,237 @@
           "fr": "Carte enregistrée.",
           "en": "Menu saved.",
           "it": "Carta salvata.",
+          "variables": []
+        },
+        {
+          "key": "siteMenu.catalogueReadSubtitle",
+          "fr": "Ouvert : le site peut le commander. Fermé : il est hors de la carte.",
+          "en": "Open: the site may order it. Closed: it is off the menu.",
+          "it": "Aperto: il sito può ordinarlo. Chiuso: è fuori carta.",
+          "variables": []
+        },
+        {
+          "key": "siteMenu.commonTitle",
+          "fr": "Carte commune des sites",
+          "en": "Shared site menu",
+          "it": "Carta comune dei siti",
+          "variables": []
+        },
+        {
+          "key": "siteMenu.commonNone",
+          "fr": "Aucune carte commune : les sites sans carte propre commandent tout ce que la boutique leur sert.",
+          "en": "No shared menu: sites without their own menu may order everything the shop serves them.",
+          "it": "Nessuna carta comune: i siti senza carta propria possono ordinare tutto ciò che il negozio offre loro.",
+          "variables": []
+        },
+        {
+          "key": "siteMenu.commonSet",
+          "fr": "Une carte commune est posée ({entries} entrées) : elle vaut pour chaque site sans carte propre.",
+          "en": "A shared menu is set ({entries} entries): it applies to every site without its own menu.",
+          "it": "È impostata una carta comune ({entries} voci): vale per ogni sito senza carta propria.",
+          "variables": ["entries"]
+        },
+        {
+          "key": "siteMenu.commonExplain",
+          "fr": "Une carte propre posée sur un site masque la carte commune. Pour exempter un site, faites-lui une carte propre « Tout, sauf… » sans exclusion.",
+          "en": "A site’s own menu hides the shared menu. To exempt a site, give it its own “Everything except…” menu with no exclusion.",
+          "it": "La carta propria di un sito nasconde la carta comune. Per esentare un sito, dagli una carta propria «Tutto, tranne…» senza esclusioni.",
+          "variables": []
+        },
+        {
+          "key": "siteMenu.openCommon",
+          "fr": "Régler la carte commune",
+          "en": "Set the shared menu",
+          "it": "Imposta la carta comune",
+          "variables": []
+        },
+        {
+          "key": "siteMenu.stateCommon",
+          "fr": "Carte commune",
+          "en": "Shared menu",
+          "it": "Carta comune",
+          "variables": []
+        },
+        {
+          "key": "siteMenu.stateOwn",
+          "fr": "Carte propre",
+          "en": "Own menu",
+          "it": "Carta propria",
+          "variables": []
+        },
+        {
+          "key": "siteMenu.stateNone",
+          "fr": "Pas de carte",
+          "en": "No menu",
+          "it": "Nessuna carta",
+          "variables": []
+        },
+        {
+          "key": "siteMenu.statesFailed",
+          "fr": "La carte de certains sites n’a pas pu être lue.",
+          "en": "The menu of some sites could not be read.",
+          "it": "Non è stato possibile leggere la carta di alcuni siti.",
+          "variables": []
+        },
+        {
+          "key": "siteMenu.makeOwn",
+          "fr": "Faire une carte propre",
+          "en": "Give it its own menu",
+          "it": "Crea una carta propria",
+          "variables": []
+        },
+        {
+          "key": "siteMenu.editOwn",
+          "fr": "Régler sa carte",
+          "en": "Set its menu",
+          "it": "Imposta la sua carta",
+          "variables": []
+        },
+        {
+          "key": "siteMenu.followCommon",
+          "fr": "Revenir à la carte commune",
+          "en": "Back to the shared menu",
+          "it": "Torna alla carta comune",
+          "variables": []
+        },
+        {
+          "key": "siteMenu.followed",
+          "fr": "Le site suit de nouveau la carte commune.",
+          "en": "The site follows the shared menu again.",
+          "it": "Il sito segue di nuovo la carta comune.",
+          "variables": []
+        },
+        {
+          "key": "siteMenu.lineCommon",
+          "fr": "Ce site suit la carte commune. Enregistrer ici lui fait une carte propre, qui remplace la commune.",
+          "en": "This site follows the shared menu. Saving here gives it its own menu, which replaces the shared one.",
+          "it": "Questo sito segue la carta comune. Salvare qui gli dà una carta propria, che sostituisce quella comune.",
+          "variables": []
+        },
+        {
+          "key": "siteMenu.lineOwn",
+          "fr": "Ce site a sa carte propre.",
+          "en": "This site has its own menu.",
+          "it": "Questo sito ha una carta propria.",
+          "variables": []
+        },
+        {
+          "key": "siteMenu.lineOwnMasks",
+          "fr": "Ce site a sa carte propre : elle masque la carte commune.",
+          "en": "This site has its own menu: it hides the shared menu.",
+          "it": "Questo sito ha una carta propria: nasconde la carta comune.",
+          "variables": []
+        },
+        {
+          "key": "siteMenu.lineExempt",
+          "fr": "Elle ne restreint rien : ce site est exempté de la carte commune.",
+          "en": "It restricts nothing: this site is exempt from the shared menu.",
+          "it": "Non limita nulla: questo sito è esentato dalla carta comune.",
+          "variables": []
+        },
+        {
+          "key": "siteMenu.lineNone",
+          "fr": "Ce site n’a pas de carte : il commande tout ce que la boutique lui sert.",
+          "en": "This site has no menu: it may order everything the shop serves it.",
+          "it": "Questo sito non ha una carta: può ordinare tutto ciò che il negozio gli offre.",
+          "variables": []
+        },
+        {
+          "key": "siteMenu.commonPageTitle",
+          "fr": "Carte commune des sites",
+          "en": "Shared site menu",
+          "it": "Carta comune dei siti",
+          "variables": []
+        },
+        {
+          "key": "siteMenu.commonPageLead",
+          "fr": "Ce que vos sites commandent, sauf ceux qui ont leur carte propre.",
+          "en": "What your sites may order, except those with their own menu.",
+          "it": "Ciò che i tuoi siti ordinano, tranne quelli con una carta propria.",
+          "variables": []
+        },
+        {
+          "key": "siteMenu.commonSaved",
+          "fr": "Carte commune enregistrée.",
+          "en": "Shared menu saved.",
+          "it": "Carta comune salvata.",
+          "variables": []
+        },
+        {
+          "key": "siteMenu.notPrincipalTitle",
+          "fr": "Pas de carte commune ici",
+          "en": "No shared menu here",
+          "it": "Nessuna carta comune qui",
+          "variables": []
+        },
+        {
+          "key": "siteMenu.notPrincipalBody",
+          "fr": "Vous ne réglez pas la carte des sites de ce compte, ou il n’a pas de sites.",
+          "en": "You do not set the menu of this account’s sites, or it has no sites.",
+          "it": "Non imposti la carta dei siti di questo account, oppure non ha siti.",
+          "variables": []
+        },
+        {
+          "key": "siteMenu.myTitle",
+          "fr": "Ma carte",
+          "en": "My menu",
+          "it": "La mia carta",
+          "variables": []
+        },
+        {
+          "key": "siteMenu.myLead",
+          "fr": "Ce que votre site peut commander.",
+          "en": "What your site may order.",
+          "it": "Ciò che il tuo sito può ordinare.",
+          "variables": []
+        },
+        {
+          "key": "siteMenu.myFromCommon",
+          "fr": "Cette carte est la carte commune des sites de votre compte principal.",
+          "en": "This menu is the shared menu of your main account’s sites.",
+          "it": "Questa carta è la carta comune dei siti del tuo account principale.",
+          "variables": []
+        },
+        {
+          "key": "siteMenu.myOwn",
+          "fr": "Cette carte est propre à votre site.",
+          "en": "This menu is your site’s own.",
+          "it": "Questa carta è propria del tuo sito.",
+          "variables": []
+        },
+        {
+          "key": "siteMenu.myReadOnly",
+          "fr": "Seul votre compte principal règle cette carte.",
+          "en": "Only your main account sets this menu.",
+          "it": "Solo il tuo account principale imposta questa carta.",
+          "variables": []
+        },
+        {
+          "key": "siteMenu.myNoneTitle",
+          "fr": "Pas de carte",
+          "en": "No menu",
+          "it": "Nessuna carta",
+          "variables": []
+        },
+        {
+          "key": "siteMenu.myNoneBody",
+          "fr": "Votre site commande tout ce que la boutique lui sert.",
+          "en": "Your site may order everything the shop serves it.",
+          "it": "Il tuo sito può ordinare tutto ciò che il negozio gli offre.",
+          "variables": []
+        },
+        {
+          "key": "siteMenu.myUnavailableTitle",
+          "fr": "Pas de carte à lire ici",
+          "en": "No menu to read here",
+          "it": "Nessuna carta da leggere qui",
+          "variables": []
+        },
+        {
+          "key": "siteMenu.myUnavailableBody",
+          "fr": "Cet espace n’est pas un site rattaché à un compte principal.",
+          "en": "This space is not a site attached to a main account.",
+          "it": "Questo spazio non è un sito collegato a un account principale.",
           "variables": []
         }
       ],

@@ -6,12 +6,41 @@
   @if (!manageable.settled()) {
     <fold-loading [message]="copy().loading" />
   } @else {
-    @for (site of manageable.sites(); track site.id) {
-      <fold-card data-site>
+    @if (manageable.sites().length > 0) {
+      <fold-card data-common>
+        <fold-element-title cardHeader variant="title" [title]="copy().commonTitle">
+          <a
+            titleAction
+            foldButton
+            size="sm"
+            emphasis="solid"
+            intent="primary"
+            data-open-common
+            routerLink="/mes-sites/carte-commune"
+          >
+            {{ copy().openCommon }}
+          </a>
+        </fold-element-title>
+        <div class="body">
+          @if (commonLine(); as line) {
+            <p class="line">{{ line }}</p>
+          }
+          <p class="line">{{ copy().commonExplain }}</p>
+        </div>
+      </fold-card>
+    }
+    @if (readFailed()) {
+      <fold-callout variant="alert" data-read-failed>{{ copy().statesFailed }}</fold-callout>
+    }
+    @if (switchRefusal(); as message) {
+      <fold-callout variant="alert" announce data-switch-refusal>{{ message }}</fold-callout>
+    }
+    @for (site of rows(); track site.id) {
+      <fold-card data-site [attr.data-state]="site.state">
         <fold-element-title
           cardHeader
           variant="title"
-          [title]="nameOf(site)"
+          [title]="site.name"
           [subtitle]="site.raisonSociale"
         >
           <a
@@ -19,11 +48,31 @@
             foldButton
             size="sm"
             emphasis="outline"
+            data-open-menu
             [routerLink]="['/mes-sites', site.id, 'carte']"
           >
-            {{ copy().openMenu }}
+            {{ site.state === 'own' ? copy().editOwn : copy().makeOwn }}
           </a>
         </fold-element-title>
+        @if (site.state !== null) {
+          <div class="body">
+            <fold-badge data-menu-state [variant]="site.stateTone" [content]="site.stateLabel" />
+            @if (site.canFollowCommon) {
+              <button
+                foldButton
+                size="sm"
+                emphasis="outline"
+                intent="neutral"
+                type="button"
+                data-follow-common
+                [disabled]="switching() !== null"
+                (click)="followCommon(site.id)"
+              >
+                {{ copy().followCommon }}
+              </button>
+            }
+          </div>
+        }
       </fold-card>
     } @empty {
       <fold-empty-state [title]="copy().sitesEmptyTitle" [subtitle]="copy().sitesEmptyBody">

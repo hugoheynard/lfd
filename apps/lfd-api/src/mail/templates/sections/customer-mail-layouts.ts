@@ -34,6 +34,7 @@ const GESTURES = {
   subscription_resumed: "Abonnement repris",
   subscription_stopped: "Abonnement arrêté",
   menu_changed: "Carte modifiée",
+  sites_menu_changed: "Carte commune modifiée",
 };
 
 /** Les deux schémas SEPA d'un mandat. */
@@ -276,6 +277,7 @@ export const CUSTOMER_MAIL_LAYOUTS: Readonly<
             bodyWithReferenceByTeam: "Fait par notre équipe, avec une référence",
           }),
           ...variantsOf("action", GESTURES),
+          { path: "bodyByTeamOf.sites_menu_changed", variant: GESTURES.sites_menu_changed },
         ],
       },
       {
@@ -283,6 +285,7 @@ export const CUSTOMER_MAIL_LAYOUTS: Readonly<
         texts: [
           ...texts("siteLabel", "referenceLabel"),
           { path: "referenceLabelOf.problem_reported", variant: GESTURES.problem_reported },
+          { path: "siteLabelOf.sites_menu_changed", variant: GESTURES.sites_menu_changed },
         ],
       },
       { id: "footer", texts: texts("footer") },

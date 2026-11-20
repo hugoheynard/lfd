@@ -47,6 +47,7 @@ const GESTURE_LABELS: Readonly<Record<SubAccountGesture, string>> = {
   subscription_resumed: "Abonnement repris",
   subscription_stopped: "Abonnement arrêté",
   menu_changed: "Carte du site modifiée",
+  sites_menu_changed: "Carte commune des sites modifiée",
 };
 
 const GESTURES = Object.keys(GESTURE_LABELS).filter((gesture): gesture is SubAccountGesture =>
@@ -73,6 +74,8 @@ function gestureCase(gesture: SubAccountGesture): MailSpecimenCase<"customer.sub
     ...data,
     gesture,
     reference: gesture === "problem_reported" ? data.reference : null,
+    // La carte commune ne se signale que posée par l'équipe (§ 6.1).
+    byTeam: gesture === "sites_menu_changed" ? true : data.byTeam,
   }));
 }
 

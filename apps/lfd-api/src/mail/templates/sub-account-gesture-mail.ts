@@ -58,7 +58,8 @@ export function renderSubAccountGestureMail(
 function bodyOf(data: SubAccountGestureMailData, copy: SubAccountGestureCopy): string {
   const values = { site: data.siteName, action: copy.action[data.gesture] };
   if (data.reference === null) {
-    return fill(data.byTeam ? copy.bodyByTeam : copy.body, values);
+    const byTeam = copy.bodyByTeamOf[data.gesture] ?? copy.bodyByTeam;
+    return fill(data.byTeam ? byTeam : copy.body, values);
   }
   const frame = data.byTeam ? copy.bodyWithReferenceByTeam : copy.bodyWithReference;
   return fill(frame, { ...values, reference: data.reference });
@@ -69,7 +70,7 @@ function rowsOf(
   copy: SubAccountGestureCopy,
 ): readonly LayoutRow[] {
   return [
-    { label: copy.siteLabel, value: data.siteName },
+    { label: copy.siteLabelOf[data.gesture] ?? copy.siteLabel, value: data.siteName },
     ...(data.reference === null
       ? []
       : [

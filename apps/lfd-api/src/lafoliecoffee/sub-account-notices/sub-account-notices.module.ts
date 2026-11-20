@@ -21,7 +21,10 @@ import { NotifyPrincipalOnMandateProofAttached } from "./application/handlers/no
 import { NotifyPrincipalOnSubscriptionCreated } from "./application/handlers/notify-principal-on-subscription-created.handler.js";
 import { NotifyPrincipalOnSubscriptionStatusChanged } from "./application/handlers/notify-principal-on-subscription-status-changed.handler.js";
 import { NotifyPrincipalOnSubscriptionDeleted } from "./application/handlers/notify-principal-on-subscription-deleted.handler.js";
-import { NotifyPrincipalOnMenuChangedByTeam } from "./application/handlers/notify-principal-on-menu-changed-by-team.handler.js";
+import {
+  NotifyPrincipalOnMenuChangedByTeam,
+  NotifyPrincipalOnSitesMenuChangedByTeam,
+} from "./application/handlers/notify-principal-on-menu-changed-by-team.handler.js";
 import { NotifyPrincipalOnOrderProblemReported } from "./application/handlers/notify-principal-on-order-problem-reported.handler.js";
 import { SubAccountNoticeDispatcher } from "./application/services/sub-account-notice.dispatcher.js";
 import { NoticeSendJournal } from "./domain/ports/notice-send.journal.js";
@@ -77,6 +80,7 @@ import { AdminSubAccountNoticesController } from "./http/admin-sub-account-notic
     NotifyPrincipalOnSubscriptionStatusChanged,
     NotifyPrincipalOnSubscriptionDeleted,
     NotifyPrincipalOnMenuChangedByTeam,
+    NotifyPrincipalOnSitesMenuChangedByTeam,
     { provide: NoticeSendJournal, useClass: PrismaNoticeSendJournal },
   ],
 })

@@ -39,6 +39,8 @@ import {
   RecordingSiteMandates,
 } from "./hierarchy-doubles.js";
 import { randomUUID } from "node:crypto";
+import { InMemoryMenus } from "./menu-doubles.js";
+import { SubAccountMenu } from "../../../domain/entities/sub-account-menu.js";
 import { inMemoryIntents } from "../../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
 
 /** L'horloge de la requête : les périodes s'ouvrent à SON instant, jamais à une date du calendrier. */
@@ -239,21 +241,54 @@ describe("Rattacher et détacher", () => {
   it("rattache sous le verrou, et journalise", async () => {
     const w = world([principalCompany(), chaletCompany(null)]);
 
-    await new AttachToParentHandler(w.companies, w.lock, w.events, new DirectUnitOfWork()).execute(
-      new AttachToParentCommand("chalet", "groupe"),
-    );
+    await new AttachToParentHandler(
+      w.companies,
+      w.lock,
+      new InMemoryMenus(),
+      w.events,
+      new DirectUnitOfWork(),
+    ).execute(new AttachToParentCommand("chalet", "groupe"));
 
     expect(w.log.calls[0]).toBe("lock");
     expect(w.companies.saved[0]?.parentCompanyId).toBe("groupe");
     expect(w.events.factTypes()).toEqual(["company.parent_attached"]);
   });
 
+  it("la carte propre d'un site rattaché dort : il suit la carte commune du nouveau principal", async () => {
+    const w = world([principalCompany(), chaletCompany(null)]);
+    const menus = new InMemoryMenus(
+      SubAccountMenu.reconstitute({
+        companyId: "chalet",
+        mode: "only",
+        offMenu: "hidden",
+        entries: [],
+        stamp: { author: { kind: "staff", staffId: "stf_0" }, at: clock.now() },
+        state: "own",
+      }),
+    );
+
+    await new AttachToParentHandler(
+      w.companies,
+      w.lock,
+      menus,
+      w.events,
+      new DirectUnitOfWork(),
+    ).execute(new AttachToParentCommand("chalet", "groupe"));
+
+    expect(menus.saved.map((menu) => menu.state)).toEqual(["follows_common"]);
+    expect(menus.saved[0]?.stamp.author).toEqual({ kind: "staff", staffId: "stf_0" });
+  });
+
   it("rattacher au principal qu'on a déjà ne change rien et ne s'inscrit pas", async () => {
     const w = world([principalCompany(), chaletCompany()]);
 
-    await new AttachToParentHandler(w.companies, w.lock, w.events, new DirectUnitOfWork()).execute(
-      new AttachToParentCommand("chalet", "groupe"),
-    );
+    await new AttachToParentHandler(
+      w.companies,
+      w.lock,
+      new InMemoryMenus(),
+      w.events,
+      new DirectUnitOfWork(),
+    ).execute(new AttachToParentCommand("chalet", "groupe"));
 
     expect(w.companies.saved).toEqual([]);
     expect(w.events.factTypes()).toEqual([]);

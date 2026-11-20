@@ -106,6 +106,16 @@ export const GESTURES = [
     "lafoliecoffee/account/http/admin-company-sub-account-menu.controller.ts",
   ],
   [
+    "lafoliecoffee/account/application/commands/set-sub-account-menu-state-by-staff.command.ts",
+    "SetSubAccountMenuStateByStaffCommand",
+    "lafoliecoffee/account/http/admin-company-sub-account-menu.controller.ts",
+  ],
+  [
+    "lafoliecoffee/account/application/commands/set-principal-sites-menu-by-staff.command.ts",
+    "SetPrincipalSitesMenuByStaffCommand",
+    "lafoliecoffee/account/http/admin-company-sites-menu.controller.ts",
+  ],
+  [
     "lafoliecoffee/orders/application/commands/request-no-show-notice.command.ts",
     "RequestNoShowNoticeCommand",
     "lafoliecoffee/orders/http/admin-counter-no-show.controller.ts",

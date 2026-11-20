@@ -1,0 +1,154 @@
+<div class="editor">
+  <fold-callout variant="info" data-summary>{{ summary() }}</fold-callout>
+  @if (closedAll()) {
+    <fold-callout variant="warning" data-closed-all>{{ copy().closedAll }}</fold-callout>
+  }
+
+  <fold-card>
+    <fold-element-title cardHeader variant="title" [title]="copy().settingsTitle" />
+    <div class="settings">
+      <div class="setting">
+        <span class="setting-label">{{ copy().modeLabel }}</span>
+        @if (canWrite()) {
+          <fold-view-toggle
+            data-mode
+            [options]="modeOptions()"
+            [value]="draft().mode"
+            [ariaLabel]="copy().modeLabel"
+            (valueChange)="setMode($event)"
+          />
+        } @else {
+          <fold-badge variant="neutral" data-mode-read [content]="modeLabel()" />
+        }
+      </div>
+      <div class="setting">
+        <span class="setting-label">{{ copy().offMenuLabel }}</span>
+        @if (canWrite()) {
+          <fold-view-toggle
+            data-off-menu
+            [options]="offMenuOptions()"
+            [value]="draft().offMenu"
+            [ariaLabel]="copy().offMenuLabel"
+            (valueChange)="setOffMenu($event)"
+          />
+        } @else {
+          <fold-badge variant="neutral" [content]="offMenuLabel()" />
+        }
+      </div>
+      @if (canWrite() && sources().length > 0) {
+        <fold-listbox
+          size="sm"
+          [label]="copy().copyLabel"
+          [placeholder]="copy().copyPlaceholder"
+          [options]="sources()"
+          [value]="copiedFrom()"
+          (selectionChange)="copyFrom($event)"
+        />
+      }
+      @if (copyNotice(); as notice) {
+        <fold-callout data-copy-notice [variant]="notice.variant">{{ notice.text }}</fold-callout>
+      }
+    </div>
+  </fold-card>
+
+  <fold-card>
+    <fold-element-title
+      cardHeader
+      variant="title"
+      [title]="copy().catalogueTitle"
+      [subtitle]="canWrite() ? copy().catalogueSubtitle : copy().catalogueReadSubtitle"
+    />
+    <div class="families">
+      @for (family of families(); track family.id) {
+        <fold-disclosure class="family" [style.--depth]="family.depth" data-family>
+          <span summary class="family-name">{{ family.name }}</span>
+          <div class="rows">
+            <div class="row">
+              <span class="row-name">{{ copy().familyWhole }}</span>
+              @if (canWrite()) {
+                <fold-view-toggle
+                  size="sm"
+                  [options]="effectOptions()"
+                  [value]="family.effect"
+                  [ariaLabel]="family.name"
+                  (valueChange)="setFamily(family.id, $event)"
+                />
+              } @else {
+                <fold-badge variant="neutral" [content]="effectLabel(family.effect)" />
+              }
+            </div>
+            @for (item of family.items; track item.sku) {
+              <div class="row" data-item>
+                <span class="row-name">{{ item.name }}</span>
+                <fold-badge
+                  [variant]="item.open ? 'success' : 'neutral'"
+                  [content]="item.open ? copy().open : copy().closed"
+                />
+                @if (canWrite()) {
+                  <fold-view-toggle
+                    size="sm"
+                    [options]="effectOptions()"
+                    [value]="item.effect"
+                    [ariaLabel]="item.name"
+                    (valueChange)="setItem(item.sku, $event)"
+                  />
+                }
+              </div>
+            }
+          </div>
+        </fold-disclosure>
+      } @empty {
+        <fold-empty-state [title]="copy().catalogueEmpty">
+          <fold-icon empty-icon name="store" />
+        </fold-empty-state>
+      }
+    </div>
+  </fold-card>
+
+  @if (canWrite() && stale().length > 0) {
+    <fold-card data-stale>
+      <fold-element-title
+        cardHeader
+        variant="title"
+        [title]="copy().staleTitle"
+        [subtitle]="copy().staleSubtitle"
+      />
+      <div class="rows">
+        @for (entry of stale(); track entry.level + entry.ref) {
+          <div class="row">
+            <s class="row-name">{{ levelLabel(entry.level) }} · {{ entry.ref }}</s>
+            <button
+              foldButton
+              size="sm"
+              emphasis="outline"
+              intent="neutral"
+              type="button"
+              (click)="remove(entry)"
+            >
+              {{ copy().staleRemove }}
+            </button>
+          </div>
+        }
+      </div>
+    </fold-card>
+  }
+
+  @if (refusal(); as message) {
+    <fold-callout variant="alert" announce data-refusal>{{ message }}</fold-callout>
+  }
+  @if (canWrite() && save() !== null) {
+    <div class="actions">
+      <button
+        foldButton
+        emphasis="solid"
+        intent="primary"
+        type="button"
+        data-save
+        [disabled]="!dirty() || saving()"
+        (click)="submit()"
+      >
+        {{ copy().save }}
+      </button>
+    </div>
+  }
+</div>

@@ -7,7 +7,7 @@
       <fold-empty-state
         data-no-parent
         title="Pas de carte pour ce compte"
-        subtitle="Seul un sous-compte a une carte : elle restreint ce qu’un site peut commander sous son compte principal."
+        subtitle="Seul un sous-compte a une carte : elle restreint ce qu’un site peut commander sous son compte principal. La carte commune de ses sites se règle dans l’onglet « Carte des sites »."
       >
         <fold-icon empty-icon name="store" />
       </fold-empty-state>
@@ -23,192 +23,68 @@
       </fold-empty-state>
     }
     @default {
-      <fold-callout variant="info" data-summary>{{ summary() }}</fold-callout>
-      @if (closedAll()) {
-        <fold-callout variant="warning" data-closed-all>
-          « Seulement les inclusions » sans aucune inclusion : ce site ne peut plus rien commander.
-        </fold-callout>
-      }
-
-      <fold-card>
-        <fold-element-title
-          cardHeader
-          variant="title"
-          icon="list"
-          title="Réglage de la carte"
-          subtitle="Le principal la règle aussi depuis son espace ; le dernier enregistrement fait foi."
-        />
-        <div class="settings">
-          <div class="setting">
-            <span class="setting-label">Forme</span>
-            <fold-view-toggle
-              data-mode
-              ariaLabel="Forme de la carte"
-              [options]="modeOptions"
-              [value]="draft().mode"
-              (valueChange)="setMode($event)"
-            />
-          </div>
-          <div class="setting">
-            <span class="setting-label">Un article hors carte, pour ce site, est</span>
-            <fold-view-toggle
-              data-off-menu
-              ariaLabel="Affichage hors carte"
-              [options]="offMenuOptions"
-              [value]="draft().offMenu"
-              (valueChange)="setOffMenu($event)"
-            />
-          </div>
-          @if (siblings().length > 0) {
-            <fold-listbox
-              size="sm"
-              label="Copier la carte d’un autre site du même principal"
-              placeholder="Choisir un site"
-              [options]="siblings()"
-              [value]="copiedFrom()"
-              (selectionChange)="copyFrom($event)"
-            />
-          }
-          @if (copyNotice(); as notice) {
-            <fold-callout data-copy-notice [variant]="notice.variant">{{
-              notice.text
-            }}</fold-callout>
-          }
-        </div>
-      </fold-card>
-
-      <fold-card>
-        <fold-element-title
-          cardHeader
-          variant="title"
-          title="Catalogue vendu aux pros"
-          subtitle="Chaque famille, produit ou déclinaison hérite, est inclus ou exclu ; le plus fin l’emporte."
-        />
-        <div class="families">
-          @for (family of families(); track family.id) {
-            <fold-disclosure data-family>
-              <span summary>{{ family.name }}</span>
-              <div class="rows">
-                <div class="row">
-                  <span class="row-name">Toute la famille</span>
-                  <ng-container
-                    *ngTemplateOutlet="
-                      effectControl;
-                      context: {
-                        level: 'family',
-                        ref: family.id,
-                        effect: family.effect,
-                        name: family.name,
-                      }
-                    "
-                  />
-                </div>
-                @for (product of family.products; track product.productSku) {
-                  <div class="row" [attr.data-product]="product.productSku">
-                    <span class="row-name">{{ product.name }}</span>
-                    <fold-badge [variant]="product.openTone" [content]="product.openLabel" />
-                    <ng-container
-                      *ngTemplateOutlet="
-                        effectControl;
-                        context: {
-                          level: 'product',
-                          ref: product.productSku,
-                          effect: product.effect,
-                          name: product.name,
-                        }
-                      "
-                    />
-                  </div>
-                  @for (variant of product.variants; track variant.sku) {
-                    <div class="row variant" [attr.data-sku]="variant.sku">
-                      <span class="row-name">{{ variant.name }} · {{ variant.sku }}</span>
-                      <fold-badge
-                        [variant]="variant.open ? 'success' : 'neutral'"
-                        [content]="variant.open ? 'Ouvert' : 'Hors carte'"
-                      />
-                      <ng-container
-                        *ngTemplateOutlet="
-                          effectControl;
-                          context: {
-                            level: 'sku',
-                            ref: variant.sku,
-                            effect: variant.effect,
-                            name: variant.name,
-                          }
-                        "
-                      />
-                    </div>
-                  }
-                }
-              </div>
-            </fold-disclosure>
-          } @empty {
-            <fold-empty-state title="Le catalogue publié est vide">
-              <fold-icon empty-icon name="store" />
-            </fold-empty-state>
-          }
-        </div>
-      </fold-card>
-
-      @if (stale().length > 0) {
-        <fold-card data-stale>
-          <fold-element-title
-            cardHeader
-            variant="title"
-            title="Entrées sans article"
-            subtitle="Le catalogue ne les livre plus : elles dorment. Retirez-les si elles n’ont plus lieu d’être."
-          />
-          <div class="rows">
-            @for (entry of stale(); track entry.level + entry.ref) {
-              <div class="row">
-                <s class="row-name">{{ levelLabel(entry.level) }} · {{ entry.ref }}</s>
-                @if (canWrite()) {
-                  <button
-                    foldButton
-                    size="sm"
-                    emphasis="outline"
-                    type="button"
-                    (click)="remove(entry)"
-                  >
-                    Retirer
-                  </button>
-                }
-              </div>
+      <fold-callout variant="info" data-menu-state>
+        {{ stateLine() }}
+        @if (canWrite()) {
+          <div actions class="gestures">
+            @if (readsCommon()) {
+              <button foldButton size="sm" type="button" data-make-own (click)="makeOwn()">
+                Faire une carte propre
+              </button>
+            }
+            @if (making()) {
+              <button
+                foldButton
+                size="sm"
+                emphasis="outline"
+                type="button"
+                data-cancel-own
+                (click)="cancelMaking()"
+              >
+                Garder la carte commune
+              </button>
+            }
+            @if (canFollowCommon()) {
+              <button
+                foldButton
+                size="sm"
+                emphasis="outline"
+                type="button"
+                data-follow-common
+                [disabled]="switching()"
+                (click)="followCommon()"
+              >
+                Revenir à la carte commune
+              </button>
             }
           </div>
-        </fold-card>
+        }
+      </fold-callout>
+      @if (switchRefusal(); as message) {
+        <fold-callout variant="alert" announce data-switch-refusal>{{ message }}</fold-callout>
       }
-
-      @if (refusal(); as message) {
-        <fold-callout variant="alert" announce data-refusal>{{ message }}</fold-callout>
-      }
-      @if (canWrite()) {
-        <div class="actions">
-          <button
-            foldButton
-            type="button"
-            data-save
-            [disabled]="!dirty() || saving()"
-            (click)="save()"
-          >
-            Enregistrer la carte
-          </button>
-        </div>
+      @if (catalogue(); as catalogue) {
+        @if (readsCommon()) {
+          <app-menu-editor
+            data-common-read
+            settingsSubtitle="La carte commune du principal, lue ici : elle se règle sur sa fiche."
+            [catalogue]="catalogue"
+            [initial]="commonDraft()"
+          />
+        } @else {
+          <app-menu-editor
+            data-own-editor
+            settingsSubtitle="Le principal la règle aussi depuis son espace ; le dernier enregistrement fait foi."
+            [catalogue]="catalogue"
+            [initial]="ownDraft()"
+            [unsaved]="ownUnsaved()"
+            [canWrite]="canWrite()"
+            [save]="saveOwn"
+            [sources]="siblings()"
+            [readSource]="readSibling"
+          />
+        }
       }
     }
   }
 </section>
-
-<ng-template #effectControl let-level="level" let-ref="ref" let-effect="effect" let-name="name">
-  @if (canWrite()) {
-    <fold-view-toggle
-      size="sm"
-      [options]="effectOptions"
-      [value]="effect"
-      [ariaLabel]="name"
-      (valueChange)="setEffect(level, ref, $event)"
-    />
-  } @else {
-    <fold-badge variant="neutral" [content]="effectLabel(effect)" />
-  }
-</ng-template>

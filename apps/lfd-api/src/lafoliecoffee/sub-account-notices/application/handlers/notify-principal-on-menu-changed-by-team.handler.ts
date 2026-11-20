@@ -1,12 +1,14 @@
 import { Injectable } from "@nestjs/common";
 
 import {
+  PRINCIPAL_SITES_MENU_SET,
   SiteGestureFact,
   SUB_ACCOUNT_MENU_SET,
 } from "../../../account/domain/events/site-gesture.fact.js";
 import { AcceptedMembersReader } from "../../../account/domain/ports/accepted-members.reader.js";
 import { CompanyLifecycleReader } from "../../../account/domain/ports/company-lifecycle.reader.js";
 import { Mail } from "../../../../mail/channels/requests/mail.js";
+import type { SubAccountGesture } from "../../../../mail/channels/templates/b2b-mails.js";
 import type { DurableDelivery } from "../../../../platform/outbox/durable-event.js";
 import {
   DurableHandler,
@@ -37,6 +39,11 @@ export const NOTIFY_PRINCIPAL_ON_MENU_CHANGED_BY_TEAM =
   subscriber: NOTIFY_PRINCIPAL_ON_MENU_CHANGED_BY_TEAM,
 })
 export class NotifyPrincipalOnMenuChangedByTeam implements DurableSubscriber {
+  /** Le geste que l'e-mail nomme. */
+  protected readonly gesture: SubAccountGesture = "menu_changed";
+  /** La clé d'e-mail, propre à chaque abonné. */
+  protected readonly mailKey: string = "sub-account-menu-notice";
+
   constructor(
     private readonly lifecycle: CompanyLifecycleReader,
     private readonly members: AcceptedMembersReader,
@@ -65,10 +72,30 @@ export class NotifyPrincipalOnMenuChangedByTeam implements DurableSubscriber {
       await this.mail.send({
         to: recipient.email,
         template: "customer.sub-account-gesture",
-        data: { gesture: "menu_changed", siteName: stamp.siteName, reference: null, byTeam: true },
+        data: { gesture: this.gesture, siteName: stamp.siteName, reference: null, byTeam: true },
         subjects: [{ type: "company", id: principalId }],
-        idempotencyKey: `sub-account-menu-notice:${delivery.eventId}:${recipient.userId}`,
+        idempotencyKey: `${this.mailKey}:${delivery.eventId}:${recipient.userId}`,
       });
     }
   }
+}
+
+/** Nom STABLE de l'abonné de la carte commune — clé de son reçu. */
+export const NOTIFY_PRINCIPAL_ON_SITES_MENU_CHANGED_BY_TEAM =
+  "b2b.sub-account-notices.on-sites-menu-changed-by-team";
+
+/**
+ * **L'équipe a changé la carte commune des sites → le principal est prévenu**
+ * (`carte-des-sites.md`, § 6.1) : la même règle et les mêmes destinataires
+ * que la carte d'un site, un e-mail qui nomme le principal. Un abonné à
+ * part parce qu'un abonné durable écoute un seul fait.
+ */
+@Injectable()
+@DurableHandler({
+  type: PRINCIPAL_SITES_MENU_SET,
+  subscriber: NOTIFY_PRINCIPAL_ON_SITES_MENU_CHANGED_BY_TEAM,
+})
+export class NotifyPrincipalOnSitesMenuChangedByTeam extends NotifyPrincipalOnMenuChangedByTeam {
+  protected override readonly gesture: SubAccountGesture = "sites_menu_changed";
+  protected override readonly mailKey: string = "principal-sites-menu-notice";
 }

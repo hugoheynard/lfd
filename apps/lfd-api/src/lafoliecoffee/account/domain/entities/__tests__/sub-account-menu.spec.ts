@@ -38,6 +38,7 @@ describe("SubAccountMenu", () => {
       offMenu: "visible_locked",
       entries: [],
       stamp: BY_STAFF,
+      state: "own",
     });
   });
 
@@ -130,5 +131,26 @@ describe("les valeurs de la carte", () => {
     () => parseMenuEffect("allow"),
   ])("refuse une valeur inconnue (%#)", (parse) => {
     expect(parse).toThrow(UnknownMenuValueError);
+  });
+});
+
+describe("SubAccountMenu — suivre la carte commune (§ 6.1)", () => {
+  it("bascule vers l'état visé, datée du geste ; déjà atteint, rien ne change", () => {
+    const menu = aMenu();
+    menu.exclude({ id: "e1", level: "family", ref: "fam_a" }, BY_STAFF);
+    expect(menu.switchState("follows_common", BY_PRINCIPAL)).toBe(true);
+    expect(menu.state).toBe("follows_common");
+    expect(menu.stamp).toEqual(BY_PRINCIPAL);
+    expect(menu.entries).toHaveLength(1);
+    expect(menu.switchState("follows_common", BY_STAFF)).toBe(false);
+    expect(menu.stamp).toEqual(BY_PRINCIPAL);
+  });
+
+  it("au changement de principal, dort sans changer d'auteur", () => {
+    const menu = aMenu();
+    expect(menu.fallBackToCommon()).toBe(true);
+    expect(menu.state).toBe("follows_common");
+    expect(menu.stamp).toEqual(BY_STAFF);
+    expect(menu.fallBackToCommon()).toBe(false);
   });
 });

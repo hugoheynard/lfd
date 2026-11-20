@@ -1,3 +1,5 @@
+import type { MenuBody } from "../entities/menu-body.js";
+import { PrincipalSitesMenu } from "../entities/principal-sites-menu.js";
 import { SubAccountMenu } from "../entities/sub-account-menu.js";
 import { NotASubAccountError } from "../errors/hierarchy-errors.js";
 import { DuplicateMenuEntryError } from "../errors/sub-account-menu-errors.js";
@@ -35,11 +37,22 @@ export interface WholeMenuContext {
   readonly nextId: () => string;
 }
 
+/** Ce que le geste sait de la carte commune visée et de son auteur. */
+export interface WholeSitesMenuContext {
+  readonly companyId: string;
+  /** Le principal ACTUEL de la société ; `null` : elle n'est le site de personne. */
+  readonly parentCompanyId: string | null;
+  readonly stamp: MenuStamp;
+  readonly nextId: () => string;
+}
+
 /**
- * **Met la carte d'un sous-compte à l'état demandé**, par les seules méthodes
- * de l'agrégat : la carte existante est recomposée entrée par entrée — une
- * entrée inchangée garde son identifiant, une entrée dont l'effet change est
- * retirée puis reposée —, une carte absente est composée.
+ * **Met la carte propre d'un sous-compte à l'état demandé**, par les seules
+ * méthodes de l'agrégat : la carte existante est recomposée entrée par
+ * entrée — une entrée inchangée garde son identifiant, une entrée dont
+ * l'effet change est retirée puis reposée —, une carte absente est composée.
+ * Enregistrer la carte propre la rend active (`own`) : c'est le geste
+ * « en faire une propre » d'un site qui suivait la carte commune.
  *
  * « Pas de restriction » s'exprime `except` sans entrée : l'en-tête reste,
  * rien n'est fermé. La carte n'est jamais détruite.
@@ -58,19 +71,50 @@ export function setWholeMenu(
   if (context.principalCompanyId === null) {
     throw new NotASubAccountError(context.companyId);
   }
+  const principalCompanyId = context.principalCompanyId;
+  const wanted = normalized(requested.entries);
+  if (current !== null && current.state === "own" && sameMenu(current, requested, wanted)) {
+    return null;
+  }
+  const menu =
+    current ?? SubAccountMenu.compose({ ...context, principalCompanyId, ...headerOf(requested) });
+  menu.switchState("own", context.stamp);
+  return recompose(menu, wanted, requested, context);
+}
+
+/**
+ * **Met la carte commune des sites d'un principal à l'état demandé**, par la
+ * même recomposition que la carte d'un site.
+ *
+ * @returns la carte à enregistrer, ou `null` si elle est déjà dans cet état.
+ * @throws {NotAPrincipalError} la société est elle-même un site.
+ * @throws {EmptyMenuReferenceError}
+ * @throws {DuplicateMenuEntryError}
+ */
+export function setWholeSitesMenu(
+  current: PrincipalSitesMenu | null,
+  context: WholeSitesMenuContext,
+  requested: RequestedMenu,
+): PrincipalSitesMenu | null {
   const wanted = normalized(requested.entries);
   if (current !== null && sameMenu(current, requested, wanted)) {
     return null;
   }
-  const menu =
-    current ??
-    SubAccountMenu.compose({
-      companyId: context.companyId,
-      principalCompanyId: context.principalCompanyId,
-      mode: requested.mode,
-      offMenu: requested.offMenu,
-      stamp: context.stamp,
-    });
+  const menu = current ?? PrincipalSitesMenu.compose({ ...context, ...headerOf(requested) });
+  return recompose(menu, wanted, requested, context);
+}
+
+function headerOf(requested: RequestedMenu): Pick<RequestedMenu, "mode" | "offMenu"> {
+  return { mode: requested.mode, offMenu: requested.offMenu };
+}
+
+/** Le corps mis à l'état demandé, par ses méthodes. */
+function recompose<M extends MenuBody>(
+  menu: M,
+  wanted: readonly RequestedMenuEntry[],
+  requested: RequestedMenu,
+  context: { readonly stamp: MenuStamp; readonly nextId: () => string },
+): M {
   if (menu.mode !== requested.mode) {
     menu.switchMode(requested.mode, context.stamp);
   }
@@ -114,7 +158,7 @@ function sameEntry(entry: MenuEntry, wanted: RequestedMenuEntry): boolean {
 }
 
 function sameMenu(
-  current: SubAccountMenu,
+  current: MenuBody,
   requested: RequestedMenu,
   wanted: readonly RequestedMenuEntry[],
 ): boolean {
@@ -127,9 +171,9 @@ function sameMenu(
 }
 
 function addEntry(
-  menu: SubAccountMenu,
+  menu: MenuBody,
   wanted: RequestedMenuEntry,
-  context: WholeMenuContext,
+  context: { readonly stamp: MenuStamp; readonly nextId: () => string },
 ): void {
   const draft = { id: context.nextId(), level: wanted.level, ref: wanted.ref };
   if (wanted.effect === "include") {

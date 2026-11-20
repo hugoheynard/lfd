@@ -125,6 +125,7 @@ const DECLARED_VARIABLES = {
     bodyWithReference: ["site", "action", "reference"],
     bodyByTeam: ["site", "action"],
     bodyWithReferenceByTeam: ["site", "action", "reference"],
+    "bodyByTeamOf.sites_menu_changed": ["site", "action"],
   },
   "staff.appointment-booked": { subject: ["contact", "when"] },
   "staff.account-alert": { subject: ["company", "rule"], title: ["rule", "company"] },

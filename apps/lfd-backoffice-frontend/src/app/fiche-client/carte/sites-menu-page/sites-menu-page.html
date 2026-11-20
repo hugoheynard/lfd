@@ -1,0 +1,48 @@
+<section class="menu">
+  @switch (screen()) {
+    @case ('loading') {
+      <fold-loading message="Chargement de la carte commune…" />
+    }
+    @case ('site') {
+      <fold-empty-state
+        data-is-site
+        title="Pas de carte commune pour un site"
+        subtitle="La carte commune appartient au compte principal et s’applique à ses sites. Ce compte est un site : sa carte se lit dans l’onglet « Carte »."
+      >
+        <fold-icon empty-icon name="store" />
+      </fold-empty-state>
+    }
+    @case ('failed') {
+      <fold-empty-state
+        tone="alert"
+        data-menu-failed
+        title="Impossible de charger la carte commune"
+        subtitle="La carte ou le catalogue n’a pas pu être lu ; rien n’a été modifié."
+      >
+        <button foldButton type="button" (click)="retry()">Réessayer</button>
+      </fold-empty-state>
+    }
+    @default {
+      <fold-callout variant="info" data-common-explained>
+        La carte commune s’applique à chaque site de ce compte qui n’a pas de carte propre, jamais
+        au principal lui-même. Une carte propre posée sur un site la masque ; pour exempter un site,
+        posez-lui une carte propre « Tout, sauf » sans exclusion.
+        @if (!hasMenu()) {
+          Aucune carte commune n’est posée : les sites sans carte propre commandent tout ce que leur
+          rayon leur sert.
+        }
+      </fold-callout>
+      @if (catalogue(); as catalogue) {
+        <app-menu-editor
+          audience="à ses sites"
+          settingsSubtitle="Le principal la règle aussi depuis « Mes sites » ; le dernier enregistrement fait foi."
+          saveLabel="Enregistrer la carte commune"
+          [catalogue]="catalogue"
+          [initial]="initial()"
+          [canWrite]="canWrite()"
+          [save]="saveCommon"
+        />
+      }
+    }
+  }
+</section>

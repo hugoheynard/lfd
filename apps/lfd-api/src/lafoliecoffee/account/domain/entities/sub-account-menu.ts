@@ -1,25 +1,18 @@
 import { NotASubAccountError } from "../errors/hierarchy-errors.js";
-import {
-  DuplicateMenuEntryError,
-  MenuEntryNotFoundError,
-} from "../errors/sub-account-menu-errors.js";
-import {
-  menuReference,
-  type MenuEffect,
-  type MenuEntry,
-  type MenuLevel,
-  type MenuMode,
-  type MenuStamp,
-  type OffMenuDisplay,
+import type {
+  MenuMode,
+  MenuStamp,
+  OffMenuDisplay,
+  SiteMenuState,
 } from "../value-objects/sub-account-menu-terms.js";
+import { MenuBody, type MenuBodyState } from "./menu-body.js";
 
-/** L'état d'une carte, tel que le dépôt le lit et l'écrit. */
-export interface SubAccountMenuState {
-  readonly companyId: string;
-  readonly mode: MenuMode;
-  readonly offMenu: OffMenuDisplay;
-  readonly entries: readonly MenuEntry[];
-  readonly stamp: MenuStamp;
+export type { MenuEntryDraft } from "./menu-body.js";
+
+/** L'état d'une carte de site, tel que le dépôt le lit et l'écrit. */
+export interface SubAccountMenuState extends MenuBodyState {
+  /** `own` : la carte compte ; `follows_common` : elle dort, la carte commune compte. */
+  readonly state: SiteMenuState;
 }
 
 /** Ce que la composition d'une carte demande. */
@@ -32,36 +25,26 @@ export interface MenuComposition {
   readonly stamp: MenuStamp;
 }
 
-/** Une entrée à poser : son identifiant vient de l'`IdGenerator` de l'appelant. */
-export interface MenuEntryDraft {
-  readonly id: string;
-  readonly level: MenuLevel;
-  readonly ref: string;
-}
-
 /**
- * **La carte d'un sous-compte** — ce que ce site peut commander
- * (`documentation/comptes-client/carte-des-sites.md`, § 3.3).
+ * **La carte propre d'un sous-compte** — ce que ce site peut commander
+ * (`documentation/comptes-client/carte-des-sites.md`, § 3.3, § 6.1).
  *
- * Elle tient deux règles : une carte ne s'attache qu'à un sous-compte, et un
- * article n'y figure qu'une fois par grain — inclus OU exclu, jamais les deux.
- * Elle ne sait pas si une référence existe au catalogue : une référence que
- * le catalogue ne livre plus dort, elle ne se refuse pas.
- *
- * Chaque geste porte son auteur et son instant ; la carte garde le dernier.
+ * Elle ne s'attache qu'à un sous-compte. Active (`own`), elle REMPLACE la
+ * carte commune de son principal ; quand le site suit la carte commune
+ * (`follows_common`), elle dort en base, entrées comprises, et se réactive
+ * telle quelle.
  */
-export class SubAccountMenu {
+export class SubAccountMenu extends MenuBody {
   private constructor(
-    readonly companyId: string,
-    private modeValue: MenuMode,
-    private offMenuValue: OffMenuDisplay,
-    private entriesValue: readonly MenuEntry[],
-    private stampValue: MenuStamp,
-  ) {}
+    body: MenuBodyState,
+    private stateValue: SiteMenuState,
+  ) {
+    super(body.companyId, body.mode, body.offMenu, body.entries, body.stamp);
+  }
 
   /**
-   * Pose une carte vide sur un sous-compte. En `only`, une carte vide ferme
-   * tout — permis, l'écran l'annonce.
+   * Pose une carte vide et active sur un sous-compte. En `only`, une carte
+   * vide ferme tout — permis, l'écran l'annonce.
    *
    * @throws {NotASubAccountError} la société n'a pas de principal.
    */
@@ -69,110 +52,50 @@ export class SubAccountMenu {
     if (composition.principalCompanyId === null) {
       throw new NotASubAccountError(composition.companyId);
     }
-    return new SubAccountMenu(
-      composition.companyId,
-      composition.mode,
-      composition.offMenu,
-      [],
-      composition.stamp,
-    );
+    return new SubAccountMenu({ ...composition, entries: [] }, "own");
   }
 
   /** Relit une carte en base ; les valeurs ont été revalidées par l'adaptateur. */
   static reconstitute(state: SubAccountMenuState): SubAccountMenu {
-    return new SubAccountMenu(
-      state.companyId,
-      state.mode,
-      state.offMenu,
-      state.entries,
-      state.stamp,
-    );
+    return new SubAccountMenu(state, state.state);
   }
 
-  get mode(): MenuMode {
-    return this.modeValue;
-  }
-
-  get offMenu(): OffMenuDisplay {
-    return this.offMenuValue;
-  }
-
-  get entries(): readonly MenuEntry[] {
-    return this.entriesValue;
-  }
-
-  get stamp(): MenuStamp {
-    return this.stampValue;
+  get state(): SiteMenuState {
+    return this.stateValue;
   }
 
   /**
-   * Ouvre l'article au site.
+   * **Le site suit la carte commune, ou reprend la sienne** — un état visé.
    *
-   * @throws {EmptyMenuReferenceError} référence vide.
-   * @throws {DuplicateMenuEntryError} l'article est déjà sur la carte.
+   * @returns `false` si l'état est déjà atteint : rien n'a changé.
    */
-  include(draft: MenuEntryDraft, stamp: MenuStamp): void {
-    this.add(draft, "include", stamp);
-  }
-
-  /**
-   * Ferme l'article au site.
-   *
-   * @throws {EmptyMenuReferenceError} référence vide.
-   * @throws {DuplicateMenuEntryError} l'article est déjà sur la carte.
-   */
-  exclude(draft: MenuEntryDraft, stamp: MenuStamp): void {
-    this.add(draft, "exclude", stamp);
-  }
-
-  /**
-   * Retire l'entrée de cet article : il reprend le défaut du mode, ou celui
-   * d'une entrée plus large.
-   *
-   * @throws {MenuEntryNotFoundError} l'article n'est pas sur la carte.
-   */
-  remove(level: MenuLevel, rawRef: string, stamp: MenuStamp): void {
-    const ref = menuReference(rawRef);
-    if (this.find(level, ref) === undefined) {
-      throw new MenuEntryNotFoundError(level, ref);
+  switchState(state: SiteMenuState, stamp: MenuStamp): boolean {
+    if (this.stateValue === state) {
+      return false;
     }
-    this.entriesValue = this.entriesValue.filter((e) => !(e.level === level && e.ref === ref));
-    this.stampValue = stamp;
+    this.stateValue = state;
+    this.restamp(stamp);
+    return true;
   }
 
-  /** Change le défaut ; les entrées restent, et peuvent contredire le nouveau mode. */
-  switchMode(mode: MenuMode, stamp: MenuStamp): void {
-    this.modeValue = mode;
-    this.stampValue = stamp;
-  }
-
-  /** Change ce que le site voit d'un article hors carte. */
-  setOffMenu(offMenu: OffMenuDisplay, stamp: MenuStamp): void {
-    this.offMenuValue = offMenu;
-    this.stampValue = stamp;
+  /**
+   * Le site change de principal : sa carte propre, décidée sous un autre
+   * principal, ne revient pas en vigueur d'elle-même (§ 6.4). Elle dort, et
+   * le site suit la carte commune du nouveau. Ce n'est le geste de personne :
+   * le dernier geste sur la carte reste celui de son auteur.
+   *
+   * @returns `false` si elle dormait déjà.
+   */
+  fallBackToCommon(): boolean {
+    if (this.stateValue === "follows_common") {
+      return false;
+    }
+    this.stateValue = "follows_common";
+    return true;
   }
 
   /** L'état à écrire. */
   toPersistence(): SubAccountMenuState {
-    return {
-      companyId: this.companyId,
-      mode: this.modeValue,
-      offMenu: this.offMenuValue,
-      entries: this.entriesValue,
-      stamp: this.stampValue,
-    };
-  }
-
-  private add(draft: MenuEntryDraft, effect: MenuEffect, stamp: MenuStamp): void {
-    const ref = menuReference(draft.ref);
-    if (this.find(draft.level, ref) !== undefined) {
-      throw new DuplicateMenuEntryError(draft.level, ref);
-    }
-    this.entriesValue = [...this.entriesValue, { id: draft.id, level: draft.level, ref, effect }];
-    this.stampValue = stamp;
-  }
-
-  private find(level: MenuLevel, ref: string): MenuEntry | undefined {
-    return this.entriesValue.find((e) => e.level === level && e.ref === ref);
+    return { ...this.bodyState(), state: this.stateValue };
   }
 }

@@ -2,11 +2,13 @@ import type {
   CompanyFollowAspect,
   CompanyHierarchyView,
   FollowedAspectView,
+  SiteMenuStanding,
   SubAccountMenuSummary,
   SubAccountView,
 } from "@lfd/contracts";
 
 import type { PrismaService } from "../../../platform/database/prisma.service.js";
+import { siteMenuStandingOf } from "../domain/services/site-menu-standing.js";
 import {
   parseMenuMode,
   parseOffMenuDisplay,
@@ -30,9 +32,14 @@ export interface HierarchyRow {
   } | null;
 }
 
-/** L'en-tête de la carte d'un site et son nombre d'entrées — relation de la même requête. */
+/** L'en-tête d'une carte et son nombre d'entrées — relation de la même requête. */
 const MENU_SUMMARY = {
   select: { mode: true, offMenu: true, _count: { select: { entries: true } } },
+} as const;
+
+/** La carte d'un site résumée, avec son état. */
+const SITE_MENU_SUMMARY = {
+  select: { ...MENU_SUMMARY.select, state: true },
 } as const;
 
 /** La carte lue par {@link MENU_SUMMARY}. */
@@ -61,7 +68,7 @@ export async function readHierarchy(
   row: HierarchyRow,
   now: Date,
 ): Promise<CompanyHierarchyView> {
-  const [follows, children, form] = await Promise.all([
+  const [follows, children, form, common] = await Promise.all([
     prisma.companyFollow.findMany({ ...OPEN_FOLLOWS, where: { companyId: row.id, validTo: null } }),
     prisma.company.findMany({
       where: { parentCompanyId: row.id },
@@ -78,7 +85,7 @@ export async function readHierarchy(
           take: 1,
         },
         follows: OPEN_FOLLOWS,
-        subAccountMenu: MENU_SUMMARY,
+        subAccountMenu: SITE_MENU_SUMMARY,
       },
     }),
     // La forme qui couvre `now` (début inclus, fin exclue) — un sous-compte seulement.
@@ -92,6 +99,8 @@ export async function readHierarchy(
           },
           select: { form: true, validFrom: true },
         }),
+    // La carte commune que ce principal pose sur ses sites (§ 6.1).
+    prisma.principalSitesMenu.findUnique({ where: { companyId: row.id }, ...MENU_SUMMARY }),
   ]);
   return {
     parent: row.parentCompany,
@@ -102,11 +111,26 @@ export async function readHierarchy(
       status: child.status,
       followedAspects: inForce(child.follows, now).map((follow) => follow.aspect),
       follows: inForce(child.follows, now),
-      menu: child.subAccountMenu === null ? null : menuSummary(child.subAccountMenu),
+      ...siteMenuOf(child.subAccountMenu, common),
     })),
     follows: inForce(follows, now),
     groupWithoutDelivery: row.groupWithoutDelivery,
     collectionForm: form === null ? null : { form: form.form, since: form.validFrom.toISOString() },
+  };
+}
+
+/** Quelle carte compte pour un site, et son résumé : la sienne, la commune, ou aucune. */
+function siteMenuOf(
+  own: (MenuSummaryRow & { readonly state: string }) | null,
+  common: MenuSummaryRow | null,
+): { readonly menuState: SiteMenuStanding; readonly menu: SubAccountMenuSummary | null } {
+  const menuState = siteMenuStandingOf(own, common !== null);
+  if (menuState === "own" && own !== null) {
+    return { menuState, menu: menuSummary(own) };
+  }
+  return {
+    menuState,
+    menu: menuState === "common" && common !== null ? menuSummary(common) : null,
   };
 }
 

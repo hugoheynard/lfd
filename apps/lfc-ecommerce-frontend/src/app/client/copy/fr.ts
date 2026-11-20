@@ -66,6 +66,8 @@ export const FR: ClientCopy = {
       connection: 'Connexion — La Folie Coffee',
       sites: 'Mes sites — La Folie Coffee',
       siteMenu: 'Carte du site — La Folie Coffee',
+      commonMenu: 'Carte commune des sites — La Folie Coffee',
+      myMenu: 'Ma carte — La Folie Coffee',
     },
   },
 
@@ -311,6 +313,7 @@ export const FR: ClientCopy = {
       'Cet article est hors de la carte que votre compte principal a posée sur ce site : vous ne pouvez pas le commander.',
     siteMenuNotice:
       'Votre compte principal a posé une carte sur ce site : les articles grisés n’y sont pas ouverts.',
+    siteMenuLink: 'Voir la carte de mon site',
     shelfLeft: 'Plus que {left} aujourd’hui',
     shelfAllTaken: 'Tout le reste d’aujourd’hui est au panier ({left})',
     shelfGone: 'Épuisé pour aujourd’hui',
