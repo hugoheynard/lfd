@@ -1,9 +1,32 @@
 import type { PrismaService } from "../../../../platform/database/prisma.service.js";
 import type { StandingCompanyStatus } from "../domain/company-standing.js";
 import type { ReservationHolders } from "../domain/reservation-holders.js";
+import { menuReadingOf, type MenuReading } from "../domain/sub-account-menu-reading.js";
 
 /** Le seul statut d'un principal qui ouvre ses sites — comme `inheritedSiteWhere` (Q8). */
 const ACTIVE = "active";
+
+/**
+ * La carte du sous-compte, lue dans la MÊME requête que son principal
+ * (`plan-carte-des-sites.md`, § 4) : une relation de plus, pas un
+ * aller-retour — le budget de lectures du devis ne bouge pas.
+ */
+const MENU_SELECT = {
+  select: {
+    mode: true,
+    offMenu: true,
+    entries: { orderBy: { id: "asc" }, select: { level: true, ref: true, effect: true } },
+  },
+} as const;
+
+/**
+ * Les porteurs de réservation d'une société, et la carte qui COMPTE pour
+ * elle — `null` sans carte, ou quand son principal n'est pas `active`
+ * (§ 3.1 : la carte dort). Lue, pas encore appliquée.
+ */
+export interface HoldersWithMenu extends ReservationHolders {
+  readonly menu: MenuReading | null;
+}
 
 /** Le principal d'un site, tel que la fiche client le nomme. */
 export interface SitePrincipal {
@@ -42,7 +65,7 @@ export async function readSitePrincipal(
 /**
  * **Pour qui un article réservé s'ouvre, vu de cette société** — elle, et son
  * principal s'il est `active` (S1, Q3, Q8). UNE lecture, par la même relation
- * que {@link readSitePrincipal}.
+ * que {@link readSitePrincipal}, la carte du sous-compte comprise.
  *
  * Une société inconnue n'a pas de principal : elle n'ouvre que ce qui lui est
  * réservé à elle-même, c'est-à-dire rien.
@@ -50,9 +73,16 @@ export async function readSitePrincipal(
 export async function readReservationHolders(
   prisma: PrismaService,
   companyId: string,
-): Promise<ReservationHolders> {
-  const read = await readSitePrincipal(prisma, companyId);
-  return reservationHoldersOf(companyId, read?.principal ?? null);
+): Promise<HoldersWithMenu> {
+  const company = await prisma.company.findUnique({
+    where: { id: companyId },
+    select: { parentCompany: { select: { id: true, status: true } }, subAccountMenu: MENU_SELECT },
+  });
+  const holders = reservationHoldersOf(companyId, company?.parentCompany ?? null);
+  return {
+    ...holders,
+    menu: menuReadingOf(company?.subAccountMenu ?? null, holders.activePrincipalId),
+  };
 }
 
 /** La règle sur la ligne lue, pure : le principal n'ouvre que s'il est `active`. */
@@ -78,6 +108,8 @@ export interface ServedCompanyRow {
    * était déjà lue.
    */
   readonly principalId: string | null;
+  /** La carte qui compte pour cette société ({@link HoldersWithMenu.menu}), lue avec le reste. */
+  readonly menu: MenuReading | null;
 }
 
 /**
@@ -95,13 +127,20 @@ export async function readServedCompany(
 ): Promise<ServedCompanyRow | null> {
   const company = await prisma.company.findUnique({
     where: { id: companyId },
-    select: { status: true, parentCompany: { select: { id: true, status: true } } },
+    select: {
+      status: true,
+      parentCompany: { select: { id: true, status: true } },
+      subAccountMenu: MENU_SELECT,
+    },
   });
-  return company === null
-    ? null
-    : {
-        status: company.status,
-        holders: reservationHoldersOf(companyId, company.parentCompany),
-        principalId: company.parentCompany?.id ?? null,
-      };
+  if (company === null) {
+    return null;
+  }
+  const holders = reservationHoldersOf(companyId, company.parentCompany);
+  return {
+    status: company.status,
+    holders,
+    principalId: company.parentCompany?.id ?? null,
+    menu: menuReadingOf(company.subAccountMenu, holders.activePrincipalId),
+  };
 }

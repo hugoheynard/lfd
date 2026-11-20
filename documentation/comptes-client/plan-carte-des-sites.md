@@ -226,14 +226,14 @@ sub_account_menu_entry   (id, company_id → sub_account_menu RESTRICT, level, r
 
 ## 6. Les lots
 
-| Lot | Contenu                                                                                                                                             |
-| --- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| C1  | Migration, agrégat, dépôt ; lecture dans les deux chemins de `shared/company-standing` ; semis, couverture, journal ; porte d'appartenance vérifiée |
-| C2  | `servedToViewer` + marque `menu` ; `isOrderable` et les huit lecteurs ; `lint:orderable-door` ; refus ; lecteur staff ; budget tenu                 |
-| C3  | Routes principal (`/companies/:subAccountId/menu`, prédicat `canSetMenuOf`) et staff (`/admin/companies/:id/menu`)                                  |
-| C4  | Boutique : écran du principal, mention sur le rayon et au panier du sous-compte                                                                     |
-| C5  | Back-office : onglet de la fiche, indicateur sur la liste des sites, étiquettes grille et mercuriale                                                |
-| C6  | Avis (Q3) ; doc d'état, ce plan supprimé                                                                                                            |
+| Lot | Contenu                                                                                                                                                                    |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| C1  | ✅ bâti le 2026-11-20. Migration, agrégat, dépôt ; lecture dans les deux chemins de `shared/company-standing` ; semis, couverture, journal ; porte d'appartenance vérifiée |
+| C2  | `servedToViewer` + marque `menu` ; `isOrderable` et les huit lecteurs ; `lint:orderable-door` ; refus ; lecteur staff ; budget tenu                                        |
+| C3  | Routes principal (`/companies/:subAccountId/menu`, prédicat `canSetMenuOf`) et staff (`/admin/companies/:id/menu`)                                                         |
+| C4  | Boutique : écran du principal, mention sur le rayon et au panier du sous-compte                                                                                            |
+| C5  | Back-office : onglet de la fiche, indicateur sur la liste des sites, étiquettes grille et mercuriale                                                                       |
+| C6  | Avis (Q3) ; doc d'état, ce plan supprimé                                                                                                                                   |
 
 ## 7. Les tests qui tiennent la frontière
 
@@ -259,6 +259,16 @@ sub_account_menu_entry   (id, company_id → sub_account_menu RESTRICT, level, r
   carte d'un de ses sites ; pas quand il la change lui-même.
 - **Q4** — Pas de carte modèle commune : un bouton « copier la carte d'un
   autre site » suffit.
+
+## 8 bis. Ce que le bâti a tranché
+
+- **C1** — l'auteur d'une carte est deux colonnes, `updated_by_staff_id` ou
+  `updated_by_user_id`, exactement une (CHECK). La carte entre au journal
+  `company_change` par déclencheurs. `shared/` est dans le bloc
+  `lafoliecoffee` comme `account` : `lint:prisma-model-ownership` passe sans
+  exception. Les entrées retirées sont supprimées physiquement (la carte,
+  jamais), comme les étapes d'une procédure de livraison. Le dépôt n'est
+  enregistré dans aucun module avant C3, son premier consommateur.
 
 ## 9. Ce que la contradiction a changé (vitruve, 2026-11-20)
 

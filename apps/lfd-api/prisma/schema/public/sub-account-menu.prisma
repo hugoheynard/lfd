@@ -1,0 +1,42 @@
+/// La **carte d'un sous-compte** : ce que ce site peut commander
+/// (`documentation/comptes-client/plan-carte-des-sites.md`, § 3.3, § 4).
+/// Clée par le `company_id` DU SOUS-COMPTE. Écrite par l'agrégat
+/// `SubAccountMenu` (`lafoliecoffee/account`) ; lue dans la même requête que
+/// le lecteur pro (`shared/company-standing`), et seulement sous un principal
+/// actif. Les valeurs de `mode` et `off_menu` sont tenues par un CHECK.
+model SubAccountMenu {
+  companyId        String                @id @map("company_id")
+  company          Company               @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  /// `only` (liste blanche) | `except` (liste noire) — le défaut d'un article
+  /// qu'aucune entrée ne touche.
+  mode             String
+  /// `hidden` | `visible_locked` — ce que voit le sous-compte hors carte.
+  offMenu          String                @map("off_menu")
+  updatedAt        DateTime              @map("updated_at") @db.Timestamptz(3)
+  /// L'id de fiche du staff qui a posé la carte ; `null` si c'est le principal.
+  updatedByStaffId String?               @map("updated_by_staff_id")
+  /// L'utilisateur du principal qui a posé la carte ; `null` si c'est le staff.
+  updatedByUserId  String?               @map("updated_by_user_id")
+  entries          SubAccountMenuEntry[]
+
+  @@map("sub_account_menu")
+  @@schema("public")
+}
+
+/// Une entrée de la carte : une famille (id PIM), un produit (`productSku`)
+/// ou un SKU, incluse ou exclue. Le plus fin l'emporte ; une référence que le
+/// catalogue ne livre plus dort.
+model SubAccountMenuEntry {
+  id        String         @id
+  companyId String         @map("company_id")
+  menu      SubAccountMenu @relation(fields: [companyId], references: [companyId], onDelete: Restrict)
+  /// `family` | `product` | `sku`.
+  level     String
+  ref       String
+  /// `include` | `exclude`.
+  effect    String
+
+  @@unique([companyId, level, ref])
+  @@map("sub_account_menu_entry")
+  @@schema("public")
+}

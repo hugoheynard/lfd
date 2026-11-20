@@ -280,7 +280,7 @@ model Company {
   // Révision de la fiche : montée par chaque enregistrement de l'agrégat, lue
   // par l'écran et renvoyée en `If-Match` — une modification décidée sur une
   // fiche périmée est refusée (comptes-client/plan-fiche-perimee.md).
-  revision Int @default(0)
+  revision  Int      @default(0)
   updatedAt DateTime @updatedAt @map("updated_at")
 
   memberships             Membership[]
@@ -295,6 +295,8 @@ model Company {
   subAccountNoticeRules   SubAccountNoticeRule[]
   /// L'interrupteur des avis à ce principal ; absent = désactivés.
   subAccountNoticeSetting SubAccountNoticeSetting?
+  /// La carte de ce sous-compte (`plan-carte-des-sites.md`) ; absente = tout le rayon.
+  subAccountMenu          SubAccountMenu?
   /// Les paniers récurrents créés dans l'espace de cette société (N4e).
   subscriptions           Subscription[]
   /// Les dérogations d'heure limite accordées à ce client.

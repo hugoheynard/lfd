@@ -954,6 +954,15 @@
       "information": false
     },
     {
+      "colonne": "public.sub_account_menu.updated_by_staff_id",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a posé ou modifié la carte d'un sous-compte (`updated_by_staff_id`) sur `sub_account_menu`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
       "colonne": "public.sub_account_notice_settings.updated_by",
       "personne": "staff",
       "categorie": "auteur-geste",

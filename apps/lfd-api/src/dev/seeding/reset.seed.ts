@@ -186,6 +186,10 @@ async function wipe(prisma: PrismaClient, companyIds: string[], userIds: string[
   await prisma.subAccountNoticeSetting.deleteMany({
     where: { principalCompanyId: { in: companyIds } },
   });
+  // La carte d'un sous-compte pointe la société, ses entrées pointent la
+  // carte (clés `Restrict`) : les entrées, puis la carte, avant la société.
+  await prisma.subAccountMenuEntry.deleteMany({ where: { companyId: { in: companyIds } } });
+  await prisma.subAccountMenu.deleteMany({ where: { companyId: { in: companyIds } } });
   const ofOrders = {
     OR: [
       { companyId: { in: companyIds } },
