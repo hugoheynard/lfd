@@ -103,6 +103,11 @@ Le premier cas est celui des anciennes « remises du point de retrait » : elles
 sont **devenues des promotions** à la bascule. Le troisième se pose aujourd'hui
 dans le modèle, et la boutique l'affiche depuis L10.
 
+Une promotion peut aussi **offrir la livraison** à un public ciblé, par
+exemple « livraison offerte à la société Dupont et ses sites, dès 50 € HT ».
+Elle ne touche ni les prix ni le total des articles : seulement le frais de
+livraison. Voir le § 2.19.
+
 ### Où on les règle
 
 - **Tarification › Promotions**, et là seulement : toutes les promotions,
@@ -174,16 +179,16 @@ multi-remise) l'ont été le 2026-10-31.
 
 ### 2.1 Le modèle
 
-| Axe                   | Code                                           | Valeurs                                                                                                                                                                                |
-| --------------------- | ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Effet                 | `domain/promotion-effect.ts:20-24`             | `percent_off`, `unit_amount_off`, `fixed_unit_price`, `basket_amount_off` ; effets admis par point `:31-36` (ligne : les trois premiers ; panier : `percent_off`, `basket_amount_off`) |
-| Public                | `domain/promotion-audience.ts:15-25`           | `everyone`, `individuals`, `individuals_guest`, `individuals_registered`, `pros`, `pros_active`, `pros_pending`, `company`, `company_and_sites`, `everyone_but_active_pros`            |
-| Public multiple (L8b) | `domain/promotion-audience-set.ts`             | un **ensemble normalisé** de cibles de l'arbre ; refus : vide, société en double, libellé d'audience sans audience (`errors/promotion-audience-errors.ts`)                             |
-| Acheminement          | `domain/promotion-fulfillment.ts:25-37`        | `displayed_price`, ou `basket` avec `pickup` (`none` · `all` · `{points}`) et `delivery` (`none` · `all` · `{zones}`) — § 2.14                                                         |
-| Point d'application   | `domain/promotion-fulfillment.ts:46-48`        | `displayed_price` → `line`, `basket` → `basket` (`applicationPointOf`)                                                                                                                 |
-| Portée                | `domain/promotion-scope.ts:19-26`              | mode `all_except` / `only`, cibles `category` / `product` / `variant`                                                                                                                  |
-| Conditions            | `domain/promotion-condition.ts:15`             | `min_quantity` seule ; union extensible                                                                                                                                                |
-| Libellés              | `prisma/schema/public/promotions.prisma:15-27` | `label_*` (commun) + `label_individuals_*` + `label_pros_*`, FR/EN/IT                                                                                                                  |
+| Axe                   | Code                                           | Valeurs                                                                                                                                                                                                                                         |
+| --------------------- | ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Effet                 | `domain/promotion-effect.ts:20-24`             | `percent_off`, `unit_amount_off`, `fixed_unit_price`, `basket_amount_off`, `free_delivery` ; effets admis par point (`EFFECTS_AT`) : ligne, les trois premiers ; panier, `percent_off` et `basket_amount_off` ; livraison, `free_delivery` seul |
+| Public                | `domain/promotion-audience.ts:15-25`           | `everyone`, `individuals`, `individuals_guest`, `individuals_registered`, `pros`, `pros_active`, `pros_pending`, `company`, `company_and_sites`, `everyone_but_active_pros`                                                                     |
+| Public multiple (L8b) | `domain/promotion-audience-set.ts`             | un **ensemble normalisé** de cibles de l'arbre ; refus : vide, société en double, libellé d'audience sans audience (`errors/promotion-audience-errors.ts`)                                                                                      |
+| Acheminement          | `domain/promotion-fulfillment.ts:25-37`        | `displayed_price`, ou `basket` avec `pickup` (`none` · `all` · `{points}`) et `delivery` (`none` · `all` · `{zones}`) — § 2.14 ; ou `delivery_fee` avec `delivery` seul (`all` · `{zones}`) — § 2.19                                            |
+| Point d'application   | `domain/promotion-fulfillment.ts:46-48`        | `displayed_price` → `line`, `basket` → `basket`, `delivery_fee` → `delivery_fee` (`applicationPointOf`)                                                                                                                                         |
+| Portée                | `domain/promotion-scope.ts:19-26`              | mode `all_except` / `only`, cibles `category` / `product` / `variant`                                                                                                                                                                           |
+| Conditions            | `domain/promotion-condition.ts:15`             | `min_quantity`, et `min_basket` réservée au point `delivery_fee` (§ 2.19) ; union extensible                                                                                                                                                    |
+| Libellés              | `prisma/schema/public/promotions.prisma:15-27` | `label_*` (commun) + `label_individuals_*` + `label_pros_*`, FR/EN/IT                                                                                                                                                                           |
 
 Tables : `promotions`, `promotion_scope_rules`, `promotion_audience_targets`,
 `promotion_settings` (`promotions.prisma`). La case « Cumulable » est la
@@ -976,6 +981,36 @@ refuse toute condition inconnue et charge les promotions en bloc : une
 instance ancienne qui lit une promotion à heures fait tomber **toutes** les
 promotions. Au lancement commercial, une variante de condition se livre en
 deux temps (lecteur, puis écriture).
+
+### 2.19 Sur la livraison : offrir le frais
+
+Un **troisième point d'application**, à côté de « Dans le prix affiché » et
+« Au panier ». Il n'agit ni sur un prix ni sur le total des articles : il met
+le frais de livraison à zéro pour le public qu'il cible.
+
+Deux endroits seulement décident du frais : le réglage de livraison (tarif et
+franco d'une clientèle) et cette promotion (un cadeau ciblé). Jamais les
+conditions commerciales de la société (décidé par Hugo le 2026-11-20).
+
+- **Acheminement** : `delivery_fee`, livraison seulement (toutes les zones ou
+  celles cochées). Pas de retrait, pas de portée sur le catalogue.
+- **Effet** : `free_delivery`, sans valeur. Une promotion offre la livraison
+  ou ne fait rien : pas de réduction partielle.
+- **Panier minimum** : la condition `min_basket`, en centimes HT, comptée sur
+  les articles après leurs remises et avant le bon de fidélité. Absente, la
+  livraison est toujours offerte. Elle est réservée à ce point : sur une
+  remise, elle dépendrait du total qu'elle réduit.
+- **Pas de cumul** : une promotion sur la livraison n'est jamais cumulable, et
+  la base le refuse (`promotions_delivery_fee_not_cumulative`).
+- **Public, période, jours et heures** : comme toute promotion.
+
+Au calcul, le franco de la route et les promotions qui admettent l'acheteur
+sont des candidats : le seuil le plus bas atteint l'emporte, et à seuil égal la
+promotion, pour que le cadeau porte un nom. La commande fige la promotion qui
+l'a offerte, son seuil et son libellé ; une révision rejuge au présent.
+
+Le détail (calcul, figé, révision, documents, facture, écrans) vit dans
+[`frais-et-livraison-offerte.md`](../livraisons/frais-et-livraison-offerte.md).
 
 ---
 
