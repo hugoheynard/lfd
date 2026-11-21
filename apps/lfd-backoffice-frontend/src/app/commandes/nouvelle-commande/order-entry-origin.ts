@@ -1,16 +1,21 @@
+import {
+  DEFAULT_ORDER_ENTRY_RETURN,
+  pointOf,
+  returnLabelOf,
+  returnTargetOf,
+} from './order-entry-return';
+
 /**
  * **D'où l'on saisit une commande** — le Commercial ou le Comptoir.
  *
- * Le même écran de saisie sert les deux, mais pas la même personne : au
- * comptoir, on n'a pas forcément les droits du Commercial. Tout lien qui
- * ramènerait vers `/comptes-clients` ou `/commercial` y mènerait à un refus du
- * garde. L'origine vit donc dans la `data` de la route, sous un nom, plutôt
- * qu'en booléen déduit de l'URL : c'est la route qui sait où elle a été montée.
+ * Une seule page, une seule adresse (`/nouvelle-commande/:id`, décidé par
+ * Hugo le 2026-11-21) : le comptoir se reconnaît au **point de retrait** qu'il
+ * passe à la saisie (`?point=`), et au droit `b2b_counter:read` de la
+ * personne — sans lui, un point tapé dans l'adresse fabriquerait la trace
+ * « comptoir ». Au comptoir, le lien de règlement est refusé (E4) et le
+ * retrait immédiat proposé ; ailleurs, les règles du commercial.
  */
 export type OrderEntryOrigin = 'commercial' | 'counter';
-
-/** La clé de `data` qui porte l'origine. */
-export const ORDER_ENTRY_ORIGIN_KEY = 'origin';
 
 /** Le sélecteur de compte du comptoir — le retour de la saisie en contexte comptoir. */
 export const COUNTER_ORDER_PICKER_LINK = '/nouvelle-commande/pro';
@@ -18,30 +23,45 @@ export const COUNTER_ORDER_PICKER_LINK = '/nouvelle-commande/pro';
 /** La saisie d'un compte au comptoir : `/nouvelle-commande/:id`. */
 export const COUNTER_ORDER_ENTRY_LINK = '/nouvelle-commande';
 
-/**
- * Lit l'origine dans la `data` d'une route. L'absence vaut `commercial` : c'est
- * le comportement historique, et la route du Commercial ne déclare rien.
- */
-export function orderEntryOriginOf(data: Readonly<Record<string, unknown>>): OrderEntryOrigin {
-  return data[ORDER_ENTRY_ORIGIN_KEY] === 'counter' ? 'counter' : 'commercial';
+/** Le comptoir : son point dans l'adresse, et le droit de la personne. */
+export function orderEntryOriginOf(
+  point: string | undefined,
+  canCounter: boolean,
+): OrderEntryOrigin {
+  return pointOf(point) !== null && canCounter ? 'counter' : 'commercial';
 }
 
 /** Le lien retour de l'en-tête de saisie, et son libellé. */
 export interface OrderEntryBackLink {
   // Mutable : `routerLink` ne prend pas de tableau `readonly`.
   readonly link: string[];
+  /** Les paramètres de la cible, ou `null` pour garder ceux de la saisie. */
+  readonly queryParams: Readonly<Record<string, string>> | null;
   readonly label: string;
 }
 
 /**
- * Le retour de l'en-tête : le dossier du compte au Commercial, le sélecteur
- * au comptoir — jamais `/comptes-clients` depuis le comptoir, dont le poste
- * n'a pas forcément le droit.
+ * Le retour de l'en-tête : au comptoir, le sélecteur de compte (l'origine et
+ * le point suivent) ; ailleurs, l'écran d'où l'on est venu (`retour`).
  */
-export function backLinkOf(origin: OrderEntryOrigin, companyId: string): OrderEntryBackLink {
-  return origin === 'counter'
-    ? { link: [COUNTER_ORDER_PICKER_LINK], label: 'Choisir un autre compte' }
-    : { link: ['/comptes-clients', companyId, 'commandes'], label: 'Ses commandes' };
+export function backLinkOf(
+  origin: OrderEntryOrigin,
+  retour: string | undefined,
+): OrderEntryBackLink {
+  if (origin === 'counter') {
+    return {
+      link: [COUNTER_ORDER_PICKER_LINK],
+      queryParams: null,
+      label: 'Choisir un autre compte',
+    };
+  }
+  const target = returnTargetOf(retour);
+  const [path = DEFAULT_ORDER_ENTRY_RETURN, query = ''] = target.split('?', 2);
+  return {
+    link: [path],
+    queryParams: Object.fromEntries(new URLSearchParams(query)),
+    label: returnLabelOf(target),
+  };
 }
 
 /**

@@ -8,24 +8,46 @@ import {
 } from '../order-entry-origin';
 
 describe("l'origine de la saisie", () => {
-  it('vaut « commercial » quand la route ne déclare rien — le comportement historique', () => {
-    expect(orderEntryOriginOf({})).toBe('commercial');
+  it('vaut « commercial » sans point de retrait : la liste, les brouillons, la fiche', () => {
+    expect(orderEntryOriginOf(undefined, true)).toBe('commercial');
+    expect(orderEntryOriginOf('  ', true)).toBe('commercial');
   });
 
-  it('vaut « counter » quand la route du comptoir le déclare', () => {
-    expect(orderEntryOriginOf({ origin: 'counter' })).toBe('counter');
+  it('vaut « counter » quand le comptoir a passé son point', () => {
+    expect(orderEntryOriginOf('pick_1', true)).toBe('counter');
   });
 
-  it('ramène le Commercial au dossier du compte', () => {
-    expect(backLinkOf('commercial', 'c1')).toEqual({
-      link: ['/comptes-clients', 'c1', 'commandes'],
+  /**
+   * Un point tapé dans l'adresse ne fait pas un comptoir : sans le droit, la
+   * trace « comptoir » serait fabriquée (vitruve, 2026-11-21).
+   */
+  it('reste « commercial » quand la personne n’a pas le droit du comptoir', () => {
+    expect(orderEntryOriginOf('pick_1', false)).toBe('commercial');
+  });
+
+  it('ramène le Commercial à l’écran d’où il vient, paramètres compris', () => {
+    expect(backLinkOf('commercial', '/comptes-clients/c1/commandes')).toEqual({
+      link: ['/comptes-clients/c1/commandes'],
+      queryParams: {},
       label: 'Ses commandes',
+    });
+    expect(backLinkOf('commercial', '/commandes?view=drafts')).toEqual({
+      link: ['/commandes'],
+      queryParams: { view: 'drafts' },
+      label: 'Retour aux commandes',
+    });
+  });
+
+  it('sans retour lisible, ramène aux commandes', () => {
+    expect(backLinkOf('commercial', '//ailleurs.example')).toMatchObject({
+      link: ['/commandes'],
     });
   });
 
   it('ramène le comptoir à son sélecteur, jamais vers /comptes-clients', () => {
-    expect(backLinkOf('counter', 'c1')).toEqual({
+    expect(backLinkOf('counter', '/comptoir')).toEqual({
       link: ['/nouvelle-commande/pro'],
+      queryParams: null,
       label: 'Choisir un autre compte',
     });
   });

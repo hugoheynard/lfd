@@ -5,7 +5,7 @@ import { resolveStaffPermissions, type StaffRole } from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
 import { routes } from '../app.routes';
-import type { PermissionGuard } from '../auth/permission.guard';
+import type { AnyPermissionGuard, PermissionGuard } from '../auth/permission.guard';
 import { PermissionsStore } from '../auth/permissions.store';
 import { WorkspaceCatalogue } from '../shared/workspace-rail/workspaces';
 
@@ -35,8 +35,8 @@ function configure(role: StaffRole): void {
   });
 }
 
-function isPermissionGuard(guard: unknown): guard is PermissionGuard {
-  return typeof guard === 'function' && 'permission' in guard;
+function isPermissionGuard(guard: unknown): guard is PermissionGuard | AnyPermissionGuard {
+  return typeof guard === 'function' && ('permission' in guard || 'anyOf' in guard);
 }
 
 /** Joue TOUS les gardes de la route pour ce rôle : vrai seulement si chacun laisse passer. */

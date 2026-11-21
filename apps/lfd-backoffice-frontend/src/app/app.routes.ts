@@ -7,10 +7,6 @@ import { comptoirLanding } from './comptoir/comptoir-landing';
 import { orderEntryParams } from './commandes/nouvelle-commande/order-entry-return';
 import { toRoundsTab } from './livraison/tour-manager/tour-manager-views';
 import { prodManagerLanding } from './production/prod-manager/prod-manager-views';
-import {
-  ORDER_ENTRY_ORIGIN_KEY,
-  type OrderEntryOrigin,
-} from './commandes/nouvelle-commande/order-entry-origin';
 import { pendingChangesGuard } from './pim/catalogue/product-form/pending-changes.guard';
 import { DEV_TOOLS_ROUTES } from './dev/dev-tools';
 import { adminRoutes } from './admin/admin.routes';
@@ -496,17 +492,14 @@ export const routes: Routes = [
       ),
   },
   {
-    // PLEINE PAGE, hors de la coquille à onglets de la fiche : on y saisit une
-    // commande pendant dix minutes, avec le client en ligne, et les trois
-    // colonnes réclament toute la largeur. Des onglets à côté inviteraient à en
-    // sortir en cours de saisie — et le panier ne survit pas à la navigation.
+    // L'ancienne adresse de la saisie, depuis la fiche : une seule saisie,
+    // `/nouvelle-commande/:id` (décidé par Hugo le 2026-11-21), qui ramène au
+    // dossier du compte une fois finie.
     path: 'comptes-clients/:id/nouvelle-commande',
-    canActivate: [permissionGuard('b2b_place_order:write')],
-    title: 'Nouvelle commande — LFC B2B admin',
-    loadComponent: () =>
-      import('./commandes/nouvelle-commande/nouvelle-commande-page').then(
-        (m) => m.NouvelleCommandePage,
-      ),
+    redirectTo: ({ params }) =>
+      inject(Router).createUrlTree(['/nouvelle-commande', params['id'] ?? ''], {
+        queryParams: orderEntryParams(`/comptes-clients/${String(params['id'])}/commandes`),
+      }),
   },
   {
     // La carte de santé de l'écosystème. Route de premier niveau et courte : on
@@ -1014,9 +1007,9 @@ export const routes: Routes = [
     // LA SAISIE D'UNE COMMANDE — une page à part, hors de tout espace (décidé
     // par Hugo le 2026-11-21). Ouverte depuis la liste des commandes ou le
     // comptoir, elle note l'origine dans l'adresse (`?retour=`) et y ramène une
-    // fois la commande passée (`order-entry-return.ts`). Ses règles restent
-    // celles du comptoir : l'origine `counter` en `data` de la saisie. Chaque
-    // écran porte ses deux gardes : la table des droits les lit sur l'écran.
+    // fois la commande passée (`order-entry-return.ts`). Le comptoir s'y
+    // reconnaît au point de retrait qu'il passe (`order-entry-origin.ts`).
+    // Chaque écran porte ses gardes : la table des droits les lit sur l'écran.
     path: 'nouvelle-commande',
     children: [
       {
@@ -1050,9 +1043,14 @@ export const routes: Routes = [
           ),
       },
       {
+        // La saisie d'un compte, pour toute l'équipe qui passe commande : le
+        // comptoir s'y reconnaît à son point (`order-entry-origin.ts`), et le
+        // client se lit par la fiche ou par le comptoir, selon les droits.
         path: ':id',
-        canActivate: COUNTER_ORDER_GUARDS,
-        data: { [ORDER_ENTRY_ORIGIN_KEY]: 'counter' satisfies OrderEntryOrigin },
+        canActivate: [
+          permissionGuard('b2b_place_order:write'),
+          anyPermissionGuard('b2b_companies:read', 'b2b_counter:read'),
+        ],
         title: 'Nouvelle commande pro — LFC B2B admin',
         loadComponent: () =>
           import('./commandes/nouvelle-commande/nouvelle-commande-page').then(

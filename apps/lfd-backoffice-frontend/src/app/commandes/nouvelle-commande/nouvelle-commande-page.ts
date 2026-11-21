@@ -19,7 +19,7 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { HttpErrorResponse } from '@angular/common/http';
-import { ActivatedRoute, Router } from '@angular/router';
+import { Router } from '@angular/router';
 import { firstValueFrom, tap } from 'rxjs';
 
 import { buyerOf, composedDraftOf, placePayloadOf } from './draft-payload';
@@ -37,6 +37,7 @@ import {
   orderEntryOriginOf,
   type CounterHandoverOutcome,
   type CounterPlacedOrder,
+  type OrderEntryOrigin,
 } from './order-entry-origin';
 import { HandoverQueueService } from '../../handover-shop/handover-queue.service';
 import { pointOf } from './order-entry-return';
@@ -199,20 +200,27 @@ export class NouvelleCommandePage {
   private readonly handovers = inject(HandoverQueueService);
   private readonly counterNotes = inject(CounterDeliveryNoteService);
 
-  /**
-   * D'où l'on saisit : le Commercial (défaut) ou le Comptoir, lu dans la `data`
-   * de la route. Au comptoir, aucun lien ne sort de `/comptoir`.
-   */
-  protected readonly origin = orderEntryOriginOf(inject(ActivatedRoute).snapshot.data);
+  /** Où « Terminer » et le lien retour ramènent (`order-entry-return.ts`). */
+  readonly retour = input<string>();
 
   /**
-   * D'où vient le client : la fiche au Commercial, les lectures du comptoir au
-   * Comptoir. Choisie une fois, à la construction — l'origine ne change pas.
+   * D'où l'on saisit : le comptoir **quand il a passé son point** et que la
+   * personne en a le droit, le commercial sinon — une seule adresse, et c'est
+   * le point qui dit le client en face (décidé par Hugo le 2026-11-21,
+   * `plan-une-seule-saisie.md`). Au comptoir : au compte (E4), retrait
+   * immédiat, et aucun lien ne sort de `/comptoir`.
    */
-  private readonly customerSource: OrderEntrySource =
-    this.origin === 'counter'
-      ? inject(CounterOrderEntrySource)
-      : inject(CommercialOrderEntrySource);
+  protected readonly origin = computed<OrderEntryOrigin>(() =>
+    orderEntryOriginOf(this.point(), this.permissions.can('b2b_counter:read')),
+  );
+
+  /**
+   * D'où vient le client : la fiche si la personne peut la lire, le détail du
+   * comptoir sinon — selon ses droits, pas selon l'adresse.
+   */
+  private readonly customerSource: OrderEntrySource = this.permissions.can('b2b_companies:read')
+    ? inject(CommercialOrderEntrySource)
+    : inject(CounterOrderEntrySource);
 
   /**
    * Le point du « Retrait immédiat » (lot L6) : celui que le comptoir a mis
@@ -222,7 +230,7 @@ export class NouvelleCommandePage {
    */
   readonly point = input<string>();
   protected readonly counterPlaceId = computed(() =>
-    this.origin === 'counter' && this.permissions.can('handover_counter:write')
+    this.origin() === 'counter' && this.permissions.can('handover_counter:write')
       ? pointOf(this.point())
       : null,
   );
@@ -269,7 +277,7 @@ export class NouvelleCommandePage {
   protected readonly loadError = signal<string | null>(null);
 
   /** Le retour de l'en-tête — le dossier du compte, ou le sélecteur du comptoir. */
-  protected readonly back = computed(() => backLinkOf(this.origin, this.id()));
+  protected readonly back = computed(() => backLinkOf(this.origin(), this.retour()));
 
   /**
    * Le panier de CET écran. Une instance par page, jamais un service racine :
@@ -376,7 +384,7 @@ export class NouvelleCommandePage {
    * 2026-11-03) : règlement au compte seulement, et le serveur le refuse.
    */
   protected readonly linkOffered = computed(
-    () => this.origin !== 'counter' && !(this.company()?.payerIsPublic ?? false),
+    () => this.origin() !== 'counter' && !(this.company()?.payerIsPublic ?? false),
   );
 
   /** Un organisme public : au compte, facture Chorus — rien à choisir. */
@@ -412,7 +420,7 @@ export class NouvelleCommandePage {
     if (draft === null) {
       return null;
     }
-    const payload = placePayloadOf(this.id(), draft, this.cart.toPayloadLines(), this.origin);
+    const payload = placePayloadOf(this.id(), draft, this.cart.toPayloadLines(), this.origin());
     return { key: estimateKeyOf(payload), payload };
   });
 
@@ -549,7 +557,7 @@ export class NouvelleCommandePage {
       // Au comptoir, le lien n'est pas proposé (E4) : au compte, toujours. Un
       // organisme public non plus : au compte, toujours (plan clients publics, B5).
       this.draft.settlement.set(
-        company.settlesOnAccount || company.payerIsPublic || this.origin === 'counter'
+        company.settlesOnAccount || company.payerIsPublic || this.origin() === 'counter'
           ? 'account'
           : 'link',
       );
@@ -807,7 +815,7 @@ export class NouvelleCommandePage {
     try {
       const placed = await this.orders.place(
         {
-          ...placePayloadOf(this.id(), draft, this.cart.toPayloadLines(), this.origin),
+          ...placePayloadOf(this.id(), draft, this.cart.toPayloadLines(), this.origin()),
           // Le TTC de l'estimation affichée : la passation refuse un autre total.
           expectedTotalCents: amounts.totalCents,
           // L'engagement d'un organisme public part avec la passation SEULE :
@@ -961,12 +969,19 @@ export class NouvelleCommandePage {
     paymentUrl: string | null,
     handover: CounterHandoverOutcome | null,
   ): Promise<void> {
-    const destination = destinationAfterPlacingOf(this.origin, this.id(), orderId);
+    // Sans la fiche, le dossier du compte serait refusé : le choix du compte
+    // du comptoir montre la commande passée et son lien, et garde `retour`.
+    const toPicker = this.origin() === 'counter' || !this.permissions.can('b2b_companies:read');
+    const destination = destinationAfterPlacingOf(
+      toPicker ? 'counter' : 'commercial',
+      this.id(),
+      orderId,
+    );
     const placed: CounterPlacedOrder = { orderNumber, paymentUrl, handover };
-    // Au comptoir, l'origine et le point suivent : « Terminer » y ramènera.
+    // L'origine et le point suivent : « Terminer » y ramènera.
     await this.router.navigate(
       destination,
-      this.origin === 'counter'
+      toPicker
         ? { state: { [COUNTER_PLACED_ORDER_KEY]: placed }, queryParamsHandling: 'preserve' }
         : {},
     );

@@ -43,6 +43,7 @@ export function returnTargetOf(raw: string | undefined): string {
 export function returnLabelOf(target: string): string {
   if (target === '/comptoir' || target.startsWith('/comptoir/')) return 'Retour au comptoir';
   if (target === '/commandes' || target.startsWith('/commandes?')) return 'Retour aux commandes';
+  if (/^\/comptes-clients\/[^/?]+\/commandes$/u.test(target)) return 'Ses commandes';
   return 'Retour';
 }
 

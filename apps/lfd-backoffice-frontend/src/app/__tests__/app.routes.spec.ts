@@ -34,7 +34,8 @@ const OPEN = 'open';
  * écran ouvert exprès s'écrivent pareil, et le test qui traque les orphelins ne
  * peut plus rien dire.
  */
-type ScreenAccess = StaffPermission | readonly StaffPermission[] | AnyOf | null | typeof OPEN;
+type ScreenAccess =
+  StaffPermission | readonly (StaffPermission | AnyOf)[] | AnyOf | null | typeof OPEN;
 
 /** « L'un OU l'autre » — un `anyPermissionGuard`, à distinguer de deux gardes cumulés. */
 interface AnyOf {
@@ -57,7 +58,6 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   commandes: 'b2b_orders:read',
   'commandes/:orderId': 'b2b_orders:read',
   'commandes/:orderId/modifier': 'b2b_place_order:write',
-  'comptes-clients/:id/nouvelle-commande': 'b2b_place_order:write',
   // Cible du QR de colisage imprimé sur la fiche d'atelier — c'est une VALEUR
   // encodée dans du papier en circulation, pas un choix d'arborescence, d'où le
   // premier niveau.
@@ -359,13 +359,17 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   // mêmes deux droits que la saisie qu'il ouvre.
   'comptoir/nouvelle-commande': ['b2b_counter:read', 'b2b_place_order:write'],
   // La saisie, page à part (décidé par Hugo le 2026-11-21) : le choix « pro ou
-  // particulier », puis l'une des deux saisies, sous les mêmes deux droits
-  // (commande-particulier-reglee-en-boutique.md). `:id` est la MÊME saisie que
-  // `comptes-clients/:id/nouvelle-commande`, aux règles du comptoir.
+  // particulier » et les deux saisies du comptoir sous ses deux droits
+  // (commande-particulier-reglee-en-boutique.md). `:id` est LA saisie d'un
+  // compte, pour toute l'équipe qui passe commande : la fiche ou le comptoir
+  // pour lire le client (`plan-une-seule-saisie.md`).
   'nouvelle-commande': ['b2b_counter:read', 'b2b_place_order:write'],
   'nouvelle-commande/pro': ['b2b_counter:read', 'b2b_place_order:write'],
   'nouvelle-commande/particulier': ['b2b_counter:read', 'b2b_place_order:write'],
-  'nouvelle-commande/:id': ['b2b_counter:read', 'b2b_place_order:write'],
+  'nouvelle-commande/:id': [
+    'b2b_place_order:write',
+    { anyOf: ['b2b_companies:read', 'b2b_counter:read'] },
+  ],
   // LA LIVRAISON est un ESPACE dont la coquille n'est PAS gardée : ses vues
   // relèvent de deux droits distincts, et un garde commun fermerait l'une à qui
   // ne tient que l'autre (plan-preparation-de-tournee.md, lot 2). La coquille ne
@@ -823,12 +827,16 @@ describe("l'arbre de routes du back-office", () => {
     expect(paths).not.toContain('lots-de-prelevement');
   });
 
-  it('monte la saisie à part avec l’origine « counter »', () => {
-    // Sans elle, la saisie reprend les liens du Commercial — vers
-    // `/comptes-clients`, que le poste du comptoir n'a pas forcément le droit d'ouvrir.
+  it('ne fixe plus l’origine de la saisie dans la route : le point du comptoir la dit', () => {
     const page = routes.find((route) => route.path === 'nouvelle-commande');
     const entry = page?.children?.find((child) => child.path === ':id');
-    expect(entry?.data?.['origin']).toBe('counter');
+    expect(entry?.data?.['origin']).toBeUndefined();
+  });
+
+  it('renvoie l’ancienne adresse de la fiche vers la saisie unique', () => {
+    const old = routes.find((route) => route.path === 'comptes-clients/:id/nouvelle-commande');
+    expect(old?.redirectTo).toBeTypeOf('function');
+    expect(old?.loadComponent).toBeUndefined();
   });
 
   it('monte la Supervision au premier niveau, sous son seul droit', () => {

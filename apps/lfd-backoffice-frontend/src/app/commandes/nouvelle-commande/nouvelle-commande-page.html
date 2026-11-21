@@ -13,9 +13,12 @@
   }
   @default {
     <header class="nc-head">
+      <!-- Au comptoir, le sélecteur garde l'origine et le point ; ailleurs, le
+           retour reprend l'adresse exacte d'où l'on vient. -->
       <fold-back-link
         [routerLink]="back().link"
-        queryParamsHandling="preserve"
+        [queryParams]="back().queryParams"
+        [queryParamsHandling]="back().queryParams === null ? 'preserve' : null"
         [label]="back().label"
       />
       <div class="nc-titles">

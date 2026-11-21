@@ -111,12 +111,16 @@ Sorti de `b2b_orders` le 2026-10-01. Il couvre la saisie par l'équipe.
 | `GET /admin/order-drafts/:companyId`           | `b2b_place_order:write` (`@RequirePermission`, même en lecture)     |
 | `PUT`, `DELETE /admin/order-drafts/:companyId` | `b2b_place_order:write` (verbe, `@AdminSurface("b2b_place_order")`) |
 
-**Back-office** : `/comptes-clients/:id/nouvelle-commande` (garde
-`b2b_place_order:write`) ; `/nouvelle-commande` et ses écrans `/pro`,
-`/particulier`, `/:id`, ainsi que le relais `/comptoir/nouvelle-commande`
-(garde `COUNTER_ORDER_GUARDS` =
-`b2b_counter:read` **et** `b2b_place_order:write`) ; l'entrée « Comptoir » du
-menu (`app.ts`, `can('b2b_counter:read') && can('b2b_place_order:write')`).
+**Back-office** : la saisie d'un compte, `/nouvelle-commande/:id` (garde
+`b2b_place_order:write` **et** l'un de `b2b_companies:read` ou
+`b2b_counter:read` — le client s'y lit par la fiche ou par le comptoir, selon
+les droits ; [`une-seule-saisie.md`](../commandes/passation/une-seule-saisie.md)).
+L'ancienne adresse `/comptes-clients/:id/nouvelle-commande` y renvoie.
+`/nouvelle-commande` (le choix pro ou particulier) et ses écrans `/pro` et
+`/particulier`, ainsi que le relais `/comptoir/nouvelle-commande` (garde
+`COUNTER_ORDER_GUARDS` = `b2b_counter:read` **et** `b2b_place_order:write`) ;
+l'entrée « Comptoir » du menu (`app.ts`,
+`can('b2b_counter:read') && can('b2b_place_order:write')`).
 
 ## `b2b_cancel_order` — Annuler une commande
 
