@@ -12,15 +12,10 @@
       <span titleAction class="pan-summary">{{ summary() }}</span>
     }
   </fold-element-title>
-} @else if (!cart().isEmpty()) {
-  <!-- Dans le panneau, son en-tête dit déjà « Panier » (Hugo, 2026-11-03) :
-       il ne reste que le récapitulatif. -->
-  <div class="pan-recap">
-    <strong class="pan-summary">{{ summary() }}</strong>
-    @if (later(); as text) {
-      <span class="pan-later">{{ text }}</span>
-    }
-  </div>
+} @else if (!cart().isEmpty() && later(); as text) {
+  <!-- Dans le panneau, l'en-tête dit « Panier » et la carte des montants le
+     total (Hugo, 2026-11-21) : il ne reste à dire que pourquoi le prix attend. -->
+  <span class="pan-later">{{ text }}</span>
 }
 
 <!-- Deux vues : côte à côte en tablette (le tiroir est large, Hugo,
@@ -149,7 +144,9 @@
            tête et collé en haut pendant que les articles défilent dessous
            (Hugo, 2026-11-21). -->
       @if (totalRows(); as rows) {
-        <app-montants-panier class="pan-amounts" [rows]="rows" />
+        <fold-card class="pan-amounts" padding="md">
+          <app-montants-panier [rows]="rows" />
+        </fold-card>
       }
       <ul class="pan-list">
         @for (line of shownLines(); track line.sku) {
