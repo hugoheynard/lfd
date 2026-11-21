@@ -86,11 +86,12 @@
     @if (!immediate()) {
       <label class="pan-field">
         <span class="pan-label">{{ dateLabel() }}</span>
-        <input
-          type="date"
-          [value]="requestedDate()"
-          (change)="draft().requestedDate.set($any($event.target).value)"
-        />
+        <input type="date" [value]="requestedDate()" (change)="onDate($any($event.target).value)" />
+        @if (draft().dateProposed()) {
+          <span class="pan-proposed" data-date-proposed>
+            Proposée : demain. À confirmer avec le client.
+          </span>
+        }
       </label>
     }
 

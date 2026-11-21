@@ -76,6 +76,19 @@ describe('PanierCommande — en-tête et ordre', () => {
     expect(host.textContent).toContain('dès que le retrait ou la livraison est choisi');
   });
 
+  it('dit que la date de départ n’est qu’une proposition, jusqu’au choix', () => {
+    const { fixture, host } = mountFull(new CartStore());
+    expect(host.querySelector('[data-date-proposed]')).not.toBeNull();
+
+    const input = host.querySelector<HTMLInputElement>('input[type="date"]');
+    if (input === null) throw new Error('champ de date absent');
+    input.value = '2099-01-15';
+    input.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+
+    expect(host.querySelector('[data-date-proposed]')).toBeNull();
+  });
+
   it('ouvre sur « Paramétrer la commande »', () => {
     const { component } = mountFull(new CartStore());
     expect(component.view()).toBe('settings');

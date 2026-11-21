@@ -350,6 +350,12 @@ export class PanierCommande {
    */
   protected readonly split = computed(() => !this.headed() && !this.handheld());
 
+  /** Une date tapée est un choix : elle cesse d'être une proposition. */
+  protected onDate(value: string): void {
+    this.draft().requestedDate.set(value);
+    this.draft().dateProposed.set(false);
+  }
+
   protected onFulfillment(choice: FulfillmentChoice): void {
     this.draft().fulfillment.set(choice);
     // Changer d'acheminement change ce qu'on s'apprêtait à confirmer.

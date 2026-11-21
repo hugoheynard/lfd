@@ -170,15 +170,17 @@
     }
   }
 
-  <!-- 🔴 OBLIGATOIRE, et jamais prérempli. Une heure qu'on suggère devient une
-       heure qu'on promet, et le comptoir la lira comme un engagement du client ;
-       une commande sans heure, elle, n'a aucun rang dans la file. `required`
-       marque le champ — le refus, lui, vient de l'acheminement. -->
+  <!-- 🔴 OBLIGATOIRE. Le premier créneau est pré-rempli pour que le prix
+       s'estime (Hugo, 2026-11-21), et DIT qu'il n'est qu'une proposition tant
+       qu'on ne l'a pas choisi : une heure suggérée ne doit pas se lire comme
+       un engagement du client. `required` marque le champ — le refus, lui,
+       vient de l'acheminement. -->
   @if (slots().length > 0) {
     <fold-listbox
       label="Créneau de retrait"
       required
       placeholder="Quand le client passe-t-il ?"
+      [hint]="slotHint()"
       [options]="slotOptions()"
       [value]="slotId()"
       (selectionChange)="onSlot($event)"

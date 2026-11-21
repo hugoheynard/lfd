@@ -68,15 +68,17 @@ export class DraftStore {
    * La tranche de retrait convenue. `null` = **pas encore choisie**, et le
    * panier refuse de partir tant qu'elle l'est.
    *
-   * 🔴 **Aucune valeur de départ, et c'est le sujet.** Préremplir avec la
-   * première heure d'ouverture du point inventerait un engagement que personne
-   * n'a pris — c'est exactement ce que le backfill du 2026-08-15 s'était refusé
-   * à faire. Le créneau est obligatoire ET non suggéré : les deux tiennent
-   * ensemble, sans quoi on obtient une heure par défaut que le comptoir lira
-   * comme une promesse du client.
+   * Le premier créneau du point est pré-rempli, pour que le panier ait son
+   * prix sans attendre (décidé par Hugo le 2026-11-21) — et marqué
+   * {@link windowProposed} tant que le commercial ne l'a pas choisi : une heure
+   * suggérée ne doit pas se lire comme une heure convenue avec le client.
    */
   readonly window = signal<FulfillmentWindow | null>(null);
+  /** La tranche est celle que l'écran a proposée, personne ne l'a choisie. */
+  readonly windowProposed = signal(false);
   readonly requestedDate = signal(tomorrowIso());
+  /** La date est celle de départ (demain), personne ne l'a choisie. */
+  readonly dateProposed = signal(true);
   readonly note = signal('');
   readonly settlement = signal<StaffSettlement>('link');
   /**
@@ -147,6 +149,9 @@ export class DraftStore {
     this.requestedDate.set(snapshot.requestedDate);
     this.note.set(snapshot.note);
     this.settlement.set(snapshot.settlement);
+    // Un brouillon repris porte des choix : ils ne sont plus des propositions.
+    this.windowProposed.set(false);
+    this.dateProposed.set(false);
   }
 
   reset(): void {
@@ -168,6 +173,7 @@ export class DraftStore {
       note: '',
       settlement: 'link',
     });
+    this.dateProposed.set(true);
   }
 }
 

@@ -534,7 +534,15 @@ export class AcheminementCommande {
       return;
     }
     this.draft().window.set({ start: slot.start, end: slot.end });
+    this.draft().windowProposed.set(false);
   }
+
+  /** Le libellé sous le créneau tant qu'il n'est qu'une proposition. */
+  protected readonly slotHint = computed(() =>
+    this.draft().windowProposed()
+      ? 'Proposé : le premier créneau du point. À confirmer avec le client.'
+      : undefined,
+  );
 
   protected readonly choice = computed<FulfillmentChoice>(() =>
     this.isCourier() ? this.courierChoice() : this.pickupChoice(),
@@ -556,6 +564,7 @@ export class AcheminementCommande {
       const first = this.slots().find((slot) => slot.access !== 'pro' || this.audience() === 'b2b');
       if (first !== undefined) {
         this.draft().window.set({ start: first.start, end: first.end });
+        this.draft().windowProposed.set(true);
       }
     });
   }
@@ -669,6 +678,7 @@ export class AcheminementCommande {
       // l'ouverture, et le créneau se rechoisit.
       this.draft().entry.set('scheduled');
       this.draft().requestedDate.set(tomorrowIso());
+      this.draft().dateProposed.set(true);
       this.draft().pickupId.set('');
       this.resetWindow();
     } else if (method !== this.method()) {

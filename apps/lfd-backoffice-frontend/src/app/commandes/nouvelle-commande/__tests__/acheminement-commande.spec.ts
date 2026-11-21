@@ -385,6 +385,16 @@ describe("le sélecteur d'acheminement de la saisie staff", () => {
       expect(choice.window).toEqual({ start: '07:00', end: '08:00' });
     });
 
+    it('dit que le créneau pré-rempli n’est qu’une proposition, jusqu’au choix', () => {
+      const fixture = mount([OUVERT]);
+      expect(fixture.componentInstance['slotHint']()).toContain('Proposé');
+
+      fixture.componentInstance['onSlot']('06:00-06:30');
+      fixture.detectChanges();
+
+      expect(fixture.componentInstance['slotHint']()).toBeUndefined();
+    });
+
     it('retient la tranche choisie, bornes comprises', () => {
       const fixture = mount([OUVERT]);
       fixture.componentInstance['onSlot']('05:00-06:00');
