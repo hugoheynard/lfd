@@ -52,13 +52,18 @@ describe("l'origine de la saisie", () => {
     });
   });
 
-  it('mène le Commercial à la commande passée, dans le dossier du compte', () => {
-    expect(destinationAfterPlacingOf('commercial', 'c1', 'o1')).toEqual([
-      '/comptes-clients',
-      'c1',
-      'commandes',
+  it('mène à la commande passée dans la liste des commandes, quand on en vient', () => {
+    expect(destinationAfterPlacingOf('commercial', 'c1', 'o1', '/commandes?view=drafts')).toEqual([
+      '/commandes',
       'o1',
     ]);
+    expect(destinationAfterPlacingOf('commercial', 'c1', 'o1')).toEqual(['/commandes', 'o1']);
+  });
+
+  it('mène à la commande passée dans le dossier du compte, quand on vient de la fiche', () => {
+    expect(
+      destinationAfterPlacingOf('commercial', 'c1', 'o1', '/comptes-clients/c1/commandes'),
+    ).toEqual(['/comptes-clients', 'c1', 'commandes', 'o1']);
   });
 
   it('renvoie le comptoir au sélecteur après la commande', () => {

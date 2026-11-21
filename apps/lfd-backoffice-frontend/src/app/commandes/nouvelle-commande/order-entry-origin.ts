@@ -65,18 +65,23 @@ export function backLinkOf(
 }
 
 /**
- * Où aller une fois la commande passée. Au Commercial, dans le dossier du
- * compte : la suite (en repasser une, vérifier la facturation) s'y trouve. Au
- * comptoir, retour au sélecteur, qui affiche le lien de règlement.
+ * Où aller une fois la commande passée. Au comptoir, retour au sélecteur, qui
+ * affiche le lien de règlement. Ailleurs, la commande, **là d'où l'on vient** :
+ * dans le dossier du compte si la saisie a été ouverte depuis la fiche, dans
+ * la liste des commandes sinon — le retour de chacun ramène à sa liste.
  */
 export function destinationAfterPlacingOf(
   origin: OrderEntryOrigin,
   companyId: string,
   orderId: string,
+  retour?: string,
 ): string[] {
-  return origin === 'counter'
-    ? [COUNTER_ORDER_PICKER_LINK]
-    : ['/comptes-clients', companyId, 'commandes', orderId];
+  if (origin === 'counter') {
+    return [COUNTER_ORDER_PICKER_LINK];
+  }
+  return returnTargetOf(retour).startsWith('/comptes-clients/')
+    ? ['/comptes-clients', companyId, 'commandes', orderId]
+    : ['/commandes', orderId];
 }
 
 /**

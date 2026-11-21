@@ -976,6 +976,7 @@ export class NouvelleCommandePage {
       toPicker ? 'counter' : 'commercial',
       this.id(),
       orderId,
+      this.retour(),
     );
     const placed: CounterPlacedOrder = { orderNumber, paymentUrl, handover };
     // L'origine et le point suivent : « Terminer » y ramènera.
