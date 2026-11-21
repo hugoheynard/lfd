@@ -1,3 +1,4 @@
+import { orderPretaxCents } from "@lfd/money";
 import { Clock } from "../../../../platform/time/clock.js";
 import { ensureTotalSeen } from "../../domain/services/seen-total.js";
 import { OrderCutoffWaiverGate } from "../../domain/ports/order-cutoff-waiver.gate.js";
@@ -162,7 +163,15 @@ export class PlaceOrderForCustomerHandler implements ICommandHandler<
     // client-là qui vient de commander, et le journal croissance compte des
     // clients. Qui a saisi est sur la commande, où c'est une trace, pas un signal.
     this.events.publish(
-      new OrderPlacedEvent(placed.id, placed.orderNumber, buyerUserId, companyId, order.totalCents),
+      new OrderPlacedEvent(
+        placed.id,
+        placed.orderNumber,
+        buyerUserId,
+        companyId,
+        order.totalCents,
+        orderPretaxCents(order.amounts()),
+        order.clientele,
+      ),
     );
 
     return result;

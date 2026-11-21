@@ -63,7 +63,7 @@ export class PrismaOrderRevisionHistoryReader extends OrderRevisionHistoryReader
   async historyOf(orderId: string): Promise<readonly RecordedOrderRevision[] | null> {
     const order = await this.prisma.order.findUnique({
       where: { id: orderId },
-      select: { id: true },
+      select: { id: true, clientele: true },
     });
     if (order === null) {
       return null;
@@ -85,6 +85,9 @@ export class PrismaOrderRevisionHistoryReader extends OrderRevisionHistoryReader
       changes: row.changes.filter(isKnownChange),
       totalBeforeCents: row.totalBeforeCents,
       totalAfterCents: row.totalAfterCents,
+      pretaxBeforeCents: row.pretaxBeforeCents,
+      pretaxAfterCents: row.pretaxAfterCents,
+      clientele: order.clientele,
       replaced: compositionOf(row.composition),
     }));
   }

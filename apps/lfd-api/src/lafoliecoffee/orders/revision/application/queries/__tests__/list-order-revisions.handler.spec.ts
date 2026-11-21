@@ -59,6 +59,9 @@ const BY_STAFF: RecordedOrderRevision = {
   changes: ["date"],
   totalBeforeCents: 3_798,
   totalAfterCents: 3_798,
+  pretaxBeforeCents: 3_600,
+  pretaxAfterCents: 3_600,
+  clientele: "pro",
   replaced: REPLACED,
 };
 
@@ -69,6 +72,9 @@ const BY_CUSTOMER: RecordedOrderRevision = {
   changes: ["lines"],
   totalBeforeCents: 1_899,
   totalAfterCents: 3_798,
+  pretaxBeforeCents: null,
+  pretaxAfterCents: null,
+  clientele: "pro",
   replaced: null,
 };
 
@@ -102,6 +108,9 @@ describe("ListOrderRevisionsHandler", () => {
         changes: ["date"],
         totalBeforeCents: 3_798,
         totalAfterCents: 3_798,
+        pretaxBeforeCents: 3_600,
+        pretaxAfterCents: 3_600,
+        clientele: "pro",
         replaced: REPLACED,
       },
       {
@@ -111,6 +120,9 @@ describe("ListOrderRevisionsHandler", () => {
         changes: ["lines"],
         totalBeforeCents: 1_899,
         totalAfterCents: 3_798,
+        pretaxBeforeCents: null,
+        pretaxAfterCents: null,
+        clientele: "pro",
         replaced: null,
       },
     ]);

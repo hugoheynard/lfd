@@ -304,6 +304,12 @@ const openings = () =>
  */
 const customerLabel = () => subjectLabel().optional();
 
+/**
+ * Qui commande (`OrderClientele`) : l'historique dit le HT d'une commande pro,
+ * le TTC d'une commande particulier.
+ */
+const orderClientele = () => z.enum(["pro", "public"]);
+
 const orderPlacedBeforeLabel = () =>
   payload({
     orderId: ref("order"),
@@ -312,6 +318,8 @@ const orderPlacedBeforeLabel = () =>
     clientName: z.string().optional(),
     clientLegalName: z.string().optional(),
     totalCents: cents(),
+    totalPretaxCents: cents().optional(),
+    clientele: orderClientele().optional(),
   });
 
 const orderReadyBeforeLabel = () =>
@@ -372,7 +380,11 @@ export const ORDERS_PRODUCTION_FACTS = {
       /** Figés à la passation, absents quand l'annuaire n'a pas répondu. */
       clientName: z.string().optional(),
       clientLegalName: z.string().optional(),
+      /** Le TTC. */
       totalCents: cents(),
+      /** Le HT (`orderPretaxCents`) et qui commande : absents des faits écrits avant le 2026-11-21. */
+      totalPretaxCents: cents().optional(),
+      clientele: orderClientele().optional(),
     }),
     [orderPlacedBeforeLabel()],
   ),
@@ -483,6 +495,10 @@ export const ORDERS_PRODUCTION_FACTS = {
       changes: z.array(z.enum(ORDER_REVISION_CHANGES)),
       totalBeforeCents: cents(),
       totalAfterCents: cents(),
+      /** Les deux HT (`orderPretaxCents`) et qui commande : absents des faits écrits avant le 2026-11-21. */
+      pretaxBeforeCents: cents().optional(),
+      pretaxAfterCents: cents().optional(),
+      clientele: orderClientele().optional(),
     }),
   ),
   /**

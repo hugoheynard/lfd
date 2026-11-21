@@ -215,7 +215,7 @@ describe('le détail, d’après le schéma qui valide la charge', () => {
     );
 
     expect(row(rendered, 'Nom du client')).toBeUndefined();
-    expect(row(rendered, 'Total')).toMatch(/^12,50\s€$/u);
+    expect(row(rendered, 'Total TTC')).toMatch(/^12,50\s€$/u);
   });
 });
 

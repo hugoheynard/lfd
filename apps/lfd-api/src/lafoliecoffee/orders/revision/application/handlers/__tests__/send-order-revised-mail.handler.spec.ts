@@ -61,6 +61,7 @@ function fact(options: {
     options.origin ?? "direct",
     pretax === null ? null : pretax[0],
     pretax === null ? null : pretax[1],
+    "pro",
   );
   return { eventId: "evt_1", ...event.durableFact() };
 }

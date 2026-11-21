@@ -1,3 +1,4 @@
+import { orderPretaxCents } from "@lfd/money";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
@@ -189,7 +190,15 @@ export class PlaceShopOrderHandler implements ICommandHandler<
     // courriel de confirmation et son QR — le porteur inscrit plus haut a une
     // adresse, donc l'envoi part vraiment (plan §5).
     this.events.publish(
-      new OrderPlacedEvent(placed.id, placed.orderNumber, buyerUserId, null, order.totalCents),
+      new OrderPlacedEvent(
+        placed.id,
+        placed.orderNumber,
+        buyerUserId,
+        null,
+        order.totalCents,
+        orderPretaxCents(order.amounts()),
+        order.clientele,
+      ),
     );
 
     // « Créez votre compte : N points offerts, et cette commande vous

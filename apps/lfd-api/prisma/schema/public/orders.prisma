@@ -692,6 +692,10 @@ model OrderRevisionEntry {
   changes          String[]
   totalBeforeCents Int      @map("total_before_cents")
   totalAfterCents  Int      @map("total_after_cents")
+  /// Le HT avant et après (`orderPretaxCents`) : l'historique d'une commande
+  /// pro dit le HT. Nuls sur une révision gardée avant le 2026-11-21.
+  pretaxBeforeCents Int?    @map("pretax_before_cents")
+  pretaxAfterCents  Int?    @map("pretax_after_cents")
   /// `customer` ou `staff` — tenu par un CHECK.
   revisedByKind    String   @map("revised_by_kind")
   revisedByUserId  String?  @map("revised_by_user_id")

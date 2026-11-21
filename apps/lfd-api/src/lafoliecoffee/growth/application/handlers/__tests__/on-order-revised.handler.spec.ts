@@ -43,6 +43,7 @@ describe("OnOrderRevised", () => {
           "direct",
           null,
           null,
+          null,
         ),
       ),
     );
@@ -76,6 +77,7 @@ describe("OnOrderRevised", () => {
           "direct",
           null,
           null,
+          null,
         ),
       ),
     );
@@ -95,5 +97,67 @@ describe("OnOrderRevised", () => {
       run.handle({ eventId: "evt_1", type: "order.revised", payload: { orderId: "order_9" } }),
     ).rejects.toThrow("illisible");
     expect(recorder.records).toEqual([]);
+  });
+
+  /** Régression : l'historique d'une commande pro disait un total TTC sans le dire. */
+  it("recopie les deux HT et la clientèle, que l'historique dit pour un pro", async () => {
+    const { recorder, run } = handler();
+
+    await run.handle(
+      delivery(
+        new OrderRevisedEvent(
+          "order_9",
+          "ORD-9",
+          "user_7",
+          1,
+          { kind: "customer", userId: "user_7" },
+          ["lines"],
+          2_110,
+          3_165,
+          "direct",
+          2_000,
+          3_000,
+          "pro",
+        ),
+      ),
+    );
+
+    const payload = recorder.records[0]?.payload;
+    expect(payload).toMatchObject({
+      totalBeforeCents: 2_110,
+      totalAfterCents: 3_165,
+      pretaxBeforeCents: 2_000,
+      pretaxAfterCents: 3_000,
+      clientele: "pro",
+    });
+    expect(JOURNAL_FACTS["order.revised"].payload.safeParse(payload).success).toBe(true);
+  });
+
+  it("omet le HT et la clientèle d'un fait écrit avant eux", async () => {
+    const { recorder, run } = handler();
+
+    await run.handle(
+      delivery(
+        new OrderRevisedEvent(
+          "order_9",
+          "ORD-9",
+          "user_7",
+          1,
+          { kind: "customer", userId: "user_7" },
+          ["note"],
+          2_110,
+          2_110,
+          "direct",
+          null,
+          null,
+          null,
+        ),
+      ),
+    );
+
+    const payload = recorder.records[0]?.payload;
+    expect(payload).not.toHaveProperty("pretaxBeforeCents");
+    expect(payload).not.toHaveProperty("pretaxAfterCents");
+    expect(payload).not.toHaveProperty("clientele");
   });
 });

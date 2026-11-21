@@ -1,3 +1,4 @@
+import { orderPretaxCents } from "@lfd/money";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { CommerceOrderPlacedFact } from "../../../../delivery/channels/commerce/index.js";
@@ -96,6 +97,8 @@ export class PlaceParticularOrderAtCounterHandler implements ICommandHandler<
         payload.buyerUserId,
         null,
         order.totalCents,
+        orderPretaxCents(order.amounts()),
+        order.clientele,
       ),
     );
     return { id: placed.id, orderNumber: placed.orderNumber, totalCents: order.totalCents };

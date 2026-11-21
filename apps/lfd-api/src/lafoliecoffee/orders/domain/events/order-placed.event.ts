@@ -1,3 +1,5 @@
+import type { OrderClientele } from "@lfd/contracts";
+
 /**
  * Fait de domaine : **une commande vient d'être passée**. Publié par le contexte
  * `orders` après persistance ; le contexte ne sait pas qui l'écoute. Le journal
@@ -13,6 +15,10 @@ export class OrderPlacedEvent {
     readonly placedByUserId: string,
     /** Société rattachée, ou `null` (commande zéro-friction personnelle). */
     readonly companyId: string | null,
+    /** Le TTC. */
     readonly totalCents: number,
+    /** Le HT (`orderPretaxCents`), que l'historique dit pour une commande pro. */
+    readonly pretaxCents: number,
+    readonly clientele: OrderClientele,
   ) {}
 }

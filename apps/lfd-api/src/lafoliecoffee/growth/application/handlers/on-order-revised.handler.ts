@@ -55,6 +55,14 @@ export class OnOrderRevised implements DurableSubscriber {
         changes: [...event.changes],
         totalBeforeCents: event.totalBeforeCents,
         totalAfterCents: event.totalAfterCents,
+        // Absents d'un fait écrit avant eux : l'historique dit alors le TTC.
+        ...(event.pretaxBeforeCents === null || event.pretaxAfterCents === null
+          ? {}
+          : {
+              pretaxBeforeCents: event.pretaxBeforeCents,
+              pretaxAfterCents: event.pretaxAfterCents,
+            }),
+        ...(event.clientele === null ? {} : { clientele: event.clientele }),
       },
     });
   }

@@ -198,6 +198,8 @@ function historyOf(
     changes: [...revision.changes],
     totalBeforeCents: revision.totalBeforeCents,
     totalAfterCents: revision.totalAfterCents,
+    pretaxBeforeCents: revision.pretaxBeforeCents,
+    pretaxAfterCents: revision.pretaxAfterCents,
     revisedByKind: author.kind,
     revisedByUserId: author.kind === "customer" ? author.userId : null,
     revisedByStaffId: author.kind === "staff" ? author.staffId : null,

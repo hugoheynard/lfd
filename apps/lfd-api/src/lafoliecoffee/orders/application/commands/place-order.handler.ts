@@ -1,3 +1,4 @@
+import { orderPretaxCents } from "@lfd/money";
 import { Clock } from "../../../../platform/time/clock.js";
 import { OrderCutoffWaiverGate } from "../../domain/ports/order-cutoff-waiver.gate.js";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
@@ -206,6 +207,8 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, Pla
         command.actorUserId,
         companyId,
         order.totalCents,
+        orderPretaxCents(order.amounts()),
+        order.clientele,
       ),
     );
 

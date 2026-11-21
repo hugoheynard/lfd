@@ -23,6 +23,7 @@ import {
 } from '../phrase';
 import { formatCount, formatUnit } from '../units';
 import { DELIVERY_VAT_MODE } from '../values/orders-values';
+import { hiddenTotals } from './order-tax-basis';
 
 /**
  * **La vie d'une commande et la journée du fournil** — la passation, le colisage et le
@@ -161,6 +162,11 @@ function afterThePlan(fact: PhraseFact): Segment[] {
  * quand c'est le client. Ce qui a changé et les deux totaux restent au détail.
  */
 function orderRevised(fact: PhraseFact): Said {
+  const totals = hiddenTotals(
+    fact.payload,
+    ['totalBeforeCents', 'totalAfterCents'],
+    ['pretaxBeforeCents', 'pretaxAfterCents'],
+  );
   const number = name(orDash(fact.payload['orderNumber']));
   if (fact.payload['revisedBy'] === null) {
     return said(
@@ -169,14 +175,14 @@ function orderRevised(fact: PhraseFact): Said {
         text(' a modifié sa commande '),
         number,
       ],
-      ['orderNumber', 'revisedBy', 'revisedByCustomer'],
+      ['orderNumber', 'revisedBy', 'revisedByCustomer', ...totals],
     );
   }
   return staffGesture(
     fact,
     'revisedBy',
     [text(' a modifié la commande '), number],
-    ['orderNumber'],
+    ['orderNumber', ...totals],
   );
 }
 
@@ -436,7 +442,11 @@ const orderPlaced: Phrase = (fact) => {
       name(orDash(fact.payload['orderNumber'])),
       ...(client === null || client === fact.actor ? [] : [text(' pour '), subject(fact, client)]),
     ],
-    ['subjectLabel', 'orderNumber'],
+    [
+      'subjectLabel',
+      'orderNumber',
+      ...hiddenTotals(fact.payload, ['totalCents'], ['totalPretaxCents']),
+    ],
   );
 };
 

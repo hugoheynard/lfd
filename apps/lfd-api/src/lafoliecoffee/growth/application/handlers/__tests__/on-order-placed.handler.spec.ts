@@ -36,7 +36,9 @@ describe("OnOrderPlaced", () => {
     const recorder = new RecordingActivityRecorder();
     const handler = new OnOrderPlaced(recorder, new StubCompanies(), customers(), work);
 
-    handler.handle(new OrderPlacedEvent("order_9", "ORD-9", "user_7", "company_3", 4200));
+    handler.handle(
+      new OrderPlacedEvent("order_9", "ORD-9", "user_7", "company_3", 4200, 3_980, "pro"),
+    );
     await work.whenIdle();
 
     expect(recorder.records).toHaveLength(1);
@@ -56,6 +58,9 @@ describe("OnOrderPlaced", () => {
         clientName: "Boulangerie Martin",
         clientLegalName: "SARL MARTIN",
         totalCents: 4200,
+        // Régression : l'historique d'une commande pro disait un total TTC sans le dire.
+        totalPretaxCents: 3_980,
+        clientele: "pro",
       },
     });
   });
@@ -64,7 +69,7 @@ describe("OnOrderPlaced", () => {
     const recorder = new RecordingActivityRecorder();
     const companies = new StubCompanies();
     new OnOrderPlaced(recorder, companies, customers(), work).handle(
-      new OrderPlacedEvent("order_1", "ORD-1", "user_1", null, 400),
+      new OrderPlacedEvent("order_1", "ORD-1", "user_1", null, 400, 379, "public"),
     );
     await work.whenIdle();
 
@@ -77,7 +82,7 @@ describe("OnOrderPlaced", () => {
   it("n’invente pas de nom quand la société est introuvable", async () => {
     const recorder = new RecordingActivityRecorder();
     new OnOrderPlaced(recorder, new StubCompanies(), customers(), work).handle(
-      new OrderPlacedEvent("order_2", "ORD-2", "user_1", "company_inconnue", 400),
+      new OrderPlacedEvent("order_2", "ORD-2", "user_1", "company_inconnue", 400, 379, "pro"),
     );
     await work.whenIdle();
 
@@ -88,7 +93,7 @@ describe("OnOrderPlaced", () => {
     const recorder = new RecordingActivityRecorder();
     const names = customers();
     new OnOrderPlaced(recorder, new StubCompanies(), names, work).handle(
-      new OrderPlacedEvent("order_3", "ORD-3", "user_7", null, 400),
+      new OrderPlacedEvent("order_3", "ORD-3", "user_7", null, 400, 379, "public"),
     );
     await work.whenIdle();
 
@@ -100,10 +105,10 @@ describe("OnOrderPlaced", () => {
   it("écrit le fait SANS libellé quand la personne n'a pas de nom — jamais son adresse", async () => {
     const recorder = new RecordingActivityRecorder();
     new OnOrderPlaced(recorder, new StubCompanies(), customers(), work).handle(
-      new OrderPlacedEvent("order_4", "ORD-4", "user_sans_nom", null, 400),
+      new OrderPlacedEvent("order_4", "ORD-4", "user_sans_nom", null, 400, 379, "public"),
     );
     new OnOrderPlaced(recorder, new StubCompanies(), new BrokenCustomers(), work).handle(
-      new OrderPlacedEvent("order_5", "ORD-5", "user_7", null, 400),
+      new OrderPlacedEvent("order_5", "ORD-5", "user_7", null, 400, 379, "public"),
     );
     await work.whenIdle();
 

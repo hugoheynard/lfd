@@ -1,3 +1,5 @@
+import type { OrderClientele } from "@lfd/contracts";
+
 import type { DurableEvent, DurableFact } from "../../../../../platform/outbox/durable-event.js";
 import { TechnicalError } from "../../../../../platform/shared/errors/app-error.js";
 import {
@@ -49,6 +51,8 @@ export class OrderRevisedEvent implements DurableEvent {
      */
     readonly pretaxBeforeCents: number | null,
     readonly pretaxAfterCents: number | null,
+    /** Qui commande ; `null` sur un fait écrit avant ce champ (2026-11-21). */
+    readonly clientele: OrderClientele | null,
   ) {}
 
   durableFact(): DurableFact {
@@ -67,6 +71,7 @@ export class OrderRevisedEvent implements DurableEvent {
         origin: this.origin,
         pretaxBeforeCents: this.pretaxBeforeCents,
         pretaxAfterCents: this.pretaxAfterCents,
+        clientele: this.clientele,
       },
     };
   }
@@ -118,8 +123,14 @@ export class OrderRevisedEvent implements DurableEvent {
       // Les deux ensemble, ou aucun : un HT sans l'autre ne se compare à rien.
       pretaxBefore === null || pretaxAfter === null ? null : pretaxBefore,
       pretaxBefore === null || pretaxAfter === null ? null : pretaxAfter,
+      clienteleOfPayload(payload["clientele"]),
     );
   }
+}
+
+/** Absente (fait d'avant le 2026-11-21) ou inconnue ⇒ `null` : l'historique dit alors le TTC. */
+function clienteleOfPayload(raw: unknown): OrderClientele | null {
+  return raw === "pro" || raw === "public" ? raw : null;
 }
 
 /** Absente (fait d'avant le 2026-11-10) ⇒ `direct` ; inconnue ⇒ illisible. */

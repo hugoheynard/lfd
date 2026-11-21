@@ -54,6 +54,9 @@ function viewOf(
     changes: revision.changes,
     totalBeforeCents: revision.totalBeforeCents,
     totalAfterCents: revision.totalAfterCents,
+    pretaxBeforeCents: revision.pretaxBeforeCents,
+    pretaxAfterCents: revision.pretaxAfterCents,
+    clientele: revision.clientele,
     replaced: revision.replaced,
   };
 }

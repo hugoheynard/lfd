@@ -13,6 +13,7 @@ const event = (origin: "direct" | "change_request") =>
     origin,
     948,
     1_137,
+    "pro",
   );
 
 describe("le fait « commande modifiée » et son origine", () => {
@@ -55,5 +56,17 @@ describe("le fait « commande modifiée » et son origine", () => {
     const { pretaxAfterCents: _after, ...half } = event("direct").durableFact().payload;
 
     expect(OrderRevisedEvent.fromPayload(half).pretaxBeforeCents).toBeNull();
+  });
+
+  it("relit la clientèle qu'il a écrite", () => {
+    expect(OrderRevisedEvent.fromPayload(event("direct").durableFact().payload).clientele).toBe(
+      "pro",
+    );
+  });
+
+  it("lit sans clientèle un fait écrit avant ce champ : l'historique dira le TTC", () => {
+    const { clientele: _absent, ...older } = event("direct").durableFact().payload;
+
+    expect(OrderRevisedEvent.fromPayload(older).clientele).toBeNull();
   });
 });

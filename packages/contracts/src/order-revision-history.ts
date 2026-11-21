@@ -1,5 +1,6 @@
 import type { BillingAddressPayload, FulfillmentWindow } from "./address.js";
 import type { FulfillmentMethod, OrderSaleUnit } from "./order.js";
+import type { OrderClientele } from "./order-handover.js";
 import type { OrderRevisionChange } from "./order-revision.values.js";
 
 /**
@@ -18,7 +19,16 @@ export interface OrderRevisionEntryView {
   readonly author: OrderRevisionAuthorView;
   readonly changes: readonly OrderRevisionChange[];
   readonly totalBeforeCents: number;
+  /** Le TTC avant et après. */
   readonly totalAfterCents: number;
+  /**
+   * Le HT avant et après (`orderPretaxCents`), que l'écran dit pour une
+   * commande pro ; `null` sur une révision gardée avant le 2026-11-21.
+   */
+  readonly pretaxBeforeCents: number | null;
+  readonly pretaxAfterCents: number | null;
+  /** Qui commande ; `null` sur une commande d'avant la colonne — l'écran dit le TTC. */
+  readonly clientele: OrderClientele | null;
   /**
    * La composition remplacée ; `null` quand son JSON ne se relit pas (forme
    * inattendue) — l'écran le dit plutôt que d'inventer.

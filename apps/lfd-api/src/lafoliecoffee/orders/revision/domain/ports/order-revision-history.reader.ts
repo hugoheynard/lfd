@@ -1,4 +1,4 @@
-import type { OrderRevisionChange, ReplacedCompositionView } from "@lfd/contracts";
+import type { OrderClientele, OrderRevisionChange, ReplacedCompositionView } from "@lfd/contracts";
 
 /**
  * Une modification telle que l'historique la garde (`public.order_revision`).
@@ -14,6 +14,11 @@ export interface RecordedOrderRevision {
   readonly changes: readonly OrderRevisionChange[];
   readonly totalBeforeCents: number;
   readonly totalAfterCents: number;
+  /** `null` : une révision gardée avant que le HT le soit. */
+  readonly pretaxBeforeCents: number | null;
+  readonly pretaxAfterCents: number | null;
+  /** La clientèle de la commande ; `null` sur une commande d'avant la colonne. */
+  readonly clientele: OrderClientele | null;
   /** `null` : le JSON de la composition ne se relit pas. */
   readonly replaced: ReplacedCompositionView | null;
 }

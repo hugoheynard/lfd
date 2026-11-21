@@ -13,6 +13,7 @@ import type {
   CartAdjustment,
   DeliveryVatMode,
   LateFeeAdjustment,
+  OrderClientele,
   PaymentStatus,
   SettlementRegime,
 } from "@lfd/contracts";
@@ -332,6 +333,11 @@ export class Order {
     return this.billedCompanyIdValue;
   }
 
+  /** Qui commande : `pro` avec une société, `public` sinon. */
+  get clientele(): OrderClientele {
+    return clienteleOf(this.companyId);
+  }
+
   /** Total **TTC** à encaisser — la source pour dimensionner l'intention Stripe. */
   get totalCents(): number {
     return this.drafted.totalCents;
@@ -541,7 +547,7 @@ export class Order {
       budgetCommitmentNumber: nullIfEmpty(this.budgetCommitment?.number),
       budgetCommitmentServiceCode: nullIfEmpty(this.budgetCommitment?.serviceCode),
       principalSeesAmount: this.principal?.seesAmount ?? null,
-      clientele: clienteleOf(this.companyId),
+      clientele: this.clientele,
       placedByUserId: this.placedByUserId,
       placedByStaffId: this.placedByStaffId,
       buyerKind: this.buyerKind,

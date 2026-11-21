@@ -14,6 +14,9 @@ const BY_CUSTOMER: OrderRevisionEntryView = {
   changes: ['lines', 'note'],
   totalBeforeCents: 1_899,
   totalAfterCents: 3_798,
+  pretaxBeforeCents: null,
+  pretaxAfterCents: null,
+  clientele: 'public',
   replaced: {
     requestedDeliveryDate: '2026-11-10',
     fulfillmentMethod: 'pickup',
@@ -117,8 +120,39 @@ describe('revisionRowOf', () => {
     const row = revisionRowOf(BY_STAFF);
     expect(row.title).toBe('Version 1');
     expect(row.meta).toContain('personne inconnue (l’équipe)');
-    expect(row.difference).toBe('Total inchangé');
+    expect(row.difference).toBe('Total TTC inchangé');
     expect(row.replaced).toBeNull();
+  });
+});
+
+/** Régression : l'historique d'une commande pro disait un total TTC sans le dire. */
+describe('revisionRowOf — la base des totaux', () => {
+  const ht = (n: string) => n.replace(/\s/gu, ' ');
+
+  it('une commande pro dit l’écart et le total de la version en HT', () => {
+    const row = revisionRowOf({
+      ...BY_CUSTOMER,
+      clientele: 'pro',
+      pretaxBeforeCents: 1_800,
+      pretaxAfterCents: 3_600,
+    });
+    expect(ht(row.difference)).toBe('+ 18,00 € HT');
+    expect(ht(row.replaced?.total ?? '')).toBe('18,00 € HT');
+  });
+
+  it('une commande particulier dit le TTC, étiqueté', () => {
+    const row = revisionRowOf({
+      ...BY_CUSTOMER,
+      pretaxBeforeCents: 1_800,
+      pretaxAfterCents: 3_600,
+    });
+    expect(ht(row.difference)).toBe('+ 18,99 € TTC');
+    expect(ht(row.replaced?.total ?? '')).toBe('18,99 € TTC');
+  });
+
+  it('une révision pro gardée avant le HT dit son TTC, étiqueté', () => {
+    const row = revisionRowOf({ ...BY_CUSTOMER, clientele: 'pro' });
+    expect(ht(row.difference)).toBe('+ 18,99 € TTC');
   });
 });
 

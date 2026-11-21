@@ -92,6 +92,7 @@ export class OrderRevisionRecording {
         origin,
         revision.pretaxBeforeCents,
         revision.pretaxAfterCents,
+        revision.state.clientele,
       ).durableFact(),
     );
     // La livraison reprend une commande qui change d'acheminement (§9) : même transaction.

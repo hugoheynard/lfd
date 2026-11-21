@@ -1,3 +1,4 @@
+import { orderPretaxCents } from "@lfd/money";
 import { CommerceOrderPlacedFact } from "../../../../../delivery/channels/commerce/index.js";
 import { IntentKeyReusedError } from "../../../../../platform/intent/intent-errors.js";
 import { OrderTotalChangedError } from "../../../domain/errors/order-total-changed.error.js";
@@ -65,7 +66,7 @@ describe("PlaceParticularOrderAtCounterHandler — la forme de la commande", () 
   });
 
   it("écrit le fait durable qui déclenche l'accusé, et publie la passation au nom du particulier", async () => {
-    const { handler, durable, published } = counterScene();
+    const { handler, durable, published, placed } = counterScene();
 
     const result = await handler.execute(
       new PlaceParticularOrderAtCounterCommand(STAFF, counterPayload(), KEY),
@@ -73,7 +74,16 @@ describe("PlaceParticularOrderAtCounterHandler — la forme de la commande", () 
 
     expect(durable.facts).toEqual([new CommerceOrderPlacedFact(result.id).durableFact()]);
     expect(published.published).toEqual([
-      new OrderPlacedEvent(result.id, result.orderNumber, PARTICULAR, null, 400),
+      // Le HT de la commande écrite, par l'arithmétique unique ; un particulier.
+      new OrderPlacedEvent(
+        result.id,
+        result.orderNumber,
+        PARTICULAR,
+        null,
+        400,
+        placed[0] === undefined ? -1 : orderPretaxCents(placed[0]),
+        "public",
+      ),
     ]);
   });
 

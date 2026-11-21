@@ -66,6 +66,8 @@ export class OnOrderPlaced implements IEventHandler<OrderPlacedEvent> {
           ? {}
           : { clientName: client.enseigne, clientLegalName: client.raisonSociale }),
         totalCents: event.totalCents,
+        totalPretaxCents: event.pretaxCents,
+        clientele: event.clientele,
       },
     });
   }

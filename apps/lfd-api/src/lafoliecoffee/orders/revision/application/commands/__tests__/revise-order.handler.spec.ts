@@ -96,6 +96,22 @@ describe("ReviseOrderHandler — le geste", () => {
     });
   });
 
+  /** Régression : l'historique d'une commande pro disait un total TTC sans le dire. */
+  it("le fait de la révision porte les deux HT et la clientèle de la commande", async () => {
+    const order = await placedOrder();
+    const { handler, asSeen, durable } = reviseScene(order);
+
+    await handler.execute(
+      await asSeen("ord_1", CUSTOMER, 0, content({ lines: [{ sku: "VIE-001", quantity: 20 }] })),
+    );
+
+    expect(durable.facts[0]?.payload).toMatchObject({
+      pretaxBeforeCents: order.pretaxCents,
+      pretaxAfterCents: 3_600,
+      clientele: "pro",
+    });
+  });
+
   it("garde le prix d'une ligne déjà présente et met une ligne nouvelle au prix du jour", async () => {
     // La ligne d'origine a été payée 1,80 € : le catalogue dit 2,00 € aujourd'hui.
     // Sa quantité ne change pas : son prix est convenu, il n'est pas rejugé.

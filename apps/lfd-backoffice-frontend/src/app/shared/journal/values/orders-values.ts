@@ -306,6 +306,12 @@ export const DELIVERY_VAT_MODE = domain('TVA de la livraison', {
   follows_goods: 'Au prorata des produits',
 });
 
+/** Qui commande (`order.placed`, `order.revised`) : il choisit si l'historique dit le HT ou le TTC. */
+export const ORDER_CLIENTELE = domain('clientèle de la commande', {
+  pro: 'Professionnel',
+  public: 'Particulier',
+});
+
 /**
  * Ce qu'une modification de commande a changé (`order.revised`, voir
  * `documentation/commandes/modification/modifier-une-commande.md`, § 2.8 « Les autres blocs ») — les valeurs de
@@ -372,6 +378,7 @@ export const ORDERS_VALUES: ValueFamily = {
     PRODUCTION_TRANCHE_MODE,
     DOSSIER_RECIPIENT_KIND,
     DELIVERY_VAT_MODE,
+    ORDER_CLIENTELE,
     ORDER_OPENING_EXEMPTION_KIND,
     SAME_DAY_PRO_WITHOUT_CREDIT,
   ],

@@ -1,3 +1,4 @@
+import { orderPretaxCents } from "@lfd/money";
 import { FixedLineClassifications } from "../../../domain/ports/__tests__/line-classification-doubles.js";
 import { OrderTotalChangedError } from "../../../domain/errors/order-total-changed.error.js";
 import {
@@ -669,7 +670,15 @@ describe("PlaceShopOrderHandler — la commande produite", () => {
     const total = sink.placed?.totalCents ?? 0;
     expect(total).toBeGreaterThan(0);
     expect(published.published).toEqual([
-      new OrderPlacedEvent("order_public_1", "ORD-PUBLIC", "user_guest", null, total),
+      new OrderPlacedEvent(
+        "order_public_1",
+        "ORD-PUBLIC",
+        "user_guest",
+        null,
+        total,
+        sink.placed === null ? -1 : orderPretaxCents(sink.placed),
+        "public",
+      ),
     ]);
   });
 

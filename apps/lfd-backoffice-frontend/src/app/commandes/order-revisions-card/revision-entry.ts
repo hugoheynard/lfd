@@ -58,22 +58,47 @@ export function revisionRowOf(entry: OrderRevisionEntryView): RevisionRow {
         ? 'Version d’origine'
         : `Version ${String(entry.replacedRevision)}`,
     meta: `Remplacée le ${formatOrderInstant(entry.revisedAt)}, par ${who} (${role})`,
-    difference: differenceOf(entry.totalAfterCents - entry.totalBeforeCents),
+    difference: differenceOf(entry),
     changes: entry.changes
       .map((change) => ORDER_REVISION_CHANGE.labels[change] ?? change)
       .join(', '),
-    replaced: entry.replaced === null ? null : replacedRowsOf(entry.replaced),
+    replaced: entry.replaced === null ? null : replacedRowsOf(entry.replaced, basisOf(entry)),
   };
 }
 
-function differenceOf(cents: number): string {
-  if (cents === 0) {
-    return 'Total inchangé';
-  }
-  return `${cents > 0 ? '+' : '−'} ${formatCents(Math.abs(cents))}`;
+/** Les totaux qu'une version dit, et leur étiquette. */
+interface TotalsBasis {
+  readonly before: number;
+  readonly after: number;
+  readonly label: 'HT' | 'TTC';
 }
 
-function replacedRowsOf(replaced: ReplacedCompositionView): ReplacedRows {
+/**
+ * Le HT pour une commande pro, le TTC pour une commande particulier — et
+ * l'étiquette toujours dite (décidé par Hugo le 2026-11-21). Une révision
+ * gardée avant le HT dit son TTC.
+ */
+function basisOf(entry: OrderRevisionEntryView): TotalsBasis {
+  if (
+    entry.clientele === 'pro' &&
+    entry.pretaxBeforeCents !== null &&
+    entry.pretaxAfterCents !== null
+  ) {
+    return { before: entry.pretaxBeforeCents, after: entry.pretaxAfterCents, label: 'HT' };
+  }
+  return { before: entry.totalBeforeCents, after: entry.totalAfterCents, label: 'TTC' };
+}
+
+function differenceOf(entry: OrderRevisionEntryView): string {
+  const basis = basisOf(entry);
+  const cents = basis.after - basis.before;
+  if (cents === 0) {
+    return `Total ${basis.label} inchangé`;
+  }
+  return `${cents > 0 ? '+' : '−'} ${formatCents(Math.abs(cents))} ${basis.label}`;
+}
+
+function replacedRowsOf(replaced: ReplacedCompositionView, basis: TotalsBasis): ReplacedRows {
   return {
     route: routeOf(replaced),
     when: whenOf(replaced),
@@ -88,7 +113,8 @@ function replacedRowsOf(replaced: ReplacedCompositionView): ReplacedRows {
       vat: formatVatRate(line.vatRate),
       total: `${formatCents(line.lineTotalCents)} HT`,
     })),
-    total: formatCents(replaced.totalCents),
+    // La composition remplacée est l'état « avant » : son total est celui de la base dite.
+    total: `${formatCents(basis.label === 'HT' ? basis.before : replaced.totalCents)} ${basis.label}`,
   };
 }
 

@@ -414,6 +414,14 @@ export const KEY_LABELS_BY_TYPE: Readonly<
   Partial<Record<JournalFactType, Readonly<Record<string, string>>>>
 > = {
   'allergen_entry.updated': { categoryId: 'Catégorie' },
+  // L'historique d'une commande dit toujours sa base : HT (pro) ou TTC.
+  'order.placed': { totalCents: 'Total TTC', totalPretaxCents: 'Total HT' },
+  'order.revised': {
+    totalBeforeCents: 'Total avant (TTC)',
+    totalAfterCents: 'Total après (TTC)',
+    pretaxBeforeCents: 'Total avant (HT)',
+    pretaxAfterCents: 'Total après (HT)',
+  },
 };
 
 /**

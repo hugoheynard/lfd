@@ -572,8 +572,8 @@ describe('la modification d’une commande (order.revised)', () => {
   it('nomme la fiche qui a modifié, et garde les changements au détail', () => {
     expect(sentence(byStaff)).toBe('Cécile Martin a modifié la commande ORD-7 — Jean Dupont');
     expect(row(byStaff, 'Modifications')).toContain('Articles et quantités');
-    expect(row(byStaff, 'Total avant')).toBeDefined();
-    expect(row(byStaff, 'Total après')).toBeDefined();
+    expect(row(byStaff, 'Total avant (TTC)')).toBeDefined();
+    expect(row(byStaff, 'Total après (TTC)')).toBeDefined();
   });
 
   it('dit « sa commande » quand c’est le client qui l’a modifiée', () => {
@@ -645,5 +645,73 @@ describe('la correction d’un engagement budgétaire (order.budget_commitment_c
       },
     };
     expect(sentence(codeOnly)).toContain('de service SRV-01 à n° N-2 · service SRV-01');
+  });
+});
+
+/** Régression : l'historique d'une commande pro disait un total TTC sans le dire. */
+describe('la base des totaux dans l’historique d’une commande', () => {
+  const placed = (extra: Record<string, unknown>): FactInput =>
+    fact({
+      type: 'order.placed',
+      subjectType: 'user',
+      payload: {
+        orderId: 'ord_1',
+        orderNumber: 'ORD-142',
+        companyId: null,
+        totalCents: 1_250,
+        ...extra,
+      },
+    });
+  const revised = (extra: Record<string, unknown>): FactInput =>
+    fact({
+      type: 'order.revised',
+      subjectType: 'user',
+      payload: {
+        orderId: 'ord_1',
+        orderNumber: 'ORD-7',
+        revision: 1,
+        revisedBy: { id: 'stf_1', name: 'Cécile Martin' },
+        changes: ['lines'],
+        totalBeforeCents: 2_110,
+        totalAfterCents: 3_165,
+        ...extra,
+      },
+    });
+  const labels = (input: FactInput): string[] =>
+    renderFact(input).detail.map((candidate) => candidate.label);
+
+  it('une commande pro : le HT seul, étiqueté', () => {
+    const pro = placed({ companyId: 'cmp_1', totalPretaxCents: 1_000, clientele: 'pro' });
+    expect(row(pro, 'Total HT')).toMatch(/^10,00 €$/u);
+    expect(labels(pro)).not.toContain('Total TTC');
+    expect(labels(pro)).not.toContain('Clientèle');
+
+    const proRevised = revised({
+      pretaxBeforeCents: 2_000,
+      pretaxAfterCents: 3_000,
+      clientele: 'pro',
+    });
+    expect(row(proRevised, 'Total avant (HT)')).toMatch(/^20,00 €$/u);
+    expect(row(proRevised, 'Total après (HT)')).toMatch(/^30,00 €$/u);
+    expect(row(proRevised, 'Total avant (TTC)')).toBeUndefined();
+  });
+
+  it('une commande particulier : le TTC seul, étiqueté', () => {
+    const particular = placed({ totalPretaxCents: 1_185, clientele: 'public' });
+    expect(row(particular, 'Total TTC')).toMatch(/^12,50 €$/u);
+    expect(row(particular, 'Total HT')).toBeUndefined();
+
+    const particularRevised = revised({
+      pretaxBeforeCents: 2_000,
+      pretaxAfterCents: 3_000,
+      clientele: 'public',
+    });
+    expect(row(particularRevised, 'Total après (TTC)')).toMatch(/^31,65 €$/u);
+    expect(row(particularRevised, 'Total après (HT)')).toBeUndefined();
+  });
+
+  it('un fait écrit avant le HT : son total, qui est le TTC, étiqueté TTC', () => {
+    expect(row(placed({ companyId: 'cmp_1' }), 'Total TTC')).toMatch(/^12,50 €$/u);
+    expect(row(revised({}), 'Total avant (TTC)')).toMatch(/^21,10 €$/u);
   });
 });
