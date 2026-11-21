@@ -42,7 +42,8 @@
  */
 import { spawn, execSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
-import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, watch } from "node:fs";
+import * as fs from "node:fs";
+import { existsSync, mkdirSync, readFileSync, readdirSync, rm, watch } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { createInterface } from "node:readline";
 import { fileURLToPath } from "node:url";
@@ -51,6 +52,7 @@ import {
   SETTLE_MS,
   backoffDelay,
   catchUpVerdict,
+  discardDir,
   isRelevantChange,
   isTscReady,
   watchdogVerdict,
@@ -73,6 +75,8 @@ import {
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const API = join(ROOT, "apps", "lfd-api");
 const API_DIST = join(API, "dist");
+/** La corbeille des `dist` écartés, sur le même disque et hors de git. */
+const DIST_TRASH = join(API, "node_modules", ".cache", "api-dev-dist-trash");
 const PACKAGES = join(ROOT, "packages");
 const TSC = join(API, "node_modules", ".bin", "tsc");
 const PORT = 3200;
@@ -387,10 +391,18 @@ if (!existsSync(TSC)) {
   process.exit(1);
 }
 freePort();
-// `maxRetries` : un `tsc` d'une session précédente, tué juste avant par le
-// balayage de `dev-stack.sh`, peut encore écrire un fichier pendant la purge —
-// `rmdir` lève alors ENOTEMPTY et le lanceur mourait au démarrage (2026-10-08).
-rmSync(API_DIST, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
+// Le `dist` est écarté par un renommage, jamais vidé sur place : un `tsc`
+// d'une pile précédente peut encore y écrire pendant le démarrage, et une
+// purge sur place perdait la course (ENOTEMPTY, l'API ne démarrait pas).
+// Les restes des démarrages précédents sont effacés sans attendre ni échouer.
+for (const left of existsSync(DIST_TRASH) ? readdirSync(DIST_TRASH) : []) {
+  rm(
+    join(DIST_TRASH, left),
+    { recursive: true, force: true, maxRetries: 10, retryDelay: 200 },
+    () => {},
+  );
+}
+discardDir(API_DIST, DIST_TRASH, fs, randomUUID());
 mkdirSync(API_DIST, { recursive: true });
 startTsc();
 scanPackageDists();

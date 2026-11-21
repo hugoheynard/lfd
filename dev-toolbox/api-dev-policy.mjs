@@ -68,3 +68,28 @@ export function catchUpVerdict({ local, pending, uncommitted }) {
   if (!local || pending.length === 0) return "retry";
   return pending.some((name) => uncommitted.includes(name)) ? "wait" : "apply";
 }
+
+/**
+ * **Écarte un `dist` sans jamais échouer.** Le dossier est RENOMMÉ d'un coup
+ * vers la corbeille (`trashDir`, sur le même disque), puis supprimé sans
+ * attendre ni lever d'erreur. Un renommage est atomique : un processus qui
+ * écrit encore dedans (le `tsc` d'une pile précédente qui finit de mourir)
+ * écrit dans l'ancien dossier, et ne gêne plus le nouveau. Une purge sur
+ * place perdait cette course : `rmdir` levait ENOTEMPTY et l'API de dev ne
+ * démarrait pas.
+ *
+ * `fs` est injecté pour le test. Rend le chemin où le dossier a été rangé, ou
+ * `null` s'il n'existait pas.
+ */
+export function discardDir(dir, trashDir, fs, id) {
+  if (!fs.existsSync(dir)) {
+    return null;
+  }
+  fs.mkdirSync(trashDir, { recursive: true });
+  const parked = `${trashDir}/${id}`;
+  fs.renameSync(dir, parked);
+  fs.rm(parked, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 }, () => {
+    // Un reste ne gêne personne : la corbeille est vidée au démarrage suivant.
+  });
+  return parked;
+}
