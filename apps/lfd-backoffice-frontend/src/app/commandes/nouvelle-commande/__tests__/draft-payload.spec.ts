@@ -1,7 +1,7 @@
 import type { CatalogItemView, DeliveryAddressView, OrderDraftView } from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
-import { draftPayloadOf, draftSnapshotOf, restoreLines } from '../draft-payload';
+import { draftPayloadOf, draftPretaxOf, draftSnapshotOf, restoreLines } from '../draft-payload';
 import { DraftStore, NEW_ADDRESS } from '../draft.store';
 
 const SHOP: DeliveryAddressView = {
@@ -48,6 +48,7 @@ function viewOf(overrides: Partial<OrderDraftView>): OrderDraftView {
     requestedWindow: null,
     note: '',
     settlement: 'link',
+    estimatedPretaxCents: null,
     lines: [],
     ...overrides,
   };
@@ -185,5 +186,35 @@ describe('la traduction écran ↔ brouillon', () => {
     // ici refuserait d'enregistrer l'appel coupé au milieu, ce pour quoi le
     // brouillon existe.
     expect(draftSnapshotOf(viewOf({ requestedWindow: null }), [SHOP]).window).toBeNull();
+  });
+});
+
+describe('draftPretaxOf — le Total HT gardé avec le brouillon', () => {
+  const AMOUNTS = { pretaxCents: 4210, lateFeeCents: 0 };
+
+  it('garde le Total HT de l’estimation de CETTE saisie', () => {
+    expect(draftPretaxOf(AMOUNTS, true, false)).toBe(4210);
+  });
+
+  it('rien quand l’estimation n’est pas celle de la saisie en cours', () => {
+    expect(draftPretaxOf(AMOUNTS, false, false)).toBeNull();
+  });
+
+  it('rien en retrait immédiat : la reprise ne le retrouverait pas', () => {
+    expect(draftPretaxOf(AMOUNTS, true, true)).toBeNull();
+  });
+
+  it('rien avec un supplément de retard : il tient à l’heure de l’enregistrement', () => {
+    expect(draftPretaxOf({ pretaxCents: 4710, lateFeeCents: 500 }, true, false)).toBeNull();
+  });
+
+  it('rien sans montants (composition refusée)', () => {
+    expect(draftPretaxOf(null, true, false)).toBeNull();
+  });
+
+  it('le payload porte le montant passé, `null` par défaut', () => {
+    const draft = new DraftStore();
+    expect(draftPayloadOf(draft.snapshot(), [], []).estimatedPretaxCents).toBeNull();
+    expect(draftPayloadOf(draft.snapshot(), [], [], 4210).estimatedPretaxCents).toBe(4210);
   });
 });

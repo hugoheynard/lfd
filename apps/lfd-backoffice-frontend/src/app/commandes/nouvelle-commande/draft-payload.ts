@@ -74,11 +74,16 @@ function deliveryAddressOf(
   };
 }
 
-/** Ce qu'on envoie au serveur : les lignes, et les décisions qui les entourent. */
+/**
+ * Ce qu'on envoie au serveur : les lignes, les décisions qui les entourent, et
+ * le Total HT affiché (`estimatedPretaxCents`, `null` sans estimation fiable —
+ * cf. {@link draftPretaxOf}).
+ */
 export function draftPayloadOf(
   draft: DraftSnapshot,
   lines: readonly CartLine[],
   addresses: readonly DeliveryAddressView[],
+  estimatedPretaxCents: number | null = null,
 ): OrderDraftPayload {
   return {
     buyerUserId: draft.buyerUserId,
@@ -92,9 +97,29 @@ export function draftPayloadOf(
     note: draft.note,
     settlement: draft.settlement,
     // Des SKU et des quantités, **jamais de prix** : c'est le catalogue serveur
-    // qui fera foi à la reprise comme à la passation.
+    // qui fera foi à la reprise comme à la passation. Seule exception, le Total
+    // HT affiché, que rien ne relit sinon la liste des brouillons.
     lines: lines.map(requestedLineOf),
+    estimatedPretaxCents,
   };
+}
+
+/**
+ * Le Total HT à garder avec le brouillon : celui de l'estimation **de cette
+ * saisie** (`ready`), et seulement quand la reprise pourra le retrouver — ni
+ * retrait immédiat (le brouillon ne garde pas ce raccourci), ni supplément de
+ * retard (il tient à l'heure de l'enregistrement). Sinon `null`, jamais un
+ * montant d'une saisie précédente.
+ */
+export function draftPretaxOf(
+  amounts: { readonly pretaxCents: number; readonly lateFeeCents: number } | null,
+  ready: boolean,
+  immediate: boolean,
+): number | null {
+  if (!ready || immediate || amounts === null || amounts.lateFeeCents > 0) {
+    return null;
+  }
+  return amounts.pretaxCents;
 }
 
 /**

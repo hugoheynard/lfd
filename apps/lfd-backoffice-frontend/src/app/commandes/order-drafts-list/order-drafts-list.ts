@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import type { OrderDraftSummaryView, PickupAddressView } from '@lfd/contracts';
-import { formatOrderDate } from '@lfd/b2b-ui/order';
+import { formatCents, formatOrderDate } from '@lfd/b2b-ui/order';
 import {
   FoldBadgeComponent,
   FoldButtonComponent,
@@ -37,6 +37,7 @@ const COLUMNS: readonly FoldTableColumn[] = [
   { key: 'mode', label: 'Mode', width: '12rem' },
   { key: 'companyName', label: 'Client' },
   { key: 'itemCount', label: 'Articles', width: '6rem', align: 'right' },
+  { key: 'pretax', label: 'HT estimé', width: '8rem', align: 'right' },
   { key: 'savedByName', label: 'Par', width: '14rem' },
 ];
 
@@ -137,6 +138,12 @@ export class OrderDraftsList {
       { fulfillmentMethod: content.fulfillmentMethod, pickupLabel: point?.label ?? null },
       [],
     );
+  }
+
+  /** Le Total HT affiché à l'enregistrement, `null` s'il n'a pas été gardé. */
+  protected pretax(draft: OrderDraftSummaryView): string | null {
+    const cents = draft.content?.estimatedPretaxCents ?? null;
+    return cents === null ? null : formatCents(cents);
   }
 
   protected resume(draft: OrderDraftSummaryView): void {

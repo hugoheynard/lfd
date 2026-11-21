@@ -16,6 +16,7 @@ const DRAFT: OrderDraftSummaryView = {
     pickupAddressId: 'pick_1',
     requestedDeliveryDate: '2099-01-15',
     requestedWindow: { start: '07:00', end: '08:00' },
+    estimatedPretaxCents: 4210,
   },
   savedAt: new Date().toISOString(),
   savedByName: 'Léa Martin',
@@ -55,6 +56,7 @@ describe('OrderDraftsList — l’onglet « Brouillons » des commandes', () => 
     expect(host.textContent).toContain('Retrait Labo');
     expect(host.textContent).toContain('07:00 – 08:00');
     expect(host.textContent).toContain('9');
+    expect(host.textContent?.replace(/\s/g, '')).toContain('42,10');
 
     host.querySelector<HTMLElement>('[data-draft="cmp_1"]')?.click();
 

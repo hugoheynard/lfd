@@ -128,5 +128,6 @@ function contentOf(payload: unknown): OrderDraftSummaryContent | null {
     pickupAddressId: draft.pickupAddressId,
     requestedDeliveryDate: draft.requestedDeliveryDate,
     requestedWindow: draft.requestedWindow,
+    estimatedPretaxCents: draft.estimatedPretaxCents,
   };
 }

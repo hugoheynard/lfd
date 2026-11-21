@@ -151,6 +151,7 @@ describe("/admin/order-drafts", () => {
       pickupAddressId: null,
       requestedDeliveryDate: null,
       requestedWindow: null,
+      estimatedPretaxCents: null,
     });
 
     await staff().delete(`/admin/order-drafts/${companyId}`).expect(204);
@@ -158,6 +159,27 @@ describe("/admin/order-drafts", () => {
       await staff().get("/admin/order-drafts").expect(200),
     );
     expect(after).toEqual([]);
+  });
+
+  it("garde le Total HT affiché à l'enregistrement, et le rend dans la liste", async () => {
+    const companyId = await seedCompany();
+    await staff()
+      .put(`/admin/order-drafts/${companyId}`)
+      .send({ estimatedPretaxCents: 1234 })
+      .expect(200);
+
+    const listed = jsonBody<OrderDraftSummaryView[]>(
+      await staff().get("/admin/order-drafts").expect(200),
+    );
+    expect(listed[0]?.content?.estimatedPretaxCents).toBe(1234);
+  });
+
+  it("refuse un Total HT négatif : un montant affiché n'est jamais en dessous de zéro", async () => {
+    const companyId = await seedCompany();
+    await staff()
+      .put(`/admin/order-drafts/${companyId}`)
+      .send({ estimatedPretaxCents: -1 })
+      .expect(400);
   });
 
   it("refuse la liste à un membre du staff qui ne peut pas passer de commande", async () => {

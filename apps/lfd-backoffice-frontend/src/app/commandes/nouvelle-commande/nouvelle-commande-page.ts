@@ -100,7 +100,7 @@ import { formatOrderInstant } from '@lfd/b2b-ui/order';
 import { narrowViewport } from '../../shared/viewport/narrow-viewport';
 import { BarrePanier } from './barre-panier/barre-panier';
 import { CartStore, saleLineOf } from './cart.store';
-import { draftPayloadOf, draftSnapshotOf, restoreLines } from './draft-payload';
+import { draftPayloadOf, draftPretaxOf, draftSnapshotOf, restoreLines } from './draft-payload';
 import { DraftStore } from './draft.store';
 import { PanierPanel, type PanierPanelData } from './panier-panel/panier-panel';
 import { PanierCommande, type OrderDraft } from './panier-commande/panier-commande';
@@ -621,7 +621,12 @@ export class NouvelleCommandePage {
     try {
       const view = await this.draftsService.save(
         this.id(),
-        draftPayloadOf(this.draft.snapshot(), this.cart.lines(), this.addresses()),
+        draftPayloadOf(
+          this.draft.snapshot(),
+          this.cart.lines(),
+          this.addresses(),
+          draftPretaxOf(this.estimate()?.amounts ?? null, this.estimateReady(), this.immediate()),
+        ),
       );
       this.resumedAt.set(formatOrderInstant(view.savedAt));
       this.notify.success('Brouillon enregistré.');

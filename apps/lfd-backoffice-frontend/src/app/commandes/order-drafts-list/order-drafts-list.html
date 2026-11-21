@@ -49,6 +49,16 @@
       <ng-template foldCell="itemCount" let-row>
         <span class="odl-count">{{ row.content?.itemCount ?? '—' }}</span>
       </ng-template>
+      <!-- Le Total HT tel que l'écran l'affichait à l'enregistrement, livraison
+           comprise : un souvenir, pas le prix du jour — la reprise recompose. -->
+      <ng-template foldCell="pretax" let-row>
+        <span
+          class="odl-count"
+          title="Total HT affiché à l’enregistrement, livraison comprise ; recalculé à la reprise"
+        >
+          {{ pretax(row) ?? '—' }}
+        </span>
+      </ng-template>
       <!-- Un brouillon est toujours une saisie de l'équipe : la boutique n'en
            écrit pas (son panier vit ailleurs). -->
       <ng-template foldCell="savedByName" let-row>
