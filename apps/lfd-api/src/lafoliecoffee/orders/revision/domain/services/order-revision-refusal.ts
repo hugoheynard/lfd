@@ -23,7 +23,7 @@ export function revisionRefusalOf(block: CancellationBlock): string {
     case "draft":
       return "Cette commande est un brouillon : elle n'est pas passée, il n'y a rien à modifier.";
     case "ready":
-      return "Cette commande est déjà prête : elle ne se modifie plus. Voyez avec le fournil.";
+      return "Cette commande est déjà prête : elle ne se modifie plus.";
     case "fulfilled":
       return "Cette commande est déjà retirée : elle ne se modifie plus.";
     case "no_show":

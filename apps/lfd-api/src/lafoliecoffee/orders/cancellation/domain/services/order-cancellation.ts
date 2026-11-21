@@ -285,7 +285,7 @@ export function cancellationRefusalOf(block: CancellationBlock): string {
     case "draft":
       return "Cette commande est un brouillon : elle n'est pas passée, il n'y a rien à annuler.";
     case "ready":
-      return "Cette commande est déjà prête : elle ne s'annule plus. Voyez avec le fournil.";
+      return "Cette commande est déjà prête : elle ne s'annule plus.";
     case "fulfilled":
       return "Cette commande est déjà retirée : elle ne s'annule plus.";
     case "no_show":
