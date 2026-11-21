@@ -130,11 +130,13 @@ modifié. Chacune porte **sa commande** (`account_alerts.order_id`,
   commandes** (`AlertsOfOrders`, une requête pour la page entière) ; le
   commerce ne lit pas sa table (`lint:prisma-model-ownership`). Route
   `GET /admin/alerts?orderIds=…`, sous `b2b_alerts:read` (`@AdminSurface("b2b_alerts")`, comme les autres routes des alertes).
-- **À trancher** : viser une commande **acquitte-t-il** ses alertes en cours ?
-  - _Oui_ : un seul geste ; le visa émet un fait (`order.reviewed`) que le
-    contexte des alertes écoute pour acquitter celles de la commande.
-  - _Non_ : deux gestes distincts ; le visa reste possible avec des alertes
-    non acquittées, et la ligne le montre.
+- **Vérifier une commande acquitte ses alertes en cours** — un seul geste
+  (Hugo, 2026-11-21). Le visa émet `orders.order_reviewed` dans la boîte
+  d'envoi ; le contexte des alertes s'y abonne (`@DurableHandler`, rejoué
+  après un redémarrage) et acquitte les alertes de cette commande au nom de
+  qui a vérifié, sous la condition `acknowledged_at IS NULL` qu'il tient déjà.
+  Les commandes ne touchent pas la table des alertes. Retirer la vérification
+  ne « désacquitte » rien : une alerte vue l'a été.
 
 ## Ce que ça n'est pas
 
@@ -171,4 +173,4 @@ lecture tenu côté serveur, la note nulle ou non vide.
 
 ## Questions ouvertes
 
-1. Vérifier une commande **acquitte-t-il** ses alertes (V4) ?
+Aucune. (Vérifier acquitte les alertes : Hugo, 2026-11-21.)
