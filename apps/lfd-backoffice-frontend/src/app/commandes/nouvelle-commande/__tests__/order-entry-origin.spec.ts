@@ -25,8 +25,8 @@ describe("l'origine de la saisie", () => {
 
   it('ramène le comptoir à son sélecteur, jamais vers /comptes-clients', () => {
     expect(backLinkOf('counter', 'c1')).toEqual({
-      link: ['/comptoir/nouvelle-commande/pro'],
-      label: 'Retour au comptoir',
+      link: ['/nouvelle-commande/pro'],
+      label: 'Choisir un autre compte',
     });
   });
 
@@ -40,9 +40,7 @@ describe("l'origine de la saisie", () => {
   });
 
   it('renvoie le comptoir au sélecteur après la commande', () => {
-    expect(destinationAfterPlacingOf('counter', 'c1', 'o1')).toEqual([
-      '/comptoir/nouvelle-commande/pro',
-    ]);
+    expect(destinationAfterPlacingOf('counter', 'c1', 'o1')).toEqual(['/nouvelle-commande/pro']);
   });
 });
 

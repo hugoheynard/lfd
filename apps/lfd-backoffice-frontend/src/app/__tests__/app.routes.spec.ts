@@ -355,14 +355,17 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   // Lire les clients du comptoir ET commander : deux gardes, deux droits
   // (architecture-commande-au-comptoir.md). `b2b_companies` n'y apparaît pas — c'est le
   // point : le vendeur de comptoir n'a pas la fiche client.
+  // L'onglet du comptoir n'est qu'un relais vers la page à part, sous les
+  // mêmes deux droits que la saisie qu'il ouvre.
   'comptoir/nouvelle-commande': ['b2b_counter:read', 'b2b_place_order:write'],
-  // La MÊME saisie que `comptes-clients/:id/nouvelle-commande`, montée sous le
-  // comptoir pour que la navigation n'en sorte pas.
-  'comptoir/nouvelle-commande/:id': ['b2b_counter:read', 'b2b_place_order:write'],
-  // Le choix « pro ou particulier » ouvre l'une des deux saisies, sous les
-  // mêmes deux droits (commande-particulier-reglee-en-boutique.md).
-  'comptoir/nouvelle-commande/pro': ['b2b_counter:read', 'b2b_place_order:write'],
-  'comptoir/nouvelle-commande/particulier': ['b2b_counter:read', 'b2b_place_order:write'],
+  // La saisie, page à part (décidé par Hugo le 2026-11-21) : le choix « pro ou
+  // particulier », puis l'une des deux saisies, sous les mêmes deux droits
+  // (commande-particulier-reglee-en-boutique.md). `:id` est la MÊME saisie que
+  // `comptes-clients/:id/nouvelle-commande`, aux règles du comptoir.
+  'nouvelle-commande': ['b2b_counter:read', 'b2b_place_order:write'],
+  'nouvelle-commande/pro': ['b2b_counter:read', 'b2b_place_order:write'],
+  'nouvelle-commande/particulier': ['b2b_counter:read', 'b2b_place_order:write'],
+  'nouvelle-commande/:id': ['b2b_counter:read', 'b2b_place_order:write'],
   // LA LIVRAISON est un ESPACE dont la coquille n'est PAS gardée : ses vues
   // relèvent de deux droits distincts, et un garde commun fermerait l'une à qui
   // ne tient que l'autre (plan-preparation-de-tournee.md, lot 2). La coquille ne
@@ -820,11 +823,11 @@ describe("l'arbre de routes du back-office", () => {
     expect(paths).not.toContain('lots-de-prelevement');
   });
 
-  it('monte la saisie du comptoir avec l’origine « counter »', () => {
+  it('monte la saisie à part avec l’origine « counter »', () => {
     // Sans elle, la saisie reprend les liens du Commercial — vers
     // `/comptes-clients`, que le poste du comptoir n'a pas forcément le droit d'ouvrir.
-    const comptoir = routes.find((route) => route.path === 'comptoir');
-    const entry = comptoir?.children?.find((child) => child.path === 'nouvelle-commande/:id');
+    const page = routes.find((route) => route.path === 'nouvelle-commande');
+    const entry = page?.children?.find((child) => child.path === ':id');
     expect(entry?.data?.['origin']).toBe('counter');
   });
 

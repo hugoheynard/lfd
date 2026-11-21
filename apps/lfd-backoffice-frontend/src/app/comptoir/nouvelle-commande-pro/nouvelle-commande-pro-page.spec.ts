@@ -134,11 +134,11 @@ describe('NouvelleCommandeProPage', () => {
     expect(page.draftOf).toEqual({ '1': null, '2': null });
   });
 
-  it('ouvre la saisie SOUS le comptoir, jamais vers /comptes-clients', async () => {
+  it('ouvre la saisie à part, jamais vers /comptes-clients', async () => {
     const page = await setup(() => Promise.resolve(CARDS));
     const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
     page.pick('2');
-    expect(navigate).toHaveBeenCalledWith(['/comptoir/nouvelle-commande', '2']);
+    expect(navigate).toHaveBeenCalledWith(['/nouvelle-commande', '2']);
   });
 });
 
@@ -150,9 +150,7 @@ async function arriveWith(
   TestBed.configureTestingModule({
     providers: [
       draftsProvider(drafts),
-      provideRouter([
-        { path: 'comptoir/nouvelle-commande/pro', component: NouvelleCommandeProPage },
-      ]),
+      provideRouter([{ path: 'nouvelle-commande/pro', component: NouvelleCommandeProPage }]),
       {
         provide: CounterDeliveryNoteService,
         useValue: { openCarrier: () => Promise.resolve() } satisfies Pick<
@@ -169,7 +167,7 @@ async function arriveWith(
     ],
   });
   const harness = await RouterTestingHarness.create();
-  await TestBed.inject(Router).navigate(['/comptoir/nouvelle-commande/pro'], { state });
+  await TestBed.inject(Router).navigate(['/nouvelle-commande/pro'], { state });
   harness.detectChanges();
   return harness.routeNativeElement ?? document.createElement('div');
 }

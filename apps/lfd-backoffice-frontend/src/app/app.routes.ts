@@ -1,8 +1,10 @@
-import { type Routes } from '@angular/router';
+import { inject } from '@angular/core';
+import { Router, type Routes } from '@angular/router';
 import { NEW_VERSION_BANNER } from '@lfd/front-ops';
 
 import { anyPermissionGuard, permissionGuard } from './auth/permission.guard';
 import { comptoirLanding } from './comptoir/comptoir-landing';
+import { orderEntryParams } from './commandes/nouvelle-commande/order-entry-return';
 import { toRoundsTab } from './livraison/tour-manager/tour-manager-views';
 import { prodManagerLanding } from './production/prod-manager/prod-manager-views';
 import {
@@ -1009,6 +1011,57 @@ export const routes: Routes = [
       import('./supervision/supervision-page/supervision-page').then((m) => m.SupervisionPage),
   },
   {
+    // LA SAISIE D'UNE COMMANDE — une page à part, hors de tout espace (décidé
+    // par Hugo le 2026-11-21). Ouverte depuis la liste des commandes ou le
+    // comptoir, elle note l'origine dans l'adresse (`?retour=`) et y ramène une
+    // fois la commande passée (`order-entry-return.ts`). Ses règles restent
+    // celles du comptoir : l'origine `counter` en `data` de la saisie. Chaque
+    // écran porte ses deux gardes : la table des droits les lit sur l'écran.
+    path: 'nouvelle-commande',
+    children: [
+      {
+        // Deux cartes, pro et particulier, AVANT `:id`, qui lirait sinon `pro`
+        // ou `particulier` comme un identifiant de société.
+        path: '',
+        pathMatch: 'full',
+        canActivate: COUNTER_ORDER_GUARDS,
+        title: 'Nouvelle commande — LFC B2B admin',
+        loadComponent: () =>
+          import('./comptoir/order-kind-choice-page/order-kind-choice-page').then(
+            (m) => m.OrderKindChoicePage,
+          ),
+      },
+      {
+        path: 'pro',
+        canActivate: COUNTER_ORDER_GUARDS,
+        title: 'Nouvelle commande pro — LFC B2B admin',
+        loadComponent: () =>
+          import('./comptoir/nouvelle-commande-pro/nouvelle-commande-pro-page').then(
+            (m) => m.NouvelleCommandeProPage,
+          ),
+      },
+      {
+        path: 'particulier',
+        canActivate: COUNTER_ORDER_GUARDS,
+        title: 'Nouvelle commande particulier — LFC B2B admin',
+        loadComponent: () =>
+          import('./comptoir/particular-order-page/particular-order-page').then(
+            (m) => m.ParticularOrderPage,
+          ),
+      },
+      {
+        path: ':id',
+        canActivate: COUNTER_ORDER_GUARDS,
+        data: { [ORDER_ENTRY_ORIGIN_KEY]: 'counter' satisfies OrderEntryOrigin },
+        title: 'Nouvelle commande pro — LFC B2B admin',
+        loadComponent: () =>
+          import('./commandes/nouvelle-commande/nouvelle-commande-page').then(
+            (m) => m.NouvelleCommandePage,
+          ),
+      },
+    ],
+  },
+  {
     // LE COMPTOIR — un ESPACE de travail : ce qui se fait quand le client est
     // devant nous. Rendre une commande (la file de retrait) et en prendre une
     // pour un pro (recherche du compte, puis l'écran de saisie du Commercial).
@@ -1035,36 +1088,24 @@ export const routes: Routes = [
           ),
       },
       {
-        // « Nouvelle commande » : deux cartes, pro et particulier
-        // (`commande-particulier-reglee-en-boutique.md`, § 2). Les deux
-        // saisies sont sous les mêmes gardes, et AVANT `nouvelle-commande/:id`,
-        // qui lirait sinon `pro` ou `particulier` comme un identifiant de société.
+        // « Nouvelle commande » : la saisie est une page à part,
+        // `/nouvelle-commande` (décidé par Hugo le 2026-11-21). L'onglet passe
+        // par ce relais, monté DANS le comptoir pour lire son point de retrait
+        // ouvert, qu'il remet dans l'adresse avec l'origine.
         path: 'nouvelle-commande',
         pathMatch: 'full',
         canActivate: COUNTER_ORDER_GUARDS,
-        title: 'Nouvelle commande — LFC B2B admin',
         loadComponent: () =>
-          import('./comptoir/order-kind-choice-page/order-kind-choice-page').then(
-            (m) => m.OrderKindChoicePage,
-          ),
+          import('./comptoir/order-entry-relay/order-entry-relay').then((m) => m.OrderEntryRelay),
       },
       {
-        path: 'nouvelle-commande/pro',
-        canActivate: COUNTER_ORDER_GUARDS,
-        title: 'Nouvelle commande pro — LFC B2B admin',
-        loadComponent: () =>
-          import('./comptoir/nouvelle-commande-pro/nouvelle-commande-pro-page').then(
-            (m) => m.NouvelleCommandeProPage,
-          ),
-      },
-      {
-        path: 'nouvelle-commande/particulier',
-        canActivate: COUNTER_ORDER_GUARDS,
-        title: 'Nouvelle commande particulier — LFC B2B admin',
-        loadComponent: () =>
-          import('./comptoir/particular-order-page/particular-order-page').then(
-            (m) => m.ParticularOrderPage,
-          ),
+        // Les anciennes adresses de la saisie, sous le comptoir : un favori
+        // atterrit sur la page à part, son retour pointant le comptoir.
+        path: 'nouvelle-commande/:rest',
+        redirectTo: ({ params }) =>
+          inject(Router).createUrlTree(['/nouvelle-commande', params['rest'] ?? ''], {
+            queryParams: orderEntryParams('/comptoir'),
+          }),
       },
       {
         // LES MODÈLES DE RÉASSORT — la bibliothèque d'un point (plan
@@ -1106,20 +1147,6 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./comptoir/reassort-boutique-page/reassort-boutique-page').then(
             (m) => m.ReassortBoutiquePage,
-          ),
-      },
-      {
-        // LA SAISIE, montée SOUS le comptoir : la personne du comptoir n'a pas
-        // forcément les droits du Commercial, et la navigation doit rester
-        // enfermée ici. Même composant que `comptes-clients/:id/nouvelle-commande` ;
-        // c'est l'origine déclarée en `data` qui referme ses liens sur `/comptoir`.
-        path: 'nouvelle-commande/:id',
-        canActivate: COUNTER_ORDER_GUARDS,
-        title: 'Nouvelle commande pro — LFC B2B admin',
-        data: { [ORDER_ENTRY_ORIGIN_KEY]: 'counter' satisfies OrderEntryOrigin },
-        loadComponent: () =>
-          import('./commandes/nouvelle-commande/nouvelle-commande-page').then(
-            (m) => m.NouvelleCommandePage,
           ),
       },
     ],

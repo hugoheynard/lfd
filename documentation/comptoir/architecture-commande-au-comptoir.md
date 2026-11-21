@@ -43,7 +43,15 @@ flowchart LR
   suffit, aucune route neuve.
 - **Droits** : `b2b_counter` est une valeur de `StaffResource`
   (`packages/contracts/src/staff-access.ts`), et un rôle `comptoir` existe.
-- **Front** : `comptoir/nouvelle-commande` est gardé par **deux** permissions,
+- **Front** : la saisie est une page à part, `/nouvelle-commande` (choix pro ou
+  particulier, `/pro`, `/particulier`, `/:id` — décidé par Hugo le 2026-11-21).
+  Celui qui l'ouvre — la liste des commandes, ou l'onglet « Nouvelle commande »
+  du comptoir, simple relais — écrit son origine dans l'adresse
+  (`?retour=/commandes`, `?retour=/comptoir&point=<id>`) ; la saisie la retient
+  (`order-entry-return.ts`) et « Terminer » y ramène. Le `point` est celui du
+  comptoir : sans lui, ni « Retrait immédiat » ni point par défaut du
+  particulier. Les règles restent celles du comptoir (origine `counter`).
+  Chaque écran est gardé par **deux** permissions,
   `b2b_counter:read` et `b2b_place_order:write` (`COUNTER_ORDER_GUARDS`,
   `app.routes.ts`) — la seconde est sortie de `b2b_orders` le 2026-10-01
   ([`plan-droits-par-geste.md`](../livraisons/droits/plan-droits-par-geste.md), 5.1 bis).

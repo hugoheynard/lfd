@@ -1,6 +1,5 @@
-<!-- Pas de titre (Hugo, 2026-10-12) : l'onglet actif nomme déjà l'écran, et la
-     consigne vit juste au-dessus du champ qu'elle explique. -->
-<fold-page-layout>
+<fold-page-layout title="Nouvelle commande pro">
+  <fold-back-link pageEyebrow routerLink="/nouvelle-commande" label="Pro ou particulier" />
   @if (placed(); as order) {
     <div class="placed">
       <fold-callout variant="success" announce>
@@ -20,6 +19,7 @@
           >
             Client suivant
           </button>
+          <button foldButton type="button" (click)="finish()" data-finish>Terminer</button>
         </div>
       </fold-callout>
       @if (order.handover; as handover) {

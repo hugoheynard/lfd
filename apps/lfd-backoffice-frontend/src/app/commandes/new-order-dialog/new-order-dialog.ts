@@ -12,12 +12,13 @@ import {
   PARTICULAR_ORDER_LINK,
   PRO_ORDER_LINK,
 } from '../../comptoir/order-kind-choice-page/order-kind-choice-page';
+import { orderEntryParams } from '../nouvelle-commande/order-entry-return';
 
 /**
- * **Nouvelle commande, depuis la liste** : le même choix que la page du
- * comptoir (`OrderKindChoicePage`) — pro ou particulier —, ouvert en panneau
- * pour qu'on ne quitte la liste qu'une fois le cas choisi. Chaque carte mène à
- * la saisie de son cas ; les deux ne se mélangent pas.
+ * **Nouvelle commande, depuis la liste** : le même choix que la page de la
+ * saisie (`OrderKindChoicePage`) — pro ou particulier —, en dialogue, pour
+ * qu'on ne quitte la liste qu'une fois le cas choisi. Chaque carte ouvre la
+ * saisie de son cas en notant l'origine : « Terminer » ramène à la liste.
  */
 @Component({
   selector: 'app-new-order-dialog',
@@ -40,6 +41,6 @@ export class NewOrderDialog {
 
   protected go(link: string): void {
     this.ref.close();
-    void this.router.navigateByUrl(link);
+    void this.router.navigate([link], { queryParams: orderEntryParams('/commandes') });
   }
 }

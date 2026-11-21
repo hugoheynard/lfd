@@ -15,7 +15,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { PermissionsStore } from '../../auth/permissions.store';
 import { PickupAddressesService } from '../../b2b/reglages/pickup-addresses.service';
 import { AdminCatalogService } from '../../commandes/catalog.service';
-import { HandoverQueueStore } from '../../handover-shop/handover-queue.store';
+import { OrderEntryReturnStore } from '../../commandes/nouvelle-commande/order-entry-return';
 import { CounterParticularsService } from '../counter-particulars.service';
 import { ParticularOrderPage } from './particular-order-page';
 
@@ -107,10 +107,11 @@ function mount(
         provide: PickupAddressesService,
         useValue: { list: () => Promise.resolve([point('a'), point('b'), point('pro', false)]) },
       },
-      { provide: HandoverQueueStore, useValue: { activePlace: () => ({ id: 'b', label: 'b' }) } },
       { provide: PermissionsStore, useValue: { can: (p: StaffPermission) => granted.includes(p) } },
     ],
   });
+  // Le comptoir a ouvert la saisie depuis son point « b » (`?retour=/comptoir&point=b`).
+  TestBed.inject(OrderEntryReturnStore).noteArrival('/comptoir', 'b');
   const fixture = TestBed.createComponent(ParticularOrderPage);
   return { fixture, place, estimate };
 }

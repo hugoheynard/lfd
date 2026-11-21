@@ -112,8 +112,9 @@ Sorti de `b2b_orders` le 2026-10-01. Il couvre la saisie par l'équipe.
 | `PUT`, `DELETE /admin/order-drafts/:companyId` | `b2b_place_order:write` (verbe, `@AdminSurface("b2b_place_order")`) |
 
 **Back-office** : `/comptes-clients/:id/nouvelle-commande` (garde
-`b2b_place_order:write`) ; `/comptoir/nouvelle-commande` et
-`/comptoir/nouvelle-commande/:id` (garde `COUNTER_ORDER_GUARDS` =
+`b2b_place_order:write`) ; `/nouvelle-commande` et ses écrans `/pro`,
+`/particulier`, `/:id`, ainsi que le relais `/comptoir/nouvelle-commande`
+(garde `COUNTER_ORDER_GUARDS` =
 `b2b_counter:read` **et** `b2b_place_order:write`) ; l'entrée « Comptoir » du
 menu (`app.ts`, `can('b2b_counter:read') && can('b2b_place_order:write')`).
 

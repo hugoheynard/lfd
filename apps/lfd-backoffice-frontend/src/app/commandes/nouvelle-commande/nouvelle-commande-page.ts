@@ -39,7 +39,7 @@ import {
   type CounterPlacedOrder,
 } from './order-entry-origin';
 import { HandoverQueueService } from '../../handover-shop/handover-queue.service';
-import { HandoverQueueStore } from '../../handover-shop/handover-queue.store';
+import { orderEntryReturn } from './order-entry-return';
 import { ResupplyReceiptsService } from '../../comptoir/reassort-boutique-page/resupply-receipts.service';
 import { CounterDeliveryNoteService } from '../../comptoir/counter-delivery-note.service';
 import { isoDayOf, shelfShortageOf, shelfStockBySku } from './immediate-pickup';
@@ -215,17 +215,15 @@ export class NouvelleCommandePage {
       : inject(CommercialOrderEntrySource);
 
   /**
-   * La bande du comptoir, d'où vient le point du « Retrait immédiat » (lot
-   * L6). Lue seulement au comptoir ET avec le droit de remettre : sans lui,
-   * l'injecter ferait lire la file du retrait pour se prendre un 403.
+   * Le point du « Retrait immédiat » (lot L6) : celui que le comptoir a mis
+   * dans l'adresse en ouvrant la saisie (`order-entry-return.ts`). Proposé
+   * seulement au comptoir ET avec le droit de remettre ; ouverte depuis la
+   * liste, la saisie n'a pas de point, et pas de raccourci.
    */
-  private readonly counterQueue =
-    this.origin === 'counter' && this.permissions.can('handover_counter:write')
-      ? inject(HandoverQueueStore, { optional: true })
-      : null;
-
-  /** Le point du comptoir quand le raccourci est proposé ; `null` sinon. */
-  protected readonly counterPlaceId = computed(() => this.counterQueue?.activePlace()?.id ?? null);
+  private readonly entryReturn = this.origin === 'counter' ? orderEntryReturn() : null;
+  protected readonly counterPlaceId = computed(() =>
+    this.permissions.can('handover_counter:write') ? (this.entryReturn?.point() ?? null) : null,
+  );
 
   /** Le raccourci est-il choisi ? */
   protected readonly immediate = computed(

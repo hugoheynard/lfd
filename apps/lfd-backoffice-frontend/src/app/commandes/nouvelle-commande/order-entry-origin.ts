@@ -13,10 +13,10 @@ export type OrderEntryOrigin = 'commercial' | 'counter';
 export const ORDER_ENTRY_ORIGIN_KEY = 'origin';
 
 /** Le sélecteur de compte du comptoir — le retour de la saisie en contexte comptoir. */
-export const COUNTER_ORDER_PICKER_LINK = '/comptoir/nouvelle-commande/pro';
+export const COUNTER_ORDER_PICKER_LINK = '/nouvelle-commande/pro';
 
-/** La saisie d'un compte au comptoir : `/comptoir/nouvelle-commande/:id`. */
-export const COUNTER_ORDER_ENTRY_LINK = '/comptoir/nouvelle-commande';
+/** La saisie d'un compte au comptoir : `/nouvelle-commande/:id`. */
+export const COUNTER_ORDER_ENTRY_LINK = '/nouvelle-commande';
 
 /**
  * Lit l'origine dans la `data` d'une route. L'absence vaut `commercial` : c'est
@@ -40,7 +40,7 @@ export interface OrderEntryBackLink {
  */
 export function backLinkOf(origin: OrderEntryOrigin, companyId: string): OrderEntryBackLink {
   return origin === 'counter'
-    ? { link: [COUNTER_ORDER_PICKER_LINK], label: 'Retour au comptoir' }
+    ? { link: [COUNTER_ORDER_PICKER_LINK], label: 'Choisir un autre compte' }
     : { link: ['/comptes-clients', companyId, 'commandes'], label: 'Ses commandes' };
 }
 

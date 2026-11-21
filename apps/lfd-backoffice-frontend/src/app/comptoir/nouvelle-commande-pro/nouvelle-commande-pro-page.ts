@@ -6,6 +6,7 @@ import {
   type OrderDraftSummaryView,
 } from '@lfd/contracts';
 import {
+  FoldBackLinkComponent,
   FoldBadgeComponent,
   FoldButtonComponent,
   FoldCalloutComponent,
@@ -23,6 +24,7 @@ import {
   COUNTER_ORDER_ENTRY_LINK,
   counterPlacedOrderOf,
 } from '../../commandes/nouvelle-commande/order-entry-origin';
+import { orderEntryReturn } from '../../commandes/nouvelle-commande/order-entry-return';
 import { OrderDraftsService } from '../../commandes/order-drafts.service';
 import { NotifyService } from '../../notify.service';
 import { CounterCustomersService } from '../counter-customers.service';
@@ -67,6 +69,7 @@ interface CompanyRow {
   selector: 'app-nouvelle-commande-pro-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    FoldBackLinkComponent,
     FoldBadgeComponent,
     FoldButtonComponent,
     FoldCalloutComponent,
@@ -87,6 +90,8 @@ export class NouvelleCommandeProPage {
   private readonly notify = inject(NotifyService);
   private readonly notes = inject(CounterDeliveryNoteService);
   private readonly drafts = inject(OrderDraftsService);
+  /** D'où l'on vient : « Terminer » y ramène. */
+  protected readonly origin = orderEntryReturn();
   /** Le bon se réimprime-t-il en ce moment ? */
   protected readonly printing = signal(false);
 
@@ -179,6 +184,11 @@ export class NouvelleCommandeProPage {
     } finally {
       this.printing.set(false);
     }
+  }
+
+  /** La commande est passée, le client servi : retour à l'écran d'où l'on vient. */
+  protected finish(): void {
+    void this.router.navigateByUrl(this.origin.target());
   }
 
   /** Le client suivant : on range le récapitulatif du précédent. */

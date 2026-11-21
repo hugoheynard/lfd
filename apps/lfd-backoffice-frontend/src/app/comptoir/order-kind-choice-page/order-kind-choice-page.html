@@ -1,4 +1,5 @@
-<fold-page-layout>
+<fold-page-layout title="Nouvelle commande">
+  <fold-back-link pageEyebrow [routerLink]="origin.target()" [label]="origin.label()" />
   <div class="choices">
     <fold-card interactive ariaLabel="Commande pro" (activated)="go(pro)" data-choice-pro>
       <fold-element-title

@@ -1,5 +1,5 @@
-<!-- Pas de titre : l'onglet « Nouvelle commande » nomme déjà l'écran. -->
-<fold-page-layout>
+<fold-page-layout title="Nouvelle commande particulier">
+  <fold-back-link pageEyebrow routerLink="/nouvelle-commande" label="Pro ou particulier" />
   @if (placed(); as order) {
     <fold-card data-placed>
       <fold-element-title
@@ -15,7 +15,8 @@
         <a foldButton emphasis="outline" [routerLink]="['/commandes', order.id]" data-placed-link>
           Voir la commande
         </a>
-        <button foldButton type="button" (click)="next()">Client suivant</button>
+        <button foldButton emphasis="outline" type="button" (click)="next()">Client suivant</button>
+        <button foldButton type="button" (click)="finish()" data-finish>Terminer</button>
       </div>
     </fold-card>
   } @else {

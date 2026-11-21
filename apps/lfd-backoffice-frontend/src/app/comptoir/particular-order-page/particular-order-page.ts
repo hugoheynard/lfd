@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { httpErrorMessage } from '@lfd/endpoints';
 import type {
   CatalogItemView,
@@ -13,6 +13,7 @@ import type {
 } from '@lfd/contracts';
 import { formatCents } from '@lfd/b2b-ui/order';
 import {
+  FoldBackLinkComponent,
   FoldButtonComponent,
   FoldCalloutComponent,
   FoldCardComponent,
@@ -23,7 +24,6 @@ import {
 } from 'fold-ng';
 import { tap } from 'rxjs';
 
-import { PermissionsStore } from '../../auth/permissions.store';
 import { PickupAddressesService } from '../../b2b/reglages/pickup-addresses.service';
 import { AdminCatalogService } from '../../commandes/catalog.service';
 import { CartStore, saleLineOf } from '../../commandes/nouvelle-commande/cart.store';
@@ -38,7 +38,7 @@ import {
   type ProposedLine,
   type SourceKind,
 } from '../../commandes/nouvelle-commande/source-produits/source-produits';
-import { HandoverQueueStore } from '../../handover-shop/handover-queue.store';
+import { orderEntryReturn } from '../../commandes/nouvelle-commande/order-entry-return';
 import { GestureIntents } from '../../shared/gesture-intents';
 import { CounterParticularsService } from '../counter-particulars.service';
 import { ParticularCart } from '../particular-cart/particular-cart';
@@ -69,6 +69,7 @@ const PLACE_INTENT = 'place';
   selector: 'app-particular-order-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    FoldBackLinkComponent,
     FoldButtonComponent,
     FoldCalloutComponent,
     FoldCardComponent,
@@ -88,11 +89,12 @@ export class ParticularOrderPage {
   private readonly api = inject(CounterParticularsService);
   private readonly catalogService = inject(AdminCatalogService);
   private readonly pickupsService = inject(PickupAddressesService);
-  private readonly permissions = inject(PermissionsStore);
-  /** La bande du comptoir, d'où vient le point par défaut — lue sous le droit du retrait seulement. */
-  private readonly counterQueue = this.permissions.can('handover_counter:read')
-    ? inject(HandoverQueueStore, { optional: true })
-    : null;
+  private readonly router = inject(Router);
+  /**
+   * D'où l'on vient, et le point du comptoir quand c'est lui qui a ouvert la
+   * saisie : il devient le point par défaut. « Terminer » ramène à l'origine.
+   */
+  protected readonly origin = orderEntryReturn();
   private readonly placeIntents = new GestureIntents();
 
   protected readonly cart = new CartStore();
@@ -164,7 +166,7 @@ export class ParticularOrderPage {
       this.catalogue.set(particularShelfOf(catalogue, prices));
       this.shelfPrices.set(prices);
       this.pickups.set(open);
-      const here = this.counterQueue?.activePlace()?.id ?? null;
+      const here = this.origin.point();
       // Le point du comptoir qui saisit ; sinon le seul ouvert ; sinon on choisit.
       const only = open.length === 1 ? (open[0]?.id ?? null) : null;
       this.pickupId.set(defaultPickupIdOf(open, here) ?? only);
@@ -222,6 +224,11 @@ export class ParticularOrderPage {
     } finally {
       this.submitting.set(false);
     }
+  }
+
+  /** La commande est notée, le client servi : retour à l'écran d'où l'on vient. */
+  protected finish(): void {
+    void this.router.navigateByUrl(this.origin.target());
   }
 
   /** Le client suivant : tout repart de zéro, sauf le point du comptoir. */
