@@ -171,7 +171,7 @@ describe('toLine', () => {
     expect(line.sentence).toBe(
       'Hugo Heynard (staff LFD — Commercial) a passé la commande ORD-142 pour Jean Dupont',
     );
-    expect(line.detail.map((row) => row.label)).toEqual(['Commande', 'Client', 'Total']);
+    expect(line.detail.map((row) => row.label)).toEqual(['Commande', 'Client', 'Total TTC']);
   });
 });
 
