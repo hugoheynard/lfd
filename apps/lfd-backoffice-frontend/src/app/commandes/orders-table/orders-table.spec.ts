@@ -218,6 +218,25 @@ describe('OrdersTable', () => {
   });
 });
 
+describe('la colonne Client', () => {
+  it('nomme un pro par son enseigne, la raison sociale en petit dessous', () => {
+    const el = render(
+      [row({ companyDisplayName: 'La Folie Douce', customerLabel: 'SAS Les Tommeuses' })],
+      true,
+    ).nativeElement as HTMLElement;
+    expect(el.querySelector('[data-customer]')?.textContent).toContain('La Folie Douce');
+    expect(el.querySelector('[data-legal-name]')?.textContent?.trim()).toBe('SAS Les Tommeuses');
+  });
+
+  it('ne répète pas la raison sociale quand il n’a pas d’enseigne', () => {
+    const el = render(
+      [row({ companyDisplayName: 'SAS Les Tommeuses', customerLabel: 'SAS Les Tommeuses' })],
+      true,
+    ).nativeElement as HTMLElement;
+    expect(el.querySelector('[data-legal-name]')).toBeNull();
+  });
+});
+
 describe('le visa et les alertes, sur la ligne (plan du visa des commandes)', () => {
   it('porte « Vérifié · Prénom Nom », ou « Vérifié » seul sans auteur connu', () => {
     const named = render(

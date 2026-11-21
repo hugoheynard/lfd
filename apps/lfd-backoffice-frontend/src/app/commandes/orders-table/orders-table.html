@@ -35,7 +35,18 @@
 
   <ng-template foldCell="customer" let-row>
     <span class="ot-who">
-      <span>{{ row.customerLabel }}</span>
+      <!-- Un pro se reconnaît à son enseigne ; la raison sociale suit, en
+           petit, quand elle dit autre chose (Hugo, 2026-11-21). -->
+      @if (row.companyDisplayName; as shop) {
+        <span class="ot-stack" data-customer>
+          <span>{{ shop }}</span>
+          @if (row.customerLabel !== shop) {
+            <span class="ot-legal" data-legal-name>{{ row.customerLabel }}</span>
+          }
+        </span>
+      } @else {
+        <span data-customer>{{ row.customerLabel }}</span>
+      }
       @if (clientele(row); as who) {
         <fold-badge
           radius="square"
