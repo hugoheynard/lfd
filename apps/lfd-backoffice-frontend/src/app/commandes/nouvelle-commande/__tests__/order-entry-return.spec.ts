@@ -1,9 +1,7 @@
-import { TestBed } from '@angular/core/testing';
 import { describe, expect, it } from 'vitest';
 
 import {
   DEFAULT_ORDER_ENTRY_RETURN,
-  OrderEntryReturnStore,
   orderEntryParams,
   pointOf,
   returnLabelOf,
@@ -46,42 +44,5 @@ describe('l’origine de la saisie à part', () => {
       retour: '/comptoir',
       point: 'site-1',
     });
-  });
-});
-
-describe('le parcours de la saisie', () => {
-  function store(): OrderEntryReturnStore {
-    TestBed.resetTestingModule();
-    return TestBed.inject(OrderEntryReturnStore);
-  }
-
-  it('part de la liste des commandes, sans point', () => {
-    const route = store();
-    expect(route.target()).toBe('/commandes');
-    expect(route.point()).toBeNull();
-  });
-
-  it('retient l’origine et le point d’arrivée', () => {
-    const route = store();
-    route.noteArrival('/comptoir', 'site-1');
-    expect(route.target()).toBe('/comptoir');
-    expect(route.point()).toBe('site-1');
-    expect(route.label()).toBe('Retour au comptoir');
-  });
-
-  it('garde l’origine du parcours sur une étape sans origine', () => {
-    const route = store();
-    route.noteArrival('/comptoir', 'site-1');
-    route.noteArrival(undefined, undefined);
-    expect(route.target()).toBe('/comptoir');
-    expect(route.point()).toBe('site-1');
-  });
-
-  it('oublie le point du comptoir quand la liste ouvre la saisie', () => {
-    // Sans quoi un « Retrait immédiat » resterait proposé loin du client.
-    const route = store();
-    route.noteArrival('/comptoir', 'site-1');
-    route.noteArrival('/commandes', undefined);
-    expect(route.point()).toBeNull();
   });
 });

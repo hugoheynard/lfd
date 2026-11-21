@@ -42,10 +42,11 @@ function isPermissionGuard(guard: unknown): guard is PermissionGuard {
 /** Joue TOUS les gardes de la route pour ce rôle : vrai seulement si chacun laisse passer. */
 async function opens(role: StaffRole, path: string): Promise<boolean> {
   configure(role);
-  const comptoir = routes.find((route) => route.path === 'comptoir');
-  const guards = (
-    comptoir?.children?.find((child) => child.path === path)?.canActivate ?? []
-  ).filter(isPermissionGuard);
+  // La saisie est une page à part (`/nouvelle-commande`, Hugo, 2026-11-21).
+  const page = routes.find((route) => route.path === 'nouvelle-commande');
+  const guards = (page?.children?.find((child) => child.path === path)?.canActivate ?? []).filter(
+    isPermissionGuard,
+  );
   expect(guards.length).toBe(2);
   const state = TestBed.inject(Router).routerState.snapshot;
   const injector = TestBed.inject(Injector);
@@ -66,7 +67,7 @@ function counterViewKeys(role: StaffRole): string[] {
 }
 
 describe('la commande pro au comptoir', () => {
-  it.each(['nouvelle-commande', 'nouvelle-commande/:id'])(
+  it.each(['', 'pro', 'particulier', ':id'])(
     '« %s » s’ouvre au vendeur de comptoir, sans la fiche client',
     async (path) => {
       expect(await opens('comptoir', path)).toBe(true);
@@ -74,16 +75,16 @@ describe('la commande pro au comptoir', () => {
   );
 
   it('reste fermée au support, qui lit les commandes sans pouvoir en passer', async () => {
-    expect(await opens('support', 'nouvelle-commande')).toBe(false);
+    expect(await opens('support', '')).toBe(false);
   });
 
   it('s’ouvre au commercial, qui a reçu le droit du comptoir', async () => {
-    expect(await opens('commercial', 'nouvelle-commande/:id')).toBe(true);
+    expect(await opens('commercial', ':id')).toBe(true);
   });
 
-  it('a son entrée de rail pour le vendeur de comptoir, pas pour le support', () => {
-    // Ordre des onglets depuis le 2026-10-12 (retrait en tête) ; le réassort suit le droit du retrait.
-    expect(counterViewKeys('comptoir')).toEqual(['retrait', 'nouvelle-commande', 'reassort']);
+  it('n’est plus un onglet du comptoir : un bouton de sa bande l’ouvre', () => {
+    // Le retrait en tête ; le réassort suit le droit du retrait.
+    expect(counterViewKeys('comptoir')).toEqual(['retrait', 'reassort']);
     expect(counterViewKeys('support')).toEqual(['retrait', 'reassort']);
   });
 });

@@ -11,10 +11,10 @@ import {
 function mount() {
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({ providers: [provideRouter([])] });
-  const navigateByUrl = vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true);
+  const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
   const fixture = TestBed.createComponent(OrderKindChoicePage);
   fixture.detectChanges();
-  return { el: fixture.nativeElement as HTMLElement, navigateByUrl };
+  return { el: fixture.nativeElement as HTMLElement, navigate };
 }
 
 describe('Nouvelle commande — le choix', () => {
@@ -25,11 +25,13 @@ describe('Nouvelle commande — le choix', () => {
   });
 
   it('mène chaque carte à sa saisie', () => {
-    const { el, navigateByUrl } = mount();
+    const { el, navigate } = mount();
+    // L'origine et le point suivent l'étape suivante.
+    const keep = { queryParamsHandling: 'preserve' };
     el.querySelector<HTMLElement>('[data-choice-particular]')?.click();
-    expect(navigateByUrl).toHaveBeenLastCalledWith(PARTICULAR_ORDER_LINK);
+    expect(navigate).toHaveBeenLastCalledWith([PARTICULAR_ORDER_LINK], keep);
     el.querySelector<HTMLElement>('[data-choice-pro]')?.click();
-    expect(navigateByUrl).toHaveBeenLastCalledWith(PRO_ORDER_LINK);
+    expect(navigate).toHaveBeenLastCalledWith([PRO_ORDER_LINK], keep);
   });
 
   it('ramène, par son lien de retour, à l’écran d’où l’on vient', () => {

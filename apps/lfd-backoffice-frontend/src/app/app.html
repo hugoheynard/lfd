@@ -967,25 +967,19 @@
             ></a>
           }
           @if (canSeeCounter()) {
-            <!-- La MÊME entrée qu'au rail, et il faut la poser deux fois : les
-               deux arbres ne partagent pas leur modèle. Comme la production, le
-               lanceur montre les vues de l'espace, lues dans le MÊME catalogue
-               que les onglets du comptoir. -->
-            <fold-nav-group icon="package-check" label="Comptoir" [entryCountLabel]="entriesLabel">
-              @for (view of comptoirViews(); track view.key) {
-                <a
-                  fold-nav-tile
-                  [icon]="view.icon"
-                  [label]="view.label"
-                  [badge]="view.badge"
-                  [routerLink]="view.link"
-                  routerLinkActive
-                  #comptoirTile="routerLinkActive"
-                  [active]="comptoirTile.isActive"
-                  (click)="mobileNavOpen.set(false)"
-                ></a>
-              }
-            </fold-nav-group>
+            <!-- La MÊME entrée qu'au rail. Une tuile simple vers le comptoir : ses
+               vues sont des onglets de sa bande, et un groupe les déclarerait
+               deux fois (Hugo, 2026-11-21). -->
+            <a
+              fold-nav-tile
+              icon="package-check"
+              label="Comptoir"
+              routerLink="/comptoir"
+              routerLinkActive
+              #comptoirTile="routerLinkActive"
+              [active]="comptoirTile.isActive"
+              (click)="mobileNavOpen.set(false)"
+            ></a>
           }
           @if (canSeeCourier()) {
             <!-- La MÊME entrée qu'au rail. Une tuile simple, comme le Fournil :

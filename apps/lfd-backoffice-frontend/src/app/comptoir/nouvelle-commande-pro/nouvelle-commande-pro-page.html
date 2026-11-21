@@ -1,5 +1,10 @@
 <fold-page-layout title="Nouvelle commande pro">
-  <fold-back-link pageEyebrow routerLink="/nouvelle-commande" label="Pro ou particulier" />
+  <fold-back-link
+    pageEyebrow
+    routerLink="/nouvelle-commande"
+    queryParamsHandling="preserve"
+    label="Pro ou particulier"
+  />
   @if (placed(); as order) {
     <div class="placed">
       <fold-callout variant="success" announce>

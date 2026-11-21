@@ -1,19 +1,27 @@
 import { ChangeDetectionStrategy, Component, Injector, computed, inject } from '@angular/core';
-import { FoldSurfaceDirective, FoldViewNavComponent } from 'fold-ng';
+import {
+  FoldButtonComponent,
+  FoldPanelHostService,
+  FoldSurfaceDirective,
+  FoldViewNavComponent,
+} from 'fold-ng';
 
 import { PermissionsStore } from '../../auth/permissions.store';
+import { NewOrderDialog } from '../../commandes/new-order-dialog/new-order-dialog';
 import { HandoverMasthead } from '../../handover-shop/handover-masthead/handover-masthead';
 import { HandoverQueueStore } from '../../handover-shop/handover-queue.store';
 import { WorkspaceCatalogue } from '../../shared/workspace-rail/workspaces';
 
 /**
- * **La bande de tête du comptoir**, présente sur ses trois vues (Hugo,
+ * **La bande de tête du comptoir**, présente sur ses vues (Hugo,
  * 2026-10-12 : « le masthead devrait rester présent sur toutes les pages »).
  *
- * Elle porte d'abord les **onglets du comptoir** — Retrait, Réassort, Nouvelle
- * commande pro —, lus dans `COMPTOIR_VIEWS` et donc filtrés par les droits
- * comme les tuiles du lanceur. Puis, pour qui tient le retrait, la part du
- * retrait (`app-handover-masthead`) : point ouvert, compteurs, heure, journée.
+ * Elle porte d'abord les **onglets du comptoir** — Retrait, Réassort —, lus
+ * dans `COMPTOIR_VIEWS` et donc filtrés par les droits
+ * comme les tuiles du lanceur, et le bouton « Nouvelle commande », qui ouvre
+ * le même dialogue que la liste des commandes. Puis, pour qui tient le
+ * retrait, la part du retrait (`app-handover-masthead`) : point ouvert,
+ * compteurs, heure, journée.
  *
  * 🔴 **Sans `handover_counter:read`, la bande ne porte que les onglets.** La
  * part du retrait est la seule à injecter `HandoverQueueStore` : ne pas la
@@ -37,6 +45,7 @@ const SITED_LABELS: Readonly<Record<string, string>> = {
   selector: 'app-comptoir-masthead',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    FoldButtonComponent,
     FoldViewNavComponent,
     // 🔴 La directive, et pas seulement l'attribut : sans elle
     // `foldSurface="chrome"` est du HTML inerte qu'Angular ignore, et la
@@ -72,6 +81,29 @@ export class ComptoirMasthead {
       return { ...view, label: place === null ? base : `${base} ${place.label}` };
     });
   });
+
+  private readonly panels = inject(FoldPanelHostService);
+
+  /** Saisir une commande demande la caisse et la passation, comme la page de la saisie. */
+  protected readonly canPlace = computed(
+    () => this.permissions.can('b2b_counter:read') && this.permissions.can('b2b_place_order:write'),
+  );
+
+  /**
+   * Le choix pro ou particulier, en dialogue centré. Il emporte l'origine et le
+   * point ouvert : la saisie propose le « Retrait immédiat » sur ce point, et
+   * « Terminer » ramène au comptoir.
+   */
+  protected openNewOrder(): void {
+    const point = this.holdsCounter()
+      ? (this.injector.get(HandoverQueueStore).activePlace()?.id ?? null)
+      : null;
+    this.panels.open(NewOrderDialog, {
+      side: 'center',
+      width: 'sm',
+      data: { origin: '/comptoir', point },
+    });
+  }
 
   /** Monte-t-on la part du retrait — et donc la file ? */
   protected readonly holdsCounter = computed(() => this.permissions.can('handover_counter:read'));

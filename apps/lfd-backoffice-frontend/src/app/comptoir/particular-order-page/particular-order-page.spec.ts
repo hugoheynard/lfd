@@ -15,7 +15,6 @@ import { describe, expect, it, vi } from 'vitest';
 import { PermissionsStore } from '../../auth/permissions.store';
 import { PickupAddressesService } from '../../b2b/reglages/pickup-addresses.service';
 import { AdminCatalogService } from '../../commandes/catalog.service';
-import { OrderEntryReturnStore } from '../../commandes/nouvelle-commande/order-entry-return';
 import { CounterParticularsService } from '../counter-particulars.service';
 import { ParticularOrderPage } from './particular-order-page';
 
@@ -110,9 +109,10 @@ function mount(
       { provide: PermissionsStore, useValue: { can: (p: StaffPermission) => granted.includes(p) } },
     ],
   });
-  // Le comptoir a ouvert la saisie depuis son point « b » (`?retour=/comptoir&point=b`).
-  TestBed.inject(OrderEntryReturnStore).noteArrival('/comptoir', 'b');
   const fixture = TestBed.createComponent(ParticularOrderPage);
+  // Le comptoir a ouvert la saisie depuis son point « b » (`?retour=/comptoir&point=b`).
+  fixture.componentRef.setInput('retour', '/comptoir');
+  fixture.componentRef.setInput('point', 'b');
   return { fixture, place, estimate };
 }
 

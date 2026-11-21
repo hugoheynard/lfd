@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, input } from '@angular/core';
 import { Router } from '@angular/router';
 import {
   FoldCardComponent,
@@ -15,11 +15,18 @@ import {
 import { orderEntryParams } from '../nouvelle-commande/order-entry-return';
 
 /**
- * **Nouvelle commande, depuis la liste** : le même choix que la page de la
- * saisie (`OrderKindChoicePage`) — pro ou particulier —, en dialogue, pour
- * qu'on ne quitte la liste qu'une fois le cas choisi. Chaque carte ouvre la
- * saisie de son cas en notant l'origine : « Terminer » ramène à la liste.
+ * **Nouvelle commande** : le même choix que la page de la saisie
+ * (`OrderKindChoicePage`) — pro ou particulier —, en dialogue, ouvert depuis
+ * la liste des commandes ou la bande du comptoir. Chaque carte ouvre la saisie
+ * de son cas en notant l'origine (et le point du comptoir) : « Terminer » y
+ * ramène.
  */
+/** D'où le dialogue est ouvert : l'origine, et le point du comptoir s'il y en a un. */
+export interface NewOrderDialogData {
+  readonly origin: string;
+  readonly point: string | null;
+}
+
 @Component({
   selector: 'app-new-order-dialog',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -33,6 +40,8 @@ import { orderEntryParams } from '../nouvelle-commande/order-entry-return';
   styleUrl: './new-order-dialog.scss',
 })
 export class NewOrderDialog {
+  readonly data = input<NewOrderDialogData>({ origin: '/commandes', point: null });
+
   private readonly ref = inject(FoldPanelRef<void>);
   private readonly router = inject(Router);
 
@@ -41,6 +50,7 @@ export class NewOrderDialog {
 
   protected go(link: string): void {
     this.ref.close();
-    void this.router.navigate([link], { queryParams: orderEntryParams('/commandes') });
+    const { origin, point } = this.data();
+    void this.router.navigate([link], { queryParams: orderEntryParams(origin, point) });
   }
 }

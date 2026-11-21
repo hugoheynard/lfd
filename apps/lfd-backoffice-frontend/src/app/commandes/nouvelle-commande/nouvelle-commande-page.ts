@@ -39,7 +39,7 @@ import {
   type CounterPlacedOrder,
 } from './order-entry-origin';
 import { HandoverQueueService } from '../../handover-shop/handover-queue.service';
-import { orderEntryReturn } from './order-entry-return';
+import { pointOf } from './order-entry-return';
 import { ResupplyReceiptsService } from '../../comptoir/reassort-boutique-page/resupply-receipts.service';
 import { CounterDeliveryNoteService } from '../../comptoir/counter-delivery-note.service';
 import { isoDayOf, shelfShortageOf, shelfStockBySku } from './immediate-pickup';
@@ -220,9 +220,11 @@ export class NouvelleCommandePage {
    * seulement au comptoir ET avec le droit de remettre ; ouverte depuis la
    * liste, la saisie n'a pas de point, et pas de raccourci.
    */
-  private readonly entryReturn = this.origin === 'counter' ? orderEntryReturn() : null;
+  readonly point = input<string>();
   protected readonly counterPlaceId = computed(() =>
-    this.permissions.can('handover_counter:write') ? (this.entryReturn?.point() ?? null) : null,
+    this.origin === 'counter' && this.permissions.can('handover_counter:write')
+      ? pointOf(this.point())
+      : null,
   );
 
   /** Le raccourci est-il choisi ? */
@@ -944,9 +946,12 @@ export class NouvelleCommandePage {
   ): Promise<void> {
     const destination = destinationAfterPlacingOf(this.origin, this.id(), orderId);
     const placed: CounterPlacedOrder = { orderNumber, paymentUrl, handover };
+    // Au comptoir, l'origine et le point suivent : « Terminer » y ramènera.
     await this.router.navigate(
       destination,
-      this.origin === 'counter' ? { state: { [COUNTER_PLACED_ORDER_KEY]: placed } } : {},
+      this.origin === 'counter'
+        ? { state: { [COUNTER_PLACED_ORDER_KEY]: placed }, queryParamsHandling: 'preserve' }
+        : {},
     );
   }
 

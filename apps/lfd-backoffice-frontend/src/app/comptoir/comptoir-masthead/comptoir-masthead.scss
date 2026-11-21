@@ -21,3 +21,15 @@
   // non choisie, elle suit le thème ; l'encre claire du chrome reste lisible.
   background: oklch(from var(--fold-color-bg-header) calc(l + 0.08) c h);
 }
+
+/* Les onglets prennent la largeur ; le bouton reste à sa taille, à droite. */
+.masthead-row {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-md);
+}
+
+.masthead-views {
+  flex: 1 1 auto;
+  min-width: 0;
+}

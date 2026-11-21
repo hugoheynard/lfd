@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { Router, RouterLink } from '@angular/router';
 import { httpErrorMessage } from '@lfd/endpoints';
@@ -38,7 +38,7 @@ import {
   type ProposedLine,
   type SourceKind,
 } from '../../commandes/nouvelle-commande/source-produits/source-produits';
-import { orderEntryReturn } from '../../commandes/nouvelle-commande/order-entry-return';
+import { pointOf, returnTargetOf } from '../../commandes/nouvelle-commande/order-entry-return';
 import { GestureIntents } from '../../shared/gesture-intents';
 import { CounterParticularsService } from '../counter-particulars.service';
 import { ParticularCart } from '../particular-cart/particular-cart';
@@ -90,11 +90,10 @@ export class ParticularOrderPage {
   private readonly catalogService = inject(AdminCatalogService);
   private readonly pickupsService = inject(PickupAddressesService);
   private readonly router = inject(Router);
-  /**
-   * D'où l'on vient, et le point du comptoir quand c'est lui qui a ouvert la
-   * saisie : il devient le point par défaut. « Terminer » ramène à l'origine.
-   */
-  protected readonly origin = orderEntryReturn();
+  /** D'où l'on vient (`?retour=`) : « Terminer » y ramène. */
+  readonly retour = input<string>();
+  /** Le point du comptoir qui a ouvert la saisie (`?point=`) : le point par défaut. */
+  readonly point = input<string>();
   private readonly placeIntents = new GestureIntents();
 
   protected readonly cart = new CartStore();
@@ -166,7 +165,7 @@ export class ParticularOrderPage {
       this.catalogue.set(particularShelfOf(catalogue, prices));
       this.shelfPrices.set(prices);
       this.pickups.set(open);
-      const here = this.origin.point();
+      const here = pointOf(this.point());
       // Le point du comptoir qui saisit ; sinon le seul ouvert ; sinon on choisit.
       const only = open.length === 1 ? (open[0]?.id ?? null) : null;
       this.pickupId.set(defaultPickupIdOf(open, here) ?? only);
@@ -228,7 +227,7 @@ export class ParticularOrderPage {
 
   /** La commande est notée, le client servi : retour à l'écran d'où l'on vient. */
   protected finish(): void {
-    void this.router.navigateByUrl(this.origin.target());
+    void this.router.navigateByUrl(returnTargetOf(this.retour()));
   }
 
   /** Le client suivant : tout repart de zéro, sauf le point du comptoir. */

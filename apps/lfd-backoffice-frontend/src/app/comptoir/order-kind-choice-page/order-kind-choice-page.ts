@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { Router } from '@angular/router';
 import {
   FoldBackLinkComponent,
@@ -7,7 +7,10 @@ import {
   FoldPageLayoutComponent,
 } from 'fold-ng';
 
-import { orderEntryReturn } from '../../commandes/nouvelle-commande/order-entry-return';
+import {
+  returnLabelOf,
+  returnTargetOf,
+} from '../../commandes/nouvelle-commande/order-entry-return';
 
 /** Les deux saisies du comptoir, et l'adresse de chacune. */
 export const PRO_ORDER_LINK = '/nouvelle-commande/pro';
@@ -34,11 +37,14 @@ export const PARTICULAR_ORDER_LINK = '/nouvelle-commande/particulier';
 })
 export class OrderKindChoicePage {
   private readonly router = inject(Router);
-  /** D'où l'on vient : le lien de retour y mène. */
-  protected readonly origin = orderEntryReturn();
+  /** D'où l'on vient (`?retour=`) : le lien de retour y mène. */
+  readonly retour = input<string>();
+  protected readonly target = computed(() => returnTargetOf(this.retour()));
+  protected readonly backLabel = computed(() => returnLabelOf(this.target()));
 
   protected go(link: string): void {
-    void this.router.navigateByUrl(link);
+    // L'origine et le point suivent l'étape suivante.
+    void this.router.navigate([link], { queryParamsHandling: 'preserve' });
   }
 
   protected readonly pro = PRO_ORDER_LINK;

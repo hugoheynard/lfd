@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { Router, provideRouter } from '@angular/router';
+import { Router, provideRouter, withComponentInputBinding } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -138,7 +138,9 @@ describe('NouvelleCommandeProPage', () => {
     const page = await setup(() => Promise.resolve(CARDS));
     const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
     page.pick('2');
-    expect(navigate).toHaveBeenCalledWith(['/nouvelle-commande', '2']);
+    expect(navigate).toHaveBeenCalledWith(['/nouvelle-commande', '2'], {
+      queryParamsHandling: 'preserve',
+    });
   });
 });
 
@@ -146,11 +148,16 @@ describe('NouvelleCommandeProPage', () => {
 async function arriveWith(
   state: Record<string, unknown>,
   drafts: DraftList = NO_DRAFT,
+  queryParams: Record<string, string> = {},
 ): Promise<HTMLElement> {
   TestBed.configureTestingModule({
     providers: [
       draftsProvider(drafts),
-      provideRouter([{ path: 'nouvelle-commande/pro', component: NouvelleCommandeProPage }]),
+      // Comme `app.config.ts` : l'adresse arrive dans les `input()`.
+      provideRouter(
+        [{ path: 'nouvelle-commande/pro', component: NouvelleCommandeProPage }],
+        withComponentInputBinding(),
+      ),
       {
         provide: CounterDeliveryNoteService,
         useValue: { openCarrier: () => Promise.resolve() } satisfies Pick<
@@ -167,7 +174,7 @@ async function arriveWith(
     ],
   });
   const harness = await RouterTestingHarness.create();
-  await TestBed.inject(Router).navigate(['/nouvelle-commande/pro'], { state });
+  await TestBed.inject(Router).navigate(['/nouvelle-commande/pro'], { state, queryParams });
   harness.detectChanges();
   return harness.routeNativeElement ?? document.createElement('div');
 }
@@ -175,6 +182,25 @@ async function arriveWith(
 describe('NouvelleCommandeProPage — retour de la saisie', () => {
   beforeEach(() => {
     TestBed.resetTestingModule();
+  });
+
+  it('garde l’origine et le point dans son lien de retour', async () => {
+    // Sans quoi le choix pro ou particulier perdrait le chemin du retour.
+    const host = await arriveWith({}, NO_DRAFT, { retour: '/comptoir', point: 'p1' });
+    expect(host.querySelector('fold-back-link a')?.getAttribute('href')).toBe(
+      '/nouvelle-commande?retour=%2Fcomptoir&point=p1',
+    );
+  });
+
+  it('« Terminer » ramène à l’origine', async () => {
+    const host = await arriveWith(
+      { counterPlacedOrder: { orderNumber: 'CMD-42', paymentUrl: null } },
+      NO_DRAFT,
+      { retour: '/comptoir' },
+    );
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true);
+    host.querySelector<HTMLElement>('[data-finish]')?.click();
+    expect(navigate).toHaveBeenCalledWith('/comptoir');
   });
 
   it('AFFICHE le lien de règlement de la commande passée : le client est en face', async () => {

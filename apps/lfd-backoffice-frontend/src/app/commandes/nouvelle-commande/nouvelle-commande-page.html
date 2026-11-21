@@ -13,7 +13,11 @@
   }
   @default {
     <header class="nc-head">
-      <fold-back-link [routerLink]="back().link" [label]="back().label" />
+      <fold-back-link
+        [routerLink]="back().link"
+        queryParamsHandling="preserve"
+        [label]="back().label"
+      />
       <div class="nc-titles">
         <h1 class="nc-title">Nouvelle commande — {{ companyName() }}</h1>
         <button

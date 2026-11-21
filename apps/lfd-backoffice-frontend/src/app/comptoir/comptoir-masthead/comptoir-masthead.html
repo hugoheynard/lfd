@@ -5,12 +5,22 @@
     <app-handover-masthead />
   }
 
-  <fold-view-nav
-    [items]="views()"
-    direction="horizontal"
-    size="comfortable"
-    justify="stretch"
-    activeStyle="fill"
-    background="transparent"
-  />
+  <!-- Les vues en onglets ; « Nouvelle commande » est un geste, pas une vue :
+       un bouton, qui ouvre le même dialogue que la liste des commandes. -->
+  <div class="masthead-row">
+    <fold-view-nav
+      class="masthead-views"
+      [items]="views()"
+      direction="horizontal"
+      size="comfortable"
+      justify="stretch"
+      activeStyle="fill"
+      background="transparent"
+    />
+    @if (canPlace()) {
+      <button foldButton intent="primary" (click)="openNewOrder()" data-new-order>
+        Nouvelle commande
+      </button>
+    }
+  </div>
 </header>

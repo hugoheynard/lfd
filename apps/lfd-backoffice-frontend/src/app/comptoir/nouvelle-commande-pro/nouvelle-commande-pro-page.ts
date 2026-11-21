@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import {
   companyDisplayName,
@@ -24,7 +24,7 @@ import {
   COUNTER_ORDER_ENTRY_LINK,
   counterPlacedOrderOf,
 } from '../../commandes/nouvelle-commande/order-entry-origin';
-import { orderEntryReturn } from '../../commandes/nouvelle-commande/order-entry-return';
+import { returnTargetOf } from '../../commandes/nouvelle-commande/order-entry-return';
 import { OrderDraftsService } from '../../commandes/order-drafts.service';
 import { NotifyService } from '../../notify.service';
 import { CounterCustomersService } from '../counter-customers.service';
@@ -90,8 +90,8 @@ export class NouvelleCommandeProPage {
   private readonly notify = inject(NotifyService);
   private readonly notes = inject(CounterDeliveryNoteService);
   private readonly drafts = inject(OrderDraftsService);
-  /** D'où l'on vient : « Terminer » y ramène. */
-  protected readonly origin = orderEntryReturn();
+  /** D'où l'on vient (`?retour=`) : « Terminer » y ramène. */
+  readonly retour = input<string>();
   /** Le bon se réimprime-t-il en ce moment ? */
   protected readonly printing = signal(false);
 
@@ -162,7 +162,9 @@ export class NouvelleCommandeProPage {
   }
 
   protected choose(companyId: string): void {
-    void this.router.navigate([COUNTER_ORDER_ENTRY_LINK, companyId]);
+    void this.router.navigate([COUNTER_ORDER_ENTRY_LINK, companyId], {
+      queryParamsHandling: 'preserve',
+    });
   }
 
   protected copy(url: string): void {
@@ -188,7 +190,7 @@ export class NouvelleCommandeProPage {
 
   /** La commande est passée, le client servi : retour à l'écran d'où l'on vient. */
   protected finish(): void {
-    void this.router.navigateByUrl(this.origin.target());
+    void this.router.navigateByUrl(returnTargetOf(this.retour()));
   }
 
   /** Le client suivant : on range le récapitulatif du précédent. */

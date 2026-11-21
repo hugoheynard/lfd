@@ -529,22 +529,17 @@ export function isExploitationUrl(url: string): boolean {
  * Ce sont des ONGLETS dans la page depuis le 2026-10-12 (Hugo), plus un rail
  * secondaire : le comptoir est une tablette, et le rail mangeait sa largeur.
  *
- * Deux gestes, et c'est ce qui les réunit : rendre une commande déjà faite, et
- * en prendre une nouvelle pour un pro venu sans l'avoir passée. Le réassort
- * (regarnir la boutique) s'y ajoute, pas encore construit. La commande pro
- * n'est pas un second écran de saisie : elle cherche le compte, puis ouvre le
- * même `comptes-clients/:id/nouvelle-commande` que le Commercial — deux saisies
- * divergeraient au premier changement de règle.
+ * Deux vues : rendre une commande déjà faite, et regarnir la boutique. Prendre
+ * une commande n'est pas une vue mais un geste (Hugo, 2026-11-21) : le bouton
+ * « Nouvelle commande » de la bande ouvre la page à part `/nouvelle-commande`,
+ * la même que depuis la liste des commandes.
  *
- * Chaque vue porte son `needs` depuis le 2026-10-01 (`documentation/livraisons/droits/plan-droits-par-geste.md`) :
- * la file de retrait demande `handover_counter:read` ; la commande pro exige
- * de lire les clients du comptoir ET de passer une commande
- * (`b2b_place_order:write`) — les deux gardes de sa route. Sans eux, un poste
- * verrait l'entrée, pour un refus du garde.
+ * Chaque vue porte son `needs` (`documentation/livraisons/droits/plan-droits-par-geste.md`) :
+ * le retrait et le réassort demandent `handover_counter:read`. Sans lui, un
+ * poste verrait l'entrée, pour un refus du garde.
  */
 export const COMPTOIR_VIEWS: readonly WorkspaceView[] = [
-  // Ordre voulu par Hugo (revu le 2026-11-03) : le retrait d'abord, la
-  // commande pro, puis le réassort. Il pilote les ONGLETS du comptoir (dans
+  // Le retrait, puis le réassort. L'ordre pilote les ONGLETS du comptoir (dans
   // sa bande de tête), les tuiles du lanceur mobile, et l'onglet qu'ouvre
   // l'entrée « Comptoir » (le premier permis).
   {
@@ -553,13 +548,6 @@ export const COMPTOIR_VIEWS: readonly WorkspaceView[] = [
     link: '/comptoir/retrait',
     icon: 'package-check',
     needs: 'handover_counter:read',
-  },
-  {
-    key: 'nouvelle-commande',
-    label: 'Nouvelle commande',
-    link: '/comptoir/nouvelle-commande',
-    icon: 'shopping-cart',
-    needs: ['b2b_counter:read', 'b2b_place_order:write'],
   },
   // Le droit du retrait, parce que c'est le même poste.
   {

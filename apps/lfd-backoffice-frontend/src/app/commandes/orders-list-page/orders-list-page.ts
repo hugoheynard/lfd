@@ -207,7 +207,11 @@ export class OrdersListPage {
 
   /** Le choix pro ou particulier, en dialogue centré : la liste reste derrière. */
   protected openNewOrder(): void {
-    this.panels.open(NewOrderDialog, { side: 'center', width: 'sm' });
+    this.panels.open(NewOrderDialog, {
+      side: 'center',
+      width: 'sm',
+      data: { origin: '/commandes', point: null },
+    });
   }
 
   protected readonly state = signal<LoadState>('loading');

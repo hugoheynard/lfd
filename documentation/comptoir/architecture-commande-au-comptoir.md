@@ -45,10 +45,13 @@ flowchart LR
   (`packages/contracts/src/staff-access.ts`), et un rôle `comptoir` existe.
 - **Front** : la saisie est une page à part, `/nouvelle-commande` (choix pro ou
   particulier, `/pro`, `/particulier`, `/:id` — décidé par Hugo le 2026-11-21).
-  Celui qui l'ouvre — la liste des commandes, ou l'onglet « Nouvelle commande »
-  du comptoir, simple relais — écrit son origine dans l'adresse
-  (`?retour=/commandes`, `?retour=/comptoir&point=<id>`) ; la saisie la retient
-  (`order-entry-return.ts`) et « Terminer » y ramène. Le `point` est celui du
+  Elle s'ouvre par le même dialogue (pro ou particulier) depuis la liste des
+  commandes et depuis le bouton « Nouvelle commande » de la bande du comptoir,
+  qui n'en fait plus un onglet. Le dialogue écrit l'origine dans l'adresse
+  (`?retour=/commandes`, `?retour=/comptoir&point=<id>`) ; chaque étape la
+  garde (`queryParamsHandling: 'preserve'`, liens de retour fold compris) et
+  « Terminer » y ramène (`order-entry-return.ts`). L'ancienne adresse
+  `/comptoir/nouvelle-commande` reste un relais. Le `point` est celui du
   comptoir : sans lui, ni « Retrait immédiat » ni point par défaut du
   particulier. Les règles restent celles du comptoir (origine `counter`).
   Chaque écran est gardé par **deux** permissions,
