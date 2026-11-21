@@ -25,6 +25,7 @@ export async function dropOrderRestrictedChildren(
   await prisma.orderLineDiscount.deleteMany({ where: { orderDiscount: { order: orders } } });
   await prisma.orderDiscount.deleteMany({ where: { order: orders } });
   await prisma.orderItemLimitOverride.deleteMany({ where: { order: orders } });
+  await prisma.orderReview.deleteMany({ where: { order: orders } });
   await prisma.deliveryNoteLine.deleteMany({ where: { note: { order: orders } } });
   await prisma.deliveryNote.deleteMany({ where: { order: orders } });
   // La décision d'abord : elle tient le manque de son envoi.
