@@ -3,7 +3,7 @@ import type { AdminOrderEstimateView, PickupAddressView } from '@lfd/contracts';
 
 import type { CartStore } from '../cart.store';
 import type { DraftStore } from '../draft.store';
-import { estimateRowsOf, PRICES_PENDING } from '../order-estimate';
+import { estimateRowsOf } from '../order-estimate';
 
 /**
  * La barre du bas, en mobile : **ce que contient le panier, et comment l'ouvrir**.
@@ -33,11 +33,15 @@ export class BarrePanier {
   /** Le brouillon et les points : le règlement et le retrait que le total lit. */
   readonly draft = input.required<DraftStore>();
   readonly pickups = input.required<readonly PickupAddressView[]>();
-  /** L'estimation du serveur, ou `null` — « Prix à confirmer » s'affiche alors. */
+  /** L'estimation du serveur, ou `null` — la barre ne montre alors aucun montant. */
   readonly estimate = input<AdminOrderEstimateView | null>(null);
 
-  /** « Total HT 12,34 € » au compte, « Total TTC … » au lien, « Prix à confirmer » sans estimation. */
-  protected readonly total = computed(() => {
+  /**
+   * « Total HT 12,34 € » au compte, « Total TTC … » au lien ; rien sans
+   * estimation (Hugo, 2026-11-21) : la barre dit alors seulement ce qu'elle
+   * ouvre, et le panier dit lui-même pourquoi le prix attend.
+   */
+  protected readonly total = computed<string | null>(() => {
     const fulfillment = this.draft().fulfillment();
     const rows = estimateRowsOf(this.estimate()?.amounts ?? null, {
       settlement: this.draft().settlement(),
@@ -46,6 +50,6 @@ export class BarrePanier {
       pickups: this.pickups(),
     });
     const row = rows?.find((candidate) => candidate.key === 'total');
-    return row === undefined ? PRICES_PENDING : `${row.label} ${row.value}`;
+    return row === undefined ? null : `${row.label} ${row.value}`;
   });
 }

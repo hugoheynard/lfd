@@ -14,29 +14,36 @@
   justify-content: space-between;
   gap: var(--fold-space-sm);
   padding: var(--fold-space-sm) var(--fold-space-md);
-  border: 1px solid var(--fold-color-border);
+  /* Bleu pâle (Hugo, 2026-11-21) : la barre se détache de la liste qu'elle
+     surplombe, et se lit comme le geste qu'elle est. */
+  border: 1px solid var(--fold-color-primary-border);
   border-radius: var(--fold-radius-md);
-  background: var(--fold-color-surface-card);
-  color: inherit;
+  background: var(--fold-color-primary-surface);
+  color: var(--fold-color-primary-text);
   font: inherit;
   cursor: pointer;
 
   &:hover {
-    border-color: var(--fold-color-primary-border);
+    border-color: var(--fold-color-primary);
   }
 }
 
+.bar-label {
+  /* Pousse le total et la flèche à droite, qu'il y ait un total ou non. */
+  margin-right: auto;
+  font-weight: 600;
+}
+
 .bar-count {
-  color: var(--fold-color-text-muted);
+  font-weight: 400;
   font-size: var(--fold-text-sm);
 }
 
 .bar-total {
-  margin-left: auto;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
 
 .bar-go {
-  color: var(--fold-color-text-muted);
+  color: var(--fold-color-primary);
 }
