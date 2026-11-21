@@ -204,6 +204,16 @@ export const adminOrdersQuerySchema = z
       .optional(),
     /** Restreint à un état d'avancement. */
     status: orderStatusSchema.optional(),
+    /**
+     * `true` : sans les commandes annulées (la case « Masquer les annulées »
+     * du back-office, cochée par défaut — Hugo, 2026-11-21). Sans effet sur la
+     * vue des tentatives abandonnées, toutes annulées, ni quand `status`
+     * demande un état précis.
+     */
+    hideCancelled: z
+      .enum(["true", "false"])
+      .transform((value) => value === "true")
+      .optional(),
     /** Restreint à un état du règlement. */
     paymentStatus: paymentStatusSchema.optional(),
     /**

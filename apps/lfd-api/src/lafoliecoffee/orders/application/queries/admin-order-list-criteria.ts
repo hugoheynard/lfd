@@ -23,6 +23,7 @@ export function adminOrderListCriteriaOf(query: AdminOrdersQuery): AdminOrderLis
     companyId: query.companyId ?? null,
     withSubAccounts: query.withSubAccounts === true,
     status: query.status ?? null,
+    hideCancelled: query.hideCancelled === true,
     paymentStatus: query.paymentStatus ?? null,
     clientele: query.clientele ?? null,
     method: query.method ?? null,

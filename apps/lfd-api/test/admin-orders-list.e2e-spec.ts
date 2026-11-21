@@ -366,6 +366,23 @@ describe("GET /admin/orders — les tentatives abandonnées se consultent à par
     expect(page.total).toBe(3);
   });
 
+  it("« Masquer les annulées » ne garde que les commandes vivantes, total compris", async () => {
+    const scene = await seedSettlements();
+
+    const page = await list("?hideCancelled=true");
+
+    expect(numbersOf(page.rows)).toEqual([scene.refusedPro]);
+    expect(page.total).toBe(1);
+    // Un état demandé l'emporte : on retrouve les annulées en les cherchant.
+    expect(numbersOf((await list("?hideCancelled=true&status=cancelled")).rows)).toEqual(
+      [scene.refunded, scene.onAccount].sort(),
+    );
+    // Les tentatives sont toutes annulées : leur vue ne se vide pas.
+    expect(numbersOf((await list("?view=abandoned_attempts&hideCancelled=true")).rows)).toEqual([
+      scene.abandoned,
+    ]);
+  });
+
   it("ne rend qu'elle dans la vue des tentatives, et la retrouve par son numéro", async () => {
     const scene = await seedSettlements();
 

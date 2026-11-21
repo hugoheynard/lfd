@@ -31,11 +31,22 @@ describe("les filtres de la liste des commandes, dans l'URL", () => {
       fulfillmentFrom: '2026-10-13',
       fulfillmentTo: '2026-10-20',
       q: 'léa',
+      hideCancelled: true,
     });
   });
 
+  it('masque les annulées par défaut ; « cancelled=shown » les montre', () => {
+    expect(filtersToQuery(NO_FILTERS)).toEqual({ hideCancelled: true });
+    const shown = filtersFromParams({ cancelled: 'shown' });
+    expect(filtersToQuery(shown)).toEqual({});
+    expect(filtersFromParams({ cancelled: 'oui' }).cancelled).toBeNull();
+  });
+
   it("relit l'onglet « À vérifier » et le passe au serveur ; un onglet inconnu retombe sur les commandes", () => {
-    expect(filtersToQuery(filtersFromParams({ view: 'to_review' }))).toEqual({ view: 'to_review' });
+    expect(filtersToQuery(filtersFromParams({ view: 'to_review' }))).toEqual({
+      view: 'to_review',
+      hideCancelled: true,
+    });
     expect(filtersFromParams({ view: 'orders' }).view).toBeNull();
     expect(filtersFromParams({ view: 'drafts' }).view).toBeNull();
   });
@@ -48,7 +59,8 @@ describe("les filtres de la liste des commandes, dans l'URL", () => {
 
   it("un filtre vide sort de l'adresse (null) et de la requête", () => {
     expect(filtersToParams(NO_FILTERS)['clientele']).toBeNull();
-    expect(filtersToQuery(NO_FILTERS)).toEqual({});
+    // Seule reste la case « Masquer les annulées », cochée par défaut.
+    expect(filtersToQuery(NO_FILTERS)).toEqual({ hideCancelled: true });
     expect(hasFilters(NO_FILTERS)).toBe(false);
     expect(hasFilters({ ...NO_FILTERS, method: 'delivery' })).toBe(true);
   });

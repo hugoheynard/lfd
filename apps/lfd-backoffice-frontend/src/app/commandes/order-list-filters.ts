@@ -39,7 +39,15 @@ export interface OrderListFilters {
   readonly fulfillmentFrom: string | null;
   readonly fulfillmentTo: string | null;
   readonly q: string | null;
+  /**
+   * `shown` : les commandes annulées aussi ; `null` (le défaut) : masquées —
+   * la case « Masquer les annulées », cochée d'office (Hugo, 2026-11-21).
+   */
+  readonly cancelled: typeof CANCELLED_SHOWN | null;
 }
+
+/** La valeur d'adresse qui montre les annulées ; son absence les masque. */
+export const CANCELLED_SHOWN = 'shown';
 
 export type OrderListFilterKey = keyof OrderListFilters;
 
@@ -58,6 +66,7 @@ export const NO_FILTERS: OrderListFilters = {
   fulfillmentFrom: null,
   fulfillmentTo: null,
   q: null,
+  cancelled: null,
 };
 
 /** Exhaustif : un état ajouté au contrat ne compile pas tant qu'il manque ici. */
@@ -129,6 +138,7 @@ export function filtersFromParams(params: Readonly<Record<string, unknown>>): Or
     fulfillmentFrom: dayOf(params['fulfillmentFrom']),
     fulfillmentTo: dayOf(params['fulfillmentTo']),
     q: textOf(params['q']),
+    cancelled: params['cancelled'] === CANCELLED_SHOWN ? CANCELLED_SHOWN : null,
   };
 }
 
@@ -154,6 +164,10 @@ export function filtersToQuery(filters: OrderListFilters): Partial<AdminOrdersQu
   if (filters.fulfillmentFrom !== null) query.fulfillmentFrom = filters.fulfillmentFrom;
   if (filters.fulfillmentTo !== null) query.fulfillmentTo = filters.fulfillmentTo;
   if (filters.q !== null) query.q = filters.q;
+  // Les tentatives abandonnées sont toutes annulées : leur vue n'a pas la case.
+  if (filters.cancelled === null && filters.view !== 'abandoned_attempts') {
+    query.hideCancelled = true;
+  }
   return query;
 }
 

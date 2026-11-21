@@ -99,6 +99,13 @@ function whereOf(criteria: AdminOrderListCriteria): Prisma.OrderWhereInput[] {
     ...criteria.searchTerms.map(searchWhere),
   ];
   if (criteria.status !== null) clauses.push({ status: criteria.status });
+  if (
+    criteria.hideCancelled &&
+    criteria.status === null &&
+    criteria.view !== "abandoned_attempts"
+  ) {
+    clauses.push({ status: { not: "cancelled" } });
+  }
   if (criteria.paymentStatus !== null) clauses.push({ paymentStatus: criteria.paymentStatus });
   // `clientele` nul = commande d'avant la distinction : l'égalité l'écarte des
   // DEUX valeurs, et c'est voulu — on ne la devine pas après coup.

@@ -23,6 +23,11 @@ export interface AdminOrderListCriteria {
   readonly companyId: string | null;
   readonly withSubAccounts: boolean;
   readonly status: OrderStatus | null;
+  /**
+   * Sans les commandes annulées — sauf dans la vue des tentatives abandonnées
+   * (toutes annulées) et quand `status` demande un état précis.
+   */
+  readonly hideCancelled: boolean;
   readonly paymentStatus: PaymentStatus | null;
   /** Les commandes d'avant la distinction (`clientele` nul) ne répondent à aucune valeur. */
   readonly clientele: OrderClientele | null;

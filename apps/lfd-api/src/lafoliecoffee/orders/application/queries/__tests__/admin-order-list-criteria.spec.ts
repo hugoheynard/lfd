@@ -58,6 +58,7 @@ describe("adminOrderListCriteriaOf", () => {
     expect(criteriaOf({})).toMatchObject({
       companyId: null,
       withSubAccounts: false,
+      hideCancelled: false,
       clientele: null,
       method: null,
       placedFrom: null,

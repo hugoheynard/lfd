@@ -91,6 +91,17 @@
             (selectionChange)="setChoice('paymentStatus', $event)"
             data-filter="paymentStatus"
           />
+          <!-- Une annulée n'est plus à servir : masquée d'office, elle se
+               retrouve en décochant (ou par l'avancement « Annulée »). La vue
+               des tentatives, toutes annulées, n'a pas la case. -->
+          @if (filters().view !== 'abandoned_attempts') {
+            <fold-checkbox
+              label="Masquer les annulées"
+              [checked]="filters().cancelled === null"
+              (checkedChange)="setHideCancelled($event)"
+              data-filter="cancelled"
+            />
+          }
         </div>
         <!-- Aujourd'hui, demain : le cadrage EST la date. Les champs de dates
          n'existent que sous « Toutes ». -->

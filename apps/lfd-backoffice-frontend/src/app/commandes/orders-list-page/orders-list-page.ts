@@ -15,6 +15,7 @@ import {
   FoldCalloutComponent,
   FoldDateComponent,
   FoldEmptyStateComponent,
+  FoldCheckboxComponent,
   FoldListboxComponent,
   FoldLoadingStateComponent,
   FoldPageLayoutComponent,
@@ -38,6 +39,7 @@ import { scopeDays, scopeOf, type OrdersScope } from '../orders-scope';
 import { watchGlobalSubjects } from '../../shared/version/watch-global-subjects';
 import {
   ANY,
+  CANCELLED_SHOWN,
   CLIENTELE_CHOICES,
   METHOD_CHOICES,
   NO_FILTERS,
@@ -184,6 +186,7 @@ function sameFilters(left: OrderListFilters, right: OrderListFilters): boolean {
     FoldCalloutComponent,
     FoldDateComponent,
     FoldEmptyStateComponent,
+    FoldCheckboxComponent,
     FoldListboxComponent,
     FoldLoadingStateComponent,
     FoldPageLayoutComponent,
@@ -210,6 +213,8 @@ export class OrdersListPage {
   readonly fulfillmentFrom = input<string>();
   readonly fulfillmentTo = input<string>();
   readonly q = input<string>();
+  /** `shown` : les annulées aussi ; absent, elles sont masquées (le défaut). */
+  readonly cancelled = input<string>();
   /** Le numéro de page, `1` quand il est absent ou illisible. */
   readonly page = input<string>();
 
@@ -232,6 +237,7 @@ export class OrdersListPage {
         fulfillmentFrom: this.fulfillmentFrom(),
         fulfillmentTo: this.fulfillmentTo(),
         q: this.q(),
+        cancelled: this.cancelled(),
       }),
     { equal: sameFilters },
   );
@@ -499,6 +505,11 @@ export class OrdersListPage {
 
   protected setSearch(term: string): void {
     this.apply({ q: term === '' ? null : term });
+  }
+
+  /** « Masquer les annulées », cochée par défaut : décochée, l'adresse le dit. */
+  protected setHideCancelled(hide: boolean): void {
+    this.apply({ cancelled: hide ? null : CANCELLED_SHOWN });
   }
 
   /** Change de liste ; les filtres suivent, la page repart de la première. */

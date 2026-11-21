@@ -115,6 +115,7 @@ describe('OrdersListPage — la liste de toutes les commandes', () => {
       method: 'delivery',
       placedFrom: '2026-10-01',
       q: 'port',
+      hideCancelled: true,
       page: 1,
       limit: 50,
     });
@@ -123,7 +124,7 @@ describe('OrdersListPage — la liste de toutes les commandes', () => {
   it("jette une valeur inconnue au lieu de l'envoyer au serveur", async () => {
     const orders = new FakeOrders();
     await open('/commandes?status=nimporte&placedTo=hier', orders);
-    expect(orders.calls.at(-1)).toEqual({ page: 1, limit: 50 });
+    expect(orders.calls.at(-1)).toEqual({ hideCancelled: true, page: 1, limit: 50 });
   });
 
   it("écrit un filtre posé dans l'adresse, et recharge", async () => {
@@ -137,6 +138,7 @@ describe('OrdersListPage — la liste de toutes les commandes', () => {
     expect(orders.calls.at(-1)).toEqual({
       clientele: 'public',
       method: 'pickup',
+      hideCancelled: true,
       page: 1,
       limit: 50,
     });
@@ -155,7 +157,12 @@ describe('OrdersListPage — la liste de toutes les commandes', () => {
     const harness = await open('/commandes', orders);
     emit(harness, 'q', 'searchChange', 'léa martin');
     await settle(harness);
-    expect(orders.calls.at(-1)).toEqual({ q: 'léa martin', page: 1, limit: 50 });
+    expect(orders.calls.at(-1)).toEqual({
+      q: 'léa martin',
+      hideCancelled: true,
+      page: 1,
+      limit: 50,
+    });
     emit(harness, 'q', 'searchChange', '');
     await settle(harness);
     expect(TestBed.inject(Router).url).toBe('/commandes');
@@ -165,7 +172,12 @@ describe('OrdersListPage — la liste de toutes les commandes', () => {
     const orders = new FakeOrders();
     orders.pages.push({ rows: [row('a')], nextCursor: null, total: 120 });
     const harness = await open('/commandes?clientele=pro&page=3', orders);
-    expect(orders.calls.at(-1)).toEqual({ clientele: 'pro', page: 3, limit: 50 });
+    expect(orders.calls.at(-1)).toEqual({
+      clientele: 'pro',
+      hideCancelled: true,
+      page: 3,
+      limit: 50,
+    });
     expect(root(harness).querySelector('fold-paginator')).not.toBeNull();
     expect(root(harness).textContent).toContain('101–120 sur 120');
   });
@@ -183,7 +195,12 @@ describe('OrdersListPage — la liste de toutes les commandes', () => {
     const url = TestBed.inject(Router).url;
     expect(url).toContain('method=pickup');
     expect(url).toContain('page=2');
-    expect(orders.calls.at(-1)).toEqual({ method: 'pickup', page: 2, limit: 50 });
+    expect(orders.calls.at(-1)).toEqual({
+      method: 'pickup',
+      hideCancelled: true,
+      page: 2,
+      limit: 50,
+    });
     expect(root(harness).textContent).toContain('CMD-b');
   });
 
@@ -194,7 +211,12 @@ describe('OrdersListPage — la liste de toutes les commandes', () => {
     emit(harness, 'status', 'selectionChange', 'placed');
     await settle(harness);
     expect(TestBed.inject(Router).url).not.toContain('page=');
-    expect(orders.calls.at(-1)).toEqual({ status: 'placed', page: 1, limit: 50 });
+    expect(orders.calls.at(-1)).toEqual({
+      status: 'placed',
+      hideCancelled: true,
+      page: 1,
+      limit: 50,
+    });
   });
 
   it('ne montre pas de paginateur quand tout tient en une page', async () => {
@@ -213,7 +235,7 @@ describe('OrdersListPage — la liste de toutes les commandes', () => {
     );
     const harness = await open('/commandes?page=9', orders);
     expect(TestBed.inject(Router).url).toBe('/commandes?page=2');
-    expect(orders.calls.at(-1)).toEqual({ page: 2, limit: 50 });
+    expect(orders.calls.at(-1)).toEqual({ hideCancelled: true, page: 2, limit: 50 });
     expect(root(harness).textContent).toContain('CMD-z');
   });
 
@@ -281,6 +303,6 @@ describe('OrdersListPage — la liste de toutes les commandes', () => {
   it('la liste par défaut ne demande pas de vue', async () => {
     const orders = new FakeOrders();
     await open('/commandes?view=nimporte', orders);
-    expect(orders.calls.at(-1)).toEqual({ page: 1, limit: 50 });
+    expect(orders.calls.at(-1)).toEqual({ hideCancelled: true, page: 1, limit: 50 });
   });
 });
