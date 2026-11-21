@@ -84,10 +84,9 @@ function fulfillmentOf(order: OrderView): SheetFulfillment {
   return {
     method: order.fulfillmentMethod,
     address: order.fulfillmentMethod === "delivery" ? order.deliveryAddress : order.pickupAddress,
-    // Le point NOMMÉ n'est pas dans `OrderView` : seule l'adresse figée y est.
-    // La feuille du fournil, elle, l'a — c'est le lecteur de production qui la
-    // compose, avec la table des points sous la main.
-    pickupLabel: null,
+    // Le nom du point est le libellé de son adresse figée : sans lui, le mail
+    // et le bon ne disent que la ville.
+    pickupLabel: pickupLabelOf(order),
     window: order.fulfillment.window.value,
     // Depuis une `OrderView`, la seule provenance possible est la commande : le
     // repli sur le détenteur du compte demande la société, que la vue ne porte
@@ -102,6 +101,12 @@ function fulfillmentOf(order: OrderView): SheetFulfillment {
           },
     signatureRequired: order.fulfillment.signatureRequired.value,
   };
+}
+
+function pickupLabelOf(order: OrderView): string | null {
+  if (order.fulfillmentMethod !== "pickup") return null;
+  const label = order.pickupAddress?.label.trim() ?? "";
+  return label === "" ? null : label;
 }
 
 /** Les montants figés, recopiés — jamais recalculés. */

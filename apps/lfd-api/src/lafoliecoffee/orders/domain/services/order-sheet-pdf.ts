@@ -117,9 +117,14 @@ const QR_SIZE = 30 * MM;
 /** La légende du QR — ce qu'on fait du papier au comptoir. */
 export const HANDOVER_QR_CAPTION = "À présenter au retrait";
 
-/** « Retrait au laboratoire » / « Livraison par coursier ». */
+/**
+ * « Retrait au <point> » / « Livraison par coursier ». Il y a plusieurs
+ * points : le titre nomme celui choisi, « Retrait » seul s'il n'a pas de nom.
+ */
 export function methodLabel(fulfillment: SheetFulfillment): string {
-  return fulfillment.method === "pickup" ? "Retrait au laboratoire" : "Livraison par coursier";
+  if (fulfillment.method !== "pickup") return "Livraison par coursier";
+  const site = fulfillment.pickupLabel?.trim() ?? "";
+  return site === "" ? "Retrait" : `Retrait au ${site}`;
 }
 
 /**
@@ -131,7 +136,6 @@ export function fulfillmentLines(fulfillment: SheetFulfillment): readonly string
   const address = fulfillment.address;
   const window = fulfillment.window;
   return [
-    ...(fulfillment.pickupLabel === null ? [] : [fulfillment.pickupLabel]),
     ...(address === null
       ? []
       : [address.ligne1, address.ligne2, `${address.codePostal} ${address.ville}`]),
