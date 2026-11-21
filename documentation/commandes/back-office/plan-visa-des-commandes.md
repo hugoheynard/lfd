@@ -32,10 +32,9 @@ Décisions de Hugo (2026-11-21) :
 
 Une commande est **à vérifier** quand, ensemble :
 
-- elle est passée **par le client lui-même** : `orders.placed_by_staff_id` est
-  nul (le critère de `orderOriginOf`, `orders/domain/services/order-origin.ts`)
-  **et** elle ne vient pas d'un abonnement (`from_subscription_id` nul —
-  personne ne l'a passée à la main) ;
+- elle n'a **pas été saisie par l'équipe** : `orders.placed_by_staff_id` est
+  nul (le critère de `orderOriginOf`, `orders/domain/services/order-origin.ts`).
+  Les commandes d'**abonnement** y entrent aussi (Hugo, 2026-11-21) ;
 - sa clientèle est **pro** ;
 - elle n'est ni **annulée**, ni une **tentative abandonnée** ;
 - elle a été passée **après la mise en service** ;
@@ -96,6 +95,20 @@ Une commande est **à vérifier** quand, ensemble :
   en cours et son historique dans le détail d'une commande : servis à qui lit
   la commande (`b2b_orders:read`), c'est une trace.
 
+### V3 — L'écran
+
+- Les mots disent « vérifier », le verbe de Hugo : l'onglet **« À vérifier »**
+  sur `/commandes` (`?view=to_review`), avec son compte dans la pastille,
+  visible à qui a `b2b_order_review:read`. La table est celle des commandes.
+  « Visa » reste le nom du concept ici et dans le code (`OrderReview`).
+- Sur la page d'une commande à vérifier : une carte — « Vérifier » (avec une
+  note facultative) ; une fois vérifiée, « Vérifié par X le … », la note, et
+  « Retirer la vérification ». Une commande modifiée depuis le dit.
+- Dans la liste générale des commandes, une commande vérifiée porte la
+  pastille **« Vérifié · Prénom Nom »** (Hugo, 2026-11-21) : le nom lu par
+  l'annuaire en une lecture pour la page (`StaffAuthorDirectory`) ; un auteur
+  que l'annuaire ne reconnaît plus donne « Vérifié » seul.
+
 ### V4 — Les alertes commerciales, sous la ligne
 
 Décidé par Hugo le 2026-11-21 : « le bon endroit pour mettre les alertes
@@ -144,20 +157,18 @@ Trois bloquants, intégrés : la table de réglage vidée par le harnais e2e
 (remplacée par une constante), le double visa tenu par une ligne qui ne voit
 pas ses sœurs (le registre par commande), une commande révisée après son visa
 (la révision gardée, la commande qui revient). Sérieux intégrés : le critère
-`placed_by_staff_id`, les abonnements écartés, les faits, le RGPD, tout ce que
+`placed_by_staff_id`, les faits, le RGPD, tout ce que
 touche une ressource neuve, le CHECK des colonnes de retrait, le droit de
 lecture tenu côté serveur, la note nulle ou non vide.
 
 ## Décisions prises en écrivant (à confirmer)
 
-1. Les commandes d'**abonnement** n'entrent pas dans l'onglet.
-2. Une commande **annulée** en sort.
-3. N'importe quel porteur du droit peut **retirer** un visa, pas seulement
+1. Une commande **annulée** en sort.
+2. N'importe quel porteur du droit peut **retirer** un visa, pas seulement
    son auteur.
-4. La **graine** donne le droit au commercial (dev, e2e) ; en production,
+3. La **graine** donne le droit au commercial (dev, e2e) ; en production,
    l'écran des rôles.
 
 ## Questions ouvertes
 
-1. Viser **acquitte-t-il** les alertes de la commande (V4) ?
-2. Une pastille « Visée » dans la liste générale des commandes : utile ?
+1. Vérifier une commande **acquitte-t-il** ses alertes (V4) ?
