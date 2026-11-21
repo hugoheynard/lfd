@@ -307,15 +307,15 @@ export const orderDraftPayloadSchema = z.object({
   lines: z.array(orderLineInputSchema).default([]),
   /**
    * Le « Total HT » que l'écran affichait à l'enregistrement, en centimes —
-   * livraison comprise —, ou `null` (saisie incomplète, estimation pas prête,
-   * retrait immédiat, supplément de retard). Décidé par Hugo le 2026-11-21
+   * livraison comprise —, ou `null` (saisie incomplète, retrait immédiat,
+   * supplément de retard). Décidé par Hugo le 2026-11-21
    * pour la liste des brouillons.
    *
    * ⚠️ **Le seul montant du brouillon, et une exception assumée** à « jamais
    * de prix » : il vient de l'écran et n'est jamais relu par la reprise ni
    * par la passation, qui recomposent tout au catalogue du jour. Un souvenir
-   * d'affichage, pas un prix. Un réenregistrement le remplace — par `null`
-   * si l'estimation de la saisie n'était pas encore prête.
+   * d'affichage, pas un prix. Un réenregistrement le remplace ; l'écran
+   * attend le prix d'une saisie complète avant d'enregistrer.
    */
   estimatedPretaxCents: z.number().int().nonnegative().nullable().default(null),
 });
