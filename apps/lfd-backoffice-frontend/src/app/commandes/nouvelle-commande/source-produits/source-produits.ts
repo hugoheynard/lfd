@@ -276,12 +276,13 @@ export class SourceProduits {
   }
 
   /**
-   * La rangée rend le produit **et la quantité réglée à l'écran** : on renvoie la
-   * ligne d'origine avec cette quantité-là. Reprendre celle de la source
-   * ignorerait le pas-à-pas que le commercial vient de tourner.
+   * Le « + » d'une rangée hors panier rend son plancher (le minimum, au pas du
+   * mode unité/colis choisi). La source propose parfois plus — la moyenne d'un
+   * habitué, la quantité d'une ancienne commande, dite dans l'indice : on prend
+   * la plus grande des deux, et le champ de la rangée la corrige ensuite.
    */
   protected onRowAction(line: ProposedLine, chosen: CatalogOrder): void {
-    this.add.emit({ ...line, quantity: chosen.quantity });
+    this.add.emit({ ...line, quantity: Math.max(line.quantity, chosen.quantity) });
   }
 }
 

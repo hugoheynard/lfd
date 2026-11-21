@@ -77,7 +77,7 @@ function rowOf(fixture: ComponentFixture<SourceProduits>, name: string): HTMLEle
 function addButtonOf(row: HTMLElement): HTMLButtonElement | null {
   return (
     [...row.querySelectorAll<HTMLButtonElement>('button')].find(
-      (button) => button.textContent?.trim() === 'Ajouter',
+      (button) => button.getAttribute('aria-label')?.startsWith('Ajouter') === true,
     ) ?? null
   );
 }

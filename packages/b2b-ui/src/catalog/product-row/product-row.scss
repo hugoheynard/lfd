@@ -123,11 +123,13 @@
   align-items: center;
   gap: var(--fold-space-xs, 0.35rem);
 }
+/* Quatre chiffres lisibles (1 500 g, 120 pièces) : le champ ne porte que le
+   chiffre, les boutons sont dehors. */
 .pr-qty {
-  width: 6.5rem;
+  width: 4.75rem;
 }
-/* Au panier, les boutons sont hors du champ : il ne porte que le chiffre, et
-   6,5 rem en faisaient une boîte vide à côté de la corbeille (2026-11-03). */
-.pr-qty--bare {
-  width: 3.5rem;
+
+/* La place du « − » et de la quantité, gardée à zéro (cf. le gabarit). */
+.is-reserved {
+  visibility: hidden;
 }

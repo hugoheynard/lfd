@@ -3,9 +3,10 @@ import { ProductRow, type CatalogOrder, type CatalogProduct } from '@lfd/b2b-ui/
 import { describe, expect, it } from 'vitest';
 
 /**
- * La rangée partagée, telle que la saisie de commande la monte (décision Hugo
- * du 2026-11-03) : « Ajouter » en toutes lettres tant que l'article n'est pas au
- * panier, puis le pas-à-pas de la LIGNE elle-même. Le jest de `@lfd/b2b-ui`
+ * La rangée partagée, telle que la saisie de commande la monte : un seul « + »
+ * qui ne bouge jamais — il ajoute, puis augmente la ligne —, le « − » et la
+ * quantité à sa gauche dès la première pièce (Hugo, 2026-11-21, sur le modèle
+ * du rayon de la boutique). Le jest de `@lfd/b2b-ui`
  * tourne sans TestBed : le rendu s'éprouve ici, chez son seul consommateur.
  */
 const PAIN: CatalogProduct = { id: 'PAI-001', name: 'Pain de mie', minimum: 10 };
@@ -40,11 +41,11 @@ function button(host: HTMLElement, label: string): HTMLButtonElement {
 }
 
 describe('ProductRow — saisie de commande', () => {
-  it('hors panier : un bouton « Ajouter » écrit, qui dit la quantité', () => {
+  it('hors panier : un seul « + », qui dit la quantité ; le « − » et le champ gardent leur place', () => {
     const { host, adds } = mount(PAIN, 0);
     const add = button(host, 'Ajouter 10');
 
-    expect(add.textContent.trim()).toBe('Ajouter');
+    expect(host.querySelectorAll('.is-reserved')).toHaveLength(2);
     add.click();
 
     expect(adds).toEqual([{ product: PAIN, quantity: 10 }]);

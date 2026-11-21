@@ -72,24 +72,33 @@
       >
         {{ notifyLabel() }}
       </button>
-    } @else if (inCartMode()) {
-      <!-- Déjà au panier : la rangée édite la ligne, elle n'en ajoute pas. -->
+    } @else {
+      <!-- Un seul geste, celui du rayon de la boutique (Hugo, 2026-11-21) : le
+           « + » ne bouge jamais — il ajoute, puis augmente. Le « − » et la
+           quantité ont leur place réservée dès zéro, invisibles, pour que
+           rien ne glisse sous le doigt à la première pièce. -->
       <button
         foldButton
         type="button"
         emphasis="outline"
         [intent]="atFloor() ? 'danger' : 'neutral'"
         size="sm"
+        class="pr-step"
+        [class.is-reserved]="!inCartMode()"
+        [disabled]="!inCartMode()"
+        [attr.aria-hidden]="!inCartMode() || null"
         [icon]="atFloor() ? 'bin' : 'minus'"
         [attr.aria-label]="atFloor() ? removeText() : 'Diminuer'"
         (click)="onDecrement()"
       ></button>
       <fold-number-input
-        class="pr-qty pr-qty--bare"
+        class="pr-qty"
+        [class.is-reserved]="!inCartMode()"
         spinner="none"
         size="sm"
         align="center"
         integer
+        [attr.aria-hidden]="!inCartMode() || null"
         [attr.aria-label]="byWeight() ? 'Poids au panier, en grammes' : 'Quantité au panier'"
         [min]="minQty()"
         [step]="step()"
@@ -100,39 +109,13 @@
       <button
         foldButton
         type="button"
-        emphasis="outline"
-        intent="neutral"
+        [emphasis]="inCartMode() ? 'outline' : 'solid'"
+        [intent]="inCartMode() ? 'neutral' : 'primary'"
         size="sm"
         icon="plus"
-        aria-label="Augmenter"
-        (click)="onIncrement()"
+        [attr.aria-label]="inCartMode() ? 'Augmenter' : addText()"
+        (click)="inCartMode() ? onIncrement() : onAction()"
       ></button>
-    } @else {
-      <fold-number-input
-        class="pr-qty"
-        spinner="plusminus"
-        controls="outside"
-        size="sm"
-        align="center"
-        snapToStep
-        integer
-        [attr.aria-label]="byWeight() ? 'Poids en grammes' : 'Quantité'"
-        [min]="minQty()"
-        [step]="step()"
-        [(value)]="quantity"
-      />
-      <button
-        foldButton
-        type="button"
-        emphasis="solid"
-        intent="primary"
-        size="sm"
-        icon="plus"
-        [attr.aria-label]="addText()"
-        (click)="onAction()"
-      >
-        Ajouter
-      </button>
     }
   </div>
 </div>
