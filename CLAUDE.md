@@ -224,6 +224,9 @@
 >   se lit par `isOrderable` — un lecteur qui compare `reservation === "other"`
 >   à la main ignore la carte du site et vendrait au sous-compte ce que son
 >   principal lui a fermé.
+>   Et **81** depuis le 2026-11-21 avec `lint:workflows` : les workflows
+>   GitHub passent actionlint, épinglé par version et somme — un workflow
+>   n'était lu que par GitHub, et une faute s'y découvrait au lancement.
 >   C'est la
 >   **seule** correction faite dans le corps, parce qu'un chiffre faux se vérifie
 >   en une commande et trompe tout de suite ;
@@ -1510,7 +1513,7 @@ pnpm --filter lfd-api seed:pim       # catalogue rejoué PAR LE BUS (cible local
 pnpm lint               # turbo, toutes les apps
 pnpm test
 pnpm build
-pnpm lint:gates         # les 80 portes du dépôt, toutes, et un résumé à la fin
+pnpm lint:gates         # les 81 portes du dépôt, toutes, et un résumé à la fin
 pnpm gate <nom>         # une porte (pnpm gate --list : la liste, avec ce qu'elle tient)
 pnpm lint:watch         # relance les portes dont un fichier lu change
 pnpm tool               # les outils occasionnels (digests, carte, axe…) ; pnpm tool <nom>

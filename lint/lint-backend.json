@@ -628,6 +628,13 @@
         "apps/lfd-api/src/platform/config/card-accounts.ts",
         "apps/lfd-api/prisma/migrations/**"
       ]
+    },
+    {
+      "name": "workflows",
+      "script": "dev-toolbox/gates/workflows.mjs",
+      "holds": "Les workflows de `.github/workflows/` passent actionlint (binaire épinglé par version et somme) : une expression, une clé ou une entrée fausse est refusée avant que GitHub ne la découvre au lancement.",
+      "since": "2026-11-21",
+      "watch": [".github/workflows/**", "dev-toolbox/gates/workflows.mjs"]
     }
   ]
 }
