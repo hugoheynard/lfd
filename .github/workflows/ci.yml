@@ -670,6 +670,30 @@ jobs:
       - name: Porte axe
         run: pnpm tool a11y:axe
 
+  # Les captures d'écran de la fiche d'atelier (Hugo, 2026-11-20) : la plupart
+  # des correctifs du fournil étaient visuels, et aucun test ne les voyait.
+  # DANS le conteneur Playwright, à la version du catalogue : les références
+  # sont générées dans ce même conteneur (`test:visual:update`), sans quoi une
+  # police rendue autrement ferait rougir chaque capture.
+  front-admin-visual:
+    name: Front admin · captures de la fiche d'atelier
+    runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.front_admin == 'true'
+    container: mcr.microsoft.com/playwright:v1.62.1-noble
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Construire les paquets
+        run: pnpm --filter "./packages/**" build
+      - name: Captures
+        run: pnpm --filter lfd-backoffice-frontend test:visual
+
   # ── La porte ────────────────────────────────────────────────────────────────
   # Le SEUL statut à exiger sur la branche. `always()` + le test explicite sur
   # `result` est ce qui fait qu'un job annulé ou sauté ne passe pas pour un
@@ -816,6 +840,7 @@ jobs:
         front-platform-build,
         front-platform-tests,
         front-platform-a11y,
+        front-admin-visual,
         gateway,
         route-planner,
         facturx-mustang,
@@ -844,6 +869,7 @@ jobs:
           echo "front-platform-build: ${{ needs.front-platform-build.result }}"
           echo "front-platform-tests: ${{ needs.front-platform-tests.result }}"
           echo "front-platform-a11y : ${{ needs.front-platform-a11y.result }}"
+          echo "front-admin-visual  : ${{ needs.front-admin-visual.result }}"
           echo "gateway       : ${{ needs.gateway.result }}"
           echo "route-planner : ${{ needs.route-planner.result }}"
           echo "facturx-mustang     : ${{ needs.facturx-mustang.result }}"
@@ -873,6 +899,7 @@ jobs:
             "${{ needs.front-platform-build.result }}" \
             "${{ needs.front-platform-tests.result }}" \
             "${{ needs.front-platform-a11y.result }}" \
+            "${{ needs.front-admin-visual.result }}" \
             "${{ needs.gateway.result }}" \
             "${{ needs.route-planner.result }}" \
             "${{ needs.facturx-mustang.result }}"; do

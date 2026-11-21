@@ -17,6 +17,9 @@
     "config:auth": "node scripts/generate-auth-config.mjs",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
+    "test:visual": "playwright test e2e/fiche-atelier-visual.spec.ts",
+    "test:visual:docker": "docker run --rm --ipc=host -v \"$PWD/../..:/src\" -v lfd-visual-pnpm-store:/pnpm-store -e CI=1 -e LFD_SKIP_GRAPHIFY=1 -e COREPACK_ENABLE_DOWNLOAD_PROMPT=0 mcr.microsoft.com/playwright:v1.62.1-noble bash -c 'set -e; mkdir -p /work; tar -C /src --exclude=./.git --exclude=./graphify-out --exclude=node_modules --exclude=dist --exclude=.angular --exclude=.turbo -cf - . | tar -C /work -xf -; cd /work; corepack enable; pnpm config set store-dir /pnpm-store; pnpm install --frozen-lockfile --filter lfd-backoffice-frontend...; pnpm exec turbo run build --filter=lfd-backoffice-frontend^...; cd apps/lfd-backoffice-frontend; pnpm exec playwright test e2e/fiche-atelier-visual.spec.ts \"$@\"; S=e2e/fiche-atelier-visual.spec.ts-snapshots; mkdir -p /src/apps/lfd-backoffice-frontend/$S; cp -r $S/. /src/apps/lfd-backoffice-frontend/$S/' visual",
+    "test:visual:update": "pnpm test:visual:docker --update-snapshots",
     "ios:add": "cap add ios",
     "ios:sync": "cap sync ios",
     "ios:open": "cap open ios"
