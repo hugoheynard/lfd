@@ -1,3 +1,11 @@
+/* La page des commandes colle l'en-tête des tables sous sa bande
+   (`--fold-table-sticky-top`). Cette table-ci est courte et défile dans sa
+   propre boîte : décalé de la hauteur de la bande, son en-tête tombait sur
+   les lignes. Il reste en tête de la table. */
+:host {
+  --fold-table-sticky-top: 0px;
+}
+
 /* Le jour, puis l'heure en dessous — comme la table des commandes. */
 .odl-stack {
   display: flex;
