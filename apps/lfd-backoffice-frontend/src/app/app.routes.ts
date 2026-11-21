@@ -5,7 +5,6 @@ import { NEW_VERSION_BANNER } from '@lfd/front-ops';
 import { anyPermissionGuard, permissionGuard } from './auth/permission.guard';
 import { comptoirLanding } from './comptoir/comptoir-landing';
 import { orderEntryParams } from './commandes/nouvelle-commande/order-entry-return';
-import { ordersDefaultScopeGuard } from './commandes/orders-default-scope.guard';
 import { toRoundsTab } from './livraison/tour-manager/tour-manager-views';
 import { prodManagerLanding } from './production/prod-manager/prod-manager-views';
 import { pendingChangesGuard } from './pim/catalogue/product-form/pending-changes.guard';
@@ -457,8 +456,7 @@ export const routes: Routes = [
     // partage, et le retour depuis le détail la retrouve.
     path: 'commandes',
     pathMatch: 'full',
-    // Le droit d'abord ; puis, sans aucun paramètre, la liste s'ouvre sur demain.
-    canActivate: [permissionGuard('b2b_orders:read'), ordersDefaultScopeGuard],
+    canActivate: [permissionGuard('b2b_orders:read')],
     title: 'Commandes — LFC B2B admin',
     loadComponent: () =>
       import('./commandes/orders-list-page/orders-list-page').then((m) => m.OrdersListPage),
