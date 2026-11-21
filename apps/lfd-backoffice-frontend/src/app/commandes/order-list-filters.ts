@@ -25,10 +25,11 @@ import { CLIENTELE_LABELS, METHOD_LABELS } from '../shared/order-identity/order-
 export interface OrderListFilters {
   /**
    * `abandoned_attempts` : les seules tentatives de règlement par carte
-   * abandonnées ; `null` : les commandes. Un onglet, pas un filtre — « Retirer
+   * abandonnées ; `to_review` : les commandes à vérifier (plan du visa des
+   * commandes) ; `null` : les commandes. Un onglet, pas un filtre — « Retirer
    * les filtres » le garde.
    */
-  readonly view: 'abandoned_attempts' | null;
+  readonly view: Exclude<AdminOrderListView, 'orders'> | null;
   readonly clientele: OrderClientele | null;
   readonly method: FulfillmentMethod | null;
   readonly status: OrderStatus | null;
@@ -83,6 +84,12 @@ const PAYMENT_STATUSES: Readonly<Record<PaymentStatus, true>> = {
 /** Les deux listes, et l'onglet qui les nomme. */
 export type OrderListTab = AdminOrderListView;
 
+/** Les onglets que l'adresse peut nommer — « Commandes » est l'absence d'onglet. */
+const VIEWS: Readonly<Record<Exclude<AdminOrderListView, 'orders'>, true>> = {
+  abandoned_attempts: true,
+  to_review: true,
+};
+
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
 
 function keysOf<T extends string>(record: Readonly<Record<T, unknown>>): T[] {
@@ -112,7 +119,7 @@ export { clienteleLabel, methodLabel } from '../shared/order-identity/order-iden
  */
 export function filtersFromParams(params: Readonly<Record<string, unknown>>): OrderListFilters {
   return {
-    view: params['view'] === 'abandoned_attempts' ? 'abandoned_attempts' : null,
+    view: oneOf(VIEWS, params['view']),
     clientele: oneOf(CLIENTELE_LABELS, params['clientele']),
     method: oneOf(METHOD_LABELS, params['method']),
     status: oneOf(STATUSES, params['status']),

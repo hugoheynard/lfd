@@ -1,0 +1,67 @@
+@if (review(); as state) {
+  <fold-card data-order-review>
+    <fold-element-title
+      variant="title"
+      icon="check-circle"
+      title="Vérification"
+      subtitle="Une trace : la commande suit son cours, vérifiée ou non."
+    />
+    <div class="body">
+      @if (state.revisedSinceReview) {
+        <fold-badge
+          variant="warning"
+          content="Modifiée depuis la vérification"
+          data-revised-since-review
+        />
+      }
+      @if (stampLine(); as line) {
+        <p class="line" data-review-stamp>{{ line }}</p>
+        @if (current()?.note; as text) {
+          <p class="line note" data-review-note>{{ text }}</p>
+        }
+      }
+      @if (canReview()) {
+        <fold-textarea
+          label="Note"
+          optional
+          [rows]="2"
+          placeholder="Ce que vous avez vu, s'il y a lieu"
+          [value]="note()"
+          (valueChange)="note.set($event)"
+          [disabled]="saving()"
+          data-review-note-input
+        />
+        <button
+          foldButton
+          size="sm"
+          [disabled]="saving() || note().length > noteMax"
+          (click)="verify()"
+          data-review
+        >
+          Vérifier
+        </button>
+      }
+      @if (current() !== null && canWrite) {
+        <button
+          foldButton
+          size="sm"
+          emphasis="outline"
+          intent="neutral"
+          [disabled]="saving()"
+          (click)="withdraw()"
+          data-review-withdraw
+        >
+          Retirer la vérification
+        </button>
+      }
+      @if (current() === null && !canReview()) {
+        <p class="line muted" data-review-none>Pas encore vérifiée.</p>
+      }
+      @if (error(); as message) {
+        <fold-callout appearance="inset" variant="alert" announce data-review-error>{{
+          message
+        }}</fold-callout>
+      }
+    </div>
+  </fold-card>
+}

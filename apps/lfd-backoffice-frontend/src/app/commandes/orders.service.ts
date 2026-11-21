@@ -29,6 +29,7 @@ import type {
   OrderRevisionQuoteView,
   BudgetCommitmentRequirementsView,
   CorrectBudgetCommitmentPayload,
+  ReviewOrderPayload,
 } from '@lfd/contracts';
 
 import { B2B_API_BASE } from '../api/api-config';
@@ -242,6 +243,33 @@ export class AdminOrdersService {
       this.http.post<void>(
         `${B2B_API_BASE}/admin/orders/${encodeURIComponent(id)}/shortfall-letter`,
         payload,
+      ),
+    );
+  }
+
+  /**
+   * **Vérifier** une commande passée par un client pro seul (plan du visa des
+   * commandes, V3). La note est facultative. `204` : l'écran relit le détail ;
+   * un refus (`409` déjà vérifiée, hors périmètre) porte sa phrase.
+   */
+  async review(id: string, note: string | null, intentKey: string): Promise<void> {
+    const payload: ReviewOrderPayload = { note };
+    await firstValueFrom(
+      this.http.post<void>(
+        `${B2B_API_BASE}/admin/orders/${encodeURIComponent(id)}/review`,
+        payload,
+        intentOptions(intentKey),
+      ),
+    );
+  }
+
+  /** **Retirer la vérification** en cours. `204` ; `409` s'il n'y en a pas. */
+  async withdrawReview(id: string, intentKey: string): Promise<void> {
+    await firstValueFrom(
+      this.http.post<void>(
+        `${B2B_API_BASE}/admin/orders/${encodeURIComponent(id)}/review/withdraw`,
+        {},
+        intentOptions(intentKey),
       ),
     );
   }

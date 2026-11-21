@@ -43,6 +43,18 @@ export class AccountAlertRulesService {
     );
   }
 
+  /**
+   * Les alertes d'une page de commandes, en une lecture (plan du visa des
+   * commandes, V4) — au plus `ORDER_ALERTS_MAX_ORDERS` identifiants.
+   */
+  listOrderAlerts(orderIds: readonly string[]): Promise<AccountAlertView[]> {
+    return firstValueFrom(
+      this.http.get<AccountAlertView[]>(`${B2B_API_BASE}/admin/alerts`, {
+        params: { orderIds: orderIds.join(',') },
+      }),
+    );
+  }
+
   async acknowledge(alertId: string): Promise<void> {
     await firstValueFrom(
       this.http.post<void>(`${B2B_API_BASE}/admin/alerts/${alertId}/acknowledge`, null),

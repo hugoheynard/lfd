@@ -30,3 +30,28 @@
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
+
+/* Le tiroir des alertes : une alerte par rangée, son geste à droite. */
+.ot-alerts {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+.ot-alert {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--fold-space-md);
+}
+
+.ot-alert-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+}
+
+.ot-findings {
+  margin: 0;
+  padding-inline-start: var(--fold-space-lg);
+}

@@ -34,6 +34,12 @@ describe("les filtres de la liste des commandes, dans l'URL", () => {
     });
   });
 
+  it("relit l'onglet « À vérifier » et le passe au serveur ; un onglet inconnu retombe sur les commandes", () => {
+    expect(filtersToQuery(filtersFromParams({ view: 'to_review' }))).toEqual({ view: 'to_review' });
+    expect(filtersFromParams({ view: 'orders' }).view).toBeNull();
+    expect(filtersFromParams({ view: 'drafts' }).view).toBeNull();
+  });
+
   it('jette une valeur inconnue plutôt que de la faire refuser par le serveur', () => {
     expect(filtersFromParams({ clientele: 'b2b', placedFrom: '12/10/2026', q: '   ' })).toEqual(
       NO_FILTERS,

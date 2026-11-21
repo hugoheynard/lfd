@@ -1,12 +1,19 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import {
   FoldBadgeComponent,
+  FoldButtonComponent,
   FoldDataTableCellDirective,
   FoldDataTableComponent,
+  FoldDataTableRowDetailDirective,
   type FoldTableColumn,
   type FoldTableEmpty,
 } from 'fold-ng';
-import { ORDER_ORIGIN_LABELS, type AdminOrderRow, type SitePaletteEntryView } from '@lfd/contracts';
+import {
+  ORDER_ORIGIN_LABELS,
+  type AccountAlertView,
+  type AdminOrderRow,
+  type SitePaletteEntryView,
+} from '@lfd/contracts';
 import {
   formatCents,
   formatOrderDate,
@@ -16,6 +23,7 @@ import {
   settlementStatusVariant,
 } from '@lfd/b2b-ui/order';
 
+import { ALERT_KIND_LABELS } from '../../shared/alerts/alert-kind-labels';
 import { fulfillmentModeOf } from '../../shared/logistics-colors/fulfillment-mode';
 import type { LogisticsCategory } from '../../shared/logistics-colors/logistics-category';
 import { LogisticsSwatch } from '../../shared/logistics-colors/logistics-swatch/logistics-swatch';
@@ -52,8 +60,10 @@ const PARIS_TIME = new Intl.DateTimeFormat('fr-FR', {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     FoldBadgeComponent,
+    FoldButtonComponent,
     FoldDataTableCellDirective,
     FoldDataTableComponent,
+    FoldDataTableRowDetailDirective,
     LogisticsSwatch,
   ],
   templateUrl: './orders-table.html',
@@ -72,7 +82,18 @@ export class OrdersTable {
   /** Le chargement en place, quand la page garde le tableau à l'écran pendant qu'elle relit. */
   readonly loading = input(false);
 
+  /**
+   * Les alertes de chaque commande de la page, par identifiant (onglet « À
+   * vérifier », plan du visa des commandes, V4). Présent : chaque ligne se
+   * déplie sur les siennes ; `null` : pas de tiroir.
+   */
+  readonly alerts = input<ReadonlyMap<string, readonly AccountAlertView[]> | null>(null);
+  /** L'alerte dont l'acquittement est en vol — son bouton patiente. */
+  readonly acknowledging = input<string | null>(null);
+
   readonly opened = output<AdminOrderRow>();
+  /** « Acquitter » sur une alerte du tiroir : l'identifiant de l'alerte. */
+  readonly acknowledged = output<string>();
 
   /**
    * Dans l'ordre où on les lit : ce qui identifie, qui, quand, où ça en est,
@@ -105,6 +126,41 @@ export class OrdersTable {
    */
   protected readonly rowTone = (row: AdminOrderRow): 'alert' | null =>
     row.offPlan ? 'alert' : null;
+
+  /** Les alertes d'une ligne, celles qui attendent d'abord. */
+  protected alertsOf(row: AdminOrderRow): readonly AccountAlertView[] {
+    const alerts = this.alerts()?.get(row.id) ?? [];
+    return [...alerts].sort(
+      (a, b) => Number(a.acknowledgedAt !== null) - Number(b.acknowledgedAt !== null),
+    );
+  }
+
+  /** « 2 alertes » sur la ligne, tant qu'il en reste à acquitter ; `null` sinon. */
+  protected pendingAlerts(row: AdminOrderRow): string | null {
+    const count = (this.alerts()?.get(row.id) ?? []).filter(
+      (a) => a.acknowledgedAt === null,
+    ).length;
+    if (count === 0) {
+      return null;
+    }
+    return count === 1 ? '1 alerte' : `${count} alertes`;
+  }
+
+  protected alertTitle(alert: AccountAlertView): string {
+    return ALERT_KIND_LABELS[alert.kind].title;
+  }
+
+  /**
+   * « Vérifié · Prénom Nom » quand la commande porte un visa en cours ;
+   * « Vérifié » seul quand l'annuaire ne connaît plus son auteur.
+   */
+  protected reviewed(row: AdminOrderRow): string | null {
+    const review = row.review ?? null;
+    if (review === null) {
+      return null;
+    }
+    return review.byName === null ? 'Vérifié' : `Vérifié · ${review.byName}`;
+  }
 
   protected date(row: AdminOrderRow): string {
     return formatOrderDate(row.placedAt);

@@ -21,6 +21,15 @@
         <!-- Lot L6 : prise sur le stock de la vitrine, pas fabriquée pour elle. -->
         <fold-badge variant="success" content="Sur stock" data-shelf />
       }
+      @if (reviewed(row); as stamp) {
+        <fold-badge variant="success" [content]="stamp" data-reviewed />
+      }
+      @if (row.revisedSinceReview) {
+        <fold-badge variant="warning" content="Modifiée depuis" data-revised-since-review />
+      }
+      @if (pendingAlerts(row); as count) {
+        <fold-badge variant="alert" [content]="count" data-pending-alerts />
+      }
     </span>
   </ng-template>
 
@@ -85,4 +94,40 @@
   <ng-template foldCell="totalCents" let-row>
     <span class="ot-total">{{ total(row) }}</span>
   </ng-template>
+
+  <!-- Onglet « À vérifier » : les alertes de la commande, sous sa ligne (V4). -->
+  @if (alerts() !== null) {
+    <ng-template foldRowDetail let-row>
+      <div class="ot-alerts" data-order-alerts>
+        @for (alert of alertsOf(row); track alert.id) {
+          <div class="ot-alert" [attr.data-alert]="alert.id">
+            <div class="ot-alert-body">
+              <strong>{{ alertTitle(alert) }}</strong>
+              <ul class="ot-findings">
+                @for (finding of alert.findings; track $index) {
+                  <li>{{ finding.message }}</li>
+                }
+              </ul>
+            </div>
+            @if (alert.acknowledgedAt === null) {
+              <button
+                foldButton
+                emphasis="outline"
+                size="sm"
+                [disabled]="acknowledging() === alert.id"
+                (click)="acknowledged.emit(alert.id)"
+                data-acknowledge
+              >
+                {{ acknowledging() === alert.id ? 'Enregistrement…' : 'Acquitter' }}
+              </button>
+            } @else {
+              <fold-badge variant="neutral" content="Acquittée" />
+            }
+          </div>
+        } @empty {
+          <span class="ot-time">Aucune alerte sur cette commande.</span>
+        }
+      </div>
+    </ng-template>
+  }
 </fold-data-table>
