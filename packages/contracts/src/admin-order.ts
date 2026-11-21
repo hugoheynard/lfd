@@ -347,6 +347,8 @@ export interface OrderDraftView extends OrderDraftPayload {
  */
 export interface OrderDraftSummaryView {
   readonly companyId: string;
+  /** Le nom d'affichage de la société, pour l'onglet « Brouillons » des commandes. */
+  readonly companyName: string;
   /** ISO du dernier enregistrement. */
   readonly savedAt: string;
   /** « Prénom Nom » de qui l'a enregistré, ou `null` si la fiche ne le dit plus. */

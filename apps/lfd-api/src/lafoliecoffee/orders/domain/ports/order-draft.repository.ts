@@ -42,6 +42,8 @@ export abstract class OrderDraftRepository {
 /** Qu'un brouillon existe pour cette société, et sa trace. */
 export interface OrderDraftSummary {
   readonly companyId: string;
+  /** Le nom d'affichage de la société (enseigne, sinon raison sociale). */
+  readonly companyName: string;
   readonly savedAt: Date;
   /** La fiche staff qui l'a enregistré, ou `null` si elle a disparu depuis. */
   readonly savedByStaffId: string | null;

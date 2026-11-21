@@ -47,22 +47,44 @@ describe("ListOrderDraftSummariesHandler", () => {
       authorsKnownAs({ firstName: "Léa", lastName: "Martin" }, "staff_1"),
     );
     const handler = new ListOrderDraftSummariesHandler(
-      new ListedDrafts([{ companyId: "cmp_1", savedAt: SAVED_AT, savedByStaffId: "staff_1" }]),
+      new ListedDrafts([
+        {
+          companyId: "cmp_1",
+          companyName: "Société cmp_1",
+          savedAt: SAVED_AT,
+          savedByStaffId: "staff_1",
+        },
+      ]),
       staff,
     );
 
     const views = await handler.execute();
 
     expect(views).toEqual([
-      { companyId: "cmp_1", savedAt: SAVED_AT.toISOString(), savedByName: "Léa Martin" },
+      {
+        companyId: "cmp_1",
+        companyName: "Société cmp_1",
+        savedAt: SAVED_AT.toISOString(),
+        savedByName: "Léa Martin",
+      },
     ]);
   });
 
   it("rend un auteur null plutôt qu'un nom inventé quand la fiche a disparu", async () => {
     const handler = new ListOrderDraftSummariesHandler(
       new ListedDrafts([
-        { companyId: "cmp_1", savedAt: SAVED_AT, savedByStaffId: "staff_parti" },
-        { companyId: "cmp_2", savedAt: SAVED_AT, savedByStaffId: null },
+        {
+          companyId: "cmp_1",
+          companyName: "Société cmp_1",
+          savedAt: SAVED_AT,
+          savedByStaffId: "staff_parti",
+        },
+        {
+          companyId: "cmp_2",
+          companyName: "Société cmp_2",
+          savedAt: SAVED_AT,
+          savedByStaffId: null,
+        },
       ]),
       new FixedStaffAuthorDirectory(),
     );
@@ -76,8 +98,18 @@ describe("ListOrderDraftSummariesHandler", () => {
     const staff = new FixedStaffAuthorDirectory();
     const handler = new ListOrderDraftSummariesHandler(
       new ListedDrafts([
-        { companyId: "cmp_1", savedAt: SAVED_AT, savedByStaffId: "staff_1" },
-        { companyId: "cmp_2", savedAt: SAVED_AT, savedByStaffId: "staff_2" },
+        {
+          companyId: "cmp_1",
+          companyName: "Société cmp_1",
+          savedAt: SAVED_AT,
+          savedByStaffId: "staff_1",
+        },
+        {
+          companyId: "cmp_2",
+          companyName: "Société cmp_2",
+          savedAt: SAVED_AT,
+          savedByStaffId: "staff_2",
+        },
       ]),
       staff,
     );

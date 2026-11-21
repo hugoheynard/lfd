@@ -118,7 +118,10 @@ describe('NouvelleCommandeProPage', () => {
     const savedAt = new Date().toISOString();
     const page = await setup(
       () => Promise.resolve(CARDS),
-      () => Promise.resolve([{ companyId: '2', savedAt, savedByName: 'Léa Martin' }]),
+      () =>
+        Promise.resolve([
+          { companyId: '2', companyName: 'Société 2', savedAt, savedByName: 'Léa Martin' },
+        ]),
     );
     expect(page.draftOf['1']).toBeNull();
     expect(page.draftOf['2']).toMatch(/^Brouillon · \d{1,2} h \d{2}$/);
@@ -248,7 +251,7 @@ describe('NouvelleCommandeProPage — retour de la saisie', () => {
   it('affiche la pastille dans la carte du compte qui a un brouillon', async () => {
     const savedAt = new Date().toISOString();
     const host = await arriveWith({}, () =>
-      Promise.resolve([{ companyId: '1', savedAt, savedByName: null }]),
+      Promise.resolve([{ companyId: '1', companyName: 'Société 1', savedAt, savedByName: null }]),
     );
     const badges = host.querySelectorAll('[data-draft-badge]');
     expect(badges).toHaveLength(1);

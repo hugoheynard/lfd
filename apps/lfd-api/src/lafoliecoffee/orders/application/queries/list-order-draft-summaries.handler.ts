@@ -6,8 +6,9 @@ import { OrderDraftRepository } from "../../domain/ports/order-draft.repository.
 import { ListOrderDraftSummariesQuery } from "./list-order-draft-summaries.query.js";
 
 /**
- * Les brouillons en attente, pour la pastille des comptes au comptoir : la
- * saisie interrompue se signale sans qu'on ait à se souvenir du client.
+ * Les brouillons en attente — la pastille des comptes au comptoir, l'onglet
+ * « Brouillons » des commandes : la saisie interrompue se signale sans qu'on
+ * ait à se souvenir du client.
  *
  * L'auteur est nommé par l'annuaire en une lecture pour toute la liste ; une
  * fiche que l'annuaire ne reconnaît plus rend `null`, jamais un nom inventé.
@@ -27,6 +28,7 @@ export class ListOrderDraftSummariesHandler implements IQueryHandler<
     const authors = await this.staff.identify(summaries.map((draft) => draft.savedByStaffId));
     return summaries.map((draft) => ({
       companyId: draft.companyId,
+      companyName: draft.companyName,
       savedAt: draft.savedAt.toISOString(),
       savedByName: authors.nameOf(draft.savedByStaffId),
     }));

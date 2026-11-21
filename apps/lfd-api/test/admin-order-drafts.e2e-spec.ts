@@ -142,6 +142,8 @@ describe("/admin/order-drafts", () => {
     expect(listed.map((summary) => summary.companyId)).toEqual([companyId]);
     expect(listed.map((summary) => summary.companyId)).not.toContain(otherId);
     expect(listed[0]?.savedAt).not.toBe("");
+    // L'onglet « Brouillons » des commandes nomme le compte sans le relire.
+    expect(listed[0]?.companyName).toContain("Café des Halles");
 
     await staff().delete(`/admin/order-drafts/${companyId}`).expect(204);
     const after = jsonBody<OrderDraftSummaryView[]>(

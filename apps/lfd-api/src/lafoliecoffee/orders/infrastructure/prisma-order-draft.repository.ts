@@ -1,4 +1,5 @@
 import {
+  companyDisplayName,
   orderDraftPayloadSchema,
   type OrderDraftPayload,
   type OrderDraftView,
@@ -46,11 +47,17 @@ export class PrismaOrderDraftRepository extends OrderDraftRepository {
   async listSummaries(): Promise<readonly OrderDraftSummary[]> {
     // Ni le `payload` ni sa validation : la liste ne dit que l'existence.
     const rows = await this.prisma.orderDraft.findMany({
-      select: { companyId: true, savedByStaffId: true, updatedAt: true },
+      select: {
+        companyId: true,
+        savedByStaffId: true,
+        updatedAt: true,
+        company: { select: { raisonSociale: true, enseigne: true } },
+      },
       orderBy: { updatedAt: "desc" },
     });
     return rows.map((row) => ({
       companyId: row.companyId,
+      companyName: companyDisplayName(row.company),
       savedAt: row.updatedAt,
       savedByStaffId: row.savedByStaffId,
     }));
