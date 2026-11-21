@@ -94,6 +94,18 @@ describe('PanierCommande — en-tête et ordre', () => {
     expect(texts().map(firstLine)).toEqual(inSettings.map(firstLine));
   });
 
+  it('dans le tiroir d’une tablette : réglages et lignes côte à côte, sans bascule', () => {
+    // Le test n'a pas de `matchMedia` : la largeur vaut celle d'une tablette.
+    const { host } = mountFull(new CartStore(), { headed: false });
+
+    expect(host.querySelector('[data-panier-split]')).not.toBeNull();
+    expect(host.querySelector('fold-tabs')).toBeNull();
+    expect(host.textContent).toContain('Commande portée par');
+    expect(host.textContent).toContain('Ajoutez des articles');
+    // Les deux vues sont là : aucun refus ne propose d'aller voir l'autre.
+    expect(host.querySelector('.pan-foot fold-button-icon')).toBeNull();
+  });
+
   it('un refus sur les lignes renvoie au panier depuis les réglages', () => {
     const { fixture, host, component } = mountFull(new CartStore());
     const go = footButton(host, 'Voir le panier');

@@ -128,3 +128,21 @@
   flex-direction: column;
   gap: var(--fold-space-xs);
 }
+
+/* Tablette, dans le tiroir : les deux vues côte à côte, chacune défile pour
+   elle-même ; le bouton de validation prend toute la largeur du pied. */
+.pan-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--fold-space-xl);
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.pan-foot.is-split > button {
+  width: 100%;
+}
+
+.pan-foot.is-split .pan-confirm > button {
+  flex: 1;
+}

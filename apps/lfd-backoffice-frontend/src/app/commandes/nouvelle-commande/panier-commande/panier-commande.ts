@@ -31,7 +31,9 @@ import {
   type PickupAddressView,
   type StaffSettlement,
 } from '@lfd/contracts';
+import { NgTemplateOutlet } from '@angular/common';
 import { CartRow } from '@lfd/b2b-ui/cart';
+import { narrowViewport } from '../../../shared/viewport/narrow-viewport';
 
 import { budgetCommitmentGaps } from '../../budget-commitment';
 import { BudgetCommitmentFields } from '../../budget-commitment-fields/budget-commitment-fields';
@@ -87,10 +89,14 @@ const NO_FULFILLMENT: FulfillmentChoice = {
  * TVA et TTC tels que la passation les écrirait. Les recopier ici donnerait deux
  * règles d'arrondi, donc un écart d'un centime devant le client.
  */
+/** Le tiroir d'un téléphone : une colonne, donc la bascule. */
+const SPLIT_MIN_MEDIA = '(max-width: 767px)';
+
 @Component({
   selector: 'app-panier-commande',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    NgTemplateOutlet,
     AcheminementCommande,
     BudgetCommitmentFields,
     CartRow,
@@ -331,6 +337,16 @@ export class PanierCommande {
     { key: 'lines', label: 'Voir le panier', icon: 'list' },
   ];
   readonly view = signal<PanierView>('settings');
+
+  /** Sous cette largeur, le tiroir est trop étroit pour deux colonnes. */
+  private readonly handheld = narrowViewport(SPLIT_MIN_MEDIA);
+
+  /**
+   * Réglages et lignes côte à côte, sans bascule : dans le tiroir (sans
+   * en-tête) d'un écran de tablette, qui a la largeur de deux colonnes
+   * (Hugo, 2026-11-21). La colonne du large et le téléphone gardent la bascule.
+   */
+  protected readonly split = computed(() => !this.headed() && !this.handheld());
 
   protected onFulfillment(choice: FulfillmentChoice): void {
     this.draft().fulfillment.set(choice);

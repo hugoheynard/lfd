@@ -23,19 +23,39 @@
   </div>
 }
 
-<!-- Une bascule pleine largeur : les réglages OU les lignes, jamais les deux.
-     La validation, en pied, reste visible dans les deux vues. -->
-<fold-tabs
-  #t="foldTabs"
-  activeStyle="fill"
-  direction="horizontal"
-  justify="stretch"
-  background="transparent"
-  [tabs]="viewTabs"
-  [(activeKey)]="view"
-/>
+<!-- Deux vues : côte à côte en tablette (le tiroir est large, Hugo,
+     2026-11-21), en bascule ailleurs — les réglages OU les lignes. La
+     validation, en pied, reste visible dans tous les cas. -->
+@if (split()) {
+  <div class="pan-split" data-panier-split>
+    <div class="pan-view">
+      <ng-container [ngTemplateOutlet]="settingsView" />
+    </div>
+    <div class="pan-view">
+      <ng-container [ngTemplateOutlet]="linesView" />
+    </div>
+  </div>
+} @else {
+  <fold-tabs
+    #t="foldTabs"
+    activeStyle="fill"
+    direction="horizontal"
+    justify="stretch"
+    background="transparent"
+    [tabs]="viewTabs"
+    [(activeKey)]="view"
+  />
 
-<fold-tab-panel class="pan-view" [tabs]="t" key="settings">
+  <fold-tab-panel class="pan-view" [tabs]="t" key="settings">
+    <ng-container [ngTemplateOutlet]="settingsView" />
+  </fold-tab-panel>
+
+  <fold-tab-panel class="pan-view" [tabs]="t" key="lines">
+    <ng-container [ngTemplateOutlet]="linesView" />
+  </fold-tab-panel>
+}
+
+<ng-template #settingsView>
   <div class="pan-form">
     <fold-select
       label="Commande portée par"
@@ -118,9 +138,9 @@
       </fieldset>
     }
   </div>
-</fold-tab-panel>
+</ng-template>
 
-<fold-tab-panel class="pan-view" [tabs]="t" key="lines">
+<ng-template #linesView>
   <div class="pan-lines">
     @if (cart().isEmpty()) {
       <p class="pan-empty">Ajoutez des articles depuis la colonne de gauche.</p>
@@ -182,16 +202,16 @@
       }
     }
   </div>
-</fold-tab-panel>
+</ng-template>
 
-<footer class="pan-foot">
+<footer class="pan-foot" [class.is-split]="split()">
   <!-- Le même pied dans les deux vues ; un refus qui vit dans l'autre vue y
        renvoie d'un geste. -->
   @for (blocker of blockers(); track blocker.text) {
     <fold-callout variant="warning">
       <div class="pan-blocker">
         <span>{{ blocker.text }}</span>
-        @if (blocker.view !== null && blocker.view !== view()) {
+        @if (!split() && blocker.view !== null && blocker.view !== view()) {
           <!-- Une flèche sur la ligne du refus (Hugo, 2026-11-03) : le libellé
                complet ne tenait pas en mobile. -->
           <fold-button-icon
