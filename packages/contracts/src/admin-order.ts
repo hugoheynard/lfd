@@ -345,10 +345,24 @@ export interface OrderDraftView extends OrderDraftPayload {
  * suffit de savoir qu'il existe, quand, et par qui. Le contenu reste derrière
  * `GET admin/order-drafts/:companyId`, lu à l'ouverture de la saisie.
  */
+/** Ce que la liste des brouillons montre d'une saisie, sans la rouvrir. */
+export interface OrderDraftSummaryContent {
+  /** Les articles — une ligne au poids compte pour un. */
+  readonly itemCount: number;
+  readonly fulfillmentMethod: FulfillmentMethod;
+  /** Le point de retrait choisi, `null` s'il ne l'est pas encore. */
+  readonly pickupAddressId: string | null;
+  /** Le jour demandé (`AAAA-MM-JJ`), `null` s'il ne l'est pas encore. */
+  readonly requestedDeliveryDate: string | null;
+  readonly requestedWindow: FulfillmentWindow | null;
+}
+
 export interface OrderDraftSummaryView {
   readonly companyId: string;
   /** Le nom d'affichage de la société, pour l'onglet « Brouillons » des commandes. */
   readonly companyName: string;
+  /** Ce que la saisie portait, `null` si son contenu ne se relit plus. */
+  readonly content: OrderDraftSummaryContent | null;
   /** ISO du dernier enregistrement. */
   readonly savedAt: string;
   /** « Prénom Nom » de qui l'a enregistré, ou `null` si la fiche ne le dit plus. */

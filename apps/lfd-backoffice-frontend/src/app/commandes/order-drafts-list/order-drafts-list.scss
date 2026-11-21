@@ -9,3 +9,14 @@
   font-size: var(--fold-text-xs);
   font-variant-numeric: tabular-nums;
 }
+
+.odl-count {
+  font-variant-numeric: tabular-nums;
+}
+
+.odl-who {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--fold-space-xs);
+}

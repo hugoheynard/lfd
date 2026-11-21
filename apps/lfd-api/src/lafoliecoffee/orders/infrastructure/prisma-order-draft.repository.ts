@@ -1,6 +1,7 @@
 import {
   companyDisplayName,
   orderDraftPayloadSchema,
+  type OrderDraftSummaryContent,
   type OrderDraftPayload,
   type OrderDraftView,
 } from "@lfd/contracts";
@@ -8,6 +9,7 @@ import { Injectable } from "@nestjs/common";
 import type { Prisma } from "../../../platform/database/client/client.js";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
+import { draftItemCount } from "../domain/services/draft-item-count.js";
 import {
   OrderDraftRepository,
   type OrderDraftSummary,
@@ -45,10 +47,12 @@ export class PrismaOrderDraftRepository extends OrderDraftRepository {
   }
 
   async listSummaries(): Promise<readonly OrderDraftSummary[]> {
-    // Ni le `payload` ni sa validation : la liste ne dit que l'existence.
+    // Le `payload` est relu pour en dire l'essentiel ; illisible, le contenu
+    // est `null` — jamais un zéro ni un mode qui le feraient passer pour vide.
     const rows = await this.prisma.orderDraft.findMany({
       select: {
         companyId: true,
+        payload: true,
         savedByStaffId: true,
         updatedAt: true,
         company: { select: { raisonSociale: true, enseigne: true } },
@@ -58,6 +62,7 @@ export class PrismaOrderDraftRepository extends OrderDraftRepository {
     return rows.map((row) => ({
       companyId: row.companyId,
       companyName: companyDisplayName(row.company),
+      content: contentOf(row.payload),
       savedAt: row.updatedAt,
       savedByStaffId: row.savedByStaffId,
     }));
@@ -108,5 +113,20 @@ function toView(row: DraftRow): OrderDraftView | null {
     companyId: row.companyId,
     savedAt: row.updatedAt.toISOString(),
     savedByStaffId: row.savedByStaffId,
+  };
+}
+
+function contentOf(payload: unknown): OrderDraftSummaryContent | null {
+  const parsed = orderDraftPayloadSchema.safeParse(payload);
+  if (!parsed.success) {
+    return null;
+  }
+  const draft = parsed.data;
+  return {
+    itemCount: draftItemCount(draft.lines),
+    fulfillmentMethod: draft.fulfillmentMethod,
+    pickupAddressId: draft.pickupAddressId,
+    requestedDeliveryDate: draft.requestedDeliveryDate,
+    requestedWindow: draft.requestedWindow,
   };
 }

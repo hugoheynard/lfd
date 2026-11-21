@@ -144,6 +144,14 @@ describe("/admin/order-drafts", () => {
     expect(listed[0]?.savedAt).not.toBe("");
     // L'onglet « Brouillons » des commandes nomme le compte sans le relire.
     expect(listed[0]?.companyName).toContain("Café des Halles");
+    // Ce que la saisie portait : aucun article, le mode par défaut, rien de choisi.
+    expect(listed[0]?.content).toEqual({
+      itemCount: 0,
+      fulfillmentMethod: "pickup",
+      pickupAddressId: null,
+      requestedDeliveryDate: null,
+      requestedWindow: null,
+    });
 
     await staff().delete(`/admin/order-drafts/${companyId}`).expect(204);
     const after = jsonBody<OrderDraftSummaryView[]>(

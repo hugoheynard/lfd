@@ -1,8 +1,9 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
-import type { OrderDraftSummaryView } from '@lfd/contracts';
+import type { OrderDraftSummaryView, PickupAddressView } from '@lfd/contracts';
 import { formatOrderDate } from '@lfd/b2b-ui/order';
 import {
+  FoldBadgeComponent,
   FoldButtonComponent,
   FoldDataTableCellDirective,
   FoldDataTableComponent,
@@ -12,6 +13,10 @@ import {
   type FoldTableEmpty,
 } from 'fold-ng';
 
+import { PickupAddressesService } from '../../b2b/reglages/pickup-addresses.service';
+import { fulfillmentModeOf } from '../../shared/logistics-colors/fulfillment-mode';
+import type { LogisticsCategory } from '../../shared/logistics-colors/logistics-category';
+import { LogisticsSwatch } from '../../shared/logistics-colors/logistics-swatch/logistics-swatch';
 import { COUNTER_ORDER_ENTRY_LINK } from '../nouvelle-commande/order-entry-origin';
 import { orderEntryParams } from '../nouvelle-commande/order-entry-return';
 import { OrderDraftsService } from '../order-drafts.service';
@@ -28,7 +33,10 @@ const PARIS_TIME = new Intl.DateTimeFormat('fr-FR', {
 /** Le plus récent d'abord : c'est l'ordre que le serveur rend. */
 const COLUMNS: readonly FoldTableColumn[] = [
   { key: 'savedAt', label: 'Enregistré le', width: '9rem' },
+  { key: 'fulfillmentDay', label: 'Pour le', width: '9rem' },
+  { key: 'mode', label: 'Mode', width: '12rem' },
   { key: 'companyName', label: 'Client' },
+  { key: 'itemCount', label: 'Articles', width: '6rem', align: 'right' },
   { key: 'savedByName', label: 'Par', width: '14rem' },
 ];
 
@@ -52,11 +60,13 @@ const DRAFTS_ORIGIN = '/commandes?view=drafts';
   selector: 'app-order-drafts-list',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    FoldBadgeComponent,
     FoldButtonComponent,
     FoldDataTableCellDirective,
     FoldDataTableComponent,
     FoldEmptyStateComponent,
     FoldLoadingStateComponent,
+    LogisticsSwatch,
   ],
   templateUrl: './order-drafts-list.html',
   styleUrl: './order-drafts-list.scss',
@@ -64,9 +74,12 @@ const DRAFTS_ORIGIN = '/commandes?view=drafts';
 export class OrderDraftsList {
   private readonly drafts = inject(OrderDraftsService);
   private readonly router = inject(Router);
+  private readonly pickupsService = inject(PickupAddressesService);
 
   protected readonly state = signal<LoadState>('loading');
   protected readonly rows = signal<readonly OrderDraftSummaryView[]>([]);
+  /** Les points de retrait, pour nommer celui d'un brouillon. */
+  private readonly pickups = signal<readonly PickupAddressView[]>([]);
 
   constructor() {
     void this.load();
@@ -74,6 +87,11 @@ export class OrderDraftsList {
 
   protected async load(): Promise<void> {
     this.state.set('loading');
+    // Sans les points, le mode dit « Retrait » sans son nom : la liste reste.
+    void this.pickupsService.list().then(
+      (pickups) => this.pickups.set(pickups),
+      () => this.pickups.set([]),
+    );
     try {
       this.rows.set(await this.drafts.list());
       this.state.set('ready');
@@ -92,6 +110,33 @@ export class OrderDraftsList {
 
   protected time(draft: OrderDraftSummaryView): string {
     return PARIS_TIME.format(new Date(draft.savedAt));
+  }
+
+  /** Le jour demandé, et le créneau dessous ; `null` tant qu'il n'est pas choisi. */
+  protected day(draft: OrderDraftSummaryView): string | null {
+    const day = draft.content?.requestedDeliveryDate ?? null;
+    return day === null ? null : formatOrderDate(day);
+  }
+
+  protected window(draft: OrderDraftSummaryView): string | null {
+    const window = draft.content?.requestedWindow ?? null;
+    if (window === null) {
+      return null;
+    }
+    return window.start === null ? `avant ${window.end}` : `${window.start} – ${window.end}`;
+  }
+
+  /** Le mode, à la teinte des autres listes ; `null` si le contenu ne se relit plus. */
+  protected mode(draft: OrderDraftSummaryView): LogisticsCategory | null {
+    const content = draft.content;
+    if (content === null) {
+      return null;
+    }
+    const point = this.pickups().find((pickup) => pickup.id === content.pickupAddressId);
+    return fulfillmentModeOf(
+      { fulfillmentMethod: content.fulfillmentMethod, pickupLabel: point?.label ?? null },
+      [],
+    );
   }
 
   protected resume(draft: OrderDraftSummaryView): void {

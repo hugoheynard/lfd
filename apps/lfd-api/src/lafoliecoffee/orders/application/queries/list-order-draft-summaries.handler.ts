@@ -29,6 +29,7 @@ export class ListOrderDraftSummariesHandler implements IQueryHandler<
     return summaries.map((draft) => ({
       companyId: draft.companyId,
       companyName: draft.companyName,
+      content: draft.content,
       savedAt: draft.savedAt.toISOString(),
       savedByName: authors.nameOf(draft.savedByStaffId),
     }));

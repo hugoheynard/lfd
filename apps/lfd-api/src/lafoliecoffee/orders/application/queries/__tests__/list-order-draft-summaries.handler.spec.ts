@@ -51,6 +51,7 @@ describe("ListOrderDraftSummariesHandler", () => {
         {
           companyId: "cmp_1",
           companyName: "Société cmp_1",
+          content: null,
           savedAt: SAVED_AT,
           savedByStaffId: "staff_1",
         },
@@ -64,6 +65,7 @@ describe("ListOrderDraftSummariesHandler", () => {
       {
         companyId: "cmp_1",
         companyName: "Société cmp_1",
+        content: null,
         savedAt: SAVED_AT.toISOString(),
         savedByName: "Léa Martin",
       },
@@ -76,12 +78,14 @@ describe("ListOrderDraftSummariesHandler", () => {
         {
           companyId: "cmp_1",
           companyName: "Société cmp_1",
+          content: null,
           savedAt: SAVED_AT,
           savedByStaffId: "staff_parti",
         },
         {
           companyId: "cmp_2",
           companyName: "Société cmp_2",
+          content: null,
           savedAt: SAVED_AT,
           savedByStaffId: null,
         },
@@ -101,12 +105,14 @@ describe("ListOrderDraftSummariesHandler", () => {
         {
           companyId: "cmp_1",
           companyName: "Société cmp_1",
+          content: null,
           savedAt: SAVED_AT,
           savedByStaffId: "staff_1",
         },
         {
           companyId: "cmp_2",
           companyName: "Société cmp_2",
+          content: null,
           savedAt: SAVED_AT,
           savedByStaffId: "staff_2",
         },

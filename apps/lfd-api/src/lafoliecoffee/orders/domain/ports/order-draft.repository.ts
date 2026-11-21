@@ -1,4 +1,4 @@
-import type { OrderDraftPayload, OrderDraftView } from "@lfd/contracts";
+import type { OrderDraftPayload, OrderDraftSummaryContent, OrderDraftView } from "@lfd/contracts";
 
 /**
  * Le **brouillon de commande** d'une société — une saisie interrompue, mise de
@@ -44,6 +44,8 @@ export interface OrderDraftSummary {
   readonly companyId: string;
   /** Le nom d'affichage de la société (enseigne, sinon raison sociale). */
   readonly companyName: string;
+  /** Ce que la saisie portait, `null` si son contenu ne se relit plus. */
+  readonly content: OrderDraftSummaryContent | null;
   readonly savedAt: Date;
   /** La fiche staff qui l'a enregistré, ou `null` si elle a disparu depuis. */
   readonly savedByStaffId: string | null;

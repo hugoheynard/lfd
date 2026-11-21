@@ -30,8 +30,33 @@
           <span class="odl-time">{{ time(row) }}</span>
         </span>
       </ng-template>
+      <ng-template foldCell="fulfillmentDay" let-row>
+        <span class="odl-stack">
+          <span>{{ day(row) ?? '—' }}</span>
+          @if (window(row); as slot) {
+            <span class="odl-time">{{ slot }}</span>
+          }
+        </span>
+      </ng-template>
+      <ng-template foldCell="mode" let-row>
+        @if (mode(row); as category) {
+          <app-logistics-swatch [category]="category" />
+        } @else {
+          —
+        }
+      </ng-template>
       <ng-template foldCell="companyName" let-row>{{ row.companyName }}</ng-template>
-      <ng-template foldCell="savedByName" let-row>{{ row.savedByName ?? '—' }}</ng-template>
+      <ng-template foldCell="itemCount" let-row>
+        <span class="odl-count">{{ row.content?.itemCount ?? '—' }}</span>
+      </ng-template>
+      <!-- Un brouillon est toujours une saisie de l'équipe : la boutique n'en
+           écrit pas (son panier vit ailleurs). -->
+      <ng-template foldCell="savedByName" let-row>
+        <span class="odl-who">
+          <span>{{ row.savedByName ?? '—' }}</span>
+          <fold-badge radius="square" variant="neutral" content="L’équipe" />
+        </span>
+      </ng-template>
     </fold-data-table>
   }
 }
