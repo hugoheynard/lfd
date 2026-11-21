@@ -1,0 +1,17 @@
+<div class="dr" data-doc-row>
+  <span class="dr-icon" aria-hidden="true">
+    <fold-icon [name]="icon()" size="sm" tone="muted" />
+  </span>
+  <div class="dr-text">
+    <span class="dr-title"><ng-content select="[rowTitle]" />{{ title() }}</span>
+    @if (meta(); as text) {
+      <span class="dr-meta" data-doc-meta>{{ text }}</span>
+    }
+  </div>
+  <div class="dr-actions">
+    <ng-content select="[rowActions]" />
+  </div>
+  <div class="dr-below">
+    <ng-content select="[rowBelow]" />
+  </div>
+</div>

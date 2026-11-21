@@ -8,19 +8,20 @@ import { PermissionsStore } from '../../auth/permissions.store';
 /**
  * **« Modifier la commande »** depuis son détail staff (voir
  * `documentation/commandes/modification/modifier-une-commande.md`, § 2.2 « Le chemin d'une modification »).
+ * Une action de la bande de tête, visible quel que soit l'onglet.
  *
  * Absent sans `b2b_place_order:write` (le droit des routes de révision).
- * Ouvert quand le serveur dit la commande modifiable (`revisability`, la
- * règle du geste : au compte à produire, engagée, réglée par carte… —
- * reprise sous verrou au `POST`). Désactivé sinon, avec la phrase du serveur ;
- * elle se tait seulement quand l'annulation est bloquée elle aussi et que son
- * bouton, juste à côté, dit déjà la cause commune.
+ * Un lien quand le serveur dit la commande modifiable (`revisability`). Sinon,
+ * aucun bouton grisé : la phrase du serveur, en callout — ou en une ligne
+ * discrète quand l'annulation est bloquée elle aussi, car c'est alors la seule
+ * raison que la bande donne de ce qu'on ne peut plus faire.
  */
 @Component({
   selector: 'app-order-revise-action',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [FoldButtonComponent, FoldCalloutComponent, RouterLink],
   templateUrl: './order-revise-action.html',
+  styleUrl: './order-revise-action.scss',
 })
 export class OrderReviseAction {
   readonly orderId = input.required<string>();
@@ -37,12 +38,10 @@ export class OrderReviseAction {
     return r.revisable ? null : r.reason;
   });
 
-  /** La cause n'est pas déjà dite par le bouton d'annulation voisin, bloqué lui aussi. */
-  protected readonly saysWhy = computed(() => {
-    const cancelSaysIt =
-      !this.cancellability().cancellable && this.permissions.can('b2b_cancel_order:write');
-    return this.blocker() !== null && !cancelSaysIt;
-  });
+  /** Ni modifiable ni annulable : la raison se dit d'une ligne, sans encadré. */
+  protected readonly quiet = computed(
+    () => this.blocker() !== null && !this.cancellability().cancellable,
+  );
 
   /** Plan A2 : inscrite au plan — le bouton dit qu'on n'y change que les quantités. */
   protected readonly label = computed(() => {

@@ -1,11 +1,10 @@
 import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import type { OrderRefundStatus, OrderRefundView } from '@lfd/contracts';
-import { formatCents } from '@lfd/b2b-ui/order';
+import { formatCents, SectionTitle } from '@lfd/b2b-ui/order';
 import {
   FoldBadgeComponent,
   FoldCardComponent,
-  FoldElementTitleComponent,
   FoldFieldComponent,
   FoldFieldListComponent,
   type FoldBadgeVariant,
@@ -51,10 +50,10 @@ interface RefundRow {
   selector: 'app-order-refunds-card',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    SectionTitle,
     DatePipe,
     FoldBadgeComponent,
     FoldCardComponent,
-    FoldElementTitleComponent,
     FoldFieldComponent,
     FoldFieldListComponent,
   ],

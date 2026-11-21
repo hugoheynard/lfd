@@ -11,16 +11,10 @@ import {
   untracked,
 } from '@angular/core';
 import { DELIVERY_PROOF_PERMISSION, type OrderHandoverProofView } from '@lfd/contracts';
-import {
-  FoldCalloutComponent,
-  FoldCardComponent,
-  FoldElementTitleComponent,
-  FoldFieldComponent,
-  FoldFieldListComponent,
-  FoldLoadingStateComponent,
-} from 'fold-ng';
+import { FoldCalloutComponent, FoldFieldComponent, FoldFieldListComponent } from 'fold-ng';
 
 import { PermissionsStore } from '../../auth/permissions.store';
+import { DocumentRow } from '../document-row/document-row';
 import { AdminOrdersService } from '../orders.service';
 
 type CardState =
@@ -55,12 +49,10 @@ const NO_IMAGES: ProofImages = { photo: null, signature: null, failed: false };
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     DatePipe,
+    DocumentRow,
     FoldCalloutComponent,
-    FoldCardComponent,
-    FoldElementTitleComponent,
     FoldFieldComponent,
     FoldFieldListComponent,
-    FoldLoadingStateComponent,
   ],
   templateUrl: './handover-proof-card.html',
   styleUrl: './handover-proof-card.scss',

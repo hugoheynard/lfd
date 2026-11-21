@@ -65,23 +65,23 @@ describe('le bouton « Modifier la commande »', () => {
     expect(link?.getAttribute('href')).toBe('/commandes/ord_1/modifier');
   });
 
-  it('est grisé avec la raison du serveur — une commande carte s’annule mais ne se modifie pas', () => {
+  it('bloquée seule : aucun bouton grisé, la raison du serveur en callout', () => {
     const f = mount(CARD, CANCEL_OPEN, ['b2b_place_order:write', 'b2b_cancel_order:write']);
-    expect(el(f).querySelector('button[data-revise-trigger]')?.hasAttribute('disabled')).toBe(true);
-    expect(el(f).querySelector('[data-revise-blocked]')?.textContent).toContain('réglée par carte');
-  });
-
-  it("dit la raison quand le bouton d'annulation n'est pas là pour la dire", () => {
-    const f = mount(INSCRIBED, CANCEL_CLOSED, ['b2b_place_order:write']);
-    expect(el(f).querySelector('[data-revise-blocked]')?.textContent).toContain(
-      'compte à produire',
+    expect(el(f).querySelector('[data-revise-trigger]')).toBeNull();
+    expect(el(f).querySelector('button[disabled]')).toBeNull();
+    expect(el(f).querySelector('fold-callout[data-revise-blocked]')?.textContent).toContain(
+      'réglée par carte',
     );
   });
 
-  it("ne répète pas la cause commune que le bouton d'annulation écrit déjà", () => {
+  it('ni modifiable ni annulable : une seule ligne discrète, la raison servie telle quelle', () => {
     const f = mount(INSCRIBED, CANCEL_CLOSED, ['b2b_place_order:write', 'b2b_cancel_order:write']);
-    expect(el(f).querySelector('button[data-revise-trigger]')?.hasAttribute('disabled')).toBe(true);
-    expect(el(f).querySelector('[data-revise-blocked]')).toBeNull();
+    expect(el(f).querySelector('[data-revise-trigger]')).toBeNull();
+    expect(el(f).querySelector('fold-callout')).toBeNull();
+    expect(el(f).querySelectorAll('[data-revise-blocked]')).toHaveLength(1);
+    expect(el(f).querySelector('p[data-revise-blocked]')?.textContent?.trim()).toBe(
+      INSCRIBED.revisable ? '' : INSCRIBED.reason,
+    );
   });
 
   it('plan A2 : inscrite au plan, le bouton dit « Modifier les quantités »', () => {

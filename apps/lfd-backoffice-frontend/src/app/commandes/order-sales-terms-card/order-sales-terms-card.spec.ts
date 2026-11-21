@@ -30,7 +30,7 @@ async function render(read: () => Promise<OrderSalesTermsResponse>): Promise<HTM
 
 const sentenceOf = (element: HTMLElement): string =>
   element
-    .querySelector('[data-order-sales-terms-sentence]')
+    .querySelector('[data-order-sales-terms-sentence] [data-doc-meta]')
     ?.textContent?.replace(/\s+/g, ' ')
     .trim() ?? '';
 
@@ -50,7 +50,9 @@ describe('OrderSalesTermsCard', () => {
     expect(sentenceOf(element)).toContain(
       'CGV acceptées : professionnelles, révision 4, PDF du 12/10/2026',
     );
-    expect(element.querySelector('fold-link')?.textContent).toContain('Télécharger ce PDF');
+    expect(element.querySelector('[data-order-sales-terms-pdf]')?.textContent).toContain(
+      'Télécharger',
+    );
   });
 
   /** C4′ : saisie par l'équipe, le client n'a rien accepté. */
@@ -64,7 +66,7 @@ describe('OrderSalesTermsCard', () => {
     expect(sentenceOf(element)).toBe(
       'CGV applicables : particuliers, texte pas encore rédigé à la passation, aucun PDF de référence',
     );
-    expect(element.querySelector('fold-link')).toBeNull();
+    expect(element.querySelector('[data-order-sales-terms-pdf]')).toBeNull();
   });
 
   it('une commande d’avant l’enregistrement : aucune version inventée', async () => {
@@ -77,6 +79,6 @@ describe('OrderSalesTermsCard', () => {
   it('un échec de lecture reste dans la carte', async () => {
     const element = await render(() => Promise.reject(new Error('réseau')));
 
-    expect(element.querySelector('fold-empty-state')).not.toBeNull();
+    expect(element.querySelector('fold-callout[data-doc-state]')).not.toBeNull();
   });
 });

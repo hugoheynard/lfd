@@ -14,11 +14,11 @@ import {
   FoldButtonComponent,
   FoldCalloutComponent,
   FoldCardComponent,
-  FoldElementTitleComponent,
   FoldFieldComponent,
   FoldFieldListComponent,
   FoldPanelHostService,
 } from 'fold-ng';
+import { SectionTitle } from '@lfd/b2b-ui/order';
 
 import {
   BudgetCommitmentDialog,
@@ -51,10 +51,10 @@ type RequirementsState =
   selector: 'app-order-budget-commitment-card',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    SectionTitle,
     FoldButtonComponent,
     FoldCalloutComponent,
     FoldCardComponent,
-    FoldElementTitleComponent,
     FoldFieldComponent,
     FoldFieldListComponent,
   ],

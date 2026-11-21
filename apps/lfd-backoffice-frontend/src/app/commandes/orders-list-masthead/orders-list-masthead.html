@@ -2,19 +2,20 @@
   <!-- Les onglets de la page (Commandes, Tentatives abandonnées) : projetés,
        pour que leur panneau, resté dans la page, garde sa référence. -->
   <div class="olm-top">
+    <!-- Le cadrage tient la place du titre : une ligne de gagnée. Le titre
+         reste, pour les lecteurs d'écran : la page garde son h1. -->
     <h1 class="olm-title">Commandes</h1>
+    <fold-view-toggle
+      ariaLabel="Commandes à servir"
+      activeStyle="accent"
+      [options]="scopes"
+      [value]="scope() ?? ''"
+      (valueChange)="choose($event)"
+      data-scope-toggle
+    />
     <span class="olm-action"><ng-content select="button" /></span>
   </div>
   <ng-content select="fold-tabs" />
-
-  <fold-view-toggle
-    ariaLabel="Commandes à servir"
-    activeStyle="accent"
-    [options]="scopes"
-    [value]="scope() ?? ''"
-    (valueChange)="choose($event)"
-    data-scope-toggle
-  />
 
   <ul class="olm-cards">
     @for (card of cards(); track card.key) {

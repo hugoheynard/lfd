@@ -1,12 +1,7 @@
 import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import type { AdminOrderItemLimitOverride, OrderLineView } from '@lfd/contracts';
-import {
-  FoldCardComponent,
-  FoldElementTitleComponent,
-  FoldFieldComponent,
-  FoldFieldListComponent,
-} from 'fold-ng';
+import { FoldCalloutComponent } from 'fold-ng';
 
 /** Un dépassement, déjà mis en mots. */
 interface OverrideRow {
@@ -18,6 +13,16 @@ interface OverrideRow {
   readonly origin: string;
 }
 
+/** Le mot posé en badge sur la ligne de la composition dont la limite a été passée. */
+export const LIMIT_OVERRIDE_BADGE = 'hors délai';
+
+/** SKU → « hors délai », pour les lignes de la composition dont la limite a été passée. */
+export function limitOverrideBadges(
+  overrides: readonly AdminOrderItemLimitOverride[] | undefined,
+): ReadonlyMap<string, string> {
+  return new Map((overrides ?? []).map((override) => [override.sku, LIMIT_OVERRIDE_BADGE]));
+}
+
 const ORIGIN: Readonly<Record<AdminOrderItemLimitOverride['origin'], string>> = {
   placement: 'à la saisie',
   revision: 'en modification',
@@ -26,7 +31,8 @@ const ORIGIN: Readonly<Record<AdminOrderItemLimitOverride['origin'], string>> = 
 /**
  * **« Limites de produit dépassées »** sur la fiche d'une commande (plan
  * `passer-outre-la-limite-d-un-produit.md`, § 3.5) : le produit, la limite
- * passée, le motif, qui et quand.
+ * passée, le motif, qui et quand. Un avertissement discret, juste sous le
+ * tableau de la composition, dont la ligne porte le badge « hors délai ».
  *
  * Rien n'est rendu sans dépassement, ni quand le serveur ne sert pas la liste
  * (sans `lfc_product_limit_override:read`) : il en décide, l'écran se tait.
@@ -37,14 +43,9 @@ const ORIGIN: Readonly<Record<AdminOrderItemLimitOverride['origin'], string>> = 
 @Component({
   selector: 'app-order-item-limit-overrides-card',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    DatePipe,
-    FoldCardComponent,
-    FoldElementTitleComponent,
-    FoldFieldComponent,
-    FoldFieldListComponent,
-  ],
+  imports: [DatePipe, FoldCalloutComponent],
   templateUrl: './order-item-limit-overrides-card.html',
+  styleUrl: './order-item-limit-overrides-card.scss',
 })
 export class OrderItemLimitOverridesCard {
   readonly overrides = input<readonly AdminOrderItemLimitOverride[] | undefined>(undefined);

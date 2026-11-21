@@ -1,6 +1,9 @@
 export { OrderDetail } from './order-detail/order-detail';
+export { OrderDetailHead } from './order-detail-head/order-detail-head';
+export { OrderDocumentsList } from './order-documents-list/order-documents-list';
 export { OrderRow } from './order-row/order-row';
-export type { OrderDocument } from './order-detail/order-detail';
+export { SectionTitle } from './section-title/section-title';
+export type { OrderDocument, OrderEntryStep } from './order-detail/order-detail';
 export { ORDER_DOC_ORDER_SHEET, ORDER_DOC_INVOICE, orderDocuments } from './order-documents';
 export { renderOrderSheetText, orderSheetFileName } from './order-sheet-text';
 export {
@@ -20,6 +23,7 @@ export {
   formatOrderDate,
   formatOrderDay,
   formatOrderInstant,
+  orderHeaderTotal,
 } from './order-format';
 export { resolveZoneForPostalCode } from './delivery-zone';
 export { entryPriceOf, orderTotalRows, priceStepLabels, wasFloored } from './order-pricing';

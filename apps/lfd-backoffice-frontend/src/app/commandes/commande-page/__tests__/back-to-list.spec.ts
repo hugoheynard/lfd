@@ -4,7 +4,7 @@ import { Component, NO_ERRORS_SCHEMA } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter, withComponentInputBinding } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
-import { FoldBackLinkComponent, FoldPageLayoutComponent } from 'fold-ng';
+import { FoldBackLinkComponent, FoldPageLayoutComponent, FoldTabsComponent } from 'fold-ng';
 import { describe, expect, it } from 'vitest';
 
 import { FROM_ORDER_LIST } from '../../order-list-return';
@@ -35,7 +35,10 @@ async function harness(): Promise<RouterTestingHarness> {
   });
   // Le corps (`app-order-view`) charge la commande : il n'est pas le sujet ici.
   TestBed.overrideComponent(AdminCommandePage, {
-    set: { imports: [FoldBackLinkComponent, FoldPageLayoutComponent], schemas: [NO_ERRORS_SCHEMA] },
+    set: {
+      imports: [FoldBackLinkComponent, FoldPageLayoutComponent, FoldTabsComponent],
+      schemas: [NO_ERRORS_SCHEMA],
+    },
   });
   const harness = await RouterTestingHarness.create();
   // Le routeur n'écoute l'historique (popstate) qu'après sa navigation initiale.
@@ -62,6 +65,7 @@ describe('AdminCommandePage — le retour vers la liste', () => {
     // Le mode historique de fold : un bouton, sans cible figée.
     expect(back(h).querySelector('button')).not.toBeNull();
     expect(back(h).querySelector('a')).toBeNull();
+    expect(back(h).textContent).toContain('Toutes les commandes');
 
     (back(h).querySelector('button') as HTMLButtonElement).click();
     for (let i = 0; i < 3; i++) {
@@ -76,6 +80,6 @@ describe('AdminCommandePage — le retour vers la liste', () => {
     const h = await harness();
     await h.navigateByUrl('/commandes/o_1');
     expect(back(h).querySelector('a')?.getAttribute('href')).toBe('/commandes');
-    expect(back(h).textContent).toContain('Commandes');
+    expect(back(h).textContent).toContain('Toutes les commandes');
   });
 });

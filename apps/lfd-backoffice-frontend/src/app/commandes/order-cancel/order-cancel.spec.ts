@@ -1,6 +1,10 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
-import type { AdminOrderCancellability, StaffPermission } from '@lfd/contracts';
+import type {
+  AdminOrderCancellability,
+  AdminOrderRevisability,
+  StaffPermission,
+} from '@lfd/contracts';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { PermissionsStore } from '../../auth/permissions.store';
@@ -19,6 +23,7 @@ function mount(
   cancellability: AdminOrderCancellability,
   permissions: readonly StaffPermission[] = CAN,
   answer: () => Promise<void> = async () => undefined,
+  revisability: AdminOrderRevisability = { revisable: true },
 ): Harness {
   const cancel = vi.fn(answer);
   TestBed.configureTestingModule({
@@ -33,6 +38,7 @@ function mount(
   const fixture = TestBed.createComponent(OrderCancelComponent);
   fixture.componentRef.setInput('orderId', 'ord_1');
   fixture.componentRef.setInput('cancellability', cancellability);
+  fixture.componentRef.setInput('revisability', revisability);
   const done = vi.fn();
   fixture.componentInstance.cancelled.subscribe(done);
   fixture.detectChanges();
@@ -67,13 +73,43 @@ describe('annuler une commande depuis son détail staff', () => {
     expect(el(fixture).querySelector('[data-cancel-trigger]')).toBeNull();
   });
 
-  it('est désactivé avec la raison du serveur à l’écran', () => {
-    const reason = 'La commande est déjà au compte à produire.';
+  it('vit dans une zone de danger fold', () => {
+    const { fixture } = mount({ cancellable: true, voucher: null, refund: null });
+    expect(
+      el(fixture).querySelector('fold-danger-zone[data-cancel-zone] [data-cancel-trigger]'),
+    ).not.toBeNull();
+  });
+
+  it('bloquée : la raison du serveur dans la zone, et aucun bouton grisé', () => {
+    const reason = 'Cette commande est déjà prête : elle ne s’annule plus.';
     const { fixture } = mount({ cancellable: false, reason });
 
-    const trigger = el(fixture).querySelector<HTMLButtonElement>('[data-cancel-trigger]');
-    expect(trigger?.disabled).toBe(true);
-    expect(el(fixture).querySelector('[data-cancel-blocked]')?.textContent).toContain(reason);
+    expect(el(fixture).querySelector('[data-cancel-trigger]')).toBeNull();
+    expect(el(fixture).querySelector('button[disabled]')).toBeNull();
+    expect(
+      el(fixture).querySelector('fold-danger-zone [data-cancel-blocked]')?.textContent,
+    ).toContain(reason);
+  });
+
+  it('bloquée comme la modification, pour la même raison : la zone se tait, la bande la dit', () => {
+    const reason = 'Cette commande est déjà prête : elle ne s’annule plus.';
+    const { fixture } = mount({ cancellable: false, reason }, CAN, async () => undefined, {
+      revisable: false,
+      reason,
+    });
+    expect(el(fixture).querySelector('fold-danger-zone')).toBeNull();
+  });
+
+  it('bloquée pour une autre raison que la modification : la zone garde la sienne', () => {
+    const { fixture } = mount(
+      { cancellable: false, reason: 'Déjà facturée.' },
+      CAN,
+      async () => undefined,
+      { revisable: false, reason: 'Déjà prête.' },
+    );
+    expect(el(fixture).querySelector('[data-cancel-blocked]')?.textContent).toContain(
+      'Déjà facturée.',
+    );
   });
 
   it('est actif quand la commande s’annule, et le motif ne s’ouvre qu’avec la confirmation', () => {

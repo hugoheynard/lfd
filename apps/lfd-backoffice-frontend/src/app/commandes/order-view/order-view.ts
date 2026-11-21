@@ -7,37 +7,40 @@ import {
   input,
   output,
   signal,
+  viewChild,
 } from '@angular/core';
 import type { AdminOrderView } from '@lfd/contracts';
-import { OrderDetail, orderDocuments, type OrderDocument } from '@lfd/b2b-ui/order';
+import { OrderDetail, OrderDetailHead } from '@lfd/b2b-ui/order';
 import {
   FoldButtonComponent,
   FoldEmptyStateComponent,
   FoldLoadingStateComponent,
   FoldPanelHostService,
+  FoldTabPanelComponent,
+  FoldTabsComponent,
 } from 'fold-ng';
 
-import { NotifyService } from '../../notify.service';
-import { HandoverProofCard } from '../handover-proof-card/handover-proof-card';
 import { OrderCancelComponent } from '../order-cancel/order-cancel';
 import { OrderNoShow } from '../order-no-show/order-no-show';
+import { OrderPlacedByComponent, entryStepOf } from '../order-placed-by/order-placed-by';
 import { OrderCardIncreaseBanner } from '../order-card-increase-banner/order-card-increase-banner';
 import { OrderReviseAction } from '../order-revise-action/order-revise-action';
+import { OrderReviewCard } from '../order-review-card/order-review-card';
 import { OrderHistoryCard } from '../order-history-card/order-history-card';
 import { OrderRevisionsCard } from '../order-revisions-card/order-revisions-card';
-import { OrderSalesTermsCard } from '../order-sales-terms-card/order-sales-terms-card';
-import { OrderDeliveryNotesCard } from '../order-delivery-notes-card/order-delivery-notes-card';
-import { OrderMailsCard } from '../order-mails-card/order-mails-card';
+import { OrderDocumentsPanel } from '../order-documents-panel/order-documents-panel';
 import { OrderMailsStore } from '../order-mails.store';
-import { OrderInvoicesCard } from '../order-invoices-card/order-invoices-card';
 import { OrderBudgetCommitmentCard } from '../order-budget-commitment-card/order-budget-commitment-card';
 import { OrderRefundBanner } from '../order-refund-banner/order-refund-banner';
 import { OrderShortfallBanner } from '../order-shortfall-banner/order-shortfall-banner';
 import { OrderShortfallDecision } from '../order-shortfall-decision/order-shortfall-decision';
 import { OrderShortfallLetter } from '../order-shortfall-letter/order-shortfall-letter';
-import { OrderItemLimitOverridesCard } from '../order-item-limit-overrides-card/order-item-limit-overrides-card';
+import {
+  OrderItemLimitOverridesCard,
+  limitOverrideBadges,
+} from '../order-item-limit-overrides-card/order-item-limit-overrides-card';
 import { OrderRefundsCard } from '../order-refunds-card/order-refunds-card';
-import { isOrderSheet } from '../commande-page/order-sheet-key';
+import { ORDER_VIEW_TABS, injectOrderViewTab, type OrderViewTab } from '../order-view-tabs';
 import { AdminOrdersService } from '../orders.service';
 import {
   PriceExplainPanel,
@@ -65,22 +68,23 @@ type LoadState = 'loading' | 'ready' | 'error';
   selector: 'app-order-view',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    OrderDocumentsPanel,
     FoldButtonComponent,
     FoldLoadingStateComponent,
     FoldEmptyStateComponent,
-    HandoverProofCard,
+    FoldTabPanelComponent,
+    FoldTabsComponent,
     OrderCancelComponent,
     OrderNoShow,
+    OrderPlacedByComponent,
     OrderCardIncreaseBanner,
     OrderReviseAction,
+    OrderReviewCard,
     OrderDetail,
+    OrderDetailHead,
     OrderHistoryCard,
     OrderRevisionsCard,
-    OrderSalesTermsCard,
-    OrderDeliveryNotesCard,
     OrderBudgetCommitmentCard,
-    OrderInvoicesCard,
-    OrderMailsCard,
     OrderRefundBanner,
     OrderShortfallBanner,
     OrderShortfallDecision,
@@ -91,6 +95,7 @@ type LoadState = 'loading' | 'ready' | 'error';
   // Une lecture des e-mails par fiche ouverte, partagée par la carte et la lettre de manque.
   providers: [OrderMailsStore],
   templateUrl: './order-view.html',
+  styleUrl: './order-view.scss',
 })
 export class OrderViewComponent {
   /** L'identifiant de la commande, lié depuis le segment de route. */
@@ -105,8 +110,41 @@ export class OrderViewComponent {
    */
   readonly loaded = output<AdminOrderView>();
 
+  /**
+   * **L'en-tête de la commande ouvre-t-il ce corps ?** Vrai par défaut.
+   *
+   * La route de premier niveau le porte dans sa bande de tête et le tait ici ;
+   * sous la fiche d'un compte, la bande est celle du compte, et l'en-tête ouvre
+   * le corps.
+   */
+  readonly showHead = input(true);
+
+  /**
+   * **La barre d'onglets, quand une autre la porte.** La route de premier
+   * niveau la rend dans sa bande de tête et la passe ici : les panneaux s'y
+   * accrochent. `null` (la fiche d'un compte, sans bande à elle) : la vue rend
+   * la sienne. Dans les deux cas, l'onglet ouvert est dans l'adresse.
+   */
+  readonly tabBar = input<FoldTabsComponent<OrderViewTab> | null>(null);
+
+  protected readonly tabs = ORDER_VIEW_TABS;
+  protected readonly tabState = injectOrderViewTab();
+  private readonly ownBar = viewChild<FoldTabsComponent<OrderViewTab>>('ownBar');
+  /** La barre à laquelle les panneaux s'accrochent : celle de la page, ou la sienne. */
+  protected readonly bar = computed(() => this.tabBar() ?? this.ownBar() ?? null);
+
+  /** SKU → « hors délai » : la ligne de la composition dont la limite a été passée. */
+  protected readonly limitBadges = computed(() =>
+    limitOverrideBadges(this.order()?.itemLimitOverrides),
+  );
+
+  /** Qui a pris la commande — la première étape de l'avancement. */
+  protected readonly entryStep = computed(() => {
+    const order = this.order();
+    return order === null ? null : entryStepOf(order);
+  });
+
   private readonly api = inject(AdminOrdersService);
-  private readonly notify = inject(NotifyService);
   private readonly panels = inject(FoldPanelHostService);
 
   protected readonly state = signal<LoadState>('loading');
@@ -132,11 +170,6 @@ export class OrderViewComponent {
     this.panels.open<PriceExplainPanelData>(PriceExplainPanel, { data });
   }
 
-  protected readonly documents = computed<readonly OrderDocument[]>(() => {
-    const order = this.order();
-    return order === null ? [] : orderDocuments(order);
-  });
-
   constructor() {
     // L'`input` de route n'est pas encore lié dans le constructeur, et il change
     // si on passe d'une commande à l'autre sans quitter la page.
@@ -160,55 +193,6 @@ export class OrderViewComponent {
       this.state.set('ready');
     } catch {
       this.state.set('error');
-    }
-  }
-
-  /**
-   * Ce que le bureau peut emporter d'une commande.
-   *
-   * 🔴 Cette méthode répondait « le téléchargement arrive avec la facturation »
-   * — vrai de la facture, faux du bon de commande depuis qu'il existe en PDF.
-   * Le staff n'a effectivement RIEN de plus que le client, et c'est délibéré :
-   * ce qu'il télécharge est le **même document**, sous la même clé d'archive.
-   * Si le client l'a déjà tiré, c'est sa copie qui s'ouvre — et c'est ce qui
-   * permet de discuter le même papier au téléphone.
-   *
-   * La facture, elle, garde son message : elle n'existe toujours pas, et la lib
-   * la rend indisponible pour cette raison.
-   */
-  protected onDocument(key: string): void {
-    if (!isOrderSheet(key)) {
-      this.notify.info('La facture arrive avec la facturation.');
-      return;
-    }
-    // Le gabarit appelle une méthode SYNCHRONE : une liaison Angular n'attend
-    // pas une promesse, et la lui rendre en laisserait une flotter sans que
-    // personne n'attrape son échec.
-    void this.downloadSheet();
-  }
-
-  /** Va chercher le bon, le propose, et **dit** quand il ne vient pas. */
-  private async downloadSheet(): Promise<void> {
-    const order = this.order();
-    if (order === null) {
-      return;
-    }
-    try {
-      const pdf = await this.api.sheetPdf(order.id);
-      const url = URL.createObjectURL(pdf);
-      const link = document.createElement('a');
-      link.href = url;
-      // Le nom se compose sur la RÉFÉRENCE — celle qu'on lit au téléphone, et
-      // qu'on cherchera dans un dossier de téléchargements.
-      link.download = `confirmation-de-commande-${order.orderNumber}.pdf`;
-      link.click();
-      // Révoqué après coup : sans ça chaque téléchargement fuiterait son blob
-      // jusqu'au rechargement de la page.
-      setTimeout(() => {
-        URL.revokeObjectURL(url);
-      }, 60_000);
-    } catch {
-      this.notify.error("La confirmation de commande n'a pas pu être téléchargée.");
     }
   }
 }

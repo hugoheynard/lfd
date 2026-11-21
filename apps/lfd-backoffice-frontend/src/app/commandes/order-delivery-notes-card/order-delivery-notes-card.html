@@ -1,44 +1,55 @@
 @if (loadError()) {
-  <fold-callout variant="alert" data-order-delivery-notes-error>
+  <fold-callout variant="alert" data-order-delivery-notes-error data-doc-state>
     Impossible de lire les bons de livraison de cette commande.
     <button foldButton size="sm" emphasis="soft" (click)="retry()">Réessayer</button>
   </fold-callout>
 } @else if (notes().length > 0) {
-  <fold-card data-order-delivery-notes>
-    <fold-element-title cardHeader variant="title" icon="truck" title="Bons de livraison" />
-    <div class="body">
-      @for (note of notes(); track note.number) {
-        <div class="row" [attr.data-delivery-note]="note.number">
-          <strong>{{ note.number }}</strong>
-          <span class="meta">{{ statusLabel(note) }} · {{ stepDate(note) }}</span>
-          <span class="actions">
-            <button foldButton size="sm" emphasis="soft" (click)="print(note)" data-print-carrier>
-              Imprimer (transport)
-            </button>
-            @if (note.money !== null) {
-              <button
-                foldButton
-                size="sm"
-                emphasis="soft"
-                (click)="download(note)"
-                data-download-client
-              >
-                Télécharger (chiffré)
-              </button>
-            }
-          </span>
-          @if (note.reprintNeeded) {
-            <fold-callout
-              class="reprint"
-              appearance="inset"
-              variant="warning"
-              [attr.data-reprint-needed]="note.number"
-            >
-              {{ reprintSentence }}
-            </fold-callout>
-          }
-        </div>
-      }
-    </div>
-  </fold-card>
+  <div class="rows" data-order-delivery-notes>
+    @for (note of notes(); track note.number) {
+      <!-- Imprimer : le bon de TRANSPORT, celui que le livreur emporte (l'impression
+           est tracée). Télécharger : le bon CHIFFRÉ du client quand il existe,
+           sinon le bon de transport. -->
+      <app-document-row
+        icon="truck"
+        [title]="'Bon de livraison ' + note.number"
+        [meta]="meta(note)"
+        [attr.data-delivery-note]="note.number"
+      >
+        <button
+          rowActions
+          foldButton
+          size="sm"
+          emphasis="soft"
+          [attr.title]="note.money !== null ? 'Le bon chiffré du client' : 'Le bon de transport'"
+          (click)="download(note)"
+          data-doc-download
+          [attr.data-download-client]="note.money !== null ? '' : null"
+        >
+          Télécharger
+        </button>
+        <button
+          rowActions
+          foldButton
+          size="sm"
+          emphasis="soft"
+          title="Le bon de transport, pour le livreur"
+          (click)="print(note)"
+          data-doc-print
+          data-print-carrier
+        >
+          Imprimer
+        </button>
+        @if (note.reprintNeeded) {
+          <fold-callout
+            ngProjectAs="[rowBelow]"
+            appearance="inset"
+            variant="warning"
+            [attr.data-reprint-needed]="note.number"
+          >
+            {{ reprintSentence }}
+          </fold-callout>
+        }
+      </app-document-row>
+    }
+  </div>
 }

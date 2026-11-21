@@ -1,0 +1,28 @@
+@let o = order();
+<!-- Bandeau : qui, quand, où ça en est, combien. Les quatre réponses qu'on
+     cherche avant de lire quoi que ce soit d'autre. -->
+<header class="od-head">
+  <div class="od-ident">
+    <h2 class="od-number">{{ o.orderNumber }}</h2>
+    @if (o.fromSubscriptionId) {
+      <span class="od-pill od-pill--rec">Panier récurrent</span>
+    }
+  </div>
+
+  <p class="od-when">
+    Passée le {{ fmtDate(o.placedAt) }}
+    @if (o.requestedDeliveryDate) {
+      · souhaitée le {{ fmtDate(o.requestedDeliveryDate) }}
+    }
+  </p>
+
+  <div class="od-badges">
+    <fold-badge [variant]="statusVariant()" [content]="statusLabel()" />
+    <fold-badge [variant]="paymentVariant()" [content]="paymentLabel()" />
+  </div>
+
+  <p class="od-total">
+    <span class="od-total-value">{{ fmtCents(headerTotal().cents) }}</span>
+    <span class="od-total-label">{{ headerTotal().basis }}</span>
+  </p>
+</header>

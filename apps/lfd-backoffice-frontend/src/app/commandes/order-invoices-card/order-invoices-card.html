@@ -1,24 +1,47 @@
 @if (loadError()) {
-  <fold-callout variant="alert" data-order-invoices-error>
+  <fold-callout variant="alert" data-order-invoices-error data-doc-state>
     Impossible de lire la facture de cette commande.
     <button foldButton size="sm" emphasis="soft" (click)="retry()">Réessayer</button>
   </fold-callout>
 } @else if (invoices().length > 0) {
-  <fold-card data-order-invoices>
-    <fold-element-title cardHeader variant="title" icon="receipt" title="Facture et avoirs" />
-    <div class="body">
-      @for (invoice of invoices(); track invoice.invoiceId) {
-        <p class="row" [attr.data-order-invoice]="invoice.invoiceId">
-          <a [routerLink]="['/comptabilite/factures', invoice.invoiceId]">{{ invoice.number }}</a>
-          <span class="meta">
-            {{ kind(invoice.kind) }} du {{ day(invoice.issuedOn) }}
-            @if (invoice.correctedInvoiceNumber; as corrected) {
-              · corrige {{ corrected }}
-            }
-          </span>
-          <strong class="amount">{{ euros(invoice.totalTtcCents) }}</strong>
-        </p>
-      }
-    </div>
-  </fold-card>
+  <div class="rows" data-order-invoices>
+    @for (invoice of invoices(); track invoice.invoiceId) {
+      <app-document-row
+        icon="receipt"
+        [meta]="meta(invoice)"
+        [attr.data-order-invoice]="invoice.invoiceId"
+      >
+        <!-- Le numéro mène à la pièce dans la comptabilité. -->
+        <a rowTitle [routerLink]="['/comptabilite/factures', invoice.invoiceId]">{{
+          invoice.number
+        }}</a>
+        <!-- Un @if par bouton : un bloc à racine unique est projeté par son sélecteur ;
+             à deux racines, il tomberait hors de `[rowActions]`. -->
+        @if (invoice.documentAvailable) {
+          <button
+            rowActions
+            foldButton
+            size="sm"
+            emphasis="soft"
+            (click)="download(invoice)"
+            data-doc-download
+          >
+            Télécharger
+          </button>
+        }
+        @if (invoice.documentAvailable) {
+          <button
+            rowActions
+            foldButton
+            size="sm"
+            emphasis="soft"
+            (click)="print(invoice)"
+            data-doc-print
+          >
+            Imprimer
+          </button>
+        }
+      </app-document-row>
+    }
+  </div>
 }

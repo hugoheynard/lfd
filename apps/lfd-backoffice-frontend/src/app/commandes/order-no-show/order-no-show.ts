@@ -8,13 +8,12 @@ import {
   signal,
 } from '@angular/core';
 import type { AdminOrderView, OrderStatus } from '@lfd/contracts';
-import { formatOrderInstant } from '@lfd/b2b-ui/order';
+import { formatOrderInstant, SectionTitle } from '@lfd/b2b-ui/order';
 import { httpErrorMessage } from '@lfd/endpoints';
 import {
   FoldButtonComponent,
   FoldCalloutComponent,
   FoldCardComponent,
-  FoldElementTitleComponent,
   FoldInlineConfirmComponent,
 } from 'fold-ng';
 
@@ -49,10 +48,10 @@ const NOTICE_INTENT = 'no-show-notice';
   selector: 'app-order-no-show',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    SectionTitle,
     FoldButtonComponent,
     FoldCalloutComponent,
     FoldCardComponent,
-    FoldElementTitleComponent,
     FoldInlineConfirmComponent,
   ],
   templateUrl: './order-no-show.html',

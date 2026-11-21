@@ -7,11 +7,12 @@ import {
   output,
   signal,
 } from '@angular/core';
-import type { AdminOrderCancellability } from '@lfd/contracts';
+import type { AdminOrderCancellability, AdminOrderRevisability } from '@lfd/contracts';
 import { httpErrorCode, httpErrorMessage } from '@lfd/endpoints';
 import {
   FoldButtonComponent,
   FoldCalloutComponent,
+  FoldDangerZoneComponent,
   FoldInlineConfirmComponent,
   FoldTextareaComponent,
 } from 'fold-ng';
@@ -45,6 +46,7 @@ const NOT_RECORDED_SENTENCE =
   imports: [
     FoldButtonComponent,
     FoldCalloutComponent,
+    FoldDangerZoneComponent,
     FoldInlineConfirmComponent,
     FoldTextareaComponent,
   ],
@@ -54,6 +56,12 @@ const NOT_RECORDED_SENTENCE =
 export class OrderCancelComponent {
   readonly orderId = input.required<string>();
   readonly cancellability = input.required<AdminOrderCancellability>();
+
+  /**
+   * Ce que le serveur dit de la modification. Quand elle est bloquée pour la
+   * MÊME raison, la bande de tête la dit déjà : la zone se tait.
+   */
+  readonly revisability = input.required<AdminOrderRevisability>();
 
   /** L'annulation est enregistrée : au parent de relire le détail. */
   readonly cancelled = output<void>();
@@ -68,6 +76,13 @@ export class OrderCancelComponent {
   protected readonly blocker = computed(() => {
     const c = this.cancellability();
     return c.cancellable ? null : c.reason;
+  });
+
+  /** La zone a-t-elle quelque chose à dire ? Rien quand la bande dit déjà la même raison. */
+  protected readonly shown = computed(() => {
+    const why = this.blocker();
+    const revise = this.revisability();
+    return why === null || revise.revisable || revise.reason !== why;
   });
 
   /**

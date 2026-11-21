@@ -9,16 +9,10 @@ import {
   untracked,
 } from '@angular/core';
 import type { OrderSalesTermsView } from '@lfd/contracts';
-import {
-  FoldButtonComponent,
-  FoldCardComponent,
-  FoldElementTitleComponent,
-  FoldEmptyStateComponent,
-  FoldLinkComponent,
-  FoldLoadingStateComponent,
-} from 'fold-ng';
+import { FoldButtonComponent, FoldCalloutComponent } from 'fold-ng';
 
 import { legalFileUrl } from '../../contenu/platform-content.service';
+import { DocumentRow } from '../document-row/document-row';
 import { AdminOrdersService } from '../orders.service';
 
 type LoadState = 'loading' | 'ready' | 'error';
@@ -37,26 +31,20 @@ const AUDIENCE_LABELS: Readonly<Record<OrderSalesTermsView['document'], string>>
 };
 
 /**
- * **Les CGV de la commande** (plan `legal/plan-cgv-par-audience.md`, C4, C4′) :
- * « CGV acceptées : professionnelles, révision 4, PDF du 12/10/2026 », avec le
- * lien vers CE PDF-là, même remplacé depuis.
+ * **Les CGV de la commande** (plan `legal/plan-cgv-par-audience.md`, C4, C4′),
+ * en ligne de l'onglet « Documents » (groupe Conditions) : « CGV acceptées :
+ * professionnelles, révision 4, PDF du 12/10/2026 », et CE PDF-là à
+ * télécharger, même remplacé depuis.
  *
  * « Applicables » et non « acceptées » quand l'équipe a saisi la commande :
  * le client n'a rien coché, le staff a passé la commande en son nom.
  *
- * Un échec de lecture reste DANS la carte, comme l'historique.
+ * Un échec de lecture se dit dans le groupe, avec « Réessayer ».
  */
 @Component({
   selector: 'app-order-sales-terms-card',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    FoldButtonComponent,
-    FoldCardComponent,
-    FoldElementTitleComponent,
-    FoldEmptyStateComponent,
-    FoldLinkComponent,
-    FoldLoadingStateComponent,
-  ],
+  imports: [DocumentRow, FoldButtonComponent, FoldCalloutComponent],
   templateUrl: './order-sales-terms-card.html',
 })
 export class OrderSalesTermsCard {

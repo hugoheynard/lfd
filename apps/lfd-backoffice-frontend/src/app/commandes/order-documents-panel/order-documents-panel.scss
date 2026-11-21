@@ -1,0 +1,42 @@
+:host {
+  display: block;
+  container-type: inline-size;
+}
+
+/* Une colonne sur tablette et téléphone ; deux au bureau. */
+.dp {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  gap: var(--fold-space-xl);
+}
+
+@container (min-width: 60rem) {
+  .dp {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}
+
+.dp-side,
+.dp-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.dp-rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+/* Une carte sans rien à dire ne rend que des commentaires : elle ne compte pas. */
+.dp-rows > :empty {
+  display: none;
+}
+
+/* Un groupe vide ne s'affiche pas ; une colonne sans groupe non plus. */
+.dp-group:not(:has([data-doc-row], [data-doc-state])),
+.dp-side:not(:has([data-doc-row], [data-doc-state])) {
+  display: none;
+}

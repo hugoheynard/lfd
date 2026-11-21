@@ -8,7 +8,7 @@ import type { AdminOrderEntryOrigin } from '@lfd/contracts';
  */
 export const ORDER_ENTRY_ORIGIN_LABELS: Readonly<Record<AdminOrderEntryOrigin, string>> = {
   counter: 'Prise au comptoir',
-  commercial: 'Prise par le commercial',
+  commercial: 'Prise par l’équipe',
 };
 
 /** Le libellé de l'origine, ou `null` quand on ne la connaît pas. */

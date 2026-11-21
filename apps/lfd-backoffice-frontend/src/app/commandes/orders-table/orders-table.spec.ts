@@ -192,7 +192,7 @@ describe('OrdersTable', () => {
   /** Hugo, 2026-11-04 : la pastille d'une saisie de l'équipe dit d'où elle vient. */
   it.each([
     ['counter', 'Prise au comptoir'],
-    ['commercial', 'Prise par le commercial'],
+    ['commercial', 'Prise par l’équipe'],
     [null, "Saisie par l'équipe"],
   ] as const)('une saisie de l’équipe d’origine %s se dit « %s »', (entryOrigin, label) => {
     const el = render([row({ origin: 'back_office', entryOrigin })], true)
@@ -215,5 +215,56 @@ describe('OrdersTable', () => {
     const el = render([row()], true).nativeElement as HTMLElement;
 
     expect(el.querySelector('[data-shortfall]')).toBeNull();
+  });
+});
+
+describe('le visa et les alertes, sur la ligne (plan du visa des commandes)', () => {
+  it('porte « Vérifié · Prénom Nom », ou « Vérifié » seul sans auteur connu', () => {
+    const named = render(
+      [row({ review: { byName: 'Lou Martin', at: '2026-11-20T13:00:00.000Z' } })],
+      true,
+    ).nativeElement as HTMLElement;
+    expect(named.querySelector('[data-reviewed]')?.textContent).toContain('Vérifié · Lou Martin');
+
+    const anonymous = render(
+      [row({ review: { byName: null, at: '2026-11-20T13:00:00.000Z' } })],
+      true,
+    ).nativeElement as HTMLElement;
+    expect(anonymous.querySelector('[data-reviewed]')?.textContent?.trim()).toBe('Vérifié');
+
+    const bare = render([row()], true).nativeElement as HTMLElement;
+    expect(bare.querySelector('[data-reviewed]')).toBeNull();
+  });
+
+  it('dit qu’une commande a été modifiée depuis sa vérification', () => {
+    const el = render([row({ revisedSinceReview: true })], true).nativeElement as HTMLElement;
+    expect(el.querySelector('[data-revised-since-review]')).not.toBeNull();
+  });
+
+  it('compte les alertes qui attendent, et se tait quand toutes sont acquittées', () => {
+    const fixture = render([row()], true);
+    const alert = {
+      id: 'a1',
+      kind: 'product.first_order' as const,
+      companyId: 'c1',
+      orderId: 'o_1',
+      orderNumber: 'CMD-1',
+      occurredAt: '2026-11-20T13:00:00.000Z',
+      findings: [],
+      acknowledgedAt: null,
+      acknowledgedBy: null,
+      acknowledgedByName: null,
+    };
+    fixture.componentRef.setInput('alerts', new Map([['o_1', [alert, { ...alert, id: 'a2' }]]]));
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('[data-pending-alerts]')?.textContent).toContain('2 alertes');
+
+    fixture.componentRef.setInput(
+      'alerts',
+      new Map([['o_1', [{ ...alert, acknowledgedAt: '2026-11-21T08:00:00.000Z' }]]]),
+    );
+    fixture.detectChanges();
+    expect(el.querySelector('[data-pending-alerts]')).toBeNull();
   });
 });

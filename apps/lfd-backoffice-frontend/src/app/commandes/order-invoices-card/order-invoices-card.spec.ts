@@ -77,6 +77,17 @@ describe('OrderInvoicesCard', () => {
     expect(rows[1]?.textContent).toContain('4,00');
   });
 
+  it('« Télécharger » et « Imprimer » sur une pièce rangée ; aucun bouton tant que le PDF manque', async () => {
+    const { fixture } = await boot(() =>
+      Promise.resolve({ invoices: [INVOICE, { ...CREDIT, documentAvailable: false }] }),
+    );
+    const rows = (fixture.nativeElement as HTMLElement).querySelectorAll('[data-order-invoice]');
+    expect(rows[0]?.querySelector('[data-doc-download]')).not.toBeNull();
+    expect(rows[0]?.querySelector('[data-doc-print]')).not.toBeNull();
+    expect(rows[1]?.querySelector('button')).toBeNull();
+    expect(rows[1]?.textContent).toContain('PDF pas encore disponible');
+  });
+
   it('ne rend rien sans pièce', async () => {
     const { fixture } = await boot(() => Promise.resolve({ invoices: [] }));
     expect(

@@ -1,6 +1,6 @@
 @if (rows().length > 0) {
   <fold-card data-refunds-card>
-    <fold-element-title variant="title" icon="undo" title="Remboursements" />
+    <lfd-section-title title="Remboursements" />
     <fold-field-list>
       @for (row of rows(); track $index) {
         <fold-field [label]="(row.refundedAt | date: 'dd/MM/yyyy à HH:mm') ?? ''" data-refund>

@@ -1,0 +1,78 @@
+/* Une colonne : l'écart entre les lignes vient de son `gap`. */
+.om {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+}
+
+/* La ligne d'identité : le titre et le badge à gauche, le montant poussé à droite. */
+.om-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--fold-space-sm) var(--fold-space-md);
+}
+
+.om-title {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--fold-space-sm);
+  min-width: 0;
+  font-size: var(--fold-text-xl);
+  font-weight: var(--fold-weight-bold);
+  letter-spacing: var(--fold-tracking-tighter);
+  color: var(--fold-color-text);
+}
+
+/* La référence se dicte au téléphone : chiffres à chasse fixe. */
+.om-number,
+.om-total-value {
+  font-variant-numeric: tabular-nums;
+}
+
+.om-sep {
+  color: var(--fold-color-text-muted);
+}
+
+/* Poussé à droite, d'un bloc : passé à la ligne, il y reste à droite. */
+.om-end {
+  margin-inline-start: auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: var(--fold-space-sm) var(--fold-space-md);
+}
+
+/* Le montant ne se coupe jamais. */
+.om-total {
+  margin: 0;
+  white-space: nowrap;
+  display: flex;
+  align-items: baseline;
+  gap: var(--fold-space-xs);
+}
+
+.om-total-value {
+  font-size: var(--fold-text-xl);
+  font-weight: var(--fold-weight-bold);
+}
+
+.om-total-basis {
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-muted);
+}
+
+.om-line {
+  margin: 0;
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text);
+}
+
+.om-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-xs);
+}

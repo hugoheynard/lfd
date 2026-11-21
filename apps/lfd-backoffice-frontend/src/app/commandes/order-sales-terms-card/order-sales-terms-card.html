@@ -1,32 +1,39 @@
-<fold-card data-order-sales-terms>
-  <fold-element-title
-    cardHeader
-    variant="title"
-    icon="contracts"
-    title="Conditions générales de vente"
-  />
-  @switch (state()) {
-    @case ('loading') {
-      <fold-loading message="Lecture des CGV de la commande…" />
-    }
-    @case ('error') {
-      <fold-empty-state tone="alert" title="Les CGV de cette commande n’ont pas pu être lues.">
-        <button foldButton (click)="retry()">Réessayer</button>
-      </fold-empty-state>
-    }
-    @default {
-      @if (sentence(); as text) {
-        <p data-order-sales-terms-sentence>
-          {{ text }}
-          @if (fileUrl(); as url) {
-            — <fold-link [href]="url">Télécharger ce PDF</fold-link>
-          }
-        </p>
-      } @else {
-        <p data-order-sales-terms-unknown>
-          Commande passée avant l’enregistrement des CGV&nbsp;: aucune version n’est connue.
-        </p>
-      }
+@switch (state()) {
+  @case ('error') {
+    <fold-callout variant="alert" data-doc-state>
+      Les CGV de cette commande n’ont pas pu être lues.
+      <button foldButton size="sm" emphasis="soft" (click)="retry()">Réessayer</button>
+    </fold-callout>
+  }
+  @case ('ready') {
+    @if (sentence(); as text) {
+      <app-document-row
+        icon="contracts"
+        title="Conditions générales de vente"
+        [meta]="text"
+        data-order-sales-terms-sentence
+      >
+        @if (fileUrl(); as url) {
+          <a
+            rowActions
+            foldButton
+            size="sm"
+            emphasis="soft"
+            [href]="url"
+            target="_blank"
+            rel="noopener"
+            data-order-sales-terms-pdf
+            >Télécharger</a
+          >
+        }
+      </app-document-row>
+    } @else {
+      <app-document-row
+        icon="contracts"
+        title="Conditions générales de vente"
+        meta="Commande passée avant l’enregistrement des CGV : aucune version n’est connue."
+        data-order-sales-terms-unknown
+      />
     }
   }
-</fold-card>
+}

@@ -1,0 +1,9 @@
+<div class="st">
+  <div class="st-text">
+    <h3 class="st-title" [attr.id]="headingId()">{{ title() }}</h3>
+    @if (subtitle(); as text) {
+      <p class="st-subtitle">{{ text }}</p>
+    }
+  </div>
+  <ng-content select="[titleAction]" />
+</div>

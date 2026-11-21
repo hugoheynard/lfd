@@ -1,0 +1,22 @@
+/* L'en-tête, la barre d'onglets et le panneau ouvert, l'un sous l'autre. */
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-lg);
+}
+
+/* L'écart entre les cartes d'un onglet : le panneau de fold est déjà une colonne. */
+.ov-panel {
+  --fold-panel-gap: var(--fold-space-lg);
+}
+
+/*
+  Une carte projetée qui n'a rien à dire (pas de manque, pas de remboursement…)
+  ne rend que des commentaires : elle est `:empty`. Sans cette règle, chacune
+  reste un élément de la colonne et y ajoute son écart — huit écarts vides
+  repoussaient la zone d'annulation loin du contenu.
+*/
+[belowComposition]:empty,
+[belowLines]:empty {
+  display: none;
+}

@@ -1,3 +1,70 @@
 :host {
-  display: block;
+  /* La chaîne de hauteur de la coquille (une grille dont la rangée de contenu
+     vaut `1fr`, puis des colonnes flex) : l'hôte la prolonge, pour que la bande
+     garde sa hauteur et que le corps prenne le reste, et défile seul. */
+  display: flex;
+  flex-direction: column;
+  /* Base ZÉRO, pas `auto` : la coquille (`content-flow`) grandit avec la
+     hauteur que ses enfants annoncent. Annoncer son contenu la ferait grandir
+     au-delà de l'écran, et c'est toute la page qui défilerait, bande comprise. */
+  flex: 1 1 0;
+  min-height: 0;
+  --fold-page-pad-top: 0;
+  --fold-page-pad-bottom: 0;
+  /* L'onglet actif est un morceau du corps : son fond, et l'encre de la PAGE —
+     lue ici, hors de la bande chrome qui redéclare le texte en clair. */
+  --fold-tabs-folder-surface: var(--fold-color-surface-band);
+  --fold-tabs-folder-ink: var(--fold-color-text);
+  /* Aucun écart entre la bande et le corps : l'onglet actif s'y raccorde. */
+  --fold-page-gap: 0;
+}
+
+/* La bande ne défile jamais. Le corps est déjà le seul à défiler ; mais si un
+   navigateur laisse la coquille (`content-scroll`) défiler malgré tout —
+   Safari iPad, barre d'adresse qui change la hauteur —, la bande reste collée
+   en haut au lieu de partir avec la page. */
+fold-page-layout {
+  flex: none;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+/* Le seul endroit qui défile. L'air sous les onglets est pris dans le corps
+   lui-même : la bande y reste collée. */
+.cp-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding-block-start: var(--fold-space-lg);
+  /* Le même air en bas : le dernier bloc d'un rail (l'annulation) ne touche
+     pas le bord de l'écran quand on arrive en fin de défilement. */
+  padding-block-end: var(--fold-space-3xl);
+  padding-inline: var(--fold-page-gutter);
+  /* Un seul défilement : celui du corps. Les rails de `fold-aside-layout` se
+     plafonnent par défaut à la hauteur de l'écran et défilent en dedans
+     au-delà ; sous une bande fixe, la zone visible est plus courte, et un rail
+     à peine haut défilait tout seul. Sans plafond, un rail plus haut que la
+     zone visible défile avec le corps, comme le reste de la page. */
+  --fold-aside-layout-rail-max: none;
+}
+
+/* La bande pleine largeur, sur le chrome : la même que la fiche d'atelier. Le
+   fond est posé par l'élément qui possède la surface. */
+.cp-masthead {
+  padding-block: var(--fold-space-lg);
+  padding-inline: var(--fold-page-gutter);
+  background: var(--fold-color-bg-rail-secondary);
+}
+
+/* Des onglets de classeur : la bande s'arrête sur eux, sans jour sous l'onglet actif. */
+.cp-masthead:has(.cp-tabs) {
+  padding-block-end: 0;
+}
+
+/* Une colonne : l'écart entre le retour, l'en-tête et les badges vient de son `gap`. */
+.cp-masthead-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
 }

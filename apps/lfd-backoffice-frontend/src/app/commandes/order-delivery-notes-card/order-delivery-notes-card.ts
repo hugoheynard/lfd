@@ -8,19 +8,12 @@ import {
   untracked,
 } from '@angular/core';
 import type { DeliveryNoteStatusView, StaffNote } from '@lfd/contracts';
-import {
-  FoldButtonComponent,
-  FoldCalloutComponent,
-  FoldCardComponent,
-  FoldElementTitleComponent,
-} from 'fold-ng';
+import { FoldButtonComponent, FoldCalloutComponent } from 'fold-ng';
 
 import { NotifyService } from '../../notify.service';
-import {
-  BLOB_LIFETIME_MS,
-  DeliveryNotesService,
-  REPRINT_SENTENCE,
-} from '../delivery-notes.service';
+import { PdfPrinter } from '../../shared/print-pdf/pdf-printer';
+import { DeliveryNotesService, REPRINT_SENTENCE } from '../delivery-notes.service';
+import { DocumentRow } from '../document-row/document-row';
 
 /** Le mot de chaque état, tel que l'équipe le dit. */
 const STATUS_LABELS: Readonly<Record<DeliveryNoteStatusView, string>> = {
@@ -45,24 +38,20 @@ function stepDate(note: StaffNote): string {
 }
 
 /**
- * **« Bons de livraison »** sur la fiche d'une commande (plan E5a, § 3) :
- * chaque BL, son état et sa date, et deux gestes — imprimer le BL de
- * transport (sans montant, il voyage avec la marchandise) et télécharger le
- * BL chiffré (celui du client).
+ * **Les bons de livraison** d'une commande, en lignes de l'onglet « Documents »
+ * (groupe Pièces) : chaque BL, son état et sa date, et deux gestes —
+ * « Imprimer » le BL de transport (sans montant, il voyage avec la
+ * marchandise ; l'impression est tracée) et « Télécharger » le BL chiffré du
+ * client.
  *
  * Rien n'est rendu sans BL : une commande pas encore arrêtée au plan n'en a
- * pas. Un BL d'avant les totaux (`money: null`) n'offre pas le chiffré : le
- * serveur le refuserait.
+ * pas. Un BL d'avant les totaux (`money: null`) n'a pas de chiffré — le
+ * serveur le refuserait : « Télécharger » y rend le BL de transport.
  */
 @Component({
   selector: 'app-order-delivery-notes-card',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    FoldButtonComponent,
-    FoldCalloutComponent,
-    FoldCardComponent,
-    FoldElementTitleComponent,
-  ],
+  imports: [DocumentRow, FoldButtonComponent, FoldCalloutComponent],
   templateUrl: './order-delivery-notes-card.html',
   styleUrl: './order-delivery-notes-card.scss',
 })
@@ -73,12 +62,16 @@ export class OrderDeliveryNotesCard {
 
   private readonly service = inject(DeliveryNotesService);
   private readonly notify = inject(NotifyService);
+  private readonly printer = inject(PdfPrinter);
 
   protected readonly notes = signal<readonly StaffNote[]>([]);
   protected readonly loadError = signal(false);
 
-  protected readonly statusLabel = (note: StaffNote): string => STATUS_LABELS[note.status];
-  protected readonly stepDate = stepDate;
+  /** « Remis · 12 nov. 2026 ». */
+  protected meta(note: StaffNote): string {
+    return `${STATUS_LABELS[note.status]} · ${stepDate(note)}`;
+  }
+
   protected readonly reprintSentence = REPRINT_SENTENCE;
 
   constructor() {
@@ -96,11 +89,11 @@ export class OrderDeliveryNotesCard {
   }
 
   protected print(note: StaffNote): void {
-    void this.openCarrier(note);
+    void this.printCarrier(note);
   }
 
   protected download(note: StaffNote): void {
-    void this.downloadClient(note);
+    void this.downloadNote(note);
   }
 
   private async load(orderId: string): Promise<void> {
@@ -112,10 +105,10 @@ export class OrderDeliveryNotesCard {
     }
   }
 
-  /** Ouvre le BL de transport dans un onglet, d'où on l'imprime. */
-  private async openCarrier(note: StaffNote): Promise<void> {
+  /** Imprime le BL de transport. */
+  private async printCarrier(note: StaffNote): Promise<void> {
     try {
-      await this.service.openCarrier(this.orderId(), note.number);
+      this.printer.print(await this.service.carrierPdf(this.orderId(), note.number));
       // L'impression est tracée : la liste relue ne demande plus de réimprimer.
       await this.load(this.orderId());
     } catch (error) {
@@ -123,22 +116,17 @@ export class OrderDeliveryNotesCard {
     }
   }
 
-  private async downloadClient(note: StaffNote): Promise<void> {
+  /** Télécharge le BL chiffré du client, ou le BL de transport quand il n'a pas de totaux. */
+  private async downloadNote(note: StaffNote): Promise<void> {
+    const ciphered = note.money !== null;
     try {
-      const url = URL.createObjectURL(await this.service.clientPdf(this.orderId(), note.number));
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `bon-de-livraison-${note.number}.pdf`;
-      link.click();
-      setTimeout(() => {
-        URL.revokeObjectURL(url);
-      }, BLOB_LIFETIME_MS);
+      const blob = ciphered
+        ? await this.service.clientPdf(this.orderId(), note.number)
+        : await this.service.carrierPdf(this.orderId(), note.number);
+      this.printer.download(blob, `bon-de-livraison-${note.number}.pdf`);
       await this.load(this.orderId());
     } catch (error) {
-      this.notify.error(
-        error,
-        `Le bon de livraison chiffré ${note.number} n'a pas pu être téléchargé.`,
-      );
+      this.notify.error(error, `Le bon de livraison ${note.number} n'a pas pu être téléchargé.`);
     }
   }
 }

@@ -16,11 +16,14 @@
   gap: var(--fold-space-md);
 }
 
+/* Masqué à l'œil, lu par les lecteurs d'écran. */
 .olm-title {
-  margin: 0;
-  font-size: var(--fold-text-xl);
-  font-weight: var(--fold-weight-bold);
-  color: var(--fold-color-text);
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 .olm-action {

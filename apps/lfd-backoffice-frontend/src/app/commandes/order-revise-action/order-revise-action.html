@@ -1,16 +1,13 @@
 @if (allowed()) {
-  @if (blocker() === null) {
+  @if (blocker(); as why) {
+    @if (quiet()) {
+      <p class="quiet" data-revise-blocked>{{ why }}</p>
+    } @else {
+      <fold-callout appearance="inset" variant="info" data-revise-blocked>{{ why }}</fold-callout>
+    }
+  } @else {
     <a foldButton size="sm" emphasis="outline" [routerLink]="link()" data-revise-trigger>
       {{ label() }}
     </a>
-  } @else {
-    <button foldButton size="sm" emphasis="outline" disabled data-revise-trigger>
-      Modifier la commande
-    </button>
-    @if (saysWhy()) {
-      <fold-callout appearance="inset" variant="info" data-revise-blocked>{{
-        blocker()
-      }}</fold-callout>
-    }
   }
 }

@@ -1,0 +1,87 @@
+:host {
+  display: block;
+}
+
+/* Le numéro et le montant se lisent en colonne. */
+.od-number,
+.od-total-value {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Grille en deux colonnes : l'identité et l'état à gauche, le montant calé à
+   droite. Le montant est la seule chose qu'on cherche parfois sans rien lire
+   d'autre — il a donc sa place fixe, pas un rang dans un flux. */
+.od-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: var(--fold-space-xs) var(--fold-space-lg);
+}
+
+.od-ident {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+  min-width: 0;
+}
+
+/* Le numéro est une référence qu'on lit à voix haute au téléphone : chiffres à
+   chasse fixe pour qu'il se déchiffre groupe par groupe, sans se relire. */
+.od-number {
+  margin: 0;
+  font-size: var(--fold-text-xl);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.od-when {
+  grid-column: 1;
+  margin: 0;
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+}
+
+.od-badges {
+  grid-column: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-xs);
+  margin-top: var(--fold-space-xs);
+}
+
+.od-total {
+  grid-column: 2;
+  grid-row: 1 / span 3;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.1rem;
+}
+
+.od-total-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.od-total-label {
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-xs);
+  letter-spacing: 0.06em;
+}
+
+.od-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.05rem 0.45rem;
+  border-radius: var(--fold-radius-pill);
+  font-size: var(--fold-text-xs);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.od-pill--rec {
+  background: color-mix(in srgb, var(--fold-color-primary) 16%, transparent);
+  color: var(--fold-color-primary);
+}

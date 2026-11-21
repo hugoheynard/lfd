@@ -9,9 +9,10 @@ import {
   untracked,
 } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import type { AdminOrderRow } from '@lfd/contracts';
+import type { AccountAlertView, AdminOrderRow } from '@lfd/contracts';
 import {
   FoldButtonComponent,
+  FoldCalloutComponent,
   FoldDateComponent,
   FoldEmptyStateComponent,
   FoldListboxComponent,
@@ -28,6 +29,7 @@ import {
 } from 'fold-ng';
 
 import { FROM_ORDER_LIST } from '../order-list-return';
+import { AccountAlertRulesService } from '../../fiche-client/alertes/account-alert-rules.service';
 import { PermissionsStore } from '../../auth/permissions.store';
 import { parisToday } from '../../shared/paris-today';
 import { NewOrderDialog } from '../new-order-dialog/new-order-dialog';
@@ -52,6 +54,7 @@ import {
 } from '../order-list-filters';
 import { SitePaletteStore } from '../../shared/logistics-colors/site-palette.store';
 import { AdminOrdersService } from '../orders.service';
+import { OrderDraftsList } from '../order-drafts-list/order-drafts-list';
 import { OrdersTable } from '../orders-table/orders-table';
 
 type LoadState = 'loading' | 'ready' | 'error';
@@ -72,14 +75,34 @@ const PAGINATOR_LABELS: FoldPaginatorLabels = {
 };
 
 /**
- * Les deux listes. Une tentative de règlement par carte abandonnée garde son
+ * Les listes. Une tentative de règlement par carte abandonnée garde son
  * numéro, mais n'est pas une commande : elle se consulte à part (décidé par
  * Hugo le 2026-11-13).
  */
-const TABS: readonly FoldTabItem<OrderListTab>[] = [
+const TABS: readonly FoldTabItem<OrdersPageTab>[] = [
   { key: 'orders', label: 'Commandes', icon: 'shopping-cart' },
   { key: 'abandoned_attempts', label: 'Tentatives abandonnées', icon: 'credit-card' },
+  { key: 'drafts', label: 'Brouillons', icon: 'edit' },
 ];
+
+/**
+ * « À vérifier » (plan du visa des commandes, V3) : les commandes qu'un client
+ * pro a passées seul, que le commercial relit. Seulement sous
+ * `b2b_order_review:read` — le serveur refuse la vue sans.
+ */
+const TO_REVIEW_TAB = {
+  key: 'to_review',
+  label: 'À vérifier',
+  icon: 'check',
+} as const satisfies FoldTabItem<OrdersPageTab>;
+
+/**
+ * Les onglets de la page. « Brouillons » n'est pas une liste de commandes —
+ * une saisie mise de côté n'en est pas une (Hugo, 2026-11-21) : il ne passe
+ * ni par les filtres ni par `GET /admin/orders`.
+ */
+type OrdersPageTab = OrderListTab | typeof DRAFTS_TAB;
+const DRAFTS_TAB = 'drafts';
 
 /** Le vide de chaque liste, sans filtre puis avec. */
 const EMPTY: Readonly<
@@ -89,6 +112,16 @@ const EMPTY: Readonly<
     bare: { title: 'Aucune commande', subtitle: "Rien n'a encore été commandé." },
     filtered: {
       title: 'Aucune commande ne correspond',
+      subtitle: 'Élargissez la période ou retirez un filtre.',
+    },
+  },
+  to_review: {
+    bare: {
+      title: 'Rien à vérifier',
+      subtitle: 'Toutes les commandes passées par les clients pro ont été vérifiées.',
+    },
+    filtered: {
+      title: 'Aucune commande à vérifier ne correspond',
       subtitle: 'Élargissez la période ou retirez un filtre.',
     },
   },
@@ -102,6 +135,13 @@ const EMPTY: Readonly<
       subtitle: 'Élargissez la période ou retirez un filtre.',
     },
   },
+};
+
+/** Le nom de chaque liste, pour les lecteurs d'écran. */
+const CAPTIONS: Readonly<Record<OrderListTab, string>> = {
+  orders: 'Toutes les commandes',
+  to_review: 'Commandes à vérifier',
+  abandoned_attempts: 'Tentatives abandonnées',
 };
 
 /** Le numéro de page de l'adresse ; tout ce qui n'est pas un entier ≥ 1 vaut 1. */
@@ -141,6 +181,7 @@ function sameFilters(left: OrderListFilters, right: OrderListFilters): boolean {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     FoldButtonComponent,
+    FoldCalloutComponent,
     FoldDateComponent,
     FoldEmptyStateComponent,
     FoldListboxComponent,
@@ -149,6 +190,7 @@ function sameFilters(left: OrderListFilters, right: OrderListFilters): boolean {
     FoldPaginatorComponent,
     FoldSearchComponent,
     FoldTabPanelComponent,
+    OrderDraftsList,
     FoldTabsComponent,
     OrdersListMasthead,
     OrdersTable,
@@ -214,6 +256,18 @@ export class OrdersListPage {
     });
   }
 
+  private readonly alertsApi = inject(AccountAlertRulesService);
+  /**
+   * Les alertes des commandes de la page, sous l'onglet « À vérifier » (V4) ;
+   * `null` ailleurs — le tableau n'a alors pas de tiroir.
+   */
+  protected readonly alerts = signal<ReadonlyMap<string, readonly AccountAlertView[]> | null>(null);
+  /** La lecture des alertes a échoué : la liste reste, un encadré le dit. */
+  protected readonly alertsFailed = signal(false);
+  /** L'alerte dont l'acquittement est en vol. */
+  protected readonly acknowledging = signal<string | null>(null);
+  protected readonly acknowledgeError = signal<string | null>(null);
+
   protected readonly state = signal<LoadState>('loading');
   protected readonly rows = signal<readonly AdminOrderRow[]>([]);
   /** Combien de commandes répondent aux filtres, toutes pages confondues. */
@@ -230,14 +284,62 @@ export class OrdersListPage {
   protected readonly statusChoices = STATUS_CHOICES;
   protected readonly paymentChoices = PAYMENT_CHOICES;
 
-  protected readonly filtered = computed(() => hasFilters(this.filters()));
+  /**
+   * Un filtre posé EN PLUS du cadrage : sous « aujourd'hui » ou « demain », le
+   * jour est le cadrage, pas un filtre à retirer.
+   */
+  protected readonly filtered = computed(() => {
+    const filters = this.filters();
+    return this.dayScoped()
+      ? hasFilters({ ...filters, fulfillmentFrom: null, fulfillmentTo: null })
+      : hasFilters(filters);
+  });
 
-  protected readonly tabs = TABS;
-  protected readonly tab = computed<OrderListTab>(() => this.filters().view ?? 'orders');
+  /** Le panneau des filtres, déplié sur mobile et tablette. */
+  protected readonly filtersOpen = signal(false);
+
+  /** Le nombre de filtres posés en plus du cadrage et de la recherche : le bouton l'affiche. */
+  protected readonly activeCount = computed(() => {
+    const { view, q, ...rest } = this.filters();
+    const counted = this.dayScoped()
+      ? { ...rest, fulfillmentFrom: null, fulfillmentTo: null }
+      : rest;
+    return Object.values(counted).filter((value) => value !== null).length;
+  });
+
+  /** Aujourd'hui ou demain : le cadrage tient la date, et les champs de dates se taisent. */
+  protected readonly dayScoped = computed(() => {
+    const scope = this.scope();
+    return scope === 'today' || scope === 'tomorrow';
+  });
+
+  /** Vérifier : l'onglet, et son compte dans la pastille. */
+  protected readonly canReview = this.permissions.can('b2b_order_review:read');
+  /** Combien de commandes attendent leur vérification ; `null` tant qu'on ne le sait pas. */
+  protected readonly toReviewCount = signal<number | null>(null);
+  protected readonly tabs = computed<readonly FoldTabItem<OrdersPageTab>[]>(() =>
+    this.canReview
+      ? TABS.flatMap((tab) =>
+          tab.key === 'orders'
+            ? [tab, { ...TO_REVIEW_TAB, badge: this.toReviewCount() || null }]
+            : [tab],
+        )
+      : TABS,
+  );
+  /** L'onglet des brouillons : ni filtres, ni tableau des commandes. */
+  protected readonly draftsTab = computed(() => this.view() === DRAFTS_TAB);
+  /** La liste de commandes affichée — celle des filtres, hors brouillons. */
+  private readonly listTab = computed<OrderListTab>(() => this.filters().view ?? 'orders');
+  protected readonly tab = computed<OrdersPageTab>(() =>
+    this.draftsTab() ? DRAFTS_TAB : this.listTab(),
+  );
+
+  protected readonly caption = computed(() => CAPTIONS[this.listTab()]);
 
   /** Le vide d'un filtre n'est pas le vide de la maison : il ne dit pas la même chose. */
   protected readonly empty = computed<FoldTableEmpty>(() =>
-    this.filtered() ? EMPTY[this.tab()].filtered : EMPTY[this.tab()].bare,
+    // Le cadrage compte : une journée vide n'est pas une maison vide.
+    hasFilters(this.filters()) ? EMPTY[this.listTab()].filtered : EMPTY[this.listTab()].bare,
   );
 
   /**
@@ -249,15 +351,22 @@ export class OrdersListPage {
 
   constructor() {
     void this.palette.refresh();
+    void this.countToReview();
     effect(() => {
       const filters = this.filters();
       const page = this.currentPage();
+      if (this.draftsTab()) {
+        return;
+      }
       untracked(() => void this.load(filters, page));
     });
     // Une commande passée ou changée ailleurs : la page se relit, filtres gardés.
-    watchGlobalSubjects(['orders-all'], () =>
-      this.load(this.filters(), this.currentPage(), { quiet: true }),
-    );
+    watchGlobalSubjects(['orders-all'], async () => {
+      await Promise.all([
+        this.load(this.filters(), this.currentPage(), { quiet: true }),
+        this.countToReview(),
+      ]);
+    });
   }
 
   /**
@@ -292,11 +401,75 @@ export class OrdersListPage {
       }
       this.rows.set(result.rows);
       this.total.set(result.total);
+      if (filters.view === 'to_review') {
+        this.toReviewCount.set(result.total);
+      }
       this.state.set('ready');
+      void this.loadAlerts(filters, result.rows);
     } catch {
       if (generation === this.generation && !background) {
         this.state.set('error');
       }
+    }
+  }
+
+  /**
+   * Le compte de la pastille « À vérifier » : une page d'une ligne, dont seul
+   * le total sert. Un échec laisse la pastille vide — l'onglet, lui, reste.
+   */
+  private async countToReview(): Promise<void> {
+    if (!this.canReview) {
+      return;
+    }
+    try {
+      const result = await this.orders.list({ view: 'to_review', page: 1, limit: 1 });
+      this.toReviewCount.set(result.total);
+    } catch {
+      this.toReviewCount.set(null);
+    }
+  }
+
+  /** Les alertes de la page, en une lecture — sous l'onglet « À vérifier » seulement. */
+  private async loadAlerts(
+    filters: OrderListFilters,
+    rows: readonly AdminOrderRow[],
+  ): Promise<void> {
+    if (filters.view !== 'to_review' || rows.length === 0) {
+      this.alerts.set(null);
+      this.alertsFailed.set(false);
+      return;
+    }
+    const generation = this.generation;
+    try {
+      const alerts = await this.alertsApi.listOrderAlerts(rows.map((row) => row.id));
+      if (generation !== this.generation) {
+        return;
+      }
+      const byOrder = new Map<string, AccountAlertView[]>();
+      for (const alert of alerts) {
+        byOrder.set(alert.orderId, [...(byOrder.get(alert.orderId) ?? []), alert]);
+      }
+      this.alerts.set(byOrder);
+      this.alertsFailed.set(false);
+    } catch {
+      if (generation === this.generation) {
+        this.alerts.set(new Map());
+        this.alertsFailed.set(true);
+      }
+    }
+  }
+
+  /** « Acquitter » une alerte du tiroir, puis relire les alertes de la page. */
+  protected async acknowledge(alertId: string): Promise<void> {
+    this.acknowledging.set(alertId);
+    this.acknowledgeError.set(null);
+    try {
+      await this.alertsApi.acknowledge(alertId);
+      await this.loadAlerts(this.filters(), this.rows());
+    } catch {
+      this.acknowledgeError.set("L'alerte n'a pas pu être acquittée. Réessayez.");
+    } finally {
+      this.acknowledging.set(null);
     }
   }
 
@@ -329,7 +502,15 @@ export class OrdersListPage {
   }
 
   /** Change de liste ; les filtres suivent, la page repart de la première. */
-  protected selectTab(tab: OrderListTab): void {
+  protected selectTab(tab: OrdersPageTab): void {
+    if (tab === DRAFTS_TAB) {
+      void this.router.navigate([], {
+        relativeTo: this.route,
+        queryParams: { view: DRAFTS_TAB },
+        replaceUrl: true,
+      });
+      return;
+    }
     this.apply({ view: tab === 'orders' ? null : tab });
   }
 
@@ -349,7 +530,12 @@ export class OrdersListPage {
 
   /** Les filtres tombent ; l'onglet reste. */
   protected clearFilters(): void {
-    this.apply({ ...NO_FILTERS, view: this.filters().view });
+    const { view, fulfillmentFrom, fulfillmentTo } = this.filters();
+    this.apply(
+      this.dayScoped()
+        ? { ...NO_FILTERS, view, fulfillmentFrom, fulfillmentTo }
+        : { ...NO_FILTERS, view },
+    );
   }
 
   /**

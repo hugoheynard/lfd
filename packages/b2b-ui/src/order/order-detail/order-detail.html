@@ -1,32 +1,10 @@
 @if (order(); as o) {
-  <article class="od">
-    <!-- Bandeau : qui, quand, où ça en est, combien. Les quatre réponses qu'on
-         cherche avant de lire quoi que ce soit d'autre. -->
-    <header class="od-head">
-      <div class="od-ident">
-        <h2 class="od-number">{{ o.orderNumber }}</h2>
-        @if (o.fromSubscriptionId) {
-          <span class="od-pill od-pill--rec">Panier récurrent</span>
-        }
-      </div>
-
-      <p class="od-when">
-        Passée le {{ fmtDate(o.placedAt) }}
-        @if (o.requestedDeliveryDate) {
-          · souhaitée le {{ fmtDate(o.requestedDeliveryDate) }}
-        }
-      </p>
-
-      <div class="od-badges">
-        <fold-badge [variant]="statusVariant()" [content]="statusLabel()" />
-        <fold-badge [variant]="paymentVariant()" [content]="paymentLabel()" />
-      </div>
-
-      <p class="od-total">
-        <span class="od-total-value">{{ fmtCents(headerTotal().cents) }}</span>
-        <span class="od-total-label">{{ headerTotal().basis }}</span>
-      </p>
-    </header>
+  <article class="od" [attr.data-pane-view]="framed() ? paneView() : null">
+    <!-- L'en-tête : un composant à part, que le back-office rend dans sa bande
+         de tête après l'avoir tu ici (`showHead`). -->
+    @if (showHead()) {
+      <lfd-order-detail-head class="od-head-slot" [order]="o" />
+    }
 
     <!-- Trois colonnes, une question chacune : où ça en est (gauche), ce qu'il y
          a dedans (centre), combien et qu'en faire (droite). Les rails collent au
@@ -35,237 +13,374 @@
 
          Pas de `stackLeftFirst` : replié, la composition passe devant la frise.
          Le rail est un compagnon, pas une navigation. -->
-    <fold-aside-layout asideLeftLabel="Avancement" asideRightLabel="Montants et documents">
-      <div asideLeft>
-        <h3 class="od-h3">Avancement</h3>
-        <!-- Rail vertical ici : en colonne étroite, un stepper horizontal
-             écraserait cinq à six libellés côte à côte. -->
-        <!-- `datePlacement="below"` : l'instant réel, ou l'échéance attendue à
-             défaut, sous le libellé. C'est fold qui la place ; on ne fournit que
-             le texte déjà formaté (cf. `toTimelineNodes`). -->
-        <fold-timeline
-          orientation="vertical"
-          ariaLabel="Avancement de la commande"
-          datePlacement="below"
-          [nodes]="nodes()"
-        >
-          <ng-template #node let-n>
-            <span class="od-node" [attr.data-state]="n.state">{{ n.label }}</span>
-            <!-- Le sens opérationnel du jalon — staff seulement. Une ligne de
-                 plus côté commercial vaut mieux que deux vocabulaires de part et
-                 d'autre du téléphone. -->
-            @if (detailOf(n.key); as detail) {
-              <span class="od-node-detail">{{ detail }}</span>
-            }
-          </ng-template>
-        </fold-timeline>
+    <!-- `keepSideRail` côté staff : en tablette paysage, les montants restent à
+         côté du contenu et l'avancement passe sous eux, au lieu de tout empiler. -->
+    <!-- Composition / Infos / Avancement : sur une seule colonne (téléphone,
+         tablette en portrait), un bloc à la fois. Côté staff seulement. -->
+    @if (framed()) {
+      <fold-view-toggle
+        class="od-pane-switch"
+        ariaLabel="Partie de la commande"
+        data-pane-switch
+        [options]="paneViewOptions"
+        [value]="paneView()"
+        (valueChange)="choosePaneView($event)"
+      />
+    }
+    <!-- La frise, rendue à deux endroits : la colonne de gauche (bureau, une
+         colonne), et la colonne de droite en tablette paysage, où elle prend
+         la place des infos quand on bascule. Une seule source. -->
+    <ng-template #timeline>
+      <!-- Rail vertical ici : en colonne étroite, un stepper horizontal
+           écraserait cinq à six libellés côte à côte. -->
+      <!-- `datePlacement="below"` : l'instant réel, ou l'échéance attendue à
+           défaut, sous le libellé. C'est fold qui la place ; on ne fournit que
+           le texte déjà formaté (cf. `toTimelineNodes`). -->
+      <fold-timeline
+        orientation="vertical"
+        ariaLabel="Avancement de la commande"
+        datePlacement="below"
+        [nodes]="nodes()"
+      >
+        <ng-template #node let-n>
+          <span class="od-node" [attr.data-state]="n.state">{{ n.label }}</span>
+          <!-- Le sens opérationnel du jalon — staff seulement. Une ligne de
+               plus côté commercial vaut mieux que deux vocabulaires de part et
+               d'autre du téléphone. -->
+          @if (detailOf(n.key); as detail) {
+            <span class="od-node-detail">{{ detail }}</span>
+          }
+        </ng-template>
+      </fold-timeline>
+    </ng-template>
+
+    <fold-aside-layout
+      asideLeftLabel="Avancement"
+      asideRightLabel="Montants et documents"
+      [keepSideRail]="framed()"
+    >
+      <div asideLeft class="od-progress">
+        <lfd-section-title title="Avancement" />
+        <ng-container [ngTemplateOutlet]="timeline" />
       </div>
 
-      <section class="od-lines" aria-labelledby="od-lines-title">
-        <h3 class="od-h3" id="od-lines-title">Composition</h3>
-
-        <!-- Le SKU ouvre la ligne : c'est par lui qu'on retrouve un article au
+      <section
+        class="od-lines"
+        [attr.aria-labelledby]="framed() ? null : 'od-lines-title'"
+        [attr.aria-label]="framed() ? 'Composition' : null"
+      >
+        <ng-template #compositionBody>
+          <!-- Le SKU ouvre la ligne : c'est par lui qu'on retrouve un article au
              téléphone, au four ou au PIM — pas par son nom commercial. -->
-        <table class="od-table">
-          <thead>
-            <tr>
-              <th scope="col" class="od-col-sku">SKU</th>
-              <th scope="col" class="od-col-qty">Qté</th>
-              <th scope="col">Article</th>
-              <th scope="col" class="od-col-num od-col-unit">PU HT</th>
-              <th scope="col" class="od-col-num od-col-vat">TVA</th>
-              <th scope="col" class="od-col-num">Total HT</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (line of o.lines; track line.sku) {
+          <table class="od-table">
+            <thead>
               <tr>
-                <td class="od-col-sku">{{ line.sku }}</td>
-                <td class="od-col-qty">{{ quantityOf(line) }}</td>
-                <td>
-                  <span class="od-line-name">{{ line.productName }}</span>
-                  @if (isAdded(line)) {
-                    <span class="od-pill od-pill--add">ajout</span>
-                  }
-                  <!-- **Pourquoi ce prix**, figé à la passation. Les étages qui
-                       ont produit un effet, dans l'ordre où ils l'ont produit.
-                       Sans eux, la seule réponse à un client qui conteste serait
-                       « c'était le prix ». Les règles qui les ont produits
-                       peuvent avoir été retirées depuis : la trace, elle, reste. -->
-                  @for (label of priceStepLabels(line, locale()); track $index) {
-                    <span class="od-step">{{ label }}</span>
-                  }
-                  @if (wasFloored(line)) {
-                    <span class="od-pill od-pill--floor" title="Une limite a relevé ce prix">
-                      plancher
-                    </span>
-                  }
-                  <!-- Un bouton, pas une ligne cliquable : la cible du clic doit
-                       s'atteindre au clavier et s'annoncer, ce qu'un `<tr>` ne
-                       fait pas. Absent côté client, où la trace ne descend
-                       plus. -->
-                  @if (selectableLines()) {
-                    <button type="button" class="od-why" (click)="lineSelected.emit(line.sku)">
-                      pourquoi ce prix ?
-                    </button>
-                  }
-                </td>
-                <td class="od-col-num od-col-unit">
-                  @if (entryPriceOf(line); as entry) {
-                    <!-- Le tarif d'entrée, barré : c'est lui qui rend la remise
+                <th scope="col" class="od-col-sku">SKU</th>
+                <th scope="col" class="od-col-qty">Qté</th>
+                <th scope="col">Article</th>
+                <th scope="col" class="od-col-num od-col-unit">PU HT</th>
+                <th scope="col" class="od-col-num od-col-vat">TVA</th>
+                <th scope="col" class="od-col-num">Total HT</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (line of o.lines; track line.sku) {
+                <tr>
+                  <td class="od-col-sku">{{ line.sku }}</td>
+                  <td class="od-col-qty">{{ quantityOf(line) }}</td>
+                  <td>
+                    <!-- Empilées, chacune seulement si elle a quelque chose à dire : le
+                       nom, le SKU (visible quand sa colonne a cédé), la remise, puis
+                       le lien d'explication. -->
+                    <div class="od-article">
+                      <span class="od-article-name" data-article-name>
+                        <span class="od-line-name">{{ line.productName }}</span>
+                        @if (isAdded(line)) {
+                          <span class="od-pill od-pill--add">ajout</span>
+                        }
+                        @if (lineBadges().get(line.sku); as mark) {
+                          <fold-badge variant="warning" [content]="mark" data-line-badge />
+                        }
+                      </span>
+                      <!-- Le SKU sous le nom quand sa colonne a cédé la place (colonne étroite). -->
+                      <span class="od-article-sku" data-article-sku>{{ line.sku }}</span>
+                      <!-- **Pourquoi ce prix**, figé à la passation. Les étages qui
+                         ont produit un effet, dans l'ordre où ils l'ont produit.
+                         Les règles qui les ont produits peuvent avoir été
+                         retirées depuis : la trace, elle, reste. -->
+                      @let steps = priceStepLabels(line, locale());
+                      @if (steps.length > 0 || wasFloored(line)) {
+                        <span class="od-article-price" data-article-discount>
+                          @for (label of steps; track $index) {
+                            <span class="od-step">{{ label }}</span>
+                          }
+                          @if (wasFloored(line)) {
+                            <span
+                              class="od-pill od-pill--floor"
+                              title="Une limite a relevé ce prix"
+                            >
+                              plancher
+                            </span>
+                          }
+                        </span>
+                      }
+                      <!-- Un bouton, pas une ligne cliquable : la cible du clic doit
+                         s'atteindre au clavier et s'annoncer, ce qu'un `<tr>` ne
+                         fait pas. Absent côté client, où la trace ne descend
+                         plus. -->
+                      @if (selectableLines()) {
+                        <button
+                          type="button"
+                          class="od-why"
+                          data-article-why
+                          (click)="lineSelected.emit(line.sku)"
+                        >
+                          pourquoi ce prix ?
+                        </button>
+                      }
+                    </div>
+                  </td>
+                  <td class="od-col-num od-col-unit">
+                    @if (entryPriceOf(line); as entry) {
+                      <!-- Le tarif d'entrée, barré : c'est lui qui rend la remise
                          lisible. `<s>` et non une classe — la rature doit exister
                          pour un lecteur d'écran aussi. -->
-                    <s class="od-was">{{ fmtMillicents(entry) }}</s>
-                  }
-                  {{ fmtMillicents(line.unitPriceMillicents) }}
-                  @if (line.saleUnit === 'weight') {
-                    <span class="od-muted">/ kg</span>
-                  }
-                </td>
-                <td class="od-col-num od-col-vat od-muted">{{ fmtVat(line.vatRate) }}</td>
-                <td class="od-col-num">{{ fmtCents(line.lineTotalCents) }}</td>
-              </tr>
-            }
-          </tbody>
-        </table>
+                      <s class="od-was">{{ fmtMillicents(entry) }}</s>
+                    }
+                    {{ fmtMillicents(line.unitPriceMillicents) }}
+                    @if (line.saleUnit === 'weight') {
+                      <span class="od-muted">/ kg</span>
+                    }
+                  </td>
+                  <td class="od-col-num od-col-vat od-muted">{{ fmtVat(line.vatRate) }}</td>
+                  <td class="od-col-num">{{ fmtCents(line.lineTotalCents) }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
 
-        @if (removed().length > 0) {
-          <p class="od-removed">
-            <span class="od-removed-label">Retiré du gabarit :</span>
-            @for (line of removed(); track line.sku) {
-              <span class="od-pill od-pill--rem">− {{ line.quantity }}× {{ line.name }}</span>
-            }
-          </p>
+          @if (removed().length > 0) {
+            <p class="od-removed">
+              <span class="od-removed-label">Retiré du gabarit :</span>
+              @for (line of removed(); track line.sku) {
+                <span class="od-pill od-pill--rem">− {{ line.quantity }}× {{ line.name }}</span>
+              }
+            </p>
+          }
+        </ng-template>
+
+        <!-- Côté staff (`framed`), la composition est une carte comme celles du
+             rail ; côté boutique, un titre de section. -->
+        @if (framed()) {
+          <fold-card data-composition-card>
+            <lfd-section-title title="Composition" />
+            <ng-container [ngTemplateOutlet]="compositionBody" />
+          </fold-card>
+        } @else {
+          <lfd-section-title title="Composition" headingId="od-lines-title" />
+          <ng-container [ngTemplateOutlet]="compositionBody" />
         }
+
+        <!-- Ce que l'app pose juste sous la composition (côté staff : le détail
+             des limites dépassées). Vide par défaut. Hors du gabarit
+             `compositionBody` : un `ng-content` ne vit jamais dans un gabarit
+             rendu par `ngTemplateOutlet`. -->
+        <ng-content select="[belowLines]" />
 
         <!-- La note reste au centre : c'est une consigne sur le contenu, elle se
              lit avec les lignes. L'acheminement, lui, est passé au rail — il
              commande le bon de livraison juste en dessous. -->
         @if (o.note) {
           <section class="od-block">
-            <h3 class="od-h3">Note</h3>
+            <lfd-section-title title="Note" />
             <p class="od-note">{{ o.note }}</p>
           </section>
         }
+
+        <!-- Ce que l'app pose sous la composition (côté staff : les cartes qui
+             parlent du contenu). Rien n'y est projeté par défaut : la boutique
+             n'y voit aucun élément. -->
+        <ng-content select="[belowComposition]" />
       </section>
 
       <div asideRight class="od-side">
-        <!-- Le code de retrait passe DEVANT les montants : c'est la seule chose
+        <!-- Infos / Avancement : seulement en tablette paysage (voir le SCSS), où
+             fold range l'avancement sous les infos. Côté staff seulement. -->
+        @if (framed()) {
+          <fold-view-toggle
+            class="od-rail-switch"
+            ariaLabel="Colonne de droite"
+            data-rail-switch
+            [options]="railViewOptions"
+            [value]="railView()"
+            (valueChange)="choosePaneView($event)"
+          />
+        }
+        <!-- Les infos du rail, groupées pour que la bascule puisse les taire
+             d'un coup ; sans effet sur la mise en page (`display: contents`). -->
+        <div class="od-side-info">
+          <!-- Ce que l'app pose en tête du rail (le contact, côté staff). Rien n'y est
+             projeté par défaut : la boutique n'y voit aucun élément. -->
+          <ng-content select="[asideTop]" />
+
+          <!-- Le code de retrait passe DEVANT les montants : c'est la seule chose
              qu'on vient chercher sur cette page debout devant un comptoir, le
              téléphone déjà à la main. Le reste se lit assis.
              Il ne paraît que sur un retrait non encore remis (`showQr`) — sur
              une livraison, ou une commande déjà retirée, rien ne s'affiche. -->
-        @if (showQr()) {
-          <section class="od-card">
-            <h3 class="od-h3">Code de retrait</h3>
-            <lfd-qr-code
-              class="od-qr"
-              [value]="handoverUrl() ?? ''"
-              label="Code de retrait à présenter au comptoir"
-            />
-            <p class="od-handover-hint">
-              À présenter au labo. C'est le scan de l'équipe qui atteste la remise.
-            </p>
-          </section>
-        } @else if (handedOverAt(); as at) {
-          <section class="od-card">
-            <h3 class="od-h3">Retrait</h3>
-            <p class="od-handover-done">
-              <fold-icon name="check" size="sm" aria-hidden="true" />
-              Retirée le {{ at }}
-            </p>
-          </section>
-        }
-
-        <section class="od-card">
-          <h3 class="od-h3">Montants</h3>
-          <dl class="od-totals">
-            @for (row of totals(); track row.key) {
-              <div class="od-total-row" [class.is-strong]="row.strong">
-                <dt>
-                  {{ row.label }}
-                  @if (row.hint) {
-                    <span class="od-total-hint">{{ row.hint }}</span>
-                  }
-                </dt>
-                <dd>{{ row.value }}</dd>
-              </div>
+          @if (showQr()) {
+            @if (framed()) {
+              <fold-card>
+                <lfd-section-title title="Code de retrait" />
+                <lfd-qr-code
+                  class="od-qr"
+                  [value]="handoverUrl() ?? ''"
+                  label="Code de retrait à présenter au comptoir"
+                />
+                <p class="od-handover-hint">
+                  À présenter au labo. C'est le scan de l'équipe qui atteste la remise.
+                </p>
+              </fold-card>
+            } @else {
+              <section class="od-card">
+                <lfd-section-title title="Code de retrait" />
+                <lfd-qr-code
+                  class="od-qr"
+                  [value]="handoverUrl() ?? ''"
+                  label="Code de retrait à présenter au comptoir"
+                />
+                <p class="od-handover-hint">
+                  À présenter au labo. C'est le scan de l'équipe qui atteste la remise.
+                </p>
+              </section>
             }
-          </dl>
-        </section>
+          } @else if (handedOverAt(); as at) {
+            @if (framed()) {
+              <fold-card>
+                <lfd-section-title title="Retrait" />
+                <p class="od-handover-done">
+                  <fold-icon name="check" size="sm" aria-hidden="true" />
+                  Retirée le {{ at }}
+                </p>
+              </fold-card>
+            } @else {
+              <section class="od-card">
+                <lfd-section-title title="Retrait" />
+                <p class="od-handover-done">
+                  <fold-icon name="check" size="sm" aria-hidden="true" />
+                  Retirée le {{ at }}
+                </p>
+              </section>
+            }
+          }
 
-        <!-- Les actions n'ont rien de commun entre client et commercial : elles
+          @if (framed()) {
+            <fold-card>
+              <lfd-section-title title="Montants" />
+              <dl class="od-totals">
+                @for (row of totals(); track row.key) {
+                  <div class="od-total-row" [class.is-strong]="row.strong">
+                    <dt>
+                      {{ row.label }}
+                      @if (row.hint) {
+                        <span class="od-total-hint">{{ row.hint }}</span>
+                      }
+                    </dt>
+                    <dd>{{ row.value }}</dd>
+                  </div>
+                }
+              </dl>
+            </fold-card>
+          } @else {
+            <section class="od-card">
+              <lfd-section-title title="Montants" />
+              <dl class="od-totals">
+                @for (row of totals(); track row.key) {
+                  <div class="od-total-row" [class.is-strong]="row.strong">
+                    <dt>
+                      {{ row.label }}
+                      @if (row.hint) {
+                        <span class="od-total-hint">{{ row.hint }}</span>
+                      }
+                    </dt>
+                    <dd>{{ row.value }}</dd>
+                  </div>
+                }
+              </dl>
+            </section>
+          }
+
+          <!-- Les actions n'ont rien de commun entre client et commercial : elles
              sont projetées par l'app, pas décidées ici. Juste sous le total,
              parce qu'on décide de régler après avoir vu combien. -->
-        <div class="od-actions">
-          <ng-content select="[actions]" />
-        </div>
+          <div class="od-actions">
+            <ng-content select="[actions]" />
+          </div>
 
-        <!-- L'acheminement précède les documents parce qu'il les COMMANDE : le
+          <!-- L'acheminement précède les documents parce qu'il les COMMANDE : le
              bon de livraison qu'on télécharge dessous porte cette adresse et ce
              mode. Les lire dans cet ordre évite d'imprimer un bon pour une
              livraison qu'on croyait être un retrait. -->
-        <section class="od-card">
-          <h3 class="od-h3">Acheminement</h3>
-          <p class="od-method">{{ fulfillment() }}</p>
-          @if (address(); as addr) {
-            <address class="od-addr">
-              {{ addr.ligne1 }}
-              @if (addr.ligne2) {
-                <br />{{ addr.ligne2 }}
-              }
-              <br />
-              {{ addr.codePostal }} {{ addr.ville }}
-            </address>
-          } @else {
-            <p class="od-muted">Adresse non renseignée.</p>
-          }
-        </section>
-
-        @if (documents().length > 0) {
-          <section class="od-card">
-            <h3 class="od-h3">Documents</h3>
-            <ul class="od-docs">
-              <!-- Disponible ou non, une pièce garde la MÊME grille : glyphe,
-                   nom, marque de droite, motif dessous. Deux structures
-                   différentes ne s'alignaient pas, et la liste tremblait d'une
-                   ligne à l'autre. Seule la marque de droite change — bouton de
-                   téléchargement d'un côté, mention d'indisponibilité de
-                   l'autre. -->
-              @for (doc of documents(); track doc.key) {
-                <li class="od-doc">
-                  @if (doc.unavailable) {
-                    <!-- Un document qu'on n'a pas se DIT, avec sa raison. Un lien
-                         mort ou un bouton inerte enverrait chercher un fichier
-                         qui n'existe pas. -->
-                    <div class="od-doc-row">
-                      <span class="od-doc-glyph" aria-hidden="true">
-                        <fold-icon [name]="doc.icon ?? 'contracts'" size="sm" />
-                      </span>
-                      <span class="od-doc-name">{{ doc.label }}</span>
-                      <span class="od-doc-tag">indisponible</span>
-                      <span class="od-doc-why">{{ doc.unavailable }}</span>
-                    </div>
-                  } @else {
-                    <button
-                      type="button"
-                      class="od-doc-row od-doc-row--action"
-                      (click)="documentAsked.emit(doc.key)"
-                    >
-                      <span class="od-doc-glyph" aria-hidden="true">
-                        <fold-icon [name]="doc.icon ?? 'contracts'" size="sm" />
-                      </span>
-                      <span class="od-doc-name">{{ doc.label }}</span>
-                      <fold-icon class="od-doc-go" name="download" size="sm" />
-                      @if (doc.hint) {
-                        <span class="od-doc-why">{{ doc.hint }}</span>
-                      }
-                    </button>
+          @if (framed()) {
+            <fold-card>
+              <lfd-section-title title="Acheminement" />
+              <p class="od-method">{{ fulfillment() }}</p>
+              @if (address(); as addr) {
+                <address class="od-addr">
+                  {{ addr.ligne1 }}
+                  @if (addr.ligne2) {
+                    <br />{{ addr.ligne2 }}
                   }
-                </li>
+                  <br />
+                  {{ addr.codePostal }} {{ addr.ville }}
+                </address>
+              } @else {
+                <p class="od-muted">Adresse non renseignée.</p>
               }
-            </ul>
-          </section>
+            </fold-card>
+          } @else {
+            <section class="od-card">
+              <lfd-section-title title="Acheminement" />
+              <p class="od-method">{{ fulfillment() }}</p>
+              @if (address(); as addr) {
+                <address class="od-addr">
+                  {{ addr.ligne1 }}
+                  @if (addr.ligne2) {
+                    <br />{{ addr.ligne2 }}
+                  }
+                  <br />
+                  {{ addr.codePostal }} {{ addr.ville }}
+                </address>
+              } @else {
+                <p class="od-muted">Adresse non renseignée.</p>
+              }
+            </section>
+          }
+
+          <!-- Le back-office les sort du rail pour son onglet « Documents » (`showDocuments`). -->
+          @if (showDocuments() && documents().length > 0) {
+            <section class="od-card">
+              <lfd-section-title title="Documents" />
+              <lfd-order-documents-list
+                [documents]="documents()"
+                (documentAsked)="documentAsked.emit($event)"
+              />
+            </section>
+          }
+
+          <!-- Ce qui clôt le rail (côté staff : l'annulation). En bas du résumé,
+             à portée sans couper le contenu ; une fois la page empilée, après
+             les montants, donc en dernier. Vide par défaut : la boutique n'y
+             voit rien. -->
+          <ng-content select="[asideBottom]" />
+        </div>
+        <!-- Tablette paysage : l'avancement prend ici la place des infos, dans
+             la même colonne collante — il ne glisse pas sous la bascule. -->
+        @if (framed()) {
+          <div class="od-progress-side" data-progress-side>
+            <lfd-section-title title="Avancement" />
+            <ng-container [ngTemplateOutlet]="timeline" />
+          </div>
         }
       </div>
     </fold-aside-layout>

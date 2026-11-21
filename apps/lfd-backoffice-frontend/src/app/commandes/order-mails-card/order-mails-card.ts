@@ -9,24 +9,13 @@ import {
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import type { OrderMailView } from '@lfd/contracts';
-import {
-  FoldBadgeComponent,
-  FoldButtonComponent,
-  FoldCalloutComponent,
-  FoldCardComponent,
-  FoldElementTitleComponent,
-  FoldEmptyStateComponent,
-  FoldIconComponent,
-  FoldLoadingStateComponent,
-} from 'fold-ng';
+import { FoldBadgeComponent, FoldButtonComponent, FoldCalloutComponent } from 'fold-ng';
 
 import { PermissionsStore } from '../../auth/permissions.store';
 import { mailLabel } from '../../mail-editor/rules/mail-labels';
-import {
-  mailSendBadge,
-  mailSendWhen,
-  type MailSendBadge,
-} from '../../mail-editor/rules/mail-send-labels';
+import { mailSendWhen } from '../../mail-editor/rules/mail-send-labels';
+import { DocumentRow } from '../document-row/document-row';
+import { orderMailStatus, type OrderMailStatus } from '../order-mail-status';
 import { OrderMailsStore } from '../order-mails.store';
 
 /** La phrase d'un retour qui demande un geste au staff. */
@@ -40,36 +29,26 @@ interface OrderMailLine {
   readonly id: string;
   readonly template: string;
   readonly title: string;
-  readonly when: string;
-  readonly badge: MailSendBadge;
+  /** « Demandé le 19 nov. 2026, 09:14 ». */
+  readonly meta: string;
+  readonly status: OrderMailStatus;
   readonly failure: string | null;
 }
 
 /**
- * **« E-mails »** sur la fiche d'une commande (`le-sujet-des-e-mails.md`,
- * lot E3) : chaque e-mail demandé pour elle, du plus récent au plus ancien,
- * avec l'état que le suivi en connaît — les mots du suivi des envois, pas
- * d'autres. Un rebond ou une plainte se dit en phrase : il faut joindre le
- * client autrement.
+ * **Les e-mails d'une commande**, en lignes de l'onglet « Documents » (groupe
+ * Envois) : chaque e-mail demandé pour elle, du plus récent au plus ancien,
+ * avec l'étape que le suivi en connaît, en mots simples (`orderMailStatus`).
+ * Un rebond ou une plainte se dit en phrase : il faut joindre le client
+ * autrement.
  *
- * Le vide est honnête : les commandes d'avant les sujets n'ont aucun e-mail
- * suivi, elles n'en ont pas moins reçu. Qui a `mail_sends:read` passe d'une
- * ligne à son détail dans le suivi.
+ * Sans e-mail suivi, rien n'est rendu et le groupe se tait. Qui a
+ * `mail_sends:read` passe d'une ligne à son détail dans le suivi.
  */
 @Component({
   selector: 'app-order-mails-card',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    RouterLink,
-    FoldBadgeComponent,
-    FoldButtonComponent,
-    FoldCalloutComponent,
-    FoldCardComponent,
-    FoldElementTitleComponent,
-    FoldEmptyStateComponent,
-    FoldIconComponent,
-    FoldLoadingStateComponent,
-  ],
+  imports: [RouterLink, DocumentRow, FoldBadgeComponent, FoldButtonComponent, FoldCalloutComponent],
   templateUrl: './order-mails-card.html',
   styleUrl: './order-mails-card.scss',
 })
@@ -100,8 +79,8 @@ function toLine(mail: OrderMailView): OrderMailLine {
     id: mail.id,
     template: mail.template,
     title: mailLabel(mail.template).title,
-    when: mailSendWhen(mail.requestedAt),
-    badge: mailSendBadge(mail),
+    meta: `Demandé le ${mailSendWhen(mail.requestedAt)}`,
+    status: orderMailStatus(mail),
     failure: mail.delivery === null ? null : (FAILURE_SENTENCES[mail.delivery] ?? null),
   };
 }

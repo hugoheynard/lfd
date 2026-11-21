@@ -2,6 +2,7 @@ import { formatAdjustmentValue } from '../pricing/price-alteration.model';
 
 import type {
   CartAdjustment,
+  CustomerOrderView,
   FulfillmentMethod,
   LateFeeAdjustment,
   OrderStatus,
@@ -241,4 +242,17 @@ export function formatOrderInstant(iso: string): string {
   const day = at.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
   const time = at.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
   return `${day}, ${time}`;
+}
+
+/**
+ * Le montant d'en-tête d'une commande et son assiette. Un pro au compte n'y lit
+ * que le HT — celui que le serveur a calculé (`pretaxCents`) —, comme dans son
+ * récapitulatif : la TVA et le TTC sont sur la facture du mois.
+ */
+export function orderHeaderTotal(
+  order: Pick<CustomerOrderView, 'settlement' | 'pretaxCents' | 'totalCents'>,
+): { readonly cents: number; readonly basis: 'HT' | 'TTC' } {
+  return order.settlement === 'account'
+    ? { cents: order.pretaxCents, basis: 'HT' }
+    : { cents: order.totalCents, basis: 'TTC' };
 }

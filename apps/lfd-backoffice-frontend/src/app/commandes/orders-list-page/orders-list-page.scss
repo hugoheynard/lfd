@@ -1,3 +1,42 @@
+/* La chaîne de hauteur de la coquille : l'hôte la prolonge, la mise en page
+   (bande et filtres) garde sa hauteur, et le corps prend le reste. Base ZÉRO :
+   annoncer son contenu ferait grandir la coquille, et toute la page défilerait. */
+:host {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;
+  min-height: 0;
+}
+
+.ol-page {
+  flex: none;
+}
+
+/* Le corps : ce qui reste de hauteur. Le tableau y défile seul ; un état vide
+   ou la liste des brouillons, plus hauts que la place, y défilent aussi. */
+.ol-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--fold-space-lg) var(--fold-page-gutter);
+}
+
+.ol-panel {
+  flex: 1 1 0;
+  min-height: 0;
+}
+
+/* Le tableau prend la place du panneau : son défilement interne (celui de
+   fold) devient vertical, et l'en-tête des colonnes reste collé en haut. */
+.ol-table {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;
+  min-height: 0;
+}
+
 /* Le masthead touche le haut de la page et ses deux bords : la page ne paie
    plus son haut, et le masthead annule la gouttière qu'elle pose. */
 .ol-page {
@@ -14,8 +53,15 @@
   gap: var(--fold-space-md);
 }
 
+.ol-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+}
+
 .ol-search {
-  max-width: 32rem;
+  flex: 0 1 32rem;
+  min-width: 0;
 }
 
 .ol-row {
@@ -31,4 +77,31 @@
 
 .ol-row .ol-clear {
   align-self: flex-end;
+}
+
+.ol-more {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+/* Bureau : tout est à l'écran, le bouton n'a pas lieu d'être. */
+.ol-toggle {
+  display: none;
+  flex: none;
+}
+
+/* Mobile et tablette : la recherche, et le bouton qui déplie le reste. */
+@media (max-width: 1040px) {
+  .ol-search {
+    flex: 1 1 auto;
+  }
+
+  .ol-toggle {
+    display: inline-flex;
+  }
+
+  .ol-more:not(.is-open) {
+    display: none;
+  }
 }

@@ -50,6 +50,23 @@ describe('OrderItemLimitOverridesCard', () => {
     expect(text).toContain('à la saisie');
   });
 
+  it('compte les dépassements, et dit chacun sur trois lignes : quoi, la demande, qui a accepté', async () => {
+    const host = await render([OVERRIDE], [{ sku: 'PAIN-LEV', productName: 'Pain au levain' }]);
+    const row = host.querySelector('[data-item-limit-override]');
+
+    expect(host.textContent).toContain('Limites de produit dépassées (1)');
+    expect(row?.querySelector('[data-override-what]')?.textContent).toContain('Pain au levain');
+    expect(row?.querySelector('[data-override-what]')?.textContent).toContain(
+      '2 jours avant, 12:00',
+    );
+    expect(row?.querySelector('[data-override-why]')?.textContent).toContain(
+      'Le client a appelé avant midi.',
+    );
+    expect(row?.querySelector('[data-override-who]')?.textContent).toContain(
+      'Acceptée par Camille Martin',
+    );
+  });
+
   it("retombe sur l'identifiant quand le serveur ne connaît pas de nom", async () => {
     const host = await render([{ ...OVERRIDE, staffName: null }]);
     expect(host.textContent).toContain('staff_01');

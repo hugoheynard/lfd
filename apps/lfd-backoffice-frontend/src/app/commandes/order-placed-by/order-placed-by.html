@@ -1,19 +1,17 @@
 @let l = lines();
-<p class="placed-by" data-placed-by>
-  <fold-icon name="user" size="sm" tone="muted" title="Passée par" />
-  <span class="item" data-placed-by-person>{{ l.person }}</span>
-  <span class="item" data-placed-by-email>
-    <fold-link [href]="'mailto:' + l.email">{{ l.email }}</fold-link>
-  </span>
-  @if (l.phone; as phone) {
-    <span class="item" data-placed-by-phone>
-      <fold-link [href]="'tel:' + phone">{{ phone }}</fold-link>
-    </span>
-  }
-  @if (l.company; as company) {
-    <span class="item" data-placed-by-company>{{ company }}</span>
-  }
-  @if (l.enteredBy; as enteredBy) {
-    <span class="item" data-placed-by-staff>{{ enteredBy }}</span>
-  }
-</p>
+<fold-card data-placed-by>
+  <lfd-section-title title="Contact" />
+  <div class="contact">
+    <p class="person" data-placed-by-person>{{ l.person }}</p>
+    <p class="reach" data-placed-by-email>
+      <fold-icon name="mail" size="sm" tone="muted" aria-hidden="true" />
+      <fold-link [href]="'mailto:' + l.email">{{ l.email }}</fold-link>
+    </p>
+    @if (l.phone; as phone) {
+      <p class="reach" data-placed-by-phone>
+        <fold-icon name="phone" size="sm" tone="muted" aria-hidden="true" />
+        <fold-link [href]="'tel:' + phone">{{ phone }}</fold-link>
+      </p>
+    }
+  </div>
+</fold-card>

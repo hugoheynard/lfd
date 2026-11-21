@@ -1,9 +1,7 @@
 @if (shown()) {
   <fold-card data-order-budget-commitment>
-    <fold-element-title
+    <lfd-section-title
       cardHeader
-      variant="title"
-      icon="receipt"
       title="Engagement budgétaire"
       subtitle="Repris sur la facture, tant que la commande n’est pas facturée."
     >
@@ -19,7 +17,7 @@
           Corriger l’engagement
         </button>
       }
-    </fold-element-title>
+    </lfd-section-title>
     @if (payer().kind === 'failed') {
       <fold-callout variant="alert" data-budget-commitment-unread>
         Le payeur de cette commande n’a pas pu être lu : la correction n’est pas proposée.

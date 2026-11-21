@@ -70,7 +70,9 @@ describe('OrderMailsCard', () => {
     expect(asked).toEqual(['o_1']);
     expect(rows).toHaveLength(2);
     expect(rows[0]?.textContent).toContain('Commande prête');
-    expect(rows[0]?.textContent).toContain('Accepté par Resend · Rebondi');
+    // L'étape la plus avancée, en mots simples : ni « Resend », ni « à blanc ».
+    expect(rows[0]?.querySelector('[data-order-mail-status]')?.textContent).toContain('Rebond');
+    expect(el(fixture).textContent).not.toContain('Resend');
     expect(rows[1]?.textContent).toContain('Commande passée');
     expect(rows[1]?.textContent).toContain('Remis');
   });
@@ -96,9 +98,9 @@ describe('OrderMailsCard', () => {
     expect(el(fixture).textContent).toContain('Commande prête');
   });
 
-  it('dit honnêtement qu’aucun e-mail n’est suivi', async () => {
+  it('sans e-mail suivi, ne rend aucune ligne : le groupe Envois se tait', async () => {
     const { fixture } = await boot(() => Promise.resolve({ items: [] }));
-    expect(el(fixture).querySelector('[data-order-mails-empty]')).not.toBeNull();
+    expect(el(fixture).querySelector('[data-doc-row]')).toBeNull();
   });
 
   it('dit un échec de lecture, et relit sur « Réessayer »', async () => {

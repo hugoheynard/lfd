@@ -1,0 +1,40 @@
+@let o = order();
+@let h = header();
+<div class="om" data-order-masthead>
+  <!-- Ligne 1 : qui et où elle en est ; à l'opposé, combien. -->
+  <div class="om-top" data-om-line="identity">
+    <h1 class="om-title">
+      <span class="om-number" data-om-number>{{ h.number }}</span>
+      @if (h.name; as name) {
+        <span class="om-sep" aria-hidden="true">/</span>
+        <span data-om-name>{{ name }}</span>
+      }
+    </h1>
+    <!-- Qui, puis où elle en est : la clientèle, le statut et le règlement suivent le
+         titre ; sur un écran étroit, ils passent dessous, le montant à leur suite. -->
+    <div class="om-badges" data-om-badges>
+      @if (h.clientele; as c) {
+        <fold-badge radius="square" [variant]="c.variant" [content]="c.label" data-om-clientele />
+      }
+      <fold-badge [variant]="statusVariant()" [content]="statusLabel()" data-om-status />
+      <fold-badge [variant]="paymentVariant()" [content]="paymentLabel()" data-om-payment />
+      <!-- Le panier récurrent qualifie la commande comme son statut : il se range avec lui. -->
+      @if (o.fromSubscriptionId) {
+        <fold-badge variant="accent" content="Panier récurrent" data-om-recurring />
+      }
+    </div>
+    <!-- Le montant et « Modifier » forment un bloc : à droite de la ligne du titre
+         tant qu'elle tient ; sinon ils passent ensemble dessous, toujours à droite. -->
+    <div class="om-end" data-om-end>
+      <!-- Le chiffre et son assiette sur la même ligne de base : « 197,34 € HT ». -->
+      <p class="om-total" data-om-total>
+        <span class="om-total-value">{{ total().value }}</span>
+        <span class="om-total-basis">{{ total().basis }}</span>
+      </p>
+      <ng-content select="[mastheadAction]" />
+    </div>
+  </div>
+
+  <!-- Ligne 2 : comment et quel jour elle part. -->
+  <p class="om-line" data-om-line="fulfillment">{{ h.fulfillment }}</p>
+</div>

@@ -9,6 +9,7 @@ import { describe, expect, it } from 'vitest';
 import { FROM_ORDER_LIST } from '../order-list-return';
 import { SitePaletteService } from '../../shared/logistics-colors/site-palette.service';
 import { AdminOrdersService } from '../orders.service';
+import { OrderDraftsService } from '../order-drafts.service';
 import { OrdersListPage } from './orders-list-page';
 
 /**
@@ -79,6 +80,7 @@ async function open(url: string, orders: FakeOrders) {
       ),
       { provide: AdminOrdersService, useValue: orders },
       { provide: SitePaletteService, useValue: { palette: () => Promise.resolve({ sites: [] }) } },
+      { provide: OrderDraftsService, useValue: { list: () => Promise.resolve([]) } },
     ],
   });
   const harness = await RouterTestingHarness.create();
@@ -250,6 +252,20 @@ describe('OrdersListPage — la liste de toutes les commandes', () => {
       page: 1,
       limit: 50,
     });
+  });
+
+  it('l’onglet « Brouillons » quitte les filtres, et ne demande aucune commande', async () => {
+    const orders = new FakeOrders();
+    const harness = await open('/commandes?method=pickup', orders);
+    const before = orders.calls.length;
+    const tabs = harness.fixture.debugElement.query(By.css('[data-tabs="view"]'));
+    (tabs.componentInstance as { activeKey: { set(k: string): void } }).activeKey.set('drafts');
+    await settle(harness);
+
+    expect(TestBed.inject(Router).url).toBe('/commandes?view=drafts');
+    expect(root(harness).querySelector('app-order-drafts-list')).not.toBeNull();
+    expect(root(harness).querySelector('[data-filter="q"]')).toBeNull();
+    expect(orders.calls.length).toBe(before);
   });
 
   it('dit son propre vide, et « Retirer les filtres » garde l’onglet', async () => {

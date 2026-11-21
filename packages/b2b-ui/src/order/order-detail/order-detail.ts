@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
 import type {
   BillingAddressPayload,
   CustomerOrderLineView,
@@ -12,27 +12,29 @@ import {
   wasFloored,
   type TotalRow,
 } from '../order-pricing';
+import { NgTemplateOutlet } from '@angular/common';
 import {
   FoldAsideLayoutComponent,
   FoldBadgeComponent,
+  FoldCardComponent,
   FoldIconComponent,
   FoldTimelineComponent,
   type FoldIconName,
   type FoldTimelineNode,
+  FoldViewToggleComponent,
+  type FoldViewToggleOption,
 } from 'fold-ng';
 
 import {
   formatCents,
-  formatOrderDate,
   formatOrderInstant,
   formatMillicents,
   formatVatPercent,
   fulfillmentLabel,
-  orderStatusLabel,
-  orderStatusVariant,
-  settlementStatusLabel,
-  settlementStatusVariant,
 } from '../order-format';
+import { OrderDetailHead } from '../order-detail-head/order-detail-head';
+import { SectionTitle } from '../section-title/section-title';
+import { OrderDocumentsList } from '../order-documents-list/order-documents-list';
 import {
   buildTimeline,
   toTimelineNodes,
@@ -65,6 +67,50 @@ export interface OrderDocument {
   readonly unavailable?: string;
 }
 
+/**
+ * **Qui a pris la commande**, côté staff : le titre de la première étape
+ * (« Prise par l'équipe », « Prise par le client »…) et, sur la ligne en
+ * dessous, qui l'a saisie — `null` quand personne de l'équipe ne l'a fait.
+ */
+export interface OrderEntryStep {
+  readonly label: string;
+  readonly detail: string | null;
+}
+
+/**
+ * Ce que montre la page quand elle manque de place, côté staff : sur une seule
+ * colonne, un des trois blocs ; en tablette paysage, la colonne de droite
+ * montre les infos (`composition` s'y lit comme `info`) ou l'avancement.
+ */
+type PaneView = 'composition' | 'info' | 'progress';
+
+/** Une seule colonne (téléphone, tablette en portrait) : un bloc à la fois. */
+const PANE_VIEW_OPTIONS: readonly FoldViewToggleOption[] = [
+  { value: 'composition', label: 'Composition' },
+  { value: 'info', label: 'Infos' },
+  { value: 'progress', label: 'Avancement' },
+];
+
+/** Tablette paysage : la colonne de droite, la composition restant à gauche. */
+const RAIL_VIEW_OPTIONS: readonly FoldViewToggleOption[] = [
+  { value: 'info', label: 'Infos' },
+  { value: 'progress', label: 'Avancement' },
+];
+
+/** La première étape côté staff : qui a pris la commande, et quand. */
+function entryStepOf(entry: OrderEntryStep, placedAt: string): TimelineStep {
+  return {
+    key: 'entry',
+    label: entry.label,
+    state: 'done',
+    icon: 'user',
+    tracked: true,
+    detail: entry.detail,
+    at: formatOrderInstant(placedAt),
+    expectedAt: null,
+  };
+}
+
 /** Une ligne retirée du gabarit récurrent, prête à afficher. */
 interface RemovedLine {
   readonly sku: string;
@@ -92,9 +138,15 @@ interface RemovedLine {
   imports: [
     FoldAsideLayoutComponent,
     FoldBadgeComponent,
+    FoldCardComponent,
     FoldIconComponent,
     FoldTimelineComponent,
+    FoldViewToggleComponent,
+    NgTemplateOutlet,
+    OrderDetailHead,
+    OrderDocumentsList,
     QrCode,
+    SectionTitle,
   ],
   templateUrl: './order-detail.html',
   styleUrl: './order-detail.scss',
@@ -166,6 +218,67 @@ export class OrderDetail {
   readonly documentAsked = output<string>();
 
   /**
+   * **L'en-tête est-il rendu ici ?** Vrai par défaut — la boutique.
+   *
+   * Le back-office le tait pour le rendre dans sa bande de tête
+   * (`lfd-order-detail-head`, le même composant) : un en-tête dans la bande et
+   * un second dans le corps diraient deux fois la même commande.
+   */
+  readonly showHead = input(true);
+
+  /**
+   * **Les documents sont-ils au rail ?** Vrai par défaut — la boutique.
+   *
+   * Le back-office les sort dans son onglet « Documents »
+   * (`lfd-order-documents-list`, la même liste), à côté des bons, factures et
+   * e-mails de la commande.
+   */
+  readonly showDocuments = input(true);
+
+  /**
+   * **Qui a pris la commande** (« Prise par l'équipe », puis « saisie par … »
+   * en dessous ; « Prise par le client »), en première étape de l'avancement,
+   * à l'instant de la passation. `null` par défaut, et ignoré hors de `audience="staff"` :
+   * le libellé est calculé par le back-office, et la boutique n'a pas cette
+   * étape.
+   */
+  readonly entryStep = input<OrderEntryStep | null>(null);
+
+  /**
+   * **Les blocs en cartes fold** (`fold-card` + `lfd-section-title`) — la
+   * composition et le rail. Faux par défaut : la
+   * boutique garde ses sections ; le back-office aligne ces blocs sur ses
+   * autres cartes, sous un seul style de titre.
+   */
+  readonly framed = input(false);
+
+  /**
+   * **Ce qu'on lit quand la place manque**, côté staff (`framed`). Sur une
+   * seule colonne, un des trois blocs — la composition d'abord ; en tablette
+   * paysage, où fold range l'avancement SOUS les infos, la colonne de droite
+   * montre l'un ou l'autre. Au bureau, rien n'est masqué. Les bascules ne se
+   * voient que dans leur plage (voir le SCSS).
+   */
+  protected readonly paneView = signal<PaneView>('composition');
+  protected readonly paneViewOptions = PANE_VIEW_OPTIONS;
+  protected readonly railViewOptions = RAIL_VIEW_OPTIONS;
+  /** La colonne de droite en tablette : les infos, sauf si l'avancement est choisi. */
+  protected readonly railView = computed(() =>
+    this.paneView() === 'progress' ? 'progress' : 'info',
+  );
+
+  protected choosePaneView(value: string): void {
+    this.paneView.set(value === 'info' || value === 'progress' ? value : 'composition');
+  }
+
+  /**
+   * Une marque par ligne (SKU → mot), posée en badge après le nom — côté staff,
+   * « hors délai » sur une ligne dont la limite a été passée. Vide par défaut :
+   * la boutique ne reçoit pas ces données.
+   */
+  readonly lineBadges = input<ReadonlyMap<string, string>>(new Map());
+
+  /**
    * L'URL que le **QR de retrait** encode, ou `null` pour ne rien afficher.
    *
    * Construite par l'app, pas ici : elle pointe vers l'app **admin** (c'est le
@@ -195,9 +308,13 @@ export class OrderDetail {
    * on ne lui projette que la zone de libellé, pour teinter l'échec et mettre en
    * retrait les jalons que rien ne suit encore.
    */
-  protected readonly steps = computed<readonly TimelineStep[]>(() =>
-    buildTimeline(this.order(), this.audience()),
-  );
+  protected readonly steps = computed<readonly TimelineStep[]>(() => {
+    const steps = buildTimeline(this.order(), this.audience());
+    const entry = this.entryStep();
+    return entry === null || this.audience() !== 'staff'
+      ? steps
+      : [entryStepOf(entry, this.order().placedAt), ...steps];
+  });
 
   protected readonly nodes = computed<readonly FoldTimelineNode[]>(() =>
     toTimelineNodes(this.steps()),
@@ -221,10 +338,6 @@ export class OrderDetail {
     return this.detailByKey().get(key) ?? null;
   }
 
-  protected readonly statusLabel = computed(() => orderStatusLabel(this.order().status));
-  protected readonly statusVariant = computed(() => orderStatusVariant(this.order().status));
-  protected readonly paymentLabel = computed(() => settlementStatusLabel(this.order()));
-  protected readonly paymentVariant = computed(() => settlementStatusVariant(this.order()));
   protected readonly fulfillment = computed(() => {
     const order = this.order();
     return fulfillmentLabel(order.fulfillmentMethod, order.pickupAddress?.label);
@@ -234,18 +347,6 @@ export class OrderDetail {
   protected readonly address = computed<BillingAddressPayload | null>(() => {
     const order = this.order();
     return order.fulfillmentMethod === 'delivery' ? order.deliveryAddress : order.pickupAddress;
-  });
-
-  /**
-   * Le total de l'en-tête et son assiette. Un pro au compte n'y lit que le HT
-   * — celui que le serveur a calculé (`pretaxCents`, plan L6) —, comme dans son récapitulatif (F5, plan
-   * `bons-et-facture-concordants`) : la TVA et le TTC sont sur la facture du mois.
-   */
-  protected readonly headerTotal = computed(() => {
-    const order = this.order();
-    return order.settlement === 'account'
-      ? { cents: order.pretaxCents, basis: 'HT' }
-      : { cents: order.totalCents, basis: 'TTC' };
   });
 
   /** Le récapitulatif des montants — assemblé par `orderTotalRows`, pas ici. */
@@ -306,9 +407,5 @@ export class OrderDetail {
    */
   protected fmtVat(percent: number): string {
     return formatVatPercent(percent);
-  }
-
-  protected fmtDate(iso: string): string {
-    return formatOrderDate(iso);
   }
 }

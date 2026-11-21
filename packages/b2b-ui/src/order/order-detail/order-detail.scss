@@ -11,8 +11,6 @@
 /* Les chiffres se lisent en colonne : numéro, montants, quantités, SKU, taux.
    Déclaré UNE fois pour tous (2026-10-07) : répété sept fois, il faisait passer
    cette feuille au-dessus du budget de style du back-office. */
-.od-number,
-.od-total-value,
 .od-col-qty,
 .od-col-num,
 .od-col-sku,
@@ -23,69 +21,11 @@
 
 /* ── Bandeau ────────────────────────────────────────────────────────────── */
 
-/* Grille en deux colonnes : l'identité et l'état à gauche, le montant calé à
-   droite. Le montant est la seule chose qu'on cherche parfois sans rien lire
-   d'autre — il a donc sa place fixe, pas un rang dans un flux. */
-.od-head {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: start;
-  gap: var(--fold-space-xs) var(--fold-space-lg);
+/* Le filet qui sépare l'en-tête du corps appartient au détail : la bande de
+   tête du back-office rend le même en-tête sans lui. */
+.od-head-slot {
   padding-bottom: var(--fold-space-md);
   border-bottom: 1px solid var(--fold-color-border);
-}
-
-.od-ident {
-  display: flex;
-  align-items: center;
-  gap: var(--fold-space-sm);
-  min-width: 0;
-}
-
-/* Le numéro est une référence qu'on lit à voix haute au téléphone : chiffres à
-   chasse fixe pour qu'il se déchiffre groupe par groupe, sans se relire. */
-.od-number {
-  margin: 0;
-  font-size: var(--fold-text-xl);
-  font-weight: 700;
-  letter-spacing: -0.01em;
-}
-
-.od-when {
-  grid-column: 1;
-  margin: 0;
-  color: var(--fold-color-text-muted);
-  font-size: var(--fold-text-sm);
-}
-
-.od-badges {
-  grid-column: 1;
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--fold-space-xs);
-  margin-top: var(--fold-space-xs);
-}
-
-.od-total {
-  grid-column: 2;
-  grid-row: 1 / span 3;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 0.1rem;
-}
-
-.od-total-value {
-  font-size: 1.75rem;
-  font-weight: 700;
-  line-height: 1;
-}
-
-.od-total-label {
-  color: var(--fold-color-text-muted);
-  font-size: var(--fold-text-xs);
-  letter-spacing: 0.06em;
 }
 
 /* ── Frise ──────────────────────────────────────────────────────────────── */
@@ -150,17 +90,11 @@ fold-aside-layout {
   --fold-aside-layout-side-width: 18rem;
 }
 
-.od-h3 {
-  margin: 0 0 var(--fold-space-sm);
-  font-size: var(--fold-text-xs);
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--fold-color-text-muted);
-}
-
 /* La colonne centrale : composition, puis ce qui décrit la commande. */
 .od-lines {
+  /* Pas d'`align-self` : le parent est une colonne flex, où il réglerait la
+     LARGEUR — et avec `container-type: inline-size`, une colonne réduite à son
+     contenu tombe à 0 px. La hauteur suit déjà le contenu. */
   container-type: inline-size;
   display: flex;
   flex-direction: column;
@@ -232,6 +166,27 @@ fold-aside-layout {
    colonne, pas l'écran. iPad portrait, ou paysage menu ouvert : la TVA, la
    moins lue, cède (le taux reste au récapitulatif). Plus étroit, le prix
    unitaire cède aussi — le total de ligne reste. */
+/* Le SKU sous le nom : caché tant que sa colonne est là. */
+.od-article-sku {
+  display: none;
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Sous ~900 px de colonne (tablette, ou le centre étroit de la boutique), la
+   colonne SKU cède : le SKU passe sous le nom, où le comptoir le retrouve. Les
+   montants gardent leurs colonnes, alignées à droite. */
+@container (max-width: 56rem) {
+  .od-col-sku {
+    display: none;
+  }
+
+  .od-article-sku {
+    display: inline;
+  }
+}
+
 @container (max-width: 36rem) {
   .od-col-vat {
     display: none;
@@ -270,13 +225,25 @@ fold-aside-layout {
 
 .od-total-row {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
-  gap: var(--fold-space-md);
+  column-gap: var(--fold-space-md);
   font-size: var(--fold-text-sm);
 }
 
 .od-total-row > * {
   margin: 0;
+}
+
+/* Le libellé cède ; le montant ne se coupe jamais. Trop large pour la
+   colonne, il passe sous son libellé, toujours aligné à droite, au lieu de
+   déborder de la carte. */
+.od-total-row dt {
+  min-width: 0;
+}
+
+.od-total-row dd {
+  margin-inline-start: auto;
   white-space: nowrap;
 }
 
@@ -366,99 +333,6 @@ fold-aside-layout {
   gap: var(--fold-space-xs);
 }
 
-/* ── Documents ──────────────────────────────────────────────────────────── */
-
-/* Les pièces débordent légèrement du padding de la carte, pour que le fond de
-   survol respire autour du texte sans décaler les libellés — le nom d'une pièce
-   reste aligné sur le titre de la carte. */
-.od-docs {
-  list-style: none;
-  margin: 0 calc(var(--fold-space-xs) * -1);
-  padding: 0;
-}
-
-/* Un filet entre les pièces, pas autour : deux encadrés dans une carte déjà
-   encadrée feraient trois bordures pour deux lignes. */
-.od-doc + .od-doc {
-  border-top: 1px solid var(--fold-color-border-subtle);
-}
-
-/* La grille commune. Colonne 1 le glyphe, 2 le nom, 3 la marque de droite ; le
-   motif court en dessous sur toute la largeur utile. */
-.od-doc-row {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 0.15rem var(--fold-space-sm);
-  width: 100%;
-  padding: var(--fold-space-sm) var(--fold-space-xs);
-  border: 0;
-  border-radius: var(--fold-radius-sm);
-  background: none;
-  font: inherit;
-  text-align: start;
-}
-
-.od-doc-row--action {
-  cursor: pointer;
-}
-
-.od-doc-row--action:hover {
-  background: color-mix(in srgb, var(--fold-color-primary) 7%, transparent);
-}
-
-.od-doc-row--action:focus-visible {
-  outline: 2px solid var(--fold-color-primary);
-  outline-offset: -2px;
-}
-
-/* Le glyphe dans un jeton : il donne à la ligne son point d'ancrage à gauche, et
-   distingue une facture d'un bon de livraison avant même qu'on lise. */
-.od-doc-glyph {
-  display: grid;
-  place-items: center;
-  grid-row: 1 / span 2;
-  width: 2rem;
-  height: 2rem;
-  border-radius: var(--fold-radius-sm);
-  background: var(--fold-color-surface-sunken);
-  color: var(--fold-color-text-muted);
-}
-
-/* Un document indisponible garde son nom lisible : c'est le motif juste en
-   dessous qui porte l'information, pas un grisé qui ferait croire à un bug. */
-.od-doc-name {
-  font-weight: 600;
-  min-width: 0;
-}
-
-.od-doc-why {
-  grid-column: 2 / -1;
-  color: var(--fold-color-text-muted);
-  font-size: var(--fold-text-xs);
-  line-height: 1.35;
-}
-
-/* La flèche de téléchargement : discrète au repos, accentuée au survol de la
-   ligne entière — c'est la ligne qui est cliquable, pas une cible de 16 px. */
-.od-doc-go {
-  color: var(--fold-color-text-muted);
-}
-
-.od-doc-row--action:hover .od-doc-go {
-  color: var(--fold-color-primary);
-}
-
-/* L'indisponibilité se lit d'un coup d'œil ; le motif, lui, se lit ensuite. */
-.od-doc-tag {
-  padding: 0.05rem 0.4rem;
-  border-radius: var(--fold-radius-pill);
-  background: var(--fold-color-surface-sunken);
-  color: var(--fold-color-text-muted);
-  font-size: var(--fold-text-xs);
-  white-space: nowrap;
-}
-
 /* ── Pastilles ──────────────────────────────────────────────────────────── */
 
 .od-pill {
@@ -469,11 +343,6 @@ fold-aside-layout {
   font-size: var(--fold-text-xs);
   font-weight: 700;
   white-space: nowrap;
-}
-
-.od-pill--rec {
-  background: color-mix(in srgb, var(--fold-color-primary) 16%, transparent);
-  color: var(--fold-color-primary);
 }
 
 .od-pill--add {
@@ -498,11 +367,22 @@ fold-aside-layout {
   font-size: 0.75rem;
 }
 
-// Ce qui suit le nom d'un article s'en écarte d'autant.
-.od-pill--add,
-.od-step,
-.od-why {
-  margin-inline-start: var(--fold-space-xs);
+// La cellule « Article » : le nom, la remise, le lien, l'un sous l'autre.
+.od-article {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--fold-space-xs);
+}
+
+// Sur une même ligne, les morceaux s'écartent par le `gap`, et passent à la
+// ligne entiers plutôt que coupés.
+.od-article-name,
+.od-article-price {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--fold-space-xs);
 }
 
 // Le prix relevé par une limite : une règle n'y a PAS produit son effet, et
@@ -527,4 +407,59 @@ fold-aside-layout {
   color: var(--fold-color-primary);
   text-decoration: underline;
   cursor: pointer;
+}
+
+/*
+  **Les bascules quand la place manque**, côté staff. Chacune ne vit que dans
+  sa plage de conteneur — le conteneur le plus proche des rails est l'hôte de
+  `fold-aside-layout`, celui de la bascule de page est `.od` :
+  - sous 700px (une seule colonne) : Composition / Infos / Avancement ;
+  - 701–1040px (`keepSideRail`, l'avancement rangé sous les infos) : la colonne
+    de droite montre les infos ou l'avancement.
+  Au bureau, aucune bascule, rien de masqué.
+*/
+.od {
+  container-type: inline-size;
+}
+
+.od-side-info {
+  display: contents;
+}
+
+.od-rail-switch,
+.od-pane-switch,
+.od-progress-side {
+  display: none;
+}
+
+@container (max-width: 700px) {
+  .od-pane-switch {
+    display: block;
+  }
+
+  .od[data-pane-view]:not([data-pane-view='composition']) .od-lines,
+  .od[data-pane-view]:not([data-pane-view='info']) .od-side,
+  .od[data-pane-view]:not([data-pane-view='progress']) .od-progress {
+    display: none;
+  }
+}
+
+@container (min-width: 701px) and (max-width: 1040px) {
+  .od-rail-switch {
+    display: block;
+  }
+
+  /* L'avancement vit ici dans la colonne de droite (`.od-progress-side`) : la
+     colonne de gauche, que fold range sous le résumé, se tait. */
+  .od[data-pane-view] .od-progress,
+  .od[data-pane-view]:not([data-pane-view='progress']) .od-progress-side,
+  .od[data-pane-view='progress'] .od-side-info {
+    display: none;
+  }
+
+  .od[data-pane-view='progress'] .od-progress-side {
+    display: flex;
+    flex-direction: column;
+    gap: var(--fold-space-sm);
+  }
 }

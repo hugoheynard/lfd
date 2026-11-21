@@ -1,23 +1,70 @@
+<!-- Pas de `title` sur le layout : la bande porte la référence, et deux titres
+     de premier niveau sur un écran n'en font aucun. -->
 <fold-page-layout>
-  <!-- Venue de la liste : le retour remonte l'historique, donc retrouve l'adresse
-       et ses filtres. Ouverte autrement (lien partagé, un autre écran) : la
-       liste nue. `fold-back-link` ne porte pas de queryParams.
-       Hors de `pageEyebrow` : `fold-page-layout` ne rend son bandeau (donc
-       l'eyebrow) qu'avec un titre, et la ligne « icône + numéro » du bandeau a
-       été retirée (Hugo, 2026-10-12) — le numéro vit dans l'en-tête ci-dessous. -->
-  @if (fromList) {
-    <fold-back-link icon="arrow-back" label="Commandes" data-back />
-  } @else {
-    <fold-back-link icon="arrow-back" label="Commandes" routerLink="/commandes" data-back />
-  }
+  <!--
+    **La bande de tête.** Ce qu'on cherche avant de lire quoi que ce soit : d'où
+    l'on vient, quelle commande, pour qui, combien, quand, où elle en est. Le corps,
+    dessous, change d'onglet ; ceci ne change pas.
+  -->
+  <fold-page-section bleed class="cp-masthead" foldSurface="chrome" data-masthead>
+    <div class="cp-masthead-stack">
+      <!-- Venue de la liste : le retour remonte l'historique, donc retrouve
+           l'adresse et ses filtres. Ouverte autrement (lien partagé, un autre
+           écran) : la liste nue. `fold-back-link` ne porte pas de queryParams. -->
+      @if (fromList) {
+        <fold-back-link icon="arrow-back" label="Toutes les commandes" data-back />
+      } @else {
+        <fold-back-link
+          icon="arrow-back"
+          label="Toutes les commandes"
+          routerLink="/commandes"
+          data-back
+        />
+      }
 
-  @if (header(); as h) {
-    <app-order-detail-header [header]="h" />
-  }
+      @if (order(); as o) {
+        <app-order-masthead [order]="o">
+          <app-order-revise-action
+            mastheadAction
+            [orderId]="o.id"
+            [revisability]="o.revisability"
+            [cancellability]="o.cancellability"
+          />
+        </app-order-masthead>
+      }
 
-  @if (order(); as o) {
-    <app-order-placed-by [order]="o" />
-  }
-
-  <app-order-view [orderId]="orderId()" (loaded)="onLoaded($event)" />
+      <!-- Les onglets de la commande, EN DERNIER dans la bande : l'onglet actif
+           prend le fond du corps qu'il ouvre, comme la fiche d'atelier. La vue
+           y accroche ses panneaux. -->
+      <fold-tabs
+        #bar="foldTabs"
+        class="cp-tabs"
+        activeStyle="folder"
+        direction="horizontal"
+        size="comfortable"
+        background="transparent"
+        aria-label="Sections de la commande"
+        data-order-tabs
+        [tabs]="tabs"
+        [activeKey]="tabState.tab()"
+        (activeKeyChange)="tabState.choose($event)"
+      />
+    </div>
+  </fold-page-section>
 </fold-page-layout>
+
+<!--
+  **Le corps défile seul, sous une bande qui ne bouge pas** — dans les trois
+  onglets. Il vit HORS du `fold-page-layout`, comme celui de la fiche d'atelier :
+  l'enveloppe que le layout pose autour de son contenu ne s'étire pas à sa
+  hauteur, et un corps posé dedans ne pourrait pas défiler seul. Les rails
+  collants de la vue se calent alors en haut de CE conteneur, sous la bande.
+-->
+<div class="cp-body" data-order-body>
+  <app-order-view
+    [orderId]="orderId()"
+    [showHead]="false"
+    [tabBar]="bar"
+    (loaded)="onLoaded($event)"
+  />
+</div>

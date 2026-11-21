@@ -1,16 +1,21 @@
 @if (rows().length > 0) {
-  <fold-card data-item-limit-overrides>
-    <fold-element-title variant="title" icon="clock" title="Limites de produit dépassées" />
-    @for (row of rows(); track $index) {
-      <fold-field-list data-item-limit-override>
-        <fold-field label="Produit">{{ row.product }}</fold-field>
-        <fold-field label="Limite">{{ row.limit }}</fold-field>
-        <fold-field label="Motif">{{ row.reason }}</fold-field>
-        <fold-field label="Par">{{ row.by }}</fold-field>
-        <fold-field label="Le">
-          {{ row.recordedAt | date: 'dd/MM/yyyy à HH:mm' }}, {{ row.origin }}
-        </fold-field>
-      </fold-field-list>
-    }
-  </fold-card>
+  <fold-callout appearance="inset" variant="warning" data-item-limit-overrides>
+    <div class="overrides">
+      <p class="override-title">Limites de produit dépassées ({{ rows().length }})</p>
+      @for (row of rows(); track $index) {
+        <!-- Trois lignes : quoi et quelle limite ; la demande (le motif, tel que
+             l'équipe l'a écrit) ; qui l'a acceptée, quand et où. -->
+        <div class="override" data-item-limit-override>
+          <p class="override-what" data-override-what>
+            <strong>{{ row.product }}</strong> — limite {{ row.limit }}
+          </p>
+          <p class="override-why" data-override-why>« {{ row.reason }} »</p>
+          <p class="override-who" data-override-who>
+            Acceptée par {{ row.by }}, le {{ row.recordedAt | date: 'dd/MM/yyyy à HH:mm' }},
+            {{ row.origin }}
+          </p>
+        </div>
+      }
+    </div>
+  </fold-callout>
 }

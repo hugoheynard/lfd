@@ -9,109 +9,149 @@
   }
   @default {
     @if (order(); as o) {
-      <!-- `audience="staff"` : les mêmes étapes que chez le client, mais
-           chacune dit ce qu'elle veut dire dans l'atelier. Au téléphone, le
-           commercial a l'écran du client sous les yeux, augmenté — jamais un
-           autre écran. -->
-      <!-- 🔴 `selectableLines` n'est vrai qu'ICI : l'explication s'appuie sur
-           la trace ENTIÈRE, que les routes clientes ne servent plus (R27).
-           Le même composant, deux publics, un geste de plus au comptoir. -->
-      <lfd-order-detail
-        audience="staff"
-        [order]="o"
-        [documents]="documents()"
-        [selectableLines]="true"
-        (lineSelected)="explain($event)"
-        (documentAsked)="onDocument($event)"
-      >
-        <!-- L'autre geste staff sur une commande passée : l'annuler, tant
-             qu'elle n'est pas au compte à produire (annulation-par-le-staff.md,
-             C3.8). Absent sans le droit, désactivé avec la raison sinon. -->
-        <!-- Modifier (plan de modification, M3, §6) : ce que le serveur dit de la
-             modification, avec sa raison quand elle est bloquée. -->
+      <!-- L'en-tête de la commande. Sur la route de premier niveau, la page le
+           porte dans sa bande de tête et le tait ici ; sous la fiche d'un compte,
+           la bande est celle du compte, et il ouvre le corps. -->
+      @if (showHead()) {
+        <lfd-order-detail-head [order]="o" />
+        <!-- Sans bande à elle, « Modifier » se tient sous l'en-tête, hors des onglets. -->
         <app-order-revise-action
-          actions
           [orderId]="o.id"
           [revisability]="o.revisability"
           [cancellability]="o.cancellability"
         />
-        <app-order-cancel
-          actions
-          [orderId]="o.id"
-          [cancellability]="o.cancellability"
-          (cancelled)="load()"
+      }
+
+      <!-- Trois onglets : la commande et ce qu'on en fait, ses pièces, son passé.
+           La barre est celle de la page quand elle la porte dans sa bande, sinon
+           la nôtre. Les panneaux restent montés (fold les cache) : passer de l'un
+           à l'autre ne relit rien. -->
+      @if (tabBar() === null) {
+        <fold-tabs
+          #ownBar
+          activeStyle="underline"
+          direction="horizontal"
+          aria-label="Sections de la commande"
+          [tabs]="tabs"
+          [activeKey]="tabState.tab()"
+          (activeKeyChange)="tabState.choose($event)"
         />
-      </lfd-order-detail>
+      }
 
-      <!-- À régler en boutique : « Le client n'est pas venu », puis « Prévenir
-           le client » (§ 5 bis). Rien pour une autre commande. -->
-      <app-order-no-show [order]="o" (changed)="load()" />
+      @if (bar(); as activeBar) {
+        <fold-tab-panel class="ov-panel" [tabs]="activeBar" key="detail" data-tab="detail">
+          <!-- `audience="staff"` : les mêmes étapes que chez le client, mais
+             chacune dit ce qu'elle veut dire dans l'atelier. Au téléphone, le
+             commercial a l'écran du client sous les yeux, augmenté — jamais un
+             autre écran. -->
+          <!-- 🔴 `selectableLines` n'est vrai qu'ICI : l'explication s'appuie sur
+             la trace ENTIÈRE, que les routes clientes ne servent plus (R27).
+             Le même composant, deux publics, un geste de plus au comptoir. -->
+          <lfd-order-detail
+            audience="staff"
+            [order]="o"
+            [selectableLines]="true"
+            [showHead]="false"
+            [showDocuments]="false"
+            [entryStep]="entryStep()"
+            [framed]="true"
+            [lineBadges]="limitBadges()"
+            (lineSelected)="explain($event)"
+          >
+            <!-- Le contact, en tête du rail : la personne à rappeler, d'un geste. -->
+            <app-order-placed-by asideTop [order]="o" />
+            <!-- La vérification d'une commande pro passée par le client seul : rien hors de ce périmètre. -->
+            <app-order-review-card asideTop [order]="o" (changed)="load()" />
 
-      <!-- Le manque signalé au colisage (E6a) : rien sans signalement en vigueur. -->
-      <app-order-shortfall-banner
-        [shortfall]="o.shortfall"
-        [lines]="o.lines"
-        [settlement]="o.settlement"
-        [increasePending]="o.cardIncrease !== null"
-      />
-      <!-- La décision du départ (E6b), sous le bandeau : rien sans manque signalé. -->
-      <app-order-shortfall-decision
-        [orderId]="o.id"
-        [shortfall]="o.shortfall"
-        [lines]="o.lines"
-        [settlement]="o.settlement"
-        [increasePending]="o.cardIncrease !== null"
-        (decided)="onShortfallDecided()"
-      />
-      <!-- « Écrire au client » (E6d), après la décision : jamais automatique. -->
-      <app-order-shortfall-letter [orderId]="o.id" [shortfall]="o.shortfall" (sent)="load()" />
+            <!-- Les limites passées, juste sous le tableau : leur ligne porte le badge « hors délai ». -->
+            <app-order-item-limit-overrides-card
+              belowLines
+              [overrides]="o.itemLimitOverrides"
+              [lines]="o.lines"
+            />
 
-      <!-- La hausse par carte qui attend (plan S2, §2.8) : rien sans projet vivant. -->
-      <app-order-card-increase-banner
-        [orderId]="o.id"
-        [increase]="o.cardIncrease"
-        (changed)="load()"
-      />
+            <!-- Le manque signalé au colisage (E6a) : rien sans signalement en vigueur. -->
+            <app-order-shortfall-banner
+              belowComposition
+              [shortfall]="o.shortfall"
+              [lines]="o.lines"
+              [settlement]="o.settlement"
+              [increasePending]="o.cardIncrease !== null"
+            />
+            <!-- La décision du départ (E6b), sous le bandeau : rien sans manque signalé. -->
+            <app-order-shortfall-decision
+              belowComposition
+              [orderId]="o.id"
+              [shortfall]="o.shortfall"
+              [lines]="o.lines"
+              [settlement]="o.settlement"
+              [increasePending]="o.cardIncrease !== null"
+              (decided)="onShortfallDecided()"
+            />
+            <!-- « Écrire au client » (E6d), après la décision : jamais automatique. -->
+            <app-order-shortfall-letter
+              belowComposition
+              [orderId]="o.id"
+              [shortfall]="o.shortfall"
+              (sent)="load()"
+            />
 
-      <!-- L'argent à rendre par carte (C4.9, plan M2 §5.3) : une ligne par demande, rien sans demande. -->
-      <app-order-refund-banner
-        [requests]="o.refundRequests"
-        [orderId]="o.id"
-        [shortfallRefund]="o.shortfallRefund ?? null"
-        (changed)="load()"
-      />
+            <!-- La hausse par carte qui attend (plan S2, §2.8) : rien sans projet vivant. -->
+            <app-order-card-increase-banner
+              belowComposition
+              [orderId]="o.id"
+              [increase]="o.cardIncrease"
+              (changed)="load()"
+            />
 
-      <!-- Les remboursements constatés, et le total servi : rien quand il n'y en a pas. -->
-      <app-order-refunds-card [refunds]="o.refunds" [refundedCents]="o.refundedCents" />
+            <!-- L'argent à rendre par carte (C4.9, plan M2 §5.3) : une ligne par demande, rien sans demande. -->
+            <app-order-refund-banner
+              belowComposition
+              [requests]="o.refundRequests"
+              [orderId]="o.id"
+              [shortfallRefund]="o.shortfallRefund ?? null"
+              (changed)="load()"
+            />
 
-      <!-- Les limites de produit que l'équipe a passées : rien sans dépassement,
-           ni sans le droit de les lire (le serveur n'envoie alors rien). -->
-      <app-order-item-limit-overrides-card [overrides]="o.itemLimitOverrides" [lines]="o.lines" />
+            <!-- Les remboursements constatés, et le total servi : rien quand il n'y en a pas. -->
+            <app-order-refunds-card
+              belowComposition
+              [refunds]="o.refunds"
+              [refundedCents]="o.refundedCents"
+            />
 
-      <!-- Les bons de livraison (plan E5a, § 3) : rien avant l'arrêt du plan. -->
-      <app-order-delivery-notes-card [orderId]="o.id" [refresh]="notesRefresh()" />
+            <!-- L'engagement budgétaire d'un organisme public (plan clients publics,
+               E3′) : rien pour un payeur privé sans engagement. -->
+            <app-order-budget-commitment-card belowComposition [order]="o" (corrected)="load()" />
+            <!-- À régler en boutique : « Le client n'est pas venu », puis « Prévenir
+               le client » (§ 5 bis). Rien pour une autre commande. -->
+            <app-order-no-show belowComposition [order]="o" (changed)="load()" />
 
-      <!-- L'engagement budgétaire d'un organisme public (plan clients publics,
-           E3′) : rien pour un payeur privé sans engagement. -->
-      <app-order-budget-commitment-card [order]="o" (corrected)="load()" />
+            <!-- Annuler, en bas du rail droit : le geste irréversible dans sa zone de
+               danger, après le résumé — en dernier une fois la page empilée. -->
+            <app-order-cancel
+              asideBottom
+              [orderId]="o.id"
+              [cancellability]="o.cancellability"
+              [revisability]="o.revisability"
+              (cancelled)="load()"
+            />
+          </lfd-order-detail>
+        </fold-tab-panel>
 
-      <!-- La facture et les avoirs de la commande (E5c) : rien quand il n'y en a pas. -->
-      <app-order-invoices-card [orderId]="o.id" />
+        <fold-tab-panel class="ov-panel" [tabs]="activeBar" key="documents" data-tab="documents">
+          <!-- Une seule liste, rangée par groupes : pièces, envois, conditions, preuve. -->
+          <app-order-documents-panel [order]="o" [notesRefresh]="notesRefresh()" />
+        </fold-tab-panel>
 
-      <!-- Les e-mails demandés pour la commande et leur état réel (plan du sujet des e-mails, E3). -->
-      <app-order-mails-card [orderId]="o.id" />
-
-      <!-- La preuve de livraison : rien quand la commande n'a pas été remise à la porte. -->
-      <app-handover-proof-card [orderId]="o.id" />
-
-      <!-- Les CGV figées à la passation (plan des CGV, C4) : texte, révision, PDF. -->
-      <app-order-sales-terms-card [orderId]="o.id" />
-
-      <!-- Les faits du journal qui touchent la commande, le plus récent d'abord. -->
-      <app-order-history-card [orderId]="o.id" />
-      <!-- Les versions qu'une modification a remplacées (plan de modification, §6). -->
-      @if (o.revision > 0) {
-        <app-order-revisions-card [orderId]="o.id" />
+        <fold-tab-panel class="ov-panel" [tabs]="activeBar" key="history" data-tab="history">
+          <!-- Les faits du journal qui touchent la commande, le plus récent d'abord. -->
+          <app-order-history-card [orderId]="o.id" />
+          <!-- Les versions qu'une modification a remplacées (plan de modification, §6). -->
+          @if (o.revision > 0) {
+            <app-order-revisions-card [orderId]="o.id" />
+          }
+        </fold-tab-panel>
       }
     }
   }

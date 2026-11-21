@@ -1,0 +1,76 @@
+<div class="dp">
+  <!-- Pièces : ce qu'on télécharge et imprime. À gauche au bureau. -->
+  <section class="dp-group" aria-label="Pièces" data-doc-group="pieces">
+    <lfd-section-title title="Pièces" />
+    <div class="dp-rows">
+      @for (doc of sheet(); track doc.key) {
+        <ng-container [ngTemplateOutlet]="piece" [ngTemplateOutletContext]="{ $implicit: doc }" />
+      }
+      <app-order-delivery-notes-card [orderId]="order().id" [refresh]="notesRefresh()" />
+      <app-order-invoices-card [orderId]="order().id" />
+      @for (doc of others(); track doc.key) {
+        <ng-container [ngTemplateOutlet]="piece" [ngTemplateOutletContext]="{ $implicit: doc }" />
+      }
+    </div>
+  </section>
+
+  <!-- Le reste : les envois, les conditions, la preuve. À droite au bureau. -->
+  <div class="dp-side">
+    <section class="dp-group" aria-label="Envois" data-doc-group="sends">
+      <lfd-section-title title="Envois" />
+      <div class="dp-rows">
+        <app-order-mails-card [orderId]="order().id" />
+      </div>
+    </section>
+    <section class="dp-group" aria-label="Conditions" data-doc-group="terms">
+      <lfd-section-title title="Conditions" />
+      <div class="dp-rows">
+        <app-order-sales-terms-card [orderId]="order().id" />
+      </div>
+    </section>
+    <section class="dp-group" aria-label="Preuve" data-doc-group="proof">
+      <lfd-section-title title="Preuve" />
+      <div class="dp-rows">
+        <app-handover-proof-card [orderId]="order().id" />
+      </div>
+    </section>
+  </div>
+</div>
+
+<!-- Une pièce de la commande elle-même (confirmation, facture du mois) : deux
+     boutons quand elle existe ; sa raison, sans bouton, quand elle n'existe pas. -->
+<ng-template #piece let-doc>
+  <app-document-row
+    [icon]="doc.icon ?? 'contracts'"
+    [title]="doc.label"
+    [meta]="doc.unavailable ?? doc.hint ?? null"
+    [attr.data-order-document]="doc.key"
+  >
+    <!-- Un @if par bouton : un bloc à racine unique est projeté par son sélecteur ;
+         à deux racines, il tomberait hors de `[rowActions]`. -->
+    @if (!doc.unavailable) {
+      <button
+        rowActions
+        foldButton
+        size="sm"
+        emphasis="soft"
+        (click)="download(doc.key)"
+        data-doc-download
+      >
+        Télécharger
+      </button>
+    }
+    @if (!doc.unavailable) {
+      <button
+        rowActions
+        foldButton
+        size="sm"
+        emphasis="soft"
+        (click)="print(doc.key)"
+        data-doc-print
+      >
+        Imprimer
+      </button>
+    }
+  </app-document-row>
+</ng-template>

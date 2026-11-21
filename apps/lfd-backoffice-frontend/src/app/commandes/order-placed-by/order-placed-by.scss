@@ -1,17 +1,24 @@
-/* Une ligne discrète sous l'en-tête : les éléments se séparent d'un point
-   médian, et passent à la ligne quand la largeur manque. */
-.placed-by {
-  margin: 0;
+/* Une colonne : l'écart entre le nom et les moyens de joindre vient de son `gap`. */
+.contact {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--fold-space-xs) var(--fold-space-sm);
-  font-size: var(--fold-text-sm);
-  color: var(--fold-color-text-secondary);
+  flex-direction: column;
+  gap: var(--fold-space-xs);
 }
 
-.item + .item::before {
-  content: '·';
-  padding-inline-end: var(--fold-space-sm);
-  color: var(--fold-color-text-muted);
+.person {
+  margin: 0;
+  font-size: var(--fold-text-base);
+  font-weight: var(--fold-weight-bold);
+  color: var(--fold-color-text);
+}
+
+/* L'icône devant le lien : on reconnaît l'e-mail et le téléphone avant de les lire. */
+.reach {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-xs);
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: var(--fold-text-sm);
 }

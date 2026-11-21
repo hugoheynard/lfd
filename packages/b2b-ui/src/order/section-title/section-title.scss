@@ -1,0 +1,32 @@
+:host {
+  display: block;
+}
+
+/* Le titre à gauche, l'action éventuelle à droite. */
+.st {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--fold-space-sm);
+}
+
+.st-text {
+  min-width: 0;
+}
+
+/* Petites capitales grises et discrètes : un intitulé, pas un second titre. */
+.st-title {
+  margin: 0 0 var(--fold-space-sm);
+  font-size: var(--fold-text-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--fold-color-text-muted);
+}
+
+.st-subtitle {
+  margin: 0;
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-muted);
+}
