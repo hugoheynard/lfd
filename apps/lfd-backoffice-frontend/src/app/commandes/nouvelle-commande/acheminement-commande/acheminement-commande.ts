@@ -545,6 +545,19 @@ export class AcheminementCommande {
     // les seules interactions aurait laissé le panier sans acheminement tant que
     // le commercial ne touche à rien, c'est-à-dire dans le cas le plus courant.
     effect(() => this.choiceChange.emit(this.choice()));
+    // Le premier créneau du point, pré-rempli (Hugo, 2026-11-21) : le prix ne
+    // s'estime que sur une commande complète, et attendre un créneau qui n'en
+    // change pas le montant laissait le panier sans prix. Le créneau reste
+    // obligatoire et visible : c'est une proposition, pas une absence acceptée.
+    effect(() => {
+      if (this.isCourier() || this.immediate() || this.draft().window() !== null) {
+        return;
+      }
+      const first = this.slots().find((slot) => slot.access !== 'pro' || this.audience() === 'b2b');
+      if (first !== undefined) {
+        this.draft().window.set({ start: first.start, end: first.end });
+      }
+    });
   }
 
   private pickupChoice(): FulfillmentChoice {

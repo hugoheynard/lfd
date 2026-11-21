@@ -370,19 +370,19 @@ describe("le sélecteur d'acheminement de la saisie staff", () => {
       },
     };
 
-    it('🔴 réclame une réponse tant que rien n’est choisi', () => {
+    it('propose le premier créneau du point : la commande s’estime sans attendre', () => {
+      // Décidé par Hugo le 2026-11-21 : le créneau ne change pas le prix, et
+      // l'attendre laissait le panier sans montant.
       const choice = choiceOf({ pickups: [OUVERT] });
 
-      expect(choice.window).toBeNull();
-      expect(choice.issue).toContain('Créneau de retrait');
+      expect(choice.window).toEqual({ start: '05:00', end: '06:00' });
+      expect(choice.issue).toBeNull();
     });
 
-    it('🔴 n’invente AUCUNE heure de départ', () => {
-      // Préremplir avec la première ouverture ferait promettre un engagement
-      // que personne n'a pris — et le comptoir le lirait comme tel.
-      const fixture = mount([OUVERT]);
+    it('à un particulier, ne propose pas un créneau réservé aux pros', () => {
+      const choice = choiceOf({ pickups: [OUVERT], audience: 'b2c' });
 
-      expect(fixture.componentInstance['slotId']()).toBe('');
+      expect(choice.window).toEqual({ start: '07:00', end: '08:00' });
     });
 
     it('retient la tranche choisie, bornes comprises', () => {
@@ -423,7 +423,7 @@ describe("le sélecteur d'acheminement de la saisie staff", () => {
       });
     });
 
-    it('🔴 changer de point EFFACE la tranche et rouvre la question', () => {
+    it('🔴 changer de point remplace la tranche par le premier créneau du nouveau point', () => {
       // Les créneaux d'un point ne valent pas pour un autre : garder l'heure
       // promettrait une porte close, et le serveur refuserait à la passation —
       // une fois le client raccroché.
@@ -431,6 +431,7 @@ describe("le sélecteur d'acheminement de la saisie staff", () => {
         ...OUVERT,
         id: 'pick_2',
         label: 'Village',
+        opening: { proPickup: null, publicOpening: { start: '07:00', end: '09:00' } },
       };
       const fixture = mount([OUVERT, village]);
       fixture.componentInstance['onPickup'](OUVERT.id);
@@ -441,8 +442,10 @@ describe("le sélecteur d'acheminement de la saisie staff", () => {
       fixture.componentInstance['onPickup']('pick_2');
       fixture.detectChanges();
 
-      expect(fixture.componentInstance['choice']().window).toBeNull();
-      expect(fixture.componentInstance['choice']().issue).toContain('Créneau de retrait');
+      expect(fixture.componentInstance['choice']().window).toEqual({
+        start: '07:00',
+        end: '08:00',
+      });
     });
 
     it('🔴 le coursier n’en porte JAMAIS', () => {
@@ -737,7 +740,9 @@ describe('AcheminementCommande — retrait immédiat', () => {
 
     expect(draft.entry()).toBe('scheduled');
     expect(draft.requestedDate()).not.toBe(isoDayOf(new Date()));
-    expect(draft.window()).toBeNull();
+    // La tranche du retrait immédiat est effacée ; le premier créneau du point
+    // la remplace aussitôt, comme pour toute commande programmée.
+    expect(draft.window()).not.toBeNull();
   });
 
   it('refuse quand le point du comptoir n’est pas ouvert à ce client', () => {
