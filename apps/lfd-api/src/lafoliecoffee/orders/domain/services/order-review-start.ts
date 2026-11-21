@@ -6,6 +6,7 @@
  *
  * Une constante du domaine plutôt qu'un réglage : elle ne change pas, se
  * teste avec une horloge fixe, et le harnais e2e n'a rien à semer. Minuit de
- * Paris, le 22 novembre 2026.
+ * Paris, le 21 novembre 2026 : le jour où Hugo l'a décidé (le 2026-11-21),
+ * pour que les commandes du jour s'y trouvent déjà.
  */
-export const ORDER_REVIEW_STARTS_AT = new Date("2026-11-22T00:00:00+01:00");
+export const ORDER_REVIEW_STARTS_AT = new Date("2026-11-21T00:00:00+01:00");

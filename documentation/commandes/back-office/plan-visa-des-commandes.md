@@ -67,7 +67,7 @@ Une commande est **à vérifier** quand, ensemble :
      client) entrent au registre RGPD (`documentation/legal/rgpd-registre.json`,
      `lint:rgpd-staff`).
 3. **Pas de table de réglage** pour la mise en service : une **constante
-   datée** du domaine (`ORDER_REVIEW_STARTS_AT`), posée par le commit de mise
+   datée** du domaine (`ORDER_REVIEW_STARTS_AT` (minuit de Paris, le 2026-11-21)), posée par le commit de mise
    en service. Pure, testable avec `FixedClock`, rien à remettre dans le
    harnais e2e (vitruve, bloquant 1).
 
