@@ -150,6 +150,14 @@ export const staffResourceSchema = z.enum([
    */
   "b2b_orders_shortfall",
   /**
+   * **Le visa des commandes** — `POST /admin/orders/:id/review` et
+   * `…/review/withdraw` (`documentation/commandes/back-office/plan-visa-des-commandes.md`).
+   * Un commercial relit et vise une commande qu'un client pro a passée seul :
+   * une trace, rien ne se bloque. La lecture ouvre l'onglet « À vérifier » ;
+   * accordée à l'écran, aucune migration ne la donne à un rôle.
+   */
+  "b2b_order_review",
+  /**
    * **Le Comptoir** — ce qu'il faut voir d'un client pour lui vendre, rien de
    * plus : une carte de recherche, et au détail ses adresses, ses acheteurs et
    * s'il règle au compte (`documentation/comptoir/architecture-commande-au-comptoir.md`).
@@ -873,6 +881,7 @@ export const STAFF_RESOURCE_LABELS: Readonly<Record<StaffResource, string>> = {
   b2b_place_order: "Passer une commande pro",
   b2b_cancel_order: "Annuler une commande",
   b2b_orders_shortfall: "Décider du départ incomplet",
+  b2b_order_review: "Visa des commandes",
   b2b_counter: "Comptoir",
   b2b_supervision: "Supervision",
   b2b_subscriptions: "Paniers récurrents",
@@ -1003,6 +1012,9 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     // La graine seule (2026-10-25, plan E6b) : en production, le geste
     // s'accorde à l'écran.
     b2b_orders_shortfall: "write",
+    // La graine seule (2026-11-21, plan du visa) : en production, accordée à
+    // l'écran.
+    b2b_order_review: "write",
     production_plan: "write",
     production_count_stop: "write",
     production_settings: "write",
@@ -1139,6 +1151,9 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     b2b_orders: "write",
     // Les gestes sortis de `b2b_orders` le 2026-10-01, reçus par la bascule.
     b2b_place_order: "write",
+    // Viser les commandes passées par un client pro (plan du visa) : graine
+    // seulement, en production accordée à l'écran.
+    b2b_order_review: "write",
     // `read` : depuis la sortie de l'arrêt du plan (2026-10-06), aucune route
     // n'exige `production_plan:write` (vérifié le 2026-10-12) — la graine ne
     // l'accorde plus. L'arrêt a son propre droit, que la graine reconduit.

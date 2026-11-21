@@ -517,6 +517,37 @@ export const ORDERS_PRODUCTION_FACTS = {
       noShowAt: instant(),
     }),
   ),
+  /**
+   * **Un commercial a visé la commande** (plan du visa des commandes) : il a
+   * relu une commande qu'un client pro a passée seul. Le sujet est le client ;
+   * `reviewedBy` la fiche staff, sous son nom du moment ; `reviewedRevision`
+   * la révision de la commande que le visa a vue. La note du visa n'est pas
+   * recopiée : elle reste sur le visa.
+   */
+  "order.reviewed": fact(
+    payload({
+      subjectLabel: customerLabel(),
+      orderId: ref("order"),
+      orderNumber: z.string(),
+      reviewedBy: namedOrBare("staff_user"),
+      reviewedAt: instant(),
+      reviewedRevision: z.number().int(),
+    }),
+  ),
+  /**
+   * **Le visa de la commande est retiré** — par un geste, ou remplacé par un
+   * nouveau visa sur une commande révisée depuis. `withdrawnBy` la fiche staff,
+   * sous son nom du moment.
+   */
+  "order.review_withdrawn": fact(
+    payload({
+      subjectLabel: customerLabel(),
+      orderId: ref("order"),
+      orderNumber: z.string(),
+      withdrawnBy: namedOrBare("staff_user"),
+      withdrawnAt: instant(),
+    }),
+  ),
   "order.handed_over": fact(
     payload({
       subjectLabel: customerLabel(),

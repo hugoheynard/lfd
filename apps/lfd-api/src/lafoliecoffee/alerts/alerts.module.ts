@@ -10,6 +10,13 @@ import { DispatchAlertChannels } from "./application/handlers/dispatch-alert-cha
 import { EvaluateBasket } from "./application/handlers/evaluate-basket.service.js";
 import { EvaluateOrderAlerts } from "./application/handlers/evaluate-order-alerts.service.js";
 import { OnOrderPlacedEvaluateAlerts } from "./application/handlers/on-order-placed.handler.js";
+import { OnOrderReviewedAcknowledgeAlerts } from "./application/handlers/on-order-reviewed.handler.js";
+import { ListOrderAlertsHandler } from "./application/queries/list-order-alerts.handler.js";
+import { AlertsOfOrders, OrderAlertsAcknowledger } from "./domain/ports/order-alerts.js";
+import {
+  PrismaAlertsOfOrders,
+  PrismaOrderAlertsAcknowledger,
+} from "./infrastructure/prisma-order-alerts.js";
 import { CountPendingAlertsHandler } from "./application/queries/count-pending-alerts.handler.js";
 import { GetAccountAlertRulesHandler } from "./application/queries/get-account-alert-rules.handler.js";
 import { ListAccountAlertsHandler } from "./application/queries/list-account-alerts.handler.js";
@@ -54,8 +61,8 @@ import { PrismaProductNormStore } from "./infrastructure/prisma-product-norm.sto
  * l'acquisition (règle, dérogation, détecteur, alerte), et il porte sa propre
  * question — surveiller un compte **déjà client**, pas en gagner un.
  *
- * Il ne connaît d'`orders` que la **classe d'événement** `OrderPlacedEvent` :
- * jamais ses tables, jamais ses agrégats.
+ * Il ne connaît d'`orders` que des **classes de fait** — `OrderPlacedEvent`,
+ * `OrderReviewedFact` : jamais ses tables, jamais ses agrégats.
  */
 @Module({
   // La lignée de détachement, lue au catalogue (L7d-bis).
@@ -91,6 +98,11 @@ import { PrismaProductNormStore } from "./infrastructure/prisma-product-norm.sto
     AcknowledgeAlertHandler,
     RecomputeProductNormsHandler,
     PreflightOrderAlertsHandler,
+    // Le visa des commandes (V4) : la lecture par lot, et l'acquittement au visa.
+    { provide: AlertsOfOrders, useClass: PrismaAlertsOfOrders },
+    { provide: OrderAlertsAcknowledger, useClass: PrismaOrderAlertsAcknowledger },
+    ListOrderAlertsHandler,
+    OnOrderReviewedAcknowledgeAlerts,
   ],
 })
 export class AlertsModule {}

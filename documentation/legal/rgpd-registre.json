@@ -2928,6 +2928,33 @@
       "information": false
     },
     {
+      "colonne": "public.order_reviews.reviewed_by_staff_id",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a visé une commande passée par un client pro (`order_reviews`, plan du visa des commandes).",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.order_reviews.withdrawn_by_staff_id",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a retiré le visa d'une commande (`order_reviews`, plan du visa des commandes).",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.order_reviews.note",
+      "personne": "staff",
+      "categorie": "contenu",
+      "finalite": "La note laissée avec un visa de commande, écrite par le staff sur un client : un texte libre, qui peut nommer une personne. Conservée aussi longtemps que la commande, dont aucune durée n'est encore décidée.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
       "colonne": "public.delivery_note.printed_by",
       "personne": "staff",
       "categorie": "auteur-geste",

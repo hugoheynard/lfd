@@ -90,6 +90,26 @@ function orderNoShow(fact: PhraseFact): Said {
   );
 }
 
+/** « Vérifier » une commande qu'un client pro a passée seul (plan du visa). */
+function orderReviewed(fact: PhraseFact): Said {
+  return staffGesture(
+    fact,
+    'reviewedBy',
+    [text(' a vérifié la commande '), name(orDash(fact.payload['orderNumber']))],
+    ['orderNumber'],
+  );
+}
+
+/** Retirer la vérification — à la main, ou remplacée sur une commande révisée depuis. */
+function orderReviewWithdrawn(fact: PhraseFact): Said {
+  return staffGesture(
+    fact,
+    'withdrawnBy',
+    [text(' a retiré la vérification de la commande '), name(orDash(fact.payload['orderNumber']))],
+    ['orderNumber'],
+  );
+}
+
 /** Comment le retrait a été validé, en fin de phrase ; une valeur inconnue reste au détail. */
 const HANDOVER_HOW: Readonly<Record<string, string>> = {
   scan: ' en scannant le QR du client',
@@ -536,6 +556,8 @@ export const ORDERS_PHRASES = {
   'order.shortfall_decided': orderShortfallDecided,
   'order.handed_over': orderHandedOver,
   'order.no_show': orderNoShow,
+  'order.reviewed': orderReviewed,
+  'order.review_withdrawn': orderReviewWithdrawn,
 
   'order_cutoff_waiver.granted': (fact) =>
     byActor(

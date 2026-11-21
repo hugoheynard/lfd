@@ -10,8 +10,8 @@ import {
   type StoredAccountAlert,
 } from "../domain/ports/account-alert.repository.js";
 
-/** Une ligne `account_alerts`, vue d'ici seulement. */
-interface AlertRow {
+/** Une ligne `account_alerts`, vue de l'infrastructure des alertes seulement. */
+export interface AlertRow {
   readonly id: string;
   readonly companyId: string;
   readonly kind: string;
@@ -67,7 +67,7 @@ export class PrismaAccountAlertRepository extends AccountAlertRepository {
       orderBy: { occurredAt: "desc" },
       take: 200,
     });
-    return rows.map((row) => toView(row)).filter(isKnown);
+    return rows.map((row) => storedAlertOf(row)).filter(isKnown);
   }
 
   /**
@@ -91,12 +91,12 @@ export class PrismaAccountAlertRepository extends AccountAlertRepository {
   }
 }
 
-function isKnown(view: StoredAccountAlert | null): view is StoredAccountAlert {
+export function isKnown(view: StoredAccountAlert | null): view is StoredAccountAlert {
   return view !== null;
 }
 
 /** `null` = type inconnu : l'alerte ne désigne plus rien qu'on sache nommer. */
-function toView(row: AlertRow): StoredAccountAlert | null {
+export function storedAlertOf(row: AlertRow): StoredAccountAlert | null {
   const kind = alertKindSchema.safeParse(row.kind);
   if (!kind.success) {
     return null;

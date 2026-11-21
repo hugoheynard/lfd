@@ -1,12 +1,19 @@
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
-import type { AccountAlertView, PendingAlertCounts } from "@lfd/contracts";
-import { Controller, Get, HttpCode, HttpStatus, Param, Post } from "@nestjs/common";
+import {
+  type AccountAlertView,
+  type OrderAlertsQuery,
+  orderAlertsQuerySchema,
+  type PendingAlertCounts,
+} from "@lfd/contracts";
+import { Controller, Get, HttpCode, HttpStatus, Param, Post, Query } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
 import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { AcknowledgeAlertCommand } from "../application/commands/acknowledge-alert.command.js";
 import { CountPendingAlertsQuery } from "../application/queries/count-pending-alerts.query.js";
 import { ListAccountAlertsQuery } from "../application/queries/list-account-alerts.query.js";
+import { ListOrderAlertsQuery } from "../application/queries/list-order-alerts.query.js";
+import { ZodQuery } from "../../../platform/shared/http/zod-body.pipe.js";
 import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 
 /**
@@ -35,6 +42,20 @@ export class AdminAccountAlertsController {
   async pending(): Promise<PendingAlertCounts> {
     return this.queries.execute<CountPendingAlertsQuery, PendingAlertCounts>(
       new CountPendingAlertsQuery(),
+    );
+  }
+
+  /**
+   * Les alertes d'une page de commandes, en une lecture —
+   * `?orderIds=a,b,c` (au plus 200). L'onglet « À vérifier » les déplie sous
+   * chaque ligne (plan du visa des commandes, V4).
+   */
+  @Get("alerts")
+  async ofOrders(
+    @Query(new ZodQuery(orderAlertsQuerySchema)) query: OrderAlertsQuery,
+  ): Promise<AccountAlertView[]> {
+    return this.queries.execute<ListOrderAlertsQuery, AccountAlertView[]>(
+      new ListOrderAlertsQuery(query.orderIds),
     );
   }
 

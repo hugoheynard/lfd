@@ -82,6 +82,11 @@ export const STAFF_RESOURCE_SCOPES: Readonly<Record<StaffResource, StaffResource
     write:
       "Décider du départ d'une commande dont le colisage a signalé un manque : ce qui est au bac part, le reste est abandonné, et le bon de livraison comme les montants à facturer suivent. Définitif. Demande aussi Commandes en lecture pour ouvrir la commande.",
   },
+  b2b_order_review: {
+    read: "Voir l'onglet « À vérifier » des commandes : celles qu'un client pro a passées seul et que personne n'a encore visées.",
+    write:
+      "Viser une commande passée par un client pro, avec une note facultative, ou retirer un visa. Une trace seulement : rien ne se bloque. Viser acquitte les alertes de la commande. Demande aussi Commandes en lecture pour ouvrir la commande.",
+  },
   b2b_counter: {
     read: "Chercher un client au comptoir et voir ce qu'il faut pour lui vendre — adresses, acheteurs, règlement au compte — sans ouvrir sa fiche complète.",
     write:

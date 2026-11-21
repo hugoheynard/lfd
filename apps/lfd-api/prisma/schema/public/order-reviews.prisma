@@ -1,0 +1,31 @@
+// Les visas des commandes — plan
+// `documentation/commandes/back-office/plan-visa-des-commandes.md`.
+//
+// Propriété du contexte `lafoliecoffee/orders` (agrégat `OrderReviews`, le
+// registre des visas d'UNE commande). Ce que Prisma ne sait pas écrire vit
+// dans `20261121120100_les_visas_des_commandes` : les CHECK et l'index unique
+// partiel « un seul visa en cours ».
+
+/// Un visa posé sur une commande. Jamais supprimé : retirer remplit
+/// `withdrawn_*`, viser à nouveau crée une ligne.
+model OrderReview {
+  id                String   @id
+  orderId           String   @map("order_id")
+  order             Order    @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  /// La révision de la commande que le visa a vue : une révision plus haute
+  /// la fait revenir dans l'onglet, « modifiée depuis le visa ».
+  reviewedRevision  Int      @map("reviewed_revision")
+  /// Un `StaffUser.id`, pas une clé étrangère (comme `placed_by_staff_id`).
+  reviewedByStaffId String   @map("reviewed_by_staff_id")
+  reviewedAt        DateTime @map("reviewed_at") @db.Timestamptz(6)
+  /// Texte libre du staff, nul ou non vide (CHECK).
+  note              String?
+
+  /// Les deux ensemble ou aucun (CHECK `order_reviews_withdrawn_together`).
+  withdrawnByStaffId String?   @map("withdrawn_by_staff_id")
+  withdrawnAt        DateTime? @map("withdrawn_at") @db.Timestamptz(6)
+
+  @@index([orderId])
+  @@map("order_reviews")
+  @@schema("public")
+}

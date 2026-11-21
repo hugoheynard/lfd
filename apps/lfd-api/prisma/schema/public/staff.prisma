@@ -72,6 +72,9 @@ enum StaffResource {
   /// manque — un geste à part, accordé à l'écran (2026-10-25,
   /// plan E6 (`documentation/commandes/bon-de-livraison.md`), E6b).
   b2b_orders_shortfall
+  /// LE VISA DES COMMANDES — relire et viser une commande qu'un client pro a
+  /// passée seul (2026-11-21, `documentation/commandes/back-office/plan-visa-des-commandes.md`).
+  b2b_order_review
   /// Le COMPTOIR — la carte et le détail d'un client, taillés pour la prise de
   /// commande (2026-09-25, `architecture-commande-au-comptoir.md`).
   b2b_counter

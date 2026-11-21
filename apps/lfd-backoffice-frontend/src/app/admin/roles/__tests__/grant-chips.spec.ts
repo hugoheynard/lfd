@@ -141,9 +141,11 @@ describe('grantGroups', () => {
    * `production_workstations`, les postes du fournil
    * (documentation/fournil/les-postes-du-fournil.md, W1). 76 le 2026-11-19 :
    * `lfc_product_limit_override` (limites-de-commande/passer-outre-la-limite-d-un-produit.md)
-   * et les modèles de réassort (reassort-boutiques).
+   * et les modèles de réassort (reassort-boutiques). 77 le 2026-11-21 :
+   * `b2b_order_review`, le visa des commandes
+   * (commandes/back-office/plan-visa-des-commandes.md, V1).
    */
   it('compte les domaines du catalogue', () => {
-    expect(RESOURCE_COUNT).toBe(76);
+    expect(RESOURCE_COUNT).toBe(77);
   });
 });

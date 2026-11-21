@@ -77,6 +77,12 @@ export const ACTIVITY_TYPES = {
    * cycle de vie : aucun score ne le lit.
    */
   orderNoShow: "order.no_show",
+  /**
+   * Un commercial a **visé** la commande, ou son visa est **retiré** (plan du
+   * visa des commandes). Des faits de cycle de vie : aucun score ne les lit.
+   */
+  orderReviewed: "order.reviewed",
+  orderReviewWithdrawn: "order.review_withdrawn",
   orderRevised: "order.revised",
   /**
    * L'équipe a **décidé d'un départ incomplet** (plan

@@ -1,6 +1,17 @@
 import { type AdminOrderRow, adminOrdersQuerySchema } from "@lfd/contracts";
 
-import { InvalidAdminOrderCursorError } from "../../../domain/errors/admin-order-list-errors.js";
+import {
+  StaffAuthorDirectory,
+  StaffAuthors,
+} from "../../../../../staff/directory/domain/staff-author-directory.js";
+import {
+  InvalidAdminOrderCursorError,
+  OrderReviewListNotReadableError,
+} from "../../../domain/errors/admin-order-list-errors.js";
+import {
+  CurrentOrderReviewsReader,
+  type CurrentOrderReview,
+} from "../../../domain/ports/order-reviews.reader.js";
 import {
   AdminOrderListReader,
   type AdminOrderListCriteria,
@@ -56,8 +67,56 @@ class SlicedReader extends AdminOrderListReader {
   }
 }
 
-const queryOf = (raw: Record<string, string>) =>
-  new ListAdminOrdersQuery(adminOrdersQuerySchema.parse(raw));
+const queryOf = (raw: Record<string, string>, mayReadReviews = true) =>
+  new ListAdminOrdersQuery(adminOrdersQuerySchema.parse(raw), mayReadReviews);
+
+/** Des visas en cours fixés, et les lots de commandes demandés. */
+class FixedCurrentReviews extends CurrentOrderReviewsReader {
+  readonly asked: (readonly string[])[] = [];
+
+  constructor(private readonly current: ReadonlyMap<string, CurrentOrderReview> = new Map()) {
+    super();
+  }
+
+  of(orderIds: readonly string[]): Promise<ReadonlyMap<string, CurrentOrderReview>> {
+    this.asked.push(orderIds);
+    return Promise.resolve(this.current);
+  }
+}
+
+/** Un annuaire qui ne nomme que `stf_1`, et compte ses lectures. */
+class OneAuthorDirectory extends StaffAuthorDirectory {
+  calls = 0;
+
+  identify(): Promise<StaffAuthors> {
+    this.calls += 1;
+    return Promise.resolve(
+      new StaffAuthors(
+        new Map([
+          [
+            "stf_1",
+            {
+              staffUserId: "stf_1",
+              firstName: "Léa",
+              lastName: "Vidal",
+              role: "commercial",
+              roleLabel: "Commercial",
+              jobTitle: "",
+            },
+          ],
+        ]),
+      ),
+    );
+  }
+}
+
+function handlerOf(
+  reader: AdminOrderListReader,
+  reviews: CurrentOrderReviewsReader = new FixedCurrentReviews(),
+  staff: StaffAuthorDirectory = new OneAuthorDirectory(),
+): ListAdminOrdersHandler {
+  return new ListAdminOrdersHandler(reader, reviews, staff);
+}
 
 describe("ListAdminOrdersHandler", () => {
   it("rend un curseur sur la DERNIÈRE ligne quand le lecteur en a vu au-delà", async () => {
@@ -67,7 +126,7 @@ describe("ListAdminOrdersHandler", () => {
       total: 7,
     });
 
-    const page = await new ListAdminOrdersHandler(reader).execute(queryOf({ limit: "2" }));
+    const page = await handlerOf(reader).execute(queryOf({ limit: "2" }));
 
     expect(page.rows.map((row) => row.id)).toEqual(["b", "a"]);
     const cursor = AdminOrderCursor.decode(page.nextCursor ?? "");
@@ -77,7 +136,7 @@ describe("ListAdminOrdersHandler", () => {
   it("ne rend pas de curseur sur la dernière page", async () => {
     const reader = new SlicedReader({ rows: [rowOf("a", EARLIER)], hasMore: false, total: 0 });
 
-    const page = await new ListAdminOrdersHandler(reader).execute(queryOf({}));
+    const page = await handlerOf(reader).execute(queryOf({}));
 
     expect(page.nextCursor).toBeNull();
   });
@@ -86,7 +145,7 @@ describe("ListAdminOrdersHandler", () => {
     const reader = new SlicedReader({ rows: [], hasMore: false, total: 0 });
     const token = AdminOrderCursor.after(new Date(EARLIER), "a").encode();
 
-    await new ListAdminOrdersHandler(reader).execute(
+    await handlerOf(reader).execute(
       queryOf({ cursor: token, clientele: "pro", method: "delivery" }),
     );
 
@@ -100,23 +159,23 @@ describe("ListAdminOrdersHandler", () => {
   it("refuse un curseur illisible sans interroger le lecteur", async () => {
     const reader = new SlicedReader({ rows: [], hasMore: false, total: 0 });
 
-    await expect(
-      new ListAdminOrdersHandler(reader).execute(queryOf({ cursor: "bricole" })),
-    ).rejects.toBeInstanceOf(InvalidAdminOrderCursorError);
+    await expect(handlerOf(reader).execute(queryOf({ cursor: "bricole" }))).rejects.toBeInstanceOf(
+      InvalidAdminOrderCursorError,
+    );
     expect(reader.received).toHaveLength(0);
   });
 
   it("rend le total du lecteur, celui qui numérote les pages", async () => {
     const reader = new SlicedReader({ rows: [rowOf("a", EARLIER)], hasMore: false, total: 51 });
 
-    const page = await new ListAdminOrdersHandler(reader).execute(queryOf({ page: "2" }));
+    const page = await handlerOf(reader).execute(queryOf({ page: "2" }));
 
     expect(page.total).toBe(51);
   });
 
   it("lit les commandes par défaut, et les seules tentatives abandonnées sur demande", async () => {
     const reader = new SlicedReader({ rows: [], hasMore: false, total: 0 });
-    const handler = new ListAdminOrdersHandler(reader);
+    const handler = handlerOf(reader);
 
     await handler.execute(queryOf({}));
     await handler.execute(queryOf({ view: "abandoned_attempts" }));
@@ -125,6 +184,58 @@ describe("ListAdminOrdersHandler", () => {
       "orders",
       "abandoned_attempts",
     ]);
+  });
+
+  it("refuse l'onglet « À vérifier » sans le droit de lire les visas, sans interroger le lecteur", async () => {
+    const reader = new SlicedReader({ rows: [], hasMore: false, total: 0 });
+
+    await expect(
+      handlerOf(reader).execute(queryOf({ view: "to_review" }, false)),
+    ).rejects.toBeInstanceOf(OrderReviewListNotReadableError);
+    expect(reader.received).toHaveLength(0);
+  });
+
+  it("lit l'onglet « À vérifier » avec le droit", async () => {
+    const reader = new SlicedReader({ rows: [], hasMore: false, total: 0 });
+
+    await handlerOf(reader).execute(queryOf({ view: "to_review" }));
+
+    expect(reader.received.map((criteria) => criteria.view)).toEqual(["to_review"]);
+  });
+
+  it("porte sur chaque ligne son visa en cours, nommé en une lecture de l'annuaire pour la page", async () => {
+    const reader = new SlicedReader({
+      rows: [rowOf("b", LATEST), rowOf("a", EARLIER), rowOf("c", EARLIER)],
+      hasMore: false,
+      total: 3,
+    });
+    const reviews = new FixedCurrentReviews(
+      new Map([
+        [
+          "b",
+          { reviewedByStaffId: "stf_1", reviewedAt: new Date(LATEST), revisedSinceReview: false },
+        ],
+        [
+          "a",
+          {
+            reviewedByStaffId: "stf_gone",
+            reviewedAt: new Date(EARLIER),
+            revisedSinceReview: true,
+          },
+        ],
+      ]),
+    );
+    const staff = new OneAuthorDirectory();
+
+    const page = await handlerOf(reader, reviews, staff).execute(queryOf({}));
+
+    expect(page.rows.map((row) => [row.id, row.review, row.revisedSinceReview])).toEqual([
+      ["b", { byName: "Léa Vidal", at: LATEST }, false],
+      ["a", { byName: null, at: EARLIER }, true],
+      ["c", null, false],
+    ]);
+    expect(reviews.asked).toEqual([["b", "a", "c"]]);
+    expect(staff.calls).toBe(1);
   });
 
   it("refuse une vue inconnue à la forme", () => {

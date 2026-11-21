@@ -597,6 +597,8 @@ model Order {
   discounts          OrderDiscount[]
   /// Les limites de produit que l'équipe a passées (plan des dépassements, § 3.5).
   itemLimitOverrides OrderItemLimitOverride[]
+  /// Ses visas, en cours et retirés (plan du visa des commandes).
+  reviews            OrderReview[]
 
   @@index([companyId])
   @@index([billedCompanyId])

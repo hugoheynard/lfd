@@ -1,5 +1,7 @@
 import type { AdminOrderCancellability, OrderView } from "@lfd/contracts";
 
+import type { OrderReviews } from "../../../domain/entities/order-reviews.js";
+import { OrderReviewsReader } from "../../../domain/ports/order-reviews.reader.js";
 import {
   OrderNoShowReader,
   type OrderNoShowTraces,
@@ -268,6 +270,13 @@ class NoNoShow extends OrderNoShowReader {
   }
 }
 
+/** Aucune commande ici ne porte de registre de visas (sa vue a sa suite). */
+class NoReviews extends OrderReviewsReader {
+  override of(): Promise<OrderReviews | null> {
+    return Promise.resolve(null);
+  }
+}
+
 /** Le détail staff, avec ce que l'annulation lit d'elle (par défaut : annulable). */
 function adminHandler(
   owned: OwnedOrder | null,
@@ -286,6 +295,7 @@ function adminHandler(
   increase: CardIncreaseProposal | null = null,
   overrides: ItemLimitOverrideReader = new RecordedOverrides([]),
   noShows: OrderNoShowReader = new NoNoShow(),
+  reviews: OrderReviewsReader = new NoReviews(),
 ): GetAdminOrderHandler {
   const subjects = new FixedSubjects(subject, others);
   const inscriptions = new FixedInscription(inscribedDay);
@@ -318,6 +328,7 @@ function adminHandler(
     ),
     overrides,
     noShows,
+    reviews,
   );
 }
 

@@ -41,6 +41,8 @@ import { GetAdminOrderQuery } from "./get-admin-order.query.js";
 import { ItemLimitOverrideReader } from "../../domain/ports/item-limit-override.reader.js";
 import { OrderNoShowReader } from "../../domain/ports/order-no-show.reader.js";
 import { noShowAuthorsOf, noShowViewOf } from "./admin-order-no-show-view.js";
+import { OrderReviewsReader } from "../../domain/ports/order-reviews.reader.js";
+import { reviewAuthorsOf, reviewStateOf } from "./admin-order-review-view.js";
 import type { ItemLimitOverride } from "../../domain/services/item-limit-overrides.js";
 
 /**
@@ -76,6 +78,9 @@ import type { ItemLimitOverride } from "../../domain/services/item-limit-overrid
  *
  * Les limites de produit que l'équipe a passées, pour qui a le droit de les
  * lire ; la lecture n'est pas faite sans lui.
+ *
+ * Et son visa (plan du visa des commandes) : en cours, son historique, et si
+ * elle se vise — servi à qui lit la commande, c'est une trace.
  */
 @QueryHandler(GetAdminOrderQuery)
 export class GetAdminOrderHandler implements IQueryHandler<GetAdminOrderQuery, AdminOrderView> {
@@ -96,6 +101,7 @@ export class GetAdminOrderHandler implements IQueryHandler<GetAdminOrderQuery, A
     private readonly shortfallRefunds: AdminShortfallRefundView,
     private readonly itemLimitOverrides: ItemLimitOverrideReader,
     private readonly noShows: OrderNoShowReader,
+    private readonly reviews: OrderReviewsReader,
   ) {}
 
   async execute(query: GetAdminOrderQuery): Promise<AdminOrderView> {
@@ -110,6 +116,7 @@ export class GetAdminOrderHandler implements IQueryHandler<GetAdminOrderQuery, A
       shortfallRefund,
       overrides,
       noShow,
+      reviews,
     ] = await Promise.all([
       this.orders.findById(query.orderId),
       this.authors.authorOf(query.orderId),
@@ -121,18 +128,21 @@ export class GetAdminOrderHandler implements IQueryHandler<GetAdminOrderQuery, A
       this.shortfallRefunds.of(query.orderId),
       query.withItemLimitOverrides ? this.itemLimitOverrides.forOrder(query.orderId) : null,
       this.noShows.of(query.orderId),
+      this.reviews.of(query.orderId),
     ]);
     if (owned === null || author === null || cancellability === null || revision === null) {
       throw new OrderNotFoundError(query.orderId);
     }
     const notifier = shortfall?.decision?.customerNotice?.byStaffId;
     // Une seule lecture de l'annuaire : qui a saisi, qui a prévenu, qui a
-    // passé outre une limite de produit, qui a déclaré la commande non retirée.
+    // passé outre une limite de produit, qui a déclaré la commande non retirée,
+    // qui l'a visée.
     const staffAuthors = await this.staff.identify([
       author.placedByStaffId,
       ...(notifier === undefined ? [] : [notifier]),
       ...(overrides ?? []).map((override) => override.staffUserId),
       ...noShowAuthorsOf(noShow),
+      ...reviewAuthorsOf(reviews),
     ]);
     return {
       ...owned.view,
@@ -151,6 +161,7 @@ export class GetAdminOrderHandler implements IQueryHandler<GetAdminOrderQuery, A
       cardIncrease: adminCardIncreaseOf(increase),
       shortfallRefund,
       noShow: noShowViewOf(noShow, staffAuthors),
+      ...(reviews === null ? {} : { review: reviewStateOf(reviews, staffAuthors) }),
       ...(overrides === null
         ? {}
         : {

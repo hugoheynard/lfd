@@ -1,3 +1,4 @@
+import { ORDER_REVIEW_CONTROLLERS, ORDER_REVIEW_PROVIDERS } from "./order-review.providers.js";
 import { Module } from "@nestjs/common";
 
 import { CatalogModule } from "../catalog/catalog.module.js";
@@ -387,6 +388,7 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     ...CARD_INCREASE_CONTROLLERS,
     ...ORDER_SHORTFALL_CONTROLLERS,
     ...ORDER_BUDGET_COMMITMENT_CONTROLLERS,
+    ...ORDER_REVIEW_CONTROLLERS,
     ...ORDER_SHORTFALL_REFUND_CONTROLLERS,
     OrdersController,
     MyShopCatalogueController,
@@ -497,6 +499,7 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     ...CARD_INCREASE_PROVIDERS,
     ...ORDER_SHORTFALL_PROVIDERS,
     ...ORDER_BUDGET_COMMITMENT_PROVIDERS,
+    ...ORDER_REVIEW_PROVIDERS,
     VoucherRestitutionRefusal,
     // Lot C5 : la règle d'annulation et l'engagement comptable — le port est
     // relié par `appBootstrap/account-order-engagement.module.ts`.

@@ -16,6 +16,7 @@ import {
   type OrderQuotePayload,
   type OrderQuoteView,
   DELIVERY_PROOF_PERMISSION,
+  hasStaffPermission,
   type StaffPermission,
 } from "@lfd/contracts";
 import {
@@ -190,14 +191,16 @@ export class AdminOrdersController {
   /**
    * Les commandes, la plus récente en tête, **par page** : `nextCursor` se
    * renvoie en `cursor` pour la suivante. Filtrables par société, clientèle,
-   * jours, états, mode et recherche (`AdminOrdersQuery`).
+   * jours, états, mode et recherche (`AdminOrdersQuery`). La vue
+   * `to_review` exige `b2b_order_review:read` (`403` sinon).
    */
   @Get()
   async list(
     @Query(new ZodQuery(adminOrdersQuerySchema)) filters: AdminOrdersQuery,
+    @StaffPermissions() permissions: readonly StaffPermission[],
   ): Promise<AdminOrdersPage> {
     return this.queries.execute<ListAdminOrdersQuery, AdminOrdersPage>(
-      new ListAdminOrdersQuery(filters),
+      new ListAdminOrdersQuery(filters, hasStaffPermission(permissions, "b2b_order_review:read")),
     );
   }
 

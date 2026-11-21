@@ -7,5 +7,13 @@ import type { AdminOrdersQuery } from "@lfd/contracts";
  * décision ouverte sur `StaffScope`), c'est CETTE requête qui portera le mur.
  */
 export class ListAdminOrdersQuery {
-  constructor(readonly filters: AdminOrdersQuery) {}
+  constructor(
+    readonly filters: AdminOrdersQuery,
+    /**
+     * L'appelant tient `b2b_order_review:read`, lu dans les permissions que
+     * la porte staff a résolues en base : sans lui, la vue `to_review` est
+     * refusée.
+     */
+    readonly mayReadReviews: boolean,
+  ) {}
 }

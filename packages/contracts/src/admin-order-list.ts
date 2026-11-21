@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import type { AdminOrderEntryOrigin } from "./admin-order-detail.js";
+import type { AdminOrderReviewStamp } from "./order-review.js";
 
 import {
   fulfillmentMethodSchema,
@@ -127,6 +128,13 @@ export interface AdminOrderRow {
   readonly origin: OrderOrigin;
   /** D'où vient la saisie de l'équipe — cf. `AdminOrderView.entryOrigin`. */
   readonly entryOrigin: AdminOrderEntryOrigin | null;
+  /**
+   * **Le visa en cours** (plan du visa des commandes) — qui l'a posé et
+   * quand ; `null` : aucun. Facultatif : un serveur plus ancien ne le sert pas.
+   */
+  readonly review?: AdminOrderReviewStamp | null;
+  /** La commande a été révisée après son visa en cours (« modifiée depuis le visa »). */
+  readonly revisedSinceReview?: boolean;
 }
 
 /**
@@ -161,8 +169,12 @@ export const adminOrderClienteleSchema = z.enum([
  */
 const parisDaySchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "jour attendu au format AAAA-MM-JJ");
 
-/** Les deux listes du back-office : les commandes, ou les tentatives abandonnées. */
-export const ADMIN_ORDER_LIST_VIEWS = ["orders", "abandoned_attempts"] as const;
+/**
+ * Les listes du back-office : les commandes, les tentatives abandonnées, ou
+ * les commandes **à vérifier** (`to_review`, plan du visa des commandes) —
+ * cette dernière refusée par le serveur sans `b2b_order_review:read`.
+ */
+export const ADMIN_ORDER_LIST_VIEWS = ["orders", "abandoned_attempts", "to_review"] as const;
 export const adminOrderListViewSchema = z.enum(ADMIN_ORDER_LIST_VIEWS);
 export type AdminOrderListView = z.infer<typeof adminOrderListViewSchema>;
 
@@ -219,6 +231,8 @@ export const adminOrdersQuerySchema = z
      * de règlement par carte abandonnées. `abandoned_attempts` : ces seules
      * tentatives — annulées sans avoir jamais été payées (décidé par Hugo le
      * 2026-11-13 : elles gardent leur numéro, mais se consultent à part).
+     * `to_review` : les commandes passées par un client pro seul qui
+     * attendent un visa, ou modifiées depuis le leur.
      */
     view: adminOrderListViewSchema.optional(),
     /** Le `nextCursor` de la page précédente, tel quel. */

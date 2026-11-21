@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import type { AdminOrderCardIncrease } from "./admin-order-card-increase.js";
+import type { AdminOrderReviewState } from "./order-review.js";
 import type { OrderSaleUnit, OrderView } from "./order.js";
 import type { OrderClientele } from "./order-handover.js";
 import type { AdminOrderRevisability } from "./order-revision.values.js";
@@ -100,6 +101,12 @@ export interface AdminOrderView extends OrderView {
    * autre commande. Facultatif : un serveur plus ancien ne le sert pas.
    */
   readonly noShow?: AdminOrderNoShow | null;
+  /**
+   * **Le visa** (plan du visa des commandes) : en cours, son historique, et
+   * si la commande se vise maintenant. Servi à qui lit la commande : c'est
+   * une trace. Facultatif : un serveur plus ancien ne le sert pas.
+   */
+  readonly review?: AdminOrderReviewState;
 }
 
 /** Une commande déclarée non retirée, telle que la fiche la raconte. */

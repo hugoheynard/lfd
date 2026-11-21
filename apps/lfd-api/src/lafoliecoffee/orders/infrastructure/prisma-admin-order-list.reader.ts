@@ -11,7 +11,7 @@ import {
 } from "../domain/ports/admin-order-list.reader.js";
 import { orderEntryOriginOf, orderOriginOf } from "../domain/services/order-origin.js";
 import { settlementRegimeOf } from "../domain/services/settlement-regime.js";
-import { abandonedAttemptWhere, notAbandonedAttemptWhere } from "./abandoned-attempt.where.js";
+import { viewWhere } from "./admin-order-list-view.where.js";
 import { customerLabelOf } from "./handover-order.query.js";
 import { fulfillmentOf, windowOf } from "./order-fulfillment.parse.js";
 import { pickupLabelOf, siteIdOf } from "./pickup-site.parse.js";
@@ -71,7 +71,7 @@ export class PrismaAdminOrderListReader extends AdminOrderListReader {
   }
 
   async page(criteria: AdminOrderListCriteria): Promise<AdminOrderListSlice> {
-    const filters = whereOf(criteria);
+    const filters = [await viewWhere(this.prisma, criteria.view), ...whereOf(criteria)];
     // Une seule photographie : la page et son total ne doivent pas se lire
     // de part et d'autre d'une commande qui arrive.
     const [rows, total] = await this.prisma.$transaction([
@@ -95,7 +95,6 @@ export class PrismaAdminOrderListReader extends AdminOrderListReader {
 /** Chaque filtre posé est une clause ; aucune ne s'écrase l'une l'autre. */
 function whereOf(criteria: AdminOrderListCriteria): Prisma.OrderWhereInput[] {
   const clauses: Prisma.OrderWhereInput[] = [
-    viewWhere(criteria),
     companyWhere(criteria),
     ...criteria.searchTerms.map(searchWhere),
   ];
@@ -114,18 +113,6 @@ function whereOf(criteria: AdminOrderListCriteria): Prisma.OrderWhereInput[] {
     clauses.push({ requestedDeliveryDate: { lte: dateColumnOf(criteria.fulfillmentTo) } });
   }
   return clauses;
-}
-
-/**
- * La vue : les commandes, ou les seules tentatives abandonnées. Une recherche
- * exacte du numéro d'une tentative ne la trouve QUE dans sa vue — les deux
- * listes sont disjointes, et la recherche ne fait pas sortir une tentative de
- * la sienne.
- */
-function viewWhere(criteria: AdminOrderListCriteria): Prisma.OrderWhereInput {
-  return criteria.view === "abandoned_attempts"
-    ? abandonedAttemptWhere()
-    : notAbandonedAttemptWhere();
 }
 
 /** Strictement après le curseur — hors du total, qui compte toute la liste. */

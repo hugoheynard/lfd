@@ -82,11 +82,23 @@ Une commande est **à vérifier** quand, ensemble :
   plus haut) ; il garde la **révision** de la commande. Une commande **révisée
   depuis son visa** (`orders.revision` > `reviewed_revision`, client ou
   équipe) **revient dans l'onglet**, marquée « modifiée depuis le visa ».
+  La vérifier à nouveau **remplace** le visa en un seul geste (2026-11-21) :
+  l'agrégat retire l'ancien (`withdrawn_by` = qui vérifie à nouveau,
+  `withdrawn_at` = maintenant) et pose le nouveau, dans la même transaction.
+  Une commande visée et **non** révisée depuis reste refusée (409, déjà
+  visée).
 - `withdraw(staff, at)` : tout porteur du droit en écriture peut retirer un
   visa (pas seulement son auteur) ; le retrait garde qui et quand.
-- Faits dans la boîte d'envoi, dans la même transaction :
-  `orders.order_reviewed`, `orders.order_review_withdrawn` (le journal de la
-  commande les lit).
+- Faits dans la boîte d'envoi, dans la même transaction, nommés comme les
+  autres faits des commandes : `order.reviewed`, `order.review_withdrawn`
+  (un remplacement publie le retrait de l'ancien visa, puis le nouveau). Le
+  journal de la commande les lit, comme `order.no_show` : deux abonnés
+  durables du contexte `growth` (`b2b.growth.record-order-reviewed`,
+  `b2b.growth.record-order-review-withdrawn`) inscrivent le témoin sous le nom
+  du client, avec la fiche qui a agi — jamais la note. Leurs charges sont au
+  catalogue `@lfd/contracts/journal-facts` ; leurs **phrases** au back-office
+  (`shared/journal/phrases/orders-phrases.ts`) appartiennent au lot de
+  l'écran.
 - Routes `POST /admin/orders/:id/review` et `.../review/withdraw`, sous
   `@RequirePermission("b2b_order_review:write")`, avec la clé d'intention de
   l'écran (`@IntentKey`, `lint:write-idempotence`).
@@ -131,8 +143,9 @@ modifié. Chacune porte **sa commande** (`account_alerts.order_id`,
   commerce ne lit pas sa table (`lint:prisma-model-ownership`). Route
   `GET /admin/alerts?orderIds=…`, sous `b2b_alerts:read` (`@AdminSurface("b2b_alerts")`, comme les autres routes des alertes).
 - **Vérifier une commande acquitte ses alertes en cours** — un seul geste
-  (Hugo, 2026-11-21). Le visa émet `orders.order_reviewed` dans la boîte
-  d'envoi ; le contexte des alertes s'y abonne (`@DurableHandler`, rejoué
+  (Hugo, 2026-11-21). Le visa émet `order.reviewed` dans la boîte
+  d'envoi ; le contexte des alertes s'y abonne
+  (`@DurableHandler` `b2b.alerts.acknowledge-reviewed-order`, rejoué
   après un redémarrage) et acquitte les alertes de cette commande au nom de
   qui a vérifié, sous la condition `acknowledged_at IS NULL` qu'il tient déjà.
   Les commandes ne touchent pas la table des alertes. Retirer la vérification

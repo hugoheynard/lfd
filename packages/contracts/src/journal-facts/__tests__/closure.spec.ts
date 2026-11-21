@@ -173,6 +173,12 @@ const BARE_REFS: Readonly<Record<string, string>> = {
     "la demande s'anonymise : on ne recopie au journal ni son auteur ni son texte",
   "order.no_show:orderId": "voisine son nom figé (`orderNumber`)",
   "order.no_show:noShowBy": "une fiche staff que l'annuaire ne nomme pas se cite par son id",
+  // Le visa des commandes (plan du visa, 2026-11-21).
+  "order.reviewed:orderId": "voisine son nom figé (`orderNumber`)",
+  "order.reviewed:reviewedBy": "une fiche staff que l'annuaire ne nomme pas se cite par son id",
+  "order.review_withdrawn:orderId": "voisine son nom figé (`orderNumber`)",
+  "order.review_withdrawn:withdrawnBy":
+    "une fiche staff que l'annuaire ne nomme pas se cite par son id",
   "order.handed_over:orderId": "voisine son nom figé (`orderNumber`)",
   "order.handed_over:handedOverBy":
     "une fiche staff que l'annuaire ne nomme pas se cite par son id",
