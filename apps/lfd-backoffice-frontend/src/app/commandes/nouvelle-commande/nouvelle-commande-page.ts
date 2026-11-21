@@ -100,7 +100,7 @@ import { formatOrderInstant } from '@lfd/b2b-ui/order';
 import { narrowViewport } from '../../shared/viewport/narrow-viewport';
 import { BarrePanier } from './barre-panier/barre-panier';
 import { CartStore, saleLineOf } from './cart.store';
-import { draftPayloadOf, draftPretaxOf, draftSnapshotOf, restoreLines } from './draft-payload';
+import { draftPayloadOf, draftSnapshotOf, pretaxToKeepOf, restoreLines } from './draft-payload';
 import { DraftStore } from './draft.store';
 import { PanierPanel, type PanierPanelData } from './panier-panel/panier-panel';
 import { PanierCommande, type OrderDraft } from './panier-commande/panier-commande';
@@ -619,14 +619,10 @@ export class NouvelleCommandePage {
   protected async onSaveDraft(): Promise<void> {
     this.savingDraft.set(true);
     try {
+      const pretax = await this.pretaxToKeep();
       const view = await this.draftsService.save(
         this.id(),
-        draftPayloadOf(
-          this.draft.snapshot(),
-          this.cart.lines(),
-          this.addresses(),
-          draftPretaxOf(this.estimate()?.amounts ?? null, this.estimateReady(), this.immediate()),
-        ),
+        draftPayloadOf(this.draft.snapshot(), this.cart.lines(), this.addresses(), pretax),
       );
       this.resumedAt.set(formatOrderInstant(view.savedAt));
       this.notify.success('Brouillon enregistré.');
@@ -635,6 +631,22 @@ export class NouvelleCommandePage {
     } finally {
       this.savingDraft.set(false);
     }
+  }
+
+  /**
+   * Le Total HT à garder avec le brouillon. Une saisie complète dont le prix
+   * est encore en calcul — juste après une reprise, ou un dernier changement —
+   * l'attend plutôt que d'enregistrer « — » (Hugo, 2026-11-21) ; la réponse ne
+   * vaut que si la saisie n'a pas bougé entre-temps.
+   */
+  private pretaxToKeep(): Promise<number | null> {
+    return pretaxToKeepOf({
+      ready: this.estimateReady(),
+      amounts: this.estimate()?.amounts ?? null,
+      immediate: this.immediate(),
+      currentKey: () => this.estimateRequest()?.key ?? null,
+      fetch: () => this.freshEstimate(),
+    });
   }
 
   /** Jette le brouillon, et repart d'un écran vide. */

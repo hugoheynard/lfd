@@ -1,7 +1,13 @@
 import type { CatalogItemView, DeliveryAddressView, OrderDraftView } from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
-import { draftPayloadOf, draftPretaxOf, draftSnapshotOf, restoreLines } from '../draft-payload';
+import {
+  draftPayloadOf,
+  draftPretaxOf,
+  draftSnapshotOf,
+  pretaxToKeepOf,
+  restoreLines,
+} from '../draft-payload';
 import { DraftStore, NEW_ADDRESS } from '../draft.store';
 
 const SHOP: DeliveryAddressView = {
@@ -216,5 +222,58 @@ describe('draftPretaxOf — le Total HT gardé avec le brouillon', () => {
     const draft = new DraftStore();
     expect(draftPayloadOf(draft.snapshot(), [], []).estimatedPretaxCents).toBeNull();
     expect(draftPayloadOf(draft.snapshot(), [], [], 4210).estimatedPretaxCents).toBe(4210);
+  });
+});
+
+describe('pretaxToKeepOf — attendre le prix avant d’enregistrer', () => {
+  const AMOUNTS = { pretaxCents: 4210, lateFeeCents: 0 };
+  const never = (): Promise<null> => Promise.reject(new Error('ne doit pas redemander'));
+
+  it('prix prêt : il le garde sans redemander', async () => {
+    const kept = await pretaxToKeepOf({
+      ready: true,
+      amounts: AMOUNTS,
+      immediate: false,
+      currentKey: () => 'k1',
+      fetch: never,
+    });
+    expect(kept).toBe(4210);
+  });
+
+  it('prix en calcul : il l’attend, au lieu d’enregistrer « — »', async () => {
+    const kept = await pretaxToKeepOf({
+      ready: false,
+      amounts: null,
+      immediate: false,
+      currentKey: () => 'k1',
+      fetch: () => Promise.resolve(AMOUNTS),
+    });
+    expect(kept).toBe(4210);
+  });
+
+  it('la saisie a bougé pendant l’attente : rien plutôt qu’un prix d’une autre saisie', async () => {
+    let key = 'k1';
+    const kept = await pretaxToKeepOf({
+      ready: false,
+      amounts: null,
+      immediate: false,
+      currentKey: () => key,
+      fetch: () => {
+        key = 'k2';
+        return Promise.resolve(AMOUNTS);
+      },
+    });
+    expect(kept).toBeNull();
+  });
+
+  it('saisie incomplète : rien à attendre', async () => {
+    const kept = await pretaxToKeepOf({
+      ready: false,
+      amounts: null,
+      immediate: false,
+      currentKey: () => null,
+      fetch: never,
+    });
+    expect(kept).toBeNull();
   });
 });

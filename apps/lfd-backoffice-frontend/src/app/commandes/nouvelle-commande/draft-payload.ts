@@ -323,3 +323,37 @@ export function placePayloadOf(
     ...(origin === 'counter' ? { entryOrigin: 'counter' as const } : {}),
   };
 }
+
+/** Ce que la saisie sait de son prix au moment d'enregistrer. */
+export interface PretaxContext {
+  /** L'estimation affichée répond-elle à la saisie en cours ? */
+  readonly ready: boolean;
+  readonly amounts: { readonly pretaxCents: number; readonly lateFeeCents: number } | null;
+  readonly immediate: boolean;
+  /** La clé de la saisie en cours, `null` tant qu'elle ne se compose pas. */
+  readonly currentKey: () => string | null;
+  /** Redemande l'estimation de la saisie en cours. */
+  readonly fetch: () => Promise<{
+    readonly pretaxCents: number;
+    readonly lateFeeCents: number;
+  } | null>;
+}
+
+/**
+ * Le Total HT à garder avec le brouillon. Une saisie complète dont le prix est
+ * encore en calcul — juste après une reprise, ou un dernier changement —
+ * l'attend plutôt que d'enregistrer « — » (Hugo, 2026-11-21) ; la réponse ne
+ * vaut que si la saisie n'a pas bougé entre-temps. Une saisie incomplète
+ * n'attend rien : elle n'a pas de prix.
+ */
+export async function pretaxToKeepOf(context: PretaxContext): Promise<number | null> {
+  if (context.ready) {
+    return draftPretaxOf(context.amounts, true, context.immediate);
+  }
+  const key = context.currentKey();
+  if (key === null) {
+    return null;
+  }
+  const amounts = await context.fetch();
+  return draftPretaxOf(amounts, context.currentKey() === key, context.immediate);
+}
