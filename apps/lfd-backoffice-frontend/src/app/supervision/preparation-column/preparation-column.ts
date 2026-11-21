@@ -40,8 +40,8 @@ import { NO_MATCHES } from '../supervision-search';
 import { SUPERVISION_LINKS } from '../supervision-links';
 import { SaleQuantityPipe } from '../../shared/sale-quantity/sale-quantity.pipe';
 import { tranchesNow } from '../../production/previsionnel/day-tranches-section/day-tranches-section';
-import { WorkshopClock } from '../../production/fiche-atelier/workshop-clock';
-import { currentStep, isLate } from '../../production/fiche-atelier/workshop-deadlines';
+import { WorkshopClock } from '../../production/fiche-atelier/state/workshop-clock';
+import { currentStep, isLate } from '../../production/fiche-atelier/rules/workshop-deadlines';
 import { parisToday } from '../../shared/paris-today';
 
 /** Une ligne du détail, et la liste du serveur qui la porte. */

@@ -1,0 +1,35 @@
+@switch (level()) {
+  @case ('always_green') {
+    <app-line-always-green
+      [line]="line()"
+      [busy]="busy()"
+      [class.is-linked]="linked()"
+      [attr.data-line]="line().sku"
+      (problem)="problem.emit()"
+    />
+  }
+  @case ('simple') {
+    <app-line-simple
+      [line]="line()"
+      [busy]="busy()"
+      [doneWaiting]="doneWaiting()"
+      [class.is-linked]="linked()"
+      [attr.data-line]="line().sku"
+      (done)="done.emit()"
+      (problem)="problem.emit()"
+    />
+  }
+  @case ('detailed') {
+    <app-worksheet-line
+      [line]="line()"
+      [busy]="busy()"
+      [now]="now()"
+      [pending]="pending()"
+      [shortcuts]="shortcuts()"
+      [class.is-linked]="linked()"
+      [attr.data-line]="line().sku"
+      (recorded)="recorded.emit($event)"
+      (cancelled)="cancelled.emit($event)"
+    />
+  }
+}

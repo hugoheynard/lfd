@@ -55,7 +55,7 @@
 /*
   🔴 Le seuil est 1024 px, et non les 640 px du back-office : c'est la largeur en
   dessous de laquelle la barre d'onglets cesse de tenir sur une ligne. La MÊME
-  valeur est écrite dans `fiche-atelier.ts` (`WORKSHOP_NARROW`), qu'une media
+  valeur est écrite dans `workshop-view.ts` (`WORKSHOP_NARROW`), qu'une media
   query ne peut pas lire. Les deux bougent ensemble, ou l'écran se coupe en deux.
 */
 @media (max-width: 1023px) {
@@ -98,6 +98,12 @@
   white-space: nowrap;
 }
 
+.fa-masthead-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
 .fa-masthead-bar {
   display: flex;
   flex-wrap: wrap;
@@ -126,7 +132,7 @@
 /* Le nom du POSTE, et rien d'autre : c'est ce qu'on cherche en levant les yeux,
    et le rail nomme déjà l'écran. */
 .fa-title {
-  margin: var(--fold-space-xs) 0 0;
+  margin: 0;
   font-size: var(--fold-text-xl);
   font-weight: var(--fold-weight-bold);
   letter-spacing: var(--fold-tracking-tighter);
@@ -180,16 +186,6 @@
 .fa-picker {
   flex: none;
   min-width: 16ch;
-}
-
-.fa-tabs {
-  margin-top: var(--fold-space-md);
-}
-
-/* Callouts et bandeau d'écart : ils se lisent, donc ils prennent la gouttière du
-   reste de la bande — et l'écart qui les sépare du bar au-dessus. */
-.fa-note {
-  margin-top: var(--fold-space-md);
 }
 
 /* ── LE CORPS ───────────────────────────────────────────────────────────────
@@ -269,7 +265,7 @@ fold-page-layout {
 */
 @media (min-width: 1024px) {
   @container fa-lines (max-width: 1100px) {
-    app-worksheet-line {
+    app-workshop-line {
       --fa-line-columns: 112px minmax(0, 1fr) auto;
       --fa-line-areas: 'left what actions' 'left progress progress' 'left batches batches';
     }
@@ -349,7 +345,6 @@ fold-page-layout {
    pas une information qu'on vient chercher — mais elle doit être lisible du
    même coup d'œil que la date, sinon elle ne sert à rien. */
 .fa-offset {
-  margin-left: var(--fold-space-xs);
   color: var(--fold-color-text-faded);
   font-weight: var(--fold-weight-regular);
 }
@@ -357,17 +352,11 @@ fold-page-layout {
 // L'intertitre d'une sous-catégorie, dans la fiche de sa racine (2026-10-30) :
 // le mot de la bande, sans la bande — on lit une seule fiche, pas deux.
 .fa-subcategory {
-  margin: var(--fold-space-md) 0 var(--fold-space-xs);
+  margin: 0;
   font-family: var(--fold-font-mono);
   font-size: var(--fold-text-xs);
   font-weight: var(--fold-weight-bold);
   letter-spacing: var(--fold-tracking-caps);
   text-transform: uppercase;
   color: var(--fold-color-text-secondary);
-}
-
-/* La ligne que le lien de la cloche désigne (`?ligne=`) : cerclée de rouge. */
-.is-linked {
-  outline: 2px solid var(--fold-color-alert);
-  outline-offset: 2px;
 }

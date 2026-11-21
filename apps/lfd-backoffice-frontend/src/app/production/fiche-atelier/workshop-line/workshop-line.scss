@@ -1,0 +1,10 @@
+/* L'hôte ne dessine rien : la grille de la liste reste celle de la ligne. */
+:host {
+  display: contents;
+}
+
+/* La ligne que le lien de la cloche désigne (`?ligne=`) : cerclée de rouge. */
+.is-linked {
+  outline: 2px solid var(--fold-color-alert);
+  outline-offset: 2px;
+}

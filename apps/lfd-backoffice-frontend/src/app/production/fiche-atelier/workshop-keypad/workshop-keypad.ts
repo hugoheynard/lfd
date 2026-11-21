@@ -151,10 +151,6 @@ export class WorkshopKeypad implements FoldPanelContent<KeypadData> {
     this.typed.set(String(preset.value));
   }
 
-  protected isPicked(preset: Preset): boolean {
-    return this.value() === preset.value;
-  }
-
   /** Fermer ne déclare rien. */
   protected close(): void {
     this.panel.close();

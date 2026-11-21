@@ -3,7 +3,7 @@ import type { ProductionWorksheetView } from '@lfd/contracts';
 import { FoldEmptyStateComponent } from 'fold-ng';
 
 import { tranchesNow } from '../../production/previsionnel/day-tranches-section/day-tranches-section';
-import { WorkshopClock } from '../../production/fiche-atelier/workshop-clock';
+import { WorkshopClock } from '../../production/fiche-atelier/state/workshop-clock';
 import { WorksheetSlots } from '../../production/fiche-atelier/worksheet-slots/worksheet-slots';
 import { parisToday } from '../../shared/paris-today';
 

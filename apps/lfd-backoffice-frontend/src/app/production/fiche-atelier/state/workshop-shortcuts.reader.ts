@@ -1,7 +1,7 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
 import type { WorkshopShortcutView } from '@lfd/contracts';
 
-import { BatchShortcutsService } from '../batch-shortcuts.service';
+import { BatchShortcutsService } from '../../batch-shortcuts.service';
 
 /**
  * **Les raccourcis du fournil**, lus pour la fiche d'atelier (plan

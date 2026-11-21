@@ -18,15 +18,16 @@
       <!-- Les raccourcis POSENT une valeur ; seul « Déclarer » enregistre. -->
       <div class="wk-presets" role="group" aria-label="Raccourcis">
         @for (preset of presets(); track preset.key) {
+          @let picked = value() === preset.value;
           <button
             foldButton
             type="button"
             size="md"
             shape="pill"
-            [emphasis]="isPicked(preset) ? 'solid' : 'outline'"
-            [intent]="isPicked(preset) ? 'primary' : 'neutral'"
+            [emphasis]="picked ? 'solid' : 'outline'"
+            [intent]="picked ? 'primary' : 'neutral'"
             [attr.data-keypad-preset]="preset.key"
-            [attr.aria-pressed]="isPicked(preset)"
+            [attr.aria-pressed]="picked"
             (click)="pick(preset)"
           >
             {{ preset.label }}

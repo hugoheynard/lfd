@@ -1,0 +1,4 @@
+/* L'hôte ne dessine rien : les bandeaux sont des enfants de la colonne de la bande. */
+:host {
+  display: contents;
+}

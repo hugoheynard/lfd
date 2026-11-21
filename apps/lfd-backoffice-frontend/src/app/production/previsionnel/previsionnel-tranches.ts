@@ -1,7 +1,7 @@
 import { saleQuantityLabel } from '@lfd/b2b-ui/catalog';
 import type { ProductionGroupingView } from '@lfd/contracts';
 
-import type { SlotState } from '../fiche-atelier/workshop-deadlines';
+import type { SlotState } from '../fiche-atelier/rules/workshop-deadlines';
 import type { TrancheCell, TrancheColumn, TrancheGrid, TrancheRow } from './day-tranche-matrix';
 import type { ForecastColumn, ForecastColumnTone, ForecastFootRow } from './forecast-column';
 import {

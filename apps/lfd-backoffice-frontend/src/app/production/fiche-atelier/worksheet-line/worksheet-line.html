@@ -3,26 +3,28 @@
   @if (line().done) {
     <!-- Le total sorti, avec ce qu'on a fait en plus, à gauche du tick (Hugo, 2026-10-28). -->
     <span class="wl-left-big"
-      >{{ figure(line().produced) }}
+      >{{ line().produced | saleQuantity: line().saleUnit }}
       @if (bonus() > 0) {
-        <span class="wl-left-of wl-left-bonus">+{{ figure(bonus()) }}</span>
+        <span class="wl-left-of wl-left-bonus">+{{ bonus() | saleQuantity: line().saleUnit }}</span>
       }
       ✓</span
     >
     <span class="wl-left-when">fait</span>
     <span class="wl-left-total"
-      >total {{ figure(line().produced) }} / {{ figure(line().quantity) }}</span
+      >total {{ line().produced | saleQuantity: line().saleUnit }} /
+      {{ line().quantity | saleQuantity: line().saleUnit }}</span
     >
   } @else {
     <!-- Le reste du palier SEUL en gros : « 365 / 365 » (reste / palier) se
          lisait comme une ligne finie (Hugo, 2026-11-01). -->
-    <span class="wl-left-big">{{ figure(stepLeft()) }}</span>
+    <span class="wl-left-big">{{ stepLeft() | saleQuantity: line().saleUnit }}</span>
     <span class="wl-left-when">à sortir {{ stepBefore() }}</span>
     @if (stepOf(); as of) {
       <span class="wl-left-step">{{ of }}</span>
     }
     <span class="wl-left-total"
-      >{{ figure(line().produced) }} / {{ figure(line().quantity) }} sorties</span
+      >{{ line().produced | saleQuantity: line().saleUnit }} /
+      {{ line().quantity | saleQuantity: line().saleUnit }} sorties</span
     >
   }
 </span>
@@ -46,8 +48,21 @@
         [attr.title]="badge.detail"
       />
     }
+    @if (pendingLabel(); as said) {
+      <fold-badge
+        class="wl-pending"
+        radius="square"
+        data-line-pending
+        [variant]="pending()?.state === 'queued' ? 'warning' : 'info'"
+        [content]="said"
+      />
+    }
     @if (line().surplus > 0) {
-      <fold-badge class="wl-surplus" variant="warning" [content]="'+' + figure(line().surplus)" />
+      <fold-badge
+        class="wl-surplus"
+        variant="warning"
+        [content]="'+' + (line().surplus | saleQuantity: line().saleUnit)"
+      />
     }
   </span>
 </span>
@@ -55,7 +70,8 @@
 <!-- La barre à paliers : « 180 / 240 sorties » dessus, l'heure sous chaque segment. -->
 <span class="wl-progress">
   <span class="wl-figures"
-    >{{ figure(line().produced) }} / {{ figure(line().quantity) }} sorties</span
+    >{{ line().produced | saleQuantity: line().saleUnit }} /
+    {{ line().quantity | saleQuantity: line().saleUnit }} sorties</span
   >
   @for (row of segmentRows(); track $index) {
     <fold-meter
@@ -80,7 +96,7 @@
       <span class="wl-quick-said">
         {{ quick }}
         <span class="wl-quick-size"
-          >{{ figure(line().container?.unitsPerContainer ?? 0)
+          >{{ line().container?.unitsPerContainer ?? 0 | saleQuantity: line().saleUnit
           }}{{ line().saleUnit === 'weight' ? '' : ' pièces' }}</span
         >
       </span>
@@ -108,7 +124,7 @@
       [disabled]="busy()"
       (click)="openKeypad(shortcut.pieces)"
     >
-      {{ shortcut.label }} · {{ figure(shortcut.pieces) }}
+      {{ shortcut.label }} · {{ shortcut.pieces | saleQuantity: line().saleUnit }}
     </button>
   }
 </span>

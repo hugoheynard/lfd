@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 
-import { WorkshopClock } from '../workshop-clock';
+import { WorkshopClock } from '../state/workshop-clock';
 
 const pad = (value: number): string => String(value).padStart(2, '0');
 

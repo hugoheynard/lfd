@@ -1,24 +1,23 @@
-import { HttpErrorResponse } from '@angular/common/http';
 import { inject, Injectable, signal } from '@angular/core';
 
 import type { WorkshopBatch, WorkshopLine } from '@lfd/contracts';
 
-import { PermissionsStore } from '../../auth/permissions.store';
-import { GestureIntents } from '../../shared/gesture-intents';
-import { ulid } from '../../shared/ulid';
-import { serverMessageOf } from '../server-message';
-import { markKey } from '../worksheet-day';
-import { WorksheetService } from '../worksheet.service';
+import { PermissionsStore } from '../../../auth/permissions.store';
+import { GestureFeedback } from '../../../shared/gesture-feedback/gesture-feedback';
+import { GestureIntents } from '../../../shared/gesture-intents';
+import { ulid } from '../../../shared/ulid';
+import { markKey } from '../../worksheet-day';
+import { WorksheetService } from '../../worksheet.service';
 import { WorkshopDayReader } from './workshop-day.reader';
-import { WorkshopProblemOpener } from './workshop-problem-opener';
-
-/**
- * La réponse n'est pas arrivée : le serveur a peut-être écrit. On ne reprend
- * pas `serverMessageOf`, qui dirait « rien n'a été enregistré » — c'est
- * justement ce qu'on ne sait pas.
- */
-const NO_ANSWER =
-  'Le serveur n’a pas répondu — réessayez : la même fournée ne comptera pas deux fois.';
+import {
+  BATCH_KEPT,
+  DONE_KEPT,
+  GestureKept,
+  isOffline,
+  reasonOf,
+} from '../rules/workshop-send-errors';
+import { WorkshopOutbox } from '../outbox/workshop-outbox';
+import { WorkshopProblemOpener } from '../openers/workshop-problem-opener';
 
 /**
  * La dernière fournée acceptée, pour « Annuler la dernière » (plan
@@ -27,12 +26,6 @@ const NO_ANSWER =
  */
 export interface LastBatch {
   readonly line: WorkshopLine;
-  readonly id: string;
-  readonly quantity: number;
-}
-
-/** Une fournée partie sans réponse, gardée pour être rejouée sous le même `id`. */
-interface Unanswered {
   readonly id: string;
   readonly quantity: number;
 }
@@ -57,6 +50,8 @@ export class WorkshopGestures {
   private readonly permissions = inject(PermissionsStore);
   private readonly day = inject(WorkshopDayReader);
   private readonly problems = inject(WorkshopProblemOpener);
+  /** Vibration et annonce : le résultat se sent sans regarder l'écran. */
+  private readonly feedback = inject(GestureFeedback);
 
   /** « Fait » par intention : un double appui ne déclare qu'une fois (`fournil/les-niveaux-de-suivi.md`). */
   private readonly intents = new GestureIntents();
@@ -76,8 +71,8 @@ export class WorkshopGestures {
   /** La dernière fournée acceptée ; `null` une fois annulée ou oubliée. */
   readonly last = this.lastAccepted.asReadonly();
 
-  /** Par ligne, la fournée partie sans réponse. */
-  private readonly unanswered = new Map<string, Unanswered>();
+  /** Les fournées parties sans réponse, gardées sur l'appareil. */
+  private readonly outbox = inject(WorkshopOutbox);
 
   /** Un geste de cette ligne est-il en train de partir ? */
   isBusy(line: WorkshopLine): boolean {
@@ -85,31 +80,56 @@ export class WorkshopGestures {
     return date !== null && this.day.busy().has(markKey(date, line.sku));
   }
 
-  /** Déclare une fournée de `quantity` pièces sur la ligne, puis relit. */
+  /**
+   * Déclare une fournée de `quantity` pièces sur la ligne, puis relit.
+   *
+   * Sans réponse du serveur, la fournée est **gardée dans la file** sous son
+   * `id`, et repart seule au retour du réseau ; un nouvel appui de la même
+   * quantité sur la même ligne la rejoue au lieu d'en créer une seconde.
+   */
   async record(line: WorkshopLine, quantity: number): Promise<void> {
     // Tiré dans l'envoi : une boîte, que la fermeture remplit.
     const sent: { id: string | null } = { id: null };
     const accepted = await this.send(
       line,
       async (date, key) => {
-        const retried = this.unanswered.get(key);
-        const id = retried?.quantity === quantity ? retried.id : ulid();
-        this.unanswered.delete(key);
+        const id = this.outbox.findBatch(date, line.sku, quantity)?.id ?? ulid();
+        const initials = this.initials();
+        this.outbox.setSending(key, quantity);
         try {
-          await this.api.recordBatch(date, line.sku, id, { quantity, initials: this.initials() });
+          await this.api.recordBatch(date, line.sku, id, { quantity, initials });
+          this.outbox.remove(id);
           sent.id = id;
         } catch (error) {
-          if (error instanceof HttpErrorResponse && error.status === 0) {
-            this.unanswered.set(key, { id, quantity });
+          if (isOffline(error)) {
+            this.outbox.add({
+              kind: 'batch',
+              id,
+              date,
+              sku: line.sku,
+              productName: line.productName,
+              quantity,
+              initials,
+            });
+            throw new GestureKept(BATCH_KEPT);
           }
           throw error;
+        } finally {
+          this.outbox.setSending(key, null);
         }
       },
       'La fournée n’a pas été enregistrée',
+      `Fournée enregistrée — ${line.productName}, ${String(quantity)}`,
     );
     if (accepted && sent.id !== null) {
       this.lastAccepted.set({ line, id: sent.id, quantity });
     }
+  }
+
+  /** Un refus arrivé hors d'un geste (la file renvoyée) : dit comme les autres. */
+  sayRefused(said: string): void {
+    this.refusal.set(said);
+    this.feedback.refused(said);
   }
 
   /**
@@ -123,10 +143,28 @@ export class WorkshopGestures {
       line,
       async (date) => {
         const subject = `done|${date}|${line.sku}`;
-        await this.api.markDone(date, line.sku, this.intents.keyFor(subject));
+        // Gardé sans réseau, le geste repart sous la clé qu'il avait.
+        const id = this.outbox.findDone(date, line.sku)?.id ?? this.intents.keyFor(subject);
+        try {
+          await this.api.markDone(date, line.sku, id);
+          this.outbox.remove(id);
+        } catch (error) {
+          if (isOffline(error)) {
+            this.outbox.add({
+              kind: 'done',
+              id,
+              date,
+              sku: line.sku,
+              productName: line.productName,
+            });
+            throw new GestureKept(DONE_KEPT);
+          }
+          throw error;
+        }
         sent.subject = subject;
       },
       'La ligne n’a pas été marquée faite',
+      `${line.productName} : faite`,
     );
     if (accepted && sent.subject !== null) {
       this.intents.done(sent.subject);
@@ -151,23 +189,35 @@ export class WorkshopGestures {
       if (await this.problems.openFor(date, line)) {
         await this.day.rereadAfterWrite();
       }
+    } catch (error) {
+      // Le panneau n'a pas pu s'ouvrir ou envoyer : le dire, pas le perdre.
+      this.sayRefused(
+        `Le problème n’a pas pu être signalé — ${line.productName} : ${reasonOf(error)}`,
+      );
     } finally {
       this.day.setBusy(key, false);
     }
   }
 
-  /** « Annuler » du bandeau : annule la dernière fournée acceptée, puis relit. */
+  /**
+   * « Annuler » du bandeau : annule la dernière fournée acceptée, puis relit.
+   * Elle n'est oubliée qu'une fois annulée : refusée, l'annulation reste offerte
+   * par le bandeau. Un second appui pendant l'envoi est ignoré (ligne occupée).
+   */
   async undoLast(): Promise<void> {
     const last = this.lastAccepted();
     if (last === null) {
       return;
     }
-    this.lastAccepted.set(null);
-    await this.send(
+    const cancelled = await this.send(
       last.line,
       (date) => this.api.cancelBatch(date, last.id),
       'La fournée n’a pas été annulée',
+      `Fournée annulée — ${last.line.productName}`,
     );
+    if (cancelled && this.lastAccepted()?.id === last.id) {
+      this.lastAccepted.set(null);
+    }
   }
 
   /** Le bandeau s'est refermé : la dernière fournée ne s'annule plus que par sa puce. */
@@ -184,6 +234,7 @@ export class WorkshopGestures {
       line,
       (date) => this.api.cancelBatch(date, batch.id),
       'La fournée n’a pas été annulée',
+      `Fournée annulée — ${line.productName}`,
     );
   }
 
@@ -212,6 +263,7 @@ export class WorkshopGestures {
     line: WorkshopLine,
     write: (date: string, key: string) => Promise<void>,
     failure: string,
+    success: string,
   ): Promise<boolean> {
     // La date est prise UNE fois : la clé et l'envoi parlent de la même journée,
     // même si une relecture la change pendant l'envoi.
@@ -229,18 +281,15 @@ export class WorkshopGestures {
       await write(date, key);
     } catch (error) {
       this.day.setBusy(key, false);
-      this.refusal.set(`${failure} — ${line.productName} : ${this.reasonOf(error)}`);
+      const said = `${failure} — ${line.productName} : ${reasonOf(error)}`;
+      this.refusal.set(said);
+      this.feedback.refused(said);
       return false;
     }
+    this.feedback.accepted(success);
     await this.day.rereadAfterWrite();
     this.day.setBusy(key, false);
     return true;
-  }
-
-  private reasonOf(error: unknown): string {
-    return error instanceof HttpErrorResponse && error.status === 0
-      ? NO_ANSWER
-      : serverMessageOf(error);
   }
 
   /**

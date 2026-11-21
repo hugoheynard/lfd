@@ -6,7 +6,9 @@
 <span class="ls-actions">
   @if (line().done) {
     <fold-badge variant="success" content="✓ fait" data-line-done-badge />
-  } @else if (left() > 0) {
+  } @else if (doneWaiting()) {
+    <fold-badge variant="warning" content="fait · en attente" data-line-done-waiting />
+  } @else if (canCheck()) {
     <button
       foldButton
       type="button"

@@ -6,7 +6,7 @@ import {
 } from '@lfd/contracts';
 import { saleQuantityLabel } from '@lfd/b2b-ui/catalog';
 
-import type { SlotState } from '../fiche-atelier/workshop-deadlines';
+import type { SlotState } from '../fiche-atelier/rules/workshop-deadlines';
 import { servedGroups } from '../served-groups';
 
 /**

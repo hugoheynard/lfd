@@ -3,16 +3,15 @@ import { FoldPanelHostService } from 'fold-ng';
 
 import type { WorkshopLine, WorkshopShortcutView } from '@lfd/contracts';
 
-import { type KeypadData, WorkshopKeypad } from './workshop-keypad/workshop-keypad';
+import { WORKSHOP_NARROW } from '../rules/workshop-view';
 
-/**
- * Le seuil du fournil (`fiche-atelier.ts`, `WORKSHOP_NARROW`) : en dessous, le
- * pavé monte du bas, sous le pouce ; au-dessus, il s'ouvre au centre.
- */
-const NARROW = '(max-width: 1023px)';
+import { type KeypadData, WorkshopKeypad } from '../workshop-keypad/workshop-keypad';
 
 /**
  * **Ouvre le pavé** et rend la quantité déclarée, ou `null` si on le ferme.
+ *
+ * Sous le seuil du fournil (`WORKSHOP_NARROW`), le pavé monte du bas, sous le
+ * pouce ; au-dessus, il s'ouvre au centre.
  *
  * Le côté se lit AU CLIC, jamais en signal : c'est la largeur de ce moment qui
  * compte (règle « Saisir » du `CLAUDE.md` de la boutique).
@@ -38,7 +37,8 @@ export class WorkshopKeypadOpener {
   }
 
   async open(data: KeypadData): Promise<number | null> {
-    const narrow = typeof window !== 'undefined' && window.matchMedia?.(NARROW).matches === true;
+    const narrow =
+      typeof window !== 'undefined' && window.matchMedia?.(WORKSHOP_NARROW).matches === true;
     const ref = this.panels.open<KeypadData, number>(WorkshopKeypad, {
       data,
       side: narrow ? 'bottom' : 'center',

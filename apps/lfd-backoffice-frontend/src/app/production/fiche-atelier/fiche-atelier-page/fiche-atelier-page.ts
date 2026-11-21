@@ -1,18 +1,14 @@
 import {
-  afterNextRender,
   ChangeDetectionStrategy,
   Component,
   computed,
-  effect,
-  ElementRef,
   inject,
-  Injector,
   input,
+  linkedSignal,
   signal,
 } from '@angular/core';
 import {
   FoldButtonComponent,
-  FoldCalloutComponent,
   FoldEmptyStateComponent,
   FoldIconComponent,
   FoldListboxComponent,
@@ -23,65 +19,43 @@ import {
   FoldToastComponent,
   FoldViewToggleComponent,
   FoldLoadingStateComponent,
-  type FoldSelectItem,
-  type FoldTabItem,
-  type FoldViewToggleOption,
 } from 'fold-ng';
 
 import { ActivatedRoute, Router } from '@angular/router';
-import { sectionIntertitles } from '@lfd/b2b-ui/catalog';
 import {
   WORKSTATION_GROUP_KEY_PREFIX,
   type WorkshopGroup,
   type WorkshopLine,
 } from '@lfd/contracts';
 
-import { StaffPrefsService } from '../../shared/staff-prefs/staff-prefs.service';
-import { narrowViewport } from '../../shared/viewport/narrow-viewport';
-import { VersionWatcher } from '../../shared/version/version-watcher';
-import { dayLabelOf, isoDay } from '../worksheet-day';
-import { DriftBanner } from './drift-banner/drift-banner';
-import { WorkshopDayReader } from './workshop-day.reader';
-import { WorkshopGestures } from './workshop-gestures';
-import { WorkshopClock } from './workshop-clock';
-import { WorkshopKeypadOpener } from './workshop-keypad-opener';
-import { WorkshopShortcutsReader } from './workshop-shortcuts.reader';
-import { WorksheetLine } from './worksheet-line/worksheet-line';
-import { LineAlwaysGreen } from './line-always-green/line-always-green';
-import { LineSimple } from './line-simple/line-simple';
-import { WorkshopProblemOpener } from './workshop-problem-opener';
-import { type SlotEntry, WorksheetSlots } from './worksheet-slots/worksheet-slots';
-import { WorkshopWallClock } from './workshop-wall-clock/workshop-wall-clock';
-import { SaleQuantityPipe } from '../../shared/sale-quantity/sale-quantity.pipe';
-
-/**
- * 🔴 **Le seuil du fournil — 1024 px, pas les 640 px du back-office.**
- *
- * La bascule est structurelle, pas cosmétique : au-dessus, les onglets de
- * catégorie et la colonne d'initiales tiennent ; en dessous, les onglets
- * deviennent un menu qu'on ouvre par erreur les mains sales. C'est la largeur
- * où la barre d'onglets cesse de tenir sur une ligne qui décide.
- *
- * ⚠️ La même valeur est écrite dans `fiche-atelier.scss` (une media query ne lit
- * pas un `const`). Les deux bougent ensemble ou l'écran se coupe en deux.
- */
-const WORKSHOP_NARROW = '(max-width: 1023px)';
-
-/** Les deux lectures de la fiche (plan fournée v3, §4.1). */
-type WorkshopView = 'product' | 'slot';
-
-const VIEW_OPTIONS: readonly FoldViewToggleOption[] = [
-  { value: 'product', label: 'Par produit' },
-  { value: 'slot', label: 'Par tranche' },
-];
-
-/** Combien de temps « Annuler la dernière » reste offert (plan fournée v3, §4.5). */
-const UNDO_MS = 8000;
-
-/** La ligne attend-elle le four pour une commande ? (le point ambre de l'onglet) */
-function presses(line: WorkshopLine): boolean {
-  return !line.done && (line.waitingOrders ?? null) !== null;
-}
+import { StaffPrefsService } from '../../../shared/staff-prefs/staff-prefs.service';
+import { narrowViewport } from '../../../shared/viewport/narrow-viewport';
+import { VersionWatcher } from '../../../shared/version/version-watcher';
+import { dayLabelOf, isoDay } from '../../worksheet-day';
+import { WorkshopNotices } from '../workshop-notices/workshop-notices';
+import { WorkshopDayReader } from '../state/workshop-day.reader';
+import { WorkshopGestures } from '../state/workshop-gestures';
+import { WorkshopOutbox } from '../outbox/workshop-outbox';
+import { WorkshopQueueReplay } from '../outbox/workshop-queue-replay';
+import { WorkshopClock } from '../state/workshop-clock';
+import { WorkshopKeypadOpener } from '../openers/workshop-keypad-opener';
+import { WorkshopShortcutsReader } from '../state/workshop-shortcuts.reader';
+import { WorkshopProblemOpener } from '../openers/workshop-problem-opener';
+import { keepScreenAwake } from '../../../shared/screen-awake/screen-awake';
+import { WorkshopLineView } from '../workshop-line/workshop-line';
+import { groupOptions, groupTabs, intertitlesOf } from '../rules/workshop-tabs';
+import { type WorkshopRow, workshopRows } from '../rules/workshop-rows';
+import { revealLineOnce } from '../openers/workshop-reveal-line';
+import {
+  groupKeyOfLine,
+  linkedElsewhereDay,
+  linkedSkuOf,
+  pickGroup,
+} from '../rules/workshop-selection';
+import { type SlotEntry, WorksheetSlots } from '../worksheet-slots/worksheet-slots';
+import { UNDO_MS, VIEW_OPTIONS, WORKSHOP_NARROW, type WorkshopView } from '../rules/workshop-view';
+import { WorkshopWallClock } from '../workshop-wall-clock/workshop-wall-clock';
+import { SaleQuantityPipe } from '../../../shared/sale-quantity/sale-quantity.pipe';
 
 /**
  * **La fiche d'atelier** — ce que le fournil a à sortir, et ce qui est sorti.
@@ -95,12 +69,9 @@ function presses(line: WorkshopLine): boolean {
  * les deux listes et tous les comptes viennent du serveur ; l'écran relit après
  * chaque fournée acceptée.
  *
- * **Trois responsabilités, trois fichiers**, comme le poste de colisage :
- * - {@link WorkshopDayReader} — CE QU'ON LIT : la journée, les relectures,
- *   les lignes en vol ;
- * - {@link WorkshopGestures} — CE QU'ON FAIT : déclarer, annuler, retirer ;
- * - **ce composant — LE CHOIX DE LA FICHE** et sa mise en forme : onglets, rang,
- *   bloc replié du téléphone.
+ * **Ce composant choisit la fiche et la met en page**, rien d'autre :
+ * {@link WorkshopDayReader} lit, {@link WorkshopGestures} agit,
+ * {@link WorkshopQueueReplay} renvoie ce qui est resté sans réseau.
  *
  * **La catégorie ouverte suit la PERSONNE**, dans `nav_prefs` et non dans
  * `localStorage` : le téléphone du pétrin n'est pas la machine du chef, et c'est
@@ -113,9 +84,8 @@ function presses(line: WorkshopLine): boolean {
   imports: [
     SaleQuantityPipe,
     WorkshopWallClock,
-    DriftBanner,
+    WorkshopNotices,
     FoldButtonComponent,
-    FoldCalloutComponent,
     FoldEmptyStateComponent,
     FoldIconComponent,
     FoldListboxComponent,
@@ -126,9 +96,7 @@ function presses(line: WorkshopLine): boolean {
     FoldToastComponent,
     FoldTabsComponent,
     FoldViewToggleComponent,
-    LineAlwaysGreen,
-    LineSimple,
-    WorksheetLine,
+    WorkshopLineView,
     WorksheetSlots,
   ],
   // Fournis ICI, pas à la racine : un poste ouvert deux fois ne partage ni sa
@@ -136,30 +104,44 @@ function presses(line: WorkshopLine): boolean {
   providers: [
     WorkshopDayReader,
     WorkshopGestures,
+    WorkshopOutbox,
+    WorkshopQueueReplay,
     WorkshopShortcutsReader,
     WorkshopClock,
     WorkshopKeypadOpener,
     WorkshopProblemOpener,
   ],
-  templateUrl: './fiche-atelier.html',
-  styleUrl: './fiche-atelier.scss',
+  templateUrl: './fiche-atelier-page.html',
+  styleUrl: './fiche-atelier-page.scss',
 })
 export class FicheAtelier {
   protected readonly day = inject(WorkshopDayReader);
   protected readonly gestures = inject(WorkshopGestures);
+  /** Les fournées en route d'une ligne : la pastille « envoi… » / « en attente ». */
+  private readonly outbox = inject(WorkshopOutbox);
+  /** Les fournées gardées sans réseau, et leur renvoi. */
+  private readonly queue = inject(WorkshopQueueReplay);
   /** « Maintenant », en minutes, mis à jour chaque minute — les paliers en retard. */
   protected readonly now = inject(WorkshopClock).minutes;
   private readonly keypad = inject(WorkshopKeypadOpener);
   /** Les raccourcis « + 1 plaque (24) », lus une fois pour toute la fiche (S2). */
-  protected readonly shortcuts = inject(WorkshopShortcutsReader);
+  private readonly shortcuts = inject(WorkshopShortcutsReader);
   private readonly prefs = inject(StaffPrefsService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
 
   protected readonly compact = narrowViewport(WORKSHOP_NARROW);
 
-  /** Par produit, ou par tranche — dans le rayon courant. */
-  protected readonly view = signal<WorkshopView>('product');
+  /**
+   * Par tranche, ou par produit — dans le rayon courant. La fiche s'ouvre **par
+   * tranche**, la lecture du four : ce qui presse, heure par heure. Un lien de
+   * la cloche qui désigne une ligne l'ouvre **par produit**, seule vue qui sait
+   * la montrer et la cercler. Le choix de la personne tient ensuite.
+   */
+  protected readonly view = linkedSignal<boolean, WorkshopView>({
+    source: () => this.linkedSku() !== null,
+    computation: (linked) => (linked ? 'product' : 'slot'),
+  });
   protected readonly viewOptions = VIEW_OPTIONS;
   protected readonly undoMs = UNDO_MS;
 
@@ -178,35 +160,18 @@ export class FicheAtelier {
   readonly lineParam = input<string | undefined>(undefined, { alias: 'ligne' });
 
   /** La ligne que le lien désigne, sur la journée lue ; `null` sinon. */
-  protected readonly linkedSku = computed(() => {
-    const sku = this.lineParam();
-    const date = this.day.date();
-    const asked = this.dayParam();
-    if (sku === undefined || sku === '' || date === null) {
-      return null;
-    }
-    return asked === undefined || asked === '' || asked === date ? sku : null;
-  });
+  protected readonly linkedSku = computed(() =>
+    linkedSkuOf(this.lineParam(), this.dayParam(), this.day.date()),
+  );
 
   /** « samedi 16 août » quand le lien vise une autre journée que celle lue. */
   protected readonly linkedElsewhere = computed(() => {
-    const asked = this.dayParam();
-    const date = this.day.date();
-    return asked === undefined || asked === '' || date === null || asked === date
-      ? null
-      : dayLabelOf(asked);
+    const day = linkedElsewhereDay(this.dayParam(), this.day.date());
+    return day === null ? null : dayLabelOf(day);
   });
 
   /** La fiche qui porte la ligne du lien. */
-  private readonly linkedKey = computed(() => {
-    const sku = this.linkedSku();
-    if (sku === null) {
-      return null;
-    }
-    return (
-      this.day.groups().find((group) => group.lines.some((line) => line.sku === sku))?.key ?? null
-    );
-  });
+  private readonly linkedKey = computed(() => groupKeyOfLine(this.day.groups(), this.linkedSku()));
 
   /** La fiche choisie à l'écran pendant la session. */
   private readonly chosen = signal<string | null>(null);
@@ -219,10 +184,14 @@ export class FicheAtelier {
   });
 
   constructor() {
+    // Une tablette posée au four ne se met pas en veille pendant le service.
+    keepScreenAwake();
     // 🔴 Une lecture UNIQUE, et pas un `effect` : la journée est choisie au
     // serveur, rien à l'écran ne la fait changer.
     void this.day.load();
     void this.shortcuts.load();
+    // Les fournées gardées sur l'appareil repartent dès que le réseau revient.
+    this.queue.start();
     // Les autres postes déclarent aussi : sans relecture, une ligne sortie du four
     // par le voisin resterait « à faire » ici, et on la fabriquerait deux fois.
     // Elle ne relit que si la journée du fournil a bougé (`version-par-journee.md`).
@@ -233,24 +202,24 @@ export class FicheAtelier {
       reload: () => this.day.refresh(),
       clockDay: () => isoDay(new Date()),
     });
-    this.showLinkedLine();
+    revealLineOnce(
+      this.linkedSku,
+      computed(() => this.linkedKey() !== null),
+    );
     // La préférence n'arrive pas avant la personne : `GET /admin/me` est déjà en
     // vol pour les droits. Si elle n'arrive jamais, la première fiche suffit.
     void this.prefs.worksheetCategory().then((category) => this.remembered.set(category));
   }
 
   /** La fiche affichée : celle qu'on a choisie, ou la première s'il n'y a pas de choix. */
-  protected readonly current = computed<WorkshopGroup | null>(() => {
-    const groups = this.day.groups();
-    const keys = [this.chosen(), this.linkedKey(), this.asked(), this.remembered()];
-    for (const key of keys) {
-      const found = key === null ? undefined : groups.find((group) => group.key === key);
-      if (found !== undefined) {
-        return found;
-      }
-    }
-    return groups[0] ?? null;
-  });
+  protected readonly current = computed<WorkshopGroup | null>(() =>
+    pickGroup(this.day.groups(), [
+      this.chosen(),
+      this.linkedKey(),
+      this.asked(),
+      this.remembered(),
+    ]),
+  );
 
   /** Le nom du poste de la fiche ouverte (mode prod) ; `null` pour un rayon. */
   protected readonly workstationName = computed(() => this.current()?.workstation?.name ?? null);
@@ -261,26 +230,8 @@ export class FicheAtelier {
     return current === null ? 0 : this.day.groups().indexOf(current) + 1;
   });
 
-  /** Les onglets de la tablette : le rayon et son avancement, tels que servis. */
-  protected readonly tabs = computed<readonly FoldTabItem[]>(() =>
-    this.day.groups().map((group) => ({
-      key: group.key,
-      label: group.label,
-      badge: `${group.doneCount}/${group.lineCount}`,
-      // Ce qui presse : un point ambre, et les mots sur la ligne elle-même.
-      ...(group.lines.some(presses)
-        ? { dot: 'warning' as const, dotLabel: 'une commande attend le four' }
-        : {}),
-    })),
-  );
-
-  /** Le même choix, sous le pouce : une liste, jamais six onglets de 390 px. */
-  protected readonly tabOptions = computed<readonly FoldSelectItem<string>[]>(() =>
-    this.day.groups().map((group) => ({
-      value: group.key,
-      label: `${group.label} · ${String(group.remainingUnits)} à sortir`,
-    })),
-  );
+  protected readonly tabs = computed(() => groupTabs(this.day.groups()));
+  protected readonly tabOptions = computed(() => groupOptions(this.day.groups()));
 
   /** Toutes les lignes de la fiche, dans l'ordre servi — la tablette. */
   protected readonly lines = computed(() => this.current()?.lines ?? []);
@@ -292,17 +243,17 @@ export class FicheAtelier {
   protected readonly done = computed(() => this.current()?.done ?? []);
 
   /**
-   * Les intertitres de sous-catégorie de la liste affichée (2026-10-30) : servis
-   * en `sections` quand le réglage les affiche, posés à chaque changement dans
-   * CETTE liste — au téléphone, une section dont la première ligne est faite
-   * garde son intertitre sur la suivante.
+   * Les rangées de la liste affichée (la tablette : toutes ; le téléphone : à
+   * faire), avec leurs intertitres de sous-catégorie, posés à chaque changement
+   * dans CETTE liste — au téléphone, une section dont la première ligne est
+   * faite garde son intertitre sur la suivante.
    */
-  protected readonly intertitles = computed(() =>
-    intertitlesOf(this.current(), this.compact() ? this.todo() : this.lines()),
+  protected readonly rows = computed(() =>
+    this.rowsOf(this.compact() ? this.todo() : this.lines()),
   );
 
   /** Les mêmes, dans le bloc replié des lignes faites. */
-  protected readonly doneIntertitles = computed(() => intertitlesOf(this.current(), this.done()));
+  protected readonly doneRows = computed(() => this.rowsOf(this.done()));
 
   /** Les SKU dont un geste est en vol — la vue par tranche les désarme. */
   protected readonly busySkus = computed<ReadonlySet<string>>(
@@ -360,48 +311,19 @@ export class FicheAtelier {
     });
   }
 
-  /**
-   * Amène la ligne du lien sous les yeux, une fois, quand elle est rendue.
-   * Une lecture de la page, pas un état : la relecture périodique ne la refait pas.
-   */
-  private showLinkedLine(): void {
-    const host = inject(ElementRef<HTMLElement>);
-    const injector = inject(Injector);
-    let shown = false;
-    effect(() => {
-      const sku = this.linkedSku();
-      if (shown || sku === null || this.linkedKey() === null) {
-        return;
-      }
-      shown = true;
-      afterNextRender(
-        () => {
-          const lines: NodeListOf<HTMLElement> = host.nativeElement.querySelectorAll('[data-line]');
-          const element = [...lines].find((line) => line.dataset['line'] === sku);
-          // jsdom n'a pas `scrollIntoView` : la garde vaut pour les tests seulement.
-          if (element !== undefined && 'scrollIntoView' in element) {
-            element.scrollIntoView({ block: 'center' });
-          }
-        },
-        { injector },
-      );
+  private rowsOf(lines: readonly WorkshopLine[]): readonly WorkshopRow[] {
+    const date = this.day.date();
+    return workshopRows(lines, {
+      intertitles: intertitlesOf(this.current(), lines),
+      isBusy: (line) => this.gestures.isBusy(line),
+      pendingOf: (sku) => this.outbox.pendingOf(date, sku),
+      doneWaiting: (sku) => this.outbox.doneWaiting(date, sku),
+      shortcuts: this.shortcuts.bySku(),
+      linkedSku: this.linkedSku(),
     });
   }
 
   protected toggleDone(): void {
     this.doneOpen.update((open) => !open);
   }
-}
-
-/** Les intertitres d'une liste de la fiche, d'après les sections servies. */
-function intertitlesOf(
-  group: WorkshopGroup | null,
-  lines: readonly WorkshopLine[],
-): ReadonlyMap<string, string> {
-  const sections = group?.sections;
-  if (sections === undefined) {
-    return new Map();
-  }
-  const bySku = new Map(sections.flatMap((section) => section.skus.map((sku) => [sku, section])));
-  return sectionIntertitles(lines, (line) => bySku.get(line.sku));
 }

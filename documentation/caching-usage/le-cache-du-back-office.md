@@ -376,7 +376,7 @@ le contenu de cette journée par la même clé.
   numéros (3 opérations Prisma) au lieu de la fiche entière (23 opérations
   sur la journée la plus chargée de la base de dev, § 3.6).
 - **L'atelier** suit `production` et `orders` dans son veilleur
-  (`fiche-atelier.ts`) : une commande du jour fait relire la fiche.
+  (`fiche-atelier-page.ts`) : une commande du jour fait relire la fiche.
 
 ### 3.3 Le colisage
 

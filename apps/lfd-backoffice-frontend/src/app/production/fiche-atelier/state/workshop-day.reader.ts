@@ -2,8 +2,8 @@ import { computed, inject, Injectable, signal } from '@angular/core';
 
 import type { ProductionWorksheetView } from '@lfd/contracts';
 
-import { dayLabelOf, hourLabel, RELATIVE_DAY_LABEL } from '../worksheet-day';
-import { WorksheetService } from '../worksheet.service';
+import { dayLabelOf, hourLabel, RELATIVE_DAY_LABEL } from '../../worksheet-day';
+import { WorksheetService } from '../../worksheet.service';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -105,14 +105,13 @@ export class WorkshopDayReader {
   private readonly busyMarks = signal<ReadonlySet<string>>(new Set());
   readonly busy = this.busyMarks.asReadonly();
 
-  /** Le rang de la dernière lecture lancée. Une réponse lente n'écrase jamais une plus récente. */
-  private readSeq = 0;
-
   /**
-   * L'instant de la dernière écriture acceptée. Une relecture PÉRIODIQUE partie
-   * avant elle rendrait l'état d'avant : sa réponse est jetée.
+   * Le rang de la dernière lecture lancée. Une réponse lente n'écrase jamais
+   * une plus récente — et comme chaque écriture acceptée relit
+   * ({@link rereadAfterWrite}), une relecture partie avant une écriture est
+   * toujours dépassée : elle ne peut pas défaire un geste.
    */
-  private lastWriteAt = 0;
+  private readSeq = 0;
 
   /** **La lecture initiale** — avec écran de chargement. */
   async load(): Promise<void> {
@@ -133,33 +132,27 @@ export class WorkshopDayReader {
    * **La relecture silencieuse** — toutes les 15 s tant que l'onglet est visible.
    * Pas d'écran de chargement, la fiche ouverte ne bouge pas.
    *
-   * 🔴 Une réponse est **jetée** si une fournée a été acceptée après son départ :
-   * elle rendrait l'état d'avant, et l'effacerait sous les doigts.
+   * 🔴 Une réponse est **jetée** si une fournée a été acceptée après son départ
+   * — elle rendrait l'état d'avant, et l'effacerait sous les doigts : la
+   * relecture de l'écriture l'a dépassée en rang.
    */
   async refresh(): Promise<void> {
     if (this.loadState() !== 'ready') {
       return;
     }
-    const startedAt = Date.now();
     const served = await this.read();
     if (served === 'failed') {
       this.readFailed.set(true);
-    } else if (served !== 'stale' && this.lastWriteAt < startedAt) {
+    } else if (served !== 'stale') {
       this.applyRead(served);
     }
   }
 
   /**
-   * **La relecture qui suit une écriture acceptée.** Elle note l'écriture, puis
-   * relit.
-   *
-   * 🔴 Elle n'est PAS soumise à la règle `lastWriteAt` : l'écriture et son départ
-   * tombent dans la même milliseconde, et la règle jetterait la lecture qui porte
-   * le geste qu'on vient de faire. Elle passe devant toute relecture périodique
-   * en vol par le rang. Rend `true` si elle a été inscrite.
+   * **La relecture qui suit une écriture acceptée.** Elle passe devant toute
+   * relecture périodique en vol par le rang. Rend `true` si elle a été inscrite.
    */
   async rereadAfterWrite(): Promise<boolean> {
-    this.lastWriteAt = Date.now();
     const served = await this.read();
     if (served === 'failed') {
       this.readFailed.set(true);

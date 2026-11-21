@@ -11,7 +11,8 @@ import {
 
 import type { WorkshopLine } from '@lfd/contracts';
 
-import { beforeLabel, type DeadlineSlot, type SlotRow, slots } from '../workshop-deadlines';
+import { type LineGestures, lineGestures } from '../rules/workshop-line-gestures';
+import { beforeLabel, type DeadlineSlot, type SlotRow, slots } from '../rules/workshop-deadlines';
 
 /** Une quantité à déclarer sur une ligne. */
 export interface SlotRecord {
@@ -25,9 +26,19 @@ export interface SlotEntry {
   readonly preset: number;
 }
 
+/** Une rangée d'une tranche, avec ce qu'elle dit et ce qu'elle permet. */
+interface ShownRow {
+  readonly row: SlotRow;
+  /** « palier 2 sur 2 · plaque de 30 ». */
+  readonly sub: string;
+  readonly tone: FoldMeterTone;
+  readonly gestures: LineGestures;
+}
+
 /** Une tranche, avec ce que sa carte dit. */
 interface ShownSlot {
   readonly slot: DeadlineSlot;
+  readonly rows: readonly ShownRow[];
   readonly title: string;
   readonly badge: string;
   readonly variant: FoldBadgeVariant;
@@ -68,32 +79,24 @@ export class WorksheetSlots {
 
   readonly recorded = output<SlotRecord>();
   readonly entered = output<SlotEntry>();
+  /** « Fait » sur une ligne simple : elle se coche en entier. */
+  readonly done = output<WorkshopLine>();
+  /** « Problème » sur une ligne toujours vert ou simple — elles ne se comptent pas. */
+  readonly problem = output<WorkshopLine>();
 
   protected readonly shown = computed<readonly ShownSlot[]>(() =>
     slots(this.lines(), this.now()).map((slot) => ({
       slot,
+      rows: slot.rows.map((row) => ({
+        row,
+        sub: subOf(row),
+        tone: toneOf(slot, row),
+        gestures: lineGestures(row.line),
+      })),
       title: beforeLabel(slot.before),
       ...badgeOf(slot),
     })),
   );
-
-  protected sub(row: SlotRow): string {
-    const container = row.line.container;
-    const size =
-      container === null ? null : `${container.singular} de ${String(container.unitsPerContainer)}`;
-    const parts = [
-      row.count > 1 ? `palier ${String(row.index + 1)} sur ${String(row.count)}` : null,
-      size ?? (row.count > 1 ? null : 'pas de contenant réglé'),
-    ];
-    return parts.filter((part) => part !== null).join(' · ');
-  }
-
-  protected tone(slot: DeadlineSlot, row: SlotRow): FoldMeterTone {
-    if (row.missing === 0) {
-      return 'success';
-    }
-    return slot.state === 'over' ? 'alert' : 'accent';
-  }
 
   protected record(row: SlotRow): void {
     const container = row.line.container;
@@ -105,6 +108,26 @@ export class WorksheetSlots {
   protected enter(row: SlotRow): void {
     this.entered.emit({ line: row.line, preset: row.missing });
   }
+}
+
+/** « palier 2 sur 2 · plaque de 30 », ou « pas de contenant réglé ». */
+function subOf(row: SlotRow): string {
+  const container = row.line.container;
+  const size =
+    container === null ? null : `${container.singular} de ${String(container.unitsPerContainer)}`;
+  const parts = [
+    row.count > 1 ? `palier ${String(row.index + 1)} sur ${String(row.count)}` : null,
+    size ?? (row.count > 1 ? null : 'pas de contenant réglé'),
+  ];
+  return parts.filter((part) => part !== null).join(' · ');
+}
+
+/** Vert tenu, rouge dépassé, accent sinon. */
+function toneOf(slot: DeadlineSlot, row: SlotRow): FoldMeterTone {
+  if (row.missing === 0) {
+    return 'success';
+  }
+  return slot.state === 'over' ? 'alert' : 'accent';
 }
 
 function badgeOf(slot: DeadlineSlot): { badge: string; variant: FoldBadgeVariant } {

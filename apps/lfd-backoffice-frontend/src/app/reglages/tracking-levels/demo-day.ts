@@ -1,6 +1,6 @@
 import type { WorkshopBatch, WorkshopLine } from '@lfd/contracts';
 
-import { minutesOf } from '../../production/fiche-atelier/workshop-deadlines';
+import { minutesOf } from '../../production/fiche-atelier/rules/workshop-deadlines';
 
 /**
  * **La fausse journée de l'aperçu des niveaux de suivi**

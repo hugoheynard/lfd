@@ -1,0 +1,86 @@
+<!--
+      🔴 Le serveur n'a pas pu lire les rayons (`shelvesKnown: false`) : les
+      quantités restent justes, mais tout est sous « Rayon inconnu » — et sans
+      rayon, il n'y a plus de poste. Un échec partiel laisse le contenu à l'écran
+      et se DIT.
+    -->
+@if (day.shelvesLost() && day.state() === 'ready') {
+  <fold-callout variant="warning">
+    Les rayons n'ont pas pu être lus — les quantités sont justes, mais les fiches ne sont pas
+    séparées par poste. Rechargez pour les retrouver.
+  </fold-callout>
+}
+
+<!-- Mode prod : les postes n'ont pas pu être lus, le serveur a rangé par rayon. -->
+@if (day.workstationsLost() && day.state() === 'ready') {
+  <fold-callout variant="warning" data-workstations-lost>
+    Les postes n'ont pas pu être lus — les fiches sont rangées par rayon.
+  </fold-callout>
+}
+
+<!-- La relecture a échoué : les chiffres affichés vieillissent. Seul reste
+         du pied retiré le 2026-10-28 (Hugo) — celui-là ne se tait pas. -->
+@if (day.refreshFailed()) {
+  <fold-callout variant="warning" class="fa-stale">
+    Relecture impossible depuis {{ day.readLabel() }} : les chiffres affichés peuvent avoir changé.
+  </fold-callout>
+}
+
+<!-- Des gestes gardés sur l'appareil, faute de réseau : ils repartiront
+         seuls ; le dire, et laisser renvoyer tout de suite. -->
+@if (queue.queuedLabel(); as queued) {
+  <fold-callout variant="warning" data-queued-batches>
+    {{ queued }} en attente d’envoi sur cet appareil : départ dès le retour du réseau.
+    <button foldButton size="sm" emphasis="outline" (click)="queue.flush()">
+      Renvoyer maintenant
+    </button>
+  </fold-callout>
+}
+
+<!-- Le lien de la cloche vise une autre journée que celle du four : le dire,
+         plutôt que d'ouvrir une ligne du mauvais jour. -->
+@if (linkedElsewhere(); as other) {
+  <fold-callout variant="info" data-link-elsewhere>
+    Le lien suivi vise le {{ other }} — la fiche montre la journée en cours au four.
+  </fold-callout>
+}
+
+@if (gestures.retakeFailed()) {
+  <fold-callout variant="alert">
+    Le retirage n'a pas abouti — la fiche affichée est toujours celle du tirage lu. Réessayez.
+  </fold-callout>
+}
+
+<!--
+      🔴 Un geste refusé se DIT, avec les mots du serveur (« pièces au bac »,
+      conflit de fournée) : un geste qui ne prend pas sans explication se
+      refait, et se refait refuser.
+    -->
+@if (gestures.refused(); as refused) {
+  <fold-callout variant="alert" class="fa-refused">{{ refused }}</fold-callout>
+}
+
+<!--
+      🔴 La fiche vient de changer de journée sous les yeux de qui la regarde :
+      le plan de ce jour a été arrêté, et c'est lui qui passe au four. Le dire,
+      sinon on déclare sur le mauvais jour.
+    -->
+@if (day.dayTurnedLabel(); as turned) {
+  <fold-callout variant="info" class="fa-day-turned">
+    La fiche montre désormais le {{ turned }} — son plan vient d'être arrêté, et c'est lui qui passe
+    au four.
+    <button foldButton (click)="day.acknowledgeDayTurn()">Compris</button>
+  </fold-callout>
+}
+
+<!-- Le bandeau de version périmée : un chiffre et une action. -->
+@if (day.drift(); as changed) {
+  @if (day.generatedLabel(); as tirage) {
+    <app-drift-banner
+      [drift]="changed"
+      [generatedLabel]="tirage"
+      [compact]="compact()"
+      (retake)="gestures.retake()"
+    />
+  }
+}

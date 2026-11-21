@@ -19,44 +19,72 @@
       </fold-element-title>
 
       <ul class="ws-rows">
-        @for (row of shown.slot.rows; track row.line.sku) {
+        @for (shownRow of shown.rows; track shownRow.row.line.sku) {
+          @let row = shownRow.row;
+          @let gestures = shownRow.gestures;
           <li class="ws-row" [class.is-met]="row.missing === 0" data-slot-row>
             <span class="ws-miss">{{ row.missing === 0 ? '✓' : row.missing }}</span>
             <span class="ws-what">
               <span class="ws-name">{{ row.line.productName }}</span>
-              <span class="ws-sub">{{ sub(row) }}</span>
+              <span class="ws-sub">{{ shownRow.sub }}</span>
             </span>
             <span class="ws-progress">
               <fold-meter
                 [label]="row.line.productName + ' — ' + shown.title"
                 [value]="row.got"
                 [max]="row.step.q"
-                [tone]="tone(shown.slot, row)"
+                [tone]="shownRow.tone"
               />
               <span class="ws-figures">{{ row.got }} / {{ row.step.q }}</span>
             </span>
             @if (row.missing > 0 && !readOnly()) {
               <span class="ws-actions">
-                @if (row.line.container; as container) {
+                @if (gestures.count) {
+                  @if (row.line.container; as container) {
+                    <button
+                      foldButton
+                      class="ws-gesture"
+                      [disabled]="busy().has(row.line.sku)"
+                      (click)="record(row)"
+                    >
+                      + 1 {{ container.singular }}
+                    </button>
+                  }
+                  @if (!compact() || row.line.container === null) {
+                    <button
+                      foldButton
+                      class="ws-gesture"
+                      [emphasis]="row.line.container === null ? 'solid' : 'outline'"
+                      [intent]="row.line.container === null ? 'primary' : 'neutral'"
+                      [disabled]="busy().has(row.line.sku)"
+                      (click)="enter(row)"
+                    >
+                      Saisir
+                    </button>
+                  }
+                }
+                @if (gestures.check) {
                   <button
                     foldButton
                     class="ws-gesture"
+                    data-slot-done
                     [disabled]="busy().has(row.line.sku)"
-                    (click)="record(row)"
+                    (click)="done.emit(row.line)"
                   >
-                    + 1 {{ container.singular }}
+                    Fait
                   </button>
                 }
-                @if (!compact() || row.line.container === null) {
+                @if (gestures.report) {
                   <button
                     foldButton
                     class="ws-gesture"
-                    [emphasis]="row.line.container === null ? 'solid' : 'outline'"
-                    [intent]="row.line.container === null ? 'primary' : 'neutral'"
+                    intent="danger"
+                    emphasis="outline"
+                    data-slot-problem
                     [disabled]="busy().has(row.line.sku)"
-                    (click)="enter(row)"
+                    (click)="problem.emit(row.line)"
                   >
-                    Saisir
+                    Problème
                   </button>
                 }
               </span>

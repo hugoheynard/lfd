@@ -148,4 +148,28 @@ describe('la vue par tranche', () => {
 
     expect(el.querySelectorAll('button').length).toBeGreaterThan(0);
   });
+
+  /** Régression : en tranche, une ligne toujours vert offrait « + 1 plaque » et « Saisir ». */
+  it('une ligne toujours vert n’offre que « Problème »', () => {
+    const fixture = render([line({ trackingLevel: 'always_green' })]);
+    const reported: WorkshopLine[] = [];
+    fixture.componentInstance.problem.subscribe((value) => reported.push(value));
+    const buttons = [...(fixture.nativeElement as HTMLElement).querySelectorAll('button')];
+
+    expect(buttons.map((node) => node.textContent?.trim())).toEqual(['Problème']);
+    buttons[0]?.click();
+    expect(reported.map((value) => value.sku)).toEqual(['CRO']);
+  });
+
+  /** Régression : en tranche, une ligne simple offrait « + 1 plaque » et « Saisir ». */
+  it('une ligne simple offre « Fait » et « Problème »', () => {
+    const fixture = render([line({ trackingLevel: 'simple' })]);
+    const done: WorkshopLine[] = [];
+    fixture.componentInstance.done.subscribe((value) => done.push(value));
+    const buttons = [...(fixture.nativeElement as HTMLElement).querySelectorAll('button')];
+
+    expect(buttons.map((node) => node.textContent?.trim())).toEqual(['Fait', 'Problème']);
+    buttons[0]?.click();
+    expect(done.map((value) => value.sku)).toEqual(['CRO']);
+  });
 });

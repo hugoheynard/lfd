@@ -4,6 +4,7 @@ import { FoldBadgeComponent, FoldButtonComponent } from 'fold-ng';
 import type { WorkshopLine } from '@lfd/contracts';
 import { saleQuantityLabel } from '@lfd/b2b-ui/catalog';
 
+import { checkLeft, lineGestures } from '../rules/workshop-line-gestures';
 import { LineProblemNote } from '../line-problem-note/line-problem-note';
 
 /**
@@ -29,14 +30,19 @@ export class LineSimple {
   /** Un geste de cette ligne est en vol. */
   readonly busy = input(false);
 
+  /** Un « Fait » gardé sans réseau : il partira seul, la ligne le dit. */
+  readonly doneWaiting = input(false);
+
   readonly done = output<void>();
   readonly problem = output<void>();
 
   /** Ce que « Fait » déclarerait, tel que servi ; `remaining` faute du champ. */
-  protected readonly left = computed(() => {
-    const line = this.line();
-    return line.remainingUnderCeiling ?? line.remaining;
-  });
+  protected readonly left = computed(() => checkLeft(this.line()));
+
+  /** « Fait » s'offre selon la règle commune des gestes. */
+  protected readonly canCheck = computed(
+    () => lineGestures(this.line()).check && !this.doneWaiting(),
+  );
 
   protected readonly figures = computed(() => {
     const line = this.line();

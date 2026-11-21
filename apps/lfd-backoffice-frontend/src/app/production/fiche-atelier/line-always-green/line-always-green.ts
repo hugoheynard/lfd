@@ -5,7 +5,7 @@ import type { WorkshopLine } from '@lfd/contracts';
 import { saleQuantityLabel } from '@lfd/b2b-ui/catalog';
 
 import { LineProblemNote } from '../line-problem-note/line-problem-note';
-import { beforeLabel, steps } from '../workshop-deadlines';
+import { beforeLabel, steps } from '../rules/workshop-deadlines';
 
 /** Un palier de la ligne, dit en une pastille. */
 interface StepBadge {

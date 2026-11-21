@@ -3,7 +3,7 @@ import { RouterOutlet } from '@angular/router';
 import { FoldSurfaceDirective, FoldViewNavComponent } from 'fold-ng';
 
 import { PermissionsStore } from '../../auth/permissions.store';
-import { WorkshopClock } from '../fiche-atelier/workshop-clock';
+import { WorkshopClock } from '../fiche-atelier/state/workshop-clock';
 import { WorkshopWallClock } from '../fiche-atelier/workshop-wall-clock/workshop-wall-clock';
 import { permittedProdManagerViews } from './prod-manager-views';
 import { UnplacedProductsAlert } from './unplaced-products-alert/unplaced-products-alert';

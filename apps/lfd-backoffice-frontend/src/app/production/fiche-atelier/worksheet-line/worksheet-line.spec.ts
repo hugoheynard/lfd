@@ -6,7 +6,7 @@ import type {
 } from '@lfd/contracts';
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import { WorkshopKeypadOpener } from '../workshop-keypad-opener';
+import { WorkshopKeypadOpener } from '../openers/workshop-keypad-opener';
 import { rowsOf, WorksheetLine } from './worksheet-line';
 
 /**

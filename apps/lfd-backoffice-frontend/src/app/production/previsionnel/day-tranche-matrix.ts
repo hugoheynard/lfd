@@ -6,7 +6,7 @@ import type {
   ProductionWorksheetView,
 } from '@lfd/contracts';
 
-import { minutesOf, type SlotState, slots } from '../fiche-atelier/workshop-deadlines';
+import { minutesOf, type SlotState, slots } from '../fiche-atelier/rules/workshop-deadlines';
 import { beforeFirstLabel } from './due-thresholds-section/due-thresholds-section';
 
 /**

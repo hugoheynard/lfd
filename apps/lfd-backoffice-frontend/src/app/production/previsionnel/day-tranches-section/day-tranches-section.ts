@@ -17,7 +17,7 @@ import {
 } from 'fold-ng';
 
 import { parisToday } from '../../../shared/paris-today';
-import { WorkshopClock } from '../../fiche-atelier/workshop-clock';
+import { WorkshopClock } from '../../fiche-atelier/state/workshop-clock';
 import { WorksheetSlots } from '../../fiche-atelier/worksheet-slots/worksheet-slots';
 import { WorksheetService } from '../../worksheet.service';
 

@@ -1,8 +1,9 @@
 import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
 import { FoldButtonComponent, FoldCalloutComponent } from 'fold-ng';
 
-import type { OrderSaleUnit, WorkshopDrift } from '@lfd/contracts';
-import { saleQuantityLabel } from '@lfd/b2b-ui/catalog';
+import { SaleQuantityPipe } from '../../../shared/sale-quantity/sale-quantity.pipe';
+
+import type { WorkshopDrift } from '@lfd/contracts';
 
 /**
  * **Le bandeau de version périmée** — ce qui est arrivé depuis le tirage.
@@ -26,7 +27,7 @@ import { saleQuantityLabel } from '@lfd/b2b-ui/catalog';
 @Component({
   selector: 'app-drift-banner',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldButtonComponent, FoldCalloutComponent],
+  imports: [FoldButtonComponent, FoldCalloutComponent, SaleQuantityPipe],
   templateUrl: './drift-banner.html',
   styleUrl: './drift-banner.scss',
 })
@@ -34,9 +35,6 @@ export class DriftBanner {
   readonly drift = input.required<WorkshopDrift>();
 
   /** « 12 » ou « 1,25 kg » : l'écart dit dans l'unité de l'article (P6). */
-  protected figure(quantity: number, unit: OrderSaleUnit): string {
-    return saleQuantityLabel(quantity, unit);
-  }
   /** « 4 h 05 » — le tirage qu'on est en train de lire. */
   readonly generatedLabel = input.required<string>();
   /** Le bandeau condensé du téléphone : un chiffre, une action, rien de plus. */

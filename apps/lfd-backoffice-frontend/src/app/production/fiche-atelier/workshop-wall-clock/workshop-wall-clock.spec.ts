@@ -2,7 +2,7 @@ import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { describe, expect, it } from 'vitest';
 
-import { WorkshopClock } from '../workshop-clock';
+import { WorkshopClock } from '../state/workshop-clock';
 import { WorkshopWallClock } from './workshop-wall-clock';
 
 /** L'horloge du bandeau de la fiche (maquette v3, 2026-10-28). */

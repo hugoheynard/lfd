@@ -19,8 +19,10 @@ import {
   lateMinutes,
   stepRemaining,
   steps,
-} from '../workshop-deadlines';
-import { WorkshopKeypadOpener } from '../workshop-keypad-opener';
+} from '../rules/workshop-deadlines';
+import type { LinePending } from '../outbox/workshop-outbox';
+import { SaleQuantityPipe } from '../../../shared/sale-quantity/sale-quantity.pipe';
+import { WorkshopKeypadOpener } from '../openers/workshop-keypad-opener';
 
 /** Paliers par rangée de la barre, au plus. */
 const STEPS_PER_ROW = 2;
@@ -52,7 +54,13 @@ const SEGMENT_SCALE = 100;
 @Component({
   selector: 'app-worksheet-line',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [BatchChips, FoldBadgeComponent, FoldButtonComponent, FoldMeterComponent],
+  imports: [
+    SaleQuantityPipe,
+    BatchChips,
+    FoldBadgeComponent,
+    FoldButtonComponent,
+    FoldMeterComponent,
+  ],
   templateUrl: './worksheet-line.html',
   styleUrl: './worksheet-line.scss',
   host: {
@@ -72,9 +80,25 @@ export class WorksheetLine {
 
   /** « Maintenant », en minutes depuis minuit — l'horloge de la fiche. */
   readonly now = input.required<number>();
+  /**
+   * Une fournée en route : « +30 · envoi… » pendant l'envoi, « +30 · en
+   * attente » gardée sans réseau. Jamais ajoutée aux chiffres servis — la
+   * barre n'avance que quand le serveur l'a dit.
+   */
+  readonly pending = input<LinePending | null>(null);
 
   readonly recorded = output<number>();
   readonly cancelled = output<WorkshopBatch>();
+
+  /** Le mot de la pastille de la fournée en route ; `null` sans fournée. */
+  protected readonly pendingLabel = computed(() => {
+    const pending = this.pending();
+    if (pending === null) {
+      return null;
+    }
+    const said = pending.state === 'sending' ? 'envoi…' : 'en attente';
+    return `+${this.figure(pending.quantity)} · ${said}`;
+  });
 
   private readonly keypad = inject(WorkshopKeypadOpener);
 
@@ -187,7 +211,7 @@ export class WorksheetLine {
    * « 48 » ou « 1,25 kg » : une quantité de la ligne dans l'unité de
    * l'article (plan `pricing/vente-au-poids.md`, P6).
    */
-  protected figure(quantity: number): string {
+  private figure(quantity: number): string {
     return saleQuantityLabel(quantity, this.line().saleUnit);
   }
 

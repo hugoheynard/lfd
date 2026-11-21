@@ -13,19 +13,21 @@ import {
 } from '@lfd/contracts';
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import { type VersionWatch, VersionWatcher } from '../../shared/version/version-watcher';
-import { PermissionsStore } from '../../auth/permissions.store';
-import { StaffPrefsService } from '../../shared/staff-prefs/staff-prefs.service';
-import { dayLabelOf } from '../worksheet-day';
-import { BatchShortcutsService } from '../batch-shortcuts.service';
-import { WorksheetService } from '../worksheet.service';
-import { FicheAtelier } from './fiche-atelier';
-import { WorkshopClock } from './workshop-clock';
-import { WorkshopDayReader } from './workshop-day.reader';
-import { WorkshopGestures } from './workshop-gestures';
-import { WorkshopShortcutsReader } from './workshop-shortcuts.reader';
-import { WorkshopKeypadOpener } from './workshop-keypad-opener';
-import { WorkshopProblemOpener } from './workshop-problem-opener';
+import { type VersionWatch, VersionWatcher } from '../../../shared/version/version-watcher';
+import { PermissionsStore } from '../../../auth/permissions.store';
+import { StaffPrefsService } from '../../../shared/staff-prefs/staff-prefs.service';
+import { dayLabelOf } from '../../worksheet-day';
+import { BatchShortcutsService } from '../../batch-shortcuts.service';
+import { WorksheetService } from '../../worksheet.service';
+import { FicheAtelier } from './fiche-atelier-page';
+import { WorkshopClock } from '../state/workshop-clock';
+import { WorkshopDayReader } from '../state/workshop-day.reader';
+import { WorkshopGestures } from '../state/workshop-gestures';
+import { WorkshopOutbox } from '../outbox/workshop-outbox';
+import { WorkshopQueueReplay } from '../outbox/workshop-queue-replay';
+import { WorkshopShortcutsReader } from '../state/workshop-shortcuts.reader';
+import { WorkshopKeypadOpener } from '../openers/workshop-keypad-opener';
+import { WorkshopProblemOpener } from '../openers/workshop-problem-opener';
 
 /**
  * Le veilleur de journée, doublé : il garde la relecture que l'écran lui
@@ -265,12 +267,32 @@ async function settle(fixture: ComponentFixture<FicheAtelier>): Promise<void> {
   fixture.detectChanges();
 }
 
-async function render(): Promise<{ fixture: ComponentFixture<FicheAtelier>; el: HTMLElement }> {
+/** Bascule la fiche sur une de ses deux lectures, par la bascule de l'écran. */
+async function chooseView(
+  fixture: ComponentFixture<FicheAtelier>,
+  view: 'product' | 'slot',
+): Promise<void> {
+  (fixture.nativeElement as HTMLElement)
+    .querySelectorAll<HTMLElement>('.fa-view [role="radio"]')
+    [view === 'product' ? 0 : 1]?.click();
+  await settle(fixture);
+}
+
+/**
+ * Ouvre la fiche. Elle s'ouvre par tranche ; la plupart des tests éprouvent les
+ * lignes, et passent donc en vue produit — `view: 'slot'` garde la vue d'ouverture.
+ */
+async function render(
+  view: 'product' | 'slot' = 'product',
+): Promise<{ fixture: ComponentFixture<FicheAtelier>; el: HTMLElement }> {
   const fixture = TestBed.createComponent(FicheAtelier);
   fixture.detectChanges();
   // Un tour de boucle, et non `whenStable()` : la lecture part dans une promesse
   // que le runtime zoneless ne compte pas comme une tâche en attente.
   await settle(fixture);
+  if (view === 'product') {
+    await chooseView(fixture, 'product');
+  }
   return { fixture, el: fixture.nativeElement };
 }
 
@@ -297,6 +319,8 @@ const text = (el: HTMLElement, selector: string): string =>
 
 describe('la fiche d’atelier', () => {
   beforeEach(() => {
+    // La file d'envoi vit dans le stockage de l'appareil : chaque test part vide.
+    localStorage.clear();
     api = new FakeWorksheetService();
     prefs = new FakePrefs();
     keypad.presets = [];
@@ -330,6 +354,8 @@ describe('la fiche d’atelier', () => {
         providers: [
           WorkshopDayReader,
           WorkshopGestures,
+          WorkshopOutbox,
+          WorkshopQueueReplay,
           WorkshopShortcutsReader,
           { provide: WorkshopClock, useValue: { minutes: signal(NOW), seconds: signal(NOW * 60) } },
           { provide: WorkshopKeypadOpener, useValue: keypad },
@@ -485,6 +511,97 @@ describe('la fiche d’atelier', () => {
 
     expect(api.batches).toHaveLength(2);
     expect(api.batches[1]?.id).toBe(api.batches[0]?.id);
+  });
+
+  describe('la file d’envoi, sans réseau', () => {
+    const queuedNote = (el: HTMLElement): string =>
+      el.querySelector('[data-queued-batches]')?.textContent ?? '';
+    const resend = (el: HTMLElement): HTMLButtonElement | null =>
+      el.querySelector<HTMLButtonElement>('[data-queued-batches] button');
+
+    it('garde la fournée sur l’appareil, le dit, et la montre en attente sur la ligne', async () => {
+      const { fixture, el } = await render();
+      api.writeError = new HttpErrorResponse({ status: 0 });
+      plaque(el)?.click();
+      await settle(fixture);
+
+      expect(queuedNote(el)).toContain('1 fournée en attente');
+      expect(text(el, '.fa-refused')).toContain('repartira dès le retour du réseau');
+      expect(baguette(el)?.querySelector('[data-line-pending]')?.textContent).toContain(
+        'en attente',
+      );
+      expect(localStorage.getItem('lfd.workshop.outbox.v2')).toContain('BAG');
+    });
+
+    it('« Renvoyer maintenant » la fait partir sous le MÊME identifiant, puis relit', async () => {
+      const { fixture, el } = await render();
+      api.writeError = new HttpErrorResponse({ status: 0 });
+      plaque(el)?.click();
+      await settle(fixture);
+      const reads = api.reads;
+
+      api.writeError = null;
+      resend(el)?.click();
+      await settle(fixture);
+      await settle(fixture);
+
+      expect(api.batches).toHaveLength(2);
+      expect(api.batches[1]?.id).toBe(api.batches[0]?.id);
+      expect(queuedNote(el)).toBe('');
+      expect(api.reads).toBeGreaterThan(reads);
+    });
+
+    it('une fournée gardée que le serveur refuse sort de la file, et le refus est dit', async () => {
+      const { fixture, el } = await render();
+      api.writeError = new HttpErrorResponse({ status: 0 });
+      plaque(el)?.click();
+      await settle(fixture);
+
+      api.writeError = new HttpErrorResponse({
+        status: 409,
+        error: { message: 'Cette fournée existe déjà avec une autre quantité.' },
+      });
+      resend(el)?.click();
+      await settle(fixture);
+
+      expect(queuedNote(el)).toBe('');
+      expect(text(el, '.fa-refused')).toContain('La fournée gardée n’a pas été acceptée');
+    });
+
+    it('une fiche rouverte renvoie ce qui était resté sur l’appareil', async () => {
+      localStorage.setItem(
+        'lfd.workshop.outbox.v2',
+        JSON.stringify([
+          {
+            kind: 'batch',
+            id: '01J00000000000000000000KEPT',
+            date: DAY,
+            sku: 'BAG',
+            productName: 'Baguette tradition',
+            quantity: 24,
+            initials: 'HH',
+          },
+        ]),
+      );
+      const { fixture } = await render();
+      await settle(fixture);
+
+      expect(api.batches.map((batch) => batch.id)).toEqual(['01J00000000000000000000KEPT']);
+      expect(localStorage.getItem('lfd.workshop.outbox.v2')).toBeNull();
+    });
+  });
+
+  it('montre « envoi… » sur la ligne tant que le serveur n’a pas répondu', async () => {
+    const { fixture, el } = await render();
+    api.holdWrites = true;
+    plaque(el)?.click();
+    await settle(fixture);
+
+    expect(baguette(el)?.querySelector('[data-line-pending]')?.textContent).toContain('envoi…');
+
+    api.releaseWrites();
+    await settle(fixture);
+    expect(baguette(el)?.querySelector('[data-line-pending]')).toBeNull();
   });
 
   it('tire un nouvel identifiant pour chaque fournée acceptée', async () => {
@@ -784,6 +901,7 @@ describe('la fiche d’atelier', () => {
       fixture.componentRef.setInput('poste', poste);
       fixture.detectChanges();
       await settle(fixture);
+      await chooseView(fixture, 'product');
       return { fixture, el: fixture.nativeElement };
     }
 
@@ -874,12 +992,16 @@ describe('la fiche d’atelier', () => {
       return { ...painTodo(), lines: [baguette, SEIGLE], pending: [baguette, SEIGLE] };
     }
 
-    const toSlots = async (fixture: ComponentFixture<FicheAtelier>): Promise<void> => {
-      (fixture.nativeElement as HTMLElement)
-        .querySelectorAll<HTMLElement>('.fa-view [role="radio"]')[1]
-        ?.click();
-      await settle(fixture);
-    };
+    const toSlots = (fixture: ComponentFixture<FicheAtelier>): Promise<void> =>
+      chooseView(fixture, 'slot');
+
+    it('s’ouvre par tranche : c’est la lecture du four', async () => {
+      api.view = sheet({ groups: [withDeadlines()] });
+      const { el } = await render('slot');
+
+      expect(el.querySelector('app-worksheet-slots')).not.toBeNull();
+      expect(el.querySelector('app-workshop-line')).toBeNull();
+    });
 
     it('montre le retard du palier, et ce qui presse, sur la ligne et l’onglet', async () => {
       api.view = sheet({ groups: [withDeadlines()] });
@@ -987,21 +1109,26 @@ describe('la fiche d’atelier', () => {
       expect(api.reads).toBe(readsBefore + 1);
     });
 
-    it('un « Fait » refusé garde sa clé : le réessai rejoue la même intention', async () => {
+    it('un « Fait » sans réponse est gardé, dit en attente, et repart sous la même clé', async () => {
       api.view = sheet({ groups: [mixed()] });
       api.writeError = new HttpErrorResponse({ status: 0 });
       const { fixture, el } = await render();
-      const done = (): void =>
-        el.querySelector<HTMLButtonElement>('app-line-simple [data-line-done-button]')?.click();
 
-      done();
+      el.querySelector<HTMLButtonElement>('app-line-simple [data-line-done-button]')?.click();
       await settle(fixture);
+
+      expect(el.querySelector('app-line-simple [data-line-done-waiting]')).not.toBeNull();
+      expect(el.querySelector('app-line-simple [data-line-done-button]')).toBeNull();
+      expect(el.querySelector('[data-queued-batches]')?.textContent).toContain('1 « Fait »');
+
       api.writeError = null;
-      done();
+      el.querySelector<HTMLButtonElement>('[data-queued-batches] button')?.click();
+      await settle(fixture);
       await settle(fixture);
 
       expect(api.dones).toHaveLength(2);
       expect(api.dones[1]?.key).toBe(api.dones[0]?.key);
+      expect(el.querySelector('[data-queued-batches]')).toBeNull();
     });
 
     it('« Problème » ouvre le panneau rouge sur la ligne, et relit s’il a été pris', async () => {

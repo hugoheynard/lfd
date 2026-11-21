@@ -15,7 +15,7 @@ import {
 import type { WorkshopBatch } from '@lfd/contracts';
 
 import { WorksheetLine } from '../../../production/fiche-atelier/worksheet-line/worksheet-line';
-import { WorkshopKeypadOpener } from '../../../production/fiche-atelier/workshop-keypad-opener';
+import { WorkshopKeypadOpener } from '../../../production/fiche-atelier/openers/workshop-keypad-opener';
 import {
   autoReleased,
   DEFAULT_MARGIN,

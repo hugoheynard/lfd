@@ -863,7 +863,9 @@ export const routes: Routes = [
     canActivate: [permissionGuard('production_worksheet:read')],
     title: 'Fournée du jour — LFC B2B admin',
     loadComponent: () =>
-      import('./production/fiche-atelier/fiche-atelier').then((m) => m.FicheAtelier),
+      import('./production/fiche-atelier/fiche-atelier-page/fiche-atelier-page').then(
+        (m) => m.FicheAtelier,
+      ),
   },
   // CHARGER MA TOURNÉE : le chargement du livreur a sa propre adresse, sous
   // le même droit — un rechargement le rouvre.

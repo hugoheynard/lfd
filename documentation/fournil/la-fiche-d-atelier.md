@@ -96,18 +96,50 @@ du jour ([`le-previsionnel.md`](le-previsionnel.md)).
 | `saleUnit`                       | `piece` ou `weight` : un article au poids se compte en grammes                                                                                                                                                                                                                                                                                  |
 
 Les fonctions de palier (palier en cours, reste, retard) sont pures, côté
-écran : `fiche-atelier/workshop-deadlines.ts`, « maintenant » venant de
+écran : `fiche-atelier/rules/workshop-deadlines.ts`, « maintenant » venant de
 l'horloge de la fiche (`workshop-clock.ts`).
 
 ### L'écran
 
-`production/fiche-atelier/` : deux vues (« Par produit » et « Par tranche »,
-une carte par heure limite : dépassée, la prochaine, à venir, tenue), le
+`production/fiche-atelier/` : deux vues. La fiche s'ouvre **« Par tranche »**
+(une carte par heure limite : dépassée, la prochaine, à venir, tenue), la
+lecture du four ; « Par produit » est à un appui. Un lien de la cloche qui
+désigne une ligne (`?ligne=`) ouvre « Par produit », seule vue qui la cercle.
+Ensuite, le
 `fold-meter` segmenté pour la barre à paliers, le pavé 3 × 4
 (`workshop-keypad/`) prérempli du reste du palier, les raccourcis
 (`workshop-shortcuts.reader.ts`), « Annuler la dernière » (`undoLast`,
 `workshop-gestures.ts`), l'horloge murale (`workshop-wall-clock/`), et au
 téléphone une carte par ligne avec les faites épinglées au pied.
+
+Le dossier se lit en deux parties : un dossier par composant (la page
+`fiche-atelier-page/`, une ligne par niveau, la vue par tranche, le pavé, les
+bandeaux…), et quatre dossiers de logique sans affichage, chacun testé seul :
+
+| Dossier    | Ce qu'il porte                                                                 |
+| ---------- | ------------------------------------------------------------------------------ |
+| `rules/`   | les règles pures : paliers, gestes par niveau, choix de la fiche, onglets      |
+| `state/`   | ce qu'on lit (la journée, l'horloge, les raccourcis) et ce qu'on fait (gestes) |
+| `outbox/`  | les gestes en route : la file d'envoi et son renvoi                            |
+| `openers/` | l'ouverture du pavé et du panneau « Problème », le défilement vers une ligne   |
+
+**Les gestes d'une ligne dépendent de son niveau de suivi, et d'un seul
+endroit** : `lineGestures` (`workshop-line-gestures.ts`) dit, pour une ligne,
+si l'on compte (détaillé), si l'on coche « Fait » (simple) et si l'on signale
+« Problème » (simple, toujours vert). Les deux vues le lisent : la vue produit
+par `app-workshop-line`, qui choisit le composant du niveau, la vue par tranche
+rangée par rangée. Un test monte les deux vues à chaque niveau et compare leurs
+gestes.
+
+Pour un poste posé au four, deux briques partagées du back-office :
+
+- `keepScreenAwake()` (`shared/screen-awake/`) garde l'écran allumé tant que la
+  fiche est ouverte, et redemande le verrou au retour de l'onglet ; sans
+  l'API, l'appareil garde sa veille normale ;
+- `GestureFeedback` (`shared/gesture-feedback/`) fait vibrer l'appareil (une
+  impulsion si le geste est pris, deux s'il est refusé) ; sans vibreur (iPad,
+  Safari), il bipe à la place, aigu pour un geste pris, deux graves pour un
+  refus. Toujours, il l'annonce aux lecteurs d'écran.
 
 ### Les fournées
 
@@ -188,10 +220,31 @@ dans le bandeau avant le geste.
 
 La relecture est silencieuse ; ce qui change sous les yeux se dit (la fiche
 passe à demain quand le plan est arrêté ; le pied dit « relue à 4 h 12 » ou
-« relecture impossible depuis… »). Pas de file hors ligne : un geste part
-directement au serveur, et revient en arrière en le disant s'il échoue. Pas de
-websocket : l'API est sans état et multi-instance, il faudrait d'abord un point
+« relecture impossible depuis… »). Pas de websocket : l'API est sans état et multi-instance, il faudrait d'abord un point
 de diffusion commun.
+
+### La file d'envoi, sans réseau
+
+Décidé par Hugo le 2026-11-20. Un geste parti sans réponse du serveur — une
+**fournée** ou un **« Fait »** — n'est pas perdu : il est gardé sur l'appareil
+(`workshop-outbox.ts`, stockage local, survit à un rechargement) sous sa clé
+d'idempotence. Il repart seul (`workshop-queue-replay.ts`) à l'ouverture de la
+fiche, au retour du réseau et à chaque relecture, ou tout de suite par
+« Renvoyer maintenant » dans le bandeau qui le compte.
+
+- Rejoué, il ne compte qu'une fois, même si le serveur l'avait écrit ; un
+  nouvel appui de la même quantité sur la même ligne rejoue la fournée gardée
+  au lieu d'en créer une seconde.
+- Un geste gardé que le serveur **refuse** sort de la file, et le refus est
+  dit : le rejouer ne le ferait pas passer.
+- Un « Fait » gardé repart sous sa clé d'intention ; la ligne simple dit
+  « fait · en attente » et n'offre plus « Fait » tant qu'il n'est pas parti.
+- L'annulation et le retirage partent toujours directement, et disent leur
+  échec.
+- **La fiche ne calcule toujours rien** : une fournée en route n'est jamais
+  ajoutée aux chiffres servis. La ligne la montre à part, « +30 · envoi… »
+  pendant l'envoi, « +30 · en attente » gardée sans réseau ; la barre n'avance
+  que quand le serveur l'a dit.
 
 ## Reste à faire
 
