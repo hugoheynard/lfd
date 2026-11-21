@@ -12,31 +12,26 @@
     </fold-empty-state>
   }
   @default {
-    @if (rows().length === 0) {
-      <fold-empty-state
-        icon="edit"
-        title="Aucun brouillon"
-        subtitle="Une saisie mise de côté par « Enregistrer le brouillon » se retrouve ici."
-      />
-    } @else {
-      <ul class="odl-list">
-        @for (draft of rows(); track draft.companyId) {
-          <li>
-            <fold-card
-              padding="md"
-              [interactive]="true"
-              [ariaLabel]="'Reprendre la saisie de ' + draft.companyName"
-              (activated)="resume(draft)"
-              [attr.data-draft]="draft.companyId"
-            >
-              <span class="odl-row">
-                <strong>{{ draft.companyName }}</strong>
-                <span class="odl-saved">{{ savedLabel(draft) }}</span>
-              </span>
-            </fold-card>
-          </li>
-        }
-      </ul>
-    }
+    <!-- La table des autres listes : une ligne rouvre la saisie du compte. -->
+    <fold-data-table
+      hover
+      clickable
+      density="compact"
+      caption="Brouillons de commande"
+      [columns]="columns"
+      [rows]="rows()"
+      [rowKey]="rowKey"
+      [empty]="empty"
+      (rowClick)="resume($event)"
+    >
+      <ng-template foldCell="savedAt" let-row>
+        <span class="odl-stack" [attr.data-draft]="row.companyId">
+          <span>{{ date(row) }}</span>
+          <span class="odl-time">{{ time(row) }}</span>
+        </span>
+      </ng-template>
+      <ng-template foldCell="companyName" let-row>{{ row.companyName }}</ng-template>
+      <ng-template foldCell="savedByName" let-row>{{ row.savedByName ?? '—' }}</ng-template>
+    </fold-data-table>
   }
 }

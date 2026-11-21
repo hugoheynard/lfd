@@ -22,8 +22,11 @@ async function mount(list: () => Promise<readonly OrderDraftSummaryView[]>): Pro
   });
   const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
   const fixture = TestBed.createComponent(OrderDraftsList);
-  await fixture.whenStable();
-  fixture.detectChanges();
+  // La lecture, puis le rendu de la table et de ses cellules.
+  for (let i = 0; i < 3; i++) {
+    await fixture.whenStable();
+    fixture.detectChanges();
+  }
   return { host: fixture.nativeElement as HTMLElement, navigate };
 }
 

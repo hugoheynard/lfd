@@ -1,19 +1,41 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import type { OrderDraftSummaryView } from '@lfd/contracts';
+import { formatOrderDate } from '@lfd/b2b-ui/order';
 import {
   FoldButtonComponent,
-  FoldCardComponent,
+  FoldDataTableCellDirective,
+  FoldDataTableComponent,
   FoldEmptyStateComponent,
   FoldLoadingStateComponent,
+  type FoldTableColumn,
+  type FoldTableEmpty,
 } from 'fold-ng';
 
-import { draftBadgeLabel } from '../../comptoir/nouvelle-commande-pro/draft-badge-label';
 import { COUNTER_ORDER_ENTRY_LINK } from '../nouvelle-commande/order-entry-origin';
 import { orderEntryParams } from '../nouvelle-commande/order-entry-return';
 import { OrderDraftsService } from '../order-drafts.service';
 
 type LoadState = 'loading' | 'ready' | 'error';
+
+/** L'heure d'enregistrement, à l'heure de Paris — quel que soit le fuseau du poste. */
+const PARIS_TIME = new Intl.DateTimeFormat('fr-FR', {
+  timeZone: 'Europe/Paris',
+  hour: '2-digit',
+  minute: '2-digit',
+});
+
+/** Le plus récent d'abord : c'est l'ordre que le serveur rend. */
+const COLUMNS: readonly FoldTableColumn[] = [
+  { key: 'savedAt', label: 'Enregistré le', width: '9rem' },
+  { key: 'companyName', label: 'Client' },
+  { key: 'savedByName', label: 'Par', width: '14rem' },
+];
+
+const EMPTY: FoldTableEmpty = {
+  title: 'Aucun brouillon',
+  subtitle: 'Une saisie mise de côté par « Enregistrer le brouillon » se retrouve ici.',
+};
 
 /** Où la saisie ramène une fois finie : cet onglet-ci. */
 const DRAFTS_ORIGIN = '/commandes?view=drafts';
@@ -31,7 +53,8 @@ const DRAFTS_ORIGIN = '/commandes?view=drafts';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     FoldButtonComponent,
-    FoldCardComponent,
+    FoldDataTableCellDirective,
+    FoldDataTableComponent,
     FoldEmptyStateComponent,
     FoldLoadingStateComponent,
   ],
@@ -59,10 +82,16 @@ export class OrderDraftsList {
     }
   }
 
-  /** « Brouillon · 14 h 05 · Léa Martin » — l'auteur seulement s'il est connu. */
-  protected savedLabel(draft: OrderDraftSummaryView): string {
-    const when = draftBadgeLabel(draft.savedAt, new Date());
-    return draft.savedByName === null ? when : `${when} · ${draft.savedByName}`;
+  protected readonly columns = COLUMNS;
+  protected readonly empty = EMPTY;
+  protected readonly rowKey = (draft: OrderDraftSummaryView): string => draft.companyId;
+
+  protected date(draft: OrderDraftSummaryView): string {
+    return formatOrderDate(draft.savedAt);
+  }
+
+  protected time(draft: OrderDraftSummaryView): string {
+    return PARIS_TIME.format(new Date(draft.savedAt));
   }
 
   protected resume(draft: OrderDraftSummaryView): void {
