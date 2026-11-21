@@ -1,4 +1,5 @@
 import {
+  fulfillmentLabel,
   orderStatusLabel,
   orderStatusVariant,
   settlementStatusLabel,
@@ -32,5 +33,22 @@ describe('settlementStatusLabel — une commande à régler à la caisse de la b
       'Au compte — à facturer',
     );
     expect(settlementStatusLabel({ paymentStatus: 'paid', settlement: 'paid' })).toBe('Payée');
+  });
+});
+
+/** Régression : la fiche de commande disait « Retrait au laboratoire » quel que soit le point. */
+describe('fulfillmentLabel — le point de retrait nommé', () => {
+  it('nomme le point choisi', () => {
+    expect(fulfillmentLabel('pickup', 'La Folie Bakery')).toBe('Retrait · La Folie Bakery');
+  });
+
+  it('dit « Retrait » seul quand le point n’a pas de nom', () => {
+    expect(fulfillmentLabel('pickup')).toBe('Retrait');
+    expect(fulfillmentLabel('pickup', '  ')).toBe('Retrait');
+    expect(fulfillmentLabel('pickup', null)).toBe('Retrait');
+  });
+
+  it('dit la livraison, sans point', () => {
+    expect(fulfillmentLabel('delivery', 'La Folie Bakery')).toBe('Livraison par coursier');
   });
 });

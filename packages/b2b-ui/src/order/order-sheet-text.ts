@@ -82,7 +82,7 @@ function headerLines(sheet: OrderSheet): readonly string[] {
     ...(sheet.requestedFor === null
       ? []
       : [`Souhaitée le  : ${formatOrderDate(sheet.requestedFor)}`]),
-    `Acheminement  : ${fulfillmentLabel(sheet.fulfillment.method)}`,
+    `Acheminement  : ${fulfillmentLabel(sheet.fulfillment.method, sheet.fulfillment.pickupLabel)}`,
     ...addressLines(sheet),
   ];
 }

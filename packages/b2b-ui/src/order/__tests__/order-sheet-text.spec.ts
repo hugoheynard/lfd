@@ -103,7 +103,19 @@ describe("l'en-tête", () => {
 
     expect(text.startsWith('CONFIRMATION DE COMMANDE')).toBe(true);
     expect(text).not.toContain('BON DE LIVRAISON');
-    expect(text).toContain('Acheminement  : Retrait au laboratoire');
+    expect(text).toContain('Acheminement  : Retrait');
+    expect(text).not.toContain('laboratoire');
+  });
+
+  /** Régression : la version texte disait « Retrait au laboratoire » quel que soit le point. */
+  it('nomme le point de retrait choisi', () => {
+    const base = atelier();
+    const text = renderOrderSheetText({
+      ...base,
+      fulfillment: { ...base.fulfillment, pickupLabel: 'La Folie Bakery' },
+    });
+
+    expect(text).toContain('Acheminement  : Retrait · La Folie Bakery');
   });
 
   it("nomme la livraison quand c'en est une, sans changer de titre", () => {

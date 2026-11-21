@@ -225,7 +225,10 @@ export class OrderDetail {
   protected readonly statusVariant = computed(() => orderStatusVariant(this.order().status));
   protected readonly paymentLabel = computed(() => settlementStatusLabel(this.order()));
   protected readonly paymentVariant = computed(() => settlementStatusVariant(this.order()));
-  protected readonly fulfillment = computed(() => fulfillmentLabel(this.order().fulfillmentMethod));
+  protected readonly fulfillment = computed(() => {
+    const order = this.order();
+    return fulfillmentLabel(order.fulfillmentMethod, order.pickupAddress?.label);
+  });
 
   /** L'adresse figée de l'acheminement : celle du coursier, ou celle du retrait. */
   protected readonly address = computed<BillingAddressPayload | null>(() => {

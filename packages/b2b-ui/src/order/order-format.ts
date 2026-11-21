@@ -64,11 +64,6 @@ const PAYMENT: Readonly<Record<PaymentStatus, Labelled>> = {
   refunded: { label: 'Remboursée', variant: 'neutral' },
 };
 
-const FULFILLMENT: Readonly<Record<FulfillmentMethod, string>> = {
-  delivery: 'Livraison par coursier',
-  pickup: 'Retrait au laboratoire',
-};
-
 export function orderStatusLabel(status: OrderStatus): string {
   return STATUS[status].label;
 }
@@ -112,8 +107,18 @@ export function settlementStatusVariant(order: SettlementShown): FoldBadgeVarian
   return settlementShownOf(order).variant;
 }
 
-export function fulfillmentLabel(method: FulfillmentMethod): string {
-  return FULFILLMENT[method];
+/**
+ * « Retrait · <point> » / « Livraison par coursier ». Il y a plusieurs points
+ * de retrait : le libellé nomme celui choisi (le nom de son adresse figée), et
+ * dit « Retrait » seul quand le point n'a pas de nom ou qu'on ne le connaît
+ * pas — la règle du bon et du mail de commande (`methodLabel` de l'API).
+ */
+export function fulfillmentLabel(method: FulfillmentMethod, pickupLabel?: string | null): string {
+  if (method === 'delivery') {
+    return 'Livraison par coursier';
+  }
+  const site = pickupLabel?.trim() ?? '';
+  return site === '' ? 'Retrait' : `Retrait · ${site}`;
 }
 
 /**

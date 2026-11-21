@@ -118,13 +118,13 @@ const QR_SIZE = 30 * MM;
 export const HANDOVER_QR_CAPTION = "À présenter au retrait";
 
 /**
- * « Retrait au <point> » / « Livraison par coursier ». Il y a plusieurs
+ * « Retrait · <point> » / « Livraison par coursier ». Il y a plusieurs
  * points : le titre nomme celui choisi, « Retrait » seul s'il n'a pas de nom.
  */
 export function methodLabel(fulfillment: SheetFulfillment): string {
   if (fulfillment.method !== "pickup") return "Livraison par coursier";
   const site = fulfillment.pickupLabel?.trim() ?? "";
-  return site === "" ? "Retrait" : `Retrait au ${site}`;
+  return site === "" ? "Retrait" : `Retrait · ${site}`;
 }
 
 /**
