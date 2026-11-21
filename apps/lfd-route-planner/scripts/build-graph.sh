@@ -38,7 +38,7 @@ case "$OUT/" in
     ;;
 esac
 
-EXTRACT_URL="https://download.geofabrik.de/europe/france/rhone-alpes-latest.osm.pbf"
+EXTRACT_URL="https://download.geofabrik.de/europe/france/rhone-alpes/rhone-alpes-latest.osm.pbf"
 POLYGON_URL="https://polygons.openstreetmap.fr/get_poly.py?id=7425&params=0"
 # Le labo (Val d'Isère, point donné par Hugo le 2026-09-29) → Arc 1800.
 # Longitude,latitude. Sur la carte du 2026-09-29 : 42,0 km · 51 min ; la
