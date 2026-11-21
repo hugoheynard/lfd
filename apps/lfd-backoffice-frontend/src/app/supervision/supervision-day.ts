@@ -51,7 +51,16 @@ export interface DayStrip {
   readonly text: string;
 }
 
-export function dayStripOf(date: string, relative: number): DayStrip | null {
+/**
+ * `planClosed` vient de la journée elle-même (`closedAt` du colisage) : un jour
+ * à venir peut déjà avoir son plan arrêté, et la date seule ne le dit pas.
+ * `null` tant qu'on ne l'a pas lu — le bandeau ne dit alors rien du plan.
+ */
+export function dayStripOf(
+  date: string,
+  relative: number,
+  planClosed: boolean | null,
+): DayStrip | null {
   if (relative === 0) {
     return null;
   }
@@ -65,7 +74,12 @@ export function dayStripOf(date: string, relative: number): DayStrip | null {
     : {
         past: false,
         chip: relative === 1 ? 'Demain · à venir' : 'À venir',
-        text: `Vous regardez ${label}. Plan pas encore arrêté : la journée se lit sans se préparer.`,
+        text:
+          planClosed === true
+            ? `Vous regardez ${label}. Plan arrêté : la fabrication et le colisage peuvent commencer.`
+            : planClosed === false
+              ? `Vous regardez ${label}. Plan pas encore arrêté : la journée se lit sans se préparer.`
+              : `Vous regardez ${label}.`,
       };
 }
 
@@ -94,6 +108,7 @@ export function stampOf(
   stale: boolean,
   now: number,
   cycleMs: number,
+  planClosed: boolean | null = null,
 ): SupervisionStamp | null {
   if (view === null) {
     return null;
@@ -102,7 +117,7 @@ export function stampOf(
   if (relative !== 0) {
     const short = SHORT_DAY.format(at(view.date));
     return {
-      wide: `${short} · ${relative < 0 ? 'close' : 'plan ouvert'}`,
+      wide: `${short} · ${relative < 0 ? 'close' : planClosed === true ? 'plan arrêté' : 'plan ouvert'}`,
       narrow: short,
       tone: 'other',
     };

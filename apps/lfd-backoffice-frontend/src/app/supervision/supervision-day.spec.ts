@@ -78,14 +78,28 @@ describe('serverDayOf', () => {
 
 describe('dayStripOf — Supervision v2, A2', () => {
   it('se tait le jour même', () => {
-    expect(dayStripOf('2026-09-25', 0)).toBeNull();
+    expect(dayStripOf('2026-09-25', 0, null)).toBeNull();
   });
 
   it('dit la relecture d’un jour passé, et l’avenir d’un jour à venir', () => {
-    expect(dayStripOf('2026-09-24', -1)).toMatchObject({ past: true, chip: 'Hier · relecture' });
-    expect(dayStripOf('2026-09-20', -5)?.chip).toBe('Relecture');
-    expect(dayStripOf('2026-09-26', 1)).toMatchObject({ past: false, chip: 'Demain · à venir' });
-    expect(dayStripOf('2026-09-26', 1)?.text).toContain('Plan pas encore arrêté');
+    expect(dayStripOf('2026-09-24', -1, true)).toMatchObject({
+      past: true,
+      chip: 'Hier · relecture',
+    });
+    expect(dayStripOf('2026-09-20', -5, true)?.chip).toBe('Relecture');
+    expect(dayStripOf('2026-09-26', 1, false)).toMatchObject({
+      past: false,
+      chip: 'Demain · à venir',
+    });
+    expect(dayStripOf('2026-09-26', 1, false)?.text).toContain('Plan pas encore arrêté');
+  });
+
+  /** Régression : demain, plan arrêté, le bandeau disait encore « pas encore arrêté ». */
+  it('dit le plan arrêté d’un jour à venir quand la journée est close', () => {
+    const strip = dayStripOf('2026-09-26', 1, true);
+    expect(strip?.text).toContain('Plan arrêté');
+    expect(strip?.text).not.toContain('pas encore');
+    expect(dayStripOf('2026-09-26', 1, null)?.text).not.toContain('Plan');
   });
 });
 

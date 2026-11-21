@@ -250,9 +250,14 @@ export class SupervisionPage {
   protected readonly dayValue = computed(() =>
     Math.abs(this.relative()) > 1 ? '' : String(this.relative()),
   );
+  /** Le plan de la journée regardée est-il arrêté ? `null` tant que le colisage n'est pas lu. */
+  private readonly planClosed = computed(() => {
+    const board = this.packingBoard();
+    return board === null ? null : !board.notClosed;
+  });
   protected readonly strip = computed(() => {
     const date = this.date();
-    return date === null ? null : dayStripOf(date, this.relative());
+    return date === null ? null : dayStripOf(date, this.relative(), this.planClosed());
   });
 
   protected readonly stamp = computed(() => {
@@ -263,6 +268,7 @@ export class SupervisionPage {
       day.status === 'ready' && day.stale,
       Date.now(),
       DAY_REFRESH_MS,
+      this.planClosed(),
     );
   });
 
