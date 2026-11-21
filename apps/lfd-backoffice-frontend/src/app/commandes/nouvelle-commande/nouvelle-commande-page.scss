@@ -32,7 +32,11 @@
   grid-template-columns: minmax(0, 2fr) minmax(20rem, 1fr);
   gap: var(--fold-space-lg);
   flex: 1;
-  min-height: 0;
+  /* Un plancher : les bandeaux du dessus (brouillon repris, dérogation…)
+     prennent de la hauteur, et sans lui la colonne du panier se tassait
+     jusqu'à couper son pied — « Valider la commande » disparaissait. Sous ce
+     plancher, c'est la page qui défile. */
+  min-height: 34rem;
 }
 
 .nc-col {
