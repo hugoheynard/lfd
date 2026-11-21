@@ -1,3 +1,13 @@
+/* Le masthead touche le haut de la page et ses deux bords : la page ne paie
+   plus son haut, et le masthead annule la gouttière qu'elle pose. */
+.ol-page {
+  --fold-page-pad-top: 0;
+}
+
+.ol-masthead {
+  margin-inline: calc(-1 * var(--fold-page-gutter));
+}
+
 .ol-filters {
   display: flex;
   flex-direction: column;

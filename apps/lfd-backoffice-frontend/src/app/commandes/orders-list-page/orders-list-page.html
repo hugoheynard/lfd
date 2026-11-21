@@ -1,17 +1,31 @@
-<fold-page-layout icon="shopping-cart" title="Commandes">
-  <p description>Toutes les commandes, pro et particuliers — la plus récente en tête.</p>
-
-  <fold-tabs
-    tabNav
-    #bar="foldTabs"
-    size="compact"
-    activeStyle="fill"
-    background="surface"
-    [tabs]="tabs"
-    [activeKey]="tab()"
-    (activeKeyChange)="selectTab($event)"
-    data-tabs="view"
-  />
+<!-- Sans titre de page : le masthead, en pleine largeur, porte le nom de la
+     page, ses onglets et le geste « Nouvelle commande ». -->
+<fold-page-layout class="ol-page">
+  <app-orders-list-masthead
+    class="ol-masthead"
+    [scope]="scope()"
+    [today]="today"
+    (scopeChange)="selectScope($event)"
+    (picked)="showCard($event)"
+  >
+    <fold-tabs
+      tabNav
+      #bar="foldTabs"
+      direction="horizontal"
+      size="compact"
+      activeStyle="fill"
+      background="transparent"
+      [tabs]="tabs"
+      [activeKey]="tab()"
+      (activeKeyChange)="selectTab($event)"
+      data-tabs="view"
+    />
+    @if (canPlace) {
+      <button foldButton intent="primary" (click)="openNewOrder()" data-new-order>
+        Nouvelle commande
+      </button>
+    }
+  </app-orders-list-masthead>
 
   <!-- Les filtres restent à l'écran dans les quatre états : c'est par eux qu'on
        sort d'une liste vide ou d'un échec. -->

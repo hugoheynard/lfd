@@ -1,0 +1,53 @@
+.olm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+  // Le parent le fait déborder ; il rend ici la gouttière, le texte ne bouge pas.
+  padding: var(--fold-space-lg) var(--fold-page-gutter);
+  // `foldSurface="chrome"` bascule l'encre en clair sans peindre le fond : on le
+  // pose ici, dérivé de la barre de l'app comme le masthead du comptoir.
+  background: oklch(from var(--fold-color-bg-header) calc(l + 0.08) c h);
+}
+
+.olm-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-md);
+}
+
+.olm-title {
+  margin: 0;
+  font-size: var(--fold-text-xl);
+  font-weight: var(--fold-weight-bold);
+  color: var(--fold-color-text);
+}
+
+.olm-action {
+  margin-inline-start: auto;
+}
+
+.olm-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: var(--fold-space-md);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.olm-label {
+  display: block;
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+}
+
+.olm-value {
+  display: block;
+  font-size: var(--fold-text-xl);
+  font-variant-numeric: tabular-nums;
+}
+
+.olm-value--alert {
+  color: var(--fold-color-alert-text);
+}

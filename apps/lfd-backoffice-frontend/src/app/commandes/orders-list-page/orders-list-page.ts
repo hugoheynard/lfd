@@ -18,6 +18,7 @@ import {
   FoldLoadingStateComponent,
   FoldPageLayoutComponent,
   FoldPaginatorComponent,
+  FoldPanelHostService,
   FoldSearchComponent,
   FoldTabPanelComponent,
   FoldTabsComponent,
@@ -27,6 +28,11 @@ import {
 } from 'fold-ng';
 
 import { FROM_ORDER_LIST } from '../order-list-return';
+import { PermissionsStore } from '../../auth/permissions.store';
+import { parisToday } from '../../shared/paris-today';
+import { NewOrderDialog } from '../new-order-dialog/new-order-dialog';
+import { OrdersListMasthead } from '../orders-list-masthead/orders-list-masthead';
+import { scopeDays, scopeOf, type OrdersScope } from '../orders-scope';
 import { watchGlobalSubjects } from '../../shared/version/watch-global-subjects';
 import {
   ANY,
@@ -144,6 +150,7 @@ function sameFilters(left: OrderListFilters, right: OrderListFilters): boolean {
     FoldSearchComponent,
     FoldTabPanelComponent,
     FoldTabsComponent,
+    OrdersListMasthead,
     OrdersTable,
   ],
   templateUrl: './orders-list-page.html',
@@ -188,6 +195,20 @@ export class OrdersListPage {
   );
 
   protected readonly currentPage = computed(() => pageOf(this.page()));
+
+  /** Le jour de Paris à l'ouverture : le cadrage « aujourd'hui » s'y lit. */
+  protected readonly today = parisToday();
+  protected readonly scope = computed(() => scopeOf(this.filters(), this.today));
+  /** Saisir une commande demande la caisse et la passation, comme la route. */
+  private readonly permissions = inject(PermissionsStore);
+  protected readonly canPlace =
+    this.permissions.can('b2b_counter:read') && this.permissions.can('b2b_place_order:write');
+  private readonly panels = inject(FoldPanelHostService);
+
+  /** Le choix pro ou particulier, en dialogue centré : la liste reste derrière. */
+  protected openNewOrder(): void {
+    this.panels.open(NewOrderDialog, { side: 'center', width: 'sm' });
+  }
 
   protected readonly state = signal<LoadState>('loading');
   protected readonly rows = signal<readonly AdminOrderRow[]>([]);
@@ -306,6 +327,20 @@ export class OrdersListPage {
   /** Change de liste ; les filtres suivent, la page repart de la première. */
   protected selectTab(tab: OrderListTab): void {
     this.apply({ view: tab === 'orders' ? null : tab });
+  }
+
+  /** Le cadrage réécrit les bornes du jour de service ; le reste des filtres tient. */
+  protected selectScope(scope: OrdersScope): void {
+    this.apply(scopeDays(scope, this.today));
+  }
+
+  /** Une carte du masthead : ses filtres remplacent tous les autres, onglet compris. */
+  protected showCard(filters: OrderListFilters): void {
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: filtersToParams(filters),
+      replaceUrl: true,
+    });
   }
 
   /** Les filtres tombent ; l'onglet reste. */

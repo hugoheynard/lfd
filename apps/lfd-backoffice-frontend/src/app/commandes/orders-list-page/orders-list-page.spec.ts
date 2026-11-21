@@ -54,6 +54,10 @@ class FakeOrders {
   readonly pages: (AdminOrdersPage | Error)[] = [];
 
   async list(filters: Partial<AdminOrdersQuery> = {}): Promise<AdminOrdersPage> {
+    // Les comptes du masthead (`limit: 1`) ne sont pas la liste : ils ne consomment rien.
+    if (filters.limit === 1) {
+      return { rows: [], nextCursor: null, total: 0 };
+    }
     this.calls.push(filters);
     const next = this.pages.shift() ?? { rows: [], nextCursor: null, total: 0 };
     if (next instanceof Error) {
