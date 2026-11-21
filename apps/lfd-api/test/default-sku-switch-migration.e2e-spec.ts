@@ -52,11 +52,24 @@ const ROLLBACK = join(
   "prisma/rollback/20261029180000_le_defaut_se_vend_sous_sa_reference.sql",
 );
 
+/**
+ * Les tables que la migration nomme et qui ont changé de schéma depuis : le
+ * fichier, appliqué en production, ne se touche pas (son empreinte Prisma) ;
+ * le rejeu, lui, tourne sur le schéma d'aujourd'hui et vise la table là où
+ * elle vit. Le panier vit dans `cart` (migration `20261120180000`).
+ */
+const MOVED_TABLES: readonly (readonly [string, string])[] = [
+  ["'public.shop_carts'", "'cart.shop_carts'"],
+];
+
 /** Joue le fichier, garde-fou forcé ; rend l'erreur levée, ou `null`. */
 async function runMigration(file = MIGRATION): Promise<Error | null> {
-  const sql = readFileSync(file, "utf8").replace(
-    /^BEGIN;$/mu,
-    "BEGIN;\nSET LOCAL lfd.default_sku_switch_guard = 'strict';",
+  const sql = MOVED_TABLES.reduce(
+    (text, [before, after]) => text.replaceAll(before, after),
+    readFileSync(file, "utf8").replace(
+      /^BEGIN;$/mu,
+      "BEGIN;\nSET LOCAL lfd.default_sku_switch_guard = 'strict';",
+    ),
   );
   const client = new Client({ connectionString: testDatabaseUrl() });
   await client.connect();
