@@ -1015,8 +1015,9 @@ créent et que la base n'a pas, un index posé à la main — est listé dans le
 journal de l'étape et **arrête** le déploiement avant toute écriture : la
 production est en mode bloquant (`MIGRATION_DRIFT_MODE=enforce`) depuis le
 2026-11-13, avec **0 écart** constaté et aucune inscription dans
-`known-drift.json`. En mode rapport (`report`, le défaut si la variable
-manque), l'écart n'est qu'un avertissement jaune.
+`known-drift.json`. `enforce` est aussi le défaut du workflow : supprimer la variable ne
+désarme pas la porte. En mode rapport (`report`, posé explicitement), l'écart
+n'est qu'un avertissement jaune.
 
 **Si le déploiement s'arrête sur la dérive** : lire chaque `✗` du journal de
 l'étape, puis corriger la base par une migration ou inscrire l'écart (étape 2
@@ -1042,7 +1043,7 @@ Passer en mode bloquant (fait le 2026-11-13) :
    plus constaté » est une inscription à retirer.
 4. GitHub → Settings → Secrets and variables → Actions → **Variables** :
    `MIGRATION_DRIFT_MODE` = `enforce`. Revenir au rapport seul : la mettre à
-   `report` (ou la supprimer).
+   `report` (la supprimer laisse le défaut, `enforce`).
 
 En mode bloquant, une comparaison qui n'a pas pu se faire (base fantôme qui ne
 démarre pas, Prisma en erreur) arrête aussi le déploiement ; en mode rapport,

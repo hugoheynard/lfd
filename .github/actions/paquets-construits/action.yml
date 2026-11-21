@@ -1,0 +1,30 @@
+# Les paquets de `packages/`, construits une fois par contenu et repris du cache.
+#
+# Chaque job de la CI a besoin des `dist/` des paquets. Les reconstruire dans
+# chacun coûtait une trentaine de builds identiques par run (vingt shards e2e
+# compris). La clé est le CONTENU de ce qui entre dans le build — sources,
+# manifestes, tsconfig, lockfile, version de Node : un paquet changé change la
+# clé, et le premier job qui la manque construit puis sauve pour les autres.
+#
+# Le `.tsbuildinfo` voyage AVEC `dist/` (il vit dedans pour la plupart des
+# paquets, à côté pour quelques-uns) : `tsc -b` se fie à lui, et un
+# tsbuildinfo sans sa sortie fait un build qui ne produit rien.
+#
+# À appeler après checkout, setup-node et `pnpm install`.
+name: Paquets construits
+description: Restaure les dist/ de packages/ depuis le cache, ou les construit.
+runs:
+  using: composite
+  steps:
+    - name: Restaurer les paquets construits
+      id: cache
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: |
+          packages/*/dist
+          packages/*/tsconfig.tsbuildinfo
+        key: paquets-${{ runner.os }}-${{ hashFiles('.nvmrc', 'pnpm-lock.yaml', 'tsconfig/**', 'packages/*/package.json', 'packages/*/tsconfig*.json', 'packages/*/src/**') }}
+    - name: Construire les paquets
+      if: steps.cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: pnpm --filter "./packages/**" build

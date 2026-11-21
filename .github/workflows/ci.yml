@@ -74,11 +74,11 @@ jobs:
       # `fetch-depth: 0` — sans l'historique, aucune base n'est résoluble et le
       # script rendrait « tout » à chaque fois. Le filtrage serait inerte, et
       # rien ne le dirait.
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .nvmrc
           cache: pnpm
@@ -131,9 +131,9 @@ jobs:
     name: Gates du dépôt
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .nvmrc
           cache: pnpm
@@ -141,7 +141,7 @@ jobs:
       # `lint:fold-tokens` lit les tokens de la version de fold-ng INSTALLÉE, et
       # plusieurs gates résolvent des imports de `packages/**`.
       - name: Construire les paquets
-        run: pnpm --filter "./packages/**" build
+        uses: ./.github/actions/paquets-construits
 
       # Le client Prisma : plusieurs portes typent ou lisent le schéma.
       - name: Générer le client Prisma
@@ -168,15 +168,15 @@ jobs:
     needs: changes
     if: needs.changes.outputs.packages == 'true'
     steps:
-      - uses: actions/checkout@v7
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - name: Construire les paquets
-        run: pnpm --filter "./packages/**" build
+        uses: ./.github/actions/paquets-construits
       - name: Lint
         run: pnpm --filter "./packages/**" lint:ci
       - name: Tests
@@ -208,15 +208,15 @@ jobs:
       matrix:
         shard: [1, 2, 3]
     steps:
-      - uses: actions/checkout@v7
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - name: Construire les paquets dont dépend le backend
-        run: pnpm --filter "./packages/**" build
+        uses: ./.github/actions/paquets-construits
       - name: Lint
         working-directory: apps/lfd-api
         env:
@@ -236,15 +236,15 @@ jobs:
     needs: changes
     if: needs.changes.outputs.api == 'true'
     steps:
-      - uses: actions/checkout@v7
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - name: Construire les paquets dont dépend le backend
-        run: pnpm --filter "./packages/**" build
+        uses: ./.github/actions/paquets-construits
       - name: Typecheck
         run: pnpm --filter lfd-api exec tsc --noEmit
       # Les SPECS, que le typecheck ci-dessus ignore (`tsconfig.json` exclut
@@ -272,21 +272,21 @@ jobs:
     needs: changes
     if: needs.changes.outputs.api == 'true'
     steps:
-      - uses: actions/checkout@v7
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - name: Construire les paquets dont dépend le backend
-        run: pnpm --filter "./packages/**" build
+        uses: ./.github/actions/paquets-construits
       # Le cache de transpilation de Jest (`cacheDirectory` de
       # `jest.base.cjs`) : restauré partout, sauvegardé par un seul job de
       # chaque sorte et seulement sur `dev`, pour ne pas faire tourner ~150 Mo
       # par éclat dans les 10 Go de cache du dépôt.
       - name: Restaurer le cache Jest
-        uses: actions/cache/restore@v6
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: apps/lfd-api/node_modules/.cache/jest
           key: jest-unit-${{ hashFiles('pnpm-lock.yaml', 'apps/lfd-api/jest.base.cjs') }}-${{ github.sha }}
@@ -296,7 +296,7 @@ jobs:
         run: pnpm --filter lfd-api test:unit
       - name: Sauvegarder le cache Jest
         if: github.ref == 'refs/heads/dev'
-        uses: actions/cache/save@v6
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: apps/lfd-api/node_modules/.cache/jest
           key: jest-unit-${{ hashFiles('pnpm-lock.yaml', 'apps/lfd-api/jest.base.cjs') }}-${{ github.sha }}
@@ -378,15 +378,15 @@ jobs:
           --health-timeout 5s
           --health-retries 10
     steps:
-      - uses: actions/checkout@v7
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - name: Construire les paquets dont dépend le backend
-        run: pnpm --filter "./packages/**" build
+        uses: ./.github/actions/paquets-construits
       # `docker run` plutôt qu'un `services:` : l'image MinIO a besoin d'une
       # commande (`server /data`), et un bloc `services` ne sait pas en passer.
       #
@@ -434,7 +434,7 @@ jobs:
       # chaque sorte et seulement sur `dev`, pour ne pas faire tourner ~150 Mo
       # par éclat dans les 10 Go de cache du dépôt.
       - name: Restaurer le cache Jest
-        uses: actions/cache/restore@v6
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: apps/lfd-api/node_modules/.cache/jest
           key: jest-e2e-${{ hashFiles('pnpm-lock.yaml', 'apps/lfd-api/jest.base.cjs') }}-${{ github.sha }}
@@ -479,7 +479,7 @@ jobs:
             "${{ runner.temp }}/e2e-boot-${{ matrix.shard }}.jsonl"
       - name: Téléverser les mesures de démarrage
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: e2e-boot-${{ matrix.shard }}
           path: ${{ runner.temp }}/e2e-boot-${{ matrix.shard }}.jsonl
@@ -493,7 +493,7 @@ jobs:
       - name: Téléverser les durées des suites
         if: ${{ !cancelled() }}
         continue-on-error: true
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: e2e-durations-${{ matrix.shard }}
           path: ${{ runner.temp }}/e2e-durations-${{ matrix.shard }}.json
@@ -501,7 +501,7 @@ jobs:
           retention-days: 7
       - name: Sauvegarder le cache Jest
         if: github.ref == 'refs/heads/dev' && matrix.shard == 1
-        uses: actions/cache/save@v6
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: apps/lfd-api/node_modules/.cache/jest
           key: jest-e2e-${{ hashFiles('pnpm-lock.yaml', 'apps/lfd-api/jest.base.cjs') }}-${{ github.sha }}
@@ -531,15 +531,15 @@ jobs:
     needs: changes
     if: needs.changes.outputs.front_admin == 'true'
     steps:
-      - uses: actions/checkout@v7
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - name: Construire les paquets
-        run: pnpm --filter "./packages/**" build
+        uses: ./.github/actions/paquets-construits
       - name: Lint
         run: pnpm --filter lfd-backoffice-frontend lint:ci
       # `-p tsconfig.app.json` et NON `tsc --noEmit` : le tsconfig racine de ces
@@ -559,15 +559,15 @@ jobs:
     needs: changes
     if: needs.changes.outputs.front_admin == 'true'
     steps:
-      - uses: actions/checkout@v7
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - name: Construire les paquets
-        run: pnpm --filter "./packages/**" build
+        uses: ./.github/actions/paquets-construits
       - name: Build de production (compilation AOT)
         run: pnpm --filter lfd-backoffice-frontend build
 
@@ -581,15 +581,15 @@ jobs:
       matrix:
         shard: [1, 2, 3, 4]
     steps:
-      - uses: actions/checkout@v7
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - name: Construire les paquets
-        run: pnpm --filter "./packages/**" build
+        uses: ./.github/actions/paquets-construits
       # L'affectation à part : sous `bash -e`, un script qui échoue dans une
       # affectation arrête l'étape — dans un argument, il passerait inaperçu
       # et `ng test` sans `--include` lancerait TOUT.
@@ -604,15 +604,15 @@ jobs:
     needs: changes
     if: needs.changes.outputs.front_platform == 'true'
     steps:
-      - uses: actions/checkout@v7
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - name: Construire les paquets
-        run: pnpm --filter "./packages/**" build
+        uses: ./.github/actions/paquets-construits
       # Pas de lint ici : ce front n'a pas encore de configuration ESLint, et en
       # fabriquer une à l'aveugle poserait une porte sans savoir ce qu'elle
       # laisse passer. Il est couvert par le typecheck, les tests et le build.
@@ -631,15 +631,15 @@ jobs:
       matrix:
         shard: [1, 2]
     steps:
-      - uses: actions/checkout@v7
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - name: Construire les paquets
-        run: pnpm --filter "./packages/**" build
+        uses: ./.github/actions/paquets-construits
       - name: Tests
         run: |
           specs=$(node dev-toolbox/ci/front-shard.mjs apps/lfc-ecommerce-frontend ${{ matrix.shard }} 2)
@@ -656,15 +656,15 @@ jobs:
     needs: changes
     if: needs.changes.outputs.front_platform == 'true'
     steps:
-      - uses: actions/checkout@v7
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - name: Construire les paquets
-        run: pnpm --filter "./packages/**" build
+        uses: ./.github/actions/paquets-construits
       - name: Installer Chromium
         run: pnpm --filter lfc-ecommerce-frontend exec playwright install --with-deps chromium
       - name: Porte axe
@@ -682,15 +682,15 @@ jobs:
     if: needs.changes.outputs.front_admin == 'true'
     container: mcr.microsoft.com/playwright:v1.62.1-noble
     steps:
-      - uses: actions/checkout@v7
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - name: Construire les paquets
-        run: pnpm --filter "./packages/**" build
+        uses: ./.github/actions/paquets-construits
       - name: Captures
         run: pnpm --filter lfd-backoffice-frontend test:visual
 
@@ -713,9 +713,9 @@ jobs:
     needs: changes
     if: needs.changes.outputs.gateway == 'true'
     steps:
-      - uses: actions/checkout@v7
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .nvmrc
           cache: pnpm
@@ -723,7 +723,7 @@ jobs:
       # Elle importe `@lfd/endpoints` (ports et sous-domaines de dev) : sans ce
       # build, le typecheck échoue sur un paquet non compilé.
       - name: Construire les paquets
-        run: pnpm --filter "./packages/**" build
+        uses: ./.github/actions/paquets-construits
       - name: Typecheck
         run: pnpm --filter lfd-gateway exec tsc --noEmit
       - name: Lint
@@ -740,9 +740,9 @@ jobs:
     needs: changes
     if: needs.changes.outputs.route_planner == 'true'
     steps:
-      - uses: actions/checkout@v7
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .nvmrc
           cache: pnpm
@@ -780,22 +780,22 @@ jobs:
       # concordait avec celui publié.
       MUSTANG_SHA256: 42d7868cb68264874a7b8cab4c3587b03b23ccc7cd72373da917f66758bb9736
     steps:
-      - uses: actions/checkout@v7
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .nvmrc
           cache: pnpm
-      - uses: actions/setup-java@v5
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
         with:
           distribution: temurin
           java-version: "21"
       - run: pnpm install --frozen-lockfile
       - name: Construire les paquets dont dépend le backend
-        run: pnpm --filter "./packages/**" build
+        uses: ./.github/actions/paquets-construits
       - name: Restaurer Mustang
         id: mustang-cache
-        uses: actions/cache@v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/mustang
           key: mustang-cli-${{ env.MUSTANG_VERSION }}-${{ env.MUSTANG_SHA256 }}
@@ -815,7 +815,7 @@ jobs:
         run: node dev-toolbox/ci/facturx-mustang/validate.mjs ~/mustang/Mustang-CLI.jar "${RUNNER_TEMP}/facturx"
       - name: Garder les rapports
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: facturx-mustang
           path: |

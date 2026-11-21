@@ -76,11 +76,15 @@ jobs:
   deploy_lfc_boutique:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - name: Signaler un déploiement manuel
+        if: github.event_name == 'workflow_dispatch'
+        run: echo "::warning::Déploiement lancé à la main par ${{ github.actor }} — l'attente de la CI est sautée pour ${{ github.sha }}."
 
-      - uses: pnpm/action-setup@v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: actions/setup-node@v7
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .nvmrc
           cache: pnpm
@@ -94,7 +98,7 @@ jobs:
       # échoue — c'est ce qui est arrivé au 1er déploiement (2026-08-13).
       # La CI ne le voyait pas : `ci.yml` construit déjà les paquets.
       - name: Build shared packages
-        run: pnpm --filter "./packages/**" build
+        uses: ./.github/actions/paquets-construits
 
       # Injecte la config Auth0 PUBLIQUE (domain/clientId/audience/apiBaseUrl) dans
       # `auth.env.generated.ts` depuis les *Variables* du repo — avant typecheck ET

@@ -60,6 +60,10 @@ jobs:
     env:
       PAGES_PROJECT: ${{ vars.LFC_APERCU_TEXTES_PAGES_PROJECT }}
     steps:
+      - name: Signaler un déploiement manuel
+        if: github.event_name == 'workflow_dispatch'
+        run: echo "::warning::Déploiement lancé à la main par ${{ github.actor }} — l'attente de la CI est sautée pour ${{ github.sha }}."
+
       # Avant tout le reste : sans nom de projet, rien ne doit être construit
       # pour être ensuite publié n'importe où.
       - name: Exiger le nom du projet Pages
@@ -69,11 +73,11 @@ jobs:
             exit 1
           fi
 
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: pnpm/action-setup@v6
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
 
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .nvmrc
           cache: pnpm
@@ -83,7 +87,7 @@ jobs:
       # Les paquets partagés AVANT le build : le bundler suit le `exports` des
       # package.json (`dist/`), et l'aperçu lit `@lfd/contracts/shop-copy-preview`.
       - name: Build shared packages
-        run: pnpm --filter "./packages/**" build
+        uses: ./.github/actions/paquets-construits
 
       # La configuration générée est importée par les écrans de la boutique.
       # Aucune valeur réelle : une API qui ne se résout pas, pas d'Auth0, pas

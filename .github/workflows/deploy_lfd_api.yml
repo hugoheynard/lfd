@@ -45,23 +45,20 @@ jobs:
   deploy_lfd_api:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - name: Signaler un déploiement manuel
+        if: github.event_name == 'workflow_dispatch'
+        run: echo "::warning::Déploiement lancé à la main par ${{ github.actor }} — l'attente de la CI est sautée pour ${{ github.sha }}."
 
-      - uses: pnpm/action-setup@v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: actions/setup-node@v7
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .nvmrc
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile
-
-      # Les types partagés doivent être buildés avant le typecheck du backend.
-      - name: Build shared packages
-        run: pnpm --filter "@lfd/contracts" build
-
-      - name: Typecheck
-        run: pnpm --filter lfd-api exec tsc --noEmit
 
       # 1) Build l'image depuis la RACINE du monorepo (contexte complet), puis la
       #    pousse sur le registre Cloudflare via wrangler (auth automatique).
@@ -107,13 +104,11 @@ jobs:
       #    change — et c'est précisément là qu'elle doit passer en premier, pour
       #    que le nouveau code trouve la nouvelle valeur déjà posée.
       #
-      #    `continue-on-error` couvre le SEUL cas où elle ne peut pas réussir :
-      #    le tout premier run, quand le Worker n'existe pas encore et qu'on ne
-      #    peut donc rien lui attacher. Le déploiement suivant le crée, l'étape
-      #    passe au run d'après, et l'ordre nominal reprend. Sans cette
-      #    tolérance, le premier déploiement échouerait sans rien livrer.
+      #    Une écriture refusée (jeton expiré, droit retiré) ARRÊTE le
+      #    déploiement : sinon le nouveau code partirait avec l'ancienne valeur,
+      #    ou sans la nouvelle, après la migration. Le Worker existe depuis le
+      #    premier déploiement ; aucun cas légitime ne reste à tolérer.
       - name: Sync runtime secrets
-        continue-on-error: true
         working-directory: apps/lfd-api
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_LFD_API_WORKER }}
@@ -322,9 +317,16 @@ jobs:
                       CATALOGUE_SNAPSHOT_MEMORY DIAGNOSTIC_SECRET DIAGNOSTIC_BASE_URL; do
             value="${!name}"
             if [ -n "$value" ]; then
-              printf '%s' "$value" | pnpm exec wrangler secret put "$name"
+              if ! printf '%s' "$value" | pnpm exec wrangler secret put "$name"; then
+                echo "::error::Le secret $name n'a pas pu être posé sur le Worker."
+                failed="$failed $name"
+              fi
             fi
           done
+          if [ -n "${failed:-}" ]; then
+            echo "::error::Secrets non posés :$failed — déploiement arrêté avant la migration."
+            exit 1
+          fi
 
       # 3a) Avant d'écrire : la base est-elle ce que ses migrations appliquées
       #    décrivent ? Une table créée par une migration et absente de la base
@@ -335,18 +337,18 @@ jobs:
       #    (Postgres dans le runner), jamais sur la production.
       #    Les écarts tolérés sont inscrits, avec leur raison, dans
       #    apps/lfd-api/prisma/known-drift.json. Mode par la variable de dépôt
-      #    MIGRATION_DRIFT_MODE : `report` (défaut — le journal liste, rien ne
-      #    s'arrête) ou `enforce` (un écart non inscrit arrête le déploiement).
+      #    MIGRATION_DRIFT_MODE : `enforce` (défaut — un écart non inscrit arrête le
+      #    déploiement) ou `report` (le journal liste, rien ne s'arrête).
       #    Cf. documentation/ops/runbook.md, « La dérive de schéma avant migration ».
       - name: Vérifier la dérive de la base (lecture seule)
         working-directory: apps/lfd-api
-        # En mode `report`, une panne de l'étape elle-même (Docker, base
+        # En mode `report` (choisi par la variable), une panne de l'étape elle-même (Docker, base
         # fantôme) n'arrête jamais le déploiement : elle ne fait que le dire.
-        continue-on-error: ${{ (vars.MIGRATION_DRIFT_MODE || 'report') == 'report' }}
+        continue-on-error: ${{ (vars.MIGRATION_DRIFT_MODE || 'enforce') == 'report' }}
         env:
           DATABASE_LFD_URL: ${{ secrets.DATABASE_LFD_PROD_DIRECT_URL }}
           SHADOW_DATABASE_URL: postgresql://postgres:shadow@localhost:55432/shadow
-          MIGRATION_DRIFT_MODE: ${{ vars.MIGRATION_DRIFT_MODE || 'report' }}
+          MIGRATION_DRIFT_MODE: ${{ vars.MIGRATION_DRIFT_MODE || 'enforce' }}
         run: |
           if [ -z "${DATABASE_LFD_URL}" ]; then
             echo "::error::DATABASE_LFD_PROD_DIRECT_URL absent des secrets GitHub — rien à comparer."

@@ -1,0 +1,11 @@
+# Les actions sont épinglées par SHA (un tag peut être déplacé ; un SHA non) :
+# Dependabot propose les montées de version, le commentaire `# vX.Y.Z` suit.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directories: ["/", "/.github/actions/*"]
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ["*"]
