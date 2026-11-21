@@ -122,6 +122,17 @@
   gap: var(--fold-space-md);
 }
 
+/* Les montants restent en haut de ce qui défile — la vue, la colonne ou le
+   tiroir, selon l'écran : `sticky` se cale sur le premier ancêtre qui défile. */
+.pan-amounts {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding-bottom: var(--fold-space-sm);
+  border-bottom: 1px solid var(--fold-color-border);
+  background: var(--fold-color-surface-card);
+}
+
 // Une ligne et ce que dit la limite de son produit, l'une sous l'autre.
 .pan-list li {
   display: flex;

@@ -145,6 +145,12 @@
     @if (cart().isEmpty()) {
       <p class="pan-empty">Ajoutez des articles depuis la colonne de gauche.</p>
     } @else {
+      <!-- Le détail de l'estimation, par la règle de toute commande (F5) : en
+           tête et collé en haut pendant que les articles défilent dessous
+           (Hugo, 2026-11-21). -->
+      @if (totalRows(); as rows) {
+        <app-montants-panier class="pan-amounts" [rows]="rows" />
+      }
       <ul class="pan-list">
         @for (line of shownLines(); track line.sku) {
           <li>
@@ -195,10 +201,6 @@
           [hint]="reasonHint()"
           [(value)]="draft().itemLimitReason"
         />
-      }
-      <!-- Le détail de l'estimation, par la règle de toute commande (F5). -->
-      @if (totalRows(); as rows) {
-        <app-montants-panier [rows]="rows" />
       }
     }
   </div>
