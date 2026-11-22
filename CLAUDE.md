@@ -495,7 +495,7 @@ src/
 | **`delivery`**      | ✓ (autorisation) | ✗                   | ✗                   | **✗**           | **port uniquement** | ✗                   | ✗     | —                   | **port uniquement** | **port uniquement** | ✗                   | ✗                   | ✓          |
 | **`packing`**       | ✓ (autorisation) | ✗                   | ✗                   | ✗               | **port uniquement** | **port uniquement** | ✗     | ✗                   | —                   | **port uniquement** | ✗                   | ✗                   | ✓          |
 | **`mail`**          | ✓ (autorisation) | ✗                   | ✗                   | ✗               | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | —                   | ✗                   | ✗                   | ✓          |
-| **`card-payment`**  | ✓ (autorisation) | ✗                   | ✗                   | ✗               | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | ✗                   | —                   | ✗                   | ✓          |
+| **`card-payment`**  | ✓ (autorisation) | ✗                   | ✗                   | ✗               | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | **port uniquement** | —                   | ✗                   | ✓          |
 | **`shop-cart`**     | ✗                | ✗                   | ✗                   | ✗               | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | ✗                   | ✗                   | —                   | ✓          |
 | **`ops`**           | ✗                | ✗                   | ✗                   | ✗               | ✗                   | ✗                   | —     | ✗                   | ✗                   | ✗                   | ✗                   | ✗                   | ✓          |
 | **`platform`**      | ✗                | ✗                   | ✗                   | ✗               | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | ✗                   | ✗                   | ✗                   | —          |
@@ -606,7 +606,7 @@ C1–C2). Le bloc n'a pas de métier propre : il reçoit des demandes
 (« l'e-mail _commande passée_, à cette personne, avec ces données »), compose,
 envoie et garde le suivi. Il DÉCLARE et IMPLÉMENTE lui-même
 `mail/channels/requests/` (`Mail`, typée par modèle), et c'est la seule
-surface qu'un autre bloc atteint — `staff` et `production` compris : n'importer
+surface qu'un autre bloc atteint — `staff`, `production` et `card-payment` compris : n'importer
 que ce canal ne couple à rien d'autre, et une porte déclarée dans `platform/`
 aurait perdu le typage des 32 modèles. `mail` n'importe que `platform` et
 `staff` (l'autorisation de l'éditeur) ; `staff ↔ mail` se lisent donc dans les
@@ -623,8 +623,12 @@ blocs métier ne l'atteignent que par son canal (`card-payment/channels/`) —
 aujourd'hui le seul `lafoliecoffee`, d'où la case `port uniquement`. Comme `production`
 avec `channels/commerce/`, il DÉCLARE `card-payment/channels/subjects/`, que
 chaque bloc métier sujet implémente et qu'`appBootstrap` relie.
-`card-payment` n'importe que `staff` (autorisation) et `platform` ;
-`card-payment → <bloc métier>` reste interdit. **La carte seulement** : ni
+`card-payment` n'importe que `staff` (autorisation), `platform` et le canal
+`mail/channels/` ; `card-payment → <bloc métier>` reste interdit. Le canal des
+e-mails sert l'avis à la comptabilité d'un paiement par lien encaissé : un
+besoin de toutes les applications qui encaisseront, donc du bloc qui
+encaisse, pas de chacune (décidé par Hugo le 2026-11-22 ;
+[`documentation/comptabilite/liens-de-paiement/plan-le-lien-vers-un-sujet.md`](documentation/comptabilite/liens-de-paiement/plan-le-lien-vers-un-sujet.md), § 2.4). **La carte seulement** : ni
 prélèvements SEPA, ni virements, ni liens de paiement. Portes armées le
 2026-11-09, avant que le dossier existe (lot P0.a).
 

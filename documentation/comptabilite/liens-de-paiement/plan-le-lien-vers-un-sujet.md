@@ -197,9 +197,10 @@ abonné durable de `card-payment` envoie l'e-mail « paiement reçu par lien »
   adresse, rien ne part et la cloche de la comptabilité le dit.
 - **Le canal du mail** : `card-payment` atteint le bloc `mail` par son
   canal (`mail.send`, clé d'e-mail tirée du paiement, sans adresse dans la
-  clé — `lint:mail-key-no-pii`). 🔴 **La matrice du §3 du CLAUDE.md
-  l'interdit aujourd'hui** (`card-payment → mail` : ✗) ; le plan demande à
-  Hugo de l'ouvrir en « port uniquement », comme pour tous les blocs (§11).
+  clé — `lint:mail-key-no-pii`). La matrice du CLAUDE.md l'admet en
+  « port uniquement » depuis le 2026-11-22, porte `context-boundaries`
+  comprise : Hugo l'a ouvert parce que l'avis est un besoin de toutes les
+  applications qui encaisseront, pas de chacune.
 - **Agnostique** : le bloc ne sait ni ce qu'est une facture ni ce qu'est
   La Folie Coffee ; il lit des libellés que l'appelant a posés. Une autre
   application qui ouvrirait des liens n'aurait qu'à déclarer son origin.
@@ -389,7 +390,7 @@ rapprocher.
 | --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
 | I0  | `isDirectDebit`, `switch` exhaustifs, la porte — **aucun changement de comportement**                                                                                                                                                                                                                                                       | —          |
 | P1  | `card_payment.pay_link`, `PayLinks`, `LinkableSubject`, la page publique (API et boutique), les tests                                                                                                                                                                                                                                       | —          |
-| P1b | l'avis à la comptabilité après encaissement (§2.4), l'adresse par origin, le modèle d'e-mail                                                                                                                                                                                                                                                | P1, §11 a  |
+| P1b | l'avis à la comptabilité après encaissement (§2.4), l'adresse par origin, le modèle d'e-mail                                                                                                                                                                                                                                                | P1         |
 | F1  | la régularisation par la porte ; l'écran des liens libres recopie `urlOf`                                                                                                                                                                                                                                                                   | P1         |
 | I1  | `card_link` : moyen, genre du moyen figé, échéance, statut, factures en retard, spécimen PDF (`specimen-data.ts`, `lint:pdf-specimens`) ; contrats et écrans (back-office : `collection-means-choice`, `paiement-section`, `sales-oversight-filters`, `accounting-values`, `invoice-phrases` ; boutique : `payment-section`, `compte-page`) | I0, §11 b  |
 | I2  | le sujet `invoice` : `onPaid`, `settled_by_card`, `invoice_card_settlement`, le lien à l'émission, l'e-mail                                                                                                                                                                                                                                 | I1, P1     |
@@ -434,9 +435,8 @@ rapprocher.
 
 ## 11. Ce qui attend Hugo avant le bâti
 
-a. **Ouvrir `card-payment → mail` en « port uniquement »** dans la matrice
-du CLAUDE.md (§2.4). Sans ça, l'avis à la comptabilité ne peut pas
-partir du bloc agnostique.
+a. ~~Ouvrir `card-payment → mail` en « port uniquement »~~ — **décidé par
+Hugo le 2026-11-22**, matrice et porte à jour.
 b. **Le code Factur-X d'une facture à payer par carte** (48 ou autre), à
 demander au cabinet **avant** I1 : une facture émise ne se corrige pas.
 c. **Les valeurs `card_link` et `settled_by_card`** ne se retirent plus une

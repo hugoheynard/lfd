@@ -212,10 +212,13 @@ const ALLOWED = {
   // Le socle pour l'autorisation de l'éditeur, la plateforme pour le reste ;
   // aucun bloc métier : `mail` ne sait pas qui lui écrit (2026-11-06).
   mail: new Set(["staff", "platform"]),
-  // Le socle (l'autorisation, les cloches) et la plateforme ; aucun bloc
-  // métier : il ne sait pas pour qui il encaisse, il déclare `channels/subjects/`
-  // et `appBootstrap` y branche chaque sujet (2026-11-09, plan M2, §3.1).
-  "card-payment": new Set(["staff", "platform"]),
+  // Le socle (l'autorisation, les cloches), la plateforme et le canal des
+  // e-mails ; aucun bloc métier : il ne sait pas pour qui il encaisse, il
+  // déclare `channels/subjects/` et `appBootstrap` y branche chaque sujet
+  // (2026-11-09, plan M2, §3.1). Le canal `mail` : l'avis à la comptabilité
+  // d'un paiement par lien, le même pour toutes les applications qui
+  // encaissent (décidé par Hugo le 2026-11-22).
+  "card-payment": new Set(["staff", "platform", "mail"]),
   // La plateforme seulement : le panier ne sait pas ce qu'est une commande, ni
   // qui lui demande ce qu'il contient.
   "shop-cart": new Set(["platform"]),
@@ -238,9 +241,13 @@ const ALLOWED = {
   ]),
 };
 
-/** Les blocs qui demandent des e-mails : tous les blocs métier (2026-11-06). */
+/**
+ * Les blocs qui demandent des e-mails : tous les blocs métier (2026-11-06), et
+ * `card-payment` pour l'avis à la comptabilité (décidé par Hugo le 2026-11-22).
+ */
 const MAIL_CLIENTS = [
   "staff",
+  "card-payment",
   "pim",
   "media",
   "lafoliecoffee",
