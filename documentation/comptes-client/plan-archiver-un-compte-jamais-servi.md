@@ -228,3 +228,21 @@ Ce qui suit **prime** sur les §§ 2 à 4.
   et lu par tous ces murs. Les comptes déjà résiliés en production perdent
   l'accès de leurs membres au déploiement : **à compter avant de livrer** (combien
   de comptes résiliés ont des membres actifs), et à annoncer.
+
+## 8. Décisions de Hugo (2026-11-22) — ce qui prime sur tout le reste
+
+- **Le geste s'appelle « Supprimer le compte »** à l'écran. C'est un soft
+  delete : le modèle garde `archived_at` et ses colonnes (§ 3.1), rien n'est
+  effacé. Il se distingue de la **résiliation** (à la demande du client, par
+  exemple), qui laisse le compte dans la liste.
+- **Le motif est obligatoire**, choisi dans une courte liste (« Doublon »,
+  « Créé par erreur ») ou « Autre » avec un texte.
+- **Une seule chose retient : une commande.** « Jamais servi » se réduit à
+  « aucune commande, dans aucun sens » (commandes du compte, passées pour lui
+  comme site, ou dont il est le payeur ; un brouillon ne compte pas). Le
+  reste de l'empreinte du § 3.2 et du § 6 (RIB, mandat, mercuriale, factures…)
+  **ne retient plus** : la porte des colonnes `*company_id` n'a plus lieu
+  d'être. La lecture « ce compte a-t-il des commandes ? » est publiée par le
+  propriétaire des commandes.
+- Le reste tient : le mur (§ 3.3, § 6, § 7 Q3 — résiliés fermés aussi), le
+  verrou de la passation, les vues, Q1 (un site ne se supprime pas).
