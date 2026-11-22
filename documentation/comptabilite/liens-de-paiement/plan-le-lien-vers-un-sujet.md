@@ -106,16 +106,16 @@ bloc : il connaît `(subject_type, subject_id)`, jamais une facture.
 
 ### 2.1 La table `card_payment.pay_link`
 
-| Colonne                        | Rôle                                                                                                                      |
-| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------- |
-| `id`                           | ULID                                                                                                                      |
-| `subject_type`, `subject_id`   | le sujet, opaque ; **un seul lien vivant par sujet** (index unique partiel `WHERE revoked_at IS NULL`)                    |
-| `origin`                       | l'application qui a demandé le lien (`lafoliecoffee` aujourd'hui) — une valeur d'un registre, opaque pour le bloc         |
-| `payer_label`                  | le nom du client tel que l'appelant le donne à l'ouverture, figé : l'avis à la comptabilité le lit sans rappeler le sujet |
-| `token_hash`                   | HMAC-SHA-256 du jeton, **unique** : la page publique cherche par lui                                                      |
-| `token_sealed`                 | le jeton chiffré, avec le même scellé que l'IBAN de l'entité : le staff peut **recopier** le lien plus tard               |
-| `created_at`, `created_by`     | `created_by` = fiche staff, ou `system` pour une émission automatique                                                     |
-| `revoked_at`, `revoked_reason` | posés ensemble (`CHECK`) ; un lien révoqué ne se ranime pas                                                               |
+| Colonne                        | Rôle                                                                                                                                                                                                                                                                                     |
+| ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`                           | ULID                                                                                                                                                                                                                                                                                     |
+| `subject_type`, `subject_id`   | le sujet, opaque ; **un seul lien vivant par sujet** (index unique partiel `WHERE revoked_at IS NULL`)                                                                                                                                                                                   |
+| `origin`                       | l'application qui a demandé le lien (`lafoliecoffee` aujourd'hui) — une valeur du **registre des origines**, dans la configuration de `platform` comme `CARD_ACCOUNTS` (nom, libellé « La Folie Coffee ») ; une origine hors registre est refusée à l'ouverture, jamais une chaîne libre |
+| `payer_label`                  | le nom du client tel que l'appelant le donne à l'ouverture, figé : l'avis à la comptabilité le lit sans rappeler le sujet                                                                                                                                                                |
+| `token_hash`                   | HMAC-SHA-256 du jeton, **unique** : la page publique cherche par lui                                                                                                                                                                                                                     |
+| `token_sealed`                 | le jeton chiffré, avec le même scellé que l'IBAN de l'entité : le staff peut **recopier** le lien plus tard                                                                                                                                                                              |
+| `created_at`, `created_by`     | `created_by` = fiche staff, ou `system` pour une émission automatique                                                                                                                                                                                                                    |
+| `revoked_at`, `revoked_reason` | posés ensemble (`CHECK`) ; un lien révoqué ne se ranime pas                                                                                                                                                                                                                              |
 
 - **Le jeton** : 32 octets aléatoires (`crypto.randomBytes`, par un port
   `TokenGenerator` — l'`IdGenerator` ULID est prévisible, il ne convient
@@ -164,8 +164,8 @@ reference, dueOn | null }` ou `{ payable: false, reason }` (réglé,
   - `POST /pay/:token/intent` → s'il existe déjà un `first` pour le sujet,
     il est relu (`retrieve`) ; sinon `prepare` (hors transaction) puis, sous
     le verrou du sujet (`lockSubject`), `attach` comme `first`, avec le
-    `pay_link_id` du lien (§2.1 bis). Rend
-    `{ clientSecret, publishableKey }`. `@Idempotent` : l'index
+    `pay_link_id` du lien (§2.1 bis). Rend une **instruction de
+    collecte** neutre (§2.3 bis), jamais un secret propre à Stripe. `@Idempotent` : l'index
     `payment_first_per_subject_key` (`WHERE role = 'first'`, **sans filtre
     d'état**) n'admet qu'un `first` par sujet, le rejeu relit.
   - **Pourquoi un seul `first` suffit** : une intention refusée par la
@@ -184,8 +184,34 @@ reference, dueOn | null }` ou `{ payable: false, reason }` (réglé,
   (`assertOutsideTransaction`, porte `network-outside-transaction`). Et une
   facture jamais ouverte ne crée rien chez le prestataire.
 - **Boutique** : route `/payer/:jeton`, hors espace client, sans
-  authentification ; elle reprend le formulaire de carte de
-  `/commandes/:id/regler`.
+  authentification. Elle et `/commandes/:id/regler` partagent **un seul
+  composant de collecte**, qui lit l'instruction du §2.3 bis : un nouveau
+  prestataire s'ajoute une fois, pas une fois par page.
+
+### 2.3 bis L'instruction de collecte, neutre du prestataire
+
+🔴 `CardPayments.prepare` et `retrieve` rendent aujourd'hui `clientSecret` et
+`publishableKey` (`card-payment/channels/requests/card-payments.ts`, relu le
+2026-11-22) : le modèle de Stripe, un formulaire intégré à notre page.
+Beaucoup de solutions bancaires demandent une **redirection** vers leur
+page, ou un jeton de formulaire à elles ; l'offre de la Caisse d'Épargne
+n'a pas été vérifiée. Tel quel, le port ne sait pas les représenter.
+
+Le port rend une union fermée, que l'adaptateur de chaque prestataire
+remplit :
+
+| Genre      | Ce que la page reçoit                                                 | Exemple            |
+| ---------- | --------------------------------------------------------------------- | ------------------ |
+| `embedded` | le prestataire, une clé publique, un jeton de formulaire              | Stripe aujourd'hui |
+| `redirect` | l'adresse de la page du prestataire, et l'adresse de retour chez nous | une page bancaire  |
+
+Le **résultat** arrive toujours par le webhook du compte qui encaisse, que
+`card-payment` reçoit déjà. L'adresse de retour ne fait qu'afficher « nous
+vérifions votre paiement » puis relire l'état : elle n'écrit rien.
+
+Le changement se fait **avant** les liens (lot P0) : la page des commandes
+et les tests le suivent pendant qu'un seul appelant existe ; après, chaque
+appelant de `clientSecret` serait un chantier.
 
 ### 2.4 L'avis à la comptabilité, après encaissement
 
@@ -230,6 +256,20 @@ enregistre l'encaissement** — juste après la réponse du sujet (`onPaid`).
 - **Agnostique** : le bloc ne sait ni ce qu'est une facture ni ce qu'est
   La Folie Coffee ; il lit des libellés que l'appelant a posés. Une autre
   application qui ouvrirait des liens n'aurait qu'à déclarer son origin.
+
+### 2.5 ⚠️ Le lien n'est pas « carte »
+
+Le bloc s'appelle `card-payment`, et le CLAUDE.md le borne à « la carte
+seulement ». Le lien, lui, est plus large que la carte : il pourrait un
+jour proposer un virement instantané ou Wero. Pour que rien ne le grave :
+
+- `pay_link` ne dépend que de `(sujet, origine)`, **jamais d'un compte de
+  carte** ; le compte est choisi à la création de l'intention ;
+- l'avis à la comptabilité dit « paiement reçu par lien », le canal en
+  donnée ;
+- le jour où un second moyen par lien arrive, il faudra choisir : élargir
+  le bloc en `payment`, ou sortir le lien dans un bloc à lui. Pas
+  aujourd'hui.
 
 ## 3. Le sujet `order` — rien ne bouge
 
@@ -414,8 +454,9 @@ rapprocher.
 
 | Lot | Contenu                                                                                                                                                                                                                                                                                                                                     | Dépend de  |
 | --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| P0  | l'instruction de collecte neutre (§2.3 bis) : le port, l'adaptateur Stripe, la page `/commandes/:id/regler` passée au composant de collecte partagé — **aucun changement visible**                                                                                                                                                          | —          |
 | I0  | `isDirectDebit`, `switch` exhaustifs, la porte — **aucun changement de comportement**                                                                                                                                                                                                                                                       | —          |
-| P1  | `card_payment.pay_link`, `PayLinks`, `LinkableSubject`, la page publique (API et boutique), les tests                                                                                                                                                                                                                                       | —          |
+| P1  | `card_payment.pay_link`, `PayLinks`, `LinkableSubject`, le registre des origines, la page publique (API et boutique), les tests                                                                                                                                                                                                             | P0         |
 | P1b | l'avis à la comptabilité après encaissement (§2.4), l'adresse par origin, le modèle d'e-mail                                                                                                                                                                                                                                                | P1         |
 | F1  | la régularisation par la porte ; l'écran des liens libres recopie `urlOf`                                                                                                                                                                                                                                                                   | P1         |
 | I1  | `card_link` : moyen, genre du moyen figé, échéance, statut, factures en retard, spécimen PDF (`specimen-data.ts`, `lint:pdf-specimens`) ; contrats et écrans (back-office : `collection-means-choice`, `paiement-section`, `sales-oversight-filters`, `accounting-values`, `invoice-phrases` ; boutique : `payment-section`, `compte-page`) | I0, §11 b  |
