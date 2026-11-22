@@ -9,6 +9,14 @@
 > frontière : contredit par `vitruve` avant Hugo. **Rien n'est décidé ni
 > planifié dans le temps** : Hugo a demandé le plan, pas le bâti.
 
+> ⏸️ **SUSPENDU le 2026-11-22**, après contradiction par `vitruve` : le plan
+> ne tient pas tel qu'écrit (§6). Le déménagement des mandats est d'abord
+> une **décision de conception** — un mandat connaît la société, et le bloc
+> `payment` ne connaît que des sujets opaques — à reprendre quand une
+> deuxième application devra prélever. Rien n'a été bâti ; le prélèvement
+> n'a pas été touché. Les §1 et §2 ci-dessous gardent leurs erreurs,
+> corrigées au §6 : lire le §6 d'abord.
+
 # Partie 1 — L'explication simple
 
 Le prélèvement SEPA a deux moitiés :
@@ -191,3 +199,66 @@ exporter.
 | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ |
 | Le calendrier : maintenant, ou quand une deuxième application prélèvera ?                                                                                                        | Hugo               |
 | Les réglages de comptabilité (`accounting-settings`) : ils portent le plafond des liens libres et des réglages de prélèvement ; les couper en deux à la marche 2, ou plus tard ? | à trancher au bâti |
+
+## 6. Ce que `vitruve` a contredit (2026-11-22)
+
+**BLOQUANT**
+
+1. **La marche 2 n'est pas un simple déménagement.** Le code des mandats
+   importe aussi `account` (les gestes de site, le port de révocation des
+   mandats de site, `AccountModule`), `lafoliecoffee/shared` (`company-standing`,
+   seule lecture admise du rôle dans une société, et l'acteur client des
+   intentions) et `orders` (`ORDER_CARD_SUBJECT_TYPE` dans
+   `admin-mandates.controller.ts`). La matrice n'autorise à `payment` que
+   `staff`, `platform` et `mail`.
+2. **Il lirait la table des sociétés** (`prisma-mandate-debtor.reader.ts`,
+   `prisma-payment-mandate.repository.ts`, relations `company` et `debtor`),
+   qui appartient au commerce.
+3. **Un mandat connaît la société** : rangé par `companyId`, servi par
+   `admin/companies/:companyId/mandate` et `companies/me/…`, gardé par le
+   rôle dans la société, les accès fonctionnels et les gestes de site. Le
+   bloc `payment` ne connaît que `(subject_type, subject_id)`. **C'est une
+   décision de conception, pas un déménagement.**
+4. **Le §1 est faux** sur ce que les deux se doivent :
+   - **sept** ports déclarés par la facturation et branchés sur les mandats,
+     pas quatre (`CollectionMandatesReader`, qui alimente le `pain.008`,
+     `MandateRecheckReader`, et `IssuedDraftMandates`, qui est une
+     **écriture** : l'annulation des brouillons) ;
+   - **`FirstMandateLedger` n'a rien à voir avec `FRST`/`RCUR`** : c'est le
+     verrou du créancier imprimé (« premier mandat frappé sous une entité »),
+     écrit dans la transaction de la frappe. Erreur de l'auteur du plan, qui
+     l'a déduite du nom ;
+   - **le document du mandat est dessiné par la facturation**
+     (`sepa-mandate-pdf.ts` et ses gabarits), pas par les mandats.
+
+**SÉRIEUX**
+
+5. **Le témoin est aveugle ou instable** : la RUM est tirée au hasard,
+   `DtOfSgntr` et `ReqdColltnDt` dépendent du jour, `MsgId`/`PmtInfId`/`EndToEndId`
+   dérivent de l'identifiant du lot ; le cas `RCUR` demande un premier lot
+   déposé ; il ne voit ni les faits `payment_mandate.*`, ni les cloches, ni
+   l'e-mail, ni le verrou du créancier, ni les gardes du RIB ; aucun outil
+   n'extrait le texte d'un PDF. Un témoin au niveau du domaine (pur)
+   coûterait moins cher qu'un e2e.
+6. **Des portes nomment les chemins en dur** (`mail-receipt-admitted.mjs`,
+   `intent-key-gestures.mjs`, `journal-tracked.mjs`) : elles échoueraient au
+   déménagement.
+7. `Iban` et `Bic` servent aussi la facturation pour elle-même (31
+   fichiers) : les déplacer crée une dépendance permanente de la facturation
+   envers `payment/channels`.
+8. `CreditorSnapshot` porte `MandatePaymentType`, et tous les objets-valeurs
+   importent `accounting-errors.js` : rien ne bouge « tel quel ».
+9. Le contexte est mixte au-delà des mandats et des liens :
+   `get-my-company-billed-to.*`, `on-refund-without-order.handler.ts`,
+   `mandate-proof-purge.ts` (une purge RGPD), `prisma-mandate-debtor.reader.ts`.
+
+**Ce qui tient** : le chiffrement des IBAN ne dépend ni de la table ni de
+la colonne (`setAAD` absent) ; la lecture directe de la croissance
+(`sales-sheet-steps.batch.ts:51-52`) ; les tests `pain008*` et le modèle
+`pricing-golden-master`.
+
+**La question à reprendre le jour venu** : qu'est-ce qu'un mandat quand il
+ne sait plus ce qu'est une société ? Piste : un **débiteur opaque**
+(`debtor_ref`), comme un sujet ; le commerce garde qui peut voir et gérer
+le mandat d'une société, le bloc garde le mandat, son IBAN, sa RUM et sa
+vie.
