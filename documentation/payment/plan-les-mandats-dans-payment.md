@@ -119,13 +119,13 @@ témoin** d'un lot complet n'existe. Le dépôt a le modèle à copier :
 
 ### Marche 0 — le fichier témoin (avant tout le reste)
 
-- Un e2e `test/collection-golden-master.e2e-spec.ts` : il sème par les
+- Un e2e test/collection-golden-master.e2e-spec.ts (à créer) : il sème par les
   **vrais handlers** un créancier confirmé, trois clients (un `FRST`, un
   `RCUR`, un sous-compte rattaché au mandat du principal), leurs mandats
   signés, des factures au prélèvement ; il constitue un lot par le geste
   réel ; il capte le XML `pain.008` et le normalise (date de création,
   identifiants tirés au hasard remplacés par des jetons stables).
-- Le XML normalisé est rangé dans `test/collection-golden-master.snapshot.xml`
+- Le XML normalisé est rangé dans test/collection-golden-master.snapshot.xml (à créer)
   et comparé **au caractère près**. Un changement du fichier exige de
   réécrire le témoin dans un commit à part, qui le dit.
 - Le même e2e capte aussi les **exports bancaires** (comptes et mandats) et
