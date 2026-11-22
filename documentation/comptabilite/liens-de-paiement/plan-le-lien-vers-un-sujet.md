@@ -126,6 +126,20 @@ bloc : il connaît `(subject_type, subject_id)`, jamais une facture.
   meurt quand le sujet est réglé, annulé, ou quand le staff le révoque.
 - **Pas de suppression physique** ; révocation par statut.
 
+### 2.1 bis Le paiement sait qu'il vient d'un lien
+
+`card_payment.payment` gagne une colonne **`pay_link_id`** (nullable, clé
+étrangère vers `card_payment.pay_link`, dans le même schéma). `attach` la
+pose quand l'intention naît de la page du lien (§2.3), et elle rejoint les
+colonnes immuables de la ligne (le déclencheur de `20261109030000` les
+énumère). Nulle pour une commande payée dans la boutique.
+
+C'est **la trace qui fait foi** : la comptabilité distingue un paiement par
+lien en lisant la base, pas un e-mail. Un relevé ou un export « paiements
+par lien » sera une lecture de cette colonne. Aucun fait ni événement propre
+au lien : `card_payment.settled` dit déjà qu'un paiement est encaissé, et
+pourra porter `payLinkId` le jour où un abonné en aura besoin.
+
 ### 2.2 Les deux ports du canal
 
 - **`PayLinks`** (`card-payment/channels/requests/`, demandé par les blocs
@@ -149,7 +163,8 @@ reference, dueOn | null }` ou `{ payable: false, reason }` (réglé,
     révoqué**, sans distinguer ;
   - `POST /pay/:token/intent` → s'il existe déjà un `first` pour le sujet,
     il est relu (`retrieve`) ; sinon `prepare` (hors transaction) puis, sous
-    le verrou du sujet (`lockSubject`), `attach` comme `first`. Rend
+    le verrou du sujet (`lockSubject`), `attach` comme `first`, avec le
+    `pay_link_id` du lien (§2.1 bis). Rend
     `{ clientSecret, publishableKey }`. `@Idempotent` : l'index
     `payment_first_per_subject_key` (`WHERE role = 'first'`, **sans filtre
     d'état**) n'admet qu'un `first` par sujet, le rejeu relit.
@@ -174,21 +189,32 @@ reference, dueOn | null }` ou `{ payable: false, reason }` (réglé,
 
 ### 2.4 L'avis à la comptabilité, après encaissement
 
-Quand un paiement **né d'un lien** est encaissé (le fait `card_payment.settled`
-que `card-payment` publie déjà, `card-payment-settlement.facts.ts`), un
-abonné durable de `card-payment` envoie l'e-mail « paiement reçu par lien »
-à l'adresse de suivi de l'origin.
+Quand un paiement **dont la ligne porte un `pay_link_id`** est encaissé,
+`card-payment` demande l'e-mail « paiement reçu par lien » à l'adresse de
+suivi de l'origin, par `mail.send`, **dans la transaction même qui
+enregistre l'encaissement** — juste après la réponse du sujet (`onPaid`).
 
-| Ce que dit l'e-mail | D'où il vient                                                                                               |
-| ------------------- | ----------------------------------------------------------------------------------------------------------- |
-| le montant          | la ligne `card_payment.payment` (centimes)                                                                  |
-| le canal            | le **compte** qui a encaissé et son prestataire (`CARD_ACCOUNTS` : `lfc-stripe` → Stripe ; demain un autre) |
-| le client           | `pay_link.payer_label`, figé à l'ouverture                                                                  |
-| le contexte         | `pay_link.origin`, dit par son libellé (« La Folie Coffee »)                                                |
-| ce qui est réglé    | `SubjectSettlement.describe` (libellé et écran), déjà exigé de tout sujet                                   |
+- **Pas d'abonné, pas d'événement** : `mail.send` écrit la demande dans la
+  boîte d'envoi du bloc `mail`, envoyée après validation et relancée en cas
+  d'échec. C'est déjà une émission durable.
+- **Atomique** : l'encaissement est écrit si et seulement si l'avis est
+  demandé. Un rollback n'envoie rien ; un paiement enregistré a toujours
+  son avis.
+- **Rien à lire hors de la transaction** : montant, compte, client, origin
+  et sujet sont en base. Un appel au prestataire, interdit en transaction,
+  n'est pas nécessaire.
 
-- **Après l'encaissement, jamais avant** : l'abonné lit le fait de
-  règlement, pas l'ouverture du lien ni la création de l'intention. Un
+| Ce que dit l'e-mail | D'où il vient                                                                                                                 |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| la provenance       | « par lien » : la ligne porte un `pay_link_id` ; la date de création du lien et son auteur (le système ou un membre du staff) |
+| le montant          | la ligne `card_payment.payment` (centimes)                                                                                    |
+| le canal            | le **compte** qui a encaissé et son prestataire (`CARD_ACCOUNTS` : `lfc-stripe` → Stripe ; demain un autre)                   |
+| le client           | `pay_link.payer_label`, figé à l'ouverture                                                                                    |
+| le contexte         | `pay_link.origin`, dit par son libellé (« La Folie Coffee »)                                                                  |
+| ce qui est réglé    | `SubjectSettlement.describe` (libellé et écran), déjà exigé de tout sujet                                                     |
+
+- **Après l'encaissement, jamais avant** : ni l'ouverture du lien ni la
+  création de l'intention ne demandent d'e-mail. Un
   paiement **refusé par le sujet** (et donc remboursé) part aussi, avec la
   mention « refusé, remboursement demandé » : la comptabilité voit l'argent
   passer dans les deux sens.
