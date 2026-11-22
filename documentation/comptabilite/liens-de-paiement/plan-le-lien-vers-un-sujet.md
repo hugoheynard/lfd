@@ -465,5 +465,5 @@ a. ~~Ouvrir `card-payment → mail` en « port uniquement »~~ — **décidé pa
 Hugo le 2026-11-22**, matrice et porte à jour.
 b. **Le code Factur-X d'une facture à payer par carte** (48 ou autre), à
 demander au cabinet **avant** I1 : une facture émise ne se corrige pas.
-c. **Les valeurs `card_link` et `settled_by_card`** ne se retirent plus une
-fois une ligne écrite : le nom est à valider maintenant.
+c. ~~Les valeurs `card_link` et `settled_by_card`~~ — **validées par Hugo
+le 2026-11-22**. Elles ne se retirent plus une fois une ligne écrite.
