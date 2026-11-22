@@ -352,6 +352,8 @@
             [modeMissing]="activationModeMissing()"
             (activate)="fiche.activate(activationMode())"
             (reactivate)="fiche.reactivate()"
+            (suspend)="fiche.suspend()"
+            (terminate)="fiche.terminate()"
           >
             @if (fiche.status() === 'pending' && !isSite() && fiche.company(); as c) {
               <app-billing-mode-choice

@@ -159,6 +159,16 @@ export class FicheClientFacade {
     return this.mutate((company) => this.actions.reactivate(company));
   }
 
+  /** Suspend un compte actif. */
+  suspend(): Promise<void> {
+    return this.mutate((company) => this.actions.suspend(company));
+  }
+
+  /** Résilie un compte actif ou suspendu. */
+  terminate(): Promise<void> {
+    return this.mutate((company) => this.actions.terminate(company));
+  }
+
   grantTerms(terms: readonly DeferredTerm[]): Promise<void> {
     return this.mutate((company) => this.actions.grantTerms(company, terms));
   }

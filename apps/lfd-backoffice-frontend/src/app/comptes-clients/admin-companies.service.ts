@@ -472,6 +472,23 @@ export class AdminCompaniesService {
     );
   }
 
+  /**
+   * **Suspend** ou **résilie** un compte, avec un motif. La résiliation est
+   * terminale : le serveur refuse ensuite toute transition.
+   */
+  async closeDown(
+    companyId: string,
+    action: 'suspend' | 'terminate',
+    reason: string,
+  ): Promise<void> {
+    await firstValueFrom(
+      this.http.patch<void>(`${B2B_API_BASE}/admin/companies/${companyId}/status`, {
+        action,
+        reason,
+      }),
+    );
+  }
+
   /** Ajoute une adresse de livraison. */
   async addDelivery(
     companyId: string,

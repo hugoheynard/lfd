@@ -170,6 +170,22 @@ export class FicheClientActions {
     return this.run(() => this.service.reactivate(company.id), 'Compte réactivé.');
   }
 
+  /** Coupe l'accès d'un compte actif, sur décision de l'équipe. */
+  suspend(company: AdminCompanyDetail): Promise<boolean> {
+    return this.run(
+      () => this.service.closeDown(company.id, 'suspend', 'Suspendu depuis la fiche client'),
+      'Compte suspendu.',
+    );
+  }
+
+  /** Clôt la relation : état terminal, l'historique reste consultable. */
+  terminate(company: AdminCompanyDetail): Promise<boolean> {
+    return this.run(
+      () => this.service.closeDown(company.id, 'terminate', 'Résilié depuis la fiche client'),
+      'Compte résilié.',
+    );
+  }
+
   /** Accorde (ou retire) les crédits de règlement — l'ensemble complet part. */
   grantTerms(company: AdminCompanyDetail, terms: readonly DeferredTerm[]): Promise<boolean> {
     return this.run(

@@ -1,5 +1,10 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
-import { FoldButtonComponent, FoldCardComponent, FoldIconComponent } from 'fold-ng';
+import {
+  FoldButtonComponent,
+  FoldCardComponent,
+  FoldIconComponent,
+  FoldInlineConfirmComponent,
+} from 'fold-ng';
 
 import type { ActivationTrace, SuspensionCause } from '../../comptes-clients/admin-company';
 import type { CompanyStatus } from '@lfd/contracts';
@@ -27,7 +32,7 @@ import type { CompanyStatus } from '@lfd/contracts';
 @Component({
   selector: 'app-activation-aside',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldCardComponent, FoldButtonComponent, FoldIconComponent],
+  imports: [FoldCardComponent, FoldButtonComponent, FoldIconComponent, FoldInlineConfirmComponent],
   templateUrl: './activation-aside.html',
   styleUrl: './activation-aside.scss',
 })
@@ -57,6 +62,10 @@ export class ActivationAside {
 
   readonly activate = output<void>();
   readonly reactivate = output<void>();
+  /** Coupe l'accès d'un compte actif — derrière une confirmation. */
+  readonly suspend = output<void>();
+  /** Clôt la relation (terminal) — derrière une confirmation. */
+  readonly terminate = output<void>();
 
   protected readonly pending = computed(() => this.status() === 'pending');
   protected readonly activatable = computed(() => this.canActivate() && !this.modeMissing());

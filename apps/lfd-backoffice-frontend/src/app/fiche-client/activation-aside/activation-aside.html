@@ -62,6 +62,14 @@
         Réactiver le compte
       </button>
     }
+    <!-- Résilier reste possible d'une suspension, quelle qu'en soit la cause. -->
+    <fold-inline-confirm
+      intent="danger"
+      [labels]="{ confirm: 'Confirmer la résiliation' }"
+      (confirmed)="terminate.emit()"
+    >
+      <button foldButton emphasis="outline" intent="danger" icon="close">Résilier le compte</button>
+    </fold-inline-confirm>
     @if (activationLabel(); as trace) {
       <p class="trace">{{ trace }}</p>
     }
@@ -92,5 +100,17 @@
     @if (activationLabel(); as trace) {
       <p class="trace">{{ trace }}</p>
     }
+    <!-- Les gestes qui engagent, derrière une confirmation : on ne coupe pas
+         un client en passant. -->
+    <fold-inline-confirm [labels]="{ confirm: 'Confirmer la pause' }" (confirmed)="suspend.emit()">
+      <button foldButton emphasis="outline">Mettre en pause</button>
+    </fold-inline-confirm>
+    <fold-inline-confirm
+      intent="danger"
+      [labels]="{ confirm: 'Confirmer la résiliation' }"
+      (confirmed)="terminate.emit()"
+    >
+      <button foldButton emphasis="outline" intent="danger" icon="close">Résilier le compte</button>
+    </fold-inline-confirm>
   }
 </fold-card>

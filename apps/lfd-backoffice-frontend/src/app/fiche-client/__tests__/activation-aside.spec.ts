@@ -90,7 +90,7 @@ describe('rail Activation du compte', () => {
     // Le geste n'a plus de sens : le montrer grisé ferait douter du statut.
     const { host } = render({ status: 'active' });
 
-    expect(host.querySelector('button')).toBeNull();
+    expect(host.textContent).not.toContain('Activer le compte');
     expect(host.textContent).toContain('Compte actif');
   });
 
@@ -139,7 +139,7 @@ describe('rail Activation du compte', () => {
     // Un bouton ici laisserait croire qu'un chemin contourne la vérification.
     const { host } = render({ status: 'suspended', suspensionCause: 'kbis_revoked' });
 
-    expect(host.querySelector('button')).toBeNull();
+    expect(host.textContent).not.toContain('Réactiver');
     expect(host.textContent).toContain('vérification du KBIS a été retirée');
   });
 
@@ -148,5 +148,22 @@ describe('rail Activation du compte', () => {
 
     expect(host.querySelector('button')).toBeNull();
     expect(host.textContent).toContain('Compte résilié');
+  });
+
+  it('offre « Mettre en pause » et « Résilier » sur un compte actif', () => {
+    const { host } = render({ status: 'active' });
+    const labels = [...host.querySelectorAll('button')].map((b) => b.textContent?.trim());
+    expect(labels).toEqual(['Mettre en pause', 'Résilier le compte']);
+  });
+
+  it('offre « Résilier » sur un compte suspendu, même quand la reprise est automatique', () => {
+    const { host } = render({ status: 'suspended', suspensionCause: 'kbis_revoked' });
+    const labels = [...host.querySelectorAll('button')].map((b) => b.textContent?.trim());
+    expect(labels).toEqual(['Résilier le compte']);
+  });
+
+  it("n'offre aucun geste sur un compte résilié", () => {
+    const { host } = render({ status: 'terminated' });
+    expect(host.querySelectorAll('button')).toHaveLength(0);
   });
 });
