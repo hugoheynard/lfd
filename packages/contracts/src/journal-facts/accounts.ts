@@ -236,6 +236,14 @@ export const ACCOUNTS_AND_CARTS_FACTS = {
   ),
   "company.direct_debit_unblocked": fact(payload({ subjectLabel: subjectLabel() })),
   /**
+   * L'équipe supprime un compte qui n'a jamais commandé (« Supprimer le
+   * compte ») : un archivage, rien n'est effacé. Le motif est obligatoire.
+   * L'auteur est sur la ligne, pas dans la charge.
+   */
+  "company.archived": fact(payload({ subjectLabel: subjectLabel(), reason: z.string().min(1) })),
+  /** L'équipe rend un compte supprimé : il revient dans les listes, son statut n'a pas bougé. */
+  "company.unarchived": fact(payload({ subjectLabel: subjectLabel() })),
+  /**
    * Un membre de l'équipe a noté un échange avec la société (suivi commercial,
    * § 3.2 ter) : le mode, le jour de l'échange (pas celui de la saisie, qui est
    * l'instant de la ligne), et une note courte quand il en a laissé une.

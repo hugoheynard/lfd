@@ -218,3 +218,11 @@ export const companyStatusPayloadSchema = z
     }
   });
 export type CompanyStatusPayload = z.infer<typeof companyStatusPayloadSchema>;
+
+/**
+ * « Supprimer le compte » (un archivage) : le motif, obligatoire. L'écran le
+ * choisit dans une courte liste (« Doublon », « Créé par erreur ») ou le
+ * saisit (« Autre ») ; le domaine refuse un motif vide ou trop long.
+ */
+export const archiveCompanyPayloadSchema = z.object({ reason: z.string() });
+export type ArchiveCompanyPayload = z.infer<typeof archiveCompanyPayloadSchema>;

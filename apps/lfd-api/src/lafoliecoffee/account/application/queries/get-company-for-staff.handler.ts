@@ -5,6 +5,7 @@ import {
   AdminCompanyReader,
   type AdminCompanyFicheView,
 } from "../../domain/ports/admin-company.reader.js";
+import { CompanyHasOrdersReader } from "../../../orders/domain/ports/company-has-orders.reader.js";
 import { activationGate } from "../../domain/services/activation-gate.js";
 import { CompanyNotFoundError } from "../../domain/errors/account-errors.js";
 import { GetCompanyForStaffQuery } from "./get-company-for-staff.query.js";
@@ -27,7 +28,10 @@ export class GetCompanyForStaffHandler implements IQueryHandler<
   GetCompanyForStaffQuery,
   AdminCompanyFicheView
 > {
-  constructor(private readonly companies: AdminCompanyReader) {}
+  constructor(
+    private readonly companies: AdminCompanyReader,
+    private readonly orders: CompanyHasOrdersReader,
+  ) {}
 
   async execute(query: GetCompanyForStaffQuery): Promise<AdminCompanyFicheView> {
     const company = await this.companies.byId(query.companyId);
@@ -40,7 +44,10 @@ export class GetCompanyForStaffHandler implements IQueryHandler<
     const addresses = query.withProcedureCounts
       ? company.addresses
       : withoutProcedureCounts(company.addresses);
-    return { ...company, addresses, gate: activationGate(company) };
+    // « A-t-il des commandes ? » se demande aux commandes : l'écran désarme
+    // « Supprimer le compte » sans rejouer la règle.
+    const hasOrders = await this.orders.hasOrders(query.companyId);
+    return { ...company, addresses, gate: activationGate(company), hasOrders };
   }
 }
 

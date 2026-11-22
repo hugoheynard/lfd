@@ -149,7 +149,14 @@ export class PrismaAdminCompanyReader extends AdminCompanyReader {
     const row = await this.prisma.company.findUnique({
       where: { id: companyId },
       // Le RIB : une existence, pour la fiche seule — la liste ne la lit pas.
-      select: { ...COMPANY_SELECT, revision: true, bankAccount: { select: { id: true } } },
+      select: {
+        ...COMPANY_SELECT,
+        revision: true,
+        bankAccount: { select: { id: true } },
+        archivedAt: true,
+        archivedByName: true,
+        archiveReason: true,
+      },
     });
     if (row === null) {
       return null;
@@ -228,6 +235,9 @@ export class PrismaAdminCompanyReader extends AdminCompanyReader {
       },
       hierarchy,
       chorusRouting: chorusRoutingView(row.chorusRouting),
+      archivedAt: row.archivedAt?.toISOString() ?? null,
+      archivedByName: row.archivedAt === null ? null : row.archivedByName,
+      archiveReason: row.archivedAt === null ? null : row.archiveReason,
     };
   }
 }

@@ -71,6 +71,7 @@ import { MailModule } from "../mail/mail.module.js";
 import { ShopCartModule } from "../shop-cart/shop-cart.module.js";
 import { AccountFeatureLevelsModule } from "./account-feature-levels.module.js";
 import { ParticularNoShowCountsModule } from "./particular-no-show-counts.module.js";
+import { CompanyHasOrdersModule } from "./company-has-orders.module.js";
 import { PackingFeedModule } from "./packing-feed.module.js";
 import { ShelfDrawsFeedModule } from "./shelf-draws-feed.module.js";
 import { PackingCommerceFeedModule } from "./packing-commerce-feed.module.js";
@@ -264,6 +265,7 @@ import { DevImpersonation } from "../platform/auth/dev-impersonation.js";
     PackingModule,
     AccountFeatureLevelsModule,
     ParticularNoShowCountsModule,
+    CompanyHasOrdersModule,
     PackingFeedModule,
     ShelfDrawsFeedModule,
     PackingDeliveryFeedModule,

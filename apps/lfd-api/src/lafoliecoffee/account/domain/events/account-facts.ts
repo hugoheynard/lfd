@@ -62,6 +62,10 @@ export const ACCOUNT_FACTS = {
   directDebitBlocked: "company.direct_debit_blocked",
   /** La comptabilité rétablit le prélèvement mensuel. */
   directDebitUnblocked: "company.direct_debit_unblocked",
+  /** L'équipe supprime (archive) un compte qui n'a jamais commandé. */
+  archived: "company.archived",
+  /** L'équipe rend un compte supprimé. */
+  unarchived: "company.unarchived",
   /** Un membre de l'équipe a noté un échange avec la société — suivi commercial. */
   companyContacted: "company.contacted",
   /** Le commercial qui suit la fiche change : confié, réattribué ou retiré. */

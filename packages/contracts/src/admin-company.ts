@@ -194,6 +194,16 @@ export interface AdminCompanyDetailView extends AdminCompanyView {
    * une forme juridique publique ; la pièce d'activation `chorus` la lit.
    */
   readonly chorusRouting: ChorusRoutingView | null;
+
+  /**
+   * Quand le compte a été supprimé (« Supprimer le compte », un archivage), en
+   * ISO, ou `null` : il est dans les listes. Le statut, lui, n'a pas bougé.
+   */
+  readonly archivedAt: string | null;
+  /** Qui l'a supprimé, nom figé ce jour-là ; `null` si inconnu de l'annuaire ou non supprimé. */
+  readonly archivedByName: string | null;
+  /** Le motif de la suppression ; `null` si le compte n'est pas supprimé. */
+  readonly archiveReason: string | null;
 }
 
 /**
@@ -237,6 +247,13 @@ export interface StaffActorView {
  */
 export interface AdminCompanyFicheView extends AdminCompanyDetailView {
   readonly gate: ActivationGate;
+  /**
+   * Le compte a-t-il des commandes, dans aucun sens (passées par lui, par un de
+   * ses sites, ou réglées par lui) ? Lu chez les commandes : l'écran désarme
+   * « Supprimer le compte » et propose la résiliation. Le serveur refuse de
+   * toute façon (409) — ce champ ne fait qu'éviter le clic.
+   */
+  readonly hasOrders: boolean;
 }
 
 /**

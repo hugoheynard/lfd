@@ -64,6 +64,9 @@ function chaletView(parentStatus: "active" | "pending"): AdminCompanyDetailView 
     activation: null,
     suspensionCause: null,
     vatNumberRequired: true,
+    archivedAt: null,
+    archivedByName: null,
+    archiveReason: null,
     hasBankAccount: false,
     addresses: {
       billing: {

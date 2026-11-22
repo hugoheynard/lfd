@@ -59,6 +59,9 @@ function schoolView(formeJuridique: string): AdminCompanyDetailView {
     activation: null,
     suspensionCause: null,
     vatNumberRequired: true,
+    archivedAt: null,
+    archivedByName: null,
+    archiveReason: null,
     hasBankAccount: false,
     addresses: {
       billing: {

@@ -18,7 +18,14 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 const ROOT = process.cwd();
-const MIGRATION = "20261105120000_l_estampille_filtree_par_colonnes";
+/**
+ * Les migrations qui écrivent ces déclencheurs, dans l'ordre : la dernière qui
+ * nomme une table l'emporte (`CREATE OR REPLACE TRIGGER`).
+ */
+const MIGRATIONS = [
+  "20261105120000_l_estampille_filtree_par_colonnes",
+  "20261122090000_un_compte_se_supprime",
+];
 
 /** Les fichiers qui décident de ce que porte le principal. */
 const RESOLUTION_SOURCES = [
@@ -119,9 +126,11 @@ function readColumns(): ReadonlySet<string> {
   return read;
 }
 
-/** Les colonnes `UPDATE OF` de chaque déclencheur de la migration. */
+/** Les colonnes `UPDATE OF` de chaque déclencheur, tel que la dernière migration l'écrit. */
 function triggerColumns(): ReadonlyMap<Table, ReadonlySet<string>> {
-  const sql = readFileSync(join(ROOT, "prisma/migrations", MIGRATION, "migration.sql"), "utf8");
+  const sql = MIGRATIONS.map((migration) =>
+    readFileSync(join(ROOT, "prisma/migrations", migration, "migration.sql"), "utf8"),
+  ).join("\n");
   const result = new Map<Table, ReadonlySet<string>>();
   for (const match of sql.matchAll(/UPDATE OF ([^\n]+)\n\s*ON "public"\."(\w+)"/g)) {
     const columns = (match[1] ?? "").split(",").map((part) => part.trim().replaceAll('"', ""));

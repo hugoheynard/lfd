@@ -391,6 +391,20 @@ const statusChanged: Phrase = (fact) => {
       );
 };
 
+/** « … a supprimé le compte du client « X » : Doublon ». */
+const companyArchived: Phrase = (fact) => {
+  const reason = optional(fact.payload['reason']);
+  return byActor(
+    fact,
+    [
+      text('a supprimé le compte '),
+      ...client(fact, 'of'),
+      ...(reason === null ? [] : [text(' : '), value(reason)]),
+    ],
+    ['subjectLabel', 'reason'],
+  );
+};
+
 /**
  * « … a bloqué le prélèvement mensuel du client « X » : raison ». Fait né le
  * 2026-09-25 (plan « blocage du prélèvement », §1) ; phrase minimale posée avec
@@ -874,6 +888,8 @@ export const ACCOUNTS_PHRASES = {
   'company.status_changed': statusChanged,
   'company.direct_debit_blocked': directDebitBlocked,
   'company.direct_debit_unblocked': onClient('a rétabli le prélèvement mensuel ', 'of'),
+  'company.archived': companyArchived,
+  'company.unarchived': onClient('a rendu le compte supprimé ', 'of'),
   'company.contacted': companyContacted,
   'company.follower_changed': companyFollowerChanged,
   'company.billing_address_saved': billingAddressSaved,

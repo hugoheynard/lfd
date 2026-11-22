@@ -5,6 +5,7 @@ import {
   AdminCompanyReader,
   type AdminCompanyDetailView,
 } from "../../../domain/ports/admin-company.reader.js";
+import { CompanyHasOrdersReader } from "../../../../orders/domain/ports/company-has-orders.reader.js";
 import { GetCompanyForStaffHandler } from "../get-company-for-staff.handler.js";
 import { GetCompanyForStaffQuery } from "../get-company-for-staff.query.js";
 
@@ -53,6 +54,9 @@ const detail: AdminCompanyDetailView = {
   declaredVia: null,
   piecesReached: [],
   vatNumberRequired: true,
+  archivedAt: null,
+  archivedByName: null,
+  archiveReason: null,
   hasBankAccount: false,
   addresses: emptyAddresses,
   activation: null,
@@ -75,11 +79,29 @@ function reader(result: AdminCompanyDetailView | null): AdminCompanyReader {
   };
 }
 
+/** « A-t-il des commandes ? », réponse fixée par le test. */
+class FixedOrders extends CompanyHasOrdersReader {
+  constructor(private readonly answer: boolean) {
+    super();
+  }
+  hasOrders(): Promise<boolean> {
+    return Promise.resolve(this.answer);
+  }
+}
+
 describe("GetCompanyForStaffHandler", () => {
+  it("dit si le compte a des commandes, lu chez les commandes", async () => {
+    const handler = new GetCompanyForStaffHandler(reader(detail), new FixedOrders(true));
+
+    const fiche = await handler.execute(new GetCompanyForStaffQuery("company_1", true));
+
+    expect(fiche.hasOrders).toBe(true);
+  });
+
   it("renvoie la fiche AVEC son verdict d'activation", async () => {
     // Le verdict part avec la fiche : l'écran ne le recalcule plus, donc il ne
     // peut plus contredire la porte serveur.
-    const handler = new GetCompanyForStaffHandler(reader(detail));
+    const handler = new GetCompanyForStaffHandler(reader(detail), new FixedOrders(false));
 
     const fiche = await handler.execute(new GetCompanyForStaffQuery("company_1", true));
 
@@ -91,7 +113,7 @@ describe("GetCompanyForStaffHandler", () => {
   });
 
   it("lève CompanyNotFoundError quand aucune société ne porte l'id", async () => {
-    const handler = new GetCompanyForStaffHandler(reader(null));
+    const handler = new GetCompanyForStaffHandler(reader(null), new FixedOrders(false));
 
     await expect(
       handler.execute(new GetCompanyForStaffQuery("company_unknown", true)),
@@ -128,7 +150,7 @@ describe("GetCompanyForStaffHandler", () => {
     };
 
     it("le sert à qui lit les procédures", async () => {
-      const handler = new GetCompanyForStaffHandler(reader(withProcedure));
+      const handler = new GetCompanyForStaffHandler(reader(withProcedure), new FixedOrders(false));
 
       const fiche = await handler.execute(new GetCompanyForStaffQuery("company_1", true));
 
@@ -136,7 +158,7 @@ describe("GetCompanyForStaffHandler", () => {
     });
 
     it("🔴 le rend à zéro sans `delivery_procedures:read`, le reste du carnet intact", async () => {
-      const handler = new GetCompanyForStaffHandler(reader(withProcedure));
+      const handler = new GetCompanyForStaffHandler(reader(withProcedure), new FixedOrders(false));
 
       const fiche = await handler.execute(new GetCompanyForStaffQuery("company_1", false));
 

@@ -37,6 +37,13 @@ import {
 } from "../value-objects/kbis-deposit.js";
 import { DirectDebitBlock } from "../value-objects/direct-debit-block.js";
 import { HierarchyPlace } from "../value-objects/hierarchy-place.js";
+import { CompanyArchive } from "../value-objects/company-archive.js";
+import {
+  CompanyAlreadyArchivedError,
+  CompanyHasOrdersError,
+  CompanyNotArchivedError,
+  SiteCannotBeArchivedError,
+} from "../errors/archive-errors.js";
 import { UnsavedParentCompanyError } from "../errors/hierarchy-errors.js";
 import {
   DirectDebitAlreadyBlockedError,
@@ -141,6 +148,8 @@ export interface ReconstituteCompanyInput {
   readonly declaredVia?: CompanyDeclarationChannel | null;
   /** Qui l'a ouverte et qui la suit, **facultatif** : absent = ni auteur ni suiveur connus. */
   readonly opening?: CompanyOpening;
+  /** La suppression (archivage), **facultative** : absente = compte non supprimé. */
+  readonly archive?: CompanyArchive | null;
   /**
    * La révision lue, **facultative** : absente = 0, celle d'une fiche jamais
    * réécrite depuis la colonne.
@@ -221,6 +230,8 @@ export interface CompanySoftState {
   readonly statusChange: { readonly status: CompanyStatus } | null;
   /** Le commercial qui suit la fiche, ou `null` — l'auteur, lui, ne s'écrit qu'à la naissance. */
   readonly followedByStaffId: string | null;
+  /** La suppression (archivage), ou `null` — les quatre colonnes ensemble. */
+  readonly archive: CompanyArchive | null;
 }
 
 /**
@@ -272,6 +283,8 @@ export class Company {
     private readonly declaredViaValue: CompanyDeclarationChannel | null,
     /** Qui l'a ouverte (fait de naissance) et qui la suit. */
     private openingValue: CompanyOpening,
+    /** La suppression (archivage), ou `null` : le compte est dans les listes. */
+    private archiveValue: CompanyArchive | null,
     /** La révision chargée : celle contre laquelle une fiche lue se compare. */
     private readonly revisionValue = 0,
   ) {
@@ -362,6 +375,8 @@ export class Company {
       HierarchyPlace.standalone(),
       via,
       opening,
+      // Une société qui naît n'est pas supprimée.
+      null,
     );
   }
 
@@ -388,6 +403,7 @@ export class Company {
       input.hierarchy ?? HierarchyPlace.standalone(),
       input.declaredVia ?? null,
       input.opening ?? CompanyOpening.none(),
+      input.archive ?? null,
       input.revision ?? 0,
     );
   }
@@ -1121,6 +1137,58 @@ export class Company {
     this.statusValue = "terminated";
   }
 
+  /** La suppression en cours, ou `null` : le compte est dans les listes. */
+  get archiveRecord(): CompanyArchive | null {
+    return this.archiveValue;
+  }
+
+  /**
+   * **Supprime** le compte (« Supprimer le compte ») : un archivage, rien n'est
+   * effacé et le statut ne bouge pas. Réservé à un compte qui n'a jamais
+   * commandé — dans aucun sens : un compte qui a servi se résilie, il ne
+   * disparaît pas des listes. Un site se détache d'abord de son principal.
+   *
+   * `hasOrders` est lu par l'appelant chez le propriétaire des commandes, sous
+   * le verrou de la ligne `companies`.
+   *
+   * @throws {CompanyAlreadyArchivedError} déjà supprimé : le premier motif reste.
+   * @throws {SiteCannotBeArchivedError} un site rattaché à un principal.
+   * @throws {CompanyHasOrdersError} le compte a des commandes.
+   * @throws {InvalidArchiveReasonError} motif vide ou trop long.
+   */
+  archive(input: {
+    readonly at: Date;
+    readonly byStaffId: string | null;
+    readonly byName: string | null;
+    readonly reason: string;
+    readonly hasOrders: boolean;
+  }): void {
+    const id = this.identityId ?? "";
+    if (this.archiveValue !== null) {
+      throw new CompanyAlreadyArchivedError(id);
+    }
+    if (this.hierarchyValue.parentCompanyId !== null) {
+      throw new SiteCannotBeArchivedError(id);
+    }
+    if (input.hasOrders) {
+      throw new CompanyHasOrdersError(id);
+    }
+    this.archiveValue = CompanyArchive.record(input);
+  }
+
+  /**
+   * **Rend** un compte supprimé : il revient dans les listes, avec le statut
+   * qu'il avait — la suppression ne l'a pas touché.
+   *
+   * @throws {CompanyNotArchivedError} le compte n'est pas supprimé.
+   */
+  unarchive(): void {
+    if (this.archiveValue === null) {
+      throw new CompanyNotArchivedError(this.identityId ?? "");
+    }
+    this.archiveValue = null;
+  }
+
   private requireStatus(expected: CompanyStatus, message: string): void {
     if (this.statusValue !== expected) {
       throw new CompanyStatusTransitionError(this.identityId ?? "", this.statusValue, message);
@@ -1167,6 +1235,7 @@ export class Company {
           ? { status: this.statusValue }
           : null,
       followedByStaffId: this.openingValue.followerStaffId,
+      archive: this.archiveValue,
     };
   }
 }

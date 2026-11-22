@@ -1,5 +1,6 @@
 import type { Company, CompanySoftState } from "../domain/entities/company.js";
 import type { CompanyOpening } from "../domain/value-objects/company-opening.js";
+import { CompanyArchive } from "../domain/value-objects/company-archive.js";
 import { DirectDebitBlock } from "../domain/value-objects/direct-debit-block.js";
 import { KbisDeposit } from "../domain/value-objects/kbis-deposit.js";
 
@@ -30,6 +31,7 @@ export function companyColumnsOf(state: ReturnType<Company["toPersistence"]>) {
     deliverySignatureRequired: state.fulfillmentPreference.signatureRequired,
     ...kbisColumns(state.kbis),
     ...directDebitBlockColumns(state.directDebitBlock),
+    ...archiveColumns(state.archive),
     followedByStaffId: state.followedByStaffId,
   };
 }
@@ -233,5 +235,39 @@ export function directDebitBlockColumns(block: DirectDebitBlock | null): DirectD
     directDebitBlockedAt: block?.blockedAt ?? null,
     directDebitBlockedBy: block?.blockedBy ?? null,
     directDebitBlockReason: block?.reason ?? null,
+  };
+}
+
+/** Les colonnes de la suppression (archivage) d'une ligne `companies`. */
+interface ArchiveRow {
+  readonly archivedAt: Date | null;
+  readonly archivedByStaffId: string | null;
+  readonly archivedByName: string | null;
+  readonly archiveReason: string | null;
+}
+
+/**
+ * Ligne → suppression, ou `null`. L'instant et le motif sont nuls ou posés
+ * ensemble (contrainte `companies_archive_complete`) ; l'auteur est facultatif.
+ */
+export function archiveOf(row: ArchiveRow): CompanyArchive | null {
+  if (row.archivedAt === null || row.archiveReason === null) {
+    return null;
+  }
+  return CompanyArchive.reconstitute(
+    row.archivedAt,
+    row.archivedByStaffId,
+    row.archivedByName,
+    row.archiveReason,
+  );
+}
+
+/** Suppression → colonnes, toujours les quatre : rendre le compte les remet à `null` ensemble. */
+export function archiveColumns(archive: CompanyArchive | null): ArchiveRow {
+  return {
+    archivedAt: archive?.archivedAt ?? null,
+    archivedByStaffId: archive?.byStaffId ?? null,
+    archivedByName: archive?.byName ?? null,
+    archiveReason: archive?.reason ?? null,
   };
 }

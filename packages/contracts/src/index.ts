@@ -2022,8 +2022,10 @@ export {
   companyStatusSchema,
   companyStatusActionSchema,
   companyStatusPayloadSchema,
+  archiveCompanyPayloadSchema,
 } from "./customer-sheet.js";
 export type {
+  ArchiveCompanyPayload,
   CompanyStatus,
   CompanyStatusAction,
   CompanyStatusPayload,

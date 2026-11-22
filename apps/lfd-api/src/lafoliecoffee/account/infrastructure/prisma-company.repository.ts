@@ -18,6 +18,7 @@ import { CompanyOpening } from "../domain/value-objects/company-opening.js";
 import { ContactDetails } from "../domain/value-objects/contact-details.js";
 import { HierarchyPlace } from "../domain/value-objects/hierarchy-place.js";
 import {
+  archiveOf,
   changedColumns,
   companyColumnsOf,
   contactColumns,
@@ -250,6 +251,7 @@ export class PrismaCompanyRepository extends CompanyRepository {
       nafCode: row.nafCode,
       kbis: kbisOf(row),
       directDebitBlock: directDebitBlockOf(row),
+      archive: archiveOf(row),
       hierarchy: HierarchyPlace.reconstitute({
         parentCompanyId: row.parentCompanyId,
         hasSubAccounts: row.subAccounts.length > 0,

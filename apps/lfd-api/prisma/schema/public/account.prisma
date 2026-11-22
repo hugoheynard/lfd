@@ -212,6 +212,16 @@ model Company {
   directDebitBlockedBy   String?   @map("direct_debit_blocked_by")
   directDebitBlockReason String?   @map("direct_debit_block_reason")
 
+  // SUPPRESSION (« Supprimer le compte ») : un archivage, rien n'est effacé et
+  // le statut ne bouge pas. Réservée à un compte qui n'a jamais commandé.
+  // `archived_at` et `archive_reason` sont nulles ensemble ou posées ensemble
+  // (contrainte CHECK `companies_archive_complete`) ; l'auteur reste nullable,
+  // comme celui d'une activation.
+  archivedAt        DateTime? @map("archived_at")
+  archivedByStaffId String?   @map("archived_by_staff_id")
+  archivedByName    String?   @map("archived_by_name")
+  archiveReason     String?   @map("archive_reason")
+
   // Préférence d'ACHEMINEMENT : comment ce client est servi d'habitude. Ce n'est
   // pas une contrainte — la commande s'ouvre dessus, le client peut en changer
   // au panier. `null` = aucune préférence posée, ce qui n'est PAS « retrait » :

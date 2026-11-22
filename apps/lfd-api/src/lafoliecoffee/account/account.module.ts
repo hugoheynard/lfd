@@ -198,6 +198,7 @@ import { AdminCompanyContactsController } from "./http/admin-company-contacts.co
 import { AdminCompanyNotedContactsController } from "./http/admin-company-noted-contacts.controller.js";
 import { AdminCompanyFollowerController } from "./http/admin-company-follower.controller.js";
 import { AdminCompanyPiecesController } from "./http/admin-company-pieces.controller.js";
+import { AdminCompanyArchiveController } from "./http/admin-company-archive.controller.js";
 import { AdminCompanyChorusRoutingController } from "./http/admin-company-chorus-routing.controller.js";
 import { RecordChorusRoutingHandler } from "./application/commands/record-chorus-routing.handler.js";
 import { ChorusRoutingRepository } from "./domain/ports/chorus-routing.repository.js";
@@ -208,6 +209,8 @@ import { AdminCustomerAccessController } from "./http/admin-customer-access.cont
 import { AdminSupportController } from "./http/admin-support.controller.js";
 import { SupportController } from "./http/support.controller.js";
 import { ChangeCompanyStatusHandler } from "./application/commands/change-company-status.handler.js";
+import { ArchiveCompanyHandler } from "./application/commands/archive-company.handler.js";
+import { UnarchiveCompanyHandler } from "./application/commands/unarchive-company.handler.js";
 import { GetCustomerSheetHandler } from "./application/queries/get-customer-sheet.handler.js";
 import { CustomerSheetReader } from "./domain/ports/customer-sheet.reader.js";
 import { PrismaCustomerSheetReader } from "./infrastructure/prisma-customer-sheet.reader.js";
@@ -241,6 +244,8 @@ import { DeliveryPostalCodesReader } from "./domain/ports/delivery-postal-codes.
 import { CompanyParentReader } from "./domain/ports/company-parent.reader.js";
 import { SitePrincipalLock } from "./domain/ports/site-principal.lock.js";
 import { PrismaSitePrincipalLock } from "./infrastructure/prisma-site-principal.lock.js";
+import { CompanyRowLock } from "./domain/ports/company-row.lock.js";
+import { PrismaCompanyRowLock } from "./infrastructure/prisma-company-row.lock.js";
 import { SiteGesturePublisher } from "./application/services/site-gesture.publisher.js";
 import { SubAccountNoticeRulesReader } from "./domain/ports/sub-account-notice-rules.reader.js";
 import { SubAccountNoticeRulesWriter } from "./domain/ports/sub-account-notice-rules.writer.js";
@@ -326,6 +331,7 @@ import { PrismaPrincipalSitesMenuReader } from "./infrastructure/prisma-principa
     AdminCompanyNotedContactsController,
     AdminCompanyFollowerController,
     AdminCompanyPiecesController,
+    AdminCompanyArchiveController,
     AdminCompanyChorusRoutingController,
     CompanyDeliveryProcedureController,
     AdminCompanyDeliveryProcedureController,
@@ -429,6 +435,8 @@ import { PrismaPrincipalSitesMenuReader } from "./infrastructure/prisma-principa
     { provide: CompanyFollowsRepository, useClass: PrismaCompanyFollowsRepository },
     { provide: CollectionFormRepository, useClass: PrismaCollectionFormRepository },
     ChangeCompanyStatusHandler,
+    ArchiveCompanyHandler,
+    UnarchiveCompanyHandler,
     GetCustomerSheetHandler,
     UploadKbisByStaffHandler,
     CertifyKbisHandler,
@@ -590,6 +598,7 @@ import { PrismaPrincipalSitesMenuReader } from "./infrastructure/prisma-principa
     { provide: AcceptedMembersReader, useClass: PrismaAcceptedMembersReader },
     { provide: CompanyParentReader, useClass: PrismaCompanyParentReader },
     { provide: SitePrincipalLock, useClass: PrismaSitePrincipalLock },
+    { provide: CompanyRowLock, useClass: PrismaCompanyRowLock },
     SiteGesturePublisher,
     { provide: CompanyLifecycleReader, useClass: PrismaCompanyLifecycleReader },
     { provide: SubAccountNoticeRulesReader, useClass: PrismaSubAccountNoticeRulesReader },
