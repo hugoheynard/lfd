@@ -3,6 +3,7 @@ import { type StandingRow, standingFromRow } from "../read-company-standing.js";
 const PRINCIPAL = {
   id: "co_principal",
   status: "active",
+  archivedAt: null,
   enseigne: "Hip Hideouts",
   raisonSociale: "HIP SAS",
   memberships: [{ role: "owner" }],
@@ -10,7 +11,7 @@ const PRINCIPAL = {
 
 /** Un site actif, sans membership propre, sous un principal actif dont on est détenteur. */
 function row(over: Partial<StandingRow> = {}): StandingRow {
-  return { status: "active", memberships: [], parentCompany: PRINCIPAL, ...over };
+  return { status: "active", archivedAt: null, memberships: [], parentCompany: PRINCIPAL, ...over };
 }
 
 describe("standingFromRow — la règle de R1 sur la ligne lue", () => {
@@ -58,5 +59,29 @@ describe("standingFromRow — la règle de R1 sur la ligne lue", () => {
   it("le nom du principal retombe sur la raison sociale sans enseigne", () => {
     const parent = { ...PRINCIPAL, enseigne: "" };
     expect(standingFromRow(row({ parentCompany: parent }))?.via?.name).toBe("HIP SAS");
+  });
+
+  describe("une société fermée — supprimée ou résiliée — n'ouvre rien", () => {
+    const owner = [{ role: "owner", acceptedAt: new Date(0) }] as const;
+
+    it("🔴 supprimée : ni la membership propre, ni l'héritage", () => {
+      expect(standingFromRow(row({ archivedAt: new Date(0), memberships: owner }))).toBeNull();
+      expect(standingFromRow(row({ archivedAt: new Date(0) }))).toBeNull();
+    });
+
+    it("🔴 résiliée : la membership propre ne l'ouvre plus", () => {
+      expect(standingFromRow(row({ status: "terminated", memberships: owner }))).toBeNull();
+    });
+
+    it("principal supprimé : plus rien par héritage, la membership propre du site reste", () => {
+      const parent = { ...PRINCIPAL, archivedAt: new Date(0) };
+      expect(standingFromRow(row({ parentCompany: parent }))).toBeNull();
+      expect(standingFromRow(row({ parentCompany: parent, memberships: owner }))).toEqual({
+        companyStatus: "active",
+        own: "owner",
+        ownAccepted: true,
+        via: null,
+      });
+    });
   });
 });

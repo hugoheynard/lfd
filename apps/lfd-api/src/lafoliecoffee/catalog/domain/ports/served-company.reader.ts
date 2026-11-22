@@ -6,6 +6,8 @@ import type { MenuReading } from "../../../shared/company-standing/domain/sub-ac
 export interface ServedCompany {
   /** Le statut de la société, relu à chaque requête — jamais pris d'un jeton. */
   readonly status: StandingCompanyStatus;
+  /** Posé quand le compte est supprimé : la société est alors fermée, quel que soit son statut. */
+  readonly archivedAt: Date | null;
   readonly holders: ReservationHolders;
   /**
    * Le principal actuel, actif ou non — `holders` ne le nomme que s'il est

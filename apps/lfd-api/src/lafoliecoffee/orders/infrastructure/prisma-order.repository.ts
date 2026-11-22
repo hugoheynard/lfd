@@ -23,6 +23,7 @@ import { formatOrderNumber } from "../domain/services/order-number.js";
 import type { FirstHandoverStatus } from "../domain/services/shipment-settlement.js";
 import { issuesHandoverToken, type HandoverVia } from "../domain/services/handover.js";
 import { freeDeliveryColumnsOf } from "./free-delivery.columns.js";
+import { lockOpenCompanies } from "./order-companies.share-lock.js";
 import { toFulfillmentJson } from "./order-json.js";
 import { identifiedLinesOf, orderDiscountsWriteOf, writeCoverage } from "./order-discounts.data.js";
 import { ttcTermsColumnsOf } from "./order-money-columns.js";
@@ -108,6 +109,9 @@ export class PrismaOrderRepository extends OrderRepository {
       this.ids.next(),
     );
     return this.prisma.$transaction(async (tx) => {
+      // La société et son principal, ouverts au moment même de l'écriture :
+      // la course avec une suppression ou une résiliation se tranche ici.
+      await lockOpenCompanies(tx, [state.companyId, state.principalCompanyId]);
       const placed = await tx.order.create({
         data: {
           orderNumber,

@@ -960,7 +960,13 @@ describe("CustomerPrincipalResolver", () => {
 
       expect(double.acceptCalls).toEqual([
         {
-          where: { userId: "user_1", acceptedAt: null, invitedAt: { gte: daysBefore(7) } },
+          where: {
+            userId: "user_1",
+            acceptedAt: null,
+            invitedAt: { gte: daysBefore(7) },
+            // Une invitation vers une société fermée ne s'accepte pas.
+            company: { archivedAt: null, status: { not: "terminated" } },
+          },
           data: { acceptedAt: NOW },
         },
       ]);

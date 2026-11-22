@@ -14,7 +14,10 @@ import {
 } from "../../../../catalog/domain/ports/served-company.reader.js";
 import { NoShopShelfCache } from "../../../../catalog/infrastructure/no-shop-shelf-cache.js";
 import { OrderCompanyNotFoundError } from "../../../domain/errors/order-errors.js";
-import { StaffEntryCompanyClosedError } from "../../../domain/errors/staff-entry-company-closed.error.js";
+import {
+  StaffEntryCompanyArchivedError,
+  StaffEntryCompanyClosedError,
+} from "../../../domain/errors/staff-entry-company-closed.error.js";
 import {
   ReadCustomerShelfPricesHandler,
   ReadCustomerShelfPricesQuery,
@@ -22,6 +25,8 @@ import {
 
 const UNKNOWN = "co_unknown";
 const CLOSED = "co_closed";
+/** Une société active, mais supprimée : fermée comme une résiliée. */
+const ARCHIVED = "co_archived";
 
 /** Les sociétés connues de la saisie : une inconnue rend `null`. */
 class GivenCompanies extends ServedCompanyReader {
@@ -36,6 +41,7 @@ class GivenCompanies extends ServedCompanyReader {
         ? null
         : {
             status,
+            archivedAt: companyId === ARCHIVED ? new Date(0) : null,
             holders: { companyId, activePrincipalId: null },
             principalId: null,
             menu: null,
@@ -56,6 +62,7 @@ function rig() {
       [HEAD, "active"],
       [SITE, "active"],
       [CLOSED, "terminated"],
+      [ARCHIVED, "active"],
     ]),
   );
   return { handler: new ReadCustomerShelfPricesHandler(companies, shelf), shelf, computation };
@@ -77,6 +84,15 @@ describe("ReadCustomerShelfPricesHandler — la liste de l'équipe au prix du cl
     await expect(handler.execute(new ReadCustomerShelfPricesQuery(CLOSED))).rejects.toBeInstanceOf(
       StaffEntryCompanyClosedError,
     );
+    expect(computation.catalog.reads).toBe(0);
+  });
+
+  it("refuse une société supprimée, en disant qu'on peut la rendre, sans lire le rayon", async () => {
+    const { handler, computation } = rig();
+
+    const refused = handler.execute(new ReadCustomerShelfPricesQuery(ARCHIVED));
+    await expect(refused).rejects.toBeInstanceOf(StaffEntryCompanyArchivedError);
+    await expect(refused).rejects.toThrow("Rendez-le depuis sa fiche client");
     expect(computation.catalog.reads).toBe(0);
   });
 

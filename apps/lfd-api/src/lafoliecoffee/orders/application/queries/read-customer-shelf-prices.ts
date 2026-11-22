@@ -2,10 +2,13 @@ import type { CustomerShelfPricesView, ShopItemView } from "@lfd/contracts";
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
 import { RecognisedShelf } from "../../../catalog/application/recognised-shelf.service.js";
-import { companyServiceOf } from "../../../catalog/domain/company-service.js";
+import { servedCompanyServiceOf } from "../../../catalog/domain/company-service.js";
 import { ServedCompanyReader } from "../../../catalog/domain/ports/served-company.reader.js";
 import { OrderCompanyNotFoundError } from "../../domain/errors/order-errors.js";
-import { StaffEntryCompanyClosedError } from "../../domain/errors/staff-entry-company-closed.error.js";
+import {
+  StaffEntryCompanyArchivedError,
+  StaffEntryCompanyClosedError,
+} from "../../domain/errors/staff-entry-company-closed.error.js";
 
 /**
  * **Les prix du rayon d'un client, pour la saisie de l'équipe** (plan
@@ -40,16 +43,19 @@ export class ReadCustomerShelfPricesHandler implements IQueryHandler<
 
   /**
    * @throws {OrderCompanyNotFoundError} la société est inconnue.
-   * @throws {StaffEntryCompanyClosedError} la société est terminée.
+   * @throws {StaffEntryCompanyClosedError} la société est résiliée.
+   * @throws {StaffEntryCompanyArchivedError} la société est supprimée.
    */
   async execute({ companyId }: ReadCustomerShelfPricesQuery): Promise<CustomerShelfPricesView> {
     const served = await this.companies.servedOf(companyId);
     if (served === null) {
       throw new OrderCompanyNotFoundError(companyId);
     }
-    const service = companyServiceOf(served.status);
+    const service = servedCompanyServiceOf(served);
     if (service === "closed") {
-      throw new StaffEntryCompanyClosedError(companyId);
+      throw served.archivedAt === null
+        ? new StaffEntryCompanyClosedError(companyId)
+        : new StaffEntryCompanyArchivedError(companyId);
     }
     const view = await this.shelf.read(companyId);
     return { items: view.items.map(shelfPriceOf), audience: service };

@@ -11,6 +11,8 @@ import {
 } from "../domain/company-standing.js";
 import type { StandingRole } from "../domain/standing-role.js";
 import { INHERITING_PARENT_ROLES } from "../domain/effective-role.js";
+import { isCompanyClosed } from "../domain/company-closure.js";
+import { openCompanyWhere } from "./open-company.js";
 import { openingMembership } from "./opening-membership.js";
 
 /** Le seul statut d'un principal qui ouvre ses sites. */
@@ -30,13 +32,18 @@ function heirMembership(userId: string): Prisma.MembershipWhereInput {
 /**
  * **Les sites qu'une personne atteint par héritage**, en condition de requête
  * — la même règle que {@link readCompanyStanding}, pour les lectures en liste
- * (« Mes commandes » du principal, sociétés atteignables). Site non suspendu,
- * principal `active`, membership du principal acceptée `owner`/`admin`.
+ * (« Mes commandes » du principal, sociétés atteignables). Site ouvert et non
+ * suspendu, principal ouvert et `active`, membership du principal acceptée
+ * `owner`/`admin`.
  */
 export function inheritedSiteWhere(userId: string): Prisma.CompanyWhereInput {
   return {
-    status: { not: SUSPENDED },
-    parentCompany: { status: ACTIVE, memberships: { some: heirMembership(userId) } },
+    AND: [openCompanyWhere(), { status: { not: SUSPENDED } }],
+    parentCompany: {
+      AND: [openCompanyWhere()],
+      status: ACTIVE,
+      memberships: { some: heirMembership(userId) },
+    },
   };
 }
 
@@ -69,6 +76,7 @@ export async function readCompanyStanding(
     where: { id: companyId },
     select: {
       status: true,
+      archivedAt: true,
       memberships: {
         where: { userId, ...openingMembership(now) },
         select: { role: true, acceptedAt: true },
@@ -77,6 +85,7 @@ export async function readCompanyStanding(
         select: {
           id: true,
           status: true,
+          archivedAt: true,
           enseigne: true,
           raisonSociale: true,
           memberships: { where: heirMembership(userId), select: { role: true } },
@@ -90,6 +99,7 @@ export async function readCompanyStanding(
 /** La ligne que {@link readCompanyStanding} lit, réduite à ce que la règle décide. */
 export interface StandingRow {
   readonly status: StandingCompanyStatus;
+  readonly archivedAt: Date | null;
   readonly memberships: readonly {
     readonly role: StandingRole;
     readonly acceptedAt: Date | null;
@@ -97,6 +107,7 @@ export interface StandingRow {
   readonly parentCompany: {
     readonly id: string;
     readonly status: StandingCompanyStatus;
+    readonly archivedAt: Date | null;
     readonly enseigne: string;
     readonly raisonSociale: string;
     /** Déjà filtrées par {@link heirMembership} : acceptées, `owner`/`admin`. */
@@ -106,10 +117,15 @@ export interface StandingRow {
 
 /**
  * La règle sur la ligne lue, pure — éprouvée branche par branche sans base.
- * L'héritage exige un principal `active` et un site non suspendu (R1) ; une
- * membership propre ne dépend ni de l'un ni de l'autre.
+ * Une société fermée (`isCompanyClosed` : supprimée ou résiliée) n'ouvre rien,
+ * ni en propre ni par héritage. L'héritage exige en plus un principal ouvert et
+ * `active`, et un site non suspendu (R1) ; une membership propre ne dépend ni
+ * de l'un ni de l'autre.
  */
 export function standingFromRow(row: StandingRow): CompanyStanding | null {
+  if (isCompanyClosed(row)) {
+    return null;
+  }
   const ownRow = row.memberships[0];
   const own = ownRow?.role ?? null;
   const parent = row.parentCompany;
@@ -121,6 +137,7 @@ export function standingFromRow(row: StandingRow): CompanyStanding | null {
     parentRole !== undefined &&
     INHERITING_PARENT_ROLES.includes(parentRole) &&
     parent.status === ACTIVE &&
+    !isCompanyClosed(parent) &&
     row.status !== SUSPENDED
       ? { companyId: parent.id, name: companyDisplayName(parent), role: parentRole }
       : null;

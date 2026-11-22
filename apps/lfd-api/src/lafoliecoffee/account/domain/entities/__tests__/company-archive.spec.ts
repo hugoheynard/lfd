@@ -1,9 +1,12 @@
 import { Company } from "../company.js";
 import {
+  ArchivedCompanyCannotBeAttachedError,
+  ArchivedPrincipalCannotReceiveSitesError,
   CompanyAlreadyArchivedError,
   CompanyHasOrdersError,
   CompanyNotArchivedError,
   InvalidArchiveReasonError,
+  PrincipalWithSitesCannotBeArchivedError,
   SiteCannotBeArchivedError,
 } from "../../errors/archive-errors.js";
 import { CompanyArchive } from "../../value-objects/company-archive.js";
@@ -13,11 +16,13 @@ import { HierarchyPlace } from "../../value-objects/hierarchy-place.js";
 const AT = new Date("2026-11-22T09:00:00.000Z");
 
 function company(over: {
+  readonly id?: string;
+  readonly hasSubAccounts?: boolean;
   readonly parentCompanyId?: string | null;
   readonly archive?: CompanyArchive | null;
 }): Company {
   return Company.reconstitute({
-    id: "c1",
+    id: over.id ?? "c1",
     raisonSociale: "Ferme du Col SAS",
     enseigne: "Ferme du Col",
     formeJuridique: "SAS",
@@ -34,7 +39,7 @@ function company(over: {
     archive: over.archive ?? null,
     hierarchy: HierarchyPlace.reconstitute({
       parentCompanyId: over.parentCompanyId ?? null,
-      hasSubAccounts: false,
+      hasSubAccounts: over.hasSubAccounts ?? false,
       groupWithoutDelivery: false,
     }),
   });
@@ -88,6 +93,15 @@ describe("Company.archive", () => {
     expect(() => subject.archive(GESTURE)).toThrow(SiteCannotBeArchivedError);
   });
 
+  it("refuse un principal qui a des sites, en disant de les détacher", () => {
+    const subject = company({ hasSubAccounts: true });
+
+    expect(() => subject.archive(GESTURE)).toThrow(
+      new PrincipalWithSitesCannotBeArchivedError("c1").message,
+    );
+    expect(subject.archiveRecord).toBeNull();
+  });
+
   it("refuse un compte déjà supprimé : le premier motif reste", () => {
     const first = CompanyArchive.reconstitute(AT, "staff_0", null, "Créé par erreur");
     const subject = company({ archive: first });
@@ -104,6 +118,36 @@ describe("Company.archive", () => {
     expect(() => company({}).archive({ ...GESTURE, reason: "x".repeat(501) })).toThrow(
       InvalidArchiveReasonError,
     );
+  });
+});
+
+describe("Company.attachTo — un compte supprimé hors de toute hiérarchie", () => {
+  const archived = CompanyArchive.reconstitute(AT, "staff_0", null, "Doublon");
+
+  it("refuse de rattacher un compte supprimé comme site", () => {
+    const site = company({ archive: archived });
+
+    expect(() => site.attachTo(company({ id: "principal" }))).toThrow(
+      ArchivedCompanyCannotBeAttachedError,
+    );
+    expect(site.parentCompanyId).toBeNull();
+  });
+
+  it("refuse de rattacher un site à une fiche principale supprimée", () => {
+    const site = company({});
+
+    expect(() => site.attachTo(company({ id: "principal", archive: archived }))).toThrow(
+      ArchivedPrincipalCannotReceiveSitesError,
+    );
+    expect(site.parentCompanyId).toBeNull();
+  });
+
+  it("rattache un compte rendu", () => {
+    const site = company({});
+
+    site.attachTo(company({ id: "principal" }));
+
+    expect(site.parentCompanyId).toBe("principal");
   });
 });
 

@@ -9,7 +9,7 @@ import {
   type ProCatalogShow,
   type StaffCatalogViewer,
 } from "../domain/catalog-viewer.js";
-import { companyServiceOf } from "../domain/company-service.js";
+import { servedCompanyServiceOf } from "../domain/company-service.js";
 import { CompanyClosedOrderRefusedError } from "../domain/errors/company-closed-order-refused.error.js";
 import type { ShopAudience } from "../domain/ports/catalog.reader.js";
 import { ServedCompanyReader, type ServedCompany } from "../domain/ports/served-company.reader.js";
@@ -18,7 +18,7 @@ import { ServedCompanyReader, type ServedCompany } from "../domain/ports/served-
  * **Le lecteur du catalogue d'une société servie** — la seule fabrique d'un
  * lecteur `pro` reconnu (`plan-articles-sur-mesure.md`, § 5, § 6), et LE lieu
  * de la décision « pro ou pas » (`plan-pros-en-cours-d-inscription.md`, § 3,
- * lot P0 ; règle : {@link companyServiceOf}).
+ * lot P0 ; règle : {@link servedCompanyServiceOf}).
  *
  * La société vient de l'appelant (`@ActingCompany`, ou la société d'une saisie
  * staff) ; son statut et son principal ACTIF sont relus ici, à chaque
@@ -36,7 +36,7 @@ export class CatalogViewers {
   constructor(private readonly companies: ServedCompanyReader) {}
 
   /**
-   * Ce que la société LIT : une société terminée lit le rayon public.
+   * Ce que la société LIT : une société fermée (résiliée ou supprimée) lit le rayon public.
    * `null` = un visiteur ou l'espace perso : le public.
    */
   async forCompany(
@@ -60,7 +60,7 @@ export class CatalogViewers {
       return { viewer: PUBLIC_VIEWER, principalId: null };
     }
     const viewer =
-      companyServiceOf(served.status) === "pro"
+      servedCompanyServiceOf(served) === "pro"
         ? proViewer(served.holders, show, served.menu)
         : PUBLIC_VIEWER;
     return { viewer, principalId: served.principalId };
@@ -68,16 +68,16 @@ export class CatalogViewers {
 
   /**
    * Ce qui se FACTURE à la société — devis et passation. La même décision,
-   * mais une société terminée est refusée par son nom.
+   * mais une société fermée (résiliée ou supprimée) est refusée par son nom.
    *
-   * @throws {CompanyClosedOrderRefusedError} la société est terminée.
+   * @throws {CompanyClosedOrderRefusedError} la société est fermée.
    */
   async forBilling(companyId: string | null, show: ProCatalogShow): Promise<CatalogViewer> {
     const served = await this.servedOf(companyId);
     if (served === null) {
       return PUBLIC_VIEWER;
     }
-    const service = companyServiceOf(served.status);
+    const service = servedCompanyServiceOf(served);
     if (service === "closed" && companyId !== null) {
       throw new CompanyClosedOrderRefusedError(companyId);
     }
@@ -91,7 +91,7 @@ export class CatalogViewers {
    */
   async forKeptLines(companyId: string | null): Promise<CatalogViewer> {
     const served = await this.servedOf(companyId);
-    return served === null || companyServiceOf(served.status) !== "pro"
+    return served === null || servedCompanyServiceOf(served) !== "pro"
       ? PUBLIC_VIEWER
       : keptLinesViewer(served.holders);
   }

@@ -125,6 +125,7 @@
   "test/company-activation.e2e-spec.ts": 3537,
   "test/company-archive.e2e-spec.ts": 7978,
   "test/company-bank-account.e2e-spec.ts": 8352,
+  "test/company-closed-wall.e2e-spec.ts": 9900,
   "test/company-naf-race.e2e-spec.ts": 2849,
   "test/company-openers-backfill.e2e-spec.ts": 5658,
   "test/company-order-summary.e2e-spec.ts": 8474,

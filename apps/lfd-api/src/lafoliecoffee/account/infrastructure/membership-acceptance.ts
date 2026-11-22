@@ -4,6 +4,7 @@ import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { BackgroundWork } from "../../../platform/events/background-work.js";
 import { DomainEventPublisher } from "../../../platform/events/domain-event-publisher.js";
+import { openCompanyWhere } from "../../shared/company-standing/infrastructure/open-company.js";
 import { oldestLiveInvitation } from "../../../platform/shared/invitation/invitation-expiry.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { StaffNotifier } from "../../../staff/notifications/domain/ports/staff-notifier.js";
@@ -48,7 +49,14 @@ export class MembershipAcceptance {
    */
   async acceptLive(userId: string, now: Date): Promise<number> {
     const { count } = await this.prisma.membership.updateMany({
-      where: { userId, acceptedAt: null, invitedAt: { gte: oldestLiveInvitation(now) } },
+      // Une invitation vers une société fermée (supprimée ou résiliée) ne
+      // s'accepte pas : elle reste en attente, et rouvrir la société la rend.
+      where: {
+        userId,
+        acceptedAt: null,
+        invitedAt: { gte: oldestLiveInvitation(now) },
+        company: openCompanyWhere(),
+      },
       data: { acceptedAt: now },
     });
     return count;

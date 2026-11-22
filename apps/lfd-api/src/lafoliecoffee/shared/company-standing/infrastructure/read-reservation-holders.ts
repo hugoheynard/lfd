@@ -110,6 +110,8 @@ export function reservationHoldersOf(
 /** Une société servie : son statut et ses porteurs de réservation, lus ensemble. */
 export interface ServedCompanyRow {
   readonly status: StandingCompanyStatus;
+  /** Posé quand le compte est supprimé (`isCompanyClosed`). */
+  readonly archivedAt: Date | null;
   readonly holders: ReservationHolders;
   /**
    * Le principal ACTUEL, quel que soit son statut — `holders` ne le garde que
@@ -140,6 +142,7 @@ export async function readServedCompany(
     where: { id: companyId },
     select: {
       status: true,
+      archivedAt: true,
       parentCompany: PRINCIPAL_SELECT,
       subAccountMenu: MENU_SELECT,
     },
@@ -150,6 +153,7 @@ export async function readServedCompany(
   const holders = reservationHoldersOf(companyId, company.parentCompany);
   return {
     status: company.status,
+    archivedAt: company.archivedAt,
     holders,
     principalId: company.parentCompany?.id ?? null,
     menu: menuReadingOf(

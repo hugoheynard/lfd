@@ -3,6 +3,7 @@ import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { Clock } from "../../../platform/time/clock.js";
+import { openCompanyWhere } from "../../shared/company-standing/infrastructure/open-company.js";
 import { openingMembership } from "../../shared/company-standing/infrastructure/opening-membership.js";
 import { readReachableSites } from "../../shared/company-standing/infrastructure/read-company-standing.js";
 import {
@@ -82,11 +83,13 @@ export class PrismaAccountReader extends AccountReader {
 
   /**
    * Seules les sociétés que le rattachement OUVRE : une invitation expirée ne
-   * liste pas sa société (§8.1 bis, 2026-10-10). Ordre : ancienneté.
+   * liste pas sa société (§8.1 bis, 2026-10-10), ni une société fermée —
+   * supprimée ou résiliée (`openCompanyWhere`), comme le principal. Ordre :
+   * ancienneté.
    */
   private async readCompanies(userId: string, now: Date): Promise<CompanyView[]> {
     const rows = await this.prisma.membership.findMany({
-      where: { AND: [{ userId }, openingMembership(now)] },
+      where: { AND: [{ userId }, openingMembership(now), { company: openCompanyWhere() }] },
       orderBy: { createdAt: "asc" },
       select: { role: true, company: { select: COMPANY_VIEW_SELECT } },
     });

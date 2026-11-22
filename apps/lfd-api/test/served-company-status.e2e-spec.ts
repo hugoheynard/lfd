@@ -70,7 +70,6 @@ const SKU = "VIE-001-1";
 const NEGOTIATED_MILLICENTS = 150_000;
 /** L'étiquette publique de VIE-001-1 (2,64 € TTC) mise hors taxe à 5,5 %. */
 const PUBLIC_MILLICENTS = 250_237;
-const CLOSED_CODE = "catalog.company_closed";
 const TUESDAY = 2;
 
 let companyId = "";
@@ -269,15 +268,23 @@ describe("société suspendue — pro, carte seule", () => {
   });
 });
 
-describe("société terminée — refus nommé", () => {
+/**
+ * Une terminée est FERMÉE (Hugo, 2026-11-17, Q3 de
+ * `plan-archiver-un-compte-jamais-servi.md`) : elle sort de l'espace de ses
+ * membres. Son membre ne la porte donc plus — il est servi comme un
+ * particulier. Le refus nommé (`catalog.company_closed`) reste celui du chemin
+ * qui facture une société lue fermée : `catalog-viewers.spec.ts`.
+ */
+describe("société terminée — fermée", () => {
   /** Régression : une terminée commandait encore au prix pro. */
-  it("refuse le devis et la passation au nom de la société", async () => {
+  it("ni devis ni commande au nom de la société, ni au prix pro", async () => {
     await setStatus(CompanyStatus.terminated);
 
-    const quoted = await quoteMine().expect(409);
-    expect(JSON.stringify(quoted.body)).toContain(CLOSED_CODE);
-    const placed = await placeMine().expect(409);
-    expect(JSON.stringify(placed.body)).toContain("Ce compte est clos. Contactez-nous.");
+    const quoted = jsonBody<ShopQuoteView>(await quoteMine().expect(200));
+    expect(quoted.lines[0]?.unitPriceMillicents).toBe(PUBLIC_MILLICENTS);
+    const placed = await placeMine().expect(201);
+    expect(await placedLinePrice(placed)).toBe(PUBLIC_MILLICENTS);
+    expect(await ctx.prisma.order.count({ where: { companyId } })).toBe(0);
   });
 
   it("laisse la même personne commander en particulier, au prix public", async () => {

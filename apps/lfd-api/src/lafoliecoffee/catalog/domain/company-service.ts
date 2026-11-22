@@ -1,3 +1,7 @@
+import {
+  isCompanyClosed,
+  type CompanyClosureFacts,
+} from "../../shared/company-standing/domain/company-closure.js";
 import type { StandingCompanyStatus } from "../../shared/company-standing/domain/company-standing.js";
 
 /**
@@ -37,4 +41,14 @@ export function companyServiceOf(status: StandingCompanyStatus | null): CompanyS
     case null:
       return "public";
   }
+}
+
+/**
+ * **Comment une société LUE est servie** — {@link companyServiceOf}, plus la
+ * suppression : une société fermée (`isCompanyClosed` : supprimée ou
+ * résiliée) est `closed`, quel que soit son statut. C'est la forme que lisent
+ * le catalogue et la saisie de l'équipe, qui relisent la société entière.
+ */
+export function servedCompanyServiceOf(company: CompanyClosureFacts): CompanyService {
+  return isCompanyClosed(company) ? "closed" : companyServiceOf(company.status);
 }

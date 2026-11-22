@@ -17,6 +17,8 @@ export class InMemoryServedCompanies extends ServedCompanyReader {
     private readonly inactivePrincipals: ReadonlyMap<string, string> = new Map(),
     /** La carte qui COMPTE, par société. */
     private readonly menus: ReadonlyMap<string, MenuReading> = new Map(),
+    /** Les sociétés supprimées (archivées), et l'instant de leur suppression. */
+    private readonly archived: ReadonlyMap<string, Date> = new Map(),
   ) {
     super();
   }
@@ -26,6 +28,7 @@ export class InMemoryServedCompanies extends ServedCompanyReader {
     const activePrincipalId = this.activePrincipals.get(companyId) ?? null;
     return Promise.resolve({
       status: this.statuses.get(companyId) ?? "active",
+      archivedAt: this.archived.get(companyId) ?? null,
       holders: { companyId, activePrincipalId },
       principalId: activePrincipalId ?? this.inactivePrincipals.get(companyId) ?? null,
       menu: this.menus.get(companyId) ?? null,

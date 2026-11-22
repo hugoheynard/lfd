@@ -7,11 +7,14 @@ import { CompanyNotFoundError } from "../../../domain/errors/account-errors.js";
 import {
   CompanyHasOrdersError,
   CompanyNotArchivedError,
+  PrincipalWithSitesCannotBeArchivedError,
 } from "../../../domain/errors/archive-errors.js";
+import { AccountHierarchyLock } from "../../../domain/ports/account-hierarchy.lock.js";
 import { CompanyRepository } from "../../../domain/ports/company.repository.js";
 import { CompanyRowLock } from "../../../domain/ports/company-row.lock.js";
 import { StaffDirectory, type StaffIdentity } from "../../../domain/ports/staff-directory.js";
 import { CompanyArchive } from "../../../domain/value-objects/company-archive.js";
+import { HierarchyPlace } from "../../../domain/value-objects/hierarchy-place.js";
 import { ArchiveCompanyCommand } from "../archive-company.command.js";
 import { ArchiveCompanyHandler } from "../archive-company.handler.js";
 import { UnarchiveCompanyCommand } from "../unarchive-company.command.js";
@@ -21,7 +24,7 @@ import { UnarchiveCompanyHandler } from "../unarchive-company.handler.js";
 const NOW = new Date("2026-11-22T09:00:00.000Z");
 const ENSEIGNE = "Ferme du Col";
 
-function company(archive: CompanyArchive | null = null): Company {
+function company(archive: CompanyArchive | null = null, hasSubAccounts = false): Company {
   return Company.reconstitute({
     id: "c1",
     raisonSociale: "Ferme du Col SAS",
@@ -38,6 +41,11 @@ function company(archive: CompanyArchive | null = null): Company {
     suspensionCause: null,
     nafCode: "",
     archive,
+    hierarchy: HierarchyPlace.reconstitute({
+      parentCompanyId: null,
+      hasSubAccounts,
+      groupWithoutDelivery: false,
+    }),
   });
 }
 
@@ -88,6 +96,16 @@ class RecordingLock extends CompanyRowLock {
   }
 }
 
+class RecordingHierarchy extends AccountHierarchyLock {
+  constructor(private readonly calls: Calls) {
+    super();
+  }
+  acquire(): Promise<void> {
+    this.calls.push("hierarchy");
+    return Promise.resolve();
+  }
+}
+
 class FixedOrders extends CompanyHasOrdersReader {
   constructor(
     private readonly answer: boolean,
@@ -117,6 +135,7 @@ function archiveHandler(input: {
   const events = new RecordingPublisher();
   const handler = new ArchiveCompanyHandler(
     companies,
+    new RecordingHierarchy(calls),
     new RecordingLock(input.exists ?? true, calls),
     new FixedOrders(input.hasOrders ?? false, calls),
     new KnownStaff(),
@@ -128,12 +147,12 @@ function archiveHandler(input: {
 }
 
 describe("ArchiveCompanyHandler", () => {
-  it("verrouille, lit les commandes, supprime et inscrit le fait avec le motif", async () => {
+  it("verrouille la hiérarchie puis la ligne, lit les commandes, supprime et inscrit le fait avec le motif", async () => {
     const { handler, companies, events, calls } = archiveHandler({ stored: company() });
 
     await handler.execute(new ArchiveCompanyCommand("c1", " Doublon ", "staff_1"));
 
-    expect(calls).toEqual(["lock", "load", "hasOrders", "save"]);
+    expect(calls).toEqual(["hierarchy", "lock", "load", "hasOrders", "save"]);
     expect(companies.saved?.toPersistence().archive).toMatchObject({
       archivedAt: NOW,
       byStaffId: "staff_1",
@@ -166,7 +185,19 @@ describe("ArchiveCompanyHandler", () => {
     await expect(
       handler.execute(new ArchiveCompanyCommand("ghost", "Doublon", "staff_1")),
     ).rejects.toBeInstanceOf(CompanyNotFoundError);
-    expect(calls).toEqual(["lock"]);
+    expect(calls).toEqual(["hierarchy", "lock"]);
+  });
+
+  it("refuse un principal qui a des sites rattachés, en disant de les détacher", async () => {
+    const { handler, companies, events } = archiveHandler({ stored: company(null, true) });
+
+    const refused = handler.execute(new ArchiveCompanyCommand("c1", "Doublon", "staff_1"));
+    await expect(refused).rejects.toBeInstanceOf(PrincipalWithSitesCannotBeArchivedError);
+    await expect(refused).rejects.toThrow(
+      "Ce compte a des sites rattachés : détachez-les d'abord.",
+    );
+    expect(companies.saved).toBeNull();
+    expect(events.factTypes()).toEqual([]);
   });
 });
 

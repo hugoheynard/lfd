@@ -246,3 +246,8 @@ Ce qui suit **prime** sur les §§ 2 à 4.
   propriétaire des commandes.
 - Le reste tient : le mur (§ 3.3, § 6, § 7 Q3 — résiliés fermés aussi), le
   verrou de la passation, les vues, Q1 (un site ne se supprime pas).
+- **Un principal qui a des sites rattachés ne se supprime pas** : on détache
+  d'abord ses sites (le pendant de Q1). Refus en clair : « Ce compte a des
+  sites rattachés : détachez-les d'abord. » Le geste prend le verrou de la
+  hiérarchie avant celui de la ligne, et un compte supprimé ne se rattache
+  plus ni comme site, ni comme principal.

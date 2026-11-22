@@ -1,4 +1,4 @@
-import { companyServiceOf } from "../company-service.js";
+import { companyServiceOf, servedCompanyServiceOf } from "../company-service.js";
 
 describe("companyServiceOf — la décision « pro ou pas » (plan pros en cours d'inscription, P0)", () => {
   it("sert une société active en pro", () => {
@@ -24,5 +24,19 @@ describe("companyServiceOf — la décision « pro ou pas » (plan pros en cours
 
   it("sert une société inconnue au public", () => {
     expect(companyServiceOf(null)).toBe("public");
+  });
+});
+
+describe("servedCompanyServiceOf — la société lue entière, suppression comprise", () => {
+  it.each(["pending", "active", "suspended"] as const)(
+    "🔴 ferme une société supprimée, même %s",
+    (status) => {
+      expect(servedCompanyServiceOf({ status, archivedAt: new Date(0) })).toBe("closed");
+    },
+  );
+
+  it("non supprimée : la décision du statut", () => {
+    expect(servedCompanyServiceOf({ status: "active", archivedAt: null })).toBe("pro");
+    expect(servedCompanyServiceOf({ status: "terminated", archivedAt: null })).toBe("closed");
   });
 });

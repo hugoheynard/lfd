@@ -15,6 +15,7 @@ import { MembershipAcceptance } from "./membership-acceptance.js";
 import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { InvitationExpiredError } from "../domain/errors/invitation-errors.js";
+import { openCompanyWhere } from "../../shared/company-standing/infrastructure/open-company.js";
 import { readReachableSites } from "../../shared/company-standing/infrastructure/read-company-standing.js";
 import {
   awaitsAcceptance,
@@ -280,7 +281,15 @@ export class CustomerPrincipalResolver extends TrackedPrincipalResolver {
     throw new UnauthorizedException("Compte inconnu.");
   }
 
-  /** La personne d'`auth0Sub`, rattachements inclus, ou `null`. */
+  /**
+   * La personne d'`auth0Sub`, rattachements inclus, ou `null`.
+   *
+   * Seuls les rattachements à une société OUVERTE (`openCompanyWhere` : ni
+   * supprimée, ni résiliée) sont chargés : une société fermée n'est plus dans
+   * l'espace du membre, son invitation n'accueille plus un invité (`canEnter`),
+   * et la personne garde ses autres sociétés. Sans société ouverte, elle voit
+   * l'écran « aucun compte ».
+   */
   private findBySub(subject: string): Promise<ResolvedUser | null> {
     return this.prisma.user.findUnique({
       where: { auth0Sub: subject },
@@ -288,6 +297,7 @@ export class CustomerPrincipalResolver extends TrackedPrincipalResolver {
       // la personne, plutôt que dans une seconde requête que chacun pourrait oublier.
       include: {
         memberships: {
+          where: { company: openCompanyWhere() },
           select: { companyId: true, role: true, invitedAt: true, acceptedAt: true },
         },
       },

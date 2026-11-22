@@ -49,6 +49,23 @@ describe("CatalogViewers — la fabrique unique (plan pros en cours d'inscriptio
   // Une suspendue est servie pro, à son tarif, depuis le 2026-11-03 (Hugo,
   // `plan-suspendue-au-prix-pro.md` § 5) : couverte par le `describe.each` ci-dessus.
 
+  it("🔴 une société supprimée est fermée comme une terminée, même active", async () => {
+    const viewers = new CatalogViewers(
+      new InMemoryServedCompanies(
+        new Map([[COMPANY, "active"]]),
+        new Map(),
+        new Map(),
+        new Map(),
+        new Map([[COMPANY, new Date(0)]]),
+      ),
+    );
+    await expect(viewers.forBilling(COMPANY, "served")).rejects.toThrow(
+      CompanyClosedOrderRefusedError,
+    );
+    expect(await viewers.forCompany(COMPANY)).toBe(PUBLIC_VIEWER);
+    expect(await viewers.forKeptLines(COMPANY)).toBe(PUBLIC_VIEWER);
+  });
+
   /** Régression : une terminée devisait et commandait au prix pro. */
   it("refuse de facturer une terminée, par son nom", async () => {
     const viewers = viewersAt("terminated");

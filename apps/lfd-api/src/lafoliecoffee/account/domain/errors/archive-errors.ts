@@ -49,3 +49,37 @@ export class CompanyNotArchivedError extends BusinessError {
     );
   }
 }
+
+/**
+ * Le compte est le principal de sites rattachés (409) : il ne se supprime pas
+ * tant qu'ils y sont — le pendant d'un site, qui se détache d'abord.
+ * Décidé par Hugo le 2026-11-22.
+ */
+export class PrincipalWithSitesCannotBeArchivedError extends BusinessError {
+  constructor(readonly companyId: string) {
+    super("account.archive.has_sites", "Ce compte a des sites rattachés : détachez-les d'abord.");
+  }
+}
+
+/** Une société supprimée ne se rattache pas comme site (409) : elle se rend d'abord. */
+export class ArchivedCompanyCannotBeAttachedError extends BusinessError {
+  constructor(readonly companyId: string) {
+    super(
+      "account.archive.attach_archived",
+      "Ce compte est supprimé : il ne peut pas devenir le site d'une fiche principale. Rendez-le depuis sa fiche, puis rattachez-le.",
+    );
+  }
+}
+
+/**
+ * Une fiche principale supprimée ne reçoit pas de site (409) : un principal
+ * supprimé n'a pas de sites, par la règle même de la suppression.
+ */
+export class ArchivedPrincipalCannotReceiveSitesError extends BusinessError {
+  constructor(readonly companyId: string) {
+    super(
+      "account.archive.parent_archived",
+      "La fiche principale choisie est supprimée : elle ne peut pas recevoir de site. Rendez-la depuis sa fiche, ou choisissez-en une autre.",
+    );
+  }
+}

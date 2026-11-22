@@ -14,3 +14,17 @@ export class StaffEntryCompanyClosedError extends BusinessError {
     );
   }
 }
+
+/**
+ * La saisie de l'équipe vise une société **supprimée** (archivée) : fermée
+ * comme une résiliée, mais le geste se défait — rendre le compte depuis sa
+ * fiche le rouvre.
+ */
+export class StaffEntryCompanyArchivedError extends BusinessError {
+  constructor(readonly companyId: string) {
+    super(
+      "orders.staff_entry.company_archived",
+      "Ce compte est supprimé : on ne peut plus commander pour lui. Rendez-le depuis sa fiche client si la suppression était une erreur.",
+    );
+  }
+}

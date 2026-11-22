@@ -41,7 +41,10 @@ import { CompanyArchive } from "../value-objects/company-archive.js";
 import {
   CompanyAlreadyArchivedError,
   CompanyHasOrdersError,
+  ArchivedCompanyCannotBeAttachedError,
+  ArchivedPrincipalCannotReceiveSitesError,
   CompanyNotArchivedError,
+  PrincipalWithSitesCannotBeArchivedError,
   SiteCannotBeArchivedError,
 } from "../errors/archive-errors.js";
 import { UnsavedParentCompanyError } from "../errors/hierarchy-errors.js";
@@ -1053,6 +1056,14 @@ export class Company {
     if (parent.identityId === null) {
       throw new UnsavedParentCompanyError();
     }
+    // Un compte supprimé n'entre dans aucune hiérarchie : ni comme site, ni
+    // comme principal (un principal supprimé n'a pas de sites).
+    if (this.archiveValue !== null) {
+      throw new ArchivedCompanyCannotBeAttachedError(this.identityId ?? "");
+    }
+    if (parent.archiveValue !== null) {
+      throw new ArchivedPrincipalCannotReceiveSitesError(parent.identityId);
+    }
     this.hierarchyValue = this.hierarchyValue.attachTo(
       this.identityId,
       parent.identityId,
@@ -1146,13 +1157,16 @@ export class Company {
    * **Supprime** le compte (« Supprimer le compte ») : un archivage, rien n'est
    * effacé et le statut ne bouge pas. Réservé à un compte qui n'a jamais
    * commandé — dans aucun sens : un compte qui a servi se résilie, il ne
-   * disparaît pas des listes. Un site se détache d'abord de son principal.
+   * disparaît pas des listes. Un site se détache d'abord de son principal, et
+   * un principal attend que ses sites soient détachés.
    *
    * `hasOrders` est lu par l'appelant chez le propriétaire des commandes, sous
-   * le verrou de la ligne `companies`.
+   * le verrou de la ligne `companies` ; les sites, sous le verrou de la
+   * hiérarchie (`AccountHierarchyLock`).
    *
    * @throws {CompanyAlreadyArchivedError} déjà supprimé : le premier motif reste.
    * @throws {SiteCannotBeArchivedError} un site rattaché à un principal.
+   * @throws {PrincipalWithSitesCannotBeArchivedError} un principal qui a des sites.
    * @throws {CompanyHasOrdersError} le compte a des commandes.
    * @throws {InvalidArchiveReasonError} motif vide ou trop long.
    */
@@ -1169,6 +1183,9 @@ export class Company {
     }
     if (this.hierarchyValue.parentCompanyId !== null) {
       throw new SiteCannotBeArchivedError(id);
+    }
+    if (this.hierarchyValue.hasSubAccounts) {
+      throw new PrincipalWithSitesCannotBeArchivedError(id);
     }
     if (input.hasOrders) {
       throw new CompanyHasOrdersError(id);
