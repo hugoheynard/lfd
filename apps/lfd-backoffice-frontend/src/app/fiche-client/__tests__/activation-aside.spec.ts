@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import type { CompanyStatus } from '@lfd/contracts';
 
 import { ActivationAside } from '../activation-aside/activation-aside';
-import type { ActivationTrace, SuspensionCause } from '../../comptes-clients/admin-company';
+import type { ActivationTrace } from '../../comptes-clients/admin-company';
 
 interface Rendered {
   readonly host: HTMLElement;
@@ -18,7 +18,6 @@ function render(options: {
   readonly blockedReason?: string;
   readonly remaining?: number;
   readonly activation?: ActivationTrace | null;
-  readonly suspensionCause?: SuspensionCause | null;
   readonly modeMissing?: boolean;
 }): Rendered {
   const fixture = TestBed.createComponent(ActivationAside);
@@ -27,7 +26,6 @@ function render(options: {
   fixture.componentRef.setInput('blockedReason', options.blockedReason ?? '');
   fixture.componentRef.setInput('remaining', options.remaining ?? 0);
   fixture.componentRef.setInput('activation', options.activation ?? null);
-  fixture.componentRef.setInput('suspensionCause', options.suspensionCause ?? null);
   fixture.componentRef.setInput('modeMissing', options.modeMissing ?? false);
   const activations: number[] = [];
   const reactivations: number[] = [];
@@ -122,25 +120,13 @@ describe('rail Activation du compte', () => {
   it('ne dit PAS « actif » d’un compte suspendu, et rend l’accès en un clic', () => {
     // Le rail affichait « Compte actif » à un compte suspendu : il contredisait
     // le badge d'en-tête, et rien n'offrait de rouvrir.
-    const { host, button, reactivations } = render({
-      status: 'suspended',
-      suspensionCause: 'staff',
-    });
+    const { host, button, reactivations } = render({ status: 'suspended' });
 
     expect(host.textContent).toContain('Compte suspendu');
     expect(host.textContent).not.toContain('Compte actif');
     button.click();
 
     expect(reactivations).toHaveLength(1);
-  });
-
-  it("n'offre pas « Réactiver » quand la reprise est AUTOMATIQUE", () => {
-    // Suspension née du retrait de vérification : re-vérifier l'extrait suffit.
-    // Un bouton ici laisserait croire qu'un chemin contourne la vérification.
-    const { host } = render({ status: 'suspended', suspensionCause: 'kbis_revoked' });
-
-    expect(host.textContent).not.toContain('Réactiver');
-    expect(host.textContent).toContain('vérification du KBIS a été retirée');
   });
 
   it('dit la fin de la relation sur un compte résilié', () => {
@@ -156,10 +142,10 @@ describe('rail Activation du compte', () => {
     expect(labels).toEqual(['Mettre en pause', 'Résilier le compte']);
   });
 
-  it('offre « Résilier » sur un compte suspendu, même quand la reprise est automatique', () => {
-    const { host } = render({ status: 'suspended', suspensionCause: 'kbis_revoked' });
+  it('offre « Réactiver » et « Résilier » sur un compte suspendu : une suspension est toujours humaine', () => {
+    const { host } = render({ status: 'suspended' });
     const labels = [...host.querySelectorAll('button')].map((b) => b.textContent?.trim());
-    expect(labels).toEqual(['Résilier le compte']);
+    expect(labels).toEqual(['Réactiver le compte', 'Résilier le compte']);
   });
 
   it("n'offre aucun geste sur un compte résilié", () => {

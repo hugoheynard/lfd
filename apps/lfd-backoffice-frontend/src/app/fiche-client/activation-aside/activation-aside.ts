@@ -6,7 +6,7 @@ import {
   FoldInlineConfirmComponent,
 } from 'fold-ng';
 
-import type { ActivationTrace, SuspensionCause } from '../../comptes-clients/admin-company';
+import type { ActivationTrace } from '../../comptes-clients/admin-company';
 import type { CompanyStatus } from '@lfd/contracts';
 
 /**
@@ -52,8 +52,6 @@ export class ActivationAside {
   readonly remaining = input(0);
   /** Qui a ouvert le compte, et quand — `null` tant qu'il ne l'a jamais été. */
   readonly activation = input<ActivationTrace | null>(null);
-  /** Ce qui a coupé l'accès : c'est ce qui décide du geste à proposer. */
-  readonly suspensionCause = input<SuspensionCause | null>(null);
   /**
    * Le mode de facturation reste à choisir : le choix est projeté
    * (`[activationChoice]`) au-dessus du bouton, qui attend qu'il soit fait.
@@ -71,14 +69,6 @@ export class ActivationAside {
   protected readonly activatable = computed(() => this.canActivate() && !this.modeMissing());
   protected readonly suspended = computed(() => this.status() === 'suspended');
   protected readonly terminated = computed(() => this.status() === 'terminated');
-
-  /**
-   * La suspension se lève-t-elle **d'elle-même** ? Celle qu'a provoquée le
-   * retrait de vérification du KBIS se relève à la re-vérification ; proposer
-   * « Réactiver » ici laisserait croire qu'il existe deux chemins, dont un qui
-   * contournerait la vérification.
-   */
-  protected readonly liftsByItself = computed(() => this.suspensionCause() === 'kbis_revoked');
 
   /**
    * « 3 points à régler » — le décompte fait plus pression qu'une liste. « Pièce »

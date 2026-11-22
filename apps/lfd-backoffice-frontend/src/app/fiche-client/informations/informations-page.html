@@ -348,7 +348,6 @@
             [blockedReason]="fiche.blockedReason()"
             [remaining]="fiche.blockingCount()"
             [activation]="fiche.company()?.activation ?? null"
-            [suspensionCause]="fiche.company()?.suspensionCause ?? null"
             [modeMissing]="activationModeMissing()"
             (activate)="fiche.activate(activationMode())"
             (reactivate)="fiche.reactivate()"
