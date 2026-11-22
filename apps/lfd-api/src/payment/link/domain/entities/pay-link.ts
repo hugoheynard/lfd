@@ -16,6 +16,8 @@ export interface PayLinkSnapshot {
   readonly tokenSealed: string;
   readonly createdAt: Date;
   readonly createdBy: string;
+  /** Le nom de l'auteur, donné par l'appelant ; `null` : système ou inconnu. */
+  readonly createdByLabel: string | null;
   readonly revokedAt: Date | null;
   readonly revokedReason: string | null;
 }
@@ -31,6 +33,7 @@ export interface PayLinkOpening {
   readonly tokenSealed: string;
   readonly at: Date;
   readonly by: string;
+  readonly byLabel: string | null;
 }
 
 /**
@@ -64,6 +67,7 @@ export class PayLink {
         tokenSealed: present("le scellé du jeton", input.tokenSealed),
         createdAt: input.at,
         createdBy: bounded("l'auteur", input.by),
+        createdByLabel: labelOf(input.byLabel),
       },
       null,
       null,
@@ -90,6 +94,24 @@ export class PayLink {
 
   get origin(): string {
     return this.row.origin;
+  }
+
+  get payerLabel(): string {
+    return this.row.payerLabel;
+  }
+
+  get createdAt(): Date {
+    return this.row.createdAt;
+  }
+
+  /** Une fiche du staff, ou `system` pour une émission automatique. */
+  get createdBy(): string {
+    return this.row.createdBy;
+  }
+
+  /** Le nom de l'auteur ; `null` : le système, ou un nom que l'appelant n'avait pas. */
+  get createdByLabel(): string | null {
+    return this.row.createdByLabel;
   }
 
   get tokenSealed(): string {
@@ -124,6 +146,11 @@ function subjectTypeOf(type: string): string {
     throw new InvalidPayLinkError("le type du sujet", "est un mot en minuscules (order, …)");
   }
   return type;
+}
+
+/** Un nom vide vaut l'absence : on ne range pas un blanc pour un nom. */
+function labelOf(label: string | null): string | null {
+  return label === null || label.trim() === "" ? null : bounded("le nom de l'auteur", label);
 }
 
 function present(field: string, value: string): string {

@@ -194,6 +194,38 @@ export interface CustomerRequestCopy {
   readonly footer: string;
 }
 
+/**
+ * **Un paiement est arrivé par un lien.** Le titre et l'objet ont leur forme
+ * « refusé » : le sujet n'a pas voulu de l'argent, le remboursement est demandé.
+ */
+export interface LinkPaymentReceivedCopy {
+  /** Le sous-titre du bandeau d'en-tête, sous l'enseigne — rendu en capitales. */
+  readonly kicker: string;
+  /** `{amount}`, `{payer}`. */
+  readonly subject: string;
+  /** `{amount}`, `{payer}`. */
+  readonly subjectRefused: string;
+  readonly title: string;
+  readonly titleRefused: string;
+  readonly amountLabel: string;
+  readonly channelLabel: string;
+  readonly payerLabel: string;
+  readonly applicationLabel: string;
+  readonly settledLabel: string;
+  readonly linkLabel: string;
+  /** `{author}`, `{day}` : un membre de l'équipe nommé. */
+  readonly linkByName: string;
+  /** `{day}` : un membre de l'équipe dont le nom n'était pas connu. */
+  readonly linkByTeam: string;
+  /** `{day}`. */
+  readonly linkBySystem: string;
+  readonly outcomeLabel: string;
+  readonly outcomePaid: string;
+  readonly outcomeRefused: string;
+  readonly cta: string;
+  readonly footer: string;
+}
+
 /** **L'annonce à l'agence de la vitrine** — l'objet et le message sont saisis au back-office. */
 export interface VitrineNoticeCopy {
   /** Le sous-titre du bandeau d'en-tête, sous l'enseigne — rendu en capitales. */
@@ -212,6 +244,7 @@ export interface TeamMailsCopy {
   readonly "staff.production-dossier": ProductionDossierCopy;
   readonly "staff.support-requested": SupportRequestedCopy;
   readonly "staff.customer-request": CustomerRequestCopy;
+  readonly "staff.link-payment-received": LinkPaymentReceivedCopy;
   readonly "ops.deploy-check": DeployCheckCopy;
   readonly "agency.vitrine-notice": VitrineNoticeCopy;
 }

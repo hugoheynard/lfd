@@ -473,49 +473,60 @@ chaque prestataire remplit :
   qui redirige ; la page de retour ne fera qu'afficher « nous vérifions
   votre paiement » puis relire l'état.
 
-### 2.4 L'avis à la comptabilité, après encaissement
+### 2.4 L'avis à la comptabilité, après encaissement (lot P1b)
 
-Quand un paiement **dont la ligne porte un `pay_link_id`** est encaissé,
-`card-payment` demande l'e-mail « paiement reçu par lien » à l'adresse de
-suivi de l'origin, par `mail.send`, **dans la transaction même qui
-enregistre l'encaissement** — juste après la réponse du sujet (`onPaid`).
+> ✅ **Bâti le 2026-11-22 (lot P1b)**, sur `dev`. Le port
+> `LinkPaymentNotice` (`payment/card/domain/ports/`), implémenté par
+> `LinkPaymentMailNotice` (`payment/link/application/`) ; le modèle
+> `staff.link-payment-received` ; le type de sujet d'e-mail `payment`.
+> Décidé par Hugo au bâti : l'e-mail **nomme l'auteur** du lien, figé dans
+> la colonne nullable `payment.pay_link.created_by_label` (migration
+> `20261122130000_l_auteur_du_lien`) et donné par l'appelant à l'ouverture
+> (`PayLinks.open`, champ `byLabel`) ; `null` pour le système ou une fiche
+> introuvable, et l'e-mail dit alors « créé automatiquement par le système »
+> ou « créé par un membre de l'équipe ».
 
-- **Pas d'abonné, pas d'événement** : `mail.send` écrit la demande dans la
-  boîte d'envoi du bloc `mail`, envoyée après validation et relancée en cas
-  d'échec. C'est déjà une émission durable.
-- **Atomique** : l'encaissement est écrit si et seulement si l'avis est
-  demandé. Un rollback n'envoie rien ; un paiement enregistré a toujours
-  son avis.
-- **Rien à lire hors de la transaction** : montant, compte, client, origin
-  et sujet sont en base. Un appel au prestataire, interdit en transaction,
-  n'est pas nécessaire.
+Un e-mail part à l'équipe **à chaque paiement encaissé par un lien** : la
+comptabilité sait qu'elle a été payée sans aller voir. Relevé de l'existant le
+2026-11-22.
 
-| Ce que dit l'e-mail | D'où il vient                                                                                                                 |
-| ------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| la provenance       | « par lien » : la ligne porte un `pay_link_id` ; la date de création du lien et son auteur (le système ou un membre du staff) |
-| le montant          | la ligne `card_payment.payment` (centimes)                                                                                    |
-| le canal            | le **compte** qui a encaissé et son prestataire (`CARD_ACCOUNTS` : `lfc-stripe` → Stripe ; demain un autre)                   |
-| le client           | `pay_link.payer_label`, figé à l'ouverture                                                                                    |
-| le contexte         | `pay_link.origin`, dit par son libellé (« La Folie Coffee »)                                                                  |
-| ce qui est réglé    | `SubjectSettlement.describe` (libellé et écran), déjà exigé de tout sujet                                                     |
+**Où il part** — la **boîte de l'équipe**, `mailerConfig().staffInbox`
+(variable `MAILER_STAFF_INBOX`, déjà transmise au déploiement de l'API), celle
+où partent déjà la demande d'aide et l'alerte de compte. Pas de table, pas
+d'écran, pas de variable de plus. Sans boîte configurée, rien ne part et le
+bloc le journalise, comme les deux e-mails voisins. Le jour où une deuxième
+application veut sa propre boîte, le registre des origines en porte une, et
+la boîte de l'équipe reste la valeur par défaut.
 
-- **Après l'encaissement, jamais avant** : ni l'ouverture du lien ni la
-  création de l'intention ne demandent d'e-mail. Un
-  paiement **refusé par le sujet** (et donc remboursé) part aussi, avec la
-  mention « refusé, remboursement demandé » : la comptabilité voit l'argent
-  passer dans les deux sens.
-- **L'adresse** est une donnée : un réglage par origin dans
-  `card_payment.link_notice_recipient`, saisi à l'écran par l'admin. Sans
-  adresse, rien ne part et la cloche de la comptabilité le dit.
-- **Le canal du mail** : `card-payment` atteint le bloc `mail` par son
-  canal (`mail.send`, clé d'e-mail tirée du paiement, sans adresse dans la
-  clé — `lint:mail-key-no-pii`). La matrice du CLAUDE.md l'admet en
-  « port uniquement » depuis le 2026-11-22, porte `context-boundaries`
-  comprise : Hugo l'a ouvert parce que l'avis est un besoin de toutes les
-  applications qui encaisseront, pas de chacune.
-- **Agnostique** : le bloc ne sait ni ce qu'est une facture ni ce qu'est
-  La Folie Coffee ; il lit des libellés que l'appelant a posés. Une autre
-  application qui ouvrirait des liens n'aurait qu'à déclarer son origin.
+**Quand** — dans `IntentOutcomeRecorder.paid` (`payment/card/application/`),
+**après** la réponse du sujet et l'écriture du paiement, **dans la même
+transaction**, si la ligne porte un `pay_link_id`. `mail.send` écrit la
+demande dans la boîte d'envoi du bloc `mail` : elle part après validation et
+se relance en cas d'échec. Un paiement déjà enregistré (`markPaid` rend faux,
+un webhook rejoué) n'envoie rien ; la clé de l'e-mail, tirée de l'identifiant
+du paiement et sans adresse (`lint:mail-key-no-pii`), ferme le reste.
+
+**Ce que dit l'e-mail** — modèle `staff.link-payment-received`, en français
+comme les autres e-mails de l'équipe :
+
+| Champ            | D'où il vient                                                                                                                                                                                                                                       |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| le montant       | la ligne `payment.card_payment` (centimes)                                                                                                                                                                                                          |
+| le canal         | le compte qui a encaissé et son prestataire (`CARD_ACCOUNTS` : `lfc-stripe`, Stripe)                                                                                                                                                                |
+| le client        | `pay_link.payer_label`, figé à l'ouverture du lien                                                                                                                                                                                                  |
+| l'application    | le libellé de l'origine au registre (« La Folie Coffee »)                                                                                                                                                                                           |
+| ce qui est réglé | `SubjectSettlement.describe` : libellé, et l'écran du back-office qui l'ouvre                                                                                                                                                                       |
+| la provenance    | le lien : sa date de création, et « créé automatiquement » (auteur `system`) ou « créé par l'équipe » ; le bloc ne lit pas l'annuaire du staff (il n'en a le droit que pour l'autorisation), l'écran du back-office lié par l'e-mail nomme l'auteur |
+| l'issue          | « encaissé », ou « encaissé puis refusé par le sujet, remboursement demandé » quand `onPaid` rend `refused`                                                                                                                                         |
+
+**Agnostique** — le bloc ne sait ni ce qu'est une commande, ni ce qu'est La
+Folie Coffee : il lit des libellés que l'appelant a posés à l'ouverture du
+lien, et le libellé de l'origine au registre. `payment → mail` est admis en
+« port uniquement » (décidé par Hugo le 2026-11-22).
+
+**Hors de P1b** — un reçu envoyé au **client** (une décision de Hugo, à
+prendre) ; un avis pour un paiement qui ne vient pas d'un lien (la commande
+payée au panier garde ses e-mails d'aujourd'hui).
 
 ### 2.5 ⚠️ Le lien n'est pas « carte »
 
@@ -843,7 +854,7 @@ la TVA) est à confirmer par le cabinet avant d'écrire ce sujet.
 | P1  | ✅ `card_payment.pay_link`, `PayLinks`, `LinkableSubject`, le registre des origines, la page publique (API et boutique), les tests                                                                                                                                                                                                          | P0         |
 | V   | ✅ le vocabulaire du schéma (§0.4) : `card_payment` → `payment`, tables de la carte préfixées `card_`                                                                                                                                                                                                                                       | P1         |
 | W   | les abonnés du commerce en `lfc.<contexte>.<geste>` (§0.5), reçus de la boîte d'envoi migrés dans le même déploiement                                                                                                                                                                                                                       | V          |
-| P1b | l'avis à la comptabilité après encaissement (§2.4), l'adresse par origin, le modèle d'e-mail                                                                                                                                                                                                                                                | P1         |
+| P1b | ✅ l'avis à la comptabilité (§2.4) : un e-mail à la boîte de l'équipe pour chaque paiement encaissé par un lien                                                                                                                                                                                                                             | F1         |
 | F1  | ✅ la demande de paiement libre par la porte (§5) : création sans réseau, sujet `free_charge` (devis et règlement), annulation qui révoque et annule l'intention, migration additive de `payment_links`                                                                                                                                     | P1         |
 | I1  | `card_link` : moyen, genre du moyen figé, échéance, statut, factures en retard, spécimen PDF (`specimen-data.ts`, `lint:pdf-specimens`) ; contrats et écrans (back-office : `collection-means-choice`, `paiement-section`, `sales-oversight-filters`, `accounting-values`, `invoice-phrases` ; boutique : `payment-section`, `compte-page`) | I0, §11 b  |
 | I2  | le sujet `invoice` : `onPaid`, `settled_by_card`, `invoice_card_settlement`, le lien à l'émission, l'e-mail                                                                                                                                                                                                                                 | I1, P1     |

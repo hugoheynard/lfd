@@ -5,6 +5,7 @@ import type { CustomerAccessOpenedMailData } from "../../templates/customer-acce
 import type { CustomerRequestMailData } from "../../templates/customer-request-mail.js";
 import type { DeliveryEnRouteMailData } from "../../templates/delivery-en-route-mail.js";
 import type { InvoiceIssuedMailData } from "../../templates/invoice-issued-mail.js";
+import type { LinkPaymentReceivedMailData } from "../../templates/link-payment-received-mail.js";
 import type { MarketingConfirmMailData } from "../../templates/marketing-confirm-mail.js";
 import type { MandateMailScheme } from "../../templates/mandate-to-sign-wording.js";
 import type { OrderCancelledMailData } from "../../templates/order-cancelled-mail.js";
@@ -485,6 +486,11 @@ export interface B2bMails {
   };
   /** Une demande client (« Nous écrire », « Signaler un problème »). Cf. `customer-request-mail.ts`. */
   "staff.customer-request": CustomerRequestMailData;
+  /**
+   * **Un paiement est arrivé par un lien.** Destinataire : la boîte de
+   * l'équipe. Cf. `link-payment-received-mail.ts`.
+   */
+  "staff.link-payment-received": LinkPaymentReceivedMailData;
   /** **Une annonce aux abonnés de la vitrine.** Destinataire : le contact de l'agence. */
   "agency.vitrine-notice": VitrineNoticeMailData;
 }

@@ -13,6 +13,7 @@ import {
   readIntentString,
 } from "../../../../platform/intent/once-per-intent.js";
 import { Clock } from "../../../../platform/time/clock.js";
+import { StaffAuthorDirectory } from "../../../../staff/directory/domain/staff-author-directory.js";
 import { PaymentLink } from "../../domain/entities/payment-link.js";
 import {
   PaymentLinkCompanyNotFoundError,
@@ -61,6 +62,7 @@ export class CreatePaymentLinkHandler implements ICommandHandler<
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
     private readonly intents: OncePerIntent,
+    private readonly authors: StaffAuthorDirectory,
   ) {}
 
   /**
@@ -101,6 +103,11 @@ export class CreatePaymentLinkHandler implements ICommandHandler<
     if (companyName === null) {
       throw new PaymentLinkCompanyNotFoundError(command.companyId);
     }
+    // Le nom de l'auteur, figé sur le lien pour l'avis à l'équipe : `payment`
+    // ne lit pas l'annuaire. Fiche introuvable : `null`, jamais un nom inventé.
+    const byLabel = (await this.authors.identify([command.staffUserId])).nameOf(
+      command.staffUserId,
+    );
     const { paymentLinkMaxCents } = await this.settings.read();
     const terms = PaymentLinkTerms.create(command.amountCents, command.label, paymentLinkMaxCents);
     const link = PaymentLink.create({
@@ -116,6 +123,7 @@ export class CreatePaymentLinkHandler implements ICommandHandler<
         origin: FREE_CHARGE_LINK_ORIGIN,
         payerLabel: companyName,
         by: command.staffUserId,
+        byLabel,
       });
       await this.events.publishTraced(new PaymentLinkCreatedEvent(link, companyName));
       await seal({ id: link.id });

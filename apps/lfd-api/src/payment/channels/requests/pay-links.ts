@@ -11,6 +11,12 @@ export interface PayLinkRequest {
   readonly payerLabel: string;
   /** La fiche staff de l'auteur, ou {@link SYSTEM_PAY_LINK_AUTHOR}. */
   readonly by: string;
+  /**
+   * Le nom de l'auteur tel que l'appelant le lit dans son annuaire, figé sur
+   * le lien — `payment` ne lit pas l'annuaire du staff. `null` : le système,
+   * ou une fiche introuvable ; on n'invente jamais de nom.
+   */
+  readonly byLabel: string | null;
 }
 
 /** Le lien ouvert (ou celui qui vivait déjà). */

@@ -3247,6 +3247,15 @@
       "conservation": "aucune-limite-decidee",
       "purge": null,
       "information": false
+    },
+    {
+      "colonne": "payment.pay_link.created_by_label",
+      "personne": "staff",
+      "categorie": "identite",
+      "finalite": "Nom figé du membre du staff qui a créé un lien de paiement, donné par le commerce à l'ouverture : l'avis à l'équipe d'un paiement reçu par lien le nomme, sans que le bloc payment lise l'annuaire.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
     }
   ],
   "exclusions": [

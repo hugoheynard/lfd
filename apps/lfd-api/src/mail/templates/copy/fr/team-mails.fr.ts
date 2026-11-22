@@ -144,6 +144,28 @@ export const TEAM_MAILS_FR: TeamMailsCopy = {
     footer:
       "Répondre à ce courriel écrit directement à son auteur. La demande est rangée au back-office, sous Commercial › Demandes clients.",
   },
+  "staff.link-payment-received": {
+    kicker: "Paiement par lien",
+    subject: "Paiement reçu par lien — {amount} · {payer}",
+    subjectRefused: "[Remboursement demandé] Paiement reçu par lien — {amount} · {payer}",
+    title: "Un paiement par lien est encaissé",
+    titleRefused: "Un paiement par lien est encaissé, puis refusé",
+    amountLabel: "Montant",
+    channelLabel: "Canal",
+    payerLabel: "Client",
+    applicationLabel: "Application",
+    settledLabel: "Réglé",
+    linkLabel: "Lien",
+    linkByName: "créé par {author} le {day}",
+    linkByTeam: "créé par un membre de l'équipe le {day}",
+    linkBySystem: "créé automatiquement par le système le {day}",
+    outcomeLabel: "Issue",
+    outcomePaid: "Encaissé.",
+    outcomeRefused:
+      "Encaissé, puis refusé : ce qui était réglé n'attendait plus ce paiement, le remboursement est demandé.",
+    cta: "Ouvrir au back-office",
+    footer: "Alerte interne — envoyée à la boîte de l'équipe à chaque paiement reçu par un lien.",
+  },
   "ops.deploy-check": {
     kicker: "Contrôle de déploiement",
     subject: "[LFC] Courrier opérationnel — {revision}",

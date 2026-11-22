@@ -62,6 +62,11 @@ export class InMemoryPayLinks extends PayLinkRepository {
     return Promise.resolve(live.map((link) => PayLink.rehydrate(link.toPersistence())));
   }
 
+  byId(id: string): Promise<PayLink | null> {
+    const found = this.rows.get(id);
+    return Promise.resolve(found === undefined ? null : PayLink.rehydrate(found.toPersistence()));
+  }
+
   byTokenHash(tokenHash: string): Promise<PayLink | null> {
     const found = [...this.rows.values()].find(
       (link) => link.toPersistence().tokenHash === tokenHash,

@@ -24,22 +24,25 @@
 ///   `SET LOCAL payment.purge = 'on'`.
 model PayLink {
   /// ULID posé par le code (`IdGenerator`).
-  id            String    @id
-  subjectType   String    @map("subject_type")
-  subjectId     String    @map("subject_id")
+  id             String    @id
+  subjectType    String    @map("subject_type")
+  subjectId      String    @map("subject_id")
   /// L'application qui a demandé le lien — une valeur du registre des origines.
-  origin        String
+  origin         String
   /// Le nom du payeur tel que l'appelant l'a donné à l'ouverture, figé.
-  payerLabel    String    @map("payer_label")
+  payerLabel     String    @map("payer_label")
   /// HMAC-SHA-256 du jeton, en hexadécimal : la page publique cherche par lui.
-  tokenHash     String    @unique @map("token_hash")
+  tokenHash      String    @unique @map("token_hash")
   /// Le jeton scellé par le coffre de champs : le staff recopie le lien.
-  tokenSealed   String    @map("token_sealed")
-  createdAt     DateTime  @map("created_at") @db.Timestamptz(6)
+  tokenSealed    String    @map("token_sealed")
+  createdAt      DateTime  @map("created_at") @db.Timestamptz(6)
   /// Une fiche staff, ou `system` pour une émission automatique.
-  createdBy     String    @map("created_by")
-  revokedAt     DateTime? @map("revoked_at") @db.Timestamptz(6)
-  revokedReason String?   @map("revoked_reason")
+  createdBy      String    @map("created_by")
+  /// Le nom du membre du staff auteur, donné par l'appelant et figé ; NULL :
+  /// le système, une fiche introuvable, ou un lien d'avant la colonne.
+  createdByLabel String?   @map("created_by_label")
+  revokedAt      DateTime? @map("revoked_at") @db.Timestamptz(6)
+  revokedReason  String?   @map("revoked_reason")
 
   /// Les paiements nés de la page de ce lien.
   payments CardPayment[]

@@ -18,6 +18,7 @@ import {
   TestSubjectSettlement,
   Timeline,
 } from "../../__tests__/card-payment-doubles.js";
+import { RecordingLinkPaymentNotice } from "../../__tests__/recording-link-payment-notice.js";
 import { IntentOutcomeRecorder } from "../../intent-outcome-recorder.js";
 import { ProviderPaymentResolver } from "../../provider-payment-resolver.js";
 import { BlockCardRefunds } from "../../refunds/block-card-refunds.js";
@@ -53,6 +54,7 @@ export function harness(options: { readonly settlementType?: string } = {}) {
   const settlement = new TestSubjectSettlement(timeline, options.settlementType ?? "order");
   const settlements = new RegisteredSubjectSettlements([settlement]);
   const durable = new RecordingDurable(timeline);
+  const notice = new RecordingLinkPaymentNotice(timeline);
   const journal = new RecordingJournal();
   const clock = new FixedClock(NOW);
   const resolver = new ProviderPaymentResolver(
@@ -65,7 +67,7 @@ export function harness(options: { readonly settlementType?: string } = {}) {
   const handler = new RecordProviderEventHandler(
     providers,
     resolver,
-    new IntentOutcomeRecorder(repo, settlements, durable, clock),
+    new IntentOutcomeRecorder(repo, settlements, durable, clock, notice),
     refunds.observation,
     durable,
     journal,
@@ -75,7 +77,17 @@ export function harness(options: { readonly settlementType?: string } = {}) {
     provider.event = event;
     return handler.execute(new RecordProviderEventCommand(account, BODY, "sig"));
   };
-  return { timeline, repo, provider, settlement, durable, journal, store: refunds.store, receive };
+  return {
+    timeline,
+    repo,
+    provider,
+    settlement,
+    durable,
+    notice,
+    journal,
+    store: refunds.store,
+    receive,
+  };
 }
 
 /** Le constat des remboursements, sur les mêmes paiements et la même chronologie. */
@@ -125,9 +137,10 @@ function observationOver(
 }
 
 /** Un paiement de la commande `ord_1`, sur `pi_1`, dans l'état voulu. */
-export function payment(state: CardPaymentState): CardPayment {
+export function payment(state: CardPaymentState, payLinkId?: string): CardPayment {
   return CardPayment.adopt(
     {
+      ...(payLinkId === undefined ? {} : { payLinkId }),
       id: "pay_known",
       subject: PaymentSubject.of("order", "ord_1"),
       account: PaymentAccount.of("lfc-stripe"),

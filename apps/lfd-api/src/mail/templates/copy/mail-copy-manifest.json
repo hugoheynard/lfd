@@ -2655,6 +2655,129 @@
         "fr": "Répondre à ce courriel écrit directement à son auteur. La demande est rangée au back-office, sous Commercial › Demandes clients."
       }
     },
+    "staff.link-payment-received": {
+      "kicker": {
+        "variables": [],
+        "required": [],
+        "fr": "Paiement par lien"
+      },
+      "subject": {
+        "variables": [
+          "amount",
+          "payer"
+        ],
+        "required": [
+          "amount",
+          "payer"
+        ],
+        "fr": "Paiement reçu par lien — {amount} · {payer}"
+      },
+      "subjectRefused": {
+        "variables": [
+          "amount",
+          "payer"
+        ],
+        "required": [
+          "amount",
+          "payer"
+        ],
+        "fr": "[Remboursement demandé] Paiement reçu par lien — {amount} · {payer}"
+      },
+      "title": {
+        "variables": [],
+        "required": [],
+        "fr": "Un paiement par lien est encaissé"
+      },
+      "titleRefused": {
+        "variables": [],
+        "required": [],
+        "fr": "Un paiement par lien est encaissé, puis refusé"
+      },
+      "amountLabel": {
+        "variables": [],
+        "required": [],
+        "fr": "Montant"
+      },
+      "channelLabel": {
+        "variables": [],
+        "required": [],
+        "fr": "Canal"
+      },
+      "payerLabel": {
+        "variables": [],
+        "required": [],
+        "fr": "Client"
+      },
+      "applicationLabel": {
+        "variables": [],
+        "required": [],
+        "fr": "Application"
+      },
+      "settledLabel": {
+        "variables": [],
+        "required": [],
+        "fr": "Réglé"
+      },
+      "linkLabel": {
+        "variables": [],
+        "required": [],
+        "fr": "Lien"
+      },
+      "linkByName": {
+        "variables": [
+          "author",
+          "day"
+        ],
+        "required": [
+          "author",
+          "day"
+        ],
+        "fr": "créé par {author} le {day}"
+      },
+      "linkByTeam": {
+        "variables": [
+          "day"
+        ],
+        "required": [
+          "day"
+        ],
+        "fr": "créé par un membre de l'équipe le {day}"
+      },
+      "linkBySystem": {
+        "variables": [
+          "day"
+        ],
+        "required": [
+          "day"
+        ],
+        "fr": "créé automatiquement par le système le {day}"
+      },
+      "outcomeLabel": {
+        "variables": [],
+        "required": [],
+        "fr": "Issue"
+      },
+      "outcomePaid": {
+        "variables": [],
+        "required": [],
+        "fr": "Encaissé."
+      },
+      "outcomeRefused": {
+        "variables": [],
+        "required": [],
+        "fr": "Encaissé, puis refusé : ce qui était réglé n'attendait plus ce paiement, le remboursement est demandé."
+      },
+      "cta": {
+        "variables": [],
+        "required": [],
+        "fr": "Ouvrir au back-office"
+      },
+      "footer": {
+        "variables": [],
+        "required": [],
+        "fr": "Alerte interne — envoyée à la boîte de l'équipe à chaque paiement reçu par un lien."
+      }
+    },
     "ops.deploy-check": {
       "kicker": {
         "variables": [],

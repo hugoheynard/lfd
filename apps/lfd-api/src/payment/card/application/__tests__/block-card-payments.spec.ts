@@ -23,6 +23,7 @@ import {
   TestSubjectSettlement,
   Timeline,
 } from "./card-payment-doubles.js";
+import { RecordingLinkPaymentNotice } from "./recording-link-payment-notice.js";
 
 /** L'instant de l'horloge doublée — rien ne le compare à l'heure réelle. */
 const NOW = new Date("2030-01-10T09:00:00.000Z");
@@ -46,6 +47,7 @@ function harness() {
       new RegisteredSubjectSettlements([settlement]),
       durable,
       new FixedClock(NOW),
+      new RecordingLinkPaymentNotice(timeline),
     ),
   );
   return { repo, provider, payments, timeline, durable };

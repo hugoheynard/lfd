@@ -68,6 +68,11 @@ export class PrismaPayLinkRepository extends PayLinkRepository {
     return rows.map((row) => PayLink.rehydrate(row));
   }
 
+  async byId(id: string): Promise<PayLink | null> {
+    const row = await this.prisma.payLink.findUnique({ where: { id } });
+    return row === null ? null : PayLink.rehydrate(row);
+  }
+
   async byTokenHash(tokenHash: string): Promise<PayLink | null> {
     const row = await this.prisma.payLink.findUnique({ where: { tokenHash } });
     return row === null ? null : PayLink.rehydrate(row);

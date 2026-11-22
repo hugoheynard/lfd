@@ -232,6 +232,8 @@ export class OrderDefaults extends CardAccountDefaults {
 export class TestSubjectSettlement extends SubjectSettlement {
   readonly subjectType: string;
   paidOutcome: SubjectPaidOutcome = "applied";
+  /** Joué pendant `onPaid` : ce qui croise l'encaissement (un webhook concurrent). */
+  duringPaid: (() => void) | null = null;
   claims = new Map<string, SubjectClaim>();
   references: SubjectReference[] = [];
   cancelled = new Set<string>();
@@ -252,6 +254,7 @@ export class TestSubjectSettlement extends SubjectSettlement {
     role: SubjectPaymentRole,
   ): Promise<SubjectPaidOutcome> {
     this.timeline.note(`channel.onPaid:${subject.id}:${paymentId}:${String(amountCents)}:${role}`);
+    this.duringPaid?.();
     return Promise.resolve(this.paidOutcome);
   }
 

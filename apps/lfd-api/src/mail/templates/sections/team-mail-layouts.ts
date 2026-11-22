@@ -21,6 +21,7 @@ export const TEAM_MAIL_LAYOUTS: Readonly<
     | "staff.production-dossier"
     | "staff.support-requested"
     | "staff.customer-request"
+    | "staff.link-payment-received"
     | "agency.vitrine-notice"
   >
 > = {
@@ -178,6 +179,37 @@ export const TEAM_MAIL_LAYOUTS: Readonly<
           "originLabel",
           "clientLabel",
         ),
+      },
+      { id: "cta", texts: texts("cta") },
+      { id: "footer", texts: texts("footer") },
+    ],
+  },
+  "staff.link-payment-received": {
+    ctaDestination:
+      "l'écran du back-office qui ouvre ce que le paiement règle ; absent sans adresse du back-office",
+    subject: variants({ subject: "Encaissé", subjectRefused: "Encaissé puis refusé" }),
+    header: KICKER,
+    sections: [
+      { id: "title", texts: variants({ title: "Encaissé", titleRefused: "Encaissé puis refusé" }) },
+      {
+        id: "body",
+        texts: [
+          ...texts(
+            "amountLabel",
+            "payerLabel",
+            "settledLabel",
+            "applicationLabel",
+            "channelLabel",
+            "linkLabel",
+          ),
+          ...variants({
+            linkByName: "Lien créé par un membre nommé",
+            linkByTeam: "Lien créé par un membre dont le nom manque",
+            linkBySystem: "Lien créé par le système",
+          }),
+          ...texts("outcomeLabel"),
+          ...variants({ outcomePaid: "Encaissé", outcomeRefused: "Encaissé puis refusé" }),
+        ],
       },
       { id: "cta", texts: texts("cta") },
       { id: "footer", texts: texts("footer") },

@@ -230,6 +230,23 @@ sequenceDiagram
 - **Les ports** (`payment/channels/`) : `PayLinks` (ouvrir, révoquer,
   recopier, `urlsOf` pour une page de liste) pour les blocs métier ;
   `LinkableSubject` (`quote`), que chaque bloc sujet implémente.
+- **L'avis à l'équipe** (`apps/lfd-api/src/payment/link/application/link-payment-mail-notice.ts`) :
+  chaque paiement encaissé par un lien demande l'e-mail
+  `staff.link-payment-received` à la boîte de l'équipe
+  (`mailerConfig().staffInbox`), dans la transaction qui enregistre le
+  paiement, après la réponse du sujet. Il dit le montant, le canal (le compte
+  et son prestataire), le client (`payer_label`), l'application (le libellé
+  de l'origine), ce qui est réglé (`SubjectSettlement.describe`, avec le
+  bouton vers l'écran du back-office), la provenance du lien (« créé par
+  <nom> », « créé par un membre de l'équipe » quand le nom manque, « créé
+  automatiquement par le système »), et l'issue (encaissé, ou encaissé puis
+  refusé par le sujet, remboursement demandé). Le nom de l'auteur est figé
+  sur le lien (`pay_link.created_by_label`), donné par l'appelant à
+  l'ouverture : le bloc ne lit pas l'annuaire du staff. La clé
+  (`mail:payment.link_paid:<paiement>`) et l'encaissement rejoué qui ne
+  repasse pas `paid` empêchent un second avis. Sans boîte configurée, rien ne
+  part et un avertissement le journalise. Un paiement de la boutique, sans
+  lien, n'envoie pas cet avis.
 - **Le registre des origines** (`platform/config/pay-link-origins.ts`) : une
   origine par application, avec sa racine publique ; `lafoliecoffee` prend
   `CLIENT_BASE_URL`.

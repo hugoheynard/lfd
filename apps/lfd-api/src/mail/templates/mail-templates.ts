@@ -17,6 +17,7 @@ import { renderCollectionNoticeMail } from "./collection-notice-mail.js";
 import { renderCustomerRequestMail } from "./customer-request-mail.js";
 import { renderCustomerAccessOpenedMail } from "./customer-access-opened-mail.js";
 import { renderInvoiceIssuedMail } from "./invoice-issued-mail.js";
+import { renderLinkPaymentReceivedMail } from "./link-payment-received-mail.js";
 import { renderMarketingConfirmMail } from "./marketing-confirm-mail.js";
 import { renderOrderCancelledMail } from "./order-cancelled-mail.js";
 import { orderPlacedRouteRows } from "./order-placed-route-rows.js";
@@ -695,6 +696,8 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
     "agency.vitrine-notice": (data) => renderVitrineNoticeMail(data, staffMail),
     "staff.customer-request": (data) =>
       renderCustomerRequestMail(data, staffMail, brand.backOfficeUrl),
+    "staff.link-payment-received": (data) =>
+      renderLinkPaymentReceivedMail(data, renderLayoutWithLogo, brand.backOfficeUrl),
     "staff.password-reset": (data) => {
       const copy = local()["staff.password-reset"];
       return {

@@ -133,6 +133,28 @@ export const TEAM_MAILS_EN: TeamMailsCopy = {
     footer:
       "Replying to this email writes directly to its author. The request is filed in the back office, under Sales › Customer requests.",
   },
+  "staff.link-payment-received": {
+    kicker: "Payment by link",
+    subject: "Payment received by link — {amount} · {payer}",
+    subjectRefused: "[Refund requested] Payment received by link — {amount} · {payer}",
+    title: "A payment by link has been collected",
+    titleRefused: "A payment by link has been collected, then refused",
+    amountLabel: "Amount",
+    channelLabel: "Channel",
+    payerLabel: "Customer",
+    applicationLabel: "Application",
+    settledLabel: "Settles",
+    linkLabel: "Link",
+    linkByName: "created by {author} on {day}",
+    linkByTeam: "created by a team member on {day}",
+    linkBySystem: "created automatically by the system on {day}",
+    outcomeLabel: "Outcome",
+    outcomePaid: "Collected.",
+    outcomeRefused:
+      "Collected, then refused: what it settled no longer expected this payment, the refund is requested.",
+    cta: "Open in the back office",
+    footer: "Internal alert — sent to the team inbox for each payment received by a link.",
+  },
   "ops.deploy-check": {
     kicker: "Deployment check",
     subject: "[LFC] Mail operational — {revision}",

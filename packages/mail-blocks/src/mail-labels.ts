@@ -195,6 +195,11 @@ const MAIL_LABELS: Readonly<Record<string, MailLabel>> = {
     recipient: "La boîte de l’équipe",
     moment: "quand un client écrit ou signale un problème",
   },
+  "staff.link-payment-received": {
+    title: "Paiement reçu par lien",
+    recipient: "La boîte de l’équipe",
+    moment: "à chaque paiement encaissé par un lien de paiement",
+  },
   "ops.deploy-check": {
     title: "Contrôle de mise en service",
     recipient: "L’admin de secours",

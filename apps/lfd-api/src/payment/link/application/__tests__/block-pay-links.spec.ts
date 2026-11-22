@@ -24,6 +24,7 @@ const REQUEST = {
   origin: "lafoliecoffee",
   payerLabel: "Café des Arts",
   by: SYSTEM_PAY_LINK_AUTHOR,
+  byLabel: null,
 };
 
 function scene(origins = new FixedOrigins([LFC_ORIGIN])) {
@@ -131,6 +132,7 @@ describe("BlockPayLinks.urlsOf — la page de liste", () => {
         tokenSealed: "sealed:tok_9",
         at: new Date(0),
         by: SYSTEM_PAY_LINK_AUTHOR,
+        byLabel: null,
       }),
     );
     const urls = await port.urlsOf([SUBJECT, { type: "free_charge", id: "fc_9" }]);

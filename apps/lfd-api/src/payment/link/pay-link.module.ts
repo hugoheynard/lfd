@@ -1,6 +1,8 @@
 import { Global, Module } from "@nestjs/common";
 
 import { PayLinks } from "../channels/requests/pay-links.js";
+import { LinkPaymentNotice } from "../card/domain/ports/link-payment-notice.js";
+import { LinkPaymentMailNotice } from "./application/link-payment-mail-notice.js";
 import { BlockPayLinks } from "./application/block-pay-links.js";
 import { StartPayLinkPaymentHandler } from "./application/commands/start-pay-link-payment.handler.js";
 import { LivePayLinkLookup } from "./application/live-pay-link-lookup.js";
@@ -39,10 +41,12 @@ import { SettlementFirstCardPaymentReader } from "./infrastructure/settlement-fi
     { provide: TokenGenerator, useClass: RandomTokenGenerator },
     { provide: FirstCardPaymentReader, useClass: SettlementFirstCardPaymentReader },
     { provide: PayLinks, useClass: BlockPayLinks },
+    // L'avis à l'équipe que l'encaissement (`payment/card/`) déclare (§2.4).
+    { provide: LinkPaymentNotice, useClass: LinkPaymentMailNotice },
     LivePayLinkLookup,
     ViewPayLinkHandler,
     StartPayLinkPaymentHandler,
   ],
-  exports: [PayLinks],
+  exports: [PayLinks, LinkPaymentNotice],
 })
 export class PayLinkModule {}

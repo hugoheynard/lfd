@@ -23,6 +23,10 @@ export const MAIL_SUBJECT_TYPES = [
   // ajouté le 2026-11-08 (lot E5) : l'annonce a un objet, ce n'est ni un
   // compte ni une société.
   "vitrine_subscriber",
+  // Le paiement du bloc `payment` dont l'équipe est avisée
+  // (`staff.link-payment-received`) : le bloc ne connaît pas le sujet qu'il
+  // règle, il nomme son propre objet.
+  "payment",
 ] as const;
 
 export type MailSubjectType = (typeof MAIL_SUBJECT_TYPES)[number];

@@ -24,6 +24,7 @@ export const PEOPLE_VALUE_CARDS: Pick<
   | "method"
   | "order"
   | "orders"
+  | "payer"
   | "purpose"
   | "reason"
   | "reference"
@@ -59,6 +60,15 @@ export const PEOPLE_VALUE_CARDS: Pick<
     label: "Auteur de la demande",
     description: "Le nom de la personne qui a envoyé la demande.",
     example: "EXEMPLE — Jeanne Martin",
+    senses: {
+      "staff.customer-request": SAME_SENSE,
+      "staff.link-payment-received": {
+        label: "Auteur du lien",
+        description:
+          "Le nom du membre de l'équipe qui a créé le lien de paiement, tel qu'il était à la création.",
+        example: "EXEMPLE — Jeanne Martin",
+      },
+    },
   },
   by: {
     label: "Auteur de l'arrêt",
@@ -136,6 +146,11 @@ export const PEOPLE_VALUE_CARDS: Pick<
     label: "Nombre de commandes",
     description: "Le nombre de commandes du plan, avec son mot.",
     example: "3 commandes",
+  },
+  payer: {
+    label: "Client",
+    description: "Le nom du client tel que l'équipe l'a donné à l'ouverture du lien de paiement.",
+    example: "EXEMPLE — Hôtel des Trois Ponts",
   },
   purpose: {
     label: "Motif du contact",

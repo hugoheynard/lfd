@@ -139,6 +139,7 @@ async function openLink(subject: CardSubject): Promise<{ linkId: string; token: 
     origin: "lafoliecoffee",
     payerLabel: "Café des Arts",
     by: SYSTEM_PAY_LINK_AUTHOR,
+    byLabel: null,
   });
   const token = opened.url.slice(`${ROOT}/payer/`.length);
   return { linkId: opened.linkId, token };
@@ -160,7 +161,7 @@ describe("ouvrir un lien", () => {
     await expect(
       ctx.app
         .get(PayLinks)
-        .open(freshSubject(), { origin: "ailleurs", payerLabel: "X", by: "system" }),
+        .open(freshSubject(), { origin: "ailleurs", payerLabel: "X", by: "system", byLabel: null }),
     ).rejects.toMatchObject({ code: "pay_link.origin.unknown" });
   });
 });

@@ -62,6 +62,7 @@ export class BlockPayLinks extends PayLinks {
       tokenSealed: this.vault.seal(token),
       at: this.clock.now(),
       by: request.by,
+      byLabel: request.byLabel,
     });
     if (await this.links.addIfAbsent(link)) {
       return { linkId: link.id, url: payLinkUrl(root, token) };

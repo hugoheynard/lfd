@@ -26,6 +26,7 @@ async function scene(subjectType = "free_charge") {
       tokenSealed: "sealed:tok_1",
       at: new Date(0),
       by: "system",
+      byLabel: null,
     }),
   );
   const linkable = new ScriptedLinkable();

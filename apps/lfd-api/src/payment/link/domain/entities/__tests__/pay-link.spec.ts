@@ -15,6 +15,7 @@ function opening(overrides: Partial<PayLinkOpening> = {}): PayLinkOpening {
     tokenSealed: "sealed",
     at: OPENED_AT,
     by: "staff_1",
+    byLabel: "Jeanne Martin",
     ...overrides,
   };
 }

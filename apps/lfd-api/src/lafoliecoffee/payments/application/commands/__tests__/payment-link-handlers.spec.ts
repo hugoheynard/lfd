@@ -6,6 +6,10 @@ import { FixedIdGenerator } from "../../../../../platform/id/fixed-id-generator.
 import { inMemoryIntents } from "../../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import {
+  authorsKnownAs,
+  FixedStaffAuthorDirectory,
+} from "../../../../../staff/directory/domain/__tests__/fixed-staff-author-directory.js";
+import {
   PaymentLinkAboveCapError,
   PaymentLinkCompanyNotFoundError,
   PaymentLinkNotFoundError,
@@ -39,6 +43,9 @@ import {
  */
 const NOW = new Date("2026-01-10T09:00:00.000Z");
 const COMPANIES = new KnownCompanies({ co_1: "Les Halles" });
+const AUTHORS = new FixedStaffAuthorDirectory(
+  authorsKnownAs({ firstName: "Jeanne", lastName: "Martin" }, "staff_1"),
+);
 
 function world() {
   const links = new InMemoryPaymentLinks();
@@ -70,6 +77,7 @@ function world() {
         events,
         uow,
         intents,
+        AUTHORS,
       ),
     cancel: new CancelPaymentLinkHandler(
       links,
@@ -106,7 +114,12 @@ describe("CreatePaymentLinkHandler — la demande de paiement libre par la porte
     expect(w.payLinks.opened).toEqual([
       {
         subject: { type: "free_charge", id: created.id },
-        request: { origin: "lafoliecoffee", payerLabel: "Les Halles", by: "staff_1" },
+        request: {
+          origin: "lafoliecoffee",
+          payerLabel: "Les Halles",
+          by: "staff_1",
+          byLabel: "Jeanne Martin",
+        },
       },
     ]);
     expect(w.links.rows.get(created.id)).toMatchObject({
@@ -119,6 +132,13 @@ describe("CreatePaymentLinkHandler — la demande de paiement libre par la porte
     // Plus aucune page Stripe Checkout pour une création.
     expect(w.checkout.opened).toEqual([]);
     expect(w.events.factTypes()).toEqual(["payment_link.created"]);
+  });
+
+  it("une fiche introuvable donne un auteur sans nom, jamais un nom inventé", async () => {
+    const w = world();
+    await w.create().execute(new CreatePaymentLinkCommand("co_1", 100, "Acompte", "staff_x", "k"));
+
+    expect(w.payLinks.opened.map((opened) => opened.request.byLabel)).toEqual([null]);
   });
 
   it("🔴 refuse au-delà du plafond sans rien écrire ni ouvrir", async () => {

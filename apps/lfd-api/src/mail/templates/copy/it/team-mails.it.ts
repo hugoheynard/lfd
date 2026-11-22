@@ -136,6 +136,29 @@ export const TEAM_MAILS_IT: TeamMailsCopy = {
     footer:
       "Rispondere a questa e-mail scrive direttamente al suo autore. La richiesta è archiviata nel back-office, sotto Commerciale › Richieste clienti.",
   },
+  "staff.link-payment-received": {
+    kicker: "Pagamento tramite link",
+    subject: "Pagamento ricevuto tramite link — {amount} · {payer}",
+    subjectRefused: "[Rimborso richiesto] Pagamento ricevuto tramite link — {amount} · {payer}",
+    title: "Un pagamento tramite link è stato incassato",
+    titleRefused: "Un pagamento tramite link è stato incassato, poi rifiutato",
+    amountLabel: "Importo",
+    channelLabel: "Canale",
+    payerLabel: "Cliente",
+    applicationLabel: "Applicazione",
+    settledLabel: "Salda",
+    linkLabel: "Link",
+    linkByName: "creato da {author} il {day}",
+    linkByTeam: "creato da un membro del team il {day}",
+    linkBySystem: "creato automaticamente dal sistema il {day}",
+    outcomeLabel: "Esito",
+    outcomePaid: "Incassato.",
+    outcomeRefused:
+      "Incassato, poi rifiutato: ciò che saldava non attendeva più questo pagamento, il rimborso è richiesto.",
+    cta: "Aprire nel back-office",
+    footer:
+      "Avviso interno — inviato alla casella del team per ogni pagamento ricevuto tramite link.",
+  },
   "ops.deploy-check": {
     kicker: "Verifica del rilascio",
     subject: "[LFC] Posta operativa — {revision}",

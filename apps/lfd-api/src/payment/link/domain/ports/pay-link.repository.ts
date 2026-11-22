@@ -23,6 +23,9 @@ export abstract class PayLinkRepository {
    */
   abstract liveOfAll(subjects: readonly CardSubject[]): Promise<readonly PayLink[]>;
 
+  /** Le lien de cet identifiant, vivant ou révoqué — sans verrou. */
+  abstract byId(id: string): Promise<PayLink | null>;
+
   /** Le lien qui porte cette empreinte de jeton, vivant ou révoqué. */
   abstract byTokenHash(tokenHash: string): Promise<PayLink | null>;
 

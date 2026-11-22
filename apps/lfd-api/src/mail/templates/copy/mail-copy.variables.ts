@@ -164,6 +164,13 @@ const DECLARED_VARIABLES = {
     title: ["form"],
     photosValue: ["count"],
   },
+  "staff.link-payment-received": {
+    subject: ["amount", "payer"],
+    subjectRefused: ["amount", "payer"],
+    linkByName: ["author", "day"],
+    linkByTeam: ["day"],
+    linkBySystem: ["day"],
+  },
   "customer.order-revised": {
     subject: ["ref"],
     intro: ["ref"],

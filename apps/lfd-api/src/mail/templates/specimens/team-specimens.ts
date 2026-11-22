@@ -24,6 +24,7 @@ export const TEAM_SPECIMENS: Pick<
   | "staff.production-dossier"
   | "staff.support-requested"
   | "staff.customer-request"
+  | "staff.link-payment-received"
   | "agency.vitrine-notice"
 > = {
   "staff.appointment-booked": {
@@ -110,6 +111,21 @@ export const TEAM_SPECIMENS: Pick<
       orderNumber: `${SPECIMEN_MARK}-0001`,
       photoCount: 2,
       message: "Message d'exemple.",
+    }),
+  },
+  "staff.link-payment-received": {
+    family: "team",
+    data: () => ({
+      amountCents: 12_345,
+      channelLabel: "lfc-stripe (Stripe)",
+      payerLabel: COMPANY,
+      applicationLabel: "La Folie Coffee",
+      settledLabel: `Paiement libre — ${SPECIMEN_MARK}`,
+      screenPath: "/comptabilite/liens-de-paiement",
+      linkCreatedOn: "mardi 13 octobre à 10:00",
+      linkCreatedAutomatically: false,
+      linkAuthorName: PERSON,
+      refused: false,
     }),
   },
   "agency.vitrine-notice": {

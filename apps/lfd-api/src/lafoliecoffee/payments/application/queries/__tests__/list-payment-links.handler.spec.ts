@@ -113,7 +113,7 @@ describe("ListPaymentLinksHandler", () => {
   });
 });
 
-const OPENING = { origin: "lafoliecoffee", payerLabel: "Les Halles", by: "staff_1" };
+const OPENING = { origin: "lafoliecoffee", payerLabel: "Les Halles", by: "staff_1", byLabel: null };
 
 function handlerOf(
   entries: readonly PaymentLinkEntry[],

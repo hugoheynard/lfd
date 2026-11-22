@@ -10,6 +10,7 @@ import {
   NoSubjectSettlementError,
 } from "../domain/errors/card-payment-errors.js";
 import { CardPaymentRepository } from "../domain/ports/card-payment.repository.js";
+import { LinkPaymentNotice } from "../domain/ports/link-payment-notice.js";
 import { factSubjectOf, subjectOf } from "./payment-facts.js";
 
 /**
@@ -23,7 +24,10 @@ import { factSubjectOf, subjectOf } from "./payment-facts.js";
  *    ses faits au franchissement ;
  * 3. la ligne **relue sous verrou**, puis écrite — l'issue n'est jamais
  *    tirée d'une lecture d'avant l'appel ;
- * 4. le **fait durable** de `card-payment`, avec l'issue du canal.
+ * 4. le **fait durable** de `card-payment`, avec l'issue du canal ;
+ * 5. pour un paiement venu d'un lien, l'**avis à l'équipe** (§2.4 du plan
+ *    des liens) — seulement quand la ligne vient de passer encaissée : un
+ *    webhook rejoué n'avise pas deux fois.
  *
  * Une transaction, un ordre.
  */
@@ -36,6 +40,7 @@ export class IntentOutcomeRecorder {
     private readonly settlements: SubjectSettlements,
     private readonly durable: DurablePublisher,
     private readonly clock: Clock,
+    private readonly linkNotice: LinkPaymentNotice,
   ) {}
 
   async paid(payment: CardPayment, providerRef: string, eventId: string): Promise<void> {
@@ -59,6 +64,17 @@ export class IntentOutcomeRecorder {
     await this.durable.publish(
       new CardPaymentSettledFact(factSubjectOf(locked, providerRef), outcome, paidAt).durableFact(),
     );
+    if (locked.payLinkId !== null) {
+      await this.linkNotice.paid({
+        paymentId: locked.id,
+        payLinkId: locked.payLinkId,
+        subjectType: locked.subject.type,
+        subjectId: locked.subject.id,
+        account: locked.account.name,
+        amountCents: locked.amountCents,
+        refused: outcome === "refused",
+      });
+    }
   }
 
   async failed(payment: CardPayment, providerRef: string, eventId: string): Promise<void> {

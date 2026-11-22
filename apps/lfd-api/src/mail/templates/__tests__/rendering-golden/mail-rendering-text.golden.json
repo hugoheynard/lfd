@@ -411,5 +411,19 @@
     "unchangedBare": {
       "textSha256": "111c5ef4e3283710f9ad12eb5a01f033825d4456e526a6e9d506525610e92f7d"
     }
+  },
+  "staff.link-payment-received": {
+    "paid": {
+      "textSha256": "7f1442949e02fbc0a09b7fb350f4fc3ef6a4ffa027384760126006aebf6c958a"
+    },
+    "refused": {
+      "textSha256": "b45172408b2e3375d1337c8930f5f1f38c9532368f5131e2185f5dd5f10beb99"
+    },
+    "noScreen": {
+      "textSha256": "6f5dc27b29d01b35f1b55d2395842feea548c4d0b42de968e404faa07c077f83"
+    },
+    "unknownAuthor": {
+      "textSha256": "72a979f346823c7dee372e5eb388b2a26050271be52d63122ba3601a3c1c3961"
+    }
   }
 }

@@ -55,6 +55,11 @@ export const BILLING_VALUE_CARDS: Pick<
           "La différence entre le nouveau total et l'ancien, en plus ou en moins : en HT pour un pro au compte, en TTC sinon.",
         example: "4,50 €",
       },
+      "staff.link-payment-received": {
+        label: "Montant encaissé",
+        description: "Le montant payé par le lien, tel que le prestataire l'a encaissé.",
+        example: "123,45 €",
+      },
       "customer.order-shortfall-refunded": {
         label: "Montant remboursé",
         description:
@@ -90,6 +95,11 @@ export const BILLING_VALUE_CARDS: Pick<
         description:
           "Le jour de service de la commande annulée ; dans les phrases du bon de fidélité, le dernier jour de validité du bon.",
         example: "mardi 8 septembre",
+      },
+      "staff.link-payment-received": {
+        label: "Création du lien",
+        description: "Le jour et l'heure où le lien de paiement a été créé, en heure de Paris.",
+        example: "mardi 13 octobre à 10:00",
       },
       "staff.production-dossier": {
         label: "Jour de production",

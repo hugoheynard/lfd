@@ -39,6 +39,7 @@ async function scene() {
       tokenSealed: `sealed:${TOKEN}`,
       at: new Date(0),
       by: "system",
+      byLabel: null,
     }),
   );
   const timeline = new Timeline();

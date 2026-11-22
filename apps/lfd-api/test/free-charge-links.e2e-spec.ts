@@ -12,7 +12,9 @@
  * - l'annulation révoque le lien (la page rend 404) et son abonné durable
  *   annule l'intention ; une annulation qui croise l'ouverture de la page
  *   est tranchée sous le verrou de la ligne ;
- * - payé après annulation : l'argent est gardé, la cloche sonne une fois.
+ * - payé après annulation : l'argent est gardé, la cloche sonne une fois ;
+ * - le paiement demande UN avis à la boîte de l'équipe, et un webhook rejoué
+ *   n'en demande pas un second.
  *
  * Frontières doublées : la signature du jeton staff, le prestataire de carte,
  * et la racine publique de l'origine.
@@ -24,6 +26,8 @@ import { PayLinkOrigins } from "../src/payment/link/domain/ports/pay-link-origin
 import { CardProviders } from "../src/payment/card/domain/ports/card-providers.js";
 import type { CreateIntentParams } from "../src/payment/card/domain/ports/card-provider-types.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
+import { MAILER } from "../src/mail/templates/mailer.tokens.js";
+import { AppConfig, type MailerConfig } from "../src/platform/config/app-config.js";
 import { CompanyStatus } from "../src/platform/database/client/client.js";
 import { bootstrapE2e, daysAgo, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { cardPaid, E2eCardProvider, E2eCardProviders, recordCardEvent } from "./card-payments.js";
@@ -58,6 +62,29 @@ class RacingProviders extends E2eCardProviders {
 
 const cards = new RacingProviders("pi_fc");
 
+const STAFF_INBOX = "equipe@lfc.test";
+
+interface SentMail {
+  readonly to: string;
+  readonly template: string;
+  readonly data: unknown;
+}
+const sentMails: SentMail[] = [];
+const recordingMailer = {
+  enabled: true,
+  send: (args: SentMail): Promise<{ providerId: null }> => {
+    sentMails.push(args);
+    return Promise.resolve({ providerId: null });
+  },
+};
+
+/** La boîte de l'équipe posée : l'avis d'un paiement par lien y est demandé. */
+class InboxConfig extends AppConfig {
+  override mailerConfig(): MailerConfig {
+    return { ...super.mailerConfig(), staffInbox: STAFF_INBOX };
+  }
+}
+
 let ctx: E2eContext;
 
 beforeAll(async () => {
@@ -65,6 +92,8 @@ beforeAll(async () => {
     overrides: [
       { token: AdminTokenVerifier, value: stubAdminVerifier },
       { token: CardProviders, value: cards },
+      { token: AppConfig, value: new InboxConfig() },
+      { token: MAILER, value: recordingMailer },
       {
         token: PayLinkOrigins,
         value: new FixedOrigins([
@@ -83,6 +112,7 @@ beforeEach(async () => {
   await ctx.reset();
   cards.provider.cancellation = { kind: "cancelled" };
   cards.provider.beforeIntent = null;
+  sentMails.splice(0);
 });
 
 function staff(): ReturnType<E2eContext["asSub"]> {
@@ -210,6 +240,41 @@ describe("payer par la porte", () => {
       .send({ token: tokenOf(created.url) })
       .expect(200);
     expect(view.body).toEqual({ payable: false, reason: "settled" });
+  });
+});
+
+describe("l'avis à l'équipe d'un paiement par lien", () => {
+  it("demande UN e-mail staff.link-payment-received, et pas un second sur un webhook rejoué", async () => {
+    const created = await create();
+    const providerRef = await startPaying(created.url);
+
+    await cardPaid(ctx, providerRef);
+    await cardPaid(ctx, providerRef);
+
+    const payment = await ctx.prisma.cardPayment.findFirstOrThrow({
+      where: { subjectType: "free_charge", subjectId: created.id },
+    });
+    const requests = await ctx.prisma.mailRequest.findMany({
+      where: { template: "staff.link-payment-received" },
+    });
+    expect(requests).toHaveLength(1);
+    expect(requests[0]).toMatchObject({
+      recipient: STAFF_INBOX,
+      idempotencyKey: `mail:payment.link_paid:${payment.id}`,
+    });
+    await ctx.drain();
+    const notices = sentMails.filter((mail) => mail.template === "staff.link-payment-received");
+    expect(notices).toHaveLength(1);
+    expect(notices[0]?.data).toMatchObject({
+      amountCents: 12_000,
+      channelLabel: "lfc-stripe (Stripe)",
+      applicationLabel: "La Folie Coffee",
+      settledLabel: "Paiement libre — Régularisation août",
+      screenPath: "/comptabilite/liens-de-paiement",
+      linkCreatedAutomatically: false,
+      linkAuthorName: "Opérateur E2E",
+      refused: false,
+    });
   });
 });
 

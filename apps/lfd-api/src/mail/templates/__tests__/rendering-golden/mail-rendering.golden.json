@@ -637,5 +637,27 @@
       "htmlSha256": "ebe1ef1c7bfc6defb4a9426713bd3686f7a7bf9cb139bc1a7beadc19f3ef7560",
       "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
     }
+  },
+  "staff.link-payment-received": {
+    "paid": {
+      "subject": "Paiement reçu par lien — 123,45 € · Hôtel des Trois Ponts",
+      "htmlSha256": "3050d4ddc0155c2f9a7ae367a7c264d4af93932f113998451dbe98a969c03207",
+      "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
+    },
+    "refused": {
+      "subject": "[Remboursement demandé] Paiement reçu par lien — 123,45 € · Hôtel des Trois Ponts",
+      "htmlSha256": "6f478167847e54d6ba3ddc05a1ff91ebcd3b762d33019a7780259e8b43de410c",
+      "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
+    },
+    "noScreen": {
+      "subject": "Paiement reçu par lien — 123,45 € · Hôtel des Trois Ponts",
+      "htmlSha256": "4af88413ab2557c24af724645c43f011f608e5ef7046c52f89483b9b44faeadb",
+      "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
+    },
+    "unknownAuthor": {
+      "subject": "Paiement reçu par lien — 123,45 € · Hôtel des Trois Ponts",
+      "htmlSha256": "92018b722b9a003aded89101eafe217f9909da15d16398662f230610deb0dd52",
+      "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
+    }
   }
 }

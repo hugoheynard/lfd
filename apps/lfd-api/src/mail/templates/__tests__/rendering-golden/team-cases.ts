@@ -34,6 +34,19 @@ const REQUEST: B2bMails["staff.customer-request"] = {
   message: "  Le pain était écrasé.  ",
 };
 
+const LINK_PAYMENT: B2bMails["staff.link-payment-received"] = {
+  amountCents: 12_345,
+  channelLabel: "lfc-stripe (Stripe)",
+  payerLabel: "Hôtel des Trois Ponts",
+  applicationLabel: "La Folie Coffee",
+  settledLabel: "Paiement libre — Acompte du traiteur",
+  screenPath: "/comptabilite/liens-de-paiement",
+  linkCreatedOn: "mardi 13 octobre 2026 à 10:00",
+  linkCreatedAutomatically: false,
+  linkAuthorName: "Jeanne Martin",
+  refused: false,
+};
+
 export const TEAM_CASES: Pick<
   MailCases,
   | "staff.appointment-booked"
@@ -46,6 +59,7 @@ export const TEAM_CASES: Pick<
   | "staff.production-dossier"
   | "staff.support-requested"
   | "staff.customer-request"
+  | "staff.link-payment-received"
   | "agency.vitrine-notice"
 > = {
   "staff.appointment-booked": {
@@ -125,6 +139,12 @@ export const TEAM_CASES: Pick<
       clientLabel: "",
       message: "",
     },
+  },
+  "staff.link-payment-received": {
+    paid: LINK_PAYMENT,
+    refused: { ...LINK_PAYMENT, refused: true, linkCreatedAutomatically: true, linkAuthorName: "" },
+    noScreen: { ...LINK_PAYMENT, screenPath: "" },
+    unknownAuthor: { ...LINK_PAYMENT, linkAuthorName: "" },
   },
   "agency.vitrine-notice": {
     only: { subject: "Nouveautés\nde la semaine", message: "Bonjour <b>l'agence</b>" },

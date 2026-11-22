@@ -24,6 +24,7 @@ export const TEAM_CASE_TABLES: Pick<
   | "staff.production-dossier"
   | "staff.support-requested"
   | "staff.customer-request"
+  | "staff.link-payment-received"
   | "agency.vitrine-notice"
 > = {
   "staff.appointment-booked": {
@@ -104,6 +105,18 @@ export const TEAM_CASE_TABLES: Pick<
       })),
     ],
     axes: [{ id: "urgent", values: YES_NO, of: (data) => yesNo(data.urgent) }],
+  },
+  "staff.link-payment-received": {
+    cases: [
+      specimenCase("staff.link-payment-received", "Encaissé, lien de l'équipe"),
+      variantCase(
+        "staff.link-payment-received",
+        "refused",
+        "Encaissé puis refusé, lien automatique",
+        (data) => ({ ...data, refused: true, linkCreatedAutomatically: true, linkAuthorName: "" }),
+      ),
+    ],
+    axes: [{ id: "refused", values: YES_NO, of: (data) => yesNo(data.refused) }],
   },
   "agency.vitrine-notice": specimenOnly("agency.vitrine-notice"),
 };
