@@ -53,8 +53,6 @@ describe("GetComplementPaymentHandler", () => {
         publishableKey: "pk_test",
         token: "pi_complement_secret",
       },
-      clientSecret: "pi_complement_secret",
-      publishableKey: "pk_test",
       expiresAt: live.toPersistence().expiresAt.toISOString(),
     });
     expect(steps.seen).toEqual(["liveOf:ord_1", "retrieve:pay_2"]);

@@ -12,7 +12,6 @@ import { ensureOrderVisible } from "../../domain/services/order-access.js";
 import { awaitsCardPayment } from "../../domain/services/payment-link.js";
 import { OrderCardRetrieval } from "../../domain/ports/order-card-payments.js";
 import { GetOrderPaymentQuery } from "./get-order-payment.query.js";
-import { cardCollectionFields } from "../services/card-collection-fields.js";
 
 /**
  * Rend de quoi régler une commande **en attente de paiement**, ou dont le
@@ -32,7 +31,7 @@ import { cardCollectionFields } from "../services/card-collection-fields.js";
  * la voir peut la payer. Pas un droit de plus : un membre qui règle la commande
  * d'un collègue rend service, il ne s'attribue rien.
  *
- * Le `clientSecret` est **redemandé au prestataire** plutôt que relu d'une
+ * L'instruction de collecte est **redemandée au prestataire** plutôt que relue d'une
  * colonne : nous ne stockons que l'identifiant de l'intention, et c'est ce qui
  * évite qu'un secret vieillisse dans notre base.
  *
@@ -92,7 +91,7 @@ export class GetOrderPaymentHandler implements IQueryHandler<
       throw new PaymentIntentClosedError(intent.state);
     }
     return {
-      ...cardCollectionFields(intent.collection),
+      collection: intent.collection,
       amountCents: owned.view.totalCents,
     };
   }

@@ -113,8 +113,6 @@ describe("GET /orders/:id/payment après un refus de carte", () => {
         publishableKey: "pk_e2e",
         token: "pi_reprise_secret",
       },
-      clientSecret: "pi_reprise_secret",
-      publishableKey: "pk_e2e",
       // Le total que la passation a tarifé, pas un chiffre recopié.
       amountCents: totalCents,
     });

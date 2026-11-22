@@ -134,8 +134,6 @@ describe("GetOrderPaymentHandler", () => {
         publishableKey: "pk_test_123",
         token: "pi_1_secret",
       },
-      clientSecret: "pi_1_secret",
-      publishableKey: "pk_test_123",
       amountCents: 12_345,
     });
     // Le secret est REDEMANDÉ au prestataire : on ne stocke que l'identifiant.
@@ -259,7 +257,7 @@ describe("GetOrderPaymentHandler", () => {
     );
 
     const intent = await handler.execute(new GetOrderPaymentQuery("u1", "order_1"));
-    expect(intent.clientSecret).toBe("pi_1_secret");
+    expect(intent.collection).toMatchObject({ kind: "embedded", token: "pi_1_secret" });
   });
 
   it("sert une commande `failed` dont l'intention est vivante : la carte refusée se reprend", async () => {
@@ -272,7 +270,7 @@ describe("GetOrderPaymentHandler", () => {
 
     const intent = await handler.execute(new GetOrderPaymentQuery("u1", "order_1"));
 
-    expect(intent.clientSecret).toBe("pi_1_secret");
+    expect(intent.collection).toMatchObject({ kind: "embedded", token: "pi_1_secret" });
     // La MÊME intention : aucune nouvelle n'est créée.
     expect(sink.retrieved).toBe("order_1");
   });

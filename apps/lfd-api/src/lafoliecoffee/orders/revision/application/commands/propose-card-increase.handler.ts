@@ -44,7 +44,6 @@ import { OrderRevising } from "../services/order-revising.service.js";
 import { RevisionCutoffs } from "../services/revision-cutoffs.js";
 import { RevisionWall } from "../services/revision-wall.js";
 import { ProposeCardIncreaseCommand } from "./propose-card-increase.command.js";
-import { cardCollectionFields } from "../../../application/services/card-collection-fields.js";
 
 /** Ce que l'étape hors verrou a établi, et que la transaction rejuge. */
 interface ProposedFrame {
@@ -240,7 +239,7 @@ function viewOf(
   return {
     proposalId: proposal.id,
     complementCents: proposal.complementCents,
-    ...cardCollectionFields(preparation.collection),
+    collection: preparation.collection,
     expiresAt: proposal.toPersistence().expiresAt.toISOString(),
   };
 }

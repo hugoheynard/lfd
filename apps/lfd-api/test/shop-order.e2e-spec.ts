@@ -272,8 +272,13 @@ describe("la commande sans compte — la commande produite", () => {
     // Champ par champ : `expect.any` et `expect.stringMatching` rendent de
     // l'`any`, que le lint refuse à juste titre — un doublé qui dérive du port
     // passerait sous un matcher qui accepte tout.
-    expect(placed.payment?.publishableKey).toBe("pk_e2e");
-    expect(placed.payment?.clientSecret).toMatch(/_secret$/u);
+    expect(placed.payment?.collection).toMatchObject({
+      kind: "embedded",
+      publishableKey: "pk_e2e",
+    });
+    expect(placed.payment?.collection).toMatchObject({
+      token: expect.stringMatching(/_secret$/u) as string,
+    });
     expect(placed.payment?.amountCents).toBeGreaterThan(0);
   });
 });

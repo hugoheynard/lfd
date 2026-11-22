@@ -1360,14 +1360,6 @@ export function toCustomerOrder(view: OrderView): CustomerOrderView {
 export interface OrderPaymentIntent {
   /** Comment faire payer le client, quel que soit le prestataire. */
   readonly collection: CardCollection;
-  /**
-   * @deprecated Servi un déploiement de plus pour une page ouverte avant
-   * l'instruction de collecte ; à lire dans `collection`. Absent quand la
-   * collecte n'est pas `embedded`.
-   */
-  readonly clientSecret?: string;
-  /** @deprecated Idem : `collection.publishableKey`. */
-  readonly publishableKey?: string;
   /** Le total à encaisser, en **centimes** : un montant, pas un prix unitaire. */
   readonly amountCents: number;
 }

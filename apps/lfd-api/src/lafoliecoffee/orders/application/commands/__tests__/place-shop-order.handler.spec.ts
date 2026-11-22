@@ -719,8 +719,6 @@ describe("PlaceShopOrderHandler — le règlement", () => {
         publishableKey: "pk_test_123",
         token: "pi_public_secret",
       },
-      clientSecret: "pi_public_secret",
-      publishableKey: "pk_test_123",
       amountCents: sink.placed?.totalCents,
     });
     expect(sink.placed?.paymentStatus).toBe("pending");

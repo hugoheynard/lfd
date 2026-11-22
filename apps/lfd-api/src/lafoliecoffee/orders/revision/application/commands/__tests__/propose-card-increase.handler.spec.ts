@@ -98,8 +98,6 @@ describe("ProposeCardIncreaseHandler — la hausse demandée", () => {
         publishableKey: "pk_test",
         token: "pi_complement_secret",
       },
-      clientSecret: "pi_complement_secret",
-      publishableKey: "pk_test",
       expiresAt: new Date(NOW.getTime() + FIFTEEN_MINUTES_MS).toISOString(),
     });
     expect(proposals.saved).toEqual(["awaiting_payment"]);

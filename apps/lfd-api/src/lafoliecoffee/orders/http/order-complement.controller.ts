@@ -22,7 +22,7 @@ export class OrderComplementController {
   ) {}
 
   /**
-   * Le complément qui attend son paiement — `clientSecret` relu chez le
+   * Le complément qui attend son paiement — l'instruction de collecte relue chez le
    * prestataire. `409` `orders.card_increase.nothing_to_pay` s'il n'y en a pas.
    */
   @Get(":id/complement")

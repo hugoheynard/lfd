@@ -183,8 +183,11 @@ describe("La hausse demandée (§2.4)", () => {
 
     expect(answer).toMatchObject({
       complementCents: seen.totalCents - order.totalCents,
-      publishableKey: expect.any(String) as string,
-      clientSecret: expect.any(String) as string,
+      collection: {
+        kind: "embedded",
+        publishableKey: expect.any(String) as string,
+        token: expect.any(String) as string,
+      },
     });
     const [proposal] = await proposalsOf(order.id);
     expect(proposal).toMatchObject({ id: answer.proposalId, state: "awaiting_payment" });

@@ -210,9 +210,5 @@ export interface CardComplementPaymentView {
   readonly complementCents: number;
   /** Comment faire payer le complément, quel que soit le prestataire. */
   readonly collection: CardCollection;
-  /** @deprecated Un déploiement de plus ; à lire dans `collection`. */
-  readonly clientSecret?: string;
-  /** @deprecated Idem : `collection.publishableKey`. */
-  readonly publishableKey?: string;
   readonly expiresAt: string;
 }

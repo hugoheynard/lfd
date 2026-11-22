@@ -339,7 +339,7 @@ describe("le règlement choisi", () => {
     const placed = jsonBody<PlacedOrderResponse>(await place({ settlement: "card" }).expect(201));
 
     // Une intention de paiement est rendue : il y a une carte à débiter.
-    expect(placed.payment?.clientSecret).toBeDefined();
+    expect(placed.payment?.collection).toBeDefined();
   });
 
   it("refuse le COMPTE quand aucun terme n'a été accordé, au lieu de prélever en silence", async () => {

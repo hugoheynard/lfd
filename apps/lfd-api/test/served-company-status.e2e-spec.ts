@@ -182,7 +182,7 @@ describe("société en attente — inchangé au lot P0", () => {
     expect(quoted.lines[0]?.unitPriceMillicents).toBe(NEGOTIATED_MILLICENTS);
     const response = await placeMine().expect(201);
     expect(await placedLinePrice(response)).toBe(NEGOTIATED_MILLICENTS);
-    expect(jsonBody<PlacedOrderResponse>(response).payment?.clientSecret).toBeDefined();
+    expect(jsonBody<PlacedOrderResponse>(response).payment?.collection).toBeDefined();
   });
 });
 
@@ -204,7 +204,7 @@ describe("société suspendue — pro, carte seule", () => {
     expect(quoted.lines[0]?.unitPriceMillicents).toBe(NEGOTIATED_MILLICENTS);
     const response = await placeMine().expect(201);
     expect(await placedLinePrice(response)).toBe(NEGOTIATED_MILLICENTS);
-    expect(jsonBody<PlacedOrderResponse>(response).payment?.clientSecret).toBeDefined();
+    expect(jsonBody<PlacedOrderResponse>(response).payment?.collection).toBeDefined();
   });
 
   /** Le crédit seul est retiré : un délai accordé ne règle plus au compte. */
@@ -218,7 +218,7 @@ describe("société suspendue — pro, carte seule", () => {
     const refused = await placeMine(undefined, "account").expect(409);
     expect(JSON.stringify(refused.body)).toContain("order.terms_not_granted");
     const response = await placeMine().expect(201);
-    expect(jsonBody<PlacedOrderResponse>(response).payment?.clientSecret).toBeDefined();
+    expect(jsonBody<PlacedOrderResponse>(response).payment?.collection).toBeDefined();
   });
 
   it("habituels à sa mercuriale", async () => {

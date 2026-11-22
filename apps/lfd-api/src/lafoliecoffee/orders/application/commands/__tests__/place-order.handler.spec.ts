@@ -1496,7 +1496,7 @@ describe("PlaceOrderHandler", () => {
     expect(sink.placed).toBeNull();
   });
 
-  it("en PER_ORDER, crée une intention Stripe du total, marque pending et renvoie le clientSecret", async () => {
+  it("en PER_ORDER, crée une intention Stripe du total, marque pending et renvoie son instruction de collecte", async () => {
     const sink = { placed: null as OrderToPlace | null };
     const intentSink = { intent: null as CardPreparationRequest | null };
     const handler = new SeeingPlaceOrderHandler(
@@ -1533,8 +1533,6 @@ describe("PlaceOrderHandler", () => {
         publishableKey: "pk_test_123",
         token: "pi_test_1_secret",
       },
-      clientSecret: "pi_test_1_secret",
-      publishableKey: "pk_test_123",
       amountCents: 400,
     });
   });

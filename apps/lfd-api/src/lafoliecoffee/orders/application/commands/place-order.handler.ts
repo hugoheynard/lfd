@@ -39,7 +39,6 @@ import { orderCardSubject } from "../services/order-card-subject.js";
 import { settleOrder } from "../services/order-settlement.js";
 import { PlaceOrderCommand, type PlaceOrderResult } from "./place-order.command.js";
 import { REGISTERED_BUYER } from "../../domain/value-objects/order-buyer-kind.js";
-import { cardCollectionFields } from "../services/card-collection-fields.js";
 
 /**
  * Passe une commande — **zéro friction**, le client pour lui-même.
@@ -223,7 +222,7 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, Pla
       orderNumber: placed.orderNumber,
       settlement,
       payment: {
-        ...cardCollectionFields(intent.collection),
+        collection: intent.collection,
         amountCents: order.totalCents,
       },
     };
@@ -334,7 +333,7 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, Pla
       orderNumber: view.orderNumber,
       settlement: view.settlement,
       payment: {
-        ...cardCollectionFields(intent.collection),
+        collection: intent.collection,
         amountCents: view.totalCents,
       },
     };

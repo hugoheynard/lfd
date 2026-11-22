@@ -457,11 +457,10 @@ chaque prestataire remplit :
   remplit `embedded` (`stripe-card-provider.ts`).
 - **Contrat** : `packages/contracts/src/card-collection.ts`, porté par
   `OrderPaymentIntent` (passation, passation boutique, règlement d'une
-  commande) et `CardComplementPaymentView` (complément d'une hausse). Les
-  six gestes du commerce le composent par `cardCollectionFields`.
-- **Un déploiement de transition** : `clientSecret` et `publishableKey`
-  restent servis, dépréciés, pour une page ouverte avant ; ils ne se
-  remplissent que pour `embedded`. À retirer au déploiement suivant.
+  commande) et `CardComplementPaymentView` (complément d'une hausse) sous
+  le seul champ `collection`.
+- **Les anciens champs** `clientSecret` et `publishableKey` ont été servis un
+  déploiement de transition, puis retirés des contrats (✅ 2026-11-22).
 - **Boutique** : un seul service connaît un prestataire, `CardCollector`
   (`client/payment-collection/`) — il monte, suit la langue, confirme ou
   redirige. La page de règlement et le paiement du complément ne gardent que

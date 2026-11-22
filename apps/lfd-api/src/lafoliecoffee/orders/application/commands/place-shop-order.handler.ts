@@ -38,7 +38,6 @@ import {
   PERSONAL_CARD_TAG,
   orderCardSubject,
 } from "../services/order-card-subject.js";
-import { cardCollectionFields } from "../services/card-collection-fields.js";
 
 /**
  * **Commander sans compte** — plan
@@ -223,7 +222,7 @@ export class PlaceShopOrderHandler implements ICommandHandler<
     return {
       ...base,
       payment: {
-        ...cardCollectionFields(intent.collection),
+        collection: intent.collection,
         amountCents: order.totalCents,
       },
     };

@@ -115,14 +115,14 @@ describe("une clé de passation ne sert qu'une fois", () => {
     const payload = order();
     const first = jsonBody<PlacedOrderResponse>(await place(payload).expect(201));
     const [intent] = cards.provider.issued;
-    expect(first.payment?.clientSecret).toBe(`${String(intent)}_secret`);
+    expect(first.payment?.collection).toMatchObject({ token: `${String(intent)}_secret` });
     expect(cards.provider.retrieved).toBe(0);
 
     const second = jsonBody<PlacedOrderResponse>(await place(payload).expect(201));
 
     // LA MÊME intention, et une seule création : le rejeu ne dimensionne pas un
     // second encaissement.
-    expect(second.payment?.clientSecret).toBe(`${String(intent)}_secret`);
+    expect(second.payment?.collection).toMatchObject({ token: `${String(intent)}_secret` });
     expect(cards.provider.issued).toEqual([intent]);
     expect(cards.provider.retrieved).toBe(1);
   });
