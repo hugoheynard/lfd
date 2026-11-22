@@ -67,7 +67,43 @@ c'est attendu.
    « créé par <nom> » ;
 5. sans réglage : l'e-mail part à la boîte de l'équipe (`MAILER_STAFF_INBOX`).
 
-### 4. Stripe — les vérifications du tableau de bord
+### 4. Déployés le 2026-11-22 au soir : N, F2, B, D1, le schéma
+
+**N — les natures** : créer une demande libre ; le formulaire impose une
+nature ; la liste montre la colonne « Nature », les anciennes demandes
+« Non précisée » ; l'e-mail à la comptabilité dit « <nature> — <libellé> ».
+
+**F2 — Stripe Checkout retiré**, quatre gestes hors du dépôt :
+
+1. Stripe : supprimer la destination de webhook « lfd-api production —
+   liens de paiement » (`/payments/links/webhook`) ;
+2. Stripe : sur l'endpoint des cartes, décocher `checkout.session.completed`,
+   `checkout.session.async_payment_succeeded` et `checkout.session.expired`
+   (pas urgent : ils sont rangés sans effet) ;
+3. Cloudflare : `wrangler secret delete STRIPE_LINKS_WEBHOOK_SECRET` sur le
+   Worker de l'API, s'il y est ;
+4. GitHub : supprimer le secret `STRIPE_LINKS_WEBHOOK_SECRET` du dépôt.
+
+**B — le balayage des paiements en attente** : rien à faire ; il tourne
+toutes les cinq minutes. Signe qu'il marche : aucune erreur
+`admin/card-payments/pending/sweep` dans les journaux du Worker.
+
+**D1 — le virement dans `payment`** :
+
+```sql
+SELECT count(*) FROM payment.transfer_received;    -- attendu : 0
+SELECT count(*) FROM payment.transfer_allocation;  -- attendu : 0
+SELECT to_regclass('public.received_bank_transfer'); -- attendu : NULL
+```
+
+Puis Comptabilité › Virements : l'écran « à régler » s'ouvre. Le premier
+virement saisi pour de vrai est le vrai contrôle : sa facture passe
+« réglée le … ». Le contrôle de cohérence passe chaque nuit (3 h 45) ; il ne
+doit sonner que s'il y a un écart.
+
+**Le schéma** : rien en production (schéma seulement).
+
+### 5. Stripe — les vérifications du tableau de bord
 
 Quand Hugo a de nouveau accès au tableau de bord Stripe :
 
