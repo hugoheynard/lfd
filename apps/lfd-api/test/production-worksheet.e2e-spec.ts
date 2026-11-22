@@ -25,7 +25,7 @@ import {
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { Clock } from "../src/platform/time/clock.js";
 import { FixedClock } from "../src/platform/time/fixed-clock.js";
-import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
+import { CardProviders } from "../src/payment/card/domain/ports/card-providers.js";
 import { bootstrapE2e, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
 import { placeLateByStaff } from "./staff-late-order.js";
 import { createUser } from "./factories.js";

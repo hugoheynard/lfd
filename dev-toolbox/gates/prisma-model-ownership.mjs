@@ -85,11 +85,11 @@ const BLOCKS = new Set([
   //   le bloc existe, pour la même raison : sans cette ligne, `src/mail/`
   //   serait ignoré, et un autre bloc pourrait lire ses demandes et son suivi.
   "mail",
-  // ▸ L'ENCAISSEMENT PAR CARTE (2026-11-09, `plan-m2-historique-de-transactions.md`,
-  //   §4.1). Armée AVANT que le bloc existe, pour la même raison : sans cette
-  //   ligne, `src/card-payment/` serait ignoré, et le commerce pourrait lire
-  //   ou écrire l'état de l'argent carte sans que rien ne rougisse.
-  "card-payment",
+  // ▸ L'ENCAISSEMENT (`payment/`, plan M2 §4.1, puis le bloc agnostique du
+  //   2026-11-22). Sans cette ligne, `src/payment/` serait ignoré, et le
+  //   commerce pourrait lire ou écrire l'état de l'argent sans que rien ne
+  //   rougisse.
+  "payment",
   // ▸ LE PANIER (2026-11-20, `le-panier.md`). Sans cette ligne,
   //   `src/shop-cart/` serait ignoré et le catalogue pourrait relire
   //   `shop_carts` en direct sans que rien ne rougisse.

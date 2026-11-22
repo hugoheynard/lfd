@@ -1,4 +1,4 @@
-import type { CardSubject } from "../../../../card-payment/channels/subjects/index.js";
+import type { CardSubject } from "../../../../payment/channels/subjects/index.js";
 
 /**
  * **Le type de sujet d'une commande** pour le bloc `card-payment` (plan M2,

@@ -1,7 +1,7 @@
 import { Logger } from "@nestjs/common";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
-import { CardPayments } from "../../../../../card-payment/channels/requests/index.js";
+import { CardPayments } from "../../../../../payment/channels/requests/index.js";
 import { WallClock } from "../../../../../platform/time/wall-clock.js";
 import { CardIncreaseProposalReader } from "../../domain/ports/card-increase-proposal.reader.js";
 import { CardIncreaseSweepReader } from "../../domain/ports/card-increase-sweep.reader.js";

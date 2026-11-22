@@ -4,7 +4,7 @@ import { Test } from "@nestjs/testing";
 import {
   CardPaymentCheckoutEvent,
   type CheckoutOutcome,
-} from "../../../../../card-payment/channels/facts/index.js";
+} from "../../../../../payment/channels/facts/index.js";
 import { PaymentGatewayUnavailableError } from "../../../domain/errors/payment-errors.js";
 import { ExpirePaymentLinkCommand } from "../../commands/expire-payment-link.command.js";
 import { SettlePaymentLinkCommand } from "../../commands/settle-payment-link.command.js";

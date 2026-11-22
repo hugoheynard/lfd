@@ -21,8 +21,8 @@
 import { UnitOfWork } from "../src/platform/database/unit-of-work.js";
 import { PaymentStatus } from "../src/platform/database/client/client.js";
 import { WallClock } from "../src/platform/time/wall-clock.js";
-import { CardRefunds } from "../src/card-payment/channels/requests/index.js";
-import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
+import { CardRefunds } from "../src/payment/channels/requests/index.js";
+import { CardProviders } from "../src/payment/card/domain/ports/card-providers.js";
 import {
   cardProvidersDouble,
   E2E_CARD_ACCOUNT,

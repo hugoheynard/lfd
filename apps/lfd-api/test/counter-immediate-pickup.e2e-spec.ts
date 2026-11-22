@@ -18,7 +18,7 @@ import { instantToLocal, localToInstant } from "@lfd/contracts";
 import type request from "supertest";
 
 import { MonthlyInvoicingReader } from "../src/lafoliecoffee/accounting/domain/ports/monthly-invoicing.reader.js";
-import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
+import { CardProviders } from "../src/payment/card/domain/ports/card-providers.js";
 import { CompanyStatus } from "../src/platform/database/client/client.js";
 import { Clock } from "../src/platform/time/clock.js";
 import { FixedClock } from "../src/platform/time/fixed-clock.js";

@@ -6,8 +6,8 @@ import { htMillicentsOf } from "@lfd/pim-contracts";
 import type {
   CreateIntentParams,
   CreatedIntent,
-} from "../src/card-payment/domain/ports/card-provider-types.js";
-import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
+} from "../src/payment/card/domain/ports/card-provider-types.js";
+import { CardProviders } from "../src/payment/card/domain/ports/card-providers.js";
 import { CompanyStatus, CustomerRole } from "../src/platform/database/client/client.js";
 import { E2eCardProvider, E2eCardProviders } from "./card-payments.js";
 import { ADMIN_VERIFIER_OVERRIDE } from "./delivery-rounds-scene.js";

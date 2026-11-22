@@ -3,7 +3,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 //
 // Plan `documentation/commandes/modification/plan-m2-historique-de-transactions.md`,
-// lot P0 (§4.1, §4.3). Propriétaire : le bloc `src/card-payment/` — À VENIR :
+// lot P0 (§4.1, §4.3). Propriétaire : le bloc `src/payment/card/` — À VENIR :
 // le schéma et sa table sont posés AVANT le premier fichier du bloc, pour que
 // les portes les connaissent. D'ici là, seule la migration écrit ici (la
 // reprise du §4.3).
@@ -48,7 +48,7 @@ enum CardPaymentRole {
 
 /// **Un paiement par carte d'un sujet** (§4.3) — table `card_payment.payment`.
 ///
-/// Propriétaire : `src/card-payment/` (à venir). Aucun autre bloc n'y écrit ni
+/// Propriétaire : `src/payment/card/` (à venir). Aucun autre bloc n'y écrit ni
 /// n'y lit : le commerce passe par les ports du canal (§3.3).
 ///
 /// Ce que le SQL porte et que ce modèle ne montre pas (G1, §11) :
@@ -103,7 +103,7 @@ model CardPayment {
 
 /// **La ligne-témoin d'une reprise** (§4.3) — table `card_payment.takeover`.
 ///
-/// Propriétaire : `src/card-payment/` (à venir). Écrite par la migration qui
+/// Propriétaire : `src/payment/card/` (à venir). Écrite par la migration qui
 /// reprend l'existant (`P0` : les premiers paiements des commandes), elle
 /// date la reprise : la commande `ReplayFirstPayments` ne demande au sujet que
 /// ses références créées depuis `migrated_at − 1 h`. Sans témoin (une base de
@@ -199,7 +199,7 @@ enum CardRefundStatus {
 /// `card_payment.refund_request`. L'argent à rendre devenu un ÉTAT PERSISTÉ :
 /// ce qui a été promis, ce qui a été tenté, et où elle en est.
 ///
-/// Propriétaire : `src/card-payment/` (à venir, lot P1.b) — aucun autre bloc
+/// Propriétaire : `src/payment/card/` (à venir, lot P1.b) — aucun autre bloc
 /// n'y écrit ; le commerce passe par `CardRefunds` (§3.3).
 ///
 /// Ce que le SQL porte et que ce modèle ne montre pas (G1, §11) :
@@ -279,7 +279,7 @@ model CardRefundRequest {
 /// par « rendu autrement » (`manual`). Rien ne s'efface : un remboursement en
 /// échec ou annulé garde sa ligne, sous son statut.
 ///
-/// Propriétaire : `src/card-payment/` (à venir, lot P1.b). L'avoir qui le
+/// Propriétaire : `src/payment/card/` (à venir, lot P1.b). L'avoir qui le
 /// constate n'est PAS ici : c'est `public.refund_credit`, à la comptabilité.
 ///
 /// Ce que le SQL porte et que ce modèle ne montre pas (G1, §11) :

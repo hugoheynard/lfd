@@ -1,12 +1,12 @@
 import { CommandBus } from "@nestjs/cqrs";
 
-import { RecordProviderEventCommand } from "../src/card-payment/application/commands/record-provider-event.command.js";
+import { RecordProviderEventCommand } from "../src/payment/card/application/commands/record-provider-event.command.js";
 import {
   InvalidProviderSignatureError,
   UnknownCardAccountError,
-} from "../src/card-payment/domain/errors/card-payment-errors.js";
-import type { CardProviderEvent } from "../src/card-payment/domain/ports/card-provider-event.js";
-import { CardProvider } from "../src/card-payment/domain/ports/card-provider.js";
+} from "../src/payment/card/domain/errors/card-payment-errors.js";
+import type { CardProviderEvent } from "../src/payment/card/domain/ports/card-provider-event.js";
+import { CardProvider } from "../src/payment/card/domain/ports/card-provider.js";
 import type {
   CardIntentState,
   CreateIntentParams,
@@ -17,9 +17,9 @@ import type {
   RefundLookupParams,
   RefundParams,
   RetrievedIntent,
-} from "../src/card-payment/domain/ports/card-provider-types.js";
-import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
-import { PaymentAccount } from "../src/card-payment/domain/value-objects/payment-account.js";
+} from "../src/payment/card/domain/ports/card-provider-types.js";
+import { CardProviders } from "../src/payment/card/domain/ports/card-providers.js";
+import { PaymentAccount } from "../src/payment/card/domain/value-objects/payment-account.js";
 import { assertOutsideTransaction } from "../src/platform/database/outside-transaction.js";
 import type { E2eContext, E2eOverride } from "./e2e-harness.js";
 

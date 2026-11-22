@@ -19,7 +19,7 @@ import { createHmac } from "node:crypto";
 
 import { MailerIdempotencyInFlightError, type MailReceipt, type SendMailArgs } from "@lfd/mailer";
 
-import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
+import { CardProviders } from "../src/payment/card/domain/ports/card-providers.js";
 import { MAIL_DELIVERY_FAILED } from "../src/mail/channels/deliveries/mail-delivery-failed.event.js";
 import { Mail } from "../src/mail/channels/requests/mail.js";
 import { MailRequest } from "../src/mail/requests/domain/entities/mail-request.js";

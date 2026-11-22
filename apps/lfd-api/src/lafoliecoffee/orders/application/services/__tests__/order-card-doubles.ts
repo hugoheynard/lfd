@@ -11,12 +11,12 @@ import {
   type SubjectCardRefundRequests,
   type SubjectCardRefunds,
   type SucceededCardRefund,
-} from "../../../../../card-payment/channels/requests/index.js";
+} from "../../../../../payment/channels/requests/index.js";
 import type {
   CardSubject,
   SubjectPaymentRole,
   SubjectSettledState,
-} from "../../../../../card-payment/channels/subjects/index.js";
+} from "../../../../../payment/channels/subjects/index.js";
 import { UnitOfWork } from "../../../../../platform/database/unit-of-work.js";
 import type { OrderCardSettled } from "../../../domain/services/order-card-settled.js";
 import {

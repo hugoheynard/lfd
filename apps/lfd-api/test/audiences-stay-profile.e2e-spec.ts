@@ -10,7 +10,7 @@
  */
 import { addDays, instantToLocal, localToInstant, type AudiencesView } from "@lfd/contracts";
 
-import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
+import { CardProviders } from "../src/payment/card/domain/ports/card-providers.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { CustomerRole } from "../src/platform/database/client/client.js";
 import { Clock } from "../src/platform/time/clock.js";

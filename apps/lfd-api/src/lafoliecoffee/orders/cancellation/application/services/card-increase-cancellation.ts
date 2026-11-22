@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 
-import { CardPayments } from "../../../../../card-payment/channels/requests/index.js";
+import { CardPayments } from "../../../../../payment/channels/requests/index.js";
 import { AfterCommit } from "../../../../../platform/database/after-commit.js";
 import { Journal } from "../../../../../platform/journal/journal.js";
 import { Clock } from "../../../../../platform/time/clock.js";

@@ -9,8 +9,8 @@ import {
   type SubjectCardRefundRequests,
   type SubjectCardRefunds,
   type SucceededCardRefund,
-} from "../../../../../../card-payment/channels/requests/index.js";
-import type { CardSubject } from "../../../../../../card-payment/channels/subjects/index.js";
+} from "../../../../../../payment/channels/requests/index.js";
+import type { CardSubject } from "../../../../../../payment/channels/subjects/index.js";
 import type { CardIncreaseProposal } from "../../../domain/entities/card-increase-proposal.js";
 import { CardIncreaseProposalReader } from "../../../domain/ports/card-increase-proposal.reader.js";
 import { CardIncreaseProposalRepository } from "../../../domain/ports/card-increase-proposal.repository.js";

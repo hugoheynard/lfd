@@ -21,8 +21,8 @@ import type {
   OrderRevisionQuoteView,
 } from "@lfd/contracts";
 
-import { CardSettlementReader } from "../src/card-payment/channels/requests/index.js";
-import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
+import { CardSettlementReader } from "../src/payment/channels/requests/index.js";
+import { CardProviders } from "../src/payment/card/domain/ports/card-providers.js";
 import { MAILER } from "../src/mail/templates/mailer.tokens.js";
 import { b2bMailTemplates, type B2bMails } from "../src/mail/templates/mail-templates.js";
 import { CardIncreaseProposalRepository } from "../src/lafoliecoffee/orders/revision/domain/ports/card-increase-proposal.repository.js";

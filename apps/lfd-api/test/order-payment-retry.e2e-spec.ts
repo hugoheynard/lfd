@@ -13,9 +13,9 @@
  */
 import { CommandBus } from "@nestjs/cqrs";
 
-import { RecordProviderEventCommand } from "../src/card-payment/application/commands/record-provider-event.command.js";
-import type { CreatedIntent } from "../src/card-payment/domain/ports/card-provider-types.js";
-import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
+import { RecordProviderEventCommand } from "../src/payment/card/application/commands/record-provider-event.command.js";
+import type { CreatedIntent } from "../src/payment/card/domain/ports/card-provider-types.js";
+import { CardProviders } from "../src/payment/card/domain/ports/card-providers.js";
 import { assertOutsideTransaction } from "../src/platform/database/outside-transaction.js";
 import { PaymentStatus } from "../src/platform/database/client/client.js";
 import {

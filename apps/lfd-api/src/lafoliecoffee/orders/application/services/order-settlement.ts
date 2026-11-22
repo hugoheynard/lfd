@@ -3,7 +3,7 @@ import type { OrderSettlement } from "@lfd/contracts";
 import type {
   CardPaymentPreparation,
   CardPayments,
-} from "../../../../card-payment/channels/requests/index.js";
+} from "../../../../payment/channels/requests/index.js";
 import type { Order } from "../../domain/entities/order.js";
 import { TermsNotGrantedError } from "../../domain/errors/order-errors.js";
 import {

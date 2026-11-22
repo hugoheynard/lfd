@@ -1,6 +1,6 @@
 import type { OrderStatus, OrderView, PaymentStatus } from "@lfd/contracts";
 
-import type { CardIntentState } from "../../../../../card-payment/channels/requests/index.js";
+import type { CardIntentState } from "../../../../../payment/channels/requests/index.js";
 import { OrderNotFoundError, OrderNotPayableError } from "../../../domain/errors/order-errors.js";
 import {
   CancelledOrderNotPayableError,

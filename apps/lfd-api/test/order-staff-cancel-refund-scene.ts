@@ -1,6 +1,6 @@
 import { CommandBus } from "@nestjs/cqrs";
 
-import { IssueCardRefundCommand } from "../src/card-payment/application/commands/issue-card-refund.command.js";
+import { IssueCardRefundCommand } from "../src/payment/card/application/commands/issue-card-refund.command.js";
 import type {
   CardRefundStatus,
   IssuedRefund,
@@ -8,11 +8,11 @@ import type {
   RefundLookup,
   RefundLookupParams,
   RefundParams,
-} from "../src/card-payment/domain/ports/card-provider-types.js";
+} from "../src/payment/card/domain/ports/card-provider-types.js";
 import { PaymentStatus } from "../src/platform/database/client/client.js";
 import { currentTransaction } from "../src/platform/database/transaction.store.js";
 import { WallClock } from "../src/platform/time/wall-clock.js";
-import { RecordProviderEventCommand } from "../src/card-payment/application/commands/record-provider-event.command.js";
+import { RecordProviderEventCommand } from "../src/payment/card/application/commands/record-provider-event.command.js";
 import { E2E_CARD_ACCOUNT, type E2eRefundBehaviour } from "./card-payments.js";
 import { bootScene, context, sceneCardProvider } from "./order-staff-cancel-scene.js";
 import { seedOrder, type OrderSeed } from "./order-staff-cancel-orders.js";

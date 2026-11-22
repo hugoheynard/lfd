@@ -12,7 +12,7 @@
 import type { CustomerSkuStat } from "@lfd/contracts";
 
 import { EvaluateBasket } from "../src/lafoliecoffee/alerts/application/handlers/evaluate-basket.service.js";
-import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
+import { CardProviders } from "../src/payment/card/domain/ports/card-providers.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { CustomerRole } from "../src/platform/database/client/client.js";
 import { OutboxRelayTrigger } from "../src/platform/outbox/outbox-relay-trigger.js";

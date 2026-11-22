@@ -4,7 +4,7 @@ import { CommandBus } from "@nestjs/cqrs";
 import {
   CARD_PAYMENT_CHECKOUT_EVENT,
   CardPaymentCheckoutEvent,
-} from "../../../../card-payment/channels/facts/index.js";
+} from "../../../../payment/channels/facts/index.js";
 import type { DurableDelivery } from "../../../../platform/outbox/durable-event.js";
 import {
   DurableHandler,

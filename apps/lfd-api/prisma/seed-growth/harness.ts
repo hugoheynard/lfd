@@ -10,7 +10,7 @@ import type { Actor } from "../../src/platform/context/request-context.js";
 import { runWithRequestContext } from "../../src/platform/context/request-context.store.js";
 import { newTraceId } from "../../src/platform/context/trace-context.js";
 import { PrismaService } from "../../src/platform/database/prisma.service.js";
-import { CardProviders } from "../../src/card-payment/domain/ports/card-providers.js";
+import { CardProviders } from "../../src/payment/card/domain/ports/card-providers.js";
 import { FakeEstablishmentDirectory } from "./fake-establishment-directory.js";
 import { FakeDocumentStore } from "./fake-document-store.js";
 import { FakeCardProviders } from "./fake-card-providers.js";

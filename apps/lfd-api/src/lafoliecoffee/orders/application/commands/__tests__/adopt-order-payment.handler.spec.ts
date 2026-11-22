@@ -1,4 +1,4 @@
-import type { CardPaymentLine } from "../../../../../card-payment/channels/requests/index.js";
+import type { CardPaymentLine } from "../../../../../payment/channels/requests/index.js";
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { OrderNotFoundError } from "../../../domain/errors/order-errors.js";
 import { OrderAccessReader } from "../../../domain/ports/order-access.reader.js";

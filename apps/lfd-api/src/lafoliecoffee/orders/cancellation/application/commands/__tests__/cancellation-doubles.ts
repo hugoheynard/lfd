@@ -1,4 +1,4 @@
-import type { CardPaymentCancellation } from "../../../../../../card-payment/channels/requests/index.js";
+import type { CardPaymentCancellation } from "../../../../../../payment/channels/requests/index.js";
 import { OrderCardCancellation } from "../../../../domain/ports/order-card-payments.js";
 import {
   PackingWithdrawalDesk,

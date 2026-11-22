@@ -1,8 +1,8 @@
 import type {
   CardRefundView,
   SubjectCardRefunds,
-} from "../../../../../../card-payment/channels/requests/index.js";
-import type { CardSubject } from "../../../../../../card-payment/channels/subjects/index.js";
+} from "../../../../../../payment/channels/requests/index.js";
+import type { CardSubject } from "../../../../../../payment/channels/subjects/index.js";
 import { RecordingMail } from "../../../../../../mail/channels/requests/__tests__/recording-mail.js";
 import type { DurableDelivery } from "../../../../../../platform/outbox/durable-event.js";
 import { ORDER_REFUND_SUCCEEDED } from "../../../../domain/events/order-refund-succeeded.fact.js";

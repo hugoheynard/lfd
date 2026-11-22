@@ -103,7 +103,7 @@ visible.
 
 ## 4. Le retour de Stripe — et le cas qui ne revient jamais
 
-[`stripe-card-provider.ts`](../../../apps/lfd-api/src/card-payment/infrastructure/stripe/stripe-card-provider.ts)
+[`stripe-card-provider.ts`](../../../apps/lfd-api/src/payment/card/infrastructure/stripe/stripe-card-provider.ts)
 ne retient que **deux** événements ; tout le reste est `ignored`.
 
 ```mermaid

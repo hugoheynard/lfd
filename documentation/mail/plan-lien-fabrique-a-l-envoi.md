@@ -87,7 +87,7 @@ sequenceDiagram
   `mail/channels/requests/` : `linkFor(ref): Promise<string>`. Il est
   implémenté par `staff` (fiche → `sub` → lien) et par `lafoliecoffee/account`
   (compte → `sub` → lien), et relié par `appBootstrap` — la figure de
-  `card-payment/channels/subjects/`. `mail` ne connaît toujours aucun bloc
+  `payment/channels/subjects/`. `mail` ne connaît toujours aucun bloc
   métier.
 - **La résolution, à chaque essai** : une étape `MailPasswordLinks.resolve`
   à côté de `MailAttachments.resolve`, sur les trois chemins d'envoi (après

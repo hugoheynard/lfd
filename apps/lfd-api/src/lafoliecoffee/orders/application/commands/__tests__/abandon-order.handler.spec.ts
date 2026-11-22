@@ -1,7 +1,7 @@
 import type { OrderStatus, PaymentStatus } from "@lfd/contracts";
 
 import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
-import type { CardPaymentCancellation } from "../../../../../card-payment/channels/requests/index.js";
+import type { CardPaymentCancellation } from "../../../../../payment/channels/requests/index.js";
 import {
   OrderAbandonNotAuthorError,
   OrderAbandonUnavailableError,

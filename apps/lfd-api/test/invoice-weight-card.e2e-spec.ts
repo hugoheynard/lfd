@@ -23,7 +23,7 @@ import {
 } from "../src/lafoliecoffee/accounting/domain/services/__tests__/pdf-objects.js";
 import { renderFacturXml } from "../src/lafoliecoffee/accounting/domain/services/facturx-xml.js";
 import { MarkOrderFulfilledCommand } from "../src/lafoliecoffee/orders/application/commands/mark-order-fulfilled.command.js";
-import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
+import { CardProviders } from "../src/payment/card/domain/ports/card-providers.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { CustomerRole } from "../src/platform/database/client/client.js";
 import { OutboxRelay } from "../src/platform/outbox/outbox-relay.js";

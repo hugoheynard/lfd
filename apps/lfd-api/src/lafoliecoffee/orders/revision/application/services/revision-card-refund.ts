@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 
-import { CardRefunds } from "../../../../../card-payment/channels/requests/index.js";
+import { CardRefunds } from "../../../../../payment/channels/requests/index.js";
 import type { RevisableOrder, RevisionActor } from "../../domain/entities/order-revision.js";
 import type { RevisionSettlement } from "../../domain/entities/revision-settlement.js";
 import { RevisionProposalPendingError } from "../../domain/errors/card-increase-proposal-errors.js";

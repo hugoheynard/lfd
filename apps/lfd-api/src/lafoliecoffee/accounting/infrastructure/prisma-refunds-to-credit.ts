@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 
-import { CardSettlementReader } from "../../../card-payment/channels/requests/index.js";
+import { CardSettlementReader } from "../../../payment/channels/requests/index.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { TechnicalError } from "../../../platform/shared/errors/app-error.js";
 import { orderCardSubject } from "../../orders/application/services/order-card-subject.js";

@@ -20,7 +20,7 @@ import type { AdminPlacedOrderResponse } from "@lfd/contracts";
 import { DeliveryNote } from "../src/lafoliecoffee/delivery-notes/domain/entities/delivery-note.js";
 import { DeliveryNoteRepository } from "../src/lafoliecoffee/delivery-notes/domain/ports/delivery-note.repository.js";
 import { ORDER_TERMS } from "../src/lafoliecoffee/delivery-notes/domain/value-objects/__tests__/delivery-note-terms.fixture.js";
-import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
+import { CardProviders } from "../src/payment/card/domain/ports/card-providers.js";
 import { HandoverAttestation } from "../src/handover/application/services/handover-attestation.service.js";
 import { HandoverSubjectReader } from "../src/handover/channels/commerce/handover-subject.reader.js";
 import { UnitOfWork } from "../src/platform/database/unit-of-work.js";

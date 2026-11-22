@@ -11,7 +11,7 @@ import { randomUUID } from "node:crypto";
  */
 import type { HandoverQueueView, OrderHandoverView } from "@lfd/contracts";
 
-import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
+import { CardProviders } from "../src/payment/card/domain/ports/card-providers.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { settleCardPayments } from "./card-payments.js";
 import { cardGatewayDouble } from "./order-factory.js";

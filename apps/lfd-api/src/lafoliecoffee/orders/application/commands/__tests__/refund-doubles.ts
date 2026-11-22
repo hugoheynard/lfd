@@ -15,8 +15,8 @@ import {
   type SubjectCardRefundRequests,
   type SubjectCardRefunds,
   type SucceededCardRefund,
-} from "../../../../../card-payment/channels/requests/index.js";
-import type { CardSubject } from "../../../../../card-payment/channels/subjects/index.js";
+} from "../../../../../payment/channels/requests/index.js";
+import type { CardSubject } from "../../../../../payment/channels/subjects/index.js";
 import { OrderCardAdoption } from "../../../domain/ports/order-card-payments.js";
 
 /**

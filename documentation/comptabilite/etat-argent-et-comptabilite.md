@@ -60,7 +60,7 @@
 ### Non fait
 
 - **E9** : le remboursement du reste existe (`requestRemainder`,
-  `card-payment/channels/requests/card-refunds.ts`) mais le reliquat refuse
+  `payment/channels/requests/card-refunds.ts`) mais le reliquat refuse
   toujours une commande carte (`shortfall-decidability.ts`,
   `CardOrderShortfallError`) et rien ne l'appelle. Le plus petit chantier du
   bloc.

@@ -16,7 +16,7 @@ import type {
   RefundLookup,
   RefundLookupParams,
   RefundParams,
-} from "../src/card-payment/domain/ports/card-provider-types.js";
+} from "../src/payment/card/domain/ports/card-provider-types.js";
 import type { B2bMails } from "../src/mail/templates/mail-templates.js";
 import { MAILER, type B2bMailer } from "../src/mail/templates/mailer.tokens.js";
 import { CustomerRole } from "../src/platform/database/client/client.js";

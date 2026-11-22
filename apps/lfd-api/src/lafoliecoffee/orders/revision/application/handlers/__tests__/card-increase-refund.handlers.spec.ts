@@ -1,7 +1,7 @@
 import type {
   AmountRefundRequest,
   RequestedCardRefund,
-} from "../../../../../../card-payment/channels/requests/index.js";
+} from "../../../../../../payment/channels/requests/index.js";
 import type { DurableDelivery } from "../../../../../../platform/outbox/durable-event.js";
 import { RecordingJournal } from "../../../../../../platform/journal/__tests__/recording-journal.js";
 import { FixedClock } from "../../../../../../platform/time/fixed-clock.js";

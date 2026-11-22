@@ -4,7 +4,7 @@ import type {
   ProvisionedIdentity,
 } from "../../src/lafoliecoffee/account/domain/ports/customer-identity.port.js";
 import { StaffIdentityPort } from "../../src/staff/invitations/staff-identity.port.js";
-import { CardProviders } from "../../src/card-payment/domain/ports/card-providers.js";
+import { CardProviders } from "../../src/payment/card/domain/ports/card-providers.js";
 import { CheckoutGateway } from "../../src/lafoliecoffee/payments/domain/ports/checkout-gateway.js";
 import { OrderMailOrigins } from "../../src/lafoliecoffee/orders/domain/ports/order-mail-origins.js";
 import { AdminTokenVerifier } from "../../src/platform/auth/admin-token.verifier.js";

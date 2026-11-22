@@ -13,7 +13,7 @@
  * écoute. Un particulier distinct par commande là où le remplacement ne doit
  * pas jouer.
  */
-import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
+import { CardProviders } from "../src/payment/card/domain/ports/card-providers.js";
 import { OrderStatus, PaymentStatus } from "../src/platform/database/client/client.js";
 import { MAILER } from "../src/mail/templates/mailer.tokens.js";
 import { cardPaid, cardProvidersDouble } from "./card-payments.js";

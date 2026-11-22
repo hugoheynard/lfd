@@ -6,7 +6,7 @@ import request from "supertest";
 
 import { CustomerRole } from "../src/platform/database/client/client.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
-import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
+import { CardProviders } from "../src/payment/card/domain/ports/card-providers.js";
 import { ProductCatalogReader } from "../src/lafoliecoffee/catalog/domain/ports/product-catalog.reader.js";
 import { OrderOperations } from "../src/lafoliecoffee/orders/application/services/order-operations.service.js";
 import { OperationDayRequiredError } from "../src/lafoliecoffee/orders/domain/errors/order-operation-errors.js";

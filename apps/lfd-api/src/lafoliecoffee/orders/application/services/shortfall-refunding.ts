@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 
-import { CardRefunds } from "../../../../card-payment/channels/requests/index.js";
+import { CardRefunds } from "../../../../payment/channels/requests/index.js";
 import { Journal } from "../../../../platform/journal/journal.js";
 import { ShortfallRefundSubjectLock } from "../../domain/ports/shortfall-refund-subject.js";
 import {

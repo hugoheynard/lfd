@@ -6,7 +6,7 @@ import {
   CardPayments,
   CardSettlementReader,
   type RetrievedCardPayment,
-} from "../../../../card-payment/channels/requests/index.js";
+} from "../../../../payment/channels/requests/index.js";
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { OrderPaymentAwaitsAdoptionError } from "../../domain/errors/order-payment-errors.js";
 import type {

@@ -43,7 +43,7 @@ async function handOverWithRefundSubscriberDead(
 
 /** L'encaissement par carte : « Relancer » un remboursement arrêté ; « Rembourser le reste ». */
 export const CARD_PAYMENT_SCENARIOS: ScenarioSet = {
-  [routeKey("card-payment/http/admin-card-refunds.controller.ts", "retry")]: async ({ ctx }) => {
+  [routeKey("payment/card/http/admin-card-refunds.controller.ts", "retry")]: async ({ ctx }) => {
     const buyer = await createUser(ctx.prisma, { auth0Sub: "replay-card", firstName: "Léa" });
     const pickupId = await pickupPoint(ctx);
     const order = await placeOrder(ctx, {

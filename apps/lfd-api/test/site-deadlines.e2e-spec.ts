@@ -14,7 +14,7 @@
 import type { GpsPoint, ProductionDueThresholdsView } from "@lfd/contracts";
 
 import { RoadTravelTimeReader } from "../src/delivery/channels/commerce/index.js";
-import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
+import { CardProviders } from "../src/payment/card/domain/ports/card-providers.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { DayOrdersReader, ServiceDay } from "../src/production/channels/commerce/index.js";
 import {

@@ -14,7 +14,7 @@ emporter un sac incomplet.
 
 **Ce qui le débloque, depuis le 2026-11-10.** Le remboursement d'un montant
 existe (`CardRefunds.requestAmount`,
-`apps/lfd-api/src/card-payment/channels/requests/card-refunds.ts`, lot P1), et
+`apps/lfd-api/src/payment/channels/requests/card-refunds.ts`, lot P1), et
 la baisse d'une commande carte le répartit déjà sur ses paiements
 (`apps/lfd-api/src/lafoliecoffee/orders/revision/domain/services/revision-card-refund.ts`, lot S1).
 

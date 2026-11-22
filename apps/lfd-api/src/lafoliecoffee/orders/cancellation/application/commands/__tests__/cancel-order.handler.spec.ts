@@ -5,7 +5,7 @@ import { proposalAt } from "../../../../revision/application/services/__tests__/
 import { DirectUnitOfWork } from "../../../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { CommerceOrderCancelledFact } from "../../../../../../delivery/channels/commerce/index.js";
 import { FixedClock } from "../../../../../../platform/time/fixed-clock.js";
-import type { CardPaymentCancellation } from "../../../../../../card-payment/channels/requests/index.js";
+import type { CardPaymentCancellation } from "../../../../../../payment/channels/requests/index.js";
 import type { OrderWithdrawalOutcome } from "../../../../../../production/channels/commerce/index.js";
 import {
   CancellationReasonRequiredError,

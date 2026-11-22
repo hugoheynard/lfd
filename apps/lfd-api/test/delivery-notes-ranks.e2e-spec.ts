@@ -18,7 +18,7 @@ import { DeliveryNoteRepository } from "../src/lafoliecoffee/delivery-notes/doma
 import { ORDER_TERMS } from "../src/lafoliecoffee/delivery-notes/domain/value-objects/__tests__/delivery-note-terms.fixture.js";
 import { MarkOrderFulfilledCommand } from "../src/lafoliecoffee/orders/application/commands/mark-order-fulfilled.command.js";
 import { MarkOrderReadyCommand } from "../src/lafoliecoffee/orders/application/commands/mark-order-ready.command.js";
-import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
+import { CardProviders } from "../src/payment/card/domain/ports/card-providers.js";
 import { UnitOfWork } from "../src/platform/database/unit-of-work.js";
 import { DurablePublisher } from "../src/platform/outbox/durable-publisher.js";
 import { PackingOrderPackedEvent } from "../src/packing/channels/commerce/index.js";

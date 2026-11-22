@@ -9,7 +9,7 @@ import {
   type SubjectReference,
   type SubjectRefundOutcome,
   SubjectSettlement,
-} from "../../../../card-payment/channels/subjects/index.js";
+} from "../../../../payment/channels/subjects/index.js";
 import { DurablePublisher } from "../../../../platform/outbox/durable-publisher.js";
 import { OrderNotFoundError } from "../../domain/errors/order-errors.js";
 import { OrderCardSubjectWithoutIntentError } from "../../domain/errors/order-payment-errors.js";

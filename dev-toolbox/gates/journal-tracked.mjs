@@ -69,8 +69,8 @@
  * **La livraison** (`delivery/**`, depuis le 2026-09-29) : même discipline —
  * cf. `DELIVERY_ZONE` plus bas.
  *
- * **L'argent carte** (`card-payment/**`, depuis le 2026-11-10, lot P1.b du
- * plan M2) : `journal.append` sous `UnitOfWork`, dans le handler ou dans un
+ * **L'argent** (`payment/**`, le bloc qui encaisse, depuis le 2026-11-10,
+ * lot P1.b du plan M2) : `journal.append` sous `UnitOfWork`, dans le handler ou dans un
  * service audité pour lui-même — cf. `CARD_PAYMENT_SERVICES` plus bas.
  *
  * Usage : `pnpm gate journal-tracked` (branché en CI).
@@ -208,18 +208,17 @@ const STAFF_DELEGATES = new Map([
 const MONEY_ZONES = ["order-waivers", "payments", "loyalty"];
 
 /**
- * **L'argent carte, à la racine** (2026-11-09, plan M2,
+ * **Le bloc qui encaisse, à la racine** (`payment/`, plan M2,
  * `documentation/commandes/modification/plan-m2-historique-de-transactions.md`
- * §4.1) : le bloc `card-payment` est de premier niveau, pas sous `src/lafoliecoffee/` —
- * `MONEY_ZONES` ne peut donc pas le viser. Armée AVANT que le dossier existe :
- * sans cette entrée, l'argent carte sortirait de l'audit en silence au
- * déménagement. Tant que `src/card-payment/` n'existe pas, la zone est vide
- * (garde `existsSync` dans `ZONES`) au lieu de faire planter la porte.
+ * §4.1) : un bloc de premier niveau, pas sous `src/lafoliecoffee/` —
+ * `MONEY_ZONES` ne peut donc pas le viser. La zone couvre tout le bloc, la
+ * carte, les liens et ses canaux. Sans dossier, elle est vide (garde
+ * `existsSync` dans `ZONES`) au lieu de faire planter la porte.
  */
-const CARD_PAYMENT_ZONE = join(SRC, "card-payment");
+const CARD_PAYMENT_ZONE = join(SRC, "payment");
 
 /**
- * **Les services de `card-payment` qui écrivent sur l'argent ET le journal**
+ * **Les services de `payment/card` qui écrivent sur l'argent ET le journal**
  * (plan M2, §3.3 v9, lot P1.b, 2026-11-10) — l'exécuteur, le constat,
  * « Relancer ». Ils ne sont pas des `@CommandHandler` : le constat est appelé
  * par le webhook, l'exécuteur par trois portes, « Relancer » par la route ET
@@ -235,28 +234,31 @@ const CARD_PAYMENT_ZONE = join(SRC, "card-payment");
 const CARD_PAYMENT_SERVICES = new Map([
   [
     "CardRefundIssuancePreparation",
-    join("card-payment", "application", "refunds", "card-refund-issuance-preparation.ts"),
+    join("payment", "card", "application", "refunds", "card-refund-issuance-preparation.ts"),
   ],
   [
     "CardRefundIssuanceRecorder",
-    join("card-payment", "application", "refunds", "card-refund-issuance-recorder.ts"),
+    join("payment", "card", "application", "refunds", "card-refund-issuance-recorder.ts"),
   ],
   [
     "CardRefundObservation",
-    join("card-payment", "application", "refunds", "card-refund-observation.ts"),
+    join("payment", "card", "application", "refunds", "card-refund-observation.ts"),
   ],
-  ["CardRefundRetrier", join("card-payment", "application", "refunds", "card-refund-retrier.ts")],
+  [
+    "CardRefundRetrier",
+    join("payment", "card", "application", "refunds", "card-refund-retrier.ts"),
+  ],
 ]);
 
 /**
- * Ce qui ÉCRIT le journal de `card-payment` par `Journal.append`, dans l'unité
+ * Ce qui ÉCRIT le journal de `payment/card` par `Journal.append`, dans l'unité
  * de travail de son appelant — vérifié, comme les délégations d'ailleurs : le
  * fichier doit appeler `journal.append(`.
  */
 const CARD_PAYMENT_JOURNALS = new Map([
   [
     "CardRefundEffectsWriter",
-    join("card-payment", "application", "refunds", "card-refund-effects.ts"),
+    join("payment", "card", "application", "refunds", "card-refund-effects.ts"),
   ],
 ]);
 

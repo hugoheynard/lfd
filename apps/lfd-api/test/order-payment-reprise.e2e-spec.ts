@@ -13,8 +13,8 @@
  */
 import type { OrderPaymentIntent } from "@lfd/contracts";
 
-import type { CreatedIntent } from "../src/card-payment/domain/ports/card-provider-types.js";
-import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
+import type { CreatedIntent } from "../src/payment/card/domain/ports/card-provider-types.js";
+import { CardProviders } from "../src/payment/card/domain/ports/card-providers.js";
 import { assertOutsideTransaction } from "../src/platform/database/outside-transaction.js";
 import { PaymentStatus } from "../src/platform/database/client/client.js";
 import { cardFailed, cardPaid, E2eCardProvider, E2eCardProviders } from "./card-payments.js";

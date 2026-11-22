@@ -2,13 +2,13 @@
   "$comment": "POST rangés « par nature » dont le handler crée, envoie un e-mail ou appelle le réseau, et dont la création ou l'envoi est gardé par une clé métier (index unique, clé d'e-mail dérivée du sujet). Chaque entrée : route (fichier#méthode), reason (la clé, où elle est), verified (date de la lecture du code). Plan : documentation/ops/l-idempotence-des-ecritures.md § 8, J4.",
   "exceptions": [
     {
-      "route": "apps/lfd-api/src/card-payment/http/admin-card-refunds.controller.ts#settleElsewhere",
+      "route": "apps/lfd-api/src/payment/card/http/admin-card-refunds.controller.ts#settleElsewhere",
       "effects": ["creates"],
       "reason": "transition terminale : rejouée, la demande relue sous le verrou du paiement n'est plus arrêtée et l'agrégat refuse (409 CardRefundNotStoppedError) avant toute ligne au carnet, tout fait ou tout avoir",
       "verified": "2026-11-12"
     },
     {
-      "route": "apps/lfd-api/src/card-payment/http/replay-first-payments.controller.ts#replay",
+      "route": "apps/lfd-api/src/payment/card/http/replay-first-payments.controller.ts#replay",
       "effects": ["creates"],
       "reason": "appelée par la machine (RecomputeGuard) : chaque référence est relue sous claim et la ligne insérée absente ou avancée en retard, jamais en arrière ; rejoué, le rattrapage ne trouve plus rien à insérer ni à avancer",
       "verified": "2026-11-12"

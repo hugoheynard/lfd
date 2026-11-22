@@ -1,4 +1,4 @@
-import { CardPaymentUnmatchedFact } from "../../../../../card-payment/channels/facts/index.js";
+import { CardPaymentUnmatchedFact } from "../../../../../payment/channels/facts/index.js";
 import { RecordingJournal } from "../../../../../platform/journal/__tests__/recording-journal.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import {

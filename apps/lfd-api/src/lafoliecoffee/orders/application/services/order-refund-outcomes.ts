@@ -3,8 +3,8 @@ import { Injectable } from "@nestjs/common";
 import type {
   CardSubject,
   SubjectRefundOutcome,
-} from "../../../../card-payment/channels/subjects/index.js";
-import type { SubjectRefundPosition } from "../../../../card-payment/channels/requests/index.js";
+} from "../../../../payment/channels/subjects/index.js";
+import type { SubjectRefundPosition } from "../../../../payment/channels/requests/index.js";
 import { AfterCommit } from "../../../../platform/database/after-commit.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import type { JournalFact } from "../../../../platform/journal/journal-fact.js";

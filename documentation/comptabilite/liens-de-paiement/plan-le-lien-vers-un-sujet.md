@@ -93,6 +93,10 @@ remboursements.
 
 ## 0. Lot zéro — le bloc `payment`
 
+> ✅ **Bâti le 2026-11-22.** Typecheck des sources et des specs, 385 suites
+> et 3 952 tests du bloc et de ses appelants, et les portes : identiques
+> avant et après.
+
 Décidé par Hugo le 2026-11-22 : le bloc qui encaisse devient **`payment`**,
 agnostique de l'application **et du moyen**. La carte et le lien en sont les
 deux premiers sous-dossiers ; le prélèvement et le virement y viendront le
@@ -113,7 +117,7 @@ Dans la suite de ce plan, `card-payment` désigne `payment/card` après Z.
 
 | Se renomme (du code)                                                                                                                                                                              | Ne se renomme pas (des valeurs)                                           |
 | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| le dossier `src/card-payment/` → `src/payment/card/` (119 fichiers, compté le 2026-11-22)                                                                                                         | le schéma Postgres `card_payment` et ses tables                           |
+| l'ancien dossier `card-payment` : ses canaux sous `src/payment/channels/`, le reste sous `src/payment/card/` (119 fichiers)                                                                       | le schéma Postgres `card_payment` et ses tables                           |
 | les imports qui l'atteignent (194 fichiers hors du bloc : tests, `appBootstrap/`, `lafoliecoffee/`)                                                                                               | les types de faits `card_payment.settled`, `card_payment.failed`…         |
 | le bloc dans les portes : `context-boundaries`, `prisma-model-ownership`, `journal-tracked`, `controller-buses`, `network-outside-transaction`, les exceptions d'idempotence, et `dev-sweeps.mjs` | les noms des abonnés durables (clés de leurs reçus dans la boîte d'envoi) |
 | la colonne et la ligne `card-payment` de la matrice du CLAUDE.md, et ses paragraphes                                                                                                              | le registre `CARD_ACCOUNTS` et les noms de comptes (`lfc-stripe`)         |
@@ -138,7 +142,7 @@ exception) : les renommer serait une migration pour rien.
 
 ### 0.3 Les branches en vol
 
-Au 2026-11-22, aucune branche ne modifie `src/card-payment/`, mais quatre
+Au 2026-11-22, aucune branche ne modifiait l'ancien dossier, mais quatre
 branches de travail d'agents (`worktree-agent-*`) ajoutent une ou deux
 lignes qui le citent. Avant Z, relire `git branch` : une branche fusionnée
 après Z verra ses imports cassés au typecheck, pas en silence — à corriger
@@ -146,15 +150,15 @@ après Z verra ses imports cassés au typecheck, pas en silence — à corriger
 
 ## 1. Ce qui existe, et ce que le plan en garde
 
-| Pièce                                                  | Aujourd'hui (relu le 2026-11-22)                                                                                                       | Après                                             |
-| ------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
-| `card-payment/channels/subjects/subject-settlement.ts` | le port qu'un bloc implémente par type de sujet ; un seul implémenteur, `order` (`order-subject-settlement.ts`)                        | **inchangé** ; deux implémenteurs de plus         |
-| `card-payment/channels/requests/card-payments.ts`      | `prepare` (réseau, hors transaction) puis `attach` (dans la transaction) ; `retrieve`                                                  | **inchangé** ; la porte l'appelle                 |
-| `card_payment.payment`                                 | `subject_type` est un `TEXT` **sans `CHECK` sur ses valeurs** (migration `20261109030000`) ; un seul `first` par sujet (index partiel) | **aucune migration** pour un type de plus         |
-| `RegisteredSubjectSettlements`                         | un registre par type, refuse un doublon                                                                                                | deux entrées de plus, reliées par `appBootstrap/` |
-| `PaymentLink` (`lafoliecoffee/payments/`)              | Stripe Checkout, son client, son webhook, son secret                                                                                   | devient la **régularisation**, sans Stripe (§5)   |
-| `PayerCollectionMeans`, `CollectionMeans`              | `sepa_debit` \| `bank_transfer`, `CHECK` en base (`20261112150100`) ; aucune ligne = prélèvement                                       | `card_link` en plus (§4)                          |
-| `OrderCollectionState`                                 | `settled_by_transfer` cite son virement (`CHECK`)                                                                                      | `settled_by_card` cite son paiement (§4.4)        |
+| Pièce                                             | Aujourd'hui (relu le 2026-11-22)                                                                                                       | Après                                             |
+| ------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
+| `payment/channels/subjects/subject-settlement.ts` | le port qu'un bloc implémente par type de sujet ; un seul implémenteur, `order` (`order-subject-settlement.ts`)                        | **inchangé** ; deux implémenteurs de plus         |
+| `payment/channels/requests/card-payments.ts`      | `prepare` (réseau, hors transaction) puis `attach` (dans la transaction) ; `retrieve`                                                  | **inchangé** ; la porte l'appelle                 |
+| `card_payment.payment`                            | `subject_type` est un `TEXT` **sans `CHECK` sur ses valeurs** (migration `20261109030000`) ; un seul `first` par sujet (index partiel) | **aucune migration** pour un type de plus         |
+| `RegisteredSubjectSettlements`                    | un registre par type, refuse un doublon                                                                                                | deux entrées de plus, reliées par `appBootstrap/` |
+| `PaymentLink` (`lafoliecoffee/payments/`)         | Stripe Checkout, son client, son webhook, son secret                                                                                   | devient la **régularisation**, sans Stripe (§5)   |
+| `PayerCollectionMeans`, `CollectionMeans`         | `sepa_debit` \| `bank_transfer`, `CHECK` en base (`20261112150100`) ; aucune ligne = prélèvement                                       | `card_link` en plus (§4)                          |
+| `OrderCollectionState`                            | `settled_by_transfer` cite son virement (`CHECK`)                                                                                      | `settled_by_card` cite son paiement (§4.4)        |
 
 ## 2. La porte : `card-payment` tient les liens
 
@@ -199,12 +203,12 @@ pourra porter `payLinkId` le jour où un abonné en aura besoin.
 
 ### 2.2 Les deux ports du canal
 
-- **`PayLinks`** (`card-payment/channels/requests/`, demandé par les blocs
+- **`PayLinks`** (`payment/channels/requests/`, demandé par les blocs
   métier) : `open(subject, { origin, payerLabel, by })` → `{ linkId, url }`, **dans la transaction de
   l'appelant, sans réseau** — l'émission d'une facture l'appelle ;
   `revoke(subject, reason)` ; `urlOf(subject)` pour recopier. `open` sur un
   sujet qui a déjà un lien vivant rend celui-là.
-- **`LinkableSubject`** (`card-payment/channels/subjects/`, implémenté par le
+- **`LinkableSubject`** (`payment/channels/subjects/`, implémenté par le
   bloc qui possède le sujet) — un port **à part** de `SubjectSettlement`
   (ISP) : la commande ne l'implémente pas, rien ne change pour elle.
   `quote(subject)` → `{ payable, amountCents, payeeName, payerName,
@@ -248,7 +252,7 @@ reference, dueOn | null }` ou `{ payable: false, reason }` (réglé,
 ### 2.3 bis L'instruction de collecte, neutre du prestataire
 
 🔴 `CardPayments.prepare` et `retrieve` rendent aujourd'hui `clientSecret` et
-`publishableKey` (`card-payment/channels/requests/card-payments.ts`, relu le
+`publishableKey` (`payment/channels/requests/card-payments.ts`, relu le
 2026-11-22) : le modèle de Stripe, un formulaire intégré à notre page.
 Beaucoup de solutions bancaires demandent une **redirection** vers leur
 page, ou un jeton de formulaire à elles ; l'offre de la Caisse d'Épargne
@@ -444,7 +448,7 @@ après `lockSubject`) :
 étapes 1-2 rend `refused`, et — comme la commande annulée, qui publie
 `OrderPaidAfterCancellationEvent` (`order-subject-settlement.ts`, l. 105-108)
 — **le sujet demande lui-même le remboursement intégral**, par
-`CardRefunds.requestRemainder` (`card-payment/channels/requests/card-refunds.ts`),
+`CardRefunds.requestRemainder` (`payment/channels/requests/card-refunds.ts`),
 hors de la transaction, par un abonné durable de son propre fait
 `invoice.card_payment_refused`. L'argent en trop revient toujours au
 client ; la cloche de la comptabilité sonne.
@@ -511,7 +515,7 @@ rapprocher.
 
 | Lot | Contenu                                                                                                                                                                                                                                                                                                                                     | Dépend de  |
 | --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
-| Z   | le bloc `payment` : `card-payment` → `payment/card`, les portes d'abord, le CLAUDE.md (§0) — **aucun changement de comportement**                                                                                                                                                                                                           | —          |
+| Z   | ✅ le bloc `payment` : `card-payment` → `payment/card`, les portes d'abord, le CLAUDE.md (§0) — **aucun changement de comportement**                                                                                                                                                                                                        | —          |
 | P0  | l'instruction de collecte neutre (§2.3 bis) : le port, l'adaptateur Stripe, la page `/commandes/:id/regler` passée au composant de collecte partagé — **aucun changement visible**                                                                                                                                                          | Z          |
 | I0  | `isDirectDebit`, `switch` exhaustifs, la porte — **aucun changement de comportement**                                                                                                                                                                                                                                                       | —          |
 | P1  | `card_payment.pay_link`, `PayLinks`, `LinkableSubject`, le registre des origines, la page publique (API et boutique), les tests                                                                                                                                                                                                             | P0         |

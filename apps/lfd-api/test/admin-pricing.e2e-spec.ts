@@ -15,7 +15,7 @@ import { millicentsFromCents } from "@lfd/money";
 import type { PricingBoardView, PricingComparisonView } from "@lfd/contracts";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
-import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
+import { CardProviders } from "../src/payment/card/domain/ports/card-providers.js";
 import {
   bootstrapE2e,
   E2E_STAFF_ID,

@@ -13,7 +13,7 @@ import { CommerceOrderPlacedFact } from "../../../../delivery/channels/commerce/
 import {
   CardPayments,
   type PreparedCardPayment,
-} from "../../../../card-payment/channels/requests/index.js";
+} from "../../../../payment/channels/requests/index.js";
 import {
   ORDER_CARD_SUBJECT_TYPE,
   orderCardSubject,

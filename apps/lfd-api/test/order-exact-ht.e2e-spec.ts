@@ -12,8 +12,8 @@ import { ConvertLoyaltyPointsCommand } from "../src/lafoliecoffee/loyalty/applic
 import type {
   CreateIntentParams,
   CreatedIntent,
-} from "../src/card-payment/domain/ports/card-provider-types.js";
-import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
+} from "../src/payment/card/domain/ports/card-provider-types.js";
+import { CardProviders } from "../src/payment/card/domain/ports/card-providers.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { E2eCardProvider, E2eCardProviders } from "./card-payments.js";
 import {

@@ -21,7 +21,7 @@ import {
   CustomerRole,
   DeferredTerm,
 } from "../src/platform/database/client/client.js";
-import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
+import { CardProviders } from "../src/payment/card/domain/ports/card-providers.js";
 import { OrderCutoffWaiverSpentError } from "../src/lafoliecoffee/orders/domain/errors/order-errors.js";
 import { OrderCutoffWaiverGate } from "../src/lafoliecoffee/orders/domain/ports/order-cutoff-waiver.gate.js";
 import { anActiveFiche, relayAll } from "./catalog-facts-scene.js";

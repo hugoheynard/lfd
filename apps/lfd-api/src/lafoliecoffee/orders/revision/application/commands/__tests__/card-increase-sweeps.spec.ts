@@ -1,4 +1,4 @@
-import type { CardProviderSettlement } from "../../../../../../card-payment/channels/requests/index.js";
+import type { CardProviderSettlement } from "../../../../../../payment/channels/requests/index.js";
 import { DirectUnitOfWork } from "../../../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { HeldAfterCommit } from "../../../../../../platform/database/__tests__/held-after-commit.js";
 import { RecordingJournal } from "../../../../../../platform/journal/__tests__/recording-journal.js";

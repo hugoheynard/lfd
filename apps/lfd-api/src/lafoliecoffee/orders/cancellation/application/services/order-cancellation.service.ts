@@ -8,7 +8,7 @@ import { UnitOfWork } from "../../../../../platform/database/unit-of-work.js";
 import { DurablePublisher } from "../../../../../platform/outbox/durable-publisher.js";
 import { BusinessError, DomainError } from "../../../../../platform/shared/errors/app-error.js";
 import { Clock } from "../../../../../platform/time/clock.js";
-import type { CardPaymentCancellation } from "../../../../../card-payment/channels/requests/index.js";
+import type { CardPaymentCancellation } from "../../../../../payment/channels/requests/index.js";
 import {
   OrderCancellationNotRecordedError,
   OrderCancellationPaymentInProgressError,

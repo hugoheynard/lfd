@@ -23,7 +23,7 @@ import type { HandoverVia } from "../src/lafoliecoffee/orders/domain/services/ha
 import type { FirstHandoverStatus } from "../src/lafoliecoffee/orders/domain/services/shipment-settlement.js";
 import { ON_PRODUCTION_DAY_CLOSED } from "../src/lafoliecoffee/orders/application/handlers/on-production-day-closed.handler.js";
 import { PrismaOrderRepository } from "../src/lafoliecoffee/orders/infrastructure/prisma-order.repository.js";
-import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
+import { CardProviders } from "../src/payment/card/domain/ports/card-providers.js";
 import { bootstrapE2e, daysAgo, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
 import { placeLateByStaff } from "./staff-late-order.js";
 import { createUser } from "./factories.js";

@@ -32,7 +32,7 @@ import request from "supertest";
 import { MarkOrderFulfilledCommand } from "../src/lafoliecoffee/orders/application/commands/mark-order-fulfilled.command.js";
 import { ConvertLoyaltyPointsCommand } from "../src/lafoliecoffee/loyalty/application/commands/convert-loyalty-points.command.js";
 import { PendingSettlementSweep } from "../src/lafoliecoffee/orders/application/services/pending-settlement-sweep.service.js";
-import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
+import { CardProviders } from "../src/payment/card/domain/ports/card-providers.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { OrderStatus, PaymentStatus } from "../src/platform/database/client/client.js";
 import { ServiceDay } from "../src/production/channels/commerce/index.js";

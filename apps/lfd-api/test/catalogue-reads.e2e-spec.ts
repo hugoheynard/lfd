@@ -34,7 +34,7 @@ import { randomUUID } from "node:crypto";
 
 import type request from "supertest";
 
-import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
+import { CardProviders } from "../src/payment/card/domain/ports/card-providers.js";
 import { PricingMaterialsCache } from "../src/lafoliecoffee/pricing/infrastructure/pricing-materials.cache.js";
 import { CatalogueSnapshotStore } from "../src/lafoliecoffee/catalog/infrastructure/catalogue-snapshot/catalogue-snapshot.store.js";
 import { StaffAccessResolver } from "../src/platform/auth/staff-access.resolver.js";

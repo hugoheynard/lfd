@@ -1,4 +1,4 @@
-import type { CardPaymentLine } from "../../../../../card-payment/channels/requests/index.js";
+import type { CardPaymentLine } from "../../../../../payment/channels/requests/index.js";
 import { UnitOfWork } from "../../../../../platform/database/unit-of-work.js";
 import { BackgroundWork } from "../../../../../platform/events/background-work.js";
 import { RecordingJournal } from "../../../../../platform/journal/__tests__/recording-journal.js";

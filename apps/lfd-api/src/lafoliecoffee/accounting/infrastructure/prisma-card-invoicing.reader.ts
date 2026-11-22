@@ -3,7 +3,7 @@ import { Injectable } from "@nestjs/common";
 import {
   type CardSettlementPosition,
   CardSettlementReader,
-} from "../../../card-payment/channels/requests/index.js";
+} from "../../../payment/channels/requests/index.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { orderCardSubject } from "../../orders/application/services/order-card-subject.js";
 import { COMMERCIAL_INVOICE } from "../domain/entities/invoice.types.js";

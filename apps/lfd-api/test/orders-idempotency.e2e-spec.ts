@@ -15,8 +15,8 @@ import { randomUUID } from "node:crypto";
  */
 import type { PlacedOrderResponse } from "@lfd/contracts";
 
-import type { RetrievedIntent } from "../src/card-payment/domain/ports/card-provider-types.js";
-import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
+import type { RetrievedIntent } from "../src/payment/card/domain/ports/card-provider-types.js";
+import { CardProviders } from "../src/payment/card/domain/ports/card-providers.js";
 import { E2eCardProvider, E2eCardProviders } from "./card-payments.js";
 import { bootstrapE2e, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
 

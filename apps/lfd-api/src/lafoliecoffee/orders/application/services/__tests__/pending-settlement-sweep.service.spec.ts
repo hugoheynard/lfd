@@ -1,6 +1,6 @@
 import { ServiceDay } from "../../../../../production/channels/commerce/index.js";
 import { CommerceOrderCancelledFact } from "../../../../../delivery/channels/commerce/index.js";
-import type { CardPaymentCancellation } from "../../../../../card-payment/channels/requests/index.js";
+import type { CardPaymentCancellation } from "../../../../../payment/channels/requests/index.js";
 import { OrderPaymentFailedEvent } from "../../../domain/events/order-payment-failed.event.js";
 import {
   OrderRepository,

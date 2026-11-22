@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 
-import { CardRefunds } from "../../../../../card-payment/channels/requests/index.js";
+import { CardRefunds } from "../../../../../payment/channels/requests/index.js";
 import type { CancelledOrderRefund } from "../../domain/events/order-cancelled.event.js";
 import { OrderCardAdoption } from "../../../domain/ports/order-card-payments.js";
 import { orderCardSubject } from "../../../application/services/order-card-subject.js";

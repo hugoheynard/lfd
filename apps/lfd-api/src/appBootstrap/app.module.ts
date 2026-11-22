@@ -39,7 +39,7 @@ import { PromotionsModule } from "../lafoliecoffee/promotions/promotions.module.
 import { OrderPricingModule } from "../lafoliecoffee/orders/order-pricing.module.js";
 import { AccountingModule } from "../lafoliecoffee/accounting/accounting.module.js";
 import { PaymentsModule } from "../lafoliecoffee/payments/payments.module.js";
-import { CardPaymentModule } from "../card-payment/card-payment.module.js";
+import { CardPaymentModule } from "../payment/card/card-payment.module.js";
 import { CardPaymentFeedModule } from "./card-payment-feed.module.js";
 import { LoyaltyModule } from "../lafoliecoffee/loyalty/loyalty.module.js";
 import { DevModule } from "../dev/dev.module.js";

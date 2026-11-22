@@ -1,4 +1,4 @@
-import type { SubjectRefundPosition } from "../../../../card-payment/channels/requests/index.js";
+import type { SubjectRefundPosition } from "../../../../payment/channels/requests/index.js";
 import { orderRefundPositionOf } from "../order-card-refund-readings.js";
 
 /**

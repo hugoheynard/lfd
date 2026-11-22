@@ -5,7 +5,7 @@ import {
   type CardPaymentPreparation,
   CardPayments,
   type PreparedCardPayment,
-} from "../../../../../card-payment/channels/requests/index.js";
+} from "../../../../../payment/channels/requests/index.js";
 import { OrderInscriptionReader } from "../../../../../production/channels/commerce/index.js";
 import { UnitOfWork } from "../../../../../platform/database/unit-of-work.js";
 import { IdGenerator } from "../../../../../platform/id/id-generator.js";

@@ -12,7 +12,7 @@
  * le parcours de chacun, et ce qui est éprouvé ici est la LECTURE.
  */
 import { SaleReferenceUsage } from "../src/pim/channels/b2b-platform/sale-reference-usage/sale-reference-usage.js";
-import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
+import { CardProviders } from "../src/payment/card/domain/ports/card-providers.js";
 import { CompanyStatus } from "../src/platform/database/client/client.js";
 import { bootstrapE2e, daysAgo, type E2eContext } from "./e2e-harness.js";
 import { createCompany, createUser } from "./factories.js";

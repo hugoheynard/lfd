@@ -24,7 +24,7 @@ import type {
 } from "@lfd/contracts";
 
 import { StatementMonth } from "../src/lafoliecoffee/accounting/domain/value-objects/statement-month.js";
-import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
+import { CardProviders } from "../src/payment/card/domain/ports/card-providers.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { CustomerRole } from "../src/platform/database/client/client.js";
 import { bootstrapE2e, daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";

@@ -12,7 +12,7 @@
 import type { AdminPlacedOrderResponse } from "@lfd/contracts";
 
 import { PrismaOrderDiscountBackfill } from "../src/lafoliecoffee/orders/infrastructure/prisma-order-discount-backfill.js";
-import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
+import { CardProviders } from "../src/payment/card/domain/ports/card-providers.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import {
   CompanyStatus,

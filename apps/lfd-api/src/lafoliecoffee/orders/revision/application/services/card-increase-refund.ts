@@ -3,7 +3,7 @@ import { Injectable } from "@nestjs/common";
 import {
   CardRefunds,
   CardSettlementReader,
-} from "../../../../../card-payment/channels/requests/index.js";
+} from "../../../../../payment/channels/requests/index.js";
 import { Journal } from "../../../../../platform/journal/journal.js";
 import { ComplementWithoutProposalError } from "../../domain/errors/card-increase-proposal-errors.js";
 import { CardIncreaseProposalRepository } from "../../domain/ports/card-increase-proposal.repository.js";

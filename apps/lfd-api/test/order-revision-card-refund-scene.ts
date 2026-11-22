@@ -2,9 +2,9 @@ import type { CardComplementPaymentView, OrderRevisionQuoteView } from "@lfd/con
 import { INTENT_KEY, freshIntent } from "./intent-key.js";
 import type request from "supertest";
 
-import { CardSettlementReader } from "../src/card-payment/channels/requests/index.js";
-import type { RefundIssuance } from "../src/card-payment/domain/ports/card-provider-types.js";
-import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
+import { CardSettlementReader } from "../src/payment/channels/requests/index.js";
+import type { RefundIssuance } from "../src/payment/card/domain/ports/card-provider-types.js";
+import { CardProviders } from "../src/payment/card/domain/ports/card-providers.js";
 import { MAILER } from "../src/mail/templates/mailer.tokens.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { OutboxRelay } from "../src/platform/outbox/outbox-relay.js";

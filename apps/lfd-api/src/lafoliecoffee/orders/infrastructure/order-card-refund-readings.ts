@@ -5,7 +5,7 @@ import {
   type CardRefundView,
   CardSettlementReader,
   type SubjectRefundPosition,
-} from "../../../card-payment/channels/requests/index.js";
+} from "../../../payment/channels/requests/index.js";
 import { orderCardSubject } from "../application/services/order-card-subject.js";
 import { refundPositionOf, type RefundPosition } from "../domain/value-objects/refund-position.js";
 

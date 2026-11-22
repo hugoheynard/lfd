@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 
-import { CardSettlementReader } from "../../../../card-payment/channels/requests/index.js";
+import { CardSettlementReader } from "../../../../payment/channels/requests/index.js";
 import type { ShortfallRefundMoney } from "../../domain/services/shortfall-refund.js";
 import { orderCardSubject } from "./order-card-subject.js";
 import { RefundablePayments, type RefundablesMode } from "./refundable-payments.js";

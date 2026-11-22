@@ -20,7 +20,7 @@ la boutique — jamais un prix pro, un client ou un article réservé aux pros.
 
 | Webhook              | De qui | Route                    | Code                                                                     | Doc                                                                                                                                    |
 | -------------------- | ------ | ------------------------ | ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
-| Paiements            | Stripe | `POST /payments/webhook` | `apps/lfd-api/src/card-payment/http/card-payments-webhook.controller.ts` | [`../ops/secrets-et-variables.md`](../ops/secrets-et-variables.md) (`STRIPE_WEBHOOK_SECRET`), [`../ops/runbook.md`](../ops/runbook.md) |
+| Paiements            | Stripe | `POST /payments/webhook` | `apps/lfd-api/src/payment/card/http/card-payments-webhook.controller.ts` | [`../ops/secrets-et-variables.md`](../ops/secrets-et-variables.md) (`STRIPE_WEBHOOK_SECRET`), [`../ops/runbook.md`](../ops/runbook.md) |
 | Courriels (rebonds…) | Resend | `POST /webhooks/resend`  | `apps/lfd-api/src/mail/deliveries/http/resend-webhook.controller.ts`     | [`../ops/runbook.md`](../ops/runbook.md)                                                                                               |
 
 Ils ne bougent pas : ils sont listés ici pour qu'un webhook sortant ne

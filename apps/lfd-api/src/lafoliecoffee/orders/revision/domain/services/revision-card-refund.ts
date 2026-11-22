@@ -1,4 +1,4 @@
-import type { OpenCardRefundRequest } from "../../../../../card-payment/channels/requests/index.js";
+import type { OpenCardRefundRequest } from "../../../../../payment/channels/requests/index.js";
 import type { RevisionActor } from "../entities/order-revision.js";
 import { CardRefundNotCoveredError } from "../errors/revision-card-refund-errors.js";
 

@@ -14,7 +14,7 @@ import { randomUUID } from "node:crypto";
 
 import type { BillingAddressPayload, DeliveryAddressPayload } from "@lfd/contracts";
 
-import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
+import { CardProviders } from "../src/payment/card/domain/ports/card-providers.js";
 import { GeocoderUnavailableError } from "../src/delivery/domain/errors/delivery-routing-errors.js";
 import {
   type GeocodeAnswer,

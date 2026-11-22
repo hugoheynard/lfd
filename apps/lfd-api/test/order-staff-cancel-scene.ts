@@ -1,8 +1,8 @@
 import type request from "supertest";
 
 import { SitedDayOrders } from "../src/lafoliecoffee/orders/application/services/sited-day-orders.service.js";
-import type { CardPaymentCancellation } from "../src/card-payment/channels/requests/index.js";
-import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
+import type { CardPaymentCancellation } from "../src/payment/channels/requests/index.js";
+import { CardProviders } from "../src/payment/card/domain/ports/card-providers.js";
 import { MAILER } from "../src/mail/templates/mailer.tokens.js";
 import { OutboxRelay } from "../src/platform/outbox/outbox-relay.js";
 import { ProductionOrderWithdrawalDesk } from "../src/production/day/application/services/production-order-withdrawal.desk.js";

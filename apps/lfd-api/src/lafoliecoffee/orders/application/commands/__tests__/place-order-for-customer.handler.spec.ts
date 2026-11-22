@@ -21,7 +21,7 @@ import {
   type CardProviderSettlement,
   type PreparedCardPayment,
   type RetrievedCardPayment,
-} from "../../../../../card-payment/channels/requests/index.js";
+} from "../../../../../payment/channels/requests/index.js";
 import { PickupAddressRepository } from "../../../../pickup-addresses/domain/pickup-address.repository.js";
 import { PreferredPickupReader } from "../../../domain/ports/preferred-pickup.reader.js";
 import type { OrderToPlace } from "../../../domain/entities/order.js";

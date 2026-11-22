@@ -19,8 +19,8 @@ import {
   type RequestReasonPayload,
 } from "@lfd/contracts";
 
-import { CardPayments } from "../src/card-payment/channels/requests/index.js";
-import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
+import { CardPayments } from "../src/payment/channels/requests/index.js";
+import { CardProviders } from "../src/payment/card/domain/ports/card-providers.js";
 import { CardIncreaseProposal } from "../src/lafoliecoffee/orders/revision/domain/entities/card-increase-proposal.js";
 import { CardIncreaseProposalRepository } from "../src/lafoliecoffee/orders/revision/domain/ports/card-increase-proposal.repository.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";

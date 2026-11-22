@@ -21,7 +21,7 @@ import { CustomerIdentityPort } from "../src/lafoliecoffee/account/domain/ports/
 import { AccountAccessGranter } from "../src/lafoliecoffee/account/application/services/grant-account-access.service.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { PrincipalResolver } from "../src/platform/auth/principal.resolver.js";
-import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
+import { CardProviders } from "../src/payment/card/domain/ports/card-providers.js";
 import type { ProvisionedIdentity } from "../src/platform/shared/identity/provisioned-identity.js";
 import { bootstrapE2e, E2E_STAFF_ID, E2E_STAFF_SUB, type E2eContext } from "./e2e-harness.js";
 import { createCompany, createGuest } from "./factories.js";

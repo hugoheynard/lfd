@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 
-import { CardSettlementReader } from "../../../../../card-payment/channels/requests/index.js";
+import { CardSettlementReader } from "../../../../../payment/channels/requests/index.js";
 import { Mail } from "../../../../../mail/channels/requests/mail.js";
 import { DEFAULT_MAIL_LOCALE } from "../../../../../mail/channels/templates/mail-locale.js";
 import type { DurableDelivery } from "../../../../../platform/outbox/durable-event.js";

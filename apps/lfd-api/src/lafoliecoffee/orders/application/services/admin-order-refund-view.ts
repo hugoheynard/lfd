@@ -4,7 +4,7 @@ import { Injectable } from "@nestjs/common";
 import {
   type CardRefundRequestView,
   CardSettlementReader,
-} from "../../../../card-payment/channels/requests/index.js";
+} from "../../../../payment/channels/requests/index.js";
 import { refundFailurePhraseOf } from "../../domain/services/refund-request-phrases.js";
 import { orderCardSubject } from "./order-card-subject.js";
 

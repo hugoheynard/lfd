@@ -4,7 +4,7 @@ import {
   type CardPaymentLine,
   type CardSettlementPosition,
   CardSettlementReader,
-} from "../../../../card-payment/channels/requests/index.js";
+} from "../../../../payment/channels/requests/index.js";
 import { OrderCardAdoption } from "../../domain/ports/order-card-payments.js";
 import { CardIncreaseProposalReader } from "../../revision/domain/ports/card-increase-proposal.reader.js";
 import type { RefundablePayment } from "../../revision/domain/services/revision-card-refund.js";

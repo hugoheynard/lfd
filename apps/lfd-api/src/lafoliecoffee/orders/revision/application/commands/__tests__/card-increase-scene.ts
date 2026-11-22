@@ -8,8 +8,8 @@ import {
   type CardProviderSettlement,
   type PreparedCardPayment,
   type RetrievedCardPayment,
-} from "../../../../../../card-payment/channels/requests/index.js";
-import type { CardSubject } from "../../../../../../card-payment/channels/subjects/index.js";
+} from "../../../../../../payment/channels/requests/index.js";
+import type { CardSubject } from "../../../../../../payment/channels/subjects/index.js";
 import { OrderInscriptionReader } from "../../../../../../production/channels/commerce/index.js";
 import { DirectUnitOfWork } from "../../../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { HeldAfterCommit } from "../../../../../../platform/database/__tests__/held-after-commit.js";

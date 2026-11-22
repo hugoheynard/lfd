@@ -25,7 +25,7 @@ import type {
 } from "../src/lafoliecoffee/account/domain/value-objects/sub-account-menu-terms.js";
 import { PrismaSubAccountMenuRepository } from "../src/lafoliecoffee/account/infrastructure/prisma-sub-account-menu.repository.js";
 import { ShelfChanges } from "../src/lafoliecoffee/shared/shelf-changes/domain/ports/shelf-changes.js";
-import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
+import { CardProviders } from "../src/payment/card/domain/ports/card-providers.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import {
   CompanyStatus,

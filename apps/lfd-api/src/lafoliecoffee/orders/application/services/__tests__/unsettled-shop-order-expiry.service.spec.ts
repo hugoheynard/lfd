@@ -1,7 +1,7 @@
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { CommerceOrderCancelledFact } from "../../../../../delivery/channels/commerce/index.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
-import type { CardPaymentCancellation } from "../../../../../card-payment/channels/requests/index.js";
+import type { CardPaymentCancellation } from "../../../../../payment/channels/requests/index.js";
 import { OrderCardCancellation } from "../../../domain/ports/order-card-payments.js";
 import { OrderPaymentFailedEvent } from "../../../domain/events/order-payment-failed.event.js";
 import { UnsettledShopOrderCanceller } from "../../../cancellation/domain/ports/unsettled-shop-order.canceller.js";

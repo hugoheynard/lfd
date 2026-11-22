@@ -17,7 +17,7 @@ import type {
   OrderRevisionQuoteView,
 } from "@lfd/contracts";
 
-import { CardRefunds } from "../src/card-payment/channels/requests/index.js";
+import { CardRefunds } from "../src/payment/channels/requests/index.js";
 import { UnitOfWork } from "../src/platform/database/unit-of-work.js";
 import type { E2eContext } from "./e2e-harness.js";
 import { jsonBody } from "./e2e-harness.js";

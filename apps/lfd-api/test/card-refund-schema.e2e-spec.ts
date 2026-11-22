@@ -6,9 +6,9 @@
  * Ce que seul le vrai Postgres prouve : les CHECK, l'index unique partiel, les
  * deux machines à états et leurs colonnes immuables, le refus du DELETE, posés
  * à la main dans `20261110010100_le_remboursement_par_carte`. Les lignes sont
- * écrites en SQL brut : le code du remboursement n'existe pas encore dans
- * `src/card-payment/` (lot P1.b), et c'est la base elle-même qu'on éprouve —
- * un agrégat qui refuserait avant elle cacherait ce qu'elle laisse passer.
+ * écrites en SQL brut, sans passer par `src/payment/card/` : c'est la base
+ * elle-même qu'on éprouve — un agrégat qui refuserait avant elle cacherait ce
+ * qu'elle laisse passer.
  */
 import { purgeCardPayments } from "../src/dev/scenario/purge/card-payment.purge.js";
 import { bootstrapE2e, type E2eContext } from "./e2e-harness.js";

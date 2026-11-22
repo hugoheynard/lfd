@@ -13,7 +13,7 @@
  * réglées ou refusées par le vrai webhook de `card-payment`. Seule la commande SANS jour
  * de retrait garde une écriture brute, datée au-dessus d'elle.
  */
-import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
+import { CardProviders } from "../src/payment/card/domain/ports/card-providers.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import {
   OrderClientele,

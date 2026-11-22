@@ -14,7 +14,7 @@
  */
 import { CommandBus } from "@nestjs/cqrs";
 
-import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
+import { CardProviders } from "../src/payment/card/domain/ports/card-providers.js";
 import { prepareCardInvoice } from "../src/lafoliecoffee/accounting/application/card-invoice-support.js";
 import { ISSUE_CARD_INVOICE_ON_BILLING_SETTLED } from "../src/lafoliecoffee/accounting/application/handlers/issue-card-invoice-on-billing-settled.handler.js";
 import { CardInvoicingReader } from "../src/lafoliecoffee/accounting/domain/ports/card-invoicing.reader.js";

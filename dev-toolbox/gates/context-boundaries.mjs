@@ -93,14 +93,14 @@ const BLOCK_OF = {
   //   de l'éditeur) et la plateforme.
   mail: "mail",
 
-  // ▸ L'ENCAISSEMENT PAR CARTE (2026-11-09,
-  //   `documentation/commandes/modification/plan-m2-historique-de-transactions.md`,
-  //   §3.1, §4.1). Déclaré AVANT que le dossier existe. Sans métier propre,
-  //   comme `mail` : il encaisse et rembourse pour un sujet opaque. Il
-  //   déclare un canal qu'un autre bloc implémente (`channels/subjects/`),
-  //   comme `production/channels/commerce/`. Le commerce l'atteint par
-  //   `card-payment/channels/` SEULEMENT.
-  "card-payment": "card-payment",
+  // ▸ L'ENCAISSEMENT (`payment/`, décidé par Hugo le 2026-11-22 ;
+  //   `documentation/comptabilite/liens-de-paiement/plan-le-lien-vers-un-sujet.md`,
+  //   §0). Sans métier propre, comme `mail` : il encaisse et rembourse pour
+  //   un sujet opaque, agnostique de l'application et du moyen — la carte
+  //   (`payment/card/`) aujourd'hui. Il déclare un canal qu'un autre bloc
+  //   implémente (`channels/subjects/`), comme `production/channels/commerce/`.
+  //   Le commerce l'atteint par `payment/channels/` SEULEMENT.
+  payment: "payment",
   // ▸ LE PANIER (2026-11-20, `documentation/commandes/le-panier.md`).
   //   Son schéma `cart`, sans clé étrangère. Le commerce l'atteint par
   //   `shop-cart/channels/` SEULEMENT ; lui n'importe que la plateforme.
@@ -183,8 +183,8 @@ const ALLOWED = {
     "delivery",
     "packing",
     "mail",
-    // Depuis le 2026-11-09 (plan M2, §3.1) : par son canal SEULEMENT.
-    "card-payment",
+    // Le bloc qui encaisse : par son canal SEULEMENT.
+    "payment",
     // Le catalogue demande au panier si un article y est (2026-11-20) : par
     // son canal SEULEMENT.
     "shop-cart",
@@ -218,7 +218,7 @@ const ALLOWED = {
   // (2026-11-09, plan M2, §3.1). Le canal `mail` : l'avis à la comptabilité
   // d'un paiement par lien, le même pour toutes les applications qui
   // encaissent (décidé par Hugo le 2026-11-22).
-  "card-payment": new Set(["staff", "platform", "mail"]),
+  payment: new Set(["staff", "platform", "mail"]),
   // La plateforme seulement : le panier ne sait pas ce qu'est une commande, ni
   // qui lui demande ce qu'il contient.
   "shop-cart": new Set(["platform"]),
@@ -236,18 +236,18 @@ const ALLOWED = {
     "delivery",
     "packing",
     "mail",
-    "card-payment",
+    "payment",
     "shop-cart",
   ]),
 };
 
 /**
  * Les blocs qui demandent des e-mails : tous les blocs métier (2026-11-06), et
- * `card-payment` pour l'avis à la comptabilité (décidé par Hugo le 2026-11-22).
+ * `payment` pour l'avis à la comptabilité (décidé par Hugo le 2026-11-22).
  */
 const MAIL_CLIENTS = [
   "staff",
-  "card-payment",
+  "payment",
   "pim",
   "media",
   "lafoliecoffee",
@@ -385,11 +385,11 @@ const PORT_SURFACE = {
   // écrit — sauf `staff`, pour l'autorisation de l'éditeur.
   ...Object.fromEntries(MAIL_CLIENTS.map((block) => [`${block}→mail`, "mail/channels/"])),
   // Le commerce encaisse et rembourse par carte par les ports que
-  // `card-payment` déclare ET implémente (`channels/requests/`), et implémente
+  // `payment` déclare ET implémente (`channels/requests/`), et implémente
   // le canal retour qu'il déclare (`channels/subjects/`) — la figure de
-  // `b2b→production` (2026-11-09, plan M2, §3.3). `card-payment → b2b` reste
+  // `b2b→production` (2026-11-09, plan M2, §3.3). `payment → b2b` reste
   // INTERDIT : il ne sait pas pour qui il encaisse.
-  "lafoliecoffee→card-payment": "card-payment/channels/",
+  "lafoliecoffee→payment": "payment/channels/",
   // Le panier publie ce qu'il sait répondre au commerce (`channels/commerce/`),
   // déclaré et implémenté par lui. `shop-cart → lafoliecoffee` reste INTERDIT.
   "lafoliecoffee→shop-cart": "shop-cart/channels/",

@@ -6,9 +6,9 @@
  * Ce que seul le vrai Postgres prouve : les CHECK, l'index unique partiel et
  * les déclencheurs que Prisma ne sait pas écrire, posés à la main dans
  * `20261109030000_le_schema_de_l_encaissement_par_carte`. Les lignes sont
- * écrites en SQL brut : le bloc `src/card-payment/` n'existe pas encore (lot
- * P0.b), et c'est la base elle-même qu'on éprouve — un agrégat qui refuserait
- * avant elle cacherait ce qu'elle laisse passer.
+ * écrites en SQL brut, sans passer par `src/payment/card/` : c'est la base
+ * elle-même qu'on éprouve — un agrégat qui refuserait avant elle cacherait ce
+ * qu'elle laisse passer.
  */
 import { bootstrapE2e, type E2eContext } from "./e2e-harness.js";
 

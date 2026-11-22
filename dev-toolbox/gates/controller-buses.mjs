@@ -100,12 +100,12 @@ const SCOPE = [
   // Nés drainés le 2026-11-09 (plan M2, lot P0.c1) : le webhook des cartes est
   // une commande (`RecordProviderEventCommand`), comme celui de Resend, et le
   // rattrapage des premiers paiements n'a que son bus.
-  "apps/lfd-api/src/card-payment/http/card-payments-webhook.controller.ts",
-  "apps/lfd-api/src/card-payment/http/replay-first-payments.controller.ts",
+  "apps/lfd-api/src/payment/card/http/card-payments-webhook.controller.ts",
+  "apps/lfd-api/src/payment/card/http/replay-first-payments.controller.ts",
   // Plan M2, lot P1.b (2026-11-10) : « Relancer », « rendu autrement » et le
   // balayage — des commandes, par le bus seul.
-  "apps/lfd-api/src/card-payment/http/admin-card-refunds.controller.ts",
-  "apps/lfd-api/src/card-payment/http/card-refund-sweep.controller.ts",
+  "apps/lfd-api/src/payment/card/http/admin-card-refunds.controller.ts",
+  "apps/lfd-api/src/payment/card/http/card-refund-sweep.controller.ts",
   // Né drainé le 2026-11-09 (plan M2, lot P0.c2) : le webhook des liens de
   // paiement, son endpoint et son secret — une commande, comme celui des cartes.
   "apps/lfd-api/src/lafoliecoffee/payments/http/payment-links-webhook.controller.ts",

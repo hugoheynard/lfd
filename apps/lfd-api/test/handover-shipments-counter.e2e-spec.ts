@@ -15,7 +15,7 @@ import type { AdminPlacedOrderResponse, OrderHandoverView } from "@lfd/contracts
 import { DeliveryNote } from "../src/lafoliecoffee/delivery-notes/domain/entities/delivery-note.js";
 import { DeliveryNoteRepository } from "../src/lafoliecoffee/delivery-notes/domain/ports/delivery-note.repository.js";
 import { ORDER_TERMS } from "../src/lafoliecoffee/delivery-notes/domain/value-objects/__tests__/delivery-note-terms.fixture.js";
-import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
+import { CardProviders } from "../src/payment/card/domain/ports/card-providers.js";
 import { UnitOfWork } from "../src/platform/database/unit-of-work.js";
 import { DurablePublisher } from "../src/platform/outbox/durable-publisher.js";
 import { PackingOrderPackedEvent } from "../src/packing/channels/commerce/index.js";

@@ -9,7 +9,7 @@ import { Clock } from "../../../../platform/time/clock.js";
 import {
   CardPayments,
   type CardPaymentPreparation,
-} from "../../../../card-payment/channels/requests/index.js";
+} from "../../../../payment/channels/requests/index.js";
 import type { Order } from "../../domain/entities/order.js";
 import {
   IdempotencyKeyReusedError,

@@ -21,7 +21,7 @@ import {
   ON_PRODUCTION_DAY_CLOSED,
   OnProductionDayClosed,
 } from "../src/lafoliecoffee/orders/application/handlers/on-production-day-closed.handler.js";
-import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
+import { CardProviders } from "../src/payment/card/domain/ports/card-providers.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import {
   CompanyStatus,

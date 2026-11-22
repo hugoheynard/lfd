@@ -1,8 +1,8 @@
 import {
   InvalidProviderSignatureError,
   UnknownCardAccountError,
-} from "../../src/card-payment/domain/errors/card-payment-errors.js";
-import type { CardProviderEvent } from "../../src/card-payment/domain/ports/card-provider-event.js";
+} from "../../src/payment/card/domain/errors/card-payment-errors.js";
+import type { CardProviderEvent } from "../../src/payment/card/domain/ports/card-provider-event.js";
 import type {
   CreateIntentParams,
   CreatedIntent,
@@ -10,10 +10,10 @@ import type {
   RefundIssuance,
   RefundLookup,
   RetrievedIntent,
-} from "../../src/card-payment/domain/ports/card-provider-types.js";
-import { CardProvider } from "../../src/card-payment/domain/ports/card-provider.js";
-import { CardProviders } from "../../src/card-payment/domain/ports/card-providers.js";
-import { PaymentAccount } from "../../src/card-payment/domain/value-objects/payment-account.js";
+} from "../../src/payment/card/domain/ports/card-provider-types.js";
+import { CardProvider } from "../../src/payment/card/domain/ports/card-provider.js";
+import { CardProviders } from "../../src/payment/card/domain/ports/card-providers.js";
+import { PaymentAccount } from "../../src/payment/card/domain/value-objects/payment-account.js";
 import { CARD_ACCOUNTS } from "../../src/platform/config/card-accounts.js";
 
 /**

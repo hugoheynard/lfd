@@ -2,7 +2,7 @@ import type {
   CardPaymentCancellation,
   CardPaymentLine,
   RetrievedCardPayment,
-} from "../../../../card-payment/channels/requests/index.js";
+} from "../../../../payment/channels/requests/index.js";
 
 /**
  * **Les gestes du commerce sur le premier paiement d'une commande** (plan

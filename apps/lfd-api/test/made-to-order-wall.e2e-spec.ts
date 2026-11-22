@@ -15,7 +15,7 @@ import { randomUUID } from "node:crypto";
 import request from "supertest";
 
 import { BundleChoiceCatalogue } from "../src/lafoliecoffee/bundles/domain/ports/bundle-choice.catalogue.js";
-import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
+import { CardProviders } from "../src/payment/card/domain/ports/card-providers.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import {
   CompanyStatus,

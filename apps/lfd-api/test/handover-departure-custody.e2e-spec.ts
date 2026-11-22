@@ -13,7 +13,7 @@ import { randomUUID } from "node:crypto";
  */
 import type request from "supertest";
 
-import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
+import { CardProviders } from "../src/payment/card/domain/ports/card-providers.js";
 import { DeliveryOrdersBroughtBackFact } from "../src/delivery/channels/handover/index.js";
 import { ShipmentRef } from "../src/production/channels/delivery/index.js";
 import { DurablePublisher } from "../src/platform/outbox/durable-publisher.js";

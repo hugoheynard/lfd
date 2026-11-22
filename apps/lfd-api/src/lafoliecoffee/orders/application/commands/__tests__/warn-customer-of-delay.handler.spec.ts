@@ -12,7 +12,7 @@ import {
 } from "../../../domain/errors/customer-nudge-errors.js";
 import { OrderNotFoundError } from "../../../domain/errors/order-errors.js";
 import { OrderMailOrigins } from "../../../domain/ports/order-mail-origins.js";
-import { OneRecipientReader } from "../../../application/handlers/__tests__/payment-failure-doubles.js";
+import { OneRecipientReader } from "../../handlers/__tests__/payment-failure-doubles.js";
 import { WarnCustomerOfDelayCommand } from "../warn-customer-of-delay.command.js";
 import { WarnCustomerOfDelayHandler } from "../warn-customer-of-delay.handler.js";
 import {

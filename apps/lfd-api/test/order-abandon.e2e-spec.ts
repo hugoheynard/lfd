@@ -16,8 +16,8 @@
 import type {
   IntentCancellation,
   RetrievedIntent,
-} from "../src/card-payment/domain/ports/card-provider-types.js";
-import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
+} from "../src/payment/card/domain/ports/card-provider-types.js";
+import { CardProviders } from "../src/payment/card/domain/ports/card-providers.js";
 import {
   CustomerRole,
   OrderClientele,

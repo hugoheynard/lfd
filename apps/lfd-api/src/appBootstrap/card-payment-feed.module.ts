@@ -6,7 +6,7 @@ import { ORDER_CARD_SUBJECT_TYPE } from "../lafoliecoffee/orders/application/ser
 import {
   RegisteredSubjectSettlements,
   SubjectSettlements,
-} from "../card-payment/channels/subjects/index.js";
+} from "../payment/channels/subjects/index.js";
 import {
   CardAccountDefaults,
   DeclaredCardAccountDefaults,
@@ -29,7 +29,7 @@ import {
  *   sujet : `order` aujourd'hui, l'instance d'`OrdersModule`.
  *
  * `@Global` pour la raison du fil du fournil : le consommateur est
- * `card-payment/`, qui ne peut pas importer le commerce.
+ * `payment/`, qui ne peut pas importer le commerce.
  */
 @Global()
 @Module({

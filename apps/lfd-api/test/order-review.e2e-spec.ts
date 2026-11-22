@@ -18,7 +18,7 @@ import {
 import type request from "supertest";
 
 import { CompanyStatus, CustomerRole } from "../src/platform/database/client/client.js";
-import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
+import { CardProviders } from "../src/payment/card/domain/ports/card-providers.js";
 import { ORDER_REVIEW_STARTS_AT } from "../src/lafoliecoffee/orders/domain/services/order-review-start.js";
 import { OutboxRelayTrigger } from "../src/platform/outbox/outbox-relay-trigger.js";
 import { relayAll, SILENT_TRIGGER } from "./catalog-facts-scene.js";

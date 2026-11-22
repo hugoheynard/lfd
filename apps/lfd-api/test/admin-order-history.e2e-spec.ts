@@ -11,7 +11,7 @@ import { randomUUID } from "node:crypto";
 import type { ActivityEventView, RoleGrant } from "@lfd/contracts";
 import type request from "supertest";
 
-import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
+import { CardProviders } from "../src/payment/card/domain/ports/card-providers.js";
 import { ADMIN_VERIFIER_OVERRIDE } from "./delivery-rounds-scene.js";
 import {
   bootstrapE2e,

@@ -4,7 +4,7 @@ import {
   CARD_PAYMENT_UNMATCHED,
   CardPaymentUnmatchedFact,
   type ProviderRefund,
-} from "../../../../card-payment/channels/facts/index.js";
+} from "../../../../payment/channels/facts/index.js";
 import { Journal } from "../../../../platform/journal/journal.js";
 import type { DurableDelivery } from "../../../../platform/outbox/durable-event.js";
 import {

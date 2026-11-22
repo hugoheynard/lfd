@@ -16,7 +16,7 @@ import type { VersionsView } from "@lfd/contracts";
 import { Client } from "pg";
 import type request from "supertest";
 
-import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
+import { CardProviders } from "../src/payment/card/domain/ports/card-providers.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { addBillingAddress, createCompany, createUser } from "./factories.js";
 import {

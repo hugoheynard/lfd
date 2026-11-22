@@ -177,7 +177,7 @@ Conséquence : **une commande de particulier ne part jamais incomplète**, elle
 paie en ligne par carte (noté par Hugo le 2026-11-03).
 
 > **Note du 2026-11-10.** Le remboursement d'un montant existe désormais :
-> `CardRefunds.requestAmount` (`src/card-payment/channels/requests/card-refunds.ts`,
+> `CardRefunds.requestAmount` (`src/payment/channels/requests/card-refunds.ts`,
 > lot P1 du bloc `card-payment`) et la répartition d'une baisse sur les
 > paiements (`lafoliecoffee/orders/revision/domain/services/revision-card-refund.ts`, lot S1 de
 > la modification de commande), tous deux sur `main`. Le départ incomplet ne

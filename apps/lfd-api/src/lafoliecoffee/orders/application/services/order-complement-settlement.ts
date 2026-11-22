@@ -3,7 +3,7 @@ import { Injectable } from "@nestjs/common";
 import type {
   CardSubject,
   SubjectPaidOutcome,
-} from "../../../../card-payment/channels/subjects/index.js";
+} from "../../../../payment/channels/subjects/index.js";
 import { AfterCommit } from "../../../../platform/database/after-commit.js";
 import { Journal } from "../../../../platform/journal/journal.js";
 import { DurablePublisher } from "../../../../platform/outbox/durable-publisher.js";

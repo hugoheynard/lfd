@@ -499,8 +499,8 @@ l'annulation rend ensuite tous les paiements encaissés, complément compris.
 #### 2.7.7 `settleFromProvider` et les balayages
 
 `CardPayments.settleFromProvider(paymentId)`
-(`card-payment/channels/requests/card-payments.ts`, implémenté dans
-`card-payment/application/block-card-payments.ts`) : hors transaction, relit
+(`payment/channels/requests/card-payments.ts`, implémenté dans
+`payment/card/application/block-card-payments.ts`) : hors transaction, relit
 l'intention chez le prestataire ; encaissée ⇒ le **même** chemin que le
 webhook (la machine de la ligne dédoublonne) ; en attente ⇒ rien ; annulée ⇒
 la ligne fermée.

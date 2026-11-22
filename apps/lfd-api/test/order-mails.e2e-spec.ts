@@ -18,7 +18,7 @@ import type {
 import type { MailReceipt, SendMailArgs } from "@lfd/mailer";
 import type request from "supertest";
 
-import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
+import { CardProviders } from "../src/payment/card/domain/ports/card-providers.js";
 import { MailRequest } from "../src/mail/requests/domain/entities/mail-request.js";
 import { MailRequestRepository } from "../src/mail/requests/domain/ports/mail-request.repository.js";
 import type { B2bMails } from "../src/mail/templates/mail-templates.js";

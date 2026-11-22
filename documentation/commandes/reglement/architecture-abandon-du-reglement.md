@@ -177,10 +177,10 @@ n'écrit rien.
 ### Les cinq issues de `cancelIntent`
 
 Le port
-([`payment-gateway.ts:50-55`](../../../apps/lfd-api/src/card-payment/domain/ports/card-provider.ts))
+([`payment-gateway.ts:50-55`](../../../apps/lfd-api/src/payment/card/domain/ports/card-provider.ts))
 ne lève jamais pour un cas métier. L'adaptateur traduit les erreurs du SDK
 `stripe` 22.4.0
-([`stripe-intent-translation.ts`](../../../apps/lfd-api/src/card-payment/infrastructure/stripe/stripe-intent-translation.ts)).
+([`stripe-intent-translation.ts`](../../../apps/lfd-api/src/payment/card/infrastructure/stripe/stripe-intent-translation.ts)).
 
 | Issue               | Ce qui la produit chez Stripe                                             | L'abandon (particulier)                               | La clôture                   |
 | ------------------- | ------------------------------------------------------------------------- | ----------------------------------------------------- | ---------------------------- |

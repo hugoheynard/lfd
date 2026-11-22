@@ -16,7 +16,7 @@ import type { PricedLot } from "../src/lafoliecoffee/pricing/application/priced-
 import { Pricer } from "../src/lafoliecoffee/pricing/application/pricer.js";
 import { CustomerVolumeReader } from "../src/lafoliecoffee/pricing/domain/ports/customer-volume.reader.js";
 import { ProductCatalogReader } from "../src/lafoliecoffee/catalog/domain/ports/product-catalog.reader.js";
-import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
+import { CardProviders } from "../src/payment/card/domain/ports/card-providers.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, daysAgo, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";

@@ -12,7 +12,7 @@
 >
 > ⚠️ **État d'AVANT le lot P0 du plan M2** (bâti le 2026-11-10,
 > [`../modification/plan-m2-historique-de-transactions.md`](../modification/plan-m2-historique-de-transactions.md)
-> §4.9). Depuis, le paiement par carte vit dans le bloc `src/card-payment/`
+> §4.9). Depuis, le paiement par carte vit dans le bloc `src/payment/card/`
 > (ports `CardPayments` / `CardSettlementReader`, canal `SubjectSettlement`
 > implémenté par `orders`, webhook par compte) ; `PaymentGateway`,
 > `PaymentRefunder`, `ConfirmOrderPaymentCommand` et le webhook de
@@ -258,10 +258,10 @@ commande » (A4).
 
 ### D. La frontière prestataire
 
-**Ports** (le domaine ne voit que ça) : `card-payment/domain/ports/card-provider.ts`
+**Ports** (le domaine ne voit que ça) : `payment/card/domain/ports/card-provider.ts`
 (`createIntent`, `retrieveIntent`, `cancelIntent`, `publishableKey`,
 `parseWebhook` → événements réduits `succeeded | failed | refund | link_paid |
-link_expired | ignored`), `card-payment/channels/requests/card-provider-refunds.ts`
+link_expired | ignored`), `payment/channels/requests/card-provider-refunds.ts`
 (`refundRemainder`, `findRefund` — **sans montant**),
 `payments/domain/ports/checkout-gateway.ts`.
 

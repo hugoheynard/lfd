@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 
-import { CardRefunds } from "../../../../../card-payment/channels/requests/index.js";
+import { CardRefunds } from "../../../../../payment/channels/requests/index.js";
 import type { DurableDelivery } from "../../../../../platform/outbox/durable-event.js";
 import {
   DurableHandler,

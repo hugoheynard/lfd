@@ -15,7 +15,7 @@ import { randomUUID } from "node:crypto";
 import type { CompanyStatus } from "../src/platform/database/client/client.js";
 import { CustomerRole } from "../src/platform/database/client/client.js";
 import type { BillingAddressPayload, CustomerOrderView, PlacedOrderResponse } from "@lfd/contracts";
-import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
+import { CardProviders } from "../src/payment/card/domain/ports/card-providers.js";
 import { cardProvidersDouble } from "./card-payments.js";
 import { bootstrapE2e, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";

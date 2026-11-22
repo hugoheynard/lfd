@@ -12,7 +12,7 @@ import { randomUUID } from "node:crypto";
 
 import type { CatalogReemissionView } from "@lfd/pim-contracts";
 
-import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
+import { CardProviders } from "../src/payment/card/domain/ports/card-providers.js";
 import {
   CatalogReemissionJob,
   INTERRUPTED_BY_RESTART,

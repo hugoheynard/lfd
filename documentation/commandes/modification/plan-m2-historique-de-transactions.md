@@ -95,7 +95,7 @@ Sa seule connaissance métier est agnostique : la **nature** d'un
 remboursement, `return` (la vente n'a pas lieu) ou `adjustment` (le montant
 dû a baissé).
 
-**Dans `src/`** : `card-payment/` au premier niveau. Sans métier propre
+**Dans `src/`** : `payment/card/` au premier niveau. Sans métier propre
 (comme `mail`), il **déclare un canal qu'un autre bloc implémente** (comme
 `production/channels/commerce/`). Matrice du `CLAUDE.md` § 3 : colonne
 `card-payment` à **port uniquement** pour `b2b` ; ligne `card-payment` : ✓
@@ -136,7 +136,7 @@ dû a baissé).
 
 ### 3.3 La surface : trois ports, un canal, des faits
 
-Déclarés et implémentés par `card-payment`, dans `card-payment/channels/requests/` :
+Déclarés et implémentés par `card-payment`, dans `payment/channels/requests/` :
 
 | Port                       | Gestes                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | Appelé par                                                                                |
 | -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
@@ -144,7 +144,7 @@ Déclarés et implémentés par `card-payment`, dans `card-payment/channels/requ
 | **`CardRefunds`**          | `requestRemainder(paymentId, nature, reason, schedule: 'now' \| 'button')` → la demande (**idempotent** : rend la `remainder` **en cours** (`to_issue \| issued`) du paiement, sinon crée — une `stopped` existante reste, et le bouton la relancera) ; `requestAmount(paymentId, amountCents, nature, reason)` ; `retry(requestId)` — dans la transaction de l'appelant                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | annulation, baisse, refus d'une hausse, inversion, « Relancer » (route par demande, §5.3) |
 | **`CardSettlementReader`** | `positionOf(subjects[])` → par sujet : paiements (id, compte, `providerRef`, rôle, état, montant), encaissé, remboursé par nature, demandes non terminales (id, forme, nature, état), en vol par forme ; `succeededRefundsOf(subject)` → chaque remboursement réussi (id, montant, nature, source), **triés par `recordedAt, id`** — l'ordre que `RefundReconciler` suppose pour ventiler le dernier avoir au reste exact (`prisma-refunds-to-credit.ts`) ; (v12) `refundsOf(subjects[])` → **tous** les remboursements, avec `source` (`provider` ou `manual`), statut, montant et instant (`refundedAt` : celui du prestataire pour un `provider`, celui du geste pour un `manual`), triés par `recordedAt` (l'ordre d'aujourd'hui, `prisma-order.reader.ts`) — la source d'`OrderView.refunds` (contrat servi, carte des remboursements du back-office), que la relation `Order.refunds` nourrit aujourd'hui ; le contrat gagne `source` ; la vue client ne reçoit toujours que `refundedCents` ; **une seule arithmétique** : `refundedCents` vient de `positionOf`, jamais recalculé depuis `refundsOf` — la carte des remboursements du back-office (`order-refunds-card.ts`, `refundedCentsOf`) lit désormais le total servi au lieu de le recalculer — **par lot** ; (v13) `refundRequestsOf(subjects[])` → **toutes** les demandes d'un sujet, terminées comprises (`id`, `paymentId`, `form`, `nature`, `state`, `reason`, `announcedCents`, `issuedCents` ou nul, `requestedAt`, `issuedAt` ou nul, `attempts`, `generation`, `lastFailure` ou nul, `retryable` — calculé par le bloc : (`stopped`, ou `to_issue` avec `attempts > 0`), pas de bail en cours, et aucune autre `remainder` du même paiement en cours ; `lastFailure` est le **code brut** de l'échec, c'est `orders` qui en fait la phrase (`refundFailurePhraseOf`, `admin-order-refund-view.ts`, étendue aux états `stopped` / `settled_elsewhere`)) — la source du bandeau du back-office, servi par `orders` dans `AdminOrderDetail.refundRequests` (§5.3) sous `b2b_orders:read` comme aujourd'hui (`admin-order-refund-view.ts`) ; le bloc ne sert **pas** de vue de bandeau lui-même — **par lot** | annulation, révision, listes, facture carte, avoirs                                       |
 
-Le **canal retour** `SubjectSettlement` (`card-payment/channels/subjects/`,
+Le **canal retour** `SubjectSettlement` (`payment/channels/subjects/`,
 un implémenteur par `subject_type`, relié dans `appBootstrap/`) :
 `onPaid(subject, paymentId, amountCents)` → `applied | refused |
 already_applied` ; `onPaymentFailed(subject, paymentId)` ;
@@ -255,7 +255,7 @@ zone d'argent : chaque handler de ses commandes et crons trace sous
 au back-office sont **créés en P1** : en P0 les handlers du bloc sont
 `@sans-journal` (§4.9).
 
-**Les routes d'équipe** (`card-payment/http/`, surface `card_payments`,
+**Les routes d'équipe** (`payment/card/http/`, surface `card_payments`,
 ressource `StaffResource.card_payments` **en P1**) : « Relancer », « rendu
 autrement », « Vérifier », le balayage — pas de vue de bandeau : c'est
 `orders` qui la sert, par `refundRequestsOf` (v13). **Le webhook est
@@ -395,8 +395,8 @@ canal ; `orders`, au canal, publie alors **son** fait `order.paid_after_cancella
 `prisma-model-ownership.mjs` : `"card-payment"` dans `BLOCKS` ;
 `context-boundaries.mjs` : `BLOCK_OF`, `ALLOWED` (`card-payment: {staff,
 platform}`, `b2b` gagne `card-payment`), `PORT_SURFACE` (`"b2b→card-payment":
-"card-payment/channels/"`) ; `journal-tracked.mjs` : `MONEY_ZONES` est joint sous `src/lafoliecoffee/` — il lui
-faut une **racine par zone** pour viser `src/card-payment/` (sinon l'argent
+"payment/channels/"`) ; `journal-tracked.mjs` : `MONEY_ZONES` est joint sous `src/lafoliecoffee/` — il lui
+faut une **racine par zone** pour viser `src/payment/card/` (sinon l'argent
 carte **sort de l'audit en silence**, ou la porte plante) ; `context-boundaries.mjs` :
 le jeu `root` gagne `card-payment` ;
 `network-outside-transaction.mjs` : ses chemins `lafoliecoffee/payments/*` suivent ;
@@ -421,14 +421,14 @@ d'aujourd'hui ; `order.payByCard(providerRef)` **continue d'écrire**
 touchés, et le rejeu lit `retrieve`), la page de règlement (`retrieve`),
 l'abandon, l'expiration, la clôture (`cancel`) ; les **mandats**
 (`admin-mandates.controller.ts`) lisent la clé publique par une **requête** du
-canal (`card-payment/channels/`, la seule surface admise), par le bus — une
+canal (`payment/channels/`, la seule surface admise), par le bus — une
 clé de carte sur l'écran SEPA parce que l'écran l'affiche, pas parce que le
 bloc l'encaisse ; `prepare` prend un `tag` opaque (`companyId` ou
 `personal`, la métadonnée d'aujourd'hui) que l'adaptateur pose chez le
 prestataire. **Le remboursement ne bouge
 pas** : il reste dans `lafoliecoffee/orders`, sur ses tables, et atteint le prestataire
 par **`CardProviderRefunds`**, port **transitoire et daté** (= `PaymentRefunder`
-d'aujourd'hui, **par `(account, providerRef)`**, sur `card-payment/channels/`,
+d'aujourd'hui, **par `(account, providerRef)`**, sur `payment/channels/`,
 retiré en P1), et reçoit les
 événements `refund.*` par le fait durable `card_payment.provider_refund_event`
 (nouvel abonné d'`orders`, qui appelle `RecordOrderRefundCommand` — rien ne
@@ -795,7 +795,7 @@ l'avoir se décide (selon la nature, comme un `re_…`) ; puis publie
 ### 5.6 P1 — ce que le bâti a tranché (P1.a → P1.d, 2026-11-10, en production)
 
 P1.a (`f25ed5ecf`) a posé les tables ; **P1.b** a bâti le remboursement dans
-`src/card-payment/` (domaine, canal, exécuteur, constat, routes d'équipe,
+`src/payment/card/` (domaine, canal, exécuteur, constat, routes d'équipe,
 balayage) et l'implémentation `order` de `lockSubject` / `onRefundOutcome`.
 Ce que le plan ne disait pas, tranché au plus simple :
 
@@ -847,7 +847,7 @@ bascule ; ce qu'il a tranché au plus simple :
   `dev-sweeps` compris — §6.8 et §10 disaient « relayé jusqu'à P2 », le lot a
   tranché le retrait). Retiré de `card-payment` : `CardProviderRefunds` et
   le fait `provider_refund_event`. Le test
-  `card-payment/__tests__/no-legacy-refund-readers.spec.ts` interdit tout
+  `payment/card/__tests__/no-legacy-refund-readers.spec.ts` interdit tout
   lecteur de `orderRefund*` hors du client généré.
 - **Lecteurs** : `refund-position.ts` (value object) et
   `order-card-refund-readings.ts` (infrastructure d'`orders`, lit

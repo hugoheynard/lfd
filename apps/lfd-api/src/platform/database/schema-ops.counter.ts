@@ -163,7 +163,7 @@ const NON_PUBLIC_SCHEMA_OF_MODEL: Readonly<Record<string, string>> = {
   MailCharterVersion: "mail",
   MailSenderIdentity: "mail",
   // L'encaissement par carte (plan M2, lot P0, 2026-11-09) : les paiements et
-  // le témoin de leur reprise, posés avant le bloc `src/card-payment/`.
+  // le témoin de leur reprise, posés avant le bloc `src/payment/`.
   CardPayment: "card_payment",
   CardPaymentTakeover: "card_payment",
   // Le remboursement (plan M2, lot P1, 2026-11-10) : les demandes et le

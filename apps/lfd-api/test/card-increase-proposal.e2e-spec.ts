@@ -12,8 +12,8 @@
  * Seule frontière doublée : le prestataire de carte. Les instants des projets
  * ne sont comparés qu'entre eux, jamais à l'horloge.
  */
-import { CardPayments } from "../src/card-payment/channels/requests/index.js";
-import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
+import { CardPayments } from "../src/payment/channels/requests/index.js";
+import { CardProviders } from "../src/payment/card/domain/ports/card-providers.js";
 import { OrderSubjectSettlement } from "../src/lafoliecoffee/orders/application/services/order-subject-settlement.js";
 import { CardIncreaseProposal } from "../src/lafoliecoffee/orders/revision/domain/entities/card-increase-proposal.js";
 import { ComplementWithoutProposalError } from "../src/lafoliecoffee/orders/revision/domain/errors/card-increase-proposal-errors.js";

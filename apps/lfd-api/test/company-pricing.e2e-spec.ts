@@ -16,7 +16,7 @@
 import type { CompanyPricingView } from "@lfd/contracts";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
-import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
+import { CardProviders } from "../src/payment/card/domain/ports/card-providers.js";
 import { CustomerRole } from "../src/platform/database/client/client.js";
 import { randomUUID } from "node:crypto";
 

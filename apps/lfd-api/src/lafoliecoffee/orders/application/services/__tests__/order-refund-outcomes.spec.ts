@@ -1,8 +1,8 @@
 import type {
   SubjectRefundOutcome,
   SubjectRefundOutcomeDraft,
-} from "../../../../../card-payment/channels/subjects/index.js";
-import type { SubjectRefundPosition } from "../../../../../card-payment/channels/requests/index.js";
+} from "../../../../../payment/channels/subjects/index.js";
+import type { SubjectRefundPosition } from "../../../../../payment/channels/requests/index.js";
 import { HeldAfterCommit } from "../../../../../platform/database/__tests__/held-after-commit.js";
 import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
 import { RecordingJournal } from "../../../../../platform/journal/__tests__/recording-journal.js";

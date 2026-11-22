@@ -8,8 +8,8 @@ import {
   type SubjectCardRefundRequests,
   type SubjectCardRefunds,
   type SucceededCardRefund,
-} from "../../../../../card-payment/channels/requests/index.js";
-import type { CardSubject } from "../../../../../card-payment/channels/subjects/index.js";
+} from "../../../../../payment/channels/requests/index.js";
+import type { CardSubject } from "../../../../../payment/channels/subjects/index.js";
 import { RecordingJournal } from "../../../../../platform/journal/__tests__/recording-journal.js";
 import { OrderCardAdoption } from "../../../domain/ports/order-card-payments.js";
 import type { CardIncreaseProposal } from "../../../revision/domain/entities/card-increase-proposal.js";

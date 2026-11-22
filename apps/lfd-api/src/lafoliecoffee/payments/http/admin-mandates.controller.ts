@@ -49,7 +49,7 @@ import {
   MandateProofNotFoundError,
 } from "../domain/errors/mandate-errors.js";
 import { GetCompanyMandateQuery } from "../application/queries/get-company-mandate.query.js";
-import { GetCardPublishableKeyQuery } from "../../../card-payment/channels/requests/index.js";
+import { GetCardPublishableKeyQuery } from "../../../payment/channels/requests/index.js";
 import { ORDER_CARD_SUBJECT_TYPE } from "../../orders/application/services/order-card-subject.js";
 import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 

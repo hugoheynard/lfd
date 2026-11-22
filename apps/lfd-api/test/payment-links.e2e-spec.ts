@@ -30,7 +30,7 @@ import { CheckoutGateway } from "../src/lafoliecoffee/payments/domain/ports/chec
 import { StripeCheckoutGateway } from "../src/lafoliecoffee/payments/infrastructure/stripe-checkout-gateway.js";
 import { PaymentLinkRepository } from "../src/lafoliecoffee/payments/domain/ports/payment-link.repository.js";
 import { PaymentLinkTerms } from "../src/lafoliecoffee/payments/domain/value-objects/payment-link-terms.js";
-import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
+import { CardProviders } from "../src/payment/card/domain/ports/card-providers.js";
 import { OrderMailOrigins } from "../src/lafoliecoffee/orders/domain/ports/order-mail-origins.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { CompanyStatus, CustomerRole } from "../src/platform/database/client/client.js";

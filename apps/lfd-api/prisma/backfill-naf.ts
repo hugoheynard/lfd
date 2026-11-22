@@ -5,7 +5,7 @@ import { Test } from "@nestjs/testing";
 import { EstablishmentDirectory } from "../src/lafoliecoffee/account/domain/ports/establishment-directory.js";
 import { KbisStore } from "../src/lafoliecoffee/account/domain/ports/kbis-store.js";
 import { PrismaService } from "../src/platform/database/prisma.service.js";
-import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
+import { CardProviders } from "../src/payment/card/domain/ports/card-providers.js";
 import { AppModule } from "../src/appBootstrap/app.module.js";
 import { FakeKbisStore } from "./seed-growth/fake-kbis-store.js";
 import { FakeCardProviders } from "./seed-growth/fake-card-providers.js";

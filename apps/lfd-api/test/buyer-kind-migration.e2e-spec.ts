@@ -20,7 +20,7 @@ import type { PlaceShopOrderPayload } from "@lfd/contracts";
 
 import { placeShopOrderSeeingTotal, type Unseen } from "./seen-total-shop-command.js";
 import { PlaceShopOrderHandler } from "../src/lafoliecoffee/orders/application/commands/place-shop-order.handler.js";
-import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
+import { CardProviders } from "../src/payment/card/domain/ports/card-providers.js";
 import { bootstrapE2e, serviceDay, type E2eContext } from "./e2e-harness.js";
 import { cardGatewayDouble } from "./order-factory.js";
 

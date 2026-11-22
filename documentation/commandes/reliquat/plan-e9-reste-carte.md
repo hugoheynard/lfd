@@ -264,13 +264,13 @@ WHERE "order_number" = $1 FOR UPDATE`
   - contrat : `CardInvoiceOutcome` (`packages/contracts/src/issued-invoices.ts:162-170`) ;
   - back-office : `RETRIED`, un `Record<CardInvoiceOutcome, string>`
     (`apps/lfd-backoffice-frontend/src/app/comptabilite/procedure-de-prelevement/card-invoice-signals/card-invoice-signals.ts:28-36`).
-- **Position carte** : `positionFrom` (`card-payment/infrastructure/settlement-position.ts:26-50`) —
+- **Position carte** : `positionFrom` (`payment/card/infrastructure/settlement-position.ts:26-50`) —
   `refundedByNature = { return, adjustment, unattributed }` ; `unattributed` =
   remboursement réussi sans nature (un `re_` fait hors de la plateforme) ;
   `refundedCents` = la somme des trois ; demandes ouvertes = `to_issue`,
   `issued`, `stopped`.
 - **Argent carte** :
-  - `requestAmount` (`card-payment/application/refunds/block-card-refunds.ts:67-91`)
+  - `requestAmount` (`payment/card/application/refunds/block-card-refunds.ts:67-91`)
     verrouille (`CardPaymentNotFoundError`, `CardRefundPaymentNotPaidError`),
     refuse `CardRefundAmountExceedsRemainderError`, écrit la demande et
     programme l'envoi à Stripe après la validation (`dispatch.afterCommitFor`) ;
@@ -281,7 +281,7 @@ WHERE "order_number" = $1 FOR UPDATE`
     `firstOf`, sinon `standings.ofOrder` — un `findUnique` Prisma
     (`orders/infrastructure/prisma-order-card-standing.reader.ts:53-56`) —, puis
     `uow.run(adopt)` ; `BlockCardPayments.adopt`
-    (`card-payment/application/block-card-payments.ts:152-180`) ne fait que
+    (`payment/card/application/block-card-payments.ts:152-180`) ne fait que
     `findByProviderRef` et `addIfAbsent`. **Aucun appel réseau** : conforme à
     la porte `network-outside-transaction`.
 - **Demandes** : états `to_issue`, `issued`, `refunded`, `stopped`,
@@ -289,10 +289,10 @@ WHERE "order_number" = $1 FOR UPDATE`
   `succeeded` (`amountCents` pour une demande `amount`,
   `ledger.remainderCents()` pour une `remainder`), puis publie
   `order.refund_succeeded`
-  (`card-payment/application/commands/settle-card-refund-elsewhere.handler.ts:55-61`).
+  (`payment/card/application/commands/settle-card-refund-elsewhere.handler.ts:55-61`).
 - **Vues du canal** : `CardRefundView` porte `source` mais pas l'identifiant de
   la demande ; `CardRefundRequestView` porte `reason`
-  (`card-payment/channels/requests/card-settlement.reader.ts:78-117`).
+  (`payment/channels/requests/card-settlement.reader.ts:78-117`).
 - **Avoir** : aucun pour un `adjustment` (`accounting/application/services/refund-reconciler.ts:96`) ;
   un `return` rapproché après la facture reçoit un avoir.
 - **Boîte d'envoi** : `publish` en `ON CONFLICT (key) DO NOTHING`
@@ -311,7 +311,7 @@ WHERE "order_number" = $1 FOR UPDATE`
 - **Idempotence des routes** : `@Idempotent` ou `@IntentKey()` +
   `OncePerIntent.runSealed` (`pnpm gate write-idempotence`) ; effet externe →
   clé d'intention. Précédent : « Relancer »
-  (`card-payment/http/admin-card-refunds.controller.ts:36-42`).
+  (`payment/card/http/admin-card-refunds.controller.ts:36-42`).
 - **Particulier** : il a un BL et un solde ; ses frais de retard sont nuls.
 - **Frais de retard sur un reste** : aucun (`delivery-notes/domain/services/remainder-decision-source.ts:28`).
 - **Reste à relivrer** : `DeliveryNote.planRemainder` sans appelant de
@@ -1132,9 +1132,9 @@ plateforme ; signal nouveau pour une facture en attente du solde (§ 3.5).
 - `lafoliecoffee/orders/revision/application/services/revision-card-refund.ts`
 - `lafoliecoffee/orders/revision/domain/services/revision-card-refund.ts`
 - `lafoliecoffee/orders/domain/services/shortfall-decidability.ts`
-- `card-payment/application/block-card-payments.ts`
-- `card-payment/application/refunds/block-card-refunds.ts`
-- `card-payment/channels/requests/card-settlement.reader.ts`
+- `payment/card/application/block-card-payments.ts`
+- `payment/card/application/refunds/block-card-refunds.ts`
+- `payment/channels/requests/card-settlement.reader.ts`
 - `platform/outbox/durable-delivery-guard.ts`
 - `packages/contracts/src/issued-invoices.ts`
 - `apps/lfd-backoffice-frontend/src/app/comptabilite/procedure-de-prelevement/card-invoice-signals/card-invoice-signals.ts`
