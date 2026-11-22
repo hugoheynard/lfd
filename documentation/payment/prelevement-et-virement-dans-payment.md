@@ -227,3 +227,25 @@ coffre de moyens de paiement, et le commerçant n'envoie qu'une référence.
 - la colonne `payment.transfer_received.received_into` (lot D1) porte
   aujourd'hui l'identifiant de l'entité : en D2, elle devient l'identifiant
   du compte d'encaissement (0 virement au 2026-11-22, rien à convertir).
+
+### 5.1 Le compte d'encaissement reste avec l'entité (Hugo, 2026-11-22)
+
+> Décidé par Hugo le 2026-11-22, « pour le moment », par instinct. Il
+> remplace la ligne « émetteur » du tableau ci-dessus et la conséquence
+> « D2 devient le compte d'encaissement ».
+
+- L'IBAN, le BIC, l'ICS et leur confirmation aux quatre yeux **restent avec
+  l'entité juridique** (aujourd'hui `LegalEntity`, en facturation ; demain
+  un socle `entities` partagé entre les applications, si plusieurs en ont
+  besoin). C'est la forme la plus courante dans les ERP : les comptes
+  bancaires sont une donnée de l'entité.
+- `payment` **ne les stocke pas** : pour un prélèvement, il les reçoit de
+  l'entité au moment de construire le fichier (lecture publiée, ou dans la
+  demande).
+- `payment.transfer_received.received_into` garde l'identifiant de
+  l'**entité** qui a reçu l'argent : rien à convertir.
+- Les comptes de **carte** (`CARD_ACCOUNTS`) restent dans `payment` : ce sont
+  des réglages du prestataire, pas des comptes bancaires de l'entité.
+- **D2 n'a plus lieu.** Le prochain déplacement est D3 (les mandats et le
+  compte du débiteur), puis D4.
+- Réversible sans casse tant que le prélèvement n'a pas déménagé.
