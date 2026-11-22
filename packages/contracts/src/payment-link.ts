@@ -36,39 +36,48 @@ export const paymentLinkStatusSchema = z.enum(["open", "paid", "cancelled", "exp
 export type PaymentLinkStatus = z.infer<typeof paymentLinkStatusSchema>;
 
 /**
- * **Le registre des natures d'une demande de paiement libre** — pourquoi on
- * demande cette somme, quand le paiement n'a pas d'autre conséquence que
- * d'être encaissé. Une clé stable (écrite en base, reprise au journal) et son
- * libellé, dans l'ordre de l'écran. Une nature de plus est une ligne ici : la
- * colonne n'a pas de `CHECK`, le domaine refuse une clé absente du registre.
- * Une raison qui a une conséquence (l'acompte) est un type de sujet à part,
- * jamais une nature.
+ * **Les clés des natures d'une demande de paiement libre** — pourquoi on
+ * demande cette somme. Une clé stable : écrite en base, reprise au journal.
+ * Un `z.enum` sur elles, pour que le catalogue du journal voie les valeurs.
+ * Une nature de plus est une clé ici et son libellé ci-dessous : la colonne
+ * n'a pas de `CHECK`. Une nature ne se retire jamais (une ligne qui la porte
+ * doit rester lisible). L'acompte en nature encaisse seulement : sa facture
+ * et sa déduction attendent un type de sujet à lui.
  */
-export const FREE_CHARGE_NATURES = [
-  { key: "regularization", label: "Régularisation" },
-  { key: "agreed_supplement", label: "Supplément convenu" },
-  { key: "balance_after_dispute", label: "Solde après litige" },
-  { key: "deposit", label: "Acompte" },
-  { key: "other", label: "Autre" },
-] as const;
+export const freeChargeNatureSchema = z.enum([
+  "regularization",
+  "agreed_supplement",
+  "balance_after_dispute",
+  "deposit",
+  "other",
+]);
 
-/** Une clé du registre {@link FREE_CHARGE_NATURES}. */
-export type FreeChargeNature = (typeof FREE_CHARGE_NATURES)[number]["key"];
+/** Une clé du registre des natures. */
+export type FreeChargeNature = z.infer<typeof freeChargeNatureSchema>;
+
+const NATURE_LABELS: Readonly<Record<FreeChargeNature, string>> = {
+  regularization: "Régularisation",
+  agreed_supplement: "Supplément convenu",
+  balance_after_dispute: "Solde après litige",
+  deposit: "Acompte",
+  other: "Autre",
+};
+
+/** **Le registre des natures**, dans l'ordre de l'écran : la clé et son libellé. */
+export const FREE_CHARGE_NATURES: readonly {
+  readonly key: FreeChargeNature;
+  readonly label: string;
+}[] = freeChargeNatureSchema.options.map((key) => ({ key, label: NATURE_LABELS[key] }));
 
 /** Vrai si `value` est une clé du registre des natures. */
 export function isFreeChargeNature(value: unknown): value is FreeChargeNature {
-  return FREE_CHARGE_NATURES.some((nature) => nature.key === value);
+  return freeChargeNatureSchema.safeParse(value).success;
 }
 
 /** Le libellé d'une nature, tel que l'écran et l'avis à la comptabilité le disent. */
 export function freeChargeNatureLabel(nature: FreeChargeNature): string {
-  return FREE_CHARGE_NATURES.find((entry) => entry.key === nature)?.label ?? nature;
+  return NATURE_LABELS[nature];
 }
-
-/** La forme d'une nature dans une charge utile : une clé du registre. */
-export const freeChargeNatureSchema = z.custom<FreeChargeNature>(isFreeChargeNature, {
-  message: `Nature inconnue : attendu une de ${FREE_CHARGE_NATURES.map((n) => n.key).join(", ")}.`,
-});
 
 /** Les bornes du libellé repris sur la page de paiement. */
 export const PAYMENT_LINK_LABEL_MAX = 140;
