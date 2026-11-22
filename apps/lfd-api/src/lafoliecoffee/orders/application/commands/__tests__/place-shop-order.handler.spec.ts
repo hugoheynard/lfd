@@ -368,8 +368,12 @@ class PreparingCardPayments extends CardPayments {
     this.sink.intent = { subjectType, amountCents, tag };
     return Promise.resolve({
       prepared: { account: "lfc-stripe", providerRef: "pi_public", amountCents },
-      clientSecret: "pi_public_secret",
-      publishableKey: "pk_test_123",
+      collection: {
+        kind: "embedded",
+        provider: "stripe",
+        publishableKey: "pk_test_123",
+        token: "pi_public_secret",
+      },
     });
   }
 
@@ -387,8 +391,12 @@ class PreparingCardPayments extends CardPayments {
     return Promise.resolve({
       paymentId,
       providerRef: "pi_public",
-      clientSecret: "pi_public_secret",
-      publishableKey: "pk_test_123",
+      collection: {
+        kind: "embedded",
+        provider: "stripe",
+        publishableKey: "pk_test_123",
+        token: "pi_public_secret",
+      },
       state: "awaiting_payment",
     });
   }
@@ -705,6 +713,12 @@ describe("PlaceShopOrderHandler — le règlement", () => {
       tag: "personal",
     });
     expect(placed.payment).toEqual({
+      collection: {
+        kind: "embedded",
+        provider: "stripe",
+        publishableKey: "pk_test_123",
+        token: "pi_public_secret",
+      },
       clientSecret: "pi_public_secret",
       publishableKey: "pk_test_123",
       amountCents: sink.placed?.totalCents,

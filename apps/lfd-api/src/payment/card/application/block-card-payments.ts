@@ -62,8 +62,7 @@ export class BlockCardPayments extends CardPayments {
     const intent = await provider.createIntent({ amountCents, currency: CARD_CURRENCY, tag });
     return {
       prepared: { account: account.name, providerRef: intent.providerRef, amountCents },
-      clientSecret: intent.clientSecret,
-      publishableKey: provider.publishableKey(),
+      collection: intent.collection,
     };
   }
 
@@ -110,8 +109,7 @@ export class BlockCardPayments extends CardPayments {
     return {
       paymentId,
       providerRef,
-      clientSecret: intent.clientSecret,
-      publishableKey: provider.publishableKey(),
+      collection: intent.collection,
       state: intent.state,
     };
   }

@@ -36,8 +36,12 @@ function complementOf(expiresInMs = 10 * MINUTE_MS): CardComplementPaymentView {
   return {
     proposalId: 'prop_1',
     complementCents: 1_200,
-    clientSecret: 'pi_1_secret',
-    publishableKey: 'pk_test',
+    collection: {
+      kind: 'embedded',
+      provider: 'stripe',
+      publishableKey: 'pk_test',
+      token: 'pi_1_secret',
+    },
     expiresAt: new Date(Date.now() + expiresInMs).toISOString(),
   };
 }

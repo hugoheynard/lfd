@@ -26,14 +26,27 @@ class FakeCardProvider extends CardProvider {
     // Référence globalement unique (le champ est UNIQUE en base) : un compteur
     // remis à zéro à chaque run collisionnerait avec les commandes déjà semées.
     const providerRef = `pi_seed_${crypto.randomUUID()}`;
-    return Promise.resolve({ providerRef, clientSecret: `${providerRef}_secret` });
+    return Promise.resolve({
+      providerRef,
+      collection: {
+        kind: "embedded",
+        provider: "stripe",
+        publishableKey: this.publishableKey(),
+        token: `${providerRef}_secret`,
+      },
+    });
   }
 
   /** L'intention telle que créée : personne ne l'a réglée, et le double n'invente pas d'encaissement. */
   retrieveIntent(providerRef: string): Promise<RetrievedIntent> {
     return Promise.resolve({
       providerRef,
-      clientSecret: `${providerRef}_secret`,
+      collection: {
+        kind: "embedded",
+        provider: "stripe",
+        publishableKey: this.publishableKey(),
+        token: `${providerRef}_secret`,
+      },
       state: "awaiting_payment",
     });
   }

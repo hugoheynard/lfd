@@ -11,8 +11,12 @@ import { demoQuote } from './demo-quote';
  * retiré au Labo, pour que le bouton « Payer » dise un nombre cohérent.
  */
 export const DEMO_PAYMENT: OrderPaymentIntent = {
-  clientSecret: 'apercu_sans_secret',
-  publishableKey: 'pk_apercu',
+  collection: {
+    kind: 'embedded',
+    provider: 'stripe',
+    publishableKey: 'pk_apercu',
+    token: 'apercu_sans_secret',
+  },
   amountCents: demoQuote({
     lines: Object.entries(DEMO_CART).map(([sku, quantity]) => ({ sku, quantity })),
     fulfillment: { method: 'pickup', pickupAddressId: DEMO_LAB_ID },

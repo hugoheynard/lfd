@@ -82,8 +82,12 @@ describe("BlockCardPayments.prepare puis attach", () => {
     expect(provider.calls).toEqual(["createIntent:2340:eur:cmp_1"]);
     expect(preparation).toEqual({
       prepared: { account: "lfc-stripe", providerRef: "pi_new", amountCents: 2_340 },
-      clientSecret: "pi_new_secret",
-      publishableKey: "pk_live_x",
+      collection: {
+        kind: "embedded",
+        provider: "stripe",
+        publishableKey: "pk_live_x",
+        token: "pi_new_secret",
+      },
     });
     expect(attached).toEqual({ paymentId: "pay_000001", providerRef: "pi_new" });
     expect(repo.rows.get("pay_000001")?.toPersistence()).toMatchObject({
@@ -133,8 +137,12 @@ describe("BlockCardPayments.retrieve", () => {
     await expect(payments.retrieve("pay_1")).resolves.toEqual({
       paymentId: "pay_1",
       providerRef: "pi_1",
-      clientSecret: "pi_1_secret",
-      publishableKey: "pk_live_x",
+      collection: {
+        kind: "embedded",
+        provider: "stripe",
+        publishableKey: "pk_live_x",
+        token: "pi_1_secret",
+      },
       state: "awaiting_payment",
     });
     expect(provider.calls).toEqual(["retrieveIntent:pi_1"]);

@@ -66,7 +66,11 @@ export async function placeOrderResponse(
 
 /** Une intention de paiement plausible, pour la commande qui en réclame une. */
 export const CARD_DUE: OrderPaymentIntent = {
-  clientSecret: 'pi_1_secret_test',
-  publishableKey: 'pk_test_1',
+  collection: {
+    kind: 'embedded',
+    provider: 'stripe',
+    publishableKey: 'pk_test_1',
+    token: 'pi_1_secret_test',
+  },
   amountCents: 1_200,
 };

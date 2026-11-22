@@ -1,4 +1,5 @@
 import type {
+  CardCollection,
   CardIntentState,
   IntentCancellation,
 } from "../../card/domain/ports/card-provider-types.js";
@@ -16,11 +17,10 @@ export interface PreparedCardPayment {
   readonly amountCents: number;
 }
 
-/** Ce que `prepare` rend au navigateur, par l'appelant. */
+/** Ce que `prepare` rend au navigateur, par l'appelant : l'instruction de collecte. */
 export interface CardPaymentPreparation {
   readonly prepared: PreparedCardPayment;
-  readonly clientSecret: string;
-  readonly publishableKey: string;
+  readonly collection: CardCollection;
 }
 
 /** La ligne rattachée. */
@@ -33,12 +33,11 @@ export interface AttachedCardPayment {
 export interface RetrievedCardPayment {
   readonly paymentId: string;
   readonly providerRef: string;
-  readonly clientSecret: string;
-  readonly publishableKey: string;
+  readonly collection: CardCollection;
   readonly state: CardIntentState;
 }
 
-export type { CardIntentState, IntentCancellation as CardPaymentCancellation };
+export type { CardCollection, CardIntentState, IntentCancellation as CardPaymentCancellation };
 
 /**
  * Ce que `settleFromProvider` a constaté chez le prestataire :

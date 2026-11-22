@@ -13,7 +13,6 @@ import {
   viewChild,
 } from '@angular/core';
 import type { CardComplementPaymentView } from '@lfd/contracts';
-import type { Stripe, StripeElements } from '@stripe/stripe-js';
 import {
   FoldButtonComponent,
   FoldCalloutComponent,
@@ -22,11 +21,10 @@ import {
   FoldLoadingStateComponent,
 } from 'fold-ng';
 
-import { ClientLocale, type LocaleCode } from '../../client-locale.service';
-import { PAYMENT_ELEMENT_OPTIONS } from '../../commande/payment-element-options';
+import { ClientLocale } from '../../client-locale.service';
 import { ClientCopyService, fill } from '../../copy/client-copy.service';
 import { formatCents } from '../../format-money';
-import { StripeLoader } from '../../stripe-loader.service';
+import { CardCollector, type MountedCollection } from '../../payment-collection/card-collector';
 import {
   CARD_INCREASE_JUST_PAID,
   CARD_INCREASE_NOTHING_TO_PAY,
@@ -54,9 +52,9 @@ type Phase =
  * **Payer le complément d'une hausse, sur l'écran de modification** (doc
  * `documentation/commandes/modification/modifier-une-commande.md`, §2.7.4, §2.7.10).
  *
- * Le Payment Element se monte comme sur la page de règlement — le même
- * chargeur (`StripeLoader`), les mêmes options, la langue de la boutique —,
- * avec le `clientSecret` du complément. Le navigateur n'affirme rien : c'est
+ * Le formulaire de carte se monte comme sur la page de règlement, par le
+ * même service de collecte (`CardCollector`), avec l'instruction de collecte
+ * du complément et la langue de la boutique. Le navigateur n'affirme rien : c'est
  * le webhook qui encaisse, puis l'exécuteur qui applique. Après un
  * `succeeded`, l'écran relit donc la commande toutes les 2 s jusqu'à voir sa
  * révision monter ; au-delà de 30 s, il dit que la modification se finalise
@@ -90,7 +88,7 @@ export class CardComplementPayment {
   readonly abandoned = output();
 
   private readonly gateway = inject(OrderRevisionGateway);
-  private readonly stripeLoader = inject(StripeLoader);
+  private readonly collector = inject(CardCollector);
   private readonly locale = inject(ClientLocale).current;
   private readonly t = inject(ClientCopyService).t;
 
@@ -98,9 +96,8 @@ export class CardComplementPayment {
 
   private readonly mountRef = viewChild.required<ElementRef<HTMLDivElement>>('mount');
 
-  private stripe: Stripe | null = null;
-  private elements: StripeElements | null = null;
-  private mountedLocale: LocaleCode | null = null;
+  /** Le formulaire de carte monté, `null` tant qu'il ne l'est pas. */
+  private collection: MountedCollection | null = null;
 
   protected readonly phase = signal<Phase>('loading');
   /** Le refus de la carte (phrase de Stripe) ou de l'abandon (la nôtre). */
@@ -145,10 +142,7 @@ export class CardComplementPayment {
   constructor() {
     effect(() => {
       const locale = this.locale();
-      if (this.elements !== null && this.mountedLocale !== locale) {
-        this.mountedLocale = locale;
-        this.elements.update({ locale });
-      }
+      this.collection?.setLocale(locale);
     });
     // Le délai passé ferme le formulaire : la modification est abandonnée.
     effect(() => {
@@ -171,22 +165,16 @@ export class CardComplementPayment {
   }
 
   private async prepare(): Promise<void> {
-    const { publishableKey, clientSecret } = this.complement();
-    const stripe = await this.stripeLoader.load(publishableKey);
-    if (stripe === null) {
-      this.settleLoading('unavailable');
-      return;
-    }
     try {
-      this.stripe = stripe;
-      const locale = this.locale();
-      this.mountedLocale = locale;
-      this.elements = stripe.elements({ clientSecret, locale });
-      this.elements.create('payment', PAYMENT_ELEMENT_OPTIONS).mount(this.mountRef().nativeElement);
-      this.settleLoading('ready');
+      this.collection = await this.collector.mount(
+        this.complement().collection,
+        this.mountRef().nativeElement,
+        this.locale(),
+      );
     } catch {
-      this.settleLoading('unavailable');
+      this.collection = null;
     }
+    this.settleLoading(this.collection === null ? 'unavailable' : 'ready');
   }
 
   /**
@@ -203,21 +191,23 @@ export class CardComplementPayment {
 
   /** `redirect: 'if_required'` : une carte simple reste ici, seul 3-D Secure redirige. */
   protected async pay(): Promise<void> {
-    const stripe = this.stripe;
-    const elements = this.elements;
-    if (stripe === null || elements === null || this.phase() !== 'ready') {
+    const collection = this.collection;
+    if (collection === null || this.phase() !== 'ready') {
       return;
     }
     this.phase.set('paying');
     this.error.set(null);
-    const result = await stripe.confirmPayment({ elements, redirect: 'if_required' });
-    if (result.error !== undefined) {
-      // La phrase de Stripe est écrite pour le porteur : elle lui dit quoi corriger.
-      this.error.set(result.error.message ?? this.c().cardRefused);
+    const outcome = await collection.collect();
+    if (outcome.kind === 'redirected') {
+      return;
+    }
+    if (outcome.kind === 'refused') {
+      // La phrase du prestataire est écrite pour le porteur : elle lui dit quoi corriger.
+      this.error.set(outcome.message ?? this.c().cardRefused);
       this.phase.set('ready');
       return;
     }
-    if (result.paymentIntent?.status !== 'succeeded') {
+    if (outcome.kind === 'unfinished') {
       this.error.set(this.c().payFailed);
       this.phase.set('ready');
       return;

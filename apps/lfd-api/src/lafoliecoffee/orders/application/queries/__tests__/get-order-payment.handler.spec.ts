@@ -1,6 +1,9 @@
 import type { OrderStatus, OrderView, PaymentStatus } from "@lfd/contracts";
 
-import type { CardIntentState } from "../../../../../payment/channels/requests/index.js";
+import type {
+  CardIntentState,
+  RetrievedCardPayment,
+} from "../../../../../payment/channels/requests/index.js";
 import { OrderNotFoundError, OrderNotPayableError } from "../../../domain/errors/order-errors.js";
 import {
   CancelledOrderNotPayableError,
@@ -69,7 +72,7 @@ class FixedRetrieval extends OrderCardRetrieval {
     super();
   }
 
-  retrieveFirst(orderId: string) {
+  retrieveFirst(orderId: string): Promise<RetrievedCardPayment> {
     this.sink.retrieved = orderId;
     if (this.awaitsAdoption) {
       return Promise.reject(new OrderPaymentAwaitsAdoptionError(orderId));
@@ -77,8 +80,12 @@ class FixedRetrieval extends OrderCardRetrieval {
     return Promise.resolve({
       paymentId: "pay_1",
       providerRef: "pi_1",
-      clientSecret: "pi_1_secret",
-      publishableKey: "pk_test_123",
+      collection: {
+        kind: "embedded",
+        provider: "stripe",
+        publishableKey: "pk_test_123",
+        token: "pi_1_secret",
+      },
       state: this.state,
     });
   }
@@ -121,6 +128,12 @@ describe("GetOrderPaymentHandler", () => {
     const intent = await handler.execute(new GetOrderPaymentQuery("u1", "order_1"));
 
     expect(intent).toEqual({
+      collection: {
+        kind: "embedded",
+        provider: "stripe",
+        publishableKey: "pk_test_123",
+        token: "pi_1_secret",
+      },
       clientSecret: "pi_1_secret",
       publishableKey: "pk_test_123",
       amountCents: 12_345,

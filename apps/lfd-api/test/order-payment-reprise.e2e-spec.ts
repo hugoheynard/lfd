@@ -36,7 +36,15 @@ class NamedIntentCardProvider extends E2eCardProvider {
   override createIntent(): Promise<CreatedIntent> {
     assertOutsideTransaction("e2e.CardProvider.createIntent");
     this.issued.push(nextIntent);
-    return Promise.resolve({ providerRef: nextIntent, clientSecret: `${nextIntent}_secret` });
+    return Promise.resolve({
+      providerRef: nextIntent,
+      collection: {
+        kind: "embedded",
+        provider: "stripe",
+        publishableKey: this.publishableKey(),
+        token: `${nextIntent}_secret`,
+      },
+    });
   }
 }
 
@@ -99,6 +107,12 @@ describe("GET /orders/:id/payment après un refus de carte", () => {
     });
     const response = await ctx.asSub(BUYER).get(`/orders/${orderId}/payment`).expect(200);
     expect(jsonBody<OrderPaymentIntent>(response)).toEqual({
+      collection: {
+        kind: "embedded",
+        provider: "stripe",
+        publishableKey: "pk_e2e",
+        token: "pi_reprise_secret",
+      },
       clientSecret: "pi_reprise_secret",
       publishableKey: "pk_e2e",
       // Le total que la passation a tarifé, pas un chiffre recopié.

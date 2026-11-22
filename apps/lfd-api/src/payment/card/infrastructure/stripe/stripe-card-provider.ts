@@ -1,6 +1,9 @@
 import Stripe from "stripe";
 
-import type { CardAccountSecrets } from "../../../../platform/config/card-accounts.js";
+import type {
+  CardAccountSecrets,
+  CardProviderType,
+} from "../../../../platform/config/card-accounts.js";
 import { assertOutsideTransaction } from "../../../../platform/database/outside-transaction.js";
 import {
   CardProviderUnavailableError,
@@ -9,6 +12,7 @@ import {
 import type { CardProviderEvent } from "../../domain/ports/card-provider-event.js";
 import { CardProvider } from "../../domain/ports/card-provider.js";
 import type {
+  CardCollection,
   CreateIntentParams,
   CreatedIntent,
   IntentCancellation,
@@ -26,6 +30,9 @@ import {
   refusedWithoutState,
 } from "./stripe-intent-translation.js";
 import { StripeRefundCalls } from "./stripe-refund-calls.js";
+
+/** Le prestataire, tel que la page le lit pour choisir son formulaire. */
+const STRIPE_PROVIDER: CardProviderType = "stripe";
 
 /**
  * Les moyens de paiement acceptés : **la carte, et elle seule** (Hugo,
@@ -67,7 +74,7 @@ export class StripeCardProvider extends CardProvider {
     if (intent.client_secret === null) {
       throw new CardProviderUnavailableError("client_secret absent de la PaymentIntent");
     }
-    return { providerRef: intent.id, clientSecret: intent.client_secret };
+    return { providerRef: intent.id, collection: this.embedded(intent.client_secret) };
   }
 
   async retrieveIntent(providerRef: string): Promise<RetrievedIntent> {
@@ -78,8 +85,21 @@ export class StripeCardProvider extends CardProvider {
     }
     return {
       providerRef: intent.id,
-      clientSecret: intent.client_secret,
+      collection: this.embedded(intent.client_secret),
       state: intentStateOf(intent.status),
+    };
+  }
+
+  /**
+   * Stripe se paie dans notre page : le Payment Element se monte avec la clé
+   * publique du compte et le `client_secret` de la PaymentIntent.
+   */
+  private embedded(clientSecret: string): CardCollection {
+    return {
+      kind: "embedded",
+      provider: STRIPE_PROVIDER,
+      publishableKey: this.secrets.publishableKey,
+      token: clientSecret,
     };
   }
 

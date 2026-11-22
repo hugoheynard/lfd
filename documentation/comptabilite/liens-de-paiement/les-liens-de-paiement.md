@@ -14,15 +14,15 @@ paie **par carte**, sans passer par la caisse ni par le prélèvement.
 
 Il en existe **deux sortes** aujourd'hui, qui ne marchent pas pareil :
 
-| Sorte                                    | Pour payer quoi                               | Où le client paie                                              | Qui le crée                                                                                    |
-| ---------------------------------------- | --------------------------------------------- | -------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| **Lien d'une commande**                  | une commande pas encore payée                 | **notre** page, dans l'espace client (`/commandes/:id/regler`) | personne : il existe dès que la commande attend son paiement ; le staff le copie ou le renvoie |
-| **Lien libre** (« Régularisation août ») | une somme hors commande, choisie par le staff | une page **Stripe Checkout** hébergée chez Stripe              | le staff, dans Comptabilité › Liens de paiement                                                |
+| Sorte                                    | Pour payer quoi                               | Où le client paie                                       | Qui le crée                                                                                    |
+| ---------------------------------------- | --------------------------------------------- | ------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| **Lien d'une commande**                  | une commande pas encore payée                 | **notre** page, dans l'espace client (`/reglement/:id`) | personne : il existe dès que la commande attend son paiement ; le staff le copie ou le renvoie |
+| **Lien libre** (« Régularisation août ») | une somme hors commande, choisie par le staff | une page **Stripe Checkout** hébergée chez Stripe       | le staff, dans Comptabilité › Liens de paiement                                                |
 
 ```mermaid
 flowchart LR
   subgraph Commande
-    O["Commande en attente<br/>de paiement"] --> P1["Notre page<br/>/commandes/:id/regler"]
+    O["Commande en attente<br/>de paiement"] --> P1["Notre page<br/>/reglement/:id"]
     P1 --> CP["Bloc card-payment<br/>(encaisse)"]
   end
   subgraph Libre
@@ -63,10 +63,18 @@ Contrat : `packages/contracts/src/payment-link.ts`.
 - **Le renvoi par e-mail** à l'acheteur :
   `resend-order-payment-link.handler.ts`, modèle d'e-mail « lien de
   règlement d'une commande ».
-- **La page** `/commandes/:id/regler` (boutique, `app.routes.ts`) relit
-  l'intention de paiement par le bloc `card-payment`
-  (`get-order-payment.handler.ts`) ; elle n'en crée jamais une nouvelle.
-  Une carte refusée se règle encore tant que l'intention vit.
+- **La page** `/reglement/:id` (boutique, `client/commande/reglement-page/`),
+  la seule page de règlement — `/commandes/:id/regler` a été retirée le
+  2026-11-22, aucun e-mail ne l'ayant jamais portée en production. Le lien
+  se génère dans `payment-link.ts`. La page relit le paiement par le bloc
+  `payment` (`get-order-payment.handler.ts`) et n'en crée jamais un nouveau ;
+  une carte refusée se règle encore tant que l'intention vit. Le formulaire
+  de carte se monte par le service de collecte (`CardCollector`), qui lit
+  l'instruction neutre du prestataire.
+- **Qui entre** (`settle.guard.ts`) : le visiteur qui vient de passer la
+  commande (son paiement est en mémoire, `HeldOrderPayment`, compte ou non) ;
+  sinon un client connecté ; sinon la connexion d'abord, puis retour sur la
+  page.
 - **Commande saisie par l'équipe** (`place-order-for-customer.handler.ts`) :
   le règlement se fait par ce lien, que le client suit lui-même ; jamais un
   numéro de carte dicté. Non réglée à l'heure limite, elle fait sonner la

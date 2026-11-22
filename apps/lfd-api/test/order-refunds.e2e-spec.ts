@@ -37,7 +37,15 @@ class NamedIntentCardProvider extends E2eCardProvider {
   override createIntent(): Promise<CreatedIntent> {
     assertOutsideTransaction("e2e.CardProvider.createIntent");
     this.issued.push(nextIntent);
-    return Promise.resolve({ providerRef: nextIntent, clientSecret: `${nextIntent}_secret` });
+    return Promise.resolve({
+      providerRef: nextIntent,
+      collection: {
+        kind: "embedded",
+        provider: "stripe",
+        publishableKey: this.publishableKey(),
+        token: `${nextIntent}_secret`,
+      },
+    });
   }
 }
 

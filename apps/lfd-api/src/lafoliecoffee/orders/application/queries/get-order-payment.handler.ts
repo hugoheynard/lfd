@@ -12,6 +12,7 @@ import { ensureOrderVisible } from "../../domain/services/order-access.js";
 import { awaitsCardPayment } from "../../domain/services/payment-link.js";
 import { OrderCardRetrieval } from "../../domain/ports/order-card-payments.js";
 import { GetOrderPaymentQuery } from "./get-order-payment.query.js";
+import { cardCollectionFields } from "../services/card-collection-fields.js";
 
 /**
  * Rend de quoi régler une commande **en attente de paiement**, ou dont le
@@ -91,8 +92,7 @@ export class GetOrderPaymentHandler implements IQueryHandler<
       throw new PaymentIntentClosedError(intent.state);
     }
     return {
-      clientSecret: intent.clientSecret,
-      publishableKey: intent.publishableKey,
+      ...cardCollectionFields(intent.collection),
       amountCents: owned.view.totalCents,
     };
   }

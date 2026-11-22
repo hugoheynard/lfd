@@ -3504,3 +3504,8 @@ export type {
   SiteMenuStatePayload,
   PrincipalSitesMenuView,
 } from "./sub-account-menu.js";
+export type {
+  CardCollection,
+  EmbeddedCardCollection,
+  RedirectCardCollection,
+} from "./card-collection.js";

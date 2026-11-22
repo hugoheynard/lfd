@@ -6,6 +6,7 @@ import { NoComplementAwaitingPaymentError } from "../../revision/domain/errors/c
 import { CardIncreaseProposalReader } from "../../revision/domain/ports/card-increase-proposal.reader.js";
 import { RevisionWall } from "../../revision/application/services/revision-wall.js";
 import { GetComplementPaymentQuery } from "./get-complement-payment.query.js";
+import { cardCollectionFields } from "../services/card-collection-fields.js";
 
 /**
  * Sert le complément qui attend son paiement : le projet vivant doit être
@@ -44,8 +45,7 @@ export class GetComplementPaymentHandler implements IQueryHandler<
     return {
       proposalId: live.id,
       complementCents: live.complementCents,
-      clientSecret: payment.clientSecret,
-      publishableKey: payment.publishableKey,
+      ...cardCollectionFields(payment.collection),
       expiresAt: state.expiresAt.toISOString(),
     };
   }

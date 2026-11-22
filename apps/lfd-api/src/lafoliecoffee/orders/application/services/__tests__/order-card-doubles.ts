@@ -135,8 +135,12 @@ export class ScriptedCardPayments extends CardPayments {
     return Promise.resolve({
       paymentId,
       providerRef: "pi_1",
-      clientSecret: "pi_1_secret",
-      publishableKey: "pk_test",
+      collection: {
+        kind: "embedded",
+        provider: "stripe",
+        publishableKey: "pk_test",
+        token: "pi_1_secret",
+      },
       state: "awaiting_payment",
     });
   }

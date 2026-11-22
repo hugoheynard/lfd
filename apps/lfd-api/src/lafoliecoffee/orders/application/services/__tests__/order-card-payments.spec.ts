@@ -37,8 +37,12 @@ describe("OrderCardPayments — lire", () => {
 
     await expect(cards.retrieveFirst("ord_1")).resolves.toMatchObject({
       paymentId: "pay_1",
-      clientSecret: "pi_1_secret",
-      publishableKey: "pk_test",
+      collection: {
+        kind: "embedded",
+        provider: "stripe",
+        publishableKey: "pk_test",
+        token: "pi_1_secret",
+      },
     });
     expect(payments.calls).toEqual(["retrieve:pay_1"]);
   });

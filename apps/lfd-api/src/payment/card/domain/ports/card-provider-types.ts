@@ -18,11 +18,38 @@ export interface CreateIntentParams {
   readonly tag: string;
 }
 
-/** Intention créée : la référence (clé de rapprochement) et son secret client. */
+/**
+ * **Comment le navigateur fait payer le client** — une instruction neutre du
+ * prestataire, que l'adaptateur remplit et que la page lit sans connaître le
+ * prestataire (plan
+ * `documentation/comptabilite/liens-de-paiement/plan-le-lien-vers-un-sujet.md`,
+ * §2.3 bis) :
+ * - `embedded` — un formulaire du prestataire intégré à notre page, monté avec
+ *   sa clé **publique** et un jeton propre à ce paiement (pour Stripe, le
+ *   `client_secret` de la PaymentIntent) ;
+ * - `redirect` — la page du prestataire, où l'on envoie le client.
+ *
+ * Le résultat n'arrive jamais par la page : toujours par le webhook du compte
+ * qui encaisse.
+ */
+export type CardCollection =
+  | {
+      readonly kind: "embedded";
+      /** Le prestataire, pour que la page choisisse son formulaire (`stripe`). */
+      readonly provider: string;
+      readonly publishableKey: string;
+      readonly token: string;
+    }
+  | {
+      readonly kind: "redirect";
+      readonly provider: string;
+      readonly url: string;
+    };
+
+/** Intention créée : la référence (clé de rapprochement) et l'instruction de collecte. */
 export interface CreatedIntent {
   readonly providerRef: string;
-  /** Pour l'élément de paiement du navigateur (non secret au sens OAuth). */
-  readonly clientSecret: string;
+  readonly collection: CardCollection;
 }
 
 /**
@@ -32,7 +59,7 @@ export interface CreatedIntent {
  */
 export type CardIntentState = "awaiting_payment" | "processing" | "succeeded" | "canceled";
 
-/** Intention relue : sa référence, son secret, son état courant. */
+/** Intention relue : sa référence, son instruction de collecte, son état courant. */
 export interface RetrievedIntent extends CreatedIntent {
   readonly state: CardIntentState;
 }

@@ -92,6 +92,12 @@ describe("ProposeCardIncreaseHandler — la hausse demandée", () => {
     expect(result).toEqual({
       proposalId: "prop_000001",
       complementCents: complement,
+      collection: {
+        kind: "embedded",
+        provider: "stripe",
+        publishableKey: "pk_test",
+        token: "pi_complement_secret",
+      },
       clientSecret: "pi_complement_secret",
       publishableKey: "pk_test",
       expiresAt: new Date(NOW.getTime() + FIFTEEN_MINUTES_MS).toISOString(),

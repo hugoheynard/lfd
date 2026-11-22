@@ -307,8 +307,12 @@ class PreparingCardPayments extends CardPayments {
     this.sink.intent = { subjectType, amountCents, tag };
     return Promise.resolve({
       prepared: { account: "lfc-stripe", providerRef: "pi_1", amountCents },
-      clientSecret: "pi_1_secret",
-      publishableKey: "pk_test_123",
+      collection: {
+        kind: "embedded",
+        provider: "stripe",
+        publishableKey: "pk_test_123",
+        token: "pi_1_secret",
+      },
     });
   }
 

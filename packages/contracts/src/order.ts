@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import type { OrderLinePricingTrace, PriceStepView, VolumeTierPriceView } from "./pricing.js";
+import type { CardCollection } from "./card-collection.js";
 
 import {
   billingAddressPayloadSchema,
@@ -1350,18 +1351,23 @@ export function toCustomerOrder(view: OrderView): CustomerOrderView {
 }
 
 /**
- * Détails de paiement renvoyés au checkout **quand une carte est requise**
- * (société `per_order`). Le client monte le Payment Element de Stripe avec le
- * `clientSecret` et la `publishableKey` (toutes deux non secrètes), pour le
- * montant `amountCents` (le total ré-résolu serveur). Absent = aucun paiement
- * carte requis (terme différé) : la commande est déjà passée.
+ * Détails de paiement renvoyés **quand une carte est requise** : au checkout
+ * (société `per_order`), au règlement d'une commande en attente. La page fait
+ * payer par l'instruction `collection`, pour le montant `amountCents` (le
+ * total ré-résolu serveur). Absent de la passation = aucun paiement carte
+ * requis (terme différé) : la commande est déjà passée.
  */
 export interface OrderPaymentIntent {
-  /** Client secret de la PaymentIntent Stripe — à passer au Payment Element. */
-  readonly clientSecret: string;
-  /** Clé **publique** Stripe (pk_test_… / pk_live_…) — destinée au bundle. */
-  readonly publishableKey: string;
-  /** Montant à encaisser, en centimes (le total serveur). Pour l'affichage. */
+  /** Comment faire payer le client, quel que soit le prestataire. */
+  readonly collection: CardCollection;
+  /**
+   * @deprecated Servi un déploiement de plus pour une page ouverte avant
+   * l'instruction de collecte ; à lire dans `collection`. Absent quand la
+   * collecte n'est pas `embedded`.
+   */
+  readonly clientSecret?: string;
+  /** @deprecated Idem : `collection.publishableKey`. */
+  readonly publishableKey?: string;
   /** Le total à encaisser, en **centimes** : un montant, pas un prix unitaire. */
   readonly amountCents: number;
 }

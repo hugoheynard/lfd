@@ -47,6 +47,12 @@ describe("GetComplementPaymentHandler", () => {
     await expect(read()).resolves.toEqual({
       proposalId: "prop_1",
       complementCents: 1_200,
+      collection: {
+        kind: "embedded",
+        provider: "stripe",
+        publishableKey: "pk_test",
+        token: "pi_complement_secret",
+      },
       clientSecret: "pi_complement_secret",
       publishableKey: "pk_test",
       expiresAt: live.toPersistence().expiresAt.toISOString(),

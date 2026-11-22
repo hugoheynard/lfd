@@ -131,7 +131,12 @@ export class RecordingCardProvider extends CardProvider {
     this.calls.push(`createIntent:${String(params.amountCents)}:${params.currency}:${params.tag}`);
     return Promise.resolve({
       providerRef: this.createdRef,
-      clientSecret: `${this.createdRef}_secret`,
+      collection: {
+        kind: "embedded",
+        provider: "stripe",
+        publishableKey: this.key,
+        token: `${this.createdRef}_secret`,
+      },
     });
   }
 
@@ -145,7 +150,12 @@ export class RecordingCardProvider extends CardProvider {
     }
     return Promise.resolve({
       providerRef,
-      clientSecret: `${providerRef}_secret`,
+      collection: {
+        kind: "embedded",
+        provider: "stripe",
+        publishableKey: this.key,
+        token: `${providerRef}_secret`,
+      },
       state: this.intentState,
     });
   }

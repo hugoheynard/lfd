@@ -358,8 +358,12 @@ class PreparingCardPayments extends CardPayments {
     this.sink.intent = { subjectType, amountCents, tag };
     return Promise.resolve({
       prepared: { account: "lfc-stripe", providerRef: "pi_test_1", amountCents },
-      clientSecret: "pi_test_1_secret",
-      publishableKey: "pk_test_123",
+      collection: {
+        kind: "embedded",
+        provider: "stripe",
+        publishableKey: "pk_test_123",
+        token: "pi_test_1_secret",
+      },
     });
   }
 
@@ -1523,6 +1527,12 @@ describe("PlaceOrderHandler", () => {
     expect(sink.placed?.stripePaymentIntentId).toBe("pi_test_1");
     expect(result.settlement).toBe("due");
     expect(result.payment).toEqual({
+      collection: {
+        kind: "embedded",
+        provider: "stripe",
+        publishableKey: "pk_test_123",
+        token: "pi_test_1_secret",
+      },
       clientSecret: "pi_test_1_secret",
       publishableKey: "pk_test_123",
       amountCents: 400,

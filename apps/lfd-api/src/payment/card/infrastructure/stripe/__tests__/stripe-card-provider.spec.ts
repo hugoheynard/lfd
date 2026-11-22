@@ -203,7 +203,15 @@ describe("StripeCardProvider.createIntent", () => {
 
     await expect(
       provider.createIntent({ amountCents: 2_340, currency: "eur", tag: "personal" }),
-    ).resolves.toEqual({ providerRef: "pi_9", clientSecret: "pi_9_secret" });
+    ).resolves.toEqual({
+      providerRef: "pi_9",
+      collection: {
+        kind: "embedded",
+        provider: "stripe",
+        publishableKey: "pk_test_cartes",
+        token: "pi_9_secret",
+      },
+    });
     expect(seen[0]?.path).toBe("/v1/payment_intents");
     expect(seen[0]?.body.get("amount")).toBe("2340");
     expect(seen[0]?.body.get("payment_method_types[0]")).toBe("card");

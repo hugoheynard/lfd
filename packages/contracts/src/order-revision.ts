@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import type { CardCollection } from "./card-collection.js";
 import type { DiscountLabelView } from "./discount-label.js";
 import type { OrderRevisionChange, OrderRevisionQuoteSettlement } from "./order-revision.values.js";
 import {
@@ -200,14 +201,18 @@ export type CardIncreasePayload = OrderRevisionPayload;
  * **Le complément à payer** — la réponse de `POST
  * /orders/:id/revisions/card-increase` (§2.4) et de `GET
  * /orders/:id/complement` (§2.5, la reprise au rechargement). La commande ne
- * change pas tant que le complément n'est pas payé : la boutique monte le
- * formulaire de carte avec `clientSecret` et `publishableKey`, et dit le
+ * change pas tant que le complément n'est pas payé : la boutique fait payer
+ * par l'instruction `collection`, et dit le
  * délai (`expiresAt`, ISO — 15 minutes, raccourci à l'heure limite).
  */
 export interface CardComplementPaymentView {
   readonly proposalId: string;
   readonly complementCents: number;
-  readonly clientSecret: string;
-  readonly publishableKey: string;
+  /** Comment faire payer le complément, quel que soit le prestataire. */
+  readonly collection: CardCollection;
+  /** @deprecated Un déploiement de plus ; à lire dans `collection`. */
+  readonly clientSecret?: string;
+  /** @deprecated Idem : `collection.publishableKey`. */
+  readonly publishableKey?: string;
   readonly expiresAt: string;
 }

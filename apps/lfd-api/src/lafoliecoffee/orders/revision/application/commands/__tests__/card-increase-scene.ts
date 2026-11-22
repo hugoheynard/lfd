@@ -89,8 +89,12 @@ export class IncreaseCardPayments extends CardPayments {
     this.steps.seen.push(`prepare:${subjectType}:${String(amountCents)}:${tag}`);
     return Promise.resolve({
       prepared: { account: "lfc-stripe", providerRef: "pi_complement", amountCents },
-      clientSecret: "pi_complement_secret",
-      publishableKey: "pk_test",
+      collection: {
+        kind: "embedded",
+        provider: "stripe",
+        publishableKey: "pk_test",
+        token: "pi_complement_secret",
+      },
     });
   }
 
@@ -116,8 +120,12 @@ export class IncreaseCardPayments extends CardPayments {
     return Promise.resolve({
       paymentId,
       providerRef: "pi_complement",
-      clientSecret: "pi_complement_secret",
-      publishableKey: "pk_test",
+      collection: {
+        kind: "embedded",
+        provider: "stripe",
+        publishableKey: "pk_test",
+        token: "pi_complement_secret",
+      },
       state: this.intentState,
     });
   }

@@ -5,6 +5,7 @@
  */
 export {
   type AttachedCardPayment,
+  type CardCollection,
   type CardIntentState,
   type CardPaymentCancellation,
   type CardPaymentPreparation,

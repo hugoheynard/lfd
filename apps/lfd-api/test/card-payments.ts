@@ -91,14 +91,27 @@ export class E2eCardProvider extends CardProvider {
     this.intents += 1;
     const providerRef = `${this.prefix}_${String(this.intents)}`;
     this.issued.push(providerRef);
-    return Promise.resolve({ providerRef, clientSecret: `${providerRef}_secret` });
+    return Promise.resolve({
+      providerRef,
+      collection: {
+        kind: "embedded",
+        provider: "stripe",
+        publishableKey: this.publishableKey(),
+        token: `${providerRef}_secret`,
+      },
+    });
   }
 
   retrieveIntent(providerRef: string): Promise<RetrievedIntent> {
     assertOutsideTransaction("e2e.CardProvider.retrieveIntent");
     return Promise.resolve({
       providerRef,
-      clientSecret: `${providerRef}_secret`,
+      collection: {
+        kind: "embedded",
+        provider: "stripe",
+        publishableKey: this.publishableKey(),
+        token: `${providerRef}_secret`,
+      },
       state: this.states.get(providerRef) ?? "awaiting_payment",
     });
   }

@@ -101,8 +101,12 @@ const CARD_PAID: CustomerOrderDetailView = {
 const COMPLEMENT: CardComplementPaymentView = {
   proposalId: 'prop_1',
   complementCents: 600,
-  clientSecret: 'pi_1_secret',
-  publishableKey: 'pk_test',
+  collection: {
+    kind: 'embedded',
+    provider: 'stripe',
+    publishableKey: 'pk_test',
+    token: 'pi_1_secret',
+  },
   expiresAt: new Date(Date.now() + 10 * 60_000).toISOString(),
 };
 

@@ -12,7 +12,6 @@ import {
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { map } from 'rxjs/operators';
-import type { Stripe, StripeElements } from '@stripe/stripe-js';
 import {
   FOLD_INLINE_CONFIRM_DEFAULT_LABELS,
   FoldButtonComponent,
@@ -24,12 +23,11 @@ import { ClientChrome } from '../../client-chrome.service';
 import { type AbandonOutcome, ClientOrderAbandon } from '../../client-order-abandon.service';
 import { ClientOrders } from '../../client-orders.service';
 import { ClientWorkspace } from '../../client-workspace.service';
-import { ClientLocale, type LocaleCode } from '../../client-locale.service';
+import { ClientLocale } from '../../client-locale.service';
 import { ClientCopyService, fill } from '../../copy/client-copy.service';
 import { formatCents } from '../../format-money';
 import { NotifyService } from '../../../notify.service';
-import { StripeLoader } from '../../stripe-loader.service';
-import { PAYMENT_ELEMENT_OPTIONS } from '../payment-element-options';
+import { CardCollector, type MountedCollection } from '../../payment-collection/card-collector';
 
 /** L'écran ne peut être que dans un de ces états, et il n'en montre qu'un. */
 type Phase = 'loading' | 'ready' | 'paying' | 'unavailable' | 'closed';
@@ -91,7 +89,7 @@ export class ReglementPage {
   private readonly chrome = inject(ClientChrome);
   private readonly router = inject(Router);
   private readonly orders = inject(ClientOrders);
-  private readonly stripeLoader = inject(StripeLoader);
+  private readonly collector = inject(CardCollector);
   private readonly notify = inject(NotifyService);
   private readonly abandoning = inject(ClientOrderAbandon);
   private readonly workspace = inject(ClientWorkspace);
@@ -104,19 +102,16 @@ export class ReglementPage {
     { initialValue: '' },
   );
 
-  private stripe: Stripe | null = null;
-  private elements: StripeElements | null = null;
+  /** Le formulaire de carte monté, `null` tant qu'il ne l'est pas. */
+  private collection: MountedCollection | null = null;
 
   /**
-   * La langue de la boutique, passée au Payment Element (RGAA 8.7, lot A3) :
-   * sans elle, Stripe parle la langue du NAVIGATEUR, et un formulaire de carte
-   * en anglais sous une page en français n'est plus lu avec la bonne voix.
-   * Les trois langues de la boutique (fr, en, it) sont des locales Stripe.
+   * La langue de la boutique, passée au formulaire de carte (RGAA 8.7, lot
+   * A3) : sans elle, le prestataire parle la langue du NAVIGATEUR, et un
+   * formulaire en anglais sous une page en français n'est plus lu avec la
+   * bonne voix.
    */
   private readonly locale = inject(ClientLocale).current;
-
-  /** La langue avec laquelle les champs ont été montés — pour ne relancer que sur un CHANGEMENT. */
-  private mountedLocale: LocaleCode | null = null;
 
   private readonly mountRef = viewChild.required<ElementRef<HTMLDivElement>>('mount');
 
@@ -179,10 +174,7 @@ export class ReglementPage {
     // La langue changée PENDANT le règlement suit dans les champs de carte.
     effect(() => {
       const locale = this.locale();
-      if (this.elements !== null && this.mountedLocale !== locale) {
-        this.mountedLocale = locale;
-        this.elements.update({ locale });
-      }
+      this.collection?.setLocale(locale);
     });
     // Navigateur uniquement : `afterNextRender` ne tourne pas en SSR, et le nœud
     // de montage du Payment Element existe alors dans le DOM.
@@ -220,21 +212,20 @@ export class ReglementPage {
       return;
     }
     this.amountCents.set(payment.amountCents);
-    const stripe = await this.stripeLoader.load(payment.publishableKey);
-    if (stripe === null) {
+    try {
+      this.collection = await this.collector.mount(
+        payment.collection,
+        this.mountRef().nativeElement,
+        this.locale(),
+      );
+    } catch {
+      this.collection = null;
+    }
+    if (this.collection === null) {
       this.unavailable();
       return;
     }
-    try {
-      this.stripe = stripe;
-      const locale = this.locale();
-      this.mountedLocale = locale;
-      this.elements = stripe.elements({ clientSecret: payment.clientSecret, locale });
-      this.elements.create('payment', PAYMENT_ELEMENT_OPTIONS).mount(this.mountRef().nativeElement);
-      this.phase.set('ready');
-    } catch {
-      this.unavailable();
-    }
+    this.phase.set('ready');
   }
 
   /**
@@ -244,23 +235,25 @@ export class ReglementPage {
    * seuls les moyens qui l'exigent — 3-D Secure — provoquent une redirection.
    */
   protected async pay(): Promise<void> {
-    const stripe = this.stripe;
-    const elements = this.elements;
-    if (stripe === null || elements === null || this.phase() !== 'ready') {
+    const collection = this.collection;
+    if (collection === null || this.phase() !== 'ready') {
       return;
     }
     this.phase.set('paying');
     this.error.set(null);
-    const result = await stripe.confirmPayment({ elements, redirect: 'if_required' });
-    if (result.error !== undefined) {
-      // Le message de Stripe est écrit pour le porteur de la carte — « fonds
-      // insuffisants », « code de sécurité invalide ». Le remplacer par le
-      // nôtre lui retirerait la seule information qui lui permet de corriger.
-      this.error.set(result.error.message ?? this.t().pay.refused);
+    const outcome = await collection.collect();
+    if (outcome.kind === 'redirected') {
+      return;
+    }
+    if (outcome.kind === 'refused') {
+      // La phrase du prestataire est écrite pour le porteur de la carte —
+      // « fonds insuffisants », « code de sécurité invalide ». La remplacer
+      // par la nôtre lui retirerait ce qui lui permet de corriger.
+      this.error.set(outcome.message ?? this.t().pay.refused);
       this.phase.set('ready');
       return;
     }
-    if (result.paymentIntent?.status !== 'succeeded') {
+    if (outcome.kind === 'unfinished') {
       this.error.set(this.t().pay.failed);
       this.phase.set('ready');
       return;

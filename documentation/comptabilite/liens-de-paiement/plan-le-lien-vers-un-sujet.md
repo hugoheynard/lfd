@@ -86,7 +86,7 @@ sequenceDiagram
 ```
 
 Ce qui ne change pas : les commandes payées par carte à la commande, leur
-page `/commandes/:id/regler`, leurs factures acquittées, leurs
+page `/reglement/:id`, leurs factures acquittées, leurs
 remboursements.
 
 # Partie 2 — La technique
@@ -244,35 +244,54 @@ reference, dueOn | null }` ou `{ payable: false, reason }` (réglé,
   tourne en transaction, et un appel réseau y est interdit
   (`assertOutsideTransaction`, porte `network-outside-transaction`). Et une
   facture jamais ouverte ne crée rien chez le prestataire.
-- **Boutique** : route `/payer/:jeton`, hors espace client, sans
-  authentification. Elle et `/commandes/:id/regler` partagent **un seul
-  composant de collecte**, qui lit l'instruction du §2.3 bis : un nouveau
-  prestataire s'ajoute une fois, pas une fois par page.
+- **La page `/payer/:jeton` appartient à l'application d'origine du lien.**
+  Le registre des origines porte, pour chacune, sa **racine publique** :
+  `PayLinks.open` compose `<racine de l'origine>/payer/<jeton>`, et le
+  client d'une autre application reste chez elle. Chaque application monte
+  cette page avec le **service de collecte partagé** (§2.3 bis), sans écrire
+  de formulaire ni connaître de prestataire. Le service vit aujourd'hui dans
+  la boutique (`client/payment-collection/card-collector.ts`), écrit sans
+  rien de propre à La Folie Coffee ; il rejoint un paquet de `packages/` le
+  jour où une deuxième application encaisse.
 
 ### 2.3 bis L'instruction de collecte, neutre du prestataire
 
-🔴 `CardPayments.prepare` et `retrieve` rendent aujourd'hui `clientSecret` et
-`publishableKey` (`payment/channels/requests/card-payments.ts`, relu le
-2026-11-22) : le modèle de Stripe, un formulaire intégré à notre page.
-Beaucoup de solutions bancaires demandent une **redirection** vers leur
-page, ou un jeton de formulaire à elles ; l'offre de la Caisse d'Épargne
-n'a pas été vérifiée. Tel quel, le port ne sait pas les représenter.
+> ✅ **Bâti le 2026-11-22 (lot P0).** Le serveur, le contrat et la boutique
+> passent par l'instruction ; aucun changement visible pour le client.
 
-Le port rend une union fermée, que l'adaptateur de chaque prestataire
-remplit :
+Le port d'encaissement rendait `clientSecret` et `publishableKey` : le
+modèle de Stripe, un formulaire intégré à notre page. Beaucoup de solutions
+bancaires demandent une **redirection** vers leur page, ou un jeton de
+formulaire à elles (l'offre de la Caisse d'Épargne n'a pas été vérifiée).
+Il rend désormais une union fermée, `CardCollection`, que l'adaptateur de
+chaque prestataire remplit :
 
-| Genre      | Ce que la page reçoit                                                 | Exemple            |
-| ---------- | --------------------------------------------------------------------- | ------------------ |
-| `embedded` | le prestataire, une clé publique, un jeton de formulaire              | Stripe aujourd'hui |
-| `redirect` | l'adresse de la page du prestataire, et l'adresse de retour chez nous | une page bancaire  |
+| Genre      | Ce que la page reçoit                                    | Exemple            |
+| ---------- | -------------------------------------------------------- | ------------------ |
+| `embedded` | le prestataire, sa clé publique, le jeton de CE paiement | Stripe aujourd'hui |
+| `redirect` | l'adresse de la page du prestataire                      | une page bancaire  |
 
-Le **résultat** arrive toujours par le webhook du compte qui encaisse, que
-`card-payment` reçoit déjà. L'adresse de retour ne fait qu'afficher « nous
-vérifions votre paiement » puis relire l'état : elle n'écrit rien.
-
-Le changement se fait **avant** les liens (lot P0) : la page des commandes
-et les tests le suivent pendant qu'un seul appelant existe ; après, chaque
-appelant de `clientSecret` serait un chantier.
+- **Serveur** : `CreatedIntent` / `RetrievedIntent` (port du prestataire),
+  puis `CardPaymentPreparation` / `RetrievedCardPayment` (canal
+  `payment/channels/requests/`) portent `collection`. L'adaptateur Stripe
+  remplit `embedded` (`stripe-card-provider.ts`).
+- **Contrat** : `packages/contracts/src/card-collection.ts`, porté par
+  `OrderPaymentIntent` (passation, passation boutique, règlement d'une
+  commande) et `CardComplementPaymentView` (complément d'une hausse). Les
+  six gestes du commerce le composent par `cardCollectionFields`.
+- **Un déploiement de transition** : `clientSecret` et `publishableKey`
+  restent servis, dépréciés, pour une page ouverte avant ; ils ne se
+  remplissent que pour `embedded`. À retirer au déploiement suivant.
+- **Boutique** : un seul service connaît un prestataire, `CardCollector`
+  (`client/payment-collection/`) — il monte, suit la langue, confirme ou
+  redirige. La page de règlement et le paiement du complément ne gardent que
+  leur logique (phases, délai, abandon).
+- **Le résultat** arrive toujours par le webhook du compte qui encaisse,
+  jamais par la page.
+- **Ce qui manque pour une vraie redirection** : `prepare` ne prend pas
+  encore d'adresse de retour. Elle s'ajoutera avec le premier prestataire
+  qui redirige ; la page de retour ne fera qu'afficher « nous vérifions
+  votre paiement » puis relire l'état.
 
 ### 2.4 L'avis à la comptabilité, après encaissement
 
@@ -334,9 +353,14 @@ jour proposer un virement instantané ou Wero. Pour que rien ne le grave :
 
 ## 3. Le sujet `order` — rien ne bouge
 
-La page `/commandes/:id/regler` reste la porte de la commande, derrière
-l'authentification. La commande n'implémente pas `LinkableSubject`. Lui
-donner un lien public plus tard serait un lot à part.
+La page `/reglement/:id` reste la porte de la commande La Folie Coffee, avec
+ce que le lien générique n'a pas (l'abandon, le retour à la confirmation,
+l'espace client). La commande n'implémente pas `LinkableSubject`.
+
+**Piste, pas décidée** : faire de la commande un sujet « liable », et faire
+pointer les liens envoyés par e-mail vers `/payer/<jeton>` plutôt que vers
+`/reglement/:id`. Une autre application n'a, elle, pas besoin d'une page de
+règlement à elle : un lien générique lui suffit.
 
 ## 4. Le sujet `invoice` — la carte, troisième moyen du paiement au compte
 
@@ -516,7 +540,7 @@ rapprocher.
 | Lot | Contenu                                                                                                                                                                                                                                                                                                                                     | Dépend de  |
 | --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
 | Z   | ✅ le bloc `payment` : `card-payment` → `payment/card`, les portes d'abord, le CLAUDE.md (§0) — **aucun changement de comportement**                                                                                                                                                                                                        | —          |
-| P0  | l'instruction de collecte neutre (§2.3 bis) : le port, l'adaptateur Stripe, la page `/commandes/:id/regler` passée au composant de collecte partagé — **aucun changement visible**                                                                                                                                                          | Z          |
+| P0  | ✅ l'instruction de collecte neutre (§2.3 bis) : le port, l'adaptateur Stripe, la page `/commandes/:id/regler` passée au composant de collecte partagé — **aucun changement visible**                                                                                                                                                       | Z          |
 | I0  | `isDirectDebit`, `switch` exhaustifs, la porte — **aucun changement de comportement**                                                                                                                                                                                                                                                       | —          |
 | P1  | `card_payment.pay_link`, `PayLinks`, `LinkableSubject`, le registre des origines, la page publique (API et boutique), les tests                                                                                                                                                                                                             | P0         |
 | P1b | l'avis à la comptabilité après encaissement (§2.4), l'adresse par origin, le modèle d'e-mail                                                                                                                                                                                                                                                | P1         |
