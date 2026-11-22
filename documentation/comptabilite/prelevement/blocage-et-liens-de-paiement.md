@@ -93,6 +93,31 @@ paid` (ou `async_payment_succeeded`) ; **expiré** sur
 `POST admin/accounting/payment-links/:id/cancel`
 (`lafoliecoffee/payments/http/admin-payment-links.controller.ts`).
 
+**Le webhook des liens** a son endpoint et son secret à lui :
+`POST /payments/links/webhook` (`payment-links-webhook.controller.ts`), signé
+avec `STRIPE_LINKS_WEBHOOK_SECRET`. Sans secret ou avec une signature fausse,
+il rend 400, ne traite rien et laisse Stripe réessayer. Les liens restent au
+commerce, avec leur client Stripe, tant qu'un lien n'est pas un sujet du bloc
+`card-payment` (plan M2, §4.5).
+
+```mermaid
+flowchart LR
+  S["Stripe<br/>checkout.session.*"] --> L["/payments/links/webhook<br/>(secret des liens)"]
+  S -. "transitoire" .-> C["/payments/webhook<br/>(cartes)"]
+  C -. "fait card_payment.checkout_event" .-> R["OnCardCheckoutEvent"]
+  L --> P["Settle / Expire<br/>PaymentLink"]
+  R --> P
+```
+
+Tant que l'ancien endpoint des cartes reçoit encore les `checkout.session.*`,
+le bloc `card-payment` les relaie au commerce par le fait durable
+`card_payment.checkout_event`. Un même événement peut donc arriver par les
+deux chemins : régler ou expirer un lien déjà réglé ne réécrit rien. Le relais
+se retire en P2.
+
+L'e2e `test/payment-links.e2e-spec.ts` passe par la route des liens, avec la
+vraie vérification de signature.
+
 ## 3. Ce qui reste ouvert
 
 - Pas de blocage automatique sur un rejet de prélèvement, par décision
@@ -100,5 +125,10 @@ paid` (ou `async_payment_succeeded`) ; **expiré** sur
   [`retours-bancaires.md`](retours-bancaires.md)), la cloche et
   la fiche le disent, le staff bloque par l'outil existant s'il le faut.
 - Pas de lettrage automatique entre un lien libre et des commandes.
-- Le webhook Stripe de production doit être abonné aux événements
-  `checkout.session.completed`, `.async_payment_succeeded` et `.expired` — à vérifier dans le tableau de bord Stripe.
+- **La bascule chez Stripe n'est pas attestée par le dépôt.** La destination
+  « lfd-api production — liens de paiement » a été créée désactivée le
+  2026-11-09, abonnée à `checkout.session.completed`,
+  `.async_payment_succeeded` et `.expired`. Reste à faire, dans l'ordre :
+  l'activer ; vérifier qu'un `checkout.*` y arrive ; retirer les trois
+  `checkout.session.*` de l'endpoint des cartes ; retirer le relais
+  (`OnCardCheckoutEvent`, P2).

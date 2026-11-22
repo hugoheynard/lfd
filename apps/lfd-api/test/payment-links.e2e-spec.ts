@@ -12,8 +12,9 @@ import { randomUUID } from "node:crypto";
  *   et sonne la cloche quand un lien annulé est payé.
  *
  * Frontières doublées : la signature du jeton staff, le prestataire de carte
- * de `card-payment` (dont le webhook relaie la page d'un lien), la passerelle
- * des sessions Stripe, le mailer et l'origine de l'espace client.
+ * de `card-payment`, l'ouverture et la fermeture des sessions Stripe, le
+ * mailer et l'origine de l'espace client. La signature du webhook des liens,
+ * elle, est vérifiée par le VRAI adaptateur, avec un secret de test.
  */
 import type {
   AccountingSettingsView,
@@ -23,7 +24,10 @@ import type {
 } from "@lfd/contracts";
 
 import { PaymentLink } from "../src/lafoliecoffee/payments/domain/entities/payment-link.js";
+import Stripe from "stripe";
+
 import { CheckoutGateway } from "../src/lafoliecoffee/payments/domain/ports/checkout-gateway.js";
+import { StripeCheckoutGateway } from "../src/lafoliecoffee/payments/infrastructure/stripe-checkout-gateway.js";
 import { PaymentLinkRepository } from "../src/lafoliecoffee/payments/domain/ports/payment-link.repository.js";
 import { PaymentLinkTerms } from "../src/lafoliecoffee/payments/domain/value-objects/payment-link-terms.js";
 import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
@@ -58,8 +62,18 @@ const stubAdminVerifier = {
     Promise.resolve({ subject: E2E_STAFF_SUB, scopes: [] }),
 };
 
-/** Le prestataire de carte doublé : il signe ce que la suite livre au webhook. */
+/** Le prestataire de carte doublé, pour les commandes à régler (2a). */
 const cards = cardProvidersDouble("pi_link");
+
+/** Le secret de l'endpoint des liens, tel que Stripe le génère. */
+const LINKS_SECRET = "whsec_e2e_liens";
+/** Le signataire de Stripe, hors réseau : il ne sert qu'à signer les corps. */
+const stripeSigner = new Stripe("sk_test_signature_seule");
+/** La VRAIE vérification de signature et la vraie réduction des événements. */
+const linkWebhookVerifier = new StripeCheckoutGateway({
+  stripeConfig: () => null,
+  stripeLinksWebhookSecret: () => LINKS_SECRET,
+});
 
 let sessionCounter = 0;
 const expiredSessions: string[] = [];
@@ -73,6 +87,8 @@ const fakeCheckout = {
     expiredSessions.push(sessionId);
     return Promise.resolve();
   },
+  parseLinkWebhook: (rawBody: Buffer, signature: string) =>
+    linkWebhookVerifier.parseLinkWebhook(rawBody, signature),
 };
 
 interface SentMail {
@@ -174,27 +190,36 @@ interface LinkWebhook {
 }
 
 /**
- * La page d'un lien, signée par le prestataire doublé et livrée à la vraie
- * route du webhook des cartes, qui la relaie à `lafoliecoffee/payments` par un fait
- * durable (plan M2, §4.5) — d'où le drainage.
+ * La page d'un lien, signée comme Stripe la signe et livrée à la route du
+ * webhook des liens (`/payments/links/webhook`), son endpoint à lui.
  */
 async function webhook(event: LinkWebhook): Promise<void> {
   const paid = event.kind === "link_paid";
-  const { signature } = cards.provider.sign({
-    kind: "checkout",
-    eventId: cards.provider.nextEventId(),
-    eventType: paid ? "checkout.session.completed" : "checkout.session.expired",
-    outcome: paid ? "paid" : "expired",
-    sessionId: event.sessionId,
+  const session = paid
+    ? { id: event.sessionId, payment_status: "paid" }
+    : { id: event.sessionId, payment_status: "unpaid" };
+  const payload = JSON.stringify({
+    id: `evt_${event.sessionId}_${event.kind}`,
+    object: "event",
+    type: paid ? "checkout.session.completed" : "checkout.session.expired",
+    data: {
+      object: { object: "checkout.session", ...session, metadata: { paymentLinkId: "pl_e2e" } },
+    },
   });
-  await ctx
+  await postLinkWebhook(
+    payload,
+    stripeSigner.webhooks.generateTestHeaderString({ payload, secret: LINKS_SECRET }),
+  ).expect(200);
+  await ctx.drain();
+}
+
+function postLinkWebhook(payload: string, signature: string) {
+  return ctx
     .http()
-    .post("/payments/webhook")
+    .post("/payments/links/webhook")
     .set("stripe-signature", signature)
     .set("content-type", "application/json")
-    .send("{}")
-    .expect(200);
-  await ctx.drain();
+    .send(payload);
 }
 
 describe("2a — les commandes à régler par carte", () => {
@@ -394,6 +419,34 @@ describe("2b — les liens libres", () => {
         where: { kind: "payment_link.paid_after_cancel" },
       }),
     ).toBe(1);
+  });
+
+  it("refuse une signature qui n'est pas celle de l'endpoint des liens, sans toucher au lien", async () => {
+    const { companyId } = await seedCompany();
+    const created = await create(companyId);
+    const row = await ctx.prisma.paymentLink.findUniqueOrThrow({ where: { id: created.id } });
+    const payload = JSON.stringify({
+      id: "evt_forge",
+      object: "event",
+      type: "checkout.session.completed",
+      data: {
+        object: {
+          object: "checkout.session",
+          id: row.stripeSessionId,
+          payment_status: "paid",
+          metadata: { paymentLinkId: created.id },
+        },
+      },
+    });
+    const forged = stripeSigner.webhooks.generateTestHeaderString({
+      payload,
+      secret: "whsec_un_autre_endpoint",
+    });
+
+    await postLinkWebhook(payload, forged).expect(400);
+
+    const after = await ctx.prisma.paymentLink.findUniqueOrThrow({ where: { id: created.id } });
+    expect(after.status).toBe("open");
   });
 
   it("expire un lien ouvert sur le webhook d'expiration", async () => {
