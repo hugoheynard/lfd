@@ -19,6 +19,12 @@ export interface OpenedPayLink {
   readonly url: string;
 }
 
+/** L'adresse du lien vivant d'un sujet, pour une page de liste. */
+export interface SubjectPayLinkUrl {
+  readonly subject: CardSubject;
+  readonly url: string;
+}
+
 /**
  * **Ouvrir un lien de paiement vers un sujet** (plan
  * `documentation/comptabilite/liens-de-paiement/plan-le-lien-vers-un-sujet.md`,
@@ -52,4 +58,13 @@ export abstract class PayLinks {
    * @throws {PayLinkOriginWithoutRootError} racine publique non configurée.
    */
   abstract urlOf(subject: CardSubject): Promise<string | null>;
+
+  /**
+   * Les adresses des liens vivants de ces sujets, en UNE lecture — pour une
+   * page de liste. Un sujet sans lien vivant n'y est pas ; un lien dont
+   * l'adresse ne se compose pas (racine absente, scellé illisible) n'y est
+   * pas non plus, et l'échec est journalisé par ligne : une ligne ne fait pas
+   * tomber la liste.
+   */
+  abstract urlsOf(subjects: readonly CardSubject[]): Promise<readonly SubjectPayLinkUrl[]>;
 }

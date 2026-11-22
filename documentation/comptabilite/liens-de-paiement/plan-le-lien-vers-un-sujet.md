@@ -9,7 +9,7 @@
 >
 > - le lien ne doit pas dépendre du prestataire : « si je passe sur Caisse
 >   d'Épargne, les deux marchent » ;
-> - **trois sujets** : la commande, la **période de bons**, la régularisation ;
+> - **trois sujets** : la commande, la **période de bons**, la demande de paiement libre ;
 > - la période se règle par **une facture agrégée, comme au virement et au
 >   prélèvement** : la carte par lien est un **troisième moyen** du paiement
 >   au compte, rien de plus ;
@@ -31,7 +31,7 @@ et les liens, et accueillera un jour le prélèvement et le virement. Il ne
 sait ni pour quelle application il encaisse, ni ce que le paiement règle.
 
 **Un lien de paiement est une porte, pas une dette.** Ce qu'on doit
-s'appelle le **sujet** : une commande, une facture, une régularisation. Le
+s'appelle le **sujet** : une commande, une facture, une demande de paiement libre. Le
 lien dit seulement « ici, on paie ce sujet-là, par carte ».
 
 ```mermaid
@@ -55,7 +55,7 @@ flowchart LR
   avec le seul lien.
 - **Celui qui possède le sujet dit ce qu'un paiement règle.** La facture
   passe « réglée », et ses commandes sortent du prélèvement ; la
-  régularisation passe « payée ».
+  demande de paiement libre passe « payée ».
 - **Le paiement encaissé, la comptabilité reçoit un e-mail** : combien,
   par quel canal, pour quel client, pour quelle application. C'est le bloc
   qui encaisse qui l'envoie : il le fait pour tous les liens, sans savoir
@@ -297,15 +297,15 @@ sans nom d'application ni d'entreprise.
 
 ## 1. Ce qui existe, et ce que le plan en garde
 
-| Pièce                                             | Aujourd'hui (relu le 2026-11-22)                                                                                                       | Après                                             |
-| ------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
-| `payment/channels/subjects/subject-settlement.ts` | le port qu'un bloc implémente par type de sujet ; un seul implémenteur, `order` (`order-subject-settlement.ts`)                        | **inchangé** ; deux implémenteurs de plus         |
-| `payment/channels/requests/card-payments.ts`      | `prepare` (réseau, hors transaction) puis `attach` (dans la transaction) ; `retrieve`                                                  | **inchangé** ; la porte l'appelle                 |
-| `card_payment.payment`                            | `subject_type` est un `TEXT` **sans `CHECK` sur ses valeurs** (migration `20261109030000`) ; un seul `first` par sujet (index partiel) | **aucune migration** pour un type de plus         |
-| `RegisteredSubjectSettlements`                    | un registre par type, refuse un doublon                                                                                                | deux entrées de plus, reliées par `appBootstrap/` |
-| `PaymentLink` (`lafoliecoffee/payments/`)         | Stripe Checkout, son client, son webhook, son secret                                                                                   | devient la **régularisation**, sans Stripe (§5)   |
-| `PayerCollectionMeans`, `CollectionMeans`         | `sepa_debit` \| `bank_transfer`, `CHECK` en base (`20261112150100`) ; aucune ligne = prélèvement                                       | `card_link` en plus (§4)                          |
-| `OrderCollectionState`                            | `settled_by_transfer` cite son virement (`CHECK`)                                                                                      | `settled_by_card` cite son paiement (§4.4)        |
+| Pièce                                             | Aujourd'hui (relu le 2026-11-22)                                                                                                       | Après                                                      |
+| ------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| `payment/channels/subjects/subject-settlement.ts` | le port qu'un bloc implémente par type de sujet ; un seul implémenteur, `order` (`order-subject-settlement.ts`)                        | **inchangé** ; deux implémenteurs de plus                  |
+| `payment/channels/requests/card-payments.ts`      | `prepare` (réseau, hors transaction) puis `attach` (dans la transaction) ; `retrieve`                                                  | **inchangé** ; la porte l'appelle                          |
+| `card_payment.payment`                            | `subject_type` est un `TEXT` **sans `CHECK` sur ses valeurs** (migration `20261109030000`) ; un seul `first` par sujet (index partiel) | **aucune migration** pour un type de plus                  |
+| `RegisteredSubjectSettlements`                    | un registre par type, refuse un doublon                                                                                                | deux entrées de plus, reliées par `appBootstrap/`          |
+| `PaymentLink` (`lafoliecoffee/payments/`)         | Stripe Checkout, son client, son webhook, son secret                                                                                   | devient la **demande de paiement libre**, sans Stripe (§5) |
+| `PayerCollectionMeans`, `CollectionMeans`         | `sepa_debit` \| `bank_transfer`, `CHECK` en base (`20261112150100`) ; aucune ligne = prélèvement                                       | `card_link` en plus (§4)                                   |
+| `OrderCollectionState`                            | `settled_by_transfer` cite son virement (`CHECK`)                                                                                      | `settled_by_card` cite son paiement (§4.4)                 |
 
 ## 2. La porte : `card-payment` tient les liens
 
@@ -316,7 +316,7 @@ sans nom d'application ni d'entreprise.
 > publiques `POST pay-links/view` et `POST pay-links/intent` ; la page
 > `/payer/:jeton` de la boutique (`client/pay-link/`). **Aucun sujet réel
 > n'implémente encore `LinkableSubject`** : aucun lien ne s'ouvre hors des
-> tests jusqu'à F1 (la régularisation) et I2 (la facture).
+> tests jusqu'à F1 (la demande de paiement libre) et I2 (la facture).
 >
 > Décisions prises au bâti :
 >
@@ -678,24 +678,142 @@ Le lot lit le moyen **de la facture** (K2) : après I0, une facture
 ### 4.7 Le reste du contrat `SubjectSettlement`
 
 Les dix méthodes du port (`subject-settlement.ts`, l. 61-123) ont une
-réponse pour la facture et la régularisation : `onPaymentFailed` laisse le
+réponse pour la facture et la demande de paiement libre : `onPaymentFailed` laisse le
 sujet dû (le client réessaie) ; `isCancelled` = facture réglée autrement ou
 lien révoqué ; `describe` = numéro et fiche ; **`claim` rend `null` et
 `referencesSince` une liste vide** : tout paiement d'un lien naît par
 `attach`, avec sa ligne, et il n'existe aucune intention d'avant le bloc à
 rapprocher.
 
-## 5. Le sujet `free_charge` — la régularisation
+## 5. Le sujet `free_charge` — la demande de paiement libre (lot F1)
 
-- `PaymentLink` (`lafoliecoffee/payments/`) garde son métier — société,
-  montant, libellé, plafond, `open → paid | cancelled` — et perd Stripe : à
-  la création, `PayLinks.open({ type: "free_charge", id }, staff)`.
-  `expired` ne sert plus qu'aux anciennes lignes.
-- La table garde son nom (`payment_links`) ; `stripe_session_id` et `url`
-  deviennent nullables : les anciennes lignes gardent leurs valeurs (une
-  colonne morte reste en base).
-- `onPaid` : `paid`, même après annulation (la règle d'aujourd'hui, cloche
-  comprise) ; le lien est révoqué. Annuler révoque le lien.
+> ✅ **Bâti le 2026-11-22 (lot F1)**, serveur et contrat ; l'écran des liens
+> libres suit `PaymentLinkView.url` devenu `string | null`. Doc d'état :
+> [`les-liens-de-paiement.md`](les-liens-de-paiement.md), §2 et §4. La
+> migration `20261122120000_la_regularisation_par_la_porte` ; le sujet dans
+> `lafoliecoffee/payments/application/free-charge/` ; la correction de la
+> porte dans `start-pay-link-payment.handler.ts` (le 409 d'un lien révoqué
+> pendant la préparation se nomme `pay_link.withdrawn`). Le §5.4 dit « le
+> contrat `PaymentLinkView` ne change pas » : c'est le §5.6 qui a été suivi.
+
+Une **demande de paiement libre** est une somme demandée à une société hors de toute
+commande (« Régularisation août »), créée par le staff dans Comptabilité ›
+Liens de paiement › Liens libres. Son métier ne change pas : société,
+montant, libellé, plafond (`accounting_settings.payment_link_max_cents`),
+états `open → paid | cancelled`, et « payé après annulation » qui garde
+l'argent et sonne la cloche. Seul le chemin de l'argent change : la porte du
+bloc `payment` au lieu d'une page Stripe Checkout. Relevé de l'existant le
+2026-11-22 dans `lafoliecoffee/payments/`.
+
+### 5.1 La création
+
+Aujourd'hui `create-payment-link.handler.ts` appelle Stripe (réseau) puis
+écrit le lien. Après F1, dans **une** transaction et sans réseau :
+
+1. le devis : société connue, `PaymentLinkTerms.create` (montant, libellé,
+   plafond) — inchangé ;
+2. `PaymentLink.create` sans session Stripe ;
+3. `PayLinks.open({ type: "free_charge", id }, { origin: "lafoliecoffee",
+payerLabel: <nom de la société>, by: <fiche staff> })` ;
+4. le scellé d'intention (`runSealed`) rend `{ id, url }`, l'URL du lien.
+
+### 5.2 Le sujet, côté commerce
+
+`lafoliecoffee/payments` implémente, pour le type `free_charge`, les deux ports
+du canal `payment/channels/subjects/`, reliés par
+`appBootstrap/` ; le compte d'encaissement du type est `lfc-stripe`
+(`CardAccountDefaults`, `card-payment-feed.module.ts`).
+
+**`LinkableSubject.quote`** : payable si `open` (montant, libellé en
+`reference`, nom de la société en `payerName`, le libellé de l'origine en
+`payeeName`, aucune échéance) ; sinon `{ payable: false }` avec `settled`
+(`paid`) ou `cancelled`.
+
+**`SubjectSettlement`**, les dix méthodes :
+
+| Méthode                     | Réponse pour une demande de paiement libre                                                                                                                                                                             |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `lockSubject`               | `FOR UPDATE` sur sa ligne de `payment_links`                                                                                                                                                                           |
+| `onPaid`                    | `markPaid` : `applied` ; déjà payée → `already_applied`. **Payée après annulation → `applied`** et la cloche `payment_link.paid_after_cancel`, comme aujourd'hui : l'argent est encaissé, le staff rembourse ou impute |
+| `onPaymentFailed`           | rien : la demande de paiement libre reste ouverte, le client réessaie                                                                                                                                                  |
+| `isCancelled`               | **faux**, même annulée : une annulation n'appelle pas de remboursement automatique, puisque l'argent arrivé après est gardé                                                                                            |
+| `onRefundOutcome`           | journal (`payment_link.refunded`), sans changer l'état ; la cloche si le remboursement échoue                                                                                                                          |
+| `describe`                  | « Paiement libre — <libellé> », l'écran des liens de paiement                                                                                                                                                          |
+| `claim` / `referencesSince` | `null` / liste vide : tout paiement d'un lien naît par `attach`, aucune intention d'avant le bloc                                                                                                                      |
+
+### 5.3 L'annulation
+
+Aujourd'hui elle ferme la session Stripe : plus personne ne paie. Après F1,
+`cancel` :
+
+1. dans la transaction : `PaymentLink.cancel` (inchangé), puis
+   `PayLinks.revoke(sujet, "cancelled")` — la page rend 404 ;
+2. **après** la transaction (réseau) : si un premier paiement existe,
+   `CardPayments.cancel(paymentId)`, pour qu'une page restée ouverte ne
+   puisse plus confirmer. Une annulation refusée parce que l'argent est déjà
+   parti (`already_paid`) est le cas « payé après annulation », que le
+   webhook réconcilie.
+
+### 5.4 La table et les anciens liens
+
+- **Migration additive** : `payment_links.stripe_session_id` et `url`
+  deviennent nullables, avec un `CHECK` « les deux nuls, ou les deux posés ».
+  Une demande de paiement libre neuve les laisse nuls ; une colonne morte reste en base.
+- **Les liens Stripe déjà ouverts** gardent leur chemin d'aujourd'hui (le
+  relais du webhook des cartes, `card_payment.checkout_event`) jusqu'à F2.
+  L'agrégat distingue les deux par la présence de la session.
+- **La liste du staff** sert l'URL : celle de la colonne pour un ancien lien,
+  `PayLinks.urlOf` pour un neuf. Le contrat `PaymentLinkView` ne change pas.
+  `expired` ne concerne plus que les anciens liens.
+- **L'écran** (`comptabilite/liens-de-paiement/free-links/`) ne change pas,
+  sauf les textes qui disaient « page Stripe ».
+
+### 5.5 Les remboursements
+
+Un remboursement d'un paiement de demande de paiement libre se rattache désormais à son
+sujet (`onRefundOutcome`), au lieu de tomber dans « remboursement sans
+commande » (`on-refund-without-order.handler.ts`), qui ne garde que les
+anciens liens.
+
+### 5.6 Ce que `vitruve` a contredit (2026-11-22), et les décisions
+
+| Objection                                                                                                                                                                                                                                                          | Classe   | Décision                                                                                                                                                                                                                                                                                                           |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| la porte lit le devis **hors verrou**, prépare l'intention, puis la rattache sans relire : une annulation qui croise l'ouverture de la page laisse payer (`start-pay-link-payment.handler.ts`)                                                                     | BLOQUANT | **la porte se corrige** : au rattachement, sous `lockSubject`, elle relit `quote` et la vie du lien ; non payable ou révoqué → `release` de l'intention et 409. L'annulation, qui prend le même verrou, est alors ou bien avant (le rattachement refuse) ou bien après (elle voit le premier paiement et l'annule) |
+| la liste du staff promet `url: string`, mais un lien révoqué n'a plus d'URL, et une racine absente met toute la liste en 500                                                                                                                                       | BLOQUANT | `PaymentLinkView.url` devient `string \| null` (nulle pour un lien annulé ou payé) ; une erreur d'URL sur une ligne la laisse nulle et se journalise, sans faire tomber la liste ; l'écran ne propose « Copier » qu'avec une URL                                                                                   |
+| `isCancelled` toujours faux était fondé sur un faux motif : `payment/card` ne rembourse pas sur `isCancelled`                                                                                                                                                      | SÉRIEUX  | `isCancelled` dit la vérité (vrai si annulée) ; `onPaid` rend `applied`, l'argent est gardé et la cloche sonne                                                                                                                                                                                                     |
+| le scellé d'intention garderait l'URL, donc le jeton en clair, dans `gesture_intents`                                                                                                                                                                              | SÉRIEUX  | le scellé ne garde que `{ id }` ; le rejeu relit l'URL par `urlOf`                                                                                                                                                                                                                                                 |
+| l'échec de `CardPayments.cancel` après l'annulation n'avait pas de suite                                                                                                                                                                                           | SÉRIEUX  | l'annulation émet un fait durable ; un abonné du commerce annule l'intention, la boîte d'envoi rejoue tant qu'il échoue, la cloche sonne si l'intention est déjà payée                                                                                                                                             |
+| §5.3 disait « la page dit annulé »                                                                                                                                                                                                                                 | SÉRIEUX  | faux : après `revoke`, la page rend le même 404 qu'un lien inconnu                                                                                                                                                                                                                                                 |
+| `urlOf` coûte une lecture par ligne                                                                                                                                                                                                                                | SÉRIEUX  | `PayLinks.urlsOf(sujets)` : une requête pour toute la page de liste                                                                                                                                                                                                                                                |
+| le geste de remboursement n'est pas nommé                                                                                                                                                                                                                          | SÉRIEUX  | F1 n'en ajoute pas ; un remboursement fait depuis le prestataire est observé et rattaché à la demande de paiement libre (`onRefundOutcome` : journal, cloche) au lieu de « remboursement sans commande »                                                                                                           |
+| deux chemins dans un agrégat dont la session est obligatoire                                                                                                                                                                                                       | SÉRIEUX  | `PaymentLink` porte un canal fermé : `{ kind: "checkout", session }` pour un ancien lien, `{ kind: "door" }` pour un neuf ; `expire`, la recherche par session et la fermeture de session ne valent que pour `checkout` ; la dualité finit avec F2                                                                 |
+| mineurs : dix méthodes et non neuf ; le verrou de l'annulation est `loadLocked` (la même ligne que `lockSubject`) ; `@unique` nullable admet plusieurs `NULL` ; ajouter `free_charge` à `DeclaredCardAccountDefaults` et le sujet à `RegisteredSubjectSettlements` | MINEUR   | pris en compte                                                                                                                                                                                                                                                                                                     |
+
+### 5.7 De nouvelles raisons de payer par lien
+
+Décidé par Hugo le 2026-11-22 : « je veux que la mécanique de lien de
+paiement puisse accueillir de nouvelles raisons, régularisation, acompte, au
+fur et à mesure que les besoins vont augmenter ». Une demande de paiement
+libre n'est pas forcément une régularisation : ce peut être un acompte sur
+devis, un supplément convenu, un solde après litige.
+
+**La règle de tri** — pour chaque raison nouvelle, une seule question :
+_« ce paiement a-t-il une conséquence au-delà d'être encaissé ? »_
+
+| Réponse                                                                               | Où va la raison                                                                                                                                                                                | Exemples                                                                                                                                                      |
+| ------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **non** : on encaisse, on trace, rien d'autre                                         | une **nature** de la demande de paiement libre (`free_charge`) : un champ choisi à la création, rangé dans un registre de natures, repris par le journal, la liste et l'avis à la comptabilité | régularisation, supplément convenu, solde après litige                                                                                                        |
+| **oui** : un document à émettre, un sujet à rattacher, un montant à déduire plus tard | un **type de sujet** à lui, qui implémente `LinkableSubject` et `SubjectSettlement` et porte sa conséquence dans `onPaid`                                                                      | l'acompte sur devis (facture d'acompte, rattachement au devis puis à la commande, déduction sur la facture finale) ; la facture d'une période (`invoice`, §4) |
+
+La porte du bloc `payment` ne change jamais pour une raison nouvelle : un
+type de sujet de plus s'inscrit au registre (`appBootstrap/`), une nature de
+plus s'ajoute au registre des natures. Rien n'est écrit en dur dans
+`payment/`.
+
+**Pas encore bâti** : le champ de nature et son registre, et le sujet
+« acompte ». La règle fiscale de l'acompte (facture d'acompte, exigibilité de
+la TVA) est à confirmer par le cabinet avant d'écrire ce sujet.
 
 ## 6. La sortie de Stripe Checkout
 
@@ -726,7 +844,7 @@ rapprocher.
 | V   | ✅ le vocabulaire du schéma (§0.4) : `card_payment` → `payment`, tables de la carte préfixées `card_`                                                                                                                                                                                                                                       | P1         |
 | W   | les abonnés du commerce en `lfc.<contexte>.<geste>` (§0.5), reçus de la boîte d'envoi migrés dans le même déploiement                                                                                                                                                                                                                       | V          |
 | P1b | l'avis à la comptabilité après encaissement (§2.4), l'adresse par origin, le modèle d'e-mail                                                                                                                                                                                                                                                | P1         |
-| F1  | la régularisation par la porte ; l'écran des liens libres recopie `urlOf`                                                                                                                                                                                                                                                                   | P1         |
+| F1  | ✅ la demande de paiement libre par la porte (§5) : création sans réseau, sujet `free_charge` (devis et règlement), annulation qui révoque et annule l'intention, migration additive de `payment_links`                                                                                                                                     | P1         |
 | I1  | `card_link` : moyen, genre du moyen figé, échéance, statut, factures en retard, spécimen PDF (`specimen-data.ts`, `lint:pdf-specimens`) ; contrats et écrans (back-office : `collection-means-choice`, `paiement-section`, `sales-oversight-filters`, `accounting-values`, `invoice-phrases` ; boutique : `payment-section`, `compte-page`) | I0, §11 b  |
 | I2  | le sujet `invoice` : `onPaid`, `settled_by_card`, `invoice_card_settlement`, le lien à l'émission, l'e-mail                                                                                                                                                                                                                                 | I1, P1     |
 | F2  | la sortie de Stripe Checkout (§6)                                                                                                                                                                                                                                                                                                           | F1 + délai |

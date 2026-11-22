@@ -1,4 +1,7 @@
-import { PaymentLinkNotOpenError } from "../../errors/payment-link-errors.js";
+import {
+  PaymentLinkChannelCorruptError,
+  PaymentLinkNotOpenError,
+} from "../../errors/payment-link-errors.js";
 import { PaymentLinkTerms } from "../../value-objects/payment-link-terms.js";
 import { PaymentLink } from "../payment-link.js";
 
@@ -7,14 +10,23 @@ const CREATED = new Date("2026-01-10T09:00:00.000Z");
 const LATER = new Date("2026-01-10T10:00:00.000Z");
 const LATEST = new Date("2026-01-10T11:00:00.000Z");
 
-function openLink(): PaymentLink {
+/** Une demande de paiement libre neuve : canal `door`. */
+function doorLink(): PaymentLink {
   return PaymentLink.create({
     id: "pl_1",
     companyId: "co_1",
     terms: PaymentLinkTerms.create(12_000, "Régularisation août", null),
-    checkout: { sessionId: "cs_test_1", url: "https://checkout.stripe.test/cs_test_1" },
     createdAt: CREATED,
     createdByStaffId: "staff_1",
+  });
+}
+
+/** Un lien d'avant la porte, relu de sa ligne : canal `checkout`. */
+function openLink(): PaymentLink {
+  return PaymentLink.reconstitute({
+    ...doorLink().toPersistence(),
+    stripeSessionId: "cs_test_1",
+    url: "https://checkout.stripe.test/cs_test_1",
   });
 }
 
@@ -83,5 +95,47 @@ describe("PaymentLink — le cycle d'un lien libre", () => {
     link.markPaid(LATER);
     const again = PaymentLink.reconstitute(link.toPersistence());
     expect(again.toPersistence()).toEqual(link.toPersistence());
+  });
+});
+
+describe("PaymentLink — le canal, fermé", () => {
+  it("une demande de paiement libre neuve naît en canal door, sans session ni URL", () => {
+    const link = doorLink();
+    expect(link.channel).toEqual({ kind: "door" });
+    expect(link.checkoutSession).toBeNull();
+    expect(link.toPersistence()).toMatchObject({ stripeSessionId: null, url: null });
+  });
+
+  it("un ancien lien se relit en canal checkout, avec sa session", () => {
+    expect(openLink().checkoutSession).toEqual({
+      sessionId: "cs_test_1",
+      url: "https://checkout.stripe.test/cs_test_1",
+    });
+  });
+
+  it("🔴 un lien door n'expire pas : il n'a pas de session à laisser mourir", () => {
+    const link = doorLink();
+    expect(link.expire()).toBe(false);
+    expect(link.status).toBe("open");
+  });
+
+  it("un lien door se paie, s'annule, et se paie après annulation comme un ancien", () => {
+    const link = doorLink();
+    link.cancel(LATER, "staff_2");
+    expect(link.isCancelled).toBe(true);
+    expect(link.markPaid(LATEST)).toBe("settled_after_cancel");
+    expect(link.isCancelled).toBe(false);
+  });
+
+  it("refuse une ligne qui porte une session sans URL", () => {
+    expect(() =>
+      PaymentLink.reconstitute({ ...doorLink().toPersistence(), stripeSessionId: "cs_x" }),
+    ).toThrow(PaymentLinkChannelCorruptError);
+  });
+
+  it("un lien door se relit tel qu'il a été rangé", () => {
+    const link = doorLink();
+    const again = PaymentLink.reconstitute(link.toPersistence());
+    expect(again.channel).toEqual({ kind: "door" });
   });
 });

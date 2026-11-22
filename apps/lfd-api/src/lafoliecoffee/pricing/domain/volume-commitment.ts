@@ -26,7 +26,7 @@ import { familyClosenessOf } from "./specificity.js";
  * aucune n'est révisée — mais la remise a été consentie sur un volume qui n'est
  * jamais venu. C'est exactement la charge de sortie anticipée que le simulateur
  * chiffre, et elle est désormais **entièrement portée par nous**. La compenser
- * demande une décision commerciale (clause de sortie, régularisation au terme)
+ * demande une décision commerciale (clause de sortie, demande de paiement libre au terme)
  * qui n'est pas prise ici — et qui ne doit surtout pas être bricolée en douce
  * dans le moteur.
  */

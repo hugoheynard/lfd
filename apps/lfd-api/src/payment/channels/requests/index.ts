@@ -45,5 +45,6 @@ export {
   type OpenedPayLink,
   type PayLinkRequest,
   PayLinks,
+  type SubjectPayLinkUrl,
   SYSTEM_PAY_LINK_AUTHOR,
 } from "./pay-links.js";

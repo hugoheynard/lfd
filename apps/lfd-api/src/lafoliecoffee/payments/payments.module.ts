@@ -70,6 +70,11 @@ import { PrismaPaymentLinkCompanyReader } from "./infrastructure/prisma-payment-
 import { PrismaPaymentLinkReader } from "./infrastructure/prisma-payment-link.reader.js";
 import { PrismaPaymentLinkRepository } from "./infrastructure/prisma-payment-link.repository.js";
 import { StripeCheckoutGateway } from "./infrastructure/stripe-checkout-gateway.js";
+import { PaymentLinkBell } from "./application/payment-link-bell.js";
+import { FreeChargeLinkable } from "./application/free-charge/free-charge-linkable.js";
+import { FreeChargeRefundOutcomes } from "./application/free-charge/free-charge-refund-outcomes.js";
+import { FreeChargeSettlement } from "./application/free-charge/free-charge-settlement.js";
+import { OnPaymentLinkCancelled } from "./application/handlers/on-payment-link-cancelled.handler.js";
 
 /**
  * Contexte **paiement** : le mandat de prélèvement SEPA, et les liens de
@@ -89,10 +94,11 @@ import { StripeCheckoutGateway } from "./infrastructure/stripe-checkout-gateway.
  * 2026-09-14 : le client génère et renvoie désormais le sien
  * (`CompanyMandateController`).
  *
- * Le webhook des liens (`POST /payments/links/webhook`) a son endpoint et son
- * secret à lui (§4.5) ; pendant P0, les `checkout.*` arrivent aussi par le
- * relais du webhook des cartes (`card_payment.checkout_event`), et les deux
- * projections sont idempotentes.
+ * Une demande de paiement libre neuve se paie par la porte du bloc `payment` (sujet
+ * `free_charge`). Les liens d'avant la porte gardent leur chemin jusqu'à
+ * leur clôture : leur webhook (`POST /payments/links/webhook`, son endpoint
+ * et son secret) et le relais du webhook des cartes
+ * (`card_payment.checkout_event`), deux projections idempotentes.
  */
 @Module({
   // 🔴 `payments` importe `accounting`, et jamais l'inverse. Le mandat est le
@@ -143,6 +149,14 @@ import { StripeCheckoutGateway } from "./infrastructure/stripe-checkout-gateway.
     // Un remboursement Stripe qu'aucune commande ne porte (lot R1, A11) —
     // annoncé par `card_payment.unmatched` depuis le plan M2, P0.c2.
     OnRefundWithoutOrder,
+    // La demande de paiement libre, sujet `free_charge` du bloc `payment` (plan du lien
+    // vers un sujet, §5) : reliée par `appBootstrap/`, qui seule connaît les
+    // registres. L'annulation annule son intention par un abonné durable.
+    PaymentLinkBell,
+    FreeChargeLinkable,
+    FreeChargeRefundOutcomes,
+    FreeChargeSettlement,
+    OnPaymentLinkCancelled,
     ExpirePaymentLinkHandler,
     ListPaymentLinksHandler,
     SetAccountingSettingsHandler,
@@ -169,6 +183,6 @@ import { StripeCheckoutGateway } from "./infrastructure/stripe-checkout-gateway.
     SetMyCompanyMandateOptionsHandler,
     GetMyCompanyMandateOptionsHandler,
   ],
-  exports: [SiteMandateRevoker],
+  exports: [SiteMandateRevoker, FreeChargeLinkable, FreeChargeSettlement],
 })
 export class PaymentsModule {}

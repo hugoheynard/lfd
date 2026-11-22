@@ -8,7 +8,12 @@ export interface PaymentLinkEntry {
   readonly amountCents: number;
   readonly label: string;
   readonly status: PaymentLinkStatus;
-  readonly url: string;
+  /**
+   * L'URL Stripe d'un lien d'avant la porte (canal `checkout`) ; `null` pour
+   * une demande de paiement libre payée par la porte, dont l'adresse est celle de son
+   * lien `payment.pay_link`.
+   */
+  readonly checkoutUrl: string | null;
   readonly createdAt: Date;
   readonly createdByStaffId: string;
   readonly paidAt: Date | null;

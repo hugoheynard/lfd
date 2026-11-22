@@ -3,17 +3,16 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { Clock } from "../../../../platform/time/clock.js";
-import { StaffNotifier } from "../../../../staff/notifications/domain/ports/staff-notifier.js";
 import type { PaymentLink } from "../../domain/entities/payment-link.js";
-import { PaymentLinkCompanyReader } from "../../domain/ports/payment-link-company.reader.js";
 import { PaymentLinkRepository } from "../../domain/ports/payment-link.repository.js";
+import { PaymentLinkBell, ringingOf } from "../payment-link-bell.js";
 import { SettlePaymentLinkCommand } from "./settle-payment-link.command.js";
 
-/** Où l'équipe ouvre les liens libres (écran du lot 4). */
-const PAYMENT_LINKS_SCREEN = "/comptabilite/liens-de-paiement";
-
 /**
- * Passe un lien libre à `paid` sur confirmation de Stripe.
+ * Passe un lien libre **d'avant la porte** (canal `checkout`) à `paid` sur
+ * confirmation de Stripe Checkout — par l'endpoint des liens ou par le relais
+ * du webhook des cartes. Une demande de paiement libre payée par la porte est réglée par
+ * son sujet `free_charge`, pas ici : elle n'a pas de session.
  *
  * **Idempotent** : Stripe réémet jusqu'à un 2xx, et un lien déjà payé ne
  * bouge plus (l'agrégat le dit). Une session inconnue ne fait rien — ce n'est
@@ -34,8 +33,7 @@ export class SettlePaymentLinkHandler implements ICommandHandler<SettlePaymentLi
 
   constructor(
     private readonly links: PaymentLinkRepository,
-    private readonly companies: PaymentLinkCompanyReader,
-    private readonly notifier: StaffNotifier,
+    private readonly bell: PaymentLinkBell,
     private readonly clock: Clock,
     private readonly uow: UnitOfWork,
   ) {}
@@ -70,19 +68,7 @@ export class SettlePaymentLinkHandler implements ICommandHandler<SettlePaymentLi
    */
   private async ringPaidAfterCancel(link: PaymentLink): Promise<void> {
     try {
-      const companyName = (await this.companies.nameOf(link.companyId)) ?? link.companyId;
-      await this.notifier.notify([
-        {
-          kind: "payment_link.paid_after_cancel",
-          subject: `Lien annulé mais payé — ${companyName}`,
-          body:
-            `Le lien « ${link.terms.label} » avait été annulé, et le client l'a payé quand même. ` +
-            "L'argent est encaissé : à rembourser ou à imputer.",
-          link: PAYMENT_LINKS_SCREEN,
-          idempotencyKey: `notification:payment_link.paid_after_cancel:${link.id}`,
-          occurredAt: this.clock.now(),
-        },
-      ]);
+      await this.bell.paidAfterCancel(ringingOf(link));
     } catch (error) {
       this.logger.error(`Cloche « lien annulé mais payé » non émise (lien ${link.id})`, error);
     }

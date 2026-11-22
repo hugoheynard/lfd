@@ -133,3 +133,19 @@ export class PayLinkOpeningConflictError extends BusinessError {
     );
   }
 }
+
+/**
+ * Le lien a été révoqué pendant que la page préparait le paiement (le sujet
+ * annulé à cet instant, par exemple) : l'intention préparée est libérée, rien
+ * n'est rattaché. 409 plutôt que le 404 d'un jeton inconnu : la page était
+ * ouverte, le payeur doit apprendre que le lien vient d'être retiré.
+ */
+export class PayLinkWithdrawnError extends BusinessError {
+  constructor() {
+    super(
+      "pay_link.withdrawn",
+      "Ce lien de paiement vient d'être retiré : rien n'a été débité. Demandez un nouveau lien " +
+        "à la personne qui vous l'a envoyé si un paiement est encore attendu.",
+    );
+  }
+}

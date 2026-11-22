@@ -8,6 +8,7 @@ import {
   SubjectNotLinkableError,
   UnknownPayLinkOriginError,
 } from "../../domain/errors/pay-link-errors.js";
+import { PayLink } from "../../domain/entities/pay-link.js";
 import { BlockPayLinks } from "../block-pay-links.js";
 import {
   FixedOrigins,
@@ -100,5 +101,44 @@ describe("BlockPayLinks", () => {
     const { port } = scene();
     const opened = await port.open(SUBJECT, REQUEST);
     expect(await port.urlOf(SUBJECT)).toBe(opened.url);
+  });
+});
+
+describe("BlockPayLinks.urlsOf — la page de liste", () => {
+  it("rend l'adresse des seuls liens vivants, en une lecture", async () => {
+    const { port } = scene();
+    await port.open(SUBJECT, REQUEST);
+    const revoked = { type: "free_charge", id: "fc_2" };
+    await port.open(revoked, REQUEST);
+    await port.revoke(revoked, "cancelled");
+    const urls = await port.urlsOf([SUBJECT, revoked, { type: "free_charge", id: "fc_x" }]);
+    expect(urls).toEqual([{ subject: SUBJECT, url: "https://app.lfc.test/payer/tok_1" }]);
+  });
+
+  it("une adresse qui ne se compose pas laisse sa ligne de côté, sans faire tomber les autres", async () => {
+    const { links, port } = scene(
+      new FixedOrigins([LFC_ORIGIN, { ...LFC_ORIGIN, name: "sans_racine", publicRoot: null }]),
+    );
+    await port.open(SUBJECT, REQUEST);
+    await links.addIfAbsent(
+      PayLink.open({
+        id: "pl_orphan",
+        subjectType: "free_charge",
+        subjectId: "fc_9",
+        origin: "sans_racine",
+        payerLabel: "X",
+        tokenHash: "hash:tok_9",
+        tokenSealed: "sealed:tok_9",
+        at: new Date(0),
+        by: SYSTEM_PAY_LINK_AUTHOR,
+      }),
+    );
+    const urls = await port.urlsOf([SUBJECT, { type: "free_charge", id: "fc_9" }]);
+    expect(urls.map((entry) => entry.subject.id)).toEqual(["fc_1"]);
+  });
+
+  it("une liste vide ne lit rien", async () => {
+    const { port } = scene();
+    expect(await port.urlsOf([])).toEqual([]);
   });
 });

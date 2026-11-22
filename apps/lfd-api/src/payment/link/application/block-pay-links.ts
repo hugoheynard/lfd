@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 
 import { IdGenerator } from "../../../platform/id/id-generator.js";
 import { Clock } from "../../../platform/time/clock.js";
@@ -6,6 +6,7 @@ import {
   type OpenedPayLink,
   type PayLinkRequest,
   PayLinks,
+  type SubjectPayLinkUrl,
 } from "../../channels/requests/pay-links.js";
 import type { CardSubject } from "../../channels/subjects/subject-settlement.js";
 import { LinkableSubjects } from "../../channels/subjects/linkable-subjects.js";
@@ -31,6 +32,8 @@ import { payLinkUrl } from "../domain/services/pay-link-url.js";
  */
 @Injectable()
 export class BlockPayLinks extends PayLinks {
+  private readonly logger = new Logger(BlockPayLinks.name);
+
   constructor(
     private readonly links: PayLinkRepository,
     private readonly origins: PayLinkOrigins,
@@ -83,6 +86,23 @@ export class BlockPayLinks extends PayLinks {
   async urlOf(subject: CardSubject): Promise<string | null> {
     const live = await this.links.liveOf(subject.type, subject.id);
     return live === null ? null : this.urlOfLink(live);
+  }
+
+  async urlsOf(subjects: readonly CardSubject[]): Promise<readonly SubjectPayLinkUrl[]> {
+    const live = await this.links.liveOfAll(subjects);
+    return live.flatMap((link) => {
+      const subject = { type: link.subjectType, id: link.subjectId };
+      try {
+        return [{ subject, url: this.urlOfLink(link) }];
+      } catch (error) {
+        this.logger.error(
+          `Adresse du lien ${link.id} (${link.subjectType} ${link.subjectId}) non composée : ` +
+            "la ligne est servie sans adresse.",
+          error,
+        );
+        return [];
+      }
+    });
   }
 
   private urlOfLink(link: PayLink): string {

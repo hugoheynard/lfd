@@ -23,7 +23,7 @@ function link(over: Partial<PaymentLinkView> = {}): PaymentLinkView {
     amountCents: 12_550,
     label: 'Régularisation août',
     status: 'open',
-    url: 'https://checkout.stripe.com/c/pay/cs_1',
+    url: 'https://boutique.lfc.test/payer/jeton_1',
     createdAt: '2026-09-20T09:00:00.000Z',
     createdByName: 'Camille Martin',
     paidAt: null,
@@ -33,7 +33,7 @@ function link(over: Partial<PaymentLinkView> = {}): PaymentLinkView {
   };
 }
 
-const PAID = link({ id: 'l2', label: 'Avoir juillet', status: 'paid' });
+const PAID = link({ id: 'l2', label: 'Avoir juillet', status: 'paid', url: null });
 
 class FakeApi {
   links: readonly PaymentLinkView[] = [link(), PAID];
@@ -155,13 +155,19 @@ describe('FreeLinks', () => {
     expect(buttons(fixture, 'Annuler')).toHaveLength(1);
   });
 
+  it('seul un lien qui a encore une URL propose « Copier le lien »', async () => {
+    const fixture = await render(new FakeApi());
+    expect(buttons(fixture, 'Copier le lien')).toHaveLength(1);
+  });
+
   it('sans droit d’écriture, ni annuler, ni créer, ni plafond à éditer', async () => {
     const fixture = await render(new FakeApi(), ['b2b_accounting:read']);
 
     expect(buttons(fixture, 'Annuler')).toHaveLength(0);
     expect(buttons(fixture, 'Nouveau lien')).toHaveLength(0);
     expect(buttons(fixture, 'Enregistrer le plafond')).toHaveLength(0);
-    expect(buttons(fixture, 'Copier le lien')).toHaveLength(2);
+    // Copier reste offert sans droit d'écriture, pour le seul lien qui a une URL.
+    expect(buttons(fixture, 'Copier le lien')).toHaveLength(1);
   });
 
   it('« Annuler » confirme, écrit, puis relit la liste', async () => {

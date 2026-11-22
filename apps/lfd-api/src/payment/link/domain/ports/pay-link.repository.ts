@@ -1,3 +1,4 @@
+import type { CardSubject } from "../../../channels/subjects/subject-settlement.js";
 import type { PayLink } from "../entities/pay-link.js";
 
 /**
@@ -15,6 +16,12 @@ export abstract class PayLinkRepository {
 
   /** Le lien vivant du sujet, **sous verrou** quand une transaction est ouverte. */
   abstract liveOf(subjectType: string, subjectId: string): Promise<PayLink | null>;
+
+  /**
+   * Les liens vivants de ces sujets, en UNE lecture et sans verrou — pour une
+   * page de liste. Un sujet sans lien vivant n'y est pas.
+   */
+  abstract liveOfAll(subjects: readonly CardSubject[]): Promise<readonly PayLink[]>;
 
   /** Le lien qui porte cette empreinte de jeton, vivant ou révoqué. */
   abstract byTokenHash(tokenHash: string): Promise<PayLink | null>;

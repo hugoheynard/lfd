@@ -13,15 +13,29 @@ import type { PayLink } from "../../domain/entities/pay-link.js";
 import {
   PayLinkIntentClosedError,
   PayLinkSubjectNotPayableError,
+  PayLinkWithdrawnError,
   SubjectNotLinkableError,
   SubjectNotSettleableError,
 } from "../../domain/errors/pay-link-errors.js";
+import { PayLinkRepository } from "../../domain/ports/pay-link.repository.js";
 import {
   type FirstCardPayment,
   FirstCardPaymentReader,
 } from "../../domain/ports/first-card-payment.reader.js";
 import { LivePayLinkLookup } from "../live-pay-link-lookup.js";
 import { StartPayLinkPaymentCommand } from "./start-pay-link-payment.command.js";
+
+/**
+ * L'issue du rattachement sous verrou : écrit, devancé par un autre `first`,
+ * ou refusé parce que le sujet ou le lien ne veut plus être payé.
+ */
+type Attachment =
+  | { readonly kind: "attached" }
+  | { readonly kind: "taken" }
+  | {
+      readonly kind: "refused";
+      readonly error: PayLinkSubjectNotPayableError | PayLinkWithdrawnError;
+    };
 
 /** Ce que la page reçoit : comment faire payer, et combien. */
 export interface PayLinkPaymentStart {
@@ -39,6 +53,13 @@ export interface PayLinkPaymentStart {
  * n'admet qu'un `first` par sujet, quel que soit son état : un rejeu, ou une
  * course perdue, relit celui qui existe, et l'intention de trop est libérée.
  *
+ * 🔴 **Sous le verrou, le devis et la vie du lien sont relus.** Le devis lu
+ * avant `prepare` n'est qu'un premier tri : une annulation qui croise
+ * l'ouverture de la page prend le même verrou du sujet. Elle passe ou bien
+ * avant le rattachement — qui relit alors un sujet non payable ou un lien
+ * révoqué, libère l'intention et répond 409 — ou bien après, et c'est elle
+ * qui voit le premier paiement et le fait annuler.
+ *
  * @sans-journal Geste anonyme d'un payeur, sans auteur à nommer : la trace
  * est la ligne `payment.card_payment` elle-même, qui naît avec son
  * `pay_link_id` ; rien n'y est encaissé — l'encaissement arrive par le
@@ -55,6 +76,7 @@ export class StartPayLinkPaymentHandler implements ICommandHandler<
     private readonly settlements: SubjectSettlements,
     private readonly firsts: FirstCardPaymentReader,
     private readonly cards: CardPayments,
+    private readonly links: PayLinkRepository,
     private readonly uow: UnitOfWork,
   ) {}
 
@@ -62,6 +84,7 @@ export class StartPayLinkPaymentHandler implements ICommandHandler<
    * @throws {PayLinkNotFoundError} jeton inconnu ou lien révoqué.
    * @throws {PayLinkSubjectNotPayableError} sujet réglé ou annulé.
    * @throws {PayLinkIntentClosedError} l'intention relue est close.
+   * @throws {PayLinkWithdrawnError} le lien a été révoqué pendant la préparation.
    */
   async execute(command: StartPayLinkPaymentCommand): Promise<PayLinkPaymentStart> {
     const link = await this.lookup.of(command.token);
@@ -75,15 +98,21 @@ export class StartPayLinkPaymentHandler implements ICommandHandler<
   }
 
   private async payableAmount(subject: CardSubject): Promise<number> {
+    const due = await this.dueOf(subject);
+    if (typeof due !== "number") {
+      throw due;
+    }
+    return due;
+  }
+
+  /** Le montant dû, ou le refus du sujet qui ne veut plus être payé. */
+  private async dueOf(subject: CardSubject): Promise<number | PayLinkSubjectNotPayableError> {
     const linkable = this.linkables.forType(subject.type);
     if (linkable === null) {
       throw new SubjectNotLinkableError(subject.type);
     }
     const quote = await linkable.quote(subject);
-    if (!quote.payable) {
-      throw new PayLinkSubjectNotPayableError(quote.reason);
-    }
-    return quote.amountCents;
+    return quote.payable ? quote.amountCents : new PayLinkSubjectNotPayableError(quote.reason);
   }
 
   private async create(
@@ -100,13 +129,16 @@ export class StartPayLinkPaymentHandler implements ICommandHandler<
       amountCents,
       `pay-link:${link.id}`,
     );
-    const attached = await this.attachUnderLock(link, subject, prepared, async () =>
+    const attachment = await this.attachUnderLock(link, subject, prepared, async () =>
       settlement.lockSubject(subject),
     );
-    if (attached) {
+    if (attachment.kind === "attached") {
       return { collection, amountCents };
     }
     await this.cards.release(prepared);
+    if (attachment.kind === "refused") {
+      throw attachment.error;
+    }
     const winner = await this.firsts.firstOf(subject.type, subject.id);
     if (winner === null) {
       throw new PayLinkIntentClosedError();
@@ -114,21 +146,32 @@ export class StartPayLinkPaymentHandler implements ICommandHandler<
     return this.reread(winner);
   }
 
-  /** Rend `false` quand un `first` est né entre la lecture et le verrou. */
+  /**
+   * Sous le verrou du sujet : le lien encore vivant, le sujet encore payable,
+   * aucun `first` né entre-temps — puis la ligne.
+   */
   private async attachUnderLock(
     link: PayLink,
     subject: CardSubject,
     prepared: PreparedCardPayment,
     lock: () => Promise<void>,
-  ): Promise<boolean> {
+  ): Promise<Attachment> {
     try {
-      return await this.uow.run(async () => {
+      return await this.uow.run(async (): Promise<Attachment> => {
         await lock();
+        const live = await this.links.liveOf(subject.type, subject.id);
+        if (live?.id !== link.id) {
+          return { kind: "refused", error: new PayLinkWithdrawnError() };
+        }
+        const due = await this.dueOf(subject);
+        if (typeof due !== "number") {
+          return { kind: "refused", error: due };
+        }
         if ((await this.firsts.firstOf(subject.type, subject.id)) !== null) {
-          return false;
+          return { kind: "taken" };
         }
         await this.cards.attach(subject, prepared, "first", { payLinkId: link.id });
-        return true;
+        return { kind: "attached" };
       });
     } catch (error) {
       await this.cards.release(prepared);

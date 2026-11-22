@@ -54,6 +54,14 @@ export class InMemoryPayLinks extends PayLinkRepository {
     return Promise.resolve(live === undefined ? null : PayLink.rehydrate(live.toPersistence()));
   }
 
+  liveOfAll(subjects: readonly CardSubject[]): Promise<readonly PayLink[]> {
+    const live = [...this.rows.values()].filter(
+      (link) =>
+        link.isLive && subjects.some((s) => s.type === link.subjectType && s.id === link.subjectId),
+    );
+    return Promise.resolve(live.map((link) => PayLink.rehydrate(link.toPersistence())));
+  }
+
   byTokenHash(tokenHash: string): Promise<PayLink | null> {
     const found = [...this.rows.values()].find(
       (link) => link.toPersistence().tokenHash === tokenHash,
@@ -160,13 +168,20 @@ export class ScriptedCards extends CardPayments {
   }[] = [];
   retrievedState: CardIntentState = "awaiting_payment";
   attachFailure: Error | null = null;
+  /** Joué pendant `prepare` : ce qui croise l'appel au prestataire (une annulation). */
+  duringPrepare: (() => Promise<void>) | null = null;
 
-  prepare(subjectType: string, amountCents: number, tag: string): Promise<CardPaymentPreparation> {
+  async prepare(
+    subjectType: string,
+    amountCents: number,
+    tag: string,
+  ): Promise<CardPaymentPreparation> {
     this.calls.push(`prepare:${subjectType}:${String(amountCents)}:${tag}`);
-    return Promise.resolve({
+    await this.duringPrepare?.();
+    return {
       prepared: { account: "lfc-stripe", providerRef: "pi_new", amountCents },
       collection: { kind: "embedded", provider: "stripe", publishableKey: "pk", token: "pi_new_s" },
-    });
+    };
   }
 
   attach(

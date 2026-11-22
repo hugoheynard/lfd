@@ -34,8 +34,9 @@ export class PrismaPaymentLinkReader extends PaymentLinkReader {
         company: { select: { raisonSociale: true, enseigne: true } },
       },
     });
-    return rows.map(({ company, ...row }) => ({
+    return rows.map(({ company, url, ...row }) => ({
       ...row,
+      checkoutUrl: url,
       // La règle de `Company.displayName()` : l'enseigne, à défaut la raison sociale.
       companyName: company.enseigne === "" ? company.raisonSociale : company.enseigne,
     }));

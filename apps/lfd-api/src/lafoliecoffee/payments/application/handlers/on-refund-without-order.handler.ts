@@ -21,10 +21,12 @@ const PAYMENT_LINKS_SCREEN = "/comptabilite/liens-de-paiement";
 export const ON_REFUND_WITHOUT_ORDER = "b2b.payments.refund-without-order";
 
 /**
- * **Un remboursement Stripe sur un paiement qu'aucune commande ne porte** —
- * un lien libre, le plus souvent (arbitrage A11 du plan
- * `facture-carte-et-remboursements.md`) : noté au journal, la cloche
- * sonne, et rien d'autre. Pas d'avoir automatique, pas de table : un lien peut
+ * **Un remboursement Stripe sur un paiement qu'aucun sujet du bloc `payment`
+ * ne porte** — un ancien lien libre payé par Stripe Checkout, le plus souvent
+ * (arbitrage A11 du plan `facture-carte-et-remboursements.md`) : noté au
+ * journal, la cloche sonne, et rien d'autre. Une demande de paiement libre payée par la
+ * porte n'arrive pas ici : son paiement est une ligne du bloc, et son
+ * remboursement est rattaché à son sujet `free_charge` (`onRefundOutcome`). Pas d'avoir automatique, pas de table : un lien peut
  * solder un impayé déjà facturé au mois, et l'avoir dépend de ce qu'il
  * réglait — c'est un geste humain.
  *

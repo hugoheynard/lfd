@@ -1,10 +1,19 @@
+import {
+  type OpenedPayLink,
+  type PayLinkRequest,
+  PayLinks,
+  type SubjectPayLinkUrl,
+} from "../../../../../payment/channels/requests/index.js";
+import type { CardSubject } from "../../../../../payment/channels/subjects/index.js";
+import type { DurableFact } from "../../../../../platform/outbox/durable-event.js";
+import { DurablePublisher } from "../../../../../platform/outbox/durable-publisher.js";
 import type { StaffNotice } from "../../../../../staff/notifications/domain/ports/staff-notifier.js";
 import { StaffNotifier } from "../../../../../staff/notifications/domain/ports/staff-notifier.js";
 import {
   InvalidWebhookSignatureError,
   PaymentGatewayUnavailableError,
 } from "../../../domain/errors/payment-errors.js";
-import { PaymentLink, type CheckoutSession } from "../../../domain/entities/payment-link.js";
+import { type CheckoutSession, PaymentLink } from "../../../domain/entities/payment-link.js";
 import {
   AccountingSettingsReader,
   type AccountingSettings,
@@ -74,6 +83,29 @@ export class KnownCompanies extends PaymentLinkCompanyReader {
   }
 }
 
+/** Un lien d'avant la porte (canal `checkout`), tel qu'il est relu de sa ligne. */
+export function checkoutLink(
+  id: string,
+  companyId: string,
+  sessionId: string,
+  at: Date,
+): PaymentLink {
+  return PaymentLink.reconstitute({
+    id,
+    companyId,
+    amountCents: 9_000,
+    label: "Ancien lien",
+    status: "open",
+    stripeSessionId: sessionId,
+    url: `https://checkout.stripe.test/${sessionId}`,
+    createdAt: at,
+    createdByStaffId: "staff_1",
+    paidAt: null,
+    cancelledAt: null,
+    cancelledByStaffId: null,
+  });
+}
+
 /** La page hébergée, sans réseau : garde ce qu'on lui a demandé. */
 export class RecordingCheckout extends CheckoutGateway {
   readonly opened: CheckoutSessionRequest[] = [];
@@ -110,6 +142,61 @@ export class RecordingNotifier extends StaffNotifier {
 
   notify(notices: readonly StaffNotice[]): Promise<void> {
     this.notices.push(...notices);
+    return Promise.resolve();
+  }
+}
+
+/**
+ * La porte des liens, sans base : chaque sujet ouvert reçoit une adresse
+ * `https://app.lfc.test/payer/tok_<n>`, révocable. `brokenUrls` simule une
+ * adresse qui ne se compose pas (racine absente) : `urlsOf` l'omet.
+ */
+export class RecordingPayLinks extends PayLinks {
+  readonly opened: { readonly subject: CardSubject; readonly request: PayLinkRequest }[] = [];
+  readonly revoked: { readonly subject: CardSubject; readonly reason: string }[] = [];
+  readonly brokenUrls = new Set<string>();
+  urlsOfCalls = 0;
+  private readonly live = new Map<string, string>();
+
+  open(subject: CardSubject, request: PayLinkRequest): Promise<OpenedPayLink> {
+    this.opened.push({ subject, request });
+    const key = keyOf(subject);
+    const url =
+      this.live.get(key) ?? `https://app.lfc.test/payer/tok_${String(this.opened.length)}`;
+    this.live.set(key, url);
+    return Promise.resolve({ linkId: `paylink_${subject.id}`, url });
+  }
+
+  revoke(subject: CardSubject, reason: string): Promise<boolean> {
+    this.revoked.push({ subject, reason });
+    return Promise.resolve(this.live.delete(keyOf(subject)));
+  }
+
+  urlOf(subject: CardSubject): Promise<string | null> {
+    return Promise.resolve(this.live.get(keyOf(subject)) ?? null);
+  }
+
+  urlsOf(subjects: readonly CardSubject[]): Promise<readonly SubjectPayLinkUrl[]> {
+    this.urlsOfCalls += 1;
+    return Promise.resolve(
+      subjects.flatMap((subject) => {
+        const url = this.live.get(keyOf(subject));
+        return url === undefined || this.brokenUrls.has(subject.id) ? [] : [{ subject, url }];
+      }),
+    );
+  }
+}
+
+function keyOf(subject: CardSubject): string {
+  return `${subject.type}:${subject.id}`;
+}
+
+/** La boîte d'envoi, en mémoire : les faits durables écrits, dans l'ordre. */
+export class RecordingDurable extends DurablePublisher {
+  readonly facts: DurableFact[] = [];
+
+  publish(fact: DurableFact): Promise<void> {
+    this.facts.push(fact);
     return Promise.resolve();
   }
 }

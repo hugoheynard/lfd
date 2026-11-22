@@ -1,6 +1,9 @@
 import { Global, Module } from "@nestjs/common";
 
 import { OrdersModule } from "../lafoliecoffee/orders/orders.module.js";
+import { FreeChargeSettlement } from "../lafoliecoffee/payments/application/free-charge/free-charge-settlement.js";
+import { FREE_CHARGE_SUBJECT_TYPE } from "../lafoliecoffee/payments/application/free-charge/free-charge-subject.js";
+import { PaymentsModule } from "../lafoliecoffee/payments/payments.module.js";
 import { OrderSubjectSettlement } from "../lafoliecoffee/orders/application/services/order-subject-settlement.js";
 import { ORDER_CARD_SUBJECT_TYPE } from "../lafoliecoffee/orders/application/services/order-card-subject.js";
 import {
@@ -22,28 +25,35 @@ import {
  * Deux jetons :
  *
  * - `CardAccountDefaults` — **la seule ligne du dépôt qui connaisse à la fois
- *   un type de sujet et un compte** : `order → lfc-stripe`. Un bloc métier
+ *   un type de sujet et un compte** : `order → lfc-stripe`, `free_charge →
+ *   lfc-stripe` (la demande de paiement libre). Un bloc métier
  *   ne nomme jamais un compte (§3.2), et `card-payment` ne sait pas ce
  *   qu'est une commande ;
  * - `SubjectSettlements` — les implémenteurs du canal retour, un par type de
- *   sujet : `order` aujourd'hui, l'instance d'`OrdersModule`.
+ *   sujet : `order` (l'instance d'`OrdersModule`) et `free_charge` (celle de
+ *   `PaymentsModule`).
  *
  * `@Global` pour la raison du fil du fournil : le consommateur est
  * `payment/`, qui ne peut pas importer le commerce.
  */
 @Global()
 @Module({
-  imports: [OrdersModule],
+  imports: [OrdersModule, PaymentsModule],
   providers: [
     {
       provide: CardAccountDefaults,
-      useValue: new DeclaredCardAccountDefaults({ [ORDER_CARD_SUBJECT_TYPE]: "lfc-stripe" }),
+      useValue: new DeclaredCardAccountDefaults({
+        [ORDER_CARD_SUBJECT_TYPE]: "lfc-stripe",
+        [FREE_CHARGE_SUBJECT_TYPE]: "lfc-stripe",
+      }),
     },
     {
       provide: SubjectSettlements,
-      useFactory: (order: OrderSubjectSettlement): SubjectSettlements =>
-        new RegisteredSubjectSettlements([order]),
-      inject: [OrderSubjectSettlement],
+      useFactory: (
+        order: OrderSubjectSettlement,
+        freeCharge: FreeChargeSettlement,
+      ): SubjectSettlements => new RegisteredSubjectSettlements([order, freeCharge]),
+      inject: [OrderSubjectSettlement, FreeChargeSettlement],
     },
   ],
   exports: [CardAccountDefaults, SubjectSettlements],

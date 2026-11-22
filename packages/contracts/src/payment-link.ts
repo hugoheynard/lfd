@@ -35,7 +35,7 @@ export interface OrderAwaitingPaymentView {
 export const paymentLinkStatusSchema = z.enum(["open", "paid", "cancelled", "expired"]);
 export type PaymentLinkStatus = z.infer<typeof paymentLinkStatusSchema>;
 
-/** Les bornes du libellé repris sur la page Stripe. */
+/** Les bornes du libellé repris sur la page de paiement. */
 export const PAYMENT_LINK_LABEL_MAX = 140;
 
 /**
@@ -50,8 +50,15 @@ export interface PaymentLinkView {
   readonly amountCents: number;
   readonly label: string;
   readonly status: PaymentLinkStatus;
-  /** L'URL hébergée par Stripe, à copier. */
-  readonly url: string;
+  /**
+   * L'adresse à copier et envoyer au client, **tant que le lien est ouvert** :
+   * la page de paiement La Folie Coffee (`/payer/…`) pour un lien neuf, la page
+   * Stripe pour un lien d'avant la porte. `null` pour un lien payé, annulé ou
+   * expiré — il n'y a plus rien à envoyer —, et pour un lien ouvert dont
+   * l'adresse ne peut pas être composée (racine publique absente) : l'écran ne
+   * propose « Copier » qu'avec une adresse.
+   */
+  readonly url: string | null;
   /** ISO. */
   readonly createdAt: string;
   readonly createdByName: string | null;

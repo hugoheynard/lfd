@@ -58,9 +58,11 @@ export function capOf(raw: string): number | null | undefined {
 }
 
 /**
- * **Les liens libres** — une somme demandée à un client hors commande, réglée
- * sur une page Stripe. On y lit leur état, on copie l'URL, on annule un lien
- * encore ouvert, on en crée un, et on règle le plafond d'un lien.
+ * **Les liens libres** — une somme demandée à un client hors commande (une
+ * demande de paiement libre), réglée par un lien de paiement. On y lit leur état, on
+ * copie l'URL d'un lien encore ouvert, on annule un lien ouvert, on en crée
+ * un, et on règle le plafond d'un lien. Un lien payé, annulé ou expiré n'a
+ * plus d'URL à copier.
  *
  * Le plafond est un réglage du comptable (Hugo, 2026-09-25) : vide = aucun
  * plafond. Il est lu par le serveur à la CRÉATION ; le baisser ne touche pas
@@ -155,6 +157,9 @@ export class FreeLinks {
   }
 
   protected async copy(row: PaymentLinkView): Promise<void> {
+    if (row.url === null) {
+      return;
+    }
     await copyLink(row.url, this.notify);
   }
 

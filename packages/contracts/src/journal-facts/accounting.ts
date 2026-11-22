@@ -311,6 +311,21 @@ export const ACCOUNTING_FACTS = {
     }),
   ),
   /**
+   * Un remboursement constaté sur le paiement d'un lien libre (plan du lien
+   * vers un sujet, §5.5) : la demande de paiement libre ne change pas d'état, le journal
+   * de la société le dit. `refundedCents` est le cumul des remboursements
+   * réussis après ce constat. Auteur : le système.
+   */
+  "payment_link.refunded": fact(
+    payload({
+      subjectLabel: subjectLabel(),
+      paymentLink: named("payment_link"),
+      amountCents: cents(),
+      refundedCents: cents(),
+      status: z.enum(["pending", "requires_action", "succeeded", "failed", "canceled"]),
+    }),
+  ),
+  /**
    * Le plafond d'un lien libre, posé par la comptabilité (Hugo, 2026-09-25).
    * `null` = aucun plafond. `subjectLabel` : le nom du réglage — une ligne
    * unique n'en a pas d'autre.

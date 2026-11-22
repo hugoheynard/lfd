@@ -91,9 +91,11 @@
           </ng-template>
 
           <ng-template foldCell="link" let-row>
-            <button foldButton size="sm" emphasis="outline" (click)="copy(row)">
-              Copier le lien
-            </button>
+            @if (row.url !== null) {
+              <button foldButton size="sm" emphasis="outline" (click)="copy(row)">
+                Copier le lien
+              </button>
+            }
           </ng-template>
 
           <ng-template foldCell="actions" let-row>

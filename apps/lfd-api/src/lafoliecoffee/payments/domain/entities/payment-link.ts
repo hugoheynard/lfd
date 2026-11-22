@@ -1,6 +1,9 @@
 import type { PaymentLinkStatus } from "@lfd/contracts";
 
-import { PaymentLinkNotOpenError } from "../errors/payment-link-errors.js";
+import {
+  PaymentLinkChannelCorruptError,
+  PaymentLinkNotOpenError,
+} from "../errors/payment-link-errors.js";
 import { PaymentLinkTerms } from "../value-objects/payment-link-terms.js";
 
 /** La session Stripe hébergée derrière un lien : la clé de rapprochement et l'URL. */
@@ -10,6 +13,20 @@ export interface CheckoutSession {
   readonly url: string;
 }
 
+/**
+ * **Par où l'argent arrive** — un canal fermé :
+ * - `checkout` : un lien d'avant la porte, payé sur sa page Stripe Checkout
+ *   hébergée ; sa session est la clé de rapprochement du webhook ;
+ * - `door` : une demande de paiement libre payée par la porte du bloc `payment` (sujet
+ *   `free_charge`), sans session : son adresse est celle de son lien.
+ *
+ * L'expiration, la recherche par session et la fermeture de session ne
+ * valent que pour `checkout`. La dualité finit quand le dernier lien
+ * `checkout` est clos (lot F2 du plan du lien vers un sujet).
+ */
+export type PaymentLinkChannel =
+  { readonly kind: "checkout"; readonly session: CheckoutSession } | { readonly kind: "door" };
+
 /** L'agrégat tel que la base le range. */
 export interface PaymentLinkSnapshot {
   readonly id: string;
@@ -17,8 +34,9 @@ export interface PaymentLinkSnapshot {
   readonly amountCents: number;
   readonly label: string;
   readonly status: PaymentLinkStatus;
-  readonly stripeSessionId: string;
-  readonly url: string;
+  /** Posés ensemble (canal `checkout`) ou nuls ensemble (canal `door`). */
+  readonly stripeSessionId: string | null;
+  readonly url: string | null;
   readonly createdAt: Date;
   readonly createdByStaffId: string;
   readonly paidAt: Date | null;
@@ -26,12 +44,11 @@ export interface PaymentLinkSnapshot {
   readonly cancelledByStaffId: string | null;
 }
 
-/** Ce qu'il faut pour ouvrir un lien. */
+/** Ce qu'il faut pour ouvrir un lien : il naît toujours en canal `door`. */
 export interface PaymentLinkOpening {
   readonly id: string;
   readonly companyId: string;
   readonly terms: PaymentLinkTerms;
-  readonly checkout: CheckoutSession;
   readonly createdAt: Date;
   readonly createdByStaffId: string;
 }
@@ -46,9 +63,10 @@ export interface PaymentLinkOpening {
 export type PaymentLinkSettlement = "settled" | "settled_after_cancel" | "already_paid";
 
 /**
- * **Un lien de paiement libre** — une somme demandée à un client hors de toute
- * commande, encaissée par Stripe Checkout hébergé (plan
- * `les-liens-de-paiement.md`).
+ * **Un lien de paiement libre — la demande de paiement libre** : une somme demandée à
+ * un client hors de toute commande (doc d'état `les-liens-de-paiement.md`).
+ * Elle se paie par la porte du bloc `payment` ; un lien d'avant la porte
+ * garde sa page Stripe Checkout ({@link PaymentLinkChannel}).
  *
  * `open` est le seul état dont on sort par un geste ; les trois autres sont
  * terminaux, à une exception près, écrite dans {@link markPaid}.
@@ -58,7 +76,7 @@ export class PaymentLink {
     readonly id: string,
     readonly companyId: string,
     readonly terms: PaymentLinkTerms,
-    readonly checkout: CheckoutSession,
+    readonly channel: PaymentLinkChannel,
     readonly createdAt: Date,
     readonly createdByStaffId: string,
     private statusValue: PaymentLinkStatus,
@@ -67,13 +85,13 @@ export class PaymentLink {
     private cancelledByValue: string | null,
   ) {}
 
-  /** Un lien neuf, ouvert. Les termes ont déjà passé le plafond. */
+  /** Un lien neuf, ouvert, payé par la porte. Les termes ont déjà passé le plafond. */
   static create(opening: PaymentLinkOpening): PaymentLink {
     return new PaymentLink(
       opening.id,
       opening.companyId,
       opening.terms,
-      opening.checkout,
+      { kind: "door" },
       opening.createdAt,
       opening.createdByStaffId,
       "open",
@@ -83,13 +101,16 @@ export class PaymentLink {
     );
   }
 
-  /** Ligne → agrégat. Les termes revalident, sans le plafond du jour. */
+  /**
+   * Ligne → agrégat. Les termes revalident, sans le plafond du jour.
+   * @throws {PaymentLinkChannelCorruptError} session sans URL, ou l'inverse.
+   */
   static reconstitute(snapshot: PaymentLinkSnapshot): PaymentLink {
     return new PaymentLink(
       snapshot.id,
       snapshot.companyId,
       PaymentLinkTerms.reconstitute(snapshot.amountCents, snapshot.label),
-      { sessionId: snapshot.stripeSessionId, url: snapshot.url },
+      channelOf(snapshot),
       snapshot.createdAt,
       snapshot.createdByStaffId,
       snapshot.status,
@@ -101,6 +122,16 @@ export class PaymentLink {
 
   get status(): PaymentLinkStatus {
     return this.statusValue;
+  }
+
+  /** La session Stripe à fermer ou à rapprocher — `null` pour un lien `door`. */
+  get checkoutSession(): CheckoutSession | null {
+    return this.channel.kind === "checkout" ? this.channel.session : null;
+  }
+
+  /** Annulée par le staff, et pas payée depuis. */
+  get isCancelled(): boolean {
+    return this.statusValue === "cancelled";
   }
 
   /**
@@ -137,12 +168,13 @@ export class PaymentLink {
   /**
    * Stripe a laissé la session mourir. Sans effet hors de `open` : un
    * `expired` qui suit notre annulation (on expire la session nous-mêmes) ou un
-   * paiement n'a rien à réécrire.
+   * paiement n'a rien à réécrire. Sans effet sur un lien `door`, qui n'a pas
+   * de session : une demande de paiement libre n'expire pas, elle s'annule.
    *
    * @returns `true` si le lien vient d'expirer.
    */
   expire(): boolean {
-    if (this.statusValue !== "open") {
+    if (this.channel.kind !== "checkout" || this.statusValue !== "open") {
       return false;
     }
     this.statusValue = "expired";
@@ -156,8 +188,8 @@ export class PaymentLink {
       amountCents: this.terms.amountCents,
       label: this.terms.label,
       status: this.statusValue,
-      stripeSessionId: this.checkout.sessionId,
-      url: this.checkout.url,
+      stripeSessionId: this.checkoutSession?.sessionId ?? null,
+      url: this.checkoutSession?.url ?? null,
       createdAt: this.createdAt,
       createdByStaffId: this.createdByStaffId,
       paidAt: this.paidAtValue,
@@ -165,4 +197,16 @@ export class PaymentLink {
       cancelledByStaffId: this.cancelledByValue,
     };
   }
+}
+
+/** Le canal d'une ligne : la paire posée, ou nulle — jamais à moitié (`CHECK`). */
+function channelOf(snapshot: PaymentLinkSnapshot): PaymentLinkChannel {
+  const { stripeSessionId, url } = snapshot;
+  if (stripeSessionId === null && url === null) {
+    return { kind: "door" };
+  }
+  if (stripeSessionId === null || url === null) {
+    throw new PaymentLinkChannelCorruptError(snapshot.id);
+  }
+  return { kind: "checkout", session: { sessionId: stripeSessionId, url } };
 }

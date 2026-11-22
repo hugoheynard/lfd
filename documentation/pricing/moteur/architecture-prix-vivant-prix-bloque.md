@@ -71,7 +71,7 @@ flowchart LR
 ## Ce qu'il faudrait trancher avant de bâtir
 
 - Que se passe-t-il si le volume engagé **n'est pas atteint** ? (rien ; une
-  régularisation au terme ; la perte du prix figé). Une régularisation ne doit
+  demande de paiement libre au terme ; la perte du prix figé). Une demande de paiement libre ne doit
   **jamais** réécrire une commande passée : elle prendrait la forme d'un
   document distinct à l'échéance.
 - Le volume se mesure-t-il **par référence ou au total** ? (« 300

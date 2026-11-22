@@ -1,5 +1,7 @@
 import { Global, Module } from "@nestjs/common";
 
+import { FreeChargeLinkable } from "../lafoliecoffee/payments/application/free-charge/free-charge-linkable.js";
+import { PaymentsModule } from "../lafoliecoffee/payments/payments.module.js";
 import {
   LinkableSubjects,
   RegisteredLinkableSubjects,
@@ -11,13 +13,21 @@ import {
  * §2.2) — la figure de `CardPaymentFeedModule` : `payment` DÉCLARE
  * `LinkableSubjects`, la racine de composition y range les implémenteurs.
  *
- * Vide aujourd'hui : la régularisation (`free_charge`) et la facture
- * (`invoice`) l'implémenteront à leur lot. Un lien ne s'ouvre donc encore
- * sur aucun sujet — `PayLinks.open` le refuse en le disant.
+ * Un implémenteur aujourd'hui : la demande de paiement libre (`free_charge`,
+ * `PaymentsModule`). La facture (`invoice`) s'y ajoutera à son lot ; un type
+ * absent d'ici est refusé par `PayLinks.open`, qui le dit.
  */
 @Global()
 @Module({
-  providers: [{ provide: LinkableSubjects, useValue: new RegisteredLinkableSubjects([]) }],
+  imports: [PaymentsModule],
+  providers: [
+    {
+      provide: LinkableSubjects,
+      useFactory: (freeCharge: FreeChargeLinkable): LinkableSubjects =>
+        new RegisteredLinkableSubjects([freeCharge]),
+      inject: [FreeChargeLinkable],
+    },
+  ],
   exports: [LinkableSubjects],
 })
 export class PayLinkFeedModule {}

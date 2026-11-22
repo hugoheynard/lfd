@@ -530,7 +530,9 @@ enum PaymentLinkStatus {
 }
 
 /// Un **lien de paiement libre** — une somme demandée à un client hors de toute
-/// commande (« Régularisation août »), encaissée par Stripe Checkout hébergé.
+/// commande (« Régularisation août »). Une demande de paiement libre neuve se paie par
+/// la porte du bloc `payment` (sujet `free_charge`) ; un lien d'avant la porte
+/// garde sa session Stripe Checkout jusqu'à sa clôture.
 ///
 /// Ce n'est PAS une commande : il n'entre ni au chiffre d'affaires des
 /// commandes ni au cycle de prélèvement, et ne solde aucune commande — le
@@ -551,10 +553,16 @@ model PaymentLink {
 
   status PaymentLinkStatus @default(open)
 
-  /// `cs_…` — la clé de rapprochement du webhook.
-  stripeSessionId String @unique @map("stripe_session_id")
-  /// L'URL hébergée par Stripe, à copier et envoyer au client.
-  url             String
+  /// `cs_…` — la clé de rapprochement du webhook, pour un lien d'avant la
+  /// porte (canal `checkout`) ; `null` pour une demande de paiement libre payée par la
+  /// porte du bloc `payment` (canal `door`). Posée avec `url`, ou nulle avec
+  /// elle (`CHECK payment_links_checkout_pair`). `@unique` sur une colonne
+  /// nullable admet plusieurs `NULL` (Postgres ne compare pas deux `NULL`) :
+  /// l'unicité ne vaut que pour les sessions posées.
+  stripeSessionId String? @unique @map("stripe_session_id")
+  /// L'URL hébergée par Stripe d'un lien `checkout` ; `null` pour un lien
+  /// `door`, dont l'adresse est celle de son lien `payment.pay_link`.
+  url             String?
 
   /// Instants lus du `Clock`, jamais de l'horloge de la base.
   createdAt          DateTime  @map("created_at")

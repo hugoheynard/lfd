@@ -2,6 +2,7 @@ import {
   BusinessError,
   DomainError,
   ResourceNotFoundError,
+  TechnicalError,
 } from "../../../../platform/shared/errors/app-error.js";
 
 /**
@@ -67,6 +68,75 @@ export class PaymentLinkCompanyNotFoundError extends ResourceNotFoundError {
     super(
       "payments.link.company_not_found",
       `Aucune société cliente sous l'identifiant ${companyId} : un lien de paiement s'adresse à un client existant.`,
+    );
+  }
+}
+
+/**
+ * Une ligne qui porte une session sans URL, ou l'inverse — **500**. Le
+ * `CHECK payment_links_checkout_pair` l'interdit en base : la voir, c'est
+ * une lecture qui ne passe pas par la table.
+ */
+export class PaymentLinkChannelCorruptError extends TechnicalError {
+  constructor(id: string) {
+    super(
+      "payments.link.channel_corrupt",
+      `Le lien de paiement ${id} porte une session Stripe sans adresse, ou l'inverse : ` +
+        "la ligne est incohérente, à signaler à l'équipe technique.",
+    );
+  }
+}
+
+/**
+ * Le lien d'une demande de paiement libre rejouée n'a plus d'adresse — **409** : elle a
+ * été payée ou annulée depuis le premier envoi.
+ */
+export class PaymentLinkUrlGoneError extends BusinessError {
+  constructor(id: string) {
+    super(
+      "payments.link.url_gone",
+      `Le lien de paiement ${id} a bien été créé, mais il n'est plus ouvert (payé ou annulé ` +
+        "depuis) : rechargez la liste des liens libres pour voir son état.",
+    );
+  }
+}
+
+/**
+ * L'origine des demandes de paiement libres n'est pas au registre des origines — **500** :
+ * une faute de configuration du dépôt, que rien à l'écran ne corrige.
+ */
+export class FreeChargeOriginMissingError extends TechnicalError {
+  constructor(origin: string) {
+    super(
+      "payments.link.origin_missing",
+      `L'origine « ${origin} » des demandes de paiement libres n'est pas déclarée au registre des ` +
+        "origines de liens (pay-link-origins.ts) : la page de paiement ne peut pas la nommer.",
+    );
+  }
+}
+
+/** Un fait durable des liens reçu hors de son contrat — **500**, faute d'émetteur. */
+export class PaymentLinkFactPayloadError extends TechnicalError {
+  constructor(type: string) {
+    super(
+      "payments.link.fact_payload",
+      `Le fait « ${type} » est arrivé sans identifiant de lien : l'émetteur ne respecte pas ` +
+        "son contrat, à signaler à l'équipe technique.",
+    );
+  }
+}
+
+/**
+ * L'annulation de l'intention d'une demande de paiement libre n'a pas abouti chez le
+ * prestataire (en cours, ou injoignable) — **500** : l'abonné lève, la boîte
+ * d'envoi le rejoue.
+ */
+export class PaymentLinkIntentNotCancelledError extends TechnicalError {
+  constructor(paymentLinkId: string, why: string) {
+    super(
+      "payments.link.intent_not_cancelled",
+      `L'intention de paiement de la demande de paiement libre ${paymentLinkId} n'a pas pu être annulée ` +
+        `(${why}) : nouvel essai automatique.`,
     );
   }
 }

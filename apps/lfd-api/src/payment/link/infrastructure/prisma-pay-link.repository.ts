@@ -3,6 +3,7 @@ import { Injectable } from "@nestjs/common";
 import { Prisma } from "../../../platform/database/client/client.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { currentTransaction } from "../../../platform/database/transaction.store.js";
+import type { CardSubject } from "../../channels/subjects/subject-settlement.js";
 import { lockRows } from "../../shared/infrastructure/row-lock.js";
 import { PayLink } from "../domain/entities/pay-link.js";
 import { PayLinkRepository } from "../domain/ports/pay-link.repository.js";
@@ -48,6 +49,23 @@ export class PrismaPayLinkRepository extends PayLinkRepository {
       where: { subjectType, subjectId, revokedAt: null },
     });
     return row === null ? null : PayLink.rehydrate(row);
+  }
+
+  async liveOfAll(subjects: readonly CardSubject[]): Promise<readonly PayLink[]> {
+    if (subjects.length === 0) {
+      return [];
+    }
+    const idsByType = new Map<string, string[]>();
+    for (const subject of subjects) {
+      idsByType.set(subject.type, [...(idsByType.get(subject.type) ?? []), subject.id]);
+    }
+    const rows = await this.prisma.payLink.findMany({
+      where: {
+        revokedAt: null,
+        OR: [...idsByType].map(([subjectType, ids]) => ({ subjectType, subjectId: { in: ids } })),
+      },
+    });
+    return rows.map((row) => PayLink.rehydrate(row));
   }
 
   async byTokenHash(tokenHash: string): Promise<PayLink | null> {

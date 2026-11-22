@@ -93,6 +93,29 @@ const refundUnmatched: Phrase = (fact) =>
     ['amountCents', 'refundedAt', 'status'],
   );
 
+const PAYMENT_LINK: Noun = { the: 'le lien de paiement', a: 'un lien de paiement' };
+
+/** Un remboursement rattaché à une demande de paiement libre payée par lien : elle ne change pas d'état. */
+const paymentLinkRefunded: Phrase = (fact) => {
+  const client = subjectLabelOf(fact);
+  return said(
+    [
+      text('Un remboursement de '),
+      inUnit('cents', fact.payload['amountCents']),
+      text(' a été constaté sur '),
+      ...cite(PAYMENT_LINK, fact.payload['paymentLink']),
+      ...(client === null
+        ? [text(' d’un client')]
+        : [text(' du client « '), subject(fact, client), text(' »')]),
+      text(' ('),
+      valueIn(REFUND_STATUS, fact.payload['status'], { inSentence: true }),
+      text(') — remboursé au total : '),
+      inUnit('cents', fact.payload['refundedCents']),
+    ],
+    ['subjectLabel', 'paymentLink', 'amountCents', 'status', 'refundedCents'],
+  );
+};
+
 const ON_INVOICE: Noun = { the: 'sur la facture', a: 'sur une facture' };
 
 const refundNotCredited: Phrase = (fact) =>
@@ -179,6 +202,7 @@ export const REFUND_PHRASES = {
   'order.fully_refunded': fullyRefunded,
   'order.refund_rejected': refundRejected,
   'payment_refund.unmatched': refundUnmatched,
+  'payment_link.refunded': paymentLinkRefunded,
   'order.refund_not_credited': refundNotCredited,
   'order.card_invoice_blocked': cardInvoiceBlocked,
   'order.refund_attempt_failed': refundAttemptFailed,

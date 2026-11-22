@@ -10,6 +10,7 @@ import {
   PayLinkIntentClosedError,
   PayLinkNotFoundError,
   PayLinkSubjectNotPayableError,
+  PayLinkWithdrawnError,
 } from "../../../domain/errors/pay-link-errors.js";
 import { LivePayLinkLookup } from "../../live-pay-link-lookup.js";
 import {
@@ -50,6 +51,7 @@ async function scene() {
     new RegisteredSubjectSettlements([new TestSubjectSettlement(timeline, "free_charge")]),
     firsts,
     cards,
+    links,
     new DirectUnitOfWork(),
   );
   const run = (token = TOKEN) => handler.execute(new StartPayLinkPaymentCommand(token));
@@ -127,5 +129,35 @@ describe("StartPayLinkPaymentHandler", () => {
       await links.save(live);
     }
     await expect(run()).rejects.toBeInstanceOf(PayLinkNotFoundError);
+  });
+
+  describe("la course avec une annulation, tranchée sous le verrou", () => {
+    it("un lien révoqué entre prepare et attach : refus 409, intention libérée, rien rattaché", async () => {
+      const { links, cards, run } = await scene();
+      cards.duringPrepare = async () => {
+        const live = await links.liveOf("free_charge", "fc_1");
+        live?.revoke("cancelled", new Date(0));
+        if (live !== null) {
+          await links.save(live);
+        }
+      };
+      await expect(run()).rejects.toBeInstanceOf(PayLinkWithdrawnError);
+      expect(cards.calls).toEqual(["prepare:free_charge:12500:pay-link:pl_1", "release:pi_new"]);
+      expect(cards.attached).toEqual([]);
+    });
+
+    it("un sujet annulé entre prepare et attach : refus 409, intention libérée", async () => {
+      const { linkable, cards, timeline, run } = await scene();
+      cards.duringPrepare = () => {
+        linkable.quote_ = { payable: false, reason: "cancelled" };
+        return Promise.resolve();
+      };
+      await expect(run()).rejects.toBeInstanceOf(PayLinkSubjectNotPayableError);
+      expect(cards.calls).toEqual(["prepare:free_charge:12500:pay-link:pl_1", "release:pi_new"]);
+      expect(cards.attached).toEqual([]);
+      // Le devis est relu APRÈS le verrou du sujet : c'est ce qui ordonne la course.
+      expect(timeline.steps).toEqual(["channel.lockSubject:fc_1"]);
+      expect(linkable.asked).toHaveLength(2);
+    });
   });
 });

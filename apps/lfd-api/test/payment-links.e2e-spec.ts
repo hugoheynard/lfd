@@ -7,13 +7,16 @@ import { randomUUID } from "node:crypto";
  * Ce que seul le vrai SQL prouve :
  * - la lecture des commandes à régler filtre `pending | failed` hors annulées ;
  * - le renvoi part par le gabarit neuf, et refuse sans `CLIENT_BASE_URL` ;
- * - un lien libre traverse la table, ses contraintes, le plafond lu en base et
- *   le journal ; le webhook le rapproche par sa session, rejoué sans dommage,
- *   et sonne la cloche quand un lien annulé est payé.
+ * - une demande de paiement libre traverse la table, le plafond lu en base et le journal,
+ *   et la liste sert l'adresse de son lien (`free-charge-links.e2e-spec.ts`
+ *   éprouve le paiement par la porte) ;
+ * - un ancien lien Stripe garde son chemin : son webhook le rapproche par sa
+ *   session, le relais du webhook des cartes aussi, rejoués sans dommage, et
+ *   la cloche sonne quand un lien annulé est payé.
  *
  * Frontières doublées : la signature du jeton staff, le prestataire de carte
- * de `card-payment`, l'ouverture et la fermeture des sessions Stripe, le
- * mailer et l'origine de l'espace client. La signature du webhook des liens,
+ * de `payment`, l'ouverture et la fermeture des sessions Stripe, le mailer,
+ * l'origine de l'espace client et la racine publique des liens. La signature du webhook des liens,
  * elle, est vérifiée par le VRAI adaptateur, avec un secret de test.
  */
 import type {
@@ -49,10 +52,14 @@ import {
   serviceDay,
   type E2eContext,
 } from "./e2e-harness.js";
-import { cardProvidersDouble } from "./card-payments.js";
+import { cardProvidersDouble, recordCardEvent } from "./card-payments.js";
+import { FixedOrigins } from "../src/payment/link/application/__tests__/pay-link-doubles.js";
+import { PayLinkOrigins } from "../src/payment/link/domain/ports/pay-link-origins.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 
 const BUYER = "auth0|acheteur-carte";
+/** La racine publique des pages `/payer/…` des demandes de paiement libres. */
+const PAY_ROOT = "https://app.lfc.test";
 const LINKS = "/admin/accounting/payment-links";
 const ORDERS = `${LINKS}/orders`;
 const SETTINGS = "/admin/accounting/settings";
@@ -122,6 +129,12 @@ beforeAll(async () => {
       { token: CheckoutGateway, value: fakeCheckout },
       { token: MAILER, value: recordingMailer },
       { token: OrderMailOrigins, value: origins },
+      {
+        token: PayLinkOrigins,
+        value: new FixedOrigins([
+          { name: "lafoliecoffee", label: "La Folie Coffee", publicRoot: PAY_ROOT },
+        ]),
+      },
     ],
   });
 });
@@ -312,12 +325,15 @@ describe("2b — les liens libres", () => {
     );
   }
 
-  it("crée un lien ouvert, le liste, et journalise sur la société", async () => {
+  it("crée une demande de paiement libre par la porte, la liste, et journalise sur la société", async () => {
     const { companyId } = await seedCompany();
+    const sessionsBefore = sessionCounter;
 
     const created = await create(companyId);
 
-    expect(created.url).toBe("https://checkout.stripe.test/cs_e2e_" + String(sessionCounter));
+    expect(created.url.startsWith(`${PAY_ROOT}/payer/`)).toBe(true);
+    // Plus aucune page Stripe Checkout pour une création.
+    expect(sessionCounter).toBe(sessionsBefore);
     const links = jsonBody<PaymentLinkView[]>(await staff().get(LINKS).expect(200));
     expect(links).toHaveLength(1);
     expect(links[0]).toMatchObject({
@@ -325,6 +341,7 @@ describe("2b — les liens libres", () => {
       companyId,
       amountCents: 12_000,
       status: "open",
+      url: created.url,
       paidAt: null,
     });
     const facts = await ctx.prisma.activityEvent.findMany({
@@ -332,24 +349,6 @@ describe("2b — les liens libres", () => {
       select: { subjectType: true, subjectId: true },
     });
     expect(facts).toEqual([{ subjectType: "company", subjectId: companyId }]);
-  });
-
-  /** Régression : un double clic ouvrait deux pages payables pour la même somme. */
-  it("la même clé d'intention rend le même lien, sans en ouvrir un second", async () => {
-    const { companyId } = await seedCompany();
-    const key = freshIntent();
-    const send = () =>
-      staff()
-        .post(LINKS)
-        .set(INTENT_KEY, key)
-        .send({ companyId, amountCents: 12_000, label: "Régularisation août" })
-        .expect(201);
-
-    const first = jsonBody<CreatedPaymentLink>(await send());
-    const replay = jsonBody<CreatedPaymentLink>(await send());
-
-    expect(replay).toEqual(first);
-    expect(await ctx.prisma.paymentLink.count()).toBe(1);
   });
 
   it("🔴 refuse au-delà du plafond en le nommant, et n'écrit rien", async () => {
@@ -365,6 +364,7 @@ describe("2b — les liens libres", () => {
     expect(refused.body).toMatchObject({ code: "payments.link.above_cap" });
     expect(JSON.stringify(refused.body)).toContain("100,00");
     expect(await ctx.prisma.paymentLink.count()).toBe(0);
+    expect(await ctx.prisma.payLink.count()).toBe(0);
   });
 
   it("refuse une société inconnue en 404", async () => {
@@ -374,44 +374,85 @@ describe("2b — les liens libres", () => {
       .send({ companyId: "co_inexistante", amountCents: 100, label: "Qui ?" })
       .expect(404);
   });
+});
+
+/**
+ * **Les anciens liens Stripe** (canal `checkout`), encore ouverts : ils gardent
+ * leur chemin — leur webhook, le relais du webhook des cartes, l'expiration et
+ * la fermeture de session — jusqu'à leur clôture (lot F2).
+ */
+describe("2b — les anciens liens Stripe gardent leur chemin", () => {
+  let oldCounter = 0;
+
+  /** Un ancien lien ouvert, rangé comme sa ligne le porte. */
+  async function seedOld(companyId: string): Promise<{ id: string; sessionId: string }> {
+    oldCounter += 1;
+    const id = `pl_old_${String(oldCounter)}`;
+    const sessionId = `cs_old_${String(oldCounter)}`;
+    await ctx.app.get(PaymentLinkRepository).save(checkoutLinkOf(id, companyId, sessionId));
+    return { id, sessionId };
+  }
+
+  it("la liste sert l'adresse Stripe d'un ancien lien ouvert", async () => {
+    const { companyId } = await seedCompany();
+    const { sessionId } = await seedOld(companyId);
+    const links = jsonBody<PaymentLinkView[]>(await staff().get(LINKS).expect(200));
+    expect(links[0]?.url).toBe(`https://checkout.stripe.test/${sessionId}`);
+  });
 
   it("le webhook payé passe le lien à payé, et un rejeu ne change rien", async () => {
     const { companyId } = await seedCompany();
-    const created = await create(companyId);
-    const row = await ctx.prisma.paymentLink.findUniqueOrThrow({ where: { id: created.id } });
+    const { id, sessionId } = await seedOld(companyId);
 
-    await webhook({ kind: "link_paid", sessionId: row.stripeSessionId });
-    const paid = await ctx.prisma.paymentLink.findUniqueOrThrow({ where: { id: created.id } });
-    await webhook({ kind: "link_paid", sessionId: row.stripeSessionId });
-    const replayed = await ctx.prisma.paymentLink.findUniqueOrThrow({ where: { id: created.id } });
+    await webhook({ kind: "link_paid", sessionId });
+    const paid = await ctx.prisma.paymentLink.findUniqueOrThrow({ where: { id } });
+    await webhook({ kind: "link_paid", sessionId });
+    const replayed = await ctx.prisma.paymentLink.findUniqueOrThrow({ where: { id } });
 
     expect(paid.status).toBe("paid");
     expect(replayed.paidAt).toEqual(paid.paidAt);
   });
 
+  it("se paie encore par le relais du webhook des cartes", async () => {
+    const { companyId } = await seedCompany();
+    const { id, sessionId } = await seedOld(companyId);
+
+    await recordCardEvent(ctx, (eventId) => ({
+      kind: "checkout",
+      eventId,
+      eventType: "checkout.session.completed",
+      outcome: "paid",
+      sessionId,
+    }));
+
+    const row = await ctx.prisma.paymentLink.findUniqueOrThrow({ where: { id } });
+    expect(row.status).toBe("paid");
+    const links = jsonBody<PaymentLinkView[]>(await staff().get(LINKS).expect(200));
+    expect(links[0]?.url).toBeNull();
+  });
+
   it("annule, ferme la session, et le webhook d'expiration qui suit ne réécrit rien", async () => {
     const { companyId } = await seedCompany();
-    const created = await create(companyId);
-    const row = await ctx.prisma.paymentLink.findUniqueOrThrow({ where: { id: created.id } });
+    const { id, sessionId } = await seedOld(companyId);
 
-    await staff().post(`${LINKS}/${created.id}/cancel`).expect(204);
-    await webhook({ kind: "link_expired", sessionId: row.stripeSessionId });
+    await staff().post(`${LINKS}/${id}/cancel`).expect(204);
+    await webhook({ kind: "link_expired", sessionId });
 
-    const after = await ctx.prisma.paymentLink.findUniqueOrThrow({ where: { id: created.id } });
+    const after = await ctx.prisma.paymentLink.findUniqueOrThrow({ where: { id } });
     expect(after.status).toBe("cancelled");
-    expect(expiredSessions).toEqual([row.stripeSessionId]);
-    await staff().post(`${LINKS}/${created.id}/cancel`).expect(409);
+    expect(expiredSessions).toEqual([sessionId]);
+    expect(await ctx.prisma.payLink.count()).toBe(0);
+    await staff().post(`${LINKS}/${id}/cancel`).expect(409);
   });
 
   it("🔴 payé après annulation : passe à payé, et la cloche sonne", async () => {
     const { companyId } = await seedCompany();
-    const created = await create(companyId);
-    const row = await ctx.prisma.paymentLink.findUniqueOrThrow({ where: { id: created.id } });
-    await staff().post(`${LINKS}/${created.id}/cancel`).expect(204);
+    const { id, sessionId } = await seedOld(companyId);
+    await staff().post(`${LINKS}/${id}/cancel`).expect(204);
 
-    await webhook({ kind: "link_paid", sessionId: row.stripeSessionId });
+    await webhook({ kind: "link_paid", sessionId });
 
-    const after = await ctx.prisma.paymentLink.findUniqueOrThrow({ where: { id: created.id } });
+    const after = await ctx.prisma.paymentLink.findUniqueOrThrow({ where: { id } });
     expect(after.status).toBe("paid");
     expect(after.cancelledAt).not.toBeNull();
     expect(
@@ -423,8 +464,7 @@ describe("2b — les liens libres", () => {
 
   it("refuse une signature qui n'est pas celle de l'endpoint des liens, sans toucher au lien", async () => {
     const { companyId } = await seedCompany();
-    const created = await create(companyId);
-    const row = await ctx.prisma.paymentLink.findUniqueOrThrow({ where: { id: created.id } });
+    const { id, sessionId } = await seedOld(companyId);
     const payload = JSON.stringify({
       id: "evt_forge",
       object: "event",
@@ -432,9 +472,9 @@ describe("2b — les liens libres", () => {
       data: {
         object: {
           object: "checkout.session",
-          id: row.stripeSessionId,
+          id: sessionId,
           payment_status: "paid",
-          metadata: { paymentLinkId: created.id },
+          metadata: { paymentLinkId: id },
         },
       },
     });
@@ -445,21 +485,38 @@ describe("2b — les liens libres", () => {
 
     await postLinkWebhook(payload, forged).expect(400);
 
-    const after = await ctx.prisma.paymentLink.findUniqueOrThrow({ where: { id: created.id } });
+    const after = await ctx.prisma.paymentLink.findUniqueOrThrow({ where: { id } });
     expect(after.status).toBe("open");
   });
 
-  it("expire un lien ouvert sur le webhook d'expiration", async () => {
+  it("expire un ancien lien ouvert sur le webhook d'expiration", async () => {
     const { companyId } = await seedCompany();
-    const created = await create(companyId);
-    const row = await ctx.prisma.paymentLink.findUniqueOrThrow({ where: { id: created.id } });
+    const { id, sessionId } = await seedOld(companyId);
 
-    await webhook({ kind: "link_expired", sessionId: row.stripeSessionId });
+    await webhook({ kind: "link_expired", sessionId });
 
-    const after = await ctx.prisma.paymentLink.findUniqueOrThrow({ where: { id: created.id } });
+    const after = await ctx.prisma.paymentLink.findUniqueOrThrow({ where: { id } });
     expect(after.status).toBe("expired");
   });
 });
+
+/** Un ancien lien ouvert (canal `checkout`), relu de sa ligne comme le domaine le fait. */
+function checkoutLinkOf(id: string, companyId: string, sessionId: string): PaymentLink {
+  return PaymentLink.reconstitute({
+    id,
+    companyId,
+    amountCents: 4_200,
+    label: "Acompte",
+    status: "open",
+    stripeSessionId: sessionId,
+    url: `https://checkout.stripe.test/${sessionId}`,
+    createdAt: new Date(daysAgo(1)),
+    createdByStaffId: E2E_STAFF_ID,
+    paidAt: null,
+    cancelledAt: null,
+    cancelledByStaffId: null,
+  });
+}
 
 /**
  * Régression : le lien s'écrivait par `upsert` sur le seul `id`, sans le mur
@@ -470,13 +527,12 @@ describe("2b — les liens libres", () => {
  * le refus attendu est le 409 que `mapPersistenceError` tire du `P2002`.
  */
 describe("le mur dans les écritures des liens", () => {
-  /** Un lien ouvert de `companyId`, tel que la fabrique du domaine le produit. */
-  function linkOf(id: string, companyId: string, sessionId: string): PaymentLink {
+  /** Une demande de paiement libre ouverte de `companyId`, telle que la fabrique du domaine la produit. */
+  function linkOf(id: string, companyId: string): PaymentLink {
     return PaymentLink.create({
       id,
       companyId,
       terms: PaymentLinkTerms.create(4_200, "Acompte", null),
-      checkout: { sessionId, url: `https://checkout.stripe.test/${sessionId}` },
       createdAt: new Date(daysAgo(0)),
       createdByStaffId: E2E_STAFF_ID,
     });
@@ -494,7 +550,7 @@ describe("le mur dans les écritures des liens", () => {
     );
     const linkRow = () => ctx.prisma.paymentLink.findUniqueOrThrow({ where: { id: theirs.id } });
     const before = await linkRow();
-    const intruder = linkOf(theirs.id, mine.id, "cs_e2e_intrus");
+    const intruder = linkOf(theirs.id, mine.id);
     intruder.cancel(new Date(daysAgo(0)), E2E_STAFF_ID);
 
     const refusal = await ctx.app
@@ -513,7 +569,7 @@ describe("le mur dans les écritures des liens", () => {
   it("le lien de sa propre société s'écrit toujours : création, puis annulation", async () => {
     const mine = await createCompany(ctx.prisma);
     const repository = ctx.app.get(PaymentLinkRepository);
-    const link = linkOf(ctx.app.get(IdGenerator).next(), mine.id, "cs_e2e_sien");
+    const link = linkOf(ctx.app.get(IdGenerator).next(), mine.id);
 
     await repository.save(link);
     link.cancel(new Date(daysAgo(0)), E2E_STAFF_ID);
