@@ -22,6 +22,7 @@ import {
 import {
   AUTOPILOT_OUTCOME,
   DRAFT_VOIDING_CAUSE,
+  FREE_CHARGE_NATURE,
   MANDATE_STATUS,
   PROOF_PURGE_CAUSE,
   SEPA_SCHEME,
@@ -349,18 +350,23 @@ const PAYMENT_LINK: Noun = { the: 'le lien de paiement', a: 'un lien de paiement
 function onPaymentLink(verb: string): Phrase {
   return (fact) => {
     const client = subjectLabelOf(fact);
+    // Les faits d'avant les natures n'en portent pas : la phrase s'en passe.
+    const nature = fact.payload['nature'];
     return byActor(
       fact,
       [
         text(`${verb} `),
         ...cite(PAYMENT_LINK, fact.payload['paymentLink']),
+        ...(nature === undefined || nature === null
+          ? []
+          : [text(' ('), valueIn(FREE_CHARGE_NATURE, nature, { inSentence: true }), text(')')]),
         text(' de '),
         inUnit('cents', fact.payload['amountCents']),
         ...(client === null
           ? [text(' pour un client')]
           : [text(' pour le client « '), subject(fact, client), text(' »')]),
       ],
-      ['subjectLabel', 'paymentLink', 'amountCents'],
+      ['subjectLabel', 'paymentLink', 'amountCents', 'nature'],
     );
   };
 }

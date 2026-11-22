@@ -28,6 +28,7 @@ async function scene() {
       id: "pl_1",
       companyId: "co_1",
       terms: PaymentLinkTerms.create(12_000, "Régularisation août", null),
+      nature: "regularization",
       createdAt: CREATED,
       createdByStaffId: "staff_1",
     }),
@@ -122,10 +123,20 @@ describe("FreeChargeSettlement — les dix membres", () => {
     expect(links.rows.get("pl_1")?.status).toBe("open");
   });
 
-  it("se décrit par son libellé et l'écran des liens ; prend le verrou de sa ligne", async () => {
+  it("une demande d'avant le registre des natures se décrit « Paiement libre — <libellé> »", async () => {
+    const { links, settlement } = await scene();
+    const row = links.rows.get("pl_1");
+    expect(row).toBeDefined();
+    if (row !== undefined) {
+      links.rows.set("pl_1", { ...row, nature: null });
+    }
+    expect((await settlement.describe(SUBJECT)).label).toBe("Paiement libre — Régularisation août");
+  });
+
+  it("se décrit par sa nature et son libellé, et l'écran des liens ; prend le verrou de sa ligne", async () => {
     const { settlement } = await scene();
     expect(await settlement.describe(SUBJECT)).toEqual({
-      label: "Paiement libre — Régularisation août",
+      label: "Régularisation — Régularisation août",
       link: "/comptabilite/liens-de-paiement",
     });
     await expect(settlement.lockSubject(SUBJECT)).resolves.toBeUndefined();

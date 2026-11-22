@@ -843,3 +843,25 @@ describe('les attestations du lot (P3)', () => {
     );
   });
 });
+
+describe('la demande de paiement libre', () => {
+  const payload = {
+    subjectLabel: 'Café des Halles',
+    paymentLink: { id: 'pl_1', name: 'Régularisation août' },
+    amountCents: 12_550,
+  };
+
+  function created(extra: Record<string, unknown>): FactInput {
+    return { ...entity('payment_link.created', { ...payload, ...extra }), subjectType: 'company' };
+  }
+
+  it('nomme la nature quand le fait la porte', () => {
+    const rendered = renderFact(created({ nature: 'agreed_supplement' }));
+    expect(rendered.sentence).toContain('« Régularisation août » (supplément convenu) de');
+    expect(rendered.detail).toEqual([]);
+  });
+
+  it('un fait d’avant les natures se dit sans elle', () => {
+    expect(sentence(created({}))).not.toContain('(');
+  });
+});

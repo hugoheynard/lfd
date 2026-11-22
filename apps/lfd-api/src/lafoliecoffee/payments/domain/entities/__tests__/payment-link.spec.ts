@@ -1,4 +1,6 @@
 import {
+  PaymentLinkNatureCorruptError,
+  UnknownFreeChargeNatureError,
   PaymentLinkChannelCorruptError,
   PaymentLinkNotOpenError,
 } from "../../errors/payment-link-errors.js";
@@ -16,6 +18,7 @@ function doorLink(): PaymentLink {
     id: "pl_1",
     companyId: "co_1",
     terms: PaymentLinkTerms.create(12_000, "Régularisation août", null),
+    nature: "regularization",
     createdAt: CREATED,
     createdByStaffId: "staff_1",
   });
@@ -137,5 +140,37 @@ describe("PaymentLink — le canal, fermé", () => {
     const link = doorLink();
     const again = PaymentLink.reconstitute(link.toPersistence());
     expect(again.channel).toEqual({ kind: "door" });
+  });
+});
+
+describe("PaymentLink — la nature", () => {
+  it("naît avec la nature choisie, et la range", () => {
+    expect(doorLink().nature).toBe("regularization");
+    expect(doorLink().toPersistence().nature).toBe("regularization");
+  });
+
+  it("refuse à la création une clé hors registre", () => {
+    expect(() =>
+      PaymentLink.create({
+        id: "pl_2",
+        companyId: "co_1",
+        terms: PaymentLinkTerms.create(100, "Divers", null),
+        nature: "bribe",
+        createdAt: CREATED,
+        createdByStaffId: "staff_1",
+      }),
+    ).toThrow(UnknownFreeChargeNatureError);
+  });
+
+  it("une demande d'avant le registre se relit sans nature, jamais une nature inventée", () => {
+    const link = PaymentLink.reconstitute({ ...doorLink().toPersistence(), nature: null });
+    expect(link.nature).toBeNull();
+    expect(link.toPersistence().nature).toBeNull();
+  });
+
+  it("refuse une ligne qui porte une nature absente du registre", () => {
+    expect(() =>
+      PaymentLink.reconstitute({ ...doorLink().toPersistence(), nature: "bribe" }),
+    ).toThrow(PaymentLinkNatureCorruptError);
   });
 });

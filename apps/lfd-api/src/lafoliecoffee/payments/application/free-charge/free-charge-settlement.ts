@@ -1,3 +1,4 @@
+import { freeChargeNatureLabel } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
 import {
@@ -79,7 +80,7 @@ export class FreeChargeSettlement extends SubjectSettlement {
 
   async describe(subject: CardSubject): Promise<SubjectDescription> {
     const link = await this.loaded(subject);
-    return { label: `Paiement libre — ${link.terms.label}`, link: PAYMENT_LINKS_SCREEN };
+    return { label: `${headingOf(link)} — ${link.terms.label}`, link: PAYMENT_LINKS_SCREEN };
   }
 
   claim(): Promise<SubjectClaim | null> {
@@ -107,4 +108,9 @@ export class FreeChargeSettlement extends SubjectSettlement {
     }
     return link;
   }
+}
+
+/** La nature de la demande quand elle est posée ; « Paiement libre » pour une demande d'avant le registre. */
+function headingOf(link: PaymentLink): string {
+  return link.nature === null ? "Paiement libre" : freeChargeNatureLabel(link.nature);
 }

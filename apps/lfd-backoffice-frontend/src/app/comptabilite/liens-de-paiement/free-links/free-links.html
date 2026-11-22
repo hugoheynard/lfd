@@ -73,6 +73,8 @@
         >
           <ng-template foldCell="company" let-row>{{ row.companyName }}</ng-template>
 
+          <ng-template foldCell="nature" let-row>{{ natureOf(row) }}</ng-template>
+
           <ng-template foldCell="label" let-row>{{ row.label }}</ng-template>
 
           <ng-template foldCell="amount" let-row>{{ amountOf(row) }}</ng-template>

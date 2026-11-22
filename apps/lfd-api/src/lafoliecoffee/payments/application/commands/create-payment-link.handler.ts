@@ -42,7 +42,7 @@ interface SealedLink {
  *
  * Rend l'id et l'URL : l'écran affiche le lien à copier sans relire la liste.
  *
- * **Une fois par intention** (sujet : la société, le montant, le libellé) :
+ * **Une fois par intention** (sujet : la société, le montant, le libellé, la nature) :
  * un double clic rend la même demande de paiement libre. 🔴 Le scellé ne garde que
  * l'identifiant — l'URL porte le jeton du lien, qui ne s'écrit jamais en
  * clair dans `gesture_intents` ; le rejeu la relit par `PayLinks.urlOf`.
@@ -79,7 +79,12 @@ export class CreatePaymentLinkHandler implements ICommandHandler<
         actorId: command.staffUserId,
         key: command.intentKey,
         gesture: CREATE_LINK_GESTURE,
-        subject: intentSubject(command.companyId, command.amountCents, command.label),
+        subject: intentSubject(
+          command.companyId,
+          command.amountCents,
+          command.label,
+          command.nature,
+        ),
       },
       SEALED_LINK,
       (seal) =>
@@ -114,6 +119,7 @@ export class CreatePaymentLinkHandler implements ICommandHandler<
       id: this.ids.next(),
       companyId: command.companyId,
       terms,
+      nature: command.nature,
       createdAt: this.clock.now(),
       createdByStaffId: command.staffUserId,
     });

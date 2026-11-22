@@ -550,6 +550,10 @@ model PaymentLink {
   amountCents Int    @map("amount_cents")
   /// Repris tel quel sur la page Stripe — 1 à 140 caractères.
   label       String
+  /// La nature de la demande, clé du registre `FREE_CHARGE_NATURES`
+  /// (`@lfd/contracts`) ; sans `CHECK`, le domaine refuse une clé hors
+  /// registre. `null` pour une demande d'avant le registre (non précisée).
+  nature      String?
 
   status PaymentLinkStatus @default(open)
 

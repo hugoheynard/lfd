@@ -131,7 +131,12 @@ async function send(companyId: string, key: string): Promise<CreatedPaymentLink>
     await staff()
       .post(LINKS)
       .set(INTENT_KEY, key)
-      .send({ companyId, amountCents: 12_000, label: "Régularisation août" })
+      .send({
+        companyId,
+        amountCents: 12_000,
+        label: "Régularisation août",
+        nature: "regularization",
+      })
       .expect(201),
   );
 }
@@ -176,7 +181,9 @@ describe("créer une demande de paiement libre", () => {
       status: "open",
       stripeSessionId: null,
       url: null,
+      nature: "regularization",
     });
+    expect((await list()).map((view) => view.nature)).toEqual(["regularization"]);
     const payLinks = await ctx.prisma.payLink.findMany({ where: { subjectId: created.id } });
     expect(payLinks).toMatchObject([{ subjectType: "free_charge", origin: "lafoliecoffee" }]);
     expect((await list()).map((view) => view.url)).toEqual([created.url]);
@@ -193,6 +200,18 @@ describe("créer une demande de paiement libre", () => {
       reference: "Régularisation août",
       dueOn: null,
     });
+  });
+
+  it("refuse une nature hors registre, et une création sans nature", async () => {
+    const { id: companyId } = await createCompany(ctx.prisma, { status: CompanyStatus.active });
+    const body = { companyId, amountCents: 12_000, label: "Divers" };
+    await staff()
+      .post(LINKS)
+      .set(INTENT_KEY, "n-1")
+      .send({ ...body, nature: "bribe" })
+      .expect(400);
+    await staff().post(LINKS).set(INTENT_KEY, "n-2").send(body).expect(400);
+    expect(await ctx.prisma.paymentLink.count({ where: { companyId } })).toBe(0);
   });
 
   /** Régression : un double clic ouvrait deux pages payables pour la même somme. */
@@ -271,7 +290,7 @@ describe("l'avis à l'équipe d'un paiement par lien", () => {
       amountCents: 12_000,
       channelLabel: "lfc-stripe (Stripe)",
       applicationLabel: "La Folie Coffee",
-      settledLabel: "Paiement libre — Régularisation août",
+      settledLabel: "Régularisation — Régularisation août",
       screenPath: "/comptabilite/liens-de-paiement",
       linkCreatedAutomatically: false,
       linkAuthorName: "Opérateur E2E",

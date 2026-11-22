@@ -40,7 +40,7 @@ export class AdminPaymentLinksController {
   }
 
   /**
-   * Ouvre une page Stripe hébergée ; rend l'URL à copier. Une fois par
+   * Ouvre une demande de paiement libre et son lien ; rend l'URL à copier. Une fois par
    * intention (`Idempotency-Key`) : la même clé rend le même lien.
    */
   @Post()
@@ -54,6 +54,7 @@ export class AdminPaymentLinksController {
         payload.companyId,
         payload.amountCents,
         payload.label,
+        payload.nature,
         staffUserId,
         intentKey,
       ),

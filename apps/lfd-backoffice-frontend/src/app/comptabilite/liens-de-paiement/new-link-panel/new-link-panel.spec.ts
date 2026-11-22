@@ -80,8 +80,13 @@ async function fill(
   fixture: ComponentFixture<NewLinkPanel>,
   amount: string,
   label: string,
+  nature: string | null = 'regularization',
 ): Promise<void> {
-  fixture.debugElement.query(By.css('fold-listbox')).triggerEventHandler('valueChange', 'c1');
+  const [company, natureBox] = fixture.debugElement.queryAll(By.css('fold-listbox'));
+  company?.triggerEventHandler('valueChange', 'c1');
+  if (nature !== null) {
+    natureBox?.triggerEventHandler('valueChange', nature);
+  }
   const inputs = (fixture.nativeElement as HTMLElement).querySelectorAll<HTMLInputElement>(
     'fold-input input',
   );
@@ -108,8 +113,21 @@ describe('NewLinkPanel', () => {
     await settle(fixture);
 
     expect(api.calls).toEqual([
-      { companyId: 'c1', amountCents: 12_550, label: 'Régularisation août' },
+      {
+        companyId: 'c1',
+        nature: 'regularization',
+        amountCents: 12_550,
+        label: 'Régularisation août',
+      },
     ]);
+  });
+
+  it('sans nature, rien n’est envoyé', async () => {
+    const { fixture } = await render(new FakeApi());
+
+    await fill(fixture, '10', 'Régularisation', null);
+
+    expect(button(fixture, 'Créer le lien').disabled).toBe(true);
   });
 
   it('une saisie plus fine que le centime n’est pas envoyée', async () => {

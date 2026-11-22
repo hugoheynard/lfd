@@ -7,6 +7,8 @@ export class CreatePaymentLinkCommand {
     readonly companyId: string,
     readonly amountCents: number,
     readonly label: string,
+    /** La clé de nature choisie ; l'agrégat la refuse hors registre. */
+    readonly nature: string,
     readonly staffUserId: string,
     /** La clé d'intention de l'écran : un second envoi rend le même lien. */
     readonly intentKey: string,

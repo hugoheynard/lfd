@@ -71,6 +71,7 @@ function toView(
     companyName: entry.companyName,
     amountCents: entry.amountCents,
     label: entry.label,
+    nature: entry.nature,
     status: entry.status,
     url,
     createdAt: entry.createdAt.toISOString(),

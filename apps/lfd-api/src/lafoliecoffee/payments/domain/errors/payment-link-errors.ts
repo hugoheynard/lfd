@@ -151,3 +151,26 @@ const STATUS_WORDS: Readonly<Record<string, string>> = {
 function euros(cents: number): string {
   return new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" }).format(cents / 100);
 }
+
+/** La nature choisie n'est pas au registre des natures — **400**. */
+export class UnknownFreeChargeNatureError extends DomainError {
+  constructor(nature: string, admitted: readonly string[]) {
+    super(
+      "payments.link.unknown_nature",
+      `Nature « ${nature} » inconnue : une demande de paiement libre se range sous une des natures du registre (${admitted.join(", ")}). Choisir « Autre » si aucune ne convient.`,
+    );
+  }
+}
+
+/**
+ * Une ligne porte une nature absente du registre — **500**. Le registre ne
+ * retire pas de clé ; une clé retirée doit d'abord quitter la base.
+ */
+export class PaymentLinkNatureCorruptError extends TechnicalError {
+  constructor(linkId: string, nature: string) {
+    super(
+      "payments.link.nature_corrupt",
+      `La demande de paiement libre ${linkId} porte la nature « ${nature} », absente du registre : la rendre au registre (packages/contracts) ou corriger la ligne.`,
+    );
+  }
+}

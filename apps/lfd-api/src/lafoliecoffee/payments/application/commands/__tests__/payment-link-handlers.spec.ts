@@ -15,6 +15,7 @@ import {
   PaymentLinkNotFoundError,
   PaymentLinkNotOpenError,
   PaymentLinkUrlGoneError,
+  UnknownFreeChargeNatureError,
 } from "../../../domain/errors/payment-link-errors.js";
 import { PaymentLinkBell } from "../../payment-link-bell.js";
 import { CancelPaymentLinkCommand } from "../cancel-payment-link.command.js";
@@ -96,7 +97,14 @@ function world() {
 type World = ReturnType<typeof world>;
 
 function createCommand(key: string = randomUUID()): CreatePaymentLinkCommand {
-  return new CreatePaymentLinkCommand("co_1", 12_000, "Régularisation août", "staff_1", key);
+  return new CreatePaymentLinkCommand(
+    "co_1",
+    12_000,
+    "Régularisation août",
+    "regularization",
+    "staff_1",
+    key,
+  );
 }
 
 /** Un ancien lien Stripe, rangé comme sa ligne le porte. */
@@ -136,7 +144,9 @@ describe("CreatePaymentLinkHandler — la demande de paiement libre par la porte
 
   it("une fiche introuvable donne un auteur sans nom, jamais un nom inventé", async () => {
     const w = world();
-    await w.create().execute(new CreatePaymentLinkCommand("co_1", 100, "Acompte", "staff_x", "k"));
+    await w
+      .create()
+      .execute(new CreatePaymentLinkCommand("co_1", 100, "Acompte", "other", "staff_x", "k"));
 
     expect(w.payLinks.opened.map((opened) => opened.request.byLabel)).toEqual([null]);
   });
@@ -146,7 +156,9 @@ describe("CreatePaymentLinkHandler — la demande de paiement libre par la porte
     await expect(
       w
         .create(10_000)
-        .execute(new CreatePaymentLinkCommand("co_1", 10_001, "Trop", "staff_1", randomUUID())),
+        .execute(
+          new CreatePaymentLinkCommand("co_1", 10_001, "Trop", "other", "staff_1", randomUUID()),
+        ),
     ).rejects.toBeInstanceOf(PaymentLinkAboveCapError);
     expect(w.payLinks.opened).toEqual([]);
     expect(w.links.saves).toBe(0);
@@ -157,7 +169,9 @@ describe("CreatePaymentLinkHandler — la demande de paiement libre par la porte
     await expect(
       w
         .create()
-        .execute(new CreatePaymentLinkCommand("co_x", 100, "Qui ?", "staff_1", randomUUID())),
+        .execute(
+          new CreatePaymentLinkCommand("co_x", 100, "Qui ?", "other", "staff_1", randomUUID()),
+        ),
     ).rejects.toBeInstanceOf(PaymentLinkCompanyNotFoundError);
     expect(w.payLinks.opened).toEqual([]);
   });
@@ -185,6 +199,29 @@ describe("CreatePaymentLinkHandler — une fois par intention", () => {
     await expect(handler.execute(createCommand("cle-2"))).rejects.toBeInstanceOf(
       PaymentLinkUrlGoneError,
     );
+  });
+});
+
+describe("CreatePaymentLinkHandler — la nature", () => {
+  it("range la nature choisie et la reprend dans le fait payment_link.created", async () => {
+    const w = world();
+    const { id } = await w.create().execute(createCommand());
+
+    expect(w.links.rows.get(id)?.nature).toBe("regularization");
+    expect(w.events.traced.map((event) => event.journalFact().payload)).toEqual([
+      expect.objectContaining({ nature: "regularization" }),
+    ]);
+  });
+
+  it("refuse une nature hors registre sans rien écrire ni ouvrir", async () => {
+    const w = world();
+    await expect(
+      w
+        .create()
+        .execute(new CreatePaymentLinkCommand("co_1", 100, "Divers", "bribe", "staff_1", "k")),
+    ).rejects.toBeInstanceOf(UnknownFreeChargeNatureError);
+    expect(w.links.rows.size).toBe(0);
+    expect(w.payLinks.opened).toEqual([]);
   });
 });
 

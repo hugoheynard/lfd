@@ -1,5 +1,6 @@
 import {
   COLLECTION_RETURN_KIND_LABELS,
+  FREE_CHARGE_NATURES,
   COLLECTION_RETURN_RESOLUTION_LABELS,
   COLLECTION_RETURN_SOURCE_LABELS,
   MANDATE_STATUS_LABELS,
@@ -26,6 +27,12 @@ export const COLLECTION_MEANS = domain('moyen d’encaissement', {
   sepa_debit: 'Prélèvement SEPA',
   bank_transfer: 'Virement bancaire',
 });
+
+/** La nature d'une demande de paiement libre — le registre des contrats. */
+export const FREE_CHARGE_NATURE = domain(
+  'nature d’une demande de paiement libre',
+  Object.fromEntries(FREE_CHARGE_NATURES.map((entry) => [entry.key, entry.label])),
+);
 
 export const MANDATE_STATUS = domain('état d’un mandat', MANDATE_STATUS_LABELS);
 
@@ -136,6 +143,7 @@ export const ACCOUNTING_VALUES: ValueFamily = {
     BILLING_RHYTHM_KIND,
     COLLECTION_MEANS,
     MANDATE_STATUS,
+    FREE_CHARGE_NATURE,
     DRAFT_VOIDING_CAUSE,
     PROOF_PURGE_CAUSE,
     ORDER_COLLECTION_STATE,

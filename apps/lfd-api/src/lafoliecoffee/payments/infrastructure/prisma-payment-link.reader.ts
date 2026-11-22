@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { PaymentLinkReader, type PaymentLinkEntry } from "../domain/ports/payment-link.reader.js";
+import { rehydrateFreeChargeNature } from "../domain/value-objects/free-charge-nature.js";
 
 /**
  * La liste des liens libres, la plus récente en tête. Bornée : c'est une page
@@ -24,6 +25,7 @@ export class PrismaPaymentLinkReader extends PaymentLinkReader {
         companyId: true,
         amountCents: true,
         label: true,
+        nature: true,
         status: true,
         url: true,
         createdAt: true,
@@ -34,8 +36,9 @@ export class PrismaPaymentLinkReader extends PaymentLinkReader {
         company: { select: { raisonSociale: true, enseigne: true } },
       },
     });
-    return rows.map(({ company, url, ...row }) => ({
+    return rows.map(({ company, url, nature, ...row }) => ({
       ...row,
+      nature: rehydrateFreeChargeNature(row.id, nature),
       checkoutUrl: url,
       // La règle de `Company.displayName()` : l'enseigne, à défaut la raison sociale.
       companyName: company.enseigne === "" ? company.raisonSociale : company.enseigne,

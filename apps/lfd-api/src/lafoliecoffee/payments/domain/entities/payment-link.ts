@@ -1,9 +1,13 @@
-import type { PaymentLinkStatus } from "@lfd/contracts";
+import type { FreeChargeNature, PaymentLinkStatus } from "@lfd/contracts";
 
 import {
   PaymentLinkChannelCorruptError,
   PaymentLinkNotOpenError,
 } from "../errors/payment-link-errors.js";
+import {
+  chooseFreeChargeNature,
+  rehydrateFreeChargeNature,
+} from "../value-objects/free-charge-nature.js";
 import { PaymentLinkTerms } from "../value-objects/payment-link-terms.js";
 
 /** La session Stripe hébergée derrière un lien : la clé de rapprochement et l'URL. */
@@ -33,6 +37,8 @@ export interface PaymentLinkSnapshot {
   readonly companyId: string;
   readonly amountCents: number;
   readonly label: string;
+  /** Clé du registre des natures ; `null` pour une demande d'avant le registre. */
+  readonly nature: string | null;
   readonly status: PaymentLinkStatus;
   /** Posés ensemble (canal `checkout`) ou nuls ensemble (canal `door`). */
   readonly stripeSessionId: string | null;
@@ -49,6 +55,8 @@ export interface PaymentLinkOpening {
   readonly id: string;
   readonly companyId: string;
   readonly terms: PaymentLinkTerms;
+  /** La nature choisie — obligatoire à la création, refusée hors registre. */
+  readonly nature: string;
   readonly createdAt: Date;
   readonly createdByStaffId: string;
 }
@@ -76,6 +84,8 @@ export class PaymentLink {
     readonly id: string,
     readonly companyId: string,
     readonly terms: PaymentLinkTerms,
+    /** `null` : une demande d'avant le registre, « non précisée ». */
+    readonly nature: FreeChargeNature | null,
     readonly channel: PaymentLinkChannel,
     readonly createdAt: Date,
     readonly createdByStaffId: string,
@@ -85,12 +95,16 @@ export class PaymentLink {
     private cancelledByValue: string | null,
   ) {}
 
-  /** Un lien neuf, ouvert, payé par la porte. Les termes ont déjà passé le plafond. */
+  /**
+   * Un lien neuf, ouvert, payé par la porte. Les termes ont déjà passé le plafond.
+   * @throws {UnknownFreeChargeNatureError} nature hors registre.
+   */
   static create(opening: PaymentLinkOpening): PaymentLink {
     return new PaymentLink(
       opening.id,
       opening.companyId,
       opening.terms,
+      chooseFreeChargeNature(opening.nature),
       { kind: "door" },
       opening.createdAt,
       opening.createdByStaffId,
@@ -104,12 +118,14 @@ export class PaymentLink {
   /**
    * Ligne → agrégat. Les termes revalident, sans le plafond du jour.
    * @throws {PaymentLinkChannelCorruptError} session sans URL, ou l'inverse.
+   * @throws {PaymentLinkNatureCorruptError} nature rangée hors registre.
    */
   static reconstitute(snapshot: PaymentLinkSnapshot): PaymentLink {
     return new PaymentLink(
       snapshot.id,
       snapshot.companyId,
       PaymentLinkTerms.reconstitute(snapshot.amountCents, snapshot.label),
+      rehydrateFreeChargeNature(snapshot.id, snapshot.nature),
       channelOf(snapshot),
       snapshot.createdAt,
       snapshot.createdByStaffId,
@@ -187,6 +203,7 @@ export class PaymentLink {
       companyId: this.companyId,
       amountCents: this.terms.amountCents,
       label: this.terms.label,
+      nature: this.nature,
       status: this.statusValue,
       stripeSessionId: this.checkoutSession?.sessionId ?? null,
       url: this.checkoutSession?.url ?? null,

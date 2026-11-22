@@ -78,7 +78,7 @@ export const PAYMENTS_SCENARIOS: ScenarioSet = {
     return {
       sub: STAFF,
       path: "/admin/accounting/payment-links",
-      body: { companyId, amountCents: 12_000, label: "Régularisation" },
+      body: { companyId, amountCents: 12_000, label: "Régularisation", nature: "regularization" },
     };
   },
 

@@ -28,6 +28,7 @@ const CANCELLED_LINK: PaymentLinkEntry = {
   companyName: "Les Halles",
   amountCents: 12_000,
   label: "Régularisation août",
+  nature: null,
   status: "cancelled",
   checkoutUrl: "https://checkout.stripe.test/cs_1",
   createdAt: CREATED,
@@ -56,6 +57,8 @@ describe("ListPaymentLinksHandler", () => {
         companyName: "Les Halles",
         amountCents: 12_000,
         label: "Régularisation août",
+        // Une demande d'avant le registre : non précisée, jamais une nature inventée.
+        nature: null,
         status: "cancelled",
         // Un lien annulé n'a plus d'adresse à envoyer.
         url: null,

@@ -25,6 +25,14 @@
       [(value)]="companyId"
     />
 
+    <fold-listbox
+      label="Nature"
+      placeholder="Choisir une nature"
+      required
+      [options]="natureOptions"
+      [(value)]="nature"
+    />
+
     <fold-input
       label="Montant (€)"
       placeholder="125,50"

@@ -115,6 +115,7 @@ async function scene() {
       id: "pl_1",
       companyId: "co_1",
       terms: PaymentLinkTerms.create(12_000, "Régularisation août", null),
+      nature: "regularization",
       createdAt: AT,
       createdByStaffId: "staff_1",
     }),

@@ -31,14 +31,25 @@ abstract class PaymentLinkStaffAct implements JournaledEvent {
         subjectLabel: this.companyName,
         paymentLink: { id: this.link.id, name: this.link.terms.label },
         amountCents: this.link.terms.amountCents,
+        ...this.particulars(),
       },
     };
   }
+
+  /** Ce que le seul fait de ce geste ajoute à la charge commune. */
+  protected particulars(): Readonly<Record<string, unknown>> {
+    return {};
+  }
 }
 
+/** La création reprend la nature, quand elle est posée. */
 export class PaymentLinkCreatedEvent extends PaymentLinkStaffAct {
   constructor(link: PaymentLink, companyName: string) {
     super(PAYMENT_LINK_CREATED, link, companyName);
+  }
+
+  protected override particulars(): Readonly<Record<string, unknown>> {
+    return this.link.nature === null ? {} : { nature: this.link.nature };
   }
 }
 

@@ -7,7 +7,7 @@ import type { AccountingSettingsView, PaymentLinkView, StaffPermission } from '@
 import { PermissionsStore } from '../../../auth/permissions.store';
 import { NotifyService } from '../../../notify.service';
 import { PaymentLinksService } from '../../payment-links.service';
-import { capOf, FreeLinks } from './free-links';
+import { capOf, FreeLinks, natureLabelOf } from './free-links';
 
 /**
  * Ce que ces cas tiennent : chaque colonne rend quelque chose, seul un lien
@@ -22,6 +22,7 @@ function link(over: Partial<PaymentLinkView> = {}): PaymentLinkView {
     companyName: 'Le Lac',
     amountCents: 12_550,
     label: 'Régularisation août',
+    nature: 'agreed_supplement',
     status: 'open',
     url: 'https://boutique.lfc.test/payer/jeton_1',
     createdAt: '2026-09-20T09:00:00.000Z',
@@ -33,7 +34,7 @@ function link(over: Partial<PaymentLinkView> = {}): PaymentLinkView {
   };
 }
 
-const PAID = link({ id: 'l2', label: 'Avoir juillet', status: 'paid', url: null });
+const PAID = link({ id: 'l2', label: 'Avoir juillet', nature: null, status: 'paid', url: null });
 
 class FakeApi {
   links: readonly PaymentLinkView[] = [link(), PAID];
@@ -137,12 +138,24 @@ describe('capOf', () => {
   });
 });
 
+describe('natureLabelOf', () => {
+  it('rend le libellé du registre', () => {
+    expect(natureLabelOf({ nature: 'regularization' })).toBe('Régularisation');
+  });
+
+  it('une demande d’avant les natures est « Non précisée »', () => {
+    expect(natureLabelOf({ nature: null })).toBe('Non précisée');
+  });
+});
+
 describe('FreeLinks', () => {
   it('rend société, libellé, montant, état, auteur et plafond', async () => {
     const body = text(await render(new FakeApi()));
 
     expect(body).toContain('Le Lac');
     expect(body).toContain('Régularisation août');
+    expect(body).toContain('Supplément convenu');
+    expect(body).toContain('Non précisée');
     expect(body).toMatch(/125,50\s€/u);
     expect(body).toContain('Ouvert');
     expect(body).toContain('Réglé');

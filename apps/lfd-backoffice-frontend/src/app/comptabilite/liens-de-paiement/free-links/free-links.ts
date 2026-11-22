@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import type { PaymentLinkStatus, PaymentLinkView } from '@lfd/contracts';
+import { FREE_CHARGE_NATURES, type PaymentLinkStatus, type PaymentLinkView } from '@lfd/contracts';
 import {
   FoldBadgeComponent,
   FoldButtonComponent,
@@ -39,12 +39,21 @@ const STATUS: Readonly<
 
 const BASE_COLUMNS: readonly FoldTableColumn[] = [
   { key: 'company', label: 'Société' },
+  { key: 'nature', label: 'Nature' },
   { key: 'label', label: 'Libellé' },
   { key: 'amount', label: 'Montant' },
   { key: 'createdAt', label: 'Créé le' },
   { key: 'status', label: 'État' },
   { key: 'link', label: 'Lien' },
 ];
+
+/** Le libellé d'une nature ; une demande d'avant les natures n'en a pas. */
+export function natureLabelOf(row: Pick<PaymentLinkView, 'nature'>): string {
+  if (row.nature === null) {
+    return 'Non précisée';
+  }
+  return FREE_CHARGE_NATURES.find((entry) => entry.key === row.nature)?.label ?? row.nature;
+}
 
 /**
  * Ce que rend la lecture du champ de plafond : vide = aucun plafond (`null`),
@@ -146,6 +155,10 @@ export class FreeLinks {
     readonly variant: FoldBadgeVariant;
   } {
     return STATUS[row.status];
+  }
+
+  protected natureOf(row: PaymentLinkView): string {
+    return natureLabelOf(row);
   }
 
   protected amountOf(row: PaymentLinkView): string {

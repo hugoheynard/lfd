@@ -12,6 +12,7 @@ const LINK_SELECT = {
   companyId: true,
   amountCents: true,
   label: true,
+  nature: true,
   status: true,
   stripeSessionId: true,
   url: true,

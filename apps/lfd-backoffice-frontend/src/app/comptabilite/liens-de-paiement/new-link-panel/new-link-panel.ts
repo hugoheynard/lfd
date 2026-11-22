@@ -1,8 +1,10 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import {
   companyDisplayName,
+  FREE_CHARGE_NATURES,
   PAYMENT_LINK_LABEL_MAX,
   type CreatedPaymentLink,
+  type FreeChargeNature,
 } from '@lfd/contracts';
 import {
   FoldButtonComponent,
@@ -31,7 +33,7 @@ export interface NewLinkPanelData {
 }
 
 /**
- * **Nouveau lien libre** — une société, un montant en euros, un libellé repris
+ * **Nouveau lien libre** — une société, une nature (classement interne), un montant en euros, un libellé repris
  * sur la page Stripe. Une fois créé, le panneau montre l'URL à copier sans
  * relire la liste ; il se ferme sur `true` pour que l'appelant la relise.
  *
@@ -68,6 +70,8 @@ export class NewLinkPanel {
   protected readonly companiesError = signal<string | null>(null);
 
   protected readonly companyId = signal<string | null>(null);
+  /** Le classement interne de la demande — obligatoire, jamais montré au client. */
+  protected readonly nature = signal<FreeChargeNature | null>(null);
   protected readonly amount = signal('');
   protected readonly label = signal('');
 
@@ -76,6 +80,12 @@ export class NewLinkPanel {
   protected readonly created = signal<CreatedPaymentLink | null>(null);
 
   protected readonly labelMax = PAYMENT_LINK_LABEL_MAX;
+
+  /** Les natures viennent du registre partagé : une de plus s'ajoute là-bas. */
+  protected readonly natureOptions = FREE_CHARGE_NATURES.map((entry) => ({
+    value: entry.key,
+    label: entry.label,
+  }));
 
   protected readonly companyOptions = computed(() =>
     this.companies()
@@ -104,6 +114,7 @@ export class NewLinkPanel {
   protected readonly canSubmit = computed(
     () =>
       this.companyId() !== null &&
+      this.nature() !== null &&
       this.amountCents() !== null &&
       this.trimmedLabel() !== '' &&
       !this.labelTooLong() &&
@@ -128,8 +139,9 @@ export class NewLinkPanel {
 
   protected async submit(): Promise<void> {
     const companyId = this.companyId();
+    const nature = this.nature();
     const amountCents = this.amountCents();
-    if (companyId === null || amountCents === null || !this.canSubmit()) {
+    if (companyId === null || nature === null || amountCents === null || !this.canSubmit()) {
       return;
     }
     this.saving.set(true);
@@ -137,7 +149,7 @@ export class NewLinkPanel {
     try {
       this.created.set(
         await this.api.createLink(
-          { companyId, amountCents, label: this.trimmedLabel() },
+          { companyId, nature, amountCents, label: this.trimmedLabel() },
           this.intents.keyFor(companyId),
         ),
       );

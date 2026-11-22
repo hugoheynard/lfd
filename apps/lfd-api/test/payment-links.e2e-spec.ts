@@ -320,7 +320,7 @@ describe("2b — les liens libres", () => {
       await staff()
         .post(LINKS)
         .set(INTENT_KEY, freshIntent())
-        .send({ companyId, amountCents, label: "Régularisation août" })
+        .send({ companyId, amountCents, label: "Régularisation août", nature: "regularization" })
         .expect(201),
     );
   }
@@ -341,14 +341,17 @@ describe("2b — les liens libres", () => {
       companyId,
       amountCents: 12_000,
       status: "open",
+      nature: "regularization",
       url: created.url,
       paidAt: null,
     });
     const facts = await ctx.prisma.activityEvent.findMany({
       where: { type: "payment_link.created" },
-      select: { subjectType: true, subjectId: true },
+      select: { subjectType: true, subjectId: true, payload: true },
     });
-    expect(facts).toEqual([{ subjectType: "company", subjectId: companyId }]);
+    expect(facts).toMatchObject([
+      { subjectType: "company", subjectId: companyId, payload: { nature: "regularization" } },
+    ]);
   });
 
   it("🔴 refuse au-delà du plafond en le nommant, et n'écrit rien", async () => {
@@ -358,7 +361,7 @@ describe("2b — les liens libres", () => {
     const refused = await staff()
       .post(LINKS)
       .set(INTENT_KEY, freshIntent())
-      .send({ companyId, amountCents: 10_001, label: "Trop" })
+      .send({ companyId, amountCents: 10_001, label: "Trop", nature: "regularization" })
       .expect(409);
 
     expect(refused.body).toMatchObject({ code: "payments.link.above_cap" });
@@ -371,7 +374,7 @@ describe("2b — les liens libres", () => {
     await staff()
       .post(LINKS)
       .set(INTENT_KEY, freshIntent())
-      .send({ companyId: "co_inexistante", amountCents: 100, label: "Qui ?" })
+      .send({ companyId: "co_inexistante", amountCents: 100, label: "Qui ?", nature: "other" })
       .expect(404);
   });
 });
@@ -507,6 +510,7 @@ function checkoutLinkOf(id: string, companyId: string, sessionId: string): Payme
     companyId,
     amountCents: 4_200,
     label: "Acompte",
+    nature: null,
     status: "open",
     stripeSessionId: sessionId,
     url: `https://checkout.stripe.test/${sessionId}`,
@@ -533,6 +537,7 @@ describe("le mur dans les écritures des liens", () => {
       id,
       companyId,
       terms: PaymentLinkTerms.create(4_200, "Acompte", null),
+      nature: "deposit",
       createdAt: new Date(daysAgo(0)),
       createdByStaffId: E2E_STAFF_ID,
     });
@@ -545,7 +550,12 @@ describe("le mur dans les écritures des liens", () => {
       await staff()
         .post(LINKS)
         .set(INTENT_KEY, freshIntent())
-        .send({ companyId: other.id, amountCents: 12_000, label: "Chez B" })
+        .send({
+          companyId: other.id,
+          amountCents: 12_000,
+          label: "Chez B",
+          nature: "regularization",
+        })
         .expect(201),
     );
     const linkRow = () => ctx.prisma.paymentLink.findUniqueOrThrow({ where: { id: theirs.id } });

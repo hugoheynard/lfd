@@ -97,6 +97,16 @@ Contrat : `packages/contracts/src/payment-link.ts`.
   lit le client), états `open → paid | cancelled | expired`. Table
   `payment_links` (`prisma/schema/public/accounting.prisma`), sans
   suppression : un lien se clôt par son statut.
+- **Sa nature**, obligatoire à la création : pourquoi on demande ce paiement
+  (régularisation, supplément convenu, solde après litige, acompte, autre).
+  Le registre est `FREE_CHARGE_NATURES` (`packages/contracts/src/payment-link.ts`) :
+  une nature de plus est une ligne, sans migration (la colonne `nature` n'a
+  pas de `CHECK`). Une nature ne s'en retire jamais : une clé inconnue
+  relue en base est une donnée corrompue (500). Les demandes d'avant le
+  registre ont `nature = NULL`, affichée « Non précisée ». La nature figure
+  dans la liste, le fait `payment_link.created` et l'avis à la comptabilité ;
+  pas sur la page `/payer/…`. L'acompte en nature encaisse seulement : la
+  facture d'acompte et sa déduction restent à la main.
 - **Son canal**, fermé (`PaymentLinkChannel`) : `door` pour une demande de paiement libre
   payée par la porte du bloc `payment` (toute création), `checkout` pour un
   lien d'avant la porte, qui garde sa session Stripe. `stripe_session_id` et
@@ -126,7 +136,8 @@ payment_links_checkout_pair`, migration
   - `onRefundOutcome` : journal `payment_link.refunded` sur la société,
     l'état ne change pas ; cloche `payment_link.refund_failed` quand un
     remboursement n'a pas rendu l'argent ;
-  - `describe` : « Paiement libre — <libellé> », l'écran des liens ;
+  - `describe` : « <nature> — <libellé> » (« Paiement libre — <libellé> »
+    sans nature), l'écran des liens et l'avis à la comptabilité ;
   - `claim` / `referencesSince` : `null` / rien — tout paiement d'un lien
     naît par `attach`.
 - **Annuler** (`cancel-payment-link.handler.ts`), sous `loadLocked` :

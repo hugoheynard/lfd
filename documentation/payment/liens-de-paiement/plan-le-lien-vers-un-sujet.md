@@ -909,8 +909,42 @@ type de sujet de plus s'inscrit au registre (`appBootstrap/`), une nature de
 plus s'ajoute au registre des natures. Rien n'est écrit en dur dans
 `payment/`.
 
-**Pas encore bâti** : le champ de nature et son registre, et le sujet
-« acompte ». La règle fiscale de l'acompte (facture d'acompte, exigibilité de
+#### Le lot N — les natures, conception (2026-11-22)
+
+- **Le registre** vit dans `packages/contracts` (`FREE_CHARGE_NATURES`) : une
+  clé stable en anglais et son libellé — `regularization` « Régularisation »,
+  `agreed_supplement` « Supplément convenu », `balance_after_dispute`
+  « Solde après litige », `deposit` « Acompte » (ajouté par Hugo le
+  2026-11-22), `other` « Autre ». Une nature de plus = une ligne.
+- **L'acompte en nature** encaisse et trace, sans plus : ni facture
+  d'acompte émise, ni rattachement au devis, ni déduction sur la facture
+  finale — ces gestes restent à la main. Le sujet « acompte » à lui (tableau
+  ci-dessus) les automatisera, après l'avis du cabinet.
+  Le type `FreeChargeNature` en dérive.
+- **La colonne** `public.payment_links.nature text NULL`, **sans `CHECK`** :
+  le registre est la liste admise, et un `CHECK` ferait d'une nature de plus
+  une migration. Le domaine refuse une clé hors registre. Les demandes d'avant
+  restent à `NULL` (« non précisée ») : on ne leur invente pas de nature.
+- **La création l'exige** : champ obligatoire de la commande et du contrat
+  HTTP (Zod sur les clés du registre), et dans le sujet de l'intention.
+- **Elle est reprise partout où la demande se lit** : la liste des liens
+  libres (une colonne), le fait `payment_link.created` (champ optionnel, les
+  faits passés n'en ont pas), la phrase du journal, et l'avis à la
+  comptabilité par `describe` du sujet `free_charge` (« Régularisation —
+  <libellé> ») : le bloc `payment` ne change pas.
+- La page `/payer/…` garde le seul libellé : la nature est un classement
+  interne.
+- **Une nature ne se retire jamais du registre** (tranché le 2026-11-22) :
+  une ligne qui la porte doit rester lisible, et une clé inconnue relue en
+  base est une donnée corrompue (`PaymentLinkNatureCorruptError`, 500). Une
+  nature qui ne sert plus se masque du formulaire, elle ne disparaît pas.
+
+✅ **Bâti le 2026-11-22** : registre dans `packages/contracts/src/payment-link.ts`,
+colonne par `20261122160000_la_nature_d_une_demande_libre`, value object
+`apps/lfd-api/src/lafoliecoffee/payments/domain/value-objects/free-charge-nature.ts`, colonne de la liste et phrase du journal au
+back-office, avis à la comptabilité par `describe`.
+
+**Pas encore bâti** : le sujet « acompte ». La règle fiscale de l'acompte (facture d'acompte, exigibilité de
 la TVA) est à confirmer par le cabinet avant d'écrire ce sujet.
 
 ## 6. La sortie de Stripe Checkout

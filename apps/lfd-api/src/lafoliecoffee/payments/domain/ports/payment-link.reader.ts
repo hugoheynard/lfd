@@ -1,4 +1,4 @@
-import type { PaymentLinkStatus } from "@lfd/contracts";
+import type { FreeChargeNature, PaymentLinkStatus } from "@lfd/contracts";
 
 /** Un lien tel que la liste le lit — les auteurs ne sont encore que des ids de fiche. */
 export interface PaymentLinkEntry {
@@ -7,6 +7,8 @@ export interface PaymentLinkEntry {
   readonly companyName: string;
   readonly amountCents: number;
   readonly label: string;
+  /** `null` pour une demande d'avant le registre des natures. */
+  readonly nature: FreeChargeNature | null;
   readonly status: PaymentLinkStatus;
   /**
    * L'URL Stripe d'un lien d'avant la porte (canal `checkout`) ; `null` pour

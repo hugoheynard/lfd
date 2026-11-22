@@ -453,6 +453,10 @@ export type {
 } from "./invoice-dossier.js";
 export {
   createPaymentLinkPayloadSchema,
+  freeChargeNatureLabel,
+  freeChargeNatureSchema,
+  isFreeChargeNature,
+  FREE_CHARGE_NATURES,
   paymentLinkStatusSchema,
   setAccountingSettingsPayloadSchema,
   PAYMENT_LINK_LABEL_MAX,
@@ -489,6 +493,7 @@ export type {
   AccountingSettingsView,
   CreatedPaymentLink,
   CreatePaymentLinkPayload,
+  FreeChargeNature,
   OrderAwaitingPaymentView,
   PaymentLinkStatus,
   PaymentLinkView,

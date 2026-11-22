@@ -95,6 +95,7 @@ export function checkoutLink(
     companyId,
     amountCents: 9_000,
     label: "Ancien lien",
+    nature: null,
     status: "open",
     stripeSessionId: sessionId,
     url: `https://checkout.stripe.test/${sessionId}`,

@@ -3,6 +3,7 @@ import { z } from "zod";
 import { billingRhythmKindSchema } from "../legal-entity.js";
 import { mandateStatusSchema } from "../payment-mandate.js";
 import { collectionMeansSchema } from "../payer-collection-means.js";
+import { freeChargeNatureSchema } from "../payment-link.js";
 import { COLLECTION_FACTS } from "./collection.js";
 import { COLLECTION_TEST_FACTS } from "./collection-test.js";
 import { CARD_PAYMENT_FACTS } from "./card-payment.js";
@@ -300,6 +301,8 @@ export const ACCOUNTING_FACTS = {
       subjectLabel: subjectLabel(),
       paymentLink: named("payment_link"),
       amountCents: cents(),
+      /** La nature de la demande ; absente des faits d'avant le registre. */
+      nature: freeChargeNatureSchema.optional(),
     }),
   ),
   /** Le staff l'a retiré avant règlement. */

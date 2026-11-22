@@ -35,6 +35,41 @@ export interface OrderAwaitingPaymentView {
 export const paymentLinkStatusSchema = z.enum(["open", "paid", "cancelled", "expired"]);
 export type PaymentLinkStatus = z.infer<typeof paymentLinkStatusSchema>;
 
+/**
+ * **Le registre des natures d'une demande de paiement libre** — pourquoi on
+ * demande cette somme, quand le paiement n'a pas d'autre conséquence que
+ * d'être encaissé. Une clé stable (écrite en base, reprise au journal) et son
+ * libellé, dans l'ordre de l'écran. Une nature de plus est une ligne ici : la
+ * colonne n'a pas de `CHECK`, le domaine refuse une clé absente du registre.
+ * Une raison qui a une conséquence (l'acompte) est un type de sujet à part,
+ * jamais une nature.
+ */
+export const FREE_CHARGE_NATURES = [
+  { key: "regularization", label: "Régularisation" },
+  { key: "agreed_supplement", label: "Supplément convenu" },
+  { key: "balance_after_dispute", label: "Solde après litige" },
+  { key: "deposit", label: "Acompte" },
+  { key: "other", label: "Autre" },
+] as const;
+
+/** Une clé du registre {@link FREE_CHARGE_NATURES}. */
+export type FreeChargeNature = (typeof FREE_CHARGE_NATURES)[number]["key"];
+
+/** Vrai si `value` est une clé du registre des natures. */
+export function isFreeChargeNature(value: unknown): value is FreeChargeNature {
+  return FREE_CHARGE_NATURES.some((nature) => nature.key === value);
+}
+
+/** Le libellé d'une nature, tel que l'écran et l'avis à la comptabilité le disent. */
+export function freeChargeNatureLabel(nature: FreeChargeNature): string {
+  return FREE_CHARGE_NATURES.find((entry) => entry.key === nature)?.label ?? nature;
+}
+
+/** La forme d'une nature dans une charge utile : une clé du registre. */
+export const freeChargeNatureSchema = z.custom<FreeChargeNature>(isFreeChargeNature, {
+  message: `Nature inconnue : attendu une de ${FREE_CHARGE_NATURES.map((n) => n.key).join(", ")}.`,
+});
+
 /** Les bornes du libellé repris sur la page de paiement. */
 export const PAYMENT_LINK_LABEL_MAX = 140;
 
@@ -49,6 +84,8 @@ export interface PaymentLinkView {
   readonly companyName: string;
   readonly amountCents: number;
   readonly label: string;
+  /** La nature choisie à la création ; `null` pour une demande d'avant le registre. */
+  readonly nature: FreeChargeNature | null;
   readonly status: PaymentLinkStatus;
   /**
    * L'adresse à copier et envoyer au client, **tant que le lien est ouvert** :
@@ -78,6 +115,7 @@ export const createPaymentLinkPayloadSchema = z.object({
   companyId: z.string().trim().min(1),
   amountCents: z.int().positive(),
   label: z.string().trim().min(1).max(PAYMENT_LINK_LABEL_MAX),
+  nature: freeChargeNatureSchema,
 });
 export type CreatePaymentLinkPayload = z.infer<typeof createPaymentLinkPayloadSchema>;
 
