@@ -13,6 +13,19 @@ import { AuthFacade } from './auth.facade';
  */
 export const INVITATION_EXPIRED = 'account.invitation.expired';
 
+/**
+ * Le refus (403) d'une invitation vers une société fermée — supprimée ou
+ * résiliée (décision de Hugo du 2026-11-22). Même sortie que l'invitation
+ * expirée : le message du serveur nomme le cas, c'est lui qu'on affiche.
+ */
+export const INVITATION_COMPANY_CLOSED = 'account.invitation.company_closed';
+
+/** Les refus d'invitation qui font sortir la personne avec le message du serveur. */
+const INVITATION_REFUSALS: ReadonlySet<string> = new Set([
+  INVITATION_EXPIRED,
+  INVITATION_COMPANY_CLOSED,
+]);
+
 /** La trace qui survit à la déconnexion : l'aller-retour Auth0 recharge la page. */
 const NOTICE_KEY = 'lfc-invitation-expired';
 
@@ -57,7 +70,8 @@ export class InvitationExpiredNotice {
 }
 
 /**
- * Fait sortir la personne au premier refus `invitation.expired`, quel que soit
+ * Fait sortir la personne au premier refus d'invitation (expirée, ou vers une
+ * société fermée), quel que soit
  * l'écran qui l'a reçu. L'erreur continue sa route : l'écran qui attendait une
  * réponse doit apprendre qu'il n'en aura pas.
  */
@@ -68,7 +82,7 @@ export const invitationExpiredInterceptor: HttpInterceptorFn = (request, next) =
     catchError((error: unknown) => {
       if (
         error instanceof HttpErrorResponse &&
-        httpErrorCode(error) === INVITATION_EXPIRED &&
+        INVITATION_REFUSALS.has(httpErrorCode(error) ?? '') &&
         notice.raise(httpErrorMessage(error))
       ) {
         auth.logout();

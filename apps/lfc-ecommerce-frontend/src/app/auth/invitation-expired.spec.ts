@@ -5,6 +5,7 @@ import { firstValueFrom } from 'rxjs';
 
 import { AuthFacade } from './auth.facade';
 import {
+  INVITATION_COMPANY_CLOSED,
   INVITATION_EXPIRED,
   InvitationExpiredNotice,
   invitationExpiredInterceptor,
@@ -62,6 +63,13 @@ describe('invitationExpiredInterceptor', () => {
     await refuse('/me/feature-levels', INVITATION_EXPIRED);
 
     expect(logouts).toBe(1);
+  });
+
+  it('fait sortir de même sur une invitation vers une société fermée', async () => {
+    await refuse('/me', INVITATION_COMPANY_CLOSED);
+
+    expect(logouts).toBe(1);
+    expect(TestBed.inject(InvitationExpiredNotice).pending()).toBe(MESSAGE);
   });
 
   it('laisse passer un autre 403 sans rien faire', async () => {

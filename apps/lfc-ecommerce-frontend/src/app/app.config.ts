@@ -23,6 +23,7 @@ import { ADDRESS_WRITER, LFD_NOTIFY } from '@lfd/b2b-ui/panel';
 import { AddressesService } from './legacy/entreprises/addresses.service';
 import { NotifyService } from './notify.service';
 import { provideAuth } from './auth/auth.providers';
+import { workspaceUnreachableInterceptor } from './client/workspace-unreachable';
 import { provideSignOutForgetting } from './client/sign-out/sign-out-forgetting';
 import { ClientTitleStrategy } from './client/client-title.strategy';
 import {
@@ -65,6 +66,8 @@ export const appConfig: ApplicationConfig = {
       withFetch(),
       withInterceptors([
         workspaceInterceptor,
+        // Après l'espace : il lit l'en-tête posé pour savoir quel espace est refusé.
+        workspaceUnreachableInterceptor,
         identityConflictInterceptor,
         invitationExpiredInterceptor,
         sessionExpiredInterceptor,
