@@ -1,11 +1,11 @@
 import { Injectable } from "@nestjs/common";
 
-import type { DurableDelivery } from "../../../../platform/outbox/durable-event.js";
+import type { DurableDelivery } from "../../../../../platform/outbox/durable-event.js";
 import {
   DurableHandler,
   type DurableSubscriber,
-} from "../../../../platform/outbox/durable-handler.js";
-import { ORDER_PAID, OrderPaidFact } from "../../domain/events/order-paid.fact.js";
+} from "../../../../../platform/outbox/durable-handler.js";
+import { ORDER_PAID, OrderPaidFact } from "../../../domain/events/order-paid.fact.js";
 import { OrderPlacedMail } from "../services/order-placed-mail.service.js";
 
 /** Nom STABLE de l'abonné — clé de son reçu dans la boîte d'envoi. */

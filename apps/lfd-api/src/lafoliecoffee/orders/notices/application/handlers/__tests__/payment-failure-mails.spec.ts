@@ -1,8 +1,8 @@
 import {
   OrderPaymentFailedEvent,
   type PaymentFailureCause,
-} from "../../../domain/events/order-payment-failed.event.js";
-import { OrderMailOrigins } from "../../../domain/ports/order-mail-origins.js";
+} from "../../../../domain/events/order-payment-failed.event.js";
+import { OrderMailOrigins } from "../../../../domain/ports/order-mail-origins.js";
 import { SendPaymentExpiredMail } from "../send-payment-expired-mail.handler.js";
 import { SendPaymentFailedMail } from "../send-payment-failed-mail.handler.js";
 import {
@@ -10,8 +10,8 @@ import {
   OneRecipientReader,
   RecordingMail,
   orderView,
-} from "./payment-failure-doubles.js";
-import { AT_PLACEMENT } from "../../../domain/services/order-sheet.js";
+} from "../../../../application/handlers/__tests__/payment-failure-doubles.js";
+import { AT_PLACEMENT } from "../../../../domain/services/order-sheet.js";
 
 /**
  * **Le courriel suit la cause** (plan `architecture-abandon-du-reglement.md`, Q4, §9

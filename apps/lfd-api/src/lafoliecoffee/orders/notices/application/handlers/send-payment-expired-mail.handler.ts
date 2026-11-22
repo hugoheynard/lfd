@@ -1,19 +1,19 @@
 import { Injectable } from "@nestjs/common";
-import type { DurableDelivery } from "../../../../platform/outbox/durable-event.js";
+import type { DurableDelivery } from "../../../../../platform/outbox/durable-event.js";
 import {
   DurableHandler,
   type DurableSubscriber,
-} from "../../../../platform/outbox/durable-handler.js";
+} from "../../../../../platform/outbox/durable-handler.js";
 
-import { DEFAULT_MAIL_LOCALE } from "../../../../mail/channels/templates/mail-locale.js";
-import { Mail } from "../../../../mail/channels/requests/mail.js";
+import { DEFAULT_MAIL_LOCALE } from "../../../../../mail/channels/templates/mail-locale.js";
+import { Mail } from "../../../../../mail/channels/requests/mail.js";
 import {
   ORDER_PAYMENT_FAILED,
   OrderPaymentFailedEvent,
-} from "../../domain/events/order-payment-failed.event.js";
-import { OrderRecipientReader } from "../../domain/ports/order-recipient.reader.js";
-import { OrderReader } from "../../domain/ports/order.reader.js";
-import { clientSheetOf } from "../../domain/services/order-sheet.js";
+} from "../../../domain/events/order-payment-failed.event.js";
+import { OrderRecipientReader } from "../../../domain/ports/order-recipient.reader.js";
+import { OrderReader } from "../../../domain/ports/order.reader.js";
+import { clientSheetOf } from "../../../domain/services/order-sheet.js";
 
 /** Nom STABLE de l'abonné — clé de son reçu dans la boîte d'envoi. */
 export const SEND_PAYMENT_EXPIRED_MAIL = "orders.send-payment-expired-mail";

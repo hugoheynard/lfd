@@ -1,18 +1,21 @@
-import type { Instant } from "../../../../../platform/context/request-context.js";
-import { CommerceOrderPlacedFact } from "../../../../../delivery/channels/commerce/commerce-order-placed.fact.js";
-import { MailJournal } from "../../../../../platform/mailer/journal/mail-journal.port.js";
-import { RecordingMail } from "../../../../../mail/channels/requests/__tests__/recording-mail.js";
-import { Clock } from "../../../../../platform/time/clock.js";
+import type { Instant } from "../../../../../../platform/context/request-context.js";
+import { CommerceOrderPlacedFact } from "../../../../../../delivery/channels/commerce/commerce-order-placed.fact.js";
+import { MailJournal } from "../../../../../../platform/mailer/journal/mail-journal.port.js";
+import { RecordingMail } from "../../../../../../mail/channels/requests/__tests__/recording-mail.js";
+import { Clock } from "../../../../../../platform/time/clock.js";
 import {
   GuestOrderNoticeReader,
   type GuestOrderNotice,
-} from "../../../domain/ports/guest-order-notice.reader.js";
-import type { OrderReader, OwnedOrder } from "../../../domain/ports/order.reader.js";
-import { OneOrderReader, orderView } from "./payment-failure-doubles.js";
-import { OrderPaidFact } from "../../../domain/events/order-paid.fact.js";
+} from "../../../../domain/ports/guest-order-notice.reader.js";
+import type { OrderReader, OwnedOrder } from "../../../../domain/ports/order.reader.js";
+import {
+  OneOrderReader,
+  orderView,
+} from "../../../../application/handlers/__tests__/payment-failure-doubles.js";
+import { OrderPaidFact } from "../../../../domain/events/order-paid.fact.js";
 import { SendGuestOrderNoticeOnPaid } from "../send-guest-order-notice-on-paid.handler.js";
 import { SendGuestOrderNotice } from "../send-guest-order-notice.handler.js";
-import { AT_PLACEMENT } from "../../../domain/services/order-sheet.js";
+import { AT_PLACEMENT } from "../../../../domain/services/order-sheet.js";
 
 const PROPRIETAIRE: GuestOrderNotice = { email: "camille@exemple.fr", firstName: "Camille" };
 

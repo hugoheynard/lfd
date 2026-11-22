@@ -17,7 +17,7 @@ import {
   OneRecipientReader,
   orderView,
 } from "../../../application/handlers/__tests__/payment-failure-doubles.js";
-import { OrderReadyMail } from "../../services/order-ready-mail.service.js";
+import { OrderReadyMail } from "../../../notices/application/services/order-ready-mail.service.js";
 import { SendHandoverReminderCommand } from "../send-handover-reminder.command.js";
 import { SendHandoverReminderHandler } from "../send-handover-reminder.handler.js";
 import {

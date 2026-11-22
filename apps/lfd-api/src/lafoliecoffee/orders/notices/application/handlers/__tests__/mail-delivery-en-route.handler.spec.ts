@@ -1,31 +1,34 @@
 import type { OrderView } from "@lfd/contracts";
 
-import { orderPageLink } from "../../../cancellation/application/commands/__tests__/customer-cancellation-doubles.js";
+import { orderPageLink } from "../../../../cancellation/application/commands/__tests__/customer-cancellation-doubles.js";
 import type {
   DeferrableMailTemplate,
   DeferredMailDemand,
   MailRequested,
-} from "../../../../../mail/channels/requests/mail.js";
+} from "../../../../../../mail/channels/requests/mail.js";
 import {
   OpenableUnitOfWork,
   RecordingMail,
-} from "../../../../../mail/channels/requests/__tests__/recording-mail.js";
-import { OrderMailOrigins } from "../../../domain/ports/order-mail-origins.js";
-import { OrderReader, type OwnedOrder } from "../../../domain/ports/order.reader.js";
+} from "../../../../../../mail/channels/requests/__tests__/recording-mail.js";
+import { OrderMailOrigins } from "../../../../domain/ports/order-mail-origins.js";
+import { OrderReader, type OwnedOrder } from "../../../../domain/ports/order.reader.js";
 import {
   DELIVERY_ROUND_DEPARTED,
   DeliveryRoundDepartedFact,
   DeliveryRoundDepartedPayloadError,
-} from "../../../../../delivery/channels/commerce/index.js";
-import type { DurableDelivery } from "../../../../../platform/outbox/durable-event.js";
-import type { DurableSubscriber } from "../../../../../platform/outbox/durable-handler.js";
+} from "../../../../../../delivery/channels/commerce/index.js";
+import type { DurableDelivery } from "../../../../../../platform/outbox/durable-event.js";
+import type { DurableSubscriber } from "../../../../../../platform/outbox/durable-handler.js";
 import { DeliveryEnRouteMail } from "../../services/delivery-en-route-mail.service.js";
 import { MAIL_DELIVERY_EN_ROUTE, MailDeliveryEnRoute } from "../mail-delivery-en-route.handler.js";
-import { OneRecipientReader, orderView } from "./payment-failure-doubles.js";
-import { AT_PLACEMENT } from "../../../domain/services/order-sheet.js";
-import { ShipmentRef } from "../../../../../production/channels/commerce/index.js";
-import type { RemainderShipment } from "../../../domain/ports/remainder-shipment.reader.js";
-import { FixedRemainders } from "./remainder-shipment-doubles.js";
+import {
+  OneRecipientReader,
+  orderView,
+} from "../../../../application/handlers/__tests__/payment-failure-doubles.js";
+import { AT_PLACEMENT } from "../../../../domain/services/order-sheet.js";
+import { ShipmentRef } from "../../../../../../production/channels/commerce/index.js";
+import type { RemainderShipment } from "../../../../domain/ports/remainder-shipment.reader.js";
+import { FixedRemainders } from "../../../../application/handlers/__tests__/remainder-shipment-doubles.js";
 
 /*
  * Le commerce entend le départ, fait durable (en-route.md ; plan-depart-durable.md,

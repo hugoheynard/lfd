@@ -4,22 +4,22 @@ import { Injectable } from "@nestjs/common";
 import {
   COMMERCE_ORDER_PLACED,
   CommerceOrderPlacedFact,
-} from "../../../../delivery/channels/commerce/commerce-order-placed.fact.js";
-import { DEFAULT_MAIL_LOCALE } from "../../../../mail/channels/templates/mail-locale.js";
-import { Mail } from "../../../../mail/channels/requests/mail.js";
-import type { DurableDelivery } from "../../../../platform/outbox/durable-event.js";
+} from "../../../../../delivery/channels/commerce/commerce-order-placed.fact.js";
+import { DEFAULT_MAIL_LOCALE } from "../../../../../mail/channels/templates/mail-locale.js";
+import { Mail } from "../../../../../mail/channels/requests/mail.js";
+import type { DurableDelivery } from "../../../../../platform/outbox/durable-event.js";
 import {
   DurableHandler,
   type DurableSubscriber,
-} from "../../../../platform/outbox/durable-handler.js";
-import { OrderMailOrigins } from "../../domain/ports/order-mail-origins.js";
-import { OrderRecipientReader } from "../../domain/ports/order-recipient.reader.js";
-import { OrderReader } from "../../domain/ports/order.reader.js";
-import { handoverUrlOf } from "../../domain/services/handover-url.js";
-import { clientSheetOf } from "../../domain/services/order-sheet.js";
-import { settlementDecidedAtPlacement } from "../../domain/services/settlement-decided-at-placement.js";
-import { OrderSheetAttachment } from "../services/order-sheet-attachment.service.js";
-import { OrderManageLink } from "../services/order-manage-link.js";
+} from "../../../../../platform/outbox/durable-handler.js";
+import { OrderMailOrigins } from "../../../domain/ports/order-mail-origins.js";
+import { OrderRecipientReader } from "../../../domain/ports/order-recipient.reader.js";
+import { OrderReader } from "../../../domain/ports/order.reader.js";
+import { handoverUrlOf } from "../../../domain/services/handover-url.js";
+import { clientSheetOf } from "../../../domain/services/order-sheet.js";
+import { settlementDecidedAtPlacement } from "../../../domain/services/settlement-decided-at-placement.js";
+import { OrderSheetAttachment } from "../../../application/services/order-sheet-attachment.service.js";
+import { OrderManageLink } from "../../../application/services/order-manage-link.js";
 
 /** Nom STABLE de l'abonné — clé de son reçu dans la boîte d'envoi. */
 export const SEND_ORDER_PLACED_MAIL = "orders.send-placed-mail.on-placed";

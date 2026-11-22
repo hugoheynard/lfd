@@ -1,15 +1,15 @@
 import { exposedHandoverToken } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
-import { DEFAULT_MAIL_LOCALE } from "../../../../mail/channels/templates/mail-locale.js";
-import { Mail } from "../../../../mail/channels/requests/mail.js";
-import { OrderMailOrigins } from "../../domain/ports/order-mail-origins.js";
-import { OrderRecipientReader } from "../../domain/ports/order-recipient.reader.js";
-import { OrderReader } from "../../domain/ports/order.reader.js";
-import { handoverUrlOf } from "../../domain/services/handover-url.js";
-import { clientSheetOf } from "../../domain/services/order-sheet.js";
-import { OrderSheetAttachment } from "./order-sheet-attachment.service.js";
-import { OrderManageLink } from "./order-manage-link.js";
+import { DEFAULT_MAIL_LOCALE } from "../../../../../mail/channels/templates/mail-locale.js";
+import { Mail } from "../../../../../mail/channels/requests/mail.js";
+import { OrderMailOrigins } from "../../../domain/ports/order-mail-origins.js";
+import { OrderRecipientReader } from "../../../domain/ports/order-recipient.reader.js";
+import { OrderReader } from "../../../domain/ports/order.reader.js";
+import { handoverUrlOf } from "../../../domain/services/handover-url.js";
+import { clientSheetOf } from "../../../domain/services/order-sheet.js";
+import { OrderSheetAttachment } from "../../../application/services/order-sheet-attachment.service.js";
+import { OrderManageLink } from "../../../application/services/order-manage-link.js";
 
 /**
  * **« Votre commande est enregistrée »** — l'accusé de réception, et le seul

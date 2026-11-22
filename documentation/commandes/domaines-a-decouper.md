@@ -2,9 +2,10 @@
 
 > **Inventaire, relu le 2026-11-20.** Ce qui, dans le bloc des commandes,
 > mériterait d'être isolé comme le paiement l'a été dans `card-payment`. Deux
-> candidats sont bâtis (le délai de commande, §2.1 ; le panier, §2.4) ; les deux
-> autres ne sont ni décidés ni bâtis. Les comptes de fichiers ont été lus dans
-> l'arborescence le 2026-11-20 (ceux des §2.2 et 2.3, le 2026-11-10) ; les couplages fins (qui lit
+> candidats sont bâtis (le délai de commande, §2.1 ; le panier, §2.4), un est
+> tranché sans découpage (les avis, §2.3) ; le départ incomplet (§2.2) n'est
+> ni décidé ni bâti. Les comptes de fichiers ont été lus dans
+> l'arborescence le 2026-11-20 (celui du §2.2, le 2026-11-10 ; le §2.3 relu dans le code le 2026-11-22) ; les couplages fins (qui lit
 > quoi, qui écrit quoi) ne l'ont **pas** été — c'est la première étape de
 > chaque chantier.
 
@@ -26,14 +27,12 @@ par un canal — un seul endroit à changer quand sa règle change.
 
 ```mermaid
 flowchart LR
-  O["lafoliecoffee/orders<br/>la commande"]
+  O["lafoliecoffee/orders<br/>la commande, ses avis (notices/)"]
   D["lafoliecoffee/order-cutoffs<br/>trop tard ? surtaxe ? (bâti)"]
   S["Départ incomplet<br/>manque, décision, reliquat"]
-  M["Avis à la clientèle<br/>e-mails et relances"]
   P["src/shop-cart<br/>le panier (bâti)"]
   O -- "demande un verdict" --> D
   S -- "écoute les faits du colisage" --> O
-  O -- "publie ses faits" --> M
   P -- "devient une commande" --> O
 ```
 
@@ -81,17 +80,37 @@ sorti du fournil le 2026-09-10.
 **Le prix.** 27 autres fichiers de `orders` le citent (relevé du
 2026-11-10) : il faudrait un canal, pas un simple déménagement.
 
-### 2.3 Les avis à la clientèle (e-mails et relances)
+### 2.3 Les avis à la clientèle — rangés, pas découpés
 
-**Aujourd'hui.** Environ **26 fichiers** : les abonnés qui envoient « commande
-passée », « prête », « annulée », « paiement échoué », « en route », les
-relances avant l'heure limite (`order-customer-nudges`), la liste des
-e-mails d'une commande — et, depuis le 2026-11-10, « commande modifiée ».
+**Tranché le 2026-11-22** après lecture des couplages : un sous-dossier, pas un
+contexte à part.
 
-**Le signe.** Presque tous **écoutent** des faits de la commande et ne
-décident rien. Les sortir ferait de `orders` un émetteur, et du nouveau
-contexte un abonné : « quoi dire, et quand ». Le bloc `mail` existe déjà pour
-l'envoi lui-même.
+**Ce que le code contient** (lu le 2026-11-22) — trois familles, pas une :
+
+- **Les abonnés purs**, rangés dans `orders/notices/` : les `@DurableHandler`
+  qui envoient « commande passée », « réglée », « prête », « paiement échoué »,
+  « paiement expiré », « en route », l'avis à l'adresse d'une commande sans
+  compte et « reliquat remboursé », avec les trois services qu'ils partagent
+  (`OrderPlacedMail`, `OrderReadyMail`, `DeliveryEnRouteMail`). Ils ne décident
+  rien. « Annulée » et « modifiée » restent dans `cancellation/` et
+  `revision/`, à côté du fait qu'elles écoutent.
+- **Les relances du staff ne sont pas des avis, ce sont des gestes** :
+  `send-handover-reminder` et `warn-customer-of-delay` chargent et sauvent
+  l'agrégat `OrderCustomerNudges` (une fois chacune, pas avant le délai, un
+  retrait ouvert seulement) ; `request-no-show-notice` écrit l'état « pas
+  venu » ; `resend-order-payment-link` dépend des règles du paiement. L'e-mail
+  y est l'effet du geste. Elles restent dans `orders/application/commands/`.
+- **Le reste a déjà sa place** : la liste des e-mails d'une commande lit
+  `mail/channels/deliveries/`, le consentement lit `mail/channels/marketing/`,
+  la lettre du départ incomplet appartient au §2.2, et la sonnerie d'un
+  e-mail en rebond est une alerte au staff.
+
+**Pourquoi pas un contexte à part.** Le bloc `mail` découple déjà l'envoi, et
+les abonnés sont déjà durables. Un contexte séparé ne leur retirerait aucune
+dépendance : il remplacerait l'import de `Mail` par une demi-douzaine de
+lectures que `orders` devrait publier — destinataire, origines, lien de
+gestion, fiche de commande, bon archivé, reliquat. Plus de surface, aucun
+invariant de mieux tenu.
 
 ### 2.4 Le panier de la boutique — bâti
 
@@ -114,7 +133,8 @@ mêmes couches que le reste des commandes.
 2. **Le départ incomplet** — le prochain : le cas le plus net, et un canal à
    concevoir.
 3. ~~**Le panier**~~ — bâti le 2026-11-20 (§2.4).
-4. **Les avis à la clientèle** — plus simple, à faire quand on y touche.
+4. ~~**Les avis à la clientèle**~~ — rangés dans `orders/notices/` le
+   2026-11-22, sans en faire un contexte (§2.3).
 
 Chacun commence par la lecture des couplages réels, puis un plan court, puis
 `vitruve` (une frontière se déplace), avant tout code.

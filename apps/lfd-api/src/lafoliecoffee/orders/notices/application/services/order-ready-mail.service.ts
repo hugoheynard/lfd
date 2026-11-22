@@ -1,16 +1,16 @@
 import { exposedHandoverToken } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
-import { DEFAULT_MAIL_LOCALE } from "../../../../mail/channels/templates/mail-locale.js";
-import { Mail } from "../../../../mail/channels/requests/mail.js";
-import { OrderMailOrigins } from "../../domain/ports/order-mail-origins.js";
-import { OrderRecipientReader } from "../../domain/ports/order-recipient.reader.js";
-import { OrderReader } from "../../domain/ports/order.reader.js";
-import { RemainderShipmentReader } from "../../domain/ports/remainder-shipment.reader.js";
-import { FIRST_SHIPMENT_RANK } from "../../../../production/channels/commerce/index.js";
-import { handoverUrlOf } from "../../domain/services/handover-url.js";
-import { OrderManageLink } from "./order-manage-link.js";
-import { clientSheetOf } from "../../domain/services/order-sheet.js";
+import { DEFAULT_MAIL_LOCALE } from "../../../../../mail/channels/templates/mail-locale.js";
+import { Mail } from "../../../../../mail/channels/requests/mail.js";
+import { OrderMailOrigins } from "../../../domain/ports/order-mail-origins.js";
+import { OrderRecipientReader } from "../../../domain/ports/order-recipient.reader.js";
+import { OrderReader } from "../../../domain/ports/order.reader.js";
+import { RemainderShipmentReader } from "../../../domain/ports/remainder-shipment.reader.js";
+import { FIRST_SHIPMENT_RANK } from "../../../../../production/channels/commerce/index.js";
+import { handoverUrlOf } from "../../../domain/services/handover-url.js";
+import { OrderManageLink } from "../../../application/services/order-manage-link.js";
+import { clientSheetOf } from "../../../domain/services/order-sheet.js";
 
 /**
  * **« Votre commande vous attend »** — le courriel de retrait, et le seul

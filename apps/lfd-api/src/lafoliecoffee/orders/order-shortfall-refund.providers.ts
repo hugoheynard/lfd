@@ -2,7 +2,7 @@ import type { Provider, Type } from "@nestjs/common";
 
 import { RefundShortfallHandler } from "./application/commands/refund-shortfall.handler.js";
 import { RefundShortfallOnBillingSettled } from "./application/handlers/refund-shortfall-on-billing-settled.handler.js";
-import { SendShortfallRefundedMail } from "./application/handlers/send-shortfall-refunded-mail.handler.js";
+import { SendShortfallRefundedMail } from "./notices/application/handlers/send-shortfall-refunded-mail.handler.js";
 import { AdminShortfallRefundView } from "./application/services/admin-shortfall-refund-view.js";
 import { RefundablePayments } from "./application/services/refundable-payments.js";
 import { ShortfallRefundMoneyReader } from "./application/services/shortfall-refund-money.js";

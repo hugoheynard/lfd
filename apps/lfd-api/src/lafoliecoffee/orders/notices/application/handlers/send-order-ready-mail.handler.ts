@@ -1,12 +1,12 @@
 import { Injectable } from "@nestjs/common";
 
-import type { DurableDelivery } from "../../../../platform/outbox/durable-event.js";
+import type { DurableDelivery } from "../../../../../platform/outbox/durable-event.js";
 import {
   DurableHandler,
   type DurableSubscriber,
-} from "../../../../platform/outbox/durable-handler.js";
-import { shipmentKeySuffix } from "../../../../production/channels/commerce/index.js";
-import { ORDER_READY, OrderReadyFact } from "../../domain/events/order-ready.fact.js";
+} from "../../../../../platform/outbox/durable-handler.js";
+import { shipmentKeySuffix } from "../../../../../production/channels/commerce/index.js";
+import { ORDER_READY, OrderReadyFact } from "../../../domain/events/order-ready.fact.js";
 import { OrderReadyMail } from "../services/order-ready-mail.service.js";
 
 /** Nom STABLE de l'abonné — clé de son reçu dans la boîte d'envoi. */

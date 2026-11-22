@@ -3,12 +3,12 @@ import { Injectable } from "@nestjs/common";
 import {
   DELIVERY_ROUND_DEPARTED,
   DeliveryRoundDepartedFact,
-} from "../../../../delivery/channels/commerce/index.js";
-import type { DurableDelivery } from "../../../../platform/outbox/durable-event.js";
+} from "../../../../../delivery/channels/commerce/index.js";
+import type { DurableDelivery } from "../../../../../platform/outbox/durable-event.js";
 import {
   DurableHandler,
   type DurableSubscriber,
-} from "../../../../platform/outbox/durable-handler.js";
+} from "../../../../../platform/outbox/durable-handler.js";
 import { DeliveryEnRouteMail } from "../services/delivery-en-route-mail.service.js";
 
 /** Nom STABLE de l'abonné — clé de son reçu dans la boîte d'envoi. */

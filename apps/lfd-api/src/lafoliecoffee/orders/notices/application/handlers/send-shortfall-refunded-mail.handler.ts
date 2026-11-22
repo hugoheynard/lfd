@@ -1,21 +1,21 @@
 import { Injectable } from "@nestjs/common";
 
-import { CardSettlementReader } from "../../../../card-payment/channels/requests/index.js";
-import { Mail } from "../../../../mail/channels/requests/mail.js";
-import { DEFAULT_MAIL_LOCALE } from "../../../../mail/channels/templates/mail-locale.js";
-import type { DurableDelivery } from "../../../../platform/outbox/durable-event.js";
+import { CardSettlementReader } from "../../../../../card-payment/channels/requests/index.js";
+import { Mail } from "../../../../../mail/channels/requests/mail.js";
+import { DEFAULT_MAIL_LOCALE } from "../../../../../mail/channels/templates/mail-locale.js";
+import type { DurableDelivery } from "../../../../../platform/outbox/durable-event.js";
 import {
   DurableHandler,
   type DurableSubscriber,
-} from "../../../../platform/outbox/durable-handler.js";
+} from "../../../../../platform/outbox/durable-handler.js";
 import {
   ORDER_REFUND_SUCCEEDED,
   OrderRefundSucceededFact,
-} from "../../domain/events/order-refund-succeeded.fact.js";
-import { OrderRecipientReader } from "../../domain/ports/order-recipient.reader.js";
-import { ShortfallRefundedNoticeReader } from "../../domain/ports/shortfall-refunded-notice.reader.js";
-import { shortfallRefundedCentsOf } from "../../domain/services/shortfall-refunded.js";
-import { orderCardSubject } from "../services/order-card-subject.js";
+} from "../../../domain/events/order-refund-succeeded.fact.js";
+import { OrderRecipientReader } from "../../../domain/ports/order-recipient.reader.js";
+import { ShortfallRefundedNoticeReader } from "../../../domain/ports/shortfall-refunded-notice.reader.js";
+import { shortfallRefundedCentsOf } from "../../../domain/services/shortfall-refunded.js";
+import { orderCardSubject } from "../../../application/services/order-card-subject.js";
 
 /** Nom STABLE de l'abonné — clé de son reçu dans la boîte d'envoi. */
 export const SEND_SHORTFALL_REFUNDED_MAIL =

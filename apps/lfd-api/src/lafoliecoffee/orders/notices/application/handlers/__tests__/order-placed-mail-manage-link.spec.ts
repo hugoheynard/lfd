@@ -1,16 +1,16 @@
 import type { OrderView } from "@lfd/contracts";
 
-import { CommerceOrderPlacedFact } from "../../../../../delivery/channels/commerce/commerce-order-placed.fact.js";
-import type { ByReference } from "../../../../../mail/channels/requests/mail.js";
-import type { B2bMails } from "../../../../../mail/channels/templates/b2b-mails.js";
-import type { CustomerCancellationSubject } from "../../../cancellation/domain/ports/customer-cancellation-subject.reader.js";
+import { CommerceOrderPlacedFact } from "../../../../../../delivery/channels/commerce/commerce-order-placed.fact.js";
+import type { ByReference } from "../../../../../../mail/channels/requests/mail.js";
+import type { B2bMails } from "../../../../../../mail/channels/templates/b2b-mails.js";
+import type { CustomerCancellationSubject } from "../../../../cancellation/domain/ports/customer-cancellation-subject.reader.js";
 import {
   customerSubject,
   FixedCustomerSubjects,
   ReadableSigner,
-} from "../../../cancellation/application/commands/__tests__/customer-cancellation-doubles.js";
-import { sheetAttachment } from "../../services/__tests__/order-sheet-doubles.js";
-import { OrderManageLink } from "../../services/order-manage-link.js";
+} from "../../../../cancellation/application/commands/__tests__/customer-cancellation-doubles.js";
+import { sheetAttachment } from "../../../../application/services/__tests__/order-sheet-doubles.js";
+import { OrderManageLink } from "../../../../application/services/order-manage-link.js";
 import { OrderPlacedMail } from "../../services/order-placed-mail.service.js";
 import { SendOrderPlacedMail } from "../send-order-placed-mail.handler.js";
 import {
@@ -19,7 +19,7 @@ import {
   recipientOf,
   LastMailRequest,
   view,
-} from "./order-placed-mail-doubles.js";
+} from "../../../../application/handlers/__tests__/order-placed-mail-doubles.js";
 
 /**
  * **Le lien de la commande est posé dans TOUS les accusés de réception**

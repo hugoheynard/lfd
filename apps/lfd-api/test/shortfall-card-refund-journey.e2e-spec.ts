@@ -17,7 +17,7 @@ import { InvoiceReader } from "../src/lafoliecoffee/accounting/domain/ports/invo
 import { facturXArithmeticViolations } from "../src/lafoliecoffee/accounting/domain/services/facturx-arithmetic.js";
 import { renderFacturXml } from "../src/lafoliecoffee/accounting/domain/services/facturx-xml.js";
 import { REFUND_SHORTFALL_ON_BILLING_SETTLED } from "../src/lafoliecoffee/orders/application/handlers/refund-shortfall-on-billing-settled.handler.js";
-import { SEND_SHORTFALL_REFUNDED_MAIL } from "../src/lafoliecoffee/orders/application/handlers/send-shortfall-refunded-mail.handler.js";
+import { SEND_SHORTFALL_REFUNDED_MAIL } from "../src/lafoliecoffee/orders/notices/application/handlers/send-shortfall-refunded-mail.handler.js";
 import { jsonBody, type E2eContext } from "./e2e-harness.js";
 import { INTENT_KEY, freshIntent } from "./intent-key.js";
 import { STAFF } from "./production-day-fixture.js";

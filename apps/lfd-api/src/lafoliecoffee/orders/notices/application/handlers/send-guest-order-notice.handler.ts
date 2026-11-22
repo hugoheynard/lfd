@@ -3,17 +3,17 @@ import { Injectable } from "@nestjs/common";
 import {
   COMMERCE_ORDER_PLACED,
   CommerceOrderPlacedFact,
-} from "../../../../delivery/channels/commerce/commerce-order-placed.fact.js";
-import { MailJournal } from "../../../../platform/mailer/journal/mail-journal.port.js";
-import { Mail } from "../../../../mail/channels/requests/mail.js";
-import type { DurableDelivery } from "../../../../platform/outbox/durable-event.js";
+} from "../../../../../delivery/channels/commerce/commerce-order-placed.fact.js";
+import { MailJournal } from "../../../../../platform/mailer/journal/mail-journal.port.js";
+import { Mail } from "../../../../../mail/channels/requests/mail.js";
+import type { DurableDelivery } from "../../../../../platform/outbox/durable-event.js";
 import {
   DurableHandler,
   type DurableSubscriber,
-} from "../../../../platform/outbox/durable-handler.js";
-import { Clock } from "../../../../platform/time/clock.js";
-import { GuestOrderNoticeReader } from "../../domain/ports/guest-order-notice.reader.js";
-import { OrderReader } from "../../domain/ports/order.reader.js";
+} from "../../../../../platform/outbox/durable-handler.js";
+import { Clock } from "../../../../../platform/time/clock.js";
+import { GuestOrderNoticeReader } from "../../../domain/ports/guest-order-notice.reader.js";
+import { OrderReader } from "../../../domain/ports/order.reader.js";
 
 /**
  * Le canal du registre d'unicité, à côté de `resend` — plan

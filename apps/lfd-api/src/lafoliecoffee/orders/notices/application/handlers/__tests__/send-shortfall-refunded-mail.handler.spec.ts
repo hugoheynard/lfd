@@ -1,21 +1,21 @@
 import type {
   CardRefundView,
   SubjectCardRefunds,
-} from "../../../../../card-payment/channels/requests/index.js";
-import type { CardSubject } from "../../../../../card-payment/channels/subjects/index.js";
-import { RecordingMail } from "../../../../../mail/channels/requests/__tests__/recording-mail.js";
-import type { DurableDelivery } from "../../../../../platform/outbox/durable-event.js";
-import { ORDER_REFUND_SUCCEEDED } from "../../../domain/events/order-refund-succeeded.fact.js";
+} from "../../../../../../card-payment/channels/requests/index.js";
+import type { CardSubject } from "../../../../../../card-payment/channels/subjects/index.js";
+import { RecordingMail } from "../../../../../../mail/channels/requests/__tests__/recording-mail.js";
+import type { DurableDelivery } from "../../../../../../platform/outbox/durable-event.js";
+import { ORDER_REFUND_SUCCEEDED } from "../../../../domain/events/order-refund-succeeded.fact.js";
 import {
   ShortfallRefundedNoticeReader,
   type ShortfallRefundedNotice,
-} from "../../../domain/ports/shortfall-refunded-notice.reader.js";
-import { SHORTFALL_REFUND_REASON } from "../../../domain/services/shortfall-refunded.js";
-import { FixedRecipients } from "../../commands/__tests__/intake-doubles.js";
+} from "../../../../domain/ports/shortfall-refunded-notice.reader.js";
+import { SHORTFALL_REFUND_REASON } from "../../../../domain/services/shortfall-refunded.js";
+import { FixedRecipients } from "../../../../application/commands/__tests__/intake-doubles.js";
 import {
   cardRefundRequest,
   FixedCardRefundRequests,
-} from "../../commands/__tests__/refund-doubles.js";
+} from "../../../../application/commands/__tests__/refund-doubles.js";
 import { SendShortfallRefundedMail } from "../send-shortfall-refunded-mail.handler.js";
 
 /**

@@ -229,14 +229,14 @@ flowchart TD
     FAILE --> KO["📧 « votre paiement n'est pas passé »<br/>SANS QR"]
 ```
 
-| Abonné                                                                                                                                | Écoute                     | Envoie                                        |
-| ------------------------------------------------------------------------------------------------------------------------------------- | -------------------------- | --------------------------------------------- |
-| [`send-order-placed-mail`](../../../apps/lfd-api/src/lafoliecoffee/orders/application/handlers/send-order-placed-mail.handler.ts)     | `OrderPlacedEvent`         | l'accusé, **sauf** si le règlement est en vol |
-| [`send-order-settled-mail`](../../../apps/lfd-api/src/lafoliecoffee/orders/application/handlers/send-order-settled-mail.handler.ts)   | `OrderPaymentSettledEvent` | le même accusé                                |
-| [`send-payment-failed-mail`](../../../apps/lfd-api/src/lafoliecoffee/orders/application/handlers/send-payment-failed-mail.handler.ts) | `OrderPaymentFailedEvent`  | le refus                                      |
+| Abonné                                                                                                                                        | Écoute                     | Envoie                                        |
+| --------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------- | --------------------------------------------- |
+| [`send-order-placed-mail`](../../../apps/lfd-api/src/lafoliecoffee/orders/notices/application/handlers/send-order-placed-mail.handler.ts)     | `OrderPlacedEvent`         | l'accusé, **sauf** si le règlement est en vol |
+| [`send-order-settled-mail`](../../../apps/lfd-api/src/lafoliecoffee/orders/notices/application/handlers/send-order-settled-mail.handler.ts)   | `OrderPaymentSettledEvent` | le même accusé                                |
+| [`send-payment-failed-mail`](../../../apps/lfd-api/src/lafoliecoffee/orders/notices/application/handlers/send-payment-failed-mail.handler.ts) | `OrderPaymentFailedEvent`  | le refus                                      |
 
 - **Les deux chemins de l'accusé partagent un service**
-  ([`order-placed-mail.service.ts`](../../../apps/lfd-api/src/lafoliecoffee/orders/application/services/order-placed-mail.service.ts))
+  ([`order-placed-mail.service.ts`](../../../apps/lfd-api/src/lafoliecoffee/orders/notices/application/services/order-placed-mail.service.ts))
   : même feuille, même QR, **même clé d'idempotence** par commande. Une commande
   ne peut pas produire deux accusés, quel que soit le chemin qui l'annonce.
 - **Le refus ne porte pas de QR** : une commande impayée ne se retire pas, et

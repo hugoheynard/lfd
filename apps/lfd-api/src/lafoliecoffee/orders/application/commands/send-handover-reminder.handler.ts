@@ -6,7 +6,7 @@ import { OrderNotFoundError, ReminderRefusedError } from "../../domain/errors/or
 import { CustomerNudgeDelaysReader } from "../../domain/ports/customer-nudge-delays.reader.js";
 import { OrderCustomerNudgesRepository } from "../../domain/ports/order-customer-nudges.repository.js";
 import { OrderRecipientReader } from "../../domain/ports/order-recipient.reader.js";
-import { OrderReadyMail } from "../services/order-ready-mail.service.js";
+import { OrderReadyMail } from "../../notices/application/services/order-ready-mail.service.js";
 import { SendHandoverReminderCommand } from "./send-handover-reminder.command.js";
 
 /** Préfixe de la clé d'idempotence du courriel. */

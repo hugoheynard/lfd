@@ -48,7 +48,7 @@
 >   invité, commande saisie par l'équipe ; au compte, total nul ou carte payée.
 >   Un compte arrive sur SA commande dans Mes commandes (connexion demandée) ;
 >   l'invité sur la page /annuler. Éprouvé par
->   `apps/lfd-api/src/lafoliecoffee/orders/application/handlers/__tests__/order-placed-mail-manage-link.spec.ts`.
+>   `apps/lfd-api/src/lafoliecoffee/orders/notices/application/handlers/__tests__/order-placed-mail-manage-link.spec.ts`.
 >
 > ⚠️ **Décidé par Hugo le 2026-10-13, PAS ENCORE BÂTI** :
 >

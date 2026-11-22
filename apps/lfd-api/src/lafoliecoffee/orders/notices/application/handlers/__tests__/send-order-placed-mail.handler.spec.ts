@@ -2,15 +2,15 @@ import { Buffer } from "node:buffer";
 
 import type { OrderView } from "@lfd/contracts";
 
-import { CommerceOrderPlacedFact } from "../../../../../delivery/channels/commerce/commerce-order-placed.fact.js";
-import type { ByReference } from "../../../../../mail/channels/requests/mail.js";
-import type { B2bMails } from "../../../../../mail/channels/templates/b2b-mails.js";
-import { OrderSheetLogoSource } from "../../../domain/ports/order-sheet-logo.source.js";
+import { CommerceOrderPlacedFact } from "../../../../../../delivery/channels/commerce/commerce-order-placed.fact.js";
+import type { ByReference } from "../../../../../../mail/channels/requests/mail.js";
+import type { B2bMails } from "../../../../../../mail/channels/templates/b2b-mails.js";
+import { OrderSheetLogoSource } from "../../../../domain/ports/order-sheet-logo.source.js";
 import {
   MemoryCustomerDocuments,
   MissingLogo,
   sheetAttachment,
-} from "../../services/__tests__/order-sheet-doubles.js";
+} from "../../../../application/services/__tests__/order-sheet-doubles.js";
 import { SendOrderPlacedMail } from "../send-order-placed-mail.handler.js";
 import {
   FixedOrigins,
@@ -18,12 +18,12 @@ import {
   recipientOf,
   LastMailRequest,
   view,
-} from "./order-placed-mail-doubles.js";
-import { OrderManageLink } from "../../services/order-manage-link.js";
+} from "../../../../application/handlers/__tests__/order-placed-mail-doubles.js";
+import { OrderManageLink } from "../../../../application/services/order-manage-link.js";
 import {
   FixedCustomerSubjects,
   ReadableSigner,
-} from "../../../cancellation/application/commands/__tests__/customer-cancellation-doubles.js";
+} from "../../../../cancellation/application/commands/__tests__/customer-cancellation-doubles.js";
 
 /** Les données de la demande : le bon y est une référence au stockage. */
 type PlacedDemandData = ByReference<B2bMails["customer.order-placed"]>;

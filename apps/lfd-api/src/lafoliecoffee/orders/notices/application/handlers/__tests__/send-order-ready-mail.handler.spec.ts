@@ -3,22 +3,22 @@ import type { OrderView } from "@lfd/contracts";
 import {
   customerSubject,
   orderPageLink,
-} from "../../../cancellation/application/commands/__tests__/customer-cancellation-doubles.js";
-import type { CustomerCancellationSubject } from "../../../cancellation/domain/ports/customer-cancellation-subject.reader.js";
-import type { B2bMails } from "../../../../../mail/channels/templates/b2b-mails.js";
-import { OrderReadyFact } from "../../../domain/events/order-ready.fact.js";
-import { OrderMailOrigins } from "../../../domain/ports/order-mail-origins.js";
+} from "../../../../cancellation/application/commands/__tests__/customer-cancellation-doubles.js";
+import type { CustomerCancellationSubject } from "../../../../cancellation/domain/ports/customer-cancellation-subject.reader.js";
+import type { B2bMails } from "../../../../../../mail/channels/templates/b2b-mails.js";
+import { OrderReadyFact } from "../../../../domain/events/order-ready.fact.js";
+import { OrderMailOrigins } from "../../../../domain/ports/order-mail-origins.js";
 import {
   OrderRecipientReader,
   type OrderRecipient,
-} from "../../../domain/ports/order-recipient.reader.js";
-import { OrderReader, type OwnedOrder } from "../../../domain/ports/order.reader.js";
+} from "../../../../domain/ports/order-recipient.reader.js";
+import { OrderReader, type OwnedOrder } from "../../../../domain/ports/order.reader.js";
 import { OrderReadyMail } from "../../services/order-ready-mail.service.js";
 import { SendOrderReadyMail } from "../send-order-ready-mail.handler.js";
-import { AT_PLACEMENT } from "../../../domain/services/order-sheet.js";
-import type { RemainderShipment } from "../../../domain/ports/remainder-shipment.reader.js";
-import { LastMailRequest } from "./order-placed-mail-doubles.js";
-import { FixedRemainders } from "./remainder-shipment-doubles.js";
+import { AT_PLACEMENT } from "../../../../domain/services/order-sheet.js";
+import type { RemainderShipment } from "../../../../domain/ports/remainder-shipment.reader.js";
+import { LastMailRequest } from "../../../../application/handlers/__tests__/order-placed-mail-doubles.js";
+import { FixedRemainders } from "../../../../application/handlers/__tests__/remainder-shipment-doubles.js";
 
 /**
  * Le courriel de mise à disposition. Ce qu'on éprouve ici est ce que l'abonné ne

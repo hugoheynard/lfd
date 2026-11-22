@@ -1,18 +1,18 @@
 import { Injectable } from "@nestjs/common";
 import type { OrderView } from "@lfd/contracts";
 
-import { DEFAULT_MAIL_LOCALE } from "../../../../mail/channels/templates/mail-locale.js";
-import { Mail } from "../../../../mail/channels/requests/mail.js";
-import { OrderMailOrigins } from "../../domain/ports/order-mail-origins.js";
-import { OrderRecipientReader } from "../../domain/ports/order-recipient.reader.js";
-import { OrderReader, type OwnedOrder } from "../../domain/ports/order.reader.js";
-import { RemainderShipmentReader } from "../../domain/ports/remainder-shipment.reader.js";
+import { DEFAULT_MAIL_LOCALE } from "../../../../../mail/channels/templates/mail-locale.js";
+import { Mail } from "../../../../../mail/channels/requests/mail.js";
+import { OrderMailOrigins } from "../../../domain/ports/order-mail-origins.js";
+import { OrderRecipientReader } from "../../../domain/ports/order-recipient.reader.js";
+import { OrderReader, type OwnedOrder } from "../../../domain/ports/order.reader.js";
+import { RemainderShipmentReader } from "../../../domain/ports/remainder-shipment.reader.js";
 import {
   FIRST_SHIPMENT_RANK,
   ShipmentRef,
-} from "../../../../production/channels/commerce/index.js";
-import { OrderManageLink } from "./order-manage-link.js";
-import { clientSheetOf } from "../../domain/services/order-sheet.js";
+} from "../../../../../production/channels/commerce/index.js";
+import { OrderManageLink } from "../../../application/services/order-manage-link.js";
+import { clientSheetOf } from "../../../domain/services/order-sheet.js";
 
 /**
  * **« Votre livraison est en route »** pour UNE commande
