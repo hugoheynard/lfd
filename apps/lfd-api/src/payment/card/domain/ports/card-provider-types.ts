@@ -21,9 +21,8 @@ export interface CreateIntentParams {
 /**
  * **Comment le navigateur fait payer le client** — une instruction neutre du
  * prestataire, que l'adaptateur remplit et que la page lit sans connaître le
- * prestataire (plan
- * `documentation/payment/liens-de-paiement/plan-le-lien-vers-un-sujet.md`,
- * §2.3 bis) :
+ * prestataire (doc
+ * `documentation/payment/les-liens-de-paiement.md`) :
  * - `embedded` — un formulaire du prestataire intégré à notre page, monté avec
  *   sa clé **publique** et un jeton propre à ce paiement (pour Stripe, le
  *   `client_secret` de la PaymentIntent) ;

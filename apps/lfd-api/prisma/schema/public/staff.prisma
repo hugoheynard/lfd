@@ -241,7 +241,7 @@ enum StaffResource {
   staff_access
   staff_notifications
   /// LES DESTINATAIRES DES AVIS — à quels rôles et membres part un avis écrit
-  /// à l'équipe (2026-11-22, `payment/liens-de-paiement/les-liens-de-paiement.md`,
+  /// à l'équipe (2026-11-22, `payment/les-liens-de-paiement.md`,
   /// lot P1c). Accordée à l'écran.
   staff_notice_audiences
 
@@ -577,7 +577,7 @@ model StaffPushSubscription {
 }
 
 /// **Un destinataire d'un avis** écrit à l'équipe (lot P1c,
-/// `documentation/payment/liens-de-paiement/les-liens-de-paiement.md`) : pour
+/// `documentation/payment/les-liens-de-paiement.md`) : pour
 /// un modèle d'e-mail, un RÔLE (`role_key`) ou un MEMBRE (`staff_user_id`) —
 /// l'un des deux exactement (`CHECK staff_notice_audience_one_target`).
 ///

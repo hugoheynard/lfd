@@ -20,9 +20,8 @@ import { RandomTokenGenerator } from "./infrastructure/random-token-generator.js
 import { SettlementFirstCardPaymentReader } from "./infrastructure/settlement-first-card-payment.reader.js";
 
 /**
- * **Les liens de paiement vers un sujet** (plan
- * `documentation/payment/liens-de-paiement/plan-le-lien-vers-un-sujet.md`,
- * §2) : la table `payment.pay_link`, la porte `PayLinks` et la page
+ * **Les liens de paiement vers un sujet** (doc
+ * `documentation/payment/les-liens-de-paiement.md`) : la table `payment.pay_link`, la porte `PayLinks` et la page
  * publique.
  *
  * **Global**, comme `CardPaymentModule` : un bloc métier n'atteint que le

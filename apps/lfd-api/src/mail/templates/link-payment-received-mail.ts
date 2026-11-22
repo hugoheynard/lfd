@@ -5,9 +5,8 @@ import type { LinkPaymentReceivedCopy } from "./copy/mail-copy.model.js";
 import type { MailBody } from "./mail-logo.js";
 
 /**
- * Les données de l'**avis d'un paiement reçu par un lien** (plan
- * `documentation/payment/liens-de-paiement/plan-le-lien-vers-un-sujet.md`,
- * §2.4). Destinataire : la boîte de l'équipe. Tout y est déjà libellé par le
+ * Les données de l'**avis d'un paiement reçu par un lien** (doc
+ * `documentation/payment/les-liens-de-paiement.md`). Destinataire : la boîte de l'équipe. Tout y est déjà libellé par le
  * bloc `payment` : le gabarit ne sait ni ce qu'est une commande, ni ce
  * qu'est une application.
  */

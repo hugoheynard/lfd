@@ -25,7 +25,7 @@ export interface CardPaymentPreparation {
 
 /**
  * D'où naît l'intention, quand ce n'est pas l'écran du sujet : la page d'un
- * lien de paiement (plan des liens, §2.1 bis). La ligne le porte, immuable.
+ * lien de paiement. La ligne le porte, immuable.
  */
 export interface CardPaymentSource {
   readonly payLinkId: string;

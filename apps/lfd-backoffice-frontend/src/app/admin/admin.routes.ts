@@ -103,7 +103,7 @@ export const adminRoutes: Routes = [
       {
         // LES DESTINATAIRES DES AVIS — à qui part un e-mail que le système écrit
         // à l'équipe, sous SON droit (`staff_notice_audiences`, plan
-        // `plan-le-lien-vers-un-sujet.md` §2.4 bis).
+        // `documentation/payment/les-liens-de-paiement.md`).
         path: 'destinataires-des-avis',
         canActivate: [permissionGuard('staff_notice_audiences:read')],
         title: 'Destinataires des avis — LFC B2B admin',

@@ -30,7 +30,7 @@ export interface UnpayableSubjectQuote {
 export type SubjectQuote = PayableSubjectQuote | UnpayableSubjectQuote;
 
 /**
- * **« Combien, et pour qui ? »** (plan des liens, §2.2) — ce que `payment`
+ * **« Combien, et pour qui ? »** — ce que `payment`
  * demande au bloc qui possède un sujet payable par lien. Un port **à part**
  * de `SubjectSettlement` (ISP) : un sujet qui s'encaisse sans lien (la
  * commande) ne l'implémente pas.

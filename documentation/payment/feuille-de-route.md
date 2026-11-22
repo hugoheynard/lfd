@@ -1,9 +1,7 @@
 # Feuille de route du paiement
 
 > 📐 **Feuille de route**, écrite le 2026-11-22 avec Hugo. Ce qui est bâti
-> est décrit dans [`liens-de-paiement/les-liens-de-paiement.md`](liens-de-paiement/les-liens-de-paiement.md) ;
-> le détail des lots en cours est dans
-> [`liens-de-paiement/plan-le-lien-vers-un-sujet.md`](liens-de-paiement/plan-le-lien-vers-un-sujet.md).
+> est décrit dans [`les-liens-de-paiement.md`](les-liens-de-paiement.md).
 > Ce document dit **où va le bloc**, et dans quel ordre. Il se met à jour à
 > chaque lot terminé.
 
@@ -77,8 +75,8 @@ construire avant d'en avoir besoin coûterait sans rien rapporter.
 | 7     | **P2** — relancer un paiement mort                                                                     | révoquer et rouvrir un lien dont l'intention est morte chez le prestataire                                                                                                                                                              | rare avec Stripe                                                                                                                                                                                                                                                     |
 | 8     | **W** — les abonnés du commerce en `lfc.`                                                              | vocabulaire, sans changement de comportement                                                                                                                                                                                            | —                                                                                                                                                                                                                                                                    |
 
-La règle qui décide où va une **nouvelle raison de payer** est au plan
-(§5.7) : sans conséquence au-delà de l'encaissement, c'est une **nature** ;
+La règle qui décide où va une **nouvelle raison de payer** est dans
+[`les-liens-de-paiement.md`](les-liens-de-paiement.md) (§ 3) : sans conséquence au-delà de l'encaissement, c'est une **nature** ;
 avec une conséquence (un document, un rattachement, une déduction), c'est un
 **type de sujet** à elle. La porte du bloc ne change jamais.
 

@@ -30,9 +30,8 @@ export interface MountedCollection {
 }
 
 /**
- * **Le seul endroit de la boutique qui connaît un prestataire de carte** (plan
- * `documentation/payment/liens-de-paiement/plan-le-lien-vers-un-sujet.md`,
- * §2.3 bis). Les écrans lui passent l'instruction de collecte que le serveur
+ * **Le seul endroit de la boutique qui connaît un prestataire de carte** (doc
+ * `documentation/payment/les-liens-de-paiement.md`). Les écrans lui passent l'instruction de collecte que le serveur
  * rend (`CardCollection`) et un nœud où monter le formulaire ; ils ne gardent
  * que leur logique propre (phases, délai, abandon).
  *

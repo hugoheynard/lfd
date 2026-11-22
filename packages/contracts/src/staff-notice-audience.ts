@@ -2,8 +2,8 @@ import { z } from "zod";
 
 /**
  * **Les destinataires des avis** — à qui part un e-mail que le système écrit
- * à l'équipe (plan `documentation/payment/liens-de-paiement/plan-le-lien-vers-un-sujet.md`,
- * §2.4 bis, lot P1c). Un avis se règle par **rôles** et par **membres**
+ * à l'équipe (doc `documentation/payment/les-liens-de-paiement.md`).
+ * Un avis se règle par **rôles** et par **membres**
  * nommés ; sans réglage joignable, il part à la boîte de l'équipe.
  *
  * Seul l'avis « paiement reçu par un lien » se règle ainsi (Hugo,

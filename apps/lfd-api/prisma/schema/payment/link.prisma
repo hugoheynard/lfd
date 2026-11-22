@@ -2,8 +2,8 @@
 // LES LIENS DE PAIEMENT — schéma `payment`
 // ─────────────────────────────────────────────────────────────────────────────
 //
-// Plan `documentation/payment/liens-de-paiement/plan-le-lien-vers-un-sujet.md`,
-// §2.1. Ce que Prisma ne sait pas écrire vit dans
+// Doc `documentation/payment/les-liens-de-paiement.md`.
+// Ce que Prisma ne sait pas écrire vit dans
 // `20261122100000_les_liens_vers_un_sujet` : le CHECK de la révocation, l'index
 // unique partiel d'un lien vivant par sujet, le déclencheur des colonnes
 // immuables et le refus du DELETE.

@@ -17,9 +17,8 @@ import { ViewPayLinkQuery } from "../application/queries/view-pay-link.query.js"
 import type { SubjectQuote } from "../../channels/subjects/linkable-subject.js";
 
 /**
- * **La page publique d'un lien de paiement** (plan
- * `documentation/payment/liens-de-paiement/plan-le-lien-vers-un-sujet.md`,
- * §2.3) — sans compte : le jeton du lien est la seule clé.
+ * **La page publique d'un lien de paiement** (doc
+ * `documentation/payment/les-liens-de-paiement.md`) — sans compte : le jeton du lien est la seule clé.
  *
  * Le jeton voyage dans le CORPS de deux `POST`, jamais dans un chemin de
  * l'API (journaux, `Referer`, scanners de liens). Débit par route et par IP.

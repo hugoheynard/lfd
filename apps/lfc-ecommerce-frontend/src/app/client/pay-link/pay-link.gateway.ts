@@ -24,9 +24,8 @@ export type PayLinkIntentResult =
   | Failed;
 
 /**
- * **La page publique d'un lien de paiement**, côté réseau (plan
- * `documentation/payment/liens-de-paiement/plan-le-lien-vers-un-sujet.md`,
- * §2.3). Sans session : le payeur n'a pas de compte.
+ * **La page publique d'un lien de paiement**, côté réseau (doc
+ * `documentation/payment/les-liens-de-paiement.md`). Sans session : le payeur n'a pas de compte.
  *
  * Le jeton voyage dans le CORPS d'un `POST`, jamais dans une adresse d'API,
  * pour ne pas finir dans un journal.

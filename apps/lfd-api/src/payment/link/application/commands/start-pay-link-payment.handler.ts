@@ -44,8 +44,7 @@ export interface PayLinkPaymentStart {
 }
 
 /**
- * Crée ou relit l'intention du premier paiement d'un sujet, depuis son lien
- * (plan des liens, §2.3).
+ * Crée ou relit l'intention du premier paiement d'un sujet, depuis son lien.
  *
  * L'ordre est celui de la passation : l'intention naît HORS transaction
  * (`prepare`), puis la ligne s'écrit sous le verrou du sujet (`lockSubject`)

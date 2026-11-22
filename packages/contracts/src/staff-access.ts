@@ -703,7 +703,7 @@ export const staffResourceSchema = z.enum([
   /**
    * **Les destinataires des avis** — à quels rôles et à quels membres part un
    * avis que le système écrit à l'équipe, comme « paiement reçu par un lien »
-   * (`documentation/payment/liens-de-paiement/les-liens-de-paiement.md`,
+   * (`documentation/payment/les-liens-de-paiement.md`,
    * lot P1c, 2026-11-22). `read` : voir le réglage ; `write` : le changer.
    * Ajoutée sans être accordée : elle s'accorde à l'écran ; la graine ne la
    * donne qu'à l'administrateur.

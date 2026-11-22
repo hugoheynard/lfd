@@ -1,7 +1,6 @@
 /**
- * E2E des **liens de paiement vers un sujet** (plan
- * `documentation/payment/liens-de-paiement/plan-le-lien-vers-un-sujet.md`,
- * lot P1, §2.1 à §2.3).
+ * E2E des **liens de paiement vers un sujet** (doc
+ * `documentation/payment/les-liens-de-paiement.md`).
  *
  * Ce que seul le vrai SQL prouve :
  * - un seul lien vivant par sujet (l'index partiel), et la révocation posée

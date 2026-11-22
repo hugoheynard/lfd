@@ -96,7 +96,7 @@ function toggled(list: readonly string[], id: string, checked: boolean): readonl
 /**
  * **Destinataires des avis** — pour chaque avis que le système écrit à
  * l'équipe, les rôles et les membres qui le reçoivent. Plan :
- * `documentation/payment/liens-de-paiement/plan-le-lien-vers-un-sujet.md` §2.4 bis.
+ * `documentation/payment/les-liens-de-paiement.md`.
  *
  * Le serveur pose l'ensemble complet : l'écran envoie donc ce qui est coché,
  * jamais un écart, et relit après chaque enregistrement. Rien de coché, c'est

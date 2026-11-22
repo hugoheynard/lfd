@@ -13,7 +13,7 @@ export type StaffAudienceMailDemand<K extends DeferrableMailTemplate> = Omit<
 
 /**
  * **Envoyer un avis à l'équipe** (lot P1c,
- * `documentation/payment/liens-de-paiement/les-liens-de-paiement.md`) : une
+ * `documentation/payment/les-liens-de-paiement.md`) : une
  * porte à part de `Mail` (ISP) — un appelant qui écrit à une personne n'a pas
  * à connaître celle qui écrit à l'équipe. Déclarée et implémentée par le bloc,
  * atteinte en « port uniquement » comme `Mail`.

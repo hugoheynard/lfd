@@ -1,6 +1,6 @@
 import { harness, PAID, payment } from "./record-provider-event-harness.js";
 
-/** L'avis à l'équipe d'un paiement venu d'un lien (§2.4 du plan des liens). */
+/** L'avis à l'équipe d'un paiement venu d'un lien. */
 describe("RecordProviderEventHandler — l'avis d'un paiement par lien", () => {
   it("avise l'équipe après l'écriture et le fait, pour un paiement venu d'un lien", async () => {
     const { timeline, repo, notice, receive } = harness();

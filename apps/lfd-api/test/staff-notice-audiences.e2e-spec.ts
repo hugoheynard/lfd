@@ -1,6 +1,6 @@
 /**
  * E2E **les destinataires des avis** (lot P1c,
- * `documentation/payment/liens-de-paiement/les-liens-de-paiement.md`) : le
+ * `documentation/payment/les-liens-de-paiement.md`) : le
  * réglage chez le staff et la lecture qu'il publie pour le bloc `mail`.
  *
  * Ce que seul le vrai SQL prouve :

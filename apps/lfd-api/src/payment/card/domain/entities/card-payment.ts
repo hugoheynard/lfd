@@ -39,7 +39,7 @@ export interface CardPaymentAttachment {
   readonly role: CardPaymentRole;
   readonly amountCents: number;
   readonly at: Date;
-  /** Posé quand l'intention naît de la page d'un lien (§2.1 bis du plan des liens). */
+  /** Posé quand l'intention naît de la page d'un lien. */
   readonly payLinkId?: string;
 }
 

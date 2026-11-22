@@ -34,7 +34,7 @@ interface SealedLink {
 
 /**
  * Crée une **demande de paiement libre** et ouvre son lien vers la porte du bloc
- * `payment` (plan du lien vers un sujet, §5.1) — dans UNE transaction, sans
+ * `payment` (doc `documentation/payment/les-liens-de-paiement.md`) — dans UNE transaction, sans
  * réseau : le plafond lu maintenant et les termes validés contre lui, la
  * ligne (canal `door`), le lien `PayLinks.open` du sujet `free_charge` au
  * nom de la société, le fait de journal. L'intention chez le prestataire ne

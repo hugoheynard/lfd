@@ -1,8 +1,7 @@
 /**
  * **Comment la page fait payer le client par carte** — une instruction neutre
- * du prestataire, rendue par le serveur à chaque écran qui encaisse (plan
- * `documentation/payment/liens-de-paiement/plan-le-lien-vers-un-sujet.md`,
- * §2.3 bis). La boutique la lit par un seul composant de collecte ; seul ce
+ * du prestataire, rendue par le serveur à chaque écran qui encaisse (doc
+ * `documentation/payment/les-liens-de-paiement.md`). La boutique la lit par un seul composant de collecte ; seul ce
  * composant sait ce qu'est un prestataire.
  *
  * - `embedded` — le formulaire du prestataire, monté dans notre page avec sa

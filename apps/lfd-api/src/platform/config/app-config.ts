@@ -251,8 +251,8 @@ export class AppConfig {
   }
 
   /**
-   * **La clé des empreintes des jetons de lien de paiement** (plan
-   * `plan-le-lien-vers-un-sujet.md`, §2.1) : `token_hash` est le
+   * **La clé des empreintes des jetons de lien de paiement** (doc
+   * `documentation/payment/les-liens-de-paiement.md`) : `token_hash` est le
    * HMAC-SHA-256 du jeton sous cette clé.
    *
    * DÉRIVÉE de la clé du coffre par HKDF-SHA256 sous son étiquette, comme les

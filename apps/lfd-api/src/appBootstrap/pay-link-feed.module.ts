@@ -8,9 +8,8 @@ import {
 } from "../payment/channels/subjects/index.js";
 
 /**
- * **Le fil des liens de paiement, relié** (plan
- * `documentation/payment/liens-de-paiement/plan-le-lien-vers-un-sujet.md`,
- * §2.2) — la figure de `CardPaymentFeedModule` : `payment` DÉCLARE
+ * **Le fil des liens de paiement, relié** (doc
+ * `documentation/payment/les-liens-de-paiement.md`) — la figure de `CardPaymentFeedModule` : `payment` DÉCLARE
  * `LinkableSubjects`, la racine de composition y range les implémenteurs.
  *
  * Un implémenteur aujourd'hui : la demande de paiement libre (`free_charge`,

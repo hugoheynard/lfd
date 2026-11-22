@@ -5,7 +5,7 @@ import type { OrderStatus } from "./order.js";
 /**
  * **Les liens de paiement** — ce que la comptabilité lit et envoie pour faire
  * régler un client par carte. Plan
- * `documentation/payment/liens-de-paiement/les-liens-de-paiement.md`
+ * `documentation/payment/les-liens-de-paiement.md`
  */
 
 /**

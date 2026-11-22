@@ -2,8 +2,8 @@
 
 > **Ouvert le 2026-11-22**, à la demande de Hugo : « note les contrôles à faire
 > en todo, on fera ça plus tard ». Chaque contrôle se raye avec sa date quand
-> il est fait. Les lots et leur détail sont dans
-> [`liens-de-paiement/plan-le-lien-vers-un-sujet.md`](liens-de-paiement/plan-le-lien-vers-un-sujet.md) ;
+> il est fait. Ce qui est bâti est décrit dans
+> [`les-liens-de-paiement.md`](les-liens-de-paiement.md) ;
 > l'ordre général dans [`feuille-de-route.md`](feuille-de-route.md).
 
 ## Déjà faits

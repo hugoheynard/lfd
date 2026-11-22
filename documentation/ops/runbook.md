@@ -1364,7 +1364,7 @@ le même profil que le webhook Resend : la chaîne ne se vérifie qu'en ligne.
 ## Les anciens liens de paiement Stripe Checkout
 
 Les **liens de paiement libres** se paient par la porte du bloc `payment`
-([`les-liens-de-paiement.md`](../payment/liens-de-paiement/les-liens-de-paiement.md),
+([`les-liens-de-paiement.md`](../payment/les-liens-de-paiement.md),
 §2 et §3) : aucun ne passe plus par Stripe Checkout, et l'API ne lit plus
 aucun `checkout.session.*`. Les lignes d'avant (canal `checkout`) sont
 historiques.
@@ -1579,8 +1579,8 @@ requête du point 1.
 
 ## Déployer le vocabulaire du paiement (lot V, `20261122110000_le_vocabulaire_du_paiement`)
 
-> Plan [`payment/liens-de-paiement/plan-le-lien-vers-un-sujet.md`](../payment/liens-de-paiement/plan-le-lien-vers-un-sujet.md),
-> §0.4. Le schéma `card_payment` devient `payment`, ses tables
+> Doc [`payment/les-liens-de-paiement.md`](../payment/les-liens-de-paiement.md),
+> § 7. Le schéma `card_payment` devient `payment`, ses tables
 > `payment`, `refund`, `refund_request` et `takeover` deviennent
 > `card_payment`, `card_refund`, `card_refund_request` et `card_takeover`
 > (`pay_link` garde son nom). **Uniquement des renommages** : aucune ligne

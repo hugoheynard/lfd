@@ -8,7 +8,7 @@
 Un outil de la comptabilité : faire payer par carte un client qui ne doit
 plus passer par le prélèvement. Les liens de paiement, qui servent à faire
 régler par carte, ont leur propre doc :
-[`../../payment/liens-de-paiement/les-liens-de-paiement.md`](../../payment/liens-de-paiement/les-liens-de-paiement.md).
+[`../../payment/les-liens-de-paiement.md`](../../payment/les-liens-de-paiement.md).
 
 ## 1. Le blocage du prélèvement
 

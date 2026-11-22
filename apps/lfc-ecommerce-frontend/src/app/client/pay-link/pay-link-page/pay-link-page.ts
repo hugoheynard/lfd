@@ -57,9 +57,8 @@ export type PayLinkPhase =
 type Payable = Extract<PayLinkView, { readonly payable: true }>;
 
 /**
- * **`/payer/:jeton`** — la page publique d'un lien de paiement (plan
- * `documentation/payment/liens-de-paiement/plan-le-lien-vers-un-sujet.md`,
- * §2.3). Le comptable d'un client y paie sans compte : ni garde, ni espace, ni
+ * **`/payer/:jeton`** — la page publique d'un lien de paiement (doc
+ * `documentation/payment/les-liens-de-paiement.md`). Le comptable d'un client y paie sans compte : ni garde, ni espace, ni
  * menu.
  *
  * Le jeton vient de l'adresse de la page ; il ne part que dans le CORPS des

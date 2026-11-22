@@ -12,8 +12,8 @@ export interface LinkPaymentReceipt {
 }
 
 /**
- * **L'avis à l'équipe d'un paiement reçu par un lien** (plan
- * `plan-le-lien-vers-un-sujet.md`, §2.4). Déclaré par l'encaissement, qui
+ * **L'avis à l'équipe d'un paiement reçu par un lien** (doc
+ * `documentation/payment/les-liens-de-paiement.md`). Déclaré par l'encaissement, qui
  * sait QUAND un paiement est encaissé ; implémenté par les liens
  * (`payment/link/`), qui savent ce que le lien dit de son payeur et de son
  * origine.

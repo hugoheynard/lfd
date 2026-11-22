@@ -478,9 +478,10 @@ src/
 │                   Cf. mail/plan-service-e-mails.md
 ├── payment/      ▸ L'ENCAISSEMENT — encaisse et rembourse pour un sujet
 │                   opaque, sans métier propre, agnostique de l'application et
-│                   du moyen. card/ (la carte), channels/ (ce que les autres
-│                   blocs atteignent) ; link/ viendra avec les liens.
-│                   Cf. payment/liens-de-paiement/plan-le-lien-vers-un-sujet.md
+│                   du moyen. card/ (la carte), link/ (les liens),
+│                   transfer/ (les virements reçus), channels/ (ce que les
+│                   autres blocs atteignent).
+│                   Cf. payment/les-liens-de-paiement.md
 ├── shop-cart/    ▸ LE PANIER — enregistrer et relire le panier en cours, dans
 │                   son schéma `cart`, sans clé étrangère. Sorti des commandes
 │                   le 2026-11-20 ; le chiffrage reste au commerce, qui
@@ -631,8 +632,8 @@ l'atteint pas.
 Hugo ;
 [`documentation/payment/plan-m2-historique-de-transactions.md`](documentation/payment/plan-m2-historique-de-transactions.md),
 §3.1 ; bloc `payment` décidé par Hugo le 2026-11-22,
-[`documentation/payment/liens-de-paiement/plan-le-lien-vers-un-sujet.md`](documentation/payment/liens-de-paiement/plan-le-lien-vers-un-sujet.md),
-§0). Agnostique de l'application et du moyen : il ne sait pas ce qu'est une
+[`documentation/payment/les-liens-de-paiement.md`](documentation/payment/les-liens-de-paiement.md)).
+Agnostique de l'application et du moyen : il ne sait pas ce qu'est une
 commande, seulement `(subject_type, subject_id)`, et range un sous-dossier par
 moyen — `payment/card/` aujourd'hui, `payment/link/` avec les liens ; le
 prélèvement et le virement y viendront le jour où leur mécanique bancaire
@@ -645,8 +646,9 @@ n'importe que `staff` (autorisation), `platform` et le canal `mail/channels/` ;
 `payment → <bloc métier>` reste interdit. Le canal des e-mails sert l'avis à
 la comptabilité d'un paiement par lien encaissé : un besoin de toutes les
 applications qui encaisseront, donc du bloc qui encaisse, pas de chacune
-(§ 2.4 du même plan). Le schéma Postgres reste `card_payment`, et les faits
-`card_payment.*` : ce sont des valeurs écrites, elles ne se renomment pas.
+(§ 5 de la même doc). Son schéma Postgres s'appelle `payment` ; les faits
+gardent leur nom `card_payment.*` : ce sont des valeurs écrites, elles ne se
+renomment pas.
 
 🔴 **`production → lafoliecoffee` est INTERDIT**, et c'est le sens qui compte. Le fournil
 DÉCLARE ce dont il a besoin (`production/channels/commerce/`) et le commerce

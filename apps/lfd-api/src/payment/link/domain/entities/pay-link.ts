@@ -37,8 +37,8 @@ export interface PayLinkOpening {
 }
 
 /**
- * **Un lien de paiement vers un sujet** (plan
- * `plan-le-lien-vers-un-sujet.md`, §2.1) — l'agrégat qui porte sa vie :
+ * **Un lien de paiement vers un sujet** (doc
+ * `documentation/payment/les-liens-de-paiement.md`) — l'agrégat qui porte sa vie :
  * ouvert, puis révoqué une fois, jamais ranimé.
  *
  * Tout ce que le déclencheur `pay_link_guard` tient immuable n'a ici aucun

@@ -19,8 +19,8 @@ import { FreeChargeRefundOutcomes } from "./free-charge-refund-outcomes.js";
 import { FREE_CHARGE_SUBJECT_TYPE } from "./free-charge-subject.js";
 
 /**
- * **La demande de paiement libre, sujet du bloc `payment`** (plan du lien vers un sujet,
- * §5.2 corrigé par §5.6) — l'implémentation `free_charge` du canal retour,
+ * **La demande de paiement libre, sujet du bloc `payment`** (doc
+ * `documentation/payment/les-liens-de-paiement.md`) — l'implémentation `free_charge` du canal retour,
  * reliée par `appBootstrap/card-payment-feed.module.ts`. Chaque méthode qui
  * écrit tourne dans la transaction de `payment`, sous le verrou de la ligne
  * `payment_links` — le même que prend l'annulation (`loadLocked`).

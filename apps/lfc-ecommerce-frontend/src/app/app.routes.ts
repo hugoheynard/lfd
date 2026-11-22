@@ -387,8 +387,8 @@ export const routes: Routes = [
           ),
       },
       {
-        // LE LIEN DE PAIEMENT (plan `liens-de-paiement/plan-le-lien-vers-un-sujet.md`,
-        // §2.3) : le comptable d'un client paie sans compte. Sans garde, sans
+        // LE LIEN DE PAIEMENT (doc `documentation/payment/les-liens-de-paiement.md`) :
+        // le comptable d'un client paie sans compte. Sans garde, sans
         // menu. Le jeton est dans le chemin de la PAGE ; il ne part vers l'API
         // que dans le corps d'un `POST`.
         path: 'payer/:jeton',

@@ -1,6 +1,6 @@
 /**
  * **À qui part un avis** — la lecture que le staff PUBLIE pour le bloc `mail`
- * (lot P1c, `documentation/payment/liens-de-paiement/les-liens-de-paiement.md`),
+ * (lot P1c, `documentation/payment/les-liens-de-paiement.md`),
  * sur le modèle de `StaffContacts` : le staff dit ce qui est à lui, `mail` le
  * prend. Un port étroit (ISP) : ni le réglage, ni l'écran.
  *

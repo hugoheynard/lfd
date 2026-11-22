@@ -24,7 +24,7 @@ import { TokenGenerator } from "../domain/ports/token-generator.js";
 import { payLinkUrl } from "../domain/services/pay-link-url.js";
 
 /**
- * **La porte `PayLinks`, implémentée par le bloc** (plan des liens, §2.2).
+ * **La porte `PayLinks`, implémentée par le bloc**.
  *
  * Aucun appel réseau : `open` écrit dans la transaction de l'appelant, et un
  * second lien vivant sur le même sujet est rendu impossible par l'index

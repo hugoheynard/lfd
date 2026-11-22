@@ -59,8 +59,8 @@ function reactionTo(o: SubjectRefundOutcome): RefundReaction {
 }
 
 /**
- * **Un remboursement d'une demande de paiement libre** (plan du lien vers un sujet,
- * §5.5) : la demande de paiement libre ne change pas d'état — l'argent rendu ne la rouvre
+ * **Un remboursement d'une demande de paiement libre** (doc
+ * `documentation/payment/les-liens-de-paiement.md`) : la demande de paiement libre ne change pas d'état — l'argent rendu ne la rouvre
  * pas, et l'avoir éventuel est un geste humain. Le journal de la société le
  * dit (`payment_link.refunded`) ; un remboursement qui n'a pas rendu l'argent
  * sonne la cloche. Appelé dans la transaction de `payment` : une panne lève,

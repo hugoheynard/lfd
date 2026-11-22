@@ -94,8 +94,8 @@ const BLOCK_OF = {
   mail: "mail",
 
   // ▸ L'ENCAISSEMENT (`payment/`, décidé par Hugo le 2026-11-22 ;
-  //   `documentation/payment/liens-de-paiement/plan-le-lien-vers-un-sujet.md`,
-  //   §0). Sans métier propre, comme `mail` : il encaisse et rembourse pour
+  //   `documentation/payment/les-liens-de-paiement.md`).
+  //   Sans métier propre, comme `mail` : il encaisse et rembourse pour
   //   un sujet opaque, agnostique de l'application et du moyen — la carte
   //   (`payment/card/`) aujourd'hui. Il déclare un canal qu'un autre bloc
   //   implémente (`channels/subjects/`), comme `production/channels/commerce/`.
