@@ -26,6 +26,10 @@
 
 # Partie 1 — L'explication simple
 
+**Le bloc qui encaisse s'appelle `payment`** (lot zéro) : il range la carte
+et les liens, et accueillera un jour le prélèvement et le virement. Il ne
+sait ni pour quelle application il encaisse, ni ce que le paiement règle.
+
 **Un lien de paiement est une porte, pas une dette.** Ce qu'on doit
 s'appelle le **sujet** : une commande, une facture, une régularisation. Le
 lien dit seulement « ici, on paie ce sujet-là, par carte ».
@@ -86,6 +90,59 @@ page `/commandes/:id/regler`, leurs factures acquittées, leurs
 remboursements.
 
 # Partie 2 — La technique
+
+## 0. Lot zéro — le bloc `payment`
+
+Décidé par Hugo le 2026-11-22 : le bloc qui encaisse devient **`payment`**,
+agnostique de l'application **et du moyen**. La carte et le lien en sont les
+deux premiers sous-dossiers ; le prélèvement et le virement y viendront le
+jour où leur mécanique bancaire sortira de la facturation (un chantier à
+part, avec son plan).
+
+```
+src/payment/
+├── card/        l'actuel card-payment, déplacé tel quel
+├── link/        les liens de ce plan (pay_link, PayLinks, la page publique)
+└── channels/    ce que les autres blocs atteignent, rangé sous un titre :
+                 « encaisser par carte », « ouvrir un lien », « les sujets »
+```
+
+Dans la suite de ce plan, `card-payment` désigne `payment/card` après Z.
+
+### 0.1 Ce qui se renomme, et ce qui ne se renomme pas
+
+| Se renomme (du code)                                                                                                                                                                              | Ne se renomme pas (des valeurs)                                           |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| le dossier `src/card-payment/` → `src/payment/card/` (119 fichiers, compté le 2026-11-22)                                                                                                         | le schéma Postgres `card_payment` et ses tables                           |
+| les imports qui l'atteignent (194 fichiers hors du bloc : tests, `appBootstrap/`, `lafoliecoffee/`)                                                                                               | les types de faits `card_payment.settled`, `card_payment.failed`…         |
+| le bloc dans les portes : `context-boundaries`, `prisma-model-ownership`, `journal-tracked`, `controller-buses`, `network-outside-transaction`, les exceptions d'idempotence, et `dev-sweeps.mjs` | les noms des abonnés durables (clés de leurs reçus dans la boîte d'envoi) |
+| la colonne et la ligne `card-payment` de la matrice du CLAUDE.md, et ses paragraphes                                                                                                              | le registre `CARD_ACCOUNTS` et les noms de comptes (`lfc-stripe`)         |
+
+Les valeurs restent celles qui ont été écrites (CLAUDE.md §8, troisième
+exception) : les renommer serait une migration pour rien.
+
+### 0.2 L'ordre
+
+1. **Les portes d'abord** : elles connaissent `payment` avant que le
+   dossier bouge. Une porte qui liste ses blocs en dur ignorerait un dossier
+   neuf, et le déménagement la désarmerait en silence.
+2. **Le déménagement** : `git mv`, puis les imports. **Aucun comportement ne
+   change** : le typecheck des sources et des specs, les specs du bloc et
+   les e2e qui le traversent (`card-*`, `payment-links`, `order-settlement-*`)
+   rendent le même compte avant et après.
+3. **Le CLAUDE.md** : la matrice (colonne et ligne `payment`), et « la carte
+   seulement » devient « un bloc `payment` agnostique de l'application et du
+   moyen ; la carte et le lien aujourd'hui ».
+4. **Ensuite seulement**, P0 puis P1 : les liens naissent dans
+   `payment/link/`.
+
+### 0.3 Les branches en vol
+
+Au 2026-11-22, aucune branche ne modifie `src/card-payment/`, mais quatre
+branches de travail d'agents (`worktree-agent-*`) ajoutent une ou deux
+lignes qui le citent. Avant Z, relire `git branch` : une branche fusionnée
+après Z verra ses imports cassés au typecheck, pas en silence — à corriger
+à la fusion.
 
 ## 1. Ce qui existe, et ce que le plan en garde
 
@@ -454,7 +511,8 @@ rapprocher.
 
 | Lot | Contenu                                                                                                                                                                                                                                                                                                                                     | Dépend de  |
 | --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
-| P0  | l'instruction de collecte neutre (§2.3 bis) : le port, l'adaptateur Stripe, la page `/commandes/:id/regler` passée au composant de collecte partagé — **aucun changement visible**                                                                                                                                                          | —          |
+| Z   | le bloc `payment` : `card-payment` → `payment/card`, les portes d'abord, le CLAUDE.md (§0) — **aucun changement de comportement**                                                                                                                                                                                                           | —          |
+| P0  | l'instruction de collecte neutre (§2.3 bis) : le port, l'adaptateur Stripe, la page `/commandes/:id/regler` passée au composant de collecte partagé — **aucun changement visible**                                                                                                                                                          | Z          |
 | I0  | `isDirectDebit`, `switch` exhaustifs, la porte — **aucun changement de comportement**                                                                                                                                                                                                                                                       | —          |
 | P1  | `card_payment.pay_link`, `PayLinks`, `LinkableSubject`, le registre des origines, la page publique (API et boutique), les tests                                                                                                                                                                                                             | P0         |
 | P1b | l'avis à la comptabilité après encaissement (§2.4), l'adresse par origin, le modèle d'e-mail                                                                                                                                                                                                                                                | P1         |
