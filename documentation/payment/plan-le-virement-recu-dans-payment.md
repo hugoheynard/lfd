@@ -209,6 +209,28 @@ ALTER TABLE payment.transfer_allocation ALTER COLUMN subject_type DROP DEFAULT;
   relation Prisma de la facturation vers le virement.
 - Le fait de journal `bank_transfer.received` ne change pas.
 
+### 3.6 Le contrôle de cohérence (décision de Hugo du 2026-11-22)
+
+Ce qui remplace les clés étrangères, comme dans un service de paiement à
+part : une comparaison régulière des deux côtés, qui alerte.
+
+- **Chaque nuit**, sur le cron de nuit du Worker, une route machine de la
+  facturation (`RecomputeGuard`) : pour ses bons `settled_by_transfer`, elle
+  demande au bloc (`BankTransfers.allocationsOf`, par lots) si le virement
+  cité existe et règle bien la facture du bon ; pour les virements que le
+  bloc a enregistrés depuis le dernier passage (lecture publiée
+  `BankTransfers.recordedSince`), elle vérifie que chaque facture citée
+  existe et que ses bons sont réglés par ce virement.
+- **Un écart** : une ligne au journal technique et **la cloche** du
+  back-office (comptabilité), qui nomme le virement, la facture et l'écart.
+  Rien n'est corrigé tout seul : un écart d'argent se regarde.
+- En régime normal, aucun écart : la requête ne lit que ce qui a bougé
+  depuis le dernier passage (curseur sur `recorded_at`), plus les bons
+  réglés le même jour.
+- C'est la première pièce du rapprochement de la feuille de route
+  ([`feuille-de-route.md`](feuille-de-route.md), §3) : le jour où les relevés
+  arriveront tout seuls, la même mécanique comparera aussi la banque.
+
 ### 3.5 Les portes
 
 - `lint:prisma-model-ownership` : les deux modèles appartiennent à
@@ -271,7 +293,7 @@ s'affiche toujours « réglée le … ».
 | 1   | BLOQUANT — un **quatrième lecteur** oublié : `prisma-unpaid-transfer-invoices.reader.ts` fait une anti-jointure `bankTransfer: null` que le canal ne sait pas servir sans « tout charger puis filtrer »  | **La facturation lit sa propre trace.** Elle sait déjà quelle facture elle a réglée : ses bons portent `order_collection.bank_transfer_id` (état `settled_by_transfer`). « À régler » et `settledByTransferId` se lisent sur cette trace, dans le schéma `public`, en une requête (SQL écrit à la main si la relation Prisma `invoice → bons` n'existe pas). Seul le **jour de réception** se lit au bloc, par lot d'identifiants (`allocationsOf`)                                                                        |
 | 2   | BLOQUANT — les e2e lisent les modèles renommés                                                                                                                                                           | ils sont **réécrits** : `bank-transfer-received` (l. 63, 64, 101, 119), `bank-transfer-reads` (l. 52), `intent-key-content` (l. 101, 112), plus `bank-transfer-doubles.ts` et `bank-transfer.providers.ts`. Leurs attentes métier ne changent pas                                                                                                                                                                                                                                                                          |
 | 3   | BLOQUANT — le SQL du §3.3 est incomplet                                                                                                                                                                  | le `migration.sql` écrit **tout** : `DROP INDEX received_bank_transfer_invoice_invoice_id_key`, la clé primaire `(transfer_id, subject_type, subject_id)`, l'unique `(subject_type, subject_id)`, chaque contrainte et index renommés aux noms que Prisma attend, `DROP TRIGGER` ×2 avant `DROP FUNCTION public.received_bank_transfer_append_only`. Le lot V n'est pas un précédent (aucune FK n'y traversait) : cette migration est relue par `lecteur-de-migrations` et `prisma migrate diff` doit être vide après elle |
-| 4   | SÉRIEUX — trois refus en base disparaissent (FK)                                                                                                                                                         | **Assumé, à confirmer par Hugo** : une référence entre blocs est un identifiant opaque (§1 et §3 du `CLAUDE.md`). Ce qui tient à la place : la même transaction écrit le virement puis les bons, avec **le même identifiant** (n° 8), et un `CHECK subject_type IN ('invoice')` borne les valeurs                                                                                                                                                                                                                          |
+| 4   | SÉRIEUX — trois refus en base disparaissent (FK)                                                                                                                                                         | **Tranché par Hugo le 2026-11-22 : « le pro »** — aucune clé entre les blocs, comme un service de paiement à part ; la cohérence tient par (a) le même identifiant écrit des deux côtés par un seul geste (n° 8), (b) l'ajout seul des deux côtés, (c) **un contrôle de cohérence** (§3.6) qui compare chaque nuit les deux côtés et sonne au premier écart. `CHECK subject_type IN ('invoice')`                                                                                                                           |
 | 5   | SÉRIEUX — le retour arrière remet des FK qui peuvent échouer                                                                                                                                             | le fichier de retour arrière porte d'abord les **requêtes d'orphelins** (aucune ligne attendue), puis les FK. Avec 0 ligne aujourd'hui, le risque ne naît qu'avec les premières saisies                                                                                                                                                                                                                                                                                                                                    |
 | 6   | SÉRIEUX — `CardSubject` est le type du port de la carte                                                                                                                                                  | le canal reçoit un type à lui, **`PaymentSubject`** (`{ type, id }`), dans `payment/channels/subjects/` ; `CardSubject` n'est pas touché. `CHECK subject_type IN ('invoice')`                                                                                                                                                                                                                                                                                                                                              |
 | 7   | SÉRIEUX — « somme des parts = montant » et la référence ≤ 140 jugées deux fois                                                                                                                           | **défense en profondeur, nommée** : la facturation juge en premier avec ses mots ; le bloc refuse ce qui contredirait sa propre règle. Un test d'application vérifie que la saisie qui passe le jugement de la facturation passe le bloc                                                                                                                                                                                                                                                                                   |
