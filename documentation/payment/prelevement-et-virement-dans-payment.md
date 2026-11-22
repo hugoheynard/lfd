@@ -196,3 +196,34 @@ payment/
 | La pré-notification : obligation tenue par le bloc, contenu par la facturation (§1.2) ?                                                    | Hugo, puis `vitruve` |
 | ~~Le vocabulaire des sous-dossiers~~ : un sous-dossier par moyen, `payment/transfer/` et `payment/sepa-debit/` (Hugo, 2026-11-22, §3.3)    | tranché              |
 | Le dossier `lafoliecoffee/payments/` (mandats et demandes libres) : il se vide en D2 ; que deviennent les demandes libres, qui y restent ? | à trancher en D2     |
+
+## 5. 🔁 Piste à revoir : qui possède quoi (Hugo, 2026-11-22)
+
+> Notée à la demande de Hugo comme **piste à revoir** avant D2 : « je pense
+> que c'est la bonne découpe ». Elle corrige le §1.1, qui faisait entrer
+> dans le bloc tout le « compte créancier » de l'entité.
+
+**L'entité juridique ne rejoint pas `payment`.** Raison sociale, SIREN/SIRET,
+TVA, adresse, logo, numérotation : c'est l'identité de qui facture, elle
+reste en facturation. Seul son **compte d'encaissement** est de la mécanique.
+
+|               | Possédé par l'application (la facturation)                           | Possédé par `payment`                                                                                                                            |
+| ------------- | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Côté émetteur | l'entité juridique, et **quel compte elle utilise** (un identifiant) | le **compte d'encaissement** : IBAN, BIC, ICS, nom du titulaire, confirmation aux quatre yeux — une configuration du bloc, comme `CARD_ACCOUNTS` |
+| Côté client   | la société cliente, son moyen choisi, ses factures                   | le **mandat** et l'IBAN du client, dans un coffre, et la vie du mandat (RUM, `FRST`/`RCUR`, modification, caducité)                              |
+| La demande    | « prélève 840 € au mandat M, pour FA-001 et FA-002, le 5 »           | le lot, le `pain.008`, le calendrier, les rejets, puis chaque sujet prévenu                                                                      |
+
+**Pourquoi le mandat et l'IBAN du client restent au bloc**, et ne sont pas
+renvoyés par l'application à chaque demande : le prélèvement a une mémoire
+imposée (séquence, modification signalée à la banque, rejet rattaché au
+débit d'origine, caducité). Sans elle dans le bloc, chaque application
+réécrirait ces règles. C'est la forme de Stripe, GoCardless ou Adyen : un
+coffre de moyens de paiement, et le commerçant n'envoie qu'une référence.
+
+**Conséquences** :
+
+- D2 devient « **le compte d'encaissement** » (et non « le compte
+  créancier ») ; la facturation lit l'IBAN à imprimer par une lecture publiée ;
+- la colonne `payment.transfer_received.received_into` (lot D1) porte
+  aujourd'hui l'identifiant de l'entité : en D2, elle devient l'identifiant
+  du compte d'encaissement (0 virement au 2026-11-22, rien à convertir).
