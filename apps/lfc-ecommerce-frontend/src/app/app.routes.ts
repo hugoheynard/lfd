@@ -12,6 +12,7 @@ import { pageTitle } from './client/client-title.strategy';
 import { PRODUCT_SEGMENT } from '@lfd/contracts/product-path';
 import { PIECE_SKU_PARAM } from './client/shop/piece-route';
 import { noProVisitGuard } from './client/shop/pro-visit.guard';
+import { settleGuard } from './client/commande/reglement-page/settle.guard';
 import { FEATURE_DASHBOARD, FEATURE_PRO_SPACE } from './feature-flags';
 
 /**
@@ -55,17 +56,8 @@ const proRoutes: Routes = FEATURE_PRO_SPACE
       // `buildDemoOrders`, des relevés mensuels dont le règlement ne changeait
       // qu'une couleur, et des changements de régime inventés — sous un en-tête
       // La Folie Coffee. La liste réelle est `/mes-commandes`, servie par
-      // l'API. Le DÉTAIL et le RÈGLEMENT ci-dessous restent : eux lisent le
-      // serveur.
-      {
-        // AVANT `commandes/:id` : sans cela le segment `regler` serait lu comme la
-        // suite d'un identifiant, et le lien de règlement ouvrirait le détail.
-        path: 'commandes/:id/regler',
-        title: 'Régler ma commande — La Folie Coffee B2B',
-        canActivate: [authenticatedGuard],
-        loadComponent: () =>
-          import('./legacy/commandes/reglement-page/reglement-page').then((m) => m.ReglementPage),
-      },
+      // l'API. Le DÉTAIL ci-dessous reste : il lit le serveur. Le règlement se
+      // fait sur `/reglement/:id`.
       {
         path: 'commandes/:id',
         title: 'Commande — La Folie Coffee B2B',
@@ -339,7 +331,9 @@ export const routes: Routes = [
         path: 'reglement/:id',
         data: pageTitle('payment'),
         // En visite pro, on ne règle pas : la connexion d'abord (2026-10-19).
-        canActivate: [noProVisitGuard],
+        // Sans le paiement en mémoire, un client connecté seulement : c'est
+        // ici qu'arrive un lien de règlement envoyé ou copié.
+        canActivate: [noProVisitGuard, settleGuard],
         loadComponent: () =>
           import('./client/commande/reglement-page/reglement-page').then((m) => m.ReglementPage),
       },

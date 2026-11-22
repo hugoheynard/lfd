@@ -66,7 +66,7 @@ describe("ListOrdersAwaitingPaymentHandler", () => {
         placedAt: PLACED.toISOString(),
         status: "placed",
         paymentStatus: "pending",
-        paymentUrl: "https://app.lfc.test/commandes/order_1/regler",
+        paymentUrl: "https://app.lfc.test/reglement/order_1",
       },
     ]);
   });

@@ -58,7 +58,7 @@ describe('routeAfterSwitch — où l’on va après avoir changé d’espace', (
     ['/mes-commandes/retrait/cmv72m88s00071s0965nissyx', false],
     ['/mes-commandes/cmv72m88s00071s0965nissyx', false],
     ['/reglement/cmv72m88s00071s0965nissyx?retour=1', true],
-    ['/commandes/c1/regler', false],
+    ['/commandes/c1', false],
   ])('quitte l’écran d’une commande pour la liste : %s', (url, personal) => {
     expect(routeAfterSwitch(url, personal)).toBe('/mes-commandes');
   });

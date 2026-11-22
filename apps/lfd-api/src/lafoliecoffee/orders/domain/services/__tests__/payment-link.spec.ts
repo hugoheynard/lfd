@@ -3,13 +3,13 @@ import { awaitsCardPayment, paymentUrlFor } from "../payment-link.js";
 describe("paymentUrlFor", () => {
   it("compose le lien vers l'espace client", () => {
     expect(paymentUrlFor("https://boutique.lfc.fr", "order_1")).toBe(
-      "https://boutique.lfc.fr/commandes/order_1/regler",
+      "https://boutique.lfc.fr/reglement/order_1",
     );
   });
 
   it("ne double pas la barre oblique quand la racine en porte déjà une", () => {
     expect(paymentUrlFor("https://boutique.lfc.fr/", "order_1")).toBe(
-      "https://boutique.lfc.fr/commandes/order_1/regler",
+      "https://boutique.lfc.fr/reglement/order_1",
     );
   });
 
@@ -22,7 +22,7 @@ describe("paymentUrlFor", () => {
 
   it("échappe l'identifiant plutôt que de le coller tel quel", () => {
     expect(paymentUrlFor("https://boutique.lfc.fr", "a/b")).toBe(
-      "https://boutique.lfc.fr/commandes/a%2Fb/regler",
+      "https://boutique.lfc.fr/reglement/a%2Fb",
     );
   });
 });

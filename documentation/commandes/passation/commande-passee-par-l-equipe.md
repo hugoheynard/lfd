@@ -103,7 +103,7 @@ Deux modes, et pas de troisième :
 | `settlement` | Ce qui se passe                                                                    |
 | ------------ | ---------------------------------------------------------------------------------- |
 | `account`    | `payment_status: not_required` — à facturer. **Refusé** sans crédit accordé (409). |
-| `link`       | Intention Stripe + une URL que le client suit lui-même (`/commandes/:id/regler`).  |
+| `link`       | Intention Stripe + une URL que le client suit lui-même (`/reglement/:id`).         |
 
 Il n'y a délibérément pas de « carte saisie au comptoir » : un numéro dicté au
 téléphone et tapé par un commercial est exactement ce qu'on ne veut pas rendre

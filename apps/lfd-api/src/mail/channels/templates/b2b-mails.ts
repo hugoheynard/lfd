@@ -222,7 +222,7 @@ export interface B2bMails {
    * `les-liens-de-paiement.md`). Destinataire :
    * l'acheteur.
    *
-   * Le seul courriel qui porte le lien `/commandes/:id/regler` : l'accusé de
+   * Le seul courriel qui porte le lien `/reglement/:id` : l'accusé de
    * passation ne le porte pas, et le courriel de refus pointe vers l'écran de
    * reprise du règlement. Il part à la main, quand quelqu'un a constaté qu'une
    * commande attend encore son argent.

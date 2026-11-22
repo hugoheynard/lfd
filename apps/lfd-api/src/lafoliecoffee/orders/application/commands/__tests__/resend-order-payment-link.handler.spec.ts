@@ -121,7 +121,7 @@ describe("ResendOrderPaymentLinkHandler", () => {
       data: {
         reference: "ORD-4812",
         totalCents: 14_400,
-        settleUrl: "https://app.lfc.test/commandes/order_1/regler",
+        settleUrl: "https://app.lfc.test/reglement/order_1",
       },
     });
   });

@@ -67,7 +67,7 @@ const ORDER_SCOPED_SCREENS: readonly RegExp[] = [
   /^\/mes-commandes\/retrait\/[^/]+$/u,
   /^\/mes-commandes\/[^/]+$/u,
   /^\/reglement\/[^/]+$/u,
-  /^\/commandes\/[^/]+(\/regler)?$/u,
+  /^\/commandes\/[^/]+$/u,
 ];
 
 /**

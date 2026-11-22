@@ -237,7 +237,7 @@ describe("2a — les commandes à régler par carte", () => {
     expect(rows[0]).toMatchObject({
       companyId,
       paymentStatus: "pending",
-      paymentUrl: `https://app.lfc.test/commandes/${pending}/regler`,
+      paymentUrl: `https://app.lfc.test/reglement/${pending}`,
     });
   });
 
@@ -252,7 +252,7 @@ describe("2a — les commandes à régler par carte", () => {
     expect(mails).toHaveLength(1);
     expect(mails[0]).toMatchObject({
       to: "acheteur@carte.fr",
-      data: { settleUrl: `https://app.lfc.test/commandes/${orderId}/regler` },
+      data: { settleUrl: `https://app.lfc.test/reglement/${orderId}` },
     });
   });
 

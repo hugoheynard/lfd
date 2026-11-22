@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { httpErrorMessage } from '@lfd/endpoints';
-import type { ClientSheet, OrderPaymentIntent, CustomerOrderView } from '@lfd/contracts';
+import type { ClientSheet, CustomerOrderView } from '@lfd/contracts';
 import { firstValueFrom } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
 
@@ -72,23 +72,6 @@ export class OrdersService {
       this.http.get<ClientSheet>(`${AUTH_CONFIG.apiBaseUrl}/orders/${encodeURIComponent(id)}/bon`, {
         headers: { Authorization: `Bearer ${token}` },
       }),
-    );
-  }
-
-  /**
-   * De quoi **régler** une commande laissée en attente (`GET /orders/:id/payment`).
-   *
-   * Le `clientSecret` n'est jamais dans `CustomerOrderView` : il ne descend que lorsque
-   * le client demande explicitement à payer. C'est la cible du lien qu'un
-   * commercial transmet après avoir saisi une commande au téléphone.
-   */
-  async paymentFor(id: string): Promise<OrderPaymentIntent> {
-    const token = await firstValueFrom(this.auth.accessToken$());
-    return firstValueFrom(
-      this.http.get<OrderPaymentIntent>(
-        `${AUTH_CONFIG.apiBaseUrl}/orders/${encodeURIComponent(id)}/payment`,
-        { headers: { Authorization: `Bearer ${token}` } },
-      ),
     );
   }
 

@@ -1035,7 +1035,7 @@ describe("PlaceOrderForCustomerHandler — le règlement", () => {
 
     expect(intents.intent).toEqual({ subjectType: "order", amountCents: 400, tag: "c1" });
     expect(sink.placed?.paymentStatus).toBe("pending");
-    expect(result.paymentUrl).toBe("https://boutique.lfc.fr/commandes/order_1/regler");
+    expect(result.paymentUrl).toBe("https://boutique.lfc.fr/reglement/order_1");
   });
 
   it("lien SANS racine cliente configurée : la commande passe, sans lien", async () => {
@@ -1668,7 +1668,7 @@ describe("PlaceOrderForCustomerHandler — une fois par intention", () => {
     const second = await placing.execute(placement("staff_1", body, key));
 
     expect(second).toEqual(first);
-    expect(first.paymentUrl).toBe("https://boutique.lfc.fr/commandes/order_1/regler");
+    expect(first.paymentUrl).toBe("https://boutique.lfc.fr/reglement/order_1");
     expect(placements).toHaveLength(1);
     expect(cards.prepared).toBe(1);
   });

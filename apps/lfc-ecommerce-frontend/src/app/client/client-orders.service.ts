@@ -26,6 +26,7 @@ import { switchMap } from 'rxjs/operators';
 
 import { AUTH_CONFIG } from '../auth/auth.config';
 import { AuthFacade } from '../auth/auth.facade';
+import { HeldOrderPayment } from './held-order-payment.service';
 import { ClientBudgetCommitment } from './cart/budget-commitment.service';
 import { ClientCart } from './cart/client-cart.service';
 import { SalesTermsConsent } from './cart/sales-terms-consent.service';
@@ -367,16 +368,8 @@ export class ClientOrders {
     });
   }
 
-  /**
-   * L'intention rendue à la passation, gardée le temps d'un écran.
-   *
-   * Elle évite à la page de règlement un aller-retour, et surtout un second
-   * appel à Stripe pour un secret qu'on vient de recevoir. Elle n'est pas
-   * persistée : un secret de paiement n'a rien à faire dans le stockage du
-   * navigateur, et la page sait le redemander (`GET /orders/:id/payment`) quand
-   * elle ne l'a plus — un rechargement, un lien rouvert plus tard.
-   */
-  private readonly intent = signal<{ orderId: string; payment: OrderPaymentIntent } | null>(null);
+  /** Le paiement de la commande tout juste passée (voir `HeldOrderPayment`). */
+  private readonly intent = inject(HeldOrderPayment).intent;
 
   /** La dernière passée — celle que la confirmation montre. */
   readonly latest = computed<PlacedOrder | null>(() => this.placed()[0] ?? null);

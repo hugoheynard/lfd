@@ -5,7 +5,7 @@ import type { OrderStatus, PaymentStatus } from "@lfd/contracts";
  * et nulle part ailleurs : c'est le backend qui fabrique le lien, et il doit
  * tomber sur une route que le front sert réellement.
  */
-const SETTLE_PATH = "commandes";
+const SETTLE_PATH = "reglement";
 
 /**
  * Le **lien de règlement** d'une commande, ou `null` si l'espace client n'a pas
@@ -21,7 +21,7 @@ export function paymentUrlFor(clientBaseUrl: string | null, orderId: string): st
     return null;
   }
   const root = clientBaseUrl.replace(/\/+$/u, "");
-  return `${root}/${SETTLE_PATH}/${encodeURIComponent(orderId)}/regler`;
+  return `${root}/${SETTLE_PATH}/${encodeURIComponent(orderId)}`;
 }
 
 /** Les règlements qu'un lien peut encore solder : en attente, ou refusé et à reprendre. */
