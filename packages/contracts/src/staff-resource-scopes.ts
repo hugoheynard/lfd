@@ -373,6 +373,11 @@ export const STAFF_RESOURCE_SCOPES: Readonly<Record<StaffResource, StaffResource
     write:
       "Marquer une notification traitée, pour toute l'équipe — et, depuis l'écran actuel, activer la poussée sur son appareil.",
   },
+  staff_notice_audiences: {
+    read: "Voir à quels rôles et à quels membres partent les avis que le système écrit à l'équipe, comme « paiement reçu par un lien ».",
+    write:
+      "Choisir ces rôles et ces membres. Sans personne de joignable, l'avis part à la boîte de l'équipe.",
+  },
   mail_templates: {
     read: "Ouvrir l'éditeur d'e-mails : la liste des e-mails, l'arrangement de chacun, ses phrases, son historique et son aperçu.",
     write:

@@ -240,6 +240,10 @@ enum StaffResource {
 
   staff_access
   staff_notifications
+  /// LES DESTINATAIRES DES AVIS — à quels rôles et membres part un avis écrit
+  /// à l'équipe (2026-11-22, `payment/liens-de-paiement/les-liens-de-paiement.md`,
+  /// lot P1c). Accordée à l'écran.
+  staff_notice_audiences
 
   /// LES MODÈLES D'E-MAILS — l'éditeur par blocs : lire, enregistrer, publier,
   /// revenir au modèle d'origine (2026-11-07,
@@ -347,6 +351,9 @@ model StaffUser {
 
   /// Les écarts au rôle, pour cette personne.
   overrides StaffPermissionOverride[]
+
+  /// Les avis auxquels la personne est nommée destinataire.
+  noticeAudiences StaffNoticeAudience[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -566,5 +573,39 @@ model StaffPushSubscription {
 
   @@index([staffUserId])
   @@map("staff_push_subscriptions")
+  @@schema("public")
+}
+
+/// **Un destinataire d'un avis** écrit à l'équipe (lot P1c,
+/// `documentation/payment/liens-de-paiement/les-liens-de-paiement.md`) : pour
+/// un modèle d'e-mail, un RÔLE (`role_key`) ou un MEMBRE (`staff_user_id`) —
+/// l'un des deux exactement (`CHECK staff_notice_audience_one_target`).
+///
+/// Une ligne retirée à l'écran s'efface : c'est un réglage, pas une trace ; la
+/// trace est le fait `staff.notice_audience_changed`. Les clés étrangères sont
+/// en `RESTRICT` : un rôle ou une fiche visés ne disparaissent pas sous l'avis.
+model StaffNoticeAudience {
+  /// ULID (fourni par l'`IdGenerator`).
+  id String @id
+
+  /// La clé du modèle d'e-mail (`staff.link-payment-received`).
+  template String
+
+  /// Le rôle visé, sans clé étrangère : une migration ne nomme pas
+  /// `staff_role_definitions` (`lint:no-role-grants-in-migrations`). L'agrégat
+  /// refuse un rôle inconnu ou archivé ; un rôle disparu ne vise plus personne.
+  roleKey String? @map("role_key")
+
+  staffUserId String?    @map("staff_user_id")
+  staffUser   StaffUser? @relation(fields: [staffUserId], references: [id], onDelete: Restrict)
+
+  /// L'auteur du réglage : l'id de SA fiche, sans clé étrangère (comme
+  /// `granted_by_staff_id` des dérogations).
+  createdByStaffId String   @map("created_by_staff_id")
+  createdAt        DateTime @map("created_at") @db.Timestamptz(3)
+
+  @@unique([template, roleKey])
+  @@unique([template, staffUserId])
+  @@map("staff_notice_audience")
   @@schema("public")
 }

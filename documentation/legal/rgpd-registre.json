@@ -2457,6 +2457,24 @@
       "information": false
     },
     {
+      "colonne": "public.staff_notice_audience.created_by_staff_id",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a réglé un destinataire d'un avis à l'équipe (`staff_notice_audience`, les-liens-de-paiement.md). Conservée tant que le réglage existe : la ligne s'efface quand le destinataire est retiré à l'écran.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.staff_notice_audience.staff_user_id",
+      "personne": "staff",
+      "categorie": "identite",
+      "finalite": "Le membre du staff nommé destinataire d'un avis à l'équipe (« paiement reçu par un lien ») : lui écrire l'avis. Conservée tant que le réglage existe : la ligne s'efface quand le membre est retiré à l'écran.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
       "colonne": "public.staff_push_subscriptions.auth",
       "personne": "staff",
       "categorie": "appareil",
@@ -2994,7 +3012,7 @@
       "colonne": "mail.mail_request.recipient",
       "personne": "client",
       "categorie": "identite",
-      "finalite": "L'adresse du destinataire d'un e-mail envoyé (client, parfois un membre du staff) : suivre ce qui est parti, à qui. À supprimer 1 an après l'envoi, l'échec ou le refus ; jamais tant que la demande est en attente (Hugo, 2026-11-06, plan-service-e-mails.md § 7). ⚠️ Durée décidée le 2026-11-06, purge NON activée (à blanc) : le passage nocturne compte ce qu'il supprimerait et ne supprime rien tant que Hugo ne l'a pas activée (`MAIL_REQUEST_PURGE` / `OUTBOX_PURGE` = `on`).",
+      "finalite": "L'adresse du destinataire d'un e-mail envoyé — un client, ou un membre du staff : les avis à l'équipe partent à chaque membre réglé (Admin › Destinataires des avis, les-liens-de-paiement.md), à défaut à la boîte de l'équipe : suivre ce qui est parti, à qui. À supprimer 1 an après l'envoi, l'échec ou le refus ; jamais tant que la demande est en attente (Hugo, 2026-11-06, plan-service-e-mails.md § 7). ⚠️ Durée décidée le 2026-11-06, purge NON activée (à blanc) : le passage nocturne compte ce qu'il supprimerait et ne supprime rien tant que Hugo ne l'a pas activée (`MAIL_REQUEST_PURGE` / `OUTBOX_PURGE` = `on`).",
       "conservation": {
         "jours": 365
       },

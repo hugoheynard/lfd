@@ -133,6 +133,7 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
       'staff_access:read',
       'b2b_feature_access:read',
       'activity:read',
+      'staff_notice_audiences:read',
       'lfd_webhooks:read',
     ],
   },
@@ -155,6 +156,9 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   // Le webhook de la vitrine, venu de Gestion Boutique le 2026-10-19, sous le
   // droit que ses routes serveur opposent (`@AdminSurface("lfd_webhooks")`).
   'admin/webhook-vitrine': 'lfd_webhooks:read',
+  // À qui part un avis de l'équipe, sous le droit que la route serveur oppose
+  // (`@AdminSurface("staff_notice_audiences")`).
+  'admin/destinataires-des-avis': 'staff_notice_audiences:read',
 
   // Son PROPRE périmètre, et pas `settings:read` : regarder la flotte n'est pas
   // la régler. Le jour où l'un s'ouvre à quelqu'un, l'autre n'a aucune raison

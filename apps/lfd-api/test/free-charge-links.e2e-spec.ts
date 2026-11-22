@@ -13,8 +13,9 @@
  *   annule l'intention ; une annulation qui croise l'ouverture de la page
  *   est tranchée sous le verrou de la ligne ;
  * - payé après annulation : l'argent est gardé, la cloche sonne une fois ;
- * - le paiement demande UN avis à la boîte de l'équipe, et un webhook rejoué
- *   n'en demande pas un second.
+ * - le paiement demande l'avis à l'équipe : un par membre joignable des
+ *   rôles réglés, ou UN à la boîte de l'équipe sans réglage ; un webhook
+ *   rejoué n'en demande pas d'autre.
  *
  * Frontières doublées : la signature du jeton staff, le prestataire de carte,
  * et la racine publique de l'origine.
@@ -29,6 +30,7 @@ import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js
 import { MAILER } from "../src/mail/templates/mailer.tokens.js";
 import { AppConfig, type MailerConfig } from "../src/platform/config/app-config.js";
 import { CompanyStatus } from "../src/platform/database/client/client.js";
+import { staffWithRole } from "./delivery-driver-scene.js";
 import { bootstrapE2e, daysAgo, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { cardPaid, E2eCardProvider, E2eCardProviders, recordCardEvent } from "./card-payments.js";
 import { createCompany } from "./factories.js";
@@ -244,7 +246,7 @@ describe("payer par la porte", () => {
 });
 
 describe("l'avis à l'équipe d'un paiement par lien", () => {
-  it("demande UN e-mail staff.link-payment-received, et pas un second sur un webhook rejoué", async () => {
+  it("sans réglage : UN e-mail à la boîte de l'équipe, et pas un second sur un webhook rejoué", async () => {
     const created = await create();
     const providerRef = await startPaying(created.url);
 
@@ -260,7 +262,7 @@ describe("l'avis à l'équipe d'un paiement par lien", () => {
     expect(requests).toHaveLength(1);
     expect(requests[0]).toMatchObject({
       recipient: STAFF_INBOX,
-      idempotencyKey: `mail:payment.link_paid:${payment.id}`,
+      idempotencyKey: `mail:payment.link_paid:${payment.id}:inbox`,
     });
     await ctx.drain();
     const notices = sentMails.filter((mail) => mail.template === "staff.link-payment-received");
@@ -274,6 +276,43 @@ describe("l'avis à l'équipe d'un paiement par lien", () => {
       linkCreatedAutomatically: false,
       linkAuthorName: "Opérateur E2E",
       refused: false,
+    });
+  });
+});
+
+describe("l'avis réglé par rôle (lot P1c)", () => {
+  it("un e-mail par membre actif du rôle, clé suffixée de son id ; rien de plus au rejeu", async () => {
+    await staff()
+      .post("/admin/staff-roles")
+      .send({
+        key: "compta-liens",
+        label: "Compta",
+        grants: [{ resource: "b2b_accounting", action: "read" }],
+      })
+      .expect(201);
+    const anne = await staffWithRole(ctx, "anne-compta", "compta-liens");
+    const bruno = await staffWithRole(ctx, "bruno-compta", "compta-liens");
+    await ctx.prisma.staffUser.update({ where: { id: bruno.id }, data: { status: "suspended" } });
+    await staff()
+      .put("/admin/staff-notice-audiences/staff.link-payment-received")
+      .send({ roleKeys: ["compta-liens"], staffUserIds: [] })
+      .expect(204);
+    const created = await create();
+    const providerRef = await startPaying(created.url);
+
+    await cardPaid(ctx, providerRef);
+    await cardPaid(ctx, providerRef);
+
+    const payment = await ctx.prisma.cardPayment.findFirstOrThrow({
+      where: { subjectType: "free_charge", subjectId: created.id },
+    });
+    const requests = await ctx.prisma.mailRequest.findMany({
+      where: { template: "staff.link-payment-received" },
+    });
+    expect(requests).toHaveLength(1);
+    expect(requests[0]).toMatchObject({
+      recipient: "anne-compta@lfc.test",
+      idempotencyKey: `mail:payment.link_paid:${payment.id}:${anne.id}`,
     });
   });
 });

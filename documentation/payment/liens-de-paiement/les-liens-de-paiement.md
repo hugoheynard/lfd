@@ -232,9 +232,9 @@ sequenceDiagram
   `LinkableSubject` (`quote`), que chaque bloc sujet implémente.
 - **L'avis à l'équipe** (`apps/lfd-api/src/payment/link/application/link-payment-mail-notice.ts`) :
   chaque paiement encaissé par un lien demande l'e-mail
-  `staff.link-payment-received` à la boîte de l'équipe
-  (`mailerConfig().staffInbox`), dans la transaction qui enregistre le
-  paiement, après la réponse du sujet. Il dit le montant, le canal (le compte
+  `staff.link-payment-received` **à l'équipe**, dans la transaction qui
+  enregistre le paiement, après la réponse du sujet (ses destinataires :
+  le point suivant). Il dit le montant, le canal (le compte
   et son prestataire), le client (`payer_label`), l'application (le libellé
   de l'origine), ce qui est réglé (`SubjectSettlement.describe`, avec le
   bouton vers l'écran du back-office), la provenance du lien (« créé par
@@ -244,9 +244,41 @@ sequenceDiagram
   sur le lien (`pay_link.created_by_label`), donné par l'appelant à
   l'ouverture : le bloc ne lit pas l'annuaire du staff. La clé
   (`mail:payment.link_paid:<paiement>`) et l'encaissement rejoué qui ne
-  repasse pas `paid` empêchent un second avis. Sans boîte configurée, rien ne
-  part et un avertissement le journalise. Un paiement de la boutique, sans
-  lien, n'envoie pas cet avis.
+  repasse pas `paid` empêchent un second avis. Un paiement de la boutique,
+  sans lien, n'envoie pas cet avis.
+- **Les destinataires de l'avis** (Admin › Destinataires des avis, droit
+  `staff_notice_audiences`) : des rôles et des membres du staff, réglés
+  dans `public.staff_notice_audience` — une ligne par rôle (`role_key`) ou
+  par membre (`staff_user_id`), l'un des deux exactement (`CHECK`), clés
+  étrangères en `RESTRICT`. Le geste est journalisé
+  (`staff.notice_audience_changed`).
+
+  ```mermaid
+  sequenceDiagram
+    participant P as payment
+    participant M as mail
+    participant S as staff
+    P->>M: sendToStaffAudience (dans la transaction du paiement)
+    M->>S: StaffNoticeRecipients.recipientsOf(modèle)
+    S-->>M: identifiants et adresses des membres joignables
+    M->>M: une demande par membre, ou une seule à la boîte de l'équipe
+  ```
+
+  Le bloc `payment` appelle `StaffAudienceMail.sendToStaffAudience`
+  (`mail/channels/requests/staff-audience-mail.ts`). Le bloc `mail` lit la
+  lecture que le staff publie, `StaffNoticeRecipients`
+  (`staff/notifications/domain/ports/staff-notice-recipients.ts`) : les
+  membres non suspendus et avec une adresse des rôles réglés, et les membres
+  nommés aux mêmes conditions, une fois chacun, triés par identifiant. Il
+  écrit **une demande par membre**, clé `mail:payment.link_paid:<paiement>:<membre>`.
+  Personne de joignable : **une** demande à la boîte de l'équipe
+  (`mailerConfig().staffInbox`), clé `…:inbox`, et un avertissement sans
+  adresse. Sans boîte non plus : rien ne part, et un avertissement.
+  Les destinataires sont choisis **au moment du paiement** et figés dans les
+  demandes : un membre suspendu juste après reçoit l'avis, c'est assumé. Pas
+  de cloche. La demande d'aide et l'alerte de compte gardent la boîte de
+  l'équipe.
+
 - **Le registre des origines** (`platform/config/pay-link-origins.ts`) : une
   origine par application, avec sa racine publique ; `lafoliecoffee` prend
   `CLIENT_BASE_URL`.

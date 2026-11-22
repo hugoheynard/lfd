@@ -700,6 +700,15 @@ export const staffResourceSchema = z.enum([
    * support client donnait la cloche interne, et l'inverse.
    */
   "staff_notifications",
+  /**
+   * **Les destinataires des avis** — à quels rôles et à quels membres part un
+   * avis que le système écrit à l'équipe, comme « paiement reçu par un lien »
+   * (`documentation/payment/liens-de-paiement/les-liens-de-paiement.md`,
+   * lot P1c, 2026-11-22). `read` : voir le réglage ; `write` : le changer.
+   * Ajoutée sans être accordée : elle s'accorde à l'écran ; la graine ne la
+   * donne qu'à l'administrateur.
+   */
+  "staff_notice_audiences",
 
   // ── `mail.` — LES E-MAILS ───────────────────────────────────────────────
   /**
@@ -920,6 +929,7 @@ export const STAFF_RESOURCE_LABELS: Readonly<Record<StaffResource, string>> = {
   lfd_webhooks: "Webhooks",
   staff_access: "Équipe et accès",
   staff_notifications: "Notifications internes",
+  staff_notice_audiences: "Destinataires des avis",
   mail_templates: "Modèles d'e-mails",
   mail_sends: "Suivi des e-mails",
   card_payments: "Paiements par carte",
@@ -1117,6 +1127,9 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     delivery_doorstep: "write",
     staff_access: "write",
     staff_notifications: "write",
+    // L'administrateur seul (2026-11-22, lot P1c des liens de paiement) : en
+    // production, accordée à l'écran.
+    staff_notice_audiences: "write",
     // L'administrateur seul (2026-11-07, plan de l'éditeur par blocs, S4c) :
     // en production, accordée à l'écran.
     mail_templates: "write",

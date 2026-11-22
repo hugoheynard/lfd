@@ -3517,3 +3517,18 @@ export {
   type PayLinkUnpayableReason,
   type PayLinkView,
 } from "./pay-link.js";
+export {
+  STAFF_NOTICE_AUDIENCE_MAX,
+  STAFF_NOTICE_LABELS,
+  STAFF_NOTICE_TEMPLATES,
+  setStaffNoticeAudiencePayloadSchema,
+  staffNoticeTemplateSchema,
+} from "./staff-notice-audience.js";
+export type {
+  SetStaffNoticeAudiencePayload,
+  StaffNoticeAudiencesView,
+  StaffNoticeAudienceView,
+  StaffNoticeMemberView,
+  StaffNoticeRoleView,
+  StaffNoticeTemplate,
+} from "./staff-notice-audience.js";

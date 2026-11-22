@@ -519,7 +519,7 @@ comme les autres e-mails de l'équipe :
 | la provenance    | le lien : sa date de création, et « créé automatiquement » (auteur `system`) ou « créé par l'équipe » ; le bloc ne lit pas l'annuaire du staff (il n'en a le droit que pour l'autorisation), l'écran du back-office lié par l'e-mail nomme l'auteur |
 | l'issue          | « encaissé », ou « encaissé puis refusé par le sujet, remboursement demandé » quand `onPaid` rend `refused`                                                                                                                                         |
 
-**Agnostique** — le bloc ne sait ni ce qu'est une commande, ni ce qu'est La
+**Agnostique** — le bloc `payment` ne sait ni ce qu'est une commande, ni ce qu'est La
 Folie Coffee : il lit des libellés que l'appelant a posés à l'ouverture du
 lien, et le libellé de l'origine au registre. `payment → mail` est admis en
 « port uniquement » (décidé par Hugo le 2026-11-22).
@@ -527,6 +527,93 @@ lien, et le libellé de l'origine au registre. `payment → mail` est admis en
 **Hors de P1b** — un reçu envoyé au **client** (une décision de Hugo, à
 prendre) ; un avis pour un paiement qui ne vient pas d'un lien (la commande
 payée au panier garde ses e-mails d'aujourd'hui).
+
+### 2.4 bis Les destinataires de l'avis (lot P1c)
+
+> ✅ **Bâti le 2026-11-22 (lot P1c, côté serveur et contrat)**, sur `dev`,
+> non commité. L'écran du back-office reste à bâtir. Noms retenus :
+> `StaffAudienceMail.sendToStaffAudience` (une porte à part de `Mail`, ISP),
+> `StaffNoticeRecipients` (la lecture publiée), droit
+> `staff_notice_audiences`, routes `GET /admin/staff-notice-audiences` et
+> `PUT /admin/staff-notice-audiences/:template`. Doc d'état :
+> [`les-liens-de-paiement.md`](les-liens-de-paiement.md).
+
+Décidé par Hugo le 2026-11-22 : l'avis part « soit à un rôle que je définis,
+soit à des membres du staff spécifiques », et **seul l'avis de paiement par
+lien** passe par ce mécanisme pour l'instant. Forme corrigée après `vitruve`
+(§2.4 ter).
+
+**Le principe** — le staff **donne** ce qui est à lui, le bloc `mail` **le
+prend**, comme il prend déjà `StaffContacts` (`staff/directory/domain/staff-contacts.ts`)
+pour choisir l'expéditeur. Le bloc `payment` ne change pas.
+
+```mermaid
+sequenceDiagram
+  participant P as payment
+  participant M as mail
+  participant S as staff
+  P->>M: « l'avis paiement reçu par lien, à l'équipe » (dans la transaction du paiement)
+  M->>S: lecture publiée : les membres actifs et joignables pour cet avis
+  S-->>M: leurs identifiants et adresses
+  M->>M: une demande par membre (sans doublon), ou une seule à la boîte de l'équipe
+```
+
+- **Le réglage appartient au staff** : table `public.staff_notice_audience` (migration
+  additive) — le modèle d'e-mail (`staff.link-payment-received`), puis un rôle
+  (`role_key`, la colonne qui fait foi, pas `role`) **ou** un membre
+  (`staff_user_id`) par ligne (`CHECK` : l'un des deux exactement), l'auteur et
+  la date. Un membre visé ne se supprime pas (clé étrangère en `RESTRICT`).
+  **Pas de clé étrangère vers les rôles** : une migration ne nomme pas
+  `staff_role_definitions` (`lint:no-role-grants-in-migrations`, règle de
+  Hugo). L'agrégat refuse un rôle inconnu ou archivé à l'écriture ; un rôle
+  qui disparaît ensuite ne vise plus personne, et l'avis retombe sur la boîte
+  de l'équipe.
+- **La lecture publiée par le staff**, sur le modèle de `StaffContacts` :
+  « pour ce modèle d'e-mail, les membres **actifs** et **joignables** (le filtre
+  de `ReachableStaff` : une adresse présente) des rôles réglés, et les membres
+  nommés aux mêmes conditions », dédoublonnés, triés par identifiant.
+- **Le bloc `mail` gagne un envoi « à l'équipe »** dans son canal
+  (`mail.sendToStaffAudience`, nom à confirmer au bâti) : il lit la réponse et
+  écrit **une demande par membre**, avec la clé de l'appelant suffixée de
+  l'identifiant du membre (`…:<membre>`, jamais l'adresse,
+  `lint:mail-key-no-pii`) ; une réponse vide donne **une seule** demande à la
+  boîte de l'équipe (`…:inbox`) et un avertissement journalisé, sans adresse.
+  Il rend la liste des demandes écrites.
+- **Le moment** : les destinataires sont **choisis au moment du paiement**,
+  dans sa transaction, et figés dans les demandes (une demande fige son
+  destinataire, `mail.mail_request.recipient`). Un membre suspendu dans les
+  secondes qui séparent le paiement de l'envoi reçoit l'avis : c'est assumé.
+- **Un rejeu** de Stripe n'écrit rien (`markPaid` faux, §2.4) : un changement
+  de réglage entre deux rejeux ne peut pas produire d'avis tardif.
+- **Pas de cloche** : la cloche ne vise qu'un droit, et sa poussée part avant
+  la validation de la transaction. La boîte de l'équipe suffit à ce qu'un avis
+  d'argent ne se perde pas.
+- **L'écran** : Admin › Destinataires des avis (back-office), la carte de
+  l'avis « paiement reçu par lien », des rôles et des membres à cocher. Un
+  **droit neuf** (`StaffResource`), ajouté par migration sans être accordé
+  (`lint:no-role-grants-in-migrations`) : Hugo l'accorde à l'écran des rôles.
+  Le réglage est journalisé par un fait du staff (`staff.notice_audience_changed`).
+- **RGPD** : `mail.mail_request.recipient` peut désormais désigner un membre
+  du staff (le registre le dit) ; `staff_notice_audience.staff_user_id` et son
+  auteur sont des données du staff, conservées **tant que le réglage existe**.
+
+**Hors de P1c** : la demande d'aide et l'alerte de compte gardent la boîte de
+l'équipe (décidé par Hugo). Les y brancher demandera de remplacer leur appel à
+`staffInbox` par l'envoi « à l'équipe » : un peu de code, pas une ligne de
+réglage.
+
+### 2.4 ter Ce que `vitruve` a contredit (2026-11-22), et les décisions
+
+| Objection                                                                                                                                                   | Classe   | Décision                                                                                                                                                                                                                                               |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| « les adresses sont lues à l'envoi » : une demande fige son destinataire, écrite dans la transaction de l'appelant (`mail.ts`, `mail-requester.service.ts`) | BLOQUANT | les destinataires sont choisis **au moment du paiement** et figés ; c'est dit, et assumé                                                                                                                                                               |
+| « `mail` n'importe rien du staff » est faux : il lit déjà `StaffContacts` et `StaffNotifier`, et le staff publie déjà ses lectures                          | BLOQUANT | la forme suit ce précédent : le staff publie, `mail` lit ; pas de port inversé                                                                                                                                                                         |
+| la cloche ne vise qu'un droit, et pousse avant la validation                                                                                                | SÉRIEUX  | pas de cloche ; la boîte de l'équipe et un avertissement                                                                                                                                                                                               |
+| les clés d'idempotence du cas mixte, et l'envoi qui ne rend qu'une demande                                                                                  | SÉRIEUX  | une clé par membre, une clé pour la boîte ; un envoi « à l'équipe » qui rend la liste                                                                                                                                                                  |
+| le droit neuf et le journal du réglage                                                                                                                      | SÉRIEUX  | accordé à l'écran par Hugo ; fait `staff.notice_audience_changed`                                                                                                                                                                                      |
+| RGPD : `recipient` classé « client », la table neuve                                                                                                        | SÉRIEUX  | registre mis à jour ; conservation tant que le réglage existe                                                                                                                                                                                          |
+| rôle supprimé, membre sans adresse joignable                                                                                                                | SÉRIEUX  | clé étrangère en `RESTRICT` vers les membres ; aucune vers les rôles (la porte `no-role-grants-in-migrations` interdit de nommer leur table) : l'agrégat refuse un rôle inconnu, un rôle disparu ne vise plus personne ; le filtre de `ReachableStaff` |
+| `role` ou `role_key` ; la phrase du §2.4 sur l'annuaire ; « une ligne de réglage »                                                                          | MINEUR   | `role_key` ; le §2.4 est corrigé ; « un peu de code »                                                                                                                                                                                                  |
 
 ### 2.5 ⚠️ Le lien n'est pas « carte »
 
@@ -855,6 +942,7 @@ la TVA) est à confirmer par le cabinet avant d'écrire ce sujet.
 | V   | ✅ le vocabulaire du schéma (§0.4) : `card_payment` → `payment`, tables de la carte préfixées `card_`                                                                                                                                                                                                                                       | P1         |
 | W   | les abonnés du commerce en `lfc.<contexte>.<geste>` (§0.5), reçus de la boîte d'envoi migrés dans le même déploiement                                                                                                                                                                                                                       | V          |
 | P1b | ✅ l'avis à la comptabilité (§2.4) : un e-mail à la boîte de l'équipe pour chaque paiement encaissé par un lien                                                                                                                                                                                                                             | F1         |
+| P1c | ✅ (serveur et contrat ; écran à bâtir) les destinataires de l'avis par rôle ou par membre (§2.4 bis) : lecture publiée par le staff et prise par `mail`, réglage chez le staff, droit                                                                                                                                                      | P1b        |
 | F1  | ✅ la demande de paiement libre par la porte (§5) : création sans réseau, sujet `free_charge` (devis et règlement), annulation qui révoque et annule l'intention, migration additive de `payment_links`                                                                                                                                     | P1         |
 | I1  | `card_link` : moyen, genre du moyen figé, échéance, statut, factures en retard, spécimen PDF (`specimen-data.ts`, `lint:pdf-specimens`) ; contrats et écrans (back-office : `collection-means-choice`, `paiement-section`, `sales-oversight-filters`, `accounting-values`, `invoice-phrases` ; boutique : `payment-section`, `compte-page`) | I0, §11 b  |
 | I2  | le sujet `invoice` : `onPaid`, `settled_by_card`, `invoice_card_settlement`, le lien à l'émission, l'e-mail                                                                                                                                                                                                                                 | I1, P1     |

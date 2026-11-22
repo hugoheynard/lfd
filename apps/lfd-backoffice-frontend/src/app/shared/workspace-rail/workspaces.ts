@@ -744,6 +744,15 @@ export const ADMIN_VIEWS: readonly WorkspaceView[] = [
     needs: 'activity:read',
   },
   {
+    // À qui part un avis de l'équipe : une question sur ses propres gens,
+    // avant l'abonné externe.
+    key: 'destinataires-des-avis',
+    label: 'Destinataires des avis',
+    link: '/admin/destinataires-des-avis',
+    icon: 'mail',
+    needs: 'staff_notice_audiences:read',
+  },
+  {
     // Venu de Gestion Boutique le 2026-10-19 (Hugo) : l'agence du site
     // vitrine est un tiers à qui l'on ouvre une porte — qui entre, et dans
     // quoi. En dernier : on règle ses propres gens avant un abonné externe.

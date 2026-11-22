@@ -1,0 +1,110 @@
+<fold-page-layout icon="mail" title="Destinataires des avis">
+  <p description>
+    À qui part un e-mail que le système écrit à l'équipe. Sans destinataire joignable, l'avis part à
+    la boîte de l'équipe.
+  </p>
+
+  @switch (state()) {
+    @case ('loading') {
+      <fold-loading message="Lecture des destinataires des avis…" />
+    }
+    @case ('error') {
+      <fold-empty-state tone="alert" title="Impossible de lire les destinataires des avis">
+        <button foldButton (click)="load()">Réessayer</button>
+      </fold-empty-state>
+    }
+    @case ('ready') {
+      @if (!canWrite()) {
+        <fold-callout variant="info">
+          Lecture seule&nbsp;: choisir les destinataires demande le droit d'écriture sur
+          «&nbsp;Destinataires des avis&nbsp;».
+        </fold-callout>
+      }
+
+      @for (card of cards(); track card.template) {
+        <fold-card>
+          <fold-element-title variant="title" [title]="card.label" />
+
+          <div class="body">
+            @if (card.nobody) {
+              <fold-callout variant="info">
+                Aucun destinataire&nbsp;: l'avis part à la boîte de l'équipe.
+              </fold-callout>
+            }
+
+            @if (canWrite()) {
+              <fold-fieldset legend="Rôles" [disabled]="pending() !== null">
+                @for (role of card.roles; track role.id) {
+                  <fold-checkbox
+                    [label]="role.label"
+                    [hint]="role.hint"
+                    [checked]="role.checked"
+                    (checkedChange)="toggleRole(card.template, role.id, $event)"
+                  />
+                } @empty {
+                  <p class="muted">Aucun rôle à proposer.</p>
+                }
+              </fold-fieldset>
+
+              <fold-fieldset legend="Membres" [disabled]="pending() !== null">
+                @for (member of card.members; track member.id) {
+                  <fold-checkbox
+                    [label]="member.label"
+                    [hint]="member.hint"
+                    [checked]="member.checked"
+                    (checkedChange)="toggleMember(card.template, member.id, $event)"
+                  />
+                } @empty {
+                  <p class="muted">Aucun membre à proposer.</p>
+                }
+              </fold-fieldset>
+
+              @if (card.refusal; as refusal) {
+                <fold-callout variant="alert" announce>{{ refusal }}</fold-callout>
+              }
+
+              <div class="actions">
+                <button
+                  foldButton
+                  [disabled]="!card.dirty || pending() !== null"
+                  (click)="save(card.template)"
+                >
+                  Enregistrer
+                </button>
+              </div>
+            } @else {
+              <fold-fieldset legend="Rôles">
+                <ul class="names">
+                  @for (role of card.roles; track role.id) {
+                    <li>
+                      {{ role.label }}
+                      @if (role.hint) {
+                        <span class="muted">— {{ role.hint }}</span>
+                      }
+                    </li>
+                  } @empty {
+                    <li class="muted">Aucun rôle.</li>
+                  }
+                </ul>
+              </fold-fieldset>
+              <fold-fieldset legend="Membres">
+                <ul class="names">
+                  @for (member of card.members; track member.id) {
+                    <li>
+                      {{ member.label }}
+                      @if (member.hint) {
+                        <span class="muted">— {{ member.hint }}</span>
+                      }
+                    </li>
+                  } @empty {
+                    <li class="muted">Aucun membre.</li>
+                  }
+                </ul>
+              </fold-fieldset>
+            }
+          </div>
+        </fold-card>
+      }
+    }
+  }
+</fold-page-layout>

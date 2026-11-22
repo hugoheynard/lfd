@@ -26,6 +26,19 @@ import {
 } from "./infrastructure/prisma-staff-notifications.js";
 import { PrismaStaffPushSubscriptions } from "./infrastructure/prisma-staff-push-subscriptions.js";
 import { WebPushSender } from "./infrastructure/web-push-sender.js";
+import { SetStaffNoticeAudienceHandler } from "./application/commands/set-staff-notice-audience.handler.js";
+import { ListStaffNoticeAudiencesHandler } from "./application/queries/list-staff-notice-audiences.handler.js";
+import {
+  StaffNoticeAudienceReader,
+  StaffNoticeAudienceRepository,
+  StaffNoticeTargetsReader,
+} from "./domain/notice-audience/staff-notice-audience.ports.js";
+import { StaffNoticeRecipients } from "./domain/ports/staff-notice-recipients.js";
+import { AdminStaffNoticeAudiencesController } from "./http/admin-staff-notice-audiences.controller.js";
+import { PrismaStaffNoticeAudienceReader } from "./infrastructure/prisma-staff-notice-audience.reader.js";
+import { PrismaStaffNoticeAudienceRepository } from "./infrastructure/prisma-staff-notice-audience.repository.js";
+import { PrismaStaffNoticeRecipients } from "./infrastructure/prisma-staff-notice-recipients.js";
+import { PrismaStaffNoticeTargetsReader } from "./infrastructure/prisma-staff-notice-targets.js";
 
 /**
  * La **cloche du back-office** — socle générique, pas une cloche à alertes.
@@ -45,6 +58,10 @@ import { WebPushSender } from "./infrastructure/web-push-sender.js";
  * vivent les notices adressées par droit. Chacun porte son mur dans ses
  * requêtes, et la poussée les suit tous deux. `StaffPermissionHolders` vient
  * du module global de l'annuaire (`StaffAuthorsModule`).
+ *
+ * Les destinataires des avis par e-mail (lot P1c) vivent ici aussi : leur
+ * réglage, son écran, et la lecture publiée {@link StaffNoticeRecipients} que
+ * le bloc `mail` prend pour écrire une demande par membre.
  */
 @Global()
 @Module({
@@ -53,6 +70,7 @@ import { WebPushSender } from "./infrastructure/web-push-sender.js";
     AdminStaffPushController,
     MyStaffNotificationsController,
     MyStaffPushController,
+    AdminStaffNoticeAudiencesController,
   ],
   providers: [
     { provide: StaffNoticeStore, useClass: PrismaStaffNoticeStore },
@@ -68,7 +86,13 @@ import { WebPushSender } from "./infrastructure/web-push-sender.js";
     GetPushCapabilityHandler,
     SubscribeStaffPushHandler,
     UnsubscribeStaffPushHandler,
+    { provide: StaffNoticeAudienceRepository, useClass: PrismaStaffNoticeAudienceRepository },
+    { provide: StaffNoticeTargetsReader, useClass: PrismaStaffNoticeTargetsReader },
+    { provide: StaffNoticeAudienceReader, useClass: PrismaStaffNoticeAudienceReader },
+    { provide: StaffNoticeRecipients, useClass: PrismaStaffNoticeRecipients },
+    SetStaffNoticeAudienceHandler,
+    ListStaffNoticeAudiencesHandler,
   ],
-  exports: [StaffNotifier],
+  exports: [StaffNotifier, StaffNoticeRecipients],
 })
 export class StaffNotificationsModule {}

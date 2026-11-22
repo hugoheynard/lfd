@@ -101,6 +101,18 @@ export const adminRoutes: Routes = [
         loadComponent: () => import('./journal/journal-page').then((m) => m.JournalPage),
       },
       {
+        // LES DESTINATAIRES DES AVIS — à qui part un e-mail que le système écrit
+        // à l'équipe, sous SON droit (`staff_notice_audiences`, plan
+        // `plan-le-lien-vers-un-sujet.md` §2.4 bis).
+        path: 'destinataires-des-avis',
+        canActivate: [permissionGuard('staff_notice_audiences:read')],
+        title: 'Destinataires des avis — LFC B2B admin',
+        loadComponent: () =>
+          import('./notice-audiences/notice-audiences-page/notice-audiences-page').then(
+            (m) => m.NoticeAudiencesPage,
+          ),
+      },
+      {
         // LE WEBHOOK DE LA VITRINE — les abonnés (l'agence du site vitrine),
         // leurs cases et le journal des envois, sous SON droit (`lfd_webhooks`,
         // webhooks/vitrine.md). Venu de Gestion Boutique le 2026-10-19 (Hugo).

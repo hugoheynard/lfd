@@ -145,4 +145,18 @@ export const TEAM_FACTS = {
   }),
   "staff_role.archived": labelled({ label: z.string() }),
   "staff_role.restored": labelled({ label: z.string() }),
+
+  /**
+   * **Les destinataires d'un avis réglés** (lot P1c des liens de paiement,
+   * 2026-11-22). Le sujet est le modèle d'e-mail, son nom figé `subjectLabel`.
+   * `added` et `removed` figent des libellés lisibles — « Rôle Comptabilité »,
+   * « Cécile Martin » —, jamais une adresse.
+   */
+  "staff.notice_audience_changed": fact(
+    payload({
+      subjectLabel: subjectLabel(),
+      added: z.array(z.string()),
+      removed: z.array(z.string()),
+    }),
+  ),
 } as const satisfies JournalFactFamily;

@@ -1,8 +1,7 @@
 import { Injectable, Logger } from "@nestjs/common";
 
-import { Mail } from "../../../mail/channels/requests/mail.js";
+import { StaffAudienceMail } from "../../../mail/channels/requests/staff-audience-mail.js";
 import type { B2bMails } from "../../../mail/channels/templates/b2b-mails.js";
-import { AppConfig } from "../../../platform/config/app-config.js";
 import {
   type CardProviderType,
   declaredCardAccount,
@@ -32,17 +31,17 @@ const CREATED_ON = new Intl.DateTimeFormat("fr-FR", {
 });
 
 /**
- * L'avis `staff.link-payment-received` à la boîte de l'équipe, **demandé au
- * bloc `mail`** dans la transaction qui enregistre le paiement (§2.4) : il
- * part après validation et se relance seul. La clé, tirée du paiement, ferme
- * un second avis pour le même encaissement.
+ * L'avis `staff.link-payment-received` **à l'équipe**, demandé au bloc `mail`
+ * dans la transaction qui enregistre le paiement : il part après validation
+ * et se relance seul. Le bloc l'adresse aux rôles et aux membres réglés chez
+ * le staff (Admin › Destinataires des avis), une demande par membre ; à
+ * défaut, à la boîte de l'équipe ; sans boîte non plus, il ne part pas et le
+ * bloc le journalise. La clé, tirée du paiement, ferme un second avis pour le
+ * même encaissement.
  *
  * Ce qu'il dit vient du lien (le payeur figé à l'ouverture, l'origine au
  * registre, sa date et son auteur) et du sujet (`describe`) : le bloc ne lit
  * ni le commerce, ni l'annuaire du staff.
- *
- * Sans boîte configurée, rien n'est demandé et un avertissement le dit — le
- * paiement, lui, s'enregistre.
  */
 @Injectable()
 export class LinkPaymentMailNotice extends LinkPaymentNotice {
@@ -52,21 +51,12 @@ export class LinkPaymentMailNotice extends LinkPaymentNotice {
     private readonly links: PayLinkRepository,
     private readonly origins: PayLinkOrigins,
     private readonly settlements: SubjectSettlements,
-    private readonly mail: Mail,
-    private readonly config: AppConfig,
+    private readonly staffMail: StaffAudienceMail,
   ) {
     super();
   }
 
   async paid(receipt: LinkPaymentReceipt): Promise<void> {
-    const inbox = this.config.mailerConfig().staffInbox;
-    if (inbox === null) {
-      this.logger.warn(
-        `Paiement ${receipt.paymentId} encaissé par un lien, mais aucune boîte d'équipe ` +
-          "configurée (MAILER_STAFF_INBOX) : l'équipe n'est pas avisée.",
-      );
-      return;
-    }
     const link = await this.links.byId(receipt.payLinkId);
     if (link === null) {
       this.logger.warn(
@@ -75,8 +65,7 @@ export class LinkPaymentMailNotice extends LinkPaymentNotice {
       );
       return;
     }
-    await this.mail.send({
-      to: inbox,
+    await this.staffMail.sendToStaffAudience({
       template: "staff.link-payment-received",
       data: await this.dataOf(receipt, link),
       subjects: [{ type: "payment", id: receipt.paymentId }],

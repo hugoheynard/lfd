@@ -643,6 +643,7 @@
   "test/staff-journal-backfill.e2e-spec.ts": 3310,
   "test/staff-journal.e2e-spec.ts": 4684,
   "test/staff-lockout.e2e-spec.ts": 3185,
+  "test/staff-notice-audiences.e2e-spec.ts": 6000,
   "test/staff-notification-audience.e2e-spec.ts": 3749,
   "test/staff-notification-authors.e2e-spec.ts": 2513,
   "test/staff-retired-catalog-right.e2e-spec.ts": 3406,

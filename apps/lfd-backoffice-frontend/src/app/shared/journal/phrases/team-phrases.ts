@@ -197,6 +197,15 @@ export const TEAM_PHRASES = {
       [text(`${fact.actor} a restauré le rôle `), name(orDash(fact.payload['label']))],
       ['label'],
     ),
+  'staff.notice_audience_changed': (fact) =>
+    staff(
+      "Destinataires d'un avis réglés",
+      [
+        text(`${fact.actor} a réglé les destinataires de l'avis `),
+        name(orDash(fact.payload['subjectLabel'])),
+      ],
+      [],
+    ),
 } as const satisfies Partial<Record<JournalFactType, Phrase>>;
 
 /**

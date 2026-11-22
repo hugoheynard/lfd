@@ -143,9 +143,11 @@ describe('grantGroups', () => {
    * `lfc_product_limit_override` (limites-de-commande/passer-outre-la-limite-d-un-produit.md)
    * et les modèles de réassort (reassort-boutiques). 77 le 2026-11-21 :
    * `b2b_order_review`, le visa des commandes
-   * (commandes/back-office/plan-visa-des-commandes.md, V1).
+   * (commandes/back-office/plan-visa-des-commandes.md, V1). 78 le 2026-11-22 :
+   * `staff_notice_audiences`, les destinataires des avis
+   * (payment/liens-de-paiement/les-liens-de-paiement.md, P1c).
    */
   it('compte les domaines du catalogue', () => {
-    expect(RESOURCE_COUNT).toBe(77);
+    expect(RESOURCE_COUNT).toBe(78);
   });
 });
