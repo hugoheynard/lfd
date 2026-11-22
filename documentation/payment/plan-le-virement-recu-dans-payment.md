@@ -63,7 +63,7 @@ endroit avec le même modèle « un mouvement, plusieurs parts ».
 
 ## 1. Ce qui existe (ouvert le 2026-11-22)
 
-### 1.1 Les tables (`prisma/schema/public/bank-transfer.prisma`)
+### 1.1 Les tables (prisma/schema/public/bank-transfer.prisma (retiré par D1))
 
 - `public.received_bank_transfer` : `id`, `legal_entity_id` (**FK** vers
   `legal_entities`), `payer_company_id` (opaque), `amount_cents` (`CHECK > 0`),
@@ -93,12 +93,12 @@ endroit avec le même modèle « un mouvement, plusieurs parts ».
   (`OrderCollection.settleByTransfer`), `ReceivedBankTransferRepository.add`,
   publie `BankTransferReceivedEvent` (journal, sujet : le payeur).
 - **Lecteurs Prisma** qui traversent vers les tables du virement :
-  - `prisma-received-bank-transfer.repository.ts` (écriture) ;
+  - prisma-received-bank-transfer.repository.ts (retiré par D1) (écriture) ;
   - `prisma-transfer-invoices.reader.ts` : relation `invoice.bankTransfer`
     pour `settledByTransferId` ;
   - `prisma-invoice-settlement-facts.reader.ts` :
     `receivedBankTransferInvoice.findMany` → `transfer.receivedOn` ;
-  - `prisma-invoice-transfer-settlement.reader.ts` : idem, une facture.
+  - prisma-invoice-transfer-settlement.reader.ts (remplacé par D1) : idem, une facture.
 - **Routes** (`http/admin-bank-transfers.controller.ts`) : `POST
 legal-entities/:id/bank-transfers`, `GET …/bank-transfers/preview`,
   `GET transfer-invoices/unpaid`.
