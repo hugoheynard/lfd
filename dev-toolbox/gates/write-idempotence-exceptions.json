@@ -212,18 +212,6 @@
       "verified": "2026-11-12"
     },
     {
-      "route": "apps/lfd-api/src/lafoliecoffee/payments/http/admin-payment-links.controller.ts#cancel",
-      "effects": ["network:CheckoutGateway"],
-      "reason": "transition : rejouée, le lien relu sous le verrou de sa ligne (FOR UPDATE) n'est plus ouvert et l'agrégat refuse (409 PaymentLinkNotOpenError) avant toute écriture et avant tout appel au prestataire ; un paiement qui croise l'annulation se joue avant ou après elle, jamais effacé par elle.",
-      "verified": "2026-11-12"
-    },
-    {
-      "route": "apps/lfd-api/src/lafoliecoffee/payments/http/payment-links-webhook.controller.ts#handle",
-      "effects": ["network:CheckoutGateway"],
-      "reason": "webhook, par la clé de l'émetteur : l'issue projetée (payé, expiré) est décidée sur le lien relu sous le verrou de sa ligne (FOR UPDATE), donc sur l'état écrit par une annulation concurrente ; un événement rejoué ne réécrit rien — le port est injecté, mais le webhook ne fait que vérifier la signature (parseLinkWebhook, sans réseau).",
-      "verified": "2026-11-12"
-    },
-    {
       "route": "apps/lfd-api/src/lafoliecoffee/pricing/http/admin-price-floors.controller.ts#carryOverFloor",
       "effects": ["creates"],
       "reason": "report : rejoué, la décision est déjà reportée sur la nouvelle référence et le cas d'usage refuse (409 DecisionAlreadyCarriedError) sous le verrou du report, avant tout tirage d'identifiant ni écriture",

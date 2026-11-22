@@ -5,7 +5,6 @@ import type {
 } from "../../src/lafoliecoffee/account/domain/ports/customer-identity.port.js";
 import { StaffIdentityPort } from "../../src/staff/invitations/staff-identity.port.js";
 import { CardProviders } from "../../src/payment/card/domain/ports/card-providers.js";
-import { CheckoutGateway } from "../../src/lafoliecoffee/payments/domain/ports/checkout-gateway.js";
 import { OrderMailOrigins } from "../../src/lafoliecoffee/orders/domain/ports/order-mail-origins.js";
 import { AdminTokenVerifier } from "../../src/platform/auth/admin-token.verifier.js";
 import { VerifiedSendingDomains } from "../../src/mail/senders/domain/ports/verified-sending-domains.js";
@@ -31,17 +30,6 @@ const stubAdminVerifier = {
 const recordingMailer = {
   enabled: true,
   send: (): Promise<{ providerId: null }> => Promise.resolve({ providerId: null }),
-};
-
-let sessionCounter = 0;
-/** Une session de paiement neuve par appel : un second appel se verrait. */
-const fakeCheckout = {
-  createCheckoutSession: () => {
-    sessionCounter += 1;
-    const sessionId = `cs_replay_${String(sessionCounter)}`;
-    return Promise.resolve({ sessionId, url: `https://checkout.stripe.test/${sessionId}` });
-  },
-  expireCheckoutSession: (): Promise<void> => Promise.resolve(),
 };
 
 const origins = {
@@ -109,7 +97,6 @@ export const REPLAY_OVERRIDES: readonly E2eOverride[] = [
   { token: AdminTokenVerifier, value: stubAdminVerifier },
   { token: MAILER, value: recordingMailer },
   { token: CardProviders, value: cards },
-  { token: CheckoutGateway, value: fakeCheckout },
   { token: OrderMailOrigins, value: origins },
   { token: VerifiedSendingDomains, value: new FixedDomains() },
   { token: CustomerIdentityPort, value: customerIdentity },

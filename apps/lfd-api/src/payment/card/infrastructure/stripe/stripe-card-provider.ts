@@ -36,8 +36,9 @@ const STRIPE_PROVIDER: CardProviderType = "stripe";
 
 /**
  * Les moyens de paiement acceptés : **la carte, et elle seule** (Hugo,
- * 2026-10-09) — Apple Pay et Google Pay en sont des portefeuilles. Copié de
- * `lafoliecoffee/payments/infrastructure/accepted-payment-methods.ts` le 2026-11-09.
+ * 2026-10-09) — Apple Pay et Google Pay en sont des portefeuilles. Énumérer
+ * `card` plutôt que laisser Stripe choisir retire Klarna, Link et tout moyen
+ * activé plus tard dans le tableau de bord sans qu'on l'ait décidé ici.
  */
 const ACCEPTED_PAYMENT_METHOD_TYPES = ["card"] as const;
 

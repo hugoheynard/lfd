@@ -1,8 +1,8 @@
 # Les liens de paiement
 
 > ✅ **Doc d'état, relue dans le code le 2026-11-22** (demande de paiement libre par la
-> porte comprise, lot F1). Elle décrit ce qui existe. La suite envisagée (la
-> facture d'une période, la fermeture des anciens liens Stripe) est dans
+> porte comprise, lot F1 ; sortie de Stripe Checkout, lot F2). Elle décrit ce
+> qui existe. La suite envisagée (la facture d'une période) est dans
 > [`plan-le-lien-vers-un-sujet.md`](plan-le-lien-vers-un-sujet.md).
 > Le blocage du prélèvement, longtemps décrit dans la même page, a sa doc :
 > [`../../comptabilite/prelevement/blocage-du-prelevement.md`](../../comptabilite/prelevement/blocage-du-prelevement.md).
@@ -36,9 +36,9 @@ Ce qu'il faut retenir :
 
 - **Les deux passent par le bloc `payment`**, celui qui encaisse toutes les
   cartes : changer de prestataire de carte les ferait suivre.
-- **Les anciens liens libres**, créés avant le 2026-11-22 et encore
-  ouverts, gardent leur page Stripe Checkout jusqu'à leur clôture. Aucun
-  nouveau lien n'en ouvre.
+- **Les anciens liens libres**, créés avant le 2026-11-22 sur une page
+  Stripe Checkout, ne sont plus que de l'historique : on les voit dans la
+  liste (payés, annulés, expirés), plus rien ne les règle.
 - **Annuler un lien libre** le rend introuvable : sa page répond « ce lien
   n'existe pas ou n'est plus valable ». Si le client avait déjà payé, l'argent
   est gardé et l'équipe est prévenue.
@@ -109,11 +109,11 @@ Contrat : `packages/contracts/src/payment-link.ts`.
   facture d'acompte et sa déduction restent à la main.
 - **Son canal**, fermé (`PaymentLinkChannel`) : `door` pour une demande de paiement libre
   payée par la porte du bloc `payment` (toute création), `checkout` pour un
-  lien d'avant la porte, qui garde sa session Stripe. `stripe_session_id` et
-  `url` sont nuls ensemble (`door`) ou posés ensemble (`checkout`) — `CHECK
-payment_links_checkout_pair`, migration
-  `20261122120000_la_regularisation_par_la_porte`. L'expiration, la recherche
-  par session et la fermeture de session ne valent que pour `checkout`.
+  lien d'avant la porte, ligne historique qui garde sa session Stripe et son
+  adresse. `stripe_session_id` et `url` sont nuls ensemble (`door`) ou posés
+  ensemble (`checkout`) — `CHECK payment_links_checkout_pair`, migration
+  `20261122120000_la_regularisation_par_la_porte`. Aucune méthode de
+  l'agrégat ne lit la session : elle se relit et se range telle quelle.
 - **Créer** (`create-payment-link.handler.ts`), dans UNE transaction, sans
   réseau : le plafond, la ligne, puis `PayLinks.open` du sujet
   `free_charge` (origine `lafoliecoffee`, payeur = nom de la société, auteur =
@@ -147,8 +147,9 @@ payment_links_checkout_pair`, migration
     annule le premier paiement chez le prestataire, s'il existe. Une panne
     lève et la boîte d'envoi rejoue ; `already_paid` fait sonner la cloche
     « payé après annulation », sans relancer ;
-  - `checkout` : après la transaction, la session Stripe est fermée ; un
-    refus est journalisé.
+  - `checkout` (une ligne historique relue encore ouverte) : la ligne passe
+    à `cancelled`, sans appel à Stripe, sans révocation ni fait durable —
+    sa session a vécu ses 24 heures, rien ne peut plus la payer.
 - **La liste** (`list-payment-links.handler.ts`) : `url` vaut `null` sauf
   pour un lien ouvert — la colonne pour un ancien lien, `PayLinks.urlsOf`
   (une lecture pour la page) pour une demande de paiement libre. Une adresse qui ne se
@@ -166,38 +167,24 @@ payment_links_checkout_pair`, migration
 
 (`lafoliecoffee/payments/http/admin-payment-links.controller.ts`)
 
-## 3. Le webhook des anciens liens libres
+## 3. Les anciens liens libres — des lignes historiques
 
-Un lien d'avant la porte (canal `checkout`) se règle encore par Stripe
-Checkout, par deux chemins :
+Un lien d'avant la porte (canal `checkout`) a été ouvert sur une page Stripe
+Checkout. Plus aucun ne se crée, et **aucun chemin ne le règle plus** : ni
+route de webhook des liens (`/payments/links/webhook` répond 404), ni relais
+par le webhook des cartes. Le 2026-11-22, la production n'en avait plus
+aucun ouvert (relevé par Hugo).
 
-```mermaid
-flowchart LR
-  S["Stripe<br/>checkout.session.*"] --> L["/payments/links/webhook<br/>(secret des liens)"]
-  S -. "transitoire" .-> C["/payments/webhook<br/>(cartes)"]
-  C -. "fait card_payment.checkout_event" .-> R["OnCardCheckoutEvent"]
-  L --> P["Settle / Expire<br/>PaymentLink"]
-  R --> P
-```
-
-- **Payé** seulement sur `checkout.session.completed` avec
-  `payment_status = paid`, ou sur `async_payment_succeeded` ; **expiré** sur
-  `checkout.session.expired`. Un paiement qui arrive sur un lien annulé le
-  passe quand même à `paid` et fait sonner la cloche.
-- **L'endpoint des liens** : `POST /payments/links/webhook`
-  (`payment-links-webhook.controller.ts`), signé avec
-  `STRIPE_LINKS_WEBHOOK_SECRET`. Sans secret ou avec une signature fausse :
-  400, rien n'est traité, Stripe réessaie.
-- **Le relais** : tant que l'endpoint des cartes reçoit les
-  `checkout.session.*`, `payment` les relaie au commerce par le fait
-  durable `card_payment.checkout_event`
-  (`on-card-checkout-event.handler.ts`). Un même événement peut arriver par
-  les deux chemins : régler ou expirer un lien déjà réglé ne réécrit rien.
+- **Ce qui reste** : la ligne, ses colonnes `stripe_session_id` et `url`,
+  leur `CHECK`, et la lecture du canal (`PaymentLink.reconstitute`, la
+  liste). Un ancien lien payé, annulé ou expiré se lit comme avant.
+- **Un `checkout.session.*`** qui arriverait encore à l'endpoint des cartes
+  est réduit en `other` et rangé `card_payment.unmatched` : sans effet.
 - **Un remboursement** d'un ancien lien n'a pas de ligne au bloc `payment` :
   il arrive « hors commande » (`on-refund-without-order.handler.ts`).
-- **Les tests** : `test/payment-links.e2e-spec.ts` (endpoint des liens,
-  vraie vérification de signature, et relais) ; `test/free-charge-links.e2e-spec.ts`
-  pour la demande de paiement libre par la porte.
+- **Les tests** : `test/payment-links.e2e-spec.ts` (lecture, annulation sans
+  Stripe, route retirée) ; `test/free-charge-links.e2e-spec.ts` pour la
+  demande de paiement libre par la porte.
 
 ## 4. Le lien vers un sujet — la porte du bloc `payment`
 
@@ -303,15 +290,12 @@ sequenceDiagram
 
 ## 5. Ce qui reste ouvert
 
-- **La bascule chez Stripe n'est pas attestée par le dépôt.** La destination
-  « lfd-api production — liens de paiement » a été créée désactivée le
-  2026-11-09. Le plan
-  [`plan-le-lien-vers-un-sujet.md`](plan-le-lien-vers-un-sujet.md)
-  propose de ne **pas** la faire : les nouveaux liens n'utiliseraient plus
-  Stripe Checkout, et le relais suffit pour les derniers liens ouverts.
+- **Chez Stripe, hors du dépôt** : la destination « lfd-api production —
+  liens de paiement » (créée désactivée le 2026-11-09) est à supprimer, et
+  les trois `checkout.session.*` à décocher sur l'endpoint des cartes ; le
+  secret `STRIPE_LINKS_WEBHOOK_SECRET` à retirer chez Cloudflare et dans
+  GitHub. Le dépôt ne l'atteste pas.
 - Pas de lettrage automatique entre un lien libre et des commandes.
 - Pas de paiement d'une facture par lien (voir le plan).
-- Les anciens liens Stripe Checkout encore ouverts ne sont pas fermés
-  d'office : c'est le lot F2 du plan, au moins 24 h après le déploiement.
 - Aucun geste de remboursement d'une demande de paiement libre au back-office : un
   remboursement se fait chez le prestataire, et il est observé et rattaché.

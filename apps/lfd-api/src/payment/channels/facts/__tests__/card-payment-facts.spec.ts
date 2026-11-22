@@ -1,5 +1,4 @@
 import {
-  CardPaymentCheckoutEvent,
   CardPaymentFactPayloadError,
   CardPaymentFailedFact,
   CardPaymentSettledFact,
@@ -50,19 +49,6 @@ describe("les faits de card-payment — aller-retour par la boîte d'envoi", () 
   it("failed", () => {
     const fact = new CardPaymentFailedFact(PAYMENT);
     expect(CardPaymentFailedFact.fromPayload(throughJson(fact.durableFact().payload))).toEqual(
-      fact,
-    );
-  });
-
-  it("checkout_event", () => {
-    const fact = new CardPaymentCheckoutEvent(
-      "lfc-stripe",
-      "evt_1",
-      "checkout.session.expired",
-      "expired",
-      "cs_1",
-    );
-    expect(CardPaymentCheckoutEvent.fromPayload(throughJson(fact.durableFact().payload))).toEqual(
       fact,
     );
   });

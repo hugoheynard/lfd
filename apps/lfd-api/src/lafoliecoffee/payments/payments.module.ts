@@ -44,32 +44,25 @@ import { PrismaPaymentMandateRepository } from "./infrastructure/prisma-payment-
 import { AdminCompanyBankAccountController } from "./http/admin-company-bank-account.controller.js";
 import { CompanyBankAccountController } from "./http/company-bank-account.controller.js";
 import { AdminMandatesController } from "./http/admin-mandates.controller.js";
-import { PaymentLinksWebhookController } from "./http/payment-links-webhook.controller.js";
 import { AdminAccountingSettingsController } from "./http/admin-accounting-settings.controller.js";
 import { AdminPaymentLinksController } from "./http/admin-payment-links.controller.js";
 import {
   AccountingSettingsReader,
   AccountingSettingsWriter,
 } from "./domain/ports/accounting-settings.store.js";
-import { CheckoutGateway } from "./domain/ports/checkout-gateway.js";
 import { PaymentLinkCompanyReader } from "./domain/ports/payment-link-company.reader.js";
 import { PaymentLinkReader } from "./domain/ports/payment-link.reader.js";
 import { PaymentLinkRepository } from "./domain/ports/payment-link.repository.js";
 import { CancelPaymentLinkHandler } from "./application/commands/cancel-payment-link.handler.js";
 import { CreatePaymentLinkHandler } from "./application/commands/create-payment-link.handler.js";
-import { ExpirePaymentLinkHandler } from "./application/commands/expire-payment-link.handler.js";
 import { SetAccountingSettingsHandler } from "./application/commands/set-accounting-settings.handler.js";
-import { SettlePaymentLinkHandler } from "./application/commands/settle-payment-link.handler.js";
 import { OnRefundWithoutOrder } from "./application/handlers/on-refund-without-order.handler.js";
-import { OnCardCheckoutEvent } from "./application/handlers/on-card-checkout-event.handler.js";
-import { RecordPaymentLinkEventHandler } from "./application/commands/record-payment-link-event.handler.js";
 import { GetAccountingSettingsHandler } from "./application/queries/get-accounting-settings.handler.js";
 import { ListPaymentLinksHandler } from "./application/queries/list-payment-links.handler.js";
 import { PrismaAccountingSettingsStore } from "./infrastructure/prisma-accounting-settings.store.js";
 import { PrismaPaymentLinkCompanyReader } from "./infrastructure/prisma-payment-link-company.reader.js";
 import { PrismaPaymentLinkReader } from "./infrastructure/prisma-payment-link.reader.js";
 import { PrismaPaymentLinkRepository } from "./infrastructure/prisma-payment-link.repository.js";
-import { StripeCheckoutGateway } from "./infrastructure/stripe-checkout-gateway.js";
 import { PaymentLinkBell } from "./application/payment-link-bell.js";
 import { FreeChargeLinkable } from "./application/free-charge/free-charge-linkable.js";
 import { FreeChargeRefundOutcomes } from "./application/free-charge/free-charge-refund-outcomes.js";
@@ -95,10 +88,8 @@ import { OnPaymentLinkCancelled } from "./application/handlers/on-payment-link-c
  * (`CompanyMandateController`).
  *
  * Une demande de paiement libre neuve se paie par la porte du bloc `payment` (sujet
- * `free_charge`). Les liens d'avant la porte gardent leur chemin jusqu'à
- * leur clôture : leur webhook (`POST /payments/links/webhook`, son endpoint
- * et son secret) et le relais du webhook des cartes
- * (`card_payment.checkout_event`), deux projections idempotentes.
+ * `free_charge`). Les liens d'avant la porte (Stripe Checkout) sont des
+ * lignes historiques : relues et listées, plus jamais réglées ni expirées.
  */
 @Module({
   // 🔴 `payments` importe `accounting`, et jamais l'inverse. Le mandat est le
@@ -111,7 +102,6 @@ import { OnPaymentLinkCancelled } from "./application/handlers/on-payment-link-c
   // n'importe aucun module, vérifié le 2026-10-20).
   imports: [AccountingModule, AccountModule, FeatureAccessModule],
   controllers: [
-    PaymentLinksWebhookController,
     AdminMandatesController,
     AdminCompanyBankAccountController,
     CompanyBankAccountController,
@@ -133,7 +123,6 @@ import { OnPaymentLinkCancelled } from "./application/handlers/on-payment-link-c
     { provide: CustomerMandateGate, useClass: FeatureAccessCustomerMandateGate },
     // Les liens de paiement libres (plan liens de paiement §2b). Le réglage du
     // plafond : une ligne, deux ports (lecture / écriture) sur le même adaptateur.
-    { provide: CheckoutGateway, useClass: StripeCheckoutGateway },
     { provide: PaymentLinkRepository, useClass: PrismaPaymentLinkRepository },
     { provide: PaymentLinkReader, useClass: PrismaPaymentLinkReader },
     { provide: PaymentLinkCompanyReader, useClass: PrismaPaymentLinkCompanyReader },
@@ -142,10 +131,6 @@ import { OnPaymentLinkCancelled } from "./application/handlers/on-payment-link-c
     { provide: AccountingSettingsWriter, useExisting: PrismaAccountingSettingsStore },
     CreatePaymentLinkHandler,
     CancelPaymentLinkHandler,
-    SettlePaymentLinkHandler,
-    RecordPaymentLinkEventHandler,
-    // Le relais des pages de lien par le webhook des cartes (plan M2, §4.5).
-    OnCardCheckoutEvent,
     // Un remboursement Stripe qu'aucune commande ne porte (lot R1, A11) —
     // annoncé par `card_payment.unmatched` depuis le plan M2, P0.c2.
     OnRefundWithoutOrder,
@@ -157,7 +142,6 @@ import { OnPaymentLinkCancelled } from "./application/handlers/on-payment-link-c
     FreeChargeRefundOutcomes,
     FreeChargeSettlement,
     OnPaymentLinkCancelled,
-    ExpirePaymentLinkHandler,
     ListPaymentLinksHandler,
     SetAccountingSettingsHandler,
     GetAccountingSettingsHandler,

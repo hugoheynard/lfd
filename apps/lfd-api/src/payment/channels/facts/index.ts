@@ -12,11 +12,8 @@ export {
   CardPaymentSettledFact,
 } from "./card-payment-settlement.facts.js";
 export {
-  CARD_PAYMENT_CHECKOUT_EVENT,
   CARD_PAYMENT_UNMATCHED,
-  CardPaymentCheckoutEvent,
   CardPaymentUnmatchedFact,
-  type CheckoutOutcome,
   type ProviderRefund,
 } from "./card-payment-relay.facts.js";
 export {

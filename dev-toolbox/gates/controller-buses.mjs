@@ -106,9 +106,6 @@ const SCOPE = [
   // balayage — des commandes, par le bus seul.
   "apps/lfd-api/src/payment/card/http/admin-card-refunds.controller.ts",
   "apps/lfd-api/src/payment/card/http/card-refund-sweep.controller.ts",
-  // Né drainé le 2026-11-09 (plan M2, lot P0.c2) : le webhook des liens de
-  // paiement, son endpoint et son secret — une commande, comme celui des cartes.
-  "apps/lfd-api/src/lafoliecoffee/payments/http/payment-links-webhook.controller.ts",
 ];
 
 /** Tout le reste, pour que le solde restant soit visible et non silencieux. */

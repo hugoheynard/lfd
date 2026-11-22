@@ -1361,40 +1361,22 @@ origine réelle, et sur iPhone l'abonnement n'est possible qu'une fois l'app
 installée sur l'écran d'accueil — Safari refuse en **silence** avant cela. C'est
 le même profil que le webhook Resend : la chaîne ne se vérifie qu'en ligne.
 
-## Abonner le webhook Stripe aux liens de paiement
+## Les anciens liens de paiement Stripe Checkout
 
-Les **liens de paiement libres**
+Les **liens de paiement libres** se paient par la porte du bloc `payment`
 ([`les-liens-de-paiement.md`](../payment/liens-de-paiement/les-liens-de-paiement.md),
-§2 et §3) sont des pages Stripe Checkout hébergées. Stripe ne prévient le backend
-que des événements auxquels l'endpoint est **abonné** — et un événement non
-abonné ne produit **aucune erreur** : le lien reste `open` pour toujours alors
-que le client a payé.
+§2 et §3) : aucun ne passe plus par Stripe Checkout, et l'API ne lit plus
+aucun `checkout.session.*`. Les lignes d'avant (canal `checkout`) sont
+historiques.
 
-Le geste, dans le tableau de bord Stripe (Développeurs → Webhooks), sur
-l'endpoint **des cartes**, branché sur `POST /payments/webhook` — celui qui
-reçoit `payment_intent.succeeded` et `payment_intent.payment_failed`. Le bloc
-`card-payment` relaie ces événements aux liens.
-
-> ⚠️ Une seconde destination, « lfd-api production — liens de paiement »
-> (`POST /payments/links/webhook`, secret `STRIPE_LINKS_WEBHOOK_SECRET`),
-> existe **désactivée** depuis le 2026-11-09. Ne pas l'activer tant que le
-> plan [`plan-le-lien-vers-un-sujet.md`](../payment/liens-de-paiement/plan-le-lien-vers-un-sujet.md)
-> n'est pas tranché : il propose de s'en passer.
-
-Ajouter ces **trois** événements aux deux déjà cochés :
-
-| Événement                                  | Ce qu'il fait chez nous                             |
-| ------------------------------------------ | --------------------------------------------------- |
-| `checkout.session.completed`               | lien → `paid`, seulement si `payment_status = paid` |
-| `checkout.session.async_payment_succeeded` | lien → `paid` (moyen de paiement différé)           |
-| `checkout.session.expired`                 | lien `open` → `expired`                             |
-
-**Vérifier** : créer un lien d'un euro depuis l'onglet « Liens libres », le
-payer avec une carte de test (en mode test), puis relire la liste — le lien doit
-être « payé ». Dans Stripe, l'onglet de l'endpoint montre la livraison de
-`checkout.session.completed` en `200`. Un `200` avec un lien resté ouvert veut
-dire que la session ne porte pas la métadonnée `paymentLinkId` : ce n'est pas
-une page ouverte par le back-office.
+Sur l'endpoint **des cartes** (`POST /payments/webhook`), les trois
+événements `checkout.session.completed`, `checkout.session.async_payment_succeeded`
+et `checkout.session.expired` peuvent être décochés : s'ils arrivent encore,
+ils sont rangés « hors de nos sujets » (`card_payment.unmatched`), sans effet.
+La destination « lfd-api production — liens de paiement »
+(`POST /payments/links/webhook`) se supprime chez Stripe : la route n'existe
+plus (404), et le secret `STRIPE_LINKS_WEBHOOK_SECRET` se retire de
+Cloudflare et des secrets GitHub.
 
 ## Abonner le webhook Stripe aux remboursements
 

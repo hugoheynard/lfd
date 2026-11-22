@@ -17,23 +17,16 @@ import {
   PaymentLinkUrlGoneError,
   UnknownFreeChargeNatureError,
 } from "../../../domain/errors/payment-link-errors.js";
-import { PaymentLinkBell } from "../../payment-link-bell.js";
 import { CancelPaymentLinkCommand } from "../cancel-payment-link.command.js";
 import { CancelPaymentLinkHandler } from "../cancel-payment-link.handler.js";
 import { CreatePaymentLinkCommand } from "../create-payment-link.command.js";
 import { CreatePaymentLinkHandler } from "../create-payment-link.handler.js";
-import { ExpirePaymentLinkCommand } from "../expire-payment-link.command.js";
-import { ExpirePaymentLinkHandler } from "../expire-payment-link.handler.js";
-import { SettlePaymentLinkCommand } from "../settle-payment-link.command.js";
-import { SettlePaymentLinkHandler } from "../settle-payment-link.handler.js";
 import {
   checkoutLink,
   FixedSettings,
   InMemoryPaymentLinks,
   KnownCompanies,
-  RecordingCheckout,
   RecordingDurable,
-  RecordingNotifier,
   RecordingPayLinks,
 } from "./payment-link-doubles.js";
 
@@ -50,23 +43,18 @@ const AUTHORS = new FixedStaffAuthorDirectory(
 
 function world() {
   const links = new InMemoryPaymentLinks();
-  const checkout = new RecordingCheckout();
   const payLinks = new RecordingPayLinks();
   const durable = new RecordingDurable();
   const events = new RecordingPublisher();
-  const notifier = new RecordingNotifier();
   const clock = new FixedClock(NOW);
   const ids = new FixedIdGenerator("pl");
   const uow = new DirectUnitOfWork();
   const intents = inMemoryIntents();
-  const bell = new PaymentLinkBell(notifier, COMPANIES, clock);
   return {
     links,
-    checkout,
     payLinks,
     durable,
     events,
-    notifier,
     create: (cap: number | null = null) =>
       new CreatePaymentLinkHandler(
         new FixedSettings(cap),
@@ -80,18 +68,7 @@ function world() {
         intents,
         AUTHORS,
       ),
-    cancel: new CancelPaymentLinkHandler(
-      links,
-      COMPANIES,
-      checkout,
-      payLinks,
-      durable,
-      clock,
-      events,
-      uow,
-    ),
-    settle: new SettlePaymentLinkHandler(links, bell, clock, uow),
-    expire: new ExpirePaymentLinkHandler(links, uow),
+    cancel: new CancelPaymentLinkHandler(links, COMPANIES, payLinks, durable, clock, events, uow),
   };
 }
 type World = ReturnType<typeof world>;
@@ -108,9 +85,9 @@ function createCommand(key: string = randomUUID()): CreatePaymentLinkCommand {
 }
 
 /** Un ancien lien Stripe, rangé comme sa ligne le porte. */
-async function seedCheckout(w: World): Promise<{ id: string; sessionId: string }> {
+async function seedCheckout(w: World): Promise<{ id: string }> {
   await w.links.save(checkoutLink("pl_old", "co_1", "cs_old", NOW));
-  return { id: "pl_old", sessionId: "cs_old" };
+  return { id: "pl_old" };
 }
 
 describe("CreatePaymentLinkHandler — la demande de paiement libre par la porte", () => {
@@ -137,8 +114,6 @@ describe("CreatePaymentLinkHandler — la demande de paiement libre par la porte
       createdAt: NOW,
       createdByStaffId: "staff_1",
     });
-    // Plus aucune page Stripe Checkout pour une création.
-    expect(w.checkout.opened).toEqual([]);
     expect(w.events.factTypes()).toEqual(["payment_link.created"]);
   });
 
@@ -247,7 +222,6 @@ describe("CancelPaymentLinkHandler — une demande de paiement libre par la port
         payload: { paymentLinkId: id },
       },
     ]);
-    expect(w.checkout.expired).toEqual([]);
     expect(w.events.factTypes()).toEqual(["payment_link.created", "payment_link.cancelled"]);
   });
 
@@ -266,90 +240,21 @@ describe("CancelPaymentLinkHandler — une demande de paiement libre par la port
   });
 });
 
-describe("Les anciens liens Stripe gardent leur chemin", () => {
-  it("l'annulation ferme la session, sans révoquer de lien ni écrire de fait durable", async () => {
-    const w = world();
-    const { id, sessionId } = await seedCheckout(w);
-
-    await w.cancel.execute(new CancelPaymentLinkCommand(id, "staff_2"));
-
-    expect(w.links.rows.get(id)?.status).toBe("cancelled");
-    expect(w.checkout.expired).toEqual([sessionId]);
-    expect(w.payLinks.revoked).toEqual([]);
-    expect(w.durable.facts).toEqual([]);
-  });
-
-  it("garde l'annulation quand Stripe refuse de fermer la session", async () => {
+describe("Les anciens liens Stripe Checkout sont des lignes historiques", () => {
+  it("un ancien lien relu ouvert s'annule sans révoquer de lien ni écrire de fait durable", async () => {
     const w = world();
     const { id } = await seedCheckout(w);
-    w.checkout.refuseExpiry = true;
-    await w.cancel.execute(new CancelPaymentLinkCommand(id, "staff_2"));
-    expect(w.links.rows.get(id)?.status).toBe("cancelled");
-  });
 
-  it("le webhook payé passe l'ancien lien à payé, une seule fois sous un rejeu", async () => {
-    const w = world();
-    const { id, sessionId } = await seedCheckout(w);
-    const savesBefore = w.links.saves;
-
-    await w.settle.execute(new SettlePaymentLinkCommand(sessionId));
-    await w.settle.execute(new SettlePaymentLinkCommand(sessionId));
-
-    expect(w.links.rows.get(id)).toMatchObject({ status: "paid", paidAt: NOW });
-    expect(w.links.saves).toBe(savesBefore + 1);
-    expect(w.notifier.notices).toEqual([]);
-  });
-
-  it("🔴 payé après annulation : passe à payé ET sonne la cloche", async () => {
-    const w = world();
-    const { id, sessionId } = await seedCheckout(w);
     await w.cancel.execute(new CancelPaymentLinkCommand(id, "staff_2"));
 
-    await w.settle.execute(new SettlePaymentLinkCommand(sessionId));
-
-    expect(w.links.rows.get(id)?.status).toBe("paid");
-    expect(w.notifier.notices).toHaveLength(1);
-    expect(w.notifier.notices[0]).toMatchObject({
-      kind: "payment_link.paid_after_cancel",
-      subject: "Lien annulé mais payé — Les Halles",
-      idempotencyKey: `notification:payment_link.paid_after_cancel:${id}`,
+    expect(w.links.rows.get(id)).toMatchObject({
+      status: "cancelled",
+      cancelledByStaffId: "staff_2",
+      stripeSessionId: "cs_old",
+      url: "https://checkout.stripe.test/cs_old",
     });
-  });
-
-  it("ignore une session inconnue sans lever", async () => {
-    const w = world();
-    await expect(
-      w.settle.execute(new SettlePaymentLinkCommand("cs_inconnue")),
-    ).resolves.toBeUndefined();
-    expect(w.links.saves).toBe(0);
-  });
-
-  it("expire un ancien lien ouvert, et pas un lien annulé", async () => {
-    const w = world();
-    const { id, sessionId } = await seedCheckout(w);
-    await w.expire.execute(new ExpirePaymentLinkCommand(sessionId));
-    expect(w.links.rows.get(id)?.status).toBe("expired");
-
-    const v = world();
-    const old = await seedCheckout(v);
-    await v.cancel.execute(new CancelPaymentLinkCommand(old.id, "staff_2"));
-    const savesBefore = v.links.saves;
-    await v.expire.execute(new ExpirePaymentLinkCommand(old.sessionId));
-    expect(v.links.rows.get(old.id)?.status).toBe("cancelled");
-    expect(v.links.saves).toBe(savesBefore);
-  });
-});
-
-describe("Une demande de paiement libre par la porte n'a pas de session", () => {
-  it("le webhook d'un ancien lien ne la trouve pas : ni règlement, ni expiration", async () => {
-    const w = world();
-    const { id } = await w.create().execute(createCommand());
-    const savesBefore = w.links.saves;
-
-    await w.settle.execute(new SettlePaymentLinkCommand("cs_inconnue"));
-    await w.expire.execute(new ExpirePaymentLinkCommand("cs_inconnue"));
-
-    expect(w.links.rows.get(id)?.status).toBe("open");
-    expect(w.links.saves).toBe(savesBefore);
+    expect(w.payLinks.revoked).toEqual([]);
+    expect(w.durable.facts).toEqual([]);
+    expect(w.events.factTypes()).toEqual(["payment_link.cancelled"]);
   });
 });

@@ -18,16 +18,6 @@ export abstract class PaymentLinkRepository {
   abstract loadLocked(id: string): Promise<PaymentLink | null>;
 
   /**
-   * Le lien derrière une session Stripe — la clé de rapprochement du webhook.
-   * Ne trouve qu'un lien `checkout` : une demande de paiement libre payée par la porte
-   * n'a pas de session.
-   */
-  abstract loadBySession(sessionId: string): Promise<PaymentLink | null>;
-
-  /** Comme {@link loadLocked}, par la session Stripe — pour le webhook. */
-  abstract loadBySessionLocked(sessionId: string): Promise<PaymentLink | null>;
-
-  /**
    * Création ou mise à jour, selon que l'id existe pour cette société ; un id déjà
    * pris par un autre est refusé, jamais réécrit (2026-10-07).
    */

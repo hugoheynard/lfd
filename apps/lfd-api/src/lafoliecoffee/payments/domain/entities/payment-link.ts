@@ -10,7 +10,7 @@ import {
 } from "../value-objects/free-charge-nature.js";
 import { PaymentLinkTerms } from "../value-objects/payment-link-terms.js";
 
-/** La session Stripe hébergée derrière un lien : la clé de rapprochement et l'URL. */
+/** La session Stripe hébergée d'un ancien lien : gardée pour être relue, jamais rouverte. */
 export interface CheckoutSession {
   /** `cs_…`, unique. */
   readonly sessionId: string;
@@ -19,14 +19,12 @@ export interface CheckoutSession {
 
 /**
  * **Par où l'argent arrive** — un canal fermé :
- * - `checkout` : un lien d'avant la porte, payé sur sa page Stripe Checkout
- *   hébergée ; sa session est la clé de rapprochement du webhook ;
- * - `door` : une demande de paiement libre payée par la porte du bloc `payment` (sujet
- *   `free_charge`), sans session : son adresse est celle de son lien.
- *
- * L'expiration, la recherche par session et la fermeture de session ne
- * valent que pour `checkout`. La dualité finit quand le dernier lien
- * `checkout` est clos (lot F2 du plan du lien vers un sujet).
+ * - `checkout` : un lien d'avant la porte, ouvert sur une page Stripe
+ *   Checkout. Plus aucun ne se crée ni ne se règle : c'est une ligne
+ *   historique (payée, annulée, expirée), qui se relit et se liste ;
+ * - `door` : une demande de paiement libre payée par la porte du bloc
+ *   `payment` (sujet `free_charge`), sans session : son adresse est celle de
+ *   son lien.
  */
 export type PaymentLinkChannel =
   { readonly kind: "checkout"; readonly session: CheckoutSession } | { readonly kind: "door" };
@@ -62,7 +60,7 @@ export interface PaymentLinkOpening {
 }
 
 /**
- * L'issue d'un paiement confirmé par Stripe :
+ * L'issue d'un paiement confirmé par le prestataire :
  * - `settled` — le lien passe à `paid` ;
  * - `settled_after_cancel` — il était annulé : il passe QUAND MÊME à `paid`
  *   (l'argent est encaissé, le nier serait pire), et l'équipe doit l'apprendre ;
@@ -74,7 +72,7 @@ export type PaymentLinkSettlement = "settled" | "settled_after_cancel" | "alread
  * **Un lien de paiement libre — la demande de paiement libre** : une somme demandée à
  * un client hors de toute commande (doc d'état `les-liens-de-paiement.md`).
  * Elle se paie par la porte du bloc `payment` ; un lien d'avant la porte
- * garde sa page Stripe Checkout ({@link PaymentLinkChannel}).
+ * reste une ligne historique ({@link PaymentLinkChannel}).
  *
  * `open` est le seul état dont on sort par un geste ; les trois autres sont
  * terminaux, à une exception près, écrite dans {@link markPaid}.
@@ -140,21 +138,16 @@ export class PaymentLink {
     return this.statusValue;
   }
 
-  /** La session Stripe à fermer ou à rapprocher — `null` pour un lien `door`. */
-  get checkoutSession(): CheckoutSession | null {
-    return this.channel.kind === "checkout" ? this.channel.session : null;
-  }
-
   /** Annulée par le staff, et pas payée depuis. */
   get isCancelled(): boolean {
     return this.statusValue === "cancelled";
   }
 
   /**
-   * Stripe a encaissé. Idempotent sur un lien déjà payé.
+   * Le prestataire a encaissé. Idempotent sur un lien déjà payé.
    *
    * 🔴 Un lien **annulé** passe quand même à `paid` : l'annulation a perdu la
-   * course chez Stripe, l'argent est là, et une ligne qui dirait « annulé » sur
+   * course chez le prestataire, l'argent est là, et une ligne qui dirait « annulé » sur
    * une somme encaissée mentirait à la comptabilité. L'annulation reste datée
    * et signée — c'est ce qui permet de dire les deux.
    */
@@ -181,23 +174,8 @@ export class PaymentLink {
     this.cancelledByValue = byStaffId;
   }
 
-  /**
-   * Stripe a laissé la session mourir. Sans effet hors de `open` : un
-   * `expired` qui suit notre annulation (on expire la session nous-mêmes) ou un
-   * paiement n'a rien à réécrire. Sans effet sur un lien `door`, qui n'a pas
-   * de session : une demande de paiement libre n'expire pas, elle s'annule.
-   *
-   * @returns `true` si le lien vient d'expirer.
-   */
-  expire(): boolean {
-    if (this.channel.kind !== "checkout" || this.statusValue !== "open") {
-      return false;
-    }
-    this.statusValue = "expired";
-    return true;
-  }
-
   toPersistence(): PaymentLinkSnapshot {
+    const session = this.channel.kind === "checkout" ? this.channel.session : null;
     return {
       id: this.id,
       companyId: this.companyId,
@@ -205,8 +183,8 @@ export class PaymentLink {
       label: this.terms.label,
       nature: this.nature,
       status: this.statusValue,
-      stripeSessionId: this.checkoutSession?.sessionId ?? null,
-      url: this.checkoutSession?.url ?? null,
+      stripeSessionId: session?.sessionId ?? null,
+      url: session?.url ?? null,
       createdAt: this.createdAt,
       createdByStaffId: this.createdByStaffId,
       paidAt: this.paidAtValue,

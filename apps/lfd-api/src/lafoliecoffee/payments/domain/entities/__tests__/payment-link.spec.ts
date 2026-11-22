@@ -46,7 +46,7 @@ describe("PaymentLink — le cycle d'un lien libre", () => {
     });
   });
 
-  it("passe à payé, et un webhook rejoué ne bouge plus rien", () => {
+  it("passe à payé, et un paiement rejoué ne bouge plus rien", () => {
     const link = openLink();
     expect(link.markPaid(LATER)).toBe("settled");
     expect(link.markPaid(LATEST)).toBe("already_paid");
@@ -79,18 +79,10 @@ describe("PaymentLink — le cycle d'un lien libre", () => {
     expect(() => link.cancel(LATEST, "staff_2")).toThrow(/déjà payé/u);
   });
 
-  it("expire depuis ouvert seulement", () => {
-    const link = openLink();
-    expect(link.expire()).toBe(true);
-    expect(link.expire()).toBe(false);
-    expect(link.status).toBe("expired");
-  });
-
-  it("n'expire pas un lien annulé : c'est nous qui avons fermé la session", () => {
-    const link = openLink();
-    link.cancel(LATER, "staff_2");
-    expect(link.expire()).toBe(false);
-    expect(link.status).toBe("cancelled");
+  it("une ligne historique expirée se relit, et ne s'annule plus", () => {
+    const expired = PaymentLink.reconstitute({ ...openLink().toPersistence(), status: "expired" });
+    expect(expired.status).toBe("expired");
+    expect(() => expired.cancel(LATER, "staff_2")).toThrow(PaymentLinkNotOpenError);
   });
 
   it("se relit tel qu'il a été rangé", () => {
@@ -105,21 +97,14 @@ describe("PaymentLink — le canal, fermé", () => {
   it("une demande de paiement libre neuve naît en canal door, sans session ni URL", () => {
     const link = doorLink();
     expect(link.channel).toEqual({ kind: "door" });
-    expect(link.checkoutSession).toBeNull();
     expect(link.toPersistence()).toMatchObject({ stripeSessionId: null, url: null });
   });
 
   it("un ancien lien se relit en canal checkout, avec sa session", () => {
-    expect(openLink().checkoutSession).toEqual({
-      sessionId: "cs_test_1",
-      url: "https://checkout.stripe.test/cs_test_1",
+    expect(openLink().channel).toEqual({
+      kind: "checkout",
+      session: { sessionId: "cs_test_1", url: "https://checkout.stripe.test/cs_test_1" },
     });
-  });
-
-  it("🔴 un lien door n'expire pas : il n'a pas de session à laisser mourir", () => {
-    const link = doorLink();
-    expect(link.expire()).toBe(false);
-    expect(link.status).toBe("open");
   });
 
   it("un lien door se paie, s'annule, et se paie après annulation comme un ancien", () => {

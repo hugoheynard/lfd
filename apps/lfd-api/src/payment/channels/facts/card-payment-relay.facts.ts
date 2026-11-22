@@ -4,7 +4,6 @@ import type { DurableEvent, DurableFact } from "../../../platform/outbox/durable
 import { cents, instant, oneOf, optionalRecord, optionalText, text } from "./fact-payload.js";
 
 /** Noms STABLES, clés de routage vers `@DurableHandler`. */
-export const CARD_PAYMENT_CHECKOUT_EVENT = "card_payment.checkout_event";
 export const CARD_PAYMENT_UNMATCHED = "card_payment.unmatched";
 
 /**
@@ -38,54 +37,6 @@ function refundOf(payload: Readonly<Record<string, unknown>>, type: string): Pro
     status: oneOf(payload, type, "status", CARD_REFUND_STATUSES),
     refundedAt: instant(payload, type, "refundedAt"),
   };
-}
-
-/** L'issue d'une page hébergée de lien de paiement. */
-export type CheckoutOutcome = "paid" | "expired";
-const CHECKOUT_OUTCOMES: readonly CheckoutOutcome[] = ["paid", "expired"];
-
-/**
- * **Le relais des liens de paiement** — fait DURABLE et **transitoire** (plan
- * M2, §4.5 ; retiré en P2) : tant que l'endpoint propre des liens ne reçoit
- * pas les `checkout.session.*`, celui des cartes les relaie à `lafoliecoffee/payments`
- * — jamais un 200 muet. La charge est ce que `SettlePaymentLinkCommand`
- * (`paid`) et `ExpirePaymentLinkCommand` (`expired`) lisent : l'id de session.
- */
-export class CardPaymentCheckoutEvent implements DurableEvent {
-  constructor(
-    readonly account: string,
-    readonly eventId: string,
-    readonly eventType: string,
-    readonly outcome: CheckoutOutcome,
-    readonly sessionId: string,
-  ) {}
-
-  durableFact(): DurableFact {
-    const type = CARD_PAYMENT_CHECKOUT_EVENT;
-    return {
-      type,
-      key: `${type}:${this.account}:${this.eventId}`,
-      payload: {
-        account: this.account,
-        eventId: this.eventId,
-        eventType: this.eventType,
-        outcome: this.outcome,
-        sessionId: this.sessionId,
-      },
-    };
-  }
-
-  /** @throws {CardPaymentFactPayloadError} charge hors forme — faute d'émetteur. */
-  static fromPayload(payload: Readonly<Record<string, unknown>>): CardPaymentCheckoutEvent {
-    const type = CARD_PAYMENT_CHECKOUT_EVENT;
-    return new CardPaymentCheckoutEvent(
-      text(payload, type, "account"),
-      text(payload, type, "eventId"),
-      text(payload, type, "eventType"),
-      oneOf(payload, type, "outcome", CHECKOUT_OUTCOMES),
-      text(payload, type, "sessionId"),
-    );
-  }
 }
 
 /**

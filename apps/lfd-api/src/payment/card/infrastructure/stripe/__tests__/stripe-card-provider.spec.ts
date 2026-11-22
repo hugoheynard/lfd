@@ -139,23 +139,18 @@ describe("StripeCardProvider.parseWebhook — vérifié avec le secret DU COMPTE
     ).toMatchObject({ kind: "other" });
   });
 
-  const LINK = { object: "checkout.session", id: "cs_1", metadata: { paymentLinkId: "pl_1" } };
-
   it.each([
-    ["checkout.session.completed", { ...LINK, payment_status: "paid" }, "paid"],
-    ["checkout.session.async_payment_succeeded", LINK, "paid"],
-    ["checkout.session.expired", LINK, "expired"],
-  ] as const)("%s d'un lien → checkout %s", (type, session, outcome) => {
-    expect(parse(type, session)).toMatchObject({ kind: "checkout", outcome, sessionId: "cs_1" });
-  });
-
-  it("une page encore impayée, ou qui n'est pas à nous, est `other`", () => {
-    expect(
-      parse("checkout.session.completed", { ...LINK, payment_status: "unpaid" }),
-    ).toMatchObject({ kind: "other" });
-    expect(
-      parse("checkout.session.expired", { object: "checkout.session", id: "cs_2", metadata: {} }),
-    ).toMatchObject({ kind: "other" });
+    "checkout.session.completed",
+    "checkout.session.async_payment_succeeded",
+    "checkout.session.expired",
+  ])("%s est `other` : aucune page hébergée n'est plus ouverte", (type) => {
+    const session = {
+      object: "checkout.session",
+      id: "cs_1",
+      payment_status: "paid",
+      metadata: { paymentLinkId: "pl_1" },
+    };
+    expect(parse(type, session)).toMatchObject({ kind: "other", eventType: type });
   });
 
   it("`charge.refunded` est `other` : son objet ne porte plus les remboursements", () => {

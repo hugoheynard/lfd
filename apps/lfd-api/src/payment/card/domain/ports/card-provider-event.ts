@@ -49,17 +49,6 @@ export interface RefundMetadata {
   readonly generation: number;
 }
 
-/**
- * La page hébergée d'un **lien de paiement** (`checkout.session.*`), relayée
- * à `lafoliecoffee/payments` jusqu'à ce que son propre endpoint la reçoive (§4.5) :
- * `paid` (encaissée), `expired` (morte sans règlement).
- */
-export interface CheckoutEvent extends ProviderEventOrigin {
-  readonly kind: "checkout";
-  readonly outcome: "paid" | "expired";
-  readonly sessionId: string;
-}
-
 /** Tout le reste : hors de nos sujets — pas une anomalie en soi (§3.3). */
 export interface OtherProviderEvent extends ProviderEventOrigin {
   readonly kind: "other";
@@ -70,4 +59,4 @@ export interface OtherProviderEvent extends ProviderEventOrigin {
  * jamais l'objet brut du prestataire.
  */
 export type CardProviderEvent =
-  IntentPaidEvent | IntentFailedEvent | RefundEvent | CheckoutEvent | OtherProviderEvent;
+  IntentPaidEvent | IntentFailedEvent | RefundEvent | OtherProviderEvent;

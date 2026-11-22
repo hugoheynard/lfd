@@ -10,14 +10,13 @@ import { randomUUID } from "node:crypto";
  * - une demande de paiement libre traverse la table, le plafond lu en base et le journal,
  *   et la liste sert l'adresse de son lien (`free-charge-links.e2e-spec.ts`
  *   éprouve le paiement par la porte) ;
- * - un ancien lien Stripe garde son chemin : son webhook le rapproche par sa
- *   session, le relais du webhook des cartes aussi, rejoués sans dommage, et
- *   la cloche sonne quand un lien annulé est payé.
+ * - un ancien lien Stripe Checkout est une ligne historique : listé, annulable
+ *   s'il était relu ouvert, sans aucun appel à Stripe, et plus aucune route
+ *   ne le règle.
  *
  * Frontières doublées : la signature du jeton staff, le prestataire de carte
- * de `payment`, l'ouverture et la fermeture des sessions Stripe, le mailer,
- * l'origine de l'espace client et la racine publique des liens. La signature du webhook des liens,
- * elle, est vérifiée par le VRAI adaptateur, avec un secret de test.
+ * de `payment`, le mailer, l'origine de l'espace client et la racine publique
+ * des liens.
  */
 import type {
   AccountingSettingsView,
@@ -27,10 +26,6 @@ import type {
 } from "@lfd/contracts";
 
 import { PaymentLink } from "../src/lafoliecoffee/payments/domain/entities/payment-link.js";
-import Stripe from "stripe";
-
-import { CheckoutGateway } from "../src/lafoliecoffee/payments/domain/ports/checkout-gateway.js";
-import { StripeCheckoutGateway } from "../src/lafoliecoffee/payments/infrastructure/stripe-checkout-gateway.js";
 import { PaymentLinkRepository } from "../src/lafoliecoffee/payments/domain/ports/payment-link.repository.js";
 import { PaymentLinkTerms } from "../src/lafoliecoffee/payments/domain/value-objects/payment-link-terms.js";
 import { CardProviders } from "../src/payment/card/domain/ports/card-providers.js";
@@ -52,7 +47,7 @@ import {
   serviceDay,
   type E2eContext,
 } from "./e2e-harness.js";
-import { cardProvidersDouble, recordCardEvent } from "./card-payments.js";
+import { cardProvidersDouble } from "./card-payments.js";
 import { FixedOrigins } from "../src/payment/link/application/__tests__/pay-link-doubles.js";
 import { PayLinkOrigins } from "../src/payment/link/domain/ports/pay-link-origins.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
@@ -71,32 +66,6 @@ const stubAdminVerifier = {
 
 /** Le prestataire de carte doublé, pour les commandes à régler (2a). */
 const cards = cardProvidersDouble("pi_link");
-
-/** Le secret de l'endpoint des liens, tel que Stripe le génère. */
-const LINKS_SECRET = "whsec_e2e_liens";
-/** Le signataire de Stripe, hors réseau : il ne sert qu'à signer les corps. */
-const stripeSigner = new Stripe("sk_test_signature_seule");
-/** La VRAIE vérification de signature et la vraie réduction des événements. */
-const linkWebhookVerifier = new StripeCheckoutGateway({
-  stripeConfig: () => null,
-  stripeLinksWebhookSecret: () => LINKS_SECRET,
-});
-
-let sessionCounter = 0;
-const expiredSessions: string[] = [];
-const fakeCheckout = {
-  createCheckoutSession: () => {
-    sessionCounter += 1;
-    const sessionId = `cs_e2e_${String(sessionCounter)}`;
-    return Promise.resolve({ sessionId, url: `https://checkout.stripe.test/${sessionId}` });
-  },
-  expireCheckoutSession: (sessionId: string) => {
-    expiredSessions.push(sessionId);
-    return Promise.resolve();
-  },
-  parseLinkWebhook: (rawBody: Buffer, signature: string) =>
-    linkWebhookVerifier.parseLinkWebhook(rawBody, signature),
-};
 
 interface SentMail {
   readonly to: string;
@@ -126,7 +95,6 @@ beforeAll(async () => {
     overrides: [
       { token: AdminTokenVerifier, value: stubAdminVerifier },
       { token: CardProviders, value: cards },
-      { token: CheckoutGateway, value: fakeCheckout },
       { token: MAILER, value: recordingMailer },
       { token: OrderMailOrigins, value: origins },
       {
@@ -146,7 +114,6 @@ afterAll(async () => {
 beforeEach(async () => {
   await ctx.reset();
   sentMails.splice(0);
-  expiredSessions.splice(0);
   clientBaseUrl = "https://app.lfc.test";
 });
 
@@ -194,45 +161,6 @@ async function placeCardOrder(companyId: string): Promise<string> {
     .expect(201);
   await ctx.drain();
   return jsonBody<{ id: string }>(response).id;
-}
-
-/** Ce que « Stripe » livre au webhook pour un lien : sa session, payée ou expirée. */
-interface LinkWebhook {
-  readonly kind: "link_paid" | "link_expired";
-  readonly sessionId: string;
-}
-
-/**
- * La page d'un lien, signée comme Stripe la signe et livrée à la route du
- * webhook des liens (`/payments/links/webhook`), son endpoint à lui.
- */
-async function webhook(event: LinkWebhook): Promise<void> {
-  const paid = event.kind === "link_paid";
-  const session = paid
-    ? { id: event.sessionId, payment_status: "paid" }
-    : { id: event.sessionId, payment_status: "unpaid" };
-  const payload = JSON.stringify({
-    id: `evt_${event.sessionId}_${event.kind}`,
-    object: "event",
-    type: paid ? "checkout.session.completed" : "checkout.session.expired",
-    data: {
-      object: { object: "checkout.session", ...session, metadata: { paymentLinkId: "pl_e2e" } },
-    },
-  });
-  await postLinkWebhook(
-    payload,
-    stripeSigner.webhooks.generateTestHeaderString({ payload, secret: LINKS_SECRET }),
-  ).expect(200);
-  await ctx.drain();
-}
-
-function postLinkWebhook(payload: string, signature: string) {
-  return ctx
-    .http()
-    .post("/payments/links/webhook")
-    .set("stripe-signature", signature)
-    .set("content-type", "application/json")
-    .send(payload);
 }
 
 describe("2a — les commandes à régler par carte", () => {
@@ -327,13 +255,10 @@ describe("2b — les liens libres", () => {
 
   it("crée une demande de paiement libre par la porte, la liste, et journalise sur la société", async () => {
     const { companyId } = await seedCompany();
-    const sessionsBefore = sessionCounter;
 
     const created = await create(companyId);
 
     expect(created.url.startsWith(`${PAY_ROOT}/payer/`)).toBe(true);
-    // Plus aucune page Stripe Checkout pour une création.
-    expect(sessionCounter).toBe(sessionsBefore);
     const links = jsonBody<PaymentLinkView[]>(await staff().get(LINKS).expect(200));
     expect(links).toHaveLength(1);
     expect(links[0]).toMatchObject({
@@ -380,14 +305,14 @@ describe("2b — les liens libres", () => {
 });
 
 /**
- * **Les anciens liens Stripe** (canal `checkout`), encore ouverts : ils gardent
- * leur chemin — leur webhook, le relais du webhook des cartes, l'expiration et
- * la fermeture de session — jusqu'à leur clôture (lot F2).
+ * **Les anciens liens Stripe Checkout** (canal `checkout`) : des lignes
+ * historiques. Aucun chemin ne les règle plus ; un lien relu encore ouvert
+ * s'annule sans appeler Stripe.
  */
-describe("2b — les anciens liens Stripe gardent leur chemin", () => {
+describe("2b — les anciens liens Stripe sont des lignes historiques", () => {
   let oldCounter = 0;
 
-  /** Un ancien lien ouvert, rangé comme sa ligne le porte. */
+  /** Un ancien lien, rangé comme sa ligne le porte. */
   async function seedOld(companyId: string): Promise<{ id: string; sessionId: string }> {
     oldCounter += 1;
     const id = `pl_old_${String(oldCounter)}`;
@@ -396,114 +321,37 @@ describe("2b — les anciens liens Stripe gardent leur chemin", () => {
     return { id, sessionId };
   }
 
-  it("la liste sert l'adresse Stripe d'un ancien lien ouvert", async () => {
+  it("la liste relit un ancien lien, sa colonne d'adresse comprise", async () => {
     const { companyId } = await seedCompany();
-    const { sessionId } = await seedOld(companyId);
+    const { id, sessionId } = await seedOld(companyId);
     const links = jsonBody<PaymentLinkView[]>(await staff().get(LINKS).expect(200));
+    expect(links[0]).toMatchObject({ id, status: "open" });
     expect(links[0]?.url).toBe(`https://checkout.stripe.test/${sessionId}`);
   });
 
-  it("le webhook payé passe le lien à payé, et un rejeu ne change rien", async () => {
-    const { companyId } = await seedCompany();
-    const { id, sessionId } = await seedOld(companyId);
-
-    await webhook({ kind: "link_paid", sessionId });
-    const paid = await ctx.prisma.paymentLink.findUniqueOrThrow({ where: { id } });
-    await webhook({ kind: "link_paid", sessionId });
-    const replayed = await ctx.prisma.paymentLink.findUniqueOrThrow({ where: { id } });
-
-    expect(paid.status).toBe("paid");
-    expect(replayed.paidAt).toEqual(paid.paidAt);
-  });
-
-  it("se paie encore par le relais du webhook des cartes", async () => {
-    const { companyId } = await seedCompany();
-    const { id, sessionId } = await seedOld(companyId);
-
-    await recordCardEvent(ctx, (eventId) => ({
-      kind: "checkout",
-      eventId,
-      eventType: "checkout.session.completed",
-      outcome: "paid",
-      sessionId,
-    }));
-
-    const row = await ctx.prisma.paymentLink.findUniqueOrThrow({ where: { id } });
-    expect(row.status).toBe("paid");
-    const links = jsonBody<PaymentLinkView[]>(await staff().get(LINKS).expect(200));
-    expect(links[0]?.url).toBeNull();
-  });
-
-  it("annule, ferme la session, et le webhook d'expiration qui suit ne réécrit rien", async () => {
+  it("un ancien lien relu ouvert s'annule sans révoquer de lien, et une seconde fois est refusée", async () => {
     const { companyId } = await seedCompany();
     const { id, sessionId } = await seedOld(companyId);
 
     await staff().post(`${LINKS}/${id}/cancel`).expect(204);
-    await webhook({ kind: "link_expired", sessionId });
 
     const after = await ctx.prisma.paymentLink.findUniqueOrThrow({ where: { id } });
-    expect(after.status).toBe("cancelled");
-    expect(expiredSessions).toEqual([sessionId]);
+    expect(after).toMatchObject({ status: "cancelled", stripeSessionId: sessionId });
     expect(await ctx.prisma.payLink.count()).toBe(0);
     await staff().post(`${LINKS}/${id}/cancel`).expect(409);
   });
 
-  it("🔴 payé après annulation : passe à payé, et la cloche sonne", async () => {
-    const { companyId } = await seedCompany();
-    const { id, sessionId } = await seedOld(companyId);
-    await staff().post(`${LINKS}/${id}/cancel`).expect(204);
-
-    await webhook({ kind: "link_paid", sessionId });
-
-    const after = await ctx.prisma.paymentLink.findUniqueOrThrow({ where: { id } });
-    expect(after.status).toBe("paid");
-    expect(after.cancelledAt).not.toBeNull();
-    expect(
-      await ctx.prisma.staffNotification.count({
-        where: { kind: "payment_link.paid_after_cancel" },
-      }),
-    ).toBe(1);
-  });
-
-  it("refuse une signature qui n'est pas celle de l'endpoint des liens, sans toucher au lien", async () => {
-    const { companyId } = await seedCompany();
-    const { id, sessionId } = await seedOld(companyId);
-    const payload = JSON.stringify({
-      id: "evt_forge",
-      object: "event",
-      type: "checkout.session.completed",
-      data: {
-        object: {
-          object: "checkout.session",
-          id: sessionId,
-          payment_status: "paid",
-          metadata: { paymentLinkId: id },
-        },
-      },
-    });
-    const forged = stripeSigner.webhooks.generateTestHeaderString({
-      payload,
-      secret: "whsec_un_autre_endpoint",
-    });
-
-    await postLinkWebhook(payload, forged).expect(400);
-
-    const after = await ctx.prisma.paymentLink.findUniqueOrThrow({ where: { id } });
-    expect(after.status).toBe("open");
-  });
-
-  it("expire un ancien lien ouvert sur le webhook d'expiration", async () => {
-    const { companyId } = await seedCompany();
-    const { id, sessionId } = await seedOld(companyId);
-
-    await webhook({ kind: "link_expired", sessionId });
-
-    const after = await ctx.prisma.paymentLink.findUniqueOrThrow({ where: { id } });
-    expect(after.status).toBe("expired");
+  it("la route du webhook des liens n'existe plus", async () => {
+    await ctx
+      .http()
+      .post("/payments/links/webhook")
+      .set("content-type", "application/json")
+      .send("{}")
+      .expect(404);
   });
 });
 
-/** Un ancien lien ouvert (canal `checkout`), relu de sa ligne comme le domaine le fait. */
+/** Un ancien lien (canal `checkout`), relu de sa ligne comme le domaine le fait. */
 function checkoutLinkOf(id: string, companyId: string, sessionId: string): PaymentLink {
   return PaymentLink.reconstitute({
     id,

@@ -32,7 +32,6 @@ import { PublicShelfStateReader } from "../src/lafoliecoffee/catalog/domain/port
 import { ShopShelfCache } from "../src/lafoliecoffee/catalog/domain/ports/shop-shelf-cache.js";
 import { ShopShelfSwitch } from "../src/lafoliecoffee/catalog/domain/ports/shop-shelf-switch.js";
 import { MarketDirectory } from "../src/lafoliecoffee/growth/domain/ports/market-directory.js";
-import { CheckoutGateway } from "../src/lafoliecoffee/payments/domain/ports/checkout-gateway.js";
 import { PublicSettingsEdgeCache } from "../src/lafoliecoffee/shared/public-settings-cache/domain/ports/public-settings-edge-cache.js";
 import { ShopCopyEdgeCache } from "../src/lafoliecoffee/shop-copy/domain/ports/shop-copy-edge-cache.js";
 import { DistanceMatrix } from "../src/delivery/domain/ports/distance-matrix.js";
@@ -60,7 +59,6 @@ import { E2E_NETWORK_LOG } from "./setup-env.js";
 type ProviderToken = symbol | (abstract new (...args: never[]) => unknown);
 
 const OUTBOUND_TOKENS: readonly { readonly token: ProviderToken; readonly name: string }[] = [
-  { token: CheckoutGateway, name: "Stripe.CheckoutGateway" },
   { token: MAILER, name: "Resend.MAILER" },
   { token: InboundMailReader, name: "Resend.InboundMailReader" },
   { token: MediaStore, name: "R2.MediaStore" },
@@ -89,7 +87,6 @@ const OUTBOUND_TOKENS: readonly { readonly token: ProviderToken; readonly name: 
  * les envelopper compterait chaque appel deux fois (relevé le 2026-11-06).
  */
 const SELF_GUARDED: ReadonlySet<string> = new Set([
-  "StripeCheckoutGateway",
   "EffectiveCopyMailer",
   "ResendInboundMailReader",
   "R2MediaStore",

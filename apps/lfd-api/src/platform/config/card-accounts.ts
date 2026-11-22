@@ -17,8 +17,8 @@
  * (`env-readers.ts`, `RUNTIME_KEYS` du Worker, la boucle du workflow).
  *
  * `lfc-stripe` pointe sur les trois variables d'avant le registre
- * (`STRIPE_*`), que `stripeConfig()` lit encore pour les liens de paiement de
- * `lafoliecoffee/payments` : une rotation de clé n'a qu'un endroit (§3.1).
+ * (`STRIPE_*`), que `stripeConfig()` lit aussi pour la sonde et le rapport de
+ * démarrage : une rotation de clé n'a qu'un endroit (§3.1).
  */
 
 /** Les types de prestataire qu'un adaptateur du code sait servir. */

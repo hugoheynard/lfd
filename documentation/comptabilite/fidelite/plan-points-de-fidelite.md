@@ -189,7 +189,7 @@ Règles :
      L'abonné peut échouer, puisque `BackgroundWork` avale son erreur. Le
      rattrapage garantit que le crédit arrive au plus tard au passage suivant.
 - **Les chemins vers `paid` sont à inventorier au lot D.** `settle` en est un.
-  Le lien de paiement en passe par un autre (`settle-payment-link.handler.ts`).
+  Le lien de paiement en passait par un autre (le règlement d'un lien Stripe Checkout, retiré le 2026-11-22).
   Le comptoir est à vérifier. Le rattrapage les couvre tous, puisqu'il lit
   l'état et non les événements.
   **Inventaire fait au lot D (2026-09-26)** : un seul chemin écrit `paid` sur
@@ -197,7 +197,7 @@ Règles :
   `ConfirmOrderPaymentHandler` sur le webhook `payment_intent.succeeded`, qui
   publie `OrderPaymentSettledEvent`. La page « régler » d'une commande refusée
   réutilise la même intention Stripe, donc le même chemin.
-  `settle-payment-link.handler.ts` passe à `paid` un **lien libre**
+  Le règlement d'un lien Stripe Checkout (retiré le 2026-11-22) passait à `paid` un **lien libre**
   (`PaymentLink`, rattaché à une société, sans commande) : il ne touche aucune
   commande. Le comptoir n'écrit aucun règlement. Hors code de production, seul
   le semis de démonstration (`dev/seeding/orders.seed.ts`) écrit `paid`.

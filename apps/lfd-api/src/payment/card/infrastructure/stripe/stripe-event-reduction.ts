@@ -2,7 +2,6 @@ import type Stripe from "stripe";
 
 import type {
   CardProviderEvent,
-  CheckoutEvent,
   OtherProviderEvent,
   RefundEvent,
   RefundMetadata,
@@ -18,13 +17,6 @@ import { REFUND_METADATA } from "./stripe-refund-calls.js";
 
 /** Stripe date ses objets en secondes Unix. */
 const MS_PER_SECOND = 1000;
-
-/**
- * La métadonnée qui marque une page hébergée ouverte par un LIEN de paiement
- * (`lafoliecoffee/payments/infrastructure/stripe-checkout-gateway.ts`, vérifié le
- * 2026-11-09) — 🔴 valeur posée chez Stripe, qui ne se renomme pas.
- */
-export const PAYMENT_LINK_METADATA_KEY = "paymentLinkId";
 
 /** Réduit un événement Stripe vérifié à la forme du bloc. */
 export function reduceEvent(event: Stripe.Event): CardProviderEvent {
@@ -43,8 +35,9 @@ export function reduceEvent(event: Stripe.Event): CardProviderEvent {
     return reduceRefund(origin, event.data.object);
   }
   // `charge.refunded` tombe dans `other`, et c'est voulu : son objet ne porte
-  // plus la liste des remboursements depuis l'API 2022-11-15.
-  return reduceCheckoutEvent(origin, event);
+  // plus la liste des remboursements depuis l'API 2022-11-15. Les
+  // `checkout.session.*` aussi : aucune page hébergée n'est plus ouverte.
+  return { ...origin, kind: "other" };
 }
 
 type Origin = Pick<OtherProviderEvent, "eventId" | "eventType">;
@@ -92,40 +85,4 @@ function metadataOf(refund: Stripe.Refund): RefundMetadata | null {
     return null;
   }
   return GENERATION.test(generation) ? { requestId, generation: Number(generation) } : null;
-}
-
-/**
- * Les trois événements d'une page hébergée, **limités aux liens** : une
- * session sans `paymentLinkId` n'a pas été ouverte par nous. `completed` ne
- * vaut paiement que si `payment_status = paid` — un moyen différé termine la
- * page avant d'encaisser, et `async_payment_succeeded` dira le reste.
- */
-function reduceCheckoutEvent(
-  origin: Origin,
-  event: Stripe.Event,
-): CheckoutEvent | OtherProviderEvent {
-  if (event.type === "checkout.session.completed") {
-    const session = event.data.object;
-    return isPaymentLink(session) && session.payment_status === "paid"
-      ? { ...origin, kind: "checkout", outcome: "paid", sessionId: session.id }
-      : { ...origin, kind: "other" };
-  }
-  if (event.type === "checkout.session.async_payment_succeeded") {
-    const session = event.data.object;
-    return isPaymentLink(session)
-      ? { ...origin, kind: "checkout", outcome: "paid", sessionId: session.id }
-      : { ...origin, kind: "other" };
-  }
-  if (event.type === "checkout.session.expired") {
-    const session = event.data.object;
-    return isPaymentLink(session)
-      ? { ...origin, kind: "checkout", outcome: "expired", sessionId: session.id }
-      : { ...origin, kind: "other" };
-  }
-  return { ...origin, kind: "other" };
-}
-
-function isPaymentLink(session: Stripe.Checkout.Session): boolean {
-  const id = session.metadata?.[PAYMENT_LINK_METADATA_KEY];
-  return id !== undefined && id !== "";
 }

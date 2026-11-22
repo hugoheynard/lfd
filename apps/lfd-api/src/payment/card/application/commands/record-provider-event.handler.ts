@@ -4,18 +4,13 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { Journal } from "../../../../platform/journal/journal.js";
 import { DurablePublisher } from "../../../../platform/outbox/durable-publisher.js";
-import {
-  CardPaymentCheckoutEvent,
-  CardPaymentUnmatchedFact,
-  type ProviderRefund,
-} from "../../../channels/facts/index.js";
+import { CardPaymentUnmatchedFact, type ProviderRefund } from "../../../channels/facts/index.js";
 import {
   InvalidPaymentAccountError,
   UnknownCardAccountError,
 } from "../../domain/errors/card-payment-errors.js";
 import type {
   CardProviderEvent,
-  CheckoutEvent,
   IntentFailedEvent,
   IntentPaidEvent,
   OtherProviderEvent,
@@ -46,8 +41,6 @@ type Recording<E extends CardProviderEvent> = (account: PaymentAccount, event: E
  *   §6.3), dans l'ordre du §3.6 — plus de relais `provider_refund_event`
  *   vers `lafoliecoffee/orders` depuis P1 ; un paiement qu'aucun sujet ne porte :
  *   `unmatched`, que `lafoliecoffee/payments` sonne ;
- * - **page hébergée d'un lien** : relayée à `lafoliecoffee/payments` (`checkout_event`,
- *   §4.5) — jamais un 200 muet ;
  * - **tout le reste** : `unmatched`, avec son type.
  *
  * Le journal de `card-payment` s'écrit sous la même unité de travail :
@@ -66,7 +59,6 @@ export class RecordProviderEventHandler implements ICommandHandler<
     paid: (account, event) => this.onIntent(account, event),
     payment_failed: (account, event) => this.onIntent(account, event),
     refund: (account, event) => this.onRefund(account, event),
-    checkout: (account, event) => this.onCheckout(account, event),
     other: (account, event) => this.unmatched(account, event, null, null),
   };
 
@@ -115,18 +107,6 @@ export class RecordProviderEventHandler implements ICommandHandler<
         refundedAt: event.createdAt,
       });
     }
-  }
-
-  private async onCheckout(account: PaymentAccount, event: CheckoutEvent): Promise<void> {
-    await this.durable.publish(
-      new CardPaymentCheckoutEvent(
-        account.name,
-        event.eventId,
-        event.eventType,
-        event.outcome,
-        event.sessionId,
-      ).durableFact(),
-    );
   }
 
   private async unmatched(

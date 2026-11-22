@@ -263,11 +263,11 @@ commande » (A4).
 `parseWebhook` → événements réduits `succeeded | failed | refund | link_paid |
 link_expired | ignored`), `payment/channels/requests/card-provider-refunds.ts`
 (`refundRemainder`, `findRefund` — **sans montant**),
-`payments/domain/ports/checkout-gateway.ts`.
+le port des pages Stripe Checkout (retiré le 2026-11-22, lot F2).
 
 **Adaptateurs Stripe** : `stripe-card-provider.ts` (223 l.),
 `stripe-intent-translation.ts` (90), `stripe-refund-calls.ts` (166),
-`stripe-card-provider.ts`, `stripe-checkout-gateway.ts` (81) ; le
+`stripe-card-provider.ts`, l'adaptateur Stripe Checkout (81, retiré le 2026-11-22) ; le
 contrôleur `card-payments-webhook.controller.ts` lit l'en-tête `stripe-signature`.
 Consommateurs du port hors `payments/` : 9 fichiers d'`orders/` + le module
 racine. **Aucun `import Stripe` hors `payments/infrastructure`** (vérifié).
@@ -279,7 +279,7 @@ racine. **Aucun `import Stripe` hors `payments/infrastructure`** (vérifié).
 | Payment Element, `clientSecret`, `publishableKey`, `loadStripe`                                                        | boutique `client/commande/reglement-page/`, `stripe-loader.service.ts` ; contrat `OrderPaymentIntent` | la page de paiement entière                               |
 | statuts de remboursement = `Refund.status` de Stripe                                                                   | `OrderRefundStatus` (enum DB), `REFUND_STATUSES`, `PaymentRefundStatus`, contrat `OrderRefundView`    | une traduction dans l'adaptateur, ou une migration d'enum |
 | noms de colonnes `stripe_payment_intent_id`, `stripe_refund_id` (×2), `stripe_session_id`, `stripe_customer_id`        | `orders.prisma`, `order-refund.prisma`, `payment-links`                                               | cosmétique (renommage = migration)                        |
-| métadonnées `lfd_refund_request` / `lfd_generation` / `lfd_order_id` sur les `re_…` ; `paymentLinkId` sur les sessions | `stripe-refund-calls.ts`, `stripe-checkout-gateway.ts`                                                | propre à chaque prestataire — reste dans l'adaptateur     |
+| métadonnées `lfd_refund_request` / `lfd_generation` / `lfd_order_id` sur les `re_…` ; `paymentLinkId` sur les sessions | `stripe-refund-calls.ts`, l'adaptateur Checkout (retiré)                                              | propre à chaque prestataire — reste dans l'adaptateur     |
 | le mot « Stripe » dans les JSDoc, les phrases de refus et les cloches                                                  | ~40 fichiers d'`orders/` et `accounting/` ; `client-copy` (2 textes)                                  | textes                                                    |
 | pas de rapprochement                                                                                                   | —                                                                                                     | à construire quel que soit le prestataire                 |
 

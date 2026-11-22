@@ -948,6 +948,20 @@ la TVA) est à confirmer par le cabinet avant d'écrire ce sujet.
 
 ## 6. La sortie de Stripe Checkout
 
+> ✅ **Bâti le 2026-11-22** (lot F2, sur `dev`, non commité à l'écriture).
+> L'étape 3 n'a rien eu à fermer : en production, aucune ligne de
+> `payment_links` n'avait de session encore `open` (Hugo, 2026-11-22) ; la
+> commande de fermeture n'a donc pas été bâtie. Retirés : le relais
+> (`card_payment.checkout_event` et son abonné), `/payments/links/webhook`
+> et ses commandes (régler, expirer), `StripeCheckoutGateway` et son port,
+> `STRIPE_LINKS_WEBHOOK_SECRET`. Les trois `checkout.session.*` qui
+> arriveraient encore au webhook des cartes sont rangés `unmatched`. Gardés :
+> les colonnes `stripe_session_id` et `url`, leur `CHECK`, et la lecture du
+> canal `checkout` (reconstitution, liste). Un ancien lien relu encore ouvert
+> s'annule sans appeler Stripe. Restent chez Hugo : supprimer la destination
+> Stripe des liens, décocher les `checkout.session.*` de l'endpoint des
+> cartes, retirer le secret chez Cloudflare et dans GitHub.
+
 1. Les nouveaux liens libres passent par la porte (lot F1).
 2. Les anciens restent payables par leur session : le **relais** du
    webhook des cartes (`card_payment.checkout_event`) continue de les
@@ -957,7 +971,7 @@ la TVA) est à confirmer par le cabinet avant d'écrire ce sujet.
    staff ferme **chez Stripe** chaque session encore ouverte
    (`expireCheckoutSession`, qui existe) et passe la ligne à `expired` ;
    une session déjà payée est relue et réglée. Les sessions durent 24 h
-   (aucun `expires_at` n'est posé par `stripe-checkout-gateway.ts`) : F2
+   (aucun `expires_at` n'était posé par l'adaptateur Stripe Checkout) : F2
    attend au moins ce délai après F1. Ensuite seulement, on retire : le relais et
    `card_payment.checkout_event`, `/payments/links/webhook`,
    `StripeCheckoutGateway`, `STRIPE_LINKS_WEBHOOK_SECRET` et la destination
@@ -979,7 +993,7 @@ la TVA) est à confirmer par le cabinet avant d'écrire ce sujet.
 | F1  | ✅ la demande de paiement libre par la porte (§5) : création sans réseau, sujet `free_charge` (devis et règlement), annulation qui révoque et annule l'intention, migration additive de `payment_links`                                                                                                                                     | P1         |
 | I1  | `card_link` : moyen, genre du moyen figé, échéance, statut, factures en retard, spécimen PDF (`specimen-data.ts`, `lint:pdf-specimens`) ; contrats et écrans (back-office : `collection-means-choice`, `paiement-section`, `sales-oversight-filters`, `accounting-values`, `invoice-phrases` ; boutique : `payment-section`, `compte-page`) | I0, §11 b  |
 | I2  | le sujet `invoice` : `onPaid`, `settled_by_card`, `invoice_card_settlement`, le lien à l'émission, l'e-mail                                                                                                                                                                                                                                 | I1, P1     |
-| F2  | la sortie de Stripe Checkout (§6)                                                                                                                                                                                                                                                                                                           | F1 + délai |
+| F2  | ✅ la sortie de Stripe Checkout (§6)                                                                                                                                                                                                                                                                                                        | F1 + délai |
 
 ## 8. Ce que le plan ne fait pas
 

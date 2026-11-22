@@ -85,14 +85,13 @@ reste : corriger ce que la mesure a trouvé (tableau 2), puis passer en
 
 ### Tableau 1 — les adaptateurs sortants
 
-32 fichiers font un appel sortant : 25 gardés, 4 délégués (le fichier construit
+31 fichiers font un appel sortant : 24 gardés, 4 délégués (le fichier construit
 le client, un autre fait les appels et se garde), 3 admis. Le garde est posé
-en tête de 41 méthodes. Chemins sous `apps/lfd-api/src/`.
+en tête de 39 méthodes. Chemins sous `apps/lfd-api/src/`.
 
 | Tiers                         | Fichier                                                                                                                                                                       | Garde                                                |
 | ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
 | Stripe                        | `payment/card/infrastructure/stripe/stripe-card-provider.ts`                                                                                                                  | `createIntent`, `retrieveIntent`, `cancelIntent`     |
-| Stripe                        | `lafoliecoffee/payments/infrastructure/stripe-checkout-gateway.ts`                                                                                                            | `createCheckoutSession`, `expireCheckoutSession`     |
 | Stripe                        | `payment/card/infrastructure/stripe/stripe-card-provider.ts`                                                                                                                  | `refundRemainder`, `findRefund`                      |
 | Stripe                        | `payment/card/infrastructure/stripe/stripe-refund-calls.ts`                                                                                                                   | délégué au remboursement ci-dessus                   |
 | Stripe                        | `payment/card/infrastructure/stripe/stripe-intent-translation.ts`                                                                                                             | admis : classes d'erreur, aucun appel                |

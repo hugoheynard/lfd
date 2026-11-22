@@ -66,21 +66,6 @@ export class PrismaPaymentLinkRepository extends PaymentLinkRepository {
     return this.load(id);
   }
 
-  async loadBySessionLocked(sessionId: string): Promise<PaymentLink | null> {
-    assertInsideTransaction();
-    await this.prisma.$queryRaw`
-      SELECT "id" FROM "public"."payment_links" WHERE "stripe_session_id" = ${sessionId} FOR UPDATE`;
-    return this.loadBySession(sessionId);
-  }
-
-  async loadBySession(sessionId: string): Promise<PaymentLink | null> {
-    const row = await this.prisma.paymentLink.findUnique({
-      where: { stripeSessionId: sessionId },
-      select: LINK_SELECT,
-    });
-    return row === null ? null : PaymentLink.reconstitute(row);
-  }
-
   async save(link: PaymentLink): Promise<void> {
     const { id, ...columns } = link.toPersistence();
     const { count } = await this.prisma.paymentLink.updateMany({

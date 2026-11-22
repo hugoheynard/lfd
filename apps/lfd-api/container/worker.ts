@@ -156,9 +156,6 @@ const RUNTIME_KEYS = [
   "STRIPE_SECRET_KEY",
   "STRIPE_PUBLISHABLE_KEY",
   "STRIPE_WEBHOOK_SECRET",
-  // Le secret de l'endpoint des liens de paiement (plan M2, §4.5) — vide tant
-  // que l'endpoint n'est pas créé chez Stripe : la route rend alors 400.
-  "STRIPE_LINKS_WEBHOOK_SECRET",
   // Jeton interne du recompute : forwardé au container (le guard le compare) ET
   // lu ici par le handler `scheduled` (le Cron Trigger le présente à l'endpoint).
   "RECOMPUTE_TOKEN",

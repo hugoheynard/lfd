@@ -9,20 +9,11 @@ import type { DurableFact } from "../../../../../platform/outbox/durable-event.j
 import { DurablePublisher } from "../../../../../platform/outbox/durable-publisher.js";
 import type { StaffNotice } from "../../../../../staff/notifications/domain/ports/staff-notifier.js";
 import { StaffNotifier } from "../../../../../staff/notifications/domain/ports/staff-notifier.js";
-import {
-  InvalidWebhookSignatureError,
-  PaymentGatewayUnavailableError,
-} from "../../../domain/errors/payment-errors.js";
-import { type CheckoutSession, PaymentLink } from "../../../domain/entities/payment-link.js";
+import { PaymentLink } from "../../../domain/entities/payment-link.js";
 import {
   AccountingSettingsReader,
   type AccountingSettings,
 } from "../../../domain/ports/accounting-settings.store.js";
-import {
-  CheckoutGateway,
-  type CheckoutSessionRequest,
-  type PaymentLinkWebhookEvent,
-} from "../../../domain/ports/checkout-gateway.js";
 import { PaymentLinkCompanyReader } from "../../../domain/ports/payment-link-company.reader.js";
 import { PaymentLinkRepository } from "../../../domain/ports/payment-link.repository.js";
 
@@ -42,18 +33,9 @@ export class InMemoryPaymentLinks extends PaymentLinkRepository {
     return Promise.resolve(row === undefined ? null : PaymentLink.reconstitute(row));
   }
 
-  loadBySession(sessionId: string): Promise<PaymentLink | null> {
-    const row = [...this.rows.values()].find((r) => r.stripeSessionId === sessionId);
-    return Promise.resolve(row === undefined ? null : PaymentLink.reconstitute(row));
-  }
-
   /** Le verrou n'a pas de sens en mémoire : les tests d'application sont séquentiels. */
   loadLocked(id: string): Promise<PaymentLink | null> {
     return this.load(id);
-  }
-
-  loadBySessionLocked(sessionId: string): Promise<PaymentLink | null> {
-    return this.loadBySession(sessionId);
   }
 
   save(link: PaymentLink): Promise<void> {
@@ -83,7 +65,7 @@ export class KnownCompanies extends PaymentLinkCompanyReader {
   }
 }
 
-/** Un lien d'avant la porte (canal `checkout`), tel qu'il est relu de sa ligne. */
+/** Un lien d'avant la porte (canal `checkout`), ligne historique relue telle quelle. */
 export function checkoutLink(
   id: string,
   companyId: string,
@@ -105,37 +87,6 @@ export function checkoutLink(
     cancelledAt: null,
     cancelledByStaffId: null,
   });
-}
-
-/** La page hébergée, sans réseau : garde ce qu'on lui a demandé. */
-export class RecordingCheckout extends CheckoutGateway {
-  readonly opened: CheckoutSessionRequest[] = [];
-  readonly expired: string[] = [];
-  refuseExpiry = false;
-
-  createCheckoutSession(request: CheckoutSessionRequest): Promise<CheckoutSession> {
-    this.opened.push(request);
-    const sessionId = `cs_test_${String(this.opened.length)}`;
-    return Promise.resolve({ sessionId, url: `https://checkout.stripe.test/${sessionId}` });
-  }
-
-  expireCheckoutSession(sessionId: string): Promise<void> {
-    if (this.refuseExpiry) {
-      return Promise.reject(new PaymentGatewayUnavailableError("session déjà payée"));
-    }
-    this.expired.push(sessionId);
-    return Promise.resolve();
-  }
-
-  /** L'événement que le prochain webhook des liens rendra ; la signature `bad` est refusée. */
-  linkEvent: PaymentLinkWebhookEvent = { kind: "ignored" };
-
-  parseLinkWebhook(_rawBody: Buffer, signature: string): PaymentLinkWebhookEvent {
-    if (signature === "bad") {
-      throw new InvalidWebhookSignatureError();
-    }
-    return this.linkEvent;
-  }
 }
 
 export class RecordingNotifier extends StaffNotifier {

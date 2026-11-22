@@ -47,32 +47,6 @@ describe("RecordProviderEventHandler — relais", () => {
     });
   });
 
-  it("la page d'un lien de paiement part en `checkout_event`", async () => {
-    const { durable, receive } = harness();
-
-    await receive({
-      kind: "checkout",
-      eventId: "evt_cs",
-      eventType: "checkout.session.completed",
-      outcome: "paid",
-      sessionId: "cs_1",
-    });
-
-    expect(durable.facts).toEqual([
-      {
-        type: "card_payment.checkout_event",
-        key: "card_payment.checkout_event:lfc-stripe:evt_cs",
-        payload: {
-          account: "lfc-stripe",
-          eventId: "evt_cs",
-          eventType: "checkout.session.completed",
-          outcome: "paid",
-          sessionId: "cs_1",
-        },
-      },
-    ]);
-  });
-
   it("tout autre type part en `unmatched`, jamais en 200 muet", async () => {
     const { durable, receive } = harness();
 
