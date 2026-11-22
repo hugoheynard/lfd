@@ -1,7 +1,7 @@
 /**
  * **Le règlement d'une commande tel qu'elle le voit**, dit au bloc
  * `card-payment` (plan
- * `documentation/commandes/modification/plan-m2-historique-de-transactions.md`,
+ * `documentation/payment/plan-m2-historique-de-transactions.md`,
  * §3.3, §4.3) — son `payment_status`, rien de plus ; `closed` seulement pour
  * une annulée que rien n'a réglée ni refusée.
  *

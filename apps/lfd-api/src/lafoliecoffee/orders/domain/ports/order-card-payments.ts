@@ -6,7 +6,7 @@ import type {
 
 /**
  * **Les gestes du commerce sur le premier paiement d'une commande** (plan
- * `documentation/commandes/modification/plan-m2-historique-de-transactions.md`,
+ * `documentation/payment/plan-m2-historique-de-transactions.md`,
  * §4.2, §4.6), par les ports du bloc `card-payment` — trois ports étroits
  * (ISP), un par famille de consommateurs, implémentés ensemble par
  * `OrderCardPayments`.

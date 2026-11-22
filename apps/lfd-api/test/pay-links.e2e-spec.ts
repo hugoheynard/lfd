@@ -1,6 +1,6 @@
 /**
  * E2E des **liens de paiement vers un sujet** (plan
- * `documentation/comptabilite/liens-de-paiement/plan-le-lien-vers-un-sujet.md`,
+ * `documentation/payment/liens-de-paiement/plan-le-lien-vers-un-sujet.md`,
  * lot P1, §2.1 à §2.3).
  *
  * Ce que seul le vrai SQL prouve :

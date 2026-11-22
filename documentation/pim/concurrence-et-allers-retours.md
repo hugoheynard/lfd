@@ -194,7 +194,7 @@ donc la clé étrangère vers le point de vente est **directe** et son `Restrict
 tient l'invariant sans qu'aucun dépôt n'ait à s'en souvenir. Le pré-contrôle du
 handler a disparu avec son aller-retour, et le compte d'usages de l'écran est un
 `groupBy` au lieu d'une relecture de toutes les grilles `jsonb` en mémoire. Voir
-[`contextes-et-points-de-vente.md`](./contextes-et-points-de-vente.md) § 8.
+[`contextes-et-points-de-vente.md`](contextes-et-points-de-vente.md) § 8.
 
 Deux leçons survivent :
 

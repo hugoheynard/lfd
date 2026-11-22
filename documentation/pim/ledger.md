@@ -5,8 +5,8 @@
 > Tenu au fil de l'eau. Chaque ajout a **deux lectures** : **PM** (ce que ça change pour le produit /
 > le métier, sans jargon) et **Tech** (ce qui a été fait, et pourquoi comme ça).
 >
-> Ce journal raconte le **chemin**. Les décisions structurantes vivent dans [`adr.md`](./adr.md),
-> les restes à faire dans [`todo.md`](./todo.md), le modèle dans [`data-model/`](./data-model/).
+> Ce journal raconte le **chemin**. Les décisions structurantes vivent dans [`adr.md`](adr.md),
+> les restes à faire dans [`todo.md`](todo.md), le modèle dans [`data-model/`](data-model).
 
 **Tenue** : une section `## AAAA-MM-JJ` par jour, la plus récente **en haut**. Un `###` par ajout.
 On n'y met que ce qui mérite d'être retrouvé dans trois mois.
@@ -90,7 +90,7 @@ un seul contexte est actif (**emporter**) → la boutique reçoit toujours 1 pro
 juste ; activer sur-place ou B2B plus tard = de la config, pas une refonte. Sur-place en ligne est
 **gelé** côté métier pour l'instant.
 
-**Tech** — Nouveau doc projection-sales-context.md (absorbé depuis par [`contextes-et-points-de-vente.md`](./contextes-et-points-de-vente.md)). Unité de
+**Tech** — Nouveau doc projection-sales-context.md (absorbé depuis par [`contextes-et-points-de-vente.md`](contextes-et-points-de-vente.md)). Unité de
 projection = **(article × contexte actif)** → 1 produit de l'ancien canal + appartenance à **une** collection
 `tva-*` (override, S1/S2). Registre de contextes (`emporter` seul actif). TVA résolue en composant
 catalogue (`Category.emporterTvaId`) + commerce (`TvaRegime.tag`) derrière un port (ADR-13).
@@ -149,7 +149,7 @@ l'ancien canal S1–S5). Le **SKU est partagé** entre les fiches d'un produit (
 permise). Boutique = disponibilité (`SalesChannels`) + navigation du QR, jamais le taux ; le fork
 `× boutique` reste **différé** au seul cas d'un article identique portant deux taux. Conséquences :
 `projectProduct` doit passer de 1:1 à **fiche→produit** (même SKU propagé), et le binding gagne le grain
-`(variant, mode)` — affine R4 de [`data-model/04`](./data-model/04-composition-et-canaux.md). Décisions
+`(variant, mode)` — affine R4 de [`data-model/04`](data-model/04-composition-et-canaux.md). Décisions
 D-SHOP-1..5 dans le doc, à graduer en ADR une fois le push livré. **Design seul — zéro code.**
 
 ## 2026-07-21 — Jour 2
@@ -243,7 +243,7 @@ utiles : un produit poussé deux fois sans modification est **ignoré** la secon
 en brouillon arrive **en brouillon** — jamais en ligne par accident.
 
 **Tech** — Adaptateur de l'ancien canal (`pim/channels/…`), dépendant du catalogue et jamais l'inverse
-→ [ADR-17](./adr.md#adr-17--secrets-dintégration-hors-base--pilote-de-canal-derrière-un-port).
+→ [ADR-17](adr.md#adr-17--secrets-dintégration-hors-base--pilote-de-canal-derrière-un-port).
 
 _Le secret ne va pas en base._ Réglages non sensibles en base et pilotables depuis l'écran ; **jeton
 d'API dans l'environnement** (le jeton d'administration de l'ancien canal via `AppConfig`). L'écran affiche sa _présence_,
@@ -349,8 +349,8 @@ boulanger prononce. Ce que chaque logiciel appelle l'article reste au niveau de 
 système **propose désormais une référence lisible tout seul** (`PATI-TARTE-FRAISE-6P`), modifiable.
 
 **Tech** — Revue adversariale de `_sources/sku-module-nestjs-doc.md` (archivée, non normative) →
-[`06-identifiants-et-sku.md`](./data-model/06-identifiants-et-sku.md) +
-[ADR-16](./adr.md#adr-16--un-sku-interne-unique--les-références-canal-vivent-au-bord).
+[`06-identifiants-et-sku.md`](data-model/06-identifiants-et-sku.md) +
+[ADR-16](adr.md#adr-16--un-sku-interne-unique--les-références-canal-vivent-au-bord).
 
 _Erreur de catégorie_ — `Sku = (variantUuid, channel, value)` avec `channel ∈ {ancien_canal, caisse,
 ean13}` : un SKU est par définition la référence **du commerçant** ; `ean13` n'est pas un canal mais
@@ -424,7 +424,7 @@ CRM). La résolution **calcule** et **trace** le chemin au lieu d'empiler des é
 Corollaire pratique : les canaux reçoivent un **nombre déjà résolu** — le moteur est unique, chez
 nous.
 
-_Construire vs acheter_ → [ADR-15](./adr.md#adr-15--construire-un-pim-minimal-plutôt-quen-acheter-un).
+_Construire vs acheter_ → [ADR-15](adr.md#adr-15--construire-un-pim-minimal-plutôt-quen-acheter-un).
 Décision : construire, **minimal**. L'argument décisif n'est pas le coût mais l'**ajustement sur le
 spécifique** (`kind`, capacité de production ≠ stock, GS1→INCO, déclinaison commune caisse/web) —
 qu'aucun PIM générique ne porte autrement qu'en **configuration**, c'est-à-dire en renonçant au
@@ -447,7 +447,7 @@ même produit différemment. Le modèle est maintenant plus simple, plus sûr, e
 
 _Fond_ — le modèle était **conçu table-first** puis étiqueté « event-sourced » : aucune commande,
 aucun event nommé nulle part, alors que D6 (frontières d'agrégat) était déclaré bloquant. Nouveau
-doc [`00-langage-et-comportement.md`](./data-model/00-langage-et-comportement.md) : glossaire
+doc [`00-langage-et-comportement.md`](data-model/00-langage-et-comportement.md) : glossaire
 ubiquitaire (« un client achète une **déclinaison**, jamais un produit »), **4 agrégats** (`Product`
 racine possédant déclinaisons + fiches réglementaires ; `Category` ; `Collection` ; `MediaAsset`),
 la **liste exhaustive des commandes et des faits**, le cycle de vie `draft → published → archived`.
@@ -475,11 +475,11 @@ LocalizedText, `has_variants`, `barcode`…) : amputé, il ne couvre plus que l'
 des médias remplacée par trois tables de liaison, `kind` explicitement marqué « pas un aiguillage »
 (OCP), `Category` scindée en **taxonomie** (arbre) + **`Collection`** (n:n).
 
-_Nouveau_ — [ADR-13](./adr.md#adr-13--composition-par-tables-satellites-canaux-au-bord) et
-[`04-composition-et-canaux.md`](./data-model/04-composition-et-canaux.md) : trois natures de table
+_Nouveau_ — [ADR-13](adr.md#adr-13--composition-par-tables-satellites-canaux-au-bord) et
+[`04-composition-et-canaux.md`](data-model/04-composition-et-canaux.md) : trois natures de table
 (socle / couche canonique / contexte canal), motif **PK = FK**, bindings sur la **déclinaison** par
 `id`, séparation binding mécanique ↔ overrides éditoriaux, **règle de promotion** de `attributes`.
-Le `pos_family_code` PI Helios **sort de `Category`**. [ADR-14](./adr.md#adr-14--couche-logistique-descopée-de-la-v1) :
+Le `pos_family_code` PI Helios **sort de `Category`**. [ADR-14](adr.md#adr-14--couche-logistique-descopée-de-la-v1) :
 couche logistique et hiérarchie GDSN **descopées** — le code-barres reviendra par le binding caisse
 quand D4 sera tranché.
 
@@ -536,7 +536,7 @@ réapprendre.
 **Tech** — pnpm workspaces + **Turborepo** (`apps/*`, `packages/*`), calqué sur SH3PHERD. Nx a été
 essayé **et abandonné** : son preset impose un TS _project-references_ incompatible avec Angular
 (mur rencontré à l'`init`). Turbo gagne aussi sur la transparence (tout est greppable, pas de target
-inférée). → [ADR-08](./adr.md#adr-08--monorepo-turborepo--pnpm-pas-nx)
+inférée). → [ADR-08](adr.md#adr-08--monorepo-turborepo--pnpm-pas-nx)
 
 ### Les deux apps du PIM sont debout
 
@@ -555,7 +555,7 @@ fois qui évite des bugs coûteux plus tard.
 **Tech** — Couche de flags partagée `tsconfig/tsflags.backend.json` (base stricte + **`noUncheckedIndexedAccess`**,
 `verbatimModuleSyntax`, `noPropertyAccessFromIndexSignature`). Ces flags **imposent l'ESM** → backend
 passé en `type: module` + imports `.js`. Tests : **Jest** (back) et **Vitest** (front), configs
-reprises de SH3PHERD. → [ADR-10](./adr.md#adr-10--backend-esm--flags-ts-stricts-partagés)
+reprises de SH3PHERD. → [ADR-10](adr.md#adr-10--backend-esm--flags-ts-stricts-partagés)
 
 ### Dépôt privé + confort de dev
 
@@ -620,7 +620,7 @@ calories, la répartition glucides / lipides / protéines, et l'indice glycémiq
 
 **Tech** — `NutritionInfo` rattachée au produit, valeurs **pour 100 g**. `allergens` requis (`[]` =
 déclaration positive « aucun »). Invariant : **pas de publication sans allergènes déclarés**.
-→ [`data-model/03-nutrition.md`](./data-model/03-nutrition.md)
+→ [`data-model/03-nutrition.md`](data-model/03-nutrition.md)
 
 ### Base de données : Prisma + Postgres local
 
@@ -642,7 +642,7 @@ clients B2C — eux passent par l'ancien canal).
 **Tech** — `src/infra/auth/` : vérification des JWT RS256 contre le JWKS du tenant avec **`jose`**
 (pas Passport — ESM natif, testable). Guard **global** → API **protégée par défaut**, ouverture
 explicite via `@Public()`. Fail-fast si la config Auth0 manque. Tests d'intégration sur une mini-app
-Nest. → [ADR-12](./adr.md#adr-12--authentification-déléguée-à-auth0-vérifiée-avec-jose)
+Nest. → [ADR-12](adr.md#adr-12--authentification-déléguée-à-auth0-vérifiée-avec-jose)
 
 ### Durcissement du jeu de flags TypeScript
 
@@ -656,7 +656,7 @@ vrais trous** : `noImplicitReturns` et `allowUnusedLabels: false`. Comblés, pui
 **`exactOptionalPropertyTypes`** et **`noUncheckedSideEffectImports`** (absents de SH3), et épinglage
 explicite des flags impliqués par `strict`. **`erasableSyntaxOnly` délibérément écarté** : il casserait
 Nest (parameter properties + enums). Build, lint et 17 tests verts — le client Prisma généré passe la
-barre sans concession. → [ADR-10](./adr.md#adr-10--backend-esm--flags-ts-stricts-partagés)
+barre sans concession. → [ADR-10](adr.md#adr-10--backend-esm--flags-ts-stricts-partagés)
 
 ---
 

@@ -2,7 +2,7 @@ import { INTENT_KEY, freshIntent } from "./intent-key.js";
 import { randomUUID } from "node:crypto";
 /**
  * E2E des **liens de paiement** (`/admin/accounting/payment-links`, plan
- * `documentation/comptabilite/liens-de-paiement/les-liens-de-paiement.md`).
+ * `documentation/payment/liens-de-paiement/les-liens-de-paiement.md`).
  *
  * Ce que seul le vrai SQL prouve :
  * - la lecture des commandes à régler filtre `pending | failed` hors annulées ;

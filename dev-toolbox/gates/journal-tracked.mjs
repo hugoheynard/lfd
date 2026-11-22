@@ -209,7 +209,7 @@ const MONEY_ZONES = ["order-waivers", "payments", "loyalty"];
 
 /**
  * **Le bloc qui encaisse, à la racine** (`payment/`, plan M2,
- * `documentation/commandes/modification/plan-m2-historique-de-transactions.md`
+ * `documentation/payment/plan-m2-historique-de-transactions.md`
  * §4.1) : un bloc de premier niveau, pas sous `src/lafoliecoffee/` —
  * `MONEY_ZONES` ne peut donc pas le viser. La zone couvre tout le bloc, la
  * carte, les liens et ses canaux. Sans dossier, elle est vide (garde

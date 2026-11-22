@@ -5,7 +5,7 @@
 > facture d'une période, la fermeture des anciens liens Stripe) est dans
 > [`plan-le-lien-vers-un-sujet.md`](plan-le-lien-vers-un-sujet.md).
 > Le blocage du prélèvement, longtemps décrit dans la même page, a sa doc :
-> [`../prelevement/blocage-du-prelevement.md`](../prelevement/blocage-du-prelevement.md).
+> [`../../comptabilite/prelevement/blocage-du-prelevement.md`](../../comptabilite/prelevement/blocage-du-prelevement.md).
 
 # Partie 1 — L'explication simple
 

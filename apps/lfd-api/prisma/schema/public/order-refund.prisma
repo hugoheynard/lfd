@@ -3,7 +3,7 @@
 /// autres sont notés, jamais supprimés.
 ///
 /// 🔴 **Sans lecteur ni écrivain depuis le lot P1.c** du plan M2
-/// (`documentation/commandes/modification/plan-m2-historique-de-transactions.md`,
+/// (`documentation/payment/plan-m2-historique-de-transactions.md`,
 /// §5.1, §5.4) : le remboursement par carte vit dans le schéma `payment` (copié par
 /// la migration `20261110010200_la_copie_des_remboursements`). Les modèles de
 /// ce fichier restent, SANS relation, pour le harnais,

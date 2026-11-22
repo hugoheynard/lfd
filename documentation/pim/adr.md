@@ -23,7 +23,7 @@ l'affichage. Mapping **n:1** maintenu (donnée de référence versionnée), serv
 **Raison** : GS1 = sur-ensemble international interopérable (B2B/GDSN) ; INCO = obligation légale UE.
 Stocker le plus riche, projeter vers le bas (l'inverse serait avec perte).
 **Conséquences** : détail dans
-[`data-model/05-allergenes-gs1-inco.md`](./data-model/05-allergenes-gs1-inco.md).
+[`data-model/05-allergenes-gs1-inco.md`](data-model/05-allergenes-gs1-inco.md).
 Le bloc est en place : [`apps/lfd-api/src/pim/reference/allergens`](../../apps/lfd-api/src/pim/reference/allergens).
 
 ✅ **Le « à peupler » est fait** (vérifié le 2026-09-13), et autrement que prévu :
@@ -50,7 +50,7 @@ canaux — c'est-à-dire passé aux fonctions pures plutôt que lu par elles, ce
 les tables sont **écrites directement** par les handlers. **Pas** de table `events`, **pas** de
 projecteurs, **pas** d'upcasting — pour l'instant. Trois règles rendent le passage ultérieur à
 l'event store **non destructif** (détail dans
-[`data-model/00-langage-et-comportement.md`](../pim/data-model/00-langage-et-comportement.md#5--les-trois-règles-irréversibles)) :
+[`data-model/00-langage-et-comportement.md`](data-model/00-langage-et-comportement.md#5--les-trois-règles-irréversibles)) :
 
 - **R1 — ids assignés par la commande** (UUID v7 applicatif). Jamais de séquence ni de
   `gen_random_uuid()` en base : un replay régénérerait des ids différents, alors que la caisse,
@@ -79,7 +79,7 @@ prix affiché le 24/12 ? »), ou obligation d'audit externe, ou un domaine à co
 **Conséquences** :
 
 - **D6 est clos** : les frontières d'agrégat sont tranchées dans
-  [`00-langage-et-comportement.md`](../pim/data-model/00-langage-et-comportement.md#2--agrégats--la-décision-ex-d6)
+  [`00-langage-et-comportement.md`](data-model/00-langage-et-comportement.md#2--agrégats--la-décision-ex-d6)
   — `Product` (racine, possède déclinaisons + fiches réglementaires), `Category`, `Collection`,
   `MediaAsset`.
 - Le schéma Prisma n'est plus bloqué.
@@ -115,7 +115,7 @@ l'ancien canal, le catalogue compilerait-il encore ?_
   jetable et re-poussable, le second est une saisie utilisateur à ne jamais écraser.
 - `attributes` (jsonb) est soumis à une **règle de promotion** : lu par un adaptateur ou utilisé par
   ≥2 familles ⇒ devient une colonne.
-- Détail : [`data-model/04-composition-et-canaux.md`](../pim/data-model/04-composition-et-canaux.md).
+- Détail : [`data-model/04-composition-et-canaux.md`](data-model/04-composition-et-canaux.md).
 
 ## ADR-14 — Couche logistique descopée de la v1
 
@@ -297,7 +297,7 @@ le produit ; suffixe numérique lisible pour la déclinaison, jamais un hash.
 
 - **GTIN/EAN-13 descopé** (ADR-14) : la plupart des articles sont vendus non préemballés, les codes
   valides s'achètent auprès de GS1, et le code-barres est un besoin de **caisse** → binding, à D4.
-- Détail : [`data-model/06-identifiants-et-sku.md`](../pim/data-model/06-identifiants-et-sku.md).
+- Détail : [`data-model/06-identifiants-et-sku.md`](data-model/06-identifiants-et-sku.md).
   Proposition d'origine archivée (non normative) sous `data-model/_sources/`.
 
 ## ADR-17 — Secrets d'intégration hors base ; pilote de canal derrière un port

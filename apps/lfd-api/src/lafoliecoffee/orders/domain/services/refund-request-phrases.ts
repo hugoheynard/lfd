@@ -36,7 +36,7 @@ const AWAITING_DECISION =
 /**
  * **La phrase du dernier échec d'une demande de remboursement** (doc
  * `documentation/commandes/annulation/annulation-par-le-staff.md`, C4.9 ; plan
- * `documentation/commandes/modification/plan-m2-historique-de-transactions.md`,
+ * `documentation/payment/plan-m2-historique-de-transactions.md`,
  * §3.3, §5.3) — lue par l'équipe sous le bandeau, sans le code sous les yeux.
  * Pure. `lastFailure` est le code BRUT que rend le bloc `card-payment` ; un
  * code inconnu se dit tel quel plutôt que d'être tu.

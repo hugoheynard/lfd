@@ -1,6 +1,6 @@
 /**
  * E2E de **la demande de paiement libre par la porte** (plan
- * `documentation/comptabilite/liens-de-paiement/plan-le-lien-vers-un-sujet.md`,
+ * `documentation/payment/liens-de-paiement/plan-le-lien-vers-un-sujet.md`,
  * §5, lot F1) : un lien libre créé au back-office se paie par la page
  * `/payer/…` du bloc `payment`, sujet `free_charge`.
  *

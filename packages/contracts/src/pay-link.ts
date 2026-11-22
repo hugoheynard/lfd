@@ -4,7 +4,7 @@ import { PAY_LINK_TOKEN_LENGTH } from "./pay-link.values.js";
 
 /**
  * Contrat de fil de **la page publique d'un lien de paiement** (plan
- * `documentation/comptabilite/liens-de-paiement/plan-le-lien-vers-un-sujet.md`,
+ * `documentation/payment/liens-de-paiement/plan-le-lien-vers-un-sujet.md`,
  * §2.3). Le jeton voyage dans le CORPS d'un `POST`, jamais dans un chemin de
  * l'API : la page `/payer/<jeton>` le lit dans son adresse et le recopie.
  * Le schéma ne valide que la FORME du jeton.

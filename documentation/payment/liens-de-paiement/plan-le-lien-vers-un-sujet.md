@@ -545,7 +545,7 @@ règlement à elle : un lien générique lui suffit.
 ## 4. Le sujet `invoice` — la carte, troisième moyen du paiement au compte
 
 Propriétaire : `lafoliecoffee/accounting/`. Tout suit le virement
-([`../le-paiement-par-virement.md`](../le-paiement-par-virement.md)) ; seul
+([`../../comptabilite/le-paiement-par-virement.md`](../../comptabilite/le-paiement-par-virement.md)) ; seul
 ce qui diffère est écrit ici.
 
 ### 4.1 Le moyen `card_link`

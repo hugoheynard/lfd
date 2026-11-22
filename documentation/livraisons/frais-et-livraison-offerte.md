@@ -467,7 +467,7 @@ entier) :
 ## Les écrans du back-office
 
 **Réglages › Livraison** — dossier
-[`delivery-zones-section/`](../../apps/lfd-backoffice-frontend/src/app/b2b/reglages/delivery-zones-section/) :
+[`delivery-zones-section/`](../../apps/lfd-backoffice-frontend/src/app/b2b/reglages/delivery-zones-section) :
 
 - [`delivery-threshold.ts`](../../apps/lfd-backoffice-frontend/src/app/b2b/reglages/delivery-zones-section/delivery-threshold.ts) :
   euros saisis → centimes ; vide → `null` ; négatif ou sous-centime →
@@ -488,7 +488,7 @@ d'erreur : `errors` de `fold-number-input` attend des erreurs de signal forms.
 À remonter à fold si un rendu d'erreur est voulu.
 
 **Promotions** — dossier
-[`targeted-promotions/`](../../apps/lfd-backoffice-frontend/src/app/targeted-promotions/) :
+[`targeted-promotions/`](../../apps/lfd-backoffice-frontend/src/app/targeted-promotions) :
 le choix « Livraison offerte » (`promotion-words.ts`,
 `DraftFulfillmentKind = 'displayed_price' | 'basket' | 'delivery_fee'` dans
 `promotion-draft.ts`) ; aucun effet à saisir, ni article, ni cumul, ni retrait ;

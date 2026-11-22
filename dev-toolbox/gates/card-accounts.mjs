@@ -2,7 +2,7 @@
 /**
  * Gate : **les comptes d'encaissement du registre sont ceux que la base admet.**
  *
- * Plan `documentation/commandes/modification/plan-m2-historique-de-transactions.md`,
+ * Plan `documentation/payment/plan-m2-historique-de-transactions.md`,
  * §3.2 et §4.1 (2026-11-09). Un compte d'encaissement par carte a deux
  * moitiés : son nom dans le registre du dépôt
  * (`apps/lfd-api/src/platform/config/card-accounts.ts`, `CARD_ACCOUNTS`) et

@@ -9,17 +9,17 @@
 > runbook « Déployer P1 » (contrôle de la copie, droit `card_payments` à
 > l'admin, réouverture) sont à faire par Hugo. **S2 (la hausse)** est
 > **en production depuis le 2026-11-10** (`f55ad8e6a`) : décrite au présent dans
-> [`modifier-une-commande.md`](modifier-une-commande.md), §2.7, son plan retiré ;
-> puis S1 (`modifier-une-commande.md` §2.7.12), S3.
+> [`../commandes/modification/modifier-une-commande.md`](../commandes/modification/modifier-une-commande.md), §2.7, son plan retiré ;
+> puis S1 (`../commandes/modification/modifier-une-commande.md` §2.7.12), S3.
 
 > **Version 14, 2026-11-10** — P0 est **bâti et déployé en production** (§4.9). `vitruve` sur la v13 : **« rien ne bloque »** ; trois incohérences de texte et des précisions, corrigées ici (§15 nonies). **Le bâti de P1 commence sur cette version.** La v12 a eu un bloquant de spécification (la source du bandeau) et cinq règles manquantes (§15 octies), toutes écrites ici. La v11 a eu un bloquant de détail (une requête sur une colonne qui n'existe pas) et six sérieux de précision (§15 septies) ; `vitruve` y a déclaré conformes l'union `onRefundOutcome` et l'ordre des verrous. **Décision de Hugo (2026-11-10) : P1 se déploie BOUTIQUE FERMÉE, en pré-release** — toute la mécanique de « fenêtre de bascule » des v9 et v10 (relais, rattrapage borné, colonne miroir, abonné déménagé, champ à côté du contrat) est **retirée** et remplacée par une condition de déploiement vérifiée à la main (§5.2) ; ce que `vitruve` avait de structurel sur la v10 (§15 quinquies) est intégré (§15 sexies). Versions 7 à 10 : `599b24732`, `923f4e4cf`, v9 et v10 non commitées. Le plan **unique** de M2, écrit après la
 > relecture complète du paiement et du remboursement
-> ([`../reglement/relecture-paiement-et-remboursement.md`](../reglement/relecture-paiement-et-remboursement.md),
+> ([`relecture-paiement-et-remboursement.md`](relecture-paiement-et-remboursement.md),
 > à lire d'abord), des deux portes de frontière, du workflow de déploiement,
 > du registre des abonnés durables et de l'écriture comptable du carnet. Il
 > **remplace** les §9 à §20 de
 > l'ancien plan de la modification par carte (retiré le 2026-11-10 ; son §17
-> sur le bon est recopié au §10 ; l'état bâti : [`modifier-une-commande.md`](modifier-une-commande.md)).
+> sur le bon est recopié au §10 ; l'état bâti : [`../commandes/modification/modifier-une-commande.md`](../commandes/modification/modifier-une-commande.md)).
 > Versions 1 à 4 et leurs contradictions par `vitruve` : `d2632e136`,
 > `6eef19357`, `ca3b6c0c4`, `d5e5d7a49`, `e1b7f8a75`, `c290188ed`,
 > `eaec69258`, `d87322030`, `68f63d17b`. **P0 et P1 sont bâtis et en production** (§4.9, §5.6 ; `adb9c41e3`). Touche l'argent : `vitruve` avant Hugo.
@@ -982,7 +982,7 @@ annoncé = encaissé − réussi − annoncé des `amount` non terminales.
 
 ## 8. Lot S2 — la hausse
 
-> ✅ **En production depuis le 2026-11-10** (`f55ad8e6a`). L'état bâti est décrit dans [`modifier-une-commande.md`](modifier-une-commande.md), §2.7 (le plan S2 qui détaillait ce lot est retiré) : ce qui suit est l'esquisse d'origine, que le bâti corrige (rendu en `adjustment`, rattrapage chez le prestataire, routage par rôle) et qui **ne fait pas foi**.
+> ✅ **En production depuis le 2026-11-10** (`f55ad8e6a`). L'état bâti est décrit dans [`../commandes/modification/modifier-une-commande.md`](../commandes/modification/modifier-une-commande.md), §2.7 (le plan S2 qui détaillait ce lot est retiré) : ce qui suit est l'esquisse d'origine, que le bâti corrige (rendu en `adjustment`, rattrapage chez le prestataire, routage par rôle) et qui **ne fait pas foi**.
 
 Le projet (`lafoliecoffee/orders`, `order_revision_proposal`) : contenu saisi et
 révision composée, total visé, `complement_cents`, auteur, `payment_id`,

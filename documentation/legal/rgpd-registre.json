@@ -2037,7 +2037,7 @@
       "colonne": "payment.card_refund_request.requested_by",
       "personne": "staff",
       "categorie": "auteur-geste",
-      "finalite": "Tracer quel membre du staff a demandé un remboursement par carte (annulation, baisse) — reprise de `order_refund_request.requested_by`, plan M2 (`commandes/modification/plan-m2-historique-de-transactions.md`), lot P1.",
+      "finalite": "Tracer quel membre du staff a demandé un remboursement par carte (annulation, baisse) — reprise de `order_refund_request.requested_by`, plan M2 (`payment/plan-m2-historique-de-transactions.md`), lot P1.",
       "conservation": "aucune-limite-decidee",
       "purge": null,
       "information": false

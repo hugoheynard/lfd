@@ -3,7 +3,7 @@ import { join, relative, sep } from "node:path";
 
 /**
  * **Plus aucun lecteur des anciennes tables du remboursement** (plan
- * `documentation/commandes/modification/plan-m2-historique-de-transactions.md`,
+ * `documentation/payment/plan-m2-historique-de-transactions.md`,
  * §5.4, lot P1.c).
  *
  * Le remboursement par carte vit dans le schéma `payment` ; les tables

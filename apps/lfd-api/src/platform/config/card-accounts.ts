@@ -1,7 +1,7 @@
 /**
  * **Le registre des comptes d'encaissement par carte** — sa moitié écrite
  * dans le dépôt (plan
- * `documentation/commandes/modification/plan-m2-historique-de-transactions.md`,
+ * `documentation/payment/plan-m2-historique-de-transactions.md`,
  * §3.2).
  *
  * Un compte est un contrat chez un prestataire : un nom stable (persisté sur

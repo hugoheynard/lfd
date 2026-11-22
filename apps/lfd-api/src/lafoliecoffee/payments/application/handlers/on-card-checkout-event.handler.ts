@@ -18,7 +18,7 @@ export const ON_CARD_CHECKOUT_EVENT = "b2b.payments.payment-link-from-card-webho
 
 /**
  * **Une page de lien relayée par le webhook des cartes** (plan
- * `documentation/commandes/modification/plan-m2-historique-de-transactions.md`,
+ * `documentation/payment/plan-m2-historique-de-transactions.md`,
  * §4.5) — l'abonné TRANSITOIRE du fait `card_payment.checkout_event`, tant
  * que l'endpoint Stripe des liens ne reçoit pas seul les `checkout.*` ;
  * retiré avec le relais (P2).

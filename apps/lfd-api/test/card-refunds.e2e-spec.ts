@@ -1,6 +1,6 @@
 /**
  * E2E du **remboursement par carte, dans le bloc `card-payment`** (plan
- * `documentation/commandes/modification/plan-m2-historique-de-transactions.md`,
+ * `documentation/payment/plan-m2-historique-de-transactions.md`,
  * lot P1.b, §3.3 à §3.6, §6.3).
  *
  * Le parcours entier, contre le vrai Postgres : une commande payée par le vrai

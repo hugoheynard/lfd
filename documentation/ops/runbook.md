@@ -1364,7 +1364,7 @@ le même profil que le webhook Resend : la chaîne ne se vérifie qu'en ligne.
 ## Abonner le webhook Stripe aux liens de paiement
 
 Les **liens de paiement libres**
-([`les-liens-de-paiement.md`](../comptabilite/liens-de-paiement/les-liens-de-paiement.md),
+([`les-liens-de-paiement.md`](../payment/liens-de-paiement/les-liens-de-paiement.md),
 §2 et §3) sont des pages Stripe Checkout hébergées. Stripe ne prévient le backend
 que des événements auxquels l'endpoint est **abonné** — et un événement non
 abonné ne produit **aucune erreur** : le lien reste `open` pour toujours alors
@@ -1378,7 +1378,7 @@ reçoit `payment_intent.succeeded` et `payment_intent.payment_failed`. Le bloc
 > ⚠️ Une seconde destination, « lfd-api production — liens de paiement »
 > (`POST /payments/links/webhook`, secret `STRIPE_LINKS_WEBHOOK_SECRET`),
 > existe **désactivée** depuis le 2026-11-09. Ne pas l'activer tant que le
-> plan [`plan-le-lien-vers-un-sujet.md`](../comptabilite/liens-de-paiement/plan-le-lien-vers-un-sujet.md)
+> plan [`plan-le-lien-vers-un-sujet.md`](../payment/liens-de-paiement/plan-le-lien-vers-un-sujet.md)
 > n'est pas tranché : il propose de s'en passer.
 
 Ajouter ces **trois** événements aux deux déjà cochés :
@@ -1435,7 +1435,7 @@ commande ne porte (un lien libre) sonne aussi la cloche, sans rien écrire.
 
 ## Déployer P1 (boutique fermée) — le remboursement passe au bloc `card-payment`
 
-> Plan [`commandes/modification/plan-m2-historique-de-transactions.md`](../commandes/modification/plan-m2-historique-de-transactions.md),
+> Plan [`payment/plan-m2-historique-de-transactions.md`](../payment/plan-m2-historique-de-transactions.md),
 > §5.2 (la condition de déploiement, décidée par Hugo le 2026-11-10 :
 > pré-release, **boutique fermée**, sans fenêtre de bascule). Écrit au lot
 > P1.c (2026-11-10). **Irréversible** : les migrations
@@ -1597,7 +1597,7 @@ requête du point 1.
 
 ## Déployer le vocabulaire du paiement (lot V, `20261122110000_le_vocabulaire_du_paiement`)
 
-> Plan [`comptabilite/liens-de-paiement/plan-le-lien-vers-un-sujet.md`](../comptabilite/liens-de-paiement/plan-le-lien-vers-un-sujet.md),
+> Plan [`payment/liens-de-paiement/plan-le-lien-vers-un-sujet.md`](../payment/liens-de-paiement/plan-le-lien-vers-un-sujet.md),
 > §0.4. Le schéma `card_payment` devient `payment`, ses tables
 > `payment`, `refund`, `refund_request` et `takeover` deviennent
 > `card_payment`, `card_refund`, `card_refund_request` et `card_takeover`

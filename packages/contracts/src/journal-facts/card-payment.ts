@@ -4,7 +4,7 @@ import { cents, fact, payload, subjectLabel } from "./fact.js";
 
 /**
  * **L'encaissement par carte, ses remboursements** (plan
- * `documentation/commandes/modification/plan-m2-historique-de-transactions.md`,
+ * `documentation/payment/plan-m2-historique-de-transactions.md`,
  * §3.3, lot P1.b) — les faits que le bloc `card-payment` écrit lui-même, sous
  * le sujet `card_payment`.
  *

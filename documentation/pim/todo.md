@@ -9,8 +9,8 @@
 > l'ouvrir.
 >
 > **Ce qui est parti n'est pas perdu** : le chemin est dans
-> [`ledger.md`](./ledger.md), les décisions structurantes dans
-> [`adr.md`](./adr.md), et chaque point fait l'était déjà dans le code. Vérifié
+> [`ledger.md`](ledger.md), les décisions structurantes dans
+> [`adr.md`](adr.md), et chaque point fait l'était déjà dans le code. Vérifié
 > point par point contre le dépôt avant retrait — dix étaient faits sans être
 > cochés.
 >
@@ -26,7 +26,7 @@
 | D3  | **Périmètre recettes / BOM** | Nomenclatures matières dans le scope v1 (calcul besoins farine…) ou plus tard ? Aucune table `Recipe` n'existe — c'est la **seule** décision qu'aucune ligne de code n'entame | 🔴 ouvert |
 
 > ✅ **D1, D2, D5 et D7 closes le 2026-09-22** — Hugo : « on peut les fermer, le
-> code a tranché ». Enregistrées dans [`adr.md`](./adr.md) : **ADR-18** (deux
+> code a tranché ». Enregistrées dans [`adr.md`](adr.md) : **ADR-18** (deux
 > clientèles, tarif négocié par client), **ADR-19** (plan consolidé tout seul,
 > arrêté à la main par journée), **ADR-20** (TVA paramétrable, à l'intersection
 > article × contexte), **ADR-21** (prix par étages déclarés, spécificité dans
@@ -46,7 +46,7 @@
 > 🔴 Elle emporte le **déclencheur de révision d'ADR-15**, qui justifiait de
 > construire le PIM par « la valeur est dans la jonction » entre la caisse, le web
 > et le fournil : **deux des trois sont partis en deux jours**. La question est
-> reposée dans [`adr.md`](./adr.md), pas ici.
+> reposée dans [`adr.md`](adr.md), pas ici.
 >
 > ✅ **D6 (frontières d'agrégat)** close le 2026-07-21 → `Product` racine.
 
@@ -95,7 +95,7 @@
 ## 4. Contextes de vente et TVA
 
 - [ ] **Appartenance TVA — projection par contexte de vente**
-      ([`contextes-et-points-de-vente.md`](./contextes-et-points-de-vente.md)).
+      ([`contextes-et-points-de-vente.md`](contextes-et-points-de-vente.md)).
       ⚠️ Le besoin a **survécu à son canal** : le contexte « sur place » est actif
       et vendu, et **aucun canal n'en fabrique une seconde fiche**. C'est une
       question du modèle, pas d'un fournisseur — elle se repose telle quelle au
@@ -106,7 +106,7 @@
       binding reste, la fiche revient si on rouvre le canal.
 
 🔴 **Voir aussi**
-[`retrait-de-l-ancien-canal.md`](./retrait-de-l-ancien-canal.md) :
+[`retrait-de-l-ancien-canal.md`](retrait-de-l-ancien-canal.md) :
 les deux colonnes du contexte de vente qui avaient survécu au canal sont
 retirées (2026-10-16).
 
@@ -119,11 +119,11 @@ retirées (2026-10-16).
       le filtre est alors une facette d'écran, sans aller-retour de plus.
 
       La quatrième demande une décision : une **publication** est aujourd'hui une
-                                      `modification` comme une autre. La sortir en catégorie propre veut dire
-                                      qu'un article qui change de statut ET de prix apparaît dans **deux**
-                                      facettes, ou qu'on choisit laquelle l'emporte. ⚠️ Trancher avant d'écrire :
-                                      un article qui disparaît d'un filtre parce qu'il a aussi changé de prix est
-                                      le genre d'absence qu'on ne remarque pas.
+                                          `modification` comme une autre. La sortir en catégorie propre veut dire
+                                          qu'un article qui change de statut ET de prix apparaît dans **deux**
+                                          facettes, ou qu'on choisit laquelle l'emporte. ⚠️ Trancher avant d'écrire :
+                                          un article qui disparaît d'un filtre parce qu'il a aussi changé de prix est
+                                          le genre d'absence qu'on ne remarque pas.
 
 - [ ] **Purger les contenus orphelins** — un `catalog_content` que plus aucune
       révision ne référence ne disparaît pas (clé étrangère `RESTRICT`, à dessein).
@@ -144,18 +144,18 @@ rejouable ni retour arrière de publication depuis le retrait de l'ancien canal 
       `fold-empty-state` « Écran à venir ».
 
       Ce qui vient ici est le **vocabulaire** — les types de conditionnement et ce
-                                      qu'ils nomment. Combien d'unités dans le carton d'un produit donné reste sur
-                                      la fiche : c'est une propriété de ce produit.
+                                          qu'ils nomment. Combien d'unités dans le carton d'un produit donné reste sur
+                                          la fiche : c'est une propriété de ce produit.
 
-                                      Le point qui justifie l'écran : un conditionnement porte sa **propre
-                                      référence**. Le professionnel commande « le carton de 24 », pas « 24 fois
-                                      l'article » — c'est ce qui en fait autre chose qu'une quantité.
+                                          Le point qui justifie l'écran : un conditionnement porte sa **propre
+                                          référence**. Le professionnel commande « le carton de 24 », pas « 24 fois
+                                          l'article » — c'est ce qui en fait autre chose qu'une quantité.
 
 ---
 
 ## 7. Provenance — le chantier ouvert
 
-➡️ **[`ingredients-et-approvisionnement.md`](./ingredients-et-approvisionnement.md)**
+➡️ **[`ingredients-et-approvisionnement.md`](ingredients-et-approvisionnement.md)**
 (2026-09-22) : « beurre de Savoie » n'est pas un ingrédient, c'est le produit d'un
 fournisseur. Le genre et ses lignes d'approvisionnement datées se séparent, et
 l'origine, l'appellation et les allergènes descendent d'un niveau.

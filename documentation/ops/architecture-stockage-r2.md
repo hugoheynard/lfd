@@ -155,7 +155,7 @@ page, et la question de la révision reste ouverte.
 ## 4. Les ports — un appelant ne choisit pas son bucket
 
 Quatre classes abstraites dans
-[`platform/storage/`](../../apps/lfd-api/src/platform/storage/), reliées à leur
+[`platform/storage/`](../../apps/lfd-api/src/platform/storage), reliées à leur
 usage **une seule fois**, dans
 [`context.module.ts`](../../apps/lfd-api/src/platform/context/context.module.ts) :
 

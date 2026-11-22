@@ -4,7 +4,7 @@
 > optionnel, les valeurs nutritionnelles.
 >
 > Elle est rattachée à la **déclinaison** — c'est-à-dire à ce qui est **réellement vendu**. Elle fait
-> partie de l'**agrégat `Product`** ([`00`](./00-langage-et-comportement.md#2--agrégats--la-décision-ex-d6)).
+> partie de l'**agrégat `Product`** ([`00`](00-langage-et-comportement.md#2--agrégats--la-décision-ex-d6)).
 
 ## Pourquoi la déclinaison, et pas le produit
 

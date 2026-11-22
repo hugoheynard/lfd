@@ -1,6 +1,6 @@
 /**
  * **Les gardes SQL du remboursement par carte** (plan
- * `documentation/commandes/modification/plan-m2-historique-de-transactions.md`,
+ * `documentation/payment/plan-m2-historique-de-transactions.md`,
  * lot P1, §3.4, §5.1, §5.4, garantie G1 du §11).
  *
  * Ce que seul le vrai Postgres prouve : les CHECK, l'index unique partiel, les

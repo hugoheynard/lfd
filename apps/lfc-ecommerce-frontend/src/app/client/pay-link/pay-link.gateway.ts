@@ -25,7 +25,7 @@ export type PayLinkIntentResult =
 
 /**
  * **La page publique d'un lien de paiement**, côté réseau (plan
- * `documentation/comptabilite/liens-de-paiement/plan-le-lien-vers-un-sujet.md`,
+ * `documentation/payment/liens-de-paiement/plan-le-lien-vers-un-sujet.md`,
  * §2.3). Sans session : le payeur n'a pas de compte.
  *
  * Le jeton voyage dans le CORPS d'un `POST`, jamais dans une adresse d'API,

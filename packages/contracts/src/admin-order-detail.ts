@@ -49,7 +49,7 @@ export interface AdminOrderView extends OrderView {
   readonly cancellability: AdminOrderCancellability;
   /**
    * **Les demandes de remboursement par carte de la commande** (plan
-   * `documentation/commandes/modification/plan-m2-historique-de-transactions.md`,
+   * `documentation/payment/plan-m2-historique-de-transactions.md`,
    * §5.3) — terminées comprises, de la plus ancienne à la plus récente ; vide
    * quand aucun remboursement n'a été demandé. Remplace `refund` (une demande
    * au plus) au lot P1.c : une commande en porte une par paiement encaissé.

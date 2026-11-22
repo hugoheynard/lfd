@@ -4,7 +4,7 @@
 > 31 questions du texte envoyé ([`question-banque.md`](question-banque.md),
 > « Le texte à envoyer »). Les réponses sont reprises ici **d'après le résumé
 > fidèle de leur mail collé par Hugo** ; le mail n'est pas dans le dépôt, ses
-> deux pièces jointes y sont depuis le 2026-10-23 ([`modeles-banque/`](modeles-banque/), § 2 bis).
+> deux pièces jointes y sont depuis le 2026-10-23 ([`modeles-banque/`](modeles-banque), § 2 bis).
 >
 > Chaque « le code fait » cite un fichier et une ligne **ouverts le
 > 2026-10-23**, sous `apps/lfd-api/src/lafoliecoffee/accounting/` (abrégé `apps/lfd-api/src/lafoliecoffee/accounting/`).
@@ -365,7 +365,7 @@ montant retourné et les frais sont **deux écritures distinctes**.
 ## 2 bis. Les deux modèles reçus, colonne par colonne
 
 > Pièces jointes du mail, fournies par Hugo et rangées le 2026-10-23 sous
-> [`modeles-banque/`](modeles-banque/) :
+> [`modeles-banque/`](modeles-banque) :
 > [`modele-import-mandats-cenet-remises.xlsx`](modeles-banque/modele-import-mandats-cenet-remises.xlsx)
 > et [`modele-comptes-destinataires-2026.csv`](modeles-banque/modele-comptes-destinataires-2026.csv).
 > Ouverts le 2026-10-23 : les couleurs de cellules et le format de F lus dans
@@ -567,6 +567,6 @@ Réponses 7, 11 (en-tête, longueur), 17, 18, 19, 20 (lot réel), 21 (lot réel)
 - Le **modèle des mandats** à jour : le nombre de colonnes (M–R → au moins 18)
   et les colonnes « en jaune » (réponses 11 et 14).
 
-À leur arrivée (fait le 2026-10-23, [`modeles-banque/`](modeles-banque/)) : les ranger sous `documentation/comptabilite/prelevement/`
+À leur arrivée (fait le 2026-10-23, [`modeles-banque/`](modeles-banque)) : les ranger sous `documentation/comptabilite/prelevement/`
 (sans IBAN réel), et mettre à jour ce document et
 [`../mandat/export-des-mandats-pour-la-banque.md`](../mandat/export-des-mandats-pour-la-banque.md).

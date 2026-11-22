@@ -27,7 +27,7 @@ export interface SubjectPayLinkUrl {
 
 /**
  * **Ouvrir un lien de paiement vers un sujet** (plan
- * `documentation/comptabilite/liens-de-paiement/plan-le-lien-vers-un-sujet.md`,
+ * `documentation/payment/liens-de-paiement/plan-le-lien-vers-un-sujet.md`,
  * §2.2) — déclaré ET implémenté par `payment`, appelé par les blocs métier.
  *
  * Tout se passe **dans la transaction de l'appelant, sans réseau** :

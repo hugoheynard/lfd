@@ -6,7 +6,7 @@ import { RecordPaymentLinkEventCommand } from "./record-payment-link-event.comma
 
 /**
  * **Le webhook des liens de paiement** (plan
- * `documentation/commandes/modification/plan-m2-historique-de-transactions.md`,
+ * `documentation/payment/plan-m2-historique-de-transactions.md`,
  * §4.5) : la signature vérifiée avec le secret DE CET endpoint, puis
  * l'issue projetée par `SettlePaymentLinkCommand` ou `ExpirePaymentLinkCommand`,
  * toutes deux idempotentes — pendant que les `checkout.*` arrivent aussi par

@@ -2,7 +2,7 @@
 
 > Ce que le catalogue appelle « une référence », et qui a le droit d'en émettre. Réécriture après
 > revue adversariale de la proposition archivée dans
-> [`_sources/sku-module-nestjs-doc.md`](./_sources/sku-module-nestjs-doc.md) — dont la notion centrale
+> [`_sources/sku-module-nestjs-doc.md`](_sources/sku-module-nestjs-doc.md) — dont la notion centrale
 > (« un SKU par canal ») est une **erreur de catégorie**.
 
 ## 1. Quatre identifiants, quatre natures
@@ -48,7 +48,7 @@ Ici — **non**, l'enum ne compile plus.
 
 **d. Ça duplique le motif de binding déjà conçu.** Une table de canal porte
 l'identifiant du tiers, **du bon côté de la frontière** — voir
-[`04`](./04-composition-et-canaux.md).
+[`04`](04-composition-et-canaux.md).
 
 > ⚠️ Cet argument citait `helios_variant_binding.plu` et
 > la table de liaison des variantes de l'ancien canal comme « existant déjà ». **Ni l'une ni l'autre
@@ -71,7 +71,7 @@ problèmes :
   du module `catalogue`.
 - **`POST /skus` est une API en forme de table.** On ne « crée un SKU » jamais dans la vraie vie : on
   crée un produit, on ajoute une déclinaison, on corrige une référence. C'est la règle **R2**
-  ([`00`](./00-langage-et-comportement.md#5--les-trois-règles-irréversibles)) : les verbes existants
+  ([`00`](00-langage-et-comportement.md#5--les-trois-règles-irréversibles)) : les verbes existants
   (`CreateProduct`, `AddVariant`, `ChangeVariantSku`) portent déjà le SKU. Un endpoint séparé
   ouvrirait un **second chemin d'écriture** sur la même donnée.
 - **La validation était dans un DTO Zod, pas dans le domaine.** Le service faisait confiance au pipe.

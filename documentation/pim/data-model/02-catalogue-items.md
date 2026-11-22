@@ -1,10 +1,10 @@
 # 02 — Le produit, en couches (socle minimal)
 
 > ⚠️ **Ce document fait seul autorité sur le socle.** Les champs et invariants ci-dessous sont ceux
-> qui iront dans Prisma. [`01-produit.md`](./01-produit.md) ne couvre que l'**éditorial**.
+> qui iront dans Prisma. [`01-produit.md`](01-produit.md) ne couvre que l'**éditorial**.
 >
 > Le **langage** et les **verbes** qui font vivre ces tables sont dans
-> [`00-langage-et-comportement.md`](./00-langage-et-comportement.md) — à lire avant celui-ci.
+> [`00-langage-et-comportement.md`](00-langage-et-comportement.md) — à lire avant celui-ci.
 
 On définit d'abord le produit **simplement** : son **identité**. Tout le reste (réglementaire, prix,
 dispo, éditorial…) est une **couche** posée autour, avec son propre rythme de vie et son propre doc.
@@ -140,7 +140,7 @@ Arbre à **parent unique**. C'est le classement _structurel_ (« Viennoiseries �
 | `is_archived` | bool             |                   |
 
 > Le **code famille caisse** n'est **pas** ici. C'était du vocabulaire PI Helios — un fournisseur sorti le 2026-09-22, dont aucune table n'a jamais été bâtie. La place qui lui était prévue était le
-> binding canal ([`04-composition-et-canaux.md`](./04-composition-et-canaux.md)). Le laisser sur
+> binding canal ([`04-composition-et-canaux.md`](04-composition-et-canaux.md)). Le laisser sur
 > `Category` faisait entrer un système tiers dans le cœur du domaine.
 
 ## Entité : `Collection` — le regroupement libre
@@ -160,14 +160,14 @@ Table de liaison `product_collection` : `(product_id, collection_id, position)`,
 
 ## Conventions du socle (figées)
 
-| Convention               | Règle                                                                                                                                                                                                                                                                                                                    |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **`LocalizedText`** 🌐   | `jsonb` `{ "fr": string, "en"?: string }` — `fr` obligatoire, fallback → `fr`                                                                                                                                                                                                                                            |
-| **Identifiants**         | UUID **v7**, générés **applicativement** par la commande (R1). Jamais de séquence, jamais de `default gen_random_uuid()`                                                                                                                                                                                                 |
-| **`sku`**                | **Value object** `Sku` (constructeur unique, normalisé majuscules) — espace de noms **global** produits + déclinaisons confondus. Modifiable par un verbe explicite ; les canaux bindent sur l'**`id`**, jamais sur le `sku` ; **rien ne le parse**. Détail : [`06-identifiants-et-sku.md`](./06-identifiants-et-sku.md) |
-| **Cycle de vie**         | `status` / `is_discontinued` / `is_archived` sont des **conséquences de verbes** ; **jamais** de `DELETE` physique (R3)                                                                                                                                                                                                  |
-| **Colonnes système**     | `created_at` / `updated_at` / `updated_by` existent, **hors-domaine** : jamais lues par une règle métier, jamais exposées en DTO (cf. [`00`](./00-langage-et-comportement.md#6--métadonnée--la-position-honnête))                                                                                                        |
-| **`attributes` (jsonb)** | Clés **namespacées** (`labo.temperature_service`). **Jamais** de donnée réglementée. **Règle de promotion** : dès qu'un attribut est lu par un adaptateur canal **ou** utilisé par ≥2 familles, il devient une **colonne** — sinon le jsonb redevient le fourre-tout que ce découpage cherche à éviter                   |
+| Convention               | Règle                                                                                                                                                                                                                                                                                                                  |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **`LocalizedText`** 🌐   | `jsonb` `{ "fr": string, "en"?: string }` — `fr` obligatoire, fallback → `fr`                                                                                                                                                                                                                                          |
+| **Identifiants**         | UUID **v7**, générés **applicativement** par la commande (R1). Jamais de séquence, jamais de `default gen_random_uuid()`                                                                                                                                                                                               |
+| **`sku`**                | **Value object** `Sku` (constructeur unique, normalisé majuscules) — espace de noms **global** produits + déclinaisons confondus. Modifiable par un verbe explicite ; les canaux bindent sur l'**`id`**, jamais sur le `sku` ; **rien ne le parse**. Détail : [`06-identifiants-et-sku.md`](06-identifiants-et-sku.md) |
+| **Cycle de vie**         | `status` / `is_discontinued` / `is_archived` sont des **conséquences de verbes** ; **jamais** de `DELETE` physique (R3)                                                                                                                                                                                                |
+| **Colonnes système**     | `created_at` / `updated_at` / `updated_by` existent, **hors-domaine** : jamais lues par une règle métier, jamais exposées en DTO (cf. [`00`](00-langage-et-comportement.md#6--métadonnée--la-position-honnête))                                                                                                        |
+| **`attributes` (jsonb)** | Clés **namespacées** (`labo.temperature_service`). **Jamais** de donnée réglementée. **Règle de promotion** : dès qu'un attribut est lu par un adaptateur canal **ou** utilisé par ≥2 familles, il devient une **colonne** — sinon le jsonb redevient le fourre-tout que ce découpage cherche à éviter                 |
 
 ## Invariants figés
 
@@ -180,20 +180,20 @@ Table de liaison `product_collection` : `(product_id, collection_id, position)`,
    produits actifs est **refusé**.
 6. Un produit appartient à **une** famille et à **0..n** collections.
 7. `PublishProduct` est **refusée** si une déclinaison active n'a pas de fiche réglementaire
-   ([`03`](./03-nutrition.md)).
+   ([`03`](03-nutrition.md)).
 
 ---
 
 ## Les couches (chacune son doc, son rythme)
 
-| Couche                   | Contenu                                                  | Où                                                                 |
-| ------------------------ | -------------------------------------------------------- | ------------------------------------------------------------------ |
-| **📖 Langage & verbes**  | glossaire, agrégats, commandes, events                   | [`00-langage-et-comportement.md`](./00-langage-et-comportement.md) |
-| **🧩 Identité** (ce doc) | `Product` / `ProductVariant` / `Category` / `Collection` | ici                                                                |
-| **🥗 Réglementaire**     | allergènes GS1 → INCO, nutrition                         | [`03-nutrition.md`](./03-nutrition.md)                             |
-| **✍️ Éditorial**         | descriptions, récit, provenance, labels, médias, SEO     | [`01-produit.md`](./01-produit.md)                                 |
-| **📡 Canaux**            | bindings, overrides, état de synchro                     | [`04-composition-et-canaux.md`](./04-composition-et-canaux.md)     |
-| **🔖 Identifiants**      | `Sku` value object, SKU par défaut, références canal     | [`06-identifiants-et-sku.md`](./06-identifiants-et-sku.md)         |
-| **💶 Prix**              | par canal + TVA                                          | _à porter_                                                         |
-| **📅 Disponibilité**     | capacité, créneaux, cut-off                              | _à porter_                                                         |
-| **⚖️ Logistique**        | poids, dimensions, GTIN, GDSN                            | **descopé v1**                                                     |
+| Couche                   | Contenu                                                  | Où                                                               |
+| ------------------------ | -------------------------------------------------------- | ---------------------------------------------------------------- |
+| **📖 Langage & verbes**  | glossaire, agrégats, commandes, events                   | [`00-langage-et-comportement.md`](00-langage-et-comportement.md) |
+| **🧩 Identité** (ce doc) | `Product` / `ProductVariant` / `Category` / `Collection` | ici                                                              |
+| **🥗 Réglementaire**     | allergènes GS1 → INCO, nutrition                         | [`03-nutrition.md`](03-nutrition.md)                             |
+| **✍️ Éditorial**         | descriptions, récit, provenance, labels, médias, SEO     | [`01-produit.md`](01-produit.md)                                 |
+| **📡 Canaux**            | bindings, overrides, état de synchro                     | [`04-composition-et-canaux.md`](04-composition-et-canaux.md)     |
+| **🔖 Identifiants**      | `Sku` value object, SKU par défaut, références canal     | [`06-identifiants-et-sku.md`](06-identifiants-et-sku.md)         |
+| **💶 Prix**              | par canal + TVA                                          | _à porter_                                                       |
+| **📅 Disponibilité**     | capacité, créneaux, cut-off                              | _à porter_                                                       |
+| **⚖️ Logistique**        | poids, dimensions, GTIN, GDSN                            | **descopé v1**                                                   |

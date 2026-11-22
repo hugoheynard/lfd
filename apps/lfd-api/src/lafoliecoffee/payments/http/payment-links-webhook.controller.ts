@@ -17,7 +17,7 @@ import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.j
 /**
  * **Le webhook des liens de paiement** — `POST /payments/links/webhook`, son
  * endpoint Stripe et son secret (`STRIPE_LINKS_WEBHOOK_SECRET`) à lui (plan
- * `documentation/commandes/modification/plan-m2-historique-de-transactions.md`,
+ * `documentation/payment/plan-m2-historique-de-transactions.md`,
  * §4.5). Les cartes ont quitté `lafoliecoffee/payments` pour le bloc `card-payment` ;
  * les liens restent ici, avec leur client Stripe, jusqu'au jour où un lien
  * deviendra un sujet.

@@ -9,7 +9,7 @@ export interface CardCollectionFields {
 
 /**
  * **L'instruction de collecte, et les deux champs qu'elle remplace** (plan
- * `documentation/comptabilite/liens-de-paiement/plan-le-lien-vers-un-sujet.md`,
+ * `documentation/payment/liens-de-paiement/plan-le-lien-vers-un-sujet.md`,
  * §2.3 bis). `clientSecret` et `publishableKey` restent servis un déploiement
  * de plus, pour une page de la boutique ouverte avant l'instruction ; ils ne
  * se remplissent que pour une collecte `embedded`, la seule qu'ils savaient

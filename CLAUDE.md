@@ -472,7 +472,7 @@ src/
 │                   opaque, sans métier propre, agnostique de l'application et
 │                   du moyen. card/ (la carte), channels/ (ce que les autres
 │                   blocs atteignent) ; link/ viendra avec les liens.
-│                   Cf. comptabilite/liens-de-paiement/plan-le-lien-vers-un-sujet.md
+│                   Cf. payment/liens-de-paiement/plan-le-lien-vers-un-sujet.md
 ├── shop-cart/    ▸ LE PANIER — enregistrer et relire le panier en cours, dans
 │                   son schéma `cart`, sans clé étrangère. Sorti des commandes
 │                   le 2026-11-20 ; le chiffrage reste au commerce, qui
@@ -621,9 +621,9 @@ l'atteint pas.
 
 🔴 **`payment` encaisse et rembourse pour un sujet opaque** (2026-11-09,
 Hugo ;
-[`documentation/commandes/modification/plan-m2-historique-de-transactions.md`](documentation/commandes/modification/plan-m2-historique-de-transactions.md),
+[`documentation/payment/plan-m2-historique-de-transactions.md`](documentation/payment/plan-m2-historique-de-transactions.md),
 §3.1 ; bloc `payment` décidé par Hugo le 2026-11-22,
-[`documentation/comptabilite/liens-de-paiement/plan-le-lien-vers-un-sujet.md`](documentation/comptabilite/liens-de-paiement/plan-le-lien-vers-un-sujet.md),
+[`documentation/payment/liens-de-paiement/plan-le-lien-vers-un-sujet.md`](documentation/payment/liens-de-paiement/plan-le-lien-vers-un-sujet.md),
 §0). Agnostique de l'application et du moyen : il ne sait pas ce qu'est une
 commande, seulement `(subject_type, subject_id)`, et range un sous-dossier par
 moyen — `payment/card/` aujourd'hui, `payment/link/` avec les liens ; le

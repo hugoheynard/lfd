@@ -44,7 +44,7 @@ lit.
 Ils vivent dans
 [`agent/pim-agent-tools.ts`](../../apps/lfd-backoffice-frontend/src/app/agent/pim-agent-tools.ts)
 déclarés par l'écran
-[`agent/agent-tools-page/`](../../apps/lfd-backoffice-frontend/src/app/agent/agent-tools-page/).
+[`agent/agent-tools-page/`](../../apps/lfd-backoffice-frontend/src/app/agent/agent-tools-page).
 
 | Outil                           | Ce qu'il fait                                             |
 | ------------------------------- | --------------------------------------------------------- |

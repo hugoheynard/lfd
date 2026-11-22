@@ -285,7 +285,7 @@ export class AdminOrdersService {
 
   /**
    * **« Relancer »** une demande de remboursement par carte (plan
-   * `documentation/commandes/modification/plan-m2-historique-de-transactions.md`,
+   * `documentation/payment/plan-m2-historique-de-transactions.md`,
    * §3.4, §5.3) — PAR DEMANDE : une commande en porte une par paiement
    * encaissé. `202` : le serveur n'attend pas Stripe, l'écran relit le détail.
    * Les refus (`404`, `409`) portent leur phrase. Une fois par intention : la

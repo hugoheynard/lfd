@@ -18,7 +18,7 @@ import type { SubjectQuote } from "../../channels/subjects/linkable-subject.js";
 
 /**
  * **La page publique d'un lien de paiement** (plan
- * `documentation/comptabilite/liens-de-paiement/plan-le-lien-vers-un-sujet.md`,
+ * `documentation/payment/liens-de-paiement/plan-le-lien-vers-un-sujet.md`,
  * §2.3) — sans compte : le jeton du lien est la seule clé.
  *
  * Le jeton voyage dans le CORPS de deux `POST`, jamais dans un chemin de

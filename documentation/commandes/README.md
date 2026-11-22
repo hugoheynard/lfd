@@ -22,17 +22,17 @@ entrer**. Il ne remplace aucun d'eux.
 > **Depuis le 2026-10-24, le dossier est rangé en sous-dossiers** (Hugo) :
 > un sujet par dossier, l'entrée et les vues transverses restent ici.
 
-| Sous-dossier                       | Ce qu'on y trouve                                                                                                             |
-| ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| [`passation/`](passation/)         | passer une commande : sans compte, sans société, par l'équipe, deux fois, son numéro, l'ouverture, les réglages, les créneaux |
-| [`boutique/`](boutique/)           | la boutique où l'on commande : rayon, cartes, fiche, récapitulatif                                                            |
-| [`la-commande/`](la-commande/)     | ce qu'est une commande : ce qu'elle porte, ses états, son QR, sa date de réception, son adresse                               |
-| [`modification/`](modification/)   | ce qui bouge après la passation : modifier une commande, la carte (plans M2, S2)                                              |
-| [`reliquat/`](reliquat/)           | ce qui ne part pas complet : le départ incomplet, le second envoi, et leur reste à faire                                      |
-| [`annulation/`](annulation/)       | annuler, par le client ou le staff, et ses verrous                                                                            |
-| [`reglement/`](reglement/)         | qui paie, quand : compte de production, abandon, carte réglée, commandes épargnées, régler une sélection                      |
-| [`bon-et-pieces/`](bon-et-pieces/) | les papiers : bon de commande, TTC, pièces en R2, conservation, export, agrégation, TVA du port                               |
-| [`back-office/`](back-office/)     | les écrans staff des commandes : la page Commandes (état), les couleurs et le tri par départ (état partiel)                   |
+| Sous-dossier                      | Ce qu'on y trouve                                                                                                             |
+| --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| [`passation/`](passation)         | passer une commande : sans compte, sans société, par l'équipe, deux fois, son numéro, l'ouverture, les réglages, les créneaux |
+| [`boutique/`](boutique)           | la boutique où l'on commande : rayon, cartes, fiche, récapitulatif                                                            |
+| [`la-commande/`](la-commande)     | ce qu'est une commande : ce qu'elle porte, ses états, son QR, sa date de réception, son adresse                               |
+| [`modification/`](modification)   | ce qui bouge après la passation : modifier une commande, la carte (plans M2, S2)                                              |
+| [`reliquat/`](reliquat)           | ce qui ne part pas complet : le départ incomplet, le second envoi, et leur reste à faire                                      |
+| [`annulation/`](annulation)       | annuler, par le client ou le staff, et ses verrous                                                                            |
+| [`reglement/`](reglement)         | qui paie, quand : compte de production, abandon, carte réglée, commandes épargnées, régler une sélection                      |
+| [`bon-et-pieces/`](bon-et-pieces) | les papiers : bon de commande, TTC, pièces en R2, conservation, export, agrégation, TVA du port                               |
+| [`back-office/`](back-office)     | les écrans staff des commandes : la page Commandes (état), les couleurs et le tri par départ (état partiel)                   |
 
 À la racine : ce README, les parcours ([`flux-de-commande.md`](flux-de-commande.md)),
 l'audit ([`audit-flux-de-commande.md`](audit-flux-de-commande.md)), le carnet

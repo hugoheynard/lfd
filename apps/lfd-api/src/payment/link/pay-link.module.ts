@@ -19,7 +19,7 @@ import { SettlementFirstCardPaymentReader } from "./infrastructure/settlement-fi
 
 /**
  * **Les liens de paiement vers un sujet** (plan
- * `documentation/comptabilite/liens-de-paiement/plan-le-lien-vers-un-sujet.md`,
+ * `documentation/payment/liens-de-paiement/plan-le-lien-vers-un-sujet.md`,
  * §2) : la table `payment.pay_link`, la porte `PayLinks` et la page
  * publique.
  *

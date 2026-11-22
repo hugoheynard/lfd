@@ -58,7 +58,7 @@ type Payable = Extract<PayLinkView, { readonly payable: true }>;
 
 /**
  * **`/payer/:jeton`** — la page publique d'un lien de paiement (plan
- * `documentation/comptabilite/liens-de-paiement/plan-le-lien-vers-un-sujet.md`,
+ * `documentation/payment/liens-de-paiement/plan-le-lien-vers-un-sujet.md`,
  * §2.3). Le comptable d'un client y paie sans compte : ni garde, ni espace, ni
  * menu.
  *

@@ -15,7 +15,7 @@ import {
 /**
  * **L'encaissement par carte et ses remboursements** — les faits que le bloc
  * `card-payment` écrit lui-même (plan
- * `documentation/commandes/modification/plan-m2-historique-de-transactions.md`,
+ * `documentation/payment/plan-m2-historique-de-transactions.md`,
  * §3.3, lot P1.b), famille `accounting` du catalogue. Ceux de la commande
  * (`order.refund_*`) restent dans `refund-phrases.ts`.
  *

@@ -22,7 +22,7 @@ export const PAID_AFTER_CANCELLATION_REASON = "paid_after_cancellation";
 /**
  * **L'encaissé après annulation se rembourse tout seul** (doc
  * `documentation/commandes/annulation/annulation-par-le-staff.md`, C4.11 — défaut de
- * Q5 ; plan `documentation/commandes/modification/plan-m2-historique-de-transactions.md`,
+ * Q5 ; plan `documentation/payment/plan-m2-historique-de-transactions.md`,
  * §3.3, §3.6, lot P1.c). La commande est annulée et ne sera pas produite,
  * l'argent n'est pas à nous.
  *

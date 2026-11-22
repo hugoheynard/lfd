@@ -688,7 +688,7 @@ async function triggerUnsettledShopOrderExpiry(env: Env): Promise<void> {
 
 /**
  * Réveille le container et passe les remboursements par carte dus (plan
- * `documentation/commandes/modification/plan-m2-historique-de-transactions.md`,
+ * `documentation/payment/plan-m2-historique-de-transactions.md`,
  * §6.8, `sweep-card-refunds`) : une demande dont l'exécuteur n'a pas abouti
  * (prestataire injoignable, processus mort) est reprise ici, au plus 20 par
  * passage — l'annulation d'une commande payée y passe depuis le lot P1.c
@@ -758,7 +758,7 @@ async function triggerDeliveryNotesReconcile(env: Env): Promise<void> {
 
 /**
  * Réveille le container et rattrape les premiers paiements par carte (plan
- * `documentation/commandes/modification/plan-m2-historique-de-transactions.md`,
+ * `documentation/payment/plan-m2-historique-de-transactions.md`,
  * §4.3, §6.8) : les intentions qu'une commande porte et que
  * `payment.card_payment` ne connaît pas encore, ou en retard sur elle. Sur le
  * cron HORAIRE, de P0 à P2 ; idempotent, et muet sans ligne-témoin. Même porte

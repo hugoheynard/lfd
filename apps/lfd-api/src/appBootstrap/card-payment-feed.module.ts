@@ -17,7 +17,7 @@ import {
 
 /**
  * **Le fil de l'encaissement par carte, relié** (plan
- * `documentation/commandes/modification/plan-m2-historique-de-transactions.md`,
+ * `documentation/payment/plan-m2-historique-de-transactions.md`,
  * §3.2, §3.3, lot P0.c2) — la figure de `ProductionFeedModule` : le bloc
  * `card-payment` DÉCLARE ce dont il a besoin, et la racine de composition le
  * relie, seule à connaître les deux côtés.

@@ -8,10 +8,10 @@
 > repris de mémoire ni des plans. C'est un **état des lieux**, pas un plan : il
 > prépare le document unique qui remplacera les §9–§20 de l'ancien plan de la
 > modification par carte (retiré le 2026-11-10 ; état bâti :
-> [`../modification/modifier-une-commande.md`](../modification/modifier-une-commande.md)).
+> [`../commandes/modification/modifier-une-commande.md`](../commandes/modification/modifier-une-commande.md)).
 >
 > ⚠️ **État d'AVANT le lot P0 du plan M2** (bâti le 2026-11-10,
-> [`../modification/plan-m2-historique-de-transactions.md`](../modification/plan-m2-historique-de-transactions.md)
+> [`plan-m2-historique-de-transactions.md`](plan-m2-historique-de-transactions.md)
 > §4.9). Depuis, le paiement par carte vit dans le bloc `src/payment/card/`
 > (ports `CardPayments` / `CardSettlementReader`, canal `SubjectSettlement`
 > implémenté par `orders`, webhook par compte) ; `PaymentGateway`,
@@ -315,7 +315,7 @@ racine. **Aucun `import Stripe` hors `payments/infrastructure`** (vérifié).
    une demande unique ; à revoir avec plusieurs demandes sur une intention).
 8. **`PAID_FROM` admet `failed → paid`** sans borne de temps : un pro qui a
    abandonné reste payable jusqu'à la clôture — voulu (Q8 a), et le trou connu
-   d'une « épargnée puis refusée » est au `todo-commande-epargnee-a-la-cloture-puis-refusee.md`.
+   d'une « épargnée puis refusée » est au `../commandes/reglement/todo-commande-epargnee-a-la-cloture-puis-refusee.md`.
 9. **La métadonnée `lfd_order_id` porte `requestId`**, égal à `orderId`
    aujourd'hui — une demande à id propre le rendrait faux.
 10. **Aucun balayage ne relit Stripe** : ni les intentions, ni les

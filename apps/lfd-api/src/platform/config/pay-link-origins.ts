@@ -1,7 +1,7 @@
 /**
  * **Le registre des origines des liens de paiement** — sa moitié écrite dans
  * le dépôt (plan
- * `documentation/comptabilite/liens-de-paiement/plan-le-lien-vers-un-sujet.md`,
+ * `documentation/payment/liens-de-paiement/plan-le-lien-vers-un-sujet.md`,
  * §2.1 et §2.3), à la manière de `CARD_ACCOUNTS`.
  *
  * Une origine est l'application qui demande un lien : son nom (persisté sur

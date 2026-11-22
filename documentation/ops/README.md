@@ -4,7 +4,7 @@ Tout ce qui concerne le **déploiement, l'infrastructure et la sécurité d'acc�
 Le reste de `documentation/` décrit le métier ; ici on décrit la machine.
 
 Depuis le 2026-09-18, les pipelines, la carte du déploiement et le build des
-fronts vivent dans [`../ci-cd/`](../ci-cd/) ; la table ci-dessous y renvoie.
+fronts vivent dans [`../ci-cd/`](../ci-cd) ; la table ci-dessous y renvoie.
 
 ## Par où entrer
 

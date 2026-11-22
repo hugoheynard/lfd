@@ -11,7 +11,7 @@ import { orderCardSubject } from "./order-card-subject.js";
 /**
  * **Le bandeau des remboursements** au détail staff (doc
  * `documentation/commandes/annulation/annulation-par-le-staff.md`, C4.9 ; plan
- * `documentation/commandes/modification/plan-m2-historique-de-transactions.md`,
+ * `documentation/payment/plan-m2-historique-de-transactions.md`,
  * §3.3, §5.3, lot P1.c) : TOUTES les demandes de la commande, terminées
  * comprises, telles que le bloc `card-payment` les rend
  * (`refundRequestsOf`) — l'état, ce qui a été promis et rendu, et si

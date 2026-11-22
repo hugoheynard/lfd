@@ -2,7 +2,7 @@ import type { LocaleCode } from '../../client-locale.service';
 
 /**
  * **Ce que dit la page publique d'un lien de paiement** — `/payer/:jeton`
- * (plan `documentation/comptabilite/liens-de-paiement/plan-le-lien-vers-un-sujet.md`,
+ * (plan `documentation/payment/liens-de-paiement/plan-le-lien-vers-un-sujet.md`,
  * §2.3). Elle s'adresse à quelqu'un qui n'a pas de compte : le comptable d'un
  * client, le plus souvent.
  */

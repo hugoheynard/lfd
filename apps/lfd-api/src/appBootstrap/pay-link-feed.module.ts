@@ -9,7 +9,7 @@ import {
 
 /**
  * **Le fil des liens de paiement, relié** (plan
- * `documentation/comptabilite/liens-de-paiement/plan-le-lien-vers-un-sujet.md`,
+ * `documentation/payment/liens-de-paiement/plan-le-lien-vers-un-sujet.md`,
  * §2.2) — la figure de `CardPaymentFeedModule` : `payment` DÉCLARE
  * `LinkableSubjects`, la racine de composition y range les implémenteurs.
  *

@@ -459,7 +459,7 @@ second. Un remboursement émis puis `failed` : cloche, état `failed`,
 - La confirmation affiche `cancellability.refund.sentence` (« Le client sera
   remboursé de 23,40 € sur sa carte (livraison comprise)… »).
 - `GET /admin/orders/:id` porte `refundRequests` (depuis le lot P1.c du plan
-  [`plan-m2-historique-de-transactions.md`](../modification/plan-m2-historique-de-transactions.md),
+  [`plan-m2-historique-de-transactions.md`](../../payment/plan-m2-historique-de-transactions.md),
   §5.3 ; `refund`, une demande au plus, avant) ; le bandeau
   (`order-refund-banner/`, lot P1.d, 2026-11-10) montre **une ligne par
   demande** — à envoyer, envoyée, remboursée, arrêtée, rendue autrement — avec
@@ -479,7 +479,7 @@ est **remboursé automatiquement** par le même chemin : l'abonné durable
 demande au bloc `card-payment` le reste de chaque paiement encaissé
 (`CardRefunds.requestRemainder`, motif `paid_after_cancellation`, depuis le
 lot P1.c du plan
-[`plan-m2-historique-de-transactions.md`](../modification/plan-m2-historique-de-transactions.md)) —
+[`plan-m2-historique-de-transactions.md`](../../payment/plan-m2-historique-de-transactions.md)) —
 idempotent : une demande en cours est rendue, jamais doublée.
 Ces commandes restent `cancelled` + `failed` : le statut ne dit rien de
 l'argent, la demande le dit.

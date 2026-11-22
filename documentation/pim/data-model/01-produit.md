@@ -2,11 +2,11 @@
 
 > 🔒 **Ce document ne décrit PAS le socle.** L'identité (`Product` / `ProductVariant` / `Category` /
 > `Collection`), ses champs et ses invariants sont dans
-> [`02-catalogue-items.md`](./02-catalogue-items.md), qui fait **seul** autorité. Le réglementaire est
-> dans [`03-nutrition.md`](./03-nutrition.md).
+> [`02-catalogue-items.md`](02-catalogue-items.md), qui fait **seul** autorité. Le réglementaire est
+> dans [`03-nutrition.md`](03-nutrition.md).
 >
 > Ici : uniquement l'**enrichissement éditorial** — récit, provenance, labels, médias, SEO. Ni prix,
-> ni disponibilité, ni ids de plateformes ([`04`](./04-composition-et-canaux.md)).
+> ni disponibilité, ni ids de plateformes ([`04`](04-composition-et-canaux.md)).
 
 ## Méthode : partir du cas le plus riche
 
@@ -16,7 +16,7 @@ signature** ou une **Galette des Rois** exige le récit, la provenance, les labe
 soignés, le SEO.
 
 Cette couche est **entièrement optionnelle** : la ligne `product_editorial` n'existe que si quelqu'un
-a écrit quelque chose (motif _shared primary key_, cf. [`04`](./04-composition-et-canaux.md#le-motif--shared-primary-key)).
+a écrit quelque chose (motif _shared primary key_, cf. [`04`](04-composition-et-canaux.md#le-motif--shared-primary-key)).
 
 ---
 
@@ -106,7 +106,7 @@ astérisque. Le jour où le markdown est vraiment voulu, c'est un choix à faire
 côtés à la fois, saisie comprise.
 
 Le **comment** de cette projection (bindings, overrides, état de synchro) est dans
-[`04-composition-et-canaux.md`](./04-composition-et-canaux.md).
+[`04-composition-et-canaux.md`](04-composition-et-canaux.md).
 
 ## 5. Recette / BOM — hors périmètre
 
