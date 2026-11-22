@@ -476,7 +476,8 @@ async function triggerSettlementReminders(env: Env): Promise<void> {
  * cache du géocodage à 365 jours (`documentation/legal/rgpd-purge-du-geocodage.md`),
  * et l'effacement des positions relevées au geste à 60 jours
  * (`documentation/livraisons/livreur/gps-y-aller-et-position.md`), et
- * l'anonymisation des messages « Nous écrire » traités depuis douze mois.
+ * l'anonymisation des messages « Nous écrire » traités depuis douze mois, et
+ * le contrôle de cohérence du virement reçu.
  *
  * Même porte et même jeton que le recompute. Idempotent : un tour manqué est
  * rattrapé au suivant, et une photo abandonnée ne coûte qu'une nuit de stockage.
@@ -515,6 +516,11 @@ async function triggerQualityUploadSweep(env: Env): Promise<void> {
     // par Hugo le 2026-11-12) : toujours active, une clé rejouée après
     // refait le geste.
     "admin/intents/purge",
+    // Le contrôle de cohérence du virement reçu (plan
+    // `documentation/payment/plan-le-virement-recu-dans-payment.md`, §3.6) :
+    // la trace de la facturation comparée au bloc `payment`, chaque nuit.
+    // Il ne corrige rien ; un écart sonne la cloche.
+    "admin/accounting/bank-transfers/consistency",
   ]) {
     await postSweep(env, token, path);
   }

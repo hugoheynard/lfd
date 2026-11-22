@@ -49,7 +49,7 @@ describe("l'aperçu d'un virement avant de le valider (a)", () => {
       invoicesDueCents: invoice.totalTtcCents,
       gapCents: -100,
     });
-    expect(await ctx.prisma.receivedBankTransfer.count()).toBe(0);
+    expect(await ctx.prisma.transferReceived.count()).toBe(0);
     expect(await ctx.prisma.orderCollection.count()).toBe(0);
     const body = { receivedOn: today(), reference: "VIR", invoiceIds: [invoice.id] };
     await record(entityId, { ...body, amountCents: short }, FIRST_KEY).expect(409);

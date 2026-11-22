@@ -80,6 +80,10 @@ export const NOT_IN_DEV = new Map([
   ],
   ["admin/intents/purge", "purge des intentions des gestes : rien à éprouver en dev"],
   [
+    "admin/accounting/bank-transfers/consistency",
+    "contrôle de cohérence du virement reçu : à jouer à la main quand on l'éprouve",
+  ],
+  [
     "admin/accounting/monthly-invoices/autopilot",
     "émet les factures du mois : à jouer à la main quand on l'éprouve",
   ],

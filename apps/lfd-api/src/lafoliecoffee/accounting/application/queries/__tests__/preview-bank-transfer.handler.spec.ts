@@ -1,7 +1,7 @@
 import type { TransferInvoice } from "../../../domain/entities/received-bank-transfer.js";
 import { BankTransferInvoiceNotFoundError } from "../../../domain/errors/bank-transfer-errors.js";
 import {
-  MemoryReceivedTransfers,
+  MemoryBankTransfers,
   StoreTransferInvoices,
 } from "../../commands/__tests__/bank-transfer-doubles.js";
 import { PreviewBankTransferHandler } from "../preview-bank-transfer.handler.js";
@@ -22,14 +22,14 @@ const INVOICE: TransferInvoice = {
 
 describe("PreviewBankTransferHandler — l'aperçu d'un virement", () => {
   const log: string[] = [];
-  const transfers = new MemoryReceivedTransfers(log);
+  const transfers = new MemoryBankTransfers(log);
   const handler = new PreviewBankTransferHandler(new StoreTransferInvoices([INVOICE], transfers));
 
   it("lit les factures cochées et rend l'écart, sans rien écrire", async () => {
     const view = await handler.execute(new PreviewBankTransferQuery("le1", 11_000, ["inv_1"]));
 
     expect(view).toEqual({ amountCents: 11_000, invoicesDueCents: 12_000, gapCents: -1_000 });
-    expect(transfers.added).toEqual([]);
+    expect(transfers.recorded).toEqual([]);
     expect(log).toEqual([]);
   });
 

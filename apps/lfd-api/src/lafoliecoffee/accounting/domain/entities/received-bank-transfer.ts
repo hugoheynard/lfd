@@ -28,7 +28,7 @@ export interface TransferInvoice {
   readonly isCreditNote: boolean;
   /** TTC moins ce qui était déjà payé à l'émission (BT-115). */
   readonly remainingCents: number;
-  /** Le virement reçu qui la règle déjà ; `null` sinon. */
+  /** Le virement que ses bons citent (`order_collection.bank_transfer_id`) ; `null` sinon. */
   readonly settledByTransferId: string | null;
   /** Ses bons, opaques. */
   readonly orderIds: readonly string[];
@@ -80,8 +80,9 @@ export interface SettledInvoice {
  * factures égale le montant, au centime.
  *
  * La factory est le seul chemin : tout ce qui pourrait refuser l'écriture se
- * juge ici, avant que les commandes ne bougent. Un virement saisi ne change
- * plus — la base le tient en ajout seul.
+ * juge ici, avant que les commandes ne bougent. C'est le JUGEMENT de la
+ * facturation : le virement lui-même est enregistré par le bloc `payment`
+ * (`BankTransfers`), en ajout seul, et les bons en gardent la trace.
  */
 export class ReceivedBankTransfer {
   private constructor(private readonly state: ReceivedBankTransferState) {}

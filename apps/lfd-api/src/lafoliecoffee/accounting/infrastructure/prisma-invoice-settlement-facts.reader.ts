@@ -1,6 +1,9 @@
 import { Injectable } from "@nestjs/common";
 
+import { BankTransfers } from "../../../payment/channels/requests/index.js";
+import { movementSubjectKey } from "../../../payment/channels/subjects/index.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
+import { INVOICE_PAYMENT_SUBJECT } from "../domain/entities/invoice.types.js";
 import {
   InvoiceSettlementFactsReader,
   type InvoiceCollectionFacts,
@@ -30,15 +33,20 @@ interface DebitRow {
 }
 
 /**
- * Les faits de prélèvement de « Mes factures », en TROIS requêtes pour toutes
+ * Les faits de prélèvement de « Mes factures », en TROIS lectures pour toutes
  * les pièces : leurs lignes (lot, avis, retour, factures de la ligne),
- * celles dont un bon a quitté `due`, et le virement reçu qui les règle. Tables du bloc `b2b`, toutes écrites par
- * la comptabilité ; `order_collection.order_id` est opaque, la jointure passe
- * par `invoice_order`.
+ * celles dont un bon a quitté `due`, et le jour du virement reçu qui les
+ * règle. Les deux premières lisent les tables de la comptabilité
+ * (`order_collection.order_id` est opaque, la jointure passe par
+ * `invoice_order`) ; le jour du virement se demande au bloc `payment`, par
+ * lot (`BankTransfers.allocationsOf`).
  */
 @Injectable()
 export class PrismaInvoiceSettlementFactsReader extends InvoiceSettlementFactsReader {
-  constructor(private readonly prisma: PrismaService) {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly bankTransfers: BankTransfers,
+  ) {
     super();
   }
 
@@ -65,8 +73,11 @@ export class PrismaInvoiceSettlementFactsReader extends InvoiceSettlementFactsRe
     for (const id of blocked) {
       entry(id).blocked = true;
     }
-    for (const transfer of transfers) {
-      entry(transfer.invoiceId).transferReceivedOn = dayOf(transfer.transfer.receivedOn);
+    for (const id of invoiceIds) {
+      const allocation = transfers.get(movementSubjectKey({ type: INVOICE_PAYMENT_SUBJECT, id }));
+      if (allocation !== undefined) {
+        entry(id).transferReceivedOn = allocation.receivedOn;
+      }
     }
     return facts;
   }
@@ -97,10 +108,9 @@ export class PrismaInvoiceSettlementFactsReader extends InvoiceSettlementFactsRe
 
   /** Le virement reçu qui règle chaque pièce, s'il y en a un (V7). */
   private transfersOf(invoiceIds: readonly string[]) {
-    return this.prisma.receivedBankTransferInvoice.findMany({
-      where: { invoiceId: { in: [...invoiceIds] } },
-      select: { invoiceId: true, transfer: { select: { receivedOn: true } } },
-    });
+    return this.bankTransfers.allocationsOf(
+      invoiceIds.map((id) => ({ type: INVOICE_PAYMENT_SUBJECT, id })),
+    );
   }
 
   /** Les pièces dont un bon n'est plus `due` (l'absence de ligne vaut `due`). */

@@ -98,7 +98,7 @@ describe("le virement reçu — une clé, un contenu", () => {
 
     expect(second.status).toBe(409);
     expect(codeOf(second)).toBe("intent.key_reused");
-    expect(await ctx.prisma.receivedBankTransfer.count()).toBe(1);
+    expect(await ctx.prisma.transferReceived.count()).toBe(1);
   });
 
   it("deux envois simultanés, même clé : un seul virement enregistré", async () => {
@@ -109,7 +109,7 @@ describe("le virement reçu — une clé, un contenu", () => {
     await ctx.drain();
 
     expectOneWinner(responses);
-    expect(await ctx.prisma.receivedBankTransfer.count()).toBe(1);
+    expect(await ctx.prisma.transferReceived.count()).toBe(1);
   });
 });
 

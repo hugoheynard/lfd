@@ -29,7 +29,7 @@ import { PrismaCompanyLabelReader } from "./infrastructure/prisma-company-label.
 import { DiskInvoiceFontSource } from "./infrastructure/disk-invoice-font-source.js";
 import { PrismaInvoicePeriodsReader } from "./infrastructure/prisma-invoice-periods.reader.js";
 import { PrismaInvoiceSettlementFactsReader } from "./infrastructure/prisma-invoice-settlement-facts.reader.js";
-import { PrismaInvoiceTransferSettlementReader } from "./infrastructure/prisma-invoice-transfer-settlement.reader.js";
+import { PaymentInvoiceTransferSettlementReader } from "./infrastructure/payment-invoice-transfer-settlement.reader.js";
 import { PrismaInvoiceSiteContactsReader } from "./infrastructure/prisma-invoice-site-contacts.reader.js";
 
 /**
@@ -46,7 +46,7 @@ export const ISSUED_INVOICE_PROVIDERS: readonly Provider[] = [
   { provide: InvoiceSettlementFactsReader, useClass: PrismaInvoiceSettlementFactsReader },
   {
     provide: InvoiceTransferSettlementReader,
-    useClass: PrismaInvoiceTransferSettlementReader,
+    useClass: PaymentInvoiceTransferSettlementReader,
   },
   { provide: InvoiceSiteContactsReader, useClass: PrismaInvoiceSiteContactsReader },
   {

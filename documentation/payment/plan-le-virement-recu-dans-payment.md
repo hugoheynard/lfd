@@ -6,6 +6,23 @@
 > (§3.2), qui le fondait de mémoire : ce plan la vérifie contre le code et la
 > corrige (§1). Argent et migration de données : contredit par `vitruve`
 > avant Hugo.
+>
+> ✅ **Bâti le 2026-11-22** (non commité à l'écriture de cette ligne). La doc
+> d'état est [`le-paiement-par-virement.md`](../comptabilite/le-paiement-par-virement.md),
+> § 5 ; le déploiement est au runbook (« Déployer le virement reçu dans
+> `payment` »). Ce que le bâti a tranché là où le plan se taisait :
+>
+> - **la fenêtre du contrôle** (§3.6 dit « depuis le dernier passage », sans
+>   dire où le passage se garde) : aucune table de curseur ; le contrôle
+>   relit les **trois dernières nuits** à l'horloge
+>   (`CONSISTENCY_LOOKBACK_MS`), une nuit manquée est rattrapée, un écart déjà
+>   sonné ne sonne pas deux fois (clé de la cloche) ;
+> - **la cloche** n'a pas d'audience : le fil partagé, comme les autres
+>   cloches de la facturation ;
+> - un index de plus, `transfer_received_recorded_at_idx`, pour la lecture
+>   `recordedSince` ;
+> - la clé de `allocationsOf` est `paymentSubjectKey` (`type/id`), pas l'id
+>   seul.
 
 # Partie 1 — L'explication simple
 

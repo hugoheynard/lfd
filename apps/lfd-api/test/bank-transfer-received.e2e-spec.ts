@@ -60,10 +60,15 @@ describe("« virement reçu » (V7)", () => {
     );
 
     expect(replay.transferId).toBe(first.transferId);
-    expect(await ctx.prisma.receivedBankTransfer.count()).toBe(1);
-    const links = await ctx.prisma.receivedBankTransferInvoice.findMany();
+    expect(await ctx.prisma.transferReceived.count()).toBe(1);
+    const links = await ctx.prisma.transferAllocation.findMany();
     expect(links).toEqual([
-      { transferId: first.transferId, invoiceId: invoice.id, amountCents: invoice.totalTtcCents },
+      {
+        transferId: first.transferId,
+        subjectType: "invoice",
+        subjectId: invoice.id,
+        amountCents: invoice.totalTtcCents,
+      },
     ]);
     const orders = await ctx.prisma.invoiceOrder.findMany({ where: { invoiceId: invoice.id } });
     const states = await ctx.prisma.orderCollection.findMany();
@@ -98,7 +103,7 @@ describe("« virement reçu » (V7)", () => {
     const refusal = await record(entityId, body, SECOND_KEY).expect(409);
 
     expect(JSON.stringify(refusal.body)).toContain(`${invoice.number} est déjà réglée`);
-    expect(await ctx.prisma.receivedBankTransfer.count()).toBe(1);
+    expect(await ctx.prisma.transferReceived.count()).toBe(1);
   });
 
   it("un écart est refusé (409, en euros) et rien n'est écrit", async () => {
@@ -116,7 +121,7 @@ describe("« virement reçu » (V7)", () => {
     ).expect(409);
 
     expect(JSON.stringify(refusal.body)).toMatch(/écart de 1,00\s€ manquants/u);
-    expect(await ctx.prisma.receivedBankTransfer.count()).toBe(0);
+    expect(await ctx.prisma.transferReceived.count()).toBe(0);
     expect(await ctx.prisma.orderCollection.count()).toBe(0);
   });
 

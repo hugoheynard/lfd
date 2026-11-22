@@ -1,6 +1,7 @@
 # Le paiement au compte par virement
 
-> ✅ **Doc d'état, relue dans le code le 2026-11-13.** En production : le
+> ✅ **Doc d'état, relue dans le code le 2026-11-13 ; § 5 relu le 2026-11-22**
+> (le virement enregistré par le bloc `payment`, lot D1). En production : le
 > compte créancier aux quatre yeux, le moyen d'encaissement daté du payeur,
 > la facture au virement, le virement reçu qui règle ses factures, les
 > virements en retard, l'écran « Moyens de paiement » de la fiche client et
@@ -194,19 +195,63 @@ admin/accounting/legal-entities/:id/transfer-due-days` `{ days }` (400
 
 ## 5. Le virement reçu
 
-Migrations `20261112170000_la_commande_reglee_par_virement` et
-`20261112170100_le_virement_recu`.
+Migrations `20261112170000_la_commande_reglee_par_virement`,
+`20261112170100_le_virement_recu` et
+`20261122180000_le_virement_recu_dans_payment`.
+
+**Deux côtés, un identifiant.** La facturation **juge** et garde la trace ;
+le bloc `payment` **enregistre** le virement (plan
+[`plan-le-virement-recu-dans-payment.md`](../payment/plan-le-virement-recu-dans-payment.md)).
+Aucune clé étrangère ne les lie (décidé par Hugo le 2026-11-22) :
+
+```mermaid
+flowchart LR
+  subgraph F["Facturation (lafoliecoffee/accounting)"]
+    J["ReceivedBankTransfer.record<br/>juge les factures"]
+    B["order_collection.bank_transfer_id<br/>(la trace)"]
+  end
+  subgraph P["payment/transfer/"]
+    T["payment.transfer_received"]
+    A["payment.transfer_allocation<br/>(invoice, id) → montant"]
+  end
+  J -- "BankTransfers.record, même transaction, même id" --> T
+  T --> A
+  J -- "settleByTransfer(id)" --> B
+  C["Contrôle de nuit"] -. compare .-> B
+  C -. compare .-> A
+```
 
 - `ReceivedBankTransfer.record` (`domain/entities/received-bank-transfer.ts`) :
-  un virement (montant en centimes, date, référence du relevé) et **les
-  factures qu'il règle**, au virement, non réglées, d'un seul payeur. Le
-  total des restes dus doit égaler le montant, sinon refus qui dit l'écart.
-  Rejouer une facture déjà réglée est refusé en la nommant.
-- Dans la même transaction, chaque commande de ces factures passe par
-  l'agrégat `OrderCollection.settleByTransfer`
-  (`domain/entities/order-collection.ts`, état `settled_by_transfer`) : une
-  écriture sur la seule facture laisserait les commandes `due`, et un retour
-  au prélèvement les prélèverait.
+  le **jugement** — un virement (montant en centimes, date, référence du
+  relevé) et **les factures qu'il règle**, au virement, non réglées, d'un
+  seul payeur. Le total des restes dus doit égaler le montant, sinon refus
+  qui dit l'écart. Rejouer une facture déjà réglée est refusé en la nommant.
+- La saisie (`record-bank-transfer.handler.ts`) tire l'identifiant **une
+  fois**, puis, dans une transaction : `BankTransfers.record` (le canal
+  `apps/lfd-api/src/payment/channels/requests/bank-transfers.ts`) enregistre le virement et
+  une part par facture (sujet `invoice`), et chaque commande de ces factures
+  passe par l'agrégat `OrderCollection.settleByTransfer`
+  (`domain/entities/order-collection.ts`, état `settled_by_transfer`, le
+  même identifiant dans `bank_transfer_id`) : une écriture sur la seule
+  facture laisserait les commandes `due`, et un retour au prélèvement les
+  prélèverait. Le bloc rejuge la répartition (`ReceivedTransfer.record`,
+  `payment/transfer/domain/`) : défense en profondeur, jamais un refus que
+  la facturation n'aurait pas dit avant.
+- **Les tables** : `payment.transfer_received` et
+  `payment.transfer_allocation` (`apps/lfd-api/prisma/schema/payment/transfer.prisma`),
+  en ajout seul (déclencheurs sur `payment.transfer_append_only`), un sujet
+  réglé par un seul virement (unique `subject_type, subject_id`, `invoice`
+  seul admis). La facturation ne les lit jamais : « déjà réglée » et « à
+  régler » se lisent sur **sa** trace (`apps/lfd-api/src/lafoliecoffee/accounting/infrastructure/transfer-trace.sql.ts`),
+  et seul le jour de réception se demande au bloc (`allocationsOf`).
+- **Le contrôle de cohérence** — ce qui remplace les clés étrangères :
+  chaque nuit (`POST admin/accounting/bank-transfers/consistency`,
+  `RecomputeGuard`, cron de nuit du Worker), sur les trois dernières nuits,
+  les bons réglés par virement doivent trouver au bloc la part de leur
+  virement sur leur facture, et chaque part du bloc doit tomber sur une
+  facture connue dont tous les bons citent ce virement. Un écart : une ligne
+  au journal technique et la cloche « Virement reçu incohérent » (une par
+  écart, non rejouée). **Rien n'est corrigé tout seul.**
 - **L'aperçu** : `previewBankTransfer` partage avec `record` le même juge des
   factures (une seule arithmétique). Routes, sous `b2b_accounting`
   (`http/admin-bank-transfers.controller.ts`) :
@@ -222,7 +267,7 @@ Migrations `20261112170000_la_commande_reglee_par_virement` et
   page `comptabilite/virements-en-retard/` et la carte de la fiche client
   `fiche-client/transfer-invoices-card/`.
 - **« Réglée par virement le … »** : `IssuedInvoiceView.settledByTransferOn`
-  (le jour de réception, lu sur `received_bank_transfer_invoice` par
+  (le jour de réception, demandé au bloc `payment` par
   `domain/ports/invoice-transfer-settlement.reader.ts`, `null` sinon), dit
   par la fiche facture du back-office et le dialogue de facture de la
   boutique.

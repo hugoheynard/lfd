@@ -1,0 +1,65 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// LE VIREMENT REÇU — schéma `payment`
+// ─────────────────────────────────────────────────────────────────────────────
+//
+// Plan `documentation/payment/plan-le-virement-recu-dans-payment.md`, lot D1.
+// Ce que Prisma ne sait pas écrire vit dans les migrations
+// `20261112170100_le_virement_recu` et `20261122180000_le_virement_recu_dans_payment` :
+// les CHECK, le type de sujet admis, et l'ajout seul.
+//
+// Aucune clé étrangère ne sort du schéma (décidé par Hugo le 2026-11-22) :
+// l'entité qui reçoit, le payeur et le sujet sont opaques, et la facturation
+// garde sa propre trace (`order_collection.bank_transfer_id`). Un contrôle de
+// nuit compare les deux côtés.
+
+/// **Un virement reçu** — table `payment.transfer_received`.
+///
+/// Propriétaire : `src/payment/transfer/`. Rien ne le modifie ni ne l'efface
+/// (déclencheur `transfer_received_append_only`).
+///
+/// Ce que le SQL porte et que ce modèle ne montre pas :
+/// - `transfer_received_amount` : montant > 0 ;
+/// - `transfer_received_reference` : référence non vide.
+model TransferReceived {
+  /// ULID posé par l'appelant, et cité par sa propre trace.
+  id                String   @id
+  /// L'entité qui reçoit — opaque (une `legal_entities.id` aujourd'hui).
+  receivedInto      String   @map("received_into")
+  /// Le payeur déclaré par l'appelant — opaque.
+  payerRef          String   @map("payer_ref")
+  amountCents       Int      @map("amount_cents")
+  /// Le jour de réception lu sur le relevé.
+  receivedOn        DateTime @map("received_on") @db.Date
+  /// La référence lue sur le relevé, telle que le client l'a écrite.
+  reference         String
+  recordedAt        DateTime @map("recorded_at") @db.Timestamptz(3)
+  recordedByStaffId String   @map("recorded_by_staff_id")
+
+  allocations TransferAllocation[]
+
+  @@index([receivedInto, payerRef])
+  @@index([recordedAt])
+  @@map("transfer_received")
+  @@schema("payment")
+}
+
+/// **Une part d'un virement reçu** : un sujet opaque et ce que le virement en
+/// règle. Un sujet n'est réglé que par UN virement (unique `subject_type,
+/// subject_id`).
+///
+/// Ce que le SQL porte et que ce modèle ne montre pas :
+/// - `transfer_allocation_amount` : montant > 0 ;
+/// - `transfer_allocation_subject_type_known` : `invoice` seul ;
+/// - le déclencheur `transfer_allocation_append_only`.
+model TransferAllocation {
+  transferId  String           @map("transfer_id")
+  transfer    TransferReceived @relation(fields: [transferId], references: [id], onDelete: Restrict)
+  subjectType String           @map("subject_type")
+  subjectId   String           @map("subject_id")
+  amountCents Int              @map("amount_cents")
+
+  @@id([transferId, subjectType, subjectId])
+  @@unique([subjectType, subjectId])
+  @@map("transfer_allocation")
+  @@schema("payment")
+}

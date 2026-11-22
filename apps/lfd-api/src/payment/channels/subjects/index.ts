@@ -15,6 +15,7 @@ export {
   SubjectSettlement,
 } from "./subject-settlement.js";
 export { RegisteredSubjectSettlements, SubjectSettlements } from "./subject-settlements.js";
+export { type MovementSubject, movementSubjectKey } from "./movement-subject.js";
 export {
   LinkableSubject,
   type PayableSubjectQuote,

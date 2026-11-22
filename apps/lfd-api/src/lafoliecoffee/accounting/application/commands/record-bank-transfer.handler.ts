@@ -1,5 +1,6 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
+import { BankTransfers } from "../../../../payment/channels/requests/index.js";
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import { IdGenerator } from "../../../../platform/id/id-generator.js";
@@ -19,9 +20,9 @@ import { BankTransferReceivedEvent } from "../../domain/events/bank-transfer.eve
 import { LegalEntityRepository } from "../../domain/ports/legal-entity.repository.js";
 import { OrderCollectionRepository } from "../../domain/ports/order-collection.repository.js";
 import { OrderInvoicingLock } from "../../domain/ports/order-invoicing-lock.js";
-import { ReceivedBankTransferRepository } from "../../domain/ports/received-bank-transfer.repository.js";
 import { TransferInvoicesReader } from "../../domain/ports/transfer-invoices.reader.js";
 import { parisDayOf } from "../../domain/services/collection-test-file.js";
+import { transferToRecord } from "../bank-transfer-recording.js";
 import { loadOrFail } from "../legal-entity-support.js";
 import { RecordBankTransferCommand } from "./record-bank-transfer.command.js";
 
@@ -45,6 +46,15 @@ export const TRANSFER_ID_REPLAY: IntentCodec<string> = {
  * (le verrou de la facturation, que le lot et l'annulation prennent aussi),
  * puis la lecture des factures, le virement, les bons, le fait, le sceau.
  *
+ * ## Deux côtés, un identifiant
+ *
+ * Le virement et ses parts vivent dans le bloc `payment` (`BankTransfers`) ;
+ * la facturation en garde la trace sur ses bons (`bank_transfer_id`). Aucune
+ * clé étrangère ne les lie : l'identifiant est tiré UNE fois ici, et le même
+ * part des deux côtés, dans la même transaction — le bloc d'abord, les bons
+ * ensuite. Le bloc rejuge la répartition (défense en profondeur) ; la
+ * facturation a jugé avant lui, avec les mots de ses factures.
+ *
  * ## Une fois par intention
  *
  * Sujet : l'entité. Un second envoi de même clé rend le virement d'origine
@@ -63,7 +73,7 @@ export class RecordBankTransferHandler implements ICommandHandler<
   constructor(
     private readonly entities: LegalEntityRepository,
     private readonly invoices: TransferInvoicesReader,
-    private readonly transfers: ReceivedBankTransferRepository,
+    private readonly transfers: BankTransfers,
     private readonly orders: OrderCollectionRepository,
     private readonly rows: OrderInvoicingLock,
     private readonly ids: IdGenerator,
@@ -93,13 +103,14 @@ export class RecordBankTransferHandler implements ICommandHandler<
     const entity = await loadOrFail(this.entities, command.legalEntityId);
     const at = this.clock.now();
     const stamp: StaffStamp = { at, staffId: command.staffUserId };
+    const transferId = this.ids.next();
     return this.uow.run(async () => {
       await this.lockOrdersOf(command.entry.invoiceIds);
       const transfer = ReceivedBankTransfer.record(
         command.entry,
         await this.invoices.ofIds(command.entry.invoiceIds),
         {
-          transferId: this.ids.next(),
+          transferId,
           legalEntityId: entity.id,
           staffId: command.staffUserId,
           at,
@@ -107,7 +118,7 @@ export class RecordBankTransferHandler implements ICommandHandler<
         },
       );
       const settled = await this.settleOrders(transfer, stamp);
-      await this.transfers.add(transfer);
+      await this.transfers.record(transferToRecord(transfer));
       await this.orders.saveAll(settled);
       await this.events.publishTraced(
         new BankTransferReceivedEvent(transfer, { id: entity.id, name: entity.name }),

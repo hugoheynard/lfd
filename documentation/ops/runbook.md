@@ -1649,6 +1649,72 @@ sur une base jetable le 2026-11-22 : le catalogue du schéma est identique à
 celui d'avant V, puis `migrate deploy` réapplique V. Pas de perte : rien n'est
 copié.
 
+## Déployer le virement reçu dans `payment` (lot D1, `20261122180000_le_virement_recu_dans_payment`)
+
+> Plan [`payment/plan-le-virement-recu-dans-payment.md`](../payment/plan-le-virement-recu-dans-payment.md).
+> `public.received_bank_transfer` devient `payment.transfer_received`,
+> `public.received_bank_transfer_invoice` devient `payment.transfer_allocation`
+> (une colonne `subject_type`, `invoice` seul admis). **Renommages, aucune
+> copie** ; les trois clés étrangères entre la facturation et le bloc sont
+> retirées (décidé par Hugo le 2026-11-22), `order_collection.bank_transfer_id`
+> reste avec son CHECK.
+
+**Quand** : sur un « pousse main » de Hugo. **Ne pas saisir de virement
+pendant le déploiement.** La migration passe avant que l'image neuve serve
+(une à deux minutes) : pendant ce temps, l'ancienne image ne trouve plus
+`public.received_bank_transfer`, et ces routes rendent **500** :
+
+- `POST admin/accounting/legal-entities/:id/bank-transfers` (« Virement reçu ») ;
+- `GET admin/accounting/legal-entities/:id/bank-transfers/preview` (l'aperçu
+  de l'écart) ;
+- `GET admin/accounting/transfer-invoices/unpaid` (les virements en retard,
+  et la carte « Factures à régler » de la fiche client) ;
+- les vues de facture qui lisent le jour de règlement : `GET
+admin/accounting/invoices/:invoiceId`, et dans l'espace client « Mes
+  factures » (`GET companies/:companyId/invoices`) et
+  `GET companies/:companyId/invoices/:invoiceId`.
+
+Rien n'est perdu : une saisie refusée n'a rien écrit (une transaction), et
+se refait après le déploiement.
+
+**Avant de pousser, constater** (lecture seule, sur la production) :
+
+```sql
+SELECT count(*) FROM public.received_bank_transfer;
+SELECT count(*) FROM public.received_bank_transfer_invoice;
+-- noter les deux comptes (0 et 0 le 2026-11-22)
+```
+
+**Après le déploiement, vérifier** :
+
+```sql
+SELECT count(*) FROM payment.transfer_received;
+SELECT count(*) FROM payment.transfer_allocation;
+-- attendu : les deux comptes d'avant
+SELECT conname FROM pg_constraint
+ WHERE conname IN ('order_collection_bank_transfer_id_fkey',
+                   'received_bank_transfer_legal_entity_id_fkey',
+                   'received_bank_transfer_invoice_invoice_id_fkey');
+-- attendu : aucune ligne
+```
+
+Puis une facture réglée par virement (s'il y en a) s'affiche toujours
+« Réglée par virement le … », et la nuit suivante le contrôle
+`admin/accounting/bank-transfers/consistency` ne sonne pas (aucune cloche
+« Virement reçu incohérent »). Une cloche de ce nom n'est **jamais** à
+corriger à la main sans avoir comparé le relevé, la facture et ses bons.
+
+**Retour arrière** : avec l'image d'avant, jouer d'abord les quatre requêtes
+d'orphelins en tête de
+`apps/lfd-api/prisma/rollback/20261122180000_le_virement_recu_dans_payment.sql`
+(aucune ligne attendue : une ligne arrête le retour arrière), puis
+`psql -1 -v ON_ERROR_STOP=1 -f` ce même fichier — les renommages à l'envers,
+les trois clés reposées, l'ajout seul rendu à
+`public.received_bank_transfer_append_only`, et la ligne de la migration
+retirée de `_prisma_migrations`. Joué sur une base jetable le 2026-11-22 :
+le schéma revenu est identique à celui d'avant D1, puis `migrate deploy`
+réapplique D1.
+
 ## Le webhook de la vitrine — mise en service, abonné en échec, rotation de clé
 
 > Bâti le 2026-10-18 (lot W,

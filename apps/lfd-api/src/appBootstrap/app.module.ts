@@ -43,6 +43,7 @@ import { CardPaymentModule } from "../payment/card/card-payment.module.js";
 import { CardPaymentFeedModule } from "./card-payment-feed.module.js";
 import { PayLinkModule } from "../payment/link/pay-link.module.js";
 import { PayLinkFeedModule } from "./pay-link-feed.module.js";
+import { BankTransferModule } from "../payment/transfer/bank-transfer.module.js";
 import { LoyaltyModule } from "../lafoliecoffee/loyalty/loyalty.module.js";
 import { DevModule } from "../dev/dev.module.js";
 import { OrderCutoffsModule } from "../lafoliecoffee/order-cutoffs/order-cutoffs.module.js";
@@ -251,6 +252,8 @@ import { DevImpersonation } from "../platform/auth/dev-impersonation.js";
     CardPaymentFeedModule,
     PayLinkModule,
     PayLinkFeedModule,
+    // Le virement reçu (lot D1) : global, la facturation n'en atteint que le canal.
+    BankTransferModule,
     // Les mandats, les liens de paiement et leur webhook.
     PaymentsModule,
     AccountingModule,

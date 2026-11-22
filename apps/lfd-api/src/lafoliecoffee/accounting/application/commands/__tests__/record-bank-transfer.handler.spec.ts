@@ -19,7 +19,7 @@ import { RecordBankTransferCommand } from "../record-bank-transfer.command.js";
 import { RecordBankTransferHandler } from "../record-bank-transfer.handler.js";
 import {
   LoggingInvoicingLock,
-  MemoryReceivedTransfers,
+  MemoryBankTransfers,
   StoreTransferInvoices,
 } from "./bank-transfer-doubles.js";
 import { MemoryOrderCollections } from "./collection-doubles.js";
@@ -48,12 +48,21 @@ const SECOND = invoice({
   orderIds: ["o3"],
 });
 
+/** Les bons en mémoire, qui comptent leurs écritures. */
+class CountingOrderCollections extends MemoryOrderCollections {
+  saves = 0;
+  override saveAll(collections: readonly OrderCollection[]): Promise<void> {
+    this.saves += 1;
+    return super.saveAll(collections);
+  }
+}
+
 function world() {
   const log: string[] = [];
   const entities = new StepEntities(new SettingSteps());
   entities.rows.set("le1", declaredEntity());
-  const transfers = new MemoryReceivedTransfers(log);
-  const orders = new MemoryOrderCollections();
+  const transfers = new MemoryBankTransfers(log);
+  const orders = new CountingOrderCollections();
   for (const id of ["o1", "o2", "o3"]) {
     orders.saved.set(id, OrderCollection.due(id, 5_000, NOW));
   }
@@ -101,8 +110,8 @@ describe("RecordBankTransferHandler — « virement reçu » (V7)", () => {
     const transferId = await record();
 
     expect(transferId).toBe("vir_000001");
-    expect(log).toEqual(["lock:o1", "lock:o2", "lock:o3", "transfer:add:vir_000001"]);
-    expect(transfers.added).toHaveLength(1);
+    expect(log).toEqual(["lock:o1", "lock:o2", "lock:o3", "transfer:record:vir_000001"]);
+    expect(transfers.recorded).toHaveLength(1);
     for (const id of ["o1", "o2", "o3"]) {
       expect(orders.saved.get(id)?.toPersistence()).toMatchObject({
         state: "settled_by_transfer",
@@ -141,7 +150,7 @@ describe("RecordBankTransferHandler — « virement reçu » (V7)", () => {
     const replay = await record();
 
     expect(replay).toBe(first);
-    expect(transfers.added).toHaveLength(1);
+    expect(transfers.recorded).toHaveLength(1);
     expect(events.traced).toHaveLength(1);
   });
 
@@ -151,7 +160,7 @@ describe("RecordBankTransferHandler — « virement reçu » (V7)", () => {
 
     await expect(record({}, "cle-2")).rejects.toThrow(InvoiceAlreadySettledByTransferError);
     await expect(record({}, "cle-3")).rejects.toThrow(/FA-LFD-2026-000001/u);
-    expect(transfers.added).toHaveLength(1);
+    expect(transfers.recorded).toHaveLength(1);
   });
 
   it("un écart est refusé avant d'écrire quoi que ce soit, et l'intention est rendue", async () => {
@@ -159,7 +168,7 @@ describe("RecordBankTransferHandler — « virement reçu » (V7)", () => {
 
     await expect(record({ amountCents: 15_000 })).rejects.toThrow(BankTransferAmountMismatchError);
 
-    expect(transfers.added).toEqual([]);
+    expect(transfers.recorded).toEqual([]);
     expect(orders.saved.get("o1")?.stateName).toBe("due");
     // La même clé, corrigée, réessaie.
     await expect(record({ amountCents: 15_455 })).resolves.toBe("vir_000002");
@@ -170,7 +179,7 @@ describe("RecordBankTransferHandler — « virement reçu » (V7)", () => {
     orders.saved.get("o3")?.batch("lot_1", 1, NOW);
 
     await expect(record()).rejects.toThrow(OrderCollectionTransitionError);
-    expect(transfers.added).toEqual([]);
+    expect(transfers.recorded).toEqual([]);
   });
 
   it("un bon hors de l'assiette d'encaissement est refusé en nommant sa facture", async () => {
@@ -188,5 +197,66 @@ describe("RecordBankTransferHandler — « virement reçu » (V7)", () => {
     const { record } = world();
 
     await expect(record({}, "cle-1", "le_inconnue")).rejects.toThrow(LegalEntityNotFoundError);
+  });
+
+  it("tire l'identifiant UNE fois : le bloc et chaque bon citent le même virement", async () => {
+    const { transfers, orders, record } = world();
+
+    const transferId = await record();
+
+    expect(transfers.recorded.map((transfer) => transfer.id)).toEqual([transferId]);
+    const cited = new Set(
+      ["o1", "o2", "o3"].map((id) => orders.saved.get(id)?.toPersistence().bankTransferId),
+    );
+    expect([...cited]).toEqual([transferId]);
+  });
+
+  it("enregistre au bloc une part par facture, dans l'ordre saisi, de son reste dû", async () => {
+    const { transfers, record } = world();
+
+    await record({ invoiceIds: ["inv_2", "inv_1"] });
+
+    expect(transfers.recorded).toEqual([
+      {
+        id: "vir_000001",
+        receivedInto: "le1",
+        payerRef: "cmp_port",
+        amountCents: 15_455,
+        receivedOn: "2026-11-18",
+        reference: "FA-LFD-2026-000001 FA-LFD-2026-000002",
+        recordedAt: NOW,
+        recordedBy: "staff_compta",
+        parts: [
+          { subject: { type: "invoice", id: "inv_2" }, amountCents: 3_455 },
+          { subject: { type: "invoice", id: "inv_1" }, amountCents: 12_000 },
+        ],
+      },
+    ]);
+  });
+
+  it("défense en profondeur : ce que la facturation accepte, le contrat du bloc l'accepte", async () => {
+    const { transfers, record } = world();
+
+    // La référence est nettoyée par le jugement de la facturation avant le bloc.
+    await record({ reference: "  VIR CLIENT  " });
+
+    const [recorded] = transfers.recorded;
+    expect(recorded?.reference).toBe("VIR CLIENT");
+    expect(recorded?.parts.reduce((sum, part) => sum + part.amountCents, 0)).toBe(
+      recorded?.amountCents,
+    );
+  });
+
+  it("un refus du bloc arrête le geste : aucun bon écrit, aucun fait, l'intention non scellée", async () => {
+    const { transfers, orders, events, ledger, record } = world();
+    transfers.refuseNext = new RangeError("refus du bloc");
+
+    // Une seule tentative : les doubles en mémoire ne rejouent pas l'annulation.
+    await expect(record()).rejects.toThrow("refus du bloc");
+
+    expect(transfers.recorded).toEqual([]);
+    expect(orders.saves).toBe(0);
+    expect(events.traced).toEqual([]);
+    expect(ledger.resolutions).toEqual([]);
   });
 });

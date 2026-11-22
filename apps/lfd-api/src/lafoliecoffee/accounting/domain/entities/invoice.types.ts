@@ -206,3 +206,10 @@ export interface InvoiceState {
   readonly documentKey: string | null;
   readonly documentSha256: string | null;
 }
+
+/**
+ * Le type de sujet sous lequel une facture est réglée par le bloc `payment`
+ * (le virement reçu, `payment.transfer_allocation.subject_type`). Une VALEUR
+ * écrite : elle ne se renomme que par migration.
+ */
+export const INVOICE_PAYMENT_SUBJECT = "invoice";

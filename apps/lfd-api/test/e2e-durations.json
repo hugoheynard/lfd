@@ -40,6 +40,7 @@
   "test/b2b-legal-sections.e2e-spec.ts": 3791,
   "test/bakehouse-resupply-drafts.e2e-spec.ts": 4038,
   "test/bank-collection-limits.e2e-spec.ts": 4423,
+  "test/bank-transfer-in-payment.e2e-spec.ts": 6500,
   "test/bank-transfer-reads.e2e-spec.ts": 6038,
   "test/bank-transfer-received.e2e-spec.ts": 5782,
   "test/basket-discount-ttc-particulier.e2e-spec.ts": 4892,
