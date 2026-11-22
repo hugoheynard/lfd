@@ -251,3 +251,16 @@ Ce qui suit **prime** sur les §§ 2 à 4.
   sites rattachés : détachez-les d'abord. » Le geste prend le verrou de la
   hiérarchie avant celui de la ligne, et un compte supprimé ne se rattache
   plus ni comme site, ni comme principal.
+- **Un espace déclaré injoignable est refusé.** Quand l'en-tête d'espace
+  désigne une société que la personne n'atteint plus (fermée, plus membre, ou
+  jamais), la requête ne retombe plus en silence sur une autre société ni sur
+  l'espace personnel : « Ce compte n'est plus accessible. » (403). Le refus
+  est porté par `@ActingCompany` : une route qui n'agit pour aucune société
+  (`GET /me`, le choix de l'espace) répond encore, pour que l'écran puisse
+  quitter l'espace.
+- **Une invitée vers une société fermée a son propre refus** : « Ce compte a
+  été fermé : l'invitation ne peut plus être acceptée. » (403), sans le fait
+  « invitation expirée » au journal ni l'alerte à l'équipe.
+- **Le verrou de la passation prend aussi le payeur** (`billed_company_id`),
+  dédoublonné avec la société et son principal, trié par identifiant ; un
+  payeur fermé est refusé.

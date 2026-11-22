@@ -70,6 +70,11 @@ const ADMITTED = new Map([
     "`GET /me` liste les sociétés PROPRES et leur rôle, tels quels ; les sites atteints " +
       "par héritage y viennent de la requête partagée (`readReachableSites`)",
   ],
+  [
+    "apps/lfd-api/src/lafoliecoffee/account/infrastructure/membership-acceptance.ts",
+    "« une invitation vivante vise-t-elle une société fermée ? » pour NOMMER un refus déjà " +
+      "décidé (l'invitée n'entre pas) — un comptage, ni un rôle ni un accès ouvert",
+  ],
 ]);
 
 const BRICK_IMPORT =

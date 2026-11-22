@@ -1,6 +1,7 @@
 import { PERSONAL_WORKSPACE } from "@lfd/contracts";
 
 import type { PrincipalMembership } from "./principal.js";
+import { UnreachableWorkspaceError } from "./unreachable-workspace.error.js";
 
 /**
  * **Pour quelle société cette requête agit-elle ?**
@@ -24,11 +25,13 @@ import type { PrincipalMembership } from "./principal.js";
  * - **un seul** — celui-là. Ce n'est **pas** le raccourci que `principal.ts`
  *   interdit : il n'y a aucun choix à faire, donc aucun risque de se tromper de
  *   tenant. « La première de plusieurs » et « la seule » ne se ressemblent que
- *   dans le code. Une déclaration qui nomme une AUTRE société est ignorée.
+ *   dans le code.
  * - **plusieurs** — la requête doit **déclarer** laquelle, et la déclaration est
  *   vérifiée contre les rattachements. Sans déclaration, `null` : on ne devine
- *   pas. Une société déclarée à laquelle la personne n'appartient pas est
- *   ignorée, jamais servie.
+ *   pas.
+ * - **une société déclarée que la personne n'atteint pas** (fermée, plus
+ *   membre, ou jamais) — refusée, quel que soit le nombre de rattachements :
+ *   ni servie, ni remplacée en silence par une autre société ou par le perso.
  *
  * - **une société atteignable déclarée** (S6, `plan-entrer-dans-ses-sites.md`,
  *   R4) — un site d'un principal dont la personne est détentrice ou
@@ -38,6 +41,8 @@ import type { PrincipalMembership } from "./principal.js";
  *
  * Pure : elle ne lit ni en-tête ni base, elle reçoit ce qui a déjà été vérifié.
  * C'est ce qui permet d'énumérer ses cas au lieu de monter une requête HTTP.
+ *
+ * @throws {UnreachableWorkspaceError} la société déclarée n'est pas atteinte.
  */
 export function resolveCompany(
   memberships: readonly PrincipalMembership[],
@@ -49,6 +54,14 @@ export function resolveCompany(
   }
   if (declared !== null && reachableCompanyIds.includes(declared)) {
     return declared;
+  }
+  // Une déclaration vide ne désigne rien : elle vaut « pas de déclaration ».
+  if (
+    declared !== null &&
+    declared !== "" &&
+    !memberships.some((membership) => membership.companyId === declared)
+  ) {
+    throw new UnreachableWorkspaceError();
   }
   const [only, ...rest] = memberships;
   if (only === undefined) {

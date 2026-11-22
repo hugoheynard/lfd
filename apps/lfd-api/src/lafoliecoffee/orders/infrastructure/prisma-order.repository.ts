@@ -109,9 +109,14 @@ export class PrismaOrderRepository extends OrderRepository {
       this.ids.next(),
     );
     return this.prisma.$transaction(async (tx) => {
-      // La société et son principal, ouverts au moment même de l'écriture :
-      // la course avec une suppression ou une résiliation se tranche ici.
-      await lockOpenCompanies(tx, [state.companyId, state.principalCompanyId]);
+      // La société, son principal et son payeur, ouverts au moment même de
+      // l'écriture : la course avec une suppression ou une résiliation se
+      // tranche ici.
+      await lockOpenCompanies(tx, [
+        state.companyId,
+        state.principalCompanyId,
+        state.billedCompanyId,
+      ]);
       const placed = await tx.order.create({
         data: {
           orderNumber,

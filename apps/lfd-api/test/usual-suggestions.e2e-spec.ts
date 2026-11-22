@@ -233,7 +233,14 @@ describe("vos habituels (R1)", () => {
     await tuesdays(4, companyA, ["VIE-001-1", "PAI-001-1"]);
 
     expect(await usualsOf(MEMBER_B)).toEqual([]);
-    expect(await usualsOf(MEMBER_B, companyA)).toEqual([]);
+    // L'en-tête qui ment est refusé (`plan-archiver-un-compte-jamais-servi.md`, § 8).
+    const lying = await ctx
+      .asSub(MEMBER_B)
+      .post("/shop/suggestions/usuals/mine")
+      .set("x-lfc-company", companyA)
+      .send(payload)
+      .expect(403);
+    expect(JSON.stringify(lying.body)).not.toContain("PAI-001-1");
   });
 
   it("🔴 le mur dans l'agrégat : deux commandes de A et deux de B ne font pas une habitude de B", async () => {

@@ -266,7 +266,8 @@ describe("Un panier par espace de travail", () => {
   });
 
   it("ne sert pas le panier d'une société à qui déclare une maison étrangère", async () => {
-    // L'en-tête qui ment est ignoré : à deux sociétés, il retombe sur le perso.
+    // L'en-tête qui ment est refusé (403), ni servi ni reporté sur le perso
+    // (`plan-archiver-un-compte-jamais-servi.md`, § 8).
     const { first } = await seedTwoCompanies();
     await inSpace(first).put(lines("VIE-001-1")).expect(200);
     const stranger = await createCompany(ctx.prisma, {
@@ -274,6 +275,11 @@ describe("Un panier par espace de travail", () => {
       siret: "11122233300044",
     });
 
-    expect(await inSpace(stranger.id).get()).toBeNull();
+    const refused = await ctx
+      .asSub(SUB)
+      .get("/shop/cart")
+      .set(WORKSPACE_HEADER, stranger.id)
+      .expect(403);
+    expect(JSON.stringify(refused.body)).not.toContain("VIE-001-1");
   });
 });

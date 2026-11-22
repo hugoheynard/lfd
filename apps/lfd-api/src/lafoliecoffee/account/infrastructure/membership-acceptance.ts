@@ -72,6 +72,24 @@ export class MembershipAcceptance {
    *
    * @throws {InvitationExpiredError} toujours.
    */
+  /**
+   * La personne a-t-elle une invitation VIVANTE vers une société fermée
+   * (supprimée ou résiliée) ? Lue seulement pour nommer un refus : une telle
+   * invitation ne s'accepte pas ({@link acceptLive}), et ce n'est pas une
+   * invitation expirée.
+   */
+  async hasLiveInvitationToClosedCompany(userId: string, now: Date): Promise<boolean> {
+    const count = await this.prisma.membership.count({
+      where: {
+        userId,
+        acceptedAt: null,
+        invitedAt: { gte: oldestLiveInvitation(now) },
+        company: { NOT: openCompanyWhere() },
+      },
+    });
+    return count > 0;
+  }
+
   async refuse(userId: string): Promise<never> {
     const person = await this.prisma.user.findUnique({
       where: { id: userId },

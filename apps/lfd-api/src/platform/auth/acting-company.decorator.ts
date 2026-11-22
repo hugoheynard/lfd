@@ -1,6 +1,10 @@
 import { createParamDecorator, type ExecutionContext } from "@nestjs/common";
 
-import { currentRequestContext } from "../context/request-context.store.js";
+import {
+  actingCompanyUnreachable,
+  currentRequestContext,
+} from "../context/request-context.store.js";
+import { UnreachableWorkspaceError } from "./unreachable-workspace.error.js";
 
 /**
  * **La société pour laquelle la requête agit**, ou `null`.
@@ -16,8 +20,15 @@ import { currentRequestContext } from "../context/request-context.store.js";
  *
  * `null` hors requête (cron, semis) : le no-op de l'ALS traverse jusqu'ici, et
  * c'est la bonne réponse — un travail de fond n'agit pour personne.
+ *
+ * @throws {UnreachableWorkspaceError} l'en-tête désignait une société que la
+ *   personne n'atteint plus : la route qui agit pour une société refuse.
  */
 export const ActingCompany = createParamDecorator(
-  (_data: unknown, _context: ExecutionContext): string | null =>
-    currentRequestContext()?.companyId ?? null,
+  (_data: unknown, _context: ExecutionContext): string | null => {
+    if (actingCompanyUnreachable()) {
+      throw new UnreachableWorkspaceError();
+    }
+    return currentRequestContext()?.companyId ?? null;
+  },
 );

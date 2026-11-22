@@ -17,6 +17,8 @@ interface ContextHolder {
   readonly traceId: string;
   actor: Actor;
   companyId: string | null;
+  /** L'en-tête désignait une société que la personne n'atteint pas : `@ActingCompany` refuse. */
+  companyUnreachable: boolean;
 }
 
 const storage = new AsyncLocalStorage<ContextHolder>();
@@ -43,6 +45,7 @@ export function runWithRequestContext<T>(seed: RequestContextSeed, fn: () => T):
     // Personne tant qu'un guard n'a pas résolu les rattachements : hors requête
     // (cron, semis, tests) il n'y a pas de société, et c'est la bonne réponse.
     companyId: null,
+    companyUnreachable: false,
   };
   return storage.run(holder, fn);
 }
@@ -73,6 +76,25 @@ export function attachCompany(companyId: string | null): void {
   if (holder !== undefined) {
     holder.companyId = companyId;
   }
+}
+
+/**
+ * Note que l'espace déclaré n'est pas atteint. Le refus est porté par
+ * `@ActingCompany`, à la lecture : une route qui n'agit pour aucune société
+ * (`GET /me`, le choix de l'espace) répond encore, et c'est par elle que
+ * l'écran se remet d'un espace devenu injoignable. **No-op** hors requête.
+ */
+export function attachUnreachableCompany(): void {
+  const holder = storage.getStore();
+  if (holder !== undefined) {
+    holder.companyId = null;
+    holder.companyUnreachable = true;
+  }
+}
+
+/** L'espace déclaré par la requête courante est-il injoignable ? `false` hors requête. */
+export function actingCompanyUnreachable(): boolean {
+  return storage.getStore()?.companyUnreachable ?? false;
 }
 
 /**

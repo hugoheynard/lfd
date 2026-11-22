@@ -2,6 +2,7 @@ import { PERSONAL_WORKSPACE } from "@lfd/contracts";
 
 import { resolveCompany } from "../resolve-company.js";
 import type { PrincipalMembership } from "../principal.js";
+import { UnreachableWorkspaceError } from "../unreachable-workspace.error.js";
 
 /**
  * **Pour quelle société la requête agit.**
@@ -23,8 +24,10 @@ describe("aucun rattachement", () => {
     expect(resolveCompany([], [], null)).toBeNull();
   });
 
-  it("ignore une société déclarée quand la personne n'appartient à rien", () => {
-    expect(resolveCompany([], [], "co_autre")).toBeNull();
+  it("🔴 refuse une société déclarée quand la personne n'appartient à rien", () => {
+    // Plus de retombée silencieuse sur le perso : la commande partirait hors
+    // de la maison que l'écran montre.
+    expect(() => resolveCompany([], [], "co_autre")).toThrow(UnreachableWorkspaceError);
   });
 });
 
@@ -36,11 +39,13 @@ describe("un seul rattachement", () => {
     expect(resolveCompany([membership("co_1")], [], null)).toBe("co_1");
   });
 
-  it("agit pour celui-là même si la déclaration en nomme un autre", () => {
-    // La déclaration n'a aucune autorité : elle sert à départager, pas à
-    // désigner. Une personne rattachée à une seule maison ne peut pas agir pour
-    // une autre en changeant un en-tête.
-    expect(resolveCompany([membership("co_1")], [], "co_2")).toBe("co_1");
+  it("🔴 refuse une déclaration qui en nomme un autre, sans servir la seule", () => {
+    // Une personne rattachée à une seule maison ne peut pas agir pour une
+    // autre en changeant un en-tête ; et l'onglet resté sur une société
+    // fermée ne commande pas en silence pour celle qui reste.
+    expect(() => resolveCompany([membership("co_1")], [], "co_2")).toThrow(
+      UnreachableWorkspaceError,
+    );
   });
 });
 
@@ -58,11 +63,11 @@ describe("plusieurs rattachements", () => {
     expect(resolveCompany(both, [], "co_2")).toBe("co_2");
   });
 
-  it("🔴 ignore une déclaration qui ne correspond à aucun rattachement", () => {
+  it("🔴 refuse une déclaration qui ne correspond à aucun rattachement", () => {
     // L'en-tête vient du réseau : il est confronté aux rattachements avant de
     // servir à quoi que ce soit. Sans cette confrontation, il suffirait de le
     // réécrire pour lire la mercuriale d'un concurrent.
-    expect(resolveCompany(both, [], "co_du_concurrent")).toBeNull();
+    expect(() => resolveCompany(both, [], "co_du_concurrent")).toThrow(UnreachableWorkspaceError);
   });
 
   it("ne se laisse pas prendre par une déclaration vide", () => {
@@ -88,10 +93,10 @@ describe("« perso » déclaré", () => {
     ).toBeNull();
   });
 
-  it("reste distinct d'une société étrangère déclarée, toujours ignorée", () => {
-    // Une valeur qui n'est ni « perso » ni un rattachement ne change rien : la
-    // seule société reste servie.
-    expect(resolveCompany([membership("co_1")], [], "co_etrangere")).toBe("co_1");
+  it("reste distinct d'une société étrangère déclarée, qui est refusée", () => {
+    expect(() => resolveCompany([membership("co_1")], [], "co_etrangere")).toThrow(
+      UnreachableWorkspaceError,
+    );
   });
 });
 
@@ -117,11 +122,11 @@ describe("resolveCompany — un site atteignable (S6)", () => {
     );
   });
 
-  it("un site NON atteignable déclaré reste ignoré, comme une société étrangère", () => {
-    expect(resolveCompany([membership("co_principal")], ["co_site"], "co_frere")).toBe(
-      "co_principal",
+  it("un site NON atteignable déclaré est refusé, comme une société étrangère", () => {
+    expect(() => resolveCompany([membership("co_principal")], ["co_site"], "co_frere")).toThrow(
+      UnreachableWorkspaceError,
     );
-    expect(resolveCompany([], ["co_site"], "co_frere")).toBeNull();
+    expect(() => resolveCompany([], ["co_site"], "co_frere")).toThrow(UnreachableWorkspaceError);
   });
 
   it("« perso » déclaré l'emporte, sites atteignables compris", () => {

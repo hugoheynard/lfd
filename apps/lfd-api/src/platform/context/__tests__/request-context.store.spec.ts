@@ -1,5 +1,8 @@
 import {
+  actingCompanyUnreachable,
   attachActor,
+  attachCompany,
+  attachUnreachableCompany,
   currentRequestContext,
   outsideRequestContext,
   runWithRequestContext,
@@ -83,5 +86,20 @@ describe("request-context store", () => {
   it("attachActor hors requête est un no-op (pas d'erreur)", () => {
     expect(() => attachActor({ type: "staff", id: "s" })).not.toThrow();
     expect(currentRequestContext()).toBeNull();
+  });
+
+  it("un espace injoignable se note, efface la société et se lit dans la requête seule", () => {
+    runWithRequestContext({ now: NOW, traceId: "trace-u" }, () => {
+      attachCompany("co_1");
+      expect(actingCompanyUnreachable()).toBe(false);
+      attachUnreachableCompany();
+      expect(actingCompanyUnreachable()).toBe(true);
+      expect(currentRequestContext()?.companyId).toBeNull();
+    });
+    runWithRequestContext({ now: NOW, traceId: "trace-v" }, () => {
+      expect(actingCompanyUnreachable()).toBe(false);
+    });
+    expect(() => attachUnreachableCompany()).not.toThrow();
+    expect(actingCompanyUnreachable()).toBe(false);
   });
 });

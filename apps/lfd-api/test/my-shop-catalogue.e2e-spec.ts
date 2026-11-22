@@ -139,21 +139,21 @@ describe("le mur", () => {
     expect(itemOf(seen, SKU)?.catalogPriceMillicents).toBeUndefined();
   });
 
-  it("🔴 ignore un en-tête d'espace de travail qui ment", async () => {
+  it("🔴 refuse un en-tête d'espace de travail qui ment", async () => {
     // L'en-tête vient du réseau : il sert à DÉPARTAGER plusieurs rattachements,
     // jamais à en désigner un qu'on n'a pas. Sans cette confrontation, il
-    // suffirait de le réécrire pour lire la mercuriale d'un concurrent.
+    // suffirait de le réécrire pour lire la mercuriale d'un concurrent. Il est
+    // refusé, pas ignoré (`plan-archiver-un-compte-jamais-servi.md`, § 8).
     await poseMercuriale();
 
-    const seen = jsonBody<ShopCatalogueView>(
-      await ctx
-        .asSub(STRANGER)
-        .get("/shop/catalogue/mine")
-        .set("x-lfc-company", companyId)
-        .expect(200),
-    );
+    const response = await ctx
+      .asSub(STRANGER)
+      .get("/shop/catalogue/mine")
+      .set("x-lfc-company", companyId)
+      .expect(403);
 
-    expect(itemOf(seen, SKU)?.unitPriceMillicents).toBe(PUBLIC_MILLICENTS);
+    expect(JSON.stringify(response.body)).toContain("auth.workspace_unreachable");
+    expect(JSON.stringify(response.body)).not.toContain(SKU);
   });
 
   it("🔴 sert l'étiquette PUBLIQUE en « perso », même à qui a UNE société négociée", async () => {

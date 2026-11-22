@@ -188,7 +188,10 @@ interface PrismaDouble {
         data: { status?: UserStatus; emailVerified?: boolean };
       }) => Promise<unknown>;
     };
-    membership: { updateMany: (args: AcceptArgs) => Promise<{ count: number }> };
+    membership: {
+      updateMany: (args: AcceptArgs) => Promise<{ count: number }>;
+      count: () => Promise<number>;
+    };
     /** Les sites atteints par héritage (S6) : la requête partagée les lit ici. */
     company: { findMany: () => Promise<readonly ReachableRow[]> };
   };
@@ -219,6 +222,8 @@ function prismaDouble(
     acceptCount?: number;
     /** Les sites que la base rend comme atteignables par héritage (S6). */
     reachable?: readonly ReachableRow[];
+    /** Invitations vivantes vers une société fermée (supprimée ou résiliée). */
+    closedLiveInvitations?: number;
   } = {},
 ): PrismaDouble {
   let index = 0;
@@ -276,6 +281,7 @@ function prismaDouble(
           acceptCalls.push(args);
           return Promise.resolve({ count: options.acceptCount ?? 1 });
         },
+        count: () => Promise.resolve(options.closedLiveInvitations ?? 0),
       },
       company: { findMany: () => Promise.resolve(options.reachable ?? []) },
     },
@@ -1000,6 +1006,25 @@ describe("CustomerPrincipalResolver", () => {
       // Ni le `sub`, ni l'adresse : le journal se relit largement.
       expect(JSON.stringify(fact)).not.toContain("auth0|");
       expect(JSON.stringify(fact)).not.toContain("@");
+    });
+
+    it("🔴 invitée par une société fermée : son propre refus, ni fait « expirée » ni cloche", async () => {
+      const events = new RecordingPublisher();
+      const bell = new RecordingBell();
+      // La société fermée n'est pas chargée par `findBySub` : il ne reste rien.
+      const double = prismaDouble([{ ...invitedUser, memberships: [] }], {
+        closedLiveInvitations: 1,
+      });
+      const resolver = await resolverWith(double, events, bell);
+
+      await expect(resolver.resolve(token)).rejects.toMatchObject({
+        code: "account.invitation.company_closed",
+        message: "Ce compte a été fermé : l'invitation ne peut plus être acceptée.",
+      });
+      await new Promise((resolve) => setImmediate(resolve));
+      expect(events.traced).toEqual([]);
+      expect(bell.notices).toEqual([]);
+      expect(double.acceptCalls).toEqual([]);
     });
 
     it("refuse aussi quand l'invitation expire entre la lecture et l'écriture", async () => {

@@ -74,6 +74,23 @@ async function discount(who: Person, point: string, declared?: string): Promise<
   return view.discountCents;
 }
 
+/**
+ * Une société déclarée que la personne n'atteint pas est REFUSÉE (403), plus
+ * ignorée : `plan-archiver-un-compte-jamais-servi.md`, § 8 (2026-11-22).
+ */
+async function refusedQuote(who: Person, point: string, declared: string): Promise<void> {
+  const response = await ctx
+    .asSub(who.sub)
+    .post("/shop/quote/mine")
+    .set(WORKSPACE_HEADER, declared)
+    .send({
+      lines: [{ sku: "VIE-001-1", quantity: 10 }],
+      fulfillment: { method: "pickup", pickupAddressId: point },
+    })
+    .expect(403);
+  expect(JSON.stringify(response.body)).toContain("auth.workspace_unreachable");
+}
+
 describe("R4 — la société servie sans en-tête ne change pas", () => {
   it("🔴 le détenteur d'un principal qui atteint deux sites garde son prix pro sans rien déclarer", async () => {
     const f = await family();
@@ -97,14 +114,14 @@ describe("R4 — une société déclarée", () => {
     const point = await prosOnlyPoint();
 
     expect(await discount(f.heir, point, f.site)).toBeGreaterThan(0);
-    expect(await discount(f.heir, point, other.site)).toBe(0);
+    await refusedQuote(f.heir, point, other.site);
   });
 
   it("🔴 un membre de site qui déclare son principal n'y est pas servi", async () => {
     const f = await family();
     await member(f.siteOwner.id, await company(), { role: CustomerRole.owner });
     const point = await prosOnlyPoint();
-    expect(await discount(f.siteOwner, point, f.principal)).toBe(0);
+    await refusedQuote(f.siteOwner, point, f.principal);
   });
 
   it("🔴 détaché : le site déclaré n'est plus servi à la requête suivante (R6)", async () => {
@@ -113,7 +130,7 @@ describe("R4 — une société déclarée", () => {
     const point = await prosOnlyPoint();
     expect(await discount(f.heir, point, f.site)).toBeGreaterThan(0);
     await detach(f.site);
-    expect(await discount(f.heir, point, f.site)).toBe(0);
+    await refusedQuote(f.heir, point, f.site);
   });
 });
 

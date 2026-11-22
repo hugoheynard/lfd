@@ -6,8 +6,13 @@ import {
   type ExecutionContext,
 } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
-import { attachActor, attachCompany } from "../context/request-context.store.js";
+import {
+  attachActor,
+  attachCompany,
+  attachUnreachableCompany,
+} from "../context/request-context.store.js";
 import { resolveCompany } from "./resolve-company.js";
+import { UnreachableWorkspaceError } from "./unreachable-workspace.error.js";
 import { AccessTokenVerifier } from "./access-token.verifier.js";
 import { PrincipalResolver } from "./principal.resolver.js";
 import { DevImpersonation } from "./dev-impersonation.js";
@@ -85,13 +90,22 @@ export class AuthGuard implements CanActivate {
       return;
     }
     attachActor({ type: "customer", id: principal.userId });
-    attachCompany(
-      resolveCompany(
-        principal.memberships,
-        principal.reachableCompanyIds,
-        declaredCompany(request),
-      ),
-    );
+    try {
+      attachCompany(
+        resolveCompany(
+          principal.memberships,
+          principal.reachableCompanyIds,
+          declaredCompany(request),
+        ),
+      );
+    } catch (error) {
+      // Refusé à la lecture (`@ActingCompany`), pas ici : `/me` doit encore
+      // répondre pour que l'écran quitte l'espace devenu injoignable.
+      if (!(error instanceof UnreachableWorkspaceError)) {
+        throw error;
+      }
+      attachUnreachableCompany();
+    }
   }
 
   /** Vérifie la signature puis résout le client local. */

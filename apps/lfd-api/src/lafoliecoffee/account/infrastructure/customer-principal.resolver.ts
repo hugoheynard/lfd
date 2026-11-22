@@ -14,7 +14,10 @@ import { tokenProvesAddress } from "./token-address-proof.js";
 import { MembershipAcceptance } from "./membership-acceptance.js";
 import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
 import { Clock } from "../../../platform/time/clock.js";
-import { InvitationExpiredError } from "../domain/errors/invitation-errors.js";
+import {
+  InvitationCompanyClosedError,
+  InvitationExpiredError,
+} from "../domain/errors/invitation-errors.js";
 import { openCompanyWhere } from "../../shared/company-standing/infrastructure/open-company.js";
 import { readReachableSites } from "../../shared/company-standing/infrastructure/read-company-standing.js";
 import {
@@ -193,6 +196,7 @@ export class CustomerPrincipalResolver extends TrackedPrincipalResolver {
    * n'ouvre plus rien après.
    *
    * @throws {InvitationExpiredError} une personne invitée qu'aucun rattachement n'accueille.
+   * @throws {InvitationCompanyClosedError} son invitation vivante vise une société fermée.
    */
   private async enter(user: ResolvedUser, now: Date): Promise<ResolvedUser> {
     const invited = user.status === UserStatus.invited;
@@ -200,6 +204,11 @@ export class CustomerPrincipalResolver extends TrackedPrincipalResolver {
       return user;
     }
     if (invited && !canEnter(user.memberships, now)) {
+      // Invitée par une société fermée : son propre refus, sans la cloche
+      // « invitation expirée » — un lien neuf n'y changerait rien.
+      if (await this.acceptance.hasLiveInvitationToClosedCompany(user.id, now)) {
+        throw new InvitationCompanyClosedError(user.id);
+      }
       return this.acceptance.refuse(user.id);
     }
     try {

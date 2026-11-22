@@ -150,17 +150,27 @@ describe("le membre d'une société fermée", () => {
   );
 
   /**
-   * L'espace déclaré n'est plus le sien : `resolveCompany` retombe sur ce
-   * qu'il lui reste (ici son autre société). Ce qui compte au mur : plus rien
-   * ne s'écrit au nom de la société supprimée.
+   * L'onglet resté sur la société supprimée : la commande est refusée par son
+   * nom, jamais reportée en silence sur l'autre société ni sur le perso — et
+   * `/me`, sous le même en-tête, répond encore : c'est par lui que l'écran
+   * quitte l'espace.
    */
-  it("supprimée : aucune commande ne s'écrit plus à son nom", async () => {
+  it("🔴 supprimée : la commande sous son en-tête est refusée, rien n'est écrit, /me répond", async () => {
     await archive(companyId).expect(204);
 
-    const response = await placeMine();
+    const response = await placeMine().expect(403);
 
-    expect(response.status).toBeLessThan(500);
-    expect(await ctx.prisma.order.count({ where: { companyId } })).toBe(0);
+    expect(JSON.stringify(response.body)).toContain("auth.workspace_unreachable");
+    expect(JSON.stringify(response.body)).toContain("Ce compte n'est plus accessible.");
+    expect(await ctx.prisma.order.count()).toBe(0);
+    await ctx.asSub(MEMBER).get("/me").set(WORKSPACE_HEADER, companyId).expect(200);
+  });
+
+  it("une société jamais sienne déclarée en en-tête : refusée, pas servie", async () => {
+    const stranger = (await createCompany(ctx.prisma, { status: CompanyStatus.active })).id;
+
+    await ctx.asSub(MEMBER).post("/orders").set(WORKSPACE_HEADER, stranger).send({}).expect(403);
+    expect(await ctx.prisma.order.count()).toBe(0);
   });
 });
 
@@ -173,9 +183,18 @@ describe("l'invitation vers une société fermée", () => {
     await attachTo(ctx.prisma, invited.id, companyId, CustomerRole.orders);
     await archive(companyId).expect(204);
 
-    const response = await ctx.asSub("auth0|mur-ferme-invitee").get("/me");
+    const response = await ctx.asSub("auth0|mur-ferme-invitee").get("/me").expect(403);
 
-    expect(response.status).toBeGreaterThanOrEqual(400);
+    expect(JSON.stringify(response.body)).toContain("account.invitation.company_closed");
+    expect(JSON.stringify(response.body)).toContain(
+      "Ce compte a été fermé : l'invitation ne peut plus être acceptée.",
+    );
+    // Pas l'alerte « invitation expirée » : un lien neuf n'y changerait rien.
+    expect(
+      await ctx.prisma.activityEvent.count({
+        where: { type: "user.entry_refused_invitation_expired" },
+      }),
+    ).toBe(0);
     const membership = await ctx.prisma.membership.findFirstOrThrow({
       where: { userId: invited.id, companyId },
       select: { acceptedAt: true },

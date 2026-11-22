@@ -4,16 +4,18 @@ import type { StandingCompanyStatus } from "../../shared/company-standing/domain
 import { OrderCompanyClosedError } from "../domain/errors/order-company-closed.error.js";
 
 /** Les colonnes que le prédicat « la société est fermée » lit, telles que le SQL les rend. */
-interface ClosureRow {
+export interface ClosureRow {
   readonly id: string;
   readonly status: StandingCompanyStatus;
   readonly archived_at: Date | null;
 }
 
 /**
- * **Le verrou de la passation** : `FOR SHARE` sur la ligne `companies` de la
- * société de la commande et de son principal, dans la transaction qui écrit la
- * commande, puis refus d'une société fermée (`isCompanyClosed`).
+ * **Le verrou de la passation** : `FOR SHARE` sur les lignes `companies` de la
+ * société de la commande, de son principal et de son payeur — dédoublonnées —,
+ * dans la transaction qui écrit la commande, puis refus d'une société fermée
+ * (`isCompanyClosed`). Les trois sont celles que la suppression lit pour dire
+ * qu'un compte a des commandes.
  *
  * La suppression prend `FOR UPDATE` sur la même ligne avant de lire si le
  * compte a des commandes, et la résiliation l'écrit : les deux se sérialisent
@@ -30,7 +32,7 @@ export async function lockOpenCompanies(
   tx: Prisma.TransactionClient,
   companyIds: readonly (string | null)[],
 ): Promise<void> {
-  const ids = [...new Set(companyIds.filter((id): id is string => id !== null))].sort();
+  const ids = companiesToLock(companyIds);
   if (ids.length === 0) {
     return;
   }
@@ -39,10 +41,25 @@ export async function lockOpenCompanies(
     WHERE id IN (${Prisma.join(ids)})
     ORDER BY id
     FOR SHARE`;
+  const closed = firstClosed(rows);
+  if (closed !== null) {
+    throw new OrderCompanyClosedError(closed);
+  }
+}
+
+/**
+ * Les sociétés à verrouiller : sans les absentes (`null`), dédoublonnées — le
+ * payeur est souvent le site ou son principal —, triées par identifiant pour
+ * que deux gestes prennent les mêmes lignes dans le même ordre.
+ */
+export function companiesToLock(companyIds: readonly (string | null)[]): string[] {
+  return [...new Set(companyIds.filter((id): id is string => id !== null))].sort();
+}
+
+/** La première société fermée parmi les lignes verrouillées, ou `null`. */
+export function firstClosed(rows: readonly ClosureRow[]): string | null {
   const closed = rows.find((row) =>
     isCompanyClosed({ status: row.status, archivedAt: row.archived_at }),
   );
-  if (closed !== undefined) {
-    throw new OrderCompanyClosedError(closed.id);
-  }
+  return closed?.id ?? null;
 }
