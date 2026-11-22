@@ -219,8 +219,13 @@ export const ACCOUNTS_AND_CARTS_FACTS = {
     before: deferredTermSchema.nullable(),
     after: deferredTermSchema.nullable(),
   }),
+  /**
+   * Le motif est porté quand l'équipe en a donné un (« Doublon »…) : c'est lui
+   * qu'on relit pour savoir pourquoi un compte a quitté la liste.
+   */
   "company.status_changed": labelled({
     action: z.enum(["suspend", "reactivate", "terminate"]),
+    reason: z.string().min(1).optional(),
   }),
   /**
    * La comptabilité suspend le prélèvement mensuel (crédit conservé). L'auteur

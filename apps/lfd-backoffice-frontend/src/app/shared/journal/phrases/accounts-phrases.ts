@@ -368,6 +368,7 @@ const STATUS_VERBS: Readonly<Record<string, string>> = {
 const statusChanged: Phrase = (fact) => {
   const action = fact.payload['action'];
   const verb = typeof action === 'string' ? STATUS_VERBS[action] : undefined;
+  const reason = optional(fact.payload['reason']);
   return verb === undefined
     ? byActor(
         fact,
@@ -379,7 +380,15 @@ const statusChanged: Phrase = (fact) => {
         ],
         ['subjectLabel', 'action'],
       )
-    : byActor(fact, [text(verb), ...client(fact, 'of')], ['subjectLabel', 'action']);
+    : byActor(
+        fact,
+        [
+          text(verb),
+          ...client(fact, 'of'),
+          ...(reason === null ? [] : [text(' : '), value(reason)]),
+        ],
+        ['subjectLabel', 'action', 'reason'],
+      );
 };
 
 /**

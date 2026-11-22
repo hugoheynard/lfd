@@ -143,6 +143,7 @@ describe("Les actes du staff au journal", () => {
     expect(events.traced[0]?.journalFact().payload).toEqual({
       subjectLabel: COMPANY_LABEL,
       action: "suspend",
+      reason: "impayés répétés",
     });
   });
 

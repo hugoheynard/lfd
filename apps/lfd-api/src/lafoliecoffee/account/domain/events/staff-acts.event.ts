@@ -125,6 +125,8 @@ export class CompanyStatusChangedByStaffEvent extends CompanyStaffAct {
   constructor(
     company: NamedRef,
     readonly action: "suspend" | "reactivate" | "terminate",
+    /** Vide quand aucun motif n'a été donné (une réactivation) : rien ne part. */
+    readonly reason: string,
   ) {
     super(company);
   }
@@ -132,7 +134,9 @@ export class CompanyStatusChangedByStaffEvent extends CompanyStaffAct {
     return ACCOUNT_FACTS.statusChanged;
   }
   protected override details(): Record<string, unknown> {
-    return { action: this.action };
+    return this.reason === ""
+      ? { action: this.action }
+      : { action: this.action, reason: this.reason };
   }
 }
 

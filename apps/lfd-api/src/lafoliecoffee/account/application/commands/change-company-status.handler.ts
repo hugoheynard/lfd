@@ -15,9 +15,8 @@ import { ChangeCompanyStatusCommand } from "./change-company-status.command.js";
  * le droit de venir — puis persiste. Aucun mur membership : l'auth staff garde
  * la route en amont.
  *
- * Le **motif** exigé par le contrat n'est pas encore relu ailleurs ; il est
- * demandé au moment du geste parce qu'un motif qu'on ne demande pas là ne se
- * retrouve jamais après coup (cf. l'annulation d'un rendez-vous).
+ * Le **motif** exigé par le contrat part dans le fait journalisé : c'est là
+ * qu'on relit pourquoi un compte a été suspendu ou résilié (« Doublon »).
  */
 @CommandHandler(ChangeCompanyStatusCommand)
 export class ChangeCompanyStatusHandler implements ICommandHandler<
@@ -44,6 +43,7 @@ export class ChangeCompanyStatusHandler implements ICommandHandler<
         new CompanyStatusChangedByStaffEvent(
           companyNamed(command.companyId, company),
           command.action,
+          command.reason,
         ),
       );
     });
