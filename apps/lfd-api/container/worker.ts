@@ -702,6 +702,22 @@ async function triggerCardRefundSweep(env: Env): Promise<void> {
 }
 
 /**
+ * Réveille le container et relit chez le prestataire les paiements restés en
+ * attente (plan `documentation/payment/plan-b-balayage-des-paiements-en-attente.md`) :
+ * le filet d'un webhook perdu, au plus 50 par passage, chacun à l'intervalle
+ * de son âge. Sur le cron de RAFRAÎCHISSEMENT ; même porte et même jeton que
+ * les remboursements ; idempotent — la machine de la ligne ne règle jamais
+ * deux fois.
+ */
+async function triggerPendingCardPaymentSweep(env: Env): Promise<void> {
+  const token = env.RECOMPUTE_TOKEN;
+  if (!token) {
+    return;
+  }
+  await postSweep(env, token, "admin/card-payments/pending/sweep");
+}
+
+/**
  * Réveille le container et passe les hausses payées par carte (doc
  * `documentation/commandes/modification/modifier-une-commande.md`, §2.7.5, §2.7.7) :
  * le balayage reprend les compléments payés à appliquer (réveil perdu, panne
@@ -797,6 +813,7 @@ async function refreshSweeps(env: Env): Promise<void> {
     triggerRoundsGapBell(env),
     triggerUnsettledShopOrderExpiry(env),
     triggerCardRefundSweep(env),
+    triggerPendingCardPaymentSweep(env),
     triggerCardIncreases(env),
     triggerVitrineSweep(env),
   ]);

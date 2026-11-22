@@ -68,6 +68,14 @@ export class PrismaCardPaymentRepository extends CardPaymentRepository {
     return count === 1;
   }
 
+  /** Conditionnée à l'état : une ligne réglée entre-temps n'est plus dans la file. */
+  async markProviderChecked(paymentId: string, at: Date): Promise<void> {
+    await this.prisma.cardPayment.updateMany({
+      where: { id: paymentId, state: { in: [...UNSETTLED] } },
+      data: { providerCheckedAt: at },
+    });
+  }
+
   /** Seuls l'état et l'instant d'encaissement bougent : le reste est immuable (déclencheur). */
   async save(payment: CardPayment): Promise<void> {
     const row = payment.toPersistence();

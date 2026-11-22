@@ -39,6 +39,16 @@ export abstract class CardPaymentRepository {
    */
   abstract addIfAbsent(payment: CardPayment): Promise<boolean>;
 
+  /**
+   * **Avance le curseur du balayage des paiements en attente** (plan B, §2.2)
+   * — l'instant de la dernière relecture chez le prestataire, si la ligne est
+   * encore `pending | failed`. L'unique écriture ciblée de ce port, et elle
+   * est voulue : aucune règle ne peut la refuser, aucun fait ne la journalise,
+   * et l'agrégat n'en lit rien. La faire passer par `save` relirait la ligne
+   * sous verrou pour une date technique.
+   */
+  abstract markProviderChecked(paymentId: string, at: Date): Promise<void>;
+
   /** Écrit l'agrégat : la ligne neuve, ou son état et son instant d'encaissement. */
   abstract save(payment: CardPayment): Promise<void>;
 }

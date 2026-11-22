@@ -1,6 +1,7 @@
 import { CardAccountDefaults } from "../../../../platform/config/card-accounts.js";
 import type { CardAccountName } from "../../../../platform/config/card-accounts.js";
 import type { DurableFact } from "../../../../platform/outbox/durable-event.js";
+import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DurablePublisher } from "../../../../platform/outbox/durable-publisher.js";
 import {
   type CardSubject,
@@ -45,6 +46,30 @@ export class Timeline {
 
   note(step: string): void {
     this.steps.push(step);
+  }
+}
+
+/**
+ * Une unité de travail sans transaction qui note son ouverture et sa
+ * fermeture dans la chronologie, et dit si elle est ouverte : de quoi
+ * éprouver l'ordre des verrous et qu'aucun appel réseau n'y part.
+ */
+export class TimelineUnitOfWork extends UnitOfWork {
+  open = false;
+
+  constructor(private readonly timeline: Timeline) {
+    super();
+  }
+
+  async run<T>(work: () => Promise<T>): Promise<T> {
+    this.timeline.note("uow.begin");
+    this.open = true;
+    try {
+      return await work();
+    } finally {
+      this.open = false;
+      this.timeline.note("uow.end");
+    }
   }
 }
 
@@ -102,6 +127,18 @@ export class InMemoryCardPayments extends CardPaymentRepository {
     this.timeline.note(`repo.add:${payment.id}:${payment.state}`);
     this.seed(payment);
     return Promise.resolve(true);
+  }
+
+  /** Les relectures notées par le balayage, par paiement. */
+  readonly checkedAt = new Map<string, Date>();
+
+  markProviderChecked(paymentId: string, at: Date): Promise<void> {
+    this.timeline.note(`repo.markProviderChecked:${paymentId}`);
+    const state = this.state(paymentId);
+    if (state === "pending" || state === "failed") {
+      this.checkedAt.set(paymentId, at);
+    }
+    return Promise.resolve();
   }
 
   save(payment: CardPayment): Promise<void> {
@@ -193,6 +230,25 @@ export class RecordingCardProvider extends CardProvider {
   findRefund(providerRef: string, params: RefundLookupParams): Promise<RefundLookup> {
     this.calls.push(`findRefund:${providerRef}:${params.requestId}:${String(params.generation)}`);
     return Promise.resolve(this.lookup);
+  }
+}
+
+/**
+ * Le prestataire doublé qui relève chaque relecture partie pendant une unité
+ * de travail ouverte — ce que `assertOutsideTransaction` refuse en vrai.
+ */
+export class OutsideWorkCardProvider extends RecordingCardProvider {
+  readonly insideWork: string[] = [];
+
+  constructor(private readonly uow: TimelineUnitOfWork) {
+    super("pk_live_x");
+  }
+
+  override retrieveIntent(providerRef: string): Promise<RetrievedIntent> {
+    if (this.uow.open) {
+      this.insideWork.push(providerRef);
+    }
+    return super.retrieveIntent(providerRef);
   }
 }
 

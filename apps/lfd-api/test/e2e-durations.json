@@ -62,6 +62,7 @@
   "test/card-increase-proposal.e2e-spec.ts": 6490,
   "test/card-invoice-billable.e2e-spec.ts": 4070,
   "test/card-invoices.e2e-spec.ts": 6004,
+  "test/card-payment-pending-sweep.e2e-spec.ts": 6000,
   "test/card-payment-schema.e2e-spec.ts": 3084,
   "test/card-refund-schema.e2e-spec.ts": 6127,
   "test/card-refunds.e2e-spec.ts": 2808,

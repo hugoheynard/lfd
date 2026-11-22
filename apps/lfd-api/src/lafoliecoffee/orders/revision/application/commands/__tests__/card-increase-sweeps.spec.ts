@@ -154,7 +154,7 @@ describe("ExpireCardIncreasesHandler — l'abandon au délai et ses cinq issues 
   it("`already_paid` : le chemin payé est rejoué par `settleFromProvider`, rien n'est abandonné", async () => {
     const scene = expireScene(proposalAt("awaiting_payment"));
     scene.cards.cancellation = { kind: "already_paid" };
-    scene.cards.settlement = "paid";
+    scene.cards.settlement = "settled";
 
     expect(await scene.handler.execute()).toEqual({ abandoned: 0, settled: 1, retried: 0 });
 
@@ -235,7 +235,7 @@ describe("SweepCardIncreasesHandler — le balayage (§2.6, §2.7)", () => {
 
   it("vérifie chez le prestataire les compléments en attente depuis plus de cinq minutes", async () => {
     const scene = sweepScene(proposalAt("awaiting_payment"), { awaiting: ["prop_1"] });
-    scene.cards.settlement = "paid";
+    scene.cards.settlement = "settled";
 
     expect(await scene.handler.execute()).toEqual({ applied: 0, checked: 1 });
 

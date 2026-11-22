@@ -131,16 +131,7 @@ export class BlockCardPayments extends CardPayments {
     const intent = await this.providers.forAccount(payment.account).retrieveIntent(providerRef);
     switch (intent.state) {
       case "succeeded":
-        // L'identifiant ne sert qu'au journal : l'idempotence tient par la
-        // machine de la ligne (`moveTo`, `markPaid`), relue sous verrou.
-        await this.uow.run(async () =>
-          this.outcomes.paid(
-            (await this.attached(paymentId)).payment,
-            providerRef,
-            `provider-check:${paymentId}`,
-          ),
-        );
-        return "paid";
+        return this.uow.run(() => this.recordPaid(payment, providerRef));
       case "canceled":
         await this.uow.run(() => this.close(paymentId));
         return "closed";
@@ -148,6 +139,24 @@ export class BlockCardPayments extends CardPayments {
       case "processing":
         return "pending";
     }
+  }
+
+  /**
+   * Le chemin du webhook, dans son ordre : la ligne relue SANS verrou par sa
+   * référence, le sujet verrouillé par le canal, puis la ligne verrouillée par
+   * `IntentOutcomeRecorder`. L'identifiant ne sert qu'au journal :
+   * l'idempotence tient par la machine de la ligne (`moveTo`, `markPaid`).
+   */
+  private async recordPaid(
+    payment: CardPayment,
+    providerRef: string,
+  ): Promise<CardProviderSettlement> {
+    // Régression : la ligne était verrouillée avant le sujet, à l'inverse du webhook (interblocage).
+    const current = await this.payments.findByProviderRef(payment.account, providerRef);
+    if (current === null) {
+      throw new CardPaymentNotFoundError(payment.id);
+    }
+    return this.outcomes.paid(current, providerRef, `provider-check:${payment.id}`);
   }
 
   async adopt(

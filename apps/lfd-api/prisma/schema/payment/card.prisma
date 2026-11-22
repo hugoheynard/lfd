@@ -63,7 +63,11 @@ enum CardPaymentRole {
 ///   `subject_type`, `subject_id`, `account`, `role`, `amount_cents` sont
 ///   immuables, comme `provider_ref` une fois posé ;
 /// - le déclencheur `card_payment_no_delete` (`BEFORE DELETE`) : refusé, sauf sous
-///   `SET LOCAL payment.purge = 'on'` dans une transaction (purge).
+///   `SET LOCAL payment.purge = 'on'` dans une transaction (purge) ;
+/// - `card_payment_provider_check_idx` : index PARTIEL sur
+///   `(provider_checked_at NULLS FIRST, created_at) WHERE state IN ('pending',
+///   'failed')` — la file du balayage des paiements en attente
+///   (`20261122170000_la_relecture_des_paiements_en_attente`).
 model CardPayment {
   /// ULID posé par le code (`IdGenerator`) ; la reprise en fabrique un en SQL.
   id          String           @id
@@ -90,6 +94,10 @@ model CardPayment {
   /// un paiement pris ailleurs (la boutique). Immuable (`card_payment_guard`).
   payLinkId   String?          @map("pay_link_id")
   payLink     PayLink?         @relation(fields: [payLinkId], references: [id], onDelete: Restrict)
+  /// La dernière relecture chez le prestataire par le balayage des paiements
+  /// en attente (l'instant du `Clock`) ; `null` : jamais relu. Un curseur
+  /// technique, sans invariant ni fait journalisé.
+  providerCheckedAt DateTime? @map("provider_checked_at") @db.Timestamptz(6)
 
   /// Les demandes de remboursement de ce paiement (lot P1, §5.1).
   refundRequests CardRefundRequest[]

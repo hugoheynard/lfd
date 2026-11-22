@@ -277,6 +277,15 @@ sequenceDiagram
   de cloche. La demande d'aide et l'alerte de compte gardent la boîte de
   l'équipe.
 
+- **Le filet d'un webhook perdu** (`sweep-pending-card-payments.handler.ts`,
+  `POST admin/card-payments/pending/sweep`, cron de rafraîchissement) : un
+  paiement de lien resté `pending | failed` plus de cinq minutes est relu
+  chez le prestataire — toutes les 5 minutes la première heure, toutes les
+  heures jusqu'à 24 heures, toutes les 6 heures jusqu'à 7 jours, puis plus
+  du tout (relecture humaine). Payé, il suit le chemin du webhook (le sujet,
+  la ligne, le fait, l'avis à l'équipe) ; annulé, la ligne se ferme et la
+  demande reste ouverte. Le même balayage couvre le premier paiement d'une
+  commande ; les compléments d'une modification gardent le leur.
 - **Le registre des origines** (`platform/config/pay-link-origins.ts`) : une
   origine par application, avec sa racine publique ; `lafoliecoffee` prend
   `CLIENT_BASE_URL`.

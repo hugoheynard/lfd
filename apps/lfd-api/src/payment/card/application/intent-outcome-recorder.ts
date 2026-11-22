@@ -31,6 +31,15 @@ import { factSubjectOf, subjectOf } from "./payment-facts.js";
  *
  * Une transaction, un ordre.
  */
+
+/**
+ * Ce que l'enregistrement d'un encaissement a fait — le webhook l'ignore, la
+ * relecture chez le prestataire le compte : `replayed` quand la ligne était
+ * déjà payée (relue avant le canal, ou sous verrou après lui),
+ * `refused_by_subject` quand le sujet n'en veut pas, `settled` sinon.
+ */
+export type PaidRecording = "settled" | "replayed" | "refused_by_subject";
+
 @Injectable()
 export class IntentOutcomeRecorder {
   private readonly logger = new Logger(IntentOutcomeRecorder.name);
@@ -43,10 +52,10 @@ export class IntentOutcomeRecorder {
     private readonly linkNotice: LinkPaymentNotice,
   ) {}
 
-  async paid(payment: CardPayment, providerRef: string, eventId: string): Promise<void> {
+  async paid(payment: CardPayment, providerRef: string, eventId: string): Promise<PaidRecording> {
     if (payment.moveTo("paid") === "replay") {
       this.ignoreStale(payment, "paid", eventId);
-      return;
+      return "replayed";
     }
     const outcome = await this.settlementOf(payment).onPaid(
       subjectOf(payment),
@@ -58,7 +67,7 @@ export class IntentOutcomeRecorder {
     const locked = await this.lock(payment.id);
     const paidAt = this.clock.now();
     if (!locked.markPaid(paidAt)) {
-      return;
+      return "replayed";
     }
     await this.payments.save(locked);
     await this.durable.publish(
@@ -75,6 +84,7 @@ export class IntentOutcomeRecorder {
         refused: outcome === "refused",
       });
     }
+    return outcome === "refused" ? "refused_by_subject" : "settled";
   }
 
   async failed(payment: CardPayment, providerRef: string, eventId: string): Promise<void> {

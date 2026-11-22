@@ -8,6 +8,7 @@ import { ReplayFirstPaymentsHandler } from "./application/commands/replay-first-
 import { RetryCardRefundHandler } from "./application/commands/retry-card-refund.handler.js";
 import { SettleCardRefundElsewhereHandler } from "./application/commands/settle-card-refund-elsewhere.handler.js";
 import { SweepCardRefundsHandler } from "./application/commands/sweep-card-refunds.handler.js";
+import { SweepPendingCardPaymentsHandler } from "./application/commands/sweep-pending-card-payments.handler.js";
 import { IntentOutcomeRecorder } from "./application/intent-outcome-recorder.js";
 import { ProviderPaymentResolver } from "./application/provider-payment-resolver.js";
 import { GetCardPublishableKeyHandler } from "./application/queries/get-card-publishable-key.handler.js";
@@ -33,10 +34,12 @@ import { CardRefundLedgerRepository } from "./domain/ports/card-refund-ledger.re
 import { CardRefundRequestLease } from "./domain/ports/card-refund-request.lease.js";
 import { CardRefundRequestRepository } from "./domain/ports/card-refund-request.repository.js";
 import { CardRefundSweepReader } from "./domain/ports/card-refund-sweep.reader.js";
+import { PendingCardPaymentsReader } from "./domain/ports/pending-card-payments.reader.js";
 import { TakeoverReader } from "./domain/ports/takeover.reader.js";
 import { AdminCardRefundsController } from "./http/admin-card-refunds.controller.js";
 import { CardPaymentsWebhookController } from "./http/card-payments-webhook.controller.js";
 import { CardRefundSweepController } from "./http/card-refund-sweep.controller.js";
+import { PendingCardPaymentsSweepController } from "./http/pending-card-payments-sweep.controller.js";
 import { ReplayFirstPaymentsController } from "./http/replay-first-payments.controller.js";
 import { PrismaCardPaymentRepository } from "./infrastructure/prisma-card-payment.repository.js";
 import { PrismaCardRefundLedgerRepository } from "./infrastructure/prisma-card-refund-ledger.repository.js";
@@ -44,6 +47,7 @@ import { PrismaCardRefundRequestLease } from "./infrastructure/prisma-card-refun
 import { PrismaCardRefundRequestRepository } from "./infrastructure/prisma-card-refund-request.repository.js";
 import { PrismaCardRefundSweepReader } from "./infrastructure/prisma-card-refund-sweep.reader.js";
 import { PrismaCardSettlementReader } from "./infrastructure/prisma-card-settlement.reader.js";
+import { PrismaPendingCardPaymentsReader } from "./infrastructure/prisma-pending-card-payments.reader.js";
 import { PrismaTakeoverReader } from "./infrastructure/prisma-takeover.reader.js";
 import { RegistryCardProviders } from "./infrastructure/registry-card-providers.js";
 
@@ -74,6 +78,7 @@ import { RegistryCardProviders } from "./infrastructure/registry-card-providers.
     ReplayFirstPaymentsController,
     AdminCardRefundsController,
     CardRefundSweepController,
+    PendingCardPaymentsSweepController,
   ],
   providers: [
     { provide: CardPaymentRepository, useClass: PrismaCardPaymentRepository },
@@ -84,6 +89,8 @@ import { RegistryCardProviders } from "./infrastructure/registry-card-providers.
     IntentOutcomeRecorder,
     { provide: CardPayments, useClass: BlockCardPayments },
     { provide: CardSettlementReader, useClass: PrismaCardSettlementReader },
+    // Le balayage des paiements en attente (plan B).
+    { provide: PendingCardPaymentsReader, useClass: PrismaPendingCardPaymentsReader },
     // Le remboursement (lot P1.b) : la demande, le carnet, l'exécuteur, le constat.
     { provide: CardRefundRequestRepository, useClass: PrismaCardRefundRequestRepository },
     { provide: CardRefundRequestLease, useClass: PrismaCardRefundRequestLease },
@@ -104,6 +111,7 @@ import { RegistryCardProviders } from "./infrastructure/registry-card-providers.
     GetCardPublishableKeyHandler,
     IssueCardRefundHandler,
     SweepCardRefundsHandler,
+    SweepPendingCardPaymentsHandler,
     RetryCardRefundHandler,
     SettleCardRefundElsewhereHandler,
   ],

@@ -1,5 +1,10 @@
 # Plan B — le balayage des paiements en attente
 
+> ✅ **Bâti le 2026-11-22**, sur `dev`, non commité au moment d'écrire ces
+> lignes : migration `20261122170000_la_relecture_des_paiements_en_attente`,
+> `SweepPendingCardPaymentsHandler`, route
+> `POST admin/card-payments/pending/sweep`, cron de rafraîchissement.
+
 > 📐 **Plan**, écrit le 2026-11-22 à la demande de Hugo (« fais B après
 > F2 »). Lot 4 bis de la [`feuille-de-route.md`](feuille-de-route.md). Il
 > touche à l'encaissement : contredit par `vitruve` avant le bâti.

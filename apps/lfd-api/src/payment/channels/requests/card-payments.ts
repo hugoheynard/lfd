@@ -48,13 +48,20 @@ export interface RetrievedCardPayment {
 export type { CardCollection, CardIntentState, IntentCancellation as CardPaymentCancellation };
 
 /**
- * Ce que `settleFromProvider` a constaté chez le prestataire :
- * - `paid` — l'intention est encaissée, et le chemin du webhook a été rejoué
- *   (ou l'avait déjà été : la machine de la ligne dédoublonne) ;
+ * Ce que `settleFromProvider` a constaté chez le prestataire, et ce qu'il en
+ * a fait :
+ * - `settled` — l'intention est encaissée, le chemin du webhook a été rejoué
+ *   et la ligne vient de passer payée (le sujet l'a appliqué, ou se savait
+ *   déjà réglé) ;
+ * - `replayed` — encaissée, mais la ligne l'était déjà : rien n'a bougé ;
+ * - `refused_by_subject` — encaissée, la ligne passe payée, mais le sujet n'en
+ *   veut pas (une commande annulée) : son remboursement part par le chemin
+ *   habituel ;
  * - `pending` — rien de décidé (`awaiting_payment`, `processing`) ;
  * - `closed` — l'intention est annulée, la ligne fermée.
  */
-export type CardProviderSettlement = "paid" | "pending" | "closed";
+export type CardProviderSettlement =
+  "settled" | "replayed" | "refused_by_subject" | "pending" | "closed";
 
 /**
  * **Encaisser par carte** (plan M2, §3.3) — déclaré ET implémenté par
