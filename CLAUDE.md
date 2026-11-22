@@ -231,6 +231,14 @@
 >   compte supprimé (`archived_at`, « Supprimer le compte ») sort des vues du
 >   staff ; toute liste de sociétés nomme `archivedAt` dans son `where`, ou
 >   figure dans la liste admise avec sa raison.
+>   Et **83** depuis le 2026-11-22 avec `schema-drift` : le schéma Prisma dit
+>   ce que les migrations construisent — rejouées sur une base fantôme, elles
+>   n'en diffèrent que par les écarts admis et datés
+>   (`apps/lfd-api/prisma/schema-drift-admitted.json`). Une `onDelete`
+>   oubliée ou un nom de contrainte périmé faisait proposer à la prochaine
+>   migration de « corriger » la base, qui avait raison. Elle demande un
+>   Postgres : en CI, elle tourne dans le premier éclat des e2e, pas dans le
+>   job des portes.
 >   C'est la
 >   **seule** correction faite dans le corps, parce qu'un chiffre faux se vérifie
 >   en une commande et trompe tout de suite ;
@@ -1525,7 +1533,7 @@ pnpm --filter lfd-api seed:pim       # catalogue rejoué PAR LE BUS (cible local
 pnpm lint               # turbo, toutes les apps
 pnpm test
 pnpm build
-pnpm lint:gates         # les 82 portes du dépôt, toutes, et un résumé à la fin
+pnpm lint:gates         # les 83 portes du dépôt, toutes, et un résumé à la fin
 pnpm gate <nom>         # une porte (pnpm gate --list : la liste, avec ce qu'elle tient)
 pnpm lint:watch         # relance les portes dont un fichier lu change
 pnpm tool               # les outils occasionnels (digests, carte, axe…) ; pnpm tool <nom>

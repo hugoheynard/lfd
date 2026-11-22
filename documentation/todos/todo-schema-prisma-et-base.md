@@ -29,9 +29,8 @@ base applique.
 
 ## À faire
 
-- [ ] Corriger 1 à 8 **dans le schéma seulement**, sans migration (lot en
-      cours de bâti le 2026-11-22).
-- [ ] Une **porte** `schema-drift` : `prisma migrate diff` des migrations vers
+- [x] ~~Corriger 1 à 8 dans le schéma seulement, sans migration~~ (2026-11-22).
+- [x] ~~Une porte `schema-drift`~~ (2026-11-22 : `dev-toolbox/gates/schema-drift.mjs`, liste admise `apps/lfd-api/prisma/schema-drift-admitted.json`, en CI dans le premier éclat des e2e, qui a Postgres) : : `prisma migrate diff` des migrations vers
       le schéma, avec une base fantôme, ne rend rien hors une liste admise et
       datée (9, 10, 11) ; une entrée admise qui ne sort plus échoue aussi.
 - [ ] **Comparer la production elle-même**, depuis le poste de Hugo et en

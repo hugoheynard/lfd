@@ -217,6 +217,7 @@ model PriceFloor {
   /// `{ kind: "detached", fromSku, fromDecisionId }`. `NULL` = saisie.
   origin Json?
 
+  @@index([scopeId])
   @@map("price_floors")
   @@schema("public")
 }
@@ -470,7 +471,7 @@ model MercurialeDraft {
 
   /// Qui l'a touché en dernier — la négociation se reprend souvent à deux.
   updatedBy String   @map("updated_by")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
 
   @@map("mercuriale_drafts")
   @@schema("public")

@@ -156,6 +156,9 @@ jobs:
       # par un résumé qui nomme les rouges.
       - name: "Gates : toutes les portes du dépôt"
         run: pnpm lint:gates
+        # Sans Postgres ici : `schema-drift` tourne dans le job e2e.
+        env:
+          LFD_GATES_SKIP_DATABASE: "1"
 
       # Les tests des portes elles-mêmes : une porte dont la règle dérive ne
       # rougit pas d'elle-même.
@@ -439,6 +442,12 @@ jobs:
           path: apps/lfd-api/node_modules/.cache/jest
           key: jest-e2e-${{ hashFiles('pnpm-lock.yaml', 'apps/lfd-api/jest.base.cjs') }}-${{ github.sha }}
           restore-keys: jest-e2e-${{ hashFiles('pnpm-lock.yaml', 'apps/lfd-api/jest.base.cjs') }}-
+      # La porte `schema-drift` demande un Postgres, que le job `gates` n'a
+      # pas : elle tourne ici, sur le premier éclat seulement — elle rejoue
+      # les migrations dans sa propre base fantôme (`*_shadow`), en ~5 s.
+      - name: "Gate : le schéma Prisma dit la base (schema-drift)"
+        if: matrix.shard == 1
+        run: pnpm gate schema-drift
       # ⚠️ PAS de `--` avant `--shard` : pnpm le transmet tel quel, et Jest lit
       # alors « --shard=1/4 » comme un motif de chemin de test. Zéro suite
       # trouvée, et un échec qui parle de tout sauf de la vraie cause.

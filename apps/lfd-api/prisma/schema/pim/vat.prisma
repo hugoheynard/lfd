@@ -1,12 +1,12 @@
 model VatRate {
-  id          String @id
+  id          String @id(map: "tva_regime_pkey")
   name        String
   description String @default("")
   /// UNIQUE, et c'est l'invariant fiscal : deux taux au même taux n'ont pas
   /// de sens. L'unicité portait avant sur le `tag` de collection dérivé du taux — le
   /// référentiel faisait donc tenir une règle comptable par une collision de
   /// handles de canal.
-  percent     Float  @unique
+  percent     Float  @unique(map: "tva_regime_percent_key")
 
   /// Familles qui visent ce taux, **par contexte** — l'autre extrémité de la
   /// jointure. Aucune colonne ajoutée ici ; sert le mur `Restrict` à la

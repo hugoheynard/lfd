@@ -1,0 +1,20 @@
+{
+  "$comment": "Les écarts VOULUS entre ce que les migrations construisent et ce que le schéma Prisma décrit, lus par `pnpm gate schema-drift`. Chaque `statement` est l'instruction que `prisma migrate diff --from-migrations --to-schema --script` rend ; une entrée qui ne sort plus fait échouer la porte.",
+  "entries": [
+    {
+      "statement": "DROP INDEX \"cart\".\"shop_carts_user_company_unique\"",
+      "reason": "Unicité PARTIELLE posée en SQL par la migration (un panier par personne et par espace, NULL compris) : Prisma ne sait pas la décrire.",
+      "since": "2026-11-22"
+    },
+    {
+      "statement": "DROP INDEX \"promotion_audience_targets_unique\"",
+      "reason": "Unicité PARTIELLE posée en SQL par la migration sur les cibles d'audience d'une promotion : Prisma ne sait pas la décrire.",
+      "since": "2026-11-22"
+    },
+    {
+      "statement": "ALTER TABLE \"pim\".\"product_variant\" DROP COLUMN \"price_per_kg_shown\"",
+      "reason": "Colonne morte gardée en base : on ne supprime pas de colonne servie en production (CLAUDE.md § 0), le schéma ne la décrit plus.",
+      "since": "2026-11-22"
+    }
+  ]
+}

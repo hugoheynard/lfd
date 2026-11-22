@@ -136,7 +136,7 @@ model Company {
   // toute façon. Écrit **uniquement par le staff** : le client ne s'accorde pas
   // un délai de règlement. Sa demande atterrit dans `requestedTerm` (`null` =
   // aucune), pour ne pas confondre « souhaité » et « accordé ».
-  grantedTerms  DeferredTerm[] @map("granted_terms")
+  grantedTerms  DeferredTerm[] @default([]) @map("granted_terms")
   requestedTerm DeferredTerm?  @map("requested_term")
 
   // Défaut `pending` : une société n'est jamais cliente parce qu'elle a été

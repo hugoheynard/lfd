@@ -182,7 +182,7 @@ model CollectionBatchLine {
 model CollectionBatchLineInvoice {
   batchId   String              @map("batch_id")
   lineRank  Int                 @map("line_rank")
-  line      CollectionBatchLine @relation(fields: [batchId, lineRank], references: [batchId, rank], onDelete: Restrict)
+  line      CollectionBatchLine @relation(fields: [batchId, lineRank], references: [batchId, rank], onDelete: Restrict, map: "collection_batch_line_invoice_line_fkey")
   invoiceId String              @map("invoice_id")
   invoice   Invoice             @relation(fields: [invoiceId], references: [id], onDelete: Restrict)
 

@@ -129,7 +129,7 @@ model Ingredient {
   /// Le signe officiel, s'il y en a un. `Restrict` : une appellation citée ne
   /// disparaît pas sous l'ingrédient qui l'affirme.
   appellationId String?      @map("appellation_id")
-  appellation   Appellation? @relation(fields: [appellationId], references: [id])
+  appellation   Appellation? @relation(fields: [appellationId], references: [id], onDelete: Restrict)
 
   /// « Aucun allergène », DÉCLARÉ (2026-10-26). `false` sans code = personne
   /// n'a rien dit. Jamais `true` avec des codes : l'agrégat le refuse.

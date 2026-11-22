@@ -50,6 +50,20 @@ export function malformedGates(gates) {
   return problems;
 }
 
+/**
+ * Les portes que `lint:gates` lance. Une porte marquée `database: true`
+ * demande un Postgres ; `LFD_GATES_SKIP_DATABASE=1` l'écarte — posé par le job
+ * `gates` de la CI, qui n'a pas de base, quand un job qui en a une la lance
+ * lui-même. Sans la variable, elle tourne, et échoue si la base manque.
+ */
+export function gatesToRun(gates, env) {
+  if (env["LFD_GATES_SKIP_DATABASE"] !== "1") return { run: gates, skipped: [] };
+  return {
+    run: gates.filter((gate) => gate.database !== true),
+    skipped: gates.filter((gate) => gate.database === true),
+  };
+}
+
 /** La commande qui lance une porte : `[programme, ...arguments]`. */
 export function commandOf(gate) {
   return gate.command ?? ["node", gate.script, ...(gate.args ?? [])];

@@ -29,6 +29,7 @@ import { fileURLToPath } from "node:url";
 import {
   commandOf,
   countMismatch,
+  gatesToRun,
   loadGates,
   loadTools,
   malformedGates,
@@ -69,7 +70,11 @@ function checkedGates() {
 
 async function all() {
   const results = [];
-  for (const gate of checkedGates()) results.push(await runGate(gate));
+  const { run, skipped } = gatesToRun(checkedGates(), process.env);
+  for (const gate of skipped) {
+    console.log(`⊘ ${gate.name} : demande une base, écartée ici (LFD_GATES_SKIP_DATABASE=1).`);
+  }
+  for (const gate of run) results.push(await runGate(gate));
   console.log(summary(results));
   process.exit(results.every((result) => result.ok) ? 0 : 1);
 }

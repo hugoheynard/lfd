@@ -484,7 +484,7 @@ model PaymentMandate {
   // autre créancier, émise sous son ICS — pas pour d'anciens mandats Stripe :
   // il n'y en a aucun (table vide, aucune route de création).
   creditorId String?      @map("creditor_id")
-  creditor   LegalEntity? @relation(fields: [creditorId], references: [id])
+  creditor   LegalEntity? @relation(fields: [creditorId], references: [id], onDelete: Restrict)
 
   // 🔴 Le schéma et le type de paiement FIGÉS à la frappe, recopiés de
   // l'émetteur. Le papier signé et le lot de prélèvement lisent CES colonnes,

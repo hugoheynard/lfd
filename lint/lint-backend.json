@@ -642,6 +642,19 @@
       "holds": "Toute liste de sociétés (`company.findMany|count|groupBy|aggregate`) nomme `archivedAt` dans son `where` — un compte supprimé sort des vues du staff — ou figure dans la liste admise avec sa raison.",
       "since": "2026-11-22",
       "watch": ["apps/lfd-api/src/**", "dev-toolbox/gates/company-archived-views.mjs"]
+    },
+    {
+      "name": "schema-drift",
+      "script": "dev-toolbox/gates/schema-drift.mjs",
+      "holds": "Le schéma Prisma dit ce que les migrations construisent : rejouées sur une base fantôme, elles ne diffèrent du schéma que par les écarts admis (`apps/lfd-api/prisma/schema-drift-admitted.json`), chacun avec sa raison.",
+      "since": "2026-11-22",
+      "database": true,
+      "watch": [
+        "apps/lfd-api/prisma/schema/**",
+        "apps/lfd-api/prisma/migrations/**",
+        "apps/lfd-api/prisma/schema-drift-admitted.json",
+        "dev-toolbox/gates/schema-drift.mjs"
+      ]
     }
   ]
 }

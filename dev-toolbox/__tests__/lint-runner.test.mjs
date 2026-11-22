@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import {
   commandOf,
   countMismatch,
+  gatesToRun,
   gatesTouchedBy,
   globToRegExp,
   loadGates,
@@ -116,4 +117,14 @@ test("la veille ignore node_modules, .git, dist et le client Prisma généré", 
   assert.ok(ignoredPath("packages/money/dist/index.js"));
   assert.ok(ignoredPath("apps/lfd-api/src/platform/database/client/client.ts"));
   assert.ok(!ignoredPath("apps/lfd-api/src/mail/mail.module.ts"));
+});
+
+test("une porte qui demande une base tourne par défaut, et s'écarte seulement sur demande", () => {
+  const plain = gate("a", ["x"]);
+  const withDb = { ...gate("b", ["x"]), database: true };
+  assert.deepEqual(gatesToRun([plain, withDb], {}), { run: [plain, withDb], skipped: [] });
+  assert.deepEqual(gatesToRun([plain, withDb], { LFD_GATES_SKIP_DATABASE: "1" }), {
+    run: [plain],
+    skipped: [withDb],
+  });
 });
