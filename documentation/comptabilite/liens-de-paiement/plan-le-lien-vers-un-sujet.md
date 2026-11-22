@@ -148,6 +148,59 @@ lignes qui le citent. Avant Z, relire `git branch` : une branche fusionnée
 après Z verra ses imports cassés au typecheck, pas en silence — à corriger
 à la fusion.
 
+### 0.4 Le lot V — le vocabulaire du schéma
+
+Décidé par Hugo le 2026-11-22 : « je tiens à ce que le vocabulaire soit juste
+quitte à faire une migration ». À bâtir **juste après P1**.
+
+| Aujourd'hui                                          | Après V                                                                                                           |
+| ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| schéma Postgres `card_payment`                       | schéma **`payment`**                                                                                              |
+| `card_payment.payment`                               | `payment.card_payment`                                                                                            |
+| `card_payment.takeover`, `refund`, `refund_request`… | `payment.card_takeover`, `payment.card_refund`, `payment.card_refund_request`… (préfixe `card_`, choisi par Hugo) |
+| `card_payment.pay_link`                              | `payment.pay_link`                                                                                                |
+| `prisma/schema/card_payment.prisma`                  | un dossier `prisma/schema/payment/`, un fichier pour la carte et un pour les liens                                |
+
+- **Renommer, jamais recréer** : `ALTER SCHEMA … RENAME`, `ALTER TABLE …
+RENAME` ; lignes, identifiants, clés et index restent en place. Les
+  commandes, dans `public`, ne référencent le paiement que par des
+  identifiants : elles ne bougent pas.
+- **Les fonctions des déclencheurs** citent les tables par leur nom complet :
+  elles se réécrivent dans la même migration.
+- **Ne se renomment pas, le mot y étant juste** : les faits
+  `card_payment.*`, les clés des abonnés durables, `CARD_ACCOUNTS`.
+- Migration de données en production : `vitruve` sur le lot avant Hugo,
+  `lecteur-de-migrations` avant tout push.
+
+### 0.5 Le lot W — les abonnés du commerce en `lfc.`
+
+Décidé par Hugo le 2026-11-10 (renommage du bloc `b2b` en `lafoliecoffee`,
+étape 3, jamais faite) et rappelé le 2026-11-22. À bâtir **après V**.
+
+Le nom d'un abonné durable dit **le bloc qui écoute** : `<bloc>.<contexte>.<geste>`.
+Le commerce **est** l'application La Folie Coffee, ses abonnés deviennent
+donc tous `lfc.<contexte>.<geste>`. Le bloc `payment`, agnostique, n'en a
+aucun aujourd'hui ; s'il en a un jour, il s'appellera `payment.<sous-contexte>.<geste>`,
+sans nom d'application ni d'entreprise.
+
+- **L'existant** (compté le 2026-11-22) : 92 fichiers d'abonnés dans
+  `src/lafoliecoffee/` ; sur les 59 noms lisibles dans leur propre fichier,
+  30 en `b2b.`, 16 en `orders.`, 7 en `accounting.`, 4 en `catalog.`, 1 en
+  `account.`, 1 en `loyalty.`, aucun en `lfc.`. Les autres viennent de
+  constantes importées : à résoudre au bâti, la liste complète se tire de la
+  base (`platform.outbox_delivery.subscriber`) et du code, et les deux
+  doivent coïncider.
+- **Un nom est la clé des reçus** : la migration réécrit
+  `platform.outbox_delivery.subscriber`, lignes livrées ou non, **dans le
+  même déploiement que le code**. Sinon les faits déjà traités seraient
+  rejoués sous le nouveau nom, ou ceux en attente perdus sous l'ancien.
+  Boîte d'envoi vidée avant le déploiement.
+- **Une porte** refuse un abonné du commerce sans le préfixe `lfc.`.
+- **Le relais `OnCardCheckoutEvent`** est retiré en F2 : si F2 passe avant
+  W, il n'est pas renommé.
+- Migration de données en production : `vitruve` avant Hugo,
+  `lecteur-de-migrations` avant tout push.
+
 ## 1. Ce qui existe, et ce que le plan en garde
 
 | Pièce                                             | Aujourd'hui (relu le 2026-11-22)                                                                                                       | Après                                             |
@@ -161,6 +214,32 @@ après Z verra ses imports cassés au typecheck, pas en silence — à corriger
 | `OrderCollectionState`                            | `settled_by_transfer` cite son virement (`CHECK`)                                                                                      | `settled_by_card` cite son paiement (§4.4)        |
 
 ## 2. La porte : `card-payment` tient les liens
+
+> ✅ **Bâti le 2026-11-22 (lot P1)**, serveur et boutique. Le sous-contexte
+> `payment/link/` ; la migration `20261122100000_les_liens_vers_un_sujet` ;
+> les ports `PayLinks` et `LinkableSubject` dans `payment/channels/` ; le
+> registre des origines (`platform/config/pay-link-origins.ts`) ; les routes
+> publiques `POST pay-links/view` et `POST pay-links/intent` ; la page
+> `/payer/:jeton` de la boutique (`client/pay-link/`). **Aucun sujet réel
+> n'implémente encore `LinkableSubject`** : aucun lien ne s'ouvre hors des
+> tests jusqu'à F1 (la régularisation) et I2 (la facture).
+>
+> Décisions prises au bâti :
+>
+> - le **scellé** du jeton passe par le chiffreur de champ commun
+>   (`FieldCipher`), celui de toutes les colonnes sensibles ; l'**empreinte**,
+>   qui sert à la recherche, a sa clé dérivée (`payLinkTokenKey()`) ;
+> - la **limite de débit** est posée par route dans l'API (`@Throttle`), pas à
+>   la passerelle, qui route par préfixe sans liste de routes ;
+> - la page vit dans le cadre de la boutique (`ClientShell`), sans menu
+>   d'espace ni retour, comme l'annulation par un invité ; elle pose
+>   elle-même `noindex` ;
+> - une **phase « lien à renouveler »** répond au 409 d'une intention close ;
+> - `open` refuse un type de sujet qu'aucun `LinkableSubject` ne sert : pas de
+>   lien mort ;
+> - à améliorer : le `tag` du lien (`pay-link:<id>`) atterrit chez Stripe dans
+>   une métadonnée nommée `companyId`, un nom que l'adaptateur Stripe devrait
+>   rendre neutre.
 
 Le lien appartient à `card-payment`. Il est agnostique comme le reste du
 bloc : il connaît `(subject_type, subject_id)`, jamais une facture.
@@ -180,9 +259,14 @@ bloc : il connaît `(subject_type, subject_id)`, jamais une facture.
 
 - **Le jeton** : 32 octets aléatoires (`crypto.randomBytes`, par un port
   `TokenGenerator` — l'`IdGenerator` ULID est prévisible, il ne convient
-  pas). En base, jamais en clair. HMAC et scellé dérivent d'un secret
-  **propre aux liens** (`PAY_LINK_SECRET`, deux sous-clés par HKDF), pas de
-  la clé qui scelle l'IBAN : une fuite de l'un ne livre pas l'autre.
+  pas). En base, jamais en clair. **Aucune variable d'environnement de
+  plus** (convention du 2026-10-13, comme les liens d'annulation et les
+  jetons de désinscription) : `token_hash` est un HMAC-SHA-256 sous
+  `payLinkTokenKey()`, dérivée de `FIELD_ENCRYPTION_KEY` par HKDF sous son
+  étiquette ; `token_sealed` passe par le chiffreur de champ (`FieldCipher`).
+  Deux usages, deux clés. Rien à poser en production avant le déploiement.
+  Conséquence assumée : une rotation de `FIELD_ENCRYPTION_KEY` tue les liens
+  déjà envoyés, comme les liens d'annulation.
 - **Pas d'expiration par défaut** : une facture se paie en retard. Le lien
   meurt quand le sujet est réglé, annulé, ou quand le staff le révoque.
 - **Pas de suppression physique** ; révocation par statut.
@@ -218,11 +302,13 @@ reference, dueOn | null }` ou `{ payable: false, reason }` (réglé,
 
 ### 2.3 La page publique
 
-- **API** (un contrôleur `PayLinkController` à créer dans le dossier `http/`
-  de `card-payment`, `@Public()`) :
-  - `GET /pay/:token` → la vue de `quote`. 404 pour un jeton inconnu **ou
-    révoqué**, sans distinguer ;
-  - `POST /pay/:token/intent` → s'il existe déjà un `first` pour le sujet,
+- **API** (`payment/link/http/`, `@Public()`), sur le modèle de
+  l'annulation par un invité : **le jeton voyage dans le corps d'un
+  `POST`**, jamais dans l'adresse de l'API, pour ne pas finir dans un
+  journal ; `@Throttle` par route ; `no-store` ; `@Idempotent` :
+  - `POST pay-links/view` `{ token }` → la vue de `quote`. 404 pour un
+    jeton inconnu **ou révoqué**, sans distinguer ;
+  - `POST pay-links/intent` `{ token }` → s'il existe déjà un `first` pour le sujet,
     il est relu (`retrieve`) ; sinon `prepare` (hors transaction) puis, sous
     le verrou du sujet (`lockSubject`), `attach` comme `first`, avec le
     `pay_link_id` du lien (§2.1 bis). Rend une **instruction de
@@ -542,7 +628,9 @@ rapprocher.
 | Z   | ✅ le bloc `payment` : `card-payment` → `payment/card`, les portes d'abord, le CLAUDE.md (§0) — **aucun changement de comportement**                                                                                                                                                                                                        | —          |
 | P0  | ✅ l'instruction de collecte neutre (§2.3 bis) : le port, l'adaptateur Stripe, la page `/commandes/:id/regler` passée au composant de collecte partagé — **aucun changement visible**                                                                                                                                                       | Z          |
 | I0  | `isDirectDebit`, `switch` exhaustifs, la porte — **aucun changement de comportement**                                                                                                                                                                                                                                                       | —          |
-| P1  | `card_payment.pay_link`, `PayLinks`, `LinkableSubject`, le registre des origines, la page publique (API et boutique), les tests                                                                                                                                                                                                             | P0         |
+| P1  | ✅ `card_payment.pay_link`, `PayLinks`, `LinkableSubject`, le registre des origines, la page publique (API et boutique), les tests                                                                                                                                                                                                          | P0         |
+| V   | le vocabulaire du schéma (§0.4) : `card_payment` → `payment`, tables de la carte préfixées `card_`                                                                                                                                                                                                                                          | P1         |
+| W   | les abonnés du commerce en `lfc.<contexte>.<geste>` (§0.5), reçus de la boîte d'envoi migrés dans le même déploiement                                                                                                                                                                                                                       | V          |
 | P1b | l'avis à la comptabilité après encaissement (§2.4), l'adresse par origin, le modèle d'e-mail                                                                                                                                                                                                                                                | P1         |
 | F1  | la régularisation par la porte ; l'écran des liens libres recopie `urlOf`                                                                                                                                                                                                                                                                   | P1         |
 | I1  | `card_link` : moyen, genre du moyen figé, échéance, statut, factures en retard, spécimen PDF (`specimen-data.ts`, `lint:pdf-specimens`) ; contrats et écrans (back-office : `collection-means-choice`, `paiement-section`, `sales-oversight-filters`, `accounting-values`, `invoice-phrases` ; boutique : `payment-section`, `compte-page`) | I0, §11 b  |

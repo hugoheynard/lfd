@@ -1,0 +1,60 @@
+:host {
+  display: block;
+  background: var(--fold-color-bg-page);
+}
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xl);
+  padding: var(--fold-space-2xl) var(--lfc-inset) var(--fold-space-4xl);
+}
+
+@media (min-width: 900px) {
+  .page {
+    width: min(640px, 100%);
+    margin-inline: auto;
+  }
+}
+
+/* Lue par les lecteurs d'écran, invisible : l'état se voit déjà à l'écran. */
+.status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.facts {
+  margin: 0;
+}
+
+/* Libellé à gauche, valeur à droite. */
+.fact {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--fold-space-sm);
+  padding: var(--fold-space-xs) 0;
+  border-top: 1px solid var(--fold-color-border-subtle);
+}
+
+.fact dd {
+  margin: 0;
+  text-align: right;
+}
+
+.mount {
+  min-height: 3rem;
+}
+
+.mount.is-hidden {
+  display: none;
+}
+
+.line {
+  display: block;
+}

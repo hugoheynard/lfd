@@ -5225,6 +5225,13 @@
           "variables": []
         },
         {
+          "key": "chrome.pageTitles.payLink",
+          "fr": "Régler par carte — La Folie Coffee",
+          "en": "Pay by card — La Folie Coffee",
+          "it": "Pagare con carta — La Folie Coffee",
+          "variables": []
+        },
+        {
           "key": "chrome.pageTitles.salesTerms",
           "fr": "Conditions générales de vente — La Folie Coffee",
           "en": "General terms of sale — La Folie Coffee",
@@ -7798,6 +7805,183 @@
           "fr": "Contactez la boutique pour toute question sur votre commande.",
           "en": "Contact the shop for any question about your order.",
           "it": "Contattate il negozio per qualsiasi domanda sul vostro ordine.",
+          "variables": []
+        }
+      ],
+      "unrecorded": []
+    },
+    {
+      "space": "payLink",
+      "title": "Payer par lien — la page publique /payer",
+      "source": "screens/pay-link.copy.ts",
+      "journey": false,
+      "entries": [
+        {
+          "key": "payLink.title",
+          "fr": "Régler par carte",
+          "en": "Pay by card",
+          "it": "Pagare con carta",
+          "variables": []
+        },
+        {
+          "key": "payLink.loading",
+          "fr": "Chargement du paiement…",
+          "en": "Loading the payment…",
+          "it": "Caricamento del pagamento…",
+          "variables": []
+        },
+        {
+          "key": "payLink.notFoundTitle",
+          "fr": "Ce lien n’est pas ou plus valable",
+          "en": "This link is not or no longer valid",
+          "it": "Questo link non è o non è più valido",
+          "variables": []
+        },
+        {
+          "key": "payLink.notFoundSubtitle",
+          "fr": "Vérifiez l’adresse reçue, ou demandez un nouveau lien à votre interlocuteur.",
+          "en": "Check the address you received, or ask your contact for a new link.",
+          "it": "Verificate l’indirizzo ricevuto, o chiedete un nuovo link al vostro referente.",
+          "variables": []
+        },
+        {
+          "key": "payLink.settledTitle",
+          "fr": "Ce paiement est déjà réglé",
+          "en": "This payment has already been made",
+          "it": "Questo pagamento è già stato saldato",
+          "variables": []
+        },
+        {
+          "key": "payLink.settledSubtitle",
+          "fr": "Il n’y a plus rien à payer avec ce lien.",
+          "en": "There is nothing left to pay with this link.",
+          "it": "Non c’è più nulla da pagare con questo link.",
+          "variables": []
+        },
+        {
+          "key": "payLink.cancelledTitle",
+          "fr": "Ce paiement a été annulé",
+          "en": "This payment has been cancelled",
+          "it": "Questo pagamento è stato annullato",
+          "variables": []
+        },
+        {
+          "key": "payLink.cancelledSubtitle",
+          "fr": "Il n’y a plus rien à payer avec ce lien.",
+          "en": "There is nothing left to pay with this link.",
+          "it": "Non c’è più nulla da pagare con questo link.",
+          "variables": []
+        },
+        {
+          "key": "payLink.renewTitle",
+          "fr": "Ce lien doit être renouvelé",
+          "en": "This link needs to be renewed",
+          "it": "Questo link deve essere rinnovato",
+          "variables": []
+        },
+        {
+          "key": "payLink.renewSubtitle",
+          "fr": "Demandez un nouveau lien de paiement à votre interlocuteur.",
+          "en": "Ask your contact for a new payment link.",
+          "it": "Chiedete un nuovo link di pagamento al vostro referente.",
+          "variables": []
+        },
+        {
+          "key": "payLink.unavailableTitle",
+          "fr": "Le paiement est momentanément indisponible",
+          "en": "Payment is temporarily unavailable",
+          "it": "Il pagamento è momentaneamente non disponibile",
+          "variables": []
+        },
+        {
+          "key": "payLink.unavailableSubtitle",
+          "fr": "Votre lien reste valable. Réessayez dans un instant.",
+          "en": "Your link is still valid. Please try again in a moment.",
+          "it": "Il vostro link resta valido. Riprovate tra un istante.",
+          "variables": []
+        },
+        {
+          "key": "payLink.retry",
+          "fr": "Réessayer",
+          "en": "Try again",
+          "it": "Riprova",
+          "variables": []
+        },
+        {
+          "key": "payLink.amount",
+          "fr": "Montant",
+          "en": "Amount",
+          "it": "Importo",
+          "variables": []
+        },
+        {
+          "key": "payLink.payee",
+          "fr": "Bénéficiaire",
+          "en": "Payee",
+          "it": "Beneficiario",
+          "variables": []
+        },
+        {
+          "key": "payLink.payer",
+          "fr": "Payeur",
+          "en": "Payer",
+          "it": "Pagatore",
+          "variables": []
+        },
+        {
+          "key": "payLink.reference",
+          "fr": "Référence",
+          "en": "Reference",
+          "it": "Riferimento",
+          "variables": []
+        },
+        {
+          "key": "payLink.dueOn",
+          "fr": "Échéance",
+          "en": "Due date",
+          "it": "Scadenza",
+          "variables": []
+        },
+        {
+          "key": "payLink.submit",
+          "fr": "Payer {amount}",
+          "en": "Pay {amount}",
+          "it": "Paga {amount}",
+          "variables": ["amount"]
+        },
+        {
+          "key": "payLink.submitting",
+          "fr": "Paiement en cours…",
+          "en": "Payment in progress…",
+          "it": "Pagamento in corso…",
+          "variables": []
+        },
+        {
+          "key": "payLink.refused",
+          "fr": "Le paiement a été refusé. Vérifiez votre carte ou essayez-en une autre.",
+          "en": "The payment was declined. Check your card or try another one.",
+          "it": "Il pagamento è stato rifiutato. Verificate la carta o provatene un’altra.",
+          "variables": []
+        },
+        {
+          "key": "payLink.unfinished",
+          "fr": "Le paiement n’a pas abouti. Vous pouvez réessayer.",
+          "en": "The payment did not go through. You can try again.",
+          "it": "Il pagamento non è andato a buon fine. Potete riprovare.",
+          "variables": []
+        },
+        {
+          "key": "payLink.paidTitle",
+          "fr": "Paiement reçu",
+          "en": "Payment received",
+          "it": "Pagamento ricevuto",
+          "variables": []
+        },
+        {
+          "key": "payLink.paidSubtitle",
+          "fr": "Merci. Une confirmation vous parviendra une fois le paiement enregistré.",
+          "en": "Thank you. A confirmation will follow once the payment is recorded.",
+          "it": "Grazie. Una conferma seguirà una volta registrato il pagamento.",
           "variables": []
         }
       ],

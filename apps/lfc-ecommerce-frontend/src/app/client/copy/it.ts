@@ -69,6 +69,7 @@ export const IT: ClientCopy = {
       pickupQr: 'Il mio QR di ritiro — La Folie Coffee',
       orderRevision: 'Modificare il mio ordine — La Folie Coffee',
       guestOrder: 'Il vostro ordine — La Folie Coffee',
+      payLink: 'Pagare con carta — La Folie Coffee',
       salesTerms: 'Condizioni generali di vendita — La Folie Coffee',
       orderConfirmed: 'Ordine confermato — La Folie Coffee',
       connection: 'Accesso — La Folie Coffee',

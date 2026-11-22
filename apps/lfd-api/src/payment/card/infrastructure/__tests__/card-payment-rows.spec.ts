@@ -19,6 +19,7 @@ const ROW: CardPaymentRow = {
   state: "paid",
   createdAt: AT,
   paidAt: AT,
+  payLinkId: null,
 };
 
 describe("toDomain", () => {

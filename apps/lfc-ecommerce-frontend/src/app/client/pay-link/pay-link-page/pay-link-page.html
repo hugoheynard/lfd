@@ -1,0 +1,111 @@
+<ng-template clientBanner>
+  <app-client-banner-block titleAlign="start" [title]="c().title" />
+</ng-template>
+
+<div class="page">
+  <!-- La région vivante : chaque changement de phase s'y annonce. -->
+  <p class="status" role="status" aria-live="polite">{{ status() }}</p>
+
+  @switch (phase()) {
+    @case ('loading') {
+      <fold-loading [message]="c().loading" />
+    }
+    @case ('not_found') {
+      <fold-empty-state
+        data-not-found
+        [title]="c().notFoundTitle"
+        [subtitle]="c().notFoundSubtitle"
+      >
+        <fold-icon empty-icon name="lock" />
+      </fold-empty-state>
+    }
+    @case ('settled') {
+      <fold-empty-state data-settled [title]="c().settledTitle" [subtitle]="c().settledSubtitle">
+        <fold-icon empty-icon name="check" />
+      </fold-empty-state>
+    }
+    @case ('cancelled') {
+      <fold-empty-state
+        data-cancelled
+        [title]="c().cancelledTitle"
+        [subtitle]="c().cancelledSubtitle"
+      >
+        <fold-icon empty-icon name="x" />
+      </fold-empty-state>
+    }
+    @case ('renew') {
+      <fold-empty-state data-renew [title]="c().renewTitle" [subtitle]="c().renewSubtitle">
+        <fold-icon empty-icon name="receipt" />
+      </fold-empty-state>
+    }
+    @case ('unavailable') {
+      <fold-empty-state
+        data-unavailable
+        tone="alert"
+        [title]="c().unavailableTitle"
+        [subtitle]="c().unavailableSubtitle"
+      >
+        <button foldButton type="button" (click)="load()">{{ c().retry }}</button>
+      </fold-empty-state>
+    }
+    @case ('paid') {
+      <fold-callout variant="success" data-paid>
+        <span class="line">{{ c().paidTitle }}</span>
+        <span class="line">{{ c().paidSubtitle }}</span>
+      </fold-callout>
+    }
+  }
+
+  @if (view(); as link) {
+    @if (phase() === 'ready' || phase() === 'paying' || phase() === 'paid') {
+      <fold-card>
+        <fold-element-title cardHeader variant="title" [title]="amount()" [subtitle]="c().amount" />
+        <dl class="facts">
+          <div class="fact">
+            <dt>{{ c().payee }}</dt>
+            <dd>{{ link.payeeName }}</dd>
+          </div>
+          <div class="fact">
+            <dt>{{ c().payer }}</dt>
+            <dd>{{ link.payerName }}</dd>
+          </div>
+          <div class="fact">
+            <dt>{{ c().reference }}</dt>
+            <dd>{{ link.reference }}</dd>
+          </div>
+          @if (dueOn(); as due) {
+            <div class="fact" data-due>
+              <dt>{{ c().dueOn }}</dt>
+              <dd>{{ due }}</dd>
+            </div>
+          }
+        </dl>
+      </fold-card>
+    }
+  }
+
+  <!-- Le nœud de montage du formulaire de carte. Il reste dans le DOM : le
+       prestataire s'y accroche, et le retirer sous ses iframes le casserait. -->
+  <div #mount class="mount" [class.is-hidden]="phase() !== 'ready' && phase() !== 'paying'"></div>
+
+  @if (phase() === 'ready' || phase() === 'paying') {
+    @if (error(); as message) {
+      <fold-callout id="pay-link-error" variant="alert" announce data-error>{{
+        message
+      }}</fold-callout>
+    }
+    <button
+      foldButton
+      type="button"
+      emphasis="solid"
+      block
+      data-pay
+      [loading]="phase() === 'paying'"
+      [disabled]="phase() !== 'ready'"
+      [attr.aria-describedby]="error() === null ? null : 'pay-link-error'"
+      (click)="pay()"
+    >
+      {{ submitLabel() }}
+    </button>
+  }
+</div>

@@ -7,6 +7,7 @@ import type { NetworkCallMode } from "../database/network-call-mode.js";
 import type { PurgeMode } from "../retention/purge-mode.js";
 import { normalizeBootstrapEmail } from "./bootstrap-admin-email.js";
 import { CARD_ACCOUNTS, type CardAccountName, type CardAccountSecrets } from "./card-accounts.js";
+import { PAY_LINK_ORIGINS, type PayLinkOrigin } from "./pay-link-origins.js";
 import {
   type RoutePlannerEndpoint,
   resolveRoutePlannerEndpoint,
@@ -249,6 +250,36 @@ export class AppConfig {
     return Buffer.from(
       hkdfSync("sha256", this.fieldKey, Buffer.alloc(0), MAIL_MARKETING_CONFIRM_KEY_INFO, 32),
     );
+  }
+
+  /**
+   * **La clé des empreintes des jetons de lien de paiement** (plan
+   * `plan-le-lien-vers-un-sujet.md`, §2.1) : `token_hash` est le
+   * HMAC-SHA-256 du jeton sous cette clé.
+   *
+   * DÉRIVÉE de la clé du coffre par HKDF-SHA256 sous son étiquette, comme les
+   * liens d'annulation : pas de variable de plus, deux usages ne partagent
+   * pas une clé. Une rotation de `FIELD_ENCRYPTION_KEY` rend introuvables
+   * tous les liens déjà envoyés — et illisibles leurs scellés.
+   */
+  payLinkTokenKey(): Buffer {
+    return Buffer.from(
+      hkdfSync("sha256", this.fieldKey, Buffer.alloc(0), PAY_LINK_TOKEN_KEY_INFO, 32),
+    );
+  }
+
+  /**
+   * Les origines des liens de paiement, chacune avec sa racine publique
+   * résolue — `null` quand l'environnement ne la pose pas : le lien est
+   * alors refusé, jamais composé sur une adresse inventée.
+   */
+  payLinkOrigins(): readonly PayLinkOrigin[] {
+    const roots = { client: this.clientBaseUrlValue } as const;
+    return PAY_LINK_ORIGINS.map((origin) => ({
+      name: origin.name,
+      label: origin.label,
+      publicRoot: roots[origin.publicRoot],
+    }));
   }
 
   /**
@@ -796,6 +827,8 @@ const MAIL_UNSUBSCRIBE_TOKEN_KEY_INFO = "lfd/mail-unsubscribe/v1";
 /** L'étiquette HKDF des empreintes du registre de préférence marketing. */
 const MAIL_MARKETING_PRINT_KEY_INFO = "lfd/mail-unsubscribe-print/v1";
 const CACHE_SERVED_PERSON_KEY_INFO = "lfd/cache-served-person/v1";
+/** Étiquette HKDF des empreintes de jetons de lien de paiement. */
+const PAY_LINK_TOKEN_KEY_INFO = "lfd/pay-link-token/v1";
 /** L'étiquette HKDF des jetons de confirmation d'un accord (C1) : distincte des deux autres. */
 const MAIL_MARKETING_CONFIRM_KEY_INFO = "lfd/mail-marketing-confirm/v1";
 

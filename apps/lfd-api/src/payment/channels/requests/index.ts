@@ -10,6 +10,7 @@ export {
   type CardPaymentCancellation,
   type CardPaymentPreparation,
   CardPayments,
+  type CardPaymentSource,
   type CardProviderSettlement,
   type PreparedCardPayment,
   type RetrievedCardPayment,
@@ -40,3 +41,9 @@ export {
   type RequestedCardRefund,
 } from "./card-refunds.js";
 export { GetCardPublishableKeyQuery } from "./get-card-publishable-key.query.js";
+export {
+  type OpenedPayLink,
+  type PayLinkRequest,
+  PayLinks,
+  SYSTEM_PAY_LINK_AUTHOR,
+} from "./pay-links.js";

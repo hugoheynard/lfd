@@ -23,6 +23,14 @@ export interface CardPaymentPreparation {
   readonly collection: CardCollection;
 }
 
+/**
+ * D'où naît l'intention, quand ce n'est pas l'écran du sujet : la page d'un
+ * lien de paiement (plan des liens, §2.1 bis). La ligne le porte, immuable.
+ */
+export interface CardPaymentSource {
+  readonly payLinkId: string;
+}
+
 /** La ligne rattachée. */
 export interface AttachedCardPayment {
   readonly paymentId: string;
@@ -76,12 +84,14 @@ export abstract class CardPayments {
 
   /**
    * Rattache l'intention préparée au sujet : la ligne naît `pending`, DANS la
-   * transaction de l'appelant — elle tombe avec la sienne.
+   * transaction de l'appelant — elle tombe avec la sienne. `source` est posé
+   * par la page d'un lien, et lui seul.
    */
   abstract attach(
     subject: CardSubject,
     prepared: PreparedCardPayment,
     role: SubjectPaymentRole,
+    source?: CardPaymentSource,
   ): Promise<AttachedCardPayment>;
 
   /** La transaction de l'appelant a échoué : annule l'intention, au mieux. Ne lève pas. */

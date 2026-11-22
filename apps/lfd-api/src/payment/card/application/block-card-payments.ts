@@ -8,6 +8,7 @@ import {
   type CardPaymentCancellation,
   type CardPaymentPreparation,
   CardPayments,
+  type CardPaymentSource,
   type CardProviderSettlement,
   type PreparedCardPayment,
   type RetrievedCardPayment,
@@ -70,8 +71,10 @@ export class BlockCardPayments extends CardPayments {
     subject: CardSubject,
     prepared: PreparedCardPayment,
     role: SubjectPaymentRole,
+    source?: CardPaymentSource,
   ): Promise<AttachedCardPayment> {
     const payment = CardPayment.attach({
+      ...(source === undefined ? {} : { payLinkId: source.payLinkId }),
       id: this.ids.next(),
       subject: PaymentSubject.of(subject.type, subject.id),
       account: PaymentAccount.of(prepared.account),

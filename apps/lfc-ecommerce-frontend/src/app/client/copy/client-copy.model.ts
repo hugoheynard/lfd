@@ -30,6 +30,8 @@ export interface PageTitles {
   readonly pickupQr: string;
   readonly orderRevision: string;
   readonly guestOrder: string;
+  /** `/payer/:jeton` — la page publique d'un lien de paiement. */
+  readonly payLink: string;
   readonly salesTerms: string;
   readonly orderConfirmed: string;
   readonly connection: string;

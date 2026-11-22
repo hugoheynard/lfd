@@ -3509,3 +3509,11 @@ export type {
   EmbeddedCardCollection,
   RedirectCardCollection,
 } from "./card-collection.js";
+export {
+  PAY_LINK_TOKEN_LENGTH,
+  payLinkTokenPayloadSchema,
+  type PayLinkIntent,
+  type PayLinkTokenPayload,
+  type PayLinkUnpayableReason,
+  type PayLinkView,
+} from "./pay-link.js";

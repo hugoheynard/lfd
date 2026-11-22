@@ -95,6 +95,7 @@ const KEYS: Readonly<Record<PageTitleKey, true>> = {
   pickupQr: true,
   orderRevision: true,
   guestOrder: true,
+  payLink: true,
   salesTerms: true,
   orderConfirmed: true,
   connection: true,

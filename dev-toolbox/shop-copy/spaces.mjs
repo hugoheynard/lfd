@@ -118,6 +118,13 @@ export const OTHER_SPACES = [
     file: "screens/order-cancel.copy.ts",
     fn: "orderCancelCopy",
   },
+  {
+    kind: "screen",
+    space: "payLink",
+    title: "Payer par lien — la page publique /payer",
+    file: "screens/pay-link.copy.ts",
+    fn: "payLinkCopy",
+  },
   { kind: "dictionary", space: "loyalty", title: "Fidélité", file: "screens/loyalty.copy.ts" },
   {
     kind: "dictionary",

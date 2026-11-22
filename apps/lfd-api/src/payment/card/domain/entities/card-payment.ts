@@ -23,6 +23,11 @@ export interface CardPaymentSnapshot {
   readonly state: CardPaymentState;
   readonly createdAt: Date;
   readonly paidAt: Date | null;
+  /**
+   * Le lien de paiement dont la page a fait naître l'intention ; absent ou
+   * `null` pour un paiement pris ailleurs.
+   */
+  readonly payLinkId?: string | null;
 }
 
 /** Ce qu'il faut pour rattacher une intention à son sujet. */
@@ -34,6 +39,8 @@ export interface CardPaymentAttachment {
   readonly role: CardPaymentRole;
   readonly amountCents: number;
   readonly at: Date;
+  /** Posé quand l'intention naît de la page d'un lien (§2.1 bis du plan des liens). */
+  readonly payLinkId?: string;
 }
 
 /**
@@ -52,7 +59,7 @@ export type CardPaymentCatchUp = "advanced" | "in_step" | "diverged";
  * qui porte la machine `payment.state`.
  *
  * Les colonnes que le déclencheur `payment_guard` tient immuables (sujet,
- * compte, rôle, montant, référence posée) n'ont ici AUCUN mutateur : la règle
+ * compte, rôle, montant, référence posée, lien d'origine) n'ont ici AUCUN mutateur : la règle
  * est structurelle avant d'être refusée en base. Seuls l'état et l'instant
  * d'encaissement bougent, et seulement par les six transitions.
  */
@@ -67,6 +74,7 @@ export class CardPayment {
     readonly createdAt: Date,
     private currentState: CardPaymentState,
     private currentPaidAt: Date | null,
+    readonly payLinkId: string | null,
   ) {}
 
   /**
@@ -106,6 +114,7 @@ export class CardPayment {
       row.createdAt,
       row.state,
       row.paidAt,
+      row.payLinkId ?? null,
     );
   }
 
@@ -124,6 +133,7 @@ export class CardPayment {
       input.at,
       state,
       state === "paid" ? input.at : null,
+      input.payLinkId ?? null,
     );
   }
 
@@ -210,6 +220,7 @@ export class CardPayment {
       state: this.currentState,
       createdAt: this.createdAt,
       paidAt: this.currentPaidAt,
+      payLinkId: this.payLinkId,
     };
   }
 

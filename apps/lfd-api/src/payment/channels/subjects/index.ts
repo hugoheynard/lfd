@@ -15,6 +15,14 @@ export {
   SubjectSettlement,
 } from "./subject-settlement.js";
 export { RegisteredSubjectSettlements, SubjectSettlements } from "./subject-settlements.js";
+export {
+  LinkableSubject,
+  type PayableSubjectQuote,
+  type SubjectQuote,
+  type SubjectUnpayableReason,
+  type UnpayableSubjectQuote,
+} from "./linkable-subject.js";
+export { LinkableSubjects, RegisteredLinkableSubjects } from "./linkable-subjects.js";
 export type {
   RefundAttemptedOutcome,
   RefundFailedOutcome,

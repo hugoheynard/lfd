@@ -79,7 +79,19 @@ describe("CardPayment.attach", () => {
       state: "pending",
       createdAt: ATTACHED_AT,
       paidAt: null,
+      payLinkId: null,
     });
+  });
+
+  it("porte le lien d'où naît l'intention, et le garde à la relecture", () => {
+    const payment = CardPayment.attach(attachment({ payLinkId: "pl_1" }));
+    expect(payment.payLinkId).toBe("pl_1");
+    expect(CardPayment.rehydrate(payment.toPersistence()).payLinkId).toBe("pl_1");
+  });
+
+  it("relit une ligne sans colonne de lien comme un paiement hors lien", () => {
+    const { payLinkId: _absent, ...row } = CardPayment.attach(attachment()).toPersistence();
+    expect(CardPayment.rehydrate(row).payLinkId).toBeNull();
   });
 
   it.each([0, -5, 12.5, Number.NaN])("refuse le montant %p", (amountCents) => {

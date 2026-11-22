@@ -86,6 +86,10 @@ model CardPayment {
   createdAt   DateTime         @map("created_at") @db.Timestamptz(6)
   /// L'instant où le paiement est devenu `paid` ; `null` sinon.
   paidAt      DateTime?        @map("paid_at") @db.Timestamptz(6)
+  /// Le lien de paiement dont la page a fait naître l'intention ; `null` pour
+  /// un paiement pris ailleurs (la boutique). Immuable (`payment_guard`).
+  payLinkId   String?          @map("pay_link_id")
+  payLink     PayLink?         @relation(fields: [payLinkId], references: [id], onDelete: Restrict)
 
   /// Les demandes de remboursement de ce paiement (lot P1, §5.1).
   refundRequests CardRefundRequest[]
@@ -97,6 +101,7 @@ model CardPayment {
   /// remboursement porte le compte de SON paiement, et aucun autre (lot P1).
   @@unique([id, account])
   @@index([subjectType, subjectId])
+  @@index([payLinkId])
   @@map("payment")
   @@schema("card_payment")
 }
@@ -296,35 +301,86 @@ model CardRefundRequest {
 ///   `SET LOCAL card_payment.purge = 'on'` dans une transaction (purge).
 model CardRefund {
   /// ULID ; une ligne reprise garde l'`id` de `public.order_refund` (§5.2).
-  id          String            @id
-  paymentId   String            @map("payment_id")
+  id          String             @id
+  paymentId   String             @map("payment_id")
   /// Recopié du paiement — la clé composée le garantit.
   account     String
-  payment     CardPayment       @relation(fields: [paymentId, account], references: [id, account], onDelete: Restrict)
+  payment     CardPayment        @relation(fields: [paymentId, account], references: [id, account], onDelete: Restrict)
   /// La demande qui l'a émis ; nul pour un `re_…` fait hors plateforme.
-  requestId   String?           @map("request_id")
+  requestId   String?            @map("request_id")
   request     CardRefundRequest? @relation(fields: [requestId], references: [id], onDelete: Restrict)
   /// Celle de sa demande ; nulle quand il n'en a pas.
   nature      CardRefundNature?
   source      CardRefundSource
   /// Le `re_…` chez le prestataire ; nul pour un `manual`. Unique PAR compte.
-  providerRef String?           @map("provider_ref")
+  providerRef String?            @map("provider_ref")
   /// Centimes, entier > 0.
-  amountCents Int               @map("amount_cents")
+  amountCents Int                @map("amount_cents")
   /// Code ISO minuscule, tel que le prestataire l'écrit.
   currency    String
   status      CardRefundStatus
   /// L'instant du prestataire pour un `provider`, celui du geste pour un
   /// `manual`.
-  refundedAt  DateTime          @map("refunded_at") @db.Timestamptz(6)
+  refundedAt  DateTime           @map("refunded_at") @db.Timestamptz(6)
   /// Quand on l'a constaté — l'ordre de lecture du carnet.
-  recordedAt  DateTime          @map("recorded_at") @db.Timestamptz(6)
+  recordedAt  DateTime           @map("recorded_at") @db.Timestamptz(6)
   /// Le dernier changement de statut constaté.
-  updatedAt   DateTime          @map("updated_at") @db.Timestamptz(6)
+  updatedAt   DateTime           @map("updated_at") @db.Timestamptz(6)
 
   @@unique([account, providerRef])
   @@index([paymentId])
   @@index([requestId])
   @@map("refund")
+  @@schema("card_payment")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// LES LIENS DE PAIEMENT — lot P1 (2026-11-22)
+// ─────────────────────────────────────────────────────────────────────────────
+//
+// Plan `documentation/comptabilite/liens-de-paiement/plan-le-lien-vers-un-sujet.md`,
+// §2.1. Ce que Prisma ne sait pas écrire vit dans
+// `20261122100000_les_liens_vers_un_sujet` : le CHECK de la révocation, l'index
+// unique partiel d'un lien vivant par sujet, le déclencheur des colonnes
+// immuables et le refus du DELETE.
+
+/// **Un lien de paiement vers un sujet** — table `card_payment.pay_link`.
+///
+/// Propriétaire : `src/payment/link/`. Le sujet est opaque, comme celui d'un
+/// paiement. Le jeton n'est jamais en clair : `token_hash` (HMAC-SHA-256) pour
+/// le retrouver, `token_sealed` (le coffre de champs) pour le recopier.
+///
+/// Ce que le SQL porte et que ce modèle ne montre pas :
+/// - `pay_link_revoked_pair` : `revoked_at` et `revoked_reason` posés ensemble ;
+/// - `pay_link_live_per_subject_key` : index unique PARTIEL sur
+///   `(subject_type, subject_id) WHERE revoked_at IS NULL` ;
+/// - le déclencheur `pay_link_guard` (`BEFORE UPDATE`) : tout est immuable,
+///   sauf la révocation, posée une fois ;
+/// - le déclencheur `pay_link_no_delete` (`BEFORE DELETE`) : refusé, sauf sous
+///   `SET LOCAL card_payment.purge = 'on'`.
+model PayLink {
+  /// ULID posé par le code (`IdGenerator`).
+  id            String    @id
+  subjectType   String    @map("subject_type")
+  subjectId     String    @map("subject_id")
+  /// L'application qui a demandé le lien — une valeur du registre des origines.
+  origin        String
+  /// Le nom du payeur tel que l'appelant l'a donné à l'ouverture, figé.
+  payerLabel    String    @map("payer_label")
+  /// HMAC-SHA-256 du jeton, en hexadécimal : la page publique cherche par lui.
+  tokenHash     String    @unique @map("token_hash")
+  /// Le jeton scellé par le coffre de champs : le staff recopie le lien.
+  tokenSealed   String    @map("token_sealed")
+  createdAt     DateTime  @map("created_at") @db.Timestamptz(6)
+  /// Une fiche staff, ou `system` pour une émission automatique.
+  createdBy     String    @map("created_by")
+  revokedAt     DateTime? @map("revoked_at") @db.Timestamptz(6)
+  revokedReason String?   @map("revoked_reason")
+
+  /// Les paiements nés de la page de ce lien.
+  payments CardPayment[]
+
+  @@index([subjectType, subjectId])
+  @@map("pay_link")
   @@schema("card_payment")
 }

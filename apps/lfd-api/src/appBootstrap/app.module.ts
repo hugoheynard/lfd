@@ -41,6 +41,8 @@ import { AccountingModule } from "../lafoliecoffee/accounting/accounting.module.
 import { PaymentsModule } from "../lafoliecoffee/payments/payments.module.js";
 import { CardPaymentModule } from "../payment/card/card-payment.module.js";
 import { CardPaymentFeedModule } from "./card-payment-feed.module.js";
+import { PayLinkModule } from "../payment/link/pay-link.module.js";
+import { PayLinkFeedModule } from "./pay-link-feed.module.js";
 import { LoyaltyModule } from "../lafoliecoffee/loyalty/loyalty.module.js";
 import { DevModule } from "../dev/dev.module.js";
 import { OrderCutoffsModule } from "../lafoliecoffee/order-cutoffs/order-cutoffs.module.js";
@@ -247,6 +249,8 @@ import { DevImpersonation } from "../platform/auth/dev-impersonation.js";
     // le compte des commandes et leur implémentation du canal retour.
     CardPaymentModule,
     CardPaymentFeedModule,
+    PayLinkModule,
+    PayLinkFeedModule,
     // Les mandats, les liens de paiement et leur webhook.
     PaymentsModule,
     AccountingModule,

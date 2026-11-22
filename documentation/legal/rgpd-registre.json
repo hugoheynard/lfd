@@ -3238,6 +3238,15 @@
       "conservation": "aucune-limite-decidee",
       "purge": null,
       "information": false
+    },
+    {
+      "colonne": "card_payment.pay_link.created_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a ouvert un lien de paiement (`created_by` sur `pay_link`) ; la valeur `system` désigne une émission automatique, sans personne.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
     }
   ],
   "exclusions": [

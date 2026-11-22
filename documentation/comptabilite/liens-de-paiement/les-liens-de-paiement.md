@@ -142,7 +142,51 @@ flowchart LR
   liens, avec la vraie vérification de signature ; le relais est éprouvé par
   la spec unitaire de `OnCardCheckoutEvent`.
 
-## 4. Ce qui reste ouvert
+## 4. Le lien vers un sujet — la porte du bloc `payment`
+
+Bâtie le 2026-11-22 (lot P1 de [`plan-le-lien-vers-un-sujet.md`](plan-le-lien-vers-un-sujet.md)),
+**pas encore servie** : aucun sujet réel ne s'y branche avant la
+régularisation (F1) et la facture d'une période (I2).
+
+```mermaid
+sequenceDiagram
+  participant M as Bloc métier
+  participant P as payment/link
+  participant B as Boutique /payer/:jeton
+  participant C as payment/card
+  M->>P: PayLinks.open(sujet, origine, payeur)
+  P-->>M: <racine de l'origine>/payer/<jeton>
+  B->>P: POST pay-links/view { token }
+  P->>M: LinkableSubject.quote(sujet)
+  P-->>B: montant, bénéficiaire, payeur, référence
+  B->>P: POST pay-links/intent { token }
+  P->>C: prepare puis attach (first, pay_link_id)
+  P-->>B: instruction de collecte
+  B->>B: CardCollector monte et confirme
+```
+
+- **Le lien** (`payment/link/`) : table `card_payment.pay_link`, un seul lien
+  vivant par sujet, aucun DELETE, révocation posée une fois. Le jeton (32
+  octets) n'est jamais gardé en clair : une empreinte HMAC sous
+  `payLinkTokenKey()` (dérivée de `FIELD_ENCRYPTION_KEY`) pour le retrouver,
+  un scellé (`FieldCipher`) pour le recopier.
+- **Le paiement sait qu'il vient d'un lien** : `card_payment.payment.pay_link_id`,
+  immuable, indexé.
+- **Les ports** (`payment/channels/`) : `PayLinks` (ouvrir, révoquer,
+  recopier) pour les blocs métier ; `LinkableSubject` (`quote`), que chaque
+  bloc sujet implémente.
+- **Le registre des origines** (`platform/config/pay-link-origins.ts`) : une
+  origine par application, avec sa racine publique ; `lafoliecoffee` prend
+  `CLIENT_BASE_URL`.
+- **Les routes publiques** : `POST pay-links/view` et `POST pay-links/intent`,
+  le jeton dans le corps, limite de débit par route, `no-store`. Un jeton
+  inconnu et un lien révoqué rendent le même 404.
+- **La page** `/payer/:jeton` (`client/pay-link/`) : sans connexion, dans le
+  cadre de la boutique sans menu d'espace, `noindex`. Elle fait payer par le
+  service de collecte (`CardCollector`) et dit chaque phase (introuvable,
+  réglé, annulé, à renouveler, indisponible, prêt, payé).
+
+## 5. Ce qui reste ouvert
 
 - **La bascule chez Stripe n'est pas attestée par le dépôt.** La destination
   « lfd-api production — liens de paiement » a été créée désactivée le

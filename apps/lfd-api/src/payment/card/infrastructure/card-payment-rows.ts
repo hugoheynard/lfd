@@ -17,6 +17,7 @@ export interface CardPaymentRow {
   readonly state: string;
   readonly createdAt: Date;
   readonly paidAt: Date | null;
+  readonly payLinkId: string | null;
 }
 
 /** Une valeur d'enum que ce binaire ne connaît pas : un schéma en avance, pas une donnée à deviner. */

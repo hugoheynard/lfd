@@ -4,7 +4,7 @@
 >
 > La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.
 
-## Sommaire — 1930 textes
+## Sommaire — 1955 textes
 
 Clés présentes dans une langue et absentes d'une autre : 0.
 
@@ -36,11 +36,12 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Confirmation](#espace-done) | `done` | 31 |
 | [Confirmation — le QR de retrait](#espace-qr) | `qr` | 12 |
 | **Le reste de la boutique** | | |
-| [Le cadre — bandeaux et erreurs générales](#espace-chrome) | `chrome` | 60 |
+| [Le cadre — bandeaux et erreurs générales](#espace-chrome) | `chrome` | 61 |
 | [La navigation](#espace-nav) | `nav` | 17 |
 | [La colonne d’accompagnement](#espace-aside) | `aside` | 4 |
 | [Mes commandes (récapitulatif compris)](#espace-orders) | `orders` | 289 |
 | [Annuler une commande — Mes commandes et la page invité](#espace-ordercancel) | `orderCancel` | 57 |
+| [Payer par lien — la page publique /payer](#espace-paylink) | `payLink` | 24 |
 | [Fidélité](#espace-loyalty) | `loyalty` | 38 |
 | [Mon compte (factures comprises)](#espace-account) | `account` | 534 |
 | [Le compte pro — le dictionnaire général](#espace-pro) | `pro` | 8 |
@@ -51,7 +52,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Les cases des e-mails marketing, « Mes e-mails » et le pied de page](#espace-marketingconsent) | `marketingConsent` | 29 |
 | [Les documents légaux](#espace-legaldocument) | `legalDocument` | 14 |
 | [Le suivi des corrections d’accessibilité — sous la déclaration](#espace-accessibilityfollowup) | `accessibilityFollowUp` | 28 |
-| **Total** | | **1930** |
+| **Total** | | **1955** |
 
 ## Le parcours de commande
 
@@ -952,7 +953,7 @@ Source : `fr.ts · en.ts · it.ts` · 12 textes.
 
 ### Le cadre — bandeaux et erreurs générales — `chrome`
 
-Source : `fr.ts · en.ts · it.ts` · 60 textes.
+Source : `fr.ts · en.ts · it.ts` · 61 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -1009,6 +1010,7 @@ Source : `fr.ts · en.ts · it.ts` · 60 textes.
 | `chrome.pageTitles.pickupQr` | Mon QR de retrait — La Folie Coffee | My pickup QR code — La Folie Coffee | Il mio QR di ritiro — La Folie Coffee |  |
 | `chrome.pageTitles.orderRevision` | Modifier ma commande — La Folie Coffee | Change my order — La Folie Coffee | Modificare il mio ordine — La Folie Coffee |  |
 | `chrome.pageTitles.guestOrder` | Votre commande — La Folie Coffee | Your order — La Folie Coffee | Il vostro ordine — La Folie Coffee |  |
+| `chrome.pageTitles.payLink` | Régler par carte — La Folie Coffee | Pay by card — La Folie Coffee | Pagare con carta — La Folie Coffee |  |
 | `chrome.pageTitles.salesTerms` | Conditions générales de vente — La Folie Coffee | General terms of sale — La Folie Coffee | Condizioni generali di vendita — La Folie Coffee |  |
 | `chrome.pageTitles.orderConfirmed` | Commande confirmée — La Folie Coffee | Order confirmed — La Folie Coffee | Ordine confermato — La Folie Coffee |  |
 | `chrome.pageTitles.connection` | Connexion — La Folie Coffee | Sign in — La Folie Coffee | Accesso — La Folie Coffee |  |
@@ -1419,6 +1421,39 @@ Source : `screens/order-cancel.copy.ts` · 57 textes.
 | `orderCancel.guestDeliveryNoCity` | Livraison | Delivery | Consegna |  |
 | `orderCancel.linkNotFoundTitle` | Ce lien est introuvable ou trop ancien | This link cannot be found or is too old | Questo link è introvabile o troppo vecchio |  |
 | `orderCancel.linkNotFoundSubtitle` | Contactez la boutique pour toute question sur votre commande. | Contact the shop for any question about your order. | Contattate il negozio per qualsiasi domanda sul vostro ordine. |  |
+
+<a id="espace-paylink"></a>
+
+### Payer par lien — la page publique /payer — `payLink`
+
+Source : `screens/pay-link.copy.ts` · 24 textes.
+
+| Clé | FR | EN | IT | Variables |
+| --- | --- | --- | --- | --- |
+| `payLink.title` | Régler par carte | Pay by card | Pagare con carta |  |
+| `payLink.loading` | Chargement du paiement… | Loading the payment… | Caricamento del pagamento… |  |
+| `payLink.notFoundTitle` | Ce lien n’est pas ou plus valable | This link is not or no longer valid | Questo link non è o non è più valido |  |
+| `payLink.notFoundSubtitle` | Vérifiez l’adresse reçue, ou demandez un nouveau lien à votre interlocuteur. | Check the address you received, or ask your contact for a new link. | Verificate l’indirizzo ricevuto, o chiedete un nuovo link al vostro referente. |  |
+| `payLink.settledTitle` | Ce paiement est déjà réglé | This payment has already been made | Questo pagamento è già stato saldato |  |
+| `payLink.settledSubtitle` | Il n’y a plus rien à payer avec ce lien. | There is nothing left to pay with this link. | Non c’è più nulla da pagare con questo link. |  |
+| `payLink.cancelledTitle` | Ce paiement a été annulé | This payment has been cancelled | Questo pagamento è stato annullato |  |
+| `payLink.cancelledSubtitle` | Il n’y a plus rien à payer avec ce lien. | There is nothing left to pay with this link. | Non c’è più nulla da pagare con questo link. |  |
+| `payLink.renewTitle` | Ce lien doit être renouvelé | This link needs to be renewed | Questo link deve essere rinnovato |  |
+| `payLink.renewSubtitle` | Demandez un nouveau lien de paiement à votre interlocuteur. | Ask your contact for a new payment link. | Chiedete un nuovo link di pagamento al vostro referente. |  |
+| `payLink.unavailableTitle` | Le paiement est momentanément indisponible | Payment is temporarily unavailable | Il pagamento è momentaneamente non disponibile |  |
+| `payLink.unavailableSubtitle` | Votre lien reste valable. Réessayez dans un instant. | Your link is still valid. Please try again in a moment. | Il vostro link resta valido. Riprovate tra un istante. |  |
+| `payLink.retry` | Réessayer | Try again | Riprova |  |
+| `payLink.amount` | Montant | Amount | Importo |  |
+| `payLink.payee` | Bénéficiaire | Payee | Beneficiario |  |
+| `payLink.payer` | Payeur | Payer | Pagatore |  |
+| `payLink.reference` | Référence | Reference | Riferimento |  |
+| `payLink.dueOn` | Échéance | Due date | Scadenza |  |
+| `payLink.submit` | Payer {amount} | Pay {amount} | Paga {amount} | `{amount}` |
+| `payLink.submitting` | Paiement en cours… | Payment in progress… | Pagamento in corso… |  |
+| `payLink.refused` | Le paiement a été refusé. Vérifiez votre carte ou essayez-en une autre. | The payment was declined. Check your card or try another one. | Il pagamento è stato rifiutato. Verificate la carta o provatene un’altra. |  |
+| `payLink.unfinished` | Le paiement n’a pas abouti. Vous pouvez réessayer. | The payment did not go through. You can try again. | Il pagamento non è andato a buon fine. Potete riprovare. |  |
+| `payLink.paidTitle` | Paiement reçu | Payment received | Pagamento ricevuto |  |
+| `payLink.paidSubtitle` | Merci. Une confirmation vous parviendra une fois le paiement enregistré. | Thank you. A confirmation will follow once the payment is recorded. | Grazie. Una conferma seguirà una volta registrato il pagamento. |  |
 
 <a id="espace-loyalty"></a>
 
