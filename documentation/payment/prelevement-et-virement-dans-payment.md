@@ -122,17 +122,71 @@ flowchart LR
 
 ## 3. L'ordre proposé, le jour venu
 
-| Lot | Contenu                                                                                                      | Risque                                                                      |
-| --- | ------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------- |
-| D0  | **Le port mouvement → parts**, d'abord pour la carte (une part) : aucun changement visible                   | faible                                                                      |
-| D1  | **Le compte créancier** rejoint le bloc ; la facturation le lit par un port (pour l'imprimer sur la facture) | moyen : un IBAN scellé, confirmé aux quatre yeux                            |
-| D2  | **Les mandats et le compte du débiteur** rejoignent `payment/sepa-debit/`                                    | élevé : des mandats signés, leurs preuves, une migration de tables d'argent |
-| D3  | **Les lots, le fichier `pain.008`, le calendrier, les rejets, l'essai**                                      | élevé : des lots déjà déposés à la banque                                   |
-| D4  | **Le virement reçu** rejoint `payment/transfer/` ; la facturation garde le rapprochement à écart nul         | moyen                                                                       |
+### 3.1 Le virement d'abord, le prélèvement bien après
+
+Discuté avec Hugo le 2026-11-22 : le virement est **le plus petit morceau**,
+et le meilleur candidat pour faire passer la première pièce bancaire dans le
+bloc.
+
+|                                | Virement                                                          | Prélèvement SEPA                                               |
+| ------------------------------ | ----------------------------------------------------------------- | -------------------------------------------------------------- |
+| ce qui circule                 | un **constat** : « reçu 840 € le 3 décembre, référence FA-001 »   | une **demande** : on va chercher l'argent chez le client       |
+| les tables à déplacer          | deux (`received_bank_transfer`, `received_bank_transfer_invoice`) | une quinzaine (mandats, comptes, lots, rejets, essai, exports) |
+| les engagements juridiques     | aucun : le client vire de lui-même                                | mandats signés, pré-notification, délais légaux de rejet       |
+| ce qui est déjà chez la banque | rien : la saisie est faite par le staff                           | des lots déjà déposés                                          |
+| ce qui peut mal tourner        | un virement mal rattaché, que le staff corrige                    | un débit en double, un mandat invalide, un fichier refusé      |
+
+Le virement **n'a pas besoin du compte créancier** : la facture continue de
+lire l'IBAN de l'entité là où il est. Le compte créancier ne déménage qu'avec
+le prélèvement.
+
+**Ce qui déclenche le chantier** : une **lecture automatique des relevés
+bancaires** (la banque envoie ses relevés, le bloc rapproche lui-même les
+virements, ce qui est aussi le début du rapprochement automatique de la
+[feuille de route](feuille-de-route.md)), ou une **deuxième application** qui
+encaisse par virement. Avant l'un des deux, le déplacer rapporte peu.
+
+### 3.2 Les lots
+
+| Lot | Contenu                                                                                                                  | Risque                                           |
+| --- | ------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------ |
+| D0  | **Le modèle mouvement → parts**, d'abord pour la carte (une part) : aucun changement visible                             | faible                                           |
+| D1  | **Le virement reçu** rejoint `payment/transfer/` ; la facturation garde le rapprochement à écart nul                     | moyen : deux tables d'argent réel                |
+| D2  | **Le compte créancier** rejoint le bloc ; la facturation le lit par une lecture publiée (pour l'imprimer sur la facture) | moyen : un IBAN scellé, confirmé aux quatre yeux |
+| D3  | **Les mandats et le compte du débiteur** rejoignent `payment/sepa-debit/`                                                | élevé : des mandats signés, leurs preuves        |
+| D4  | **Les lots, le fichier `pain.008`, le calendrier, les rejets, l'essai**                                                  | élevé : des lots déjà déposés à la banque        |
 
 Chaque lot passe par `vitruve` (argent, migration de données) et par
 `lecteur-de-migrations`, et finit au runbook. Les tables déménagent de `public`
 vers le schéma `payment` par **renommage**, jamais par copie, comme le lot V.
+
+### 3.3 L'organisation dans le bloc
+
+Un sous-dossier par moyen de paiement, comme `card/` : un nom de dossier ne
+ment pas sur ce qu'il contient (la règle du lot zéro).
+
+```
+payment/
+├── card/        la carte (existant)
+├── link/        les liens de paiement (existant)
+├── transfer/    les virements reçus (D1)
+├── sepa-debit/  le prélèvement (D3, D4)
+├── movement/    le mouvement et ses parts, commun à tous (D0)
+├── shared/      ce qui sert à tous (le verrou de ligne)
+└── channels/    ce que les autres blocs atteignent
+```
+
+- **Pourquoi pas dans `card/`** : un virement n'a ni intention, ni webhook, ni
+  remboursement par API ; il a un relevé, une date de réception, une
+  référence, et un rattachement à des factures. Son cycle de vie est « reçu →
+  rattaché », pas « en attente → payé → remboursé ». Son prestataire, à terme,
+  est la banque, pas Stripe.
+- **Le mouvement** vit à part (`movement/`), parce qu'il sert à tous les
+  moyens ; sa partie publique est dans `payment/channels/`.
+- **Les tables** prennent le préfixe de leur moyen dans le schéma `payment`,
+  comme `card_` : par exemple `transfer_received` et `transfer_allocation`.
+- **La doc** du chantier vit dans `documentation/payment/`, un plan, ou un
+  sous-dossier `virement/` s'il grossit.
 
 ## 4. Les questions ouvertes
 
@@ -140,5 +194,5 @@ vers le schéma `payment` par **renommage**, jamais par copie, comme le lot V.
 | ------------------------------------------------------------------------------------------------------------------------------------------ | -------------------- |
 | Quand le faire : à la deuxième application qui prélève, au changement de banque, ou plus tôt pour alléger la facturation ?                 | Hugo                 |
 | La pré-notification : obligation tenue par le bloc, contenu par la facturation (§1.2) ?                                                    | Hugo, puis `vitruve` |
-| Le vocabulaire des sous-dossiers : `payment/sepa-debit/` et `payment/transfer/`, ou un seul `payment/bank/` ?                              | Hugo                 |
+| ~~Le vocabulaire des sous-dossiers~~ : un sous-dossier par moyen, `payment/transfer/` et `payment/sepa-debit/` (Hugo, 2026-11-22, §3.3)    | tranché              |
 | Le dossier `lafoliecoffee/payments/` (mandats et demandes libres) : il se vide en D2 ; que deviennent les demandes libres, qui y restent ? | à trancher en D2     |
