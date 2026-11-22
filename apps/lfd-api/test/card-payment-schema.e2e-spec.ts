@@ -1,5 +1,5 @@
 /**
- * **Les gardes SQL de `card_payment.payment`** (plan
+ * **Les gardes SQL de `payment.card_payment`** (plan
  * `documentation/commandes/modification/plan-m2-historique-de-transactions.md`,
  * lot P0, §3.4, §4.3, garantie G1 du §11).
  *
@@ -54,23 +54,23 @@ function row(overrides: Partial<PaymentRow> = {}): PaymentRow {
 
 function insert(payment: PaymentRow): Promise<number> {
   return ctx.prisma.$executeRaw`
-    INSERT INTO "card_payment"."payment"
+    INSERT INTO "payment"."card_payment"
       ("id", "subject_type", "subject_id", "account", "provider_ref", "role",
        "amount_cents", "state", "created_at")
     VALUES (${payment.id}, 'order', ${payment.subjectId}, ${payment.account},
-            ${payment.providerRef}, ${payment.role}::"card_payment"."CardPaymentRole",
-            ${payment.amountCents}, ${payment.state}::"card_payment"."CardPaymentState", now())`;
+            ${payment.providerRef}, ${payment.role}::"payment"."CardPaymentRole",
+            ${payment.amountCents}, ${payment.state}::"payment"."CardPaymentState", now())`;
 }
 
 function moveTo(id: string, state: State): Promise<number> {
   return ctx.prisma.$executeRaw`
-    UPDATE "card_payment"."payment"
-       SET "state" = ${state}::"card_payment"."CardPaymentState"
+    UPDATE "payment"."card_payment"
+       SET "state" = ${state}::"payment"."CardPaymentState"
      WHERE "id" = ${id}`;
 }
 
 function remove(id: string): Promise<number> {
-  return ctx.prisma.$executeRaw`DELETE FROM "card_payment"."payment" WHERE "id" = ${id}`;
+  return ctx.prisma.$executeRaw`DELETE FROM "payment"."card_payment" WHERE "id" = ${id}`;
 }
 
 beforeAll(async () => {
@@ -85,7 +85,7 @@ beforeEach(async () => {
   await ctx.reset();
 });
 
-describe("card_payment.payment — ce que la base refuse d'elle-même (G1)", () => {
+describe("payment.card_payment — ce que la base refuse d'elle-même (G1)", () => {
   it("refuse un compte hors du registre", async () => {
     await expect(insert(row({ account: "lfc-caisse-epargne" }))).rejects.toThrow(
       /payment_account_known/,
@@ -116,7 +116,7 @@ describe("card_payment.payment — ce que la base refuse d'elle-même (G1)", () 
   });
 });
 
-describe("card_payment.payment — la machine des états (§3.4)", () => {
+describe("payment.card_payment — la machine des états (§3.4)", () => {
   it("chaque paire (état, état) est admise ou refusée selon la machine, (x, x) compris", async () => {
     const observed: string[] = [];
     const expected: string[] = [];
@@ -145,21 +145,21 @@ describe("card_payment.payment — la machine des états (§3.4)", () => {
   });
 });
 
-describe("card_payment.payment — les colonnes immuables", () => {
+describe("payment.card_payment — les colonnes immuables", () => {
   it("refuse de changer le montant, le compte, le rôle ou le sujet", async () => {
     const payment = row();
     await insert(payment);
     await expect(
       ctx.prisma.$executeRaw`
-        UPDATE "card_payment"."payment" SET "amount_cents" = 999 WHERE "id" = ${payment.id}`,
+        UPDATE "payment"."card_payment" SET "amount_cents" = 999 WHERE "id" = ${payment.id}`,
     ).rejects.toThrow(/le montant d'un paiement ne change pas/);
     await expect(
       ctx.prisma.$executeRaw`
-        UPDATE "card_payment"."payment" SET "role" = 'complement' WHERE "id" = ${payment.id}`,
+        UPDATE "payment"."card_payment" SET "role" = 'complement' WHERE "id" = ${payment.id}`,
     ).rejects.toThrow(/le rôle d'un paiement ne change pas/);
     await expect(
       ctx.prisma.$executeRaw`
-        UPDATE "card_payment"."payment" SET "subject_id" = 'ord_other' WHERE "id" = ${payment.id}`,
+        UPDATE "payment"."card_payment" SET "subject_id" = 'ord_other' WHERE "id" = ${payment.id}`,
     ).rejects.toThrow(/le sujet d'un paiement ne change pas/);
   });
 
@@ -167,20 +167,20 @@ describe("card_payment.payment — les colonnes immuables", () => {
     const payment = row({ providerRef: null });
     await insert(payment);
     await ctx.prisma.$executeRaw`
-      UPDATE "card_payment"."payment" SET "provider_ref" = 'pi_set' WHERE "id" = ${payment.id}`;
+      UPDATE "payment"."card_payment" SET "provider_ref" = 'pi_set' WHERE "id" = ${payment.id}`;
     await expect(
       ctx.prisma.$executeRaw`
-        UPDATE "card_payment"."payment" SET "provider_ref" = 'pi_other' WHERE "id" = ${payment.id}`,
+        UPDATE "payment"."card_payment" SET "provider_ref" = 'pi_other' WHERE "id" = ${payment.id}`,
     ).rejects.toThrow(/la référence chez le prestataire est posée/);
     await expect(
       ctx.prisma.$executeRaw`
-        UPDATE "card_payment"."payment" SET "provider_ref" = NULL WHERE "id" = ${payment.id}`,
+        UPDATE "payment"."card_payment" SET "provider_ref" = NULL WHERE "id" = ${payment.id}`,
     ).rejects.toThrow(/la référence chez le prestataire est posée/);
   });
 });
 
-describe("card_payment.payment — pas de DELETE, sauf la purge", () => {
-  it("refuse un DELETE nu, l'admet sous SET LOCAL card_payment.purge dans une transaction, et le réglage meurt avec elle", async () => {
+describe("payment.card_payment — pas de DELETE, sauf la purge", () => {
+  it("refuse un DELETE nu, l'admet sous SET LOCAL payment.purge dans une transaction, et le réglage meurt avec elle", async () => {
     const kept = row();
     const purged = row();
     await insert(kept);
@@ -189,8 +189,8 @@ describe("card_payment.payment — pas de DELETE, sauf la purge", () => {
     await expect(remove(purged.id)).rejects.toThrow(/ne s'efface pas/);
 
     await ctx.prisma.$transaction(async (tx) => {
-      await tx.$executeRaw`SET LOCAL card_payment.purge = 'on'`;
-      await tx.$executeRaw`DELETE FROM "card_payment"."payment" WHERE "id" = ${purged.id}`;
+      await tx.$executeRaw`SET LOCAL payment.purge = 'on'`;
+      await tx.$executeRaw`DELETE FROM "payment"."card_payment" WHERE "id" = ${purged.id}`;
     });
 
     expect(

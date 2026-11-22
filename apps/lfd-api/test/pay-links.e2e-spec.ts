@@ -237,7 +237,7 @@ describe("payer : POST /pay-links/intent", () => {
     await ctx.http().post(INTENT).send({ token }).expect(200);
     await expect(
       ctx.prisma.$executeRaw`
-        UPDATE "card_payment"."payment" SET "pay_link_id" = NULL
+        UPDATE "payment"."card_payment" SET "pay_link_id" = NULL
         WHERE "subject_id" = ${subject.id}`,
     ).rejects.toThrow(/le lien d'où vient un paiement ne change pas/u);
   });
@@ -275,7 +275,7 @@ describe("les gardes de la table", () => {
     await openLink(subject);
     await expect(
       ctx.prisma.$executeRaw`
-        INSERT INTO "card_payment"."pay_link"
+        INSERT INTO "payment"."pay_link"
           ("id", "subject_type", "subject_id", "origin", "payer_label", "token_hash",
            "token_sealed", "created_at", "created_by")
         VALUES ('pl_dup', ${subject.type}, ${subject.id}, 'lafoliecoffee', 'X', 'h_dup',
@@ -288,7 +288,7 @@ describe("les gardes de la table", () => {
     await openLink(subject);
     await expect(
       ctx.prisma.$executeRaw`
-        UPDATE "card_payment"."pay_link" SET "revoked_at" = now()
+        UPDATE "payment"."pay_link" SET "revoked_at" = now()
         WHERE "subject_id" = ${subject.id}`,
     ).rejects.toThrow(/pay_link_revoked_pair/u);
   });
@@ -299,7 +299,7 @@ describe("les gardes de la table", () => {
     await ctx.app.get(PayLinks).revoke(subject, "réglé ailleurs");
     await expect(
       ctx.prisma.$executeRaw`
-        UPDATE "card_payment"."pay_link" SET "revoked_at" = NULL, "revoked_reason" = NULL
+        UPDATE "payment"."pay_link" SET "revoked_at" = NULL, "revoked_reason" = NULL
         WHERE "id" = ${first.linkId}`,
     ).rejects.toThrow(/un lien ne se ranime pas/u);
     const reopened = await openLink(subject);
@@ -309,7 +309,7 @@ describe("les gardes de la table", () => {
   it("un lien ne s'efface pas", async () => {
     const { linkId } = await openLink(freshSubject());
     await expect(
-      ctx.prisma.$executeRaw`DELETE FROM "card_payment"."pay_link" WHERE "id" = ${linkId}`,
+      ctx.prisma.$executeRaw`DELETE FROM "payment"."pay_link" WHERE "id" = ${linkId}`,
     ).rejects.toThrow(/ne s'efface pas/u);
   });
 });

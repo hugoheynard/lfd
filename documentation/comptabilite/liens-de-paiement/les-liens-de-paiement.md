@@ -165,12 +165,12 @@ sequenceDiagram
   B->>B: CardCollector monte et confirme
 ```
 
-- **Le lien** (`payment/link/`) : table `card_payment.pay_link`, un seul lien
+- **Le lien** (`payment/link/`) : table `payment.pay_link`, un seul lien
   vivant par sujet, aucun DELETE, révocation posée une fois. Le jeton (32
   octets) n'est jamais gardé en clair : une empreinte HMAC sous
   `payLinkTokenKey()` (dérivée de `FIELD_ENCRYPTION_KEY`) pour le retrouver,
   un scellé (`FieldCipher`) pour le recopier.
-- **Le paiement sait qu'il vient d'un lien** : `card_payment.payment.pay_link_id`,
+- **Le paiement sait qu'il vient d'un lien** : `payment.card_payment.pay_link_id`,
   immuable, indexé.
 - **Les ports** (`payment/channels/`) : `PayLinks` (ouvrir, révoquer,
   recopier) pour les blocs métier ; `LinkableSubject` (`quote`), que chaque

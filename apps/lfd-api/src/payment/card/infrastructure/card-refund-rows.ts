@@ -10,7 +10,7 @@ import {
   oneOfValues,
 } from "../domain/value-objects/card-refund-values.js";
 
-/** La ligne de `card_payment.refund_request` telle que Prisma la rend — confinée à `infrastructure/`. */
+/** La ligne de `payment.card_refund_request` telle que Prisma la rend — confinée à `infrastructure/`. */
 export interface CardRefundRequestRow {
   readonly id: string;
   readonly paymentId: string;
@@ -37,7 +37,7 @@ export interface CardRefundRequestRow {
   readonly settledReason: string | null;
 }
 
-/** La ligne de `card_payment.refund` telle que Prisma la rend. */
+/** La ligne de `payment.card_refund` telle que Prisma la rend. */
 export interface CardRefundRow {
   readonly id: string;
   readonly paymentId: string;
@@ -57,8 +57,8 @@ export interface CardRefundRow {
 export class UnknownCardRefundValueError extends TechnicalError {
   constructor(column: string, value: string) {
     super(
-      "card_payment.refund_row.unknown_value",
-      `card_payment.${column} vaut « ${value} », que ce binaire ne connaît pas : ` +
+      "payment.card_refund_row.unknown_value",
+      `payment.${column} vaut « ${value} », que ce binaire ne connaît pas : ` +
         "le schéma est en avance sur le code déployé.",
     );
   }
@@ -76,9 +76,9 @@ function known<T extends string>(values: readonly T[], raw: string, column: stri
 export function requestOf(row: CardRefundRequestRow): CardRefundRequest {
   return CardRefundRequest.rehydrate({
     ...row,
-    form: known(CARD_REFUND_FORMS, row.form, "refund_request.form"),
-    nature: known(CARD_REFUND_NATURES, row.nature, "refund_request.nature"),
-    state: known(CARD_REFUND_REQUEST_STATES, row.state, "refund_request.state"),
+    form: known(CARD_REFUND_FORMS, row.form, "card_refund_request.form"),
+    nature: known(CARD_REFUND_NATURES, row.nature, "card_refund_request.nature"),
+    state: known(CARD_REFUND_REQUEST_STATES, row.state, "card_refund_request.state"),
   });
 }
 
@@ -87,12 +87,13 @@ export function lineOf(row: CardRefundRow): CardRefundLine {
   return {
     id: row.id,
     requestId: row.requestId,
-    nature: row.nature === null ? null : known(CARD_REFUND_NATURES, row.nature, "refund.nature"),
-    source: known(CARD_REFUND_SOURCES, row.source, "refund.source"),
+    nature:
+      row.nature === null ? null : known(CARD_REFUND_NATURES, row.nature, "card_refund.nature"),
+    source: known(CARD_REFUND_SOURCES, row.source, "card_refund.source"),
     providerRef: row.providerRef,
     amountCents: row.amountCents,
     currency: row.currency,
-    status: known(CARD_REFUND_STATUSES, row.status, "refund.status"),
+    status: known(CARD_REFUND_STATUSES, row.status, "card_refund.status"),
     refundedAt: row.refundedAt,
     recordedAt: row.recordedAt,
     updatedAt: row.updatedAt,

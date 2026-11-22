@@ -5,7 +5,7 @@ import type { CancelledOrderRefund } from "../../domain/events/order-cancelled.e
 import { OrderCardAdoption } from "../../../domain/ports/order-card-payments.js";
 import { orderCardSubject } from "../../../application/services/order-card-subject.js";
 
-/** Le code de la demande — 🔴 une valeur écrite (`card_payment.refund_request.reason`). */
+/** Le code de la demande — 🔴 une valeur écrite (`payment.card_refund_request.reason`). */
 export const CANCELLATION_REFUND_REASON = "cancellation";
 
 /**

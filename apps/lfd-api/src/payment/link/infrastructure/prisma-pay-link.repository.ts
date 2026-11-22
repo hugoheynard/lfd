@@ -1,12 +1,14 @@
 import { Injectable } from "@nestjs/common";
 
+import { Prisma } from "../../../platform/database/client/client.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { currentTransaction } from "../../../platform/database/transaction.store.js";
+import { lockRows } from "../../shared/infrastructure/row-lock.js";
 import { PayLink } from "../domain/entities/pay-link.js";
 import { PayLinkRepository } from "../domain/ports/pay-link.repository.js";
 
 /**
- * **Les liens**, dans `card_payment.pay_link` — l'écrivain UNIQUE de la table.
+ * **Les liens**, dans `payment.pay_link` — l'écrivain UNIQUE de la table.
  * Passe par le client ambiant : sous une unité de travail, il écrit dans la
  * transaction de l'appelant.
  *
@@ -35,11 +37,12 @@ export class PrismaPayLinkRepository extends PayLinkRepository {
 
   async liveOf(subjectType: string, subjectId: string): Promise<PayLink | null> {
     if (currentTransaction() !== undefined) {
-      await this.prisma.$queryRaw`
-        SELECT "id" FROM "card_payment"."pay_link"
-        WHERE "subject_type" = ${subjectType} AND "subject_id" = ${subjectId}
-          AND "revoked_at" IS NULL
-        FOR UPDATE`;
+      await lockRows(
+        this.prisma,
+        "pay_link",
+        Prisma.sql`"subject_type" = ${subjectType} AND "subject_id" = ${subjectId}
+          AND "revoked_at" IS NULL`,
+      );
     }
     const row = await this.prisma.payLink.findFirst({
       where: { subjectType, subjectId, revokedAt: null },

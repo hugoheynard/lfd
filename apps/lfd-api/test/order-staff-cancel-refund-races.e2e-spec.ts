@@ -115,7 +115,7 @@ describe("un seul remboursement, quoi qu'il arrive", () => {
     expect(stripe.refunds).toHaveLength(1);
     expect(seen.button?.status).toBe(409);
     expect(seen.button === null ? null : codeOf(seen.button)).toBe(
-      "card_payment.refund_request.retry_in_progress",
+      "payment.card_refund_request.retry_in_progress",
     );
   });
 

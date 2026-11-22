@@ -59,7 +59,7 @@ describe("« Relancer » et le balayage", () => {
     const request = await refundRequestOf(orderId);
     const response = await retry(request?.id ?? "");
     expect(response.status).toBe(409);
-    expect(codeOf(response)).toBe("card_payment.refund_request.retry_awaiting_bank");
+    expect(codeOf(response)).toBe("payment.card_refund_request.retry_awaiting_bank");
   });
 
   /** L'ancienne route par commande est retirée au lot P1.c (plan M2, §5.3). */

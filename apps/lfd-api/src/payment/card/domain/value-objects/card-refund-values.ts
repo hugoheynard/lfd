@@ -2,7 +2,7 @@ import { CARD_REFUND_STATUSES, type CardRefundStatus } from "../ports/card-provi
 
 /**
  * **Les valeurs du remboursement par carte** (plan M2, §3.4, §5.1) — 🔴
- * valeurs des enums Postgres du schéma `card_payment` (migration
+ * valeurs des enums Postgres du schéma `payment` (migration
  * `20261110010100_le_remboursement_par_carte`) : elles ne se renomment que par
  * migration.
  */
@@ -37,7 +37,7 @@ export { CARD_REFUND_STATUSES, type CardRefundStatus };
 
 /**
  * **Les neuf transitions d'une demande**, et elles seules — la même liste que
- * le déclencheur `card_payment.refund_request_guard` (vérifié le 2026-11-10
+ * le déclencheur `payment.card_refund_request_guard` (vérifié le 2026-11-10
  * dans `20261110010100_le_remboursement_par_carte/migration.sql`). `(x, x)`
  * n'en est pas une : c'est une écriture qui ne touche pas l'état.
  */
@@ -68,7 +68,7 @@ const OPEN_STATUSES: ReadonlySet<CardRefundStatus> = new Set(["pending", "requir
  * **Un statut ne régresse pas** — la règle de `refundTransition`
  * (`lafoliecoffee/orders/domain/entities/order-refund.ts`, recopiée le 2026-11-10 ;
  * ce fichier est retiré au lot P1.c, la règle ne vit plus qu'ici) et
- * du déclencheur `card_payment.refund_guard` :
+ * du déclencheur `payment.card_refund_guard` :
  *
  * - depuis une attente (`pending`, `requires_action`), tout s'applique ;
  * - depuis `succeeded`, seul `failed` s'applique (une inversion, §6.2) ;

@@ -1,6 +1,6 @@
 /**
  * **Les états d'un paiement** (plan M2, §3.4) — 🔴 valeurs de l'enum Postgres
- * `card_payment."CardPaymentState"`, elles ne se renomment que par migration.
+ * `payment."CardPaymentState"`, elles ne se renomment que par migration.
  *
  * Pas d'état `created` : une intention naît hors transaction, et n'a de ligne
  * qu'une fois rattachée à son sujet.
@@ -14,7 +14,7 @@ export type CardPaymentRole = (typeof CARD_PAYMENT_ROLES)[number];
 
 /**
  * **Les six transitions**, et elles seules — la même liste que le
- * déclencheur `card_payment.payment_guard` de la migration
+ * déclencheur `payment.card_payment_guard` de la migration
  * `20261109030000_le_schema_de_l_encaissement_par_carte` (vérifié le
  * 2026-11-09). `(x, x)` n'en est pas une : c'est un rejeu sans effet.
  *

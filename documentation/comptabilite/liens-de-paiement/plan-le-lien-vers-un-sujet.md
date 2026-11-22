@@ -150,27 +150,121 @@ après Z verra ses imports cassés au typecheck, pas en silence — à corriger
 
 ### 0.4 Le lot V — le vocabulaire du schéma
 
+> ✅ **Bâti le 2026-11-22**, pas encore déployé : migration
+> `20261122110000_le_vocabulaire_du_paiement`, retour arrière
+> `prisma/rollback/20261122110000_le_vocabulaire_du_paiement.sql` (joué une
+> fois sur une base jetable : catalogue revenu identique, puis V réappliquée),
+> verrou unique `payment/shared/infrastructure/row-lock.ts`, section du
+> runbook « Déployer le vocabulaire du paiement (lot V) ». `prisma migrate
+diff` rend 15 écarts **antérieurs à V** et identiques avant et après lui
+> (`pim`, `cart`, mandats…) : une dette à part, hors de `known-drift.json`.
+
 Décidé par Hugo le 2026-11-22 : « je tiens à ce que le vocabulaire soit juste
-quitte à faire une migration ». À bâtir **juste après P1**.
+quitte à faire une migration si ça ne change pas mes commandes déjà faites ».
+Préfixe `card_` choisi par Hugo. À bâtir **juste après P1**. Inventaire fait
+le 2026-11-22 sur une base jetable à jour (toutes les migrations).
 
-| Aujourd'hui                                          | Après V                                                                                                           |
-| ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| schéma Postgres `card_payment`                       | schéma **`payment`**                                                                                              |
-| `card_payment.payment`                               | `payment.card_payment`                                                                                            |
-| `card_payment.takeover`, `refund`, `refund_request`… | `payment.card_takeover`, `payment.card_refund`, `payment.card_refund_request`… (préfixe `card_`, choisi par Hugo) |
-| `card_payment.pay_link`                              | `payment.pay_link`                                                                                                |
-| `prisma/schema/card_payment.prisma`                  | un dossier `prisma/schema/payment/`, un fichier pour la carte et un pour les liens                                |
+#### Ce qui se renomme
 
-- **Renommer, jamais recréer** : `ALTER SCHEMA … RENAME`, `ALTER TABLE …
-RENAME` ; lignes, identifiants, clés et index restent en place. Les
-  commandes, dans `public`, ne référencent le paiement que par des
-  identifiants : elles ne bougent pas.
-- **Les fonctions des déclencheurs** citent les tables par leur nom complet :
-  elles se réécrivent dans la même migration.
-- **Ne se renomment pas, le mot y étant juste** : les faits
-  `card_payment.*`, les clés des abonnés durables, `CARD_ACCOUNTS`.
-- Migration de données en production : `vitruve` sur le lot avant Hugo,
-  `lecteur-de-migrations` avant tout push.
+| Objet                     | Aujourd'hui                                                                                                                                                       | Après V                                                                                                                                                                                                                     |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| schéma Postgres           | `card_payment`                                                                                                                                                    | `payment`                                                                                                                                                                                                                   |
+| tables                    | `payment`, `refund`, `refund_request`, `takeover`, `pay_link`                                                                                                     | `card_payment`, `card_refund`, `card_refund_request`, `card_takeover`, `pay_link`                                                                                                                                           |
+| clés, index, contraintes  | préfixés par l'ancien nom de table (`payment_pkey`, `refund_payment_id_idx`, `payment_account_known`…)                                                            | préfixés par le nouveau (`card_payment_pkey`, `card_refund_payment_id_idx`, `card_payment_account_known`…) — les noms que Prisma attend par défaut, et ceux écrits à la main (CHECK, index partiels) pour qu'aucun ne mente |
+| fonctions et déclencheurs | `payment_guard`, `refund_guard`, `refund_request_guard`, `refuse_delete`, `refuse_refund_delete`, `pay_link_guard` et leurs déclencheurs `*_guard`, `*_no_delete` | `card_payment_guard`, `card_refund_guard`, `card_refund_request_guard`, `refuse_delete`, `refuse_refund_delete`, `pay_link_guard` ; déclencheurs au nom de leur table                                                       |
+| messages des déclencheurs | « `card_payment.payment %` : … »                                                                                                                                  | « `payment.card_payment %` : … »                                                                                                                                                                                            |
+| réglage de la purge       | `SET LOCAL card_payment.purge = 'on'`                                                                                                                             | `SET LOCAL payment.purge = 'on'`                                                                                                                                                                                            |
+| fichiers Prisma           | un seul fichier, card_payment.prisma (retiré par V)                                                                                                               | un dossier `prisma/schema/payment/`, un fichier pour la carte, un pour les liens ; `@@schema("payment")`, `@@map` aux nouveaux noms                                                                                         |
+
+Les **modèles Prisma** (`CardPayment`, `CardRefund`, `CardRefundRequest`,
+`CardPaymentTakeover`, `PayLink`) gardent leur nom : il est déjà juste. Le
+client TypeScript ne change pas.
+
+#### Ce qui ne se renomme pas, le mot y étant juste
+
+Les **valeurs écrites** qui disent « paiement par carte » : les faits
+`card_payment.*` (boîte d'envoi), le sujet de journal `card_payment` et ses
+types (`card_payment.issued`, `card_payment.retried`…), les cloches
+`card_payment.refund_attention`…, la
+ressource `card_payments`, `CARD_ACCOUNTS`.
+
+#### La migration — renommer, jamais recréer
+
+Une seule migration, dans une transaction :
+
+1. `ALTER SCHEMA "card_payment" RENAME TO "payment"` — tables, fonctions,
+   déclencheurs, séquences et index suivent le schéma ;
+2. `ALTER TABLE … RENAME TO` pour les quatre tables de la carte ;
+3. `ALTER TABLE … RENAME CONSTRAINT` et `ALTER INDEX … RENAME` pour chaque
+   clé, index et contrainte ;
+4. `ALTER FUNCTION … RENAME TO` et `ALTER TRIGGER … RENAME TO` ;
+5. `CREATE OR REPLACE FUNCTION` pour les six fonctions : **le même texte**,
+   seuls les messages et le nom du réglage de purge changent. Aucune ne fait
+   de requête qualifiée par le schéma (vérifié dans `pg_proc` le 2026-11-22) :
+   le renommage seul ne casse aucun déclencheur.
+
+Aucune ligne n'est copiée ni réécrite. Aucune clé étrangère n'entre dans le
+schéma depuis un autre (vérifié) ; les commandes, dans `public`, ne citent un
+paiement que par un identifiant opaque : elles ne bougent pas.
+
+#### Le code qui suit, dans le même déploiement
+
+- 🔴 **Quatre requêtes SQL brutes** verrouillent une ligne en nommant le
+  schéma (`SELECT … FROM "card_payment"."payment" … FOR UPDATE`) :
+  `prisma-card-payment.repository.ts`, `prisma-card-refund-ledger.repository.ts`,
+  `prisma-card-refund-request.repository.ts`, `prisma-pay-link.repository.ts`.
+  Le compilateur ne les voit pas ; un e2e qui verrouille chacune le prouve.
+- **Un seul endroit verrouille une ligne du bloc** (décidé par Hugo le
+  2026-11-22). Prisma n'a pas de `SELECT … FOR UPDATE` : la requête brute est
+  normale, ses quatre exemplaires ne le sont pas. Une fonction du bloc,
+  `lockRow(table, id)`, porte les noms qualifiés des tables **une fois** ; les
+  quatre dépôts l'appellent. Un e2e confronte chaque table qu'elle déclare au
+  catalogue Postgres (`to_regclass`) et prend réellement chaque verrou : un
+  renommage oublié rougit en e2e, pas au premier remboursement en
+  production.
+- La purge du scénario (`card-payment.purge.ts`, `purge-coverage.ts`) et les
+  e2e qui posent le réglage de purge.
+- `schema-ops.counter.ts` (le schéma de chaque modèle).
+- `datasource.prisma` (la liste des schémas).
+- Les portes : `card-accounts` (le nom du `CHECK` des comptes, lu dans les
+  migrations : le dernier porte désormais le nouveau nom),
+  `prisma-schema-layout`, `cross-schema-join` (lit `datasource`),
+  `prisma-model-ownership`.
+- Le harnais e2e tronque les tables lues dans le catalogue : rien à changer,
+  à vérifier.
+- Après la migration, `prisma migrate diff` entre les migrations et le schéma
+  doit être **vide** : sinon Prisma proposerait de recréer les tables.
+
+#### Ce que `vitruve` a contredit (2026-11-22), et les décisions
+
+| Objection                                                                                                                                                                                                             | Classe   | Décision                                                                                                                                                                                                                                                                                                                                                                      |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| la porte `card-accounts` lit le `CHECK payment_account_known` **écrit** dans une migration : un `RENAME CONSTRAINT` ne pose aucun `CHECK` (`card-accounts.mjs`, l. 31, 49)                                            | BLOQUANT | V fait `DROP CONSTRAINT` puis `ADD CONSTRAINT "card_payment_account_known" CHECK ("account" IN (…))` **en toutes lettres**, avec les comptes du registre ; la porte lit ce nouveau nom                                                                                                                                                                                        |
+| l'e2e de la copie (`card-refund-takeover-migration`, retiré par V) rejouait le `migration.sql` figé de `20261110010200_la_copie_des_remboursements`, qui nomme `"card_payment"` ; un `migration.sql` ne se touche pas | BLOQUANT | **l'e2e est retiré** : il éprouve une copie appliquée en production le 2026-11-10, qui ne se rejouera plus jamais ; ce qu'elle a produit reste tenu par les contraintes et les e2e de schéma. Décision prise ici, à confirmer par Hugo                                                                                                                                        |
+| le retour arrière laissait V inscrite comme appliquée                                                                                                                                                                 | SÉRIEUX  | `prisma/rollback/<V>.sql` (la convention du runbook) : les `RENAME` inverses, `payment_guard` remise à sa version de `20261122100000`, puis la ligne de V retirée de `_prisma_migrations` ; le geste est écrit au runbook                                                                                                                                                     |
+| l'inventaire du code oubliait le SQL brut des e2e (`card-payment-schema`, `card-refund-schema`, `pay-links`, `order-staff-cancel-orders.ts`, `order-revision-card-refund-sequences`) et les sept types enum du schéma | SÉRIEUX  | inventaire étendu ; les enums suivent le schéma, sans renommage                                                                                                                                                                                                                                                                                                               |
+| les codes d'erreur `card_payment.payment.*`, `card_payment.refund_request.*`, `card_payment.refund.*` et le message de `card-payment-rows.ts` nomment des **tables** : ils mentiraient                                | SÉRIEUX  | renommés en `payment.card_payment.*`, `payment.card_refund_request.*`, `payment.card_refund.*` (aucun écran ne les lit, vérifié le 2026-11-22 ; V vérifie qu'aucun n'est écrit en base avant de les renommer) ; les JSDoc qui citent une table la nomment par son nouveau nom                                                                                                 |
+| la fenêtre de déploiement : un remboursement parti chez Stripe dont l'écriture échoue                                                                                                                                 | SÉRIEUX  | **retardé, pas perdu** : la clé d'idempotence est `<demande>:<génération>:<tour>` (`card-refund-request.ts`, l. 92) et le tour n'avance pas sur un échec, donc le balayage suivant rend le même remboursement ; le webhook `refund.*` porte la demande en métadonnée. Consigne au runbook : après le déploiement, constater qu'aucune demande ne reste réclamée sans écriture |
+| « six fonctions renommées »                                                                                                                                                                                           | MINEUR   | trois renommées, six réécrites                                                                                                                                                                                                                                                                                                                                                |
+| les index partiels écrits à la main échappent à `migrate diff`                                                                                                                                                        | MINEUR   | l'e2e de `lockRow` et ceux du schéma vérifient leurs **noms** dans le catalogue                                                                                                                                                                                                                                                                                               |
+| `PayLink` absent de `schema-ops.counter.ts`                                                                                                                                                                           | MINEUR   | ajouté                                                                                                                                                                                                                                                                                                                                                                        |
+
+#### La fenêtre de déploiement
+
+`migrate deploy` passe avant que l'image neuve serve (une à deux minutes,
+`documentation/ops/runbook.md`). Pendant ce temps, l'ancien code cherche
+`card_payment` : un paiement ou un remboursement par carte échoue, un webhook
+de Stripe reçoit une erreur et sera rejoué. **Même discipline que les
+migrations précédentes du même genre : sur un « pousse main » de Hugo, un
+jour sans service ouvert, la boutique au calme**, et une entrée au runbook
+(quoi constater avant, quoi vérifier après : un paiement de bout en bout, un
+remboursement, la purge en dev).
+
+#### Retour arrière
+
+La même migration à l'envers (les mêmes `RENAME`, en sens inverse, et les
+fonctions remises à leur texte), avec l'image d'avant. Pas de perte : rien
+n'est copié.
 
 ### 0.5 Le lot W — les abonnés du commerce en `lfc.`
 
@@ -629,7 +723,7 @@ rapprocher.
 | P0  | ✅ l'instruction de collecte neutre (§2.3 bis) : le port, l'adaptateur Stripe, la page `/commandes/:id/regler` passée au composant de collecte partagé — **aucun changement visible**                                                                                                                                                       | Z          |
 | I0  | `isDirectDebit`, `switch` exhaustifs, la porte — **aucun changement de comportement**                                                                                                                                                                                                                                                       | —          |
 | P1  | ✅ `card_payment.pay_link`, `PayLinks`, `LinkableSubject`, le registre des origines, la page publique (API et boutique), les tests                                                                                                                                                                                                          | P0         |
-| V   | le vocabulaire du schéma (§0.4) : `card_payment` → `payment`, tables de la carte préfixées `card_`                                                                                                                                                                                                                                          | P1         |
+| V   | ✅ le vocabulaire du schéma (§0.4) : `card_payment` → `payment`, tables de la carte préfixées `card_`                                                                                                                                                                                                                                       | P1         |
 | W   | les abonnés du commerce en `lfc.<contexte>.<geste>` (§0.5), reçus de la boîte d'envoi migrés dans le même déploiement                                                                                                                                                                                                                       | V          |
 | P1b | l'avis à la comptabilité après encaissement (§2.4), l'adresse par origin, le modèle d'e-mail                                                                                                                                                                                                                                                | P1         |
 | F1  | la régularisation par la porte ; l'écran des liens libres recopie `urlOf`                                                                                                                                                                                                                                                                   | P1         |

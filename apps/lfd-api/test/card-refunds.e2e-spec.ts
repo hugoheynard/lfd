@@ -13,7 +13,7 @@
  * Ce que seul le vrai SQL prouve ici : les déclencheurs de la migration
  * `20261110010100_…` n'ont rien refusé de ce que le code a tenté (la machine,
  * les colonnes immuables, l'index d'une `remainder` en cours), et l'ordre des
- * verrous (`orders` puis `card_payment.payment`) tient dans une transaction.
+ * verrous (`orders` puis `payment.card_payment`) tient dans une transaction.
  *
  * Frontière doublée : le prestataire, au jeton `CardProviders` ; et l'horloge
  * MURALE, pour faire échoir la reprise sans attendre.

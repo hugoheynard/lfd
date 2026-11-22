@@ -7,7 +7,7 @@ export type CreditableRefundNature = "return" | "adjustment";
  * §5.1, §6.1).
  */
 export interface CreditableRefund {
-  /** L'id de la ligne `card_payment.refund` — jamais le `re_…` du prestataire. */
+  /** L'id de la ligne `payment.card_refund` — jamais le `re_…` du prestataire. */
   readonly refundId: string;
   readonly amountCents: number;
   /** `null` : un remboursement fait hors de la plateforme, sans demande — traité en `return`. */

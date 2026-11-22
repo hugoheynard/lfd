@@ -5,7 +5,7 @@ import {
   cardPaymentStateOf,
 } from "../domain/value-objects/card-payment-state.js";
 
-/** La ligne de `card_payment.payment` telle que Prisma la rend — confinée à `infrastructure/`. */
+/** La ligne de `payment.card_payment` telle que Prisma la rend — confinée à `infrastructure/`. */
 export interface CardPaymentRow {
   readonly id: string;
   readonly subjectType: string;
@@ -24,8 +24,8 @@ export interface CardPaymentRow {
 export class UnknownCardPaymentValueError extends TechnicalError {
   constructor(column: string, value: string) {
     super(
-      "card_payment.row.unknown_value",
-      `card_payment.payment.${column} vaut « ${value} », que ce binaire ne connaît pas : ` +
+      "payment.card_payment_row.unknown_value",
+      `payment.card_payment.${column} vaut « ${value} », que ce binaire ne connaît pas : ` +
         "le schéma est en avance sur le code déployé.",
     );
   }

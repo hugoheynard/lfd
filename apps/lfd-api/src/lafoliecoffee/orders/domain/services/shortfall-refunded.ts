@@ -19,7 +19,7 @@ export interface RefundRequestReasonShape {
   readonly reason: string;
 }
 
-/** Le code de la demande du reste — 🔴 une valeur écrite (`card_payment.refund_request.reason`). */
+/** Le code de la demande du reste — 🔴 une valeur écrite (`payment.card_refund_request.reason`). */
 export const SHORTFALL_REFUND_REASON = "shortfall";
 /** Seul le prestataire rend une somme qu'on peut écrire au client. */
 const PROVIDER_SOURCE = "provider";

@@ -2,7 +2,7 @@ import type { CardSubject } from "../../../../payment/channels/subjects/index.js
 
 /**
  * **Le type de sujet d'une commande** pour le bloc `card-payment` (plan M2,
- * §3.3) — 🔴 une valeur persistée (`card_payment.payment.subject_type`),
+ * §3.3) — 🔴 une valeur persistée (`payment.card_payment.subject_type`),
  * qui ne se renomme pas. Le compte qui l'encaisse n'est pas ici : seul
  * `appBootstrap/` connaît à la fois ce type et un compte (§3.2).
  */

@@ -14,7 +14,7 @@ import { IncreaseOrderLabels } from "../../../application/services/increase-orde
 
 /**
  * Les deux raisons d'un complément rendu (R8) — 🔴 des valeurs écrites
- * (`card_payment.refund_request.reason`), qui ne se renomment plus (§2.9).
+ * (`payment.card_refund_request.reason`), qui ne se renomment plus (§2.9).
  */
 export type ComplementReturnReason = "late_payment" | "revision_refused";
 

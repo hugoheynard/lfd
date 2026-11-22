@@ -16,7 +16,7 @@ import { orderCardSubject } from "../../../application/services/order-card-subje
 /** Nom STABLE de l'abonné — clé de son reçu dans la boîte d'envoi. */
 export const REFUND_PAID_AFTER_CANCELLATION = "orders.refund-paid-after-cancellation";
 
-/** Le code de la demande — 🔴 une valeur écrite (`card_payment.refund_request.reason`). */
+/** Le code de la demande — 🔴 une valeur écrite (`payment.card_refund_request.reason`). */
 export const PAID_AFTER_CANCELLATION_REASON = "paid_after_cancellation";
 
 /**

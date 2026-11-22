@@ -6,7 +6,7 @@
  * §3.2 et §4.1 (2026-11-09). Un compte d'encaissement par carte a deux
  * moitiés : son nom dans le registre du dépôt
  * (`apps/lfd-api/src/platform/config/card-accounts.ts`, `CARD_ACCOUNTS`) et
- * sa place dans le `CHECK payment_account_known` de `card_payment.payment`
+ * sa place dans le `CHECK card_payment_account_known` de `payment.card_payment`
  * (la dernière migration qui le pose). Rien ne relie les deux :
  *
  * - un compte au registre et absent du CHECK s'instancie, crée des intentions
@@ -28,7 +28,7 @@ import { fileURLToPath } from "node:url";
 
 export const REGISTRY = "apps/lfd-api/src/platform/config/card-accounts.ts";
 export const MIGRATIONS = "apps/lfd-api/prisma/migrations";
-export const CONSTRAINT = "payment_account_known";
+export const CONSTRAINT = "card_payment_account_known";
 
 /** Les noms de `CARD_ACCOUNTS`, dans l'ordre du fichier ; `null` si le tableau manque. */
 export function registryAccounts(source) {
@@ -40,9 +40,11 @@ export function registryAccounts(source) {
 }
 
 /**
- * Les comptes du dernier `CHECK payment_account_known` d'un `migration.sql`,
+ * Les comptes du dernier `CHECK card_payment_account_known` d'un `migration.sql`,
  * ou `null` s'il n'en pose aucun. Lit `CHECK ("account" IN ('a', 'b'))`, que
- * la contrainte naisse avec la table ou par `ADD CONSTRAINT`.
+ * la contrainte naisse avec la table ou par `ADD CONSTRAINT`. Un
+ * `RENAME CONSTRAINT` ne pose aucune liste : la migration qui renomme le
+ * CHECK le repose donc en toutes lettres.
  */
 export function checkAccounts(sql) {
   const pattern = new RegExp(

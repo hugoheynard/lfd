@@ -285,13 +285,13 @@ enum RefundCreditReason {
 /// (plan `documentation/commandes/modification/plan-m2-historique-de-transactions.md`,
 /// §5.1, §6.1) — table `public.refund_credit`. Remplace
 /// `order_refund.credit_note_id` : la comptabilité vit dans `public`, le
-/// carnet dans `card_payment`.
+/// carnet dans le schéma `payment`.
 ///
 /// Propriétaire : `src/lafoliecoffee/accounting/` (lot P1.b). Une ligne par
 /// remboursement rapproché, écrite une fois.
 ///
-/// 🔴 `refund_id` est un identifiant OPAQUE de `card_payment.refund`, SANS clé
-/// étrangère : l'en-tête de `card_payment.prisma` interdit toute clé qui en
+/// 🔴 `refund_id` est un identifiant OPAQUE de `payment.card_refund`, SANS clé
+/// étrangère : l'en-tête de `payment/card.prisma` interdit toute clé qui en
 /// viendrait (§5.1, v13). La table tient `invoice` par `credit_note_id`, et
 /// n'est tenue par personne.
 ///
@@ -304,7 +304,7 @@ enum RefundCreditReason {
 ///   ne change plus — l'écriture conditionnée d'`order_refund_credit_note_once`,
 ///   conservée.
 model RefundCredit {
-  /// L'`id` de `card_payment.refund` — opaque, sans clé étrangère.
+  /// L'`id` de `payment.card_refund` — opaque, sans clé étrangère.
   refundId     String             @id @map("refund_id")
   /// L'avoir (381) ; nul pour une ligne `adjustment`.
   creditNoteId String?            @unique @map("credit_note_id")

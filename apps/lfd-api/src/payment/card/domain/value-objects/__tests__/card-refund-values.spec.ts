@@ -2,7 +2,7 @@ import { CARD_REFUND_STATUSES, cardRefundStatusMove, oneOfValues } from "../card
 
 /**
  * Le carnet ne régresse pas (§3.4) — la même table que le déclencheur
- * `card_payment.refund_guard` (relu le 2026-11-10 dans
+ * `payment.card_refund_guard` (relu le 2026-11-10 dans
  * `20261110010100_le_remboursement_par_carte`) : ce que la base refuse, le code
  * ne le tente jamais ; ce qu'elle admet et qui recule, le code l'ignore.
  */

@@ -6,7 +6,7 @@ import { join, relative, sep } from "node:path";
  * `documentation/commandes/modification/plan-m2-historique-de-transactions.md`,
  * §5.4, lot P1.c).
  *
- * Le remboursement par carte vit dans `card_payment` depuis P1 ; les tables
+ * Le remboursement par carte vit dans le schéma `payment` ; les tables
  * `public.order_refund` et `public.order_refund_request` restent jusqu'à P2,
  * sans relation, et ne font plus foi pour personne. `prisma-model-ownership`
  * se tait sur une table sans écrivain : c'est le retrait des relations, et
@@ -16,7 +16,7 @@ import { join, relative, sep } from "node:path";
  *
  * Exclus : le client Prisma généré (`platform/database/client/`, hors git, qui
  * cite les modèles). `test/` reste libre : le harnais tronque par le
- * catalogue, et l'e2e de la copie sème par l'ancien modèle.
+ * catalogue.
  */
 
 /** Assemblé en morceaux : ce fichier ne doit pas se trouver lui-même. */

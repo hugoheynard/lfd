@@ -22,7 +22,7 @@ export interface CardRefundFactSubject {
   readonly subjectType: string;
   readonly subjectId: string;
   readonly paymentId: string;
-  /** L'id de la ligne `card_payment.refund` — jamais le `re_…` du prestataire. */
+  /** L'id de la ligne `payment.card_refund` — jamais le `re_…` du prestataire. */
   readonly refundId: string;
   readonly requestId: string | null;
   readonly nature: CardRefundNature | null;

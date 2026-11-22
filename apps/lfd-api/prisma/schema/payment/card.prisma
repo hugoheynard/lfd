@@ -1,24 +1,24 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// CARD_PAYMENT — l'encaissement par carte, son propre schéma (2026-11-09)
+// PAYMENT — l'encaissement par carte : paiements, remboursements, reprise
 // ─────────────────────────────────────────────────────────────────────────────
 //
 // Plan `documentation/commandes/modification/plan-m2-historique-de-transactions.md`,
-// lot P0 (§4.1, §4.3). Propriétaire : le bloc `src/payment/card/` — À VENIR :
-// le schéma et sa table sont posés AVANT le premier fichier du bloc, pour que
-// les portes les connaissent. D'ici là, seule la migration écrit ici (la
-// reprise du §4.3).
+// §4.1, §4.3. Propriétaire : le bloc `src/payment/card/`. Les liens de
+// paiement, dans le même schéma, sont dans `link.prisma`.
 //
 // Le bloc est AGNOSTIQUE (§3.1) : il encaisse pour un sujet qu'il ne connaît
 // pas, `(subject_type, subject_id)` opaques. Aucune clé étrangère vers `public`,
 // et aucune ne doit en venir : une commande se référence par identifiant.
 //
-// 🔴 Ce que Prisma ne sait pas écrire vit dans le `migration.sql`
-// (`20261109030000_le_schema_de_l_encaissement_par_carte`) : les CHECK, l'index
-// unique partiel, et les deux déclencheurs. Le lire avant de toucher un modèle.
-// Le remboursement (lot P1, plus bas) a les siens dans
-// `20261110010100_le_remboursement_par_carte`. Les clés à l'INTÉRIEUR du schéma
-// sont réelles (`refund` → `payment`, `refund_request` → `payment`, `refund`
-// → `refund_request`) ; aucune ne sort de `card_payment`, aucune n'y entre.
+// 🔴 Ce que Prisma ne sait pas écrire vit dans les `migration.sql` : les CHECK,
+// les index uniques partiels et les déclencheurs
+// (`20261109030000_le_schema_de_l_encaissement_par_carte`,
+// `20261110010100_le_remboursement_par_carte`), sous les noms que leur donne
+// `20261122110000_le_vocabulaire_du_paiement`. Les lire avant de toucher un
+// modèle. Les clés à l'INTÉRIEUR du schéma sont réelles (`card_refund` →
+// `card_payment`, `card_refund_request` → `card_payment`, `card_refund` →
+// `card_refund_request`, `card_payment` → `pay_link`) ; aucune ne sort du
+// schéma `payment`, aucune n'y entre.
 
 /// L'état d'un paiement (§3.4). Pas d'état `created` : une intention naît hors
 /// transaction et n'a de ligne qu'une fois rattachée à son sujet.
@@ -34,7 +34,7 @@ enum CardPaymentState {
   /// dire `paid`, et le sujet demande alors le remboursement.
   closed
 
-  @@schema("card_payment")
+  @@schema("payment")
 }
 
 /// Le rôle d'un paiement pour son sujet (§4.3) : le premier, ou un complément
@@ -43,27 +43,27 @@ enum CardPaymentRole {
   first
   complement
 
-  @@schema("card_payment")
+  @@schema("payment")
 }
 
-/// **Un paiement par carte d'un sujet** (§4.3) — table `card_payment.payment`.
+/// **Un paiement par carte d'un sujet** (§4.3) — table `payment.card_payment`.
 ///
-/// Propriétaire : `src/payment/card/` (à venir). Aucun autre bloc n'y écrit ni
+/// Propriétaire : `src/payment/card/`. Aucun autre bloc n'y écrit ni
 /// n'y lit : le commerce passe par les ports du canal (§3.3).
 ///
 /// Ce que le SQL porte et que ce modèle ne montre pas (G1, §11) :
-/// - `payment_amount_positive` : `amount_cents > 0` ;
-/// - `payment_account_known` : `account IN ('lfc-stripe')` — la liste des
+/// - `card_payment_amount_positive` : `amount_cents > 0` ;
+/// - `card_payment_account_known` : `account IN ('lfc-stripe')` — la liste des
 ///   comptes du registre (§3.2) ; un compte neuf est une migration ;
-/// - `payment_first_per_subject_key` : index unique PARTIEL sur
+/// - `card_payment_first_per_subject_key` : index unique PARTIEL sur
 ///   `(subject_type, subject_id) WHERE role = 'first'` — un seul premier
 ///   paiement par sujet, autant de compléments qu'il en faut ;
-/// - le déclencheur `payment_guard` (`BEFORE UPDATE`) : les transitions de
+/// - le déclencheur `card_payment_guard` (`BEFORE UPDATE`) : les transitions de
 ///   `state` hors de la machine du §3.4 sont refusées (`(x, x)` admis), et
 ///   `subject_type`, `subject_id`, `account`, `role`, `amount_cents` sont
 ///   immuables, comme `provider_ref` une fois posé ;
-/// - le déclencheur `payment_no_delete` (`BEFORE DELETE`) : refusé, sauf sous
-///   `SET LOCAL card_payment.purge = 'on'` dans une transaction (purge).
+/// - le déclencheur `card_payment_no_delete` (`BEFORE DELETE`) : refusé, sauf sous
+///   `SET LOCAL payment.purge = 'on'` dans une transaction (purge).
 model CardPayment {
   /// ULID posé par le code (`IdGenerator`) ; la reprise en fabrique un en SQL.
   id          String           @id
@@ -87,7 +87,7 @@ model CardPayment {
   /// L'instant où le paiement est devenu `paid` ; `null` sinon.
   paidAt      DateTime?        @map("paid_at") @db.Timestamptz(6)
   /// Le lien de paiement dont la page a fait naître l'intention ; `null` pour
-  /// un paiement pris ailleurs (la boutique). Immuable (`payment_guard`).
+  /// un paiement pris ailleurs (la boutique). Immuable (`card_payment_guard`).
   payLinkId   String?          @map("pay_link_id")
   payLink     PayLink?         @relation(fields: [payLinkId], references: [id], onDelete: Restrict)
 
@@ -97,32 +97,32 @@ model CardPayment {
   refunds        CardRefund[]
 
   @@unique([account, providerRef])
-  /// La cible de la clé composée `refund (payment_id, account)` : un
+  /// La cible de la clé composée `card_refund (payment_id, account)` : un
   /// remboursement porte le compte de SON paiement, et aucun autre (lot P1).
   @@unique([id, account])
   @@index([subjectType, subjectId])
   @@index([payLinkId])
-  @@map("payment")
-  @@schema("card_payment")
+  @@map("card_payment")
+  @@schema("payment")
 }
 
-/// **La ligne-témoin d'une reprise** (§4.3) — table `card_payment.takeover`.
+/// **La ligne-témoin d'une reprise** (§4.3) — table `payment.card_takeover`.
 ///
-/// Propriétaire : `src/payment/card/` (à venir). Écrite par la migration qui
+/// Propriétaire : `src/payment/card/`. Écrite par la migration qui
 /// reprend l'existant (`P0` : les premiers paiements des commandes), elle
 /// date la reprise : la commande `ReplayFirstPayments` ne demande au sujet que
 /// ses références créées depuis `migrated_at − 1 h`. Sans témoin (une base de
 /// test après `ctx.reset()`), cette commande ne fait rien et le dit.
 ///
-/// Même déclencheur `BEFORE DELETE` que `payment` : un témoin effacé ferait
+/// Même déclencheur `BEFORE DELETE` que `card_payment` : un témoin effacé ferait
 /// rebalayer tout l'existant, ou plus rien.
 model CardPaymentTakeover {
   /// Le lot de reprise (`P0`, puis `P1`).
   lot        String   @id
   migratedAt DateTime @map("migrated_at") @db.Timestamptz(6)
 
-  @@map("takeover")
-  @@schema("card_payment")
+  @@map("card_takeover")
+  @@schema("payment")
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -154,7 +154,7 @@ enum CardRefundRequestState {
   /// Rendue hors plateforme, motif et fiche staff à l'appui (§5.5). Terminal.
   settled_elsewhere
 
-  @@schema("card_payment")
+  @@schema("payment")
 }
 
 /// La forme d'une demande (§3.5) : tout le reste du paiement, ou un montant.
@@ -163,7 +163,7 @@ enum CardRefundForm {
   remainder
   amount
 
-  @@schema("card_payment")
+  @@schema("payment")
 }
 
 /// La nature d'un remboursement (§3.1) — la seule connaissance métier du bloc,
@@ -174,7 +174,7 @@ enum CardRefundNature {
   /// Le montant dû a baissé (révision, lot S1).
   adjustment
 
-  @@schema("card_payment")
+  @@schema("payment")
 }
 
 /// D'où vient une ligne du carnet (§5.1). 🔴 Valeurs écrites en base.
@@ -184,7 +184,7 @@ enum CardRefundSource {
   /// « Rendu autrement » (§5.5) : aucun argent n'a bougé chez le prestataire.
   manual
 
-  @@schema("card_payment")
+  @@schema("payment")
 }
 
 /// Le statut d'un remboursement chez le prestataire, recopié tel quel
@@ -197,30 +197,30 @@ enum CardRefundStatus {
   failed
   canceled
 
-  @@schema("card_payment")
+  @@schema("payment")
 }
 
 /// **Une demande de remboursement d'un paiement** (§3.4, §3.5, §5.1) — table
-/// `card_payment.refund_request`. L'argent à rendre devenu un ÉTAT PERSISTÉ :
+/// `payment.card_refund_request`. L'argent à rendre devenu un ÉTAT PERSISTÉ :
 /// ce qui a été promis, ce qui a été tenté, et où elle en est.
 ///
-/// Propriétaire : `src/payment/card/` (à venir, lot P1.b) — aucun autre bloc
+/// Propriétaire : `src/payment/card/` — aucun autre bloc
 /// n'y écrit ; le commerce passe par `CardRefunds` (§3.3).
 ///
 /// Ce que le SQL porte et que ce modèle ne montre pas (G1, §11) :
-/// - `refund_request_amount_matches_form` : `form = 'amount'` ⇔
+/// - `card_refund_request_amount_matches_form` : `form = 'amount'` ⇔
 ///   `amount_cents IS NOT NULL`, et `amount_cents > 0` ;
-/// - `refund_request_remainder_in_progress_key` : index unique PARTIEL sur
+/// - `card_refund_request_remainder_in_progress_key` : index unique PARTIEL sur
 ///   `(payment_id) WHERE form = 'remainder' AND state IN ('to_issue',
 ///   'issued')` — une seule `remainder` en cours par paiement ;
-/// - `refund_request_settled_elsewhere` : `settled_elsewhere` ⇔ motif ET fiche
-///   staff ; `refund_request_issued_pair` : `provider_ref` et `issued_at`
+/// - `card_refund_request_settled_elsewhere` : `settled_elsewhere` ⇔ motif ET fiche
+///   staff ; `card_refund_request_issued_pair` : `provider_ref` et `issued_at`
 ///   posés ensemble ; montants positifs, compteurs ≥ 1 / ≥ 0, textes bornés ;
-/// - le déclencheur `refund_request_guard` (`BEFORE UPDATE`) : les transitions
+/// - le déclencheur `card_refund_request_guard` (`BEFORE UPDATE`) : les transitions
 ///   de `state` hors de la machine du §3.4 sont refusées (`(x, x)` admis), et
 ///   `payment_id`, `form`, `amount_cents`, `nature`, `reason` sont immuables ;
-/// - le déclencheur `refund_request_no_delete` (`BEFORE DELETE`) : refusé, sauf
-///   sous `SET LOCAL card_payment.purge = 'on'` dans une transaction (purge).
+/// - le déclencheur `card_refund_request_no_delete` (`BEFORE DELETE`) : refusé, sauf
+///   sous `SET LOCAL payment.purge = 'on'` dans une transaction (purge).
 model CardRefundRequest {
   /// ULID posé par le code ; une ligne reprise garde l'`order_id` de
   /// l'ancienne demande (§5.1), la clé d'hier.
@@ -275,30 +275,30 @@ model CardRefundRequest {
   @@index([paymentId])
   @@index([nextAttemptAt])
   @@index([providerRef])
-  @@map("refund_request")
-  @@schema("card_payment")
+  @@map("card_refund_request")
+  @@schema("payment")
 }
 
 /// **Un remboursement constaté sur un paiement** — le carnet, table
-/// `card_payment.refund` (§5.1). Une ligne par `re_…` chez le prestataire, ou
+/// `payment.card_refund` (§5.1). Une ligne par `re_…` chez le prestataire, ou
 /// par « rendu autrement » (`manual`). Rien ne s'efface : un remboursement en
 /// échec ou annulé garde sa ligne, sous son statut.
 ///
-/// Propriétaire : `src/payment/card/` (à venir, lot P1.b). L'avoir qui le
+/// Propriétaire : `src/payment/card/`. L'avoir qui le
 /// constate n'est PAS ici : c'est `public.refund_credit`, à la comptabilité.
 ///
 /// Ce que le SQL porte et que ce modèle ne montre pas (G1, §11) :
-/// - la clé `(payment_id, account)` vers `payment (id, account)` : un
+/// - la clé `(payment_id, account)` vers `card_payment (id, account)` : un
 ///   remboursement porte le compte de son paiement, donc un compte connu ;
-/// - `refund_amount_positive` : `amount_cents > 0` ;
-/// - `refund_source_matches_provider_ref` : `source = 'provider'` ⇔
+/// - `card_refund_amount_positive` : `amount_cents > 0` ;
+/// - `card_refund_source_matches_provider_ref` : `source = 'provider'` ⇔
 ///   `provider_ref IS NOT NULL` ;
-/// - le déclencheur `refund_guard` (`BEFORE UPDATE`) : les transitions de
+/// - le déclencheur `card_refund_guard` (`BEFORE UPDATE`) : les transitions de
 ///   `status` hors du carnet d'aujourd'hui (`refundTransition`) sont refusées
 ///   (`(x, x)` admis), et `payment_id`, `account`, `provider_ref`,
 ///   `amount_cents`, `nature`, `source` sont immuables ;
-/// - le déclencheur `refund_no_delete` (`BEFORE DELETE`) : refusé, sauf sous
-///   `SET LOCAL card_payment.purge = 'on'` dans une transaction (purge).
+/// - le déclencheur `card_refund_no_delete` (`BEFORE DELETE`) : refusé, sauf sous
+///   `SET LOCAL payment.purge = 'on'` dans une transaction (purge).
 model CardRefund {
   /// ULID ; une ligne reprise garde l'`id` de `public.order_refund` (§5.2).
   id          String             @id
@@ -330,57 +330,6 @@ model CardRefund {
   @@unique([account, providerRef])
   @@index([paymentId])
   @@index([requestId])
-  @@map("refund")
-  @@schema("card_payment")
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// LES LIENS DE PAIEMENT — lot P1 (2026-11-22)
-// ─────────────────────────────────────────────────────────────────────────────
-//
-// Plan `documentation/comptabilite/liens-de-paiement/plan-le-lien-vers-un-sujet.md`,
-// §2.1. Ce que Prisma ne sait pas écrire vit dans
-// `20261122100000_les_liens_vers_un_sujet` : le CHECK de la révocation, l'index
-// unique partiel d'un lien vivant par sujet, le déclencheur des colonnes
-// immuables et le refus du DELETE.
-
-/// **Un lien de paiement vers un sujet** — table `card_payment.pay_link`.
-///
-/// Propriétaire : `src/payment/link/`. Le sujet est opaque, comme celui d'un
-/// paiement. Le jeton n'est jamais en clair : `token_hash` (HMAC-SHA-256) pour
-/// le retrouver, `token_sealed` (le coffre de champs) pour le recopier.
-///
-/// Ce que le SQL porte et que ce modèle ne montre pas :
-/// - `pay_link_revoked_pair` : `revoked_at` et `revoked_reason` posés ensemble ;
-/// - `pay_link_live_per_subject_key` : index unique PARTIEL sur
-///   `(subject_type, subject_id) WHERE revoked_at IS NULL` ;
-/// - le déclencheur `pay_link_guard` (`BEFORE UPDATE`) : tout est immuable,
-///   sauf la révocation, posée une fois ;
-/// - le déclencheur `pay_link_no_delete` (`BEFORE DELETE`) : refusé, sauf sous
-///   `SET LOCAL card_payment.purge = 'on'`.
-model PayLink {
-  /// ULID posé par le code (`IdGenerator`).
-  id            String    @id
-  subjectType   String    @map("subject_type")
-  subjectId     String    @map("subject_id")
-  /// L'application qui a demandé le lien — une valeur du registre des origines.
-  origin        String
-  /// Le nom du payeur tel que l'appelant l'a donné à l'ouverture, figé.
-  payerLabel    String    @map("payer_label")
-  /// HMAC-SHA-256 du jeton, en hexadécimal : la page publique cherche par lui.
-  tokenHash     String    @unique @map("token_hash")
-  /// Le jeton scellé par le coffre de champs : le staff recopie le lien.
-  tokenSealed   String    @map("token_sealed")
-  createdAt     DateTime  @map("created_at") @db.Timestamptz(6)
-  /// Une fiche staff, ou `system` pour une émission automatique.
-  createdBy     String    @map("created_by")
-  revokedAt     DateTime? @map("revoked_at") @db.Timestamptz(6)
-  revokedReason String?   @map("revoked_reason")
-
-  /// Les paiements nés de la page de ce lien.
-  payments CardPayment[]
-
-  @@index([subjectType, subjectId])
-  @@map("pay_link")
-  @@schema("card_payment")
+  @@map("card_refund")
+  @@schema("payment")
 }

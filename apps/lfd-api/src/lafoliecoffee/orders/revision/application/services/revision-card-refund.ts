@@ -15,7 +15,7 @@ import { RefundablePayments } from "../../../application/services/refundable-pay
 
 /**
  * Le code de la demande — 🔴 une valeur écrite
- * (`card_payment.refund_request.reason`), qui ne se renomme plus (plan S1, §2.3).
+ * (`payment.card_refund_request.reason`), qui ne se renomme plus (plan S1, §2.3).
  */
 export const REVISION_REFUND_REASON = "revision";
 

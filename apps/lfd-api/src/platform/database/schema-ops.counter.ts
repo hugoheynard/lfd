@@ -162,16 +162,13 @@ const NON_PUBLIC_SCHEMA_OF_MODEL: Readonly<Record<string, string>> = {
   MailCharter: "mail",
   MailCharterVersion: "mail",
   MailSenderIdentity: "mail",
-  // L'encaissement par carte (plan M2, lot P0, 2026-11-09) : les paiements et
-  // le témoin de leur reprise, posés avant le bloc `src/payment/`.
-  CardPayment: "card_payment",
-  CardPaymentTakeover: "card_payment",
-  // Le remboursement (plan M2, lot P1, 2026-11-10) : les demandes et le
-  // carnet, sortis de `public` (`order_refund_request`, `order_refund`).
-  CardRefundRequest: "card_payment",
-  CardRefund: "card_payment",
-  // Les liens de paiement vers un sujet (lot P1).
-  PayLink: "card_payment",
+  // L'encaissement (`src/payment/`) : les paiements par carte, le témoin de
+  // leur reprise, les demandes de remboursement, le carnet, et les liens.
+  CardPayment: "payment",
+  CardPaymentTakeover: "payment",
+  CardRefundRequest: "payment",
+  CardRefund: "payment",
+  PayLink: "payment",
   // Le panier de la boutique, sorti de `public` dans son bloc `src/shop-cart/`.
   ShopCart: "cart",
   // Le référentiel, depuis B4. Il avait sa propre BASE : ses opérations

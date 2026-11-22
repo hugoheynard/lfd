@@ -136,7 +136,7 @@ async function settleCard(
  * - une carte SANS intention : la passation en lie toujours une ; l'état
  *   n'existe qu'après une panne de la passerelle au moment de la passation.
  *   Depuis le lot P0.c2 du plan M2, la passation rattache aussi la ligne du
- *   premier paiement (`card_payment.payment`) : elle est retirée avec
+ *   premier paiement (`payment.card_payment`) : elle est retirée avec
  *   l'intention, sous la purge du scénario — le déclencheur refuse tout
  *   `DELETE` hors d'elle.
  */
@@ -154,7 +154,7 @@ async function forceState(orderId: string, seed: OrderSeed): Promise<void> {
   });
   if (seed.intent === null) {
     await prisma.$transaction(async (tx) => {
-      await tx.$executeRaw`SET LOCAL card_payment.purge = 'on'`;
+      await tx.$executeRaw`SET LOCAL payment.purge = 'on'`;
       await tx.cardPayment.deleteMany({ where: { subjectType: "order", subjectId: orderId } });
     });
   }

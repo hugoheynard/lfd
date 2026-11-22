@@ -760,7 +760,7 @@ async function triggerDeliveryNotesReconcile(env: Env): Promise<void> {
  * Réveille le container et rattrape les premiers paiements par carte (plan
  * `documentation/commandes/modification/plan-m2-historique-de-transactions.md`,
  * §4.3, §6.8) : les intentions qu'une commande porte et que
- * `card_payment.payment` ne connaît pas encore, ou en retard sur elle. Sur le
+ * `payment.card_payment` ne connaît pas encore, ou en retard sur elle. Sur le
  * cron HORAIRE, de P0 à P2 ; idempotent, et muet sans ligne-témoin. Même porte
  * et même jeton que la boîte d'envoi.
  */

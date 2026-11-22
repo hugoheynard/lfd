@@ -5,7 +5,7 @@
  * §3.2).
  *
  * Un compte est un contrat chez un prestataire : un nom stable (persisté sur
- * chaque paiement, `card_payment.payment.account`), un type de prestataire (un
+ * chaque paiement, `payment.card_payment.account`), un type de prestataire (un
  * adaptateur par TYPE dans le code), et le préfixe de ses trois secrets dans
  * l'environnement. Les SECRETS, eux, ne sont jamais ici : `AppConfig` les lit
  * sous les noms déclarés (`cardAccountSecrets`).

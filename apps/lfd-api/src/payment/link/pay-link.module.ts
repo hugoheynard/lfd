@@ -20,7 +20,7 @@ import { SettlementFirstCardPaymentReader } from "./infrastructure/settlement-fi
 /**
  * **Les liens de paiement vers un sujet** (plan
  * `documentation/comptabilite/liens-de-paiement/plan-le-lien-vers-un-sujet.md`,
- * §2) : la table `card_payment.pay_link`, la porte `PayLinks` et la page
+ * §2) : la table `payment.pay_link`, la porte `PayLinks` et la page
  * publique.
  *
  * **Global**, comme `CardPaymentModule` : un bloc métier n'atteint que le

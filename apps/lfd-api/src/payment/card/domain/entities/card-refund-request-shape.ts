@@ -24,7 +24,7 @@ export const REASON_MAX = 64;
 /** Le motif d'un « rendu autrement » : borné comme en base (`refund_request_settled_reason_bounded`). */
 export const SETTLED_REASON_MAX = 500;
 
-/** Une demande telle que la table `card_payment.refund_request` la range. */
+/** Une demande telle que la table `payment.card_refund_request` la range. */
 export interface CardRefundRequestSnapshot {
   readonly id: string;
   readonly paymentId: string;

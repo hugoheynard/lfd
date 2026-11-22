@@ -40,7 +40,7 @@ export interface PayLinkPaymentStart {
  * course perdue, relit celui qui existe, et l'intention de trop est libérée.
  *
  * @sans-journal Geste anonyme d'un payeur, sans auteur à nommer : la trace
- * est la ligne `card_payment.payment` elle-même, qui naît avec son
+ * est la ligne `payment.card_payment` elle-même, qui naît avec son
  * `pay_link_id` ; rien n'y est encaissé — l'encaissement arrive par le
  * webhook, qui a sa propre trace.
  */

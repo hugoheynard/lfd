@@ -5,7 +5,7 @@
  * §2.1 et §2.3), à la manière de `CARD_ACCOUNTS`.
  *
  * Une origine est l'application qui demande un lien : son nom (persisté sur
- * chaque lien, `card_payment.pay_link.origin`), son libellé, et la racine
+ * chaque lien, `payment.pay_link.origin`), son libellé, et la racine
  * publique où sa page `/payer/<jeton>` est montée. La racine n'est pas écrite
  * ici : elle nomme l'une des racines que `AppConfig` lit dans
  * l'environnement. Une origine hors de cette liste est refusée à l'ouverture.

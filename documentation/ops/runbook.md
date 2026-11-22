@@ -1453,7 +1453,7 @@ commande ne porte (un lien libre) sonne aussi la cloche, sans rien écrire.
 Toutes les requêtes sont en **lecture seule**, sur la base de production,
 colonnes relues dans `prisma/schema/public/order-refund.prisma`,
 `prisma/schema/public/settings.prisma`, `prisma/schema/platform.prisma` et
-`prisma/schema/card_payment.prisma` (2026-11-10).
+`prisma/schema/payment/card.prisma` (relues le 2026-11-10 sous son ancien nom).
 
 **1. Boutique fermée, aucun geste sur une commande carte.** Fermer la
 commande aux deux clientèles (Réglages → ouverture de la boutique,
@@ -1594,6 +1594,78 @@ production (la graine `ROLE_GRANTS` ne vaut que pour une base vierge) ; sans
 
 **9. Rouvrir la boutique** (`/admin/order-opening`), puis relire la
 requête du point 1.
+
+## Déployer le vocabulaire du paiement (lot V, `20261122110000_le_vocabulaire_du_paiement`)
+
+> Plan [`comptabilite/liens-de-paiement/plan-le-lien-vers-un-sujet.md`](../comptabilite/liens-de-paiement/plan-le-lien-vers-un-sujet.md),
+> §0.4. Le schéma `card_payment` devient `payment`, ses tables
+> `payment`, `refund`, `refund_request` et `takeover` deviennent
+> `card_payment`, `card_refund`, `card_refund_request` et `card_takeover`
+> (`pay_link` garde son nom). **Uniquement des renommages** : aucune ligne
+> n'est copiée ni réécrite.
+
+**Quand** : sur un « pousse main » de Hugo, un jour sans service ouvert, la
+boutique au calme. La migration passe avant que l'image neuve serve (une à
+deux minutes) : pendant ce temps, l'ancienne image cherche `card_payment` —
+un paiement ou un remboursement par carte échoue, un webhook de Stripe reçoit
+une erreur et sera rejoué. Un remboursement parti chez Stripe dont l'écriture
+échoue est **retardé, pas perdu** : la clé d'idempotence
+(`<demande>:<génération>:<tour>`) ne bouge pas sur un échec, le balayage
+suivant rend le même remboursement.
+
+**Avant de pousser, constater** (lecture seule, sur la production) :
+
+```sql
+-- V n'est pas encore passée, P1 des liens l'est :
+SELECT migration_name, finished_at FROM _prisma_migrations
+ WHERE migration_name IN ('20261122100000_les_liens_vers_un_sujet',
+                          '20261122110000_le_vocabulaire_du_paiement');
+-- attendu : une seule ligne, 20261122100000, finished_at posé
+
+SELECT nspname FROM pg_namespace WHERE nspname IN ('card_payment', 'payment');
+-- attendu : card_payment seulement
+
+-- Rien en vol : ni paiement en attente, ni demande sous bail.
+SELECT (SELECT count(*) FROM card_payment.payment WHERE state = 'pending') AS paiements_en_attente,
+       (SELECT count(*) FROM card_payment.refund_request
+         WHERE state = 'to_issue' AND claimed_until > now())               AS demandes_sous_bail,
+       (SELECT count(*) FROM card_payment.refund
+         WHERE status IN ('pending', 'requires_action'))                   AS remboursements_en_vol;
+-- attendu : 0 / 0 / 0 — sinon attendre, puis relire
+```
+
+**Après le déploiement, vérifier** :
+
+```sql
+SELECT table_name FROM information_schema.tables
+ WHERE table_schema = 'payment' ORDER BY 1;
+-- attendu : card_payment, card_refund, card_refund_request, card_takeover, pay_link
+
+-- Aucune demande restée réclamée sans écriture : un bail échu sans `re_…`
+-- est une demande que l'ancienne image a prise pendant la minute et qui n'a
+-- rien écrit. Le balayage suivant la reprend ; la relire après lui.
+SELECT id, state, generation, round, attempts, claimed_until, last_failure
+  FROM payment.card_refund_request
+ WHERE state = 'to_issue' AND claim_token IS NOT NULL
+   AND claimed_until < now() AND provider_ref IS NULL;
+-- attendu : aucune ligne
+```
+
+Puis, de bout en bout : **un paiement** par carte (une commande payée à la
+boutique, qui passe `paid` dans `payment.card_payment`), et **un
+remboursement** (l'annulation de cette commande, qui écrit
+`payment.card_refund_request` puis `payment.card_refund` en `succeeded`).
+En dev, la purge du scénario passe sous `SET LOCAL payment.purge = 'on'`.
+
+**Retour arrière** : avec l'image d'avant,
+`psql -1 -v ON_ERROR_STOP=1 -f apps/lfd-api/prisma/rollback/20261122110000_le_vocabulaire_du_paiement.sql` —
+les mêmes renommages à l'envers, le CHECK des comptes reposé sous son nom
+d'avant (`payment_account_known`), les six fonctions remises à leur texte
+d'avant, et la ligne `20261122110000_le_vocabulaire_du_paiement` retirée de
+`_prisma_migrations` (sans quoi `migrate deploy` la croirait appliquée). Joué
+sur une base jetable le 2026-11-22 : le catalogue du schéma est identique à
+celui d'avant V, puis `migrate deploy` réapplique V. Pas de perte : rien n'est
+copié.
 
 ## Le webhook de la vitrine — mise en service, abonné en échec, rotation de clé
 

@@ -89,7 +89,7 @@ function next(prefix: string): string {
 async function aPayment(subjectId = next("ord")): Promise<string> {
   const id = next("pay");
   await ctx.prisma.$executeRaw`
-    INSERT INTO "card_payment"."payment"
+    INSERT INTO "payment"."card_payment"
       ("id", "subject_type", "subject_id", "account", "provider_ref", "role",
        "amount_cents", "state", "created_at")
     VALUES (${id}, 'order', ${subjectId}, 'lfc-stripe', ${next("pi")}, 'first',
@@ -112,13 +112,13 @@ function request(paymentId: string, overrides: Partial<RequestRow> = {}): Reques
 
 function insertRequest(row: RequestRow): Promise<number> {
   return ctx.prisma.$executeRaw`
-    INSERT INTO "card_payment"."refund_request"
+    INSERT INTO "payment"."card_refund_request"
       ("id", "payment_id", "form", "amount_cents", "nature", "reason", "state",
        "announced_cents", "requested_at", "next_attempt_at",
        "settled_by_staff_id", "settled_reason")
-    VALUES (${row.id}, ${row.paymentId}, ${row.form}::"card_payment"."CardRefundForm",
+    VALUES (${row.id}, ${row.paymentId}, ${row.form}::"payment"."CardRefundForm",
             ${row.amountCents}, 'return', 'cancellation',
-            ${row.state}::"card_payment"."CardRefundRequestState", 5000, now(), now(),
+            ${row.state}::"payment"."CardRefundRequestState", 5000, now(), now(),
             ${row.settledBy}, ${row.settledReason})`;
 }
 
@@ -126,8 +126,8 @@ function insertRequest(row: RequestRow): Promise<number> {
 function moveRequestTo(id: string, to: RequestState): Promise<number> {
   const settled = to === "settled_elsewhere";
   return ctx.prisma.$executeRaw`
-    UPDATE "card_payment"."refund_request"
-       SET "state" = ${to}::"card_payment"."CardRefundRequestState",
+    UPDATE "payment"."card_refund_request"
+       SET "state" = ${to}::"payment"."CardRefundRequestState",
            "settled_by_staff_id" = ${settled ? "stf_1" : null},
            "settled_reason" = ${settled ? "rendu en espèces" : null}
      WHERE "id" = ${id}`;
@@ -149,19 +149,19 @@ function refund(paymentId: string, overrides: Partial<RefundRow> = {}): RefundRo
 
 function insertRefund(row: RefundRow): Promise<number> {
   return ctx.prisma.$executeRaw`
-    INSERT INTO "card_payment"."refund"
+    INSERT INTO "payment"."card_refund"
       ("id", "payment_id", "account", "request_id", "source", "provider_ref",
        "amount_cents", "currency", "status", "refunded_at", "recorded_at", "updated_at")
     VALUES (${row.id}, ${row.paymentId}, ${row.account}, ${row.requestId},
-            ${row.source}::"card_payment"."CardRefundSource", ${row.providerRef},
-            ${row.amountCents}, 'eur', ${row.status}::"card_payment"."CardRefundStatus",
+            ${row.source}::"payment"."CardRefundSource", ${row.providerRef},
+            ${row.amountCents}, 'eur', ${row.status}::"payment"."CardRefundStatus",
             now(), now(), now())`;
 }
 
 function moveRefundTo(id: string, to: RefundStatus): Promise<number> {
   return ctx.prisma.$executeRaw`
-    UPDATE "card_payment"."refund"
-       SET "status" = ${to}::"card_payment"."CardRefundStatus"
+    UPDATE "payment"."card_refund"
+       SET "status" = ${to}::"payment"."CardRefundStatus"
      WHERE "id" = ${id}`;
 }
 
@@ -185,7 +185,7 @@ beforeEach(async () => {
   await ctx.reset();
 });
 
-describe("card_payment.refund_request — ce que la base refuse d'elle-même (G1)", () => {
+describe("payment.card_refund_request — ce que la base refuse d'elle-même (G1)", () => {
   it("form = amount ⇔ un montant, et un montant est positif", async () => {
     const paymentId = await aPayment();
     await expect(insertRequest(request(paymentId, { form: "amount" }))).rejects.toThrow(
@@ -251,7 +251,7 @@ describe("card_payment.refund_request — ce que la base refuse d'elle-même (G1
   });
 });
 
-describe("card_payment.refund_request — la machine des états (§3.4)", () => {
+describe("payment.card_refund_request — la machine des états (§3.4)", () => {
   it("chaque paire (état, état) est admise ou refusée selon la machine, (x, x) compris", async () => {
     const observed: string[] = [];
     const expected: string[] = [];
@@ -284,7 +284,7 @@ describe("card_payment.refund_request — la machine des états (§3.4)", () => 
   });
 });
 
-describe("card_payment.refund_request — les colonnes immuables", () => {
+describe("payment.card_refund_request — les colonnes immuables", () => {
   it("refuse de changer le paiement, la forme, le montant, la nature ou le motif", async () => {
     const paymentId = await aPayment();
     const other = await aPayment();
@@ -292,24 +292,24 @@ describe("card_payment.refund_request — les colonnes immuables", () => {
     await insertRequest(row);
     await expect(
       ctx.prisma.$executeRaw`
-        UPDATE "card_payment"."refund_request" SET "payment_id" = ${other} WHERE "id" = ${row.id}`,
+        UPDATE "payment"."card_refund_request" SET "payment_id" = ${other} WHERE "id" = ${row.id}`,
     ).rejects.toThrow(/le paiement d'une demande ne change pas/);
     await expect(
       ctx.prisma.$executeRaw`
-        UPDATE "card_payment"."refund_request" SET "amount_cents" = 800 WHERE "id" = ${row.id}`,
+        UPDATE "payment"."card_refund_request" SET "amount_cents" = 800 WHERE "id" = ${row.id}`,
     ).rejects.toThrow(/la forme et le montant d'une demande ne changent pas/);
     await expect(
       ctx.prisma.$executeRaw`
-        UPDATE "card_payment"."refund_request"
+        UPDATE "payment"."card_refund_request"
            SET "form" = 'remainder', "amount_cents" = NULL WHERE "id" = ${row.id}`,
     ).rejects.toThrow(/la forme et le montant d'une demande ne changent pas/);
     await expect(
       ctx.prisma.$executeRaw`
-        UPDATE "card_payment"."refund_request" SET "nature" = 'adjustment' WHERE "id" = ${row.id}`,
+        UPDATE "payment"."card_refund_request" SET "nature" = 'adjustment' WHERE "id" = ${row.id}`,
     ).rejects.toThrow(/la nature et le motif d'une demande ne changent pas/);
     await expect(
       ctx.prisma.$executeRaw`
-        UPDATE "card_payment"."refund_request" SET "reason" = 'revision' WHERE "id" = ${row.id}`,
+        UPDATE "payment"."card_refund_request" SET "reason" = 'revision' WHERE "id" = ${row.id}`,
     ).rejects.toThrow(/la nature et le motif d'une demande ne changent pas/);
   });
 
@@ -317,7 +317,7 @@ describe("card_payment.refund_request — les colonnes immuables", () => {
     const row = request(await aPayment(), { state: "stopped" });
     await insertRequest(row);
     await ctx.prisma.$executeRaw`
-      UPDATE "card_payment"."refund_request"
+      UPDATE "payment"."card_refund_request"
          SET "state" = 'to_issue', "generation" = 2, "round" = 1, "attempts" = 0,
              "next_attempt_at" = now()
        WHERE "id" = ${row.id}`;
@@ -330,7 +330,7 @@ describe("card_payment.refund_request — les colonnes immuables", () => {
   });
 });
 
-describe("card_payment.refund — ce que la base refuse d'elle-même (G1)", () => {
+describe("payment.card_refund — ce que la base refuse d'elle-même (G1)", () => {
   it("source = provider ⇔ une référence ; montant positif", async () => {
     const paymentId = await aPayment();
     await expect(insertRefund(refund(paymentId, { providerRef: null }))).rejects.toThrow(
@@ -372,7 +372,7 @@ describe("card_payment.refund — ce que la base refuse d'elle-même (G1)", () =
   });
 });
 
-describe("card_payment.refund — le carnet des statuts (§3.4)", () => {
+describe("payment.card_refund — le carnet des statuts (§3.4)", () => {
   it("chaque paire (statut, statut) est admise ou refusée selon le carnet, (x, x) compris", async () => {
     const observed: string[] = [];
     const expected: string[] = [];
@@ -400,7 +400,7 @@ describe("card_payment.refund — le carnet des statuts (§3.4)", () => {
   });
 });
 
-describe("card_payment.refund — les colonnes immuables", () => {
+describe("payment.card_refund — les colonnes immuables", () => {
   it("refuse de changer le paiement, la référence, le montant, la nature ou la source", async () => {
     const paymentId = await aPayment();
     const other = await aPayment();
@@ -408,27 +408,26 @@ describe("card_payment.refund — les colonnes immuables", () => {
     await insertRefund(row);
     await expect(
       ctx.prisma.$executeRaw`
-        UPDATE "card_payment"."refund" SET "payment_id" = ${other} WHERE "id" = ${row.id}`,
+        UPDATE "payment"."card_refund" SET "payment_id" = ${other} WHERE "id" = ${row.id}`,
     ).rejects.toThrow(/le paiement et le compte d'un remboursement ne changent pas/);
     await expect(
       ctx.prisma.$executeRaw`
-        UPDATE "card_payment"."refund" SET "provider_ref" = 're_autre' WHERE "id" = ${row.id}`,
+        UPDATE "payment"."card_refund" SET "provider_ref" = 're_autre' WHERE "id" = ${row.id}`,
     ).rejects.toThrow(/la source et la référence d'un remboursement ne changent pas/);
     await expect(
       ctx.prisma.$executeRaw`
-        UPDATE "card_payment"."refund" SET "amount_cents" = 99 WHERE "id" = ${row.id}`,
+        UPDATE "payment"."card_refund" SET "amount_cents" = 99 WHERE "id" = ${row.id}`,
     ).rejects.toThrow(/le montant d'un remboursement ne change pas/);
     await expect(
       ctx.prisma.$executeRaw`
-        UPDATE "card_payment"."refund" SET "nature" = 'return' WHERE "id" = ${row.id}`,
+        UPDATE "payment"."card_refund" SET "nature" = 'return' WHERE "id" = ${row.id}`,
     ).rejects.toThrow(/la nature d'un remboursement ne change pas/);
   });
 });
 
 /**
  * L'unicité de `credit_note_id` (un remboursement par avoir) demande un avoir
- * réel : elle est éprouvée par `card-refund-takeover-migration.e2e-spec.ts`,
- * qui en émet un.
+ * réel : elle s'éprouve dans `refund-credit-credit-note.e2e-spec.ts`.
  */
 describe("public.refund_credit — la raison, et une ligne par remboursement", () => {
   it("une ligne adjustment n'a pas d'avoir, une ligne credit_note en a un", async () => {
@@ -461,7 +460,7 @@ describe("public.refund_credit — la raison, et une ligne par remboursement", (
 });
 
 describe("pas de DELETE, sauf la purge", () => {
-  it("refuse un DELETE nu sur les deux tables, l'admet sous SET LOCAL card_payment.purge", async () => {
+  it("refuse un DELETE nu sur les deux tables, l'admet sous SET LOCAL payment.purge", async () => {
     const paymentId = await aPayment();
     const row = request(paymentId);
     await insertRequest(row);
@@ -469,16 +468,16 @@ describe("pas de DELETE, sauf la purge", () => {
     await insertRefund(line);
 
     await expect(
-      ctx.prisma.$executeRaw`DELETE FROM "card_payment"."refund" WHERE "id" = ${line.id}`,
+      ctx.prisma.$executeRaw`DELETE FROM "payment"."card_refund" WHERE "id" = ${line.id}`,
     ).rejects.toThrow(/un remboursement ne s'efface pas/);
     await expect(
-      ctx.prisma.$executeRaw`DELETE FROM "card_payment"."refund_request" WHERE "id" = ${row.id}`,
+      ctx.prisma.$executeRaw`DELETE FROM "payment"."card_refund_request" WHERE "id" = ${row.id}`,
     ).rejects.toThrow(/un remboursement ne s'efface pas/);
 
     await ctx.prisma.$transaction(async (tx) => {
-      await tx.$executeRaw`SET LOCAL card_payment.purge = 'on'`;
-      await tx.$executeRaw`DELETE FROM "card_payment"."refund" WHERE "id" = ${line.id}`;
-      await tx.$executeRaw`DELETE FROM "card_payment"."refund_request" WHERE "id" = ${row.id}`;
+      await tx.$executeRaw`SET LOCAL payment.purge = 'on'`;
+      await tx.$executeRaw`DELETE FROM "payment"."card_refund" WHERE "id" = ${line.id}`;
+      await tx.$executeRaw`DELETE FROM "payment"."card_refund_request" WHERE "id" = ${row.id}`;
     });
     expect(await ctx.prisma.cardRefund.count()).toBe(0);
     expect(await ctx.prisma.cardRefundRequest.count()).toBe(0);
@@ -491,8 +490,8 @@ describe("pas de DELETE, sauf la purge", () => {
     await insertRefund(refund(paymentId, { requestId: row.id }));
     await expect(
       ctx.prisma.$transaction(async (tx) => {
-        await tx.$executeRaw`SET LOCAL card_payment.purge = 'on'`;
-        await tx.$executeRaw`DELETE FROM "card_payment"."refund_request" WHERE "id" = ${row.id}`;
+        await tx.$executeRaw`SET LOCAL payment.purge = 'on'`;
+        await tx.$executeRaw`DELETE FROM "payment"."card_refund_request" WHERE "id" = ${row.id}`;
       }),
     ).rejects.toThrow(/refund_request_id_fkey|Foreign key/);
   });

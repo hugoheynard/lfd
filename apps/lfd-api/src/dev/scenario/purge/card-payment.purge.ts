@@ -2,7 +2,7 @@ import type { PurgeClient, ScenarioScope } from "./scenario-scope.js";
 
 /**
  * Le type de sujet sous lequel `card-payment` range les paiements d'une
- * commande — 🔴 une valeur écrite en base (`card_payment.payment.subject_type`,
+ * commande — 🔴 une valeur écrite en base (`payment.card_payment.subject_type`,
  * reprise P0 de la migration `20261109030000_…`), pas un nom.
  */
 export const ORDER_SUBJECT_TYPE = "order";
@@ -16,7 +16,7 @@ export function scenarioCardPayments(orderIds: readonly string[]): {
 }
 
 /**
- * **L'argent par carte du scénario** (`card_payment`, plan M2, §3.4, §5.4) :
+ * **L'argent par carte du scénario** (schéma `payment`, plan M2, §3.4, §5.4) :
  * les paiements dont le sujet est une de ses commandes, et tout ce qui en
  * dépend. Aucune clé étrangère ne les relie aux commandes (le bloc est
  * agnostique) : sans cette coupe, chaque rechargement en laisserait un de plus
@@ -27,15 +27,15 @@ export function scenarioCardPayments(orderIds: readonly string[]): {
  * 1. `public.refund_credit`, par `refund_id` — aucune clé ne la relie au
  *    carnet (identifiant opaque, §5.1) ; elle tient l'avoir, qu'on ne
  *    supprime pas : une commande facturée bloque la purge exprès ;
- * 2. `card_payment.refund` — il tient `payment` et `refund_request` ;
- * 3. `card_payment.refund_request` — elle tient `payment` ;
- * 4. `card_payment.payment`.
+ * 2. `payment.card_refund` — il tient `card_payment` et `card_refund_request` ;
+ * 3. `payment.card_refund_request` — elle tient `card_payment` ;
+ * 4. `payment.card_payment`.
  *
  * Une ligne d'encaissement ne s'efface pas : les déclencheurs `*_no_delete` le
- * refusent, sauf sous `SET LOCAL card_payment.purge = 'on'` — posé ICI, dans
+ * refusent, sauf sous `SET LOCAL payment.purge = 'on'` — posé ICI, dans
  * la transaction de la purge, et mort avec elle.
  *
- * ⚠️ Le témoin de reprise (`card_payment.takeover`) n'est PAS purgé : il
+ * ⚠️ Le témoin de reprise (`payment.card_takeover`) n'est PAS purgé : il
  * n'appartient pas au scénario (« jamais une table entière », plan §2 bis),
  * et l'effacer ferait taire le rattrapage des premiers paiements.
  *
@@ -59,7 +59,7 @@ export async function purgeOrderCardPayments(
   if (orderIds.length === 0) {
     return 0;
   }
-  await tx.$executeRaw`SET LOCAL card_payment.purge = 'on'`;
+  await tx.$executeRaw`SET LOCAL payment.purge = 'on'`;
   const payments = { payment: scenarioCardPayments(orderIds) };
   const refunds = await tx.cardRefund.findMany({ where: payments, select: { id: true } });
   const credits = await tx.refundCredit.deleteMany({

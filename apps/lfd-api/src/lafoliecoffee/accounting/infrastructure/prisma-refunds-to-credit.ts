@@ -18,7 +18,7 @@ import {
  * rapprochement suppose pour ventiler le dernier avoir au reste exact), et
  * leur rapprochement dans `public.refund_credit`, la table de la
  * comptabilité. Lecture seule ; deux lectures, sans jointure : `refund_id`
- * est un identifiant opaque, sans clé étrangère vers `card_payment`.
+ * est un identifiant opaque, sans clé étrangère vers `payment.card_refund`.
  */
 @Injectable()
 export class PrismaRefundsToCreditReader extends RefundsToCreditReader {

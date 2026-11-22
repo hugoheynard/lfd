@@ -116,7 +116,7 @@ export class InvalidProviderSignatureError extends DomainError {
 /** Aucun paiement sous cet identifiant. */
 export class CardPaymentNotFoundError extends ResourceNotFoundError {
   constructor(paymentId: string) {
-    super("card_payment.payment.not_found", `Aucun paiement par carte « ${paymentId} ».`);
+    super("payment.card_payment.not_found", `Aucun paiement par carte « ${paymentId} ».`);
   }
 }
 

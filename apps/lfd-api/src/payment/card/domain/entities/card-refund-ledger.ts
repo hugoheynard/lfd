@@ -15,7 +15,7 @@ import type { PaymentSubject } from "../value-objects/payment-subject.js";
  */
 export const CARD_REFUND_CURRENCY = "eur";
 
-/** Une ligne du carnet, telle que la table `card_payment.refund` la range. */
+/** Une ligne du carnet, telle que la table `payment.card_refund` la range. */
 export interface CardRefundLine {
   readonly id: string;
   readonly requestId: string | null;

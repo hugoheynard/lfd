@@ -2,13 +2,14 @@ import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { currentTransaction } from "../../../platform/database/transaction.store.js";
+import { lockRow } from "../../shared/infrastructure/row-lock.js";
 import type { CardRefundRequest } from "../domain/entities/card-refund-request.js";
 import { CardRefundRequestConflictError } from "../domain/errors/card-refund-errors.js";
 import { CardRefundRequestRepository } from "../domain/ports/card-refund-request.repository.js";
 import { requestOf } from "./card-refund-rows.js";
 
 /**
- * **Les demandes de remboursement**, dans `card_payment.refund_request` —
+ * **Les demandes de remboursement**, dans `payment.card_refund_request` —
  * l'écrivain UNIQUE de la table (`lint:prisma-model-ownership`). Par le client
  * ambiant : dans l'unité de travail de l'appelant.
  *
@@ -36,8 +37,7 @@ export class PrismaCardRefundRequestRepository extends CardRefundRequestReposito
 
   async load(requestId: string): Promise<CardRefundRequest | null> {
     if (currentTransaction() !== undefined) {
-      await this.prisma.$queryRaw`
-        SELECT "id" FROM "card_payment"."refund_request" WHERE "id" = ${requestId} FOR UPDATE`;
+      await lockRow(this.prisma, "card_refund_request", requestId);
     }
     const row = await this.prisma.cardRefundRequest.findUnique({ where: { id: requestId } });
     return row === null ? null : requestOf(row);

@@ -2,14 +2,15 @@ import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { currentTransaction } from "../../../platform/database/transaction.store.js";
+import { lockRow } from "../../shared/infrastructure/row-lock.js";
 import { CardRefundLedger } from "../domain/entities/card-refund-ledger.js";
 import { CardRefundLedgerRepository } from "../domain/ports/card-refund-ledger.repository.js";
 import { PaymentSubject } from "../domain/value-objects/payment-subject.js";
 import { lineOf } from "./card-refund-rows.js";
 
 /**
- * **Le carnet**, dans `card_payment.refund` — l'écrivain UNIQUE de la table.
- * Le verrou est celui de la ligne `payment` : deux constats du même paiement
+ * **Le carnet**, dans `payment.card_refund` — l'écrivain UNIQUE de la table.
+ * Le verrou est celui de la ligne `card_payment` : deux constats du même paiement
  * se sérialisent, et le cumul se lit à jour.
  */
 @Injectable()
@@ -28,8 +29,7 @@ export class PrismaCardRefundLedgerRepository extends CardRefundLedgerRepository
 
   async loadByPayment(paymentId: string): Promise<CardRefundLedger | null> {
     if (currentTransaction() !== undefined) {
-      await this.prisma.$queryRaw`
-        SELECT "id" FROM "card_payment"."payment" WHERE "id" = ${paymentId} FOR UPDATE`;
+      await lockRow(this.prisma, "card_payment", paymentId);
     }
     const payment = await this.prisma.cardPayment.findUnique({ where: { id: paymentId } });
     if (payment === null) {

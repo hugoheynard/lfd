@@ -573,7 +573,7 @@ NULL`), montant, **`currency`**, statut, instants (`recorded_at`, l'ordre de
 - **`public.refund_credit`** (`accounting` : la comptabilité vit dans
   `public`) : `refund_id @unique` **sans clé étrangère** (v13 : une clé de
   `public` vers `card_payment` est interdite par l'en-tête de
-  `card_payment.prisma` — « aucune ne doit en venir » ; c'est la même règle
+  `payment/card.prisma` — « aucune ne doit en venir » ; c'est la même règle
   qu'entre `orders` et `card_payment.payment`, identifiant opaque), `credit_note_id` **nullable** (une ligne `adjustment`
   n'a pas d'avoir), unique partiel `WHERE credit_note_id IS NOT NULL`, `reason`
   (`credit_note | adjustment`), **reprise de `order_refund.credit_note_id`**

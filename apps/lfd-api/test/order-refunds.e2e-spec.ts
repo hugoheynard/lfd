@@ -3,7 +3,7 @@
  * `documentation/comptabilite/facturation/facture-carte-et-remboursements.md`).
  *
  * Ce que seul le vrai SQL prouve :
- * - le carnet `card_payment.refund` (depuis le lot P1.b du plan M2 ; avant,
+ * - le carnet `payment.card_refund` (depuis le lot P1.b du plan M2 ; avant,
  *   `order_refund`), son unicité par `(compte, re_…)` et sa contrainte de
  *   montant ; le verrou de la commande sous lequel le cumul se lit ;
  * - la bascule `paid` → `refunded` écrite en base, et le journal dans la même
@@ -126,7 +126,7 @@ async function webhook(refund: Refund): Promise<void> {
 
 /**
  * Le paiement carte de la commande — le carnet vit sous lui depuis le lot P1.b
- * du plan M2 (le webhook constate dans `card_payment.refund`, plus dans
+ * du plan M2 (le webhook constate dans `payment.card_refund`, plus dans
  * `public.order_refund`, qui reste sans écrivain jusqu'à P2).
  */
 async function paymentOf(orderId: string): Promise<string> {

@@ -1,5 +1,5 @@
 /**
- * **La ligne-témoin d'une reprise** (`card_payment.takeover`, plan M2,
+ * **La ligne-témoin d'une reprise** (`payment.card_takeover`, plan M2,
  * §4.3) : l'instant où la migration a repris l'existant. Écrite par la
  * migration seule ; le bloc ne fait que la lire.
  */

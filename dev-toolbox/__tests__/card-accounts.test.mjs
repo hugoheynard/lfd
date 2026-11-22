@@ -26,16 +26,23 @@ test("rend null sans tableau CARD_ACCOUNTS", () => {
 });
 
 test("lit le CHECK posé avec la table", () => {
-  const sql = `CONSTRAINT "payment_account_known" CHECK ("account" IN ('lfc-stripe'))`;
+  const sql = `CONSTRAINT "card_payment_account_known" CHECK ("account" IN ('lfc-stripe'))`;
   assert.deepEqual(checkAccounts(sql), ["lfc-stripe"]);
 });
 
 test("lit le DERNIER CHECK d'un fichier qui le repose par ADD CONSTRAINT", () => {
   const sql =
-    `CONSTRAINT "payment_account_known" CHECK ("account" IN ('lfc-stripe'));\n` +
-    `ALTER TABLE x DROP CONSTRAINT "payment_account_known";\n` +
-    `ALTER TABLE x ADD CONSTRAINT "payment_account_known" CHECK ("account" IN ('lfc-stripe', 'lfc-caisse-epargne'));`;
+    `CONSTRAINT "card_payment_account_known" CHECK ("account" IN ('lfc-stripe'));\n` +
+    `ALTER TABLE x DROP CONSTRAINT "card_payment_account_known";\n` +
+    `ALTER TABLE x ADD CONSTRAINT "card_payment_account_known" CHECK ("account" IN ('lfc-stripe', 'lfc-caisse-epargne'));`;
   assert.deepEqual(checkAccounts(sql), ["lfc-stripe", "lfc-caisse-epargne"]);
+});
+
+test("ignore le CHECK sous son ancien nom et un simple RENAME CONSTRAINT", () => {
+  const sql =
+    `CONSTRAINT "payment_account_known" CHECK ("account" IN ('lfc-stripe'))\n` +
+    `ALTER TABLE x RENAME CONSTRAINT "payment_account_known" TO "card_payment_account_known";`;
+  assert.equal(checkAccounts(sql), null);
 });
 
 test("rend null pour une migration qui ne pose pas le CHECK", () => {
@@ -67,4 +74,5 @@ test("le dépôt d'aujourd'hui s'accorde", () => {
   const check = latestCheck(root);
   assert.notEqual(check, null);
   assert.deepEqual(check.accounts, ["lfc-stripe"]);
+  assert.equal(check.migration, "20261122110000_le_vocabulaire_du_paiement");
 });

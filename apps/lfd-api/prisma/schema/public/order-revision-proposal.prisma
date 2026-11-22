@@ -24,7 +24,7 @@ model OrderRevisionProposal {
   revisedByKind    String    @map("revised_by_kind")
   revisedByUserId  String?   @map("revised_by_user_id")
   revisedByStaffId String?   @map("revised_by_staff_id")
-  /// Le paiement du complément dans `card_payment.payment` — un autre bloc :
+  /// Le paiement du complément dans `payment.card_payment` — un autre bloc :
   /// unique, sans clé étrangère.
   paymentId        String    @unique @map("payment_id")
   state            String

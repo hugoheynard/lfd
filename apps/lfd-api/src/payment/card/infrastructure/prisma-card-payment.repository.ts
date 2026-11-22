@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { currentTransaction } from "../../../platform/database/transaction.store.js";
+import { lockRow } from "../../shared/infrastructure/row-lock.js";
 import type { CardPayment } from "../domain/entities/card-payment.js";
 import { CardPaymentRepository } from "../domain/ports/card-payment.repository.js";
 import type { PaymentAccount } from "../domain/value-objects/payment-account.js";
@@ -11,7 +12,7 @@ import { toDomain } from "./card-payment-rows.js";
 const UNSETTLED = ["pending", "failed"] as const;
 
 /**
- * **Les paiements**, dans le schéma `card_payment` — l'écrivain UNIQUE de la
+ * **Les paiements**, table `payment.card_payment` — l'écrivain UNIQUE de la
  * table (`lint:prisma-model-ownership`). Passe par le client ambiant : sous
  * une unité de travail, il écrit dans la transaction de l'appelant.
  *
@@ -30,8 +31,7 @@ export class PrismaCardPaymentRepository extends CardPaymentRepository {
     if (currentTransaction() !== undefined) {
       // Le verrou d'abord, la lecture ensuite : un second webhook attend le
       // premier, puis relit la ligne écrite (§3.6).
-      await this.prisma.$queryRaw`
-        SELECT "id" FROM "card_payment"."payment" WHERE "id" = ${paymentId} FOR UPDATE`;
+      await lockRow(this.prisma, "card_payment", paymentId);
     }
     const row = await this.prisma.cardPayment.findUnique({ where: { id: paymentId } });
     return row === null ? null : toDomain(row);

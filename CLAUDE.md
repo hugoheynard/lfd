@@ -175,7 +175,7 @@
 >   comptée qui ne peut que décroître. Et **70** depuis le 2026-11-09 avec
 >   `lint:card-accounts` (plan M2, lot P0.c1) : les comptes d'encaissement par
 >   carte du registre (`CARD_ACCOUNTS`, dans la configuration de l'API) sont
->   exactement ceux que le `CHECK payment_account_known` de `card_payment.payment`
+>   exactement ceux que le `CHECK card_payment_account_known` de `payment.card_payment`
 >   admet — un compte au registre et absent du CHECK verrait ses paiements
 >   refusés par la base au premier encaissement, un compte admis et absent du
 >   registre laisserait des paiements qu'aucun adaptateur ne relit. Et **71**

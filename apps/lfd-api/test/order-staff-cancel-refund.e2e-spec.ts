@@ -4,8 +4,8 @@
  * la demande persistée, l'exécuteur, le carnet, le courriel, le journal,
  * l'écran, « Relancer », le balayage et le droit. Mêmes scénarios depuis le
  * lot P1.c du plan M2 : la demande, l'exécuteur, le carnet, « Relancer » et le
- * balayage sont ceux du bloc `card-payment` (`card_payment.refund_request`,
- * `card_payment.refund`, `admin/card-payments/…`), par demande.
+ * balayage sont ceux du bloc `card-payment` (`payment.card_refund_request`,
+ * `payment.card_refund`, `admin/card-payments/…`), par demande.
  *
  * Les courses (deux exécuteurs, webhook avant/après, clôture, `COMMIT` perdu)
  * sont dans `order-staff-cancel-refund-races.e2e-spec.ts` ; « Relancer », le

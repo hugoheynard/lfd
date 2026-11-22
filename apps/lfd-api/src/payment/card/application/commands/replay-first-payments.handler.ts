@@ -22,7 +22,7 @@ import {
 } from "./replay-first-payments.command.js";
 import { ReplayTally } from "./replay-tally.js";
 
-/** Le lot de la reprise des premiers paiements (`card_payment.takeover`). */
+/** Le lot de la reprise des premiers paiements (`payment.card_takeover`). */
 export const FIRST_PAYMENTS_TAKEOVER_LOT = "P0";
 
 /**

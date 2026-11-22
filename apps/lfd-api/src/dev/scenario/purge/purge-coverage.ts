@@ -188,21 +188,21 @@ export const SCENARIO_PURGED_TABLES: readonly PurgedTable[] = [
   { table: "mail.mail_request", purgedIn: "mail.purge.ts", referencedBy: [] },
   // Plan M2, §4.1 : aucune clé étrangère vers `public` (le bloc est
   // agnostique) ; déclarée pour que la couverture voie la table. Ses clés à
-  // l'intérieur de `card_payment` sont réelles (§5.4, v14) : le carnet et les
+  // l'intérieur du schéma `payment` sont réelles (§5.4, v14) : le carnet et les
   // demandes la tiennent, et le carnet tient les demandes.
   // `public.refund_credit` n'y est pas : aucune clé ne la relie au carnet
   // (§5.1), elle est purgée par `refund_id` dans le même fichier.
   {
-    table: "card_payment.payment",
+    table: "payment.card_payment",
     purgedIn: "card-payment.purge.ts",
-    referencedBy: ["card_payment.refund", "card_payment.refund_request"],
+    referencedBy: ["payment.card_refund", "payment.card_refund_request"],
   },
   {
-    table: "card_payment.refund_request",
+    table: "payment.card_refund_request",
     purgedIn: "card-payment.purge.ts",
-    referencedBy: ["card_payment.refund"],
+    referencedBy: ["payment.card_refund"],
   },
-  { table: "card_payment.refund", purgedIn: "card-payment.purge.ts", referencedBy: [] },
+  { table: "payment.card_refund", purgedIn: "card-payment.purge.ts", referencedBy: [] },
   { table: "ops.mail_send", purgedIn: "journals.purge.ts", referencedBy: [] },
   { table: "growth.activity_events", purgedIn: "journals.purge.ts", referencedBy: [] },
   { table: "public.order_change", purgedIn: "journals.purge.ts", referencedBy: [] },

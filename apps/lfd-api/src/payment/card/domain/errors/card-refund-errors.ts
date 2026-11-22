@@ -8,7 +8,7 @@ import {
 /** Une demande de remboursement mal formée — faute de l'appelant (le sujet), jamais d'un client. */
 export class CardRefundRequestInvalidError extends DomainError {
   constructor(detail: string) {
-    super("card_payment.refund_request.invalid", `Demande de remboursement refusée : ${detail}.`);
+    super("payment.card_refund_request.invalid", `Demande de remboursement refusée : ${detail}.`);
   }
 }
 
@@ -16,7 +16,7 @@ export class CardRefundRequestInvalidError extends DomainError {
 export class CardRefundRequestNotFoundError extends ResourceNotFoundError {
   constructor(requestId: string) {
     super(
-      "card_payment.refund_request.not_found",
+      "payment.card_refund_request.not_found",
       `Aucune demande de remboursement « ${requestId} ». Rouvrez la commande : la liste des ` +
         "demandes a peut-être changé.",
     );
@@ -27,7 +27,7 @@ export class CardRefundRequestNotFoundError extends ResourceNotFoundError {
 export class CardRefundTransitionRefusedError extends BusinessError {
   constructor(requestId: string, from: string, to: string) {
     super(
-      "card_payment.refund_request.transition_refused",
+      "payment.card_refund_request.transition_refused",
       `La demande de remboursement ${requestId} ne passe pas de « ${from} » à « ${to} » : ` +
         "une demande arrêtée se relance ou se dit rendue autrement.",
     );
@@ -38,7 +38,7 @@ export class CardRefundTransitionRefusedError extends BusinessError {
 export class CardRefundAlreadyIssuedError extends BusinessError {
   constructor(requestId: string) {
     super(
-      "card_payment.refund_request.already_issued",
+      "payment.card_refund_request.already_issued",
       `La demande de remboursement ${requestId} porte déjà un autre remboursement chez le ` +
         "prestataire : vérifiez le paiement dans son tableau de bord avant de relancer.",
     );
@@ -73,7 +73,7 @@ const RETRY_MESSAGES: Readonly<Record<CardRefundRetryRefusal, string>> = {
 /** « Relancer » refusé — un 409 qui dit pourquoi, et quoi faire. */
 export class CardRefundRetryRefusedError extends BusinessError {
   constructor(readonly reason: CardRefundRetryRefusal) {
-    super(`card_payment.refund_request.retry_${reason}`, RETRY_MESSAGES[reason]);
+    super(`payment.card_refund_request.retry_${reason}`, RETRY_MESSAGES[reason]);
   }
 }
 
@@ -81,7 +81,7 @@ export class CardRefundRetryRefusedError extends BusinessError {
 export class CardRefundNotStoppedError extends BusinessError {
   constructor(requestId: string, state: string) {
     super(
-      "card_payment.refund_request.not_stopped",
+      "payment.card_refund_request.not_stopped",
       `La demande de remboursement ${requestId} est « ${state} » : seule une demande arrêtée ` +
         "se dit rendue autrement. Si elle est en cours, attendez son issue.",
     );
@@ -92,7 +92,7 @@ export class CardRefundNotStoppedError extends BusinessError {
 export class CardRefundNothingLeftError extends BusinessError {
   constructor(paymentId: string) {
     super(
-      "card_payment.refund.nothing_left",
+      "payment.card_refund.nothing_left",
       `Il ne reste rien à rembourser sur le paiement ${paymentId} : tout est déjà rendu ou ` +
         "annoncé. Vérifiez les demandes en cours de la commande.",
     );
@@ -103,7 +103,7 @@ export class CardRefundNothingLeftError extends BusinessError {
 export class CardRefundAmountExceedsRemainderError extends BusinessError {
   constructor(amountCents: number, remainderCents: number) {
     super(
-      "card_payment.refund.amount_exceeds_remainder",
+      "payment.card_refund.amount_exceeds_remainder",
       `Remboursement de ${String(amountCents)} centimes refusé : il ne reste que ` +
         `${String(remainderCents)} centimes à rendre sur ce paiement.`,
     );
@@ -114,7 +114,7 @@ export class CardRefundAmountExceedsRemainderError extends BusinessError {
 export class CardRefundPaymentNotPaidError extends BusinessError {
   constructor(paymentId: string, state: string) {
     super(
-      "card_payment.refund.payment_not_paid",
+      "payment.card_refund.payment_not_paid",
       `Le paiement ${paymentId} est « ${state} » : il n'a pas été encaissé, il n'y a rien à ` +
         "rembourser. S'il doit l'être, annulez-le plutôt.",
     );
@@ -137,7 +137,7 @@ export type CardRefundRejection =
 export class CardRefundRejectedError extends BusinessError {
   constructor(readonly reason: CardRefundRejection) {
     super(
-      `card_payment.refund.${reason}`,
+      `payment.card_refund.${reason}`,
       `Remboursement non noté au carnet (${reason}) : comparez avec le tableau de bord du prestataire.`,
     );
   }
@@ -150,7 +150,7 @@ export class CardRefundRejectedError extends BusinessError {
 export class CardRefundRequestConflictError extends TechnicalError {
   constructor(requestId: string) {
     super(
-      "card_payment.refund_request.conflict",
+      "payment.card_refund_request.conflict",
       `La demande de remboursement ${requestId} a changé pendant l'écriture : rien n'a été ` +
         "écrit, le balayage la reprendra.",
     );

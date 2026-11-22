@@ -154,7 +154,7 @@ describe("Les cas d'avant et le bon (R4, R10)", () => {
     // Exception gardée (cf. `order-staff-cancel-orders.ts`) : l'image d'avant
     // P0 n'existe qu'en purgeant la ligne que la passation rattache désormais.
     await scene().prisma.$transaction(async (tx) => {
-      await tx.$executeRaw`SET LOCAL card_payment.purge = 'on'`;
+      await tx.$executeRaw`SET LOCAL payment.purge = 'on'`;
       await tx.cardPayment.deleteMany({ where: { subjectType: "order", subjectId: order.id } });
     });
     expect(await paymentsOf(order.id)).toEqual([]);
