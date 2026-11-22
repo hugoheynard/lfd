@@ -28,7 +28,7 @@ import {
 
 /**
  * Les liens de paiement libres, de la création au webhook (plan
- * `blocage-et-liens-de-paiement.md`). Aucune date n'est
+ * `les-liens-de-paiement.md`). Aucune date n'est
  * comparée à l'horloge : l'instant fixe n'est que recopié.
  */
 const NOW = new Date("2026-01-10T09:00:00.000Z");

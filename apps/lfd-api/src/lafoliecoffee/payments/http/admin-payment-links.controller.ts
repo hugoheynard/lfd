@@ -18,7 +18,7 @@ import { IntentKey } from "../../../platform/shared/http/intent-key.decorator.js
 
 /**
  * Surface **comptabilité** des liens de paiement libres (plan
- * `blocage-et-liens-de-paiement.md`). L'action se déduit
+ * `les-liens-de-paiement.md`). L'action se déduit
  * du verbe (`GET` → lecture, le reste → écriture).
  *
  * Les commandes à régler (§2a) vivent sous `…/payment-links/orders`, dans le

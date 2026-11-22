@@ -1,7 +1,7 @@
 /**
  * Commande **staff** (comptabilité) : bloquer le prélèvement mensuel d'une
  * société. Le crédit accordé est conservé ; les commandes à venir se règlent
- * par carte. Plan : `documentation/comptabilite/prelevement/blocage-et-liens-de-paiement.md`
+ * par carte. Plan : `documentation/comptabilite/prelevement/blocage-du-prelevement.md`
  *
  * Aucun mur membership : `b2b_deferred_payment_block:write` garde la route.
  */

@@ -219,7 +219,7 @@ export interface B2bMails {
   "customer.sub-account-gesture": SubAccountGestureMailData;
   /**
    * **Le lien de règlement d'une commande**, renvoyé par la comptabilité (plan
-   * `blocage-et-liens-de-paiement.md`). Destinataire :
+   * `les-liens-de-paiement.md`). Destinataire :
    * l'acheteur.
    *
    * Le seul courriel qui porte le lien `/commandes/:id/regler` : l'accusé de

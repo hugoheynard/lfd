@@ -19,7 +19,7 @@ import { B2B_API_BASE } from '../api/api-config';
  *
  * Transport pur : les refus (plafond dépassé, lien déjà réglé, adresse publique
  * absente) sont rédigés par le serveur, et l'écran les affiche tels quels.
- * Plan : `documentation/comptabilite/prelevement/blocage-et-liens-de-paiement.md`
+ * Plan : `documentation/comptabilite/liens-de-paiement/les-liens-de-paiement.md`
  */
 @Injectable({ providedIn: 'root' })
 export class PaymentLinksService {

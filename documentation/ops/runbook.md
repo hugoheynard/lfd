@@ -1363,18 +1363,23 @@ le même profil que le webhook Resend : la chaîne ne se vérifie qu'en ligne.
 
 ## Abonner le webhook Stripe aux liens de paiement
 
-Les **liens de paiement libres** (plan
-[`blocage-et-liens-de-paiement.md`](../comptabilite/prelevement/blocage-et-liens-de-paiement.md)
-§2b) sont des pages Stripe Checkout hébergées. Stripe ne prévient le backend
+Les **liens de paiement libres**
+([`les-liens-de-paiement.md`](../comptabilite/liens-de-paiement/les-liens-de-paiement.md),
+§2 et §3) sont des pages Stripe Checkout hébergées. Stripe ne prévient le backend
 que des événements auxquels l'endpoint est **abonné** — et un événement non
 abonné ne produit **aucune erreur** : le lien reste `open` pour toujours alors
 que le client a payé.
 
 Le geste, dans le tableau de bord Stripe (Développeurs → Webhooks), sur
-l'endpoint **déjà branché** sur `POST /payments/webhook` — celui qui reçoit
-`payment_intent.succeeded` et `payment_intent.payment_failed`. Ne pas en créer
-un second : il aurait son propre secret de signature, que le backend ne connaît
-pas, et chacun de ses appels serait refusé en `400`.
+l'endpoint **des cartes**, branché sur `POST /payments/webhook` — celui qui
+reçoit `payment_intent.succeeded` et `payment_intent.payment_failed`. Le bloc
+`card-payment` relaie ces événements aux liens.
+
+> ⚠️ Une seconde destination, « lfd-api production — liens de paiement »
+> (`POST /payments/links/webhook`, secret `STRIPE_LINKS_WEBHOOK_SECRET`),
+> existe **désactivée** depuis le 2026-11-09. Ne pas l'activer tant que le
+> plan [`plan-le-lien-vers-un-sujet.md`](../comptabilite/liens-de-paiement/plan-le-lien-vers-un-sujet.md)
+> n'est pas tranché : il propose de s'en passer.
 
 Ajouter ces **trois** événements aux deux déjà cochés :
 

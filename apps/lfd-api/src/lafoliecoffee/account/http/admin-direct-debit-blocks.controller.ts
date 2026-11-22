@@ -23,7 +23,7 @@ import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.j
  * `b2b_deferred_payment_block:write` (Hugo, 2026-09-25). Ouvrir l'espace
  * comptable à quelqu'un — pour relancer un lien de paiement — ne lui donne
  * pas le pouvoir de suspendre le crédit d'un client. Plan :
- * `documentation/comptabilite/prelevement/blocage-et-liens-de-paiement.md`
+ * `documentation/comptabilite/prelevement/blocage-du-prelevement.md`
  */
 @Controller("admin/accounting/direct-debit-blocks")
 @AdminSurface("b2b_accounting")

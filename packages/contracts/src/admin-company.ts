@@ -259,7 +259,7 @@ export interface AdminCompanyFicheView extends AdminCompanyDetailView {
 /**
  * Une société au crédit mensuel, telle que la page « Blocages du prélèvement »
  * la liste — bloquée ou non. Plan :
- * `documentation/comptabilite/prelevement/blocage-et-liens-de-paiement.md`
+ * `documentation/comptabilite/prelevement/blocage-du-prelevement.md`
  */
 export interface DirectDebitBlockView {
   readonly companyId: string;
