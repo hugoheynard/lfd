@@ -43,12 +43,13 @@ flowchart LR
 
 ## Ici
 
-| Doc                                                                                                  | Ce que c'est                                                                                                                       |
-| ---------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| [`liens-de-paiement/les-liens-de-paiement.md`](liens-de-paiement/les-liens-de-paiement.md)           | **Doc d'état** des liens de paiement : le lien d'une commande, la demande de paiement libre, le lien vers un sujet, leurs webhooks |
-| [`liens-de-paiement/plan-le-lien-vers-un-sujet.md`](liens-de-paiement/plan-le-lien-vers-un-sujet.md) | **Le plan du bloc agnostique** : lots Z, P0, P1, V et F1 bâtis ; P1b, F2, I0 à I2, P2, W et les nouvelles raisons à venir          |
-| [`plan-m2-historique-de-transactions.md`](plan-m2-historique-de-transactions.md)                     | **Le plan M2**, qui a créé le bloc qui encaisse par carte (alors `card-payment`) et y a déménagé le remboursement                  |
-| [`relecture-paiement-et-remboursement.md`](relecture-paiement-et-remboursement.md)                   | La relecture du paiement et du remboursement contre le code, qui a fondé M2                                                        |
+| Doc                                                                                                  | Ce que c'est                                                                                                                                                                                                 |
+| ---------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| [`feuille-de-route.md`](feuille-de-route.md)                                                         | **Où va le bloc**, et dans quel ordre : les lots à venir, les chantiers de fond (rapprochement, litiges…), les recettes pour une deuxième application, un deuxième prestataire, un nouveau moyen de paiement |
+| [`liens-de-paiement/les-liens-de-paiement.md`](liens-de-paiement/les-liens-de-paiement.md)           | **Doc d'état** des liens de paiement : le lien d'une commande, la demande de paiement libre, le lien vers un sujet, leurs webhooks                                                                           |
+| [`liens-de-paiement/plan-le-lien-vers-un-sujet.md`](liens-de-paiement/plan-le-lien-vers-un-sujet.md) | **Le plan du bloc agnostique** : lots Z, P0, P1, V et F1 bâtis ; P1b, F2, I0 à I2, P2, W et les nouvelles raisons à venir                                                                                    |
+| [`plan-m2-historique-de-transactions.md`](plan-m2-historique-de-transactions.md)                     | **Le plan M2**, qui a créé le bloc qui encaisse par carte (alors `card-payment`) et y a déménagé le remboursement                                                                                            |
+| [`relecture-paiement-et-remboursement.md`](relecture-paiement-et-remboursement.md)                   | La relecture du paiement et du remboursement contre le code, qui a fondé M2                                                                                                                                  |
 
 ## Ailleurs, et pourquoi
 
