@@ -267,7 +267,7 @@ describe("Un panier par espace de travail", () => {
 
   it("ne sert pas le panier d'une société à qui déclare une maison étrangère", async () => {
     // L'en-tête qui ment est refusé (403), ni servi ni reporté sur le perso
-    // (`plan-archiver-un-compte-jamais-servi.md`, § 8).
+    // (`supprimer-un-compte.md`, § 2.3).
     const { first } = await seedTwoCompanies();
     await inSpace(first).put(lines("VIE-001-1")).expect(200);
     const stranger = await createCompany(ctx.prisma, {

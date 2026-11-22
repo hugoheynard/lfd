@@ -4,7 +4,7 @@ import { AuthorizationError } from "../shared/errors/app-error.js";
  * L'espace déclaré par l'en-tête (`x-lfc-company`) désigne une société que la
  * personne n'atteint plus — fermée, ou dont elle n'est plus membre (403).
  *
- * Décidé le 2026-11-22 (plan `plan-archiver-un-compte-jamais-servi.md`, § 8) :
+ * Décidé le 2026-11-22 (`supprimer-un-compte.md`, § 2.3) :
  * on refuse plutôt que de retomber en silence sur une autre société ou sur
  * l'espace personnel, ce qui écrivait une commande sous une maison que la
  * personne ne regardait pas.

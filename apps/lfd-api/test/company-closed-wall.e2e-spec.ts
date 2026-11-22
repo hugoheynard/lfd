@@ -1,7 +1,6 @@
 /**
  * E2E du **mur d'une société fermée** — supprimée (archivée) ou résiliée
- * (`documentation/comptes-client/plan-archiver-un-compte-jamais-servi.md`,
- * lot A2 : § 3.3, § 3.4, § 6, § 7 Q3).
+ * (`documentation/comptes-client/supprimer-un-compte.md`, § 2.3).
  *
  * Ce que seul le vrai SQL prouve :
  * - le membre ne voit plus la société dans son espace, garde ses autres
@@ -18,7 +17,7 @@ import { randomUUID } from "node:crypto";
 
 import { WORKSPACE_HEADER, type AccountView } from "@lfd/contracts";
 
-import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
+import { CardProviders } from "../src/payment/card/domain/ports/card-providers.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { CompanyStatus, CustomerRole } from "../src/platform/database/client/client.js";
 import {

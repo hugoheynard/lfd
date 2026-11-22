@@ -65,7 +65,7 @@ export class PasswordLinkAlreadyIssuedError extends BusinessError {
  * **La personne invitée se connecte, mais la société qui l'invitait est
  * fermée** — supprimée ou résiliée (403). Ce n'est pas une invitation expirée :
  * aucun lien neuf ne la rouvrirait, d'où un refus à part, sans alerte à
- * l'équipe. Décidé le 2026-11-22 (`plan-archiver-un-compte-jamais-servi.md`, § 8).
+ * l'équipe. Décidé le 2026-11-22 (`supprimer-un-compte.md`, § 2.3).
  */
 export class InvitationCompanyClosedError extends AuthorizationError {
   constructor(readonly userId: string) {

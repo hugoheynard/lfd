@@ -12,8 +12,7 @@ export const CLOSING_STATUS = "terminated" satisfies StandingCompanyStatus;
 
 /**
  * **La société est-elle fermée ?** — supprimée (`archived_at` posé) OU
- * résiliée (`terminated`). Décidé par Hugo le 2026-11-17 (Q3 du plan
- * `plan-archiver-un-compte-jamais-servi.md`) : les deux ferment de la même
+ * résiliée (`terminated`). Décidé par Hugo le 2026-11-17 (`supprimer-un-compte.md`, § 2.3) : les deux ferment de la même
  * façon, et la règle est écrite ici une fois.
  *
  * Une société fermée n'entre plus dans l'espace de ses membres (principal,

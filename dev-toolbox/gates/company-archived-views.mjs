@@ -3,8 +3,8 @@
  * Gate : **une liste de sociétés dit ce qu'elle fait d'un compte supprimé.**
  *
  * « Supprimer le compte » est un soft delete : `archived_at` posé sur
- * `companies`, rien d'effacé (plan `plan-archiver-un-compte-jamais-servi.md`,
- * § 8). Le compte doit alors disparaître des vues du staff — liste, recherche,
+ * `companies`, rien d'effacé (`supprimer-un-compte.md`,
+ * § 2.4). Le compte doit alors disparaître des vues du staff — liste, recherche,
  * suivi commercial, compteurs, sélecteurs — et des producteurs automatiques.
  * Une lecture qui ne le nomme pas le remontre, sans qu'aucun test ne rougisse :
  * c'est l'oubli que cette porte rend visible.

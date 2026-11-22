@@ -20,7 +20,7 @@ import request from "supertest";
 import { CommandBus } from "@nestjs/cqrs";
 
 import { CancelOrderCommand } from "../src/lafoliecoffee/orders/cancellation/application/commands/cancel-order.command.js";
-import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
+import { CardProviders } from "../src/payment/card/domain/ports/card-providers.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 import {
@@ -233,7 +233,7 @@ describe("vos habituels (R1)", () => {
     await tuesdays(4, companyA, ["VIE-001-1", "PAI-001-1"]);
 
     expect(await usualsOf(MEMBER_B)).toEqual([]);
-    // L'en-tête qui ment est refusé (`plan-archiver-un-compte-jamais-servi.md`, § 8).
+    // L'en-tête qui ment est refusé (`supprimer-un-compte.md`, § 2.3).
     const lying = await ctx
       .asSub(MEMBER_B)
       .post("/shop/suggestions/usuals/mine")

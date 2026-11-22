@@ -33,7 +33,7 @@ import {
   type UsualSuggestionView,
 } from "@lfd/contracts";
 
-import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
+import { CardProviders } from "../src/payment/card/domain/ports/card-providers.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { CompanyStatus, CustomerRole } from "../src/platform/database/client/client.js";
 import {
@@ -270,7 +270,7 @@ describe("société suspendue — pro, carte seule", () => {
 
 /**
  * Une terminée est FERMÉE (Hugo, 2026-11-17, Q3 de
- * `plan-archiver-un-compte-jamais-servi.md`) : elle sort de l'espace de ses
+ * `supprimer-un-compte.md`) : elle sort de l'espace de ses
  * membres. Son membre ne la porte donc plus — il est servi comme un
  * particulier. Le refus nommé (`catalog.company_closed`) reste celui du chemin
  * qui facture une société lue fermée : `catalog-viewers.spec.ts`.

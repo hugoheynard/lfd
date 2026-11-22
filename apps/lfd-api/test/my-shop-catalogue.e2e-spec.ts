@@ -22,7 +22,7 @@ import {
 } from "@lfd/contracts";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
-import { CardProviders } from "../src/card-payment/domain/ports/card-providers.js";
+import { CardProviders } from "../src/payment/card/domain/ports/card-providers.js";
 import { bootstrapE2e, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { cardGatewayDouble } from "./order-factory.js";
@@ -143,7 +143,7 @@ describe("le mur", () => {
     // L'en-tête vient du réseau : il sert à DÉPARTAGER plusieurs rattachements,
     // jamais à en désigner un qu'on n'a pas. Sans cette confrontation, il
     // suffirait de le réécrire pour lire la mercuriale d'un concurrent. Il est
-    // refusé, pas ignoré (`plan-archiver-un-compte-jamais-servi.md`, § 8).
+    // refusé, pas ignoré (`supprimer-un-compte.md`, § 2.3).
     await poseMercuriale();
 
     const response = await ctx

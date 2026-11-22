@@ -76,7 +76,7 @@ async function discount(who: Person, point: string, declared?: string): Promise<
 
 /**
  * Une société déclarée que la personne n'atteint pas est REFUSÉE (403), plus
- * ignorée : `plan-archiver-un-compte-jamais-servi.md`, § 8 (2026-11-22).
+ * ignorée : `supprimer-un-compte.md`, § 2.3 (2026-11-22).
  */
 async function refusedQuote(who: Person, point: string, declared: string): Promise<void> {
   const response = await ctx

@@ -1,6 +1,6 @@
 /**
  * E2E des vues d'un compte supprimé (`archived_at`, « Supprimer le compte ») —
- * plan `plan-archiver-un-compte-jamais-servi.md`, lot A3.
+ * `supprimer-un-compte.md`, § 2.4.
  *
  * Ce que seul le vrai SQL prouve :
  * - la liste staff (`GET /admin/companies`), dont l'écran tire sa recherche et
