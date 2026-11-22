@@ -152,9 +152,19 @@ describe("le schéma payment — les noms écrits à la main", () => {
         "pay_link_live_per_subject_key",
         "pay_link_guard",
         "pay_link_no_delete",
+        "transfer_received_append_only",
+        "transfer_allocation_append_only",
+        "transfer_allocation_subject_type_known",
       ]),
     );
-    const prefixes = ["card_payment_", "card_refund_", "card_takeover_", "pay_link_"];
+    const prefixes = [
+      "card_payment_",
+      "card_refund_",
+      "card_takeover_",
+      "pay_link_",
+      "transfer_received_",
+      "transfer_allocation_",
+    ];
     expect(all.filter((name) => !prefixes.some((prefix) => name.startsWith(prefix)))).toEqual([]);
   });
 });

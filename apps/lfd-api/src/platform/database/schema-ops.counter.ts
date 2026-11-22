@@ -163,12 +163,15 @@ const NON_PUBLIC_SCHEMA_OF_MODEL: Readonly<Record<string, string>> = {
   MailCharterVersion: "mail",
   MailSenderIdentity: "mail",
   // L'encaissement (`src/payment/`) : les paiements par carte, le témoin de
-  // leur reprise, les demandes de remboursement, le carnet, et les liens.
+  // leur reprise, les demandes de remboursement, le carnet, et les liens, les
+  // virements reçus et leurs parts.
   CardPayment: "payment",
   CardPaymentTakeover: "payment",
   CardRefundRequest: "payment",
   CardRefund: "payment",
   PayLink: "payment",
+  TransferReceived: "payment",
+  TransferAllocation: "payment",
   // Le panier de la boutique, sorti de `public` dans son bloc `src/shop-cart/`.
   ShopCart: "cart",
   // Le référentiel, depuis B4. Il avait sa propre BASE : ses opérations
