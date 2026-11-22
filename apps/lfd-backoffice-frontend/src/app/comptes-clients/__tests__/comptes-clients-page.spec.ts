@@ -45,6 +45,7 @@ function makeCompany(
     createdAt: '2026-07-30T10:00:00.000Z',
     declaredVia: null,
     piecesReached: [],
+    archivedAt: null,
     activatedAt: null,
     warnings: [],
   };
@@ -62,6 +63,7 @@ const COMPANIES: readonly AdminCompany[] = [
 async function setup(
   companies: readonly AdminCompany[] = COMPANIES,
   counts: Promise<Readonly<Record<string, number>>> = Promise.resolve({}),
+  archived: readonly AdminCompany[] = [],
 ): Promise<ComptesClientsPage> {
   TestBed.configureTestingModule({
     providers: [
@@ -70,7 +72,10 @@ async function setup(
       provideRouter([{ path: '**', children: [] }]),
       {
         provide: AdminCompaniesService,
-        useValue: { list: (): Promise<readonly AdminCompany[]> => Promise.resolve(companies) },
+        useValue: {
+          list: (): Promise<readonly AdminCompany[]> => Promise.resolve(companies),
+          listArchived: (): Promise<readonly AdminCompany[]> => Promise.resolve(archived),
+        } satisfies Pick<AdminCompaniesService, 'list' | 'listArchived'>,
       },
       {
         provide: PortfolioMetricsService,
@@ -104,6 +109,17 @@ describe('ComptesClientsPage', () => {
     ]);
     page['onFilterChange']('self_signup');
     expect(page['filtered']().map((company) => company.id)).toEqual(['s']);
+  });
+
+  it('« Supprimés » lit les comptes supprimés à part, sans les mêler à « Tous »', async () => {
+    const page = await setup(COMPANIES, Promise.resolve({}), [makeCompany('x', 'pending')]);
+    expect(page['filtered']().map((company) => company.id)).not.toContain('x');
+    page['onFilterChange']('archived');
+    await vi.waitFor(() => {
+      expect(page['filtered']().map((company) => company.id)).toEqual(['x']);
+    });
+    page['onFilterChange']('all');
+    expect(page['filtered']()).toHaveLength(5);
   });
 
   it('charge les sociétés et passe à ready', async () => {

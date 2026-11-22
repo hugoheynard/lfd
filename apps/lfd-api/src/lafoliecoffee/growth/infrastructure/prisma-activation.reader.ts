@@ -6,6 +6,7 @@ import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { ACTIVITY_TYPES } from "../domain/activity-event.js";
 import { companyIdsOf, deriveActivations, type ActivationEvent } from "../domain/activation.js";
+import { ArchivedCompaniesReader } from "../domain/ports/archived-companies.reader.js";
 import { CompanyNamer } from "../domain/ports/company-namer.js";
 import { ActivationReader } from "../domain/ports/activation.reader.js";
 
@@ -24,6 +25,7 @@ export class PrismaActivationReader extends ActivationReader {
     private readonly prisma: PrismaService,
     private readonly clock: Clock,
     private readonly companies: CompanyNamer,
+    private readonly archived: ArchivedCompaniesReader,
   ) {
     super();
   }
@@ -43,7 +45,7 @@ export class PrismaActivationReader extends ActivationReader {
       select: { type: true, subjectId: true, occurredAt: true, actorType: true, payload: true },
     });
 
-    const events: ActivationEvent[] = rows.map((row) => ({
+    const journal: ActivationEvent[] = rows.map((row) => ({
       type: row.type,
       subjectId: row.subjectId,
       occurredAt: row.occurredAt,
@@ -54,6 +56,9 @@ export class PrismaActivationReader extends ActivationReader {
     // Une seule lecture pour toutes les enseignes : le tunnel en nomme autant
     // qu'il porte de dossiers, et les demander une par une ferait une requête
     // par ligne d'écran.
+    // Un compte supprimé sort du tunnel : un doublon n'est pas un dossier bloqué.
+    const archived = await this.archived.among(companyIdsOf(journal));
+    const events = journal.filter((event) => !archived.has(event.subjectId));
     const names = await this.companies.namesOf(companyIdsOf(events));
     return deriveActivations(events, this.clock.now(), names);
   }

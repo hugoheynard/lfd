@@ -43,7 +43,8 @@ export class PrismaCounterCustomerReader extends CounterCustomerReader {
 
   async listActive(): Promise<readonly CounterCustomerCard[]> {
     const rows = await this.prisma.company.findMany({
-      where: { status: CompanyStatus.active },
+      // Supprimé : plus une carte du Comptoir, même resté `active`.
+      where: { status: CompanyStatus.active, archivedAt: null },
       select: CARD_COLUMNS,
       orderBy: [{ enseigne: "asc" }, { raisonSociale: "asc" }],
     });
@@ -52,7 +53,7 @@ export class PrismaCounterCustomerReader extends CounterCustomerReader {
 
   async activeCard(companyId: string): Promise<CounterCustomerCard | null> {
     const row = await this.prisma.company.findFirst({
-      where: { id: companyId, status: CompanyStatus.active },
+      where: { id: companyId, status: CompanyStatus.active, archivedAt: null },
       select: CARD_COLUMNS,
     });
     return row === null ? null : toCard(row);

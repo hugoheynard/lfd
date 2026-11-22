@@ -40,7 +40,7 @@ export class GetCustomerPortfolioHandler implements IQueryHandler<
   ) {}
 
   async execute(): Promise<CustomerPortfolioView> {
-    const all = await this.companies.listAll();
+    const all = await this.companies.listAll("listed");
     const since = this.clock.now().getTime() - NEW_CUSTOMER_WINDOW_DAYS * MILLISECONDS_PER_DAY;
     return {
       active: all.filter((company) => company.status === "active").length,

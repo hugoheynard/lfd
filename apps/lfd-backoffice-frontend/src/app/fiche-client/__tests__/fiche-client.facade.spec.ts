@@ -92,6 +92,17 @@ class ScriptedActions extends FicheClientActions {
     return Promise.resolve(this.succeeds);
   }
 
+  archivedWith: string[] = [];
+
+  override archive(_company: AdminCompanyDetail, reason: string): Promise<boolean> {
+    this.archivedWith.push(reason);
+    return Promise.resolve(this.succeeds);
+  }
+
+  override unarchive(): Promise<boolean> {
+    return Promise.resolve(this.succeeds);
+  }
+
   override certifyKbis(): Promise<string | null> {
     return Promise.resolve(this.succeeds ? null : 'Date de délivrance dans le futur.');
   }
@@ -176,6 +187,40 @@ describe('façade — un geste réussi recharge la fiche', () => {
     await facade.activate();
 
     expect(loads()).toBe(0);
+  });
+});
+
+describe('façade — « Supprimer le compte » et « Rétablir »', () => {
+  beforeEach(() => {
+    TestBed.resetTestingModule();
+  });
+
+  it('envoie le motif et recharge la fiche', async () => {
+    const { facade, loads } = setup({ succeeds: true });
+    await facade.reload();
+
+    await facade.archive('Doublon');
+
+    expect(injected(FicheClientActions, ScriptedActions).archivedWith).toEqual(['Doublon']);
+    expect(loads()).toBe(2);
+  });
+
+  it('un refus serveur ne recharge pas', async () => {
+    const { facade, loads } = setup({ succeeds: false });
+    await facade.reload();
+
+    await facade.archive('Doublon');
+
+    expect(loads()).toBe(1);
+  });
+
+  it('rétablir recharge la fiche', async () => {
+    const { facade, loads } = setup({ succeeds: true });
+    await facade.reload();
+
+    await facade.unarchive();
+
+    expect(loads()).toBe(2);
   });
 });
 

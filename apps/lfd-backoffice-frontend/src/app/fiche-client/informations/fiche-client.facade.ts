@@ -169,6 +169,14 @@ export class FicheClientFacade {
     return this.mutate((company) => this.actions.terminate(company));
   }
 
+  archive(reason: string): Promise<void> {
+    return this.mutate((company) => this.actions.archive(company, reason));
+  }
+
+  unarchive(): Promise<void> {
+    return this.mutate((company) => this.actions.unarchive(company));
+  }
+
   grantTerms(terms: readonly DeferredTerm[]): Promise<void> {
     return this.mutate((company) => this.actions.grantTerms(company, terms));
   }

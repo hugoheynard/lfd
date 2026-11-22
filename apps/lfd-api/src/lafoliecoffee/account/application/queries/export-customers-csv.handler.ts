@@ -18,6 +18,6 @@ export class ExportCustomersCsvHandler implements IQueryHandler<ExportCustomersC
   constructor(private readonly companies: AdminCompanyReader) {}
 
   async execute(): Promise<string> {
-    return customersCsv(await this.companies.listAll());
+    return customersCsv(await this.companies.listAll("listed"));
   }
 }

@@ -6,6 +6,7 @@ import { LeadEventSource } from "../../../domain/ports/lead-event-source.js";
 import { LeadReader } from "../../../domain/ports/lead.reader.js";
 import { LeadScoreStore } from "../../../domain/ports/lead-score.store.js";
 import { CompanyNamer, type CompanyIdentity } from "../../../domain/ports/company-namer.js";
+import { FixedArchivedCompanies } from "../../../domain/ports/__tests__/fixed-archived-companies.js";
 import { RecomputeLeadScoresHandler } from "../recompute-lead-scores.handler.js";
 
 const NOW = new Date("2026-08-20T10:00:00.000Z");
@@ -86,6 +87,7 @@ describe("RecomputeLeadScoresHandler", () => {
       store,
       new FixedClock(NOW),
       new FakeCompanies(),
+      new FixedArchivedCompanies(),
     );
 
     const count = await handler.execute();
@@ -107,6 +109,7 @@ describe("RecomputeLeadScoresHandler", () => {
       store,
       new FixedClock(NOW),
       new FakeCompanies(),
+      new FixedArchivedCompanies(),
     );
 
     const count = await handler.execute();
@@ -131,6 +134,7 @@ describe("RecomputeLeadScoresHandler", () => {
       store,
       new FixedClock(NOW),
       companies,
+      new FixedArchivedCompanies(),
     );
 
     await handler.execute();
@@ -150,6 +154,7 @@ describe("RecomputeLeadScoresHandler", () => {
       new CapturingStore(),
       new FixedClock(NOW),
       companies,
+      new FixedArchivedCompanies(),
     );
 
     await handler.execute();
@@ -169,10 +174,34 @@ describe("RecomputeLeadScoresHandler", () => {
       store,
       new FixedClock(NOW),
       new FakeCompanies(),
+      new FixedArchivedCompanies(),
     );
 
     await handler.execute();
 
     expect(store.written?.map((row) => row.subjectId)).toEqual(["c_a"]);
+  });
+
+  it("écarte un compte supprimé : un doublon n'est pas un dossier à relancer", async () => {
+    const store = new CapturingStore();
+    const archived = new FixedArchivedCompanies(["c_doublon"]);
+    const handler = new RecomputeLeadScoresHandler(
+      new FakeEventSource([
+        declared("c_doublon", "2026-08-05T09:00:00.000Z"),
+        declared("c_vrai", "2026-08-06T09:00:00.000Z"),
+        ordered("u1", "2026-08-18T09:00:00.000Z", 5000),
+      ]),
+      new FakeLeadReader(),
+      store,
+      new FixedClock(NOW),
+      new FakeCompanies(),
+      archived,
+    );
+
+    await handler.execute();
+
+    expect(store.written?.map((row) => row.subjectId)).toEqual(["c_vrai"]);
+    // Un lot, les sociétés seules : la personne `u1` n'est pas demandée.
+    expect(archived.batches).toEqual([["c_doublon", "c_vrai"]]);
   });
 });

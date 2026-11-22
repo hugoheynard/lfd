@@ -37,6 +37,7 @@ function company(id: string, declaredVia: AdminCompany['declaredVia']): AdminCom
     createdAt: NOW.toISOString(),
     declaredVia,
     piecesReached: [],
+    archivedAt: null,
     activatedAt: null,
     warnings: [],
   };

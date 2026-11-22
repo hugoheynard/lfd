@@ -25,6 +25,18 @@
     }
     @case ('ready') {
       <fold-aside-layout class="fiche" asideRightLabel="Activation">
+        <!-- Un compte supprimé le dit d'abord : tout ce qui suit est la fiche
+             d'un compte hors des listes. -->
+        @if (fiche.company(); as c) {
+          @if (c.archivedAt; as archivedAt) {
+            <app-deleted-account-banner
+              [archivedAt]="archivedAt"
+              [archivedByName]="c.archivedByName"
+              [reason]="c.archiveReason"
+              (unarchive)="fiche.unarchive()"
+            />
+          }
+        }
         <!-- La synthèse ne réclame que ce qui bloque À CE MOMENT : deux champs
              pour ouvrir, les pièces d'activation ensuite. Montrer le dossier
              complet devant un formulaire vide faisait passer pour bloquant ce
@@ -335,6 +347,12 @@
               (editIdentity)="fiche.editIdentity()"
               (debitSetupChange)="fiche.reload()"
             />
+          }
+        }
+        <!-- Supprimer n'est pas résilier : la résiliation vit dans le rail. -->
+        @if (!fiche.draft() && fiche.company(); as c) {
+          @if (c.archivedAt === null) {
+            <app-account-deletion-zone [company]="c" (archive)="fiche.archive($event)" />
           }
         }
         <!-- Le geste qui clôt le dossier, épinglé : il se perdait au fil d'une

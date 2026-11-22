@@ -124,6 +124,7 @@
   "test/company-access-guards.e2e-spec.ts": 5103,
   "test/company-activation.e2e-spec.ts": 3537,
   "test/company-archive.e2e-spec.ts": 7978,
+  "test/company-archive-views.e2e-spec.ts": 11945,
   "test/company-bank-account.e2e-spec.ts": 8352,
   "test/company-closed-wall.e2e-spec.ts": 9900,
   "test/company-naf-race.e2e-spec.ts": 2849,

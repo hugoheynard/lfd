@@ -186,6 +186,16 @@ export class FicheClientActions {
     );
   }
 
+  /** Supprime un compte créé par erreur ou en double ; le serveur dit ce qui retient. */
+  archive(company: AdminCompanyDetail, reason: string): Promise<boolean> {
+    return this.run(() => this.service.archive(company.id, reason), 'Compte supprimé.');
+  }
+
+  /** Rend un compte supprimé aux listes, son statut intact. */
+  unarchive(company: AdminCompanyDetail): Promise<boolean> {
+    return this.run(() => this.service.unarchive(company.id), 'Compte rétabli.');
+  }
+
   /** Accorde (ou retire) les crédits de règlement — l'ensemble complet part. */
   grantTerms(company: AdminCompanyDetail, terms: readonly DeferredTerm[]): Promise<boolean> {
     return this.run(

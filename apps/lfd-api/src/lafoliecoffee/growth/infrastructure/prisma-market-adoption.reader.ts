@@ -44,7 +44,8 @@ export class PrismaMarketAdoptionReader extends MarketAdoptionReader {
     const targeted = new Set(config.zones.map((z) => z.codePostal));
 
     const companies = await this.prisma.company.findMany({
-      where: { status: { in: ["active", "terminated"] } },
+      // Un compte supprimé n'a jamais été un client du marché.
+      where: { status: { in: ["active", "terminated"] }, archivedAt: null },
       select: {
         status: true,
         activatedAt: true,

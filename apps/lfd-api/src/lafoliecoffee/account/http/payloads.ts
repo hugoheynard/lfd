@@ -183,3 +183,14 @@ export const issuePasswordLinkPayload = z
   .optional();
 
 export type IssuePasswordLinkPayload = z.infer<typeof issuePasswordLinkPayload>;
+
+/**
+ * Le paramètre de `GET /admin/companies` : `archived=only` ne rend que les
+ * comptes supprimés ; absent, ils sont écartés. Toute autre valeur est refusée
+ * (400) plutôt que lue comme l'absence : un filtre mal écrit montrerait la
+ * mauvaise liste sans le dire.
+ */
+export const adminCompaniesListQuery = z.object({
+  archived: z.literal("only").optional(),
+});
+export type AdminCompaniesListQueryParams = z.infer<typeof adminCompaniesListQuery>;

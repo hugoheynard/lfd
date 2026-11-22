@@ -12,6 +12,7 @@ export type {
   CompanyWarningsCountView,
   CompanyOwnerView,
   AdminCompanyView,
+  AdminCompaniesListQuery,
   AdminCompanyDetailView,
   AdminKbisView,
   StaffActorView,

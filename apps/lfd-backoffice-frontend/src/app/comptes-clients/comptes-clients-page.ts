@@ -35,6 +35,7 @@ import { KbisCell } from './kbis-cell/kbis-cell';
 import { parisToday } from '../shared/paris-today';
 import { SelfSignupPipeline } from './self-signup-pipeline/self-signup-pipeline';
 import { PortfolioMetricsService } from './portfolio-metrics.service';
+import { AdminCompaniesService } from './admin-companies.service';
 import { COMPANY_LIST_MAX_AGE_MS, CompanyListStore } from './company-cache/company-list.store';
 import { watchCompanySubjects } from './company-cache/company-subjects';
 import { STATUS_LABELS, type AdminCompany, type CompanyStatus } from './admin-company';
@@ -63,9 +64,10 @@ const PAGINATOR_LABELS: FoldPaginatorLabels = {
 /**
  * Valeur du filtre : un statut, `all` pour la vue d'ensemble, ou `self_signup`
  * — le pipeline des pros inscrits seuls (plan auto-acquisition pro, P1), qui a
- * son propre tableau.
+ * son propre tableau —, ou `archived` : les comptes supprimés, que le serveur
+ * écarte de la liste par défaut et rend sur une lecture à part.
  */
-type FilterValue = 'all' | CompanyStatus | 'self_signup';
+type FilterValue = 'all' | CompanyStatus | 'self_signup' | 'archived';
 
 /** Ordre des statuts dans le filtre — `all` en tête, l'actionnable (`pending`) en 2ᵉ. */
 const FILTER_ORDER: readonly FilterValue[] = [
@@ -75,6 +77,7 @@ const FILTER_ORDER: readonly FilterValue[] = [
   'suspended',
   'terminated',
   'self_signup',
+  'archived',
 ];
 
 /**
@@ -153,11 +156,14 @@ export class ComptesClientsPage {
 
   private readonly router = inject(Router);
   private readonly service = inject(CompanyListStore);
+  private readonly api = inject(AdminCompaniesService);
   private readonly alerts = inject(PendingAlertsService);
   private readonly portfolio = inject(PortfolioMetricsService);
 
   protected readonly state = signal<LoadState>('loading');
   protected readonly companies = signal<readonly AdminCompany[]>([]);
+  /** Les comptes supprimés — lus seulement quand le segment « Supprimés » est choisi. */
+  private readonly archived = signal<readonly AdminCompany[]>([]);
 
   /**
    * L'instant qui date les avertissements, figé au chargement de l'écran.
@@ -209,6 +215,7 @@ export class ComptesClientsPage {
     { value: 'suspended', label: 'Suspendu' },
     { value: 'terminated', label: 'Résilié' },
     { value: 'self_signup', label: 'Inscrit seul · dossier incomplet' },
+    { value: 'archived', label: 'Supprimés' },
   ];
 
   /** Segments du filtre de hiérarchie — dans l'ordre de `HIERARCHY_ORDER`. */
@@ -268,9 +275,9 @@ export class ComptesClientsPage {
   protected readonly filtered = computed<readonly AdminCompany[]>(() => {
     const current = this.filter();
     const term = this.search();
-    const all = this.companies();
+    const all = current === 'archived' ? this.archived() : this.companies();
     const byStatus =
-      current === 'all'
+      current === 'all' || current === 'archived'
         ? all
         : all.filter((company) =>
             current === 'self_signup'
@@ -404,6 +411,10 @@ export class ComptesClientsPage {
     try {
       // La copie de la session sert, sauf écriture depuis ou plus de cinq minutes.
       this.companies.set(await this.service.list({ maxAgeMs: COMPANY_LIST_MAX_AGE_MS }));
+      // Les supprimés ne sont pas dans la copie de session : relus à chaque fois.
+      if (this.filter() === 'archived') {
+        this.archived.set(await this.api.listArchived());
+      }
       this.state.set('ready');
     } catch {
       if (!background) {
@@ -424,6 +435,9 @@ export class ComptesClientsPage {
     if (isFilterValue(value)) {
       this.filter.set(value);
       this.page.set(1);
+      if (value === 'archived') {
+        void this.load();
+      }
     }
   }
 

@@ -118,6 +118,22 @@ export interface AdminCompanyView {
    * l'étage Activation de Prospects la comptait encore comme franchie.
    */
   readonly piecesReached: readonly ActivationPiece[];
+  /**
+   * Quand le compte a été supprimé (« Supprimer le compte », un archivage), en
+   * ISO, ou `null` : il est dans les listes. Le statut, lui, n'a pas bougé.
+   * La liste par défaut n'en rend aucun de posé ; `?archived=only` ne rend
+   * qu'eux (le filtre « Supprimés »).
+   */
+  readonly archivedAt: string | null;
+}
+
+/**
+ * Le paramètre de la liste staff des comptes (`GET /admin/companies`) :
+ * absent, la liste écarte les comptes supprimés ; `archived=only` ne rend
+ * QUE les supprimés. Un compte résilié est listé dans le premier cas.
+ */
+export interface AdminCompaniesListQuery {
+  readonly archived?: "only";
 }
 
 /**
@@ -195,11 +211,6 @@ export interface AdminCompanyDetailView extends AdminCompanyView {
    */
   readonly chorusRouting: ChorusRoutingView | null;
 
-  /**
-   * Quand le compte a été supprimé (« Supprimer le compte », un archivage), en
-   * ISO, ou `null` : il est dans les listes. Le statut, lui, n'a pas bougé.
-   */
-  readonly archivedAt: string | null;
   /** Qui l'a supprimé, nom figé ce jour-là ; `null` si inconnu de l'annuaire ou non supprimé. */
   readonly archivedByName: string | null;
   /** Le motif de la suppression ; `null` si le compte n'est pas supprimé. */

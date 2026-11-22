@@ -41,6 +41,7 @@ function company(id: string, overrides: Partial<AdminCompany> = {}): AdminCompan
     createdAt: daysBefore(1),
     declaredVia: 'self',
     piecesReached: [],
+    archivedAt: null,
     activatedAt: null,
     warnings: [],
     ...overrides,

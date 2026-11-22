@@ -30,6 +30,9 @@ export type {
  * ({@link AdminCompanyDetailView}), pas de la liste — une liste reste scannable.
  */
 
+/** La portée d'une liste staff des sociétés : les listées, ou les supprimées seules. */
+export type CompanyListScope = "listed" | "archived";
+
 /**
  * Port de **lecture admin** des sociétés — **cross-tenant assumé** : contrairement
  * à `AccountReader` (qui part de `user → memberships → company`), on lit
@@ -37,7 +40,13 @@ export type {
  * amont par l'authentification **staff** (cf. `AdminAuthGuard`), pas par la query.
  */
 export abstract class AdminCompanyReader {
-  abstract listAll(): Promise<readonly AdminCompanyView[]>;
+  /**
+   * Les sociétés d'une portée : `listed` écarte les comptes supprimés
+   * (`archived_at` posé) — la liste, le portefeuille, l'export —, `archived`
+   * ne rend qu'eux (le filtre « Supprimés »). Un compte résilié est `listed` :
+   * la résiliation le garde dans la liste (Hugo, 2026-11-22).
+   */
+  abstract listAll(scope: CompanyListScope): Promise<readonly AdminCompanyView[]>;
 
   /**
    * La fiche d'une société par son id, ou `null` si aucune société ne porte cet

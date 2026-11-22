@@ -37,6 +37,7 @@ const company: AdminCompany = {
   createdAt: '2026-07-30T10:00:00.000Z',
   declaredVia: null,
   piecesReached: [],
+  archivedAt: null,
   activatedAt: null,
   warnings: [],
 };
@@ -87,7 +88,6 @@ describe('AdminCompaniesService', () => {
       revision: 0,
       activation: null,
       gate: { canActivate: false, blocking: [], checklist: [] },
-      archivedAt: null,
       archivedByName: null,
       archiveReason: null,
       hasOrders: false,

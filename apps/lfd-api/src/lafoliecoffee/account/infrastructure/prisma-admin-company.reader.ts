@@ -9,6 +9,7 @@ import { CompanyAddressReader } from "../domain/ports/company-address.reader.js"
 import {
   AdminCompanyReader,
   type AdminCompanyDetailView,
+  type CompanyListScope,
   type AdminCompanyView,
 } from "../domain/ports/admin-company.reader.js";
 import { companyWarnings } from "../domain/services/company-warnings.js";
@@ -52,6 +53,7 @@ const COMPANY_SELECT = {
   suspensionCause: true,
   // Préférence d'acheminement : lue sur la fiche seulement, mais si peu coûteuse
   // (trois colonnes, aucune jointure) qu'un second select ne se justifierait pas.
+  archivedAt: true,
   preferredFulfillmentMethod: true,
   preferredPickupAddressId: true,
   preferredDeliveryAddressId: true,
@@ -135,8 +137,11 @@ export class PrismaAdminCompanyReader extends AdminCompanyReader {
     super();
   }
 
-  async listAll(): Promise<readonly AdminCompanyView[]> {
+  async listAll(scope: CompanyListScope): Promise<readonly AdminCompanyView[]> {
     const rows = await this.prisma.company.findMany({
+      // Un compte supprimé sort de la liste ; le filtre « Supprimés » ne rend
+      // qu'eux. Un résilié reste listé : `archivedAt` seul, pas la fermeture.
+      where: { archivedAt: scope === "archived" ? { not: null } : null },
       orderBy: { createdAt: "desc" },
       select: COMPANY_SELECT,
     });
@@ -153,7 +158,6 @@ export class PrismaAdminCompanyReader extends AdminCompanyReader {
         ...COMPANY_SELECT,
         revision: true,
         bankAccount: { select: { id: true } },
-        archivedAt: true,
         archivedByName: true,
         archiveReason: true,
       },
@@ -235,7 +239,6 @@ export class PrismaAdminCompanyReader extends AdminCompanyReader {
       },
       hierarchy,
       chorusRouting: chorusRoutingView(row.chorusRouting),
-      archivedAt: row.archivedAt?.toISOString() ?? null,
       archivedByName: row.archivedAt === null ? null : row.archivedByName,
       archiveReason: row.archivedAt === null ? null : row.archiveReason,
     };
@@ -316,6 +319,7 @@ function toView(
         ? null
         : { id: company.parentCompany.id, enseigne: company.parentCompany.enseigne },
     declaredVia: company.declaredVia,
+    archivedAt: company.archivedAt?.toISOString() ?? null,
     piecesReached: dossierPieces({
       vatNumber: company.vatNumber,
       kbisDeposited: company.kbisUploadedAt !== null,

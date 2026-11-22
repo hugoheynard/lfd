@@ -227,6 +227,10 @@
 >   Et **81** depuis le 2026-11-21 avec `lint:workflows` : les workflows
 >   GitHub passent actionlint, épinglé par version et somme — un workflow
 >   n'était lu que par GitHub, et une faute s'y découvrait au lancement.
+>   Et **82** depuis le 2026-11-22 avec `lint:company-archived-views` : un
+>   compte supprimé (`archived_at`, « Supprimer le compte ») sort des vues du
+>   staff ; toute liste de sociétés nomme `archivedAt` dans son `where`, ou
+>   figure dans la liste admise avec sa raison.
 >   C'est la
 >   **seule** correction faite dans le corps, parce qu'un chiffre faux se vérifie
 >   en une commande et trompe tout de suite ;
@@ -464,10 +468,11 @@ src/
 │                   son schéma `mail`, sans métier propre. Tous les blocs
 │                   métier l'atteignent par `mail/channels/` SEULEMENT.
 │                   Cf. mail/plan-service-e-mails.md
-├── card-payment/ ▸ L'ENCAISSEMENT PAR CARTE — encaisse et rembourse pour
-│                   un sujet opaque, sans métier propre. Annoncé le 2026-11-09
-│                   (plan M2, lot P0) : portes armées, dossier pas encore créé.
-│                   Cf. commandes/modification/plan-m2-historique-de-transactions.md
+├── payment/      ▸ L'ENCAISSEMENT — encaisse et rembourse pour un sujet
+│                   opaque, sans métier propre, agnostique de l'application et
+│                   du moyen. card/ (la carte), channels/ (ce que les autres
+│                   blocs atteignent) ; link/ viendra avec les liens.
+│                   Cf. comptabilite/liens-de-paiement/plan-le-lien-vers-un-sujet.md
 ├── shop-cart/    ▸ LE PANIER — enregistrer et relire le panier en cours, dans
 │                   son schéma `cart`, sans clé étrangère. Sorti des commandes
 │                   le 2026-11-20 ; le chiffrage reste au commerce, qui
@@ -484,7 +489,7 @@ src/
 └── main.ts
 ```
 
-| Depuis ↓ vers →     | `staff`          | `pim`               | `media`             | `lafoliecoffee` | `production`        | `handover`          | `ops` | `delivery`          | `packing`           | `mail`              | `card-payment`      | `shop-cart`         | `platform` |
+| Depuis ↓ vers →     | `staff`          | `pim`               | `media`             | `lafoliecoffee` | `production`        | `handover`          | `ops` | `delivery`          | `packing`           | `mail`              | `payment`           | `shop-cart`         | `platform` |
 | ------------------- | ---------------- | ------------------- | ------------------- | --------------- | ------------------- | ------------------- | ----- | ------------------- | ------------------- | ------------------- | ------------------- | ------------------- | ---------- |
 | **`staff`**         | —                | ✗                   | ✗                   | ✗               | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | **port uniquement** | ✗                   | ✗                   | ✓          |
 | **`pim`**           | ✓ (autorisation) | —                   | **port uniquement** | ✗               | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | **port uniquement** | ✗                   | ✗                   | ✓          |
@@ -495,7 +500,7 @@ src/
 | **`delivery`**      | ✓ (autorisation) | ✗                   | ✗                   | **✗**           | **port uniquement** | ✗                   | ✗     | —                   | **port uniquement** | **port uniquement** | ✗                   | ✗                   | ✓          |
 | **`packing`**       | ✓ (autorisation) | ✗                   | ✗                   | ✗               | **port uniquement** | **port uniquement** | ✗     | ✗                   | —                   | **port uniquement** | ✗                   | ✗                   | ✓          |
 | **`mail`**          | ✓ (autorisation) | ✗                   | ✗                   | ✗               | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | —                   | ✗                   | ✗                   | ✓          |
-| **`card-payment`**  | ✓ (autorisation) | ✗                   | ✗                   | ✗               | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | **port uniquement** | —                   | ✗                   | ✓          |
+| **`payment`**       | ✓ (autorisation) | ✗                   | ✗                   | ✗               | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | **port uniquement** | —                   | ✗                   | ✓          |
 | **`shop-cart`**     | ✗                | ✗                   | ✗                   | ✗               | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | ✗                   | ✗                   | —                   | ✓          |
 | **`ops`**           | ✗                | ✗                   | ✗                   | ✗               | ✗                   | ✗                   | —     | ✗                   | ✗                   | ✗                   | ✗                   | ✗                   | ✓          |
 | **`platform`**      | ✗                | ✗                   | ✗                   | ✗               | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | ✗                   | ✗                   | ✗                   | —          |
@@ -606,7 +611,7 @@ C1–C2). Le bloc n'a pas de métier propre : il reçoit des demandes
 (« l'e-mail _commande passée_, à cette personne, avec ces données »), compose,
 envoie et garde le suivi. Il DÉCLARE et IMPLÉMENTE lui-même
 `mail/channels/requests/` (`Mail`, typée par modèle), et c'est la seule
-surface qu'un autre bloc atteint — `staff`, `production` et `card-payment` compris : n'importer
+surface qu'un autre bloc atteint — `staff`, `production` et `payment` compris : n'importer
 que ce canal ne couple à rien d'autre, et une porte déclarée dans `platform/`
 aurait perdu le typage des 32 modèles. `mail` n'importe que `platform` et
 `staff` (l'autorisation de l'éditeur) ; `staff ↔ mail` se lisent donc dans les
@@ -614,23 +619,26 @@ deux sens, par des fichiers distincts — la figure de `handover`. `mail → <bl
 métier>` reste interdit : le service ne sait pas qui lui écrit. `ops` ne
 l'atteint pas.
 
-🔴 **`card-payment` encaisse et rembourse par carte pour un sujet opaque**
-(2026-11-09, Hugo ;
+🔴 **`payment` encaisse et rembourse pour un sujet opaque** (2026-11-09,
+Hugo ;
 [`documentation/commandes/modification/plan-m2-historique-de-transactions.md`](documentation/commandes/modification/plan-m2-historique-de-transactions.md),
-§3.1). Agnostique du contexte : il ne sait pas ce qu'est une commande, seulement
-`(subject_type, subject_id)`. Comme `mail`, il n'a pas de métier propre et les
-blocs métier ne l'atteignent que par son canal (`card-payment/channels/`) —
-aujourd'hui le seul `lafoliecoffee`, d'où la case `port uniquement`. Comme `production`
-avec `channels/commerce/`, il DÉCLARE `card-payment/channels/subjects/`, que
-chaque bloc métier sujet implémente et qu'`appBootstrap` relie.
-`card-payment` n'importe que `staff` (autorisation), `platform` et le canal
-`mail/channels/` ; `card-payment → <bloc métier>` reste interdit. Le canal des
-e-mails sert l'avis à la comptabilité d'un paiement par lien encaissé : un
-besoin de toutes les applications qui encaisseront, donc du bloc qui
-encaisse, pas de chacune (décidé par Hugo le 2026-11-22 ;
-[`documentation/comptabilite/liens-de-paiement/plan-le-lien-vers-un-sujet.md`](documentation/comptabilite/liens-de-paiement/plan-le-lien-vers-un-sujet.md), § 2.4). **La carte seulement** : ni
-prélèvements SEPA, ni virements, ni liens de paiement. Portes armées le
-2026-11-09, avant que le dossier existe (lot P0.a).
+§3.1 ; bloc `payment` décidé par Hugo le 2026-11-22,
+[`documentation/comptabilite/liens-de-paiement/plan-le-lien-vers-un-sujet.md`](documentation/comptabilite/liens-de-paiement/plan-le-lien-vers-un-sujet.md),
+§0). Agnostique de l'application et du moyen : il ne sait pas ce qu'est une
+commande, seulement `(subject_type, subject_id)`, et range un sous-dossier par
+moyen — `payment/card/` aujourd'hui, `payment/link/` avec les liens ; le
+prélèvement et le virement y viendront le jour où leur mécanique bancaire
+sortira de la facturation. Comme `mail`, il n'a pas de métier propre et les
+blocs métier ne l'atteignent que par son canal (`payment/channels/`) —
+aujourd'hui le seul `lafoliecoffee`, d'où la case `port uniquement`. Comme
+`production` avec `channels/commerce/`, il DÉCLARE `payment/channels/subjects/`,
+que chaque bloc métier sujet implémente et qu'`appBootstrap` relie. `payment`
+n'importe que `staff` (autorisation), `platform` et le canal `mail/channels/` ;
+`payment → <bloc métier>` reste interdit. Le canal des e-mails sert l'avis à
+la comptabilité d'un paiement par lien encaissé : un besoin de toutes les
+applications qui encaisseront, donc du bloc qui encaisse, pas de chacune
+(§ 2.4 du même plan). Le schéma Postgres reste `card_payment`, et les faits
+`card_payment.*` : ce sont des valeurs écrites, elles ne se renomment pas.
 
 🔴 **`production → lafoliecoffee` est INTERDIT**, et c'est le sens qui compte. Le fournil
 DÉCLARE ce dont il a besoin (`production/channels/commerce/`) et le commerce
@@ -1517,7 +1525,7 @@ pnpm --filter lfd-api seed:pim       # catalogue rejoué PAR LE BUS (cible local
 pnpm lint               # turbo, toutes les apps
 pnpm test
 pnpm build
-pnpm lint:gates         # les 81 portes du dépôt, toutes, et un résumé à la fin
+pnpm lint:gates         # les 82 portes du dépôt, toutes, et un résumé à la fin
 pnpm gate <nom>         # une porte (pnpm gate --list : la liste, avec ce qu'elle tient)
 pnpm lint:watch         # relance les portes dont un fichier lu change
 pnpm tool               # les outils occasionnels (digests, carte, axe…) ; pnpm tool <nom>

@@ -4,6 +4,7 @@ import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
 import type {
+  AdminCompaniesListQuery,
   BillingModeEntityView,
   AccountHolderPayload,
   BillingAddressPayload,
@@ -54,6 +55,18 @@ export class AdminCompaniesService {
   async list(): Promise<readonly AdminCompany[]> {
     return firstValueFrom(
       this.http.get<readonly AdminCompany[]>(`${B2B_API_BASE}/admin/companies`),
+    );
+  }
+
+  /**
+   * Les comptes **supprimés** seulement — le segment « Supprimés » de la liste.
+   * `list()` ne les rend pas : le serveur les écarte de la liste par défaut.
+   */
+  async listArchived(): Promise<readonly AdminCompany[]> {
+    return firstValueFrom(
+      this.http.get<readonly AdminCompany[]>(`${B2B_API_BASE}/admin/companies`, {
+        params: { archived: 'only' } satisfies AdminCompaniesListQuery,
+      }),
     );
   }
 
@@ -469,6 +482,24 @@ export class AdminCompaniesService {
         action: 'reactivate',
         reason: '',
       }),
+    );
+  }
+
+  /**
+   * **Supprime** un compte créé par erreur ou en double (un archivage : rien
+   * n'est effacé). Le serveur refuse un compte qui a des commandes, un site, ou
+   * un principal qui a des sites. Route `@Idempotent` : pas de clé d'intention.
+   */
+  async archive(companyId: string, reason: string): Promise<void> {
+    await firstValueFrom(
+      this.http.post<void>(`${B2B_API_BASE}/admin/companies/${companyId}/archive`, { reason }),
+    );
+  }
+
+  /** **Rétablit** un compte supprimé : il revient dans les listes, son statut intact. */
+  async unarchive(companyId: string): Promise<void> {
+    await firstValueFrom(
+      this.http.post<void>(`${B2B_API_BASE}/admin/companies/${companyId}/unarchive`, null),
     );
   }
 

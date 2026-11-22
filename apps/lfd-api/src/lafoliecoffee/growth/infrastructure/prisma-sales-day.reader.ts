@@ -33,6 +33,8 @@ export class PrismaSalesDayReader extends SalesDayReader {
     return this.prisma.company.count({
       where: {
         parentCompanyId: null,
+        // Un doublon supprimé n'est pas une ouverture.
+        archivedAt: null,
         createdAt: { gte: day.start, lt: day.end },
         ...(scope.actor === undefined ? {} : { declaredByStaffId: scope.actor }),
         ...(scope.actor === undefined && scope.unassigned === true

@@ -264,3 +264,53 @@ Ce qui suit **prime** sur les §§ 2 à 4.
 - **Le verrou de la passation prend aussi le payeur** (`billed_company_id`),
   dédoublonné avec la société et son principal, trié par identifiant ; un
   payeur fermé est refusé.
+
+## 9. Les vues (A3, bâti le 2026-11-22) — lecteur par lecteur
+
+Un compte **supprimé** (`archived_at` posé) sort des vues du staff ; un compte
+**résilié** y reste (Hugo, 2026-11-22) — d'où `archivedAt` seul, et pas le
+prédicat de fermeture `openCompanyWhere`, qui est celui des murs. Un lecteur
+qui part d'une commande, d'une facture ou d'un prélèvement n'a rien à faire :
+un compte supprimé n'en a pas (§ 8).
+
+La porte `company-archived-views` tient la règle : tout
+`company.findMany|count|groupBy|aggregate` nomme `archivedAt` (ou un prédicat
+qui le porte) dans son `where` de premier niveau, ou son fichier est inscrit
+avec le nombre de ses appels et la raison. Elle ne voit ni `findUnique` /
+`findFirst`, ni le SQL écrit à la main, ni les identifiants de société lus
+dans un autre modèle (journal, notes).
+
+| Lecteur                                                                                                                        | Vue                                          | Choix                                                                                    |
+| ------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `account/…/prisma-admin-company.reader.ts` (`listAll`)                                                                         | liste des comptes, recherche, sélecteurs (¹) | **écarte** ; `GET /admin/companies?archived=only` ne rend que les supprimés              |
+| même lecteur, `byId`                                                                                                           | fiche                                        | non : la fiche d'un supprimé s'ouvre, avec son bandeau                                   |
+| `get-customer-portfolio.handler.ts`, `export-customers-csv.handler.ts`                                                         | portefeuille, export CSV                     | **écartent** (portée `listed`)                                                           |
+| `prisma-company-warnings.counter.ts`                                                                                           | compteur d'avertissements du menu            | **écarte**                                                                               |
+| `prisma-customer-access-overview.reader.ts`                                                                                    | accès clients                                | **écarte**                                                                               |
+| `prisma-counter-customer.reader.ts` (`listActive`, `activeCard`)                                                               | cartes du Comptoir                           | **écarte**, même resté `active`                                                          |
+| `prisma-direct-debit-block.reader.ts`                                                                                          | blocages du prélèvement                      | **à écarter, laissé intact** : fichier des prélèvements tenu par une autre session       |
+| `growth/…/prisma-sales-sheet.reader.ts` (fiches, suiveurs)                                                                     | suivi commercial                             | **écarte**                                                                               |
+| `growth/…/prisma-sales-day.reader.ts` (`openedOn`)                                                                             | ouvertures du jour                           | **écarte** : un doublon n'est pas une ouverture                                          |
+| même lecteur, `touched`                                                                                                        | gestes du jour                               | non : un contact noté reste un geste fait                                                |
+| `prisma-market-sectors.reader.ts`, `prisma-market-adoption.reader.ts`                                                          | secteurs, adoption                           | **écartent**                                                                             |
+| `prisma-portfolio-metrics.reader.ts`                                                                                           | métriques du portefeuille                    | **écarte** (actifs, activés sur 30 j)                                                    |
+| `prisma-activation.reader.ts`                                                                                                  | tunnel d'activation                          | **écarte** par `ArchivedCompaniesReader` (lecture par lot)                               |
+| `recompute-lead-scores.handler.ts`                                                                                             | cockpit (calcul)                             | **écarte** ses faits avant le calcul                                                     |
+| `get-cockpit.handler.ts`                                                                                                       | cockpit (lecture)                            | **écarte** : le read-model date du dernier recompute — un coup de moins jusqu'au suivant |
+| `prisma-company-namer.ts`                                                                                                      | noms des faits du journal                    | non : un fait passé garde son nom                                                        |
+| `prisma-promotion-company-status.reader.ts`                                                                                    | publics des promotions                       | lit `isCompanyClosed` : une société fermée répond `terminated`, jamais « pro actif »     |
+| `promotion-meeting.ts`                                                                                                         | rencontre de deux publics                    | ses statuts « qui commandent » se dérivent de `CLOSING_STATUS`                           |
+| `client-notes/…/prisma-notebook-companies.ts`                                                                                  | notes du commercial                          | non : la fiche d'un supprimé s'ouvre, ses notes avec                                     |
+| `prisma-account.reader.ts` (sites atteints), `read-company-standing.ts`                                                        | espace client                                | non : déjà fermés par le mur (A2, `openCompanyWhere`)                                    |
+| `company-hierarchy.projection.ts`, `prisma-statement-billing.reader.ts`                                                        | sites d'un principal                         | non : un supprimé n'est jamais site, ni principal à sites                                |
+| `accounting/…` (impayés, facturation, candidats, acheteur, payeurs, établissements), `loyalty`, `catalog/…made-to-order-admin` | noms par identifiants d'un fait              | non : un supprimé n'a ni commande, ni facture, ni prélèvement                            |
+| `prisma-company-opener-backfill.ts`, `dev/seeding/*`                                                                           | rattrapage, semis                            | non                                                                                      |
+| alertes de compte (`alerts/`), avis aux sous-comptes                                                                           | producteurs automatiques                     | non : les alertes partent des commandes ; les avis visent les sites d'un principal       |
+| calendrier commercial (rendez-vous)                                                                                            | agenda                                       | non : un rendez-vous pris est un engagement daté, il s'annule à la main                  |
+
+(¹) La recherche, le ciblage de promotion et le rattachement d'un site
+filtrent côté écran la liste `GET /admin/companies` ; la saisie de commande lit
+les cartes du Comptoir (`listActive`, écarté aussi). Vérifié le 2026-11-22 dans
+`apps/lfd-backoffice-frontend/src/app/` (`company-search`,
+`promotion-audience-tree`, `attach-sub-account-panel`, `order-entry-sources`) ;
+le sélecteur de titulaire n'a pas été ouvert.

@@ -99,7 +99,7 @@ export class PrismaSalesSheetReader extends SalesSheetReader {
 
   async followerIds(): Promise<readonly string[]> {
     const rows = await this.prisma.company.findMany({
-      where: { parentCompanyId: null, followedByStaffId: { not: null } },
+      where: { parentCompanyId: null, archivedAt: null, followedByStaffId: { not: null } },
       distinct: ["followedByStaffId"],
       select: { followedByStaffId: true },
     });
@@ -198,6 +198,8 @@ function readCompanies(prisma: PrismaService, scope: SalesSheetScope, limit: num
   return prisma.company.findMany({
     where: {
       parentCompanyId: null,
+      // Un compte supprimé sort du suivi commercial ; un résilié y reste.
+      archivedAt: null,
       ...(scope.followedBy === undefined ? {} : { followedByStaffId: scope.followedBy }),
       ...(scope.channel === undefined ? {} : { declaredVia: scope.channel }),
     },

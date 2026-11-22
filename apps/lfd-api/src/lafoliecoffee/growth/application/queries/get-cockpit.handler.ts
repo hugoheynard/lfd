@@ -3,6 +3,7 @@ import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 import type { LeadScoreView } from "@lfd/contracts";
 import { ACTIVITY_TYPES } from "../../domain/activity-event.js";
 import { ActivityRecorder } from "../../domain/ports/activity-recorder.js";
+import { ArchivedCompaniesReader } from "../../domain/ports/archived-companies.reader.js";
 import { LeadScoreReader } from "../../domain/ports/lead-score.reader.js";
 import { GetCockpitQuery } from "./get-cockpit.query.js";
 
@@ -27,12 +28,25 @@ export class GetCockpitHandler implements IQueryHandler<GetCockpitQuery, LeadSco
   constructor(
     private readonly reader: LeadScoreReader,
     private readonly recorder: ActivityRecorder,
+    private readonly archived: ArchivedCompaniesReader,
   ) {}
 
   async execute(): Promise<LeadScoreView[]> {
-    const leads = await this.reader.topPlays(COCKPIT_SIZE);
+    const leads = await this.withoutArchived(await this.reader.topPlays(COCKPIT_SIZE));
     await Promise.all(leads.map((lead) => this.logShown(lead, labelOf(lead))));
     return leads;
+  }
+
+  /**
+   * Le read-model date du dernier recompute : un compte supprimé depuis y est
+   * encore. Il sort du cockpit dès sa suppression, quitte à montrer un coup de
+   * moins jusqu'au prochain passage du cron.
+   */
+  private async withoutArchived(leads: LeadScoreView[]): Promise<LeadScoreView[]> {
+    const archived = await this.archived.among(
+      leads.flatMap((lead) => (lead.subjectType === "company" ? [lead.subjectId] : [])),
+    );
+    return leads.filter((lead) => lead.subjectType !== "company" || !archived.has(lead.subjectId));
   }
 
   private logShown(lead: LeadScoreView, label: { readonly subjectLabel?: string }): Promise<void> {

@@ -1,0 +1,6 @@
+<fold-callout variant="warning" icon="archive">
+  <strong>Compte supprimé</strong> {{ details() }}
+  <button foldButton actions size="sm" icon="undo" (click)="unarchive.emit()">
+    Rétablir le compte
+  </button>
+</fold-callout>

@@ -1,8 +1,11 @@
 import {
   AdminCompanyReader,
+  type AdminCompanyDetailView,
   type AdminCompanyView,
+  type CompanyListScope,
 } from "../../../domain/ports/admin-company.reader.js";
 import { ListAllCompaniesHandler } from "../list-all-companies.handler.js";
+import { ListAllCompaniesQuery } from "../list-all-companies.query.js";
 
 const view: AdminCompanyView = {
   requestedTerm: null,
@@ -38,18 +41,29 @@ const view: AdminCompanyView = {
   createdAt: "2026-07-30T10:00:00.000Z",
   declaredVia: null,
   piecesReached: [],
+  archivedAt: null,
 };
 
 describe("ListAllCompaniesHandler", () => {
-  it("renvoie la liste cross-tenant fournie par le AdminCompanyReader", async () => {
+  it("renvoie la liste cross-tenant fournie par le AdminCompanyReader, pour la portée demandée", async () => {
     // Le handler admin ne rejoue aucune règle : il délègue au port de lecture.
-    // Prouver la délégation = prouver que sa sortie EST celle du reader.
-    const reader: AdminCompanyReader = {
-      listAll: () => Promise.resolve([view]),
-      byId: () => Promise.resolve(null),
-    };
-    const handler = new ListAllCompaniesHandler(reader);
+    // Prouver la délégation = prouver que sa sortie EST celle du reader, et que
+    // la portée (listés / supprimés seuls) lui parvient telle quelle.
+    const scopes: CompanyListScope[] = [];
+    class Reader extends AdminCompanyReader {
+      listAll(scope: CompanyListScope): Promise<readonly AdminCompanyView[]> {
+        scopes.push(scope);
+        return Promise.resolve([view]);
+      }
+      byId(): Promise<AdminCompanyDetailView | null> {
+        return Promise.resolve(null);
+      }
+    }
+    const handler = new ListAllCompaniesHandler(new Reader());
 
-    await expect(handler.execute()).resolves.toEqual([view]);
+    await expect(handler.execute(new ListAllCompaniesQuery("listed"))).resolves.toEqual([view]);
+    await handler.execute(new ListAllCompaniesQuery("archived"));
+
+    expect(scopes).toEqual(["listed", "archived"]);
   });
 });

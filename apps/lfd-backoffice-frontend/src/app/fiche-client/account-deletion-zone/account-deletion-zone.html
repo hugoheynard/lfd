@@ -1,0 +1,52 @@
+<fold-danger-zone appearance="section" title="Supprimer le compte">
+  <div class="deletion">
+    <p>
+      Pour un compte créé par erreur ou en double, qui n’a jamais commandé. Il disparaît des listes
+      ; rien n’est effacé, et il se rétablit depuis le segment «&nbsp;Supprimés&nbsp;». Pour un
+      client qui part, le geste est de <strong>résilier</strong> le compte.
+    </p>
+    @if (blocker(); as reasonNotNow) {
+      <p class="blocker" data-deletion-blocker>{{ reasonNotNow }}</p>
+    } @else {
+      <fold-listbox
+        label="Motif"
+        required
+        placeholder="Choisir un motif"
+        [options]="options"
+        [value]="choice()"
+        (selectionChange)="choice.set($event)"
+      />
+      @if (choice() === 'other') {
+        <fold-input
+          label="Précisez le motif"
+          required
+          hint="500 caractères au plus"
+          [value]="otherText()"
+          (valueChange)="otherText.set($event)"
+        />
+        @if (tooLong()) {
+          <p class="blocker">Le motif dépasse {{ maxLength }} caractères.</p>
+        }
+      }
+    }
+    <div class="actions">
+      <fold-inline-confirm
+        intent="danger"
+        confirmIcon="bin"
+        message="Supprimer ce compte ? Il disparaît des listes."
+        [labels]="{ confirm: 'Supprimer' }"
+        (confirmed)="confirm()"
+      >
+        <button
+          foldButton
+          intent="danger"
+          icon="bin"
+          data-deletion-action
+          [disabled]="blocker() !== null || reason() === null"
+        >
+          Supprimer le compte
+        </button>
+      </fold-inline-confirm>
+    </div>
+  </div>
+</fold-danger-zone>

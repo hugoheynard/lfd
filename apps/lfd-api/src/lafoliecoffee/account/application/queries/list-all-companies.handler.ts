@@ -18,7 +18,7 @@ export class ListAllCompaniesHandler implements IQueryHandler<
 > {
   constructor(private readonly companies: AdminCompanyReader) {}
 
-  execute(): Promise<readonly AdminCompanyView[]> {
-    return this.companies.listAll();
+  execute(query: ListAllCompaniesQuery): Promise<readonly AdminCompanyView[]> {
+    return this.companies.listAll(query.scope);
   }
 }

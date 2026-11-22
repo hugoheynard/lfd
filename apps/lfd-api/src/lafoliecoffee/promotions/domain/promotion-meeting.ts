@@ -1,3 +1,4 @@
+import { CLOSING_STATUS } from "../../shared/company-standing/domain/company-closure.js";
 import type { StandingCompanyStatus } from "../../shared/company-standing/domain/company-standing.js";
 import { audienceCompanyIdOf, type PromotionAudience } from "./promotion-audience.js";
 import type { PromotionAudienceSet } from "./promotion-audience-set.js";
@@ -20,8 +21,14 @@ import {
  * jours et heures l'ont fait passer les 300 lignes ; les refus y restent.
  */
 
-/** Les statuts d'une société qui commande encore ; une société close ne commande plus. */
-const ORDERING_STATUSES: readonly StandingCompanyStatus[] = ["pending", "active", "suspended"];
+/**
+ * Les statuts d'une société qui commande encore : tous sauf celui qui ferme
+ * (`CLOSING_STATUS`) — une société close ne commande plus. Une société
+ * supprimée se lit avec ce statut-là (`PrismaPromotionCompanyStatusReader`).
+ */
+const ORDERING_STATUSES: readonly StandingCompanyStatus[] = (
+  ["pending", "active", "suspended", "terminated"] satisfies readonly StandingCompanyStatus[]
+).filter((status) => status !== CLOSING_STATUS);
 const BUYER_KINDS: readonly PromotionBuyerKind[] = ["guest", "registered"];
 /** Une société qu'aucun des deux publics ne nomme. */
 const ANY_OTHER = "__unnamed__";

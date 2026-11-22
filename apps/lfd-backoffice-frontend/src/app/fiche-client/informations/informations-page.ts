@@ -39,6 +39,8 @@ import {
 import { AdminCompaniesService } from '../../comptes-clients/admin-companies.service';
 import { CompanyDetailStore } from '../../comptes-clients/company-cache/company-detail.store';
 import { PermissionsStore } from '../../auth/permissions.store';
+import { AccountDeletionZone } from '../account-deletion-zone/account-deletion-zone';
+import { DeletedAccountBanner } from '../deleted-account-banner/deleted-account-banner';
 import { ActivationAside } from '../activation-aside/activation-aside';
 import { HolderPicker, type HolderChoice } from '../holder-picker/holder-picker';
 import { PaiementSection } from '../paiement-section/paiement-section';
@@ -114,6 +116,8 @@ import { watchCompanySubjects } from '../../comptes-clients/company-cache/compan
     CompanyFulfillmentCard,
     CompanyActivationChecklist,
     ActivationAside,
+    AccountDeletionZone,
+    DeletedAccountBanner,
     PaiementSection,
     FollowParentToggle,
     SiteIdentityCard,

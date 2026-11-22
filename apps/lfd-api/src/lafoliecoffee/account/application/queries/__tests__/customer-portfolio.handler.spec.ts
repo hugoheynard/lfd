@@ -1,7 +1,10 @@
 import type { AdminCompanyDetailView, AdminCompanyView } from "@lfd/contracts";
 
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
-import { AdminCompanyReader } from "../../../domain/ports/admin-company.reader.js";
+import {
+  AdminCompanyReader,
+  type CompanyListScope,
+} from "../../../domain/ports/admin-company.reader.js";
 import { GetCustomerPortfolioHandler } from "../get-customer-portfolio.handler.js";
 
 const NOW = new Date("2026-09-10T09:00:00.000Z");
@@ -41,6 +44,7 @@ function company(over: Partial<AdminCompanyView>): AdminCompanyView {
     createdAt: daysAgo(200),
     declaredVia: null,
     piecesReached: [],
+    archivedAt: null,
     activatedAt: null,
     warnings: [],
     ...over,
@@ -57,11 +61,14 @@ function company(over: Partial<AdminCompanyView>): AdminCompanyView {
  * test que dans du code de production.
  */
 class FakeCompanies extends AdminCompanyReader {
+  readonly scopes: CompanyListScope[] = [];
+
   constructor(private readonly rows: readonly AdminCompanyView[]) {
     super();
   }
 
-  listAll(): Promise<readonly AdminCompanyView[]> {
+  listAll(scope: CompanyListScope): Promise<readonly AdminCompanyView[]> {
+    this.scopes.push(scope);
     return Promise.resolve(this.rows);
   }
 
@@ -125,5 +132,13 @@ describe("GetCustomerPortfolioHandler", () => {
     ]).execute();
 
     expect(view).toMatchObject({ active: 2, pending: 1, suspended: 1 });
+  });
+
+  it("ne compte que les comptes listés : un compte supprimé sort du portefeuille", async () => {
+    const companies = new FakeCompanies([company({})]);
+
+    await new GetCustomerPortfolioHandler(companies, new FixedClock(NOW)).execute();
+
+    expect(companies.scopes).toEqual(["listed"]);
   });
 });

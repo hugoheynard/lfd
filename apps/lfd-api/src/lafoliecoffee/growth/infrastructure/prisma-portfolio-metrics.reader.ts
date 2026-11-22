@@ -29,8 +29,11 @@ export class PrismaPortfolioMetricsReader extends PortfolioMetricsReader {
 
     const [activeCompanies, activatedLast30d, failedPayments, current, previous] =
       await Promise.all([
-        this.prisma.company.count({ where: { status: "active" } }),
-        this.prisma.company.count({ where: { activatedAt: { gte: currentStart } } }),
+        // Un compte supprimé sort du portefeuille, même resté `active`.
+        this.prisma.company.count({ where: { status: "active", archivedAt: null } }),
+        this.prisma.company.count({
+          where: { activatedAt: { gte: currentStart }, archivedAt: null },
+        }),
         // Le compte des COMMANDES, pas des sociétés : deux échecs sur le même
         // compte sont deux relances à passer. Une commande annulée en `failed`
         // est une tentative de carte abandonnée : il n'y a rien à relancer, et

@@ -44,6 +44,8 @@ export class PrismaCustomerAccessOverviewReader extends CustomerAccessOverviewRe
 
   async list(): Promise<readonly CustomerAccessRowView[]> {
     const rows = await this.prisma.company.findMany({
+      // Un compte supprimé n'a plus d'accès à montrer : il sort de la vue.
+      where: { archivedAt: null },
       orderBy: { raisonSociale: "asc" },
       select: {
         id: true,

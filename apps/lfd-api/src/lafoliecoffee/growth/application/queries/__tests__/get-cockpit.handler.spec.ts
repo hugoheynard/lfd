@@ -3,6 +3,7 @@ import type { LeadScoreView } from "@lfd/contracts";
 import { LeadScoreReader } from "../../../domain/ports/lead-score.reader.js";
 import { GetCockpitHandler } from "../get-cockpit.handler.js";
 import { RecordingActivityRecorder } from "../../../domain/ports/__tests__/recording-activity-recorder.js";
+import { FixedArchivedCompanies } from "../../../domain/ports/__tests__/fixed-archived-companies.js";
 
 /** Reader doublé par EXTENSION : rend une queue figée. */
 class FakeReader extends LeadScoreReader {
@@ -33,7 +34,11 @@ function lead(overrides: Partial<LeadScoreView> = {}): LeadScoreView {
 describe("GetCockpitHandler", () => {
   it("demande les 5 meilleurs coups et les rend tels quels", async () => {
     const reader = new FakeReader([lead()]);
-    const handler = new GetCockpitHandler(reader, new RecordingActivityRecorder());
+    const handler = new GetCockpitHandler(
+      reader,
+      new RecordingActivityRecorder(),
+      new FixedArchivedCompanies(),
+    );
 
     const result = await handler.execute();
 
@@ -50,6 +55,7 @@ describe("GetCockpitHandler", () => {
         lead({ subjectType: "company", subjectId: "c9", play: "rescue" }),
       ]),
       recorder,
+      new FixedArchivedCompanies(),
     );
 
     await handler.execute();
@@ -68,7 +74,11 @@ describe("GetCockpitHandler", () => {
 
   it("ne journalise rien quand la queue est vide", async () => {
     const recorder = new RecordingActivityRecorder();
-    const handler = new GetCockpitHandler(new FakeReader([]), recorder);
+    const handler = new GetCockpitHandler(
+      new FakeReader([]),
+      recorder,
+      new FixedArchivedCompanies(),
+    );
 
     const result = await handler.execute();
 
@@ -89,6 +99,7 @@ describe("GetCockpitHandler", () => {
         lead({ subjectType: "company", subjectId: "c2", label: "c2", play: "rescue" }),
       ]),
       recorder,
+      new FixedArchivedCompanies(),
     );
 
     await handler.execute();
@@ -97,5 +108,26 @@ describe("GetCockpitHandler", () => {
       { subjectLabel: "Boulangerie Martin", play: "rescue", score: 42 },
       { play: "rescue", score: 42 },
     ]);
+  });
+
+  it("écarte un compte supprimé depuis le dernier recompute, sans le journaliser", async () => {
+    const recorder = new RecordingActivityRecorder();
+    const archived = new FixedArchivedCompanies(["c_doublon"]);
+    const handler = new GetCockpitHandler(
+      new FakeReader([
+        lead({ subjectType: "company", subjectId: "c_doublon", play: "rescue" }),
+        lead({ subjectType: "company", subjectId: "c_vrai", play: "rescue" }),
+        lead({ subjectId: "lead_1" }),
+      ]),
+      recorder,
+      archived,
+    );
+
+    const result = await handler.execute();
+
+    expect(result.map((row) => row.subjectId)).toEqual(["c_vrai", "lead_1"]);
+    expect(recorder.records.map((record) => record.subjectId)).toEqual(["c_vrai", "lead_1"]);
+    // Seules les sociétés sont demandées : un prospect saisi n'est pas un compte.
+    expect(archived.batches).toEqual([["c_doublon", "c_vrai"]]);
   });
 });

@@ -26,7 +26,12 @@ export class PrismaCompanyWarningsCounter extends CompanyWarningsCounter {
   }
 
   async count(): Promise<number> {
-    const rows = await this.prisma.company.findMany({ select: WARNING_SELECT });
+    // Les comptes de la liste, ni plus ni moins : un supprimé n'y est plus, ses
+    // avertissements ne comptent plus au menu.
+    const rows = await this.prisma.company.findMany({
+      where: { archivedAt: null },
+      select: WARNING_SELECT,
+    });
     const now = this.clock.now();
     const transfer = await transferPayersAmong(this.prisma, warningPayersOf(rows, now), now);
     return rows.reduce(

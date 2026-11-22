@@ -1,13 +1,23 @@
 import type { CompanyWarningsCountView, CustomerPortfolioView } from "@lfd/contracts";
 
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
-import { Body, Controller, Get, Header, HttpCode, HttpStatus, Param, Post } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Get,
+  Header,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Post,
+  Query,
+} from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
 import { StaffPermissions, StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { AcceptedReplay } from "../../../platform/shared/http/accepted-replay.decorator.js";
 import { IntentKey } from "../../../platform/shared/http/intent-key.decorator.js";
-import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
+import { ZodBody, ZodQuery } from "../../../platform/shared/http/zod-body.pipe.js";
 import { AttachAccountHolderCommand } from "../application/commands/attach-account-holder.command.js";
 import type { HolderAttached } from "../application/commands/attach-account-holder.handler.js";
 import { CreateCompanyByStaffCommand } from "../application/commands/create-company-by-staff.command.js";
@@ -29,7 +39,12 @@ import {
   type AccountHolderPayload,
   type StaffPermission,
 } from "@lfd/contracts";
-import { adminCreateCompanyPayload, type AdminCreateCompanyPayload } from "./payloads.js";
+import {
+  adminCompaniesListQuery,
+  adminCreateCompanyPayload,
+  type AdminCompaniesListQueryParams,
+  type AdminCreateCompanyPayload,
+} from "./payloads.js";
 
 /**
  * Surface **admin** (staff) : la **liste** des comptes clients et leur
@@ -48,10 +63,16 @@ export class AdminCompaniesController {
     private readonly commands: CommandBus,
   ) {}
 
+  /**
+   * La liste des comptes. Sans paramètre, les comptes supprimés en sont
+   * écartés ; `?archived=only` ne rend qu'eux (le filtre « Supprimés »).
+   */
   @Get()
-  list(): Promise<readonly AdminCompanyView[]> {
+  list(
+    @Query(new ZodQuery(adminCompaniesListQuery)) query: AdminCompaniesListQueryParams,
+  ): Promise<readonly AdminCompanyView[]> {
     return this.queries.execute<ListAllCompaniesQuery, readonly AdminCompanyView[]>(
-      new ListAllCompaniesQuery(),
+      new ListAllCompaniesQuery(query.archived === "only" ? "archived" : "listed"),
     );
   }
 

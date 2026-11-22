@@ -635,6 +635,13 @@
       "holds": "Les workflows de `.github/workflows/` passent actionlint (binaire épinglé par version et somme) : une expression, une clé ou une entrée fausse est refusée avant que GitHub ne la découvre au lancement.",
       "since": "2026-11-21",
       "watch": [".github/workflows/**", "dev-toolbox/gates/workflows.mjs"]
+    },
+    {
+      "name": "company-archived-views",
+      "script": "dev-toolbox/gates/company-archived-views.mjs",
+      "holds": "Toute liste de sociétés (`company.findMany|count|groupBy|aggregate`) nomme `archivedAt` dans son `where` — un compte supprimé sort des vues du staff — ou figure dans la liste admise avec sa raison.",
+      "since": "2026-11-22",
+      "watch": ["apps/lfd-api/src/**", "dev-toolbox/gates/company-archived-views.mjs"]
     }
   ]
 }
