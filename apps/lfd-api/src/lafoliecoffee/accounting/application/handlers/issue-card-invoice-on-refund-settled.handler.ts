@@ -19,8 +19,7 @@ export const ISSUE_CARD_INVOICE_ON_REFUND_SETTLED =
 /**
  * **Un remboursement a réussi : la facture carte, si elle attendait que
  * l'argent tombe juste** (plan
- * `documentation/payment/plan-m2-historique-de-transactions.md`,
- * §6.1, lot P1.c). Le troisième réveil de la facture, après l'encaissement et
+ * `documentation/payment/le-bloc-payment.md`, lot P1.c). Le troisième réveil de la facture, après l'encaissement et
  * le retrait : une facture `blocked` par un ajustement en cours ou arrêté
  * repart quand il est rendu — par le prestataire ou « rendu autrement ».
  *

@@ -280,8 +280,7 @@ enum RefundCreditReason {
 }
 
 /// **Le lien entre un remboursement par carte et l'avoir qui le constate**
-/// (plan `documentation/payment/plan-m2-historique-de-transactions.md`,
-/// §5.1, §6.1) — table `public.refund_credit`. Remplace
+/// (doc `documentation/payment/le-bloc-payment.md`) — table `public.refund_credit`. Remplace
 /// `order_refund.credit_note_id` : la comptabilité vit dans `public`, le
 /// carnet dans le schéma `payment`.
 ///

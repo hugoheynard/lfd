@@ -3,8 +3,8 @@
 > Dossier ouvert le 2026-11-22, à la demande de Hugo : y réunir ce qui
 > concerne le bloc `payment` et les prestataires. Les docs d'un geste du
 > commerce qui se trouve encaisser ou rembourser (annuler, modifier une
-> commande) restent chez leur métier ; ce qui encaisse au compte
-> (prélèvement, virement) reste en comptabilité. Les liens sont plus bas.
+> commande) restent chez leur métier ; le prélèvement reste en
+> comptabilité. Les liens sont plus bas.
 
 # Partie 1 — L'explication simple
 
@@ -43,7 +43,7 @@ flowchart LR
   le virement et une part par facture. Pas de clé étrangère entre les deux :
   le même identifiant est écrit des deux côtés par un seul geste, et un
   contrôle de nuit compare les deux côtés et sonne au premier écart
-  ([`le-paiement-par-virement.md`](../comptabilite/le-paiement-par-virement.md), § 5).
+  ([`le-bloc-payment.md`](le-bloc-payment.md), § 6).
 - **Une nouvelle raison de payer** (un acompte, une régularisation) est une
   nature d'une demande libre, ou un type de sujet à elle : la porte ne change
   pas.
@@ -52,17 +52,14 @@ flowchart LR
 
 ## Ici
 
-| Doc                                                                                          | Ce que c'est                                                                                                                                                                                                 |
-| -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| [`feuille-de-route.md`](feuille-de-route.md)                                                 | **Où va le bloc**, et dans quel ordre : les lots à venir, les chantiers de fond (rapprochement, litiges…), les recettes pour une deuxième application, un deuxième prestataire, un nouveau moyen de paiement |
-| [`prelevement-et-virement-dans-payment.md`](prelevement-et-virement-dans-payment.md)         | **Analyse** : ce qui, du prélèvement et du virement, devrait rejoindre le bloc (la mécanique bancaire) et ce qui reste en facturation (le métier) ; le modèle mouvement → parts ; l'ordre proposé            |
-| [`plan-les-mandats-dans-payment.md`](plan-les-mandats-dans-payment.md)                       | ⏸️ **Suspendu** : le déménagement du code des mandats (marches 0 à 2), contredit par `vitruve` ; d'abord une décision de conception — un mandat connaît la société                                           |
-| [`plan-le-virement-recu-dans-payment.md`](plan-le-virement-recu-dans-payment.md)             | **Plan D1**, ✅ bâti le 2026-11-22 : le virement reçu rejoint `payment/transfer/`, la facturation garde le jugement et sa trace sur les bons, un contrôle de nuit compare les deux côtés                     |
-| [`plan-b-balayage-des-paiements-en-attente.md`](plan-b-balayage-des-paiements-en-attente.md) | **Plan B**, contredit par `vitruve` : relire chez le prestataire les paiements restés en attente, pour ne pas dépendre du seul webhook ; corrige l'ordre des verrous de `settleFromProvider`                 |
-| [`todo-controles-en-production.md`](todo-controles-en-production.md)                         | **TODO** : les contrôles à faire en production après chaque déploiement du paiement (V, F1, P1b et P1c, le tableau de bord Stripe)                                                                           |
-| [`les-liens-de-paiement.md`](les-liens-de-paiement.md)                                       | **Doc d'état** des liens de paiement : le lien d'une commande, la porte vers un sujet, la demande de paiement libre et ses natures, l'avis à la comptabilité, le webhook des cartes et le balayage           |
-| [`plan-m2-historique-de-transactions.md`](plan-m2-historique-de-transactions.md)             | **Le plan M2**, qui a créé le bloc qui encaisse par carte (alors `card-payment`) et y a déménagé le remboursement                                                                                            |
-| [`relecture-paiement-et-remboursement.md`](relecture-paiement-et-remboursement.md)           | La relecture du paiement et du remboursement contre le code, qui a fondé M2                                                                                                                                  |
+| Doc                                                                    | Ce que c'est                                                                                                                                                                                             |
+| ---------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`le-bloc-payment.md`](le-bloc-payment.md)                             | **Doc d'état** du bloc : la carte (paiement, compte d'encaissement, webhook, faits, port des sujets, ordre des verrous), le remboursement, les balayages, le rattrapage, le virement reçu, tables, crons |
+| [`les-liens-de-paiement.md`](les-liens-de-paiement.md)                 | **Doc d'état** des liens de paiement : le lien d'une commande, la porte vers un sujet, la demande de paiement libre et ses natures, l'avis à la comptabilité                                             |
+| [`feuille-de-route.md`](feuille-de-route.md)                           | **Où va le bloc**, et dans quel ordre : ce qui est en production, la suite, ce qui reste de M2, les chantiers de fond, les recettes (deuxième application, deuxième prestataire, nouveau moyen)          |
+| [`le-prelevement-dans-payment.md`](le-prelevement-dans-payment.md)     | **Analyse** : ce qui, du prélèvement, devrait rejoindre le bloc (la mécanique bancaire) et ce qui reste en facturation (l'entité, ses comptes, le métier)                                                |
+| [`plan-les-mandats-dans-payment.md`](plan-les-mandats-dans-payment.md) | ⏸️ **Suspendu** : le déménagement du code des mandats ; d'abord une décision de conception — un mandat connaît la société                                                                                |
+| [`todo-controles-en-production.md`](todo-controles-en-production.md)   | **TODO** : les contrôles à faire en production après chaque déploiement du paiement                                                                                                                      |
 
 ## Ailleurs, et pourquoi
 

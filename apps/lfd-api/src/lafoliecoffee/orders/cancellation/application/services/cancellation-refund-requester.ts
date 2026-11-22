@@ -11,8 +11,7 @@ export const CANCELLATION_REFUND_REASON = "cancellation";
 /**
  * **L'argent à rendre d'une commande payée qu'on annule** (doc
  * `documentation/commandes/annulation/annulation-par-le-staff.md`, C4.4, C4.6 ;
- * plan `documentation/payment/plan-m2-historique-de-transactions.md`,
- * §7, lot P1.c).
+ * doc `documentation/payment/le-bloc-payment.md`, lot P1.c).
  *
  * Dans l'unité de travail de l'annulation, sous le verrou de la ligne
  * `orders` que l'appelant a pris (l'ordre du §3.6 : le sujet, puis les lignes

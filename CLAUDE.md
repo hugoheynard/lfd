@@ -630,8 +630,8 @@ l'atteint pas.
 
 🔴 **`payment` encaisse et rembourse pour un sujet opaque** (2026-11-09,
 Hugo ;
-[`documentation/payment/plan-m2-historique-de-transactions.md`](documentation/payment/plan-m2-historique-de-transactions.md),
-§3.1 ; bloc `payment` décidé par Hugo le 2026-11-22,
+[`documentation/payment/le-bloc-payment.md`](documentation/payment/le-bloc-payment.md),
+§ 1 ; bloc `payment` décidé par Hugo le 2026-11-22,
 [`documentation/payment/les-liens-de-paiement.md`](documentation/payment/les-liens-de-paiement.md)).
 Agnostique de l'application et du moyen : il ne sait pas ce qu'est une
 commande, seulement `(subject_type, subject_id)`, et range un sous-dossier par

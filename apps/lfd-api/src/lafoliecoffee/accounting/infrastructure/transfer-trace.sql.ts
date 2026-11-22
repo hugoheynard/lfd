@@ -10,7 +10,7 @@ import { COMMERCIAL_INVOICE } from "../domain/entities/invoice.types.js";
  *
  * C'est la facturation qui sait ce qu'elle a réglé : elle le lit sur ses
  * propres tables, sans lire celles du bloc `payment` (plan
- * `plan-le-virement-recu-dans-payment.md`, §7 n° 1).
+ * `documentation/payment/le-bloc-payment.md`).
  */
 export const SETTLING_TRANSFER_OF_INVOICE_I = Prisma.sql`(
   SELECT oc."bank_transfer_id"

@@ -1,6 +1,6 @@
 /**
  * **Les gardes SQL de `payment.card_payment`** (plan
- * `documentation/payment/plan-m2-historique-de-transactions.md`,
+ * `documentation/payment/le-bloc-payment.md`,
  * lot P0, §3.4, §4.3, garantie G1 du §11).
  *
  * Ce que seul le vrai Postgres prouve : les CHECK, l'index unique partiel et

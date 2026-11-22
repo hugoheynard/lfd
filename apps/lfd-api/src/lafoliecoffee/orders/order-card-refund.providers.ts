@@ -8,8 +8,7 @@ import { OrderCardRefundReadings } from "./infrastructure/order-card-refund-read
 
 /**
  * **Ce que le commerce garde du remboursement par carte** (plan
- * `documentation/payment/plan-m2-historique-de-transactions.md`,
- * §3.3, §5.4, lot P1.c) — la demande à l'annulation, celle de l'encaissé
+ * `documentation/payment/le-bloc-payment.md`, lot P1.c) — la demande à l'annulation, celle de l'encaissé
  * après annulation, celle d'une baisse (plan S1, `RevisionCardRefund`), le bandeau du détail staff, et la lecture des
  * remboursements d'une commande au bloc `card-payment`.
  *

@@ -31,8 +31,7 @@ const WHAT: Readonly<Record<BankTransferGapKind, (gap: BankTransferGap) => strin
 };
 
 /**
- * **« Virement reçu incohérent »** (plan `plan-le-virement-recu-dans-payment.md`,
- * §3.6) : le contrôle de nuit a trouvé un écart entre la trace de la
+ * **« Virement reçu incohérent »** (doc `documentation/payment/le-bloc-payment.md`) : le contrôle de nuit a trouvé un écart entre la trace de la
  * facturation et le virement enregistré par le bloc `payment`. Sans
  * destinataire nommé, comme `RingCollectionReturned` : visible de tout le
  * back-office. Une clé par écart : le passage de la nuit suivante, qui relit

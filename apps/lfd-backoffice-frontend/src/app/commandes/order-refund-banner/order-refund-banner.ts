@@ -100,8 +100,7 @@ interface RequestError {
 /**
  * **Le bandeau des remboursements par carte** d'une commande (doc
  * `documentation/commandes/annulation/annulation-par-le-staff.md`, C4.9 ; plan
- * `documentation/payment/plan-m2-historique-de-transactions.md`,
- * §5.3, §5.5) : une ligne PAR DEMANDE — une commande en porte une par
+ * `documentation/payment/le-bloc-payment.md`) : une ligne PAR DEMANDE — une commande en porte une par
  * paiement encaissé —, son état lu au carnet par le serveur, et ses deux
  * gestes.
  *

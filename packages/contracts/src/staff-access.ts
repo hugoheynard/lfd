@@ -734,8 +734,7 @@ export const staffResourceSchema = z.enum([
   /**
    * **Les paiements par carte** — les routes d'équipe du bloc `card-payment` :
    * « Relancer » un remboursement, « rendu autrement », « Vérifier », le
-   * balayage (`documentation/payment/plan-m2-historique-de-transactions.md`,
-   * §3.3, §5.3, lot P1, 2026-11-10). Le bandeau de la commande reste servi
+   * balayage (`documentation/payment/le-bloc-payment.md`, lot P1, 2026-11-10). Le bandeau de la commande reste servi
    * par `orders` sous `b2b_orders:read`. Ajoutée sans être accordée : elle
    * s'accorde à l'écran ; la graine ne la donne qu'à l'administrateur.
    */

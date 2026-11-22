@@ -1,8 +1,7 @@
 /**
  * **Le registre des comptes d'encaissement par carte** — sa moitié écrite
  * dans le dépôt (plan
- * `documentation/payment/plan-m2-historique-de-transactions.md`,
- * §3.2).
+ * `documentation/payment/le-bloc-payment.md`).
  *
  * Un compte est un contrat chez un prestataire : un nom stable (persisté sur
  * chaque paiement, `payment.card_payment.account`), un type de prestataire (un

@@ -17,8 +17,7 @@ export const NO_REFUNDS: OrderRefundsReading = { refunds: [], refundedCents: 0 }
 
 /**
  * **Les remboursements d'une commande, lus au bloc `card-payment`** (plan
- * `documentation/payment/plan-m2-historique-de-transactions.md`,
- * §3.3, §5.1, lot P1.c) — ce que les relations `Order.refunds` et
+ * `documentation/payment/le-bloc-payment.md`, lot P1.c) — ce que les relations `Order.refunds` et
  * `Order.refundRequest` donnaient aux lecteurs Prisma d'`orders`, retirées
  * du schéma. Par lot : une liste de commandes coûte deux lectures, jamais
  * une par commande.

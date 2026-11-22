@@ -24,7 +24,7 @@ export interface InvoiceTrace {
 /**
  * Port de LECTURE de la **trace du virement côté facturation** — ce que le
  * contrôle de cohérence compare à ce que le bloc `payment` a enregistré
- * (plan `plan-le-virement-recu-dans-payment.md`, §3.6). Tables de la
+ * (doc `documentation/payment/le-bloc-payment.md`). Tables de la
  * comptabilité seulement.
  */
 export abstract class BankTransferTraceReader {

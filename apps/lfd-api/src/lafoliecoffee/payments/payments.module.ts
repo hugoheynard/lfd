@@ -76,7 +76,7 @@ import { OnPaymentLinkCancelled } from "./application/handlers/on-payment-link-c
  * ⚠️ L'encaissement d'une commande par carte (`PaymentGateway`, son webhook,
  * son remboursement chez Stripe) vivait ici jusqu'au 2026-11-09 : il est au
  * bloc `card-payment` depuis le lot P0.c2 du plan M2
- * (`documentation/payment/plan-m2-historique-de-transactions.md`),
+ * (`documentation/payment/le-bloc-payment.md`),
  * et `orders` l'atteint par son canal. Le mandat, lui, ne
  * passe par aucun prestataire : il est frappé et rangé ici, et traité
  * directement avec la banque (`documentation/comptabilite/prelevement/prelevement-sepa.md`).

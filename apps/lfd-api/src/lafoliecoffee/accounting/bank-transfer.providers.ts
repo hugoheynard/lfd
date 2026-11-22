@@ -20,7 +20,7 @@ import { PrismaUnpaidTransferInvoicesReader } from "./infrastructure/prisma-unpa
  * module, qui dépasse déjà la taille d'un fichier. Le virement lui-même est
  * enregistré par le bloc `payment` (`BankTransfers`, global) ; la facturation
  * en garde la trace sur ses bons, et la compare chaque nuit (§3.6 du plan
- * `plan-le-virement-recu-dans-payment.md`).
+ * `documentation/payment/le-bloc-payment.md`).
  */
 export const BANK_TRANSFER_PROVIDERS: readonly Provider[] = [
   { provide: TransferInvoicesReader, useClass: PrismaTransferInvoicesReader },

@@ -1,7 +1,6 @@
 /**
  * E2E de **`public.refund_credit` : un avoir ne constate qu'un remboursement**
- * (`documentation/payment/plan-m2-historique-de-transactions.md`,
- * §5.1). L'unicité de `credit_note_id` ne s'éprouve qu'avec un avoir réel —
+ * (`documentation/payment/le-bloc-payment.md`). L'unicité de `credit_note_id` ne s'éprouve qu'avec un avoir réel —
  * une pièce émise par l'émetteur de factures — d'où ce fichier à part de
  * `card-refund-schema.e2e-spec.ts`, qui écrit ses lignes en SQL brut.
  *

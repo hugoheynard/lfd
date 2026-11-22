@@ -1,6 +1,6 @@
 /**
  * **Le contrôle de cohérence du virement reçu** (plan
- * `plan-le-virement-recu-dans-payment.md`, §3.6) : la trace de la facturation
+ * `documentation/payment/le-bloc-payment.md`) : la trace de la facturation
  * comparée à ce que le bloc `payment` a enregistré. Sans paramètre : la
  * fenêtre se lit à l'horloge.
  */

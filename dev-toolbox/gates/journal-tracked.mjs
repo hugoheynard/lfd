@@ -208,9 +208,8 @@ const STAFF_DELEGATES = new Map([
 const MONEY_ZONES = ["order-waivers", "payments", "loyalty"];
 
 /**
- * **Le bloc qui encaisse, à la racine** (`payment/`, plan M2,
- * `documentation/payment/plan-m2-historique-de-transactions.md`
- * §4.1) : un bloc de premier niveau, pas sous `src/lafoliecoffee/` —
+ * **Le bloc qui encaisse, à la racine** (`payment/`,
+ * `documentation/payment/le-bloc-payment.md`) : un bloc de premier niveau, pas sous `src/lafoliecoffee/` —
  * `MONEY_ZONES` ne peut donc pas le viser. La zone couvre tout le bloc, la
  * carte, les liens et ses canaux. Sans dossier, elle est vide (garde
  * `existsSync` dans `ZONES`) au lieu de faire planter la porte.

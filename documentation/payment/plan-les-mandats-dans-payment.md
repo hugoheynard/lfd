@@ -3,7 +3,7 @@
 > 📐 **Plan**, écrit le 2026-11-22 à la demande de Hugo (« fais un plan, en
 > lisant le code »). Il couvre les **marches 0 à 2** du déménagement des
 > mandats (lot D3 de
-> [`prelevement-et-virement-dans-payment.md`](prelevement-et-virement-dans-payment.md)) :
+> [`le-prelevement-dans-payment.md`](le-prelevement-dans-payment.md)) :
 > le **code** déménage, **les tables ne bougent pas**. La marche 3 (les
 > tables) et D4 (les lots, le `pain.008`) sont hors de ce plan. Argent et
 > frontière : contredit par `vitruve` avant Hugo. **Rien n'est décidé ni

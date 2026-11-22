@@ -12,8 +12,7 @@ import {
 
 /**
  * Les remboursements réussis d'une commande (plan
- * `documentation/payment/plan-m2-historique-de-transactions.md`,
- * §5.1, §6.1, lot P1.c) : le carnet du bloc `card-payment`
+ * `documentation/payment/le-bloc-payment.md`, lot P1.c) : le carnet du bloc `card-payment`
  * (`succeededRefundsOf`, trié par `recordedAt, id` — l'ordre que le
  * rapprochement suppose pour ventiler le dernier avoir au reste exact), et
  * leur rapprochement dans `public.refund_credit`, la table de la

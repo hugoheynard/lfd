@@ -1417,7 +1417,7 @@ commande ne porte (un lien libre) sonne aussi la cloche, sans rien écrire.
 
 ## Déployer P1 (boutique fermée) — le remboursement passe au bloc `card-payment`
 
-> Plan [`payment/plan-m2-historique-de-transactions.md`](../payment/plan-m2-historique-de-transactions.md),
+> Doc [`payment/le-bloc-payment.md`](../payment/le-bloc-payment.md),
 > §5.2 (la condition de déploiement, décidée par Hugo le 2026-11-10 :
 > pré-release, **boutique fermée**, sans fenêtre de bascule). Écrit au lot
 > P1.c (2026-11-10). **Irréversible** : les migrations
@@ -1651,7 +1651,7 @@ copié.
 
 ## Déployer le virement reçu dans `payment` (lot D1, `20261122180000_le_virement_recu_dans_payment`)
 
-> Plan [`payment/plan-le-virement-recu-dans-payment.md`](../payment/plan-le-virement-recu-dans-payment.md).
+> Doc [`payment/le-bloc-payment.md`](../payment/le-bloc-payment.md).
 > `public.received_bank_transfer` devient `payment.transfer_received`,
 > `public.received_bank_transfer_invoice` devient `payment.transfer_allocation`
 > (une colonne `subject_type`, `invoice` seul admis). **Renommages, aucune

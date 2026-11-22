@@ -1,8 +1,7 @@
 /**
  * **Ce qu'il reste à rendre d'une commande payée, et ce qui est en vol** (doc
  * `documentation/commandes/annulation/annulation-par-le-staff.md`, C4.4 ; plan
- * `documentation/payment/plan-m2-historique-de-transactions.md`,
- * §3.3, §6.2) — ce que la règle de l'annulation lit.
+ * `documentation/payment/le-bloc-payment.md`) — ce que la règle de l'annulation lit.
  *
  * Depuis le lot P1.c, tiré de la position du bloc `card-payment` (une seule
  * arithmétique) : le carnet d'`orders` n'existe plus.

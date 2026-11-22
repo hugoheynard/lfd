@@ -1,6 +1,6 @@
 /**
  * E2E du **balayage des paiements en attente** (plan
- * `documentation/payment/plan-b-balayage-des-paiements-en-attente.md`) : le
+ * `documentation/payment/le-bloc-payment.md`) : le
  * filet d'un webhook perdu, `POST admin/card-payments/pending/sweep`.
  *
  * Ce que seul le vrai SQL prouve : la sélection (états, rôle, bornes d'âge,

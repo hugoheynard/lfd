@@ -200,8 +200,8 @@ Migrations `20261112170000_la_commande_reglee_par_virement`,
 `20261122180000_le_virement_recu_dans_payment`.
 
 **Deux côtés, un identifiant.** La facturation **juge** et garde la trace ;
-le bloc `payment` **enregistre** le virement (plan
-[`plan-le-virement-recu-dans-payment.md`](../payment/plan-le-virement-recu-dans-payment.md)).
+le bloc `payment` **enregistre** le virement
+([`le-bloc-payment.md`](../payment/le-bloc-payment.md), § 6).
 Aucune clé étrangère ne les lie (décidé par Hugo le 2026-11-22) :
 
 ```mermaid

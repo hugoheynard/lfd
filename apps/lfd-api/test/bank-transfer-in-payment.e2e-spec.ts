@@ -1,6 +1,6 @@
 /**
  * E2E du **virement reçu dans le bloc `payment`** (plan
- * `documentation/payment/plan-le-virement-recu-dans-payment.md`, lot D1).
+ * `documentation/payment/le-bloc-payment.md`).
  *
  * Ce que seul le vrai serveur prouve : après le renommage, la base tient
  * toujours l'ajout seul sur les deux tables déménagées ; et le contrôle de

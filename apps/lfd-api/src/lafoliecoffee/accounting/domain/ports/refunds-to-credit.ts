@@ -3,8 +3,7 @@ export type CreditableRefundNature = "return" | "adjustment";
 
 /**
  * Un remboursement RÉUSSI d'une commande, et son rapprochement s'il existe
- * (plan `documentation/payment/plan-m2-historique-de-transactions.md`,
- * §5.1, §6.1).
+ * (doc `documentation/payment/le-bloc-payment.md`).
  */
 export interface CreditableRefund {
   /** L'id de la ligne `payment.card_refund` — jamais le `re_…` du prestataire. */

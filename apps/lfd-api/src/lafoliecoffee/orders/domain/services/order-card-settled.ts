@@ -1,8 +1,7 @@
 /**
  * **Le règlement d'une commande tel qu'elle le voit**, dit au bloc
  * `card-payment` (plan
- * `documentation/payment/plan-m2-historique-de-transactions.md`,
- * §3.3, §4.3) — son `payment_status`, rien de plus ; `closed` seulement pour
+ * `documentation/payment/le-bloc-payment.md`) — son `payment_status`, rien de plus ; `closed` seulement pour
  * une annulée que rien n'a réglée ni refusée.
  *
  * Les quatre valeurs sont celles de `SubjectSettledState` du canal, réécrites

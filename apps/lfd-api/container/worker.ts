@@ -517,7 +517,7 @@ async function triggerQualityUploadSweep(env: Env): Promise<void> {
     // refait le geste.
     "admin/intents/purge",
     // Le contrôle de cohérence du virement reçu (plan
-    // `documentation/payment/plan-le-virement-recu-dans-payment.md`, §3.6) :
+    // `documentation/payment/le-bloc-payment.md`) :
     // la trace de la facturation comparée au bloc `payment`, chaque nuit.
     // Il ne corrige rien ; un écart sonne la cloche.
     "admin/accounting/bank-transfers/consistency",
@@ -691,8 +691,7 @@ async function triggerUnsettledShopOrderExpiry(env: Env): Promise<void> {
 
 /**
  * Réveille le container et passe les remboursements par carte dus (plan
- * `documentation/payment/plan-m2-historique-de-transactions.md`,
- * §6.8, `sweep-card-refunds`) : une demande dont l'exécuteur n'a pas abouti
+ * `documentation/payment/le-bloc-payment.md`, `sweep-card-refunds`) : une demande dont l'exécuteur n'a pas abouti
  * (prestataire injoignable, processus mort) est reprise ici, au plus 20 par
  * passage — l'annulation d'une commande payée y passe depuis le lot P1.c
  * (l'ancienne route `admin/orders/refunds/sweep` est retirée). Sur le cron de
@@ -709,7 +708,7 @@ async function triggerCardRefundSweep(env: Env): Promise<void> {
 
 /**
  * Réveille le container et relit chez le prestataire les paiements restés en
- * attente (plan `documentation/payment/plan-b-balayage-des-paiements-en-attente.md`) :
+ * attente (doc `documentation/payment/le-bloc-payment.md`) :
  * le filet d'un webhook perdu, au plus 50 par passage, chacun à l'intervalle
  * de son âge. Sur le cron de RAFRAÎCHISSEMENT ; même porte et même jeton que
  * les remboursements ; idempotent — la machine de la ligne ne règle jamais
@@ -777,8 +776,7 @@ async function triggerDeliveryNotesReconcile(env: Env): Promise<void> {
 
 /**
  * Réveille le container et rattrape les premiers paiements par carte (plan
- * `documentation/payment/plan-m2-historique-de-transactions.md`,
- * §4.3, §6.8) : les intentions qu'une commande porte et que
+ * `documentation/payment/le-bloc-payment.md`) : les intentions qu'une commande porte et que
  * `payment.card_payment` ne connaît pas encore, ou en retard sur elle. Sur le
  * cron HORAIRE, de P0 à P2 ; idempotent, et muet sans ligne-témoin. Même porte
  * et même jeton que la boîte d'envoi.

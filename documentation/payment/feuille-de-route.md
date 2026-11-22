@@ -1,7 +1,8 @@
 # Feuille de route du paiement
 
 > 📐 **Feuille de route**, écrite le 2026-11-22 avec Hugo. Ce qui est bâti
-> est décrit dans [`les-liens-de-paiement.md`](les-liens-de-paiement.md).
+> est décrit dans [`le-bloc-payment.md`](le-bloc-payment.md) et
+> [`les-liens-de-paiement.md`](les-liens-de-paiement.md).
 > Ce document dit **où va le bloc**, et dans quel ordre. Il se met à jour à
 > chaque lot terminé.
 
@@ -18,19 +19,20 @@ flowchart TB
     B["La page de paiement à nous, le champ de carte au prestataire"]
     C["Les liens vers un sujet"]
   end
-  subgraph Bientot["Bientôt"]
-    D["L'avis à la comptabilité"]
-    E["Les natures d'une demande libre"]
-    F["Retirer Stripe Checkout (fait)"]
+  subgraph Bientot["Fait aussi"]
+    D["L'avis à la comptabilité, les natures"]
+    E["Le balayage des paiements en attente"]
+    F["Le virement reçu dans le bloc"]
   end
   subgraph Ensuite["Ensuite, selon les besoins"]
     G["L'acompte sur devis"]
     H["La facture d'une période payée par carte"]
+    H2["Le resserrement de M2"]
   end
   subgraph Fond["Chantiers de fond"]
     I["Rapprochement automatique"]
     J["Litiges"]
-    K["Prélèvement et virement dans le bloc"]
+    K["Le prélèvement dans le bloc"]
   end
   Fait --> Bientot --> Ensuite --> Fond
 ```
@@ -47,33 +49,60 @@ construire avant d'en avoir besoin coûterait sans rien rapporter.
 
 # Partie 2 — La technique
 
-## 1. Où en est le bloc
+## 1. Où en est le bloc (2026-11-22, soir)
 
-| Lot | Contenu                                                                                                                                                  | État                                        |
-| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- |
-| M2  | le bloc qui encaisse par carte, le remboursement déménagé ([`plan-m2-historique-de-transactions.md`](plan-m2-historique-de-transactions.md))             | ✅ en production                            |
-| Z   | le bloc s'appelle `payment` : `card/`, `link/`, `shared/`, `channels/`                                                                                   | ✅ en production                            |
-| P0  | la page reçoit une instruction de collecte neutre, plus un secret Stripe                                                                                 | ✅ en production                            |
-| P1  | les liens vers un sujet, leur page `/payer/<jeton>`                                                                                                      | ✅ en production, sans sujet branché        |
-| V   | le vocabulaire du schéma : `payment`, tables `card_*`                                                                                                    | ✅ en production                            |
-| F1  | la demande de paiement libre passe par le lien                                                                                                           | ✅ en production                            |
-| P1b | l'avis à la comptabilité : un e-mail à l'équipe par paiement encaissé par un lien, l'auteur du lien nommé                                                | ✅ en production                            |
-| F2  | la sortie de Stripe Checkout : plus de webhook des liens, plus de relais ; les anciens liens sont des lignes historiques                                 | 🟦 sur `dev`                                |
-| D1  | le virement reçu dans `payment/transfer/`, sans clé entre les blocs, et le contrôle de cohérence de nuit ([plan](plan-le-virement-recu-dans-payment.md)) | ✅ bâti le 2026-11-22, pas encore sur `dev` |
+L'état bâti est décrit dans [`le-bloc-payment.md`](le-bloc-payment.md) et
+[`les-liens-de-paiement.md`](les-liens-de-paiement.md).
+
+| Lot    | Contenu                                                                                                                                                                              | État             |
+| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------- |
+| M2     | le bloc qui encaisse par carte, le remboursement déménagé, la hausse et la baisse d'une commande payée                                                                               | ✅ en production |
+| Z      | le bloc s'appelle `payment` : `card/`, `link/`, `shared/`, `channels/`                                                                                                               | ✅ en production |
+| P0     | la page reçoit une instruction de collecte neutre, plus un secret Stripe                                                                                                             | ✅ en production |
+| P1     | les liens vers un sujet, leur page `/payer/<jeton>`                                                                                                                                  | ✅ en production |
+| V      | le vocabulaire du schéma : `payment`, tables `card_*`                                                                                                                                | ✅ en production |
+| F1     | la demande de paiement libre passe par le lien                                                                                                                                       | ✅ en production |
+| P1b    | l'avis à la comptabilité d'un paiement encaissé par un lien                                                                                                                          | ✅ en production |
+| P1c    | les natures d'une demande libre                                                                                                                                                      | ✅ en production |
+| N      | les destinataires des avis, réglés à l'écran                                                                                                                                         | ✅ en production |
+| —      | les champs dépréciés de P0 retirés des contrats (`clientSecret`, `publishableKey`)                                                                                                   | ✅ en production |
+| F2     | la sortie de Stripe Checkout : un seul webhook, les anciens liens en lignes historiques                                                                                              | ✅ en production |
+| B      | le balayage des paiements en attente, et l'ordre des verrous de `settleFromProvider`                                                                                                 | ✅ en production |
+| D1     | le virement reçu dans `payment/transfer/`, sans clé entre les blocs, et le contrôle de cohérence de nuit                                                                             | ✅ en production |
+| —      | le schéma Prisma dit la base                                                                                                                                                         | ✅ en production |
+| ~~D2~~ | ~~le compte d'encaissement dans le bloc~~ — **retiré** : il reste avec l'entité (décision de Hugo du 2026-11-22, [`le-prelevement-dans-payment.md`](le-prelevement-dans-payment.md)) | —                |
 
 ## 2. La suite, dans l'ordre
 
-| #     | Lot                                                                                                    | Ce qu'il apporte                                                                                                                                                                                                                        | Condition                                                                                                                                                                                                                                                            |
-| ----- | ------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1     | ~~**P1b** — l'avis à la comptabilité~~                                                                 | ✅ bâti le 2026-11-22, sur `dev` (§1)                                                                                                                                                                                                   | F1 déployé                                                                                                                                                                                                                                                           |
-| 2     | ~~**Les natures d'une demande libre**~~                                                                | ✅ bâti le 2026-11-22, sur `dev` — cinq natures, acompte compris (encaissé seulement)                                                                                                                                                   | —                                                                                                                                                                                                                                                                    |
-| 3     | ~~**Retrait des champs dépréciés de P0**~~                                                             | ✅ fait le 2026-11-22, sur `dev` : `clientSecret` et `publishableKey` sortis des contrats                                                                                                                                               | un déploiement après P0 (fait)                                                                                                                                                                                                                                       |
-| 4     | ~~**F2** — la sortie de Stripe Checkout~~                                                              | ✅ bâti le 2026-11-22, sur `dev` : `/payments/links/webhook`, son secret, le relais `card_payment.checkout_event` et le code des sessions Checkout retirés ; le webhook des cartes reste, les anciens liens sont des lignes historiques | plus aucun ancien lien Stripe ouvert (vérifié en production le 2026-11-22)                                                                                                                                                                                           |
-| 4 bis | ~~**B — le balayage des paiements en attente**~~ ([plan](plan-b-balayage-des-paiements-en-attente.md)) | ✅ bâti le 2026-11-22, sur `dev` : toutes les cinq minutes, les paiements `pending                                                                                                                                                      | failed`(hors compléments, nés il y a plus de 5 min et moins de 7 jours, à l'intervalle de leur âge, 50 au plus) sont relus chez le prestataire et réglés par le chemin du webhook, ou clos ;`settleFromProvider` prend désormais ses verrous dans l'ordre du webhook | —   |
-| 5     | **L'acompte sur devis**                                                                                | un type de sujet à lui : facture d'acompte, rattachement au devis puis à la commande, déduction sur la facture finale                                                                                                                   | **avis du cabinet** sur la facture d'acompte et la TVA                                                                                                                                                                                                               |
-| 6     | **I0 → I2** — la facture d'une période payée par carte                                                 | « la carte par lien », troisième moyen du paiement au compte, à côté du prélèvement et du virement                                                                                                                                      | **avis du cabinet** sur le code Factur-X d'une facture à payer par carte                                                                                                                                                                                             |
-| 7     | **P2** — relancer un paiement mort                                                                     | révoquer et rouvrir un lien dont l'intention est morte chez le prestataire                                                                                                                                                              | rare avec Stripe                                                                                                                                                                                                                                                     |
-| 8     | **W** — les abonnés du commerce en `lfc.`                                                              | vocabulaire, sans changement de comportement                                                                                                                                                                                            | —                                                                                                                                                                                                                                                                    |
+| #   | Lot                                                    | Ce qu'il apporte                                                                                                                                                                                                                                                    | Condition                                                                                                        |
+| --- | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| 1   | **L'acompte sur devis**                                | un type de sujet à lui : facture d'acompte, rattachement au devis puis à la commande, déduction sur la facture finale                                                                                                                                               | **avis du cabinet** sur la facture d'acompte et la TVA                                                           |
+| 2   | **I0 → I2** — la facture d'une période payée par carte | « la carte par lien », troisième moyen du paiement au compte, à côté du prélèvement et du virement                                                                                                                                                                  | **avis du cabinet** sur le code Factur-X d'une facture à payer par carte                                         |
+| 3   | **Le resserrement de M2**                              | retirer `orders.stripe_payment_intent_id` (ses lecteurs passent par `positionOf`), les anciennes tables `public.order_refund` et `order_refund_request`, le rattrapage `first-payments/replay` et son témoin, et `POST /payments/webhook` sans compte               | **après** avoir repointé l'endpoint Stripe des cartes vers `/payments/webhook/lfc-stripe`                        |
+| 4   | **P2** — relancer un paiement mort                     | révoquer et rouvrir un lien dont l'intention est morte chez le prestataire                                                                                                                                                                                          | rare avec Stripe                                                                                                 |
+| 5   | **W** — les abonnés du commerce en `lfc.`              | vocabulaire, sans changement de comportement                                                                                                                                                                                                                        | —                                                                                                                |
+| 6   | **Le prélèvement dans le bloc**                        | les mandats et le compte du débiteur (D3), puis les lots et le `pain.008` (D4) : [`le-prelevement-dans-payment.md`](le-prelevement-dans-payment.md) ; le plan des mandats est **suspendu** ([`plan-les-mandats-dans-payment.md`](plan-les-mandats-dans-payment.md)) | une **question de conception** d'abord : un mandat connaît la société, le bloc ne connaît que des sujets opaques |
+
+**Ce qui reste de M2**, sans plan écrit (vérifié dans le code le
+2026-11-22) :
+
+- **« Vérifier chez le prestataire »** : une commande d'équipe qui relit les
+  paiements et remboursements d'un sujet chez le prestataire et les compare,
+  sans rien écrire. Non bâtie.
+- **La veille** : des cloches horaires sans appel au prestataire (demande
+  `issued` depuis plus de 7 jours, `stopped` depuis plus de 24 heures,
+  `to_issue` en retard ; commande payée dont la référence diverge du bloc).
+  Non bâtie.
+- **Les écrans et courriels** : l'historique daté des paiements et
+  remboursements d'une commande, et le courriel `customer.order-modified`.
+  Le courriel d'échec (`customer.order-modification-failed`) et les gestes
+  « Relancer » et « Rendu autrement » existent.
+- **C-2b, le bon sous la différence** : une baisse sous la part du bon de
+  fidélité imputé reste refusée (`RevisionBelowVoucherError`), au compte
+  comme par carte. Deux obstacles connus : un bon de modification ne
+  s'insère pas sous les `CHECK` actuels de `loyalty_vouchers`, et le
+  reliquat différé du bon d'origine rendrait la différence une seconde fois.
+  Plan à écrire dans `loyalty`.
 
 La règle qui décide où va une **nouvelle raison de payer** est dans
 [`les-liens-de-paiement.md`](les-liens-de-paiement.md) (§ 3) : sans conséquence au-delà de l'encaissement, c'est une **nature** ;
@@ -87,16 +116,16 @@ qu'elles ont publié (Airbnb, Uber, Booking ; des produits comme Spreedly,
 Primer ou Hyperswitch) décrit une couche de la même forme que la nôtre,
 avec ces pièces en plus.
 
-| Chantier                                                   | Ce qu'il fait                                                                                                                                                                                                                                                                                     | Quand                                                                                           |
-| ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| **Rapprochement automatique**                              | chaque jour, comparer ce qui a été encaissé, versé et facturé, avec les relevés du prestataire et de la banque, et signaler chaque écart — première pièce bâtie (D1) : le contrôle de nuit du virement reçu, facturation contre bloc                                                              | **le premier**, dès que l'argent réel circule : c'est lui qui détecte l'argent perdu sans bruit |
-| **Litiges** (rétrofacturations)                            | réception, preuves, issue, écriture comptable — avec un délai de réponse imposé par la banque                                                                                                                                                                                                     | **le second**, avant le premier litige réel                                                     |
-| **Prélèvement et virement dans le bloc**                   | le virement reçu y est (D1, `payment/transfer/`) ; la suite de la mécanique bancaire (mandats, `pain.008`, rejets) quitte la facturation ; la facturation garde « ce qui est dû » — le tri pièce par pièce : [`prelevement-et-virement-dans-payment.md`](prelevement-et-virement-dans-payment.md) | quand une deuxième application doit prélever, ou quand la facturation en souffre                |
-| **Un mouvement réparti sur plusieurs sujets**              | un prélèvement ou un virement règle plusieurs factures d'un coup ; le port des sujets doit le savoir                                                                                                                                                                                              | avec le chantier précédent                                                                      |
-| **Plusieurs prestataires en même temps**                   | routage selon le pays, le coût ou la disponibilité, bascule en cas de panne                                                                                                                                                                                                                       | quand un second prestataire est réellement contracté                                            |
-| **Grand livre en partie double**                           | chaque mouvement d'argent est une écriture débit/crédit, la balance est toujours vérifiable                                                                                                                                                                                                       | quand le volume ou la comptabilité l'exigent                                                    |
-| **Paiements partiels, cartes enregistrées, multi-devises** | courants à grande échelle ou à l'étranger                                                                                                                                                                                                                                                         | sur besoin                                                                                      |
-| **Exploitation**                                           | alertes sur le retard des webhooks et les taux de refus, tableau de bord, tests de contrat contre le bac à sable de chaque prestataire                                                                                                                                                            | progressivement, dès les premiers vrais clients                                                 |
+| Chantier                                                   | Ce qu'il fait                                                                                                                                                                                                                                                                   | Quand                                                                                           |
+| ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| **Rapprochement automatique**                              | chaque jour, comparer ce qui a été encaissé, versé et facturé, avec les relevés du prestataire et de la banque, et signaler chaque écart — première pièce bâtie (D1) : le contrôle de nuit du virement reçu, facturation contre bloc                                            | **le premier**, dès que l'argent réel circule : c'est lui qui détecte l'argent perdu sans bruit |
+| **Litiges** (rétrofacturations)                            | réception, preuves, issue, écriture comptable — avec un délai de réponse imposé par la banque                                                                                                                                                                                   | **le second**, avant le premier litige réel                                                     |
+| **Le prélèvement dans le bloc**                            | le virement reçu y est (D1, `payment/transfer/`) ; la suite de la mécanique bancaire (mandats, `pain.008`, rejets) quitte la facturation ; la facturation garde « ce qui est dû » — le tri pièce par pièce : [`le-prelevement-dans-payment.md`](le-prelevement-dans-payment.md) | quand une deuxième application doit prélever, ou quand la facturation en souffre                |
+| **Un mouvement réparti sur plusieurs sujets**              | un prélèvement ou un virement règle plusieurs factures d'un coup ; le port des sujets doit le savoir                                                                                                                                                                            | avec le chantier précédent                                                                      |
+| **Plusieurs prestataires en même temps**                   | routage selon le pays, le coût ou la disponibilité, bascule en cas de panne                                                                                                                                                                                                     | quand un second prestataire est réellement contracté                                            |
+| **Grand livre en partie double**                           | chaque mouvement d'argent est une écriture débit/crédit, la balance est toujours vérifiable                                                                                                                                                                                     | quand le volume ou la comptabilité l'exigent                                                    |
+| **Paiements partiels, cartes enregistrées, multi-devises** | courants à grande échelle ou à l'étranger                                                                                                                                                                                                                                       | sur besoin                                                                                      |
+| **Exploitation**                                           | alertes sur le retard des webhooks et les taux de refus, tableau de bord, tests de contrat contre le bac à sable de chaque prestataire                                                                                                                                          | progressivement, dès les premiers vrais clients                                                 |
 
 ## 4. Les recettes
 
@@ -135,7 +164,7 @@ assouplir. Un lot à part, contredit par `vitruve`.
 
 | Question                                                                                  | À qui                     | Bloque                    |
 | ----------------------------------------------------------------------------------------- | ------------------------- | ------------------------- |
-| La facture d'acompte : obligation, exigibilité de la TVA, déduction sur la facture finale | le cabinet comptable      | l'acompte (#5)            |
-| Le code Factur-X d'une facture à payer par carte (48 ou un autre)                         | le cabinet comptable      | I1 (#6)                   |
+| La facture d'acompte : obligation, exigibilité de la TVA, déduction sur la facture finale | le cabinet comptable      | l'acompte (#1)            |
+| Le code Factur-X d'une facture à payer par carte (48 ou un autre)                         | le cabinet comptable      | I1 (#2)                   |
 | Un reçu de paiement envoyé au client après un paiement par lien                           | Hugo                      | rien ; à décider avec P1b |
 | Les moyens de paiement en plusieurs fois disponibles sur le compte Stripe français        | le tableau de bord Stripe | §4.3                      |

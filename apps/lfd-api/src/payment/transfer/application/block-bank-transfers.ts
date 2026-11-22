@@ -17,7 +17,7 @@ import { TransferAllocationsReader } from "../domain/ports/transfer-allocations.
 
 /**
  * **La porte `BankTransfers`, implémentée par le bloc** (plan
- * `documentation/payment/plan-le-virement-recu-dans-payment.md`, §3.1).
+ * `documentation/payment/le-bloc-payment.md`).
  *
  * Aucun appel réseau : `record` juge par l'agrégat puis écrit dans la
  * transaction de l'appelant ; les lectures n'écrivent rien.

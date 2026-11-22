@@ -11,7 +11,7 @@ import {
 
 /**
  * Endpoint **machine** du contrôle de cohérence du virement reçu (plan
- * `plan-le-virement-recu-dans-payment.md`, §3.6) : le `RecomputeGuard` et son
+ * `documentation/payment/le-bloc-payment.md`) : le `RecomputeGuard` et son
  * jeton, présentés par le cron de NUIT du Worker (`container/worker.ts`).
  */
 @Controller("admin/accounting/bank-transfers/consistency")

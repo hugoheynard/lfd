@@ -32,8 +32,7 @@ const ORDER_SCREEN = "/commandes";
 
 /**
  * **La commande, sujet du bloc `card-payment`** (plan
- * `documentation/payment/plan-m2-historique-de-transactions.md`,
- * §3.3, §3.6, §4.4) — l'implémentation `order` du canal retour, reliée par
+ * `documentation/payment/le-bloc-payment.md`) — l'implémentation `order` du canal retour, reliée par
  * `appBootstrap/card-payment-feed.module.ts`.
  *
  * Ce que faisait `ConfirmOrderPaymentHandler` (retiré au lot P0.c2), mais

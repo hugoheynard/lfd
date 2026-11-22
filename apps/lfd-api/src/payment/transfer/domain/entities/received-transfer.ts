@@ -23,7 +23,7 @@ export type ReceivedTransferState = ReceivedTransferInput;
 
 /**
  * **Un virement reçu, et ses parts** (plan
- * `documentation/payment/plan-le-virement-recu-dans-payment.md`, §3.2) : la
+ * `documentation/payment/le-bloc-payment.md`) : la
  * mécanique de l'argent, sans métier. Elle ne sait pas ce qu'est une facture,
  * seulement qu'un sujet opaque reçoit une part.
  *

@@ -53,7 +53,7 @@ import { RegistryCardProviders } from "./infrastructure/registry-card-providers.
 
 /**
  * **Le bloc de l'encaissement par carte** (plan
- * `documentation/payment/plan-m2-historique-de-transactions.md`,
+ * `documentation/payment/le-bloc-payment.md`,
  * lots P0 et P1.b) : il encaisse et rembourse pour un sujet opaque, tient
  * l'état de l'argent carte, et seul il parle au prestataire des cartes.
  *

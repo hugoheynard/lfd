@@ -256,8 +256,7 @@ enum StaffResource {
   mail_sends
   /// LES PAIEMENTS PAR CARTE — « Relancer » un remboursement, « rendu
   /// autrement », « Vérifier », le balayage (2026-11-10,
-  /// `documentation/payment/plan-m2-historique-de-transactions.md`,
-  /// §3.3, §5.3, lot P1). Accordée à l'écran.
+  /// `documentation/payment/le-bloc-payment.md`, lot P1). Accordée à l'écran.
   card_payments
   ops_health
   /// LES OPÉRATIONS APRÈS DÉPLOIEMENT — simuler (lecture), appliquer

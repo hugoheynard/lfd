@@ -2,7 +2,7 @@
 // LE VIREMENT REÇU — schéma `payment`
 // ─────────────────────────────────────────────────────────────────────────────
 //
-// Plan `documentation/payment/plan-le-virement-recu-dans-payment.md`, lot D1.
+// Doc `documentation/payment/le-bloc-payment.md`.
 // Ce que Prisma ne sait pas écrire vit dans les migrations
 // `20261112170100_le_virement_recu` et `20261122180000_le_virement_recu_dans_payment` :
 // les CHECK, le type de sujet admis, et l'ajout seul.

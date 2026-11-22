@@ -11,7 +11,7 @@ import { PrismaTransferAllocationsReader } from "./infrastructure/prisma-transfe
 
 /**
  * **Le virement reçu** (plan
- * `documentation/payment/plan-le-virement-recu-dans-payment.md`, lot D1) :
+ * `documentation/payment/le-bloc-payment.md`) :
  * le mouvement d'argent et ses parts, sans métier.
  *
  * **Global**, comme `CardPaymentModule` et `PayLinkModule` : un bloc métier

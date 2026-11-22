@@ -2,8 +2,7 @@
 // PAYMENT — l'encaissement par carte : paiements, remboursements, reprise
 // ─────────────────────────────────────────────────────────────────────────────
 //
-// Plan `documentation/payment/plan-m2-historique-de-transactions.md`,
-// §4.1, §4.3. Propriétaire : le bloc `src/payment/card/`. Les liens de
+// Doc `documentation/payment/le-bloc-payment.md`. Propriétaire : le bloc `src/payment/card/`. Les liens de
 // paiement, dans le même schéma, sont dans `link.prisma`.
 //
 // Le bloc est AGNOSTIQUE (§3.1) : il encaisse pour un sujet qu'il ne connaît

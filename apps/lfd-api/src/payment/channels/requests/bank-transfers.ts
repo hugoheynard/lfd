@@ -50,7 +50,7 @@ export interface RecordedTransferView {
 
 /**
  * **Le virement reçu** — déclaré ET implémenté par `payment` (plan
- * `documentation/payment/plan-le-virement-recu-dans-payment.md`, §3.1). Un
+ * `documentation/payment/le-bloc-payment.md`). Un
  * mouvement d'argent reçu par virement, et sa répartition sur des sujets
  * opaques. Aucun réseau : tout se joue dans la base, dans la transaction de
  * l'appelant.
