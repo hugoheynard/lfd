@@ -249,3 +249,14 @@ coffre de moyens de paiement, et le commerçant n'envoie qu'une référence.
 - **D2 n'a plus lieu.** Le prochain déplacement est D3 (les mandats et le
   compte du débiteur), puis D4.
 - Réversible sans casse tant que le prélèvement n'a pas déménagé.
+
+### 5.2 Une application vend au nom d'une seule entité (Hugo, 2026-11-22)
+
+> Réponse de Hugo le 2026-11-22, « pour l'instant ».
+
+L'entité qui vend est une **configuration de l'application**, pas un choix
+fait à chaque vente. Conséquence : le jour où plusieurs applications
+existent, chacune déclare son entité une fois ; la facture et le paiement la
+lisent de l'application. Si un jour une même application doit vendre au nom
+de plusieurs entités (une par boutique, par exemple), l'entité deviendra une
+donnée de la vente, et la numérotation des factures restera par entité.
