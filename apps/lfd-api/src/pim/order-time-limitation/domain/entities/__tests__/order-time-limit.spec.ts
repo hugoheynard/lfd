@@ -19,8 +19,8 @@ function payload(over: Partial<OrderTimeLimitPayload> = {}): OrderTimeLimitPaylo
 }
 
 /**
- * Décision de Hugo du 2026-10-21 (`limites-de-commande/schema-des-reglages.md`
- * §4, points 1 à 3) : une limite par produit, délai ET heure, sans rattrapage.
+ * Décisions de Hugo (2026-10-21 et 2026-11-23) : une limite par produit ou par
+ * famille, délai ET heure, sans rattrapage.
  */
 describe("OrderTimeLimit", () => {
   it("pose la limite d'un produit", () => {
@@ -29,9 +29,14 @@ describe("OrderTimeLimit", () => {
     expect([limit.daysBefore, limit.time, limit.graceMinutes]).toEqual([2, "12:00", null]);
   });
 
+  it("pose la limite d'une famille", () => {
+    const limit = OrderTimeLimit.set("l1", payload({ scope: { type: "category", id: "cat_1" } }));
+
+    expect([limit.scope.type, limit.daysBefore, limit.time]).toEqual(["category", 2, "12:00"]);
+  });
+
   it.each([
     ["global", null],
-    ["category", "cat_1"],
     ["variant", "v1"],
   ] as const)("refuse la portée %s en nommant où se règle la générale", (type, id) => {
     expect(() => OrderTimeLimit.set("l1", payload({ scope: { type, id } }))).toThrow(

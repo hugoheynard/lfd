@@ -27,6 +27,7 @@ function view(
     graceMinutes: null,
     archived: false,
     staffMayExceed: false,
+    excludedProductIds: [],
     ...over,
   };
 }
@@ -66,6 +67,18 @@ describe("toSyncRule", () => {
       "time",
     ]);
     expect(Object.keys(rule.scope).sort()).toEqual(["id", "type"]);
+  });
+
+  it("porte les produits exclus d'une limite de famille", () => {
+    const rule = toSyncRule(
+      view("category", "patisserie", {
+        daysBefore: 2,
+        time: "12:00",
+        excludedProductIds: ["prd_1", "prd_2"],
+      }),
+    );
+
+    expect(rule.excludedProductIds).toEqual(["prd_1", "prd_2"]);
   });
 
   it("transporte la case « l'équipe peut passer outre »", () => {

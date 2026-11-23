@@ -21,6 +21,7 @@ function rule(over: Partial<OrderTimeLimitView> = {}): OrderTimeLimitView {
     graceMinutes: null,
     staffMayExceed: false,
     archived: false,
+    excludedProductIds: [],
     ...over,
   };
 }

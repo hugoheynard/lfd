@@ -101,4 +101,6 @@ export const CATALOGUE_READING_PORTS = [
   ProductRateUsageReader,
   CategoryNamesReader,
   ProductSkusReader,
+  ProductPlacementReader,
+  CategoryChainReader,
 ] as const;

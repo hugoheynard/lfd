@@ -15,6 +15,7 @@ const BUCHE: OrderTimeLimitView = {
   graceMinutes: null,
   staffMayExceed: false,
   archived: false,
+  excludedProductIds: [],
 };
 
 /** Le service doublé : seules ses deux lectures servent à l'affichage. */

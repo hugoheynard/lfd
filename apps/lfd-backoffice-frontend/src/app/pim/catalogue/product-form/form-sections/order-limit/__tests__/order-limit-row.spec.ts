@@ -18,6 +18,7 @@ function rule(
     graceMinutes: null,
     staffMayExceed: false,
     archived: false,
+    excludedProductIds: [],
     ...over,
   };
 }

@@ -1,11 +1,13 @@
 import type { OrderTimeLimitPayload } from "@lfd/pim-contracts";
 
 import {
+  ExclusionOnProductLimitError,
   IncompleteOrderTimeLimitError,
   ProductGraceRetiredError,
   RetiredOrderTimeLimitScopeError,
 } from "../errors/order-time-limit-errors.js";
 import { LimitScope } from "../value-objects/limit-scope.js";
+import { isLive, type OrderTimeLimitExclusion } from "./order-time-limit-exclusion.js";
 
 /** Ce qu'un rang peut poser. `null` = **ce rang ne se prononce pas**. */
 export interface LimitValues {
@@ -17,16 +19,19 @@ export interface LimitValues {
 }
 
 /**
- * **Une limite posée sur une portée.**
+ * **Une limite posée sur un produit ou sur une famille**, règle entière.
  *
- * Depuis le 2026-10-21 (décision de Hugo, `limites-de-commande/
- * schema-des-reglages.md` §4) : **une limite par produit, règle entière**. Ni
- * « toute la production » (elle se règle au commerce), ni famille, ni
- * déclinaison (elle suit son produit) ; et plus d'héritage champ par champ —
- * le délai et l'heure sont tous deux posés. **Pas de rattrapage** (même jour,
- * point 2) : le seul rattrapage est celui de la règle générale du commerce, et
- * la dérogation reste le geste d'exception. `graceMinutes` n'accepte que
- * `null` ou `0`, et s'enregistre `null`.
+ * Décisions de Hugo (2026-10-21 et 2026-11-23, `limites-de-commande/`) : ni
+ * « toute la production » (elle se règle au commerce), ni déclinaison (elle
+ * suit son produit) ; pas d'héritage champ par champ — le délai et l'heure
+ * sont tous deux posés. **Pas de rattrapage** : le seul est celui de la règle
+ * générale du commerce, et la dérogation reste le geste d'exception.
+ * `graceMinutes` n'accepte que `null` ou `0`, et s'enregistre `null`.
+ *
+ * Une limite de **famille** vise toute sa descendance, sauf les produits
+ * qu'elle **exclut** nommément. Les exclusions font partie de l'agrégat : elles
+ * ne s'effacent pas (retirer pose `removedAt`), et archiver la limite les
+ * garde — la reposer les remet en vigueur avec elle.
  */
 export class OrderTimeLimit {
   private constructor(
@@ -34,6 +39,7 @@ export class OrderTimeLimit {
     readonly scope: LimitScope,
     private values: LimitValues,
     private archivedAtValue: Date | null,
+    private exclusionsValue: readonly OrderTimeLimitExclusion[],
   ) {}
 
   /**
@@ -41,28 +47,36 @@ export class OrderTimeLimit {
    * en a **au plus une par portée** : reposer sur la même portée remplace, ça ne
    * crée pas un second avis.
    *
-   * @throws {RetiredOrderTimeLimitScopeError} la portée n'est pas un produit.
+   * @throws {RetiredOrderTimeLimitScopeError} la portée n'est ni un produit ni une famille.
    * @throws {IncompleteOrderTimeLimitError} le délai ou l'heure manque.
    */
   static set(id: string, payload: OrderTimeLimitPayload): OrderTimeLimit {
     const scope = LimitScope.of(payload.scope);
-    ensureProduct(scope);
-    const values = productValuesOf(payload);
-    return new OrderTimeLimit(id, scope, values, null);
+    ensureAdmittedScope(scope);
+    const values = completeValuesOf(payload);
+    return new OrderTimeLimit(id, scope, values, null, []);
   }
 
   /**
-   * Rehydrate depuis la base. La portée se revérifie (cohérence `id`/type) ;
-   * la règle « produit seulement, règle entière » NON : une ligne d'avant le
-   * 2026-10-21 doit encore pouvoir se relire pour être retirée. La résolution
+   * Rehydrate depuis la base, avec ses exclusions (retirées comprises ou non :
+   * seules les vivantes comptent). La portée se revérifie (cohérence
+   * `id`/type) ; la règle « produit ou famille, règle entière » NON : une ligne
+   * résiduelle doit encore pouvoir se relire pour être retirée. La résolution
    * l'ignore, et `reset` la refuse.
    */
   static reconstitute(
     id: string,
     payload: OrderTimeLimitPayload,
     archivedAt: Date | null,
+    exclusions: readonly OrderTimeLimitExclusion[] = [],
   ): OrderTimeLimit {
-    return new OrderTimeLimit(id, LimitScope.of(payload.scope), valuesOf(payload), archivedAt);
+    return new OrderTimeLimit(
+      id,
+      LimitScope.of(payload.scope),
+      valuesOf(payload),
+      archivedAt,
+      exclusions,
+    );
   }
 
   /**
@@ -82,8 +96,8 @@ export class OrderTimeLimit {
    *   vigueur — la case seule changée est un changement.
    */
   reset(payload: OrderTimeLimitPayload): boolean {
-    ensureProduct(this.scope);
-    const next = productValuesOf(payload);
+    ensureAdmittedScope(this.scope);
+    const next = completeValuesOf(payload);
     const before = this.values;
     const revived = this.restore();
     this.values = next;
@@ -128,6 +142,65 @@ export class OrderTimeLimit {
     return true;
   }
 
+  /**
+   * Exclut un produit de la limite de cette famille. L'appartenance du produit
+   * à la descendance de la famille se vérifie avant, par qui lit le catalogue.
+   *
+   * @param exclusionId l'identifiant de la nouvelle exclusion (`IdGenerator`).
+   * @throws {ExclusionOnProductLimitError} la limite n'est pas celle d'une famille.
+   * @returns `false` si le produit était déjà exclu — le geste rejoué ne change rien.
+   */
+  exclude(exclusionId: string, productId: string, at: Date): boolean {
+    this.ensureFamily();
+    if (this.liveExclusionOf(productId) !== undefined) {
+      return false;
+    }
+    const exclusion = { id: exclusionId, productId, createdAt: at, removedAt: null };
+    this.exclusionsValue = [...this.exclusionsValue, exclusion];
+    return true;
+  }
+
+  /**
+   * Réintègre un produit exclu : son exclusion est **retirée** (`removedAt`),
+   * jamais effacée.
+   *
+   * @throws {ExclusionOnProductLimitError} la limite n'est pas celle d'une famille.
+   * @returns `false` si le produit n'était pas exclu.
+   */
+  include(productId: string, at: Date): boolean {
+    this.ensureFamily();
+    const live = this.liveExclusionOf(productId);
+    if (live === undefined) {
+      return false;
+    }
+    this.exclusionsValue = this.exclusionsValue.map((exclusion) =>
+      exclusion === live ? { ...exclusion, removedAt: at } : exclusion,
+    );
+    return true;
+  }
+
+  /** Toutes les exclusions que l'agrégat tient, retirées comprises. */
+  get exclusions(): readonly OrderTimeLimitExclusion[] {
+    return this.exclusionsValue;
+  }
+
+  /** Les produits exclus en vigueur. */
+  get excludedProductIds(): readonly string[] {
+    return this.exclusionsValue.filter(isLive).map((exclusion) => exclusion.productId);
+  }
+
+  private liveExclusionOf(productId: string): OrderTimeLimitExclusion | undefined {
+    return this.exclusionsValue.find(
+      (exclusion) => isLive(exclusion) && exclusion.productId === productId,
+    );
+  }
+
+  private ensureFamily(): void {
+    if (this.scope.type !== "category") {
+      throw new ExclusionOnProductLimitError();
+    }
+  }
+
   get daysBefore(): number | null {
     return this.values.daysBefore;
   }
@@ -155,13 +228,13 @@ function valuesOf(payload: OrderTimeLimitPayload): LimitValues {
 }
 
 /**
- * Les valeurs d'une limite de produit : délai ET heure, sans rattrapage.
+ * Les valeurs d'une limite : délai ET heure, sans rattrapage.
  *
  * Un rattrapage non nul est **refusé**, pas ignoré : l'ignorer laisserait
  * l'appelant croire qu'il a posé une heure de grâce que la passation
  * n'appliquera jamais.
  */
-function productValuesOf(payload: OrderTimeLimitPayload): LimitValues {
+function completeValuesOf(payload: OrderTimeLimitPayload): LimitValues {
   const values = valuesOf(payload);
   ensureComplete(values);
   if (values.graceMinutes !== null && values.graceMinutes !== 0) {
@@ -170,15 +243,15 @@ function productValuesOf(payload: OrderTimeLimitPayload): LimitValues {
   return { ...values, graceMinutes: null };
 }
 
-/** Seul le produit porte encore une limite au référentiel (2026-10-21). */
-function ensureProduct(scope: LimitScope): void {
-  if (scope.type !== "product") {
+/** Le référentiel pose une limite sur un produit ou une famille, rien d'autre. */
+function ensureAdmittedScope(scope: LimitScope): void {
+  if (scope.type !== "product" && scope.type !== "category") {
     throw new RetiredOrderTimeLimitScopeError(scope.type);
   }
 }
 
 /**
- * Plus de rang au-dessus dont hériter : un délai sans heure, ou l'inverse, se
+ * Pas de rang au-dessus dont hériter : un délai sans heure, ou l'inverse, se
  * montrerait comme une règle sans jamais rien refuser.
  */
 function ensureComplete(values: LimitValues): void {

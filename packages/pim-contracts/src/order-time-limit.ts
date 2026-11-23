@@ -112,6 +112,11 @@ export interface OrderTimeLimitView {
    * commerce. Elle reste listée pour pouvoir être restaurée.
    */
   readonly archived: boolean;
+  /**
+   * Les produits exclus **en vigueur** d'une limite de famille ; toujours vide
+   * pour une limite de produit.
+   */
+  readonly excludedProductIds: readonly string[];
 }
 
 /**

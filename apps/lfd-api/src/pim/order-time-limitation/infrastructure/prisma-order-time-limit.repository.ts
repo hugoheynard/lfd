@@ -8,6 +8,7 @@ import {
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import type { WriteTicket } from "../../../platform/journal/scoped-journal.js";
 import { OrderTimeLimit } from "../domain/entities/order-time-limit.js";
+import type { OrderTimeLimitExclusion } from "../domain/entities/order-time-limit-exclusion.js";
 import { OrderTimeLimitRepository } from "../domain/ports/order-time-limit.repository.js";
 import { LimitTargetLabelsReader } from "../domain/ports/limit-target-labels.reader.js";
 import { LimitScope } from "../domain/value-objects/limit-scope.js";
@@ -23,6 +24,14 @@ interface LimitRow {
   readonly staffMayExceed: boolean;
   readonly archivedAt: Date | null;
 }
+
+/** Une ligne et ses exclusions — vivantes seulement, ou toutes, selon la lecture. */
+interface LimitRowWithExclusions extends LimitRow {
+  readonly exclusions: readonly OrderTimeLimitExclusion[];
+}
+
+/** Les exclusions vivantes : ce que la vue et le fil portent. */
+const LIVE_EXCLUSIONS = { exclusions: { where: { removedAt: null } } } as const;
 
 @Injectable()
 export class PrismaOrderTimeLimitRepository extends OrderTimeLimitRepository {
@@ -42,22 +51,32 @@ export class PrismaOrderTimeLimitRepository extends OrderTimeLimitRepository {
    * plutôt que d'être escamotée avec elle.
    */
   async list(): Promise<readonly OrderTimeLimitView[]> {
-    return this.views(await this.prisma.orderTimeLimit.findMany());
+    return this.views(await this.prisma.orderTimeLimit.findMany({ include: LIVE_EXCLUSIONS }));
   }
 
   /** `archived_at IS NULL` dans la requête : une limite archivée ne s'applique plus. */
   async inForce(): Promise<readonly OrderTimeLimitView[]> {
-    return this.views(await this.prisma.orderTimeLimit.findMany({ where: { archivedAt: null } }));
+    return this.views(
+      await this.prisma.orderTimeLimit.findMany({
+        where: { archivedAt: null },
+        include: LIVE_EXCLUSIONS,
+      }),
+    );
   }
 
+  /** L'agrégat porte ses exclusions vivantes : les retirées ne se modifient plus. */
   async findById(id: string): Promise<OrderTimeLimit | null> {
-    const row = await this.prisma.orderTimeLimit.findUnique({ where: { id } });
+    const row = await this.prisma.orderTimeLimit.findUnique({
+      where: { id },
+      include: LIVE_EXCLUSIONS,
+    });
     return row === null ? null : toDomain(row);
   }
 
   async findByScope(scope: LimitScope): Promise<OrderTimeLimit | null> {
     const row = await this.prisma.orderTimeLimit.findFirst({
       where: { scopeType: scope.type, scopeId: scope.id },
+      include: LIVE_EXCLUSIONS,
     });
     return row === null ? null : toDomain(row);
   }
@@ -66,6 +85,10 @@ export class PrismaOrderTimeLimitRepository extends OrderTimeLimitRepository {
    * Écrit la règle à son identifiant. `upsert` et non `create`/`update` : le
    * handler a déjà décidé lequel des deux c'était en cherchant la portée, et
    * refaire ce test ici en ferait un second endroit à corriger.
+   *
+   * Les exclusions se comparent à la base : une exclusion que l'agrégat tient
+   * et que la base n'a pas s'insère ; une exclusion vivante en base que
+   * l'agrégat a retirée reçoit son `removed_at`. Aucune ne s'efface.
    */
   async save(limit: OrderTimeLimit, _ticket: WriteTicket): Promise<void> {
     const values = {
@@ -80,6 +103,7 @@ export class PrismaOrderTimeLimitRepository extends OrderTimeLimitRepository {
       create: { id: limit.id, scopeType: limit.scope.type, scopeId: limit.scope.id, ...values },
       update: values,
     });
+    await this.saveExclusions(limit);
   }
 
   async saveArchival(limit: OrderTimeLimit, _ticket: WriteTicket): Promise<void> {
@@ -89,7 +113,41 @@ export class PrismaOrderTimeLimitRepository extends OrderTimeLimitRepository {
     });
   }
 
-  private async views(rows: readonly LimitRow[]): Promise<readonly OrderTimeLimitView[]> {
+  private async saveExclusions(limit: OrderTimeLimit): Promise<void> {
+    const stored = await this.prisma.orderTimeLimitExclusion.findMany({
+      where: { limitId: limit.id },
+      select: { id: true, removedAt: true },
+    });
+    const storedById = new Map(stored.map((row) => [row.id, row.removedAt]));
+    const added = limit.exclusions.filter((exclusion) => !storedById.has(exclusion.id));
+    const removed = limit.exclusions.filter(
+      (exclusion) =>
+        exclusion.removedAt !== null &&
+        storedById.has(exclusion.id) &&
+        storedById.get(exclusion.id) === null,
+    );
+    if (added.length > 0) {
+      await this.prisma.orderTimeLimitExclusion.createMany({
+        data: added.map((exclusion) => ({
+          id: exclusion.id,
+          limitId: limit.id,
+          productId: exclusion.productId,
+          createdAt: exclusion.createdAt,
+          removedAt: exclusion.removedAt,
+        })),
+      });
+    }
+    for (const exclusion of removed) {
+      await this.prisma.orderTimeLimitExclusion.update({
+        where: { id: exclusion.id },
+        data: { removedAt: exclusion.removedAt },
+      });
+    }
+  }
+
+  private async views(
+    rows: readonly LimitRowWithExclusions[],
+  ): Promise<readonly OrderTimeLimitView[]> {
     const labels = await this.targets.labelsOf(rows);
     return rows.flatMap((row) => {
       const view = toView(row, labels);
@@ -98,7 +156,10 @@ export class PrismaOrderTimeLimitRepository extends OrderTimeLimitRepository {
   }
 }
 
-function toView(row: LimitRow, labels: ReadonlyMap<string, string>): OrderTimeLimitView | null {
+function toView(
+  row: LimitRowWithExclusions,
+  labels: ReadonlyMap<string, string>,
+): OrderTimeLimitView | null {
   const type = toScopeType(row.scopeType);
   if (type === null) {
     return null;
@@ -112,6 +173,7 @@ function toView(row: LimitRow, labels: ReadonlyMap<string, string>): OrderTimeLi
     graceMinutes: row.graceMinutes,
     staffMayExceed: row.staffMayExceed,
     archived: row.archivedAt !== null,
+    excludedProductIds: row.exclusions.map((exclusion) => exclusion.productId),
   };
 }
 
@@ -119,7 +181,7 @@ function toView(row: LimitRow, labels: ReadonlyMap<string, string>): OrderTimeLi
  * La ligne trouvée par portée : le type vient de la requête, donc il est valide.
  * On le revalide quand même, et l'absurde ne devient pas une règle.
  */
-function toDomain(row: LimitRow): OrderTimeLimit | null {
+function toDomain(row: LimitRowWithExclusions): OrderTimeLimit | null {
   const type = toScopeType(row.scopeType);
   if (type === null) {
     return null;
@@ -134,6 +196,7 @@ function toDomain(row: LimitRow): OrderTimeLimit | null {
       staffMayExceed: row.staffMayExceed,
     },
     row.archivedAt,
+    row.exclusions,
   );
 }
 

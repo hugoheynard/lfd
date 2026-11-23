@@ -138,6 +138,9 @@ model Product {
   /// Relation virtuelle — la clé étrangère est portée par le binding (ADR-13).
   b2bBinding B2bChannelBinding?
 
+  /// Les limites de famille qui excluent ce produit nommément.
+  orderTimeLimitExclusions OrderTimeLimitExclusion[]
+
   @@index([categoryId])
   @@map("product")
   @@schema("pim")

@@ -42,8 +42,8 @@
 model OrderTimeLimit {
   id String @id
 
-  /// `global` | `category` | `product` | `variant`. `scopeId` est `NULL` **si et
-  /// seulement si** `scopeType = 'global'`.
+  /// `product` | `category` (CHECK `order_time_limit_product_or_family`) ;
+  /// `global` et `variant` sont retirées.
   scopeType String  @map("scope_type")
   scopeId   String? @map("scope_id")
 
@@ -71,8 +71,41 @@ model OrderTimeLimit {
   updatedAt DateTime @updatedAt @map("updated_at")
   updatedBy String?  @map("updated_by")
 
+  /// Les produits exclus nommément d'une limite de FAMILLE, retirés compris.
+  exclusions OrderTimeLimitExclusion[]
+
   @@index([scopeType])
   @@map("order_time_limit")
+  @@schema("pim")
+}
+
+/// **Un produit exclu nommément de la limite d'une famille** : il échappe à
+/// CETTE limite seulement — pas à la sienne, ni à celle d'une famille parente
+/// qui ne l'exclut pas.
+///
+/// Retirer une exclusion pose `removedAt` : elle fait partie de l'agrégat
+/// `OrderTimeLimit`, et rien ne s'y efface. Ré-exclure après un retrait crée
+/// une nouvelle ligne.
+///
+/// ⚠️ L'unicité réelle n'est PAS dans ce modèle : l'index unique PARTIEL
+/// `order_time_limit_exclusion_one_live` (`WHERE removed_at IS NULL`), posé en
+/// SQL par la migration, interdit deux exclusions vivantes du même produit.
+model OrderTimeLimitExclusion {
+  /// ULID, assigné par l'`IdGenerator`.
+  id String @id
+
+  limitId String         @map("limit_id")
+  limit   OrderTimeLimit @relation(fields: [limitId], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "order_time_limit_exclusion_limit_fkey")
+
+  productId String  @map("product_id")
+  product   Product @relation(fields: [productId], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "order_time_limit_exclusion_product_fkey")
+
+  /// Du `Clock`, jamais un défaut de la base.
+  createdAt DateTime  @map("created_at") @db.Timestamptz(6)
+  /// `NULL` = l'exclusion est en vigueur.
+  removedAt DateTime? @map("removed_at") @db.Timestamptz(6)
+
+  @@map("order_time_limit_exclusion")
   @@schema("pim")
 }
 

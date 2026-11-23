@@ -25,6 +25,7 @@ function rule(
     graceMinutes: null,
     archived: false,
     staffMayExceed: false,
+    excludedProductIds: [],
     ...values,
   };
 }
@@ -37,10 +38,10 @@ const ENTREMETS: LimitTarget = {
 };
 
 /**
- * Décision de Hugo du 2026-10-21 (`limites-de-commande/schema-des-reglages.md`
- * §4, points 1 à 3) : une limite par PRODUIT, règle entière, sans rattrapage.
- * Tout autre rang encore en base est ignoré — c'est ce qui le rend inerte sans
- * migration destructive.
+ * Décisions de Hugo (2026-10-21 et 2026-11-23) : une limite par produit ou par
+ * famille, règle entière, sans rattrapage ; la plus stricte gagne. Un rang
+ * « global » ou « déclinaison » encore en base est ignoré — c'est ce qui le
+ * rend inerte sans migration destructive.
  */
 describe("resolveOrderTimeLimit", () => {
   it("ne rend rien quand aucune règle n'existe", () => {
@@ -65,7 +66,7 @@ describe("resolveOrderTimeLimit", () => {
     expect(resolveOrderTimeLimit(rules, ENTREMETS)).toBeNull();
   });
 
-  it("ignore une famille et une déclinaison résiduelles", () => {
+  it("ignore une déclinaison résiduelle, et garde le produit quand il est plus strict que sa famille", () => {
     const rules = [
       rule("category", "patisserie", { daysBefore: 1, time: "16:00" }),
       rule("variant", "v1", { daysBefore: 3, time: "10:00" }),
@@ -93,6 +94,26 @@ describe("resolveOrderTimeLimit", () => {
     const rules = [rule("product", "p1", { daysBefore: 0, time: "19:00", graceMinutes: 60 })];
 
     expect(resolveOrderTimeLimit(rules, ENTREMETS)?.graceMinutes).toBe(0);
+  });
+
+  it("applique la famille quand elle est plus stricte que le produit", () => {
+    const rules = [
+      rule("category", "sucre", { daysBefore: 3, time: "12:00" }),
+      rule("product", "p1", { daysBefore: 2, time: "12:00" }),
+    ];
+
+    expect(resolveOrderTimeLimit(rules, ENTREMETS)?.daysBefore).toBe(3);
+  });
+
+  it("n'applique pas la famille au produit qu'elle exclut", () => {
+    const rules = [
+      {
+        ...rule("category", "patisserie", { daysBefore: 3, time: "12:00" }),
+        excludedProductIds: ["p1"],
+      },
+    ];
+
+    expect(resolveOrderTimeLimit(rules, ENTREMETS)).toBeNull();
   });
 
   it("ignore les règles qui visent un autre produit", () => {

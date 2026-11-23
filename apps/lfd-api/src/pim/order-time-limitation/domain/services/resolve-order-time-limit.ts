@@ -1,16 +1,12 @@
 /**
- * **La résolution de l'échelle vit dans `@lfd/pim-contracts`.**
+ * **La résolution d'une limite de commande vit dans `@lfd/catalog-sync`**
+ * (réexportée par `@lfd/pim-contracts`) : la plus stricte des règles qui visent
+ * l'article — celle de son produit et celle de chaque famille de sa lignée qui
+ * ne l'exclut pas.
  *
- * Elle est partie le 2026-09-04, quand la fiche produit a dû montrer la limite
- * EFFECTIVE d'un article et pas seulement ce qu'il pose lui-même : sans ça,
- * l'écran affichait « Hérité » sans dire de quoi, ce qui ne dit rien.
- *
- * La recopier côté front aurait été le pire des deux mondes — deux descentes
- * d'échelle à tenir d'accord, et l'écart n'aurait sauté aux yeux de personne
- * puisque l'écran et la commande ne se lisent pas au même endroit.
- *
- * Ce fichier ne fait plus que réexporter : les imports du référentiel n'ont pas
- * eu à bouger, et le contrat est le seul endroit où la règle s'écrit.
+ * Une seule fonction pour le référentiel, le back-office et le commerce : deux
+ * descentes à tenir d'accord divergeraient sans que l'écart saute aux yeux,
+ * l'écran et la commande ne se lisant pas au même endroit.
  */
 export {
   explainOrderTimeLimit,

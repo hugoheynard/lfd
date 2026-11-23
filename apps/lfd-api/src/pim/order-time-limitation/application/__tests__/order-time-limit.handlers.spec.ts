@@ -269,12 +269,12 @@ describe("SetOrderTimeLimitHandler", () => {
   });
 
   /**
-   * Décision de Hugo du 2026-10-21 : « toute la production » se règle au
-   * commerce, une famille n'a plus de limite, une déclinaison suit son produit.
+   * Décisions de Hugo (2026-10-21 et 2026-11-23) : « toute la production » se
+   * règle au commerce, une déclinaison suit son produit ; produit et famille
+   * restent admis.
    */
   it.each([
     ["global", null],
-    ["category", "cat_1"],
     ["variant", "v1"],
   ] as const)("refuse une limite de portée %s, sans trace ni émission", async (type, id) => {
     const { handler, saved, journal, rules } = doubles(null);

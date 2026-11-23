@@ -9,9 +9,9 @@
  *   hors du domaine ;
  * - le `PUT` sans identifiant : la **portée** est la clé, et reposer dessus
  *   remplace au lieu de créer un second avis ;
- * - depuis le 2026-10-21 (décision de Hugo, `limites-de-commande/
- *   schema-des-reglages.md` §4) : une limite par PRODUIT, règle entière, sans
- *   rattrapage — refusée autrement par le domaine ET par la base.
+ * - décisions de Hugo (2026-10-21 et 2026-11-23) : une limite par produit ou
+ *   par famille, règle entière, sans rattrapage — refusée autrement par le
+ *   domaine ET par la base.
  */
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
@@ -119,13 +119,12 @@ describe("poser une limite", () => {
   });
 
   /**
-   * Décision de Hugo du 2026-10-21 : « toute la production » se règle dans
-   * Réglages › Commandes › Heure limite ; une famille n'a plus de limite ; une
-   * déclinaison suit son produit. Le refus nomme où aller.
+   * Décisions de Hugo (2026-10-21 et 2026-11-23) : « toute la production » se
+   * règle dans Réglages › Commandes › Heure limite ; une déclinaison suit son
+   * produit. Le refus nomme où aller.
    */
   it.each([
     ["global", null],
-    ["category", "patisserie"],
     ["variant", "var_e2e"],
   ] as const)("refuse la portée %s, en disant où se règle la générale", async (type, id) => {
     const refusal = await staff()
@@ -300,7 +299,7 @@ describe("ce que la base refuse, même hors du domaine", () => {
     ).rejects.toThrow();
   });
 
-  /** `order_time_limit_product_only` et `order_time_limit_no_grace` (2026-10-21). */
+  /** `order_time_limit_product_or_family` et `order_time_limit_no_grace`. */
   it("refuse une limite globale ou un rattrapage insérés en direct", async () => {
     await expect(
       ctx.prisma.orderTimeLimit.create({

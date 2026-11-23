@@ -46,6 +46,7 @@ const RESIDUAL = {
   graceMinutes: 60,
   staffMayExceed: false,
   archived: false,
+  excludedProductIds: [],
 } as const;
 
 class TableLimits extends OrderTimeLimitRepository {
@@ -71,6 +72,7 @@ class TableLimits extends OrderTimeLimitRepository {
         graceMinutes: null,
         staffMayExceed: false,
         archived: false,
+        excludedProductIds: [],
       },
       // Des lignes d'avant le 2026-10-21, que la décision de Hugo a retirées.
       { ...RESIDUAL, id: "lim_g", scope: { type: "global", id: null } },

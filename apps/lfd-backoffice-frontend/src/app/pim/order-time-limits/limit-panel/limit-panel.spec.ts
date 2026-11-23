@@ -18,6 +18,7 @@ const RULE: OrderTimeLimitView = {
   graceMinutes: null,
   staffMayExceed: true,
   archived: false,
+  excludedProductIds: [],
 };
 
 class FakeApi {

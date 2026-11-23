@@ -25,8 +25,6 @@ export function toSyncRule(rule: OrderTimeLimitView): SyncOrderTimeLimitRule {
     time: rule.time,
     graceMinutes: rule.graceMinutes,
     staffMayExceed: rule.staffMayExceed,
-    // La vue ne porte pas encore d'exclusions : seules les familles en ont, et
-    // l'émetteur n'envoie que des règles de produit.
-    excludedProductIds: [],
+    excludedProductIds: [...rule.excludedProductIds],
   };
 }
