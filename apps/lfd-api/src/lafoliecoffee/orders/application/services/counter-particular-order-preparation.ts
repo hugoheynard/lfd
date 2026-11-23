@@ -2,15 +2,11 @@ import type { CounterParticularOrderEstimatePayload } from "@lfd/contracts";
 
 import type { ParticularStandingReader } from "../../../account/domain/ports/particular-standing.reader.js";
 import type { PricingCaller } from "../../../pricing/application/pricing-caller.js";
-import {
-  CounterBuyerIsCompanyMemberError,
-  CounterParticularDisabledError,
-  CounterParticularNotFoundError,
-} from "../../domain/errors/shop-till-order-errors.js";
 import { ensureShopTillPickup } from "../../domain/services/shop-till-rules.js";
 import { REGISTERED_BUYER } from "../../domain/value-objects/order-buyer-kind.js";
 import { COUNTER_ENTRY } from "../../domain/value-objects/order-supply.js";
 import type { DraftedOrder, OrderDrafting } from "./order-drafting.service.js";
+import { ensureParticular } from "./particular-buyer-wall.js";
 
 /** Ce que la préparation lit, et rien d'autre. */
 export interface CounterParticularOrderPreparationPorts {
@@ -75,22 +71,4 @@ export async function prepareCounterParticularOrder(
     undefined,
     COUNTER_ENTRY,
   );
-}
-
-/** La fiche choisie est un particulier, ou le refus qui nomme pourquoi elle n'en est pas un. */
-async function ensureParticular(
-  particulars: ParticularStandingReader,
-  buyerUserId: string,
-): Promise<void> {
-  const standing = await particulars.standingOf(buyerUserId);
-  switch (standing) {
-    case "particular":
-      return;
-    case "company_member":
-      throw new CounterBuyerIsCompanyMemberError();
-    case "disabled":
-      throw new CounterParticularDisabledError();
-    case "unknown":
-      throw new CounterParticularNotFoundError();
-  }
 }

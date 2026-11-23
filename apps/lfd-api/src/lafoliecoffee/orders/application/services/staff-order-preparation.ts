@@ -1,9 +1,5 @@
 import type { AdminOrderEstimatePayload } from "@lfd/contracts";
 
-import {
-  orderOfferReasonOf,
-  type OrderOfferReason,
-} from "../../domain/value-objects/order-offer.js";
 import type { PricingCaller } from "../../../pricing/application/pricing-caller.js";
 import type { OrderGuardReader } from "../../domain/ports/order-guard.reader.js";
 import { ensureOrderMember } from "../../domain/services/order-access.js";
@@ -14,6 +10,7 @@ import {
 } from "../../domain/services/order-supply-rules.js";
 import { REGISTERED_BUYER } from "../../domain/value-objects/order-buyer-kind.js";
 import type { DraftedOrder, OrderDrafting } from "./order-drafting.service.js";
+import { offerPartyOf } from "./order-offering.js";
 import { counterCompanyStatusRefusal } from "./staff-settlement-refusal.js";
 
 /** Ce que la préparation lit, et rien d'autre. */
@@ -76,7 +73,7 @@ export async function prepareStaffOrder(
       exceedItemLimits,
       // L'équipe commande ce qu'il faut : pas de minimum d'achat (Hugo, 2026-11-23).
       minimumsWaived: true,
-      ...offerOf(payload),
+      ...offerPartyOf(payload.offer),
     },
     payload,
     // L'équipe ne dépense pas le bon d'un client : son contrat n'en nomme
@@ -118,14 +115,4 @@ async function ensureCounterLinkCause(
     }
   }
   ensureCounterSettlement(payload.settlement, atCounter);
-}
-
-/**
- * Le motif de l'offre, revalidé par l'agrégat, ou rien. Le contrat garantit
- * qu'il est là si et seulement si le règlement est `offered`.
- *
- * @throws {InvalidOrderOfferError} un motif mal formé.
- */
-function offerOf(payload: AdminOrderEstimatePayload): { readonly offer?: OrderOfferReason } {
-  return payload.offer === undefined ? {} : { offer: orderOfferReasonOf(payload.offer) };
 }

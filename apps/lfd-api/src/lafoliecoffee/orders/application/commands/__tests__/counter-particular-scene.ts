@@ -50,6 +50,7 @@ import { deadlineOf } from "../../services/__tests__/order-deadline-of.js";
 import { shelfCircuitOf } from "../../services/__tests__/shelf-circuit-doubles.js";
 import { EstimateParticularOrderAtCounterHandler } from "../../queries/estimate-particular-order-at-counter.handler.js";
 import { PlaceParticularOrderAtCounterHandler } from "../place-particular-order-at-counter.handler.js";
+import { PlaceOfferedParticularOrderHandler } from "../place-offered-particular-order.handler.js";
 import { FixedDeliveryVat } from "./fixed-delivery-vat.js";
 import { FixedSalesTerms } from "./fixed-sales-terms.js";
 import { ownPayers } from "./payer-doubles.js";
@@ -222,7 +223,7 @@ export function counterPayload(
   };
 }
 
-/** Le handler, l'estimation, et tout ce qu'ils ont touché. */
+/** Les deux passations sans société, l'estimation, et tout ce qu'ils ont touché. */
 export function counterScene() {
   const placed: OrderToPlace[] = [];
   const published = new RecordingPublisher();
@@ -243,6 +244,17 @@ export function counterScene() {
     inMemoryIntents(),
     new CustomerCancellationDeadline(new FixedCancellationSettings()),
   );
+  // La commande offerte à un particulier : le même mur, la même composition.
+  const offerer = new PlaceOfferedParticularOrderHandler(
+    particulars,
+    composition,
+    capturingRepo(placed),
+    published,
+    new DirectUnitOfWork(),
+    durable,
+    inMemoryIntents(),
+    new CustomerCancellationDeadline(new FixedCancellationSettings()),
+  );
   const estimator = new EstimateParticularOrderAtCounterHandler(
     particulars,
     composition,
@@ -251,5 +263,5 @@ export function counterScene() {
       new FixedClock(PRICED_AT),
     ),
   );
-  return { handler, estimator, placed, published, durable };
+  return { handler, offerer, estimator, placed, published, durable };
 }

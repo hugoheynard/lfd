@@ -1,6 +1,6 @@
 # La commande offerte — l'équipe offre une commande depuis le back-office
 
-**État : 📝 plan ; O0 à O6 bâtis le 2026-11-23 (O3b et O5 compris), et O7b (la nouvelle enseigne) ; reste O7a (le particulier).** Demandé par Hugo le
+**État : 📝 plan ; O0 à O6 bâtis le 2026-11-23 (O3b et O5 compris), O7a (le particulier, backend) et O7b (la nouvelle enseigne) ; reste O7c (l'écran du particulier).** Demandé par Hugo le
 2026-11-23 : « l'équipe passe une commande offerte depuis le back-office ».
 Contredit par `vitruve` le 2026-11-23 : cinq bloquants sur la première version
 (une remise de panier « offerte »), tous levés par le changement de forme du
@@ -119,7 +119,7 @@ Il n'est pas créé par ce plan. Il se ferme à part, avec un test de régressio
 | O5  | ✅ bâti le 2026-11-23. « Prévenir le client » (§ 4) : rangé dans le motif de l'offre (`OrderOfferReason.notifyCustomer`, colonne `offer_notifies_customer`, migration `20261123160000`), décoché par défaut. La commande lue par les envoyeurs dit `customerNotified` ; les cinq e-mails automatiques (passée, prête, en route, modifiée, annulée) se taisent sans l'accord. Le rappel de retrait, qui partage le service « prête », part quand même : c'est un geste de l'équipe. Case « Prévenir le client par e-mail » dans la saisie, gardée dans le brouillon.                                                                                                                                   | Un test « se tait » par envoyeur, le rappel qui part quand même ; e2e : le choix fait l'aller-retour en base, décoché comme coché.                                  |
 | O5b | ✅ bâti le 2026-11-23 : un sixième régime de règlement, `offered`, lu partout (fiche, liste, e-mail « Offerte », bon et feuille « Commande offerte — sans facturation », annulation comme une commande à total nul, modification après l'arrêt admise pour l'équipe) ; motif sur la fiche du back-office, jamais servi au client. Les mentions « offerte » : l'e-mail de commande passée (quand le client est prévenu) dit « offerte » au lieu d'un montant ; bon de livraison « Commande offerte — sans facturation » ; fiche et liste du back-office « Offerte » et motif. Sorti de O5 le 2026-11-23 : l'e-mail vit dans l'éditeur (manifeste, spécimens) et le bon est un PDF tenu par sa planche. | Planche des PDF (`lint:pdf-specimens`), manifeste des e-mails régénéré (`pnpm tool mail-copy:digest`).                                                              |
 | O6  | ✅ bâti le 2026-11-23. Écran de saisie : troisième choix « Offerte », **absent** sans le droit (comme « Annuler », `order-cancel.ts`), nature et texte obligatoires, gardés dans le brouillon (`offerNature`, `offerNote`). L'estimation admet `offered` sans motif et chiffre alors la valeur pleine ; avec le motif complet, elle rend 0 et la valeur offerte (`offeredTotalCents`, calculée au serveur), affichée en ligne « Valeur offerte ».                                                                                                                                                                                                                                                     | Specs de composant, du brouillon, de l'estimation et des blocages.                                                                                                  |
-| O7  | **Destinataire libre**, conçu au § 2.4 : une commande offerte pour un particulier (route à part) ou une enseigne créée sans annonce.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | Cf. § 2.4.                                                                                                                                                          |
+| O7  | **Destinataire libre**, conçu au § 2.4 : une commande offerte pour un particulier (route à part) ou une enseigne créée sans annonce. O7a (backend) et O7b bâtis le 2026-11-23 ; reste O7c.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | Cf. § 2.4.                                                                                                                                                          |
 
 ### 2.3 bis Ce que O1 a établi
 
@@ -221,6 +221,21 @@ par la liste des comptes clients ou celle des brouillons.
 
 **Lots** : O7a le particulier (route, mur extrait, service de l'offre
 partagé, révision) ; O7b la nouvelle enseigne sans annonce ; O7c l'écran.
+
+**O7a bâti le 2026-11-23 (backend)** : `POST /admin/offered-orders/particular`
+(contrat `offeredParticularOrderPayloadSchema`, motif toujours exigé, total vu
+à zéro), handler `PlaceOfferedParticularOrderHandler`, une fois par intention
+(`orders.place-offered-particular`). Le mur `ensureParticular` vit dans
+`particular-buyer-wall.ts`, partagé avec le comptoir ; les gestes de l'offre
+(`ensureMayOffer`, `offerPartyOf`, `publishOrderOffered`) dans
+`order-offering.ts`, appelés par les deux passations. La commande porte
+l'origine `commercial`, la clientèle publique, `not_required`, et le délai
+d'annulation du particulier, figé comme au comptoir. **O7-6 n'a rien demandé
+au code** : `RevisionWall` ne juge déjà le mur que pour un client, et la
+modification par l'équipe d'une offerte sans société passe (e2e
+`offered-particular-order.e2e-spec.ts`). **Reste O7c** : l'écran, et l'estimation
+qu'il demandera pour montrer la valeur offerte avant de valider — aucune route
+d'estimation n'est bâtie pour le particulier offert.
 
 ### 2.5 Ce qui n’est pas fait ici
 

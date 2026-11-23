@@ -153,8 +153,10 @@ import { QuoteOrderHandler } from "./application/queries/quote-order.handler.js"
 import { EstimateOrderForCustomerHandler } from "./application/queries/estimate-order-for-customer.handler.js";
 import { AdminOrderEstimatesController } from "./http/admin-order-estimates.controller.js";
 import { AdminCounterParticularOrdersController } from "./http/admin-counter-particular-orders.controller.js";
+import { AdminOfferedParticularOrdersController } from "./http/admin-offered-particular-orders.controller.js";
 import { AdminCounterNoShowController } from "./http/admin-counter-no-show.controller.js";
 import { PlaceParticularOrderAtCounterHandler } from "./application/commands/place-particular-order-at-counter.handler.js";
+import { PlaceOfferedParticularOrderHandler } from "./application/commands/place-offered-particular-order.handler.js";
 import { EstimateParticularOrderAtCounterHandler } from "./application/queries/estimate-particular-order-at-counter.handler.js";
 import { AccountModule } from "../account/account.module.js";
 import { QuoteShopCartHandler } from "./application/queries/quote-shop-cart.handler.js";
@@ -402,6 +404,7 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     AdminOrderEstimatesController,
     // La commande d'un particulier notée au comptoir, réglée à la caisse de la boutique.
     AdminCounterParticularOrdersController,
+    AdminOfferedParticularOrdersController,
     AdminCounterNoShowController,
     AdminCounterOrderSheetController,
     AdminCounterLateToleranceController,
@@ -470,6 +473,7 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     PlaceOrderHandler,
     PlaceOrderForCustomerHandler,
     PlaceParticularOrderAtCounterHandler,
+    PlaceOfferedParticularOrderHandler,
     AbandonOrderHandler,
     // Le paiement par carte, par le bloc `card-payment` (plan M2, lot P0.c2) :
     // les gestes du commerce sur le premier paiement, l'adoption d'une

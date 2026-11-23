@@ -2789,6 +2789,11 @@ export type {
   CounterParticularOrderPayload,
   CounterParticularPlacedOrderResponse,
 } from "./counter-particular-order.js";
+export { offeredParticularOrderPayloadSchema } from "./offered-particular-order.js";
+export type {
+  OfferedParticularOrderPayload,
+  OfferedParticularPlacedOrderResponse,
+} from "./offered-particular-order.js";
 export {
   counterCustomerCardSchema,
   counterCustomerBuyerSchema,

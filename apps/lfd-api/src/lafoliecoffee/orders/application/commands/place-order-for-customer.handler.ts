@@ -1,6 +1,4 @@
 import { orderPretaxCents } from "@lfd/money";
-import { OrderOfferedEvent } from "../../domain/events/order-offered.event.js";
-import { OfferNotPermittedError } from "../../domain/errors/order-offer-errors.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import { ensureTotalSeen } from "../../domain/services/seen-total.js";
 import { OrderCutoffWaiverGate } from "../../domain/ports/order-cutoff-waiver.gate.js";
@@ -33,6 +31,7 @@ import { commitOrderBudget } from "../services/order-budget-commitment.js";
 import { PayerCommitmentRequirements } from "../../domain/ports/payer-commitment-requirements.js";
 import { prepareStaffOrder } from "../services/staff-order-preparation.js";
 import { staffSettlementRefusal } from "../services/staff-settlement-refusal.js";
+import { ensureMayOffer, publishOrderOffered } from "../services/order-offering.js";
 import {
   PlaceOrderForCustomerCommand,
   type PlaceOrderForCustomerResult,
@@ -108,12 +107,10 @@ export class PlaceOrderForCustomerHandler implements ICommandHandler<
    * @throws {IntentKeyReusedError} la clé a déjà passé un autre panier.
    * @throws {OfferNotPermittedError} une commande offerte sans le droit `b2b_offer_order`.
    */
-  execute(command: PlaceOrderForCustomerCommand): Promise<PlaceOrderForCustomerResult> {
+  async execute(command: PlaceOrderForCustomerCommand): Promise<PlaceOrderForCustomerResult> {
     // Avant toute intention scellée : un refus de droit ne consomme pas la clé.
-    if (command.payload.settlement === "offered" && !command.mayOffer) {
-      return Promise.reject(new OfferNotPermittedError());
-    }
-    return this.intents.runSealed(
+    ensureMayOffer(command.payload.settlement === "offered", command.mayOffer);
+    return await this.intents.runSealed(
       staffPlacementIntent(command.staffUserId, command.intentKey, command.payload),
       STAFF_PLACEMENT_REPLAY,
       (seal) => this.placeOnce(command, seal),
@@ -234,19 +231,10 @@ export class PlaceOrderForCustomerHandler implements ICommandHandler<
         }
         await this.durable.publish(new CommerceOrderPlacedFact(written.id).durableFact());
         // Le témoin d'une commande offerte : dans la même transaction que la commande.
-        if (order.offer !== null) {
-          await this.durable.publish(
-            new OrderOfferedEvent(
-              written.id,
-              written.orderNumber,
-              payload.buyerUserId,
-              command.staffUserId,
-              order.offer.reason.nature,
-              order.offer.value.totalCents,
-              order.offer.value.vatCents,
-            ).durableFact(),
-          );
-        }
+        await publishOrderOffered(this.durable, order, written, {
+          buyerUserId: payload.buyerUserId,
+          staffUserId: command.staffUserId,
+        });
         const result = this.resultOf(written, order, payload.settlement, intent !== null);
         await seal(result);
         return { placed: written, result };

@@ -2,6 +2,7 @@ import {
   AuthorizationError,
   BusinessError,
   DomainError,
+  TechnicalError,
 } from "../../../../platform/shared/errors/app-error.js";
 
 /** Un motif d'offre mal formé : nature hors registre, texte vide ou trop long. */
@@ -50,6 +51,19 @@ export class OfferNotPermittedError extends AuthorizationError {
     super(
       "orders.offer.forbidden",
       "Vous n'avez pas le droit d'offrir une commande. Demandez à un administrateur le droit « Offrir une commande ».",
+    );
+  }
+}
+
+/**
+ * Une passation qui offre a composé une commande sans ligne d'offre : le motif
+ * n'a pas atteint l'agrégat. Rien n'est écrit.
+ */
+export class OfferedOrderWithoutOfferError extends TechnicalError {
+  constructor() {
+    super(
+      "orders.offer.missing",
+      "La commande offerte a été composée sans son offre : rien n'a été enregistré. Signalez-le à l'équipe technique avec l'heure de la saisie.",
     );
   }
 }
