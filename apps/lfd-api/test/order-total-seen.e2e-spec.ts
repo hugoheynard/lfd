@@ -179,6 +179,19 @@ describe("la passation compare le total vu (T2)", () => {
     expect(order.totalCents).toBe(seen);
   });
 
+  /** Régression : en « Lien de règlement », l'écran restait sur « Calcul du montant… ». */
+  it("🔴 la saisie de l'équipe au lien de règlement : l'estimation répond, avec ses montants", async () => {
+    const estimate = await http()
+      .as(E2E_STAFF_SUB)
+      .post("/admin/orders/estimate")
+      .send(staffBody(scene, PICKUP, "link"));
+
+    expect({ status: estimate.status, body: estimate.body as unknown }).toMatchObject({
+      status: 200,
+    });
+    expect((estimate.body as { amounts: unknown }).amounts).not.toBeNull();
+  });
+
   it("la saisie de l'équipe : le total de l'estimation, au centime", async () => {
     const agents = http();
     const estimate = await agents

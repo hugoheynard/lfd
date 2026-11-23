@@ -15,6 +15,8 @@ import {
 } from '@lfd/b2b-ui/order';
 import { catchError, distinctUntilChanged, type Observable, of, switchMap, timer } from 'rxjs';
 
+import { serverMessageOf } from '../../production/server-message';
+
 import type { PricedCartLine } from './cart.store';
 
 /**
@@ -285,6 +287,27 @@ export function refusalViewOf(code: string): EstimateRefusalView {
 const GRACE_REFUSAL = 'orders.cutoff.grace';
 
 /** Le refus de l'estimation retient-il la validation ? */
+/** Le code d'une estimation qui n'a pas pu se faire : le serveur a refusé ou n'a pas répondu. */
+export const ESTIMATE_FAILED = 'orders.estimate.failed';
+
+/**
+ * **Une estimation qui échoue se DIT** — elle restait sinon sur « Calcul du
+ * montant… », grisée, sans raison (Hugo, 2026-11-23). L'échec devient un refus
+ * bloquant, avec le message du serveur : le panier le montre à la place du
+ * bouton, et la saisie suivante relance l'estimation.
+ */
+export function failedEstimateOf(error: unknown): AdminOrderEstimateView {
+  return {
+    amounts: null,
+    cutoff: null,
+    refusal: {
+      code: ESTIMATE_FAILED,
+      message: `Le montant n’a pas pu être calculé : ${serverMessageOf(error)}`,
+    },
+    warnings: [],
+  };
+}
+
 export function isBlockingRefusal(refusal: AdminOrderEstimateNotice): boolean {
   return refusal.code !== GRACE_REFUSAL;
 }

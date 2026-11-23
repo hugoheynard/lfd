@@ -1,3 +1,4 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import type {
   AdminOrderEstimateAmountsView,
   AdminOrderEstimateView,
@@ -18,6 +19,8 @@ import {
   isBlockingRefusal,
   refusalViewOf,
   type EstimateRequest,
+  ESTIMATE_FAILED,
+  failedEstimateOf,
 } from '../order-estimate';
 import type { OrderDraft } from '../panier-commande/panier-commande';
 
@@ -353,5 +356,24 @@ describe('ce que le panier affiche de l’estimation', () => {
     expect(refusalViewOf('orders.line.quantity_below_minimum')).toBe('lines');
     expect(refusalViewOf('orders.cutoff.past')).toBe('settings');
     expect(refusalViewOf('orders.inconnu')).toBeNull();
+  });
+});
+
+/** Régression : une estimation en échec laissait le bouton sur « Calcul du montant… », sans raison. */
+describe('failedEstimateOf — une estimation qui échoue se dit', () => {
+  it('🔴 devient un refus bloquant qui porte la raison du serveur', () => {
+    const error = new HttpErrorResponse({
+      status: 409,
+      error: { code: 'orders.x', message: 'Ce client ne peut pas recevoir de lien.' },
+    });
+
+    const view = failedEstimateOf(error);
+
+    expect(view.amounts).toBeNull();
+    expect(view.refusal?.code).toBe(ESTIMATE_FAILED);
+    expect(view.refusal?.message).toBe(
+      'Le montant n’a pas pu être calculé : Ce client ne peut pas recevoir de lien.',
+    );
+    expect(isBlockingRefusal(view.refusal!)).toBe(true);
   });
 });

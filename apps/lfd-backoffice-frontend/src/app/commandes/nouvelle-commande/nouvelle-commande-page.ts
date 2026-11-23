@@ -20,7 +20,7 @@ import {
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { firstValueFrom, tap } from 'rxjs';
+import { catchError, firstValueFrom, of, tap } from 'rxjs';
 
 import { buyerOf, composedDraftOf, placePayloadOf } from './draft-payload';
 import {
@@ -31,6 +31,7 @@ import {
 import {
   estimateKeyOf,
   estimatesOf,
+  failedEstimateOf,
   isBlockingRefusal,
   type EstimateRequest,
 } from './order-estimate';
@@ -483,7 +484,12 @@ export class NouvelleCommandePage {
    */
   private watchEstimate(): void {
     estimatesOf(toObservable(this.estimateRequest), (payload, key) =>
-      this.orders.estimate(payload).pipe(tap(() => this.estimatedKey.set(key))),
+      this.orders.estimate(payload).pipe(
+        // Un échec se dit, avec la raison du serveur, au lieu de laisser le
+        // bouton sur « Calcul du montant… » (Hugo, 2026-11-23).
+        catchError((error: unknown) => of(failedEstimateOf(error))),
+        tap(() => this.estimatedKey.set(key)),
+      ),
     )
       .pipe(takeUntilDestroyed())
       .subscribe((estimate) => {
