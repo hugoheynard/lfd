@@ -59,6 +59,7 @@ describe("salesExportOrderOf — une commande pour l'export des ventes", () => {
     const order = salesExportOrderOf(ROW);
 
     expect(order).toMatchObject({
+      orderId: ROW.id,
       orderNumber: "C-0001",
       placedAt: PLACED_AT,
       receivedOn: "2026-03-12",

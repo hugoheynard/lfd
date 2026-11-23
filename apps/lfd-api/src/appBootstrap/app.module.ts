@@ -11,6 +11,7 @@ import { PayerCommitmentRequirementsModule } from "./payer-commitment-requiremen
 import { AlertsModule } from "../lafoliecoffee/alerts/alerts.module.js";
 import { ClientNotesModule } from "../lafoliecoffee/client-notes/client-notes.module.js";
 import { SubAccountNoticesModule } from "../lafoliecoffee/sub-account-notices/sub-account-notices.module.js";
+import { ReportingModule } from "../lafoliecoffee/reporting/reporting.module.js";
 import { DeliveryZonesModule } from "../lafoliecoffee/delivery-zones/delivery-zones.module.js";
 import { DeliveryAvailabilityModule } from "../lafoliecoffee/delivery-availability/delivery-availability.module.js";
 import { ContactModule } from "../lafoliecoffee/contact/contact.module.js";
@@ -322,6 +323,8 @@ import { DevImpersonation } from "../platform/auth/dev-impersonation.js";
     AlertsModule,
     // Les avis au principal (plan-notifications-sous-comptes.md) — lot N1 : le tableau.
     SubAccountNoticesModule,
+    // L'export des ventes (plan de l'export, E1) : il compose les lectures des propriétaires.
+    ReportingModule,
   ],
   controllers: [AppController],
   providers: [

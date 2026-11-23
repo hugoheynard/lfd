@@ -178,7 +178,7 @@ Un contexte neuf, `src/lafoliecoffee/reporting/`, en quatre couches. Il
 | référence, code NAF                  | `lafoliecoffee/account`    | une lecture nommée, par lot                                                                             |
 | remboursements                       | `payment`                  | une lecture de `payment/channels/requests/`, par lot (§ 5)                                              |
 
-Toutes par lot : un appel de 31 jours fait **six requêtes**, jamais une par
+Toutes par lot : un appel de 31 jours fait **cinq requêtes**, jamais une par
 commande.
 
 ⚠️ **Rien ne fait respecter ce découpage.** `lint:prisma-model-ownership`
@@ -506,7 +506,29 @@ Tranché au bâti d'E0 (2026-11-23), sur les failles qu'il a remontées :
 - **Un remboursement sans nature** (fait hors de la plateforme) n'est pas
   déduit : seule `return` se déduit (§ 5).
 
-E0 est bâti ; E1 suit.
+Tranché au bâti d'E1 (2026-11-23) :
+
+- **Deux HT, servis tous les deux**, par commande, par jour et par clientèle.
+  `totalHt` / `revenueHt` = TTC − TVA, port et pénalité compris. `goodsHt` =
+  « CA marchandises HT », **celui du cockpit** (`subtotal − remise − bon`,
+  sans port ni pénalité, ramené à 0 si les remises dépassent le sous-total) —
+  la règle `goodsCents` de `growth/domain/revenue-scope.ts` est importée. Le
+  cockpit ne calcule nulle part `total − TVA` (vérifié le 2026-11-23 dans
+  `growth/infrastructure/prisma-order-metrics.reader.ts`).
+- **Égalité prouvée par e2e** sur la période : Σ `revenueTtc` = `caCents` et
+  Σ `goodsHt` = `caGoodsCents` d'`OrderMetricsReader`. **Pas jour par jour** :
+  le cockpit range ses jours en UTC, l'export à Paris ; près de minuit une
+  commande change de jour entre les deux. La notice le dit.
+- **Particulier** (`clientele = public`) : ni nom ni NAF, même si la commande
+  porte une société.
+- `settled` est servi en objet imbriqué ; le CSV d'E5 l'aplatit.
+- Prix unitaire à **5 décimales** (le millicentime), sans arrondi.
+- Cinq lectures par appel, pas six (§ 4).
+
+D2 (l'équation d'une commande `exact_ht`) n'est pas éprouvé : il passe au
+lot E3, sur le jeu de l'e2e.
+
+E0 et E1 sont bâtis ; E2 suit.
 
 ## 11. Ce que la contradiction a changé
 

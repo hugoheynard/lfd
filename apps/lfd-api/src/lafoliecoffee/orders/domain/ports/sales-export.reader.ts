@@ -43,6 +43,11 @@ export interface SalesExportSettlement {
  * est qu'un identifiant opaque, la personne n'y est pas.
  */
 export interface SalesExportOrder {
+  /**
+   * L'identifiant opaque de la commande : le sujet sous lequel `payment` range
+   * ses remboursements. Il sert à les demander par lot, jamais à l'export.
+   */
+  readonly orderId: string;
   readonly orderNumber: string;
   readonly placedAt: Date;
   /** Le jour où la marchandise a changé de mains, `AAAA-MM-JJ` ; `null` = pas encore. */

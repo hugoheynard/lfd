@@ -138,6 +138,7 @@ export function salesExportOrderOf(row: SalesExportOrderRow): SalesExportOrder {
   const offered = row.offerNature !== null;
   const settled = billableOf(row);
   return {
+    orderId: row.id,
     orderNumber: row.orderNumber,
     placedAt: row.createdAt,
     receivedOn: dayOf(row.receivedOn),
