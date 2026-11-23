@@ -23,6 +23,13 @@ export interface EarnableOrder {
   readonly discountCents: number;
   /** La part du bon de fidélité imputée, hors taxe — `0` sans bon. */
   readonly voucherDiscountCents: number;
+  /**
+   * La commande est offerte par l'équipe : elle ne rapporte aucun point. Son
+   * sous-total garde la valeur pleine (la ligne « offert » retranche le total,
+   * pas les lignes), et sans cette marque l'assiette la créditerait
+   * (`plan-commande-offerte.md`, O-9).
+   */
+  readonly offered: boolean;
 }
 
 /** Un point par centime d'assiette HORS TAXE : 23,40 € HT rapportent 2 340 points. */
@@ -35,7 +42,8 @@ export type EarningSkipReason =
   | "company_missing"
   | "guest_buyer"
   | "before_program"
-  | "empty_basis";
+  | "empty_basis"
+  | "offered";
 
 export type OrderEarning =
   | { readonly kind: "earn"; readonly holder: LoyaltyHolder; readonly points: number }
@@ -64,6 +72,9 @@ export type OrderEarning =
 export function earningFor(order: EarnableOrder, settings: LoyaltySettings | null): OrderEarning {
   if (settings === null) {
     return skip("program_closed");
+  }
+  if (order.offered) {
+    return skip("offered");
   }
   const holder = holderOf(order);
   if (typeof holder === "string") {

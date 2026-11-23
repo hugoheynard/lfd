@@ -21,7 +21,12 @@
  *   produit par ses propres gestes, ou reste une écriture brute justifiée
  *   dans la suite qui en a besoin.
  */
-import type { BillingAddressPayload, PlaceOrderPayload, StaffSettlement } from "@lfd/contracts";
+import type {
+  BillingAddressPayload,
+  OrderOffer,
+  PlaceOrderPayload,
+  StaffSettlement,
+} from "@lfd/contracts";
 import {
   addDays,
   adminPlaceOrderPayloadSchema,
@@ -225,6 +230,8 @@ export interface StaffOrderSeed extends Omit<
   /** Toujours une société : l'équipe ne saisit pas de commande personnelle. */
   readonly companyId: string;
   readonly settlement: StaffSettlement;
+  /** Le motif d'une commande offerte, avec `settlement: "offered"` (plan de la commande offerte). */
+  readonly offer?: OrderOffer;
 }
 
 /**
@@ -242,6 +249,7 @@ export function placeOrderForCustomer(
       companyId: seed.companyId,
       buyerUserId: seed.buyerUserId,
       settlement: seed.settlement,
+      ...(seed.offer === undefined ? {} : { offer: seed.offer }),
       expectedTotalCents,
     });
   // Une intention par commande semée ; le refus du total vu rend la clé.
@@ -255,8 +263,8 @@ export function placeOrderForCustomer(
           intentKey,
           // Une commande semée ne passe outre aucune limite de produit.
           false,
-          // Ni n'est offerte.
-          false,
+          // Le droit d'offrir, seulement pour une commande semée offerte.
+          seed.offer !== undefined,
         ),
       ),
     ),

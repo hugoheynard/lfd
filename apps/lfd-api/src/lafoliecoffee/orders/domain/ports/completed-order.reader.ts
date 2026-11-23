@@ -44,6 +44,8 @@ export interface CompletedOrder {
   readonly discountCents: number;
   /** La part du bon de fidélité imputée, **hors taxe** — centimes, `0` sans bon. */
   readonly voucherDiscountCents: number;
+  /** Offerte par l'équipe : elle ne rapporte aucun point (`plan-commande-offerte.md`, O-9). */
+  readonly offered: boolean;
 }
 
 /** Un lot, et le curseur du suivant (`null` = plus rien après). */

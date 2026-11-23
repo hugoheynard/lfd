@@ -37,6 +37,7 @@ const SELECT = {
   billableDiscountCents: true,
   billableVoucherDiscountCents: true,
   placedBy: { select: { auth0Sub: true } },
+  offerNature: true,
 } as const;
 
 /** Une ligne lue — exportée pour le test du mapper. */
@@ -52,6 +53,7 @@ export interface CompletedRow {
   readonly billableDiscountCents: number | null;
   readonly billableVoucherDiscountCents: number | null;
   readonly placedBy: { readonly auth0Sub: string | null };
+  readonly offerNature: string | null;
 }
 
 /**
@@ -148,5 +150,6 @@ export function toCompleted(row: CompletedRow): CompletedOrder | null {
     subtotalCents: billableSubtotalCents,
     discountCents: billableDiscountCents,
     voucherDiscountCents: billableVoucherDiscountCents,
+    offered: row.offerNature !== null,
   };
 }

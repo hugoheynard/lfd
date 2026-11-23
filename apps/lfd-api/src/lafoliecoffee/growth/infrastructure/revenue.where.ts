@@ -16,5 +16,8 @@ export function revenueWhere(): Prisma.OrderWhereInput {
     status: { in: [...REVENUE_ORDER_STATUSES] },
     paymentStatus: { in: [...REVENUE_PAYMENT_STATUSES] },
     settlementVenue: REVENUE_SETTLEMENT_VENUE,
+    // Une commande offerte n'est pas un achat : elle fausserait le nombre de
+    // commandes et le panier moyen (`plan-commande-offerte.md`, O-9).
+    offerNature: null,
   };
 }

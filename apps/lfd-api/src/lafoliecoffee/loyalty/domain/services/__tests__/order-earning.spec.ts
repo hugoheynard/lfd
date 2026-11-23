@@ -26,10 +26,26 @@ const PUBLIC_ORDER: EarnableOrder = {
   subtotalCents: 2_340,
   discountCents: 0,
   voucherDiscountCents: 0,
+  offered: false,
 };
 const PRO_ORDER: EarnableOrder = { ...PUBLIC_ORDER, clientele: "pro", companyId: "c1" };
 
 describe("earningFor — ce que rapporte une commande définitive, et à qui", () => {
+  /**
+   * Régression : une commande offerte garde son sous-total plein (la ligne
+   * « offert » retranche le total), et l'assiette la créditait.
+   */
+  it("🔴 une commande offerte ne rapporte aucun point, à un particulier comme à un pro", () => {
+    expect(earningFor({ ...PUBLIC_ORDER, offered: true }, BOTH)).toEqual({
+      kind: "skip",
+      reason: "offered",
+    });
+    expect(earningFor({ ...PRO_ORDER, offered: true }, BOTH)).toEqual({
+      kind: "skip",
+      reason: "offered",
+    });
+  });
+
   it("un centime d'assiette vaut un point, à la personne pour le public", () => {
     expect(earningFor(PUBLIC_ORDER, PUBLIC_ONLY)).toEqual({
       kind: "earn",

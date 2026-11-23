@@ -200,6 +200,7 @@ function scope(from: string, to: string, subscriptions: boolean): Prisma.Sql {
       AND ${LOCAL_AT}::date BETWEEN ${from}::date AND ${to}::date
       AND "o"."status"::text NOT IN (${Prisma.join([...AUDIENCE_EXCLUDED_ORDER_STATUSES])})
       AND "o"."payment_status"::text IN (${Prisma.join([...AUDIENCE_COUNTED_PAYMENT_STATUSES])})
+      AND "o"."offer_nature" IS NULL
       AND ${origin}`;
 }
 

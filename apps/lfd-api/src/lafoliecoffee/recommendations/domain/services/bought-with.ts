@@ -52,7 +52,11 @@ export const BOUGHT_WITH_CANDIDATES = 20;
  */
 export const BOUGHT_WITH_EXCLUDED_ORDER_STATUSES = ["draft", "cancelled"] as const;
 
-/** Les règlements d'une commande prise : au compte, gratuit, ou encaissé. */
+/**
+ * Les règlements d'une commande prise : au compte, gratuit, ou encaissé. Une
+ * commande offerte n'en est jamais (`offer_nature IS NULL` au lecteur,
+ * `plan-commande-offerte.md`, O-9).
+ */
 export const BOUGHT_WITH_COUNTED_PAYMENT_STATUSES = ["not_required", "paid"] as const;
 
 /** Une paire, telle que la base la rend. */

@@ -41,7 +41,11 @@ export const WEEKLY_RHYTHM_MIN_OCCURRENCES = 3;
  */
 export const USUALS_EXCLUDED_ORDER_STATUSES = ["draft", "cancelled"] as const;
 
-/** Les règlements d'une commande prise : au compte, gratuit, ou encaissé. */
+/**
+ * Les règlements d'une commande prise : au compte, gratuit, ou encaissé. Une
+ * commande offerte n'en est jamais : ses lignes n'apprennent pas les habituels
+ * (`offer_nature IS NULL` au lecteur, `plan-commande-offerte.md`, O-9).
+ */
 export const USUALS_COUNTED_PAYMENT_STATUSES = ["not_required", "paid"] as const;
 
 /** Combien d'habituels l'accueil montre au plus. Jamais de remplissage en dessous. */

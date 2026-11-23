@@ -51,6 +51,7 @@ export class PrismaPurchaseHistoryReader extends PurchaseHistoryReader {
           AND ${PLACED_DAY} >= ${ask.since}::date
           AND "o"."status"::text NOT IN (${Prisma.join([...USUALS_EXCLUDED_ORDER_STATUSES])})
           AND "o"."payment_status"::text IN (${Prisma.join([...USUALS_COUNTED_PAYMENT_STATUSES])})
+          AND "o"."offer_nature" IS NULL
           AND "o"."from_subscription_id" IS NULL
       ) "t"
       GROUP BY "t"."sku"

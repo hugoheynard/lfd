@@ -63,6 +63,7 @@ export class PrismaCoPurchaseReader extends CoPurchaseReader {
           AND ${LOCAL_AT}::date >= ${ask.since}::date
           AND "o"."status"::text NOT IN (${Prisma.join([...BOUGHT_WITH_EXCLUDED_ORDER_STATUSES])})
           AND "o"."payment_status"::text IN (${Prisma.join([...BOUGHT_WITH_COUNTED_PAYMENT_STATUSES])})
+          AND "o"."offer_nature" IS NULL
           AND "o"."from_subscription_id" IS NULL
           AND ${CLIENTELE} = ${ask.audience}
       ),

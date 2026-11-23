@@ -46,6 +46,8 @@ export class LoyaltyEarningPreviewing extends LoyaltyEarningPreview {
         subtotalCents: basis.subtotalCents,
         discountCents: basis.discountCents,
         voucherDiscountCents: basis.voucherDiscountCents,
+        // L'aperçu d'un panier de la boutique : jamais une offre de l'équipe.
+        offered: false,
       },
       await this.settings.read(),
     );

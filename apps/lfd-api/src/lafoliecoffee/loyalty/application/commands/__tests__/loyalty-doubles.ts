@@ -259,6 +259,7 @@ export function completedOrder(overrides: Partial<CompletedOrder> = {}): Complet
     companyId: null,
     placedByUserId: "u1",
     buyerHasAccount: true,
+    offered: false,
     subtotalCents: 2_340,
     discountCents: 0,
     voucherDiscountCents: 0,

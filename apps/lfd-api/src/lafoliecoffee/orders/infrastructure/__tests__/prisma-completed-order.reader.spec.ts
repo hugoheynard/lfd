@@ -17,7 +17,15 @@ const PARTIAL: CompletedRow = {
   billableDiscountCents: 100,
   billableVoucherDiscountCents: 50,
   placedBy: { auth0Sub: "auth0|x" },
+  offerNature: null,
 };
+
+describe("toCompleted — la commande offerte", () => {
+  it("🔴 une commande qui porte une nature d'offre se lit offerte", () => {
+    expect(toCompleted({ ...PARTIAL, offerNature: "tasting" })?.offered).toBe(true);
+    expect(toCompleted(PARTIAL)?.offered).toBe(false);
+  });
+});
 
 describe("toCompleted — l'assiette des points est ce qui est PARTI", () => {
   /**

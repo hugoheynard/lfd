@@ -29,5 +29,6 @@ export function madeToOrderLinesFrom(
       AND ${LOCAL_PLACED_AT}::date BETWEEN ${from}::date AND ${to}::date
       AND "o"."status"::text IN (${Prisma.join([...REVENUE_ORDER_STATUSES])})
       AND "o"."payment_status"::text IN (${Prisma.join([...REVENUE_PAYMENT_STATUSES])})
-      AND "o"."settlement_venue" IS NULL`;
+      AND "o"."settlement_venue" IS NULL
+      AND "o"."offer_nature" IS NULL`;
 }
