@@ -107,15 +107,30 @@ describe('PanierCommande — en-tête et ordre', () => {
     expect(host.querySelector('[data-date-proposed]')).toBeNull();
   });
 
+  /** Hugo, 2026-11-23 : il fallait défiler pour atteindre la validation. */
+  it('🔴 la validation vient en tête, avant les réglages et les lignes', () => {
+    const cart = new CartStore();
+    const host = mount(cart);
+
+    const actions = host.querySelector('[data-panier-actions]');
+    const views = host.querySelector('fold-tabs, [data-panier-split]');
+    expect(actions).not.toBeNull();
+    expect(views).not.toBeNull();
+    // `DOCUMENT_POSITION_FOLLOWING` : les vues viennent APRÈS la validation.
+    expect(
+      (actions?.compareDocumentPosition(views as Node) ?? 0) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
   it('ouvre sur « Paramétrer la commande »', () => {
     const { component } = mountFull(new CartStore());
     expect(component.view()).toBe('settings');
   });
 
-  it('le pied et ses refus restent dans les deux vues', () => {
+  it('le bloc de validation et ses refus restent dans les deux vues', () => {
     const { fixture, host, component } = mountFull(new CartStore());
     const texts = (): string[] =>
-      [...host.querySelectorAll('.pan-foot fold-callout')].map((c) => c.textContent);
+      [...host.querySelectorAll('.pan-actions fold-callout')].map((c) => c.textContent);
 
     const inSettings = texts();
     component.view.set('lines');
@@ -134,7 +149,7 @@ describe('PanierCommande — en-tête et ordre', () => {
     expect(host.textContent).toContain('Commande portée par');
     expect(host.textContent).toContain('Ajoutez des articles');
     // Les deux vues sont là : aucun refus ne propose d'aller voir l'autre.
-    expect(host.querySelector('.pan-foot fold-button-icon')).toBeNull();
+    expect(host.querySelector('.pan-actions fold-button-icon')).toBeNull();
   });
 
   it('un refus sur les lignes renvoie au panier depuis les réglages', () => {
@@ -159,7 +174,7 @@ describe('PanierCommande — en-tête et ordre', () => {
     fixture.detectChanges();
 
     expect(component.view()).toBe('settings');
-    expect(host.querySelector('.pan-foot [aria-label="Voir le panier"]')).toBeNull();
+    expect(host.querySelector('.pan-actions [aria-label="Voir le panier"]')).toBeNull();
   });
 });
 
@@ -168,7 +183,7 @@ function firstLine(text: string): string {
 }
 
 function footButton(host: HTMLElement, label: string): HTMLButtonElement {
-  const found = [...host.querySelectorAll<HTMLButtonElement>('.pan-foot button')].find(
+  const found = [...host.querySelectorAll<HTMLButtonElement>('.pan-actions button')].find(
     (b) => b.textContent.trim() === label || b.getAttribute('aria-label') === label,
   );
   if (found === undefined) {
@@ -249,7 +264,7 @@ describe('PanierCommande — l’estimation (lot P2)', () => {
       refusal: { code: 'orders.cutoff.past', message: 'L’heure limite est passée.' },
     };
     const { host } = mountFull(filledCart(), { estimate: refused });
-    expect(host.querySelector('.pan-foot')?.textContent).toContain('L’heure limite est passée.');
+    expect(host.querySelector('.pan-actions')?.textContent).toContain('L’heure limite est passée.');
     expect(validate(host)).toBeUndefined();
   });
 
@@ -267,7 +282,7 @@ describe('PanierCommande — l’estimation (lot P2)', () => {
     // montage : on repose l'acheminement résolu par-dessus.
     draft.fulfillment.set(readyDraft().fulfillment());
     fixture.detectChanges();
-    expect(host.querySelector('.pan-foot fold-callout[variant="info"]')?.textContent).toContain(
+    expect(host.querySelector('.pan-actions fold-callout[variant="info"]')?.textContent).toContain(
       'Reste en vitrine',
     );
     expect(validate(host)).toBeDefined();
@@ -284,7 +299,7 @@ describe('PanierCommande — l’estimation (lot P2)', () => {
     draft.fulfillment.set(readyDraft().fulfillment());
     fixture.detectChanges();
 
-    const waiting = [...host.querySelectorAll<HTMLButtonElement>('.pan-foot button')].find(
+    const waiting = [...host.querySelectorAll<HTMLButtonElement>('.pan-actions button')].find(
       (b) => b.textContent.trim() === 'Calcul du montant…',
     );
     expect(waiting?.disabled).toBe(true);
@@ -341,7 +356,7 @@ function readyDraft(): DraftStore {
 }
 
 function validate(host: HTMLElement): HTMLButtonElement | undefined {
-  return [...host.querySelectorAll<HTMLButtonElement>('.pan-foot button')].find(
+  return [...host.querySelectorAll<HTMLButtonElement>('.pan-actions button')].find(
     (b) => b.textContent.trim() === 'Valider la commande',
   );
 }
@@ -405,11 +420,11 @@ describe('PanierCommande — la limite d’un produit', () => {
     host.querySelector<HTMLButtonElement>('[data-item-limit-override]')?.click();
     fixture.detectChanges();
     expect(host.querySelector('[data-item-limit-reason]')).not.toBeNull();
-    expect(host.querySelector('.pan-foot')?.textContent).toContain('Indiquez pourquoi');
+    expect(host.querySelector('.pan-actions')?.textContent).toContain('Indiquez pourquoi');
 
     draft.itemLimitReason.set('Le client a appelé avant midi.');
     fixture.detectChanges();
-    expect(host.querySelector('.pan-foot')?.textContent).not.toContain('Indiquez pourquoi');
+    expect(host.querySelector('.pan-actions')?.textContent).not.toContain('Indiquez pourquoi');
     expect(validate(host)).toBeDefined();
   });
 
@@ -530,7 +545,7 @@ describe('PanierCommande — la commande offerte', () => {
 
     validate(host)?.click();
     fixture.detectChanges();
-    expect(squash(host.querySelector('.pan-foot fold-callout')?.textContent)).toContain(
+    expect(squash(host.querySelector('.pan-actions fold-callout')?.textContent)).toContain(
       'ni facturée ni prélevée',
     );
     [...host.querySelectorAll<HTMLButtonElement>('.pan-confirm button')]

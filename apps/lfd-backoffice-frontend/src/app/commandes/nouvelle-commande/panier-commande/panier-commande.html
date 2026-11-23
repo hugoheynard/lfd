@@ -18,9 +18,87 @@
   <span class="pan-later">{{ text }}</span>
 }
 
+<!-- La validation, EN TÊTE du panneau (Hugo, 2026-11-23) : visible sans
+     faire défiler, au-dessus des réglages et des lignes, dans toutes les vues. -->
+<div class="pan-actions" [class.is-split]="split()" data-panier-actions>
+  <!-- Le même bloc dans les deux vues ; un refus qui vit dans l'autre vue y
+       renvoie d'un geste. -->
+  @for (blocker of blockers(); track blocker.text) {
+    <fold-callout variant="warning">
+      <div class="pan-blocker">
+        <span>{{ blocker.text }}</span>
+        @if (!split() && blocker.view !== null && blocker.view !== view()) {
+          <!-- Une flèche sur la ligne du refus (Hugo, 2026-11-03) : le libellé
+               complet ne tenait pas en mobile. -->
+          <fold-button-icon
+            size="sm"
+            icon="arrow-right"
+            [tooltip]="blocker.view === 'settings' ? 'Paramétrer la commande' : 'Voir le panier'"
+            (clicked)="view.set(blocker.view)"
+          />
+        }
+      </div>
+    </fold-callout>
+  }
+
+  <!-- Ce que la passation jugera sous verrou : dit, la validation reste possible. -->
+  @for (warning of warnings(); track warning) {
+    <fold-callout variant="info">{{ warning }}</fold-callout>
+  }
+
+  @if (blockers().length === 0) {
+    @if (!confirming()) {
+      <button
+        foldButton
+        [disabled]="submitting() || !estimateReady()"
+        (click)="confirming.set(true)"
+      >
+        @if (!estimateReady()) {
+          Calcul du montant…
+        } @else {
+          {{ immediate() ? 'Valider et remettre' : 'Valider la commande' }}
+        }
+      </button>
+    } @else {
+      <fold-callout variant="accent">
+        <strong>Confirmer.</strong>
+        @if (immediate()) {
+          Prise sur le stock de la vitrine, la commande sera <strong>remise aussitôt</strong> ; le
+          bon de livraison s’ouvrira pour être imprimé et signé par le client.
+        }
+        @if (settlement() === 'account') {
+          Cette commande partira <strong>au compte</strong> et sera facturée sur la période en
+          cours. Rien ne sera encaissé maintenant.
+          @if (payerIsPublic()) {
+            La facture sera déposée sur Chorus Pro, réglée par virement.
+          }
+        } @else if (settlement() === 'offered') {
+          Cette commande sera <strong>offerte</strong> : ni facturée ni prélevée.
+        } @else {
+          Un <strong>lien de règlement</strong> sera créé ; il faudra le transmettre au client pour
+          que la commande soit payée.
+        }
+      </fold-callout>
+      <div class="pan-confirm">
+        <button foldButton [disabled]="!canPlace()" (click)="submit()">
+          {{ submitting() ? 'Envoi…' : immediate() ? 'Confirmer et remettre' : 'Confirmer' }}
+        </button>
+        <button
+          foldButton
+          emphasis="outline"
+          intent="neutral"
+          [disabled]="submitting()"
+          (click)="confirming.set(false)"
+        >
+          Revenir
+        </button>
+      </div>
+    }
+  }
+</div>
+
 <!-- Deux vues : côte à côte en tablette (le tiroir est large, Hugo,
-     2026-11-21), en bascule ailleurs — les réglages OU les lignes. La
-     validation, en pied, reste visible dans tous les cas. -->
+     2026-11-21), en bascule ailleurs — les réglages OU les lignes. -->
 @if (split()) {
   <div class="pan-split" data-panier-split>
     <div class="pan-view">
@@ -237,80 +315,3 @@
     }
   </div>
 </ng-template>
-
-<footer class="pan-foot" [class.is-split]="split()">
-  <!-- Le même pied dans les deux vues ; un refus qui vit dans l'autre vue y
-       renvoie d'un geste. -->
-  @for (blocker of blockers(); track blocker.text) {
-    <fold-callout variant="warning">
-      <div class="pan-blocker">
-        <span>{{ blocker.text }}</span>
-        @if (!split() && blocker.view !== null && blocker.view !== view()) {
-          <!-- Une flèche sur la ligne du refus (Hugo, 2026-11-03) : le libellé
-               complet ne tenait pas en mobile. -->
-          <fold-button-icon
-            size="sm"
-            icon="arrow-right"
-            [tooltip]="blocker.view === 'settings' ? 'Paramétrer la commande' : 'Voir le panier'"
-            (clicked)="view.set(blocker.view)"
-          />
-        }
-      </div>
-    </fold-callout>
-  }
-
-  <!-- Ce que la passation jugera sous verrou : dit, la validation reste possible. -->
-  @for (warning of warnings(); track warning) {
-    <fold-callout variant="info">{{ warning }}</fold-callout>
-  }
-
-  @if (blockers().length === 0) {
-    @if (!confirming()) {
-      <button
-        foldButton
-        [disabled]="submitting() || !estimateReady()"
-        (click)="confirming.set(true)"
-      >
-        @if (!estimateReady()) {
-          Calcul du montant…
-        } @else {
-          {{ immediate() ? 'Valider et remettre' : 'Valider la commande' }}
-        }
-      </button>
-    } @else {
-      <fold-callout variant="accent">
-        <strong>Confirmer.</strong>
-        @if (immediate()) {
-          Prise sur le stock de la vitrine, la commande sera <strong>remise aussitôt</strong> ; le
-          bon de livraison s’ouvrira pour être imprimé et signé par le client.
-        }
-        @if (settlement() === 'account') {
-          Cette commande partira <strong>au compte</strong> et sera facturée sur la période en
-          cours. Rien ne sera encaissé maintenant.
-          @if (payerIsPublic()) {
-            La facture sera déposée sur Chorus Pro, réglée par virement.
-          }
-        } @else if (settlement() === 'offered') {
-          Cette commande sera <strong>offerte</strong> : ni facturée ni prélevée.
-        } @else {
-          Un <strong>lien de règlement</strong> sera créé ; il faudra le transmettre au client pour
-          que la commande soit payée.
-        }
-      </fold-callout>
-      <div class="pan-confirm">
-        <button foldButton [disabled]="!canPlace()" (click)="submit()">
-          {{ submitting() ? 'Envoi…' : immediate() ? 'Confirmer et remettre' : 'Confirmer' }}
-        </button>
-        <button
-          foldButton
-          emphasis="outline"
-          intent="neutral"
-          [disabled]="submitting()"
-          (click)="confirming.set(false)"
-        >
-          Revenir
-        </button>
-      </div>
-    }
-  }
-</footer>

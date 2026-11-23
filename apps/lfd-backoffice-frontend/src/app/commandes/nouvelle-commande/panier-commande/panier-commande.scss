@@ -84,12 +84,12 @@
   }
 }
 
-.pan-foot {
+.pan-actions {
   display: flex;
   flex-direction: column;
   gap: var(--fold-space-md);
-  padding-top: var(--fold-space-md);
-  border-top: 1px solid var(--fold-color-border);
+  padding-bottom: var(--fold-space-md);
+  border-bottom: 1px solid var(--fold-color-border);
 }
 
 .pan-summary {
@@ -143,7 +143,7 @@
 }
 
 /* Tablette, dans le tiroir : les deux vues côte à côte, chacune défile pour
-   elle-même ; le bouton de validation prend toute la largeur du pied. */
+   elle-même ; le bouton de validation prend toute la largeur de son bloc. */
 .pan-split {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -152,10 +152,10 @@
   min-height: 0;
 }
 
-.pan-foot.is-split > button {
+.pan-actions.is-split > button {
   width: 100%;
 }
 
-.pan-foot.is-split .pan-confirm > button {
+.pan-actions.is-split .pan-confirm > button {
   flex: 1;
 }
