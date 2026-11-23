@@ -8,9 +8,11 @@
  * particuliers par le vrai réglage, le droit d'offrir lu en base, le témoin
  * `order.offered` dans la vraie boîte d'envoi, la révision par l'équipe d'une
  * commande sans société, et ce que la liste et la fiche staff en disent. Les
- * jours sont relatifs (`serviceDay`).
+ * jours sont relatifs (`serviceDay`). L'estimation (O7c) rend la valeur
+ * offerte que la passation écrit, sans rien écrire.
  */
 import type {
+  AdminOrderEstimateView,
   AdminOrdersPage,
   AdminOrderView,
   CreatedPickupResponse,
@@ -293,5 +295,76 @@ describe("ce qu'elle refuse, sans rien écrire", () => {
 
     expect(response.body).toMatchObject({ code: "orders.offer.forbidden" });
     expect(await ctx.prisma.order.count()).toBe(0);
+  });
+});
+
+describe("l'estimation de la commande offerte (O7c)", () => {
+  const ESTIMATE = `${ROUTE}/estimate`;
+
+  function estimateBody(site: string, buyerUserId: string): Record<string, unknown> {
+    const { expectedTotalCents: _seen, ...content } = basket(site, buyerUserId);
+    return content;
+  }
+
+  it("🔴 avec le motif : zéro et la valeur que la passation écrit, sans rien écrire", async () => {
+    const { site, particularId } = await scene();
+
+    const view = jsonBody<AdminOrderEstimateView>(
+      await staff().post(ESTIMATE).send(estimateBody(site, particularId)).expect(200),
+    );
+
+    expect(view.refusal).toBeNull();
+    expect(view.amounts?.totalCents).toBe(0);
+    expect(await ctx.prisma.order.count()).toBe(0);
+    const placed = await offer(site, particularId);
+    expect(view.amounts?.offeredTotalCents).toBe(placed.offeredTotalCents);
+  });
+
+  it("sans motif : la valeur pleine", async () => {
+    const { site, particularId } = await scene();
+    const { offer: _none, ...withoutOffer } = estimateBody(site, particularId);
+
+    const view = jsonBody<AdminOrderEstimateView>(
+      await staff().post(ESTIMATE).send(withoutOffer).expect(200),
+    );
+
+    expect(view.amounts?.totalCents).toBeGreaterThan(0);
+    expect(view.amounts?.offeredTotalCents).toBeUndefined();
+  });
+
+  it("rend une livraison fermée aux particuliers en refus de devis", async () => {
+    const { particularId } = await scene();
+    await staff().patch("/admin/delivery-availability").send({ openToB2c: false }).expect(204);
+
+    const view = jsonBody<AdminOrderEstimateView>(
+      await staff()
+        .post(ESTIMATE)
+        .send({
+          ...estimateBody("unused", particularId),
+          fulfillmentMethod: "delivery",
+          pickupAddressId: null,
+          requestedWindow: { start: null, end: "10:00" },
+          deliveryAddress: {
+            label: "Maison",
+            ligne1: "1 rue des Lilas",
+            ligne2: "",
+            codePostal: "75011",
+            ville: "Paris",
+            pays: "France",
+          },
+        })
+        .expect(200),
+    );
+
+    expect(view.amounts).toBeNull();
+    expect(view.refusal?.code).toBe("orders.delivery.closed_for_audience");
+  });
+
+  it("🔴 la fiche d'un membre de société reste une erreur", async () => {
+    const { site, memberId } = await scene();
+
+    const response = await staff().post(ESTIMATE).send(estimateBody(site, memberId)).expect(409);
+
+    expect(response.body).toMatchObject({ code: "orders.counter_particular.company_member" });
   });
 });

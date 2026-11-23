@@ -3,7 +3,8 @@ import { NO_PICKUP_DISCOUNTS, type PickupAddressView } from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
 import { CartStore } from '../../commandes/nouvelle-commande/cart.store';
-import { ParticularCart, SHOP_TILL_MENTION } from './particular-cart';
+import { ParticularOfferDraft } from '../particular-offer-draft';
+import { OFFERED_MENTION, ParticularCart, SHOP_TILL_MENTION } from './particular-cart';
 
 const POINT: PickupAddressView = {
   id: 'p1',
@@ -68,5 +69,75 @@ describe('ParticularCart — le panier du particulier', () => {
     fixture.detectChanges();
     el(fixture).querySelector<HTMLButtonElement>('[data-confirm]')?.click();
     expect(placed).toBe(1);
+  });
+});
+
+describe('ParticularCart — offrir la commande (O7c)', () => {
+  function offering(): { fixture: ComponentFixture<ParticularCart>; offer: ParticularOfferDraft } {
+    const fixture = mount();
+    const offer = new ParticularOfferDraft();
+    fixture.componentRef.setInput('offer', offer);
+    fixture.detectChanges();
+    return { fixture, offer };
+  }
+
+  it('sans offre (pas le droit), pas de choix « Offrir cette commande »', () => {
+    expect(el(mount()).querySelector('[data-offering]')).toBeNull();
+  });
+
+  it('coché, ouvre le motif, le mode d’acheminement, et change la mention', () => {
+    const { fixture } = offering();
+    expect(el(fixture).querySelector('[data-offer]')).toBeNull();
+
+    fixture.componentInstance['onOffering'](true);
+    fixture.detectChanges();
+
+    expect(el(fixture).querySelector('[data-offer]')).not.toBeNull();
+    expect(el(fixture).querySelector('[data-offer-method]')).not.toBeNull();
+    expect(el(fixture).querySelector('[data-shop-till-mention]')?.textContent).toContain(
+      OFFERED_MENTION,
+    );
+  });
+
+  it('en livraison : l’adresse dictée remplace le point de retrait', () => {
+    const { fixture } = offering();
+    fixture.componentInstance['onOffering'](true);
+    fixture.componentInstance['onMethod']('delivery');
+    fixture.detectChanges();
+
+    expect(el(fixture).querySelector('app-particular-delivery-fields')).not.toBeNull();
+    expect(el(fixture).querySelector('[data-pickup]')).toBeNull();
+    expect(el(fixture).textContent).toContain('Adresse de livraison à compléter');
+  });
+
+  it('montre la valeur offerte que le devis rend', () => {
+    const { fixture, offer } = offering();
+    offer.offering.set(true);
+    fixture.componentRef.setInput('estimate', {
+      amounts: {
+        vatMethod: 'line_ht',
+        lines: [],
+        subtotalCents: 200,
+        discountCents: 0,
+        discountTtcCents: null,
+        discounts: [],
+        deliveryFeeCents: 0,
+        deliveryFeeTtcCents: null,
+        lateFeeCents: 0,
+        lateFeeVatRatePercent: null,
+        vatCents: 0,
+        vatShares: [],
+        pretaxCents: 0,
+        totalCents: 0,
+        offeredTotalCents: 211,
+      },
+      cutoff: null,
+      refusal: null,
+      warnings: [],
+    });
+    fixture.detectChanges();
+
+    expect(el(fixture).textContent).toContain('Valeur offerte');
+    expect(el(fixture).textContent).toContain('2,11');
   });
 });

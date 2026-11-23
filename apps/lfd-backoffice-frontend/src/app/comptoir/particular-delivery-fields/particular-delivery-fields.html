@@ -1,0 +1,43 @@
+<fold-input
+  label="Rue"
+  required
+  autocomplete="street-address"
+  placeholder="N° et rue"
+  [value]="address().ligne1"
+  (valueChange)="onField('ligne1', $event)"
+  data-delivery-street
+/>
+<div class="row">
+  <fold-input
+    label="Code postal"
+    required
+    autocomplete="postal-code"
+    [value]="address().codePostal"
+    (valueChange)="onField('codePostal', $event)"
+    data-delivery-postal-code
+  />
+  <fold-input
+    label="Ville"
+    required
+    autocomplete="address-level2"
+    [value]="address().ville"
+    (valueChange)="onField('ville', $event)"
+    data-delivery-city
+  />
+</div>
+<div class="row">
+  <fold-time
+    label="Livré à partir de"
+    required
+    [value]="window().start"
+    (valueChange)="onBound('start', $event)"
+    data-delivery-start
+  />
+  <fold-time
+    label="Livré avant"
+    required
+    [value]="window().end"
+    (valueChange)="onBound('end', $event)"
+    data-delivery-end
+  />
+</div>

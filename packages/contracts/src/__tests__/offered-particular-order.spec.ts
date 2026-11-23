@@ -1,6 +1,9 @@
 import { describe, expect, it } from "@jest/globals";
 
-import { offeredParticularOrderPayloadSchema } from "../offered-particular-order.js";
+import {
+  offeredParticularOrderEstimatePayloadSchema,
+  offeredParticularOrderPayloadSchema,
+} from "../offered-particular-order.js";
 
 const pickup = {
   buyerUserId: "u_particular",
@@ -40,5 +43,28 @@ describe("contrat de la commande offerte à un particulier", () => {
   it("n'accepte pas de société : le champ est ignoré, jamais lu", () => {
     const parsed = offeredParticularOrderPayloadSchema.parse({ ...pickup, companyId: "c_1" });
     expect("companyId" in parsed).toBe(false);
+  });
+});
+
+describe("contrat de l'estimation de la commande offerte à un particulier", () => {
+  // Sans total vu : le champ n'est pas au contrat de l'estimation.
+  const estimate = { ...pickup, expectedTotalCents: undefined };
+
+  it("admet un panier sans motif : l'écran estime avant que le motif soit écrit", () => {
+    const parsed = offeredParticularOrderEstimatePayloadSchema.parse({
+      ...estimate,
+      offer: undefined,
+    });
+    expect(parsed.offer).toBeUndefined();
+  });
+
+  it("refuse un motif vide quand il est donné", () => {
+    const empty = { ...estimate, offer: { nature: "event", note: " " } };
+    expect(offeredParticularOrderEstimatePayloadSchema.safeParse(empty).success).toBe(false);
+  });
+
+  it("refuse une livraison sans adresse, comme la passation", () => {
+    const delivery = { ...estimate, fulfillmentMethod: "delivery", pickupAddressId: null };
+    expect(offeredParticularOrderEstimatePayloadSchema.safeParse(delivery).success).toBe(false);
   });
 });

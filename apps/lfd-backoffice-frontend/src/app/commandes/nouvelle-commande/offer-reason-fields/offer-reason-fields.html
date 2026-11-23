@@ -1,0 +1,28 @@
+<fold-callout variant="info">
+  Offerte, la commande part au fournil comme les autres, mais elle ne sera
+  <strong>ni facturée ni prélevée</strong>.
+</fold-callout>
+<fold-listbox
+  label="Nature de l’offre"
+  required
+  placeholder="Choisir…"
+  data-offer-nature
+  [options]="natureOptions"
+  [value]="nature()"
+  (valueChange)="onNature($event)"
+/>
+<fold-textarea
+  label="Motif"
+  required
+  data-offer-note
+  placeholder="À qui, et pourquoi on l’offre."
+  [rows]="2"
+  [hint]="noteHint()"
+  [(value)]="note"
+/>
+<fold-checkbox
+  label="Prévenir le client par e-mail"
+  data-offer-notify
+  [checked]="notifyCustomer()"
+  (checkedChange)="notifyCustomer.set($event)"
+/>

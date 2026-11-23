@@ -7,15 +7,26 @@
   />
   @if (placed(); as order) {
     <fold-card data-placed>
-      <fold-element-title
-        variant="title"
-        [title]="'Commande ' + order.orderNumber + ' notée'"
-        [subtitle]="
-          'Total ' +
-          cents(order.totalCents) +
-          ' TTC — à régler à la caisse de la boutique, au retrait.'
-        "
-      />
+      @if (order.offeredTotalCents === undefined) {
+        <fold-element-title
+          variant="title"
+          [title]="'Commande ' + order.orderNumber + ' notée'"
+          [subtitle]="
+            'Total ' +
+            cents(order.totalCents) +
+            ' TTC — à régler à la caisse de la boutique, au retrait.'
+          "
+        />
+      } @else {
+        <fold-element-title
+          variant="title"
+          [title]="'Commande ' + order.orderNumber + ' offerte'"
+          [subtitle]="
+            'Valeur offerte ' + cents(order.offeredTotalCents) + ' TTC — ni facturée ni prélevée.'
+          "
+          data-placed-offered
+        />
+      }
       <div class="row">
         <a foldButton emphasis="outline" [routerLink]="['/commandes', order.id]" data-placed-link>
           Voir la commande
@@ -89,6 +100,7 @@
                 [estimate]="estimate()"
                 [estimateReady]="estimateReady()"
                 [submitting]="submitting()"
+                [offer]="offer()"
                 (place)="onPlace()"
               />
             </div>

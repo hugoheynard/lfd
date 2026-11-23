@@ -259,36 +259,12 @@
         }
       </fieldset>
       @if (settlement() === 'offered') {
-        <div class="pan-offer" data-offer>
-          <fold-callout variant="info">
-            Offerte, la commande part au fournil comme les autres, mais elle ne sera
-            <strong>ni facturée ni prélevée</strong>.
-          </fold-callout>
-          <fold-listbox
-            label="Nature de l’offre"
-            required
-            placeholder="Choisir…"
-            data-offer-nature
-            [options]="offerNatureOptions"
-            [value]="draft().offerNature()"
-            (valueChange)="onOfferNature($event)"
-          />
-          <fold-textarea
-            label="Motif"
-            required
-            data-offer-note
-            placeholder="À qui, et pourquoi on l’offre."
-            [rows]="2"
-            [hint]="offerNoteHint()"
-            [(value)]="draft().offerNote"
-          />
-          <fold-checkbox
-            label="Prévenir le client par e-mail"
-            data-offer-notify
-            [checked]="draft().offerNotifiesCustomer()"
-            (checkedChange)="draft().offerNotifiesCustomer.set($event)"
-          />
-        </div>
+        <app-offer-reason-fields
+          data-offer
+          [(nature)]="draft().offerNature"
+          [(note)]="draft().offerNote"
+          [(notifyCustomer)]="draft().offerNotifiesCustomer"
+        />
       }
     }
   </div>

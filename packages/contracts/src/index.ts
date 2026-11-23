@@ -2789,8 +2789,12 @@ export type {
   CounterParticularOrderPayload,
   CounterParticularPlacedOrderResponse,
 } from "./counter-particular-order.js";
-export { offeredParticularOrderPayloadSchema } from "./offered-particular-order.js";
+export {
+  offeredParticularOrderEstimatePayloadSchema,
+  offeredParticularOrderPayloadSchema,
+} from "./offered-particular-order.js";
 export type {
+  OfferedParticularOrderEstimatePayload,
   OfferedParticularOrderPayload,
   OfferedParticularPlacedOrderResponse,
 } from "./offered-particular-order.js";

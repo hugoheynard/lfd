@@ -5,27 +5,58 @@
   [subtitle]="cart().isEmpty() ? undefined : summary()"
 />
 
-<div class="form">
-  <fold-listbox
-    label="Point de retrait"
-    placeholder="Où le client retire-t-il ?"
-    [options]="pickupOptions()"
-    [value]="pickupId()"
-    (selectionChange)="onPickup($event)"
-    data-pickup
+@if (offer(); as draft) {
+  <!-- Le droit d'offrir seul fait paraître le choix : sans lui, la saisie
+       reste celle du comptoir, à régler à la caisse de la boutique. -->
+  <fold-checkbox
+    label="Offrir cette commande"
+    [checked]="offering()"
+    (checkedChange)="onOffering($event)"
+    data-offering
   />
-  <fold-date label="Retrait le" required [(value)]="requestedDate" />
-  @if (slotOptions().length > 0) {
-    <!-- Obligatoire et jamais prérempli : une heure suggérée devient une promesse. -->
-    <fold-listbox
-      label="Créneau de retrait"
-      required
-      placeholder="Quand le client passe-t-il ?"
-      [options]="slotOptions()"
-      [value]="slotId()"
-      (selectionChange)="onSlot($event)"
-      data-slot
+  @if (offering()) {
+    <fold-view-toggle
+      activeStyle="accent"
+      ariaLabel="Mode d'acheminement"
+      [options]="methods"
+      [value]="draft.method()"
+      (valueChange)="onMethod($event)"
+      data-offer-method
     />
+  }
+}
+
+<div class="form">
+  @if (delivered()) {
+    @if (offer(); as draft) {
+      <app-particular-delivery-fields
+        [(address)]="draft.address"
+        [(window)]="draft.deliveryWindow"
+      />
+    }
+    <fold-date label="Livraison le" required [(value)]="requestedDate" />
+  } @else {
+    <fold-listbox
+      label="Point de retrait"
+      placeholder="Où le client retire-t-il ?"
+      [options]="pickupOptions()"
+      [value]="pickupId()"
+      (selectionChange)="onPickup($event)"
+      data-pickup
+    />
+    <fold-date label="Retrait le" required [(value)]="requestedDate" />
+    @if (slotOptions().length > 0) {
+      <!-- Obligatoire et jamais prérempli : une heure suggérée devient une promesse. -->
+      <fold-listbox
+        label="Créneau de retrait"
+        required
+        placeholder="Quand le client passe-t-il ?"
+        [options]="slotOptions()"
+        [value]="slotId()"
+        (selectionChange)="onSlot($event)"
+        data-slot
+      />
+    }
   }
   <fold-textarea
     label="Note"
@@ -35,7 +66,18 @@
   />
 </div>
 
-<fold-callout variant="info" data-shop-till-mention>{{ mention }}</fold-callout>
+@if (offering()) {
+  @if (offer(); as draft) {
+    <app-offer-reason-fields
+      data-offer
+      [(nature)]="draft.nature"
+      [(note)]="draft.note"
+      [(notifyCustomer)]="draft.notifyCustomer"
+    />
+  }
+}
+
+<fold-callout variant="info" data-shop-till-mention>{{ mention() }}</fold-callout>
 
 @if (cart().isEmpty()) {
   <p class="empty">Ajoutez des articles depuis la colonne de gauche.</p>
@@ -80,12 +122,23 @@
       (click)="confirming.set(true)"
       data-validate
     >
-      {{ estimateReady() ? 'Valider la commande' : 'Calcul du montant…' }}
+      @if (!estimateReady()) {
+        Calcul du montant…
+      } @else if (offering()) {
+        Offrir la commande
+      } @else {
+        Valider la commande
+      }
     </button>
   } @else {
     <fold-callout variant="accent">
-      <strong>Confirmer.</strong> La commande part au plan du fournil. Le client la règle à la
-      caisse de la boutique en venant la retirer : rien n’est encaissé ici.
+      @if (offering()) {
+        <strong>Confirmer.</strong> La commande part au plan du fournil, <strong>offerte</strong> :
+        ni facturée, ni prélevée, ni réglée en boutique.
+      } @else {
+        <strong>Confirmer.</strong> La commande part au plan du fournil. Le client la règle à la
+        caisse de la boutique en venant la retirer : rien n’est encaissé ici.
+      }
     </fold-callout>
     <div class="confirm">
       <button foldButton type="button" [disabled]="!canPlace()" (click)="submit()" data-confirm>

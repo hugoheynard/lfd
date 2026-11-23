@@ -122,24 +122,30 @@ function offerBlockers(facts: PanierBlockerFacts): readonly PanierBlocker[] {
       },
     ];
   }
-  const issues: PanierBlocker[] = [];
-  if ((facts.offerNature ?? null) === null) {
-    issues.push({
-      text: 'Une commande offerte dit pourquoi : choisissez sa nature.',
-      view: 'settings',
-    });
+  return offerReasonIssues(facts.offerNature ?? null, facts.offerNote ?? '').map((text) => ({
+    text,
+    view: 'settings',
+  }));
+}
+
+/**
+ * Ce qui manque au motif d'une commande offerte : une nature, et un texte
+ * court non vide. Partagé avec la saisie d'un particulier, qui offre par sa
+ * propre route : les mêmes mots, quelle que soit la porte.
+ */
+export function offerReasonIssues(
+  nature: OrderOfferNature | null,
+  note: string,
+): readonly string[] {
+  const issues: string[] = [];
+  if (nature === null) {
+    issues.push('Une commande offerte dit pourquoi : choisissez sa nature.');
   }
-  const note = (facts.offerNote ?? '').trim();
-  if (note === '') {
-    issues.push({
-      text: 'Une commande offerte porte un motif : écrivez-le en quelques mots.',
-      view: 'settings',
-    });
-  } else if (note.length > ORDER_OFFER_NOTE_MAX_LENGTH) {
-    issues.push({
-      text: `Le motif de l’offre dépasse ${String(ORDER_OFFER_NOTE_MAX_LENGTH)} caractères.`,
-      view: 'settings',
-    });
+  const text = note.trim();
+  if (text === '') {
+    issues.push('Une commande offerte porte un motif : écrivez-le en quelques mots.');
+  } else if (text.length > ORDER_OFFER_NOTE_MAX_LENGTH) {
+    issues.push(`Le motif de l’offre dépasse ${String(ORDER_OFFER_NOTE_MAX_LENGTH)} caractères.`);
   }
   return issues;
 }

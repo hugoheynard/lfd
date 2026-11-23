@@ -158,6 +158,7 @@ import { AdminCounterNoShowController } from "./http/admin-counter-no-show.contr
 import { PlaceParticularOrderAtCounterHandler } from "./application/commands/place-particular-order-at-counter.handler.js";
 import { PlaceOfferedParticularOrderHandler } from "./application/commands/place-offered-particular-order.handler.js";
 import { EstimateParticularOrderAtCounterHandler } from "./application/queries/estimate-particular-order-at-counter.handler.js";
+import { EstimateOfferedParticularOrderHandler } from "./application/queries/estimate-offered-particular-order.handler.js";
 import { AccountModule } from "../account/account.module.js";
 import { QuoteShopCartHandler } from "./application/queries/quote-shop-cart.handler.js";
 import { QuoteMyShopCartHandler } from "./application/queries/quote-my-shop-cart.handler.js";
@@ -703,6 +704,7 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     OrderQuoting,
     EstimateOrderForCustomerHandler,
     EstimateParticularOrderAtCounterHandler,
+    EstimateOfferedParticularOrderHandler,
     ReadMyShopCatalogueHandler,
     ReadCustomerShelfPricesHandler,
     ReadCounterParticularShelfPricesHandler,

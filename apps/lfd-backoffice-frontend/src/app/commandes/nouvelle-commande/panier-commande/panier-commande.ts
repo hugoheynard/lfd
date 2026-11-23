@@ -15,8 +15,6 @@ import {
   FoldCalloutComponent,
   FoldCardComponent,
   FoldElementTitleComponent,
-  FoldCheckboxComponent,
-  FoldListboxComponent,
   FoldSelectComponent,
   FoldTabPanelComponent,
   FoldTabsComponent,
@@ -25,8 +23,6 @@ import {
 } from 'fold-ng';
 import {
   ITEM_LIMIT_OVERRIDE_REASON_MAX_LENGTH,
-  ORDER_OFFER_NATURES,
-  ORDER_OFFER_NOTE_MAX_LENGTH,
   STAFF_SETTLEMENT_LABELS,
   type AdminOrderEstimateView,
   type BudgetCommitmentRequirementsView,
@@ -34,7 +30,6 @@ import {
   type DeliveryAddressView,
   type DeliveryAvailabilityView,
   type DeliveryZoneView,
-  type OrderOfferNature,
   type PickupAddressView,
   type StaffSettlement,
 } from '@lfd/contracts';
@@ -70,6 +65,7 @@ import {
   itemLimitNoticesOf,
 } from '../item-limits';
 import { MontantsPanier } from '../montants-panier/montants-panier';
+import { OfferReasonFields } from '../offer-reason-fields/offer-reason-fields';
 import { panierBlockersOf, type PanierBlocker, type PanierView } from '../panier-blockers';
 
 export type { OrderDraft } from '../draft-payload';
@@ -122,10 +118,9 @@ const SPLIT_MIN_MEDIA = '(max-width: 767px)';
     FoldCalloutComponent,
     FoldCardComponent,
     FoldElementTitleComponent,
-    FoldCheckboxComponent,
-    FoldListboxComponent,
     FoldSelectComponent,
     MontantsPanier,
+    OfferReasonFields,
     FoldTabPanelComponent,
     FoldTabsComponent,
     FoldTextareaComponent,
@@ -338,17 +333,6 @@ export class PanierCommande {
     ...(this.canOffer() ? (['offered'] as const) : []),
   ]);
 
-  /** Les natures d'une commande offerte, dans l'ordre du registre. */
-  protected readonly offerNatureOptions = ORDER_OFFER_NATURES.map((nature) => ({
-    value: nature.key,
-    label: nature.label,
-  }));
-  protected readonly offerNoteMax = ORDER_OFFER_NOTE_MAX_LENGTH;
-  protected readonly offerNoteHint = computed(
-    () =>
-      `Obligatoire, gardé avec la commande. ${String(this.draft().offerNote().trim().length)} / ${String(this.offerNoteMax)} caractères.`,
-  );
-
   /** Le choix par défaut : le détenteur, sinon le premier membre venu. */
   protected readonly buyer = computed<string | null>(() =>
     buyerOf(this.draft().buyerUserId(), this.buyers()),
@@ -440,10 +424,6 @@ export class PanierCommande {
     // Changer de mode de règlement rouvre la confirmation : c'est précisément la
     // décision qu'on demandait de confirmer.
     this.confirming.set(false);
-  }
-
-  protected onOfferNature(value: OrderOfferNature | null): void {
-    this.draft().offerNature.set(value);
   }
 
   protected submit(): void {

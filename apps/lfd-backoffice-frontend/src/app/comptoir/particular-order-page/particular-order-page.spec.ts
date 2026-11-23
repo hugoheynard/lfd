@@ -16,6 +16,7 @@ import { PermissionsStore } from '../../auth/permissions.store';
 import { PickupAddressesService } from '../../b2b/reglages/pickup-addresses.service';
 import { AdminCatalogService } from '../../commandes/catalog.service';
 import { CounterParticularsService } from '../counter-particulars.service';
+import { OfferedParticularOrdersService } from '../offered-particular-orders.service';
 import { ParticularOrderPage } from './particular-order-page';
 
 function point(id: string, b2c = true): PickupAddressView {
@@ -65,6 +66,15 @@ const ESTIMATE: AdminOrderEstimateView = {
   warnings: [],
 };
 
+/** Offerte, motif écrit : total nul, et la valeur offerte que le serveur rend. */
+const OFFERED_ESTIMATE: AdminOrderEstimateView = {
+  ...ESTIMATE,
+  amounts:
+    ESTIMATE.amounts === null
+      ? null
+      : { ...ESTIMATE.amounts, totalCents: 0, offeredTotalCents: 528 },
+};
+
 function catalogItem(sku: string, name: string): CatalogItemView {
   return { sku, name, unitPriceMillicents: 100_000, vatRate: 5.5, family: null, category: null };
 }
@@ -93,6 +103,10 @@ function mount(
 ) {
   const place = vi.fn(() => Promise.resolve({ id: 'o1', orderNumber: 'CMD-1', totalCents: 528 }));
   const estimate = vi.fn(() => of(ESTIMATE));
+  const offeredEstimate = vi.fn(() => of(OFFERED_ESTIMATE));
+  const offeredPlace = vi.fn(() =>
+    Promise.resolve({ id: 'o2', orderNumber: 'CMD-2', totalCents: 0, offeredTotalCents: 528 }),
+  );
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     providers: [
@@ -100,6 +114,10 @@ function mount(
       {
         provide: CounterParticularsService,
         useValue: { place, estimate, shelfPrices, search: vi.fn() },
+      },
+      {
+        provide: OfferedParticularOrdersService,
+        useValue: { estimate: offeredEstimate, place: offeredPlace },
       },
       { provide: AdminCatalogService, useValue: { list: () => Promise.resolve(CATALOGUE) } },
       {
@@ -113,7 +131,7 @@ function mount(
   // Le comptoir a ouvert la saisie depuis son point « b » (`?retour=/comptoir&point=b`).
   fixture.componentRef.setInput('retour', '/comptoir');
   fixture.componentRef.setInput('point', 'b');
-  return { fixture, place, estimate };
+  return { fixture, place, estimate, offeredEstimate, offeredPlace };
 }
 
 async function settle(fixture: ComponentFixture<ParticularOrderPage>): Promise<void> {
@@ -186,5 +204,54 @@ describe('ParticularOrderPage — la commande d’un particulier au comptoir', (
 
     expect(fixture.componentInstance['state']()).toBe('error');
     expect(fixture.componentInstance['catalogue']()).toEqual([]);
+  });
+});
+
+describe('ParticularOrderPage — offrir la commande (O7c)', () => {
+  it('sans le droit d’offrir, la saisie n’en propose rien', async () => {
+    const { fixture } = mount();
+    await settle(fixture);
+    fixture.componentInstance['choose'](JEANNE);
+    await settle(fixture);
+
+    expect(fixture.componentInstance['offer']()).toBeNull();
+    expect((fixture.nativeElement as HTMLElement).querySelector('[data-offering]')).toBeNull();
+  });
+
+  it('avec le droit, offre par la route offerte : motif, total nul, valeur offerte', async () => {
+    const { fixture, place, offeredEstimate, offeredPlace } = mount([
+      'handover_counter:read',
+      'b2b_offer_order:write',
+    ]);
+    await settle(fixture);
+    const page = fixture.componentInstance;
+    page['choose'](JEANNE);
+    page['cart'].add({ sku: 'S1', name: 'Baguette', unitPriceMillicents: 100_000 }, 2);
+    page['window'].set({ start: '08:00', end: '09:00' });
+    const offer = page['offer']();
+    offer?.offering.set(true);
+    offer?.nature.set('tasting');
+    offer?.note.set('Dégustation au salon');
+    fixture.detectChanges();
+    TestBed.tick();
+    await new Promise((resolve) => setTimeout(resolve, 600));
+    expect(offeredEstimate).toHaveBeenCalled();
+    expect(page['estimateReady']()).toBe(true);
+
+    await page['onPlace']();
+    fixture.detectChanges();
+
+    expect(place).not.toHaveBeenCalled();
+    expect(offeredPlace).toHaveBeenCalledWith(
+      expect.objectContaining({
+        buyerUserId: 'u1',
+        offer: { nature: 'tasting', note: 'Dégustation au salon', notifyCustomer: false },
+        expectedTotalCents: 0,
+      }),
+      expect.any(String),
+    );
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('[data-placed-offered]')).not.toBeNull();
+    expect(el.querySelector('[data-placed]')?.textContent).toContain('5,28');
   });
 });

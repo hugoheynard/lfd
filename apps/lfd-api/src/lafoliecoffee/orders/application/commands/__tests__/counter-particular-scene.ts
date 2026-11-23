@@ -48,6 +48,7 @@ import {
 } from "../../services/__tests__/basket-promotions.doubles.js";
 import { deadlineOf } from "../../services/__tests__/order-deadline-of.js";
 import { shelfCircuitOf } from "../../services/__tests__/shelf-circuit-doubles.js";
+import { EstimateOfferedParticularOrderHandler } from "../../queries/estimate-offered-particular-order.handler.js";
 import { EstimateParticularOrderAtCounterHandler } from "../../queries/estimate-particular-order-at-counter.handler.js";
 import { PlaceParticularOrderAtCounterHandler } from "../place-particular-order-at-counter.handler.js";
 import { PlaceOfferedParticularOrderHandler } from "../place-offered-particular-order.handler.js";
@@ -255,13 +256,19 @@ export function counterScene() {
     inMemoryIntents(),
     new CustomerCancellationDeadline(new FixedCancellationSettings()),
   );
+  const cutoffNotice = new OrderCutoffNotice(
+    deadlineOf({ cutoffs: { list: () => Promise.resolve([]) }, catalog }),
+    new FixedClock(PRICED_AT),
+  );
   const estimator = new EstimateParticularOrderAtCounterHandler(
     particulars,
     composition,
-    new OrderCutoffNotice(
-      deadlineOf({ cutoffs: { list: () => Promise.resolve([]) }, catalog }),
-      new FixedClock(PRICED_AT),
-    ),
+    cutoffNotice,
   );
-  return { handler, offerer, estimator, placed, published, durable };
+  const offerEstimator = new EstimateOfferedParticularOrderHandler(
+    particulars,
+    composition,
+    cutoffNotice,
+  );
+  return { handler, offerer, estimator, offerEstimator, placed, published, durable };
 }

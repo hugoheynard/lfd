@@ -1,4 +1,4 @@
-import type { OfferedParticularOrderPayload } from "@lfd/contracts";
+import type { OfferedParticularOrderEstimatePayload } from "@lfd/contracts";
 
 import type { ParticularStandingReader } from "../../../account/domain/ports/particular-standing.reader.js";
 import type { PricingCaller } from "../../../pricing/application/pricing-caller.js";
@@ -29,7 +29,8 @@ export interface OfferedParticularOrderPreparationPorts {
  * Ni fermeture de la boutique, ni premier jour commandable, ni minimum
  * d'achat : l'équipe n'y est pas tenue (décidé par Hugo le 2026-11-23).
  * Aucune dérogation d'heure limite : elles sont tenues par société. Rien
- * n'est écrit.
+ * n'est écrit. Sans motif (l'estimation, avant qu'il soit écrit), la
+ * commande se compose à sa valeur pleine.
  *
  * @throws {CounterParticularNotFoundError} aucune fiche sous cet identifiant.
  * @throws {CounterBuyerIsCompanyMemberError} la fiche est rattachée à une société.
@@ -39,7 +40,8 @@ export interface OfferedParticularOrderPreparationPorts {
 export async function prepareOfferedParticularOrder(
   ports: OfferedParticularOrderPreparationPorts,
   staffUserId: string,
-  payload: OfferedParticularOrderPayload,
+  // La forme de l'estimation, plus large : la passation y entre, motif exigé.
+  payload: OfferedParticularOrderEstimatePayload,
   caller: PricingCaller,
 ): Promise<DraftedOrder> {
   await ensureParticular(ports.particulars, payload.buyerUserId);

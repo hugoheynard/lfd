@@ -35,6 +35,27 @@ export const offeredParticularOrderPayloadSchema = z
   .refine(hasWindowWhenPickedUp, pickupWindowIssue());
 export type OfferedParticularOrderPayload = z.infer<typeof offeredParticularOrderPayloadSchema>;
 
+/**
+ * **Ce que l'estimation de la commande offerte reçoit**
+ * (`POST /admin/offered-orders/particular/estimate`) : la passation, sans le
+ * total vu, et le motif **facultatif**. L'écran estime dès que le panier se
+ * compose, avant que le motif soit écrit : sans motif, le serveur chiffre la
+ * valeur pleine ; avec, il rend zéro et la valeur offerte — la règle de
+ * l'estimation de la saisie pour une société.
+ */
+export const offeredParticularOrderEstimatePayloadSchema = z
+  .object({
+    buyerUserId: z.string().trim().min(1, "client requis"),
+    offer: orderOfferSchema.optional(),
+    ...orderContentShape,
+  })
+  .refine(hasAddressWhenDelivered, deliveryAddressIssue())
+  .refine(hasPickupPointWhenPickedUp, pickupPointIssue())
+  .refine(hasWindowWhenPickedUp, pickupWindowIssue());
+export type OfferedParticularOrderEstimatePayload = z.infer<
+  typeof offeredParticularOrderEstimatePayloadSchema
+>;
+
 /** Ce que la passation rend : la commande, son total (zéro) et la valeur offerte TTC. */
 export interface OfferedParticularPlacedOrderResponse {
   readonly id: string;

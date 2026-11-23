@@ -77,7 +77,7 @@ export class EstimateParticularOrderAtCounterHandler implements IQueryHandler<
         "estimate",
       );
     } catch (error) {
-      if (isCompositionRefusal(error)) {
+      if (isParticularCompositionRefusal(error)) {
         return { code: error.code, message: error.message };
       }
       throw error;
@@ -85,8 +85,14 @@ export class EstimateParticularOrderAtCounterHandler implements IQueryHandler<
   }
 }
 
-/** Un refus de composition — pas la fiche choisie, qui reste l'erreur de la passation. */
-function isCompositionRefusal(error: unknown): error is DomainError | BusinessError {
+/**
+ * Un refus de composition — pas la fiche choisie, qui reste l'erreur de la
+ * passation. Partagé avec l'estimation de la commande offerte à un
+ * particulier : le même mur, la même frontière entre erreur et refus.
+ */
+export function isParticularCompositionRefusal(
+  error: unknown,
+): error is DomainError | BusinessError {
   if (
     error instanceof CounterParticularNotFoundError ||
     error instanceof CounterBuyerIsCompanyMemberError ||
