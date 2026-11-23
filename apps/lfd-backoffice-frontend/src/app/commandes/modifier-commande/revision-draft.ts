@@ -152,6 +152,7 @@ export function revisionDraftOf(
     settlement: 'link',
     offerNature: null,
     offerNote: '',
+    offerNotifiesCustomer: false,
   };
 }
 

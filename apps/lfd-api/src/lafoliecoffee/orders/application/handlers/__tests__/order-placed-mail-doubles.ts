@@ -162,11 +162,12 @@ export class OneRecipientReader extends OrderRecipientReader {
   }
 }
 
-export function readerOf(order: OrderView | null): OrderReader {
+export function readerOf(order: OrderView | null, customerNotified = true): OrderReader {
   return new OneOrderReader(
     order === null
       ? null
       : {
+          ...(customerNotified ? {} : { customerNotified: false }),
           view: order,
           companyId: null,
           placedByUserId: "user_7",

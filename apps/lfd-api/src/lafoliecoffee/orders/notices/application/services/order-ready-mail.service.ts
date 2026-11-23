@@ -5,7 +5,7 @@ import { DEFAULT_MAIL_LOCALE } from "../../../../../mail/channels/templates/mail
 import { Mail } from "../../../../../mail/channels/requests/mail.js";
 import { OrderMailOrigins } from "../../../domain/ports/order-mail-origins.js";
 import { OrderRecipientReader } from "../../../domain/ports/order-recipient.reader.js";
-import { OrderReader } from "../../../domain/ports/order.reader.js";
+import { isCustomerNotified, OrderReader } from "../../../domain/ports/order.reader.js";
 import { RemainderShipmentReader } from "../../../domain/ports/remainder-shipment.reader.js";
 import { FIRST_SHIPMENT_RANK } from "../../../../../production/channels/commerce/index.js";
 import { handoverUrlOf } from "../../../domain/services/handover-url.js";
@@ -76,6 +76,11 @@ export class OrderReadyMail {
   ): Promise<boolean> {
     const owned = await this.orders.findById(orderId);
     if (owned === null) {
+      return false;
+    }
+    // Une commande offerte qui ne prévient pas le client : aucun e-mail
+    // automatique ; le rappel de retrait, geste de l'équipe, part quand même (décidé par Hugo le 2026-11-23, `plan-commande-offerte.md` § 4).
+    if (!isCustomerNotified(owned) && options.reminder !== true) {
       return false;
     }
     const remainder = await this.remainderOf(orderId, options.rank ?? FIRST_SHIPMENT_RANK);

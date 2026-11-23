@@ -5,7 +5,11 @@ import { DEFAULT_MAIL_LOCALE } from "../../../../../mail/channels/templates/mail
 import { Mail } from "../../../../../mail/channels/requests/mail.js";
 import { OrderMailOrigins } from "../../../domain/ports/order-mail-origins.js";
 import { OrderRecipientReader } from "../../../domain/ports/order-recipient.reader.js";
-import { OrderReader, type OwnedOrder } from "../../../domain/ports/order.reader.js";
+import {
+  isCustomerNotified,
+  OrderReader,
+  type OwnedOrder,
+} from "../../../domain/ports/order.reader.js";
 import { RemainderShipmentReader } from "../../../domain/ports/remainder-shipment.reader.js";
 import {
   FIRST_SHIPMENT_RANK,
@@ -52,6 +56,11 @@ export class DeliveryEnRouteMail {
     const { orderId } = shipment;
     const owned = await this.orders.findById(orderId);
     if (owned === null || !(await this.stillOnItsWay(owned, shipment))) {
+      return false;
+    }
+    // Une commande offerte qui ne prévient pas le client : aucun e-mail
+    // automatique (décidé par Hugo le 2026-11-23, `plan-commande-offerte.md` § 4).
+    if (!isCustomerNotified(owned)) {
       return false;
     }
     const recipient = await this.recipients.findById(owned.placedByUserId);

@@ -401,6 +401,9 @@ model Order {
   offeredTotalCents Int?    @map("offered_total_cents")
   offeredVatCents   Int?    @map("offered_vat_cents")
   offeredVatShares  Json?   @map("offered_vat_shares")
+  /// Le client reçoit-il les e-mails automatiques ? `false` par défaut pour une
+  /// commande offerte (décidé par Hugo le 2026-11-23) ; NULL pour une commande payée.
+  offerNotifiesCustomer Boolean? @map("offer_notifies_customer")
 
   // Règlement. `paymentStatus` est fixé à la passation d'après le terme de la
   // société (cf. enum PaymentStatus). `stripePaymentIntentId` relie la commande

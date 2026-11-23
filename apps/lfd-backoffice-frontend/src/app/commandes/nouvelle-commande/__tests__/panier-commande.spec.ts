@@ -540,7 +540,35 @@ describe('PanierCommande — la commande offerte', () => {
     expect(emitted).toEqual([
       expect.objectContaining({
         settlement: 'offered',
-        offer: { nature: 'goodwill', note: 'Geste après réclamation' },
+        offer: { nature: 'goodwill', note: 'Geste après réclamation', notifyCustomer: false },
+      }),
+    ]);
+  });
+
+  it('🔴 « Prévenir le client » est décoché par défaut, et coché il part avec le motif', () => {
+    granted = ['b2b_offer_order:write'];
+    const draft = offeredDraft();
+    draft.offerNature.set('tasting');
+    draft.offerNote.set('Dégustation');
+    const { fixture, host, component } = mountFull(filledCart(), { draft, estimate: ESTIMATE });
+    const emitted: unknown[] = [];
+    component.place.subscribe((value) => emitted.push(value));
+    draft.fulfillment.set(readyDraft().fulfillment());
+    fixture.detectChanges();
+
+    expect(host.querySelector('[data-offer-notify]')).not.toBeNull();
+    expect(draft.offerNotifiesCustomer()).toBe(false);
+    draft.offerNotifiesCustomer.set(true);
+    fixture.detectChanges();
+    validate(host)?.click();
+    fixture.detectChanges();
+    [...host.querySelectorAll<HTMLButtonElement>('.pan-confirm button')]
+      .find((b) => b.textContent.trim() === 'Confirmer')
+      ?.click();
+
+    expect(emitted).toEqual([
+      expect.objectContaining({
+        offer: { nature: 'tasting', note: 'Dégustation', notifyCustomer: true },
       }),
     ]);
   });

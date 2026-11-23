@@ -115,6 +115,7 @@ describe('la complétude de la saisie', () => {
     settlement: 'account',
     offerNature: null,
     offerNote: '',
+    offerNotifiesCustomer: false,
     immediate: false,
     empty: false,
   };

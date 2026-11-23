@@ -415,6 +415,7 @@ export class NouvelleCommandePage {
       settlement: this.draft.settlement(),
       offerNature: this.draft.offerNature(),
       offerNote: this.draft.offerNote(),
+      offerNotifiesCustomer: this.draft.offerNotifiesCustomer(),
       immediate: this.immediate(),
       empty: this.cart.isEmpty(),
     }),

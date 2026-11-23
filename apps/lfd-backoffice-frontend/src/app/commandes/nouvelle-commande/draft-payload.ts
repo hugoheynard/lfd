@@ -105,6 +105,7 @@ export function draftPayloadOf(
     settlement: draft.settlement,
     offerNature: draft.offerNature,
     offerNote: draft.offerNote,
+    offerNotifiesCustomer: draft.offerNotifiesCustomer,
     // Des SKU et des quantités, **jamais de prix** : c'est le catalogue serveur
     // qui fera foi à la reprise comme à la passation. Seule exception, le Total
     // HT affiché, que rien ne relit sinon la liste des brouillons.
@@ -174,6 +175,7 @@ export function draftSnapshotOf(
     settlement: view.settlement,
     offerNature: view.offerNature,
     offerNote: view.offerNote,
+    offerNotifiesCustomer: view.offerNotifiesCustomer,
   };
 }
 
@@ -255,6 +257,7 @@ export interface DraftDecisions {
   readonly settlement: StaffSettlement;
   readonly offerNature: OrderOfferNature | null;
   readonly offerNote: string;
+  readonly offerNotifiesCustomer: boolean;
   readonly immediate: boolean;
   readonly empty: boolean;
 }
@@ -269,12 +272,13 @@ export function offerOf(
   settlement: StaffSettlement,
   nature: OrderOfferNature | null,
   note: string,
+  notifyCustomer = false,
 ): OrderOffer | null {
   const text = note.trim();
   if (settlement !== 'offered' || nature === null || text === '') {
     return null;
   }
-  return { nature, note: text };
+  return { nature, note: text, notifyCustomer };
 }
 
 /**
@@ -309,7 +313,12 @@ export function composedDraftOf(decisions: DraftDecisions): OrderDraft | null {
     requestedWindow: fulfillment.window,
     note: decisions.note,
     settlement: decisions.settlement,
-    offer: offerOf(decisions.settlement, decisions.offerNature, decisions.offerNote),
+    offer: offerOf(
+      decisions.settlement,
+      decisions.offerNature,
+      decisions.offerNote,
+      decisions.offerNotifiesCustomer,
+    ),
     immediate: decisions.immediate,
   };
 }

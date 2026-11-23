@@ -44,10 +44,11 @@ function handler(options: {
   admin?: string | null;
   logo?: OrderSheetLogoSource;
   documents?: MemoryCustomerDocuments;
+  silenced?: boolean;
 }): { readonly run: SendOrderPlacedMail; readonly mailer: LastMailRequest } {
   const mailer = new LastMailRequest();
   const run = new SendOrderPlacedMail(
-    readerOf(options.order === undefined ? view() : options.order),
+    readerOf(options.order === undefined ? view() : options.order, options.silenced !== true),
     recipientOf(options.email === undefined ? "camille@halles.test" : options.email),
     new FixedOrigins(
       options.client === undefined ? "https://app.lfc.test" : options.client,
@@ -140,6 +141,14 @@ describe("l'accusé de réception d'une commande", () => {
     // Une commande valide ne doit pas remplir les journaux d'alertes qui ne
     // désignent rien à corriger.
     const subject = handler({ email: null });
+    await fire(subject);
+
+    expect(subject.mailer.last).toBeNull();
+  });
+
+  it("🔴 se tait pour une commande offerte qui ne prévient pas le client", async () => {
+    const subject = handler({ silenced: true });
+
     await fire(subject);
 
     expect(subject.mailer.last).toBeNull();

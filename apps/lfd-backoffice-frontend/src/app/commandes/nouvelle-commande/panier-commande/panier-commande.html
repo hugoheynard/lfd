@@ -158,6 +158,12 @@
             [hint]="offerNoteHint()"
             [(value)]="draft().offerNote"
           />
+          <fold-checkbox
+            label="Prévenir le client par e-mail"
+            data-offer-notify
+            [checked]="draft().offerNotifiesCustomer()"
+            (checkedChange)="draft().offerNotifiesCustomer.set($event)"
+          />
         </div>
       }
     }

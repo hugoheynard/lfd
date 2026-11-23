@@ -66,7 +66,9 @@ function fact(options: {
   return { eventId: "evt_1", ...event.durableFact() };
 }
 
-function subscriber(options: { order?: OrderView | null; email?: string | null } = {}) {
+function subscriber(
+  options: { order?: OrderView | null; email?: string | null; silenced?: boolean } = {},
+) {
   const mailer = new LastMailRequest();
   const order = options.order === undefined ? view() : options.order;
   const documents = new MemoryCustomerDocuments();
@@ -75,6 +77,7 @@ function subscriber(options: { order?: OrderView | null; email?: string | null }
       order === null
         ? null
         : {
+            ...(options.silenced === true ? { customerNotified: false } : {}),
             view: order,
             companyId: order.companyId,
             placedByUserId: "user_7",
@@ -122,6 +125,14 @@ describe("SendOrderRevisedMail — « votre commande est modifiée »", () => {
       orderUrl: "https://app.lfc.test/mes-commandes/order_1",
       locale: "fr",
     });
+  });
+
+  it("🔴 se tait pour une commande offerte qui ne prévient pas le client", async () => {
+    const { run, mailer } = subscriber({ silenced: true });
+
+    await run.handle(fact({ before: 0, after: 0 }));
+
+    expect(mailer.last).toBeNull();
   });
 
   it("écrit pour une hausse carte appliquée : « réglée par carte »", async () => {

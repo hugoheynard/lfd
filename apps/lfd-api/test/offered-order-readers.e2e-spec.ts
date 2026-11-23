@@ -27,7 +27,11 @@ const LINES = [
   { sku: "PAI-001-1", quantity: 2 },
   { sku: "VIE-001-1", quantity: 3 },
 ] as const;
-const TASTING = { nature: "tasting", note: "Dégustation d'un prospect" } as const;
+const TASTING = {
+  nature: "tasting",
+  note: "Dégustation d'un prospect",
+  notifyCustomer: false,
+} as const;
 
 let ctx: E2eContext;
 let seq = 0;

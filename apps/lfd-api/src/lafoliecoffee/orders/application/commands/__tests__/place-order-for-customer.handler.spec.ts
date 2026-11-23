@@ -1905,7 +1905,7 @@ describe("PlaceOrderForCustomerHandler — passer outre la limite d'un produit",
 
 /** La commande offerte (plan `plan-commande-offerte.md`, O3). */
 describe("PlaceOrderForCustomerHandler — la commande offerte", () => {
-  const OFFER = { nature: "tasting" as const, note: "Dégustation mariage" };
+  const OFFER = { nature: "tasting" as const, note: "Dégustation mariage", notifyCustomer: false };
   const offered = (over: Partial<AdminPlaceOrderPayload> = {}) =>
     payload({ settlement: "offered", offer: OFFER, expectedTotalCents: 0, ...over });
 

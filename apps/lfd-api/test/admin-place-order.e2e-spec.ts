@@ -15,6 +15,7 @@
  */
 import type { AdminPlacedOrderResponse, OrderView } from "@lfd/contracts";
 
+import { OrderReader } from "../src/lafoliecoffee/orders/domain/ports/order.reader.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import {
   CompanyStatus,
@@ -368,6 +369,28 @@ describe("POST /admin/orders — le règlement", () => {
     expect(row.offerNature).toBe("tasting");
     expect(row.offerNote).toBe("Dégustation mariage");
     expect(row.offeredTotalCents).toBeGreaterThan(0);
+    // Par défaut, le client n'est pas prévenu : aucun e-mail automatique ne le lira.
+    expect(row.offerNotifiesCustomer).toBe(false);
+    expect((await ctx.app.get(OrderReader).findById(body.id))?.customerNotified).toBe(false);
+  });
+
+  it("offerte en prévenant le client : le choix est gardé, et les e-mails le liront", async () => {
+    const { companyId, buyerId } = await seedCompany(false);
+
+    const placed = await staff()
+      .post("/admin/orders")
+      .set(INTENT_KEY, freshIntent())
+      .send({
+        ...offeredPayload(companyId, buyerId),
+        offer: { nature: "goodwill", note: "Geste après réclamation", notifyCustomer: true },
+      })
+      .expect(201);
+
+    const { id } = jsonBody<AdminPlacedOrderResponse>(placed);
+    expect(
+      (await ctx.prisma.order.findUniqueOrThrow({ where: { id } })).offerNotifiesCustomer,
+    ).toBe(true);
+    expect((await ctx.app.get(OrderReader).findById(id))?.customerNotified).toBe(true);
   });
 
   it("🔴 offerte, puis modifiée : elle reste offerte et sa valeur suit (aller-retour en base)", async () => {

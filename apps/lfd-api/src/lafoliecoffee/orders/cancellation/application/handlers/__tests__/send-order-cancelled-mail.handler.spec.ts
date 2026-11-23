@@ -11,9 +11,10 @@ import { AT_PLACEMENT } from "../../../../domain/services/order-sheet.js";
 
 /** Le courriel de l'annulation staff (doc `documentation/commandes/annulation/annulation-par-le-staff.md`, C3.5). */
 
-function subscriber(email: string | null = "camille@example.test") {
+function subscriber(email: string | null = "camille@example.test", customerNotified = true) {
   const mailer = new RecordingMail();
   const orders = new OneOrderReader({
+    ...(customerNotified ? {} : { customerNotified: false }),
     view: orderView("cancelled", "failed"),
     companyId: null,
     placedByUserId: "user_7",
@@ -48,6 +49,14 @@ const FACT = new OrderCancelledEvent(
 ).durableFact();
 
 describe("SendOrderCancelledMail", () => {
+  it("🔴 se tait pour une commande offerte qui ne prévient pas le client", async () => {
+    const { mailer, handler } = subscriber("camille@example.test", false);
+
+    await handler.handle({ eventId: "evt_1", type: FACT.type, payload: FACT.payload });
+
+    expect(mailer.queued).toEqual([]);
+  });
+
   it("envoie le gabarit d'annulation, une clé par commande, sans le motif", async () => {
     const { mailer, handler } = subscriber();
 

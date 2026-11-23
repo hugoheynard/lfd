@@ -240,6 +240,8 @@ export class PrismaOrderReader extends OrderReader {
         companyId: true,
         placedByUserId: true,
         stripePaymentIntentId: true,
+        offerNature: true,
+        offerNotifiesCustomer: true,
         clientele: true,
         entryOrigin: true,
         entryShortcut: true,
@@ -263,6 +265,8 @@ export class PrismaOrderReader extends OrderReader {
       companyId: row.companyId,
       placedByUserId: row.placedByUserId,
       stripePaymentIntentId: row.stripePaymentIntentId,
+      // Une commande payée prévient toujours ; une offerte, si l'équipe l'a choisi.
+      customerNotified: row.offerNature === null || row.offerNotifiesCustomer === true,
       clientele: row.clientele,
       entryOrigin: orderEntryOriginOf(row),
       loyaltyVoucherId: row.loyaltyVoucherId,

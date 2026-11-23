@@ -21,7 +21,11 @@ import {
  * à la révision.
  */
 
-const TASTING: OrderOfferReason = { nature: "tasting", note: "Dégustation mariage" };
+const TASTING: OrderOfferReason = {
+  nature: "tasting",
+  note: "Dégustation mariage",
+  notifyCustomer: false,
+};
 const FEE = { mode: "amount", cents: 1_500 } as const;
 const DELIVERED: DraftOrderInput["fulfillment"] = {
   method: "delivery",
@@ -143,6 +147,15 @@ describe("orderOfferReasonOf", () => {
     expect(orderOfferReasonOf({ nature: "event", note: "  Salon  " })).toEqual({
       nature: "event",
       note: "Salon",
+      notifyCustomer: false,
+    });
+  });
+
+  it("🔴 ne prévient le client que si on le demande (décidé par Hugo le 2026-11-23)", () => {
+    expect(orderOfferReasonOf({ nature: "event", note: "Salon", notifyCustomer: true })).toEqual({
+      nature: "event",
+      note: "Salon",
+      notifyCustomer: true,
     });
   });
 

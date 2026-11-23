@@ -15,6 +15,7 @@ import {
   FoldCalloutComponent,
   FoldCardComponent,
   FoldElementTitleComponent,
+  FoldCheckboxComponent,
   FoldListboxComponent,
   FoldSelectComponent,
   FoldTabPanelComponent,
@@ -116,6 +117,7 @@ const SPLIT_MIN_MEDIA = '(max-width: 767px)';
     FoldCalloutComponent,
     FoldCardComponent,
     FoldElementTitleComponent,
+    FoldCheckboxComponent,
     FoldListboxComponent,
     FoldSelectComponent,
     MontantsPanier,
@@ -429,6 +431,7 @@ export class PanierCommande {
       settlement: this.settlement(),
       offerNature: this.draft().offerNature(),
       offerNote: this.draft().offerNote(),
+      offerNotifiesCustomer: this.draft().offerNotifiesCustomer(),
       immediate: this.immediate(),
       empty: this.cart().isEmpty(),
     });

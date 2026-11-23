@@ -60,6 +60,7 @@ function viewOf(overrides: Partial<OrderDraftView>): OrderDraftView {
     settlement: 'link',
     offerNature: null,
     offerNote: '',
+    offerNotifiesCustomer: false,
     estimatedPretaxCents: null,
     lines: [],
     ...overrides,
@@ -308,6 +309,7 @@ describe('la commande offerte — le motif', () => {
     settlement: 'offered' as const,
     offerNature,
     offerNote,
+    offerNotifiesCustomer: false,
     immediate: false,
     empty: false,
   });
@@ -329,6 +331,7 @@ describe('la commande offerte — le motif', () => {
           settlement: payload.settlement,
           offerNature: payload.offerNature,
           offerNote: payload.offerNote,
+          offerNotifiesCustomer: false,
         }),
         [],
       ),
@@ -348,7 +351,10 @@ describe('la commande offerte — le motif', () => {
     expect(offerOf('offered', 'tasting', '  Salon  ')).toEqual({
       nature: 'tasting',
       note: 'Salon',
+      notifyCustomer: false,
     });
+    // Le client n'est prévenu que sur demande (Hugo, 2026-11-23).
+    expect(offerOf('offered', 'tasting', 'Salon', true)?.notifyCustomer).toBe(true);
     expect(offerOf('offered', null, 'Salon')).toBeNull();
     expect(offerOf('offered', 'tasting', '   ')).toBeNull();
     expect(offerOf('link', 'tasting', 'Salon')).toBeNull();
@@ -365,7 +371,11 @@ describe('la commande offerte — le motif', () => {
     const draft = composedDraftOf(decisions('tasting', ' Salon du chocolat '));
     const payload = placePayloadOf('cmp_1', composed(draft), [], 'commercial');
     expect(payload.settlement).toBe('offered');
-    expect(payload.offer).toEqual({ nature: 'tasting', note: 'Salon du chocolat' });
+    expect(payload.offer).toEqual({
+      nature: 'tasting',
+      note: 'Salon du chocolat',
+      notifyCustomer: false,
+    });
   });
 
   it('un autre règlement ne porte jamais de motif, même saisi', () => {

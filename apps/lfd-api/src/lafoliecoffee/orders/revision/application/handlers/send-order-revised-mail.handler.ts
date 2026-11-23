@@ -11,7 +11,7 @@ import {
 import { ORDER_REVISED, OrderRevisedEvent } from "../../domain/events/order-revised.event.js";
 import { OrderMailOrigins } from "../../../domain/ports/order-mail-origins.js";
 import { OrderRecipientReader } from "../../../domain/ports/order-recipient.reader.js";
-import { OrderReader } from "../../../domain/ports/order.reader.js";
+import { isCustomerNotified, OrderReader } from "../../../domain/ports/order.reader.js";
 import { clientSheetOf } from "../../../domain/services/order-sheet.js";
 import { revisionMoneyNoteOf } from "../../domain/services/revision-money-note.js";
 import { OrderManageLink } from "../../../application/services/order-manage-link.js";
@@ -62,6 +62,11 @@ export class SendOrderRevisedMail implements DurableSubscriber {
     // La commande vient d'être révisée, son auteur est connu : on sort en
     // silence plutôt que de lever sur un cas qui ne désigne rien à corriger.
     if (owned === null) {
+      return;
+    }
+    // Une commande offerte qui ne prévient pas le client : aucun e-mail
+    // automatique (décidé par Hugo le 2026-11-23, `plan-commande-offerte.md` § 4).
+    if (!isCustomerNotified(owned)) {
       return;
     }
     const recipient = await this.recipients.findById(event.placedByUserId);

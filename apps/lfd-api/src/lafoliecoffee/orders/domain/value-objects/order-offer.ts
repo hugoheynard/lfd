@@ -18,6 +18,12 @@ const ADMITTED: readonly string[] = ORDER_OFFER_NATURES.map((nature) => nature.k
 export interface OrderOfferReason {
   readonly nature: OrderOfferNature;
   readonly note: string;
+  /**
+   * Le client reçoit-il les e-mails automatiques de la commande ? Non par
+   * défaut : une dégustation, la commerciale l'apporte (décidé par Hugo le
+   * 2026-11-23). Figé avec le motif, relu par chaque envoyeur automatique.
+   */
+  readonly notifyCustomer: boolean;
 }
 
 /**
@@ -51,6 +57,7 @@ export interface OrderOffer {
 export function orderOfferReasonOf(raw: {
   readonly nature: string;
   readonly note: string;
+  readonly notifyCustomer?: boolean | undefined;
 }): OrderOfferReason {
   if (!isAdmittedNature(raw.nature)) {
     throw new InvalidOrderOfferError(`nature inconnue « ${raw.nature} »`);
@@ -62,7 +69,7 @@ export function orderOfferReasonOf(raw: {
   if (note.length > ORDER_OFFER_NOTE_MAX_LENGTH) {
     throw new InvalidOrderOfferError(`le texte dépasse ${ORDER_OFFER_NOTE_MAX_LENGTH} caractères`);
   }
-  return { nature: raw.nature, note };
+  return { nature: raw.nature, note, notifyCustomer: raw.notifyCustomer ?? false };
 }
 
 function isAdmittedNature(nature: string): nature is OrderOfferNature {

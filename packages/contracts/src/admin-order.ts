@@ -100,7 +100,13 @@ export function orderOfferNatureLabel(nature: OrderOfferNature): string {
 /** La longueur maximale du texte qui accompagne la nature d'une offre. */
 export const ORDER_OFFER_NOTE_MAX_LENGTH = 280;
 
-/** Le motif d'une commande offerte : sa nature, et un texte court obligatoire. */
+/**
+ * Le motif d'une commande offerte : sa nature, un texte court obligatoire, et
+ * si le client est prévenu. Par défaut il ne l'est pas : une dégustation se
+ * produit et la commerciale l'apporte, le client n'a pas passé cette commande
+ * (décidé par Hugo le 2026-11-23). Prévenu, il reçoit les e-mails automatiques
+ * d'une commande ; sinon aucun ne part.
+ */
 export const orderOfferSchema = z.object({
   nature: orderOfferNatureSchema,
   note: z
@@ -108,6 +114,7 @@ export const orderOfferSchema = z.object({
     .trim()
     .min(1, "motif requis")
     .max(ORDER_OFFER_NOTE_MAX_LENGTH, "motif trop long"),
+  notifyCustomer: z.boolean().default(false),
 });
 export type OrderOffer = z.infer<typeof orderOfferSchema>;
 
@@ -400,6 +407,7 @@ export const orderDraftPayloadSchema = z.object({
    */
   offerNature: orderOfferNatureSchema.nullable().default(null),
   offerNote: z.string().max(ORDER_OFFER_NOTE_MAX_LENGTH).default(""),
+  offerNotifiesCustomer: z.boolean().default(false),
   lines: z.array(orderLineInputSchema).default([]),
   /**
    * Le « Total HT » que l'écran affichait à l'enregistrement, en centimes —

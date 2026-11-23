@@ -21,6 +21,7 @@ export function offerColumnsOf(offer: OrderOffer | null) {
       offeredTotalCents: null,
       offeredVatCents: null,
       offeredVatShares: Prisma.DbNull,
+      offerNotifiesCustomer: null,
     };
   }
   return {
@@ -33,11 +34,16 @@ export function offerColumnsOf(offer: OrderOffer | null) {
       rate: share.rate,
       amountCents: share.amountCents,
     })),
+    offerNotifiesCustomer: offer.reason.notifyCustomer,
   };
 }
 
 /** Ce que la révision relit de l'offre : le motif seul, la valeur se recalcule. */
-export const ORDER_OFFER_REASON_SELECT = { offerNature: true, offerNote: true } as const;
+export const ORDER_OFFER_REASON_SELECT = {
+  offerNature: true,
+  offerNote: true,
+  offerNotifiesCustomer: true,
+} as const;
 
 /** Un motif rangé hors du registre : écrit hors de l'application. */
 export class OrderOfferUnreadableError extends TechnicalError {
@@ -58,7 +64,11 @@ export class OrderOfferUnreadableError extends TechnicalError {
  */
 export function offerReasonOfRow(
   orderId: string,
-  row: { readonly offerNature: string | null; readonly offerNote: string | null },
+  row: {
+    readonly offerNature: string | null;
+    readonly offerNote: string | null;
+    readonly offerNotifiesCustomer: boolean | null;
+  },
 ): OrderOfferReason | undefined {
   if (row.offerNature === null && row.offerNote === null) {
     return undefined;
@@ -67,7 +77,11 @@ export function offerReasonOfRow(
     throw new OrderOfferUnreadableError(orderId, "motif incomplet");
   }
   try {
-    return orderOfferReasonOf({ nature: row.offerNature, note: row.offerNote });
+    return orderOfferReasonOf({
+      nature: row.offerNature,
+      note: row.offerNote,
+      notifyCustomer: row.offerNotifiesCustomer ?? false,
+    });
   } catch (error) {
     if (error instanceof InvalidOrderOfferError) {
       throw new OrderOfferUnreadableError(orderId, error);

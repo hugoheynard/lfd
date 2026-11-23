@@ -45,6 +45,8 @@ export interface DraftSnapshot {
   readonly offerNature: OrderOfferNature | null;
   /** Le texte du motif d'une commande offerte, tel que tapé. */
   readonly offerNote: string;
+  /** Prévenir le client d'une commande offerte — décoché par défaut (Hugo, 2026-11-23). */
+  readonly offerNotifiesCustomer: boolean;
 }
 
 /**
@@ -97,6 +99,7 @@ export class DraftStore {
    */
   readonly offerNature = signal<OrderOfferNature | null>(null);
   readonly offerNote = signal('');
+  readonly offerNotifiesCustomer = signal(false);
   /**
    * « Retrait immédiat » ou « Commande programmée » (lot L6, comptoir). Hors
    * du brouillon conservé : un raccourci vaut pour l'instant où le client est
@@ -167,6 +170,7 @@ export class DraftStore {
       settlement: this.settlement(),
       offerNature: this.offerNature(),
       offerNote: this.offerNote(),
+      offerNotifiesCustomer: this.offerNotifiesCustomer(),
     };
   }
 
@@ -183,6 +187,7 @@ export class DraftStore {
     this.settlement.set(snapshot.settlement);
     this.offerNature.set(snapshot.offerNature);
     this.offerNote.set(snapshot.offerNote);
+    this.offerNotifiesCustomer.set(snapshot.offerNotifiesCustomer);
     // Un brouillon repris porte des choix : ils ne sont plus des propositions.
     this.windowProposed.set(false);
     this.dateProposed.set(false);
@@ -209,6 +214,7 @@ export class DraftStore {
       settlement: 'link',
       offerNature: null,
       offerNote: '',
+      offerNotifiesCustomer: false,
     });
     this.dateProposed.set(true);
   }

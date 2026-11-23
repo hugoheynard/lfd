@@ -29,6 +29,13 @@ export interface OwnedOrder {
    */
   readonly stripePaymentIntentId: string | null;
   /**
+   * Le client reçoit-il les e-mails automatiques de cette commande ? `false`
+   * seulement pour une commande offerte qui ne le prévient pas (décidé par
+   * Hugo le 2026-11-23, `plan-commande-offerte.md` § 4). Absent : prévenu.
+   * Se lit par {@link isCustomerNotified}.
+   */
+  readonly customerNotified?: boolean;
+  /**
    * La clientèle **figée** à la passation, ou `null` pour une commande d'avant
    * la distinction. Hors `OrderView` : l'abandon en a besoin AVANT d'appeler
    * Stripe — un pro garde son intention vivante jusqu'à la clôture (plan
@@ -253,4 +260,14 @@ export interface HandoverOrder {
   /** La note du client — elle est sur le bon qu'on coche au comptoir. */
   readonly note: string;
   readonly lines: readonly OrderHandoverLine[];
+}
+
+/**
+ * **Le client est-il prévenu ?** — la question que pose chaque e-mail
+ * automatique d'une commande avant de partir. Les gestes de l'équipe (rappel
+ * de retrait, avertissement de retard, avis de non-présentation, lettre du
+ * départ incomplet) ne la posent pas : quelqu'un a décidé d'écrire.
+ */
+export function isCustomerNotified(order: Pick<OwnedOrder, "customerNotified">): boolean {
+  return order.customerNotified !== false;
 }

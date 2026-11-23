@@ -173,11 +173,12 @@ class OneRecipientReader extends OrderRecipientReader {
   }
 }
 
-function readerOf(order: OrderView | null): OrderReader {
+function readerOf(order: OrderView | null, customerNotified = true): OrderReader {
   return new OneOrderReader(
     order === null
       ? null
       : {
+          ...(customerNotified ? {} : { customerNotified: false }),
           view: order,
           companyId: null,
           placedByUserId: "user_7",
@@ -203,8 +204,10 @@ function handler(options: {
   admin?: string | null;
   remainders?: ReadonlyMap<string, RemainderShipment>;
   subject?: CustomerCancellationSubject;
+  silenced?: boolean;
 }): {
   readonly run: SendOrderReadyMail;
+  readonly mail: OrderReadyMail;
   readonly mailer: LastMailRequest;
   readonly remainders: FixedRemainders;
 } {
@@ -215,20 +218,19 @@ function handler(options: {
   // — se joue dans `OrderReadyMail` depuis que le rappel du comptoir partage le
   // même gabarit ; les vérifier à travers un double du composeur ne prouverait
   // plus que l'abonné appelle une fonction.
-  const run = new SendOrderReadyMail(
-    new OrderReadyMail(
-      readerOf(options.order === undefined ? view() : options.order),
-      recipientOf(options.email === undefined ? "camille@halles.test" : options.email),
-      new FixedOrigins(
-        options.client === undefined ? "https://app.lfc.test" : options.client,
-        options.admin === undefined ? "https://admin.lfc.test" : options.admin,
-      ),
-      orderPageLink(options.subject ?? null),
-      mailer,
-      remainders,
+  const mail = new OrderReadyMail(
+    readerOf(options.order === undefined ? view() : options.order, options.silenced !== true),
+    recipientOf(options.email === undefined ? "camille@halles.test" : options.email),
+    new FixedOrigins(
+      options.client === undefined ? "https://app.lfc.test" : options.client,
+      options.admin === undefined ? "https://admin.lfc.test" : options.admin,
     ),
+    orderPageLink(options.subject ?? null),
+    mailer,
+    remainders,
   );
-  return { run, mailer, remainders };
+  const run = new SendOrderReadyMail(mail);
+  return { run, mail, mailer, remainders };
 }
 
 function readyData(
@@ -243,6 +245,22 @@ async function fire(subject: ReturnType<typeof handler>): Promise<void> {
 }
 
 describe("le courriel « votre commande est prête »", () => {
+  it("🔴 se tait pour une commande offerte qui ne prévient pas le client", async () => {
+    const subject = handler({ silenced: true });
+
+    await fire(subject);
+
+    expect(subject.mailer.last).toBeNull();
+  });
+
+  it("🔴 le rappel de retrait, geste de l'équipe, part quand même", async () => {
+    const subject = handler({ silenced: true });
+
+    await subject.mail.send(view().id, "rappel:1", { reminder: true });
+
+    expect(subject.mailer.last?.template).toBe("customer.order-ready");
+  });
+
   it("écrit à l'AUTEUR de la commande, lu sur la commande", async () => {
     // Le fait ne porte que l'identifiant de la commande : contrairement à la
     // passation, aucun abonné n'a besoin d'un montant ni d'une société. Le

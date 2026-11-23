@@ -13,7 +13,7 @@ import {
   OrderRecipientReader,
   type OrderRecipient,
 } from "../../../domain/ports/order-recipient.reader.js";
-import { OrderReader } from "../../../domain/ports/order.reader.js";
+import { isCustomerNotified, OrderReader } from "../../../domain/ports/order.reader.js";
 import { clientSheetOf } from "../../../domain/services/order-sheet.js";
 
 /** Nom STABLE de l'abonné — clé de son reçu dans la boîte d'envoi. */
@@ -48,6 +48,11 @@ export class SendOrderCancelledMail implements DurableSubscriber {
     const event = OrderCancelledEvent.fromPayload(delivery.payload);
     const owned = await this.orders.findById(event.orderId);
     if (owned === null) {
+      return;
+    }
+    // Une commande offerte qui ne prévient pas le client : aucun e-mail
+    // automatique (décidé par Hugo le 2026-11-23, `plan-commande-offerte.md` § 4).
+    if (!isCustomerNotified(owned)) {
       return;
     }
     const recipient = await this.recipients.findById(owned.placedByUserId);

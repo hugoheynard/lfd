@@ -6,7 +6,9 @@ import { amountsViewOf } from "../estimate-order-for-customer.handler.js";
 describe("amountsViewOf — la commande offerte", () => {
   it("🔴 rend la valeur offerte, calculée au serveur, à côté d'un total nul", () => {
     const paid = Order.draft(input());
-    const offered = Order.draft(input({ offer: { nature: "tasting", note: "Dégustation" } }));
+    const offered = Order.draft(
+      input({ offer: { nature: "tasting", note: "Dégustation", notifyCustomer: false } }),
+    );
 
     const view = amountsViewOf(offered.amounts(), offered.offer);
 

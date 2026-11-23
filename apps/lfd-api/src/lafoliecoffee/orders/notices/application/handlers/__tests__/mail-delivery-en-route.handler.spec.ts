@@ -59,7 +59,10 @@ function delivered(id: string, overrides: Partial<OrderView> = {}): OrderView {
 
 /** Plusieurs commandes, lues par id ; tout le reste refuse. */
 class ManyOrdersReader extends OrderReader {
-  constructor(private readonly views: readonly OrderView[]) {
+  constructor(
+    private readonly views: readonly OrderView[],
+    private readonly customerNotified = true,
+  ) {
     super();
   }
 
@@ -69,6 +72,7 @@ class ManyOrdersReader extends OrderReader {
       view === undefined
         ? null
         : {
+            ...(this.customerNotified ? {} : { customerNotified: false }),
             view,
             companyId: null,
             placedByUserId: "user_7",
@@ -143,6 +147,7 @@ function subscriber(
     readonly email?: string | null;
     readonly remainders?: ReadonlyMap<string, RemainderShipment>;
     readonly failFor?: string;
+    readonly silenced?: boolean;
   } = {},
 ) {
   const unitOfWork = new OpenableUnitOfWork();
@@ -151,7 +156,7 @@ function subscriber(
       ? new RecordingMail(unitOfWork)
       : new FailingFor(options.failFor, unitOfWork);
   const mail = new DeliveryEnRouteMail(
-    new ManyOrdersReader(views),
+    new ManyOrdersReader(views, options.silenced !== true),
     new OneRecipientReader(options.email === undefined ? "camille@halles.test" : options.email),
     new FixedOrigins(),
     orderPageLink(),
@@ -180,6 +185,14 @@ function departed(
 }
 
 describe("MailDeliveryEnRoute — abonné durable « en route »", () => {
+  it("🔴 se tait pour une commande offerte qui ne prévient pas le client", async () => {
+    const { subject, mailer } = subscriber([delivered("o_1")], { silenced: true });
+
+    await subject.handle(departed("r_1", ["o_1"]));
+
+    expect(mailer.queued).toEqual([]);
+  });
+
   it("porte un nom d'abonné stable", () => {
     expect(MAIL_DELIVERY_EN_ROUTE).toBe("b2b.mail-delivery-en-route");
   });

@@ -169,6 +169,7 @@ export interface RevisableOrderRow {
   readonly totalCents: number;
   readonly offerNature: string | null;
   readonly offerNote: string | null;
+  readonly offerNotifiesCustomer: boolean | null;
   readonly subtotalCents: number;
   readonly deliveryFeeCents: number;
   readonly lateFeeCents: number;
