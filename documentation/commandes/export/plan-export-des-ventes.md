@@ -1,6 +1,8 @@
 # Plan — l'export des ventes pour la Direction
 
-> 📝 **Plan, rien n'est bâti.** Écrit le 2026-11-23 à la demande de Hugo, sur la
+> 🟦 **Bâti sur `dev` le 2026-11-23 (E0 à E5), pas déployé.** Le script du
+> poste de la Direction n'a **pas été exécuté** : il s'éprouve sur un Windows
+> réel avant remise (D6). L'alerte d'usage n'est pas bâtie (D5). Écrit le 2026-11-23 à la demande de Hugo, sur la
 > demande de la Direction (reporting sur une page web, données gardées chez
 > elle). Chaque affirmation sur l'existant a été ouverte dans le code ce
 > jour-là, puis contredite par `vitruve` le même jour : ses deux objections
@@ -278,7 +280,7 @@ Une **clé par lecteur**, jamais partagée.
 - ne pas se fier à un « modifié depuis » : `updated_at` n'est pas exposé (les
   migrations de données et les déclencheurs ne le tiennent pas).
 
-Une notice d'une page, rédigée au lot E5, le dit avec un exemple d'appel.
+La [notice de la Direction](notice-direction.md) le dit, avec un exemple d'appel.
 
 ### 6.4 Une page HTML ouverte depuis son ordinateur
 
@@ -325,6 +327,9 @@ peut lancer le script. Ça se règle par le verrouillage du poste, pas par nous.
 
 La Direction est sur **Windows**. Le script est en **PowerShell** : déjà
 installé sur Windows 10 et 11, rien à installer ni à mettre à jour.
+Livrés : [`export.ps1`](poste-direction/export.ps1),
+[`reporting.html`](poste-direction/reporting.html) et la
+[notice](notice-direction.md).
 
 #### En clair (le début de la notice)
 
@@ -369,7 +374,7 @@ Documents\Ventes LFD\
 └── export.ps1
 ```
 
-#### Ce que fait `export.ps1`
+#### Ce que fait [`export.ps1`](poste-direction/export.ps1)
 
 1. lit la clé (ci-dessous) et appelle la route sur les 15 derniers jours ; le
    1er de chaque mois, aussi le mois précédent en entier (31 jours au plus par
@@ -443,14 +448,14 @@ qui reste, et ce qu'il faut décider :
 
 ## 8. Les lots
 
-| Lot    | Contenu                                                                                                                                                                                                                                                                                                                                                                                                    | Portes concernées                                                                                         |
-| ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| **E0** | Lectures publiées par `orders` (avec `revenue-scope`), `accounting`, `catalog`, `account` ; lecture par lot des remboursements dans `payment/channels/`                                                                                                                                                                                                                                                    | `context-boundaries`                                                                                      |
-| **E1** | `GetSalesExportQuery` + handler + mapping euros/ISO + `countsAsRevenue` + `returnRefundedTtc` ; tests unitaires : centimes → euros, `null` conservés, commande offerte, poids, `shop_till`, remboursement `adjustment` jamais déduit, `return` sur commande annulée non déduit ; résumé : jour sans vente servi à zéro, commande `shop_till` hors du total, somme des commandes et non des lignes          | `clock-port`, `code-language`                                                                             |
-| **E2** | Table des clés (avec `allowed_ips`), garde `X-Export-Key` qui lit aussi l'IP admise, création et révocation au back-office (faits, clé d'intention), ressource `exports`, entrées du registre RGPD                                                                                                                                                                                                         | `prisma-schema-layout`, `schema-drift`, `no-role-grants-in-migrations`, `write-idempotence`, `rgpd-staff` |
-| **E3** | Route, limite par IP à la passerelle, `@Throttle` ; e2e : clé absente, révoquée, expirée, passée en `Bearer`, IP non admise, période > 31 jours, aucune donnée personnelle dans la réponse, même CA que le cockpit sur un jeu commun ; **étanchéité** : la clé sur toutes les routes → 401/403, un jeton staff ou client sur l'export → refusé ; porte `lint:export-key-guard` ; alerte d'usage inhabituel | `cache-control`, `log-no-email`, la porte neuve (compte du § 10 du CLAUDE.md à monter)                    |
-| **E4** | Écran de création et de révocation des clés (back-office)                                                                                                                                                                                                                                                                                                                                                  | portes du front                                                                                           |
-| **E5** | Le poste de la Direction (§ 6.6) : `export.ps1` (appel, archive, base cumulée, ventes.js, CSV, journal, notification, clé DPAPI, planification), reporting.html d'exemple, et la notice (une notice-direction.md à créer dans ce dossier) en deux parties : l'explication simple, puis la technique. Livrés à la Direction, hors du code servi ; éprouvés sur un Windows réel avant remise                 | `doc-orphans`                                                                                             |
+| Lot    | Contenu                                                                                                                                                                                                                                                                                                                                                                                                                           | Portes concernées                                                                                         |
+| ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| **E0** | Lectures publiées par `orders` (avec `revenue-scope`), `accounting`, `catalog`, `account` ; lecture par lot des remboursements dans `payment/channels/`                                                                                                                                                                                                                                                                           | `context-boundaries`                                                                                      |
+| **E1** | `GetSalesExportQuery` + handler + mapping euros/ISO + `countsAsRevenue` + `returnRefundedTtc` ; tests unitaires : centimes → euros, `null` conservés, commande offerte, poids, `shop_till`, remboursement `adjustment` jamais déduit, `return` sur commande annulée non déduit ; résumé : jour sans vente servi à zéro, commande `shop_till` hors du total, somme des commandes et non des lignes                                 | `clock-port`, `code-language`                                                                             |
+| **E2** | Table des clés (avec `allowed_ips`), garde `X-Export-Key` qui lit aussi l'IP admise, création et révocation au back-office (faits, clé d'intention), ressource `exports`, entrées du registre RGPD                                                                                                                                                                                                                                | `prisma-schema-layout`, `schema-drift`, `no-role-grants-in-migrations`, `write-idempotence`, `rgpd-staff` |
+| **E3** | Route, limite par IP à la passerelle, `@Throttle` ; e2e : clé absente, révoquée, expirée, passée en `Bearer`, IP non admise, période > 31 jours, aucune donnée personnelle dans la réponse, même CA que le cockpit sur un jeu commun ; **étanchéité** : la clé sur toutes les routes → 401/403, un jeton staff ou client sur l'export → refusé ; porte `lint:export-key-guard` ; alerte d'usage inhabituel                        | `cache-control`, `log-no-email`, la porte neuve (compte du § 10 du CLAUDE.md à monter)                    |
+| **E4** | Écran de création et de révocation des clés (back-office)                                                                                                                                                                                                                                                                                                                                                                         | portes du front                                                                                           |
+| **E5** | Le poste de la Direction (§ 6.6) : [`export.ps1`](poste-direction/export.ps1) (appel, archive, base cumulée, ventes.js, CSV, journal, notification, clé DPAPI, planification), [`reporting.html`](poste-direction/reporting.html) d'exemple, et la [notice](notice-direction.md) en deux parties : l'explication simple, puis la technique. Livrés à la Direction, hors du code servi ; éprouvés sur un Windows réel avant remise | `doc-orphans`                                                                                             |
 
 ## 9. Doutes restants
 
@@ -583,7 +588,12 @@ une fois, avec l'avertissement de ne jamais l'envoyer, puis effacé à la
 fermeture du dialogue. L'échéance tombe à 23:59:59 du jour choisi, heure du
 poste.
 
-E0 à E4 sont bâtis ; E5 suit.
+E5 écrit le 2026-11-23 : [`export.ps1`](poste-direction/export.ps1),
+[`reporting.html`](poste-direction/reporting.html) et la
+[notice](notice-direction.md). Le relu du mois précédent se fait le 1er, ou
+au premier lancement qui suit s'il a été manqué (mois relus gardés dans la
+base). **Le script n'a pas été exécuté** : il s'éprouve sur un Windows réel
+avant remise (D6). La page a été vérifiée sur un ventes.js d'exemple.
 
 ## 11. Ce que la contradiction a changé
 

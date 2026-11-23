@@ -1,0 +1,444 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <title>Ventes La Folie Douce</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      body {
+        font-family: system-ui, "Segoe UI", sans-serif;
+        margin: 1.5rem;
+        color: #222;
+        background: #fafafa;
+      }
+      h1 {
+        font-size: 1.4rem;
+        margin: 0 0 0.25rem;
+      }
+      h2 {
+        font-size: 1.1rem;
+        margin: 2rem 0 0.5rem;
+      }
+      .updated {
+        color: #555;
+        margin: 0 0 1rem;
+      }
+      .stale,
+      .missing {
+        background: #fde8e8;
+        border: 1px solid #c0392b;
+        color: #7b1d13;
+        padding: 0.6rem 0.8rem;
+        margin: 0 0 1rem;
+      }
+      form {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        align-items: end;
+        margin: 0 0 0.75rem;
+      }
+      label {
+        display: flex;
+        flex-direction: column;
+        font-size: 0.85rem;
+        gap: 0.2rem;
+      }
+      table {
+        border-collapse: collapse;
+        background: #fff;
+        font-size: 0.85rem;
+        width: 100%;
+      }
+      th,
+      td {
+        border: 1px solid #ddd;
+        padding: 0.3rem 0.5rem;
+        text-align: right;
+        white-space: nowrap;
+      }
+      th {
+        background: #f0f0f0;
+      }
+      td.text,
+      th.text {
+        text-align: left;
+      }
+      tfoot td {
+        font-weight: bold;
+        background: #f7f7f7;
+      }
+      .scroll {
+        overflow-x: auto;
+      }
+      .note {
+        font-size: 0.8rem;
+        color: #555;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Ventes La Folie Douce</h1>
+    <p class="updated" id="updated"></p>
+    <div id="alert"></div>
+
+    <h2>Résumé par jour</h2>
+    <form id="summary-form">
+      <label>Du <input type="date" id="from" /></label>
+      <label>Au <input type="date" id="to" /></label>
+      <label
+        >Clientèle
+        <select id="summary-clientele">
+          <option value="all">Toutes</option>
+          <option value="pro">Pros</option>
+          <option value="public">Particuliers</option>
+          <option value="unknown">Inconnue (anciennes commandes)</option>
+        </select>
+      </label>
+    </form>
+    <div class="scroll"><table id="summary"></table></div>
+    <p class="note">
+      Jour de passation, heure de Paris. Seules les commandes qui comptent dans le CA sont sommées.
+      « Net TTC » = TTC moins les remboursements de retour. Les avoirs sont rangés à leur jour
+      d'émission, à part.
+    </p>
+
+    <h2>Commandes</h2>
+    <form id="orders-form">
+      <label
+        >Clientèle
+        <select id="orders-clientele">
+          <option value="all">Toutes</option>
+          <option value="pro">Pros</option>
+          <option value="public">Particuliers</option>
+          <option value="unknown">Inconnue</option>
+        </select>
+      </label>
+      <label
+        >Compte dans le CA
+        <select id="orders-revenue">
+          <option value="all">Toutes</option>
+          <option value="yes">Oui</option>
+          <option value="no">Non (annulées, caisse de la boutique, offertes…)</option>
+        </select>
+      </label>
+    </form>
+    <div class="scroll"><table id="orders"></table></div>
+
+    <script src="ventes.js"></script>
+    <script>
+      (function () {
+        "use strict";
+        var STALE_HOURS = 26;
+        var data = window.VENTES;
+        var euro = new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" });
+        var integer = new Intl.NumberFormat("fr-FR");
+
+        function byId(id) {
+          return document.getElementById(id);
+        }
+        function money(value) {
+          return value === null || value === undefined ? "" : euro.format(value);
+        }
+
+        function cell(row, text, isText) {
+          var td = document.createElement("td");
+          td.textContent = text;
+          if (isText) td.className = "text";
+          row.appendChild(td);
+        }
+
+        function header(table, columns) {
+          var row = table.createTHead().insertRow();
+          columns.forEach(function (column) {
+            var th = document.createElement("th");
+            th.textContent = column.label;
+            if (column.text) th.className = "text";
+            row.appendChild(th);
+          });
+        }
+
+        function fill(table, columns, items, totals) {
+          table.innerHTML = "";
+          header(table, columns);
+          var body = table.createTBody();
+          items.forEach(function (item) {
+            var row = body.insertRow();
+            columns.forEach(function (column) {
+              cell(row, column.value(item), column.text);
+            });
+          });
+          if (totals) {
+            var foot = table.createTFoot().insertRow();
+            columns.forEach(function (column, index) {
+              cell(
+                foot,
+                index === 0 ? "Total" : column.total ? column.value(totals) : "",
+                column.text,
+              );
+            });
+          }
+        }
+
+        function showUpdated() {
+          var updated = new Date(data.misAJourLe);
+          byId("updated").textContent = "Mis à jour le " + updated.toLocaleString("fr-FR");
+          var ageHours = (Date.now() - updated.getTime()) / 3600000;
+          if (ageHours > STALE_HOURS) {
+            byId("alert").innerHTML = "";
+            var banner = document.createElement("div");
+            banner.className = "stale";
+            banner.textContent =
+              "Ces chiffres datent de plus de " +
+              STALE_HOURS +
+              " heures : l'export ne s'est pas fait. Regardez export.log dans le dossier Ventes LFD.";
+            byId("alert").appendChild(banner);
+          }
+        }
+
+        var TALLY_FIELDS = [
+          "orders",
+          "revenueHt",
+          "goodsHt",
+          "vat",
+          "revenueTtc",
+          "returnRefundedTtc",
+          "netRevenueTtc",
+        ];
+
+        function tallyOf(day, clientele) {
+          return clientele === "all" ? day : day.byClientele[clientele];
+        }
+
+        function renderSummary() {
+          var from = byId("from").value;
+          var to = byId("to").value;
+          var clientele = byId("summary-clientele").value;
+          var days = data.summary
+            .filter(function (day) {
+              return (!from || day.day >= from) && (!to || day.day <= to);
+            })
+            .sort(function (a, b) {
+              return a.day < b.day ? -1 : 1;
+            });
+          var rows = days.map(function (day) {
+            var tally = tallyOf(day, clientele);
+            var row = { day: day.day, creditNotesTtc: day.creditNotesTtc };
+            TALLY_FIELDS.forEach(function (field) {
+              row[field] = tally[field];
+            });
+            return row;
+          });
+          var totals = {};
+          TALLY_FIELDS.concat(["creditNotesTtc"]).forEach(function (field) {
+            totals[field] =
+              Math.round(
+                rows.reduce(function (sum, row) {
+                  return sum + row[field];
+                }, 0) * 100,
+              ) / 100;
+          });
+          fill(
+            byId("summary"),
+            [
+              {
+                label: "Jour",
+                text: true,
+                value: function (r) {
+                  return r.day;
+                },
+              },
+              {
+                label: "Commandes",
+                total: true,
+                value: function (r) {
+                  return integer.format(r.orders);
+                },
+              },
+              {
+                label: "CA HT",
+                total: true,
+                value: function (r) {
+                  return money(r.revenueHt);
+                },
+              },
+              {
+                label: "CA marchandises HT",
+                total: true,
+                value: function (r) {
+                  return money(r.goodsHt);
+                },
+              },
+              {
+                label: "TVA",
+                total: true,
+                value: function (r) {
+                  return money(r.vat);
+                },
+              },
+              {
+                label: "CA TTC",
+                total: true,
+                value: function (r) {
+                  return money(r.revenueTtc);
+                },
+              },
+              {
+                label: "Retours remboursés TTC",
+                total: true,
+                value: function (r) {
+                  return money(r.returnRefundedTtc);
+                },
+              },
+              {
+                label: "Net TTC",
+                total: true,
+                value: function (r) {
+                  return money(r.netRevenueTtc);
+                },
+              },
+              {
+                label: "Avoirs émis TTC",
+                total: true,
+                value: function (r) {
+                  return money(r.creditNotesTtc);
+                },
+              },
+            ],
+            rows,
+            totals,
+          );
+        }
+
+        var CLIENTELE_LABELS = { pro: "Pro", public: "Particulier" };
+        var STATUS_LABELS = { cancelled: "annulée", no_show: "non retirée" };
+
+        function renderOrders() {
+          var clientele = byId("orders-clientele").value;
+          var revenue = byId("orders-revenue").value;
+          var orders = data.orders
+            .filter(function (order) {
+              var orderClientele = order.clientele === null ? "unknown" : order.clientele;
+              if (clientele !== "all" && orderClientele !== clientele) return false;
+              if (revenue === "yes" && !order.countsAsRevenue) return false;
+              if (revenue === "no" && order.countsAsRevenue) return false;
+              return true;
+            })
+            .sort(function (a, b) {
+              return a.placedAt < b.placedAt ? 1 : -1;
+            });
+          fill(
+            byId("orders"),
+            [
+              {
+                label: "N°",
+                text: true,
+                value: function (o) {
+                  return o.orderNumber;
+                },
+              },
+              {
+                label: "Passée le",
+                text: true,
+                value: function (o) {
+                  return o.placedAt.slice(0, 16).replace("T", " ");
+                },
+              },
+              {
+                label: "Clientèle",
+                text: true,
+                value: function (o) {
+                  return CLIENTELE_LABELS[o.clientele] || "inconnue";
+                },
+              },
+              {
+                label: "Société",
+                text: true,
+                value: function (o) {
+                  return o.companyName || "";
+                },
+              },
+              {
+                label: "Statut",
+                text: true,
+                value: function (o) {
+                  return STATUS_LABELS[o.status] || o.status;
+                },
+              },
+              {
+                label: "Dans le CA",
+                text: true,
+                value: function (o) {
+                  return o.countsAsRevenue ? "oui" : "non";
+                },
+              },
+              {
+                label: "HT",
+                value: function (o) {
+                  return money(o.totalHt);
+                },
+              },
+              {
+                label: "Marchandises HT",
+                value: function (o) {
+                  return money(o.goodsHt);
+                },
+              },
+              {
+                label: "TVA",
+                value: function (o) {
+                  return money(o.vat);
+                },
+              },
+              {
+                label: "TTC",
+                value: function (o) {
+                  return money(o.totalTtc);
+                },
+              },
+              {
+                label: "Retours remboursés",
+                value: function (o) {
+                  return money(o.returnRefundedTtc);
+                },
+              },
+            ],
+            orders,
+            null,
+          );
+        }
+
+        function defaultPeriod() {
+          var days = data.summary
+            .map(function (day) {
+              return day.day;
+            })
+            .sort();
+          if (days.length === 0) return;
+          var last = days[days.length - 1];
+          byId("to").value = last;
+          byId("from").value = last.slice(0, 8) + "01";
+        }
+
+        if (!data) {
+          var missing = document.createElement("div");
+          missing.className = "missing";
+          missing.textContent =
+            "Le fichier ventes.js est absent : lancez export.ps1 une première fois, dans ce dossier.";
+          byId("alert").appendChild(missing);
+          return;
+        }
+        showUpdated();
+        defaultPeriod();
+        ["from", "to", "summary-clientele"].forEach(function (id) {
+          byId(id).addEventListener("change", renderSummary);
+        });
+        ["orders-clientele", "orders-revenue"].forEach(function (id) {
+          byId(id).addEventListener("change", renderOrders);
+        });
+        renderSummary();
+        renderOrders();
+      })();
+    </script>
+  </body>
+</html>
