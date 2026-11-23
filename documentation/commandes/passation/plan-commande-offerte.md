@@ -1,0 +1,151 @@
+# La commande offerte — l'équipe offre une commande depuis le back-office
+
+**État : 📝 plan, rien n'est bâti (2026-11-23).** Demandé par Hugo le
+2026-11-23 : « l'équipe passe une commande offerte depuis le back-office ».
+Contredit par `vitruve` le 2026-11-23 : cinq bloquants sur la première version
+(une remise de panier « offerte »), tous levés par le changement de forme du
+§ 2.2. Ce qui reste ouvert est au § 3.
+
+---
+
+## Partie 1 — en simple
+
+Aujourd'hui, quand l'équipe saisit une commande pour un client, elle choisit
+entre deux façons de la régler : **au compte** (elle sera facturée) ou **par
+lien** (le client paie par carte). Il manque une troisième façon : **offerte**.
+Ça sert pour une dégustation, un geste commercial, un remplacement après une
+réclamation, un échantillon.
+
+Une commande offerte est **une vraie commande** : elle part au fournil, au
+colisage, en livraison ou au comptoir, comme les autres. La seule différence
+porte sur l'argent : le client ne paie rien, on n'émet aucune facture, et on ne
+prélève rien.
+
+Mais on garde **ce qu'elle valait**. La commande se compose d'abord comme si le
+client la payait (ses prix, les frais de livraison), puis une ligne « offert »
+retranche exactement ce total, taux de TVA par taux de TVA. Trois raisons :
+
+1. la comptabilité doit pouvoir dire combien on a offert, à qui et pourquoi ;
+2. au-delà d'un certain montant offert à une même personne dans l'année, la TVA
+   déjà déduite doit être reversée (§ 3, question au cabinet) ;
+3. une commande offerte « à 0 € » sans trace de sa valeur cacherait la décision
+   prise, ce qu'on refuse pour toute exception de l'équipe.
+
+```mermaid
+flowchart LR
+    S["Saisie par l'équipe"] --> C{"Règlement"}
+    C -->|"au compte"| A["facturée en fin de mois"]
+    C -->|"lien"| L["payée par carte"]
+    C -->|"offerte + motif"| O["composée au prix du client, puis offert = moins le total"]
+    O --> F["fournil, colisage, retrait : comme les autres"]
+    O --> N["aucune facture, aucun prélèvement"]
+    O --> X["hors des audiences, du panier moyen, des habituels"]
+```
+
+Offrir est un **droit à part** : pouvoir saisir une commande ne suffit pas. Ce
+droit s'accorde à l'écran des rôles, comme tous les autres.
+
+---
+
+## Partie 2 — technique
+
+### 2.1 Ce qui existe (vérifié le 2026-11-23, et par `vitruve` le même jour)
+
+- `staffSettlementSchema = z.enum(["account", "link"])`
+  (`packages/contracts/src/admin-order.ts:48`) ; son JSDoc justifie l'absence
+  d'une troisième valeur.
+- `PlaceOrderForCustomerHandler` appelle `order.deferPayment()` quand
+  `settlement === "account" || order.totalCents <= 0`
+  (`place-order-for-customer.handler.ts:293`). `staffSettlementRefusal`
+  (`application/services/staff-settlement-refusal.ts`) ne connaît que `account`
+  et `link`.
+- `settlementRegimeOf` rend `free` pour `not_required` à total nul
+  (`orders/domain/services/settlement-regime.ts`). L'assiette du prélèvement
+  exige `total_cents > 0` (`accounting/infrastructure/billable-order-criterion.ts`),
+  la facture carte écarte `totalCents <= 0` (`outsideCardInvoicing`,
+  `accounting/domain/services/card-invoicing.ts`). Le schéma « publique ou
+  gratuite → pas de facture » est dans `documentation/commandes/parcours-complet.md`.
+- **Les remises de panier ne touchent que les lignes** : `chainBasketDiscounts`
+  (`packages/money/src/basket-discounts.ts`) ne remise que les `coveredLines`,
+  et `deliveryFeeCents` s'ajoute après. Une remise ne peut donc pas ramener une
+  commande livrée à 0. Une remise de panier exige un `promotionId`
+  (`DraftBasketDiscount`, `order-shapes.ts`), elle compte dans
+  `MAX_BASKET_DISCOUNTS_PER_ORDER = 5`, et elle allume `pickup_discount_eligible`
+  sur les lignes couvertes. C'est pourquoi l'offre **n'est pas** une remise.
+- La révision (`order-revision.ts`, `revisionOf`) garde `free → ≠free` et
+  `account → ≠account`, **pas** `due`/`paid → free`.
+- Lisent `not_required` comme une commande réelle : les audiences
+  (`AUDIENCE_COUNTED_PAYMENT_STATUSES`, `audiences/domain/audience-scope.ts`),
+  le chiffre d'affaires (`REVENUE_PAYMENT_STATUSES`, `growth/domain/revenue-scope.ts`),
+  les recommandations (`usuals.ts`, `bought-with.ts`).
+- Droit de saisie : `b2b_place_order` (`prisma/schema/public/staff.prisma:67`).
+  Un droit neuf s'inscrit aussi dans `packages/contracts/src/staff-access.ts`
+  (liste, libellés, dérivation) et `staff-resource-scopes.ts`.
+- Les liens `free_charge` (`payments/application/free-charge/`) encaissent un
+  montant **sans commande** ; les dérogations (`order-waivers/`) portent l'heure
+  limite et la pénalité de retard, pas le prix. Aucun des deux n'offre une
+  commande.
+
+### 2.2 Décisions proposées
+
+| #    | Décision                                                                                                                                                                                                                                                                                          | Raison                                                                                                                                                                               |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| O-1  | Troisième valeur `offered` dans `staffSettlementSchema`, toujours sans défaut. Le JSDoc est réécrit au présent.                                                                                                                                                                                   | Offrir est une décision commerciale, au même rang que facturer ou réclamer.                                                                                                          |
+| O-2  | **L'offre est un ajustement de commande, pas une remise de panier.** La commande se compose entière par le chemin du client (lignes, remises de clientèle, frais de livraison). L'agrégat ajoute ensuite une ligne d'offre égale à **moins** le montant de chaque taux, déjà arrondi : HT et TVA. | Retrancher des montants déjà arrondis donne 0 exactement, sans nouvel arrondi. Les frais sont couverts. Aucune interaction avec la chaîne, le plafond ni `pickup_discount_eligible`. |
+| O-3  | **La composition est celle du client, sans sélection** : promotions comprises, elles consomment leur usage comme sur toute commande. Seul le bon de fidélité reste hors de la saisie de l'équipe, comme aujourd'hui.                                                                              | Décidé par Hugo le 2026-11-23 : « on ne refait pas le calcul de manière sélective ». Une seule arithmétique : la valeur offerte est ce que le client aurait payé.                    |
+| O-4  | Colonnes sur `orders` : `offer_nature` (nullable, CHECK contre le registre), `offer_note`, `offered_value_cents` (TTC). Les montants par taux vont dans la table des montants de TVA déjà tenue par la commande, sous une ligne d'offre.                                                          | Un discriminant en SQL : une commande offerte se distingue d'une commande tombée à 0 par une promotion à 100 %. Ce choix ne se défait plus après le premier merge.                   |
+| O-5  | Motif obligatoire : nature du registre `ORDER_OFFER_NATURES` (`tasting`, `event`, `goodwill`, `replacement`, `sample`) et texte court.                                                                                                                                                            | Distinct de `FREE_CHARGE_NATURES`, qui qualifie un encaissement sans commande : les deux registres répondent à deux questions et divergeront.                                        |
+| O-6  | Nouveau droit `b2b_offer_order` : valeur de `StaffResource` par migration, **jamais accordée par elle**, inscrite dans `staff-access.ts` et `staff-resource-scopes.ts`. `staffSettlementRefusal` refuse `offered` sans ce droit.                                                                  | Règle du § 3 de `CLAUDE.md`, porte `lint:no-role-grants-in-migrations`. La garde vit dans le refus existant, pas à côté.                                                             |
+| O-7  | **Révision.** Une commande offerte reste offerte : la révision recompose comme toute révision et recalcule la ligne d'offre (O-2), donc le total reste 0. Elle refuse de rendre offerte une commande qui ne l'était pas, et l'inverse.                                                            | Changer qui paie après coup est une autre décision : annulation, puis nouvelle saisie.                                                                                               |
+| O-8  | Fait `lfc.orders.order_offered` à la passation, **et** `lfc.orders.order_offer_revalued` à chaque révision ou annulation qui change la valeur offerte, avec la valeur par taux après le geste.                                                                                                    | Le cumul par bénéficiaire (Q-O2) se lit sur le dernier fait de chaque commande, jamais sur une valeur périmée.                                                                       |
+| O-9  | **Les lecteurs qui comptent des achats écartent les commandes offertes** (`offer_nature IS NULL`) : audiences, chiffre d'affaires et panier moyen, habituels et « acheté avec ». La fidélité aussi, si elle crédite `not_required` (à vérifier au lot O4).                                        | Une dégustation offerte à un prospect ne le fait pas basculer en client actif, ni n'apprend ses « habituels ».                                                                       |
+| O-10 | E-mail de commande passée : « offerte » à la place du montant à régler, sans prix. Bon de livraison : mention « Commande offerte — sans facturation ». Back-office : libellé « Offerte » et motif sur la fiche.                                                                                   | Le client n'a rien à faire. La valeur offerte est un document interne.                                                                                                               |
+
+**Écart découvert, hors de ce chantier** : la révision ne garde pas `due`/`paid
+→ free`, alors qu'une commande à lien pourrait devenir gratuite par révision.
+Il n'est pas créé par ce plan. Il se ferme à part, avec un test de régression
+(cf. `documentation/commandes/modification/modifier-une-commande.md`).
+
+### 2.3 Lots
+
+| Lot | Contenu                                                                                                                                 | Tests                                                                                                                                                               |
+| --- | --------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| O0  | Contrat : `offered`, libellés, `ORDER_OFFER_NATURES`, champ `offer` exigé ssi `settlement === "offered"`. Droit dans `staff-access.ts`. | Spec du contrat : `offered` sans motif refusé, motif sans `offered` refusé.                                                                                         |
+| O1  | Domaine : ligne d'offre (O-2) posée après la composition complète (O-3), recomposition à la révision (O-7).                             | Unitaire : total 0 en retrait **et** en livraison, avec une promotion, avec plusieurs taux, avec un poids au kilo ; révision qui garde 0 ; refus des deux bascules. |
+| O2  | Migration additive : `b2b_offer_order`, colonnes O-4 nullables avec leur CHECK. Passe par `lecteur-de-migrations`.                      | `schema-drift`, `lint:no-role-grants-in-migrations`, `lint:rgpd-staff` si la note nomme une personne.                                                               |
+| O3  | Application : `staffSettlementRefusal`, `PlaceOrderForCustomerHandler`, faits O-8, clé d'intention inchangée.                           | Unitaire + e2e : 403 sans le droit, mur tenant, total 0, absente de l'assiette du prélèvement et de la facture carte.                                               |
+| O4  | Lecteurs O-9 et vérification de la fidélité.                                                                                            | Un test par lecteur : une commande offerte n'y compte pas.                                                                                                          |
+| O5  | Lectures O-10 : e-mail, bon de livraison, fiche et liste du back-office.                                                                | Planche des PDF (`lint:pdf-specimens`), manifeste des e-mails régénéré.                                                                                             |
+| O6  | Écran de saisie : troisième choix, grisé sans le droit, motif obligatoire, total annoncé 0 avec la valeur offerte.                      | Spec de composant.                                                                                                                                                  |
+
+### 2.4 Ce qui n'est pas fait ici
+
+- **Offrir une partie** d'une commande (une ligne sur trois). La forme O-2
+  retranche un total, pas une ligne.
+- **Un plafond** par commande ou par mois. Rien n'a été demandé ; le droit à
+  part et les faits suffisent pour commencer.
+- **Offrir après coup** une commande déjà payée : c'est un remboursement, par
+  le bloc `payment`.
+
+---
+
+## 3. Questions ouvertes
+
+- **Q-O2 (cabinet).** Un bien offert à un client professionnel est un cadeau :
+  la TVA déduite sur ce qu'il a coûté doit être reversée, sauf pour les cadeaux
+  de faible valeur (seuil annuel par bénéficiaire, 73 € TTC selon le BOFiP, à
+  vérifier). Faut-il suivre ce cumul par bénéficiaire et par année civile, et
+  qui passe l'écriture ? Les faits O-8 portent de quoi le calculer.
+- **Q-O3 (cabinet).** Un échantillon ou une dégustation suit-il le même régime
+  qu'un cadeau ? Le registre O-5 les distingue au cas où la réponse serait non.
+
+## 4. Décisions de Hugo (2026-11-23)
+
+- **Pas de deuxième validation**, quel que soit le montant.
+- **Un particulier peut recevoir une commande offerte** : c'est un usage
+  attendu (dégustations de mariage, événements), d'où la nature `event`.
+- **La valeur offerte est le calcul normal**, promotions comprises (O-3).
+  Doute assumé : une promotion à usage limité est consommée par une commande
+  que le client n'a pas payée. C'est la conséquence d'un calcul unique ; si
+  elle gêne, la réponse sera de ne pas proposer la promotion à la saisie, pas
+  de la retirer du calcul.
