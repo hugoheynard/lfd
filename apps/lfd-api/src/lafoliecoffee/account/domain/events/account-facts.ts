@@ -54,6 +54,8 @@ export const ACCOUNT_FACTS = {
   identityCorrected: "company.identity_corrected",
   /** Un agent relève la fiche Chorus Pro d'un organisme public. */
   chorusRoutingRecorded: "company.chorus_routing_recorded",
+  /** Un agent pose la fiche du service Chorus d'une société qui commande. */
+  chorusServiceRecorded: "company.chorus_service_recorded",
   /** Un agent accorde (ou retire) des délais de paiement. */
   paymentTermsGranted: "company.payment_terms_granted",
   /** Un agent suspend, réactive ou résilie le compte. */

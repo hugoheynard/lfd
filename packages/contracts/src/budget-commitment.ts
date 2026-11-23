@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import type { CurrentCommitmentView } from "./chorus-service.js";
+
 /**
  * **L'engagement budgétaire** d'un organisme public (plan
  * `documentation/comptabilite/facturation/plan-clients-publics-chorus.md`,
@@ -52,8 +54,18 @@ export interface BudgetCommitmentRequirementsView {
   readonly publicPayer: boolean;
   readonly commitmentRequired: boolean;
   readonly serviceCodeRequired: boolean;
-  /** Le code proposé dans le champ ; vide quand la fiche n'en donne pas. */
+  /**
+   * Le code proposé dans le champ : celui de la fiche du service de la
+   * société qui commande, sinon celui de la fiche Chorus du payeur ; vide
+   * quand aucune n'en donne.
+   */
   readonly defaultServiceCode: string;
+  /**
+   * L'engagement en cours de la société qui commande, ou `null`. Servi sans
+   * filtre de date : l'écran le propose quand la livraison choisie tombe au
+   * plus tard `endsOn`, et le dit expiré au-delà. Proposé, jamais imposé.
+   */
+  readonly currentCommitment: CurrentCommitmentView | null;
 }
 
 /**

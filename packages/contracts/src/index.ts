@@ -600,6 +600,12 @@ export type {
   CorrectBudgetCommitmentPayload,
 } from "./budget-commitment.js";
 export type { ChorusRoutingPayload, ChorusRoutingView } from "./chorus-routing.js";
+export { CHORUS_SERVICE_ERRORS, chorusServicePayloadSchema } from "./chorus-service.js";
+export type {
+  ChorusServicePayload,
+  ChorusServiceView,
+  CurrentCommitmentView,
+} from "./chorus-service.js";
 export {
   companyMemberRoleSchema,
   assignableRoleSchema,

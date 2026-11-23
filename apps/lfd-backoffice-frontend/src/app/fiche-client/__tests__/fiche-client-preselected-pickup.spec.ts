@@ -63,6 +63,7 @@ const COMPANY: AdminCompanyDetail = {
   declaredVia: null,
   piecesReached: [],
   chorusRouting: null,
+  chorusService: null,
   activatedAt: null,
   warnings: [],
   vatNumberRequired: true,

@@ -1,0 +1,14 @@
+-- RETOUR ARRIÈRE de 20261123100000_le_service_chorus
+-- (documentation/comptabilite/facturation/plan-clients-publics-chorus.md, § 6 octies).
+--
+-- 🔴 NON APPLIQUÉ, et Prisma ne le lit pas. La migration reste inscrite
+-- « appliquée ».
+--
+-- Le code d'avant ignore la table : le retour arrière est le retour du code
+-- seul. La retirer perdrait les fiches de service relevées ; à faire
+-- seulement sur décision de Hugo :
+--
+--   DROP TRIGGER "company_chorus_service_company_change_insert" ON "public"."company_chorus_service";
+--   DROP TRIGGER "company_chorus_service_company_change_update" ON "public"."company_chorus_service";
+--   DROP TRIGGER "company_chorus_service_company_change_delete" ON "public"."company_chorus_service";
+--   DROP TABLE "public"."company_chorus_service";

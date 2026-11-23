@@ -11,6 +11,7 @@ const ARMY: BudgetCommitmentRequirementsView = {
   commitmentRequired: true,
   serviceCodeRequired: false,
   defaultServiceCode: 'SRV-01',
+  currentCommitment: null,
 };
 
 /** Le service doublé : les exigences et la saisie, sans HTTP. */

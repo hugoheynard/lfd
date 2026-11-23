@@ -15,6 +15,7 @@ const PUBLIC: BudgetCommitmentRequirementsView = {
   commitmentRequired: true,
   serviceCodeRequired: false,
   defaultServiceCode: 'SRV-01',
+  currentCommitment: null,
 };
 
 const PRIVATE: BudgetCommitmentRequirementsView = {
@@ -23,6 +24,7 @@ const PRIVATE: BudgetCommitmentRequirementsView = {
   publicPayer: false,
   commitmentRequired: false,
   defaultServiceCode: '',
+  currentCommitment: null,
 };
 
 const ORDER: BudgetCommitmentOrder = {

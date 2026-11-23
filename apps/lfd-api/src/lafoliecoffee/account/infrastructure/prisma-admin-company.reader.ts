@@ -18,6 +18,7 @@ import { transferPayersAmong } from "./transfer-payers.projection.js";
 import { dossierPieces } from "../domain/services/dossier-pieces.js";
 import { requiresVatNumber } from "../domain/value-objects/vat-liability.js";
 import { projectContacts } from "./company-contacts.projection.js";
+import { CHORUS_SERVICE_SELECT, chorusServiceView } from "./chorus-service.projection.js";
 import { readHierarchy } from "./company-hierarchy.projection.js";
 
 /** Colonnes lues pour une vue admin — partagées par la liste et la fiche. */
@@ -114,6 +115,8 @@ const COMPANY_SELECT = {
       checkedByRole: true,
     },
   },
+  // La fiche du service Chorus (une ligne au plus) : la carte de la fiche.
+  chorusService: { select: CHORUS_SERVICE_SELECT },
 } satisfies Prisma.CompanySelect;
 
 type CompanyRow = Prisma.CompanyGetPayload<{ select: typeof COMPANY_SELECT }>;
@@ -239,6 +242,7 @@ export class PrismaAdminCompanyReader extends AdminCompanyReader {
       },
       hierarchy,
       chorusRouting: chorusRoutingView(row.chorusRouting),
+      chorusService: chorusServiceView(row.chorusService),
       archivedByName: row.archivedAt === null ? null : row.archivedByName,
       archiveReason: row.archivedAt === null ? null : row.archiveReason,
     };

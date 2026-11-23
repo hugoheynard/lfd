@@ -93,6 +93,7 @@ function chaletView(parentStatus: "active" | "pending"): AdminCompanyDetailView 
         emailVerified: false,
       },
     ],
+    chorusService: null,
     chorusRouting: null,
     fulfillmentPreference: {
       method: null,

@@ -93,6 +93,7 @@ describe('AdminCompaniesService', () => {
       hasOrders: false,
       suspensionCause: null,
       chorusRouting: null,
+      chorusService: null,
       ...company,
       vatNumberRequired: true,
       hasBankAccount: false,

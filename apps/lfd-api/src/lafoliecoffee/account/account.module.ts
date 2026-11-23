@@ -203,6 +203,10 @@ import { AdminCompanyChorusRoutingController } from "./http/admin-company-chorus
 import { RecordChorusRoutingHandler } from "./application/commands/record-chorus-routing.handler.js";
 import { ChorusRoutingRepository } from "./domain/ports/chorus-routing.repository.js";
 import { PrismaChorusRoutingRepository } from "./infrastructure/prisma-chorus-routing.repository.js";
+import { AdminCompanyChorusServiceController } from "./http/admin-company-chorus-service.controller.js";
+import { RecordChorusServiceHandler } from "./application/commands/record-chorus-service.handler.js";
+import { ChorusServiceRepository } from "./domain/ports/chorus-service.repository.js";
+import { PrismaChorusServiceRepository } from "./infrastructure/prisma-chorus-service.repository.js";
 import { CompaniesController } from "./http/companies.controller.js";
 import { AdminAccessPendingController } from "./http/admin-access-pending.controller.js";
 import { AdminCustomerAccessController } from "./http/admin-customer-access.controller.js";
@@ -333,6 +337,7 @@ import { PrismaPrincipalSitesMenuReader } from "./infrastructure/prisma-principa
     AdminCompanyPiecesController,
     AdminCompanyArchiveController,
     AdminCompanyChorusRoutingController,
+    AdminCompanyChorusServiceController,
     CompanyDeliveryProcedureController,
     AdminCompanyDeliveryProcedureController,
     // Les sous-comptes (plan `sous-comptes.md`, S1) : la fiche, et le
@@ -441,6 +446,7 @@ import { PrismaPrincipalSitesMenuReader } from "./infrastructure/prisma-principa
     UploadKbisByStaffHandler,
     CertifyKbisHandler,
     RecordChorusRoutingHandler,
+    RecordChorusServiceHandler,
     NoteCompanyContactHandler,
     AssignCompanyFollowerHandler,
     RevokeKbisCertificationHandler,
@@ -489,6 +495,7 @@ import { PrismaPrincipalSitesMenuReader } from "./infrastructure/prisma-principa
     { provide: CustomerSheetReader, useClass: PrismaCustomerSheetReader },
     { provide: CompanyRepository, useClass: PrismaCompanyRepository },
     { provide: ChorusRoutingRepository, useClass: PrismaChorusRoutingRepository },
+    { provide: ChorusServiceRepository, useClass: PrismaChorusServiceRepository },
     SetSubAccountMenuHandler,
     SetSubAccountMenuByStaffHandler,
     GetSubAccountMenuHandler,

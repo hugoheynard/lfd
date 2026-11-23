@@ -117,6 +117,7 @@ describe("la passation d'un organisme public", () => {
       commitmentRequired: true,
       serviceCodeRequired: true,
       defaultServiceCode: "SERV-RH",
+      currentCommitment: null,
     });
   });
 

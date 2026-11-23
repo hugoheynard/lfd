@@ -190,3 +190,24 @@ export class ChorusRoutingRecordedEvent extends CompanyStaffAct {
     return { ...this.routing };
   }
 }
+
+/** La fiche du service Chorus d'une société qui commande, posée par un agent. */
+export class ChorusServiceRecordedEvent extends CompanyStaffAct {
+  constructor(
+    company: NamedRef,
+    readonly service: {
+      readonly payerCompanyId: string;
+      readonly serviceCode: string;
+      readonly commitmentNumber: string;
+      readonly commitmentEndsOn: string | null;
+    },
+  ) {
+    super(company);
+  }
+  protected type(): JournalFactType {
+    return ACCOUNT_FACTS.chorusServiceRecorded;
+  }
+  protected override details(): Record<string, unknown> {
+    return { ...this.service };
+  }
+}

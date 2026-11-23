@@ -339,6 +339,8 @@ model Company {
 
   /// La fiche Chorus Pro d'un organisme public — au plus une.
   chorusRouting CompanyChorusRouting?
+  /// La fiche du service Chorus de la société qui commande — au plus une.
+  chorusService CompanyChorusService?
 
   // Unicité du SIRET : index PARTIEL (`siret <> ''`), donc invisible du schéma
   // Prisma — il vit dans la migration `20260811160000_unicite_siret_et_interlocuteur`.
@@ -435,6 +437,35 @@ model CompanyChorusRouting {
   checkedByRole       String   @default("") @map("checked_by_role")
 
   @@map("company_chorus_routing")
+  @@schema("public")
+}
+
+/// **La fiche du service Chorus** d'une société qui commande — le
+/// sous-compte d'une unité, ou un compte public seul : son code service, et
+/// l'engagement en cours qui préremplit ses commandes. Au plus une par
+/// société. `payerCompanyId` est le payeur au moment du geste, sans clé
+/// étrangère : la lecture ignore la fiche quand le payeur a changé. Un
+/// engagement a toujours une fin (`company_chorus_service_commitment_has_end`,
+/// en migration). Doc :
+/// `documentation/comptabilite/facturation/plan-clients-publics-chorus.md`, § 6 octies.
+model CompanyChorusService {
+  companyId         String    @id @map("company_id")
+  company           Company   @relation(fields: [companyId], references: [id])
+  payerCompanyId    String    @map("payer_company_id")
+  /// Vide permis : le code de la fiche Chorus du payeur s'applique.
+  serviceCode       String    @default("") @map("service_code")
+  /// Vide = aucun engagement en cours.
+  commitmentNumber  String    @default("") @map("commitment_number")
+  /// `null` exactement quand le numéro est vide.
+  commitmentEndsOn  DateTime? @map("commitment_ends_on") @db.Date
+  recordedAt        DateTime  @map("recorded_at") @db.Timestamptz(3)
+  /// L'id de fiche de l'agent — sans clé étrangère, comme les autres traces.
+  recordedByStaffId String    @map("recorded_by_staff_id")
+  /// Instantanés à l'instant du geste, vides si l'annuaire ne connaît pas l'agent.
+  recordedByName    String    @default("") @map("recorded_by_name")
+  recordedByRole    String    @default("") @map("recorded_by_role")
+
+  @@map("company_chorus_service")
   @@schema("public")
 }
 

@@ -88,6 +88,7 @@ function schoolView(formeJuridique: string): AdminCompanyDetailView {
         emailVerified: false,
       },
     ],
+    chorusService: null,
     chorusRouting: {
       commitmentRequired: true,
       serviceCodeRequired: false,

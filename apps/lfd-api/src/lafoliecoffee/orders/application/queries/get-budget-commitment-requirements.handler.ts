@@ -3,6 +3,10 @@ import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
 import { Clock } from "../../../../platform/time/clock.js";
 import { OrderCompanyNotFoundError } from "../../domain/errors/order-errors.js";
+import {
+  OrderingChorusServiceReader,
+  type OrderingChorusService,
+} from "../../domain/ports/ordering-chorus-service.reader.js";
 import { OrderPayerReader } from "../../domain/ports/order-payer.reader.js";
 import { PayerCommitmentRequirements } from "../../domain/ports/payer-commitment-requirements.js";
 import { GetBudgetCommitmentRequirementsQuery } from "./get-budget-commitment-requirements.query.js";
@@ -13,12 +17,18 @@ const NO_PAYER: BudgetCommitmentRequirementsView = {
   commitmentRequired: false,
   serviceCodeRequired: false,
   defaultServiceCode: "",
+  currentCommitment: null,
 };
 
 /**
  * Le payeur que la passation retiendrait (le principal d'un site qui suit sa
  * facturation, sinon la société), et ce que sa fiche Chorus exige. Une
  * lecture d'affichage : le refus d'un payeur suspendu reste à la passation.
+ *
+ * La fiche du service de la société qui commande propose son code service
+ * (avant celui du payeur) et son engagement en cours. Elle est écartée quand
+ * elle a été posée pour un autre payeur : un sous-compte qui a changé de
+ * principal ne propose pas l'engagement d'un autre SIRET.
  *
  * @throws {OrderCompanyNotFoundError} la société n'existe pas.
  */
@@ -30,6 +40,7 @@ export class GetBudgetCommitmentRequirementsHandler implements IQueryHandler<
   constructor(
     private readonly payers: OrderPayerReader,
     private readonly requirements: PayerCommitmentRequirements,
+    private readonly services: OrderingChorusServiceReader,
     private readonly clock: Clock,
   ) {}
 
@@ -45,14 +56,29 @@ export class GetBudgetCommitmentRequirementsHandler implements IQueryHandler<
     }
     const payerCompanyId = standing.billingFollow?.payerId ?? standing.companyId;
     const terms = await this.requirements.of(payerCompanyId);
-    return terms.kind === "private"
-      ? { ...NO_PAYER, payerCompanyId }
-      : {
-          payerCompanyId,
-          publicPayer: true,
-          commitmentRequired: terms.commitmentRequired,
-          serviceCodeRequired: terms.serviceCodeRequired,
-          defaultServiceCode: terms.defaultServiceCode,
-        };
+    if (terms.kind === "private") {
+      return { ...NO_PAYER, payerCompanyId };
+    }
+    const service = await this.serviceFor(query.companyId, payerCompanyId);
+    return {
+      payerCompanyId,
+      publicPayer: true,
+      commitmentRequired: terms.commitmentRequired,
+      serviceCodeRequired: terms.serviceCodeRequired,
+      defaultServiceCode:
+        service === null || service.serviceCode === ""
+          ? terms.defaultServiceCode
+          : service.serviceCode,
+      currentCommitment: service?.currentCommitment ?? null,
+    };
+  }
+
+  /** La fiche du service de la société, si elle a été posée pour ce payeur. */
+  private async serviceFor(
+    companyId: string,
+    payerCompanyId: string,
+  ): Promise<OrderingChorusService | null> {
+    const service = await this.services.of(companyId);
+    return service !== null && service.payerCompanyId === payerCompanyId ? service : null;
   }
 }

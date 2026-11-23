@@ -18,6 +18,7 @@ import type { CompanyStatus } from "./customer-sheet.js";
 import type { FulfillmentPreferenceView } from "./fulfillment-preference.js";
 import type { ActivationPiece } from "./platform-settings.js";
 import type { ChorusRoutingView } from "./chorus-routing.js";
+import type { ChorusServiceView } from "./chorus-service.js";
 import type { CompanyHierarchyView, CompanyRefView } from "./sub-accounts.js";
 
 /**
@@ -210,6 +211,12 @@ export interface AdminCompanyDetailView extends AdminCompanyView {
    * une forme juridique publique ; la pièce d'activation `chorus` la lit.
    */
   readonly chorusRouting: ChorusRoutingView | null;
+
+  /**
+   * La fiche du service Chorus de la société qui commande (code service et
+   * engagement en cours), ou `null` : jamais posée.
+   */
+  readonly chorusService: ChorusServiceView | null;
 
   /** Qui l'a supprimé, nom figé ce jour-là ; `null` si inconnu de l'annuaire ou non supprimé. */
   readonly archivedByName: string | null;

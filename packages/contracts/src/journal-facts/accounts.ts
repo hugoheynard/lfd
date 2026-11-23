@@ -196,6 +196,16 @@ export const ACCOUNTS_AND_CARTS_FACTS = {
     defaultServiceCode: z.string(),
     checkedOn: day(),
   }),
+  /**
+   * Un agent pose la fiche du service Chorus d'une société qui commande.
+   * `commitmentNumber` vide et `commitmentEndsOn` nul : aucun engagement en cours.
+   */
+  "company.chorus_service_recorded": labelled({
+    payerCompanyId: z.string(),
+    serviceCode: z.string(),
+    commitmentNumber: z.string(),
+    commitmentEndsOn: day().nullable(),
+  }),
   "company.identity_corrected": labelled({
     raisonSociale: z.string(),
     formeJuridique: z.string(),

@@ -45,6 +45,7 @@ function company(over: Partial<AdminCompanyDetail> = {}): AdminCompanyDetail {
     declaredVia: null,
     piecesReached: [],
     chorusRouting: null,
+    chorusService: null,
     activatedAt: null,
     warnings: [],
     // Le DÉTAIL : c'est lui que la fiche projette, et lui seul qui sait si la

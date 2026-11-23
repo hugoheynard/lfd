@@ -16,6 +16,7 @@ const ARMY: BudgetCommitmentRequirementsView = {
   commitmentRequired: true,
   serviceCodeRequired: true,
   defaultServiceCode: 'SRV-01',
+  currentCommitment: null,
 };
 
 const URL_OF = /\/me\/budget-commitment-requirements$/u;

@@ -13,6 +13,7 @@ const ARMY: BudgetCommitmentRequirementsView = {
   commitmentRequired: true,
   serviceCodeRequired: true,
   defaultServiceCode: '',
+  currentCommitment: null,
 };
 
 describe('budgetCommitmentGaps', () => {

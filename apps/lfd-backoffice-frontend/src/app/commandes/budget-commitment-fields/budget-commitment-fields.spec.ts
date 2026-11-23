@@ -10,6 +10,7 @@ const REQUIRED: BudgetCommitmentRequirementsView = {
   commitmentRequired: true,
   serviceCodeRequired: false,
   defaultServiceCode: 'SRV-01',
+  currentCommitment: null,
 };
 
 async function render(

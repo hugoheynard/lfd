@@ -45,6 +45,7 @@ function company(hierarchy: Partial<CompanyHierarchyView> = {}): AdminCompanyDet
     declaredVia: null,
     piecesReached: [],
     chorusRouting: null,
+    chorusService: null,
     activatedAt: null,
     warnings: [],
     activation: null,

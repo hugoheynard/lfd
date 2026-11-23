@@ -39,6 +39,7 @@ function principal(hierarchy: Partial<CompanyHierarchyView> = {}): AdminCompanyD
     declaredVia: null,
     piecesReached: [],
     chorusRouting: null,
+    chorusService: null,
     activatedAt: null,
     warnings: [],
     activation: null,
