@@ -34,7 +34,13 @@ const FEW = 3;
 const MANY = 70;
 const FAMILY = "fam-lot";
 /** Sans rattrapage : une limite de produit n'en a plus (2026-10-21). */
-const PRODUCT_LIMIT = { daysBefore: 1, time: "18:00", graceMinutes: null, staffMayExceed: false };
+const PRODUCT_LIMIT = {
+  daysBefore: 1,
+  time: "18:00",
+  graceMinutes: null,
+  staffMayExceed: false,
+  excludedProductIds: [],
+};
 
 let ctx: E2eContext;
 let counter: SchemaOpsCounter;

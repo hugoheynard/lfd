@@ -1,13 +1,12 @@
-import { categoryPathOf, resolveOrderTimeLimit } from "../order-time-limit-resolution.js";
+import {
+  categoryPathOf,
+  explainOrderTimeLimit,
+  resolveOrderTimeLimit,
+} from "../order-time-limit-resolution.js";
 import { syncOrderTimeLimitRuleSchema, type SyncOrderTimeLimitRule } from "../snapshot.js";
 
 /**
  * La résolution, éprouvée **là où elle vit** — partagée par les deux rives.
- *
- * Ces cas venaient de `resolveLimitsByVariant`, côté référentiel, qui résolvait
- * avant d'émettre. La v7 envoie les rangs et fait descendre les deux rives par
- * cette fonction-ci : la couverture devait suivre, sans quoi elle serait partie
- * avec le fichier qui la portait.
  *
  * `resolveOrderTimeLimit` a par ailleurs sa propre suite côté référentiel
  * (`resolve-order-time-limit.spec.ts`, 26 cas) : celle-ci ne la redouble pas,
@@ -21,6 +20,7 @@ function rule(over: Partial<SyncOrderTimeLimitRule> = {}): SyncOrderTimeLimitRul
     time: null,
     graceMinutes: null,
     staffMayExceed: false,
+    excludedProductIds: [],
     ...over,
   };
 }
@@ -60,12 +60,8 @@ describe("categoryPathOf", () => {
   });
 });
 
-/**
- * Décision de Hugo du 2026-10-21 (`limites-de-commande/schema-des-reglages.md`
- * §4) : une limite par PRODUIT, règle entière, sans rattrapage. Les autres
- * rangs, s'il en reste en base ou dans un fait déjà rangé, sont ignorés.
- */
-describe("resolveOrderTimeLimit — le produit seulement", () => {
+/** Une limite par produit, règle entière, sans rattrapage ; global et déclinaison ne visent rien. */
+describe("resolveOrderTimeLimit — le produit", () => {
   const target = { variantId: "var_1", productId: "prd_1", categoryPath: ["pain", "boulangerie"] };
 
   it("rend la limite du produit", () => {
@@ -79,17 +75,16 @@ describe("resolveOrderTimeLimit — le produit seulement", () => {
     });
   });
 
-  it("ignore un rang global, une famille et une déclinaison résiduels", () => {
+  it("ignore un rang global et une déclinaison résiduels", () => {
     const rules = [
       rule({ scope: { type: "global", id: null }, daysBefore: 1, time: "18:00" }),
-      rule({ scope: { type: "category", id: "pain" }, daysBefore: 1, time: "16:00" }),
       rule({ scope: { type: "variant", id: "var_1" }, daysBefore: 3, time: "10:00" }),
     ];
 
     expect(resolveOrderTimeLimit(rules, target)).toBeNull();
   });
 
-  it("n'emprunte plus rien à une famille quand le produit ne pose qu'une heure", () => {
+  it("n'emprunte rien à une famille incomplète quand le produit ne pose qu'une heure", () => {
     const rules = [
       rule({ scope: { type: "category", id: "pain" }, daysBefore: 1 }),
       rule({ scope: { type: "product", id: "prd_1" }, time: "16:00" }),
@@ -98,8 +93,7 @@ describe("resolveOrderTimeLimit — le produit seulement", () => {
     expect(resolveOrderTimeLimit(rules, target)).toBeNull();
   });
 
-  /** Le seul rattrapage est celui de la règle générale (2026-10-21, point 2). */
-  it("traite une grâce résiduelle du produit comme nulle", () => {
+  it("traite une grâce résiduelle comme nulle", () => {
     const rules = [
       rule({
         scope: { type: "product", id: "prd_1" },
@@ -117,6 +111,100 @@ describe("resolveOrderTimeLimit — le produit seulement", () => {
   });
 });
 
+describe("resolveOrderTimeLimit — les familles", () => {
+  const target = {
+    variantId: null,
+    productId: "fraisier",
+    categoryPath: ["gateaux", "patisserie"],
+  };
+  const product = (daysBefore: number, time: string): SyncOrderTimeLimitRule =>
+    rule({ scope: { type: "product", id: "fraisier" }, daysBefore, time });
+  const family = (
+    id: string,
+    daysBefore: number,
+    time: string,
+    excludedProductIds: string[] = [],
+  ): SyncOrderTimeLimitRule =>
+    rule({ scope: { type: "category", id }, daysBefore, time, excludedProductIds });
+
+  it("applique la limite de la famille seule", () => {
+    expect(resolveOrderTimeLimit([family("gateaux", 2, "12:00")], target)).toEqual({
+      daysBefore: 2,
+      time: "12:00",
+      graceMinutes: 0,
+      staffMayExceed: false,
+    });
+  });
+
+  it("garde le produit quand il est plus strict", () => {
+    const rules = [family("gateaux", 1, "18:00"), product(2, "12:00")];
+
+    expect(resolveOrderTimeLimit(rules, target)).toMatchObject({ daysBefore: 2, time: "12:00" });
+    expect(explainOrderTimeLimit(rules, target)?.from).toEqual({ type: "product", id: "fraisier" });
+  });
+
+  it("garde la famille quand elle est plus stricte, à jours égaux par l'heure la plus tôt", () => {
+    const rules = [product(1, "18:00"), family("gateaux", 1, "09:30")];
+
+    expect(resolveOrderTimeLimit(rules, target)).toMatchObject({ daysBefore: 1, time: "09:30" });
+    expect(explainOrderTimeLimit(rules, target)?.from).toEqual({ type: "category", id: "gateaux" });
+  });
+
+  it("applique la limite d'une famille parente", () => {
+    const rules = [family("patisserie", 3, "10:00"), family("gateaux", 2, "12:00")];
+
+    expect(resolveOrderTimeLimit(rules, target)).toMatchObject({ daysBefore: 3, time: "10:00" });
+    expect(explainOrderTimeLimit(rules, target)?.from).toEqual({
+      type: "category",
+      id: "patisserie",
+    });
+  });
+
+  it("ignore une famille hors de la lignée", () => {
+    expect(resolveOrderTimeLimit([family("viennoiserie", 2, "12:00")], target)).toBeNull();
+  });
+
+  it("ne vise pas un produit exclu de la famille", () => {
+    expect(resolveOrderTimeLimit([family("gateaux", 2, "12:00", ["fraisier"])], target)).toBeNull();
+  });
+
+  it("laisse la famille parente viser un produit que seule la famille proche exclut", () => {
+    const rules = [family("gateaux", 3, "10:00", ["fraisier"]), family("patisserie", 1, "18:00")];
+
+    expect(resolveOrderTimeLimit(rules, target)).toMatchObject({ daysBefore: 1, time: "18:00" });
+  });
+
+  it("à égalité, dit le produit, puis la famille la plus proche", () => {
+    const rules = [family("patisserie", 2, "12:00"), family("gateaux", 2, "12:00")];
+
+    expect(explainOrderTimeLimit(rules, target)?.from).toEqual({ type: "category", id: "gateaux" });
+    expect(explainOrderTimeLimit([...rules, product(2, "12:00")], target)?.from).toEqual({
+      type: "product",
+      id: "fraisier",
+    });
+  });
+
+  it("ignore une règle de famille incomplète", () => {
+    const rules = [
+      rule({ scope: { type: "category", id: "gateaux" }, daysBefore: 3 }),
+      product(1, "18:00"),
+    ];
+
+    expect(resolveOrderTimeLimit(rules, target)).toMatchObject({ daysBefore: 1, time: "18:00" });
+  });
+
+  it("se lit sans exclusion sur une règle rangée sans la liste", () => {
+    const stored: unknown = {
+      scope: { type: "category", id: "gateaux" },
+      daysBefore: 2,
+      time: "12:00",
+      graceMinutes: null,
+    };
+
+    expect(syncOrderTimeLimitRuleSchema.parse(stored).excludedProductIds).toEqual([]);
+  });
+});
+
 describe("la case « l'équipe peut passer outre »", () => {
   const TARGET = { variantId: null, productId: "p1", categoryPath: ["pain"] };
 
@@ -126,6 +214,39 @@ describe("la case « l'équipe peut passer outre »", () => {
         scope: { type: "product", id: "p1" },
         daysBefore: 2,
         time: "12:00",
+        staffMayExceed: true,
+      }),
+    ];
+
+    expect(resolveOrderTimeLimit(rules, TARGET)?.staffMayExceed).toBe(true);
+  });
+
+  it("est fausse dès qu'une des règles en jeu l'interdit (famille cochée, produit décoché)", () => {
+    const rules = [
+      rule({
+        scope: { type: "category", id: "pain" },
+        daysBefore: 2,
+        time: "12:00",
+        staffMayExceed: true,
+      }),
+      rule({ scope: { type: "product", id: "p1" }, daysBefore: 1, time: "18:00" }),
+    ];
+
+    expect(resolveOrderTimeLimit(rules, TARGET)?.staffMayExceed).toBe(false);
+  });
+
+  it("est vraie quand toutes les règles en jeu la permettent", () => {
+    const rules = [
+      rule({
+        scope: { type: "category", id: "pain" },
+        daysBefore: 2,
+        time: "12:00",
+        staffMayExceed: true,
+      }),
+      rule({
+        scope: { type: "product", id: "p1" },
+        daysBefore: 1,
+        time: "18:00",
         staffMayExceed: true,
       }),
     ];

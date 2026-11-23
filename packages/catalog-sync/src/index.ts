@@ -45,5 +45,6 @@ export type {
   ExplainedOrderTimeLimit,
   LimitTarget,
   OrderTimeLimitScopeType,
-  ResolvedField,
+  OrderTimeLimitOrigin,
+  ResolvableOrderTimeLimitRule,
 } from "./order-time-limit-resolution.js";

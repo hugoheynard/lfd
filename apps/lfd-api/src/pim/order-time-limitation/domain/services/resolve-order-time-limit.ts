@@ -17,5 +17,5 @@ export {
   resolveOrderTimeLimit,
   type ExplainedOrderTimeLimit,
   type LimitTarget,
-  type ResolvedField,
+  type OrderTimeLimitOrigin,
 } from "@lfd/pim-contracts";

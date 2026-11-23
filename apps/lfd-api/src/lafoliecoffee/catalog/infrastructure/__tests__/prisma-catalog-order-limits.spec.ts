@@ -1,4 +1,4 @@
-import { orderLimitGroups } from "../prisma-catalog-order-limits.js";
+import { admittedOrderLimitRules, orderLimitGroups } from "../prisma-catalog-order-limits.js";
 
 /** La descente des limites, regroupée par limite identique. */
 
@@ -33,5 +33,22 @@ describe("orderLimitGroups", () => {
       { limit: NOON, skus: ["A"] },
       { limit: { ...NOON, staffMayExceed: true }, skus: ["B"] },
     ]);
+  });
+});
+
+describe("admittedOrderLimitRules", () => {
+  // Une règle de famille résiduelle de `catalog_rules` ne doit fermer aucun article avant F3.
+  it("ne garde que les règles de produit", () => {
+    const product = {
+      scope: { type: "product" as const, id: "p1" },
+      daysBefore: 1,
+      time: "12:00",
+      graceMinutes: null,
+      staffMayExceed: false,
+      excludedProductIds: [],
+    };
+    const family = { ...product, scope: { type: "category" as const, id: "gateaux" } };
+
+    expect(admittedOrderLimitRules([family, product])).toEqual([product]);
   });
 });

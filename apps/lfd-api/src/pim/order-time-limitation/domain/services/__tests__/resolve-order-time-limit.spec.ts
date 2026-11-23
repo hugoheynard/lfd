@@ -103,13 +103,12 @@ describe("resolveOrderTimeLimit", () => {
 });
 
 describe("explainOrderTimeLimit", () => {
-  it("dit que délai et heure viennent du produit, sans rattrapage", () => {
+  it("dit que la limite vient du produit, sans rattrapage", () => {
     const rules = [rule("product", "p1", { daysBefore: 1, time: "18:00", graceMinutes: 30 })];
 
     expect(explainOrderTimeLimit(rules, ENTREMETS)).toEqual({
-      daysBefore: { value: 1, from: "product" },
-      time: { value: "18:00", from: "product" },
-      graceMinutes: null,
+      limit: { daysBefore: 1, time: "18:00", graceMinutes: 0, staffMayExceed: false },
+      from: { type: "product", id: "p1" },
     });
   });
 });

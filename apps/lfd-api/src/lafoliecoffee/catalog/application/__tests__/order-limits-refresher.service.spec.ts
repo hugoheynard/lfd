@@ -13,6 +13,7 @@ const GLOBAL = {
   time: "12:00",
   graceMinutes: null,
   staffMayExceed: false,
+  excludedProductIds: [],
 };
 const ITEM = {
   sku: "VIE-1-1",

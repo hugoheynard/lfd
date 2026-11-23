@@ -43,6 +43,7 @@ describe("toSyncRule", () => {
       time: "16:00",
       graceMinutes: 30,
       staffMayExceed: false,
+      excludedProductIds: [],
     });
   });
 
@@ -58,6 +59,7 @@ describe("toSyncRule", () => {
 
     expect(Object.keys(rule).sort()).toEqual([
       "daysBefore",
+      "excludedProductIds",
       "graceMinutes",
       "scope",
       "staffMayExceed",
@@ -88,6 +90,7 @@ describe("toSyncRule", () => {
       time: "16:00",
       graceMinutes: null,
       staffMayExceed: false,
+      excludedProductIds: [],
     });
   });
 

@@ -48,7 +48,7 @@ export class PrismaCatalogOrderLimits extends CatalogOrderLimits {
     if (!parsed.success) {
       throw new StoredRulesUnreadableError(parsed.error.message);
     }
-    return parsed.data;
+    return admittedOrderLimitRules(parsed.data);
   }
 
   async categories(): Promise<readonly CategoryNode[]> {
@@ -109,6 +109,22 @@ export class PrismaCatalogOrderLimits extends CatalogOrderLimits {
       this.shelves.changed(ALL_SHELVES);
     }
   }
+}
+
+/**
+ * Les règles que le commerce applique : celles des **produits** seulement.
+ *
+ * La résolution partagée sait combiner les limites de famille, mais le
+ * référentiel n'en émet pas encore, et `catalog_rules` peut garder des règles
+ * de famille rangées avant qu'elles soient retirées : les appliquer fermerait
+ * des articles sur une décision abandonnée. Ce filtre se lève quand le
+ * référentiel émet les limites de famille (plan
+ * `limites-de-commande/plan-limite-par-famille.md`, lot F3).
+ */
+export function admittedOrderLimitRules(
+  rules: readonly SyncOrderTimeLimitRule[],
+): readonly SyncOrderTimeLimitRule[] {
+  return rules.filter((rule) => rule.scope.type === "product");
 }
 
 /** Une limite (ou son absence), et les SKU qui la reçoivent. */

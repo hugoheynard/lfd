@@ -15,9 +15,8 @@ import type { OrderTimeLimitView } from "@lfd/pim-contracts";
  * n'est pas un littéral. C'est exactement le genre de fuite qu'une projection
  * doit refuser à la main.
  *
- * Cette fonction remplace `resolveLimitsByVariant`, qui descendait l'échelle ici
- * pour n'envoyer que des valeurs. La v7 envoie les rangs ; la descente vit
- * désormais dans `@lfd/catalog-sync`, partagée par les deux rives.
+ * Le fil porte les règles, pas leur résultat : la résolution vit dans
+ * `@lfd/catalog-sync`, partagée par les deux rives.
  */
 export function toSyncRule(rule: OrderTimeLimitView): SyncOrderTimeLimitRule {
   return {
@@ -26,5 +25,8 @@ export function toSyncRule(rule: OrderTimeLimitView): SyncOrderTimeLimitRule {
     time: rule.time,
     graceMinutes: rule.graceMinutes,
     staffMayExceed: rule.staffMayExceed,
+    // La vue ne porte pas encore d'exclusions : seules les familles en ont, et
+    // l'émetteur n'envoie que des règles de produit.
+    excludedProductIds: [],
   };
 }

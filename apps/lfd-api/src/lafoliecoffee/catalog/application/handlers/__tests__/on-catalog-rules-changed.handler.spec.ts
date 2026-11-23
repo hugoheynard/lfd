@@ -21,6 +21,7 @@ const RULES: SyncOrderTimeLimitRule[] = [
     time: "18:00",
     graceMinutes: null,
     staffMayExceed: false,
+    excludedProductIds: [],
   },
 ];
 

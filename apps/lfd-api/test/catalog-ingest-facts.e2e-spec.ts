@@ -263,7 +263,13 @@ describe("les limites de commande traversent le fil, en RÈGLES", () => {
         [
           rule(
             { type: "product", id: "prd_VIE-001" },
-            { daysBefore: 1, time: "18:00", graceMinutes: 30, staffMayExceed: false },
+            {
+              daysBefore: 1,
+              time: "18:00",
+              graceMinutes: 30,
+              staffMayExceed: false,
+              excludedProductIds: [],
+            },
           ),
         ],
       ),
@@ -286,15 +292,33 @@ describe("les limites de commande traversent le fil, en RÈGLES", () => {
       withLimits(snapshotOf([{ sku: "VIE-002", priceMillicents: 220_000 }]), [
         rule(
           { type: "global", id: null },
-          { daysBefore: 1, time: "18:00", graceMinutes: 30, staffMayExceed: false },
+          {
+            daysBefore: 1,
+            time: "18:00",
+            graceMinutes: 30,
+            staffMayExceed: false,
+            excludedProductIds: [],
+          },
         ),
         rule(
           { type: "category", id: CATEGORY.id },
-          { daysBefore: 1, time: "16:00", graceMinutes: null, staffMayExceed: false },
+          {
+            daysBefore: 1,
+            time: "16:00",
+            graceMinutes: null,
+            staffMayExceed: false,
+            excludedProductIds: [],
+          },
         ),
         rule(
           { type: "variant", id: "var_VIE-002" },
-          { daysBefore: 3, time: "09:00", graceMinutes: null, staffMayExceed: false },
+          {
+            daysBefore: 3,
+            time: "09:00",
+            graceMinutes: null,
+            staffMayExceed: false,
+            excludedProductIds: [],
+          },
         ),
       ]),
     );

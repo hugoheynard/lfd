@@ -27,5 +27,6 @@ export type {
   CategoryNode,
   ExplainedOrderTimeLimit,
   LimitTarget,
-  ResolvedField,
+  OrderTimeLimitOrigin,
+  ResolvableOrderTimeLimitRule,
 } from "@lfd/catalog-sync";

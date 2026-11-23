@@ -295,7 +295,8 @@ export type {
   CategoryNode,
   ExplainedOrderTimeLimit,
   LimitTarget,
-  ResolvedField,
+  OrderTimeLimitOrigin,
+  ResolvableOrderTimeLimitRule,
 } from "./order-time-limit-resolution.js";
 
 export { productHistoryQuerySchema } from "./product-history.js";

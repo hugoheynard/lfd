@@ -125,6 +125,7 @@ describe("B2bCatalogRulesEmitter", () => {
         time: "16:00",
         graceMinutes: null,
         staffMayExceed: false,
+        excludedProductIds: [],
       },
     ]);
   });

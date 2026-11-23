@@ -449,11 +449,17 @@ export const syncOrderTimeLimitRuleSchema = z.object({
   /** Le rattrapage après la limite, en minutes. `0` = limite ferme. */
   graceMinutes: z.number().int().min(0).max(720).nullable(),
   /**
-   * L'équipe peut-elle passer outre cette limite ? Lue au seul rang du
-   * produit. **Absente = `false`** : une règle émise ou rangée avant que la
+   * L'équipe peut-elle passer outre cette limite ? Un article visé par
+   * plusieurs règles ne le permet que si toutes le permettent. **Absente = `false`** : une règle émise ou rangée avant que la
    * case existe dit une limite infranchissable, jamais l'inverse.
    */
   staffMayExceed: z.boolean().default(false),
+  /**
+   * Les produits qu'une règle de famille ne vise pas, nommément. Ils échappent
+   * à cette règle seulement. **Absente = aucun** : une règle rangée sans la
+   * liste se lit sans exclusion.
+   */
+  excludedProductIds: z.array(z.string().min(1)).default([]),
 });
 export type SyncOrderTimeLimitRule = z.infer<typeof syncOrderTimeLimitRuleSchema>;
 

@@ -1,16 +1,8 @@
 /**
- * **La descente de l'échelle des limites de commande** — partagée par les deux
- * rives du fil.
- *
- * Elle a vécu dans `@lfd/pim-contracts`, et elle y était juste tant que seul le
- * référentiel résolvait : le fil portait des valeurs déjà calculées. Depuis la
- * **v7**, ce sont les RÈGLES qui traversent — donc le récepteur descend
- * l'échelle lui aussi, et une descente par rive aurait fini par diverger sur un
- * cas limite. L'écart n'aurait sauté aux yeux de personne : l'écran du
- * référentiel et la garde de commande ne se lisent pas au même endroit.
- *
- * Elle vit donc avec le contrat qui transporte les règles. `@lfd/pim-contracts`
- * la réexporte : les imports du référentiel et du back-office n'ont pas bougé.
+ * **La résolution des limites de commande** — partagée par les deux rives du
+ * fil : le fil porte les RÈGLES, et le référentiel comme le commerce les
+ * résolvent ici. Une résolution par rive finirait par diverger sur un cas
+ * limite, entre l'écran du référentiel et la garde de commande.
  *
  * **Pure** : aucun port, aucune horloge. Elle dit ce qu'une règle vaut, jamais
  * si l'on est en retard — cette comparaison-là appartient à qui tient l'horloge.
@@ -41,92 +33,144 @@ export interface LimitTarget {
 }
 
 /**
- * **Résout la limite d'un article** : celle de **son produit**, et rien d'autre.
+ * **Ce que la résolution lit d'une règle.** La liste d'exclusions peut
+ * manquer : la vue du référentiel ne la porte pas encore, et une règle sans
+ * liste n'exclut rien — la même lecture que le schéma du fil.
+ */
+export type ResolvableOrderTimeLimitRule = Omit<SyncOrderTimeLimitRule, "excludedProductIds"> & {
+  readonly excludedProductIds?: readonly string[] | undefined;
+};
+
+/** Une règle complète qui vise l'article, et sa précision (0 = le produit, puis la famille la plus proche). */
+interface Candidate {
+  readonly rule: ResolvableOrderTimeLimitRule;
+  readonly daysBefore: number;
+  readonly time: string;
+  readonly precision: number;
+}
+
+/**
+ * **Résout la limite d'un article** : la plus stricte des règles qui le visent.
  *
- * 🔴 Depuis le 2026-10-21 (décision de Hugo,
- * `documentation/limites-de-commande/schema-des-reglages.md` §4, points 1 à
- * 3), le référentiel n'a plus qu'**une limite par produit, règle entière, sans
- * rattrapage** :
+ * Visent l'article la règle de **son produit** et celle de **chaque famille de
+ * sa lignée** (`categoryPath`) qui ne l'exclut pas nommément. Une exclusion ne
+ * vaut que pour la famille qui la porte : une famille parente qui ne l'exclut
+ * pas le vise encore. Les rangs « global » et « déclinaison » ne visent rien :
+ * « toute la production » se règle au commerce, une déclinaison suit son
+ * produit.
  *
- * - « toute la production » se règle au commerce (Réglages › Commandes › Heure
- *   limite) ; une famille n'a plus de limite propre ; une déclinaison suit son
- *   produit. Une règle résiduelle de ces portées — d'avant la décision, ou
- *   d'un fait déjà rangé chez le récepteur — est **ignorée** ici, et c'est ce
- *   qui la rend inerte sans migration destructive ;
- * - plus d'héritage champ par champ : la règle du produit dit le délai ET
- *   l'heure, sinon il n'y a pas de limite ;
- * - le rattrapage vaut toujours `0` : le seul rattrapage est celui de la règle
- *   générale. Une grâce résiduelle sur une ligne produit est ignorée ;
- * - la case « l'équipe peut passer outre » est celle de la règle du produit :
- *   aucun autre rang ne la porte.
- *
- * `variantId` et `categoryPath` restent dans {@link LimitTarget} : les
- * appelants les portent encore, et la forme ne change pas pour eux.
+ * - **Règle entière** : une règle sans délai ou sans heure ne compte pas ; il
+ *   n'y a pas d'héritage champ par champ.
+ * - **La plus stricte gagne** : plus de jours avant, puis l'heure la plus tôt.
+ *   Aucune règle n'en relâche une autre.
+ * - **Pas de rattrapage** : `graceMinutes` vaut `0` ; le seul rattrapage est
+ *   celui de la règle générale.
+ * - **« L'équipe peut passer outre »** vaut vrai seulement si TOUTES les règles
+ *   en jeu le permettent : passer outre fait juger la ligne par la seule règle
+ *   générale, donc fait tomber toutes les limites de l'article, pas seulement
+ *   la gagnante.
  *
  * Fonction **pure** : aucun port, aucune horloge.
  */
 export function resolveOrderTimeLimit(
-  rules: readonly SyncOrderTimeLimitRule[],
+  rules: readonly ResolvableOrderTimeLimitRule[],
   target: LimitTarget,
 ): SyncOrderTimeLimit | null {
-  const rule = productRuleOf(rules, target);
-  if (rule === undefined || rule.daysBefore === null || rule.time === null) {
+  const candidates = candidatesFor(rules, target);
+  const winner = strictestOf(candidates);
+  if (winner === null) {
     return null;
   }
   return {
-    daysBefore: rule.daysBefore,
-    time: rule.time,
+    daysBefore: winner.daysBefore,
+    time: winner.time,
     graceMinutes: 0,
-    staffMayExceed: rule.staffMayExceed,
+    staffMayExceed: candidates.every((candidate) => candidate.rule.staffMayExceed),
   };
 }
 
-/** La règle posée sur le produit de l'article, s'il y en a une. */
-function productRuleOf(
-  rules: readonly SyncOrderTimeLimitRule[],
+/** Les règles complètes qui visent l'article, chacune avec sa précision. */
+function candidatesFor(
+  rules: readonly ResolvableOrderTimeLimitRule[],
   target: LimitTarget,
-): SyncOrderTimeLimitRule | undefined {
-  return rules.find((rule) => rule.scope.type === "product" && rule.scope.id === target.productId);
+): Candidate[] {
+  const candidates: Candidate[] = [];
+  for (const rule of rules) {
+    const precision = precisionOf(rule, target);
+    if (precision !== null && rule.daysBefore !== null && rule.time !== null) {
+      candidates.push({ rule, daysBefore: rule.daysBefore, time: rule.time, precision });
+    }
+  }
+  return candidates;
 }
 
-/** D'où vient une valeur résolue : le rang qui l'a posée. */
-export interface ResolvedField<T> {
-  readonly value: T;
-  readonly from: OrderTimeLimitScopeType;
+/** `null` quand la règle ne vise pas l'article ; sinon 0 pour le produit, 1 + rang dans la lignée pour une famille. */
+function precisionOf(rule: ResolvableOrderTimeLimitRule, target: LimitTarget): number | null {
+  if (rule.scope.type === "product") {
+    return rule.scope.id === target.productId ? 0 : null;
+  }
+  if (rule.scope.type !== "category" || rule.scope.id === null) {
+    return null;
+  }
+  const rank = target.categoryPath.indexOf(rule.scope.id);
+  if (rank < 0 || (rule.excludedProductIds ?? []).includes(target.productId)) {
+    return null;
+  }
+  return rank + 1;
+}
+
+/** La plus stricte ; à égalité, la plus précise. */
+function strictestOf(candidates: readonly Candidate[]): Candidate | null {
+  let winner: Candidate | null = null;
+  for (const candidate of candidates) {
+    if (winner === null || isStricter(candidate, winner)) {
+      winner = candidate;
+    }
+  }
+  return winner;
+}
+
+function isStricter(left: Candidate, right: Candidate): boolean {
+  if (left.daysBefore !== right.daysBefore) {
+    return left.daysBefore > right.daysBefore;
+  }
+  if (left.time !== right.time) {
+    // `HH:MM` sur deux chiffres : l'ordre des chaînes est celui des heures.
+    return left.time < right.time;
+  }
+  return left.precision < right.precision;
+}
+
+/** La règle qui a gagné : un produit, ou une famille nommée. */
+export interface OrderTimeLimitOrigin {
+  readonly type: "product" | "category";
+  readonly id: string;
 }
 
 /**
- * La limite résolue, **avec la provenance de chaque valeur**.
- *
- * Le fil n'en a pas besoin — il envoie des nombres. Un ÉCRAN, si : dire
- * « Hérité » sans dire de quoi ne dit rien, et l'héritage se faisant champ par
- * champ, les trois valeurs peuvent venir de trois rangs différents. Une seule
- * mention pour l'ensemble aurait donc menti sur deux tiers de la ligne.
+ * La limite résolue, **avec sa provenance** : un écran dit « 2 jours avant,
+ * 12 h — famille Gâteaux », et la passation ne lit que les valeurs.
  */
 export interface ExplainedOrderTimeLimit {
-  readonly daysBefore: ResolvedField<number> | null;
-  readonly time: ResolvedField<string> | null;
-  readonly graceMinutes: ResolvedField<number> | null;
+  readonly limit: SyncOrderTimeLimit;
+  readonly from: OrderTimeLimitOrigin;
 }
 
 /**
- * La même résolution, avec la **provenance** de chaque valeur.
- *
- * Depuis le 2026-10-21, la seule provenance possible est le produit, et le
- * rattrapage n'en a pas (`null`) : gardée pour la forme de ses lecteurs, elle
- * partage {@link resolveOrderTimeLimit} pour ne jamais dire autre chose que la
- * passation.
+ * La même résolution, avec la règle qui a gagné. Partage ses candidates avec
+ * {@link resolveOrderTimeLimit} pour ne jamais dire autre chose que la passation.
  */
 export function explainOrderTimeLimit(
-  rules: readonly SyncOrderTimeLimitRule[],
+  rules: readonly ResolvableOrderTimeLimitRule[],
   target: LimitTarget,
-): ExplainedOrderTimeLimit {
+): ExplainedOrderTimeLimit | null {
   const limit = resolveOrderTimeLimit(rules, target);
-  return {
-    daysBefore: limit === null ? null : { value: limit.daysBefore, from: "product" },
-    time: limit === null ? null : { value: limit.time, from: "product" },
-    graceMinutes: null,
-  };
+  const winner = strictestOf(candidatesFor(rules, target));
+  if (limit === null || winner === null || winner.rule.scope.id === null) {
+    return null;
+  }
+  const type = winner.rule.scope.type === "product" ? "product" : "category";
+  return { limit, from: { type, id: winner.rule.scope.id } };
 }
 
 /** Ce qu'il faut d'une famille pour remonter son arbre. */
@@ -139,8 +183,8 @@ export interface CategoryNode {
  * La **lignée** d'une famille : elle-même d'abord, puis ses ancêtres jusqu'à la
  * racine — l'ordre que {@link resolveOrderTimeLimit} attend.
  *
- * Elle-même en tête parce que « le plus proche gagne » commence par le rang le
- * plus précis.
+ * Elle-même en tête : à égalité de sévérité, la famille la plus proche est la
+ * provenance affichée.
  *
  * 🔴 **Un cycle ne boucle pas ici.** L'arbre des familles est censé ne pas en
  * avoir, mais « censé » n'est pas une garantie qu'on veut voir tomber sous la

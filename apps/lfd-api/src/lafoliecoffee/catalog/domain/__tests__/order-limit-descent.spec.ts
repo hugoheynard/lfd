@@ -8,8 +8,8 @@ import { orderLimitChanges, sameLimit, type OrderLimitTarget } from "../order-li
  */
 
 /**
- * Décision de Hugo du 2026-10-21 : une limite par PRODUIT, règle entière, sans
- * rattrapage. Les autres rangs, encore rangés chez le récepteur, sont ignorés.
+ * Une limite par produit ou par famille, règle entière, sans
+ * rattrapage, la plus stricte des règles de produit et de famille ; global ignoré.
  */
 const PRODUCT: SyncOrderTimeLimitRule = {
   scope: { type: "product", id: "prd_1" },
@@ -17,6 +17,7 @@ const PRODUCT: SyncOrderTimeLimitRule = {
   time: "12:00",
   graceMinutes: 30,
   staffMayExceed: false,
+  excludedProductIds: [],
 };
 const RESIDUAL_GLOBAL: SyncOrderTimeLimitRule = {
   scope: { type: "global", id: null },
@@ -24,6 +25,7 @@ const RESIDUAL_GLOBAL: SyncOrderTimeLimitRule = {
   time: "18:00",
   graceMinutes: 60,
   staffMayExceed: false,
+  excludedProductIds: [],
 };
 const RESIDUAL_CATEGORY: SyncOrderTimeLimitRule = {
   scope: { type: "category", id: "cat_root" },
@@ -31,6 +33,7 @@ const RESIDUAL_CATEGORY: SyncOrderTimeLimitRule = {
   time: "16:00",
   graceMinutes: 30,
   staffMayExceed: false,
+  excludedProductIds: [],
 };
 const TREE = [
   { id: "cat_root", parentId: null },
@@ -58,12 +61,23 @@ describe("orderLimitChanges", () => {
     ]);
   });
 
-  it("ignore un rang global et une famille résiduels", () => {
+  it("ignore un rang global résiduel", () => {
     expect(
-      orderLimitChanges([RESIDUAL_GLOBAL, RESIDUAL_CATEGORY], TREE, [
-        target({ productId: "prd_autre" }),
-      ]),
+      orderLimitChanges([RESIDUAL_GLOBAL], TREE, [target({ productId: "prd_autre" })]),
     ).toEqual([]);
+  });
+
+  // Les règles de famille résiduelles sont écartées par l'adaptateur (`admittedOrderLimitRules`) ;
+  // la descente, elle, applique toute famille de la lignée de l'article.
+  it("applique une famille ancêtre par la lignée de l'article", () => {
+    expect(
+      orderLimitChanges([RESIDUAL_CATEGORY], TREE, [target({ productId: "prd_autre" })]),
+    ).toEqual([
+      {
+        sku: "TAR-1-1",
+        limit: { daysBefore: 1, time: "16:00", graceMinutes: 0, staffMayExceed: false },
+      },
+    ]);
   });
 
   it("ne rend pas un article dont la limite ne change pas", () => {
