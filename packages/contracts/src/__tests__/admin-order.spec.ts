@@ -4,6 +4,10 @@ import {
   adminOrderEstimatePayloadSchema,
   adminPlaceOrderPayloadSchema,
   hasWindowWhenPickedUp,
+  ORDER_OFFER_NATURES,
+  ORDER_OFFER_NOTE_MAX_LENGTH,
+  orderOfferNatureLabel,
+  orderOfferNatureSchema,
 } from "../admin-order.js";
 
 /**
@@ -87,5 +91,58 @@ describe("adminPlaceOrderPayloadSchema", () => {
     expect(refused.success).toBe(false);
     expect(refused.error?.issues[0]?.message).toContain("créneau de retrait");
     expect(refused.error?.issues[0]?.path).toEqual(["requestedWindow"]);
+  });
+});
+
+/** La commande offerte (plan `plan-commande-offerte.md`, O0) : le motif suit le règlement. */
+describe("la commande offerte au contrat", () => {
+  const base = {
+    companyId: "cmp_1",
+    expectedTotalCents: 0,
+    buyerUserId: "usr_1",
+    requestedDeliveryDate: "2026-09-12",
+    fulfillmentMethod: "pickup" as const,
+    pickupAddressId: "pick_1",
+    requestedWindow: { start: "07:00", end: "08:00" },
+    lines: [{ sku: "VIE-001", quantity: 12 }],
+  };
+  const offer = { nature: "tasting" as const, note: "Dégustation mariage Dupont" };
+
+  it("accepte une commande offerte qui porte son motif, à la passation comme à l'estimation", () => {
+    const payload = { ...base, settlement: "offered" as const, offer };
+    expect(adminPlaceOrderPayloadSchema.safeParse(payload).success).toBe(true);
+    expect(adminOrderEstimatePayloadSchema.safeParse(payload).success).toBe(true);
+  });
+
+  it("🔴 refuse une commande offerte sans motif", () => {
+    const refused = adminPlaceOrderPayloadSchema.safeParse({ ...base, settlement: "offered" });
+    expect(refused.success).toBe(false);
+    expect(refused.error?.issues.some((issue) => issue.path[0] === "offer")).toBe(true);
+  });
+
+  it("🔴 refuse un motif sur une commande qui n'est pas offerte", () => {
+    expect(
+      adminPlaceOrderPayloadSchema.safeParse({ ...base, settlement: "link", offer }).success,
+    ).toBe(false);
+    expect(
+      adminOrderEstimatePayloadSchema.safeParse({ ...base, settlement: "account", offer }).success,
+    ).toBe(false);
+  });
+
+  it("refuse un motif vide, une nature hors registre, un texte trop long", () => {
+    const parse = (o: unknown) =>
+      adminPlaceOrderPayloadSchema.safeParse({ ...base, settlement: "offered", offer: o }).success;
+    expect(parse({ nature: "tasting", note: "   " })).toBe(false);
+    expect(parse({ nature: "gift", note: "x" })).toBe(false);
+    expect(parse({ nature: "tasting", note: "x".repeat(ORDER_OFFER_NOTE_MAX_LENGTH + 1) })).toBe(
+      false,
+    );
+    expect(parse({ nature: "tasting", note: "x".repeat(ORDER_OFFER_NOTE_MAX_LENGTH) })).toBe(true);
+  });
+
+  it("le registre donne un libellé à chaque nature, dans l'ordre du schéma", () => {
+    expect(ORDER_OFFER_NATURES.map((n) => n.key)).toEqual(orderOfferNatureSchema.options);
+    expect(ORDER_OFFER_NATURES.every((n) => n.label.length > 0)).toBe(true);
+    expect(orderOfferNatureLabel("event")).toBe("Événement");
   });
 });

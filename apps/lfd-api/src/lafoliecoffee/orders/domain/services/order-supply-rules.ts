@@ -95,11 +95,15 @@ export function staffEntryOriginOf(
  * **Le comptoir ne règle qu'au compte** (Hugo, 2026-11-03, E4 du plan
  * `documentation/commandes/passation/commande-passee-par-l-equipe.md`) — sur la vitrine
  * comme sur une commande programmée, dès que la saisie vient du comptoir
- * ({@link isCounterEntry}).
+ * ({@link isCounterEntry}). Une commande offerte y passe : elle n'a rien à
+ * encaisser, donc rien à régler au comptoir.
  *
  * @throws {CounterLinkSettlementRefusedError} un lien de règlement au comptoir.
  */
-export function ensureCounterSettlement(settlement: "account" | "link", atCounter: boolean): void {
+export function ensureCounterSettlement(
+  settlement: "account" | "link" | "offered",
+  atCounter: boolean,
+): void {
   if (atCounter && settlement === "link") {
     throw new CounterLinkSettlementRefusedError();
   }

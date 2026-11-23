@@ -1,6 +1,6 @@
 # La commande offerte — l'équipe offre une commande depuis le back-office
 
-**État : 📝 plan, rien n'est bâti (2026-11-23).** Demandé par Hugo le
+**État : 📝 plan ; O0 bâti le 2026-11-23, le reste à bâtir.** Demandé par Hugo le
 2026-11-23 : « l'équipe passe une commande offerte depuis le back-office ».
 Contredit par `vitruve` le 2026-11-23 : cinq bloquants sur la première version
 (une remise de panier « offerte »), tous levés par le changement de forme du
@@ -108,15 +108,16 @@ Il n'est pas créé par ce plan. Il se ferme à part, avec un test de régressio
 
 ### 2.3 Lots
 
-| Lot | Contenu                                                                                                                                 | Tests                                                                                                                                                               |
-| --- | --------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| O0  | Contrat : `offered`, libellés, `ORDER_OFFER_NATURES`, champ `offer` exigé ssi `settlement === "offered"`. Droit dans `staff-access.ts`. | Spec du contrat : `offered` sans motif refusé, motif sans `offered` refusé.                                                                                         |
-| O1  | Domaine : ligne d'offre (O-2) posée après la composition complète (O-3), recomposition à la révision (O-7).                             | Unitaire : total 0 en retrait **et** en livraison, avec une promotion, avec plusieurs taux, avec un poids au kilo ; révision qui garde 0 ; refus des deux bascules. |
-| O2  | Migration additive : `b2b_offer_order`, colonnes O-4 nullables avec leur CHECK. Passe par `lecteur-de-migrations`.                      | `schema-drift`, `lint:no-role-grants-in-migrations`, `lint:rgpd-staff` si la note nomme une personne.                                                               |
-| O3  | Application : `staffSettlementRefusal`, `PlaceOrderForCustomerHandler`, faits O-8, clé d'intention inchangée.                           | Unitaire + e2e : 403 sans le droit, mur tenant, total 0, absente de l'assiette du prélèvement et de la facture carte.                                               |
-| O4  | Lecteurs O-9 et vérification de la fidélité.                                                                                            | Un test par lecteur : une commande offerte n'y compte pas.                                                                                                          |
-| O5  | Lectures O-10 : e-mail, bon de livraison, fiche et liste du back-office.                                                                | Planche des PDF (`lint:pdf-specimens`), manifeste des e-mails régénéré.                                                                                             |
-| O6  | Écran de saisie : troisième choix, grisé sans le droit, motif obligatoire, total annoncé 0 avec la valeur offerte.                      | Spec de composant.                                                                                                                                                  |
+| Lot | Contenu                                                                                                                                                                                                                                                                                                                                                                                                                                                            | Tests                                                                                                                                                                               |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| O0  | ✅ bâti le 2026-11-23. Contrat : `offered`, libellés, `ORDER_OFFER_NATURES`, champ `offer` exigé ssi `settlement === "offered"`. L'API refuse `offered` (`OfferedOrderUnavailableError`) jusqu'à O3. Le droit va avec sa migration, en O2 : un droit au contrat sans valeur en base casserait l'écran des rôles.                                                                                                                                                   | Spec du contrat : `offered` sans motif refusé, motif sans `offered` refusé.                                                                                                         |
+| O1  | Domaine : ligne d'offre (O-2) posée après la composition complète (O-3), recomposition à la révision (O-7).                                                                                                                                                                                                                                                                                                                                                        | Unitaire : total 0 en retrait **et** en livraison, avec une promotion, avec plusieurs taux, avec un poids au kilo ; révision qui garde 0 ; refus des deux bascules.                 |
+| O2  | Migration additive : `b2b_offer_order` (et son inscription dans `staff-access.ts`, `staff-resource-scopes.ts`), colonnes O-4 nullables avec leur CHECK. Passe par `lecteur-de-migrations`.                                                                                                                                                                                                                                                                         | `schema-drift`, `lint:no-role-grants-in-migrations`, `lint:rgpd-staff` si la note nomme une personne.                                                                               |
+| O3  | Application : `staffSettlementRefusal`, `PlaceOrderForCustomerHandler`, faits O-8, clé d'intention inchangée.                                                                                                                                                                                                                                                                                                                                                      | Unitaire + e2e : 403 sans le droit, mur tenant, total 0, absente de l'assiette du prélèvement et de la facture carte.                                                               |
+| O4  | Lecteurs O-9 et vérification de la fidélité.                                                                                                                                                                                                                                                                                                                                                                                                                       | Un test par lecteur : une commande offerte n'y compte pas.                                                                                                                          |
+| O5  | Lectures O-10 : e-mail, bon de livraison, fiche et liste du back-office.                                                                                                                                                                                                                                                                                                                                                                                           | Planche des PDF (`lint:pdf-specimens`), manifeste des e-mails régénéré.                                                                                                             |
+| O6  | Écran de saisie : troisième choix, grisé sans le droit, motif obligatoire, total annoncé 0 avec la valeur offerte.                                                                                                                                                                                                                                                                                                                                                 | Spec de composant.                                                                                                                                                                  |
+| O7  | **Destinataire libre** (demandé par Hugo le 2026-11-23) : offrir à quelqu'un qui n'est pas dans le système. L'équipe saisit prénom, nom, e-mail ou téléphone, et une adresse de livraison ou un point de retrait. Le destinataire est enregistré par `GuestBuyerRegistrar` (un `User` sans `auth0Sub`, la figure de `architecture-commande-sans-compte.md`), la commande se compose sans société au prix particulier, et seule `offered` est admise sur ce chemin. | e2e : commande offerte sans société, en retrait et en livraison ; refus de `account` et `link` sans société ; un second don à la même adresse e-mail retrouve le même destinataire. |
 
 ### 2.4 Ce qui n'est pas fait ici
 
@@ -124,6 +125,9 @@ Il n'est pas créé par ce plan. Il se ferme à part, avec un test de régressio
   retranche un total, pas une ligne.
 - **Un plafond** par commande ou par mois. Rien n'a été demandé ; le droit à
   part et les faits suffisent pour commencer.
+- **Le registre RGPD** pour O7 : un destinataire libre est une personne dont
+  on garde des données sans qu'elle ait créé de compte. À traiter au lot O7,
+  avec le texte d'information de la commande sans compte.
 - **Offrir après coup** une commande déjà payée : c'est un remboursement, par
   le bloc `payment`.
 
@@ -182,6 +186,15 @@ faits O-8, et un seuil d'alerte. Pas avant la réponse du cabinet.
   (§ 3) ne dépend pas de la façon d'arriver à zéro.
 
 - **Pas de deuxième validation**, quel que soit le montant.
+- **Une société non active peut recevoir une commande offerte** : des
+  dégustations servent à l'acquisition, donc à des prospects. Le refus
+  d'`offered` n'interroge ni le statut de la société ni son crédit, à la
+  différence du compte. La saisie exige toujours une fiche de société et un
+  acheteur qui en est membre (vérifié le 2026-11-23 dans
+  `staff-order-preparation.ts` : le statut n'est lu que pour le lien au
+  comptoir). Conséquence : une société non active est servie en clientèle
+  particulier (`commande-passee-par-l-equipe.md`, § 2), et la valeur offerte
+  est son prix de particulier.
 - **Un particulier peut recevoir une commande offerte** : c'est un usage
   attendu (dégustations de mariage, événements), d'où la nature `event`.
 - **La valeur offerte est le calcul normal**, promotions comprises (O-3).

@@ -4,6 +4,7 @@ import type { Order } from "../../domain/entities/order.js";
 import type { OrderCompanyStatus } from "../../domain/ports/company-status.reader.js";
 import {
   AccountSettlementNotGrantedError,
+  OfferedOrderUnavailableError,
   SuspendedCompanyAccountSettlementError,
 } from "../../domain/errors/order-errors.js";
 import { CounterAccountSettlementNotGrantedError } from "../../domain/errors/shelf-order-errors.js";
@@ -34,7 +35,9 @@ export interface StaffSettlementPorts {
  * - `account` est refusé à une société suspendue (É18) — elle, ou son PAYEUR
  *   (décision 2 de `plan-suspendue-au-prix-pro.md`, 2026-11-03) — puis exige
  *   un crédit réellement accordé, celui du payeur (T44) ;
- * - `link` sur la vitrine suit le réglage du pro sans crédit (Q7).
+ * - `link` sur la vitrine suit le réglage du pro sans crédit (Q7) ;
+ * - `offered` est refusé tant que la ligne « offert » n'existe pas
+ *   (`OfferedOrderUnavailableError`).
  *
  * - un payeur public (sa forme juridique) ne règle jamais par lien, et un
  *   compte qui ne règle pas lui est refusé sans repli.
@@ -52,6 +55,7 @@ export async function staffSettlementRefusal(
   atCounter: boolean,
 ): Promise<
   | AccountSettlementNotGrantedError
+  | OfferedOrderUnavailableError
   | SuspendedCompanyAccountSettlementError
   | CounterAccountSettlementNotGrantedError
   | ShelfWithoutCreditRefusedError
@@ -59,6 +63,9 @@ export async function staffSettlementRefusal(
   | PublicBuyerAccountUnavailableError
   | null
 > {
+  if (settlement === "offered") {
+    return new OfferedOrderUnavailableError();
+  }
   const parties = { companyId, payerId: order.billedCompanyId };
   const payerId = order.billedCompanyId ?? companyId;
   // La forme du payeur ne se lit que quand elle change la réponse : sur un

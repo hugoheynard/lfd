@@ -1524,6 +1524,11 @@ export type {
 export {
   staffSettlementSchema,
   STAFF_SETTLEMENT_LABELS,
+  orderOfferNatureSchema,
+  ORDER_OFFER_NATURES,
+  orderOfferNatureLabel,
+  ORDER_OFFER_NOTE_MAX_LENGTH,
+  orderOfferSchema,
   adminPlaceOrderPayloadSchema,
   adminOrderEstimatePayloadSchema,
   adminOrderRevisionPayloadSchema,
@@ -1533,6 +1538,7 @@ export {
   orderDraftPayloadSchema,
   pickupWindowIssue,
 } from "./admin-order.js";
+export type { OrderOffer, OrderOfferNature } from "./admin-order.js";
 export type {
   AdminOrderEstimateView,
   AdminOrderEstimateNotice,

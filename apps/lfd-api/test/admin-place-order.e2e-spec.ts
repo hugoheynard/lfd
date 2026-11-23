@@ -338,6 +338,24 @@ describe("POST /admin/orders — le règlement", () => {
     expect(await ctx.prisma.order.count()).toBe(0);
   });
 
+  it("🔴 refuse une commande offerte tant que la ligne « offert » n'existe pas — et n'écrit rien", async () => {
+    // Sans ce refus, `offered` tombait dans le chemin du lien et créait un
+    // règlement par carte pour une commande promise gratuite.
+    const { companyId, buyerId } = await seedCompany(true);
+
+    const refusal = await staff()
+      .post("/admin/orders")
+      .set(INTENT_KEY, freshIntent())
+      .send({
+        ...payload({ companyId, buyerUserId: buyerId, settlement: "offered" }),
+        offer: { nature: "tasting", note: "Dégustation" },
+      })
+      .expect(409);
+
+    expect(refusal.body).toMatchObject({ code: "orders.settlement.offered_unavailable" });
+    expect(await ctx.prisma.order.count()).toBe(0);
+  });
+
   it("lien : la commande attend un règlement, que le client peut aller faire", async () => {
     const { companyId, buyerId } = await seedCompany(false);
 

@@ -39,20 +39,92 @@ import {
  *   sociétés qui règlent effectivement au compte : l'accorder ailleurs serait
  *   livrer à crédit sans crédit ;
  * - `link` — une intention de paiement est créée et un **lien de règlement**
- *   est rendu, que le client suit lui-même.
+ *   est rendu, que le client suit lui-même ;
+ * - `offered` — la commande est **offerte** : composée comme si le client la
+ *   payait, puis ramenée à zéro par une ligne « offert ». Elle exige un motif
+ *   (`offer`) et un droit à part. Doc
+ *   `documentation/commandes/passation/plan-commande-offerte.md`.
  *
- * Il n'y a délibérément pas de troisième valeur « carte saisie au comptoir » :
- * un numéro de carte dicté au téléphone et tapé par un commercial est
- * exactement ce qu'on ne veut pas rendre possible.
+ * Aucune valeur « carte saisie au comptoir » : un numéro de carte dicté au
+ * téléphone et tapé par un commercial est exactement ce qu'on ne veut pas
+ * rendre possible.
  */
-export const staffSettlementSchema = z.enum(["account", "link"]);
+export const staffSettlementSchema = z.enum(["account", "link", "offered"]);
 export type StaffSettlement = z.infer<typeof staffSettlementSchema>;
 
 /** Libellés d'écran — le code parle anglais, l'interface parle français. */
 export const STAFF_SETTLEMENT_LABELS: Readonly<Record<StaffSettlement, string>> = {
   account: "Au compte, à facturer",
   link: "Lien de règlement au client",
+  offered: "Offerte",
 };
+
+/**
+ * **Pourquoi une commande est offerte.** Une clé stable : écrite en base,
+ * reprise au journal. Une nature ne se retire jamais, une ligne qui la porte
+ * doit rester lisible. Distinct des natures d'un lien de paiement libre, qui
+ * qualifient un encaissement sans commande : les deux registres répondent à
+ * deux questions. Les natures sont distinctes pour que la comptabilité puisse
+ * traiter chacune à part (un échantillon n'est peut-être pas un cadeau).
+ */
+export const orderOfferNatureSchema = z.enum([
+  "tasting",
+  "event",
+  "goodwill",
+  "replacement",
+  "sample",
+]);
+
+/** Une clé du registre des natures d'une commande offerte. */
+export type OrderOfferNature = z.infer<typeof orderOfferNatureSchema>;
+
+const OFFER_NATURE_LABELS: Readonly<Record<OrderOfferNature, string>> = {
+  tasting: "Dégustation",
+  event: "Événement",
+  goodwill: "Geste commercial",
+  replacement: "Remplacement après réclamation",
+  sample: "Échantillon",
+};
+
+/** **Le registre des natures**, dans l'ordre de l'écran : la clé et son libellé. */
+export const ORDER_OFFER_NATURES: readonly {
+  readonly key: OrderOfferNature;
+  readonly label: string;
+}[] = orderOfferNatureSchema.options.map((key) => ({ key, label: OFFER_NATURE_LABELS[key] }));
+
+/** Le libellé d'une nature, tel que l'écran et les documents le disent. */
+export function orderOfferNatureLabel(nature: OrderOfferNature): string {
+  return OFFER_NATURE_LABELS[nature];
+}
+
+/** La longueur maximale du texte qui accompagne la nature d'une offre. */
+export const ORDER_OFFER_NOTE_MAX_LENGTH = 280;
+
+/** Le motif d'une commande offerte : sa nature, et un texte court obligatoire. */
+export const orderOfferSchema = z.object({
+  nature: orderOfferNatureSchema,
+  note: z
+    .string()
+    .trim()
+    .min(1, "motif requis")
+    .max(ORDER_OFFER_NOTE_MAX_LENGTH, "motif trop long"),
+});
+export type OrderOffer = z.infer<typeof orderOfferSchema>;
+
+/** Le motif est là si et seulement si la commande est offerte. */
+function hasOfferIffOffered(payload: {
+  readonly settlement: StaffSettlement;
+  readonly offer?: OrderOffer | undefined;
+}): boolean {
+  return (payload.settlement === "offered") === (payload.offer !== undefined);
+}
+
+function offerIssue(): { readonly message: string; readonly path: string[] } {
+  return {
+    message: "une commande offerte exige un motif, et seule elle en porte",
+    path: ["offer"],
+  };
+}
 
 /**
  * **Une commande de RETRAIT saisie par l'équipe porte une tranche horaire.**
@@ -138,6 +210,8 @@ const adminOrderEntryShape = {
   companyId: z.string().trim().min(1, "société requise"),
   buyerUserId: z.string().trim().min(1, "client requis"),
   settlement: staffSettlementSchema,
+  // Le motif d'une commande offerte : exigé avec `offered`, refusé sinon.
+  offer: orderOfferSchema.optional(),
   supply: staffOrderSupplySchema.optional(),
   // Le « Retrait immédiat » du comptoir (lot L6) : seulement avec `supply: "shelf"`.
   entryShortcut: staffEntryShortcutSchema.optional(),
@@ -161,7 +235,8 @@ export const adminPlaceOrderPayloadSchema = z
   })
   .refine(hasAddressWhenDelivered, deliveryAddressIssue())
   .refine(hasPickupPointWhenPickedUp, pickupPointIssue())
-  .refine(hasWindowWhenPickedUp, pickupWindowIssue());
+  .refine(hasWindowWhenPickedUp, pickupWindowIssue())
+  .refine(hasOfferIffOffered, offerIssue());
 export type AdminPlaceOrderPayload = z.infer<typeof adminPlaceOrderPayloadSchema>;
 
 /**
@@ -194,7 +269,8 @@ export const adminOrderEstimatePayloadSchema = z
   .object(adminOrderEntryShape)
   .refine(hasAddressWhenDelivered, deliveryAddressIssue())
   .refine(hasPickupPointWhenPickedUp, pickupPointIssue())
-  .refine(hasWindowWhenPickedUp, pickupWindowIssue());
+  .refine(hasWindowWhenPickedUp, pickupWindowIssue())
+  .refine(hasOfferIffOffered, offerIssue());
 export type AdminOrderEstimatePayload = z.infer<typeof adminOrderEstimatePayloadSchema>;
 
 /**

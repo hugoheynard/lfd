@@ -239,6 +239,22 @@ export class OrderNotPayableError extends BusinessError {
  * suffirait à accorder un délai de paiement qu'aucun commercial n'a négocié — et
  * la plateforme livrerait à crédit sans jamais l'avoir décidé.
  */
+/**
+ * **Une commande offerte ne se passe pas encore.** Le contrat connaît le
+ * règlement `offered`, mais la ligne « offert » qui ramène le total à zéro
+ * n'existe pas encore dans l'agrégat : laisser passer `offered` créerait un
+ * lien de règlement pour une commande promise gratuite. Le refus tombe au lot
+ * qui bâtit la passation (`documentation/commandes/passation/plan-commande-offerte.md`, O3).
+ */
+export class OfferedOrderUnavailableError extends BusinessError {
+  constructor() {
+    super(
+      "orders.settlement.offered_unavailable",
+      "Les commandes offertes ne sont pas encore ouvertes : choisissez « Au compte » ou « Lien de règlement ».",
+    );
+  }
+}
+
 export class AccountSettlementNotGrantedError extends BusinessError {
   /**
    * @param directDebitBlocked le crédit est accordé mais la comptabilité a
