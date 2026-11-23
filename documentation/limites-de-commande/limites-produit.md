@@ -1,120 +1,155 @@
-# La limite de commande par article — état
+# La limite de commande du référentiel — état
 
-> Doc d'état, écrite le 2026-10-21 à partir du code ouvert ce jour-là. Le
-> pourquoi de l'échelle (héritage champ par champ, `NULL` ≠ « aucune limite »,
-> place de l'écran) est au §5 et au §12 de
-> [`architecture-heure-limite-de-commande.md`](architecture-heure-limite-de-commande.md).
-> Entrée du dossier : [`README.md`](README.md).
+> Doc d'état. Limite par produit : code ouvert le 2026-10-21. Limite par
+> famille et exclusions : bâties le 2026-11-23 (commits `0aca8093e`,
+> `0cf0ffed6`, `82f2e57e4` et les écrans qui suivent). Entrée du dossier :
+> [`README.md`](README.md).
 
-Le délai propre à un produit : « un gâteau d'anniversaire se sait deux jours
-avant ». Il est réglé au **référentiel**, parce qu'il tient au temps de
+Le délai propre à ce qu'on fabrique : « un gâteau d'anniversaire se sait deux
+jours avant ». Il se règle au **référentiel**, parce qu'il tient au temps de
 production, et il s'oppose à **toutes** les clientèles.
 
-🔴 **Depuis le 2026-10-21 (décisions de Hugo, [`schema-des-reglages.md`](schema-des-reglages.md) §4) :
-une limite par PRODUIT, règle entière, sans rattrapage.** « Toute la
-production » se règle au commerce ([`reglages-generaux.md`](reglages-generaux.md)) ;
-une famille n'a plus de limite propre ; une déclinaison suit son produit ; le
-seul rattrapage est celui de la règle générale.
+## 1. En deux mots
 
-## 1. Au référentiel
+Une limite se pose sur un **produit** ou sur une **famille**. Celle d'une
+famille vise tous ses produits et ceux de ses sous-familles, y compris ceux
+qu'on y créera, **sauf** les produits exclus nommément.
 
-**Table** `pim.order_time_limit` (`OrderTimeLimit`,
-`apps/lfd-api/prisma/schema/pim/sales-contexts.prisma`) : `scope_type`,
-`scope_id`, `days_before`, `time` (`HH:MM`, pendule de Paris), `grace_minutes`.
-Une règle par portée, tenue par l'index unique `order_time_limit_one_per_scope`.
-Les colonnes n'ont pas changé ; ce qui a changé :
+Un article peut donc être visé par plusieurs limites : la sienne, celle de sa
+famille, celles des familles au-dessus. **La plus stricte gagne** (décision de
+Hugo, 2026-11-23). Puis, à la passation, la plus stricte entre elle et la règle
+générale du commerce (inchangé).
 
-- **le domaine** (`OrderTimeLimit.set` / `reset`) refuse toute portée autre que
-  `product` (`pim.order_time_limit.scope_retired`, 400, le message dit où se
-  règle la générale), une limite sans délai OU sans heure
-  (`pim.order_time_limit.incomplete`) et un rattrapage non nul
-  (`pim.order_time_limit.grace_retired` — refusé plutôt qu'ignoré, pour qu'on ne
-  croie pas avoir posé une grâce). Un rattrapage `0` s'enregistre `NULL` ;
-- **la base** : la migration `20261021120000_une_limite_de_commande_par_produit`
-  ajoute `order_time_limit_product_only` (`scope_type = 'product'`) et
-  `order_time_limit_no_grace` (`grace_minutes` `NULL` ou `0`). Additive ; elle
-  échoue si une ligne la viole (aucune en production, d'après Hugo le
-  2026-10-21 ; en dev, les lignes « Toute la production » et « Viennoiseries »
-  ont été retirées par `RemoveOrderTimeLimitCommand` le même jour, et le
-  rattrapage d'une heure du Gros florentin remis à zéro par
-  `SetOrderTimeLimitCommand`). **⚠️ À relire avant promotion.**
-- **une ligne résiduelle** (globale, famille, déclinaison) se relit encore
-  (`reconstitute`) pour pouvoir se retirer, mais ne se modifie plus, ne
-  s'affiche plus (`ListOrderTimeLimits` ne rend que les produits), ne traverse
-  plus (l'émetteur filtre) et ne s'applique plus (la résolution l'ignore). La
-  garde qui refusait de retirer le global sous des règles qui en héritaient
-  (`GlobalOrderTimeLimitStillNeededError`) est retirée : plus rien n'hérite.
+```mermaid
+flowchart TD
+  A["Article : Fraisier 6 parts"] --> P["Limite du produit<br/>1 jour avant, 18 h"]
+  A --> F["Famille Gâteaux<br/>2 jours avant, 12 h"]
+  A --> R["Famille Pâtisserie (parente)<br/>aucune"]
+  P --> S{"La plus stricte"}
+  F --> S
+  R --> S
+  S --> L["2 jours avant, 12 h"]
+  L --> G["À la passation : la plus stricte<br/>avec la règle générale"]
+```
 
-**Résolution** (`resolveOrderTimeLimit`,
-`packages/catalog-sync/src/order-time-limit-resolution.ts`, partagée par les
-deux rives) : la règle du produit de l'article, si elle pose le délai ET
-l'heure ; rattrapage toujours `0`. Rien d'autre n'est lu.
+« Plus stricte » : plus de jours avant ; à jours égaux, l'heure la plus tôt.
 
-**Écrans** (droit `pim_catalog`) :
+Ce qui n'existe pas au référentiel : « toute la production » (elle se règle au
+commerce, [`reglages-generaux.md`](reglages-generaux.md)), la limite par
+déclinaison (elle suit son produit), le rattrapage (le seul est celui de la
+règle générale), l'exclusion d'une sous-famille (on pose la limite plus bas).
 
-- **Référentiel › Général › Limites de commande** (`/pim/limites-de-commande`,
-  `OrderTimeLimitsPage`) — en tête, la règle générale du commerce **en
-  lecture** (« Toute la production : la veille à 18:00, rattrapage aucun — se
-  règle dans Réglages › Commandes › Heure limite », avec le lien ; elle dit
-  quand l'interrupteur la coupe ou qu'elle n'existe pas). Lue par
-  `GET /pim/order-time-limits/general-cutoff` : la route du commerce est murée
-  par `lfc_order_settings`, et `pim → b2b` est interdit — le référentiel déclare
-  le port `GeneralOrderCutoffReader`
-  (`pim/channels/b2b-platform/general-order-cutoff/`), le commerce
-  l'implémente (`CommerceGeneralOrderCutoffReader`), `appBootstrap/
-general-order-cutoff.module.ts` les relie. Puis la liste des produits qui ont
-  une limite (modifier, retirer) ; plus de choix de portée, plus de « poser »
-  ici ;
-- la carte **« Limite de commande »** de la fiche produit
-  (`product-form/form-sections/order-limit/`) — la limite du produit (délai,
-  heure), ou « pas de limite propre » ; poser, modifier, archiver (elle cesse de s'appliquer), restaurer. Le panneau
-  n'a plus ni portée, ni « hériter », ni rattrapage.
+**Passer outre** : l'équipe ne peut passer outre la limite d'un article que si
+**toutes** les limites qui le visent le permettent. Passer outre fait juger la
+ligne par la règle générale seule
+([`passer-outre-la-limite-d-un-produit.md`](passer-outre-la-limite-d-un-produit.md)) :
+toutes les limites d'article tombent, donc toutes doivent y consentir.
 
-## 2. La propagation au commerce
+## 2. Au référentiel
 
-`SetOrderTimeLimit` / `ArchiveOrderTimeLimit` / `RestoreOrderTimeLimit` émettent, dans leur transaction,
-le fait durable **`pim.catalog_rules_changed`**
-(`pim/channels/b2b-platform/products/catalog-rules-changed.fact.ts`) : ce sont
-les **règles** qui traversent, pas des limites résolues — et, depuis le
-2026-10-21, les seules règles de produit **en vigueur** (`B2bCatalogRulesEmitter`
-lit `inForce`, qui filtre `archived_at IS NULL` dans la requête : une limite
-archivée cesse de s'appliquer et ne traverse plus). Le commerce
-(`OnCatalogRulesChangedHandler`, `lafoliecoffee/catalog/application/handlers/`) les range
-dans `public.catalog_rules` si le fait est plus récent (`applied_seq`), puis
-`OrderLimitsRefresher` les **descend sur chaque article en vente** (la règle de
-son produit seulement, depuis le 2026-10-21) — colonnes
-`CatalogItem.orderLimitDaysBefore` / `orderLimitTime` / `orderLimitGraceMinutes`.
-Les faits d'une fiche et d'une famille redescendent aussi (un article reclassé
-prenait les limites de sa nouvelle famille — sans effet depuis le 2026-10-21,
-plus aucune famille n'en porte). Avant tout fait de règles reçu, rien
-ne bouge.
+**Tables** (`apps/lfd-api/prisma/schema/pim/sales-contexts.prisma`) :
 
-## 3. À la passation
+- `pim.order_time_limit` (`OrderTimeLimit`) : `scope_type` (`product` ou
+  `category`, CHECK `order_time_limit_product_or_family`), `scope_id`,
+  `days_before`, `time` (`HH:MM`, pendule de Paris), `grace_minutes` (`NULL`
+  ou `0`, CHECK `order_time_limit_no_grace`), `staff_may_exceed`,
+  `archived_at`. Une règle par portée (`order_time_limit_one_per_scope`).
+- `pim.order_time_limit_exclusion` (`OrderTimeLimitExclusion`) : un produit
+  exclu d'une limite de famille. Retirer pose `removed_at` ; rien ne s'efface.
+  Une seule exclusion vivante par produit et par limite (index unique partiel
+  `order_time_limit_exclusion_one_live`). Ré-exclure crée une ligne.
+
+**Le domaine** (`pim/order-time-limitation/domain/entities/order-time-limit.ts`) :
+
+- `set` / `reset` refusent une portée autre que produit ou famille
+  (`pim.order_time_limit.scope_retired`), une limite sans délai OU sans heure
+  (`incomplete`), un rattrapage non nul (`grace_retired`) ;
+- `exclude` / `include` refusent hors d'une limite de famille
+  (`exclusion_on_product`, 400) et rendent `false` quand rien ne change ;
+- archiver garde les exclusions ; reposer une limite archivée la remet en
+  vigueur avec elles (l'écran les montre avant validation).
+
+**La lignée d'un produit** : `order-time-limitation` ne lit pas les tables du
+catalogue. Il déclare `ProductLineageReader` (`domain/ports/`), que
+`appBootstrap/pim-catalogue-product-lineage.ts` implémente avec les lectures du
+catalogue, relié dans `appBootstrap/order-time-limit-targets-feed.module.ts`.
+Il sert à refuser une famille inconnue (`family_not_found`, 404) et l'exclusion
+d'un produit hors de la famille (`exclusion_outside_family`, 409).
+
+**Les gestes** (`application/`, un fichier par cas) : `SetOrderTimeLimit`,
+`ArchiveOrderTimeLimit`, `RestoreOrderTimeLimit`, `ExcludeProductFromLimit`,
+`IncludeProductInLimit`. Chacun écrit son fait au journal du référentiel
+(`order_time_limit.product_excluded` / `product_included` pour les deux
+derniers) et émet les règles dans sa transaction. Exclure et réintégrer sont
+idempotents : rejoués, ils n'écrivent rien.
+
+**Routes** (droit `pim_catalog`, sous `/pim/order-time-limits`) :
+
+| Route                               | Ce qu'elle fait                                                      |
+| ----------------------------------- | -------------------------------------------------------------------- |
+| `GET /`                             | produits et familles, archivées comprises, exclusions nommées        |
+| `PUT /`                             | pose ou repose une limite de produit ou de famille                   |
+| `POST /:id/exclusions`              | exclut un produit (`{ productId }`)                                  |
+| `DELETE /:id/exclusions/:productId` | le réintègre                                                         |
+| `GET /effective/:productId`         | la lignée, les règles qui visent le produit, celle qui gagne et d'où |
+| `GET /general-cutoff`               | la règle générale du commerce, en lecture                            |
+
+**Écrans** :
+
+- **Référentiel › Général › Limites de commande** (`/pim/limites-de-commande`) :
+  la règle générale en lecture, puis les limites de produit et de famille ;
+  « Poser une limite » fait choisir la portée ; une ligne de famille déplie ses
+  produits exclus, chacun réintégrable.
+- **Fiche famille** : une carte « Limite de commande » (poser, modifier,
+  archiver, restaurer, exclure un produit de la famille, réintégrer).
+- **Fiche produit** : la limite effective et sa provenance (« … — famille
+  Gâteaux » ou « … — limite propre du produit »), si l'équipe peut passer
+  outre, une case « Exclure de la limite de la famille X » par famille limitée
+  de sa lignée, et la limite propre du produit.
+
+## 3. La résolution, partagée par les deux rives
+
+`resolveOrderTimeLimit` (`packages/catalog-sync/src/order-time-limit-resolution.ts`)
+retient la règle du produit et chaque règle de famille de la lignée
+(`categoryPath`, la plus proche d'abord) qui n'exclut pas le produit ; seules
+les règles complètes comptent. Elle rend le délai et l'heure de la plus
+stricte, un rattrapage `0`, et `staffMayExceed` = le ET de toutes les
+candidates. `explainOrderTimeLimit` dit en plus d'où vient la limite (à
+égalité, la plus précise : produit, puis famille la plus proche).
+
+## 4. La propagation au commerce
+
+Chaque geste émet le fait durable **`pim.catalog_rules_changed`**
+(`pim/channels/b2b-platform/products/catalog-rules-changed.fact.ts`) : les
+**règles** en vigueur de produit et de famille, avec leurs `excludedProductIds`
+(`B2bCatalogRulesEmitter`). Le commerce (`OnCatalogRulesChangedHandler`, un
+`@DurableHandler`) les range dans `public.catalog_rules` si le fait est plus
+récent (`applied_seq`), ne garde que les portées produit et famille
+(`admittedOrderLimitRules`), puis `OrderLimitsRefresher` **descend** sur chaque
+article en vente la limite résolue — colonnes `CatalogItem.orderLimitDaysBefore`
+/ `orderLimitTime` / `orderLimitGraceMinutes` / `orderLimitStaffMayExceed`.
+
+Un produit reclassé redescend par le fait de sa fiche ; une famille déplacée,
+par le fait de famille (`refresh(null)`). Le fait d'une fiche ne réécrit jamais
+une famille déjà connue (`ensureFamily` en `skipDuplicates`), donc ne peut pas
+déplacer une famille à l'insu des autres articles.
+
+## 5. À la passation
 
 `OrderDrafting.ensureNotTooLate` demande le verdict du délai de commande
-(`OrderDeadline`), qui relit le catalogue sur les SKU du panier en clientèle
-`pro` et juge la limite de chaque ligne
-([`le-verdict-de-l-heure-limite.md`](le-verdict-de-l-heure-limite.md)). Une limite
-d'article **n'a jamais de grâce** : le juge la force à `0`
-(`judge-order-deadline.ts`), même si une grâce est encore rangée sur l'article —
-passée l'heure, refus sec. 🔴 **La plus stricte gagne toujours** (décision de Hugo,
-2026-10-21) : chaque ligne est jugée par la plus fermée entre la limite de
-l'article (s'il en porte une) et la règle générale en vigueur pour ce jour et ce
-point ; puis la plus fermée du panier gagne ([`README.md`](README.md) §2). Une
-limite d'article plus tardive ne relâche donc jamais la règle générale. Seule
-la règle générale a une grâce, et c'est pendant elle que la dérogation et la
-surtaxe valent. Interrupteur de l'heure limite générale désactivé, il n'y a
-plus de règle en vigueur, et seule la limite d'article compte.
+(`OrderDeadline`) ([`le-verdict-de-l-heure-limite.md`](le-verdict-de-l-heure-limite.md)).
+Le juge lit **une** limite par article, celle que le commerce a descendue :
+il ne sait pas si elle vient du produit ou d'une famille. Une limite d'article
+**n'a jamais de grâce** : passée l'heure, refus sec. Chaque ligne est jugée par
+la plus fermée entre la limite de l'article et la règle générale en vigueur ;
+puis la plus fermée du panier gagne ([`README.md`](README.md) §2).
+Interrupteur de la règle générale désactivé, seule la limite d'article compte.
 
-Jusqu'au 2026-10-21, la limite d'article **remplaçait** la règle générale : un
-rang global posé au référentiel la neutralisait à la passation. Ce rang n'existe
-plus (§1).
-
-**L'équipe peut passer outre** la limite d'un produit dont la case le permet,
-avec le droit et un motif ; la règle générale reste le plancher
+**L'équipe peut passer outre** la limite d'un article dont la case résolue le
+permet (§1), avec le droit et un motif ; la règle générale reste le plancher
 ([`passer-outre-la-limite-d-un-produit.md`](passer-outre-la-limite-d-un-produit.md)).
 
-## 4. Ce que sert la boutique (depuis `a1e1c62f5`, 2026-10-21)
+## 6. Ce que sert la boutique (depuis `a1e1c62f5`, 2026-10-21)
 
 `ShopItemView.orderTimeLimit` (`packages/contracts/src/shop-catalogue.ts`),
 **facultatif** : `{ daysBefore, time }`, **jamais la grâce**. Posé par
@@ -141,7 +176,7 @@ propre à un jour ou à un point n'entre pas dans la comparaison.
 `<orderTimeLimit><daysBefore/><time/></orderTimeLimit>`, facultatif dans le XSD
 (`lafoliecoffee/vitrine/http/xml/vitrine-xml-shapes.ts`).
 
-## 5. La phrase, et ses trois formes
+## 7. La phrase, et ses trois formes
 
 Sur la fiche produit et sous le prix de la ligne du panier
 (`madeToOrderLabel`, `apps/lfc-ecommerce-frontend/src/app/client/shop/made-to-order.ts` ;
@@ -155,7 +190,7 @@ textes dans `copy/fr.ts`) :
 
 Absente du flux, rien ne s'affiche : l'absence est la réponse.
 
-## 6. Le compte à rebours d'un article du panier
+## 8. Le compte à rebours d'un article du panier
 
 Quand une limite d'article du panier tombe **plus tôt** que l'`orderUntil`
 général du jour dont parle la barre, c'est elle qui décide — la plus fermée du
@@ -170,11 +205,18 @@ panier : … » s'il y en a plusieurs)
 règle générale, la plus fermée des articles décide. Le reste du compte à
 rebours : [`reglages-generaux.md`](reglages-generaux.md) §6.
 
-## 7. Ce qui reste
+## 9. Ce qui reste
 
 - **Une limite d'article déjà passée n'est pas dite** pour le jour accordé
   (une limite à deux jours, commandée pour demain) : la barre se tait, la fiche
   et la ligne disent le délai, et seule la passation refuse. Dire « trop tard
   pour cet article » au panier reste à décider.
 - La comparaison « plus stricte » de la fiche ignore les règles par jour ou par
-  point (§4) ; le compte à rebours, lui, compare au jour près.
+  point (§6) ; le compte à rebours, lui, compare au jour près.
+- La fiche famille ne propose à l'exclusion que les produits de sa
+  descendance ; une exclusion devenue inerte (produit reclassé ailleurs) reste
+  listée, réintégrable, sans être signalée « hors de la famille ».
+- Avant de déployer en production : compter les règles non produit dans
+  `public.catalog_rules`, puis, après le déploiement, « Réémettre » les règles
+  (`CatalogReemissionService`) pour que le commerce range l'état du
+  référentiel.

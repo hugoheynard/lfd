@@ -209,7 +209,7 @@ describe("les limites de commande voyagent en règles", () => {
 
 /**
  * La limite d'une famille vise toute sa descendance, sauf ses exclusions
- * (`limites-de-commande/plan-limite-par-famille.md`) : elle voyage en règle
+ * (`documentation/limites-de-commande/limites-produit.md`) : elle voyage en règle
  * avec ses exclusions, et le commerce la descend par la lignée.
  */
 describe("la limite d'une famille", () => {
