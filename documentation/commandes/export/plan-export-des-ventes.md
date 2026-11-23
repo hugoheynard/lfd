@@ -493,7 +493,20 @@ qui reste, et ce qu'il faut décider :
   encore les remboursements partiels. L'écart entre les deux se dit dans la
   notice ; aligner le cockpit est un chantier à part.
 
-Le plan est **prêt à bâtir**.
+Tranché au bâti d'E0 (2026-11-23), sur les failles qu'il a remontées :
+
+- **La société d'une commande** est `company_id` (celle qui commande), ni la
+  société facturée ni le principal.
+- **Le nom sur un avoir** est celui d'aujourd'hui (enseigne, à défaut raison
+  sociale), lu par la même lecture que les commandes sur `payer_company_id` ;
+  le nom figé dans `buyer` n'est pas servi : un seul nom par société dans
+  l'export.
+- **Les commandes d'un avoir** sont celles qu'il nomme (`invoice_order`) ; un
+  avoir global n'en nomme aucune, et la notice le dit.
+- **Un remboursement sans nature** (fait hors de la plateforme) n'est pas
+  déduit : seule `return` se déduit (§ 5).
+
+E0 est bâti ; E1 suit.
 
 ## 11. Ce que la contradiction a changé
 

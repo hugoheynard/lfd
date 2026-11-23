@@ -44,6 +44,8 @@ import { CatalogCategoryProjection } from "./domain/ports/catalog-category.proje
 import { CatalogItemRepository } from "./domain/ports/catalog-item.repository.js";
 import { CatalogVisualsProjection } from "./domain/ports/catalog-visuals.projection.js";
 import { CanonicalPriceHistoryModule } from "./canonical-price-history.module.js";
+import { CategoryNamesReader } from "./domain/ports/category-names.reader.js";
+import { PrismaCategoryNamesReader } from "./infrastructure/prisma-category-names.reader.js";
 import { CatalogReader } from "./domain/ports/catalog.reader.js";
 import { ProductCatalogReader } from "./domain/ports/product-catalog.reader.js";
 import { CatalogBackedProductCatalog } from "./infrastructure/catalog-backed-product-catalog.js";
@@ -188,6 +190,7 @@ import { SnapshotOrderLineClassificationReader } from "./infrastructure/catalogu
     ShopFeaturedController,
   ],
   providers: [
+    { provide: CategoryNamesReader, useClass: PrismaCategoryNamesReader },
     SwitchShelfCacheHandler,
     // L'abonné qui projette les visuels d'une fiche sans attendre un push.
     // Il n'importe pas le référentiel : il reçoit un fait du bus.
@@ -346,6 +349,8 @@ import { SnapshotOrderLineClassificationReader } from "./infrastructure/catalogu
     // Pour la liste de la saisie de l'équipe : la société est lue avant le
     // rayon, pour qu'une clé venue de l'URL ne soit jamais rangée sans elle.
     ServedCompanyReader,
+    // Pour l'export des ventes : le nom des familles des lignes vendues.
+    CategoryNamesReader,
     // Pour la grille de prix (`export-grille-de-prix.md`) : le rayon d'un
     // public se compose comme la vitrine — opérations datées comprises — et
     // porte le prix au kilo saisi, lu À CÔTÉ de la résolution.

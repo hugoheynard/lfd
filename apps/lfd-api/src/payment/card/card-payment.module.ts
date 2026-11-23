@@ -28,6 +28,7 @@ import { CardRefundScope } from "./application/refunds/card-refund-scope.js";
 import { CardPayments } from "../channels/requests/card-payments.js";
 import { CardRefunds } from "../channels/requests/card-refunds.js";
 import { CardSettlementReader } from "../channels/requests/card-settlement.reader.js";
+import { SucceededCardRefundsReader } from "../channels/requests/succeeded-card-refunds.reader.js";
 import { CardPaymentRepository } from "./domain/ports/card-payment.repository.js";
 import { CardProviders } from "./domain/ports/card-providers.js";
 import { CardRefundLedgerRepository } from "./domain/ports/card-refund-ledger.repository.js";
@@ -47,6 +48,7 @@ import { PrismaCardRefundRequestLease } from "./infrastructure/prisma-card-refun
 import { PrismaCardRefundRequestRepository } from "./infrastructure/prisma-card-refund-request.repository.js";
 import { PrismaCardRefundSweepReader } from "./infrastructure/prisma-card-refund-sweep.reader.js";
 import { PrismaCardSettlementReader } from "./infrastructure/prisma-card-settlement.reader.js";
+import { PrismaSucceededCardRefundsReader } from "./infrastructure/prisma-succeeded-card-refunds.reader.js";
 import { PrismaPendingCardPaymentsReader } from "./infrastructure/prisma-pending-card-payments.reader.js";
 import { PrismaTakeoverReader } from "./infrastructure/prisma-takeover.reader.js";
 import { RegistryCardProviders } from "./infrastructure/registry-card-providers.js";
@@ -89,6 +91,9 @@ import { RegistryCardProviders } from "./infrastructure/registry-card-providers.
     IntentOutcomeRecorder,
     { provide: CardPayments, useClass: BlockCardPayments },
     { provide: CardSettlementReader, useClass: PrismaCardSettlementReader },
+    // L'argent rendu, par lot, que l'export des ventes lit (plan
+    // `documentation/commandes/export/plan-export-des-ventes.md`, § 5).
+    { provide: SucceededCardRefundsReader, useClass: PrismaSucceededCardRefundsReader },
     // Le balayage des paiements en attente (plan B).
     { provide: PendingCardPaymentsReader, useClass: PrismaPendingCardPaymentsReader },
     // Le remboursement (lot P1.b) : la demande, le carnet, l'exécuteur, le constat.
@@ -115,6 +120,12 @@ import { RegistryCardProviders } from "./infrastructure/registry-card-providers.
     RetryCardRefundHandler,
     SettleCardRefundElsewhereHandler,
   ],
-  exports: [CardPayments, CardSettlementReader, CardRefunds, CardProviders],
+  exports: [
+    CardPayments,
+    CardSettlementReader,
+    SucceededCardRefundsReader,
+    CardRefunds,
+    CardProviders,
+  ],
 })
 export class CardPaymentModule {}

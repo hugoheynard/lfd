@@ -79,6 +79,8 @@ import { InvoiceRepository } from "./domain/ports/invoice.repository.js";
 import { InvoiceIssuer } from "./application/services/invoice-issuer.js";
 import { PrismaInvoiceNumbering } from "./infrastructure/prisma-invoice-numbering.js";
 import { PrismaInvoiceReader } from "./infrastructure/prisma-invoice.reader.js";
+import { IssuedCreditNotesReader } from "./domain/ports/issued-credit-notes.reader.js";
+import { PrismaIssuedCreditNotesReader } from "./infrastructure/prisma-issued-credit-notes.reader.js";
 import { PrismaInvoiceRepository } from "./infrastructure/prisma-invoice.repository.js";
 import { OrderCollectionRepository } from "./domain/ports/order-collection.repository.js";
 import { OrderNumbersReader } from "./domain/ports/order-numbers.reader.js";
@@ -325,6 +327,7 @@ import { PrismaOrderRowsLock } from "./infrastructure/prisma-order-rows-lock.js"
     { provide: InvoiceNumbering, useClass: PrismaInvoiceNumbering },
     { provide: InvoiceRepository, useClass: PrismaInvoiceRepository },
     { provide: InvoiceReader, useClass: PrismaInvoiceReader },
+    { provide: IssuedCreditNotesReader, useClass: PrismaIssuedCreditNotesReader },
     InvoiceIssuer,
     // La facture du mois, et le lot qui encaisse des factures (E4).
     { provide: MonthlyInvoicingReader, useClass: PrismaMonthlyInvoicingReader },
@@ -435,6 +438,9 @@ import { PrismaOrderRowsLock } from "./infrastructure/prisma-order-rows-lock.js"
     AccountOrderEngaging,
     AccountOrderRevaluing,
     AccountOrderSettling,
+    // Les avoirs émis d'une période, que l'export des ventes compose
+    // (`documentation/commandes/export/plan-export-des-ventes.md`, § 3.4).
+    IssuedCreditNotesReader,
   ],
 })
 export class AccountingModule {}

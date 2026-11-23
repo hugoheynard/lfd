@@ -134,6 +134,8 @@ import { OnCompanyDeclaredResolveNaf } from "./application/handlers/on-company-d
 import { RechercheEntreprisesEstablishmentDirectory } from "./infrastructure/recherche-entreprises-establishment.directory.js";
 import { MembershipReader } from "./domain/ports/membership.reader.js";
 import { CompanyNameReader } from "./domain/ports/company-name.reader.js";
+import { CompanySalesIdentityReader } from "./domain/ports/company-sales-identity.reader.js";
+import { PrismaCompanySalesIdentityReader } from "./infrastructure/prisma-company-sales-identity.reader.js";
 import { PrismaCompanyNameReader } from "./infrastructure/prisma-company-name.reader.js";
 import { NavPreferencesRepository } from "./domain/ports/nav-preferences.repository.js";
 import { UserProfileRepository } from "./domain/ports/user-profile.repository.js";
@@ -537,6 +539,7 @@ import { PrismaPrincipalSitesMenuReader } from "./infrastructure/prisma-principa
     ReorderDeliveryStepsByStaffHandler,
     { provide: MembershipReader, useClass: PrismaMembershipReader },
     { provide: CompanyNameReader, useClass: PrismaCompanyNameReader },
+    { provide: CompanySalesIdentityReader, useClass: PrismaCompanySalesIdentityReader },
     { provide: AccountReader, useClass: PrismaAccountReader },
     {
       // 🔴 **En production, l'adaptateur Auth0 et lui seul** — avec ou sans M2M.
@@ -624,6 +627,8 @@ import { PrismaPrincipalSitesMenuReader } from "./infrastructure/prisma-principa
     // N4e (2026-10-20) : les paniers récurrents nomment leur site et murent
     // leurs gestes par le rattachement ACTUEL.
     CompanyNameReader,
+    // L'export des ventes nomme les sociétés et lit leur code NAF, par lot.
+    CompanySalesIdentityReader,
     MembershipReader,
     ImpersonationSubjects,
     PrincipalResolver,

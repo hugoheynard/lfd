@@ -266,6 +266,8 @@ import { PrismaCustomerSkuReader } from "./infrastructure/prisma-customer-sku.re
 import { PrismaSuggestedSkuSalesReader } from "./infrastructure/prisma-suggested-sku-sales.reader.js";
 import { SuggestedSkuSalesReader } from "../recommendations/domain/ports/suggested-sku-sales.reader.js";
 import { CoPurchaseReader } from "../recommendations/domain/ports/co-purchase.reader.js";
+import { SalesExportReader } from "./domain/ports/sales-export.reader.js";
+import { PrismaSalesExportReader } from "./infrastructure/prisma-sales-export.reader.js";
 import { PrismaCoPurchaseReader } from "./infrastructure/prisma-co-purchase.reader.js";
 import { PurchaseHistoryReader } from "../recommendations/domain/ports/purchase-history.reader.js";
 import { PrismaPurchaseHistoryReader } from "./infrastructure/prisma-purchase-history.reader.js";
@@ -754,6 +756,7 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     { provide: CompletedOrderReader, useClass: PrismaCompletedOrderReader },
     { provide: VoucherOrderReader, useClass: PrismaVoucherOrderReader },
     { provide: OrderNumberReader, useClass: PrismaOrderNumberReader },
+    { provide: SalesExportReader, useClass: PrismaSalesExportReader },
   ],
   // Le catalogue sort d'ici parce que l'écran de tarification en a besoin : il
   // doit résoudre les prix contre l'autorité que la caisse utilise, pas contre
@@ -801,6 +804,9 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     PurchaseHistoryReader,
     // Les agrégats par segment, lus par les audiences (A1).
     AudienceOrderReader,
+    // Les commandes passées d'une période, que l'export des ventes compose
+    // (`documentation/commandes/export/plan-export-des-ventes.md`, § 4).
+    SalesExportReader,
     // Le résumé d'une commande, que les avis au principal lisent (N2).
     OrderNoticeSummaryReader,
     // Les lignes d'une commande confirmée, que le bon de livraison recopie (plan E1).
