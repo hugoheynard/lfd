@@ -20,8 +20,8 @@ import {
 } from "./counter-particular-scene.js";
 
 /**
- * **La commande offerte à un particulier** (`plan-commande-offerte.md`,
- * § 2.4, O7a) : le mur du comptoir, la composition réelle, les gestes de
+ * **La commande offerte à un particulier** (`la-commande-offerte.md`,
+ * § 2.5) : le mur du comptoir, la composition réelle, les gestes de
  * l'offre partagés avec la saisie pour une société.
  */
 

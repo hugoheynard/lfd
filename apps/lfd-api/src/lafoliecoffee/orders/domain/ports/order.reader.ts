@@ -32,7 +32,7 @@ export interface OwnedOrder {
   /**
    * Le client reçoit-il les e-mails automatiques de cette commande ? `false`
    * seulement pour une commande offerte qui ne le prévient pas (décidé par
-   * Hugo le 2026-11-23, `plan-commande-offerte.md` § 4). Absent : prévenu.
+   * Hugo le 2026-11-23, `la-commande-offerte.md`, § 2.9). Absent : prévenu.
    * Se lit par {@link isCustomerNotified}.
    */
   readonly customerNotified?: boolean;

@@ -34,7 +34,7 @@ export interface CancellationState {
   readonly totalCents: number;
   /** Où le règlement se fera hors de chez nous — `shop_till`, ou `null`. */
   readonly settlementVenue: SettlementVenue | null;
-  /** Offerte par l'équipe : rien n'est dû ni facturé (`plan-commande-offerte.md`). */
+  /** Offerte par l'équipe : rien n'est dû ni facturé (`la-commande-offerte.md`). */
   readonly offered: boolean;
   /** Le jour de service `AAAA-MM-JJ`, ou `null` (commande sans jour). */
   readonly serviceDay: string | null;

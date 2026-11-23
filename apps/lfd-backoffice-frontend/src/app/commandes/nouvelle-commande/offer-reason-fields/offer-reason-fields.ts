@@ -13,7 +13,7 @@ import {
 
 /**
  * **Le motif d'une commande offerte** — sa nature, son texte, et l'accord pour
- * prévenir le client (`plan-commande-offerte.md`, O-5, O5).
+ * prévenir le client (`la-commande-offerte.md`, § 2.9).
  *
  * Partagé par les deux saisies qui offrent : celle d'une société (le panier,
  * règlement « Offerte ») et celle d'un particulier (« Offrir cette

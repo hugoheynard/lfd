@@ -1,7 +1,7 @@
 # TODO — `Order`, l'entonnoir unique de toute commande
 
 **État : 📝 à faire, pas planifié.** Noté le 2026-11-23 à la demande de Hugo,
-pendant la commande offerte (`passation/plan-commande-offerte.md`). À ouvrir
+pendant la commande offerte (`passation/la-commande-offerte.md`). À ouvrir
 **après** la commande offerte, qui servira de premier cas éprouvé.
 
 ## Le constat (mesuré le 2026-11-23)

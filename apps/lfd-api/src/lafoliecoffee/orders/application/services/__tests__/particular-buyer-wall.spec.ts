@@ -19,7 +19,7 @@ class OneStanding extends ParticularStandingReader {
   }
 }
 
-/** Le mur partagé par le comptoir et la commande offerte (`plan-commande-offerte.md`, O7-2). */
+/** Le mur partagé par le comptoir et la commande offerte (`la-commande-offerte.md`, § 2.5). */
 describe("ensureParticular", () => {
   it("admet un particulier", async () => {
     await expect(ensureParticular(new OneStanding("particular"), "u1")).resolves.toBeUndefined();

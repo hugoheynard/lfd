@@ -99,7 +99,7 @@ export const ACTIVITY_TYPES = {
    */
   orderBudgetCommitmentCorrected: "order.budget_commitment_corrected",
   /**
-   * L'équipe a **offert** une commande (`plan-commande-offerte.md`, O-8) : la
+   * L'équipe a **offert** une commande (`la-commande-offerte.md`, § 2.6) : la
    * nature et ce qu'elle valait. Un fait de trace : aucun score ne le lit.
    */
   orderOffered: "order.offered",

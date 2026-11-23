@@ -15,8 +15,8 @@ import { intentOptions } from '../shared/gesture-intents';
 const OFFERED_PARTICULAR = `${B2B_API_BASE}/admin/offered-orders/particular`;
 
 /**
- * **La commande offerte à un particulier** (`plan-commande-offerte.md`,
- * § 2.4) — transport pur. Sa route à elle, distincte de la commande notée au
+ * **La commande offerte à un particulier** (`la-commande-offerte.md`,
+ * § 2.5) — transport pur. Sa route à elle, distincte de la commande notée au
  * comptoir : le devis, puis la passation sous la clé d'intention de l'écran.
  */
 @Injectable({ providedIn: 'root' })

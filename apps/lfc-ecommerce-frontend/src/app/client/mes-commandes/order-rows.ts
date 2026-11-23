@@ -506,7 +506,7 @@ function paymentOf(order: CustomerOrderView): OrderPayment {
   // Une commande offerte se lit comme une commande à total nul : « Mes
   // commandes » ne liste que les commandes personnelles, et une commande
   // offerte à un particulier n'existe qu'avec le lot O7 de
-  // `plan-commande-offerte.md`, qui en dira le mot à l'écran.
+  // `la-commande-offerte.md`, qui en dira le mot à l'écran.
   if (
     order.settlement === 'account' ||
     order.settlement === 'free' ||

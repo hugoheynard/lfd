@@ -11,7 +11,7 @@ const ADMITTED: readonly string[] = ORDER_OFFER_NATURES.map((nature) => nature.k
 
 /**
  * **Pourquoi une commande est offerte** — doc
- * `documentation/commandes/passation/plan-commande-offerte.md` (O-5). Une
+ * `documentation/commandes/passation/la-commande-offerte.md`, § 2.1. Une
  * nature du registre et un texte court, tous deux obligatoires : une
  * exception de l'équipe sans raison écrite ne se relit pas.
  */

@@ -51,7 +51,7 @@ export class SendOrderCancelledMail implements DurableSubscriber {
       return;
     }
     // Une commande offerte qui ne prévient pas le client : aucun e-mail
-    // automatique (décidé par Hugo le 2026-11-23, `plan-commande-offerte.md` § 4).
+    // automatique (décidé par Hugo le 2026-11-23, `la-commande-offerte.md`, § 2.9).
     if (!isCustomerNotified(owned)) {
       return;
     }

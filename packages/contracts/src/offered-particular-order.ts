@@ -13,7 +13,7 @@ import {
 /**
  * Contrat de fil de la **commande offerte à un particulier**, saisie par
  * l'équipe (`POST /admin/offered-orders/particular` ;
- * `documentation/commandes/passation/plan-commande-offerte.md`, § 2.4, O7-1).
+ * `documentation/commandes/passation/la-commande-offerte.md`, § 2.5).
  *
  * Une route à part de `POST /admin/orders`, qui garde sa société obligatoire.
  * Aucun champ de règlement : la route offre, donc le motif (`offer`) est

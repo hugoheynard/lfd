@@ -10,7 +10,7 @@ export const ORDER_OFFER_REVALUED = "order.offer_revalued";
 const NATURES: readonly string[] = ORDER_OFFER_NATURES.map((nature) => nature.key);
 
 /**
- * **« L'équipe a offert cette commande »** (`plan-commande-offerte.md`, O-8) —
+ * **« L'équipe a offert cette commande »** (`la-commande-offerte.md`, § 2.6) —
  * écrit dans la boîte d'envoi, dans la transaction de la passation. Le texte
  * du motif n'y est pas : il peut nommer une personne, il reste sur la commande.
  * Clé `order.offered:<orderId>` : une commande n'est offerte qu'une fois.

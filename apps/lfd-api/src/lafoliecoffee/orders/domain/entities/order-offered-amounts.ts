@@ -9,7 +9,7 @@ import type { DraftOrderInput } from "./order-shapes.js";
 
 /**
  * **La ligne « offert »** — doc
- * `documentation/commandes/passation/plan-commande-offerte.md` (O-2).
+ * `documentation/commandes/passation/la-commande-offerte.md`, § 2.2.
  *
  * La commande s'est composée entière, comme si le client la payait : lignes,
  * remises, promotions, frais de livraison. L'offre retranche ensuite ce qui

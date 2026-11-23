@@ -16,7 +16,7 @@ import { EstimateOfferedParticularOrderQuery } from "../estimate-offered-particu
 
 /**
  * **L'estimation de la commande offerte à un particulier**
- * (`plan-commande-offerte.md`, § 2.4, O7c) : la préparation de la passation,
+ * (`la-commande-offerte.md`, § 2.10) : la préparation de la passation,
  * lue sans écrire.
  */
 

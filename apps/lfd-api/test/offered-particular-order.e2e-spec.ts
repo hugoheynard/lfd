@@ -1,7 +1,7 @@
 /**
  * E2E de la **commande offerte à un particulier**
  * (`POST /admin/offered-orders/particular`) — lot O7a de
- * `documentation/commandes/passation/plan-commande-offerte.md`, § 2.4.
+ * `documentation/commandes/passation/la-commande-offerte.md`, § 2.5.
  *
  * Ce qui ne se prouve qu'ici : le mur du particulier lu par le SQL
  * d'`account` (membre de société, fiche désactivée), la livraison fermée aux

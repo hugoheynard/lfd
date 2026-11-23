@@ -22,7 +22,7 @@ function countingPorts(): { readonly ports: StaffSettlementPorts; readonly reads
 }
 
 /**
- * La commande offerte (plan `plan-commande-offerte.md`, O3) : rien à
+ * La commande offerte (`la-commande-offerte.md`, § 2.5) : rien à
  * encaisser, donc ni crédit, ni statut, ni payeur à juger. Le droit d'offrir
  * se garde au handler.
  */

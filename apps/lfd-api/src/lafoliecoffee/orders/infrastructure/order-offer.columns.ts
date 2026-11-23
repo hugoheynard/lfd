@@ -9,7 +9,7 @@ import { InvalidOrderOfferError } from "../domain/errors/order-offer-errors.js";
 
 /**
  * **Les colonnes de la commande offerte** (migration `20261123150100`, doc
- * `documentation/commandes/passation/plan-commande-offerte.md`, O-4) — écrites
+ * `documentation/commandes/passation/la-commande-offerte.md`, § 2.3) — écrites
  * par la passation et par la révision, de la même façon. Tout ou rien : la
  * base refuse un motif sans valeur (`orders_offer_together`).
  */

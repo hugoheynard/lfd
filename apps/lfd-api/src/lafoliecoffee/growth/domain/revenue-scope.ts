@@ -30,7 +30,7 @@ export const REVENUE_ORDER_STATUSES = [
  * ne lisent pas `order_refunds` (vérifié le 2026-10-09).
  *
  * Une commande **offerte** n'est jamais du CA, quel que soit son règlement :
- * `revenueWhere` la retire (`offer_nature IS NULL`, `plan-commande-offerte.md`, O-9).
+ * `revenueWhere` la retire (`offer_nature IS NULL`, `la-commande-offerte.md`, § 2.8).
  */
 export const REVENUE_PAYMENT_STATUSES = ["not_required", "paid"] as const;
 

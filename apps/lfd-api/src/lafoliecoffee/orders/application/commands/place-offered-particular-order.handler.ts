@@ -26,8 +26,8 @@ import {
 } from "./place-offered-particular-order.command.js";
 
 /**
- * **La commande offerte à un particulier** (`plan-commande-offerte.md`,
- * § 2.4, O7-1 à O7-5).
+ * **La commande offerte à un particulier** (`la-commande-offerte.md`,
+ * § 2.5).
  *
  * Une route à part de la saisie pour une société, qui garde sa société
  * obligatoire. Les gestes de l'offre sont ceux de toute passation offerte

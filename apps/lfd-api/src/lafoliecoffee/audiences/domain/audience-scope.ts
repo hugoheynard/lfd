@@ -23,6 +23,6 @@ export const AUDIENCE_EXCLUDED_ORDER_STATUSES = ["draft", "cancelled"] as const;
 /**
  * Une commande **offerte** n'entre jamais dans une audience, quel que soit son
  * règlement : une dégustation offerte à un prospect n'en fait pas un client
- * actif (`plan-commande-offerte.md`, O-9). Tenu par le lecteur (`offer_nature IS NULL`).
+ * actif (`la-commande-offerte.md`, § 2.8). Tenu par le lecteur (`offer_nature IS NULL`).
  */
 export const AUDIENCE_COUNTED_PAYMENT_STATUSES = ["not_required", "paid"] as const;

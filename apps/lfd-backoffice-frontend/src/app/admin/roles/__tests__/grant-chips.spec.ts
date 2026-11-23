@@ -146,7 +146,7 @@ describe('grantGroups', () => {
    * (commandes/back-office/plan-visa-des-commandes.md, V1). 78 le 2026-11-22 :
    * `staff_notice_audiences`, les destinataires des avis
    * (payment/les-liens-de-paiement.md, P1c). 79 le 2026-11-23 :
-   * `b2b_offer_order`, offrir une commande (commandes/passation/plan-commande-offerte.md).
+   * `b2b_offer_order`, offrir une commande (commandes/passation/la-commande-offerte.md).
    * 80 le même jour : `exports`, les clés de l'export des ventes
    * (commandes/export/plan-export-des-ventes.md, E2).
    */

@@ -43,7 +43,7 @@ import {
  * - `offered` — la commande est **offerte** : composée comme si le client la
  *   payait, puis ramenée à zéro par une ligne « offert ». Elle exige un motif
  *   (`offer`) et un droit à part. Doc
- *   `documentation/commandes/passation/plan-commande-offerte.md`.
+ *   `documentation/commandes/passation/la-commande-offerte.md`.
  *
  * Aucune valeur « carte saisie au comptoir » : un numéro de carte dicté au
  * téléphone et tapé par un commercial est exactement ce qu'on ne veut pas

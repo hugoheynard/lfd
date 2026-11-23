@@ -1893,7 +1893,7 @@ describe("PlaceOrderForCustomerHandler — passer outre la limite d'un produit",
   });
 });
 
-/** La commande offerte (plan `plan-commande-offerte.md`, O3). */
+/** La commande offerte (`la-commande-offerte.md`, § 2.5). */
 describe("PlaceOrderForCustomerHandler — la commande offerte", () => {
   const OFFER = { nature: "tasting" as const, note: "Dégustation mariage", notifyCustomer: false };
   const offered = (over: Partial<AdminPlaceOrderPayload> = {}) =>

@@ -5,7 +5,7 @@ import { cents, count, fact, namedOrBare, payload, ref, subjectLabel } from "./f
 
 /**
  * **La commande offerte** (doc
- * `documentation/commandes/passation/plan-commande-offerte.md`, O-8) — ce que
+ * `documentation/commandes/passation/la-commande-offerte.md`, § 2.6) — ce que
  * le journal garde d'une commande que l'équipe a offerte : qui, de quelle
  * nature, et ce qu'elle valait au calcul normal (TTC et TVA). Le sujet est le
  * client, comme `order.placed`.

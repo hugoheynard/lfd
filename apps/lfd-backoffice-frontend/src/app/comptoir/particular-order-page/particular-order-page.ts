@@ -74,7 +74,7 @@ interface PlacedParticularOrder extends CounterParticularPlacedOrderResponse {
  * règlement : notre système ne sait jamais que la commande est payée.
  *
  * Avec le droit d'offrir (`b2b_offer_order:write`), la même saisie offre la
- * commande (`plan-commande-offerte.md`, § 2.4, O7c) : le motif, le retrait ou
+ * commande (`la-commande-offerte.md`, § 2.10) : le motif, le retrait ou
  * une livraison à une adresse dictée, la valeur offerte au devis, et la
  * passation par la route offerte. La personne et le panier restent les mêmes :
  * offrir est un choix dans la saisie, pas un autre écran.

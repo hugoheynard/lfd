@@ -55,7 +55,7 @@ export const BOUGHT_WITH_EXCLUDED_ORDER_STATUSES = ["draft", "cancelled"] as con
 /**
  * Les règlements d'une commande prise : au compte, gratuit, ou encaissé. Une
  * commande offerte n'en est jamais (`offer_nature IS NULL` au lecteur,
- * `plan-commande-offerte.md`, O-9).
+ * `la-commande-offerte.md`, § 2.8).
  */
 export const BOUGHT_WITH_COUNTED_PAYMENT_STATUSES = ["not_required", "paid"] as const;
 

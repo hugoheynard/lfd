@@ -27,7 +27,7 @@ export interface EarnableOrder {
    * La commande est offerte par l'équipe : elle ne rapporte aucun point. Son
    * sous-total garde la valeur pleine (la ligne « offert » retranche le total,
    * pas les lignes), et sans cette marque l'assiette la créditerait
-   * (`plan-commande-offerte.md`, O-9).
+   * (`la-commande-offerte.md`, § 2.8).
    */
   readonly offered: boolean;
 }

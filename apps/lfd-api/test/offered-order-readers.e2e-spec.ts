@@ -1,7 +1,7 @@
 /**
  * E2E des **lecteurs qui comptent des achats**, face à une commande offerte
- * (lot O4 de `documentation/commandes/passation/plan-commande-offerte.md`,
- * O-9). Une commande offerte est une vraie commande, réglée `not_required`
+ * (`documentation/commandes/passation/la-commande-offerte.md`,
+ * § 2.8). Une commande offerte est une vraie commande, réglée `not_required`
  * comme une commande au compte : sans la marque `offer_nature`, chaque
  * lecteur la compterait comme un achat. Chaque lecteur est éprouvé contre un
  * témoin payé, pour qu'un lecteur vide ne passe pas pour un lecteur juste.

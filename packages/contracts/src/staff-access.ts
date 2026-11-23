@@ -135,7 +135,7 @@ export const staffResourceSchema = z.enum([
   /**
    * **Offrir une commande** — passer pour un client une commande ramenée à
    * zéro, avec son motif (doc
-   * `documentation/commandes/passation/plan-commande-offerte.md`, O-6).
+   * `documentation/commandes/passation/la-commande-offerte.md`, § 2.4).
    * S'ajoute à `b2b_place_order`. Une action utile, `write`. Accordée à
    * l'écran ; aucune migration ne la donne à un rôle.
    */

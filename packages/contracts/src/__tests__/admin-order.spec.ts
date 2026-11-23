@@ -94,7 +94,7 @@ describe("adminPlaceOrderPayloadSchema", () => {
   });
 });
 
-/** La commande offerte (plan `plan-commande-offerte.md`, O0) : le motif suit le règlement. */
+/** La commande offerte (`la-commande-offerte.md`, § 2.1) : le motif suit le règlement. */
 describe("la commande offerte au contrat", () => {
   const base = {
     companyId: "cmp_1",

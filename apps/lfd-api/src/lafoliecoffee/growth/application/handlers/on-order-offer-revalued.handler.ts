@@ -19,7 +19,7 @@ export const RECORD_ORDER_OFFER_REVALUED = "lfc.growth.record-order-offer-revalu
 
 /**
  * Abonné du journal : `order.offer_revalued` → **la valeur d'une commande
- * offerte, revue par une modification** (`plan-commande-offerte.md`, O-8).
+ * offerte, revue par une modification** (`la-commande-offerte.md`, § 2.6).
  * Une clé par révision : le dernier témoin d'une commande dit sa valeur.
  */
 @Injectable()

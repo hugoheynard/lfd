@@ -2,7 +2,7 @@ import type { OfferedParticularOrderPayload } from "@lfd/contracts";
 
 /**
  * L'équipe **offre une commande à un particulier**
- * (`plan-commande-offerte.md`, § 2.4, O7-1).
+ * (`la-commande-offerte.md`, § 2.5).
  *
  * Deux identités : `staffUserId`, celui qui offre (posé par la porte staff),
  * et `payload.buyerUserId`, la fiche du particulier — vérifiée par le

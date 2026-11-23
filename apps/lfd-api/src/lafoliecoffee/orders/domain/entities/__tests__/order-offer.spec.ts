@@ -16,7 +16,7 @@ import {
 } from "../../../revision/domain/entities/__tests__/revisable-order.fixture.js";
 
 /**
- * **La commande offerte dans l'agrégat** (plan `plan-commande-offerte.md`, O1) :
+ * **La commande offerte dans l'agrégat** (`la-commande-offerte.md`, § 2.2) :
  * composée entière, puis ramenée à zéro taux par taux, et offerte elle reste
  * à la révision.
  */

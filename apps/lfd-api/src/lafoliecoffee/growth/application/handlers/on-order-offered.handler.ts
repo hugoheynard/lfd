@@ -20,7 +20,7 @@ export const RECORD_ORDER_OFFERED = "lfc.growth.record-order-offered";
 
 /**
  * Abonné du journal : `order.offered` → **le témoin d'une commande offerte**
- * (`plan-commande-offerte.md`, O-8). Le sujet est le client ; la charge dit
+ * (`la-commande-offerte.md`, § 2.6). Le sujet est le client ; la charge dit
  * qui a offert (la fiche staff, sous son nom du moment), la nature et la
  * valeur. Durable : une commande n'est offerte qu'une fois.
  */

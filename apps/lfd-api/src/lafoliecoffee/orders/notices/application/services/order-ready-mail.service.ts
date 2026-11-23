@@ -79,7 +79,7 @@ export class OrderReadyMail {
       return false;
     }
     // Une commande offerte qui ne prévient pas le client : aucun e-mail
-    // automatique ; le rappel de retrait, geste de l'équipe, part quand même (décidé par Hugo le 2026-11-23, `plan-commande-offerte.md` § 4).
+    // automatique ; le rappel de retrait, geste de l'équipe, part quand même (décidé par Hugo le 2026-11-23, `la-commande-offerte.md`, § 2.9).
     if (!isCustomerNotified(owned) && options.reminder !== true) {
       return false;
     }

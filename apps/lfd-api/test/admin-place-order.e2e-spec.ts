@@ -136,7 +136,7 @@ function payload(over: Record<string, unknown> = {}): Record<string, unknown> {
   };
 }
 
-/** Une commande offerte (plan `plan-commande-offerte.md`, O3) : total vu nul. */
+/** Une commande offerte (`la-commande-offerte.md`, § 2.5) : total vu nul. */
 function offeredPayload(companyId: string, buyerUserId: string): Record<string, unknown> {
   return payload({
     companyId,

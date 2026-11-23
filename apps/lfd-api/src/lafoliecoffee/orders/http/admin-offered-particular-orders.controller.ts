@@ -24,7 +24,7 @@ import { EstimateOfferedParticularOrderQuery } from "../application/queries/esti
 
 /**
  * Surface de la **commande offerte à un particulier**
- * (`documentation/commandes/passation/plan-commande-offerte.md`, § 2.4, O7-1).
+ * (`documentation/commandes/passation/la-commande-offerte.md`, § 2.5).
  *
  * Sa route à elle : `POST /admin/orders` garde sa société obligatoire. La
  * porte exige le droit de saisir (`b2b_place_order:write`) ; le droit

@@ -4,7 +4,7 @@ import {
 } from "../../../domain/errors/order-offer-errors.js";
 import { ensureMayOffer, offerPartyOf } from "../order-offering.js";
 
-/** Les gestes de l'offre partagés par les deux passations (`plan-commande-offerte.md`, O7-3). */
+/** Les gestes de l'offre partagés par les deux passations (`la-commande-offerte.md`, § 2.5). */
 describe("ensureMayOffer", () => {
   it("laisse passer une commande qui n'est pas offerte, avec ou sans le droit", () => {
     expect(() => ensureMayOffer(false, false)).not.toThrow();

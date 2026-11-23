@@ -390,7 +390,7 @@ model Order {
   totalCents Int    @map("total_cents")
   currency   String @default("EUR")
 
-  /// LA COMMANDE OFFERTE (`plan-commande-offerte.md`, O-4) — tout ou rien
+  /// LA COMMANDE OFFERTE (`la-commande-offerte.md`, § 2.3) — tout ou rien
   /// (CHECK `orders_offer_together`). Le motif : une nature du registre
   /// (CHECK `orders_offer_nature_known`) et un texte. La valeur : ce que la
   /// commande aurait coûté au calcul normal — TTC, TVA, TVA par taux

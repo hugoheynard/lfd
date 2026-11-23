@@ -10,7 +10,7 @@ import {
 
 /**
  * **L'adresse dictée et la tranche d'une livraison offerte à un particulier**
- * (`plan-commande-offerte.md`, O7-4). Un particulier n'a pas de carnet chez
+ * (`la-commande-offerte.md`, § 2.5). Un particulier n'a pas de carnet chez
  * l'équipe : l'adresse se tape, et ne s'enregistre nulle part ailleurs que
  * sur la commande. La desserte et l'ouverture aux particuliers sont jugées
  * par le serveur, qui les dit dans le devis.

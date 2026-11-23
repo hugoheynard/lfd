@@ -16,7 +16,7 @@ export interface OfferedParticularOrderPreparationPorts {
 
 /**
  * **La commande offerte à un particulier, composée et pas encore écrite**
- * (`plan-commande-offerte.md`, § 2.4, O7-2 et O7-4).
+ * (`la-commande-offerte.md`, § 2.5).
  *
  * Le mur est celui du comptoir ({@link ensureParticular}) ; la composition est
  * {@link OrderDrafting}, sans société : la clientèle publique se résout au

@@ -59,8 +59,8 @@ export const OFFERED_MENTION = 'Offerte : ni facturée, ni prélevée, ni régl�
  *
  * Avec le droit d'offrir, « Offrir cette commande » ouvre le motif et le mode
  * d'acheminement — une offerte peut être livrée à une adresse dictée — et
- * montre la valeur offerte que le devis rend (`plan-commande-offerte.md`,
- * O7c). La page envoie alors la commande par la route offerte.
+ * montre la valeur offerte que le devis rend (`la-commande-offerte.md`,
+ * § 2.10). La page envoie alors la commande par la route offerte.
  */
 @Component({
   selector: 'app-particular-cart',

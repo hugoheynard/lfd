@@ -12,7 +12,7 @@ import {
  *
  * Le même mur pour toute commande qu'elle porte sans société : notée au
  * comptoir (`counter-particular-order-preparation.ts`) ou offerte
- * (`offered-particular-order-preparation.ts`, `plan-commande-offerte.md`, O7-2).
+ * (`offered-particular-order-preparation.ts`, `la-commande-offerte.md`, § 2.5).
  *
  * @throws {CounterParticularNotFoundError} aucune fiche sous cet identifiant.
  * @throws {CounterBuyerIsCompanyMemberError} la fiche est rattachée à une société.

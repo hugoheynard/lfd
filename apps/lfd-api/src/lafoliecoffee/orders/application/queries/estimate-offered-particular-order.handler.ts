@@ -13,7 +13,7 @@ import { EstimateOfferedParticularOrderQuery } from "./estimate-offered-particul
 
 /**
  * **L'estimation de la commande offerte à un particulier**
- * (`plan-commande-offerte.md`, § 2.4, O7c) : la commande que
+ * (`la-commande-offerte.md`, § 2.10) : la commande que
  * `PlaceOfferedParticularOrderHandler` passerait, composée par la même
  * préparation, puis lue sans être écrite — la vue de l'estimation de la
  * saisie pour une société, pour un seul vocabulaire à l'écran.

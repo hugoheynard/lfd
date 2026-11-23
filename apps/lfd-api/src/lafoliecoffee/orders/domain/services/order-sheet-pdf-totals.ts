@@ -43,7 +43,7 @@ export const PRETAX_ONLY_NOTE = "TVA et TTC sur la facture du mois.";
 
 /**
  * La mention d'une commande offerte par l'équipe, sous ses totaux nuls : rien
- * n'est dû, et aucune facture ne viendra (`plan-commande-offerte.md`).
+ * n'est dû, et aucune facture ne viendra (`la-commande-offerte.md`).
  */
 export const OFFERED_NOTE = "Commande offerte — sans facturation.";
 

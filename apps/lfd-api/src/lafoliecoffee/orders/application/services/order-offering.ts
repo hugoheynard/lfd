@@ -12,7 +12,7 @@ import {
 
 /**
  * **Les gestes de l'offre, tenus au même endroit quelle que soit la porte**
- * (`plan-commande-offerte.md`, O7-3) : la saisie pour une société
+ * (`la-commande-offerte.md`, § 2.5) : la saisie pour une société
  * (`PlaceOrderForCustomerHandler`) et la commande offerte à un particulier
  * (`PlaceOfferedParticularOrderHandler`) les appellent toutes deux. Le
  * droit, le motif et le fait `order.offered` ne se recopient pas d'une

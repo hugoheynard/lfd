@@ -158,7 +158,7 @@ export interface SheetFulfillment {
  * total nul ; `shop_till` — notée au comptoir pour un particulier, à régler
  * à la caisse de la boutique : notre système ne sait jamais qu'elle est
  * payée ; `offered` — offerte par l'équipe, avec son motif : rien n'est dû,
- * rien n'est facturé (`plan-commande-offerte.md`). Un particulier n'est
+ * rien n'est facturé (`la-commande-offerte.md`). Un particulier n'est
  * jamais `account`.
  */
 export const settlementRegimeSchema = z.enum([

@@ -17,8 +17,8 @@ import {
 } from './particular-order-draft';
 
 /**
- * **Offrir la commande d'un particulier** (`plan-commande-offerte.md`, § 2.4,
- * O7c) — ce que la saisie du particulier ajoute quand l'équipe choisit
+ * **Offrir la commande d'un particulier** (`la-commande-offerte.md`, § 2.10)
+ * — ce que la saisie du particulier ajoute quand l'équipe choisit
  * « Offrir cette commande » : le motif, et le mode d'acheminement, puisqu'une
  * offerte peut être livrée à une adresse dictée.
  *
