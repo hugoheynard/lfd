@@ -83,6 +83,30 @@ L'état bâti est décrit dans [`le-bloc-payment.md`](le-bloc-payment.md) et
 | 5   | **W** — les abonnés du commerce en `lfc.`              | vocabulaire, sans changement de comportement                                                                                                                                                                                                                        | —                                                                                                                |
 | 6   | **Le prélèvement dans le bloc**                        | les mandats et le compte du débiteur (D3), puis les lots et le `pain.008` (D4) : [`le-prelevement-dans-payment.md`](le-prelevement-dans-payment.md) ; le plan des mandats est **suspendu** ([`plan-les-mandats-dans-payment.md`](plan-les-mandats-dans-payment.md)) | une **question de conception** d'abord : un mandat connaît la société, le bloc ne connaît que des sujets opaques |
 
+### I0 → I2 : une décision prise d'avance (Hugo, 2026-11-23)
+
+**Le moyen de paiement appartient à la facture ; le payeur n'en donne que le
+défaut.** La facture fige déjà son moyen à l'émission (`invoice.payment_means`,
+BG-16 : `58` virement, `59` prélèvement), tiré du plan de facture d'un groupe
+(`PayerInvoicePlan.means`, `invoicePaymentMeansOf`,
+`accounting/domain/services/monthly-invoicing.ts:230`). I0 → I2 ajoute « la
+carte par lien » **à ce niveau-là** :
+
+- `payer_collection_means` peut proposer la carte par lien comme **défaut** du
+  payeur (le chalet qui veut payer chaque période par carte) ;
+- un **circuit** peut l'imposer à un groupe sans toucher au payeur : la régie
+  d'un organisme public, dont le payeur reste au virement pour ses bons de
+  commande
+  ([`plan-clients-publics-chorus.md`](../comptabilite/facturation/plan-clients-publics-chorus.md),
+  § 6 nonies) ;
+- le règlement, l'échéance, le PDF et le Factur-X lisent le moyen **de la
+  facture**, jamais celui du payeur relu après coup.
+
+Raison : décidé après que la régie a montré qu'un même payeur peut avoir, dans
+une même période, une facture au virement et une facture par lien. Un moyen
+porté par le seul payeur ne le permettrait pas, et une valeur de
+`payer_collection_means` déjà servie serait à défaire.
+
 **Ce qui reste de M2**, sans plan écrit (vérifié dans le code le
 2026-11-22) :
 
