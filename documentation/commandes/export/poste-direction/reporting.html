@@ -75,6 +75,38 @@
         font-size: 0.8rem;
         color: #555;
       }
+      tr.clickable {
+        cursor: pointer;
+      }
+      tr.clickable:hover td {
+        background: #eef4fb;
+      }
+      tr.selected td {
+        background: #dbe9f8;
+        font-weight: 600;
+      }
+      tr.detail > td {
+        background: #f6f8fa;
+        padding: 0.5rem 0.75rem 0.75rem 2rem;
+        text-align: left;
+      }
+      tr.detail table {
+        width: auto;
+        min-width: 60%;
+      }
+      .scope {
+        display: flex;
+        gap: 0.75rem;
+        align-items: center;
+        margin: 0 0 0.75rem;
+        font-size: 0.9rem;
+      }
+      button {
+        font: inherit;
+        font-size: 0.85rem;
+        padding: 0.25rem 0.6rem;
+        cursor: pointer;
+      }
     </style>
   </head>
   <body>
@@ -100,10 +132,25 @@
     <p class="note">
       Jour de passation, heure de Paris. Seules les commandes qui comptent dans le CA sont sommées.
       « Net TTC » = TTC moins les remboursements de retour. Les avoirs sont rangés à leur jour
-      d'émission, à part.
+      d'émission, à part. <strong>Cliquez sur une journée</strong> pour voir ses commandes et ses
+      ventes par famille.
     </p>
 
-    <h2>Commandes</h2>
+    <div class="scope">
+      <span id="scope-label"></span>
+      <button type="button" id="scope-clear" hidden>Revenir à toute la période</button>
+    </div>
+
+    <h2 id="families-title">Ventes par famille</h2>
+    <div class="scroll"><table id="families"></table></div>
+    <p class="note">
+      Le détail des articles des commandes qui comptent dans le CA, sur la journée ou la période
+      choisie. Les montants sont ceux des lignes,
+      <strong>avant les remises de panier, le bon de fidélité et les frais</strong> : leur total
+      n'est pas le CA, qui se lit dans le résumé.
+    </p>
+
+    <h2 id="orders-title">Commandes</h2>
     <form id="orders-form">
       <label
         >Clientèle
@@ -124,6 +171,7 @@
       </label>
     </form>
     <div class="scroll"><table id="orders"></table></div>
+    <p class="note">Cliquez sur une commande pour voir ses articles.</p>
 
     <script src="ventes.js"></script>
     <script>
@@ -133,6 +181,13 @@
         var data = window.VENTES;
         var euro = new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" });
         var integer = new Intl.NumberFormat("fr-FR");
+        // Un prix unitaire porte jusqu'à cinq décimales (le millicentime) : on les garde.
+        var unitEuro = new Intl.NumberFormat("fr-FR", {
+          style: "currency",
+          currency: "EUR",
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 5,
+        });
 
         function byId(id) {
           return document.getElementById(id);
@@ -158,7 +213,8 @@
           });
         }
 
-        function fill(table, columns, items, totals) {
+        // `onRow(item, row, body)` rend une ligne cliquable, ou la marque.
+        function fill(table, columns, items, totals, onRow) {
           table.innerHTML = "";
           header(table, columns);
           var body = table.createTBody();
@@ -167,6 +223,7 @@
             columns.forEach(function (column) {
               cell(row, column.value(item), column.text);
             });
+            if (onRow) onRow(item, row, body);
           });
           if (totals) {
             var foot = table.createTFoot().insertRow();
@@ -307,17 +364,226 @@
             ],
             rows,
             totals,
+            function (item, row) {
+              row.className = "clickable" + (item.day === selectedDay ? " selected" : "");
+              row.title = "Voir les commandes du " + dayLabel(item.day);
+              row.addEventListener("click", function () {
+                selectedDay = selectedDay === item.day ? null : item.day;
+                renderAll();
+              });
+            },
           );
         }
 
+        // La journée choisie dans le résumé, ou `null` : toute la période.
+        var selectedDay = null;
+
+        function dayLabel(day) {
+          var parts = day.split("-");
+          return parts[2] + "/" + parts[1] + "/" + parts[0];
+        }
+
+        // Le jour de passation se lit dans `placedAt`, déjà à l'heure de Paris.
+        function placedDay(order) {
+          return order.placedAt.slice(0, 10);
+        }
+
+        function inScope(order) {
+          var day = placedDay(order);
+          if (selectedDay) return day === selectedDay;
+          var from = byId("from").value;
+          var to = byId("to").value;
+          return (!from || day >= from) && (!to || day <= to);
+        }
+
+        function renderScope() {
+          var from = byId("from").value;
+          var to = byId("to").value;
+          var label;
+          if (selectedDay) label = "Journée du " + dayLabel(selectedDay);
+          else if (from && to) label = "Période du " + dayLabel(from) + " au " + dayLabel(to);
+          else label = "Toute la période";
+          byId("scope-label").textContent = label;
+          byId("scope-clear").hidden = !selectedDay;
+          byId("families-title").textContent = "Ventes par famille — " + label.toLowerCase();
+          byId("orders-title").textContent = "Commandes — " + label.toLowerCase();
+        }
+
+        var linesByOrder = {};
+
+        function indexLines() {
+          (data.lines || []).forEach(function (line) {
+            (linesByOrder[line.orderNumber] = linesByOrder[line.orderNumber] || []).push(line);
+          });
+        }
+
+        function quantityLabel(line) {
+          if (line.saleUnit === "weight") {
+            return integer.format(line.quantity / 1000) + " kg";
+          }
+          return integer.format(line.quantity);
+        }
+
+        function renderFamilies() {
+          var families = {};
+          data.orders.filter(inScope).forEach(function (order) {
+            if (!order.countsAsRevenue) return;
+            (linesByOrder[order.orderNumber] || []).forEach(function (line) {
+              var name = line.family || "Sans famille";
+              var family =
+                families[name] ||
+                (families[name] = { name: name, pieces: 0, grams: 0, htCents: 0, orders: {} });
+              if (line.saleUnit === "weight") family.grams += line.quantity;
+              else family.pieces += line.quantity;
+              family.htCents += Math.round(line.lineHt * 100);
+              family.orders[order.orderNumber] = true;
+            });
+          });
+          var rows = Object.keys(families)
+            .map(function (name) {
+              var family = families[name];
+              return {
+                name: name,
+                pieces: family.pieces,
+                kilos: family.grams / 1000,
+                ht: family.htCents / 100,
+                orders: Object.keys(family.orders).length,
+              };
+            })
+            .sort(function (a, b) {
+              return b.ht - a.ht;
+            });
+          var totals = { pieces: 0, kilos: 0, ht: 0 };
+          rows.forEach(function (row) {
+            totals.pieces += row.pieces;
+            totals.kilos += row.kilos;
+            totals.ht = Math.round((totals.ht + row.ht) * 100) / 100;
+          });
+          fill(
+            byId("families"),
+            [
+              {
+                label: "Famille",
+                text: true,
+                value: function (r) {
+                  return r.name;
+                },
+              },
+              {
+                label: "Commandes",
+                value: function (r) {
+                  return r.orders === undefined ? "" : integer.format(r.orders);
+                },
+              },
+              {
+                label: "Pièces",
+                total: true,
+                value: function (r) {
+                  return r.pieces ? integer.format(r.pieces) : "";
+                },
+              },
+              {
+                label: "Au poids",
+                total: true,
+                value: function (r) {
+                  return r.kilos ? integer.format(r.kilos) + " kg" : "";
+                },
+              },
+              {
+                label: "HT des lignes",
+                total: true,
+                value: function (r) {
+                  return money(r.ht);
+                },
+              },
+            ],
+            rows,
+            rows.length ? totals : null,
+          );
+          if (!rows.length) {
+            var empty = byId("families").createTBody().insertRow();
+            var td = document.createElement("td");
+            td.colSpan = 5;
+            td.className = "text";
+            td.textContent =
+              "Aucune vente qui compte dans le CA sur cette journée ou cette période.";
+            empty.appendChild(td);
+          }
+        }
+
+        function linesTable(order) {
+          var table = document.createElement("table");
+          var lines = linesByOrder[order.orderNumber] || [];
+          fill(
+            table,
+            [
+              {
+                label: "Article",
+                text: true,
+                value: function (l) {
+                  return l.article;
+                },
+              },
+              {
+                label: "Famille",
+                text: true,
+                value: function (l) {
+                  return l.family || "";
+                },
+              },
+              { label: "Quantité", value: quantityLabel },
+              {
+                label: "Prix unitaire HT",
+                value: function (l) {
+                  if (l.unitPriceHt === null || l.unitPriceHt === undefined) return "";
+                  return unitEuro.format(l.unitPriceHt) + (l.saleUnit === "weight" ? " / kg" : "");
+                },
+              },
+              {
+                label: "TVA",
+                value: function (l) {
+                  return l.vatRate === null ? "" : String(l.vatRate).replace(".", ",") + " %";
+                },
+              },
+              {
+                label: "HT",
+                value: function (l) {
+                  return money(l.lineHt);
+                },
+              },
+              {
+                label: "TTC",
+                value: function (l) {
+                  return money(l.lineTtc);
+                },
+              },
+            ],
+            lines,
+            null,
+          );
+          return table;
+        }
+
+        var openOrders = {};
+
         var CLIENTELE_LABELS = { pro: "Pro", public: "Particulier" };
-        var STATUS_LABELS = { cancelled: "annulée", no_show: "non retirée" };
+        var STATUS_LABELS = {
+          placed: "passée",
+          confirmed: "confirmée",
+          in_production: "en production",
+          ready: "prête",
+          partially_handed_over: "en partie retirée",
+          fulfilled: "retirée ou livrée",
+          cancelled: "annulée",
+          no_show: "non retirée",
+        };
 
         function renderOrders() {
           var clientele = byId("orders-clientele").value;
           var revenue = byId("orders-revenue").value;
           var orders = data.orders
             .filter(function (order) {
+              if (!inScope(order)) return false;
               var orderClientele = order.clientele === null ? "unknown" : order.clientele;
               if (clientele !== "all" && orderClientele !== clientele) return false;
               if (revenue === "yes" && !order.countsAsRevenue) return false;
@@ -405,7 +671,44 @@
             ],
             orders,
             null,
+            function (order, row, body) {
+              row.className = "clickable";
+              row.title = "Voir les articles";
+              var columns = row.cells.length;
+              function showDetail() {
+                var detail = document.createElement("tr");
+                detail.className = "detail";
+                var td = document.createElement("td");
+                td.colSpan = columns;
+                if ((linesByOrder[order.orderNumber] || []).length) {
+                  td.appendChild(linesTable(order));
+                } else {
+                  td.textContent = "Aucun article dans l'export pour cette commande.";
+                }
+                detail.appendChild(td);
+                row.parentNode.insertBefore(detail, row.nextSibling);
+                return detail;
+              }
+              var detail = openOrders[order.orderNumber] ? showDetail() : null;
+              row.addEventListener("click", function () {
+                if (detail) {
+                  detail.remove();
+                  detail = null;
+                  delete openOrders[order.orderNumber];
+                } else {
+                  detail = showDetail();
+                  openOrders[order.orderNumber] = true;
+                }
+              });
+            },
           );
+        }
+
+        function renderAll() {
+          renderScope();
+          renderSummary();
+          renderFamilies();
+          renderOrders();
         }
 
         function defaultPeriod() {
@@ -429,15 +732,23 @@
           return;
         }
         showUpdated();
+        indexLines();
         defaultPeriod();
-        ["from", "to", "summary-clientele"].forEach(function (id) {
-          byId(id).addEventListener("change", renderSummary);
+        ["from", "to"].forEach(function (id) {
+          byId(id).addEventListener("change", function () {
+            selectedDay = null;
+            renderAll();
+          });
         });
+        byId("summary-clientele").addEventListener("change", renderSummary);
         ["orders-clientele", "orders-revenue"].forEach(function (id) {
           byId(id).addEventListener("change", renderOrders);
         });
-        renderSummary();
-        renderOrders();
+        byId("scope-clear").addEventListener("click", function () {
+          selectedDay = null;
+          renderAll();
+        });
+        renderAll();
       })();
     </script>
   </body>

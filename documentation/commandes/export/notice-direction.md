@@ -55,6 +55,23 @@ tardive, un remboursement).
   commande (à la minute), le jour et les articles, croisés, peuvent encore
   faire reconnaître un habitué : à garder pour la Direction.
 
+**Lire la page, journée par journée.** En ouvrant `reporting.html` :
+
+- le **résumé par jour** donne une ligne par journée sur la période choisie
+  (« Du … Au … », le mois en cours par défaut) : commandes, CA HT, CA
+  marchandises HT, TVA, CA TTC, retours, net, avoirs, et le total en bas ;
+- **cliquez sur une journée** : les **ventes par famille** (pièces, poids, HT
+  des lignes) et la **liste des commandes** se limitent à ce jour-là ; « Revenir
+  à toute la période » annule ;
+- **cliquez sur une commande** : ses articles se déplient (quantité, prix, TVA,
+  HT, TTC) ;
+- les ventes par famille additionnent les **articles**, avant les remises de
+  panier, le bon de fidélité et les frais : leur total n'est pas le CA, qui se
+  lit dans le résumé.
+
+Dans Excel, `csv\resume.csv` donne la même ligne par journée, prête pour un
+tableau croisé dynamique par semaine ou par mois.
+
 **Et si ça ne marche pas ?** Une notification Windows prévient et nomme la
 cause. Votre fichier n'est pas touché : la page garde les chiffres de la
 veille, avec leur date en haut, et un bandeau rouge s'ils ont plus de 26
