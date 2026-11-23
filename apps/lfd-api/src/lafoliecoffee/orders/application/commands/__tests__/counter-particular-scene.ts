@@ -3,7 +3,6 @@ import {
   type CatalogPricing,
   type CounterParticularOrderPayload,
   type PickupAddressView,
-  type PublicOrderOpeningView,
 } from "@lfd/contracts";
 
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
@@ -53,7 +52,6 @@ import { EstimateParticularOrderAtCounterHandler } from "../../queries/estimate-
 import { PlaceParticularOrderAtCounterHandler } from "../place-particular-order-at-counter.handler.js";
 import { FixedDeliveryVat } from "./fixed-delivery-vat.js";
 import { FixedSalesTerms } from "./fixed-sales-terms.js";
-import { intakeAt } from "./intake-doubles.js";
 import { ownPayers } from "./payer-doubles.js";
 import { openPlanGate } from "./plan-doubles.js";
 import { RecordingDurable } from "./durable-doubles.js";
@@ -225,7 +223,7 @@ export function counterPayload(
 }
 
 /** Le handler, l'estimation, et tout ce qu'ils ont touché. */
-export function counterScene(options: { readonly opening?: Partial<PublicOrderOpeningView> } = {}) {
+export function counterScene() {
   const placed: OrderToPlace[] = [];
   const published = new RecordingPublisher();
   const durable = new RecordingDurable();
@@ -234,11 +232,9 @@ export function counterScene(options: { readonly opening?: Partial<PublicOrderOp
     [MEMBER]: "company_member",
     [DISABLED]: "disabled",
   });
-  const intake = intakeAt(options.opening);
   const composition = drafting();
   const handler = new PlaceParticularOrderAtCounterHandler(
     particulars,
-    intake,
     composition,
     capturingRepo(placed),
     published,
@@ -249,7 +245,6 @@ export function counterScene(options: { readonly opening?: Partial<PublicOrderOp
   );
   const estimator = new EstimateParticularOrderAtCounterHandler(
     particulars,
-    intake,
     composition,
     new OrderCutoffNotice(
       deadlineOf({ cutoffs: { list: () => Promise.resolve([]) }, catalog }),

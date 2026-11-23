@@ -2,7 +2,6 @@ import { orderPretaxCents } from "@lfd/money";
 import { CommerceOrderPlacedFact } from "../../../../../delivery/channels/commerce/index.js";
 import { IntentKeyReusedError } from "../../../../../platform/intent/intent-errors.js";
 import { OrderTotalChangedError } from "../../../domain/errors/order-total-changed.error.js";
-import { OrdersClosedForAudienceError } from "../../../domain/errors/orders-closed-for-audience.error.js";
 import {
   CounterBuyerIsCompanyMemberError,
   CounterParticularDisabledError,
@@ -151,14 +150,6 @@ describe("PlaceParticularOrderAtCounterHandler — ce qu'elle refuse", () => {
       ),
     ).rejects.toThrow(error);
     expect(placed).toEqual([]);
-  });
-
-  it("refuse quand la boutique est fermée aux particuliers", async () => {
-    const { handler } = counterScene({ opening: { ordersOpenToB2c: false } });
-
-    await expect(
-      handler.execute(new PlaceParticularOrderAtCounterCommand(STAFF, counterPayload(), KEY)),
-    ).rejects.toThrow(OrdersClosedForAudienceError);
   });
 
   it("l'estimation rend la fiche d'un membre de société en erreur, pas en refus de devis", async () => {

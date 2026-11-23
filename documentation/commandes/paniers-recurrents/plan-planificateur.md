@@ -137,7 +137,7 @@ C'est le port qui la tient.
 « hors plan » sur un plan arrêté, règle du jour même de l'équipe —
 `order-drafting.service.ts`, `holdSupply` / `receiveOffPlan`). Il compose
 par `OrderDrafting` directement, avec les parties du client, sans
-`admitStaffEntry` ni `ensureCounterLinkCause`. Pour une échéance :
+`ensureCounterLinkCause`. Pour une échéance :
 
 1. **Le mur sur l'acheteur.** `placedByUserId` doit être encore actif et,
    si `companyId` n'est pas nul, encore membre de la société, lu par

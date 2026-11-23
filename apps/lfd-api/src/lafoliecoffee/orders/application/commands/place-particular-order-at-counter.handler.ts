@@ -14,7 +14,6 @@ import { OrderRepository, type PlacedOrder } from "../../domain/ports/order.repo
 import { ensureTotalSeen } from "../../domain/services/seen-total.js";
 import { prepareCounterParticularOrder } from "../services/counter-particular-order-preparation.js";
 import { OrderDrafting } from "../services/order-drafting.service.js";
-import { OrderIntake } from "../services/order-intake.service.js";
 import {
   PARTICULAR_COUNTER_PLACEMENT_REPLAY,
   particularCounterPlacementIntent,
@@ -42,7 +41,6 @@ export class PlaceParticularOrderAtCounterHandler implements ICommandHandler<
 > {
   constructor(
     private readonly particulars: ParticularStandingReader,
-    private readonly intake: OrderIntake,
     private readonly drafting: OrderDrafting,
     private readonly orders: OrderRepository,
     private readonly events: DomainEventPublisher,
@@ -79,7 +77,7 @@ export class PlaceParticularOrderAtCounterHandler implements ICommandHandler<
     // jamais le registre des dérogations et rend `null` (`judging-order-deadline.service.ts`,
     // vérifié le 2026-11-20).
     const { order } = await prepareCounterParticularOrder(
-      { particulars: this.particulars, intake: this.intake, drafting: this.drafting },
+      { particulars: this.particulars, drafting: this.drafting },
       command.staffUserId,
       payload,
       "checkout",

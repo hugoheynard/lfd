@@ -11,12 +11,10 @@ import { ensureShopTillPickup } from "../../domain/services/shop-till-rules.js";
 import { REGISTERED_BUYER } from "../../domain/value-objects/order-buyer-kind.js";
 import { COUNTER_ENTRY } from "../../domain/value-objects/order-supply.js";
 import type { DraftedOrder, OrderDrafting } from "./order-drafting.service.js";
-import type { OrderIntake } from "./order-intake.service.js";
 
 /** Ce que la préparation lit, et rien d'autre. */
 export interface CounterParticularOrderPreparationPorts {
   readonly particulars: ParticularStandingReader;
-  readonly intake: Pick<OrderIntake, "admitStaffEntry">;
   readonly drafting: Pick<OrderDrafting, "draft">;
 }
 
@@ -43,8 +41,6 @@ export interface CounterParticularOrderPreparationPorts {
  * @throws {CounterParticularNotFoundError} aucune fiche sous cet identifiant.
  * @throws {CounterBuyerIsCompanyMemberError} la fiche est rattachée à une société.
  * @throws {CounterParticularDisabledError} la fiche est désactivée.
- * @throws {OrdersClosedForAudienceError} la boutique est fermée aux particuliers.
- * @throws {ServiceDayBeforeFirstOrderableDayError} avant leur premier jour commandable.
  */
 export async function prepareCounterParticularOrder(
   ports: CounterParticularOrderPreparationPorts,
@@ -54,11 +50,8 @@ export async function prepareCounterParticularOrder(
 ): Promise<DraftedOrder> {
   ensureShopTillPickup(payload.fulfillmentMethod);
   await ensureParticular(ports.particulars, payload.buyerUserId);
-  await ports.intake.admitStaffEntry(
-    null,
-    { userId: payload.buyerUserId },
-    payload.requestedDeliveryDate,
-  );
+  // Ni fermeture de la boutique aux particuliers, ni premier jour commandable :
+  // l'équipe n'y est pas tenue (décidé par Hugo le 2026-11-23).
   return ports.drafting.draft(
     {
       companyId: null,

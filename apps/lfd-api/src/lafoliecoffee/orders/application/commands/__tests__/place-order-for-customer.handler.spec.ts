@@ -86,18 +86,15 @@ import { OrderLinePricing } from "../../services/order-line-pricing.service.js";
 import { Pricer } from "../../../../pricing/application/pricer.js";
 import { PricingMaterialsLoader } from "../../../../pricing/application/pricing-materials.loader.js";
 import { VolumeCommitmentReader } from "../../../../pricing/domain/ports/volume-commitment.reader.js";
-import { intakeAt } from "./intake-doubles.js";
 import { EstimateOrderForCustomerHandler } from "../../queries/estimate-order-for-customer.handler.js";
 import { EstimateOrderForCustomerQuery } from "../../queries/estimate-order-for-customer.query.js";
 import { OrderCutoffNotice } from "../../services/order-cutoff-notice.service.js";
 import { RecordingShelfStockLock } from "../../../../resupply/application/__tests__/shelf-stock-doubles.js";
-import { OrdersClosedForAudienceError } from "../../../domain/errors/orders-closed-for-audience.error.js";
 import { OfferNotPermittedError } from "../../../domain/errors/order-offer-errors.js";
 import {
   CounterAccountSettlementNotGrantedError,
   CounterLinkSettlementRefusedError,
 } from "../../../domain/errors/shelf-order-errors.js";
-import type { OrderIntake } from "../../services/order-intake.service.js";
 import { CustomerVolumeReader } from "../../../../pricing/domain/ports/customer-volume.reader.js";
 
 /**
@@ -416,7 +413,6 @@ interface HandlerOptions {
   readonly salesTerms?: FixedSalesTerms;
   readonly durable?: RecordingDurable;
   readonly shelf?: ShelfCircuit;
-  readonly intake?: OrderIntake;
   readonly intents?: OncePerIntent;
   readonly cutoffs?: OrderCutoffsInForce;
   readonly catalog?: InMemoryProductCatalog;
@@ -512,7 +508,6 @@ function handler(
     options.unitOfWork ?? { run: <T>(work: () => Promise<T>): Promise<T> => work() },
     options.durable ?? new RecordingDurable(),
     options.shelf ?? shelfCircuitOf(options.plans ?? openPlanGate()),
-    options.intake ?? intakeAt(),
     options.intents ?? inMemoryIntents(),
     new FixedCommitmentTerms(),
     options.overrides ?? new RecordingOverrides(),
@@ -1137,7 +1132,6 @@ describe("PlaceOrderForCustomerHandler — le règlement", () => {
       { run: <T>(work: () => Promise<T>): Promise<T> => work() },
       new RecordingDurable(),
       shelfCircuitOf(openPlanGate()),
-      intakeAt(),
       inMemoryIntents(),
       new FixedCommitmentTerms(),
       new RecordingOverrides(),
@@ -1244,27 +1238,6 @@ describe("PlaceOrderForCustomerHandler — les CGV en vigueur", () => {
 });
 
 /**
- * **La saisie de l'équipe, comme si le client commandait lui-même** (D4 de
- * Hugo, 2026-11-03 — `documentation/commandes/passation/commande-passee-par-l-equipe.md`, § 8.1).
- */
-describe("PlaceOrderForCustomerHandler — la porte de la boutique (E2)", () => {
-  /**
-   * Régression : la saisie de l'équipe passait outre une boutique fermée à
-   * la clientèle du client porté (E2) ; elle passe désormais la même porte.
-   */
-  it("refuse la saisie pour un pro quand la boutique est fermée aux pros, sans rien écrire", async () => {
-    const sink = { placed: null as OrderToPlace | null };
-
-    await expect(
-      handler(guard("orders"), sink, {
-        intake: intakeAt({ ordersOpenToB2b: false }, "active"),
-      }).execute(placement("staff_1", payload())),
-    ).rejects.toBeInstanceOf(OrdersClosedForAudienceError);
-    expect(sink.placed).toBeNull();
-  });
-});
-
-/**
  * **L'estimation de la saisie** (`EstimateOrderForCustomerHandler`, plan
  * `documentation/commandes/passation/commande-passee-par-l-equipe.md`, § 8) : la même
  * préparation que la passation, lue sans être écrite. Ici, dans la suite de
@@ -1281,7 +1254,6 @@ describe("EstimateOrderForCustomerHandler", () => {
     const shelf = options.shelf ?? shelfCircuitOf(plans);
     return new EstimateOrderForCustomerHandler(
       guardDouble,
-      options.intake ?? intakeAt(),
       draftingFor(guardDouble, { ...options, plans, shelf }),
       shelf,
       new OrderCutoffNotice(
@@ -1400,13 +1372,24 @@ describe("EstimateOrderForCustomerHandler", () => {
   });
 
   it("rend le refus de la composition avec les mots de la passation, sans montants", async () => {
+    const delivered = payload({
+      fulfillmentMethod: "delivery",
+      pickupAddressId: null,
+      deliveryAddress: {
+        label: "",
+        ligne1: "12 rue du Test",
+        ligne2: "",
+        codePostal: "73150",
+        ville: "Val d'Isère",
+        pays: "France",
+      },
+    });
     const estimate = await estimator(guard("orders"), {
-      intake: intakeAt({ ordersOpenToB2b: false }, "active"),
-    }).execute(new EstimateOrderForCustomerQuery("staff_1", payload(), false));
+      delivery: { ...DEFAULT_DELIVERY_AVAILABILITY, openToB2b: false },
+    }).execute(new EstimateOrderForCustomerQuery("staff_1", delivered, false));
 
     expect(estimate.amounts).toBeNull();
-    expect(estimate.refusal?.code).toBe(new OrdersClosedForAudienceError("b2b").code);
-    expect(estimate.refusal?.message).toBe(new OrdersClosedForAudienceError("b2b").message);
+    expect(estimate.refusal?.code).toBe(new DeliveryClosedForAudienceError().code);
   });
 
   it("refuse le lien de règlement au comptoir, comme la passation (E4)", async () => {
@@ -1959,15 +1942,5 @@ describe("PlaceOrderForCustomerHandler — la commande offerte", () => {
     );
 
     expect(sink.placed?.totalCents).toBe(0);
-  });
-
-  it("🔴 passe outre la boutique fermée à la clientèle (geste nommé, Hugo 2026-11-23)", async () => {
-    const sink = { placed: null as OrderToPlace | null };
-
-    await handler(guard("orders"), sink, {
-      intake: intakeAt({ ordersOpenToB2b: false }, "active"),
-    }).execute(placement("staff_1", offered(), randomUUID(), false, true));
-
-    expect(sink.placed?.offer).not.toBeNull();
   });
 });

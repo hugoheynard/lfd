@@ -31,7 +31,6 @@ import { isCounterEntry } from "../../domain/services/order-supply-rules.js";
 import { OrderDrafting } from "../services/order-drafting.service.js";
 import { commitOrderBudget } from "../services/order-budget-commitment.js";
 import { PayerCommitmentRequirements } from "../../domain/ports/payer-commitment-requirements.js";
-import { OrderIntake } from "../services/order-intake.service.js";
 import { prepareStaffOrder } from "../services/staff-order-preparation.js";
 import { staffSettlementRefusal } from "../services/staff-settlement-refusal.js";
 import {
@@ -91,7 +90,6 @@ export class PlaceOrderForCustomerHandler implements ICommandHandler<
     private readonly unitOfWork: UnitOfWork,
     private readonly durable: DurablePublisher,
     private readonly shelf: ShelfCircuit,
-    private readonly intake: OrderIntake,
     private readonly intents: OncePerIntent,
     private readonly commitments: PayerCommitmentRequirements,
     private readonly overrides: ItemLimitOverrideRecorder,
@@ -132,7 +130,7 @@ export class PlaceOrderForCustomerHandler implements ICommandHandler<
     // La préparation que l'estimation partage (lot P2) : le mur sur
     // l'acheteur, le comptoir, la porte de la boutique, puis la composition.
     const { order, waiverUsed, exceeded } = await prepareStaffOrder(
-      { guard: this.guard, intake: this.intake, drafting: this.drafting },
+      { guard: this.guard, drafting: this.drafting },
       command.staffUserId,
       payload,
       "checkout",

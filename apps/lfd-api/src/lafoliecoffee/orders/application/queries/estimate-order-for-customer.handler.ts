@@ -16,7 +16,6 @@ import { OrderCompanyNotFoundError } from "../../domain/errors/order-errors.js";
 import { OrderGuardReader } from "../../domain/ports/order-guard.reader.js";
 import { OrderCutoffNotice } from "../services/order-cutoff-notice.service.js";
 import { OrderDrafting, type DraftedOrder } from "../services/order-drafting.service.js";
-import { OrderIntake } from "../services/order-intake.service.js";
 import { ShelfCircuit } from "../services/shelf-circuit.service.js";
 import { prepareStaffOrder } from "../services/staff-order-preparation.js";
 import { staffSettlementRefusal } from "../services/staff-settlement-refusal.js";
@@ -47,7 +46,6 @@ export class EstimateOrderForCustomerHandler implements IQueryHandler<
 > {
   constructor(
     private readonly guard: OrderGuardReader,
-    private readonly intake: OrderIntake,
     private readonly drafting: OrderDrafting,
     private readonly shelf: ShelfCircuit,
     private readonly cutoffNotice: OrderCutoffNotice,
@@ -82,7 +80,7 @@ export class EstimateOrderForCustomerHandler implements IQueryHandler<
   ): Promise<DraftedOrder | AdminOrderEstimateNotice> {
     try {
       return await prepareStaffOrder(
-        { guard: this.guard, intake: this.intake, drafting: this.drafting },
+        { guard: this.guard, drafting: this.drafting },
         query.staffUserId,
         query.payload,
         "estimate",

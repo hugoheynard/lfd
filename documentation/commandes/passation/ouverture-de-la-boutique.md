@@ -63,13 +63,13 @@ flowchart LR
   lieu **avant** toute composition : la clé d'idempotence est rendue, et la
   commande sans compte n'inscrit pas de porteur. Un **rejeu** d'une commande
   déjà passée sous la même clé passe toujours.
-- **La saisie de l'équipe passe la même porte que son client** (Hugo,
-  2026-11-03, E2 de
-  [`commande-passee-par-l-equipe.md`](commande-passee-par-l-equipe.md) §5) :
-  `OrderIntake.admitStaffEntry` — la fermeture et le premier jour de la
-  clientèle du client porté, exemptions comprises, sans CGV à cocher. Une
-  exception passe par une exemption. Jusqu'au 2026-11-03, l'équipe n'y était
-  jamais soumise (Hugo, 2026-10-09).
+- **La saisie de l'équipe n'est jamais retenue par l'ouverture** (décidé par
+  Hugo le 2026-11-23) : ni la fermeture d'une clientèle, ni son premier jour
+  commandable ne refusent une commande saisie par l'équipe, pour un pro comme
+  pour un particulier noté au comptoir. Ces réglages ouvrent la boutique aux
+  clients ; la production tourne déjà et s'adapte. Le jour de production,
+  l'heure limite (et sa dérogation) et les règles de la journée tiennent
+  toujours. Les exemptions ne servent plus qu'aux clients eux-mêmes.
 - **Le devis et le panier ne sont pas gardés** : ils calculent des prix, ce
   que la fermeture laisse voir ; la commande se décide à la passation.
 - **La boutique** lit `GET /order-opening` (`OrderOpeningStore`) et remplace,

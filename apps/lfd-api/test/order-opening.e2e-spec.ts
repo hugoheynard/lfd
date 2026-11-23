@@ -5,8 +5,8 @@
  * Ce que seul le vrai chemin prouve : que le réglage posé par la route staff
  * est relu par les passations, que la clientèle est DÉDUITE au serveur (une
  * société active = pro, l'espace perso = particulier), que la saisie de
- * l'équipe est tenue à la même porte que son client (E2, 2026-11-03), et que
- * la bascule est au journal.
+ * l'équipe n'est jamais retenue par l'ouverture (Hugo, 2026-11-23 : la
+ * production tourne déjà et s'adapte), et que la bascule est au journal.
  *
  * ⚠️ `POST /shop/orders` n'est pas servie (le contrôleur n'est pas enregistré,
  * cf. `shop-order.e2e-spec.ts`) : la commande sans compte est donc éprouvée par
@@ -214,7 +214,7 @@ describe("fermée aux particuliers", () => {
 });
 
 describe("fermée aux pros", () => {
-  it("refuse le pro, et l'équipe pour lui ; le particulier et la commande sans compte passent", async () => {
+  it("refuse le pro ; le particulier, la commande sans compte et l'équipe pour le pro passent", async () => {
     await setOpening({ ordersOpenToB2b: false });
 
     const refused = await ctx.asSub(ACTIVE).post("/orders").send(clientOrder()).expect(409);
@@ -226,11 +226,10 @@ describe("fermée aux pros", () => {
 
     await ctx.asSub(PERSO).post("/orders").send(clientOrder()).expect(201);
     await placeAsGuest();
-    // 🔴 L'équipe saisit « comme si le client commandait lui-même » (E2, Hugo,
-    // 2026-11-03, `commande-passee-par-l-equipe.md`, § 8.1) : la boutique fermée aux
-    // pros la refuse aussi ; une exception passe par une exemption.
-    expect((await staffOrderForPro(SERVICE_DAY, 409)).code).toBe(CLOSED);
-    expect(await ctx.prisma.order.count()).toBe(2);
+    // 🔴 L'équipe n'est jamais retenue par l'ouverture de la boutique (Hugo,
+    // 2026-11-23) : la boutique fermée aux pros ne la refuse pas.
+    await staffOrderForPro();
+    expect(await ctx.prisma.order.count()).toBe(3);
   });
 
   it("rouverte, le pro commande de nouveau", async () => {
@@ -371,7 +370,7 @@ describe("le premier jour commandable", () => {
       .expect(400);
   });
 
-  it("refuse en 409 le pro avant sa date — l'équipe pour lui aussi —, et admet sa date", async () => {
+  it("refuse en 409 le pro avant sa date, admet sa date, et l'équipe passe avant", async () => {
     await setOpening({ firstServiceDayB2b: FIRST });
 
     const refused = await ctx.asSub(ACTIVE).post("/orders").send(clientOrder()).expect(409);
@@ -384,9 +383,8 @@ describe("le premier jour commandable", () => {
     // La date des pros ne touche pas les particuliers.
     await ctx.asSub(PERSO).post("/orders").send(clientOrder()).expect(201);
     await ctx.asSub(ACTIVE).post("/orders").send(clientOrder(FIRST)).expect(201);
-    // Le même premier jour pour la saisie de l'équipe (E2, Hugo, 2026-11-03).
-    expect((await staffOrderForPro(SERVICE_DAY, 409)).code).toBe(BEFORE_FIRST_DAY);
-    await staffOrderForPro(FIRST);
+    // 🔴 L'équipe passe avant la date des pros (Hugo, 2026-11-23).
+    await staffOrderForPro(SERVICE_DAY);
     expect(await ctx.prisma.order.count()).toBe(3);
   });
 

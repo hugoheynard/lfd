@@ -51,13 +51,10 @@ export interface IntakeStanding {
  * les exemptions (décision de Hugo du 2026-10-26).
  *
  * Appelé par les deux passations CLIENT (`PlaceOrderHandler`,
- * `PlaceShopOrderHandler`) et, depuis le 2026-11-03, par la saisie de
- * l'équipe et son estimation ({@link admitStaffEntry}) — jamais par
- * `OrderDrafting`. La saisie de l'équipe passait outre la fermeture (Hugo,
- * 2026-10-09) ; Hugo l'a alignée sur le client le 2026-11-03 (E2 du plan
- * `documentation/commandes/passation/commande-passee-par-l-equipe.md`) : « comme s'il
- * commandait lui-même », et une exception passe par une exemption, pas par
- * l'équipe.
+ * `PlaceShopOrderHandler`) — jamais par `OrderDrafting`, ni par la saisie de
+ * l'équipe : ces dates ouvrent la boutique aux clients, la production tourne
+ * déjà et s'adapte, et une commande de l'équipe n'est jamais retenue par elles
+ * (décidé par Hugo le 2026-11-23).
  *
  * La clientèle se déduit par {@link CustomerAudiences}, la même règle que la
  * remise et la livraison : B2B pour une société active seulement. La décision
@@ -107,25 +104,6 @@ export class OrderIntake {
     const document = salesTermsOf(standing.audience);
     const { revision } = await this.salesTerms.inForce(document);
     ensureSalesTermsAccepted(accepted, document, revision);
-  }
-
-  /**
-   * **La porte de la saisie de l'équipe** (E2, Hugo, 2026-11-03) : la boutique
-   * ouverte à la clientèle du client porté, puis son premier jour commandable
-   * — exemptions comprises, sur la société et l'adresse de l'ACHETEUR. Sans
-   * les CGV : le client ne coche rien quand l'équipe saisit pour lui, et
-   * celles qui s'appliquent se figent sur la commande comme avant.
-   *
-   * @throws {OrdersClosedForAudienceError} cf. {@link ensureOpenFor}.
-   * @throws {ServiceDayBeforeFirstOrderableDayError} cf. {@link ensureServiceDayFor}.
-   */
-  async admitStaffEntry(
-    // `null` : un particulier noté au comptoir — la clientèle publique.
-    companyId: string | null,
-    buyer: IntakeBuyer,
-    serviceDay: string | null,
-  ): Promise<void> {
-    ensureDayAdmitted(await this.openStandingOf(companyId, buyer), serviceDay);
   }
 
   /**

@@ -15,12 +15,10 @@ import {
 import { REGISTERED_BUYER } from "../../domain/value-objects/order-buyer-kind.js";
 import type { DraftedOrder, OrderDrafting } from "./order-drafting.service.js";
 import { counterCompanyStatusRefusal } from "./staff-settlement-refusal.js";
-import type { OrderIntake } from "./order-intake.service.js";
 
 /** Ce que la préparation lit, et rien d'autre. */
 export interface StaffOrderPreparationPorts {
   readonly guard: Pick<OrderGuardReader, "roleOf" | "companyStatusOf">;
-  readonly intake: Pick<OrderIntake, "admitStaffEntry">;
   readonly drafting: Pick<OrderDrafting, "draft">;
 }
 
@@ -47,8 +45,6 @@ export interface StaffOrderPreparationPorts {
  * @throws {CounterLinkSettlementRefusedError} un lien de règlement au comptoir.
  * @throws {CounterAccountSettlementNotGrantedError} le même lien, quand la
  *   société est suspendue ou inactive : « Au compte » serait refusé aussi.
- * @throws {OrdersClosedForAudienceError} la boutique est fermée à sa clientèle (sauf offerte).
- * @throws {ServiceDayBeforeFirstOrderableDayError} avant son premier jour commandable (sauf offerte).
  * @throws {InvalidOrderOfferError} le motif d'une commande offerte est mal formé.
  */
 export async function prepareStaffOrder(
@@ -64,17 +60,10 @@ export async function prepareStaffOrder(
   // fiche sous les yeux, il n'a pas besoin d'un message plus bavard.
   ensureOrderMember(await ports.guard.roleOf(buyerUserId, companyId), companyId);
   await ensureCounterLinkCause(ports.guard, payload);
-  // Une commande offerte n'est tenue ni par la fermeture de la boutique à sa
-  // clientèle, ni par son premier jour commandable : un geste nommé de
-  // l'équipe (décidé par Hugo le 2026-11-23, `plan-commande-offerte.md`, § 4).
-  // Le jour de production et l'heure limite, eux, tiennent.
-  if (payload.settlement !== "offered") {
-    await ports.intake.admitStaffEntry(
-      companyId,
-      { userId: buyerUserId },
-      payload.requestedDeliveryDate,
-    );
-  }
+  // L'équipe n'est tenue ni par la fermeture de la boutique à une clientèle,
+  // ni par son premier jour commandable : ces dates ouvrent la boutique aux
+  // clients, la production tourne déjà et s'adapte (décidé par Hugo le
+  // 2026-11-23). Le jour de production et l'heure limite, eux, tiennent.
   return ports.drafting.draft(
     // Le client porté est membre d'une société : un compte, pas un invité (§ 13.7).
     {

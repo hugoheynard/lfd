@@ -242,16 +242,10 @@ faits O-8, et un seuil d'alerte. Pas avant la réponse du cabinet.
   existe ensuite pour le suivi commercial, et son activation se fait plus
   tard par le geste habituel. Le destinataire libre (O7) reste pour une
   personne sans société.
-- **Une commande offerte n'est pas tenue par l'ouverture de la boutique**
-  (demandé par Hugo le 2026-11-23) : ni la fermeture à la clientèle
-  (`OrdersClosedForAudienceError`), ni le premier jour commandable
-  (`ServiceDayBeforeFirstOrderableDayError`), tous deux levés par
-  `prepareStaffOrder` (vérifié le 2026-11-23). Une dégustation se prépare
-  souvent avant l'ouverture, ou pour une clientèle encore fermée. C'est un
-  **geste nommé** de l'équipe, au même titre que le retrait immédiat : il ne
-  vaut que pour `offered`. Le reste tient : le jour doit être un jour où le
-  fournil produit, et l'heure limite de commande s'applique (la dérogation
-  existante reste le geste pour la dépasser). Branché au lot O3.
+- **Une commande offerte n'est pas tenue par l'ouverture de la boutique**,
+  comme toute saisie de l'équipe depuis le 2026-11-23 (décision de Hugo,
+  `ouverture-de-la-boutique.md`) : la règle, d'abord posée pour l'offre seule,
+  vaut désormais pour toutes les commandes de l'équipe.
 - **La valeur offerte est le calcul normal**, promotions comprises (O-3).
   Doute assumé : une promotion à usage limité est consommée par une commande
   que le client n'a pas payée. C'est la conséquence d'un calcul unique ; si

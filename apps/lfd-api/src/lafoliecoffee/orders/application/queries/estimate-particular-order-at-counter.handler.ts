@@ -13,7 +13,6 @@ import { PLANNED_SUPPLY } from "../../domain/value-objects/order-supply.js";
 import { prepareCounterParticularOrder } from "../services/counter-particular-order-preparation.js";
 import { OrderCutoffNotice } from "../services/order-cutoff-notice.service.js";
 import { OrderDrafting, type DraftedOrder } from "../services/order-drafting.service.js";
-import { OrderIntake } from "../services/order-intake.service.js";
 import { amountsViewOf } from "./estimate-order-for-customer.handler.js";
 import { EstimateParticularOrderAtCounterQuery } from "./estimate-particular-order-at-counter.query.js";
 
@@ -35,7 +34,6 @@ export class EstimateParticularOrderAtCounterHandler implements IQueryHandler<
 > {
   constructor(
     private readonly particulars: ParticularStandingReader,
-    private readonly intake: OrderIntake,
     private readonly drafting: OrderDrafting,
     private readonly cutoffNotice: OrderCutoffNotice,
   ) {}
@@ -73,7 +71,7 @@ export class EstimateParticularOrderAtCounterHandler implements IQueryHandler<
   ): Promise<DraftedOrder | AdminOrderEstimateNotice> {
     try {
       return await prepareCounterParticularOrder(
-        { particulars: this.particulars, intake: this.intake, drafting: this.drafting },
+        { particulars: this.particulars, drafting: this.drafting },
         query.staffUserId,
         query.payload,
         "estimate",
