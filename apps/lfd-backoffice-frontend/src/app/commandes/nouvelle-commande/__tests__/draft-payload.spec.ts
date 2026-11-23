@@ -285,6 +285,21 @@ describe('pretaxToKeepOf — attendre le prix avant d’enregistrer', () => {
     });
     expect(kept).toBeNull();
   });
+
+  /**
+   * Régression : un calcul refusé (heure limite passée) faisait échouer
+   * l'enregistrement, et les changements de la commerciale se perdaient.
+   */
+  it('🔴 calcul refusé : le brouillon se garde quand même, sans Total HT', async () => {
+    const kept = await pretaxToKeepOf({
+      ready: false,
+      amounts: null,
+      immediate: false,
+      currentKey: () => 'k1',
+      fetch: () => Promise.reject(new Error('orders.cutoff.past')),
+    });
+    expect(kept).toBeNull();
+  });
 });
 
 function composed<T>(draft: T | null): T {

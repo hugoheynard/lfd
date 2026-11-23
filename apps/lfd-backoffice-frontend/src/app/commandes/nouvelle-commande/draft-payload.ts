@@ -391,6 +391,10 @@ export interface PretaxContext {
  * l'attend plutôt que d'enregistrer « — » (Hugo, 2026-11-21) ; la réponse ne
  * vaut que si la saisie n'a pas bougé entre-temps. Une saisie incomplète
  * n'attend rien : elle n'a pas de prix.
+ *
+ * Un calcul refusé (heure limite passée, minimum, interlocuteur refusé) ne
+ * retient jamais le brouillon : il se garde sans Total HT. Un brouillon sert
+ * justement à mettre de côté une saisie qui ne passe pas encore.
  */
 export async function pretaxToKeepOf(context: PretaxContext): Promise<number | null> {
   if (context.ready) {
@@ -400,6 +404,6 @@ export async function pretaxToKeepOf(context: PretaxContext): Promise<number | n
   if (key === null) {
     return null;
   }
-  const amounts = await context.fetch();
+  const amounts = await context.fetch().catch(() => null);
   return draftPretaxOf(amounts, context.currentKey() === key, context.immediate);
 }
