@@ -241,7 +241,10 @@ export function saleTermsOf(
 
 /** Le choix par défaut de l'interlocuteur : celui retenu, sinon le détenteur, sinon le premier. */
 export function buyerOf(chosen: string | null, members: readonly OrderEntryBuyer[]): string | null {
-  if (chosen !== null) {
+  // Un acheteur gardé par un brouillon mais qui n'est plus proposé (accès
+  // retiré, invitation expirée) cède la place au défaut : le serveur le
+  // refuserait.
+  if (chosen !== null && members.some((member) => member.userId === chosen)) {
     return chosen;
   }
   return (members.find((member) => member.role === 'owner') ?? members[0])?.userId ?? null;

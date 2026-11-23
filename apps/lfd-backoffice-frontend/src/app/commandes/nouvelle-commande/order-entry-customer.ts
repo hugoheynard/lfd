@@ -76,7 +76,11 @@ export function customerFromAdminCompany(
     // principal de même nature (plan clients publics, B6).
     payerIsPublic: isPublicForm(company.formeJuridique),
     addresses: company.addresses.deliveries,
-    buyers: members,
+    // Seul un membre ACTIF peut porter une commande : le serveur refuse une
+    // invitation jamais acceptée (404, `ensureOrderMember`). La proposer
+    // laissait le panier sur « Calcul du montant… » sans dire pourquoi
+    // (Hugo, 2026-11-23). Même règle que le comptoir.
+    buyers: members.filter((member) => member.status === 'active'),
     preferredPickupId: company.fulfillmentPreference.pickupAddressId,
   };
 }

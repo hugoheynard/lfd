@@ -54,7 +54,10 @@ function mountFull(
   set('cart', cart);
   set('draft', new DraftStore());
   set('companyName', 'Le Bistrot');
-  set('buyers', []);
+  // L'acheteur que les saisies complètes choisissent (`u_1`) est proposé.
+  set('buyers', [
+    { userId: 'u_1', firstName: 'Léa', lastName: 'Martin', email: 'lea@exemple.fr', role: 'owner' },
+  ]);
   set('pickups', []);
   set('addresses', []);
   set('zones', []);

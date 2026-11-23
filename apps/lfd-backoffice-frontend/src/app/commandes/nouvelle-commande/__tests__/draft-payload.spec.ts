@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { FulfillmentChoice } from '../acheminement-commande/acheminement-commande';
 import {
+  buyerOf,
   composedDraftOf,
   draftPayloadOf,
   draftPretaxOf,
@@ -382,5 +383,28 @@ describe('la commande offerte — le motif', () => {
   it('un autre règlement ne porte jamais de motif, même saisi', () => {
     const draft = composedDraftOf({ ...decisions('tasting', 'Salon'), settlement: 'account' });
     expect('offer' in placePayloadOf('cmp_1', composed(draft), [], 'commercial')).toBe(false);
+  });
+});
+
+/** Régression : un brouillon gardait un acheteur que la saisie ne propose plus. */
+describe('buyerOf', () => {
+  const owner = {
+    userId: 'usr_owner',
+    firstName: 'A',
+    lastName: 'B',
+    email: 'a@b.fr',
+    role: 'owner' as const,
+  };
+
+  it('garde le choix quand il est proposé', () => {
+    expect(buyerOf('usr_owner', [owner])).toBe('usr_owner');
+  });
+
+  it('🔴 oublie un choix qui n’est plus proposé, au profit du détenteur', () => {
+    expect(buyerOf('usr_invited', [owner])).toBe('usr_owner');
+  });
+
+  it('sans personne à proposer : aucun acheteur', () => {
+    expect(buyerOf('usr_invited', [])).toBeNull();
   });
 });

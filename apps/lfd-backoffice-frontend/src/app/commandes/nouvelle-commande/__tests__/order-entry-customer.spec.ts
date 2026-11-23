@@ -105,6 +105,19 @@ describe('customerFromCounter', () => {
 });
 
 describe('customerFromAdminCompany', () => {
+  /**
+   * Régression : une invitation jamais acceptée était proposée comme acheteur ;
+   * le serveur la refusait (404) et le panier restait sur « Calcul du montant… ».
+   */
+  it('🔴 ne propose que les membres actifs, jamais une invitation', () => {
+    const invited = { ...MEMBER, userId: 'usr_invited', status: 'invited' as const };
+    const disabled = { ...MEMBER, userId: 'usr_off', status: 'disabled' as const };
+
+    const buyers = customerFromAdminCompany(fiche(), [invited, MEMBER, disabled]).buyers;
+
+    expect(buyers.map((buyer) => buyer.userId)).toEqual([MEMBER.userId]);
+  });
+
   it('projette la fiche et ses membres', () => {
     expect(customerFromAdminCompany(fiche(), [MEMBER])).toEqual({
       displayName: 'Boulangerie Périn SARL',
