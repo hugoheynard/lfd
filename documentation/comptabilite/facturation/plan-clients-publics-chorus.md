@@ -662,14 +662,593 @@ Schematron + XSD verts. Retards : non déposée jamais en retard, déposée en
 retard à J+délai+1 jour ouvré, rejetée hors des impayés. E2E : émettre,
 lister à déposer, déposer, relire l'échéance, rejeter.
 
+## 6 sexies. P2 bis — le devis de période (commandes récurrentes)
+
+> 📐 **Plan** (2026-11-22, Hugo). Pas bâti. Contradiction `vitruve` à venir
+> (argent).
+
+### En simple
+
+Une institution qui commande régulièrement **n'a pas de numéro d'engagement
+au moment de commander** : elle engage son budget sur un montant connu. Le
+fonctionnement devient :
+
+```mermaid
+flowchart LR
+  C["Commandes de la période<br/>sans engagement, prix figés"] --> D["Clôture : un DEVIS<br/>pas de facture"]
+  D --> E["Envoi du devis"]
+  E --> N["L'institution renvoie<br/>n° d'engagement (+ code service)"]
+  N --> F["Le staff saisit le n°<br/>la facture s'émet"]
+  F --> CH["Dépôt Chorus<br/>(file existante, P3)"]
+  CH --> V["Virement à 30 j du dépôt<br/>(chemin existant)"]
+```
+
+Le règlement ne change pas : virement, échéance comptée **depuis le dépôt**
+sur Chorus. L'attente du numéro ne compte donc pas dans le délai de paiement.
+
+**Les tarifs annoncés sont tenus par une mercuriale** (Hugo, 2026-11-22) :
+l'institution engage un budget sur des prix qu'elle connaît d'avance, pas sur
+le tarif du catalogue au jour de chaque commande. Ces prix sortent d'une
+**négociation en amont** entre notre commercial et le service : la mercuriale
+n'est pas une option ajoutée au compte, c'est l'accord lui-même, saisi avant
+la première commande.
+
+### Ce qui existe (ouvert le 2026-11-22)
+
+- **Une commande fige ses prix à la passation** (`Order.draft`,
+  `orders/domain/entities/order.ts:160`) et une révision tient les prix figés
+  (R3, `order.ts:249`).
+- **La facture émise est calculée par le dossier de facturation** à partir
+  des commandes figées (`invoice-from-dossier.ts`,
+  [`simulateur-dossier-de-facturation.md`](simulateur-dossier-de-facturation.md)).
+  Le devis, tiré du même calcul, est donc égal à la facture par construction.
+- **Les motifs qui bloquent une émission** vivent dans
+  `accounting/domain/services/invoice-issuance-blockers.ts`.
+- **La mercuriale fige le prix des articles qu'elle cite**, sur une période
+  datée ; un article qu'elle ne cite pas suit le catalogue
+  ([`comprendre-une-mercuriale.md`](../../pricing/mercuriales/comprendre-une-mercuriale.md)).
+- **L'engagement est aujourd'hui saisi à la commande** (P2) et la clé de
+  facture est (payeur, mandat, engagement).
+
+### Deux rôles différents
+
+- **Devis = facture** : garanti par les prix figés des commandes et le calcul
+  unique. La mercuriale n'y est pour rien.
+- **Prix annoncé = prix commandé** : c'est le rôle de la mercuriale. Sans
+  elle, deux commandes de la même période peuvent porter deux prix différents
+  si le catalogue ou une promotion change entre elles. Le devis reste juste,
+  mais il ne correspond plus au tarif que l'institution avait budgété.
+
+### Décisions proposées
+
+- **DV1 — Le moment de l'engagement se règle sur la fiche Chorus** :
+  `commitment_timing` = `at_order` (P2, l'existant) ou `on_period_quote`
+  (ce lot). Il ne s'applique que si l'engagement est exigé.
+- **DV2 — En `on_period_quote`, la commande se passe sans engagement**,
+  même s'il est exigé : `Order.draft` ne le demande plus pour ce payeur.
+- **DV3 — À la clôture, la facture du groupe n'est pas émise** : un motif
+  `commitment_awaited` s'ajoute aux bloqueurs d'émission. La période est
+  arrêtée (ses commandes appartiennent au groupe) et un **devis** est produit.
+- **DV4 — Le devis est un document**, sans numéro de facture ni valeur
+  comptable, tiré du dossier de facturation, avec son exemple sur la planche
+  (`lint:pdf-specimens`). Il porte la période, les lignes, les totaux HT, TVA
+  et TTC, la mercuriale appliquée et la mention « Devis — à retourner avec
+  votre numéro d'engagement ».
+- **DV5 — Un geste du staff, « Engagement reçu »** : numéro (et code
+  service s'il est exigé) saisis, la facture s'émet avec ces valeurs (BT-13,
+  BT-10), puis entre dans la file « À déposer » de P3. Clé d'intention
+  (`lint:write-idempotence`).
+- **DV6 — Une mercuriale active est exigée** pour un payeur en
+  `on_period_quote` : pièce bloquante de l'activation, et refus de passer en
+  `on_period_quote` sans mercuriale couvrant la date.
+
+### Questions à trancher (Hugo)
+
+1. **Un ou plusieurs numéros par devis ?** Plusieurs numéros découperaient le
+   devis en plusieurs factures (par commande ? par site ?).
+2. **Un article hors mercuriale** — _orienté par Hugo le 2026-11-22_ : en
+   engagement, une négociation a eu lieu **en amont** entre le commercial et
+   le service ; la mercuriale en est la trace, et ce qu'on commande est ce qui
+   a été négocié. Proposé : **refusé à la commande**, refus nommé (« Cet
+   article n'est pas dans le tarif convenu avec votre service »). À trancher :
+   la carte des sites
+   ([`carte-des-sites.md`](../../comptes-client/carte-des-sites.md)) ne règle
+   que les sous-comptes, pas le principal lui-même — il faut donc une règle
+   propre (« commandable = cité par la mercuriale active ») lue par
+   `isOrderable`, ou étendre la carte au principal.
+3. **Envoi du devis** : e-mail automatique par le bloc `mail`, ou
+   téléchargé et envoyé par le staff ?
+4. **Contestation** : pendant l'attente, peut-on modifier ou annuler une
+   commande de la période (le devis se régénère) ou la période est-elle figée ?
+5. **Relance** : un délai et une alerte si le numéro n'arrive pas ?
+6. **L'armée** : `on_period_quote` remplace-t-il l'engagement à la commande
+   pour elle, ou les deux modes coexistent-ils selon le client ?
+
+### Après contradiction (`vitruve`, 2026-11-22) — ce qui corrige DV2–DV6
+
+| Objection                                                                                                                                                                                                                                    | Sort proposé                                                                                                                                                                                                                                                                                                                                                              |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **B1** « Arrêter sans émettre » n'existe pas : un groupe bloqué ne rattache aucune commande (`issue-monthly-invoices.handler.ts:307`), et `uninvoicedOrders` relit tout depuis le plancher : la période suivante absorbe le devis en attente | **DV3′ — Le devis est un objet** : table `period_quote` (payeur, mandat, période, version, statut `awaiting` / `invoiced` / `superseded`) et `period_quote_order` (commande → devis, une seule fois). `uninvoicedOrders` écarte toute commande d'un devis non `superseded`. La période suivante ne voit plus ces commandes.                                               |
+| **B2** L'engagement d'une facture vient des commandes ; `withoutMovedCommitments` retire celles qui diffèrent                                                                                                                                | **DV5′ — chemin (a)** : « Engagement reçu », dans une transaction, écrit le numéro sur **chaque commande du devis** (même règle que `correct-order-budget-commitment`), passe le devis à `invoiced` et émet la facture du groupe. La clé de facture ne change pas. La ligne `blocked` sous la clé vide n'existe pas : le devis remplace l'issue bloquée pour ces payeurs. |
+| **B3** `isOrderable` n'est lu qu'au rayon ; la passation, la saisie staff et les abonnements ne l'appellent pas                                                                                                                              | **Q2 → contrôle à la passation** : un port `NegotiatedScope` (déclaré dans `orders`, implémenté par `pricing`) refuse dans les deux handlers de passation et à la génération d'abonnement un article non cité par la mercuriale active. Le rayon l'affiche en plus, il ne le garantit pas.                                                                                |
+| **S4** `public_commitment_missing` bloque déjà et dit au staff de corriger chaque commande                                                                                                                                                   | Pour un payeur `on_period_quote`, ce motif ne s'applique pas : la clôture produit le devis au lieu de chercher à émettre. Pas de motif `commitment_awaited`.                                                                                                                                                                                                              |
+| **S5** L'exigence passe par `Order.commitBudget` → `budgetCommitmentFor`, pas par `draft`                                                                                                                                                    | **DV2′** : `PayerCommitmentTerms` porte `timing` ; `budgetCommitmentFor` n'exige rien en `on_period_quote`. Lecteurs à suivre : `get-budget-commitment-requirements.handler.ts`, le panier. `correct-order-budget-commitment` refuse une commande d'un devis `awaiting` (le numéro passe par le devis).                                                                   |
+| **S6** Annulation, révision ou reliquat entre devis et facture changent le contenu                                                                                                                                                           | **Q4 → devis versionné** : tant qu'il est `awaiting`, une commande peut changer ; le devis se régénère en version n+1, l'ancienne passe `superseded`, et l'écran dit « le devis envoyé n'est plus à jour, renvoyez la version n+1 ». La facture n'est émise que sur la dernière version.                                                                                  |
+| **S7** Avenant daté en cours de période, mercuriale qui expire, promotions acceptées par la mercuriale                                                                                                                                       | **DV6′** : pour un payeur `on_period_quote`, la mercuriale exige `promotionMode = none`, et un avenant ou une fin ne prend effet **qu'au début d'une période**. Alerte au staff 30 jours avant l'expiration de la mercuriale. Une expiration atteinte : les commandes sont refusées, message nommé.                                                                       |
+| **S8** Passer de `at_order` à `on_period_quote` en cours de période mélange les commandes                                                                                                                                                    | Changement du moment de l'engagement refusé dès la première commande (règle de Q5).                                                                                                                                                                                                                                                                                       |
+| Mineur : devis envoyé par `mail`                                                                                                                                                                                                             | Le devis est rangé au stockage et joint par référence (`lint:mail-attachment-by-reference`) ; son exemple va sur la planche.                                                                                                                                                                                                                                              |
+
+### Non vérifié
+
+- Si une révision recalcule le prix au tarif du jour ou à la mercuriale
+  (le devis versionné en dépend).
+- Comment le relevé et les « payeurs comptés » lisent un groupe sans facture.
+- Si l'autopilote rejoue les clôtures passées.
+- La couverture de la mercuriale article par article.
+
+## 6 septies. Qui paie ? Les cas de l'armée (2026-11-22)
+
+> 📝 **Cas à instruire**, rien de décidé. Hugo, 2026-11-22 : l'armée veut
+> notre pain, mais voudrait payer « en boutique à intervalle régulier, peut-être
+> par carte » — leur mode de paiement est encore flou.
+
+### En simple
+
+Une administration paie en général de deux façons, **à confirmer avec
+l'armée** (leurs règles internes ne sont pas vérifiées ici) :
+
+- **sur bon de commande** : facture déposée sur Chorus, payée par virement
+  par leur comptable — la voie bâtie (P1 à P3) ;
+- **par une régie** : un régisseur dispose d'une petite enveloppe et paie sur
+  place, par carte ou en espèces, de petites dépenses courantes. C'est
+  probablement ce que recouvre « payer en boutique ».
+
+**La question qui décide de tout : qui paie, et sur quel budget ?**
+
+```mermaid
+flowchart TD
+  Q{"Qui paie ?"} -->|"le service comptable,<br/>sur bon de commande"| A["Cas A — compte public<br/>Chorus + virement (bâti)"]
+  Q -->|"un régisseur,<br/>par carte"| B["Cas B — compte pro ordinaire<br/>carte à la commande (existe)"]
+  B -.->|"s'il veut payer<br/>une période d'un coup"| S["Régler une sélection<br/>de commandes (TODO)"]
+  Q -->|"en espèces ou carte<br/>à la caisse de la boutique"| C["Cas C — à éviter"]
+```
+
+### Les cas
+
+| Cas                                         | Comment ça marche                                                                                                               | À bâtir                                                                                                                       | Avis                          |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- | ----------------------------- |
+| **A. Bon de commande, Chorus**              | compte **organisme public**, au compte, facture de période, dépôt Chorus, virement à 30 j du dépôt                              | rien ; P2 bis si l'engagement arrive sur devis de période                                                                     | la voie normale du pain livré |
+| **B. Régie, carte en ligne**                | compte **pro ordinaire** (forme non publique) pour la régie ; elle paie **par carte à la commande**, comme tout pro sans crédit | rien                                                                                                                          | propre, si c'est une régie    |
+| **B′. Régie, une période d'un coup**        | sélection des commandes de la période, un lien de paiement **rattaché à ces commandes**, la facture en sort réglée              | le TODO [`régler une sélection de commandes`](../../commandes/reglement/todo-regler-une-selection-de-commandes.md) (pas bâti) | si B ne leur suffit pas       |
+| **C. À la caisse de la boutique, au cumul** | les commandes s'accumulent ; le régisseur paie la somme à la caisse certifiée de la boutique                                    | un relevé à payer, et une caisse qui encaisse **nos** commandes                                                               | **à éviter**                  |
+
+### Pourquoi pas le lien de paiement libre sur un compte public
+
+La demande de paiement libre (Comptabilité › Liens de paiement,
+[`les-liens-de-paiement.md`](../../payment/les-liens-de-paiement.md)) existe et encaisse par carte en ligne, ce que la règle fiscale permet.
+Mais sur un compte **public** :
+
+1. il n'est rattaché à aucune commande ni facture (pas de lettrage) ;
+2. la facture de période est quand même émise, entre dans « À déposer sur
+   Chorus » et attend un virement ;
+3. elle reste donc impayée chez nous, passe en retard et se relance — et si
+   leur comptable paie aussi la facture Chorus, **ils paient deux fois**.
+
+Le lien libre ne sert qu'en dépannage ponctuel, et sur un compte non public.
+
+### Pourquoi éviter le cas C
+
+- **Notre système n'enregistre jamais un paiement au comptoir** : c'est ce qui
+  nous dispense de logiciel de caisse certifié
+  ([`pas-de-logiciel-de-caisse.md`](../caisse/pas-de-logiciel-de-caisse.md)).
+  La caisse de la boutique encaisserait, et notre système ne saurait jamais
+  que c'est payé : pas de suivi des impayés, rapprochement à la main entre
+  deux systèmes.
+- **Deux pièces pour une vente** : le ticket de caisse et notre commande, voire
+  notre facture.
+- La commande « réglée en boutique » d'un particulier
+  ([`commande-particulier-reglee-en-boutique.md`](../../commandes/passation/commande-particulier-reglee-en-boutique.md))
+  marche parce qu'**une commande = un paiement au retrait** ; elle ne sait pas
+  régler un cumul.
+
+### Questions à poser à l'armée
+
+1. Paient-ils **sur bon de commande** (Chorus), **par une régie**, ou les deux
+   selon le montant ?
+2. Si régie : ont-ils une **carte** (carte d'achat ou carte du régisseur)
+   utilisable **en ligne** ?
+3. Quel **volume** ? Une régie vise de petits montants ; une livraison
+   régulière de pain pour une base relève plutôt du bon de commande.
+4. Si Chorus : un **numéro d'engagement par commande**, ou **un par période**
+   sur devis (P2 bis) ?
+
+**Recommandation (2026-11-22)** : A pour le pain livré régulièrement, B pour
+les achats ponctuels s'ils ont une régie. Un même service peut avoir les deux
+comptes ; ils ne se mélangent pas (natures différentes, règle de D1).
+
+## 6 octies. Un SIRET de facturation, plusieurs services (option 1)
+
+> 📐 **Plan** (2026-11-23, Hugo : option 1 retenue). Pas bâti.
+
+### En simple
+
+Sous un même SIRET de facturation, plusieurs **services** reçoivent leurs
+factures, chacun avec son **code service** Chorus. Chez nous, **un SIRET de
+facturation est un compte principal ; chaque service qui y facture est un
+sous-compte**.
+
+```mermaid
+flowchart TD
+  P["Compte principal<br/>SIRET de facturation, fiche Chorus,<br/>virement, payeur"] --> S1["Sous-compte : unité A<br/>code service, engagement en cours,<br/>adresses, commandes"]
+  P --> S2["Sous-compte : unité B<br/>son code service"]
+  S1 --> F1["Facture A<br/>SIRET + code A + engagement A"]
+  S2 --> F2["Facture B<br/>SIRET + code B + engagement B"]
+```
+
+**Le cas réel (bon de commande reçu le 2026-11-22)** : un bon de l'armée
+pour le pain d'une unité de Tignes porte un numéro d'engagement unique, un
+code service (service exécutant), et le SIRET de facturation d'une plateforme
+du Commissariat — pas celui de l'unité, livrée à sa propre adresse. Le bon
+est **ouvert** (désignation sans quantité ni prix unitaire, 1,00 € HT
+symbolique) et valable jusqu'au 31/12/2026.
+
+### Qui partage un SIRET (connaissance générale, non vérifiée)
+
+L'annuaire Chorus tranche client par client ; le staff le relève déjà sur la
+carte Chorus.
+
+| Client                                | Facturé à                                                  | Chez nous                                           |
+| ------------------------------------- | ---------------------------------------------------------- | --------------------------------------------------- |
+| unités de l'armée, services de l'État | une plateforme de facturation, SIRET partagé               | un principal, un sous-compte par unité              |
+| écoles maternelles, élémentaires      | la **commune** (l'école n'a pas de personnalité juridique) | principal = la mairie, sous-compte = l'école livrée |
+| collège, lycée, université, hôpital   | l'établissement, **son propre SIRET**                      | un compte, sans sous-compte sauf besoin             |
+
+**L'État n'a pas un SIRET.** Chaque ministère a son SIREN, et chacun
+plusieurs SIRET. On ne crée donc pas de compte « État français » : on crée
+**un principal par SIRET de facturation, celui que porte le bon**, nommé
+d'après lui (« Armées — Commissariat Sud-Est (SIRET …0044) »). Un bon avec un
+autre SIRET ouvre un autre principal.
+
+### Ce qui existe (ouvert le 2026-11-23)
+
+- **SIRET unique** : index partiel `companies_siret_unique_when_known`
+  (migration `20260811160000_unicite_siret_et_interlocuteur`). Il reste tel
+  quel : les services n'ont pas de SIRET chez nous.
+- **Sous-compte sans SIRET** : admis à l'activation quand il est porté par un
+  principal actif (`isLegallyCarriedBy`,
+  [`sous-comptes.md`](../../comptes-client/sous-comptes.md)) — le cas du
+  chalet.
+- **Même nature** : un site sans forme juridique peut suivre la facturation
+  d'un principal public (`sameNature`, `sub-account-follows.ts:118`). Le
+  payeur est alors le principal, public.
+- **Une facture par engagement ET par code service** : le code service est
+  dans la clé de groupement (`monthly-invoicing.ts:133`). Deux unités, même
+  avec un même numéro, ont deux factures.
+- **La fiche Chorus est sur le compte** (`company_chorus_routing`, PK
+  `company_id`) : un seul code service par défaut, celui du principal.
+
+### Décisions proposées
+
+- **SV1 — Un principal par SIRET de facturation**, public, porteur de la fiche
+  Chorus et du virement. Ouvert par le staff.
+- **SV2 — Une unité (un service) = un sous-compte sans SIRET**, qui suit la
+  facturation du principal. Ses adresses, contacts, commandes, mercuriale et
+  carte lui sont propres.
+- **SV3 — Le code service par défaut se lit d'abord sur le sous-compte**, puis
+  sur le principal. Les exigences (engagement exigé, code exigé) restent celles
+  du principal : elles appartiennent au SIRET dans l'annuaire Chorus.
+- **SV4 — Un engagement en cours par sous-compte** : numéro, code service,
+  date de fin (le 31/12/2026 du bon). Il préremplit chaque commande de l'unité
+  tant qu'il court ; après sa fin, la commande le redemande. Il se saisit à
+  réception du bon, par le staff.
+
+### Conception de P2 ter (v2, 2026-11-23, après contradiction)
+
+**Le principe : préremplir à l'écran, ne rien décider à la place de celui
+qui commande.** La règle de passation (`budgetCommitmentFor`), la correction
+d'engagement et les révisions ne changent pas : la commande porte ce qui a
+été envoyé, et la déclaration reste un acte. Seule la vue qui alimente le
+panier et la saisie de l'équipe propose davantage.
+
+**La fiche du service** — portée par **la société qui commande** (le
+sous-compte de l'unité, ou un compte public seul) :
+
+- Table `company_chorus_service` (`company_id` PK, schéma `public`, bloc
+  `account`) : `payer_company_id` (le payeur au moment du geste),
+  `service_code` (texte, vide permis), `commitment_number` (texte, vide
+  permis), `commitment_ends_on` (date), traces du staff (`recorded_at`,
+  `recorded_by_staff_id`, `_name`, `_role`, inscrites au registre de
+  `lint:rgpd-staff`). `CHECK` : `commitment_number = ''` ⇔
+  `commitment_ends_on IS NULL` — un engagement a toujours une fin.
+- Value object `ChorusService` (formes de `BudgetCommitment`, 1 à 50
+  caractères imprimables).
+- **Le geste** `PUT /admin/companies/:id/chorus-service`, `@Idempotent` (pose
+  la fiche entière). Le handler résout le payeur **actuel** de la société
+  (elle-même, ou le principal dont elle suit la facturation) et refuse si ce
+  payeur n'est pas public. Sur un **payeur seul** (la société est son propre
+  payeur), le code service doit être vide : c'est la fiche Chorus qui le porte,
+  il n'y a pas deux codes par défaut. Fait au journal
+  `company.chorus_service_recorded`. Retirer l'engagement = reposer la fiche
+  sans numéro.
+
+**La lecture** — un port étroit `OrderingChorusServiceReader` (déclaré dans
+`orders`, implémenté par `account`) : `of(companyId)` rend la fiche, ou
+`null`. Seul `GetBudgetCommitmentRequirementsHandler` l'appelle, pour la
+société de la requête (`query.companyId` : l'espace actif du client, ou la
+société que l'équipe saisit — la même que `order.companyId` à la passation).
+La fiche est **ignorée** si son `payer_company_id` n'est pas le payeur que la
+passation retiendrait : un sous-compte qui a changé de principal ne
+propose pas l'engagement d'un autre SIRET.
+
+**La vue** `BudgetCommitmentRequirementsView` :
+
+- `defaultServiceCode` = code de la fiche du service, sinon celui de la fiche
+  Chorus du payeur ;
+- `currentCommitment` : `{ number, endsOn }` ou `null`, sans filtre de date au
+  serveur.
+
+**Les écrans** (panier de la boutique, saisie de l'équipe) préremplissent le
+numéro **si la date de livraison choisie est au plus tard `endsOn`**, et
+affichent « Engagement n° … en cours jusqu'au … ». Au-delà, le champ reste
+vide avec « L'engagement n° … a pris fin le … ». Le client ou l'équipe peut
+toujours effacer ou changer le numéro proposé. La fiche client du back-office
+gagne une carte **« Service Chorus »**.
+
+**Ce qui ne change pas, et pourquoi** : la passation, la correction (un
+retrait reste possible), les révisions (elles gardent le numéro d'origine),
+la boutique sans compte, la vente au comptoir et le réassort (ils ne portent
+pas d'engagement). Un appel direct à l'API avec un code vide prend le code de
+la fiche Chorus du payeur, comme aujourd'hui.
+
+**Non vérifié** : la date que Chorus juge pour la validité d'un engagement
+(commande, livraison ou facture). La livraison a été retenue parce que c'est
+la date que porte le bon (« date de livraison : 31.12.2026 »).
+
+### Questions et non vérifié
+
+1. **Un principal sans titulaire côté client** : personne de l'armée ne se
+   connecte au principal, chaque unité se connecte à son sous-compte. Non
+   vérifié qu'un principal s'active sans titulaire.
+2. **Le montant symbolique du bon (1 €)** : une facture qui le dépasse est-elle
+   acceptée par Chorus, ou faut-il que le service complète l'engagement avant ?
+   À demander au service du bon. Si c'est la seconde réponse, le devis de
+   période (P2 bis) devient le moyen de leur donner le montant.
+3. **Le même numéro pour toutes les livraisons jusqu'au 31/12**, une facture
+   par mois : à confirmer avec eux.
+4. **Une unité qui paie autrement** (régie, carte) : hors de cette grappe, cas
+   B du § 6 septies.
+
+## 6 nonies. P2 quater — un service réglé par régie
+
+> 📐 **Plan** (2026-11-23, Hugo : « le format le plus fiable et exact »).
+> Pas bâti, pas encore contredit (`vitruve` obligatoire : encaissement).
+> Remplace, pour la régie, les cas B et B′ du § 6 septies.
+
+### En simple
+
+Une régie est un régisseur qui **paie sur place, au nom de son organisme**.
+Elle n'est donc ni un autre client ni une autre nature : c'est **un service
+de l'organisme dont le moyen de paiement change**.
+
+```mermaid
+flowchart TD
+  P["Compte principal<br/>SIRET de facturation, public"] --> S["Unité (sous-compte)<br/>« régie autorisée »"]
+  S --> Q{"À la commande,<br/>quel circuit ?"}
+  Q -->|"bon de commande"| A1["Commandes au compte<br/>n° d'engagement"]
+  Q -->|"régie"| B1["Commandes au compte<br/>sans engagement"]
+  A1 --> A2["Facture de période<br/>au nom du principal"]
+  B1 --> B2["Facture de période régie<br/>au nom du principal"]
+  A2 --> A3["Dépôt sur Chorus<br/>échéance à 30 jours"]
+  B2 --> B3["Lien de paiement carte<br/>rattaché à la facture"]
+  A3 --> A4["Virement reçu<br/>saisi, facture réglée"]
+  B3 --> B4["Paiement carte abouti<br/>facture réglée seule"]
+```
+
+- La nature publique, le SIRET et le nom sur la facture restent **vrais** : la
+  facture est au nom du principal, le payeur juridique.
+- L'argent est **rattaché à sa facture** : rien à rapprocher à la main.
+- Une même unité peut suivre les deux circuits sans les mélanger : le
+  circuit se choisit **à chaque commande**, et l'option est posée par unité,
+  jamais sur le payeur.
+
+### Décisions proposées (v3, 2026-11-23 : la régie au compte, payée par lien)
+
+Hugo, 2026-11-23 : la régie vit **sur le même sous-compte** que le bon de
+commande (« même entité mais différent process ») et commande **au compte**
+elle aussi ; elle paie **en fin de période, par un lien de paiement carte**.
+Une même unité a donc deux circuits au compte, choisis **commande par
+commande**.
+
+- **RG1 — L'option « régie autorisée » est portée par le sous-compte**,
+  posée par le staff, admise seulement si le payeur retenu est public.
+- **RG2 — À la passation, l'unité choisit son circuit** : « bon de commande »
+  (Chorus, inchangé : engagement, dépôt, virement) ou « régie ». Le circuit
+  est figé sur la commande et ne change plus. Sans l'option, seul le bon de
+  commande existe.
+- **RG3 — Une facture ne mélange jamais les deux circuits** : le circuit
+  entre dans la clé de groupement de la facture de période, à côté du mandat,
+  de l'engagement et du code service. Une commande en régie ne porte pas
+  d'engagement (l'exigence de la fiche Chorus ne s'applique qu'au circuit bon
+  de commande).
+- **RG4 — La facture de régie** est au nom du payeur retenu (le principal),
+  n'entre **pas** dans la file « À déposer sur Chorus », et part avec un
+  **lien de paiement carte rattaché à elle** (la porte du bloc `payment`,
+  sujet « facture », montant dû de la facture). Le paiement abouti **règle la facture** ; sans paiement
+  à l'échéance, elle passe en retard et se relance avec le même lien.
+- **RG5 — Le prélèvement reste refusé** pour tout payeur public ; la carte
+  à la commande aussi (le régisseur paie la facture, pas la commande).
+
+**Ce que ça entraîne** : la régie ne construit pas son propre lien. Le bloc
+`payment` sait déjà ouvrir un lien vers un **sujet** (P1, en production) ; la
+« facture d'une période payée par carte », troisième moyen du paiement au
+compte, est le lot **I0 → I2** de sa
+[feuille de route](../../payment/feuille-de-route.md) § 2, en attente de
+**l'avis du cabinet** sur le code Factur-X d'une facture à payer par carte (recherche préparatoire ci-dessous : code 48, cadre A1).
+P2 quater s'appuie sur ce lot et ne le double pas : la régie y ajoute le
+circuit par commande et l'exclusion de la file Chorus.
+
+### À vérifier dans le code avant de bâtir
+
+- Tous les lecteurs de la clé de groupement (émission, verrou du groupe,
+  `invoice_monthly_outcome`, relevé, payeurs comptés) : ajouter le circuit
+  sans changer le découpage d'un payeur privé ni d'un payeur Chorus.
+- La file « À déposer sur Chorus » : elle doit écarter une facture de régie,
+  alors qu'aujourd'hui elle retient toute facture d'un payeur public.
+- L'échéance d'une facture de régie : celle d'un virement (émission + N jours)
+  ou le délai légal du payeur public, sans dépôt pour le faire partir.
+- Le sujet « facture » du bloc `payment` (`LinkableSubject`,
+  `SubjectSettlement`) : ce que `quote` rend après un avoir partiel, et
+  l'écriture du règlement de la facture au paiement.
+
+### À confirmer avec l'organisme
+
+Le régisseur peut-il payer **en ligne**, avec quelle carte (carte d'achat,
+carte bancaire de la régie), et sous quel plafond ?
+
+### Le code Factur-X d'une facture payée par carte (recherche du 2026-11-23)
+
+> ⚠️ **Recherche documentaire, pas un avis.** Elle prépare la question au
+> cabinet ; elle ne la remplace pas. Les sources sont listées à la fin ; une
+> seule est officielle et française sur le cadre A2, et elle date de 2017.
+
+#### En simple
+
+Une facture électronique dit **comment** elle sera payée, par un code. Nous
+écrivons déjà « virement » (58) et « prélèvement » (59). La carte a son code :
+**48**. La facture de régie part **avant** que le régisseur paie par le lien :
+elle n'est donc pas « déjà payée » au moment du dépôt, elle est « à payer par
+carte ».
+
+```mermaid
+flowchart LR
+    E["Émission de la facture de période"] --> M["Moyen figé sur la facture : 48 carte"]
+    M --> Q{"Payée avant le dépôt ?"}
+    Q -- "non, cas de la régie" --> A1["Chorus, cadre A1 : facture à payer, net à payer réel"]
+    Q -- "oui" --> A2["Chorus, cadre A2 : facture déjà payée, net à payer 0"]
+    A1 --> L["Lien de paiement carte, bloc payment"]
+    L --> R["Règlement écrit sur la facture"]
+```
+
+#### Ce que dit la norme (EN 16931, reprise par Factur-X)
+
+| Zone      | Nom                                           | Ce qu'on y met pour la régie                                       |
+| --------- | --------------------------------------------- | ------------------------------------------------------------------ |
+| **BG-16** | Instructions de paiement                      | le groupe, comme pour 58 et 59                                     |
+| **BT-81** | Code du moyen de paiement (liste UNTDID 4461) | **48** « carte bancaire »                                          |
+| **BT-82** | Libellé du moyen                              | « Carte bancaire, par lien de paiement » (texte libre, facultatif) |
+| **BG-17** | Virement (IBAN, BIC)                          | **rien** : ce n'est pas un virement                                |
+| **BG-18** | Carte de paiement                             | **rien** : la carte n'est pas connue à l'émission                  |
+| BT-87     | Numéro de la carte (dans BG-18)               | —                                                                  |
+| BT-88     | Nom du porteur (dans BG-18, facultatif)       | —                                                                  |
+
+- **48 plutôt que 54 ou 55.** La liste UNTDID 4461 a aussi 54 (carte de
+  crédit) et 55 (carte de débit). Nous ne savons pas, à l'émission, quelle carte
+  le régisseur utilisera : **48** (« carte émise par une banque ») est le code
+  générique, et le seul qui reste vrai quel que soit le moyen choisi dans
+  Stripe.
+- **BG-18 vide.** La règle qui rend BG-18 obligatoire avec 48, 54 ou 55
+  (`DE-R-024-1`) est **allemande** : elle ne vaut qu'entre vendeur et acheteur
+  allemands (Peppol). Les sources divergent sur le contenu de BT-87 (numéro
+  complet chez Peppol, qui interdit par ailleurs de l'imprimer ; 4 à 6 derniers
+  chiffres chez Sovos pour la France). La question ne se pose pas ici : la
+  carte n'existe pas encore quand la facture part, et **nous ne garderons
+  jamais un numéro de carte** — c'est Stripe qui le tient.
+- **Pas de règle de cohérence** propre au code 48 dans le cœur de la norme
+  (les règles connues portent sur le virement et le prélèvement) — non
+  vérifié dans le texte de la norme, que nous n'avons pas ouvert.
+
+#### Ce que dit Chorus Pro : le cadre de facturation
+
+Au dépôt, Chorus Pro demande un **cadre** :
+
+| Cadre  | Sens                                               | Net à payer     | Conséquence                            |
+| ------ | -------------------------------------------------- | --------------- | -------------------------------------- |
+| **A1** | facture à payer — le cas courant                   | le montant réel | l'organisme met la facture en paiement |
+| **A2** | facture **déjà payée** (souvent par carte d'achat) | **0**           | aucun paiement n'est déclenché         |
+
+- La facture de régie est émise **avant** le paiement : elle relève d'**A1**,
+  pas d'A2. A2 voudrait dire « soldée », et l'organisme la classerait comme
+  telle même si le lien n'était jamais payé (mise en garde d'un éditeur de
+  logiciel, source commerciale).
+- A2 ne serait juste que si l'on déposait **après** l'encaissement du lien —
+  un ordre que P2 quater ne prévoit pas, et qui ferait dépendre le dépôt d'un
+  paiement.
+- **Non trouvé** : une source officielle qui dise si Chorus accepte **A1 avec
+  le code 48**, c'est-à-dire « à payer, par carte, hors de Chorus ». Le guide
+  officiel trouvé sur A2 (net à payer à 0) est la spécification externe du
+  portail v3.27, de **2017**.
+
+#### Ce que ça décide pour nous
+
+1. **I0 → I2 ajoute 48** aux codes que `invoice.payment_means` sait écrire, à
+   côté de 58 et 59. Le Factur-X écrit BT-81 = 48, et **jamais** BG-17 ni BG-18.
+   Le moyen est figé à l'émission, comme aujourd'hui (§ « I0 → I2 : une décision
+   prise d'avance » de la [feuille de route de `payment`](../../payment/feuille-de-route.md)).
+2. **Pas d'IBAN sur une facture payable par carte** : BG-17 est vide, et le PDF
+   ne l'imprime pas comme moyen de paiement. Ce qui reste du pied de page
+   (coordonnées de l'entité) se décide avec le PDF d'I0 → I2.
+3. **Si la régie passe par Chorus** (réponse 1 du cabinet) : dépôt en **A1**,
+   avec le code 48. Jamais A2 tant que la facture part avant le paiement.
+4. **Si la régie ne passe pas par Chorus** : le code 48 vaut de la même façon
+   dans le Factur-X envoyé par e-mail ; la question du cadre disparaît.
+
+#### Questions au cabinet (resserrées)
+
+1. Une facture adressée à un organisme public et payée par sa **régie
+   d'avances** doit-elle être déposée sur Chorus Pro ? (la question déjà
+   ouverte, qui décide si le lot existe)
+2. Si oui : **cadre A1, BT-81 = 48, sans BG-18**, est-il accepté pour une
+   facture payée ensuite par un lien de paiement carte, hors de Chorus ? Ou
+   faut-il attendre le paiement et déposer en **A2** ?
+3. Pour une facture privée réglée par lien (le chalet, I0 → I2) : 48 sans
+   BG-18 suffit-il, ou une mention particulière est-elle attendue sur le PDF ?
+
+#### Sources
+
+- Liste UNTDID 4461 : [XRepository](https://www.xrepository.de/api/xrepository/urn:xoev-de:xrechnung:codeliste:untdid.4461_3:technischerBestandteilGenericode),
+  [i-effect, BT-81](https://manual.i-effect.com/de/i-effect-manual/latest/untdid-4461-zahlungsart-code-bt-81)
+- Peppol : [BG-16](https://test-docs.peppol.eu/tdd/sk/tdd-sk/trn-tdd/semantic-model/bg-16/),
+  [BG-18](https://docs.peppol.eu/tdd/sk/tdd-sk/trn-tdd/semantic-model/bg-18/),
+  [CardAccount](https://docs.peppol.eu/poacc/billing/3.0/syntax/ubl-invoice/cac-PaymentMeans/cac-CardAccount/),
+  [règle DE-R-024-1](https://docs.peppol.eu/poacc/billing/3.0/upcoming/rules/ubl-peppol/DE-R-024-1/)
+- France, achats par carte : [Sovos, cas d'usage 7](https://docs.sovos.com/indirect-tax/indirect-tax-products/einvoicing/compliance-network/country-setup-guides/france/lifecycles-and-use-cases/use-case-7-lodged-card-purchases)
+- Chorus Pro (officiel, 2017) : [spécifications externes v3.27](https://communaute.chorus-pro.gouv.fr/wp-content/uploads/2017/08/20170630_Solution-portail_Dossier_Specifications_Externes_V3.27.pdf)
+- Cadres A1 et A2 (sources secondaires) : [ma-facture-electronique.org](https://ma-facture-electronique.org/?p=2980),
+  [propulsebyca.fr](https://propulsebyca.fr/comptabilite/facture/electronique/chorus-pro-deposer-facture)
+- Norme AFNOR : [impots.gouv.fr](https://www.impots.gouv.fr/factures-norme-afnor)
+
+### Contradiction (`vitruve`, 2026-11-23) — P2 quater suspendu
+
+> 🟥 **Une question décide si le lot existe** : une facture adressée à un
+> organisme public doit-elle passer par Chorus Pro **même quand une régie la
+> paie** ? Si oui, le circuit régie « hors Chorus » n'est pas permis, et le
+> lot se réduit à « déposer, puis payer par lien ». À trancher par le cabinet
+> (et l'organisme) **avant tout bâti** — une facture émise hors Chorus ne se
+> redépose pas proprement.
+
+| Objection                                                                                                                                                                                                            | Sort                                                                                                                                                                                                                                                                                                                                                                                    |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **B1** RG4 nomme une session Stripe hébergée : ce canal est historique, `checkout.session.*` ne règle plus rien (`payment-link.ts:13`, `stripe-event-reduction.ts:37`)                                               | Le lien passe par la porte du bloc `src/payment/` : un `subject_type` « facture » qui implémente `LinkableSubject` et `SubjectSettlement`, avec son compte de carte. C'est le lot I0 → I2 de `payment`.                                                                                                                                                                                 |
+| **B2** Une facture publique non déposée n'a jamais d'échéance ni de retard, et imprime la mention BT-20 « réception sur Chorus Pro » (`public-invoice-due.ts:85`, `:109`)                                            | Un **circuit persisté sur `invoice`**, lu par l'échéance, le retard, le PDF et le Factur-X. Pour la régie : échéance et mention d'une facture payable par carte (avis du cabinet attendu par I0 → I2).                                                                                                                                                                                  |
+| **B3** Le circuit n'a pas de colonne ; la PK de `invoice_monthly_outcome` est (entité, clôture, payeur, mandat, numéro, code) : une facture bon de commande sans engagement et une facture de régie se confondraient | Colonne de circuit **dans la PK** et dans le déclencheur `invoice_monthly_outcome_final`, défaut « bon de commande » pour le passé. Migration de clé sur une table de facturation : `vitruve` à nouveau.                                                                                                                                                                                |
+| File Chorus : `prisma-chorus-invoices.reader.ts:27` retient toute facture d'un acheteur public sans dépôt ; même trou dans les états de dépôt                                                                        | Les trois lecteurs lisent le circuit de la facture.                                                                                                                                                                                                                                                                                                                                     |
+| Règlement : un payeur public est « au virement » (`invoice-settlement.ts:89`) ; `card_paid` veut dire « payée à la commande »                                                                                        | Un genre de règlement « par lien » distinct ; le paiement du lien écrit le règlement de la facture dans la transaction de `SubjectSettlement`. Le moyen du payeur reste `bank_transfer`.                                                                                                                                                                                                |
+| Passation : aucun endroit nommé pour le choix du circuit, ni pour le figer ; révisions et correction d'engagement muettes                                                                                            | À concevoir : un champ de la commande posé à `draft`, refusé en révision ; la correction d'engagement refuse une commande de régie.                                                                                                                                                                                                                                                     |
+| **I0 → I2 met la carte par lien sur le PAYEUR** (`payer_collection_means`, `COLLECTION_MEANS`), la régie la veut par **facture** ; et I0 → I2 n'a pas de plan, seulement une ligne de feuille de route               | **Anticipé le 2026-11-23** : le moyen appartient à la facture (`invoice.payment_means`, déjà figé à l'émission), le payeur n'en donne que le défaut, un circuit peut l'imposer à un groupe. Écrit dans la [feuille de route de `payment`](../../payment/feuille-de-route.md), § « I0 → I2 : une décision prise d'avance ». P2 quater dépend toujours d'I0 → I2 et de l'avis du cabinet. |
+| Avoir d'une facture de régie payée                                                                                                                                                                                   | Remboursement par la porte `payment` (`refund.*`) : à écrire.                                                                                                                                                                                                                                                                                                                           |
+| L'option si le payeur change                                                                                                                                                                                         | Comme la fiche du service : elle porte son payeur, et s'éteint s'il change.                                                                                                                                                                                                                                                                                                             |
+
 ## 7. Lots
 
-| Lot       | Contenu                                                                                                                                 | Dépend de                                                     |
-| --------- | --------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
-| **P1** ✅ | D1, D2, D3 : routage du payeur, geste « passer public », virement forcé, carte refusée, suivi refusé entre natures ; fiche client       | —                                                             |
-| **P2** ✅ | D4, D5 : engagement sur la commande et ses révisions, clé de clôture à trois termes, BT-13 et référence acheteur ; champ dans le panier | P1, mapping Chorus vérifié, inventaire des lecteurs de la clé |
-| **P3** ✅ | D6, D7, D8 : journal de transmission, échéance au dépôt, `ManualChorusDeposit`, file « À déposer »                                      | P2                                                            |
-| **P4**    | Adaptateur de la plateforme agréée (qui envoie à Chorus un format qu'il accepte), lecture de l'annuaire Chorus (exigences relues)       | Q4 de [`plan-zero-faille.md`](plan-zero-faille.md)            |
+| Lot              | Contenu                                                                                                                                                                                        | Dépend de                                                     |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| **P1** ✅        | D1, D2, D3 : routage du payeur, geste « passer public », virement forcé, carte refusée, suivi refusé entre natures ; fiche client                                                              | —                                                             |
+| **P2** ✅        | D4, D5 : engagement sur la commande et ses révisions, clé de clôture à trois termes, BT-13 et référence acheteur ; champ dans le panier                                                        | P1, mapping Chorus vérifié, inventaire des lecteurs de la clé |
+| **P3** ✅        | D6, D7, D8 : journal de transmission, échéance au dépôt, `ManualChorusDeposit`, file « À déposer »                                                                                             | P2                                                            |
+| **P2 bis**       | Devis de période : engagement reçu après la clôture, facture émise ensuite, mercuriale exigée (§ 6 sexies)                                                                                     | P3, réponses de Hugo                                          |
+| **P2 ter**       | Un SIRET de facturation, plusieurs services : code service et engagement en cours par sous-compte (§ 6 octies)                                                                                 | P2, réponses de Hugo                                          |
+| **P2 quater** 🟥 | Suspendu (question légale, § 6 nonies). La régie sur le sous-compte, au compte : circuit choisi par commande, facture de période régie hors Chorus, payée par lien carte rattaché (§ 6 nonies) | question légale, I0 → I2 (`payment`), avis du cabinet         |
+| **P4**           | Adaptateur de la plateforme agréée (qui envoie à Chorus un format qu'il accepte), lecture de l'annuaire Chorus (exigences relues)                                                              | Q4 de [`plan-zero-faille.md`](plan-zero-faille.md)            |
 
 ## 8. Décisions de Hugo (2026-11-18)
 
