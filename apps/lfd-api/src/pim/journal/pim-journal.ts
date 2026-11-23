@@ -481,6 +481,10 @@ export const PIM_EVENTS = {
   orderTimeLimitArchived: "order_time_limit.archived",
   /** Restaurée : la limite s'applique de nouveau, avec les valeurs qu'elle portait. */
   orderTimeLimitRestored: "order_time_limit.restored",
+  /** Un produit exclu nommément d'une limite de famille : elle ne le vise plus. */
+  orderTimeLimitProductExcluded: "order_time_limit.product_excluded",
+  /** Son exclusion retirée : la limite de la famille le vise de nouveau. */
+  orderTimeLimitProductIncluded: "order_time_limit.product_included",
 
   /**
    * **Les opérations datées** — Noël, Pâques, la galette (lot 1 du plan

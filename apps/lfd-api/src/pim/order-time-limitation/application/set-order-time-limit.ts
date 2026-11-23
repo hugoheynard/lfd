@@ -6,9 +6,11 @@ import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
 import { UuidGenerator } from "../../../platform/id/uuid-generator.js";
 import { PIM_EVENTS, PimJournal } from "../../journal/pim-journal.js";
 import { OrderTimeLimit } from "../domain/entities/order-time-limit.js";
+import { OrderTimeLimitFamilyNotFoundError } from "../domain/errors/order-time-limit-errors.js";
 import { CatalogRulesEmitter } from "../domain/ports/catalog-rules.emitter.js";
 import { LimitScopeNamer } from "../domain/ports/limit-scope.namer.js";
 import { OrderTimeLimitRepository } from "../domain/ports/order-time-limit.repository.js";
+import { ProductLineageReader } from "../domain/ports/product-lineage.reader.js";
 import { limitScopeLabel } from "../domain/services/limit-scope-label.js";
 import { LimitScope } from "../domain/value-objects/limit-scope.js";
 
@@ -29,8 +31,12 @@ export class SetOrderTimeLimitCommand {
  * un simple changement d'heure ferait disparaître la ligne et en créerait une
  * autre sous les yeux de qui la regardait.
  *
- * Émet `pim.catalog_rules_changed` dans sa transaction (lot 2b) : la
- * plateforme applique l'échelle entière, comme l'ingestion du push.
+ * Une limite de famille vise une famille qui existe : `scope_id` n'a pas de
+ * clé étrangère, et une limite posée sur un identifiant inconnu ne viserait
+ * rien tout en s'affichant.
+ *
+ * Émet `pim.catalog_rules_changed` dans sa transaction : le commerce applique
+ * l'échelle entière.
  */
 @CommandHandler(SetOrderTimeLimitCommand)
 export class SetOrderTimeLimitHandler implements ICommandHandler<SetOrderTimeLimitCommand, string> {
@@ -41,6 +47,7 @@ export class SetOrderTimeLimitHandler implements ICommandHandler<SetOrderTimeLim
     private readonly uow: UnitOfWork,
     private readonly scopes: LimitScopeNamer,
     private readonly rules: CatalogRulesEmitter,
+    private readonly lineage: ProductLineageReader,
   ) {}
 
   async execute(command: SetOrderTimeLimitCommand): Promise<string> {
@@ -49,6 +56,7 @@ export class SetOrderTimeLimitHandler implements ICommandHandler<SetOrderTimeLim
     // qui se contredit reviendrait à interroger la base avec une question qui
     // n'en est pas une.
     const scope = LimitScope.of(payload.scope);
+    await this.ensureFamilyExists(scope);
     const existing = await this.limits.findByScope(scope);
 
     // L'agrégat naît (ou se réécrit) AVANT la trace : il refuse une règle qui
@@ -84,10 +92,17 @@ export class SetOrderTimeLimitHandler implements ICommandHandler<SetOrderTimeLim
         },
       });
       await this.limits.save(limit, ticket);
-      // Les règles relues APRÈS l'écriture, dans la transaction (lot 2b) :
-      // sans effet tant que les faits du catalogue sont fermés.
+      // Les règles relues APRÈS l'écriture, dans la transaction.
       await this.rules.emitRules();
     });
     return limit.id;
+  }
+
+  private async ensureFamilyExists(scope: LimitScope): Promise<void> {
+    if (scope.type === "category" && scope.id !== null) {
+      if (!(await this.lineage.familyExists(scope.id))) {
+        throw new OrderTimeLimitFamilyNotFoundError(scope.id);
+      }
+    }
   }
 }

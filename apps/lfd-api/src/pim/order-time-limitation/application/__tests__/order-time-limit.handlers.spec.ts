@@ -8,6 +8,7 @@ import { OrderTimeLimit } from "../../domain/entities/order-time-limit.js";
 import {
   IncompleteOrderTimeLimitError,
   InvalidOrderTimeLimitScopeError,
+  OrderTimeLimitFamilyNotFoundError,
   ProductGraceRetiredError,
   RetiredOrderTimeLimitScopeError,
 } from "../../domain/errors/order-time-limit-errors.js";
@@ -16,6 +17,7 @@ import { OrderTimeLimitRepository } from "../../domain/ports/order-time-limit.re
 import type { LimitScope } from "../../domain/value-objects/limit-scope.js";
 import { SetOrderTimeLimitCommand, SetOrderTimeLimitHandler } from "../set-order-time-limit.js";
 import { RecordingRulesEmitter } from "../../domain/ports/__tests__/recording-rules-emitter.js";
+import { TableProductLineage } from "../../domain/ports/__tests__/table-product-lineage.js";
 
 function payload(over: Partial<OrderTimeLimitPayload> = {}): OrderTimeLimitPayload {
   return {
@@ -80,6 +82,7 @@ function doubles(existing: OrderTimeLimit | null): Doubles {
       new DirectUnitOfWork(),
       new TableScopeNamer(),
       rules,
+      new TableProductLineage({}, ["gateaux"]),
     ),
     saved,
     minted,
@@ -283,6 +286,30 @@ describe("SetOrderTimeLimitHandler", () => {
 
     await expect(refusal).rejects.toBeInstanceOf(RetiredOrderTimeLimitScopeError);
     await expect(refusal).rejects.toThrow(/Réglages › Commandes › Heure limite/u);
+    expect(saved).toHaveLength(0);
+    expect(journal.entries).toHaveLength(0);
+    expect(rules.emissions).toEqual([]);
+  });
+
+  it("pose une limite sur une famille qui existe, et émet les règles", async () => {
+    const { handler, saved, rules } = doubles(null);
+
+    await handler.execute(
+      new SetOrderTimeLimitCommand(payload({ scope: { type: "category", id: "gateaux" } })),
+    );
+
+    expect(saved[0]?.scope.key).toBe("category:gateaux");
+    expect(rules.emissions).toEqual([1]);
+  });
+
+  it("refuse une famille inexistante, sans rien lire ni écrire", async () => {
+    const { handler, saved, journal, rules } = doubles(null);
+
+    await expect(
+      handler.execute(
+        new SetOrderTimeLimitCommand(payload({ scope: { type: "category", id: "fantome" } })),
+      ),
+    ).rejects.toBeInstanceOf(OrderTimeLimitFamilyNotFoundError);
     expect(saved).toHaveLength(0);
     expect(journal.entries).toHaveLength(0);
     expect(rules.emissions).toEqual([]);

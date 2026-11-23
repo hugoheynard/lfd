@@ -14,6 +14,7 @@ import {
   localizedText,
   minutes,
   named,
+  namedOrBare,
   payload,
   percent,
   ref,
@@ -67,6 +68,19 @@ const orderTimeLimitSet = () =>
      * limite naît, et des faits écrits avant qu'on la garde.
      */
     previousStaffMayExceed: z.boolean().optional(),
+  });
+
+/**
+ * Un produit exclu d'une limite de famille, ou réintégré : la portée de la
+ * limite, et le produit nommé par son SKU du moment — par son seul
+ * identifiant quand la fiche ne se nomme plus.
+ */
+const orderTimeLimitExclusion = () =>
+  payload({
+    subjectLabel: subjectLabel(),
+    /** La clé de portée de la limite (`category:<id>`). */
+    scope: z.string(),
+    product: namedOrBare("product"),
   });
 
 /**
@@ -351,4 +365,6 @@ export const REFERENTIAL_SETTINGS_FACTS = {
   "order_time_limit.removed": labelled(orderTimeLimit()),
   "order_time_limit.archived": labelled(orderTimeLimit()),
   "order_time_limit.restored": labelled(orderTimeLimit()),
+  "order_time_limit.product_excluded": fact(orderTimeLimitExclusion()),
+  "order_time_limit.product_included": fact(orderTimeLimitExclusion()),
 } as const satisfies JournalFactFamily;

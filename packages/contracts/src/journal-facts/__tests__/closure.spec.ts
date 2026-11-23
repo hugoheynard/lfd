@@ -185,6 +185,10 @@ const BARE_REFS: Readonly<Record<string, string>> = {
   "order_cutoff.created:pickupAddress": "un point de retrait disparu se cite par son id",
   "order_cutoff.updated:pickupAddress": "un point de retrait disparu se cite par son id",
   "order_cutoff.removed:pickupAddress": "un point de retrait disparu se cite par son id",
+  "order_time_limit.product_excluded:product":
+    "une fiche que le référentiel ne nomme plus se cite par son id",
+  "order_time_limit.product_included:product":
+    "une fiche que le référentiel ne nomme plus se cite par son id",
   // La sortie de réserve vers une boutique (plan A1, lot A1.4, 2026-10-25).
   "packing_stock.sent_to_shop:site": "un point de retrait disparu se cite par son id",
   "packing_stock.sent_to_shop:resupplyId":

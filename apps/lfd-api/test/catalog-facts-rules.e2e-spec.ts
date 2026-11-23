@@ -88,6 +88,7 @@ describe("les limites de commande voyagent en règles", () => {
         time: "18:00",
         graceMinutes: null,
         staffMayExceed: false,
+        excludedProductIds: [],
       },
     ]);
     expect(await limitOf(fiche.variantSku)).toMatchObject({
@@ -203,6 +204,78 @@ describe("les limites de commande voyagent en règles", () => {
     await relayAll(ctx);
 
     expect(await limitOf(fiche.variantSku)).toMatchObject({ orderLimitTime: null });
+  });
+});
+
+/**
+ * La limite d'une famille vise toute sa descendance, sauf ses exclusions
+ * (`limites-de-commande/plan-limite-par-famille.md`) : elle voyage en règle
+ * avec ses exclusions, et le commerce la descend par la lignée.
+ */
+describe("la limite d'une famille", () => {
+  const FAMILY_LIMIT = { daysBefore: 2, time: "12:00", staffMayExceed: false };
+
+  async function moveUnder(child: string, parentId: string): Promise<void> {
+    await staff().put(`${CATEGORIES}/${child}/parent`).send({ parentId }).expect(200);
+  }
+
+  async function limitFamily(categoryId: string): Promise<string> {
+    return jsonBody<{ id: string }>(
+      await staff()
+        .put(LIMITS)
+        .send({ scope: { type: "category", id: categoryId }, ...FAMILY_LIMIT })
+        .expect(200),
+    ).id;
+  }
+
+  it("se range sur un article de la famille, pas sur le produit exclu", async () => {
+    const kept = await anActiveFiche(staff, "Fraisier");
+    const excluded = await anActiveFiche(staff, "Tarte au citron");
+    await moveUnder(excluded.categoryId, kept.categoryId);
+    const limitId = await limitFamily(kept.categoryId);
+    await staff()
+      .post(`${LIMITS}/${limitId}/exclusions`)
+      .send({ productId: excluded.id })
+      .expect(204);
+    await relayAll(ctx);
+
+    const rules = await ctx.prisma.catalogRules.findUnique({
+      where: { kind: "order_time_limits" },
+    });
+    expect(rules?.rules).toEqual([
+      expect.objectContaining({
+        scope: { type: "category", id: kept.categoryId },
+        excludedProductIds: [excluded.id],
+      }),
+    ]);
+    expect(await limitOf(kept.variantSku)).toMatchObject({
+      orderLimitDaysBefore: 2,
+      orderLimitTime: "12:00",
+      orderLimitGraceMinutes: 0,
+    });
+    expect(await limitOf(excluded.variantSku)).toMatchObject({ orderLimitTime: null });
+
+    // Réintégré, il la prend.
+    await staff().delete(`${LIMITS}/${limitId}/exclusions/${excluded.id}`).expect(204);
+    await relayAll(ctx);
+    expect(await limitOf(excluded.variantSku)).toMatchObject({ orderLimitTime: "12:00" });
+  });
+
+  it("une famille déplacée sous une famille limitée : ses articles la prennent", async () => {
+    const limited = await anActiveFiche(staff, "Opéra");
+    const moved = await anActiveFiche(staff, "Éclair");
+    await limitFamily(limited.categoryId);
+    await relayAll(ctx);
+    expect(await limitOf(limited.variantSku)).toMatchObject({ orderLimitTime: "12:00" });
+    expect(await limitOf(moved.variantSku)).toMatchObject({ orderLimitTime: null });
+
+    await moveUnder(moved.categoryId, limited.categoryId);
+    await relayAll(ctx);
+
+    expect(await limitOf(moved.variantSku)).toMatchObject({
+      orderLimitDaysBefore: 2,
+      orderLimitTime: "12:00",
+    });
   });
 });
 

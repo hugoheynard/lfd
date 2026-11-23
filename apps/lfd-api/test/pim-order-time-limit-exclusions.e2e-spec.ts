@@ -1,6 +1,6 @@
 /**
  * E2E de la **limite de commande d'une famille** et de ses exclusions — sur un
- * vrai Postgres (plan `limites-de-commande/plan-limite-par-famille.md`, F2).
+ * vrai Postgres.
  *
  * Ce que seul ce niveau prouve :
  * - le CHECK `order_time_limit_product_or_family` admet une famille ;
@@ -10,12 +10,18 @@
  * - l'index unique PARTIEL `order_time_limit_exclusion_one_live` refuse deux
  *   exclusions vivantes du même produit, même écrites hors du domaine ;
  * - `ProductLineageReader` remonte la lignée d'une fiche par les lectures du
- *   catalogue.
+ *   catalogue ;
+ * - les routes : exclure, réintégrer, la liste nommée et la limite effective
+ *   d'un produit.
  *
- * Les cas d'application (exclure, réintégrer par une route) sont le lot F3 :
- * ici l'agrégat est chargé et sauvé par le dépôt lui-même.
+ * Le dépôt est aussi éprouvé seul : l'agrégat chargé et sauvé sans passer par
+ * un cas d'application.
  */
-import type { OrderTimeLimitView } from "@lfd/pim-contracts";
+import type {
+  EffectiveOrderTimeLimitView,
+  OrderTimeLimitListItem,
+  OrderTimeLimitView,
+} from "@lfd/pim-contracts";
 import type { Response } from "supertest";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
@@ -103,10 +109,12 @@ async function scene(): Promise<Scene> {
 }
 
 const repository = (): OrderTimeLimitRepository => ctx.app.get(OrderTimeLimitRepository);
-/** Par le dépôt : la liste de l'écran ne rend les familles qu'au lot F3. */
+/** Par le dépôt : archivées et exclusions, sans passer par la route. */
 const listed = (): Promise<readonly OrderTimeLimitView[]> => repository().list();
 const ticket = (): ReturnType<PimJournal["untraced"]> =>
-  ctx.app.get(PimJournal, { strict: false }).untraced("e2e : le cas d'application est le lot F3");
+  ctx.app
+    .get(PimJournal, { strict: false })
+    .untraced("e2e : le dépôt éprouvé sans cas d'application");
 
 async function excluded(limitId: string, exclusionId: string, productId: string, at: Date) {
   const limit = await repository().findById(limitId);
@@ -210,5 +218,84 @@ describe("ProductLineageReader", () => {
     expect(await lineage.lineageOf("prd_inconnu")).toBeNull();
     expect(await lineage.familyExists(cakes)).toBe(true);
     expect(await lineage.familyExists("cat_inconnue")).toBe(false);
+  });
+});
+
+describe("les routes des exclusions", () => {
+  const exclusions = (limitId: string) => `${LIMITS}/${limitId}/exclusions`;
+
+  it("exclut, rejoue sans rien écrire, réintègre, et la liste les nomme", async () => {
+    const { strawberry, limitId } = await scene();
+
+    await staff().post(exclusions(limitId)).send({ productId: strawberry }).expect(204);
+    await staff().post(exclusions(limitId)).send({ productId: strawberry }).expect(204);
+    expect(await storedExclusions(limitId)).toHaveLength(1);
+
+    const rows = jsonBody<OrderTimeLimitListItem[]>(await staff().get(LIMITS).expect(200));
+    const [row] = rows;
+    expect(rows).toHaveLength(1);
+    expect(row?.exclusions.map((exclusion) => exclusion.productId)).toEqual([strawberry]);
+    // Nommée par le SKU de la fiche.
+    expect(row?.exclusions[0]?.label).toMatch(/\S/u);
+
+    await staff()
+      .delete(`${exclusions(limitId)}/${strawberry}`)
+      .expect(204);
+    await staff()
+      .delete(`${exclusions(limitId)}/${strawberry}`)
+      .expect(204);
+    const [stored, ...others] = await storedExclusions(limitId);
+    expect(others).toEqual([]);
+    expect(stored?.removedAt).toBeInstanceOf(Date);
+  });
+
+  it("refuse un produit hors de la famille (409), et une forme vide (400)", async () => {
+    const { limitId } = await scene();
+    const elsewhere = await createdId(
+      staff()
+        .post(CATEGORIES)
+        .send({ name: { fr: "Pains" } }),
+    );
+    const bread = await createdId(
+      staff()
+        .post(PRODUCTS)
+        .set(INTENT_KEY, freshIntent())
+        .send({ name: { fr: "Baguette" }, kind: "daily", categoryId: elsewhere }),
+    );
+
+    const refused = await staff().post(exclusions(limitId)).send({ productId: bread }).expect(409);
+    expect(jsonBody<{ code: string }>(refused).code).toBe(
+      "pim.order_time_limit.exclusion_outside_family",
+    );
+    await staff().post(exclusions(limitId)).send({}).expect(400);
+  });
+
+  it("refuse une limite posée sur une famille inexistante (404)", async () => {
+    await staff()
+      .put(LIMITS)
+      .send({
+        scope: { type: "category", id: "cat_inconnue" },
+        daysBefore: 1,
+        time: "12:00",
+        staffMayExceed: false,
+      })
+      .expect(404);
+  });
+
+  it("dit la limite effective d'un produit, sa lignée et sa provenance", async () => {
+    const { cakes, layered, strawberry } = await scene();
+
+    const effective = jsonBody<EffectiveOrderTimeLimitView>(
+      await staff().get(`${LIMITS}/effective/${strawberry}`).expect(200),
+    );
+
+    expect(effective.lineage.map((family) => family.id)).toEqual([layered, cakes]);
+    expect(effective.lineage[1]?.label).toBe("Gâteaux");
+    expect(effective.rules).toHaveLength(1);
+    expect(effective.explained).toEqual({
+      limit: { daysBefore: 2, time: "12:00", graceMinutes: 0, staffMayExceed: false },
+      from: { type: "category", id: cakes },
+    });
+    await staff().get(`${LIMITS}/effective/prd_inconnu`).expect(404);
   });
 });

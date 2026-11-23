@@ -122,3 +122,13 @@ export class OrderTimeLimitFamilyNotFoundError extends ResourceNotFoundError {
     );
   }
 }
+
+/** On exclut un produit, ou on lit sa limite, sous un identifiant qu'aucune fiche ne porte. */
+export class OrderTimeLimitProductNotFoundError extends ResourceNotFoundError {
+  constructor(readonly productId: string) {
+    super(
+      "pim.order_time_limit.product_not_found",
+      "Ce produit n'existe pas. Rechargez la page et choisissez un produit de la liste.",
+    );
+  }
+}

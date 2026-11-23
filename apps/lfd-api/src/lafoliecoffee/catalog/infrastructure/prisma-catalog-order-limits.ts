@@ -112,19 +112,17 @@ export class PrismaCatalogOrderLimits extends CatalogOrderLimits {
 }
 
 /**
- * Les règles que le commerce applique : celles des **produits** seulement.
+ * Les règles que le commerce applique : celles des **produits** et des
+ * **familles**, les deux portées que le référentiel émet.
  *
- * La résolution partagée sait combiner les limites de famille, mais le
- * référentiel n'en émet pas encore, et `catalog_rules` peut garder des règles
- * de famille rangées avant qu'elles soient retirées : les appliquer fermerait
- * des articles sur une décision abandonnée. Ce filtre se lève quand le
- * référentiel émet les limites de famille (plan
- * `limites-de-commande/plan-limite-par-famille.md`, lot F3).
+ * Une règle globale ou de déclinaison résiduelle de `catalog_rules` est
+ * écartée : le référentiel ne les pose plus, et la résolution partagée ne les
+ * lit pas — les garder ferait croire qu'elles comptent.
  */
 export function admittedOrderLimitRules(
   rules: readonly SyncOrderTimeLimitRule[],
 ): readonly SyncOrderTimeLimitRule[] {
-  return rules.filter((rule) => rule.scope.type === "product");
+  return rules.filter((rule) => rule.scope.type === "product" || rule.scope.type === "category");
 }
 
 /** Une limite (ou son absence), et les SKU qui la reçoivent. */

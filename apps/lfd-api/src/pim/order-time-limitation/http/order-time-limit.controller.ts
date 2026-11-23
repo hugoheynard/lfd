@@ -11,14 +11,20 @@ import {
 } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import {
+  type EffectiveOrderTimeLimitView,
   type GeneralOrderCutoffView,
+  orderTimeLimitExclusionPayloadSchema,
+  type OrderTimeLimitExclusionPayload,
+  type OrderTimeLimitListItem,
   orderTimeLimitPayloadSchema,
   type OrderTimeLimitPayload,
-  type OrderTimeLimitView,
 } from "@lfd/pim-contracts";
 
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
+import { ExcludeProductFromLimitCommand } from "../application/exclude-product-from-limit.js";
+import { ExplainProductOrderTimeLimitQuery } from "../application/explain-product-order-time-limit.js";
+import { IncludeProductInLimitCommand } from "../application/include-product-in-limit.js";
 import { GetGeneralOrderCutoffQuery } from "../application/get-general-order-cutoff.js";
 import { ListOrderTimeLimitsQuery } from "../application/list-order-time-limits.js";
 import { ArchiveOrderTimeLimitCommand } from "../application/archive-order-time-limit.js";
@@ -50,16 +56,24 @@ export class OrderTimeLimitController {
   ) {}
 
   @Get()
-  list(): Promise<readonly OrderTimeLimitView[]> {
-    return this.queries.execute<ListOrderTimeLimitsQuery, readonly OrderTimeLimitView[]>(
+  list(): Promise<readonly OrderTimeLimitListItem[]> {
+    return this.queries.execute<ListOrderTimeLimitsQuery, readonly OrderTimeLimitListItem[]>(
       new ListOrderTimeLimitsQuery(),
+    );
+  }
+
+  /** La limite effective d'un produit et sa provenance, pour sa fiche. */
+  @Get("effective/:productId")
+  effective(@Param("productId") productId: string): Promise<EffectiveOrderTimeLimitView> {
+    return this.queries.execute<ExplainProductOrderTimeLimitQuery, EffectiveOrderTimeLimitView>(
+      new ExplainProductOrderTimeLimitQuery(productId),
     );
   }
 
   /**
    * La règle générale du commerce, en lecture : « toute la production » se
-   * règle dans Réglages › Commandes › Heure limite depuis le 2026-10-21, et
-   * cette page la montre sans demander le droit de la régler.
+   * règle dans Réglages › Commandes › Heure limite, et cette page la montre
+   * sans demander le droit de la régler.
    */
   @Get("general-cutoff")
   generalCutoff(): Promise<GeneralOrderCutoffView> {
@@ -102,6 +116,32 @@ export class OrderTimeLimitController {
   async restore(@Param("id") id: string): Promise<void> {
     await this.commands.execute<RestoreOrderTimeLimitCommand, void>(
       new RestoreOrderTimeLimitCommand(id),
+    );
+  }
+
+  /** Exclut un produit d'une limite de famille. */
+  @Post(":id/exclusions")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent("exclut le produit : rejouée, il l'est déjà et rien ne s'écrit ni ne s'émet")
+  async exclude(
+    @Param("id") id: string,
+    @Body(new ZodBody(orderTimeLimitExclusionPayloadSchema)) body: OrderTimeLimitExclusionPayload,
+  ): Promise<void> {
+    await this.commands.execute<ExcludeProductFromLimitCommand, void>(
+      new ExcludeProductFromLimitCommand(id, body.productId),
+    );
+  }
+
+  /**
+   * Réintègre le produit : son exclusion est retirée, jamais effacée — le verbe
+   * `DELETE` dit ce que l'écran voit disparaître, comme l'archive d'une limite.
+   */
+  @Delete(":id/exclusions/:productId")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent("réintègre le produit : rejouée, il n'est plus exclu et rien ne s'écrit ni ne s'émet")
+  async include(@Param("id") id: string, @Param("productId") productId: string): Promise<void> {
+    await this.commands.execute<IncludeProductInLimitCommand, void>(
+      new IncludeProductInLimitCommand(id, productId),
     );
   }
 }

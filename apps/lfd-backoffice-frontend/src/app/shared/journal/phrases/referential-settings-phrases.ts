@@ -315,6 +315,25 @@ function timeLimitGesture(verb: string): Phrase {
     );
 }
 
+/**
+ * « a exclu le produit « VIE-001 » de l'heure limite de commande (Famille
+ * « Gâteaux ») » — et sa réintégration.
+ */
+function timeLimitExclusion(verb: string, preposition: string): Phrase {
+  return (fact) =>
+    byActor(
+      fact,
+      [
+        text(`${verb} `),
+        ...cite({ the: 'le produit', a: 'un produit' }, fact.payload['product']),
+        text(` ${preposition} l’heure limite de commande (`),
+        ...scopeOf(fact),
+        text(')'),
+      ],
+      ['subjectLabel', 'scope', 'product'],
+    );
+}
+
 export const REFERENTIAL_SETTINGS_PHRASES = {
   ...REFERENTIAL_PROVENANCE_PHRASES,
 
@@ -337,4 +356,6 @@ export const REFERENTIAL_SETTINGS_PHRASES = {
   'order_time_limit.removed': timeLimitGesture('a supprimé'),
   'order_time_limit.archived': timeLimitGesture('a archivé'),
   'order_time_limit.restored': timeLimitGesture('a restauré'),
+  'order_time_limit.product_excluded': timeLimitExclusion('a exclu', 'de'),
+  'order_time_limit.product_included': timeLimitExclusion('a réintégré', 'dans'),
 } as const satisfies Partial<Record<JournalFactType, Phrase>>;

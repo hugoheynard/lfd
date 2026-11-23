@@ -37,8 +37,7 @@ describe("orderLimitGroups", () => {
 });
 
 describe("admittedOrderLimitRules", () => {
-  // Une règle de famille résiduelle de `catalog_rules` ne doit fermer aucun article avant F3.
-  it("ne garde que les règles de produit", () => {
+  it("garde les règles de produit et de famille, écarte les portées retirées", () => {
     const product = {
       scope: { type: "product" as const, id: "p1" },
       daysBefore: 1,
@@ -49,6 +48,9 @@ describe("admittedOrderLimitRules", () => {
     };
     const family = { ...product, scope: { type: "category" as const, id: "gateaux" } };
 
-    expect(admittedOrderLimitRules([family, product])).toEqual([product]);
+    const global = { ...product, scope: { type: "global" as const, id: null } };
+    const variant = { ...product, scope: { type: "variant" as const, id: "v1" } };
+
+    expect(admittedOrderLimitRules([family, global, product, variant])).toEqual([family, product]);
   });
 });

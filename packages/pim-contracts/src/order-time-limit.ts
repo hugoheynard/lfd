@@ -1,44 +1,25 @@
 import { z } from "zod";
 
 /**
- * **Le point d'arrêt de prise de commande**, déclaré par le référentiel.
+ * **La limite de commande**, déclarée par le référentiel.
  *
- * ## Ce que ça répond, et ce que ça ne répond pas
+ * Elle répond à « jusqu'à quand accepte-t-on une commande pour un
+ * acheminement le jour J ? », et rien d'autre : ni où l'on retire, ni comment
+ * on livre.
  *
- * « Jusqu'à quand accepte-t-on une commande pour un acheminement le jour J ? »
- * — et rien d'autre. Ni où l'on retire, ni comment on livre : ce sont des faits
- * d'acheminement, et ils ne font pas varier le moment où la production ferme.
+ * ## Les portées
  *
- * Le modèle précédent accrochait la règle à un **point de retrait**. Un point de
- * retrait n'est ni un lieu de production ni un lieu de livraison : c'est
- * l'endroit où un client vient chercher. La conséquence se voyait — une
- * commande livrée ne pouvait matcher aucune règle de point, donc toute la moitié
- * livrée du commerce n'avait qu'une seule limite possible.
+ * Le référentiel pose une limite sur un **produit** ou sur une **famille**
+ * (décisions de Hugo du 2026-10-21 et du 2026-11-23). « Toute la production »
+ * se règle au commerce, et une déclinaison suit son produit : `global` et
+ * `variant` restent dans l'énumération pour relire les lignes résiduelles,
+ * jamais pour en poser.
  *
- * ## L'échelle
- *
- * `global → famille → produit → déclinaison`, la même que celle des prix
- * (`PriceScopeType`), et pour la même raison : deux vocabulaires de portée pour
- * la même idée finiraient par diverger, et le back-office montrerait « Famille »
- * d'un côté et « Catégorie » de l'autre.
- *
- * - **global** — on ferme toute la production à telle heure ;
- * - **famille** — la viennoiserie et le pain n'ont pas la même charge ;
- * - **produit** / **déclinaison** — le cas particulier, jusqu'au conditionnement
- *   (le pot de 200 g et le seau de 5 kg ne se préparent pas pareil).
- *
- * ## L'héritage se fait CHAMP PAR CHAMP
- *
- * C'est la décision qui fait tenir le reste. Un rang pose ce qu'il change, et
- * hérite du reste : « le pain ferme à 16 h » ne recopie pas le nombre de jours,
- * « l'entremets demande un jour de plus » ne recopie pas l'heure. Le jour où le
- * labo passe de 18 h à 16 h, **tout ce qui n'a pas d'heure propre suit** — alors
- * qu'une règle recopiée entière serait restée figée, en silence, sur chaque
- * article qui l'avait dupliquée.
- *
- * `null` ne veut donc pas dire « aucune limite » : il veut dire **« ce rang ne
- * se prononce pas »**. Confondre les deux empêcherait de déclarer une famille
- * explicitement libre sous un global contraignant.
+ * Une limite est une **règle entière** — délai ET heure, sans rattrapage. Une
+ * limite de famille vise toute sa descendance, sauf les produits qu'elle
+ * exclut nommément. Quand plusieurs limites visent un article (son produit,
+ * ses familles), **la plus stricte gagne** ; la résolution vit dans
+ * `@lfd/catalog-sync`, partagée par les deux rives.
  */
 
 /** Les portées, du plus général au plus précis. Mêmes valeurs que `PriceScopeType`. */
@@ -71,9 +52,8 @@ export const orderTimeLimitScopeSchema = z.object({
 export type OrderTimeLimitScope = z.infer<typeof orderTimeLimitScopeSchema>;
 
 /**
- * Ce qu'un rang pose. **Les trois champs sont optionnels** — c'est l'héritage
- * champ par champ. Un payload dont les trois valent `null` ne dit rien : le
- * serveur le refuse plutôt que d'écrire une ligne muette.
+ * Ce qu'on pose sur une portée. La forme admet `null` ; le serveur refuse une
+ * limite sans délai ou sans heure, et un rattrapage non nul.
  */
 export const orderTimeLimitPayloadSchema = z.object({
   scope: orderTimeLimitScopeSchema,

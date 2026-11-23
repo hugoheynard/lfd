@@ -248,10 +248,9 @@ describe("les limites de commande traversent le fil, en RÈGLES", () => {
   }
 
   /**
-   * 🔴 Depuis le 2026-10-21 (décision de Hugo, `limites-de-commande/
-   * schema-des-reglages.md` §4) : seule la règle d'un PRODUIT s'applique, sans
-   * rattrapage. Un global, une famille ou une déclinaison encore portés par un
-   * snapshot sont ignorés.
+   * Décisions de Hugo (2026-10-21 et 2026-11-23) : les règles d'un PRODUIT et
+   * d'une FAMILLE s'appliquent, sans rattrapage. Un global ou une déclinaison
+   * encore portés par un snapshot sont ignorés.
    */
   it("résout la règle du produit, sans grâce, sur ses articles", async () => {
     await push(
@@ -287,7 +286,7 @@ describe("les limites de commande traversent le fil, en RÈGLES", () => {
     });
   });
 
-  it("ignore un global, une famille et une déclinaison résiduels", async () => {
+  it("ignore un global et une déclinaison résiduels", async () => {
     await push(
       withLimits(snapshotOf([{ sku: "VIE-002", priceMillicents: 220_000 }]), [
         rule(
@@ -296,16 +295,6 @@ describe("les limites de commande traversent le fil, en RÈGLES", () => {
             daysBefore: 1,
             time: "18:00",
             graceMinutes: 30,
-            staffMayExceed: false,
-            excludedProductIds: [],
-          },
-        ),
-        rule(
-          { type: "category", id: CATEGORY.id },
-          {
-            daysBefore: 1,
-            time: "16:00",
-            graceMinutes: null,
             staffMayExceed: false,
             excludedProductIds: [],
           },
@@ -323,6 +312,40 @@ describe("les limites de commande traversent le fil, en RÈGLES", () => {
       ]),
     );
 
+    expect(await limitOf("VIE-002-1")).toEqual({
+      orderLimitDaysBefore: null,
+      orderLimitTime: null,
+      orderLimitGraceMinutes: null,
+    });
+  });
+
+  it("range la limite d'une famille sur ses articles, sauf le produit exclu", async () => {
+    await push(
+      withLimits(
+        snapshotOf([
+          { sku: "VIE-001", priceMillicents: 200_000 },
+          { sku: "VIE-002", priceMillicents: 220_000 },
+        ]),
+        [
+          rule(
+            { type: "category", id: CATEGORY.id },
+            {
+              daysBefore: 1,
+              time: "16:00",
+              graceMinutes: null,
+              staffMayExceed: false,
+              excludedProductIds: ["prd_VIE-002"],
+            },
+          ),
+        ],
+      ),
+    );
+
+    expect(await limitOf("VIE-001-1")).toEqual({
+      orderLimitDaysBefore: 1,
+      orderLimitTime: "16:00",
+      orderLimitGraceMinutes: 0,
+    });
     expect(await limitOf("VIE-002-1")).toEqual({
       orderLimitDaysBefore: null,
       orderLimitTime: null,

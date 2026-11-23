@@ -387,6 +387,28 @@ describe('les heures limites de commande', () => {
   });
 });
 
+describe('les exclusions d’une heure limite de famille', () => {
+  it('dit le produit exclu et la famille, puis sa réintégration', () => {
+    const excluded = on('order_time_limit', 'order_time_limit.product_excluded', {
+      subjectLabel: 'Famille « Gâteaux »',
+      scope: 'category:cat_1',
+      product: { id: 'prd_1', name: 'VIE-001' },
+    });
+    const included = on('order_time_limit', 'order_time_limit.product_included', {
+      subjectLabel: 'Famille « Gâteaux »',
+      scope: 'category:cat_1',
+      product: 'prd_1',
+    });
+
+    expect(sentence(excluded)).toBe(
+      'Colette Martin a exclu le produit « VIE-001 » de l’heure limite de commande (Famille « Gâteaux »)',
+    );
+    expect(sentence(included)).toBe(
+      'Colette Martin a réintégré un produit (identifiant prd_1) dans l’heure limite de commande (Famille « Gâteaux »)',
+    );
+  });
+});
+
 describe('la case « l’équipe peut passer outre » d’une heure limite', () => {
   it('se dit quand le fait la porte, et se tait sur un fait d’avant la case', () => {
     const open = on('order_time_limit', 'order_time_limit.set', {

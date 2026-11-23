@@ -17,25 +17,20 @@
 // - textes traduisibles = `Json` `{ fr, en? }` (`fr` obligatoire).
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// **Le point d'arrêt de prise de commande**, posé sur une portée du catalogue.
+/// **La limite de commande**, posée sur un produit ou sur une famille.
 ///
-/// Une ligne par portée : `global` ferme toute la production, `category` dit
-/// qu'une famille n'a pas la même charge, `product` / `variant` le cas
-/// particulier — jusqu'au conditionnement, parce que le pot de 200 g et le seau
-/// de 5 kg ne se préparent pas pareil.
+/// Une ligne par portée. Le référentiel ne pose que `product` et `category`
+/// (CHECK `order_time_limit_product_or_family`) ; une limite de famille vise
+/// toute sa descendance, sauf ses exclusions (`OrderTimeLimitExclusion`), et
+/// quand plusieurs limites visent un article, la plus stricte gagne.
 ///
-/// 🔴 **Les trois valeurs sont nullables, et c'est la décision structurante.**
-/// L'héritage se fait CHAMP PAR CHAMP : un rang pose ce qu'il change et hérite
-/// du reste. Le jour où le labo passe de 18 h à 16 h, tout ce qui n'a pas
-/// d'heure propre suit — alors qu'une règle recopiée entière serait restée
-/// figée, en silence, sur chaque article qui l'avait dupliquée.
-///
-/// `NULL` ne veut donc pas dire « aucune limite » : il veut dire **« ce rang ne
-/// se prononce pas »**. Confondre les deux empêcherait de déclarer une famille
-/// explicitement libre sous un global contraignant.
+/// Une limite est une **règle entière** : `days_before` et `time` sont tous
+/// deux posés, `grace_minutes` vaut `NULL` (pas de rattrapage). Les colonnes
+/// restent nullables pour relire les lignes résiduelles, que la résolution
+/// ignore.
 ///
 /// ⚠️ Comme pour `PriceFloor`, l'unicité réelle n'est PAS dans ce modèle :
-/// `@@unique([scopeType, scopeId])` laisserait passer deux règles globales,
+/// `@@unique([scopeType, scopeId])` laisserait passer deux lignes sans cible,
 /// Postgres tenant deux `NULL` pour distincts. C'est l'index unique
 /// `order_time_limit_one_per_scope` sur `coalesce(scope_id, '')`, posé en SQL
 /// par la migration, qui porte la garantie.

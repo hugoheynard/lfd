@@ -74,9 +74,16 @@ class TableLimits extends OrderTimeLimitRepository {
         archived: false,
         excludedProductIds: [],
       },
-      // Des lignes d'avant le 2026-10-21, que la décision de Hugo a retirées.
+      // Une famille, avec ses exclusions.
+      {
+        ...RESIDUAL,
+        graceMinutes: null,
+        id: "lim_c",
+        scope: { type: "category", id: "cat_1" },
+        excludedProductIds: ["prd_9"],
+      },
+      // Des portées retirées par la décision de Hugo du 2026-10-21.
       { ...RESIDUAL, id: "lim_g", scope: { type: "global", id: null } },
-      { ...RESIDUAL, id: "lim_c", scope: { type: "category", id: "cat_1" } },
       { ...RESIDUAL, id: "lim_v", scope: { type: "variant", id: "var_1" } },
     ]);
   }
@@ -118,8 +125,8 @@ describe("B2bCatalogRulesEmitter", () => {
     const parsed = CatalogRulesChangedFact.fromPayload(fact?.payload ?? {});
     expect(parsed).toMatchObject({ seq: 77, emittedAt: NOW.toISOString() });
     // La forme du FIL : ni identifiant, ni nom — un renommage ne doit pas faire
-    // un fait. Et le produit SEULEMENT : depuis le 2026-10-21, un rang global,
-    // une famille ou une déclinaison résiduels ne traversent plus.
+    // un fait. Le produit et la famille seulement : un rang global ou une
+    // déclinaison résiduels ne traversent pas.
     expect(parsed.orderTimeLimits).toEqual([
       {
         scope: { type: "product", id: "prd_1" },
@@ -128,6 +135,14 @@ describe("B2bCatalogRulesEmitter", () => {
         graceMinutes: null,
         staffMayExceed: false,
         excludedProductIds: [],
+      },
+      {
+        scope: { type: "category", id: "cat_1" },
+        daysBefore: 1,
+        time: "18:00",
+        graceMinutes: null,
+        staffMayExceed: false,
+        excludedProductIds: ["prd_9"],
       },
     ]);
   });
