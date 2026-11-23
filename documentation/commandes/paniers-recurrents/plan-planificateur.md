@@ -4,6 +4,21 @@
 > contredit par `vitruve` le même jour (3 bloquants, 5 sérieux, tous intégrés,
 > § 9). Les questions à trancher sont au § 8.
 
+## 0. Le périmètre : les pros, et eux seuls
+
+Décidé par Hugo le 2026-11-23 : le planificateur ne sert d'abord que les
+**paniers récurrents pros**, c'est-à-dire ceux qui portent une société
+(`companyId` non nul), et **pas les entités publiques**.
+
+- **Paniers perso** (`companyId` nul, y compris les abonnements d'avant la
+  colonne) : le balayage ne les lit pas. Rien ne s'inscrit au registre et
+  aucune alerte ne part.
+- **Payeurs publics** (société qui exige un engagement budgétaire, E2′) : le
+  balayage ne les lit pas non plus. Le chantier est remis à plus tard,
+  avec la question de l'engagement porté par l'abonnement.
+- L'écran de création dit aux deux qu'aucune commande ne sortira du panier
+  pour le moment.
+
 ## 1. En deux mots
 
 Un client enregistre un **panier récurrent** : « ces articles, toutes les
@@ -143,8 +158,8 @@ par `OrderDrafting` directement, avec les parties du client, sans
      `companyName` : le panier sans société ne l'appelle pas, aucune
      réservation ne le concerne) ;
    - le SKU existe et se vend encore dans le canal ;
-   - un payeur public qui exige un engagement budgétaire (E2′) : refus, la
-     machine n'en a pas (Q3).
+   - un payeur public n'arrive jamais jusqu'ici : il est écarté par le
+     balayage (§ 0).
 4. **Le règlement** (§ 6). Refus `no_settlement` s'il n'y en a aucun de
    possible.
 5. **L'écriture**, dans une transaction : `holdSupply` (porte client : un
@@ -188,7 +203,7 @@ Proposition pour le premier bâti (Q2) :
 - **Au compte seulement.** L'échéance se règle au compte si la société a un
   crédit réellement accordé — le même prédicat que
   `staffSettlementRefusal`. Sinon : refus `no_settlement`, alerte.
-- **Les paniers perso (`companyId` nul) et les pros sans crédit** ne
+- **Les pros sans crédit** ne
   génèrent donc rien. L'écran de création le dit dès l'ouverture, plutôt
   que de laisser croire qu'un abonnement tourne.
 - La carte enregistrée (prélèvement hors session, `off_session`) est un
@@ -213,7 +228,7 @@ modifier ou annuler.
 | **R1** | `cancelled` remplace la suppression physique ; la route de suppression pose le statut ; l'agrégat refuse `pause`/`resume`/`overrideOccurrence` sur un panier annulé ; chaque lecteur de `subscriptions.status` est listé dans le lot et l'exclut (le compte se fait au bâti, par la table)                                                                                       | aucune (statut en `String`) ; élargir le schéma zod de `@lfd/contracts`. Les paniers déjà supprimés sont perdus ; `fromSubscriptionId` n'a pas de clé étrangère, une commande semée peut citer un abonnement absent — les lecteurs le tolèrent déjà |
 | **R2** | Le registre `subscription_occurrence_runs` : `(subscription_id, occurrence_date)` unique, `outcome` (`generated \| refused \| missed_deadline`), `order_id`, `reason`, `first_refused_at`, `at` ; écrit par le port `OccurrenceRunLedger` de `subscriptions` ; et `subscriptions.armed_from` (borne basse, § 4)                                                                  | additive                                                                                                                                                                                                                                            |
 | **R3** | `OrderDrafting` gagne `waiver: "ignore"` ; la garde du jour fermé est localisée ou ajoutée ; `PlaceRecurringOccurrenceHandler` (§ 5) : mur, composition par la porte client, juges, règlement au compte, écriture ; tests unitaires et e2e (le mur, l'unicité sous double balayage, chaque refus, le rejeu d'un refus corrigé, la dérogation intacte, le plan arrêté qui refuse) | —                                                                                                                                                                                                                                                   |
-| **R4** | Le balayage `POST admin/subscriptions/sweep` sous `RecomputeGuard`, `@Idempotent`, appelé par le cron `*/5` du Worker ; borné par lot ; le test de `dev-toolbox` des routes de cron                                                                                                                                                                                              | —                                                                                                                                                                                                                                                   |
+| **R4** | Le balayage `POST admin/subscriptions/sweep`, limité aux paniers d’une société non publique (§ 0), sous `RecomputeGuard`, `@Idempotent`, appelé par le cron `*/5` du Worker ; borné par lot ; le test de `dev-toolbox` des routes de cron                                                                                                                                        | —                                                                                                                                                                                                                                                   |
 | **R5** | L'e-mail « non passée » au bloc `mail` (l'accusé « passée » existe déjà, au plus un texte choisi sur `fromSubscriptionId`), et l'alerte staff                                                                                                                                                                                                                                    | —                                                                                                                                                                                                                                                   |
 | **R6** | Les écrans : prochaines échéances et leur sort, côté client (sortie de `legacy/`) et sur la fiche client du back-office                                                                                                                                                                                                                                                          | —                                                                                                                                                                                                                                                   |
 
@@ -227,18 +242,16 @@ propriété du registre n'est tenue par aucune porte (§ 5).
 
 - **Q1 — L'horizon.** Générer 7 jours avant la journée de service ? Plus tôt
   donne de la visibilité au fournil ; plus tard, un prix plus frais.
-- **Q2 — Le règlement.** Au compte seulement dans un premier temps (perso et
-  pros sans crédit : rien ne se génère, et l'écran le dit) ?
-- **Q3 — Les payeurs publics.** Une échéance qui exige un engagement
-  budgétaire est refusée : faut-il un engagement « annuel » porté par
-  l'abonnement ?
+- **Q2 — Le règlement.** Au compte seulement dans un premier temps (pros
+  sans crédit : rien ne se génère, et l'écran le dit) ?
+- ~~Q3 — Les payeurs publics~~ : hors périmètre, remis à plus tard (§ 0,
+  Hugo, 2026-11-23).
 - **Q4 — Le mois court.** Le 31 devient le dernier jour du mois, ou
   l'échéance est sautée ?
 - **Q5 — Le client prévenu d'un refus.** E-mail au client, ou alerte staff
   seulement (le commercial appelle) ?
-- **Q6 — Les abonnements existants.** Ceux d'avant `companyId` ont une
-  société `null` : on les traite en perso (donc rien ne se génère), ou on
-  les rattache à la main avant d'armer le balayage ?
+- ~~Q6 — Les abonnements sans société~~ : écartés avec les paniers perso
+  (§ 0, Hugo, 2026-11-23).
 
 ## 9. La contradiction de `vitruve` (2026-11-22)
 
