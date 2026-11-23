@@ -1,6 +1,12 @@
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
-import type { AdminOrderEstimateView, DeliveryAvailabilityView } from '@lfd/contracts';
-import { describe, expect, it } from 'vitest';
+import type {
+  AdminOrderEstimateView,
+  DeliveryAvailabilityView,
+  StaffPermission,
+} from '@lfd/contracts';
+import { beforeEach, describe, expect, it } from 'vitest';
+
+import { PermissionsStore } from '../../../auth/permissions.store';
 
 import { CartStore } from '../cart.store';
 import { DraftStore } from '../draft.store';
@@ -18,6 +24,18 @@ const OPEN_TO_ALL: DeliveryAvailabilityView = {
   updatedAt: null,
   updatedBy: null,
 };
+
+/** Les droits de l'agent — aucun par défaut, posés par le test qui en a besoin. */
+let granted: StaffPermission[] = [];
+
+beforeEach(() => {
+  granted = [];
+  TestBed.configureTestingModule({
+    providers: [
+      { provide: PermissionsStore, useValue: { can: (p: StaffPermission) => granted.includes(p) } },
+    ],
+  });
+});
 
 function mount(cart: CartStore): HTMLElement {
   return mountFull(cart).host;
@@ -419,5 +437,111 @@ describe('PanierCommande — la limite d’un produit', () => {
     fixture.detectChanges();
     expect(component.view()).toBe('lines');
     expect(draft.itemLimitReasonAsked()).toBe(false);
+  });
+});
+
+/** Plan de la commande offerte, O6 : un troisième règlement, sous un droit à part. */
+describe('PanierCommande — la commande offerte', () => {
+  const settlementValues = (host: HTMLElement): string[] =>
+    [...host.querySelectorAll<HTMLInputElement>('input[name="settlement"]')].map((r) => r.value);
+
+  function offeredDraft(): DraftStore {
+    const draft = readyDraft();
+    draft.settlement.set('offered');
+    return draft;
+  }
+
+  it('sans le droit d’offrir, le choix « Offerte » est absent', () => {
+    const { host } = mountFull(filledCart());
+    expect(settlementValues(host)).toEqual(['account', 'link']);
+  });
+
+  it('avec le droit, « Offerte » est proposé après le lien', () => {
+    granted = ['b2b_offer_order:write'];
+    const { host } = mountFull(filledCart());
+    expect(settlementValues(host)).toEqual(['account', 'link', 'offered']);
+  });
+
+  it('au comptoir, avec le droit : le compte et l’offre', () => {
+    granted = ['b2b_offer_order:write'];
+    const { host } = mountFull(filledCart(), { linkOffered: false });
+    expect(settlementValues(host)).toEqual(['account', 'offered']);
+  });
+
+  it('choisir « Offerte » le garde, et montre la nature, le motif et la phrase', () => {
+    granted = ['b2b_offer_order:write'];
+    const draft = readyDraft();
+    const { fixture, host } = mountFull(filledCart(), { draft });
+    expect(host.querySelector('[data-offer]')).toBeNull();
+
+    const offered = host.querySelector<HTMLInputElement>(
+      'input[name="settlement"][value="offered"]',
+    );
+    offered?.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+
+    expect(draft.settlement()).toBe('offered');
+    expect(host.querySelector('fold-listbox[data-offer-nature]')).not.toBeNull();
+    expect(host.querySelector('fold-textarea[data-offer-note]')).not.toBeNull();
+    expect(squash(host.querySelector('[data-offer]')?.textContent)).toContain(
+      'ni facturée ni prélevée',
+    );
+  });
+
+  it('bloque la validation tant que la nature et le motif manquent', () => {
+    granted = ['b2b_offer_order:write'];
+    const draft = offeredDraft();
+    const { fixture, host } = mountFull(filledCart(), { draft, estimate: ESTIMATE });
+
+    expect(host.textContent).toContain('choisissez sa nature');
+    expect(host.textContent).toContain('écrivez-le en quelques mots');
+    expect(validate(host)).toBeUndefined();
+
+    draft.offerNature.set('tasting');
+    draft.offerNote.set('   ');
+    fixture.detectChanges();
+    expect(host.textContent).not.toContain('choisissez sa nature');
+    expect(validate(host)).toBeUndefined();
+
+    draft.offerNote.set('Dégustation au salon');
+    // Le sélecteur d'acheminement, sans point connu, émet son propre refus au
+    // montage : on repose l'acheminement résolu par-dessus.
+    draft.fulfillment.set(readyDraft().fulfillment());
+    fixture.detectChanges();
+    expect(validate(host)?.disabled).toBe(false);
+  });
+
+  it('un brouillon repris en « Offerte » sans le droit ne part pas', () => {
+    const { host } = mountFull(filledCart(), { draft: offeredDraft(), estimate: ESTIMATE });
+    expect(host.textContent).toContain('demande un droit que vous n’avez pas');
+    expect(validate(host)).toBeUndefined();
+  });
+
+  it('la validation rend le motif complet avec `offered`', () => {
+    granted = ['b2b_offer_order:write'];
+    const draft = offeredDraft();
+    draft.offerNature.set('goodwill');
+    draft.offerNote.set('  Geste après réclamation ');
+    const { fixture, host, component } = mountFull(filledCart(), { draft, estimate: ESTIMATE });
+    const emitted: unknown[] = [];
+    component.place.subscribe((value) => emitted.push(value));
+    draft.fulfillment.set(readyDraft().fulfillment());
+    fixture.detectChanges();
+
+    validate(host)?.click();
+    fixture.detectChanges();
+    expect(squash(host.querySelector('.pan-foot fold-callout')?.textContent)).toContain(
+      'ni facturée ni prélevée',
+    );
+    [...host.querySelectorAll<HTMLButtonElement>('.pan-confirm button')]
+      .find((b) => b.textContent.trim() === 'Confirmer')
+      ?.click();
+
+    expect(emitted).toEqual([
+      expect.objectContaining({
+        settlement: 'offered',
+        offer: { nature: 'goodwill', note: 'Geste après réclamation' },
+      }),
+    ]);
   });
 });

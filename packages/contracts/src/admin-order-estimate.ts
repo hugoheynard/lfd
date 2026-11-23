@@ -62,6 +62,12 @@ export interface AdminOrderEstimateAmountsView {
   readonly pretaxCents: number;
   /** TTC à régler. */
   readonly totalCents: number;
+  /**
+   * Ce que la commande aurait coûté, TTC, quand elle est offerte avec son
+   * motif complet (`totalCents` vaut alors 0) ; absent sinon. Calculé par le
+   * serveur : l'écran ne le reconstitue pas.
+   */
+  readonly offeredTotalCents?: number;
 }
 
 /** Une ligne de la commande composée. */

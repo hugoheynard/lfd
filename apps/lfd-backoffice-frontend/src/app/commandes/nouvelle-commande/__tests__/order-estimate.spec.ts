@@ -32,6 +32,7 @@ const DRAFT: OrderDraft = {
   requestedWindow: null,
   note: '',
   settlement: 'account',
+  offer: null,
   immediate: false,
 };
 
@@ -112,6 +113,8 @@ describe('la complétude de la saisie', () => {
     requestedDate: '2030-01-02',
     note: '',
     settlement: 'account',
+    offerNature: null,
+    offerNote: '',
     immediate: false,
     empty: false,
   };
@@ -246,7 +249,7 @@ describe('le flux des estimations', () => {
 });
 
 describe('ce que le panier affiche de l’estimation', () => {
-  const context = (settlement: 'account' | 'link') => ({
+  const context = (settlement: 'account' | 'link' | 'offered') => ({
     settlement,
     method: 'pickup' as const,
     pickupAddressId: null,
@@ -275,6 +278,41 @@ describe('ce que le panier affiche de l’estimation', () => {
       'Total HT',
     ]);
     expect(rows.at(-1)?.value.replace(/\s/gu, ' ')).toBe('12,50 €');
+  });
+
+  /**
+   * Une commande offerte n'est pas un lien en attente : rien n'est dû. Le
+   * panier n'invente aucun montant — il recopie le total que le serveur rend,
+   * nul une fois le motif écrit.
+   */
+  it('offerte : TVA et TTC tels que le serveur les rend, sans rien recalculer', () => {
+    const zeroed: AdminOrderEstimateAmountsView = {
+      ...AMOUNTS,
+      vatCents: 0,
+      vatShares: [],
+      totalCents: 0,
+    };
+    const rows = estimateRowsOf(zeroed, context('offered')) ?? [];
+    expect(rows.map((row) => row.label)).toContain('Total TTC');
+    expect(rows.at(-1)?.value.replace(/\s/gu, ' ')).toBe('0,00 €');
+  });
+
+  it('🔴 offerte avec son motif : la valeur rendue par le serveur, en dernière ligne', () => {
+    const offered: AdminOrderEstimateAmountsView = {
+      ...AMOUNTS,
+      vatCents: 0,
+      vatShares: [],
+      totalCents: 0,
+      offeredTotalCents: 1362,
+    };
+    const last = (estimateRowsOf(offered, context('offered')) ?? []).at(-1);
+    expect(last?.label).toBe('Valeur offerte');
+    expect(last?.value.replace(/\s/gu, ' ')).toBe('13,62 €');
+  });
+
+  it('sans valeur offerte rendue, aucune ligne « Valeur offerte »', () => {
+    const rows = estimateRowsOf(AMOUNTS, context('link')) ?? [];
+    expect(rows.map((row) => row.label)).not.toContain('Valeur offerte');
   });
 
   it('sans estimation, rien', () => {

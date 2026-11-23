@@ -3,6 +3,7 @@ import {
   Component,
   computed,
   effect,
+  inject,
   input,
   output,
   signal,
@@ -14,6 +15,7 @@ import {
   FoldCalloutComponent,
   FoldCardComponent,
   FoldElementTitleComponent,
+  FoldListboxComponent,
   FoldSelectComponent,
   FoldTabPanelComponent,
   FoldTabsComponent,
@@ -22,6 +24,8 @@ import {
 } from 'fold-ng';
 import {
   ITEM_LIMIT_OVERRIDE_REASON_MAX_LENGTH,
+  ORDER_OFFER_NATURES,
+  ORDER_OFFER_NOTE_MAX_LENGTH,
   STAFF_SETTLEMENT_LABELS,
   type AdminOrderEstimateView,
   type BudgetCommitmentRequirementsView,
@@ -29,12 +33,14 @@ import {
   type DeliveryAddressView,
   type DeliveryAvailabilityView,
   type DeliveryZoneView,
+  type OrderOfferNature,
   type PickupAddressView,
   type StaffSettlement,
 } from '@lfd/contracts';
 import { NgTemplateOutlet } from '@angular/common';
 import { CartRow } from '@lfd/b2b-ui/cart';
 import { narrowViewport } from '../../../shared/viewport/narrow-viewport';
+import { PermissionsStore } from '../../../auth/permissions.store';
 
 import { budgetCommitmentGaps } from '../../budget-commitment';
 import { BudgetCommitmentFields } from '../../budget-commitment-fields/budget-commitment-fields';
@@ -106,6 +112,7 @@ const SPLIT_MIN_MEDIA = '(max-width: 767px)';
     FoldCalloutComponent,
     FoldCardComponent,
     FoldElementTitleComponent,
+    FoldListboxComponent,
     FoldSelectComponent,
     MontantsPanier,
     FoldTabPanelComponent,
@@ -269,14 +276,35 @@ export class PanierCommande {
   protected readonly note = computed(() => this.draft().note());
   protected readonly settlement = computed(() => this.draft().settlement());
 
+  private readonly permissions = inject(PermissionsStore);
+  /**
+   * Offrir est un droit à part (`b2b_offer_order:write`) : saisir une commande
+   * ne suffit pas. Sans lui, le choix « Offerte » n'est pas montré — le serveur
+   * le refuserait de toute façon.
+   */
+  protected readonly canOffer = computed(() => this.permissions.can('b2b_offer_order:write'));
+
   protected readonly labels = STAFF_SETTLEMENT_LABELS;
   /**
    * L'ordre des modes à l'écran : le compte d'abord, quand il est ouvert, parce
    * que c'est le régime négocié. Une liste typée et non deux littéraux dans le
    * gabarit — le compilateur vérifie alors l'indexation des libellés.
    */
-  protected readonly settlementModes = computed<readonly StaffSettlement[]>(() =>
-    this.linkOffered() ? ['account', 'link'] : ['account'],
+  protected readonly settlementModes = computed<readonly StaffSettlement[]>(() => [
+    'account',
+    ...(this.linkOffered() ? (['link'] as const) : []),
+    ...(this.canOffer() ? (['offered'] as const) : []),
+  ]);
+
+  /** Les natures d'une commande offerte, dans l'ordre du registre. */
+  protected readonly offerNatureOptions = ORDER_OFFER_NATURES.map((nature) => ({
+    value: nature.key,
+    label: nature.label,
+  }));
+  protected readonly offerNoteMax = ORDER_OFFER_NOTE_MAX_LENGTH;
+  protected readonly offerNoteHint = computed(
+    () =>
+      `Obligatoire, gardé avec la commande. ${String(this.draft().offerNote().trim().length)} / ${String(this.offerNoteMax)} caractères.`,
   );
 
   /** Le choix par défaut : le détenteur, sinon le premier membre venu. */
@@ -313,6 +341,9 @@ export class PanierCommande {
       settlement: this.settlement(),
       linkOffered: this.linkOffered(),
       settlesOnAccount: this.settlesOnAccount(),
+      canOffer: this.canOffer(),
+      offerNature: this.draft().offerNature(),
+      offerNote: this.draft().offerNote(),
       payerIsPublic: this.payerIsPublic(),
       commitmentGaps: budgetCommitmentGaps(
         this.commitmentRequirements(),
@@ -362,11 +393,15 @@ export class PanierCommande {
     this.confirming.set(false);
   }
 
-  protected onSettlement(value: string): void {
-    this.draft().settlement.set(value === 'account' ? 'account' : 'link');
+  protected onSettlement(value: StaffSettlement): void {
+    this.draft().settlement.set(value);
     // Changer de mode de règlement rouvre la confirmation : c'est précisément la
     // décision qu'on demandait de confirmer.
     this.confirming.set(false);
+  }
+
+  protected onOfferNature(value: OrderOfferNature | null): void {
+    this.draft().offerNature.set(value);
   }
 
   protected submit(): void {
@@ -376,6 +411,8 @@ export class PanierCommande {
       requestedDate: this.requestedDate(),
       note: this.note(),
       settlement: this.settlement(),
+      offerNature: this.draft().offerNature(),
+      offerNote: this.draft().offerNote(),
       immediate: this.immediate(),
       empty: this.cart().isEmpty(),
     });

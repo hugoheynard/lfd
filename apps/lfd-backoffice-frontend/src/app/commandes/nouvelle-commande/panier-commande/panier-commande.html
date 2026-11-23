@@ -132,6 +132,32 @@
           </label>
         }
       </fieldset>
+      @if (settlement() === 'offered') {
+        <div class="pan-offer" data-offer>
+          <fold-callout variant="info">
+            Offerte, la commande part au fournil comme les autres, mais elle ne sera
+            <strong>ni facturée ni prélevée</strong>.
+          </fold-callout>
+          <fold-listbox
+            label="Nature de l’offre"
+            required
+            placeholder="Choisir…"
+            data-offer-nature
+            [options]="offerNatureOptions"
+            [value]="draft().offerNature()"
+            (valueChange)="onOfferNature($event)"
+          />
+          <fold-textarea
+            label="Motif"
+            required
+            data-offer-note
+            placeholder="À qui, et pourquoi on l’offre."
+            [rows]="2"
+            [hint]="offerNoteHint()"
+            [(value)]="draft().offerNote"
+          />
+        </div>
+      }
     }
   </div>
 </ng-template>
@@ -256,6 +282,8 @@
           @if (payerIsPublic()) {
             La facture sera déposée sur Chorus Pro, réglée par virement.
           }
+        } @else if (settlement() === 'offered') {
+          Cette commande sera <strong>offerte</strong> : ni facturée ni prélevée.
         } @else {
           Un <strong>lien de règlement</strong> sera créé ; il faudra le transmettre au client pour
           que la commande soit payée.

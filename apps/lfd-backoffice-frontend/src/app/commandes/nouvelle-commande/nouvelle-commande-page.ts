@@ -409,6 +409,8 @@ export class NouvelleCommandePage {
       requestedDate: this.draft.requestedDate(),
       note: this.draft.note(),
       settlement: this.draft.settlement(),
+      offerNature: this.draft.offerNature(),
+      offerNote: this.draft.offerNote(),
       immediate: this.immediate(),
       empty: this.cart.isEmpty(),
     }),

@@ -1,10 +1,14 @@
 import type { CatalogItemView, DeliveryAddressView, OrderDraftView } from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
+import type { FulfillmentChoice } from '../acheminement-commande/acheminement-commande';
 import {
+  composedDraftOf,
   draftPayloadOf,
   draftPretaxOf,
   draftSnapshotOf,
+  offerOf,
+  placePayloadOf,
   pretaxToKeepOf,
   restoreLines,
 } from '../draft-payload';
@@ -54,6 +58,8 @@ function viewOf(overrides: Partial<OrderDraftView>): OrderDraftView {
     requestedWindow: null,
     note: '',
     settlement: 'link',
+    offerNature: null,
+    offerNote: '',
     estimatedPretaxCents: null,
     lines: [],
     ...overrides,
@@ -275,5 +281,95 @@ describe('pretaxToKeepOf — attendre le prix avant d’enregistrer', () => {
       fetch: never,
     });
     expect(kept).toBeNull();
+  });
+});
+
+function composed<T>(draft: T | null): T {
+  if (draft === null) {
+    throw new Error('la saisie devait se composer');
+  }
+  return draft;
+}
+
+describe('la commande offerte — le motif', () => {
+  const PICKUP: FulfillmentChoice = {
+    method: 'pickup',
+    pickupAddressId: 'pk_1',
+    deliveryAddress: null,
+    saveToBook: false,
+    window: { start: '09:00', end: '10:00' },
+    issue: null,
+  };
+  const decisions = (offerNature: 'tasting' | null, offerNote: string) => ({
+    buyerUserId: 'usr_1',
+    fulfillment: PICKUP,
+    requestedDate: '2030-01-02',
+    note: '',
+    settlement: 'offered' as const,
+    offerNature,
+    offerNote,
+    immediate: false,
+    empty: false,
+  });
+
+  it('le brouillon garde la nature et le texte, et la reprise les relit', () => {
+    const draft = new DraftStore();
+    draft.settlement.set('offered');
+    draft.offerNature.set('tasting');
+    draft.offerNote.set('Dégustation pour le salon');
+
+    const payload = draftPayloadOf(draft.snapshot(), [], []);
+    expect(payload.offerNature).toBe('tasting');
+    expect(payload.offerNote).toBe('Dégustation pour le salon');
+
+    const reopened = new DraftStore();
+    reopened.restore(
+      draftSnapshotOf(
+        viewOf({
+          settlement: payload.settlement,
+          offerNature: payload.offerNature,
+          offerNote: payload.offerNote,
+        }),
+        [],
+      ),
+    );
+    expect(reopened.settlement()).toBe('offered');
+    expect(reopened.offerNature()).toBe('tasting');
+    expect(reopened.offerNote()).toBe('Dégustation pour le salon');
+  });
+
+  it('un brouillon d’avant l’offre se rouvre sans motif', () => {
+    const snapshot = draftSnapshotOf(viewOf({}), []);
+    expect(snapshot.offerNature).toBeNull();
+    expect(snapshot.offerNote).toBe('');
+  });
+
+  it('le motif n’existe qu’en `offered`, complet et rogné', () => {
+    expect(offerOf('offered', 'tasting', '  Salon  ')).toEqual({
+      nature: 'tasting',
+      note: 'Salon',
+    });
+    expect(offerOf('offered', null, 'Salon')).toBeNull();
+    expect(offerOf('offered', 'tasting', '   ')).toBeNull();
+    expect(offerOf('link', 'tasting', 'Salon')).toBeNull();
+  });
+
+  it('l’estimation part sans `offer` tant que le motif est incomplet', () => {
+    const draft = composedDraftOf(decisions('tasting', ''));
+    const payload = placePayloadOf('cmp_1', composed(draft), [], 'commercial');
+    expect(payload.settlement).toBe('offered');
+    expect('offer' in payload).toBe(false);
+  });
+
+  it('la passation porte `offer` avec `offered`', () => {
+    const draft = composedDraftOf(decisions('tasting', ' Salon du chocolat '));
+    const payload = placePayloadOf('cmp_1', composed(draft), [], 'commercial');
+    expect(payload.settlement).toBe('offered');
+    expect(payload.offer).toEqual({ nature: 'tasting', note: 'Salon du chocolat' });
+  });
+
+  it('un autre règlement ne porte jamais de motif, même saisi', () => {
+    const draft = composedDraftOf({ ...decisions('tasting', 'Salon'), settlement: 'account' });
+    expect('offer' in placePayloadOf('cmp_1', composed(draft), [], 'commercial')).toBe(false);
   });
 });

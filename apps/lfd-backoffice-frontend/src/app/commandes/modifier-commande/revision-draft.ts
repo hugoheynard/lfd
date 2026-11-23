@@ -150,6 +150,8 @@ export function revisionDraftOf(
     note: order.note,
     // Sans objet : le payeur et le règlement ne changent pas (R2).
     settlement: 'link',
+    offerNature: null,
+    offerNote: '',
   };
 }
 

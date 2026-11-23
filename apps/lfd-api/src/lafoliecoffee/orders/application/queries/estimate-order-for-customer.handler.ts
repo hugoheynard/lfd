@@ -5,6 +5,7 @@ import type {
   AdminOrderEstimatePayload,
   OrderQuoteCutoffView,
 } from "@lfd/contracts";
+import type { OrderOffer } from "../../domain/value-objects/order-offer.js";
 import { orderPretaxCents } from "@lfd/money";
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
@@ -68,7 +69,7 @@ export class EstimateOrderForCustomerHandler implements IQueryHandler<
       return { amounts: null, cutoff, refusal: drafted, warnings: [] };
     }
     return {
-      amounts: amountsViewOf(drafted.order.amounts()),
+      amounts: amountsViewOf(drafted.order.amounts(), drafted.order.offer),
       cutoff,
       refusal: null,
       warnings: await this.warningsOf(drafted.order, payload),
@@ -150,8 +151,12 @@ function isCompositionRefusal(error: unknown): error is DomainError | BusinessEr
  * La lecture de l'agrégat → la vue du contrat. Partagée avec l'estimation de
  * la commande d'un particulier notée au comptoir : une seule vue des montants.
  */
-export function amountsViewOf(reading: OrderAmountsReading): AdminOrderEstimateAmountsView {
+export function amountsViewOf(
+  reading: OrderAmountsReading,
+  offer: OrderOffer | null = null,
+): AdminOrderEstimateAmountsView {
   return {
+    ...(offer === null ? {} : { offeredTotalCents: offer.value.totalCents }),
     vatMethod: reading.vatMethod,
     lines: reading.lines,
     subtotalCents: reading.subtotalCents,

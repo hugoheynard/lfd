@@ -1,4 +1,9 @@
-import type { AdminOrderEstimateNotice, StaffSettlement } from '@lfd/contracts';
+import {
+  ORDER_OFFER_NOTE_MAX_LENGTH,
+  type AdminOrderEstimateNotice,
+  type OrderOfferNature,
+  type StaffSettlement,
+} from '@lfd/contracts';
 
 import { isBlockingRefusal, refusalViewOf } from './order-estimate';
 
@@ -22,6 +27,11 @@ export interface PanierBlockerFacts {
   readonly settlement: StaffSettlement;
   readonly linkOffered: boolean;
   readonly settlesOnAccount: boolean;
+  /** Le droit d'offrir (`b2b_offer_order:write`) — absent, `offered` ne part pas. */
+  readonly canOffer?: boolean;
+  /** Le motif d'une commande offerte, tel que saisi — lu en `offered` seulement. */
+  readonly offerNature?: OrderOfferNature | null;
+  readonly offerNote?: string;
   /** Un organisme public : au compte, toujours ; le serveur dit le refus. */
   readonly payerIsPublic?: boolean;
   /** Ce qui manque à l'engagement budgétaire d'un organisme public (`budgetCommitmentGaps`). */
@@ -77,6 +87,9 @@ function settlementBlockers(facts: PanierBlockerFacts): readonly PanierBlocker[]
       },
     ];
   }
+  if (facts.settlement === 'offered') {
+    return offerBlockers(facts);
+  }
   if (facts.payerIsPublic === true) {
     // Un organisme public part au compte, toujours. Son compte suspendu, c'est
     // le refus de l'estimation qui le dit, tel que le serveur l'écrit
@@ -93,4 +106,40 @@ function settlementBlockers(facts: PanierBlockerFacts): readonly PanierBlocker[]
     ];
   }
   return [];
+}
+
+/**
+ * Les refus d'une commande offerte : le droit d'offrir, puis le motif — une
+ * nature et un texte court, que la passation exige et que la comptabilité
+ * relira pour dire pourquoi on a offert.
+ */
+function offerBlockers(facts: PanierBlockerFacts): readonly PanierBlocker[] {
+  if (facts.canOffer !== true) {
+    return [
+      {
+        text: 'Offrir une commande demande un droit que vous n’avez pas : choisissez un autre règlement.',
+        view: 'settings',
+      },
+    ];
+  }
+  const issues: PanierBlocker[] = [];
+  if ((facts.offerNature ?? null) === null) {
+    issues.push({
+      text: 'Une commande offerte dit pourquoi : choisissez sa nature.',
+      view: 'settings',
+    });
+  }
+  const note = (facts.offerNote ?? '').trim();
+  if (note === '') {
+    issues.push({
+      text: 'Une commande offerte porte un motif : écrivez-le en quelques mots.',
+      view: 'settings',
+    });
+  } else if (note.length > ORDER_OFFER_NOTE_MAX_LENGTH) {
+    issues.push({
+      text: `Le motif de l’offre dépasse ${String(ORDER_OFFER_NOTE_MAX_LENGTH)} caractères.`,
+      view: 'settings',
+    });
+  }
+  return issues;
 }

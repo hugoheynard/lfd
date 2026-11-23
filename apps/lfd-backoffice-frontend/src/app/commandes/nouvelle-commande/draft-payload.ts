@@ -8,6 +8,8 @@ import type {
   OrderDraftPayload,
   OrderDraftView,
   OrderLineInput,
+  OrderOffer,
+  OrderOfferNature,
   StaffSettlement,
 } from '@lfd/contracts';
 
@@ -35,6 +37,11 @@ export interface OrderDraft {
   readonly requestedWindow: FulfillmentWindow | null;
   readonly note: string;
   readonly settlement: StaffSettlement;
+  /**
+   * Le motif d'une commande offerte, complet — `null` hors de `offered`, ou
+   * tant que la nature ou le texte manquent (cf. {@link offerOf}).
+   */
+  readonly offer: OrderOffer | null;
   /**
    * « Retrait immédiat » (lot L6) : la page passe la commande sur le stock
    * (`supply: "shelf"`, `entryShortcut: "immediate_pickup"`), puis la remet.
@@ -96,6 +103,8 @@ export function draftPayloadOf(
     requestedWindow: draft.window,
     note: draft.note,
     settlement: draft.settlement,
+    offerNature: draft.offerNature,
+    offerNote: draft.offerNote,
     // Des SKU et des quantités, **jamais de prix** : c'est le catalogue serveur
     // qui fera foi à la reprise comme à la passation. Seule exception, le Total
     // HT affiché, que rien ne relit sinon la liste des brouillons.
@@ -163,6 +172,8 @@ export function draftSnapshotOf(
     requestedDate: view.requestedDeliveryDate ?? '',
     note: view.note,
     settlement: view.settlement,
+    offerNature: view.offerNature,
+    offerNote: view.offerNote,
   };
 }
 
@@ -242,8 +253,28 @@ export interface DraftDecisions {
   readonly requestedDate: string;
   readonly note: string;
   readonly settlement: StaffSettlement;
+  readonly offerNature: OrderOfferNature | null;
+  readonly offerNote: string;
   readonly immediate: boolean;
   readonly empty: boolean;
+}
+
+/**
+ * **Le motif qui part avec une commande offerte** : seulement en `offered`, et
+ * seulement complet — une nature et un texte non vide, rogné. Incomplet, il
+ * n'est pas envoyé : l'estimation chiffre alors la valeur pleine, et la
+ * passation reste retenue par le panier (`panierBlockersOf`).
+ */
+export function offerOf(
+  settlement: StaffSettlement,
+  nature: OrderOfferNature | null,
+  note: string,
+): OrderOffer | null {
+  const text = note.trim();
+  if (settlement !== 'offered' || nature === null || text === '') {
+    return null;
+  }
+  return { nature, note: text };
 }
 
 /**
@@ -278,6 +309,7 @@ export function composedDraftOf(decisions: DraftDecisions): OrderDraft | null {
     requestedWindow: fulfillment.window,
     note: decisions.note,
     settlement: decisions.settlement,
+    offer: offerOf(decisions.settlement, decisions.offerNature, decisions.offerNote),
     immediate: decisions.immediate,
   };
 }
@@ -297,6 +329,9 @@ export function placePayloadOf(
     companyId,
     buyerUserId: draft.buyerUserId,
     settlement: draft.settlement,
+    // Le motif d'une commande offerte, quand il est complet : l'estimation le
+    // lit pour rendre un total nul, la passation l'exige avec `offered`.
+    ...(draft.offer === null ? {} : { offer: draft.offer }),
     fulfillmentMethod: draft.fulfillmentMethod,
     deliveryAddress: draft.deliveryAddress,
     pickupAddressId: draft.pickupAddressId,

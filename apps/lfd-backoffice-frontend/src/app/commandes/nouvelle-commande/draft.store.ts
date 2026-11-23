@@ -1,6 +1,11 @@
 import { signal } from '@angular/core';
 
-import type { FulfillmentMethod, FulfillmentWindow, StaffSettlement } from '@lfd/contracts';
+import type {
+  FulfillmentMethod,
+  FulfillmentWindow,
+  OrderOfferNature,
+  StaffSettlement,
+} from '@lfd/contracts';
 
 import type { FulfillmentChoice } from './acheminement-commande/acheminement-commande';
 import type { OrderEntryKind } from './immediate-pickup';
@@ -36,6 +41,10 @@ export interface DraftSnapshot {
   readonly requestedDate: string;
   readonly note: string;
   readonly settlement: StaffSettlement;
+  /** La nature d'une commande offerte, même avant que le texte soit écrit. */
+  readonly offerNature: OrderOfferNature | null;
+  /** Le texte du motif d'une commande offerte, tel que tapé. */
+  readonly offerNote: string;
 }
 
 /**
@@ -81,6 +90,13 @@ export class DraftStore {
   readonly dateProposed = signal(true);
   readonly note = signal('');
   readonly settlement = signal<StaffSettlement>('link');
+  /**
+   * Le motif d'une commande offerte : sa nature et son texte. Gardés dans le
+   * brouillon conservé même incomplets, et même quand un autre règlement est
+   * choisi : revenir à « Offerte » ne doit pas faire retaper le motif.
+   */
+  readonly offerNature = signal<OrderOfferNature | null>(null);
+  readonly offerNote = signal('');
   /**
    * « Retrait immédiat » ou « Commande programmée » (lot L6, comptoir). Hors
    * du brouillon conservé : un raccourci vaut pour l'instant où le client est
@@ -135,6 +151,8 @@ export class DraftStore {
       requestedDate: this.requestedDate(),
       note: this.note(),
       settlement: this.settlement(),
+      offerNature: this.offerNature(),
+      offerNote: this.offerNote(),
     };
   }
 
@@ -149,6 +167,8 @@ export class DraftStore {
     this.requestedDate.set(snapshot.requestedDate);
     this.note.set(snapshot.note);
     this.settlement.set(snapshot.settlement);
+    this.offerNature.set(snapshot.offerNature);
+    this.offerNote.set(snapshot.offerNote);
     // Un brouillon repris porte des choix : ils ne sont plus des propositions.
     this.windowProposed.set(false);
     this.dateProposed.set(false);
@@ -172,6 +192,8 @@ export class DraftStore {
       requestedDate: tomorrowIso(),
       note: '',
       settlement: 'link',
+      offerNature: null,
+      offerNote: '',
     });
     this.dateProposed.set(true);
   }

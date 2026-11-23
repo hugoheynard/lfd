@@ -7,7 +7,12 @@ import type {
   PickupAddressView,
   StaffSettlement,
 } from '@lfd/contracts';
-import { orderTotalRows, type OrderTotalsSource, type TotalRow } from '@lfd/b2b-ui/order';
+import {
+  formatCents,
+  orderTotalRows,
+  type OrderTotalsSource,
+  type TotalRow,
+} from '@lfd/b2b-ui/order';
 import { catchError, distinctUntilChanged, type Observable, of, switchMap, timer } from 'rxjs';
 
 import type { PricedCartLine } from './cart.store';
@@ -92,6 +97,20 @@ export function estimatesOf<P = AdminOrderEstimatePayload>(
   );
 }
 
+/** Le régime d'affichage d'un règlement de la saisie. */
+function regimeOf(settlement: StaffSettlement): 'account' | 'due' | 'free' {
+  switch (settlement) {
+    case 'account':
+      return 'account';
+    case 'link':
+      return 'due';
+    // Rien n'est dû : TVA et TTC tels que le serveur les rend, nuls une fois
+    // le motif écrit, la valeur pleine tant qu'il ne l'est pas.
+    case 'offered':
+      return 'free';
+  }
+}
+
 /**
  * **L'estimation, lue comme la commande qu'elle serait** — pour que le panier
  * passe par `orderTotalRows`, la règle d'affichage de toute commande (au
@@ -102,6 +121,7 @@ export function estimatesOf<P = AdminOrderEstimatePayload>(
  * `discountAdjustment`, `lateFeeAdjustment` et `deliveryVatMode` à `null`,
  * aucun bon de fidélité. Le lien de règlement se lit comme une commande en
  * attente de paiement (`due`) : c'est sa seule différence avec le compte, ici.
+ * Une commande offerte se lit `free` : rien n'est dû.
  */
 export function estimateTotalsSource(
   amounts: AdminOrderEstimateAmountsView,
@@ -110,7 +130,7 @@ export function estimateTotalsSource(
   pickup: PickupAddressView | null,
 ): OrderTotalsSource {
   return {
-    settlement: settlement === 'account' ? 'account' : 'due',
+    settlement: regimeOf(settlement),
     fulfillmentMethod,
     pickupAddress:
       pickup === null
@@ -169,7 +189,22 @@ export function estimateRowsOf(
     context.method === 'pickup'
       ? (context.pickups.find((point) => point.id === context.pickupAddressId) ?? null)
       : null;
-  return orderTotalRows(estimateTotalsSource(amounts, context.settlement, context.method, pickup));
+  const rows = orderTotalRows(
+    estimateTotalsSource(amounts, context.settlement, context.method, pickup),
+  );
+  // La valeur d'une commande offerte, calculée au serveur : recopiée, jamais refaite.
+  return amounts.offeredTotalCents === undefined
+    ? rows
+    : [
+        ...rows,
+        {
+          key: 'offered-value',
+          label: 'Valeur offerte',
+          value: formatCents(amounts.offeredTotalCents),
+          hint: 'ni facturée ni prélevée',
+          strong: false,
+        },
+      ];
 }
 
 /**

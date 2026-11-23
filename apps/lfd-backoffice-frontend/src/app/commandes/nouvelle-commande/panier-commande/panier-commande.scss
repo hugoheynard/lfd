@@ -66,6 +66,12 @@
   border: 0;
 }
 
+.pan-offer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
 .pan-radio {
   display: flex;
   align-items: center;
