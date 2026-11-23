@@ -89,6 +89,30 @@
             </fold-page-section>
           </fold-card>
         }
+
+        <!-- LIMITE DE COMMANDE — elle vit dans un autre contexte, avec ses
+             routes, et s'écrit seule. Absente d'une famille archivée : une
+             famille gelée ne reçoit pas de nouvelle règle. -->
+        @if (!store.isArchived()) {
+          <fold-card>
+            <fold-page-section
+              title="Limite de commande"
+              separator
+              collapsible
+              [open]="sectionOpen('limite')()"
+              (openChange)="setSectionOpen('limite', $event)"
+            >
+              <span sectionSubtitle>
+                Jusqu'à quand on prend commande des produits de la famille. Ses sous-familles et
+                leurs produits la prennent, sauf ceux qu'elle exclut.
+              </span>
+              <app-category-order-limit
+                [familyId]="store.id() ?? ''"
+                [familyName]="store.pageTitle()"
+              />
+            </fold-page-section>
+          </fold-card>
+        }
       </div>
 
       <app-category-summary-rail asideRight (archived)="archive()" />

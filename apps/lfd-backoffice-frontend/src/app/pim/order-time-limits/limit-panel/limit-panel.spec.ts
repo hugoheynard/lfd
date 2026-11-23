@@ -1,13 +1,19 @@
+import { signal } from '@angular/core';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import type { OrderTimeLimitPayload, OrderTimeLimitView } from '@lfd/pim-contracts';
-import { FoldPanelRef } from 'fold-ng';
+import { By } from '@angular/platform-browser';
+import { FoldListboxComponent, FoldPanelRef } from 'fold-ng';
 import { describe, expect, it } from 'vitest';
 
 import { NotifyService } from '../../../notify.service';
+import { CategoryStore } from '../../catalogue/category-store';
+import { ProductListStore } from '../../catalogue/product-list-store';
 import { OrderTimeLimitsService } from '../order-time-limits.service';
 import { LimitPanel, type LimitPanelData } from './limit-panel';
 
 /** La case « l'équipe peut passer outre » : décochée d'office, relue, envoyée. */
+
+const PRODUCT = { type: 'product', id: 'p1' } as const;
 
 const RULE: OrderTimeLimitView = {
   id: 'l1',
@@ -31,6 +37,42 @@ class FakeApi {
 
 const notify = { success: (): void => undefined, error: (): void => undefined };
 
+/** Les listes de choix : deux familles, un produit. */
+const categories = {
+  items: signal([
+    { id: 'f1', name: { fr: 'Gâteaux' }, isArchived: false },
+    { id: 'f0', name: { fr: 'Ancienne' }, isArchived: true },
+  ]),
+  ensure: (): Promise<void> => Promise.resolve(),
+};
+const products = {
+  products: signal([{ id: 'p1', sku: 'BUC-01', name: { fr: 'Bûche' } }]),
+  open: (): Promise<void> => Promise.resolve(),
+};
+
+const FAMILY_RULE: OrderTimeLimitView = {
+  ...RULE_BASE(),
+  id: 'l2',
+  scope: { type: 'category', id: 'f1' },
+  scopeLabel: 'Gâteaux',
+  archived: true,
+  excludedProductIds: ['p1', 'p2', 'p3'],
+};
+
+function RULE_BASE(): OrderTimeLimitView {
+  return {
+    id: 'l1',
+    scope: { type: 'product', id: 'p1' },
+    scopeLabel: 'Bûche',
+    daysBefore: 2,
+    time: '12:00',
+    graceMinutes: null,
+    staffMayExceed: true,
+    archived: false,
+    excludedProductIds: [],
+  };
+}
+
 async function render(
   data: LimitPanelData,
   api = new FakeApi(),
@@ -41,6 +83,8 @@ async function render(
       { provide: OrderTimeLimitsService, useValue: api },
       { provide: NotifyService, useValue: notify },
       { provide: FoldPanelRef, useValue: new FoldPanelRef(1, () => undefined) },
+      { provide: CategoryStore, useValue: categories },
+      { provide: ProductListStore, useValue: products },
     ],
   });
   const fixture = TestBed.createComponent(LimitPanel);
@@ -63,7 +107,7 @@ const submit = async (fixture: ComponentFixture<LimitPanel>): Promise<void> => {
 
 describe('LimitPanel — la case « l’équipe peut passer outre »', () => {
   it('est décochée sur une limite neuve, et part à false', async () => {
-    const { fixture, api } = await render({ productId: 'p1', label: 'Bûche', rule: null });
+    const { fixture, api } = await render({ scope: PRODUCT, label: 'Bûche', rule: null });
     expect(box(fixture).checked).toBe(false);
     const time = (fixture.nativeElement as HTMLElement).querySelector(
       'input[type="time"]',
@@ -84,7 +128,7 @@ describe('LimitPanel — la case « l’équipe peut passer outre »', () => {
   });
 
   it('relit la case depuis la limite, et envoie ce qui est coché', async () => {
-    const { fixture, api } = await render({ productId: 'p1', label: 'Bûche', rule: RULE });
+    const { fixture, api } = await render({ scope: PRODUCT, label: 'Bûche', rule: RULE });
     expect(box(fixture).checked).toBe(true);
     box(fixture).click();
     fixture.detectChanges();
@@ -93,9 +137,71 @@ describe('LimitPanel — la case « l’équipe peut passer outre »', () => {
   });
 
   it('dit sous la case ce qu’elle permet', async () => {
-    const { fixture } = await render({ productId: 'p1', label: 'Bûche', rule: null });
+    const { fixture } = await render({ scope: PRODUCT, label: 'Bûche', rule: null });
     expect((fixture.nativeElement as HTMLElement).textContent).toContain(
       "L'heure limite générale reste opposée.",
     );
+  });
+
+  it('dit la règle du point de décision unique', async () => {
+    const { fixture } = await render({ scope: PRODUCT, label: 'Bûche', rule: null });
+    expect((fixture.nativeElement as HTMLElement).textContent).toContain(
+      "Passer outre n'est possible que si toutes les limites qui visent ce produit le permettent.",
+    );
+  });
+});
+
+const text = (fixture: ComponentFixture<LimitPanel>): string =>
+  ((fixture.nativeElement as HTMLElement).textContent ?? '').replace(/\s+/gu, ' ');
+
+describe('LimitPanel — la portée famille', () => {
+  it('pose sur la famille fixée à l’ouverture', async () => {
+    const { fixture, api } = await render({
+      scope: { type: 'category', id: 'f1' },
+      label: 'Gâteaux',
+      rule: null,
+    });
+    expect(text(fixture)).toContain("S'applique à Gâteaux, à ses sous-familles");
+    const time = (fixture.nativeElement as HTMLElement).querySelector(
+      'input[type="time"]',
+    ) as HTMLInputElement;
+    time.value = '12:00';
+    time.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+    await submit(fixture);
+    expect(api.sent[0]?.scope).toEqual({ type: 'category', id: 'f1' });
+  });
+
+  it('montre avant validation les exclusions qu’une famille archivée remet en vigueur', async () => {
+    const { fixture } = await render({
+      scope: { type: 'category', id: 'f1' },
+      label: 'Gâteaux',
+      rule: FAMILY_RULE,
+    });
+    expect(text(fixture)).toContain('3 produits restent exclus');
+  });
+
+  it('ne dit rien des exclusions d’une famille en vigueur', async () => {
+    const { fixture } = await render({
+      scope: { type: 'category', id: 'f1' },
+      label: 'Gâteaux',
+      rule: { ...FAMILY_RULE, archived: false },
+    });
+    expect(text(fixture)).not.toContain('restent exclus');
+  });
+
+  it('fait choisir la portée sans « toute la production », et retrouve la limite archivée de la famille choisie', async () => {
+    const { fixture } = await render({
+      scope: null,
+      label: '',
+      rule: null,
+      known: [FAMILY_RULE],
+    });
+    expect(text(fixture)).not.toContain('Toute la production');
+    const [, family] = fixture.debugElement.queryAll(By.directive(FoldListboxComponent));
+    (family?.componentInstance as FoldListboxComponent<string>).selectionChange.emit('f1');
+    fixture.detectChanges();
+    await fixture.whenStable();
+    expect(text(fixture)).toContain('3 produits restent exclus');
   });
 });

@@ -1,10 +1,47 @@
 <fold-panel-header [title]="heading()" />
 
 <div class="body">
-  <fold-callout appearance="inset" variant="neutral">
-    S'applique à <strong>{{ label() }}</strong
-    >, et à toutes ses déclinaisons.
-  </fold-callout>
+  @if (picking()) {
+    <fold-listbox
+      label="La portée"
+      [options]="scopeChoices"
+      [value]="pickedType()"
+      (selectionChange)="onScopeType($event)"
+    />
+    @if (pickedType() === 'category') {
+      <fold-listbox
+        label="La famille"
+        placeholder="Choisir une famille"
+        [options]="familyChoices()"
+        [value]="pickedId()"
+        (selectionChange)="onTarget($event)"
+      />
+    } @else {
+      <fold-listbox
+        label="Le produit"
+        placeholder="Choisir un produit"
+        [options]="productChoices()"
+        [value]="pickedId()"
+        (selectionChange)="onTarget($event)"
+      />
+    }
+  }
+
+  @if (reach(); as target) {
+    <fold-callout appearance="inset" variant="neutral">
+      S'applique à <strong>{{ target.label }}</strong
+      >{{ target.rest }}
+    </fold-callout>
+  }
+
+  <!-- Reposer une limite de famille archivée remet ses exclusions en vigueur :
+       le dire AVANT la validation, pas après. -->
+  @if (reinstatedExclusions(); as excluded) {
+    <fold-callout variant="warning">
+      Cette limite était archivée. En la reposant, <strong>{{ excluded }}</strong> — ils échappent
+      toujours à la limite de cette famille.
+    </fold-callout>
+  }
 
   <fold-listbox
     label="Le délai"
@@ -22,17 +59,21 @@
 
   <fold-checkbox
     label="L'équipe peut passer outre cette limite"
-    hint="Une personne qui a le droit pourra saisir ce produit pour un client après cette limite, avec un motif. L'heure limite générale reste opposée."
+    hint="Une personne qui a le droit pourra saisir pour un client après cette limite, avec un motif. L'heure limite générale reste opposée."
     [checked]="staffMayExceed()"
     (checkedChange)="staffMayExceed.set($event)"
   />
+
+  <fold-callout appearance="inset" variant="neutral">
+    Passer outre n'est possible que si toutes les limites qui visent ce produit le permettent.
+  </fold-callout>
 
   <!-- Pas de rattrapage par produit (Hugo, 2026-10-21) : le dire, parce que
        l'écran en proposait un. -->
   <fold-callout variant="info">{{ recap() }}</fold-callout>
   <fold-callout appearance="inset" variant="neutral">
-    Pas de rattrapage sur un produit&nbsp;: le seul rattrapage est celui de la règle générale
-    (Réglages › Commandes › Heure limite), où une dérogation peut s'accorder.
+    Pas de rattrapage sur une limite du référentiel&nbsp;: le seul rattrapage est celui de la règle
+    générale (Réglages › Commandes › Heure limite), où une dérogation peut s'accorder.
   </fold-callout>
 </div>
 

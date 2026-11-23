@@ -1,8 +1,11 @@
 <fold-page-layout icon="clock" title="Limites de commande">
+  <button pageActions foldButton emphasis="solid" intent="primary" (click)="create()">
+    Poser une limite
+  </button>
   <p description>
     <strong>Jusqu'à quand on prend commande</strong> pour une journée de retrait ou de livraison.
-    Une règle générale pour toute la production, et, pour un produit qui demande plus de temps, sa
-    propre limite — la plus stricte des deux s'applique.
+    Une règle générale pour toute la production, et, pour un produit ou une famille qui demande plus
+    de temps, sa propre limite — la plus stricte de celles qui visent un article s'applique.
   </p>
 
   @switch (state()) {
@@ -33,8 +36,8 @@
       <fold-card>
         @if (ordered().length === 0) {
           <fold-empty-state
-            title="Aucun produit n'a sa propre limite"
-            subtitle="Chaque produit suit la règle générale. Une limite propre se pose depuis la fiche du produit."
+            title="Aucune limite propre"
+            subtitle="Chaque produit suit la règle générale. Une limite se pose ici, sur un produit ou une famille."
           >
             <fold-icon empty-icon name="clock" [size]="28" />
           </fold-empty-state>
@@ -42,8 +45,20 @@
           <ul class="limits">
             @for (rule of ordered(); track rule.id) {
               <li class="limit">
+                <fold-badge [content]="kind(rule)" variant="neutral" radius="pill" />
                 <span class="limit-name">{{ name(rule) }}</span>
                 <span class="limit-value">{{ limit(rule) }}</span>
+                @if (rule.scope.type === 'category' && rule.exclusions.length > 0) {
+                  <button
+                    foldButton
+                    emphasis="outline"
+                    size="sm"
+                    [attr.aria-expanded]="openExclusions() === rule.id"
+                    (click)="toggleExclusions(rule)"
+                  >
+                    {{ excluded(rule) }}
+                  </button>
+                }
 
                 <div class="limit-actions">
                   <button foldButton emphasis="soft" size="sm" (click)="edit(rule)">
@@ -68,6 +83,25 @@
                     </button>
                   }
                 </div>
+
+                @if (openExclusions() === rule.id) {
+                  <ul class="exclusions" [attr.aria-label]="'Produits exclus de ' + name(rule)">
+                    @for (exclusion of rule.exclusions; track exclusion.productId) {
+                      <li class="exclusion">
+                        <span>{{ exclusion.label ?? exclusion.productId }}</span>
+                        <button
+                          foldButton
+                          emphasis="soft"
+                          size="sm"
+                          [disabled]="busy()"
+                          (click)="include(rule, exclusion.productId)"
+                        >
+                          Réintégrer
+                        </button>
+                      </li>
+                    }
+                  </ul>
+                }
               </li>
             }
           </ul>
@@ -83,9 +117,10 @@
       />
 
       <fold-callout appearance="inset" variant="neutral">
-        La limite d'un produit se <strong>pose</strong> depuis sa fiche&nbsp;; elle vaut pour toutes
-        ses déclinaisons, sans rattrapage. Elle se lit, se modifie et s'archive ici — archivée, elle
-        ne s'applique plus.
+        La limite d'un produit vaut pour toutes ses déclinaisons&nbsp;; celle d'une famille, pour
+        ses sous-familles et tous leurs produits, sauf ceux qu'elle exclut. Aucune n'a de
+        rattrapage. Elles se posent ici ou depuis la fiche, se modifient et s'archivent — archivée,
+        une limite ne s'applique plus.
       </fold-callout>
     }
   }

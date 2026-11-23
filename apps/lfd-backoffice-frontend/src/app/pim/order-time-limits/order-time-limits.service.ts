@@ -3,9 +3,10 @@ import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
 import type {
+  EffectiveOrderTimeLimitView,
   GeneralOrderCutoffView,
+  OrderTimeLimitListItem,
   OrderTimeLimitPayload,
-  OrderTimeLimitView,
   SetOrderTimeLimitResponse,
 } from '@lfd/pim-contracts';
 
@@ -13,7 +14,7 @@ import { API_BASE_URL } from '../data/api';
 
 /**
  * **Points d'arrêt de prise de commande** — jusqu'à quand on accepte une
- * commande, par portée du catalogue.
+ * commande, sur un produit ou sur une famille.
  *
  * `PUT` sans identifiant, et c'est le serveur qui le veut : la **portée** est la
  * clé. Un écran qui pose « la viennoiserie ferme à 16 h » n'a pas à savoir si
@@ -25,8 +26,34 @@ export class OrderTimeLimitsService {
   private readonly http = inject(HttpClient);
   private readonly base = inject(API_BASE_URL);
 
-  async list(): Promise<readonly OrderTimeLimitView[]> {
-    return firstValueFrom(this.http.get<readonly OrderTimeLimitView[]>(this.url()));
+  /** Les limites des produits et des familles, archivées comprises, avec leurs exclusions nommées. */
+  async list(): Promise<readonly OrderTimeLimitListItem[]> {
+    return firstValueFrom(this.http.get<readonly OrderTimeLimitListItem[]>(this.url()));
+  }
+
+  /** La limite effective d'un produit, sa provenance, et les limites de sa lignée. */
+  async effective(productId: string): Promise<EffectiveOrderTimeLimitView> {
+    return firstValueFrom(
+      this.http.get<EffectiveOrderTimeLimitView>(
+        `${this.url()}/effective/${encodeURIComponent(productId)}`,
+      ),
+    );
+  }
+
+  /** Exclut un produit de la limite d'une famille : elle ne le vise plus. */
+  async exclude(limitId: string, productId: string): Promise<void> {
+    await firstValueFrom(
+      this.http.post<void>(`${this.url()}/${limitId}/exclusions`, { productId }),
+    );
+  }
+
+  /** Réintègre un produit exclu : la limite de la famille le vise de nouveau. */
+  async include(limitId: string, productId: string): Promise<void> {
+    await firstValueFrom(
+      this.http.delete<void>(
+        `${this.url()}/${limitId}/exclusions/${encodeURIComponent(productId)}`,
+      ),
+    );
   }
 
   /**

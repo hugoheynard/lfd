@@ -1,12 +1,15 @@
-import type { GeneralOrderCutoffView, OrderTimeLimitView } from '@lfd/pim-contracts';
+import {
+  ORDER_TIME_LIMIT_SCOPE_LABELS,
+  type GeneralOrderCutoffView,
+  type OrderTimeLimitView,
+} from '@lfd/pim-contracts';
 
 /**
- * Ce que la règle vise, en clair : le nom du produit.
+ * Ce que la règle vise, en clair : le nom de la famille ou le SKU du produit.
  *
- * Depuis le 2026-10-21 (décision de Hugo), une limite ne se pose plus que sur
- * un produit. Le nom vient du serveur ; `null` veut dire que la cible n'a pas
- * été retrouvée, et l'on montre alors l'identifiant plutôt que rien — une
- * règle qui s'applique sans qu'on sache à quoi doit se voir.
+ * Le nom vient du serveur ; `null` veut dire que la cible n'a pas été
+ * retrouvée, et l'on montre alors l'identifiant plutôt que rien — une règle qui
+ * s'applique sans qu'on sache à quoi doit se voir.
  */
 export function scopeLabel(rule: OrderTimeLimitView): string {
   return rule.scopeLabel ?? rule.scope.id ?? '';
@@ -39,7 +42,17 @@ export function gracePhrase(graceMinutes: number): string {
   return graceMinutes % 60 === 0 ? `${graceMinutes / 60} h` : `${graceMinutes} min`;
 }
 
-/** La limite d'un produit en une ligne : « La veille, 18:00 ». */
+/** « Famille » ou « Produit » : le type de portée, dit à côté du nom. */
+export function scopeKind(rule: OrderTimeLimitView): string {
+  return ORDER_TIME_LIMIT_SCOPE_LABELS[rule.scope.type];
+}
+
+/** « 1 produit exclu », « 3 produits exclus ». */
+export function excludedPhrase(count: number): string {
+  return count === 1 ? '1 produit exclu' : `${count} produits exclus`;
+}
+
+/** La limite d'une règle en une ligne : « La veille, 18:00 ». */
 export function limitPhrase(rule: OrderTimeLimitView): string {
   if (rule.daysBefore === null || rule.time === null) {
     // Une ligne d'avant le 2026-10-21 qui n'aurait pas les deux : elle ne

@@ -1,0 +1,95 @@
+<div class="col">
+  <fold-callout appearance="inset" variant="info">
+    Le dernier moment où un client peut commander les produits de cette famille, de ses
+    sous-familles et de tous leurs produits — sauf ceux qu'elle exclut. Quand plusieurs limites
+    visent un produit (la sienne, celles de ses familles), la plus stricte gagne. Pas de rattrapage.
+  </fold-callout>
+
+  @if (failed()) {
+    <fold-callout variant="alert">
+      Les limites de commande n'ont pas pu être lues.
+      <button foldButton emphasis="soft" size="sm" (click)="load()">Réessayer</button>
+    </fold-callout>
+  } @else {
+    @let current = rule();
+    @if (current === null) {
+      <fold-callout appearance="inset" variant="neutral">
+        <strong>Pas de limite sur cette famille</strong>&nbsp;: ses produits suivent leur propre
+        limite, celles des familles au-dessus, et la règle générale.
+      </fold-callout>
+      <div class="actions">
+        <button foldButton emphasis="soft" size="sm" (click)="edit()">Poser une limite</button>
+      </div>
+    } @else {
+      <p class="value">
+        {{ phrase() }}
+        @if (current.archived) {
+          — archivée, elle ne s'applique plus
+        } @else if (current.staffMayExceed) {
+          — l'équipe peut passer outre
+        }
+      </p>
+
+      <div class="actions">
+        @if (current.archived) {
+          <button foldButton emphasis="soft" size="sm" [disabled]="busy()" (click)="restore()">
+            Restaurer
+          </button>
+          <button foldButton emphasis="soft" size="sm" (click)="edit()">Reposer autrement</button>
+        } @else {
+          <button foldButton emphasis="soft" size="sm" (click)="edit()">Modifier la limite</button>
+          @if (pendingRemoval()) {
+            <button foldButton intent="danger" size="sm" (click)="archive()">Confirmer</button>
+            <button foldButton emphasis="soft" size="sm" (click)="cancelRemove()">Annuler</button>
+          } @else {
+            <button foldButton emphasis="soft" intent="danger" size="sm" (click)="askRemove()">
+              Archiver
+            </button>
+          }
+        }
+      </div>
+
+      <div class="col">
+        <strong>{{ excludedCount() }}</strong>
+        @if (current.exclusions.length > 0) {
+          <ul class="exclusions" aria-label="Produits exclus de la limite">
+            @for (exclusion of current.exclusions; track exclusion.productId) {
+              <li class="exclusion">
+                <span>{{ exclusion.label ?? exclusion.productId }}</span>
+                <button
+                  foldButton
+                  emphasis="soft"
+                  size="sm"
+                  [disabled]="busy()"
+                  (click)="include(exclusion.productId)"
+                >
+                  Réintégrer
+                </button>
+              </li>
+            }
+          </ul>
+        }
+
+        <div class="exclude">
+          <fold-listbox
+            label="Exclure un produit de la limite"
+            placeholder="Choisir un produit"
+            hint="Il échappe à la limite de cette famille, pas à la sienne ni à celles des familles au-dessus."
+            [options]="productChoices()"
+            [value]="toExclude()"
+            (selectionChange)="toExclude.set($event)"
+          />
+          <button
+            foldButton
+            emphasis="soft"
+            size="sm"
+            [disabled]="toExclude() === null || busy()"
+            (click)="exclude()"
+          >
+            Exclure
+          </button>
+        </div>
+      </div>
+    }
+  }
+</div>

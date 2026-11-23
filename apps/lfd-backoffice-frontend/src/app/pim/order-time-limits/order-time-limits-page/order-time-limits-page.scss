@@ -30,3 +30,21 @@
   display: flex;
   gap: var(--fold-space-sm);
 }
+
+/* La liste des exclus d'une famille, dépliée sous sa ligne, sur toute la largeur. */
+.exclusions {
+  display: flex;
+  flex-basis: 100%;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.exclusion {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--fold-space-md);
+}

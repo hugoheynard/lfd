@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
-import type { OrderTimeLimitView } from '@lfd/pim-contracts';
+import type { EffectiveOrderTimeLimitView, OrderTimeLimitView } from '@lfd/pim-contracts';
 
-import { limitApplies, productRule } from '../order-limit-row';
+import { effectivePhrase, familyRules, limitApplies, productRule } from '../order-limit-row';
 
 function rule(
   type: OrderTimeLimitView['scope']['type'],
@@ -48,5 +48,52 @@ describe('limitApplies', () => {
     expect(limitApplies(rule('product', 'p1', { time: null }))).toBe(false);
     expect(limitApplies(rule('product', 'p1', { daysBefore: null }))).toBe(false);
     expect(limitApplies(null)).toBe(false);
+  });
+});
+
+function view(over: Partial<EffectiveOrderTimeLimitView> = {}): EffectiveOrderTimeLimitView {
+  return {
+    productId: 'p1',
+    lineage: [
+      { id: 'f1', label: 'Gâteaux' },
+      { id: 'f0', label: 'Pâtisserie' },
+    ],
+    rules: [],
+    explained: null,
+    ...over,
+  };
+}
+
+describe('familyRules', () => {
+  it('ne garde que les limites de famille, la plus proche d’abord', () => {
+    const rules = familyRules(
+      view({
+        rules: [
+          { rule: rule('category', 'f0'), excludesProduct: false },
+          { rule: rule('product', 'p1'), excludesProduct: false },
+          { rule: rule('category', 'f1'), excludesProduct: true },
+        ],
+      }),
+    );
+    expect(rules.map((entry) => entry.rule.scope.id)).toEqual(['f1', 'f0']);
+  });
+});
+
+describe('effectivePhrase', () => {
+  it('nomme la famille d’où vient la limite', () => {
+    expect(
+      effectivePhrase(
+        view({
+          explained: {
+            limit: { daysBefore: 2, time: '12:00', graceMinutes: 0, staffMayExceed: false },
+            from: { type: 'category', id: 'f1' },
+          },
+        }),
+      ),
+    ).toBe("L'avant-veille, 12:00 — famille Gâteaux");
+  });
+
+  it('rend null sans limite', () => {
+    expect(effectivePhrase(view())).toBeNull();
   });
 });

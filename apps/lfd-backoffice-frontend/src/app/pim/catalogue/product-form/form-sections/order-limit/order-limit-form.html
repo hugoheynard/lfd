@@ -1,12 +1,12 @@
 <div class="ol">
   <!-- Le sens de la carte, dit une fois en tête : qui la règle n'a pas forcément
-       lu la doc de l'heure limite (Hugo, 2026-10-16). -->
+       lu la doc de l'heure limite. -->
   <fold-callout class="ol-explain" appearance="inset" variant="info">
     Le dernier moment où un client peut commander ce produit, compte tenu du temps qu'il faut pour
     le produire. Le <strong>délai</strong> compte les jours avant celui du retrait ou de la
-    livraison, l'<strong>heure</strong> dit jusqu'à quand ce jour-là. Passé cette limite, la
-    commande est refusée — pas de rattrapage sur un produit. Elle vaut pour toutes ses
-    déclinaisons&nbsp;; la règle générale s'applique aussi, et la plus stricte des deux gagne.
+    livraison, l'<strong>heure</strong> dit jusqu'à quand ce jour-là. Plusieurs limites peuvent le
+    viser — la sienne, celles de ses familles — et la plus stricte gagne, avec la règle générale.
+    Pas de rattrapage, et elle vaut pour toutes ses déclinaisons.
   </fold-callout>
 
   @if (failed()) {
@@ -17,15 +17,40 @@
   } @else {
     @if (phrase(); as text) {
       <p class="ol-value">{{ text }}</p>
+      <p class="ol-hint">
+        @if (mayExceed()) {
+          L'équipe peut passer outre, avec le droit et un motif.
+        } @else {
+          L'équipe ne peut pas passer outre.
+        }
+        Passer outre n'est possible que si toutes les limites qui visent ce produit le permettent.
+      </p>
     } @else {
       <fold-callout appearance="inset" variant="neutral">
-        <strong>Pas de limite propre</strong>&nbsp;: seule la règle générale juge ce produit.
+        <strong>Aucune limite du référentiel</strong>&nbsp;: seule la règle générale juge ce
+        produit.
       </fold-callout>
+    }
+
+    @if (families().length > 0) {
+      <div class="ol-families">
+        @for (row of families(); track row.entry.rule.id) {
+          <fold-checkbox
+            [label]="'Exclure de la limite de la famille ' + row.name"
+            hint="Il échappe à la limite de cette famille, pas à la sienne ni à celles des autres familles."
+            [checked]="row.entry.excludesProduct"
+            [disabled]="busy()"
+            (checkedChange)="setExcluded(row, $event)"
+          />
+        }
+      </div>
     }
 
     <div class="ol-actions">
       @if (rule() !== null) {
-        <button foldButton emphasis="soft" size="sm" (click)="edit()">Modifier la limite</button>
+        <button foldButton emphasis="soft" size="sm" (click)="edit()">
+          Modifier la limite propre
+        </button>
         @if (pendingRemoval()) {
           <button foldButton intent="danger" size="sm" (click)="remove()">Confirmer</button>
           <button foldButton emphasis="soft" size="sm" (click)="cancelRemove()">Annuler</button>
@@ -35,7 +60,9 @@
           </button>
         }
       } @else {
-        <button foldButton emphasis="soft" size="sm" (click)="edit()">Poser une limite</button>
+        <button foldButton emphasis="soft" size="sm" (click)="edit()">
+          Poser une limite propre
+        </button>
       }
     </div>
   }
@@ -43,7 +70,7 @@
   <p class="ol-hint">
     La règle générale se règle dans
     <a routerLink="/reglages/commandes/heure-limite">Réglages › Commandes › Heure limite</a>. Les
-    limites de tous les produits se lisent dans
+    limites de tous les produits et familles se lisent dans
     <a routerLink="/pim/limites-de-commande">Limites de commande</a>.
   </p>
 </div>

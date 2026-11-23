@@ -20,6 +20,7 @@ import { SectionState } from '../section-state/section-state';
 import { CategoryFormStore, type CategorySection } from './category-form-store';
 import { CategoryAudienceForm } from './form-sections/audience/category-audience-form';
 import { CategoryChannelsForm } from './form-sections/channels/channels-form';
+import { CategoryOrderLimit } from './form-sections/order-limit/category-order-limit';
 import { CategoryCommunicationForm } from './form-sections/communication/communication-form';
 import { CategoryIdentityForm } from './form-sections/identity/identity-form';
 import { CategoryVisualsForm } from './form-sections/visuals/visuals-form';
@@ -69,6 +70,7 @@ interface PageSection {
     CategoryChannelsForm,
     CategoryCommunicationForm,
     CategoryVisualsForm,
+    CategoryOrderLimit,
     CategorySummaryRail,
   ],
   templateUrl: './category-form-page.html',

@@ -1,0 +1,32 @@
+.col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.value {
+  margin: 0;
+  font-weight: var(--fold-weight-medium);
+}
+
+.actions {
+  display: flex;
+  gap: var(--fold-space-xs);
+}
+
+.exclusions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.exclusion,
+.exclude {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--fold-space-md);
+}
