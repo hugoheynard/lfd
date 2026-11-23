@@ -18,6 +18,7 @@ import {
   writeCoverage,
 } from "../../infrastructure/order-discounts.data.js";
 import { ttcTermsColumnsOf } from "../../infrastructure/order-money-columns.js";
+import { offerColumnsOf } from "../../infrastructure/order-offer.columns.js";
 import { OrderCardRefundReadings } from "../../infrastructure/order-card-refund-readings.js";
 import { REVISABLE_ORDER_SELECT, toRevisableOrder } from "./revisable-order.row.js";
 import { revisedCompositionOf } from "./revised-composition.js";
@@ -178,6 +179,9 @@ function revisedColumnsOf(revision: OrderRevisionToSave, at: Date) {
       amountCents: share.amountCents,
     })),
     totalCents: state.totalCents,
+    // La valeur offerte suit la nouvelle composition ; le motif, relu sur la
+    // commande par l'agrégat, ne change pas.
+    ...offerColumnsOf(state.offer),
     // Le délai d'origine reporté, l'instant recalculé sur le nouveau créneau.
     customerCancellableUntil: state.customerCancellableUntil,
     ...customerCancellationColumnsOf(state.customerCancellation),

@@ -133,6 +133,14 @@ export const staffResourceSchema = z.enum([
    */
   "b2b_place_order",
   /**
+   * **Offrir une commande** — passer pour un client une commande ramenée à
+   * zéro, avec son motif (doc
+   * `documentation/commandes/passation/plan-commande-offerte.md`, O-6).
+   * S'ajoute à `b2b_place_order`. Une action utile, `write`. Accordée à
+   * l'écran ; aucune migration ne la donne à un rôle.
+   */
+  "b2b_offer_order",
+  /**
    * **Annuler une commande** — `POST /admin/orders/:id/cancel` (doc
    * `documentation/commandes/annulation/annulation-par-le-staff.md`, C3.8, 2026-10-12).
    * Un geste à part, sur le modèle de `b2b_place_order` : voir les commandes
@@ -887,6 +895,7 @@ export const STAFF_RESOURCE_LABELS: Readonly<Record<StaffResource, string>> = {
   b2b_companies: "Comptes clients",
   b2b_orders: "Commandes",
   b2b_place_order: "Passer une commande pro",
+  b2b_offer_order: "Offrir une commande",
   b2b_cancel_order: "Annuler une commande",
   b2b_orders_shortfall: "Décider du départ incomplet",
   b2b_order_review: "Visa des commandes",
@@ -1018,6 +1027,8 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     // La graine seule (2026-10-12, plan d'annulation C3.8) : en production,
     // le geste s'accorde à l'écran.
     b2b_cancel_order: "write",
+    // La graine seule : en production, le geste s'accorde à l'écran.
+    b2b_offer_order: "write",
     // La graine seule (2026-10-25, plan E6b) : en production, le geste
     // s'accorde à l'écran.
     b2b_orders_shortfall: "write",

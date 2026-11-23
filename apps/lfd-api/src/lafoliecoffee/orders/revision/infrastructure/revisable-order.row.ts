@@ -36,6 +36,10 @@ import { fixedCustomerCancellationOf } from "../../cancellation/infrastructure/c
 import { fulfillmentOf } from "../../infrastructure/order-fulfillment.parse.js";
 import { vatMethodOf } from "../../infrastructure/order-money-columns.js";
 import {
+  ORDER_OFFER_REASON_SELECT,
+  offerReasonOfRow,
+} from "../../infrastructure/order-offer.columns.js";
+import {
   orderLineSaleUnitOf,
   parseAllergens,
   parseTrace,
@@ -93,6 +97,7 @@ export const REVISABLE_ORDER_SELECT = {
   paymentStatus: true,
   settlementVenue: true,
   totalCents: true,
+  ...ORDER_OFFER_REASON_SELECT,
   // Les gestes du HT (`orderPretaxCents`) : l'e-mail « commande modifiée » dit l'ancien HT d'un pro.
   subtotalCents: true,
   deliveryFeeCents: true,
@@ -162,6 +167,8 @@ export interface RevisableOrderRow {
   readonly paymentStatus: PaymentStatus;
   readonly settlementVenue: RevisableOrder["settlementVenue"];
   readonly totalCents: number;
+  readonly offerNature: string | null;
+  readonly offerNote: string | null;
   readonly subtotalCents: number;
   readonly deliveryFeeCents: number;
   readonly lateFeeCents: number;
@@ -226,6 +233,7 @@ export function toRevisableOrder(row: RevisableOrderRow, refunds: RefundPosition
     paymentStatus: row.paymentStatus,
     settlementVenue: row.settlementVenue,
     totalCents: row.totalCents,
+    ...offerOf(row),
     pretaxCents: orderPretaxCents(row),
     shortfallDecided: row.shortfallDecisions.length > 0,
     stripePaymentIntentId: row.stripePaymentIntentId,
@@ -327,4 +335,10 @@ function localeOf(value: string | null): ContentLocale | null {
   }
   const parsed = contentLocaleSchema.safeParse(value);
   return parsed.success ? parsed.data : null;
+}
+
+/** L'offre relue, étalée : absente pour une commande payée (`exactOptionalPropertyTypes`). */
+function offerOf(row: RevisableOrderRow): Pick<RevisableOrder, "offer"> {
+  const offer = offerReasonOfRow(row.id, row);
+  return offer === undefined ? {} : { offer };
 }

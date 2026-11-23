@@ -27,6 +27,7 @@ import { lockOpenCompanies } from "./order-companies.share-lock.js";
 import { toFulfillmentJson } from "./order-json.js";
 import { identifiedLinesOf, orderDiscountsWriteOf, writeCoverage } from "./order-discounts.data.js";
 import { ttcTermsColumnsOf } from "./order-money-columns.js";
+import { offerColumnsOf } from "./order-offer.columns.js";
 import { planWhere } from "./plan-filter.js";
 
 /**
@@ -217,6 +218,7 @@ export class PrismaOrderRepository extends OrderRepository {
             amountCents: share.amountCents,
           })),
           totalCents: state.totalCents,
+          ...offerColumnsOf(state.offer),
           paymentStatus: state.paymentStatus,
           // Figé ici : la base en refuse toute modification ultérieure.
           settlementVenue: state.settlementVenue,

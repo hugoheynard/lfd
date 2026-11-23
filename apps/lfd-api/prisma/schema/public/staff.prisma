@@ -65,6 +65,10 @@ enum StaffResource {
   /// PASSER UNE COMMANDE pour un client pro — sortie de `b2b_orders` le
   /// 2026-10-01 (`documentation/livraisons/droits/plan-droits-par-geste.md`, 5.1 bis).
   b2b_place_order
+  /// OFFRIR UNE COMMANDE — passer, pour un client, une commande ramenée à
+  /// zéro avec son motif (`plan-commande-offerte.md`, O-6). S'ajoute à
+  /// `b2b_place_order`, ne le remplace pas. Accordé à l'écran.
+  b2b_offer_order
   /// ANNULER UNE COMMANDE — un geste à part, accordé à l'écran
   /// (2026-10-12, `documentation/commandes/annulation/annulation-par-le-staff.md`, C3.8).
   b2b_cancel_order

@@ -72,6 +72,11 @@ export const STAFF_RESOURCE_SCOPES: Readonly<Record<StaffResource, StaffResource
     write:
       "Composer et passer une commande au nom d'un client pro — devis, brouillon, passation. Demande aussi Commandes en lecture (catalogue et historique du client), et Comptoir en lecture pour saisir depuis le comptoir.",
   },
+  b2b_offer_order: {
+    read: "N'ouvre rien : il n'y a rien à lire dans ce geste, seule l'écriture compte.",
+    write:
+      "Passer une commande offerte : composée comme si le client la payait, puis ramenée à zéro, avec un motif obligatoire (dégustation, événement, geste commercial…). Demande aussi « Passer une commande pro ».",
+  },
   b2b_cancel_order: {
     read: "N'ouvre rien : il n'y a rien à lire dans ce geste, seule l'écriture compte.",
     write:
