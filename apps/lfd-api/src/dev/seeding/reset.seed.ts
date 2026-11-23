@@ -174,6 +174,8 @@ async function wipe(prisma: PrismaClient, companyIds: string[], userIds: string[
   await prisma.paymentMandate.deleteMany({ where: { companyId: { in: companyIds } } });
   // La fiche Chorus pointe la société en `Restrict`.
   await prisma.companyChorusRouting.deleteMany({ where: { companyId: { in: companyIds } } });
+  // Le service Chorus d'une société qui commande la pointe aussi.
+  await prisma.companyChorusService.deleteMany({ where: { companyId: { in: companyIds } } });
   // Le carnet du commercial pointe la société (clé `Restrict`) ; ses notes
   // suivent en cascade. Absent jusqu'au 2026-09-29 : une société d'essai dotée
   // d'un carnet faisait échouer tout le rechargement sur la clé étrangère.
@@ -205,9 +207,14 @@ async function wipe(prisma: PrismaClient, companyIds: string[], userIds: string[
   await dropHolderRestrictedRows(prisma, companyIds, userIds);
   // `company_id` en `Restrict` (N4e) : le panier d'une personne hors périmètre
   // posé sur une société du périmètre partirait sinon en erreur.
-  await prisma.subscription.deleteMany({
-    where: { OR: [{ placedByUserId: { in: userIds } }, { companyId: { in: companyIds } }] },
+  const ofSubscriptions = {
+    OR: [{ placedByUserId: { in: userIds } }, { companyId: { in: companyIds } }],
+  };
+  // Le registre des échéances pointe l'abonnement en `Restrict` : avant lui.
+  await prisma.subscriptionOccurrenceRun.deleteMany({
+    where: { subscription: ofSubscriptions },
   });
+  await prisma.subscription.deleteMany({ where: ofSubscriptions });
   // Les préférences d'acheminement POINTENT sur les adresses : les délier avant
   // de supprimer, sinon la FK refuse et le message ne dit pas pourquoi.
   await prisma.company.updateMany({

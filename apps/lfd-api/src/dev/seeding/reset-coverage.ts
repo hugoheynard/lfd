@@ -34,6 +34,7 @@ export const RESET_WIPED_TABLES: readonly CoveredTable[] = [
       "public.client_notebooks",
       "public.companies",
       "public.company_chorus_routing",
+      "public.company_chorus_service",
       "public.company_collection_form",
       "public.company_follows",
       "public.loyalty_ledger_entries",
@@ -51,6 +52,7 @@ export const RESET_WIPED_TABLES: readonly CoveredTable[] = [
     ],
   },
   { table: "public.company_chorus_routing", referencedBy: [] },
+  { table: "public.company_chorus_service", referencedBy: [] },
   { table: "public.company_collection_form", referencedBy: [] },
   { table: "public.company_follows", referencedBy: [] },
   {
@@ -109,7 +111,11 @@ export const RESET_WIPED_TABLES: readonly CoveredTable[] = [
   { table: "public.sub_account_menu_entry", referencedBy: [] },
   { table: "public.sub_account_notice_rules", referencedBy: [] },
   { table: "public.sub_account_notice_settings", referencedBy: [] },
-  { table: "public.subscriptions", referencedBy: [] },
+  {
+    table: "public.subscriptions",
+    referencedBy: ["public.subscription_occurrence_runs"],
+  },
+  { table: "public.subscription_occurrence_runs", referencedBy: [] },
   { table: "public.support_requests", referencedBy: [] },
   {
     table: "public.users",

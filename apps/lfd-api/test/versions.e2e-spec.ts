@@ -40,6 +40,7 @@ const WATCHED: Readonly<Record<"company_change" | "order_change", readonly strin
     "companies",
     "company_bank_accounts",
     "company_chorus_routing",
+    "company_chorus_service",
     "company_collection_form",
     "company_contacts",
     "company_follows",
