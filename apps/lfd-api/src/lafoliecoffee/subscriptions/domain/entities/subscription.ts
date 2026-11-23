@@ -14,6 +14,7 @@ import {
   SubscriptionAlreadyActiveError,
   SubscriptionAlreadyPausedError,
 } from "../errors/subscription-errors.js";
+import { type Occurrence, occurrencesBetween } from "../services/occurrence-calendar.js";
 import { IsoDate } from "../value-objects/iso-date.js";
 import { SubscriptionLine } from "../value-objects/subscription-line.js";
 
@@ -249,6 +250,26 @@ export class Subscription {
   /** L'état du panier : actif ou en pause. */
   get currentStatus(): SubscriptionStatus {
     return this.status;
+  }
+
+  /**
+   * Les échéances que le panier vise entre deux jours, bornes comprises,
+   * dérogations appliquées (cf. {@link occurrencesBetween}). Le statut n'y
+   * entre pas : un panier en pause vise toujours ses jours, c'est le
+   * balayage qui ne les sert pas.
+   */
+  occurrencesBetween(from: IsoDate, to: IsoDate): readonly Occurrence[] {
+    return occurrencesBetween(
+      {
+        recurrence: this.recurrence,
+        startDate: this.startDate,
+        endDate: this.endDate,
+        lines: this.lines,
+        overrideOn: (date) => this.overrideOn(date),
+      },
+      from,
+      to,
+    );
   }
 
   /** La dérogation posée sur cette échéance, ou `null` s'il n'y en a pas. */
