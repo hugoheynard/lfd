@@ -198,9 +198,11 @@ l'accès et envoie le lien. Mais `GrantAccountAccess.open` sait **ouvrir sans
 - **À vérifier au bâti** : que `GrantAccountAccess.open` sans annonce ne
   fait rien partir par Auth0 (création d'identité sans e-mail de
   vérification).
-- **RGPD (Hugo)** : le contact d'une enseigne démarchée a une finalité
-  nouvelle, la prospection. Combien de temps le garde-t-on sans suite, et
-  qui l'informe, puisqu'aucun e-mail ne part ?
+- **RGPD — décidé par Hugo le 2026-11-23 : conservation sans limite pour
+  l'instant.** Le contact d'une enseigne démarchée sert à la prospection, une
+  finalité nouvelle ; aucun e-mail ne l'informe. La durée et l'information
+  restent à revoir (avec un avis RGPD) ; la colonne est déjà au registre, la
+  finalité « prospection » y sera inscrite au bâti d'O7b.
 
 **Lots** : O7a le particulier (route, mur extrait, service de l'offre
 partagé, révision) ; O7b la nouvelle enseigne sans annonce ; O7c l'écran.
