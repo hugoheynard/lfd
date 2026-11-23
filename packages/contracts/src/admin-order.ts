@@ -119,6 +119,18 @@ function hasOfferIffOffered(payload: {
   return (payload.settlement === "offered") === (payload.offer !== undefined);
 }
 
+/**
+ * L'estimation admet `offered` sans motif : l'écran estime dès qu'on choisit
+ * « Offerte », avant que le motif soit écrit, et le serveur chiffre alors la
+ * valeur pleine. Un motif sans `offered` reste refusé.
+ */
+function hasOfferOnlyWhenOffered(payload: {
+  readonly settlement: StaffSettlement;
+  readonly offer?: OrderOffer | undefined;
+}): boolean {
+  return payload.offer === undefined || payload.settlement === "offered";
+}
+
 function offerIssue(): { readonly message: string; readonly path: string[] } {
   return {
     message: "une commande offerte exige un motif, et seule elle en porte",
@@ -270,7 +282,7 @@ export const adminOrderEstimatePayloadSchema = z
   .refine(hasAddressWhenDelivered, deliveryAddressIssue())
   .refine(hasPickupPointWhenPickedUp, pickupPointIssue())
   .refine(hasWindowWhenPickedUp, pickupWindowIssue())
-  .refine(hasOfferIffOffered, offerIssue());
+  .refine(hasOfferOnlyWhenOffered, offerIssue());
 export type AdminOrderEstimatePayload = z.infer<typeof adminOrderEstimatePayloadSchema>;
 
 /**
@@ -380,6 +392,14 @@ export const orderDraftPayloadSchema = z.object({
   requestedWindow: fulfillmentWindowSchema.nullable().default(null),
   note: z.string().default(""),
   settlement: staffSettlementSchema.default("link"),
+  /**
+   * Le motif d'une commande offerte en cours de saisie : la nature choisie et
+   * le texte, même incomplets — un brouillon n'a pas d'invariant. Les
+   * brouillons déjà stockés ne portent pas ces clés, et les défauts les leur
+   * donnent à la relecture.
+   */
+  offerNature: orderOfferNatureSchema.nullable().default(null),
+  offerNote: z.string().max(ORDER_OFFER_NOTE_MAX_LENGTH).default(""),
   lines: z.array(orderLineInputSchema).default([]),
   /**
    * Le « Total HT » que l'écran affichait à l'enregistrement, en centimes —

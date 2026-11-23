@@ -114,10 +114,16 @@ describe("la commande offerte au contrat", () => {
     expect(adminOrderEstimatePayloadSchema.safeParse(payload).success).toBe(true);
   });
 
-  it("🔴 refuse une commande offerte sans motif", () => {
+  it("🔴 refuse une commande offerte sans motif à la passation", () => {
     const refused = adminPlaceOrderPayloadSchema.safeParse({ ...base, settlement: "offered" });
     expect(refused.success).toBe(false);
     expect(refused.error?.issues.some((issue) => issue.path[0] === "offer")).toBe(true);
+  });
+
+  it("l'estimation admet offered sans motif : l'écran estime avant qu'il soit écrit", () => {
+    expect(
+      adminOrderEstimatePayloadSchema.safeParse({ ...base, settlement: "offered" }).success,
+    ).toBe(true);
   });
 
   it("🔴 refuse un motif sur une commande qui n'est pas offerte", () => {
