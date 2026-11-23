@@ -322,6 +322,7 @@ function guard(
 ): OrderGuardReader {
   return {
     roleOf: () => Promise.resolve(role),
+    staffEntryRoleOf: () => Promise.resolve(role),
     companyStatusOf: () => Promise.resolve(status),
     settlesOnAccount: () => Promise.resolve(onAccount),
     isPublicPayer: () => Promise.resolve(false),
@@ -1730,6 +1731,7 @@ describe("PlaceOrderHandler — un article d'opération datée", () => {
 function asPublicPayer(base: OrderGuardReader): OrderGuardReader {
   return {
     roleOf: (userId, companyId) => base.roleOf(userId, companyId),
+    staffEntryRoleOf: (userId, companyId) => base.staffEntryRoleOf(userId, companyId),
     companyStatusOf: (companyId) => base.companyStatusOf(companyId),
     settlesOnAccount: (companyId) => base.settlesOnAccount(companyId),
     isPublicPayer: () => Promise.resolve(true),
@@ -2146,6 +2148,7 @@ describe("PlaceOrderHandler — un site facturé à son principal", () => {
     // Seul le principal a un crédit : le site n'a rien d'accordé à son nom.
     const payerGuard: OrderGuardReader = {
       roleOf: () => Promise.resolve("orders"),
+      staffEntryRoleOf: () => Promise.resolve("orders"),
       companyStatusOf: () => Promise.resolve("active"),
       settlesOnAccount: (companyId) => {
         asked.push(companyId);

@@ -25,3 +25,18 @@ export function openingMembership(now: Date): Prisma.MembershipWhereInput {
     OR: [{ acceptedAt: { not: null } }, { invitedAt: { gte: oldestLiveInvitation(now) } }],
   };
 }
+
+/**
+ * **Le rattachement qui porte une commande SAISIE PAR L'ÉQUIPE** : toute
+ * appartenance à la société, acceptée ou non, invitation vivante ou expirée,
+ * tant que le compte de la personne n'est pas désactivé. Décidé par Hugo le
+ * 2026-11-23 : une commande prise par l'équipe passe dans tous les cas, le
+ * client n'a pas à s'être connecté pour être livré.
+ *
+ * Ne sert qu'à DÉSIGNER à qui la commande est portée par l'équipe : n'ouvre
+ * aucun accès. Le mur tient toujours — la personne est rattachée à CETTE
+ * société, et un compte désactivé ne porte plus rien.
+ */
+export function staffBuyerMembership(): Prisma.MembershipWhereInput {
+  return { user: { status: { not: "disabled" } } };
+}

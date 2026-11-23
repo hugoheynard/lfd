@@ -23,6 +23,7 @@ const EMPTY: OrderDraftPayload = orderDraftPayloadSchema.parse({});
 function guard(status: OrderCompanyStatus | null): OrderGuardReader {
   return {
     roleOf: (): Promise<OrderRole | null> => Promise.resolve(null),
+    staffEntryRoleOf: (): Promise<OrderRole | null> => Promise.resolve(null),
     companyStatusOf: (): Promise<OrderCompanyStatus | null> => Promise.resolve(status),
     settlesOnAccount: () => Promise.resolve("none" as const),
     isPublicPayer: () => Promise.resolve(false),

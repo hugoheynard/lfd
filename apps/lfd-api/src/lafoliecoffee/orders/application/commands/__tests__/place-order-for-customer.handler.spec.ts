@@ -263,6 +263,11 @@ function guard(
       asked.userId = userId;
       return Promise.resolve(role);
     },
+    // La saisie de l'équipe lit l'acheteur par sa méthode à elle : même réponse.
+    staffEntryRoleOf: (userId) => {
+      asked.userId = userId;
+      return Promise.resolve(role);
+    },
     companyStatusOf: () => Promise.resolve(status),
     settlesOnAccount: () => Promise.resolve(onAccount),
     isPublicPayer: () => Promise.resolve(false),
@@ -480,6 +485,7 @@ function draftingFor(guardDouble: OrderGuardReader, options: DraftingOptions = {
 function asPublicPayer(base: OrderGuardReader): OrderGuardReader {
   return {
     roleOf: (userId, companyId) => base.roleOf(userId, companyId),
+    staffEntryRoleOf: (userId, companyId) => base.staffEntryRoleOf(userId, companyId),
     companyStatusOf: (companyId) => base.companyStatusOf(companyId),
     settlesOnAccount: (companyId) => base.settlesOnAccount(companyId),
     isPublicPayer: () => Promise.resolve(true),
@@ -1173,6 +1179,7 @@ describe("PlaceOrderForCustomerHandler — un site facturé à son principal", (
     const asked: string[] = [];
     const payerGuard: OrderGuardReader = {
       roleOf: () => Promise.resolve("orders"),
+      staffEntryRoleOf: () => Promise.resolve("orders"),
       companyStatusOf: () => Promise.resolve("active"),
       settlesOnAccount: (companyId) => {
         asked.push(companyId);

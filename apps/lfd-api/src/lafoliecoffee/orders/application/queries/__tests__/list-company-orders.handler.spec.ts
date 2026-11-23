@@ -25,6 +25,10 @@ class OwnRole extends OrderGuardReader {
     return Promise.resolve(this.role);
   }
 
+  staffEntryRoleOf(): Promise<OrderRole | null> {
+    return Promise.resolve(this.role);
+  }
+
   companyStatusOf(): Promise<OrderCompanyStatus | null> {
     return Promise.reject(new Error("non utilisé"));
   }

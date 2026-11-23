@@ -147,6 +147,53 @@ function offeredPayload(companyId: string, buyerUserId: string): Record<string, 
   });
 }
 
+/**
+ * Un interlocuteur rattaché à la société, invité il y a longtemps, qui n'a
+ * jamais accepté : l'invitation est expirée. Posé à la main, faute de geste du
+ * domaine qui fasse vieillir une invitation.
+ */
+async function expiredInvitee(companyId: string, status: "invited" | "disabled"): Promise<string> {
+  const person = await createUser(ctx.prisma, { auth0Sub: `auth0|invite-${status}` });
+  await attachTo(ctx.prisma, person.id, companyId, CustomerRole.orders);
+  await ctx.prisma.membership.update({
+    where: { userId_companyId: { userId: person.id, companyId } },
+    data: { acceptedAt: null, invitedAt: new Date("2020-01-01T00:00:00.000Z") },
+  });
+  await ctx.prisma.user.update({ where: { id: person.id }, data: { status } });
+  return person.id;
+}
+
+describe("POST /admin/orders — l'interlocuteur qui n'a jamais accepté son accès", () => {
+  /** Régression : le panier restait sur « Calcul du montant… » (404 sur l'estimation). */
+  it("🔴 l'équipe lui porte une commande : estimation et passation passent", async () => {
+    const { companyId } = await seedCompany(true);
+    const invitee = await expiredInvitee(companyId, "invited");
+    const body = payload({ companyId, buyerUserId: invitee, settlement: "account" });
+
+    const estimate = await staff().post("/admin/orders/estimate").send(body).expect(200);
+    const seen = (estimate.body as { amounts: { totalCents: number } | null }).amounts?.totalCents;
+    await staff()
+      .post("/admin/orders")
+      .set(INTENT_KEY, freshIntent())
+      .send({ ...body, expectedTotalCents: seen })
+      .expect(201);
+  });
+
+  it("un compte désactivé ne porte plus rien : 404, rien d'écrit", async () => {
+    const { companyId } = await seedCompany(true);
+    const disabled = await expiredInvitee(companyId, "disabled");
+
+    await staff()
+      .post("/admin/orders")
+      .set(INTENT_KEY, freshIntent())
+      .send(
+        payload({ companyId, buyerUserId: disabled, settlement: "account", expectedTotalCents: 0 }),
+      )
+      .expect(404);
+    expect(await ctx.prisma.order.count()).toBe(0);
+  });
+});
+
 describe("POST /admin/orders — le mur", () => {
   it("refuse un acheteur qui n'est pas membre de la société visée", async () => {
     // Le staff, lui, n'est membre de rien : si le mur portait sur l'acteur,

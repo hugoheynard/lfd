@@ -25,6 +25,14 @@ export abstract class OrderGuardReader extends CompanyStatusReader {
   abstract roleOf(userId: string, companyId: string): Promise<OrderRole | null>;
 
   /**
+   * Rôle de la personne à qui l'ÉQUIPE porte une commande : tout rattachement
+   * à la société, invitation acceptée ou non, hors compte désactivé (décidé par
+   * Hugo le 2026-11-23). Une méthode à part, pour qu'aucun chemin client ne
+   * puisse la demander par erreur : elle désigne le porteur, n'ouvre aucun accès.
+   */
+  abstract staffEntryRoleOf(userId: string, companyId: string): Promise<OrderRole | null>;
+
+  /**
    * Cette société règle-t-elle **au compte** ? (`none` si elle n'existe pas.)
    *
    * `granted` dès qu'un crédit lui est accordé : c'est alors le régime négocié,

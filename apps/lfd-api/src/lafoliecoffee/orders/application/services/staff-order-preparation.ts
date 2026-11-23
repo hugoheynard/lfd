@@ -18,7 +18,7 @@ import { counterCompanyStatusRefusal } from "./staff-settlement-refusal.js";
 
 /** Ce que la préparation lit, et rien d'autre. */
 export interface StaffOrderPreparationPorts {
-  readonly guard: Pick<OrderGuardReader, "roleOf" | "companyStatusOf">;
+  readonly guard: Pick<OrderGuardReader, "staffEntryRoleOf" | "companyStatusOf">;
   readonly drafting: Pick<OrderDrafting, "draft">;
 }
 
@@ -58,7 +58,9 @@ export async function prepareStaffOrder(
   const { companyId, buyerUserId } = payload;
   // Un 404 non-divulguant, comme sur le chemin client : le back-office a la
   // fiche sous les yeux, il n'a pas besoin d'un message plus bavard.
-  ensureOrderMember(await ports.guard.roleOf(buyerUserId, companyId), companyId);
+  // L'équipe porte la commande à toute personne rattachée à la société, même
+  // sans accès accepté : elle passe dans tous les cas (Hugo, 2026-11-23).
+  ensureOrderMember(await ports.guard.staffEntryRoleOf(buyerUserId, companyId), companyId);
   await ensureCounterLinkCause(ports.guard, payload);
   // L'équipe n'est tenue ni par la fermeture de la boutique à une clientèle,
   // ni par son premier jour commandable : ces dates ouvrent la boutique aux

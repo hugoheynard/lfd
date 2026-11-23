@@ -13,7 +13,7 @@ import type { StandingRole } from "../domain/standing-role.js";
 import { INHERITING_PARENT_ROLES } from "../domain/effective-role.js";
 import { isCompanyClosed } from "../domain/company-closure.js";
 import { openCompanyWhere } from "./open-company.js";
-import { openingMembership } from "./opening-membership.js";
+import { openingMembership, staffBuyerMembership } from "./opening-membership.js";
 
 /** Le seul statut d'un principal qui ouvre ses sites. */
 const ACTIVE = "active";
@@ -71,6 +71,10 @@ export async function readCompanyStanding(
   now: Date,
   userId: string,
   companyId: string,
+  // `staff_entry` : la personne à qui l'équipe PORTE une commande — tout
+  // rattachement non désactivé (`staffBuyerMembership`). Par défaut, la règle
+  // d'accès : accepté, ou invitation vivante.
+  scope: "access" | "staff_entry" = "access",
 ): Promise<CompanyStanding | null> {
   const company = await prisma.company.findUnique({
     where: { id: companyId },
@@ -78,7 +82,10 @@ export async function readCompanyStanding(
       status: true,
       archivedAt: true,
       memberships: {
-        where: { userId, ...openingMembership(now) },
+        where: {
+          userId,
+          ...(scope === "staff_entry" ? staffBuyerMembership() : openingMembership(now)),
+        },
         select: { role: true, acceptedAt: true },
       },
       parentCompany: {

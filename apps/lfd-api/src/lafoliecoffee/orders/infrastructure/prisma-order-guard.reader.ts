@@ -32,6 +32,12 @@ export class PrismaOrderGuardReader extends OrderGuardReader {
     );
   }
 
+  async staffEntryRoleOf(userId: string, companyId: string): Promise<OrderRole | null> {
+    return standingRole(
+      await readCompanyStanding(this.prisma, this.clock.now(), userId, companyId, "staff_entry"),
+    );
+  }
+
   async companyStatusOf(companyId: string): Promise<OrderCompanyStatus | null> {
     const company = await this.prisma.company.findUnique({
       where: { id: companyId },
