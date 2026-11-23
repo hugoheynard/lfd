@@ -176,6 +176,11 @@ faits O-8, et un seuil d'alerte. Pas avant la réponse du cabinet.
 
 ## 4. Décisions de Hugo (2026-11-23)
 
+- **La ligne « offert » qui met tout à zéro** (O-2) est retenue contre une
+  remise de 100 % par article plus la livraison offerte. La TVA facturée est
+  nulle dans les deux cas ; la question de la TVA récupérée sur les achats
+  (§ 3) ne dépend pas de la façon d'arriver à zéro.
+
 - **Pas de deuxième validation**, quel que soit le montant.
 - **Un particulier peut recevoir une commande offerte** : c'est un usage
   attendu (dégustations de mariage, événements), d'où la nature `event`.
