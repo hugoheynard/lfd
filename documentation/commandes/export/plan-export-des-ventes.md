@@ -377,14 +377,14 @@ Documents\Ventes LFD\
 3. **met à jour la base** : pour chaque commande reçue, remplace la commande et
    **toutes** ses lignes (§ 6.3) ; remplace le résumé des jours reçus ; ajoute
    les avoirs par numéro. Ce qui est plus ancien ne bouge pas ;
-4. régénère `ventes.js` (avec la date de mise à jour) et les CSV ;
+4. régénère ventes.js (avec la date de mise à jour) et les CSV ;
 5. écrit une ligne dans `export.log`.
 
 **Un échec s'arrête avant l'étape 3** : base et page gardent la veille, une
 notification Windows nomme la cause (« clé refusée », « API injoignable »,
 « limite atteinte »).
 
-- **`ventes.js`, pas `ventes.json`** : une page `file://` ne peut pas lire un
+- **ventes.js, pas ventes.json** : une page `file://` ne peut pas lire un
   JSON local ; elle peut charger `<script src="ventes.js">`.
 - **CSV au format Excel français** : séparateur `;`, virgule décimale, UTF-8
   avec BOM, en-têtes stables.
@@ -449,7 +449,7 @@ qui reste, et ce qu'il faut décider :
 | **E2** | Table des clés (avec `allowed_ips`), garde `X-Export-Key` qui lit aussi l'IP admise, création et révocation au back-office (faits, clé d'intention), ressource `exports`, entrées du registre RGPD                                                                                                                                                                                                         | `prisma-schema-layout`, `schema-drift`, `no-role-grants-in-migrations`, `write-idempotence`, `rgpd-staff` |
 | **E3** | Route, limite par IP à la passerelle, `@Throttle` ; e2e : clé absente, révoquée, expirée, passée en `Bearer`, IP non admise, période > 31 jours, aucune donnée personnelle dans la réponse, même CA que le cockpit sur un jeu commun ; **étanchéité** : la clé sur toutes les routes → 401/403, un jeton staff ou client sur l'export → refusé ; porte `lint:export-key-guard` ; alerte d'usage inhabituel | `cache-control`, `log-no-email`, la porte neuve (compte du § 10 du CLAUDE.md à monter)                    |
 | **E4** | Écran de création et de révocation des clés (back-office)                                                                                                                                                                                                                                                                                                                                                  | portes du front                                                                                           |
-| **E5** | Le poste de la Direction (§ 6.6) : `export.ps1` (appel, archive, base cumulée, `ventes.js`, CSV, journal, notification, clé DPAPI, planification), `reporting.html` d'exemple, et la notice (`documentation/commandes/export/notice-direction.md`) en deux parties : l'explication simple, puis la technique. Livrés à la Direction, hors du code servi ; éprouvés sur un Windows réel avant remise        | `doc-orphans`                                                                                             |
+| **E5** | Le poste de la Direction (§ 6.6) : `export.ps1` (appel, archive, base cumulée, ventes.js, CSV, journal, notification, clé DPAPI, planification), reporting.html d'exemple, et la notice (une notice-direction.md à créer dans ce dossier) en deux parties : l'explication simple, puis la technique. Livrés à la Direction, hors du code servi ; éprouvés sur un Windows réel avant remise                 | `doc-orphans`                                                                                             |
 
 ## 9. Doutes restants
 
@@ -528,7 +528,29 @@ Tranché au bâti d'E1 (2026-11-23) :
 D2 (l'équation d'une commande `exact_ht`) n'est pas éprouvé : il passe au
 lot E3, sur le jeu de l'e2e.
 
-E0 et E1 sont bâtis ; E2 suit.
+Tranché au bâti d'E2 (2026-11-23) :
+
+- **Les faits** s'appellent `export_key.created` et `export_key.revoked`,
+  rangés dans le module « équipe » du journal.
+- **Rejouer une création** ne rend pas le secret, montré une fois : 409 qui
+  dit de révoquer la clé et d'en créer une autre (`shownOnceReplay`, la
+  convention en place).
+- **Le secret** : 32 octets en base64url, par un port étroit du contexte
+  (`ExportKeySecretSource`) — celui de la plateforme ne rend que 130 bits.
+- **Bornes** : libellé de 120 signes, 20 adresses au plus, adresses comparées
+  exactement (pas de plage CIDR).
+- **Le nom d'une société dans l'export** n'entre pas au registre RGPD : le
+  registre tient les données du staff et des réceptionnaires
+  (`lint:rgpd-staff`), pas celles des clients, et n'a pas de champ « transmise
+  à ». Une entreprise individuelle peut porter le nom d'une personne : la
+  notice le dit, et la question rejoint le traitement des données clients,
+  hors de ce chantier.
+- **Deux lecteurs inscrits aux listes admises de leurs portes** : les noms de
+  familles (`catalogue-door` : hors du devis et du rayon, une famille retirée
+  doit rester nommée) et les sociétés des ventes (`company-archived-views` :
+  un compte supprimé a pu vendre).
+
+E0, E1 et E2 sont bâtis ; E3 suit.
 
 ## 11. Ce que la contradiction a changé
 

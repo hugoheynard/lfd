@@ -5,7 +5,15 @@ import {
   staffOverrideEffectSchema,
   staffResourceSchema,
 } from "../staff-access.js";
-import { fact, payload, retired, subjectLabel, type JournalFactFamily } from "./fact.js";
+import {
+  count,
+  fact,
+  instant,
+  payload,
+  retired,
+  subjectLabel,
+  type JournalFactFamily,
+} from "./fact.js";
 
 /**
  * **L'équipe** — l'annuaire staff et ses rôles. Écrits par les handlers de
@@ -159,4 +167,17 @@ export const TEAM_FACTS = {
       removed: z.array(z.string()),
     }),
   ),
+
+  /**
+   * **Une clé de lecture de l'export des ventes créée** (plan
+   * `documentation/commandes/export/plan-export-des-ventes.md`, § 6.1). Le
+   * sujet est la clé (`export_reader_key`), son lecteur figé `subjectLabel`.
+   * Jamais le secret ni son haché ; les adresses admises sont comptées, pas
+   * citées.
+   */
+  "export_key.created": fact(
+    payload({ subjectLabel: subjectLabel(), expiresAt: instant(), allowedIpCount: count() }),
+  ),
+  /** La clé est révoquée : elle ne sert plus à l'appel suivant. */
+  "export_key.revoked": fact(payload({ subjectLabel: subjectLabel() })),
 } as const satisfies JournalFactFamily;

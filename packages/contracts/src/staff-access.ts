@@ -769,6 +769,15 @@ export const staffResourceSchema = z.enum([
    * Une exception nommée ne dérive pas ; une exception tacite, si.
    */
   "activity",
+  /**
+   * **L'export des ventes** — créer et révoquer les clés de lecture de
+   * l'export (`documentation/commandes/export/plan-export-des-ventes.md`,
+   * § 6.1). `read` : voir les clés, jamais leur secret ; `write` : en créer et
+   * en révoquer. Sans préfixe comme le journal : l'export lit les commandes,
+   * les avoirs et les remboursements à la fois. Ajoutée sans être accordée :
+   * elle s'accorde à l'écran ; la graine ne la donne qu'à l'administrateur.
+   */
+  "exports",
 ]);
 export type StaffResource = z.infer<typeof staffResourceSchema>;
 
@@ -944,6 +953,7 @@ export const STAFF_RESOURCE_LABELS: Readonly<Record<StaffResource, string>> = {
   ops_health: "Santé de l'écosystème",
   ops_post_deploy: "Opérations après déploiement",
   activity: "Journal d'activité",
+  exports: "Export des ventes",
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1160,6 +1170,9 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     // l'administrateur le premier rôle incomplet, et c'est ce qu'un test
     // vérifie explicitement.
     activity: "write",
+    // L'administrateur seul (2026-11-23, plan de l'export des ventes, E2) : en
+    // production, accordée à l'écran.
+    exports: "write",
   },
   commercial: {
     b2b_companies: "write",

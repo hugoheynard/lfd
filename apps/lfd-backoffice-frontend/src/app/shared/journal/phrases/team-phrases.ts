@@ -206,6 +206,24 @@ export const TEAM_PHRASES = {
       ],
       [],
     ),
+  'export_key.created': (fact) =>
+    staff(
+      "Clé de l'export des ventes créée",
+      [
+        text(`${fact.actor} a créé la clé de l'export des ventes `),
+        name(orDash(fact.payload['subjectLabel'])),
+      ],
+      [],
+    ),
+  'export_key.revoked': (fact) =>
+    staff(
+      "Clé de l'export des ventes révoquée",
+      [
+        text(`${fact.actor} a révoqué la clé de l'export des ventes `),
+        name(orDash(fact.payload['subjectLabel'])),
+      ],
+      [],
+    ),
 } as const satisfies Partial<Record<JournalFactType, Phrase>>;
 
 /**

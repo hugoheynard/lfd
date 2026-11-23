@@ -410,4 +410,9 @@ export const STAFF_RESOURCE_SCOPES: Readonly<Record<StaffResource, StaffResource
     read: "Voir le journal d'activité : qui a fait quoi, dans tous les outils à la fois. L'écran vit dans Admin, qui demande aussi Comptes clients en lecture.",
     write: "N'ajoute rien : le journal se lit seulement.",
   },
+  exports: {
+    read: "Voir les clés de lecture de l'export des ventes : leur lecteur, leur échéance, leurs adresses admises et leur révocation — jamais leur secret.",
+    write:
+      "Créer une clé (son secret n'est montré qu'une fois) et la révoquer : la révocation coupe l'export à l'appel suivant.",
+  },
 };

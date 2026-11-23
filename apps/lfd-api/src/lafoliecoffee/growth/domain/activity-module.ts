@@ -173,7 +173,9 @@ const PREFIXES: Readonly<Record<ActivityModule, readonly string[]>> = {
   // lit avec les comptes qu'il touche (2026-09-19).
   comptes: ["user.", "company.", "subscription.", "support.", "feature_access."],
   // L'annuaire staff et ses rôles : qui entre, avec quels droits, et qui l'a décidé.
-  equipe: ["staff_user.", "staff_role.", "staff.notice_audience_"],
+  // Les clés de l'export des ventes (2026-11-23) : qui peut lire de chez
+  // nous, et qui l'a décidé — un accès, comme une fiche de l'équipe.
+  equipe: ["staff_user.", "staff_role.", "staff.notice_audience_", "export_key."],
   // Le fournil : arrêter et reprendre une journée, régler le contenant d'un
   // article (2026-09-19). Les coches d'atelier n'y écrivent rien encore. Le
   // contrôle qualité du superviseur s'y range aussi (2026-09-28, lot QC2) : un

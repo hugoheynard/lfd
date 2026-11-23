@@ -15,6 +15,7 @@ import { PACKING_SCENARIOS } from "./packing-scenarios.js";
 import { PIM_SCENARIOS } from "./pim-scenarios.js";
 import { PRICING_SCENARIOS } from "./pricing-scenarios.js";
 import { PRODUCTION_SCENARIOS } from "./production-scenarios.js";
+import { REPORTING_SCENARIOS } from "./reporting-scenarios.js";
 import { REVIEW_SCENARIOS } from "./review-scenarios.js";
 import type { ScenarioSet } from "./scenario.js";
 import { SETTINGS_SCENARIOS } from "./settings-scenarios.js";
@@ -41,6 +42,7 @@ export const REPLAY_SCENARIOS: ScenarioSet = {
   ...PIM_SCENARIOS,
   ...PRICING_SCENARIOS,
   ...PRODUCTION_SCENARIOS,
+  ...REPORTING_SCENARIOS,
   ...REVIEW_SCENARIOS,
   ...SETTINGS_SCENARIOS,
 };

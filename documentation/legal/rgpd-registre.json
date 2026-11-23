@@ -2493,6 +2493,24 @@
       "information": false
     },
     {
+      "colonne": "public.export_reader_key.created_by_staff_id",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a créé une clé de lecture de l'export des ventes (`export_reader_key`, plan-export-des-ventes.md § 6.1) : qui a ouvert un accès aux ventes hors de chez nous. Conservée tant que la clé existe : une clé se révoque, elle ne se supprime pas.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.export_reader_key.revoked_by_staff_id",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a révoqué une clé de lecture de l'export des ventes (`export_reader_key`, plan-export-des-ventes.md § 6.5). Conservée tant que la clé existe : une clé se révoque, elle ne se supprime pas.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
       "colonne": "public.staff_push_subscriptions.auth",
       "personne": "staff",
       "categorie": "appareil",

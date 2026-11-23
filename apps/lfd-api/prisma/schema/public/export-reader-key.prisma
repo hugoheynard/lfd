@@ -1,0 +1,41 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Les clés de l'export des ventes — contexte `lafoliecoffee/reporting`,
+// `documentation/commandes/export/plan-export-des-ventes.md`, § 6.1 et § 6.5.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// **Une clé de lecture de l'export des ventes**, une par lecteur, jamais
+/// partagée. Seul son haché est gardé : une fuite de la base ne donne aucune
+/// clé utilisable, et le secret en clair n'est montré qu'une fois, à la
+/// création.
+///
+/// Aucune « dernière utilisation » : une lecture n'écrit rien, l'usage se lit
+/// dans les journaux de requête par l'id de l'acteur (`export-reader:<id>`).
+/// Une clé ne se supprime pas : elle se révoque.
+model ExportReaderKey {
+  /// ULID (fourni par l'`IdGenerator`).
+  id    String @id
+  /// Le lecteur, en clair pour le staff (« Direction »).
+  label String
+
+  /// SHA-256 du secret, en hexadécimal minuscule (64 signes). Unique : la
+  /// garde retrouve la clé par son haché.
+  secretHash String @unique @map("secret_hash")
+
+  createdAt        DateTime @map("created_at") @db.Timestamptz(3)
+  /// L'auteur : l'id de SA fiche staff, sans clé étrangère (comme
+  /// `created_by_staff_id` des destinataires des avis).
+  createdByStaffId String   @map("created_by_staff_id")
+
+  /// Obligatoire : une clé oubliée finit par mourir seule.
+  expiresAt DateTime @map("expires_at") @db.Timestamptz(3)
+
+  /// Posés ensemble ou pas du tout (`CHECK export_reader_key_revocation_complete`).
+  revokedAt        DateTime? @map("revoked_at") @db.Timestamptz(3)
+  revokedByStaffId String?   @map("revoked_by_staff_id")
+
+  /// Les adresses admises, en clair (`x-lfc-client-ip`). Vide : toute adresse.
+  allowedIps String[] @default([]) @map("allowed_ips")
+
+  @@map("export_reader_key")
+  @@schema("public")
+}

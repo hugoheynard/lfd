@@ -21,6 +21,7 @@ import type { JournalFactType } from '@lfd/contracts/journal-facts';
  */
 export const KEY_LABELS: Readonly<Record<string, string>> = {
   checkedOn: 'Fiche Chorus vérifiée le',
+  allowedIpCount: 'Adresses admises (0 : toutes)',
   commitmentRequired: 'Numéro d’engagement exigé',
   defaultServiceCode: 'Code service par défaut',
   serviceCodeRequired: 'Code service exigé',

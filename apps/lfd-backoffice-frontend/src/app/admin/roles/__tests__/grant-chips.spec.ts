@@ -147,8 +147,10 @@ describe('grantGroups', () => {
    * `staff_notice_audiences`, les destinataires des avis
    * (payment/les-liens-de-paiement.md, P1c). 79 le 2026-11-23 :
    * `b2b_offer_order`, offrir une commande (commandes/passation/plan-commande-offerte.md).
+   * 80 le même jour : `exports`, les clés de l'export des ventes
+   * (commandes/export/plan-export-des-ventes.md, E2).
    */
   it('compte les domaines du catalogue', () => {
-    expect(RESOURCE_COUNT).toBe(79);
+    expect(RESOURCE_COUNT).toBe(80);
   });
 });

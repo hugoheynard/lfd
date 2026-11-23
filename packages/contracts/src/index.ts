@@ -3550,3 +3550,12 @@ export type {
   StaffNoticeRoleView,
   StaffNoticeTemplate,
 } from "./staff-notice-audience.js";
+export {
+  EXPORT_READER_KEY_IPS_MAX,
+  issueExportReaderKeyPayloadSchema,
+} from "./export-reader-keys.js";
+export type {
+  ExportReaderKeyView,
+  IssueExportReaderKeyPayload,
+  IssuedExportReaderKeyResponse,
+} from "./export-reader-keys.js";
