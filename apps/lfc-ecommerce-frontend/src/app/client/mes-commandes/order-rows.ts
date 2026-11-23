@@ -503,7 +503,15 @@ function paymentOf(order: CustomerOrderView): OrderPayment {
   if (order.settlement === 'shop_till') {
     return 'shop_till';
   }
-  if (order.settlement === 'account' || order.settlement === 'free') {
+  // Une commande offerte se lit comme une commande à total nul : « Mes
+  // commandes » ne liste que les commandes personnelles, et une commande
+  // offerte à un particulier n'existe qu'avec le lot O7 de
+  // `plan-commande-offerte.md`, qui en dira le mot à l'écran.
+  if (
+    order.settlement === 'account' ||
+    order.settlement === 'free' ||
+    order.settlement === 'offered'
+  ) {
     return 'account';
   }
   // Réglée, ou réglée puis remboursée : l'étiquette dit la carte, `refundOf`

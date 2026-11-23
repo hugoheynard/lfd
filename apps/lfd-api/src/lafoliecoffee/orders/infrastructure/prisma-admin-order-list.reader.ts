@@ -30,6 +30,7 @@ const ADMIN_ROW_SELECT = {
   },
   paymentStatus: true,
   settlementVenue: true,
+  offerNature: true,
   fulfillmentMethod: true,
   requestedDeliveryDate: true,
   clientele: true,
@@ -190,7 +191,12 @@ function toAdminRow(row: AdminRow): AdminOrderRow {
         ? (shortfall.reportedAt?.toISOString() ?? null)
         : null,
     paymentStatus: row.paymentStatus,
-    settlement: settlementRegimeOf(row.paymentStatus, row.totalCents, row.settlementVenue),
+    settlement: settlementRegimeOf(
+      row.paymentStatus,
+      row.totalCents,
+      row.settlementVenue,
+      row.offerNature !== null,
+    ),
     fulfillmentMethod: row.fulfillmentMethod,
     fulfillmentDay:
       row.requestedDeliveryDate === null

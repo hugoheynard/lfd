@@ -296,6 +296,14 @@ describe("le régime de règlement du courriel de confirmation", () => {
     expect(html).not.toContain("Réglé en ligne");
   });
 
+  it("🔴 une commande offerte le dit, jamais « porté à votre compte »", () => {
+    const html = render({ sheet: withSettlement("offered") }).html;
+
+    expect(html).toContain("Offerte");
+    expect(html).not.toContain("Porté à votre compte");
+    expect(html).not.toContain("Reste à régler");
+  });
+
   it("un total nul garde le libellé du compte", () => {
     const html = render({ sheet: withSettlement("free") }).html;
 

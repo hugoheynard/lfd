@@ -19,6 +19,8 @@ import {
   type RecurringDeltas,
   recurringDeltasSchema,
 } from "@lfd/contracts";
+import type { OrderOfferReason } from "../domain/value-objects/order-offer.js";
+import { offerReasonOfRow } from "./order-offer.columns.js";
 import { orderPretaxCents } from "@lfd/money";
 import { Injectable } from "@nestjs/common";
 import { z } from "zod";
@@ -119,6 +121,7 @@ export interface OrderRow extends FreeDeliveryRow {
   readonly lines: readonly OrderLineRow[];
   /** Les remises de panier actives, dans l'ordre des rangs (lot M6). */
   readonly discounts: readonly OrderDiscountAmountRow[];
+  readonly offerNature: string | null;
 }
 
 /** Colonnes d'une commande à lire (partagées entreprise / personnel). */
@@ -128,6 +131,7 @@ export const ORDER_SELECT = {
   status: true,
   paymentStatus: true,
   settlementVenue: true,
+  offerNature: true,
   requestedDeliveryDate: true,
   fulfillmentMethod: true,
   deliveryAddressId: true,
@@ -241,6 +245,7 @@ export class PrismaOrderReader extends OrderReader {
         placedByUserId: true,
         stripePaymentIntentId: true,
         offerNature: true,
+        offerNote: true,
         offerNotifiesCustomer: true,
         clientele: true,
         entryOrigin: true,
@@ -267,6 +272,7 @@ export class PrismaOrderReader extends OrderReader {
       stripePaymentIntentId: row.stripePaymentIntentId,
       // Une commande payée prévient toujours ; une offerte, si l'équipe l'a choisi.
       customerNotified: row.offerNature === null || row.offerNotifiesCustomer === true,
+      ...offerOfRow(row),
       clientele: row.clientele,
       entryOrigin: orderEntryOriginOf(row),
       loyaltyVoucherId: row.loyaltyVoucherId,
@@ -560,7 +566,12 @@ export function toOrderView(row: OrderRow, refunds: OrderRefundsReading): OrderV
     orderNumber: row.orderNumber,
     status: row.status,
     paymentStatus: row.paymentStatus,
-    settlement: settlementRegimeOf(row.paymentStatus, row.totalCents, row.settlementVenue),
+    settlement: settlementRegimeOf(
+      row.paymentStatus,
+      row.totalCents,
+      row.settlementVenue,
+      row.offerNature !== null,
+    ),
     requestedDeliveryDate: toIsoDate(row.requestedDeliveryDate),
     fulfillmentMethod: row.fulfillmentMethod,
     deliveryAddressId: row.deliveryAddressId,
@@ -693,4 +704,15 @@ function pickupDiscountBaseFieldOf(row: OrderRow): Pick<OrderView, "pickupDiscou
     })),
   );
   return base === null ? {} : { pickupDiscountBase: base };
+}
+
+/** Le motif relu, étalé : absent pour une commande payée (`exactOptionalPropertyTypes`). */
+function offerOfRow(row: {
+  readonly id: string;
+  readonly offerNature: string | null;
+  readonly offerNote: string | null;
+  readonly offerNotifiesCustomer: boolean | null;
+}): { readonly offer?: OrderOfferReason } {
+  const reason = offerReasonOfRow(row.id, row);
+  return reason === undefined ? {} : { offer: reason };
 }

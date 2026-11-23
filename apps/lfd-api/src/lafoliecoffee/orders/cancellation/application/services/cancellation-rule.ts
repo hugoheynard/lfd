@@ -66,8 +66,12 @@ export class CancellationRule {
   /** L'engagement, demandé seulement pour une commande au compte. */
   private async engagementOf(subject: CancellationSubject): Promise<AccountEngagement | null> {
     if (
-      settlementRegimeOf(subject.paymentStatus, subject.totalCents, subject.settlementVenue) !==
-      "account"
+      settlementRegimeOf(
+        subject.paymentStatus,
+        subject.totalCents,
+        subject.settlementVenue,
+        subject.offered,
+      ) !== "account"
     ) {
       return null;
     }

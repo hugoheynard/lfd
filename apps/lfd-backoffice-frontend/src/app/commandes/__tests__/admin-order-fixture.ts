@@ -12,6 +12,7 @@ export function adminOrder(overrides: Partial<AdminOrderView> = {}): AdminOrderV
     status: 'ready',
     paymentStatus: 'not_required',
     settlement: 'account',
+    offer: null,
     requestedDeliveryDate: '2026-11-24',
     fulfillmentMethod: 'pickup',
     deliveryAddressId: null,

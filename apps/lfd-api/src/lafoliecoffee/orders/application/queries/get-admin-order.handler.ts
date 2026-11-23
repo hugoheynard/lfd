@@ -148,6 +148,7 @@ export class GetAdminOrderHandler implements IQueryHandler<GetAdminOrderQuery, A
       ...owned.view,
       clientele: owned.clientele,
       entryOrigin: owned.entryOrigin,
+      offer: owned.offer ?? null,
       placedBy: {
         customer: author.customer,
         company: author.company,
@@ -253,8 +254,12 @@ function customerNoticeViewOf(
 /** Lot C4 (C4.9) : ce que l'annulation d'une payée rendra — `null` hors carte payée. */
 function refundPreviewOf(subject: CancellationSubject): AdminCancellationRefund | null {
   if (
-    settlementRegimeOf(subject.paymentStatus, subject.totalCents, subject.settlementVenue) !==
-    "paid"
+    settlementRegimeOf(
+      subject.paymentStatus,
+      subject.totalCents,
+      subject.settlementVenue,
+      subject.offered,
+    ) !== "paid"
   ) {
     return null;
   }

@@ -30,6 +30,7 @@ export class PrismaShortfallLetterReader extends ShortfallLetterReader {
         locale: true,
         paymentStatus: true,
         settlementVenue: true,
+        offerNature: true,
         totalCents: true,
         shortfalls: {
           where: { rank: FIRST_SHIPMENT_RANK },
@@ -49,7 +50,12 @@ export class PrismaShortfallLetterReader extends ShortfallLetterReader {
     return {
       reference: row.orderNumber,
       locale: orderLocaleOf(row.locale),
-      settlementRegime: settlementRegimeOf(row.paymentStatus, row.totalCents, row.settlementVenue),
+      settlementRegime: settlementRegimeOf(
+        row.paymentStatus,
+        row.totalCents,
+        row.settlementVenue,
+        row.offerNature !== null,
+      ),
       notified: decision.customerNotifiedAt !== null,
       lines: shortfallLinesOf(lines),
       names: new Map(row.lines.map((line) => [line.sku, line.productNameSnapshot])),

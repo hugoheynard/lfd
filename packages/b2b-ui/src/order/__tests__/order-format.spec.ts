@@ -28,6 +28,13 @@ describe('settlementStatusLabel — une commande à régler à la caisse de la b
     expect(settlementStatusVariant(order)).toBe('neutral');
   });
 
+  it('🔴 dit « Offerte » pour une commande offerte, jamais « au compte »', () => {
+    const order = { paymentStatus: 'not_required', settlement: 'offered' } as const;
+
+    expect(settlementStatusLabel(order)).toBe('Offerte');
+    expect(settlementStatusVariant(order)).toBe('neutral');
+  });
+
   it('garde le libellé du règlement pour toute autre commande', () => {
     expect(settlementStatusLabel({ paymentStatus: 'not_required', settlement: 'account' })).toBe(
       'Au compte — à facturer',

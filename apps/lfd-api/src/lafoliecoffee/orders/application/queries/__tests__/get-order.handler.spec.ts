@@ -349,6 +349,7 @@ describe("GetAdminOrderHandler", () => {
 
     await expect(handler.execute(new GetAdminOrderQuery("ord_1", false))).resolves.toEqual({
       ...VIEW,
+      offer: null,
       clientele: "pro",
       entryOrigin: null,
       placedBy: { customer: CUSTOMER, company: COMPANY, staffName: null },

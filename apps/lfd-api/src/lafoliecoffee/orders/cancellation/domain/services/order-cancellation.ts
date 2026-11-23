@@ -34,6 +34,8 @@ export interface CancellationState {
   readonly totalCents: number;
   /** Où le règlement se fera hors de chez nous — `shop_till`, ou `null`. */
   readonly settlementVenue: SettlementVenue | null;
+  /** Offerte par l'équipe : rien n'est dû ni facturé (`plan-commande-offerte.md`). */
+  readonly offered: boolean;
   /** Le jour de service `AAAA-MM-JJ`, ou `null` (commande sans jour). */
   readonly serviceDay: string | null;
   /** Retrait ou livraison : une livraison inscrite ne se retire pas (plan A1, § 1). */
@@ -78,6 +80,7 @@ export function cancellationStateOf(
     paymentStatus: subject.paymentStatus,
     totalCents: subject.totalCents,
     settlementVenue: subject.settlementVenue,
+    offered: subject.offered,
     serviceDay: subject.serviceDay,
     fulfillmentMethod: subject.fulfillmentMethod,
     cancelledAt: subject.cancelledAt,
@@ -148,8 +151,14 @@ export type CancellableRegime = "free" | "due" | "account" | "paid";
  * n'a aucun engagement à fermer — elle n'est jamais au compte.
  */
 function cancellableRegimeOf(state: CancellationState): CancellableRegime {
-  const regime = settlementRegimeOf(state.paymentStatus, state.totalCents, state.settlementVenue);
-  return regime === "shop_till" ? "free" : regime;
+  const regime = settlementRegimeOf(
+    state.paymentStatus,
+    state.totalCents,
+    state.settlementVenue,
+    state.offered,
+  );
+  // Rien n'a été encaissé chez nous, rien ne sera facturé ni prélevé.
+  return regime === "shop_till" || regime === "offered" ? "free" : regime;
 }
 
 /** La décision : annulable sous tel régime, ou bloquée, et pourquoi. */

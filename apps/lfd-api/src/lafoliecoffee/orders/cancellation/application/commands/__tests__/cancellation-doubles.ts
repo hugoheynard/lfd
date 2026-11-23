@@ -42,6 +42,7 @@ export function cancellationSubject(
     orderNumber: "ORD-0001",
     placedByUserId: "usr_1",
     companyId: null,
+    offered: false,
     fulfillmentMethod: "pickup",
     supply: "planned",
     status: "placed",

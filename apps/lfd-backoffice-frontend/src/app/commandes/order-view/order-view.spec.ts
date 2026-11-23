@@ -112,6 +112,27 @@ const DOCUMENTS = ['app-order-documents-panel'];
 const HISTORY = ['app-order-history-card', 'app-order-revisions-card'];
 
 describe('OrderViewComponent — les onglets', () => {
+  it('🔴 une commande offerte dit son motif à l’équipe, et si le client est prévenu', async () => {
+    const h = await open(
+      '/commandes/ord_9',
+      adminOrder({
+        settlement: 'offered',
+        offer: { nature: 'tasting', note: 'Dégustation du salon', notifyCustomer: false },
+      }),
+    );
+
+    const offer = (h.routeNativeElement as HTMLElement).querySelector('[data-order-offer]');
+    expect(offer?.textContent?.replace(/\s+/gu, ' ').trim()).toBe(
+      'Commande offerte — Dégustation : Dégustation du salon. Le client n’est pas prévenu.',
+    );
+  });
+
+  it('une commande payée ne montre aucun motif d’offre', async () => {
+    const h = await open('/commandes/ord_9', adminOrder());
+
+    expect((h.routeNativeElement as HTMLElement).querySelector('[data-order-offer]')).toBeNull();
+  });
+
   it('range chaque carte dans son onglet, et nulle part ailleurs', async () => {
     const h = await open('/commandes/ord_9', adminOrder({ revision: 1 }));
     const groups: Readonly<Record<string, readonly string[]>> = {

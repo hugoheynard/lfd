@@ -245,8 +245,20 @@ export function revisionOf(
   ensureVoucherCovered(order, state);
   ensureShopTillStaysPickup(order, state.fulfillmentMethod);
   // Le lieu est figé en base à la passation : la composition révisée le garde.
-  const before = settlementRegimeOf(order.paymentStatus, order.totalCents, order.settlementVenue);
-  const after = settlementRegimeOf(state.paymentStatus, state.totalCents, order.settlementVenue);
+  // L'offre se relit sur la commande (`offerCarriedOn`) : avant et après, la même.
+  const offered = order.offer !== undefined;
+  const before = settlementRegimeOf(
+    order.paymentStatus,
+    order.totalCents,
+    order.settlementVenue,
+    offered,
+  );
+  const after = settlementRegimeOf(
+    state.paymentStatus,
+    state.totalCents,
+    order.settlementVenue,
+    offered,
+  );
   if (before === "free" && after !== "free") {
     throw new RevisionRequiresPaymentError(order.orderId, state.totalCents);
   }

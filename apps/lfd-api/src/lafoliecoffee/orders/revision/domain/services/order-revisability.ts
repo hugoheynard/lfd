@@ -89,7 +89,9 @@ export function standingBlockOf(
     return { kind: "order", block: decision.block };
   }
   if (isCardSettlement(subject.paymentStatus, subject.totalCents)) {
-    const unsettled = settlementRegimeOf(subject.paymentStatus, subject.totalCents, null) === "due";
+    // Une carte n'est jamais offerte : la marque de l'offre ne change pas ce tri.
+    const unsettled =
+      settlementRegimeOf(subject.paymentStatus, subject.totalCents, null, false) === "due";
     if (purpose === "request" || unsettled) {
       return { kind: "card_settled", unsettled: purpose === "revise" };
     }
@@ -103,7 +105,8 @@ export function standingBlockOf(
  * qui ne sont jamais une carte (`orders_shop_till_shape`).
  */
 export function isCardSettlement(paymentStatus: PaymentStatus, totalCents: number): boolean {
-  const regime = settlementRegimeOf(paymentStatus, totalCents, null);
+  // Une carte n'est jamais offerte : la marque de l'offre ne change pas ce tri.
+  const regime = settlementRegimeOf(paymentStatus, totalCents, null, false);
   return regime === "due" || regime === "paid";
 }
 

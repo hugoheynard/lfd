@@ -17,6 +17,7 @@ export const CANCELLATION_SUBJECT_SELECT = {
   status: true,
   paymentStatus: true,
   settlementVenue: true,
+  offerNature: true,
   totalCents: true,
   requestedDeliveryDate: true,
   cancelledAt: true,
@@ -39,6 +40,7 @@ interface CancellationSubjectRow {
   readonly cancelledAt: Date | null;
   readonly stripePaymentIntentId: string | null;
   readonly loyaltyVoucherId: string | null;
+  readonly offerNature: string | null;
 }
 
 /**
@@ -60,6 +62,7 @@ export function toCancellationSubject(
     paymentStatus: row.paymentStatus,
     totalCents: row.totalCents,
     settlementVenue: row.settlementVenue,
+    offered: row.offerNature !== null,
     serviceDay:
       row.requestedDeliveryDate === null
         ? null

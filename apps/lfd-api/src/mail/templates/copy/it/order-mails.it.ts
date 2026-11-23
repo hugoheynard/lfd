@@ -14,6 +14,7 @@ export const ORDER_MAILS_IT: OrderMailsCopy = {
       due: "Ancora da pagare",
       account: "Addebitato sul suo conto",
       shopTill: "Da pagare in negozio",
+      offered: "Offerta",
     },
     recapDay: "Giorno",
     recapPickup: "Ritiro",

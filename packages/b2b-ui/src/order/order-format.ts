@@ -89,6 +89,12 @@ export function paymentStatusVariant(status: PaymentStatus): FoldBadgeVariant {
  */
 const SHOP_TILL: Labelled = { label: 'À régler en boutique', variant: 'neutral' };
 
+/**
+ * Une commande offerte par l'équipe est `not_required`, mais elle n'est ni
+ * « au compte » ni « réglée » : rien n'est dû, rien ne sera facturé.
+ */
+const OFFERED: Labelled = { label: 'Offerte', variant: 'neutral' };
+
 /** Ce qu'on lit d'une commande pour dire son règlement. */
 export interface SettlementShown {
   readonly paymentStatus: PaymentStatus;
@@ -96,6 +102,9 @@ export interface SettlementShown {
 }
 
 function settlementShownOf(order: SettlementShown): Labelled {
+  if (order.settlement === 'offered') {
+    return OFFERED;
+  }
   return order.settlement === 'shop_till' ? SHOP_TILL : PAYMENT[order.paymentStatus];
 }
 

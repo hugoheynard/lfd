@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import type { AdminOrderCardIncrease } from "./admin-order-card-increase.js";
+import type { OrderOfferNature } from "./admin-order.js";
 import type { AdminOrderReviewState } from "./order-review.js";
 import type { OrderSaleUnit, OrderView } from "./order.js";
 import type { OrderClientele } from "./order-handover.js";
@@ -23,7 +24,20 @@ export type AdminOrderEntryOrigin = "counter" | "commercial";
  * champ par champ (`toCustomerOrder`, vérifié le 2026-10-12) ; un champ posé ici
  * n'y entre donc pas, et rien n'oblige à y penser.
  */
+/**
+ * Le motif d'une commande offerte, tel que l'équipe le relit sur la fiche :
+ * jamais servi au client (le texte peut nommer une personne).
+ */
+export interface AdminOrderOfferView {
+  readonly nature: OrderOfferNature;
+  readonly note: string;
+  /** Le client reçoit-il les e-mails automatiques de la commande ? */
+  readonly notifyCustomer: boolean;
+}
+
 export interface AdminOrderView extends OrderView {
+  /** Le motif d'une commande offerte par l'équipe, `null` sinon. */
+  readonly offer: AdminOrderOfferView | null;
   /**
    * QUI a commandé, figé à la passation : `pro` ou `public`. `null` = commande
    * d'avant la distinction, jamais rattrapée — l'écran n'affiche alors aucun

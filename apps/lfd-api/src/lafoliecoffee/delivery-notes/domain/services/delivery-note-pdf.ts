@@ -27,6 +27,7 @@ import {
 } from "../../../orders/domain/services/order-sheet-pdf-format.js";
 import {
   PICKUP_DISCOUNT_EXCLUDED_NOTE,
+  OFFERED_NOTE,
   PRETAX_ONLY_NOTE,
   totalRows,
 } from "../../../orders/domain/services/order-sheet-pdf-totals.js";
@@ -290,6 +291,10 @@ function totals(doc: Doc, note: ClientNote, top: number): number {
   }
   if (note.variant === "pro" && note.money.settlement === "account") {
     put(doc, PRETAX_ONLY_NOTE, blockLeft, y, { size: 9 });
+    y += 5 * MM;
+  }
+  if (note.money.settlement === "offered") {
+    put(doc, OFFERED_NOTE, blockLeft, y, { size: 9 });
     y += 5 * MM;
   }
   return y;

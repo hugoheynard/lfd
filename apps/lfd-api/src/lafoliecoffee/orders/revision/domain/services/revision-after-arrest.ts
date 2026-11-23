@@ -24,18 +24,22 @@ export const QUANTITIES_ONLY_NOTE =
   "pour retirer un article, laissez-en 1 ou annulez la commande.";
 
 /**
- * § 7 : l'équipe, et une commande sans carte à suivre — au compte (`account`)
- * ou à régler à la caisse de la boutique (`shop_till`, dont la caisse
- * encaisse le total du jour du retrait). Rien d'autre.
+ * § 7 : l'équipe, et une commande sans carte à suivre — au compte (`account`),
+ * à régler à la caisse de la boutique (`shop_till`, dont la caisse encaisse le
+ * total du jour du retrait), ou offerte (`offered`, rien n'est dû). Rien d'autre.
  */
 export function quantitiesAfterArrestAllowed(
   actorKind: "customer" | "staff",
   paymentStatus: PaymentStatus,
   totalCents: number,
   venue: SettlementVenue | null,
+  offered: boolean,
 ): boolean {
-  const regime = settlementRegimeOf(paymentStatus, totalCents, venue);
-  return actorKind === "staff" && (regime === "account" || regime === "shop_till");
+  const regime = settlementRegimeOf(paymentStatus, totalCents, venue, offered);
+  return (
+    actorKind === "staff" &&
+    (regime === "account" || regime === "shop_till" || regime === "offered")
+  );
 }
 
 /** Ce que la règle lit d'une révision : ses changements et sa composition (un `OrderRevisionToSave`). */

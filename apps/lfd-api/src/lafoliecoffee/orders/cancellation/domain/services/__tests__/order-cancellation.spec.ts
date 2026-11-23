@@ -19,6 +19,7 @@ function state(overrides: Partial<CancellationState> = {}): CancellationState {
     status: "placed",
     paymentStatus: "pending",
     settlementVenue: null,
+    offered: false,
     totalCents: 2_110,
     serviceDay: "2026-10-13",
     fulfillmentMethod: "pickup",

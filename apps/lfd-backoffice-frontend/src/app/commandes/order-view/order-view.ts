@@ -9,10 +9,11 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import type { AdminOrderView } from '@lfd/contracts';
+import { orderOfferNatureLabel, type AdminOrderView } from '@lfd/contracts';
 import { OrderDetail, OrderDetailHead } from '@lfd/b2b-ui/order';
 import {
   FoldButtonComponent,
+  FoldCalloutComponent,
   FoldEmptyStateComponent,
   FoldLoadingStateComponent,
   FoldPanelHostService,
@@ -70,6 +71,7 @@ type LoadState = 'loading' | 'ready' | 'error';
   imports: [
     OrderDocumentsPanel,
     FoldButtonComponent,
+    FoldCalloutComponent,
     FoldLoadingStateComponent,
     FoldEmptyStateComponent,
     FoldTabPanelComponent,
@@ -128,6 +130,8 @@ export class OrderViewComponent {
   readonly tabBar = input<FoldTabsComponent<OrderViewTab> | null>(null);
 
   protected readonly tabs = ORDER_VIEW_TABS;
+  /** « Dégustation », « Événement »… — le libellé d'une nature d'offre. */
+  protected readonly offerNatureLabel = orderOfferNatureLabel;
   protected readonly tabState = injectOrderViewTab();
   private readonly ownBar = viewChild<FoldTabsComponent<OrderViewTab>>('ownBar');
   /** La barre à laquelle les panneaux s'accrochent : celle de la page, ou la sienne. */

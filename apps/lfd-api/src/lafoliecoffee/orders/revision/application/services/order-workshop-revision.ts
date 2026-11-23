@@ -71,6 +71,7 @@ export class OrderWorkshopRevision {
       current.paymentStatus,
       current.totalCents,
       current.settlementVenue,
+      current.offer !== undefined,
     );
     const quantities = eligible && isQuantitiesOnly(current.lines, revision);
     const outcome = await this.bakery.note(

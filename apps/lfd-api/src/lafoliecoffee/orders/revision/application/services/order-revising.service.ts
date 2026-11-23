@@ -208,6 +208,7 @@ export class OrderRevising {
         order.paymentStatus,
         order.totalCents,
         order.settlementVenue,
+        order.offer !== undefined,
       );
     const block = standingBlockOf(
       quantities ? { cancellable: true, regime: "account" } : decision,
@@ -560,6 +561,7 @@ function subjectOf(order: RevisableOrder) {
     paymentStatus: order.paymentStatus,
     totalCents: order.totalCents,
     settlementVenue: order.settlementVenue,
+    offered: order.offer !== undefined,
     serviceDay: order.serviceDay,
     cancelledAt: order.cancelledAt,
     stripePaymentIntentId: order.stripePaymentIntentId,

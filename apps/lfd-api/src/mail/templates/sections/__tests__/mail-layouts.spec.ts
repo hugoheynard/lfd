@@ -42,6 +42,8 @@ const NOT_SHOWN_AS_TEXT = new Set([
   "customer.order-placed|recapDiscountBase",
   // Le libellé d'une commande à régler en boutique : `order-placed-mail.spec.ts` le rend.
   "customer.order-placed|totalLabel.shopTill",
+  // Le libellé d'une commande offerte : `order-placed-mail.spec.ts` le rend.
+  "customer.order-placed|totalLabel.offered",
   // La livraison offerte au récapitulatif : `free-delivery-mail-row.spec.ts`
   // la rend, aucun cas de l'empreinte n'en porte.
   "customer.order-placed|recapFreeDelivery",

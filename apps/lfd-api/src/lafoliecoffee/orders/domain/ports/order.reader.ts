@@ -7,6 +7,7 @@ import type {
   SheetCustomer,
 } from "@lfd/contracts";
 
+import type { OrderOfferReason } from "../value-objects/order-offer.js";
 import type { OrderRevisionStamp } from "../services/order-sheet.js";
 import type { OrderEntryOrigin } from "../value-objects/order-supply.js";
 
@@ -35,6 +36,12 @@ export interface OwnedOrder {
    * Se lit par {@link isCustomerNotified}.
    */
   readonly customerNotified?: boolean;
+  /**
+   * Le motif d'une commande offerte, absent sinon. Hors `OrderView` : seule
+   * la fiche du back-office le lit, le client ne le voit jamais (le texte peut
+   * nommer une personne).
+   */
+  readonly offer?: OrderOfferReason;
   /**
    * La clientèle **figée** à la passation, ou `null` pour une commande d'avant
    * la distinction. Hors `OrderView` : l'abandon en a besoin AVANT d'appeler

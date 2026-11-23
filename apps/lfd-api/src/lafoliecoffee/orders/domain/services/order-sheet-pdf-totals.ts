@@ -42,6 +42,12 @@ export interface TotalRow {
 export const PRETAX_ONLY_NOTE = "TVA et TTC sur la facture du mois.";
 
 /**
+ * La mention d'une commande offerte par l'équipe, sous ses totaux nuls : rien
+ * n'est dû, et aucune facture ne viendra (`plan-commande-offerte.md`).
+ */
+export const OFFERED_NOTE = "Commande offerte — sans facturation.";
+
+/**
  * La mention qui explique l'astérisque d'une ligne exclue de la remise de
  * retrait — écrite une fois, au pied du bon (lot C).
  */

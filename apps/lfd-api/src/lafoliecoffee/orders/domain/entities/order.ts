@@ -483,6 +483,7 @@ export class Order {
       this.payment.status,
       this.drafted.totalCents,
       this.settlementVenueValue,
+      this.offerValue !== null,
     );
   }
 

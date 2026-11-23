@@ -60,6 +60,20 @@
           >
             <!-- Le contact, en tête du rail : la personne à rappeler, d'un geste. -->
             <app-order-placed-by asideTop [order]="o" />
+            <!-- Une commande offerte : le motif, que le client ne voit jamais. -->
+            @if (o.offer; as offer) {
+              <div asideTop>
+                <fold-callout variant="info" data-order-offer>
+                  <strong>Commande offerte</strong> — {{ offerNatureLabel(offer.nature) }} :
+                  {{ offer.note }}.
+                  {{
+                    offer.notifyCustomer
+                      ? 'Le client est prévenu par e-mail.'
+                      : 'Le client n’est pas prévenu.'
+                  }}
+                </fold-callout>
+              </div>
+            }
             <!-- La vérification d'une commande pro passée par le client seul : rien hors de ce périmètre. -->
             <app-order-review-card asideTop [order]="o" (changed)="load()" />
 

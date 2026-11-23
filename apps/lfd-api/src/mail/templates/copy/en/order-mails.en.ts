@@ -14,6 +14,7 @@ export const ORDER_MAILS_EN: OrderMailsCopy = {
       due: "Left to pay",
       account: "Charged to your account",
       shopTill: "To pay at the shop",
+      offered: "On the house",
     },
     recapDay: "Day",
     recapPickup: "Pickup",

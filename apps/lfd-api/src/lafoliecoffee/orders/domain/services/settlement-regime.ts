@@ -13,6 +13,8 @@ const DUE: ReadonlySet<PaymentStatus> = new Set<PaymentStatus>(["pending", "fail
  *   (`failed`) ;
  * - `paid` — encaissé par carte (`refunded` en descend : il a été payé) ;
  * - `free` — total nul, rien à régler ;
+ * - `offered` — offerte par l'équipe (`offer_nature` posée) : son total est nul
+ *   comme `free`, mais c'est une décision tracée, pas un panier tombé à zéro ;
  * - `shop_till` — notée au comptoir pour un particulier, à régler à la caisse
  *   de la boutique. Son `paymentStatus` est `not_required`, comme une commande
  *   au compte : c'est le LIEU (`settlement_venue`, figé en base à la passation)
@@ -43,7 +45,11 @@ export function settlementRegimeOf(
   paymentStatus: PaymentStatus,
   totalCents: number,
   venue: SettlementVenue | null,
+  offered: boolean,
 ): SettlementRegime {
+  if (offered) {
+    return "offered";
+  }
   if (venue === "shop_till") {
     return "shop_till";
   }
