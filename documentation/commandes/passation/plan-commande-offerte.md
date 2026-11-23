@@ -4,7 +4,7 @@
 2026-11-23 : « l'équipe passe une commande offerte depuis le back-office ».
 Contredit par `vitruve` le 2026-11-23 : cinq bloquants sur la première version
 (une remise de panier « offerte »), tous levés par le changement de forme du
-§ 2.2. Ce qui reste ouvert est au § 3.
+§ 2.2. Les questions comptables sont au § 3 ; elles ne bloquent rien.
 
 ---
 
@@ -27,7 +27,7 @@ retranche exactement ce total, taux de TVA par taux de TVA. Trois raisons :
 
 1. la comptabilité doit pouvoir dire combien on a offert, à qui et pourquoi ;
 2. au-delà d'un certain montant offert à une même personne dans l'année, la TVA
-   déjà déduite doit être reversée (§ 3, question au cabinet) ;
+   déjà déduite devrait être reversée — pour le moment on ne reverse rien, la question est notée au § 3 ;
 3. une commande offerte « à 0 € » sans trace de sa valeur cacherait la décision
    prise, ce qu'on refuse pour toute exception de l'équipe.
 
@@ -97,7 +97,7 @@ droit s'accorde à l'écran des rôles, comme tous les autres.
 | O-5  | Motif obligatoire : nature du registre `ORDER_OFFER_NATURES` (`tasting`, `event`, `goodwill`, `replacement`, `sample`) et texte court.                                                                                                                                                            | Distinct de `FREE_CHARGE_NATURES`, qui qualifie un encaissement sans commande : les deux registres répondent à deux questions et divergeront.                                        |
 | O-6  | Nouveau droit `b2b_offer_order` : valeur de `StaffResource` par migration, **jamais accordée par elle**, inscrite dans `staff-access.ts` et `staff-resource-scopes.ts`. `staffSettlementRefusal` refuse `offered` sans ce droit.                                                                  | Règle du § 3 de `CLAUDE.md`, porte `lint:no-role-grants-in-migrations`. La garde vit dans le refus existant, pas à côté.                                                             |
 | O-7  | **Révision.** Une commande offerte reste offerte : la révision recompose comme toute révision et recalcule la ligne d'offre (O-2), donc le total reste 0. Elle refuse de rendre offerte une commande qui ne l'était pas, et l'inverse.                                                            | Changer qui paie après coup est une autre décision : annulation, puis nouvelle saisie.                                                                                               |
-| O-8  | Fait `lfc.orders.order_offered` à la passation, **et** `lfc.orders.order_offer_revalued` à chaque révision ou annulation qui change la valeur offerte, avec la valeur par taux après le geste.                                                                                                    | Le cumul par bénéficiaire (Q-O2) se lit sur le dernier fait de chaque commande, jamais sur une valeur périmée.                                                                       |
+| O-8  | Fait `lfc.orders.order_offered` à la passation, **et** `lfc.orders.order_offer_revalued` à chaque révision ou annulation qui change la valeur offerte, avec la valeur par taux après le geste.                                                                                                    | Le cumul par bénéficiaire (§ 3) se lit sur le dernier fait de chaque commande, jamais sur une valeur périmée.                                                                        |
 | O-9  | **Les lecteurs qui comptent des achats écartent les commandes offertes** (`offer_nature IS NULL`) : audiences, chiffre d'affaires et panier moyen, habituels et « acheté avec ». La fidélité aussi, si elle crédite `not_required` (à vérifier au lot O4).                                        | Une dégustation offerte à un prospect ne le fait pas basculer en client actif, ni n'apprend ses « habituels ».                                                                       |
 | O-10 | E-mail de commande passée : « offerte » à la place du montant à régler, sans prix. Bon de livraison : mention « Commande offerte — sans facturation ». Back-office : libellé « Offerte » et motif sur la fiche.                                                                                   | Le client n'a rien à faire. La valeur offerte est un document interne.                                                                                                               |
 
@@ -129,15 +129,50 @@ Il n'est pas créé par ce plan. Il se ferme à part, avec un test de régressio
 
 ---
 
-## 3. Questions ouvertes
+## 3. Les questions comptables — notées, non bloquantes
 
-- **Q-O2 (cabinet).** Un bien offert à un client professionnel est un cadeau :
-  la TVA déduite sur ce qu'il a coûté doit être reversée, sauf pour les cadeaux
-  de faible valeur (seuil annuel par bénéficiaire, 73 € TTC selon le BOFiP, à
-  vérifier). Faut-il suivre ce cumul par bénéficiaire et par année civile, et
-  qui passe l'écriture ? Les faits O-8 portent de quoi le calculer.
-- **Q-O3 (cabinet).** Un échantillon ou une dégustation suit-il le même régime
-  qu'un cadeau ? Le registre O-5 les distingue au cas où la réponse serait non.
+**Décidé par Hugo le 2026-11-23 : on ne reverse aucune TVA pour le moment.**
+Ces questions ne retiennent aucun lot. Elles sont écrites pour que la
+réflexion ne se perde pas, et pour que le jour où le cabinet répondra, les
+données soient déjà là : les faits O-8 gardent, pour chaque commande offerte,
+le bénéficiaire, la nature et la valeur par taux après le dernier geste.
+
+Rien dans ce chantier ne calcule, ne déclare ni ne passe d'écriture de TVA
+sur les cadeaux.
+
+### 3.1 La TVA sur les biens offerts
+
+Ce que l'on croit savoir, **à faire confirmer par le cabinet** :
+
+- un bien remis sans contrepartie n'est pas une vente, donc pas de TVA
+  collectée sur la commande offerte (d'où le total à 0) ;
+- en revanche, la TVA **déduite** à l'achat de ce qui a servi à le fabriquer
+  (matières, emballages) n'est en principe pas déductible pour un cadeau, et
+  devrait être reversée ;
+- sauf pour les **cadeaux de faible valeur** : un plafond annuel par
+  bénéficiaire, 73 € TTC selon le BOFiP (valeur à vérifier) ;
+- les **échantillons** commerciaux suivent en principe un régime à part.
+
+### 3.2 Les questions à poser
+
+- **Q-C1.** Le seuil de faible valeur s'apprécie-t-il sur la valeur de vente
+  (ce que les faits O-8 portent) ou sur le coût de revient (que le dépôt ne
+  connaît pas aujourd'hui) ?
+- **Q-C2.** Faut-il suivre le cumul par bénéficiaire et par année civile, et
+  qui est le bénéficiaire : la société, ou la personne pour un particulier ?
+- **Q-C3.** Une dégustation, un événement, un échantillon, un remplacement
+  après réclamation : lesquels sont des cadeaux au sens fiscal ? Un
+  remplacement est peut-être l'exécution de la vente d'origine plutôt qu'un
+  don. Le registre O-5 les distingue déjà, pour pouvoir répondre par nature.
+- **Q-C4.** Qui passe l'écriture (compte de cadeaux à la clientèle, reversement
+  de TVA), à quelle fréquence, et faut-il un état que la comptabilité exporte ?
+- **Q-C5.** Une commande offerte à un particulier se traite-t-elle comme une
+  dégustation commerciale ou comme un don ?
+
+### 3.3 Ce qu'il faudrait bâtir si la réponse l'exige
+
+Un état annuel « valeur offerte par bénéficiaire et par nature », lu sur les
+faits O-8, et un seuil d'alerte. Pas avant la réponse du cabinet.
 
 ## 4. Décisions de Hugo (2026-11-23)
 
