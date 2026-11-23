@@ -91,5 +91,32 @@
         </div>
       </div>
     }
+
+    @let own = ownLimits();
+    @if (own.length > 0) {
+      <div class="col">
+        <strong>Produits qui ont leur propre limite</strong>
+        @if (parentHasLimit()) {
+          <small class="hint">
+            Comparées à la limite de cette famille seulement : une famille au-dessus en porte aussi
+            une, et la plus stricte de toutes s'applique.
+          </small>
+        }
+        <ul class="exclusions" aria-label="Produits qui ont leur propre limite">
+          @for (item of own; track item.id) {
+            <li class="own">
+              <a [routerLink]="['/pim/produits', item.id]">{{ item.label }}</a>
+              <span>{{ item.limit }}</span>
+              @if (item.standing !== 'none') {
+                <fold-badge [content]="item.badge.text" [variant]="item.badge.variant" />
+              }
+              @if (item.standing === 'overridden') {
+                <small class="hint">Pour l'assouplir, exclure le produit de la famille.</small>
+              }
+            </li>
+          }
+        </ul>
+      </div>
+    }
   }
 </div>

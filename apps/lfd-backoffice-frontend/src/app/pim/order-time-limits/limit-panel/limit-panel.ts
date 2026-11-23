@@ -8,7 +8,12 @@ import {
   signal,
   untracked,
 } from '@angular/core';
-import type { OrderTimeLimitPayload, OrderTimeLimitView } from '@lfd/pim-contracts';
+import {
+  explainOrderTimeLimit,
+  type EffectiveOrderTimeLimitView,
+  type OrderTimeLimitPayload,
+  type OrderTimeLimitView,
+} from '@lfd/pim-contracts';
 import {
   FoldButtonComponent,
   FoldCalloutComponent,
@@ -23,7 +28,8 @@ import { NotifyService } from '../../../notify.service';
 import { CategoryStore } from '../../catalogue/category-store';
 import { ProductListStore } from '../../catalogue/product-list-store';
 import { OrderTimeLimitsService } from '../order-time-limits.service';
-import { daysPhrase } from '../limit-format';
+import { compareToFamily } from '../../catalogue/category-form/form-sections/order-limit/product-limits-in-family';
+import { daysPhrase, limitPhrase } from '../limit-format';
 
 /** Les deux portées que le référentiel pose : un produit, ou une famille. */
 export type LimitScopeType = 'product' | 'category';
@@ -220,7 +226,76 @@ export class LimitPanel {
       : `Commander au plus tard ${daysPhrase(Number(this.daysBefore())).toLowerCase()}, avant ${this.time()}. Passé cette heure, la commande est refusée.`,
   );
 
+  /** La lignée du produit visé et les limites qui la portent, ou `null`. */
+  private readonly effective = signal<EffectiveOrderTimeLimitView | null>(null);
+
+  /** Le produit visé, quand la portée est un produit. */
+  private readonly productId = computed(() => {
+    const scope = this.scope();
+    return scope?.type === 'product' ? scope.id : null;
+  });
+
+  /**
+   * La limite saisie est-elle sans effet, parce qu'une famille de la lignée
+   * qui ne l'exclut pas est au moins aussi stricte ? On compare à la plus
+   * stricte de ces familles. Un avertissement, pas un refus.
+   */
+  protected readonly overriddenBy = computed(() => {
+    const effective = this.effective();
+    const productId = this.productId();
+    const time = this.time().trim();
+    if (
+      effective === null ||
+      productId === null ||
+      effective.productId !== productId ||
+      time === ''
+    ) {
+      return null;
+    }
+    const families = effective.rules
+      .filter(
+        (item) =>
+          item.rule.scope.type === 'category' && !item.excludesProduct && !item.rule.archived,
+      )
+      .map((item) => item.rule);
+    const strictest = explainOrderTimeLimit(families, {
+      variantId: null,
+      productId,
+      categoryPath: effective.lineage.map((family) => family.id),
+    });
+    const family = families.find((rule) => rule.scope.id === strictest?.from.id);
+    if (family === undefined || strictest === null) {
+      return null;
+    }
+    const standing = compareToFamily(
+      { daysBefore: Number(this.daysBefore()), time },
+      family,
+      productId,
+      strictest.from.id,
+    );
+    if (standing !== 'overridden' && standing !== 'equal') {
+      return null;
+    }
+    const name =
+      family.scopeLabel ??
+      effective.lineage.find((item) => item.id === strictest.from.id)?.label ??
+      strictest.from.id;
+    const limit = limitPhrase(family);
+    return { name, limit: limit.charAt(0).toLowerCase() + limit.slice(1) };
+  });
+
   constructor() {
+    // La lignée du produit visé, relue quand la cible change : à l'ouverture
+    // depuis une fiche, ou au choix du produit depuis la page des limites.
+    effect(() => {
+      const productId = this.productId();
+      untracked(() => {
+        this.effective.set(null);
+        if (productId !== null) {
+          void this.loadEffective(productId);
+        }
+      });
+    });
     // Les listes de choix ne se chargent que si l'on choisit ici. `untracked` :
     // l'état du chargement ne doit pas relancer l'effet, sans quoi un échec
     // relirait en boucle.
@@ -243,6 +318,18 @@ export class LimitPanel {
       this.time.set(rule.time ?? '');
       this.staffMayExceed.set(rule.staffMayExceed);
     });
+  }
+
+  private async loadEffective(productId: string): Promise<void> {
+    try {
+      const view = await this.api.effective(productId);
+      if (this.productId() === productId) {
+        this.effective.set(view);
+      }
+    } catch {
+      // Sans la lignée, pas d'avertissement : il n'est qu'un conseil, la
+      // pose reste permise et le serveur résout la limite de toute façon.
+    }
   }
 
   protected onScopeType(value: LimitScopeType): void {

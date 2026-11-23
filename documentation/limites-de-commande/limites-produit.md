@@ -101,7 +101,15 @@ idempotents : rejoués, ils n'écrivent rien.
   « Poser une limite » fait choisir la portée ; une ligne de famille déplie ses
   produits exclus, chacun réintégrable.
 - **Fiche famille** : une carte « Limite de commande » (poser, modifier,
-  archiver, restaurer, exclure un produit de la famille, réintégrer).
+  archiver, restaurer, exclure un produit de la famille, réintégrer). Elle
+  liste aussi les produits de la famille qui ont leur propre limite, et ce
+  qu'elle devient face à celle de la famille : plus stricte (elle
+  s'applique), sans effet (la famille est plus stricte — exclure le produit
+  pour l'assouplir), égale, ou exclu. Elle ne compare qu'à cette famille, et
+  dit si une famille parente pose aussi une limite.
+- **Panneau de pose d'une limite de produit** : pendant la saisie, un
+  avertissement dit quand la limite est sans effet parce qu'une famille de la
+  lignée est aussi stricte ou plus stricte. Ce n'est pas un refus.
 - **Fiche produit** : la limite effective et sa provenance (« … — famille
   Gâteaux » ou « … — limite propre du produit »), si l'équipe peut passer
   outre, une case « Exclure de la limite de la famille X » par famille limitée

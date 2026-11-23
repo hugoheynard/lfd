@@ -8,9 +8,11 @@ import {
   signal,
   untracked,
 } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { httpErrorCode } from '@lfd/endpoints';
 import type { OrderTimeLimitListItem } from '@lfd/pim-contracts';
 import {
+  FoldBadgeComponent,
   FoldButtonComponent,
   FoldCalloutComponent,
   FoldListboxComponent,
@@ -25,6 +27,25 @@ import { OrderTimeLimitsService } from '../../../../order-time-limits/order-time
 import { CategoryStore } from '../../../category-store';
 import { ProductListStore } from '../../../product-list-store';
 import { excludableProducts } from './family-descendants';
+import {
+  hasParentFamilyLimit,
+  productLimitsInFamily,
+  type ProductLimitStanding,
+} from './product-limits-in-family';
+
+/** Ce que devient la limite propre d'un produit, dit à l'équipe. */
+const STANDING_LABELS: Readonly<
+  Record<
+    ProductLimitStanding,
+    { readonly text: string; readonly variant: 'success' | 'warning' | 'neutral' | 'info' }
+  >
+> = {
+  stricter: { text: "Plus stricte : c'est elle qui s'applique", variant: 'success' },
+  overridden: { text: 'Sans effet : la famille est plus stricte', variant: 'warning' },
+  equal: { text: 'Égale à celle de la famille', variant: 'neutral' },
+  excluded: { text: "Exclu : sa propre limite s'applique", variant: 'info' },
+  none: { text: '', variant: 'neutral' },
+};
 
 /**
  * **Limite de commande de la famille** — la poser, la modifier, l'archiver, la
@@ -43,7 +64,13 @@ import { excludableProducts } from './family-descendants';
 @Component({
   selector: 'app-category-order-limit',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldButtonComponent, FoldCalloutComponent, FoldListboxComponent],
+  imports: [
+    FoldBadgeComponent,
+    FoldButtonComponent,
+    FoldCalloutComponent,
+    FoldListboxComponent,
+    RouterLink,
+  ],
   templateUrl: './category-order-limit.html',
   styleUrl: './category-order-limit.scss',
 })
@@ -98,6 +125,32 @@ export class CategoryOrderLimit {
       }))
       .sort((a, b) => a.label.localeCompare(b.label, 'fr'));
   });
+
+  /**
+   * Les produits de la descendance qui ont leur propre limite, comparée à
+   * celle de CETTE famille seulement (en vigueur : une limite archivée ne
+   * compare rien).
+   */
+  protected readonly ownLimits = computed(() =>
+    productLimitsInFamily(
+      this.rules(),
+      this.products.products(),
+      this.categories.items(),
+      this.familyId(),
+    )
+      .map((item) => ({
+        id: item.product.id,
+        label: `${item.product.name.fr ?? item.product.sku} — ${item.product.sku}`,
+        limit: limitPhrase(item.rule),
+        standing: item.standing,
+        badge: STANDING_LABELS[item.standing],
+      }))
+      .sort((a, b) => a.label.localeCompare(b.label, 'fr')),
+  );
+
+  protected readonly parentHasLimit = computed(() =>
+    hasParentFamilyLimit(this.rules(), this.categories.items(), this.familyId()),
+  );
 
   constructor() {
     effect(() => {

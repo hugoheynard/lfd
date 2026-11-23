@@ -30,3 +30,14 @@
   justify-content: space-between;
   gap: var(--fold-space-md);
 }
+
+.own {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-xs) var(--fold-space-md);
+}
+
+.hint {
+  color: var(--fold-color-text-muted);
+}

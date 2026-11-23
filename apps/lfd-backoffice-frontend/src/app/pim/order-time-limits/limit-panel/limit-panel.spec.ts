@@ -1,6 +1,10 @@
 import { signal } from '@angular/core';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
-import type { OrderTimeLimitPayload, OrderTimeLimitView } from '@lfd/pim-contracts';
+import type {
+  EffectiveOrderTimeLimitView,
+  OrderTimeLimitPayload,
+  OrderTimeLimitView,
+} from '@lfd/pim-contracts';
 import { By } from '@angular/platform-browser';
 import { FoldListboxComponent, FoldPanelRef } from 'fold-ng';
 import { describe, expect, it } from 'vitest';
@@ -29,6 +33,12 @@ const RULE: OrderTimeLimitView = {
 
 class FakeApi {
   readonly sent: OrderTimeLimitPayload[] = [];
+  lineage: EffectiveOrderTimeLimitView | null = null;
+  effective(productId: string): Promise<EffectiveOrderTimeLimitView> {
+    return this.lineage === null
+      ? Promise.reject(new Error('absent'))
+      : Promise.resolve({ ...this.lineage, productId });
+  }
   set(payload: OrderTimeLimitPayload): Promise<{ id: string }> {
     this.sent.push(payload);
     return Promise.resolve({ id: 'l1' });
@@ -203,5 +213,70 @@ describe('LimitPanel — la portée famille', () => {
     fixture.detectChanges();
     await fixture.whenStable();
     expect(text(fixture)).toContain('3 produits restent exclus');
+  });
+});
+
+describe('LimitPanel — une limite de produit sans effet face à sa famille', () => {
+  const lineage = (excludesProduct: boolean): EffectiveOrderTimeLimitView => ({
+    productId: 'p1',
+    lineage: [
+      { id: 'f1', label: 'Gâteaux' },
+      { id: 'f0', label: 'Pâtisserie' },
+    ],
+    rules: [
+      {
+        rule: {
+          ...FAMILY_RULE,
+          archived: false,
+          excludedProductIds: excludesProduct ? ['p1'] : [],
+        },
+        excludesProduct,
+      },
+    ],
+    explained: null,
+  });
+
+  async function typed(
+    days: string,
+    time: string,
+    excludesProduct = false,
+  ): Promise<ComponentFixture<LimitPanel>> {
+    const api = new FakeApi();
+    api.lineage = lineage(excludesProduct);
+    const { fixture } = await render({ scope: PRODUCT, label: 'Bûche', rule: null }, api);
+    const listbox = fixture.debugElement.query(By.directive(FoldListboxComponent));
+    (listbox.componentInstance as FoldListboxComponent<string>).selectionChange.emit(days);
+    const input = (fixture.nativeElement as HTMLElement).querySelector(
+      'input[type="time"]',
+    ) as HTMLInputElement;
+    input.value = time;
+    input.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    return fixture;
+  }
+
+  it('avertit pendant la saisie quand la famille est plus stricte, sans bloquer', async () => {
+    const fixture = await typed('1', '18:00');
+    expect(text(fixture)).toContain("Sans effet : la famille Gâteaux impose l'avant-veille, 12:00");
+    expect(text(fixture)).toContain('excluez-le de la limite de la famille');
+    const buttons = (fixture.nativeElement as HTMLElement).querySelectorAll('button');
+    expect((buttons[buttons.length - 1] as HTMLButtonElement).disabled).toBe(false);
+  });
+
+  it('avertit aussi quand elle est égale', async () => {
+    const fixture = await typed('2', '12:00');
+    expect(text(fixture)).toContain('Sans effet');
+  });
+
+  it('se tait quand la limite du produit est plus stricte', async () => {
+    const fixture = await typed('3', '18:00');
+    expect(text(fixture)).not.toContain('Sans effet');
+  });
+
+  it('se tait quand le produit est exclu de la famille', async () => {
+    const fixture = await typed('1', '18:00', true);
+    expect(text(fixture)).not.toContain('Sans effet');
   });
 });

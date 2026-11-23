@@ -57,6 +57,13 @@
     <input type="time" [value]="time()" (change)="onTime($event)" />
   </label>
 
+  @if (overriddenBy(); as family) {
+    <fold-callout variant="warning">
+      Sans effet&nbsp;: la famille <strong>{{ family.name }}</strong> impose {{ family.limit }}.
+      Pour assouplir ce produit, excluez-le de la limite de la famille.
+    </fold-callout>
+  }
+
   <fold-checkbox
     label="L'équipe peut passer outre cette limite"
     hint="Une personne qui a le droit pourra saisir pour un client après cette limite, avec un motif. L'heure limite générale reste opposée."

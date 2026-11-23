@@ -2,6 +2,7 @@ import { signal } from '@angular/core';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpErrorResponse } from '@angular/common/http';
 import { By } from '@angular/platform-browser';
+import { provideRouter } from '@angular/router';
 import type { OrderTimeLimitListItem } from '@lfd/pim-contracts';
 import { FoldListboxComponent } from 'fold-ng';
 import { describe, expect, it } from 'vitest';
@@ -103,6 +104,7 @@ async function render(
       { provide: NotifyService, useValue: notify },
       { provide: ProductListStore, useValue: products },
       { provide: CategoryStore, useValue: categories },
+      provideRouter([]),
     ],
   });
   const fixture = TestBed.createComponent(CategoryOrderLimit);
@@ -199,5 +201,67 @@ describe('CategoryOrderLimit', () => {
     const listbox = fixture.debugElement.query(By.directive(FoldListboxComponent));
     const options = (listbox.componentInstance as FoldListboxComponent<string>).options() ?? [];
     expect(options.map((option) => ('value' in option ? option.value : null))).toEqual(['p9']);
+  });
+
+  it('montre les produits à limite propre et ce qu’elle devient face à la famille', async () => {
+    const api = new FakeApi();
+    api.rules = [
+      familyRule(),
+      familyRule({
+        id: 'l3',
+        scope: { type: 'product', id: 'p9' },
+        daysBefore: 1,
+        time: '18:00',
+        excludedProductIds: [],
+        exclusions: [],
+      }),
+      familyRule({
+        id: 'l4',
+        scope: { type: 'product', id: 'p7' },
+        daysBefore: 1,
+        time: '18:00',
+        excludedProductIds: [],
+        exclusions: [],
+      }),
+      familyRule({
+        id: 'l5',
+        scope: { type: 'product', id: 'p5' },
+        daysBefore: 5,
+        time: '18:00',
+        excludedProductIds: [],
+        exclusions: [],
+      }),
+    ];
+    const fixture = await render(api);
+    const text = textOf(fixture);
+
+    expect(text).toContain('Sans effet : la famille est plus stricte');
+    expect(text).toContain('exclure le produit de la famille');
+    expect(text).toContain("Exclu : sa propre limite s'applique");
+    expect(text).not.toContain('PAN-01 ');
+    const links = (fixture.nativeElement as HTMLElement).querySelectorAll(
+      'a[href^="/pim/produits/"]',
+    );
+    expect(links.length).toBe(2);
+  });
+
+  it('liste les produits à limite propre sans comparer quand la famille n’en a pas', async () => {
+    const api = new FakeApi();
+    api.rules = [
+      familyRule({
+        id: 'l3',
+        scope: { type: 'product', id: 'p9' },
+        daysBefore: 1,
+        time: '18:00',
+        excludedProductIds: [],
+        exclusions: [],
+      }),
+    ];
+    const fixture = await render(api);
+    const text = textOf(fixture);
+
+    expect(text).toContain('Produits qui ont leur propre limite');
+    expect(text).toContain('ENT-01');
+    expect(text).not.toContain('Sans effet');
   });
 });
