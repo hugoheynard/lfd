@@ -64,6 +64,22 @@ export const COUNTER_SCENARIOS: ScenarioSet = {
   [routeKey("lafoliecoffee/orders/http/admin-counter-particular-orders.controller.ts", "place")]:
     async (world) => ({ sub: STAFF, path: ORDERS, body: await particularBasket(world) }),
 
+  [routeKey(
+    "lafoliecoffee/orders/http/admin-offered-particular-orders.controller.ts",
+    "placeForParticular",
+  )]: async (world) => {
+    const { expectedTotalCents: _paid, ...basket } = await particularBasket(world);
+    return {
+      sub: STAFF,
+      path: "/admin/offered-orders/particular",
+      body: {
+        ...basket,
+        offer: { nature: "event", note: "Dégustation", notifyCustomer: false },
+        expectedTotalCents: 0,
+      },
+    };
+  },
+
   [routeKey("lafoliecoffee/orders/http/admin-counter-no-show.controller.ts", "declareNoShow")]:
     async (world) => ({
       sub: STAFF,
