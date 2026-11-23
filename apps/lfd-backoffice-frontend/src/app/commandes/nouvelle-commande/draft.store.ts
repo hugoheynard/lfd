@@ -47,6 +47,8 @@ export interface DraftSnapshot {
   readonly offerNote: string;
   /** Prévenir le client d'une commande offerte — décoché par défaut (Hugo, 2026-11-23). */
   readonly offerNotifiesCustomer: boolean;
+  /** Le motif du dépassement des limites de produit ; vide sans dépassement. */
+  readonly itemLimitReason: string;
 }
 
 /**
@@ -171,6 +173,7 @@ export class DraftStore {
       offerNature: this.offerNature(),
       offerNote: this.offerNote(),
       offerNotifiesCustomer: this.offerNotifiesCustomer(),
+      itemLimitReason: this.itemLimitReason(),
     };
   }
 
@@ -188,6 +191,9 @@ export class DraftStore {
     this.offerNature.set(snapshot.offerNature);
     this.offerNote.set(snapshot.offerNote);
     this.offerNotifiesCustomer.set(snapshot.offerNotifiesCustomer);
+    // Un motif gardé dit que l'équipe avait choisi de passer outre.
+    this.itemLimitReason.set(snapshot.itemLimitReason);
+    this.itemLimitOverriding.set(snapshot.itemLimitReason.trim() !== '');
     // Un brouillon repris porte des choix : ils ne sont plus des propositions.
     this.windowProposed.set(false);
     this.dateProposed.set(false);
@@ -215,6 +221,7 @@ export class DraftStore {
       offerNature: null,
       offerNote: '',
       offerNotifiesCustomer: false,
+      itemLimitReason: '',
     });
     this.dateProposed.set(true);
   }

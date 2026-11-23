@@ -106,6 +106,7 @@ export function draftPayloadOf(
     offerNature: draft.offerNature,
     offerNote: draft.offerNote,
     offerNotifiesCustomer: draft.offerNotifiesCustomer,
+    itemLimitOverrideReason: draft.itemLimitReason,
     // Des SKU et des quantités, **jamais de prix** : c'est le catalogue serveur
     // qui fera foi à la reprise comme à la passation. Seule exception, le Total
     // HT affiché, que rien ne relit sinon la liste des brouillons.
@@ -176,6 +177,7 @@ export function draftSnapshotOf(
     offerNature: view.offerNature,
     offerNote: view.offerNote,
     offerNotifiesCustomer: view.offerNotifiesCustomer,
+    itemLimitReason: view.itemLimitOverrideReason,
   };
 }
 

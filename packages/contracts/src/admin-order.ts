@@ -408,6 +408,11 @@ export const orderDraftPayloadSchema = z.object({
   offerNature: orderOfferNatureSchema.nullable().default(null),
   offerNote: z.string().max(ORDER_OFFER_NOTE_MAX_LENGTH).default(""),
   offerNotifiesCustomer: z.boolean().default(false),
+  /**
+   * Le motif du dépassement des limites de produit, tel que tapé — un seul
+   * pour toutes les lignes qui dépassent. Vide : l'équipe n'a pas passé outre.
+   */
+  itemLimitOverrideReason: z.string().max(ITEM_LIMIT_OVERRIDE_REASON_MAX_LENGTH).default(""),
   lines: z.array(orderLineInputSchema).default([]),
   /**
    * Le « Total HT » que l'écran affichait à l'enregistrement, en centimes —

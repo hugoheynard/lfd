@@ -62,6 +62,7 @@ function viewOf(overrides: Partial<OrderDraftView>): OrderDraftView {
     offerNature: null,
     offerNote: '',
     offerNotifiesCustomer: false,
+    itemLimitOverrideReason: '',
     estimatedPretaxCents: null,
     lines: [],
     ...overrides,
@@ -421,5 +422,30 @@ describe('buyerOf', () => {
 
   it('sans personne à proposer : aucun acheteur', () => {
     expect(buyerOf('usr_invited', [])).toBeNull();
+  });
+});
+
+describe('le motif du dépassement des limites — gardé avec le brouillon', () => {
+  it('enregistré, il revient à la reprise, et le dépassement est rouvert', () => {
+    const draft = new DraftStore();
+    draft.itemLimitOverriding.set(true);
+    draft.itemLimitReason.set('Commande du salon, la prod est prévenue');
+
+    const payload = draftPayloadOf(draft.snapshot(), [], []);
+    expect(payload.itemLimitOverrideReason).toBe('Commande du salon, la prod est prévenue');
+
+    const reopened = new DraftStore();
+    reopened.restore(
+      draftSnapshotOf(viewOf({ itemLimitOverrideReason: payload.itemLimitOverrideReason }), []),
+    );
+    expect(reopened.itemLimitReason()).toBe('Commande du salon, la prod est prévenue');
+    expect(reopened.itemLimitOverriding()).toBe(true);
+  });
+
+  it('un brouillon sans motif ne rouvre pas le dépassement', () => {
+    const reopened = new DraftStore();
+    reopened.restore(draftSnapshotOf(viewOf({}), []));
+    expect(reopened.itemLimitReason()).toBe('');
+    expect(reopened.itemLimitOverriding()).toBe(false);
   });
 });

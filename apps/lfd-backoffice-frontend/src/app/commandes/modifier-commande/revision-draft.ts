@@ -153,6 +153,7 @@ export function revisionDraftOf(
     offerNature: null,
     offerNote: '',
     offerNotifiesCustomer: false,
+    itemLimitReason: '',
   };
 }
 
