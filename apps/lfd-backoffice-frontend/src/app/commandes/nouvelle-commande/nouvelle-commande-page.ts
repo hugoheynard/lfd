@@ -23,7 +23,11 @@ import { Router } from '@angular/router';
 import { firstValueFrom, tap } from 'rxjs';
 
 import { buyerOf, composedDraftOf, placePayloadOf } from './draft-payload';
-import { budgetCommitmentPayloadOf } from '../budget-commitment';
+import {
+  budgetCommitmentPayloadOf,
+  commitmentStandingOf,
+  proposedCommitmentNumber,
+} from '../budget-commitment';
 import {
   estimateKeyOf,
   estimatesOf,
@@ -825,7 +829,14 @@ export class NouvelleCommandePage {
           // chaque caractère saisi (E2′ : le refus vit à la passation).
           ...budgetCommitmentPayloadOf(
             this.payerIsPublic(),
-            this.draft.commitmentNumber(),
+            this.draft.commitmentNumberFor(
+              proposedCommitmentNumber(
+                commitmentStandingOf(
+                  this.commitmentRequirements()?.currentCommitment ?? null,
+                  this.draft.requestedDate(),
+                ),
+              ),
+            ),
             this.draft.commitmentServiceCode(),
           ),
           // Le motif d'un dépassement de limite de produit : à la passation

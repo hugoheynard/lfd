@@ -4,7 +4,7 @@
 >
 > La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.
 
-## Sommaire — 1955 textes
+## Sommaire — 1957 textes
 
 Clés présentes dans une langue et absentes d'une autre : 0.
 
@@ -31,7 +31,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Choix de l’heure — le sélecteur de créneau](#espace-slotpicker) | `slotPicker` | 15 |
 | [Choix de l’heure — l’étape du créneau](#espace-slotstep) | `slotStep` | 11 |
 | [Choix de l’heure — le rappel téléphonique](#espace-rappel) | `rappel` | 12 |
-| [Panier, connexion et saisie invité](#espace-cart) | `cart` | 113 |
+| [Panier, connexion et saisie invité](#espace-cart) | `cart` | 115 |
 | [Règlement](#espace-pay) | `pay` | 21 |
 | [Confirmation](#espace-done) | `done` | 31 |
 | [Confirmation — le QR de retrait](#espace-qr) | `qr` | 12 |
@@ -52,7 +52,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Les cases des e-mails marketing, « Mes e-mails » et le pied de page](#espace-marketingconsent) | `marketingConsent` | 29 |
 | [Les documents légaux](#espace-legaldocument) | `legalDocument` | 14 |
 | [Le suivi des corrections d’accessibilité — sous la déclaration](#espace-accessibilityfollowup) | `accessibilityFollowUp` | 28 |
-| **Total** | | **1955** |
+| **Total** | | **1957** |
 
 ## Le parcours de commande
 
@@ -738,7 +738,7 @@ Source : `fr.ts · en.ts · it.ts` · 12 textes.
 
 ### Panier, connexion et saisie invité — `cart`
 
-Source : `fr.ts · en.ts · it.ts` · 113 textes.
+Source : `fr.ts · en.ts · it.ts` · 115 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -815,6 +815,8 @@ Source : `fr.ts · en.ts · it.ts` · 113 textes.
 | `cart.commitmentNumberMissing` | Saisissez le numéro d’engagement de votre bon de commande. | Enter the commitment number from your purchase order. | Inserite il numero di impegno del vostro buono d’ordine. |  |
 | `cart.commitmentServiceCodeMissing` | Saisissez le code service Chorus Pro de votre organisme. | Enter your organisation’s Chorus Pro service code. | Inserite il codice servizio Chorus Pro del vostro ente. |  |
 | `cart.commitmentUnread` | Nous n’avons pas pu lire ce que votre organisme exige : saisissez votre bon de commande, la commande dira s’il manque quelque chose. | We could not read what your organisation requires: enter your purchase order, and the order will tell you if anything is missing. | Non siamo riusciti a leggere ciò che il vostro ente richiede: inserite il buono d’ordine, l’ordine vi dirà se manca qualcosa. |  |
+| `cart.commitmentRunning` | Engagement n° {number} en cours jusqu’au {date}. | Commitment no. {number} runs until {date}. | Impegno n. {number} in corso fino al {date}. | `{number}` `{date}` |
+| `cart.commitmentEnded` | L’engagement n° {number} a pris fin le {date}. | Commitment no. {number} ended on {date}. | L’impegno n. {number} è terminato il {date}. | `{number}` `{date}` |
 | `cart.closeEmpty` | Fermer | Close | Chiudi |  |
 | `cart.whoTitle` | Qui passe cette commande ? | Who is placing this order? | Chi effettua questo ordine? |  |
 | `cart.whoHint` | Il nous faut un nom et une adresse pour vous envoyer votre QR de retrait. | We need a name and an address to send you your pickup QR. | Ci servono un nome e un indirizzo per inviarle il QR di ritiro. |  |

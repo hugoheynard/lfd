@@ -112,7 +112,9 @@
       <app-budget-commitment-fields
         [requirements]="commitmentRequirements()"
         [requirementsFailed]="commitmentRequirementsFailed()"
-        [(number)]="draft().commitmentNumber"
+        [standing]="commitmentStanding()"
+        [number]="commitmentNumber()"
+        (numberChange)="draft().typeCommitmentNumber($event)"
         [(serviceCode)]="draft().commitmentServiceCode"
       />
     } @else {

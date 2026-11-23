@@ -42,7 +42,11 @@ import { CartRow } from '@lfd/b2b-ui/cart';
 import { narrowViewport } from '../../../shared/viewport/narrow-viewport';
 import { PermissionsStore } from '../../../auth/permissions.store';
 
-import { budgetCommitmentGaps } from '../../budget-commitment';
+import {
+  budgetCommitmentGaps,
+  commitmentStandingOf,
+  proposedCommitmentNumber,
+} from '../../budget-commitment';
 import { BudgetCommitmentFields } from '../../budget-commitment-fields/budget-commitment-fields';
 import type { CartStore } from '../cart.store';
 import type { DraftStore } from '../draft.store';
@@ -181,6 +185,18 @@ export class PanierCommande {
   readonly commitmentRequirements = input<BudgetCommitmentRequirementsView | null>(null);
   /** La lecture des exigences a échoué : les champs restent, l'échec est dit. */
   readonly commitmentRequirementsFailed = input(false);
+
+  /** L'engagement en cours de la société, jugé contre la journée choisie. */
+  protected readonly commitmentStanding = computed(() =>
+    commitmentStandingOf(
+      this.commitmentRequirements()?.currentCommitment ?? null,
+      this.draft().requestedDate(),
+    ),
+  );
+  /** Le numéro saisi, sinon celui de l'engagement en cours. */
+  protected readonly commitmentNumber = computed(() =>
+    this.draft().commitmentNumberFor(proposedCommitmentNumber(this.commitmentStanding())),
+  );
 
   /** Ce que l'écran ne calcule PAS, dit près du sous-total. */
   protected readonly TOTALS_LATER =
@@ -347,7 +363,7 @@ export class PanierCommande {
       payerIsPublic: this.payerIsPublic(),
       commitmentGaps: budgetCommitmentGaps(
         this.commitmentRequirements(),
-        this.draft().commitmentNumber(),
+        this.commitmentNumber(),
         this.draft().commitmentServiceCode(),
       ),
       refusal: this.estimate()?.refusal ?? null,

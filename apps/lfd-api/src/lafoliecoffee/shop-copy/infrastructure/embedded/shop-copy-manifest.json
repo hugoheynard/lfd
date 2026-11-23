@@ -4114,6 +4114,20 @@
           "variables": []
         },
         {
+          "key": "cart.commitmentRunning",
+          "fr": "Engagement n° {number} en cours jusqu’au {date}.",
+          "en": "Commitment no. {number} runs until {date}.",
+          "it": "Impegno n. {number} in corso fino al {date}.",
+          "variables": ["number", "date"]
+        },
+        {
+          "key": "cart.commitmentEnded",
+          "fr": "L’engagement n° {number} a pris fin le {date}.",
+          "en": "Commitment no. {number} ended on {date}.",
+          "it": "L’impegno n. {number} è terminato il {date}.",
+          "variables": ["number", "date"]
+        },
+        {
           "key": "cart.closeEmpty",
           "fr": "Fermer",
           "en": "Close",

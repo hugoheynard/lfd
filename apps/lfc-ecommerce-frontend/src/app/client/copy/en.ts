@@ -447,6 +447,8 @@ export const EN: ClientCopy = {
     commitmentServiceCodeMissing: 'Enter your organisation’s Chorus Pro service code.',
     commitmentUnread:
       'We could not read what your organisation requires: enter your purchase order, and the order will tell you if anything is missing.',
+    commitmentRunning: 'Commitment no. {number} runs until {date}.',
+    commitmentEnded: 'Commitment no. {number} ended on {date}.',
     closeEmpty: 'Close',
     whoTitle: 'Who is placing this order?',
     whoHint: 'We need a name and an address to send you your pickup QR.',

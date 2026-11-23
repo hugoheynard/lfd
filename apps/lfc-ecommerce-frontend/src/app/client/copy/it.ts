@@ -452,6 +452,8 @@ export const IT: ClientCopy = {
     commitmentServiceCodeMissing: 'Inserite il codice servizio Chorus Pro del vostro ente.',
     commitmentUnread:
       'Non siamo riusciti a leggere ciò che il vostro ente richiede: inserite il buono d’ordine, l’ordine vi dirà se manca qualcosa.',
+    commitmentRunning: 'Impegno n. {number} in corso fino al {date}.',
+    commitmentEnded: 'L’impegno n. {number} è terminato il {date}.',
     closeEmpty: 'Chiudi',
     whoTitle: 'Chi effettua questo ordine?',
     whoHint: 'Ci servono un nome e un indirizzo per inviarle il QR di ritiro.',

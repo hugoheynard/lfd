@@ -2,7 +2,49 @@ import type {
   BudgetCommitmentPayload,
   BudgetCommitmentRequirementsView,
   BudgetCommitmentView,
+  CurrentCommitmentView,
 } from '@lfd/contracts';
+
+import { frenchDay } from '../comptes-clients/kbis-age-wording';
+
+/**
+ * L'engagement en cours de la société, jugé contre la journée choisie :
+ * `running` le propose, `ended` dit qu'il a pris fin.
+ */
+export interface CommitmentStanding {
+  readonly state: 'running' | 'ended';
+  readonly number: string;
+  /** Le dernier jour de validité, `AAAA-MM-JJ`. */
+  readonly endsOn: string;
+}
+
+/**
+ * L'engagement en cours contre la journée de retrait ou de livraison : il
+ * court tant qu'elle tombe au plus tard `endsOn` (deux jours `AAAA-MM-JJ` se
+ * comparent comme des textes). `null` sans engagement ou sans journée.
+ */
+export function commitmentStandingOf(
+  current: CurrentCommitmentView | null,
+  day: string,
+): CommitmentStanding | null {
+  if (current === null || day === '') {
+    return null;
+  }
+  return { state: day <= current.endsOn ? 'running' : 'ended', ...current };
+}
+
+/** Le numéro proposé : celui d'un engagement qui court, rien sinon. */
+export function proposedCommitmentNumber(standing: CommitmentStanding | null): string {
+  return standing?.state === 'running' ? standing.number : '';
+}
+
+/** « Engagement n° … en cours jusqu'au … » ou « L'engagement n° … a pris fin le … ». */
+export function commitmentStandingLine(standing: CommitmentStanding): string {
+  const day = frenchDay(standing.endsOn);
+  return standing.state === 'running'
+    ? `Engagement n° ${standing.number} en cours jusqu’au ${day}.`
+    : `L’engagement n° ${standing.number} a pris fin le ${day}.`;
+}
 
 /**
  * **Ce qui manque à l'engagement** pour que la passation l'accepte, dit en

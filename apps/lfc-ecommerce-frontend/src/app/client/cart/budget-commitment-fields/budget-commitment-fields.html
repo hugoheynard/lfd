@@ -15,6 +15,9 @@
     (valueChange)="commitment.setNumber($event)"
     data-budget-commitment-number
   />
+  @if (standingLine(); as line) {
+    <p class="commitment-standing" data-budget-commitment-standing>{{ line }}</p>
+  }
   <fold-input
     [label]="t().cart.commitmentServiceCode"
     [required]="serviceCodeRequired()"

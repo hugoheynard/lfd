@@ -10,6 +10,7 @@ import type {
   BillingAddressPayload,
   CertifyKbisPayload,
   ChorusRoutingPayload,
+  ChorusServicePayload,
   CompanyWarningsCountView,
   CompanyMemberInvitedView,
   CompanyMemberView,
@@ -300,6 +301,17 @@ export class AdminCompaniesService {
   async setChorusRouting(companyId: string, payload: ChorusRoutingPayload): Promise<void> {
     await firstValueFrom(
       this.http.put<void>(`${B2B_API_BASE}/admin/companies/${companyId}/chorus-routing`, payload),
+    );
+  }
+
+  /**
+   * Pose la fiche du service Chorus d'une société qui commande — code service
+   * et engagement en cours —, réécrite en entier. Le geste est idempotent au
+   * serveur : la rejouer retrouve la même fiche.
+   */
+  async setChorusService(companyId: string, payload: ChorusServicePayload): Promise<void> {
+    await firstValueFrom(
+      this.http.put<void>(`${B2B_API_BASE}/admin/companies/${companyId}/chorus-service`, payload),
     );
   }
 

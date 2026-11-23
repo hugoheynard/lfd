@@ -107,9 +107,12 @@ export class DraftStore {
    * L'engagement budgétaire d'un organisme public (plan clients publics,
    * § 6 quater) : le numéro de son bon de commande et le code service. Hors
    * du brouillon conservé — il ne voyage qu'avec la passation, et
-   * l'estimation l'ignore. Le code se préremplit du défaut de la fiche.
+   * l'estimation l'ignore. Le code se préremplit du défaut de la fiche ; le
+   * numéro, de l'engagement en cours, tant que personne ne l'a saisi.
    */
   readonly commitmentNumber = signal('');
+  /** Le numéro a été saisi (même effacé) : plus aucune proposition ne le remplace. */
+  readonly commitmentNumberTyped = signal(false);
   readonly commitmentServiceCode = signal('');
 
   /**
@@ -133,6 +136,17 @@ export class DraftStore {
    * y compris quand le panier est replié dans son tiroir.
    */
   readonly fulfillment = signal<FulfillmentChoice | null>(null);
+
+  /** Une saisie du numéro d'engagement : elle prend le pas sur la proposition. */
+  typeCommitmentNumber(number: string): void {
+    this.commitmentNumber.set(number);
+    this.commitmentNumberTyped.set(true);
+  }
+
+  /** Le numéro qui vaut : celui saisi, sinon celui que l'engagement en cours propose. */
+  commitmentNumberFor(proposed: string): string {
+    return this.commitmentNumberTyped() ? this.commitmentNumber() : proposed;
+  }
 
   /** Modifie un champ de l'adresse dictée. */
   patchAddress(patch: Partial<DraftAddress>): void {
@@ -177,6 +191,7 @@ export class DraftStore {
   reset(): void {
     this.entry.set('scheduled');
     this.commitmentNumber.set('');
+    this.commitmentNumberTyped.set(false);
     this.commitmentServiceCode.set('');
     this.itemLimitOverriding.set(false);
     this.itemLimitReason.set('');

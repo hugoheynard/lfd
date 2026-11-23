@@ -2,6 +2,8 @@ import { ChangeDetectionStrategy, Component, computed, input, model } from '@ang
 import type { BudgetCommitmentRequirementsView } from '@lfd/contracts';
 import { FoldCalloutComponent, FoldInputComponent } from 'fold-ng';
 
+import { commitmentStandingLine, type CommitmentStanding } from '../budget-commitment';
+
 /**
  * **L'engagement budgétaire d'un organisme public**, saisi par l'équipe (plan
  * `documentation/comptabilite/facturation/plan-clients-publics-chorus.md`,
@@ -24,8 +26,18 @@ export class BudgetCommitmentFields {
   readonly requirements = input<BudgetCommitmentRequirementsView | null>(null);
   /** La lecture des exigences a échoué : la saisie reste possible, l'écran le dit. */
   readonly requirementsFailed = input(false);
+  /**
+   * L'engagement en cours jugé contre la journée choisie — à la nouvelle
+   * commande seulement ; `null` : rien à en dire.
+   */
+  readonly standing = input<CommitmentStanding | null>(null);
   readonly number = model('');
   readonly serviceCode = model('');
+
+  protected readonly standingLine = computed(() => {
+    const standing = this.standing();
+    return standing === null ? '' : commitmentStandingLine(standing);
+  });
 
   protected readonly numberRequired = computed(
     () => this.requirements()?.commitmentRequired ?? false,

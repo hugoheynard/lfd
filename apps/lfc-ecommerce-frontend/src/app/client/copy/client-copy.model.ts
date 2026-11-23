@@ -941,6 +941,10 @@ export interface ClientCopy {
     readonly commitmentServiceCodeMissing: string;
     /** Les exigences du payeur n'ont pas pu être lues : la saisie reste ouverte. */
     readonly commitmentUnread: string;
+    /** L'engagement en cours couvre la journée choisie : `{number}`, `{date}`. */
+    readonly commitmentRunning: string;
+    /** L'engagement en cours a pris fin avant la journée choisie : `{number}`, `{date}`. */
+    readonly commitmentEnded: string;
     /**
      * Le bouton d'un panier vide : il ferme le panneau (2026-10-09). Il disait
      * « Voir le rayon » et, ouvert depuis « Mes commandes », y ramenait.

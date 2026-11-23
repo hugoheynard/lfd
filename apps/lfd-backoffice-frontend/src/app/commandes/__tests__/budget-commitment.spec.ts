@@ -5,7 +5,11 @@ import {
   budgetCommitmentGaps,
   budgetCommitmentLabel,
   budgetCommitmentPayloadOf,
+  commitmentStandingLine,
+  commitmentStandingOf,
+  proposedCommitmentNumber,
 } from '../budget-commitment';
+import { DraftStore } from '../nouvelle-commande/draft.store';
 
 const ARMY: BudgetCommitmentRequirementsView = {
   payerCompanyId: 'cmp_army',
@@ -48,5 +52,46 @@ describe('budgetCommitmentLabel', () => {
     expect(budgetCommitmentLabel({ number: 'N1', serviceCode: 'SRV' })).toBe('n° N1 · service SRV');
     expect(budgetCommitmentLabel({ number: '', serviceCode: '' })).toBeNull();
     expect(budgetCommitmentLabel(undefined)).toBeNull();
+  });
+});
+
+describe('l’engagement en cours', () => {
+  const CURRENT = { number: 'ENG-2026', endsOn: '2026-12-31' };
+
+  it('court jusqu’à sa date de fin incluse, et se propose', () => {
+    const standing = commitmentStandingOf(CURRENT, '2026-12-31');
+    expect(standing).toEqual({ state: 'running', ...CURRENT });
+    expect(proposedCommitmentNumber(standing)).toBe('ENG-2026');
+    expect(standing && commitmentStandingLine(standing)).toBe(
+      'Engagement n° ENG-2026 en cours jusqu’au 31/12/2026.',
+    );
+  });
+
+  it('au-delà, a pris fin et ne se propose plus', () => {
+    const standing = commitmentStandingOf(CURRENT, '2027-01-04');
+    expect(standing?.state).toBe('ended');
+    expect(proposedCommitmentNumber(standing)).toBe('');
+    expect(standing && commitmentStandingLine(standing)).toBe(
+      'L’engagement n° ENG-2026 a pris fin le 31/12/2026.',
+    );
+  });
+
+  it('sans engagement ni journée : rien', () => {
+    expect(commitmentStandingOf(null, '2026-12-01')).toBeNull();
+    expect(commitmentStandingOf(CURRENT, '')).toBeNull();
+    expect(proposedCommitmentNumber(null)).toBe('');
+  });
+
+  it('une saisie, même effacée, n’est jamais remplacée par la proposition', () => {
+    const draft = new DraftStore();
+    expect(draft.commitmentNumberFor('ENG-2026')).toBe('ENG-2026');
+
+    draft.typeCommitmentNumber('AUTRE');
+    expect(draft.commitmentNumberFor('ENG-2026')).toBe('AUTRE');
+    draft.typeCommitmentNumber('');
+    expect(draft.commitmentNumberFor('ENG-2026')).toBe('');
+
+    draft.reset();
+    expect(draft.commitmentNumberFor('ENG-2026')).toBe('ENG-2026');
   });
 });

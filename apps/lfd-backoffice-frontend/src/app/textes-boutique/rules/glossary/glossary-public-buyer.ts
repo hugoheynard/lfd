@@ -16,6 +16,8 @@ export const GLOSSARY_PUBLIC_BUYER: Readonly<Record<string, string>> = {
   commitmentNumberMissing: 'Engagement — numéro manquant',
   commitmentServiceCodeMissing: 'Engagement — code service manquant',
   commitmentUnread: 'Engagement — exigences illisibles',
+  commitmentRunning: 'Engagement — en cours, jusqu’au',
+  commitmentEnded: 'Engagement — pris fin le',
   recapCommitment: 'Récapitulatif — engagement',
   recapCommitmentNumber: "Récapitulatif — numéro d'engagement",
   recapCommitmentService: 'Récapitulatif — code service',

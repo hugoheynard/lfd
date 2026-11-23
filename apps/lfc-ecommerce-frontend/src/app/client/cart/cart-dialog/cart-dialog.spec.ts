@@ -216,6 +216,7 @@ function boot({
         useValue: {
           requirements: signal(null),
           failed: signal(false),
+          standing: signal(null),
           number: signal(''),
           serviceCode: signal(''),
           gap: signal(commitmentGap),

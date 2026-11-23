@@ -1,0 +1,117 @@
+<fold-card>
+  <fold-element-title
+    cardHeader
+    variant="title"
+    icon="contracts"
+    title="Service Chorus"
+    subtitle="Le code service et l'engagement en cours du bon de commande de cette société."
+  >
+    @if (canManage() && !editing() && fiche() !== null) {
+      <button titleAction foldButton size="sm" emphasis="outline" icon="edit" (click)="edit()">
+        Modifier
+      </button>
+    }
+  </fold-element-title>
+
+  <div class="body">
+    @if (editing()) {
+      @if (!solePayer()) {
+        <fold-input
+          label="Code service"
+          hint="Le code Chorus Pro de cette unité ; vide, celui de la fiche Chorus Pro du payeur."
+          [optional]="true"
+          [value]="serviceCode()"
+          (valueChange)="serviceCode.set($event)"
+          data-chorus-service-code
+        />
+      }
+      <fold-input
+        label="Numéro d'engagement"
+        hint="Celui du bon de commande en cours ; vide, aucun engagement n'est proposé."
+        [optional]="true"
+        [value]="commitmentNumber()"
+        (valueChange)="commitmentNumber.set($event)"
+        data-chorus-service-number
+      />
+      <fold-date
+        label="Fin de l'engagement"
+        hint="Le dernier jour de validité du bon : au-delà, la commande redemande un numéro."
+        [required]="commitmentNumber().trim() !== ''"
+        [optional]="commitmentNumber().trim() === ''"
+        [value]="commitmentEndsOn()"
+        (valueChange)="commitmentEndsOn.set($event)"
+        data-chorus-service-ends-on
+      />
+      @if (!paired()) {
+        <fold-callout variant="warning" data-chorus-service-unpaired>
+          Un numéro d'engagement et sa date de fin vont ensemble.
+        </fold-callout>
+      }
+
+      @if (refusal(); as message) {
+        <fold-callout variant="alert" announce data-chorus-service-refusal>{{
+          message
+        }}</fold-callout>
+      }
+
+      <div class="actions">
+        @if (commitmentNumber() !== '' || commitmentEndsOn() !== '') {
+          <button foldButton emphasis="soft" intent="neutral" (click)="clearCommitment()">
+            Retirer l'engagement
+          </button>
+        }
+        <button foldButton emphasis="outline" intent="neutral" (click)="cancel()">Annuler</button>
+        <button
+          foldButton
+          intent="primary"
+          [disabled]="!canSave()"
+          [loading]="saving()"
+          (click)="save()"
+          data-chorus-service-save
+        >
+          Enregistrer
+        </button>
+      </div>
+    } @else if (fiche(); as f) {
+      @if (payerChanged()) {
+        <fold-callout variant="warning" data-chorus-service-payer-changed>
+          Le payeur de cette société a changé depuis la pose : la fiche ne propose plus rien à la
+          commande. Reposez-la pour le nouveau payeur.
+        </fold-callout>
+      }
+      <fold-field-list>
+        @if (!solePayer()) {
+          <fold-field
+            label="Code service"
+            [empty]="f.serviceCode === ''"
+            placeholder="Celui de la fiche Chorus Pro du payeur"
+          >
+            {{ f.serviceCode }}
+          </fold-field>
+        }
+        <fold-field
+          label="Engagement en cours"
+          [empty]="f.currentCommitment === null"
+          placeholder="Aucun"
+        >
+          @if (f.currentCommitment; as c) {
+            n° {{ c.number }}, jusqu'au {{ frenchDay(c.endsOn) }}
+          }
+        </fold-field>
+      </fold-field-list>
+      <p class="recorded" data-chorus-service-recorded>{{ recordedLine() }}</p>
+    } @else {
+      <p class="recorded" data-chorus-service-missing>
+        Aucune fiche : les commandes proposent le code de la fiche Chorus Pro du payeur, et aucun
+        engagement.
+      </p>
+      @if (canManage()) {
+        <div class="actions">
+          <button foldButton emphasis="soft" size="sm" (click)="edit()" data-chorus-service-start>
+            Poser la fiche
+          </button>
+        </div>
+      }
+    }
+  </div>
+</fold-card>

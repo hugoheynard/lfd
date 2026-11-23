@@ -59,6 +59,7 @@ import { followsBilling, openingSteps } from './activation-steps';
 import type { AdminCompanyDetail } from '../../comptes-clients/admin-company';
 import { SiteIdentityCard } from '../site-identity-card/site-identity-card';
 import { ChorusRoutingCard } from '../chorus-routing-card/chorus-routing-card';
+import { ChorusServiceCard } from '../chorus-service-card/chorus-service-card';
 import { SitePaymentNote } from '../site-payment-note/site-payment-note';
 import { GroupAccountCard } from '../group-account-card/group-account-card';
 import { KbisCertification } from '../kbis-certification/kbis-certification';
@@ -107,6 +108,7 @@ import { watchCompanySubjects } from '../../comptes-clients/company-cache/compan
     FoldLoadingStateComponent,
     FoldPageSectionComponent,
     ChorusRoutingCard,
+    ChorusServiceCard,
     CompanyReferenceCard,
     CompanyIdentityCard,
     CompanyIdentityFields,
@@ -200,6 +202,23 @@ export class InformationsPage {
   protected readonly isPublic = computed(
     () => natureOfLegalForm(this.fiche.company()?.formeJuridique ?? '') === 'public',
   );
+
+  /**
+   * La carte du service Chorus : sur un organisme public, sur un site qui suit
+   * la facturation d'un principal (la nature du principal n'est pas servie ici,
+   * le serveur refuse un payeur privé), et partout où une fiche est déjà posée.
+   */
+  protected readonly showsChorusService = computed(() => {
+    const company = this.fiche.company();
+    if (company === null) {
+      return false;
+    }
+    return (
+      this.isPublic() ||
+      company.chorusService !== null ||
+      company.hierarchy.follows.some((f) => f.aspect === 'billing')
+    );
+  });
 
   /** Le mode choisi à l'ouverture — exigé, sauf quand il n'y a rien à choisir ici. */
   protected readonly openingMode = signal<InitialBillingMode>({ kind: 'missing' });

@@ -1,20 +1,40 @@
 import { HttpClient } from '@angular/common/http';
 import { computed, inject, Injectable, signal } from '@angular/core';
-import type { BudgetCommitmentPayload, BudgetCommitmentRequirementsView } from '@lfd/contracts';
+import type {
+  BudgetCommitmentPayload,
+  BudgetCommitmentRequirementsView,
+  CurrentCommitmentView,
+} from '@lfd/contracts';
 import { switchMap } from 'rxjs/operators';
 
 import { AUTH_CONFIG } from '../../auth/auth.config';
 import { AuthFacade } from '../../auth/auth.facade';
 import { ClientContext } from '../client-context.service';
+import { OrderContextStore } from '../order-context.store';
 import { contextKeyed, type ContextKey, workspaceRequestOf } from '../context-keyed/context-keyed';
 
 /** Ce qui manque à l'engagement pour que la passation l'accepte. */
 export type BudgetCommitmentGap = 'number' | 'serviceCode';
 
-/** La saisie d'un espace : le code `null` n'a pas été touché, il suit le défaut de la fiche. */
+/**
+ * L'engagement en cours de la société, jugé contre la journée choisie :
+ * `running` le propose, `ended` dit qu'il a pris fin.
+ */
+export interface CommitmentStanding {
+  readonly state: 'running' | 'ended';
+  readonly number: string;
+  /** Le dernier jour de validité, `AAAA-MM-JJ`. */
+  readonly endsOn: string;
+}
+
+/**
+ * La saisie d'un espace. Un champ `null` n'a pas été touché : le numéro suit
+ * l'engagement en cours, le code le défaut de la fiche. Une saisie, même vide,
+ * n'est jamais remplacée par une proposition.
+ */
 interface Draft {
   readonly space: string;
-  readonly number: string;
+  readonly number: string | null;
   readonly serviceCode: string | null;
 }
 
@@ -40,6 +60,7 @@ export class ClientBudgetCommitment {
   private readonly http = inject(HttpClient);
   private readonly auth = inject(AuthFacade);
   private readonly context = inject(ClientContext);
+  private readonly order = inject(OrderContextStore);
 
   /** Avance à chaque réponse ou échec : la brique n'est pas un signal. */
   private readonly answered = signal(0);
@@ -78,7 +99,19 @@ export class ClientBudgetCommitment {
     return draft !== null && draft.space === this.context.prefix() ? draft : null;
   });
 
-  readonly number = computed(() => this.shownDraft()?.number ?? '');
+  /**
+   * L'engagement en cours de la société, jugé contre la journée de retrait ou
+   * de livraison choisie : il court tant qu'elle tombe au plus tard `endsOn`.
+   * `null` sans engagement, ou tant qu'aucune journée n'est choisie.
+   */
+  readonly standing = computed<CommitmentStanding | null>(() =>
+    standingOf(this.requirements()?.currentCommitment ?? null, this.order.choice()?.date ?? null),
+  );
+
+  /** Le numéro saisi, sinon celui de l'engagement en cours. */
+  readonly number = computed(
+    () => this.shownDraft()?.number ?? this.proposedNumber(this.standing()),
+  );
   /** Le code saisi, sinon celui que la fiche Chorus du payeur propose. */
   readonly serviceCode = computed(
     () => this.shownDraft()?.serviceCode ?? this.requirements()?.defaultServiceCode ?? '',
@@ -136,9 +169,10 @@ export class ClientBudgetCommitment {
     }
     const draft = this.draft();
     const own = draft !== null && draft.space === workspace ? draft : null;
+    const standing = standingOf(requirements.currentCommitment, this.order.choice()?.date ?? null);
     return {
       budgetCommitment: {
-        number: (own?.number ?? '').trim(),
+        number: (own?.number ?? this.proposedNumber(standing)).trim(),
         serviceCode: (own?.serviceCode ?? requirements.defaultServiceCode).trim(),
       },
     };
@@ -156,8 +190,12 @@ export class ClientBudgetCommitment {
     if (space === null) {
       return;
     }
-    const current = this.shownDraft() ?? { space, number: '', serviceCode: null };
+    const current = this.shownDraft() ?? { space, number: null, serviceCode: null };
     this.draft.set({ ...current, ...patch });
+  }
+
+  private proposedNumber(standing: CommitmentStanding | null): string {
+    return standing?.state === 'running' ? standing.number : '';
   }
 
   private async settle(
@@ -174,6 +212,17 @@ export class ClientBudgetCommitment {
     }
     this.answered.update((count) => count + 1);
   }
+}
+
+/** Deux jours `AAAA-MM-JJ` se comparent comme des textes. */
+function standingOf(
+  current: CurrentCommitmentView | null,
+  day: string | null,
+): CommitmentStanding | null {
+  if (current === null || day === null || day === '') {
+    return null;
+  }
+  return { state: day <= current.endsOn ? 'running' : 'ended', ...current };
 }
 
 /** La clé d'un espace : sans part propre. */
