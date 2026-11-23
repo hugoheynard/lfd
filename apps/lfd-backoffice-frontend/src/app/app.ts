@@ -323,6 +323,13 @@ export class App {
   protected readonly canSeeMedia = computed(() => this.permissions.can('media_library:read'));
 
   /**
+   * L'export des ventes — les clés de lecture de la Direction, sous son droit
+   * `exports`, celui que le serveur oppose. Le même `computed` tient le rail et
+   * la tuile.
+   */
+  protected readonly canSeeExports = computed(() => this.permissions.can('exports:read'));
+
+  /**
    * L'éditeur d'e-mails (S5a) — son droit, celui que les routes serveur
    * `/admin/mail-templates` opposent. Le même `computed` tient le rail et la tuile.
    */

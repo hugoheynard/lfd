@@ -628,6 +628,16 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./analytics/croissance/croissance-page').then((m) => m.CroissancePage),
   },
+  {
+    // L'EXPORT DES VENTES — les clés de lecture que le script de la Direction
+    // présente (plan-export-des-ventes.md, § 6.1). Son droit à lui, `exports`,
+    // celui que le serveur oppose (`@AdminSurface("exports")`).
+    path: 'export-des-ventes',
+    canActivate: [permissionGuard('exports:read')],
+    title: 'Export des ventes — LFC B2B admin',
+    loadComponent: () =>
+      import('./export-des-ventes/export-keys-page/export-keys-page').then((m) => m.ExportKeysPage),
+  },
   ...pimRoutes,
   ...b2bRoutes,
   ...comptabiliteRoutes,

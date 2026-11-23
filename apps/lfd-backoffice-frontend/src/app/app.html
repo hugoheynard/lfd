@@ -571,6 +571,21 @@
         </fold-menu-section>
       }
 
+      @if (canSeeExports()) {
+        <!-- EXPORT DES VENTES — les clés avec lesquelles la Direction lit les
+             ventes. Juste sous Analytics : on y règle QUI lit les chiffres. -->
+        <a
+          fold-menu-item
+          icon="download"
+          label="Export des ventes"
+          routerLink="/export-des-ventes"
+          routerLinkActive
+          #exportsRla="routerLinkActive"
+          [active]="exportsRla.isActive"
+          (click)="mobileNavOpen.set(false)"
+        ></a>
+      }
+
       @if (canSeeOps()) {
         <!-- OPS dans le CORPS, plus au pied. Il y était rangé avec les réglages,
              au motif qu'on n'y va pas pour travailler — c'était vrai d'un écran
@@ -1317,6 +1332,19 @@
             (click)="mobileNavOpen.set(false)"
           ></a>
         </fold-nav-section>
+      }
+      @if (canSeeExports()) {
+        <!-- La MÊME entrée qu'au rail : deux arbres, deux modèles. -->
+        <a
+          fold-nav-tile
+          icon="download"
+          label="Export des ventes"
+          routerLink="/export-des-ventes"
+          routerLinkActive
+          #exportsTile="routerLinkActive"
+          [active]="exportsTile.isActive"
+          (click)="mobileNavOpen.set(false)"
+        ></a>
       }
       @if (canSeeOps()) {
         <a

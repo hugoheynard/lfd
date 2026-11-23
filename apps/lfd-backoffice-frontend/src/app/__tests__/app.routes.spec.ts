@@ -454,6 +454,8 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   // Les commandes à régler en boutique, à part du CA web, sous le même droit
   // (commande-particulier-reglee-en-boutique.md, § 4.2).
   'analytics/a-regler-en-boutique': 'b2b_growth:read',
+  // Les clés de l'export des ventes (plan-export-des-ventes.md, § 6.1).
+  'export-des-ventes': 'exports:read',
   'commercial/calendrier': 'b2b_growth:read',
   // LES DEMANDES CLIENTS, venues de `/b2b/demandes` le 2026-10-17 (Hugo) : le
   // droit du contact (demandes-clients.md, §6.8). Le mur `b2b_settings` de

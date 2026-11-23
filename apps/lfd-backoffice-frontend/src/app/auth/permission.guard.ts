@@ -46,6 +46,7 @@ const LANDINGS: readonly { readonly permission: StaffPermission; readonly path: 
   // qui ne tient que l'un de ces droits rebondissait de refus en refus.
   { permission: 'mail_templates:read', path: '/emails' },
   { permission: 'media_library:read', path: '/mediatheque' },
+  { permission: 'exports:read', path: '/export-des-ventes' },
 ];
 
 /**

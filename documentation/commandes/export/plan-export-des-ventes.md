@@ -576,7 +576,14 @@ no-store` posé sur la route (le middleware ne reconnaît une personne qu'à son
   [TODO des commandes](../todo-order-entonnoir.md) comme suite à décider, pas
   bâtie ici.
 
-E0 à E3 sont bâtis ; E4 suit.
+E4 bâti le 2026-11-23 : l'écran « Export des ventes » du back-office
+(`apps/lfd-backoffice-frontend/src/app/export-des-ventes/`), gardé par
+`exports:read`, créer et révoquer avec `exports:write`. Le secret est montré
+une fois, avec l'avertissement de ne jamais l'envoyer, puis effacé à la
+fermeture du dialogue. L'échéance tombe à 23:59:59 du jour choisi, heure du
+poste.
+
+E0 à E4 sont bâtis ; E5 suit.
 
 ## 11. Ce que la contradiction a changé
 

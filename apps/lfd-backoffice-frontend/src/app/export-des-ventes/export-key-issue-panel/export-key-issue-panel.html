@@ -1,0 +1,84 @@
+<fold-panel-header
+  title="Créer une clé d’export"
+  subtitle="Une clé par lecteur, jamais partagée"
+  closeLabel="Fermer"
+/>
+
+<fold-panel-body>
+  @if (secret(); as value) {
+    <div class="ekp-fields">
+      <fold-callout variant="warning" announce data-warning>
+        Cette clé ne sera plus jamais affichée. Collez-la directement dans le script de la
+        Direction, avec la personne à côté. Ne l’envoyez ni par e-mail ni par messagerie.
+      </fold-callout>
+      <fold-input label="Clé d’export" [readOnly]="true" [value]="value" data-secret />
+      <button
+        foldButton
+        emphasis="outline"
+        intent="neutral"
+        icon="copy"
+        type="button"
+        (click)="copy()"
+        data-copy
+      >
+        Copier la clé
+      </button>
+    </div>
+  } @else {
+    <div class="ekp-fields">
+      <fold-input
+        label="Libellé"
+        hint="Qui lit avec cette clé, par exemple « Direction »."
+        [value]="label()"
+        (valueChange)="label.set($event)"
+        data-label
+      />
+      <fold-date
+        label="Expire le"
+        hint="Proposée à un an. Passé ce jour, la clé n’ouvre plus rien."
+        [min]="today"
+        [value]="expiresOn()"
+        (valueChange)="expiresOn.set($event)"
+        data-expires
+      />
+      <fold-textarea
+        label="Adresses IP admises"
+        optional
+        hint="Une par ligne. Vide : toute adresse. Inutile avec une box dont l’adresse change."
+        [rows]="3"
+        [value]="ipsText()"
+        (valueChange)="ipsText.set($event)"
+        data-ips
+      />
+      @if (!pristine() && issue() !== '') {
+        <fold-callout variant="warning" data-issue-hint>{{ issue() }}</fold-callout>
+      }
+      @if (refusal(); as message) {
+        <fold-callout variant="alert" announce data-refusal>{{ message }}</fold-callout>
+      }
+    </div>
+  }
+</fold-panel-body>
+
+<fold-panel-footer align="end">
+  @if (secret()) {
+    <button foldButton intent="primary" type="button" (click)="close()" data-done>
+      J’ai collé la clé
+    </button>
+  } @else {
+    <button foldButton emphasis="outline" intent="neutral" type="button" (click)="close()">
+      Annuler
+    </button>
+    <button
+      foldButton
+      intent="primary"
+      type="button"
+      [disabled]="issue() !== ''"
+      [loading]="saving()"
+      (click)="submit()"
+      data-submit
+    >
+      Créer la clé
+    </button>
+  }
+</fold-panel-footer>
