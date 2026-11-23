@@ -202,6 +202,7 @@ const NON_PUBLIC_SCHEMA_OF_MODEL: Readonly<Record<string, string>> = {
   VariantAllergens: "pim",
   NutritionValues: "pim",
   OrderTimeLimit: "pim",
+  OrderTimeLimitExclusion: "pim",
   ProductEditorial: "pim",
   ProductReadiness: "pim",
   CatalogContent: "pim",
