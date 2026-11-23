@@ -720,6 +720,8 @@ export class NouvelleCommandePage {
         payerIsPublic: this.payerIsPublic(),
         commitmentRequirements: this.commitmentRequirements.asReadonly(),
         commitmentRequirementsFailed: this.commitmentRequirementsFailed.asReadonly(),
+        savingDraft: this.savingDraft.asReadonly(),
+        saveDraft: () => void this.onSaveDraft(),
       },
     });
     const placed = await ref.closed;

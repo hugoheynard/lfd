@@ -23,5 +23,8 @@
   [payerIsPublic]="data().payerIsPublic"
   [commitmentRequirements]="data().commitmentRequirements()"
   [commitmentRequirementsFailed]="data().commitmentRequirementsFailed()"
+  [offersDraft]="true"
+  [savingDraft]="data().savingDraft()"
+  (saveDraft)="data().saveDraft()"
   (place)="onPlace($event)"
 />

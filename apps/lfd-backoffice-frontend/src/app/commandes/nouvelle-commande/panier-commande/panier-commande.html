@@ -95,6 +95,20 @@
       </div>
     }
   }
+
+  <!-- En tiroir seulement : l'en-tête de la page, qui porte ce bouton, est
+       hors de vue sous la feuille. -->
+  @if (offersDraft()) {
+    <button
+      foldButton
+      emphasis="outline"
+      intent="neutral"
+      [disabled]="savingDraft() || submitting()"
+      (click)="saveDraft.emit()"
+    >
+      {{ savingDraft() ? 'Enregistrement…' : 'Enregistrer le brouillon' }}
+    </button>
+  }
 </div>
 
 <!-- Deux vues : côte à côte en tablette (le tiroir est large, Hugo,

@@ -46,6 +46,10 @@ export interface PanierPanelData {
   /** Ce que le payeur public exige de son engagement — `null` tant que non lu. */
   readonly commitmentRequirements: Signal<BudgetCommitmentRequirementsView | null>;
   readonly commitmentRequirementsFailed: Signal<boolean>;
+  /** Le brouillon s'enregistre-t-il ? Le bouton du tiroir le dit. */
+  readonly savingDraft: Signal<boolean>;
+  /** Enregistre le brouillon, le tiroir restant ouvert. */
+  readonly saveDraft: () => void;
 }
 
 /**

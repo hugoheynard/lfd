@@ -591,3 +591,33 @@ describe('PanierCommande — la commande offerte', () => {
     ]);
   });
 });
+
+/** En tiroir (tablette, téléphone), l'en-tête de la page est caché sous la feuille. */
+describe('PanierCommande — le brouillon en tiroir', () => {
+  const draftButton = (host: HTMLElement): HTMLButtonElement | undefined =>
+    [...host.querySelectorAll<HTMLButtonElement>('button')].find(
+      (b) => b.textContent.trim() === 'Enregistrer le brouillon',
+    );
+
+  it('en colonne : pas de bouton, l’en-tête de la page le porte', () => {
+    expect(draftButton(mount2({}))).toBeUndefined();
+  });
+
+  it('en tiroir : le bouton est là et demande l’enregistrement', () => {
+    const { host, component } = mountFull(new CartStore(), { offersDraft: true });
+    let asked = 0;
+    component.saveDraft.subscribe(() => (asked += 1));
+    const button = draftButton(host);
+    expect(button).toBeDefined();
+    button?.click();
+    expect(asked).toBe(1);
+  });
+
+  it('pendant l’enregistrement : il se grise et le dit', () => {
+    const host = mountFull(new CartStore(), { offersDraft: true, savingDraft: true }).host;
+    const button = [...host.querySelectorAll<HTMLButtonElement>('button')].find(
+      (b) => b.textContent.trim() === 'Enregistrement…',
+    );
+    expect(button?.disabled).toBe(true);
+  });
+});

@@ -252,6 +252,15 @@ export class PanierCommande {
 
   readonly place = output<OrderDraft>();
 
+  /**
+   * Proposer « Enregistrer le brouillon » sous la validation : en tiroir
+   * (tablette, téléphone), où l'en-tête de la page qui le porte est caché.
+   */
+  readonly offersDraft = input(false);
+  readonly savingDraft = input(false);
+  /** Mettre la saisie de côté — c'est la page qui enregistre. */
+  readonly saveDraft = output();
+
   /** Le mot de chaque ligne fermée par la limite de son produit, par SKU. */
   protected readonly limitNotices = computed(() =>
     itemLimitNoticesOf(this.estimate()?.cutoff ?? null),
