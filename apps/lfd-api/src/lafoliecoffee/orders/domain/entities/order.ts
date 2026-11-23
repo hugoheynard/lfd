@@ -78,6 +78,8 @@ import type { OrderBuyerKind } from "../value-objects/order-buyer-kind.js";
 import type { OrderLocale } from "../value-objects/order-locale.js";
 import type { SettlementVenue } from "../value-objects/settlement-venue.js";
 import { ShopTillOrderShapeError } from "../errors/shop-till-order-errors.js";
+import type { OrderOffer } from "../value-objects/order-offer.js";
+import { offerAppliedTo, offerCarriedOn } from "./order-offered-amounts.js";
 import { ensureShopTillPickup } from "../services/shop-till-rules.js";
 import { placementVatMethodOf, type OrderVatMethod } from "../value-objects/order-vat-method.js";
 import {
@@ -154,6 +156,7 @@ export class Order {
     private readonly locale: OrderLocale | null,
     private readonly supplyMark: OrderSupplyMark,
     private readonly pricingNotesValue: OrderPricingNotes,
+    private readonly offerValue: OrderOffer | null,
   ) {}
 
   /**
@@ -208,7 +211,10 @@ export class Order {
   ): Order {
     ensureDraftable(input);
     const fulfillment = normalizeFulfillment(input.fulfillment, input.companyId);
-    const amounts = draftedAmountsOf(input, fulfillment, vatMethod);
+    const { amounts, offer } = offerAppliedTo(
+      draftedAmountsOf(input, fulfillment, vatMethod),
+      input,
+    );
     return new Order(
       input.companyId,
       input.billedCompanyId,
@@ -238,6 +244,7 @@ export class Order {
       input.locale,
       supply,
       notes,
+      offer,
     );
   }
 
@@ -299,9 +306,10 @@ export class Order {
     ensureFulfillmentKeepsPromotion(current, revisedFulfillment);
     // Le créneau, contre les heures figées d'une promotion « au retrait ».
     ensureSlotKeepsPromotionHours(current, revisedFulfillment);
-    // La marque se relit sur la commande : elle n'a aucun setter.
+    // La marque se relit sur la commande : elle n'a aucun setter. L'offre
+    // aussi : une modification ne change pas qui paie.
     const revised = Order.compose(
-      input,
+      offerCarriedOn(current, input),
       current.vatMethod,
       {
         supply: current.supply,
@@ -331,6 +339,11 @@ export class Order {
    */
   get billedCompanyId(): string | null {
     return this.billedCompanyIdValue;
+  }
+
+  /** Le motif et la valeur d'une commande offerte, `null` sinon. */
+  get offer(): OrderOffer | null {
+    return this.offerValue;
   }
 
   /** Qui commande : `pro` avec une société, `public` sinon. */
@@ -588,6 +601,7 @@ export class Order {
       vatShares: this.drafted.vatShares,
       ttcByRate: this.drafted.ttcByRate,
       totalCents: this.drafted.totalCents,
+      offer: this.offerValue,
       paymentStatus: this.payment.status,
       settlementVenue: this.settlementVenueValue,
       stripePaymentIntentId: this.payment.intentId,

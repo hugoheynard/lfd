@@ -10,6 +10,7 @@ import {
   type OrderStatus,
   type PaymentStatus,
 } from "@lfd/contracts";
+import type { OrderOfferReason } from "../../../domain/value-objects/order-offer.js";
 import { orderPretaxCents } from "@lfd/money";
 
 import {
@@ -65,6 +66,11 @@ export interface RevisableOrder {
   readonly status: OrderStatus;
   readonly paymentStatus: PaymentStatus;
   readonly totalCents: number;
+  /**
+   * Le motif d'une commande offerte, absent sinon : la révision le relit ici
+   * pour que la commande reste offerte (`offerCarriedOn`).
+   */
+  readonly offer?: OrderOfferReason;
   /** Où le règlement se fera hors de chez nous, figé à la passation — `shop_till`, ou `null`. */
   readonly settlementVenue: SettlementVenue | null;
   /** Le HT de la composition écrite (`orderPretaxCents`), relu pour l'ancien HT de l'e-mail. */

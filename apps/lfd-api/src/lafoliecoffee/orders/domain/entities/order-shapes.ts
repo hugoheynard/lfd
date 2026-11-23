@@ -23,6 +23,7 @@ import type { FreeDelivery } from "../value-objects/free-delivery.js";
 import type { OrderBuyerKind } from "../value-objects/order-buyer-kind.js";
 import type { OrderLineInput, OrderLineSnapshot } from "../value-objects/order-line.js";
 import type { OrderLocale } from "../value-objects/order-locale.js";
+import type { OrderOffer, OrderOfferReason } from "../value-objects/order-offer.js";
 import type { OrderRateAmounts } from "../value-objects/order-rate-amounts.js";
 import type { OrderVatMethod } from "../value-objects/order-vat-method.js";
 import type {
@@ -220,6 +221,13 @@ export interface DraftOrderInput {
    * saisie du staff, ou boutique qui ne l'a pas envoyée. Jamais devinée.
    */
   readonly locale: OrderLocale | null;
+  /**
+   * Le motif d'une commande **offerte** par l'équipe, absent sinon. Présent,
+   * l'agrégat compose la commande entière puis la ramène à zéro
+   * (`offeredAmountsOf`). Une révision ne le lit pas sur la demande : elle le
+   * relit sur la commande (`Order.recompose`).
+   */
+  readonly offer?: OrderOfferReason;
 }
 
 /** État de la commande sérialisé pour la persistance — aucun type Prisma ici. */
@@ -311,6 +319,8 @@ export interface OrderToPlace {
   /** La part de chaque taux d'une commande `exact_ht`, `null` pour `line_ht`. */
   readonly ttcByRate: readonly OrderRateAmounts[] | null;
   readonly totalCents: number;
+  /** Le motif et la valeur d'une commande offerte, `null` sinon. */
+  readonly offer: OrderOffer | null;
   readonly paymentStatus: PaymentStatus;
   /** Où le règlement se fera hors de chez nous, `null` sinon (cf. `SettlementVenue`). */
   readonly settlementVenue: SettlementVenue | null;
