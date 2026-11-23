@@ -2,7 +2,8 @@
 
 > 📝 **Plan, rédigé le 2026-11-22. Rien n'est bâti.** Il touche l'argent :
 > contredit par `vitruve` le même jour (3 bloquants, 5 sérieux, tous intégrés,
-> § 9). Les questions à trancher sont au § 8.
+> § 9). Toutes les questions sont tranchées par Hugo (§ 8) : le plan est
+> prêt à bâtir, lot par lot.
 
 ## 0. Le périmètre : les pros, et eux seuls
 
@@ -180,8 +181,9 @@ ligne du registre (`refused`, la cause, la phrase) et l'alerte staff (le
 canal d'alertes de la fiche client). La ligne **se rejoue** à chaque
 balayage tant que l'heure limite est ouverte : elle est mise à jour (même
 clé), jamais doublée ; la correction du staff (« réservez-le à nouveau »)
-fait donc repartir l'échéance. L'alerte et l'e-mail au client (Q5) ne
-partent qu'au **premier** refus d'une cause, pas à chaque balayage.
+fait donc repartir l'échéance. L'alerte ne part qu'au **premier** refus
+d'une cause, pas à chaque balayage. **Le client ne reçoit rien** : le staff
+seul est prévenu, et le commercial appelle (Q5).
 
 **Une erreur technique** (lecteur indisponible, base qui coupe) ne
 s'inscrit pas au registre : elle se journalise et le balayage suivant
@@ -198,7 +200,7 @@ production des commandes que personne n'a payées (à vérifier dans le code
 avant le bâti : comment le fournil traite aujourd'hui une commande `link`
 non réglée).
 
-Proposition pour le premier bâti (Q2) :
+Décidé pour le premier bâti (Q2) :
 
 - **Au compte seulement.** L'échéance se règle au compte si la société a un
   crédit réellement accordé — le même prédicat que
@@ -229,7 +231,7 @@ modifier ou annuler.
 | **R2** | Le registre `subscription_occurrence_runs` : `(subscription_id, occurrence_date)` unique, `outcome` (`generated \| refused \| missed_deadline`), `order_id`, `reason`, `first_refused_at`, `at` ; écrit par le port `OccurrenceRunLedger` de `subscriptions` ; et `subscriptions.armed_from` (borne basse, § 4)                                                                  | additive                                                                                                                                                                                                                                            |
 | **R3** | `OrderDrafting` gagne `waiver: "ignore"` ; la garde du jour fermé est localisée ou ajoutée ; `PlaceRecurringOccurrenceHandler` (§ 5) : mur, composition par la porte client, juges, règlement au compte, écriture ; tests unitaires et e2e (le mur, l'unicité sous double balayage, chaque refus, le rejeu d'un refus corrigé, la dérogation intacte, le plan arrêté qui refuse) | —                                                                                                                                                                                                                                                   |
 | **R4** | Le balayage `POST admin/subscriptions/sweep`, limité aux paniers d’une société non publique (§ 0), sous `RecomputeGuard`, `@Idempotent`, appelé par le cron `*/5` du Worker ; borné par lot ; le test de `dev-toolbox` des routes de cron                                                                                                                                        | —                                                                                                                                                                                                                                                   |
-| **R5** | L'e-mail « non passée » au bloc `mail` (l'accusé « passée » existe déjà, au plus un texte choisi sur `fromSubscriptionId`), et l'alerte staff                                                                                                                                                                                                                                    | —                                                                                                                                                                                                                                                   |
+| **R5** | L'alerte staff d'un refus (premier refus d'une cause) ; aucun e-mail au client (Q5). L'accusé « passée » existe déjà, au plus un texte choisi sur `fromSubscriptionId`                                                                                                                                                                                                           | —                                                                                                                                                                                                                                                   |
 | **R6** | Les écrans : prochaines échéances et leur sort, côté client (sortie de `legacy/`) et sur la fiche client du back-office                                                                                                                                                                                                                                                          | —                                                                                                                                                                                                                                                   |
 
 Les portes concernées : `lint:write-idempotence` (la route de balayage),
@@ -238,20 +240,19 @@ Les portes concernées : `lint:write-idempotence` (la route de balayage),
 lui-même), `lint:company-role-readers`, `lint:durable-cross-block`. La
 propriété du registre n'est tenue par aucune porte (§ 5).
 
-## 8. Les questions à Hugo
+## 8. Les décisions de Hugo (2026-11-23)
 
-- **Q1 — L'horizon.** Générer 7 jours avant la journée de service ? Plus tôt
-  donne de la visibilité au fournil ; plus tard, un prix plus frais.
-- **Q2 — Le règlement.** Au compte seulement dans un premier temps (pros
-  sans crédit : rien ne se génère, et l'écran le dit) ?
-- ~~Q3 — Les payeurs publics~~ : hors périmètre, remis à plus tard (§ 0,
-  Hugo, 2026-11-23).
-- **Q4 — Le mois court.** Le 31 devient le dernier jour du mois, ou
-  l'échéance est sautée ?
-- **Q5 — Le client prévenu d'un refus.** E-mail au client, ou alerte staff
-  seulement (le commercial appelle) ?
-- ~~Q6 — Les abonnements sans société~~ : écartés avec les paniers perso
-  (§ 0, Hugo, 2026-11-23).
+- **Q1 — L'horizon** : la commande se génère **7 jours** avant la journée de
+  service (réglage du commerce).
+- **Q2 — Le règlement** : **au compte**. Un pro sans crédit accordé ne
+  génère rien, et l'écran le dit.
+- **Q3 — Les payeurs publics** : hors périmètre, remis à plus tard (§ 0).
+- **Q4 — Le mois court** : une échéance au-delà du dernier jour du mois
+  tombe **le dernier jour du mois**.
+- **Q5 — Un refus** : prévenir le **staff seulement**, par l'alerte ; aucun
+  e-mail au client.
+- **Q6 — Les abonnements sans société** : écartés avec les paniers perso
+  (§ 0).
 
 ## 9. La contradiction de `vitruve` (2026-11-22)
 
