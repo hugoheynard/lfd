@@ -1,6 +1,7 @@
 # Plan — un prélèvement d'essai à plusieurs débiteurs
 
-> Doc-first, 2026-11-18. Rien n'est bâti. Prolonge
+> ✅ **Éprouvé à la banque le 2026-11-23** (Hugo) : un fichier d'essai sur
+> deux établissements a été prélevé. Bâti le 2026-11-18. Prolonge
 > [`plan-prelevement-d-essai.md`](plan-prelevement-d-essai.md) (essai à UN
 > débiteur, bâti le 2026-10-22, éprouvé à la banque sur un établissement).
 
