@@ -218,6 +218,15 @@ faits O-8, et un seuil d'alerte. Pas avant la réponse du cabinet.
   est son prix de particulier.
 - **Un particulier peut recevoir une commande offerte** : c'est un usage
   attendu (dégustations de mariage, événements), d'où la nature `event`.
+- **Une société qui n'est pas dans le système** : l'équipe crée sa fiche
+  depuis le back-office (`POST /admin/companies`, puis son détenteur par
+  `POST /admin/companies/:companyId/holder`), sans SIRET si on ne l'a pas
+  (le SIRET est facultatif, `LegalRegistration.declare`, vérifié le
+  2026-11-23). La fiche reste non active, donc un prospect, et la commande
+  offerte se passe sur elle. C'est voulu pour l'acquisition : le prospect
+  existe ensuite pour le suivi commercial, et son activation se fait plus
+  tard par le geste habituel. Le destinataire libre (O7) reste pour une
+  personne sans société.
 - **La valeur offerte est le calcul normal**, promotions comprises (O-3).
   Doute assumé : une promotion à usage limité est consommée par une commande
   que le client n'a pas payée. C'est la conséquence d'un calcul unique ; si
