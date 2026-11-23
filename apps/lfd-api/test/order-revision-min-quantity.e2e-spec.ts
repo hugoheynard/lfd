@@ -23,17 +23,17 @@ import { INTENT_KEY, freshIntent } from "./intent-key.js";
  * (dérogation à R3 décidée par Hugo le 2026-10-29,
  * `documentation/catalogue/plan-quantite-minimale.md`, M4).
  *
- * Ce que seul ce niveau prouve : le minimum relu pour une ligne gardée est
- * celui que `catalog_items` porte AUJOURD'HUI pour la clientèle de la commande,
- * et un article retiré depuis (`withdrawn_at`) n'en a plus. La commande est
- * passée sans minimum ; le minimum est posé ensuite.
+ * Ce que seul ce niveau prouve : l'équipe qui modifie n'est pas tenue au
+ * minimum que `catalog_items` porte aujourd'hui (décidé par Hugo le
+ * 2026-11-23 ; le client qui modifie l'est, `revise-order-min-quantity`), et
+ * un article retiré depuis (`withdrawn_at`) ne se retarifie pas. La commande
+ * est passée sans minimum ; le minimum est posé ensuite.
  */
 
 const BUYER = "auth0|acheteur-revision-minimum";
 const DAY = serviceDay(7);
 const PRO_MINIMUM = 6;
 const ORDERED = 10;
-const BELOW_MINIMUM = "orders.line.quantity_below_minimum";
 
 let ctx: E2eContext;
 
@@ -110,17 +110,13 @@ async function croissants(orderId: string): Promise<number | undefined> {
 }
 
 describe("POST /admin/orders/:id/revisions — le minimum d'une ligne gardée", () => {
-  it("une ligne gardée baissée sous le minimum : 409, la commande reste intacte", async () => {
+  it("🔴 l'équipe baisse une ligne gardée sous le minimum : la révision passe", async () => {
     const { orderId, pickupId } = await placed();
     await setCroissant({ proMinQuantity: PRO_MINIMUM });
 
-    const response = await revise(orderId, pickupId, [
-      { sku: "VIE-001-1", quantity: PRO_MINIMUM - 1 },
-    ]);
+    await revise(orderId, pickupId, [{ sku: "VIE-001-1", quantity: PRO_MINIMUM - 1 }]).expect(200);
 
-    expect(response.status).toBe(409);
-    expect(jsonBody<{ code: string }>(response).code).toBe(BELOW_MINIMUM);
-    expect(await croissants(orderId)).toBe(ORDERED);
+    expect(await croissants(orderId)).toBe(PRO_MINIMUM - 1);
   });
 
   it("une ligne gardée baissée jusqu'au minimum : la révision passe", async () => {

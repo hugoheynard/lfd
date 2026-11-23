@@ -72,6 +72,8 @@ export async function prepareStaffOrder(
       placedByStaffId: staffUserId,
       buyerKind: REGISTERED_BUYER,
       exceedItemLimits,
+      // L'équipe commande ce qu'il faut : pas de minimum d'achat (Hugo, 2026-11-23).
+      minimumsWaived: true,
       ...offerOf(payload),
     },
     payload,

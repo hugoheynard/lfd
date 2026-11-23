@@ -32,4 +32,12 @@ export interface OrderParties {
    * ailleurs : le client, l'invité et la boutique n'offrent rien.
    */
   readonly offer?: OrderOfferReason;
+  /**
+   * L'équipe saisit ou modifie : les minimums d'achat en pièces des articles
+   * ne s'appliquent pas (décidé par Hugo le 2026-11-23 — l'équipe commande ce
+   * qu'il faut, la production s'adapte). Posé par la saisie de l'équipe, le
+   * comptoir et la modification par l'équipe ; absent pour le client. Le
+   * minimum et le pas d'un article au poids, eux, tiennent toujours.
+   */
+  readonly minimumsWaived?: boolean;
 }

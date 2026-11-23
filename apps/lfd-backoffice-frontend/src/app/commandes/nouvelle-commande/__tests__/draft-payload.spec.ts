@@ -161,12 +161,13 @@ describe('la traduction écran ↔ brouillon', () => {
   });
 
   /** Plan `catalogue/plan-quantite-minimale.md`, Q6 : le plancher du jour suit la ligne. */
-  it('rouvre une pièce avec le minimum de pièces du catalogue du jour', () => {
+  /** Hugo, 2026-11-23 : l'équipe n'est pas tenue au minimum d'achat d'une pièce. */
+  it('🔴 rouvre une pièce SANS le minimum de pièces du catalogue', () => {
     const catalogue = [{ ...CATALOGUE[0]!, minQuantity: 6 }];
-    const restored = restoreLines(viewOf({ lines: [{ sku: 'VIE-001', quantity: 12 }] }), catalogue);
+    const restored = restoreLines(viewOf({ lines: [{ sku: 'VIE-001', quantity: 2 }] }), catalogue);
 
     expect(restored.lines).toEqual([
-      { sku: 'VIE-001', name: 'Croissant', unitPriceMillicents: 120, quantity: 12, minimum: 6 },
+      { sku: 'VIE-001', name: 'Croissant', unitPriceMillicents: 120, quantity: 2 },
     ]);
   });
 

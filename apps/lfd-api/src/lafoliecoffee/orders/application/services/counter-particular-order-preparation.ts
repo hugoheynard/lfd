@@ -61,6 +61,8 @@ export async function prepareCounterParticularOrder(
       buyerKind: REGISTERED_BUYER,
       // Le particulier ne passe pas outre la limite d'un produit dans son espace.
       exceedItemLimits: false,
+      // L'équipe commande ce qu'il faut : pas de minimum d'achat (Hugo, 2026-11-23).
+      minimumsWaived: true,
     },
     payload,
     // Aucun bon de fidélité dépensé par l'équipe (§ 5).

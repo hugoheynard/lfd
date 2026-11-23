@@ -11,10 +11,12 @@ import { refusedEarly } from "./revision-seen.js";
  *
  * La commande de la scène porte 10 croissants, passée sans minimum ; le
  * catalogue en publie un ensuite (6 pour un pro). Seule une ligne gardée dont
- * la quantité CHANGE y est tenue.
+ * la quantité CHANGE y est tenue, et seulement quand le CLIENT modifie :
+ * l'équipe n'est pas tenue au minimum (décidé par Hugo le 2026-11-23).
  */
 
 const STAFF = { kind: "staff", staffId: "stf_1" } as const;
+const CUSTOMER = { kind: "customer", userId: "usr_1" } as const;
 const PRO_MINIMUM = 6;
 
 function withMinimum(proMinimum: number): readonly UnsealedCatalogItem[] {
@@ -37,8 +39,9 @@ const WITHOUT_CROISSANT = CATALOG.filter((item) => item.sku !== "VIE-001");
 function revise(
   asSeen: SeenRevision,
   lines: readonly { sku: string; quantity: number }[],
+  actor: typeof STAFF | typeof CUSTOMER = CUSTOMER,
 ): Promise<ReviseOrderCommand> {
-  return asSeen("ord_1", STAFF, 0, content({ lines: [...lines] }));
+  return asSeen("ord_1", actor, 0, content({ lines: [...lines] }));
 }
 
 describe("ReviseOrderHandler — le minimum d'une ligne gardée", () => {
@@ -51,6 +54,19 @@ describe("ReviseOrderHandler — le minimum d'une ligne gardée", () => {
       handler.execute(await revise(refusedEarly, [{ sku: "VIE-001", quantity: PRO_MINIMUM - 1 }])),
     ).rejects.toBeInstanceOf(QuantityBelowMinimumError);
     expect(revisions.saved).toEqual([]);
+  });
+
+  /** Hugo, 2026-11-23 : l'équipe commande ce qu'il faut, la production s'adapte. */
+  it("🔴 l'équipe baisse une ligne gardée SOUS le minimum : la révision passe", async () => {
+    const { handler, asSeen, revisions } = reviseScene(await placedOrder(), {
+      catalogItems: withMinimum(PRO_MINIMUM),
+    });
+
+    await handler.execute(
+      await revise(asSeen, [{ sku: "VIE-001", quantity: PRO_MINIMUM - 1 }], STAFF),
+    );
+
+    expect(revisions.saved).toHaveLength(1);
   });
 
   it("laisse passer une ligne gardée baissée jusqu'au minimum", async () => {

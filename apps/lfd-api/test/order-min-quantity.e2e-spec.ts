@@ -23,8 +23,9 @@ import { INTENT_KEY, freshIntent } from "./intent-key.js";
  *
  * Ce que seul ce niveau prouve : le minimum projeté dans `catalog_items` est
  * celui que la passation et le devis lisent, chacun pour SA clientèle — le pro
- * contre `pro_min_quantity`, le particulier contre `public_min_quantity` —, et
- * l'équipe n'y échappe pas. Un refus est un 409 qui n'écrit rien.
+ * contre `pro_min_quantity`, le particulier contre `public_min_quantity`. Un
+ * refus est un 409 qui n'écrit rien. L'équipe, elle, n'y est pas tenue
+ * (décidé par Hugo le 2026-11-23).
  */
 
 const PRO = "auth0|pro-minimum";
@@ -150,13 +151,12 @@ describe("la commande saisie par l'équipe (nouvelle commande pro, comptoir)", (
     expect(items.find((item) => item.sku === "VIE-001-1")?.minQuantity).toBe(PRO_MINIMUM);
   });
 
-  it("sous le minimum pro : 409, l'équipe n'y échappe pas", async () => {
-    await expectRefused(
-      await staff()
-        .post("/admin/orders")
-        .set(INTENT_KEY, freshIntent())
-        .send(staffOrder(PRO_MINIMUM - 1)),
-    );
+  it("🔴 sous le minimum pro : la commande de l'équipe passe", async () => {
+    await staff()
+      .post("/admin/orders")
+      .set(INTENT_KEY, freshIntent())
+      .send(staffOrder(PRO_MINIMUM - 1))
+      .expect(201);
   });
 
   it("au minimum pro : la commande passe", async () => {

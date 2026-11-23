@@ -13,7 +13,7 @@ import type {
   StaffSettlement,
 } from '@lfd/contracts';
 
-import { firstSaleQuantityOf, pieceMinimumOf, saleStepOf } from '@lfd/b2b-ui/catalog';
+import { firstSaleQuantityOf, saleStepOf } from '@lfd/b2b-ui/catalog';
 
 import { requestedLineOf, type CartLine } from './cart.store';
 import { NEW_ADDRESS, type DraftSnapshot } from './draft.store';
@@ -221,8 +221,8 @@ export function restoreLines(
 
 /**
  * L'unité, le pas et le minimum d'un article au poids, lus au catalogue du
- * jour (P5) ; pour une pièce, son seul minimum de pièces quand il en a un
- * (plan quantité minimale, Q6) — sinon rien, la ligne reste celle d'avant.
+ * jour (P5) ; pour une pièce, rien : l'équipe n'est pas tenue au minimum
+ * d'achat (décidé par Hugo le 2026-11-23), la ligne reste celle d'avant.
  */
 export function saleTermsOf(
   item: CatalogItemView,
@@ -230,8 +230,7 @@ export function saleTermsOf(
   const step = saleStepOf(item);
   const minimum = firstSaleQuantityOf(item);
   if (item.saleUnit !== 'weight') {
-    const pieces = pieceMinimumOf(item);
-    return pieces === null ? {} : { minimum: pieces };
+    return {};
   }
   return {
     saleUnit: 'weight',

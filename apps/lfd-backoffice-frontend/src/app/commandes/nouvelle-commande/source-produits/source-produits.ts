@@ -363,8 +363,9 @@ function saleTermsOf(item: CatalogItemView | undefined): Partial<CatalogProduct>
   }
   const { saleUnit, step, minimum, unit, outOfStock } = toCatalogProduct(item);
   if (saleUnit !== 'weight') {
-    // Une pièce n'apporte que son minimum de pièces (plan quantité minimale, Q6).
-    return minimum === undefined ? {} : { minimum };
+    // Une pièce n'apporte rien : l'équipe n'est pas tenue au minimum d'achat
+    // (décidé par Hugo le 2026-11-23).
+    return {};
   }
   return {
     saleUnit,
@@ -440,9 +441,12 @@ function fromOrderLine(
     },
     unitPriceMillicents: line.unitPriceMillicents,
     hint: `×${saleQuantityLabel(line.quantity, line.saleUnit)}`,
-    // Reprise d'une commande passée sous un minimum posé depuis : on propose le
-    // minimum d'aujourd'hui, que le serveur exige (plan quantité minimale, Q6).
-    quantity: Math.max(line.quantity, item === undefined ? 0 : (firstSaleQuantityOf(item) ?? 0)),
+    // Reprise d'une commande : sa quantité. Au poids seulement, le minimum
+    // d'aujourd'hui, que le serveur exige ; une pièce n'en a pas pour l'équipe.
+    quantity:
+      item === undefined || item.saleUnit !== 'weight'
+        ? line.quantity
+        : Math.max(line.quantity, firstSaleQuantityOf(item) ?? 0),
     available: true,
     priceSuffix: 'HT',
     unavailableLabel: RETIRED_LABEL,

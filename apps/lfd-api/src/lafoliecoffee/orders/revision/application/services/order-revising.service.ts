@@ -293,6 +293,8 @@ export class OrderRevising {
       // La composition d'une modification ne juge pas l'heure limite : ses
       // gardes de délai sont celles de ce service, qui ont leur propre asker.
       exceedItemLimits: false,
+      // L'équipe qui modifie n'est pas tenue aux minimums d'achat.
+      minimumsWaived: actor === "staff",
     };
     const loaded = await this.composition.load({
       content,

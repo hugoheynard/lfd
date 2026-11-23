@@ -57,7 +57,8 @@ export interface RevisedLines {
  * refusée garde son prix figé, pour que le total montré soit celui d'un prix
  * convenu, jamais celui d'un prix substitué.
  *
- * Même règle pour l'équipe (M4) : aucune dérogation.
+ * L'équipe n'est pas tenue au minimum (décidé par Hugo le 2026-11-23,
+ * `OrderParties.minimumsWaived`) ; la retarification, elle, vaut pour tous.
  */
 export async function priceRevisedLines(
   linePricing: OrderLinePricing,
@@ -68,11 +69,13 @@ export async function priceRevisedLines(
 ): Promise<RevisedLines> {
   const split = revisedLineRequests(revised.lines, requested);
   const changes = keptQuantityChanges(revised.lines, split);
-  const minimums = await linePricing.minimumsOf(
-    changes.map((change) => change.sku),
-    parties,
-  );
-  ensureKeptMinimums(changes, minimums);
+  if (parties.minimumsWaived !== true) {
+    const minimums = await linePricing.minimumsOf(
+      changes.map((change) => change.sku),
+      parties,
+    );
+    ensureKeptMinimums(changes, minimums);
+  }
   const repriced = await linePricing.repriceKept(
     changes.map((change) => ({
       sku: change.sku,

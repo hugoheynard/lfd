@@ -11,7 +11,10 @@ type ServedCompany = Pick<PricingParties, "companyId">;
  * ce que la tarification d'un panier reçoit — la porte vient de la route ou
  * de la commande, jamais d'un corps de requête.
  */
-type ServedBuyer = Pick<PricingParties, "companyId" | "buyerKind">;
+type ServedBuyer = Pick<PricingParties, "companyId" | "buyerKind"> & {
+  /** L'équipe saisit : pas de minimum d'achat en pièces (cf. `OrderParties`). */
+  readonly minimumsWaived?: boolean;
+};
 import { Pricer } from "../../../pricing/application/pricer.js";
 import { UnknownSkuError } from "../../../catalog/domain/errors/unknown-sku.error.js";
 import {
@@ -316,7 +319,8 @@ export class OrderLinePricing {
     // Puis le TOTAL de chaque SKU contre le minimum de SA clientèle
     // (`plan-quantite-minimale.md`, Q5) — la même audience que le prix, donc
     // le même minimum que le rayon a annoncé. Devis et passation passent ici.
-    for (const [sku, quantity] of quantities) {
+    // L'équipe n'y est pas tenue (décidé par Hugo le 2026-11-23).
+    for (const [sku, quantity] of parties.minimumsWaived === true ? [] : quantities) {
       const found = foundOrRefused(catalogue, sku);
       ensureMinimumQuantity(
         { ...found, minQuantity: minQuantityFor(found.minQuantities, audience) },

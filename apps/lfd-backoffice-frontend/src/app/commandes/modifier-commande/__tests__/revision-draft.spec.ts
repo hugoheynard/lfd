@@ -220,7 +220,8 @@ describe('la commande voulue, telle que le serveur la reçoit', () => {
 
 /** Hugo, 2026-10-29 : une ligne gardée ne se CHANGE pas sous le minimum du jour. */
 describe('le minimum d’une ligne en révision', () => {
-  it('porte le minimum de pièces du catalogue du jour sur une ligne gardée', () => {
+  /** Hugo, 2026-11-23 : l'équipe n'est pas tenue au minimum d'achat d'une pièce. */
+  it('🔴 ne porte PAS le minimum de pièces du catalogue sur une ligne gardée', () => {
     const [line] = revisionCartOf(
       {
         lines: [
@@ -245,7 +246,7 @@ describe('le minimum d’une ligne en révision', () => {
         },
       ],
     );
-    expect(line?.minimum).toBe(6);
+    expect(line?.minimum).toBeUndefined();
   });
 
   it('au-dessus du minimum : le « − » s’arrête au minimum', () => {
