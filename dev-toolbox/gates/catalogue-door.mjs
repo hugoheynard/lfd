@@ -75,6 +75,8 @@ export const FALLBACKS = {
 
 /** Hors des chemins de l'instantané — chacun avec sa raison (relevé le 2026-11-06). */
 export const ADMITTED = {
+  "lafoliecoffee/catalog/infrastructure/prisma-category-names.reader.ts":
+    "export des ventes : le nom d'une famille d'après un identifiant figé sur une ligne vendue, retirée comprise — hors du devis et du rayon",
   "lafoliecoffee/catalog/infrastructure/prisma-catalog-admin.reader.ts":
     "administration : le catalogue du personnel, retirés et en revue compris",
   "lafoliecoffee/catalog/infrastructure/prisma-made-to-order-admin.reader.ts":

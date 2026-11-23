@@ -45,6 +45,14 @@ const SKIP_DIRS = new Set(["node_modules", "client", "__tests__"]);
  * pourquoi (choix relevés le 2026-11-22).
  */
 export const ADMITTED = new Map([
+  [
+    "apps/lfd-api/src/lafoliecoffee/account/infrastructure/prisma-company-sales-identity.reader.ts",
+    {
+      calls: 1,
+      reason:
+        "nomme les sociétés des ventes exportées : un compte supprimé a pu vendre, sa vente reste à compter",
+    },
+  ],
   // — Des noms par identifiants venus d'un fait : facture, commande, prélèvement…
   [
     "apps/lfd-api/src/lafoliecoffee/accounting/infrastructure/prisma-detached-unpaid.reader.ts",
