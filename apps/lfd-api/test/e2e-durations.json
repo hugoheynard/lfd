@@ -359,6 +359,7 @@
   "test/my-invoices.e2e-spec.ts": 5755,
   "test/my-shop-catalogue.e2e-spec.ts": 7725,
   "test/offered-order-readers.e2e-spec.ts": 13700,
+  "test/offered-particular-order.e2e-spec.ts": 15000,
   "test/operation-sales.e2e-spec.ts": 7147,
   "test/operations-at-commerce.e2e-spec.ts": 3600,
   "test/operations-image-at-commerce.e2e-spec.ts": 5192,
