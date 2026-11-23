@@ -621,29 +621,20 @@ describe("le cache des matériaux, vu d'une autre instance", () => {
  * **Le budget de l'estimation de la saisie** (`POST /admin/orders/estimate`,
  * plan `documentation/commandes/passation/commande-passee-par-l-equipe.md`, § 8).
  *
- * Elle compose la commande entière sans l'écrire : le payeur, la porte de la
- * boutique, la marque, la résolution des prix, l'acheminement et sa remise,
- * l'heure limite, les CGV — puis le jugement du crédit et l'heure limite
- * affichée. `vitruve` l'estimait à une quinzaine de lectures ; le chiffre
- * ci-dessous est MESURÉ (2026-11-03), à froid, au retrait et au compte :
- * **33**, porte de la surface staff comprise (identité, droits — leur part
- * n'a pas été isolée), le même pour une ligne et pour dix.
- *
- * 🔴 **De 33 à 31 le 2026-11-04** : l'estampille du cache des matériaux se
- * lit une fois par requête (le chargeur des prix, la remise du point et les
- * promotions panier la relisaient chacun). Mesuré par trace des modèles.
- *
- * 🔴 **De 31 à 28 le 2026-11-06** (lot M1b, plan des matériaux du catalogue) :
- * les lignes lues trois fois, les SKU d'opération, le classement et l'heure
- * limite lue deux fois (sept lectures) deviennent les numéros, les
- * réservations du client, les articles et l'heure limite (quatre).
+ * Elle compose la commande entière sans l'écrire : le payeur, la marque, la
+ * résolution des prix, l'acheminement et sa remise, l'heure limite, les CGV —
+ * puis le jugement du crédit et l'heure limite affichée. Elle ne lit pas
+ * l'ouverture de la boutique : l'équipe n'y est pas tenue (décidé par Hugo le
+ * 2026-11-23). Le chiffre ci-dessous est MESURÉ, à froid, au retrait et au
+ * compte, porte de la surface staff comprise (identité, droits), le même pour
+ * une ligne et pour dix.
  *
  * Il est plus cher qu'un devis, et c'est le prix d'une seule arithmétique :
  * le front ne l'appelle qu'une fois la saisie assez complète, après 400 ms
  * d'inactivité. Ce qui compte ici, comme pour le devis, est qu'il ne suive
  * pas la taille du panier.
  */
-const COLD_ESTIMATE_OPS = 27;
+const COLD_ESTIMATE_OPS = 25;
 
 describe("l'estimation de la saisie", () => {
   async function seedBuyer(): Promise<Record<string, unknown>> {

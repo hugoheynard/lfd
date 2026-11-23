@@ -2,8 +2,15 @@ import { settlementRegimeSchema } from "../order-sheet.js";
 import { shopTillOrdersReportQuerySchema } from "../shop-till-orders-report.js";
 
 describe("le régime de règlement — à régler en boutique", () => {
-  it("admet `shop_till`, à côté des régimes d'avant", () => {
-    expect(settlementRegimeSchema.options).toEqual(["paid", "due", "account", "free", "shop_till"]);
+  it("admet `shop_till` et `offered`, à côté des régimes d'avant", () => {
+    expect(settlementRegimeSchema.options).toEqual([
+      "paid",
+      "due",
+      "account",
+      "free",
+      "shop_till",
+      "offered",
+    ]);
   });
 });
 

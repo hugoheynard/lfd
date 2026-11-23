@@ -145,9 +145,10 @@ describe('grantGroups', () => {
    * `b2b_order_review`, le visa des commandes
    * (commandes/back-office/plan-visa-des-commandes.md, V1). 78 le 2026-11-22 :
    * `staff_notice_audiences`, les destinataires des avis
-   * (payment/les-liens-de-paiement.md, P1c).
+   * (payment/les-liens-de-paiement.md, P1c). 79 le 2026-11-23 :
+   * `b2b_offer_order`, offrir une commande (commandes/passation/plan-commande-offerte.md).
    */
   it('compte les domaines du catalogue', () => {
-    expect(RESOURCE_COUNT).toBe(78);
+    expect(RESOURCE_COUNT).toBe(79);
   });
 });
