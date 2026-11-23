@@ -418,6 +418,14 @@ describe('PanierCommande — la limite d’un produit', () => {
     expect(validate(host)).toBeUndefined();
   });
 
+  it('en tête : le résumé nomme les produits, et « Passer outre » y vit, pas sur la ligne', () => {
+    const { host } = inLines(exceeded);
+    const summary = host.querySelector('.pan-actions [data-item-limit-summary]');
+    expect(squash(summary?.textContent)).toContain('Un produit a dépassé sa limite de commande');
+    expect(summary?.querySelector('[data-item-limit-override]')).not.toBeNull();
+    expect(host.querySelector('[data-item-limit] [data-item-limit-override]')).toBeNull();
+  });
+
   it('« Passer outre » ouvre le motif, obligatoire ; un motif rouvre la validation', () => {
     const { fixture, host, draft } = inLines(exceeded);
     host.querySelector<HTMLButtonElement>('[data-item-limit-override]')?.click();

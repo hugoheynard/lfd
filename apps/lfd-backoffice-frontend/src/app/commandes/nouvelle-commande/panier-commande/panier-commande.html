@@ -21,6 +21,38 @@
 <!-- La validation, EN TÊTE du panneau (Hugo, 2026-11-23) : visible sans
      faire défiler, au-dessus des réglages et des lignes, dans toutes les vues. -->
 <div class="pan-actions" [class.is-split]="split()" data-panier-actions>
+  <!-- Les produits qui ont passé leur limite, réunis en tête (Hugo,
+       2026-11-23) : un seul geste et un seul motif pour toutes ces lignes,
+       sans aller chercher chaque produit dans la liste. -->
+  @if (exceededSummary(); as summary) {
+    <fold-callout variant="warning" data-item-limit-summary>
+      <div class="pan-blocker">
+        <span>{{ summary }}</span>
+        @if (!draft().itemLimitOverriding()) {
+          <button
+            foldButton
+            size="sm"
+            emphasis="outline"
+            data-item-limit-override
+            (click)="draft().itemLimitOverriding.set(true)"
+          >
+            Passer outre
+          </button>
+        }
+      </div>
+    </fold-callout>
+    @if (draft().itemLimitOverriding()) {
+      <fold-textarea
+        label="Motif du dépassement"
+        required
+        data-item-limit-reason
+        placeholder="Pourquoi l'équipe passe outre la limite de ces produits."
+        [rows]="2"
+        [hint]="reasonHint()"
+        [(value)]="draft().itemLimitReason"
+      />
+    }
+  }
   <!-- Le même bloc dans les deux vues ; un refus qui vit dans l'autre vue y
        renvoie d'un geste. -->
   @for (blocker of blockers(); track blocker.text) {
@@ -298,34 +330,12 @@
               >
                 <div class="pan-blocker">
                   <span>{{ notice.text }}</span>
-                  @if (notice.kind === 'exceeded' && !draft().itemLimitOverriding()) {
-                    <button
-                      foldButton
-                      size="sm"
-                      emphasis="outline"
-                      data-item-limit-override
-                      (click)="draft().itemLimitOverriding.set(true)"
-                    >
-                      Passer outre
-                    </button>
-                  }
                 </div>
               </fold-callout>
             }
           </li>
         }
       </ul>
-      @if (asksReason() && draft().itemLimitOverriding()) {
-        <fold-textarea
-          label="Motif du dépassement"
-          required
-          data-item-limit-reason
-          placeholder="Pourquoi l'équipe passe outre la limite du produit."
-          [rows]="2"
-          [hint]="reasonHint()"
-          [(value)]="draft().itemLimitReason"
-        />
-      }
     }
   </div>
 </ng-template>

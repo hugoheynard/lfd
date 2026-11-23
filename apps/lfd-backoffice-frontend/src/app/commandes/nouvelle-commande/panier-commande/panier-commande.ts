@@ -63,7 +63,12 @@ import {
   AcheminementCommande,
   type FulfillmentChoice,
 } from '../acheminement-commande/acheminement-commande';
-import { asksItemLimitReason, itemLimitBlockerOf, itemLimitNoticesOf } from '../item-limits';
+import {
+  asksItemLimitReason,
+  exceededSummaryOf,
+  itemLimitBlockerOf,
+  itemLimitNoticesOf,
+} from '../item-limits';
 import { MontantsPanier } from '../montants-panier/montants-panier';
 import { panierBlockersOf, type PanierBlocker, type PanierView } from '../panier-blockers';
 
@@ -268,6 +273,16 @@ export class PanierCommande {
   /** La saisie passe une limite de produit : le champ du motif a lieu d'être. */
   protected readonly asksReason = computed(() =>
     asksItemLimitReason(this.estimate()?.cutoff ?? null),
+  );
+  /**
+   * « Des produits ont dépassé leur limite… » : les lignes que l'équipe peut
+   * passer outre, nommées ensemble en tête, ou `null` s'il n'y en a pas.
+   */
+  protected readonly exceededSummary = computed(() =>
+    exceededSummaryOf(
+      this.shownLines().filter((line) => this.limitNotices().get(line.sku)?.kind === 'exceeded'),
+      this.draft().requestedDate(),
+    ),
   );
   protected readonly reasonMax = ITEM_LIMIT_OVERRIDE_REASON_MAX_LENGTH;
   protected readonly reasonHint = computed(

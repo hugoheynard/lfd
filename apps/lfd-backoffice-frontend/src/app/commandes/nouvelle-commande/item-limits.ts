@@ -31,6 +31,34 @@ export function exceededText(limit: OrderQuoteExceededLimitView): string {
   return `Limite dépassée — ce produit se commande ${days} avant, ${limit.time}.`;
 }
 
+const SERVICE_DAY = new Intl.DateTimeFormat('fr-FR', {
+  weekday: 'long',
+  day: 'numeric',
+  month: 'long',
+  timeZone: 'UTC',
+});
+
+/**
+ * « Des produits ont dépassé leur limite de commande pour le mardi 24
+ * novembre : A, B. » — le résumé en tête du panier, ou `null` sans ligne.
+ * Le jour est un `AAAA-MM-JJ` de service, lu tel quel (UTC, sans décalage).
+ */
+export function exceededSummaryOf(
+  lines: readonly { readonly name: string }[],
+  serviceDay: string,
+): string | null {
+  if (lines.length === 0) {
+    return null;
+  }
+  const names = lines.map((line) => line.name).join(', ');
+  const day = /^\d{4}-\d{2}-\d{2}$/.test(serviceDay)
+    ? ` pour le ${SERVICE_DAY.format(new Date(`${serviceDay}T00:00:00Z`))}`
+    : '';
+  return lines.length === 1
+    ? `Un produit a dépassé sa limite de commande${day} : ${names}.`
+    : `Des produits ont dépassé leur limite de commande${day} : ${names}.`;
+}
+
 /**
  * Le mot de chaque ligne fermée par sa limite, par SKU.
  *

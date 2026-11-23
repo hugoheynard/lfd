@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   ITEM_LIMIT_CLOSED,
+  exceededSummaryOf,
   isItemLimitReasonRefusal,
   itemLimitBlockerOf,
   itemLimitReasonBlockerOf,
@@ -93,5 +94,23 @@ describe('itemLimitReasonBlockerOf', () => {
     expect(itemLimitReasonBlockerOf(true, false, '')).toContain('passez outre');
     expect(itemLimitReasonBlockerOf(true, true, ' ')).toContain('Indiquez pourquoi');
     expect(itemLimitReasonBlockerOf(true, true, 'Client fidèle')).toBeNull();
+  });
+});
+
+describe('exceededSummaryOf — le résumé en tête du panier', () => {
+  it('aucune ligne : rien à dire', () => {
+    expect(exceededSummaryOf([], '2030-01-02')).toBeNull();
+  });
+
+  it('plusieurs produits : les nomme tous, avec le jour', () => {
+    expect(exceededSummaryOf([{ name: 'Croissant' }, { name: 'Pain au maïs' }], '2030-01-02')).toBe(
+      'Des produits ont dépassé leur limite de commande pour le mercredi 2 janvier : Croissant, Pain au maïs.',
+    );
+  });
+
+  it('un seul produit, jour pas encore choisi : au singulier, sans jour', () => {
+    expect(exceededSummaryOf([{ name: 'Croissant' }], '')).toBe(
+      'Un produit a dépassé sa limite de commande : Croissant.',
+    );
   });
 });
