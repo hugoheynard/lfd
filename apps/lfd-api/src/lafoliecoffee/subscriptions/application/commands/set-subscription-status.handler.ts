@@ -1,3 +1,4 @@
+import { instantToLocal } from "@lfd/contracts";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { SUBSCRIPTION_STATUS_CHANGED } from "../../../account/domain/events/site-gesture.fact.js";
@@ -6,6 +7,8 @@ import { DomainEventPublisher } from "../../../../platform/events/domain-event-p
 import { SubscriptionStatusChangedEvent } from "../../domain/events/subscription-acts.events.js";
 import { SubscriptionRepository } from "../../domain/ports/subscription.repository.js";
 import { SubscriptionGestures } from "../services/subscription-gestures.js";
+import { Clock } from "../../../../platform/time/clock.js";
+import { IsoDate } from "../../domain/value-objects/iso-date.js";
 import { SetSubscriptionStatusCommand } from "./set-subscription-status.command.js";
 
 /**
@@ -30,6 +33,7 @@ export class SetSubscriptionStatusHandler implements ICommandHandler<
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
     private readonly gestures: SubscriptionGestures,
+    private readonly clock: Clock,
   ) {}
 
   async execute(command: SetSubscriptionStatusCommand): Promise<void> {
@@ -41,7 +45,8 @@ export class SetSubscriptionStatusHandler implements ICommandHandler<
     if (command.status === "paused") {
       subscription.pause();
     } else {
-      subscription.resume();
+      // Le jour de Paris de la reprise : la borne basse du planificateur.
+      subscription.resume(IsoDate.fromString(instantToLocal(this.clock.now()).day));
     }
     await this.uow.run(async () => {
       await this.subscriptions.save(subscription);

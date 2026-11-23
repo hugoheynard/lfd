@@ -45,6 +45,7 @@ export class PrismaSubscriptionRepository extends SubscriptionRepository {
         fromOrderId: state.fromOrderId,
         recurrence: state.recurrence,
         status: state.status,
+        armedFrom: state.armedFrom,
         startDate: state.startDate,
         endDate: state.endDate,
         fulfillmentMethod: state.fulfillmentMethod,
@@ -84,7 +85,10 @@ export class PrismaSubscriptionRepository extends SubscriptionRepository {
     }
     const dates = state.overrides.map((override) => override.occurrenceDate);
     await this.prisma.$transaction(async (tx) => {
-      await tx.subscription.update({ where: { id }, data: { status: state.status } });
+      await tx.subscription.update({
+        where: { id },
+        data: { status: state.status, armedFrom: state.armedFrom },
+      });
       await tx.subscriptionOccurrence.deleteMany({
         where: { subscriptionId: id, occurrenceDate: { notIn: dates } },
       });
@@ -131,6 +135,7 @@ function toDomain(row: {
   fromOrderId: string | null;
   recurrence: string;
   status: string;
+  armedFrom: Date | null;
   startDate: Date;
   endDate: Date | null;
   fulfillmentMethod: SubscriptionState["fulfillmentMethod"];
@@ -152,6 +157,7 @@ function toDomain(row: {
     fromOrderId: row.fromOrderId,
     recurrence: recurrenceSchema.parse(row.recurrence),
     status: subscriptionStatusSchema.parse(row.status),
+    armedFrom: row.armedFrom === null ? null : IsoDate.fromDate(row.armedFrom),
     startDate: IsoDate.fromDate(row.startDate),
     endDate: row.endDate === null ? null : IsoDate.fromDate(row.endDate),
     routing: {

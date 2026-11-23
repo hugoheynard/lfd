@@ -74,6 +74,7 @@ describe("DeleteSubscriptionHandler", () => {
         note: "",
         lines: [SubscriptionLine.create("SKU-1", 2)],
         overrides: [],
+        armedFrom: null,
       });
     const { repo, events, handler } = build();
 

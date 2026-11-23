@@ -32,11 +32,17 @@ model Subscription {
 
   note String @default("")
 
+  /// La borne basse du planificateur : il ne sert aucune échéance avant ce
+  /// jour. Posée à l'armement, puis à chaque reprise — une échéance tombée
+  /// avant n'est ni due ni manquée. `null` : jamais armé.
+  armedFrom DateTime? @map("armed_from") @db.Date
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   lines       SubscriptionLine[]
   occurrences SubscriptionOccurrence[]
+  runs        SubscriptionOccurrenceRun[]
 
   @@index([placedByUserId])
   @@index([companyId])
@@ -79,5 +85,37 @@ model SubscriptionLine {
 
   @@index([subscriptionId])
   @@map("subscription_lines")
+  @@schema("public")
+}
+
+/// **Le registre des échéances** : ce que le planificateur a fait de chaque
+/// échéance d'un panier — une ligne par (panier, jour), jamais deux. Une
+/// commande générée est définitive ; un refus se réécrit tant que l'heure
+/// limite est ouverte, puis l'échéance passe `missed_deadline`. Écrit par le
+/// seul contexte des paniers, par son port `OccurrenceRunLedger`.
+/// `order_id` est opaque : aucune clé étrangère vers la commande.
+model SubscriptionOccurrenceRun {
+  id String @id
+
+  subscriptionId String       @map("subscription_id")
+  subscription   Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Restrict)
+
+  occurrenceDate DateTime @map("occurrence_date") @db.Date
+
+  outcome String // generated | refused | missed_deadline — CHECK en base
+
+  orderId String? @map("order_id")
+
+  /// La cause d'un refus, code stable (`buyer_left`, `deadline_closed`…).
+  cause String?
+  /// La phrase de l'alerte, qui nomme le cas et le geste de sortie.
+  reason String?
+
+  recordedAt DateTime @map("recorded_at") @db.Timestamptz(6)
+
+  /// Le nom que Postgres a donné à l'index : le nom par défaut fait 64
+  /// caractères, et Postgres coupe à 63.
+  @@unique([subscriptionId, occurrenceDate], map: "subscription_occurrence_runs_subscription_id_occurrence_date_ke")
+  @@map("subscription_occurrence_runs")
   @@schema("public")
 }

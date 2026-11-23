@@ -45,5 +45,6 @@ export function activeSubscription(id = "sub_1", companyId: string | null = null
     note: "",
     lines: [SubscriptionLine.create("SKU-1", 2)],
     overrides: [],
+    armedFrom: null,
   });
 }

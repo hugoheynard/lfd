@@ -129,13 +129,24 @@ describe("Subscription — transitions d'état", () => {
   it("reprend un panier en pause", () => {
     const sub = Subscription.open(openInput());
     sub.pause();
-    sub.resume();
+    sub.resume(IsoDate.fromString("2026-09-14"));
     expect(sub.toPersistence().status).toBe("active");
+  });
+
+  it("la reprise pose la borne basse du planificateur au jour de la reprise", () => {
+    const sub = Subscription.open(openInput());
+    sub.arm(IsoDate.fromString("2026-08-10"));
+    sub.pause();
+    sub.resume(IsoDate.fromString("2026-09-14"));
+    expect(sub.armedSince?.toString()).toBe("2026-09-14");
+    expect(sub.toPersistence().armedFrom?.toISOString()).toBe("2026-09-14T00:00:00.000Z");
   });
 
   it("refuse de reprendre un panier déjà actif", () => {
     const sub = Subscription.open(openInput());
-    expect(() => sub.resume()).toThrow(SubscriptionAlreadyActiveError);
+    expect(() => sub.resume(IsoDate.fromString("2026-09-14"))).toThrow(
+      SubscriptionAlreadyActiveError,
+    );
   });
 });
 
@@ -314,7 +325,8 @@ describe("Subscription.cancel — l'arrêt garde le panier en base", () => {
   it.each([
     ["un second arrêt", (sub: Subscription) => sub.cancel()],
     ["la pause", (sub: Subscription) => sub.pause()],
-    ["la reprise", (sub: Subscription) => sub.resume()],
+    ["la reprise", (sub: Subscription) => sub.resume(IsoDate.fromString("2026-09-14"))],
+    ["l'armement", (sub: Subscription) => sub.arm(IsoDate.fromString("2026-09-14"))],
     [
       "une dérogation",
       (sub: Subscription) =>
@@ -331,5 +343,20 @@ describe("Subscription.cancel — l'arrêt garde le panier en base", () => {
     sub.cancel();
     expect(() => act(sub)).toThrow(SubscriptionCancelledError);
     expect(sub.toPersistence().status).toBe("cancelled");
+  });
+});
+
+describe("Subscription.arm — la borne basse du planificateur", () => {
+  it("un panier neuf n'est pas armé", () => {
+    const sub = Subscription.open(openInput());
+    expect(sub.armedSince).toBeNull();
+    expect(sub.toPersistence().armedFrom).toBeNull();
+  });
+
+  it("le premier armement pose la borne, le suivant ne la déplace pas", () => {
+    const sub = Subscription.open(openInput());
+    sub.arm(IsoDate.fromString("2026-11-23"));
+    sub.arm(IsoDate.fromString("2026-12-01"));
+    expect(sub.armedSince?.toString()).toBe("2026-11-23");
   });
 });

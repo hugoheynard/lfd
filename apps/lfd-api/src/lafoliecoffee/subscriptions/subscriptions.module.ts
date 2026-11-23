@@ -11,7 +11,9 @@ import { UpsertOccurrenceOverrideHandler } from "./application/commands/upsert-o
 import { ListCompanySubscriptionsHandler } from "./application/queries/list-company-subscriptions.handler.js";
 import { ListSubscriptionsHandler } from "./application/queries/list-subscriptions.handler.js";
 import { SubscriptionReader } from "./domain/ports/subscription.reader.js";
+import { OccurrenceRunLedger } from "./domain/ports/occurrence-run.ledger.js";
 import { SubscriptionRepository } from "./domain/ports/subscription.repository.js";
+import { PrismaOccurrenceRunLedger } from "./infrastructure/prisma-occurrence-run.ledger.js";
 import { PrismaSubscriptionReader } from "./infrastructure/prisma-subscription.reader.js";
 import { PrismaSubscriptionRepository } from "./infrastructure/prisma-subscription.repository.js";
 import { AdminSubscriptionsController } from "./http/admin-subscriptions.controller.js";
@@ -37,6 +39,10 @@ import { SubscriptionsController } from "./http/subscriptions.controller.js";
     ListCompanySubscriptionsHandler,
     { provide: SubscriptionRepository, useClass: PrismaSubscriptionRepository },
     { provide: SubscriptionReader, useClass: PrismaSubscriptionReader },
+    { provide: OccurrenceRunLedger, useClass: PrismaOccurrenceRunLedger },
   ],
+  // Le registre des échéances : la passation d'une échéance l'écrit dans sa
+  // propre unité de travail (plan du planificateur, § 5).
+  exports: [OccurrenceRunLedger],
 })
 export class SubscriptionsModule {}

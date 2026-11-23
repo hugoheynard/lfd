@@ -1,3 +1,4 @@
+import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
 import { SubscriptionAlreadyActiveError } from "../../../domain/errors/subscription-errors.js";
@@ -15,6 +16,8 @@ function build() {
     events,
     new DirectUnitOfWork(),
     subscriptionGestures(repo).gestures,
+    // 23 h 30 UTC le 22 novembre : déjà le 23 à Paris.
+    new FixedClock(new Date("2026-11-22T23:30:00.000Z")),
   );
   return { repo, events, handler };
 }
@@ -45,6 +48,17 @@ describe("SetSubscriptionStatusHandler", () => {
         payload: { before: "active", after: "paused" },
       },
     ]);
+  });
+
+  it("la reprise pose la borne du planificateur au jour de PARIS, pas au jour UTC", async () => {
+    const { repo, handler } = build();
+    const paused = activeSubscription();
+    paused.pause();
+    repo.loadResult = paused;
+
+    await handler.execute(new SetSubscriptionStatusCommand("user_1", "sub_1", "active"));
+
+    expect(repo.saved[0]?.armedSince?.toString()).toBe("2026-11-23");
   });
 
   it("laisse remonter le refus métier (reprendre un déjà actif), sans fait", async () => {

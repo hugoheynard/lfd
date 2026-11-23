@@ -9,6 +9,7 @@ import {
   SUBSCRIPTION_DELETED,
   SUBSCRIPTION_STATUS_CHANGED,
 } from "../../../../account/domain/events/site-gesture.fact.js";
+import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
 import { SubscriptionSiteMembershipLostError } from "../../../domain/errors/subscription-errors.js";
@@ -61,7 +62,13 @@ function build(options: { readonly member?: boolean } = {}) {
       guardServing("SKU-1", "SKU-2", "PAT-002-1"),
       inMemoryIntents(),
     ),
-    status: new SetSubscriptionStatusHandler(repo, events, uow, doubles.gestures),
+    status: new SetSubscriptionStatusHandler(
+      repo,
+      events,
+      uow,
+      doubles.gestures,
+      new FixedClock(new Date("2026-11-23T08:00:00.000Z")),
+    ),
     remove: new DeleteSubscriptionHandler(
       repo,
       events,

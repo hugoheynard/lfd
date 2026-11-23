@@ -90,6 +90,8 @@ export interface ReconstituteSubscriptionInput extends OpenSubscriptionInput {
   readonly id: string;
   readonly status: SubscriptionLifecycle;
   readonly overrides: readonly OccurrenceOverride[];
+  /** La borne basse du planificateur, `null` tant qu'il ne l'a pas armé. */
+  readonly armedFrom: IsoDate | null;
 }
 
 /** Une ligne prête à écrire (SKU + quantité). */
@@ -122,6 +124,7 @@ export interface SubscriptionState {
   readonly note: string;
   readonly lines: readonly PersistedLine[];
   readonly overrides: readonly PersistedOverride[];
+  readonly armedFrom: Date | null;
 }
 
 /**
@@ -173,6 +176,7 @@ export class Subscription {
     private readonly note: string,
     private readonly lines: readonly SubscriptionLine[],
     overrides: readonly OccurrenceOverride[],
+    private armedFrom: IsoDate | null,
   ) {
     this.status = status;
     this.overrides = new Map(overrides.map((o) => [o.date.toString(), o]));
@@ -200,6 +204,7 @@ export class Subscription {
       input.note,
       input.lines,
       [],
+      null,
     );
   }
 
@@ -218,6 +223,7 @@ export class Subscription {
       input.note,
       input.lines,
       input.overrides,
+      input.armedFrom,
     );
   }
 
@@ -242,13 +248,35 @@ export class Subscription {
     this.status = "paused";
   }
 
-  /** Reprend — refuse si déjà actif ou arrêté. */
-  resume(): void {
+  /**
+   * Reprend — refuse si déjà actif ou arrêté. La borne basse du planificateur
+   * passe au jour de la reprise : une échéance tombée pendant la pause n'est
+   * ni due ni manquée.
+   */
+  resume(today: IsoDate): void {
     this.ensureNotCancelled();
     if (this.status === "active") {
       throw new SubscriptionAlreadyActiveError();
     }
     this.status = "active";
+    this.armedFrom = today;
+  }
+
+  /**
+   * **Arme** le panier pour le planificateur : rien avant `today` ne sera
+   * servi. Sans effet sur un panier déjà armé — la borne ne recule jamais
+   * d'elle-même, seule une reprise la déplace.
+   */
+  arm(today: IsoDate): void {
+    this.ensureNotCancelled();
+    if (this.armedFrom === null) {
+      this.armedFrom = today;
+    }
+  }
+
+  /** La borne basse du planificateur, `null` tant que le panier n'est pas armé. */
+  get armedSince(): IsoDate | null {
+    return this.armedFrom;
   }
 
   /**
@@ -354,6 +382,7 @@ export class Subscription {
       note: this.note,
       lines: this.lines.map((line) => ({ sku: line.sku, quantity: line.quantity })),
       overrides: [...this.overrides.values()].map(toPersistedOverride),
+      armedFrom: this.armedFrom === null ? null : this.armedFrom.toUtcDate(),
     };
   }
 }
