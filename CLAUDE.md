@@ -239,6 +239,11 @@
 >   migration de « corriger » la base, qui avait raison. Elle demande un
 >   Postgres : en CI, elle tourne dans le premier éclat des e2e, pas dans le
 >   job des portes.
+>   Et **84** depuis le 2026-11-23 avec `lint:export-key-guard` (plan
+>   `documentation/commandes/export/plan-export-des-ventes.md`, § 6.5) : la
+>   garde de la clé d'export n'est posée que sur le contrôleur de l'export des
+>   ventes — ailleurs, elle ouvrirait une route à la clé de la Direction, et à
+>   quiconque la lui aurait volée.
 >   C'est la
 >   **seule** correction faite dans le corps, parce qu'un chiffre faux se vérifie
 >   en une commande et trompe tout de suite ;
@@ -1535,7 +1540,7 @@ pnpm --filter lfd-api seed:pim       # catalogue rejoué PAR LE BUS (cible local
 pnpm lint               # turbo, toutes les apps
 pnpm test
 pnpm build
-pnpm lint:gates         # les 83 portes du dépôt, toutes, et un résumé à la fin
+pnpm lint:gates         # les 84 portes du dépôt, toutes, et un résumé à la fin
 pnpm gate <nom>         # une porte (pnpm gate --list : la liste, avec ce qu'elle tient)
 pnpm lint:watch         # relance les portes dont un fichier lu change
 pnpm tool               # les outils occasionnels (digests, carte, axe…) ; pnpm tool <nom>

@@ -15,6 +15,7 @@ import { ExportReaderKeyReader } from "./domain/ports/export-reader-key.reader.j
 import { ExportReaderKeyRepository } from "./domain/ports/export-reader-key.repository.js";
 import { AdminExportKeysController } from "./http/admin-export-keys.controller.js";
 import { ExportReaderKeyGuard } from "./http/export-reader-key.guard.js";
+import { SalesExportController } from "./http/sales-export.controller.js";
 import { PrismaExportReaderKeyLookup } from "./infrastructure/prisma-export-reader-key.lookup.js";
 import { PrismaExportReaderKeyReader } from "./infrastructure/prisma-export-reader-key.reader.js";
 import { PrismaExportReaderKeyRepository } from "./infrastructure/prisma-export-reader-key.repository.js";
@@ -32,7 +33,7 @@ import { RandomExportKeySecretSource } from "./infrastructure/random-export-key-
  */
 @Module({
   imports: [OrdersModule, AccountingModule, CatalogModule, AccountModule],
-  controllers: [AdminExportKeysController],
+  controllers: [AdminExportKeysController, SalesExportController],
   providers: [
     GetSalesExportHandler,
     { provide: ExportReaderKeyRepository, useClass: PrismaExportReaderKeyRepository },

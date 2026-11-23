@@ -2,6 +2,8 @@ import { frontHeaders, PRO_FRONT_ORIGIN, resolveTarget } from "./routes";
 import { forwardedSearch } from "./cache-key";
 import type { BackendKey, Target } from "./routes";
 import { guardTarget } from "./route-planner-guard";
+import { guardExports } from "./exports-guard";
+import type { ExportsGuardEnv } from "./exports-guard";
 import type { RoutePlannerGuardEnv } from "./route-planner-guard";
 import { isDiagnostic, sortDiagnosticHeaders, withoutDiagnosticSecret } from "./diagnostic";
 import { withServerTiming } from "./server-timing";
@@ -48,7 +50,7 @@ const X_LFC_REQUEST_TIME = "x-lfc-request-time";
 const TRACEPARENT_FORMAT = /^[0-9a-f]{2}-[0-9a-f]{32}-[0-9a-f]{16}-[0-9a-f]{2}$/;
 
 /** Les backends joignables par service binding. Absents en `wrangler dev`. */
-interface Env extends RoutePlannerGuardEnv {
+interface Env extends RoutePlannerGuardEnv, ExportsGuardEnv {
   LFD_BACKEND?: Fetcher;
   /** `lfd-route-planner`, le calcul routier — derrière la garde de `route-planner-guard.ts`. */
   ROUTE_PLANNER?: Fetcher;
@@ -100,7 +102,8 @@ async function handle(request: Request, url: URL, env: Env): Promise<Handled> {
   }
   const node = nodeOf(target);
   const forwardedPath = target.kind === "url" ? url.pathname : target.path;
-  const admitted = await guardTarget(target, request, env);
+  const guarded = await guardTarget(target, request, env);
+  const admitted = guarded instanceof Response ? guarded : await guardExports(target, guarded, env);
   if (admitted instanceof Response) {
     return {
       response: admitted,

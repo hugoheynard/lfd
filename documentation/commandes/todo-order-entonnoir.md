@@ -52,3 +52,14 @@ départ incomplet, les projections de paiement du dépôt.
 
 `vitruve` est obligatoire : le chantier touche le calcul de l'argent et
 l'écriture en base de toute commande.
+
+## L'export des ventes : l'alerte d'usage (2026-11-23)
+
+Le plan [`export/plan-export-des-ventes.md`](export/plan-export-des-ventes.md)
+voulait prévenir le staff d'un usage inhabituel d'une clé d'export. Rien ne
+garde l'IP ni la clé d'un appel. Possible sans écriture nouvelle : une tâche
+planifiée du bloc `ops` qui lit chaque heure le trafic de la surface
+`exports/sales` (Analytics Engine, `gateway/src/traffic.ts`) et sonne la cloche
+au-delà d'un seuil (plus de 10 succès en 24 h, ou une rafale de 401 / 429). Elle
+ne dira ni quelle clé ni quelle adresse : un vrai journal d'accès est l'autre
+voie. À décider par Hugo.

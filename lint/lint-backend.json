@@ -644,6 +644,13 @@
       "watch": ["apps/lfd-api/src/**", "dev-toolbox/gates/company-archived-views.mjs"]
     },
     {
+      "name": "export-key-guard",
+      "script": "dev-toolbox/gates/export-key-guard.mjs",
+      "holds": "La garde de la clé d'export (`ExportReaderKeyGuard`) n'est posée que sur le contrôleur de l'export des ventes : ailleurs, elle ouvrirait une route à la clé de la Direction.",
+      "since": "2026-11-23",
+      "watch": ["apps/lfd-api/src/**", "dev-toolbox/gates/export-key-guard.mjs"]
+    },
+    {
       "name": "schema-drift",
       "script": "dev-toolbox/gates/schema-drift.mjs",
       "holds": "Le schéma Prisma dit ce que les migrations construisent : rejouées sur une base fantôme, elles ne diffèrent du schéma que par les écarts admis (`apps/lfd-api/prisma/schema-drift-admitted.json`), chacun avec sa raison.",

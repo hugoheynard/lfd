@@ -167,6 +167,17 @@ name = "ROUTE_PLANNER_TILES_RATE_LIMITER"
 namespace_id = "1005"
 simple = { limit = 1200, period = 60 }
 
+# La limite de l'export des ventes (`/api/lfd/exports/…`, plan
+# documentation/commandes/export/plan-export-des-ventes.md, § 6.2) : par IP,
+# AVANT de transmettre (`src/exports-guard.ts`). La passerelle ne valide pas la
+# clé `X-Export-Key`, qui passe intacte ; l'API la relit en base. 30 par
+# minute : le serveur de la Direction appelle une fois par nuit (deux ou trois
+# appels le 1er du mois). `namespace_id` distinct (1006).
+[[ratelimits]]
+name = "EXPORTS_RATE_LIMITER"
+namespace_id = "1006"
+simple = { limit = 30, period = 60 }
+
 # ── Observation du trafic (OPS J1) ─────────────────────────────────────────────
 # La passerelle est le SEUL chemin : elle est donc le seul endroit qui puisse
 # dire, sans rien demander à personne, ce qui est parti vers chaque backend et

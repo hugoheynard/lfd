@@ -239,8 +239,9 @@ Une **clé par lecteur**, jamais partagée.
   `RecomputeGuard` pose `system` — pas de nouveau type d'acteur, qui toucherait
   `platform` et les recopies d'`ActorType` dans `growth`.
 - **Une lecture n'écrit rien** (§ 4 du CLAUDE.md) : pas de « dernière
-  utilisation » en base. L'usage se lit dans les journaux de requête, par l'id
-  de l'acteur.
+  utilisation » en base. Et **rien ne garde l'usage par clé** : la passerelle
+  ne trace ni IP ni identifiant (`gateway/src/traffic.ts`, par choix), l'API ne
+  garde que ses erreurs, en mémoire. Qui a lu quand ne se sait pas (D5).
 - Le secret n'est montré **qu'une fois**, à la création, au back-office.
   Ressource de permission neuve `exports`, accordée à l'écran
   (`lint:no-role-grants-in-migrations`).
@@ -296,15 +297,15 @@ page ne fait que lire un fichier. Le poste de la Direction est décrit au § 6.6
 **Le script seul ne donne rien** : il ne contient pas la clé. Tout repose sur
 la clé, et sur ce qu'on fait quand elle fuit.
 
-| Mesure                                     | Ce qu'elle tient                                                                                                                                                                                                |
-| ------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| une clé par personne                       | on ne coupe que celle qui a fui                                                                                                                                                                                 |
-| révocation d'un clic, relue à chaque appel | une clé volée meurt à l'appel suivant                                                                                                                                                                           |
-| `expires_at`                               | une clé oubliée finit par mourir seule                                                                                                                                                                          |
-| clé hachée en base                         | une fuite de notre base ne donne aucune clé utilisable                                                                                                                                                          |
-| `allowed_ips`, **facultatif par clé**      | une clé volée ne sert à rien hors de l'adresse admise. Lue sur `x-lfc-client-ip`, que la passerelle garantit (`platform/security/client-ip.ts`). Inutilisable avec une IP de box qui change : option, pas règle |
-| alerte d'usage inhabituel                  | une clé appelée depuis une adresse jamais vue, ou bien plus que d'habitude, prévient le staff (doute D5)                                                                                                        |
-| journal de chaque appel, par id de clé     | on sait qui a lu quoi, et quand                                                                                                                                                                                 |
+| Mesure                                                                                     | Ce qu'elle tient                                                                                                                                                                                                |
+| ------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| une clé par personne                                                                       | on ne coupe que celle qui a fui                                                                                                                                                                                 |
+| révocation d'un clic, relue à chaque appel                                                 | une clé volée meurt à l'appel suivant                                                                                                                                                                           |
+| `expires_at`                                                                               | une clé oubliée finit par mourir seule                                                                                                                                                                          |
+| clé hachée en base                                                                         | une fuite de notre base ne donne aucune clé utilisable                                                                                                                                                          |
+| `allowed_ips`, **facultatif par clé**                                                      | une clé volée ne sert à rien hors de l'adresse admise. Lue sur `x-lfc-client-ip`, que la passerelle garantit (`platform/security/client-ip.ts`). Inutilisable avec une IP de box qui change : option, pas règle |
+| alerte d'usage inhabituel — **pas bâtie** (D5)                                             | voir § 9                                                                                                                                                                                                        |
+| la limite de 30 appels par minute et par IP à la passerelle, puis 10 par minute dans l'API | une clé volée ne sert pas à aspirer ; une rafale de clés essayées se heurte au même compteur                                                                                                                    |
 
 **Elle n'ouvre que l'export, et c'est prouvé, pas supposé :**
 
@@ -550,7 +551,32 @@ Tranché au bâti d'E2 (2026-11-23) :
   doit rester nommée) et les sociétés des ventes (`company-archived-views` :
   un compte supprimé a pu vendre).
 
-E0, E1 et E2 sont bâtis ; E3 suit.
+Tranché au bâti d'E3 (2026-11-23) :
+
+- **Route** `GET /exports/sales`, `@Public()` pour la garde Auth0 et gardée
+  par la clé, 10 appels par minute dans l'API, `Cache-Control: private,
+no-store` posé sur la route (le middleware ne reconnaît une personne qu'à son
+  `Authorization`, et aurait servi `no-cache`).
+- **Passerelle** : 30 appels par minute **par IP** sur `/api/lfd/exports`,
+  chemin comparé sans la casse (Express ne la distingue pas) ; `x-export-key`
+  transmis intact (D3 éprouvé).
+- **Étanchéité prouvée** : l'e2e appelle les 1 194 routes de l'application
+  démarrée, lues sur son routeur. Les non publiques répondent 401 ou 403 avec
+  la clé ; les `@Public()` (la surface staff en fait partie, gardée par
+  `@AdminSurface`) répondent le même statut avec et sans clé. Seule la route
+  d'export s'ouvre à elle. Un jeton staff ou client y est refusé. La porte
+  `lint:export-key-guard` tient la garde au contrôleur d'export.
+- **D2** : l'égalité sous-total = HT tient au centime en `line_ht` et
+  `exact_ht`, sur un jeu sans remise, bon, port ni pénalité. **L'équation
+  complète n'est pas éprouvée** ; la notice ne la promet pas.
+- **D5, l'alerte d'usage : pas bâtie.** Aucune trace ne garde l'IP ni la clé
+  d'un appel, et une lecture n'écrit rien. Une alerte de **volume** sur la
+  surface `exports/sales` (le trafic de la passerelle la compte déjà) reste
+  possible, sans savoir quelle clé ni quelle adresse ; elle est notée au
+  [TODO des commandes](../todo-order-entonnoir.md) comme suite à décider, pas
+  bâtie ici.
+
+E0 à E3 sont bâtis ; E4 suit.
 
 ## 11. Ce que la contradiction a changé
 
