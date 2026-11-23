@@ -16,8 +16,11 @@ import {
   FoldIconComponent,
   FoldLoadingStateComponent,
   FoldPageLayoutComponent,
+  FoldPanelHostService,
   FoldSearchComponent,
 } from 'fold-ng';
+
+import { PermissionsStore } from '../../auth/permissions.store';
 
 import { copyLink } from '../../comptabilite/copy-link';
 import {
@@ -31,6 +34,7 @@ import { CounterCustomersService } from '../counter-customers.service';
 import { CounterDeliveryNoteService } from '../counter-delivery-note.service';
 import { matchesCounterSearch } from '../counter-customer-search';
 import { draftBadgeLabel } from './draft-badge-label';
+import { ProspectPanel } from './prospect-panel/prospect-panel';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -90,6 +94,14 @@ export class NouvelleCommandeProPage {
   private readonly notify = inject(NotifyService);
   private readonly notes = inject(CounterDeliveryNoteService);
   private readonly drafts = inject(OrderDraftsService);
+  private readonly panels = inject(FoldPanelHostService);
+  private readonly permissions = inject(PermissionsStore);
+  /**
+   * « Nouvelle enseigne » : ouvrir un compte ET y commander — les deux droits.
+   * Le vendeur du comptoir, qui n'a pas la fiche client, ne le voit pas.
+   */
+  protected readonly canOpenProspect =
+    this.permissions.can('b2b_companies:write') && this.permissions.can('b2b_place_order:write');
   /** D'où l'on vient (`?retour=`) : « Terminer » y ramène. */
   readonly retour = input<string>();
   /** Le bon se réimprime-t-il en ce moment ? */
@@ -159,6 +171,16 @@ export class NouvelleCommandeProPage {
 
   protected onSearchChange(query: string): void {
     this.query.set(query);
+  }
+
+  /** Ouvre le compte d'une enseigne démarchée, puis sa saisie. */
+  protected async openProspect(): Promise<void> {
+    const ref = this.panels.open(ProspectPanel, {});
+    const companyId = await ref.closed;
+    // Le panneau rend l'id du compte créé, rien s'il est fermé sans créer.
+    if (typeof companyId === 'string') {
+      this.choose(companyId);
+    }
   }
 
   protected choose(companyId: string): void {

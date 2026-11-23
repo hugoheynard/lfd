@@ -104,6 +104,29 @@ describe("POST /admin/companies", () => {
     expect(company.contactFonction).toBe("Gérante");
   });
 
+  it("🔴 enseigne démarchée : détenteur ouvert, aucun e-mail, il attend dans « Accès à remettre »", async () => {
+    const created = await staff()
+      .post("/admin/companies")
+      .set(INTENT_KEY, freshIntent())
+      .send({ ...valide, announceHolder: false })
+      .expect(201);
+
+    expect(jsonBody<CreatedCompanyResponse>(created)).toMatchObject({
+      holder: "attached",
+      mailSent: false,
+    });
+    const company = await ctx.prisma.company.findUniqueOrThrow({
+      where: { id: jsonBody<CreatedCompanyResponse>(created).id },
+      include: { memberships: true },
+    });
+    expect(company.memberships).toHaveLength(1);
+    expect(company.memberships[0]?.role).toBe("owner");
+    expect(await ctx.prisma.mailRequest.count()).toBe(0);
+
+    const pending = await staff().get("/admin/access-pending").expect(200);
+    expect(JSON.stringify(pending.body)).toContain("Camille");
+  });
+
   /** Régression : `invitedBy` recevait le `sub` du jeton staff (plan de l'auteur, D2). */
   it("trace le détenteur comme provisionné par la FICHE de l'agent", async () => {
     const created = await staff()

@@ -60,6 +60,16 @@
     </div>
   }
 
+  @if (canOpenProspect) {
+    <!-- Une enseigne qui n'est pas encore cliente (une dégustation) : son
+         compte s'ouvre sans e-mail, puis sa saisie. -->
+    <div class="row" data-prospect>
+      <button foldButton emphasis="outline" type="button" (click)="openProspect()">
+        Nouvelle enseigne
+      </button>
+    </div>
+  }
+
   @switch (state()) {
     @case ('loading') {
       <fold-loading message="Chargement des comptes clients…" />

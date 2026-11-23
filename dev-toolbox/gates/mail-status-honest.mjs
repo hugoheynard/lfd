@@ -82,7 +82,7 @@ export const DEBT = {
   },
   "apps/lfd-api/src/lafoliecoffee/account/application/commands/create-company-by-staff.handler.ts":
     {
-      count: 4,
+      count: 3,
       reason: "2026-11-08 — ouverture de compte : mailSent servi = acceptée",
     },
   "apps/lfd-api/src/lafoliecoffee/account/application/services/company-opening-replay.ts": {

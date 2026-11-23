@@ -35,5 +35,11 @@ export class CreateCompanyByStaffCommand {
      * déclare pas une seconde société et ne renvoie pas l'e-mail.
      */
     readonly intentKey: string,
+    /**
+     * Prévenir le détenteur ? Non pour une enseigne démarchée (une
+     * dégustation, décidé par Hugo le 2026-11-23) : son accès est ouvert sans
+     * e-mail, et il attend dans « Accès à remettre ».
+     */
+    readonly announce: boolean = true,
   ) {}
 }

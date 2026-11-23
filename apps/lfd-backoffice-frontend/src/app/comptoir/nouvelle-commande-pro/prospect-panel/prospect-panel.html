@@ -1,0 +1,68 @@
+<fold-panel-header
+  title="Nouvelle enseigne"
+  subtitle="Pas encore cliente : son compte s’ouvre en attente"
+  closeLabel="Fermer"
+/>
+
+<fold-panel-body>
+  <div class="pp-fields">
+    <fold-callout variant="info">
+      Aucun e-mail ne part. Le contact attend dans « Accès à remettre », d’où vous lui enverrez son
+      accès le jour où l’enseigne devient cliente.
+    </fold-callout>
+    <fold-input
+      label="Enseigne"
+      required
+      [value]="enseigne()"
+      (valueChange)="enseigne.set($event)"
+      data-enseigne
+    />
+    <fold-input
+      label="Prénom du contact"
+      required
+      [value]="firstName()"
+      (valueChange)="firstName.set($event)"
+      data-first-name
+    />
+    <fold-input label="Nom du contact" [value]="lastName()" (valueChange)="lastName.set($event)" />
+    <fold-input
+      label="E-mail du contact"
+      type="email"
+      required
+      [value]="email()"
+      (valueChange)="email.set($event)"
+      data-email
+    />
+    <fold-input
+      label="Téléphone du contact"
+      type="tel"
+      required
+      [value]="phone()"
+      (valueChange)="phone.set($event)"
+      data-phone
+    />
+    @if (!pristine() && issue() !== '') {
+      <fold-callout variant="warning" data-issue>{{ issue() }}</fold-callout>
+    }
+    @if (refusal(); as message) {
+      <fold-callout variant="alert" announce>{{ message }}</fold-callout>
+    }
+  </div>
+</fold-panel-body>
+
+<fold-panel-footer align="end">
+  <button foldButton emphasis="outline" intent="neutral" type="button" (click)="close()">
+    Annuler
+  </button>
+  <button
+    foldButton
+    intent="primary"
+    type="button"
+    [disabled]="issue() !== ''"
+    [loading]="saving()"
+    (click)="submit()"
+    data-submit
+  >
+    Créer et saisir la commande
+  </button>
+</fold-panel-footer>

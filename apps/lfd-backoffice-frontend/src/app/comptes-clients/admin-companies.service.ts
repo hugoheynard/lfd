@@ -112,8 +112,14 @@ export class AdminCompaniesService {
     readonly identity: CompanyIdentityDraft;
     readonly contact?: CompanyContactDraft | undefined;
     readonly intentKey: string;
+    /** `false` : le détenteur est ouvert sans e-mail (enseigne démarchée). */
+    readonly announceHolder?: boolean | undefined;
   }): Promise<CompanyOpened> {
-    const body = { ...input.identity, primaryContact: input.contact };
+    const body = {
+      ...input.identity,
+      primaryContact: input.contact,
+      ...(input.announceHolder === false ? { announceHolder: false } : {}),
+    };
     return firstValueFrom(
       this.http.post<CompanyOpened>(
         `${B2B_API_BASE}/admin/companies`,

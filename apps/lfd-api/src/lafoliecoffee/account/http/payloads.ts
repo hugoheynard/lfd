@@ -159,6 +159,12 @@ export type AdditionalContactPayload = z.infer<typeof additionalContactPayload>;
  */
 export const adminCreateCompanyPayload = createCompanyPayload.extend({
   primaryContact: contactPayload.optional(),
+  /**
+   * Prévenir le détenteur par e-mail — oui par défaut. `false` pour une
+   * enseigne démarchée depuis la saisie d'une commande (une dégustation) :
+   * l'accès s'ouvre sans e-mail et attend dans « Accès à remettre ».
+   */
+  announceHolder: z.boolean().default(true),
 });
 
 export type AdminCreateCompanyPayload = z.infer<typeof adminCreateCompanyPayload>;

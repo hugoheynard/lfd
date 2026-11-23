@@ -24,14 +24,18 @@ import {
   type AccessGranted,
   type AccessToGrant,
 } from "../../services/grant-account-access.service.js";
+import type { AccessOpening, AccountAccessOpener } from "../../services/account-access-opener.js";
 import { CreateCompanyByStaffCommand } from "../create-company-by-staff.command.js";
 import { CreateCompanyByStaffHandler } from "../create-company-by-staff.handler.js";
 import { KnownStaff } from "./hierarchy-doubles.js";
 
 /** Publisher doublé : capture les événements publiés (extension du port, sans cast). */
 /** Accès doublé : capture la demande, ou échoue pour simuler un canal absent. */
-class FakeAccess extends AccountAccessGranter {
+class FakeAccess extends AccountAccessGranter implements AccountAccessOpener {
   readonly granted: AccessToGrant[] = [];
+  /** Les ouvertures sans annonce, et combien d'annonces ont été demandées. */
+  readonly opened: AccessToGrant[] = [];
+  announced = 0;
   constructor(readonly outcome: AccessGranted | Error) {
     super();
   }
@@ -41,6 +45,18 @@ class FakeAccess extends AccountAccessGranter {
     return this.outcome instanceof Error
       ? Promise.reject(this.outcome)
       : Promise.resolve(this.outcome);
+  }
+
+  open(input: AccessToGrant): Promise<AccessOpening> {
+    this.opened.push(input);
+    return Promise.resolve({
+      userId: "user_1",
+      outcome: "identity_created",
+      announce: () => {
+        this.announced += 1;
+        return Promise.resolve(true);
+      },
+    });
   }
 }
 
@@ -170,6 +186,7 @@ function doubles(
     handler: new CreateCompanyByStaffHandler(
       companies,
       access,
+      access,
       events,
       inMemoryIntents(),
       uow,
@@ -244,6 +261,39 @@ describe("CreateCompanyByStaffHandler", () => {
     const first = await handler.execute(commandWithoutHolder());
     await expect(handler.execute(commandWithoutHolder())).resolves.toEqual(first);
     expect(unowned).toHaveLength(1);
+  });
+
+  it("🔴 enseigne démarchée : le détenteur est ouvert SANS e-mail, et rien ne part", async () => {
+    const { handler, access } = doubles();
+    const base = command();
+    const silent = new CreateCompanyByStaffCommand(
+      base.raisonSociale,
+      base.enseigne,
+      base.formeJuridique,
+      base.siret,
+      base.siren,
+      base.vatNumber,
+      base.contact,
+      base.invitedBy,
+      base.intentKey,
+      false,
+    );
+
+    await expect(handler.execute(silent)).resolves.toMatchObject({
+      holder: "attached",
+      mailSent: false,
+    });
+    expect(access.opened).toHaveLength(1);
+    expect(access.opened[0]?.role).toBe("owner");
+    expect(access.announced).toBe(0);
+    expect(access.granted).toHaveLength(0);
+  });
+
+  it("par défaut, le détenteur est prévenu comme avant", async () => {
+    const { handler, access } = doubles();
+    await handler.execute(command());
+    expect(access.granted).toHaveLength(1);
+    expect(access.opened).toHaveLength(0);
   });
 
   it("crée la société SANS propriétaire et retourne son seul identifiant", async () => {

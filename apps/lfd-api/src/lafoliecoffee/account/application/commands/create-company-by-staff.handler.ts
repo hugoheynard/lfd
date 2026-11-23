@@ -13,7 +13,11 @@ import { StaffDirectory } from "../../domain/ports/staff-directory.js";
 import { CompanyOpening } from "../../domain/value-objects/company-opening.js";
 import { ContactDetails } from "../../domain/value-objects/contact-details.js";
 import { CompanyOpeningReplay } from "../services/company-opening-replay.js";
-import { AccountAccessGranter } from "../services/grant-account-access.service.js";
+import { AccountAccessOpener } from "../services/account-access-opener.js";
+import {
+  AccountAccessGranter,
+  type AccessToGrant,
+} from "../services/grant-account-access.service.js";
 import { CreateCompanyByStaffCommand } from "./create-company-by-staff.command.js";
 
 /**
@@ -80,6 +84,7 @@ export class CreateCompanyByStaffHandler implements ICommandHandler<
   constructor(
     private readonly companies: CompanyRepository,
     private readonly access: AccountAccessGranter,
+    private readonly opener: AccountAccessOpener,
     private readonly events: DomainEventPublisher,
     private readonly intents: OncePerIntent,
     private readonly uow: UnitOfWork,
@@ -174,10 +179,10 @@ export class CreateCompanyByStaffHandler implements ICommandHandler<
       // Pas d'adresse, donc rien à tenter : le dossier existe, le détenteur
       // viendra. Ce n'est pas un échec, et l'écran ne doit pas le dire comme
       // tel.
-      return { holder: "deferred", mailSent: false };
+      return withoutMail("deferred");
     }
     try {
-      const granted = await this.access.grant({
+      const access: AccessToGrant = {
         companyId,
         // Le nom d'USAGE : la raison sociale est facultative à l'ouverture (les
         // papiers arrivent après), et un e-mail intitulé « Votre accès à
@@ -192,14 +197,26 @@ export class CreateCompanyByStaffHandler implements ICommandHandler<
         role: "owner",
         invitedBy: command.invitedBy,
         intentKey: command.intentKey,
-      });
+      };
+      if (!command.announce) {
+        // Ouvert sans annonce : l'identité naît sans e-mail de vérification,
+        // et rien ne part — le lien se remettra depuis « Accès à remettre ».
+        await this.opener.open(access);
+        return withoutMail("attached");
+      }
+      const granted = await this.access.grant(access);
       // On ne dit PAS si la personne était déjà connue : ce serait apprendre au
       // commercial que cette adresse travaille avec un autre de nos clients.
       // L'issue reste au serveur, où elle choisit l'e-mail qui part.
       return { holder: "attached", mailSent: granted.mailSent };
     } catch (error) {
       this.logger.error(`Accès non ouvert pour la société ${companyId}`, error);
-      return { holder: "failed", mailSent: false };
+      return withoutMail("failed");
     }
   }
+}
+
+/** Une issue où aucun e-mail n'a été demandé : choix, ouverture sans annonce, ou panne. */
+function withoutMail(holder: HolderOutcome): Omit<CompanyOpened, "id"> {
+  return { holder, mailSent: false };
 }

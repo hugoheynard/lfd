@@ -1,6 +1,6 @@
 # La commande offerte — l'équipe offre une commande depuis le back-office
 
-**État : 📝 plan ; O0 à O6 bâtis le 2026-11-23 (O3b et O5 compris) ; reste O7 (destinataire libre).** Demandé par Hugo le
+**État : 📝 plan ; O0 à O6 bâtis le 2026-11-23 (O3b et O5 compris), et O7b (la nouvelle enseigne) ; reste O7a (le particulier).** Demandé par Hugo le
 2026-11-23 : « l'équipe passe une commande offerte depuis le back-office ».
 Contredit par `vitruve` le 2026-11-23 : cinq bloquants sur la première version
 (une remise de panier « offerte »), tous levés par le changement de forme du
@@ -195,14 +195,29 @@ l'accès et envoie le lien. Mais `GrantAccountAccess.open` sait **ouvrir sans
 
 #### Encore ouvert
 
-- **À vérifier au bâti** : que `GrantAccountAccess.open` sans annonce ne
-  fait rien partir par Auth0 (création d'identité sans e-mail de
-  vérification).
+- **Vérifié au bâti (2026-11-23)** : `GrantAccountAccess.open` ne fait rien
+  partir. L'identité Auth0 naît avec `verify_email: false`
+  (`auth0-identity.gateway.ts`, `createUser`), et aucun lien n'est émis sans
+  `announce()`.
 - **RGPD — décidé par Hugo le 2026-11-23 : conservation sans limite pour
   l'instant.** Le contact d'une enseigne démarchée sert à la prospection, une
   finalité nouvelle ; aucun e-mail ne l'informe. La durée et l'information
-  restent à revoir (avec un avis RGPD) ; la colonne est déjà au registre, la
-  finalité « prospection » y sera inscrite au bâti d'O7b.
+  restent à revoir (avec un avis RGPD). ⚠️ Le plan disait la colonne « déjà
+  au registre » : c'est faux (vérifié le 2026-11-23). Le registre
+  (`documentation/legal/rgpd-registre.json`) couvre le staff, les
+  réceptionnaires et les tiers, pas les contacts clients
+  (`public.companies.contact_*`, `public.users`). La finalité « prospection »
+  n'y est donc pas inscrite ; l'y faire entrer est un chantier du registre.
+
+**O7b bâti le 2026-11-23** : `POST /admin/companies` accepte
+`announceHolder: false` ; le détenteur est alors ouvert par
+`AccountAccessOpener.open`, sans annonce (`holder: "attached"`,
+`mailSent: false`). Sur « Nouvelle commande pro », le bouton « Nouvelle
+enseigne » (droits `b2b_companies:write` et `b2b_place_order:write`) ouvre
+le panneau `ProspectPanel` (enseigne, prénom, e-mail et téléphone
+obligatoires), crée le compte en attente, puis ouvre sa saisie. La liste de
+cette page ne montre que les comptes actifs : un prospect se retrouve ensuite
+par la liste des comptes clients ou celle des brouillons.
 
 **Lots** : O7a le particulier (route, mur extrait, service de l'offre
 partagé, révision) ; O7b la nouvelle enseigne sans annonce ; O7c l'écran.

@@ -186,6 +186,7 @@ export class AdminCompaniesController {
         payload.primaryContact ?? null,
         staffUserId,
         intentKey,
+        payload.announceHolder,
       ),
     );
   }
