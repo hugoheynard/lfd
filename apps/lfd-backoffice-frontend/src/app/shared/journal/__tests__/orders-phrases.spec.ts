@@ -715,3 +715,45 @@ describe('la base des totaux dans l’historique d’une commande', () => {
     expect(row(revised({}), 'Total avant (TTC)')).toMatch(/^21,10 €$/u);
   });
 });
+
+describe('la commande offerte (order.offered, order.offer_revalued)', () => {
+  const offered = fact({
+    type: 'order.offered',
+    subjectType: 'user',
+    actorName: 'Système',
+    payload: {
+      subjectLabel: 'Les Mariés',
+      orderId: 'ord_1',
+      orderNumber: 'ORD-7',
+      offeredBy: { id: 'stf_1', name: 'Cécile Martin' },
+      nature: 'event',
+      offeredTotalCents: 4_200,
+      offeredVatCents: 220,
+    },
+  });
+
+  it('nomme la fiche, la commande, la nature et la valeur TTC', () => {
+    expect(sentence(offered).replace(/\s/gu, ' ')).toBe(
+      'Cécile Martin a offert la commande ORD-7 (événement), d’une valeur de 42,00 € TTC — Les Mariés',
+    );
+    expect(row(offered, 'Dont TVA')?.replace(/\s/gu, ' ')).toBe('2,20 €');
+  });
+
+  it('dit la valeur revue après une modification', () => {
+    const revalued = fact({
+      type: 'order.offer_revalued',
+      subjectType: 'user',
+      payload: {
+        subjectLabel: 'Les Mariés',
+        orderId: 'ord_1',
+        orderNumber: 'ORD-7',
+        revision: 1,
+        offeredTotalCents: 5_100,
+        offeredVatCents: 266,
+      },
+    });
+    expect(sentence(revalued).replace(/\s/gu, ' ')).toContain(
+      'La valeur offerte de la commande ORD-7 est maintenant de 51,00 € TTC',
+    );
+  });
+});

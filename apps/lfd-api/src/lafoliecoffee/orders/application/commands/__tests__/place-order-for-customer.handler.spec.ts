@@ -1934,6 +1934,23 @@ describe("PlaceOrderForCustomerHandler — la commande offerte", () => {
     expect(sink.placed?.offer?.value.totalCents).toBe(400);
   });
 
+  it("🔴 écrit le témoin « commande offerte » avec la commande, sans le texte du motif", async () => {
+    const durable = new RecordingDurable();
+    const sink = { placed: null as OrderToPlace | null };
+
+    await handler(guard("orders"), sink, { durable }).execute(
+      placement("staff_1", offered(), randomUUID(), false, true),
+    );
+
+    const fact = durable.facts.find((written) => written.type === "order.offered");
+    expect(fact?.payload).toMatchObject({
+      offeredByStaffId: "staff_1",
+      nature: "tasting",
+      offeredTotalCents: 400,
+    });
+    expect(fact?.payload).not.toHaveProperty("note");
+  });
+
   it("passe à une société non active et sans crédit : un prospect", async () => {
     const sink = { placed: null as OrderToPlace | null };
 

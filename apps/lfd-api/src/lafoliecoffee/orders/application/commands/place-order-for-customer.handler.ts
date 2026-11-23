@@ -1,4 +1,5 @@
 import { orderPretaxCents } from "@lfd/money";
+import { OrderOfferedEvent } from "../../domain/events/order-offered.event.js";
 import { OfferNotPermittedError } from "../../domain/errors/order-offer-errors.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import { ensureTotalSeen } from "../../domain/services/seen-total.js";
@@ -234,6 +235,20 @@ export class PlaceOrderForCustomerHandler implements ICommandHandler<
           await this.payments.attach(orderCardSubject(written.id), intent, "first");
         }
         await this.durable.publish(new CommerceOrderPlacedFact(written.id).durableFact());
+        // Le témoin d'une commande offerte : dans la même transaction que la commande.
+        if (order.offer !== null) {
+          await this.durable.publish(
+            new OrderOfferedEvent(
+              written.id,
+              written.orderNumber,
+              payload.buyerUserId,
+              command.staffUserId,
+              order.offer.reason.nature,
+              order.offer.value.totalCents,
+              order.offer.value.vatCents,
+            ).durableFact(),
+          );
+        }
         const result = this.resultOf(written, order, payload.settlement, intent !== null);
         await seal(result);
         return { placed: written, result };

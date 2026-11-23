@@ -99,6 +99,13 @@ export const ACTIVITY_TYPES = {
    */
   orderBudgetCommitmentCorrected: "order.budget_commitment_corrected",
   /**
+   * L'équipe a **offert** une commande (`plan-commande-offerte.md`, O-8) : la
+   * nature et ce qu'elle valait. Un fait de trace : aucun score ne le lit.
+   */
+  orderOffered: "order.offered",
+  /** La valeur d'une commande offerte, **revue** par une modification. */
+  orderOfferRevalued: "order.offer_revalued",
+  /**
    * La commande a **changé de mains**. Le fait le plus important du lot : c'est
    * lui qu'on cherchera le jour où un client dit n'avoir rien reçu.
    *

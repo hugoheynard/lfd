@@ -423,6 +423,17 @@ export const KEY_LABELS_BY_TYPE: Readonly<
   'allergen_entry.updated': { categoryId: 'Catégorie' },
   // L'historique d'une commande dit toujours sa base : HT (pro) ou TTC.
   'order.placed': { totalCents: 'Total TTC', totalPretaxCents: 'Total HT' },
+  // La commande offerte (plan de la commande offerte, O-8).
+  'order.offered': {
+    offeredBy: 'Offerte par',
+    nature: 'Nature de l’offre',
+    offeredTotalCents: 'Valeur offerte (TTC)',
+    offeredVatCents: 'Dont TVA',
+  },
+  'order.offer_revalued': {
+    offeredTotalCents: 'Valeur offerte (TTC)',
+    offeredVatCents: 'Dont TVA',
+  },
   'order.revised': {
     totalBeforeCents: 'Total avant (TTC)',
     totalAfterCents: 'Total après (TTC)',

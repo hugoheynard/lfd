@@ -1,3 +1,4 @@
+import { ORDER_OFFER_NATURES } from '@lfd/contracts';
 import type { JournalFactType } from '@lfd/contracts/journal-facts';
 
 import { count, optional, recordOf, text as orDash } from '../payload-read';
@@ -240,6 +241,50 @@ function orderBudgetCommitmentCorrected(fact: PhraseFact): Said {
       ...fromTo(commitmentTerms(fact.payload['before']), commitmentTerms(fact.payload['after'])),
     ],
     ['orderNumber', 'before', 'after'],
+  );
+}
+
+/** « une dégustation », « un geste commercial »… — `null` hors du registre. */
+function offerNatureOf(raw: unknown): string | null {
+  const known = ORDER_OFFER_NATURES.find((nature) => nature.key === raw);
+  return known === undefined ? null : known.label.toLowerCase();
+}
+
+/**
+ * La commande offerte (plan de la commande offerte, O-8) : « Marie D. a
+ * offert la commande ORD-7 (dégustation), d'une valeur de 42,00 € TTC ».
+ */
+function orderOffered(fact: PhraseFact): Said {
+  const nature = offerNatureOf(fact.payload['nature']);
+  return staffGesture(
+    fact,
+    'offeredBy',
+    [
+      text(' a offert la commande '),
+      name(orDash(fact.payload['orderNumber'])),
+      ...(nature === null ? [] : [text(` (${nature})`)]),
+      text(', d’une valeur de '),
+      inUnit('cents', fact.payload['offeredTotalCents']),
+      text(' TTC'),
+    ],
+    ['orderNumber', ...(nature === null ? [] : ['nature']), 'offeredTotalCents'],
+  );
+}
+
+/**
+ * La valeur d'une commande offerte, revue par une modification : « La valeur
+ * offerte de la commande ORD-7 est maintenant de 51,00 € TTC ».
+ */
+function orderOfferRevalued(fact: PhraseFact): Said {
+  return said(
+    [
+      text('La valeur offerte de la commande '),
+      name(orDash(fact.payload['orderNumber'])),
+      text(' est maintenant de '),
+      inUnit('cents', fact.payload['offeredTotalCents']),
+      text(' TTC'),
+    ],
+    ['orderNumber', 'offeredTotalCents'],
   );
 }
 
@@ -553,6 +598,8 @@ export const ORDERS_PHRASES = {
   'order.cancelled': orderCancelled,
   'order.revised': orderRevised,
   'order.budget_commitment_corrected': orderBudgetCommitmentCorrected,
+  'order.offered': orderOffered,
+  'order.offer_revalued': orderOfferRevalued,
   'order.shortfall_decided': orderShortfallDecided,
   'order.handed_over': orderHandedOver,
   'order.no_show': orderNoShow,

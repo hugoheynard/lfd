@@ -157,6 +157,10 @@ const BARE_REFS: Readonly<Record<string, string>> = {
   // Le départ incomplet décidé (plan E6c2, § 5, 2026-10-25).
   "order.shortfall_decided:orderId": "voisine son nom figé (`orderNumber`)",
   "order.budget_commitment_corrected:orderId": "voisine son nom figé (`orderNumber`)",
+  // La commande offerte (plan-commande-offerte.md, O3b).
+  "order.offered:orderId": "voisine son nom figé (`orderNumber`)",
+  "order.offered:offeredBy": "une fiche staff que l'annuaire ne nomme pas se cite par son id",
+  "order.offer_revalued:orderId": "voisine son nom figé (`orderNumber`)",
   "order.budget_commitment_corrected:correctedBy":
     "une fiche staff que l'annuaire ne nomme pas se cite par son id",
   "order.shortfall_decided:decidedBy":

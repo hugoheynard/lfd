@@ -1,3 +1,4 @@
+import { ORDER_OFFER_NATURES } from '@lfd/contracts';
 import { WEEKDAYS } from '@lfd/b2b-ui/company';
 
 import { domain, type ValueFamily } from './value-domain';
@@ -306,6 +307,12 @@ export const DELIVERY_VAT_MODE = domain('TVA de la livraison', {
   follows_goods: 'Au prorata des produits',
 });
 
+/** La nature d'une commande offerte (`order.offered`) — le registre des contrats. */
+export const ORDER_OFFER_NATURE = domain(
+  'nature d’une commande offerte',
+  Object.fromEntries(ORDER_OFFER_NATURES.map((entry) => [entry.key, entry.label])),
+);
+
 /** Qui commande (`order.placed`, `order.revised`) : il choisit si l'historique dit le HT ou le TTC. */
 export const ORDER_CLIENTELE = domain('clientèle de la commande', {
   pro: 'Professionnel',
@@ -379,6 +386,7 @@ export const ORDERS_VALUES: ValueFamily = {
     DOSSIER_RECIPIENT_KIND,
     DELIVERY_VAT_MODE,
     ORDER_CLIENTELE,
+    ORDER_OFFER_NATURE,
     ORDER_OPENING_EXEMPTION_KIND,
     SAME_DAY_PRO_WITHOUT_CREDIT,
   ],

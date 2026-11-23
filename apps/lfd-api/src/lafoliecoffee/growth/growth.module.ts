@@ -28,6 +28,8 @@ import { OnOrderReviewed } from "./application/handlers/on-order-reviewed.handle
 import { OnOrderRevised } from "./application/handlers/on-order-revised.handler.js";
 import { OnOrderShortfallDecided } from "./application/handlers/on-order-shortfall-decided.handler.js";
 import { OnOrderBudgetCommitmentCorrected } from "./application/handlers/on-order-budget-commitment-corrected.handler.js";
+import { OnOrderOffered } from "./application/handlers/on-order-offered.handler.js";
+import { OnOrderOfferRevalued } from "./application/handlers/on-order-offer-revalued.handler.js";
 import { OnOrderReady } from "./application/handlers/on-order-ready.handler.js";
 import { OnSubscriptionCreated } from "./application/handlers/on-subscription-created.handler.js";
 import { OnGuestAccountClaimed } from "./application/handlers/on-guest-account-claimed.handler.js";
@@ -253,6 +255,8 @@ import { PrismaLeadScoreStore } from "./infrastructure/prisma-lead-score.store.j
     OnOrderRevised,
     OnOrderShortfallDecided,
     OnOrderBudgetCommitmentCorrected,
+    OnOrderOffered,
+    OnOrderOfferRevalued,
     OnOrderHandedOver,
     OnCompanyDeclared,
     OnCompanyStepReached,

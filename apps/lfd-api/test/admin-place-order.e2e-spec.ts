@@ -397,6 +397,13 @@ describe("POST /admin/orders — le règlement", () => {
     expect(after.totalCents).toBe(0);
     expect(after.offerNature).toBe("tasting");
     expect(after.offeredTotalCents).toBeGreaterThan(before.offeredTotalCents ?? 0);
+    // Les deux témoins sont dans la boîte d'envoi : offerte, puis revue à sa nouvelle valeur.
+    const facts = await ctx.prisma.outboxMessage.findMany({
+      where: { type: { in: ["order.offered", "order.offer_revalued"] } },
+      orderBy: { occurredAt: "asc" },
+    });
+    expect(facts.map((fact) => fact.type)).toEqual(["order.offered", "order.offer_revalued"]);
+    expect(facts[1]?.payload).toMatchObject({ offeredTotalCents: after.offeredTotalCents });
   });
 
   it("🔴 refuse d'offrir sans le droit « Offrir une commande » — et n'écrit rien", async () => {

@@ -1,5 +1,6 @@
 import { Injectable } from "@nestjs/common";
 
+import { OrderOfferRevaluedEvent } from "../../../domain/events/order-offered.event.js";
 import { CommerceOrderRevisedFact } from "../../../../../delivery/channels/commerce/index.js";
 import { DurablePublisher } from "../../../../../platform/outbox/durable-publisher.js";
 import { Clock } from "../../../../../platform/time/clock.js";
@@ -95,6 +96,19 @@ export class OrderRevisionRecording {
         revision.state.clientele,
       ).durableFact(),
     );
+    // Une commande offerte : sa valeur après le geste, pour le cumul offert.
+    if (revision.state.offer !== null) {
+      await this.durable.publish(
+        new OrderOfferRevaluedEvent(
+          revision.orderId,
+          revision.orderNumber,
+          revision.placedByUserId,
+          revision.toRevision,
+          revision.state.offer.value.totalCents,
+          revision.state.offer.value.vatCents,
+        ).durableFact(),
+      );
+    }
     // La livraison reprend une commande qui change d'acheminement (§9) : même transaction.
     await this.durable.publish(
       new CommerceOrderRevisedFact(
