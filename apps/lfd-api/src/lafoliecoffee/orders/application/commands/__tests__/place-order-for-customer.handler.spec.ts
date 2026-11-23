@@ -92,6 +92,7 @@ import { EstimateOrderForCustomerQuery } from "../../queries/estimate-order-for-
 import { OrderCutoffNotice } from "../../services/order-cutoff-notice.service.js";
 import { RecordingShelfStockLock } from "../../../../resupply/application/__tests__/shelf-stock-doubles.js";
 import { OrdersClosedForAudienceError } from "../../../domain/errors/orders-closed-for-audience.error.js";
+import { OfferNotPermittedError } from "../../../domain/errors/order-offer-errors.js";
 import {
   CounterAccountSettlementNotGrantedError,
   CounterLinkSettlementRefusedError,
@@ -525,8 +526,15 @@ function placement(
   payload: AdminPlaceOrderPayload,
   intentKey: string = randomUUID(),
   exceedItemLimits = false,
+  mayOffer = false,
 ): PlaceOrderForCustomerCommand {
-  return new PlaceOrderForCustomerCommand(staffUserId, payload, intentKey, exceedItemLimits);
+  return new PlaceOrderForCustomerCommand(
+    staffUserId,
+    payload,
+    intentKey,
+    exceedItemLimits,
+    mayOffer,
+  );
 }
 
 /**
@@ -1892,5 +1900,57 @@ describe("PlaceOrderForCustomerHandler — passer outre la limite d'un produit",
     );
 
     expect(overrides.recorded).toEqual([]);
+  });
+});
+
+/** La commande offerte (plan `plan-commande-offerte.md`, O3). */
+describe("PlaceOrderForCustomerHandler — la commande offerte", () => {
+  const OFFER = { nature: "tasting" as const, note: "Dégustation mariage" };
+  const offered = (over: Partial<AdminPlaceOrderPayload> = {}) =>
+    payload({ settlement: "offered", offer: OFFER, expectedTotalCents: 0, ...over });
+
+  it("🔴 refuse sans le droit d'offrir, sans rien écrire ni sceller", async () => {
+    const sink = { placed: null as OrderToPlace | null };
+
+    await expect(
+      handler(guard("orders"), sink).execute(placement("staff_1", offered())),
+    ).rejects.toBeInstanceOf(OfferNotPermittedError);
+    expect(sink.placed).toBeNull();
+  });
+
+  it("🔴 avec le droit : total nul, rien à encaisser, la valeur et le motif gardés", async () => {
+    const intents = { intent: null as CardPreparationRequest | null };
+    const sink = { placed: null as OrderToPlace | null };
+
+    const result = await handler(guard("orders"), sink, { payments: payments(intents) }).execute(
+      placement("staff_1", offered(), randomUUID(), false, true),
+    );
+
+    expect(result.totalCents).toBe(0);
+    expect(result.paymentUrl).toBeUndefined();
+    expect(intents.intent).toBeNull();
+    expect(sink.placed?.paymentStatus).toBe("not_required");
+    expect(sink.placed?.offer?.reason).toEqual(OFFER);
+    expect(sink.placed?.offer?.value.totalCents).toBe(400);
+  });
+
+  it("passe à une société non active et sans crédit : un prospect", async () => {
+    const sink = { placed: null as OrderToPlace | null };
+
+    await handler(guard("orders", "pending", "none"), sink).execute(
+      placement("staff_1", offered(), randomUUID(), false, true),
+    );
+
+    expect(sink.placed?.totalCents).toBe(0);
+  });
+
+  it("🔴 passe outre la boutique fermée à la clientèle (geste nommé, Hugo 2026-11-23)", async () => {
+    const sink = { placed: null as OrderToPlace | null };
+
+    await handler(guard("orders"), sink, {
+      intake: intakeAt({ ordersOpenToB2b: false }, "active"),
+    }).execute(placement("staff_1", offered(), randomUUID(), false, true));
+
+    expect(sink.placed?.offer).not.toBeNull();
   });
 });

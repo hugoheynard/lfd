@@ -24,6 +24,11 @@ export class PlaceOrderForCustomerCommand {
      * qui le permet, avec un motif.
      */
     readonly exceedItemLimits: boolean,
+    /**
+     * Celui qui saisit a le droit `b2b_offer_order:write`, lu en base par la
+     * porte staff : lui seul peut passer une commande offerte.
+     */
+    readonly mayOffer: boolean,
   ) {}
 }
 

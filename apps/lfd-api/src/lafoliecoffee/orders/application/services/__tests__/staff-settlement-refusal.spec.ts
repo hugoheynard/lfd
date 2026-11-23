@@ -1,4 +1,3 @@
-import { OfferedOrderUnavailableError } from "../../../domain/errors/order-errors.js";
 import { staffSettlementRefusal, type StaffSettlementPorts } from "../staff-settlement-refusal.js";
 import { shelfOrder } from "./shelf-circuit-fixtures.js";
 
@@ -23,26 +22,23 @@ function countingPorts(): { readonly ports: StaffSettlementPorts; readonly reads
 }
 
 /**
- * La commande offerte (plan `plan-commande-offerte.md`, O0) : le contrat
- * l'admet, la ligne « offert » n'existe pas encore. Sans ce refus, `offered`
- * tombait dans le chemin du lien et créait un règlement par carte pour une
- * commande promise gratuite.
+ * La commande offerte (plan `plan-commande-offerte.md`, O3) : rien à
+ * encaisser, donc ni crédit, ni statut, ni payeur à juger. Le droit d'offrir
+ * se garde au handler.
  */
 describe("staffSettlementRefusal — offered", () => {
-  it("🔴 refuse offered tant que la passation ne le sait pas, sans rien lire", async () => {
+  it("🔴 laisse passer offered sans rien lire, même sans crédit ni société active", async () => {
     const { ports, reads } = countingPorts();
 
     const refusal = await staffSettlementRefusal(ports, shelfOrder(1), "offered", "co_1", false);
 
-    expect(refusal).toBeInstanceOf(OfferedOrderUnavailableError);
+    expect(refusal).toBeNull();
     expect(reads()).toBe(0);
   });
 
-  it("refuse offered au comptoir aussi", async () => {
+  it("laisse passer offered au comptoir aussi", async () => {
     const { ports } = countingPorts();
 
-    const refusal = await staffSettlementRefusal(ports, shelfOrder(1), "offered", "co_1", true);
-
-    expect(refusal).toBeInstanceOf(OfferedOrderUnavailableError);
+    expect(await staffSettlementRefusal(ports, shelfOrder(1), "offered", "co_1", true)).toBeNull();
   });
 });

@@ -1,5 +1,9 @@
 import type { AdminOrderEstimatePayload } from "@lfd/contracts";
 
+import {
+  orderOfferReasonOf,
+  type OrderOfferReason,
+} from "../../domain/value-objects/order-offer.js";
 import type { PricingCaller } from "../../../pricing/application/pricing-caller.js";
 import type { OrderGuardReader } from "../../domain/ports/order-guard.reader.js";
 import { ensureOrderMember } from "../../domain/services/order-access.js";
@@ -43,8 +47,9 @@ export interface StaffOrderPreparationPorts {
  * @throws {CounterLinkSettlementRefusedError} un lien de règlement au comptoir.
  * @throws {CounterAccountSettlementNotGrantedError} le même lien, quand la
  *   société est suspendue ou inactive : « Au compte » serait refusé aussi.
- * @throws {OrdersClosedForAudienceError} la boutique est fermée à sa clientèle.
- * @throws {ServiceDayBeforeFirstOrderableDayError} avant son premier jour commandable.
+ * @throws {OrdersClosedForAudienceError} la boutique est fermée à sa clientèle (sauf offerte).
+ * @throws {ServiceDayBeforeFirstOrderableDayError} avant son premier jour commandable (sauf offerte).
+ * @throws {InvalidOrderOfferError} le motif d'une commande offerte est mal formé.
  */
 export async function prepareStaffOrder(
   ports: StaffOrderPreparationPorts,
@@ -59,11 +64,17 @@ export async function prepareStaffOrder(
   // fiche sous les yeux, il n'a pas besoin d'un message plus bavard.
   ensureOrderMember(await ports.guard.roleOf(buyerUserId, companyId), companyId);
   await ensureCounterLinkCause(ports.guard, payload);
-  await ports.intake.admitStaffEntry(
-    companyId,
-    { userId: buyerUserId },
-    payload.requestedDeliveryDate,
-  );
+  // Une commande offerte n'est tenue ni par la fermeture de la boutique à sa
+  // clientèle, ni par son premier jour commandable : un geste nommé de
+  // l'équipe (décidé par Hugo le 2026-11-23, `plan-commande-offerte.md`, § 4).
+  // Le jour de production et l'heure limite, eux, tiennent.
+  if (payload.settlement !== "offered") {
+    await ports.intake.admitStaffEntry(
+      companyId,
+      { userId: buyerUserId },
+      payload.requestedDeliveryDate,
+    );
+  }
   return ports.drafting.draft(
     // Le client porté est membre d'une société : un compte, pas un invité (§ 13.7).
     {
@@ -72,6 +83,7 @@ export async function prepareStaffOrder(
       placedByStaffId: staffUserId,
       buyerKind: REGISTERED_BUYER,
       exceedItemLimits,
+      ...offerOf(payload),
     },
     payload,
     // L'équipe ne dépense pas le bon d'un client : son contrat n'en nomme
@@ -113,4 +125,14 @@ async function ensureCounterLinkCause(
     }
   }
   ensureCounterSettlement(payload.settlement, atCounter);
+}
+
+/**
+ * Le motif de l'offre, revalidé par l'agrégat, ou rien. Le contrat garantit
+ * qu'il est là si et seulement si le règlement est `offered`.
+ *
+ * @throws {InvalidOrderOfferError} un motif mal formé.
+ */
+function offerOf(payload: AdminOrderEstimatePayload): { readonly offer?: OrderOfferReason } {
+  return payload.offer === undefined ? {} : { offer: orderOfferReasonOf(payload.offer) };
 }

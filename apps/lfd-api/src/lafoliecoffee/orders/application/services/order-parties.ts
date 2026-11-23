@@ -1,4 +1,5 @@
 import type { OrderBuyerKind } from "../../domain/value-objects/order-buyer-kind.js";
+import type { OrderOfferReason } from "../../domain/value-objects/order-offer.js";
 
 /**
  * **Qui est concerné** par une commande : le client porté, et le membre de
@@ -25,4 +26,10 @@ export interface OrderParties {
    * Obligatoire : un poseur oublié ne compile pas, et personne n'en hérite.
    */
   readonly exceedItemLimits: boolean;
+  /**
+   * Le motif d'une commande **offerte**, posé par la saisie de l'équipe
+   * seule, après la garde du droit `b2b_offer_order`. Absent partout
+   * ailleurs : le client, l'invité et la boutique n'offrent rien.
+   */
+  readonly offer?: OrderOfferReason;
 }

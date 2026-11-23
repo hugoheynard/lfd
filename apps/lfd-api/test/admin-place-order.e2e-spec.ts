@@ -135,6 +135,17 @@ function payload(over: Record<string, unknown> = {}): Record<string, unknown> {
   };
 }
 
+/** Une commande offerte (plan `plan-commande-offerte.md`, O3) : total vu nul. */
+function offeredPayload(companyId: string, buyerUserId: string): Record<string, unknown> {
+  return payload({
+    companyId,
+    buyerUserId,
+    settlement: "offered",
+    offer: { nature: "tasting", note: "Dégustation mariage" },
+    expectedTotalCents: 0,
+  });
+}
+
 describe("POST /admin/orders — le mur", () => {
   it("refuse un acheteur qui n'est pas membre de la société visée", async () => {
     // Le staff, lui, n'est membre de rien : si le mur portait sur l'acteur,
@@ -338,21 +349,71 @@ describe("POST /admin/orders — le règlement", () => {
     expect(await ctx.prisma.order.count()).toBe(0);
   });
 
-  it("🔴 refuse une commande offerte tant que la ligne « offert » n'existe pas — et n'écrit rien", async () => {
-    // Sans ce refus, `offered` tombait dans le chemin du lien et créait un
-    // règlement par carte pour une commande promise gratuite.
-    const { companyId, buyerId } = await seedCompany(true);
+  it("🔴 offerte : total nul, rien à encaisser, motif et valeur écrits en base", async () => {
+    const { companyId, buyerId } = await seedCompany(false);
+
+    const placed = await staff()
+      .post("/admin/orders")
+      .set(INTENT_KEY, freshIntent())
+      .send(offeredPayload(companyId, buyerId))
+      .expect(201);
+
+    const body = jsonBody<AdminPlacedOrderResponse>(placed);
+    expect(body.totalCents).toBe(0);
+    expect(body.paymentUrl).toBeUndefined();
+    const row = await ctx.prisma.order.findUniqueOrThrow({ where: { id: body.id } });
+    expect(row.totalCents).toBe(0);
+    expect(row.paymentStatus).toBe("not_required");
+    expect(row.stripePaymentIntentId).toBeNull();
+    expect(row.offerNature).toBe("tasting");
+    expect(row.offerNote).toBe("Dégustation mariage");
+    expect(row.offeredTotalCents).toBeGreaterThan(0);
+  });
+
+  it("🔴 offerte, puis modifiée : elle reste offerte et sa valeur suit (aller-retour en base)", async () => {
+    const { companyId, buyerId } = await seedCompany(false);
+    const placed = await staff()
+      .post("/admin/orders")
+      .set(INTENT_KEY, freshIntent())
+      .send(offeredPayload(companyId, buyerId))
+      .expect(201);
+    const { id } = jsonBody<AdminPlacedOrderResponse>(placed);
+    const before = await ctx.prisma.order.findUniqueOrThrow({ where: { id } });
+
+    await staff()
+      .post(`/admin/orders/${id}/revisions`)
+      .send({
+        expectedRevision: 0,
+        expectedTotalCents: 0,
+        requestedDeliveryDate: SERVICE_DAY,
+        fulfillmentMethod: "pickup",
+        pickupAddressId: pickupId,
+        requestedWindow: { start: "07:00", end: "08:00" },
+        lines: [{ sku: "VIE-001-1", quantity: 24 }],
+      })
+      .expect(200);
+
+    const after = await ctx.prisma.order.findUniqueOrThrow({ where: { id } });
+    expect(after.totalCents).toBe(0);
+    expect(after.offerNature).toBe("tasting");
+    expect(after.offeredTotalCents).toBeGreaterThan(before.offeredTotalCents ?? 0);
+  });
+
+  it("🔴 refuse d'offrir sans le droit « Offrir une commande » — et n'écrit rien", async () => {
+    // Un commercial passe des commandes ; offrir est un droit à part.
+    await ctx.prisma.staffUser.update({
+      where: { auth0Id: "staff-e2e" },
+      data: { role: "commercial" },
+    });
+    const { companyId, buyerId } = await seedCompany(false);
 
     const refusal = await staff()
       .post("/admin/orders")
       .set(INTENT_KEY, freshIntent())
-      .send({
-        ...payload({ companyId, buyerUserId: buyerId, settlement: "offered" }),
-        offer: { nature: "tasting", note: "Dégustation" },
-      })
-      .expect(409);
+      .send(offeredPayload(companyId, buyerId))
+      .expect(403);
 
-    expect(refusal.body).toMatchObject({ code: "orders.settlement.offered_unavailable" });
+    expect(refusal.body).toMatchObject({ code: "orders.offer.forbidden" });
     expect(await ctx.prisma.order.count()).toBe(0);
   });
 

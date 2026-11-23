@@ -1,4 +1,8 @@
-import { BusinessError, DomainError } from "../../../../platform/shared/errors/app-error.js";
+import {
+  AuthorizationError,
+  BusinessError,
+  DomainError,
+} from "../../../../platform/shared/errors/app-error.js";
 
 /** Un motif d'offre mal formé : nature hors registre, texte vide ou trop long. */
 export class InvalidOrderOfferError extends DomainError {
@@ -33,6 +37,19 @@ export class OfferChangeOnRevisionError extends BusinessError {
       wasOffered
         ? "Cette commande est offerte : une modification ne peut pas la rendre payante. Annulez-la, puis saisissez une nouvelle commande."
         : "Une modification ne peut pas rendre une commande offerte. Annulez-la, puis saisissez une commande offerte.",
+    );
+  }
+}
+
+/**
+ * **Offrir est un droit à part** (`b2b_offer_order`) : pouvoir saisir une
+ * commande pour un client ne suffit pas.
+ */
+export class OfferNotPermittedError extends AuthorizationError {
+  constructor() {
+    super(
+      "orders.offer.forbidden",
+      "Vous n'avez pas le droit d'offrir une commande. Demandez à un administrateur le droit « Offrir une commande ».",
     );
   }
 }

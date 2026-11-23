@@ -226,6 +226,7 @@ export class OrderDrafting {
         voucher,
         salesTerms: await this.salesTermsIn(salesTermsOf(loaded.audience)),
         locale,
+        ...(parties.offer === undefined ? {} : { offer: parties.offer }),
       },
       supply,
       entryOrigin,

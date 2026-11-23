@@ -1,4 +1,5 @@
 import { orderPretaxCents } from "@lfd/money";
+import { OfferNotPermittedError } from "../../domain/errors/order-offer-errors.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import { ensureTotalSeen } from "../../domain/services/seen-total.js";
 import { OrderCutoffWaiverGate } from "../../domain/ports/order-cutoff-waiver.gate.js";
@@ -106,8 +107,13 @@ export class PlaceOrderForCustomerHandler implements ICommandHandler<
    *
    * @throws {GestureInFlightError} la même clé est encore en vol.
    * @throws {IntentKeyReusedError} la clé a déjà passé un autre panier.
+   * @throws {OfferNotPermittedError} une commande offerte sans le droit `b2b_offer_order`.
    */
   execute(command: PlaceOrderForCustomerCommand): Promise<PlaceOrderForCustomerResult> {
+    // Avant toute intention scellée : un refus de droit ne consomme pas la clé.
+    if (command.payload.settlement === "offered" && !command.mayOffer) {
+      return Promise.reject(new OfferNotPermittedError());
+    }
     return this.intents.runSealed(
       staffPlacementIntent(command.staffUserId, command.intentKey, command.payload),
       STAFF_PLACEMENT_REPLAY,

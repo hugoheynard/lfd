@@ -255,6 +255,8 @@ export function placeOrderForCustomer(
           intentKey,
           // Une commande semée ne passe outre aucune limite de produit.
           false,
+          // Ni n'est offerte.
+          false,
         ),
       ),
     ),

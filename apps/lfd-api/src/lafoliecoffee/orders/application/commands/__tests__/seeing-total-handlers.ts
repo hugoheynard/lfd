@@ -73,6 +73,7 @@ export class SeeingPlaceOrderForCustomerHandler extends PlaceOrderForCustomerHan
           { ...command.payload, expectedTotalCents },
           command.intentKey,
           command.exceedItemLimits,
+          command.mayOffer,
         ),
       ),
     );
