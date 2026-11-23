@@ -174,8 +174,8 @@ describe("transitions d'état", () => {
   });
 });
 
-describe("suppression", () => {
-  it("supprime l'abonnement et ses dérogations en cascade", async () => {
+describe("arrêt", () => {
+  it("arrête l'abonnement sans l'effacer : lignes et dérogations restent en base", async () => {
     const id = await createSubscription();
     await ctx
       .asSub(OWNER)
@@ -185,10 +185,27 @@ describe("suppression", () => {
 
     await ctx.asSub(OWNER).delete(`/subscriptions/${id}`).expect(204);
 
-    expect(await ctx.prisma.subscription.count({ where: { id } })).toBe(0);
-    expect(await ctx.prisma.subscriptionOccurrence.count({ where: { subscriptionId: id } })).toBe(
-      0,
+    expect((await ctx.prisma.subscription.findUniqueOrThrow({ where: { id } })).status).toBe(
+      "cancelled",
     );
+    expect(await ctx.prisma.subscriptionLine.count({ where: { subscriptionId: id } })).toBe(1);
+    expect(await ctx.prisma.subscriptionOccurrence.count({ where: { subscriptionId: id } })).toBe(
+      1,
+    );
+  });
+
+  it("un panier arrêté ne se liste plus et répond comme absent", async () => {
+    const id = await createSubscription();
+    await ctx.asSub(OWNER).delete(`/subscriptions/${id}`).expect(204);
+
+    const mine = await ctx.asSub(OWNER).get("/subscriptions/mine").expect(200);
+    expect(jsonBody<readonly { id: string }[]>(mine).map((row) => row.id)).not.toContain(id);
+    await ctx.asSub(OWNER).delete(`/subscriptions/${id}`).expect(404);
+    await ctx
+      .asSub(OWNER)
+      .patch(`/subscriptions/${id}/status`)
+      .send({ status: "paused" })
+      .expect(404);
   });
 });
 

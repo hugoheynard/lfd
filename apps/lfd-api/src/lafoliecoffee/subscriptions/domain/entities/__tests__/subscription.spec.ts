@@ -8,6 +8,7 @@ import {
   OccurrenceOutsideWindowError,
   SubscriptionAlreadyActiveError,
   SubscriptionAlreadyPausedError,
+  SubscriptionCancelledError,
 } from "../../errors/subscription-errors.js";
 import { IsoDate } from "../../value-objects/iso-date.js";
 import { SubscriptionLine } from "../../value-objects/subscription-line.js";
@@ -278,5 +279,57 @@ describe("Subscription — la société de l'abonnement (N4e)", () => {
       "chalet",
     );
     expect(Subscription.open(openInput()).companyId).toBeNull();
+  });
+});
+
+describe("Subscription.cancel — l'arrêt garde le panier en base", () => {
+  it("arrête un panier actif, et l'état persisté le dit", () => {
+    const sub = Subscription.open(openInput());
+    sub.cancel();
+    expect(sub.isCancelled).toBe(true);
+    expect(sub.toPersistence().status).toBe("cancelled");
+  });
+
+  it("arrête un panier en pause", () => {
+    const sub = Subscription.open(openInput());
+    sub.pause();
+    sub.cancel();
+    expect(sub.toPersistence().status).toBe("cancelled");
+  });
+
+  it("garde lignes et dérogations : rien n'est effacé", () => {
+    const sub = Subscription.open(openInput());
+    sub.overrideOccurrence(IsoDate.fromString("2026-09-01"), {
+      skipped: true,
+      lines: [],
+      note: "",
+    });
+    const before = sub.toPersistence();
+    sub.cancel();
+    const after = sub.toPersistence();
+    expect(after.lines).toEqual(before.lines);
+    expect(after.overrides).toEqual(before.overrides);
+  });
+
+  it.each([
+    ["un second arrêt", (sub: Subscription) => sub.cancel()],
+    ["la pause", (sub: Subscription) => sub.pause()],
+    ["la reprise", (sub: Subscription) => sub.resume()],
+    [
+      "une dérogation",
+      (sub: Subscription) =>
+        sub.overrideOccurrence(IsoDate.fromString("2026-09-01"), {
+          skipped: true,
+          lines: [],
+          note: "",
+        }),
+    ],
+    ["la lecture de son état public", (sub: Subscription) => sub.currentStatus],
+    ["la lecture de sa décision", (sub: Subscription) => sub.decision()],
+  ])("un panier arrêté refuse %s", (_label, act) => {
+    const sub = Subscription.open(openInput());
+    sub.cancel();
+    expect(() => act(sub)).toThrow(SubscriptionCancelledError);
+    expect(sub.toPersistence().status).toBe("cancelled");
   });
 });

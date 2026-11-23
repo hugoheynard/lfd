@@ -7,6 +7,7 @@ import type {
 
 import {
   EmptyOverrideError,
+  SubscriptionCancelledError,
   EmptySubscriptionError,
   InvalidDateRangeError,
   InvalidRoutingError,
@@ -17,6 +18,17 @@ import {
 import { type Occurrence, occurrencesBetween } from "../services/occurrence-calendar.js";
 import { IsoDate } from "../value-objects/iso-date.js";
 import { SubscriptionLine } from "../value-objects/subscription-line.js";
+
+/**
+ * **Le cycle de vie** d'un panier : les deux états que le client voit, et
+ * l'arrêt. Un panier arrêté reste en base (CLAUDE.md §3, pas de DELETE
+ * physique) mais ne se lit plus et ne se mute plus : il n'a pas de troisième
+ * état public, d'où un type du domaine plus large que le contrat.
+ */
+export type SubscriptionLifecycle = SubscriptionStatus | "cancelled";
+
+/** Le statut d'un panier arrêté, tel qu'il est écrit en base. */
+export const CANCELLED_SUBSCRIPTION = "cancelled" satisfies SubscriptionLifecycle;
 
 /** Acheminement figé du panier : livraison (adresse libre) OU retrait (point). */
 export interface SubscriptionRouting {
@@ -76,7 +88,7 @@ export interface OpenSubscriptionInput {
 /** Ce qu'il faut pour **reconstituer** un panier déjà persisté (il porte son id). */
 export interface ReconstituteSubscriptionInput extends OpenSubscriptionInput {
   readonly id: string;
-  readonly status: SubscriptionStatus;
+  readonly status: SubscriptionLifecycle;
   readonly overrides: readonly OccurrenceOverride[];
 }
 
@@ -101,7 +113,7 @@ export interface SubscriptionState {
   readonly companyId: string | null;
   readonly fromOrderId: string | null;
   readonly recurrence: Recurrence;
-  readonly status: SubscriptionStatus;
+  readonly status: SubscriptionLifecycle;
   readonly startDate: Date;
   readonly endDate: Date | null;
   readonly fulfillmentMethod: FulfillmentMethod;
@@ -144,7 +156,7 @@ export interface OverrideInput {
  * de l'abonnement. La persistance passe par `toPersistence()`.
  */
 export class Subscription {
-  private status: SubscriptionStatus;
+  private status: SubscriptionLifecycle;
   private readonly overrides: Map<string, OccurrenceOverride>;
 
   private constructor(
@@ -154,7 +166,7 @@ export class Subscription {
     readonly companyId: string | null,
     private readonly fromOrderId: string | null,
     private readonly recurrence: Recurrence,
-    status: SubscriptionStatus,
+    status: SubscriptionLifecycle,
     private readonly startDate: IsoDate,
     private readonly endDate: IsoDate | null,
     private readonly routing: SubscriptionRouting,
@@ -209,16 +221,30 @@ export class Subscription {
     );
   }
 
-  /** Met en pause — refuse si déjà en pause. */
+  /**
+   * **Arrête** le panier : il reste en base, mais ne se lit plus, ne se
+   * modifie plus et ne génère plus rien. Sans retour : un client qui veut
+   * reprendre ouvre un nouveau panier.
+   *
+   * @throws {SubscriptionCancelledError} le panier est déjà arrêté.
+   */
+  cancel(): void {
+    this.ensureNotCancelled();
+    this.status = "cancelled";
+  }
+
+  /** Met en pause — refuse si déjà en pause ou arrêté. */
   pause(): void {
+    this.ensureNotCancelled();
     if (this.status === "paused") {
       throw new SubscriptionAlreadyPausedError();
     }
     this.status = "paused";
   }
 
-  /** Reprend — refuse si déjà actif. */
+  /** Reprend — refuse si déjà actif ou arrêté. */
   resume(): void {
+    this.ensureNotCancelled();
     if (this.status === "active") {
       throw new SubscriptionAlreadyActiveError();
     }
@@ -231,6 +257,7 @@ export class Subscription {
    * n'est ni une modification ni un saut). Rend la dérogation posée.
    */
   overrideOccurrence(date: IsoDate, input: OverrideInput): OccurrenceOverride {
+    this.ensureNotCancelled();
     if (date.isBefore(this.startDate) || (this.endDate !== null && date.isAfter(this.endDate))) {
       throw new OccurrenceOutsideWindowError(date.toString());
     }
@@ -247,9 +274,18 @@ export class Subscription {
     return override;
   }
 
-  /** L'état du panier : actif ou en pause. */
+  /**
+   * L'état du panier que le client voit : actif ou en pause.
+   *
+   * @throws {SubscriptionCancelledError} le panier est arrêté : il n'a plus d'état public.
+   */
   get currentStatus(): SubscriptionStatus {
-    return this.status;
+    return this.liveStatus();
+  }
+
+  /** Vrai une fois le panier arrêté. */
+  get isCancelled(): boolean {
+    return this.status === "cancelled";
   }
 
   /**
@@ -281,13 +317,24 @@ export class Subscription {
   decision(): SubscriptionDecision {
     return {
       recurrence: this.recurrence,
-      status: this.status,
+      status: this.liveStatus(),
       startDate: this.startDate.toString(),
       endDate: this.endDate === null ? null : this.endDate.toString(),
       fulfillmentMethod: this.routing.method,
       pickupAddressId: this.routing.pickupAddressId,
       lines: this.lines.map((line) => ({ sku: line.sku, quantity: line.quantity })),
     };
+  }
+
+  private ensureNotCancelled(): void {
+    this.liveStatus();
+  }
+
+  private liveStatus(): SubscriptionStatus {
+    if (this.status === "cancelled") {
+      throw new SubscriptionCancelledError();
+    }
+    return this.status;
   }
 
   /** Sérialise l'agrégat pour l'adaptateur de persistance (aucun type Prisma). */

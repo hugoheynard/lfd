@@ -131,7 +131,8 @@ describe("les gestes sur un panier de société (N4e)", () => {
     const { remove, repo, durable } = build();
     repo.loadResult = activeSubscription("sub_9", "chalet");
     await remove.execute(new DeleteSubscriptionCommand("user_1", "sub_9"));
-    expect(repo.removed).toEqual(["sub_9"]);
+    // Le panier n'est plus effacé : il est rendu au port, arrêté.
+    expect(repo.saved.map((saved) => saved.isCancelled)).toEqual([true]);
     expect(durable.facts[0]).toMatchObject({
       type: SUBSCRIPTION_DELETED,
       payload: { subjectId: "sub_9", siteCompanyId: "chalet" },
@@ -195,7 +196,6 @@ describe("le mur du rattachement actuel (N4e)", () => {
       "Vous n'êtes plus membre de Chalet Gentiane : cet abonnement ne se gère plus depuis votre compte.",
     );
     expect(h.repo.saved).toEqual([]);
-    expect(h.repo.removed).toEqual([]);
     expect(h.durable.facts).toEqual([]);
   });
 

@@ -155,12 +155,14 @@ describe("les gestes du client sur son panier", () => {
     expect(written[0]).toMatchObject({ subjectId: id, actorId: ownerId });
   });
 
-  it("supprimer : la ligne disparaît, le fait garde ce que le panier décidait", async () => {
+  it("arrêter : la ligne reste, arrêtée, et le fait garde ce que le panier décidait", async () => {
     const id = await createSubscription();
 
     await ctx.asSub(OWNER).delete(`/subscriptions/${id}`).expect(204);
 
-    expect(await ctx.prisma.subscription.count({ where: { id } })).toBe(0);
+    expect((await ctx.prisma.subscription.findUniqueOrThrow({ where: { id } })).status).toBe(
+      "cancelled",
+    );
     expect(await facts("subscription.deleted")).toEqual([
       {
         subjectType: "subscription",

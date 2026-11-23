@@ -147,6 +147,6 @@ croissance, à écrire comme un choix. Relevé par Hugo en relisant l'écran.
   deux une journée ouverte et enregistrent chacune : course antérieure au
   journal, qui y écrit désormais deux `production_day.closed` (relevé le
   2026-09-19, tranche (d) du lot 1).
-- **La suppression d'un panier récurrent est physique** : interdite par
-  CLAUDE.md §3 sur un agrégat, et son handler lève une `NotFoundException`
-  depuis l'application — dette des paniers récurrents, à traiter chez eux.
+- ~~La suppression d'un panier récurrent est physique~~ : pris par le lot R1
+  du [planificateur](../commandes/paniers-recurrents/plan-planificateur.md)
+  (2026-11-23) — le panier s'arrête au statut `cancelled`.

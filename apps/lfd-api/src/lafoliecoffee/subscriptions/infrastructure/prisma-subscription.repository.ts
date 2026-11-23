@@ -11,6 +11,7 @@ import { PrismaService } from "../../../platform/database/prisma.service.js";
 import {
   Subscription,
   type PersistedOverride,
+  CANCELLED_SUBSCRIPTION,
   type SubscriptionState,
 } from "../domain/entities/subscription.js";
 import { IsoDate } from "../domain/value-objects/iso-date.js";
@@ -60,7 +61,13 @@ export class PrismaSubscriptionRepository extends SubscriptionRepository {
 
   async load(subscriptionId: string, ownerUserId: string): Promise<Subscription | null> {
     const row = await this.prisma.subscription.findFirst({
-      where: { id: subscriptionId, placedByUserId: ownerUserId },
+      // Un panier arrêté répond comme un panier absent : le statut lu ensuite
+      // n'est donc jamais `cancelled`.
+      where: {
+        id: subscriptionId,
+        placedByUserId: ownerUserId,
+        status: { not: CANCELLED_SUBSCRIPTION },
+      },
       include: {
         lines: { select: { sku: true, quantity: true } },
         occurrences: { select: { occurrenceDate: true, skipped: true, lines: true, note: true } },
@@ -98,10 +105,6 @@ export class PrismaSubscriptionRepository extends SubscriptionRepository {
         });
       }
     });
-  }
-
-  async remove(subscriptionId: string): Promise<void> {
-    await this.prisma.subscription.delete({ where: { id: subscriptionId } });
   }
 }
 

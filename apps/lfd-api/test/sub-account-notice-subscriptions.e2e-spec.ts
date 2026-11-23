@@ -243,7 +243,9 @@ describe("le mur du rattachement actuel", () => {
       "Vous n'êtes plus membre de Chalet Gentiane : cet abonnement ne se gère plus depuis votre compte.",
     );
     await ctx.asSub(s.housekeeper).delete(`/subscriptions/${id}`).expect(403);
-    expect(await ctx.prisma.subscription.count({ where: { id } })).toBe(1);
+    expect((await ctx.prisma.subscription.findUniqueOrThrow({ where: { id } })).status).toBe(
+      "active",
+    );
   });
 });
 

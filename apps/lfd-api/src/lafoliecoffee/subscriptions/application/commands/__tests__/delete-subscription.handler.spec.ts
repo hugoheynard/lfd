@@ -24,23 +24,23 @@ function build() {
 }
 
 describe("DeleteSubscriptionHandler", () => {
-  it("404 quand l'abonnement n'est pas au mur — ni suppression, ni fait", async () => {
+  it("404 quand l'abonnement n'est pas au mur (ou déjà arrêté) — ni arrêt, ni fait", async () => {
     const { repo, events, handler } = build();
 
     await expect(
       handler.execute(new DeleteSubscriptionCommand("user_1", "sub_1")),
     ).rejects.toBeInstanceOf(SubscriptionNotFoundError);
-    expect(repo.removed).toHaveLength(0);
+    expect(repo.saved).toHaveLength(0);
     expect(events.traced).toHaveLength(0);
   });
 
-  it("supprime l'abonnement au mur, et journalise ce qu'il décidait", async () => {
+  it("arrête l'abonnement au mur sans l'effacer, et journalise ce qu'il décidait", async () => {
     const { repo, events, handler } = build();
     repo.loadResult = activeSubscription("sub_42");
 
     await handler.execute(new DeleteSubscriptionCommand("user_1", "sub_42"));
 
-    expect(repo.removed).toEqual(["sub_42"]);
+    expect(repo.saved.map((saved) => saved.toPersistence().status)).toEqual(["cancelled"]);
     expect(events.traced.map((event) => event.journalFact())).toEqual([
       {
         type: "subscription.deleted",

@@ -72,6 +72,16 @@ export class SubscriptionAlreadyActiveError extends BusinessError {
   }
 }
 
+/** Un panier arrêté ne se modifie plus : il reste en base, sans retour. */
+export class SubscriptionCancelledError extends BusinessError {
+  constructor() {
+    super(
+      "subscriptions.cancelled",
+      "Ce panier récurrent est arrêté : il ne se modifie plus. Ouvrez un nouveau panier pour reprendre.",
+    );
+  }
+}
+
 export class OccurrenceOutsideWindowError extends BusinessError {
   constructor(readonly date: string) {
     super(

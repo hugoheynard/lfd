@@ -11,6 +11,7 @@ import { z } from "zod";
 
 import { Prisma } from "../../../platform/database/client/client.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
+import { CANCELLED_SUBSCRIPTION } from "../domain/entities/subscription.js";
 import { SubscriptionReader } from "../domain/ports/subscription.reader.js";
 
 /** Adaptateur Prisma de lecture : les abonnements de la personne, plus récents d'abord. */
@@ -22,7 +23,7 @@ export class PrismaSubscriptionReader extends SubscriptionReader {
 
   async listForUser(userId: string): Promise<readonly SubscriptionView[]> {
     const rows = await this.prisma.subscription.findMany({
-      where: { placedByUserId: userId },
+      where: { placedByUserId: userId, status: { not: CANCELLED_SUBSCRIPTION } },
       orderBy: { createdAt: "desc" },
       select: SELECT,
     });
@@ -36,7 +37,10 @@ export class PrismaSubscriptionReader extends SubscriptionReader {
    */
   async listForCompany(companyId: string): Promise<readonly AdminSubscriptionRow[]> {
     const rows = await this.prisma.subscription.findMany({
-      where: { placedBy: { memberships: { some: { companyId } } } },
+      where: {
+        placedBy: { memberships: { some: { companyId } } },
+        status: { not: CANCELLED_SUBSCRIPTION },
+      },
       orderBy: { createdAt: "desc" },
       select: {
         ...SELECT,

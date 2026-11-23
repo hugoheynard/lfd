@@ -110,11 +110,11 @@ export class SubscriptionsController {
     );
   }
 
-  /** Supprime un panier récurrent. Mur = le propriétaire (sinon `404`). */
+  /** Arrête un panier récurrent (il reste en base, arrêté). Mur = le propriétaire (sinon `404`). */
   @Delete(":id")
   @HttpCode(HttpStatus.NO_CONTENT)
   @Idempotent(
-    "retire un panier : rejouée, il n'existe plus et le chargement refuse (404 SubscriptionNotFoundError) avant toute écriture, tout fait ni tout avis au principal",
+    "arrête un panier : rejouée, le panier arrêté répond comme absent et le chargement refuse (404 SubscriptionNotFoundError) avant toute écriture, tout fait ni tout avis au principal",
   )
   remove(@CurrentUser() user: Principal, @Param("id") id: string): Promise<void> {
     return this.commands.execute<DeleteSubscriptionCommand, void>(

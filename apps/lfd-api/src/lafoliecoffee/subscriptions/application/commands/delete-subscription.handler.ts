@@ -13,17 +13,15 @@ import { SubscriptionGestures } from "../services/subscription-gestures.js";
 import { DeleteSubscriptionCommand } from "./delete-subscription.command.js";
 
 /**
- * Supprime un panier récurrent. Le mur est dans `loadManaged` : le panier est à
- * l'acteur, et, s'il est d'une société, l'acteur en est membre actuel (N4e).
- * La suppression reste physique (lignes + dérogations en cascade) — à faire
- * évoluer en statut `cancelled` quand le planificateur existera (cf. règle
- * « pas de DELETE physique sur les agrégats »).
+ * **Arrête** un panier récurrent. Le mur est dans `loadManaged` : le panier est
+ * à l'acteur, et, s'il est d'une société, l'acteur en est membre actuel (N4e).
+ * Le panier reste en base au statut `cancelled` (CLAUDE.md §3, pas de DELETE
+ * physique), avec ses lignes et ses dérogations, mais ne se lit plus et ne se
+ * mute plus : relu, il répond comme un panier absent.
  *
- * Parce que la ligne disparaît, le fait journalisé et le fait durable de l'avis
- * au principal (N4e) sont écrits dans la transaction de la suppression, et
- * leur charge vient de l'état CHARGÉ avant le geste : la ligne n'est jamais
- * relue. L'avis « arrêté » est alors la seule trace côté principal ; il relève
- * de la purge à douze mois décidée pour ces avis (non bâtie).
+ * Le fait journalisé et le fait durable de l'avis au principal (N4e) sont
+ * écrits dans la transaction de l'arrêt, et leur charge vient de l'état
+ * CHARGÉ avant le geste.
  */
 @CommandHandler(DeleteSubscriptionCommand)
 export class DeleteSubscriptionHandler implements ICommandHandler<DeleteSubscriptionCommand, void> {
@@ -49,7 +47,8 @@ export class DeleteSubscriptionHandler implements ICommandHandler<DeleteSubscrip
     // faire dans le verrou de la suppression.
     const pickupAddress = await citedPickupPoint(this.pickupPoints, decision.pickupAddressId);
     await this.uow.run(async () => {
-      await this.subscriptions.remove(command.subscriptionId);
+      subscription.cancel();
+      await this.subscriptions.save(subscription);
       await this.events.publishTraced(
         new SubscriptionDeletedEvent(command.subscriptionId, decision, pickupAddress),
       );

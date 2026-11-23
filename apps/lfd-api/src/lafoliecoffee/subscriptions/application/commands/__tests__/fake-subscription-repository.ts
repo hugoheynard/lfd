@@ -13,7 +13,6 @@ import { SubscriptionLine } from "../../../domain/value-objects/subscription-lin
 export class FakeSubscriptionRepository implements SubscriptionRepository {
   readonly created: Subscription[] = [];
   readonly saved: Subscription[] = [];
-  readonly removed: string[] = [];
   loadResult: Subscription | null = null;
 
   create(subscription: Subscription): Promise<CreatedSubscription> {
@@ -27,11 +26,6 @@ export class FakeSubscriptionRepository implements SubscriptionRepository {
 
   save(subscription: Subscription): Promise<void> {
     this.saved.push(subscription);
-    return Promise.resolve();
-  }
-
-  remove(subscriptionId: string): Promise<void> {
-    this.removed.push(subscriptionId);
     return Promise.resolve();
   }
 }

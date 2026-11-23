@@ -19,13 +19,11 @@ export abstract class SubscriptionRepository {
 
   /**
    * Charge l'agrégat **muré** (appartenant à `ownerUserId`), avec ses lignes et
-   * ses dérogations, ou `null` s'il n'existe pas / n'est pas au mur.
+   * ses dérogations, ou `null` s'il n'existe pas, n'est pas au mur, ou est
+   * arrêté : un panier arrêté répond comme un panier absent.
    */
   abstract load(subscriptionId: string, ownerUserId: string): Promise<Subscription | null>;
 
-  /** Persiste l'état courant d'un agrégat déjà chargé (statut + dérogations). */
+  /** Persiste l'état courant d'un agrégat déjà chargé (statut, arrêt compris, et dérogations). */
   abstract save(subscription: Subscription): Promise<void>;
-
-  /** Supprime le panier récurrent (lignes + dérogations en cascade). */
-  abstract remove(subscriptionId: string): Promise<void>;
 }
