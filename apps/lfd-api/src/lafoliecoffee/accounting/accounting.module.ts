@@ -1,4 +1,5 @@
 import { AdminIssuedInvoicesController } from "./http/admin-issued-invoices.controller.js";
+import { AdminCompanyPeriodQuotesController } from "./http/admin-company-period-quotes.controller.js";
 import { AdminPeriodQuotesController } from "./http/admin-period-quotes.controller.js";
 import { CompanyInvoicesController } from "./http/company-invoices.controller.js";
 import { BANK_TRANSFER_CONTROLLERS, BANK_TRANSFER_PROVIDERS } from "./bank-transfer.providers.js";
@@ -274,6 +275,7 @@ import { PrismaOrderRowsLock } from "./infrastructure/prisma-order-rows-lock.js"
     CompanyDetachedUnpaidController,
     AdminIssuedInvoicesController,
     AdminPeriodQuotesController,
+    AdminCompanyPeriodQuotesController,
     CompanyInvoicesController,
     ...BILLING_MODE_CONTROLLERS,
     ...BANK_TRANSFER_CONTROLLERS,

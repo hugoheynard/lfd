@@ -466,6 +466,7 @@
   "test/period-quote-closure.e2e-spec.ts": 9000,
   "test/period-quote-commitment.e2e-spec.ts": 15000,
   "test/period-quote-document.e2e-spec.ts": 12000,
+  "test/period-quote-screens.e2e-spec.ts": 12000,
   "test/pickup-addresses.e2e-spec.ts": 3812,
   "test/pickup-audience-information.e2e-spec.ts": 4360,
   "test/pickup-audience.e2e-spec.ts": 4805,

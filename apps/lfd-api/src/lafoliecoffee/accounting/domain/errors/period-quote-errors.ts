@@ -218,3 +218,30 @@ export class PeriodQuoteCommitmentGroupsError extends BusinessError {
     );
   }
 }
+
+/**
+ * Le PDF d'une version n'est pas encore rangé : son envoi automatique ne
+ * l'a pas rendu (personne à prévenir, ou commandes changées depuis).
+ */
+export class PeriodQuoteDocumentNotRenderedError extends ResourceNotFoundError {
+  constructor(
+    readonly number: string,
+    readonly version: number,
+  ) {
+    super(
+      "accounting.period_quote.document_not_rendered",
+      `Le document du devis ${number} (version ${String(version)}) n'est pas encore rendu : ` +
+        "son envoi n'a pas eu lieu. Utiliser « Renvoyer le devis », qui le rend et l'envoie.",
+    );
+  }
+}
+
+/** La fiche demandée n'est aucun compte client. */
+export class PeriodQuoteCompanyNotFoundError extends ResourceNotFoundError {
+  constructor(readonly companyId: string) {
+    super(
+      "accounting.period_quote.company_not_found",
+      `Aucun compte client « ${companyId} » : les devis de période se lisent sur un compte existant.`,
+    );
+  }
+}

@@ -49,6 +49,33 @@
         </fold-data-table>
       }
 
+      @if (quotes().length > 0) {
+        <fold-callout variant="info" data-invoices-quotes>
+          {{ quotes().length }} devis de période en attente du numéro d’engagement&nbsp;: leur
+          facture part à « Engagement reçu », sur la fiche du payeur.
+        </fold-callout>
+        <fold-data-table
+          caption="Devis en attente de l’engagement"
+          narrowLayout="cards"
+          [columns]="quoteColumns"
+          [rows]="quotes()"
+          [rowKey]="rowKey"
+          data-quotes-table
+        >
+          <ng-template foldCell="number" let-row>{{ row.number }}</ng-template>
+          <ng-template foldCell="payer" let-row>
+            <a [routerLink]="['/comptes-clients', row.payerCompanyId, 'facturation']">{{
+              row.payerName
+            }}</a>
+          </ng-template>
+          <ng-template foldCell="orders" let-row>{{ row.orderCount }}</ng-template>
+          <ng-template foldCell="total" let-row>
+            <span class="mi-amount">{{ row.total }}</span>
+          </ng-template>
+          <ng-template foldCell="shelved" let-row>{{ row.shelved }}</ng-template>
+        </fold-data-table>
+      }
+
       @if (invoices().length > 0) {
         <fold-data-table
           [caption]="title()"
@@ -77,7 +104,7 @@
           <ng-template foldCell="mandate" let-row>{{ row.mandate }}</ng-template>
           <ng-template foldCell="commitment" let-row>{{ row.commitment }}</ng-template>
         </fold-data-table>
-      } @else if (signaled().length === 0) {
+      } @else if (signaled().length === 0 && quotes().length === 0) {
         <fold-empty-state
           title="Aucune facture émise pour cette période"
           subtitle="Elles partent la veille de la clôture à 23h55, ou par le bouton en tête de l’onglet."

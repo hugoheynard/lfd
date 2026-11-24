@@ -1,0 +1,36 @@
+<fold-panel-header title="Engagement reçu" [subtitle]="subtitle()" />
+
+<div class="body">
+  <fold-input
+    label="Numéro d’engagement"
+    required
+    hint="Tel que l’organisme l’a renvoyé sur le devis."
+    [(value)]="commitmentNumber"
+    data-commitment-number
+  />
+
+  <fold-callout appearance="inset" variant="info">
+    Le numéro est écrit sur les commandes du devis, et sa facture de {{ total() }} est émise
+    aussitôt. Si les commandes ont changé depuis l’envoi, l’enregistrement est refusé : renvoyez
+    d’abord le devis.
+  </fold-callout>
+
+  @if (error(); as message) {
+    <fold-callout appearance="inset" variant="alert" announce data-commitment-error>
+      {{ message }}
+    </fold-callout>
+  }
+</div>
+
+<footer class="foot">
+  <button foldButton emphasis="outline" intent="neutral" (click)="close()">Annuler</button>
+  <button
+    foldButton
+    [disabled]="!canSubmit()"
+    [loading]="saving()"
+    (click)="submit()"
+    data-commitment-submit
+  >
+    Enregistrer et émettre la facture
+  </button>
+</footer>

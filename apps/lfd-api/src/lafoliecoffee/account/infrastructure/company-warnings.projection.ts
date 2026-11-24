@@ -1,8 +1,10 @@
 import type { Prisma } from "../../../platform/database/client/client.js";
 
 import type { WarningInput } from "../domain/services/company-warnings.js";
+import type { PrismaService } from "../../../platform/database/prisma.service.js";
+import { awaitingQuotesSinceAmong } from "./awaiting-period-quotes.projection.js";
 import { billingCarriedAt } from "./company-hierarchy.projection.js";
-import { warningPayerOf } from "./transfer-payers.projection.js";
+import { transferPayersAmong, warningPayerOf } from "./transfer-payers.projection.js";
 
 /**
  * Les colonnes que le calcul des avertissements lit, et elles seules.
@@ -47,14 +49,36 @@ export const WARNING_SELECT = {
 type WarningRow = Prisma.CompanyGetPayload<{ select: typeof WARNING_SELECT }>;
 
 /**
- * Traduit une ligne société en l'entrée pure du calcul des avertissements.
- * `transferPayers` : les payeurs au virement du lot (`transferPayersAmong`),
- * lus une fois pour toutes les lignes.
+ * Ce que le calcul lit hors de la ligne société, une fois pour tout le lot :
+ * les payeurs au virement (`transferPayersAmong`) et, par payeur, son plus
+ * ancien devis de période en attente (`awaitingQuotesSinceAmong`).
  */
+export interface WarningLedger {
+  readonly transferPayers: ReadonlySet<string>;
+  readonly awaitingQuotes: ReadonlyMap<string, Date>;
+}
+
+/** Les deux lectures du lot, en parallèle. */
+export async function warningLedgerOf(
+  prisma: PrismaService,
+  rows: readonly WarningRow[],
+  now: Date,
+): Promise<WarningLedger> {
+  const [transferPayers, awaitingQuotes] = await Promise.all([
+    transferPayersAmong(prisma, warningPayersOf(rows, now), now),
+    awaitingQuotesSinceAmong(
+      prisma,
+      rows.map((row) => row.id),
+    ),
+  ]);
+  return { transferPayers, awaitingQuotes };
+}
+
+/** Traduit une ligne société en l'entrée pure du calcul des avertissements. */
 export function warningInputOf(
   company: WarningRow,
   now: Date,
-  transferPayers: ReadonlySet<string>,
+  ledger: WarningLedger,
 ): WarningInput {
   const payer = warningPayerOf(company.id, company.follows, now);
   return {
@@ -68,12 +92,14 @@ export function warningInputOf(
     hasBillingAddress: company.addresses.length > 0,
     hasGrantedTerms: company.grantedTerms.length > 0,
     hasActiveMandate: company.mandates.length > 0,
-    collectsByTransfer: transferPayers.has(payer),
+    collectsByTransfer: ledger.transferPayers.has(payer),
     billedByParent: payer !== company.id,
     kbisUploadedAt: company.kbisUploadedAt,
     kbisCertifiedAt: company.kbisCertifiedAt,
     legalIdentityCarriedByParent: billingCarriedAt(company.parentCompany, company.follows, now),
     deliveryAddressCount: company._count.addresses,
+    // Le devis est au payeur légal : la ligne d'un site n'en a jamais.
+    awaitingQuoteSince: ledger.awaitingQuotes.get(company.id) ?? null,
   };
 }
 

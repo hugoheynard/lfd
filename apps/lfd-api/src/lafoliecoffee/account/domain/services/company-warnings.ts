@@ -39,6 +39,13 @@ export interface WarningInput {
   readonly legalIdentityCarriedByParent: boolean;
   /** Les adresses de livraison vivantes (non archivées) du carnet. */
   readonly deliveryAddressCount: number;
+  /**
+   * Le plus ancien devis de période qui attend son numéro d'engagement chez ce
+   * PAYEUR, daté du rangement de sa version courante ; `null` sans devis en
+   * attente. Le devis ne range pas sa date d'envoi : le rangement déclenche
+   * l'envoi automatique, et un renvoi de la même version ne le date pas.
+   */
+  readonly awaitingQuoteSince: Date | null;
 }
 
 /**
@@ -49,6 +56,13 @@ export interface WarningInput {
  * d'un commerçant en alerte.
  */
 const ATTENTE_JOURS = 14;
+
+/**
+ * Au-delà de ce délai, un devis de période sans numéro d'engagement n'est plus
+ * un délai de traitement de l'organisme : il faut le relancer (plan
+ * `plan-clients-publics-chorus.md`, § 6 sexies, QD7).
+ */
+export const PERIOD_QUOTE_WAIT_DAYS = 15;
 
 const JOUR_MS = 24 * 60 * 60 * 1000;
 
@@ -62,6 +76,8 @@ const JOUR_MS = 24 * 60 * 60 * 1000;
 const URGENCE: readonly CompanyWarningKind[] = [
   "mandat_absent",
   "activation_bloquee",
+  // Une facture de période qui ne part pas : de l'argent à l'arrêt.
+  "period_quote_awaiting",
   "attente_prolongee",
   "kbis_a_verifier",
   "adresses_multiples",
@@ -120,6 +136,13 @@ export function companyWarnings(company: WarningInput, now: Date): readonly Comp
   // l'âge de la seconde adresse ne dit rien de l'urgence.
   if (company.deliveryAddressCount > 1) {
     found.push({ kind: "adresses_multiples", since: null });
+  }
+
+  // Le devis appartient au payeur : un site ne le porte jamais, seule la ligne
+  // du payeur l'avertit.
+  const quoteSince = company.awaitingQuoteSince;
+  if (quoteSince !== null && daysBetween(quoteSince, now) >= PERIOD_QUOTE_WAIT_DAYS) {
+    found.push({ kind: "period_quote_awaiting", since: iso(quoteSince) });
   }
 
   return found.sort(byUrgency);

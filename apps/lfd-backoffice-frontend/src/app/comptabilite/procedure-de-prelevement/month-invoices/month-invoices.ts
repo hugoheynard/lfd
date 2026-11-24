@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import {
   instantToLocal,
   type BudgetCommitmentView,
@@ -30,6 +31,14 @@ const INVOICE_COLUMNS: readonly FoldTableColumn[] = [
   { key: 'due', label: 'Échéance' },
   { key: 'mandate', label: 'Mandat (RUM)' },
   { key: 'commitment', label: 'Engagement' },
+];
+
+const QUOTE_COLUMNS: readonly FoldTableColumn[] = [
+  { key: 'number', label: 'Devis' },
+  { key: 'payer', label: 'Payeur' },
+  { key: 'orders', label: 'Bons', numeric: true },
+  { key: 'total', label: 'Total TTC', numeric: true },
+  { key: 'shelved', label: 'Rangé et envoyé' },
 ];
 
 const SIGNAL_COLUMNS: readonly FoldTableColumn[] = [
@@ -64,6 +73,18 @@ export interface MonthlySignalRow {
   /** Cf. {@link commitmentLabel}. */
   readonly commitment: string;
   readonly message: string;
+}
+
+/** Un devis de période en attente de son engagement, dans la carte d'une clôture. */
+export interface MonthlyQuoteRow {
+  readonly key: string;
+  /** `D-20261031-1 · v2`. */
+  readonly number: string;
+  readonly payerCompanyId: string;
+  readonly payerName: string;
+  readonly orderCount: number;
+  readonly total: string;
+  readonly shelved: string;
 }
 
 /** L'état d'un lot dans la carte d'une clôture — les mots de l'écran, pas ceux de la banque. */
@@ -140,6 +161,7 @@ export function periodLastDay(periodClosesAtIso: string): string {
   selector: 'app-month-invoices',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    RouterLink,
     FoldCalloutComponent,
     FoldCardComponent,
     FoldDataTableCellDirective,
@@ -160,6 +182,7 @@ export class MonthInvoices {
 
   protected readonly invoiceColumns = INVOICE_COLUMNS;
   protected readonly signalColumns = SIGNAL_COLUMNS;
+  protected readonly quoteColumns = QUOTE_COLUMNS;
   protected readonly rowKey = (row: { readonly key: string }): string => row.key;
 
   protected readonly title = computed(() => {
@@ -245,6 +268,23 @@ export class MonthInvoices {
       mandate: row.mandateReference ?? '—',
       commitment: commitmentLabel(row.budgetCommitment),
       message: row.message,
+    })),
+  );
+
+  /**
+   * Les devis de période de la clôture qui attendent leur engagement
+   * (`plan-clients-publics-chorus.md`, § 6 sexies) : leurs commandes n'ont
+   * pas de facture, et sans eux le payeur disparaîtrait de la carte.
+   */
+  protected readonly quotes = computed((): readonly MonthlyQuoteRow[] =>
+    (this.view()?.periodQuotes ?? []).map((quote) => ({
+      key: quote.quoteId,
+      number: `${quote.number} · v${String(quote.version)}`,
+      payerCompanyId: quote.payerCompanyId,
+      payerName: quote.payerName,
+      orderCount: quote.orderCount,
+      total: euros(quote.totalCents),
+      shelved: instant(quote.createdAt),
     })),
   );
 

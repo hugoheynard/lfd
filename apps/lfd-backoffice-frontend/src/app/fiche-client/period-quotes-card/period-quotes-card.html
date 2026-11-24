@@ -1,0 +1,92 @@
+@if (loadError()) {
+  <fold-callout variant="alert" data-period-quotes-error>
+    Impossible de lire les devis de période de ce compte.
+    <button foldButton size="sm" emphasis="soft" (click)="retry()">Réessayer</button>
+  </fold-callout>
+} @else if (rows().length > 0) {
+  <fold-card data-period-quotes>
+    <fold-element-title
+      cardHeader
+      variant="title"
+      icon="receipt"
+      title="Devis de période"
+      [subtitle]="subtitle()"
+    />
+    <div class="body">
+      @if (payerOfSite(); as payer) {
+        <p class="meta" data-period-quotes-payer>
+          Ce site est facturé chez
+          <a [routerLink]="['/comptes-clients', payer.id, 'facturation']">{{ payer.name }}</a>
+          : ses devis sont ceux du payeur.
+        </p>
+      }
+
+      @if (issued(); as notice) {
+        <fold-callout variant="success" announce data-period-quote-issued>
+          Engagement enregistré sur le devis {{ notice.quoteNumber }} : la facture
+          <a [routerLink]="['/comptabilite/factures', notice.invoiceId]">{{
+            notice.invoiceNumber
+          }}</a>
+          est émise.
+        </fold-callout>
+      }
+
+      @for (row of rows(); track row.quote.quoteId) {
+        <div class="quote" [attr.data-period-quote]="row.quote.quoteId">
+          <div class="head">
+            <strong>{{ row.title }}</strong>
+            <fold-badge [variant]="row.stateTone" [content]="row.stateLabel" />
+            <strong class="amount">{{ row.total }}</strong>
+          </div>
+          <p class="meta">{{ row.meta }}</p>
+          @if (row.replaced; as replaced) {
+            <p class="meta" data-period-quote-replaced>{{ replaced }}</p>
+          }
+          @if (row.quote.invoice; as invoice) {
+            <p class="meta" data-period-quote-invoice>
+              Facture
+              <a [routerLink]="['/comptabilite/factures', invoice.invoiceId]">{{
+                invoice.number
+              }}</a>
+            </p>
+          }
+          <div class="actions">
+            <button
+              foldButton
+              size="sm"
+              emphasis="soft"
+              icon="download"
+              [attr.aria-label]="'Télécharger le PDF du devis ' + row.title"
+              [loading]="busy() === row.quote.quoteId"
+              (click)="download(row.quote)"
+              data-period-quote-pdf
+            >
+              PDF
+            </button>
+            @if (row.quote.state === 'awaiting' && canWrite()) {
+              <button
+                foldButton
+                size="sm"
+                emphasis="outline"
+                [disabled]="busy() !== null"
+                (click)="resend(row.quote)"
+                data-period-quote-resend
+              >
+                Renvoyer le devis
+              </button>
+              <button
+                foldButton
+                size="sm"
+                [disabled]="busy() !== null"
+                (click)="receiveCommitment(row.quote)"
+                data-period-quote-commitment
+              >
+                Engagement reçu
+              </button>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  </fold-card>
+}

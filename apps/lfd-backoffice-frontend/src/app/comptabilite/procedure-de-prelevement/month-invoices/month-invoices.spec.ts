@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { describe, expect, it } from 'vitest';
 
 import type { MonthlyClosureView } from '@lfd/contracts';
@@ -191,6 +192,41 @@ describe('MonthInvoices', () => {
     const { host } = await render(null, { error: 'illisible' });
 
     expect(host.querySelector('[data-invoices-error]')?.textContent).toContain('illisible');
+  });
+});
+
+describe('MonthInvoices — devis de période', () => {
+  it('liste les devis en attente à côté des factures, chacun vers la fiche du payeur', async () => {
+    TestBed.configureTestingModule({ imports: [MonthInvoices], providers: [provideRouter([])] });
+    const fixture = TestBed.createComponent(MonthInvoices);
+    fixture.componentRef.setInput('view', {
+      ...VIEW,
+      invoices: [],
+      periodQuotes: [
+        {
+          quoteId: 'pq_1',
+          number: 'D-20260930-1',
+          version: 2,
+          payerCompanyId: 'co_army',
+          payerName: 'Caserne des Alpes',
+          serviceCode: null,
+          totalCents: 12_000,
+          orderCount: 3,
+          createdAt: '2026-10-01T08:00:00.000Z',
+        },
+      ],
+    });
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const host = fixture.nativeElement as HTMLElement;
+
+    const table = host.querySelector('[data-quotes-table]');
+    expect(table?.textContent).toContain('D-20260930-1 · v2');
+    expect(table?.querySelector('a')?.getAttribute('href')).toBe(
+      '/comptes-clients/co_army/facturation',
+    );
+    expect(host.querySelector('[data-invoices-quotes]')).not.toBeNull();
+    expect(host.querySelector('[data-invoices-empty]')).toBeNull();
   });
 });
 

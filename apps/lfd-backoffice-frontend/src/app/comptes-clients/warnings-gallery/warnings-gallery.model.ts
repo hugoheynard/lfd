@@ -47,6 +47,12 @@ const TEXTS: Readonly<
     detail: 'Un lieu de plus est un site : créer un site par adresse.',
     tone: 'info',
   },
+  period_quote_awaiting: {
+    title: 'Devis sans engagement',
+    detail:
+      'Un devis de période attend son numéro d’engagement depuis quinze jours : relancer l’organisme, ou renvoyer le devis.',
+    tone: 'warning',
+  },
 };
 
 /**

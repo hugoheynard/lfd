@@ -20,6 +20,9 @@ import { z } from "zod";
  * - `adresses_multiples` — plus d'une adresse de livraison vivante. Un lieu de
  *   plus est un site : la sortie est de créer un site par adresse. Un signal,
  *   jamais un refus.
+ * - `period_quote_awaiting` — un devis de période attend son numéro
+ *   d'engagement depuis quinze jours ou plus : l'organisme n'a pas répondu, et
+ *   la facture de la période ne part pas sans lui.
  */
 export const companyWarningKindSchema = z.enum([
   "mandat_absent",
@@ -27,6 +30,7 @@ export const companyWarningKindSchema = z.enum([
   "attente_prolongee",
   "kbis_a_verifier",
   "adresses_multiples",
+  "period_quote_awaiting",
 ]);
 export type CompanyWarningKind = z.infer<typeof companyWarningKindSchema>;
 

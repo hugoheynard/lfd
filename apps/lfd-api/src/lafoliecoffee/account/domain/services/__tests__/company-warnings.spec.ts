@@ -1,4 +1,4 @@
-import { companyWarnings, type WarningInput } from "../company-warnings.js";
+import { companyWarnings, PERIOD_QUOTE_WAIT_DAYS, type WarningInput } from "../company-warnings.js";
 
 const NOW = new Date("2026-08-14T09:00:00.000Z");
 
@@ -18,6 +18,7 @@ function company(over: Partial<WarningInput> = {}): WarningInput {
     kbisCertifiedAt: null,
     legalIdentityCarriedByParent: false,
     deliveryAddressCount: 1,
+    awaitingQuoteSince: null,
     ...over,
   };
 }
@@ -150,5 +151,38 @@ describe("les avertissements d'un dossier", () => {
   it("range les adresses multiples après tout ce qui bloque", () => {
     const found = companyWarnings(company({ deliveryAddressCount: 3, hasGrantedTerms: true }), NOW);
     expect(found.map((warning) => warning.kind)).toEqual(["mandat_absent", "adresses_multiples"]);
+  });
+
+  describe("un devis de période sans engagement", () => {
+    const DAY_MS = 24 * 60 * 60 * 1000;
+    const daysBefore = (days: number): Date => new Date(NOW.getTime() - days * DAY_MS);
+
+    it("se tait à quatorze jours du rangement", () => {
+      expect(companyWarnings(company({ awaitingQuoteSince: daysBefore(14) }), NOW)).toEqual([]);
+    });
+
+    it("avertit à quinze jours, daté du rangement de la version", () => {
+      const since = daysBefore(PERIOD_QUOTE_WAIT_DAYS);
+      expect(companyWarnings(company({ awaitingQuoteSince: since }), NOW)).toEqual([
+        { kind: "period_quote_awaiting", since: since.toISOString() },
+      ]);
+    });
+
+    it("passe avant un dossier oublié, après ce qui empêche de commander", () => {
+      const found = companyWarnings(
+        company({
+          status: "pending",
+          createdAt: daysBefore(30),
+          hasHolder: false,
+          awaitingQuoteSince: daysBefore(20),
+        }),
+        NOW,
+      );
+      expect(found.map((warning) => warning.kind)).toEqual([
+        "activation_bloquee",
+        "period_quote_awaiting",
+        "attente_prolongee",
+      ]);
+    });
   });
 });

@@ -4,8 +4,7 @@ import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { CompanyWarningsCounter } from "../domain/ports/company-warnings.counter.js";
 import { companyWarnings } from "../domain/services/company-warnings.js";
-import { WARNING_SELECT, warningInputOf, warningPayersOf } from "./company-warnings.projection.js";
-import { transferPayersAmong } from "./transfer-payers.projection.js";
+import { WARNING_SELECT, warningInputOf, warningLedgerOf } from "./company-warnings.projection.js";
 
 /**
  * Compte les avertissements en lisant les seules colonnes du calcul.
@@ -33,9 +32,9 @@ export class PrismaCompanyWarningsCounter extends CompanyWarningsCounter {
       select: WARNING_SELECT,
     });
     const now = this.clock.now();
-    const transfer = await transferPayersAmong(this.prisma, warningPayersOf(rows, now), now);
+    const ledger = await warningLedgerOf(this.prisma, rows, now);
     return rows.reduce(
-      (total, row) => total + companyWarnings(warningInputOf(row, now, transfer), now).length,
+      (total, row) => total + companyWarnings(warningInputOf(row, now, ledger), now).length,
       0,
     );
   }

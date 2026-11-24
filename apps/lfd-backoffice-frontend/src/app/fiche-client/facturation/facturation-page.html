@@ -65,6 +65,10 @@
 
     <app-issued-invoices-card [companyId]="id()" [billedBy]="billedBy()" />
 
+    <!-- Les devis de période d'un organisme public (plan-clients-publics-chorus
+         § 6 sexies) : ceux du payeur, muette sans devis. -->
+    <app-period-quotes-card [companyId]="id()" />
+
     <fold-callout appearance="inset" variant="neutral">
       Le registre ci-dessous rassemble les commandes telles qu'elles se reportent en comptabilité ;
       les factures émises, elles, sont listées au-dessus.

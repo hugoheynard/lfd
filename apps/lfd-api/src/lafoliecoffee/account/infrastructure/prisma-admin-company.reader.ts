@@ -14,8 +14,11 @@ import {
   type AdminCompanyView,
 } from "../domain/ports/admin-company.reader.js";
 import { companyWarnings } from "../domain/services/company-warnings.js";
-import { warningInputOf, warningPayersOf } from "./company-warnings.projection.js";
-import { transferPayersAmong } from "./transfer-payers.projection.js";
+import {
+  warningInputOf,
+  warningLedgerOf,
+  type WarningLedger,
+} from "./company-warnings.projection.js";
 import { dossierPieces } from "../domain/services/dossier-pieces.js";
 import { requiresVatNumber } from "../domain/value-objects/vat-liability.js";
 import { isPublicFormeJuridique } from "../domain/value-objects/public-nature.js";
@@ -152,8 +155,8 @@ export class PrismaAdminCompanyReader extends AdminCompanyReader {
       select: COMPANY_SELECT,
     });
     const now = this.clock.now();
-    const transfer = await transferPayersAmong(this.prisma, warningPayersOf(rows, now), now);
-    return rows.map((row) => toView(row, now, transfer));
+    const ledger = await warningLedgerOf(this.prisma, rows, now);
+    return rows.map((row) => toView(row, now, ledger));
   }
 
   async byId(companyId: string): Promise<AdminCompanyDetailView | null> {
@@ -177,7 +180,7 @@ export class PrismaAdminCompanyReader extends AdminCompanyReader {
     // carnet n'a pas de lien de base vers un compte, et c'est l'e-mail qui les
     // relie — la même clé humaine que le commercial a sous les yeux.
     const now = this.clock.now();
-    const [addresses, book, access, hierarchy, transfer, payerIsPublic] = await Promise.all([
+    const [addresses, book, access, hierarchy, ledger, payerIsPublic] = await Promise.all([
       this.addresses.read(companyId),
       this.prisma.companyContact.findMany({
         where: { companyId },
@@ -205,11 +208,11 @@ export class PrismaAdminCompanyReader extends AdminCompanyReader {
         },
       }),
       readHierarchy(this.prisma, row, now),
-      transferPayersAmong(this.prisma, warningPayersOf([row], now), now),
+      warningLedgerOf(this.prisma, [row], now),
       this.chorusServicePayerIsPublic(row, now),
     ]);
     return {
-      ...toView(row, this.clock.now(), transfer),
+      ...toView(row, this.clock.now(), ledger),
       revision: row.revision,
       vatNumberRequired: requiresVatNumber(row.formeJuridique),
       hasBankAccount: row.bankAccount !== null,
@@ -288,11 +291,7 @@ function chorusRoutingView(routing: CompanyRow["chorusRouting"]): ChorusRoutingV
 }
 
 /** Mappe une ligne société vers la vue admin de liste (champs propres). */
-function toView(
-  company: CompanyRow,
-  now: Date,
-  transferPayers: ReadonlySet<string>,
-): AdminCompanyView {
+function toView(company: CompanyRow, now: Date, ledger: WarningLedger): AdminCompanyView {
   return {
     id: company.id,
     reference: company.reference,
@@ -341,7 +340,7 @@ function toView(
     owner: company.memberships[0]?.user ?? null,
     hasOpenSupportRequest: company.supportRequests.length > 0,
     createdAt: company.createdAt.toISOString(),
-    warnings: companyWarnings(warningInputOf(company, now, transferPayers), now),
+    warnings: companyWarnings(warningInputOf(company, now, ledger), now),
     parent:
       company.parentCompany === null
         ? null

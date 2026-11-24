@@ -33,6 +33,7 @@ import { CycleStatementCard } from './cycle-statement-card/cycle-statement-card'
 import { CollectionReturnsCard } from '../collection-returns-card/collection-returns-card';
 import { DetachedUnpaidCard } from '../detached-unpaid-card/detached-unpaid-card';
 import { IssuedInvoicesCard } from '../issued-invoices-card/issued-invoices-card';
+import { PeriodQuotesCard } from '../period-quotes-card/period-quotes-card';
 import { PayerBillingModeNote } from '../payer-billing-mode-note/payer-billing-mode-note';
 import { TransferInvoicesCard } from '../transfer-invoices-card/transfer-invoices-card';
 import { watchCompanySubjects } from '../../comptes-clients/company-cache/company-subjects';
@@ -75,6 +76,7 @@ const ORDERS_WINDOW = 200;
     CycleStatementCard,
     DetachedUnpaidCard,
     IssuedInvoicesCard,
+    PeriodQuotesCard,
     PayerBillingModeNote,
     TransferInvoicesCard,
     FoldBadgeComponent,

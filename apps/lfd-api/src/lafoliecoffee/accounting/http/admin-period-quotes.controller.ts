@@ -2,8 +2,20 @@ import {
   periodQuoteCommitmentPayloadSchema,
   type PeriodQuoteCommitmentPayload,
 } from "@lfd/contracts";
-import { Body, Controller, HttpCode, HttpStatus, Param, Post } from "@nestjs/common";
-import { CommandBus } from "@nestjs/cqrs";
+import { contentDispositionAttachment, sanitiseFileName } from "@lfd/storage";
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Post,
+  Res,
+  StreamableFile,
+} from "@nestjs/common";
+import { CommandBus, QueryBus } from "@nestjs/cqrs";
+import type { Response } from "express";
 
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
 import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
@@ -11,18 +23,43 @@ import { IntentKey } from "../../../platform/shared/http/intent-key.decorator.js
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { ReceivePeriodQuoteCommitmentCommand } from "../application/commands/receive-period-quote-commitment.command.js";
 import { ResendPeriodQuoteCommand } from "../application/commands/resend-period-quote.command.js";
+import type { InvoiceDocument } from "../application/invoice-document-support.js";
+import { GetPeriodQuoteDocumentQuery } from "../application/queries/get-period-quote-document.query.js";
 
 /**
  * Surface **staff** des devis de période (plan
  * `plan-clients-publics-chorus.md`, § 6 sexies, QD4 et QD6) : « Renvoyer le
  * devis » et « Engagement reçu », sous `b2b_accounting:write`, déduit du
  * verbe — la ressource de la facturation, celle du renvoi de « Votre
- * facture ».
+ * facture » ; le PDF d'une version, sous `b2b_accounting:read`.
  */
 @Controller("admin/period-quotes")
 @AdminSurface("b2b_accounting")
 export class AdminPeriodQuotesController {
-  constructor(private readonly commands: CommandBus) {}
+  constructor(
+    private readonly commands: CommandBus,
+    private readonly queries: QueryBus,
+  ) {}
+
+  /**
+   * Le PDF rangé d'une version, en téléchargement — la forme du PDF d'une
+   * facture (`attachment`, sous son nom). 404 nommé tant qu'il n'est pas rendu.
+   */
+  @Get(":quoteId/document")
+  async document(
+    @Param("quoteId") quoteId: string,
+    @Res({ passthrough: true }) response: Response,
+  ): Promise<StreamableFile> {
+    const document = await this.queries.execute<GetPeriodQuoteDocumentQuery, InvoiceDocument>(
+      new GetPeriodQuoteDocumentQuery(quoteId),
+    );
+    response.setHeader("Content-Type", "application/pdf");
+    response.setHeader(
+      "Content-Disposition",
+      contentDispositionAttachment(sanitiseFileName(document.fileName, "devis.pdf")),
+    );
+    return new StreamableFile(document.bytes);
+  }
 
   /**
    * Renvoie le devis : la même version si ses commandes n'ont pas changé,

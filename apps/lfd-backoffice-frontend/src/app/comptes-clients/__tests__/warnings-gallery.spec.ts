@@ -98,4 +98,16 @@ describe('la galerie d’avertissements', () => {
     expect(card?.detail).toContain('créer un site par adresse');
     expect(card?.age).toBe('');
   });
+
+  it('dit le devis sans engagement, daté de son rangement', () => {
+    const since = new Date(NOW.getTime() - 16 * 86_400_000).toISOString();
+    const [card] = warningCards(
+      [company({ warnings: [{ kind: 'period_quote_awaiting', since }] })],
+      NOW,
+    );
+
+    expect(card?.title).toBe('Devis sans engagement');
+    expect(card?.tone).toBe('warning');
+    expect(card?.age).toBe('depuis 16 jours');
+  });
 });
