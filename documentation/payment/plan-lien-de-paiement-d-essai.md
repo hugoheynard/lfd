@@ -151,6 +151,17 @@ Ces décisions **l'emportent** sur les §3 à §6.
 | 9   | SÉRIEUX — un remboursement Stripe `pending` (fonds pas encore disponibles)                                                                                                                                                              | l'essai ne passe `refunded` que sur l'issue **terminale réussie** ; `recorded` ne change rien                                                                                                                                                                                                                                                                                                                               |
 | —   | MINEURS — l'origine est une seconde entrée de `PAY_LINK_ORIGINS` (racine `client`, la page de la boutique) ; `rgpd-staff` à vérifier pour `created_by_staff_id` ; un reçu Stripe éventuel au payeur                                     | intégrés au bâti                                                                                                                                                                                                                                                                                                                                                                                                            |
 
+## 8 bis. Le destinataire : un membre du staff (décidé par Hugo le 2026-11-24)
+
+L'écran ne prend **pas d'adresse** : il propose la liste des **membres
+actifs du staff**, et l'on en choisit un. La commande porte son
+identifiant de fiche staff ; l'adresse est résolue au moment d'envoyer, par
+le même chemin que les autres e-mails à un membre du staff (le bloc `mail`
+lit les contacts du staff ; aucune adresse ne transite par le bloc
+`payment`). Un membre inconnu ou désactivé : refus qui le nomme. Ce qui
+disparaît avec : l'envoi à une adresse quelconque depuis notre domaine, et
+les rebonds vers des adresses inconnues.
+
 ## 9. Questions pour Hugo
 
 | Question                                                                                                                                                                                                                                                             | Proposé                                              |
