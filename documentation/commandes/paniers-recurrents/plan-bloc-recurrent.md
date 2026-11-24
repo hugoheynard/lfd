@@ -4,7 +4,8 @@
 > 2026-11-24 (« la meilleure architecture possible pour ce sujet »). Il porte
 > une migration de **données vivantes** et touche l'argent : contredit une
 > première fois par `vitruve` le même jour (4 bloquants, 7 sérieux, tous
-> intégrés, § 10). Le SQL de B1 reste à écrire et à faire contredire avant
+> intégrés, § 10). Décisions de Hugo du même jour au § 9 (Q-B2 et Q-B5
+> restent ouvertes). Le SQL de B1 reste à écrire et à faire contredire avant
 > tout bâti (§ 8). Il reprend la forme des lots R1 à R4 du
 > [planificateur](plan-planificateur.md), dont les décisions (§ 0, § 5 bis,
 > § 8) restent vraies. Les questions sont au § 9.
@@ -322,21 +323,29 @@ Puis R5 (l'alerte staff, abonnée à `recurring.occurrence_refused`) et R6 (les
 **R4 n'est pas poussé sur `main`** tant que ce plan n'est pas tranché : il
 ferait passer des échéances sur la forme qu'on remplace.
 
-## 9. Les questions à Hugo
+## 9. Les décisions de Hugo (2026-11-24) et ce qui reste ouvert
 
-- **Q-B1 — Le nom.** `recurring/` et le schéma `recurring` ?
-- **Q-B2 — Les CGV changent.** Les échéances d'un panier attendent une
-  nouvelle acceptation. Faut-il prévenir le client, alors que Q5 a décidé
-  que les refus ne préviennent que le staff ?
-- **Q-B3 — La création à l'avance.** Combien de semaines de lignes
-  d'échéance (proposition : 8) ?
-- **Q-B4 — L'ordre.** Étendre, basculer, resserrer en trois déploiements
-  (proposé, § 8), ou tout d'un coup puisque l'activité n'a pas commencé ?
-- **Q-B5 — La production.** Combien de paniers, de dérogations et de lignes
-  du registre existent en production ? Une requête de compte, lancée par toi,
-  avant B1a.
-- **Q-B6 — Les paniers déjà ouverts et les CGV.** Refusés jusqu'à une
-  acceptation explicite, ou servis par une dérogation datée ?
+- **Q-B1 — Le nom** : `recurring/` et le schéma `recurring`. ✅
+- **Q-B2 — Les CGV changent** : ⏳ **ouvert.** Hugo a posé deux options —
+  une acceptation d'office de toute modification, annoncée à l'ouverture du
+  panier, ou les CGV de l'ouverture pour toute la durée. Proposé en
+  réponse : le panier garde les CGV de son ouverture ; un changement est
+  annoncé au client par e-mail avec un préavis (par exemple 30 jours), et
+  s'applique aux échéances d'après le préavis, sauf s'il arrête son panier,
+  sans frais, à tout moment ; l'écran de création le dit. La clause et le
+  préavis sont à faire valider par le rédacteur des CGV. Le refus
+  `terms_outdated` du § 7 tombe si cette forme est retenue.
+- **Q-B3 — La création à l'avance** : 8 semaines. ✅
+- **Q-B4 — L'ordre** : **tout d'un coup**, l'activité n'ayant pas commencé.
+  ✅ B1a, B1b et B5 se fondent en un seul déploiement : les tables
+  déménagent, le code bascule et les anciennes tables sont retirées
+  ensemble (§ 8, à réécrire avec le SQL).
+- **Q-B5 — La production** : ⏳ **ouvert.** Le compte des paniers, des
+  dérogations et des lignes du registre en production, par une requête que
+  Hugo lance, avant le déploiement.
+- **Q-B6 — Les paniers déjà ouverts** : **dérogation datée.** ✅ Ils sont
+  servis, et la reprise l'inscrit comme telle (« ouvert avant les CGV au
+  panier »), sans fabriquer d'acceptation.
 
 ## 10. La contradiction de `vitruve` (v1, 2026-11-24)
 
