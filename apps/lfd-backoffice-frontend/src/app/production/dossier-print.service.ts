@@ -3,6 +3,7 @@ import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
 import type {
+  CreatedIdResponse,
   ProductionDossierPart,
   ProductionPrintOptionsView,
   ProvisionalPrintPayload,
@@ -58,7 +59,7 @@ export class DossierPrintService {
     intentKey: string,
   ): Promise<string> {
     const created = await firstValueFrom(
-      this.http.post<{ readonly id: string }>(
+      this.http.post<CreatedIdResponse>(
         `${this.batchUrl(date)}/provisional-print`,
         payload,
         intentOptions(intentKey),
