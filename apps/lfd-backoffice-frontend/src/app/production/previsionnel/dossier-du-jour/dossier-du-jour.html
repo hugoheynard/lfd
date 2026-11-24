@@ -27,39 +27,13 @@
         <span class="pr-count-resupply">dont {{ resupplyPieces() }} de réassort</span>
       }
     </p>
-    <!-- Le tirage est le PDF figé du serveur, pas l'onglet affiché : le
-         fournil reçoit le paquet entier (2026-10-06). -->
-    <button
-      foldButton
-      icon="print"
-      class="pr-print"
-      [disabled]="notArrested()"
-      [loading]="fetching()"
-      (click)="openPdf()"
-    >
-      @if (notArrested()) {
-        Arrêtez d’abord le plan du {{ dayLabel() }} pour tirer le dossier
-      } @else {
-        Imprimer le dossier
-      }
+    <!-- Le tirage est un PDF du serveur, pas l'onglet affiché : provisoire
+         avant l'arrêt, figé après. La fenêtre choisit les parties. -->
+    <button foldButton icon="print" class="pr-print" (click)="openPrintDialog()">
+      Imprimer le dossier
     </button>
   }
 </header>
-
-@if (pdfFailed()) {
-  <fold-callout variant="alert" class="pr-pdf-failed">
-    Le dossier n’a pas pu être téléchargé. Vérifiez la connexion et réessayez.
-  </fold-callout>
-}
-
-@if (blockedPdfUrl(); as url) {
-  <fold-callout variant="info" class="pr-pdf-blocked">
-    Le navigateur a bloqué l’ouverture d’un nouvel onglet.
-    <a foldButton emphasis="outline" size="sm" [href]="url" [download]="fileName()">
-      Télécharger le dossier
-    </a>
-  </fold-callout>
-}
 
 <!--
   🔴 Le rangement n'a pas répondu. Le lot reste juste — les commandes et leurs

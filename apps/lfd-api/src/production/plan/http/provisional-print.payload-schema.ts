@@ -1,3 +1,4 @@
+import type { ProvisionalPrintPayload } from "@lfd/contracts";
 import { z } from "zod";
 
 import type { ProvisionalChoice } from "../domain/entities/provisional-print.js";
@@ -29,7 +30,7 @@ export const provisionalPrintPayloadSchema = z.object({
   ]),
 });
 
-export type ProvisionalPrintPayload = z.infer<typeof provisionalPrintPayloadSchema>;
+export type { ProvisionalPrintPayload };
 
 /** Le choix du domaine. */
 export function provisionalChoiceOf(payload: ProvisionalPrintPayload): ProvisionalChoice {

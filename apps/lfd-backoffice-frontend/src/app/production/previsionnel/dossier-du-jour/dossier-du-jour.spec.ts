@@ -1,20 +1,21 @@
-import { HttpErrorResponse } from '@angular/common/http';
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
 import type {
   AtelierSheet,
   ProductionBatchView,
   ProductionDayResuppliesView,
 } from '@lfd/contracts';
+import { FoldPanelHostService } from 'fold-ng';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { WorkstationsService } from '../../workstations.service';
 import { shelfGrouping } from '../../__tests__/shelf-grouping-fixture';
 import { ProductionService } from '../../production.service';
 import { DossierDuJour } from './dossier-du-jour';
+import type { DossierPrintDialogData } from './dossier-print-dialog/dossier-print-dialog';
 
 /**
- * **Le tirage du dossier** (2026-10-06) : le bouton ouvre le PDF figé du
- * serveur dans un onglet, au lieu de `window.print()` sur l'écran.
+ * **Le tirage du dossier** : le bouton ouvre la fenêtre d'impression, et
+ * l'écran ouvre dans un onglet le PDF qu'elle lui rend.
  */
 
 /** Une commande d'atelier, figée : ses dates ne sont comparées à aucune horloge. */
@@ -41,15 +42,13 @@ const SHEET: AtelierSheet = {
 };
 
 interface Doubles {
-  readonly dossierPdf: ReturnType<typeof vi.fn>;
+  readonly opened: { readonly data: DossierPrintDialogData }[];
 }
 
 async function render(
-  dossierPdf: () => Promise<Blob>,
-  closed: boolean | null = null,
   day: { sheets?: readonly AtelierSheet[]; resupplies?: ProductionDayResuppliesView } = {},
 ): Promise<{ fixture: ComponentFixture<DossierDuJour>; doubles: Doubles }> {
-  const doubles = { dossierPdf: vi.fn(dossierPdf) };
+  const doubles: Doubles = { opened: [] };
   const batch = async (date: string): Promise<ProductionBatchView> => ({
     date,
     sheets: day.sheets ?? [SHEET],
@@ -63,7 +62,6 @@ async function render(
         useValue: {
           batch,
           dayResupplies,
-          dossierPdf: doubles.dossierPdf,
           dueThresholds: async () => ({
             date: '',
             trancheMode: 'computed',
@@ -76,10 +74,17 @@ async function render(
         provide: WorkstationsService,
         useValue: { grouping: async (skus: readonly string[]) => shelfGrouping(skus, []) },
       },
+      {
+        provide: FoldPanelHostService,
+        useValue: {
+          open: (_component: unknown, config: { readonly data: DossierPrintDialogData }) => {
+            doubles.opened.push(config);
+          },
+        },
+      },
     ],
   });
   const fixture = TestBed.createComponent(DossierDuJour);
-  fixture.componentRef.setInput('closed', closed);
   fixture.detectChanges();
   await fixture.componentInstance['load']();
   fixture.detectChanges();
@@ -97,11 +102,6 @@ function printButton(el: HTMLElement): HTMLButtonElement {
   return button;
 }
 
-async function settle(fixture: ComponentFixture<DossierDuJour>): Promise<void> {
-  await fixture.whenStable();
-  fixture.detectChanges();
-}
-
 describe('le tirage du dossier', () => {
   beforeEach(() => {
     TestBed.resetTestingModule();
@@ -113,66 +113,37 @@ describe('le tirage du dossier', () => {
     vi.restoreAllMocks();
   });
 
-  it('télécharge le PDF de la journée et l’ouvre dans un onglet', async () => {
-    const open = vi.spyOn(window, 'open').mockReturnValue({} as Window);
-    const { fixture, doubles } = await render(async () => new Blob(['%PDF']), true);
+  it('ouvre la fenêtre d’impression de la journée affichée, même plan non arrêté', async () => {
+    const { fixture, doubles } = await render();
     const el = fixture.nativeElement as HTMLElement;
 
-    printButton(el).click();
-    await settle(fixture);
-
-    expect(doubles.dossierPdf).toHaveBeenCalledWith(fixture.componentInstance.date());
-    expect(open).toHaveBeenCalledWith('blob:dossier', '_blank');
-    expect(el.querySelector('.pr-pdf-blocked')).toBeNull();
-  });
-
-  it('désactive le bouton et dit pourquoi quand le plan n’est pas arrêté', async () => {
-    const { fixture } = await render(async () => new Blob(), false);
-    const button = printButton(fixture.nativeElement as HTMLElement);
-
-    expect(button.disabled).toBe(true);
-    expect(button.textContent).toContain('Arrêtez d’abord le plan du');
-    expect(button.textContent).toContain('pour tirer le dossier');
-  });
-
-  it('se désactive sur un refus 409 quand l’arrêt n’était pas connu', async () => {
-    const { fixture } = await render(async () => {
-      throw new HttpErrorResponse({ status: 409 });
-    });
-    const el = fixture.nativeElement as HTMLElement;
-
-    printButton(el).click();
-    await settle(fixture);
-
-    expect(printButton(el).disabled).toBe(true);
-    expect(printButton(el).textContent).toContain('Arrêtez d’abord le plan du');
-    expect(el.querySelector('.pr-pdf-failed')).toBeNull();
-  });
-
-  it('propose un lien de téléchargement quand l’onglet est bloqué', async () => {
-    vi.spyOn(window, 'open').mockReturnValue(null);
-    const { fixture } = await render(async () => new Blob(['%PDF']), true);
-    const el = fixture.nativeElement as HTMLElement;
-
-    printButton(el).click();
-    await settle(fixture);
-
-    const link = el.querySelector<HTMLAnchorElement>('.pr-pdf-blocked a');
-    expect(link?.getAttribute('href')).toBe('blob:dossier');
-    expect(link?.hasAttribute('download')).toBe(true);
-  });
-
-  it('affiche une erreur réseau dans un encadré', async () => {
-    const { fixture } = await render(async () => {
-      throw new HttpErrorResponse({ status: 0 });
-    }, true);
-    const el = fixture.nativeElement as HTMLElement;
-
-    printButton(el).click();
-    await settle(fixture);
-
-    expect(el.querySelector('fold-callout.pr-pdf-failed')).not.toBeNull();
     expect(printButton(el).disabled).toBe(false);
+    printButton(el).click();
+
+    expect(doubles.opened).toHaveLength(1);
+    expect(doubles.opened[0]?.data.date).toBe(fixture.componentInstance.date());
+  });
+
+  it('ouvre le PDF rendu par la fenêtre dans un onglet', async () => {
+    const open = vi.spyOn(window, 'open').mockReturnValue({} as Window);
+    const { fixture, doubles } = await render();
+    printButton(fixture.nativeElement as HTMLElement).click();
+
+    const blocked = doubles.opened[0]?.data.present(new Blob(['%PDF']));
+
+    expect(open).toHaveBeenCalledWith('blob:dossier', '_blank');
+    expect(blocked).toBeNull();
+  });
+
+  it('rend l’URL à télécharger quand l’onglet est bloqué, et révoque la précédente', async () => {
+    vi.spyOn(window, 'open').mockReturnValue(null);
+    const { fixture, doubles } = await render();
+    printButton(fixture.nativeElement as HTMLElement).click();
+    const present = doubles.opened[0]?.data.present;
+
+    expect(present?.(new Blob(['%PDF']))).toBe('blob:dossier');
+    present?.(new Blob(['%PDF']));
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:dossier');
   });
 });
 
@@ -198,7 +169,7 @@ describe('les réassorts au dossier', () => {
   });
 
   it('montre une journée à réassorts seuls : comptés dans le total, nombre de commandes inchangé', async () => {
-    const { fixture } = await render(async () => new Blob(), false, {
+    const { fixture } = await render({
       sheets: [],
       resupplies: VILLAGE(false),
     });
@@ -216,7 +187,7 @@ describe('les réassorts au dossier', () => {
    * journée arrêtée (Hugo, 2026-10-21) — il était dans une section à part.
    */
   it('compte le réassort sur la fiche de poste, total d’abord, et lui donne son bon', async () => {
-    const { fixture } = await render(async () => new Blob(), true, { resupplies: VILLAGE(true) });
+    const { fixture } = await render({ resupplies: VILLAGE(true) });
     const el = fixture.nativeElement as HTMLElement;
 
     expect(el.querySelector('.pr-count')?.textContent).toContain('1 commande');

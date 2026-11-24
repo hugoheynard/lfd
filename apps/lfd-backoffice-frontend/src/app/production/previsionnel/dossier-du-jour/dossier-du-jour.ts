@@ -5,16 +5,15 @@ import {
   DestroyRef,
   effect,
   inject,
-  input,
   model,
   signal,
 } from '@angular/core';
-import { HttpErrorResponse } from '@angular/common/http';
 import {
   FoldButtonComponent,
   FoldCalloutComponent,
   FoldEmptyStateComponent,
   FoldLoadingStateComponent,
+  FoldPanelHostService,
   FoldViewToggleComponent,
   type FoldViewToggleOption,
 } from 'fold-ng';
@@ -31,12 +30,13 @@ import { ProductionService } from '../../production.service';
 import { DayTranchesSection } from '../day-tranches-section/day-tranches-section';
 import { DueThresholdsSection } from '../due-thresholds-section/due-thresholds-section';
 import { BonReassort } from './bon-reassort/bon-reassort';
+import {
+  DossierPrintDialog,
+  type DossierPrintDialogData,
+} from './dossier-print-dialog/dossier-print-dialog';
 import { resupplySheetsOf } from './resupply-sheets';
 
 type LoadState = 'loading' | 'ready' | 'error';
-
-/** Le refus du serveur quand le plan de la journée n'est pas arrêté. */
-const HTTP_CONFLICT = 409;
 
 /** Les deux lectures d'un même lot. On ouvre sur la fabrication. */
 const VIEWS: readonly FoldViewToggleOption[] = [
@@ -92,9 +92,9 @@ export function defaultDossierDate(): string {
  * `@media print` tentait d'en effacer le menu de l'app ; elle est retirée, et
  * plus rien ici n'imprime. Les onglets récap/bons restent un **aperçu** à lire.
  *
- * Tant que le plan n'est pas arrêté, le PDF n'existe pas : le bouton est
- * désactivé et dit pourquoi. On le sait par `closed` (la matrice du parent) ;
- * hors de sa fenêtre, on ne le sait qu'au refus 409 du serveur.
+ * Le bouton ouvre la fenêtre d'impression (`DossierPrintDialog`) : avant
+ * l'arrêt, elle tire une impression provisoire numérotée ; après, des parties
+ * du dossier figé. L'écran garde l'URL objet du PDF ouvert.
  *
  * La production n'a pas d'écran de suivi, et le papier ne répond pas : si
  * l'imprimante manque de feuilles, une commande cesse d'exister pour le fournil
@@ -126,6 +126,7 @@ export function defaultDossierDate(): string {
 export class DossierDuJour {
   private readonly production = inject(ProductionService);
   private readonly workstations = inject(WorkstationsService);
+  private readonly panels = inject(FoldPanelHostService);
 
   protected readonly state = signal<LoadState>('loading');
   private readonly destroyRef = inject(DestroyRef);
@@ -137,12 +138,6 @@ export class DossierDuJour {
    */
   readonly date = model<string>(defaultDossierDate());
 
-  /**
-   * Le plan de cette journée est-il arrêté ? `null` = on ne le sait pas (hors
-   * de la fenêtre lue par le parent) — le bouton reste alors actif, et c'est le
-   * 409 du serveur qui tranche.
-   */
-  readonly closed = input<boolean | null>(null);
   protected readonly view = signal<string>('recap');
   protected readonly views = VIEWS;
 
@@ -192,32 +187,12 @@ export class DossierDuJour {
     DAY_LABEL.format(new Date(`${this.date()}T00:00:00`)),
   );
 
-  /** Le téléchargement du PDF est en cours. */
-  protected readonly fetching = signal(false);
-  /** La dernière lecture du PDF a échoué pour une autre raison qu'un plan non arrêté. */
-  protected readonly pdfFailed = signal(false);
-  /** La journée que le serveur a refusée en 409 — pour la journée affichée seulement. */
-  private readonly refusedDate = signal<string | null>(null);
-  /**
-   * L'URL objet du dernier PDF, quand le navigateur a bloqué l'onglet : on
-   * propose alors de le télécharger. `null` sinon.
-   */
-  protected readonly blockedPdfUrl = signal<string | null>(null);
-
   /**
    * L'URL objet vivante. Révoquée au PDF suivant et à la destruction de
-   * l'écran — pas après un délai, qui couperait un onglet encore en train de
-   * charger ou garderait le fichier pour rien.
+   * l'écran — pas après un délai, ni à la fermeture de la fenêtre
+   * d'impression, qui couperaient un onglet encore en train de charger.
    */
   private objectUrl: string | null = null;
-
-  /** Le plan n'est pas arrêté : il n'y a pas de dossier à tirer. */
-  protected readonly notArrested = computed(
-    () => this.closed() === false || (this.closed() === null && this.refusedDate() === this.date()),
-  );
-
-  /** Le nom du fichier proposé au téléchargement. */
-  protected readonly fileName = computed(() => `dossier-${this.date()}.pdf`);
 
   constructor() {
     effect(() => {
@@ -229,8 +204,6 @@ export class DossierDuJour {
   protected onDate(value: string): void {
     if (value !== '') {
       this.date.set(value);
-      this.pdfFailed.set(false);
-      this.blockedPdfUrl.set(null);
     }
   }
 
@@ -286,33 +259,27 @@ export class DossierDuJour {
     }
   }
 
+  /** Ouvre la fenêtre d'impression de la journée affichée. */
+  protected openPrintDialog(): void {
+    this.panels.open<DossierPrintDialogData>(DossierPrintDialog, {
+      data: {
+        date: this.date(),
+        dayLabel: this.dayLabel(),
+        present: (pdf) => this.present(pdf),
+      },
+    });
+  }
+
   /**
-   * Télécharge le PDF figé du serveur et l'ouvre dans un nouvel onglet. Si le
-   * navigateur bloque l'onglet (`window.open` rend `null`), on garde l'URL et
-   * on propose un lien de téléchargement à la place.
+   * Ouvre un PDF dans un nouvel onglet. Si le navigateur bloque l'onglet
+   * (`window.open` rend `null`), rend l'URL pour que la fenêtre propose de le
+   * télécharger ; `null` sinon.
    */
-  protected async openPdf(): Promise<void> {
-    const date = this.date();
-    this.fetching.set(true);
-    this.pdfFailed.set(false);
-    this.blockedPdfUrl.set(null);
-    try {
-      const blob = await this.production.dossierPdf(date);
-      this.revoke();
-      const url = URL.createObjectURL(blob);
-      this.objectUrl = url;
-      if (window.open(url, '_blank') === null) {
-        this.blockedPdfUrl.set(url);
-      }
-    } catch (error) {
-      if (error instanceof HttpErrorResponse && error.status === HTTP_CONFLICT) {
-        this.refusedDate.set(date);
-      } else {
-        this.pdfFailed.set(true);
-      }
-    } finally {
-      this.fetching.set(false);
-    }
+  private present(pdf: Blob): string | null {
+    this.revoke();
+    const url = URL.createObjectURL(pdf);
+    this.objectUrl = url;
+    return window.open(url, '_blank') === null ? url : null;
   }
 
   private revoke(): void {

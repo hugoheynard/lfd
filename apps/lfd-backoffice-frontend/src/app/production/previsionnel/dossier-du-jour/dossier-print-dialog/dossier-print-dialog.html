@@ -1,0 +1,132 @@
+<fold-panel-header
+  [title]="'Imprimer le dossier du ' + data().dayLabel"
+  [subtitle]="
+    arrested() ? 'Plan arrêté : parties du dossier figé' : 'Plan non arrêté : impression provisoire'
+  "
+  closeLabel="Fermer"
+/>
+
+<fold-panel-body>
+  @switch (state()) {
+    @case ('loading') {
+      <fold-loading message="Lecture de la journée…" />
+    }
+    @case ('error') {
+      <fold-empty-state
+        tone="alert"
+        title="Impossible de lire la journée"
+        subtitle="Les commandes, elles, sont intactes."
+      >
+        <button foldButton type="button" (click)="load()">Réessayer</button>
+      </fold-empty-state>
+    }
+    @default {
+      <div class="dpd-body">
+        @if (options()?.changedSinceLast && lastPrint(); as last) {
+          <fold-callout variant="warning" data-changed>
+            La journée a changé depuis l’impression {{ runLabel(last) }}.
+          </fold-callout>
+        }
+
+        <fold-fieldset legend="Parties" direction="horizontal">
+          @for (entry of partLabels; track entry.part) {
+            <fold-checkbox
+              [label]="entry.label"
+              [checked]="parts().has(entry.part)"
+              (checkedChange)="togglePart(entry.part, $event)"
+              [attr.data-part]="entry.part"
+            />
+          }
+        </fold-fieldset>
+
+        @if (groupNames().length > 0) {
+          <fold-fieldset [legend]="groupsLegend()" direction="horizontal">
+            <fold-checkbox
+              label="Tous"
+              [checked]="allGroups()"
+              (checkedChange)="allGroups.set($event)"
+              data-all-groups
+            />
+            @if (!allGroups()) {
+              @for (group of groupNames(); track group) {
+                <fold-checkbox
+                  [label]="group"
+                  [checked]="groups().has(group)"
+                  (checkedChange)="toggleGroup(group, $event)"
+                />
+              }
+            }
+          </fold-fieldset>
+        }
+
+        <fold-fieldset legend="Commandes">
+          <fold-choice-row
+            ariaLabel="Commandes à imprimer"
+            [options]="modes()"
+            [activeKey]="ordersMode()"
+            (selected)="selectMode($event)"
+          />
+          @if (ordersMode() === 'since') {
+            <fold-listbox
+              label="Depuis l’impression"
+              [options]="runOptions()"
+              [value]="sinceRun()"
+              (selectionChange)="sinceRun.set($event)"
+            />
+          }
+          @if (ordersMode() === 'chosen') {
+            @if (orders().length === 0) {
+              <fold-empty-state
+                title="Aucune commande ce jour-là"
+                subtitle="Rien à cocher : imprimez les réassorts avec « Toutes »."
+              />
+            } @else {
+              <div class="dpd-orders">
+                @for (order of orders(); track order.orderId) {
+                  <fold-checkbox
+                    [label]="order.reference + ' — ' + order.customerLabel"
+                    [checked]="chosen().has(order.orderId)"
+                    (checkedChange)="toggleOrder(order.orderId, $event)"
+                    [attr.data-order]="order.orderId"
+                  />
+                }
+              </div>
+            }
+          }
+        </fold-fieldset>
+
+        @if (error(); as message) {
+          <fold-callout appearance="inset" variant="alert" announce data-error>{{
+            message
+          }}</fold-callout>
+        }
+
+        @if (blockedUrl(); as url) {
+          <fold-callout variant="info" data-blocked>
+            Le navigateur a bloqué l’ouverture d’un nouvel onglet.
+            <a foldButton emphasis="outline" size="sm" [href]="url" [download]="fileName()">
+              Télécharger le dossier
+            </a>
+          </fold-callout>
+        }
+      </div>
+    }
+  }
+</fold-panel-body>
+
+<fold-panel-footer align="end">
+  <button foldButton emphasis="outline" intent="neutral" type="button" (click)="cancel()">
+    Annuler
+  </button>
+  <button
+    foldButton
+    icon="print"
+    type="button"
+    data-action="print"
+    [disabled]="state() !== 'ready' || !ready()"
+    [loading]="printing()"
+    (click)="print()"
+  >
+    {{ arrested() ? 'Imprimer' : 'Imprimer en provisoire' }}
+  </button>
+</fold-panel-footer>

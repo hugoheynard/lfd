@@ -15,6 +15,7 @@ export type SpecimenKey =
   | 'allergen-matrix'
   | 'production-count'
   | 'day-dossier'
+  | 'day-dossier-provisional'
   | 'production-simulation'
   | 'delivery-note-carrier'
   | 'delivery-note-client-pro'
@@ -36,6 +37,7 @@ export const SPECIMEN_LABELS: Readonly<Record<SpecimenKey, string>> = {
   'allergen-matrix': 'Matrice des allergènes',
   'production-count': 'Compte à produire',
   'day-dossier': 'Dossier du jour',
+  'day-dossier-provisional': 'Dossier du jour — provisoire',
   'production-simulation': 'Simulation du catalogue',
   'delivery-note-carrier': 'Bon de livraison — transport',
   'delivery-note-client-pro': 'Bon de livraison — client pro',
@@ -71,7 +73,12 @@ export const SPECIMEN_GROUPS: readonly SpecimenGroup[] = [
     'rounds-dossier',
     'delivery-note-carrier',
   ]),
-  group('Fournil', ['production-count', 'day-dossier', 'production-simulation']),
+  group('Fournil', [
+    'production-count',
+    'day-dossier',
+    'day-dossier-provisional',
+    'production-simulation',
+  ]),
   group('Factures', ['invoice', 'invoice-bank-transfer']),
   group('Mandats', ['sepa-mandate-b2b', 'sepa-mandate-core']),
   group('Récapitulatifs', ['order-summary']),

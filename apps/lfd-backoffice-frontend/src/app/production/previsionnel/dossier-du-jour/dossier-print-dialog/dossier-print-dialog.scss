@@ -1,0 +1,14 @@
+.dpd-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-lg);
+}
+
+/* Une liste de commandes peut être longue : elle défile dans la fenêtre. */
+.dpd-orders {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+  max-height: 40vh;
+  overflow-y: auto;
+}
