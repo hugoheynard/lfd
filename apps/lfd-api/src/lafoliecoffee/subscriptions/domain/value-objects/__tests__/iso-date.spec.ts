@@ -58,3 +58,22 @@ describe("IsoDate", () => {
     });
   });
 });
+
+describe("IsoDate.plusDays / latest — l'horizon du planificateur", () => {
+  it("avance d'un nombre de jours, à travers les mois et l'heure d'hiver", () => {
+    expect(IsoDate.fromString("2026-10-24").plusDays(7).toString()).toBe("2026-10-31");
+    expect(IsoDate.fromString("2026-11-28").plusDays(7).toString()).toBe("2026-12-05");
+    expect(IsoDate.fromString("2026-12-31").plusDays(1).toString()).toBe("2027-01-01");
+  });
+
+  it("recule avec un nombre négatif", () => {
+    expect(IsoDate.fromString("2026-03-01").plusDays(-1).toString()).toBe("2026-02-28");
+  });
+
+  it("garde le plus tardif de deux jours", () => {
+    const early = IsoDate.fromString("2026-11-23");
+    const late = IsoDate.fromString("2026-11-30");
+    expect(IsoDate.latest(early, late)).toBe(late);
+    expect(IsoDate.latest(late, early)).toBe(late);
+  });
+});

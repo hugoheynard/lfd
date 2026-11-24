@@ -3,6 +3,7 @@ import {
   BusinessError,
   DomainError,
   ResourceNotFoundError,
+  TechnicalError,
 } from "../../../../platform/shared/errors/app-error.js";
 
 // ─── Données mal formées : le modèle se protège lui-même (400) ───────────────
@@ -46,6 +47,13 @@ export class InvalidDateRangeError extends DomainError {
 export class InvalidRoutingError extends DomainError {
   constructor(readonly reason: string) {
     super("subscriptions.routing.invalid", reason);
+  }
+}
+
+/** Un panier neuf n'a pas encore d'identifiant : seul un panier relu en a un. */
+export class SubscriptionNotPersistedError extends TechnicalError {
+  constructor() {
+    super("subscriptions.not_persisted", "Ce panier récurrent n'a pas encore été enregistré.");
   }
 }
 

@@ -13,6 +13,10 @@ import { ListSubscriptionsHandler } from "./application/queries/list-subscriptio
 import { SubscriptionReader } from "./domain/ports/subscription.reader.js";
 import { OccurrenceRunLedger } from "./domain/ports/occurrence-run.ledger.js";
 import { SubscriptionRepository } from "./domain/ports/subscription.repository.js";
+import { PlannerSubscriptions } from "./domain/ports/planner-subscriptions.js";
+import { PrismaPlannerSubscriptions } from "./infrastructure/prisma-planner-subscriptions.js";
+import { SweepRecurringOccurrencesHandler } from "./application/commands/sweep-recurring-occurrences.handler.js";
+import { RecurringOccurrencesSweepController } from "./http/recurring-occurrences-sweep.controller.js";
 import { RecurringOccurrences } from "./domain/ports/recurring-occurrences.js";
 import { PrismaRecurringOccurrences } from "./infrastructure/prisma-recurring-occurrences.js";
 import { PrismaOccurrenceRunLedger } from "./infrastructure/prisma-occurrence-run.ledger.js";
@@ -30,7 +34,11 @@ import { SubscriptionsController } from "./http/subscriptions.controller.js";
   // `AccountModule` depuis N4e (2026-10-20) : le mur par le rattachement
   // actuel, le nom du site, l'annonce au principal.
   imports: [CatalogModule, AccountModule, PickupAddressesModule],
-  controllers: [SubscriptionsController, AdminSubscriptionsController],
+  controllers: [
+    SubscriptionsController,
+    AdminSubscriptionsController,
+    RecurringOccurrencesSweepController,
+  ],
   providers: [
     CreateSubscriptionHandler,
     UpsertOccurrenceOverrideHandler,
@@ -43,6 +51,8 @@ import { SubscriptionsController } from "./http/subscriptions.controller.js";
     { provide: SubscriptionReader, useClass: PrismaSubscriptionReader },
     { provide: OccurrenceRunLedger, useClass: PrismaOccurrenceRunLedger },
     { provide: RecurringOccurrences, useClass: PrismaRecurringOccurrences },
+    { provide: PlannerSubscriptions, useClass: PrismaPlannerSubscriptions },
+    SweepRecurringOccurrencesHandler,
   ],
   // Ce que la passation d'une échéance lit et écrit chez les paniers : son
   // échéance, et le registre, dans sa propre unité de travail.

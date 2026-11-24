@@ -9,6 +9,7 @@ import type {
 import {
   EmptyOverrideError,
   SubscriptionCancelledError,
+  SubscriptionNotPersistedError,
   SubscriptionWindowRequiredError,
   EmptySubscriptionError,
   InvalidDateRangeError,
@@ -284,6 +285,18 @@ export class Subscription {
     if (this.armedFrom === null) {
       this.armedFrom = today;
     }
+  }
+
+  /**
+   * L'identifiant du panier persisté.
+   *
+   * @throws {SubscriptionNotPersistedError} un panier neuf, pas encore écrit.
+   */
+  get persistedId(): string {
+    if (this.id === null) {
+      throw new SubscriptionNotPersistedError();
+    }
+    return this.id;
   }
 
   /** L'acheminement figé de chaque échéance, créneau compris. */

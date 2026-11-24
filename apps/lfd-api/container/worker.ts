@@ -794,6 +794,22 @@ async function triggerFirstPaymentsReplay(env: Env): Promise<void> {
 }
 
 /**
+ * Réveille le container et passe le planificateur des paniers récurrents
+ * (`documentation/commandes/paniers-recurrents/plan-planificateur.md`) : les
+ * échéances des paniers pros à sept jours deviennent des commandes. Sur le
+ * cron HORAIRE : une échéance se passe une semaine avant son jour, et chaque
+ * passage lit la base. Même porte et même jeton que la boîte d'envoi ;
+ * idempotent (le registre ne repasse pas une échéance close).
+ */
+async function triggerRecurringOccurrences(env: Env): Promise<void> {
+  const token = env.RECOMPUTE_TOKEN;
+  if (!token) {
+    return;
+  }
+  await postSweep(env, token, "admin/subscriptions/sweep");
+}
+
+/**
  * Les passages du cron horaire, chacun pour soi : l'échec de l'un ne prive
  * pas l'autre de son tour (`postSweep` l'écrit dans les logs du Worker).
  */
@@ -802,6 +818,7 @@ async function hourlySweeps(env: Env): Promise<void> {
     triggerSettlementReminders(env),
     triggerDeliveryNotesReconcile(env),
     triggerFirstPaymentsReplay(env),
+    triggerRecurringOccurrences(env),
   ]);
 }
 

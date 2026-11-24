@@ -1,5 +1,7 @@
 import { InvalidOccurrenceDateError } from "../errors/subscription-errors.js";
 
+/** Un jour en millisecondes : les dates sont à minuit UTC, sans heure d'été. */
+const DAY_MS = 86_400_000;
 const ISO_DATE = /^(\d{4})-(\d{2})-(\d{2})$/u;
 
 /**
@@ -39,6 +41,16 @@ export class IsoDate {
   /** Vers un `Date` minuit UTC — la seule forme que Prisma `@db.Date` comprend. */
   toUtcDate(): Date {
     return new Date(`${this.value}T00:00:00.000Z`);
+  }
+
+  /** Le jour `days` jours plus tard (ou plus tôt, `days` négatif) — un jour, jamais un instant. */
+  plusDays(days: number): IsoDate {
+    return IsoDate.fromDate(new Date(this.toUtcDate().getTime() + days * DAY_MS));
+  }
+
+  /** Le plus tardif des deux jours. */
+  static latest(a: IsoDate, b: IsoDate): IsoDate {
+    return a.isAfter(b) ? a : b;
   }
 
   isBefore(other: IsoDate): boolean {

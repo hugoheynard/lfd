@@ -48,6 +48,8 @@ export const EVERY_HOUR = [
   // témoin `payment.card_takeover` il ne fait rien et le dit ; avec, il
   // rapproche les intentions créées depuis le témoin — en dev comme en prod.
   "admin/card-payments/first-payments/replay",
+  // Le planificateur des paniers récurrents : les échéances à sept jours.
+  "admin/subscriptions/sweep",
 ];
 
 /**
