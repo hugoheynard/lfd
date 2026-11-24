@@ -360,6 +360,7 @@
   "test/my-invoices-archive.e2e-spec.ts": 6367,
   "test/my-invoices.e2e-spec.ts": 5755,
   "test/my-shop-catalogue.e2e-spec.ts": 7725,
+  "test/negotiated-scope.e2e-spec.ts": 5500,
   "test/offered-order-readers.e2e-spec.ts": 13700,
   "test/offered-particular-order.e2e-spec.ts": 15000,
   "test/operation-sales.e2e-spec.ts": 7147,

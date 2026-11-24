@@ -6,6 +6,7 @@ import { CompanyStatus, CustomerRole } from "../src/platform/database/client/cli
 import { ADMIN_VERIFIER_OVERRIDE } from "./delivery-rounds-scene.js";
 import {
   bootstrapE2e,
+  daysAgo,
   E2E_STAFF_ID,
   E2E_STAFF_SUB,
   jsonBody,
@@ -13,6 +14,7 @@ import {
   type E2eContext,
 } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 import { pickupSite } from "./order-factory.js";
 import { cardProvidersOverride } from "./card-payments.js";
 
@@ -81,7 +83,28 @@ async function army(timing: "at_order" | "on_period_quote"): Promise<string> {
     company.id,
     CustomerRole.owner,
   );
+  if (timing === "on_period_quote") {
+    await poseAgreedTariff(company.id);
+  }
   return company.id;
+}
+
+/**
+ * Le tarif convenu qu'exige un payeur sur devis de période (QD8) : sans lui,
+ * il ne commande rien. Fenêtre relative, comparée au jour de livraison.
+ */
+async function poseAgreedTariff(companyId: string): Promise<void> {
+  await ctx
+    .asSub(E2E_STAFF_SUB)
+    .post(`/admin/pricing/companies/${companyId}/mercuriale`)
+    .set(INTENT_KEY, freshIntent())
+    .send({
+      label: "Tarif convenu de la caserne",
+      validFrom: daysAgo(1),
+      validTo: `${serviceDay(60)}T00:00:00.000Z`,
+      lines: [{ sku: "VIE-001-1", unitPriceMillicents: 90_000 }],
+    })
+    .expect(201);
 }
 
 beforeEach(async () => {

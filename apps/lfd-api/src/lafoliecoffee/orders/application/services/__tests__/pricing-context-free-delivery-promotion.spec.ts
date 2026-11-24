@@ -40,6 +40,7 @@ const BY_STAFF_FOR_CLIENT: PricingRequest = {
   frozenDeliveryVatMode: null,
   frozenAudience: null,
   frozenDeliveryFee: null,
+  negotiated: { payerCompanyId: null, day: null },
 };
 
 /** « Livraison offerte » à `companyId`, toujours, depuis la veille du chiffrage. */

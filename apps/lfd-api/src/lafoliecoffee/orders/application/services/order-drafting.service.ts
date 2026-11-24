@@ -185,6 +185,7 @@ export class OrderDrafting {
       frozenDeliveryVatMode: null,
       frozenAudience: null,
       frozenDeliveryFee: null,
+      negotiated: { payerCompanyId: billedCompanyId, day: content.requestedDeliveryDate },
     });
     // APRÈS le chargement : un panier qu'on ne sait pas charger est refusé pour
     // ce qu'il est (un article inconnu, indisponible) avant de l'être pour

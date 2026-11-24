@@ -126,6 +126,7 @@ import {
   pointDiscountPromotions,
   deliveryFeePromotions,
 } from "../../services/__tests__/basket-promotions.doubles.js";
+import { UnboundedNegotiatedScope } from "../../services/__tests__/negotiated-scope.doubles.js";
 
 /**
  * **La commande sans compte**, éprouvée là où elle décide — plan
@@ -281,6 +282,7 @@ function drafting(
         new FixedStopwatch(),
       ),
       new CatalogViewers(new InMemoryServedCompanies()),
+      new UnboundedNegotiatedScope(),
     ),
     new CartAdjustments(
       pickups(),

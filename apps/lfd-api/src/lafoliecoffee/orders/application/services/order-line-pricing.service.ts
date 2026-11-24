@@ -14,6 +14,12 @@ type ServedCompany = Pick<PricingParties, "companyId">;
 type ServedBuyer = Pick<PricingParties, "companyId" | "buyerKind"> & {
   /** L'équipe saisit : pas de minimum d'achat en pièces (cf. `OrderParties`). */
   readonly minimumsWaived?: boolean;
+  /**
+   * Le payeur et le jour de la commande, pour le tarif convenu (QD8) — posés
+   * par la passation et par la révision, qui connaissent le payeur. Absent
+   * pour un devis : il chiffre, la passation refuse.
+   */
+  readonly negotiated?: NegotiatedPayer;
 };
 import { Pricer } from "../../../pricing/application/pricer.js";
 import { UnknownSkuError } from "../../../catalog/domain/errors/unknown-sku.error.js";
@@ -29,6 +35,8 @@ import {
   type CatalogViewer,
 } from "../../../catalog/domain/catalog-viewer.js";
 import { refuseUnorderable } from "../../../catalog/domain/errors/reserved-article-refused.error.js";
+import { OutsideNegotiatedScopeError } from "../../domain/errors/outside-negotiated-scope.error.js";
+import { NegotiatedScope, type NegotiatedPayer } from "../../domain/ports/negotiated-scope.js";
 import {
   ensureMinimumQuantity,
   ensureSaleQuantity,
@@ -73,6 +81,7 @@ export class OrderLinePricing {
     private readonly catalog: ProductCatalogReader,
     private readonly pricer: Pricer,
     private readonly viewers: CatalogViewers,
+    private readonly negotiatedScope: NegotiatedScope,
   ) {}
 
   /**
@@ -94,6 +103,7 @@ export class OrderLinePricing {
    * @throws {UnknownSkuError} un SKU que le catalogue ne connaît pas.
    * @throws {ReservedArticleRefusedError} un article réservé à un autre compte.
    * @throws {ArticleOffMenuError} un article hors de la carte du site (`carte-des-sites.md`, § 3.7).
+   * @throws {OutsideNegotiatedScopeError} un article hors du tarif convenu d'un payeur sur devis de période.
    * @throws {QuantityBelowMinimumError} un SKU sous le minimum de la clientèle.
    * @throws {CompanyClosedOrderRefusedError} la société servie est terminée.
    */
@@ -304,6 +314,9 @@ export class OrderLinePricing {
     // reste inconnu.
     const catalogue = loaded ?? (await this.catalog.resolveMany([...quantities.keys()], viewer));
     refuseUnorderable(catalogue, quantities.keys());
+    // Le tarif convenu (QD8) : un payeur sur devis de période ne commande que
+    // ce que sa mercuriale cite. L'équipe qui saisit n'y échappe pas.
+    await this.refuseOutsideScope(catalogue, quantities.keys(), parties.negotiated);
     // 🔴 Le SKU inconnu est refusé AVANT le chargement des matériaux. Charger
     // d'abord ferait payer des lectures pour un panier qu'on va refuser.
     //
@@ -366,6 +379,34 @@ export class OrderLinePricing {
     });
 
     return lines.map(({ item, quantity }) => priceLine({ item, quantity, withTiers }, lot));
+  }
+
+  /**
+   * Refuse le premier article que le tarif convenu du payeur ne cite pas,
+   * dans l'ordre demandé. Sans payeur, ou hors devis de période, rien n'est
+   * lu de plus que la question.
+   *
+   * @throws {UnknownSkuError} un SKU que le catalogue ne connaît pas.
+   * @throws {OutsideNegotiatedScopeError} un article hors du tarif convenu.
+   */
+  private async refuseOutsideScope(
+    catalogue: ReadonlyMap<string, CatalogItem>,
+    skus: Iterable<string>,
+    negotiated: NegotiatedPayer | undefined,
+  ): Promise<void> {
+    if (negotiated === undefined || negotiated.payerCompanyId === null) {
+      return;
+    }
+    const scope = await this.negotiatedScope.scopeFor(negotiated.payerCompanyId, negotiated.day);
+    if (scope === null) {
+      return;
+    }
+    for (const sku of skus) {
+      const found = foundOrRefused(catalogue, sku);
+      if (!scope.has(sku)) {
+        throw new OutsideNegotiatedScopeError(sku, found.name);
+      }
+    }
   }
 }
 

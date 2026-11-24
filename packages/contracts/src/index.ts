@@ -594,6 +594,7 @@ export {
 } from "./chorus-routing.js";
 export {
   BUDGET_COMMITMENT_ERRORS,
+  NEGOTIATED_SCOPE_ERRORS,
   budgetCommitmentPayloadSchema,
   correctBudgetCommitmentPayloadSchema,
 } from "./budget-commitment.js";

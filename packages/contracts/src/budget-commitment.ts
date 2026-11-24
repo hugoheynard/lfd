@@ -94,3 +94,14 @@ export const BUDGET_COMMITMENT_ERRORS = {
   /** 409 — la commande est déjà facturée (ou engagée en comptabilité) : la comptabilité décide. */
   alreadyInvoiced: "budget_commitment.already_invoiced",
 } as const;
+
+/**
+ * Le code du refus d'un article hors du tarif convenu (`AppError.code`) : un
+ * payeur sur devis de période ne commande que ce que sa mercuriale cite.
+ */
+export const NEGOTIATED_SCOPE_ERRORS = {
+  /** 409 — l'article n'est pas cité par la mercuriale active du payeur au jour de livraison. */
+  outsideScope: "negotiated_scope.outside_scope",
+  /** 400 — le jour de livraison n'est pas une date lisible. */
+  invalidDay: "negotiated_scope.invalid_day",
+} as const;

@@ -16,6 +16,7 @@ import { noLinePromotionSupply } from "../../../../promotions/application/__test
 import { DatedPublicPriceUnsupportedError } from "../../../domain/errors/dated-public-price.error.js";
 import { OrderLinePricing } from "../order-line-pricing.service.js";
 import { catalogItem, PRICED_AT } from "./shop-cart-quoting.doubles.js";
+import { UnboundedNegotiatedScope } from "./negotiated-scope.doubles.js";
 
 /**
  * **L'instant d'une lecture « maintenant »**, hors requête.
@@ -96,6 +97,7 @@ function pricingWith(history: CanonicalPriceHistoryReader): OrderLinePricing {
       new FixedStopwatch(),
     ),
     new CatalogViewers(new InMemoryServedCompanies()),
+    new UnboundedNegotiatedScope(),
   );
 }
 

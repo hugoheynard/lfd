@@ -96,6 +96,7 @@ import {
   CounterLinkSettlementRefusedError,
 } from "../../../domain/errors/shelf-order-errors.js";
 import { CustomerVolumeReader } from "../../../../pricing/domain/ports/customer-volume.reader.js";
+import { UnboundedNegotiatedScope } from "../../services/__tests__/negotiated-scope.doubles.js";
 
 /**
  * Aucun réglage d'adresse : tout ce que la commande porte y est donc un choix.
@@ -455,6 +456,7 @@ function draftingFor(guardDouble: OrderGuardReader, options: DraftingOptions = {
         new FixedStopwatch(),
       ),
       new CatalogViewers(new InMemoryServedCompanies()),
+      new UnboundedNegotiatedScope(),
     ),
     new CartAdjustments(
       pickups,
@@ -1105,6 +1107,7 @@ describe("PlaceOrderForCustomerHandler — le règlement", () => {
             new FixedStopwatch(),
           ),
           new CatalogViewers(new InMemoryServedCompanies()),
+          new UnboundedNegotiatedScope(),
         ),
         new CartAdjustments(
           pickups,

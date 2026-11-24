@@ -313,6 +313,9 @@ export class OrderRevising {
       // Le tarif de livraison du jour de la passation (1a, Hugo, 2026-11-05) :
       // un frais relevé depuis ne renchérit pas la commande.
       frozenDeliveryFee: frozenDeliveryFeeOf(order),
+      // Le payeur de la commande et le jour révisé : les lignes nouvelles sont
+      // tenues au tarif convenu (QD8).
+      negotiated: { payerCompanyId: order.billedCompanyId, day: content.requestedDeliveryDate },
     });
     if (!fromShelf && actor === "customer") {
       await this.cutoffs.ensureCustomerBefore(order, content, options.decidedAt);

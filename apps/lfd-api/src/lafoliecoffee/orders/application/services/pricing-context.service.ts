@@ -40,6 +40,7 @@ import {
   type RevisedFrom,
   type RevisedLines,
 } from "../../revision/application/services/revised-line-pricing.js";
+import type { NegotiatedPayer } from "../../domain/ports/negotiated-scope.js";
 
 /** Le panier chargé, et ce que le chargement sait de plus que le calcul. */
 export interface LoadedBasket {
@@ -95,6 +96,12 @@ export interface PricingRequest {
    * d'avant le barème figé — le chargement résout alors celui du jour.
    */
   readonly frozenDeliveryFee: FrozenDeliveryFee | null;
+  /**
+   * Le payeur et le jour de livraison, que le tarif convenu juge (QD8) : la
+   * passation y met le payeur qu'elle vient de résoudre, la révision celui
+   * copié sur la commande. Obligatoire : un appelant oublié ne compile pas.
+   */
+  readonly negotiated: NegotiatedPayer;
 }
 
 /**
@@ -274,14 +281,21 @@ export class PricingContext {
   private async priceLines(request: PricingRequest): Promise<RevisedLines> {
     const { content, parties, revised } = request;
     if (revised === null) {
-      const resolved = await this.linePricing.resolve(content.lines, parties, request.caller);
+      const resolved = await this.linePricing.resolve(
+        content.lines,
+        { ...parties, negotiated: request.negotiated },
+        request.caller,
+      );
       return {
         lines: resolved.map((entry) => entry.line),
         refusals: [],
         sealing: sealingBySku(resolved),
       };
     }
-    return priceRevisedLines(this.linePricing, content.lines, parties, revised, request.vatMethod);
+    return priceRevisedLines(this.linePricing, content.lines, parties, revised, {
+      vatMethod: request.vatMethod,
+      negotiated: request.negotiated,
+    });
   }
 
   /**

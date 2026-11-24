@@ -22,6 +22,7 @@ import type {
 import type { OrderVatMethod } from "../../../domain/value-objects/order-vat-method.js";
 import type { OrderLinePricing } from "../../../application/services/order-line-pricing.service.js";
 import type { OrderParties } from "../../../application/services/order-parties.js";
+import type { NegotiatedPayer } from "../../../domain/ports/negotiated-scope.js";
 
 /**
  * **Ce que la composition reçoit d'une commande qu'on révise** : ses lignes
@@ -59,13 +60,19 @@ export interface RevisedLines {
  *
  * L'équipe n'est pas tenue au minimum (décidé par Hugo le 2026-11-23,
  * `OrderParties.minimumsWaived`) ; la retarification, elle, vaut pour tous.
+ *
+ * Seules les lignes NOUVELLES sont tenues au tarif convenu du payeur (QD8) :
+ * une ligne gardée a déjà été admise à la passation.
  */
 export async function priceRevisedLines(
   linePricing: OrderLinePricing,
   requested: readonly OrderLineRequest[],
   parties: OrderParties,
   revised: RevisedFrom,
-  vatMethod: OrderVatMethod,
+  {
+    vatMethod,
+    negotiated,
+  }: { readonly vatMethod: OrderVatMethod; readonly negotiated: NegotiatedPayer },
 ): Promise<RevisedLines> {
   const split = revisedLineRequests(revised.lines, requested);
   const changes = keptQuantityChanges(revised.lines, split);
@@ -86,7 +93,9 @@ export async function priceRevisedLines(
   );
   const refusals = keptLineRefusals(revised.lines, changes, repriced, vatMethod);
   const fresh =
-    split.fresh.length === 0 ? [] : await linePricing.resolve(split.fresh, parties, "checkout");
+    split.fresh.length === 0
+      ? []
+      : await linePricing.resolve(split.fresh, { ...parties, negotiated }, "checkout");
   const freshBySku = new Map(fresh.map((entry) => [entry.line.sku, entry.line]));
   const lines = split.order
     .map((sku) => split.frozen.get(sku) ?? freshBySku.get(sku))

@@ -57,6 +57,7 @@ import { FixedSalesTerms } from "./fixed-sales-terms.js";
 import { ownPayers } from "./payer-doubles.js";
 import { openPlanGate } from "./plan-doubles.js";
 import { RecordingDurable } from "./durable-doubles.js";
+import { UnboundedNegotiatedScope } from "../../services/__tests__/negotiated-scope.doubles.js";
 
 /**
  * La scène de la commande d'un particulier notée au comptoir : le handler, son
@@ -145,7 +146,12 @@ function pricer(): Pricer {
 function drafting(): OrderDrafting {
   const plans = openPlanGate();
   return new OrderDrafting(
-    new OrderLinePricing(catalog, pricer(), new CatalogViewers(new InMemoryServedCompanies())),
+    new OrderLinePricing(
+      catalog,
+      pricer(),
+      new CatalogViewers(new InMemoryServedCompanies()),
+      new UnboundedNegotiatedScope(),
+    ),
     new CartAdjustments(
       pickups,
       zoneFees([]),

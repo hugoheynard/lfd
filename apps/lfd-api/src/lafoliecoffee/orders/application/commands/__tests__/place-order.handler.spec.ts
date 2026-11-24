@@ -128,6 +128,7 @@ import { Pricer } from "../../../../pricing/application/pricer.js";
 import { PricingMaterialsLoader } from "../../../../pricing/application/pricing-materials.loader.js";
 import { VolumeCommitmentReader } from "../../../../pricing/domain/ports/volume-commitment.reader.js";
 import { CustomerVolumeReader } from "../../../../pricing/domain/ports/customer-volume.reader.js";
+import { UnboundedNegotiatedScope } from "../../services/__tests__/negotiated-scope.doubles.js";
 
 /**
  * Aucun réglage d'adresse : tout ce que la commande porte y est donc un choix.
@@ -560,6 +561,7 @@ function drafting(
         new FixedStopwatch(),
       ),
       new CatalogViewers(new InMemoryServedCompanies()),
+      new UnboundedNegotiatedScope(),
     ),
     new CartAdjustments(
       pickupsDouble,

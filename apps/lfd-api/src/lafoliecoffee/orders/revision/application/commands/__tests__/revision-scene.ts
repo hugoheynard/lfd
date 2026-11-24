@@ -92,6 +92,7 @@ import {
   pointDiscountPromotions,
   deliveryFeePromotions,
 } from "../../../../application/services/__tests__/basket-promotions.doubles.js";
+import { UnboundedNegotiatedScope } from "../../../../application/services/__tests__/negotiated-scope.doubles.js";
 
 /**
  * **La scène de la modification d'une commande** (voir
@@ -261,7 +262,12 @@ export function revisingAt(
   const catalog = new InMemoryProductCatalog(options.catalogItems ?? CATALOG);
   const classifications = new FixedLineClassifications();
   const composition = new OrderComposition(
-    new OrderLinePricing(catalog, pricer(clock), new CatalogViewers(new InMemoryServedCompanies())),
+    new OrderLinePricing(
+      catalog,
+      pricer(clock),
+      new CatalogViewers(new InMemoryServedCompanies()),
+      new UnboundedNegotiatedScope(),
+    ),
     new CartAdjustments(
       pickups,
       zones,

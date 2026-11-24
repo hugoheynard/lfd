@@ -55,6 +55,8 @@ import {
 import type { GuestSignInOffer } from "../guest-sign-in-offer.service.js";
 import type { ForeseenLateFee } from "../foreseen-late-fee.service.js";
 import { foreseenLateFeeOf } from "./foreseen-late-fee.doubles.js";
+import { UnboundedNegotiatedScope } from "./negotiated-scope.doubles.js";
+import type { NegotiatedScope } from "../../../domain/ports/negotiated-scope.js";
 
 /**
  * Le devis de la boutique monté sur ses VRAIS services, ports doublés à la
@@ -157,7 +159,12 @@ export interface QuotingDecisions {
 export function pricingOf(
   catalog: readonly UnsealedCatalogItem[],
   decisions: QuotingDecisions = {},
-  gate: { readonly clock?: Clock; readonly history?: CanonicalPriceHistoryReader } = {},
+  gate: {
+    readonly clock?: Clock;
+    readonly history?: CanonicalPriceHistoryReader;
+    /** Le tarif convenu des payeurs ; par défaut, aucun n'est sur devis de période. */
+    readonly scope?: NegotiatedScope;
+  } = {},
 ): OrderLinePricing {
   const rules = () => Promise.resolve([...(decisions.rules ?? [])]);
   const mercuriale = () => Promise.resolve(decisions.mercuriale ?? null);
@@ -197,6 +204,7 @@ export function pricingOf(
     new InMemoryProductCatalog(catalog),
     pricer,
     new CatalogViewers(new InMemoryServedCompanies()),
+    gate.scope ?? new UnboundedNegotiatedScope(),
   );
 }
 
