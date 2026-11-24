@@ -8,6 +8,7 @@ import { OrderBudgetCommitmentCorrectedEvent } from "../../domain/events/order-b
 import { AccountOrderEngagementReader } from "../../domain/ports/account-order-engagement.js";
 import { OrderBudgetCommitmentRepository } from "../../domain/ports/order-budget-commitment.repository.js";
 import { PayerCommitmentRequirements } from "../../domain/ports/payer-commitment-requirements.js";
+import { QuotedOrdersReader } from "../../domain/ports/quoted-orders.reader.js";
 import { PRIVATE_PAYER } from "../../domain/services/budget-commitment-rule.js";
 import type { BudgetCommitment } from "../../domain/value-objects/budget-commitment.js";
 import { CorrectOrderBudgetCommitmentCommand } from "./correct-order-budget-commitment.command.js";
@@ -15,12 +16,14 @@ import { CorrectOrderBudgetCommitmentCommand } from "./correct-order-budget-comm
 /**
  * **Corriger l'engagement budgétaire** (E3′) : sous le verrou de la ligne
  * `orders` — celui que prend l'émission de la facture —, relire ce que la
- * comptabilité a engagé, juger par l'agrégat avec l'exigence du payeur, puis
+ * comptabilité a engagé et le devis de période en attente qui la porte,
+ * juger par l'agrégat avec l'exigence du payeur, puis
  * écrire et journaliser dans la même transaction. Rejoué, le même engagement
  * ne réécrit rien et ne journalise rien.
  *
  * @throws {OrderNotFoundError} commande inconnue.
  * @throws {BudgetCommitmentAlreadyInvoicedError} la commande est facturée ou engagée.
+ * @throws {BudgetCommitmentInPeriodQuoteError} la commande attend son numéro sur un devis.
  */
 @CommandHandler(CorrectOrderBudgetCommitmentCommand)
 export class CorrectOrderBudgetCommitmentHandler implements ICommandHandler<
@@ -31,6 +34,7 @@ export class CorrectOrderBudgetCommitmentHandler implements ICommandHandler<
     private readonly commitments: OrderBudgetCommitmentRepository,
     private readonly engagement: AccountOrderEngagementReader,
     private readonly requirements: PayerCommitmentRequirements,
+    private readonly quoted: QuotedOrdersReader,
     private readonly durable: DurablePublisher,
     private readonly ids: IdGenerator,
     private readonly uow: UnitOfWork,
@@ -45,7 +49,8 @@ export class CorrectOrderBudgetCommitmentHandler implements ICommandHandler<
       const payerId = order.payerCompanyId;
       const terms = payerId === null ? PRIVATE_PAYER : await this.requirements.of(payerId);
       const engagement = await this.engagement.engagementOf(order.orderId);
-      if (!order.correct(command.budgetCommitment, terms, engagement)) {
+      const quote = await this.quoted.awaitingQuoteOf(order.orderId);
+      if (!order.correct(command.budgetCommitment, terms, engagement, quote)) {
         return;
       }
       await this.commitments.save(order);

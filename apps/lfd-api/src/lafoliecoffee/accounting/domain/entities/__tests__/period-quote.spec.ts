@@ -2,6 +2,8 @@ import { PeriodQuote, periodQuoteNumberOf } from "../period-quote.js";
 import {
   EmptyPeriodQuoteError,
   InvalidPeriodQuoteRankError,
+  PeriodQuoteCommitmentClosedError,
+  PeriodQuoteCommitmentOutdatedError,
   PeriodQuoteNotAwaitingError,
 } from "../../errors/period-quote-errors.js";
 import type { InvoiceableOrder } from "../../services/monthly-invoicing.js";
@@ -141,5 +143,41 @@ describe("PeriodQuote.resend (QD5)", () => {
     const quote = shelve([order("a")]);
 
     expect(() => quote.resend([], "q_2", AT)).toThrow(EmptyPeriodQuoteError);
+  });
+});
+
+describe("PeriodQuote.acceptCommitment et invoiced — « Engagement reçu » (QD6)", () => {
+  it("accepte les mêmes commandes, dans n'importe quel ordre, et passe facturé avec sa facture", () => {
+    const quote = shelve([order("a"), order("b")]);
+
+    expect(() => quote.acceptCommitment([order("b"), order("a")])).not.toThrow();
+    const invoiced = quote.invoiced("inv_1").toSnapshot();
+
+    expect(invoiced).toMatchObject({ state: "invoiced", invoiceId: "inv_1", version: 1 });
+    expect(quote.toSnapshot()).toMatchObject({ state: "awaiting", invoiceId: null });
+  });
+
+  it("refuse une empreinte changée, ou plus aucune commande, en nommant le renvoi", () => {
+    const quote = shelve([order("a"), order("b")]);
+
+    expect(() => quote.acceptCommitment([order("a")])).toThrow(PeriodQuoteCommitmentOutdatedError);
+    expect(() => quote.acceptCommitment([])).toThrow(
+      /n'est plus à jour : renvoyez-le avant d'enregistrer l'engagement/u,
+    );
+  });
+
+  it("refuse un devis facturé ou remplacé", () => {
+    const quote = shelve([order("a")]);
+    const invoiced = quote.invoiced("inv_1");
+    const resent = quote.resend([order("a"), order("b")], "q_2", CLOSES_AT);
+    if (resent.kind !== "renewed") {
+      throw new TypeError("une commande de plus fait une nouvelle version");
+    }
+
+    expect(() => invoiced.acceptCommitment([order("a")])).toThrow(PeriodQuoteCommitmentClosedError);
+    expect(() => invoiced.invoiced("inv_2")).toThrow(/est déjà facturé/u);
+    expect(() => resent.superseded.acceptCommitment([order("a")])).toThrow(
+      /remplacé par une version plus récente/u,
+    );
   });
 });

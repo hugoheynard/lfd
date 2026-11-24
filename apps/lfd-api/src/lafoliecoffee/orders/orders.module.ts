@@ -63,6 +63,7 @@ import {
   ORDER_BUDGET_COMMITMENT_CONTROLLERS,
   ORDER_BUDGET_COMMITMENT_PROVIDERS,
 } from "./order-budget-commitment.providers.js";
+import { QuotedCommitmentAccepting } from "./application/services/quoted-commitment-accepting.js";
 import { ORDER_CUSTOMER_NUDGES_PROVIDERS } from "./order-customer-nudges.providers.js";
 import { ORDER_NO_SHOW_PROVIDERS } from "./order-no-show.providers.js";
 import { ORDER_LATE_TOLERANCE_PROVIDERS } from "./order-late-tolerance.providers.js";
@@ -806,6 +807,9 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     // Les commandes qui portent des bons, que le rattrapage de nuit de la
     // fidélité et son écran lisent (plan des points, C5, §11 bis S4, S6).
     VoucherOrderReader,
+    // Le numéro reçu sur un devis de période, relié au port de la comptabilité
+    // par `appBootstrap/period-quote-commitment.module.ts` (QD6).
+    QuotedCommitmentAccepting,
     // Les numéros des commandes qui ont rapporté des points, que l'historique
     // du client montre (plan des points, E1.1).
     OrderNumberReader,

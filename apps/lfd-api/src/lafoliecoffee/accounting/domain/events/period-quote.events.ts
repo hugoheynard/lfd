@@ -67,3 +67,38 @@ export class PeriodQuoteNoticeFailedEvent implements JournaledEvent {
     };
   }
 }
+
+/** Valeur écrite au journal : elle ne se renomme pas. */
+export const PERIOD_QUOTE_COMMITMENT_RECEIVED = "period_quote.commitment_received";
+
+/**
+ * **« Engagement reçu »** (QD6), le geste du staff au journal : le numéro
+ * renvoyé par l'organisme, la facture émise, le nombre de commandes
+ * numérotées. Écrit dans la transaction qui émet et scelle.
+ */
+export class PeriodQuoteCommitmentReceivedEvent implements JournaledEvent {
+  constructor(
+    readonly quote: PeriodQuoteSnapshot,
+    readonly commitmentNumber: string,
+    readonly invoice: { readonly id: string; readonly number: string },
+    readonly orderCount: number,
+    readonly at: Date,
+  ) {}
+
+  journalFact(): JournalFact {
+    return {
+      type: PERIOD_QUOTE_COMMITMENT_RECEIVED,
+      subjectType: PERIOD_QUOTE_SUBJECT,
+      subjectId: this.quote.id,
+      occurredAt: this.at,
+      payload: {
+        subjectLabel: `${this.quote.number} v${String(this.quote.version)}`,
+        payer: { id: this.quote.payerCompanyId, name: this.quote.payerName },
+        version: this.quote.version,
+        commitmentNumber: this.commitmentNumber,
+        invoice: { id: this.invoice.id, name: this.invoice.number },
+        orderCount: this.orderCount,
+      },
+    };
+  }
+}

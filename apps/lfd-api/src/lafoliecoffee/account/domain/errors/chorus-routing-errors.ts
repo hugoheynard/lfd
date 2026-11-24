@@ -47,17 +47,3 @@ export class ChorusRoutingTimingLockedError extends BusinessError {
     );
   }
 }
-
-/**
- * **Le devis de période n'est pas encore disponible** (409) : sans lui, un
- * payeur commanderait sans numéro et sa clôture resterait bloquée.
- */
-export class ChorusRoutingPeriodQuoteUnavailableError extends BusinessError {
-  constructor() {
-    super(
-      CHORUS_ROUTING_ERRORS.periodQuoteUnavailable,
-      "Le devis de période n'est pas encore disponible : gardez l'engagement à la commande " +
-        "pour ce client.",
-    );
-  }
-}

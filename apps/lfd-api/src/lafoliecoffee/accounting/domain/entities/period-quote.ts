@@ -1,6 +1,8 @@
 import {
   EmptyPeriodQuoteError,
   InvalidPeriodQuoteRankError,
+  PeriodQuoteCommitmentClosedError,
+  PeriodQuoteCommitmentOutdatedError,
   PeriodQuoteNotAwaitingError,
 } from "../errors/period-quote-errors.js";
 import { periodTagOf } from "../services/invoicing-closures.js";
@@ -52,6 +54,8 @@ export interface PeriodQuoteSnapshot {
   readonly fingerprint: string;
   readonly totalTtcCents: number;
   readonly orderIds: readonly string[];
+  /** La facture émise de ce devis ; posée avec `invoiced`, `null` avant. */
+  readonly invoiceId: string | null;
   readonly createdAt: Date;
 }
 
@@ -66,8 +70,9 @@ export interface PeriodQuoteSnapshot {
  *
  * Deux gestes le font vivre ici : la naissance (v1, `awaiting`, à la
  * clôture) et le renvoi (`resend`), qui garde la version quand l'empreinte
- * n'a pas bougé et en range une nouvelle sinon. L'engagement reçu
- * (`invoiced`) a son propre geste.
+ * n'a pas bougé et en range une nouvelle sinon. L'engagement reçu le passe
+ * `invoiced` (`acceptCommitment` puis `invoiced`), dans la transaction qui
+ * émet sa facture.
  */
 export class PeriodQuote {
   private constructor(
@@ -92,6 +97,7 @@ export class PeriodQuote {
         number: periodQuoteNumberOf(input.periodClosesAt, rank),
         version: FIRST_VERSION,
         state: "awaiting",
+        invoiceId: null,
         ...figuresOf(input.payerName, orders),
       },
       orders,
@@ -121,6 +127,37 @@ export class PeriodQuote {
 
   get version(): number {
     return this.state.version;
+  }
+
+  /**
+   * **« Engagement reçu »** (QD6) : le devis attend encore son numéro, et ses
+   * commandes d'aujourd'hui (relues sous verrou, annulées retirées par
+   * l'appelant) font toujours la facture qu'il a annoncée — même empreinte.
+   *
+   * @throws {PeriodQuoteCommitmentClosedError} le devis est facturé ou remplacé.
+   * @throws {PeriodQuoteCommitmentOutdatedError} ses commandes ont changé, ou il n'en reste aucune.
+   */
+  acceptCommitment(orders: readonly InvoiceableOrder[]): void {
+    const { number, version, state } = this.state;
+    if (state !== "awaiting") {
+      throw new PeriodQuoteCommitmentClosedError(number, version, state);
+    }
+    if (orders.length === 0 || periodQuoteFigures(orders).fingerprint !== this.state.fingerprint) {
+      throw new PeriodQuoteCommitmentOutdatedError(number, version);
+    }
+  }
+
+  /**
+   * Le devis facturé : sa facture est émise. État final.
+   *
+   * @throws {PeriodQuoteCommitmentClosedError} le devis n'attendait plus.
+   */
+  invoiced(invoiceId: string): PeriodQuote {
+    const { number, version, state } = this.state;
+    if (state !== "awaiting") {
+      throw new PeriodQuoteCommitmentClosedError(number, version, state);
+    }
+    return new PeriodQuote({ ...this.state, state: "invoiced", invoiceId }, this.orders);
   }
 
   /**

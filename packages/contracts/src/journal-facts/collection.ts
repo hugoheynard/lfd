@@ -303,6 +303,23 @@ export const COLLECTION_FACTS = {
       recipientCount: count().nullable(),
     }),
   ),
+  /**
+   * « Engagement reçu » sur un devis de période (QD6) : le numéro
+   * d'engagement que l'organisme a renvoyé est écrit sur les commandes du
+   * devis, et sa facture est émise. Sujet : `period_quote`, la version
+   * facturée. Le numéro d'engagement figure sur la facture (BT-13) : ce
+   * n'est pas une donnée personnelle.
+   */
+  "period_quote.commitment_received": fact(
+    payload({
+      subjectLabel: subjectLabel(),
+      payer: named("company"),
+      version: count(),
+      commitmentNumber: z.string(),
+      invoice: named("invoice"),
+      orderCount: count(),
+    }),
+  ),
   /** Le PDF/A-3 est rendu, rangé et attaché à la pièce — une seule fois. */
   "invoice.document_rendered": fact(
     payload({ ...invoiceDocument, byteCount: count(), sha256: z.string() }),

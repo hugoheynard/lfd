@@ -83,3 +83,44 @@ export class BudgetCommitmentAlreadyInvoicedError extends BusinessError {
     );
   }
 }
+
+/**
+ * **La commande attend son numéro sur un devis de période** (409) : son
+ * engagement se donne par « Engagement reçu » sur le devis, qui émet la
+ * facture — une correction à la main le contredirait.
+ */
+export class BudgetCommitmentInPeriodQuoteError extends BusinessError {
+  constructor(orderNumber: string, quoteNumber: string) {
+    super(
+      BUDGET_COMMITMENT_ERRORS.inPeriodQuote,
+      `La commande ${orderNumber} est dans le devis de période ${quoteNumber}, en attente de ` +
+        "son numéro d'engagement : enregistrez le numéro sur le devis (Comptabilité, « Engagement " +
+        "reçu »), pas sur la commande.",
+    );
+  }
+}
+
+/**
+ * **« Engagement reçu » sur une commande qui n'est pas dans ce devis en
+ * attente** (409) : elle a été retirée, ou le devis a été remplacé.
+ */
+export class BudgetCommitmentNotInQuoteError extends BusinessError {
+  constructor(orderNumber: string, quoteNumber: string) {
+    super(
+      BUDGET_COMMITMENT_ERRORS.notInQuote,
+      `La commande ${orderNumber} n'est plus dans le devis ${quoteNumber} en attente : rien n'est ` +
+        "enregistré. Relisez les devis de la société et enregistrez l'engagement sur la version en attente.",
+    );
+  }
+}
+
+/** **« Engagement reçu » sur une commande qui porte déjà un numéro** (409). */
+export class BudgetCommitmentAlreadyNumberedError extends BusinessError {
+  constructor(orderNumber: string, current: string) {
+    super(
+      BUDGET_COMMITMENT_ERRORS.alreadyNumbered,
+      `La commande ${orderNumber} porte déjà le numéro d'engagement ${current} : le devis ne peut ` +
+        "pas lui en donner un second. Rien n'est enregistré ; voyez avec la comptabilité.",
+    );
+  }
+}

@@ -11,7 +11,7 @@ import { StaffDirectory, type StaffIdentity } from "../../../domain/ports/staff-
 import { PayerLiveMercurialeReader } from "../../../domain/ports/payer-live-mercuriale.reader.js";
 import { PayerUninvoicedOrdersReader } from "../../../domain/ports/payer-uninvoiced-orders.reader.js";
 import {
-  ChorusRoutingPeriodQuoteUnavailableError,
+  ChorusRoutingQuoteWithoutMercurialeError,
   ChorusRoutingTimingLockedError,
 } from "../../../domain/errors/chorus-routing-errors.js";
 import { ChorusRouting } from "../../../domain/value-objects/chorus-routing.js";
@@ -219,8 +219,21 @@ describe("RecordChorusRoutingHandler", () => {
     ).rejects.toThrow(CompanyNotFoundError);
   });
 
-  it("refuse le devis de période tant qu'il n'est pas bâti, sans rien écrire", async () => {
+  it("passe au devis de période : mercuriale active, tout facturé", async () => {
     const { handler, routings } = handlerFor(company("public_state"));
+
+    await handler.execute(
+      new RecordChorusRoutingCommand("c1", "staff_1", {
+        ...READING,
+        commitmentTiming: "on_period_quote",
+      }),
+    );
+
+    expect(routings.saved[0]?.routing.commitmentTiming).toBe("on_period_quote");
+  });
+
+  it("refuse le devis de période sans mercuriale active, sans rien écrire", async () => {
+    const { handler, routings } = handlerFor(company("public_state"), undefined, { live: false });
 
     await expect(
       handler.execute(
@@ -229,7 +242,7 @@ describe("RecordChorusRoutingHandler", () => {
           commitmentTiming: "on_period_quote",
         }),
       ),
-    ).rejects.toThrow(ChorusRoutingPeriodQuoteUnavailableError);
+    ).rejects.toThrow(ChorusRoutingQuoteWithoutMercurialeError);
     expect(routings.saved).toHaveLength(0);
   });
 

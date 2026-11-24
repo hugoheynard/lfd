@@ -73,6 +73,7 @@ export function specimenPeriodQuote(
     periodStartsAt: startsAt,
     periodClosesAt: closesAt,
     state: "awaiting",
+    invoiceId: null,
     ...periodQuoteFigures(orders),
     orderIds: orders.map((order) => order.orderId),
     createdAt: now,

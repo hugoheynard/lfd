@@ -158,3 +158,63 @@ export class PeriodQuoteSellerMissingError extends TechnicalError {
     );
   }
 }
+
+/** Les mots d'un état final, pour « Engagement reçu ». */
+const CLOSED_FOR_COMMITMENT: Readonly<Record<string, string>> = {
+  invoiced: "est déjà facturé : son engagement a été enregistré et sa facture émise",
+  superseded: "a été remplacé par une version plus récente : enregistrez l'engagement sur celle-ci",
+};
+
+/** « Engagement reçu » sur un devis qui n'attend plus son numéro. */
+export class PeriodQuoteCommitmentClosedError extends BusinessError {
+  constructor(
+    readonly number: string,
+    readonly version: number,
+    readonly state: string,
+  ) {
+    super(
+      "accounting.period_quote.commitment_closed",
+      `Le devis ${number} (version ${String(version)}) ${CLOSED_FOR_COMMITMENT[state] ?? `est « ${state} »`}. ` +
+        "Rien n'est enregistré ; relire la liste des devis de la société.",
+    );
+  }
+}
+
+/**
+ * « Engagement reçu » sur un devis dont les commandes ont changé depuis
+ * l'envoi : la facture ne serait plus celle que l'organisme a engagée.
+ */
+export class PeriodQuoteCommitmentOutdatedError extends BusinessError {
+  constructor(
+    readonly number: string,
+    readonly version: number,
+  ) {
+    super(
+      "accounting.period_quote.commitment_outdated",
+      `Le devis n° ${number} (version ${String(version)}) n'est plus à jour : renvoyez-le avant ` +
+        "d'enregistrer l'engagement. Ses commandes ont changé depuis son envoi ; rien n'est enregistré.",
+    );
+  }
+}
+
+/**
+ * Les commandes du devis, numérotées, ne font plus UNE facture : un mandat ou
+ * un code service a changé depuis le rangement, ou la facture de ce groupe
+ * est déjà émise. Rien n'est enregistré.
+ */
+export class PeriodQuoteCommitmentGroupsError extends BusinessError {
+  constructor(
+    readonly number: string,
+    readonly groups: number,
+  ) {
+    super(
+      "accounting.period_quote.commitment_groups",
+      groups === 0
+        ? `La facture du devis ${number} est déjà émise pour cette période et cet engagement : ` +
+            "rien n'est enregistré. Relire les factures de la période."
+        : `Les commandes du devis ${number} ne tiennent plus en une seule facture (${String(groups)} ` +
+            "groupes : mandat ou code service différents) : rien n'est enregistré. Renvoyez le devis, " +
+            "ou signalez-le à l'équipe technique si le refus revient.",
+    );
+  }
+}

@@ -10,13 +10,9 @@ import { CancelledOrdersReader } from "../../domain/ports/cancelled-orders.reade
 import { OrderBudgetCommitmentsReader } from "../../domain/ports/order-budget-commitments.reader.js";
 import { OrderRowsLock } from "../../domain/ports/order-rows-lock.js";
 import { PeriodQuoteRepository } from "../../domain/ports/period-quote.repository.js";
-import {
-  groupOrderIds,
-  withoutCancelled,
-  withoutMovedCommitments,
-} from "../../domain/services/invoice-group-under-lock.js";
 import { periodTagOf } from "../../domain/services/invoicing-closures.js";
 import type { PayerInvoicePlan } from "../../domain/services/monthly-invoicing.js";
+import { liveGroupUnderLock } from "../live-invoice-group.js";
 import type { Issuance, PayerIssue } from "../monthly-invoice-issuance.js";
 
 /**
@@ -54,7 +50,8 @@ export class PeriodQuoteShelver {
   shelve(planned: PayerInvoicePlan, issuance: Issuance): Promise<PayerIssue> {
     const { payerId } = planned;
     return this.uow.run(async (): Promise<PayerIssue> => {
-      const group = await this.liveGroup(planned);
+      const { rows, cancelled, commitments } = this;
+      const group = await liveGroupUnderLock({ rows, cancelled, commitments }, planned);
       if (group === null || group.billable.length === 0) {
         return { kind: "void", payerCompanyId: payerId };
       }
@@ -75,17 +72,6 @@ export class PeriodQuoteShelver {
     });
   }
 
-  /** Le groupe sous le verrou de ses lignes `orders` — la règle de `issueFor`. */
-  private async liveGroup(planned: PayerInvoicePlan): Promise<PayerInvoicePlan | null> {
-    const ids = groupOrderIds(planned);
-    await this.rows.lockAll(ids);
-    // `cancelledAmong` rend des NUMÉROS de commande, pas des identifiants.
-    const live = withoutCancelled(planned, new Set(await this.cancelled.cancelledAmong(ids)));
-    return live === null
-      ? null
-      : withoutMovedCommitments(live, await this.commitments.commitmentsOf(ids));
-  }
-
   private async draft(group: PayerInvoicePlan, issuance: Issuance): Promise<PeriodQuote> {
     const closesAt = issuance.period.closesAt;
     return PeriodQuote.shelve({
@@ -96,7 +82,7 @@ export class PeriodQuoteShelver {
       payerName: issuance.context.names.get(group.payerId) ?? group.payerId,
       mandateId: group.mandate?.mandateId ?? null,
       serviceCode: group.budgetCommitment?.serviceCode ?? "",
-      periodStartsAt: issuance.calendar.payerPeriodOf(group.payerId, closesAt).startsAt,
+      periodStartsAt: issuance.payerPeriodOf(group.payerId).startsAt,
       periodClosesAt: closesAt,
       orders: group.billable,
       createdAt: issuance.at,

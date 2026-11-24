@@ -1,4 +1,3 @@
-import { instantToLocal } from "@lfd/contracts";
 import { Logger } from "@nestjs/common";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
@@ -7,12 +6,10 @@ import { DomainEventPublisher } from "../../../../platform/events/domain-event-p
 import { IdGenerator } from "../../../../platform/id/id-generator.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import { InvoiceSignalledEvent } from "../../domain/events/invoice-autopilot.events.js";
-import { LegalEntityNotFoundError } from "../../domain/errors/accounting-errors.js";
 import {
   InvoicingFloorMissingError,
   InvoicingNotYetOpenError,
   NotABillingClosureError,
-  NotTheInvoicingEntityError,
   PeriodNotYetInvoiceableError,
 } from "../../domain/errors/monthly-invoice-errors.js";
 import { BillingModeDatesReader } from "../../domain/ports/billing-mode-dates.reader.js";
@@ -32,21 +29,13 @@ import { PayerBillingModesReader } from "../../domain/ports/payer-billing-modes.
 import { PayersCollectionMeansReader } from "../../domain/ports/payers-collection-means.reader.js";
 import { StatementBuyerReader } from "../../domain/ports/statement-buyer.reader.js";
 import type { BillingCycle } from "../../domain/services/billing-cycle.js";
-import type { InvoiceSellerFacts } from "../../domain/services/invoice-issuance-blockers.js";
 import type { MonthlyInvoiceReport } from "../../domain/services/monthly-invoice-report.js";
-import { invoiceDueDay, transferDueDay } from "../../domain/services/invoice-due-day.js";
 import type { InvoicingCalendar } from "../../domain/services/invoicing-calendar.js";
 import {
   invoicingMomentOf,
-  lastDayOf,
   parsePeriodClosure,
   periodLabelOf,
 } from "../../domain/services/invoicing-closures.js";
-import {
-  groupOrderIds,
-  withoutCancelled,
-  withoutMovedCommitments,
-} from "../../domain/services/invoice-group-under-lock.js";
 import {
   ordersByPayer,
   planMonthlyInvoices,
@@ -58,15 +47,15 @@ import {
 } from "../../domain/services/period-quote-split.js";
 import {
   draftOf,
-  later,
   outcomeKey,
   payerPeriodLabelOf,
   report,
   type Issuance,
   type PayerIssue,
 } from "../monthly-invoice-issuance.js";
+import { closureIssuance, readIssuingParties } from "../closure-issuance.js";
 import { readInvoicingCalendar } from "../invoicing-calendar-support.js";
-import { readMonthlyContext } from "../monthly-invoice-support.js";
+import { liveGroupUnderLock } from "../live-invoice-group.js";
 import { unique } from "../unique-ids.js";
 import { InvoiceIssuer } from "../services/invoice-issuer.js";
 import { PeriodQuoteShelver } from "../services/period-quote-shelver.js";
@@ -180,11 +169,8 @@ export class IssueMonthlyInvoicesHandler implements ICommandHandler<
     readonly invoiced: ReadonlySet<string>;
     readonly issuance: Issuance;
   }> {
-    const creditor = await this.creditors.snapshot(legalEntityId);
-    if (creditor === null) {
-      throw new LegalEntityNotFoundError(legalEntityId);
-    }
-    const sellerFacts = await this.soleSeller(legalEntityId);
+    const { creditors, issuers, reader, buyers, mandates, means, requirements } = this;
+    const parties = await readIssuingParties({ creditors, issuers }, legalEntityId);
     const { closesAt } = period;
     const periodLabel = periodLabelOf(period);
     const floor = await this.openFloor(periodLabel, closesAt);
@@ -195,51 +181,25 @@ export class IssueMonthlyInvoicesHandler implements ICommandHandler<
     const payers = ordersByPayer(orders, follows).filter((payer) =>
       calendar.closesFor(payer.payerId, closesAt),
     );
-    const { reader, buyers, mandates, means, requirements } = this;
-    const context = await readMonthlyContext(
+    const issuance = await closureIssuance(
       { reader, buyers, mandates, means, requirements },
-      payers,
-      follows,
-      at,
+      parties,
       {
         legalEntityId,
-        periodStartOf: (payerId) => calendar.payerPeriodOf(payerId, closesAt).startsAt,
+        period,
+        periodLabel,
+        closures: calendar,
+        payerPeriodOf: (payerId) => calendar.payerPeriodOf(payerId, closesAt),
+        at,
       },
+      payers,
+      follows,
     );
+    const { context } = issuance;
     const { invoices } = planMonthlyInvoices(payers, { legalEntityId, ...context }, invoiced);
     // Après le plan : les groupes n'existent qu'une fois faits (v5 B4).
     const plan = splitForPeriodQuotes(invoices, context.commitmentRequirements);
-    const { preNotificationDays, collectionDaysAfterClosure } = creditor;
-    // Jamais d'antidate : émise après la veille de la clôture, la facture
-    // porte le jour réel (Paris) ; la période facturée reste la même.
-    const issuedOn = later(lastDayOf(closesAt), instantToLocal(at).day);
-    const issuance: Issuance = {
-      legalEntityId,
-      period,
-      periodLabel,
-      calendar,
-      issuedOn,
-      transferDueOn: transferDueDay(issuedOn, creditor.transferDueDaysAfterIssue),
-      collectionDueOn: later(
-        issuedOn,
-        invoiceDueDay(closesAt, at, calendar, { preNotificationDays, collectionDaysAfterClosure }),
-      ),
-      creditor,
-      sellerFacts,
-      context,
-      at,
-    };
     return { plan, invoiced, issuance };
-  }
-
-  /** La seule entité en service, et c'est elle — comme le mandat (`soleIssuer`). */
-  private async soleSeller(legalEntityId: string): Promise<InvoiceSellerFacts> {
-    const active = await this.issuers.activeIssuers();
-    const [sole, ...others] = active;
-    if (sole === undefined || others.length > 0 || sole.legalEntityId !== legalEntityId) {
-      throw new NotTheInvoicingEntityError(legalEntityId);
-    }
-    return sole;
   }
 
   private async openFloor(periodLabel: string, closesAt: Date): Promise<Date> {
@@ -257,18 +217,17 @@ export class IssueMonthlyInvoicesHandler implements ICommandHandler<
    * Une facture (payeur × mandat) : elle et son issue ensemble, ou son refus
    * rangé.
    *
-   * Lot C5 (doc `documentation/commandes/annulation/annulation-par-le-staff.md`, C5.3) : dans la
-   * transaction et AVANT le numéro, les lignes `orders` de TOUS les bons du
-   * groupe sont verrouillées (`OrderRowsLock`, ordre unique), puis les
-   * annulées en sont retirées. Une annulation qui attend ce verrou relira
-   * une commande facturée ; une annulation passée avant n'est pas facturée.
+   * Dans la transaction et AVANT le numéro, le groupe est relu sous le
+   * verrou de TOUS ses bons (`liveGroupUnderLock`) : une annulation qui
+   * attend ce verrou relira une commande facturée.
    */
   private async issueFor(planned: PayerInvoicePlan, issuance: Issuance): Promise<PayerIssue> {
     const { payerId } = planned;
     let key = outcomeKey(planned, issuance);
     try {
       return await this.uow.run(async () => {
-        const payer = await this.liveGroup(planned);
+        const { rows, cancelled, commitments } = this;
+        const payer = await liveGroupUnderLock({ rows, cancelled, commitments }, planned);
         if (payer === null) {
           return { kind: "void", payerCompanyId: payerId };
         }
@@ -311,25 +270,6 @@ export class IssueMonthlyInvoicesHandler implements ICommandHandler<
 
   private warn(payerId: string, error: unknown): void {
     this.logger.warn({ message: "monthly_invoice_blocked", payerId, reason: messageOf(error) });
-  }
-
-  /**
-   * Le groupe sous le verrou de ses lignes `orders`, moins ses annulées et
-   * moins les bons dont l'engagement a été corrigé depuis la préparation
-   * (E4″) ; `null` s'il est vide. La correction d'engagement prend le même
-   * verrou : elle passe avant (le bon sort d'ici) ou attend la facture (et la
-   * refuse alors, la commande étant facturée).
-   */
-  private async liveGroup(planned: PayerInvoicePlan): Promise<PayerInvoicePlan | null> {
-    const ids = groupOrderIds(planned);
-    await this.rows.lockAll(ids);
-    // `cancelledAmong` rend des NUMÉROS de commande, pas des identifiants.
-    const cancelledNumbers = await this.cancelled.cancelledAmong(ids);
-    const live = withoutCancelled(planned, new Set(cancelledNumbers));
-    if (live === null) {
-      return null;
-    }
-    return withoutMovedCommitments(live, await this.commitments.commitmentsOf(ids));
   }
 
   /**

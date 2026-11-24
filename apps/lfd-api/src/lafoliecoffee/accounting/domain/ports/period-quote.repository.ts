@@ -26,6 +26,14 @@ export abstract class PeriodQuoteRepository {
   /** Réécrit l'empreinte et le total d'un devis en attente (après `keeping`). */
   abstract save(quote: PeriodQuote): Promise<void>;
 
+  /**
+   * **Le devis facturé** (QD6), dans la transaction de « Engagement reçu » :
+   * `invoiced` et sa facture posés ensemble, si le devis attendait encore.
+   *
+   * @throws {PeriodQuoteCommitmentClosedError} il n'attendait plus.
+   */
+  abstract recordInvoiced(quote: PeriodQuote): Promise<void>;
+
   /** Le devis relu, ou `null`. */
   abstract load(quoteId: string): Promise<PeriodQuote | null>;
 

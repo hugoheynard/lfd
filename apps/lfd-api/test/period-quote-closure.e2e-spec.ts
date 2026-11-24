@@ -9,8 +9,9 @@
  * `uninvoicedOrders` qui n'en reprend pas les commandes, le relevé et le
  * dossier qui les gardent au cycle du devis, et la vue de la période.
  *
- * ⚠️ La fiche Chorus en `on_period_quote` est posée par Prisma : le geste la
- * refuse encore (Q1, levée par Q5). La mercuriale passe par sa route.
+ * La fiche Chorus en `on_period_quote` est posée par Prisma : le sujet est la
+ * clôture, pas le geste de la fiche (éprouvé par `commitment-timing` et
+ * `period-quote-commitment`). La mercuriale passe par sa route.
  *
  * Aucune date absolue comparée à l'horloge : le mois est le précédent du jour
  * du test, l'horloge est celle de la scène.

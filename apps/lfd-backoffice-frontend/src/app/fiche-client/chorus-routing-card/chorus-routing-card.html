@@ -37,12 +37,8 @@
         data-chorus-timing
       >
         <fold-option value="at_order">{{ timingLabels.at_order }}</fold-option>
-        <fold-option
-          value="on_period_quote"
-          [disabled]="!periodQuoteAvailable"
-          data-chorus-timing-quote
-        >
-          {{ timingLabels.on_period_quote }}{{ periodQuoteAvailable ? '' : ' (bientôt)' }}
+        <fold-option value="on_period_quote" data-chorus-timing-quote>
+          {{ timingLabels.on_period_quote }}
         </fold-option>
       </fold-listbox>
       <fold-input

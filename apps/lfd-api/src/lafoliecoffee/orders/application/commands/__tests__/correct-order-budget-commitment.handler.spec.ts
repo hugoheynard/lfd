@@ -3,6 +3,7 @@ import { FixedIdGenerator } from "../../../../../platform/id/fixed-id-generator.
 import { OrderBudgetCommitment } from "../../../domain/entities/order-budget-commitment.js";
 import {
   BudgetCommitmentAlreadyInvoicedError,
+  BudgetCommitmentInPeriodQuoteError,
   PrivatePayerBudgetCommitmentError,
 } from "../../../domain/errors/budget-commitment-errors.js";
 import { OrderNotFoundError } from "../../../domain/errors/order-errors.js";
@@ -13,6 +14,10 @@ import {
 } from "../../../domain/ports/account-order-engagement.js";
 import { OrderBudgetCommitmentRepository } from "../../../domain/ports/order-budget-commitment.repository.js";
 import { PayerCommitmentRequirements } from "../../../domain/ports/payer-commitment-requirements.js";
+import {
+  QuotedOrdersReader,
+  type QuotedOrder,
+} from "../../../domain/ports/quoted-orders.reader.js";
 import {
   PRIVATE_PAYER,
   type PayerCommitmentTerms,
@@ -77,6 +82,18 @@ class Engagement extends AccountOrderEngagementReader {
   }
 }
 
+/** Le devis de période en attente qui porte la commande, relu sous le verrou. */
+class Quoted extends QuotedOrdersReader {
+  current: QuotedOrder | null = null;
+  constructor(private readonly log: string[]) {
+    super();
+  }
+  awaitingQuoteOf(): Promise<QuotedOrder | null> {
+    this.log.push("quote");
+    return Promise.resolve(this.current);
+  }
+}
+
 class Requirements extends PayerCommitmentRequirements {
   terms: PayerCommitmentTerms = {
     kind: "public",
@@ -95,11 +112,13 @@ function harness() {
   const commitments = new MemoryCommitments(log);
   const engagement = new Engagement(log);
   const requirements = new Requirements();
+  const quoted = new Quoted(log);
   const durable = new RecordingDurable();
   const handler = new CorrectOrderBudgetCommitmentHandler(
     commitments,
     engagement,
     requirements,
+    quoted,
     durable,
     new FixedIdGenerator("bc"),
     new DirectUnitOfWork(),
@@ -112,7 +131,7 @@ function harness() {
         number === null ? null : { number, serviceCode: "" },
       ),
     );
-  return { log, commitments, engagement, requirements, durable, correct };
+  return { log, commitments, engagement, requirements, quoted, durable, correct };
 }
 
 describe("CorrectOrderBudgetCommitmentHandler", () => {
@@ -121,7 +140,7 @@ describe("CorrectOrderBudgetCommitmentHandler", () => {
 
     await h.correct("1300012345");
 
-    expect(h.log).toEqual(["lock", "engagement", "save"]);
+    expect(h.log).toEqual(["lock", "engagement", "quote", "save"]);
     expect(h.commitments.stored).toEqual({ number: "1300012345", serviceCode: "SERV-RH" });
     expect(h.durable.facts).toHaveLength(1);
     expect(h.durable.facts[0]).toMatchObject({
@@ -160,7 +179,18 @@ describe("CorrectOrderBudgetCommitmentHandler", () => {
     };
 
     await expect(h.correct("1300012345")).rejects.toThrow(BudgetCommitmentAlreadyInvoicedError);
-    expect(h.log).toEqual(["lock", "engagement"]);
+    expect(h.log).toEqual(["lock", "engagement", "quote"]);
+    expect(h.commitments.stored).toEqual({ number: null, serviceCode: null });
+    expect(h.durable.facts).toEqual([]);
+  });
+
+  it("une commande d'un devis de période en attente : refusée, renvoyée au devis, rien écrit", async () => {
+    const h = harness();
+    h.quoted.current = { quoteId: "pq_1", quoteNumber: "D-20261031-1" };
+
+    await expect(h.correct("1300012345")).rejects.toThrow(BudgetCommitmentInPeriodQuoteError);
+    await expect(h.correct("1300012345")).rejects.toThrow(/devis de période D-20261031-1/u);
+    expect(h.log.slice(0, 3)).toEqual(["lock", "engagement", "quote"]);
     expect(h.commitments.stored).toEqual({ number: null, serviceCode: null });
     expect(h.durable.facts).toEqual([]);
   });

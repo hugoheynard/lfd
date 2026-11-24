@@ -3,7 +3,6 @@ import { SEPA_CREDIT_TRANSFER } from "../domain/entities/invoice.types.js";
 import { statementSellerOf, type StatementBuyer } from "../domain/entities/billing-statement.js";
 import type { MonthlyInvoiceOutcomeKey } from "../domain/ports/monthly-invoice-outcomes.js";
 import type { BillingCycle } from "../domain/services/billing-cycle.js";
-import type { InvoicingCalendar } from "../domain/services/invoicing-calendar.js";
 import { periodLabelOf } from "../domain/services/invoicing-closures.js";
 import { invoiceFromDossier } from "../domain/services/invoice-from-dossier.js";
 import type { InvoiceSellerFacts } from "../domain/services/invoice-issuance-blockers.js";
@@ -17,9 +16,10 @@ import {
 import type { MonthlyContext } from "./monthly-invoice-support.js";
 
 /**
- * Les pièces pures d'un passage de la facture par période
- * (`IssueMonthlyInvoicesHandler`) : ce qu'il fige une fois, la facture d'un
- * payeur, sa clé d'issue, et le rapport. Sorties du handler pour qu'il
+ * Les pièces pures d'une facture de période — la clôture
+ * (`IssueMonthlyInvoicesHandler`) et « Engagement reçu » sur un devis : ce
+ * qu'elle fige une fois (`closure-issuance.ts`), la facture d'un payeur, sa
+ * clé d'issue, et le rapport. Sorties du handler pour qu'il
  * n'orchestre que les lectures et les transactions.
  */
 
@@ -29,8 +29,11 @@ export interface Issuance {
   readonly period: BillingCycle;
   /** La période affichée de la clôture — la plus longue de celles qui s'y closent. */
   readonly periodLabel: string;
-  /** Le calendrier des payeurs : la période de CHACUN se lit dessus (M2). */
-  readonly calendar: InvoicingCalendar;
+  /**
+   * La période de CHAQUE payeur close ici (M2) : sur le calendrier à la
+   * clôture, figée sur le devis à « Engagement reçu ».
+   */
+  readonly payerPeriodOf: (payerId: string) => BillingCycle;
   readonly issuedOn: string;
   /**
    * L'échéance du cycle — le jour de prélèvement du lot qui prendra la
@@ -124,8 +127,7 @@ export function outcomeKey(payer: PayerInvoicePlan, issuance: Issuance): Monthly
   return {
     legalEntityId: issuance.legalEntityId,
     periodClosesAt: issuance.period.closesAt,
-    periodStartsAt: issuance.calendar.payerPeriodOf(payer.payerId, issuance.period.closesAt)
-      .startsAt,
+    periodStartsAt: issuance.payerPeriodOf(payer.payerId).startsAt,
     payerCompanyId: payer.payerId,
     payerName: issuance.context.names.get(payer.payerId) ?? payer.payerId,
     mandateId: payer.mandate?.mandateId ?? null,
@@ -164,7 +166,7 @@ export function report(
 
 /** « du 21 au 27 septembre 2026 » : la période du payeur, sur SA suite (M2). */
 export function payerPeriodLabelOf(payerId: string, issuance: Issuance): string {
-  return periodLabelOf(issuance.calendar.payerPeriodOf(payerId, issuance.period.closesAt));
+  return periodLabelOf(issuance.payerPeriodOf(payerId));
 }
 
 /** Le plus tard de deux jours `AAAA-MM-JJ`. */

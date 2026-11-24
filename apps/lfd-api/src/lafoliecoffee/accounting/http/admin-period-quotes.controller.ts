@@ -1,16 +1,23 @@
-import { Controller, HttpCode, HttpStatus, Param, Post } from "@nestjs/common";
+import {
+  periodQuoteCommitmentPayloadSchema,
+  type PeriodQuoteCommitmentPayload,
+} from "@lfd/contracts";
+import { Body, Controller, HttpCode, HttpStatus, Param, Post } from "@nestjs/common";
 import { CommandBus } from "@nestjs/cqrs";
 
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
 import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { IntentKey } from "../../../platform/shared/http/intent-key.decorator.js";
+import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
+import { ReceivePeriodQuoteCommitmentCommand } from "../application/commands/receive-period-quote-commitment.command.js";
 import { ResendPeriodQuoteCommand } from "../application/commands/resend-period-quote.command.js";
 
 /**
  * Surface **staff** des devis de période (plan
- * `plan-clients-publics-chorus.md`, § 6 sexies, QD4) : « Renvoyer le devis »,
- * sous `b2b_accounting:write`, déduit du verbe — la ressource de la
- * facturation, celle du renvoi de « Votre facture ».
+ * `plan-clients-publics-chorus.md`, § 6 sexies, QD4 et QD6) : « Renvoyer le
+ * devis » et « Engagement reçu », sous `b2b_accounting:write`, déduit du
+ * verbe — la ressource de la facturation, celle du renvoi de « Votre
+ * facture ».
  */
 @Controller("admin/period-quotes")
 @AdminSurface("b2b_accounting")
@@ -34,5 +41,27 @@ export class AdminPeriodQuotesController {
       new ResendPeriodQuoteCommand(quoteId, staffUserId, intentKey),
     );
     return { quoteId: sent };
+  }
+
+  /**
+   * **« Engagement reçu »** : corps `{ number }`, le numéro renvoyé par
+   * l'organisme. Écrit sur les commandes du devis, émet sa facture (le code
+   * service est celui du devis) et rend son identifiant. Refus : forme du
+   * numéro (`400` `budget_commitment.invalid`), devis inconnu (`404`), devis
+   * facturé, remplacé, plus à jour ou dont les commandes ne font plus une
+   * facture (`409` nommé) — rien n'est alors écrit.
+   */
+  @Post(":quoteId/commitment")
+  @HttpCode(HttpStatus.OK)
+  async receiveCommitment(
+    @Param("quoteId") quoteId: string,
+    @StaffUserId() staffUserId: string,
+    @IntentKey() intentKey: string,
+    @Body(new ZodBody(periodQuoteCommitmentPayloadSchema)) payload: PeriodQuoteCommitmentPayload,
+  ): Promise<{ readonly invoiceId: string }> {
+    const invoiceId = await this.commands.execute<ReceivePeriodQuoteCommitmentCommand, string>(
+      new ReceivePeriodQuoteCommitmentCommand(quoteId, payload.number, staffUserId, intentKey),
+    );
+    return { invoiceId };
   }
 }

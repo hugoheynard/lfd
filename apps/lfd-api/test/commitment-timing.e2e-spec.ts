@@ -23,9 +23,9 @@ import { cardProvidersOverride } from "./card-payments.js";
  * `documentation/comptabilite/facturation/plan-clients-publics-chorus.md`,
  * § 6 sexies, QD1 et QD2).
  *
- * Le geste de la fiche Chorus refuse `on_period_quote` tant que le devis de
- * période n'est pas bâti : le mode est donc posé en base pour éprouver la
- * passation sans numéro, le refus d'un numéro et la vue des exigences.
+ * Le geste de la fiche Chorus accepte `on_period_quote` sous une mercuriale
+ * active ; les passations, elles, partent d'un mode posé en base pour ne
+ * dépendre que de la fiche.
  */
 
 const ARMY_BUYER = "auth0|army-quote-buyer";
@@ -142,7 +142,7 @@ describe("le mode sur la fiche Chorus", () => {
     expect(fiche.body).toMatchObject({ chorusRouting: { commitmentTiming: "at_order" } });
   });
 
-  it("refuse le devis de période tant qu'il n'est pas disponible : 409, rien n'est écrit", async () => {
+  it("refuse le devis de période sans mercuriale active : 409, rien n'est écrit", async () => {
     armyId = await army("at_order");
 
     const response = await ctx
@@ -152,9 +152,22 @@ describe("le mode sur la fiche Chorus", () => {
 
     expect(response.status).toBe(409);
     expect(jsonBody<{ code: string }>(response).code).toBe(
-      CHORUS_ROUTING_ERRORS.periodQuoteUnavailable,
+      CHORUS_ROUTING_ERRORS.quoteWithoutMercuriale,
     );
     expect(await timingOf(armyId)).toBe("at_order");
+  });
+
+  it("passe au devis de période sous une mercuriale active", async () => {
+    armyId = await army("at_order");
+    await poseAgreedTariff(armyId);
+
+    await ctx
+      .asSub(E2E_STAFF_SUB)
+      .put(route(armyId))
+      .send({ ...READING, commitmentTiming: "on_period_quote" })
+      .expect(204);
+
+    expect(await timingOf(armyId)).toBe("on_period_quote");
   });
 
   it("refuse le devis de période sans engagement exigé : 400", async () => {

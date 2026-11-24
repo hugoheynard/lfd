@@ -42,12 +42,6 @@ const TIMING_LABELS: Readonly<Record<CommitmentTiming, string>> = {
 };
 
 /**
- * Le devis de période n'est pas encore bâti : le serveur refuse ce mode, et
- * l'option reste visible, grisée, « bientôt ». À lever avec le lot Q5.
- */
-const PERIOD_QUOTE_AVAILABLE = false;
-
-/**
  * La carte **Chorus Pro** d'un organisme public — elle tient la place du KBIS.
  *
  * Elle montre ce que l'acheteur exige sur ses factures, relevé à la main par le
@@ -120,7 +114,6 @@ export class ChorusRoutingCard {
   protected readonly commitmentTiming = signal<CommitmentTiming>('at_order');
   protected readonly checkedOn = signal('');
   protected readonly timingLabels = TIMING_LABELS;
-  protected readonly periodQuoteAvailable = PERIOD_QUOTE_AVAILABLE;
   protected readonly saving = signal(false);
   protected readonly refusal = signal<string | null>(null);
 

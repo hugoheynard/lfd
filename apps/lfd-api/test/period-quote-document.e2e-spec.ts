@@ -14,8 +14,8 @@
  * 🔴 Aucun courriel ne part : le mailer est un double ; on lit les demandes
  * dans la boîte d'envoi, comme les autres e2e d'e-mail.
  *
- * ⚠️ La fiche Chorus en `on_period_quote` est posée par Prisma (le geste la
- * refuse encore, Q1), et la commande « modifiée » est annulée par Prisma : le
+ * La fiche Chorus en `on_period_quote` est posée par Prisma (le sujet n'est
+ * pas le geste de la fiche), et la commande « modifiée » est annulée par Prisma : le
  * sujet est l'empreinte du devis, pas le geste d'annulation. Aucune date
  * absolue comparée à l'horloge : le mois est le précédent du jour du test.
  */

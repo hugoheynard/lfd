@@ -24,6 +24,8 @@ import {
 
 const QUOTE: Noun = { the: 'le devis', a: 'un devis' };
 const FOR_CLIENT: Noun = { the: 'au client', a: 'à un client' };
+const OF_CLIENT: Noun = { the: 'du client', a: 'd’un client' };
+const INVOICE: Noun = { the: 'la facture', a: 'une facture' };
 
 /** « le devis « D-20261031-1 v2 » », lié au sujet du fait. */
 function piece(fact: PhraseFact): Segment[] {
@@ -69,7 +71,32 @@ const resent: Phrase = (fact) => {
   );
 };
 
+/**
+ * « … a enregistré l'engagement n° « 1300012345 » sur le devis « D-… v1 » du
+ * client « X » : la facture « FA-… » est émise pour 2 commande(s) ».
+ */
+const commitmentReceived: Phrase = (fact) => {
+  const orders = count(fact.payload['orderCount']);
+  return byActor(
+    fact,
+    [
+      text('a enregistré l’engagement n° « '),
+      name(optional(fact.payload['commitmentNumber']) ?? '—'),
+      text(' » sur '),
+      ...piece(fact),
+      text(' '),
+      ...cite(OF_CLIENT, fact.payload['payer']),
+      text(' : '),
+      ...cite(INVOICE, fact.payload['invoice']),
+      text(' est émise'),
+      ...(orders === null ? [] : [text(' pour '), value(`${String(orders)} commande(s)`)]),
+    ],
+    ['subjectLabel', 'payer', 'version', 'commitmentNumber', 'invoice', 'orderCount'],
+  );
+};
+
 export const PERIOD_QUOTE_PHRASES = {
+  'period_quote.commitment_received': commitmentReceived,
   'period_quote.notice_failed': noticeFailed,
   'period_quote.resent': resent,
 } as const satisfies Partial<Record<JournalFactType, Phrase>>;

@@ -206,13 +206,14 @@ describe('ChorusRoutingCard', () => {
     );
   });
 
-  it('offre le devis de période, grisé et « bientôt », tant qu’il n’est pas bâti', () => {
+  it('offre le devis de période, choisissable', () => {
     const { fixture } = boot(organisme('public_state', RELEVEE));
     fixture.componentInstance.edit();
     fixture.detectChanges();
     const quote = host(fixture).querySelector('[data-chorus-timing-quote]');
-    expect(quote?.textContent).toContain('Sur le devis de la période (bientôt)');
-    expect(quote?.getAttribute('aria-disabled')).toBe('true');
+    expect(quote?.textContent?.trim()).toBe('Sur le devis de la période');
+    expect(quote?.textContent).not.toContain('bientôt');
+    expect(quote?.getAttribute('aria-disabled')).not.toBe('true');
   });
 
   it('envoie le mode choisi et le préremplit de la fiche posée', async () => {

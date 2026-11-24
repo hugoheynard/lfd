@@ -4,6 +4,7 @@ import { isUniqueViolation } from "../../../platform/database/json-columns.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { PeriodQuote } from "../domain/entities/period-quote.js";
 import {
+  PeriodQuoteCommitmentClosedError,
   PeriodQuoteNotAwaitingError,
   PeriodQuoteResendConflictError,
 } from "../domain/errors/period-quote-errors.js";
@@ -15,6 +16,8 @@ import { mandateColumnOf } from "./prisma-monthly-invoice-outcomes.js";
 export const AWAITING_QUOTE_STATE = "awaiting";
 /** L'état d'un devis remplacé par une version plus récente. */
 const SUPERSEDED_QUOTE_STATE = "superseded";
+/** L'état d'un devis dont la facture est émise. */
+const INVOICED_QUOTE_STATE = "invoiced";
 
 /**
  * Les devis de période dans `public.period_quote`, `period_quote_order` et
@@ -76,6 +79,20 @@ export class PrismaPeriodQuoteRepository extends PeriodQuoteRepository {
       where: { id: state.id },
       data: { fingerprint: state.fingerprint, totalTtcCents: state.totalTtcCents },
     });
+  }
+
+  async recordInvoiced(quote: PeriodQuote): Promise<void> {
+    const state = quote.toSnapshot();
+    // Conditionnée sur `awaiting` : deux gestes concurrents ne facturent pas
+    // deux fois — le second ne trouve plus la ligne en attente. La clé
+    // étrangère composite passe ses commandes à `invoiced` avec lui.
+    const { count } = await this.prisma.periodQuote.updateMany({
+      where: { id: state.id, state: AWAITING_QUOTE_STATE },
+      data: { state: INVOICED_QUOTE_STATE, invoiceId: state.invoiceId },
+    });
+    if (count === 0) {
+      throw new PeriodQuoteCommitmentClosedError(state.number, state.version, INVOICED_QUOTE_STATE);
+    }
   }
 
   async load(quoteId: string): Promise<PeriodQuote | null> {

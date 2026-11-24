@@ -110,6 +110,48 @@ export const ACCOUNTING_SCENARIOS: ScenarioSet = {
     return { sub: STAFF, path: `/admin/period-quotes/${quoteId}/resend` };
   },
 
+  // Un payeur public, au virement, dont le numéro arrive sur le devis : la
+  // clôture range un devis au lieu d'émettre ; « Engagement reçu » émet sa
+  // facture, et le rejeu rend la même sans en émettre une seconde (QD6).
+  [routeKey(`${HTTP}/admin-period-quotes.controller.ts`, "receiveCommitment")]: async (world) => {
+    await invoicedWorld(world, async (entity, payer) => {
+      const startsAt = new Date(world.clock.now().getTime() - 40 * 24 * HOUR_MS);
+      await world.ctx.prisma.company.update({
+        where: { id: payer },
+        data: { formeJuridique: "public_state" },
+      });
+      await world.ctx.prisma.companyChorusRouting.create({
+        data: {
+          companyId: payer,
+          commitmentRequired: true,
+          serviceCodeRequired: false,
+          defaultServiceCode: "",
+          commitmentTiming: "on_period_quote",
+          checkedOn: startsAt,
+          checkedByStaffId: STAFF,
+        },
+      });
+      await world.ctx.prisma.payerCollectionMeans.create({
+        data: {
+          id: `means_${payer}`,
+          legalEntityId: entity,
+          payerCompanyId: payer,
+          effectiveFrom: startsAt,
+          means: "bank_transfer",
+          reason: "Organisme public : il règle par virement",
+          createdAt: startsAt,
+          createdByStaffId: STAFF,
+        },
+      });
+    });
+    const quote = await world.ctx.prisma.periodQuote.findFirstOrThrow({ select: { id: true } });
+    return {
+      sub: STAFF,
+      path: `/admin/period-quotes/${quote.id}/commitment`,
+      body: { number: "1300012345" },
+    };
+  },
+
   [routeKey(`${HTTP}/admin-bank-transfers.controller.ts`, "record")]: async (world) => {
     const { entityId, payerId } = await invoicedWorld(world, async (entity, payer) => {
       const startsAt = new Date(world.clock.now().getTime() - 40 * 24 * HOUR_MS);

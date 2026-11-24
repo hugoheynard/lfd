@@ -19,8 +19,6 @@ export type CommitmentTiming = (typeof COMMITMENT_TIMINGS)[number];
 
 /** Les codes des refus de la fiche Chorus Pro (`AppError.code`). */
 export const CHORUS_ROUTING_ERRORS = {
-  /** 409 — `on_period_quote` choisi alors que le devis de période n'est pas encore bâti. */
-  periodQuoteUnavailable: "account.chorus_routing.period_quote_unavailable",
   /** 400 — `on_period_quote` sans engagement exigé : il n'y aurait rien à attendre. */
   quoteWithoutCommitment: "account.chorus_routing.quote_without_commitment",
   /** 409 — `on_period_quote` sans mercuriale active chez le payeur au jour du geste. */

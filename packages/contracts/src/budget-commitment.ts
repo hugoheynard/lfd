@@ -32,6 +32,18 @@ export const correctBudgetCommitmentPayloadSchema = z.object({
 });
 export type CorrectBudgetCommitmentPayload = z.infer<typeof correctBudgetCommitmentPayloadSchema>;
 
+/**
+ * **« Engagement reçu »** sur un devis de période
+ * (`POST /admin/period-quotes/:quoteId/commitment`, plan
+ * `plan-clients-publics-chorus.md`, § 6 sexies, QD6) : le numéro que
+ * l'organisme a renvoyé. Le code service reste celui du devis. La forme du
+ * numéro se juge au serveur, comme à la passation.
+ */
+export const periodQuoteCommitmentPayloadSchema = z.object({
+  number: z.string("numéro d'engagement : un texte"),
+});
+export type PeriodQuoteCommitmentPayload = z.infer<typeof periodQuoteCommitmentPayloadSchema>;
+
 /** L'engagement porté par une commande ou une facture. */
 export interface BudgetCommitmentView {
   /** Vide quand seul le code service est porté. */
@@ -93,6 +105,15 @@ export const BUDGET_COMMITMENT_ERRORS = {
   onQuote: "budget_commitment.on_quote",
   /** 409 — la commande est déjà facturée (ou engagée en comptabilité) : la comptabilité décide. */
   alreadyInvoiced: "budget_commitment.already_invoiced",
+  /**
+   * 409 — la commande est rangée dans un devis de période en attente : son
+   * numéro arrive par « Engagement reçu » sur le devis.
+   */
+  inPeriodQuote: "budget_commitment.in_period_quote",
+  /** 409 — « Engagement reçu » sur une commande qui n'est pas dans ce devis en attente. */
+  notInQuote: "budget_commitment.not_in_quote",
+  /** 409 — « Engagement reçu » sur une commande qui porte déjà un numéro. */
+  alreadyNumbered: "budget_commitment.already_numbered",
 } as const;
 
 /**

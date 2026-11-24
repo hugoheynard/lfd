@@ -1,5 +1,6 @@
 import { PeriodQuote, type PeriodQuoteSnapshot } from "../../../domain/entities/period-quote.js";
 import {
+  PeriodQuoteCommitmentClosedError,
   PeriodQuoteNotAwaitingError,
   PeriodQuoteResendConflictError,
 } from "../../../domain/errors/period-quote-errors.js";
@@ -48,6 +49,19 @@ export class MemoryPeriodQuotes extends PeriodQuoteRepository {
   save(quote: PeriodQuote): Promise<void> {
     const state = quote.toSnapshot();
     this.quotes.set(state.id, state);
+    return Promise.resolve();
+  }
+
+  /** Conditionnée sur `awaiting`, comme la base ; ses commandes sortent de l'ensemble en attente. */
+  recordInvoiced(quote: PeriodQuote): Promise<void> {
+    const state = quote.toSnapshot();
+    if (this.quotes.get(state.id)?.state !== "awaiting") {
+      return Promise.reject(
+        new PeriodQuoteCommitmentClosedError(state.number, state.version, "invoiced"),
+      );
+    }
+    this.quotes.set(state.id, state);
+    state.orderIds.forEach((orderId) => this.awaitingOrders.delete(orderId));
     return Promise.resolve();
   }
 

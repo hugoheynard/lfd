@@ -125,6 +125,7 @@ import { AdminInvoiceSpecimenController } from "./http/admin-invoice-specimen.co
 import { AdminSepaMandateSpecimensController } from "./http/admin-sepa-mandate-specimens.controller.js";
 import { AdminMonthlyInvoicesController } from "./http/admin-monthly-invoices.controller.js";
 import { AdminUnconfirmedDeliveriesController } from "./http/admin-unconfirmed-deliveries.controller.js";
+import { PrismaQuotedOrdersReader } from "./infrastructure/prisma-quoted-orders.reader.js";
 import { PrismaInvoiceAutopilotRuns } from "./infrastructure/prisma-invoice-autopilot-runs.js";
 import { PrismaMonthlyInvoiceOutcomes } from "./infrastructure/prisma-monthly-invoice-outcomes.js";
 import { PrismaMonthlyInvoicesReader } from "./infrastructure/prisma-monthly-invoices.reader.js";
@@ -445,6 +446,9 @@ import { PrismaOrderRowsLock } from "./infrastructure/prisma-order-rows-lock.js"
     // Les avoirs émis d'une période, que l'export des ventes compose
     // (`documentation/commandes/export/plan-export-des-ventes.md`, § 3.4).
     IssuedCreditNotesReader,
+    // Le devis en attente d'une commande, que la correction d'engagement lit
+    // (`appBootstrap/period-quote-commitment.module.ts`, QD2).
+    PrismaQuotedOrdersReader,
   ],
 })
 export class AccountingModule {}

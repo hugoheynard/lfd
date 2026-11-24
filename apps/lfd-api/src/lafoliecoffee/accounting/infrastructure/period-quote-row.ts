@@ -21,6 +21,7 @@ export const PERIOD_QUOTE_SELECT = {
   state: true,
   fingerprint: true,
   totalTtcCents: true,
+  invoiceId: true,
   createdAt: true,
   orders: { select: { orderId: true }, orderBy: { orderId: "asc" } },
 } as const satisfies Prisma.PeriodQuoteSelect;
