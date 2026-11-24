@@ -147,14 +147,7 @@
                 (picked)="shelf.set($event)"
               />
             }
-            <fold-search
-              placeholder="Chercher un produit"
-              ariaLabel="Chercher un produit"
-              [value]="query()"
-              (valueChange)="query.set($event)"
-              [resultCount]="visibleArticles().length"
-              resultLabel="produits"
-            />
+            <lfd-product-search [(query)]="query" [count]="visibleArticles().length" />
           </div>
           <fold-data-table
             data-template-table

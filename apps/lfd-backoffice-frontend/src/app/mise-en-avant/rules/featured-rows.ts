@@ -1,3 +1,4 @@
+import { searchProducts, type ProductSearchKeys } from '@lfd/b2b-ui/search';
 import type { CatalogAdminItemView } from '@lfd/contracts';
 
 import type { ShopAudience } from '../../b2b/catalogue/catalogue.service';
@@ -86,24 +87,25 @@ export function familiesOf(
   return [...seen].map(([id, name]) => ({ id, name }));
 }
 
-/** Sans casse ni accents : « eclair » trouve « Éclair ». */
-function normalize(text: string): string {
-  return text.normalize('NFD').replace(/\p{M}/gu, '').toLocaleLowerCase('fr').trim();
-}
+const FEATURED_ROW_SEARCH: ProductSearchKeys<FeaturedRow> = {
+  nameOf: (row) => row.name,
+  skuOf: (row) => row.sku,
+  extraOf: (row) => row.familyName,
+};
 
-/** Le filtre : une famille (`null` = toutes), et un terme sur le nom ou le SKU. */
+/**
+ * Le filtre : une famille (`null` = toutes), puis la recherche de produits
+ * commune sur le nom, le SKU et la famille.
+ */
 export function filterRows(
   rows: readonly FeaturedRow[],
   query: string,
   familyId: string | null,
 ): readonly FeaturedRow[] {
-  const needle = normalize(query);
-  return rows.filter(
-    (row) =>
-      (familyId === null || row.familyId === familyId) &&
-      (needle === '' ||
-        normalize(row.name).includes(needle) ||
-        normalize(row.sku).includes(needle)),
+  return searchProducts(
+    rows.filter((row) => familyId === null || row.familyId === familyId),
+    query,
+    FEATURED_ROW_SEARCH,
   );
 }
 

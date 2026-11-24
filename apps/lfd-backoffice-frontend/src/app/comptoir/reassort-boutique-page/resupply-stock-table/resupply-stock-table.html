@@ -18,14 +18,7 @@
       [value]="target()"
       (valueChange)="chooseTarget($event)"
     />
-    <fold-search
-      placeholder="Chercher un produit"
-      ariaLabel="Chercher un produit"
-      [value]="query()"
-      (valueChange)="query.set($event)"
-      [resultCount]="visibleRows().length"
-      resultLabel="produits"
-    />
+    <lfd-product-search [(query)]="query" [count]="visibleRows().length" />
   </div>
 
   <!-- Les modèles du point, appliqués à la visée affichée (commander.md § 6, § 4). -->

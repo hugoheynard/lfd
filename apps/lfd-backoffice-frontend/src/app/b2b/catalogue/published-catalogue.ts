@@ -1,3 +1,4 @@
+import { type ProductSearchKeys } from '@lfd/b2b-ui/search';
 import type {
   CatalogScreenItemView,
   CatalogItemAudience,
@@ -130,19 +131,11 @@ export function rowName(row: PublishedRow): string {
   return row.variant.name ?? row.entry.name;
 }
 
-/** Nom ou référence, sans accent ni casse — on tape « pate » et « Pâté » sort. */
-export function matches(row: PublishedRow, needle: string): boolean {
-  return (
-    needle === '' ||
-    normalize(rowName(row)).includes(needle) ||
-    normalize(row.variant.sku).includes(needle) ||
-    normalize(row.entry.productSku).includes(needle)
-  );
-}
-
-export function normalize(value: string): string {
-  return value.toLocaleLowerCase('fr').normalize('NFD').replace(/[̀-ͯ]/gu, '');
-}
+/** Une ligne se cherche par son nom et par sa référence — celle de la déclinaison et celle de la fiche. */
+export const PUBLISHED_ROW_SEARCH: ProductSearchKeys<PublishedRow> = {
+  nameOf: rowName,
+  skuOf: (row) => [row.variant.sku, row.entry.productSku],
+};
 
 /**
  * Les rayons dans l'ordre du serveur, chacun avec ses lignes retenues. Un rayon

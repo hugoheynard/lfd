@@ -56,10 +56,12 @@
           </p>
 
           <div class="masthead-tools">
-            <fold-search
+            <lfd-product-search
               class="search"
               placeholder="Rechercher un article ou une référence…"
-              (searchChange)="query.set($event)"
+              ariaLabel="Rechercher un article ou une référence"
+              [(query)]="query"
+              [count]="shown()"
             />
             <fold-view-toggle
               ariaLabel="Filtrer le catalogue"

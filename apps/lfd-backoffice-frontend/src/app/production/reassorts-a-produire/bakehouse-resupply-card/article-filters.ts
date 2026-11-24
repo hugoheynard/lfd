@@ -1,3 +1,4 @@
+import { type ProductSearchKeys } from '@lfd/b2b-ui/search';
 import type { ResupplyArticleView } from '@lfd/contracts';
 
 import {
@@ -9,12 +10,12 @@ import {
 /** La puce « Tout » : aucun filtre de famille. Hors de l'espace des identifiants. */
 export const ALL_FAMILIES = '';
 
-function normalize(text: string): string {
-  return text
-    .normalize('NFD')
-    .replace(/\p{Diacritic}/gu, '')
-    .toLowerCase();
-}
+/** Un article du réassort pour la recherche de produits : son nom, son SKU, et sa famille. */
+export const RESUPPLY_ARTICLE_SEARCH: ProductSearchKeys<ResupplyArticleView> = {
+  nameOf: (article) => article.name,
+  skuOf: (article) => article.sku,
+  extraOf: (article) => article.categoryName,
+};
 
 /**
  * « Tout », puis une puce par famille dans l'ordre du catalogue (Hugo,
@@ -56,18 +57,15 @@ export function familyOptionsOf(
   ];
 }
 
-/** Les articles de la famille (ou du poste) retenu et de la recherche, dans l'ordre du catalogue. */
-export function articlesMatching(
+/** Les articles de la famille (ou du poste) retenu, dans l'ordre du catalogue. */
+export function articlesOfFamily(
   articles: readonly ResupplyArticleView[],
   family: string,
-  query: string,
   stations: WorkstationFilter | null = null,
 ): readonly ResupplyArticleView[] {
-  const needle = normalize(query.trim());
-  return articles.filter(
-    (article) =>
-      (family === ALL_FAMILIES ||
-        filterKeyOf(stations, article.sku, article.categoryId) === family) &&
-      (needle === '' || normalize(`${article.name} ${article.sku}`).includes(needle)),
-  );
+  return family === ALL_FAMILIES
+    ? articles
+    : articles.filter(
+        (article) => filterKeyOf(stations, article.sku, article.categoryId) === family,
+      );
 }

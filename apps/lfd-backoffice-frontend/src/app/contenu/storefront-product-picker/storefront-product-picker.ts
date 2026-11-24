@@ -1,7 +1,9 @@
 import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
-import { FoldListboxComponent, FoldSearchComponent } from 'fold-ng';
+import { ProductSearch } from '@lfd/b2b-ui/catalog';
+import { searchProducts } from '@lfd/b2b-ui/search';
+import { FoldListboxComponent } from 'fold-ng';
 
-import { type CatalogProduct, searchProducts } from '../storefront-catalog';
+import { CATALOG_PRODUCT_SEARCH, type CatalogProduct } from '../storefront-catalog';
 
 /** Au-delà, la liste déroulante ne se lit plus : on affine la recherche. */
 const MAX_MATCHES = 50;
@@ -15,7 +17,7 @@ const MAX_MATCHES = 50;
  */
 @Component({
   selector: 'app-storefront-product-picker',
-  imports: [FoldListboxComponent, FoldSearchComponent],
+  imports: [FoldListboxComponent, ProductSearch],
   templateUrl: './storefront-product-picker.html',
   styleUrl: './storefront-product-picker.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -28,7 +30,9 @@ export class StorefrontProductPicker {
 
   protected readonly query = signal('');
 
-  protected readonly matches = computed(() => searchProducts(this.products(), this.query()));
+  protected readonly matches = computed(() =>
+    searchProducts(this.products(), this.query(), CATALOG_PRODUCT_SEARCH),
+  );
 
   /** Les options de la liste : l'article déjà désigné y reste, même hors de la recherche. */
   protected readonly options = computed(() => {

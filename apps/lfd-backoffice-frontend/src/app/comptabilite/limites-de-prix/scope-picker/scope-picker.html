@@ -1,9 +1,9 @@
-<fold-search
+<lfd-product-search
   size="sm"
   placeholder="Nom ou référence d'article…"
   ariaLabel="Chercher un article"
-  [resultCount]="articleCount()"
-  [(value)]="query"
+  [(query)]="query"
+  [count]="articleCount()"
 />
 <fold-listbox
   label="Portée"

@@ -1,12 +1,5 @@
 <div class="picker">
-  <fold-search
-    size="sm"
-    ariaLabel="Chercher un article par nom ou par SKU"
-    placeholder="Nom ou SKU"
-    [value]="query()"
-    [resultCount]="matches().length"
-    (valueChange)="query.set($event)"
-  />
+  <lfd-product-search size="sm" [(query)]="query" [count]="matches().length" />
   <fold-listbox
     size="sm"
     label="Article"

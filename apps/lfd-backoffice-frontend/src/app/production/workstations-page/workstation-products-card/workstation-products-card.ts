@@ -8,6 +8,8 @@ import {
   output,
   signal,
 } from '@angular/core';
+import { ProductSearch } from '@lfd/b2b-ui/catalog';
+import { searchProducts, type ProductSearchKeys } from '@lfd/b2b-ui/search';
 import type {
   OffCatalogArticleView,
   WorkstationProductView,
@@ -23,7 +25,6 @@ import {
   FoldDataTableComponent,
   FoldElementTitleComponent,
   FoldListboxComponent,
-  FoldSearchComponent,
   type FoldSelectOption,
   type FoldTableColumn,
 } from 'fold-ng';
@@ -40,12 +41,17 @@ const COLUMNS: readonly FoldTableColumn<WorkstationProductView>[] = [
   { key: 'workstation', label: 'Poste' },
 ];
 
-function normalize(text: string): string {
-  return text
-    .normalize('NFD')
-    .replace(/\p{Diacritic}/gu, '')
-    .toLowerCase();
+/** Le nom du produit ; à défaut, celui de sa première déclinaison. */
+function productNameOf(product: WorkstationProductView): string {
+  return product.productName ?? product.variants[0]?.variantName ?? product.productSku;
 }
+
+/** Un produit se cherche aussi par le nom et le SKU de ses déclinaisons. */
+const PRODUCT_SEARCH: ProductSearchKeys<WorkstationProductView> = {
+  nameOf: productNameOf,
+  skuOf: (product) => [product.productSku, ...product.variants.map((variant) => variant.sku)],
+  extraOf: (product) => product.variants.map((variant) => variant.variantName),
+};
 
 /** Le rayon racine d'un produit : la clé du filtre par rayon. */
 function rootOf(
@@ -72,6 +78,7 @@ function rootOf(
   selector: 'app-workstation-products-card',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    ProductSearch,
     FoldButtonComponent,
     FoldCalloutComponent,
     FoldCardComponent,
@@ -80,7 +87,6 @@ function rootOf(
     FoldDataTableComponent,
     FoldElementTitleComponent,
     FoldListboxComponent,
-    FoldSearchComponent,
   ],
   templateUrl: './workstation-products-card.html',
   styleUrl: './workstation-products-card.scss',
@@ -141,19 +147,16 @@ export class WorkstationProductsCard {
   });
 
   protected readonly visibleProducts = computed(() => {
-    const needle = normalize(this.query().trim());
     const shelf = this.shelf();
-    return this.products().filter(
-      (product) =>
-        (!this.onlyUnplaced() || product.workstationId === null) &&
-        (!this.onlyOrdered() || product.ordered) &&
-        (shelf === null || rootOf(product)?.id === shelf) &&
-        (needle === '' ||
-          normalize(
-            `${this.nameOf(product)} ${product.productSku} ${product.variants
-              .map((variant) => `${variant.variantName} ${variant.sku}`)
-              .join(' ')}`,
-          ).includes(needle)),
+    return searchProducts(
+      this.products().filter(
+        (product) =>
+          (!this.onlyUnplaced() || product.workstationId === null) &&
+          (!this.onlyOrdered() || product.ordered) &&
+          (shelf === null || rootOf(product)?.id === shelf),
+      ),
+      this.query(),
+      PRODUCT_SEARCH,
     );
   });
 
@@ -165,7 +168,7 @@ export class WorkstationProductsCard {
 
   /** Le nom du produit ; à défaut, celui de sa première déclinaison. */
   protected nameOf(product: WorkstationProductView): string {
-    return product.productName ?? product.variants[0]?.variantName ?? product.productSku;
+    return productNameOf(product);
   }
 
   protected shelfNameOf(product: WorkstationProductView): string {

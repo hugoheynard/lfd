@@ -136,14 +136,7 @@
             (valueChange)="family.set($event)"
           />
         }
-        <fold-search
-          placeholder="Chercher un produit"
-          ariaLabel="Chercher un produit"
-          [value]="query()"
-          (valueChange)="query.set($event)"
-          [resultCount]="visibleArticles().length"
-          resultLabel="produits"
-        />
+        <lfd-product-search [(query)]="query" [count]="visibleArticles().length" />
       </div>
 
       <!-- UNE table fold, filtrée par famille au-dessus (Hugo, 2026-10-28), une

@@ -1,3 +1,4 @@
+import { searchProducts } from '@lfd/b2b-ui/search';
 import type { ResupplyArticleView } from '@lfd/contracts';
 
 import {
@@ -7,7 +8,8 @@ import {
 } from '../../commandes/nouvelle-commande/catalog-shelf-filter';
 import {
   ALL_FAMILIES as NO_FAMILY_FILTER,
-  articlesMatching,
+  articlesOfFamily,
+  RESUPPLY_ARTICLE_SEARCH,
 } from '../../production/reassorts-a-produire/bakehouse-resupply-card/article-filters';
 
 /** La pastille « Tout » du rail — la même que celle de la saisie de commande. */
@@ -35,11 +37,18 @@ export function resupplyShelvesOf(articles: readonly ResupplyArticleView[]): Fam
   };
 }
 
-/** Les articles du rayon choisi et de la recherche, dans l'ordre du catalogue. */
+/**
+ * Les articles du rayon choisi, puis la recherche de produits commune : dans
+ * l'ordre du catalogue sans requête, les plus proches en tête avec.
+ */
 export function articlesOnShelf(
   articles: readonly ResupplyArticleView[],
   shelf: string,
   query: string,
 ): readonly ResupplyArticleView[] {
-  return articlesMatching(articles, shelf === ALL_SHELVES ? NO_FAMILY_FILTER : shelf, query);
+  return searchProducts(
+    articlesOfFamily(articles, shelf === ALL_SHELVES ? NO_FAMILY_FILTER : shelf),
+    query,
+    RESUPPLY_ARTICLE_SEARCH,
+  );
 }

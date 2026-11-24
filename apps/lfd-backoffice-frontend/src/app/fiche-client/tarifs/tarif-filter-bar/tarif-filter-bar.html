@@ -5,12 +5,10 @@
   [value]="shelf()"
   (selectionChange)="shelf.set($event)"
 />
-<fold-search
+<lfd-product-search
   class="tf-filter-search"
   placeholder="Nom ou SKU"
   ariaLabel="Rechercher un article par nom ou SKU"
-  clearable
-  [value]="search()"
-  (valueChange)="search.set($event)"
+  [(query)]="search"
 />
 <fold-checkbox [label]="checkLabel()" [checked]="checked()" (checkedChange)="checked.set($event)" />

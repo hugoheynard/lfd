@@ -2,7 +2,7 @@ import type { CompanyPricingCategoryView, PricingItemView } from '@lfd/contracts
 import { describe, expect, it } from 'vitest';
 
 import { withPrice } from '../draft-prices';
-import { ALL_SHELVES, filterTarifRows, normalizeSearch } from '../tarif-filter';
+import { ALL_SHELVES, filterTarifRows } from '../tarif-filter';
 import { tarifShelves } from '../tarif-shelves';
 
 // Les lignes viennent de `tarifShelves`, comme à l'écran : pas de ligne
@@ -82,11 +82,5 @@ describe('filterTarifRows', () => {
     expect(filterTarifRows(SHELVES, { shelfId: 'vien', search: 'pain', pricedOnly: true })).toEqual(
       [],
     );
-  });
-});
-
-describe('normalizeSearch', () => {
-  it('retire casse, accents et blancs de bord', () => {
-    expect(normalizeSearch('  Pâté Éclair ')).toBe('pate eclair');
   });
 });

@@ -52,6 +52,10 @@
     "./photo-cards": {
       "types": "./src/photo-cards/index.ts",
       "default": "./src/photo-cards/index.ts"
+    },
+    "./search": {
+      "types": "./src/search/index.ts",
+      "default": "./src/search/index.ts"
     }
   },
   "scripts": {

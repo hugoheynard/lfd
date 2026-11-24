@@ -18,6 +18,7 @@ export {
   settleSaleQuantity,
 } from './sale-terms';
 export type { SaleTerms } from './sale-terms';
+export { ProductSearch } from './product-search/product-search';
 export { CatalogShelfNav } from './shelf-nav/shelf-nav';
 export type { CatalogShelfNavLabels, ShelfCounted } from './shelf-nav/shelf-nav.model';
 export {

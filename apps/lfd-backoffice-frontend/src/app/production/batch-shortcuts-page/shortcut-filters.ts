@@ -1,14 +1,15 @@
+import { type ProductSearchKeys } from '@lfd/b2b-ui/search';
 import type { BatchShortcutArticleView } from '@lfd/contracts';
 
 /** La puce « Tout » : aucun filtre de famille. Hors de l'espace des identifiants. */
 export const ALL_FAMILIES = '';
 
-function normalize(text: string): string {
-  return text
-    .normalize('NFD')
-    .replace(/\p{Diacritic}/gu, '')
-    .toLowerCase();
-}
+/** Un article des raccourcis pour la recherche de produits : nom, SKU, famille. */
+export const SHORTCUT_ARTICLE_SEARCH: ProductSearchKeys<BatchShortcutArticleView> = {
+  nameOf: (article) => article.name,
+  skuOf: (article) => article.sku,
+  extraOf: (article) => article.familyName,
+};
 
 /**
  * « Tout », puis une puce par famille dans l'ordre du catalogue — comme la
@@ -35,16 +36,12 @@ export function familyOptionsOf(
   ];
 }
 
-/** Les articles de la famille retenue et de la recherche, dans l'ordre du catalogue. */
-export function articlesMatching(
+/** Les articles de la famille retenue, dans l'ordre du catalogue. */
+export function articlesOfFamily(
   articles: readonly BatchShortcutArticleView[],
   family: string,
-  query: string,
 ): readonly BatchShortcutArticleView[] {
-  const needle = normalize(query.trim());
-  return articles.filter(
-    (article) =>
-      (family === ALL_FAMILIES || article.familyId === family) &&
-      (needle === '' || normalize(`${article.name} ${article.sku}`).includes(needle)),
-  );
+  return family === ALL_FAMILIES
+    ? articles
+    : articles.filter((article) => article.familyId === family);
 }

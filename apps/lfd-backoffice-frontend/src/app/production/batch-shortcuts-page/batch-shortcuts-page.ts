@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { searchProducts } from '@lfd/b2b-ui/search';
 import {
   MAX_BATCH_SHORTCUTS_PER_PRODUCT,
   type BatchShortcutArticleView,
@@ -7,7 +8,7 @@ import {
   type OrderSaleUnit,
   type ProductionContainerView,
 } from '@lfd/contracts';
-import { saleQuantityLabel } from '@lfd/b2b-ui/catalog';
+import { ProductSearch, saleQuantityLabel } from '@lfd/b2b-ui/catalog';
 import {
   FoldBadgeComponent,
   FoldButtonComponent,
@@ -19,7 +20,6 @@ import {
   FoldLoadingStateComponent,
   FoldPageLayoutComponent,
   FoldPanelHostService,
-  FoldSearchComponent,
   FoldViewToggleComponent,
   type FoldTableColumn,
 } from 'fold-ng';
@@ -37,7 +37,12 @@ import {
   type ProductionContainerDialogData,
 } from '../production-container-dialog/production-container-dialog';
 import { ProductionContainersService } from '../production-containers.service';
-import { ALL_FAMILIES, articlesMatching, familyOptionsOf } from './shortcut-filters';
+import {
+  ALL_FAMILIES,
+  articlesOfFamily,
+  familyOptionsOf,
+  SHORTCUT_ARTICLE_SEARCH,
+} from './shortcut-filters';
 
 /** Le téléphone — le seuil de la table du réassort, dont celle-ci reprend la forme. */
 const PHONE_QUERY = '(max-width: 768px)';
@@ -81,6 +86,7 @@ type LoadState =
   selector: 'app-batch-shortcuts-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    ProductSearch,
     FoldBadgeComponent,
     FoldButtonComponent,
     FoldCardComponent,
@@ -90,7 +96,6 @@ type LoadState =
     FoldEmptyStateComponent,
     FoldLoadingStateComponent,
     FoldPageLayoutComponent,
-    FoldSearchComponent,
     FoldViewToggleComponent,
     SaleQuantityPipe,
   ],
@@ -128,7 +133,11 @@ export class BatchShortcutsPage {
     familyOptionsOf(this.view()?.articles ?? [], new Set(this.bySku().keys())),
   );
   protected readonly visibleArticles = computed(() =>
-    articlesMatching(this.view()?.articles ?? [], this.family(), this.query()),
+    searchProducts(
+      articlesOfFamily(this.view()?.articles ?? [], this.family()),
+      this.query(),
+      SHORTCUT_ARTICLE_SEARCH,
+    ),
   );
   /** En mobile, la famille est dans le filtre : la table garde produit et raccourcis. */
   protected readonly columns = computed(() =>

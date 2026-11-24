@@ -1,3 +1,4 @@
+import { type ProductSearchKeys } from '@lfd/b2b-ui/search';
 import type { StorefrontCatalogOperation, StorefrontCatalogView } from '@lfd/contracts';
 import type { ShelfKey } from '@lfd/storefront-layout';
 
@@ -77,19 +78,8 @@ export function vanishedShelves(
   return [...new Set(keys)].filter((key) => !known.has(key));
 }
 
-/** Filtre les articles par nom ou par SKU, sans casse ni accents. */
-export function searchProducts(
-  products: readonly CatalogProduct[],
-  query: string,
-): readonly CatalogProduct[] {
-  const needle = fold(query);
-  return needle === ''
-    ? products
-    : products.filter(
-        (product) => fold(product.name).includes(needle) || fold(product.sku).includes(needle),
-      );
-}
-
-function fold(text: string): string {
-  return text.trim().normalize('NFD').replace(/[̀-ͯ]/gu, '').toLocaleLowerCase('fr');
-}
+/** Un article de la vitrine pour la recherche de produits commune : son nom et son SKU. */
+export const CATALOG_PRODUCT_SEARCH: ProductSearchKeys<CatalogProduct> = {
+  nameOf: (product) => product.name,
+  skuOf: (product) => product.sku,
+};

@@ -1,9 +1,9 @@
+import { searchProducts, type ProductSearchKeys } from '@lfd/b2b-ui/search';
 import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
 import {
   FoldEmptyStateComponent,
   FoldNavLayoutComponent,
-  FoldSearchComponent,
   FoldTabPanelComponent,
   FoldTabsComponent,
   type FoldTabItem,
@@ -22,6 +22,7 @@ import {
   UNKNOWN_FAMILY_LABEL,
   firstSaleQuantityOf,
   ProductRow,
+  ProductSearch,
   saleQuantityLabel,
   saleStepOf,
   toCatalogProduct,
@@ -105,9 +106,9 @@ export type SourceKind = 'habituels' | 'catalogue' | 'commande';
   selector: 'app-source-produits',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    ProductSearch,
     FoldEmptyStateComponent,
     FoldNavLayoutComponent,
-    FoldSearchComponent,
     FoldTabPanelComponent,
     FoldTabsComponent,
     CatalogShelfNav,
@@ -177,11 +178,12 @@ export class SourceProduits {
 
   /** Le catalogue filtré par le rayon choisi et la recherche, à plat. */
   protected readonly matching = computed(() => {
-    const needle = normalise(this.search());
     const tree = this.shelfTree();
     const chosen = this.shelf();
-    return this.catalogue().filter(
-      (item) => inChosenShelf(tree, item, chosen) && matches(item, needle),
+    return searchProducts(
+      this.catalogue().filter((item) => inChosenShelf(tree, item, chosen)),
+      this.search(),
+      CATALOGUE_SEARCH,
     );
   });
 
@@ -211,9 +213,9 @@ export class SourceProduits {
 
   /** Ce que ce client reprend, filtré par la même recherche. */
   protected readonly habitLines = computed<readonly ProposedLine[]>(() =>
-    this.habits()
-      .filter((stat) => normalise(stat.productName + stat.sku).includes(normalise(this.search())))
-      .map((stat) => fromHabit(stat, this.bySku().get(stat.sku), this.priceIndex())),
+    searchProducts(this.habits(), this.search(), HABIT_SEARCH).map((stat) =>
+      fromHabit(stat, this.bySku().get(stat.sku), this.priceIndex()),
+    ),
   );
 
   /** Les lignes de la commande choisie — avec LEURS quantités, c'est tout l'intérêt. */
@@ -280,14 +282,17 @@ export class SourceProduits {
   }
 }
 
-/** Minuscule et sans accents, pour que « pâté » se trouve en tapant « pate ». */
-function normalise(value: string): string {
-  return value.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/gu, '');
-}
+/** Un article du catalogue se cherche aussi par le nom de sa famille. */
+const CATALOGUE_SEARCH: ProductSearchKeys<CatalogItemView> = {
+  nameOf: (item) => item.name,
+  skuOf: (item) => item.sku,
+  extraOf: (item) => item.family?.name ?? '',
+};
 
-function matches(item: CatalogItemView, needle: string): boolean {
-  return needle === '' || normalise(`${item.name} ${item.sku}`).includes(needle);
-}
+const HABIT_SEARCH: ProductSearchKeys<CustomerSkuStat> = {
+  nameOf: (stat) => stat.productName,
+  skuOf: (stat) => stat.sku,
+};
 
 /**
  * Pose le sort d'un SKU au rayon du client sur une rangée : son prix (barré

@@ -7,6 +7,7 @@ import {
   output,
   signal,
 } from '@angular/core';
+import { searchProducts } from '@lfd/b2b-ui/search';
 import {
   FoldBadgeComponent,
   FoldButtonComponent,
@@ -21,7 +22,7 @@ import { formatEuros } from '@lfd/catalog-ui';
 import type { AmendmentRow } from '../amendment-rows';
 import { FirmPriceField } from '../firm-price-field/firm-price-field';
 import { TarifFilterBar } from '../tarif-filter-bar/tarif-filter-bar';
-import { ALL_SHELVES, normalizeSearch } from '../tarif-filter';
+import { ALL_SHELVES, TARIF_ROW_SEARCH } from '../tarif-filter';
 
 /** Un prix saisi dans la table. */
 export interface FirmPriceEdit {
@@ -70,14 +71,14 @@ export class AmendmentTable {
   protected readonly search = signal('');
 
   protected readonly visible = computed(() => {
-    const needle = normalizeSearch(this.search());
-    return this.rows().filter(
-      (row) =>
-        (this.shelf() === ALL_SHELVES || row.shelfId === this.shelf()) &&
-        (!this.onlyChanged() || row.label?.changed === true) &&
-        (needle === '' ||
-          normalizeSearch(row.name).includes(needle) ||
-          normalizeSearch(row.sku).includes(needle)),
+    return searchProducts(
+      this.rows().filter(
+        (row) =>
+          (this.shelf() === ALL_SHELVES || row.shelfId === this.shelf()) &&
+          (!this.onlyChanged() || row.label?.changed === true),
+      ),
+      this.search(),
+      TARIF_ROW_SEARCH,
     );
   });
 

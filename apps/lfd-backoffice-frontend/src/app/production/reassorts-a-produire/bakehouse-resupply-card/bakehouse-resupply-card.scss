@@ -25,7 +25,7 @@
   align-items: center;
 }
 
-.filters fold-search {
+.filters lfd-product-search {
   flex: 1 1 16rem;
 }
 
@@ -85,7 +85,7 @@
     overflow-x: auto;
   }
 
-  .filters fold-search {
+  .filters lfd-product-search {
     flex: none;
   }
 }

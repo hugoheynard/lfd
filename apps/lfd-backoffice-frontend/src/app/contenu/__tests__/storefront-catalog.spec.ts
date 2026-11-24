@@ -1,7 +1,7 @@
 import type { StorefrontCatalogView } from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
-import { catalogOf, searchProducts, shelfLabelIn, vanishedShelves } from '../storefront-catalog';
+import { catalogOf, shelfLabelIn, vanishedShelves } from '../storefront-catalog';
 
 type Item = StorefrontCatalogView['items'][number];
 
@@ -47,17 +47,6 @@ describe('le catalogue de l’éditeur', () => {
     const shelves = catalogOf({ shelves: [BREAD], items: [item({})], operations: [] }).shelves;
     expect(vanishedShelves(['all', 'gone', 'bread', 'gone'], shelves)).toEqual(['gone']);
     expect(shelfLabelIn(shelves, 'gone')).toBe('gone');
-  });
-
-  it('cherche par nom ou par SKU, sans casse ni accents', () => {
-    const { products } = catalogOf({
-      operations: [],
-      shelves: [BREAD],
-      items: [item({ sku: 'ECL', name: 'Éclair café' }), item({ sku: 'BAG', name: 'Baguette' })],
-    });
-    expect(searchProducts(products, 'eclair').map((p) => p.sku)).toEqual(['ECL']);
-    expect(searchProducts(products, 'bag').map((p) => p.sku)).toEqual(['BAG']);
-    expect(searchProducts(products, '  ')).toHaveLength(2);
   });
 
   /** D8 : les rayons des opérations arrivent en tête, et se disent opérations. */

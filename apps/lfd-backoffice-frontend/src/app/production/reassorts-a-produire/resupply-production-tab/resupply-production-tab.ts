@@ -8,6 +8,8 @@ import {
   signal,
   untracked,
 } from '@angular/core';
+import { ProductSearch } from '@lfd/b2b-ui/catalog';
+import { searchProducts, type ProductSearchKeys } from '@lfd/b2b-ui/search';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import type { LiveStockAlertsView, ResupplyProductionDayView } from '@lfd/contracts';
 import {
@@ -16,7 +18,6 @@ import {
   FoldCalloutComponent,
   FoldEmptyStateComponent,
   FoldLoadingStateComponent,
-  FoldSearchComponent,
   FoldViewToggleComponent,
 } from 'fold-ng';
 
@@ -54,12 +55,10 @@ const TODAY_POLL_MS = 60_000;
 /** La puce « Tout » des familles. */
 const ALL_CATEGORIES = '';
 
-function normalize(text: string): string {
-  return text
-    .normalize('NFD')
-    .replace(/\p{Diacritic}/gu, '')
-    .toLowerCase();
-}
+const ROW_SEARCH: ProductSearchKeys<ResupplyProductionRow> = {
+  nameOf: (row) => row.name,
+  skuOf: (row) => row.sku,
+};
 
 /**
  * **L'onglet « Réassorts » de Prod manager** (lot R3d,
@@ -88,6 +87,7 @@ function normalize(text: string): string {
   selector: 'app-resupply-production-tab',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    ProductSearch,
     BakehouseDraftsSection,
     RouterLink,
     ResupplyLaunchCard,
@@ -97,7 +97,6 @@ function normalize(text: string): string {
     FoldCalloutComponent,
     FoldEmptyStateComponent,
     FoldLoadingStateComponent,
-    FoldSearchComponent,
     FoldViewToggleComponent,
     SaleQuantityPipe,
   ],
@@ -204,15 +203,18 @@ export class ResupplyProductionTab {
     ];
   });
 
+  /** Les lignes de la famille (ou du poste) retenue, puis la recherche de produits commune. */
   protected readonly visibleRows = computed(() => {
-    const query = normalize(this.query().trim());
     const category = this.category();
     const stations = this.stations();
-    return this.rows().filter(
-      (row) =>
-        (category === ALL_CATEGORIES ||
-          filterKeyOf(stations, row.sku, row.categoryId) === category) &&
-        (query === '' || normalize(`${row.name} ${row.sku}`).includes(query)),
+    return searchProducts(
+      this.rows().filter(
+        (row) =>
+          category === ALL_CATEGORIES ||
+          filterKeyOf(stations, row.sku, row.categoryId) === category,
+      ),
+      this.query(),
+      ROW_SEARCH,
     );
   });
 

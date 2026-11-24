@@ -1,4 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ProductSearch } from '@lfd/b2b-ui/catalog';
+import { searchProducts } from '@lfd/b2b-ui/search';
 import {
   FoldBadgeComponent,
   FoldButtonComponent,
@@ -8,7 +10,6 @@ import {
   FoldPageLayoutComponent,
   FoldPageSectionComponent,
   FoldPanelHostService,
-  FoldSearchComponent,
   FoldSurfaceDirective,
   FoldViewToggleComponent,
   type FoldViewToggleOption,
@@ -26,8 +27,7 @@ import {
 import {
   filterLabel,
   keptBy,
-  matches,
-  normalize,
+  PUBLISHED_ROW_SEARCH,
   PUBLISHED_FILTERS,
   rowName,
   rowsOf,
@@ -72,6 +72,7 @@ type LoadState = 'loading' | 'ready' | 'error';
   selector: 'app-catalogue-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    ProductSearch,
     FoldBadgeComponent,
     FoldButtonComponent,
     FoldCalloutComponent,
@@ -79,7 +80,6 @@ type LoadState = 'loading' | 'ready' | 'error';
     FoldLoadingStateComponent,
     FoldPageLayoutComponent,
     FoldPageSectionComponent,
-    FoldSearchComponent,
     FoldSurfaceDirective,
     FoldViewToggleComponent,
     ReviewCallout,
@@ -153,9 +153,12 @@ export class CataloguePage {
   );
 
   private readonly matching = computed(() => {
-    const needle = normalize(this.query());
     const filter = this.filter();
-    return this.rows().filter((row) => matches(row, needle) && keptBy(row, filter));
+    return searchProducts(
+      this.rows().filter((row) => keptBy(row, filter)),
+      this.query(),
+      PUBLISHED_ROW_SEARCH,
+    );
   });
 
   protected readonly shown = computed(() => this.matching().length);

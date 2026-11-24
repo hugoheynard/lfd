@@ -10,6 +10,7 @@ import {
   output,
   signal,
 } from '@angular/core';
+import { ProductSearch } from '@lfd/b2b-ui/catalog';
 import type {
   ResupplyArticleView,
   ResupplyReceiptLineView,
@@ -27,7 +28,6 @@ import {
   FoldDropdownComponent,
   FoldDropdownItemComponent,
   FoldIconComponent,
-  FoldSearchComponent,
   FoldTimeComponent,
   FoldViewToggleComponent,
   type FoldTableColumn,
@@ -87,6 +87,7 @@ const PHONE_QUERY = '(max-width: 768px)';
   selector: 'app-resupply-stock-table',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    ProductSearch,
     FoldButtonComponent,
     FoldCalloutComponent,
     FoldDataTableCellDirective,
@@ -94,7 +95,6 @@ const PHONE_QUERY = '(max-width: 768px)';
     FoldDropdownComponent,
     FoldDropdownItemComponent,
     FoldIconComponent,
-    FoldSearchComponent,
     FoldTimeComponent,
     FoldViewToggleComponent,
     ResupplyNameField,

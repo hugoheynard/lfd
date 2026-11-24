@@ -1,3 +1,4 @@
+import { searchProducts, type ProductSearchKeys } from '@lfd/b2b-ui/search';
 import type {
   OrderSaleUnit,
   ResupplyArticleView,
@@ -78,17 +79,25 @@ export function buildStockRows(sources: StockRowSources): readonly StockRow[] {
     .map(({ row }) => row);
 }
 
-/** Les puces et la recherche se combinent : une ligne passe les deux filtres. */
+const STOCK_ROW_SEARCH: ProductSearchKeys<StockRow> = {
+  nameOf: (row) => row.name,
+  skuOf: (row) => row.sku,
+};
+
+/**
+ * Les puces et la recherche se combinent : une ligne passe les deux filtres. La
+ * recherche est celle de tous les écrans de produits (`searchProducts`) :
+ * tolérante aux fautes, et elle range les plus proches en tête.
+ */
 export function filterStockRows(
   rows: readonly StockRow[],
   query: string,
   category: string,
 ): readonly StockRow[] {
-  const needle = normalize(query.trim());
-  return rows.filter(
-    (row) =>
-      (category === ALL_CATEGORIES || row.categoryId === category) &&
-      (needle === '' || normalize(`${row.name} ${row.sku}`).includes(needle)),
+  return searchProducts(
+    rows.filter((row) => category === ALL_CATEGORIES || row.categoryId === category),
+    query,
+    STOCK_ROW_SEARCH,
   );
 }
 
@@ -142,14 +151,6 @@ function rankOf(row: StockRow): number {
     return 0;
   }
   return row.asap + row.tomorrow > 0 ? 1 : 2;
-}
-
-/** La recherche ignore accents et casse : « eclair » trouve « Éclair ». */
-function normalize(text: string): string {
-  return text
-    .normalize('NFD')
-    .replace(/\p{Diacritic}/gu, '')
-    .toLowerCase();
 }
 
 function draftQuantities(draft: SiteResupplyDraftView | null): ReadonlyMap<string, number> {

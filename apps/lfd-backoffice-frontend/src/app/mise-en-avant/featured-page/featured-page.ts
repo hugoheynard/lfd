@@ -6,6 +6,7 @@ import {
   signal,
   type OnInit,
 } from '@angular/core';
+import { ProductSearch } from '@lfd/b2b-ui/catalog';
 import { NgTemplateOutlet } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import type { CatalogAdminItemView } from '@lfd/contracts';
@@ -21,7 +22,6 @@ import {
   FoldEmptyStateComponent,
   FoldLoadingStateComponent,
   FoldPageLayoutComponent,
-  FoldSearchComponent,
   FoldSelectComponent,
   type FoldTableColumn,
   type FoldTableEmpty,
@@ -59,6 +59,7 @@ const ALL_FAMILIES = '';
   selector: 'app-featured-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    ProductSearch,
     FoldButtonComponent,
     FoldCalloutComponent,
     FoldCardComponent,
@@ -69,7 +70,6 @@ const ALL_FAMILIES = '';
     FoldEmptyStateComponent,
     FoldLoadingStateComponent,
     FoldPageLayoutComponent,
-    FoldSearchComponent,
     FoldSelectComponent,
     NgTemplateOutlet,
     RouterLink,

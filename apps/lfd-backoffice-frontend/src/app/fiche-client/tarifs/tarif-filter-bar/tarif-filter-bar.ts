@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, input, model } from '@angular/core';
-import { FoldCheckboxComponent, FoldListboxComponent, FoldSearchComponent } from 'fold-ng';
+import { ProductSearch } from '@lfd/b2b-ui/catalog';
+import { FoldCheckboxComponent, FoldListboxComponent } from 'fold-ng';
 
 /**
  * **Le filtre au-dessus de la table des tarifs** — une famille, une recherche
@@ -10,7 +11,7 @@ import { FoldCheckboxComponent, FoldListboxComponent, FoldSearchComponent } from
 @Component({
   selector: 'app-tarif-filter-bar',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldCheckboxComponent, FoldListboxComponent, FoldSearchComponent],
+  imports: [FoldCheckboxComponent, FoldListboxComponent, ProductSearch],
   templateUrl: './tarif-filter-bar.html',
   styleUrl: './tarif-filter-bar.scss',
 })

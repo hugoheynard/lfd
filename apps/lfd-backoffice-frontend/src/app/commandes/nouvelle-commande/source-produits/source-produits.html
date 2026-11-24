@@ -16,11 +16,11 @@
   />
 
   @if (kind() !== 'commande') {
-    <fold-search
+    <lfd-product-search
       class="src-search"
       size="sm"
-      placeholder="Chercher un produit…"
-      (searchChange)="search.set($event)"
+      [(query)]="search"
+      [count]="kind() === 'catalogue' ? matching().length : habitLines().length"
     />
   }
 

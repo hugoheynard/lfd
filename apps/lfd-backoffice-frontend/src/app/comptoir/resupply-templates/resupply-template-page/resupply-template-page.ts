@@ -10,7 +10,7 @@ import {
 } from '@angular/core';
 import { requiredError } from '@angular/forms/signals';
 import { Router } from '@angular/router';
-import { CatalogShelfNav } from '@lfd/b2b-ui/catalog';
+import { CatalogShelfNav, ProductSearch } from '@lfd/b2b-ui/catalog';
 import type {
   ResupplyArticleView,
   ResupplyTarget,
@@ -33,7 +33,6 @@ import {
   FoldInputComponent,
   FoldLoadingStateComponent,
   FoldPageLayoutComponent,
-  FoldSearchComponent,
   FoldTimeComponent,
   FoldViewToggleComponent,
   type FoldTableColumn,
@@ -96,6 +95,7 @@ const TEMPLATES_URL = '/comptoir/modeles-reassort';
   selector: 'app-resupply-template-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    ProductSearch,
     BakehouseQuantityStepper,
     CatalogShelfNav,
     FoldBackLinkComponent,
@@ -111,7 +111,6 @@ const TEMPLATES_URL = '/comptoir/modeles-reassort';
     FoldInputComponent,
     FoldLoadingStateComponent,
     FoldPageLayoutComponent,
-    FoldSearchComponent,
     FoldTimeComponent,
     FoldViewToggleComponent,
     SaleQuantityPipe,

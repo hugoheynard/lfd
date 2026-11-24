@@ -36,6 +36,7 @@
       "@lfd/b2b-ui/payment": ["../../packages/b2b-ui/src/payment/index.ts"],
       "@lfd/b2b-ui/photo-cards": ["../../packages/b2b-ui/src/photo-cards/index.ts"],
       "@lfd/b2b-ui/pricing": ["../../packages/b2b-ui/src/pricing/index.ts"],
+      "@lfd/b2b-ui/search": ["../../packages/b2b-ui/src/search/index.ts"],
       "@lfd/b2b-ui/subscription": ["../../packages/b2b-ui/src/subscription/index.ts"],
       "@lfd/catalog-ui": ["../../packages/catalog-ui/src/index.ts"],
       "@lfd/endpoints": ["../../packages/endpoints/src/index.ts"],

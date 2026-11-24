@@ -68,13 +68,11 @@
         />
       } @else {
         <div class="filters">
-          <fold-search
+          <lfd-product-search
             class="filter-search"
-            placeholder="Nom ou SKU…"
-            ariaLabel="Chercher un article"
             size="sm"
-            [resultCount]="shown().length"
-            [(value)]="query"
+            [(query)]="query"
+            [count]="shown().length"
           />
           <fold-select
             class="filter-family"

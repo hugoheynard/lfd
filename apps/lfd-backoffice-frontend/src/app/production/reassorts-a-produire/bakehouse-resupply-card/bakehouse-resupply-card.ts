@@ -9,6 +9,8 @@ import {
   signal,
   untracked,
 } from '@angular/core';
+import { ProductSearch } from '@lfd/b2b-ui/catalog';
+import { searchProducts } from '@lfd/b2b-ui/search';
 import type {
   BakehouseResupplyDraftView,
   ResupplyArticleView,
@@ -32,7 +34,6 @@ import {
   FoldIconComponent,
   FoldListboxComponent,
   FoldPanelHostService,
-  FoldSearchComponent,
   FoldTimeComponent,
   FoldViewToggleComponent,
   type FoldSelectOption,
@@ -51,7 +52,12 @@ import {
 import { ResupplyTemplatesStore } from '../../../comptoir/resupply-templates/resupply-templates.store';
 import { ResupplyNameField } from '../../../shared/resupply-name-field/resupply-name-field';
 import { narrowViewport } from '../../../shared/viewport/narrow-viewport';
-import { ALL_FAMILIES, articlesMatching, familyOptionsOf } from './article-filters';
+import {
+  ALL_FAMILIES,
+  articlesOfFamily,
+  familyOptionsOf,
+  RESUPPLY_ARTICLE_SEARCH,
+} from './article-filters';
 import { requestedAmountLabel, requestedLines, withQuantity } from './bakehouse-resupply-lines';
 import { BakehouseDraftsStore } from '../bakehouse-drafts.store';
 import { BakehouseQuantityStepper } from '../bakehouse-quantity-stepper/bakehouse-quantity-stepper';
@@ -108,6 +114,7 @@ interface SiteChoice {
   selector: 'app-bakehouse-resupply-card',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    ProductSearch,
     BakehouseQuantityStepper,
     FoldButtonComponent,
     FoldCalloutComponent,
@@ -120,7 +127,6 @@ interface SiteChoice {
     FoldEmptyStateComponent,
     FoldIconComponent,
     FoldListboxComponent,
-    FoldSearchComponent,
     FoldTimeComponent,
     FoldViewToggleComponent,
     NgTemplateOutlet,
@@ -240,9 +246,13 @@ export class BakehouseResupplyCard {
   /** Ce qui part, pièces et poids à part : « 12 pièces · 1,25 kg ». */
   protected readonly amount = computed(() => requestedAmountLabel(this.articles(), this.lines()));
 
-  /** Les articles de la famille retenue et de la recherche, dans l'ordre du catalogue. */
+  /** Les articles de la famille retenue, puis la recherche de produits commune. */
   protected readonly visibleArticles = computed(() =>
-    articlesMatching(this.articles(), this.family(), this.query(), this.stations()),
+    searchProducts(
+      articlesOfFamily(this.articles(), this.family(), this.stations()),
+      this.query(),
+      RESUPPLY_ARTICLE_SEARCH,
+    ),
   );
   protected readonly nothingFound = { title: 'Aucun produit ne correspond.' };
 

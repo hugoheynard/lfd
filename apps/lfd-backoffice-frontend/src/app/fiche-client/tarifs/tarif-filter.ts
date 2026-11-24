@@ -1,3 +1,4 @@
+import { searchProducts, type ProductSearchKeys } from '@lfd/b2b-ui/search';
 import type { TarifRow, TarifShelf } from './tarif-shelves';
 
 /** « Toutes les familles » : aucune famille retenue. */
@@ -18,35 +19,27 @@ export interface FilteredTarifRow extends TarifRow {
   readonly shelfName: string;
 }
 
-/** Casse et accents retirés : « Éclair » se trouve en tapant « eclair ». */
-export function normalizeSearch(text: string): string {
-  return text
-    .normalize('NFD')
-    .replace(/\p{Diacritic}/gu, '')
-    .toLowerCase()
-    .trim();
-}
+/** Un article du tarif se cherche par son nom et son SKU (`searchProducts`). */
+export const TARIF_ROW_SEARCH: ProductSearchKeys<{ readonly name: string; readonly sku: string }> =
+  {
+    nameOf: (row) => row.name,
+    skuOf: (row) => row.sku,
+  };
 
 /**
  * Les lignes de la table unique, dans l'ordre du catalogue (famille puis
- * article) : le filtre retire des lignes, il ne les réordonne jamais.
+ * article) : le filtre retire des lignes, il ne les réordonne jamais. La
+ * recherche de produits commune ne sert donc qu'à DIRE qui reste, pas à ranger.
  */
 export function filterTarifRows(
   shelves: readonly TarifShelf[],
   filter: TarifFilter,
 ): readonly FilteredTarifRow[] {
-  const needle = normalizeSearch(filter.search);
   return shelves
     .filter((shelf) => filter.shelfId === ALL_SHELVES || shelf.id === filter.shelfId)
-    .flatMap((shelf) =>
-      shelf.rows
-        .filter((row) => !filter.pricedOnly || row.priceEuros !== null)
-        .filter(
-          (row) =>
-            needle === '' ||
-            normalizeSearch(row.name).includes(needle) ||
-            normalizeSearch(row.sku).includes(needle),
-        )
-        .map((row) => ({ ...row, shelfName: shelf.name })),
-    );
+    .flatMap((shelf) => {
+      const kept = shelf.rows.filter((row) => !filter.pricedOnly || row.priceEuros !== null);
+      const found = new Set(searchProducts(kept, filter.search, TARIF_ROW_SEARCH));
+      return kept.filter((row) => found.has(row)).map((row) => ({ ...row, shelfName: shelf.name }));
+    });
 }

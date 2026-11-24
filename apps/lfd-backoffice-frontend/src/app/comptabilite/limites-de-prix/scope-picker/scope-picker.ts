@@ -1,6 +1,8 @@
 import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
+import { ProductSearch } from '@lfd/b2b-ui/catalog';
+import { searchProducts, type ProductSearchKeys } from '@lfd/b2b-ui/search';
 import type { PriceFloorView, PriceScopePayload } from '@lfd/contracts';
-import { FoldListboxComponent, FoldSearchComponent, type FoldSelectOptionGroup } from 'fold-ng';
+import { FoldListboxComponent, type FoldSelectOptionGroup } from 'fold-ng';
 
 /** Ce que le panneau d'une limite doit savoir de la portée qu'il vise. */
 export interface FloorTarget {
@@ -23,6 +25,12 @@ export interface ScopeChoice extends FloorTarget {
   readonly label: string;
 }
 
+/** Un article se cherche par son nom et sa référence — l'identifiant de sa portée. */
+const ARTICLE_CHOICE_SEARCH: ProductSearchKeys<ScopeChoice> = {
+  nameOf: (choice) => choice.target,
+  skuOf: (choice) => choice.scope.id ?? '',
+};
+
 /** Au-delà, la liste ne s'affiche plus en entier : on cherche. */
 const MAX_ARTICLES = 50;
 
@@ -37,7 +45,7 @@ const MAX_ARTICLES = 50;
 @Component({
   selector: 'app-scope-picker',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldListboxComponent, FoldSearchComponent],
+  imports: [FoldListboxComponent, ProductSearch],
   templateUrl: './scope-picker.html',
   styleUrl: './scope-picker.scss',
 })
@@ -49,9 +57,10 @@ export class ScopePicker {
   protected readonly chosen = signal<string | null>(null);
 
   private readonly matchingArticles = computed(() => {
-    const needle = normalize(this.query());
-    return this.choices().filter(
-      (choice) => choice.group === 'article' && normalize(choice.label).includes(needle),
+    return searchProducts(
+      this.choices().filter((choice) => choice.group === 'article'),
+      this.query(),
+      ARTICLE_CHOICE_SEARCH,
     );
   });
 
@@ -86,12 +95,4 @@ export class ScopePicker {
       this.picked.emit(choice);
     }
   }
-}
-
-function normalize(text: string): string {
-  return text
-    .normalize('NFD')
-    .replace(/\p{Diacritic}/gu, '')
-    .toLowerCase()
-    .trim();
 }

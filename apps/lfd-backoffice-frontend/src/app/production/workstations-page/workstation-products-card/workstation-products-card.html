@@ -31,15 +31,7 @@
         (valueChange)="shelf.set($event)"
         data-filter-shelf
       />
-      <fold-search
-        class="filter"
-        placeholder="Chercher un produit"
-        ariaLabel="Chercher un produit"
-        [value]="query()"
-        (valueChange)="query.set($event)"
-        [resultCount]="visibleProducts().length"
-        resultLabel="produits"
-      />
+      <lfd-product-search class="filter" [(query)]="query" [count]="visibleProducts().length" />
     </div>
 
     @if (canWrite() && shelf() !== null && targetOptions().length > 0) {
