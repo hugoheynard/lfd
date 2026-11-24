@@ -4,8 +4,8 @@
 > 2026-11-24 (« la meilleure architecture possible pour ce sujet »). Il porte
 > une migration de **données vivantes** et touche l'argent : contredit une
 > première fois par `vitruve` le même jour (4 bloquants, 7 sérieux, tous
-> intégrés, § 10). Décisions de Hugo du même jour au § 9 (Q-B2 et Q-B5
-> restent ouvertes). Le SQL de B1 reste à écrire et à faire contredire avant
+> intégrés, § 10). Décisions de Hugo du même jour au § 9 (Q-B5 reste
+> ouverte). Le SQL de B1 reste à écrire et à faire contredire avant
 > tout bâti (§ 8). Il reprend la forme des lots R1 à R4 du
 > [planificateur](plan-planificateur.md), dont les décisions (§ 0, § 5 bis,
 > § 8) restent vraies. Les questions sont au § 9.
@@ -124,7 +124,7 @@ la matrice de CLAUDE.md (B0) :
 | --------------------------------------------------- | ------------------------------------------------------------------------ |
 | `recurring → platform`                              | ✓                                                                        |
 | `recurring → staff`                                 | ✓ (autorisation de la route du staff)                                    |
-| `recurring → mail`                                  | port uniquement, seulement si Q-B2 prévient le client                    |
+| `recurring → mail`                                  | port uniquement : l'e-mail de changement des CGV (§ 7)                   |
 | `lafoliecoffee → recurring`                         | port uniquement, par `recurring/channels/`                               |
 | `recurring → lafoliecoffee`                         | ✗                                                                        |
 | le `RecurringFeedModule` d’`appBootstrap` (à créer) | relie les ports déclarés par `recurring` aux implémentations du commerce |
@@ -150,6 +150,8 @@ erDiagram
     text sales_terms_key "nullable"
     int sales_terms_revision "nullable"
     text sales_terms_file_id "nullable"
+    int sales_terms_next_revision "la version annoncée"
+    date sales_terms_effective_on "envoi plus 30 jours"
     date planned_until
   }
   occurrence {
@@ -224,13 +226,13 @@ stateDiagram-v2
 
 ### 6.1 Ce que le bloc demande (déclaré par `recurring`, implémenté par le commerce)
 
-| Port                  | Ce qu'il répond                                                                                 | Implémenté par                       |
-| --------------------- | ----------------------------------------------------------------------------------------------- | ------------------------------------ |
-| `OccurrencePlacement` | « passe cette échéance » → `placed(orderId)` ou `refused(cause, phrase, définitif)`             | `orders` : la passation de R3        |
-| `BasketBuyerStanding` | l'acheteur est-il membre actuel ? le nom de la société ? un payeur public ?                     | `account`, par `readCompanyStanding` |
-| `BasketArticles`      | ces SKU se vendent-ils à la pièce, hors opération datée, sans être réservés à un autre compte ? | `catalog`                            |
-| `BasketPickupPoints`  | la référence d'un point de retrait                                                              | `pickup-addresses`                   |
-| `BasketSalesTerms`    | la révision en vigueur des CGV d'une clientèle — **dépendance neuve** (B5)                      | `content`                            |
+| Port                  | Ce qu'il répond                                                                                    | Implémenté par                       |
+| --------------------- | -------------------------------------------------------------------------------------------------- | ------------------------------------ |
+| `OccurrencePlacement` | « passe cette échéance » → `placed(orderId)` ou `refused(cause, phrase, définitif)`                | `orders` : la passation de R3        |
+| `BasketBuyerStanding` | l'acheteur est-il membre actuel ? le nom de la société ? un payeur public ?                        | `account`, par `readCompanyStanding` |
+| `BasketArticles`      | ces SKU se vendent-ils à la pièce, hors opération datée, sans être réservés à un autre compte ?    | `catalog`                            |
+| `BasketPickupPoints`  | la référence d'un point de retrait                                                                 | `pickup-addresses`                   |
+| `BasketSalesTerms`    | la révision en vigueur des CGV d'une clientèle, et le fichier du texte — **dépendance neuve** (B4) | `content`                            |
 
 **Une échéance, au plus une commande — tenu par le commerce, en base.** La
 passation et l'inscription de l'issue ne sont plus dans la même transaction
@@ -276,19 +278,38 @@ Les deux abonnés (avis au principal, croissance) basculent en
 
 Les faits du journal gardent leurs types `subscription.*`.
 
-## 7. Les CGV figées à l'ouverture
+## 7. Les CGV d'un panier (Hugo, 2026-11-24)
 
-Le panier enregistre la révision des CGV que le client a acceptée en
-l'ouvrant, comme une commande le fait à la passation (`orders.sales_terms_*`).
-Une échéance dont la révision n'est plus en vigueur est **refusée** (cause
-`terms_outdated`, non définitive) ; elle repart dès que le client accepte la
-nouvelle révision depuis son espace.
+**La règle, annoncée à l'ouverture du panier** : « Les modifications des
+CGV vous sont envoyées 30 jours avant leur application. Sans arrêt de votre
+part, elles s'appliquent aux commandes suivantes. Vous pouvez arrêter votre
+panier à tout moment, sans frais. » La rédaction exacte est à faire valider
+par le rédacteur des CGV.
 
-**Les paniers existants n'ont accepté aucune révision.** Les remplir par la
-migration fabriquerait une acceptation que personne n'a donnée. Deux
-issues, à trancher (Q-B6) : leurs échéances sont refusées jusqu'à une
-acceptation explicite, ou ils reçoivent une dérogation datée, inscrite comme
-telle (« ouvert avant les CGV au panier, servi jusqu'au … »).
+- **À l'ouverture**, le panier enregistre la version acceptée
+  (`sales_terms_key`, `_revision`, `_file_id`, comme une commande).
+- **À la publication d'une nouvelle version**, le bloc l'apprend par un fait
+  du contenu, envoie à l'acheteur de chaque panier actif l'e-mail qui porte
+  le nouveau texte et rappelle le geste « arrêter le panier » (bloc `mail`,
+  par son canal), et note sur le panier la **version à venir** et sa **date
+  d'effet** : le jour de l'envoi + 30 jours.
+- **Contester, c'est arrêter le panier** : le geste existant, sans frais ni
+  dernière échéance imposée. Aucun traitement manuel par l'équipe.
+- **Aucune échéance n'est jamais bloquée** pour une question de CGV : il n'y
+  a pas de refus `terms_outdated`.
+- 🔴 **La version figée sur la commande d'une échéance est celle que le
+  panier applique à son jour de service**, pas celle en vigueur à l'instant
+  de la passation : une échéance se passe 7 jours avant son jour, et une
+  échéance passée pendant le préavis prendrait sinon le nouveau texte trop
+  tôt. Une échéance dont le jour de service précède la date d'effet garde
+  l'ancienne version ; à partir de la date d'effet, la nouvelle. Le port
+  `OccurrencePlacement` porte donc la version à figer, et la passation
+  l'impose au lieu de la lire au contenu.
+- **La preuve** : le suivi de l'e-mail par le bloc `mail` (demandé, accepté,
+  remis), et la version figée sur chaque commande.
+- **Les paniers ouverts avant cette règle** (Q-B6) : servis par une
+  dérogation datée, inscrite à la reprise ; ils reçoivent l'e-mail de la
+  prochaine version comme les autres.
 
 ## 8. Les lots
 
@@ -299,7 +320,7 @@ telle (« ouvert avant les CGV au panier, servi jusqu'au … »).
 | **B1b — basculer** | Le code déménage dans `src/recurring/` et lit les tables neuves ; le canal, ses ports, le `RecurringFeedModule` d’`appBootstrap` (à créer) ; la passation sur l'index unique ; les écritures du semis et des e2e suivent                                                                                                        | —                                                                             |
 | **B2**             | L'entité `Occurrence`, la création à l'avance, le balayage sur les lignes dues                                                                                                                                                                                                                                                  | —                                                                             |
 | **B3**             | Les lectures et les faits publiés (§ 6.2) ; avis au principal et croissance en `@DurableHandler` ; la fiche client et le catalogue sur les lectures publiées                                                                                                                                                                    | —                                                                             |
-| **B4**             | Les CGV figées et le refus `terms_outdated` (§ 7)                                                                                                                                                                                                                                                                               | additive                                                                      |
+| **B4**             | Les CGV du panier (§ 7) : version acceptée à l'ouverture, version à venir et date d'effet, l'e-mail à 30 jours par le bloc `mail`, la version imposée à la passation d'une échéance                                                                                                                                             | additive                                                                      |
 | **B5 — resserrer** | Retrait des anciennes tables `public.subscription*` et de leurs relations inverses dans `account.prisma`, une fois B1b déployé et vérifié                                                                                                                                                                                       | **suppression** : sur ordre explicite de Hugo (CLAUDE.md § 0)                 |
 
 Ce que le SQL de B1a doit dire, et que ce plan n'écrit pas encore :
@@ -326,15 +347,10 @@ ferait passer des échéances sur la forme qu'on remplace.
 ## 9. Les décisions de Hugo (2026-11-24) et ce qui reste ouvert
 
 - **Q-B1 — Le nom** : `recurring/` et le schéma `recurring`. ✅
-- **Q-B2 — Les CGV changent** : ⏳ **ouvert.** Hugo a posé deux options —
-  une acceptation d'office de toute modification, annoncée à l'ouverture du
-  panier, ou les CGV de l'ouverture pour toute la durée. Proposé en
-  réponse : le panier garde les CGV de son ouverture ; un changement est
-  annoncé au client par e-mail avec un préavis (par exemple 30 jours), et
-  s'applique aux échéances d'après le préavis, sauf s'il arrête son panier,
-  sans frais, à tout moment ; l'écran de création le dit. La clause et le
-  préavis sont à faire valider par le rédacteur des CGV. Le refus
-  `terms_outdated` du § 7 tombe si cette forme est retenue.
+- **Q-B2 — Les CGV changent** : **préavis de 30 jours, arrêt libre.** ✅
+  Un e-mail porte le nouveau texte ; sans arrêt du panier, il s'applique aux
+  échéances dont le jour suit la date d'effet ; contester, c'est arrêter le
+  panier, sans frais (§ 7).
 - **Q-B3 — La création à l'avance** : 8 semaines. ✅
 - **Q-B4 — L'ordre** : **tout d'un coup**, l'activité n'ayant pas commencé.
   ✅ B1a, B1b et B5 se fondent en un seul déploiement : les tables
