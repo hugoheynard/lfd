@@ -48,6 +48,12 @@ interface Tally {
  *
  * Une erreur technique sur une échéance n'arrête pas le balayage : elle est
  * comptée, journalisée, et réessayée au passage suivant.
+ *
+ * @sans-journal la seule écriture propre au balayage est l'armement d'un
+ * panier neuf : une borne technique (le premier jour que le planificateur
+ * regarde), posée par la machine à son premier passage, que personne ne
+ * décide. Chaque commande passée garde sa trace par la passation, et chaque
+ * issue sa ligne au registre.
  */
 @CommandHandler(SweepRecurringOccurrencesCommand)
 export class SweepRecurringOccurrencesHandler implements ICommandHandler<
