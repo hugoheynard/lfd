@@ -7,8 +7,8 @@ import { PrismaService } from "../../../platform/database/prisma.service.js";
 
 /**
  * **La version d'une journée du commerce, relayée au fournil** — l'adaptateur
- * de `CommerceDayVersionReader` (plan
- * `documentation/fournil/plan-impression-provisoire.md`, § 3) : `max(id)` et
+ * de `CommerceDayVersionReader` (
+ * `documentation/fournil/dossier-prod-du-jour.md`) : `max(id)` et
  * `count(*)` de `public.day_change` pour ce jour, la requête même que
  * `PrismaCommerceDayVersionReader` sert à la livraison. Un parcours d'index ;
  * aucun mur de société — le journal ne porte que des jours.

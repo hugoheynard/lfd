@@ -497,7 +497,7 @@ async function triggerQualityUploadSweep(env: Env): Promise<void> {
     // propre route, la qualité ne porte pas la journée.
     "admin/production/journal/sweep",
     // Les impressions provisoires du dossier des journées passées, et leurs
-    // PDF (`documentation/fournil/plan-impression-provisoire.md`, § 2) : sa
+    // PDF (`documentation/fournil/dossier-prod-du-jour.md`) : sa
     // propre route, les impressions sont au plan et la journée ne l'importe pas.
     "admin/production/provisional-prints/sweep",
     "admin/delivery/journal/sweep",

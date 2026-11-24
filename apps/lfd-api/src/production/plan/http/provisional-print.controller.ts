@@ -24,8 +24,8 @@ import {
 const DAY = new ZodParam(productionBatchQuerySchema.shape.date, "date");
 
 /**
- * **La fenêtre d'impression du dossier** (plan
- * `documentation/fournil/plan-impression-provisoire.md`, § 4) : son état,
+ * **La fenêtre d'impression du dossier** (
+ * `documentation/fournil/dossier-prod-du-jour.md`) : son état,
  * l'impression provisoire avant l'arrêt, et le PDF de chaque impression.
  *
  * Sous `production_plan`, la surface du bouton « Imprimer le dossier ». Le

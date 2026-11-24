@@ -9,10 +9,11 @@ information**, et comment il part par e-mail. Il naît de l'arrêt du plan :
 Le paquet que le fournil reçoit pour une journée : un récapitulatif de ce qu'il
 faut fabriquer, puis un bon par commande. Il se lit à deux endroits :
 
-| Où                                                                                                                                                | Ce que c'est                                    | Quand                                                                                         |
-| ------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| **Aperçu à l'écran** — Prévisionnel › Dossier du jour (onglets Récapitulatif / Bons)                                                              | une lecture, depuis les commandes **en direct** | à tout moment                                                                                 |
-| **Le PDF** — bouton « Imprimer le dossier » (ouvre le PDF dans un onglet), `GET /admin/production/batch/:date/dossier.pdf`, et l'envoi par e-mail | **le papier**, depuis ce que l'arrêt a **figé** | seulement une fois le plan **arrêté** ; avant, le bouton dit « Arrêtez d'abord le plan du … » |
+| Où                                                                                                                                                     | Ce que c'est                                                                            | Quand                                                                 |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| **Aperçu à l'écran** — Prévisionnel › Dossier du jour (onglets Récapitulatif / Bons)                                                                   | une lecture, depuis les commandes **en direct**                                         | à tout moment                                                         |
+| **Le PDF** — bouton « Imprimer le dossier », qui ouvre la fenêtre d'impression, `GET /admin/production/batch/:date/dossier.pdf`, et l'envoi par e-mail | **le papier**, depuis ce que l'arrêt a **figé**                                         | une fois le plan **arrêté** ; la fenêtre en imprime aussi des parties |
+| **Le PDF provisoire** — la même fenêtre, avant l'arrêt                                                                                                 | un papier de travail, depuis les commandes **en direct**, « Provisoire 26/11 #3 10:42 » | à tout moment avant l'arrêt ; jamais archivé ni envoyé                |
 
 On n'imprime pas depuis le navigateur : le papier est toujours le PDF du
 serveur.
@@ -39,6 +40,39 @@ flowchart LR
 > dossier sont rangés par **poste** au lieu du rayon, avec la même mise en
 > page : un poste prend la place d'un rayon, un produit sans poste reste sous
 > son rayon, « à ranger ». Voir [`les-postes-du-fournil.md`](les-postes-du-fournil.md).
+
+## L'impression pendant la journée
+
+Le bouton « Imprimer le dossier » ouvre une **fenêtre**. On y choisit :
+
+- les **parties** : couverture, totaux par rayon, calendriers par tranche,
+  fiches de commande, BL, fiches de réassort ;
+- les **rayons ou postes** : tous, ou une liste ;
+- les **commandes** : toutes, celles **nouvelles ou modifiées depuis
+  l'impression #N**, ou des commandes choisies une à une.
+
+Chaque partie sort des mêmes dessins que le dossier entier. Quand on choisit
+des commandes, chaque page dit « sélection : N commandes sur M » : la
+couverture et les totaux ne comptent alors que celles-là (les réassorts
+restent dans les totaux).
+
+**Avant l'arrêt**, le papier est **provisoire** : tiré des commandes en
+direct, chaque page porte « Provisoire 26/11 #3 10:42 » (le jour du lot, le
+numéro d'impression de la journée, l'heure de Paris) et le pied « Provisoire —
+plan non arrêté ». Il n'est ni archivé, ni envoyé. La fenêtre prévient quand
+la journée a changé depuis la dernière impression.
+
+**Après l'arrêt**, la fenêtre imprime des parties du dossier figé, sans
+bandeau. Un extrait n'est jamais archivé ; sans rien décocher, c'est le
+dossier archivé qui sort.
+
+```mermaid
+flowchart LR
+  F[Fenêtre d'impression] --> Q{Plan arrêté ?}
+  Q -- non --> L[Commandes en direct] --> P[PDF provisoire numéroté]
+  P --> R[Impression #N gardée : version, heure, empreintes]
+  Q -- oui --> G[Dossier figé] --> S[Parties choisies, sans bandeau]
+```
 
 ## Partie technique
 
@@ -134,6 +168,39 @@ la fiche, ou `auto-close` ; `closed_by_name` : son nom ce jour-là), et celui du
 retirage au retirage (`retaken_by_name`) : le papier ne bouge pas si la fiche
 est renommée. L'heure est **celle de Paris** : en UTC, un arrêt fait après
 22 h ou 23 h s'imprimerait à la veille.
+
+### L'impression provisoire et les extraits
+
+| Route                                                  | Ce qu'elle fait                                                                                                                                  |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `GET …/batch/:date/print-options`                      | l'état de la fenêtre : arrêté ou non, rayons ou postes, commandes, impressions du jour, `changedSinceLast`                                       |
+| `POST …/batch/:date/provisional-print`                 | refusé après l'arrêt ; tire le PDF, le range au stockage (`<jour>/provisoire-<run>.pdf`), écrit l'impression, rend son id (`@IntentKey`, scellé) |
+| `GET …/batch/:date/provisional-print/:id.pdf`          | sert ce PDF ; 404 qui nomme le cas si le rangement a échoué                                                                                      |
+| `GET …/batch/:date/dossier.pdf?parts=&groups=&orders=` | après l'arrêt, un extrait du dossier figé, jamais archivé ; `groups` en paramètre répété                                                         |
+
+- **`production.provisional_print`** : une ligne par impression — `run` (le
+  `#`, `max + 1` sous `UNIQUE (service_day, run)`, rejoué sur conflit), la
+  version du commerce (`public.day_change`, lue par le port
+  `CommerceDayVersionReader` du canal `production/channels/commerce/`),
+  l'instant, l'auteur (id de la fiche), les **empreintes** des fiches
+  imprimées et les parties cochées.
+- **L'empreinte** d'une commande est un sha256 de ce qui s'imprime sur sa
+  fiche. « Depuis #N » = commandes absentes de #N ou d'empreinte différente ;
+  rien de changé est refusé (409) plutôt que d'imprimer une page vide. Les
+  empreintes ne sont gardées que si les fiches de commande sont cochées.
+- Les commandes en direct passent par la conversion de l'arrêt
+  (`arrestPreviewOf`, `day/domain/entities/production-day.plan.ts`) : retraits
+  écartés, mêmes instantanés que le dossier figé.
+- Le droit est celui du dossier, `production_plan:read`.
+- **Balayage** : `POST admin/production/provisional-prints/sweep`, posté par
+  le cron juste après celui de `day_change`, retire les PDF puis les lignes
+  des journées passées.
+- Un extrait se sélectionne par `orderId` et par libellé de rayon ou poste ;
+  une clé inconnue du dossier est refusée (400).
+
+Reste : décider la durée de conservation de `printed_by` au registre RGPD
+(`a-decider`), et afficher le message du serveur quand un extrait figé est
+refusé (la fenêtre dit aujourd'hui un message générique).
 
 ### L'envoi par e-mail
 

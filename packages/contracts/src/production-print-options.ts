@@ -2,7 +2,7 @@ import type { ProductionGrouping } from "./production-settings.js";
 
 /**
  * **Une partie du dossier du jour** — ce que la fenêtre d'impression coche
- * (`documentation/fournil/plan-impression-provisoire.md`, § 5).
+ * (`documentation/fournil/dossier-prod-du-jour.md`).
  *
  * - `cover` : la couverture ;
  * - `recap` : le total à produire d'un rayon (ou d'un poste) ;

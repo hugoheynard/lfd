@@ -97,21 +97,22 @@ n'en lit un autre que sur les deux arêtes du schéma, et toujours par son
 Toutes les tables sont dans `apps/lfd-api/prisma/schema/production.prisma`,
 schéma Postgres `production`, sans clé étrangère vers `public`.
 
-| Table                                                                           | Ce qu'elle tient                                                                                              |
-| ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| `production_day`                                                                | la journée : arrêt (`closed_at`, auteur), retirage, réouverture, qui colise                                   |
-| `production_order`, `production_order_line`                                     | les commandes figées à l'arrêt, avec leur copie (en-tête du bon, échéance, lignes)                            |
-| `production_resupply`, `_line`                                                  | les réassorts figés à l'arrêt                                                                                 |
-| `production_count`                                                              | le compte à produire, `(service_day, sku)` ; `done_*` = coche de l'ancien poste                               |
-| `production_batch`                                                              | les fournées, en ajout seul, annulables                                                                       |
-| `production_handoff`, `production_return_request`                               | ce qui a été remis au colisage, et les retours demandés                                                       |
-| `production_container`, `production_batch_shortcut`                             | le contenant d'un produit (« 1 plaque · 24 ») et les raccourcis                                               |
-| `production_quality_check`, `_photo`, `_upload`, `_quality_settings`            | le contrôle qualité                                                                                           |
-| `production_settings`, `production_closed_day`, `production_auto_close_attempt` | jours fermés, tentative d'arrêt automatique (les colonnes d'arrêt de `production_settings` ne sont plus lues) |
-| `production_tranche_settings`, `production_display_settings`                    | tranches fixes ou calculées, affichage des sous-catégories                                                    |
-| `production_dossier_recipient`, `production_dossier_dispatch`                   | destinataires du dossier du jour, envois faits                                                                |
-| `order_withdrawal`, `order_revision_notice`                                     | retraits et révisions d'une commande déjà inscrite                                                            |
-| `production_day_change`                                                         | le journal des versions de journée, qui fait relire les écrans                                                |
+| Table                                                                           | Ce qu'elle tient                                                                                                                                      |
+| ------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `production_day`                                                                | la journée : arrêt (`closed_at`, auteur), retirage, réouverture, qui colise                                                                           |
+| `production_order`, `production_order_line`                                     | les commandes figées à l'arrêt, avec leur copie (en-tête du bon, échéance, lignes)                                                                    |
+| `production_resupply`, `_line`                                                  | les réassorts figés à l'arrêt                                                                                                                         |
+| `production_count`                                                              | le compte à produire, `(service_day, sku)` ; `done_*` = coche de l'ancien poste                                                                       |
+| `production_batch`                                                              | les fournées, en ajout seul, annulables                                                                                                               |
+| `production_handoff`, `production_return_request`                               | ce qui a été remis au colisage, et les retours demandés                                                                                               |
+| `production_container`, `production_batch_shortcut`                             | le contenant d'un produit (« 1 plaque · 24 ») et les raccourcis                                                                                       |
+| `production_quality_check`, `_photo`, `_upload`, `_quality_settings`            | le contrôle qualité                                                                                                                                   |
+| `production_settings`, `production_closed_day`, `production_auto_close_attempt` | jours fermés, tentative d'arrêt automatique (les colonnes d'arrêt de `production_settings` ne sont plus lues)                                         |
+| `production_tranche_settings`, `production_display_settings`                    | tranches fixes ou calculées, affichage des sous-catégories                                                                                            |
+| `production_dossier_recipient`, `production_dossier_dispatch`                   | destinataires du dossier du jour, envois faits                                                                                                        |
+| `order_withdrawal`, `order_revision_notice`                                     | retraits et révisions d'une commande déjà inscrite                                                                                                    |
+| `production_day_change`                                                         | le journal des versions de journée, qui fait relire les écrans                                                                                        |
+| `provisional_print`                                                             | les impressions provisoires du dossier avant l'arrêt : numéro, version du commerce, empreintes ([`dossier-prod-du-jour.md`](dossier-prod-du-jour.md)) |
 
 ### La journée, un agrégat
 

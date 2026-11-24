@@ -2,8 +2,8 @@ import type { ServiceDay } from "../../../day/index.js";
 import type { ProvisionalPrint } from "../entities/provisional-print.js";
 
 /**
- * **Écrire les impressions provisoires** (plan
- * `documentation/fournil/plan-impression-provisoire.md`, § 2) — port
+ * **Écrire les impressions provisoires** (
+ * `documentation/fournil/dossier-prod-du-jour.md`) — port
  * d'écriture, distinct de la lecture (ISP) : le tirage lit le dernier numéro
  * et écrit le sien, rien d'autre.
  */

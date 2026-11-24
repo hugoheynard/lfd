@@ -13,7 +13,7 @@ export interface ProvisionalPrintSweepReport {
 
 /**
  * Endpoint **batch** du balayage des impressions provisoires des journées
- * passées (plan `documentation/fournil/plan-impression-provisoire.md`, § 2).
+ * passées (`documentation/fournil/dossier-prod-du-jour.md`).
  * Même porte machine-à-machine que `admin/production/journal/sweep` : le
  * `RecomputeGuard` et son jeton.
  *

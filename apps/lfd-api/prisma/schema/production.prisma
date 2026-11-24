@@ -623,7 +623,7 @@ model ProductionDossierRecipient {
 }
 
 /// **Une trace d'envoi du dossier du jour** — une par destinataire et par
-/// envoi (plan `documentation/fournil/dossier-prod-du-jour.md`, lot E3).
+/// envoi (`documentation/fournil/dossier-prod-du-jour.md`, lot E3).
 ///
 /// Un envoi est désigné par sa journée et son instant d'origine : la clôture,
 /// ou un retirage (`occasion_at`). La clé primaire EST l'idempotence : le fait
@@ -1002,7 +1002,7 @@ model ProductionProblem {
 }
 
 /// **Une impression provisoire du dossier du jour** — tirée avant l'arrêt, des
-/// commandes en direct (plan `documentation/fournil/plan-impression-provisoire.md`, § 2).
+/// commandes en direct (`documentation/fournil/dossier-prod-du-jour.md`).
 ///
 /// Une ligne par tirage : son numéro de la journée (le `#` du bandeau), la
 /// version du journal du commerce lue au tirage (« la journée a changé

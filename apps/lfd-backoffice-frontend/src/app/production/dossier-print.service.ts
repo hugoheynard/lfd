@@ -23,8 +23,8 @@ export interface FrozenDossierSelection {
 }
 
 /**
- * **Les tirages du dossier du jour, partie par partie** (plan
- * `documentation/fournil/plan-impression-provisoire.md`, § 4) : l'état de la
+ * **Les tirages du dossier du jour, partie par partie** (
+ * `documentation/fournil/dossier-prod-du-jour.md`) : l'état de la
  * fenêtre, l'impression provisoire avant l'arrêt, les parties du dossier
  * figé après.
  *

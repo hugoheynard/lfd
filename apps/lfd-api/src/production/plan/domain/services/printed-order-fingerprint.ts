@@ -4,8 +4,8 @@ import type { OrderSheetDetails } from "../../../channels/commerce/day-orders.re
 import type { ProductionOrderSnapshot } from "../../../day/index.js";
 
 /**
- * **L'empreinte d'une commande, telle que sa fiche l'imprime** (plan
- * `documentation/fournil/plan-impression-provisoire.md`, § 2) : un condensat
+ * **L'empreinte d'une commande, telle que sa fiche l'imprime** (
+ * `documentation/fournil/dossier-prod-du-jour.md`) : un condensat
  * de tout ce que la fiche de commande et son en-tête portent — référence,
  * client, acheminement, échéance, lignes (article, nom, quantité, unité, sur
  * mesure) et le bloc du bon (adresse, fenêtre, contact, note…).

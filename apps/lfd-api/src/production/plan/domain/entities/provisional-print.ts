@@ -3,7 +3,7 @@ import { InvalidProvisionalRunError } from "../errors/provisional-print-errors.j
 
 /**
  * **Quelles commandes une impression provisoire tire** — les trois choix de la
- * fenêtre (plan `documentation/fournil/plan-impression-provisoire.md`) :
+ * fenêtre (`documentation/fournil/dossier-prod-du-jour.md`) :
  * toutes, celles qui sont nouvelles ou modifiées depuis le tirage `run`, ou
  * celles qu'on a cochées.
  */

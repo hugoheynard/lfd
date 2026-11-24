@@ -82,8 +82,8 @@ export function runLabel(print: PrintOptionRun): string {
 type LoadState = 'loading' | 'ready' | 'error';
 
 /**
- * **La fenêtre d'impression du dossier du jour** (plan
- * `documentation/fournil/plan-impression-provisoire.md`, § 6).
+ * **La fenêtre d'impression du dossier du jour** (
+ * `documentation/fournil/dossier-prod-du-jour.md`).
  *
  * Avant l'arrêt, elle tire une **impression provisoire** numérotée, des
  * commandes en direct ; après, elle réimprime des parties du dossier figé,

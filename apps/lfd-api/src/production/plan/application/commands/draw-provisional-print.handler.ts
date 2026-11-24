@@ -28,8 +28,8 @@ import { DrawProvisionalPrintCommand } from "./draw-provisional-print.command.js
 const RUN_ATTEMPTS = 5;
 
 /**
- * **Tire une impression provisoire du dossier** (plan
- * `documentation/fournil/plan-impression-provisoire.md`, § 2 et § 4).
+ * **Tire une impression provisoire du dossier** (
+ * `documentation/fournil/dossier-prod-du-jour.md`).
  *
  * Une fois par intention : un double clic ne tire pas deux numéros, et le
  * rejeu rend le même identifiant. Le numéro est `max(run) + 1` ; l'unicité

@@ -6,8 +6,8 @@ export interface StaleProvisionalPrint {
 }
 
 /**
- * **Balayer les impressions provisoires des journées passées** (plan
- * `documentation/fournil/plan-impression-provisoire.md`, § 2) : le fil
+ * **Balayer les impressions provisoires des journées passées** (
+ * `documentation/fournil/dossier-prod-du-jour.md`) : le fil
  * d'une journée n'a plus d'usage une fois le jour passé. Le PDF part
  * d'abord, la ligne ensuite — une ligne restée retrouve son fichier la nuit
  * suivante.

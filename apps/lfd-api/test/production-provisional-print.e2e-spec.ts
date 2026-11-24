@@ -1,6 +1,6 @@
 /**
- * E2E de l'**impression provisoire du dossier** (plan
- * `documentation/fournil/plan-impression-provisoire.md`, lot P2) : avant
+ * E2E de l'**impression provisoire du dossier** (
+ * `documentation/fournil/dossier-prod-du-jour.md`) : avant
  * l'arrêt, la fenêtre lit les commandes en direct, un tirage prend le numéro
  * suivant de la journée et range son PDF, « depuis #N » ne retire que ce qui a
  * bougé, et l'arrêt ferme la porte en nommant le dossier figé.

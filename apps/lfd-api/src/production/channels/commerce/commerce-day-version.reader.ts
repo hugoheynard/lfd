@@ -2,8 +2,8 @@ import type { ServiceDay } from "../../day/domain/value-objects/service-day.valu
 
 /**
  * **« Les commandes de cette journée ont-elles bougé ? »** — port que le
- * fournil DÉCLARE et que le commerce implémente (plan
- * `documentation/fournil/plan-impression-provisoire.md`, § 3).
+ * fournil DÉCLARE et que le commerce implémente (
+ * `documentation/fournil/dossier-prod-du-jour.md`).
  *
  * L'impression provisoire garde la version lue à son tirage ; la fenêtre
  * suivante compare, et dit « la journée a changé depuis #N ». Le fournil ne

@@ -1,8 +1,8 @@
 import type { ProvisionalChoice } from "../../domain/entities/provisional-print.js";
 
 /**
- * **Tirer une impression provisoire du dossier** (plan
- * `documentation/fournil/plan-impression-provisoire.md`, § 4) — avant
+ * **Tirer une impression provisoire du dossier** (
+ * `documentation/fournil/dossier-prod-du-jour.md`) — avant
  * l'arrêt, des commandes en direct. Rend l'identifiant de l'impression ; le
  * PDF se lit ensuite par `GetProvisionalPrintPdfQuery`.
  */

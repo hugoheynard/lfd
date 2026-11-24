@@ -1,6 +1,5 @@
 /**
  * **Balayer les impressions provisoires des journées passées** — leurs
- * lignes et leurs PDF (plan `documentation/fournil/plan-impression-provisoire.md`,
- * § 2). Rend le nombre d'impressions retirées.
+ * lignes et leurs PDF (`documentation/fournil/dossier-prod-du-jour.md`). Rend le nombre d'impressions retirées.
  */
 export class PruneProvisionalPrintsCommand {}
