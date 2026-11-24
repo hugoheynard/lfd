@@ -59,8 +59,8 @@
  * `@CommandHandler` doit APPELER `publishTraced` sous `UnitOfWork` — cf.
  * `CATALOG_ZONE` plus bas.
  *
- * **Les paniers récurrents** (`lafoliecoffee/subscriptions/**`, depuis le 2026-09-19) :
- * même discipline — cf. `SUBSCRIPTIONS_ZONE` plus bas.
+ * **Les paniers récurrents** (le bloc `recurring/**`) : même discipline — cf.
+ * `RECURRING_ZONE` plus bas.
  *
  * **Le fournil** (`production/**`, depuis le 2026-09-19) : tout
  * `@CommandHandler` doit APPELER `publishTraced` sous `UnitOfWork` — cf.
@@ -327,12 +327,12 @@ const MONEY_DELEGATES = new Map([
 const CATALOG_ZONE = "catalog";
 
 /**
- * **Les paniers récurrents** (lot 1 du plan du journal, tranche (c),
- * 2026-09-19) : suspendre, reprendre, déroger à une échéance, supprimer. Tous
- * des gestes du client, qui décident de ce qu'on fabriquera et facturera sans
- * qu'une commande soit repassée.
+ * **Les paniers récurrents** : ouvrir, suspendre, reprendre, déroger à une
+ * échéance, arrêter. Tous des gestes du client, qui décident de ce qu'on
+ * fabriquera et facturera sans qu'une commande soit repassée. Un BLOC entier
+ * (`plan-bloc-recurrent.md`, § 4), d'où sa racine à part.
  */
-const SUBSCRIPTIONS_ZONE = "subscriptions";
+const RECURRING_ZONE = "recurring";
 
 /**
  * **Le fournil** (lot 1 du plan du journal, tranche (d), 2026-09-19) : arrêter,
@@ -725,7 +725,7 @@ const ZONES = [
     audit: (source, index, params, handler) => auditTraced(source, index, params, handler),
   },
   {
-    root: join(SRC, "lafoliecoffee", SUBSCRIPTIONS_ZONE),
+    root: join(SRC, RECURRING_ZONE),
     audit: (source, index, params, handler) => auditTraced(source, index, params, handler),
   },
   {

@@ -157,7 +157,7 @@ async function trimPricing(
 /**
  * Supprime, **enfants d'abord**.
  *
- * Les FK `Restrict` — Address, Order, Subscription — exigent la suppression
+ * Les FK `Restrict` — Address, Order — exigent la suppression
  * explicite ; Membership et OrderLine cascadent. L'ordre n'est pas une
  * précaution : c'est la seule séquence que Postgres accepte.
  */
@@ -205,16 +205,15 @@ async function wipe(prisma: PrismaClient, companyIds: string[], userIds: string[
   await dropOrderRestrictedChildren(prisma, ofOrders);
   await prisma.order.deleteMany({ where: ofOrders });
   await dropHolderRestrictedRows(prisma, companyIds, userIds);
-  // `company_id` en `Restrict` (N4e) : le panier d'une personne hors périmètre
-  // posé sur une société du périmètre partirait sinon en erreur.
-  const ofSubscriptions = {
-    OR: [{ placedByUserId: { in: userIds } }, { companyId: { in: companyIds } }],
+  // Les paniers récurrents (schéma `recurring`) ne pointent plus personne :
+  // aucune cascade ne les vide, ils se vident ici, échéances et lignes avant
+  // le panier (clés `Restrict` internes au schéma).
+  const ofBaskets = {
+    OR: [{ buyerUserId: { in: userIds } }, { companyId: { in: companyIds } }],
   };
-  // Le registre des échéances pointe l'abonnement en `Restrict` : avant lui.
-  await prisma.subscriptionOccurrenceRun.deleteMany({
-    where: { subscription: ofSubscriptions },
-  });
-  await prisma.subscription.deleteMany({ where: ofSubscriptions });
+  await prisma.occurrence.deleteMany({ where: { basket: ofBaskets } });
+  await prisma.basketLine.deleteMany({ where: { basket: ofBaskets } });
+  await prisma.basket.deleteMany({ where: ofBaskets });
   // Les préférences d'acheminement POINTENT sur les adresses : les délier avant
   // de supprimer, sinon la FK refuse et le message ne dit pas pourquoi.
   await prisma.company.updateMany({

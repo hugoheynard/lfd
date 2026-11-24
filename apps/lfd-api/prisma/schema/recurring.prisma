@@ -1,0 +1,103 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// RECURRING — les paniers récurrents, leur propre schéma
+// ─────────────────────────────────────────────────────────────────────────────
+//
+// Propriétaire : le bloc `src/recurring/`. Aucune clé étrangère ne sort de
+// `recurring` : une personne, une société, une commande et un point de retrait
+// s'y désignent par identifiant. Les identifiants sont posés par l'application
+// (`IdGenerator`), les horodatages par l'horloge (`Clock`) : aucun défaut en base.
+//
+// Ce que Prisma ne sait pas dire vit dans le `migration.sql`
+// (`20261125090000_le_bloc_des_paniers_recurrents`) : les `CHECK` de forme et
+// l'index partiel `occurrence_due_idx`, admis par `schema-drift-admitted.json`.
+
+/// **Le panier récurrent** : le gabarit d'une commande qui se répète. Le mur de
+/// toute lecture et de tout geste du client est `buyer_user_id`. La cadence, le
+/// début, la fin et l'acheminement sont figés à l'ouverture.
+model Basket {
+  id                String    @id
+  buyerUserId       String    @map("buyer_user_id")
+  /// La société de l'espace où le panier a été ouvert, `null` en perso. Un
+  /// panier sans société n'est pas servi : aucune échéance ne lui est créée.
+  companyId         String?   @map("company_id")
+  fromOrderId       String?   @map("from_order_id")
+  /// weekly | biweekly | monthly — CHECK en base.
+  cadence           String
+  /// active | paused | cancelled — CHECK en base.
+  status            String    @default("active")
+  startDate         DateTime  @map("start_date") @db.Date
+  endDate           DateTime? @map("end_date") @db.Date
+  /// delivery | pickup — CHECK en base, pas l'énum de `public`.
+  fulfillmentMethod String    @map("fulfillment_method")
+  deliveryAddress   Json?     @map("delivery_address")
+  pickupAddressId   String?   @map("pickup_address_id")
+  /// Le créneau de chaque échéance (`{ start, end }`).
+  requestedWindow   Json      @map("requested_window")
+  note              String    @default("")
+
+  /// La version des CGV acceptée à l'ouverture, puis celle en vigueur.
+  salesTermsKey          String    @map("sales_terms_key")
+  salesTermsRevision     Int       @map("sales_terms_revision")
+  salesTermsFileId       String?   @map("sales_terms_file_id")
+  /// La version annoncée et sa date d'effet (envoi + 30 jours).
+  salesTermsNextRevision Int?      @map("sales_terms_next_revision")
+  salesTermsNextFileId   String?   @map("sales_terms_next_file_id")
+  salesTermsEffectiveOn  DateTime? @map("sales_terms_effective_on") @db.Date
+
+  /// Le dernier jour jusqu'où les échéances sont créées à l'avance.
+  plannedUntil DateTime? @map("planned_until") @db.Date
+
+  createdAt DateTime @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @map("updated_at") @db.Timestamptz(6)
+
+  lines       BasketLine[]
+  occurrences Occurrence[]
+
+  @@index([buyerUserId])
+  @@index([companyId])
+  @@map("basket")
+  @@schema("recurring")
+}
+
+/// Une ligne du gabarit : un SKU (opaque, référence du catalogue) et une
+/// quantité, à son rang.
+model BasketLine {
+  id       String @id
+  basketId String @map("basket_id")
+  basket   Basket @relation(fields: [basketId], references: [id], onDelete: Restrict)
+  position Int
+  sku      String
+  quantity Int
+
+  @@unique([basketId, sku])
+  @@unique([basketId, position])
+  @@map("basket_line")
+  @@schema("recurring")
+}
+
+/// **Une échéance** : un jour visé par un panier, créé à l'avance, qui porte
+/// son état, sa dérogation et son issue.
+model Occurrence {
+  id         String    @id
+  basketId   String    @map("basket_id")
+  basket     Basket    @relation(fields: [basketId], references: [id], onDelete: Restrict)
+  serviceDay DateTime  @map("service_day") @db.Date
+  /// Le jour où elle se passe : `service_day` moins 7 jours.
+  placeOn    DateTime  @map("place_on") @db.Date
+  /// planned | skipped | placed | refused | missed | cancelled — CHECK en base.
+  state      String    @default("planned")
+  /// Les lignes de la dérogation ; `null` = le gabarit.
+  lines      Json?
+  note       String    @default("")
+  orderId    String?   @map("order_id")
+  cause      String?
+  reason     String?
+  /// L'heure de l'issue : passée, refusée (la dernière fois) ou manquée.
+  settledAt  DateTime? @map("settled_at") @db.Timestamptz(6)
+  createdAt  DateTime  @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime  @map("updated_at") @db.Timestamptz(6)
+
+  @@unique([basketId, serviceDay])
+  @@map("occurrence")
+  @@schema("recurring")
+}

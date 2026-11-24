@@ -52,7 +52,7 @@ const WATCHED: Readonly<Record<"company_change" | "order_change", readonly strin
     "principal_sites_menu_entry",
     "sub_account_menu",
     "sub_account_menu_entry",
-    "subscriptions",
+    "recurring.basket",
     "support_requests",
     "users",
   ],
@@ -119,7 +119,10 @@ describe("les déclencheurs des journaux globaux", () => {
 
       expect(Object.fromEntries(found)).toEqual(
         Object.fromEntries(
-          tables.map((table) => [`public.${table}`, ["DELETE", "INSERT", "UPDATE"]]),
+          tables.map((table) => [
+            table.includes(".") ? table : `public.${table}`,
+            ["DELETE", "INSERT", "UPDATE"],
+          ]),
         ),
       );
     },

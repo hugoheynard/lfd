@@ -10,7 +10,6 @@
  *
  * Doublée : la signature des jetons (le jeton EST le `sub`).
  */
-import type { CreatedSubscription } from "../src/lafoliecoffee/subscriptions/domain/ports/subscription.repository.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { CustomerRole } from "../src/platform/database/client/client.js";
 import {
@@ -23,6 +22,7 @@ import {
 import { markCustomRecipe } from "./custom-recipe-fixture.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { INTENT_KEY, freshIntent } from "./intent-key.js";
+import { publishSalesTerms } from "./recurring-scene.js";
 
 const stubAdminVerifier = {
   verify: (sub: string): Promise<{ subject: string; scopes: string[] }> =>
@@ -53,6 +53,7 @@ afterAll(async () => {
 
 beforeEach(async () => {
   await ctx.reset();
+  await publishSalesTerms(ctx);
   await createUser(ctx.prisma, { auth0Sub: PERSON });
   company = (await createCompany(ctx.prisma, { enseigne: "Maison Pro" })).id;
   const pro = await createUser(ctx.prisma, { auth0Sub: PRO });
@@ -106,11 +107,11 @@ describe("abonnement de particulier", () => {
     const refused = await subscribe(X).expect(409);
     expect(jsonBody<{ code: string; message: string }>(refused)).toMatchObject({ code: REFUSED });
     expect(jsonBody<{ message: string }>(refused).message).toContain(X);
-    expect(await ctx.prisma.subscription.count()).toBe(0);
+    expect(await ctx.prisma.basket.count()).toBe(0);
   });
 
   it("refuse une dérogation d'échéance qui ajoute un article non servi au public", async () => {
-    const id = jsonBody<CreatedSubscription>(await subscribe(OPEN).expect(201)).id;
+    const id = jsonBody<{ id: string }>(await subscribe(OPEN).expect(201)).id;
     await markCustomRecipe(ctx, X);
 
     const refused = await ctx
@@ -159,6 +160,6 @@ describe("abonnement pro", () => {
   it("refuse une référence inconnue", async () => {
     const refused = await subscribePro("ZZZ-999-1").expect(409);
     expect(jsonBody<{ code: string }>(refused).code).toBe(NOT_SERVED);
-    expect(await ctx.prisma.subscription.count()).toBe(0);
+    expect(await ctx.prisma.basket.count()).toBe(0);
   });
 });

@@ -1,10 +1,10 @@
 /**
  * E2E de la **lecture staff des paniers récurrents** d'un compte.
  *
- * Ce que seul le vrai SQL prouve : qu'un abonnement, qui n'a **aucune colonne
- * société**, se rattache bien au compte par la jointure `memberships` — donc que
- * la liste rend les paniers de **tous** les membres, nomme leur porteur, et ne
- * laisse pas entrer celui d'un client qui n'appartient pas au compte.
+ * Ce que seul le vrai SQL prouve : que la liste rend les paniers de **tous**
+ * les membres actuels du compte (lus par les comptes, `BasketBuyerStanding`),
+ * nomme leur porteur, et ne laisse pas entrer celui d'un client qui
+ * n'appartient pas au compte.
  *
  * Frontière doublée : la signature du jeton staff. Le reste est réel.
  */
@@ -15,6 +15,7 @@ import { CompanyStatus, CustomerRole } from "../src/platform/database/client/cli
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { INTENT_KEY, freshIntent } from "./intent-key.js";
+import { publishSalesTerms } from "./recurring-scene.js";
 
 const MEMBER = "auth0|member";
 const COLLEAGUE = "auth0|colleague";
@@ -39,6 +40,7 @@ afterAll(async () => {
 
 beforeEach(async () => {
   await ctx.reset();
+  await publishSalesTerms(ctx);
 });
 
 function weeklyPickup(sku: string): Record<string, unknown> {

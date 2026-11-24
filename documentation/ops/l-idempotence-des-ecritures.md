@@ -108,7 +108,7 @@ C'est le handler qui sait.
   lecture suivie d'une écriture. Une clé ne se partage pas entre deux acteurs.
 - **L'acteur** : la fiche du staff ; pour la boutique, `customer:<id>` — le
   client résolu en base, jamais le `sub` ni une adresse
-  (`lafoliecoffee/shared/intent/customer-intent-actor.ts`) ; pour le
+  (`platform/intent/customer-intent-actor.ts`) ; pour le
   formulaire public « Nous écrire », le littéral `visitor:public`
   (`VISITOR_INTENT_ACTOR`), la clé étant fabriquée par la page. Les autres
   routes publiques sans compte n'ont pas d'acteur : par nature ou par leur

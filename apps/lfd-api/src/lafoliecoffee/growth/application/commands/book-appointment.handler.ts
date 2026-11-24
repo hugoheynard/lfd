@@ -20,7 +20,7 @@ import { AppointmentBookedAlert } from "../../domain/ports/appointment-booked-al
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { intentSubject } from "../../../../platform/intent/intent-subject.js";
 import { CREATED_ID_REPLAY, OncePerIntent } from "../../../../platform/intent/once-per-intent.js";
-import { customerIntentActor } from "../../../../lafoliecoffee/shared/intent/customer-intent-actor.js";
+import { customerIntentActor } from "../../../../platform/intent/customer-intent-actor.js";
 
 /** Le nom stable du geste, dans le registre des intentions. */
 const BOOK_GESTURE = "growth.book-appointment";

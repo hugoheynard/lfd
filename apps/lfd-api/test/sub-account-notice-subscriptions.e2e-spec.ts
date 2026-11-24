@@ -3,10 +3,11 @@
  * `documentation/comptes-client/plan-notifications-sous-comptes.md`, lot N4e).
  *
  * Ce que seul l'e2e prouve : la création lit la société de l'en-tête d'espace
- * et la copie sur le panier ; chaque geste écrit son fait durable dans sa
- * transaction ; le mur du rattachement actuel refuse un ancien membre ; une
- * seule ligne `subscription.created` au journal (la croissance), le fait
- * durable du même nom vivant dans la boîte d'envoi.
+ * et la copie sur le panier ; chaque geste écrit son fait durable
+ * `recurring.*` dans sa transaction, principal figé sous le verrou du site ;
+ * le mur du rattachement actuel refuse un ancien membre ; une seule ligne
+ * `subscription.created` au journal (la croissance, abonnée au fait
+ * `recurring.basket_opened`).
  *
  * Doublés : la signature des jetons (le jeton EST le `sub`) et le courrier.
  */
@@ -14,13 +15,13 @@ import { setTimeout as sleep } from "node:timers/promises";
 
 import { PERSONAL_WORKSPACE, WORKSPACE_HEADER } from "@lfd/contracts";
 
-import { SUBSCRIPTION_CREATED } from "../src/lafoliecoffee/account/domain/events/site-gesture.fact.js";
 import { NotifyPrincipalOnSubscriptionCreated } from "../src/lafoliecoffee/sub-account-notices/application/handlers/notify-principal-on-subscription-created.handler.js";
+import { RECURRING_BASKET_OPENED } from "../src/recurring/channels/commerce/index.js";
 import { CustomerRole } from "../src/platform/database/client/client.js";
 import { UnitOfWork } from "../src/platform/database/unit-of-work.js";
 import { MAILER } from "../src/mail/templates/mailer.tokens.js";
 import { ADMIN_VERIFIER_OVERRIDE } from "./delivery-rounds-scene.js";
-import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { bootstrapE2e, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
 import { createCompany } from "./factories.js";
 import {
   enableNotices,
@@ -31,6 +32,7 @@ import {
   type NoticeScene,
 } from "./sub-account-notice-scene.js";
 import { INTENT_KEY, freshIntent } from "./intent-key.js";
+import { publishSalesTerms } from "./recurring-scene.js";
 
 const TEMPLATE = "customer.sub-account-gesture";
 
@@ -62,13 +64,14 @@ afterAll(async () => {
 
 beforeEach(async () => {
   await ctx.reset();
+  await publishSalesTerms(ctx);
   mails.splice(0);
 });
 
 const PANIER = {
   fromOrderId: null,
   recurrence: "weekly",
-  startDate: "2026-08-10",
+  startDate: serviceDay(2),
   endDate: null,
   fulfillmentMethod: "pickup",
   deliveryAddress: null,
@@ -101,7 +104,7 @@ describe("un panier récurrent créé dans l'espace d'un site", () => {
 
     const id = await create(s);
 
-    const row = await ctx.prisma.subscription.findUniqueOrThrow({ where: { id } });
+    const row = await ctx.prisma.basket.findUniqueOrThrow({ where: { id } });
     expect(row.companyId).toBe(s.site);
     expect(recipients(notices())).toEqual(
       [mailOf(s.admin), mailOf(s.orders), mailOf(s.owner)].sort(),
@@ -124,16 +127,16 @@ describe("un panier récurrent créé dans l'espace d'un site", () => {
     expect(await ctx.prisma.activityEvent.count({ where: { type: "subscription.created" } })).toBe(
       1,
     );
-    expect(await ctx.prisma.outboxMessage.count({ where: { type: SUBSCRIPTION_CREATED } })).toBe(1);
+    expect(await ctx.prisma.outboxMessage.count({ where: { type: RECURRING_BASKET_OPENED } })).toBe(
+      1,
+    );
   });
 
   it("en perso : société nulle, aucun avis", async () => {
     const s = await noticeScene(ctx);
     const id = await create(s, PERSONAL_WORKSPACE);
 
-    expect((await ctx.prisma.subscription.findUniqueOrThrow({ where: { id } })).companyId).toBe(
-      null,
-    );
+    expect((await ctx.prisma.basket.findUniqueOrThrow({ where: { id } })).companyId).toBe(null);
     expect(notices()).toEqual([]);
   });
 
@@ -170,7 +173,7 @@ describe("un panier récurrent créé dans l'espace d'un site", () => {
 
     await ctx
       .asSub(s.housekeeper)
-      .put(`/subscriptions/${id}/occurrences/2026-08-17`)
+      .put(`/subscriptions/${id}/occurrences/${serviceDay(9)}`)
       .send({ skipped: true })
       .expect(204);
     await ctx.drain();
@@ -188,7 +191,7 @@ describe("un panier récurrent créé dans l'espace d'un site", () => {
     const s = await noticeScene(ctx);
     await create(s);
     const [row] = await ctx.prisma.outboxMessage.findMany({
-      where: { type: SUBSCRIPTION_CREATED },
+      where: { type: RECURRING_BASKET_OPENED },
     });
     const before = notices().length;
 
@@ -196,7 +199,7 @@ describe("un panier récurrent créé dans l'espace d'un site", () => {
     await ctx.app.get(UnitOfWork, { strict: false }).run(() =>
       subscriber.handle({
         eventId: row?.id ?? "",
-        type: SUBSCRIPTION_CREATED,
+        type: RECURRING_BASKET_OPENED,
         payload: recordOf(row?.payload),
       }),
     );
@@ -244,9 +247,7 @@ describe("le mur du rattachement actuel", () => {
       "Vous n'êtes plus membre de Chalet Gentiane : cet abonnement ne se gère plus depuis votre compte.",
     );
     await ctx.asSub(s.housekeeper).delete(`/subscriptions/${id}`).expect(403);
-    expect((await ctx.prisma.subscription.findUniqueOrThrow({ where: { id } })).status).toBe(
-      "active",
-    );
+    expect((await ctx.prisma.basket.findUniqueOrThrow({ where: { id } })).status).toBe("active");
   });
 });
 

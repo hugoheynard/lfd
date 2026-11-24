@@ -16,7 +16,7 @@ doit le retrouver à la main.
 **L'état (vérifié le 2026-10-19).** `CustomerRequest` ne rattache qu'une
 commande (`orderId`, `apps/lfd-api/prisma/schema/public/contact.prisma`) ; aucune
 colonne vers un abonnement. Le concept existe toujours : `Subscription`,
-`SubscriptionOccurrence` (`prisma/schema/public/subscriptions.prisma`, statut
+`SubscriptionOccurrence` (`prisma/schema/recurring.prisma`, statut
 `active | paused`) et le contexte `apps/lfd-api/src/lafoliecoffee/subscriptions/`.
 
 **La piste.** Un `kind` de plus (cf. `demandes-clients.md`, « Ajouter un

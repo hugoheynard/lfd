@@ -49,7 +49,7 @@ flowchart LR
 - Une adresse vérifiée active une fiche staff `pending` jamais invitée (« premier contact », à confirmer).
 - Photos de livraison et d'incident servies `private, max-age=31536000, immutable` (`step-photo-http.ts`) : elles restent dans le cache du navigateur après déconnexion.
 - Liste des impayés d'un site (`prisma-detached-unpaid.reader.ts`) : toute la table est lue, le mur est appliqué en mémoire. Juste, mais contraire au § 3 du `CLAUDE.md`.
-- Suppression d'un abonnement par `id` seul (`prisma-subscription.repository.ts`), précédée d'un chargement muré.
+- Suppression d'un abonnement par `id` seul (`prisma-basket.repository.ts`), précédée d'un chargement muré.
 - La vue client d'une commande porte `placedByStaffId` et le booléen `pricing.floored` (un signal de marge, sans montant).
 - L'objet d'un e-mail n'est assaini que par chaque gabarit (`sanitiseSubject`), pas au point d'envoi.
 - Revendication d'une intention de paiement sans comparer le compte Stripe (`order-subject-settlement.ts`) : exploitable seulement avec un secret de signature.

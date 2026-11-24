@@ -1,24 +1,35 @@
 /**
- * E2E des **paniers récurrents** — sur un vrai Postgres.
+ * E2E des **paniers récurrents** — le bloc `recurring`, sur un vrai Postgres.
  *
- * Ce que seul le vrai SQL prouve, au-delà des tests de domaine : le mur
- * (`load` filtre sur `placedByUserId`), la **reconstitution** de l'agrégat depuis
- * les tables (`toDomain`) et sa **réécriture** (`save` transactionnel qui
- * réconcilie les dérogations), et la cascade de suppression.
+ * Ce que seul le vrai SQL prouve, au-delà des tests de domaine : le mur (le
+ * panier est à son acheteur), la reconstitution de l'agrégat depuis le schéma
+ * `recurring`, la création à l'avance des échéances en lignes, les gestes sur
+ * une échéance, la reprise qui annule les jours tombés pendant la pause, et
+ * l'arrêt qui garde tout en base.
  */
+import { PERSONAL_WORKSPACE, WORKSPACE_HEADER } from "@lfd/contracts";
 import type { SubscriptionView } from "@lfd/contracts";
-import type { CreatedSubscription } from "../src/lafoliecoffee/subscriptions/domain/ports/subscription.repository.js";
-import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
-import { createUser } from "./factories.js";
+
+import { CompanyStatus, CustomerRole } from "../src/platform/database/client/client.js";
+import { ADMIN_VERIFIER_OVERRIDE } from "./delivery-rounds-scene.js";
+import { bootstrapE2e, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
+import { attachTo, createCompany, createUser } from "./factories.js";
 import { INTENT_KEY, freshIntent } from "./intent-key.js";
+import {
+  occurrenceStates,
+  openBasket,
+  publishSalesTerms,
+  weeklyBasket,
+} from "./recurring-scene.js";
 
 const OWNER = "auth0|owner";
 const STRANGER = "auth0|stranger";
 
 let ctx: E2eContext;
+let companyId = "";
 
 beforeAll(async () => {
-  ctx = await bootstrapE2e();
+  ctx = await bootstrapE2e({ overrides: [ADMIN_VERIFIER_OVERRIDE] });
 });
 
 afterAll(async () => {
@@ -27,67 +38,89 @@ afterAll(async () => {
 
 beforeEach(async () => {
   await ctx.reset();
-  await createUser(ctx.prisma, { auth0Sub: OWNER });
+  await publishSalesTerms(ctx);
+  companyId = (await createCompany(ctx.prisma, { status: CompanyStatus.active })).id;
+  const owner = await createUser(ctx.prisma, { auth0Sub: OWNER });
+  await attachTo(ctx.prisma, owner.id, companyId, CustomerRole.owner);
   await createUser(ctx.prisma, { auth0Sub: STRANGER });
 });
 
-/** Gabarit retrait hebdomadaire, du 10 août au 10 décembre 2026. */
-function weeklyPickup(): Record<string, unknown> {
-  return {
-    fromOrderId: null,
-    recurrence: "weekly",
-    startDate: "2026-08-10",
-    endDate: "2026-12-10",
-    fulfillmentMethod: "pickup",
-    deliveryAddress: null,
-    pickupAddressId: null,
-    requestedWindow: { start: "08:00", end: "10:00" },
-    lines: [{ sku: "VIE-001-1", quantity: 3 }],
-    note: "Le lundi",
-  };
+/** Le premier jour du panier : dans deux jours, puis chaque semaine. */
+const FIRST = serviceDay(2);
+const SECOND = serviceDay(9);
+
+const open = (): Promise<string> => openBasket(ctx, OWNER, companyId);
+
+async function occurrenceOn(basketId: string, day: string) {
+  return ctx.prisma.occurrence.findUniqueOrThrow({
+    where: { basketId_serviceDay: { basketId, serviceDay: new Date(`${day}T00:00:00.000Z`) } },
+  });
 }
 
-async function createSubscription(): Promise<string> {
-  const response = await ctx
-    .asSub(OWNER)
-    .post("/subscriptions")
-    .set(INTENT_KEY, freshIntent())
-    .send(weeklyPickup())
-    .expect(201);
-  return jsonBody<CreatedSubscription>(response).id;
-}
+describe("ouverture + lecture", () => {
+  it("persiste le panier, ses lignes, les CGV pros et huit semaines d'échéances ; /mine le rend", async () => {
+    const id = await open();
 
-describe("création + lecture", () => {
-  it("persiste le gabarit et ses lignes, actif, et le rend dans /mine", async () => {
-    const id = await createSubscription();
-
-    const row = await ctx.prisma.subscription.findUniqueOrThrow({
+    const row = await ctx.prisma.basket.findUniqueOrThrow({
       where: { id },
       include: { lines: true },
     });
-    expect(row.placedByUserId).not.toBe("");
-    expect(row.status).toBe("active");
-    expect(row.fulfillmentMethod).toBe("pickup");
-    expect(row.lines).toEqual([expect.objectContaining({ sku: "VIE-001-1", quantity: 3 })]);
+    expect(row).toMatchObject({
+      companyId,
+      status: "active",
+      cadence: "weekly",
+      fulfillmentMethod: "pickup",
+      salesTermsKey: "salesTermsPro",
+      salesTermsRevision: 1,
+    });
+    expect(row.lines).toEqual([expect.objectContaining({ sku: "VIE-001-1", quantity: 6 })]);
+    const states = await occurrenceStates(ctx, id);
+    expect(states).toHaveLength(8);
+    expect(states[0]).toEqual([FIRST, "planned"]);
+    expect(states.every(([, state]) => state === "planned")).toBe(true);
 
     const mine = jsonBody<readonly SubscriptionView[]>(
       await ctx.asSub(OWNER).get("/subscriptions/mine").expect(200),
     );
-    expect(mine).toHaveLength(1);
-    expect(mine[0]?.id).toBe(id);
+    expect(mine.map((view) => view.id)).toEqual([id]);
+  });
+
+  it("un panier perso s'ouvre aux CGV des particuliers, sans aucune échéance", async () => {
+    const id = await openBasket(ctx, OWNER, PERSONAL_WORKSPACE);
+
+    const row = await ctx.prisma.basket.findUniqueOrThrow({ where: { id } });
+    expect(row).toMatchObject({ companyId: null, salesTermsKey: "salesTerms" });
+    expect(await occurrenceStates(ctx, id)).toEqual([]);
+  });
+
+  it("sans CGV publiées pour la clientèle, le panier ne s'ouvre pas (409) et rien n'est écrit", async () => {
+    await ctx.reset();
+    const company = (await createCompany(ctx.prisma, { status: CompanyStatus.active })).id;
+    const owner = await createUser(ctx.prisma, { auth0Sub: OWNER });
+    await attachTo(ctx.prisma, owner.id, company, CustomerRole.owner);
+
+    const refused = await ctx
+      .asSub(OWNER)
+      .post("/subscriptions")
+      .set(INTENT_KEY, freshIntent())
+      .set(WORKSPACE_HEADER, company)
+      .send(weeklyBasket());
+
+    expect(refused.status).toBe(409);
+    expect(JSON.stringify(refused.body)).toContain("conditions générales");
+    expect(await ctx.prisma.basket.count()).toBe(0);
   });
 });
 
-describe("le mur (load filtre le propriétaire)", () => {
-  it("un étranger ne voit pas l'abonnement et reçoit 404 sur chaque mutation", async () => {
-    const id = await createSubscription();
+describe("le mur (le panier est à son acheteur)", () => {
+  it("un étranger ne voit pas le panier et reçoit 404 sur chaque geste", async () => {
+    const id = await open();
 
     expect(
       jsonBody<readonly SubscriptionView[]>(
         await ctx.asSub(STRANGER).get("/subscriptions/mine").expect(200),
       ),
     ).toHaveLength(0);
-
     await ctx
       .asSub(STRANGER)
       .patch(`/subscriptions/${id}/status`)
@@ -95,108 +128,175 @@ describe("le mur (load filtre le propriétaire)", () => {
       .expect(404);
     await ctx
       .asSub(STRANGER)
-      .put(`/subscriptions/${id}/occurrences/2026-09-01`)
+      .put(`/subscriptions/${id}/occurrences/${FIRST}`)
       .send({ skipped: true })
       .expect(404);
     await ctx.asSub(STRANGER).delete(`/subscriptions/${id}`).expect(404);
 
-    // Rien n'a bougé côté propriétaire.
-    const row = await ctx.prisma.subscription.findUniqueOrThrow({ where: { id } });
-    expect(row.status).toBe("active");
+    expect((await ctx.prisma.basket.findUniqueOrThrow({ where: { id } })).status).toBe("active");
+    expect((await occurrenceOn(id, FIRST)).state).toBe("planned");
   });
 });
 
-describe("dérogations d'échéance (save réconcilie)", () => {
-  it("écrit un saut, puis le remplace par des lignes pour la même date (pas de doublon)", async () => {
-    const id = await createSubscription();
+describe("une échéance (sa ligne)", () => {
+  it("se saute, puis se rétablit avec d'autres lignes — la même ligne, jamais une seconde", async () => {
+    const id = await open();
 
     await ctx
       .asSub(OWNER)
-      .put(`/subscriptions/${id}/occurrences/2026-09-01`)
+      .put(`/subscriptions/${id}/occurrences/${SECOND}`)
       .send({ skipped: true })
       .expect(204);
-    let occ = await ctx.prisma.subscriptionOccurrence.findMany({ where: { subscriptionId: id } });
-    expect(occ).toHaveLength(1);
-    expect(occ[0]?.skipped).toBe(true);
+    expect(await occurrenceOn(id, SECOND)).toMatchObject({ state: "skipped", lines: null });
 
     await ctx
       .asSub(OWNER)
-      .put(`/subscriptions/${id}/occurrences/2026-09-01`)
+      .put(`/subscriptions/${id}/occurrences/${SECOND}`)
       .send({ skipped: false, lines: [{ sku: "VIE-001-1", quantity: 5 }] })
       .expect(204);
-
-    occ = await ctx.prisma.subscriptionOccurrence.findMany({ where: { subscriptionId: id } });
-    expect(occ).toHaveLength(1);
-    expect(occ[0]?.skipped).toBe(false);
-    expect(occ[0]?.lines).toEqual([{ sku: "VIE-001-1", quantity: 5 }]);
+    const row = await occurrenceOn(id, SECOND);
+    expect(row.state).toBe("planned");
+    expect(row.lines).toEqual([expect.objectContaining({ sku: "VIE-001-1", quantity: 5 })]);
+    expect(await ctx.prisma.occurrence.count({ where: { basketId: id } })).toBe(8);
   });
 
-  it("refuse (409) une échéance hors de la fenêtre, rien n'est écrit", async () => {
-    const id = await createSubscription();
+  it("un jour sans échéance répond 404 qui le dit, et rien n'est écrit", async () => {
+    const id = await open();
 
-    await ctx
+    const response = await ctx
       .asSub(OWNER)
-      .put(`/subscriptions/${id}/occurrences/2026-12-11`)
-      .send({ skipped: true })
-      .expect(409);
-    expect(await ctx.prisma.subscriptionOccurrence.count({ where: { subscriptionId: id } })).toBe(
+      .put(`/subscriptions/${id}/occurrences/${serviceDay(3)}`)
+      .send({ skipped: true });
+
+    expect(response.status).toBe(404);
+    expect(JSON.stringify(response.body)).toContain("Aucune échéance prévue");
+    expect(await ctx.prisma.occurrence.count({ where: { basketId: id, state: "skipped" } })).toBe(
       0,
     );
   });
+
+  it("une échéance refusée se saute : sa cause s'efface avec elle", async () => {
+    const id = await open();
+    await ctx.prisma.occurrence.update({
+      where: { id: (await occurrenceOn(id, FIRST)).id },
+      data: {
+        state: "refused",
+        cause: "unavailable_sku",
+        reason: "Article indisponible.",
+        settledAt: new Date(),
+      },
+    });
+
+    await ctx
+      .asSub(OWNER)
+      .put(`/subscriptions/${id}/occurrences/${FIRST}`)
+      .send({ skipped: true })
+      .expect(204);
+
+    expect(await occurrenceOn(id, FIRST)).toMatchObject({
+      state: "skipped",
+      cause: null,
+      reason: null,
+      settledAt: null,
+    });
+  });
 });
 
-describe("transitions d'état", () => {
+describe("pause et reprise", () => {
   it("met en pause, refuse une seconde pause (409), puis reprend", async () => {
-    const id = await createSubscription();
+    const id = await open();
+    const status = (value: string) =>
+      ctx.asSub(OWNER).patch(`/subscriptions/${id}/status`).send({ status: value });
 
+    await status("paused").expect(204);
+    expect((await ctx.prisma.basket.findUniqueOrThrow({ where: { id } })).status).toBe("paused");
+    expect((await occurrenceOn(id, FIRST)).state).toBe("planned");
+    await status("paused").expect(409);
+    await status("active").expect(204);
+    expect((await ctx.prisma.basket.findUniqueOrThrow({ where: { id } })).status).toBe("active");
+  });
+
+  /**
+   * Les jours tombés pendant la pause ne sont ni dus ni manqués : la reprise
+   * les annule, ceux qu'un refus avait marqués compris — sans quoi ils
+   * tomberaient « manqués » et réalerteraient. Les deux lignes d'avant la
+   * reprise sont posées à la main : la création à l'avance ne crée jamais un
+   * jour passé, et c'est exactement l'état que laisserait une pause de deux
+   * semaines.
+   */
+  it("la reprise annule les échéances prévues ET refusées d'avant son jour, et garde la cause", async () => {
+    const id = await open();
     await ctx
       .asSub(OWNER)
       .patch(`/subscriptions/${id}/status`)
       .send({ status: "paused" })
       .expect(204);
-    expect((await ctx.prisma.subscription.findUniqueOrThrow({ where: { id } })).status).toBe(
-      "paused",
-    );
-
-    await ctx
-      .asSub(OWNER)
-      .patch(`/subscriptions/${id}/status`)
-      .send({ status: "paused" })
-      .expect(409);
+    const now = new Date();
+    await ctx.prisma.occurrence.createMany({
+      data: [
+        {
+          id: "occ_passee_prevue",
+          basketId: id,
+          serviceDay: new Date(`${serviceDay(-12)}T00:00:00.000Z`),
+          placeOn: new Date(`${serviceDay(-19)}T00:00:00.000Z`),
+          state: "planned",
+          createdAt: now,
+          updatedAt: now,
+        },
+        {
+          id: "occ_passee_refusee",
+          basketId: id,
+          serviceDay: new Date(`${serviceDay(-5)}T00:00:00.000Z`),
+          placeOn: new Date(`${serviceDay(-12)}T00:00:00.000Z`),
+          state: "refused",
+          cause: "no_settlement",
+          reason: "Aucun moyen de règlement.",
+          settledAt: now,
+          createdAt: now,
+          updatedAt: now,
+        },
+      ],
+    });
 
     await ctx
       .asSub(OWNER)
       .patch(`/subscriptions/${id}/status`)
       .send({ status: "active" })
       .expect(204);
-    expect((await ctx.prisma.subscription.findUniqueOrThrow({ where: { id } })).status).toBe(
-      "active",
-    );
+
+    const passed = await ctx.prisma.occurrence.findMany({
+      where: { id: { in: ["occ_passee_prevue", "occ_passee_refusee"] } },
+      orderBy: { serviceDay: "asc" },
+    });
+    expect(passed.map((row) => row.state)).toEqual(["cancelled", "cancelled"]);
+    expect(passed[1]).toMatchObject({
+      cause: "no_settlement",
+      reason: "Aucun moyen de règlement.",
+    });
+    expect((await occurrenceOn(id, FIRST)).state).toBe("planned");
   });
 });
 
 describe("arrêt", () => {
-  it("arrête l'abonnement sans l'effacer : lignes et dérogations restent en base", async () => {
-    const id = await createSubscription();
+  it("arrête le panier sans l'effacer : lignes et échéances restent, annulées", async () => {
+    const id = await open();
     await ctx
       .asSub(OWNER)
-      .put(`/subscriptions/${id}/occurrences/2026-09-01`)
+      .put(`/subscriptions/${id}/occurrences/${SECOND}`)
       .send({ skipped: true })
       .expect(204);
 
     await ctx.asSub(OWNER).delete(`/subscriptions/${id}`).expect(204);
 
-    expect((await ctx.prisma.subscription.findUniqueOrThrow({ where: { id } })).status).toBe(
-      "cancelled",
-    );
-    expect(await ctx.prisma.subscriptionLine.count({ where: { subscriptionId: id } })).toBe(1);
-    expect(await ctx.prisma.subscriptionOccurrence.count({ where: { subscriptionId: id } })).toBe(
-      1,
-    );
+    expect((await ctx.prisma.basket.findUniqueOrThrow({ where: { id } })).status).toBe("cancelled");
+    expect(await ctx.prisma.basketLine.count({ where: { basketId: id } })).toBe(1);
+    const states = await occurrenceStates(ctx, id);
+    expect(states).toHaveLength(8);
+    expect(states.every(([, state]) => state === "cancelled")).toBe(true);
   });
 
   it("un panier arrêté ne se liste plus et répond comme absent", async () => {
-    const id = await createSubscription();
+    const id = await open();
     await ctx.asSub(OWNER).delete(`/subscriptions/${id}`).expect(204);
 
     const mine = await ctx.asSub(OWNER).get("/subscriptions/mine").expect(200);
@@ -210,37 +310,36 @@ describe("arrêt", () => {
   });
 });
 
-describe("émission du journal (subscription.created)", () => {
-  it("journalise subscription.created sur la personne (câblage subscriptions→growth)", async () => {
-    const id = await createSubscription();
+describe("le journal (subscription.created, par le fait durable)", () => {
+  it("l'ouverture écrit recurring.basket_opened ; la croissance en tire subscription.created sur la personne", async () => {
+    const id = await open();
+    await ctx.drain();
     const owner = await ctx.prisma.user.findUniqueOrThrow({ where: { auth0Sub: OWNER } });
 
-    for (let attempt = 0; attempt < 50; attempt += 1) {
-      if ((await ctx.prisma.activityEvent.count({ where: { type: "subscription.created" } })) > 0) {
-        break;
-      }
-      await new Promise<void>((resolve) => setTimeout(resolve, 20));
-    }
-
-    const [event] = await ctx.prisma.activityEvent.findMany({
+    expect(
+      await ctx.prisma.outboxMessage.count({ where: { type: "recurring.basket_opened" } }),
+    ).toBe(1);
+    const events = await ctx.prisma.activityEvent.findMany({
       where: { type: "subscription.created" },
     });
-    expect(event!.subjectType).toBe("user");
-    expect(event!.subjectId).toBe(owner.id);
-    expect(event!.actorType).toBe("customer");
-    expect(event!.idempotencyKey).toBe(`subscription.created:${id}`);
-    expect(event!.payload).toMatchObject({ subscriptionId: id, recurrence: "weekly" });
+    expect(events).toHaveLength(1);
+    expect(events[0]).toMatchObject({
+      subjectType: "user",
+      subjectId: owner.id,
+      idempotencyKey: `subscription.created:${id}`,
+    });
+    expect(events[0]?.payload).toMatchObject({ subscriptionId: id, recurrence: "weekly" });
   });
 });
 
 /**
  * Régression : une date d'échéance hors AAAA-MM-JJ sortait en 500
  * `internal.unexpected` — le `ZodError` d'un `.parse` écrit dans la route
- * n'était pas catégorisé (fix 2026-10-22).
+ * n'était pas catégorisé.
  */
 describe("un chemin mal formé", () => {
   it("🔴 une date d'échéance mal formée est refusée en 400 qui nomme le paramètre, rien n'est écrit", async () => {
-    const id = await createSubscription();
+    const id = await open();
 
     const response = await ctx
       .asSub(OWNER)
@@ -249,7 +348,7 @@ describe("un chemin mal formé", () => {
 
     expect(response.status).toBe(400);
     expect(JSON.stringify(response.body)).toContain("date");
-    expect(await ctx.prisma.subscriptionOccurrence.count({ where: { subscriptionId: id } })).toBe(
+    expect(await ctx.prisma.occurrence.count({ where: { basketId: id, state: "skipped" } })).toBe(
       0,
     );
   });

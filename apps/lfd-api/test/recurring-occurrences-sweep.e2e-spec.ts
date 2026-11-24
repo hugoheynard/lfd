@@ -1,23 +1,29 @@
 /**
- * E2E — **le balayage du planificateur** (plan, lot R4) par sa vraie route
- * machine : il arme un panier neuf, passe l'échéance de l'horizon une seule
- * fois, et laisse les paniers perso de côté.
+ * E2E — **le balayage des paniers récurrents** par sa vraie route machine
+ * (plan `plan-bloc-recurrent.md`, § 5 et § 6.1) : il passe l'échéance dont le
+ * jour de passation est atteint, une seule fois, inscrit l'issue sur sa
+ * ligne avec son fait durable, et laisse les paniers perso de côté.
  */
-import { PERSONAL_WORKSPACE, WORKSPACE_HEADER } from "@lfd/contracts";
+import { PERSONAL_WORKSPACE } from "@lfd/contracts";
 
-import type { RecurringOccurrencesSweepReport } from "../src/lafoliecoffee/subscriptions/application/commands/sweep-recurring-occurrences.command.js";
-import type { CreatedSubscription } from "../src/lafoliecoffee/subscriptions/domain/ports/subscription.repository.js";
 import { CompanyStatus, CustomerRole } from "../src/platform/database/client/client.js";
-import { bootstrapE2e, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
+import { ADMIN_VERIFIER_OVERRIDE } from "./delivery-rounds-scene.js";
+import { bootstrapE2e, serviceDay, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
-import { INTENT_KEY, freshIntent } from "./intent-key.js";
 import { pickupSite } from "./order-factory.js";
-import { TEST_RECOMPUTE_TOKEN } from "./setup-env.js";
+import {
+  occurrenceStates,
+  openBasket,
+  publishSalesTerms,
+  sweep,
+  weeklyBasket,
+} from "./recurring-scene.js";
 
 const BUYER = "auth0|sweep-buyer";
 /**
- * Dans deux jours : dans l'horizon, et loin de l'heure limite à toute heure
- * de la journée. L'échéance suivante (neuf jours) est hors de l'horizon.
+ * Dans deux jours : dans l'horizon de passation, et loin de l'heure limite à
+ * toute heure de la journée. L'échéance suivante (neuf jours) est hors de
+ * l'horizon.
  */
 const FIRST = serviceDay(2);
 
@@ -26,7 +32,7 @@ let companyId = "";
 let pickupId = "";
 
 beforeAll(async () => {
-  ctx = await bootstrapE2e();
+  ctx = await bootstrapE2e({ overrides: [ADMIN_VERIFIER_OVERRIDE] });
 });
 
 afterAll(async () => {
@@ -35,9 +41,9 @@ afterAll(async () => {
 
 beforeEach(async () => {
   await ctx.reset();
+  await publishSalesTerms(ctx);
   pickupId = await pickupSite(ctx.prisma);
-  const company = await createCompany(ctx.prisma, { status: CompanyStatus.active });
-  companyId = company.id;
+  companyId = (await createCompany(ctx.prisma, { status: CompanyStatus.active })).id;
   await ctx.prisma.company.update({
     where: { id: companyId },
     data: { grantedTerms: ["monthly"] },
@@ -46,75 +52,77 @@ beforeEach(async () => {
   await attachTo(ctx.prisma, buyer.id, companyId, CustomerRole.owner);
 });
 
-async function openBasket(workspace: string): Promise<string> {
-  const response = await ctx
-    .asSub(BUYER)
-    .post("/subscriptions")
-    .set(INTENT_KEY, freshIntent())
-    .set(WORKSPACE_HEADER, workspace)
-    .send({
-      fromOrderId: null,
-      recurrence: "weekly",
-      startDate: FIRST,
-      endDate: null,
-      fulfillmentMethod: "pickup",
-      deliveryAddress: null,
-      pickupAddressId: pickupId,
-      requestedWindow: { start: "07:00", end: "08:00" },
-      lines: [{ sku: "VIE-001-1", quantity: 6 }],
-      note: "",
-    })
-    .expect(201);
-  return jsonBody<CreatedSubscription>(response).id;
-}
+const open = (workspace: string): Promise<string> =>
+  openBasket(ctx, BUYER, workspace, weeklyBasket({ pickupAddressId: pickupId }));
 
-async function sweep(): Promise<RecurringOccurrencesSweepReport> {
-  const response = await ctx
-    .http()
-    .post("/admin/subscriptions/sweep")
-    .set("x-lfc-recompute-token", TEST_RECOMPUTE_TOKEN)
-    .expect(200);
-  return jsonBody<RecurringOccurrencesSweepReport>(response);
-}
+describe("le balayage des échéances dues", () => {
+  it("passe l'échéance de l'horizon une seule fois, l'inscrit, et écrit son fait", async () => {
+    const id = await open(companyId);
 
-describe("le balayage du planificateur", () => {
-  it("arme le panier neuf et passe son échéance de l'horizon, une seule fois", async () => {
-    const id = await openBasket(companyId);
-
-    expect(await sweep()).toMatchObject({
-      subscriptions: 1,
-      armed: 1,
-      generated: 1,
+    expect(await sweep(ctx)).toMatchObject({
+      due: 1,
+      placed: 1,
       refused: 0,
       missed: 0,
       failed: 0,
     });
     const orders = await ctx.prisma.order.findMany({ where: { fromSubscriptionId: id } });
     expect(orders).toHaveLength(1);
+    const placed = await ctx.prisma.occurrence.findFirstOrThrow({
+      where: { basketId: id, state: "placed" },
+    });
+    expect(placed.orderId).toBe(orders[0]?.id);
+    expect(placed.settledAt).not.toBeNull();
+    expect((await occurrenceStates(ctx, id))[0]).toEqual([FIRST, "placed"]);
     expect(
-      (await ctx.prisma.subscription.findUniqueOrThrow({ where: { id } })).armedFrom,
-    ).not.toBeNull();
+      await ctx.prisma.outboxMessage.count({ where: { type: "recurring.occurrence_placed" } }),
+    ).toBe(1);
 
-    expect(await sweep()).toMatchObject({ subscriptions: 1, armed: 0, generated: 0 });
+    expect(await sweep(ctx)).toMatchObject({ due: 0, placed: 0 });
     expect(await ctx.prisma.order.count({ where: { fromSubscriptionId: id } })).toBe(1);
   });
 
-  it("refuse sans crédit, dit la cause une fois, et ne la redit pas", async () => {
-    await openBasket(companyId);
+  it("refuse sans crédit, alerte une fois, n'écrit le fait qu'une fois, puis passe la cause levée", async () => {
+    const id = await open(companyId);
     await ctx.prisma.company.update({ where: { id: companyId }, data: { grantedTerms: [] } });
 
-    const first = await sweep();
-    expect(first).toMatchObject({ generated: 0, refused: 1 });
+    const first = await sweep(ctx);
+    expect(first).toMatchObject({ placed: 0, refused: 1 });
     expect(first.alerts.map((alert) => [alert.date, alert.cause])).toEqual([
       [FIRST, "no_settlement"],
     ]);
-    expect((await sweep()).alerts).toEqual([]);
+    expect((await sweep(ctx)).alerts).toEqual([]);
+    expect(
+      await ctx.prisma.outboxMessage.count({ where: { type: "recurring.occurrence_refused" } }),
+    ).toBe(1);
+    expect((await occurrenceStates(ctx, id))[0]).toEqual([FIRST, "refused"]);
+
+    await ctx.prisma.company.update({
+      where: { id: companyId },
+      data: { grantedTerms: ["monthly"] },
+    });
+    expect(await sweep(ctx)).toMatchObject({ placed: 1 });
+    expect(
+      await ctx.prisma.occurrence.findFirstOrThrow({ where: { basketId: id, state: "placed" } }),
+    ).toMatchObject({ cause: null, reason: null });
+  });
+
+  it("un panier en pause n'est pas balayé", async () => {
+    const id = await open(companyId);
+    await ctx
+      .asSub(BUYER)
+      .patch(`/subscriptions/${id}/status`)
+      .send({ status: "paused" })
+      .expect(204);
+
+    expect(await sweep(ctx)).toMatchObject({ due: 0, placed: 0 });
+    expect(await ctx.prisma.order.count()).toBe(0);
   });
 
   it("laisse les paniers perso de côté", async () => {
-    await openBasket(PERSONAL_WORKSPACE);
+    await open(PERSONAL_WORKSPACE);
 
-    expect(await sweep()).toMatchObject({ subscriptions: 0, generated: 0 });
+    expect(await sweep(ctx)).toMatchObject({ due: 0, placed: 0 });
     expect(await ctx.prisma.order.count()).toBe(0);
   });
 

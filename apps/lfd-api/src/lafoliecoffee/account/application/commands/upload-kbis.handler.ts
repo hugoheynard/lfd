@@ -10,7 +10,7 @@ import { DocumentStore } from "../../../../platform/storage/document-store.js";
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { intentSubject } from "../../../../platform/intent/intent-subject.js";
 import { NOTHING_TO_REPLAY, OncePerIntent } from "../../../../platform/intent/once-per-intent.js";
-import { customerIntentActor } from "../../../shared/intent/customer-intent-actor.js";
+import { customerIntentActor } from "../../../../platform/intent/customer-intent-actor.js";
 import { MembershipReader } from "../../domain/ports/membership.reader.js";
 import { ensureCompanyAdmin } from "../../domain/services/company-access.js";
 import { ingestKbis, type KbisIngestionPorts } from "./ingest-kbis.js";

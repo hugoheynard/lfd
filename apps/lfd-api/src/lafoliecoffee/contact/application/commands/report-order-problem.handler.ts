@@ -28,7 +28,7 @@ import { offeredReason } from "./offered-reason.js";
 import { ReportOrderProblemCommand } from "./report-order-problem.command.js";
 import { intentSubject } from "../../../../platform/intent/intent-subject.js";
 import { CREATED_ID_REPLAY, OncePerIntent } from "../../../../platform/intent/once-per-intent.js";
-import { customerIntentActor } from "../../../shared/intent/customer-intent-actor.js";
+import { customerIntentActor } from "../../../../platform/intent/customer-intent-actor.js";
 
 /** Le nom stable du geste, dans le registre des intentions. */
 const REPORT_PROBLEM_GESTURE = "contact.report-order-problem";

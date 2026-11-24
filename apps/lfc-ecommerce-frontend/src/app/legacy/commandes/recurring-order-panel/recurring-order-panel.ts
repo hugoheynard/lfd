@@ -25,9 +25,12 @@ import {
   FoldViewToggleComponent,
   type FoldViewToggleOption,
 } from 'fold-ng';
+import { RouterLink } from '@angular/router';
 
 import { RECURRENCE_OPTIONS, todayIso } from '@lfd/b2b-ui/subscription';
 import { httpErrorMessage } from '@lfd/endpoints';
+import { ClientAudience } from '../../../client/client-audience.service';
+import { defaultSalesTermsSide, SALES_TERMS_SIDE_PARAM } from '../../../client/sales-terms-side';
 import { NotifyService } from '../../../notify.service';
 import { PickupAddressesService } from '../../entreprises/pickup-addresses.service';
 import { SubscriptionsService } from '../subscriptions.service';
@@ -51,6 +54,7 @@ type AddressField = 'ligne1' | 'ligne2' | 'codePostal' | 'ville';
     FoldCalloutComponent,
     FoldListboxComponent,
     FoldViewToggleComponent,
+    RouterLink,
   ],
   templateUrl: './recurring-order-panel.html',
   styleUrl: './recurring-order-panel.scss',
@@ -65,6 +69,12 @@ export class RecurringOrderPanel {
   private readonly subscriptions = inject(SubscriptionsService);
   private readonly notify = inject(NotifyService);
   protected readonly pickups = inject(PickupAddressesService);
+  private readonly audience = inject(ClientAudience);
+
+  /** La page des CGV, ouverte sur le texte de la clientèle qui commande. */
+  protected readonly salesTermsQuery = computed(() => ({
+    [SALES_TERMS_SIDE_PARAM]: defaultSalesTermsSide(this.audience.shown()),
+  }));
 
   protected readonly recurrenceOptions: readonly FoldViewToggleOption[] = RECURRENCE_OPTIONS.map(
     (option) => ({ value: option.value, label: option.label }),

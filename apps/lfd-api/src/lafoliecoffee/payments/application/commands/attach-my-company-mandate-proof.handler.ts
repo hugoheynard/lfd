@@ -16,7 +16,7 @@ import { attachProofToDraft } from "../mandate-proof-support.js";
 import { ringProofDeposited } from "../mandate-staff-bell.js";
 import { AttachMyCompanyMandateProofCommand } from "./attach-my-company-mandate-proof.command.js";
 import { SiteGesturePublisher } from "../../../account/application/services/site-gesture.publisher.js";
-import { customerIntentActor } from "../../../shared/intent/customer-intent-actor.js";
+import { customerIntentActor } from "../../../../platform/intent/customer-intent-actor.js";
 
 /**
  * Dépose le scan signé du client — **sur le brouillon seulement**, après le mur

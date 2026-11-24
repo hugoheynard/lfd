@@ -332,7 +332,7 @@ Bâti en N4a, sans rien laisser aux lots suivants :
 | `delivery_address_changed` | `account/http/company-addresses.controller.ts` → `add-` / `update-` / `remove-delivery-address.handler.ts`                                                                                                      | `add-` / `update-` / `remove-delivery-address-by-staff.handler.ts`                                                                             | `company.delivery_address_added                                                                    | updated                                        | removed`                                                             | site, « ajouté / modifié / retiré une adresse »     | toute partie de l'adresse (décision de Hugo)                    |
 | `contact_changed`          | `account/http/company-contacts.controller.ts` → `add-` / `remove-company-contact.handler.ts`                                                                                                                    | `add-` / `remove-contact-by-staff.handler.ts`                                                                                                  | `company.contact_added                                                                             | removed`                                       | site, « ajouté / retiré un contact »                                 | nom, adresse, rôle du contact (une personne tierce) |
 | `bank_account_changed`     | `payments/http/company-bank-account.controller.ts` → `set-my-company-bank-account.handler.ts` (par `recordCompanyBankAccount`) ; `company-mandate.controller.ts` → `attach-my-company-mandate-proof.handler.ts` | `set-company-bank-account.handler.ts` (par `recordCompanyBankAccount`), `attach-mandate-proof.handler.ts` — hors de `recordCompanyBankAccount` | `company.bank_account_changed`, `payment_mandate.proof_attached` (déjà au journal — corrigé à N4d) | site, « RIB déposé » / « mandat signé déposé » | IBAN, quatre derniers caractères, titulaire (peut être une personne) |
-| `subscription_changed`     | `subscriptions/http/subscriptions.controller.ts` → `create-` / `set-subscription-status-` / `delete-subscription.handler.ts`                                                                                    | aucun (`admin-subscriptions.controller.ts` ne fait que lire)                                                                                   | `subscription.created                                                                              | status_changed                                 | deleted`                                                             | site, « créé / mis en pause / repris / arrêté »     | lignes, adresse ; aucun montant (un abonnement n'a pas de prix) |
+| `subscription_changed`     | `recurring/basket/http/subscriptions.controller.ts` → `create-` / `set-subscription-status-` / `stop-basket.handler.ts`                                                                                         | aucun (`admin-subscriptions.controller.ts` ne fait que lire)                                                                                   | `subscription.created                                                                              | status_changed                                 | deleted`                                                             | site, « créé / mis en pause / repris / arrêté »     | lignes, adresse ; aucun montant (un abonnement n'a pas de prix) |
 
 Notes par action :
 
@@ -570,14 +570,14 @@ principal, désactivé par défaut**.
 > SÉRIEUX), puis tranchée par Hugo — voir « Décisions de Hugo sur N4e » et
 > « Ce que `vitruve` a changé à N4e », en fin de section.
 
-**Ce qui existe.** Un abonnement (`prisma/schema/public/subscriptions.prisma`,
+**Ce qui existe.** Un abonnement (`prisma/schema/recurring.prisma`,
 modèle `Subscription`) appartient à une PERSONNE (`placed_by_user_id`), pas à
 une société : aucune colonne `company_id`. Le mur est la personne — `load(id,
 ownerUserId)` filtre sur `placedByUserId`
-(`apps/lfd-api/src/lafoliecoffee/subscriptions/infrastructure/prisma-subscription.repository.ts`).
+(`apps/lfd-api/src/recurring/basket/infrastructure/prisma-basket.repository.ts`).
 La vue staff rattache par les rattachements de la personne
 (`listForCompany`, `placedBy.memberships.some(companyId)`,
-`prisma-subscription.reader.ts`). Le staff ne fait AUCUN geste : son
+`prisma-basket.reader.ts`). Le staff ne fait AUCUN geste : son
 contrôleur n'a qu'un `GET` (`admin-subscriptions.controller.ts`).
 
 **La migration** (additive) : `subscriptions.company_id TEXT NULL`, index,
@@ -604,13 +604,13 @@ plus. Qui peut créer pour une société : **tout membre**, comme une commande
 
 **Les gestes** (client seulement — le staff n'en a pas) :
 
-| Geste               | Handler                                 | Fait durable (nom du journal)        | Mail                                   |
-| ------------------- | --------------------------------------- | ------------------------------------ | -------------------------------------- |
-| création            | `create-subscription.handler.ts`        | `subscription.created`               | « a créé un panier récurrent »         |
-| pause               | `set-subscription-status.handler.ts`    | `subscription.status_changed`        | « a mis en pause un panier récurrent » |
-| reprise             | idem                                    | idem                                 | « a repris un panier récurrent »       |
-| arrêt               | `delete-subscription.handler.ts`        | `subscription.deleted`               | « a arrêté un panier récurrent »       |
-| occurrence modifiée | `upsert-occurrence-override.handler.ts` | `subscription.occurrence_overridden` | **hors périmètre proposé** (N4e-Q2)    |
+| Geste               | Handler                          | Fait durable (nom du journal)        | Mail                                   |
+| ------------------- | -------------------------------- | ------------------------------------ | -------------------------------------- |
+| création            | `open-basket.handler.ts`         | `subscription.created`               | « a créé un panier récurrent »         |
+| pause               | `set-basket-status.handler.ts`   | `subscription.status_changed`        | « a mis en pause un panier récurrent » |
+| reprise             | idem                             | idem                                 | « a repris un panier récurrent »       |
+| arrêt               | `stop-basket.handler.ts`         | `subscription.deleted`               | « a arrêté un panier récurrent »       |
+| occurrence modifiée | `override-occurrence.handler.ts` | `subscription.occurrence_overridden` | **hors périmètre proposé** (N4e-Q2)    |
 
 - Pour pause, reprise et arrêt, la société est **celle copiée sur
   l'abonnement** (lue au chargement), pas l'espace de la requête : un geste
@@ -633,7 +633,7 @@ false`. Un abonnement sans `company_id` écrit son fait sans principal
 
 **Le mail** : l'action seule et le site. Ni lignes, ni adresse, ni cadence, ni
 montant — un abonnement n'a pas de prix (« Aucun prix ici »,
-`create-subscription.handler.ts`).
+`open-basket.handler.ts`).
 
 **Dev** : la remise à blanc (`src/dev/seeding/reset.seed.ts`) supprime les
 abonnements des personnes du périmètre AVANT les sociétés — compatible avec
@@ -729,7 +729,7 @@ dans N4e) :
   réécrit). Hors requête, la société est confrontée aux rattachements comme
   pour une commande. Contrat HTTP et écrans inchangés.
 - **Le mur et l'annonce** : `SubscriptionGestures`
-  (`apps/lfd-api/src/lafoliecoffee/subscriptions/application/services/subscription-gestures.ts`)
+  (`apps/lfd-api/src/recurring/basket/application/services/basket-gestures.ts`)
   — `loadManaged` (404 `SubscriptionNotFoundError`, 403
   `SubscriptionSiteMembershipLostError` pour un ancien membre) et `announce`
   (fait durable dans l'unité de travail du geste). Lit deux ports d'`account/`

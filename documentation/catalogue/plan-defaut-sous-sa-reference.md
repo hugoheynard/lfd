@@ -124,7 +124,7 @@ Les magasins de configuration, clés par SKU de vente, sont **réécrits dans la
 - `ProductionBatchShortcut.sku` (`production.prisma:926-929`)
 - les bacs `DeliveryBinCapacity` `@@id([binTypeId, sku])` (`delivery.prisma:693-701`)
 - `StaffSuggestionRule.suggestedSkus` (`public/staff-suggestions.prisma:26`)
-- les abonnements `SubscriptionLine.sku` (`public/subscriptions.prisma:77`) et `SubscriptionOccurrence.lines` jsonb (`:58`, occurrences à venir seulement)
+- les abonnements `SubscriptionLine.sku` (`recurring.prisma`) et `SubscriptionOccurrence.lines` jsonb (`:58`, occurrences à venir seulement)
 - les lots `BundleChoice` `@@id([bundleId, sku])` (`public/bundles.prisma:57-62`)
 - `ProductNorm` : réécrire la clé, ou recalculer en lisant par alias
 - `production_count` des jours de service ≥ jour de bascule

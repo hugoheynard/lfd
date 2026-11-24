@@ -94,6 +94,10 @@ const BLOCKS = new Set([
   //   `src/shop-cart/` serait ignoré et le catalogue pourrait relire
   //   `shop_carts` en direct sans que rien ne rougisse.
   "shop-cart",
+  // ▸ LES PANIERS RÉCURRENTS (`plan-bloc-recurrent.md`, § 4). Sans cette
+  //   ligne, `src/recurring/` serait ignoré, et la fiche client ou le
+  //   catalogue pourraient relire `recurring.basket` sans que rien ne rougisse.
+  "recurring",
 ]);
 
 /**

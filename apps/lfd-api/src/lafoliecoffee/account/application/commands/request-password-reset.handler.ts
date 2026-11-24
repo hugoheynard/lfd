@@ -10,7 +10,7 @@ import { AccountJournalNames } from "../services/account-journal-names.service.j
 import { RequestPasswordResetCommand } from "./request-password-reset.command.js";
 import { NOTHING_TO_REPLAY, OncePerIntent } from "../../../../platform/intent/once-per-intent.js";
 import { intentSubject } from "../../../../platform/intent/intent-subject.js";
-import { customerIntentActor } from "../../../shared/intent/customer-intent-actor.js";
+import { customerIntentActor } from "../../../../platform/intent/customer-intent-actor.js";
 
 /** Le nom stable du geste, dans le registre des intentions. */
 const PASSWORD_RESET_GESTURE = "account.request-password-reset";

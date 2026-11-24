@@ -519,7 +519,7 @@ naturellement ».
   fabrique d'un lecteur pro reconnu ; `ReservedArticleRefusedError` (409,
   code `catalog.reserved_article`) ; lignes gardées par `keptLinesViewer` ;
   mur à l'abonnement (`ReservedArticleGuard`) et règle Q7 écrite
-  (`subscriptions/domain/services/reserved-occurrence.ts`, sans appelant tant
+  (`recurring/occurrence/domain/refusal-cause.ts`, sans appelant tant
   que la génération n'existe pas) ; Tarifs filtrés et pose/avenant/report
   refusés (Q1). E2e : `test/made-to-order-wall.e2e-spec.ts`. Écarts au texte
   du plan, à trancher : un lecteur `staff` porte une **audience** (le prix
@@ -602,7 +602,7 @@ premier SKU absent est refusé par `ArticleNotServedToPublicError` (409,
 particuliers »). Un seul refus pour tous les cas, SKU inconnu compris :
 distinguer « réservé » d'« inconnu » dirait au particulier ce que son rayon
 lui cache. Les deux handlers appelaient déjà la garde ; rien n'y change.
-Tests : `reserved-article-guard.spec.ts`, `create-subscription.handler.spec.ts`,
+Tests : `reserved-article-guard.spec.ts`, `open-basket.handler.spec.ts`,
 e2e `apps/lfd-api/test/public-subscription-wall.e2e-spec.ts`.
 
 **Abonnement pro — décidé par Hugo le 2026-10-30, bâti** : un abonnement pro

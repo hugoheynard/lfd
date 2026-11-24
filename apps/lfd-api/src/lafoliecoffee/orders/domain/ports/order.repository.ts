@@ -5,14 +5,17 @@ import type { FirstHandoverStatus } from "../services/shipment-settlement.js";
 import type { HandoverVia } from "../services/handover.js";
 
 /**
- * **D'où vient une commande générée** par le planificateur des paniers
- * récurrents : le panier, et l'écart de ce jour avec son gabarit. Une trace de
- * provenance, écrite une fois à la création et jamais relue par l'agrégat :
- * aucune règle de la commande ne dépend d'elle, d'où sa place à côté de
- * l'agrégat plutôt que dans son état.
+ * **D'où vient une commande passée pour une échéance** de panier récurrent :
+ * le panier, le jour de l'échéance, et l'écart de ce jour avec son gabarit.
+ * Une trace de provenance, écrite une fois à la création (un déclencheur en
+ * refuse la modification) et jamais relue par l'agrégat, d'où sa place à
+ * côté de l'agrégat plutôt que dans son état. Le couple (panier, jour) est
+ * unique en base : une échéance, au plus une commande.
  */
 export interface RecurringProvenance {
   readonly subscriptionId: string;
+  /** Le jour de l'échéance, `AAAA-MM-JJ` — pas la date de service, que le client peut modifier. */
+  readonly occurrenceDay: string;
   readonly deltas: RecurringDeltas;
 }
 
@@ -51,6 +54,10 @@ export abstract class OrderRepository {
    * aucune des deux. L'intervalle entre les deux serait le seul état que le
    * dispositif ne survit pas — la commande existe, la clé n'est pas résolue :
    * ni rendable, ni reprenable.
+   *
+   * @throws {OccurrenceAlreadyServedError} `recurring` nomme une échéance qui a
+   *   déjà sa commande (index `orders_one_per_occurrence`) : la transaction
+   *   est annulée, et l'appelant relit la commande existante.
    */
   abstract place(order: Order, recurring?: RecurringProvenance): Promise<PlacedOrder>;
 

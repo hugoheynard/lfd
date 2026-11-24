@@ -105,6 +105,11 @@ const BLOCK_OF = {
   //   Son schéma `cart`, sans clé étrangère. Le commerce l'atteint par
   //   `shop-cart/channels/` SEULEMENT ; lui n'importe que la plateforme.
   "shop-cart": "shop-cart",
+  // ▸ LES PANIERS RÉCURRENTS (`documentation/commandes/paniers-recurrents/
+  //   plan-bloc-recurrent.md`, § 4). Son schéma `recurring`, sans clé
+  //   étrangère. Il DÉCLARE ce dont il a besoin (`channels/commerce/`) et le
+  //   commerce l'implémente ; `recurring → lafoliecoffee` reste INTERDIT.
+  recurring: "recurring",
 
   // ▸ LA RACINE DE COMPOSITION — le seul endroit qui a le droit de connaître
   //   tout le monde, parce que son unique travail est de relier les blocs
@@ -188,6 +193,9 @@ const ALLOWED = {
     // Le catalogue demande au panier si un article y est (2026-11-20) : par
     // son canal SEULEMENT.
     "shop-cart",
+    // Le commerce implémente ce que les paniers récurrents déclarent : par
+    // leur canal SEULEMENT.
+    "recurring",
   ]),
   production: new Set(["staff", "platform", "mail"]),
   // `delivery` depuis le 2026-10-01 (a-la-porte.md, BQ) : le retrait
@@ -222,6 +230,9 @@ const ALLOWED = {
   // La plateforme seulement : le panier ne sait pas ce qu'est une commande, ni
   // qui lui demande ce qu'il contient.
   "shop-cart": new Set(["platform"]),
+  // Le socle (l'autorisation de la route du staff), la plateforme, et le
+  // canal des e-mails (le changement des CGV, plan § 7) ; aucun bloc métier.
+  recurring: new Set(["staff", "platform", "mail"]),
   platform: new Set([]),
   ops: new Set(["platform"]),
   root: new Set([
@@ -238,6 +249,7 @@ const ALLOWED = {
     "mail",
     "payment",
     "shop-cart",
+    "recurring",
   ]),
 };
 
@@ -255,6 +267,7 @@ const MAIL_CLIENTS = [
   "handover",
   "delivery",
   "packing",
+  "recurring",
 ];
 
 /**
@@ -393,6 +406,10 @@ const PORT_SURFACE = {
   // Le panier publie ce qu'il sait répondre au commerce (`channels/commerce/`),
   // déclaré et implémenté par lui. `shop-cart → lafoliecoffee` reste INTERDIT.
   "lafoliecoffee→shop-cart": "shop-cart/channels/",
+  // Le commerce implémente ce que les paniers récurrents déclarent
+  // (`channels/commerce/` : passer une échéance, l'acheteur, les articles,
+  // les points de retrait, les CGV). `recurring → lafoliecoffee` reste INTERDIT.
+  "lafoliecoffee→recurring": "recurring/channels/",
 };
 
 /**

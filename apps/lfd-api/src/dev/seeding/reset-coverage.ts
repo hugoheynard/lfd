@@ -48,7 +48,6 @@ export const RESET_WIPED_TABLES: readonly CoveredTable[] = [
       "public.sub_account_menu",
       "public.sub_account_notice_rules",
       "public.sub_account_notice_settings",
-      "public.subscriptions",
     ],
   },
   { table: "public.company_chorus_routing", referencedBy: [] },
@@ -111,11 +110,11 @@ export const RESET_WIPED_TABLES: readonly CoveredTable[] = [
   { table: "public.sub_account_menu_entry", referencedBy: [] },
   { table: "public.sub_account_notice_rules", referencedBy: [] },
   { table: "public.sub_account_notice_settings", referencedBy: [] },
-  {
-    table: "public.subscriptions",
-    referencedBy: ["public.subscription_occurrence_runs"],
-  },
-  { table: "public.subscription_occurrence_runs", referencedBy: [] },
+  // Les paniers récurrents : identifiants opaques, aucune clé ne sort du
+  // schéma ; échéances et lignes tiennent le panier en `RESTRICT`.
+  { table: "recurring.basket", referencedBy: ["recurring.basket_line", "recurring.occurrence"] },
+  { table: "recurring.basket_line", referencedBy: [] },
+  { table: "recurring.occurrence", referencedBy: [] },
   { table: "public.support_requests", referencedBy: [] },
   {
     table: "public.users",
@@ -123,7 +122,6 @@ export const RESET_WIPED_TABLES: readonly CoveredTable[] = [
       "public.loyalty_ledger_entries",
       "public.loyalty_vouchers",
       "public.orders",
-      "public.subscriptions",
       "public.support_requests",
     ],
   },

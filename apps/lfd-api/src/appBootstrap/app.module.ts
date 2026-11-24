@@ -110,7 +110,8 @@ import { StorefrontModule } from "../lafoliecoffee/storefront/storefront.module.
 import { StaffNotificationsModule } from "../staff/notifications/staff-notifications.module.js";
 import { StaffUsersModule } from "../staff/staff.module.js";
 import { StaffAuthorsModule } from "../staff/directory/staff-authors.module.js";
-import { SubscriptionsModule } from "../lafoliecoffee/subscriptions/subscriptions.module.js";
+import { RecurringModule } from "../recurring/recurring.module.js";
+import { RecurringFeedModule } from "./recurring-feed.module.js";
 import { AuthModule } from "../platform/auth/auth.module.js";
 import { AppConfigModule } from "../platform/config/config.module.js";
 import { envFilePaths } from "../platform/config/env-readers.js";
@@ -325,7 +326,8 @@ import { DevImpersonation } from "../platform/auth/dev-impersonation.js";
     // La façade de lecture du prix. Après Orders, dont elle emprunte la recette.
     PricerModule,
     // Paniers récurrents (abonnements) — murés par le seul client connecté.
-    SubscriptionsModule,
+    RecurringModule,
+    RecurringFeedModule,
     // Croissance (cross-domain) : journal d'événements, consommé par les émetteurs.
     GrowthModule,
     // Alertes de compte client : surveille un compte DÉJÀ client (produit inédit,

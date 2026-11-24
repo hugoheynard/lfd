@@ -10,10 +10,13 @@
  * `order-waivers-journal` : une contrainte SQL qui refuse précisément le fait
  * attendu.
  */
-import type { CreatedSubscription } from "../src/lafoliecoffee/subscriptions/domain/ports/subscription.repository.js";
-import { bootstrapE2e, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
-import { createUser } from "./factories.js";
-import { INTENT_KEY, freshIntent } from "./intent-key.js";
+import type { CreateSubscriptionPayload } from "@lfd/contracts";
+
+import { CompanyStatus, CustomerRole } from "../src/platform/database/client/client.js";
+import { ADMIN_VERIFIER_OVERRIDE } from "./delivery-rounds-scene.js";
+import { bootstrapE2e, serviceDay, type E2eContext } from "./e2e-harness.js";
+import { attachTo, createCompany, createUser } from "./factories.js";
+import { openBasket, publishSalesTerms } from "./recurring-scene.js";
 
 const OWNER = "auth0|panier-journal";
 const REFUSAL = "e2e_journal_paniers_en_panne";
@@ -27,9 +30,10 @@ const OCCURRENCE = serviceDay(8);
 
 let ctx: E2eContext;
 let ownerId: string;
+let companyId: string;
 
 beforeAll(async () => {
-  ctx = await bootstrapE2e();
+  ctx = await bootstrapE2e({ overrides: [ADMIN_VERIFIER_OVERRIDE] });
 });
 
 afterAll(async () => {
@@ -40,11 +44,14 @@ afterAll(async () => {
 beforeEach(async () => {
   await ctx.reset();
   await repairJournal();
+  await publishSalesTerms(ctx);
   ownerId = (await createUser(ctx.prisma, { auth0Sub: OWNER })).id;
+  companyId = (await createCompany(ctx.prisma, { status: CompanyStatus.active })).id;
+  await attachTo(ctx.prisma, ownerId, companyId, CustomerRole.owner);
 });
 
 /** Livraison hebdomadaire : une adresse et une note — deux choses que le journal ne doit pas garder. */
-function weeklyDelivery(): Record<string, unknown> {
+function weeklyDelivery(): CreateSubscriptionPayload {
   return {
     fromOrderId: null,
     recurrence: "weekly",
@@ -66,14 +73,9 @@ function weeklyDelivery(): Record<string, unknown> {
   };
 }
 
-async function createSubscription(): Promise<string> {
-  const response = await ctx
-    .asSub(OWNER)
-    .post("/subscriptions")
-    .set(INTENT_KEY, freshIntent())
-    .send(weeklyDelivery())
-    .expect(201);
-  return jsonBody<CreatedSubscription>(response).id;
+/** Un panier de la société : ses échéances existent, une dérogation a un jour à viser. */
+function createSubscription(): Promise<string> {
+  return openBasket(ctx, OWNER, companyId, weeklyDelivery());
 }
 
 /** Le journal refuse d'écrire CE type de fait — une panne d'append, la vraie. */
@@ -161,9 +163,7 @@ describe("les gestes du client sur son panier", () => {
 
     await ctx.asSub(OWNER).delete(`/subscriptions/${id}`).expect(204);
 
-    expect((await ctx.prisma.subscription.findUniqueOrThrow({ where: { id } })).status).toBe(
-      "cancelled",
-    );
+    expect((await ctx.prisma.basket.findUniqueOrThrow({ where: { id } })).status).toBe("cancelled");
     expect(await facts("subscription.deleted")).toEqual([
       {
         subjectType: "subscription",
@@ -203,6 +203,16 @@ describe("les gestes du client sur son panier", () => {
     for (const secret of [STREET, NOTE_PHONE, OWNER]) {
       expect(text).not.toContain(secret);
     }
+    // Les faits durables du bloc non plus : ni adresse, ni note, ni sub.
+    const durableRows = await ctx.prisma.outboxMessage.findMany({
+      where: { type: { startsWith: "recurring." } },
+      select: { payload: true },
+    });
+    expect(durableRows.length).toBeGreaterThan(0);
+    const durable = JSON.stringify(durableRows);
+    for (const secret of [STREET, NOTE_PHONE, OWNER]) {
+      expect(durable).not.toContain(secret);
+    }
   });
 });
 
@@ -217,9 +227,7 @@ describe("un journal en panne annule le geste", () => {
       .send({ status: "paused" });
 
     expect(response.status).toBeGreaterThanOrEqual(500);
-    expect((await ctx.prisma.subscription.findUniqueOrThrow({ where: { id } })).status).toBe(
-      "active",
-    );
+    expect((await ctx.prisma.basket.findUniqueOrThrow({ where: { id } })).status).toBe("active");
   });
 
   it("la dérogation n'est pas écrite", async () => {
@@ -232,18 +240,21 @@ describe("un journal en panne annule le geste", () => {
       .send({ skipped: true });
 
     expect(response.status).toBeGreaterThanOrEqual(500);
-    expect(await ctx.prisma.subscriptionOccurrence.count({ where: { subscriptionId: id } })).toBe(
-      0,
-    );
+    expect(
+      await ctx.prisma.occurrence.count({ where: { basketId: id, state: { not: "planned" } } }),
+    ).toBe(0);
   });
 
-  it("le panier n'est pas supprimé", async () => {
+  it("le panier n'est pas arrêté", async () => {
     const id = await createSubscription();
     await breakJournal("subscription.deleted");
 
     const response = await ctx.asSub(OWNER).delete(`/subscriptions/${id}`);
 
     expect(response.status).toBeGreaterThanOrEqual(500);
-    expect(await ctx.prisma.subscription.count({ where: { id } })).toBe(1);
+    expect((await ctx.prisma.basket.findUniqueOrThrow({ where: { id } })).status).toBe("active");
+    expect(
+      await ctx.prisma.outboxMessage.count({ where: { type: "recurring.basket_stopped" } }),
+    ).toBe(0);
   });
 });

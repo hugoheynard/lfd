@@ -1,4 +1,5 @@
 import { createUser } from "../factories.js";
+import { publishSalesTerms } from "../recurring-scene.js";
 import { serviceDay } from "../e2e-harness.js";
 import { routeKey, STAFF, type ScenarioSet } from "./scenario.js";
 import { companyWithOwner, pickupPoint } from "./seeds.js";
@@ -26,9 +27,9 @@ export const COMMERCE_SCENARIOS: ScenarioSet = {
     };
   },
 
-  [routeKey("lafoliecoffee/subscriptions/http/subscriptions.controller.ts", "create")]: async ({
-    ctx,
-  }) => {
+  [routeKey("recurring/basket/http/subscriptions.controller.ts", "create")]: async ({ ctx }) => {
+    // Un panier ne s'ouvre pas sans CGV publiées pour sa clientèle.
+    await publishSalesTerms(ctx);
     await createUser(ctx.prisma, { auth0Sub: BUYER, firstName: "Léa", lastName: "Martin" });
     return {
       sub: BUYER,

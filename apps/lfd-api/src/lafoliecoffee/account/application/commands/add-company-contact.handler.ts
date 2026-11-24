@@ -14,7 +14,7 @@ import { CONTACT_ADDED } from "../../domain/events/site-gesture.fact.js";
 import { SiteGesturePublisher } from "../services/site-gesture.publisher.js";
 import { intentSubject } from "../../../../platform/intent/intent-subject.js";
 import { CREATED_ID_REPLAY, OncePerIntent } from "../../../../platform/intent/once-per-intent.js";
-import { customerIntentActor } from "../../../shared/intent/customer-intent-actor.js";
+import { customerIntentActor } from "../../../../platform/intent/customer-intent-actor.js";
 
 /** Le nom stable du geste, dans le registre des intentions. */
 const ADD_CONTACT_GESTURE = "account.add-company-contact";

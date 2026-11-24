@@ -122,6 +122,24 @@
   }
 
   <p class="pay-note">Paiement par carte à chaque échéance.</p>
+  <!-- La règle des CGV d'un panier (plan-bloc-recurrent.md, § 7) : le panier
+       garde la version acceptée à l'ouverture ; une nouvelle version est
+       annoncée 30 jours avant de s'appliquer, et l'arrêt reste libre. Le lien
+       s'ouvre dans un nouvel onglet pour ne pas perdre le formulaire, et le
+       dit dans son nom (RGAA 13.2). -->
+  <p class="terms-note" data-sales-terms-rule>
+    Les modifications des CGV vous sont envoyées 30 jours avant leur application ; sans arrêt de
+    votre part, elles s'appliquent aux commandes suivantes, et vous pouvez arrêter votre panier à
+    tout moment, sans frais.
+    <a
+      routerLink="/cgv"
+      [queryParams]="salesTermsQuery()"
+      target="_blank"
+      rel="noopener"
+      aria-label="Lire les conditions générales de vente (nouvel onglet)"
+      >Lire les conditions générales de vente</a
+    >
+  </p>
 </div>
 
 <fold-panel-footer align="between">

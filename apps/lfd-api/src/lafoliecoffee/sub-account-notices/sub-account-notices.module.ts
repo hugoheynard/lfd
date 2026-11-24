@@ -19,7 +19,8 @@ import { NotifyPrincipalOnPrimaryContactChanged } from "./application/handlers/n
 import { NotifyPrincipalOnBankAccountChanged } from "./application/handlers/notify-principal-on-bank-account-changed.handler.js";
 import { NotifyPrincipalOnMandateProofAttached } from "./application/handlers/notify-principal-on-mandate-proof-attached.handler.js";
 import { NotifyPrincipalOnSubscriptionCreated } from "./application/handlers/notify-principal-on-subscription-created.handler.js";
-import { NotifyPrincipalOnSubscriptionStatusChanged } from "./application/handlers/notify-principal-on-subscription-status-changed.handler.js";
+import { NotifyPrincipalOnSubscriptionPaused } from "./application/handlers/notify-principal-on-subscription-paused.handler.js";
+import { NotifyPrincipalOnSubscriptionResumed } from "./application/handlers/notify-principal-on-subscription-resumed.handler.js";
 import { NotifyPrincipalOnSubscriptionDeleted } from "./application/handlers/notify-principal-on-subscription-deleted.handler.js";
 import {
   NotifyPrincipalOnMenuChangedByTeam,
@@ -77,7 +78,8 @@ import { AdminSubAccountNoticesController } from "./http/admin-sub-account-notic
     NotifyPrincipalOnBankAccountChanged,
     NotifyPrincipalOnMandateProofAttached,
     NotifyPrincipalOnSubscriptionCreated,
-    NotifyPrincipalOnSubscriptionStatusChanged,
+    NotifyPrincipalOnSubscriptionPaused,
+    NotifyPrincipalOnSubscriptionResumed,
     NotifyPrincipalOnSubscriptionDeleted,
     NotifyPrincipalOnMenuChangedByTeam,
     NotifyPrincipalOnSitesMenuChangedByTeam,

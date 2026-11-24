@@ -4,6 +4,7 @@ import type { CustomerOrderLine, CustomerSheetView, SubAccountParentView } from 
 
 import { CompanyFollowAspect, OrderStatus } from "../../../platform/database/client/client.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
+import { RecurringBasketCounts } from "../../../recurring/channels/commerce/index.js";
 import { CustomerSheetReader } from "../domain/ports/customer-sheet.reader.js";
 import { commercialTimeline } from "../domain/services/commercial-timeline.js";
 import { averageTicket, spendTrend, trendWindows } from "../domain/services/customer-stats.js";
@@ -50,7 +51,10 @@ const REVENUE_STATUSES: readonly OrderStatus[] = [
  */
 @Injectable()
 export class PrismaCustomerSheetReader extends CustomerSheetReader {
-  constructor(private readonly prisma: PrismaService) {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly baskets: RecurringBasketCounts,
+  ) {
     super();
   }
 
@@ -151,9 +155,9 @@ export class PrismaCustomerSheetReader extends CustomerSheetReader {
   /**
    * Les paniers récurrents **actifs** de la société.
    *
-   * Passe par ses **membres** : un abonnement appartient à une personne, pas à
-   * une société (cf. le modèle). Compter autrement — par la commande d'origine —
-   * raterait tous ceux créés hors d'une commande d'entreprise.
+   * Passe par ses **membres** : un panier appartient à une personne, pas à
+   * une société. Le compte est demandé aux paniers récurrents, par leur canal :
+   * la fiche ne lit pas leurs tables.
    */
   private async countRecurringBaskets(companyId: string): Promise<number> {
     const members = await this.prisma.membership.findMany({
@@ -163,9 +167,7 @@ export class PrismaCustomerSheetReader extends CustomerSheetReader {
     if (members.length === 0) {
       return 0;
     }
-    return this.prisma.subscription.count({
-      where: { placedByUserId: { in: members.map((member) => member.userId) }, status: "active" },
-    });
+    return this.baskets.activeOf(members.map((member) => member.userId));
   }
 }
 

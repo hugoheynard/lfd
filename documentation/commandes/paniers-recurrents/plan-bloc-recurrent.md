@@ -93,18 +93,18 @@ flowchart LR
 | Pièce                                                                                                                                                                        | Où                                                                                                       | Ce qu'elle devient                                                                                                           |
 | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
 | Agrégat `Subscription`, ses value objects, `occurrencesBetween` (R0), `servableOccurrence` (R3)                                                                              | `apps/lfd-api/src/lafoliecoffee/subscriptions/domain/`                                                   | déménagent ; le calendrier sert à **créer** les lignes d'échéance                                                            |
-| Tables `subscriptions`, `subscription_lines`, `subscription_occurrences`, `subscription_occurrence_runs`                                                                     | `apps/lfd-api/prisma/schema/public/subscriptions.prisma`                                                 | `basket`, `basket_line`, `occurrence` dans le schéma `recurring` (§ 5)                                                       |
-| Clés étrangères vers `users` et `companies`, et leurs relations inverses                                                                                                     | `subscriptions.prisma` ; `account.prisma` (`subscriptions Subscription[]` sur `User` et `Company`)       | retirées ensemble : identifiants opaques                                                                                     |
-| `CatalogModule` : unité de vente, opérations datées, **articles réservés** (`catalog/application/reserved-article-guard.service.js`)                                         | `create-subscription.handler.ts`                                                                         | port `BasketArticles` (§ 6.1)                                                                                                |
-| `AccountModule` : mur de membre (`MembershipReader`), nom de la société, `SiteGesturePublisher` et ses types (`site-gesture.fact.js`, `journal-names.js` — `PickupPointRef`) | `subscription-gestures.ts`, handlers des gestes                                                          | ports `BasketBuyerStanding` ; faits durables du bloc (§ 6.2)                                                                 |
-| `PickupAddressesModule` : le nom d'un point                                                                                                                                  | `delete-subscription.handler.ts`                                                                         | port `BasketPickupPoints`                                                                                                    |
-| L'acteur d'intention des routes client (`lafoliecoffee/shared/intent/customer-intent-actor.js`)                                                                              | handlers de création et de gestes                                                                        | la matrice interdit à `recurring` d'importer `lafoliecoffee/shared` : il descend dans `platform/intent/` (B0)                |
+| Tables `subscriptions`, `subscription_lines`, `subscription_occurrences`, `subscription_occurrence_runs`                                                                     | `apps/lfd-api/prisma/schema/recurring.prisma`                                                            | `basket`, `basket_line`, `occurrence` dans le schéma `recurring` (§ 5)                                                       |
+| Clés étrangères vers `users` et `companies`, et leurs relations inverses                                                                                                     | `recurring.prisma` ; `account.prisma` (`subscriptions Subscription[]` sur `User` et `Company`)           | retirées ensemble : identifiants opaques                                                                                     |
+| `CatalogModule` : unité de vente, opérations datées, **articles réservés** (`catalog/application/reserved-article-guard.service.js`)                                         | `open-basket.handler.ts`                                                                                 | port `BasketArticles` (§ 6.1)                                                                                                |
+| `AccountModule` : mur de membre (`MembershipReader`), nom de la société, `SiteGesturePublisher` et ses types (`site-gesture.fact.js`, `journal-names.js` — `PickupPointRef`) | `basket-gestures.ts`, handlers des gestes                                                                | ports `BasketBuyerStanding` ; faits durables du bloc (§ 6.2)                                                                 |
+| `PickupAddressesModule` : le nom d'un point                                                                                                                                  | `stop-basket.handler.ts`                                                                                 | port `BasketPickupPoints`                                                                                                    |
+| L'acteur d'intention des routes client (`platform/intent/customer-intent-actor.js`)                                                                                          | handlers de création et de gestes                                                                        | la matrice interdit à `recurring` d'importer `lafoliecoffee/shared` : il descend dans `platform/intent/` (B0)                |
 | La fiche client compte les paniers actifs en lisant la table                                                                                                                 | `lafoliecoffee/account/infrastructure/prisma-customer-sheet.reader.ts`                                   | lecture publiée `RecurringBasketCounts`                                                                                      |
 | L'usage d'un SKU par les paniers, lu en Prisma par le catalogue                                                                                                              | `lafoliecoffee/catalog/infrastructure/prisma-sale-reference-usage.ts`                                    | lecture publiée `RecurringSkuUsage`, comme `ShopCartSkuUsage`                                                                |
 | `OnSubscriptionCreated` (croissance), `@EventsHandler` en mémoire                                                                                                            | `lafoliecoffee/growth/application/handlers/on-subscription-created.handler.ts`                           | `@DurableHandler` sur `recurring.basket_opened`, dans le lot B4                                                              |
 | Les avis au principal, `@DurableHandler` sur les faits de geste de site                                                                                                      | `lafoliecoffee/sub-account-notices/application/handlers/notify-principal-on-subscription-*.handler.ts`   | abonnés aux faits `recurring.*` par le canal, dans le lot B4                                                                 |
-| La passation d'une échéance                                                                                                                                                  | `lafoliecoffee/orders/application/commands/place-recurring-occurrence.handler.ts`                        | implémentation commerce d'`OccurrencePlacement` ; `RECURRING_OCCURRENCE_POLICY` et `recurringRefusalOf` restent              |
-| Le balayage et sa route `admin/subscriptions/sweep` (R4, pas sur `main`)                                                                                                     | `subscriptions/application/commands/sweep-recurring-occurrences.handler.ts`                              | réécrit sur les lignes ; la route garde son nom (le Worker et `dev-sweeps.mjs` la citent)                                    |
+| La passation d'une échéance                                                                                                                                                  | `lafoliecoffee/orders/application/services/recurring-occurrence-placement.ts`                            | implémentation commerce d'`OccurrencePlacement` ; `RECURRING_OCCURRENCE_POLICY` et `recurringRefusalOf` restent              |
+| Le balayage et sa route `admin/subscriptions/sweep` (R4, pas sur `main`)                                                                                                     | `recurring/occurrence/application/commands/sweep-due-occurrences.handler.ts`                             | réécrit sur les lignes ; la route garde son nom (le Worker et `dev-sweeps.mjs` la citent)                                    |
 | `Order.fromSubscriptionId` (sans relation), `recurringDeltas`                                                                                                                | `public.orders`                                                                                          | restent ; s'ajoute `from_occurrence_day` (§ 6.1)                                                                             |
 | Faits du journal `subscription.*`                                                                                                                                            | `packages/contracts/src/journal-facts/accounts.ts`                                                       | gardent leur type : valeurs écrites                                                                                          |
 | Les écrivains hors du contexte                                                                                                                                               | `src/dev/seeding/reset.seed.ts` (`prisma.subscription*`), e2e qui lisent les modèles Prisma par leur nom | suivent le renommage dans le lot qui le fait                                                                                 |
@@ -431,6 +431,22 @@ CREATE TABLE "recurring"."basket" (
 CREATE INDEX "basket_buyer_user_id_idx" ON "recurring"."basket" ("buyer_user_id");
 CREATE INDEX "basket_company_id_idx" ON "recurring"."basket" ("company_id");
 
+-- La fiche client compte les paniers actifs : comme l'ancienne table, le panier
+-- fait monter la version `companies` du cache des écrans (journal
+-- `public.company_change`), par la fonction commune des journaux globaux.
+CREATE TRIGGER "basket_company_change_insert"
+  AFTER INSERT ON "recurring"."basket"
+  REFERENCING NEW TABLE AS new_rows
+  FOR EACH STATEMENT EXECUTE FUNCTION "public"."record_company_change"();
+CREATE TRIGGER "basket_company_change_update"
+  AFTER UPDATE ON "recurring"."basket"
+  REFERENCING OLD TABLE AS old_rows NEW TABLE AS new_rows
+  FOR EACH STATEMENT EXECUTE FUNCTION "public"."record_company_change"();
+CREATE TRIGGER "basket_company_change_delete"
+  AFTER DELETE ON "recurring"."basket"
+  REFERENCING OLD TABLE AS old_rows
+  FOR EACH STATEMENT EXECUTE FUNCTION "public"."record_company_change"();
+
 -- ─── Ses lignes ─────────────────────────────────────────────────────────────
 CREATE TABLE "recurring"."basket_line" (
   "id"        TEXT PRIMARY KEY,
@@ -570,7 +586,14 @@ Ce que ce SQL décide, et que le code devra suivre :
   horodatage, `cadence` et `fulfillment_method` en `String`,
   `requested_window` en `Json` obligatoire.
 - La migration inverse, générée par `prisma migrate diff` et gardée prête :
-  la migration est irréversible par simple redéploiement.
+  la migration est irréversible par simple redéploiement. Elle est rangée
+  à côté de ce plan,
+  [`migration-inverse-du-bloc-recurrent.sql`](migration-inverse-du-bloc-recurrent.sql)
+  (générée le 2026-11-24) : le diff de Prisma, encadré à la main de ce qu'il
+  ne voit pas — le déclencheur de la provenance à retirer d'abord, le
+  `CHECK` du registre et les trois déclencheurs du journal des sociétés sur
+  `subscriptions` à reposer ensuite — et précédé du même garde-fou que
+  l'aller.
 - La base de développement de Hugo perd ses paniers semés au retrait des
   anciennes tables : le semis (`reset.seed.ts`) est réécrit dans le même
   lot.
@@ -627,3 +650,41 @@ Ce que ce SQL décide, et que le code devra suivre :
 | S10 — consommateurs oubliés                                                                         | semis, `reset-coverage.ts`, dix e2e ajoutés au lot                                        |
 | S11 — ce que `schema-drift` fera sortir                                                             | § 8 bis : modèle Prisma aligné, `CHECK` prouvés par l'e2e                                 |
 | Mineurs (condition de l'index, nom `position`, `skipped` avec lignes, nombre de migrations sources) | intégrés ; l'unicité non différable du rang reste sans objet tant que le gabarit est figé |
+
+## 12. L'état du bâti (2026-11-25)
+
+Bâti en deux tranches, **commité sur `dev`, non poussé** : le bloc
+`src/recurring/` (`basket/`, `occurrence/`, `channels/commerce/`), la
+migration `20261125090000_le_bloc_des_paniers_recurrents`, le canal et ses
+implémentations commerce, la passation sur l'index unique, les faits
+`recurring.*` et leurs abonnés, le semis, les e2e. L'ancien
+`lafoliecoffee/subscriptions/` est retiré.
+
+Décidé en bâtissant :
+
+- **Le panier d'un payeur public ne s'ouvre pas** (`subscriptions.public_payer`, 409) : le planificateur ne les sert pas (périmètre du planificateur, § 0).
+- **Sauter une échéance** est admis depuis `planned` et `refused` ; modifier
+  ses lignes aussi depuis `skipped`, qui repasse `planned`. Une dérogation ne
+  vise qu'un jour déjà créé (8 semaines) : un autre jour répond 404.
+- **La version de CGV acceptée** est celle en vigueur pour la clientèle de
+  l'acheteur à l'ouverture ; l'écran de création affiche la règle du § 7 et
+  un lien vers les CGV. Aucune case à cocher : **doute écrit**, l'acceptation
+  est implicite à la création, comme le panier de la boutique avant le
+  paiement.
+- Le panier garde le **nom du document** des CGV (`salesTermsPro`) ; la
+  commande d'une échéance le traduit en sa clé, comme toute commande.
+- La migration pose sur `recurring.basket` les trois déclencheurs du journal
+  `public.company_change`, comme l'ancienne table : la fiche client, qui
+  compte les paniers actifs, ne reste pas en cache périmée.
+
+**Ce qui n'est pas bâti, et pourquoi** : l'annonce d'une nouvelle version
+des CGV aux paniers et son e-mail (§ 7). Le contenu n'émet aucun fait à la
+publication, et il n'y a pas de « publication » : chaque correction d'un
+article des CGV fait monter la révision, sans texte figé. Dix corrections
+feraient dix e-mails. Le domaine est prêt (`Basket.announceSalesTerms`, la
+version à venir, sa date d'effet) ; il manque l'acte de publication — voir
+la question ci-dessous.
+
+**Question à Hugo (Q-B7)** : l'acte qui publie une nouvelle version des CGV
+est-il le **dépôt du PDF** des CGV (un fait `content.sales_terms_published`
+émis au dépôt, la version figée et jointe à l'e-mail) ?

@@ -627,6 +627,9 @@ import { PrismaPrincipalSitesMenuReader } from "./infrastructure/prisma-principa
     // N4e (2026-10-20) : les paniers récurrents nomment leur site et murent
     // leurs gestes par le rattachement ACTUEL.
     CompanyNameReader,
+    // Les faits des paniers récurrents figent le principal de leur site sous
+    // le verrou de sa ligne, comme tout geste de site.
+    SitePrincipalLock,
     // L'export des ventes nomme les sociétés et lit leur code NAF, par lot.
     CompanySalesIdentityReader,
     MembershipReader,

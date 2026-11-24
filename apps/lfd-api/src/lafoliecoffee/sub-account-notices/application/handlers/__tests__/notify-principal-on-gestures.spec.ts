@@ -13,16 +13,25 @@ import { GestureNoticeDispatcher } from "../../services/gesture-notice.dispatche
 import { PrincipalNoticeSender } from "../../services/principal-notice.sender.js";
 import {
   BANK_ACCOUNT_CHANGED,
-  SUBSCRIPTION_STATUS_CHANGED,
   CONTACT_ADDED,
   DELIVERY_ADDRESS_ADDED,
   SiteGestureFact,
   SiteGesturePayloadError,
   type SiteGestureStamp,
 } from "../../../../account/domain/events/site-gesture.fact.js";
+import {
+  RECURRING_BASKET_OPENED,
+  RECURRING_BASKET_PAUSED,
+  RECURRING_BASKET_RESUMED,
+  RECURRING_BASKET_STOPPED,
+  RecurringBasketFact,
+  RecurringBasketFactPayloadError,
+  type RecurringBasketFactType,
+} from "../../../../../recurring/channels/commerce/index.js";
 import { NotifyPrincipalOnSubscriptionCreated } from "../notify-principal-on-subscription-created.handler.js";
 import { NotifyPrincipalOnSubscriptionDeleted } from "../notify-principal-on-subscription-deleted.handler.js";
-import { NotifyPrincipalOnSubscriptionStatusChanged } from "../notify-principal-on-subscription-status-changed.handler.js";
+import { NotifyPrincipalOnSubscriptionPaused } from "../notify-principal-on-subscription-paused.handler.js";
+import { NotifyPrincipalOnSubscriptionResumed } from "../notify-principal-on-subscription-resumed.handler.js";
 import { NotifyPrincipalOnBankAccountChanged } from "../notify-principal-on-bank-account-changed.handler.js";
 import { NotifyPrincipalOnMandateProofAttached } from "../notify-principal-on-mandate-proof-attached.handler.js";
 import { NotifyPrincipalOnContactAdded } from "../notify-principal-on-contact-added.handler.js";
@@ -85,7 +94,8 @@ function build(
     bank: new NotifyPrincipalOnBankAccountChanged(gestures),
     proof: new NotifyPrincipalOnMandateProofAttached(gestures),
     subCreated: new NotifyPrincipalOnSubscriptionCreated(gestures),
-    subStatus: new NotifyPrincipalOnSubscriptionStatusChanged(gestures),
+    subPaused: new NotifyPrincipalOnSubscriptionPaused(gestures),
+    subResumed: new NotifyPrincipalOnSubscriptionResumed(gestures),
     subDeleted: new NotifyPrincipalOnSubscriptionDeleted(gestures),
   };
 }
@@ -405,18 +415,29 @@ describe("le RIB et la preuve de mandat d'un site (N4d)", () => {
   });
 });
 
-function subscriptionFact(status: "active" | "paused" | null, eventId: string) {
-  const fact = new SiteGestureFact(SUBSCRIPTION_STATUS_CHANGED, "g1", "sub_1", CUSTOMER, status);
-  return { eventId, type: SUBSCRIPTION_STATUS_CHANGED, payload: fact.durableFact().payload };
+function basketFact(
+  type: RecurringBasketFactType,
+  eventId: string,
+  site: { readonly principalCompanyId: string | null } | null = { principalCompanyId: "alpes" },
+) {
+  const fact = new RecurringBasketFact(
+    type,
+    "basket_1",
+    "housekeeper",
+    "weekly",
+    site === null ? null : { companyId: "chalet", name: "Chalet Gentiane", ...site },
+    "g1",
+  );
+  return { eventId, type, payload: fact.durableFact().payload };
 }
 
-describe("les paniers récurrents d'un site (N4e)", () => {
-  it("créé, mis en pause, repris, arrêté : chacun ses mots ; owner, admin, orders moins l'auteure", async () => {
-    const { subCreated, subStatus, subDeleted, mailer } = build();
-    await subCreated.handle({ ...subscriptionFact(null, "s1"), type: "subscription.created" });
-    await subStatus.handle(subscriptionFact("paused", "s2"));
-    await subStatus.handle(subscriptionFact("active", "s3"));
-    await subDeleted.handle({ ...subscriptionFact(null, "s4"), type: "subscription.deleted" });
+describe("les paniers récurrents d'un site (N4e), par les faits du bloc recurring", () => {
+  it("ouvert, mis en pause, repris, arrêté : chacun ses mots ; owner, admin, orders moins l'auteure", async () => {
+    const { subCreated, subPaused, subResumed, subDeleted, mailer } = build();
+    await subCreated.handle(basketFact(RECURRING_BASKET_OPENED, "s1"));
+    await subPaused.handle(basketFact(RECURRING_BASKET_PAUSED, "s2"));
+    await subResumed.handle(basketFact(RECURRING_BASKET_RESUMED, "s3"));
+    await subDeleted.handle(basketFact(RECURRING_BASKET_STOPPED, "s4"));
 
     const toOwner = mailer.sent.filter((m) => m.to === "owner@alpes.test");
     expect(toOwner.map((m) => (m.data as { gesture: string }).gesture)).toEqual([
@@ -431,11 +452,20 @@ describe("les paniers récurrents d'un site (N4e)", () => {
     );
   });
 
-  it("un changement de statut sans état d'arrivée lisible lève, sans rien envoyer", async () => {
-    const { subStatus, mailer } = build();
-    await expect(subStatus.handle(subscriptionFact(null, "x"))).rejects.toThrow(
-      SiteGesturePayloadError,
+  it("un panier sans société, ou un site sans principal : personne n'est prévenu", async () => {
+    const { subCreated, mailer } = build();
+    await subCreated.handle(basketFact(RECURRING_BASKET_OPENED, "p1", null));
+    await subCreated.handle(
+      basketFact(RECURRING_BASKET_OPENED, "p2", { principalCompanyId: null }),
     );
+    expect(mailer.sent).toEqual([]);
+  });
+
+  it("une charge hors forme lève, sans rien envoyer", async () => {
+    const { subPaused, mailer } = build();
+    await expect(
+      subPaused.handle({ eventId: "x", type: RECURRING_BASKET_PAUSED, payload: { basketId: 1 } }),
+    ).rejects.toThrow(RecurringBasketFactPayloadError);
     expect(mailer.sent).toEqual([]);
   });
 });

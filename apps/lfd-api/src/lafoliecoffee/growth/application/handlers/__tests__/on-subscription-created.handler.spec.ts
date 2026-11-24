@@ -1,6 +1,9 @@
-import { SubscriptionCreatedEvent } from "../../../../subscriptions/domain/events/subscription-created.event.js";
+import {
+  RECURRING_BASKET_OPENED,
+  RecurringBasketFact,
+  RecurringBasketFactPayloadError,
+} from "../../../../../recurring/channels/commerce/index.js";
 import { OnSubscriptionCreated } from "../on-subscription-created.handler.js";
-import { BackgroundWork } from "../../../../../platform/events/background-work.js";
 import { RecordingActivityRecorder } from "../../../domain/ports/__tests__/recording-activity-recorder.js";
 import { CustomerNamer } from "../../../domain/ports/customer-namer.js";
 
@@ -21,15 +24,26 @@ class Customers extends CustomerNamer {
   }
 }
 
-describe("OnSubscriptionCreated", () => {
-  const work = new BackgroundWork();
+/** Le fait d'ouverture tel que le bloc des paniers l'écrit. */
+function opened(basketId: string, buyerUserId: string, cadence: string) {
+  const fact = new RecurringBasketFact(
+    RECURRING_BASKET_OPENED,
+    basketId,
+    buyerUserId,
+    cadence,
+    { companyId: "chalet", name: "Chalet Gentiane", principalCompanyId: null },
+    null,
+  );
+  const { type, payload } = fact.durableFact();
+  return { eventId: `evt_${basketId}`, type, payload };
+}
 
-  it("journalise subscription.created sur la personne, nommée, clé par abonnement", async () => {
+describe("OnSubscriptionCreated", () => {
+  it("journalise subscription.created sur la personne, nommée, clé par panier", async () => {
     const recorder = new RecordingActivityRecorder();
-    new OnSubscriptionCreated(recorder, work, new Customers({ user_4: "Camille Rousseau" })).handle(
-      new SubscriptionCreatedEvent("sub_7", "user_4", "weekly"),
+    await new OnSubscriptionCreated(recorder, new Customers({ user_4: "Camille Rousseau" })).handle(
+      opened("sub_7", "user_4", "weekly"),
     );
-    await work.whenIdle();
 
     expect(recorder.records[0]).toEqual({
       type: "subscription.created",
@@ -42,17 +56,28 @@ describe("OnSubscriptionCreated", () => {
 
   it("une fiche sans nom, ou un annuaire en panne : le fait part sans libellé, jamais perdu", async () => {
     const recorder = new RecordingActivityRecorder();
-    new OnSubscriptionCreated(recorder, work, new Customers({})).handle(
-      new SubscriptionCreatedEvent("sub_8", "user_5", "weekly"),
+    await new OnSubscriptionCreated(recorder, new Customers({})).handle(
+      opened("sub_8", "user_5", "weekly"),
     );
-    new OnSubscriptionCreated(recorder, work, new Customers({}, true)).handle(
-      new SubscriptionCreatedEvent("sub_9", "user_6", "monthly"),
+    await new OnSubscriptionCreated(recorder, new Customers({}, true)).handle(
+      opened("sub_9", "user_6", "monthly"),
     );
-    await work.whenIdle();
 
     expect(recorder.records.map((record) => record.payload)).toEqual([
       { subscriptionId: "sub_8", recurrence: "weekly" },
       { subscriptionId: "sub_9", recurrence: "monthly" },
     ]);
+  });
+
+  it("une charge hors forme lève, sans rien écrire", async () => {
+    const recorder = new RecordingActivityRecorder();
+    await expect(
+      new OnSubscriptionCreated(recorder, new Customers({})).handle({
+        eventId: "x",
+        type: RECURRING_BASKET_OPENED,
+        payload: {},
+      }),
+    ).rejects.toThrow(RecurringBasketFactPayloadError);
+    expect(recorder.records).toEqual([]);
   });
 });

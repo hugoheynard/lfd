@@ -5,7 +5,7 @@ import { DomainEventPublisher } from "../../../../platform/events/domain-event-p
 import { IdGenerator } from "../../../../platform/id/id-generator.js";
 import { intentSubject } from "../../../../platform/intent/intent-subject.js";
 import { NOTHING_TO_REPLAY, OncePerIntent } from "../../../../platform/intent/once-per-intent.js";
-import { customerIntentActor } from "../../../shared/intent/customer-intent-actor.js";
+import { customerIntentActor } from "../../../../platform/intent/customer-intent-actor.js";
 import { DocumentStore } from "../../../../platform/storage/document-store.js";
 import { DeliveryProcedureEditedByMemberEvent } from "../../domain/events/member-acts.event.js";
 import { CompanyAddressRepository } from "../../domain/ports/company-address.repository.js";

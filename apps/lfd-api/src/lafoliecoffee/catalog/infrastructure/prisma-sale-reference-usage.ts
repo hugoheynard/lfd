@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
+import { RecurringSkuUsage } from "../../../recurring/channels/commerce/index.js";
 import { ShopCartSkuUsage } from "../../../shop-cart/channels/commerce/index.js";
 import {
   SaleReferenceUsage,
@@ -32,6 +33,7 @@ export class PrismaSaleReferenceUsage extends SaleReferenceUsage {
   constructor(
     private readonly prisma: PrismaService,
     private readonly carts: ShopCartSkuUsage,
+    private readonly baskets: RecurringSkuUsage,
   ) {
     super();
   }
@@ -56,7 +58,7 @@ export class PrismaSaleReferenceUsage extends SaleReferenceUsage {
       ["order", (skus) => this.scalar(this.prisma.orderLine, skus)],
       ["order_draft", (skus) => this.inPayloads(this.prisma.orderDraft, skus)],
       ["shop_cart", (skus) => this.carts.skusInCarts(skus)],
-      ["subscription", (skus) => this.scalar(this.prisma.subscriptionLine, skus)],
+      ["subscription", (skus) => this.baskets.skusInBaskets(skus)],
       ["resupply", (skus) => this.resupplies(skus)],
       ["bundle", (skus) => this.scalar(this.prisma.bundleChoice, skus)],
       ["price_template", (skus) => this.inLines(this.prisma.priceTemplate, skus)],

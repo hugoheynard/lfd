@@ -422,11 +422,16 @@ model Order {
   /// Le code service Chorus (BT-10) ; NULL = aucun.
   budgetCommitmentServiceCode String? @map("budget_commitment_service_code")
 
-  // Origine récurrente : l'abonnement qui a produit cette commande (« récurrent »)
-  // et l'écart vs son gabarit pour cette échéance ({ added, removed } — pills +/−).
-  // Nuls tant que le planificateur ne génère pas de commandes depuis un abonnement.
-  fromSubscriptionId String? @map("from_subscription_id")
-  recurringDeltas    Json?   @map("recurring_deltas")
+  // Origine récurrente : le panier (`recurring.basket`, identifiant opaque) qui
+  // a produit cette commande, le jour de l'échéance servie, et l'écart avec son
+  // gabarit ({ added, removed } — pills +/−). Un déclencheur refuse toute
+  // modification de la provenance, et l'index unique partiel
+  // `orders_one_per_occurrence` (posé en SQL, Prisma ne sait pas le dire) tient
+  // « une échéance, au plus une commande ». Le jour de l'échéance n'est pas la
+  // date de service : le client peut modifier celle-ci.
+  fromSubscriptionId String?   @map("from_subscription_id")
+  fromOccurrenceDay  DateTime? @map("from_occurrence_day") @db.Date
+  recurringDeltas    Json?     @map("recurring_deltas")
 
   // Le PLAN DU SOIR a absorbé la commande : elle est entrée dans le compte à
   // produire. Écrit d'un coup pour toute une journée de service, à la clôture —

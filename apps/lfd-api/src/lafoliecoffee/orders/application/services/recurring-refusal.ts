@@ -1,4 +1,4 @@
-import type { OccurrenceRefusalCause } from "../../../subscriptions/domain/ports/occurrence-run.ledger.js";
+import type { OccurrenceRefusalCause } from "../../../../recurring/channels/commerce/index.js";
 import { ReservedArticleRefusedError } from "../../../catalog/domain/errors/reserved-article-refused.error.js";
 import { UnknownSkuError } from "../../../catalog/domain/errors/unknown-sku.error.js";
 import {
@@ -18,7 +18,7 @@ import { SameDayOrderClosedError } from "../../domain/errors/same-day-order-clos
 import { ServiceDayBeforeFirstOrderableDayError } from "../../domain/errors/service-day-before-first-orderable-day.error.js";
 
 /**
- * Ce que le registre retient d'un refus de la passation : sa cause stable, sa
+ * Ce que la passation rend d'un refus : sa cause stable, sa
  * phrase, et s'il est **définitif** — l'heure limite passée ne se rouvre pas,
  * l'échéance est alors manquée.
  */

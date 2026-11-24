@@ -24,7 +24,7 @@ import {
 import { intentSubject } from "../../../../../platform/intent/intent-subject.js";
 import { OncePerIntent } from "../../../../../platform/intent/once-per-intent.js";
 import { shownOnceReplay } from "../../../../../platform/intent/shown-once-replay.js";
-import { customerIntentActor } from "../../../../shared/intent/customer-intent-actor.js";
+import { customerIntentActor } from "../../../../../platform/intent/customer-intent-actor.js";
 import { OrderNotFoundError } from "../../../domain/errors/order-errors.js";
 import {
   OrderNotRevisableError,

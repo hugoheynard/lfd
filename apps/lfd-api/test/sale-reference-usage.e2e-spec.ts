@@ -54,13 +54,20 @@ async function seedOrders(userId: string, companyId: string): Promise<void> {
   await ctx.prisma.shopCart.create({
     data: { userId, payload: { lines: [{ sku: "U-CART", quantity: 1 }] } },
   });
-  await ctx.prisma.subscription.create({
+  await ctx.prisma.basket.create({
     data: {
-      placedByUserId: userId,
-      recurrence: "weekly",
+      id: "basket_usage",
+      buyerUserId: userId,
+      companyId,
+      cadence: "weekly",
       startDate: at(),
       fulfillmentMethod: "pickup",
-      lines: { create: [{ sku: "U-SUB", quantity: 4 }] },
+      requestedWindow: { start: "07:00", end: "08:00" },
+      salesTermsKey: "salesTermsPro",
+      salesTermsRevision: 1,
+      createdAt: at(),
+      updatedAt: at(),
+      lines: { create: [{ id: "basket_usage_l1", position: 0, sku: "U-SUB", quantity: 4 }] },
     },
   });
 }

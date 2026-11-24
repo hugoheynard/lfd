@@ -59,6 +59,12 @@ export interface DraftPolicy {
   readonly deadlineWaiver: "consider" | "ignore";
   /** Qui demande le créneau ; `null` : déduit des parties ({@link windowRequesterOf}). */
   readonly windowRequester: WindowRequester | null;
+  /**
+   * Les CGV que la commande fige à la place de celles en vigueur : celles que
+   * le panier récurrent applique au jour de l'échéance (plan des paniers
+   * récurrents, § 7). Absentes : la version en vigueur à la passation.
+   */
+  readonly salesTerms?: OrderSalesTerms;
 }
 
 /** La passation d'une personne : la dérogation se dépense, le créneau se juge. */
@@ -67,7 +73,8 @@ export const PLACEMENT_POLICY: DraftPolicy = { deadlineWaiver: "consider", windo
 /**
  * L'échéance d'un panier récurrent, passée sans personne devant l'écran :
  * aucune dérogation dépensée (donc aucun frais de retard), et le créneau du
- * panier honoré tel qu'il a été choisi ({@link SUBSCRIPTION_WINDOW}).
+ * panier honoré tel qu'il a été choisi ({@link SUBSCRIPTION_WINDOW}). La
+ * passation y ajoute les CGV que le panier applique au jour servi.
  */
 export const RECURRING_OCCURRENCE_POLICY: DraftPolicy = {
   deadlineWaiver: "ignore",
@@ -257,7 +264,7 @@ export class OrderDrafting {
         // les commandes passées gardent la leur.
         catalogVersionId: null,
         voucher,
-        salesTerms: await this.salesTermsIn(salesTermsOf(loaded.audience)),
+        salesTerms: policy.salesTerms ?? (await this.salesTermsIn(salesTermsOf(loaded.audience))),
         locale,
         ...(parties.offer === undefined ? {} : { offer: parties.offer }),
       },

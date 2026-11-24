@@ -13,7 +13,7 @@ import { SEED_EMAIL_DOMAIN, SEED_SUB_PREFIX } from "./seed-growth/personas.js";
  * donnée réelle ne sont jamais visés. À lancer avant un re-seed quand on veut
  * repartir d'un corpus propre (le seed étant additif, il ne réécrit pas l'existant).
  *
- * Ordre = enfants avant parents (les FK `Restrict` — Address, Order, Subscription —
+ * Ordre = enfants avant parents (les FK `Restrict` — Address, Order —
  * exigent la suppression explicite ; Membership/Contact/OrderLine cascade).
  */
 async function main(): Promise<void> {
@@ -72,7 +72,12 @@ async function wipe(
   await prisma.deliveryNoteLine.deleteMany({ where: { note: { order: orderWhere } } });
   await prisma.deliveryNote.deleteMany({ where: { order: orderWhere } });
   await prisma.order.deleteMany({ where: orderWhere });
-  await prisma.subscription.deleteMany({ where: { placedByUserId: { in: userIds } } });
+  // Les paniers récurrents (schéma `recurring`) : aucune clé ne les relie aux
+  // comptes, ils se vident ici, échéances et lignes avant le panier.
+  const ofBaskets = { buyerUserId: { in: userIds } };
+  await prisma.occurrence.deleteMany({ where: { basket: ofBaskets } });
+  await prisma.basketLine.deleteMany({ where: { basket: ofBaskets } });
+  await prisma.basket.deleteMany({ where: ofBaskets });
   await prisma.address.deleteMany({ where: { companyId: { in: companyIds } } });
   // `Membership.company` n'est pas en cascade (seul le côté user l'est) → explicite.
   await prisma.membership.deleteMany({

@@ -231,9 +231,18 @@ describe("les audiences de la clientèle (A1)", () => {
     await personalOrder(outsider); // carte jamais encaissée
     const fromSubscription = await personalOrder(outsider);
     await payByCard(ctx, fromSubscription);
-    await ctx.prisma.order.update({
-      where: { id: fromSubscription.id },
-      data: { fromSubscriptionId: "sub-audiences" },
+    // La provenance d'une commande ne se pose qu'à sa création, par la
+    // passation d'une échéance — et le déclencheur
+    // `orders_keep_recurring_provenance` refuse de la poser après coup. Une
+    // commande de particulier issue d'un panier n'a pas de chemin public
+    // (le balayage ne sert que les paniers de société) : elle est posée ici
+    // déclencheurs suspendus, le temps de la seule instruction.
+    await ctx.prisma.$transaction(async (tx) => {
+      await tx.$executeRawUnsafe("SET LOCAL session_replication_role = replica");
+      await tx.order.update({
+        where: { id: fromSubscription.id },
+        data: { fromSubscriptionId: "sub-audiences" },
+      });
     });
 
     const view = await read("?days=7&dimension=clientele");

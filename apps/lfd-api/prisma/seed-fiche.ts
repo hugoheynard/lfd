@@ -117,7 +117,12 @@ async function wipe(): Promise<void> {
   });
   await prisma.deliveryNote.deleteMany({ where: { order: { companyId: { in: companyIds } } } });
   await prisma.order.deleteMany({ where: { companyId: { in: companyIds } } });
-  await prisma.subscription.deleteMany({ where: { placedByUserId: { in: userIds } } });
+  // Les paniers récurrents (schéma `recurring`) : aucune clé ne les relie aux
+  // comptes, ils se vident ici, échéances et lignes avant le panier.
+  const ofBaskets = { buyerUserId: { in: userIds } };
+  await prisma.occurrence.deleteMany({ where: { basket: ofBaskets } });
+  await prisma.basketLine.deleteMany({ where: { basket: ofBaskets } });
+  await prisma.basket.deleteMany({ where: ofBaskets });
   await prisma.membership.deleteMany({ where: { companyId: { in: companyIds } } });
   await prisma.company.deleteMany({ where: { id: { in: companyIds } } });
   await prisma.user.deleteMany({ where: { id: { in: userIds } } });
@@ -215,24 +220,29 @@ async function seedOrder(index: number, days: number, totalCents: number): Promi
   });
 }
 
-/** Un panier récurrent actif, avec sa ligne. */
+/**
+ * Un panier récurrent actif, avec sa ligne — écrit à la main dans le schéma
+ * `recurring`, sans échéance : la fiche ne compte que les paniers actifs. La
+ * version des CGV est celle d'une démonstration, aucun texte n'étant lu ici.
+ */
 async function seedSubscription(index: number, recurrence: string): Promise<void> {
-  await prisma.subscription.create({
+  const id = `${NS}-subscription-${index}`;
+  await prisma.basket.create({
     data: {
-      id: `${NS}-subscription-${index}`,
-      placedByUserId: ESTABLISHED.userId,
-      recurrence,
+      id,
+      buyerUserId: ESTABLISHED.userId,
+      companyId: ESTABLISHED.companyId,
+      cadence: recurrence,
       status: "active",
       startDate: daysAgo(60),
-      fulfillmentMethod: FulfillmentMethod.delivery,
-      // Servie le lendemain de la commande : une commande sans jour de service
-      // n'entre dans aucune journée de production (cf. `orderContentShape`).
-      requestedDeliveryDate: new Date(
-        `${new Date(placedAt.getTime() + 86_400_000).toISOString().slice(0, 10)}T00:00:00.000Z`,
-      ),
+      fulfillmentMethod: "pickup",
+      requestedWindow: { start: "08:00", end: "10:00" },
       note: `Panier récurrent de démonstration (${recurrence})`,
+      salesTermsKey: "salesTermsPro",
+      salesTermsRevision: 1,
       createdAt: daysAgo(60),
-      lines: { create: [{ sku: "CAFE-GRAIN-1KG", quantity: 3 }] },
+      updatedAt: daysAgo(60),
+      lines: { create: [{ id: `${id}-line-1`, position: 0, sku: "CAFE-GRAIN-1KG", quantity: 3 }] },
     },
   });
 }

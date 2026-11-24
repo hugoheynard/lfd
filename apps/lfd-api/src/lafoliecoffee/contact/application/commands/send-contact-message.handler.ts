@@ -19,7 +19,7 @@ import { NOTHING_TO_REPLAY, OncePerIntent } from "../../../../platform/intent/on
 import {
   customerIntentActor,
   VISITOR_INTENT_ACTOR,
-} from "../../../shared/intent/customer-intent-actor.js";
+} from "../../../../platform/intent/customer-intent-actor.js";
 
 /** Le nom stable du geste, dans le registre des intentions. */
 const SEND_MESSAGE_GESTURE = "contact.send-message";

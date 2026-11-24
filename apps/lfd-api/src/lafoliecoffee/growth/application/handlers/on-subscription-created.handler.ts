@@ -1,45 +1,53 @@
-import { EventsHandler, type IEventHandler } from "@nestjs/cqrs";
+import { Injectable } from "@nestjs/common";
 
-import { SubscriptionCreatedEvent } from "../../../subscriptions/domain/events/subscription-created.event.js";
+import type { DurableDelivery } from "../../../../platform/outbox/durable-event.js";
+import {
+  DurableHandler,
+  type DurableSubscriber,
+} from "../../../../platform/outbox/durable-handler.js";
+import {
+  RECURRING_BASKET_OPENED,
+  RecurringBasketFact,
+} from "../../../../recurring/channels/commerce/index.js";
 import { ACTIVITY_TYPES } from "../../domain/activity-event.js";
 import { ActivityRecorder } from "../../domain/ports/activity-recorder.js";
 import { CustomerNamer } from "../../domain/ports/customer-namer.js";
-import { BackgroundWork } from "../../../../platform/events/background-work.js";
+
+/** Nom STABLE de l'abonné — clé de son reçu dans la boîte d'envoi. */
+export const RECORD_SUBSCRIPTION_CREATED = "b2b.growth.record-subscription-created";
 
 /**
- * Abonné du journal : `subscription.created` → une ligne d'activité sur la
- * personne (signal « lead qualifié », récurrence = engagement). Clé d'idempotence
- * déterministe par abonnement.
+ * Abonné du journal : `recurring.basket_opened` (le fait durable du bloc des
+ * paniers) → `subscription.created`, une ligne d'activité sur la PERSONNE
+ * (signal « lead qualifié », récurrence = engagement). Le type du journal
+ * reste `subscription.created` : c'est une valeur écrite, et le score des
+ * leads la lit sous cette forme.
  *
- * La personne y est nommée au moment du fait (`subjectLabel`, lot B du plan
- * des phrases) — sans libellé si sa fiche n'a pas de nom : le port ne se rabat
- * jamais sur l'adresse.
+ * Clé d'idempotence déterministe par panier : un rejeu du fait n'écrit
+ * qu'une ligne. La personne y est nommée au moment du fait (`subjectLabel`)
+ * — sans libellé si sa fiche n'a pas de nom : le port ne se rabat jamais sur
+ * l'adresse.
  */
-@EventsHandler(SubscriptionCreatedEvent)
-export class OnSubscriptionCreated implements IEventHandler<SubscriptionCreatedEvent> {
+@Injectable()
+@DurableHandler({ type: RECURRING_BASKET_OPENED, subscriber: RECORD_SUBSCRIPTION_CREATED })
+export class OnSubscriptionCreated implements DurableSubscriber {
   constructor(
     private readonly recorder: ActivityRecorder,
-    private readonly work: BackgroundWork,
     private readonly customers: CustomerNamer,
   ) {}
 
-  handle(event: SubscriptionCreatedEvent): void {
-    // **Suivi** : cet abonné tourne hors de la requête HTTP. Sans cette
-    // inscription, personne — ni la prod, ni un test — ne sait quand il a fini.
-    void this.work.track(this.run(event), "on-subscription-created");
-  }
-
-  private async run(event: SubscriptionCreatedEvent): Promise<void> {
-    const name = await this.nameOrNull(event.placedByUserId);
+  async handle(delivery: DurableDelivery): Promise<void> {
+    const fact = RecurringBasketFact.fromDelivery(delivery);
+    const name = await this.nameOrNull(fact.buyerUserId);
     await this.recorder.record({
       type: ACTIVITY_TYPES.subscriptionCreated,
       subjectType: "user",
-      subjectId: event.placedByUserId,
-      idempotencyKey: `${ACTIVITY_TYPES.subscriptionCreated}:${event.subscriptionId}`,
+      subjectId: fact.buyerUserId,
+      idempotencyKey: `${ACTIVITY_TYPES.subscriptionCreated}:${fact.basketId}`,
       payload: {
         ...(name === null ? {} : { subjectLabel: name }),
-        subscriptionId: event.subscriptionId,
-        recurrence: event.recurrence,
+        subscriptionId: fact.basketId,
+        recurrence: fact.cadence,
       },
     });
   }
