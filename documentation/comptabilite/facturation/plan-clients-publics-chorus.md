@@ -796,13 +796,236 @@ la première commande.
 | **S8** Passer de `at_order` à `on_period_quote` en cours de période mélange les commandes                                                                                                                                                    | Changement du moment de l'engagement refusé dès la première commande (règle de Q5).                                                                                                                                                                                                                                                                                       |
 | Mineur : devis envoyé par `mail`                                                                                                                                                                                                             | Le devis est rangé au stockage et joint par référence (`lint:mail-attachment-by-reference`) ; son exemple va sur la planche.                                                                                                                                                                                                                                              |
 
+### Ce que le code dit des points « non vérifiés » (ouvert le 2026-11-24)
+
+- **Révision** : une ligne gardée garde son prix figé ; une ligne **ajoutée**
+  est chiffrée au tarif du jour (`revised-line-pricing.ts:89`,
+  `resolve(…, "checkout")`), qui applique la mercuriale active. Le
+  **reliquat** reste aux prix de la commande (`reliquat.md`). Une révision
+  peut donc changer le total d'un devis en attente : d'où l'empreinte (QD5).
+- **Payeurs comptés et relevé** ne lisent pas `invoice_monthly_outcome`
+  (`counted-payers.ts:32`, `get-cycle-statement.handler.ts`). La vue de la
+  période (`prisma-monthly-invoices.reader.ts:52`) ne montre que `issued` et
+  `blocked` : un payeur sans l'un ni l'autre n'y apparaît pas. D'où QD3.
+- **L'autopilote rejoue** les clôtures depuis la dernière tentée
+  (`run-invoice-autopilot.handler.ts:90`) : la clôture d'un payeur sur devis
+  doit être **rejouable sans doubler le devis** (QD2).
+- **Aucun générateur** d'abonnements ou de paniers récurrents dans `src/`
+  (`OccurrenceRunLedger` est déclaré, rien ne le joue) : le refus hors tarif
+  ne vise que les deux passations et la révision.
+- **Aucun lecteur** « articles cités par la mercuriale active » depuis
+  `orders` : à déclarer (QD8).
+
+### Conception de P2 bis (v4, 2026-11-24 — après contradiction)
+
+> La v3 a été contredite par `vitruve` le 2026-11-24 : 5 bloquants, 8 sérieux
+> (tableau en fin de section). La v4 en change la forme sur un point : le
+> geste « Engagement reçu » **émet la facture du devis lui-même, dans sa
+> transaction**, au lieu de rejouer la clôture. Il n'y a plus d'état
+> intermédiaire, ni d'issue nouvelle dans `invoice_monthly_outcome`.
+
+**Le principe** : la clôture d'un payeur sur devis **range** ses commandes
+dans un devis au lieu d'émettre. Le geste « Engagement reçu » écrit le
+numéro sur ces commandes et émet **la facture de ce devis seul**, avec la
+période figée sur le devis, dans une seule transaction. La facture est
+calculée comme toute facture de période (`draftOf`), avec la clé (payeur,
+mandat, engagement) d'aujourd'hui : rien de neuf dans la numérotation, le
+Factur-X, le dépôt Chorus ni l'échéance.
+
+```mermaid
+stateDiagram-v2
+  [*] --> awaiting: clôture du payeur (devis v1 rangé, envoyé)
+  awaiting --> superseded: « Renvoyer le devis » (une v n+1 la remplace si l'empreinte a changé)
+  awaiting --> invoiced: « Engagement reçu » (empreinte égale, facture émise dans la même transaction)
+  invoiced --> [*]
+  superseded --> [*]
+```
+
+**QD1 — Le mode, sur la fiche Chorus** (`account`). Colonne
+`company_chorus_routing.commitment_timing` (`at_order` | `on_period_quote`,
+défaut `at_order`, migration additive), posée par le geste existant de la
+fiche Chorus.
+
+- `on_period_quote` n'est permis que si l'engagement est **exigé**
+  (`commitment_required`) : sans exigence, il n'y a rien à attendre (DV1).
+- Passer à `on_period_quote` est refusé sans **mercuriale active à la date
+  du geste** (port déclaré par `account`, implémenté par `pricing`). La
+  mercuriale lue **à la date de livraison** sert, elle, à chaque commande
+  (QD8) : deux usages distincts.
+- **Changer de mode** est refusé tant qu'une commande au compte du payeur
+  n'est pas facturée (port déclaré par `account`, implémenté par
+  `accounting`). C'est la règle unique ; elle remplace « dès la première
+  commande d'une période » du tableau S8, plus faible.
+
+**QD2 — La passation sans numéro** (`orders`). `PayerCommitmentTerms` gagne
+`timing`. En `on_period_quote`, `budgetCommitmentFor` n'exige pas le numéro
+et **refuse** un numéro saisi (`BudgetCommitmentOnQuoteError`, 400 : « Le
+numéro d'engagement de ce client arrive sur le devis de période »). Le code
+service reste exigé ou proposé comme aujourd'hui.
+`BudgetCommitmentRequirementsView` gagne `timing`, et `currentCommitment`
+vaut `null` en `on_period_quote` (pas de préremplissage, Q6).
+
+**Une commande en devis reste modifiable** : annulation, révision et
+reliquat suivent leurs règles d'aujourd'hui, et l'empreinte (QD5) dit au
+geste que le devis a changé. `AccountEngagement` **ne change pas**. Seule la
+**correction d'engagement** refuse une commande rangée dans un devis vivant,
+par un lecteur dédié `QuotedOrdersReader` (déclaré par `orders`, implémenté
+par `accounting`) : le numéro d'une commande en devis passe par le devis.
+
+**QD3 — Le devis, objet de la comptabilité** (`accounting`, schéma
+`public`, migration additive). Tables :
+
+- `period_quote` : `id` (ULID), `number`, `legal_entity_id`,
+  `payer_company_id`, `mandate_key` (texte, `''` sans mandat — la forme de
+  `invoice_monthly_outcome`, pour que l'unicité ne soit pas trouée par
+  `NULL`), `service_code`, `period_starts_at`, `period_closes_at`,
+  `version` (≥ 1), `state` (`awaiting` | `invoiced` | `superseded`),
+  `fingerprint`, `total_ttc_cents`, `invoice_id` (nullable, posé avec
+  `invoiced`), `created_at`. Index unique partiel : une seule ligne
+  `awaiting` ou `invoiced` par (`legal_entity_id`, `payer_company_id`,
+  `mandate_key`, `service_code`, `period_closes_at`). CHECK :
+  `invoice_id IS NOT NULL` ⇔ `state = 'invoiced'`.
+- `period_quote_order` : (`quote_id`, `order_id`), PK, et `live` (booléen,
+  copié de l'état du devis, passé à faux quand il est remplacé). Index
+  unique partiel sur `order_id` **where live** : une commande n'est que dans
+  un seul devis vivant, **interdit par la base**. Une clôture qui croise une
+  autre (autopilote et bouton) se heurte à l'index au lieu de doubler :
+  l'insertion est `ON CONFLICT DO NOTHING`, et le devis déjà rangé gagne.
+- `period_quote_counter` : (`legal_entity_id`, `period_label`) → dernier
+  numéro. Numéro `D-<période>-<n>` : un devis n'est pas une pièce
+  comptable, il ne prend pas un numéro de facture.
+
+**À la clôture** (`IssueMonthlyInvoicesHandler`), **avant**
+`planMonthlyInvoices` et ses bloqueurs (sinon `public_commitment_missing`
+bloquerait le groupe), les groupes d'un payeur `on_period_quote` dont les
+commandes n'ont pas de numéro sont **mis à part** : chacun devient un devis
+v1, avec ses commandes, s'il n'en a pas déjà un. Pas d'issue dans
+`invoice_monthly_outcome`, pas de `invoice.signalled`. Le rapport de la
+clôture compte les devis rangés (`quoted: n`), pour que l'autopilote ne
+lise pas « rien à facturer ».
+
+**Les lecteurs de « non facturé » lisent `period_quote_order`** :
+
+- `uninvoicedOrders` écarte toute commande d'un devis vivant : la période
+  suivante ne la reprend pas, qu'elle soit `awaiting` ou en cours
+  d'émission ;
+- `cycle-order-membership` range une commande d'un devis vivant dans le
+  cycle de **la clôture du devis**, pas dans le cycle ouvert suivant : le
+  relevé et le dossier de la clôture la montrent ;
+- la vue de la période lit `period_quote` pour afficher « devis en attente »
+  à côté des issues ;
+- non lu à ce jour : le lot de prélèvement (`prisma-collection-candidates`).
+  Un payeur public est au virement, donc hors du lot ; Q3 le vérifie et
+  l'écrit.
+
+**QD4 — Le document et l'envoi**. PDF `renderPeriodQuotePdf` (domaine
+`accounting`, PDF simple, **sans Factur-X**), rangé sous
+`quotes/<entité>/<numéro>-v<version>.pdf`. Ses lignes et totaux viennent du
+**brouillon de facture** (`draftOf`) calculé sur les commandes de
+`period_quote_order`, la source même de la facture. Mentions : « Devis —
+ceci n'est pas une facture », période, lignes, totaux HT, TVA et TTC,
+mercuriale appliquée, « À retourner avec votre numéro d'engagement ».
+Envoi : `mail.send`, modèle `customer.period-quote`, au destinataire de
+`payerNoticeRecipientOf`, pièce `pdfStored`, clé
+`period-quote:<quoteId>:<recipientId>` à l'envoi automatique (abonné
+durable du fait `period_quote.issued`). « Renvoyer le devis » est un geste
+staff à clé d'intention, et la clé de l'e-mail **vient de cette intention**
+(`lint:intent-key-gestures`) : un renvoi de la même version part bien.
+À la charge de Q4 : `mail-copy:digest`, `lint:mail-subject-declared`,
+`lint:mail-attachment-by-reference`, la planche (`lint:pdf-specimens`).
+
+**QD5 — L'empreinte et les versions** (S6). `fingerprint` = sha256 de la
+sérialisation canonique du **brouillon de facture** (`draftOf`) : lignes
+triées par (commande, ligne), quantités, prix, taux de TVA, livraison
+offerte, bons remis, décisions de reliquat, totaux. Tout ce que la facture
+imprime y entre, puisque c'est elle qu'on hache. « Renvoyer le devis »
+recalcule : égale → renvoi de la même version ; différente → v n+1 rangée
+(nouvelles lignes de `period_quote_order`), l'ancienne `superseded` (ses
+lignes `live = false`), envoi.
+
+**QD6 — « Engagement reçu »** (`accounting`). `POST
+/admin/period-quotes/:id/commitment` { `number` }, `@IntentKey` et
+`runSealed`. **Une seule transaction** :
+
+1. verrou des lignes `orders` du devis (`OrderRowsLock`) ;
+2. commandes relues, annulées retirées (`withoutCancelled`), brouillon de
+   facture recalculé avec la période **du devis** (pas le calendrier
+   d'aujourd'hui), empreinte comparée : différente → refus nommé (« Le devis
+   n° … n'est plus à jour : renvoyez-le avant d'enregistrer l'engagement ») ;
+3. numéro écrit sur chaque commande par **une écriture propre au devis**,
+   déclarée par `accounting` et implémentée par `orders`
+   (`OrderBudgetCommitment.acceptQuoted(number, quoteId)`), dont la
+   précondition est « commande dans ce devis vivant, sans numéro » — pas la
+   règle de correction, qui refuserait. Un fait par commande
+   (`order.budget_commitment_received`) ;
+4. facture émise par `InvoiceIssuer` (numéro, échéance de la règle
+   publique, moyen figé), issue `issued` rangée sous la clé avec le numéro ;
+5. devis `invoiced`, `invoice_id` posé.
+
+Un échec à n'importe quelle étape annule tout : le devis reste `awaiting`,
+le refus s'affiche, et le geste se refait. Le scellement ne mémorise qu'un
+succès. Le PDF et l'avis de la facture partent ensuite par l'abonné
+existant de `INVOICE_ISSUED`. **Aucun rejeu de la clôture** : les autres
+payeurs de cette clôture ne sont pas touchés.
+
+**QD7 — Écrans**. Back-office : le mode sur la carte Chorus Pro ; la liste
+des devis d'une société (fiche client) et de la période (Comptabilité),
+avec « Renvoyer », « Engagement reçu » et l'écart d'empreinte. Boutique et
+saisie staff : le champ numéro masqué en `on_period_quote`, avec la phrase
+« Votre numéro d'engagement vous sera demandé sur le devis de la période ».
+Avertissement `period_quote_awaiting` à 15 jours du dernier envoi (Q5).
+
+**QD8 — Le tarif convenu** (B3, DV6). Port `NegotiatedScope` déclaré par
+`orders`, implémenté par `pricing` : `scopeFor(payerId, day)` → les SKU
+cités par la mercuriale active à la date de livraison, ou `null` hors
+`on_period_quote`. Refus dans `order-line-pricing.service.ts`, après
+`refuseUnorderable` : les deux passations et la révision. **DV6′** (promotions
+à `none`, avenant au début d'une période, alerte avant expiration) est
+reporté à Q7 : c'est une règle de la mercuriale.
+
+**Ce qui se décide avant Q3, parce qu'une ligne écrite en production le
+fige** : les noms et valeurs de `period_quote.state`, la forme de
+`mandate_key`, le numéro `D-…`. Rien n'est ajouté au CHECK ni à la clé de
+`invoice_monthly_outcome`.
+
+**Sous-lots, dans l'ordre** :
+
+| Lot    | Contenu                                                                        | Dépend de |
+| ------ | ------------------------------------------------------------------------------ | --------- |
+| **Q1** | Le mode (QD1), la passation sans numéro (QD2), back et front                   | —         |
+| **Q2** | Le tarif convenu (QD8)                                                         | Q1        |
+| **Q3** | Le devis à la clôture, l'empreinte, les lecteurs de « non facturé » (QD3, QD5) | Q1        |
+| **Q4** | PDF, planche, e-mail, renvoi (QD4)                                             | Q3        |
+| **Q5** | « Engagement reçu » et sa facture (QD6), le refus de correction (QD2)          | Q3        |
+| **Q6** | Écrans des devis, avertissement à 15 jours (QD7)                               | Q4, Q5    |
+| **Q7** | DV6′, règles de la mercuriale sur devis                                        | Q2        |
+
+### Contradiction de la v3 (`vitruve`, 2026-11-24) — ce que la v4 en fait
+
+| Objection                                                                                                                    | Sort dans la v4                                                                                                                  |
+| ---------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| **B1** QD6 réutilisait la règle de correction, qui refuse tout engagement non `free` et tout numéro en `on_period_quote`     | Écriture propre au devis, `acceptQuoted`, avec sa précondition (QD6, 3).                                                         |
+| **B2** Un `AccountEngagement` `quoted` figeait annulation, reliquat et correction                                            | `AccountEngagement` inchangé ; seule la correction refuse, par `QuotedOrdersReader` (QD2).                                       |
+| **B3** L'issue `quoted` n'était pas additive (CHECK, PK) et restait à vie à côté de la facture                               | Plus d'issue nouvelle : la vue de la période lit `period_quote` (QD3).                                                           |
+| **B4** Rejouer `IssueMonthlyInvoicesCommand` réémettait ou resignalait les autres payeurs, et relisait le calendrier du jour | Émission du seul devis, période figée sur lui, dans la transaction du geste (QD6).                                               |
+| **B5** `cycle-order-membership` rangeait les commandes du devis dans le cycle suivant                                        | Il lit `period_quote_order` (QD3).                                                                                               |
+| `mandate_id` nullable trouait l'unicité                                                                                      | `mandate_key` texte, `''` sans mandat (QD3).                                                                                     |
+| « Une commande, un devis vivant » tenu par le code                                                                           | Index unique partiel sur `period_quote_order.order_id where live`, et `ON CONFLICT DO NOTHING` (QD3).                            |
+| Un devis `accepted` non émis était absorbé par la clôture suivante                                                           | Plus d'état `accepted` : acceptation et facture dans la même transaction (QD6).                                                  |
+| Scellement contre une émission échouée                                                                                       | La transaction entière échoue, rien n'est scellé, le geste se refait (QD6).                                                      |
+| « Renvoyer » muet (même clé d'e-mail)                                                                                        | La clé du renvoi vient de l'intention de l'écran (QD4).                                                                          |
+| Empreinte sous-spécifiée                                                                                                     | Sha256 du brouillon de facture (`draftOf`) en sérialisation canonique, revérifié sous le verrou (QD5, QD6).                      |
+| QD1 contre S8, et deux dates de mercuriale                                                                                   | Une règle : pas de changement de mode tant qu'une commande du payeur n'est pas facturée ; les deux dates sont deux usages (QD1). |
+| Irréversibilité non signalée                                                                                                 | Liste de ce qui se décide avant Q3 (QD3, fin).                                                                                   |
+| Mineurs : compteur sans table, DV1, place de la branche, gates du mail                                                       | `period_quote_counter` ; `on_period_quote` exige l'engagement ; branche avant `planMonthlyInvoices` ; portes listées dans Q4.    |
+
 ### Non vérifié
 
-- Si une révision recalcule le prix au tarif du jour ou à la mercuriale
-  (le devis versionné en dépend).
-- Comment le relevé et les « payeurs comptés » lisent un groupe sans facture.
-- Si l'autopilote rejoue les clôtures passées.
-- La couverture de la mercuriale article par article.
+- Le lot de prélèvement face à une commande en devis (Q3 le lit).
+- Que la révision ne lit pas `AccountEngagement` pour refuser
+  (`order-revision.providers.ts`) : sans effet dans la v4, qui ne le change
+  pas.
+- La couverture de la mercuriale article par article (QD8).
 
 ## 6 septies. Qui paie ? Les cas de l'armée (2026-11-22)
 
