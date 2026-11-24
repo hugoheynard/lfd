@@ -114,9 +114,8 @@ devra avoir « Montrer chaque déclinaison » coché.
   l'article. Après AD1, on ne revient pas en arrière sans d'abord remettre
   chaque déclinaison sur l'audience de sa fiche.
 - **A7. `putOnSale` écrit l'audience de chaque article**, et pose les drapeaux
-  de validation à la création **d'après l'audience de l'article**. Un
-  élargissement ultérieur ne repasse rien en attente (inchangé) — **à
-  trancher par Hugo** (§ 4, Q1).
+  de validation à la création **d'après l'audience de l'article**, et de
+  nouveau quand son audience s'élargit à une clientèle (§ 4, Q1, décidé).
 - **A8. Le journal** : `variant.audience_changed` (`from` / `to`, nullable),
   émis par la méthode de l'agrégat `Product` (la déclinaison n'est pas un
   agrégat), dans la même unité de travail que l'émission de la fiche.
@@ -138,6 +137,12 @@ devra avoir « Montrer chaque déclinaison » coché.
     article s'élargit au public** — par article, au commerce, à la réception du
     fait ; un geste du staff au référentiel reste un geste à regarder avant la
     vitrine. Alternative : garder la règle d'aujourd'hui et le dire à l'écran.
+    **Décidé par Hugo le 2026-11-24 : l'attente.** Quand l'audience d'un article
+    s'élargit au public (de `pro` ou `resupply` vers `public` ou `both`), le
+    commerce pose `publicReviewPending` à la réception du fait. Même règle pour
+    les pros (`proReviewPending`) quand l'audience s'élargit aux pros. Vaut pour
+    une fiche comme pour une déclinaison : la règle du lot 3 « jamais à
+    l'élargissement » est remplacée.
 - **Q2 — l'écran.** Proposé : un sélecteur « Audience » dans la carte de chaque
   déclinaison autre que le défaut, à côté du nom de vitrine, avec « Comme la
   fiche (…) » en premier choix ; grisé avec sa raison sur une fiche sans
