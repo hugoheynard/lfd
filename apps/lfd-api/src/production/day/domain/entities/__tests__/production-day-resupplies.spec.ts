@@ -37,6 +37,7 @@ const RESUPPLY: PlacedResupply = {
   siteLabel: "Le Village",
   name: null,
   servedByTransfer: true,
+  arrivalBy: null,
   lines: [
     { sku: "VIE-001", productName: "Croissant", quantity: 12, saleUnit: "piece" as const },
     { sku: "PAIN-001", productName: "Baguette", quantity: 5, saleUnit: "piece" as const },

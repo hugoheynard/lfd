@@ -175,6 +175,12 @@ export interface ProductionResupplySnapshot {
    * colisage. `false` pour un réassort figé avant la colonne.
    */
   readonly servedByTransfer: boolean;
+  /**
+   * L'heure d'ARRIVÉE voulue au point, `HH:MM`, figée à l'arrêt (plan de
+   * l'heure du réassort, H3). `null` : figé avant la colonne, envoyé sans
+   * heure, ou « au plus tôt ».
+   */
+  readonly arrivalBy: string | null;
   readonly lines: readonly ProductionLineSnapshot[];
 }
 

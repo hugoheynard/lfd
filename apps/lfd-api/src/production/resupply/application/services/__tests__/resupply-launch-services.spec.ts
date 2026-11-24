@@ -31,6 +31,7 @@ const ASAP = {
   siteLabel: "Le Village",
   name: null,
   servedByTransfer: true,
+  arrivalBy: null,
   lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 6, saleUnit: "piece" as const }],
 };
 

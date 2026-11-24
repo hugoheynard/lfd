@@ -14,7 +14,10 @@
 import type { InternalTransferManifestView } from "@lfd/contracts";
 import { addDays, localToInstant } from "@lfd/contracts";
 
-import { RoadTravelTimeReader } from "../src/delivery/channels/commerce/index.js";
+import {
+  RoadTravelTimeReader,
+  TransferSitesReader,
+} from "../src/delivery/channels/commerce/index.js";
 import { Clock } from "../src/platform/time/clock.js";
 import { FixedClock } from "../src/platform/time/fixed-clock.js";
 import { jsonBody, type E2eContext } from "./e2e-harness.js";
@@ -166,5 +169,64 @@ describe("le réassort dans le transfert (R3c)", () => {
       where: { serviceDay: SERVICE_DAY, sku: CROISSANT },
     });
     expect(stock).toEqual([expect.objectContaining({ received: 6 })]);
+  });
+});
+
+describe("l'heure du transfert tient celle des réassorts (H2 de l'heure du réassort)", () => {
+  async function arrivalOf(site: string): Promise<string | null | undefined> {
+    const facts = await ctx.app.get(TransferSitesReader).sitesFor(SERVICE_DAY, [site]);
+    return facts.get(site)?.arrivalBy;
+  }
+
+  /**
+   * Régression : un point qui ne recevait que des réassorts n'avait pas
+   * d'heure, et son transfert se plaçait sans fenêtre.
+   */
+  it("un point à réassorts seuls a une heure ; le réassort annulé ou sans heure ne compte pas", async () => {
+    const village = await seedVillage(ctx);
+    expect(await arrivalOf(village)).toBeNull();
+
+    // Le réassort est voulu à 06:30, plus tôt que l'ouverture pros (07:30 − 10).
+    const dated = await croissants(village, 6);
+    expect(await arrivalOf(village)).toBe("06:30");
+
+    await ctx
+      .asSub(STAFF)
+      .post(`/admin/site-resupplies/sites/${village}/${dated}/cancel`)
+      .expect(204);
+    expect(await arrivalOf(village)).toBeNull();
+
+    // Un réassort envoyé avant l'heure du réassort n'en porte pas : la donnée
+    // d'avant H1, que seule la base peut encore tenir.
+    const undated = await croissants(village, 2);
+    await ctx.prisma.siteResupply.update({ where: { id: undated }, data: { arrivalBy: null } });
+    expect(await arrivalOf(village)).toBeNull();
+  });
+});
+
+describe("l'heure du réassort au fournil (H3 de l'heure du réassort)", () => {
+  it("l'arrêt fige l'heure d'arrivée voulue sur la copie du fournil", async () => {
+    const village = await seedVillage(ctx);
+    const toVillage = await croissants(village, 6);
+
+    await closePlan(ctx);
+
+    const frozen = await ctx.prisma.productionResupply.findMany({
+      select: { resupplyId: true, arrivalBy: true },
+    });
+    expect(frozen).toEqual([{ resupplyId: toVillage, arrivalBy: "06:30" }]);
+  });
+
+  it("la base refuse une heure mal formée sur la copie figée (CHECK)", async () => {
+    const village = await seedVillage(ctx);
+    const toVillage = await croissants(village, 6);
+    await closePlan(ctx);
+
+    await expect(
+      ctx.prisma.productionResupply.updateMany({
+        where: { resupplyId: toVillage },
+        data: { arrivalBy: "6h30" },
+      }),
+    ).rejects.toThrow(/production_resupply_arrival_by_clock/u);
   });
 });

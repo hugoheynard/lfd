@@ -92,6 +92,8 @@ import { PrismaSiteResupplyRepository } from "./infrastructure/prisma-site-resup
 import { PrismaSiteResupplyPlanKeyReader } from "./infrastructure/prisma-site-resupply-plan-key.reader.js";
 import { PrismaStockAlertReader } from "./infrastructure/prisma-stock-alert.reader.js";
 import { PrismaStockAlertRepository } from "./infrastructure/prisma-stock-alert.repository.js";
+import { PrismaPlacedResupplyArrivals } from "./infrastructure/prisma-placed-resupply-arrivals.js";
+import { PlacedResupplyArrivals } from "./domain/placed-resupply-arrivals.reader.js";
 import { PrismaTransferServedSites } from "./infrastructure/prisma-transfer-served-sites.js";
 import { PrismaShelfStockLock } from "./infrastructure/prisma-shelf-stock-lock.js";
 import { ShelfStockLock } from "./domain/shelf-stock-lock.js";
@@ -174,6 +176,8 @@ import { PrismaCounterStockTracking } from "./infrastructure/prisma-counter-stoc
     { provide: ResupplyCutoff, useClass: SettingsResupplyCutoff },
     { provide: ResupplySiteLabels, useClass: PrismaResupplySiteLabels },
     { provide: TransferServedSites, useClass: PrismaTransferServedSites },
+    // L'heure des réassorts que le transfert tient (H2 de l'heure du réassort).
+    { provide: PlacedResupplyArrivals, useClass: PrismaPlacedResupplyArrivals },
     { provide: StockAlertRepository, useClass: PrismaStockAlertRepository },
     { provide: StockAlertReader, useClass: PrismaStockAlertReader },
     { provide: DayStockReader, useClass: PrismaDayStockReader },
@@ -242,6 +246,12 @@ import { PrismaCounterStockTracking } from "./infrastructure/prisma-counter-stoc
   ],
   // Le reste du jour et son verrou, que la passation sur stock lit (plan du
   // jour J, lot L4) — même bloc `b2b`, sans frontière franchie.
-  exports: [ProductionDayResupplies, ProductionRangeResupplies, DayShelfStock, ShelfStockLock],
+  exports: [
+    PlacedResupplyArrivals,
+    ProductionDayResupplies,
+    ProductionRangeResupplies,
+    DayShelfStock,
+    ShelfStockLock,
+  ],
 })
 export class ResupplyModule {}

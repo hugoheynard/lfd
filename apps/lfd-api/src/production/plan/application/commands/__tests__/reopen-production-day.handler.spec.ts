@@ -163,6 +163,7 @@ describe("ReopenProductionDayHandler", () => {
         siteLabel: "Le Village",
         name: null,
         servedByTransfer: true,
+        arrivalBy: null,
         lines: [{ sku: "PAI-SEI", productName: "Pain de seigle", quantity: 3, saleUnit: "piece" }],
       },
     ]);

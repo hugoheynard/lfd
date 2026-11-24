@@ -17,6 +17,7 @@ function resupply(servedByTransfer: boolean, quantity: number): ProductionResupp
     siteLabel: null,
     name: null,
     servedByTransfer,
+    arrivalBy: null,
     lines: [{ sku: SKU, productName: "Croissant", quantity, saleUnit: "piece" }],
   };
 }

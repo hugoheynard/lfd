@@ -364,6 +364,7 @@ describe("le réassort au poids, au fournil (L2b-2)", () => {
     siteLabel: "Village",
     name: null,
     servedByTransfer: false,
+    arrivalBy: null,
     lines: [
       { sku: CROISSANT, productName: "Croissant", quantity: 6, saleUnit: "piece" },
       { sku: WEIGHED, productName: "Pain au chocolat", quantity: 2000, saleUnit: "weight" },

@@ -27,6 +27,7 @@ const RESUPPLY: ProductionResupplySnapshot = {
   siteLabel: "Village",
   name: null,
   servedByTransfer: false,
+  arrivalBy: null,
   lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 5, saleUnit: "piece" }],
 };
 

@@ -45,6 +45,7 @@ function resupply(resupplyId: string, quantity = 6): PlacedResupply {
     siteLabel: "Le Village",
     name: null,
     servedByTransfer: true,
+    arrivalBy: null,
     lines: [{ sku: "VIE-001", productName: "Croissant", quantity, saleUnit: "piece" }],
   };
 }

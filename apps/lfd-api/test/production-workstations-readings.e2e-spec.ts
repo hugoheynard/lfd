@@ -57,6 +57,7 @@ function resupply(sku: string, productName: string): PlacedResupply {
     siteLabel: "Le Village",
     name: null,
     servedByTransfer: true,
+    arrivalBy: null,
     lines: [{ sku, productName, quantity: 6, saleUnit: "piece" }],
   };
 }

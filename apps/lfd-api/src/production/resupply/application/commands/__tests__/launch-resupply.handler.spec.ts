@@ -52,6 +52,7 @@ const ASAP: PlacedResupply = {
   siteLabel: "Le Village",
   name: "Vitrine du midi",
   servedByTransfer: true,
+  arrivalBy: null,
   lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 8, saleUnit: "piece" }],
 };
 

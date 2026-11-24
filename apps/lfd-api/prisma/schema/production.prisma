@@ -731,6 +731,11 @@ model ProductionResupply {
   /// réassort figé avant la colonne — servi sur place par défaut, aucune fiche.
   servedByTransfer Boolean @default(false) @map("served_by_transfer")
 
+  /// L'heure d'ARRIVÉE voulue au point, `HH:MM`, figée à l'arrêt (plan de
+  /// l'heure du réassort, H3) — CHECK `production_resupply_arrival_by_clock`.
+  /// `null` : figé avant la colonne, envoyé sans heure, ou « au plus tôt ».
+  arrivalBy String? @map("arrival_by") @db.VarChar(5)
+
   /// `evening` : figé à l'arrêt du soir ; `asap` : « au plus tôt », LANCÉ par
   /// le fournil dans la journée (réassort, lot R4a) — CHECK
   /// `production_resupply_kind_known`. Un lancé, et lui seul, porte l'instant

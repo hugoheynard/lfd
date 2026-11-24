@@ -316,6 +316,7 @@ describe("dayDossierPdfKey", () => {
         siteLabel: "Village",
         name: null,
         servedByTransfer: true,
+        arrivalBy: null,
         lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 18, saleUnit: "piece" }],
       },
     ]);
@@ -343,6 +344,7 @@ describe("dayDossierPdfKey", () => {
         siteLabel: "Village",
         name: null,
         servedByTransfer: true,
+        arrivalBy: null,
         lines: [
           { sku: "VIE-002", productName: "Pain au chocolat", quantity: 18, saleUnit: "piece" },
           { sku: "TRA-SAU", productName: "Saumon gravlax", quantity: 1250, saleUnit: "weight" },
@@ -371,6 +373,7 @@ describe("dayDossierPdfKey", () => {
         siteLabel: "Village",
         name: null,
         servedByTransfer: true,
+        arrivalBy: null,
         lines: [
           { sku: "VIE-002", productName: "Pain au chocolat", quantity: 18, saleUnit: "piece" },
           { sku: "TRA-SAU", productName: "Saumon gravlax", quantity: 1250, saleUnit: "weight" },
@@ -393,6 +396,7 @@ describe("dayDossierPdfKey", () => {
         siteLabel: "Village",
         name: null,
         servedByTransfer: true,
+        arrivalBy: null,
         lines: [
           { sku: "VIE-002", productName: "Pain au chocolat", quantity: 18, saleUnit: "piece" },
         ],
@@ -412,6 +416,7 @@ describe("dayDossierPdfKey", () => {
         siteLabel: "Village",
         name: "Vitrine du matin",
         servedByTransfer: true,
+        arrivalBy: null,
         lines: [
           { sku: "VIE-002", productName: "Pain au chocolat", quantity: 18, saleUnit: "piece" },
         ],
@@ -479,6 +484,7 @@ describe("renderDayDossierPdf — la pastille du bon de réassort (Hugo, 2026-10
       siteLabel: "Village",
       name: null,
       servedByTransfer: true,
+      arrivalBy: null,
       lines: [{ sku: "VIE-002", productName: "Pain au chocolat", quantity: 18, saleUnit: "piece" }],
     },
   ]);

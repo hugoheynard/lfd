@@ -3335,6 +3335,10 @@
       "raison": "Voir `public.site_resupply.arrival_by` : l'heure d'arrivée proposée par un modèle de réassort, une heure de service, pas une personne."
     },
     {
+      "colonne": "production.production_resupply.arrival_by",
+      "raison": "Voir `public.site_resupply.arrival_by` : la même heure d'arrivée voulue, figée sur la copie du fournil à l'arrêt (H3), une heure de service, pas une personne."
+    },
+    {
       "colonne": "public.collection_batch.constituted_by",
       "raison": "Un GENRE d'auteur (`staff` | `system`), jamais une personne : la fiche du membre du staff est dans `constituted_by_staff_id`, déjà au registre, et un lot `system` n'en a pas (CHECK `collection_batch_constituted_by_author`, migration 20261008170000_la_constitution_automatique)."
     },

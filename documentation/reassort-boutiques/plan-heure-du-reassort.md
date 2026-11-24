@@ -1,6 +1,6 @@
 # Plan — l'heure du réassort
 
-> **Plan, doc-first.** Rien n'est bâti. Écrit le 2026-11-24 à la demande de
+> **Plan en cours.** H1 bâti (`a686db02c`), H2 bâti, H3 à moitié (l'heure figée sur la copie du fournil ; l'échéance attend une décision, § 4 H3), H4 contredit et en attente (§ 4 H4). Écrit le 2026-11-24 à la demande de
 > Hugo : « on devrait définir une heure au réassort du matin comme pour les
 > créneaux de commande, parce que le transfert est une conséquence des
 > horaires de tout ce qu'il contient ». Chaque affirmation sur l'existant a
@@ -99,6 +99,18 @@ lot H2 le corrige au passage.
 
 ### H3 — l'échéance du fournil
 
+> **À moitié, 2026-11-24.** Bâti : `production_resupply.arrival_by`, recopiée
+> à l'arrêt. **Pas bâti, et pourquoi** (lu dans le code par le bâtisseur) :
+> le compte à rebours (`DueThresholds`, commerce) ne fabrique ses seuils
+> qu'avec les commandes vivantes, et la fiche ajuste ses paliers à la
+> quantité de la ligne — un réassort tombe aujourd'hui dans le dernier palier.
+> Y ajouter des seuils de réassort fausse l'aperçu d'avant l'arrêt, qui ne
+> compte pas les réassorts. Et H2 avance le transfert sur un réassort à
+> 05:30 sans avancer l'échéance des commandes du même point (`requiredBy`).
+> Décisions attendues : quel « départ requis » vaut pour l'échéance, les
+> commandes suivent-elles, et le réassort servi sur place retire-t-il la
+> marge de retrait.
+
 - La copie figée gagne `production_resupply.arrival_by` (additive),
   recopiée à l'arrêt.
 - L'échéance d'un réassort pour le compte à rebours et la fiche d'atelier :
@@ -110,6 +122,10 @@ lot H2 le corrige au passage.
   d'écrire).
 
 ### H4 — plusieurs transferts par point et par jour (le gros morceau)
+
+> **Contredit deux fois, non bâti.** Son plan propre :
+> [`plan-vagues-de-transfert.md`](../livraisons/transferts/plan-vagues-de-transfert.md),
+> dont le § 8 liste les quatre bloquants restants et une voie plus courte.
 
 C'est ce qui rend « un réassort le matin, un l'après-midi » réel. Sans H4,
 H1 à H3 donnent la bonne heure au **seul** transfert, donc la plus tôt : le

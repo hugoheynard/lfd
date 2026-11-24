@@ -102,6 +102,7 @@ function setup(options: { readonly vehicle?: boolean } = {}) {
         siteLabel,
         name,
         servedByTransfer,
+        arrivalBy: null,
         lines: lines.map((line) => ({ ...line, saleUnit: "piece" as const })),
       },
       null,

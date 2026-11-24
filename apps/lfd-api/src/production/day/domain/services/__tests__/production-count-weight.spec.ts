@@ -50,6 +50,7 @@ function resupply(lines: readonly PlacedResupplyLine[]): PlacedResupply {
     siteLabel: null,
     name: null,
     servedByTransfer: false,
+    arrivalBy: null,
     lines,
   };
 }

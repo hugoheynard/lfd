@@ -55,6 +55,7 @@ export const SPECIMEN_DAY_RESUPPLIES: readonly ProductionResupplySnapshot[] = [
     siteLabel: "EXEMPLE — Village",
     name: "Vitrine du matin",
     servedByTransfer: false,
+    arrivalBy: "06:30",
     lines: [
       { sku: "EXEMPLE-CRO", productName: "Croissant pur beurre", quantity: 20, saleUnit: "piece" },
       { sku: "EXEMPLE-BAG", productName: "Baguette tradition", quantity: 15, saleUnit: "piece" },

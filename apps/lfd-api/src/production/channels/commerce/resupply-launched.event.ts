@@ -104,6 +104,8 @@ function launchedResupplyOf(value: unknown): PlacedResupply | null {
   const siteLabel = raw["siteLabel"] ?? null;
   const name = raw["name"] ?? null;
   const servedByTransfer = raw["servedByTransfer"];
+  // Absente des faits écrits avant l'heure du réassort : relue `null`.
+  const arrivalBy = raw["arrivalBy"] ?? null;
   // Les lignes portent leur unité (L2b-2) : absente = `piece`, inconnue =
   // payload illisible — la lecture partagée avec le fait de liste (L2b-3).
   const lines = resupplyLinesOf(raw["lines"]);
@@ -113,11 +115,12 @@ function launchedResupplyOf(value: unknown): PlacedResupply | null {
     (siteLabel !== null && typeof siteLabel !== "string") ||
     (name !== null && typeof name !== "string") ||
     typeof servedByTransfer !== "boolean" ||
+    (arrivalBy !== null && typeof arrivalBy !== "string") ||
     lines === null
   ) {
     return null;
   }
-  return { resupplyId, siteId, siteLabel, name, servedByTransfer, lines };
+  return { resupplyId, siteId, siteLabel, name, servedByTransfer, arrivalBy, lines };
 }
 
 /** Le fait `production.resupply_launched` reçu ne respecte pas son contrat. */

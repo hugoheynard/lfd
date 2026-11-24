@@ -113,6 +113,7 @@ describe("dossierCountsOf", () => {
       siteLabel: "Village",
       name: null,
       servedByTransfer: true,
+      arrivalBy: null,
       lines: [
         { sku: "CRO", productName: "Croissant", quantity: 12, saleUnit: "piece" as const },
         { sku: "PAC", productName: "Pain au chocolat", quantity: 6, saleUnit: "piece" as const },

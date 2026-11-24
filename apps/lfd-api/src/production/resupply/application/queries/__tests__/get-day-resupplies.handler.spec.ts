@@ -24,13 +24,15 @@ function resupply(resupplyId: string, quantity: number): PlacedResupply {
     siteLabel: "Village",
     name: null,
     servedByTransfer: true,
+    arrivalBy: null,
     lines: [{ sku: "VIE-001", productName: "Croissant", quantity, saleUnit: "piece" }],
   };
 }
 
-/** Le réassort tel que la vue le rend : l'unité comprise (lot L2b-4). */
+/** Le réassort tel que la vue le rend : l'unité comprise (lot L2b-4), sans son heure. */
 function viewOf(resupplyId: string, quantity: number) {
-  return resupply(resupplyId, quantity);
+  const { arrivalBy: _notServed, ...view } = resupply(resupplyId, quantity);
+  return view;
 }
 
 const ORDER: ProducibleOrder = {

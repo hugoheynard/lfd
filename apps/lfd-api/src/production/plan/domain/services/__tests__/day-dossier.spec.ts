@@ -127,6 +127,7 @@ describe("dayDossierOf", () => {
         siteLabel: "Village",
         name: null,
         servedByTransfer: true,
+        arrivalBy: null,
         lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 6, saleUnit: "piece" }],
       },
       {
@@ -135,6 +136,7 @@ describe("dayDossierOf", () => {
         siteLabel: "Village",
         name: null,
         servedByTransfer: true,
+        arrivalBy: null,
         lines: [
           { sku: "VIE-001", productName: "Croissant", quantity: 6, saleUnit: "piece" },
           { sku: "VIE-002", productName: "Pain au chocolat", quantity: 10, saleUnit: "piece" },
@@ -146,6 +148,7 @@ describe("dayDossierOf", () => {
         siteLabel: null,
         name: null,
         servedByTransfer: false,
+        arrivalBy: null,
         lines: [{ sku: "PAI-SEI", productName: "Pain de seigle", quantity: 3, saleUnit: "piece" }],
       },
     ]);
@@ -194,6 +197,7 @@ describe("dayDossierOf", () => {
         siteLabel: "Village",
         name: null,
         servedByTransfer: true,
+        arrivalBy: null,
         lines: [
           { sku: "VIE-001", productName: "Croissant", quantity: 6, saleUnit: "piece" },
           { sku: "GRA-001", productName: "Gravlax", quantity: 2000, saleUnit: "weight" },
@@ -220,6 +224,7 @@ describe("dayDossierOf", () => {
         siteLabel: "Village",
         name: null,
         servedByTransfer: true,
+        arrivalBy: null,
         lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 18, saleUnit: "piece" }],
       },
     ]);

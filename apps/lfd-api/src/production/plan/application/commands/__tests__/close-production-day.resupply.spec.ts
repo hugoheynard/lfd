@@ -41,6 +41,8 @@ describe("le réassort au plan figé (lot R3a)", () => {
       { sku: "PAIN-001", productName: "Baguette", quantity: 5, saleUnit: "piece" },
       { sku: "VIE-001", productName: "Croissant", quantity: 52, saleUnit: "piece" },
     ]);
+    // L'heure d'arrivée voulue est figée avec lui (heure du réassort, H3).
+    expect(days.saved?.resupplies[0]?.arrivalBy).toBe("06:30");
   });
 
   it("le fait porte les réassorts figés, le journal compte toujours les seules commandes", async () => {

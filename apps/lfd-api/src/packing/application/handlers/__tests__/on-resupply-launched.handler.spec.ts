@@ -18,6 +18,7 @@ function fact(servedByTransfer: boolean) {
     siteLabel: servedByTransfer ? "Le Village" : "Le Labo",
     name: "Rupture de midi",
     servedByTransfer,
+    arrivalBy: null,
     lines: [
       { sku: "PAC", productName: "Pain au chocolat", quantity: 4, saleUnit: "piece" },
       { sku: "CRO", productName: "Croissant", quantity: 6, saleUnit: "piece" },

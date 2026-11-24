@@ -77,6 +77,7 @@ function dayWithResupplies(): ProductionDay {
     siteLabel: "Village",
     name: null,
     servedByTransfer: true,
+    arrivalBy: null,
     lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 4, saleUnit: "piece" as const }],
   });
   day.close([ORDER], new Set<string>(), CLOSED, null, [resupply("r-1"), resupply("r-2")]);

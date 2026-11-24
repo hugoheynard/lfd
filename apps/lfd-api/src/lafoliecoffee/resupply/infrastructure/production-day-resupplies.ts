@@ -75,6 +75,7 @@ export class ProductionDayResupplies extends DayResuppliesReader {
       siteLabel: labels.get(resupply.siteId) ?? null,
       name: resupply.name,
       servedByTransfer: served.has(resupply.siteId),
+      arrivalBy: resupply.arrivalBy ?? null,
       lines: resupply.lines.map((line) => ({
         sku: line.sku,
         productName: line.label,

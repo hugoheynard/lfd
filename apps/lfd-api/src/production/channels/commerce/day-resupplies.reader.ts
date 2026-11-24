@@ -32,6 +32,12 @@ export interface PlacedResupply {
    * Q1 révisée). `false` : servi sur place (le Labo), de la feuille à la vitrine.
    */
   readonly servedByTransfer: boolean;
+  /**
+   * L'heure d'ARRIVÉE voulue au point, `HH:MM` (plan de l'heure du réassort,
+   * H3), que le fournil fige à l'arrêt. `null` : envoyé sans heure, ou « au
+   * plus tôt ».
+   */
+  readonly arrivalBy: string | null;
   readonly lines: readonly PlacedResupplyLine[];
 }
 

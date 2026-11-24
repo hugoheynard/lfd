@@ -21,6 +21,7 @@ export const RESUPPLY_COLUMNS = {
     siteLabel: true,
     name: true,
     servedByTransfer: true,
+    arrivalBy: true,
     kind: true,
     launchedAt: true,
     launchedBy: true,
@@ -40,6 +41,7 @@ interface ResupplyRow {
   readonly siteLabel: string | null;
   readonly name: string | null;
   readonly servedByTransfer: boolean;
+  readonly arrivalBy: string | null;
   readonly kind: string;
   readonly launchedAt: Date | null;
   readonly launchedBy: string | null;
@@ -72,6 +74,7 @@ export function splitResupplies(rows: readonly ResupplyRow[]): SplitResupplies {
       siteLabel: row.siteLabel,
       name: row.name,
       servedByTransfer: row.servedByTransfer,
+      arrivalBy: row.arrivalBy,
       // L'unité figée à l'arrêt (L2b-2) ; une ligne figée avant la
       // colonne est née `piece`, ce qu'elle était.
       lines: row.lines.map((line) => ({
@@ -102,6 +105,7 @@ export function resupplyRowOf(resupply: ProductionResupplySnapshot | LaunchedRes
     siteLabel: resupply.siteLabel,
     name: resupply.name,
     servedByTransfer: resupply.servedByTransfer,
+    arrivalBy: resupply.arrivalBy,
     kind: launched === null ? EVENING_KIND : ASAP_KIND,
     launchedAt: launched?.at ?? null,
     launchedBy: launched?.by ?? null,

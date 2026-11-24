@@ -12,6 +12,7 @@ const RESUPPLY = {
   siteLabel: null,
   name: null,
   servedByTransfer: false,
+  arrivalBy: null,
   lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 8, saleUnit: "piece" as const }],
 };
 
@@ -22,6 +23,22 @@ describe("ResupplyLaunchedEvent", () => {
     expect(ResupplyLaunchedEvent.fromPayload(fact.payload)).toEqual(
       new ResupplyLaunchedEvent("2026-09-08", AT, "s_max", null, RESUPPLY),
     );
+  });
+
+  it("relit `arrivalBy` absent (fait d'avant l'heure du réassort) comme `null`, et refuse une heure qui n'est pas un texte", () => {
+    const fact = new ResupplyLaunchedEvent("2026-09-08", AT, "s_max", null, RESUPPLY).durableFact();
+    const { arrivalBy: _gone, ...withoutArrival } = RESUPPLY;
+
+    expect(
+      ResupplyLaunchedEvent.fromPayload({ ...fact.payload, resupply: withoutArrival }).resupply
+        .arrivalBy,
+    ).toBeNull();
+    expect(() =>
+      ResupplyLaunchedEvent.fromPayload({
+        ...fact.payload,
+        resupply: { ...RESUPPLY, arrivalBy: 630 },
+      }),
+    ).toThrow(ResupplyLaunchedPayloadError);
   });
 
   it("refuse un payload sans `servedByTransfer` ou sans ligne", () => {
