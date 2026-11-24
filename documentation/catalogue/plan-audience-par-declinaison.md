@@ -168,7 +168,7 @@ devra avoir « Montrer chaque déclinaison » coché.
   `list-products.ts:102`, `list-product-compliance-warnings.ts:71,119` et
   `activate-product.ts:89` passent à l'audience de chaque déclinaison pour la
   complétude et les constats.
-  **✅ Bâti le 2026-11-24** (commit avec AD2). Écarts au plan, tranchés au
+  **✅ Bâti le 2026-11-24** (`aec4dc396`, avec AD2). Écarts au plan, tranchés au
   bâti :
   - le fait s'appelle `product.variant_audience_changed` (et non
     `variant.audience_changed`) : tous les faits de déclinaison du dépôt sont
@@ -181,6 +181,10 @@ devra avoir « Montrer chaque déclinaison » coché.
     `null` ajoutée partout aurait fait paraître chaque fiche modifiée.
 - **AD2 back-office** : le sélecteur (Q2), la phrase du journal, l'audience
   affichée par ligne de déclinaison au catalogue publié (servie par AD1).
+  **✅ Bâti le 2026-11-24** (`aec4dc396`). Le sélecteur est dans la carte
+  « Identité de la déclinaison » de la déclinaison ouverte, sous « Sur
+  mesure ». `VariantView.audience` et `PublishedVariantView.audience` restent
+  facultatifs dans les contrats (le front lit `?? null`).
 - **Tests** : domaine (héritage à trois niveaux, refus A2/A3, journal
   seulement si changé) ; complétude (une déclinaison `resupply` sans prix est
   complète ; une `pro` sur fiche `public` exige le prix pro) ; mapping (champ de
