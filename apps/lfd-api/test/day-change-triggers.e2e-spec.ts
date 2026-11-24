@@ -87,6 +87,8 @@ const UNWATCHED: Readonly<Record<string, string>> = {
   // La trace d'envoi du dossier (plan d'envoi du dossier, E3, 2026-10-06).
   "production.production_dossier_dispatch":
     "la trace d'envoi du dossier : aucun écran de la journée ne la lit, l'envoi ne change ni le plan ni la fiche",
+  "production.provisional_print":
+    "le registre des tirages provisoires du dossier : relu à l'ouverture de la fenêtre d'impression, il ne change ni le plan ni la fiche, et un tirage ne fait bouger aucun écran de la journée",
   "production.production_quality_upload":
     "un dépôt de photo en attente, sans journée — il n'y entre qu'en devenant une photo, surveillée",
   // Les bases de la livraison (lot 2, 2026-09-29) n'appartiennent à aucune

@@ -633,8 +633,15 @@ describe("le cache des matériaux, vu d'une autre instance", () => {
  * le front ne l'appelle qu'une fois la saisie assez complète, après 400 ms
  * d'inactivité. Ce qui compte ici, comme pour le devis, est qu'il ne suive
  * pas la taille du panier.
+ *
+ * Une de ces lectures est le tarif convenu (`PricingNegotiatedScope`) : la
+ * composition demande au compte ce que le payeur exige de son engagement
+ * (`PrismaPayerCommitmentRequirements.of`, la société et sa fiche Chorus Pro),
+ * parce qu'un payeur sur devis de période ne commande que ce que sa mercuriale
+ * cite, et que l'estimation refuse ce que la passation refuserait. Elle est
+ * lue une fois par composition, pas par ligne.
  */
-const COLD_ESTIMATE_OPS = 25;
+const COLD_ESTIMATE_OPS = 26;
 
 describe("l'estimation de la saisie", () => {
   async function seedBuyer(): Promise<Record<string, unknown>> {

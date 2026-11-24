@@ -1,3 +1,4 @@
+import { DOSSIER_PARTS } from "../../src/production/plan/domain/services/day-dossier-selection.js";
 import { jsonBody, serviceDay, type E2eContext } from "../e2e-harness.js";
 import { createUser } from "../factories.js";
 import { INTENT_KEY, freshIntent } from "../intent-key.js";
@@ -83,6 +84,28 @@ const TRACKING_SCENARIOS: ScenarioSet = {
   }),
 };
 
+const PROVISIONAL = "production/plan/http/provisional-print.controller.ts";
+
+/** L'impression provisoire, avant l'arrêt (`fournil/dossier-prod-du-jour.md`). */
+const PRINT_SCENARIOS: ScenarioSet = {
+  [routeKey(PROVISIONAL, "draw")]: async ({ ctx }) => {
+    const buyer = await createUser(ctx.prisma, { auth0Sub: "replay-apercu", firstName: "Léo" });
+    const order = await placeOrder(ctx, {
+      buyerUserId: buyer.id,
+      forDay: serviceDay(),
+      fulfillment: { method: "pickup", pickupSiteId: await pickupPoint(ctx) },
+      lines: [{ sku: CROISSANT, quantity: 2 }],
+    });
+    await payByCard(ctx, order);
+    await ctx.drain();
+    return {
+      sub: STAFF,
+      path: `/admin/production/batch/${SERVICE_DAY}/provisional-print`,
+      body: { parts: [...DOSSIER_PARTS], groups: "all", orders: { kind: "all" } },
+    };
+  },
+};
+
 /** Les postes du fournil (plan `fournil/les-postes-du-fournil.md`, W1). */
 export const PRODUCTION_SCENARIOS: ScenarioSet = {
   [routeKey(CONTROLLER, "declare")]: () =>
@@ -113,4 +136,5 @@ export const PRODUCTION_SCENARIOS: ScenarioSet = {
 
   ...WORKSHEET_SCENARIOS,
   ...TRACKING_SCENARIOS,
+  ...PRINT_SCENARIOS,
 };

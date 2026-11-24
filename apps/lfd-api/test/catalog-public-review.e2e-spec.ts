@@ -201,7 +201,12 @@ describe("la validation avant la boutique publique", () => {
     expect(await pendingOf(fiche.variantSku)).toEqual(NONE);
   });
 
-  it("un article né pour les pros n'attend rien quand son audience s'élargit", async () => {
+  /**
+   * Un élargissement au public est un geste du référentiel à regarder avant la
+   * vitrine : l'article attend de nouveau sa validation publique (décidé par
+   * Hugo le 2026-11-24, `documentation/catalogue/plan-audience-par-declinaison.md`, Q1).
+   */
+  it("un article né pour les pros attend sa validation publique quand son audience s'élargit", async () => {
     const active = await anActiveFiche(staff, "Financier", "pro");
     await relayAll(ctx);
     expect(await pendingOf(active.variantSku)).toEqual({ pro: true, public: false });
@@ -210,6 +215,10 @@ describe("la validation avant la boutique publique", () => {
     await setAudience(active, "both");
     await relayAll(ctx);
 
+    expect(await pendingOf(active.variantSku)).toEqual({ pro: false, public: true });
+    expect(await publicShopSkus()).not.toContain(active.variantSku);
+
+    await approve([active.variantSku], ["public"]).expect(204);
     expect(await pendingOf(active.variantSku)).toEqual(NONE);
     expect(await publicShopSkus()).toContain(active.variantSku);
   });

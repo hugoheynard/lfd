@@ -1,4 +1,4 @@
-import { jsonBody } from "../e2e-harness.js";
+import { E2E_STAFF_ID, jsonBody } from "../e2e-harness.js";
 import { createUser } from "../factories.js";
 import { payByCard, placeOrder } from "../order-factory.js";
 import { routeKey, STAFF, type ReplayWorld, type ScenarioSet } from "./scenario.js";
@@ -129,4 +129,12 @@ export const PAYMENTS_SCENARIOS: ScenarioSet = {
       replay: "shown-once",
     };
   },
+
+  /** Le lien d'essai, envoyé à l'opérateur lui-même (`payment/les-liens-de-paiement.md`). */
+  [routeKey("payment/link/test/http/admin-pay-link-tests.controller.ts", "send")]: () =>
+    Promise.resolve({
+      sub: STAFF,
+      path: "/admin/payment/link-tests",
+      body: { staffUserId: E2E_STAFF_ID },
+    }),
 };
