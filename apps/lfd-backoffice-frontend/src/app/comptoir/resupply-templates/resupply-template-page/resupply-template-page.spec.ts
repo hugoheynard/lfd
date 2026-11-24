@@ -195,4 +195,35 @@ describe('ResupplyTemplatePage', () => {
       queryParams: { point: 'site_v' },
     });
   });
+
+  describe('le rail des rayons', () => {
+    const visible = (page: ResupplyTemplatePage): string[] =>
+      page['visibleArticles']().map((article) => article.sku);
+
+    it('monte le rail de la saisie, « Tout » et une pastille par famille', async () => {
+      const { root } = await mount(undefined);
+      const rail = root.querySelector('[data-template-shelves]');
+      expect(rail).not.toBeNull();
+      expect(rail?.textContent).toContain('Viennoiseries');
+      expect(rail?.textContent).toContain('Pains');
+    });
+
+    it('un rayon filtre la table, « Tout » la rend entière', async () => {
+      const { page } = await mount(undefined);
+      expect(visible(page)).toEqual(['CRO', 'PAC', 'BAG']);
+      page['shelf'].set('fam_b');
+      expect(visible(page)).toEqual(['BAG']);
+      page['shelf'].set(page['allShelves']);
+      expect(visible(page)).toEqual(['CRO', 'PAC', 'BAG']);
+    });
+
+    it('se combine avec la recherche', async () => {
+      const { page } = await mount(undefined);
+      page['shelf'].set('fam_m');
+      page['query'].set('chocolat');
+      expect(visible(page)).toEqual(['PAC']);
+      page['shelf'].set('fam_b');
+      expect(visible(page)).toEqual([]);
+    });
+  });
 });

@@ -20,7 +20,6 @@ import {
   catalogShelves,
   shelfTreeOf,
   UNKNOWN_FAMILY_LABEL,
-  type CatalogShelfNavLabels,
   firstSaleQuantityOf,
   ProductRow,
   saleQuantityLabel,
@@ -44,18 +43,13 @@ import {
   type ShelfPriceIndex,
   type ShelfPricing,
 } from '../customer-shelf-prices';
-import { ALL_FAMILIES, familyShelvesOf, inChosenShelf, shelfIdOf } from '../catalog-shelf-filter';
-
-/** Les mots du rail des rayons, en français : le back-office n'a qu'une langue. */
-const SHELF_NAV_LABELS: CatalogShelfNavLabels = {
-  group: 'Rayons',
-  all: 'Tout',
-  root: 'Catalogue',
-  climbToRoot: 'Remonter à tout le catalogue',
-  climbTo: (shelf) => `Remonter à ${shelf}`,
-  level: (shelf) => `Familles de ${shelf}`,
-  withChildren: (shelf, n) => `${shelf}, ${String(n)} sous-familles`,
-};
+import {
+  ALL_FAMILIES,
+  familyShelvesOf,
+  inChosenShelf,
+  SHELF_NAV_LABELS,
+  shelfIdOf,
+} from '../catalog-shelf-filter';
 
 /**
  * Une ligne proposée : le produit tel que la rangée partagée le rend, plus la

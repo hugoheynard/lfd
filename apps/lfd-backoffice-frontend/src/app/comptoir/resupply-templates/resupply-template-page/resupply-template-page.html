@@ -133,13 +133,18 @@
         />
         <div class="articles">
           <div class="filters">
-            @if (familyOptions().length > 2) {
-              <fold-view-toggle
-                ariaLabel="Filtrer par famille"
-                size="sm"
-                [options]="familyOptions()"
-                [value]="family()"
-                (valueChange)="family.set($event)"
+            <!-- Le rail des rayons de la saisie de commande, à plat. -->
+            @if (shelves().families.size > 1) {
+              <lfd-catalog-shelf-nav
+                appearance="compact"
+                data-template-shelves
+                [shelves]="shelves().entries"
+                [families]="shelves().families"
+                [items]="shelfItems()"
+                [allId]="allShelves"
+                [labels]="shelfLabels"
+                [active]="shelf()"
+                (picked)="shelf.set($event)"
               />
             }
             <fold-search

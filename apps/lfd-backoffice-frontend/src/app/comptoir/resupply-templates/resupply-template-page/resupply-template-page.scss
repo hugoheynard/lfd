@@ -1,21 +1,20 @@
 .composition,
 .articles,
+.filters,
 .archive {
   display: flex;
   flex-direction: column;
   gap: var(--fold-space-md);
 }
 
-.identity,
-.filters {
+.identity {
   display: flex;
   flex-wrap: wrap;
   gap: var(--fold-space-md);
   align-items: end;
 }
 
-.identity fold-input,
-.filters fold-search {
+.identity fold-input {
   flex: 1 1 16rem;
 }
 

@@ -1,5 +1,24 @@
 import type { CatalogFamilyNodeView, CatalogItemView } from '@lfd/contracts';
-import { inSubtree, type ShelfEntry, type ShelfTree } from '@lfd/b2b-ui/catalog';
+import {
+  type CatalogShelfNavLabels,
+  inSubtree,
+  type ShelfEntry,
+  type ShelfTree,
+} from '@lfd/b2b-ui/catalog';
+
+/**
+ * Les mots du rail des rayons, en français : le back-office n'a qu'une langue.
+ * Partagés par la saisie et la composition d'un modèle de réassort.
+ */
+export const SHELF_NAV_LABELS: CatalogShelfNavLabels = {
+  group: 'Rayons',
+  all: 'Tout',
+  root: 'Catalogue',
+  climbToRoot: 'Remonter à tout le catalogue',
+  climbTo: (shelf) => `Remonter à ${shelf}`,
+  level: (shelf) => `Familles de ${shelf}`,
+  withChildren: (shelf, n) => `${shelf}, ${String(n)} sous-familles`,
+};
 
 /** La pastille « Tout » du rail de la saisie — aucune famille ne porte cet id. */
 export const ALL_FAMILIES = 'all';

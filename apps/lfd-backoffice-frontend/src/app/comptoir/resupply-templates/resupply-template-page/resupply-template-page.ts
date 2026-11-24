@@ -10,6 +10,7 @@ import {
 } from '@angular/core';
 import { requiredError } from '@angular/forms/signals';
 import { Router } from '@angular/router';
+import { CatalogShelfNav } from '@lfd/b2b-ui/catalog';
 import type {
   ResupplyArticleView,
   ResupplyTarget,
@@ -38,12 +39,8 @@ import {
   type FoldTableColumn,
 } from 'fold-ng';
 
+import { SHELF_NAV_LABELS } from '../../../commandes/nouvelle-commande/catalog-shelf-filter';
 import { PickupAddressesService } from '../../../b2b/reglages/pickup-addresses.service';
-import {
-  ALL_FAMILIES,
-  articlesMatching,
-  familyOptionsOf,
-} from '../../../production/reassorts-a-produire/bakehouse-resupply-card/article-filters';
 import { withQuantity } from '../../../production/reassorts-a-produire/bakehouse-resupply-card/bakehouse-resupply-lines';
 import { BakehouseQuantityStepper } from '../../../production/reassorts-a-produire/bakehouse-quantity-stepper/bakehouse-quantity-stepper';
 import { SaleQuantityPipe } from '../../../shared/sale-quantity/sale-quantity.pipe';
@@ -51,6 +48,7 @@ import { narrowViewport } from '../../../shared/viewport/narrow-viewport';
 import { ResupplyReceiptsService } from '../../reassort-boutique-page/resupply-receipts.service';
 import { compositionOf, LINE_ISSUE_LABELS, templateLines } from '../resupply-template-composition';
 import { ResupplyTemplatesStore } from '../resupply-templates.store';
+import { ALL_SHELVES, articlesOnShelf, resupplyShelvesOf } from '../resupply-shelves';
 
 /** Le téléphone — le même seuil que la table du fournil. */
 const PHONE_QUERY = '(max-width: 768px)';
@@ -83,8 +81,8 @@ const TEMPLATES_URL = '/comptoir/modeles-reassort';
  * **Composer un modèle de réassort** — le créer
  * (`/comptoir/modeles-reassort/:siteId/nouveau`) ou l'ajuster
  * (`…/:siteId/:templateId`) : son nom, sa visée proposée, et une quantité par
- * article dans la table du catalogue du réassort, filtrée par famille — les
- * briques de « Envoyer un réassort » du fournil.
+ * article dans la table du catalogue du réassort, filtrée par le rail des rayons de la saisie
+ * de commande — les briques de « Envoyer un réassort » du fournil.
  *
  * Les lignes inapplicables (article retiré, unité changée) restent visibles à
  * part et s'enregistrent telles quelles tant qu'on ne les retire pas : le
@@ -99,6 +97,7 @@ const TEMPLATES_URL = '/comptoir/modeles-reassort';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     BakehouseQuantityStepper,
+    CatalogShelfNav,
     FoldBackLinkComponent,
     FoldButtonComponent,
     FoldCalloutComponent,
@@ -158,7 +157,9 @@ export class ResupplyTemplatePage {
   protected readonly issueLabels = LINE_ISSUE_LABELS;
 
   protected readonly query = signal('');
-  protected readonly family = signal<string>(ALL_FAMILIES);
+  protected readonly shelf = signal<string>(ALL_SHELVES);
+  protected readonly allShelves = ALL_SHELVES;
+  protected readonly shelfLabels = SHELF_NAV_LABELS;
   protected readonly pending = signal(false);
   protected readonly failure = signal<string | null>(null);
   protected readonly done = signal<string | null>(null);
@@ -190,11 +191,13 @@ export class ResupplyTemplatePage {
     const refusal = this.arrivalRefusal();
     return refusal === null ? [] : [requiredError({ message: refusal })];
   });
-  protected readonly familyOptions = computed(() =>
-    familyOptionsOf(this.articles() ?? [], this.quantities()),
+  /** Les rayons du rail, à plat : l'article ne porte que sa famille. */
+  protected readonly shelves = computed(() => resupplyShelvesOf(this.articles() ?? []));
+  protected readonly shelfItems = computed(() =>
+    (this.articles() ?? []).map((article) => ({ shelfId: article.categoryId })),
   );
   protected readonly visibleArticles = computed(() =>
-    articlesMatching(this.articles() ?? [], this.family(), this.query()),
+    articlesOnShelf(this.articles() ?? [], this.shelf(), this.query()),
   );
   protected readonly columns = computed(() =>
     this.phone() ? COLUMNS.filter((column) => column.key !== 'family') : COLUMNS,
