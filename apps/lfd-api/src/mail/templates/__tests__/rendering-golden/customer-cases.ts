@@ -32,10 +32,23 @@ const INVOICE: B2bMails["customer.invoice-issued"] = {
   locale: "fr",
 };
 
+const QUOTE: B2bMails["customer.period-quote"] = {
+  quoteNumber: "D-20261031-1",
+  version: 1,
+  sellerName: "CRAZEATIVITY",
+  buyerName: "Caserne des Alpes",
+  period: "du 01/10/2026 au 31/10/2026",
+  total: "1 234,56 €",
+  serviceCode: "SERV-RH",
+  document: { fileName: "D-20261031-1-v1.pdf", pdfBase64: "JVBERi0=" },
+  locale: "fr",
+};
+
 export const CUSTOMER_CASES: Pick<
   MailCases,
   | "customer.collection-notice"
   | "customer.invoice-issued"
+  | "customer.period-quote"
   | "customer.mandate-to-sign"
   | "customer.sub-account-activity"
   | "customer.sub-account-gesture"
@@ -68,6 +81,10 @@ export const CUSTOMER_CASES: Pick<
       bankTransferReference: "FA-LFD-2026-000001",
       publicPaymentDeadlineDays: 30,
     },
+  },
+  "customer.period-quote": {
+    full: QUOTE,
+    noServiceCode: { ...QUOTE, version: 2, serviceCode: null },
   },
   "customer.mandate-to-sign": {
     core: {

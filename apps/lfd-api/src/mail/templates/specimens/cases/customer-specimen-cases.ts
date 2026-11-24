@@ -83,6 +83,7 @@ export const CUSTOMER_CASE_TABLES: Pick<
   MailCaseTables,
   | "customer.collection-notice"
   | "customer.invoice-issued"
+  | "customer.period-quote"
   | "customer.mandate-to-sign"
   | "customer.sub-account-activity"
   | "customer.sub-account-gesture"
@@ -165,6 +166,22 @@ export const CUSTOMER_CASE_TABLES: Pick<
       ),
     ],
     axes: [{ id: "document", values: PRESENCE, of: (data) => presence(data.document?.fileName) }],
+  },
+  "customer.period-quote": {
+    cases: [
+      specimenCase("customer.period-quote", "Avec un code service"),
+      variantCase(
+        "customer.period-quote",
+        "noServiceCode",
+        "Sans code service, version 2",
+        (data) => ({
+          ...data,
+          version: 2,
+          serviceCode: null,
+        }),
+      ),
+    ],
+    axes: [{ id: "serviceCode", values: PRESENCE, of: (data) => presence(data.serviceCode) }],
   },
   "customer.mandate-to-sign": {
     cases: [

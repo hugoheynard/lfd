@@ -95,4 +95,24 @@ export const BILLING_MAILS_EN: BillingMailsCopy = {
     creditorIdentifierLabel: "Creditor identifier (ICS)",
     creditorLabel: "Creditor",
   },
+  "customer.period-quote": {
+    kicker: "Period quote",
+    title: "Quote {number}",
+    subject: "{title} — {seller}",
+    greeting: "Hello,",
+    intro:
+      "{seller} sends you quote {number} for the orders of {buyer} {period}, amounting to {total} including VAT.",
+    notAnInvoice:
+      "This quote is not an invoice: it prices the orders of the period at the agreed prices, so that you can commit the expenditure.",
+    returnRequest:
+      "Please send it back with your commitment number by replying to this message: the invoice will then be issued, for the same amount, and filed on Chorus Pro.",
+    quoteLabel: "Quote",
+    versionLabel: "Version",
+    periodLabel: "Period",
+    addressedToLabel: "Addressed to",
+    serviceCodeLabel: "Service code",
+    totalLabel: "Total incl. VAT",
+    footer:
+      "The quote is attached to this message as a PDF. For any question, reply to this message.",
+  },
 };

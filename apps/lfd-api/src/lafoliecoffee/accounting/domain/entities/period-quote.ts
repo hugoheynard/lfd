@@ -1,6 +1,7 @@
 import {
   EmptyPeriodQuoteError,
   InvalidPeriodQuoteRankError,
+  PeriodQuoteNotAwaitingError,
 } from "../errors/period-quote-errors.js";
 import { periodTagOf } from "../services/invoicing-closures.js";
 import type { InvoiceableOrder } from "../services/monthly-invoicing.js";
@@ -63,8 +64,10 @@ export interface PeriodQuoteSnapshot {
  * devis porte (`periodQuoteFigures`) : on ne les donne pas, on ne peut donc
  * pas les donner faux. Un devis sans commande n'existe pas.
  *
- * Seule la naissance (v1, `awaiting`) est bâtie ici ; le renvoi (v n+1) et
- * l'engagement reçu (`invoiced`) viendront avec leurs gestes.
+ * Deux gestes le font vivre ici : la naissance (v1, `awaiting`, à la
+ * clôture) et le renvoi (`resend`), qui garde la version quand l'empreinte
+ * n'a pas bougé et en range une nouvelle sinon. L'engagement reçu
+ * (`invoiced`) a son propre geste.
  */
 export class PeriodQuote {
   private constructor(
@@ -95,6 +98,14 @@ export class PeriodQuote {
     );
   }
 
+  /**
+   * Le devis relu en base. Il ne porte pas ses commandes chiffrées : seul
+   * `resend` les demande, et les reçoit relues.
+   */
+  static restore(snapshot: PeriodQuoteSnapshot): PeriodQuote {
+    return new PeriodQuote(snapshot, []);
+  }
+
   /** L'identifiant du devis. */
   get id(): string {
     return this.state.id;
@@ -106,6 +117,47 @@ export class PeriodQuote {
 
   get orderIds(): readonly string[] {
     return this.state.orderIds;
+  }
+
+  get version(): number {
+    return this.state.version;
+  }
+
+  /**
+   * **« Renvoyer le devis »** (QD5) : l'empreinte recalculée sur les
+   * commandes du devis telles qu'elles sont aujourd'hui (annulées retirées
+   * par l'appelant). Égale, la même version repart ; différente, une version
+   * n+1 la remplace — même numéro, nouvelles commandes, nouvelle empreinte —
+   * et celle-ci passe `superseded`.
+   *
+   * @throws {PeriodQuoteNotAwaitingError} le devis est facturé ou déjà remplacé.
+   * @throws {EmptyPeriodQuoteError} plus aucune commande du devis n'est à facturer.
+   */
+  resend(orders: readonly InvoiceableOrder[], successorId: string, at: Date): PeriodQuoteResend {
+    if (this.state.state !== "awaiting") {
+      throw new PeriodQuoteNotAwaitingError(
+        this.state.number,
+        this.state.version,
+        this.state.state,
+      );
+    }
+    const figures = figuresOf(this.state.payerName, orders);
+    if (figures.fingerprint === this.state.fingerprint) {
+      return { kind: "unchanged", quote: this };
+    }
+    const successor = new PeriodQuote(
+      {
+        ...this.state,
+        ...figures,
+        id: successorId,
+        version: this.state.version + 1,
+        state: "awaiting",
+        createdAt: at,
+      },
+      orders,
+    );
+    const superseded = new PeriodQuote({ ...this.state, state: "superseded" }, this.orders);
+    return { kind: "renewed", superseded, successor };
   }
 
   /**
@@ -126,6 +178,15 @@ export class PeriodQuote {
     return this.state;
   }
 }
+
+/** Ce que rend un renvoi : la même version, ou l'ancienne remplacée et la nouvelle. */
+export type PeriodQuoteResend =
+  | { readonly kind: "unchanged"; readonly quote: PeriodQuote }
+  | {
+      readonly kind: "renewed";
+      readonly superseded: PeriodQuote;
+      readonly successor: PeriodQuote;
+    };
 
 /** `D-<AAAAMMJJ>-<rang>` : l'étiquette de la période (son dernier jour), puis le rang. */
 export function periodQuoteNumberOf(periodClosesAt: Date, rank: number): string {

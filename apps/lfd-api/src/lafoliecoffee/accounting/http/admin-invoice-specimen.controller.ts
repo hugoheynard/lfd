@@ -5,6 +5,7 @@ import type { Response } from "express";
 
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
 import { GetInvoiceSpecimenQuery } from "../application/queries/get-invoice-specimen.query.js";
+import { GetPeriodQuoteSpecimenQuery } from "../application/queries/get-period-quote-specimen.query.js";
 import type { InvoiceDocument } from "../application/invoice-document-support.js";
 
 /**
@@ -14,7 +15,9 @@ import type { InvoiceDocument } from "../application/invoice-document-support.js
  *
  * Une route par moyen qui change le papier : sans moyen figé, et au virement
  * (le bloc « Règlement par virement »). La facture EST le PDF/A-3 Factur-X,
- * il n'existe pas de second rendu « simple ». Il n'injecte que le `QueryBus`.
+ * il n'existe pas de second rendu « simple ». Le devis de période d'exemple
+ * (un PDF ordinaire, sans Factur-X) y a sa route. Il n'injecte que le
+ * `QueryBus`.
  */
 @Controller("admin/document-specimens")
 @AdminSurface("b2b_accounting")
@@ -31,8 +34,19 @@ export class AdminInvoiceSpecimenController {
     return this.serve(new GetInvoiceSpecimenQuery("bank_transfer"), response);
   }
 
-  private async serve(query: GetInvoiceSpecimenQuery, response: Response): Promise<StreamableFile> {
-    const pdf = await this.queries.execute<GetInvoiceSpecimenQuery, InvoiceDocument>(query);
+  @Get("period-quote.pdf")
+  periodQuote(@Res({ passthrough: true }) response: Response): Promise<StreamableFile> {
+    return this.serve(new GetPeriodQuoteSpecimenQuery(), response);
+  }
+
+  private async serve(
+    query: GetInvoiceSpecimenQuery | GetPeriodQuoteSpecimenQuery,
+    response: Response,
+  ): Promise<StreamableFile> {
+    const pdf = await this.queries.execute<
+      GetInvoiceSpecimenQuery | GetPeriodQuoteSpecimenQuery,
+      InvoiceDocument
+    >(query);
     response.setHeader("Content-Type", "application/pdf");
     response.setHeader(
       "Content-Disposition",

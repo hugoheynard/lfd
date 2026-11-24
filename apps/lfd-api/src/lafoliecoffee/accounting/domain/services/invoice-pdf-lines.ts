@@ -105,9 +105,14 @@ function drawRow(sheet: InvoiceSheet, line: InvoiceLineInput): void {
 
 /** Le tableau des lignes, sur autant de pages qu'il faut. */
 export function drawLines(sheet: InvoiceSheet, state: InvoiceState): void {
+  drawLineTable(sheet, state.lines);
+}
+
+/** Le même tableau, sur des lignes qui ne sont pas encore une pièce (le devis de période). */
+export function drawLineTable(sheet: InvoiceSheet, lines: readonly InvoiceLineInput[]): void {
   sheet.ensure(HEAD_RESERVE * 3);
   drawHead(sheet);
-  for (const line of state.lines) {
+  for (const line of lines) {
     drawRow(sheet, line);
   }
   sheet.rule(sheet.y - ROW_GAP / 2);

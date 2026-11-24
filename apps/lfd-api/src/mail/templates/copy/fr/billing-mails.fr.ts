@@ -105,4 +105,24 @@ export const BILLING_MAILS_FR: BillingMailsCopy = {
     creditorIdentifierLabel: "Identifiant créancier (ICS)",
     creditorLabel: "Créancier",
   },
+  "customer.period-quote": {
+    kicker: "Devis de période",
+    title: "Devis {number}",
+    subject: "{title} — {seller}",
+    greeting: "Bonjour,",
+    intro:
+      "{seller} vous adresse le devis {number} des commandes de {buyer} {period}, d'un montant de {total} TTC.",
+    notAnInvoice:
+      "Ce devis n'est pas une facture : il chiffre les commandes de la période aux prix convenus, pour que vous puissiez engager la dépense.",
+    returnRequest:
+      "Retournez-le avec votre numéro d'engagement, en répondant à ce message : la facture sera alors émise, pour ce même montant, et déposée sur Chorus Pro.",
+    quoteLabel: "Devis",
+    versionLabel: "Version",
+    periodLabel: "Période",
+    addressedToLabel: "Adressé à",
+    serviceCodeLabel: "Code service",
+    totalLabel: "Total TTC",
+    footer:
+      "Le devis est joint à ce message au format PDF. Pour toute question, répondez à ce message.",
+  },
 };

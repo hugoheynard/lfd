@@ -78,7 +78,7 @@ const WATERMARK_COLOR = "#9a1b1b";
  * Le filigrane, sur CHAQUE page (les pages sont tamponnées : `bufferPages`).
  * L'opacité est admise par PDF/A-3, qui n'interdit plus la transparence.
  */
-function drawWatermark(doc: InvoiceDoc, text: string): void {
+export function drawWatermark(doc: InvoiceDoc, text: string): void {
   const range = doc.bufferedPageRange();
   for (let index = range.start; index < range.start + range.count; index += 1) {
     doc.switchToPage(index);

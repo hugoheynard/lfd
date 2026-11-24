@@ -464,6 +464,7 @@
   "test/payment-row-lock.e2e-spec.ts": 11389,
   "test/payments-journal.e2e-spec.ts": 6197,
   "test/period-quote-closure.e2e-spec.ts": 9000,
+  "test/period-quote-document.e2e-spec.ts": 12000,
   "test/pickup-addresses.e2e-spec.ts": 3812,
   "test/pickup-audience-information.e2e-spec.ts": 4360,
   "test/pickup-audience.e2e-spec.ts": 4805,

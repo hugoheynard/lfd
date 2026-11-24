@@ -126,9 +126,38 @@ export interface MandateToSignCopy {
   readonly creditorLabel: string;
 }
 
+/**
+ * **« Devis D-… »** — le devis de période d'un organisme public (plan
+ * `plan-clients-publics-chorus.md`, § 6 sexies, QD4). Le numéro, la période
+ * et le montant arrivent mis en forme par la comptabilité.
+ */
+export interface PeriodQuoteCopy {
+  /** Le sous-titre du bandeau d'en-tête, sous l'enseigne — rendu en capitales. */
+  readonly kicker: string;
+  /** `{number}` — « Devis D-20261031-1 ». */
+  readonly title: string;
+  /** `{title}`, `{seller}`. */
+  readonly subject: string;
+  readonly greeting: string;
+  /** `{seller}`, `{number}`, `{buyer}`, `{period}`, `{total}`. */
+  readonly intro: string;
+  /** Qu'un devis n'est pas une facture. */
+  readonly notAnInvoice: string;
+  /** Ce que l'organisme renvoie : son numéro d'engagement. */
+  readonly returnRequest: string;
+  readonly quoteLabel: string;
+  readonly versionLabel: string;
+  readonly periodLabel: string;
+  readonly addressedToLabel: string;
+  readonly serviceCodeLabel: string;
+  readonly totalLabel: string;
+  readonly footer: string;
+}
+
 /** La famille « facturation et prélèvement », une section par clé du registre. */
 export interface BillingMailsCopy {
   readonly "customer.invoice-issued": InvoiceIssuedCopy;
+  readonly "customer.period-quote": PeriodQuoteCopy;
   readonly "customer.collection-notice": CollectionNoticeCopy;
   readonly "customer.mandate-to-sign": MandateToSignCopy;
 }

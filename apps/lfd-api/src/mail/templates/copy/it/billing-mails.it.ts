@@ -94,4 +94,24 @@ export const BILLING_MAILS_IT: BillingMailsCopy = {
     creditorIdentifierLabel: "Identificativo del creditore (ICS)",
     creditorLabel: "Creditore",
   },
+  "customer.period-quote": {
+    kicker: "Preventivo del periodo",
+    title: "Preventivo {number}",
+    subject: "{title} — {seller}",
+    greeting: "Buongiorno,",
+    intro:
+      "{seller} le invia il preventivo {number} degli ordini di {buyer} {period}, per un importo di {total} IVA inclusa.",
+    notAnInvoice:
+      "Questo preventivo non è una fattura: valorizza gli ordini del periodo ai prezzi concordati, affinché possa impegnare la spesa.",
+    returnRequest:
+      "Ce lo rinvii con il suo numero di impegno, rispondendo a questo messaggio: la fattura sarà allora emessa, per lo stesso importo, e depositata su Chorus Pro.",
+    quoteLabel: "Preventivo",
+    versionLabel: "Versione",
+    periodLabel: "Periodo",
+    addressedToLabel: "Intestato a",
+    serviceCodeLabel: "Codice servizio",
+    totalLabel: "Totale IVA inclusa",
+    footer:
+      "Il preventivo è allegato a questo messaggio in formato PDF. Per qualsiasi domanda, risponda a questo messaggio.",
+  },
 };

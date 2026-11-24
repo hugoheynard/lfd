@@ -96,6 +96,13 @@ export const MAIL_DATA_BLOCK_CARDS: { readonly [K in keyof B2bMails]: MailDataBl
         "Le numéro, la date, la période, le destinataire, l'échéance, le règlement et le total TTC.",
     },
   },
+  "customer.period-quote": {
+    summary: {
+      label: "Récapitulatif du devis",
+      description:
+        "Le numéro, la version, la période, l'organisme destinataire, le code service s'il y en a un, et le total TTC.",
+    },
+  },
   "customer.collection-notice": {
     summary: {
       label: "Récapitulatif du prélèvement",

@@ -204,6 +204,18 @@
       "attachmentsSha256": "1acc23c2ee05f869cce7dc3ca27107216c38c6e574509a03a31673e3174a0867"
     }
   },
+  "customer.period-quote": {
+    "full": {
+      "subject": "Devis D-20261031-1 — CRAZEATIVITY",
+      "htmlSha256": "78a4b7edf57cc5b2c52e5d2c39243a7f31f55d22c6f976d6b3dfc65810028786",
+      "attachmentsSha256": "899883488a5d7fa42040b19622c271147ed447c7e1eb4ccfce825251369a2429"
+    },
+    "noServiceCode": {
+      "subject": "Devis D-20261031-1 — CRAZEATIVITY",
+      "htmlSha256": "c660a33b609a18a16972f42ba129b690aad08965f332d762bcff34c08131ac41",
+      "attachmentsSha256": "899883488a5d7fa42040b19622c271147ed447c7e1eb4ccfce825251369a2429"
+    }
+  },
   "customer.mandate-to-sign": {
     "core": {
       "subject": "Votre mandat de prélèvement SEPA — RUM-1",

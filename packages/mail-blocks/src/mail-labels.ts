@@ -105,6 +105,12 @@ const MAIL_LABELS: Readonly<Record<string, MailLabel>> = {
     recipient: "La facturation du payeur et des sous-comptes",
     moment: "à l’émission de la facture",
   },
+  "customer.period-quote": {
+    title: "Devis de période",
+    recipient: "La facturation de l’organisme payeur",
+    moment:
+      "à la clôture d’une période d’un payeur public sur devis, et quand l’équipe renvoie le devis",
+  },
   "customer.collection-notice": {
     title: "Avis de prélèvement",
     recipient: "La société payeuse",

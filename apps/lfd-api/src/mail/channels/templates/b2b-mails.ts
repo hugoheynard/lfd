@@ -5,6 +5,7 @@ import type { CustomerAccessOpenedMailData } from "../../templates/customer-acce
 import type { CustomerRequestMailData } from "../../templates/customer-request-mail.js";
 import type { DeliveryEnRouteMailData } from "../../templates/delivery-en-route-mail.js";
 import type { InvoiceIssuedMailData } from "../../templates/invoice-issued-mail.js";
+import type { PeriodQuoteMailData } from "../../templates/period-quote-mail.js";
 import type { LinkPaymentReceivedMailData } from "../../templates/link-payment-received-mail.js";
 import type { MarketingConfirmMailData } from "../../templates/marketing-confirm-mail.js";
 import type { PayLinkTestMailData } from "../../templates/pay-link-test-mail.js";
@@ -39,6 +40,7 @@ import type { VitrineNoticeMailData } from "../../templates/vitrine-notice-mail.
  */
 export type {
   InvoiceIssuedMailData,
+  PeriodQuoteMailData,
   OrderCancelledMailData,
   OrderRevisedMoneyNote,
   OrderSheetMailDocument,
@@ -112,6 +114,13 @@ export interface B2bMails {
    * la facturation du payeur et celle des sous-comptes. Cf. `invoice-issued-mail.ts`.
    */
   "customer.invoice-issued": InvoiceIssuedMailData;
+  /**
+   * **« Devis D-… »** — le devis de période d'un organisme public, à
+   * retourner avec son numéro d'engagement (plan
+   * `plan-clients-publics-chorus.md`, § 6 sexies, QD4). Destinataire : la
+   * facturation du payeur. Cf. `period-quote-mail.ts`.
+   */
+  "customer.period-quote": PeriodQuoteMailData;
   /** **La tournée est partie.** Destinataire : le client. Cf. `delivery-en-route-mail.ts`. */
   "customer.delivery-en-route": DeliveryEnRouteMailData;
   /**

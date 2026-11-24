@@ -7,27 +7,10 @@ import type { BillingFollow } from "../domain/ports/statement-billing.reader.js"
 import { invoiceGroupKey, type InvoiceableOrder } from "../domain/services/monthly-invoicing.js";
 import type { CollectionFormName } from "../domain/value-objects/collection-form.js";
 import { budgetCommitmentOf } from "../domain/value-objects/invoice-budget-commitment.js";
-import {
-  BILLABLE_INVOICE_ORDER_SELECT,
-  handedOverNoteNumbersOf,
-  toBillableInvoiceOrder,
-} from "./billable-invoice-order.mapper.js";
-import {
-  AWAITING_REMAINDER_SELECT,
-  awaitsRemainder,
-  billableOrderWhere,
-  unsettledWhere,
-} from "./billable-order-criterion.js";
-import { toFrozenInvoiceOrder } from "./frozen-invoice-order.mapper.js";
-import {
-  INVOICE_ORDER_FREE_DELIVERY_SELECT,
-  freeDeliveryFieldOf,
-} from "./invoice-free-delivery.columns.js";
+import { billableOrderWhere, unsettledWhere } from "./billable-order-criterion.js";
+import { INVOICEABLE_ORDER_SELECT, toInvoiceableOrder } from "./invoiceable-order.mapper.js";
 import { ISSUED_OUTCOME, mandateIdOfColumn } from "./prisma-monthly-invoice-outcomes.js";
 import { AWAITING_QUOTE_STATE } from "./prisma-period-quote.repository.js";
-
-/** `AAAA-MM-JJ`. */
-const DAY_LENGTH = 10;
 
 /**
  * Ce que lit la facture du mois (E4). L'assiette est `billableOrderWhere`,
@@ -52,18 +35,7 @@ export class PrismaMonthlyInvoicingReader extends MonthlyInvoicingReader {
       // d'émission les nomme au lieu de les taire (plan E6c2, § 1).
       where: { OR: [billableOrderWhere(from, to), unsettledWhere(from, to)] },
       orderBy: [{ createdAt: "asc" }, { orderNumber: "asc" }],
-      select: {
-        ...BILLABLE_INVOICE_ORDER_SELECT,
-        ...INVOICE_ORDER_FREE_DELIVERY_SELECT,
-        id: true,
-        companyId: true,
-        billedCompanyId: true,
-        receivedOn: true,
-        ...AWAITING_REMAINDER_SELECT,
-        shortfallDecisions: { select: { id: true, remainder: true } },
-        budgetCommitmentNumber: true,
-        budgetCommitmentServiceCode: true,
-      },
+      select: INVOICEABLE_ORDER_SELECT,
     });
     const ids = orders.map((order) => order.id);
     const [invoiced, quoted] = await Promise.all([
@@ -83,31 +55,7 @@ export class PrismaMonthlyInvoicingReader extends MonthlyInvoicingReader {
     return orders.flatMap((order) =>
       order.companyId === null || taken.has(order.id)
         ? []
-        : [
-            {
-              orderId: order.id,
-              orderNumber: order.orderNumber,
-              companyId: order.companyId,
-              placedAt: order.createdAt,
-              // `@db.Date` : minuit UTC, dont la date ISO EST le jour de Paris.
-              receivedOn: order.receivedOn?.toISOString().slice(0, DAY_LENGTH) ?? null,
-              billedCompanyId: order.billedCompanyId,
-              deliveryNoteNumbers: handedOverNoteNumbersOf(order),
-              ...freeDeliveryFieldOf(order),
-              budgetCommitment: budgetCommitmentOf(
-                order.budgetCommitmentNumber,
-                order.budgetCommitmentServiceCode,
-              ),
-              // Non soldé : la facture de son payeur ne part pas (bloqueur) ; le
-              // dossier montré en attendant est celui de la commande.
-              ...(order.billableTotalCents === null
-                ? {
-                    settlement: awaitsRemainder(order) ? "awaiting_remainder" : "unsettled",
-                    frozen: toFrozenInvoiceOrder(order),
-                  }
-                : { frozen: toBillableInvoiceOrder(order) }),
-            },
-          ],
+        : [toInvoiceableOrder(order, order.companyId)],
     );
   }
 

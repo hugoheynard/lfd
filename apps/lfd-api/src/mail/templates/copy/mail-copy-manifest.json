@@ -1319,6 +1319,100 @@
         "fr": "Créancier"
       }
     },
+    "customer.period-quote": {
+      "kicker": {
+        "variables": [],
+        "required": [],
+        "fr": "Devis de période"
+      },
+      "title": {
+        "variables": [
+          "number"
+        ],
+        "required": [
+          "number"
+        ],
+        "fr": "Devis {number}"
+      },
+      "subject": {
+        "variables": [
+          "title",
+          "seller"
+        ],
+        "required": [
+          "title",
+          "seller"
+        ],
+        "fr": "{title} — {seller}"
+      },
+      "greeting": {
+        "variables": [],
+        "required": [],
+        "fr": "Bonjour,"
+      },
+      "intro": {
+        "variables": [
+          "seller",
+          "number",
+          "buyer",
+          "period",
+          "total"
+        ],
+        "required": [
+          "seller",
+          "number",
+          "buyer",
+          "period",
+          "total"
+        ],
+        "fr": "{seller} vous adresse le devis {number} des commandes de {buyer} {period}, d'un montant de {total} TTC."
+      },
+      "notAnInvoice": {
+        "variables": [],
+        "required": [],
+        "fr": "Ce devis n'est pas une facture : il chiffre les commandes de la période aux prix convenus, pour que vous puissiez engager la dépense."
+      },
+      "returnRequest": {
+        "variables": [],
+        "required": [],
+        "fr": "Retournez-le avec votre numéro d'engagement, en répondant à ce message : la facture sera alors émise, pour ce même montant, et déposée sur Chorus Pro."
+      },
+      "quoteLabel": {
+        "variables": [],
+        "required": [],
+        "fr": "Devis"
+      },
+      "versionLabel": {
+        "variables": [],
+        "required": [],
+        "fr": "Version"
+      },
+      "periodLabel": {
+        "variables": [],
+        "required": [],
+        "fr": "Période"
+      },
+      "addressedToLabel": {
+        "variables": [],
+        "required": [],
+        "fr": "Adressé à"
+      },
+      "serviceCodeLabel": {
+        "variables": [],
+        "required": [],
+        "fr": "Code service"
+      },
+      "totalLabel": {
+        "variables": [],
+        "required": [],
+        "fr": "Total TTC"
+      },
+      "footer": {
+        "variables": [],
+        "required": [],
+        "fr": "Le devis est joint à ce message au format PDF. Pour toute question, répondez à ce message."
+      }
+    },
     "customer.access-opened": {
       "kicker": {
         "variables": [],

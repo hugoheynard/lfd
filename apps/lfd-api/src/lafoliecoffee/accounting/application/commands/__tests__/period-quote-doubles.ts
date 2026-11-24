@@ -1,4 +1,8 @@
-import type { PeriodQuote, PeriodQuoteSnapshot } from "../../../domain/entities/period-quote.js";
+import { PeriodQuote, type PeriodQuoteSnapshot } from "../../../domain/entities/period-quote.js";
+import {
+  PeriodQuoteNotAwaitingError,
+  PeriodQuoteResendConflictError,
+} from "../../../domain/errors/period-quote-errors.js";
 import { PeriodQuoteRepository } from "../../../domain/ports/period-quote.repository.js";
 
 /**
@@ -44,6 +48,28 @@ export class MemoryPeriodQuotes extends PeriodQuoteRepository {
   save(quote: PeriodQuote): Promise<void> {
     const state = quote.toSnapshot();
     this.quotes.set(state.id, state);
+    return Promise.resolve();
+  }
+
+  load(quoteId: string): Promise<PeriodQuote | null> {
+    const state = this.quotes.get(quoteId);
+    return Promise.resolve(state === undefined ? null : PeriodQuote.restore(state));
+  }
+
+  /** L'ordre de la base : l'ancienne remplacée d'abord, puis la nouvelle, sans `ON CONFLICT`. */
+  replace(superseded: PeriodQuote, successor: PeriodQuote): Promise<void> {
+    const old = superseded.toSnapshot();
+    if (this.quotes.get(old.id)?.state !== "awaiting") {
+      return Promise.reject(new PeriodQuoteNotAwaitingError(old.number, old.version, "superseded"));
+    }
+    this.quotes.set(old.id, { ...old, state: "superseded" });
+    old.orderIds.forEach((orderId) => this.awaitingOrders.delete(orderId));
+    const next = successor.toSnapshot();
+    if (next.orderIds.some((orderId) => this.awaitingOrders.has(orderId))) {
+      return Promise.reject(new PeriodQuoteResendConflictError(next.number));
+    }
+    next.orderIds.forEach((orderId) => this.awaitingOrders.add(orderId));
+    this.quotes.set(next.id, next);
     return Promise.resolve();
   }
 

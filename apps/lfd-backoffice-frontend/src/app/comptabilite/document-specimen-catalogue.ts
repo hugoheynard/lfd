@@ -9,6 +9,7 @@ export type SpecimenKey =
   | 'rounds-dossier'
   | 'invoice'
   | 'invoice-bank-transfer'
+  | 'period-quote'
   | 'sepa-mandate-b2b'
   | 'sepa-mandate-core'
   | 'order-summary'
@@ -31,6 +32,7 @@ export const SPECIMEN_LABELS: Readonly<Record<SpecimenKey, string>> = {
   'rounds-dossier': 'Dossier des tournées du jour',
   invoice: 'Facture Factur-X',
   'invoice-bank-transfer': 'Facture Factur-X — virement',
+  'period-quote': 'Devis de période (organisme public)',
   'sepa-mandate-b2b': 'Mandat SEPA interentreprises (B2B)',
   'sepa-mandate-core': 'Mandat SEPA CORE',
   'order-summary': 'Récapitulatif de commandes',
@@ -60,7 +62,8 @@ function group(title: string, keys: readonly SpecimenKey[]): SpecimenGroup {
  * des prix, ceux qui n'en portent aucun (le fournil et le livreur ne lisent
  * jamais un montant — le bon de livraison de transport non plus, il voyage
  * avec la marchandise), les papiers du fournil pour la journée (compte à
- * produire, dossier du jour), la facture, les deux mandats SEPA, le récapitulatif de
+ * produire, dossier du jour), la facture, le devis de période d'un organisme
+ * public, les deux mandats SEPA, le récapitulatif de
  * commandes d'une société, la matrice des allergènes du catalogue, et les
  * étiquettes A6 du colisage — sac et bac (2026-10-25). Il n'y
  * a pas de bon « bureau » : le bon que le staff ouvre est celui du client.
@@ -80,6 +83,7 @@ export const SPECIMEN_GROUPS: readonly SpecimenGroup[] = [
     'production-simulation',
   ]),
   group('Factures', ['invoice', 'invoice-bank-transfer']),
+  group('Devis', ['period-quote']),
   group('Mandats', ['sepa-mandate-b2b', 'sepa-mandate-core']),
   group('Récapitulatifs', ['order-summary']),
   group('Catalogue', ['allergen-matrix']),

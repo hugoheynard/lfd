@@ -25,4 +25,18 @@ export abstract class PeriodQuoteRepository {
 
   /** Réécrit l'empreinte et le total d'un devis en attente (après `keeping`). */
   abstract save(quote: PeriodQuote): Promise<void>;
+
+  /** Le devis relu, ou `null`. */
+  abstract load(quoteId: string): Promise<PeriodQuote | null>;
+
+  /**
+   * **Le renvoi d'une nouvelle version** (QD5, v5 S4), dans la transaction du
+   * geste et dans cet ordre : l'ancienne passe `superseded` — la clé
+   * étrangère composite met ses commandes à jour —, PUIS la nouvelle et ses
+   * commandes sont insérées, sans `ON CONFLICT` : un conflit est une erreur.
+   *
+   * @throws {PeriodQuoteNotAwaitingError} l'ancienne n'était plus en attente.
+   * @throws {PeriodQuoteResendConflictError} la base refuse la nouvelle.
+   */
+  abstract replace(superseded: PeriodQuote, successor: PeriodQuote): Promise<void>;
 }

@@ -17,6 +17,7 @@ import { renderCollectionNoticeMail } from "./collection-notice-mail.js";
 import { renderCustomerRequestMail } from "./customer-request-mail.js";
 import { renderCustomerAccessOpenedMail } from "./customer-access-opened-mail.js";
 import { renderInvoiceIssuedMail } from "./invoice-issued-mail.js";
+import { renderPeriodQuoteMail } from "./period-quote-mail.js";
 import { renderLinkPaymentReceivedMail } from "./link-payment-received-mail.js";
 import { renderMarketingConfirmMail } from "./marketing-confirm-mail.js";
 import { renderPayLinkTestMail } from "./pay-link-test-mail.js";
@@ -376,6 +377,7 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
     "customer.order-not-collected": (data) => renderOrderNotCollectedMail(data, customerMail),
     "customer.collection-notice": (data) => renderCollectionNoticeMail(data, customerMail),
     "customer.invoice-issued": (data) => renderInvoiceIssuedMail(data, customerMail),
+    "customer.period-quote": (data) => renderPeriodQuoteMail(data, customerMail),
     "customer.order-cancelled": (data) => renderOrderCancelledMail(data, customerMail),
     "customer.order-change-applied": (data) => renderOrderChangeAppliedMail(data, customerMail),
     "customer.order-change-refused": (data) => renderOrderChangeRefusedMail(data, customerMail),

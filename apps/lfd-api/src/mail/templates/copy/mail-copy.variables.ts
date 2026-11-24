@@ -76,6 +76,11 @@ const DECLARED_VARIABLES = {
     publicDue: ["days"],
     publicBankTransfer: ["number"],
   },
+  "customer.period-quote": {
+    title: ["number"],
+    subject: ["title", "seller"],
+    intro: ["seller", "number", "buyer", "period", "total"],
+  },
   "customer.collection-notice": {
     subject: ["title", "creditor", "day"],
     cancelled: ["amount", "day", "debtor"],

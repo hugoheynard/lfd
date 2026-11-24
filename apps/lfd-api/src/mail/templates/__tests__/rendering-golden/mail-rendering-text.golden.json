@@ -146,6 +146,14 @@
       "textSha256": "2a8081e9cd2571155a270a38425f491ea1875a4d1e517151e31a8f87f43777f1"
     }
   },
+  "customer.period-quote": {
+    "full": {
+      "textSha256": "7904521b0634505a408eac8034efaca0605059e61d65a8e74208ebee1c48735c"
+    },
+    "noServiceCode": {
+      "textSha256": "036d6a6fe5ac29a11f0dc18eea5668c3a9cfc48aaabf6041b2a16a0d7a4aefd5"
+    }
+  },
   "customer.mandate-to-sign": {
     "core": {
       "textSha256": "34ae235b97759129b39e0204ca0cec1e60aa4c465c8d35aacb4a57776e2160c3"

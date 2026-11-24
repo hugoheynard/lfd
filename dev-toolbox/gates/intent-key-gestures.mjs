@@ -76,6 +76,11 @@ export const GESTURES = [
     "lafoliecoffee/payments/http/admin-mandates.controller.ts",
   ],
   [
+    "lafoliecoffee/accounting/application/commands/resend-period-quote.command.ts",
+    "ResendPeriodQuoteCommand",
+    "lafoliecoffee/accounting/http/admin-period-quotes.controller.ts",
+  ],
+  [
     "lafoliecoffee/accounting/application/commands/resend-invoice-notice.command.ts",
     "ResendInvoiceNoticeCommand",
     "lafoliecoffee/accounting/http/admin-issued-invoices.controller.ts",

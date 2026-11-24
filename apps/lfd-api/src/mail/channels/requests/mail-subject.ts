@@ -30,6 +30,9 @@ export const MAIL_SUBJECT_TYPES = [
   // L'essai du paiement par lien (`staff.pay-link-test`) : le bloc `payment`
   // nomme son propre essai, qui n'est pas encore un paiement.
   "pay_link_test",
+  // Le devis de période d'un organisme public (`customer.period-quote`) : il
+  // n'est pas encore une facture, il a son propre objet.
+  "period_quote",
 ] as const;
 
 export type MailSubjectType = (typeof MAIL_SUBJECT_TYPES)[number];

@@ -72,6 +72,14 @@ export const BILLING_VALUE_CARDS: Pick<
     label: "Client facturé",
     description: "Le nom du client à qui la facture est adressée.",
     example: "EXEMPLE — SAS des Trois Ponts",
+    senses: {
+      "customer.invoice-issued": SAME_SENSE,
+      "customer.period-quote": {
+        label: "Organisme destinataire",
+        description: "Le nom de l'organisme payeur à qui le devis de période est adressé.",
+        example: "EXEMPLE — Caserne des Alpes",
+      },
+    },
   },
   creditor: {
     label: "Créancier",
@@ -128,7 +136,15 @@ export const BILLING_VALUE_CARDS: Pick<
     label: "Numéro de facture",
     description: "Le numéro de la facture.",
     example: "EXEMPLE-FA-0001",
-    senses: { "customer.invoice-issued": SAME_SENSE, "customer.collection-notice": SAME_SENSE },
+    senses: {
+      "customer.invoice-issued": SAME_SENSE,
+      "customer.collection-notice": SAME_SENSE,
+      "customer.period-quote": {
+        label: "Numéro du devis",
+        description: "Le numéro du devis de période, partagé par ses versions.",
+        example: "EXEMPLE-D-20261031-1",
+      },
+    },
   },
   numbers: {
     label: "Numéros de facture",
@@ -139,6 +155,14 @@ export const BILLING_VALUE_CARDS: Pick<
     label: "Période facturée",
     description: "La période des commandes que la facture couvre.",
     example: "du 21 au 27 septembre 2026",
+    senses: {
+      "customer.invoice-issued": SAME_SENSE,
+      "customer.period-quote": {
+        label: "Période du devis",
+        description: "La période des commandes que le devis chiffre, son dernier jour compris.",
+        example: "du 01/10/2026 au 31/10/2026",
+      },
+    },
   },
   pieces: {
     label: "Ce que le prélèvement règle",
@@ -158,6 +182,14 @@ export const BILLING_VALUE_CARDS: Pick<
     label: "Vendeur",
     description: "Le nom de la société qui émet la facture.",
     example: "EXEMPLE — CRAZEATIVITY",
+    senses: {
+      "customer.invoice-issued": SAME_SENSE,
+      "customer.period-quote": {
+        label: "Vendeur",
+        description: "Le nom de la société qui adresse le devis et émettra la facture.",
+        example: "EXEMPLE — CRAZEATIVITY",
+      },
+    },
   },
   statement: {
     label: "Référence de l'arrêté",
@@ -170,6 +202,11 @@ export const BILLING_VALUE_CARDS: Pick<
     example: "Votre facture EXEMPLE-FA-0001",
     senses: {
       "customer.invoice-issued": SAME_SENSE,
+      "customer.period-quote": {
+        label: "Titre de l'e-mail",
+        description: "Le titre du devis tel que l'e-mail l'affiche, repris dans l'objet.",
+        example: "Devis EXEMPLE-D-20261031-1",
+      },
       "customer.collection-notice": {
         label: "Nature de l'avis",
         description:
@@ -194,6 +231,11 @@ export const BILLING_VALUE_CARDS: Pick<
     example: "1 234,56 €",
     senses: {
       "customer.invoice-issued": SAME_SENSE,
+      "customer.period-quote": {
+        label: "Total TTC du devis",
+        description: "Le montant TTC de la facture que le devis annonce.",
+        example: "1 234,56 €",
+      },
       "customer.order-revised": {
         label: "Nouveau total",
         description:

@@ -46,6 +46,7 @@ export const CUSTOMER_MAIL_LAYOUTS: Readonly<
     MailLayouts,
     | "customer.collection-notice"
     | "customer.invoice-issued"
+    | "customer.period-quote"
     | "customer.mandate-to-sign"
     | "customer.access-opened"
     | "customer.company-attached"
@@ -138,6 +139,28 @@ export const CUSTOMER_MAIL_LAYOUTS: Readonly<
         ],
       },
       { id: "cta", texts: texts("cta") },
+      { id: "footer", texts: texts("footer") },
+    ],
+  },
+  "customer.period-quote": {
+    subject: SUBJECT,
+    header: KICKER,
+    sections: [
+      { id: "title", texts: texts("title") },
+      { id: "body", texts: texts("greeting", "intro", "notAnInvoice", "returnRequest") },
+      {
+        id: "summary",
+        texts: [
+          ...texts(
+            "quoteLabel",
+            "versionLabel",
+            "periodLabel",
+            "addressedToLabel",
+            "serviceCodeLabel",
+            "totalLabel",
+          ),
+        ],
+      },
       { id: "footer", texts: texts("footer") },
     ],
   },

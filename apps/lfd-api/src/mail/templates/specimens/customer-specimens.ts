@@ -13,6 +13,8 @@ const CREDITOR = `${SPECIMEN_MARK} — CRAZEATIVITY`;
 const CREDITOR_ID = "FR00ZZZ000000";
 const MANDATE = `${SPECIMEN_MARK}-RUM-0001`;
 const INVOICE = `${SPECIMEN_MARK}-FA-0001`;
+const QUOTE = `${SPECIMEN_MARK}-D-20261031-1`;
+const PUBLIC_PAYER = `${SPECIMEN_MARK} — Caserne des Alpes`;
 const SITE = `${SPECIMEN_MARK} — Chalet Gentiane`;
 const TICKET_URL = `${SPECIMEN_URL}/mot-de-passe`;
 const MARKETING_CONFIRM_URL = `${SPECIMEN_URL}/api/lfd/mail/marketing/confirm/exemple`;
@@ -21,6 +23,7 @@ export const CUSTOMER_SPECIMENS: Pick<
   MailSpecimens,
   | "customer.collection-notice"
   | "customer.invoice-issued"
+  | "customer.period-quote"
   | "customer.mandate-to-sign"
   | "customer.sub-account-activity"
   | "customer.sub-account-gesture"
@@ -61,6 +64,20 @@ export const CUSTOMER_SPECIMENS: Pick<
       bankTransferReference: null,
       invoicesUrl: `${SPECIMEN_URL}/mes-factures`,
       document: { fileName: `${INVOICE}.pdf`, pdfBase64: SPECIMEN_PDF_BASE64 },
+      locale,
+    }),
+  },
+  "customer.period-quote": {
+    family: "billing",
+    data: (locale) => ({
+      quoteNumber: QUOTE,
+      version: 1,
+      sellerName: CREDITOR,
+      buyerName: PUBLIC_PAYER,
+      period: "du 01/10/2026 au 31/10/2026",
+      total: "1 234,56 €",
+      serviceCode: `${SPECIMEN_MARK}-SERV`,
+      document: { fileName: `${QUOTE}-v1.pdf`, pdfBase64: SPECIMEN_PDF_BASE64 },
       locale,
     }),
   },

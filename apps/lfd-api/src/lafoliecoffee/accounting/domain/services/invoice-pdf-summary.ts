@@ -54,7 +54,7 @@ const VAT_COLUMNS: readonly (readonly [string, (category: InvoiceVatCategory) =>
 const VAT_WIDTH = CONTENT_WIDTH / VAT_COLUMNS.length;
 
 /** La ventilation de la TVA, un rang par taux (BG-23). */
-export function drawVatBreakdown(sheet: InvoiceSheet, state: InvoiceState): void {
+export function drawVatBreakdown(sheet: InvoiceSheet, state: Pick<InvoiceState, "vat">): void {
   const row = sheet.heightOf("0", { size: 9 }) + 1.5 * MM;
   sheet.ensure(row * (state.vat.categories.length + 2));
   const top = sheet.y;
@@ -75,7 +75,10 @@ export function drawVatBreakdown(sheet: InvoiceSheet, state: InvoiceState): void
 }
 
 /** Total HT, TVA et TTC, à droite — le TTC en gras. */
-export function drawTotals(sheet: InvoiceSheet, state: InvoiceState): void {
+export function drawTotals(
+  sheet: InvoiceSheet,
+  state: Pick<InvoiceState, "vat" | "correctedInvoiceId">,
+): void {
   const ttc = state.correctedInvoiceId === null ? "Total TTC" : "Total TTC de l'avoir";
   const rows: readonly (readonly [string, string, boolean])[] = [
     ["Total HT", euros(state.vat.taxableBaseCents), false],

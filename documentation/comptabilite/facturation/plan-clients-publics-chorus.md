@@ -361,7 +361,7 @@ flowchart LR
   (`monthly-invoicing.ts:104`), relue de `invoice_monthly_outcome`
   (PK `legalEntityId, periodClosesAt, payerCompanyId, mandateId`,
   `invoice.prisma:193`, déclencheur `invoice_monthly_outcome_final`).
-- Ses lecteurs et écrivains : `prisma-monthly-invoicing.reader.ts:137`,
+- Ses lecteurs et écrivains : `prisma-monthly-invoicing.reader.ts:105`,
   `prisma-monthly-invoice-outcomes.ts` (écrit), `prisma-monthly-invoices.reader.ts:39`,
   `prisma-invoice-periods.reader.ts:29`, `cycle-order-membership.ts:116`.
 - La passation : `Order.draft(...)` avec `PricedDraftInput`, les révisions

@@ -114,7 +114,8 @@ export type ByReference<T> = T extends string | number | boolean | null | undefi
  * facture Factur-X, rangée au même stockage sous `Invoice.documentKey` (lot
  * S2d), et le mandat à signer, rangé avant l'envoi sous
  * `mandates/<société>/<mandat>/<intention>.pdf` (revue, cas 7). Depuis le
- * 2026-11-10, le bon révisé joint à « commande modifiée ». Le dossier
+ * 2026-11-10, le bon révisé joint à « commande modifiée ». Le devis de
+ * période, rangé sous `quotes/<entité>/<numéro>-v<version>.pdf`. Le dossier
  * du fournil RESTE fermé : il est rangé au stockage du fournil, que le bloc
  * n'ouvre pas.
  */
@@ -122,6 +123,7 @@ type OpenedByReference =
   | "customer.order-placed"
   | "customer.order-revised"
   | "customer.invoice-issued"
+  | "customer.period-quote"
   | "customer.mandate-to-sign";
 
 /**

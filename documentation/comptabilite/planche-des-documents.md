@@ -24,6 +24,7 @@ s'affiche à droite, et « Ouvrir dans un onglet » sert à l'imprimer.
 | Fournil           | dossier du jour                 | `admin/document-specimens/day-dossier.pdf`              | `production`                   | `renderDayDossierPdf`       |
 | Factures          | facture Factur-X (PDF/A-3)      | `admin/document-specimens/invoice.pdf`                  | `lafoliecoffee/accounting`     | `renderInvoicePdf`          |
 | Factures          | facture Factur-X au virement    | `admin/document-specimens/invoice-bank-transfer.pdf`    | `lafoliecoffee/accounting`     | `renderInvoicePdf`          |
+| Devis             | devis de période (public)       | `admin/document-specimens/period-quote.pdf`             | `lafoliecoffee/accounting`     | `renderPeriodQuotePdf`      |
 | Mandats           | mandat SEPA interentreprises    | `admin/document-specimens/sepa-mandate-b2b.pdf`         | `lafoliecoffee/accounting`     | `renderSepaMandatePdf`      |
 | Mandats           | mandat SEPA CORE                | `admin/document-specimens/sepa-mandate-core.pdf`        | `lafoliecoffee/accounting`     | `renderSepaMandatePdf`      |
 | Récapitulatifs    | récapitulatif de commandes      | `admin/document-specimens/order-summary.pdf`            | `lafoliecoffee/orders`         | `renderOrderSummaryPdf`     |
@@ -44,7 +45,7 @@ flowchart LR
   screen["Back-office<br/>Comptabilité › Planche des documents"]
   screen -->|order-sheet-*.pdf| orders["b2b/orders<br/>AdminOrderSheetSpecimensController"]
   screen -->|order-summary.pdf| summary["b2b/orders<br/>AdminOrderSummarySpecimenController"]
-  screen -->|invoice.pdf| accounting["b2b/accounting<br/>AdminInvoiceSpecimenController"]
+  screen -->|invoice.pdf, period-quote.pdf| accounting["b2b/accounting<br/>AdminInvoiceSpecimenController"]
   screen -->|sepa-mandate-*.pdf| mandates["b2b/accounting<br/>AdminSepaMandateSpecimensController"]
   screen -->|allergen-matrix.pdf| pim["pim<br/>AdminAllergenMatrixSpecimenController"]
   screen -->|atelier-sheet.pdf| production["production<br/>AdminAtelierSheetSpecimenController"]
@@ -100,6 +101,15 @@ n'appartiennent à personne.
   (l'échéance seule), et **au virement** — le bloc « Règlement par virement »
   (échéance, bénéficiaire, IBAN et BIC du vendeur figé, référence à reporter :
   le numéro de la facture), jamais de RUM.
+- **Devis de période** (`lafoliecoffee/accounting/…/specimen-period-quote.ts`) :
+  les deux bons de la facture d'exemple, chiffrés par le calcul même du devis
+  et de sa facture (`simulateInvoiceDossier`, l'empreinte par
+  `periodQuoteFigures`), pour un organisme public fictif, en version 2, avec
+  un code service et une mercuriale citée. Un PDF **ordinaire, sans
+  Factur-X** : un devis n'est pas une pièce comptable. Il dit « Devis — ceci
+  n'est pas une facture » en tête et au pied de chaque page, et « À retourner
+  avec votre numéro d'engagement ». Aucun compteur ne donne son numéro (rang
+  `999`), rien n'est rangé.
 - **Fiche d'atelier** et **feuille de tournée** : les mêmes articles, recopiés
   et non importés. Le QR de colisage encode `/colisage/EXEMPLE-0001`.
 - **Compte à produire** et **dossier du jour**

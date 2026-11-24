@@ -273,6 +273,36 @@ export const COLLECTION_FACTS = {
    * tout est accepté.
    */
   "invoice.notice_resent": fact(payload({ ...invoiceNotice, failure: z.string().nullable() })),
+  /**
+   * Le staff a renvoyé un devis de période (plan
+   * `plan-clients-publics-chorus.md`, § 6 sexies, QD4). Sujet :
+   * `period_quote`, la version envoyée, nommée « <numéro> v<version> ».
+   * `renewed` : les commandes avaient changé, une nouvelle version a été
+   * rangée et part par l'envoi automatique ; sinon la même version est
+   * renvoyée à `recipientCount` destinataires (`null` pour une nouvelle
+   * version : l'envoi automatique les compte).
+   */
+  /**
+   * L'envoi automatique d'un devis de période n'a pas eu lieu : personne à
+   * prévenir chez le payeur. Sujet : `period_quote`, la version.
+   */
+  "period_quote.notice_failed": fact(
+    payload({
+      subjectLabel: subjectLabel(),
+      payer: named("company"),
+      version: count(),
+      failure: z.string(),
+    }),
+  ),
+  "period_quote.resent": fact(
+    payload({
+      subjectLabel: subjectLabel(),
+      payer: named("company"),
+      version: count(),
+      renewed: z.boolean(),
+      recipientCount: count().nullable(),
+    }),
+  ),
   /** Le PDF/A-3 est rendu, rangé et attaché à la pièce — une seule fois. */
   "invoice.document_rendered": fact(
     payload({ ...invoiceDocument, byteCount: count(), sha256: z.string() }),

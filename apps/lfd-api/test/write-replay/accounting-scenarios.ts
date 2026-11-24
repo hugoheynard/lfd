@@ -80,6 +80,36 @@ export const ACCOUNTING_SCENARIOS: ScenarioSet = {
     return { sub: STAFF, path: `/admin/accounting/invoices/${invoice.id}/resend-notice` };
   },
 
+  // Un devis de période rangé sur les bons du payeur, sous une empreinte qui
+  // n'est plus la leur : le renvoi range une version 2 (QD5), et le rejeu
+  // rend son identifiant sans en ranger une troisième.
+  [routeKey(`${HTTP}/admin-period-quotes.controller.ts`, "resend")]: async (world) => {
+    const { entityId, payerId, closesAt } = await invoicedWorld(world);
+    const orders = await world.ctx.prisma.order.findMany({
+      where: { companyId: payerId },
+      select: { id: true },
+    });
+    const quoteId = "replay-period-quote";
+    await world.ctx.prisma.periodQuote.create({
+      data: {
+        id: quoteId,
+        number: "D-20261031-1",
+        version: 1,
+        legalEntityId: entityId,
+        payerCompanyId: payerId,
+        payerName: "Payeur du rejeu",
+        periodStartsAt: new Date(closesAt.getTime() - 30 * 24 * HOUR_MS),
+        periodClosesAt: closesAt,
+        state: "awaiting",
+        fingerprint: "0".repeat(64),
+        totalTtcCents: 1,
+        createdAt: closesAt,
+        orders: { create: orders.map((order) => ({ orderId: order.id })) },
+      },
+    });
+    return { sub: STAFF, path: `/admin/period-quotes/${quoteId}/resend` };
+  },
+
   [routeKey(`${HTTP}/admin-bank-transfers.controller.ts`, "record")]: async (world) => {
     const { entityId, payerId } = await invoicedWorld(world, async (entity, payer) => {
       const startsAt = new Date(world.clock.now().getTime() - 40 * 24 * HOUR_MS);

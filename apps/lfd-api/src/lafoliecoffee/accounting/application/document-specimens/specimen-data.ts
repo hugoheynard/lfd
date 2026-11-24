@@ -114,6 +114,27 @@ function frozenOf(state: OrderToPlace, reference: string, createdAt: Date): Froz
   };
 }
 
+/** Un bon d'exemple, tel que la facture et le devis de période le lisent. */
+export interface SpecimenFrozenOrder {
+  readonly orderId: string;
+  readonly reference: string;
+  /** `AAAA-MM-JJ` — le jour de Paris de la livraison. */
+  readonly receivedOn: string;
+  readonly frozen: FrozenInvoiceOrder;
+}
+
+/** Les deux bons d'exemple, livrés la veille et l'avant-veille de `now` (jour de Paris). */
+export function specimenFrozenOrders(now: Date): readonly SpecimenFrozenOrder[] {
+  const today = instantToLocal(now).day;
+  const state = specimenProOrderState(now);
+  return ORDERS.map((order) => ({
+    orderId: order.orderId,
+    reference: order.reference,
+    receivedOn: addDays(today, -order.daysBefore),
+    frozen: frozenOf(state, order.reference, now),
+  }));
+}
+
 /**
  * Le moyen de la facture d'exemple : aucun (l'échéance seule), ou le virement
  * (V5) — l'IBAN, le BIC et la référence que le client reporte.

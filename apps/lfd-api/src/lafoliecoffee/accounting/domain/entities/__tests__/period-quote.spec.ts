@@ -2,6 +2,7 @@ import { PeriodQuote, periodQuoteNumberOf } from "../period-quote.js";
 import {
   EmptyPeriodQuoteError,
   InvalidPeriodQuoteRankError,
+  PeriodQuoteNotAwaitingError,
 } from "../../errors/period-quote-errors.js";
 import type { InvoiceableOrder } from "../../services/monthly-invoicing.js";
 import { periodQuoteFigures } from "../../services/period-quote-fingerprint.js";
@@ -90,5 +91,55 @@ describe("PeriodQuote.keeping", () => {
 describe("periodQuoteNumberOf", () => {
   it("D-<AAAAMMJJ>-<rang>, le jour étant la veille de la clôture à Paris", () => {
     expect(periodQuoteNumberOf(CLOSES_AT, 12)).toBe("D-20260930-12");
+  });
+});
+
+describe("PeriodQuote.resend (QD5)", () => {
+  const AT = new Date("2026-10-05T09:00:00.000Z");
+
+  it("même empreinte : la même version repart, rien ne change", () => {
+    const quote = shelve([order("a"), order("b")]);
+
+    const outcome = quote.resend([order("b"), order("a")], "q_2", AT);
+
+    expect(outcome).toEqual({ kind: "unchanged", quote });
+  });
+
+  it("empreinte différente : une version n+1 sous le même numéro, l'ancienne remplacée", () => {
+    const quote = PeriodQuote.restore(shelve([order("a"), order("b")]).toSnapshot());
+
+    const outcome = quote.resend([order("a")], "q_2", AT);
+
+    expect(outcome.kind).toBe("renewed");
+    if (outcome.kind !== "renewed") {
+      return;
+    }
+    expect(outcome.superseded.toSnapshot()).toMatchObject({
+      id: "q_1",
+      version: 1,
+      state: "superseded",
+    });
+    expect(outcome.successor.toSnapshot()).toMatchObject({
+      id: "q_2",
+      number: "D-20260930-3",
+      version: 2,
+      state: "awaiting",
+      orderIds: ["a"],
+      createdAt: AT,
+      ...periodQuoteFigures([order("a")]),
+    });
+  });
+
+  it.each(["invoiced", "superseded"] as const)("refuse un devis %s, en le nommant", (state) => {
+    const quote = PeriodQuote.restore({ ...shelve([order("a")]).toSnapshot(), state });
+
+    expect(() => quote.resend([order("a")], "q_2", AT)).toThrow(PeriodQuoteNotAwaitingError);
+    expect(() => quote.resend([order("a")], "q_2", AT)).toThrow(/D-20260930-3 \(version 1\)/u);
+  });
+
+  it("refuse un devis dont plus aucune commande n'est à facturer", () => {
+    const quote = shelve([order("a")]);
+
+    expect(() => quote.resend([], "q_2", AT)).toThrow(EmptyPeriodQuoteError);
   });
 });
