@@ -936,6 +936,15 @@
       "information": false
     },
     {
+      "colonne": "production.provisional_print.printed_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Dire qui a tiré une impression provisoire du dossier du jour (`printed_by`, l'id de la fiche staff) dans la fenêtre d'impression du fournil, le temps de la journée : la ligne et son PDF sont balayés la nuit qui suit la journée de service.",
+      "conservation": "a-decider",
+      "purge": "apps/lfd-api/src/production/plan/application/commands/prune-provisional-prints.handler.ts",
+      "information": false
+    },
+    {
       "colonne": "public.account_alert_overrides.updated_by",
       "personne": "staff",
       "categorie": "auteur-geste",

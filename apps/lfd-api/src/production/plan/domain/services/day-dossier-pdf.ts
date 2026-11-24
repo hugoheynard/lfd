@@ -23,6 +23,11 @@ import {
   type Doc,
 } from "../../../../platform/pdf/paper-pdf-kit.js";
 import { contentRightOf, PaperPages } from "../../../../platform/pdf/paper-pages.js";
+import {
+  PROVISIONAL_FOOTER,
+  type ProvisionalStamp,
+  provisionalHeader,
+} from "./provisional-stamp.js";
 
 /**
  * **Le dossier du jour, en PDF** — une couverture, le récapitulatif (un rayon
@@ -52,6 +57,12 @@ export interface DossierStamp {
   readonly retakenByName: string | null;
   /** Le tirage : 1 à l'arrêt, plus un à chaque retirage. */
   readonly printRun: number;
+  /**
+   * Une impression **provisoire**, tirée avant l'arrêt : chaque page le dit en
+   * tête (« Provisoire 26/11 #4 11:15 ») et au pied. Absente ou `null` : le
+   * papier arrêté.
+   */
+  readonly provisional?: ProvisionalStamp | null;
 }
 
 /**
@@ -135,7 +146,7 @@ export function renderDayDossierPdf(
       if (parts.has("resupplies")) {
         drawResupplies(doc, pages, dossier, stamp, print);
       }
-      const header = dossierHeader(stamp);
+      const header = pageHeader(stamp);
       pages.finish({
         logo: print.logo,
         headerRight: extract.notice === null ? header : `${header} · ${extract.notice}`,
@@ -232,50 +243,11 @@ export function drawRecapWithCalendars(
  * retirage, dont l'instant entre dans le nom — le dossier complété ne
  * remplace pas celui qui est parti avant lui, il s'y ajoute.
  *
- * `v2` (E1b, 2026-10-06) : le bon porte désormais ce que la journée a figé
- * au-delà de l'étiquette, et le pied l'heure de Paris. Un dossier archivé sous
- * l'ancienne clé dirait encore le papier d'avant ; changer la clé le laisse en
- * place, sans jamais le resservir. Toute mise en page qui change ce qu'un
- * dossier déjà archivé dirait monte cette version.
- *
- * `v3` (2026-10-06) : le lot dit le jour de service en toutes lettres
- * (« Lot pour le mercredi 7 octobre 2026 ») et chaque pied porte « x/N ».
- *
- * `v4` (2026-10-06) : le pied dit QUI a arrêté (« Arrêté par Marie Dupont le
- * … », « Arrêté automatiquement le … ») et qui a complété ; le récapitulatif
- * sépare les commandes en retrait et en livraison.
- *
- * `v6` (2026-10-21, R3d du réassort) : la section « Réassorts » par point, et
- * leurs pièces dans le compte du lot.
- *
- * `v7` (2026-10-21, R3d-bis du réassort) : les fiches de poste comptent
- * commandes + réassorts (« dont N réassort » en détail), et un bon par
- * réassort suit les bons de commande ; la section « Réassorts » est retirée.
- *
- * `v8` (2026-10-21, R1g du réassort) : le bon d'un réassort nommé se titre
- * « Vitrine du matin — Village ».
- *
- * `v9` (2026-10-22, §0 bis du plan de la planche des documents v2) : chaque
- * bon de commande porte la pastille de sa couleur devant sa référence.
- *
- * `v10` (2026-10-22, Hugo) : chaque bon de réassort porte la pastille de la
- * teinte de réassort de son site devant son titre.
- *
- * `v11` (2026-10-25, Hugo) : en-tête au logo sur chaque page, couverture
- * « Dossier de production du … », un rayon par page (« (1/2) » s'il
- * déborde), numéro de page encadré, acheminement « Retrait <site> · pro »
- * derrière la pastille, et le BL de transport derrière chaque bon.
- *
- * `v12` (2026-11-02, Hugo) : derrière la page de chaque rayon, son calendrier
- * — une page paysage, produits × tranches horaires, une case à cocher par
- * quantité.
- *
- * `v13` (2026-11-02, circuit du jour J, bâti des restes) : la part de
- * réassort d'un rayon compte un réassort au poids pour une pièce, jamais ses
- * grammes ; la ligne dit « dont 1,25 kg réassort ».
- *
- * `v14` (2026-11-18, Hugo) : l'en-tête de chaque page dit en gras le jour du
- * lot et le tirage (« Lot pour le mer. 18 nov. · v2 »).
+ * Toute mise en page qui change ce qu'un dossier déjà archivé dirait monte
+ * cette version : un dossier archivé sous l'ancienne clé dit le papier
+ * d'avant, et changer la clé le laisse en place sans jamais le resservir.
+ * Une impression provisoire n'est pas archivée ici : elle ne la fait pas
+ * monter.
  */
 export const DOSSIER_LAYOUT_VERSION = "v14";
 
@@ -300,8 +272,19 @@ export function dossierHeader(
   return `Plan du ${weekdayShortDate(planDay)} pour le ${weekdayShortDate(stamp.serviceDay)} · v${String(stamp.printRun)}`;
 }
 
-/** Le pied : quand le tirage a été arrêté — et complété. */
+/** L'en-tête d'une page : celui du papier arrêté, ou le bandeau provisoire. */
+function pageHeader(stamp: DossierStamp): string {
+  const provisional = stamp.provisional ?? null;
+  return provisional === null
+    ? dossierHeader(stamp)
+    : provisionalHeader(stamp.serviceDay, provisional);
+}
+
+/** Le pied : quand le tirage a été arrêté — et complété ; ou qu'il ne l'est pas. */
 function stampLine(stamp: DossierStamp): string {
+  if ((stamp.provisional ?? null) !== null) {
+    return PROVISIONAL_FOOTER;
+  }
   const arrested = `${signedVerb("Arrêté", stamp.closedBy)} ${parisDateTime(stamp.closedAt)}`;
   const completer = stamp.retakenByName === null ? null : staffSigner("", stamp.retakenByName);
   return stamp.retakenAt === null

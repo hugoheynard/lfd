@@ -1,3 +1,5 @@
+import type { Buffer } from "node:buffer";
+
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
 import { BrandLogoSource } from "../../../../platform/brand/brand-logo.source.js";
@@ -8,12 +10,14 @@ import {
 import { ResupplyPrintColorsReader } from "../../../channels/commerce/resupply-print-colors.reader.js";
 import { ProductionDisplaySettings } from "../../../shared/print/index.js";
 import { ProductionDisplaySettingsReader } from "../../../shared/print/index.js";
-import type { ProductionDay, ProductionDaySnapshot } from "../../../day/index.js";
-import { ProductionDayNotClosedError } from "../../../day/index.js";
+import type {
+  ProductionDay,
+  ProductionOrderSnapshot,
+  ProductionResupplySnapshot,
+} from "../../../day/index.js";
 import {
   OrderSheetPaper,
   type OrderSheetMarks,
-  productionCountPdfKey,
   renderProductionCountPdf,
 } from "../../../shared/print/index.js";
 import { countColorSharesOf } from "../../../shared/print/index.js";
@@ -26,7 +30,8 @@ import { ServiceDay } from "../../../day/index.js";
 import { DossierDeadlinesReading } from "./dossier-deadlines-reading.service.js";
 import { GroupingSourceReading } from "../../../workstations/index.js";
 import { countPaperRowsOf } from "../../../shared/print/index.js";
-import { dayDossierPdfKey, renderDayDossierPdf } from "../../domain/services/day-dossier-pdf.js";
+import { type DossierStamp, renderDayDossierPdf } from "../../domain/services/day-dossier-pdf.js";
+import type { ProvisionalStamp } from "../../domain/services/provisional-stamp.js";
 import {
   type DossierSelection,
   WHOLE_DOSSIER,
@@ -34,46 +39,16 @@ import {
   selectedOrders,
   selectionNotice,
 } from "../../domain/services/day-dossier-selection.js";
-import type { PaperDraft, PaperSlot } from "../../../shared/print/index.js";
+import type { PaperDraft } from "../../../shared/print/index.js";
+import { closedSnapshotOf } from "./production-paper-slots.js";
 
-type ClosedSnapshot = ProductionDaySnapshot & { readonly closedAt: Date };
+export { dayDossierSlotOf, productionCountSlotOf } from "./production-paper-slots.js";
 
-/** Le cliché d'une journée arrêtée. @throws {ProductionDayNotClosedError} */
-function closedSnapshotOf(day: ProductionDay): ClosedSnapshot {
-  const snapshot = day.toSnapshot();
-  const closedAt = snapshot.closedAt;
-  if (closedAt === null) {
-    throw new ProductionDayNotClosedError(snapshot.serviceDay);
-  }
-  return { ...snapshot, closedAt };
-}
-
-/**
- * La place du compte à produire d'une journée.
- *
- * @throws {ProductionDayNotClosedError} la journée n'est pas arrêtée.
- */
-export function productionCountSlotOf(day: ProductionDay): PaperSlot {
-  const { serviceDay } = closedSnapshotOf(day);
-  return {
-    key: productionCountPdfKey(serviceDay),
-    fileName: `compte-a-produire-${serviceDay}.pdf`,
-  };
-}
-
-/**
- * La place du dossier du jour : **par tirage arrêté**. La clé porte l'instant
- * du dernier retirage (`dayDossierPdfKey`), si bien qu'un retirage fabrique un
- * dossier complété sans écraser celui qui était parti avant.
- *
- * @throws {ProductionDayNotClosedError} la journée n'est pas arrêtée.
- */
-export function dayDossierSlotOf(day: ProductionDay): PaperSlot {
-  const snapshot = closedSnapshotOf(day);
-  return {
-    key: dayDossierPdfKey(snapshot.serviceDay, snapshot.retaken?.at ?? null),
-    fileName: `dossier-du-jour-${snapshot.serviceDay}.pdf`,
-  };
+/** Ce que le dossier dessine : les commandes et réassorts d'un jour, figés ou en aperçu. */
+export interface DossierContent {
+  readonly serviceDay: string;
+  readonly orders: readonly ProductionOrderSnapshot[];
+  readonly resupplies: readonly ProductionResupplySnapshot[];
 }
 
 /** Ce que le dossier lit au tirage, chaque lecture faillible à `null`. */
@@ -161,27 +136,76 @@ export class ProductionPaperRenderer {
     selection: DossierSelection = WHOLE_DOSSIER,
   ): Promise<PaperDraft> {
     const whole = closedSnapshotOf(day);
-    const snapshot = { ...whole, orders: selectedOrders(whole.orders, selection) };
-    const resupplies = snapshot.resupplies ?? [];
-    const inputs = await this.dossierInputsOf(snapshot);
+    const content = {
+      serviceDay: whole.serviceDay,
+      orders: whole.orders,
+      resupplies: whole.resupplies ?? [],
+    };
+    const { bytes, inputs } = await this.drawn(
+      content,
+      {
+        serviceDay: whole.serviceDay,
+        closedAt: whole.closedAt,
+        closedBy: whole.closedBy,
+        retakenAt: whole.retaken?.at ?? null,
+        retakenByName: whole.retakenByName,
+        printRun: whole.retakeCount === undefined ? 1 : whole.retakeCount + 1,
+      },
+      selection,
+    );
+    const archivable = isWholeDossier(selection) && this.archivable(whole.serviceDay, inputs);
+    return { bytes, archivable };
+  }
+
+  /**
+   * **Une impression provisoire du dossier** — les mêmes dessins, tirés de ce
+   * que l'arrêt figerait à cet instant (`content`), chaque page portant le
+   * bandeau « Provisoire » (`provisional`). Jamais archivée ici : l'appelant
+   * la range sous son numéro.
+   *
+   * @throws {DossierSelectionUnknownError} la sélection nomme une commande ou
+   * un rayon que le contenu ne porte pas.
+   */
+  async provisionalOf(
+    content: DossierContent,
+    provisional: ProvisionalStamp,
+    selection: DossierSelection,
+  ): Promise<Buffer> {
+    const { bytes } = await this.drawn(
+      content,
+      {
+        serviceDay: content.serviceDay,
+        closedAt: provisional.printedAt,
+        closedBy: null,
+        retakenAt: null,
+        retakenByName: null,
+        printRun: provisional.run,
+        provisional,
+      },
+      selection,
+    );
+    return bytes;
+  }
+
+  /** Monte et rend le dossier d'un contenu, les commandes choisies avant le montage. */
+  private async drawn(
+    content: DossierContent,
+    stamp: DossierStamp,
+    selection: DossierSelection,
+  ): Promise<{ readonly bytes: Buffer; readonly inputs: DossierInputs }> {
+    const picked = { ...content, orders: selectedOrders(content.orders, selection) };
+    const inputs = await this.dossierInputsOf(picked);
     const dossier = dayDossierFrom(
-      snapshot.orders,
+      picked.orders,
       inputs.grouping.source,
-      resupplies,
+      picked.resupplies,
       inputs.showSubcategories,
     );
     const calendar: readonly CalendarPage[] =
       inputs.tranches === null ? [] : dossierCalendarOf(dossier.recap, inputs.tranches);
     const bytes = await renderDayDossierPdf(
       dossier,
-      {
-        serviceDay: snapshot.serviceDay,
-        closedAt: snapshot.closedAt,
-        closedBy: snapshot.closedBy,
-        retakenAt: snapshot.retaken?.at ?? null,
-        retakenByName: snapshot.retakenByName,
-        printRun: snapshot.retakeCount === undefined ? 1 : snapshot.retakeCount + 1,
-      },
+      stamp,
       {
         logo: inputs.logo,
         colisageUrlOf: inputs.marks.colisageUrlOf,
@@ -190,10 +214,9 @@ export class ProductionPaperRenderer {
         deliveryNotes: inputs.deliveryNotes ?? new Map(),
       },
       calendar,
-      { selection, notice: selectionNotice(snapshot.orders.length, whole.orders.length) },
+      { selection, notice: selectionNotice(picked.orders.length, content.orders.length) },
     );
-    const archivable = isWholeDossier(selection) && this.archivable(snapshot.serviceDay, inputs);
-    return { bytes, archivable };
+    return { bytes, inputs };
   }
 
   /**
@@ -217,8 +240,8 @@ export class ProductionPaperRenderer {
     return false;
   }
 
-  private async dossierInputsOf(snapshot: ClosedSnapshot): Promise<DossierInputs> {
-    const resupplies = snapshot.resupplies ?? [];
+  private async dossierInputsOf(snapshot: DossierContent): Promise<DossierInputs> {
+    const { resupplies } = snapshot;
     const lines = [
       ...snapshot.orders.flatMap((order) => order.lines),
       ...resupplies.flatMap((resupply) => resupply.lines),

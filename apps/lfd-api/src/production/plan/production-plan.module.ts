@@ -14,6 +14,24 @@ import { ReopenProductionDayHandler } from "./application/commands/reopen-produc
 import { RetakeProductionDayHandler } from "./application/commands/retake-production-day.handler.js";
 import { RunAutoCloseRoundHandler } from "./application/commands/run-auto-close-round.handler.js";
 import { SetProductionTranchesHandler } from "./application/commands/set-production-tranches.handler.js";
+import { DrawProvisionalPrintHandler } from "./application/commands/draw-provisional-print.handler.js";
+import { PruneProvisionalPrintsHandler } from "./application/commands/prune-provisional-prints.handler.js";
+import { GetPrintOptionsHandler } from "./application/queries/get-print-options.handler.js";
+import { GetProvisionalDossierSpecimenHandler } from "./application/queries/get-provisional-dossier-specimen.handler.js";
+import { GetProvisionalPrintPdfHandler } from "./application/queries/get-provisional-print-pdf.handler.js";
+import { DossierGroupLabelsReading } from "./application/services/dossier-group-labels.js";
+import { LiveDossierContent } from "./application/services/live-dossier-content.js";
+import { ProvisionalPrintIntake } from "./application/services/provisional-print-intake.js";
+import { ProvisionalPrintLedger } from "./domain/ports/provisional-print.ledger.js";
+import { ProvisionalPrintPruner } from "./domain/ports/provisional-print.pruner.js";
+import { ProvisionalPrintsReader } from "./domain/ports/provisional-prints.reader.js";
+import { ProvisionalPrintController } from "./http/provisional-print.controller.js";
+import { ProvisionalPrintSweepController } from "./http/provisional-print-sweep.controller.js";
+import {
+  PrismaProvisionalPrintLedger,
+  PrismaProvisionalPrintPruner,
+  PrismaProvisionalPrintsReader,
+} from "./infrastructure/prisma-provisional-prints.js";
 import { SendDossierOnDayClosed } from "./application/handlers/send-dossier-on-day-closed.handler.js";
 import { SendDossierOnDayRetaken } from "./application/handlers/send-dossier-on-day-retaken.handler.js";
 import { GetDayDossierPdfHandler } from "./application/queries/get-day-dossier-pdf.handler.js";
@@ -98,6 +116,10 @@ import { PrismaProductionSettingsReader } from "./infrastructure/prisma-producti
     AutoCloseController,
     // La simulation du catalogue, sous la page Postes : elle rend une partie du dossier.
     ProductionSimulationController,
+    // La fenêtre d'impression : son état, l'impression provisoire, son PDF ;
+    // et le balayage nocturne des impressions des journées passées.
+    ProvisionalPrintController,
+    ProvisionalPrintSweepController,
   ],
   providers: [
     CloseProductionDayHandler,
@@ -154,6 +176,19 @@ import { PrismaProductionSettingsReader } from "./infrastructure/prisma-producti
     { provide: DossierRecipientsReader, useClass: PrismaDossierRecipientsReader },
     { provide: DossierDispatchLog, useClass: PrismaDossierDispatchLog },
     ProductionPlanAdmissionDesk,
+    // L'impression provisoire du dossier, avant l'arrêt : écrire, lire et
+    // balayer sont trois ports (ISP).
+    LiveDossierContent,
+    DossierGroupLabelsReading,
+    ProvisionalPrintIntake,
+    DrawProvisionalPrintHandler,
+    GetPrintOptionsHandler,
+    GetProvisionalPrintPdfHandler,
+    GetProvisionalDossierSpecimenHandler,
+    PruneProvisionalPrintsHandler,
+    { provide: ProvisionalPrintLedger, useClass: PrismaProvisionalPrintLedger },
+    { provide: ProvisionalPrintsReader, useClass: PrismaProvisionalPrintsReader },
+    { provide: ProvisionalPrintPruner, useClass: PrismaProvisionalPrintPruner },
   ],
   exports: [
     // Ce que la racine de composition relie aux autres blocs.

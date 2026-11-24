@@ -17,6 +17,7 @@ import { DueThresholds } from "../lafoliecoffee/orders/application/services/due-
 import { SitedDayOrders } from "../lafoliecoffee/orders/application/services/sited-day-orders.service.js";
 import { PrismaExpectedProductionReader } from "../lafoliecoffee/orders/infrastructure/prisma-expected-production.reader.js";
 import { ProductionOrderPrintColorsReader } from "../lafoliecoffee/orders/infrastructure/production-order-print-colors.reader.js";
+import { ProductionCommerceDayVersionReader } from "../lafoliecoffee/orders/infrastructure/production-commerce-day-version.reader.js";
 import { PrismaPendingOrdersReader } from "../lafoliecoffee/orders/infrastructure/prisma-pending-orders.reader.js";
 import { ProductionDayResupplies } from "../lafoliecoffee/resupply/infrastructure/production-day-resupplies.js";
 import { ProductionRangeResupplies } from "../lafoliecoffee/resupply/infrastructure/production-range-resupplies.js";
@@ -24,6 +25,7 @@ import { ResupplyModule } from "../lafoliecoffee/resupply/resupply.module.js";
 import { SiteResupplyPrintColorsReader } from "../lafoliecoffee/sites/infrastructure/site-resupply-print-colors.reader.js";
 import { SitesModule } from "../lafoliecoffee/sites/sites.module.js";
 import {
+  CommerceDayVersionReader,
   DayOrdersReader,
   DayResuppliesReader,
   DueThresholdsReader,
@@ -124,8 +126,13 @@ import {
     // ses ports de lecture.
     { provide: PlannedDeliveryNotesReader, useExisting: ProductionPlannedDeliveryNotesReader },
     { provide: SpecimenDeliveryNoteReader, useExisting: ProductionSpecimenDeliveryNoteReader },
+    // La version de la journée au commerce, gardée par chaque impression
+    // provisoire du dossier : « la journée a changé depuis #N ». Un port du
+    // fournil à lui (ISP), même requête que celui de la livraison.
+    { provide: CommerceDayVersionReader, useClass: ProductionCommerceDayVersionReader },
   ],
   exports: [
+    CommerceDayVersionReader,
     DayOrdersReader,
     DayResuppliesReader,
     DueThresholdsReader,

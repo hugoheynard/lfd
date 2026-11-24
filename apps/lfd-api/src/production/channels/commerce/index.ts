@@ -26,6 +26,9 @@ export {
   type SheetWindow,
 } from "./day-orders.reader.js";
 export { ServiceDay } from "../../day/domain/value-objects/service-day.value-object.js";
+// La version d'une journée du commerce, pour l'impression provisoire
+// (`documentation/fournil/plan-impression-provisoire.md`, § 3).
+export { CommerceDayVersionReader } from "./commerce-day-version.reader.js";
 export { ServiceRange } from "../../day/domain/value-objects/service-range.value-object.js";
 export {
   ExpectedProductionReader,

@@ -1,7 +1,7 @@
 import type { ProducibleOrder } from "../../../../channels/commerce/day-orders.reader.js";
 import type { PlacedResupply } from "../../../../channels/commerce/day-resupplies.reader.js";
 import { UNCHANGED_DAY } from "../production-day.changes.js";
-import { DayPlan, withoutWithdrawn } from "../production-day.plan.js";
+import { DayPlan, arrestPreviewOf, withoutWithdrawn } from "../production-day.plan.js";
 
 /**
  * Le plan d'une journée, sorti de l'agrégat le 2026-11-02 : immuable, il rend
@@ -91,5 +91,19 @@ describe("DayPlan", () => {
     const kept = withoutWithdrawn([order("ord_1", 1), order("ord_2", 1)], new Set(["ord_1"]));
 
     expect(kept.map((o) => o.orderId)).toEqual(["ord_2"]);
+  });
+});
+
+describe("arrestPreviewOf", () => {
+  it("rend ce que l'arrêt figerait : les retraits ôtés, la conversion de l'arrêt", () => {
+    const orders = [order("ord_1", 4), order("ord_withdrawn", 2)];
+    const resupplies = [resupply("rs_1", 6)];
+    const preview = arrestPreviewOf(orders, new Set(["ord_withdrawn"]), resupplies);
+    const arrested = DayPlan.of(DayPlan.EMPTY).frozen(
+      withoutWithdrawn(orders, new Set(["ord_withdrawn"])),
+      resupplies,
+    );
+    expect(preview.orders).toEqual(arrested.orders);
+    expect(preview.resupplies).toEqual(arrested.resupplies);
   });
 });

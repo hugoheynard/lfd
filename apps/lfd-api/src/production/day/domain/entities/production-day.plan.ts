@@ -191,3 +191,27 @@ export function withoutWithdrawn(
 ): readonly ProducibleOrder[] {
   return orders.filter((order) => !withdrawn.has(order.orderId));
 }
+
+/** Ce que l'arrêt figerait à cet instant : les commandes gardées et les réassorts, recopiés. */
+export interface ArrestPreview {
+  readonly orders: readonly ProductionOrderSnapshot[];
+  readonly resupplies: readonly ProductionResupplySnapshot[];
+}
+
+/**
+ * **L'arrêt, sans arrêter** — les commandes du commerce moins les retraits
+ * (`withoutWithdrawn`), recopiées par la conversion même de l'arrêt
+ * (`freezeOrder`, `freezeResupply`). L'impression provisoire du dossier la
+ * lit pour que son papier soit celui que l'arrêt aurait tiré à cet instant,
+ * jamais une seconde conversion qui dériverait.
+ */
+export function arrestPreviewOf(
+  orders: readonly ProducibleOrder[],
+  withdrawn: ReadonlySet<string>,
+  resupplies: readonly PlacedResupply[],
+): ArrestPreview {
+  return {
+    orders: withoutWithdrawn(orders, withdrawn).map(freezeOrder),
+    resupplies: resupplies.map(freezeResupply),
+  };
+}

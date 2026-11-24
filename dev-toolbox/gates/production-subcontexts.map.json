@@ -19,6 +19,7 @@
     "ProductionOrder": "day",
     "ProductionOrderLine": "day",
     "ProductionProblem": "atelier",
+    "ProductionProvisionalPrint": "plan",
     "ProductionQualityCheck": "quality",
     "ProductionQualityPhoto": "quality",
     "ProductionQualitySettings": "quality",

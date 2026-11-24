@@ -43,11 +43,11 @@ model ProductionDay {
   /// compte à produire ne se recalcule jamais tout seul ; il se reprend, et la
   /// reprise a un auteur. `null` tous les deux = la journée porte encore son
   /// tirage d'origine.
-  retakenAt DateTime? @map("retaken_at")
-  retakenBy String?   @map("retaken_by")
+  retakenAt   DateTime? @map("retaken_at")
+  retakenBy   String?   @map("retaken_by")
   /// Le nombre de retirages depuis le dernier arrêt (2026-11-18) : le dossier
   /// imprime le tirage « v<n + 1> ». Remis à zéro par la réouverture.
-  retakeCount Int @default(0) @map("retake_count")
+  retakeCount Int       @default(0) @map("retake_count")
 
   /// La dernière **réouverture** (2026-10-14) : l'arrêt a été défait, le plan
   /// effacé, les clients peuvent de nouveau commander pour ce jour. L'auteur
@@ -998,5 +998,36 @@ model ProductionProblem {
 
   @@unique([serviceDay, sku])
   @@map("production_problem")
+  @@schema("production")
+}
+
+/// **Une impression provisoire du dossier du jour** — tirée avant l'arrêt, des
+/// commandes en direct (plan `documentation/fournil/plan-impression-provisoire.md`, § 2).
+///
+/// Une ligne par tirage : son numéro de la journée (le `#` du bandeau), la
+/// version du journal du commerce lue au tirage (« la journée a changé
+/// depuis »), et l'empreinte de chaque commande imprimée (« nouvelles ou
+/// modifiées depuis #N »). Aucune clé étrangère : une journée n'a pas de
+/// ligne `production_day` avant son arrêt. Balayée avec son PDF une fois la
+/// journée passée.
+model ProductionProvisionalPrint {
+  /// ULID.
+  id                String   @id
+  serviceDay        String   @map("service_day") @db.VarChar(10)
+  /// 1, 2, 3… par journée (≥ 1, CHECK) : un numéro sauté n'est pas grave, deux
+  /// tirages sous le même le seraient — l'unicité arbitre.
+  run               Int
+  /// La version de `public.day_change` lue au tirage, opaque et croissante.
+  commerceVersion   BigInt   @map("commerce_version")
+  printedAt         DateTime @map("printed_at") @db.Timestamptz(6)
+  /// L'id de la fiche staff qui a tiré (jamais le `sub`).
+  printedBy         String   @map("printed_by")
+  /// `{ orderId: empreinte }` des commandes dont la fiche a été imprimée.
+  orderFingerprints Json     @map("order_fingerprints")
+  /// Ce qui a été coché : parties, rayons ou postes, choix des commandes.
+  parts             Json
+
+  @@unique([serviceDay, run])
+  @@map("provisional_print")
   @@schema("production")
 }

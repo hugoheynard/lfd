@@ -5,6 +5,7 @@ import type { Response } from "express";
 
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
 import { GetDayDossierSpecimenQuery } from "../application/queries/get-day-dossier-specimen.query.js";
+import { GetProvisionalDossierSpecimenQuery } from "../application/queries/get-provisional-dossier-specimen.query.js";
 import { GetProductionCountSpecimenQuery } from "../application/queries/get-production-count-specimen.query.js";
 import { GetProductionSimulationSpecimenQuery } from "../application/queries/get-production-simulation-specimen.query.js";
 import type { ProductionPaper } from "../../shared/print/index.js";
@@ -36,6 +37,16 @@ export class AdminDayPapersSpecimensController {
       new GetDayDossierSpecimenQuery(),
     );
     return served(response, pdf, "exemple-dossier-du-jour.pdf");
+  }
+
+  @Get("day-dossier-provisional.pdf")
+  async provisionalDossier(
+    @Res({ passthrough: true }) response: Response,
+  ): Promise<StreamableFile> {
+    const pdf = await this.queries.execute<GetProvisionalDossierSpecimenQuery, ProductionPaper>(
+      new GetProvisionalDossierSpecimenQuery(),
+    );
+    return served(response, pdf, "exemple-dossier-provisoire.pdf");
   }
 
   @Get("production-simulation.pdf")

@@ -111,6 +111,8 @@ export type {
 } from "./domain/services/latest-order-cutoff.js";
 export { withSeals } from "./domain/services/packing-overlay.js";
 export { countOf } from "./domain/services/production-count.js";
+/** Ce que l'arrêt figerait maintenant, par sa conversion même (l'impression provisoire du plan). */
+export { arrestPreviewOf } from "./domain/entities/production-day.plan.js";
 export { activeBatchesOf, countedBatch, outputOf } from "./domain/services/production-output.js";
 export { deadlinesOf } from "./domain/services/production-deadlines.js";
 export type { TrancheThreshold } from "./domain/services/production-tranches.js";
