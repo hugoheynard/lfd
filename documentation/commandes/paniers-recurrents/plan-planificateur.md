@@ -305,8 +305,9 @@ Le panier récurrent vit dans `lafoliecoffee/subscriptions/`, ses tables dans
 resteraient libres de lire ses tables. Ce qui garderait la frontière, c'est
 d'en faire un **bloc**, comme `shop-cart/` et son schéma `cart` : sans clé
 étrangère, atteint par un canal — `RecurringOccurrences` et
-`OccurrenceRunLedger` en sont déjà la forme. À décider après R6 ; ce serait
-une migration de données (vitruve).
+`OccurrenceRunLedger` en sont déjà la forme. La forme cible et son plan
+sont dans [`plan-bloc-recurrent.md`](plan-bloc-recurrent.md) (2026-11-24) :
+R5 et R6 attendent qu'il soit tranché.
 
 À corriger quoi qu'on décide : la fiche client (`account`,
 `prisma-customer-sheet.reader.ts`) compte les paniers actifs en lisant la
