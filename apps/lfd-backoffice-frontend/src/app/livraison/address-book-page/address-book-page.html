@@ -1,0 +1,101 @@
+<fold-page-layout icon="map-pin" title="Adresses">
+  <p description>
+    Toutes les adresses de livraison des clients, avec leurs points GPS et leurs consignes.
+  </p>
+
+  @switch (state().status) {
+    @case ('loading') {
+      <fold-loading message="Lecture du carnet d’adresses…" />
+    }
+    @case ('error') {
+      <fold-empty-state
+        tone="alert"
+        title="Carnet d’adresses illisible"
+        subtitle="Le serveur n’a pas répondu. Réessayez dans un instant."
+        data-error
+      >
+        <button foldButton emphasis="outline" (click)="retry()">Réessayer</button>
+      </fold-empty-state>
+    }
+    @case ('ready') {
+      <fold-data-table
+        caption="Adresses de livraison"
+        narrowLayout="cards"
+        [columns]="columns"
+        [rows]="rows()"
+        [rowKey]="rowKey"
+        [empty]="empty()"
+      >
+        <div foldToolbar class="toolbar">
+          <fold-search
+            placeholder="Client, ville, libellé, note…"
+            ariaLabel="Rechercher une adresse"
+            [value]="query()"
+            (valueChange)="query.set($event)"
+            data-search
+          />
+          <fold-checkbox
+            label="Sans point GPS"
+            [checked]="withoutGpsOnly()"
+            (checkedChange)="withoutGpsOnly.set($event)"
+            data-without-gps
+          />
+          <fold-badge radius="square" variant="neutral" [content]="countLabel()" data-count />
+        </div>
+
+        <ng-template foldCell="customer" let-row>{{ row.customerLabel }}</ng-template>
+
+        <ng-template foldCell="address" let-row>
+          <span class="stack">
+            <span class="line">
+              <strong>{{ row.addressLabel }}</strong>
+              @if (row.isDefault) {
+                <fold-badge radius="square" variant="info" content="par défaut" data-default />
+              }
+            </span>
+            <span>{{ row.ligne1 }}</span>
+            @if (row.ligne2) {
+              <span>{{ row.ligne2 }}</span>
+            }
+            <span>{{ row.codePostal }} {{ row.ville }}</span>
+          </span>
+        </ng-template>
+
+        <ng-template foldCell="door" let-row>
+          @if (row.door; as point) {
+            <fold-link [href]="osmUrlOf(point)" target="_blank" rel="noopener" data-door>
+              {{ gpsLabelOf(point) }}
+            </fold-link>
+          } @else {
+            —
+          }
+        </ng-template>
+
+        <ng-template foldCell="parking" let-row>
+          @if (row.parking; as point) {
+            <fold-link [href]="osmUrlOf(point)" target="_blank" rel="noopener" data-parking>
+              {{ gpsLabelOf(point) }}
+            </fold-link>
+          } @else {
+            —
+          }
+        </ng-template>
+
+        <ng-template foldCell="note" let-row>{{ row.note || '—' }}</ng-template>
+
+        <ng-template foldCell="contact" let-row>
+          @if (row.deliveryContact; as contact) {
+            <span class="stack">
+              <span>{{ contact.prenom }} {{ contact.nom }}</span>
+              <fold-link [href]="'tel:' + contact.telephone" data-phone>
+                {{ contact.telephone }}
+              </fold-link>
+            </span>
+          } @else {
+            —
+          }
+        </ng-template>
+      </fold-data-table>
+    }
+  }
+</fold-page-layout>

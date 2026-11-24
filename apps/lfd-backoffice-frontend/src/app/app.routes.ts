@@ -837,11 +837,10 @@ export const routes: Routes = [
       },
     ],
   },
-  // TOUR MANAGER (Hugo, 2026-10-10) : l'organisation des tournées sort de la
-  // Livraison pour une entrée de premier niveau, sous Prod manager. UN SEUL
-  // ÉCRAN depuis le 2026-10-26 (Hugo) : l'onglet « Feuille de route », posé le
-  // matin même, est retiré — le dossier du jour, ouvert depuis le bandeau, porte
-  // ce qu'il montrait. Ses favoris mènent aux tournées, `?jour=` compris.
+  // TOUR MANAGER : l'organisation des tournées, entrée de premier niveau sous
+  // Prod manager. Deux onglets : les tournées (le dossier du jour s'ouvre depuis
+  // le bandeau ; les favoris y mènent, `?jour=` compris) et le carnet des
+  // adresses de livraison (Hugo, 2026-11-24).
   {
     path: 'tour-manager',
     loadComponent: () =>
@@ -856,6 +855,13 @@ export const routes: Routes = [
         title: 'Tour manager — LFC B2B admin',
         loadComponent: () =>
           import('./livraison/rounds-page/rounds-page').then((m) => m.RoundsPage),
+      },
+      {
+        path: 'adresses',
+        canActivate: [permissionGuard('delivery_rounds:read')],
+        title: 'Adresses — LFC B2B admin',
+        loadComponent: () =>
+          import('./livraison/address-book-page/address-book-page').then((m) => m.AddressBookPage),
       },
     ],
   },

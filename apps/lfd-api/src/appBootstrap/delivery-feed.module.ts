@@ -11,6 +11,7 @@ import { PrismaDeliveryOrderStatesReader } from "../lafoliecoffee/orders/infrast
 import { PrismaDeliveryNoteNumbersReader } from "../lafoliecoffee/delivery-notes/infrastructure/prisma-delivery-note-numbers.reader.js";
 import { PrismaDeliveryDeparturesReader } from "../lafoliecoffee/orders/infrastructure/prisma-delivery-departures.reader.js";
 import { PrismaDeliveryOrderLinesReader } from "../lafoliecoffee/orders/infrastructure/prisma-delivery-order-lines.reader.js";
+import { PrismaDeliveryAddressBookReader } from "../lafoliecoffee/account/infrastructure/prisma-delivery-address-book.reader.js";
 import { PrismaDeliveryAddressPointsReader } from "../lafoliecoffee/orders/infrastructure/prisma-delivery-address-points.reader.js";
 import { PrismaDeliveryOrdersReader } from "../lafoliecoffee/orders/infrastructure/prisma-delivery-orders.reader.js";
 import { PrismaDeliveryProceduresReader } from "../lafoliecoffee/orders/infrastructure/prisma-delivery-procedures.reader.js";
@@ -35,6 +36,7 @@ import {
   TransferOrderColorsReader,
   TransferSiteColorsReader,
   BinLabelColorsReader,
+  DeliveryAddressBookReader,
   DeliveryAddressPointsReader,
   DeliveryDeparturesReader,
   DeliveryNoteNumbersReader,
@@ -85,6 +87,8 @@ import { ResolvedDepartureSiteReader } from "../delivery/infrastructure/resolved
  * - `DeliveryAddressPointsReader` — l'adresse du carnet derrière une commande
  *   livrée, et ses deux points, pour les suggestions de correction
  *   (`gps-y-aller-et-position.md`, §6) ;
+ * - `DeliveryAddressBookReader` — le carnet des adresses de livraison entier,
+ *   pour l'onglet « Adresses » de Tour manager (2026-11-24) ;
  * - `DeliveryAddressPointCorrector` — « corrige ce point du carnet » : le
  *   carnet décide et écrit, le commerce journalise. Son adaptateur vit dans
  *   `AccountModule` : `useExisting`.
@@ -131,6 +135,7 @@ import { ResolvedDepartureSiteReader } from "../delivery/infrastructure/resolved
     { provide: DeliveryStepPhotosReader, useClass: PrismaDeliveryStepPhotosReader },
     { provide: DeliveryOrderStatesReader, useClass: PrismaDeliveryOrderStatesReader },
     { provide: CommerceDayVersionReader, useClass: PrismaCommerceDayVersionReader },
+    { provide: DeliveryAddressBookReader, useClass: PrismaDeliveryAddressBookReader },
     { provide: DeliveryAddressPointsReader, useClass: PrismaDeliveryAddressPointsReader },
     {
       provide: DeliveryAddressPointCorrector,
@@ -163,6 +168,7 @@ import { ResolvedDepartureSiteReader } from "../delivery/infrastructure/resolved
     DeliveryStepPhotosReader,
     DeliveryOrderStatesReader,
     CommerceDayVersionReader,
+    DeliveryAddressBookReader,
     DeliveryAddressPointsReader,
     DeliveryAddressPointCorrector,
     OrderDeliveryHistoryReader,
