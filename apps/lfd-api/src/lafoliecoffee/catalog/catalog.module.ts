@@ -153,6 +153,8 @@ import { SnapshotOrderLineClassificationReader } from "./infrastructure/catalogu
  *   référentiel s'appliquent fiche par fiche, et les opérations s'écrivent au
  *   commerce. Leurs tables restent en base.
  */
+import { ResupplyOnlyArticlesReader } from "./domain/ports/resupply-only-articles.reader.js";
+import { PrismaResupplyOnlyArticlesReader } from "./infrastructure/prisma-resupply-only-articles.reader.js";
 @Module({
   // `PricerModule` parce que la vitrine TARIFE depuis le 2026-09-09 : elle
   // servait le canonique, donc une promotion publique n'apparaissait qu'au
@@ -260,6 +262,7 @@ import { SnapshotOrderLineClassificationReader } from "./infrastructure/catalogu
     // ailleurs, de la base.
     PrismaCatalogReader,
     { provide: CatalogReader, useClass: SnapshotCatalogReader },
+    { provide: ResupplyOnlyArticlesReader, useClass: PrismaResupplyOnlyArticlesReader },
     // 🔴 **L'autorité de prix du checkout**, ramenée là d'où vient sa donnée le
     // 2026-09-09. Elle vivait dans `OrdersModule`, alors que son unique
     // adaptateur ne fait que TRADUIRE `CatalogReader` — deux ports empilés, dont
@@ -320,6 +323,7 @@ import { SnapshotOrderLineClassificationReader } from "./infrastructure/catalogu
     // Le numéro de l'écran Catalogue, relié au registre par `appBootstrap/day-version-sources.module.ts`.
     CatalogAdminVersionSource,
     CatalogReader,
+    ResupplyOnlyArticlesReader,
     // Pour la caisse, le tarificateur et la projection : tous trois résolvent un
     // SKU avant de tarifer, et aucun n'a de raison de passer par `orders` pour ça.
     ProductCatalogReader,

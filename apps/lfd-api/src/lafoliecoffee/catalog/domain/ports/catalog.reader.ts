@@ -5,7 +5,7 @@ import type { CatalogSaleUnit } from "../catalog-sale-unit.js";
 import type { MenuMark } from "../sub-account-menu-verdict.js";
 import type { CatalogTranslations } from "../catalog-translations.js";
 import type { ShopAllergenFacts } from "../shop-allergens.js";
-import type { CatalogAudience } from "../served-to.js";
+import type { SoldAudience } from "../served-to.js";
 import type { CatalogMinQuantities } from "../catalog-min-quantities.js";
 import type { CatalogViewer } from "../catalog-viewer.js";
 import type { CatalogReservationMark } from "../served-to-viewer.js";
@@ -55,7 +55,7 @@ export interface ResolvedCatalogItem {
    * une ligne jamais reçue par un fait (cf. `servedTo`). Une lecture publique
    * ne rend jamais `pro` : `servedTo` l'a écarté avant.
    */
-  readonly audience: CatalogAudience;
+  readonly audience: SoldAudience;
   /**
    * **L'article est-il réservé, et à qui pour ce lecteur**
    * (`plan-articles-sur-mesure.md`, § 5) — `servedToViewer` l'a déjà admis.

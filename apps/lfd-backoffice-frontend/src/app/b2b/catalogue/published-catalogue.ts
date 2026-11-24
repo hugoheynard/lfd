@@ -169,6 +169,7 @@ const AUDIENCE_LABELS: Readonly<Record<CatalogItemAudience, string>> = {
   pro: 'Pros',
   public: 'Public',
   both: 'Pros et public',
+  resupply: 'Réassort des boutiques',
 };
 
 export function audienceLabel(audience: CatalogItemAudience): string {

@@ -4,7 +4,11 @@ import {
   CatalogReader,
   type ResolvedCatalogItem,
 } from "../../../catalog/domain/ports/catalog.reader.js";
-import { CatalogResupplyCatalogue } from "../catalog-resupply-catalogue.js";
+import {
+  type ResupplyOnlyArticle,
+  ResupplyOnlyArticlesReader,
+} from "../../../catalog/domain/ports/resupply-only-articles.reader.js";
+import { CatalogResupplyCatalogue, withinFamilies } from "../catalog-resupply-catalogue.js";
 
 function item(sku: string, overrides: Partial<ResolvedCatalogItem> = {}): ResolvedCatalogItem {
   return {
@@ -60,22 +64,102 @@ class Catalog extends CatalogReader {
   }
 }
 
+/** Le cookie des formules : réservé au réassort, rangé avec les viennoiseries. */
+const FORMULA_COOKIE: ResupplyOnlyArticle = {
+  sku: "VIE-009-1",
+  name: "Cookie formule",
+  categoryId: VIENNOISERIES.id,
+  categoryName: VIENNOISERIES.name,
+  saleUnit: "piece",
+};
+
+class ResupplyOnly extends ResupplyOnlyArticlesReader {
+  constructor(private readonly items: readonly ResupplyOnlyArticle[] = []) {
+    super();
+  }
+
+  articles(): Promise<readonly ResupplyOnlyArticle[]> {
+    return Promise.resolve(this.items);
+  }
+
+  article(sku: string): Promise<ResupplyOnlyArticle | null> {
+    return Promise.resolve(this.items.find((candidate) => candidate.sku === sku) ?? null);
+  }
+}
+
 describe("CatalogResupplyCatalogue — un seul critère, celui du rayon", () => {
   /**
    * Régression E4 (audit final, 2026-11-03) : la liste ne proposait que le
    * défaut, et la validation acceptait une déclinaison masquée au rayon.
    */
   it("propose le défaut et la déclinaison en vignette, jamais la masquée", async () => {
-    const articles = await new CatalogResupplyCatalogue(new Catalog()).articles();
+    const articles = await new CatalogResupplyCatalogue(
+      new Catalog(),
+      new ResupplyOnly(),
+    ).articles();
 
     expect(articles.map((article) => article.sku)).toEqual(["VIE-001-1", "VIE-002-2"]);
   });
 
   it("valide ce qu'elle propose, et refuse la déclinaison masquée comme un article inconnu", async () => {
-    const catalogue = new CatalogResupplyCatalogue(new Catalog());
+    const catalogue = new CatalogResupplyCatalogue(new Catalog(), new ResupplyOnly());
 
     await expect(catalogue.article("VIE-002-2")).resolves.toMatchObject({ sku: "VIE-002-2" });
     await expect(catalogue.article("VIE-001-1")).resolves.toMatchObject({ sku: "VIE-001-1" });
     await expect(catalogue.article("VIE-001-3")).resolves.toBeNull();
+  });
+});
+
+describe("CatalogResupplyCatalogue — les articles réservés au réassort", () => {
+  it("propose le cookie des formules, qu'aucune vitrine ne sert, avec les viennoiseries", async () => {
+    const catalogue = new CatalogResupplyCatalogue(
+      new Catalog(),
+      new ResupplyOnly([FORMULA_COOKIE]),
+    );
+
+    const articles = await catalogue.articles();
+
+    expect(articles.map((article) => article.sku)).toEqual(["VIE-001-1", "VIE-002-2", "VIE-009-1"]);
+  });
+
+  it("le valide à l'ajout d'une ligne, et refuse toujours un SKU inconnu des deux", async () => {
+    const catalogue = new CatalogResupplyCatalogue(
+      new Catalog(),
+      new ResupplyOnly([FORMULA_COOKIE]),
+    );
+
+    await expect(catalogue.article("VIE-009-1")).resolves.toEqual(FORMULA_COOKIE);
+    await expect(catalogue.article("INCONNU-1")).resolves.toBeNull();
+  });
+});
+
+describe("withinFamilies", () => {
+  const BREADS = {
+    ...FORMULA_COOKIE,
+    sku: "PAI-001-1",
+    categoryId: "pains",
+    categoryName: "Pains",
+  };
+  const shop = [
+    { ...FORMULA_COOKIE, sku: "VIE-001-1" },
+    { ...BREADS, sku: "PAI-002-1" },
+  ];
+
+  it("range un article après le dernier de sa famille", () => {
+    expect(withinFamilies(shop, [FORMULA_COOKIE]).map((article) => article.sku)).toEqual([
+      "VIE-001-1",
+      "VIE-009-1",
+      "PAI-002-1",
+    ]);
+  });
+
+  it("met à la fin un article dont la famille n'a aucun article public", () => {
+    const pastry = { ...FORMULA_COOKIE, sku: "PAT-001-1", categoryId: "patisseries" };
+
+    expect(withinFamilies(shop, [pastry]).map((article) => article.sku)).toEqual([
+      "VIE-001-1",
+      "PAI-002-1",
+      "PAT-001-1",
+    ]);
   });
 });

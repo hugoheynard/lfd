@@ -1,13 +1,26 @@
 import type { ShopAudience } from "./ports/catalog.reader.js";
+import { ResupplyOnlySoldError } from "./errors/resupply-only-sold.error.js";
 
 /**
  * À qui un article se vend, tel que le référentiel le dit (C2 de
  * `documentation/catalogue/plan-catalogue-synchronise-par-audience.md`). Une VALEUR
  * de donnée, recopiée du fait de la fiche.
+ *
+ * `resupply` : l'article ne se vend à personne, il se commande seulement en
+ * réassort des boutiques (le cookie des formules ;
+ * `documentation/reassort-boutiques/plan-articles-de-reassort.md`). Aucun
+ * acheteur ne le demande : `servedTo` le refuse aux pros comme au public.
+ *
+ * Le commerce connaît une valeur avant que le référentiel puisse l'émettre :
+ * `putOnSale` reçoit l'audience typée du fait de fiche, donc un référentiel
+ * qui élargirait la sienne sans ce type ne compilerait plus.
  */
-export type CatalogAudience = "pro" | "public" | "both";
+export type CatalogAudience = "pro" | "public" | "both" | "resupply";
 
-const AUDIENCES: readonly CatalogAudience[] = ["pro", "public", "both"];
+/** L'audience d'un article servi à un acheteur : jamais `resupply`, que `servedTo` refuse. */
+export type SoldAudience = Exclude<CatalogAudience, "resupply">;
+
+const AUDIENCES: readonly CatalogAudience[] = ["pro", "public", "both", "resupply"];
 
 /**
  * Ce que `servedTo` lit d'un article — la colonne d'audience, les deux
@@ -70,6 +83,27 @@ export function servedTo(item: ServableItem, viewer: ShopAudience): boolean {
     : !item.isHiddenPublic && !item.publicReviewPending && !item.isReserved && !item.isCustomRecipe;
 }
 
+/**
+ * **L'article se commande-t-il en réassort des boutiques ?** — servi au public
+ * (la vitrine se réassortit), ou réservé au réassort, non masqué.
+ *
+ * Un article `resupply` n'attend aucune validation : il n'est montré à aucun
+ * client. Réservé à une société ou sur mesure, il reste refusé, comme au
+ * public.
+ */
+export function servedToResupply(item: ServableItem): boolean {
+  if (servedTo(item, "public")) {
+    return true;
+  }
+  return (
+    item.audience === "resupply" &&
+    !item.isHidden &&
+    !item.isHiddenPublic &&
+    !item.isReserved &&
+    !item.isCustomRecipe
+  );
+}
+
 /** L'audience (`null` lu `both`) contient-elle ce lecteur ? */
 export function audienceIncludes(audience: CatalogAudience | null, viewer: ShopAudience): boolean {
   const effective = audience ?? "both";
@@ -99,4 +133,18 @@ export function servedToAnyone(item: ServableItem): boolean {
  */
 export function catalogAudienceOf(raw: string | null): CatalogAudience | null {
   return AUDIENCES.find((candidate) => candidate === raw) ?? null;
+}
+
+/**
+ * L'audience d'un article **servi à un acheteur** (`null` lu `both`).
+ *
+ * @throws {ResupplyOnlySoldError} l'article est réservé au réassort : aucune
+ *   lecture d'acheteur ne devait le rendre.
+ */
+export function soldAudienceOf(sku: string, raw: string | null): SoldAudience {
+  const audience = catalogAudienceOf(raw) ?? "both";
+  if (audience === "resupply") {
+    throw new ResupplyOnlySoldError(sku);
+  }
+  return audience;
 }

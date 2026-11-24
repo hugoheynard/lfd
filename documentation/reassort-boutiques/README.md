@@ -58,14 +58,15 @@ flowchart TD
   R --> D["Stock du jour<br/>reçus réceptionnés − commandes sur stock"]
 ```
 
-| Étape                                                   | Doc d'état                                               |
-| ------------------------------------------------------- | -------------------------------------------------------- |
-| Demander, envoyer, nommer, brouillons                   | [`commander.md`](commander.md)                           |
-| Le soir pour demain : plan, colisage, transfert, arrivé | [`au-plan-du-fournil.md`](au-plan-du-fournil.md)         |
-| « Au plus tôt » : lancer, réserver, transporter, suivre | [`au-plus-tot.md`](au-plus-tot.md)                       |
-| Réceptionner, alertes, stock du jour, Supervision       | [`reception-et-stock.md`](reception-et-stock.md)         |
-| Ce qui n'est pas bâti                                   | [`reste-a-faire.md`](reste-a-faire.md)                   |
-| L'heure du réassort (plan)                              | [`plan-heure-du-reassort.md`](plan-heure-du-reassort.md) |
+| Étape                                                   | Doc d'état                                                     |
+| ------------------------------------------------------- | -------------------------------------------------------------- |
+| Demander, envoyer, nommer, brouillons                   | [`commander.md`](commander.md)                                 |
+| Le soir pour demain : plan, colisage, transfert, arrivé | [`au-plan-du-fournil.md`](au-plan-du-fournil.md)               |
+| « Au plus tôt » : lancer, réserver, transporter, suivre | [`au-plus-tot.md`](au-plus-tot.md)                             |
+| Réceptionner, alertes, stock du jour, Supervision       | [`reception-et-stock.md`](reception-et-stock.md)               |
+| Ce qui n'est pas bâti                                   | [`reste-a-faire.md`](reste-a-faire.md)                         |
+| Les articles de réassort seulement (plan)               | [`plan-articles-de-reassort.md`](plan-articles-de-reassort.md) |
+| L'heure du réassort (plan)                              | [`plan-heure-du-reassort.md`](plan-heure-du-reassort.md)       |
 
 ## 3. Où vit le code
 

@@ -11,7 +11,7 @@ import {
 import { saleUnitOf } from "./catalog-sale-unit.js";
 import { shopAllergenFactsOf } from "./shop-allergen-facts.js";
 import { PUBLIC_SALES_CONTEXT } from "../domain/public-context.js";
-import { catalogAudienceOf } from "../domain/served-to.js";
+import { soldAudienceOf } from "../domain/served-to.js";
 import { viewerAudience, type CatalogViewer } from "../domain/catalog-viewer.js";
 import {
   ACCESS_DECISION_COLUMNS,
@@ -379,7 +379,7 @@ function resolve(
     categoryId: row.category.id,
     categoryName: row.category.name,
     // `NULL` lu `both`, comme `servedTo` le lit : une ligne jamais reçue par un fait.
-    audience: catalogAudienceOf(row.audience) ?? "both",
+    audience: soldAudienceOf(row.sku, row.audience),
     reservation: access.mark,
     menu: access.menu,
     translations: {

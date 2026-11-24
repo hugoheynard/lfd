@@ -16,8 +16,11 @@ export interface CatalogAllergenView {
   readonly label: string;
 }
 
-/** À qui un article se vend, tel que le référentiel le dit — une valeur de donnée. */
-export type CatalogItemAudience = "pro" | "public" | "both";
+/**
+ * À qui un article se vend, tel que le référentiel le dit — une valeur de donnée.
+ * `resupply` : à personne, il se commande seulement en réassort des boutiques.
+ */
+export type CatalogItemAudience = "pro" | "public" | "both" | "resupply";
 
 export interface CatalogAdminItemView {
   readonly sku: string;

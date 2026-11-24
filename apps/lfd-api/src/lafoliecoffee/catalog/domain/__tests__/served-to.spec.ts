@@ -1,4 +1,12 @@
-import { catalogAudienceOf, servedTo, servedToAnyone, type ServableItem } from "../served-to.js";
+import {
+  catalogAudienceOf,
+  servedTo,
+  servedToAnyone,
+  servedToResupply,
+  soldAudienceOf,
+  type ServableItem,
+} from "../served-to.js";
+import { ResupplyOnlySoldError } from "../errors/resupply-only-sold.error.js";
 
 /**
  * `servedTo` (2a5) : l'audience de l'article contient le lecteur ET la
@@ -135,5 +143,46 @@ describe("S3 — réservé ou sur mesure, jamais au public", () => {
     const pending = item({ audience: "both", isCustomRecipe: true, proReviewPending: true });
     expect(servedTo(pending, "pro")).toBe(false);
     expect(servedTo(pending, "public")).toBe(false);
+  });
+});
+
+describe("l'audience `resupply` — réservée au réassort des boutiques", () => {
+  const resupply = (over: Partial<ServableItem> = {}): ServableItem =>
+    item({ audience: "resupply", ...over });
+
+  it("n'est servie à aucun acheteur, ni pro ni public", () => {
+    expect(servedTo(resupply(), "pro")).toBe(false);
+    expect(servedTo(resupply(), "public")).toBe(false);
+    expect(servedToAnyone(resupply())).toBe(false);
+  });
+
+  it("se commande en réassort, sans attendre de validation", () => {
+    expect(servedToResupply(resupply({ publicReviewPending: true, proReviewPending: true }))).toBe(
+      true,
+    );
+  });
+
+  it.each([
+    ["masquée aux pros", { isHidden: true }],
+    ["masquée au public", { isHiddenPublic: true }],
+    ["réservée à une société", { isReserved: true }],
+    ["sur mesure", { isCustomRecipe: true }],
+  ] as const)("ne se commande pas en réassort quand elle est %s", (_case, over) => {
+    expect(servedToResupply(resupply(over))).toBe(false);
+  });
+
+  it("le réassort suit la vitrine pour tout le reste : public et `both` oui, `pro` non", () => {
+    expect(servedToResupply(item({ audience: "public" }))).toBe(true);
+    expect(servedToResupply(item({ audience: "both" }))).toBe(true);
+    expect(servedToResupply(item({ audience: "pro" }))).toBe(false);
+  });
+
+  it("se relit depuis la colonne", () => {
+    expect(catalogAudienceOf("resupply")).toBe("resupply");
+  });
+
+  it("refuse d'être servie à un acheteur, au lieu de se lire `both`", () => {
+    expect(() => soldAudienceOf("VIE-009-1", "resupply")).toThrow(ResupplyOnlySoldError);
+    expect(soldAudienceOf("VIE-001-1", null)).toBe("both");
   });
 });

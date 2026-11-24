@@ -128,6 +128,10 @@ const ALLOWED = new Set([
   // M1b, 2026-11-06) : il PORTE le filtre (`where: STILL_SOLD`) — un article
   // retiré est absent de l'instantané, donc d'aucune vue du devis.
   "apps/lfd-api/src/lafoliecoffee/catalog/infrastructure/catalogue-snapshot/catalogue-snapshot.loader.ts",
+  // Les articles réservés au réassort (`plan-articles-de-reassort.md`, lot A,
+  // 2026-11-24) : il PORTE le filtre (`...STILL_SOLD`) sur ses deux lectures —
+  // un article retiré ne se commande plus en réassort.
+  "apps/lfd-api/src/lafoliecoffee/catalog/infrastructure/prisma-resupply-only-articles.reader.ts",
 ]);
 
 /** Les opérations qui LISENT. Les autres écrivent, et doivent voir toute la table. */
