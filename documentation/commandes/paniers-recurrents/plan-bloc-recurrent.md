@@ -5,8 +5,8 @@
 > une migration de **données vivantes** et touche l'argent : contredit une
 > première fois par `vitruve` le même jour (4 bloquants, 7 sérieux, tous
 > intégrés, § 10). Toutes les questions sont tranchées par Hugo le même
-> jour (§ 9). Le SQL de la migration est écrit et essayé (§ 8 bis) ; il
-> reste à le faire contredire avant tout bâti. Il reprend la forme des lots R1 à R4 du
+> jour (§ 9). Le SQL de la migration est écrit, essayé et contredit
+> (§ 8 bis, § 11) : le plan est prêt à bâtir, en un seul lot (§ 8). Il reprend la forme des lots R1 à R4 du
 > [planificateur](plan-planificateur.md), dont les décisions (§ 0, § 5 bis,
 > § 8) restent vraies. Les questions sont au § 9.
 
@@ -86,8 +86,7 @@ flowchart LR
 - **Une seule table au lieu de deux.** Dérogation et registre décrivent la
   même chose : une échéance.
 - **Le moment où c'est le moins cher.** Pré-release, et aucune échéance
-  passée en production (§ 0) : le registre est vide, seules les dérogations
-  sont à reprendre (Q-B5 les compte).
+  passée en production (§ 0) : aucune donnée de panier à reprendre (Q-B5).
 
 ## 3. Ce qui existe (vérifié le 2026-11-24)
 
@@ -203,7 +202,7 @@ stateDiagram-v2
   refused --> missed : heure limite passée
   planned --> missed : heure limite passée
   planned --> cancelled : panier arrêté, ou jour tombé en pause
-  refused --> cancelled : panier arrêté
+  refused --> cancelled : panier arrêté, ou jour tombé en pause
   placed --> [*]
   missed --> [*]
 ```
@@ -218,15 +217,21 @@ stateDiagram-v2
   l'avance est plus longue que l'horizon pour que l'écran montre les
   semaines à venir ; elle ne passe rien plus tôt.
 - **La pause** ne touche pas les lignes : le balayage ne passe que les
-  lignes d'un panier actif. À la reprise, les lignes `planned` dont
-  `service_day` est avant le jour de la reprise passent `cancelled` : elles ne
-  sont ni dues ni manquées (la règle de `armed_from`, dite par l'état).
+  lignes d'un panier actif. À la reprise, les lignes `planned` **et
+  `refused`** dont `service_day` est avant le jour de la reprise passent
+  `cancelled` : elles ne sont ni dues ni manquées (la règle de `armed_from`,
+  dite par l'état), et une ligne refusée avant la pause n'alerte pas une
+  seconde fois en tombant « manquée ».
 - **Le gabarit ne change pas** aujourd'hui (aucune route, § 3) : rien à
   recréer. Si un jour la cadence ou les dates deviennent modifiables, le geste
   annulera les lignes `planned` sans dérogation et recréera les autres dans
   sa transaction — à concevoir avec ce geste, pas avant.
 - **L'arrêt** passe les lignes `planned`, `skipped` et `refused` en
-  `cancelled`, dans la transaction du statut.
+  `cancelled`, dans la transaction du statut. Une ligne annulée garde la
+  cause et la phrase d'un refus antérieur : l'historique ne s'efface pas.
+- **L'heure de l'issue** (`settled_at`) est posée à chaque passage, refus ou
+  échéance manquée — distincte de `updated_at`, que les gestes du client font
+  bouger.
 
 ## 6. Le canal `recurring/channels/commerce/`
 
@@ -246,13 +251,21 @@ passation et l'inscription de l'issue ne sont plus dans la même transaction
 donc dans la table qui risque le doublon :
 
 - la commande porte sa provenance complète, `from_subscription_id` **et**
-  `from_occurrence_day` (colonne neuve, `DATE`, immuable : la date de
-  service de la commande, elle, peut être modifiée par le client) ;
+  `from_occurrence_day` (colonne neuve, `DATE` ; la date de service de la
+  commande, elle, peut être modifiée par le client). Un **déclencheur**
+  refuse toute modification de ces deux colonnes après la création
+  (`orders_keep_recurring_provenance`, § 8 bis) ;
 - index unique partiel `orders (from_subscription_id, from_occurrence_day)
-WHERE from_subscription_id IS NOT NULL` ;
-- une seconde passation de la même échéance échoue sur cet index, et la
-  passation rend alors la commande existante comme `placed` : un rejeu, pas
-  un doublon. Aucune rétention, aucune clé d'intention — `OncePerIntent`
+WHERE from_occurrence_day IS NOT NULL` (`orders_one_per_occurrence`) ;
+- une seconde passation de la même échéance échoue sur cet index, ce qui
+  annule sa transaction. La passation rattrape l'erreur **hors** de la
+  transaction, la reconnaît **par le nom de la contrainte**
+  `orders_one_per_occurrence` (jamais par un « unicité violée » générique :
+  `orders` porte d'autres uniques, dont le numéro de commande), relit la
+  commande existante par sa provenance, et la rend comme `placed` : un
+  rejeu, pas un doublon. Un e2e le prouve : deux passations concurrentes de
+  la même échéance, une seule commande, deux réponses `placed` qui nomment
+  la même. Aucune rétention, aucune clé d'intention — `OncePerIntent`
   n'est **pas** utilisé ici (il garderait le premier refus et empêcherait
   `refused → placed`, et il exige un acteur et un sujet que le balayage n'a
   pas).
@@ -313,44 +326,29 @@ par le rédacteur des CGV.
   l'impose au lieu de la lire au contenu.
 - **La preuve** : le suivi de l'e-mail par le bloc `mail` (demandé, accepté,
   remis), et la version figée sur chaque commande.
-- **Les paniers ouverts avant cette règle** (Q-B6) : servis par une
-  dérogation datée, inscrite à la reprise ; ils reçoivent l'e-mail de la
-  prochaine version comme les autres.
+- **Les paniers ouverts avant cette règle** : il n'y en a aucun en
+  production (Q-B5) ; la version acceptée est exigée dès la création (§ 8
+  bis), et Q-B6 est sans objet.
 
-## 8. Les lots
+## 8. Le lot — un seul déploiement (Q-B4)
 
-| Lot                | Contenu                                                                                                                                                                                                                                                                                                                         | Migration                                                                     |
-| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| **B0**             | Les portes et la matrice (§ 4) ; l'acteur d'intention client descend dans `platform/intent/`                                                                                                                                                                                                                                    | —                                                                             |
-| **B1a — étendre**  | `CREATE SCHEMA recurring` et le schéma déclaré dans `datasource.prisma` **dans le même commit** ; les tables neuves `basket`, `basket_line`, `occurrence` ; recopie des paniers, lignes et dérogations ; `orders.from_occurrence_day` et son index unique partiel. Les anciennes tables restent, lues par le code en production | **données** : SQL complet dans ce plan, contredit (vitruve 2) avant tout bâti |
-| **B1b — basculer** | Le code déménage dans `src/recurring/` et lit les tables neuves ; le canal, ses ports, le `RecurringFeedModule` d’`appBootstrap` (à créer) ; la passation sur l'index unique ; les écritures du semis et des e2e suivent                                                                                                        | —                                                                             |
-| **B2**             | L'entité `Occurrence`, la création à l'avance, le balayage sur les lignes dues                                                                                                                                                                                                                                                  | —                                                                             |
-| **B3**             | Les lectures et les faits publiés (§ 6.2) ; avis au principal et croissance en `@DurableHandler` ; la fiche client et le catalogue sur les lectures publiées                                                                                                                                                                    | —                                                                             |
-| **B4**             | Les CGV du panier (§ 7) : version acceptée à l'ouverture, version à venir et date d'effet, l'e-mail à 30 jours par le bloc `mail`, la version imposée à la passation d'une échéance                                                                                                                                             | additive                                                                      |
-| **B5 — resserrer** | Retrait des anciennes tables `public.subscription*` et de leurs relations inverses dans `account.prisma`, une fois B1b déployé et vérifié                                                                                                                                                                                       | **suppression** : sur ordre explicite de Hugo (CLAUDE.md § 0)                 |
+Tout part ensemble, parce que la migration retire les anciennes tables et
+rend les CGV et le créneau obligatoires : un morceau livré seul casserait la
+création d'un panier.
 
-Ce que le SQL de B1a doit dire, et que ce plan n'écrit pas encore :
-
-- la correspondance des états : dérogation `skipped` → `skipped` ; dérogation
-  à lignes → `planned` avec ses lignes ; ligne du registre `generated` →
-  `placed`, `refused` → `refused`, `missed_deadline` → `missed` ; une
-  dérogation et une ligne du registre au même jour fusionnent (l'issue du
-  registre l'emporte, la dérogation garde ses lignes) ;
-- `armed_from` : les lignes recopiées dont `service_day` précède
-  `armed_from` passent `cancelled` ;
-- les noms d'index et de contraintes tels que Prisma les attend (le nom
-  coupé à 63 caractères du registre, déclaré par `map:`), vérifiés par
-  `schema-drift` ;
-- les colonnes CGV à `NULL` pour les paniers recopiés (Q-B6 décide de la
-  suite).
+| Part                  | Contenu                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Portes**            | Le bloc `recurring` dans `context-boundaries.mjs` (matrice et canal, § 4), dans `BLOCKS` de `prisma-model-ownership.mjs`, dans `prisma-schema-layout` ; la zone de `journal-tracked.mjs` qui nomme `lafoliecoffee/subscriptions` suit le déménagement ; la ligne de la matrice dans CLAUDE.md. L'acteur d'intention client descend dans `platform/intent/`                                                                                                                 |
+| **Migration**         | Le SQL du § 8 bis, avec `recurring` déclaré dans `datasource.prisma` et le fichier de schéma `recurring.prisma` (à créer) dans le même commit ; les relations inverses quittent `account.prisma`                                                                                                                                                                                                                                                                           |
+| **Code**              | Le contexte déménage dans `src/recurring/` ; l'entité `Occurrence`, la création à l'avance, le balayage sur les lignes dues ; le canal et ses ports, le `RecurringFeedModule` d’`appBootstrap` (à créer) ; la passation sur l'index unique (§ 6.1)                                                                                                                                                                                                                         |
+| **Lectures et faits** | `RecurringBasketCounts`, `RecurringSkuUsage` ; les faits `recurring.*` ; avis au principal et croissance en `@DurableHandler`                                                                                                                                                                                                                                                                                                                                              |
+| **CGV**               | La version acceptée capturée à l'ouverture ; la version à venir, sa date d'effet et l'e-mail à 30 jours ; la version imposée à la passation d'une échéance (§ 7)                                                                                                                                                                                                                                                                                                           |
+| **Semis et tests**    | `reset.seed.ts` vide `recurring.*` explicitement (plus de cascade depuis les comptes) ; `reset-coverage.ts` retire `public.subscriptions` de ses listes ; les e2e qui lisent les modèles par leur nom (`subscriptions`, `public-subscription-wall`, `subscriptions-journal`, `subscription-occurrence-runs`, `recurring-occurrences-sweep`, `recurring-occurrence-placement`, `sale-reference-usage`, `sub-account-notice-subscriptions`, `audiences`, `versions`) suivent |
 
 Puis R5 (l'alerte staff, abonnée à `recurring.occurrence_refused`) et R6 (les
 écrans, sur les lignes d'échéance) du planificateur.
 
-**R4 n'est pas poussé sur `main`** tant que ce plan n'est pas tranché : il
-ferait passer des échéances sur la forme qu'on remplace.
-
-## 8 bis. La migration (écrite le 2026-11-24, à contredire)
+## 8 bis. La migration (écrite le 2026-11-24, contredite deux fois)
 
 Un seul déploiement (Q-B4), sur une production sans panier (Q-B5) : rien
 n'est recopié, les tables neuves se créent et les anciennes se retirent.
@@ -367,9 +365,25 @@ Nom du dossier : `<horodatage>_le_bloc_des_paniers_recurrents`.
 -- une société, une commande et un point de retrait s'y désignent par
 -- identifiant.
 --
--- Retour arrière : recréer les quatre tables `public.subscription*` depuis les
--- migrations qui les ont posées, et retirer le schéma `recurring` ; sans
--- donnée à recopier tant qu'aucun panier n'a été ouvert.
+-- IRRÉVERSIBLE par redéploiement de l'image précédente : elle lit des tables
+-- que cette migration retire. Le retour arrière est une migration inverse,
+-- générée au bâti (`prisma migrate diff`, de ce schéma vers le précédent) et
+-- gardée prête à côté du plan ; sans donnée à recopier tant qu'aucun panier
+-- n'a été ouvert.
+
+-- Le garde-fou : les anciennes tables ne se retirent que vides. Un panier
+-- ouvert entre le comptage et le déploiement arrête la migration au lieu
+-- d'être détruit.
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM "public"."subscriptions")
+    OR EXISTS (SELECT 1 FROM "public"."subscription_occurrences")
+    OR EXISTS (SELECT 1 FROM "public"."subscription_occurrence_runs")
+    OR EXISTS (SELECT 1 FROM "public"."orders" WHERE "from_subscription_id" IS NOT NULL)
+  THEN
+    RAISE EXCEPTION 'Des paniers récurrents existent en base : la migration du bloc recurring ne les supprime pas. Les reprendre avant de déployer.';
+  END IF;
+END $$;
 
 CREATE SCHEMA IF NOT EXISTS "recurring";
 
@@ -428,7 +442,7 @@ CREATE TABLE "recurring"."basket_line" (
     FOREIGN KEY ("basket_id") REFERENCES "recurring"."basket" ("id")
     ON DELETE RESTRICT ON UPDATE CASCADE,
   CONSTRAINT "basket_line_quantity_positive" CHECK ("quantity" > 0),
-  CONSTRAINT "basket_line_position_positive" CHECK ("position" >= 0)
+  CONSTRAINT "basket_line_position_not_negative" CHECK ("position" >= 0)
 );
 CREATE UNIQUE INDEX "basket_line_basket_id_sku_key" ON "recurring"."basket_line" ("basket_id", "sku");
 CREATE UNIQUE INDEX "basket_line_basket_id_position_key" ON "recurring"."basket_line" ("basket_id", "position");
@@ -445,6 +459,8 @@ CREATE TABLE "recurring"."occurrence" (
   "order_id"    TEXT,
   "cause"       TEXT,
   "reason"      TEXT,
+  -- L'heure de l'issue : passée, refusée (la dernière fois) ou manquée.
+  "settled_at"  TIMESTAMPTZ(6),
   "created_at"  TIMESTAMPTZ(6) NOT NULL,
   "updated_at"  TIMESTAMPTZ(6) NOT NULL,
   CONSTRAINT "occurrence_basket_id_fkey"
@@ -454,12 +470,20 @@ CREATE TABLE "recurring"."occurrence" (
     CHECK ("state" IN ('planned', 'skipped', 'placed', 'refused', 'missed', 'cancelled')),
   CONSTRAINT "occurrence_placed_before_served" CHECK ("place_on" <= "service_day"),
   -- La forme de chaque état : une commande seulement si passée ; une cause et
-  -- sa phrase seulement si refusée ou manquée.
+  -- sa phrase si refusée ou manquée ; une issue datée dans ces trois cas. Une
+  -- échéance annulée garde la cause d'un refus antérieur, s'il y en a eu un.
   CONSTRAINT "occurrence_state_shape" CHECK (
-    ("state" = 'placed' AND "order_id" IS NOT NULL AND "cause" IS NULL AND "reason" IS NULL)
-    OR ("state" IN ('refused', 'missed') AND "order_id" IS NULL AND "cause" IS NOT NULL AND "reason" IS NOT NULL)
-    OR ("state" IN ('planned', 'skipped', 'cancelled') AND "order_id" IS NULL AND "cause" IS NULL AND "reason" IS NULL)
-  )
+    ("state" = 'placed' AND "order_id" IS NOT NULL AND "cause" IS NULL AND "reason" IS NULL
+      AND "settled_at" IS NOT NULL)
+    OR ("state" IN ('refused', 'missed') AND "order_id" IS NULL AND "cause" IS NOT NULL
+      AND "reason" IS NOT NULL AND "settled_at" IS NOT NULL)
+    OR ("state" IN ('planned', 'skipped') AND "order_id" IS NULL AND "cause" IS NULL
+      AND "reason" IS NULL AND "settled_at" IS NULL)
+    OR ("state" = 'cancelled' AND "order_id" IS NULL
+      AND ("cause" IS NULL) = ("reason" IS NULL))
+  ),
+  -- Une échéance sautée n'a pas de lignes à elle.
+  CONSTRAINT "occurrence_skipped_without_lines" CHECK ("state" <> 'skipped' OR "lines" IS NULL)
 );
 CREATE UNIQUE INDEX "occurrence_basket_id_service_day_key" ON "recurring"."occurrence" ("basket_id", "service_day");
 -- Ce que le balayage lit : les échéances encore à passer, par leur jour de passation.
@@ -472,6 +496,22 @@ CREATE UNIQUE INDEX "orders_one_per_occurrence"
   ON "public"."orders" ("from_subscription_id", "from_occurrence_day")
   WHERE "from_occurrence_day" IS NOT NULL;
 
+-- La provenance d'une commande ne change plus après sa création : c'est elle
+-- que l'unicité lit.
+CREATE FUNCTION "public"."orders_keep_recurring_provenance"() RETURNS trigger
+LANGUAGE plpgsql AS $$
+BEGIN
+  IF NEW."from_subscription_id" IS DISTINCT FROM OLD."from_subscription_id"
+    OR NEW."from_occurrence_day" IS DISTINCT FROM OLD."from_occurrence_day"
+  THEN
+    RAISE EXCEPTION 'La provenance récurrente d''une commande ne se modifie pas (commande %).', OLD."id";
+  END IF;
+  RETURN NEW;
+END $$;
+CREATE TRIGGER "orders_keep_recurring_provenance"
+  BEFORE UPDATE OF "from_subscription_id", "from_occurrence_day" ON "public"."orders"
+  FOR EACH ROW EXECUTE FUNCTION "public"."orders_keep_recurring_provenance"();
+
 -- ─── Les anciennes tables, vides en production ──────────────────────────────
 DROP TABLE "public"."subscription_occurrence_runs";
 DROP TABLE "public"."subscription_occurrences";
@@ -479,11 +519,20 @@ DROP TABLE "public"."subscription_lines";
 DROP TABLE "public"."subscriptions";
 ```
 
-**Essayée le 2026-11-24** sur la base e2e locale, dans une transaction
-annulée : toutes les instructions passent ; une échéance `placed` sans
-commande, un second jour identique pour un même panier, une livraison sans
-adresse et une version annoncée sans date d'effet sont refusés par leurs
-contraintes ; l'annulation ne laisse rien.
+**Essayée le 2026-11-24** sur la base e2e locale, dans des transactions
+annulées : toutes les instructions passent ; sont refusés une échéance
+`placed` sans commande, un second jour identique pour un même panier, une
+livraison sans adresse, une version annoncée sans date d'effet, une
+échéance sautée qui garde des lignes, et la modification de la provenance
+d'une commande ; une échéance refusée puis annulée garde sa cause ; et le
+garde-fou arrête la migration dès qu'une commande porte un panier.
+
+**La fenêtre de déploiement** : `migrate deploy` joue avant le remplacement
+du conteneur. Entre les deux, l'ancien code lit des tables retirées
+(erreur 42P01) : les routes des paniers, le balayage, la fiche client et
+l'édition du catalogue (l'usage des références). Quelques dizaines de
+secondes d'erreurs, acceptées en pré-release, comme au déménagement du
+panier de la boutique.
 
 Ce que ce SQL décide, et que le code devra suivre :
 
@@ -505,6 +554,9 @@ Ce que ce SQL décide, et que le code devra suivre :
 - **Les relations inverses** `User.subscriptions` et `Company.subscriptions`
   quittent `account.prisma` dans le même commit ; `public.orders` garde
   `from_subscription_id`, qui désigne désormais un `recurring.basket`.
+- **Les `CHECK` et le déclencheur** ne se voient pas dans le diff de
+  Prisma : ils sont prouvés par l'e2e de la migration (une suite qui tente
+  chaque forme interdite), pas par `schema-drift`.
 
 À vérifier au bâti, pas encore ouvert :
 
@@ -513,7 +565,12 @@ Ce que ce SQL décide, et que le code devra suivre :
   (`occurrence_due_idx`, `orders_one_per_occurrence`) et les `CHECK` ne
   s'écrivent pas tous en Prisma ; ceux qu'il ne sait pas dire entrent dans
   `schema-drift-admitted.json`, chacun avec sa raison, comme l'unicité du
-  panier de la boutique.
+  panier de la boutique. Le modèle Prisma suit le SQL : aucun
+  `@default(now())` sur `created_at`, `@db.Timestamptz(6)` sur chaque
+  horodatage, `cadence` et `fulfillment_method` en `String`,
+  `requested_window` en `Json` obligatoire.
+- La migration inverse, générée par `prisma migrate diff` et gardée prête :
+  la migration est irréversible par simple redéploiement.
 - La base de développement de Hugo perd ses paniers semés au retrait des
   anciennes tables : le semis (`reset.seed.ts`) est réécrit dans le même
   lot.
@@ -533,9 +590,9 @@ Ce que ce SQL décide, et que le code devra suivre :
 - **Q-B5 — La production** : **vide.** ✅ Compté par Hugo le 2026-11-24 :
   aucun panier, aucune ligne, aucune dérogation, aucune commande issue d'un
   panier (§ 0).
-- **Q-B6 — Les paniers déjà ouverts** : **dérogation datée.** ✅ Ils sont
-  servis, et la reprise l'inscrit comme telle (« ouvert avant les CGV au
-  panier »), sans fabriquer d'acceptation.
+- **Q-B6 — Les paniers déjà ouverts** : **sans objet.** Hugo avait choisi
+  une dérogation datée ; la production n'ayant aucun panier (Q-B5), il n'y a
+  personne à couvrir, et la version acceptée est exigée dès la création.
 
 ## 10. La contradiction de `vitruve` (v1, 2026-11-24)
 
@@ -553,3 +610,20 @@ Ce que ce SQL décide, et que le code devra suivre :
 | S10 — les arêtes de la matrice                                                                | § 4                                                                                                                                  |
 | S11 — la garantie de l'avis au principal                                                      | § 6.2 : dite, et les deux abonnés basculent ensemble                                                                                 |
 | Mineurs (`recurringDeltas`, « arrêté », `content`, comparaison à `shop-cart`)                 | intégrés (§ 3, § 5, § 6.1)                                                                                                           |
+
+## 11. La contradiction de `vitruve` (la migration, 2026-11-24)
+
+| Objection                                                                                           | Sort                                                                                      |
+| --------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| B1 — les suppressions reposent sur un comptage                                                      | garde-fou `DO … RAISE EXCEPTION` avant tout, essayé (§ 8 bis)                             |
+| B2 — le plan se contredisait sur les lots                                                           | § 8 réécrit en un seul lot ; Q-B6 sans objet ; la reprise des dérogations retirée         |
+| B3 — la fenêtre de déploiement et le retour arrière                                                 | fenêtre dite (§ 8 bis) ; migration marquée irréversible, inverse générée au bâti          |
+| S4 — le chemin du doublon de commande                                                               | § 6.1 : rattrapé hors transaction, reconnu par le nom de contrainte, e2e                  |
+| S5 — « immuable » sans mécanisme                                                                    | déclencheur `orders_keep_recurring_provenance`, essayé                                    |
+| S6 — une ligne refusée pendant la pause                                                             | § 5 : `refused` aussi passe `cancelled` à la reprise                                      |
+| S7 — l'heure de l'issue                                                                             | colonne `settled_at`, tenue par le `CHECK` de forme                                       |
+| S8 — l'arrêt efface la cause                                                                        | une ligne annulée garde sa cause, essayé                                                  |
+| S9 — `journal-tracked` et `prisma-model-ownership`                                                  | dans le lot (§ 8, Portes)                                                                 |
+| S10 — consommateurs oubliés                                                                         | semis, `reset-coverage.ts`, dix e2e ajoutés au lot                                        |
+| S11 — ce que `schema-drift` fera sortir                                                             | § 8 bis : modèle Prisma aligné, `CHECK` prouvés par l'e2e                                 |
+| Mineurs (condition de l'index, nom `position`, `skipped` avec lignes, nombre de migrations sources) | intégrés ; l'unicité non différable du rang reste sans objet tant que le gabarit est figé |
