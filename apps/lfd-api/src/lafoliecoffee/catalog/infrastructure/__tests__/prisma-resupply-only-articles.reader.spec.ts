@@ -44,7 +44,7 @@ describe("articleOf — la famille d'un article réservé au réassort", () => {
   });
 
   it("une famille de tête n'a aucune parente", () => {
-    const article = articleOf(row({ ...VIENNOISERIE, slug: "viennoiserie" }), FLAT_LINEAGE);
+    const article = articleOf(row({ ...VIENNOISERIE, slug: "famille-de-tete" }), FLAT_LINEAGE);
 
     expect(article?.family).not.toHaveProperty("ancestors");
     expect(article?.family).toMatchObject({ id: VIENNOISERIE.id, path: [VIENNOISERIE.id] });

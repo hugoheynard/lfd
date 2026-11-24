@@ -47,3 +47,13 @@ export interface CompanyPeriodQuotesView {
   /** Les versions vivantes, la clôture la plus récente d'abord. */
   readonly quotes: readonly CompanyPeriodQuoteView[];
 }
+
+/** `POST admin/period-quotes/:id/resend` — la version envoyée (la même, ou une nouvelle). */
+export interface PeriodQuoteResentView {
+  readonly quoteId: string;
+}
+
+/** `POST admin/period-quotes/:id/commitment` — la facture émise sur l'engagement reçu. */
+export interface PeriodQuoteCommitmentReceivedView {
+  readonly invoiceId: string;
+}

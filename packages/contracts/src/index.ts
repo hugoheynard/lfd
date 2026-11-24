@@ -390,6 +390,8 @@ export type {
   CompanyPeriodQuoteState,
   CompanyPeriodQuoteView,
   CompanyPeriodQuotesView,
+  PeriodQuoteCommitmentReceivedView,
+  PeriodQuoteResentView,
 } from "./period-quotes.js";
 export type {
   UnconfirmedDeliveriesView,

@@ -147,12 +147,17 @@ describe('searchProducts', () => {
   describe('le tri', () => {
     it('met le SKU exact, puis le nom qui commence, puis les mots exacts, puis les approchés', () => {
       const items: readonly Item[] = [
-        { sku: 'X-1', name: 'Grand pain' },
-        { sku: 'X-2', name: 'Pian blanc' },
-        { sku: 'X-3', name: 'Pain de mie' },
-        { sku: 'pain', name: 'Brioche' },
+        { sku: 'X-1', name: 'Grand tourteau' },
+        { sku: 'X-2', name: 'Toutreau blanc' },
+        { sku: 'X-3', name: 'Tourteau fromager' },
+        { sku: 'tourteau', name: 'Brioche' },
       ];
-      expect(names('pain', items)).toEqual(['Brioche', 'Pain de mie', 'Grand pain', 'Pian blanc']);
+      expect(names('tourteau', items)).toEqual([
+        'Brioche',
+        'Tourteau fromager',
+        'Grand tourteau',
+        'Toutreau blanc',
+      ]);
     });
 
     it('garde l’ordre reçu à rang égal', () => {

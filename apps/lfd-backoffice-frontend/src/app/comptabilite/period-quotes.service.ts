@@ -2,7 +2,12 @@ import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
-import type { CompanyPeriodQuotesView, PeriodQuoteCommitmentPayload } from '@lfd/contracts';
+import type {
+  CompanyPeriodQuotesView,
+  PeriodQuoteCommitmentPayload,
+  PeriodQuoteCommitmentReceivedView,
+  PeriodQuoteResentView,
+} from '@lfd/contracts';
 
 import { B2B_API_BASE } from '../api/api-config';
 import { intentOptions } from '../shared/gesture-intents';
@@ -40,9 +45,9 @@ export class PeriodQuotesService {
    * `POST admin/period-quotes/:id/resend` — la même version si ses commandes
    * n'ont pas changé, sinon une nouvelle ; rend la version envoyée.
    */
-  async resend(quoteId: string, intentKey: string): Promise<{ readonly quoteId: string }> {
+  async resend(quoteId: string, intentKey: string): Promise<PeriodQuoteResentView> {
     return firstValueFrom(
-      this.http.post<{ readonly quoteId: string }>(
+      this.http.post<PeriodQuoteResentView>(
         `${B2B_API_BASE}/admin/period-quotes/${encodeURIComponent(quoteId)}/resend`,
         {},
         intentOptions(intentKey),
@@ -55,9 +60,9 @@ export class PeriodQuotesService {
     quoteId: string,
     payload: PeriodQuoteCommitmentPayload,
     intentKey: string,
-  ): Promise<{ readonly invoiceId: string }> {
+  ): Promise<PeriodQuoteCommitmentReceivedView> {
     return firstValueFrom(
-      this.http.post<{ readonly invoiceId: string }>(
+      this.http.post<PeriodQuoteCommitmentReceivedView>(
         `${B2B_API_BASE}/admin/period-quotes/${encodeURIComponent(quoteId)}/commitment`,
         payload,
         intentOptions(intentKey),
