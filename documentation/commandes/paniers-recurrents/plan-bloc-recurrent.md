@@ -5,8 +5,8 @@
 > une migration de **données vivantes** et touche l'argent : contredit une
 > première fois par `vitruve` le même jour (4 bloquants, 7 sérieux, tous
 > intégrés, § 10). Toutes les questions sont tranchées par Hugo le même
-> jour (§ 9). Le SQL de B1 reste à écrire et à faire contredire avant
-> tout bâti (§ 8). Il reprend la forme des lots R1 à R4 du
+> jour (§ 9). Le SQL de la migration est écrit et essayé (§ 8 bis) ; il
+> reste à le faire contredire avant tout bâti. Il reprend la forme des lots R1 à R4 du
 > [planificateur](plan-planificateur.md), dont les décisions (§ 0, § 5 bis,
 > § 8) restent vraies. Les questions sont au § 9.
 
@@ -349,6 +349,174 @@ Puis R5 (l'alerte staff, abonnée à `recurring.occurrence_refused`) et R6 (les
 
 **R4 n'est pas poussé sur `main`** tant que ce plan n'est pas tranché : il
 ferait passer des échéances sur la forme qu'on remplace.
+
+## 8 bis. La migration (écrite le 2026-11-24, à contredire)
+
+Un seul déploiement (Q-B4), sur une production sans panier (Q-B5) : rien
+n'est recopié, les tables neuves se créent et les anciennes se retirent.
+Nom du dossier : `<horodatage>_le_bloc_des_paniers_recurrents`.
+
+```sql
+-- Le bloc des paniers récurrents : son schéma `recurring`, l'échéance devenue
+-- une ligne (documentation/commandes/paniers-recurrents/plan-bloc-recurrent.md).
+--
+-- La production ne contient aucun panier (compté le 2026-11-24, § 0 du plan) :
+-- les tables neuves se créent vides, et les anciennes tables
+-- `public.subscription*`, vides elles aussi, se retirent dans la même
+-- migration (Q-B4). Aucune clé étrangère ne sort de `recurring` : une personne,
+-- une société, une commande et un point de retrait s'y désignent par
+-- identifiant.
+--
+-- Retour arrière : recréer les quatre tables `public.subscription*` depuis les
+-- migrations qui les ont posées, et retirer le schéma `recurring` ; sans
+-- donnée à recopier tant qu'aucun panier n'a été ouvert.
+
+CREATE SCHEMA IF NOT EXISTS "recurring";
+
+-- ─── Le panier ──────────────────────────────────────────────────────────────
+CREATE TABLE "recurring"."basket" (
+  "id"                        TEXT PRIMARY KEY,
+  "buyer_user_id"             TEXT NOT NULL,
+  "company_id"                TEXT,
+  "from_order_id"             TEXT,
+  "cadence"                   TEXT NOT NULL,
+  "status"                    TEXT NOT NULL DEFAULT 'active',
+  "start_date"                DATE NOT NULL,
+  "end_date"                  DATE,
+  "fulfillment_method"        TEXT NOT NULL,
+  "delivery_address"          JSONB,
+  "pickup_address_id"         TEXT,
+  "requested_window"          JSONB NOT NULL,
+  "note"                      TEXT NOT NULL DEFAULT '',
+  "sales_terms_key"           TEXT NOT NULL,
+  "sales_terms_revision"      INTEGER NOT NULL,
+  "sales_terms_file_id"       TEXT,
+  "sales_terms_next_revision" INTEGER,
+  "sales_terms_next_file_id"  TEXT,
+  "sales_terms_effective_on"  DATE,
+  "planned_until"             DATE,
+  "created_at"                TIMESTAMPTZ(6) NOT NULL,
+  "updated_at"                TIMESTAMPTZ(6) NOT NULL,
+  CONSTRAINT "basket_cadence_known"
+    CHECK ("cadence" IN ('weekly', 'biweekly', 'monthly')),
+  CONSTRAINT "basket_status_known"
+    CHECK ("status" IN ('active', 'paused', 'cancelled')),
+  CONSTRAINT "basket_dates_ordered"
+    CHECK ("end_date" IS NULL OR "end_date" >= "start_date"),
+  -- Livraison : une adresse et pas de point ; retrait : jamais d'adresse.
+  CONSTRAINT "basket_routing_shape" CHECK (
+    ("fulfillment_method" = 'delivery' AND "delivery_address" IS NOT NULL AND "pickup_address_id" IS NULL)
+    OR ("fulfillment_method" = 'pickup' AND "delivery_address" IS NULL)
+  ),
+  -- Une version annoncée a toujours sa date d'effet, et l'inverse (§ 7).
+  CONSTRAINT "basket_next_terms_together" CHECK (
+    ("sales_terms_next_revision" IS NULL) = ("sales_terms_effective_on" IS NULL)
+    AND ("sales_terms_next_file_id" IS NULL OR "sales_terms_next_revision" IS NOT NULL)
+  )
+);
+CREATE INDEX "basket_buyer_user_id_idx" ON "recurring"."basket" ("buyer_user_id");
+CREATE INDEX "basket_company_id_idx" ON "recurring"."basket" ("company_id");
+
+-- ─── Ses lignes ─────────────────────────────────────────────────────────────
+CREATE TABLE "recurring"."basket_line" (
+  "id"        TEXT PRIMARY KEY,
+  "basket_id" TEXT NOT NULL,
+  "position"  INTEGER NOT NULL,
+  "sku"       TEXT NOT NULL,
+  "quantity"  INTEGER NOT NULL,
+  CONSTRAINT "basket_line_basket_id_fkey"
+    FOREIGN KEY ("basket_id") REFERENCES "recurring"."basket" ("id")
+    ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT "basket_line_quantity_positive" CHECK ("quantity" > 0),
+  CONSTRAINT "basket_line_position_positive" CHECK ("position" >= 0)
+);
+CREATE UNIQUE INDEX "basket_line_basket_id_sku_key" ON "recurring"."basket_line" ("basket_id", "sku");
+CREATE UNIQUE INDEX "basket_line_basket_id_position_key" ON "recurring"."basket_line" ("basket_id", "position");
+
+-- ─── Ses échéances ──────────────────────────────────────────────────────────
+CREATE TABLE "recurring"."occurrence" (
+  "id"          TEXT PRIMARY KEY,
+  "basket_id"   TEXT NOT NULL,
+  "service_day" DATE NOT NULL,
+  "place_on"    DATE NOT NULL,
+  "state"       TEXT NOT NULL DEFAULT 'planned',
+  "lines"       JSONB,
+  "note"        TEXT NOT NULL DEFAULT '',
+  "order_id"    TEXT,
+  "cause"       TEXT,
+  "reason"      TEXT,
+  "created_at"  TIMESTAMPTZ(6) NOT NULL,
+  "updated_at"  TIMESTAMPTZ(6) NOT NULL,
+  CONSTRAINT "occurrence_basket_id_fkey"
+    FOREIGN KEY ("basket_id") REFERENCES "recurring"."basket" ("id")
+    ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT "occurrence_state_known"
+    CHECK ("state" IN ('planned', 'skipped', 'placed', 'refused', 'missed', 'cancelled')),
+  CONSTRAINT "occurrence_placed_before_served" CHECK ("place_on" <= "service_day"),
+  -- La forme de chaque état : une commande seulement si passée ; une cause et
+  -- sa phrase seulement si refusée ou manquée.
+  CONSTRAINT "occurrence_state_shape" CHECK (
+    ("state" = 'placed' AND "order_id" IS NOT NULL AND "cause" IS NULL AND "reason" IS NULL)
+    OR ("state" IN ('refused', 'missed') AND "order_id" IS NULL AND "cause" IS NOT NULL AND "reason" IS NOT NULL)
+    OR ("state" IN ('planned', 'skipped', 'cancelled') AND "order_id" IS NULL AND "cause" IS NULL AND "reason" IS NULL)
+  )
+);
+CREATE UNIQUE INDEX "occurrence_basket_id_service_day_key" ON "recurring"."occurrence" ("basket_id", "service_day");
+-- Ce que le balayage lit : les échéances encore à passer, par leur jour de passation.
+CREATE INDEX "occurrence_due_idx" ON "recurring"."occurrence" ("place_on")
+  WHERE "state" IN ('planned', 'refused');
+
+-- ─── La commande : une échéance, au plus une commande (§ 6.1) ──────────────
+ALTER TABLE "public"."orders" ADD COLUMN "from_occurrence_day" DATE;
+CREATE UNIQUE INDEX "orders_one_per_occurrence"
+  ON "public"."orders" ("from_subscription_id", "from_occurrence_day")
+  WHERE "from_occurrence_day" IS NOT NULL;
+
+-- ─── Les anciennes tables, vides en production ──────────────────────────────
+DROP TABLE "public"."subscription_occurrence_runs";
+DROP TABLE "public"."subscription_occurrences";
+DROP TABLE "public"."subscription_lines";
+DROP TABLE "public"."subscriptions";
+```
+
+**Essayée le 2026-11-24** sur la base e2e locale, dans une transaction
+annulée : toutes les instructions passent ; une échéance `placed` sans
+commande, un second jour identique pour un même panier, une livraison sans
+adresse et une version annoncée sans date d'effet sont refusés par leurs
+contraintes ; l'annulation ne laisse rien.
+
+Ce que ce SQL décide, et que le code devra suivre :
+
+- **Les CGV sont exigées dès la création** (`sales_terms_key`,
+  `sales_terms_revision` `NOT NULL`) : la capture de la version acceptée
+  (B4) part dans le même déploiement que le bloc. Sans panier en production,
+  la dérogation datée de Q-B6 n'a personne à couvrir ; elle n'est pas écrite.
+- **Le créneau est exigé** (`requested_window` `NOT NULL`) : plus de panier
+  sans créneau, donc plus de refus `no_window`.
+- **L'acheminement en `TEXT` avec `CHECK`**, pas l'énum `FulfillmentMethod`
+  de `public` : un type d'un autre schéma serait une dépendance de plus.
+- **Les identifiants sont posés par l'application** (`IdGenerator`), sans
+  défaut en base, comme le registre de R2.
+- **Les lignes du gabarit portent leur rang** (`position`, unique par
+  panier) et un SKU au plus une fois par panier.
+- **`orders.from_occurrence_day`** est nullable et sans `CHECK` contre
+  `from_subscription_id` : les commandes semées en développement portent un
+  panier sans jour, et l'index unique ne lit que les lignes qui ont un jour.
+- **Les relations inverses** `User.subscriptions` et `Company.subscriptions`
+  quittent `account.prisma` dans le même commit ; `public.orders` garde
+  `from_subscription_id`, qui désigne désormais un `recurring.basket`.
+
+À vérifier au bâti, pas encore ouvert :
+
+- `datasource.prisma` déclare `recurring` dans le même commit que la
+  migration, et `schema-drift` passe : les deux index partiels
+  (`occurrence_due_idx`, `orders_one_per_occurrence`) et les `CHECK` ne
+  s'écrivent pas tous en Prisma ; ceux qu'il ne sait pas dire entrent dans
+  `schema-drift-admitted.json`, chacun avec sa raison, comme l'unicité du
+  panier de la boutique.
+- La base de développement de Hugo perd ses paniers semés au retrait des
+  anciennes tables : le semis (`reset.seed.ts`) est réécrit dans le même
+  lot.
 
 ## 9. Les décisions de Hugo (2026-11-24) et ce qui reste ouvert
 
