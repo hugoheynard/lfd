@@ -998,7 +998,7 @@ fige** : les noms et valeurs de `period_quote.state`, la forme de
 | **Q4** ✅ | PDF, planche, e-mail, renvoi (QD4) — bâti le 2026-11-24 (`7e890ceab`) : un e-mail par version (la même version renvoyée sous la clé de l'intention, une v n+1 par l'envoi automatique) ; un document qui contredirait l'empreinte rangée n'est pas rendu (« Renvoyer » le refait) ; la mercuriale citée est celle du dernier instant de la période                                                                                                                                                                                                                                | Q3        |
 | **Q5** ✅ | « Engagement reçu » et sa facture (QD6), le refus de correction (QD2) — bâti le 2026-11-24 : le devis est relu sous le verrou de ses commandes ; une clé de groupe déjà facturée est refusée ; le moyen lu à `period_starts_at` du devis exige un organisme déjà au virement à cette date. `PERIOD_QUOTE_AVAILABLE` levée : le mode sur devis se choisit                                                                                                                                                                                                                          | Q3        |
 | **Q6** ✅ | Écrans des devis, avertissement à 15 jours (QD7) — bâti le 2026-11-24 : carte « Devis de période » (fiche client, onglet Facturation ; un site montre ceux de son payeur), PDF téléchargeable, devis en attente dans la vue de la période. Les 15 jours comptent depuis la **création de la version courante**, qui est son envoi automatique : un renvoi de la même version ne remet pas le compteur à zéro (aucune date d'envoi n'est rangée). L'écart affiché est celui du total avec la version remplacée ; un devis devenu périmé sans nouvelle version se découvre au geste | Q4, Q5    |
-| **Q7**    | DV6′, règles de la mercuriale sur devis                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | Q2        |
+| **Q7** 🟥 | DV6′, règles de la mercuriale sur devis — **suspendu** : contredit le 2026-11-24, deux décisions de Hugo attendues (« Contradiction de Q7 »)                                                                                                                                                                                                                                                                                                                                                                                                                                      | Q2        |
 
 ### Contradiction de la v3 (`vitruve`, 2026-11-24) — ce que la v4 en fait
 
@@ -1080,6 +1080,59 @@ Chaque lecteur a été ouvert et rangé :
   verte sans elles, rouge « admis mais plus constaté » avec elles).
 - **Déclencheurs** : un devis et ses commandes ne se suppriment pas, un état
   final ne se quitte pas, le compteur ne recule pas.
+
+### Conception de Q7 — la mercuriale d'un payeur sur devis (2026-11-24, à contredire)
+
+**Le principe** : un payeur sur devis a budgété des prix connus d'avance. Sa
+mercuriale ne doit donc ni bouger au milieu d'une période, ni laisser une
+promotion changer un prix, ni s'éteindre sans que l'équipe l'ait vu venir.
+Les règles ne visent que les mercuriales d'un payeur `on_period_quote`
+(celle que `NegotiatedScope` lit) ; les autres ne changent pas.
+
+- **QD9 — Pas de promotion** : la mercuriale d'un payeur sur devis a
+  `promotionMode = none`. Refus, dans `pricing`, au geste qui poserait ou
+  amenderait une mercuriale de ce payeur avec un autre mode
+  (`pose`, `amend`, brouillon publié) ; et refus, dans `account`, du passage
+  à `on_period_quote` si la mercuriale active admet des promotions (le port
+  `PayerLiveMercurialeReader` de Q1 rend aussi le mode).
+- **QD10 — Les dates tombent au début d'une période** : la prise d'effet
+  d'un avenant, la fin d'une mercuriale (`close`) et la correction de sa
+  fenêtre (`correctWindow`) doivent tomber **au début d'une période de
+  facturation du payeur** (minuit, heure de Paris, du premier jour). Port
+  `PayerPeriodStarts` déclaré par `pricing`, implémenté par `accounting`
+  (le calendrier de l'entité, `InvoicingCalendar.payerPeriodOf`) :
+  `isPeriodStart(payerId, instant)`. Refus nommé : « Pour un client sur
+  devis, la date doit être le début d'une période de facturation (prochaine
+  : le …) ».
+- **QD11 — L'alerte d'expiration** : un avertissement de compte
+  `mercuriale_expiring` sur le payeur sur devis dont la mercuriale active
+  finit (`validTo`) dans 30 jours ou moins, sans mercuriale suivante qui
+  prenne le relais. Constante nommée, horloge du `Clock`, recette des
+  avertissements (Q6).
+- **L'expiration atteinte** est déjà tenue par Q2 : sans mercuriale active,
+  le payeur ne peut rien commander, et le refus le dit.
+
+**Non tranché, à dire** : un payeur sur devis dont la mercuriale active
+admet déjà des promotions au moment où Q7 est déployé (aucun en production
+aujourd'hui, le mode n'étant choisissable que depuis Q5).
+
+### Contradiction de Q7 (`vitruve`, 2026-11-24) — Q7 suspendu, deux décisions de Hugo
+
+> 🟥 **Q7 n'est pas bâti.** Trois bloquants, dont un qui touche **Q2, déjà
+> bâti** (B2). Deux points demandent une décision de Hugo avant toute
+> reprise de la conception.
+
+| Objection                                                                                                                                                                                                                                                                                                                                                                                    | Sort proposé                                                                                                                                                                                                              |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **B1** `close` ne prend pas de date : il clôt maintenant et archive tout de suite (`close-company-mercuriale.handler.ts:40`, `mercuriale-closing.ts:21`)                                                                                                                                                                                                                                     | Retirer `close` de QD10 ; une fin programmée passe par `correctWindow` (`validTo`), seule à contraindre.                                                                                                                  |
+| **B2** Le prix se résout sur le compte **qui tarifie** (`followed-pricing-account.reader.ts:20`), le périmètre (Q2) et le devis (Q4) sur le **payeur** ; les aspects « facturation » et « tarif » se suivent séparément : un site facturé au principal sur devis mais tarifé sur sa propre mercuriale échappe aux règles, et « ne plus suivre le tarif » change ses prix en cours de période | **Décision 1 (Hugo)** : `on_period_quote` impose que chaque site facturé au payeur **suive aussi son tarif** — refus au geste dans les deux ordres (passer en devis ; cesser de suivre le tarif). Corrige aussi Q2 et Q4. |
+| **B3** Le passage à `on_period_quote` ne juge que la mercuriale active ; un avenant futur à promotions, un avenant posé en milieu de période ou une mercuriale suivante programmée passent                                                                                                                                                                                                   | Au passage, juger **toutes les mercuriales non finies** et leurs avenants vivants (`prisma-unended-mercuriales.reader.ts`) : politique et dates.                                                                          |
+| **S1** Gestes oubliés : `pose` (ses dates), la fin d'un avenant, le report de ligne (`carryOver`, `validFrom = now`) ; aucune suspension n'existe                                                                                                                                                                                                                                            | Les lister un par un ; le report de ligne est **exempté** (il détache un article sans changer son prix), à confirmer.                                                                                                     |
+| **S2** La promesse « aucun prix ne bouge » dépasse les promotions : les règles qui s'empilent sur la mercuriale (étage `geste`) et le plancher passent au travers (`resolve-price.ts:48`, `:176`)                                                                                                                                                                                            | **Décision 2 (Hugo)** : borner la promesse aux promotions, ou refuser aussi, pour ce payeur, les règles qui s'empilent et un plancher qui relève son prix.                                                                |
+| **S3** `payerPeriodOf` prend une clôture, pas un instant ; le calendrier est celui d'une entité ; un changement de rythme rend une date « hors période » sans la rejuger                                                                                                                                                                                                                     | Port avec l'entité nommée, sur `closesFor` ; refuser le changement de rythme d'un payeur sur devis qui porte une mercuriale non finie.                                                                                    |
+| **S4** `pricing ↔ accounting` deviendrait cyclique                                                                                                                                                                                                                                                                                                                                           | Déclarer le port dans le sens établi (`accounting` déclare, `pricing` implémente), ou passer par `account`.                                                                                                               |
+| **S5** Copier la recette de Q6 ferait lire `company_mercuriale` par `account`                                                                                                                                                                                                                                                                                                                | Un lecteur nommé publié par `pricing`. (Q6 lit `period_quote` depuis `account` : même défaut, à corriger avec Q7.)                                                                                                        |
+| Mineurs                                                                                                                                                                                                                                                                                                                                                                                      | Le brouillon ne fixe aucun prix (la pose le couvre) ; « relais » = une suivante qui commence exactement à `validTo` ; une mercuriale suspendue n'est pas active.                                                          |
 
 ### Non vérifié
 
