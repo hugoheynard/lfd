@@ -1,6 +1,6 @@
 # Plan — les clients publics (armée, écoles, mairies) et Chorus Pro
 
-> 🟨 **Plan v2** (2026-11-18). **P1a ✅ bâti** (`f4f10fb25`, § 6 bis), **P1b ✅ bâti** (2026-11-18, § 6 ter), **P2 ✅ bâti** (2026-11-18, § 6 quater, limites écrites), **P3 ✅ bâti** (2026-11-18, § 6 quinquies) ; P4 attend le choix de la plateforme agréée. Contredit par `vitruve` le
+> 🟨 **Plan v2** (2026-11-18). **P1a ✅ bâti** (`f4f10fb25`, § 6 bis), **P1b ✅ bâti** (2026-11-18, § 6 ter), **P2 ✅ bâti** (2026-11-18, § 6 quater, limites écrites), **P3 ✅ bâti** (2026-11-18, § 6 quinquies), **P2 ter ✅ bâti** (2026-11-24, § 6 octies) ; P2 bis en plan, P2 quater suspendu (§ 6 nonies) ; P4 attend le choix de la plateforme agréée. Contredit par `vitruve` le
 > 2026-11-18 : 4 bloquants et 7 sérieux, tous intégrés (§ 10).
 
 # Partie 1 — En simple
@@ -944,6 +944,10 @@ autre SIRET ouvre un autre principal.
 
 ### Conception de P2 ter (v2, 2026-11-23, après contradiction)
 
+> ✅ **Bâti** le 2026-11-23 et le 2026-11-24 : le back (`f52bd9cb6`), le front
+> (`e063c6415`), et la nature du payeur servie à la fiche staff (ci-dessous,
+> « Ce qui a été tranché en bâtissant »). Non déployé.
+
 **Le principe : préremplir à l'écran, ne rien décider à la place de celui
 qui commande.** La règle de passation (`budgetCommitmentFor`), la correction
 d'engagement et les révisions ne changent pas : la commande porte ce qui a
@@ -960,8 +964,8 @@ sous-compte de l'unité, ou un compte public seul) :
   `recorded_by_staff_id`, `_name`, `_role`, inscrites au registre de
   `lint:rgpd-staff`). `CHECK` : `commitment_number = ''` ⇔
   `commitment_ends_on IS NULL` — un engagement a toujours une fin.
-- Value object `ChorusService` (formes de `BudgetCommitment`, 1 à 50
-  caractères imprimables).
+- Value object `ChorusService`, aux formes de `BudgetCommitment` : un numéro
+  de 1 à 50 caractères imprimables, un code service de 0 à 100.
 - **Le geste** `PUT /admin/companies/:id/chorus-service`, `@Idempotent` (pose
   la fiche entière). Le handler résout le payeur **actuel** de la société
   (elle-même, ou le principal dont elle suit la facturation) et refuse si ce
@@ -1003,6 +1007,26 @@ la fiche Chorus du payeur, comme aujourd'hui.
 **Non vérifié** : la date que Chorus juge pour la validité d'un engagement
 (commande, livraison ou facture). La livraison a été retenue parce que c'est
 la date que porte le bon (« date de livraison : 31.12.2026 »).
+
+### Ce qui a été tranché en bâtissant (2026-11-24)
+
+- **Les longueurs** : celles de l'engagement d'une commande
+  (`BudgetCommitment`), pour qu'une fiche posée soit toujours une déclaration
+  acceptable — numéro ≤ 50, code service ≤ 100. L'écran n'a pas de plafond :
+  le refus du serveur s'affiche tel quel.
+- **Une société pas encore active** peut recevoir sa fiche : le bon de
+  commande arrive souvent à l'ouverture du compte, et la fiche ne fait que
+  préremplir. Ni le geste ni la carte n'exigent l'activation.
+- **Où la carte s'offre** : la fiche staff sert
+  `chorusServicePayerIsPublic` — le payeur d'aujourd'hui (le principal dont
+  la société suit la facturation, sinon elle-même) est public, la règle même
+  du geste. La carte s'affiche là, et partout où une fiche est déjà posée
+  (pour rester lisible après un changement de payeur). Elle vit sous
+  l'identité, **sites compris** : l'unité sous le SIRET de son principal est
+  précisément un site.
+- **Sans date de livraison choisie**, rien n'est proposé ni affiché : on ne
+  juge pas un engagement contre une journée inconnue.
+- **Une saisie n'est jamais remplacée** par la proposition, même effacée.
 
 ### Questions et non vérifié
 
@@ -1246,7 +1270,7 @@ Au dépôt, Chorus Pro demande un **cadre** :
 | **P2** ✅        | D4, D5 : engagement sur la commande et ses révisions, clé de clôture à trois termes, BT-13 et référence acheteur ; champ dans le panier                                                        | P1, mapping Chorus vérifié, inventaire des lecteurs de la clé |
 | **P3** ✅        | D6, D7, D8 : journal de transmission, échéance au dépôt, `ManualChorusDeposit`, file « À déposer »                                                                                             | P2                                                            |
 | **P2 bis**       | Devis de période : engagement reçu après la clôture, facture émise ensuite, mercuriale exigée (§ 6 sexies)                                                                                     | P3, réponses de Hugo                                          |
-| **P2 ter**       | Un SIRET de facturation, plusieurs services : code service et engagement en cours par sous-compte (§ 6 octies)                                                                                 | P2, réponses de Hugo                                          |
+| **P2 ter** ✅    | Un SIRET de facturation, plusieurs services : code service et engagement en cours par sous-compte (§ 6 octies)                                                                                 | P2, réponses de Hugo                                          |
 | **P2 quater** 🟥 | Suspendu (question légale, § 6 nonies). La régie sur le sous-compte, au compte : circuit choisi par commande, facture de période régie hors Chorus, payée par lien carte rattaché (§ 6 nonies) | question légale, I0 → I2 (`payment`), avis du cabinet         |
 | **P4**           | Adaptateur de la plateforme agréée (qui envoie à Chorus un format qu'il accepte), lecture de l'annuaire Chorus (exigences relues)                                                              | Q4 de [`plan-zero-faille.md`](plan-zero-faille.md)            |
 
