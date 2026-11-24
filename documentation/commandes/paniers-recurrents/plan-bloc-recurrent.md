@@ -4,26 +4,33 @@
 > 2026-11-24 (« la meilleure architecture possible pour ce sujet »). Il porte
 > une migration de **données vivantes** et touche l'argent : contredit une
 > première fois par `vitruve` le même jour (4 bloquants, 7 sérieux, tous
-> intégrés, § 10). Décisions de Hugo du même jour au § 9 (Q-B5 reste
-> ouverte). Le SQL de B1 reste à écrire et à faire contredire avant
+> intégrés, § 10). Toutes les questions sont tranchées par Hugo le même
+> jour (§ 9). Le SQL de B1 reste à écrire et à faire contredire avant
 > tout bâti (§ 8). Il reprend la forme des lots R1 à R4 du
 > [planificateur](plan-planificateur.md), dont les décisions (§ 0, § 5 bis,
 > § 8) restent vraies. Les questions sont au § 9.
 
-## 0. L'état réel (vérifié le 2026-11-24)
+## 0. L'état réel (vérifié le 2026-11-24, base de production lue par Hugo)
 
-R1, R2 et R3 du planificateur sont **sur `main`, donc en production**
-(`5844fd16e`, `5ab93f773`, `9766608dc`, poussés à 15 h 57). En production
-existent donc : le statut `cancelled`, le registre
-`subscription_occurrence_runs`, `subscriptions.armed_from`,
-`subscriptions.requested_window` et la passation d'une échéance (une
-commande du bus, **sans route** : rien ne l'appelle encore). R4 — le balayage
-et son cron — n'est **pas** sur `main` (`015b6260d`) : aucune échéance n'a
-donc été passée en production, le registre y est vide, sauf passage manuel.
+- **R1 et R2 sont en production** : leur code a été déployé avec
+  `645e1d7bf`, et la migration du registre
+  (`20261123140000_le_registre_des_echeances`) est appliquée depuis le
+  2026-11-23.
+- **R3 est sur `main` mais pas déployé** : les cinq déploiements de
+  `9766608dc` ont échoué, la CI étant rouge (une e2e de rejeu qui créait un
+  panier sans créneau, et les durées e2e d'une suite neuve). La migration du
+  créneau n'est pas appliquée en production. Le correctif est commité sur
+  `dev` (`4dcd49e0a`), pas encore poussé.
+- **R4 n'est sur aucune branche distante** (`015b6260d`).
+- **La production ne contient aucune donnée de panier** (Q-B5) : zéro
+  panier, zéro ligne, zéro dérogation, zéro commande issue d'un panier. Le
+  registre n'a jamais été écrit, aucun balayage n'ayant tourné.
 
-Conséquence : ce plan déplace des données de production. Il suit l'ordre de
-la production en service — étendre, basculer, resserrer — sauf décision
-contraire de Hugo (Q-B4).
+Conséquence : la reprise n'a **rien à recopier**. Le déménagement se fait
+en un seul déploiement (Q-B4) : les tables neuves se créent dans le schéma
+`recurring`, les anciennes tables `public.subscription*` se retirent dans la
+même migration — vides, elles ne détruisent rien —, et le SQL n'a ni
+correspondance d'états ni collision à traiter.
 
 ## 1. En deux mots
 
@@ -356,9 +363,9 @@ ferait passer des échéances sur la forme qu'on remplace.
   ✅ B1a, B1b et B5 se fondent en un seul déploiement : les tables
   déménagent, le code bascule et les anciennes tables sont retirées
   ensemble (§ 8, à réécrire avec le SQL).
-- **Q-B5 — La production** : ⏳ **ouvert.** Le compte des paniers, des
-  dérogations et des lignes du registre en production, par une requête que
-  Hugo lance, avant le déploiement.
+- **Q-B5 — La production** : **vide.** ✅ Compté par Hugo le 2026-11-24 :
+  aucun panier, aucune ligne, aucune dérogation, aucune commande issue d'un
+  panier (§ 0).
 - **Q-B6 — Les paniers déjà ouverts** : **dérogation datée.** ✅ Ils sont
   servis, et la reprise l'inscrit comme telle (« ouvert avant les CGV au
   panier »), sans fabriquer d'acceptation.
