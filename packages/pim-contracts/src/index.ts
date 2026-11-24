@@ -319,8 +319,13 @@ export type {
   ProductHistoryPageView,
 } from "./product-history.js";
 
-export { OPERATION_AUDIENCES, operationAudienceSchema } from "./operation.js";
-export type { OperationAudience } from "./operation.js";
+export {
+  CATALOGUE_AUDIENCES,
+  catalogueAudienceSchema,
+  OPERATION_AUDIENCES,
+  operationAudienceSchema,
+} from "./operation.js";
+export type { CatalogueAudience, OperationAudience } from "./operation.js";
 
 export {
   applyIngredientAllergenPropagationPayloadSchema,

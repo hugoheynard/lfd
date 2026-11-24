@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import type { OperationAudience } from '@lfd/pim-contracts';
+import type { CatalogueAudience } from '@lfd/pim-contracts';
 import { FoldListboxComponent } from 'fold-ng';
 
 import { NotifyService } from '../../../../../notify.service';
@@ -30,7 +30,7 @@ export class CategoryAudienceForm {
   protected readonly busy = signal(false);
   protected readonly options = FAMILY_AUDIENCE_OPTIONS;
 
-  protected async onChange(audience: OperationAudience): Promise<void> {
+  protected async onChange(audience: CatalogueAudience): Promise<void> {
     const id = this.store.id();
     const previous = this.store.audience();
     if (id === null || audience === previous) {

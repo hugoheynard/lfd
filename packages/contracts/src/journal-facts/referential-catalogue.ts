@@ -21,7 +21,7 @@ import {
   subjectLabel,
   type JournalFactFamily,
 } from "./fact.js";
-import { audience } from "./referential-operations.js";
+import { catalogueAudience } from "./referential-operations.js";
 
 /**
  * **Le référentiel — les fiches, leurs déclinaisons, les familles et les
@@ -472,7 +472,7 @@ export const REFERENTIAL_CATALOGUE_FACTS = {
    * famille (lot 1 de `plan-catalogue-synchronise-par-audience.md`).
    */
   "product.audience_changed": fact(
-    payload({ subjectLabel: subjectLabel(), audience: fromTo(audience().nullable()) }),
+    payload({ subjectLabel: subjectLabel(), audience: fromTo(catalogueAudience().nullable()) }),
   ),
   /**
    * La fiche montre chaque déclinaison en vignette au rayon (`to: true`), ou
@@ -662,7 +662,7 @@ export const REFERENTIAL_CATALOGUE_FACTS = {
   ),
   /** À qui la famille vend — ses fiches en héritent, sauf dérogation. */
   "product_category.audience_changed": fact(
-    payload({ subjectLabel: subjectLabel(), audience: fromTo(audience()) }),
+    payload({ subjectLabel: subjectLabel(), audience: fromTo(catalogueAudience()) }),
   ),
   "product_category.vat_changed": fact(vatChanged(), [vatByContextV1(), vatChangedLotB()]),
   "product_category.editorial_saved": labelled(categoryEditorial),

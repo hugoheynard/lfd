@@ -43,6 +43,14 @@ const OPERATION_AUDIENCES = ["pro", "public", "both"] as const;
  */
 export const audience = () => z.enum(OPERATION_AUDIENCES);
 
+/**
+ * L'audience d'une famille ou d'une fiche : les clientèles, plus `resupply`
+ * — l'article se commande seulement en réassort des boutiques. Une opération
+ * ne vise jamais le réassort : elle garde `audience()`. Recopiée de
+ * `@lfd/pim-contracts` (`CATALOGUE_AUDIENCES`) pour la même raison.
+ */
+export const catalogueAudience = () => z.enum([...OPERATION_AUDIENCES, "resupply"]);
+
 /** L'image : l'URL de la médiathèque et son texte alternatif. */
 const image = () => payload({ url: z.string(), alt: z.string() });
 

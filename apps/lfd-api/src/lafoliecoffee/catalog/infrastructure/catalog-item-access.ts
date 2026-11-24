@@ -57,6 +57,19 @@ export interface AccessRow {
   readonly reservations: readonly { readonly companyId: string }[];
 }
 
+/** Ce que `servedTo` et `servedToResupply` lisent d'une ligne du miroir. */
+export function servableItemOf(row: AccessRow): ServableItem {
+  return {
+    audience: catalogAudienceOf(row.audience),
+    isHidden: row.override?.isHidden ?? false,
+    isHiddenPublic: row.override?.isHiddenPublic ?? false,
+    publicReviewPending: row.publicReviewPending,
+    proReviewPending: row.proReviewPending,
+    isReserved: row._count.reservations > 0,
+    isCustomRecipe: row.customRecipe,
+  };
+}
+
 /** Le verdict du lecteur, et l'étiquette quand l'article est rendu. */
 export interface ItemAccess {
   readonly verdict: "served" | "locked" | "absent";
@@ -77,15 +90,7 @@ export function accessOf(
   viewer: CatalogViewer,
   familyPath: readonly string[],
 ): ItemAccess {
-  const item: ServableItem = {
-    audience: catalogAudienceOf(row.audience),
-    isHidden: row.override?.isHidden ?? false,
-    isHiddenPublic: row.override?.isHiddenPublic ?? false,
-    publicReviewPending: row.publicReviewPending,
-    proReviewPending: row.proReviewPending,
-    isReserved: row._count.reservations > 0,
-    isCustomRecipe: row.customRecipe,
-  };
+  const item = servableItemOf(row);
   const reservation: ItemReservation = {
     heldBy: row.reservations.map((entry) => entry.companyId),
     visibility: reservedVisibilityOf(row.override?.reservedVisibility),

@@ -13,7 +13,7 @@ import type {
   VariantNutritionView,
   VariantView,
   LocalizedText,
-  OperationAudience,
+  CatalogueAudience,
   SetVariantMinQuantitiesPayload,
   SetProductAudiencePayload,
 } from '@lfd/pim-contracts';
@@ -665,7 +665,7 @@ export class ProductHttpApi {
    * **À qui la fiche vend** — `null` la rend à sa famille. Une écriture à part,
    * journalisée par le serveur (`product.audience_changed`), hors des sections.
    */
-  async setAudience(id: string, audience: OperationAudience | null): Promise<void> {
+  async setAudience(id: string, audience: CatalogueAudience | null): Promise<void> {
     const payload: SetProductAudiencePayload = { audience };
     await this.put(`products/${id}/audience`, payload);
   }

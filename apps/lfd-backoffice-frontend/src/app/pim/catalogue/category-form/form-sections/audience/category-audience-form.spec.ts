@@ -1,6 +1,6 @@
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import type { OperationAudience } from '@lfd/pim-contracts';
+import type { CatalogueAudience } from '@lfd/pim-contracts';
 import { describe, expect, it } from 'vitest';
 
 import { NotifyService } from '../../../../../notify.service';
@@ -8,8 +8,8 @@ import { CategoryHttpApi } from '../../../category-http-api';
 import { CategoryFormStore } from '../../category-form-store';
 import { CategoryAudienceForm } from './category-audience-form';
 
-function setup(write: (id: string, value: OperationAudience) => Promise<void>) {
-  const audience = signal<OperationAudience | null>('both');
+function setup(write: (id: string, value: CatalogueAudience) => Promise<void>) {
+  const audience = signal<CatalogueAudience | null>('both');
   const said: string[] = [];
   TestBed.configureTestingModule({
     providers: [
@@ -32,11 +32,16 @@ function setup(write: (id: string, value: OperationAudience) => Promise<void>) {
 describe('CategoryAudienceForm — le sélecteur d’audience de la famille', () => {
   it('offre les trois audiences, sans héritage : une famille n’hérite de rien', () => {
     const { form } = setup(async () => undefined);
-    expect(form['options'].map((option) => option.label)).toEqual(['Pros', 'Public', 'Les deux']);
+    expect(form['options'].map((option) => option.label)).toEqual([
+      'Pros',
+      'Public',
+      'Les deux',
+      'Réassort des boutiques seulement',
+    ]);
   });
 
   it('écrit tout de suite sur la famille ouverte', async () => {
-    const sent: [string, OperationAudience][] = [];
+    const sent: [string, CatalogueAudience][] = [];
     const { form, audience, said } = setup(async (id, value) => {
       sent.push([id, value]);
     });
@@ -47,7 +52,7 @@ describe('CategoryAudienceForm — le sélecteur d’audience de la famille', ()
   });
 
   it('n’écrit rien quand on rechoisit la même', async () => {
-    const sent: OperationAudience[] = [];
+    const sent: CatalogueAudience[] = [];
     const { form } = setup(async (_id, value) => {
       sent.push(value);
     });

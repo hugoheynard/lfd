@@ -83,6 +83,7 @@
   "test/catalog-min-quantities.e2e-spec.ts": 5789,
   "test/catalog-pro-variants.e2e-spec.ts": 6356,
   "test/catalog-public-review.e2e-spec.ts": 6693,
+  "test/catalog-resupply-audience.e2e-spec.ts": 10927,
   "test/catalog-sale-unit.e2e-spec.ts": 4590,
   "test/catalog-screen.e2e-spec.ts": 3794,
   "test/catalog-unknown-family.e2e-spec.ts": 4710,

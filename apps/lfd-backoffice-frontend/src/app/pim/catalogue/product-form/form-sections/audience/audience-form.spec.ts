@@ -1,6 +1,6 @@
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import type { OperationAudience } from '@lfd/pim-contracts';
+import type { CatalogueAudience } from '@lfd/pim-contracts';
 import { describe, expect, it } from 'vitest';
 
 import { NotifyService } from '../../../../../notify.service';
@@ -9,11 +9,11 @@ import { ProductFormStore } from '../../product-form-store';
 import { AudienceForm } from './audience-form';
 
 function setup(
-  write: (id: string, value: OperationAudience | null) => Promise<void>,
-  initial: OperationAudience | null = null,
+  write: (id: string, value: CatalogueAudience | null) => Promise<void>,
+  initial: CatalogueAudience | null = null,
 ) {
-  const audience = signal<OperationAudience | null>(initial);
-  const familyAudience = signal<OperationAudience | null>('pro');
+  const audience = signal<CatalogueAudience | null>(initial);
+  const familyAudience = signal<CatalogueAudience | null>('pro');
   const said: string[] = [];
   TestBed.configureTestingModule({
     providers: [
@@ -37,13 +37,14 @@ function setup(
 }
 
 describe('AudienceForm — le sélecteur d’audience de la fiche', () => {
-  it('nomme ce dont la fiche hérite, puis les trois audiences', () => {
+  it('nomme ce dont la fiche hérite, puis les quatre audiences', () => {
     const { form, familyAudience } = setup(async () => undefined);
     expect(form['options']().map((option) => option.label)).toEqual([
       'Hérite de la famille (Pros)',
       'Pros',
       'Public',
       'Les deux',
+      'Réassort des boutiques seulement',
     ]);
     familyAudience.set('both');
     expect(form['options']()[0]?.label).toBe('Hérite de la famille (Les deux)');
@@ -55,7 +56,7 @@ describe('AudienceForm — le sélecteur d’audience de la fiche', () => {
   });
 
   it('écrit une dérogation tout de suite', async () => {
-    const sent: [string, OperationAudience | null][] = [];
+    const sent: [string, CatalogueAudience | null][] = [];
     const { form, audience, said } = setup(async (id, value) => {
       sent.push([id, value]);
     });
@@ -66,7 +67,7 @@ describe('AudienceForm — le sélecteur d’audience de la fiche', () => {
   });
 
   it('rend la fiche à sa famille en envoyant `null`', async () => {
-    const sent: (OperationAudience | null)[] = [];
+    const sent: (CatalogueAudience | null)[] = [];
     const { form, audience } = setup(async (_id, value) => {
       sent.push(value);
     }, 'both');

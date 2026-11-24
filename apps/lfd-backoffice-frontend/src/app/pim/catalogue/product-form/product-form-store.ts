@@ -16,7 +16,7 @@ import {
   writeLocalized,
   type Locale,
   type LocalizedText,
-  type OperationAudience,
+  type CatalogueAudience,
   type ProductLineageView,
   type ProductReadinessView,
   type ProductSaleUnitUsageView,
@@ -705,7 +705,7 @@ export class ProductFormStore {
    * À qui la fiche vend quand elle déroge à sa famille ; `null` = elle hérite.
    * Une écriture à part (`PUT …/audience`), hors des sections.
    */
-  readonly audience = signal<OperationAudience | null>(null);
+  readonly audience = signal<CatalogueAudience | null>(null);
   /**
    * Le refus d'ACTIVER, rangé à part de `error` : il porte une liste par
    * déclinaison, que le rail montre sous le bouton qui l'a provoqué.
@@ -1002,7 +1002,7 @@ export class ProductFormStore {
   );
 
   /** L'audience de la famille — ce dont la fiche hérite. `null` tant qu'elle n'est pas chargée. */
-  readonly familyAudience = computed<OperationAudience | null>(
+  readonly familyAudience = computed<CatalogueAudience | null>(
     () => this.selectedCategory()?.audience ?? null,
   );
 

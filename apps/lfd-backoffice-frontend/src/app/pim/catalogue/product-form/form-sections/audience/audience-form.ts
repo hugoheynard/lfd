@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import type { OperationAudience } from '@lfd/pim-contracts';
+import type { CatalogueAudience } from '@lfd/pim-contracts';
 import { FoldListboxComponent } from 'fold-ng';
 
 import { NotifyService } from '../../../../../notify.service';
@@ -41,7 +41,7 @@ export class AudienceForm {
   );
 
   protected async onChange(choice: ProductAudienceChoice): Promise<void> {
-    const next: OperationAudience | null = choice === INHERIT ? null : choice;
+    const next: CatalogueAudience | null = choice === INHERIT ? null : choice;
     const previous = this.store.audience();
     if (next === previous) {
       return;

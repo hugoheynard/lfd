@@ -13,6 +13,8 @@ import { FLAT_LINEAGE, lineageFrom, type Lineage } from "./catalog-family-lineag
 import { timeCatalogueRead } from "./catalogue-read-timing.js";
 import { type ItemRow, itemInclude, servedItem } from "./prisma-catalog.reader.js";
 import { STILL_SOLD } from "./sellable-filter.js";
+import { servableItemOf } from "./catalog-item-access.js";
+import { servedToResupply } from "../domain/served-to.js";
 
 /** Les deux clientèles : un article vendable l'est à au moins l'une. */
 const AUDIENCE_VIEWERS = [staffViewer("pro"), staffViewer("public")] as const;
@@ -37,7 +39,8 @@ const AUDIENCE_VIEWERS = [staffViewer("pro"), staffViewer("public")] as const;
  * déclinaison paraît au rayon (`isShownAsTile`, la jumelle de
  * `soldUnderShopSkus`) et `servedItem` la sert à au moins une clientèle —
  * masquages, réservations, taux et prix compris ; un article retiré ne l'est
- * jamais.
+ * jamais. Un article réservé au réassort des boutiques (`resupply`) est
+ * vendable aussi : il se commande, même si aucun acheteur ne le voit.
  *
  * La famille passe par la lignée puis `familyView`, comme celle de
  * `listByShopSkus` : sans la lignée, une sous-catégorie se rangerait sous
@@ -113,7 +116,8 @@ function articleOf(row: ArticleRow, lineage: Lineage): ProductionArticle {
     sellable:
       row.withdrawnAt === null &&
       isShownAsTile(row) &&
-      AUDIENCE_VIEWERS.some((viewer) => servedItem(row, viewer, lineage) !== null),
+      (AUDIENCE_VIEWERS.some((viewer) => servedItem(row, viewer, lineage) !== null) ||
+        servedToResupply(servableItemOf(row))),
   };
 }
 

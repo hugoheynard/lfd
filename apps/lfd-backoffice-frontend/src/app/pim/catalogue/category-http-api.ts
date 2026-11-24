@@ -6,7 +6,7 @@ import type {
   CategoryMediaView,
   CategoryView,
   LocalizedText,
-  OperationAudience,
+  CatalogueAudience,
   SetCategoryAudiencePayload,
 } from '@lfd/pim-contracts';
 import { firstValueFrom } from 'rxjs';
@@ -124,7 +124,7 @@ export class CategoryHttpApi {
   }
 
   /** À qui la famille vend — ses fiches en héritent, sauf dérogation. */
-  setAudience(id: string, audience: OperationAudience): Promise<void> {
+  setAudience(id: string, audience: CatalogueAudience): Promise<void> {
     const payload: SetCategoryAudiencePayload = { audience };
     return this.put(`categories/${id}/audience`, payload);
   }

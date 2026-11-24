@@ -28,6 +28,17 @@ describe("variantGaps", () => {
     expect(variantGaps(COMPLETE, ALL, RULES, "both")).toEqual([]);
   });
 
+  it("n'exige aucun prix d'un article de réassort, mais toujours ses taux", () => {
+    const unpriced = { ...COMPLETE, priceCents: null, proPriceMillicents: null };
+
+    expect(variantGaps(unpriced, ALL, RULES, "resupply")).toEqual([]);
+    expect(variantGaps(unpriced, {}, RULES, "resupply")).toEqual([
+      "vat:b2b",
+      "vat:takeaway",
+      "vat:eatIn",
+    ]);
+  });
+
   it("nomme tout ce qui manque, dans l'ordre de l'écran", () => {
     expect(variantGaps({ ...COMPLETE, priceCents: null }, {}, RULES, "public")).toEqual([
       "price",

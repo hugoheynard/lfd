@@ -122,7 +122,7 @@ model CatalogCategory {
   /// fait. Écrite par le seul fait famille ; remise à `NULL` à la restauration.
   withdrawnAt DateTime? @map("withdrawn_at")
 
-  /// À qui la famille vend (`pro`, `public`, `both`), telle que son fait le
+  /// À qui la famille vend (`pro`, `public`, `both`, `resupply`), telle que son fait le
   /// dit (lot 2b). `NULL` = jamais reçue par un fait.
   audience String?
 
@@ -427,7 +427,7 @@ model CatalogItem {
   /// Plan-evenements-durables §7 quater, #12 (2026-10-10).
   visualsGestureId String? @map("visuals_gesture_id")
 
-  /// À qui l'article se vend (`pro`, `public`, `both`), posé par le fait de sa
+  /// À qui l'article se vend (`pro`, `public`, `both`, `resupply`), posé par le fait de sa
   /// fiche (lot 2a). `NULL` = jamais reçu par un fait, lu `both` — ce que fait
   /// tout article avant l'audience. Lu par `servedTo`, et lui seul.
   audience String?

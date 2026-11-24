@@ -3,7 +3,7 @@ import { z } from "zod";
 import { localizedTextSchema, optionalLocalizedTextSchema } from "./localized.js";
 import { setMediaPayloadSchema, type AttachedMediaView } from "./attached-media.js";
 import type { LocalizedText } from "./shared.js";
-import { operationAudienceSchema, type OperationAudience } from "./operation.js";
+import { catalogueAudienceSchema, type CatalogueAudience } from "./operation.js";
 
 /**
  * Contrat de fil des **familles** (catégories). Payloads validés côté backend,
@@ -48,7 +48,7 @@ export type SetCategoryVatPayload = z.infer<typeof setCategoryVatPayloadSchema>;
  * une famille et une opération s'adressent aux mêmes clientèles.
  */
 export const setCategoryAudiencePayloadSchema = z.strictObject({
-  audience: operationAudienceSchema,
+  audience: catalogueAudienceSchema,
 });
 export type SetCategoryAudiencePayload = z.infer<typeof setCategoryAudiencePayloadSchema>;
 
@@ -117,7 +117,7 @@ export interface CategoryView {
   /** Les taux visés, par clé de contexte. Clé absente = non réglé. */
   readonly vatByContext: Readonly<Record<string, string>>;
   /** À qui la famille vend — ses fiches en héritent, sauf dérogation. */
-  readonly audience: OperationAudience;
+  readonly audience: CatalogueAudience;
   /**
    * Combien de fiches **actives** cette famille porte.
    *

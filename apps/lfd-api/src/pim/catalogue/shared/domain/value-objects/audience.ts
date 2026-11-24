@@ -1,24 +1,22 @@
-import { OPERATION_AUDIENCES, type OperationAudience } from "@lfd/pim-contracts";
+import { CATALOGUE_AUDIENCES, type CatalogueAudience } from "@lfd/pim-contracts";
 
 import { InvalidAudienceError } from "../errors/audience-errors.js";
 
 /**
- * **À qui l'on vend** : professionnels, particuliers, ou les deux (C2 du plan
- * `plan-catalogue-synchronise-par-audience.md`).
- *
- * Le type est celui des opérations datées, et ce n'est pas un hasard : une
- * fiche et une opération s'adressent aux mêmes clientèles, et deux listes
- * finiraient par ne plus dire la même chose.
+ * **À qui l'on vend** : professionnels, particuliers, les deux (C2 du plan
+ * `plan-catalogue-synchronise-par-audience.md`) — ou personne : `resupply`,
+ * l'article se commande seulement en réassort des boutiques
+ * (`plan-articles-de-reassort.md`).
  */
-export type Audience = OperationAudience;
+export type Audience = CatalogueAudience;
 
 /**
  * Valide une clientèle reçue — d'une requête ou d'une ligne relue.
  *
- * @throws {InvalidAudienceError} la valeur n'est pas l'une des trois.
+ * @throws {InvalidAudienceError} la valeur n'est pas l'une des quatre.
  */
 export function audience(raw: string): Audience {
-  const found = OPERATION_AUDIENCES.find((candidate) => candidate === raw);
+  const found = CATALOGUE_AUDIENCES.find((candidate) => candidate === raw);
   if (found === undefined) {
     throw new InvalidAudienceError(raw);
   }
@@ -39,10 +37,17 @@ export function effectiveAudience(
   return productAudience ?? categoryAudience;
 }
 
+/** Une clientèle à qui l'on vend, une seule : ni `both`, ni le réassort. */
+export type BuyerAudience = Exclude<Audience, "both" | "resupply">;
+
 /**
- * Les clientèles qu'une audience **sert**, une par une — `both` en sert deux.
- * C'est la liste à juger pour savoir si chacune peut être facturée.
+ * Les clientèles qu'une audience **sert**, une par une — `both` en sert deux,
+ * `resupply` aucune. C'est la liste à juger pour savoir si chacune peut être
+ * facturée : un article de réassort n'a aucun prix à exiger.
  */
-export function servedAudiences(value: Audience): readonly Exclude<Audience, "both">[] {
-  return value === "both" ? ["pro", "public"] : [value];
+export function servedAudiences(value: Audience): readonly BuyerAudience[] {
+  if (value === "both") {
+    return ["pro", "public"];
+  }
+  return value === "resupply" ? [] : [value];
 }

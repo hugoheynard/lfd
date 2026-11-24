@@ -4,7 +4,7 @@ import {
   syncSaleUnitSchema,
   syncVariantSchema,
 } from "@lfd/catalog-sync";
-import { operationAudienceSchema } from "@lfd/pim-contracts";
+import { catalogueAudienceSchema } from "@lfd/pim-contracts";
 import { z } from "zod";
 
 import type { DurableEvent, DurableFact } from "../../../../platform/outbox/durable-event.js";
@@ -32,7 +32,7 @@ const payloadSchema = z.object({
   seq: z.number().int().positive(),
   emittedAt: z.string().datetime({ offset: true }),
   status: z.enum(["inactive", "active", "archived"]),
-  audience: operationAudienceSchema,
+  audience: catalogueAudienceSchema,
   // Lot 3 : absent d'un fait émis avant lui, lu `null` — « on ne sait pas ».
   audienceInherited: z.boolean().nullable().default(null),
   // Lot des langues (2026-10-18) : les traductions sont absentes d'un fait

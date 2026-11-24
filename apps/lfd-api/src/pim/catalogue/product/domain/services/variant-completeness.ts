@@ -1,7 +1,11 @@
 import { ROOT_CONTEXT_KEY } from "../../../../reference/sales-contexts/domain/value-objects/bootstrap-contexts.js";
 import type { CategoryVatPercents } from "../../../shared/domain/value-objects/vat-percents.js";
 import type { VariantSnapshot } from "../entities/variant.js";
-import { servedAudiences, type Audience } from "../../../shared/domain/value-objects/audience.js";
+import {
+  servedAudiences,
+  type Audience,
+  type BuyerAudience,
+} from "../../../shared/domain/value-objects/audience.js";
 
 /** Ce qui manque à une déclinaison pour se vendre — des clés, que l'écran traduit. */
 export const PRICE_GAP = "price";
@@ -67,8 +71,8 @@ export function requiredContexts(rules: CompletenessRules): string[] {
   return [...new Set([ROOT_CONTEXT_KEY, ...rules.activeContextKeys])];
 }
 
-/** Une clientèle servie une par une — `both` n'en est pas une. */
-export type ServedAudience = Exclude<Audience, "both">;
+/** Une clientèle servie une par une — ni `both`, ni le réassort. */
+export type ServedAudience = BuyerAudience;
 
 /**
  * **Les audiences visées par la fiche qui n'ont pas leur prix** — vide quand

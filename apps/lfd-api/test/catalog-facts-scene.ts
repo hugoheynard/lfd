@@ -71,7 +71,7 @@ export async function aDraftFiche(staff: Staff, name: string): Promise<Fiche> {
 export async function anActiveFiche(
   staff: Staff,
   name: string,
-  audience: "pro" | "public" | "both" | null = null,
+  audience: "pro" | "public" | "both" | "resupply" | null = null,
   allergens: readonly string[] | null = [],
 ): Promise<Fiche> {
   return activateFiche(staff, await aDraftFiche(staff, name), audience, allergens);
@@ -81,7 +81,7 @@ export async function anActiveFiche(
 export async function activateFiche(
   staff: Staff,
   fiche: Fiche,
-  audience: "pro" | "public" | "both" | null = null,
+  audience: "pro" | "public" | "both" | "resupply" | null = null,
   allergens: readonly string[] | null = [],
 ): Promise<Fiche> {
   const detail = await detailOf(staff, fiche.id);

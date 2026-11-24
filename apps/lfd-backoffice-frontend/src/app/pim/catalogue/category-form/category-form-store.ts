@@ -1,6 +1,6 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 
-import type { CategoryMediaView, LocalizedText, OperationAudience } from '@lfd/pim-contracts';
+import type { CategoryMediaView, LocalizedText, CatalogueAudience } from '@lfd/pim-contracts';
 
 import { localizedField } from '../../../shared/lang-switch/localized-field';
 import { NotifyService } from '../../../notify.service';
@@ -66,7 +66,7 @@ export class CategoryFormStore implements SectionEditing {
    * À qui la famille vend — une écriture à part (`PUT …/audience`), hors des
    * sections. `null` tant que la famille n'est pas chargée.
    */
-  readonly audience = signal<OperationAudience | null>(null);
+  readonly audience = signal<CatalogueAudience | null>(null);
 
   /** Les quatre textes, et la langue qu'on rédige. */
   readonly editorial = editorialDraft();

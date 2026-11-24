@@ -20,7 +20,7 @@
  */
 import type {
   LocalizedText,
-  OperationAudience,
+  CatalogueAudience,
   ProductComplianceFinding,
   SaleUnit,
   VariantMinQuantities,
@@ -223,7 +223,7 @@ export interface Product {
    */
   variantsAsTiles: boolean;
   /** À qui la fiche vend quand elle déroge à sa famille ; `null` = elle hérite. */
-  audience: OperationAudience | null;
+  audience: CatalogueAudience | null;
   /** Pilote l'URL publique — jamais changé après création (SEO). */
   slug?: LocalizedText;
   /** Prix de vente TTC, en euros. */
@@ -272,7 +272,7 @@ export interface Category {
    */
   activeProductCount: number;
   /** À qui la famille vend — ses fiches en héritent, sauf dérogation. */
-  audience: OperationAudience;
+  audience: CatalogueAudience;
 }
 
 /**

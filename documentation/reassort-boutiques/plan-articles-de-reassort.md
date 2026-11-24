@@ -1,6 +1,7 @@
 # Plan — les articles de réassort seulement
 
-> **Plan**, ouvert le 2026-11-24. Lot A bâti le même jour ; B et C restent. Décision de Hugo du même jour : **une
+> **Plan**, ouvert le 2026-11-24. Lots A, B et C bâtis le même jour. Suite
+> décidée par Hugo le même jour : l'audience **par déclinaison** (§ 6). Décision de Hugo du même jour : **une
 > audience « réassort » dédiée**, plutôt qu'un drapeau « hors vitrine » sur un
 > article public. Entrée du dossier : [`README.md`](README.md).
 
@@ -99,8 +100,11 @@ du staff, pour une défense que le typage donne déjà.
   famille (`withinFamilies`), ou à la fin.
 - Le contrat staff `CatalogItemAudience` gagne `resupply` (le back-office
   l'affiche « Réassort des boutiques ») ; `ShopItemAudience` ne bouge pas.
-- Aucune migration : `catalog_items.audience` et `catalog_categories.audience`
-  n'ont pas de `CHECK` (vérifié le 2026-11-24 dans les migrations).
+- ⚠️ Ce lot affirmait « aucun `CHECK` sur le miroir » : c'était faux. Les
+  migrations `20261015200100` et `20261015400000` en posent trois
+  (`catalog_items`, `catalog_entries`, `catalog_categories`), que la recherche
+  du lot A n'a pas trouvés. L'e2e du lot B l'a vu : la livraison du fait a été
+  **refusée par la base**, sans rien servir. Ils sont élargis au lot B.
 - Tests : `served-to.spec.ts`, `catalog-resupply-catalogue.spec.ts`.
 
 ⚠️ Vu en bâtissant, à reprendre au lot B : le fournil marque `sellable` un
@@ -109,29 +113,34 @@ un article `resupply` y sera dit « non vendable ». Il se fabrique quand même
 (le fournil range des lignes déjà commandées) ; seul l'indicateur de la page
 Postes est en cause.
 
-### B — le référentiel ouvre `resupply`
+### B — le référentiel ouvre `resupply` ✅ bâti le 2026-11-24
 
-- `sellable` du fournil : compter aussi `servedToResupply` (cf. lot A).
+- `@lfd/pim-contracts` : `CATALOGUE_AUDIENCES` (= `OPERATION_AUDIENCES` +
+  `resupply`), `CatalogueAudience`, `catalogueAudienceSchema` ; les routes
+  d'audience de la fiche et de la famille, leurs vues et les faits du canal
+  (`catalog-product-changed.fact.ts`, `catalog-category-changed.fact.ts`) les
+  emploient. Une opération commerciale garde `OPERATION_AUDIENCES`.
+- `Audience` du référentiel = `CatalogueAudience` ; `servedAudiences("resupply")`
+  rend `[]` : la complétude n'exige aucun prix, seulement les taux.
+- Faits du journal (`packages/contracts`, `catalogueAudience()`) :
+  `product.audience_changed` et `product_category.audience_changed`.
+- Migrations additives : `20261124140000_l_audience_du_reassort` (les deux
+  `CHECK` du référentiel) et `20261124140100_l_audience_du_reassort_au_commerce`
+  (les trois du miroir).
+- La page Postes du fournil compte un article `resupply` comme vendable
+  (`catalog-production-articles.reader.ts`, par `servedToResupply`).
+- e2e `apps/lfd-api/test/catalog-resupply-audience.e2e-spec.ts` : la fiche (ou sa famille)
+  traverse le fil, n'attend aucune validation, est absente de la vitrine et du
+  catalogue pro, et présente au réassort.
 
-- **Séparer** `Audience` (fiche, famille) d'`OperationAudience` : une opération
-  datée ne vise pas le réassort. Liste propre aux fiches dans
-  `@lfd/pim-contracts`, sur-ensemble de celle des opérations.
-- Migration additive : `product_audience_check` et `category_audience_check`
-  admettent `resupply`.
-- Le contrat du fait de fiche et du fait de famille (`packages/contracts`)
-  admet `resupply`.
-- `servedAudiences` (juge « chaque clientèle servie peut-elle être
-  facturée ? ») rend une liste vide pour `resupply` : aucun prix n'est exigé.
-- e2e : une fiche `resupply` traverse le fil, n'apparaît ni au rayon public ni
-  au catalogue pro, n'est pas commandable (`isOrderable`), et apparaît au
-  réassort du comptoir.
+### C — l'écran de la fiche et de la famille ✅ bâti le 2026-11-24
 
-### C — l'écran de la fiche et de la famille
-
-- Le sélecteur d'audience du back-office (référentiel) gagne « Réassort des
-  boutiques seulement », avec une phrase qui dit ce que ça fait (ni en ligne,
-  ni aux pros).
-- La liste des articles du référentiel montre la pastille.
+- Le sélecteur d'audience du référentiel propose « Réassort des boutiques
+  seulement » (`pim/catalogue/audience/audience-options.ts`), pour la fiche
+  comme pour la famille ; le catalogue publié l'affiche « Réassort des
+  boutiques ».
+- Non vérifié à l'exécution : les specs du back-office ne compilaient pas ce
+  jour-là (chantier « heure d'arrivée du réassort » en cours dans l'arbre).
 
 ## 5. Points ouverts — tranchés au bâti, écrits ici
 
@@ -145,3 +154,11 @@ Postes est en cause.
 - **`vitruve`** : ce plan ne touche ni à l'argent, ni à une migration de
   données (deux CHECK élargis), ni au mur tenant. Pas de contradicteur ; les
   affirmations du § 2 ont été ouvertes.
+
+## 6. Suite : l'audience par déclinaison (décidée, pas conçue)
+
+Hugo, le 2026-11-24 : le cookie des formules doit pouvoir être une
+**déclinaison** du cookie vendu, pas une fiche à part. Aujourd'hui l'audience
+vit sur la fiche et sur la famille (`pim.product.audience`,
+`pim.category.audience`) ; `ProductVariant` n'en porte pas, et le fait de fiche
+envoie une seule audience pour toutes ses déclinaisons. Plan à écrire.

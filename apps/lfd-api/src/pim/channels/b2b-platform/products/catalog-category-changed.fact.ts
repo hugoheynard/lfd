@@ -1,5 +1,5 @@
 import { syncCategorySchema } from "@lfd/catalog-sync";
-import { operationAudienceSchema } from "@lfd/pim-contracts";
+import { catalogueAudienceSchema } from "@lfd/pim-contracts";
 import { z } from "zod";
 
 import type { DurableEvent, DurableFact } from "../../../../platform/outbox/durable-event.js";
@@ -18,7 +18,7 @@ export const PIM_CATALOG_CATEGORY_CHANGED = "pim.catalog_category_changed";
  * valident par les mêmes règles, et ne peuvent pas diverger.
  */
 export const catalogFamilyFactSchema = syncCategorySchema.extend({
-  audience: operationAudienceSchema,
+  audience: catalogueAudienceSchema,
   archived: z.boolean(),
   // Lot des langues (2026-10-18) : absent d'un fait émis avant lui, lu `null`.
   nameTranslations: catalogTranslationsSchema,

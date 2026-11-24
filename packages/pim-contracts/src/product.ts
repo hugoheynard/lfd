@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { operationAudienceSchema, type OperationAudience } from "./operation.js";
+import { catalogueAudienceSchema, type CatalogueAudience } from "./operation.js";
 
 import { localizedTextSchema, optionalLocalizedTextSchema } from "./localized.js";
 import {
@@ -408,9 +408,9 @@ export interface ProductView {
    * La clientèle **propre** à la fiche ; `null` = elle suit sa famille. La
    * dérogation seule, comme les canaux — l'effective est à côté.
    */
-  readonly audience: OperationAudience | null;
+  readonly audience: CatalogueAudience | null;
   /** À qui la fiche vend réellement : la sienne, sinon celle de sa famille. */
-  readonly effectiveAudience: OperationAudience;
+  readonly effectiveAudience: CatalogueAudience;
   /** Vrai quand l'audience effective vient de la famille. */
   readonly audienceInherited: boolean;
 }
@@ -659,7 +659,7 @@ export type SetVariantCustomRecipePayload = z.infer<typeof setVariantCustomRecip
  * avec `null` (`PUT /pim/catalogue/products/:id/audience`).
  */
 export const setProductAudiencePayloadSchema = z.strictObject({
-  audience: operationAudienceSchema.nullable(),
+  audience: catalogueAudienceSchema.nullable(),
 });
 export type SetProductAudiencePayload = z.infer<typeof setProductAudiencePayloadSchema>;
 

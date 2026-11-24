@@ -89,7 +89,8 @@ model Product {
   customRecipe Boolean @default(false) @map("custom_recipe")
 
   /// **À qui la fiche vend, quand elle ne suit pas sa famille** — `pro` |
-  /// `public` | `both`, ou `NULL` : elle hérite de `category.audience` (C2 du
+  /// `public` | `both` | `resupply` (à personne : réassort des boutiques
+  /// seulement), ou `NULL` : elle hérite de `category.audience` (C2 du
   /// plan `plan-catalogue-synchronise-par-audience.md`). `CHECK` en base.
   audience String?
 
