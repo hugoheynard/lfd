@@ -311,8 +311,12 @@ juridiction. Une seule valeur pour tous rend une erreur S3 opaque au premier
 dépôt.
 
 🔴 **`R2_CUSTOMERS_EU_ENDPOINT` est donc OBLIGATOIRE**, et sa valeur est celle de
-`R2_KBIS_ENDPOINT` — même compte, même juridiction. `R2_PRODUCTION_ENDPOINT`,
-lui, peut être omis : le repli sur `R2_ENDPOINT` est correct.
+`R2_KBIS_ENDPOINT` — même compte, même juridiction. 🔴 **`R2_PRODUCTION_ENDPOINT`
+l'est aussi**, avec la valeur de `R2_MEDIA_ENDPOINT` (sans juridiction) : le
+repli sur `R2_ENDPOINT`, qui est européen, fait refuser chaque dépôt du bucket
+`lfc-production` (« AccessDenied », constaté le 2026-11-24 au premier tirage du
+dossier provisoire). Posée ce jour-là. Une variable posée ne prend effet qu'avec
+une image neuve : un déploiement sur un commit neuf.
 
 🔴 **Les deux buckets EU sont ceux qui portent de la donnée de personnes** : les
 pièces d'identité d'une entreprise, et les bons de commande — nom, adresse, et ce
