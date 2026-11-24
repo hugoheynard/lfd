@@ -41,10 +41,10 @@ beforeEach(async () => {
 });
 
 /** Télécharge le dossier et rend son texte, page par page. */
-async function dossierPages(): Promise<readonly string[]> {
+async function dossierPages(query = ""): Promise<readonly string[]> {
   const response = await ctx
     .asSub(STAFF)
-    .get(ROUTE)
+    .get(`${ROUTE}${query}`)
     .buffer()
     .parse((res, callback) => {
       const chunks: Buffer[] = [];
@@ -136,6 +136,40 @@ describe("GET admin/production/batch/:date/dossier.pdf", () => {
 
     const response = await ctx.asSub(STAFF).get(ROUTE).expect(409);
     expect(jsonBody<{ message: string }>(response).message).toContain("n'est pas arrêtée");
+  });
+});
+
+describe("GET admin/production/batch/:date/dossier.pdf?parts=…&orders=… — un extrait du dossier figé", () => {
+  it("ne tire que les fiches de commande, sans ranger l'extrait à la place du dossier", async () => {
+    await place(ctx, issued, [{ sku: CROISSANT, quantity: 12 }]);
+    await closePlan(ctx);
+
+    const extract = await dossierPages("?parts=orders");
+    expect(extract.length).toBeGreaterThan(0);
+    expect(extract.every((page) => !page.includes("Dossier de production du"))).toBe(true);
+    expect(orderSheetPage(extract)).not.toBe("");
+
+    const whole = await dossierPages();
+    expect(whole[0]).toContain("Dossier de production du");
+    expect(whole.length).toBeGreaterThan(extract.length);
+  });
+
+  it("refuse (400) une partie inconnue, en nommant le paramètre", async () => {
+    await place(ctx, issued, [{ sku: CROISSANT, quantity: 12 }]);
+    await closePlan(ctx);
+    await ctx.asSub(STAFF).get(`${ROUTE}?parts=menu`).expect(400);
+  });
+
+  it("refuse (400) une commande que la journée figée ne porte pas", async () => {
+    await place(ctx, issued, [{ sku: CROISSANT, quantity: 12 }]);
+    await closePlan(ctx);
+    const response = await ctx.asSub(STAFF).get(`${ROUTE}?orders=ord_inconnue`).expect(400);
+    expect(jsonBody<{ message: string }>(response).message).toContain("ord_inconnue");
+  });
+
+  it("refuse (409) un extrait d'une journée qui n'est pas arrêtée", async () => {
+    await place(ctx, issued, [{ sku: CROISSANT, quantity: 12 }]);
+    await ctx.asSub(STAFF).get(`${ROUTE}?parts=orders`).expect(409);
   });
 });
 

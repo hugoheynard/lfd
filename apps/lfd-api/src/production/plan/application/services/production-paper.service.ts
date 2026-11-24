@@ -27,6 +27,13 @@ import { DossierDeadlinesReading } from "./dossier-deadlines-reading.service.js"
 import { GroupingSourceReading } from "../../../workstations/index.js";
 import { countPaperRowsOf } from "../../../shared/print/index.js";
 import { dayDossierPdfKey, renderDayDossierPdf } from "../../domain/services/day-dossier-pdf.js";
+import {
+  type DossierSelection,
+  WHOLE_DOSSIER,
+  isWholeDossier,
+  selectedOrders,
+  selectionNotice,
+} from "../../domain/services/day-dossier-selection.js";
 import type { PaperDraft, PaperSlot } from "../../../shared/print/index.js";
 
 type ClosedSnapshot = ProductionDaySnapshot & { readonly closedAt: Date };
@@ -140,10 +147,21 @@ export class ProductionPaperRenderer {
    * le tirage suivant le refera avec ses rayons. Idem sans BL, sans tranches,
    * et en mode prod sans postes.
    *
+   * Une **sélection** (`selection`) tire des parties, des rayons ou des
+   * commandes du même dossier figé ; les commandes se filtrent avant le
+   * montage, si bien que la couverture et les totaux comptent la sélection —
+   * et l'en-tête le dit. Un tirage partiel n'est jamais archivable.
+   *
    * @throws {ProductionDayNotClosedError} la journée n'est pas arrêtée.
+   * @throws {DossierSelectionUnknownError} la sélection nomme une commande ou
+   * un rayon que le dossier ne porte pas.
    */
-  async dossierOf(day: ProductionDay): Promise<PaperDraft> {
-    const snapshot = closedSnapshotOf(day);
+  async dossierOf(
+    day: ProductionDay,
+    selection: DossierSelection = WHOLE_DOSSIER,
+  ): Promise<PaperDraft> {
+    const whole = closedSnapshotOf(day);
+    const snapshot = { ...whole, orders: selectedOrders(whole.orders, selection) };
     const resupplies = snapshot.resupplies ?? [];
     const inputs = await this.dossierInputsOf(snapshot);
     const dossier = dayDossierFrom(
@@ -172,8 +190,10 @@ export class ProductionPaperRenderer {
         deliveryNotes: inputs.deliveryNotes ?? new Map(),
       },
       calendar,
+      { selection, notice: selectionNotice(snapshot.orders.length, whole.orders.length) },
     );
-    return { bytes, archivable: this.archivable(snapshot.serviceDay, inputs) };
+    const archivable = isWholeDossier(selection) && this.archivable(snapshot.serviceDay, inputs);
+    return { bytes, archivable };
   }
 
   /**

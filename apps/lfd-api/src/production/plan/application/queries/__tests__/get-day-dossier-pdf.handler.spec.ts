@@ -30,6 +30,8 @@ import { OrderSheetPaper, ProductionPaperArchive } from "../../../../shared/prin
 import { ProductionPaperRenderer } from "../../services/production-paper.service.js";
 import { GetDayDossierPdfHandler } from "../get-day-dossier-pdf.handler.js";
 import { GetDayDossierPdfQuery } from "../get-day-dossier-pdf.query.js";
+import { WHOLE_DOSSIER } from "../../../domain/services/day-dossier-selection.js";
+import { DossierSelectionUnknownError } from "../../../domain/errors/dossier-selection-errors.js";
 import { GroupingSourceReading } from "../../../../workstations/index.js";
 import {
   article,
@@ -209,5 +211,43 @@ describe("GetDayDossierPdfHandler", () => {
     const paper = await handler.execute(new GetDayDossierPdfQuery(DAY));
     expect(pdfPages(paper.bytes).join("")).not.toContain("BON DE LIVRAISON");
     expect(store.objects.size).toBe(0);
+  });
+
+  it("tire une sélection du dossier figé sans la ranger, et sans relire l'archive", async () => {
+    const { handler, store } = setup(closedDay());
+    const whole = await handler.execute(new GetDayDossierPdfQuery(DAY));
+    const extract = await handler.execute(
+      new GetDayDossierPdfQuery(DAY, { ...WHOLE_DOSSIER, parts: new Set(["orders"]) }),
+    );
+    expect(extract.fileName).toBe(`dossier-du-jour-${DAY}-extrait.pdf`);
+    expect(extract.bytes.equals(whole.bytes)).toBe(false);
+    expect(pdfPages(extract.bytes)).toHaveLength(1);
+    expect([...store.objects.keys()]).toEqual([dayDossierPdfKey(DAY, null)]);
+  });
+
+  it("ne range pas un extrait tiré avant le dossier entier", async () => {
+    const { handler, store } = setup(closedDay());
+    await handler.execute(
+      new GetDayDossierPdfQuery(DAY, { ...WHOLE_DOSSIER, orders: new Set(["ord_1"]) }),
+    );
+    expect(store.objects.size).toBe(0);
+  });
+
+  it("refuse une sélection avant l'arrêt, comme le dossier entier", async () => {
+    const { handler } = setup(ProductionDay.open(ServiceDay.of(DAY)));
+    await expect(
+      handler.execute(
+        new GetDayDossierPdfQuery(DAY, { ...WHOLE_DOSSIER, parts: new Set(["cover"]) }),
+      ),
+    ).rejects.toBeInstanceOf(ProductionDayNotClosedError);
+  });
+
+  it("refuse une commande que la journée figée ne porte pas", async () => {
+    const { handler } = setup(closedDay());
+    await expect(
+      handler.execute(
+        new GetDayDossierPdfQuery(DAY, { ...WHOLE_DOSSIER, orders: new Set(["ord_9"]) }),
+      ),
+    ).rejects.toBeInstanceOf(DossierSelectionUnknownError);
   });
 });

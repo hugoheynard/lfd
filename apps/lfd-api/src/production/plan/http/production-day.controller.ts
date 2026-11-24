@@ -27,6 +27,11 @@ import { GetProductionForecastQuery } from "../application/queries/get-productio
 import { GetProductionDueThresholdsQuery } from "../../day/index.js";
 import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
+import {
+  type DossierSelectionQuery,
+  dossierSelectionOf,
+  dossierSelectionQuerySchema,
+} from "./dossier-selection.query-schema.js";
 import { type ProductionPaper, servePaper } from "../../shared/print/index.js";
 
 /**
@@ -98,16 +103,21 @@ export class ProductionDayController {
    *
    * Même surface et même garde que le compte à produire, et même refus tant
    * que la journée n'est pas arrêtée : il se lit dans ce qu'elle a figé.
+   *
+   * `?parts=&groups=&orders=` en tire une partie — réimprimer les fiches
+   * d'un rayon, ou les bons de trois commandes — sans archiver l'extrait
+   * (`dossier-selection.query-schema.ts` pour la forme).
    */
   @Get("batch/:date/dossier.pdf")
   async dossier(
     @Param("date", DAY) date: string,
+    @Query(new ZodQuery(dossierSelectionQuerySchema)) selection: DossierSelectionQuery,
     @Res({ passthrough: true }) response: Response,
   ): Promise<StreamableFile> {
     return servePaper(
       response,
       await this.queries.execute<GetDayDossierPdfQuery, ProductionPaper>(
-        new GetDayDossierPdfQuery(date),
+        new GetDayDossierPdfQuery(date, dossierSelectionOf(selection)),
       ),
     );
   }

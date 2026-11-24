@@ -2,35 +2,27 @@ import type { Buffer } from "node:buffer";
 
 import type { DeliveryNoteDrawing } from "../../../channels/commerce/planned-delivery-notes.reader.js";
 import { type PlanSigner, signedVerb, staffSigner } from "../../../day/index.js";
-import type { ProductionOrderSnapshot } from "../../../day/index.js";
+import { todayOf } from "../../../day/index.js";
 import type { DayDossier } from "./day-dossier.js";
 import type { CalendarPage } from "./day-dossier-calendar.js";
 import { drawCalendarPage } from "./day-dossier-calendar-pdf.js";
 import { drawDossierCover } from "./day-dossier-cover-pdf.js";
+import { drawOrder, lotBanner } from "./day-dossier-order-sheet-pdf.js";
 import { drawRecapGroup } from "./day-dossier-recap-pdf.js";
-import { dossierSheetHeadOf, type DossierSheetHead } from "../../../shared/print/index.js";
-import { figureFontSize, lineFigure, piecesOfLines } from "../../../shared/print/index.js";
 import { drawResupplySheet } from "./day-dossier-resupplies-pdf.js";
 import {
-  LEFT,
-  MM,
-  RIGHT,
-  ROW_GRAY,
-  WIDTH,
-  drawQr,
+  type DossierPart,
+  type DossierSelection,
+  WHOLE_DOSSIER,
+  selectedRecap,
+} from "./day-dossier-selection.js";
+import {
   parisDateTime,
-  put,
-  putCaps,
-  putRight,
   render,
-  rule,
   weekdayShortDate,
   type Doc,
 } from "../../../../platform/pdf/paper-pdf-kit.js";
-import { isMadeToOrder, MADE_TO_ORDER_MENTION } from "../../../shared/print/index.js";
-import { drawRouting } from "../../../shared/print/index.js";
 import { contentRightOf, PaperPages } from "../../../../platform/pdf/paper-pages.js";
-import { todayOf } from "../../../day/index.js";
 
 /**
  * **Le dossier du jour, en PDF** — une couverture, le récapitulatif (un rayon
@@ -47,8 +39,6 @@ import { todayOf } from "../../../day/index.js";
  * Déterministe : ses dates viennent de la clôture et du retirage, jamais de
  * l'horloge, si bien qu'un second tirage écrit les mêmes octets.
  */
-
-const SCAN_SIZE = 26 * MM;
 
 /** Les instants qui datent le papier. */
 export interface DossierStamp {
@@ -85,56 +75,129 @@ export interface DossierPrint {
   readonly deliveryNotes: ReadonlyMap<string, DeliveryNoteDrawing>;
 }
 
-/** Rend le dossier. */
+/**
+ * Ce qu'un tirage partiel prend du dossier : les parties et les rayons de la
+ * sélection — les commandes, elles, sont filtrées par l'appelant avant le
+ * montage (`selectedOrders`) —, et la mention d'en-tête qui le dit.
+ */
+export interface DossierExtract {
+  readonly selection: DossierSelection;
+  /** « sélection : 3 commandes sur 14 », `null` : toutes les commandes. */
+  readonly notice: string | null;
+}
+
+/** Le dossier entier, sans mention : le papier de l'arrêt. */
+export const WHOLE_EXTRACT: DossierExtract = { selection: WHOLE_DOSSIER, notice: null };
+
+/**
+ * Rend le dossier, ou les parties choisies. Le folio compte les pages du
+ * fichier tiré : une feuille manquante se voit toujours.
+ */
 export function renderDayDossierPdf(
   dossier: DayDossier,
   stamp: DossierStamp,
   print: DossierPrint,
   /** Le calendrier par tranche, une page paysage par catégorie — vide : aucune. */
   calendar: readonly CalendarPage[] = [],
+  extract: DossierExtract = WHOLE_EXTRACT,
 ): Promise<Buffer> {
+  const { parts } = extract.selection;
   return render(
     stamp.retakenAt ?? stamp.closedAt,
     `Dossier du jour ${stamp.serviceDay}`,
     (doc) => {
       const pages = new PaperPages(doc);
       const room = (at: number, needed: number): number => pages.room(at, needed);
-      drawDossierCover(doc, dossier, stamp.serviceDay, pages.open("Dossier de production"), room, {
-        orders: print.colors,
-        resupplies: print.resupplyColors,
-      });
-      drawRecapWithCalendars(doc, pages, dossier.recap, calendar);
-      dossier.sheets.forEach((order, index) => {
-        const rank = `bon ${String(index + 1)}/${String(dossier.sheets.length)}`;
-        const top = pages.open(`${order.reference} — Fiche de commande`);
-        drawOrder(doc, order, { top, rank, stamp, room }, print);
-        const note = print.deliveryNotes.get(order.orderId);
-        if (note !== undefined) {
-          pages.foreign(note);
-        }
-      });
-      dossier.resupplySheets.forEach((resupply, index) => {
-        const rank = `réassort ${String(index + 1)}/${String(dossier.resupplySheets.length)}`;
-        const top = pages.open("Fiche de réassort");
-        drawResupplySheet(
+      if (parts.has("cover")) {
+        drawDossierCover(
           doc,
-          resupply,
-          top,
-          lotBanner(stamp),
-          rank,
+          dossier,
+          stamp.serviceDay,
+          pages.open("Dossier de production"),
           room,
-          print.resupplyColors.get(resupply.siteId) ?? null,
+          {
+            orders: print.colors,
+            resupplies: print.resupplyColors,
+          },
         );
-      });
+      }
+      drawRecapWithCalendars(
+        doc,
+        pages,
+        selectedRecap(dossier.recap, extract.selection),
+        calendar,
+        {
+          recap: parts.has("recap"),
+          calendar: parts.has("calendar"),
+        },
+      );
+      drawOrders(doc, pages, dossier, { stamp, print, parts });
+      if (parts.has("resupplies")) {
+        drawResupplies(doc, pages, dossier, stamp, print);
+      }
+      const header = dossierHeader(stamp);
       pages.finish({
         logo: print.logo,
-        headerRight: dossierHeader(stamp),
+        headerRight: extract.notice === null ? header : `${header} · ${extract.notice}`,
         headerRightBold: true,
         footerLeft: stampLine(stamp),
       });
     },
     true,
   );
+}
+
+/** Ce que la boucle des bons lit au-delà du dossier. */
+interface OrdersPass {
+  readonly stamp: DossierStamp;
+  readonly print: DossierPrint;
+  readonly parts: ReadonlySet<DossierPart>;
+}
+
+/** Un bon par commande, chacun suivi de son BL — l'un, l'autre ou les deux. */
+function drawOrders(doc: Doc, pages: PaperPages, dossier: DayDossier, pass: OrdersPass): void {
+  const room = (at: number, needed: number): number => pages.room(at, needed);
+  dossier.sheets.forEach((order, index) => {
+    if (pass.parts.has("orders")) {
+      const rank = `bon ${String(index + 1)}/${String(dossier.sheets.length)}`;
+      const top = pages.open(`${order.reference} — Fiche de commande`);
+      drawOrder(doc, order, { top, rank, stamp: pass.stamp, room }, pass.print);
+    }
+    const note = pass.print.deliveryNotes.get(order.orderId);
+    if (pass.parts.has("deliveryNotes") && note !== undefined) {
+      pages.foreign(note);
+    }
+  });
+}
+
+/** Un bon par réassort, numérotés. */
+function drawResupplies(
+  doc: Doc,
+  pages: PaperPages,
+  dossier: DayDossier,
+  stamp: DossierStamp,
+  print: DossierPrint,
+): void {
+  const room = (at: number, needed: number): number => pages.room(at, needed);
+  dossier.resupplySheets.forEach((resupply, index) => {
+    const rank = `réassort ${String(index + 1)}/${String(dossier.resupplySheets.length)}`;
+    const top = pages.open("Fiche de réassort");
+    drawResupplySheet(
+      doc,
+      resupply,
+      top,
+      lotBanner(stamp),
+      rank,
+      room,
+      print.resupplyColors.get(resupply.siteId) ?? null,
+    );
+  });
+}
+
+/** Quelles pages d'un rayon dessiner : son total, son calendrier. */
+export interface RecapPages {
+  readonly recap: boolean;
+  readonly calendar: boolean;
 }
 
 /**
@@ -148,38 +211,19 @@ export function drawRecapWithCalendars(
   pages: PaperPages,
   recap: DayDossier["recap"],
   calendar: readonly CalendarPage[],
+  which: RecapPages = { recap: true, calendar: true },
 ): void {
   const room = (at: number, needed: number): number => pages.room(at, needed);
   const calendarOf = new Map(calendar.map((page) => [page.label, page]));
   for (const group of recap) {
-    drawRecapGroup(doc, group, pages.open(`${group.label} — total à produire`), room);
+    if (which.recap) {
+      drawRecapGroup(doc, group, pages.open(`${group.label} — total à produire`), room);
+    }
     const page = calendarOf.get(group.label);
-    if (page !== undefined && page.rows.length > 0) {
+    if (which.calendar && page !== undefined && page.rows.length > 0) {
       const top = pages.openLandscape(`${page.label} — par tranche horaire`);
       drawCalendarPage(doc, page, top, room, contentRightOf("landscape"));
     }
-  }
-}
-
-/** Où et comment dessiner un bon : son haut, son rang, le lot, la page à tourner. */
-interface SheetPlace {
-  readonly top: number;
-  readonly rank: string;
-  readonly stamp: DossierStamp;
-  readonly room: (at: number, needed: number) => number;
-}
-
-/** Le bon d'une commande, puis son QR de colisage s'il y en a un. */
-function drawOrder(
-  doc: Doc,
-  order: ProductionOrderSnapshot,
-  place: SheetPlace,
-  print: DossierPrint,
-): void {
-  const end = drawSheet(doc, order, place, print.colors.get(order.orderId) ?? null);
-  const url = print.colisageUrlOf(order.reference);
-  if (url !== "") {
-    drawScan(doc, url, order.reference, place.room(end, SCAN_SIZE + 4 * MM));
   }
 }
 
@@ -243,120 +287,6 @@ export function dayDossierPdfKey(serviceDay: string, retakenAt: Date | null): st
   return `${base}-retirage-${retakenAt.toISOString().replace(/[:.]/g, "-")}.pdf`;
 }
 
-function plural(count: number, word: string): string {
-  return `${String(count)} ${word}${count > 1 ? "s" : ""}`;
-}
-
-function drawSheet(
-  doc: Doc,
-  order: ProductionOrderSnapshot,
-  place: SheetPlace,
-  color: string | null,
-): number {
-  let y = place.top;
-  putCaps(doc, `${lotBanner(place.stamp)} · ${place.rank.toUpperCase()}`, LEFT, y);
-  const head = dossierSheetHeadOf(order);
-  y = drawHead(doc, order, head, y + 6 * MM, color);
-  rule(doc, y, 2);
-  // Un article au poids compte pour une ligne dans ce total (P6).
-  const pieces = piecesOfLines(order.lines);
-  y += 5 * MM;
-  putCaps(doc, `À PRÉPARER — ${plural(pieces, "pièce")}`, LEFT, y);
-  putCaps(doc, "FAIT", RIGHT - 8 * MM, y);
-  y += 6 * MM;
-  for (const line of order.lines) {
-    const marked = isMadeToOrder(line);
-    y = place.room(y, marked ? 14 * MM : 10 * MM);
-    put(doc, lineFigure(line), LEFT, y - 1.2 * MM, { size: figureFontSize(line, 18), bold: true });
-    put(doc, line.productName, LEFT + 18 * MM, y, { size: 13, width: WIDTH - 70 * MM });
-    putRight(doc, line.sku, RIGHT - 14 * MM, y + 1 * MM, 9);
-    if (marked) {
-      // Comme la fiche d'atelier (`plan-sur-mesure-partout.md`, M3).
-      putCaps(doc, MADE_TO_ORDER_MENTION, LEFT + 18 * MM, y + 6 * MM);
-    }
-    // La case à cocher au stylo : on coche en remplissant le bac.
-    doc
-      .save()
-      .lineWidth(0.8)
-      .rect(RIGHT - 6 * MM, y - 0.5 * MM, 5 * MM, 5 * MM)
-      .stroke()
-      .restore();
-    y += marked ? 10.4 * MM : 6.4 * MM;
-    rule(doc, y, 0.6, ROW_GRAY);
-    y += 3 * MM;
-  }
-  return drawNote(doc, head.note, y + 4 * MM, place.room);
-}
-
-/**
- * Qui, et par où ça part (« Retrait Village · pro », derrière la pastille de
- * la commande) ; puis la référence et l'heure, et les mentions. Rend le `y`
- * du trait.
- */
-function drawHead(
-  doc: Doc,
-  order: ProductionOrderSnapshot,
-  head: DossierSheetHead,
-  top: number,
-  color: string | null,
-): number {
-  let y = top;
-  put(doc, head.title, LEFT, y, { size: 16, bold: true, width: WIDTH * 0.55 });
-  drawRouting(doc, order, color, { right: RIGHT, y: y + 1, size: 12 });
-  y += 8 * MM;
-  if (head.subtitle !== null) {
-    // La raison sociale sous l'enseigne : elle lève l'ambiguïté entre deux
-    // devantures voisines.
-    put(doc, head.subtitle, LEFT, y - 1.5 * MM, { size: 11 });
-    y += 5 * MM;
-  }
-  put(doc, order.reference, LEFT, y, { size: 12, bold: true });
-  putRight(doc, head.when, RIGHT, y, 11);
-  return drawMentions(doc, head, y + 5.5 * MM) + 2.5 * MM;
-}
-
-/** Où, puis ce que le livreur doit savoir avant de sonner — une ligne par mention. */
-function drawMentions(doc: Doc, head: DossierSheetHead, top: number): number {
-  let y = top;
-  const mentions = [...head.where, head.contact, head.signature, head.origin];
-  for (const mention of mentions) {
-    if (mention !== null) {
-      put(doc, mention, LEFT, y, { size: 11, width: WIDTH });
-      y += 5 * MM;
-    }
-  }
-  return y;
-}
-
-/** La note du client, sous les lignes — comme sur la fiche de l'écran. */
-function drawNote(
-  doc: Doc,
-  note: string | null,
-  top: number,
-  room: (at: number, needed: number) => number,
-): number {
-  if (note === null) {
-    return top;
-  }
-  const y = room(top, 16 * MM);
-  putCaps(doc, "NOTE DU CLIENT", LEFT, y);
-  put(doc, note, LEFT, y + 5 * MM, { size: 11, width: WIDTH });
-  return y + 5 * MM + doc.heightOfString(note, { width: WIDTH }) + 4 * MM;
-}
-
-/** Le QR de colisage, en bas du bon — il encode un NOM, déjà écrit en clair. */
-function drawScan(doc: Doc, url: string, reference: string, y: number): void {
-  const size = SCAN_SIZE;
-  drawQr(doc, url, LEFT, y, size);
-  put(doc, "Scanner pour signaler", LEFT + size + 6 * MM, y + 7 * MM, { size: 12, bold: true });
-  put(doc, "que la commande est prête.", LEFT + size + 6 * MM, y + 12 * MM, { size: 12 });
-  put(doc, reference, LEFT + size + 6 * MM, y + 18 * MM, { size: 10 });
-}
-
-/**
- * « LOT POUR LE MER. 7 OCT. » — le jour où la marchandise est attendue
- * (retrait ou livraison), pas celui où on la fabrique.
- */
 /**
  * L'en-tête de chaque page, en gras (Hugo, 2026-11-18) : le jour du plan —
  * celui du dernier tirage, arrêt ou retirage, à l'heure de Paris —, le jour
@@ -368,10 +298,6 @@ export function dossierHeader(
 ): string {
   const planDay = todayOf(stamp.retakenAt ?? stamp.closedAt);
   return `Plan du ${weekdayShortDate(planDay)} pour le ${weekdayShortDate(stamp.serviceDay)} · v${String(stamp.printRun)}`;
-}
-
-function lotBanner(stamp: DossierStamp): string {
-  return `LOT POUR LE ${weekdayShortDate(stamp.serviceDay).toUpperCase()}`;
 }
 
 /** Le pied : quand le tirage a été arrêté — et complété. */
