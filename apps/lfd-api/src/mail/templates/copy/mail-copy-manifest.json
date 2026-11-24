@@ -1680,6 +1680,57 @@
         "fr": "Vous n'avez rien demandé ? Ne suivez pas ce lien : cette adresse ne recevra aucune offre, et la demande s'effacera seule."
       }
     },
+    "customer.recurring-sales-terms-changed": {
+      "kicker": {
+        "variables": [],
+        "required": [],
+        "fr": "Conditions de vente"
+      },
+      "subject": {
+        "variables": [],
+        "required": [],
+        "fr": "Nos conditions générales de vente changent"
+      },
+      "title": {
+        "variables": [],
+        "required": [],
+        "fr": "Nos conditions générales de vente changent"
+      },
+      "greeting": {
+        "variables": [],
+        "required": [],
+        "fr": "Bonjour,"
+      },
+      "intro": {
+        "variables": [
+          "date"
+        ],
+        "required": [
+          "date"
+        ],
+        "fr": "Nos conditions générales de vente évoluent. La nouvelle version s'appliquera aux commandes de votre panier récurrent à partir du {date}."
+      },
+      "attachedNote": {
+        "variables": [],
+        "required": [],
+        "fr": "Vous la trouverez jointe à ce message."
+      },
+      "stopAnytime": {
+        "variables": [],
+        "required": [],
+        "fr": "Si elle ne vous convient pas, vous pouvez arrêter votre panier à tout moment, sans frais, depuis votre espace. Sans arrêt de votre part, elle s'appliquera aux commandes suivantes."
+      },
+      "cta": {
+        "variables": [],
+        "required": [],
+        "fr": "Mes paniers récurrents"
+      },
+      "footer": {
+        "variables": [],
+        "required": [],
+        "fr": "Vous recevez ce message parce que vous avez un panier récurrent chez nous."
+      }
+    },
     "customer.sub-account-activity": {
       "kicker": {
         "variables": [],

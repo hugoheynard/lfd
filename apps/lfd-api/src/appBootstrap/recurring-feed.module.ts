@@ -1,6 +1,7 @@
 import { Global, Module } from "@nestjs/common";
 
 import { AccountModule } from "../lafoliecoffee/account/account.module.js";
+import { AccountBasketBuyerContacts } from "../lafoliecoffee/account/infrastructure/account-basket-buyer-contacts.js";
 import { AccountBasketBuyerStanding } from "../lafoliecoffee/account/infrastructure/account-basket-buyer-standing.js";
 import { CatalogBasketArticles } from "../lafoliecoffee/catalog/application/catalog-basket-articles.js";
 import { CatalogModule } from "../lafoliecoffee/catalog/catalog.module.js";
@@ -11,6 +12,7 @@ import { SiteBasketPickupPoints } from "../lafoliecoffee/pickup-addresses/infras
 import { PickupAddressesModule } from "../lafoliecoffee/pickup-addresses/pickup-addresses.module.js";
 import {
   BasketArticles,
+  BasketBuyerContacts,
   BasketBuyerStanding,
   BasketPickupPoints,
   BasketSalesTerms,
@@ -21,7 +23,7 @@ import {
  * **Le fil des paniers récurrents, relié** (plan `plan-bloc-recurrent.md`,
  * § 6.1) : les ports que `recurring/channels/commerce/` déclare, branchés sur
  * leurs implémentations du commerce — la passation d'une échéance et les CGV
- * (`orders`), l'acheteur (`account`), les articles (`catalog`), les points de
+ * (`orders`), l'acheteur et son adresse (`account`), les articles (`catalog`), les points de
  * retrait (`pickup-addresses`).
  *
  * `@Global` pour la raison des autres fils : `recurring` ne peut pas importer
@@ -34,6 +36,7 @@ import {
     { provide: OccurrencePlacement, useExisting: RecurringOccurrencePlacement },
     { provide: BasketSalesTerms, useExisting: OrdersBasketSalesTerms },
     { provide: BasketBuyerStanding, useClass: AccountBasketBuyerStanding },
+    { provide: BasketBuyerContacts, useClass: AccountBasketBuyerContacts },
     { provide: BasketArticles, useClass: CatalogBasketArticles },
     { provide: BasketPickupPoints, useClass: SiteBasketPickupPoints },
   ],
@@ -41,6 +44,7 @@ import {
     OccurrencePlacement,
     BasketSalesTerms,
     BasketBuyerStanding,
+    BasketBuyerContacts,
     BasketArticles,
     BasketPickupPoints,
   ],

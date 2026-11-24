@@ -52,6 +52,14 @@ export class InMemoryBaskets extends BasketRepository {
     return Promise.resolve(visible ? basket : null);
   }
 
+  liveUnderSalesTerms(salesTermsKey: string): Promise<readonly Basket[]> {
+    return Promise.resolve(
+      [...this.rows.values()].filter(
+        (basket) => basket.salesTerms.key === salesTermsKey && basket.lifecycle !== "cancelled",
+      ),
+    );
+  }
+
   save(basket: Basket): Promise<void> {
     this.rows.set(basket.id, basket);
     this.saved.push(basket.id);

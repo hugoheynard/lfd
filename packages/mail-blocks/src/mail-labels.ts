@@ -146,6 +146,11 @@ const MAIL_LABELS: Readonly<Record<string, MailLabel>> = {
     recipient: "Le client",
     moment: "quand il coche une case d’offres avec une adresse pas encore vérifiée",
   },
+  "customer.recurring-sales-terms-changed": {
+    title: "Nouvelles conditions de vente d’un panier récurrent",
+    recipient: "L’acheteur d’un panier récurrent actif ou en pause",
+    moment: "quand le PDF des CGV de sa clientèle est déposé, 30 jours avant qu’elles s’appliquent",
+  },
   "customer.sub-account-activity": {
     title: "Commande d’un site",
     recipient: "Les membres du compte principal",

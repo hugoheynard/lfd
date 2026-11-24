@@ -31,8 +31,8 @@ function brandOf(html: string): string | null {
 const MAILS = mailKeys();
 
 describe("les déclarations de l'éditeur par blocs (S4a)", () => {
-  it("couvrent les 40 e-mails du registre", () => {
-    expect(MAILS).toHaveLength(40);
+  it("couvrent les 41 e-mails du registre", () => {
+    expect(MAILS).toHaveLength(41);
     expect(new Set(MAILS)).toEqual(new Set(Object.keys(MAIL_LAYOUTS)));
   });
 
@@ -111,11 +111,11 @@ describe("les déclarations de l'éditeur par blocs (S4a)", () => {
   // Seize depuis `customer.marketing-confirm` (C1 du plan de désinscription, 2026-11-08),
   // dix-sept depuis `customer.order-revised` (2026-11-10), dix-huit depuis
   // `staff.link-payment-received` (2026-11-22).
-  it("dix-neuf e-mails ont un bouton du modèle", () => {
+  it("vingt e-mails ont un bouton du modèle", () => {
     const withButton = MAILS.filter(
       (mail) => mailBlockDeclarationOf(mail).ctaDestination !== undefined,
     );
 
-    expect(withButton).toHaveLength(19);
+    expect(withButton).toHaveLength(20);
   });
 });

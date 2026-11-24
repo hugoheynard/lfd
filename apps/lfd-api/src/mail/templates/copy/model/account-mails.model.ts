@@ -175,6 +175,26 @@ export interface MarketingConfirmCopy {
   readonly footer: string;
 }
 
+/**
+ * **« Nos conditions de vente changent »** — l'annonce d'une nouvelle version
+ * des CGV à l'acheteur d'un panier récurrent, 30 jours avant qu'elle
+ * s'applique (plan `plan-bloc-recurrent.md`, § 7). Elle dit la date d'effet
+ * et le geste de sortie : arrêter le panier, sans frais.
+ */
+export interface RecurringSalesTermsChangedCopy {
+  /** Le sous-titre du bandeau d'en-tête, sous l'enseigne — rendu en capitales. */
+  readonly kicker: string;
+  readonly subject: string;
+  readonly title: string;
+  readonly greeting: string;
+  /** `{date}` : le jour où la nouvelle version s'applique. */
+  readonly intro: string;
+  readonly attachedNote: string;
+  readonly stopAnytime: string;
+  readonly cta: string;
+  readonly footer: string;
+}
+
 /** La famille « compte client », une section par clé du registre. */
 export interface AccountMailsCopy {
   readonly "customer.access-opened": CustomerAccessOpenedCopy;
@@ -182,6 +202,7 @@ export interface AccountMailsCopy {
   readonly "customer.login-method-linked": LoginMethodLinkedCopy;
   readonly "customer.password-reset": CustomerPasswordResetCopy;
   readonly "customer.marketing-confirm": MarketingConfirmCopy;
+  readonly "customer.recurring-sales-terms-changed": RecurringSalesTermsChangedCopy;
   readonly "customer.sub-account-activity": SubAccountActivityCopy;
   readonly "customer.sub-account-gesture": SubAccountGestureCopy;
 }

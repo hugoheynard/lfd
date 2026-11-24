@@ -32,6 +32,7 @@ export const CUSTOMER_SPECIMENS: Pick<
   | "customer.login-method-linked"
   | "customer.password-reset"
   | "customer.marketing-confirm"
+  | "customer.recurring-sales-terms-changed"
 > = {
   "customer.collection-notice": {
     family: "billing",
@@ -138,5 +139,14 @@ export const CUSTOMER_SPECIMENS: Pick<
   "customer.marketing-confirm": {
     family: "account",
     data: () => ({ confirmUrl: MARKETING_CONFIRM_URL, locale: "fr" }),
+  },
+  "customer.recurring-sales-terms-changed": {
+    family: "account",
+    data: (locale) => ({
+      effectiveOn: "2027-01-04",
+      basketsUrl: `${SPECIMEN_URL}/paniers-recurrents`,
+      document: { fileName: "cgv-professionnels-2026-12-05.pdf", pdfBase64: SPECIMEN_PDF_BASE64 },
+      locale,
+    }),
   },
 };

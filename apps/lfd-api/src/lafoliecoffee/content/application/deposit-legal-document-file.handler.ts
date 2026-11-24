@@ -9,9 +9,12 @@ import { intentSubject } from "../../../platform/intent/intent-subject.js";
 import { CREATED_ID_REPLAY, OncePerIntent } from "../../../platform/intent/once-per-intent.js";
 import { CustomerDocumentStore } from "../../../platform/storage/customer-document-store.js";
 import { Clock } from "../../../platform/time/clock.js";
+import { DurablePublisher } from "../../../platform/outbox/durable-publisher.js";
+import { SalesTermsPublishedFact } from "../../../recurring/channels/commerce/index.js";
 import { LegalDocumentFile } from "../domain/entities/legal-document-file.js";
 import { LegalDocumentFileRepository } from "../domain/legal-document-file.repository.js";
 import { LegalPdf } from "../domain/value-objects/legal-pdf.js";
+import { SalesTermsRevisionReader } from "../domain/sales-terms-revision.reader.js";
 import { DepositLegalDocumentFileCommand } from "./deposit-legal-document-file.command.js";
 
 /** Le nom stable du geste, dans le registre des intentions. */
@@ -29,6 +32,14 @@ const DEPOSIT_GESTURE = "content.deposit-legal-document-file";
  *
  * 🔴 Jamais écrasé : la clé dérive de l'identifiant neuf, et le PDF remplacé
  * n'est que daté (`supersededAt`). La base refuse tout le reste.
+ *
+ * **Le dépôt publie** (décidé par Hugo le 2026-11-25, Q-B7 du plan
+ * `commandes/paniers-recurrents/plan-bloc-recurrent.md`, § 7) : dans la
+ * transaction du dépôt, il émet `content.sales_terms_published` — la
+ * révision du texte au moment du dépôt et ce PDF figé. Tout dépôt vise un
+ * texte de CGV (`SalesTermsDocument` n'en connaît pas d'autre). Un texte
+ * jamais écrit n'a pas de révision : rien n'est publié, aucun panier n'a pu
+ * l'accepter.
  */
 @CommandHandler(DepositLegalDocumentFileCommand)
 export class DepositLegalDocumentFileHandler implements ICommandHandler<
@@ -42,6 +53,8 @@ export class DepositLegalDocumentFileHandler implements ICommandHandler<
     private readonly clock: Clock,
     private readonly uow: UnitOfWork,
     private readonly intents: OncePerIntent,
+    private readonly revisions: SalesTermsRevisionReader,
+    private readonly durable: DurablePublisher,
   ) {}
 
   /**
@@ -86,8 +99,25 @@ export class DepositLegalDocumentFileHandler implements ICommandHandler<
     await this.store.save(file.storageKey, { bytes: pdf.bytes, contentType: "application/pdf" });
     await this.uow.run(async () => {
       await this.files.deposit(file, replaced, title);
+      await this.publish(file);
       await seal(file.id);
     });
     return file.id;
+  }
+
+  /** Le fait de publication : la révision du texte, portée par ce PDF. */
+  private async publish(file: LegalDocumentFile): Promise<void> {
+    const revision = await this.revisions.revisionOf(file.document);
+    if (revision === null || revision < 1) {
+      return;
+    }
+    const fact = new SalesTermsPublishedFact(
+      file.document,
+      revision,
+      file.id,
+      file.storageKey,
+      file.downloadFileName(),
+    );
+    await this.durable.publish(fact.durableFact());
   }
 }

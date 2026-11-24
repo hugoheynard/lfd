@@ -307,11 +307,33 @@ par le rédacteur des CGV.
 
 - **À l'ouverture**, le panier enregistre la version acceptée
   (`sales_terms_key`, `_revision`, `_file_id`, comme une commande).
-- **À la publication d'une nouvelle version**, le bloc l'apprend par un fait
-  du contenu, envoie à l'acheteur de chaque panier actif l'e-mail qui porte
-  le nouveau texte et rappelle le geste « arrêter le panier » (bloc `mail`,
-  par son canal), et note sur le panier la **version à venir** et sa **date
-  d'effet** : le jour de l'envoi + 30 jours.
+- **L'acte qui publie une nouvelle version est le dépôt du PDF des CGV**
+  (Hugo, 2026-11-25, Q-B7). Une correction d'article fait monter la révision
+  du texte sans rien publier ; le dépôt du PDF d'un texte de CGV (pro ou
+  particulier) émet, dans sa transaction, le fait durable
+  `content.sales_terms_published` { `document`, `revision`, `fileId`,
+  `storageKey`, `fileName` } : la révision du texte au moment du dépôt, et
+  ce PDF figé. Un texte jamais rédigé (sans révision) ne publie rien.
+- **À la publication**, l'abonné durable du bloc
+  (`AnnounceSalesTermsToBaskets`) note sur chaque panier **actif ou en
+  pause** de ce texte la **version à venir** et sa **date d'effet** — le
+  jour de l'envoi + 30 jours —, le sauvegarde, puis demande au bloc `mail`
+  (`mail.send`) **un e-mail par acheteur** :
+  `customer.recurring-sales-terms-changed`, en français, anglais et
+  italien, qui dit la date d'effet, joint le PDF déposé par référence au
+  stockage, et rappelle le geste « arrêter le panier, sans frais, depuis
+  votre espace » (lien vers `/paniers-recurrents`). La clé de l'e-mail est
+  `<modèle>:<fichier>:<acheteur>`, sans adresse.
+- **Un dépôt qui n'apporte pas de révision plus récente n'annonce rien** :
+  `Basket.announceSalesTerms` rend faux pour une version que le panier
+  applique ou annonce déjà. Rejouer le fait, ou redéposer un PDF sans
+  corriger le texte, ne renvoie donc aucun e-mail.
+- **Le fait vit dans le canal du bloc**, `recurring/channels/commerce/`
+  (`SalesTermsPublishedFact`) : `recurring → lafoliecoffee` est interdit, et
+  `lafoliecoffee → recurring/channels/` admis. Le bloc déclare le fait qu'il
+  écoute, le contenu l'émet dans ses mots (`content.*`). L'adresse de
+  l'acheteur se lit par un port du même canal, `BasketBuyerContacts`, que
+  les comptes implémentent.
 - **Contester, c'est arrêter le panier** : le geste existant, sans frais ni
   dernière échéance imposée. Aucun traitement manuel par l'équipe.
 - **Aucune échéance n'est jamais bloquée** pour une question de CGV : il n'y
@@ -653,7 +675,8 @@ Ce que ce SQL décide, et que le code devra suivre :
 
 ## 12. L'état du bâti (2026-11-25)
 
-Bâti en deux tranches, **commité sur `dev`, non poussé** : le bloc
+Bâti en deux tranches, **commité sur `dev`, non poussé**, puis la fin du
+§ 7 (l'annonce des nouvelles CGV, non commitée au 2026-11-25) : le bloc
 `src/recurring/` (`basket/`, `occurrence/`, `channels/commerce/`), la
 migration `20261125090000_le_bloc_des_paniers_recurrents`, le canal et ses
 implémentations commerce, la passation sur l'index unique, les faits
@@ -676,15 +699,14 @@ Décidé en bâtissant :
 - La migration pose sur `recurring.basket` les trois déclencheurs du journal
   `public.company_change`, comme l'ancienne table : la fiche client, qui
   compte les paniers actifs, ne reste pas en cache périmée.
-
-**Ce qui n'est pas bâti, et pourquoi** : l'annonce d'une nouvelle version
-des CGV aux paniers et son e-mail (§ 7). Le contenu n'émet aucun fait à la
-publication, et il n'y a pas de « publication » : chaque correction d'un
-article des CGV fait monter la révision, sans texte figé. Dix corrections
-feraient dix e-mails. Le domaine est prêt (`Basket.announceSalesTerms`, la
-version à venir, sa date d'effet) ; il manque l'acte de publication — voir
-la question ci-dessous.
-
-**Question à Hugo (Q-B7)** : l'acte qui publie une nouvelle version des CGV
-est-il le **dépôt du PDF** des CGV (un fait `content.sales_terms_published`
-émis au dépôt, la version figée et jointe à l'e-mail) ?
+- **L'annonce d'une nouvelle version des CGV** (§ 7, Q-B7, décidée par
+  Hugo le 2026-11-25 : l'acte qui publie est le dépôt du PDF) : le fait
+  `content.sales_terms_published` émis au dépôt, l'abonné durable du bloc,
+  l'e-mail `customer.recurring-sales-terms-changed` (fr, en, it, PDF joint
+  par référence), les tests unitaires et l'e2e
+  `recurring-sales-terms-announcement`.
+- **La langue de l'annonce** est le français : rien ne range encore la
+  langue d'un client (`DEFAULT_MAIL_LOCALE`), comme pour la facture.
+- **La page « Mes paniers récurrents »** (`/paniers-recurrents`) est le lien
+  de l'e-mail ; elle n'est pas encore ouverte dans la boutique (`ready:
+false` dans la navigation du client).

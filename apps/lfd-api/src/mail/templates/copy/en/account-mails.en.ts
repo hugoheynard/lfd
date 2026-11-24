@@ -79,6 +79,21 @@ export const ACCOUNT_MAILS_EN: AccountMailsCopy = {
       "You did not ask for this? Do not follow this link: this address will receive " +
       "no offers, and the request will expire on its own.",
   },
+  "customer.recurring-sales-terms-changed": {
+    kicker: "Terms of sale",
+    subject: "Our general terms of sale are changing",
+    title: "Our general terms of sale are changing",
+    greeting: "Hello,",
+    intro:
+      "Our general terms of sale are changing. The new version will apply to the orders " +
+      "of your recurring basket from {date}.",
+    attachedNote: "You will find it attached to this message.",
+    stopAnytime:
+      "If it does not suit you, you can stop your basket at any time, free of charge, from " +
+      "your account. Unless you stop it, it will apply to the following orders.",
+    cta: "My recurring baskets",
+    footer: "You are receiving this message because you have a recurring basket with us.",
+  },
   "customer.sub-account-activity": {
     kicker: "Site activity",
     title: {

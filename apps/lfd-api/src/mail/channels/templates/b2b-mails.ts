@@ -6,6 +6,7 @@ import type { CustomerRequestMailData } from "../../templates/customer-request-m
 import type { DeliveryEnRouteMailData } from "../../templates/delivery-en-route-mail.js";
 import type { InvoiceIssuedMailData } from "../../templates/invoice-issued-mail.js";
 import type { PeriodQuoteMailData } from "../../templates/period-quote-mail.js";
+import type { RecurringSalesTermsChangedMailData } from "../../templates/recurring-sales-terms-changed-mail.js";
 import type { LinkPaymentReceivedMailData } from "../../templates/link-payment-received-mail.js";
 import type { MarketingConfirmMailData } from "../../templates/marketing-confirm-mail.js";
 import type { PayLinkTestMailData } from "../../templates/pay-link-test-mail.js";
@@ -433,6 +434,12 @@ export interface B2bMails {
    * un bloc métier. Cf. `marketing-confirm-mail.ts`.
    */
   "customer.marketing-confirm": MarketingConfirmMailData;
+  /**
+   * **Une nouvelle version des CGV, annoncée à l'acheteur d'un panier
+   * récurrent** 30 jours avant qu'elle s'applique, le PDF joint. Cf.
+   * `recurring-sales-terms-changed-mail.ts`.
+   */
+  "customer.recurring-sales-terms-changed": RecurringSalesTermsChangedMailData;
   /**
    * Un accès au **back-office** vient d'être ouvert. Destinataire : **le membre
    * de l'équipe**.

@@ -21,6 +21,7 @@ import { renderPeriodQuoteMail } from "./period-quote-mail.js";
 import { renderLinkPaymentReceivedMail } from "./link-payment-received-mail.js";
 import { renderMarketingConfirmMail } from "./marketing-confirm-mail.js";
 import { renderPayLinkTestMail } from "./pay-link-test-mail.js";
+import { renderRecurringSalesTermsChangedMail } from "./recurring-sales-terms-changed-mail.js";
 import { renderOrderCancelledMail } from "./order-cancelled-mail.js";
 import { orderPlacedRouteRows } from "./order-placed-route-rows.js";
 import {
@@ -553,6 +554,8 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
     },
     "customer.access-opened": (data) => renderCustomerAccessOpenedMail(data, customerMail),
     "customer.marketing-confirm": (data) => renderMarketingConfirmMail(data, customerMail),
+    "customer.recurring-sales-terms-changed": (data) =>
+      renderRecurringSalesTermsChangedMail(data, customerMail),
     "staff.invited": (data) => {
       const copy = local()["staff.invited"];
       return {

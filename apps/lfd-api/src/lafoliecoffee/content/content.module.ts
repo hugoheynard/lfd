@@ -29,6 +29,8 @@ import { LegalDocumentFilesController } from "./http/legal-document-files.contro
 import { PrismaLegalDocumentFileReader } from "./infrastructure/prisma-legal-document-file.reader.js";
 import { PrismaLegalDocumentFileRepository } from "./infrastructure/prisma-legal-document-file.repository.js";
 import { PrismaOrderSalesTermsReader } from "./infrastructure/prisma-order-sales-terms.reader.js";
+import { SalesTermsRevisionReader } from "./domain/sales-terms-revision.reader.js";
+import { PrismaSalesTermsRevisionReader } from "./infrastructure/prisma-sales-terms-revision.reader.js";
 
 /**
  * **Contenu de plateforme** — les textes de la vitrine, lus par tout le monde,
@@ -63,6 +65,9 @@ import { PrismaOrderSalesTermsReader } from "./infrastructure/prisma-order-sales
     // deux ports, l'écran dépose, la boutique télécharge.
     { provide: LegalDocumentFileRepository, useClass: PrismaLegalDocumentFileRepository },
     { provide: LegalDocumentFileReader, useClass: PrismaLegalDocumentFileReader },
+    // Le dépôt publie la version qu'il porte (`content.sales_terms_published`,
+    // Q-B7) : la révision du texte au moment du dépôt.
+    { provide: SalesTermsRevisionReader, useClass: PrismaSalesTermsRevisionReader },
     DepositLegalDocumentFileHandler,
     ListLegalDocumentFilesHandler,
     GetLegalDocumentFileHandler,

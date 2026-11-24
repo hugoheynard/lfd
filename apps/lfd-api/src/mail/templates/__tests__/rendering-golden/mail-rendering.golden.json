@@ -678,5 +678,17 @@
       "htmlSha256": "f2b4e60cda761be83c7df77007217c3f7c445ccecc6d97103ca26c7fefc5510f",
       "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
     }
+  },
+  "customer.recurring-sales-terms-changed": {
+    "fr": {
+      "subject": "Nos conditions générales de vente changent",
+      "htmlSha256": "ee9392cacd82e39d7b650bf4d0e4f7dfd9fca26cd42a3b2a7e0911965bc9f768",
+      "attachmentsSha256": "6946446dd180c9f9d03e06aefa9a34f0739ca3c737f7d4f113541da99875410a"
+    },
+    "withoutShop": {
+      "subject": "Our general terms of sale are changing",
+      "htmlSha256": "5e54ccbcc18883fde43c57313677c7cde84d09cfee99ae6d6cb6de6931b1942b",
+      "attachmentsSha256": "c986a3f2546828a1ddf6d1271d3630516b8b3170c1782ebc722d55eef8a27a84"
+    }
   }
 }

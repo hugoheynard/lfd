@@ -16,7 +16,6 @@ import {
   UnknownLegalDocumentFileError,
 } from "../../domain/errors/legal-document-file-errors.js";
 import { LegalDocumentFileReader } from "../../domain/legal-document-file.reader.js";
-import { LegalDocumentFileRepository } from "../../domain/legal-document-file.repository.js";
 import { DepositLegalDocumentFileCommand } from "../deposit-legal-document-file.command.js";
 import { DepositLegalDocumentFileHandler } from "../deposit-legal-document-file.handler.js";
 import { GetLegalDocumentFileHandler } from "../get-legal-document-file.handler.js";
@@ -26,41 +25,19 @@ import { ListLegalDocumentFilesQuery } from "../list-legal-document-files.query.
 import { randomUUID } from "node:crypto";
 import { inMemoryIntents } from "../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
 import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
+import { DurablePublisher } from "../../../../platform/outbox/durable-publisher.js";
+import { FixedSalesTermsRevisions, MemoryFiles } from "./legal-document-file-doubles.js";
+
+/** Ces cas n'éprouvent pas la publication : la boîte d'envoi ignore ce qu'on lui écrit. */
+class IgnoredDurable extends DurablePublisher {
+  publish(): Promise<void> {
+    return Promise.resolve();
+  }
+}
 
 // Comparée seulement aux dates qu'elle produit, jamais à l'horloge du mur.
 const NOW = new Date("2026-10-12T08:00:00.000Z");
 const PDF = Buffer.from("%PDF-1.7\nles CGV des juristes", "latin1");
-
-/**
- * Les dépôts en mémoire, qui jouent les DEUX ports (écriture et lecture) sur
- * le même état — et qui tiennent, comme la base, « un seul en vigueur ».
- */
-class MemoryFiles extends LegalDocumentFileRepository {
-  readonly rows: LegalDocumentFile[] = [];
-  /** Simule un dépôt concurrent qui a remplacé le PDF entre lecture et écriture. */
-  raceLost = false;
-
-  current(document: SalesTermsDocument): Promise<LegalDocumentFile | null> {
-    const found = this.rows.find((row) => row.document === document && row.supersededAt === null);
-    return Promise.resolve(found === undefined ? null : rehydrate(found));
-  }
-
-  deposit(
-    file: LegalDocumentFile,
-    replaced: LegalDocumentFile | null,
-    documentTitle: string,
-  ): Promise<void> {
-    if (this.raceLost) {
-      return Promise.reject(new LegalDocumentFileAlreadySupersededError(documentTitle));
-    }
-    if (replaced !== null) {
-      const index = this.rows.findIndex((row) => row.id === replaced.id);
-      this.rows[index] = rehydrate(replaced);
-    }
-    this.rows.push(rehydrate(file));
-    return Promise.resolve();
-  }
-}
 
 class MemoryFilesReader extends LegalDocumentFileReader {
   constructor(private readonly files: MemoryFiles) {
@@ -79,11 +56,6 @@ class MemoryFilesReader extends LegalDocumentFileReader {
     const found = this.files.rows.find((row) => row.id === fileId && row.document === document);
     return Promise.resolve(found ?? null);
   }
-}
-
-/** Une copie : ce que le port rend n'est pas l'objet que la mémoire garde. */
-function rehydrate(file: LegalDocumentFile): LegalDocumentFile {
-  return LegalDocumentFile.reconstitute(file.toState());
 }
 
 const CAMILLE: StaffAuthor = {
@@ -112,6 +84,8 @@ function scene() {
     clock,
     new DirectUnitOfWork(),
     inMemoryIntents(),
+    new FixedSalesTermsRevisions(),
+    new IgnoredDurable(),
   );
   const reader = new MemoryFilesReader(files);
   const list = new ListLegalDocumentFilesHandler(reader, new OneAuthor());

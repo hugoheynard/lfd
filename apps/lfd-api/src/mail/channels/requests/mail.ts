@@ -124,7 +124,10 @@ type OpenedByReference =
   | "customer.order-revised"
   | "customer.invoice-issued"
   | "customer.period-quote"
-  | "customer.mandate-to-sign";
+  | "customer.mandate-to-sign"
+  // Le PDF des CGV déposé, rangé sous `legal/…/<fichier>.pdf` : l'annonce d'une
+  // nouvelle version aux paniers récurrents (plan du bloc récurrent, § 7).
+  | "customer.recurring-sales-terms-changed";
 
 /**
  * Les données d'un envoi immédiat : la pièce par référence (`pdfStored`), ou

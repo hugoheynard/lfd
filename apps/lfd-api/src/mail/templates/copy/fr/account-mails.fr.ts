@@ -83,6 +83,22 @@ export const ACCOUNT_MAILS_FR: AccountMailsCopy = {
       "Vous n'avez rien demandé ? Ne suivez pas ce lien : cette adresse ne recevra " +
       "aucune offre, et la demande s'effacera seule.",
   },
+  "customer.recurring-sales-terms-changed": {
+    kicker: "Conditions de vente",
+    subject: "Nos conditions générales de vente changent",
+    title: "Nos conditions générales de vente changent",
+    greeting: "Bonjour,",
+    intro:
+      "Nos conditions générales de vente évoluent. La nouvelle version s'appliquera aux " +
+      "commandes de votre panier récurrent à partir du {date}.",
+    attachedNote: "Vous la trouverez jointe à ce message.",
+    stopAnytime:
+      "Si elle ne vous convient pas, vous pouvez arrêter votre panier à tout moment, sans " +
+      "frais, depuis votre espace. Sans arrêt de votre part, elle s'appliquera aux commandes " +
+      "suivantes.",
+    cta: "Mes paniers récurrents",
+    footer: "Vous recevez ce message parce que vous avez un panier récurrent chez nous.",
+  },
   "customer.sub-account-activity": {
     kicker: "Activité d'un site",
     title: {

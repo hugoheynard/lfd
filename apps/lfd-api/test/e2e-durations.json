@@ -589,6 +589,7 @@
   "test/recurring-occurrence-placement.e2e-spec.ts": 8000,
   "test/recurring-occurrences-sweep.e2e-spec.ts": 8000,
   "test/recurring-occurrences.e2e-spec.ts": 5000,
+  "test/recurring-sales-terms-announcement.e2e-spec.ts": 10149,
   "test/recurring-schema-constraints.e2e-spec.ts": 5000,
   "test/refund-credit-credit-note.e2e-spec.ts": 4000,
   "test/remainder-settlement.e2e-spec.ts": 6543,

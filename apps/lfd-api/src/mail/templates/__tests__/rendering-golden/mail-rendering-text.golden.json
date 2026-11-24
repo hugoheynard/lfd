@@ -438,5 +438,13 @@
     "only": {
       "textSha256": "7e4cc59ed54dfd8beecf4019e06ccf4771bb2aeeb232895b797a7010dd19d532"
     }
+  },
+  "customer.recurring-sales-terms-changed": {
+    "fr": {
+      "textSha256": "f420c5b21ce5898bf36aa1249b1b0a2e658aa07e98c2aee2cc7421ab192e8cd5"
+    },
+    "withoutShop": {
+      "textSha256": "1188e9ef8fbaaf5084e449f3cc70d833e41094d38fd08596c6d5e7c2541ac8ff"
+    }
   }
 }

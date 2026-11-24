@@ -16,6 +16,7 @@ export const PEOPLE_VALUE_CARDS: Pick<
   | "by"
   | "company"
   | "contact"
+  | "date"
   | "email"
   | "figures"
   | "firstName"
@@ -55,6 +56,12 @@ export const PEOPLE_VALUE_CARDS: Pick<
     label: "Moment de l'arrêt",
     description: "Le jour et l'heure où le plan de production a été arrêté, ou complété.",
     example: "mardi 6 octobre 2026 à 20:00",
+  },
+  date: {
+    label: "Date d'effet des nouvelles CGV",
+    description:
+      "Le jour où la nouvelle version des conditions de vente s'applique aux commandes du panier récurrent : 30 jours après l'envoi.",
+    example: "4 janvier 2027",
   },
   author: {
     label: "Auteur de la demande",

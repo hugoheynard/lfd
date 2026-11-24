@@ -18,6 +18,14 @@ export abstract class BasketRepository {
    */
   abstract load(basketId: string, buyerUserId: string): Promise<Basket | null>;
 
+  /**
+   * Les paniers **vivants** (actifs ou en pause) qui appliquent ce texte de
+   * CGV (`salesTerms`, `salesTermsPro`) : ceux à qui annoncer une nouvelle
+   * version (plan § 7). Une lecture du bloc pour lui-même, hors mur : elle
+   * ne sert à aucun client.
+   */
+  abstract liveUnderSalesTerms(salesTermsKey: string): Promise<readonly Basket[]>;
+
   /** Persiste le statut et la planification d'un panier chargé. */
   abstract save(basket: Basket, at: Date): Promise<void>;
 }

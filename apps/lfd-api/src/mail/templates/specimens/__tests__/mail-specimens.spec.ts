@@ -23,6 +23,8 @@ describe("les e-mails d'exemple de l'aperçu (C6)", () => {
       "staff.access-suspended",
       // La confirmation d'inscription (C1) ne cite personne : le lien est le bouton.
       "customer.marketing-confirm",
+      // L'annonce des nouvelles CGV ne cite personne : une date et le PDF joint.
+      "customer.recurring-sales-terms-changed",
     ];
     if (!anonymous.includes(mail)) {
       expect(`${rendered.subject}${rendered.html}`).toContain(SPECIMEN_MARK);

@@ -16,6 +16,16 @@ export { BasketBuyerStanding, type BasketCompanyMember } from "./basket-buyer-st
 export { BasketArticles, type BasketArticlesReview } from "./basket-articles.js";
 export { BasketPickupPoints } from "./basket-pickup-points.js";
 export { BasketSalesTerms, type SalesTermsInForce } from "./basket-sales-terms.js";
+export { BasketBuyerContacts } from "./basket-buyer-contacts.js";
+/**
+ * Ce que le bloc écoute (déclaré ici, émis par le contenu du commerce au
+ * dépôt du PDF des CGV, § 7) :
+ */
+export {
+  CONTENT_SALES_TERMS_PUBLISHED,
+  SalesTermsPublishedFact,
+  SalesTermsPublishedPayloadError,
+} from "./sales-terms-published.js";
 /**
  * Ce que le bloc émet (faits durables, § 6.2) : les gestes du client sur son
  * panier, et l'issue de chaque échéance. Les faits du JOURNAL gardent leurs

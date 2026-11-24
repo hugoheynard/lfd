@@ -64,6 +64,15 @@ export class PrismaBasketRepository extends BasketRepository {
     return row === null ? null : basketFromRow(row);
   }
 
+  async liveUnderSalesTerms(salesTermsKey: string): Promise<readonly Basket[]> {
+    const rows = await this.prisma.basket.findMany({
+      where: { salesTermsKey, status: { not: CANCELLED_BASKET } },
+      include: BASKET_INCLUDE,
+      orderBy: { id: "asc" },
+    });
+    return rows.map(basketFromRow);
+  }
+
   async save(basket: Basket, at: Date): Promise<void> {
     await this.prisma.basket.update({
       where: { id: basket.id },

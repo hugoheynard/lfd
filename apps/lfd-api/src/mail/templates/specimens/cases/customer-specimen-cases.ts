@@ -92,6 +92,7 @@ export const CUSTOMER_CASE_TABLES: Pick<
   | "customer.login-method-linked"
   | "customer.password-reset"
   | "customer.marketing-confirm"
+  | "customer.recurring-sales-terms-changed"
 > = {
   "customer.collection-notice": {
     cases: [
@@ -254,4 +255,5 @@ export const CUSTOMER_CASE_TABLES: Pick<
   ),
   "customer.password-reset": specimenOnly("customer.password-reset"),
   "customer.marketing-confirm": specimenOnly("customer.marketing-confirm"),
+  "customer.recurring-sales-terms-changed": specimenOnly("customer.recurring-sales-terms-changed"),
 };

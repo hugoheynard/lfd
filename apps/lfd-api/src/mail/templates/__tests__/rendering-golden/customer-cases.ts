@@ -58,6 +58,7 @@ export const CUSTOMER_CASES: Pick<
   | "customer.login-method-linked"
   | "customer.password-reset"
   | "customer.marketing-confirm"
+  | "customer.recurring-sales-terms-changed"
 > = {
   "customer.collection-notice": {
     statement: NOTICE,
@@ -223,5 +224,19 @@ export const CUSTOMER_CASES: Pick<
   "customer.marketing-confirm": {
     fr: { confirmUrl: "https://shop.test/api/lfd/mail/marketing/confirm/t", locale: "fr" },
     it: { confirmUrl: "https://shop.test/api/lfd/mail/marketing/confirm/t", locale: "it" },
+  },
+  "customer.recurring-sales-terms-changed": {
+    fr: {
+      effectiveOn: "2027-01-04",
+      basketsUrl: "https://shop.test/paniers-recurrents",
+      document: { fileName: "cgv-professionnels-2026-12-05.pdf", pdfBase64: "JVBERi0=" },
+      locale: "fr",
+    },
+    withoutShop: {
+      effectiveOn: "2027-01-04",
+      basketsUrl: "",
+      document: { fileName: "cgv-particuliers-2026-12-05.pdf", pdfBase64: "JVBERi0=" },
+      locale: "en",
+    },
   },
 };

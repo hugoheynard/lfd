@@ -1,5 +1,7 @@
 import { Global, Module } from "@nestjs/common";
 
+import { AppConfig } from "../platform/config/app-config.js";
+
 import { ListCompanyBasketsHandler } from "./basket/application/queries/list-company-baskets.handler.js";
 import { ListMyBasketsHandler } from "./basket/application/queries/list-my-baskets.handler.js";
 import { OpenBasketHandler } from "./basket/application/commands/open-basket.handler.js";
@@ -7,6 +9,8 @@ import { SetBasketStatusHandler } from "./basket/application/commands/set-basket
 import { StopBasketHandler } from "./basket/application/commands/stop-basket.handler.js";
 import { BasketFacts } from "./basket/application/services/basket-facts.js";
 import { BasketGestures } from "./basket/application/services/basket-gestures.js";
+import { AnnounceSalesTermsToBaskets } from "./basket/application/handlers/announce-sales-terms-to-baskets.handler.js";
+import { BasketMailOrigins } from "./basket/domain/ports/basket-mail-origins.js";
 import { BasketReader } from "./basket/domain/ports/basket.reader.js";
 import { BasketRepository } from "./basket/domain/ports/basket.repository.js";
 import { AdminSubscriptionsController } from "./basket/http/admin-subscriptions.controller.js";
@@ -53,6 +57,16 @@ import { PrismaOccurrenceRepository } from "./occurrence/infrastructure/prisma-o
     BasketGestures,
     BasketFacts,
     OccurrencePlanner,
+    // L'annonce d'une nouvelle version des CGV (§ 7, Q-B7) : l'abonné durable
+    // du dépôt du PDF, et l'origine de la boutique pour son lien.
+    AnnounceSalesTermsToBaskets,
+    {
+      provide: BasketMailOrigins,
+      inject: [AppConfig],
+      useFactory: (config: AppConfig): BasketMailOrigins => ({
+        clientBaseUrl: () => config.clientBaseUrl(),
+      }),
+    },
     { provide: BasketRepository, useClass: PrismaBasketRepository },
     { provide: BasketReader, useClass: PrismaBasketReader },
     { provide: OccurrenceRepository, useClass: PrismaOccurrenceRepository },

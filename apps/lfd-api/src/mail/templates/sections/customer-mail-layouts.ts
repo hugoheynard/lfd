@@ -53,6 +53,7 @@ export const CUSTOMER_MAIL_LAYOUTS: Readonly<
     | "customer.login-method-linked"
     | "customer.password-reset"
     | "customer.marketing-confirm"
+    | "customer.recurring-sales-terms-changed"
     | "customer.sub-account-activity"
     | "customer.sub-account-gesture"
   >
@@ -265,6 +266,18 @@ export const CUSTOMER_MAIL_LAYOUTS: Readonly<
     sections: [
       { id: "title", texts: texts("title") },
       { id: "body", texts: texts("intro", "validity") },
+      { id: "cta", texts: texts("cta") },
+      { id: "footer", texts: texts("footer") },
+    ],
+  },
+  "customer.recurring-sales-terms-changed": {
+    ctaDestination:
+      "la page « Mes paniers récurrents » de son espace client, d'où arrêter un panier ; absent quand l'adresse de la boutique n'est pas configurée",
+    subject: SUBJECT,
+    header: KICKER,
+    sections: [
+      { id: "title", texts: texts("title") },
+      { id: "body", texts: texts("greeting", "intro", "attachedNote", "stopAnytime") },
       { id: "cta", texts: texts("cta") },
       { id: "footer", texts: texts("footer") },
     ],

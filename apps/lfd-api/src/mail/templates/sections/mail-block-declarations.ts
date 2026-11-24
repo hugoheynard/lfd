@@ -50,6 +50,7 @@ const CHARTERS: PerMail<MailCharter> = {
   "customer.login-method-linked": "lfc",
   "customer.password-reset": "lfc",
   "customer.marketing-confirm": "lfc",
+  "customer.recurring-sales-terms-changed": "lfc",
   "staff.invited": "lfd",
   "staff.password-reset": "lfd",
   "staff.access-suspended": "lfd",
@@ -93,6 +94,7 @@ const FOLLOWS_RECIPIENT_LOCALE: ReadonlySet<keyof B2bMails> = new Set<keyof B2bM
   "customer.order-shortfall",
   "customer.order-shortfall-refunded",
   "customer.marketing-confirm",
+  "customer.recurring-sales-terms-changed",
 ]);
 
 /**
@@ -133,6 +135,9 @@ const NATURES: PerMail<MailNature> = {
   // La double confirmation d'un accord (C1) : elle répond à un geste, elle
   // ne vend rien — et elle doit partir à une adresse sans accord.
   "customer.marketing-confirm": "transactional",
+  // L'annonce d'une nouvelle version des CGV : une information due au client
+  // d'un panier récurrent, pas une offre.
+  "customer.recurring-sales-terms-changed": "transactional",
   "staff.invited": "transactional",
   "staff.password-reset": "transactional",
   "staff.access-suspended": "transactional",

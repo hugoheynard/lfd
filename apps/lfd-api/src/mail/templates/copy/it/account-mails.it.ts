@@ -79,6 +79,21 @@ export const ACCOUNT_MAILS_IT: AccountMailsCopy = {
       "Non ha chiesto nulla? Non segua questo link: questo indirizzo non riceverà " +
       "alcuna offerta, e la richiesta scadrà da sola.",
   },
+  "customer.recurring-sales-terms-changed": {
+    kicker: "Condizioni di vendita",
+    subject: "Le nostre condizioni generali di vendita cambiano",
+    title: "Le nostre condizioni generali di vendita cambiano",
+    greeting: "Buongiorno,",
+    intro:
+      "Le nostre condizioni generali di vendita cambiano. La nuova versione si applicherà " +
+      "agli ordini del suo carrello ricorrente a partire dal {date}.",
+    attachedNote: "La trova allegata a questo messaggio.",
+    stopAnytime:
+      "Se non le va bene, può interrompere il suo carrello in qualsiasi momento, senza costi, " +
+      "dal suo spazio. Senza interruzione da parte sua, si applicherà agli ordini successivi.",
+    cta: "I miei carrelli ricorrenti",
+    footer: "Riceve questo messaggio perché ha un carrello ricorrente presso di noi.",
+  },
   "customer.sub-account-activity": {
     kicker: "Attività di un punto vendita",
     title: {
