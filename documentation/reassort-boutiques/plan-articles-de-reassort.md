@@ -161,4 +161,5 @@ Hugo, le 2026-11-24 : le cookie des formules doit pouvoir être une
 **déclinaison** du cookie vendu, pas une fiche à part. Aujourd'hui l'audience
 vit sur la fiche et sur la famille (`pim.product.audience`,
 `pim.category.audience`) ; `ProductVariant` n'en porte pas, et le fait de fiche
-envoie une seule audience pour toutes ses déclinaisons. Plan à écrire.
+envoie une seule audience pour toutes ses déclinaisons. Plan :
+[`../catalogue/plan-audience-par-declinaison.md`](../catalogue/plan-audience-par-declinaison.md).
