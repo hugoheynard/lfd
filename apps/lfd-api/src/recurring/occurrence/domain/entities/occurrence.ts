@@ -123,6 +123,22 @@ export class Occurrence {
   }
 
   /**
+   * **Rétablit** l'échéance : elle revient au gabarit, sans dérogation ni
+   * note. Admis tant qu'elle n'est pas passée — une échéance sautée
+   * redevient `planned`, une échéance refusée garde son état et sera reprise
+   * au passage suivant. Rend faux quand il n'y avait rien à rétablir.
+   */
+  restore(at: Date): boolean {
+    this.ensureIn(["planned", "refused", "skipped"], "rétablir");
+    const { state, lines, note } = this.current;
+    if (state !== "skipped" && lines === null && note === "") {
+      return false;
+    }
+    this.override(null, "", at);
+    return true;
+  }
+
+  /**
    * **Saute** l'échéance : aucune commande ce jour-là. Admis depuis `planned`
    * et depuis `refused` — le client renonce au jour que la passation refusait.
    * Une échéance sautée n'a pas d'issue : la cause du refus s'efface avec elle

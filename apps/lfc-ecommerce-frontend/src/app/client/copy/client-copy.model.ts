@@ -22,6 +22,7 @@ export interface PageTitles {
   readonly proOpening: string;
   readonly orders: string;
   readonly invoices: string;
+  readonly baskets: string;
   readonly account: string;
   readonly profile: string;
   readonly loyalty: string;

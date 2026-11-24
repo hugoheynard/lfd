@@ -1975,6 +1975,8 @@ export {
   createSubscriptionPayloadSchema,
   occurrenceDateSchema,
   upsertOccurrenceOverridePayloadSchema,
+  recurringOccurrenceStateSchema,
+  recurringOccurrenceCauseSchema,
 } from "./subscription.js";
 export type {
   Recurrence,
@@ -1985,7 +1987,12 @@ export type {
   SubscriptionLineView,
   SubscriptionView,
   AdminSubscriptionRow,
-  OccurrenceOverrideView,
+  RecurringOccurrenceState,
+  RecurringOccurrenceCause,
+  SubscriptionSalesTermsView,
+  SubscriptionNextSalesTermsView,
+  RecurringOccurrenceView,
+  AdminRecurringOccurrenceView,
 } from "./subscription.js";
 
 export type {

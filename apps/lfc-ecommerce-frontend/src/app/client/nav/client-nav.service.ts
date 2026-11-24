@@ -78,7 +78,7 @@ const DESTINATIONS: readonly Destination[] = [
   { id: 'orders', route: '/mes-commandes', ready: true },
   { id: 'loyalty', route: '/ma-fidelite', ready: true, loyaltyOnly: true },
   { id: 'invoices', route: '/mes-factures', ready: true, companyOnly: true },
-  { id: 'baskets', route: '/paniers-recurrents', ready: false, companyOnly: true },
+  { id: 'baskets', route: '/paniers-recurrents', ready: true, companyOnly: true },
   { id: 'account', route: '/mon-compte', ready: true, companyOnly: true },
   { id: 'sites', route: '/mes-sites', ready: true, companyOnly: true, sitesOnly: true },
 ];

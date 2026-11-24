@@ -1,0 +1,34 @@
+<ng-template clientBanner>
+  <app-client-banner-block [title]="copy().title" [lead]="copy().lead" />
+</ng-template>
+
+<div class="page">
+  @switch (status()) {
+    @case ('loading') {
+      <fold-loading [message]="copy().loading" />
+    }
+    @case ('failed') {
+      <fold-empty-state
+        tone="alert"
+        data-baskets-failed
+        [title]="copy().loadFailedTitle"
+        [subtitle]="copy().loadFailedBody"
+      >
+        <button foldButton emphasis="solid" intent="primary" type="button" (click)="retry()">
+          {{ copy().retry }}
+        </button>
+      </fold-empty-state>
+    }
+    @default {
+      @if (baskets().length === 0) {
+        <fold-empty-state data-baskets-none [title]="copy().noneTitle" [subtitle]="copy().none">
+          <fold-icon empty-icon name="basket" />
+        </fold-empty-state>
+      } @else {
+        @for (basket of baskets(); track basket.id) {
+          <app-basket-card [basket]="basket" [today]="today()" />
+        }
+      }
+    }
+  }
+</div>

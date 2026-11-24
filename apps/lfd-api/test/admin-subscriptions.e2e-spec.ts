@@ -15,7 +15,7 @@ import { CompanyStatus, CustomerRole } from "../src/platform/database/client/cli
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { INTENT_KEY, freshIntent } from "./intent-key.js";
-import { publishSalesTerms } from "./recurring-scene.js";
+import { openBasket, publishSalesTerms } from "./recurring-scene.js";
 
 const MEMBER = "auth0|member";
 const COLLEAGUE = "auth0|colleague";
@@ -109,6 +109,41 @@ describe("GET /admin/companies/:companyId/subscriptions", () => {
       "VIE-001-1",
       "VIE-002-1",
     ]);
+  });
+
+  it("le staff voit la cause, la phrase et l'heure d'une échéance refusée", async () => {
+    const company = await createCompany(ctx.prisma, { status: CompanyStatus.active });
+    const member = await createUser(ctx.prisma, { auth0Sub: MEMBER });
+    await attachTo(ctx.prisma, member.id, company.id, CustomerRole.owner);
+    const id = await openBasket(ctx, MEMBER, company.id);
+    const [first] = await ctx.prisma.occurrence.findMany({
+      where: { basketId: id },
+      orderBy: { serviceDay: "asc" },
+      take: 1,
+    });
+    const settledAt = new Date();
+    await ctx.prisma.occurrence.update({
+      where: { id: first?.id ?? "" },
+      data: {
+        state: "refused",
+        cause: "unavailable_sku",
+        reason: "Article indisponible.",
+        settledAt,
+      },
+    });
+
+    const [row] = jsonBody<readonly AdminSubscriptionRow[]>(
+      await ctx.asSub("staff-e2e").get(`/admin/companies/${company.id}/subscriptions`).expect(200),
+    );
+
+    expect(row?.occurrences).toHaveLength(8);
+    expect(row?.occurrences[0]).toMatchObject({
+      state: "refused",
+      cause: "unavailable_sku",
+      reason: "Article indisponible.",
+      settledAt: settledAt.toISOString(),
+    });
+    expect(row?.occurrences[1]).toMatchObject({ state: "planned", cause: null, reason: null });
   });
 
   it("rend une liste vide pour un compte sans panier", async () => {

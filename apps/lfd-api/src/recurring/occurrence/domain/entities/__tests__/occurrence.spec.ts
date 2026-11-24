@@ -121,3 +121,32 @@ describe("Occurrence — le cycle du § 5", () => {
     );
   });
 });
+
+describe("Occurrence.restore", () => {
+  it("une échéance sautée redevient prévue, au gabarit et sans note", () => {
+    const occurrence = planned();
+    occurrence.skip("En vacances", AT);
+    expect(occurrence.restore(LATER)).toBe(true);
+    expect(occurrence.snapshot).toMatchObject({ state: "planned", lines: null, note: "" });
+  });
+
+  it("une échéance refusée et modifiée revient au gabarit et reste refusée", () => {
+    const occurrence = planned();
+    occurrence.override([BasketLine.create("PAN-001", 2)], "", AT);
+    occurrence.refuse("unavailable_sku", "Indisponible.", false, AT);
+    expect(occurrence.restore(LATER)).toBe(true);
+    expect(occurrence.snapshot).toMatchObject({ state: "refused", lines: null });
+  });
+
+  it("rend faux quand il n'y a rien à rétablir", () => {
+    expect(planned().restore(LATER)).toBe(false);
+  });
+
+  it.each(["placed", "missed", "cancelled"])("refuse depuis %s", (state) => {
+    const occurrence = planned();
+    if (state === "placed") occurrence.place("order_1", AT);
+    if (state === "missed") occurrence.refuse("deadline_closed", "Trop tard.", true, AT);
+    if (state === "cancelled") occurrence.cancel(AT);
+    expect(() => occurrence.restore(LATER)).toThrow(OccurrenceTransitionRefusedError);
+  });
+});

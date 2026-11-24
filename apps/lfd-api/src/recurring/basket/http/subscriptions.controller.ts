@@ -33,6 +33,7 @@ import {
 import { StopBasketCommand } from "../application/commands/stop-basket.command.js";
 import { SetBasketStatusCommand } from "../application/commands/set-basket-status.command.js";
 import { OverrideOccurrenceCommand } from "../../occurrence/application/commands/override-occurrence.command.js";
+import { RestoreOccurrenceCommand } from "../../occurrence/application/commands/restore-occurrence.command.js";
 import { ListMyBasketsQuery } from "../application/queries/list-my-baskets.query.js";
 import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 import { IntentKey } from "../../../platform/shared/http/intent-key.decorator.js";
@@ -94,6 +95,26 @@ export class SubscriptionsController {
   ): Promise<void> {
     return this.commands.execute<OverrideOccurrenceCommand, void>(
       new OverrideOccurrenceCommand(user.userId, id, date, payload),
+    );
+  }
+
+  /**
+   * Rétablit une échéance (« revenir au panier habituel ») : une échéance
+   * sautée est de nouveau à passer, une échéance modifiée reprend les lignes
+   * du gabarit. Mur = le propriétaire (sinon `404`).
+   */
+  @Delete(":id/occurrences/:date")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "rétablit une échéance : rejouée, l'échéance est déjà au gabarit et l'entité rend faux avant toute écriture ni tout fait",
+  )
+  restore(
+    @CurrentUser() user: Principal,
+    @Param("id") id: string,
+    @Param("date", new ZodParam(occurrenceDateSchema, "date")) date: string,
+  ): Promise<void> {
+    return this.commands.execute<RestoreOccurrenceCommand, void>(
+      new RestoreOccurrenceCommand(user.userId, id, date),
     );
   }
 

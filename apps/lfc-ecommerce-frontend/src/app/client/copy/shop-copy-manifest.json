@@ -5190,6 +5190,13 @@
           "variables": []
         },
         {
+          "key": "chrome.pageTitles.baskets",
+          "fr": "Mes paniers récurrents — La Folie Coffee",
+          "en": "My recurring baskets — La Folie Coffee",
+          "it": "I miei carrelli ricorrenti — La Folie Coffee",
+          "variables": []
+        },
+        {
           "key": "chrome.pageTitles.account",
           "fr": "Mon compte — La Folie Coffee",
           "en": "My account — La Folie Coffee",
@@ -12801,6 +12808,470 @@
           "fr": "Cet espace n’est pas un site rattaché à un compte principal.",
           "en": "This space is not a site attached to a main account.",
           "it": "Questo spazio non è un sito collegato a un account principale.",
+          "variables": []
+        }
+      ],
+      "unrecorded": []
+    },
+    {
+      "space": "recurringBaskets",
+      "title": "Mes paniers récurrents — les paniers et leurs prochaines commandes",
+      "source": "screens/recurring-baskets.copy.ts",
+      "journey": false,
+      "entries": [
+        {
+          "key": "recurringBaskets.title",
+          "fr": "Mes paniers récurrents",
+          "en": "My recurring baskets",
+          "it": "I miei carrelli ricorrenti",
+          "variables": []
+        },
+        {
+          "key": "recurringBaskets.lead",
+          "fr": "Vos commandes qui se répètent, et les prochaines qu’elles passeront.",
+          "en": "Your repeating orders, and the next ones they will place.",
+          "it": "I vostri ordini che si ripetono, e i prossimi che verranno passati.",
+          "variables": []
+        },
+        {
+          "key": "recurringBaskets.loading",
+          "fr": "Chargement de vos paniers…",
+          "en": "Loading your baskets…",
+          "it": "Caricamento dei vostri carrelli…",
+          "variables": []
+        },
+        {
+          "key": "recurringBaskets.loadFailedTitle",
+          "fr": "Vos paniers n’ont pas pu être chargés",
+          "en": "Your baskets could not be loaded",
+          "it": "Non è stato possibile caricare i vostri carrelli",
+          "variables": []
+        },
+        {
+          "key": "recurringBaskets.loadFailedBody",
+          "fr": "Vérifiez votre connexion, puis réessayez.",
+          "en": "Check your connection, then try again.",
+          "it": "Verificate la connessione, poi riprovate.",
+          "variables": []
+        },
+        {
+          "key": "recurringBaskets.retry",
+          "fr": "Réessayer",
+          "en": "Try again",
+          "it": "Riprova",
+          "variables": []
+        },
+        {
+          "key": "recurringBaskets.noneTitle",
+          "fr": "Aucun panier récurrent",
+          "en": "No recurring basket",
+          "it": "Nessun carrello ricorrente",
+          "variables": []
+        },
+        {
+          "key": "recurringBaskets.none",
+          "fr": "Depuis une commande passée, vous pouvez la répéter chaque semaine ou chaque mois.",
+          "en": "From a past order, you can repeat it every week or every month.",
+          "it": "Da un ordine passato, potete ripeterlo ogni settimana o ogni mese.",
+          "variables": []
+        },
+        {
+          "key": "recurringBaskets.recurrence.weekly",
+          "fr": "Chaque semaine",
+          "en": "Every week",
+          "it": "Ogni settimana",
+          "variables": []
+        },
+        {
+          "key": "recurringBaskets.recurrence.biweekly",
+          "fr": "Toutes les deux semaines",
+          "en": "Every two weeks",
+          "it": "Ogni due settimane",
+          "variables": []
+        },
+        {
+          "key": "recurringBaskets.recurrence.monthly",
+          "fr": "Chaque mois",
+          "en": "Every month",
+          "it": "Ogni mese",
+          "variables": []
+        },
+        {
+          "key": "recurringBaskets.statusActive",
+          "fr": "Actif",
+          "en": "Active",
+          "it": "Attivo",
+          "variables": []
+        },
+        {
+          "key": "recurringBaskets.statusPaused",
+          "fr": "En pause",
+          "en": "Paused",
+          "it": "In pausa",
+          "variables": []
+        },
+        {
+          "key": "recurringBaskets.pausedNote",
+          "fr": "Ce panier est en pause : aucune commande n’est passée tant que vous ne le reprenez pas.",
+          "en": "This basket is paused: no order is placed until you resume it.",
+          "it": "Questo carrello è in pausa: nessun ordine viene passato finché non lo riprendete.",
+          "variables": []
+        },
+        {
+          "key": "recurringBaskets.since",
+          "fr": "Depuis le {start}",
+          "en": "Since {start}",
+          "it": "Dal {start}",
+          "variables": ["start"]
+        },
+        {
+          "key": "recurringBaskets.between",
+          "fr": "Du {start} au {end}",
+          "en": "From {start} to {end}",
+          "it": "Dal {start} al {end}",
+          "variables": ["start", "end"]
+        },
+        {
+          "key": "recurringBaskets.pickup",
+          "fr": "Retrait",
+          "en": "Pickup",
+          "it": "Ritiro",
+          "variables": []
+        },
+        {
+          "key": "recurringBaskets.delivery",
+          "fr": "Livraison",
+          "en": "Delivery",
+          "it": "Consegna",
+          "variables": []
+        },
+        {
+          "key": "recurringBaskets.slotLabel",
+          "fr": "Créneau",
+          "en": "Time slot",
+          "it": "Fascia oraria",
+          "variables": []
+        },
+        {
+          "key": "recurringBaskets.before",
+          "fr": "avant",
+          "en": "before",
+          "it": "prima delle",
+          "variables": []
+        },
+        {
+          "key": "recurringBaskets.noSlot",
+          "fr": "à préciser",
+          "en": "to be set",
+          "it": "da definire",
+          "variables": []
+        },
+        {
+          "key": "recurringBaskets.linesLabel",
+          "fr": "Le panier",
+          "en": "The basket",
+          "it": "Il carrello",
+          "variables": []
+        },
+        {
+          "key": "recurringBaskets.noteLabel",
+          "fr": "Note",
+          "en": "Note",
+          "it": "Nota",
+          "variables": []
+        },
+        {
+          "key": "recurringBaskets.pause",
+          "fr": "Mettre en pause",
+          "en": "Pause",
+          "it": "Metti in pausa",
+          "variables": []
+        },
+        {
+          "key": "recurringBaskets.resume",
+          "fr": "Reprendre",
+          "en": "Resume",
+          "it": "Riprendi",
+          "variables": []
+        },
+        {
+          "key": "recurringBaskets.stop",
+          "fr": "Arrêter le panier",
+          "en": "Stop the basket",
+          "it": "Interrompi il carrello",
+          "variables": []
+        },
+        {
+          "key": "recurringBaskets.stopMessage",
+          "fr": "Plus aucune commande ne sera passée pour ce panier. Ce geste est définitif.",
+          "en": "No further order will be placed for this basket. This cannot be undone.",
+          "it": "Nessun altro ordine verrà passato per questo carrello. L’azione è definitiva.",
+          "variables": []
+        },
+        {
+          "key": "recurringBaskets.stopConfirm",
+          "fr": "Arrêter",
+          "en": "Stop",
+          "it": "Interrompi",
+          "variables": []
+        },
+        {
+          "key": "recurringBaskets.cancel",
+          "fr": "Annuler",
+          "en": "Cancel",
+          "it": "Annulla",
+          "variables": []
+        },
+        {
+          "key": "recurringBaskets.busy",
+          "fr": "Un instant…",
+          "en": "One moment…",
+          "it": "Un attimo…",
+          "variables": []
+        },
+        {
+          "key": "recurringBaskets.confirmGroup",
+          "fr": "Confirmer l’arrêt du panier",
+          "en": "Confirm stopping the basket",
+          "it": "Conferma l’interruzione del carrello",
+          "variables": []
+        },
+        {
+          "key": "recurringBaskets.newTerms",
+          "fr": "Nouvelles conditions générales à partir du {date}.",
+          "en": "New terms and conditions from {date}.",
+          "it": "Nuove condizioni generali a partire dal {date}.",
+          "variables": ["date"]
+        },
+        {
+          "key": "recurringBaskets.termsLink",
+          "fr": "Lire les conditions générales de vente",
+          "en": "Read the terms and conditions of sale",
+          "it": "Leggi le condizioni generali di vendita",
+          "variables": []
+        },
+        {
+          "key": "recurringBaskets.newTab",
+          "fr": "{name} (nouvel onglet)",
+          "en": "{name} (new tab)",
+          "it": "{name} (nuova scheda)",
+          "variables": ["name"]
+        },
+        {
+          "key": "recurringBaskets.upcomingTitle",
+          "fr": "Mes prochaines commandes",
+          "en": "My next orders",
+          "it": "I miei prossimi ordini",
+          "variables": []
+        },
+        {
+          "key": "recurringBaskets.noUpcoming",
+          "fr": "Aucune commande prévue pour le moment.",
+          "en": "No order planned for now.",
+          "it": "Nessun ordine previsto per ora.",
+          "variables": []
+        },
+        {
+          "key": "recurringBaskets.pastTitle",
+          "fr": "Les semaines passées",
+          "en": "Past weeks",
+          "it": "Le settimane passate",
+          "variables": []
+        },
+        {
+          "key": "recurringBaskets.states.planned",
+          "fr": "Prévue",
+          "en": "Planned",
+          "it": "Previsto",
+          "variables": []
+        },
+        {
+          "key": "recurringBaskets.states.skipped",
+          "fr": "Sautée",
+          "en": "Skipped",
+          "it": "Saltato",
+          "variables": []
+        },
+        {
+          "key": "recurringBaskets.states.placed",
+          "fr": "Passée",
+          "en": "Placed",
+          "it": "Passato",
+          "variables": []
+        },
+        {
+          "key": "recurringBaskets.states.refused",
+          "fr": "Non passée",
+          "en": "Not placed",
+          "it": "Non passato",
+          "variables": []
+        },
+        {
+          "key": "recurringBaskets.states.missed",
+          "fr": "Non passée",
+          "en": "Not placed",
+          "it": "Non passato",
+          "variables": []
+        },
+        {
+          "key": "recurringBaskets.overridden",
+          "fr": "Modifiée",
+          "en": "Changed",
+          "it": "Modificato",
+          "variables": []
+        },
+        {
+          "key": "recurringBaskets.notPlaced",
+          "fr": "Cette commande n’a pas pu être passée : nous vous contactons.",
+          "en": "This order could not be placed: we will contact you.",
+          "it": "Non è stato possibile passare questo ordine: vi contatteremo.",
+          "variables": []
+        },
+        {
+          "key": "recurringBaskets.skip",
+          "fr": "Sauter",
+          "en": "Skip",
+          "it": "Salta",
+          "variables": []
+        },
+        {
+          "key": "recurringBaskets.modify",
+          "fr": "Modifier",
+          "en": "Change",
+          "it": "Modifica",
+          "variables": []
+        },
+        {
+          "key": "recurringBaskets.restore",
+          "fr": "Rétablir",
+          "en": "Restore",
+          "it": "Ripristina",
+          "variables": []
+        },
+        {
+          "key": "recurringBaskets.viewOrder",
+          "fr": "Voir la commande",
+          "en": "View the order",
+          "it": "Vedi l’ordine",
+          "variables": []
+        },
+        {
+          "key": "recurringBaskets.skipName",
+          "fr": "Sauter la commande du {day}",
+          "en": "Skip the order of {day}",
+          "it": "Salta l’ordine del {day}",
+          "variables": ["day"]
+        },
+        {
+          "key": "recurringBaskets.modifyName",
+          "fr": "Modifier la commande du {day}",
+          "en": "Change the order of {day}",
+          "it": "Modifica l’ordine del {day}",
+          "variables": ["day"]
+        },
+        {
+          "key": "recurringBaskets.restoreName",
+          "fr": "Rétablir la commande du {day}",
+          "en": "Restore the order of {day}",
+          "it": "Ripristina l’ordine del {day}",
+          "variables": ["day"]
+        },
+        {
+          "key": "recurringBaskets.viewOrderName",
+          "fr": "Voir la commande du {day}",
+          "en": "View the order of {day}",
+          "it": "Vedi l’ordine del {day}",
+          "variables": ["day"]
+        },
+        {
+          "key": "recurringBaskets.gestureFailed",
+          "fr": "Ce changement n’a pas été enregistré : {message}",
+          "en": "This change was not saved: {message}",
+          "it": "Questa modifica non è stata registrata: {message}",
+          "variables": ["message"]
+        },
+        {
+          "key": "recurringBaskets.announcePaused",
+          "fr": "Panier mis en pause.",
+          "en": "Basket paused.",
+          "it": "Carrello messo in pausa.",
+          "variables": []
+        },
+        {
+          "key": "recurringBaskets.announceResumed",
+          "fr": "Panier repris.",
+          "en": "Basket resumed.",
+          "it": "Carrello ripreso.",
+          "variables": []
+        },
+        {
+          "key": "recurringBaskets.announceStopped",
+          "fr": "Panier arrêté.",
+          "en": "Basket stopped.",
+          "it": "Carrello interrotto.",
+          "variables": []
+        },
+        {
+          "key": "recurringBaskets.announceSkipped",
+          "fr": "Commande sautée.",
+          "en": "Order skipped.",
+          "it": "Ordine saltato.",
+          "variables": []
+        },
+        {
+          "key": "recurringBaskets.announceModified",
+          "fr": "Commande modifiée.",
+          "en": "Order changed.",
+          "it": "Ordine modificato.",
+          "variables": []
+        },
+        {
+          "key": "recurringBaskets.announceRestored",
+          "fr": "Commande rétablie.",
+          "en": "Order restored.",
+          "it": "Ordine ripristinato.",
+          "variables": []
+        },
+        {
+          "key": "recurringBaskets.dialogTitle",
+          "fr": "Modifier la commande du {day}",
+          "en": "Change the order of {day}",
+          "it": "Modifica l’ordine del {day}",
+          "variables": ["day"]
+        },
+        {
+          "key": "recurringBaskets.dialogLead",
+          "fr": "Seule cette commande change : les suivantes gardent votre panier habituel.",
+          "en": "Only this order changes: the next ones keep your usual basket.",
+          "it": "Cambia solo questo ordine: i successivi mantengono il carrello abituale.",
+          "variables": []
+        },
+        {
+          "key": "recurringBaskets.removeHint",
+          "fr": "Une quantité à 0 retire l’article de cette commande.",
+          "en": "A quantity of 0 removes the item from this order.",
+          "it": "Una quantità a 0 toglie l’articolo da questo ordine.",
+          "variables": []
+        },
+        {
+          "key": "recurringBaskets.atLeastOne",
+          "fr": "Gardez au moins un article, ou sautez cette commande.",
+          "en": "Keep at least one item, or skip this order.",
+          "it": "Tenete almeno un articolo, oppure saltate questo ordine.",
+          "variables": []
+        },
+        {
+          "key": "recurringBaskets.save",
+          "fr": "Enregistrer",
+          "en": "Save",
+          "it": "Salva",
+          "variables": []
+        },
+        {
+          "key": "recurringBaskets.close",
+          "fr": "Fermer",
+          "en": "Close",
+          "it": "Chiudi",
           "variables": []
         }
       ],

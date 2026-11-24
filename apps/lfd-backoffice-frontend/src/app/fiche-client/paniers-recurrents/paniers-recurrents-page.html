@@ -1,4 +1,7 @@
 @switch (state()) {
+  @case ('loading') {
+    <fold-loading message="Chargement des paniers récurrents…" />
+  }
   @case ('error') {
     <fold-empty-state
       tone="alert"
@@ -17,44 +20,103 @@
         </span>
       </header>
 
-      <!-- Ce que la liste NE dit pas, dit à l'écran : la production issue de ces
-           paniers n'est pas encore planifiée par la plateforme. -->
-      <fold-callout variant="neutral">
-        Ces commandes se déclenchent d'elles-mêmes. La date annoncée est calculée depuis le gabarit
-        — aucune commande n'est créée à l'avance.
-      </fold-callout>
+      @if (attentionCount() > 0) {
+        <fold-callout variant="alert">
+          {{ attentionCount() }} échéance{{ attentionCount() > 1 ? 's' : '' }} refusée{{
+            attentionCount() > 1 ? 's' : ''
+          }}
+          ou manquée{{ attentionCount() > 1 ? 's' : '' }} : la raison est écrite sous chacune.
+        </fold-callout>
+      }
 
-      <fold-data-table
-        caption="Paniers récurrents du compte"
-        density="compact"
-        [columns]="columns"
-        [rows]="rows()"
-        [rowKey]="rowKey"
-        [loading]="state() === 'loading'"
-        [empty]="emptyState"
-      >
-        <ng-template foldCell="placedByName" let-row>
-          <span class="rec-who">{{ row.placedByName }}</span>
-          <span class="rec-period">{{ period(row) }}</span>
-        </ng-template>
+      @for (row of rows(); track row.id) {
+        <fold-card>
+          <fold-element-title
+            cardHeader
+            variant="title"
+            [title]="row.placedByName"
+            [subtitle]="period(row)"
+          >
+            <fold-badge
+              titleAction
+              [variant]="row.status === 'active' ? 'success' : 'warning'"
+              [content]="statusLabel(row)"
+            />
+          </fold-element-title>
 
-        <ng-template foldCell="recurrence" let-row>{{ rhythm(row) }}</ng-template>
-        <ng-template foldCell="next" let-row>{{ next(row) }}</ng-template>
+          <div class="rec-body">
+            <dl class="rec-facts">
+              <div class="rec-fact">
+                <dt>Rythme</dt>
+                <dd>{{ rhythm(row) }}</dd>
+              </div>
+              <div class="rec-fact">
+                <dt>Créneau</dt>
+                <dd>{{ window(row) }}</dd>
+              </div>
+              <div class="rec-fact">
+                <dt>Acheminement</dt>
+                <dd>{{ fulfillment(row) }}</dd>
+              </div>
+              <div class="rec-fact">
+                <dt>Conditions</dt>
+                <dd>{{ salesTerms(row) }}</dd>
+              </div>
+              <div class="rec-fact">
+                <dt>Lignes</dt>
+                <dd>{{ linesLabel(row.lines) }}</dd>
+              </div>
+            </dl>
 
-        <ng-template foldCell="lines" let-row>
-          <span class="rec-lines">{{ row.lines.length }}</span>
-        </ng-template>
+            @if (nextSalesTerms(row); as next) {
+              <fold-callout variant="info">{{ next }}</fold-callout>
+            }
 
-        <ng-template foldCell="fulfillment" let-row>{{ fulfillment(row) }}</ng-template>
-
-        <ng-template foldCell="status" let-row>
-          @if (row.status === 'active') {
-            <fold-badge variant="success" content="Actif" />
-          } @else {
-            <fold-badge variant="warning" content="En pause" />
-          }
-        </ng-template>
-      </fold-data-table>
+            @if (row.occurrences.length === 0) {
+              <p class="rec-muted">Aucune échéance dans la fenêtre.</p>
+            } @else {
+              <ol class="rec-occurrences" aria-label="Échéances">
+                @for (occurrence of row.occurrences; track occurrence.serviceDay) {
+                  <li
+                    class="rec-occurrence"
+                    [class.rec-occurrence--attention]="needsAttention(occurrence)"
+                  >
+                    <div class="rec-occurrence-head">
+                      <span class="rec-day">{{ day(occurrence) }}</span>
+                      <fold-badge
+                        [variant]="stateVariant(occurrence)"
+                        [content]="stateLabel(occurrence)"
+                      />
+                      @if (occurrence.overridden) {
+                        <fold-badge variant="accent" content="Modifiée" />
+                      }
+                    </div>
+                    <span class="rec-muted">{{ linesLabel(occurrence.lines) }}</span>
+                    @if (occurrence.orderId; as orderId) {
+                      <a [routerLink]="['/comptes-clients', id(), 'commandes', orderId]"
+                        >Voir la commande</a
+                      >
+                    }
+                    @if (needsAttention(occurrence)) {
+                      @if (occurrence.reason; as reason) {
+                        <span class="rec-reason">{{ reason }}</span>
+                      }
+                      @if (settledAt(occurrence); as at) {
+                        <span class="rec-muted">Issue le {{ at }}</span>
+                      }
+                    }
+                  </li>
+                }
+              </ol>
+            }
+          </div>
+        </fold-card>
+      } @empty {
+        <fold-empty-state
+          title="Aucun panier récurrent"
+          subtitle="Ce compte n'a mis en place aucune commande répétée."
+        />
+      }
     </section>
   }
 }

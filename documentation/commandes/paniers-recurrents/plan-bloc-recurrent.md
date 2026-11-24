@@ -710,3 +710,16 @@ Décidé en bâtissant :
 - **La page « Mes paniers récurrents »** (`/paniers-recurrents`) est le lien
   de l'e-mail ; elle n'est pas encore ouverte dans la boutique (`ready:
 false` dans la navigation du client).
+- **Les écrans lisent les échéances** (R6, partie API) : `SubscriptionView`
+  porte `salesTerms`, `nextSalesTerms` et `occurrences` (quatre semaines
+  passées, jour de Paris, et toutes celles créées à l'avance, triées par
+  jour), en une requête par liste ; `overrides` est retiré. La vue du client
+  ne porte d'un refus que l'état ; `AdminSubscriptionRow` ajoute `cause`,
+  `reason`, `settledAt`. Les lignes d'une échéance sont la dérogation, sinon
+  le gabarit — une échéance sautée garde aussi celles du gabarit, l'état
+  dit qu'elle ne part pas.
+- **Rétablir une échéance** : `DELETE /subscriptions/:id/occurrences/:date`
+  la ramène au gabarit (lignes et note effacées, une sautée redevient
+  `planned`), journalisé comme une dérogation dont l'après est le gabarit,
+  avec le fait `recurring.basket_occurrence_changed` ; sans effet si elle y
+  est déjà.

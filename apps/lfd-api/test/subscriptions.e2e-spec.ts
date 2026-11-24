@@ -332,6 +332,98 @@ describe("le journal (subscription.created, par le fait durable)", () => {
   });
 });
 
+describe("la vue du client (GET /subscriptions/mine)", () => {
+  it("porte les CGV appliquées et les échéances, triées par jour, au gabarit", async () => {
+    const id = await open();
+    await ctx
+      .asSub(OWNER)
+      .put(`/subscriptions/${id}/occurrences/${SECOND}`)
+      .send({ skipped: false, lines: [{ sku: "VIE-001-1", quantity: 2 }], note: "Moins" })
+      .expect(204);
+
+    const [view] = jsonBody<readonly SubscriptionView[]>(
+      await ctx.asSub(OWNER).get("/subscriptions/mine").expect(200),
+    );
+
+    expect(view?.salesTerms).toEqual({ document: "salesTermsPro", revision: 1 });
+    expect(view?.nextSalesTerms).toBeNull();
+    expect(view?.occurrences).toHaveLength(8);
+    const days = view?.occurrences.map((occurrence) => occurrence.serviceDay) ?? [];
+    expect(days).toEqual([...days].sort());
+    expect(view?.occurrences[0]).toEqual({
+      serviceDay: FIRST,
+      state: "planned",
+      lines: [{ sku: "VIE-001-1", quantity: 6 }],
+      overridden: false,
+      note: "",
+      orderId: null,
+    });
+    expect(view?.occurrences[1]).toMatchObject({
+      serviceDay: SECOND,
+      lines: [{ sku: "VIE-001-1", quantity: 2 }],
+      overridden: true,
+      note: "Moins",
+    });
+  });
+
+  it("🔴 une échéance refusée ne montre au client que son état : ni cause, ni phrase", async () => {
+    const id = await open();
+    await ctx.prisma.occurrence.update({
+      where: { id: (await occurrenceOn(id, FIRST)).id },
+      data: {
+        state: "refused",
+        cause: "unavailable_sku",
+        reason: "Article indisponible.",
+        settledAt: new Date(),
+      },
+    });
+
+    const response = await ctx.asSub(OWNER).get("/subscriptions/mine").expect(200);
+    const [view] = jsonBody<readonly SubscriptionView[]>(response);
+
+    expect(view?.occurrences[0]?.state).toBe("refused");
+    expect(Object.keys(view?.occurrences[0] ?? {})).not.toContain("cause");
+    expect(JSON.stringify(response.body)).not.toContain("unavailable_sku");
+    expect(JSON.stringify(response.body)).not.toContain("Article indisponible.");
+  });
+});
+
+describe("rétablir une échéance (DELETE /subscriptions/:id/occurrences/:date)", () => {
+  it("une échéance sautée revient au gabarit, avec son fait ; le rejeu n'écrit rien", async () => {
+    const id = await open();
+    await ctx
+      .asSub(OWNER)
+      .put(`/subscriptions/${id}/occurrences/${SECOND}`)
+      .send({ skipped: true, note: "Fermé" })
+      .expect(204);
+    const changed = { where: { type: "recurring.basket_occurrence_changed" } };
+    const before = await ctx.prisma.outboxMessage.count(changed);
+
+    await ctx.asSub(OWNER).delete(`/subscriptions/${id}/occurrences/${SECOND}`).expect(204);
+    await ctx.asSub(OWNER).delete(`/subscriptions/${id}/occurrences/${SECOND}`).expect(204);
+
+    expect(await occurrenceOn(id, SECOND)).toMatchObject({
+      state: "planned",
+      lines: null,
+      note: "",
+    });
+    expect(await ctx.prisma.outboxMessage.count(changed)).toBe(before + 1);
+  });
+
+  it("un étranger reçoit 404 et l'échéance reste sautée", async () => {
+    const id = await open();
+    await ctx
+      .asSub(OWNER)
+      .put(`/subscriptions/${id}/occurrences/${SECOND}`)
+      .send({ skipped: true })
+      .expect(204);
+
+    await ctx.asSub(STRANGER).delete(`/subscriptions/${id}/occurrences/${SECOND}`).expect(404);
+
+    expect((await occurrenceOn(id, SECOND)).state).toBe("skipped");
+  });
+});
+
 /**
  * Régression : une date d'échéance hors AAAA-MM-JJ sortait en 500
  * `internal.unexpected` — le `ZodError` d'un `.parse` écrit dans la route

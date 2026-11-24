@@ -4,7 +4,7 @@
 >
 > La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.
 
-## Sommaire — 1958 textes
+## Sommaire — 2024 textes
 
 Clés présentes dans une langue et absentes d'une autre : 0.
 
@@ -36,7 +36,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Confirmation](#espace-done) | `done` | 31 |
 | [Confirmation — le QR de retrait](#espace-qr) | `qr` | 12 |
 | **Le reste de la boutique** | | |
-| [Le cadre — bandeaux et erreurs générales](#espace-chrome) | `chrome` | 61 |
+| [Le cadre — bandeaux et erreurs générales](#espace-chrome) | `chrome` | 62 |
 | [La navigation](#espace-nav) | `nav` | 17 |
 | [La colonne d’accompagnement](#espace-aside) | `aside` | 4 |
 | [Mes commandes (récapitulatif compris)](#espace-orders) | `orders` | 289 |
@@ -47,12 +47,13 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Le compte pro — le dictionnaire général](#espace-pro) | `pro` | 8 |
 | [Le compte pro — l’écran](#espace-proaccount) | `proAccount` | 27 |
 | [Mes sites — la carte de chaque site, réglée par le compte principal](#espace-sitemenu) | `siteMenu` | 78 |
+| [Mes paniers récurrents — les paniers et leurs prochaines commandes](#espace-recurringbaskets) | `recurringBaskets` | 65 |
 | [La procédure de livraison d’une adresse](#espace-deliveryprocedure) | `deliveryProcedure` | 47 (+ 3 non recensé) |
 | [Le dialogue « Nous écrire »](#espace-contactdialog) | `contactDialog` | 25 |
 | [Les cases des e-mails marketing, « Mes e-mails » et le pied de page](#espace-marketingconsent) | `marketingConsent` | 29 |
 | [Les documents légaux](#espace-legaldocument) | `legalDocument` | 14 |
 | [Le suivi des corrections d’accessibilité — sous la déclaration](#espace-accessibilityfollowup) | `accessibilityFollowUp` | 28 |
-| **Total** | | **1958** |
+| **Total** | | **2024** |
 
 ## Le parcours de commande
 
@@ -956,7 +957,7 @@ Source : `fr.ts · en.ts · it.ts` · 12 textes.
 
 ### Le cadre — bandeaux et erreurs générales — `chrome`
 
-Source : `fr.ts · en.ts · it.ts` · 61 textes.
+Source : `fr.ts · en.ts · it.ts` · 62 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -1005,6 +1006,7 @@ Source : `fr.ts · en.ts · it.ts` · 61 textes.
 | `chrome.pageTitles.proOpening` | Ouverture de compte pro — La Folie Coffee | Open a business account — La Folie Coffee | Apertura di un conto professionale — La Folie Coffee |  |
 | `chrome.pageTitles.orders` | Mes commandes — La Folie Coffee | My orders — La Folie Coffee | I miei ordini — La Folie Coffee |  |
 | `chrome.pageTitles.invoices` | Mes factures — La Folie Coffee | My invoices — La Folie Coffee | Le mie fatture — La Folie Coffee |  |
+| `chrome.pageTitles.baskets` | Mes paniers récurrents — La Folie Coffee | My recurring baskets — La Folie Coffee | I miei carrelli ricorrenti — La Folie Coffee |  |
 | `chrome.pageTitles.account` | Mon compte — La Folie Coffee | My account — La Folie Coffee | Il mio conto — La Folie Coffee |  |
 | `chrome.pageTitles.profile` | Mon profil — La Folie Coffee | My profile — La Folie Coffee | Il mio profilo — La Folie Coffee |  |
 | `chrome.pageTitles.loyalty` | Ma fidélité — La Folie Coffee | My loyalty — La Folie Coffee | La mia fedeltà — La Folie Coffee |  |
@@ -2187,6 +2189,80 @@ Source : `screens/site-menu.copy.ts` · 78 textes.
 | `siteMenu.myNoneBody` | Votre site commande tout ce que la boutique lui sert. | Your site may order everything the shop serves it. | Il tuo sito può ordinare tutto ciò che il negozio gli offre. |  |
 | `siteMenu.myUnavailableTitle` | Pas de carte à lire ici | No menu to read here | Nessuna carta da leggere qui |  |
 | `siteMenu.myUnavailableBody` | Cet espace n’est pas un site rattaché à un compte principal. | This space is not a site attached to a main account. | Questo spazio non è un sito collegato a un account principale. |  |
+
+<a id="espace-recurringbaskets"></a>
+
+### Mes paniers récurrents — les paniers et leurs prochaines commandes — `recurringBaskets`
+
+Source : `screens/recurring-baskets.copy.ts` · 65 textes.
+
+| Clé | FR | EN | IT | Variables |
+| --- | --- | --- | --- | --- |
+| `recurringBaskets.title` | Mes paniers récurrents | My recurring baskets | I miei carrelli ricorrenti |  |
+| `recurringBaskets.lead` | Vos commandes qui se répètent, et les prochaines qu’elles passeront. | Your repeating orders, and the next ones they will place. | I vostri ordini che si ripetono, e i prossimi che verranno passati. |  |
+| `recurringBaskets.loading` | Chargement de vos paniers… | Loading your baskets… | Caricamento dei vostri carrelli… |  |
+| `recurringBaskets.loadFailedTitle` | Vos paniers n’ont pas pu être chargés | Your baskets could not be loaded | Non è stato possibile caricare i vostri carrelli |  |
+| `recurringBaskets.loadFailedBody` | Vérifiez votre connexion, puis réessayez. | Check your connection, then try again. | Verificate la connessione, poi riprovate. |  |
+| `recurringBaskets.retry` | Réessayer | Try again | Riprova |  |
+| `recurringBaskets.noneTitle` | Aucun panier récurrent | No recurring basket | Nessun carrello ricorrente |  |
+| `recurringBaskets.none` | Depuis une commande passée, vous pouvez la répéter chaque semaine ou chaque mois. | From a past order, you can repeat it every week or every month. | Da un ordine passato, potete ripeterlo ogni settimana o ogni mese. |  |
+| `recurringBaskets.recurrence.weekly` | Chaque semaine | Every week | Ogni settimana |  |
+| `recurringBaskets.recurrence.biweekly` | Toutes les deux semaines | Every two weeks | Ogni due settimane |  |
+| `recurringBaskets.recurrence.monthly` | Chaque mois | Every month | Ogni mese |  |
+| `recurringBaskets.statusActive` | Actif | Active | Attivo |  |
+| `recurringBaskets.statusPaused` | En pause | Paused | In pausa |  |
+| `recurringBaskets.pausedNote` | Ce panier est en pause : aucune commande n’est passée tant que vous ne le reprenez pas. | This basket is paused: no order is placed until you resume it. | Questo carrello è in pausa: nessun ordine viene passato finché non lo riprendete. |  |
+| `recurringBaskets.since` | Depuis le {start} | Since {start} | Dal {start} | `{start}` |
+| `recurringBaskets.between` | Du {start} au {end} | From {start} to {end} | Dal {start} al {end} | `{start}` `{end}` |
+| `recurringBaskets.pickup` | Retrait | Pickup | Ritiro |  |
+| `recurringBaskets.delivery` | Livraison | Delivery | Consegna |  |
+| `recurringBaskets.slotLabel` | Créneau | Time slot | Fascia oraria |  |
+| `recurringBaskets.before` | avant | before | prima delle |  |
+| `recurringBaskets.noSlot` | à préciser | to be set | da definire |  |
+| `recurringBaskets.linesLabel` | Le panier | The basket | Il carrello |  |
+| `recurringBaskets.noteLabel` | Note | Note | Nota |  |
+| `recurringBaskets.pause` | Mettre en pause | Pause | Metti in pausa |  |
+| `recurringBaskets.resume` | Reprendre | Resume | Riprendi |  |
+| `recurringBaskets.stop` | Arrêter le panier | Stop the basket | Interrompi il carrello |  |
+| `recurringBaskets.stopMessage` | Plus aucune commande ne sera passée pour ce panier. Ce geste est définitif. | No further order will be placed for this basket. This cannot be undone. | Nessun altro ordine verrà passato per questo carrello. L’azione è definitiva. |  |
+| `recurringBaskets.stopConfirm` | Arrêter | Stop | Interrompi |  |
+| `recurringBaskets.cancel` | Annuler | Cancel | Annulla |  |
+| `recurringBaskets.busy` | Un instant… | One moment… | Un attimo… |  |
+| `recurringBaskets.confirmGroup` | Confirmer l’arrêt du panier | Confirm stopping the basket | Conferma l’interruzione del carrello |  |
+| `recurringBaskets.newTerms` | Nouvelles conditions générales à partir du {date}. | New terms and conditions from {date}. | Nuove condizioni generali a partire dal {date}. | `{date}` |
+| `recurringBaskets.termsLink` | Lire les conditions générales de vente | Read the terms and conditions of sale | Leggi le condizioni generali di vendita |  |
+| `recurringBaskets.newTab` | {name} (nouvel onglet) | {name} (new tab) | {name} (nuova scheda) | `{name}` |
+| `recurringBaskets.upcomingTitle` | Mes prochaines commandes | My next orders | I miei prossimi ordini |  |
+| `recurringBaskets.noUpcoming` | Aucune commande prévue pour le moment. | No order planned for now. | Nessun ordine previsto per ora. |  |
+| `recurringBaskets.pastTitle` | Les semaines passées | Past weeks | Le settimane passate |  |
+| `recurringBaskets.states.planned` | Prévue | Planned | Previsto |  |
+| `recurringBaskets.states.skipped` | Sautée | Skipped | Saltato |  |
+| `recurringBaskets.states.placed` | Passée | Placed | Passato |  |
+| `recurringBaskets.states.refused` | Non passée | Not placed | Non passato |  |
+| `recurringBaskets.states.missed` | Non passée | Not placed | Non passato |  |
+| `recurringBaskets.overridden` | Modifiée | Changed | Modificato |  |
+| `recurringBaskets.notPlaced` | Cette commande n’a pas pu être passée : nous vous contactons. | This order could not be placed: we will contact you. | Non è stato possibile passare questo ordine: vi contatteremo. |  |
+| `recurringBaskets.skip` | Sauter | Skip | Salta |  |
+| `recurringBaskets.modify` | Modifier | Change | Modifica |  |
+| `recurringBaskets.restore` | Rétablir | Restore | Ripristina |  |
+| `recurringBaskets.viewOrder` | Voir la commande | View the order | Vedi l’ordine |  |
+| `recurringBaskets.skipName` | Sauter la commande du {day} | Skip the order of {day} | Salta l’ordine del {day} | `{day}` |
+| `recurringBaskets.modifyName` | Modifier la commande du {day} | Change the order of {day} | Modifica l’ordine del {day} | `{day}` |
+| `recurringBaskets.restoreName` | Rétablir la commande du {day} | Restore the order of {day} | Ripristina l’ordine del {day} | `{day}` |
+| `recurringBaskets.viewOrderName` | Voir la commande du {day} | View the order of {day} | Vedi l’ordine del {day} | `{day}` |
+| `recurringBaskets.gestureFailed` | Ce changement n’a pas été enregistré : {message} | This change was not saved: {message} | Questa modifica non è stata registrata: {message} | `{message}` |
+| `recurringBaskets.announcePaused` | Panier mis en pause. | Basket paused. | Carrello messo in pausa. |  |
+| `recurringBaskets.announceResumed` | Panier repris. | Basket resumed. | Carrello ripreso. |  |
+| `recurringBaskets.announceStopped` | Panier arrêté. | Basket stopped. | Carrello interrotto. |  |
+| `recurringBaskets.announceSkipped` | Commande sautée. | Order skipped. | Ordine saltato. |  |
+| `recurringBaskets.announceModified` | Commande modifiée. | Order changed. | Ordine modificato. |  |
+| `recurringBaskets.announceRestored` | Commande rétablie. | Order restored. | Ordine ripristinato. |  |
+| `recurringBaskets.dialogTitle` | Modifier la commande du {day} | Change the order of {day} | Modifica l’ordine del {day} | `{day}` |
+| `recurringBaskets.dialogLead` | Seule cette commande change : les suivantes gardent votre panier habituel. | Only this order changes: the next ones keep your usual basket. | Cambia solo questo ordine: i successivi mantengono il carrello abituale. |  |
+| `recurringBaskets.removeHint` | Une quantité à 0 retire l’article de cette commande. | A quantity of 0 removes the item from this order. | Una quantità a 0 toglie l’articolo da questo ordine. |  |
+| `recurringBaskets.atLeastOne` | Gardez au moins un article, ou sautez cette commande. | Keep at least one item, or skip this order. | Tenete almeno un articolo, oppure saltate questo ordine. |  |
+| `recurringBaskets.save` | Enregistrer | Save | Salva |  |
+| `recurringBaskets.close` | Fermer | Close | Chiudi |  |
 
 <a id="espace-deliveryprocedure"></a>
 

@@ -22,6 +22,7 @@ import { PrismaRecurringSkuUsage } from "./basket/infrastructure/prisma-recurrin
 import { RecurringBasketCounts } from "./channels/commerce/recurring-basket-counts.js";
 import { RecurringSkuUsage } from "./channels/commerce/recurring-sku-usage.js";
 import { OverrideOccurrenceHandler } from "./occurrence/application/commands/override-occurrence.handler.js";
+import { RestoreOccurrenceHandler } from "./occurrence/application/commands/restore-occurrence.handler.js";
 import { SweepDueOccurrencesHandler } from "./occurrence/application/commands/sweep-due-occurrences.handler.js";
 import { OccurrencePlanner } from "./occurrence/application/services/occurrence-planner.js";
 import { BasketsBehindPlan } from "./occurrence/domain/ports/baskets-behind-plan.js";
@@ -56,6 +57,7 @@ import {
     SetBasketStatusHandler,
     StopBasketHandler,
     OverrideOccurrenceHandler,
+    RestoreOccurrenceHandler,
     SweepDueOccurrencesHandler,
     ListMyBasketsHandler,
     ListCompanyBasketsHandler,

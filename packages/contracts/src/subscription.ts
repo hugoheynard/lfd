@@ -93,17 +93,6 @@ export const upsertOccurrenceOverridePayloadSchema = z
   });
 export type UpsertOccurrenceOverridePayload = z.infer<typeof upsertOccurrenceOverridePayloadSchema>;
 
-/** Une échéance dérogée, telle que renvoyée avec l'abonnement. */
-export interface OccurrenceOverrideView {
-  /** `AAAA-MM-JJ` — l'échéance visée. */
-  readonly date: string;
-  /** Échéance sautée (aucune commande ce jour-là). */
-  readonly skipped: boolean;
-  /** Lignes de remplacement (vide si sautée). */
-  readonly lines: readonly SubscriptionLineView[];
-  readonly note: string;
-}
-
 /** Une ligne d'abonnement telle que renvoyée (SKU + quantité). */
 export interface SubscriptionLineView {
   readonly sku: string;
@@ -127,8 +116,16 @@ export interface SubscriptionView {
   readonly requestedWindow: FulfillmentWindow | null;
   readonly note: string;
   readonly lines: readonly SubscriptionLineView[];
-  /** Dérogations par échéance (sautée / lignes remplacées). */
-  readonly overrides: readonly OccurrenceOverrideView[];
+  /** La version des CGV que le panier applique aujourd'hui. */
+  readonly salesTerms: SubscriptionSalesTermsView;
+  /** La version annoncée et sa date d'effet, `null` sans annonce en cours. */
+  readonly nextSalesTerms: SubscriptionNextSalesTermsView | null;
+  /**
+   * Les échéances de la fenêtre utile — les quatre semaines passées et
+   * toutes celles déjà créées à l'avance —, triées par jour. Un panier sans
+   * société n'en a aucune.
+   */
+  readonly occurrences: readonly RecurringOccurrenceView[];
   /** ISO — créé le. */
   readonly createdAt: string;
 }
@@ -142,7 +139,74 @@ export interface SubscriptionView {
  * est celui de qui.
  */
 export interface AdminSubscriptionRow extends SubscriptionView {
+  readonly occurrences: readonly AdminRecurringOccurrenceView[];
   readonly placedByUserId: string;
   /** Nom d'usage du client, ou son e-mail quand il n'a pas encore de nom. */
   readonly placedByName: string;
+}
+
+/** L'état d'une échéance (`plan-bloc-recurrent.md`, § 5). */
+export const recurringOccurrenceStateSchema = z.enum([
+  "planned",
+  "skipped",
+  "placed",
+  "refused",
+  "missed",
+  "cancelled",
+]);
+export type RecurringOccurrenceState = z.infer<typeof recurringOccurrenceStateSchema>;
+
+/** Pourquoi une échéance n'a pas été passée — un code stable, lu par le staff. */
+export const recurringOccurrenceCauseSchema = z.enum([
+  "buyer_left",
+  "deadline_closed",
+  "item_limit_exceeded",
+  "reserved_elsewhere",
+  "unavailable_sku",
+  "day_closed",
+  "plan_closed",
+  "no_settlement",
+  "shop_closed",
+  "order_refused",
+]);
+export type RecurringOccurrenceCause = z.infer<typeof recurringOccurrenceCauseSchema>;
+
+/** La version des CGV qu'un panier applique : le document et sa révision. */
+export interface SubscriptionSalesTermsView {
+  /** Le nom du document (`salesTermsPro`, `salesTerms`). */
+  readonly document: string;
+  readonly revision: number;
+}
+
+/** Une version des CGV annoncée au panier, qui s'appliquera à partir de `effectiveOn`. */
+export interface SubscriptionNextSalesTermsView {
+  readonly revision: number;
+  /** `AAAA-MM-JJ` — premier jour de service auquel elle s'applique. */
+  readonly effectiveOn: string;
+}
+
+/**
+ * **Une échéance**, vue du client. Un refus ou une échéance manquée ne
+ * porte que son état : la cause et sa phrase sont écrites pour le staff.
+ */
+export interface RecurringOccurrenceView {
+  /** `AAAA-MM-JJ` — le jour de service. */
+  readonly serviceDay: string;
+  readonly state: RecurringOccurrenceState;
+  /** Les lignes effectives : la dérogation, sinon le gabarit. */
+  readonly lines: readonly SubscriptionLineView[];
+  /** Vrai quand l'échéance porte ses propres lignes. */
+  readonly overridden: boolean;
+  readonly note: string;
+  /** La commande passée, `null` tant qu'elle ne l'est pas. */
+  readonly orderId: string | null;
+}
+
+/** Une échéance vue du back-office : l'issue et sa raison en plus. */
+export interface AdminRecurringOccurrenceView extends RecurringOccurrenceView {
+  readonly cause: RecurringOccurrenceCause | null;
+  /** La phrase du refus, pour le staff. */
+  readonly reason: string | null;
+  /** ISO — l'heure de l'issue (passée, refusée la dernière fois, manquée). */
+  readonly settledAt: string | null;
 }

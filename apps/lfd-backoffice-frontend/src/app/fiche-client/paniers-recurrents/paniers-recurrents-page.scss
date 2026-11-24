@@ -22,19 +22,74 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* Le porteur et la période sur deux lignes : c'est la même information — de qui
-   est ce panier, et depuis quand — et elle tient dans une seule colonne. */
-.rec-who {
-  display: block;
+.rec-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.rec-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+  gap: var(--fold-space-sm) var(--fold-space-md);
+  margin: 0;
+
+  dt {
+    color: var(--fold-color-text-muted);
+    font-size: var(--fold-text-xs);
+  }
+
+  dd {
+    margin: 0;
+  }
+}
+
+.rec-fact {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+}
+
+.rec-muted {
+  margin: 0;
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+}
+
+.rec-occurrences {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rec-occurrence {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+  padding: var(--fold-space-sm);
+  border-inline-start: var(--fold-space-xs) solid var(--fold-color-border);
+}
+
+/* La mise en évidence double le texte de l'état, elle ne le remplace pas. */
+.rec-occurrence--attention {
+  border-inline-start-color: var(--fold-color-alert);
+  background: var(--fold-color-alert-surface);
+}
+
+.rec-occurrence-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-sm);
+}
+
+.rec-day {
   font-weight: 600;
 }
 
-.rec-period {
-  display: block;
-  color: var(--fold-color-text-muted);
-  font-size: var(--fold-text-xs);
-}
-
-.rec-lines {
-  font-variant-numeric: tabular-nums;
+.rec-reason {
+  font-weight: 600;
 }

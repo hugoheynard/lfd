@@ -1,0 +1,42 @@
+<fold-panel-header [title]="title()" [subtitle]="copy().dialogLead" [closeLabel]="copy().close" />
+
+<fold-panel-body>
+  @if (refusal(); as message) {
+    <fold-callout variant="alert" announce data-occurrence-refusal>{{ message }}</fold-callout>
+  }
+  <div class="lines">
+    @for (line of lines(); track line.sku) {
+      <fold-number-input
+        integer
+        [min]="0"
+        [label]="line.name"
+        [value]="line.quantity"
+        [attr.data-line]="line.sku"
+        (valueChange)="setQuantity(line.sku, $event)"
+      />
+    }
+  </div>
+  <p class="hint">{{ copy().removeHint }}</p>
+  @if (empty()) {
+    <fold-callout variant="warning" announce data-occurrence-empty>
+      {{ copy().atLeastOne }}
+    </fold-callout>
+  }
+</fold-panel-body>
+
+<fold-panel-footer align="between">
+  <button foldButton emphasis="outline" intent="neutral" type="button" (click)="close()">
+    {{ copy().cancel }}
+  </button>
+  <button
+    foldButton
+    intent="primary"
+    type="button"
+    data-occurrence-save
+    [disabled]="empty() || !changed()"
+    [loading]="saving()"
+    (click)="save()"
+  >
+    {{ copy().save }}
+  </button>
+</fold-panel-footer>

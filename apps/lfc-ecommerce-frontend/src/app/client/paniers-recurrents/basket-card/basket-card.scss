@@ -1,0 +1,69 @@
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.facts {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+  margin: 0;
+}
+
+.fact {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+
+  dt {
+    font-size: var(--fold-text-sm);
+    color: var(--fold-color-text-muted);
+  }
+
+  dd {
+    margin: 0;
+  }
+}
+
+.lines,
+.days {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.gestures,
+.day-gestures,
+.day-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-sm);
+}
+
+.occurrences,
+.day {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+}
+
+.day {
+  padding-block: var(--fold-space-sm);
+  border-top: 1px solid var(--fold-color-border-subtle);
+}
+
+.heading {
+  margin: 0;
+  font-size: var(--fold-text-md);
+}
+
+.muted {
+  margin: 0;
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-muted);
+}

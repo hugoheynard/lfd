@@ -218,6 +218,18 @@ export const routes: Routes = [
           import('./client/mes-factures/invoices-page/invoices-page').then((m) => m.InvoicesPage),
       },
       {
+        // « MES PANIERS RÉCURRENTS » (plan `plan-bloc-recurrent.md`, § 5 et
+        // § 7) : l'adresse que donne l'e-mail des nouvelles CGV. Écran de
+        // SOCIÉTÉ, même garde que les factures.
+        path: 'paniers-recurrents',
+        canActivate: [companyWorkspaceGuard],
+        data: pageTitle('baskets'),
+        loadComponent: () =>
+          import('./client/paniers-recurrents/baskets-page/baskets-page').then(
+            (m) => m.BasketsPage,
+          ),
+      },
+      {
         // LE DOSSIER, écrit pour celui qui le possède. Sept cartes et pas sept
         // écrans : le back-office a des onglets parce qu'un commercial y passe
         // la journée ; un client y passe deux fois par an.

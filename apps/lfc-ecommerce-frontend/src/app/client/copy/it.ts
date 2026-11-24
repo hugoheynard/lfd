@@ -61,6 +61,7 @@ export const IT: ClientCopy = {
       proOpening: 'Apertura di un conto professionale — La Folie Coffee',
       orders: 'I miei ordini — La Folie Coffee',
       invoices: 'Le mie fatture — La Folie Coffee',
+      baskets: 'I miei carrelli ricorrenti — La Folie Coffee',
       account: 'Il mio conto — La Folie Coffee',
       profile: 'Il mio profilo — La Folie Coffee',
       loyalty: 'La mia fedeltà — La Folie Coffee',

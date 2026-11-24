@@ -1,0 +1,204 @@
+<fold-card [attr.data-basket]="basket().id">
+  <fold-element-title
+    cardHeader
+    variant="title"
+    [title]="copy().recurrence[basket().recurrence]"
+    [subtitle]="period()"
+  >
+    <span titleAction>
+      <fold-badge
+        data-basket-status
+        [variant]="paused() ? 'warning' : 'success'"
+        [content]="paused() ? copy().statusPaused : copy().statusActive"
+      />
+    </span>
+  </fold-element-title>
+
+  <div class="body">
+    @if (refusal(); as message) {
+      <fold-callout variant="alert" announce data-basket-refusal>{{ message }}</fold-callout>
+    }
+    @if (done(); as message) {
+      <fold-callout variant="success" announce data-basket-done>{{ message }}</fold-callout>
+    }
+    @if (paused()) {
+      <fold-callout variant="warning" data-basket-paused>{{ copy().pausedNote }}</fold-callout>
+    }
+    @if (newTerms(); as sentence) {
+      <fold-callout variant="info" data-basket-new-terms>
+        {{ sentence }}
+        <a
+          routerLink="/cgv"
+          target="_blank"
+          rel="noopener"
+          [queryParams]="termsQuery()"
+          [attr.aria-label]="termsName()"
+          >{{ copy().termsLink }}</a
+        >
+      </fold-callout>
+    }
+
+    <dl class="facts">
+      <div class="fact">
+        <dt>{{ copy().slotLabel }}</dt>
+        <dd data-basket-routing>{{ routing() }} · {{ slot() }}</dd>
+      </div>
+      <div class="fact">
+        <dt>{{ copy().linesLabel }}</dt>
+        <dd>
+          <ul class="lines">
+            @for (line of lines(); track $index) {
+              <li>{{ line }}</li>
+            }
+          </ul>
+        </dd>
+      </div>
+      @if (basket().note !== '') {
+        <div class="fact">
+          <dt>{{ copy().noteLabel }}</dt>
+          <dd>{{ basket().note }}</dd>
+        </div>
+      }
+    </dl>
+
+    <div class="gestures">
+      <button
+        foldButton
+        size="sm"
+        emphasis="soft"
+        intent="primary"
+        type="button"
+        data-basket-toggle
+        [loading]="pending() === 'status'"
+        [disabled]="pending() !== null"
+        (click)="toggleStatus()"
+      >
+        {{ paused() ? copy().resume : copy().pause }}
+      </button>
+      <fold-inline-confirm
+        keepOpenOnConfirm
+        [message]="copy().stopMessage"
+        [labels]="confirmLabels()"
+        [loading]="pending() === 'stop'"
+        [(open)]="stopOpen"
+        (confirmed)="stop()"
+      >
+        <button
+          foldButton
+          size="sm"
+          emphasis="outline"
+          intent="danger"
+          type="button"
+          data-basket-stop
+          [disabled]="pending() !== null"
+        >
+          {{ copy().stop }}
+        </button>
+      </fold-inline-confirm>
+    </div>
+
+    <section class="occurrences">
+      <h3 class="heading">{{ copy().upcomingTitle }}</h3>
+      @if (occurrences().upcoming.length === 0) {
+        <p class="muted" data-no-upcoming>{{ copy().noUpcoming }}</p>
+      } @else {
+        <ul class="days">
+          @for (occurrence of occurrences().upcoming; track occurrence.serviceDay) {
+            <ng-container
+              [ngTemplateOutlet]="row"
+              [ngTemplateOutletContext]="{ $implicit: occurrence, upcoming: true }"
+            />
+          }
+        </ul>
+      }
+    </section>
+
+    @if (occurrences().past.length > 0) {
+      <section class="occurrences">
+        <h3 class="heading">{{ copy().pastTitle }}</h3>
+        <ul class="days">
+          @for (occurrence of occurrences().past; track occurrence.serviceDay) {
+            <ng-container
+              [ngTemplateOutlet]="row"
+              [ngTemplateOutletContext]="{ $implicit: occurrence, upcoming: false }"
+            />
+          }
+        </ul>
+      </section>
+    }
+  </div>
+</fold-card>
+
+<ng-template #row let-occurrence let-upcoming="upcoming">
+  <li class="day" [attr.data-occurrence]="occurrence.serviceDay">
+    <div class="day-head">
+      <strong>{{ day(occurrence.serviceDay) }}</strong>
+      <fold-badge [variant]="stateTone(occurrence)" [content]="stateLabel(occurrence)" />
+    </div>
+    @if (isNotPlaced(occurrence)) {
+      <p class="muted" data-not-placed>{{ copy().notPlaced }}</p>
+    } @else {
+      <p class="muted">{{ linesOf(occurrence) }}</p>
+    }
+    <div class="day-gestures">
+      @if (occurrence.orderId !== null) {
+        <a
+          foldButton
+          size="sm"
+          emphasis="soft"
+          intent="primary"
+          data-view-order
+          [routerLink]="['/mes-commandes', occurrence.orderId]"
+          [attr.aria-label]="nameFor(copy().viewOrderName, occurrence)"
+          >{{ copy().viewOrder }}</a
+        >
+      }
+      @if (upcoming && isEditable(occurrence)) {
+        @if (occurrence.state === 'planned') {
+          <button
+            foldButton
+            size="sm"
+            emphasis="outline"
+            intent="neutral"
+            type="button"
+            data-skip
+            [disabled]="pending() !== null"
+            [loading]="pending() === 'occurrence:' + occurrence.serviceDay"
+            [attr.aria-label]="nameFor(copy().skipName, occurrence)"
+            (click)="skip(occurrence)"
+          >
+            {{ copy().skip }}
+          </button>
+        }
+        <button
+          foldButton
+          size="sm"
+          emphasis="outline"
+          intent="neutral"
+          type="button"
+          data-modify
+          [disabled]="pending() !== null"
+          [attr.aria-label]="nameFor(copy().modifyName, occurrence)"
+          (click)="modify(occurrence)"
+        >
+          {{ copy().modify }}
+        </button>
+        @if (isRestorable(occurrence)) {
+          <button
+            foldButton
+            size="sm"
+            emphasis="soft"
+            intent="primary"
+            type="button"
+            data-restore
+            [disabled]="pending() !== null"
+            [attr.aria-label]="nameFor(copy().restoreName, occurrence)"
+            (click)="restore(occurrence)"
+          >
+            {{ copy().restore }}
+          </button>
+        }
+      }
+    </div>
+  </li>
+</ng-template>

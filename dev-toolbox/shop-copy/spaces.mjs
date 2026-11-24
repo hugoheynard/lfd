@@ -149,6 +149,13 @@ export const OTHER_SPACES = [
   },
   {
     kind: "screen",
+    space: "recurringBaskets",
+    title: "Mes paniers récurrents — les paniers et leurs prochaines commandes",
+    file: "screens/recurring-baskets.copy.ts",
+    fn: "recurringBasketsCopy",
+  },
+  {
+    kind: "screen",
     space: "deliveryProcedure",
     title: "La procédure de livraison d’une adresse",
     file: "screens/delivery-procedure.copy.ts · .fr/.en/.it.ts",

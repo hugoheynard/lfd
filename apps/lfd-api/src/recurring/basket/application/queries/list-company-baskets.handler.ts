@@ -2,14 +2,17 @@ import type { AdminSubscriptionRow } from "@lfd/contracts";
 import { type IQueryHandler, QueryHandler } from "@nestjs/cqrs";
 
 import { BasketBuyerStanding } from "../../../channels/commerce/basket-buyer-standing.js";
+import { Clock } from "../../../../platform/time/clock.js";
 import { BasketReader } from "../../domain/ports/basket.reader.js";
+import { occurrenceWindowStart } from "../services/occurrence-window.js";
 import { ListCompanyBasketsQuery } from "./list-company-baskets.query.js";
 
 /**
  * Sert les paniers des **membres** d'une société, nommés. Aucun mur ici : la
  * surface est `@AdminSurface`. Les membres viennent des comptes, par le
  * canal : le bloc ne lit pas l'annuaire. Une société inconnue rend une liste
- * vide, comme une société sans panier.
+ * vide, comme une société sans panier. Les échéances suivent la fenêtre du
+ * client : quatre semaines passées et celles créées à l'avance.
  */
 @QueryHandler(ListCompanyBasketsQuery)
 export class ListCompanyBasketsHandler implements IQueryHandler<
@@ -19,10 +22,13 @@ export class ListCompanyBasketsHandler implements IQueryHandler<
   constructor(
     private readonly standing: BasketBuyerStanding,
     private readonly baskets: BasketReader,
+    private readonly clock: Clock,
   ) {}
 
   async execute(query: ListCompanyBasketsQuery): Promise<readonly AdminSubscriptionRow[]> {
     const members = await this.standing.membersOf(query.companyId);
-    return members.length === 0 ? [] : this.baskets.listForBuyers(members);
+    return members.length === 0
+      ? []
+      : this.baskets.listForBuyers(members, occurrenceWindowStart(this.clock.now()));
   }
 }

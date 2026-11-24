@@ -99,17 +99,13 @@ describe('Les destinations du menu', () => {
    * appelait `/subscriptions/mine` à chaque page, pour une destination dont
    * aucune surface n'affiche le compte tant que son écran n'existe pas.
    */
-  it('ne lit PAS les gabarits récurrents tant que leur écran n’existe pas', async () => {
+  it('mène aux paniers récurrents, dont l’écran existe', () => {
     const baskets = TestBed.inject(ClientNav)
       .items()
       .find((i) => i.id === 'baskets');
-    TestBed.tick();
-    // Le jeton se résout de façon asynchrone : on laisse partir ce qui partirait.
-    await new Promise((resolve) => setTimeout(resolve));
 
-    expect(baskets?.ready).toBe(false);
-    expect(baskets?.countShort).toBe('');
-    TestBed.inject(HttpTestingController).expectNone((r) => r.url.endsWith('/subscriptions/mine'));
+    expect(baskets?.ready).toBe(true);
+    expect(baskets?.route).toBe('/paniers-recurrents');
   });
 
   it('suit la NAVIGATION — l’onglet actif ne reste pas figé sur la première page', async () => {
@@ -144,13 +140,9 @@ describe('Les destinations du menu', () => {
     expect(nav.current()).toBe('/boutique');
   });
 
-  it('déclare inertes les destinations dont l’écran n’existe pas encore', () => {
+  it('toutes les destinations ont leur écran', () => {
     const nav = TestBed.inject(ClientNav);
-    expect(nav.items().find((i) => i.id === 'shop')?.ready).toBe(true);
-    // Les paniers récurrents sont la dernière destination sans écran. Le drapeau
-    // ne retire PAS l'entrée : l'ordre des six ne bouge jamais d'une surface à
-    // l'autre, et l'habitude du pouce avec.
-    expect(nav.items().find((i) => i.id === 'baskets')?.ready).toBe(false);
+    expect(nav.items().every((i) => i.ready)).toBe(true);
   });
 });
 
