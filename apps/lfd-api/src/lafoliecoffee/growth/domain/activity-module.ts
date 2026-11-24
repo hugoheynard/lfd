@@ -270,6 +270,9 @@ const PREFIXES: Readonly<Record<ActivityModule, readonly string[]>> = {
     // Les attestations du lot : contrôle CSV relu, remise signée, accusés PSR
     // lus (plan `plan-page-procedure-de-prelevement.md` § 1.2, P3, 2026-10-24).
     "collection_batch_attestation.",
+    // Le devis de période d'un acheteur public : son envoi, son échec et sa
+    // relance, sous `b2b_accounting` comme la facture qu'il prépare.
+    "period_quote.",
   ],
   // Le fonds d'images : un bloc à lui depuis le 2026-09-23, avec son droit
   // (`media_library`). Rangé sous `pim` jusqu'au 2026-10-10.
