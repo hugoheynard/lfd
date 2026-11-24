@@ -1,5 +1,6 @@
 import { RoadRoutingUnavailableError } from "../domain/errors/delivery-routing-errors.js";
 import { type CostFn, DistanceMatrix } from "../domain/ports/distance-matrix.js";
+import { RoadRoutingReadiness } from "../domain/ports/road-routing-readiness.js";
 import { RoadRoutingWaker } from "../domain/ports/road-routing-waker.js";
 import { RouteGeometry, type RouteLine } from "../domain/ports/route-geometry.js";
 
@@ -27,5 +28,12 @@ export class DisabledRouteGeometry extends RouteGeometry {
 export class DisabledRoadRoutingWaker extends RoadRoutingWaker {
   wake(): Promise<void> {
     return Promise.resolve();
+  }
+}
+
+/** Sans OSRM, rien à attendre : Tour manager ne voile pas ses tournées. */
+export class DisabledRoadRoutingReadiness extends RoadRoutingReadiness {
+  isReady(): Promise<boolean> {
+    return Promise.resolve(true);
   }
 }

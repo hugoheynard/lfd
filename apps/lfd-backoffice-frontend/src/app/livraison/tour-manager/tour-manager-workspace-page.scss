@@ -48,6 +48,39 @@
   color: var(--fold-ref-navyink-200);
 }
 
+/* La vue routée, et le voile du calcul routier par-dessus (onglet Tournées). */
+.routed {
+  position: relative;
+}
+
+.routed-content.veiled {
+  filter: blur(var(--fold-blur-glass));
+  user-select: none;
+}
+
+.routing-veil {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: var(--fold-space-xl) var(--fold-page-gutter);
+}
+
+.routing-card {
+  max-width: 28rem;
+}
+
+.routing-warming {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--fold-space-sm);
+  text-align: center;
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+}
+
 /* L'écran s'imprime sans le bandeau. */
 @media print {
   .masthead {

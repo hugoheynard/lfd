@@ -1,42 +1,51 @@
 <!-- Le bandeau, sur le modèle de celui de la Supervision. -->
 <header class="masthead" foldSurface="chrome" data-tour-manager-masthead>
   <div class="masthead-row">
-    <div class="day-nav" data-day-nav>
-      <fold-view-toggle
-        ariaLabel="Jour de livraison"
-        activeStyle="raised"
-        [options]="dayOptions"
-        [value]="days.dayValue()"
-        (valueChange)="days.pickRelative($event)"
-        data-day-toggle
-      />
-      <app-day-calendar
-        [selected]="days.day()"
-        [today]="days.today"
-        [custom]="days.dayValue() === ''"
-        (pick)="days.show($event)"
-      />
-    </div>
-    @if (canPrintDossier()) {
-      <button
-        foldButton
-        emphasis="outline"
-        size="sm"
-        icon="print"
-        (click)="printDossier()"
-        data-print-dossier
-      >
-        {{ dossierLabel() }}
-      </button>
-    }
-    @if (summary(); as summary) {
-      <fold-badge
-        radius="square"
-        variant="neutral"
-        class="summary"
-        [content]="summary"
-        data-masthead-summary
-      />
+    <fold-view-nav
+      [items]="tabs"
+      direction="horizontal"
+      activeStyle="fill"
+      background="transparent"
+      data-tour-manager-tabs
+    />
+    @if (!onAddressBook()) {
+      <div class="day-nav" data-day-nav>
+        <fold-view-toggle
+          ariaLabel="Jour de livraison"
+          activeStyle="raised"
+          [options]="dayOptions"
+          [value]="days.dayValue()"
+          (valueChange)="days.pickRelative($event)"
+          data-day-toggle
+        />
+        <app-day-calendar
+          [selected]="days.day()"
+          [today]="days.today"
+          [custom]="days.dayValue() === ''"
+          (pick)="days.show($event)"
+        />
+      </div>
+      @if (canPrintDossier()) {
+        <button
+          foldButton
+          emphasis="outline"
+          size="sm"
+          icon="print"
+          (click)="printDossier()"
+          data-print-dossier
+        >
+          {{ dossierLabel() }}
+        </button>
+      }
+      @if (summary(); as summary) {
+        <fold-badge
+          radius="square"
+          variant="neutral"
+          class="summary"
+          [content]="summary"
+          data-masthead-summary
+        />
+      }
     }
     <span class="stamp" data-stamp>{{ stamp() }}</span>
   </div>
@@ -54,4 +63,43 @@
     </fold-callout>
   }
 </header>
-<router-outlet />
+<div class="routed" data-routing-zone>
+  <div
+    class="routed-content"
+    [class.veiled]="routingVeiled()"
+    [attr.inert]="routingVeiled() ? '' : null"
+    [attr.aria-busy]="routingVeiled() ? 'true' : null"
+  >
+    <router-outlet />
+  </div>
+  @if (routingVeiled()) {
+    <div class="routing-veil" data-routing-veil>
+      <fold-card class="routing-card">
+        @if (routing.state() === 'stalled') {
+          <fold-callout variant="alert" announce data-routing-stalled>
+            Le calcul routier ne répond pas.
+            <div actions>
+              <button foldButton size="sm" (click)="routing.start()" data-routing-retry>
+                Réessayer
+              </button>
+              <button
+                foldButton
+                emphasis="outline"
+                size="sm"
+                (click)="routing.dismiss()"
+                data-routing-dismiss
+              >
+                Continuer sans attendre
+              </button>
+            </div>
+          </fold-callout>
+        } @else {
+          <div class="routing-warming" data-routing-warming>
+            <fold-loading message="Initialisation du calcul routier…" />
+            <span>Cela prend jusqu’à une minute au premier accès de la journée.</span>
+          </div>
+        }
+      </fold-card>
+    </div>
+  }
+</div>

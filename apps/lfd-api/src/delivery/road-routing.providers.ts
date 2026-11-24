@@ -2,20 +2,24 @@ import type { Provider } from "@nestjs/common";
 
 import { AppConfig } from "../platform/config/app-config.js";
 import { WallClock } from "../platform/time/wall-clock.js";
+import { GetRoadRoutingReadinessHandler } from "./application/queries/get-road-routing-readiness.handler.js";
 import { WakeRoadRoutingHandler } from "./application/commands/wake-road-routing.handler.js";
 import { DistanceMatrix } from "./domain/ports/distance-matrix.js";
 import { Geocoder } from "./domain/ports/geocoder.js";
+import { RoadRoutingReadiness } from "./domain/ports/road-routing-readiness.js";
 import { RoadRoutingWaker } from "./domain/ports/road-routing-waker.js";
 import { RouteGeometry } from "./domain/ports/route-geometry.js";
 import { BanGeocoder } from "./infrastructure/ban-geocoder.js";
 import { DisabledGeocoder } from "./infrastructure/disabled-geocoder.js";
 import {
   DisabledDistanceMatrix,
+  DisabledRoadRoutingReadiness,
   DisabledRoadRoutingWaker,
   DisabledRouteGeometry,
 } from "./infrastructure/disabled-road-routing.js";
 import { OsrmDistanceMatrix } from "./infrastructure/osrm-distance-matrix.js";
 import { wallClockPacing } from "./infrastructure/osrm-fetch.js";
+import { OsrmRoadRoutingReadiness } from "./infrastructure/osrm-road-routing-readiness.js";
 import { OsrmRoadRoutingWaker } from "./infrastructure/osrm-road-routing-waker.js";
 import { RoadRoutingWakeController } from "./http/road-routing-wake.controller.js";
 import { OsrmRouteGeometry } from "./infrastructure/osrm-route-geometry.js";
@@ -26,7 +30,7 @@ import { OsrmRouteGeometry } from "./infrastructure/osrm-route-geometry.js";
  * dépendre d'`AppConfig` : chacun bascule sur sa version désactivée quand
  * l'adresse manque, et cette bascule se lit d'un bloc.
  */
-/** La route du réveil (2026-11-01). */
+/** Les routes du réveil et de la disponibilité du calcul routier. */
 export const ROAD_ROUTING_CONTROLLERS = [RoadRoutingWakeController];
 
 export const ROAD_ROUTING_PROVIDERS: readonly Provider[] = [
@@ -65,6 +69,18 @@ export const ROAD_ROUTING_PROVIDERS: readonly Provider[] = [
     },
   },
   WakeRoadRoutingHandler,
+  // Le sondage de Tour manager (2026-11-24) : sans URL, rien à attendre — prêt.
+  {
+    provide: RoadRoutingReadiness,
+    inject: [AppConfig],
+    useFactory: (config: AppConfig): RoadRoutingReadiness => {
+      const endpoint = config.routePlannerEndpoint();
+      return endpoint === null
+        ? new DisabledRoadRoutingReadiness()
+        : new OsrmRoadRoutingReadiness(endpoint);
+    },
+  },
+  GetRoadRoutingReadinessHandler,
   // Sans URL, le géocodage est DÉSACTIVÉ (L7-C9) : les e2e ne sortent pas sur le réseau.
   {
     provide: Geocoder,

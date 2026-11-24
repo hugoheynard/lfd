@@ -1,3 +1,5 @@
+import { provideHttpClient } from '@angular/common/http';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { Component, inject } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
@@ -8,6 +10,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { PermissionsStore } from '../../auth/permissions.store';
 import { DeliveryRoundsService } from '../delivery-rounds.service';
+import { READINESS_VEIL_DELAY_MS, RoadRoutingReadiness } from '../road-routing-readiness';
 import { RoadRoutingWake } from '../road-routing-wake';
 import { DayCalendar } from '../../shared/day-calendar/day-calendar';
 import { parisDayOf, shiftDay } from '../run-sheet';
@@ -34,11 +37,16 @@ async function open(url: string, granted: readonly StaffPermission[] = ROUNDS) {
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     providers: [
+      provideHttpClient(),
+      provideHttpClientTesting(),
       provideRouter([
         {
           path: 'tour-manager',
           component: TourManagerWorkspacePage,
-          children: [{ path: 'tournees', component: TabStub }],
+          children: [
+            { path: 'tournees', component: TabStub },
+            { path: 'adresses', component: TabStub },
+          ],
         },
       ]),
       {
@@ -59,14 +67,24 @@ function tabDay(element: HTMLElement): string | undefined {
   return element.querySelector('[data-tab-day]')?.textContent?.trim();
 }
 
-describe('le bandeau de Tour manager (2026-10-26)', () => {
-  it('porte le jour et son calendrier, et la date et l’heure — plus de switch d’onglets (Feuille de route retirée)', async () => {
+describe('le bandeau de Tour manager', () => {
+  it('porte les onglets, le jour et son calendrier, et la date et l’heure', async () => {
     const { element } = await open('/tour-manager/tournees?jour=2026-10-27');
-    expect(element.querySelector('[data-tour-manager-tabs]')).toBeNull();
+    const tabs = element.querySelector('[data-tour-manager-tabs]');
+    expect(tabs?.textContent).toContain('Tournées');
+    expect(tabs?.textContent).toContain('Adresses');
     expect(element.querySelectorAll('fold-view-toggle')).toHaveLength(1);
     expect(element.querySelector('[data-day-toggle]')).not.toBeNull();
     expect(element.querySelector('app-day-calendar')).not.toBeNull();
     expect(element.querySelector('[data-stamp]')?.textContent).toContain(' h ');
+  });
+
+  it('sur l’onglet Adresses, garde les onglets et l’heure et retire le jour et son dossier', async () => {
+    const { element } = await open('/tour-manager/adresses');
+    expect(element.querySelector('[data-tour-manager-tabs]')).not.toBeNull();
+    expect(element.querySelector('[data-day-nav]')).toBeNull();
+    expect(element.querySelector('[data-print-dossier]')).toBeNull();
+    expect(element.querySelector('[data-stamp]')).not.toBeNull();
   });
 
   it('montre le résumé du jour publié par l’écran des tournées, juste avant la date', async () => {
@@ -180,5 +198,67 @@ describe('daysBetween / stampLabelOf', () => {
       const { element } = await open('/tour-manager/tournees', ['delivery_run_sheet:read']);
       expect(element.querySelector('[data-print-dossier]')).toBeNull();
     });
+  });
+});
+
+describe('le voile du calcul routier (2026-11-24)', () => {
+  const READINESS = '/admin/delivery/road-routing/readiness';
+
+  /** Répond à la sonde, puis laisse passer le délai anti-flash. */
+  async function answered(url: string, ready: boolean) {
+    const opened = await open(url);
+    TestBed.inject(HttpTestingController)
+      .expectOne((req) => req.url.endsWith(READINESS))
+      .flush({ ready });
+    await new Promise((resolve) => setTimeout(resolve, READINESS_VEIL_DELAY_MS + 50));
+    opened.harness.detectChanges();
+    const readiness = opened.harness.fixture.debugElement
+      .query(By.directive(TourManagerWorkspacePage))
+      .injector.get(RoadRoutingReadiness);
+    return { ...opened, readiness };
+  }
+
+  it('voile l’onglet Tournées tant que le calcul n’est pas prêt', async () => {
+    const { element } = await answered('/tour-manager/tournees?jour=2026-10-27', false);
+    expect(element.querySelector('[data-routing-warming]')?.textContent).toContain(
+      'Initialisation du calcul routier…',
+    );
+    const zone = element.querySelector('.routed-content');
+    expect(zone?.hasAttribute('inert')).toBe(true);
+    expect(zone?.getAttribute('aria-busy')).toBe('true');
+    expect(element.querySelector('[data-day-toggle]')?.closest('[inert]')).toBeNull();
+  });
+
+  it('ne voile pas l’onglet Adresses', async () => {
+    const { element } = await answered('/tour-manager/adresses', false);
+    expect(element.querySelector('[data-routing-veil]')).toBeNull();
+    expect(element.querySelector('.routed-content')?.hasAttribute('inert')).toBe(false);
+  });
+
+  it('ne voile rien quand le calcul est prêt', async () => {
+    const { element } = await answered('/tour-manager/tournees?jour=2026-10-27', true);
+    expect(element.querySelector('[data-routing-veil]')).toBeNull();
+  });
+
+  it('en panne : Réessayer relance le réveil, Continuer lève le voile', async () => {
+    const { harness, element, readiness } = await answered(
+      '/tour-manager/tournees?jour=2026-10-27',
+      false,
+    );
+    readiness.state.set('stalled');
+    harness.detectChanges();
+    expect(element.querySelector('[data-routing-stalled]')?.textContent).toContain(
+      'Le calcul routier ne répond pas.',
+    );
+
+    wake.mockClear();
+    element.querySelector<HTMLButtonElement>('[data-routing-retry]')?.click();
+    expect(wake).toHaveBeenCalledTimes(1);
+    readiness.state.set('stalled');
+    harness.detectChanges();
+
+    element.querySelector<HTMLButtonElement>('[data-routing-dismiss]')?.click();
+    harness.detectChanges();
+    expect(element.querySelector('[data-routing-veil]')).toBeNull();
   });
 });
