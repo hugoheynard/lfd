@@ -664,8 +664,9 @@ lister à déposer, déposer, relire l'échéance, rejeter.
 
 ## 6 sexies. P2 bis — le devis de période (commandes récurrentes)
 
-> 📐 **Plan** (2026-11-22, Hugo). Pas bâti. Contradiction `vitruve` à venir
-> (argent).
+> 📐 **Plan** (2026-11-22, Hugo). Pas bâti. Contredit par `vitruve` le
+> 2026-11-22 (tableau « Après contradiction »). Relu avec Hugo le
+> 2026-11-24 : décisions au fil des questions ci-dessous.
 
 ### En simple
 
@@ -744,9 +745,10 @@ la première commande.
 
 ### Questions à trancher (Hugo)
 
-1. **Un ou plusieurs numéros par devis ?** Plusieurs numéros découperaient le
-   devis en plusieurs factures (par commande ? par site ?).
-2. **Un article hors mercuriale** — _orienté par Hugo le 2026-11-22_ : en
+1. ✅ **Un seul numéro par devis** (Hugo, 2026-11-24). Un client qui a besoin
+   de plusieurs numéros a un sous-compte par site, donc un devis par site.
+2. ✅ **Un article hors mercuriale** (tranché par la contradiction, B3 :
+   refus à la passation par le port `NegotiatedScope`) — _orienté par Hugo le 2026-11-22_ : en
    engagement, une négociation a eu lieu **en amont** entre le commercial et
    le service ; la mercuriale en est la trace, et ce qu'on commande est ce qui
    a été négocié. Proposé : **refusé à la commande**, refus nommé (« Cet
@@ -756,13 +758,29 @@ la première commande.
    que les sous-comptes, pas le principal lui-même — il faut donc une règle
    propre (« commandable = cité par la mercuriale active ») lue par
    `isOrderable`, ou étendre la carte au principal.
-3. **Envoi du devis** : e-mail automatique par le bloc `mail`, ou
-   téléchargé et envoyé par le staff ?
-4. **Contestation** : pendant l'attente, peut-on modifier ou annuler une
+3. ✅ **Envoi du devis : automatique** (Hugo, 2026-11-24). Le bloc `mail`
+   l'envoie à la clôture, et de nouveau à chaque nouvelle version, au **contact
+   facturation** du payeur — le destinataire des factures, par la même règle
+   (`payerNoticeRecipientOf` : le premier contact au rôle `billing` à
+   l'adresse valable, sinon le détenteur ; vérifié le 2026-11-24). Le PDF est
+   rangé au stockage et joint par référence. Le staff garde un bouton
+   « Renvoyer le devis » (clé d'intention de l'écran).
+4. ✅ **Contestation** (tranché par la contradiction, S6 : devis versionné) : pendant l'attente, peut-on modifier ou annuler une
    commande de la période (le devis se régénère) ou la période est-elle figée ?
-5. **Relance** : un délai et une alerte si le numéro n'arrive pas ?
-6. **L'armée** : `on_period_quote` remplace-t-il l'engagement à la commande
-   pour elle, ou les deux modes coexistent-ils selon le client ?
+5. ✅ **Relance par le commercial** (Hugo, 2026-11-24). Un devis
+   `awaiting` depuis **15 jours** (comptés depuis l'envoi de sa dernière
+   version) lève un avertissement sur le compte, dans la liste des
+   avertissements de la fiche staff. Aucune relance automatique au client :
+   c'est le commercial qui a négocié avec le service, il relance lui-même.
+6. ✅ **Les deux modes coexistent, client par client** (Hugo, 2026-11-24).
+   Le moment de l'engagement se choisit sur la fiche Chorus du payeur :
+   `at_order` (le défaut, l'existant de P2 et P2 ter) ou `on_period_quote`.
+   Pour un payeur `on_period_quote`, **rien n'est prérempli** à la commande,
+   même si une fiche de service (P2 ter) existe : le numéro vient du devis.
+   Le mode ne change plus après la première commande d'une période (S8).
+   L'armée reste en `at_order` : son bon porte un numéro valable jusqu'au
+   31/12. Son règlement change (« prélèvement automatique à carte »,
+   Hugo, 2026-11-24) : voir § 6 septies.
 
 ### Après contradiction (`vitruve`, 2026-11-22) — ce qui corrige DV2–DV6
 
@@ -791,6 +809,22 @@ la première commande.
 > 📝 **Cas à instruire**, rien de décidé. Hugo, 2026-11-22 : l'armée veut
 > notre pain, mais voudrait payer « en boutique à intervalle régulier, peut-être
 > par carte » — leur mode de paiement est encore flou.
+>
+> ✅ **Orienté par Hugo le 2026-11-24** : l'armée paiera **par la carte de sa
+> régie, par un lien de paiement envoyé automatiquement** — « on va faire un
+> lien de paiement automatique ». C'est la forme de P2 quater (§ 6 nonies) :
+> les commandes au compte, la facture de période, et le lien carte qui part
+> **avec la facture**, sans geste du staff. Le régisseur clique et paie.
+>
+> - **Lu ainsi** : « automatique » veut dire que le lien part tout seul, pas
+>   que la carte est débitée sans clic. Un débit sans clic demanderait
+>   d'enregistrer la carte chez Stripe avec l'accord du porteur (paiement hors
+>   session) : un autre lot, non décidé.
+> - **Toujours en suspens** : la question légale (une facture à l'État payée
+>   par la régie passe-t-elle par Chorus ?) et l'avis du cabinet sur le code
+>   Factur-X 48 (§ 6 nonies). P2 quater reste suspendu jusque-là.
+> - À confirmer avec l'armée : le régisseur peut-il payer **en ligne**, avec
+>   quelle carte, sous quel plafond.
 
 ### En simple
 
