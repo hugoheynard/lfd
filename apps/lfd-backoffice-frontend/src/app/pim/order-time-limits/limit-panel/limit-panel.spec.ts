@@ -123,7 +123,7 @@ describe('LimitPanel — la case « l’équipe peut passer outre »', () => {
       'input[type="time"]',
     ) as HTMLInputElement;
     time.value = '10:00';
-    time.dispatchEvent(new Event('change'));
+    time.dispatchEvent(new Event('input'));
     fixture.detectChanges();
     await submit(fixture);
     expect(api.sent).toEqual([
@@ -176,7 +176,7 @@ describe('LimitPanel — la portée famille', () => {
       'input[type="time"]',
     ) as HTMLInputElement;
     time.value = '12:00';
-    time.dispatchEvent(new Event('change'));
+    time.dispatchEvent(new Event('input'));
     fixture.detectChanges();
     await submit(fixture);
     expect(api.sent[0]?.scope).toEqual({ type: 'category', id: 'f1' });
@@ -250,7 +250,7 @@ describe('LimitPanel — une limite de produit sans effet face à sa famille', (
       'input[type="time"]',
     ) as HTMLInputElement;
     input.value = time;
-    input.dispatchEvent(new Event('change'));
+    input.dispatchEvent(new Event('input'));
     fixture.detectChanges();
     await fixture.whenStable();
     fixture.detectChanges();

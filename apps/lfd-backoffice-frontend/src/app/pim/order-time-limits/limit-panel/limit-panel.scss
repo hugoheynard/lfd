@@ -37,27 +37,6 @@
   align-items: start;
 }
 
-.time {
-  display: flex;
-  flex-direction: column;
-  gap: var(--fold-space-xs);
-}
-
-.time-label {
-  font-size: var(--fold-text-sm);
-  font-weight: var(--fold-weight-semibold);
-}
-
-.time input {
-  padding: var(--fold-space-sm);
-  border: 1px solid var(--fold-color-border);
-  border-radius: var(--fold-radius-sm);
-  background: var(--fold-color-surface-card);
-  color: inherit;
-  font: inherit;
-  font-variant-numeric: tabular-nums;
-}
-
 /* LA phrase du panneau : ce que la limite dira au client. */
 .recap {
   margin: 0;

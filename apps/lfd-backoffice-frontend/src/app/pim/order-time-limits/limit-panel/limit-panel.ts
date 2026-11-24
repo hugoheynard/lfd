@@ -21,6 +21,7 @@ import {
   FoldFieldsetComponent,
   FoldListboxComponent,
   FoldNumberInputComponent,
+  FoldTimeComponent,
   FoldPanelHeaderComponent,
   FoldPanelRef,
   type FoldSelectOption,
@@ -97,6 +98,7 @@ function isValidDays(days: number | null): days is number {
     FoldFieldsetComponent,
     FoldListboxComponent,
     FoldNumberInputComponent,
+    FoldTimeComponent,
   ],
   templateUrl: './limit-panel.html',
   styleUrl: './limit-panel.scss',
@@ -361,10 +363,6 @@ export class LimitPanel {
 
   protected onDays(value: number | null): void {
     this.daysBefore.set(value);
-  }
-
-  protected onTime(event: Event): void {
-    this.time.set((event.target as HTMLInputElement).value);
   }
 
   protected async submit(): Promise<void> {

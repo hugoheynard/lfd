@@ -65,12 +65,7 @@
           integer
         />
 
-        <!-- `<input type="time">` en natif : fold ne couvre pas les heures, et le
-             contrôle du navigateur vaut mieux qu'un masque maison. -->
-        <label class="time">
-          <span class="time-label">L'heure</span>
-          <input type="time" [value]="time()" (change)="onTime($event)" />
-        </label>
+        <fold-time label="L'heure" [step]="60" [value]="time()" (valueChange)="time.set($event)" />
       </div>
       <p class="recap">{{ recap() }}</p>
     </fold-fieldset>
