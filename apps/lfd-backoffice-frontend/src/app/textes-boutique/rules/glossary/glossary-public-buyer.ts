@@ -10,6 +10,7 @@ export const GLOSSARY_PUBLIC_BUYER: Readonly<Record<string, string>> = {
   commitmentNumber: "Engagement — numéro d'engagement",
   commitmentNumberRequiredHint: 'Engagement — aide (numéro obligatoire)',
   commitmentNumberOptionalHint: 'Engagement — aide (numéro facultatif)',
+  commitmentOnQuote: 'Engagement — demandé sur le devis de la période',
   commitmentOptional: 'Engagement — mention « facultatif »',
   commitmentServiceCode: 'Engagement — code service',
   commitmentServiceCodeHint: 'Engagement — aide (code service)',

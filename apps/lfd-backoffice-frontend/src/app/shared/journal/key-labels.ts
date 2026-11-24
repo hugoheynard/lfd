@@ -28,6 +28,7 @@ export const KEY_LABELS: Readonly<Record<string, string>> = {
   payerCompanyId: 'Payeur',
   serviceCode: 'Code service',
   commitmentNumber: 'Numéro d’engagement',
+  commitmentTiming: 'Moment de l’engagement',
   commitmentEndsOn: 'Engagement valable jusqu’au',
   absorbed: 'Commandes absorbées',
   action: 'Action',

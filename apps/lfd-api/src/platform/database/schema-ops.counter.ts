@@ -283,6 +283,7 @@ const NON_PUBLIC_SCHEMA_OF_MODEL: Readonly<Record<string, string>> = {
   ProductionTrackingSettings: "production",
   ProductionDayTrackingLevel: "production",
   ProductionProblem: "production",
+  ProductionProvisionalPrint: "production",
   // La remise au colisage (2026-10-04, `colisage/colisage.md`, K1) :
   // une ligne par fournée déclarée, et une par retour.
   ProductionHandoff: "production",

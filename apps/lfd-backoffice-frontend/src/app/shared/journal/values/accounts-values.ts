@@ -160,6 +160,12 @@ export const COLLECTION_FORM = domain('forme de prélèvement', {
   own_iban: 'Mandat et compte du site',
 });
 
+/** Quand l'acheteur public donne son numéro d'engagement (`company.chorus_routing_recorded`). */
+export const COMMITMENT_TIMING = domain('moment de l’engagement', {
+  at_order: 'À la commande',
+  on_period_quote: 'Sur le devis de la période',
+});
+
 /** Le défaut de la carte d'un site (`company.sub_account_menu_set`). */
 export const SUB_ACCOUNT_MENU_MODE = domain('carte du site', {
   only: 'Seulement les articles inclus',
@@ -221,6 +227,7 @@ export const ACCOUNTS_VALUES: ValueFamily = {
     FOLLOW_ASPECT,
     PARENT_LINK_VIA,
     COLLECTION_FORM,
+    COMMITMENT_TIMING,
     SUB_ACCOUNT_MENU_MODE,
     SITE_MENU_STATE,
     CUSTOMER_REQUEST_KIND,
