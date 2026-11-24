@@ -1,6 +1,6 @@
 /**
- * **L'heure à laquelle un transfert interne doit partir** vers un site servi
- * par transfert, un jour donné (plan des sites, §4.6, lot T0).
+ * **L'heure à laquelle un transfert interne doit arriver, puis partir**, vers
+ * un site servi par transfert, un jour donné (plan des sites, §4.6).
  *
  * Fonction pure : ni horloge, ni base, ni réseau. Ce qu'elle reçoit est déjà
  * réduit au jour demandé — la règle du jour de semaine et des fermetures datées
@@ -13,9 +13,16 @@
  * **des commandes** du site. Sans rien : `null`, et les commandes passent en
  * `UNDATED` (comme une commande sans fenêtre).
  *
- * Arrivée requise = référence − mise en place au comptoir ; départ requis =
- * arrivée requise − trajet. Un trajet inconnu (site ou départ sans GPS,
- * calcul routier injoignable) rend `null` : aucune durée n'est inventée.
+ * ## L'arrivée est la plus faible échéance de ce que le transfert porte
+ *
+ * Règle de Hugo du 2026-11-24 : arrivée requise = la plus tôt de
+ * « référence − mise en place au comptoir » et de l'heure des réassorts
+ * « pour demain » du point. L'ouverture reste un plancher : un réassort plus
+ * tardif ne retarde rien. Sans référence, l'heure des réassorts seule.
+ *
+ * L'arrivée ne dépend pas du trajet. Le départ requis = arrivée − trajet ; un
+ * trajet inconnu (site ou départ sans GPS, calcul routier injoignable) rend un
+ * départ `null`, aucune durée n'est inventée, mais l'arrivée reste.
  */
 
 /** Une fenêtre `HH:mm` ; `start` nul = échéance seule (la fin fait foi). */
@@ -46,28 +53,37 @@ export interface TransferDepartureInput {
   readonly orderWindows: readonly ClockWindow[];
   /** ≥ 0, tenu par l'agrégat `Site`. */
   readonly counterSetupMinutes: number;
+  /**
+   * La plus tôt des heures (`HH:mm`) des réassorts « pour demain » du point,
+   * déjà une ARRIVÉE (la mise en place n'en est pas retirée) ; `null` = aucun.
+   */
+  readonly resupplyArrival: string | null;
   /** Durée du trajet, en minutes ; `null` = inconnue. */
   readonly travelMinutes: number | null;
 }
 
 export interface TransferDeparture {
-  /** L'heure à laquelle le site doit pouvoir servir. */
-  readonly reference: string;
   readonly arrivalBy: string;
-  readonly departureBy: string;
+  /** `null` = trajet inconnu : l'arrivée, elle, se tient quand même. */
+  readonly departureBy: string | null;
 }
 
 const MINUTES_PER_HOUR = 60;
 
-/** Ce que l'heure d'arrivée requise lit : tout, sauf le trajet. */
-export type RequiredArrivalInput = Omit<TransferDepartureInput, "travelMinutes">;
+/** Ce que l'heure d'arrivée requise du POINT lit : ni trajet, ni réassorts. */
+export type RequiredArrivalInput = Omit<
+  TransferDepartureInput,
+  "travelMinutes" | "resupplyArrival"
+>;
 
 /**
  * L'heure à laquelle ce qui sert le point doit y ÊTRE — référence moins la
  * mise en place, `HH:mm` — ou `null` sans heure de référence. Elle ne
  * dépend pas du trajet : un point servi sur place la tient aussi (le
- * réassort « monté pour », H-D6 du plan de l'heure du réassort). Ramenée à
- * `00:00` au plus tôt.
+ * réassort « monté pour »). Ramenée à `00:00` au plus tôt.
+ *
+ * Sans les réassorts : c'est l'heure qu'on PROPOSE à un réassort, et un
+ * réassort à 05:30 ne doit pas proposer 05:30 au suivant.
  */
 export function requiredArrival(input: RequiredArrivalInput): string | null {
   const arrival = arrivalMinute(input);
@@ -75,22 +91,34 @@ export function requiredArrival(input: RequiredArrivalInput): string | null {
 }
 
 /**
- * Le départ requis, ou `null` s'il ne se calcule pas (aucune heure de
- * référence, ou trajet inconnu). Ramené à `00:00` au plus tôt : rien ne part
- * la veille (même règle que `deadlineThresholds`).
+ * L'arrivée requise du transfert — la plus tôt de celle du point et des
+ * réassorts —, ou `null` s'il n'y a ni référence ni réassort daté.
+ */
+export function transferArrival(
+  input: Omit<TransferDepartureInput, "travelMinutes">,
+): string | null {
+  const minutes = [
+    arrivalMinute(input),
+    input.resupplyArrival === null ? null : minuteOf(input.resupplyArrival),
+  ].filter((minute): minute is number => minute !== null);
+  return minutes.length === 0 ? null : clockOf(Math.min(...minutes));
+}
+
+/**
+ * L'arrivée et le départ requis, ou `null` sans aucune arrivée. Le départ est
+ * ramené à `00:00` au plus tôt : rien ne part la veille (même règle que
+ * `deadlineThresholds`).
  */
 export function transferDeparture(input: TransferDepartureInput): TransferDeparture | null {
-  const reference = referenceMinute(input);
-  const arrival = arrivalMinute(input);
-  if (reference === null || arrival === null || input.travelMinutes === null) {
+  const arrivalBy = transferArrival(input);
+  if (arrivalBy === null) {
     return null;
   }
-  const departure = Math.max(0, arrival - input.travelMinutes);
-  return {
-    reference: clockOf(reference),
-    arrivalBy: clockOf(arrival),
-    departureBy: clockOf(departure),
-  };
+  const departureBy =
+    input.travelMinutes === null
+      ? null
+      : clockOf(Math.max(0, minuteOf(arrivalBy) - input.travelMinutes));
+  return { arrivalBy, departureBy };
 }
 
 function arrivalMinute(input: RequiredArrivalInput): number | null {

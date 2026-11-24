@@ -5,6 +5,7 @@ import {
   DepartureSiteReader,
   RoadTravelTimeReader,
 } from "../../../../delivery/channels/commerce/index.js";
+import { PlacedResupplyArrivals } from "../../../resupply/domain/placed-resupply-arrivals.reader.js";
 import {
   type SiteDaySettings,
   SiteDaySettingsReader,
@@ -30,10 +31,17 @@ export interface SitedOrder {
  * lot T0).
  *
  * Pour un site sur place : sa mise en place au comptoir. Pour un site servi par
- * transfert : le départ et l'arrivée requis (`transferDeparture`), depuis ses
- * créneaux du jour, sa mise en place, et le trajet routier entre le départ des
- * tournées et lui — tous deux lus à la livraison, qui les déclare et les
- * implémente (`DepartureSiteReader`, `RoadTravelTimeReader`).
+ * transfert : l'arrivée et le départ requis (`transferDeparture`), depuis ses
+ * créneaux du jour, sa mise en place, la plus tôt des heures de ses réassorts
+ * « pour demain » envoyés (`PlacedResupplyArrivals`, une lecture groupée) et
+ * le trajet routier entre le départ des tournées et lui — tous deux lus à la
+ * livraison, qui les déclare et les implémente (`DepartureSiteReader`,
+ * `RoadTravelTimeReader`).
+ *
+ * C'est le SEUL endroit où l'heure du point et celles des réassorts se
+ * composent (règle de Hugo du 2026-11-24, la plus faible échéance) : le
+ * compte à rebours, la copie du colisage et le placement du transfert lisent
+ * tous cette arrivée.
  *
  * Calculé À LA VOLÉE, jamais rangé. L'arrêt du plan fige l'échéance de chaque
  * commande sur le bon du fournil (`production_order.due_at`, par
@@ -57,20 +65,31 @@ export class SiteDeadlines {
     private readonly sites: SiteDaySettingsReader,
     private readonly departure: DepartureSiteReader,
     private readonly road: RoadTravelTimeReader,
+    private readonly resupplies: PlacedResupplyArrivals,
   ) {}
 
   /**
-   * Le site résolu, par id. Un id ABSENT du résultat (site inconnu, commande
-   * sans site) se lit « non résolu » : l'échéance reste celle d'avant les sites.
+   * Le site résolu, par id : celui de chaque retrait, et celui de chaque
+   * point de `alsoSiteIds` qui a un réassort daté ce jour-là (le placement
+   * d'un transfert qui ne porte que des réassorts). Un id ABSENT du résultat
+   * (site inconnu, commande sans site) se lit « non résolu » : l'échéance
+   * reste celle d'avant les sites.
    */
   async forDay(
     day: string,
     orders: readonly SitedOrder[],
+    alsoSiteIds: readonly string[] = [],
   ): Promise<ReadonlyMap<string, DeadlineSite>> {
     const pickups = orders.filter((order) => order.fulfillmentMethod === "pickup");
-    const ids = [
+    const pickupIds = [
       ...new Set(pickups.flatMap((order) => (order.siteId === null ? [] : [order.siteId]))),
     ];
+    const asked = [...new Set([...pickupIds, ...alsoSiteIds])];
+    if (asked.length === 0) {
+      return new Map();
+    }
+    const resupplyArrivals = await this.resupplies.earliestFor(day, asked);
+    const ids = asked.filter((id) => pickupIds.includes(id) || resupplyArrivals.has(id));
     if (ids.length === 0) {
       return new Map();
     }
@@ -89,7 +108,8 @@ export class SiteDeadlines {
       const windows = pickups.flatMap((order) =>
         order.siteId === id && order.window !== null ? [order.window] : [],
       );
-      resolved.set(id, await this.resolve(day, id, site, origin, windows));
+      const timing = { origin, windows, resupplyArrival: resupplyArrivals.get(id) ?? null };
+      resolved.set(id, await this.resolve(day, id, site, timing));
     }
     return resolved;
   }
@@ -125,12 +145,12 @@ export class SiteDeadlines {
     day: string,
     id: string,
     site: SiteDaySettings,
-    origin: GpsPoint | null,
-    orderWindows: readonly ClockWindow[],
+    timing: SiteTiming,
   ): Promise<DeadlineSite> {
     if (site.supply === "on_site") {
       return { supply: "on_site", counterSetupMinutes: site.counterSetupMinutes };
     }
+    const { origin } = timing;
     const travelMinutes =
       origin === null || site.gps === null
         ? null
@@ -139,11 +159,12 @@ export class SiteDeadlines {
       proPickup: site.proPickup,
       publicRules: site.publicRules,
       publicClosures: site.publicClosures,
-      orderWindows,
+      orderWindows: timing.windows,
       counterSetupMinutes: site.counterSetupMinutes,
+      resupplyArrival: timing.resupplyArrival,
       travelMinutes,
     });
-    if (departure === null) {
+    if ((departure?.departureBy ?? null) === null) {
       this.logger.warn(
         `Transfert vers le site ${id} le ${day} : départ requis incalculable ` +
           `(${missingOf(site, origin, travelMinutes)}). Ses commandes passent « sans heure » ` +
@@ -156,6 +177,15 @@ export class SiteDeadlines {
       arrivalBy: departure?.arrivalBy ?? null,
     };
   }
+}
+
+/** Ce qui fixe l'heure d'un point, hors de ses réglages. */
+interface SiteTiming {
+  /** Le point GPS du départ des tournées, ou `null`. */
+  readonly origin: GpsPoint | null;
+  readonly windows: readonly ClockWindow[];
+  /** La plus tôt des heures de ses réassorts « pour demain », ou `null`. */
+  readonly resupplyArrival: string | null;
 }
 
 /** La raison, dans les mots de l'écran des sites. */
@@ -173,5 +203,5 @@ function missingOf(
   if (travelMinutes === null) {
     return "le calcul routier est indisponible";
   }
-  return "aucun créneau, aucune ouverture pros ni aucune commande avec une heure ce jour-là";
+  return "aucun créneau, aucune ouverture pros, aucune commande ni aucun réassort avec une heure ce jour-là";
 }

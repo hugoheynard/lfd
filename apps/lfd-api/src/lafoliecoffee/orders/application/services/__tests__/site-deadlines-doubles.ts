@@ -4,6 +4,7 @@ import {
   DepartureSiteReader,
   RoadTravelTimeReader,
 } from "../../../../../delivery/channels/commerce/index.js";
+import { PlacedResupplyArrivals } from "../../../../resupply/domain/placed-resupply-arrivals.reader.js";
 import {
   type SiteDaySettings,
   SiteDaySettingsReader,
@@ -73,11 +74,28 @@ export class FixedRoad extends RoadTravelTimeReader {
   }
 }
 
-/** Le service, branché sur ses trois doubles. */
+/** Les heures des réassorts envoyés, par point — déjà réduites au plus tôt, comme en base. */
+export class FixedResupplyArrivals extends PlacedResupplyArrivals {
+  readonly asked: (readonly string[])[] = [];
+
+  constructor(private readonly arrivals: ReadonlyMap<string, string>) {
+    super();
+  }
+
+  earliestFor(_day: string, siteIds: readonly string[]): Promise<ReadonlyMap<string, string>> {
+    this.asked.push(siteIds);
+    return Promise.resolve(
+      new Map([...this.arrivals].filter(([siteId]) => siteIds.includes(siteId))),
+    );
+  }
+}
+
+/** Le service, branché sur ses quatre doubles. */
 export function siteDeadlinesOf(options: {
   readonly sites?: ReadonlyMap<string, SiteDaySettings>;
   readonly departureId?: string | null;
   readonly travelMinutes?: number | null;
+  readonly resupplies?: ReadonlyMap<string, string>;
 }): {
   readonly service: SiteDeadlines;
   readonly sites: FixedSiteSettings;
@@ -88,5 +106,6 @@ export function siteDeadlinesOf(options: {
   const departure = new FixedDeparture(
     options.departureId === undefined ? "site_fournil" : options.departureId,
   );
-  return { service: new SiteDeadlines(sites, departure, road), sites, road };
+  const resupplies = new FixedResupplyArrivals(options.resupplies ?? new Map());
+  return { service: new SiteDeadlines(sites, departure, road, resupplies), sites, road };
 }

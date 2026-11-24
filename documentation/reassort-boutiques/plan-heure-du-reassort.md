@@ -99,27 +99,103 @@ lot H2 le corrige au passage.
 
 ### H3 — l'échéance du fournil
 
-> **À moitié, 2026-11-24.** Bâti : `production_resupply.arrival_by`, recopiée
-> à l'arrêt. **Pas bâti, et pourquoi** (lu dans le code par le bâtisseur) :
-> le compte à rebours (`DueThresholds`, commerce) ne fabrique ses seuils
-> qu'avec les commandes vivantes, et la fiche ajuste ses paliers à la
-> quantité de la ligne — un réassort tombe aujourd'hui dans le dernier palier.
-> Y ajouter des seuils de réassort fausse l'aperçu d'avant l'arrêt, qui ne
-> compte pas les réassorts. Et H2 avance le transfert sur un réassort à
-> 05:30 sans avancer l'échéance des commandes du même point (`requiredBy`).
-> Décisions attendues : quel « départ requis » vaut pour l'échéance, les
-> commandes suivent-elles, et le réassort servi sur place retire-t-il la
-> marge de retrait.
+> **Première moitié bâtie** (`5427f4e05`) : `production_resupply.arrival_by`,
+> recopiée à l'arrêt. **La seconde suit la règle de Hugo du 2026-11-24**,
+> pour le transfert du matin (H4 attend).
 
-- La copie figée gagne `production_resupply.arrival_by` (additive),
-  recopiée à l'arrêt.
-- L'échéance d'un réassort pour le compte à rebours et la fiche d'atelier :
-  servi par transfert → départ requis du transfert − marge de livraison ;
-  servi sur place → heure − mise en place.
-- **À ouvrir au début du lot** : comment le compte à rebours et la fiche
-  d'atelier comptent aujourd'hui les réassorts (je n'ai pas trouvé
-  d'échéance de réassort dans `production/atelier/` ; à confirmer avant
-  d'écrire).
+**La règle (Hugo, 2026-11-24)** : « l'échéance du réassort se considère de
+la même façon que la plus faible échéance des commandes, pour ensuite
+calculer une heure de départ » ; « l'ouverture reste un plancher ».
+
+```mermaid
+flowchart LR
+  O["Ouverture du point<br/>− mise en place"] --> M["Arrivée requise<br/>= la plus faible"]
+  C["Commandes<br/>créneau − mise en place"] --> M
+  R["Réassorts pour demain<br/>leur heure"] --> M
+  M --> D["Départ requis<br/>= arrivée − trajet"]
+  D --> F["Échéance du fournil<br/>= départ − marge de livraison<br/>pour TOUT ce que le transfert porte"]
+```
+
+**Une seule source, déjà en place** (vérifié le 2026-11-24) :
+`SiteDeadlines` (`lafoliecoffee/orders/application/services/site-deadlines.service.ts`)
+rend pour chaque point `arrivalBy` et `requiredBy`, que lisent :
+
+- le compte à rebours (`DueThresholds` → `deadlineThresholds`, `dueMinute` :
+  `requiredBy − marge de livraison` pour un retrait par transfert) ;
+- la copie remise au colisage (`SitedDayOrders` → `destinationDueAt` :
+  `arrivalBy`) ;
+- le placement (`CommerceTransferSites`, `arrivalBy`), où H2 a pris le
+  `min` avec les réassorts **à côté** de `SiteDeadlines`.
+
+Le défaut d'aujourd'hui est là : H2 a corrigé l'heure du placement, pas
+celle du compte à rebours ni de la copie. Un réassort à 05:30 avance la
+camionnette, pas l'échéance des commandes du point.
+
+**H3b — la plus faible échéance dans `SiteDeadlines`** (v2, après `vitruve`).
+
+- `transferDeparture` sépare l'**arrivée** du **départ** : l'arrivée ne
+  dépend pas du trajet. `arrivée = min(ouverture − mise en place, premier
+créneau public − mise en place, réassorts)` ; sans ouverture ni créneau,
+  le repli sur les créneaux des commandes, puis les réassorts seuls. Le
+  départ = arrivée − trajet, `null` seulement si le trajet est inconnu. Un
+  OSRM muet ne remet donc plus le transfert sans fenêtre (le placement ne lit
+  que l'arrivée).
+- `SiteDeadlines.forDay` reçoit, par point, la plus tôt des heures des
+  réassorts « pour demain » envoyés et non annulés (`PlacedResupplyArrivals`,
+  une lecture groupée). `requiredArrivals`, qui sert la **proposition**
+  d'heure d'un réassort, reste **sans** réassorts : sinon un réassort à 05:30
+  proposerait 05:30 au suivant.
+- `CommerceTransferSites` lit l'`arrivalBy` de `SiteDeadlines` pour les
+  points qui ont des retraits, `requiredArrivals` + réassorts pour les autres ;
+  le `min` de H2 n'existe plus qu'à un endroit.
+- Lecteurs touchés (recensés le 2026-11-24) : le compte à rebours
+  (`DueThresholds`), la copie du colisage (`ProducibleOrder.dueAt`, par les six
+  appels de `producibleFor` : lancement d'un « au plus tôt », fiche, clôture
+  automatique de tournée, dossier vivant, arrêt et reprise), le placement et
+  le papier de tournée. Tous veulent la même heure : c'est le but.
+- La lecture d'OSRM dans la transaction de l'arrêt est une dette connue
+  (`network-outside-transaction`) ; H3b n'ajoute qu'une lecture SQL groupée.
+
+**H3c — le réassort dans le compte à rebours, par le commerce** (v2).
+
+- Le fournil ne connaît ni le trajet ni le départ d'un point : c'est le
+  **commerce**, qui calcule déjà le compte à rebours (`DueThresholds`), qui y
+  ajoute les réassorts « pour demain » envoyés du jour. Leur échéance :
+  - servi par transfert : `requiredBy` du point − marge de livraison, comme
+    les commandes du point ;
+  - servi sur place (Labo) : `heure − marge de retrait`. L'heure est déjà
+    une arrivée au comptoir (la mise en place n'est pas retirée deux fois),
+    comme une commande dont `créneau − mise en place` est l'arrivée.
+- La quantité attendue avant l'arrêt : la **fiche d'atelier** additionne les
+  réassorts envoyés (`ExpectedResuppliesReader`, déjà lu par le prévisionnel
+  et les postes) à la demande des commandes (`ProductionWorksheetReading`,
+  `demandOf`), comme le font déjà les postes ; sans quoi l'ajustement des
+  paliers à la ligne (`deadlinesOf`) rognerait les paliers des commandes.
+  `ExpectedProductionReader` ne change pas : le prévisionnel les compterait
+  deux fois (lu par le bâtisseur le 2026-11-24 ; décidé sans Hugo, dans le
+  mandat). Après l'arrêt, les fournées comptent déjà commandes + réassorts
+  (décision B, `production-count.ts`).
+- Une seule arithmétique : `deadlineThresholds` reçoit les réassorts comme des
+  éléments de plus ; rien n'est recopié côté fournil.
+- Le compte à rebours est vivant (il relit à chaque ouverture), comme pour
+  les commandes : un réassort annulé après l'arrêt en sort, comme une
+  commande.
+
+**Limites assumées** : `on-site-share` sert le colisage avant la part sur
+place (en-tête du fichier) ; un réassort du Labo à 05:30 reçoit donc ses
+pièces après les commandes à coliser. Inchangé par ce lot, noté dans
+`reste-a-faire.md`.
+
+| #   | Niveau   | Objection de `vitruve` (2026-11-24)                | Réponse                          |
+| --- | -------- | -------------------------------------------------- | -------------------------------- |
+| 1   | BLOQUANT | le fournil ne peut pas calculer « départ − marge » | H3c par le commerce              |
+| 2   | BLOQUANT | sans trajet, `arrivalBy` retombe à `null`          | arrivée séparée du départ        |
+| 3   | SÉRIEUX  | fusion côté fournil : deux arithmétiques           | sans objet (H3c par le commerce) |
+| 4   | SÉRIEUX  | mise en place retirée deux fois au Labo            | `heure − marge de retrait`       |
+| 5   | SÉRIEUX  | `on-site-share` sert le colisage d'abord           | limite assumée                   |
+| 6   | SÉRIEUX  | `requiredArrivals` deviendrait circulaire          | reste sans réassorts             |
+| 7   | SÉRIEUX  | lecteurs non recensés, OSRM dans la transaction    | recensés ; dette inchangée       |
+| 8   | SÉRIEUX  | figé et vivant divergent                           | comme les commandes : vivant     |
 
 ### H4 — plusieurs transferts par point et par jour (le gros morceau)
 

@@ -4,11 +4,7 @@ import {
   type TransferSiteFacts,
   TransferSitesReader,
 } from "../../../../delivery/channels/commerce/index.js";
-import { PlacedResupplyArrivals } from "../../../resupply/domain/placed-resupply-arrivals.reader.js";
-import {
-  type SiteArrivalOrder,
-  SiteArrivalOrdersReader,
-} from "../../domain/ports/site-arrival-orders.reader.js";
+import { SiteArrivalOrdersReader } from "../../domain/ports/site-arrival-orders.reader.js";
 import { SiteDaySettingsReader } from "../../domain/ports/site-day-settings.reader.js";
 import { SiteDeadlines } from "./site-deadlines.service.js";
 
@@ -23,22 +19,18 @@ import { SiteDeadlines } from "./site-deadlines.service.js";
  * passe par le calcul routier.
  *
  * 🔴 **Les commandes qui fixent l'heure sont les retraits VIVANTS du jour**
- * (`SiteArrivalOrdersReader`), pas celles du plan. Jusqu'au 2026-10-24, ce
- * service lisait `DayOrdersSource.producibleFor` (`planWhere`, `placed` seul) :
- * après l'arrêt du plan, toutes les commandes sont `confirmed`, le site n'était
- * plus résolu, `arrivalBy` tombait à `null`, et la composition de l'arrêt,
- * « Proposer » et le placement au fil de l'eau posaient le transfert sans
- * fenêtre — parfois dans une tournée d'après-midi.
+ * (`SiteArrivalOrdersReader`), pas celles du plan (`planWhere`, `placed`
+ * seul) : après l'arrêt, toutes les commandes sont `confirmed`, et le plan
+ * n'en résoudrait plus le site.
  *
- * ## Le transfert arrive à la plus tôt des heures de ce qu'il porte (H-D4)
+ * ## Le transfert arrive à la plus tôt des heures de ce qu'il porte
  *
- * `arrivalBy` = la plus tôt de l'heure requise du point et des heures des
- * réassorts « pour demain » envoyés du jour (`PlacedResupplyArrivals`, que
- * le réassort publie). Un point SANS retrait mais avec un réassort daté a
- * donc une heure : celle que le point demande (`requiredArrivals`, la même
- * règle sans les créneaux de commandes), sinon celle du réassort. Un
- * réassort sans heure ne compte pas. L'échéance des commandes
- * (`SiteDeadlines.forDay`) n'en est pas changée.
+ * `arrivalBy` est l'arrivée de `SiteDeadlines`, qui compose seule l'heure du
+ * point et celles des réassorts « pour demain » envoyés : le compte à rebours
+ * et la copie du colisage lisent la même. Un point SANS retrait mais avec un
+ * réassort daté est résolu aussi (`forDay`, `alsoSiteIds`). L'arrivée ne
+ * dépend pas du trajet : un calcul routier muet ne remet pas le transfert
+ * sans fenêtre.
  */
 @Injectable()
 export class CommerceTransferSites extends TransferSitesReader {
@@ -46,7 +38,6 @@ export class CommerceTransferSites extends TransferSitesReader {
     private readonly orders: SiteArrivalOrdersReader,
     private readonly settings: SiteDaySettingsReader,
     private readonly deadlines: SiteDeadlines,
-    private readonly resupplies: PlacedResupplyArrivals,
   ) {
     super();
   }
@@ -58,60 +49,30 @@ export class CommerceTransferSites extends TransferSitesReader {
     if (siteIds.length === 0) {
       return new Map();
     }
-    const [pickups, settings, resupplyArrivals] = await Promise.all([
+    const [pickups, settings] = await Promise.all([
       this.orders.forDay(day),
       this.settings.forDay(day, siteIds),
-      this.resupplies.earliestFor(day, siteIds),
     ]);
-    const arrivals = await this.siteArrivals(day, pickups, resupplyArrivals);
+    const deadlines = await this.deadlines.forDay(
+      day,
+      pickups.map(({ window, siteId }) => ({ fulfillmentMethod: "pickup", window, siteId })),
+      siteIds,
+    );
     const facts = new Map<string, TransferSiteFacts>();
     for (const siteId of siteIds) {
       const site = settings.get(siteId);
       if (site === undefined) {
         continue;
       }
+      const deadline = deadlines.get(siteId);
       facts.set(siteId, {
         siteId,
         label: site.label,
         gps: site.gps,
         mode: site.transferMode,
-        arrivalBy:
-          site.supply === "transfer"
-            ? earliestOf([arrivals.get(siteId) ?? null, resupplyArrivals.get(siteId) ?? null])
-            : null,
+        arrivalBy: deadline?.supply === "transfer" ? deadline.arrivalBy : null,
       });
     }
     return facts;
   }
-
-  /**
-   * L'heure que chaque point demande : par ses retraits du jour (la règle de
-   * l'échéance), sinon — point sans retrait mais avec un réassort daté — par
-   * ses horaires seuls.
-   */
-  private async siteArrivals(
-    day: string,
-    pickups: readonly SiteArrivalOrder[],
-    resupplyArrivals: ReadonlyMap<string, string>,
-  ): Promise<ReadonlyMap<string, string | null>> {
-    const deadlines = await this.deadlines.forDay(
-      day,
-      pickups.map(({ window, siteId }) => ({ fulfillmentMethod: "pickup", window, siteId })),
-    );
-    const arrivals = new Map<string, string | null>();
-    for (const [siteId, deadline] of deadlines) {
-      arrivals.set(siteId, deadline.supply === "transfer" ? deadline.arrivalBy : null);
-    }
-    const unresolved = [...resupplyArrivals.keys()].filter((siteId) => !deadlines.has(siteId));
-    for (const [siteId, arrival] of await this.deadlines.requiredArrivals(day, unresolved)) {
-      arrivals.set(siteId, arrival);
-    }
-    return arrivals;
-  }
-}
-
-/** La plus tôt des heures `HH:MM` présentes, ou `null` sans aucune. */
-function earliestOf(clocks: readonly (string | null)[]): string | null {
-  const present = clocks.filter((clock): clock is string => clock !== null);
-  return present.length === 0 ? null : present.reduce((a, b) => (b < a ? b : a));
 }

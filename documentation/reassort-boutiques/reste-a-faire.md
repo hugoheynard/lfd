@@ -71,6 +71,13 @@
   tournées, dossier du jour) n'est éprouvé de bout en bout que par les deux
   parcours `resupply-village-flow` et `resupply-labo-flow` ; aucune e2e ne
   vise chacun de ces effets à part. Non revérifié le 2026-11-02.
+- **La part sur place se sert après le colisage** : `on-site-share`
+  (`production/atelier/domain/services/on-site-share.ts`, en-tête) remet une
+  fournée au colisage d'abord, puis garde la part du point sur place. Un
+  réassort du Labo « pour 05:30 » reçoit donc ses pièces après les commandes
+  à coliser, même plus tardives : l'heure du réassort fixe son échéance au
+  compte à rebours, pas l'ordre de partage d'une fournée. Limite assumée du
+  plan `plan-heure-du-reassort.md` (H3, objection 5 de `vitruve`).
 
 ## 4. Dette de code
 

@@ -1,4 +1,3 @@
-import { PlacedResupplyArrivals } from "../../../../resupply/domain/placed-resupply-arrivals.reader.js";
 import {
   type SiteArrivalOrder,
   SiteArrivalOrdersReader,
@@ -21,19 +20,6 @@ class FixedPickups extends SiteArrivalOrdersReader {
   }
 }
 
-/** Les heures des réassorts envoyés, par point — déjà réduites au plus tôt, comme en base. */
-class FixedResupplyArrivals extends PlacedResupplyArrivals {
-  constructor(private readonly arrivals: ReadonlyMap<string, string>) {
-    super();
-  }
-
-  earliestFor(_day: string, siteIds: readonly string[]): Promise<ReadonlyMap<string, string>> {
-    return Promise.resolve(
-      new Map([...this.arrivals].filter(([siteId]) => siteIds.includes(siteId))),
-    );
-  }
-}
-
 const VILLAGE_ORDER: SiteArrivalOrder = {
   siteId: "site_village",
   window: { start: "09:00", end: "10:00" },
@@ -42,6 +28,7 @@ const VILLAGE_ORDER: SiteArrivalOrder = {
 function service(
   orders: readonly SiteArrivalOrder[],
   resupplies: ReadonlyMap<string, string> = new Map(),
+  travelMinutes: number | null = 25,
 ) {
   const sites = new Map([
     ["site_fournil", siteSettings({ gps: FOURNIL_GPS })],
@@ -57,13 +44,12 @@ function service(
       }),
     ],
   ]);
-  const { service: deadlines, sites: reader } = siteDeadlinesOf({ sites, travelMinutes: 25 });
-  return new CommerceTransferSites(
-    new FixedPickups(orders),
-    reader,
-    deadlines,
-    new FixedResupplyArrivals(resupplies),
-  );
+  const { service: deadlines, sites: reader } = siteDeadlinesOf({
+    sites,
+    travelMinutes,
+    resupplies,
+  });
+  return new CommerceTransferSites(new FixedPickups(orders), reader, deadlines);
 }
 
 describe("CommerceTransferSites — de quoi placer le transfert d'un site (lot T1)", () => {
@@ -128,27 +114,50 @@ describe("CommerceTransferSites — la plus tôt des heures de ce que le transfe
       ["site_fournil", siteSettings({ gps: FOURNIL_GPS })],
       ["site_chalet", siteSettings({ supply: "transfer", gps: VILLAGE_GPS })],
     ]);
-    const { service: deadlines, sites: reader } = siteDeadlinesOf({ sites });
-    const facts = await new CommerceTransferSites(
-      new FixedPickups([]),
-      reader,
-      deadlines,
-      new FixedResupplyArrivals(new Map([["site_chalet", "06:30"]])),
-    ).sitesFor("2030-01-15", ["site_chalet"]);
+    const { service: deadlines, sites: reader } = siteDeadlinesOf({
+      sites,
+      resupplies: new Map([["site_chalet", "06:30"]]),
+    });
+    const facts = await new CommerceTransferSites(new FixedPickups([]), reader, deadlines).sitesFor(
+      "2030-01-15",
+      ["site_chalet"],
+    );
 
     expect(facts.get("site_chalet")?.arrivalBy).toBe("06:30");
   });
 
   it("un point servi sur place n'a jamais d'heure de transfert, réassort ou pas", async () => {
     const sites = new Map([["site_labo", siteSettings()]]);
-    const { service: deadlines, sites: reader } = siteDeadlinesOf({ sites });
-    const facts = await new CommerceTransferSites(
-      new FixedPickups([]),
-      reader,
-      deadlines,
-      new FixedResupplyArrivals(new Map([["site_labo", "06:30"]])),
-    ).sitesFor("2030-01-15", ["site_labo"]);
+    const { service: deadlines, sites: reader } = siteDeadlinesOf({
+      sites,
+      resupplies: new Map([["site_labo", "06:30"]]),
+    });
+    const facts = await new CommerceTransferSites(new FixedPickups([]), reader, deadlines).sitesFor(
+      "2030-01-15",
+      ["site_labo"],
+    );
 
     expect(facts.get("site_labo")?.arrivalBy).toBeNull();
+  });
+
+  /**
+   * Régression : un calcul routier muet effaçait le départ ET l'arrivée, et
+   * le transfert se replaçait sans fenêtre.
+   */
+  it("un calcul routier muet garde l'heure d'arrivée", async () => {
+    const facts = await service([VILLAGE_ORDER], new Map(), null).sitesFor("2030-01-15", [
+      "site_village",
+    ]);
+
+    expect(facts.get("site_village")?.arrivalBy).toBe("07:20");
+  });
+
+  it("un point à réassorts seuls et calcul routier muet garde l'heure du réassort", async () => {
+    const facts = await service([], new Map([["site_village", "06:00"]]), null).sitesFor(
+      "2030-01-15",
+      ["site_village"],
+    );
+
+    expect(facts.get("site_village")?.arrivalBy).toBe("06:00");
   });
 });
