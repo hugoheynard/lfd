@@ -45,6 +45,7 @@ import {
   SettableTrackingSettingsVersion,
   trackingPorts,
 } from "../../__tests__/tracking-doubles.js";
+import { ExpectedResupplies } from "../../../../channels/commerce/__tests__/expected-resupplies-doubles.js";
 
 /**
  * La fiche du fournil servie depuis l'objet des journées
@@ -109,6 +110,7 @@ function around(outage: Outage = "none") {
   const reading = new ProductionWorksheetReading(
     days,
     new NoDemand(),
+    new ExpectedResupplies(),
     new NoOrders(),
     new NoContainers(),
     new WorksheetDeadlinesReading(

@@ -21,7 +21,10 @@ import {
   ExpectedProductionReader,
   type ExpectedDayProduction,
 } from "../../../../channels/commerce/expected-production.reader.js";
-import type { ProductionArticlesReader } from "../../../../channels/commerce/index.js";
+import type {
+  ExpectedDayResupplies,
+  ProductionArticlesReader,
+} from "../../../../channels/commerce/index.js";
 import { ProductionDay } from "../../../../day/domain/entities/production-day.js";
 import { ProductionContainerReader } from "../../../domain/ports/production-container.reader.js";
 import { ProductionDayRepository } from "../../../../day/index.js";
@@ -46,6 +49,7 @@ import {
   UnreadWorkstationOfProducts,
 } from "../../../../workstations/application/__tests__/placement-doubles.js";
 import { trackingPorts } from "../../__tests__/tracking-doubles.js";
+import { ExpectedResupplies } from "../../../../channels/commerce/__tests__/expected-resupplies-doubles.js";
 
 /**
  * Le jour est DÉRIVÉ de maintenant : `relativeDay` le compare à l'horloge, et un
@@ -132,12 +136,14 @@ function handlerFor(
   shelves: ProductionArticlesReader = shelfArticles(SEIGLE_AU_PAIN),
   commerce: Commerce = new Commerce(producible),
   display: InMemoryDisplaySettings = new InMemoryDisplaySettings(),
+  resupplies: readonly ExpectedDayResupplies[] = [],
 ): GetProductionWorksheetHandler {
   return new GetProductionWorksheetHandler(
     worksheetContentsAround(
       new ProductionWorksheetReading(
         new Days(current),
         new Expected(expected),
+        new ExpectedResupplies(resupplies),
         commerce,
         new Containers(rules),
         new WorksheetDeadlinesReading(

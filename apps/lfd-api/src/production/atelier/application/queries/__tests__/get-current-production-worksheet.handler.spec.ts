@@ -30,6 +30,7 @@ import { worksheetContentsAround } from "../../__tests__/worksheet-contents-doub
 import { WorksheetDeadlinesReading } from "../../services/worksheet-deadlines-reading.service.js";
 import { placementPorts } from "../../../../workstations/application/__tests__/placement-doubles.js";
 import { trackingPorts } from "../../__tests__/tracking-doubles.js";
+import { ExpectedResupplies } from "../../../../channels/commerce/__tests__/expected-resupplies-doubles.js";
 
 /**
  * **La fiche en cours** : demain si son plan est arrêté, aujourd'hui sinon.
@@ -112,6 +113,7 @@ function handlerFor(days: Days, now: Date = NOW): GetCurrentProductionWorksheetH
   const reading = new ProductionWorksheetReading(
     days,
     new NoDemand(),
+    new ExpectedResupplies(),
     new NoOrders(),
     new NoContainers(),
     new WorksheetDeadlinesReading(new FixedDueThresholds(), new InMemoryTrancheSettings().reader()),

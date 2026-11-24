@@ -35,6 +35,7 @@ import { WorksheetDeadlinesReading } from "../worksheet-deadlines-reading.servic
 import { placementPorts } from "../../../../workstations/application/__tests__/placement-doubles.js";
 import { trackingPorts } from "../../__tests__/tracking-doubles.js";
 import { InMemoryProblems } from "../../__tests__/problem-doubles.js";
+import { ExpectedResupplies } from "../../../../channels/commerce/__tests__/expected-resupplies-doubles.js";
 
 /**
  * Les paliers et la pastille qualité d'une ligne de la fiche (plan
@@ -133,6 +134,7 @@ function bareReading(
   return new ProductionWorksheetReading(
     new Days(closedDay()),
     new NoDemand(),
+    new ExpectedResupplies(),
     new NoOrders(),
     new NoContainers(),
     new WorksheetDeadlinesReading(new FixedDueThresholds(due), settings.reader()),

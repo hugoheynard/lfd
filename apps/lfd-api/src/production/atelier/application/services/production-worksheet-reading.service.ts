@@ -2,6 +2,7 @@ import { Injectable, Logger } from "@nestjs/common";
 
 import { DayOrdersReader } from "../../../channels/commerce/day-orders.reader.js";
 import { ExpectedProductionReader } from "../../../channels/commerce/expected-production.reader.js";
+import { ExpectedResuppliesReader } from "../../../channels/commerce/expected-resupplies.reader.js";
 import {
   OvenWaitingOrdersReader,
   type OvenWaitingOrders,
@@ -60,6 +61,14 @@ import { WorksheetTrackingLevelsReading } from "./worksheet-tracking-levels.js";
  * Des tranches illisibles laissent la fiche servie, sans paliers. La
  * traduction d'une ligne vers le contrat vit dans `worksheet-line-views.ts`.
  *
+ * ## La demande d'une journée ouverte : commandes ET réassorts
+ *
+ * Avant l'arrêt, la fiche additionne les réassorts « pour demain » envoyés
+ * (`ExpectedResuppliesReader`) aux commandes, comme les postes : le compte à
+ * rebours les compte aussi, et sans eux l'ajustement des paliers à la ligne
+ * (`deadlinesOf`) rognerait ceux des commandes. Après l'arrêt, la quantité
+ * vient du compte figé, qui porte déjà les deux : la demande n'y est pas lue.
+ *
  * ## Ce qui attend le four (§3, Hugo, 2026-10-28)
  *
  * Le colisage dit, par SKU, combien de commandes du jour attendent le four et
@@ -98,6 +107,7 @@ export class ProductionWorksheetReading {
   constructor(
     private readonly days: ProductionDayRepository,
     private readonly expected: ExpectedProductionReader,
+    private readonly expectedResupplies: ExpectedResuppliesReader,
     private readonly orders: DayOrdersReader,
     private readonly containers: ProductionContainerReader,
     private readonly deadlines: WorksheetDeadlinesReading,
@@ -118,6 +128,7 @@ export class ProductionWorksheetReading {
     const [
       current,
       expected,
+      resupplies,
       producible,
       containers,
       tranches,
@@ -129,6 +140,7 @@ export class ProductionWorksheetReading {
     ] = await Promise.all([
       loading,
       this.expected.expectedBetween(ServiceRange.of(day.value, day.value)),
+      this.expectedResupplies.expectedBetween(ServiceRange.of(day.value, day.value)),
       this.orders.producibleFor(day),
       this.containers.allBySku(),
       this.deadlines.read(day),
@@ -151,7 +163,7 @@ export class ProductionWorksheetReading {
       retakenAt: current.retaken?.at ?? null,
       counts: current.counts,
       batches: current.batches,
-      demand: demandOf(expected, day),
+      demand: mergedDemand([...demandOf(expected, day), ...demandOf(resupplies, day)]),
       arrivals: producible.filter((order) => !known.has(order.orderId)),
       containers,
     });
@@ -217,4 +229,17 @@ function demandOf(
   day: ServiceDay,
 ): readonly DemandedItem[] {
   return expected.find((entry) => entry.day === day.value)?.items ?? [];
+}
+
+/** Une ligne par article : les quantités des commandes et des réassorts s'additionnent. */
+function mergedDemand(items: readonly DemandedItem[]): readonly DemandedItem[] {
+  const bySku = new Map<string, DemandedItem>();
+  for (const item of items) {
+    const known = bySku.get(item.sku);
+    bySku.set(
+      item.sku,
+      known === undefined ? item : { ...known, quantity: known.quantity + item.quantity },
+    );
+  }
+  return [...bySku.values()];
 }

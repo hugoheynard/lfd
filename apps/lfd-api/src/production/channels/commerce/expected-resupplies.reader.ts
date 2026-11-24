@@ -14,9 +14,10 @@ export interface ExpectedDayResupplies {
  * `documentation/reassort-boutiques/README.md`, Hugo
  * 2026-10-21). Port que le fournil DÉCLARE et que le commerce implémente.
  *
- * Un port à part d'{@link ExpectedProductionReader} (ISP) : la fiche
- * d'atelier lit la demande en commandes et n'a que faire des réassorts, qui
- * entrent dans son compte par le gel de l'arrêt ; et à part de
+ * Un port à part d'{@link ExpectedProductionReader} (ISP) : le prévisionnel
+ * compte les réassorts à part des commandes, et la fiche d'atelier les
+ * additionne à sa demande d'une journée ouverte (après l'arrêt, ils sont
+ * dans le compte figé) ; et à part de
  * {@link DayResuppliesReader}, qui rend des réassorts entiers, une journée à
  * la fois, pour les figer — une matrice de sept jours ne veut que des pièces.
  *

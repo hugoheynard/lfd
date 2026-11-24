@@ -1,6 +1,6 @@
 # Plan — l'heure du réassort
 
-> **Plan en cours.** H1 bâti (`a686db02c`), H2 bâti, H3 à moitié (l'heure figée sur la copie du fournil ; l'échéance attend une décision, § 4 H3), H4 contredit et en attente (§ 4 H4). Écrit le 2026-11-24 à la demande de
+> **Plan en cours.** H1 bâti (`a686db02c`), H2 et H3 bâtis (`5427f4e05`, `1a5d80959`, H3c ensuite) — e2e de H3b et H3c pas encore passés ; H4 contredit et mis de côté par Hugo le 2026-11-24 (« mon plus important c'est mon transfert du matin »). Écrit le 2026-11-24 à la demande de
 > Hugo : « on devrait définir une heure au réassort du matin comme pour les
 > créneaux de commande, parce que le transfert est une conséquence des
 > horaires de tout ce qu'il contient ». Chaque affirmation sur l'existant a

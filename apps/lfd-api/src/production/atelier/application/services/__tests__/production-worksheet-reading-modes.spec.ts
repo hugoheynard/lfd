@@ -44,6 +44,7 @@ import {
   trackingPorts,
 } from "../../__tests__/tracking-doubles.js";
 import { ProductionTrackingSettings } from "../../../domain/entities/production-tracking-settings.js";
+import { ExpectedResupplies } from "../../../../channels/commerce/__tests__/expected-resupplies-doubles.js";
 
 /**
  * **La fiche selon le mode** (`documentation/fournil/les-postes-du-fournil.md`,
@@ -108,6 +109,7 @@ function subject(
   const reading = new ProductionWorksheetReading(
     new Days(closedDay(DAY, TIRAGE, [])),
     new NoDemand(),
+    new ExpectedResupplies(),
     new NoOrders(),
     new NoContainers(),
     new WorksheetDeadlinesReading(new FixedDueThresholds(), new InMemoryTrancheSettings().reader()),

@@ -1,5 +1,7 @@
 import { Module } from "@nestjs/common";
 
+import { DayResuppliesReader } from "../../production/channels/commerce/index.js";
+
 import { AccountModule } from "../account/account.module.js";
 import { CatalogModule } from "../catalog/catalog.module.js";
 import { OrderCutoffsInForceModule } from "../order-cutoffs/order-cutoffs-in-force.module.js";
@@ -235,6 +237,9 @@ import { PrismaCounterStockTracking } from "./infrastructure/prisma-counter-stoc
     RecordDepartureOnTransferDeparted,
     ResupplyPlanGate,
     ProductionDayResupplies,
+    // Le compte à rebours des commandes y lit les réassorts du jour, par le
+    // port que le fournil déclare (plan de l'heure du réassort, H3c).
+    { provide: DayResuppliesReader, useExisting: ProductionDayResupplies },
     ProductionRangeResupplies,
     // Réglages › Comptoir : le suivi du stock, point par point (2026-11-19).
     { provide: CounterStockTracking, useClass: PrismaCounterStockTracking },
@@ -248,6 +253,7 @@ import { PrismaCounterStockTracking } from "./infrastructure/prisma-counter-stoc
   // jour J, lot L4) — même bloc `b2b`, sans frontière franchie.
   exports: [
     PlacedResupplyArrivals,
+    DayResuppliesReader,
     ProductionDayResupplies,
     ProductionRangeResupplies,
     DayShelfStock,

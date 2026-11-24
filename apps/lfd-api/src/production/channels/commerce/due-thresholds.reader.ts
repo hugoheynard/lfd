@@ -50,8 +50,8 @@ export interface DayDueThresholds {
  * même motif que ses voisins : déclaré ici, implémenté par le commerce, relié
  * dans `appBootstrap`.
  *
- * ⚠️ **Lecture de prévision** : il lit les commandes du plan (les mêmes que la
- * clôture absorbe). Une journée close n'en a plus — ses seuils figés sont le
+ * ⚠️ **Lecture de prévision** : il lit les commandes du plan et les réassorts
+ * « pour demain » envoyés (les mêmes que la clôture absorbe). Une journée close n'en a plus — ses seuils figés sont le
  * lot V1, pas ce port.
  */
 export abstract class DueThresholdsReader {
