@@ -3,6 +3,7 @@ import { isPublicLegalForm, toLegalForm } from "@lfd/contracts";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { PayerCommitmentRequirements } from "../../orders/domain/ports/payer-commitment-requirements.js";
+import { commitmentTimingOf } from "./prisma-chorus-routing.repository.js";
 import {
   PRIVATE_PAYER,
   type PayerCommitmentTerms,
@@ -26,7 +27,12 @@ export class PrismaPayerCommitmentRequirements extends PayerCommitmentRequiremen
       select: {
         formeJuridique: true,
         chorusRouting: {
-          select: { commitmentRequired: true, serviceCodeRequired: true, defaultServiceCode: true },
+          select: {
+            commitmentRequired: true,
+            serviceCodeRequired: true,
+            defaultServiceCode: true,
+            commitmentTiming: true,
+          },
         },
       },
     });
@@ -40,6 +46,7 @@ export class PrismaPayerCommitmentRequirements extends PayerCommitmentRequiremen
       commitmentRequired: routing?.commitmentRequired ?? false,
       serviceCodeRequired: routing?.serviceCodeRequired ?? false,
       defaultServiceCode: routing?.defaultServiceCode ?? "",
+      timing: routing === null ? "at_order" : commitmentTimingOf(routing.commitmentTiming),
     };
   }
 }

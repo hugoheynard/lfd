@@ -18,6 +18,7 @@ const ARMY: BudgetCommitmentRequirementsView = {
   commitmentRequired: true,
   serviceCodeRequired: true,
   defaultServiceCode: 'SRV-01',
+  timing: 'at_order',
   currentCommitment: null,
 };
 
@@ -86,6 +87,17 @@ describe('ClientBudgetCommitment', () => {
     expect(commitment.gap()).toBeNull();
     expect(commitment.payloadFor('cmp_1')).toEqual({
       budgetCommitment: { number: '1300012345', serviceCode: 'SRV-01' },
+    });
+  });
+
+  it('sur devis de période : le numéro ne manque pas et ne part pas, le code reste', async () => {
+    await read({ ...ARMY, timing: 'on_period_quote' });
+
+    expect(commitment.onQuote()).toBe(true);
+    expect(commitment.gap()).toBeNull();
+    commitment.setNumber('1300012345');
+    expect(commitment.payloadFor('cmp_1')).toEqual({
+      budgetCommitment: { number: '', serviceCode: 'SRV-01' },
     });
   });
 

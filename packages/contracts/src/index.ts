@@ -587,7 +587,11 @@ export {
   LEGAL_FORM_OPTIONS,
 } from "./legal-form.js";
 export type { LegalForm, LegalFormOption } from "./legal-form.js";
-export { chorusRoutingPayloadSchema } from "./chorus-routing.js";
+export {
+  CHORUS_ROUTING_ERRORS,
+  COMMITMENT_TIMINGS,
+  chorusRoutingPayloadSchema,
+} from "./chorus-routing.js";
 export {
   BUDGET_COMMITMENT_ERRORS,
   budgetCommitmentPayloadSchema,
@@ -599,7 +603,11 @@ export type {
   BudgetCommitmentView,
   CorrectBudgetCommitmentPayload,
 } from "./budget-commitment.js";
-export type { ChorusRoutingPayload, ChorusRoutingView } from "./chorus-routing.js";
+export type {
+  ChorusRoutingPayload,
+  ChorusRoutingView,
+  CommitmentTiming,
+} from "./chorus-routing.js";
 export { CHORUS_SERVICE_ERRORS, chorusServicePayloadSchema } from "./chorus-service.js";
 export type {
   ChorusServicePayload,

@@ -1,0 +1,14 @@
+-- RETOUR ARRIÈRE de 20261124190000_le_moment_de_l_engagement
+-- (documentation/comptabilite/facturation/plan-clients-publics-chorus.md, § 6 sexies, QD1).
+--
+-- 🔴 NON APPLIQUÉ, et Prisma ne le lit pas. La migration reste inscrite
+-- « appliquée ».
+--
+-- Le code d'avant ignore la colonne : le retour arrière est le retour du code
+-- seul. Un payeur posé en `on_period_quote` repasse alors, pour ce code, à la
+-- saisie du numéro à la commande. Retirer la colonne perdrait le mode relevé ;
+-- à faire seulement sur décision de Hugo :
+--
+--   ALTER TABLE "public"."company_chorus_routing"
+--     DROP CONSTRAINT "company_chorus_routing_commitment_timing_known";
+--   ALTER TABLE "public"."company_chorus_routing" DROP COLUMN "commitment_timing";

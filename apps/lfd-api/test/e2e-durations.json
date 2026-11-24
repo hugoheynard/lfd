@@ -124,6 +124,7 @@
   "test/collection-test-generate.e2e-spec.ts": 4726,
   "test/collection-test-return.e2e-spec.ts": 2346,
   "test/commercial-settings-access.e2e-spec.ts": 2638,
+  "test/commitment-timing.e2e-spec.ts": 5000,
   "test/company-access-guards.e2e-spec.ts": 5103,
   "test/company-activation.e2e-spec.ts": 3537,
   "test/company-archive-views.e2e-spec.ts": 11945,

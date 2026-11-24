@@ -108,6 +108,13 @@ export class ClientBudgetCommitment {
     standingOf(this.requirements()?.currentCommitment ?? null, this.order.choice()?.date ?? null),
   );
 
+  /**
+   * Le payeur donne son numéro sur le devis de la période : la commande se
+   * passe sans, le champ ne s'affiche pas et rien ne part. Le code service,
+   * lui, garde sa règle.
+   */
+  readonly onQuote = computed(() => this.requirements()?.timing === 'on_period_quote');
+
   /** Le numéro saisi, sinon celui de l'engagement en cours. */
   readonly number = computed(
     () => this.shownDraft()?.number ?? this.proposedNumber(this.standing()),
@@ -127,7 +134,11 @@ export class ClientBudgetCommitment {
     if (requirements === null || !requirements.publicPayer) {
       return null;
     }
-    if (requirements.commitmentRequired && this.number().trim() === '') {
+    if (
+      requirements.timing === 'at_order' &&
+      requirements.commitmentRequired &&
+      this.number().trim() === ''
+    ) {
       return 'number';
     }
     if (
@@ -170,9 +181,13 @@ export class ClientBudgetCommitment {
     const draft = this.draft();
     const own = draft !== null && draft.space === workspace ? draft : null;
     const standing = standingOf(requirements.currentCommitment, this.order.choice()?.date ?? null);
+    const number =
+      requirements.timing === 'on_period_quote'
+        ? ''
+        : (own?.number ?? this.proposedNumber(standing)).trim();
     return {
       budgetCommitment: {
-        number: (own?.number ?? this.proposedNumber(standing)).trim(),
+        number,
         serviceCode: (own?.serviceCode ?? requirements.defaultServiceCode).trim(),
       },
     };

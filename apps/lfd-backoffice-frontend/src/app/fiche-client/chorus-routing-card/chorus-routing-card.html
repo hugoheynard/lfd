@@ -29,6 +29,22 @@
         (checkedChange)="serviceCodeRequired.set($event)"
         data-chorus-service-required
       />
+      <fold-listbox
+        label="Moment de l'engagement"
+        hint="Sur le devis de la période : la commande se passe sans numéro, il arrive sur le devis."
+        [value]="commitmentTiming()"
+        (selectionChange)="chooseTiming($event)"
+        data-chorus-timing
+      >
+        <fold-option value="at_order">{{ timingLabels.at_order }}</fold-option>
+        <fold-option
+          value="on_period_quote"
+          [disabled]="!periodQuoteAvailable"
+          data-chorus-timing-quote
+        >
+          {{ timingLabels.on_period_quote }}{{ periodQuoteAvailable ? '' : ' (bientôt)' }}
+        </fold-option>
+      </fold-listbox>
       <fold-input
         label="Code service par défaut"
         hint="Proposé à chaque commande ; vide, il se saisira à la commande."
@@ -71,6 +87,9 @@
         </fold-field>
         <fold-field label="Code service">
           {{ r.serviceCodeRequired ? 'Exigé' : 'Non exigé' }}
+        </fold-field>
+        <fold-field label="Moment de l'engagement" data-chorus-timing-shown>
+          {{ timingLabels[r.commitmentTiming] }}
         </fold-field>
         <fold-field label="Code service par défaut" [empty]="r.defaultServiceCode === ''">
           {{ r.defaultServiceCode }}

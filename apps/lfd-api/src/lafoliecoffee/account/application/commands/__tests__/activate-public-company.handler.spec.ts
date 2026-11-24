@@ -94,6 +94,7 @@ function schoolView(formeJuridique: string): AdminCompanyDetailView {
       commitmentRequired: true,
       serviceCodeRequired: false,
       defaultServiceCode: "",
+      commitmentTiming: "at_order",
       checkedOn: "2030-02-01",
       checkedBy: { name: "Agent", role: "admin" },
     },

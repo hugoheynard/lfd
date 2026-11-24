@@ -330,6 +330,7 @@ describe("activationGate — un organisme public", () => {
     commitmentRequired: true,
     serviceCodeRequired: false,
     defaultServiceCode: "",
+    commitmentTiming: "at_order" as const,
     checkedOn: "2026-11-01",
     checkedBy: { name: "Camille", role: "commercial" },
   };

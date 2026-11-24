@@ -14,6 +14,7 @@ import { fulfillmentMethodSchema } from "../order.js";
 import { recurrenceSchema, subscriptionStatusSchema } from "../subscription.js";
 import { supportChannelSchema } from "../support.js";
 import { companyContactModeSchema } from "../company-contact-note.js";
+import { COMMITMENT_TIMINGS } from "../chorus-routing.js";
 import {
   count,
   day,
@@ -189,11 +190,16 @@ export const ACCOUNTS_AND_CARTS_FACTS = {
    * les lignes d'avant gardent ce nom.
    */
   "company.kbis_uploaded_by_staff": retired(payload({ fileName: z.string() })),
-  /** Un agent relève la fiche Chorus Pro d'un organisme public. */
+  /**
+   * Un agent relève la fiche Chorus Pro d'un organisme public.
+   * `commitmentTiming` absent : un relevé écrit avant que le mode existe, donc
+   * `at_order`.
+   */
   "company.chorus_routing_recorded": labelled({
     commitmentRequired: z.boolean(),
     serviceCodeRequired: z.boolean(),
     defaultServiceCode: z.string(),
+    commitmentTiming: z.enum(COMMITMENT_TIMINGS).optional(),
     checkedOn: day(),
   }),
   /**

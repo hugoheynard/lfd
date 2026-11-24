@@ -11,6 +11,7 @@ const ARMY: BudgetCommitmentRequirementsView = {
   commitmentRequired: true,
   serviceCodeRequired: false,
   defaultServiceCode: 'SRV-01',
+  timing: 'at_order',
   currentCommitment: null,
 };
 
@@ -29,6 +30,7 @@ function commitmentDouble(
       requirements: signal(requirements),
       failed: signal(failed),
       standing: signal(standing),
+      onQuote: computed(() => requirements?.timing === 'on_period_quote'),
       number,
       serviceCode: computed(() => requirements?.defaultServiceCode ?? ''),
       ensure: () => asked.push('ensure'),
@@ -39,6 +41,7 @@ function commitmentDouble(
       | 'requirements'
       | 'failed'
       | 'standing'
+      | 'onQuote'
       | 'number'
       | 'serviceCode'
       | 'ensure'
@@ -138,5 +141,14 @@ describe('BudgetCommitmentFields (boutique)', () => {
     expect(textOf(host, '[data-budget-commitment-standing]')).toBe(
       'L’engagement n° ENG-2026 a pris fin le 31 décembre 2026.',
     );
+  });
+
+  it('sur devis de période : pas de champ numéro, la phrase du devis, le code reste', async () => {
+    const { host } = await render({ ...ARMY, timing: 'on_period_quote' });
+    expect(host.querySelector('[data-budget-commitment-number]')).toBeNull();
+    expect(textOf(host, '[data-budget-commitment-on-quote]')).toContain(
+      'vous sera demandé sur le devis de la période',
+    );
+    expect(host.querySelector('[data-budget-commitment-service]')).not.toBeNull();
   });
 });

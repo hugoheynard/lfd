@@ -83,6 +83,7 @@ class Requirements extends PayerCommitmentRequirements {
     commitmentRequired: true,
     serviceCodeRequired: false,
     defaultServiceCode: "SERV-RH",
+    timing: "at_order",
   };
   of(): Promise<PayerCommitmentTerms> {
     return Promise.resolve(this.terms);

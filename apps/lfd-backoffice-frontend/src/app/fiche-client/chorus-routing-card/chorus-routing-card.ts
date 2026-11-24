@@ -13,6 +13,7 @@ import {
   toLegalForm,
   type ChorusRoutingPayload,
   type ChorusRoutingView,
+  type CommitmentTiming,
 } from '@lfd/contracts';
 import { httpErrorMessage } from '@lfd/endpoints';
 import {
@@ -25,6 +26,8 @@ import {
   FoldFieldComponent,
   FoldFieldListComponent,
   FoldInputComponent,
+  FoldListboxComponent,
+  FoldOptionComponent,
 } from 'fold-ng';
 
 import type { AdminCompanyDetail } from '../../comptes-clients/admin-company';
@@ -32,13 +35,26 @@ import { AdminCompaniesService } from '../../comptes-clients/admin-companies.ser
 import { frenchDay } from '../../comptes-clients/kbis-age-wording';
 import { parisToday } from '../../shared/paris-today';
 
+/** Les libellés du moment de l'engagement. */
+const TIMING_LABELS: Readonly<Record<CommitmentTiming, string>> = {
+  at_order: 'À chaque commande',
+  on_period_quote: 'Sur le devis de la période',
+};
+
+/**
+ * Le devis de période n'est pas encore bâti : le serveur refuse ce mode, et
+ * l'option reste visible, grisée, « bientôt ». À lever avec le lot Q5.
+ */
+const PERIOD_QUOTE_AVAILABLE = false;
+
 /**
  * La carte **Chorus Pro** d'un organisme public — elle tient la place du KBIS.
  *
  * Elle montre ce que l'acheteur exige sur ses factures, relevé à la main par le
  * staff dans l'annuaire Chorus : engagement exigé, code service exigé, code par
- * défaut, et le jour du relevé avec son auteur. Le délai de paiement ne s'y
- * saisit pas : il se dérive de la catégorie juridique.
+ * défaut, le moment de l'engagement, et le jour du relevé avec son auteur.
+ * Le délai de paiement ne s'y saisit pas : il se dérive de la catégorie
+ * juridique.
  *
  * Plan : `documentation/comptabilite/facturation/plan-clients-publics-chorus.md`, § 6 bis.
  */
@@ -55,6 +71,8 @@ import { parisToday } from '../../shared/paris-today';
     FoldFieldComponent,
     FoldFieldListComponent,
     FoldInputComponent,
+    FoldListboxComponent,
+    FoldOptionComponent,
   ],
   templateUrl: './chorus-routing-card.html',
   styleUrl: './chorus-routing-card.scss',
@@ -99,7 +117,10 @@ export class ChorusRoutingCard {
   protected readonly commitmentRequired = signal(false);
   protected readonly serviceCodeRequired = signal(false);
   protected readonly defaultServiceCode = signal('');
+  protected readonly commitmentTiming = signal<CommitmentTiming>('at_order');
   protected readonly checkedOn = signal('');
+  protected readonly timingLabels = TIMING_LABELS;
+  protected readonly periodQuoteAvailable = PERIOD_QUOTE_AVAILABLE;
   protected readonly saving = signal(false);
   protected readonly refusal = signal<string | null>(null);
 
@@ -111,6 +132,7 @@ export class ChorusRoutingCard {
     this.commitmentRequired.set(routing?.commitmentRequired ?? false);
     this.serviceCodeRequired.set(routing?.serviceCodeRequired ?? false);
     this.defaultServiceCode.set(routing?.defaultServiceCode ?? '');
+    this.commitmentTiming.set(routing?.commitmentTiming ?? 'at_order');
     // Un nouveau relevé est daté du jour : ré-enregistrer, c’est avoir revérifié.
     this.checkedOn.set(this.today);
     this.refusal.set(null);
@@ -123,6 +145,10 @@ export class ChorusRoutingCard {
     if (this.canManage()) {
       this.edit();
     }
+  }
+
+  protected chooseTiming(timing: CommitmentTiming): void {
+    this.commitmentTiming.set(timing);
   }
 
   protected cancel(): void {
@@ -138,6 +164,7 @@ export class ChorusRoutingCard {
       commitmentRequired: this.commitmentRequired(),
       serviceCodeRequired: this.serviceCodeRequired(),
       defaultServiceCode: this.defaultServiceCode().trim(),
+      commitmentTiming: this.commitmentTiming(),
       checkedOn: this.checkedOn(),
     };
     this.saving.set(true);

@@ -36,6 +36,21 @@ export class BudgetCommitmentServiceCodeRequiredError extends BusinessError {
 }
 
 /**
+ * **Le numéro d'engagement de ce payeur arrive sur le devis de période**
+ * (400) : un numéro saisi à la commande serait un second numéro, que le
+ * devis contredirait.
+ */
+export class BudgetCommitmentOnQuoteError extends DomainError {
+  constructor() {
+    super(
+      BUDGET_COMMITMENT_ERRORS.onQuote,
+      "Le numéro d'engagement de ce client arrive sur le devis de période : videz le champ " +
+        "« N° d'engagement », puis validez de nouveau.",
+    );
+  }
+}
+
+/**
  * **Un payeur privé n'a pas d'engagement budgétaire** (409) : un numéro
  * envoyé pour lui se perdrait en silence — il est refusé.
  */

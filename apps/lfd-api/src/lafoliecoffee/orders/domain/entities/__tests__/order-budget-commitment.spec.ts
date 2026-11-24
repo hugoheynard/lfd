@@ -14,6 +14,7 @@ const ARMY: PayerCommitmentTerms = {
   commitmentRequired: true,
   serviceCodeRequired: false,
   defaultServiceCode: "SERV-RH",
+  timing: "at_order",
 };
 const FREE: AccountEngagement = { kind: "free" };
 const INVOICED: AccountEngagement = {

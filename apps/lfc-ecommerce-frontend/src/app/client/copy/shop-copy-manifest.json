@@ -4093,6 +4093,13 @@
           "variables": []
         },
         {
+          "key": "cart.commitmentOnQuote",
+          "fr": "Votre numéro d'engagement vous sera demandé sur le devis de la période.",
+          "en": "Your commitment number will be requested on the quote for the period.",
+          "it": "Il numero di impegno le sarà richiesto sul preventivo del periodo.",
+          "variables": []
+        },
+        {
           "key": "cart.commitmentNumberMissing",
           "fr": "Saisissez le numéro d’engagement de votre bon de commande.",
           "en": "Enter the commitment number from your purchase order.",

@@ -1,4 +1,7 @@
+import type { CommitmentTiming } from "@lfd/contracts";
+
 import { InvalidChorusRoutingError } from "../errors/account-errors.js";
+import { ChorusRoutingQuoteWithoutCommitmentError } from "../errors/chorus-routing-errors.js";
 import type { StaffTrace } from "./staff-trace.js";
 
 /** Un code service Chorus Pro tient en 100 caractères. */
@@ -11,13 +14,21 @@ export interface ChorusRoutingInput {
   readonly commitmentRequired: boolean;
   readonly serviceCodeRequired: boolean;
   readonly defaultServiceCode: string;
+  readonly commitmentTiming: CommitmentTiming;
   /** `AAAA-MM-JJ`. */
   readonly checkedOn: string;
 }
 
+/** Le mode du devis de période : la commande se passe sans numéro. */
+export const ON_PERIOD_QUOTE: CommitmentTiming = "on_period_quote";
+
+/** Le mode par défaut, et celui d'une société sans fiche. */
+export const AT_ORDER: CommitmentTiming = "at_order";
+
 /**
  * **La fiche Chorus Pro** d'un organisme public : engagement exigé ou non,
- * code service exigé ou non et son défaut, et la parole de l'agent qui l'a
+ * code service exigé ou non et son défaut, le moment de l'engagement (à la
+ * commande, ou sur le devis de la période), et la parole de l'agent qui l'a
  * relevée dans l'annuaire. Un code exigé sans défaut est permis : il se
  * saisira à la commande.
  *
@@ -29,6 +40,7 @@ export class ChorusRouting {
     readonly commitmentRequired: boolean,
     readonly serviceCodeRequired: boolean,
     readonly defaultServiceCode: string,
+    readonly commitmentTiming: CommitmentTiming,
     readonly checkedOn: string,
     readonly checkedBy: StaffTrace,
   ) {}
@@ -38,12 +50,18 @@ export class ChorusRouting {
    *
    * @throws {InvalidChorusRoutingError} code service trop long, ou date du
    *   relevé qui n'est pas un jour du calendrier.
+   * @throws {ChorusRoutingQuoteWithoutCommitmentError} devis de période sans
+   *   engagement exigé : il n'y aurait rien à attendre.
    */
   static record(input: ChorusRoutingInput, checkedBy: StaffTrace): ChorusRouting {
+    if (input.commitmentTiming === ON_PERIOD_QUOTE && !input.commitmentRequired) {
+      throw new ChorusRoutingQuoteWithoutCommitmentError();
+    }
     return new ChorusRouting(
       input.commitmentRequired,
       input.serviceCodeRequired,
       serviceCode(input.defaultServiceCode),
+      input.commitmentTiming,
       calendarDay(input.checkedOn),
       checkedBy,
     );
@@ -63,8 +81,23 @@ export class ChorusRouting {
       this.commitmentRequired === other.commitmentRequired &&
       this.serviceCodeRequired === other.serviceCodeRequired &&
       this.defaultServiceCode === other.defaultServiceCode &&
+      this.commitmentTiming === other.commitmentTiming &&
       this.checkedOn === other.checkedOn
     );
+  }
+
+  /**
+   * Le mode change-t-il par rapport à la fiche rangée ? Une société sans
+   * fiche est à la commande : poser d'emblée le devis de période est un
+   * changement.
+   */
+  changesTimingFrom(current: ChorusRouting | null): boolean {
+    return this.commitmentTiming !== (current?.commitmentTiming ?? AT_ORDER);
+  }
+
+  /** La commande se passe-t-elle sans numéro, qui arrive sur le devis de la période ? */
+  get onPeriodQuote(): boolean {
+    return this.commitmentTiming === ON_PERIOD_QUOTE;
   }
 }
 

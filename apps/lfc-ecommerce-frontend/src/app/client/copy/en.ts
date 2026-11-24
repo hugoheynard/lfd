@@ -443,6 +443,7 @@ export const EN: ClientCopy = {
     commitmentOptional: 'optional',
     commitmentServiceCode: 'Service code',
     commitmentServiceCodeHint: 'The Chorus Pro code of the department the invoice goes to.',
+    commitmentOnQuote: 'Your commitment number will be requested on the quote for the period.',
     commitmentNumberMissing: 'Enter the commitment number from your purchase order.',
     commitmentServiceCodeMissing: 'Enter your organisation’s Chorus Pro service code.',
     commitmentUnread:

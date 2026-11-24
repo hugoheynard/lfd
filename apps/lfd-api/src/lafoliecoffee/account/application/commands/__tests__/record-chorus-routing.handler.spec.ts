@@ -8,7 +8,14 @@ import { Company } from "../../../domain/entities/company.js";
 import { ChorusRoutingRepository } from "../../../domain/ports/chorus-routing.repository.js";
 import { CompanyRepository, type KbisLocation } from "../../../domain/ports/company.repository.js";
 import { StaffDirectory, type StaffIdentity } from "../../../domain/ports/staff-directory.js";
-import type { ChorusRouting } from "../../../domain/value-objects/chorus-routing.js";
+import { PayerLiveMercurialeReader } from "../../../domain/ports/payer-live-mercuriale.reader.js";
+import { PayerUninvoicedOrdersReader } from "../../../domain/ports/payer-uninvoiced-orders.reader.js";
+import {
+  ChorusRoutingPeriodQuoteUnavailableError,
+  ChorusRoutingTimingLockedError,
+} from "../../../domain/errors/chorus-routing-errors.js";
+import { ChorusRouting } from "../../../domain/value-objects/chorus-routing.js";
+import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import { RecordChorusRoutingCommand } from "../record-chorus-routing.command.js";
 import { RecordChorusRoutingHandler } from "../record-chorus-routing.handler.js";
 
@@ -16,8 +23,31 @@ const READING = {
   commitmentRequired: true,
   serviceCodeRequired: true,
   defaultServiceCode: "SERVICE-A",
+  commitmentTiming: "at_order" as const,
   checkedOn: "2026-11-01",
 };
+
+class Mercuriales extends PayerLiveMercurialeReader {
+  readonly asked: string[] = [];
+  constructor(private readonly live: boolean) {
+    super();
+  }
+  hasLiveMercuriale(companyId: string): Promise<boolean> {
+    this.asked.push(companyId);
+    return Promise.resolve(this.live);
+  }
+}
+
+class Uninvoiced extends PayerUninvoicedOrdersReader {
+  readonly asked: string[] = [];
+  constructor(private readonly pending: boolean) {
+    super();
+  }
+  hasUninvoicedOrders(payerCompanyId: string): Promise<boolean> {
+    this.asked.push(payerCompanyId);
+    return Promise.resolve(this.pending);
+  }
+}
 
 function company(formeJuridique: string): Company {
   return Company.reconstitute({
@@ -85,16 +115,25 @@ class KnownStaff extends StaffDirectory {
   }
 }
 
-function handlerFor(target: Company | null, routings = new InMemoryRoutings()) {
+function handlerFor(
+  target: Company | null,
+  routings = new InMemoryRoutings(),
+  facts: { live?: boolean; pending?: boolean } = {},
+) {
   const events = new RecordingPublisher();
+  const uninvoiced = new Uninvoiced(facts.pending ?? false);
   return {
     events,
+    uninvoiced,
     handler: new RecordChorusRoutingHandler(
       new OneCompany(target),
       routings,
       new KnownStaff(),
       events,
       new DirectUnitOfWork(),
+      new Mercuriales(facts.live ?? true),
+      uninvoiced,
+      new FixedClock(new Date(0)),
     ),
     routings,
   };
@@ -178,5 +217,66 @@ describe("RecordChorusRoutingHandler", () => {
     await expect(
       handler.execute(new RecordChorusRoutingCommand("absente", "staff_1", READING)),
     ).rejects.toThrow(CompanyNotFoundError);
+  });
+
+  it("refuse le devis de période tant qu'il n'est pas bâti, sans rien écrire", async () => {
+    const { handler, routings } = handlerFor(company("public_state"));
+
+    await expect(
+      handler.execute(
+        new RecordChorusRoutingCommand("c1", "staff_1", {
+          ...READING,
+          commitmentTiming: "on_period_quote",
+        }),
+      ),
+    ).rejects.toThrow(ChorusRoutingPeriodQuoteUnavailableError);
+    expect(routings.saved).toHaveLength(0);
+  });
+
+  it("ne demande rien à la comptabilité quand le mode ne change pas", async () => {
+    const { handler, uninvoiced } = handlerFor(company("public_state"), undefined, {
+      pending: true,
+    });
+
+    await handler.execute(new RecordChorusRoutingCommand("c1", "staff_1", READING));
+
+    expect(uninvoiced.asked).toEqual([]);
+  });
+
+  it("refuse de quitter le devis de période sous une commande non facturée", async () => {
+    const stored = ChorusRouting.reconstitute(
+      { ...READING, commitmentTiming: "on_period_quote" },
+      { staffUserId: "staff_1", name: "Camille", role: "commercial" },
+    );
+    const { handler, routings } = handlerFor(
+      company("public_state"),
+      new InMemoryRoutings(stored),
+      { pending: true },
+    );
+
+    await expect(
+      handler.execute(new RecordChorusRoutingCommand("c1", "staff_1", READING)),
+    ).rejects.toThrow(ChorusRoutingTimingLockedError);
+    expect(routings.saved).toHaveLength(0);
+  });
+
+  it("revient à la commande quand tout est facturé, et le journal porte le mode", async () => {
+    const stored = ChorusRouting.reconstitute(
+      { ...READING, commitmentTiming: "on_period_quote" },
+      { staffUserId: "staff_1", name: "Camille", role: "commercial" },
+    );
+    const { handler, routings, events, uninvoiced } = handlerFor(
+      company("public_state"),
+      new InMemoryRoutings(stored),
+    );
+
+    await handler.execute(new RecordChorusRoutingCommand("c1", "staff_1", READING));
+
+    expect(uninvoiced.asked).toEqual(["c1"]);
+    expect(routings.saved[0]?.routing.commitmentTiming).toBe("at_order");
+    const payload: unknown = expect.objectContaining({ commitmentTiming: "at_order" });
+    expect(events.traced.map((event) => event.journalFact())).toEqual([
+      expect.objectContaining({ payload }),
+    ]);
   });
 });

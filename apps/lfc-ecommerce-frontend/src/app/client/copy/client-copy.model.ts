@@ -935,6 +935,8 @@ export interface ClientCopy {
     readonly commitmentOptional: string;
     readonly commitmentServiceCode: string;
     readonly commitmentServiceCodeHint: string;
+    /** Payeur sur devis de période : le numéro n'est pas demandé à la commande. */
+    readonly commitmentOnQuote: string;
     /** Sous le bouton : le numéro exigé n'est pas saisi. */
     readonly commitmentNumberMissing: string;
     /** Sous le bouton : le code service exigé n'est ni saisi ni proposé. */

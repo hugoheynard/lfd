@@ -1,4 +1,4 @@
-import type { DeferredTerm } from "@lfd/contracts";
+import type { CommitmentTiming, DeferredTerm } from "@lfd/contracts";
 import type { JournalFactType } from "@lfd/contracts/journal-facts";
 
 import type { JournalFact, JournaledEvent } from "../../../../platform/journal/journal-fact.js";
@@ -178,6 +178,7 @@ export class ChorusRoutingRecordedEvent extends CompanyStaffAct {
       readonly commitmentRequired: boolean;
       readonly serviceCodeRequired: boolean;
       readonly defaultServiceCode: string;
+      readonly commitmentTiming: CommitmentTiming;
       readonly checkedOn: string;
     },
   ) {

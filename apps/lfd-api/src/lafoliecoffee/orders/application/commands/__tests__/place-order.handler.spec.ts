@@ -3002,6 +3002,7 @@ describe("PlaceOrderHandler — l'engagement budgétaire d'un payeur public (P2,
         commitmentRequired: true,
         serviceCodeRequired: false,
         defaultServiceCode: "SERV-RH",
+        timing: "at_order",
       } as const,
     ],
   ]);

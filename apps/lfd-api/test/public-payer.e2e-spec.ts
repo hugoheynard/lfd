@@ -54,6 +54,7 @@ async function pendingSchool(): Promise<string> {
       commitmentRequired: true,
       serviceCodeRequired: false,
       defaultServiceCode: "",
+      commitmentTiming: "at_order",
       checkedOn: daysAgo(1).slice(0, 10),
     })
     .expect(204);

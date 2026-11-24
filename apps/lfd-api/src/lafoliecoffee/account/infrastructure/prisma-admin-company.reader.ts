@@ -3,6 +3,7 @@ import { Injectable } from "@nestjs/common";
 
 import type { Prisma } from "../../../platform/database/client/client.js";
 
+import { commitmentTimingOf } from "./prisma-chorus-routing.repository.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { CompanyAddressReader } from "../domain/ports/company-address.reader.js";
@@ -111,6 +112,7 @@ const COMPANY_SELECT = {
       commitmentRequired: true,
       serviceCodeRequired: true,
       defaultServiceCode: true,
+      commitmentTiming: true,
       checkedOn: true,
       checkedByName: true,
       checkedByRole: true,
@@ -279,6 +281,7 @@ function chorusRoutingView(routing: CompanyRow["chorusRouting"]): ChorusRoutingV
     commitmentRequired: routing.commitmentRequired,
     serviceCodeRequired: routing.serviceCodeRequired,
     defaultServiceCode: routing.defaultServiceCode,
+    commitmentTiming: commitmentTimingOf(routing.commitmentTiming),
     checkedOn: routing.checkedOn.toISOString().slice(0, 10),
     checkedBy: { name: routing.checkedByName, role: routing.checkedByRole },
   };

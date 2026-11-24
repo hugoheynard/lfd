@@ -1,4 +1,5 @@
 import { InvalidChorusRoutingError } from "../../errors/account-errors.js";
+import { ChorusRoutingQuoteWithoutCommitmentError } from "../../errors/chorus-routing-errors.js";
 import { ChorusRouting } from "../chorus-routing.js";
 
 const AGENT = { staffUserId: "staff_1", name: "Camille", role: "commercial" };
@@ -6,6 +7,7 @@ const READING = {
   commitmentRequired: true,
   serviceCodeRequired: true,
   defaultServiceCode: "  SERVICE-A  ",
+  commitmentTiming: "at_order" as const,
   checkedOn: "2026-11-01",
 };
 
@@ -53,5 +55,27 @@ describe("ChorusRouting — la fiche relevée dans l'annuaire", () => {
     expect(
       first.sameReadingAs(ChorusRouting.record({ ...READING, checkedOn: "2026-11-02" }, AGENT)),
     ).toBe(false);
+  });
+
+  it("refuse le devis de période sans engagement exigé", () => {
+    expect(() =>
+      ChorusRouting.record(
+        { ...READING, commitmentRequired: false, commitmentTiming: "on_period_quote" },
+        AGENT,
+      ),
+    ).toThrow(ChorusRoutingQuoteWithoutCommitmentError);
+  });
+
+  it("dit un changement de mode, une fiche absente valant « à la commande »", () => {
+    const atOrder = ChorusRouting.record(READING, AGENT);
+    const onQuote = ChorusRouting.record(
+      { ...READING, commitmentTiming: "on_period_quote" },
+      AGENT,
+    );
+
+    expect(atOrder.changesTimingFrom(null)).toBe(false);
+    expect(onQuote.changesTimingFrom(null)).toBe(true);
+    expect(onQuote.changesTimingFrom(atOrder)).toBe(true);
+    expect(onQuote.sameReadingAs(atOrder)).toBe(false);
   });
 });

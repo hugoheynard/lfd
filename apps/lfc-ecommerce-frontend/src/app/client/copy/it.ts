@@ -448,6 +448,7 @@ export const IT: ClientCopy = {
     commitmentOptional: 'facoltativo',
     commitmentServiceCode: 'Codice servizio',
     commitmentServiceCodeHint: 'Il codice Chorus Pro del servizio a cui indirizzare la fattura.',
+    commitmentOnQuote: 'Il numero di impegno le sarà richiesto sul preventivo del periodo.',
     commitmentNumberMissing: 'Inserite il numero di impegno del vostro buono d’ordine.',
     commitmentServiceCodeMissing: 'Inserite il codice servizio Chorus Pro del vostro ente.',
     commitmentUnread:

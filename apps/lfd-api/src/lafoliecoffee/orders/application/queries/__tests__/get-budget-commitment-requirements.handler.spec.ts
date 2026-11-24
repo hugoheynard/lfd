@@ -19,6 +19,7 @@ const ARMY: PayerCommitmentTerms = {
   commitmentRequired: true,
   serviceCodeRequired: true,
   defaultServiceCode: "SIRET-PLATEFORME",
+  timing: "at_order",
 };
 const UNIT_SHEET: OrderingChorusService = {
   payerCompanyId: "principal",
@@ -95,8 +96,23 @@ describe("GetBudgetCommitmentRequirementsHandler", () => {
       commitmentRequired: true,
       serviceCodeRequired: true,
       defaultServiceCode: "UNITE-TIGNES",
+      timing: "at_order",
       currentCommitment: { number: "1300012345", endsOn: "2026-12-31" },
     });
+  });
+
+  it("sur devis de période : rend le mode et ne propose aucun engagement en cours", async () => {
+    const sheets = new Sheets(new Map([["unite", UNIT_SHEET]]));
+
+    const view = await handler(
+      unitFollowing("principal"),
+      new Map([["principal", { ...ARMY, timing: "on_period_quote" as const }]]),
+      sheets,
+    ).execute(new GetBudgetCommitmentRequirementsQuery("unite"));
+
+    expect(view.timing).toBe("on_period_quote");
+    expect(view.currentCommitment).toBeNull();
+    expect(view.defaultServiceCode).toBe("UNITE-TIGNES");
   });
 
   it("garde le code du payeur quand la fiche de l'unité n'en porte pas", async () => {
@@ -162,6 +178,7 @@ describe("GetBudgetCommitmentRequirementsHandler", () => {
       commitmentRequired: false,
       serviceCodeRequired: false,
       defaultServiceCode: "",
+      timing: "at_order",
       currentCommitment: null,
     });
   });

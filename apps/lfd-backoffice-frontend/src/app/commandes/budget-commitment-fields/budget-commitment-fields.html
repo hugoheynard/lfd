@@ -6,17 +6,21 @@
       dira ce qui manque.
     </fold-callout>
   }
-  <fold-input
-    label="N° d’engagement"
-    [required]="numberRequired()"
-    [optional]="!numberRequired()"
-    optionalLabel="facultatif"
-    [hint]="numberHint()"
-    [(value)]="number"
-    data-budget-commitment-number
-  />
-  @if (standingLine(); as line) {
-    <p class="bcf-standing" data-budget-commitment-standing>{{ line }}</p>
+  @if (onQuote()) {
+    <p class="bcf-standing" data-budget-commitment-on-quote>{{ onQuoteLine }}</p>
+  } @else {
+    <fold-input
+      label="N° d’engagement"
+      [required]="numberRequired()"
+      [optional]="!numberRequired()"
+      optionalLabel="facultatif"
+      [hint]="numberHint()"
+      [(value)]="number"
+      data-budget-commitment-number
+    />
+    @if (standingLine(); as line) {
+      <p class="bcf-standing" data-budget-commitment-standing>{{ line }}</p>
+    }
   }
   <fold-input
     label="Code service"

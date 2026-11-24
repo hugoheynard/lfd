@@ -47,6 +47,19 @@ export function commitmentStandingLine(standing: CommitmentStanding): string {
 }
 
 /**
+ * Le payeur donne son numéro d'engagement sur le devis de la période : la
+ * commande se passe sans, le champ ne s'affiche pas et aucun numéro ne part.
+ * Le code service garde sa règle.
+ */
+export function commitmentOnQuote(requirements: BudgetCommitmentRequirementsView | null): boolean {
+  return requirements?.timing === 'on_period_quote';
+}
+
+/** La phrase qui remplace le champ numéro d'un payeur sur devis de période. */
+export const COMMITMENT_ON_QUOTE_LINE =
+  'Votre numéro d’engagement vous sera demandé sur le devis de la période.';
+
+/**
  * **Ce qui manque à l'engagement** pour que la passation l'accepte, dit en
  * clair — vide quand rien ne manque, ou tant que les exigences ne sont pas
  * lues (le serveur juge alors seul). Un code service exigé ne manque pas quand
@@ -61,7 +74,7 @@ export function budgetCommitmentGaps(
     return [];
   }
   const gaps: string[] = [];
-  if (requirements.commitmentRequired && number.trim() === '') {
+  if (!commitmentOnQuote(requirements) && requirements.commitmentRequired && number.trim() === '') {
     gaps.push('Ce payeur exige un numéro d’engagement : il figure sur son bon de commande.');
   }
   if (

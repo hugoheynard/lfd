@@ -1,7 +1,10 @@
 import { Injectable } from "@nestjs/common";
 
+import { TechnicalError } from "../../../platform/shared/errors/app-error.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { ChorusRoutingRepository } from "../domain/ports/chorus-routing.repository.js";
+import { COMMITMENT_TIMINGS, type CommitmentTiming } from "@lfd/contracts";
+
 import { ChorusRouting } from "../domain/value-objects/chorus-routing.js";
 
 /** Le jour d'une colonne `DATE`, posé à minuit UTC. */
@@ -26,6 +29,7 @@ export class PrismaChorusRoutingRepository extends ChorusRoutingRepository {
         commitmentRequired: row.commitmentRequired,
         serviceCodeRequired: row.serviceCodeRequired,
         defaultServiceCode: row.defaultServiceCode,
+        commitmentTiming: commitmentTimingOf(row.commitmentTiming),
         checkedOn: row.checkedOn.toISOString().slice(0, 10),
       },
       { staffUserId: row.checkedByStaffId, name: row.checkedByName, role: row.checkedByRole },
@@ -37,6 +41,7 @@ export class PrismaChorusRoutingRepository extends ChorusRoutingRepository {
       commitmentRequired: routing.commitmentRequired,
       serviceCodeRequired: routing.serviceCodeRequired,
       defaultServiceCode: routing.defaultServiceCode,
+      commitmentTiming: routing.commitmentTiming,
       checkedOn: dayColumn(routing.checkedOn),
       checkedByStaffId: routing.checkedBy.staffUserId,
       checkedByName: routing.checkedBy.name,
@@ -48,4 +53,23 @@ export class PrismaChorusRoutingRepository extends ChorusRoutingRepository {
       update: columns,
     });
   }
+}
+
+/** Une valeur hors du CHECK de `company_chorus_routing` : la base ment. */
+export class UnknownCommitmentTimingError extends TechnicalError {
+  constructor(raw: string) {
+    super(
+      "account.chorus_routing.unknown_timing",
+      `Moment de l'engagement inconnu en base : « ${raw} ». Vérifiez le CHECK de company_chorus_routing.`,
+    );
+  }
+}
+
+/** La colonne, tenue par un CHECK. */
+export function commitmentTimingOf(raw: string): CommitmentTiming {
+  const known = COMMITMENT_TIMINGS.find((timing) => timing === raw);
+  if (known === undefined) {
+    throw new UnknownCommitmentTimingError(raw);
+  }
+  return known;
 }

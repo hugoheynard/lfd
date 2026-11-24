@@ -5,6 +5,7 @@ import {
   budgetCommitmentGaps,
   budgetCommitmentLabel,
   budgetCommitmentPayloadOf,
+  commitmentOnQuote,
   commitmentStandingLine,
   commitmentStandingOf,
   proposedCommitmentNumber,
@@ -17,6 +18,7 @@ const ARMY: BudgetCommitmentRequirementsView = {
   commitmentRequired: true,
   serviceCodeRequired: true,
   defaultServiceCode: '',
+  timing: 'at_order',
   currentCommitment: null,
 };
 
@@ -27,6 +29,15 @@ describe('budgetCommitmentGaps', () => {
 
   it('un code exigé avec un défaut sur la fiche ne manque pas', () => {
     expect(budgetCommitmentGaps({ ...ARMY, defaultServiceCode: 'SRV' }, 'N1', '')).toEqual([]);
+  });
+
+  it('sur devis de période : le numéro ne manque pas, le code garde sa règle', () => {
+    const onQuote = { ...ARMY, timing: 'on_period_quote' as const };
+    expect(commitmentOnQuote(onQuote)).toBe(true);
+    expect(commitmentOnQuote(ARMY)).toBe(false);
+    expect(budgetCommitmentGaps(onQuote, '', '')).toEqual([
+      'Ce payeur exige un code service Chorus Pro.',
+    ]);
   });
 
   it('un payeur privé, ou des exigences pas encore lues : rien à dire', () => {

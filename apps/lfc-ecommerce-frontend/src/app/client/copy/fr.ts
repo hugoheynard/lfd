@@ -444,6 +444,7 @@ export const FR: ClientCopy = {
     commitmentOptional: 'facultatif',
     commitmentServiceCode: 'Code service',
     commitmentServiceCodeHint: 'Le code Chorus Pro du service à qui adresser la facture.',
+    commitmentOnQuote: "Votre numéro d'engagement vous sera demandé sur le devis de la période.",
     commitmentNumberMissing: 'Saisissez le numéro d’engagement de votre bon de commande.',
     commitmentServiceCodeMissing: 'Saisissez le code service Chorus Pro de votre organisme.',
     commitmentUnread:

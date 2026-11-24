@@ -217,6 +217,7 @@ function boot({
           requirements: signal(null),
           failed: signal(false),
           standing: signal(null),
+          onQuote: signal(false),
           number: signal(''),
           serviceCode: signal(''),
           gap: signal(commitmentGap),

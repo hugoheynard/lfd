@@ -77,6 +77,7 @@ const RELEVEE: ChorusRoutingView = {
   commitmentRequired: true,
   serviceCodeRequired: false,
   defaultServiceCode: '',
+  commitmentTiming: 'at_order',
   checkedOn: '2026-11-12',
   checkedBy: { name: 'Camille Rousseau', role: 'commercial' },
 };
@@ -155,6 +156,7 @@ describe('ChorusRoutingCard', () => {
         commitmentRequired: false,
         serviceCodeRequired: true,
         defaultServiceCode: 'SERV-01',
+        commitmentTiming: 'at_order',
         checkedOn: card['today'],
       },
     ]);
@@ -195,5 +197,33 @@ describe('ChorusRoutingCard', () => {
     );
     expect(card['editing']()).toBe(true);
     expect(wire.changed).toBe(0);
+  });
+
+  it('montre le moment de l’engagement de la fiche posée', () => {
+    const { fixture } = boot(organisme('public_state', RELEVEE));
+    expect(host(fixture).querySelector('[data-chorus-timing-shown]')?.textContent).toContain(
+      'À chaque commande',
+    );
+  });
+
+  it('offre le devis de période, grisé et « bientôt », tant qu’il n’est pas bâti', () => {
+    const { fixture } = boot(organisme('public_state', RELEVEE));
+    fixture.componentInstance.edit();
+    fixture.detectChanges();
+    const quote = host(fixture).querySelector('[data-chorus-timing-quote]');
+    expect(quote?.textContent).toContain('Sur le devis de la période (bientôt)');
+    expect(quote?.getAttribute('aria-disabled')).toBe('true');
+  });
+
+  it('envoie le mode choisi et le préremplit de la fiche posée', async () => {
+    const { fixture, wire } = boot(
+      organisme('public_state', { ...RELEVEE, commitmentTiming: 'on_period_quote' }),
+    );
+    const card = fixture.componentInstance;
+    card.edit();
+    expect(card['commitmentTiming']()).toBe('on_period_quote');
+    card['chooseTiming']('at_order');
+    await card['save']();
+    expect(wire.put[0]?.commitmentTiming).toBe('at_order');
   });
 });

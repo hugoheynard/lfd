@@ -7,6 +7,7 @@ import { AccountModule } from "../lafoliecoffee/account/account.module.js";
 import { PricingFollowJournalModule } from "./pricing-follow-journal.module.js";
 import { SiteMandateRevocationModule } from "./site-mandate-revocation.module.js";
 import { PublicPayerOpeningModule } from "./public-payer-opening.module.js";
+import { CommitmentTimingModule } from "./commitment-timing.module.js";
 import { PayerCommitmentRequirementsModule } from "./payer-commitment-requirements.module.js";
 import { AlertsModule } from "../lafoliecoffee/alerts/alerts.module.js";
 import { ClientNotesModule } from "../lafoliecoffee/client-notes/client-notes.module.js";
@@ -312,6 +313,7 @@ import { DevImpersonation } from "../platform/auth/dev-impersonation.js";
     PricingFollowJournalModule,
     SiteMandateRevocationModule,
     PublicPayerOpeningModule,
+    CommitmentTimingModule,
     PayerCommitmentRequirementsModule,
     OrderPricingModule,
     // La façade de lecture du prix. Après Orders, dont elle emprunte la recette.

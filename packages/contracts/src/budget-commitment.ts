@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import type { CommitmentTiming } from "./chorus-routing.js";
 import type { CurrentCommitmentView } from "./chorus-service.js";
 
 /**
@@ -55,6 +56,12 @@ export interface BudgetCommitmentRequirementsView {
   readonly commitmentRequired: boolean;
   readonly serviceCodeRequired: boolean;
   /**
+   * Le moment de l'engagement du payeur. En `on_period_quote`, l'écran masque
+   * le champ numéro (il arrive sur le devis de la période) et n'en envoie
+   * aucun ; le code service reste. `at_order` pour un payeur privé.
+   */
+  readonly timing: CommitmentTiming;
+  /**
    * Le code proposé dans le champ : celui de la fiche du service de la
    * société qui commande, sinon celui de la fiche Chorus du payeur ; vide
    * quand aucune n'en donne.
@@ -64,6 +71,7 @@ export interface BudgetCommitmentRequirementsView {
    * L'engagement en cours de la société qui commande, ou `null`. Servi sans
    * filtre de date : l'écran le propose quand la livraison choisie tombe au
    * plus tard `endsOn`, et le dit expiré au-delà. Proposé, jamais imposé.
+   * Toujours `null` en `on_period_quote` : rien n'est prérempli.
    */
   readonly currentCommitment: CurrentCommitmentView | null;
 }
@@ -81,6 +89,8 @@ export const BUDGET_COMMITMENT_ERRORS = {
   serviceCodeRequired: "budget_commitment.service_code_required",
   /** 409 — un payeur privé : il n'a pas d'engagement budgétaire. */
   privatePayer: "budget_commitment.private_payer",
+  /** 400 — un numéro saisi pour un payeur dont l'engagement arrive sur le devis de période. */
+  onQuote: "budget_commitment.on_quote",
   /** 409 — la commande est déjà facturée (ou engagée en comptabilité) : la comptabilité décide. */
   alreadyInvoiced: "budget_commitment.already_invoiced",
 } as const;

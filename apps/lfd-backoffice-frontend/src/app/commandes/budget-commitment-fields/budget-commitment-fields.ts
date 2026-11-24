@@ -2,7 +2,12 @@ import { ChangeDetectionStrategy, Component, computed, input, model } from '@ang
 import type { BudgetCommitmentRequirementsView } from '@lfd/contracts';
 import { FoldCalloutComponent, FoldInputComponent } from 'fold-ng';
 
-import { commitmentStandingLine, type CommitmentStanding } from '../budget-commitment';
+import {
+  COMMITMENT_ON_QUOTE_LINE,
+  commitmentOnQuote,
+  commitmentStandingLine,
+  type CommitmentStanding,
+} from '../budget-commitment';
 
 /**
  * **L'engagement budgétaire d'un organisme public**, saisi par l'équipe (plan
@@ -38,6 +43,10 @@ export class BudgetCommitmentFields {
     const standing = this.standing();
     return standing === null ? '' : commitmentStandingLine(standing);
   });
+
+  /** Sur devis de période : pas de champ numéro, la phrase du devis à sa place. */
+  protected readonly onQuote = computed(() => commitmentOnQuote(this.requirements()));
+  protected readonly onQuoteLine = COMMITMENT_ON_QUOTE_LINE;
 
   protected readonly numberRequired = computed(
     () => this.requirements()?.commitmentRequired ?? false,

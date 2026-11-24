@@ -1,5 +1,8 @@
+import type { CommitmentTiming } from "@lfd/contracts";
+
 import {
   BudgetCommitmentNumberRequiredError,
+  BudgetCommitmentOnQuoteError,
   BudgetCommitmentServiceCodeRequiredError,
   PrivatePayerBudgetCommitmentError,
 } from "../errors/budget-commitment-errors.js";
@@ -20,6 +23,11 @@ export type PayerCommitmentTerms =
       readonly serviceCodeRequired: boolean;
       /** Vide quand la fiche n'en propose pas. */
       readonly defaultServiceCode: string;
+      /**
+       * `on_period_quote` : le numéro arrive sur le devis de la période, la
+       * commande n'en porte pas.
+       */
+      readonly timing: CommitmentTiming;
     };
 
 /** Un payeur privé — et toute commande sans société. */
@@ -32,11 +40,14 @@ export const PRIVATE_PAYER: PayerCommitmentTerms = { kind: "private" };
  *   perd en silence ;
  * - payeur public : le numéro saisi, et le code saisi — sinon celui que sa
  *   fiche propose. Un numéro exigé et absent est refusé ; un code exigé, ni
- *   saisi ni proposé, aussi.
+ *   saisi ni proposé, aussi ;
+ * - payeur public sur devis de période : aucun numéro — il arrive sur le
+ *   devis, un numéro saisi est refusé. Le code service garde sa règle.
  *
  * @throws {InvalidBudgetCommitmentError} une forme refusée.
  * @throws {PrivatePayerBudgetCommitmentError} un engagement pour un payeur privé.
  * @throws {BudgetCommitmentNumberRequiredError} numéro exigé, absent.
+ * @throws {BudgetCommitmentOnQuoteError} un numéro pour un payeur sur devis de période.
  * @throws {BudgetCommitmentServiceCodeRequiredError} code exigé, absent.
  */
 export function budgetCommitmentFor(
@@ -52,7 +63,10 @@ export function budgetCommitmentFor(
   }
   const number = typed?.number ?? "";
   const serviceCode = (typed?.serviceCode ?? "") || terms.defaultServiceCode;
-  if (terms.commitmentRequired && number === "") {
+  if (terms.timing === "on_period_quote" && number !== "") {
+    throw new BudgetCommitmentOnQuoteError();
+  }
+  if (terms.timing === "at_order" && terms.commitmentRequired && number === "") {
     throw new BudgetCommitmentNumberRequiredError();
   }
   if (terms.serviceCodeRequired && serviceCode === "") {

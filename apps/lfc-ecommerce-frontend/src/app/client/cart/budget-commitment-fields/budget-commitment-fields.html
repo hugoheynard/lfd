@@ -5,18 +5,24 @@
       t().cart.commitmentUnread
     }}</fold-callout>
   }
-  <fold-input
-    [label]="t().cart.commitmentNumber"
-    [required]="numberRequired()"
-    [optional]="!numberRequired()"
-    [optionalLabel]="t().cart.commitmentOptional"
-    [hint]="numberHint()"
-    [value]="commitment.number()"
-    (valueChange)="commitment.setNumber($event)"
-    data-budget-commitment-number
-  />
-  @if (standingLine(); as line) {
-    <p class="commitment-standing" data-budget-commitment-standing>{{ line }}</p>
+  @if (commitment.onQuote()) {
+    <p class="commitment-standing" data-budget-commitment-on-quote>
+      {{ t().cart.commitmentOnQuote }}
+    </p>
+  } @else {
+    <fold-input
+      [label]="t().cart.commitmentNumber"
+      [required]="numberRequired()"
+      [optional]="!numberRequired()"
+      [optionalLabel]="t().cart.commitmentOptional"
+      [hint]="numberHint()"
+      [value]="commitment.number()"
+      (valueChange)="commitment.setNumber($event)"
+      data-budget-commitment-number
+    />
+    @if (standingLine(); as line) {
+      <p class="commitment-standing" data-budget-commitment-standing>{{ line }}</p>
+    }
   }
   <fold-input
     [label]="t().cart.commitmentServiceCode"

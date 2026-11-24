@@ -84,6 +84,7 @@ const ARMY: PayerCommitmentTerms = {
   commitmentRequired: true,
   serviceCodeRequired: true,
   defaultServiceCode: "SERV-RH",
+  timing: "at_order",
 };
 
 describe("Order.commitBudget — l'engagement à la passation (E2′)", () => {

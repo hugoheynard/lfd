@@ -21,6 +21,7 @@ const DATA: BudgetCommitmentDialogData = {
     commitmentRequired: false,
     serviceCodeRequired: false,
     defaultServiceCode: 'SRV-01',
+    timing: 'at_order',
     currentCommitment: null,
   },
 };

@@ -108,6 +108,7 @@ describe("Company — la fiche Chorus Pro", () => {
     commitmentRequired: true,
     serviceCodeRequired: false,
     defaultServiceCode: "",
+    commitmentTiming: "at_order" as const,
     checkedOn: "2026-11-01",
   };
   const AGENT = { staffUserId: "staff_1", name: "Camille", role: "commercial" };

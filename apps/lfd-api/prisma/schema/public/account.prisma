@@ -428,6 +428,10 @@ model CompanyChorusRouting {
   serviceCodeRequired Boolean  @map("service_code_required")
   /// Vide permis : un code exigé se saisit alors à la commande.
   defaultServiceCode  String   @default("") @map("default_service_code")
+  /// Le moment de l'engagement : `at_order` (à la commande) ou
+  /// `on_period_quote` (sur le devis de la période). CHECK
+  /// `company_chorus_routing_commitment_timing_known`.
+  commitmentTiming    String   @default("at_order") @map("commitment_timing")
   /// Le jour du relevé dans l'annuaire.
   checkedOn           DateTime @map("checked_on") @db.Date
   /// L'id de fiche de l'agent qui a relevé — sans clé étrangère, comme les autres traces.

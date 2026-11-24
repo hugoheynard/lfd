@@ -25,6 +25,7 @@ import { catchError, firstValueFrom, of, tap } from 'rxjs';
 import { buyerOf, composedDraftOf, placePayloadOf } from './draft-payload';
 import {
   budgetCommitmentPayloadOf,
+  commitmentOnQuote,
   commitmentStandingOf,
   proposedCommitmentNumber,
 } from '../budget-commitment';
@@ -838,14 +839,17 @@ export class NouvelleCommandePage {
           // chaque caractère saisi (E2′ : le refus vit à la passation).
           ...budgetCommitmentPayloadOf(
             this.payerIsPublic(),
-            this.draft.commitmentNumberFor(
-              proposedCommitmentNumber(
-                commitmentStandingOf(
-                  this.commitmentRequirements()?.currentCommitment ?? null,
-                  this.draft.requestedDate(),
+            // Sur devis de période, le numéro arrive sur le devis : rien ne part.
+            commitmentOnQuote(this.commitmentRequirements())
+              ? ''
+              : this.draft.commitmentNumberFor(
+                  proposedCommitmentNumber(
+                    commitmentStandingOf(
+                      this.commitmentRequirements()?.currentCommitment ?? null,
+                      this.draft.requestedDate(),
+                    ),
+                  ),
                 ),
-              ),
-            ),
             this.draft.commitmentServiceCode(),
           ),
           // Le motif d'un dépassement de limite de produit : à la passation

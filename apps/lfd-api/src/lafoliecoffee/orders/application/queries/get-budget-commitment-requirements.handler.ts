@@ -17,6 +17,7 @@ const NO_PAYER: BudgetCommitmentRequirementsView = {
   commitmentRequired: false,
   serviceCodeRequired: false,
   defaultServiceCode: "",
+  timing: "at_order",
   currentCommitment: null,
 };
 
@@ -69,7 +70,10 @@ export class GetBudgetCommitmentRequirementsHandler implements IQueryHandler<
         service === null || service.serviceCode === ""
           ? terms.defaultServiceCode
           : service.serviceCode,
-      currentCommitment: service?.currentCommitment ?? null,
+      timing: terms.timing,
+      // Sur devis de période, rien n'est prérempli : le numéro vient du devis.
+      currentCommitment:
+        terms.timing === "on_period_quote" ? null : (service?.currentCommitment ?? null),
     };
   }
 

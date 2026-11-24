@@ -244,6 +244,7 @@ describe("la vue des exigences de l'engagement", () => {
       commitmentRequired: true,
       serviceCodeRequired: true,
       defaultServiceCode: "UNITE-TIGNES",
+      timing: "at_order",
       currentCommitment: { number: "1300012345", endsOn: SHEET.commitmentEndsOn },
     });
     const forStaff = await ctx

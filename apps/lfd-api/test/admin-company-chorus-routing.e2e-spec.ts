@@ -45,6 +45,7 @@ const READING = {
   commitmentRequired: true,
   serviceCodeRequired: true,
   defaultServiceCode: "SERVICE-A",
+  commitmentTiming: "at_order",
   checkedOn: "2026-11-01",
 };
 
