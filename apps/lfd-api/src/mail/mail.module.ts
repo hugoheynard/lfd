@@ -6,6 +6,8 @@ import { PrismaDurableFactPayloads } from "../platform/outbox/prisma-durable-fac
 import { Mail } from "./channels/requests/mail.js";
 import { StaffAudienceMail } from "./channels/requests/staff-audience-mail.js";
 import { BlockStaffAudienceMail } from "./requests/application/block-staff-audience-mail.js";
+import { StaffMemberMail } from "./channels/requests/staff-member-mail.js";
+import { BlockStaffMemberMail } from "./requests/application/block-staff-member-mail.js";
 import { MAIL_REQUEST_PURGE_MODE } from "./requests/domain/services/mail-request-retention.js";
 import { CheckMailDeliveryHandler } from "./requests/application/check-mail-delivery.handler.js";
 import { BlockMail } from "./requests/application/block-mail.js";
@@ -122,6 +124,8 @@ import { UnappliedMailDeliveries } from "./requests/domain/ports/unapplied-mail-
     // Lot P1c des liens de paiement : l'avis « à l'équipe », une demande par
     // membre réglé chez le staff, la boîte de l'équipe à défaut.
     { provide: StaffAudienceMail, useClass: BlockStaffAudienceMail },
+    // L'envoi à un membre désigné par sa fiche (le lien de paiement d'essai).
+    { provide: StaffMemberMail, useClass: BlockStaffMemberMail },
     // S1b (plan § 8) : l'envoi d'après validation et son balayeur.
     { provide: StalledMailRequests, useClass: PrismaStalledMailRequests },
     { provide: DurableFactPayloads, useClass: PrismaDurableFactPayloads },
@@ -165,6 +169,7 @@ import { UnappliedMailDeliveries } from "./requests/domain/ports/unapplied-mail-
     MailSubjectDeliveries,
     Mail,
     StaffAudienceMail,
+    StaffMemberMail,
     MailTemplatePreview,
     ShortfallLetterDrafter,
     MailBacklogSurvey,

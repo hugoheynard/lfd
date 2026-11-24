@@ -27,6 +27,9 @@ export const MAIL_SUBJECT_TYPES = [
   // (`staff.link-payment-received`) : le bloc ne connaît pas le sujet qu'il
   // règle, il nomme son propre objet.
   "payment",
+  // L'essai du paiement par lien (`staff.pay-link-test`) : le bloc `payment`
+  // nomme son propre essai, qui n'est pas encore un paiement.
+  "pay_link_test",
 ] as const;
 
 export type MailSubjectType = (typeof MAIL_SUBJECT_TYPES)[number];

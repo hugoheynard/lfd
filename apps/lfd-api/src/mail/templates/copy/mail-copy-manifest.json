@@ -2783,6 +2783,43 @@
         "fr": "Alerte interne — envoyée à la boîte de l'équipe à chaque paiement reçu par un lien."
       }
     },
+    "staff.pay-link-test": {
+      "kicker": {
+        "variables": [],
+        "required": [],
+        "fr": "Essai du paiement par lien"
+      },
+      "subject": {
+        "variables": [],
+        "required": [],
+        "fr": "ESSAI — un lien de paiement de 1 €"
+      },
+      "title": {
+        "variables": [],
+        "required": [],
+        "fr": "Un lien de paiement d'essai"
+      },
+      "intro": {
+        "variables": [],
+        "required": [],
+        "fr": "Voici un vrai lien de paiement de 1 €, envoyé depuis le back-office pour éprouver le paiement par lien : la page, le formulaire de carte et l'avis à la comptabilité."
+      },
+      "refund": {
+        "variables": [],
+        "required": [],
+        "fr": "Payez-le avec une vraie carte : l'euro est remboursé tout seul dès qu'il est encaissé. Le lien n'est plus valable 24 heures après son envoi."
+      },
+      "cta": {
+        "variables": [],
+        "required": [],
+        "fr": "Payer 1 €"
+      },
+      "footer": {
+        "variables": [],
+        "required": [],
+        "fr": "Essai interne — envoyé à un membre de l'équipe depuis le back-office."
+      }
+    },
     "ops.deploy-check": {
       "kicker": {
         "variables": [],

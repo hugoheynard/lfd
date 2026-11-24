@@ -659,5 +659,12 @@
       "htmlSha256": "92018b722b9a003aded89101eafe217f9909da15d16398662f230610deb0dd52",
       "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
     }
+  },
+  "staff.pay-link-test": {
+    "only": {
+      "subject": "ESSAI — un lien de paiement de 1 €",
+      "htmlSha256": "f2b4e60cda761be83c7df77007217c3f7c445ccecc6d97103ca26c7fefc5510f",
+      "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
+    }
   }
 }

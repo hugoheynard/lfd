@@ -4,8 +4,8 @@ import { embeddedMailCopyManifest } from "../embedded-mail-copy-manifest.js";
 describe("le manifeste des textes d'e-mails que l'API embarque", () => {
   const manifest = embeddedMailCopyManifest();
 
-  it("connaît les 38 e-mails du registre, chacun avec au moins un texte", () => {
-    expect(manifest.mails()).toHaveLength(38);
+  it("connaît les 39 e-mails du registre, chacun avec au moins un texte", () => {
+    expect(manifest.mails()).toHaveLength(39);
     for (const { mail } of manifest.mails()) {
       expect(manifest.textsOf(mail).length).toBeGreaterThan(0);
     }

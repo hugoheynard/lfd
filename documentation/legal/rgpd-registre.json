@@ -3312,6 +3312,15 @@
       "information": false
     },
     {
+      "colonne": "payment.pay_link_test.created_by_staff_id",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a envoyé un lien de paiement d'essai de 1 € (plafond du jour, liste des essais). Le destinataire n'est pas rangé : son adresse n'existe que dans le suivi des e-mails.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
       "colonne": "payment.pay_link.created_by_label",
       "personne": "staff",
       "categorie": "identite",

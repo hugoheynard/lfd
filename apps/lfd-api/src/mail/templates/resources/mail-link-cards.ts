@@ -66,5 +66,6 @@ export const MAIL_LINK_CARDS: { readonly [K in keyof B2bMails]: MailLinkCards } 
   "staff.support-requested": {},
   "staff.customer-request": { cta: { label: "La demande du client" } },
   "staff.link-payment-received": { cta: { label: "Ce que le paiement règle" } },
+  "staff.pay-link-test": { cta: { label: "La page de paiement d'essai" } },
   "agency.vitrine-notice": {},
 };

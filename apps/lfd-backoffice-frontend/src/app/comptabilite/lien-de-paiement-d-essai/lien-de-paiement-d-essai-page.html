@@ -1,0 +1,75 @@
+<fold-page-layout title="Lien de paiement d'essai" separator>
+  <p description>
+    Un lien de paiement de 1&nbsp;€ envoyé à un membre de l'équipe, pour éprouver le parcours de
+    bout en bout. 1&nbsp;€ encaissé puis remboursé automatiquement&nbsp;; {{ dailyLimit }} essais
+    par jour au plus.
+  </p>
+
+  @if (canWrite()) {
+    <fold-card data-send>
+      <fold-element-title variant="title" title="Envoyer un essai" />
+      <div class="send-form">
+        @if (membersError(); as message) {
+          <fold-callout appearance="inset" variant="alert">{{ message }}</fold-callout>
+        }
+        <fold-listbox
+          label="Destinataire"
+          placeholder="Choisir un membre de l'équipe"
+          hint="Le lien part à l'adresse de sa fiche."
+          [options]="members()"
+          [(value)]="recipient"
+        />
+        @if (actionError(); as message) {
+          <fold-callout appearance="inset" variant="alert" announce>{{ message }}</fold-callout>
+        }
+        <div>
+          <button
+            foldButton
+            intent="primary"
+            data-send-button
+            [disabled]="!canSend()"
+            [loading]="sending()"
+            (click)="send()"
+          >
+            Envoyer un lien d'essai de 1&nbsp;€
+          </button>
+        </div>
+      </div>
+    </fold-card>
+  }
+
+  @if (loadError(); as message) {
+    <fold-empty-state tone="alert" title="Impossible de lire les essais" [subtitle]="message">
+      <button foldButton (click)="load()">Réessayer</button>
+    </fold-empty-state>
+  } @else if (loading() && tests().length === 0) {
+    <fold-loading message="Lecture des essais…" />
+  } @else if (tests().length === 0) {
+    <fold-empty-state title="Aucun essai" subtitle="Les liens d'essai envoyés s'afficheront ici.">
+      <fold-icon empty-icon name="credit-card" />
+    </fold-empty-state>
+  } @else {
+    <fold-data-table
+      caption="Les liens de paiement d'essai"
+      narrowLayout="cards"
+      zebra
+      [columns]="columns"
+      [rows]="tests()"
+      [rowKey]="rowKey"
+    >
+      <ng-template foldCell="state" let-row>
+        <fold-badge [variant]="stateVariant(row)" [content]="stateLabel(row)" />
+      </ng-template>
+      <ng-template foldCell="created" let-row>{{ createdOf(row) }}</ng-template>
+      <ng-template foldCell="paid" let-row>{{ instantOf(row.paidAt) }}</ng-template>
+      <ng-template foldCell="refunded" let-row>{{ instantOf(row.refundedAt) }}</ng-template>
+      <ng-template foldCell="link" let-row>
+        @if (row.url; as url) {
+          <button foldButton size="sm" emphasis="outline" data-copy (click)="copy(url)">
+            Copier le lien
+          </button>
+        }
+      </ng-template>
+    </fold-data-table>
+  }
+</fold-page-layout>

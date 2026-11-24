@@ -147,10 +147,10 @@ function casesOf<K extends keyof B2bMails>(key: K): readonly (readonly [string, 
 
 const KEYS = Object.keys(MAIL_CASES) as readonly (keyof B2bMails)[];
 
-it("couvre les 38 e-mails du registre, sans en oublier un", () => {
+it("couvre les 39 e-mails du registre, sans en oublier un", () => {
   expect([...KEYS].sort()).toEqual(Object.keys(REGISTRY).sort());
   expect(Object.keys(GOLDEN).sort()).toEqual(Object.keys(REGISTRY).sort());
-  expect(KEYS).toHaveLength(38);
+  expect(KEYS).toHaveLength(39);
 });
 
 describe.each(KEYS)("le rendu de « %s »", (key) => {

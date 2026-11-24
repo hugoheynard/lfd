@@ -47,8 +47,12 @@ beforeEach(async () => {
 
 const TABLES = Object.keys(LOCKABLE_TABLES) as LockableTable[];
 
-/** Les lignes à verrouiller : un lien, un paiement né de lui, une demande. */
+/** Les lignes à verrouiller : un lien, un paiement né de lui, une demande, un essai. */
 async function seed(): Promise<void> {
+  await ctx.prisma.$executeRaw`
+    INSERT INTO "payment"."pay_link_test"
+      ("id", "amount_cents", "state", "created_at", "created_by_staff_id")
+    VALUES ('plt_lock', 100, 'sent', now(), 'staff_lock')`;
   await ctx.prisma.$executeRaw`
     INSERT INTO "payment"."pay_link"
       ("id", "subject_type", "subject_id", "origin", "payer_label", "token_hash",
@@ -73,6 +77,7 @@ const ROW_OF: Readonly<Record<LockableTable, string>> = {
   card_payment: "pay_lock",
   card_refund_request: "req_lock",
   pay_link: "pl_lock",
+  pay_link_test: "plt_lock",
 };
 
 /** Tente le même verrou depuis une autre connexion, sans attendre. */
@@ -152,6 +157,13 @@ describe("le schéma payment — les noms écrits à la main", () => {
         "pay_link_live_per_subject_key",
         "pay_link_guard",
         "pay_link_no_delete",
+        "pay_link_test_amount_fixed",
+        "pay_link_test_state_known",
+        "pay_link_test_paid_pair",
+        "pay_link_test_refunded_pair",
+        "pay_link_test_author_present",
+        "pay_link_test_guard",
+        "pay_link_test_no_delete",
         "transfer_received_append_only",
         "transfer_allocation_append_only",
         "transfer_allocation_subject_type_known",

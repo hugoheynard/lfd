@@ -197,6 +197,7 @@ const DECLARED_VARIABLES = {
   },
   "customer.order-shortfall-refunded": { subject: ["ref"], intro: ["amount", "ref"] },
   "ops.deploy-check": { subject: ["revision"] },
+  "staff.pay-link-test": {},
   "agency.vitrine-notice": {},
 } as const satisfies MailCopyVariables;
 

@@ -397,6 +397,11 @@ export const STAFF_RESOURCE_SCOPES: Readonly<Record<StaffResource, StaffResource
     write:
       "Relancer un remboursement par carte arrêté, le dire rendu autrement (motif obligatoire), vérifier un paiement chez le prestataire et lancer le balayage des remboursements à émettre.",
   },
+  pay_link_test: {
+    read: "Voir les liens de paiement d'essai : envoyés, payés, remboursés, et le lien à copier tant qu'il se paie.",
+    write:
+      "Envoyer à un membre de l'équipe un vrai lien de paiement de 1 €, remboursé tout seul une fois payé — cinq par jour au plus.",
+  },
   ops_health: {
     read: "Voir la carte de santé de l'écosystème et son trafic.",
     write: "N'ajoute rien : la carte de santé se lit seulement.",

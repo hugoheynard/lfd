@@ -31,8 +31,8 @@ function brandOf(html: string): string | null {
 const MAILS = mailKeys();
 
 describe("les déclarations de l'éditeur par blocs (S4a)", () => {
-  it("couvrent les 38 e-mails du registre", () => {
-    expect(MAILS).toHaveLength(38);
+  it("couvrent les 39 e-mails du registre", () => {
+    expect(MAILS).toHaveLength(39);
     expect(new Set(MAILS)).toEqual(new Set(Object.keys(MAIL_LAYOUTS)));
   });
 
@@ -46,10 +46,10 @@ describe("les déclarations de l'éditeur par blocs (S4a)", () => {
     expect([...mailBlockDeclarationOf(mail).locales]).toEqual(expected);
   });
 
-  it("22 e-mails partent en français seul", () => {
+  it("23 e-mails partent en français seul", () => {
     const frenchOnly = MAILS.filter((mail) => mailBlockDeclarationOf(mail).locales.length === 1);
 
-    expect(frenchOnly).toHaveLength(22);
+    expect(frenchOnly).toHaveLength(23);
   });
 
   it.each(MAILS)("%s : sa charte est celle de la coquille qui le rend", (mail) => {
@@ -111,11 +111,11 @@ describe("les déclarations de l'éditeur par blocs (S4a)", () => {
   // Seize depuis `customer.marketing-confirm` (C1 du plan de désinscription, 2026-11-08),
   // dix-sept depuis `customer.order-revised` (2026-11-10), dix-huit depuis
   // `staff.link-payment-received` (2026-11-22).
-  it("dix-huit e-mails ont un bouton du modèle", () => {
+  it("dix-neuf e-mails ont un bouton du modèle", () => {
     const withButton = MAILS.filter(
       (mail) => mailBlockDeclarationOf(mail).ctaDestination !== undefined,
     );
 
-    expect(withButton).toHaveLength(18);
+    expect(withButton).toHaveLength(19);
   });
 });

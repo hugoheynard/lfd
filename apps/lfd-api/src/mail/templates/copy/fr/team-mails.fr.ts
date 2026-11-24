@@ -166,6 +166,19 @@ export const TEAM_MAILS_FR: TeamMailsCopy = {
     cta: "Ouvrir au back-office",
     footer: "Alerte interne — envoyée à la boîte de l'équipe à chaque paiement reçu par un lien.",
   },
+  "staff.pay-link-test": {
+    kicker: "Essai du paiement par lien",
+    subject: "ESSAI — un lien de paiement de 1 €",
+    title: "Un lien de paiement d'essai",
+    intro:
+      "Voici un vrai lien de paiement de 1 €, envoyé depuis le back-office pour éprouver " +
+      "le paiement par lien : la page, le formulaire de carte et l'avis à la comptabilité.",
+    refund:
+      "Payez-le avec une vraie carte : l'euro est remboursé tout seul dès qu'il est encaissé. " +
+      "Le lien n'est plus valable 24 heures après son envoi.",
+    cta: "Payer 1 €",
+    footer: "Essai interne — envoyé à un membre de l'équipe depuis le back-office.",
+  },
   "ops.deploy-check": {
     kicker: "Contrôle de déploiement",
     subject: "[LFC] Courrier opérationnel — {revision}",

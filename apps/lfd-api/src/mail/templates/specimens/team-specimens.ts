@@ -25,6 +25,7 @@ export const TEAM_SPECIMENS: Pick<
   | "staff.support-requested"
   | "staff.customer-request"
   | "staff.link-payment-received"
+  | "staff.pay-link-test"
   | "agency.vitrine-notice"
 > = {
   "staff.appointment-booked": {
@@ -127,6 +128,10 @@ export const TEAM_SPECIMENS: Pick<
       linkAuthorName: PERSON,
       refused: false,
     }),
+  },
+  "staff.pay-link-test": {
+    family: "team",
+    data: () => ({ payUrl: `${SPECIMEN_URL}/payer/${SPECIMEN_MARK}` }),
   },
   "agency.vitrine-notice": {
     family: "team",

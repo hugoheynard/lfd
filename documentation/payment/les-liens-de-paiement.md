@@ -217,10 +217,11 @@ l'adaptateur de chaque prestataire remplit
 
 ## 3. Les sujets branchés, et comment en brancher un
 
-| Type de sujet | Bloc            | `SubjectSettlement` | `LinkableSubject`   | Compte       |
-| ------------- | --------------- | ------------------- | ------------------- | ------------ |
-| `order`       | `lafoliecoffee` | oui                 | non (sa page à lui) | `lfc-stripe` |
-| `free_charge` | `lafoliecoffee` | oui                 | oui                 | `lfc-stripe` |
+| Type de sujet  | Bloc            | `SubjectSettlement` | `LinkableSubject`   | Compte       |
+| -------------- | --------------- | ------------------- | ------------------- | ------------ |
+| `order`        | `lafoliecoffee` | oui                 | non (sa page à lui) | `lfc-stripe` |
+| `free_charge`  | `lafoliecoffee` | oui                 | oui                 | `lfc-stripe` |
+| `payment_test` | `payment`       | oui                 | oui                 | `lfc-stripe` |
 
 Le `subject_type` de `payment.card_payment` est un `TEXT` sans `CHECK` : un
 type de plus ne demande **aucune migration** du bloc. Pour brancher un sujet :
@@ -353,6 +354,55 @@ s'annule sans appeler Stripe. Un remboursement d'une telle ligne n'a pas de
 paiement au bloc `payment` : il arrive « hors commande »
 (`on-refund-without-order.handler.ts`).
 
+## 4 bis. Le lien d'essai — sujet `payment_test`
+
+Le pendant du prélèvement d'essai, pour la carte : un **vrai lien de 1 €**,
+envoyé à un membre du staff, payé avec une vraie carte, et **remboursé tout
+seul** dès qu'il est encaissé. Il éprouve la page `/payer/…`, le formulaire de
+carte, le webhook, l'avis à la comptabilité et le remboursement ; il ne touche
+ni commande, ni facture, ni société. Le coût réel est la commission du
+prestataire, qu'un remboursement ne rend pas.
+
+- **Où il vit** : `payment/link/test/`. C'est le seul sujet que le bloc
+  `payment` possède lui-même — il n'est rien d'autre qu'un essai du bloc.
+  `PayLinkTestModule` exporte ses deux implémenteurs, que
+  `appBootstrap/pay-link-feed.module.ts` et `card-payment-feed.module.ts`
+  rangent comme ceux d'un bloc métier. `payment_test` est une valeur écrite
+  dans `payment.pay_link` et `payment.card_payment` : elle ne se renomme pas.
+- **Sa table**, `payment.pay_link_test` : l'état (`sent`, `paid`, `refunded`,
+  `refund_failed`), l'auteur, les instants, et `amount_cents`, que la base
+  tient à 100. Un déclencheur ferme les transitions et refuse le DELETE.
+  **Aucune adresse** : « expiré » n'est pas rangé, il se calcule.
+- **Envoyer** — `POST admin/payment/link-tests`, droit `pay_link_test:write`,
+  clé d'intention de l'écran. La commande porte la fiche du destinataire,
+  jamais une adresse. Dans une transaction : le verrou consultatif de l'envoi,
+  le compte du jour de Paris sous lui (**cinq par jour**,
+  `PAY_LINK_TEST_DAILY_LIMIT`, puis un refus qui le dit), l'essai, son lien
+  (origine `lafoliecoffee_test`, libellé « Essai — La Folie Coffee » ; payeur
+  fixe « Essai du paiement par lien »), puis l'e-mail `staff.pay-link-test`
+  par `StaffMemberMail` : le bloc `mail` lit l'adresse sur la fiche et refuse
+  un membre inconnu (404) ou suspendu, ou sans adresse (409) — la transaction
+  tombe alors entière.
+- **Le montant fait foi par `quote`**, qui rend toujours 100 centimes, et
+  répond « plus valable » à un essai payé ou de plus de 24 heures. Le lien,
+  lui, reste en base.
+- **Le remboursement** n'est pas demandé dans `onPaid` — la ligne du paiement
+  n'y est pas encore `paid`. L'abonné durable `RefundPaidPayLinkTest`, sur
+  `card_payment.settled` filtré sur `payment_test`, demande le reste de tout
+  paiement de l'essai (`requestRemainder`, `schedule: "now"`, motif
+  `pay_link_test`) ; l'exécuteur émet après validation. L'essai passe
+  `refunded` sur l'issue terminale réussie (tout l'encaissé rendu),
+  `refund_failed` et la cloche `pay_link_test.refund_failed` sur un échec, une
+  inversion ou un refus du carnet ; un remboursement en attente de la banque
+  ne change rien, un essai d'émission raté non plus (le bloc réessaie et sonne
+  lui-même).
+- **L'avis à la comptabilité** part comme pour tout lien ; son corps dit
+  l'essai (l'application « Essai — La Folie Coffee », réglé « ESSAI — lien de
+  paiement de 1 € »), son objet est celui de tout paiement par lien.
+- **Lister** — `GET admin/payment/link-tests`, droit `pay_link_test:read` :
+  l'état (`expired` calculé), les instants, l'auteur nommé, l'adresse tant que
+  l'essai se paie. Contrat : `packages/contracts/src/pay-link-test.ts`.
+
 ## 5. L'avis à la comptabilité
 
 Chaque paiement encaissé par un lien demande l'e-mail
@@ -429,9 +479,12 @@ l'équipe.
 | `public.payment_links`                              | `lafoliecoffee/payments` | la demande de paiement libre ; `stripe_session_id`, `url` historiques (§4.6) |
 | `public.accounting_settings.payment_link_max_cents` | `lafoliecoffee/payments` | le plafond                                                                   |
 | `public.staff_notice_audience`                      | `staff/notifications`    | les destinataires des avis                                                   |
+| `payment.pay_link_test`                             | `payment/link/test`      | les essais du lien de paiement (§ 4 bis)                                     |
 
 Migrations : `20261122100000_les_liens_vers_un_sujet` à
-`20261122170000_la_relecture_des_paiements_en_attente`.
+`20261122170000_la_relecture_des_paiements_en_attente`, puis
+`20261124150000_ressource_lien_de_paiement_d_essai` et
+`20261124150100_le_lien_de_paiement_d_essai` pour l'essai.
 
 ## 8. Les portes et les tests
 
@@ -449,7 +502,8 @@ E2E : `test/pay-links.e2e-spec.ts` (la porte),
 `test/free-charge-links.e2e-spec.ts` (la demande libre par la porte),
 `test/payment-links.e2e-spec.ts` (lecture et annulation des lignes
 historiques, route retirée), `test/staff-notice-audiences.e2e-spec.ts`,
-`test/card-payment-pending-sweep.e2e-spec.ts`.
+`test/card-payment-pending-sweep.e2e-spec.ts`, `test/pay-link-test.e2e-spec.ts`
+(le lien d'essai).
 
 ## 9. Ce qui reste
 

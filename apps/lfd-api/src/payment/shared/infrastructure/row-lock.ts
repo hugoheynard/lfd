@@ -15,6 +15,7 @@ export const LOCKABLE_TABLES = {
   card_payment: Prisma.raw('"payment"."card_payment"'),
   card_refund_request: Prisma.raw('"payment"."card_refund_request"'),
   pay_link: Prisma.raw('"payment"."pay_link"'),
+  pay_link_test: Prisma.raw('"payment"."pay_link_test"'),
 } as const;
 
 /** Une table du bloc qu'un dépôt peut verrouiller. */

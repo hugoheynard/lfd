@@ -3547,6 +3547,15 @@ export type {
   RedirectCardCollection,
 } from "./card-collection.js";
 export {
+  PAY_LINK_TEST_DAILY_LIMIT,
+  createPayLinkTestPayloadSchema,
+  type CreatePayLinkTestPayload,
+  type CreatedPayLinkTest,
+  type PayLinkTestView,
+  type PayLinkTestViewState,
+  type PayLinkTestRecipient,
+} from "./pay-link-test.js";
+export {
   PAY_LINK_TOKEN_LENGTH,
   payLinkTokenPayloadSchema,
   type PayLinkIntent,

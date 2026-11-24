@@ -148,5 +148,6 @@ export const MAIL_DATA_BLOCK_CARDS: { readonly [K in keyof B2bMails]: MailDataBl
   "staff.support-requested": {},
   "staff.customer-request": {},
   "staff.link-payment-received": {},
+  "staff.pay-link-test": {},
   "agency.vitrine-notice": {},
 };

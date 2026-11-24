@@ -425,5 +425,10 @@
     "unknownAuthor": {
       "textSha256": "72a979f346823c7dee372e5eb388b2a26050271be52d63122ba3601a3c1c3961"
     }
+  },
+  "staff.pay-link-test": {
+    "only": {
+      "textSha256": "7e4cc59ed54dfd8beecf4019e06ccf4771bb2aeeb232895b797a7010dd19d532"
+    }
   }
 }

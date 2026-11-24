@@ -1,0 +1,39 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// LE LIEN DE PAIEMENT D'ESSAI — schéma `payment`
+// ─────────────────────────────────────────────────────────────────────────────
+//
+// Doc `documentation/payment/les-liens-de-paiement.md`, « Le lien d'essai ».
+// Ce que Prisma ne sait pas écrire vit dans
+// `20261124150100_le_lien_de_paiement_d_essai` : les CHECK du montant, de
+// l'état et de leurs instants, le déclencheur des transitions et le refus du
+// DELETE.
+
+/// **Un essai du paiement par lien** — table `payment.pay_link_test`.
+///
+/// Propriétaire : `src/payment/link/test/`. Le sujet `payment_test` du bloc :
+/// son lien est un `payment.pay_link` ordinaire. Aucune adresse ici.
+///
+/// Ce que le SQL porte et que ce modèle ne montre pas :
+/// - `pay_link_test_amount_fixed` : `amount_cents = 100` ;
+/// - `pay_link_test_state_known`, `pay_link_test_paid_pair`,
+///   `pay_link_test_refunded_pair` ;
+/// - le déclencheur `pay_link_test_guard` (`BEFORE UPDATE`) : auteur, montant
+///   et naissance immuables, transitions fermées ;
+/// - le déclencheur `pay_link_test_no_delete` (`BEFORE DELETE`).
+model PayLinkTest {
+  /// ULID posé par le code (`IdGenerator`).
+  id               String    @id
+  /// Toujours 100.
+  amountCents      Int       @map("amount_cents")
+  /// `sent`, `paid`, `refunded`, `refund_failed` — « expiré » se calcule.
+  state            String
+  createdAt        DateTime  @map("created_at") @db.Timestamptz(6)
+  /// La fiche staff qui l'a envoyé.
+  createdByStaffId String    @map("created_by_staff_id")
+  paidAt           DateTime? @map("paid_at") @db.Timestamptz(6)
+  refundedAt       DateTime? @map("refunded_at") @db.Timestamptz(6)
+
+  @@index([createdAt])
+  @@map("pay_link_test")
+  @@schema("payment")
+}

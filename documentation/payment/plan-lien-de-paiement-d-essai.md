@@ -1,5 +1,8 @@
 # Plan — le lien de paiement d'essai
 
+> ✅ **Bâti le 2026-11-24** (côté serveur ; l'écran est bâti à part). Doc
+> d'état : [`les-liens-de-paiement.md`](les-liens-de-paiement.md), § 4 bis.
+
 > 📐 **Plan**, écrit le 2026-11-24 à la demande de Hugo : « comme on a fait
 > test prélèvement, j'ai besoin d'une page test lien de paiement, où je peux
 > mettre une adresse mail libre, montant 1 euro ». Argent réel (1 € encaissé

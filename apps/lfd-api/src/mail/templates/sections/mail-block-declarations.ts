@@ -61,6 +61,7 @@ const CHARTERS: PerMail<MailCharter> = {
   "ops.deploy-check": "internal",
   "staff.support-requested": "internal",
   "staff.link-payment-received": "internal",
+  "staff.pay-link-test": "lfd",
 };
 
 /**
@@ -141,6 +142,7 @@ const NATURES: PerMail<MailNature> = {
   "ops.deploy-check": "transactional",
   "staff.support-requested": "transactional",
   "staff.link-payment-received": "transactional",
+  "staff.pay-link-test": "transactional",
 };
 
 const FRENCH_ONLY: readonly MailLocale[] = ["fr"];

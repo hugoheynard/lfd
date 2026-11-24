@@ -6,6 +6,9 @@ import { FREE_CHARGE_SUBJECT_TYPE } from "../lafoliecoffee/payments/application/
 import { PaymentsModule } from "../lafoliecoffee/payments/payments.module.js";
 import { OrderSubjectSettlement } from "../lafoliecoffee/orders/application/services/order-subject-settlement.js";
 import { ORDER_CARD_SUBJECT_TYPE } from "../lafoliecoffee/orders/application/services/order-card-subject.js";
+import { PayLinkTestSettlement } from "../payment/link/test/application/pay-link-test-settlement.js";
+import { PAY_LINK_TEST_SUBJECT_TYPE } from "../payment/link/test/domain/pay-link-test-subject.js";
+import { PayLinkTestModule } from "../payment/link/test/pay-link-test.module.js";
 import {
   RegisteredSubjectSettlements,
   SubjectSettlements,
@@ -25,25 +28,28 @@ import {
  *
  * - `CardAccountDefaults` — **la seule ligne du dépôt qui connaisse à la fois
  *   un type de sujet et un compte** : `order → lfc-stripe`, `free_charge →
- *   lfc-stripe` (la demande de paiement libre). Un bloc métier
+ *   lfc-stripe` (la demande de paiement libre), `payment_test → lfc-stripe`
+ *   (l'essai du paiement par lien). Un bloc métier
  *   ne nomme jamais un compte (§3.2), et `card-payment` ne sait pas ce
  *   qu'est une commande ;
  * - `SubjectSettlements` — les implémenteurs du canal retour, un par type de
- *   sujet : `order` (l'instance d'`OrdersModule`) et `free_charge` (celle de
- *   `PaymentsModule`).
+ *   sujet : `order` (l'instance d'`OrdersModule`), `free_charge` (celle de
+ *   `PaymentsModule`) et `payment_test` (celle de `PayLinkTestModule`, le
+ *   seul sujet que le bloc `payment` possède).
  *
  * `@Global` pour la raison du fil du fournil : le consommateur est
  * `payment/`, qui ne peut pas importer le commerce.
  */
 @Global()
 @Module({
-  imports: [OrdersModule, PaymentsModule],
+  imports: [OrdersModule, PaymentsModule, PayLinkTestModule],
   providers: [
     {
       provide: CardAccountDefaults,
       useValue: new DeclaredCardAccountDefaults({
         [ORDER_CARD_SUBJECT_TYPE]: "lfc-stripe",
         [FREE_CHARGE_SUBJECT_TYPE]: "lfc-stripe",
+        [PAY_LINK_TEST_SUBJECT_TYPE]: "lfc-stripe",
       }),
     },
     {
@@ -51,8 +57,9 @@ import {
       useFactory: (
         order: OrderSubjectSettlement,
         freeCharge: FreeChargeSettlement,
-      ): SubjectSettlements => new RegisteredSubjectSettlements([order, freeCharge]),
-      inject: [OrderSubjectSettlement, FreeChargeSettlement],
+        test: PayLinkTestSettlement,
+      ): SubjectSettlements => new RegisteredSubjectSettlements([order, freeCharge, test]),
+      inject: [OrderSubjectSettlement, FreeChargeSettlement, PayLinkTestSettlement],
     },
   ],
   exports: [CardAccountDefaults, SubjectSettlements],

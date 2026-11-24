@@ -22,6 +22,7 @@ export const TEAM_MAIL_LAYOUTS: Readonly<
     | "staff.support-requested"
     | "staff.customer-request"
     | "staff.link-payment-received"
+    | "staff.pay-link-test"
     | "agency.vitrine-notice"
   >
 > = {
@@ -211,6 +212,17 @@ export const TEAM_MAIL_LAYOUTS: Readonly<
           ...variants({ outcomePaid: "Encaissé", outcomeRefused: "Encaissé puis refusé" }),
         ],
       },
+      { id: "cta", texts: texts("cta") },
+      { id: "footer", texts: texts("footer") },
+    ],
+  },
+  "staff.pay-link-test": {
+    ctaDestination: "la page de paiement du lien d'essai (/payer/…), un vrai paiement de 1 €",
+    subject: SUBJECT,
+    header: KICKER,
+    sections: [
+      { id: "title", texts: texts("title") },
+      { id: "body", texts: texts("intro", "refund") },
       { id: "cta", texts: texts("cta") },
       { id: "footer", texts: texts("footer") },
     ],

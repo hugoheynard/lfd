@@ -7,6 +7,7 @@ import type { DeliveryEnRouteMailData } from "../../templates/delivery-en-route-
 import type { InvoiceIssuedMailData } from "../../templates/invoice-issued-mail.js";
 import type { LinkPaymentReceivedMailData } from "../../templates/link-payment-received-mail.js";
 import type { MarketingConfirmMailData } from "../../templates/marketing-confirm-mail.js";
+import type { PayLinkTestMailData } from "../../templates/pay-link-test-mail.js";
 import type { MandateMailScheme } from "../../templates/mandate-to-sign-wording.js";
 import type { OrderCancelledMailData } from "../../templates/order-cancelled-mail.js";
 import type {
@@ -491,6 +492,11 @@ export interface B2bMails {
    * l'équipe. Cf. `link-payment-received-mail.ts`.
    */
   "staff.link-payment-received": LinkPaymentReceivedMailData;
+  /**
+   * **Un lien de paiement d'essai de 1 €.** Destinataire : le membre du staff
+   * choisi à l'écran. Cf. `pay-link-test-mail.ts`.
+   */
+  "staff.pay-link-test": PayLinkTestMailData;
   /** **Une annonce aux abonnés de la vitrine.** Destinataire : le contact de l'agence. */
   "agency.vitrine-notice": VitrineNoticeMailData;
 }

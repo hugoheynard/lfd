@@ -60,6 +60,7 @@ export const TEAM_CASES: Pick<
   | "staff.support-requested"
   | "staff.customer-request"
   | "staff.link-payment-received"
+  | "staff.pay-link-test"
   | "agency.vitrine-notice"
 > = {
   "staff.appointment-booked": {
@@ -145,6 +146,9 @@ export const TEAM_CASES: Pick<
     refused: { ...LINK_PAYMENT, refused: true, linkCreatedAutomatically: true, linkAuthorName: "" },
     noScreen: { ...LINK_PAYMENT, screenPath: "" },
     unknownAuthor: { ...LINK_PAYMENT, linkAuthorName: "" },
+  },
+  "staff.pay-link-test": {
+    only: { payUrl: "https://app.lfc.test/payer/jeton-d-essai" },
   },
   "agency.vitrine-notice": {
     only: { subject: "Nouveautés\nde la semaine", message: "Bonjour <b>l'agence</b>" },

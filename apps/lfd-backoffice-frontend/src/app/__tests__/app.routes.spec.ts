@@ -88,6 +88,8 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   // Le prélèvement d'essai et nos établissements (2026-10-22, plan-prelevement-d-essai.md).
   'comptabilite/prelevement-d-essai': 'collection_test:read',
   'comptabilite/nos-etablissements': 'collection_test:read',
+  // Le lien de paiement d'essai (plan-lien-de-paiement-d-essai.md), son propre droit.
+  'comptabilite/lien-de-paiement-d-essai': 'pay_link_test:read',
   // Son propre droit, venu des Réglages le 2026-09-29 : ni `b2b_settings`, que
   // le commercial lit, ni `b2b_accounting`.
   'comptabilite/surtaxe-de-retard': 'b2b_late_fee:read',

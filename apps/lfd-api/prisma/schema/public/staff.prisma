@@ -262,6 +262,10 @@ enum StaffResource {
   /// autrement », « Vérifier », le balayage (2026-11-10,
   /// `documentation/payment/le-bloc-payment.md`, lot P1). Accordée à l'écran.
   card_payments
+  /// LE LIEN DE PAIEMENT D'ESSAI — envoyer un vrai lien de 1 € à un membre du
+  /// staff, lister les essais (2026-11-24,
+  /// `documentation/payment/les-liens-de-paiement.md`). Accordée à l'écran.
+  pay_link_test
   ops_health
   /// LES OPÉRATIONS APRÈS DÉPLOIEMENT — simuler (lecture), appliquer
   /// (écriture) une reprise de données (2026-11-01,

@@ -226,6 +226,21 @@ export interface LinkPaymentReceivedCopy {
   readonly footer: string;
 }
 
+/**
+ * **Un lien de paiement d'essai de 1 €**, envoyé à un membre de l'équipe : il
+ * dit que c'est un essai, qu'il est réel, et qu'il se rembourse seul.
+ */
+export interface PayLinkTestCopy {
+  /** Le sous-titre du bandeau d'en-tête, sous l'enseigne — rendu en capitales. */
+  readonly kicker: string;
+  readonly subject: string;
+  readonly title: string;
+  readonly intro: string;
+  readonly refund: string;
+  readonly cta: string;
+  readonly footer: string;
+}
+
 /** **L'annonce à l'agence de la vitrine** — l'objet et le message sont saisis au back-office. */
 export interface VitrineNoticeCopy {
   /** Le sous-titre du bandeau d'en-tête, sous l'enseigne — rendu en capitales. */
@@ -245,6 +260,7 @@ export interface TeamMailsCopy {
   readonly "staff.support-requested": SupportRequestedCopy;
   readonly "staff.customer-request": CustomerRequestCopy;
   readonly "staff.link-payment-received": LinkPaymentReceivedCopy;
+  readonly "staff.pay-link-test": PayLinkTestCopy;
   readonly "ops.deploy-check": DeployCheckCopy;
   readonly "agency.vitrine-notice": VitrineNoticeCopy;
 }

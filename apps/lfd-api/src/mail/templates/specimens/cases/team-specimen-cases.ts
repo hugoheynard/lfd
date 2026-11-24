@@ -25,6 +25,7 @@ export const TEAM_CASE_TABLES: Pick<
   | "staff.support-requested"
   | "staff.customer-request"
   | "staff.link-payment-received"
+  | "staff.pay-link-test"
   | "agency.vitrine-notice"
 > = {
   "staff.appointment-booked": {
@@ -118,5 +119,6 @@ export const TEAM_CASE_TABLES: Pick<
     ],
     axes: [{ id: "refused", values: YES_NO, of: (data) => yesNo(data.refused) }],
   },
+  "staff.pay-link-test": specimenOnly("staff.pay-link-test"),
   "agency.vitrine-notice": specimenOnly("agency.vitrine-notice"),
 };

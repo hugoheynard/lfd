@@ -25,6 +25,9 @@ export interface PayLinkOriginDeclaration {
 /** Les origines déclarées. */
 export const PAY_LINK_ORIGINS: readonly PayLinkOriginDeclaration[] = [
   { name: "lafoliecoffee", label: "La Folie Coffee", publicRoot: "client" },
+  // Les liens d'essai du bloc `payment` : la même page de la boutique, et un
+  // libellé qui dit l'essai jusque dans l'avis à la comptabilité.
+  { name: "lafoliecoffee_test", label: "Essai — La Folie Coffee", publicRoot: "client" },
 ];
 
 /** Une origine, sa racine résolue : `null` quand l'environnement ne la pose pas. */

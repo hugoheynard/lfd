@@ -19,6 +19,7 @@ import { renderCustomerAccessOpenedMail } from "./customer-access-opened-mail.js
 import { renderInvoiceIssuedMail } from "./invoice-issued-mail.js";
 import { renderLinkPaymentReceivedMail } from "./link-payment-received-mail.js";
 import { renderMarketingConfirmMail } from "./marketing-confirm-mail.js";
+import { renderPayLinkTestMail } from "./pay-link-test-mail.js";
 import { renderOrderCancelledMail } from "./order-cancelled-mail.js";
 import { orderPlacedRouteRows } from "./order-placed-route-rows.js";
 import {
@@ -698,6 +699,7 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
       renderCustomerRequestMail(data, staffMail, brand.backOfficeUrl),
     "staff.link-payment-received": (data) =>
       renderLinkPaymentReceivedMail(data, renderLayoutWithLogo, brand.backOfficeUrl),
+    "staff.pay-link-test": (data) => renderPayLinkTestMail(data, staffMail),
     "staff.password-reset": (data) => {
       const copy = local()["staff.password-reset"];
       return {

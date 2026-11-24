@@ -159,6 +159,19 @@ export const TEAM_MAILS_IT: TeamMailsCopy = {
     footer:
       "Avviso interno — inviato alla casella del team per ogni pagamento ricevuto tramite link.",
   },
+  "staff.pay-link-test": {
+    kicker: "Prova del pagamento tramite link",
+    subject: "PROVA — un link di pagamento da 1 €",
+    title: "Un link di pagamento di prova",
+    intro:
+      "Ecco un vero link di pagamento da 1 €, inviato dal back-office per provare il " +
+      "pagamento tramite link: la pagina, il modulo della carta e l'avviso alla contabilità.",
+    refund:
+      "Lo paghi con una vera carta: l'euro viene rimborsato automaticamente appena incassato. " +
+      "Il link non è più valido 24 ore dopo l'invio.",
+    cta: "Pagare 1 €",
+    footer: "Prova interna — inviata a un membro del team dal back-office.",
+  },
   "ops.deploy-check": {
     kicker: "Verifica del rilascio",
     subject: "[LFC] Posta operativa — {revision}",

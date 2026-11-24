@@ -148,9 +148,10 @@ describe('grantGroups', () => {
    * (payment/les-liens-de-paiement.md, P1c). 79 le 2026-11-23 :
    * `b2b_offer_order`, offrir une commande (commandes/passation/la-commande-offerte.md).
    * 80 le même jour : `exports`, les clés de l'export des ventes
-   * (commandes/export/plan-export-des-ventes.md, E2).
+   * (commandes/export/plan-export-des-ventes.md, E2). 81 le 2026-11-24 :
+   * `pay_link_test`, le lien de paiement d'essai (payment/plan-lien-de-paiement-d-essai.md).
    */
   it('compte les domaines du catalogue', () => {
-    expect(RESOURCE_COUNT).toBe(80);
+    expect(RESOURCE_COUNT).toBe(81);
   });
 });

@@ -747,6 +747,15 @@ export const staffResourceSchema = z.enum([
    * s'accorde à l'écran ; la graine ne la donne qu'à l'administrateur.
    */
   "card_payments",
+  /**
+   * **Le lien de paiement d'essai** — envoyer un vrai lien de 1 € à un
+   * membre du staff, et lister les essais
+   * (`documentation/payment/les-liens-de-paiement.md`, « Le lien d'essai »).
+   * À part de `card_payments` : chaque essai coûte une commission. Ajoutée
+   * sans être accordée : elle s'accorde à l'écran ; la graine ne la donne
+   * qu'à l'administrateur.
+   */
+  "pay_link_test",
 
   // ── `ops.` — L'EXPLOITATION ─────────────────────────────────────────────
   /** La carte de santé de l'écosystème : topologie, trafic. Staff only. */
@@ -950,6 +959,7 @@ export const STAFF_RESOURCE_LABELS: Readonly<Record<StaffResource, string>> = {
   mail_templates: "Modèles d'e-mails",
   mail_sends: "Suivi des e-mails",
   card_payments: "Paiements par carte",
+  pay_link_test: "Lien de paiement d'essai",
   ops_health: "Santé de l'écosystème",
   ops_post_deploy: "Opérations après déploiement",
   activity: "Journal d'activité",
@@ -1160,6 +1170,9 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     // L'administrateur seul (2026-11-10, plan M2, lot P1) : en production,
     // accordée à l'écran avant de rouvrir la boutique (§5.2, règle 8).
     card_payments: "write",
+    // L'administrateur seul (2026-11-24, le lien de paiement d'essai) : en
+    // production, accordée à l'écran.
+    pay_link_test: "write",
     ops_health: "write",
     // Graine seulement (dev, e2e) : en production, accordée à l'écran
     // (plan des opérations après déploiement, § 7.9).

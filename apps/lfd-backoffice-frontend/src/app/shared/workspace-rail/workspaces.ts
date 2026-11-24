@@ -855,6 +855,14 @@ export const COMPTABILITE_VIEWS: readonly WorkspaceView[] = [
     needs: 'collection_test:read',
   },
   {
+    // Son propre droit : `pay_link_test` (plan `plan-lien-de-paiement-d-essai.md`).
+    key: 'lien-de-paiement-d-essai',
+    label: "Lien de paiement d'essai",
+    link: '/comptabilite/lien-de-paiement-d-essai',
+    icon: 'credit-card',
+    needs: 'pay_link_test:read',
+  },
+  {
     // Les sociétés à nous, seules visées par l'essai — même droit (Q1).
     key: 'nos-etablissements',
     label: 'Nos établissements',

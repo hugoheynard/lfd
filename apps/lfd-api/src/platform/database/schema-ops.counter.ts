@@ -170,6 +170,7 @@ const NON_PUBLIC_SCHEMA_OF_MODEL: Readonly<Record<string, string>> = {
   CardRefundRequest: "payment",
   CardRefund: "payment",
   PayLink: "payment",
+  PayLinkTest: "payment",
   TransferReceived: "payment",
   TransferAllocation: "payment",
   // Le panier de la boutique, sorti de `public` dans son bloc `src/shop-cart/`.

@@ -155,6 +155,19 @@ export const TEAM_MAILS_EN: TeamMailsCopy = {
     cta: "Open in the back office",
     footer: "Internal alert — sent to the team inbox for each payment received by a link.",
   },
+  "staff.pay-link-test": {
+    kicker: "Pay-by-link test",
+    subject: "TEST — a €1 payment link",
+    title: "A test payment link",
+    intro:
+      "Here is a real €1 payment link, sent from the back office to try out payment by link: " +
+      "the page, the card form and the notice to accounting.",
+    refund:
+      "Pay it with a real card: the euro is refunded automatically as soon as it is collected. " +
+      "The link expires 24 hours after it was sent.",
+    cta: "Pay €1",
+    footer: "Internal test — sent to a team member from the back office.",
+  },
   "ops.deploy-check": {
     kicker: "Deployment check",
     subject: "[LFC] Mail operational — {revision}",

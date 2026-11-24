@@ -105,6 +105,8 @@ export interface ToolGroup {
  * - `collection_test` : le prélèvement d'essai vit dans la Comptabilité, avec
  *   `b2b_accounting` (2026-10-22, plan `plan-prelevement-d-essai.md`) ; sa clé
  *   n'a pas de préfixe d'outil.
+ * - `pay_link_test` : le lien de paiement d'essai vit dans la Comptabilité, à
+ *   côté du prélèvement d'essai (plan `plan-lien-de-paiement-d-essai.md`).
  * - `resupply_templates` : les modèles de réassort se tiennent au comptoir
  *   (Comptoir › Réassort, plan `commander.md § 6`, 2026-11-19) ;
  *   rangés au retrait, avec `handover_counter`, plutôt qu'en « Transverse ».
@@ -113,6 +115,7 @@ const RESOURCE_TOOL_EXCEPTIONS: Readonly<Partial<Record<StaffResource, StaffTool
   shop_bundles: 'lfc',
   allergen_matrix: 'pim',
   collection_test: 'b2b',
+  pay_link_test: 'b2b',
   resupply_templates: 'handover',
 };
 

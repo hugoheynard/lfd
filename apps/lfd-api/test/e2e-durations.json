@@ -457,6 +457,7 @@
   "test/packing-shortfall.e2e-spec.ts": 3210,
   "test/packing-tracking-level.e2e-spec.ts": 5000,
   "test/password-link.e2e-spec.ts": 2766,
+  "test/pay-link-test.e2e-spec.ts": 12000,
   "test/pay-links.e2e-spec.ts": 3200,
   "test/payment-links.e2e-spec.ts": 5313,
   "test/payment-row-lock.e2e-spec.ts": 11389,

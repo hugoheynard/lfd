@@ -121,6 +121,18 @@ export const comptabiliteRoutes: Routes = [
           ),
       },
       {
+        // LE LIEN DE PAIEMENT D'ESSAI — 1 € à un membre du staff, encaissé puis
+        // remboursé. Sous `pay_link_test` ; envoyer demande `pay_link_test:write`.
+        // Plan : documentation/payment/plan-lien-de-paiement-d-essai.md.
+        path: 'lien-de-paiement-d-essai',
+        canActivate: [permissionGuard('pay_link_test:read')],
+        title: "Lien de paiement d'essai — LFC B2B admin",
+        loadComponent: () =>
+          import('./lien-de-paiement-d-essai/lien-de-paiement-d-essai-page').then(
+            (m) => m.LienDePaiementDEssaiPage,
+          ),
+      },
+      {
         // NOS ÉTABLISSEMENTS — les sociétés à nous (Q1), et la décision écrite
         // de pré-notification (Q6). Même garde que l'outil d'essai.
         path: 'nos-etablissements',
