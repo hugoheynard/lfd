@@ -1,15 +1,19 @@
 <div class="stock-table">
+  <!-- Le rail des rayons de la saisie de commande, en arbre, puis la recherche. -->
+  @if (shelves().families.size > 1) {
+    <lfd-catalog-shelf-nav
+      appearance="compact"
+      data-resupply-shelves
+      [shelves]="shelves().entries"
+      [families]="shelves().families"
+      [items]="shelfItems()"
+      [allId]="allShelves"
+      [labels]="shelfLabels"
+      [active]="shelf()"
+      (picked)="shelf.set($event)"
+    />
+  }
   <div class="selectors">
-    @if (categoryOptions().length > 1) {
-      <fold-view-toggle
-        data-resupply-categories
-        ariaLabel="Filtrer par famille"
-        size="sm"
-        [options]="categoryOptions()"
-        [value]="category()"
-        (valueChange)="category.set($event)"
-      />
-    }
     <fold-view-toggle
       data-resupply-target
       ariaLabel="Visée de la demande"

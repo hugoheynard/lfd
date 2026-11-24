@@ -52,7 +52,7 @@ import {
   articlesOnShelf,
   resupplyShelfIdOf,
   resupplyShelvesOf,
-} from '../resupply-shelves';
+} from '../../resupply-shelves/resupply-shelves';
 
 /** Le téléphone — le même seuil que la table du fournil. */
 const PHONE_QUERY = '(max-width: 768px)';

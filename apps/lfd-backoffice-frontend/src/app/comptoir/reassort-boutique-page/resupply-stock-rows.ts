@@ -1,5 +1,6 @@
 import { searchProducts, type ProductSearchKeys } from '@lfd/b2b-ui/search';
 import type {
+  CatalogFamilyView,
   OrderSaleUnit,
   ResupplyArticleView,
   ResupplyReceiptLineView,
@@ -8,6 +9,8 @@ import type {
   StockAlertLevel,
   UnorderedReceiptLineView,
 } from '@lfd/contracts';
+
+import { onShelf } from '../resupply-shelves/resupply-shelves';
 
 /** L'état d'une ligne : `ok` n'est pas une alerte, c'est l'absence d'alerte. */
 export type RowState = 'ok' | StockAlertLevel;
@@ -18,6 +21,12 @@ export interface StockRow {
   readonly name: string;
   /** La famille de l'article ; `null` pour un article reçu puis retiré du catalogue. */
   readonly categoryId: string | null;
+  /**
+   * La famille de l'article et ses parentes, pour le rail des rayons ;
+   * `null` pour un article reçu puis retiré du catalogue — le reçu ne porte
+   * pas sa famille, la ligne va sous « famille inconnue ».
+   */
+  readonly family: CatalogFamilyView | null;
   /**
    * L'unité de l'article : au poids, le stock, la demande et le reçu sans
    * commande comptent des GRAMMES, saisis en grammes et dits « 1,25 kg »
@@ -31,9 +40,6 @@ export interface StockRow {
   /** Le reçu sans commande de l'article ; `null` s'il n'y en a pas. */
   readonly unordered: number | null;
 }
-
-/** La puce « Tout » : aucun filtre de famille. Hors de l'espace des identifiants de famille. */
-export const ALL_CATEGORIES = '';
 
 /** Les libellés des deux visées, sur le sélecteur et le bouton d'envoi. */
 export const TARGET_LABELS: Readonly<Record<ResupplyTarget, string>> = {
@@ -66,6 +72,7 @@ export function buildStockRows(sources: StockRowSources): readonly StockRow[] {
     sku: product.sku,
     name: product.name,
     categoryId: product.categoryId,
+    family: product.family,
     saleUnit: product.saleUnit,
     stock: stock.get(unitKey(product))?.estimatedStock ?? 0,
     state: sources.alertLevels.get(product.sku) ?? 'ok',
@@ -85,36 +92,17 @@ const STOCK_ROW_SEARCH: ProductSearchKeys<StockRow> = {
 };
 
 /**
- * Les puces et la recherche se combinent : une ligne passe les deux filtres. La
- * recherche est celle de tous les écrans de produits (`searchProducts`) :
- * tolérante aux fautes, et elle range les plus proches en tête.
+ * Le rayon puis la recherche : une ligne passe les deux filtres. Le rayon
+ * choisi montre son sous-arbre ; la recherche est celle de tous les écrans de
+ * produits (`searchProducts`) : tolérante aux fautes, et elle range les plus
+ * proches en tête.
  */
 export function filterStockRows(
   rows: readonly StockRow[],
   query: string,
-  category: string,
+  shelf: string,
 ): readonly StockRow[] {
-  return searchProducts(
-    rows.filter((row) => category === ALL_CATEGORIES || row.categoryId === category),
-    query,
-    STOCK_ROW_SEARCH,
-  );
-}
-
-/** « Tout », puis une puce par famille présente au catalogue, dans son ordre. */
-export function categoryOptionsOf(
-  articles: readonly ResupplyArticleView[],
-): readonly { readonly value: string; readonly label: string }[] {
-  const families = new Map<string, string>();
-  for (const article of articles) {
-    if (!families.has(article.categoryId)) {
-      families.set(article.categoryId, article.categoryName);
-    }
-  }
-  return [
-    { value: ALL_CATEGORIES, label: 'Tout' },
-    ...[...families].map(([value, label]) => ({ value, label })),
-  ];
+  return searchProducts(onShelf(rows, shelf), query, STOCK_ROW_SEARCH);
 }
 
 /** Le libellé d'un état, pour qui lit sans écrire. */
@@ -125,13 +113,14 @@ export function rowStateLabel(state: RowState): string {
 /** Les articles du catalogue, puis ceux reçus mais retirés du catalogue depuis. */
 function productsOf(
   sources: StockRowSources,
-): readonly Pick<StockRow, 'sku' | 'name' | 'categoryId' | 'saleUnit'>[] {
+): readonly Pick<StockRow, 'sku' | 'name' | 'categoryId' | 'family' | 'saleUnit'>[] {
   const known = new Set(sources.articles.map((article) => article.sku));
   return [
-    ...sources.articles.map(({ sku, name, categoryId, saleUnit }) => ({
+    ...sources.articles.map(({ sku, name, categoryId, family, saleUnit }) => ({
       sku,
       name,
       categoryId,
+      family,
       saleUnit,
     })),
     ...sources.stock
@@ -140,6 +129,7 @@ function productsOf(
         sku: line.sku,
         name: line.label,
         categoryId: null,
+        family: null,
         saleUnit: line.saleUnit,
       })),
   ];

@@ -10,7 +10,7 @@ import {
   output,
   signal,
 } from '@angular/core';
-import { ProductSearch } from '@lfd/b2b-ui/catalog';
+import { CatalogShelfNav, ProductSearch } from '@lfd/b2b-ui/catalog';
 import type {
   ResupplyArticleView,
   ResupplyReceiptLineView,
@@ -39,10 +39,14 @@ import { SaleQuantityPipe } from '../../../shared/sale-quantity/sale-quantity.pi
 import { narrowViewport } from '../../../shared/viewport/narrow-viewport';
 import { ResupplyQuantityCell } from '../resupply-quantity-cell/resupply-quantity-cell';
 import { ResupplyTemplatesMenu } from '../resupply-templates-menu/resupply-templates-menu';
+import { SHELF_NAV_LABELS } from '../../../commandes/nouvelle-commande/catalog-shelf-filter';
 import {
-  ALL_CATEGORIES,
+  ALL_SHELVES,
+  resupplyShelfIdOf,
+  resupplyShelvesOf,
+} from '../../resupply-shelves/resupply-shelves';
+import {
   buildStockRows,
-  categoryOptionsOf,
   filterStockRows,
   rowStateLabel,
   TARGET_LABELS,
@@ -87,6 +91,7 @@ const PHONE_QUERY = '(max-width: 768px)';
   selector: 'app-resupply-stock-table',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    CatalogShelfNav,
     ProductSearch,
     FoldButtonComponent,
     FoldCalloutComponent,
@@ -226,9 +231,10 @@ export class ResupplyStockTable {
     }),
   );
   protected readonly query = signal('');
-  /** La famille retenue par les puces ; `ALL_CATEGORIES` par défaut. */
-  protected readonly category = signal<string>(ALL_CATEGORIES);
-  protected readonly categoryOptions = computed(() => categoryOptionsOf(this.articles()));
+  /** Le rayon retenu sur le rail ; « Tout » par défaut. */
+  protected readonly shelf = signal<string>(ALL_SHELVES);
+  protected readonly allShelves = ALL_SHELVES;
+  protected readonly shelfLabels = SHELF_NAV_LABELS;
 
   protected readonly resuppliesPending = this.resupplies.pending;
   protected readonly alertFailure = this.alerts.failure;
@@ -254,8 +260,16 @@ export class ResupplyStockTable {
       tomorrowDraft: this.tomorrowDraft(),
     }),
   );
+  /**
+   * Les rayons de la table, en arbre, tirés des LIGNES : une ligne retirée du
+   * catalogue n'a pas de famille et va sous « famille inconnue ».
+   */
+  protected readonly shelves = computed(() => resupplyShelvesOf(this.rows()));
+  protected readonly shelfItems = computed(() =>
+    this.rows().map((row) => ({ shelfId: resupplyShelfIdOf(row) })),
+  );
   protected readonly visibleRows = computed(() =>
-    filterStockRows(this.rows(), this.query(), this.category()),
+    filterStockRows(this.rows(), this.query(), this.shelf()),
   );
 
   protected readonly targetCount = computed(() => this.countOf(this.target()));

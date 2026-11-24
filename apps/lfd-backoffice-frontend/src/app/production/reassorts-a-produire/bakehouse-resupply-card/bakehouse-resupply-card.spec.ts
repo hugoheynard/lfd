@@ -319,22 +319,54 @@ describe('BakehouseResupplyCard', () => {
     expect(card['name']()).toBe('');
   });
 
-  it('filtre par famille au-dessus de la table, et dit où l’on a déjà saisi', async () => {
-    const { fixture, card, add, root } = await mount();
-    add('BAG', 2);
+  describe('le rail des rayons', () => {
+    const rowsOf = (root: HTMLElement): (string | null)[] =>
+      [...root.querySelectorAll('[data-bakehouse-row]')].map((row) =>
+        row.getAttribute('data-bakehouse-row'),
+      );
 
-    expect(card['familyOptions']().map((option) => option.label)).toEqual([
-      'Tout',
-      'Viennoiseries',
-      'Pains (1)',
-    ]);
-    card['family'].set('fam_bread');
-    fixture.detectChanges();
+    it('monte le rail de la saisie au-dessus de la table, sans la bascule de familles', async () => {
+      const { root } = await mount();
+      const rail = root.querySelector('[data-bakehouse-shelves]');
+      expect(rail).not.toBeNull();
+      expect(rail?.textContent).toContain('Viennoiseries');
+      expect(rail?.textContent).toContain('Pains');
+      expect(root.querySelector('[data-bakehouse-families]')).toBeNull();
+    });
 
-    const rows = [...root.querySelectorAll('[data-bakehouse-row]')].map((row) =>
-      row.getAttribute('data-bakehouse-row'),
-    );
-    expect(rows).toEqual(['BAG']);
+    it('un rayon filtre la table, combiné à la recherche', async () => {
+      const { fixture, card, root } = await mount();
+      card['shelf'].set('fam_bread');
+      fixture.detectChanges();
+      expect(rowsOf(root)).toEqual(['BAG']);
+
+      card['shelf'].set('fam_morning');
+      card['query'].set('chocolat');
+      fixture.detectChanges();
+      expect(rowsOf(root)).toEqual(['PAC']);
+
+      card['query'].set('');
+      card['shelf'].set(card['allShelves']);
+      fixture.detectChanges();
+      expect(rowsOf(root)).toEqual(['CRO', 'PAC', 'BAG']);
+    });
+
+    it('un rayon parent montre tout son sous-arbre', async () => {
+      const { fixture, card, root } = await mount();
+      const viennoiserie = { id: 'fam_v', name: 'Viennoiserie', position: 0 };
+      card['articles'].update((articles) =>
+        articles.map((article) =>
+          article.categoryId === 'fam_morning'
+            ? { ...article, family: { ...article.family, ancestors: [viennoiserie] } }
+            : article,
+        ),
+      );
+      fixture.detectChanges();
+      expect(root.querySelector('[data-bakehouse-shelves]')?.textContent).toContain('Viennoiserie');
+      card['shelf'].set('fam_v');
+      fixture.detectChanges();
+      expect(rowsOf(root)).toEqual(['CRO', 'PAC']);
+    });
   });
 
   it('dit à l’écran que le rangement n’a pas pu être lu, au lieu de revenir en silence à la famille', async () => {

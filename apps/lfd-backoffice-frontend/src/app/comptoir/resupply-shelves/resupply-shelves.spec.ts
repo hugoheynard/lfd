@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { ResupplyArticleView } from '@lfd/contracts';
 
-import { ARTICLES } from './resupply-template.testing';
+import { ARTICLES } from '../resupply-templates/resupply-template.testing';
 import { ALL_SHELVES, articlesOnShelf, resupplyShelvesOf } from './resupply-shelves';
 
 const skus = (articles: readonly { sku: string }[]): string[] => articles.map((a) => a.sku);

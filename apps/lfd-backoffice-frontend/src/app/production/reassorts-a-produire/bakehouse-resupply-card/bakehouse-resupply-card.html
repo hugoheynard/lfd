@@ -124,12 +124,28 @@
         <fold-callout variant="warning" data-grouping-lost>{{ lost }}</fold-callout>
       }
 
+      <!-- Le rail des rayons de la saisie de commande, en arbre ; en mode prod,
+           le filtre par poste le remplace. -->
+      @if (!byStation() && shelves().families.size > 1) {
+        <lfd-catalog-shelf-nav
+          appearance="compact"
+          data-bakehouse-shelves
+          [shelves]="shelves().entries"
+          [families]="shelves().families"
+          [items]="shelfItems()"
+          [allId]="allShelves"
+          [labels]="shelfLabels"
+          [active]="shelf()"
+          (picked)="shelf.set($event)"
+        />
+      }
+
       <!-- Le filtre et la recherche sur UNE ligne : ils règlent la même table. -->
       <div class="filters">
-        @if (familyOptions().length > 2) {
+        @if (byStation() && familyOptions().length > 2) {
           <fold-view-toggle
             data-bakehouse-families
-            [ariaLabel]="filterLabel()"
+            ariaLabel="Filtrer par poste"
             size="sm"
             [options]="familyOptions()"
             [value]="family()"

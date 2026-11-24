@@ -9,7 +9,7 @@ import {
   signal,
   untracked,
 } from '@angular/core';
-import { ProductSearch } from '@lfd/b2b-ui/catalog';
+import { CatalogShelfNav, ProductSearch } from '@lfd/b2b-ui/catalog';
 import { searchProducts } from '@lfd/b2b-ui/search';
 import type {
   BakehouseResupplyDraftView,
@@ -50,6 +50,13 @@ import {
   skippedNotice,
 } from '../../../comptoir/resupply-templates/resupply-template-apply';
 import { ResupplyTemplatesStore } from '../../../comptoir/resupply-templates/resupply-templates.store';
+import {
+  ALL_SHELVES,
+  articlesOnShelf,
+  resupplyShelfIdOf,
+  resupplyShelvesOf,
+} from '../../../comptoir/resupply-shelves/resupply-shelves';
+import { SHELF_NAV_LABELS } from '../../../commandes/nouvelle-commande/catalog-shelf-filter';
 import { ResupplyNameField } from '../../../shared/resupply-name-field/resupply-name-field';
 import { narrowViewport } from '../../../shared/viewport/narrow-viewport';
 import {
@@ -114,6 +121,7 @@ interface SiteChoice {
   selector: 'app-bakehouse-resupply-card',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    CatalogShelfNav,
     ProductSearch,
     BakehouseQuantityStepper,
     FoldButtonComponent,
@@ -191,8 +199,12 @@ export class BakehouseResupplyCard {
   /** La quantité saisie par article ; un article absent n'est pas demandé. */
   protected readonly quantities = signal<ReadonlyMap<string, number>>(new Map());
   protected readonly query = signal('');
-  /** La famille retenue par le filtre ; `ALL_FAMILIES` par défaut. */
+  /** Le poste retenu par le filtre en mode prod ; `ALL_FAMILIES` par défaut. */
   protected readonly family = signal<string>(ALL_FAMILIES);
+  /** Le rayon retenu sur le rail, hors mode prod ; « Tout » par défaut. */
+  protected readonly shelf = signal<string>(ALL_SHELVES);
+  protected readonly allShelves = ALL_SHELVES;
+  protected readonly shelfLabels = SHELF_NAV_LABELS;
 
   /**
    * En mode prod, le poste de chaque article (plan des postes, § 3.7) ;
@@ -201,12 +213,16 @@ export class BakehouseResupplyCard {
   private readonly stations = signal<WorkstationFilter | null>(null);
   /** Ce que la lecture du rangement a perdu : le texte du `fold-callout`, ou `null`. */
   protected readonly groupingLost = signal<string | null>(null);
-  /** Le nom du filtre : par poste en mode prod, par famille sinon. */
-  protected readonly filterLabel = computed(() =>
-    this.stations() === null ? 'Filtrer par famille' : 'Filtrer par poste',
+  /** Le mode prod : le filtre est par poste, et le rail des rayons s'efface. */
+  protected readonly byStation = computed(() => this.stations() !== null);
+
+  /** Les rayons du catalogue, en arbre — ceux de la saisie de commande. */
+  protected readonly shelves = computed(() => resupplyShelvesOf(this.articles()));
+  protected readonly shelfItems = computed(() =>
+    this.articles().map((article) => ({ shelfId: resupplyShelfIdOf(article) })),
   );
 
-  /** « Tout », puis une puce par famille (ou par poste), avec ce qui y est déjà saisi. */
+  /** « Tout », puis une puce par poste, avec ce qui y est déjà saisi (mode prod). */
   protected readonly familyOptions = computed(() =>
     familyOptionsOf(this.articles(), this.quantities(), this.stations()),
   );
@@ -246,14 +262,20 @@ export class BakehouseResupplyCard {
   /** Ce qui part, pièces et poids à part : « 12 pièces · 1,25 kg ». */
   protected readonly amount = computed(() => requestedAmountLabel(this.articles(), this.lines()));
 
-  /** Les articles de la famille retenue, puis la recherche de produits commune. */
-  protected readonly visibleArticles = computed(() =>
-    searchProducts(
-      articlesOfFamily(this.articles(), this.family(), this.stations()),
-      this.query(),
-      RESUPPLY_ARTICLE_SEARCH,
-    ),
-  );
+  /**
+   * Les articles du rayon (ou du poste, en mode prod) retenu, puis la
+   * recherche de produits commune.
+   */
+  protected readonly visibleArticles = computed(() => {
+    const stations = this.stations();
+    return stations === null
+      ? articlesOnShelf(this.articles(), this.shelf(), this.query())
+      : searchProducts(
+          articlesOfFamily(this.articles(), this.family(), stations),
+          this.query(),
+          RESUPPLY_ARTICLE_SEARCH,
+        );
+  });
   protected readonly nothingFound = { title: 'Aucun produit ne correspond.' };
 
   /** Enregistrer demande un point et une ligne ; l'heure y est facultative. */

@@ -2,13 +2,8 @@ import type { SiteResupplyDraftView } from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
 import { ARTICLES } from './resupply-stock.testing';
-import {
-  ALL_CATEGORIES,
-  buildStockRows,
-  categoryOptionsOf,
-  filterStockRows,
-  rowStateLabel,
-} from './resupply-stock-rows';
+import { ALL_SHELVES } from '../resupply-shelves/resupply-shelves';
+import { buildStockRows, filterStockRows, rowStateLabel } from './resupply-stock-rows';
 
 function draft(target: 'asap' | 'tomorrow', lines: [string, number][]): SiteResupplyDraftView {
   return {
@@ -70,21 +65,35 @@ describe('les lignes de la table du réassort', () => {
     expect(rows.find((row) => row.sku === 'CRO')).toMatchObject({ stock: 0, unordered: 2 });
   });
 
-  it('filtre par famille et par recherche sans accents ni casse, les deux combinés', () => {
+  it('filtre par rayon et par recherche sans accents ni casse, les deux combinés', () => {
     const rows = buildStockRows(EMPTY);
-    expect(filterStockRows(rows, ' CHOCOLAT ', ALL_CATEGORIES).map((row) => row.sku)).toEqual([
-      'PAC',
-    ]);
+    expect(filterStockRows(rows, ' CHOCOLAT ', ALL_SHELVES).map((row) => row.sku)).toEqual(['PAC']);
     expect(filterStockRows(rows, '', 'fam_morning').map((row) => row.sku)).toEqual(['CRO', 'PAC']);
     expect(filterStockRows(rows, 'baguette', 'fam_morning')).toEqual([]);
   });
 
-  it('propose « Tout » puis une puce par famille, dans l’ordre du catalogue', () => {
-    expect(categoryOptionsOf(ARTICLES).map((option) => option.label)).toEqual([
-      'Tout',
-      'Pains',
-      'Viennoiseries',
-    ]);
+  it('un rayon parent montre son sous-arbre ; une ligne retirée du catalogue va sous « famille inconnue »', () => {
+    const viennoiserie = { id: 'fam_v', name: 'Viennoiserie', position: 0 };
+    const rows = buildStockRows({
+      ...EMPTY,
+      articles: [
+        ...ARTICLES,
+        {
+          sku: 'BRI',
+          name: 'Brioche',
+          categoryId: 'fam_brio',
+          categoryName: 'Brioches',
+          family: { id: 'fam_brio', name: 'Brioches', position: 1, ancestors: [viennoiserie] },
+          saleUnit: 'piece',
+        },
+      ],
+      stock: [
+        { sku: 'OLD', label: 'Ancien', receivedQuantity: 2, estimatedStock: 2, saleUnit: 'piece' },
+      ],
+    });
+    expect(filterStockRows(rows, '', 'fam_v').map((row) => row.sku)).toEqual(['BRI']);
+    expect(filterStockRows(rows, '', 'unknown-family').map((row) => row.sku)).toEqual(['OLD']);
+    expect(rows.find((row) => row.sku === 'OLD')?.family).toBeNull();
   });
 
   it('dit l’état en clair', () => {

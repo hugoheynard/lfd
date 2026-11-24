@@ -10,6 +10,7 @@ import { UnorderedReceiptEditor } from './unordered-receipt-editor';
 const ROW: StockRow = {
   sku: 'BAG',
   name: 'Baguette',
+  family: { id: 'fam_bread', name: 'Pains', position: 0 },
   categoryId: 'fam_bread',
   saleUnit: 'piece',
   stock: 0,

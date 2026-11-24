@@ -409,7 +409,7 @@ describe('ResupplyStockTable', () => {
     expect(order(fixture)).toEqual(['PAC']);
   });
 
-  it('les puces de famille : « Tout » puis une par famille présente, un clic filtre, combiné à la recherche', async () => {
+  it('le rail des rayons : « Tout » puis une pastille par famille des lignes, un clic filtre, combiné à la recherche', async () => {
     const { fixture, table } = await mount({
       stock: [
         {
@@ -422,14 +422,13 @@ describe('ResupplyStockTable', () => {
       ],
     });
 
-    expect(root(fixture).querySelector('[data-resupply-categories]')).not.toBeNull();
-    expect(table['categoryOptions']().map((option) => option.label)).toEqual([
-      'Tout',
-      'Pains',
-      'Viennoiseries',
-    ]);
+    const rail = root(fixture).querySelector('[data-resupply-shelves]');
+    expect(rail).not.toBeNull();
+    expect(rail?.textContent).toContain('Pains');
+    expect(rail?.textContent).toContain('Viennoiseries');
+    expect(root(fixture).querySelector('[data-resupply-categories]')).toBeNull();
 
-    table['category'].set('fam_morning');
+    table['shelf'].set('fam_morning');
     await settle(fixture);
     expect(order(fixture)).toEqual(['CRO', 'PAC']);
 
@@ -438,9 +437,52 @@ describe('ResupplyStockTable', () => {
     expect(order(fixture)).toEqual(['PAC']);
 
     table['query'].set('');
-    table['category'].set('');
+    table['shelf'].set(table['allShelves']);
     await settle(fixture);
     expect(order(fixture)).toEqual(['BAG', 'CRO', 'PAC', 'OLD']);
+  });
+
+  it('un rayon parent montre tout son sous-arbre', async () => {
+    const viennoiserie = { id: 'fam_v', name: 'Viennoiserie', position: 0 };
+    const nested: readonly ResupplyArticleView[] = [
+      ARTICLES[0]!,
+      {
+        sku: 'CRO',
+        name: 'Croissant',
+        categoryId: 'fam_fine',
+        categoryName: 'Viennoiserie fine',
+        family: {
+          id: 'fam_fine',
+          name: 'Viennoiserie fine',
+          position: 1,
+          ancestors: [viennoiserie],
+        },
+        saleUnit: 'piece',
+      },
+      {
+        sku: 'BRI',
+        name: 'Brioche',
+        categoryId: 'fam_brio',
+        categoryName: 'Brioches',
+        family: { id: 'fam_brio', name: 'Brioches', position: 2, ancestors: [viennoiserie] },
+        saleUnit: 'piece',
+      },
+    ];
+    const { fixture, table } = await mount({ articles: nested });
+    expect(root(fixture).querySelector('[data-resupply-shelves]')?.textContent).toContain(
+      'Viennoiserie',
+    );
+    table['shelf'].set('fam_v');
+    await settle(fixture);
+    expect(order(fixture)).toEqual(['CRO', 'BRI']);
+    table['shelf'].set('fam_brio');
+    await settle(fixture);
+    expect(order(fixture)).toEqual(['BRI']);
+  });
+
+  it('sans deux familles, pas de rail', async () => {
+    const { fixture } = await mount({ articles: [ARTICLES[0]!] });
+    expect(root(fixture).querySelector('[data-resupply-shelves]')).toBeNull();
   });
 
   it('en lecture seule : ni sélecteur d’état, ni case, ni envoi', async () => {
@@ -591,10 +633,7 @@ describe('ResupplyStockTable', () => {
     const { fixture, table } = await mount({ articles: variants });
     expect(rowOf(table, 'TAR-6').name).toBe('Tarte citron 6 parts');
     expect(rowOf(table, 'TAR-1').name).toBe('Tarte citron part');
-    expect(table['categoryOptions']().filter((option) => option.label === 'Tartes')).toHaveLength(
-      1,
-    );
-    table['category'].set('fam_tart');
+    table['shelf'].set('fam_tart');
     await settle(fixture);
     expect(order(fixture)).toEqual(['TAR-6', 'TAR-1']);
   });
