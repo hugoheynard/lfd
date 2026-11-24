@@ -80,6 +80,7 @@ describe("un article réservé au réassort des boutiques", () => {
     expect(await resupplyCatalogue()).toContain(cookie.variantSku);
     await expect(ctx.app.get(ResupplyCatalogue).article(cookie.variantSku)).resolves.toMatchObject({
       sku: cookie.variantSku,
+      internal: true,
     });
     // Le témoin public attend sa validation : le réassort suit la vitrine.
     expect(await resupplyCatalogue()).not.toContain(witness.variantSku);

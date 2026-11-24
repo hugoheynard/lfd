@@ -36,6 +36,7 @@ import {
   FoldTimeComponent,
   FoldViewToggleComponent,
   type FoldTableColumn,
+  FoldBadgeComponent,
 } from 'fold-ng';
 
 import { SHELF_NAV_LABELS } from '../../../commandes/nouvelle-commande/catalog-shelf-filter';
@@ -100,6 +101,7 @@ const TEMPLATES_URL = '/comptoir/modeles-reassort';
   selector: 'app-resupply-template-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    FoldBadgeComponent,
     ProductSearch,
     BakehouseQuantityStepper,
     CatalogShelfNav,

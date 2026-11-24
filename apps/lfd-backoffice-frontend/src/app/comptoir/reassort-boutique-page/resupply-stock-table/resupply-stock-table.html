@@ -93,7 +93,14 @@
         [class.out]="row.state === 'out_of_stock'"
         [class.low]="row.state === 'low'"
       >
-        {{ row.name }}
+        <span class="product-name">
+          {{ row.name }}
+          @if (row.internal) {
+            <span data-internal-badge title="Réservé au réassort, jamais vendu en ligne">
+              <fold-badge content="Interne" variant="neutral" radius="pill" />
+            </span>
+          }
+        </span>
         <span class="muted">{{ row.sku }}</span>
       </span>
     </ng-template>

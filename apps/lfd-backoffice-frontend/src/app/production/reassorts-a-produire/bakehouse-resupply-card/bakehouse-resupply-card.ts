@@ -38,6 +38,7 @@ import {
   FoldViewToggleComponent,
   type FoldSelectOption,
   type FoldTableColumn,
+  FoldBadgeComponent,
 } from 'fold-ng';
 
 import { PickupAddressesService } from '../../../b2b/reglages/pickup-addresses.service';
@@ -121,6 +122,7 @@ interface SiteChoice {
   selector: 'app-bakehouse-resupply-card',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    FoldBadgeComponent,
     CatalogShelfNav,
     ProductSearch,
     BakehouseQuantityStepper,

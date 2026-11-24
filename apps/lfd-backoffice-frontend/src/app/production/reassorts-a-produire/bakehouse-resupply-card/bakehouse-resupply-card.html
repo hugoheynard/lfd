@@ -173,7 +173,14 @@
         </ng-template>
         <ng-template foldCell="product" let-article>
           <span class="product" [class.asked]="quantityOf(article.sku)">
-            {{ article.name }}
+            <span class="product-name">
+              {{ article.name }}
+              @if (article.internal) {
+                <span data-internal-badge title="Réservé au réassort, jamais vendu en ligne">
+                  <fold-badge content="Interne" variant="neutral" radius="pill" />
+                </span>
+              }
+            </span>
             <span class="muted">{{ article.sku }}</span>
           </span>
         </ng-template>

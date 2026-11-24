@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import type { ResupplyArticleView } from '@lfd/contracts';
 import { provideRouter, Router } from '@angular/router';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -17,7 +18,11 @@ async function settle(fixture: {
   fixture.detectChanges();
 }
 
-async function mount(templateId: string | undefined, service = new FakeTemplatesService()) {
+async function mount(
+  templateId: string | undefined,
+  service = new FakeTemplatesService(),
+  articles: readonly ResupplyArticleView[] = ARTICLES,
+) {
   vi.stubGlobal('matchMedia', () => ({
     matches: false,
     addEventListener: () => undefined,
@@ -29,7 +34,7 @@ async function mount(templateId: string | undefined, service = new FakeTemplates
     providers: [
       provideRouter([]),
       { provide: ResupplyTemplatesService, useValue: service },
-      { provide: ResupplyReceiptsService, useValue: { articles: () => Promise.resolve(ARTICLES) } },
+      { provide: ResupplyReceiptsService, useValue: { articles: () => Promise.resolve(articles) } },
       {
         provide: PickupAddressesService,
         useValue: { list: () => Promise.resolve([{ id: 'site_v', label: 'Val Village' }]) },
@@ -225,5 +230,33 @@ describe('ResupplyTemplatePage', () => {
       page['shelf'].set('fam_b');
       expect(visible(page)).toEqual([]);
     });
+  });
+});
+
+describe('ResupplyTemplatePage — le badge « Interne »', () => {
+  const COOKIE: ResupplyArticleView = {
+    sku: 'COO',
+    name: 'Cookie formule',
+    categoryId: 'fam_m',
+    categoryName: 'Viennoiseries',
+    family: { id: 'fam_m', name: 'Viennoiseries', position: 0 },
+    saleUnit: 'piece',
+    internal: true,
+  };
+
+  it('marque l’article réservé au réassort, et lui seul', async () => {
+    const { root } = await mount(undefined, undefined, [...ARTICLES, COOKIE]);
+
+    const badges = [...root.querySelectorAll('[data-internal-badge]')];
+    expect(badges).toHaveLength(1);
+    expect(badges[0]?.parentElement?.textContent).toContain('Cookie formule');
+    expect(badges[0]?.getAttribute('title')).toBe('Réservé au réassort, jamais vendu en ligne');
+  });
+
+  it('ne marque aucun article publié', async () => {
+    const { root } = await mount(undefined);
+
+    expect(root.querySelector('fold-data-table')).not.toBeNull();
+    expect(root.querySelector('[data-internal-badge]')).toBeNull();
   });
 });

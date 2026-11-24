@@ -13,6 +13,7 @@ const ROW: StockRow = {
   family: { id: 'fam_bread', name: 'Pains', position: 0 },
   categoryId: 'fam_bread',
   saleUnit: 'piece',
+  internal: false,
   stock: 0,
   state: 'ok',
   asap: 0,

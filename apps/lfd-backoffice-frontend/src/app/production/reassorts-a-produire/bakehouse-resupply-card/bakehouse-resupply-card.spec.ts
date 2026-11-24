@@ -41,6 +41,8 @@ class FakeBakehouse {
   refuse = false;
   /** Un article au poids en plus (lot L2b-4) ; absent par défaut. */
   weighed = false;
+  /** Un article réservé au réassort en plus ; absent par défaut. */
+  withInternal = false;
   articles(): Promise<readonly ResupplyArticleView[]> {
     return Promise.resolve([
       {
@@ -50,6 +52,7 @@ class FakeBakehouse {
         categoryName: 'Viennoiseries',
         family: { id: 'fam_morning', name: 'Viennoiseries', position: 0 },
         saleUnit: 'piece',
+        internal: false,
       },
       {
         sku: 'PAC',
@@ -58,6 +61,7 @@ class FakeBakehouse {
         categoryName: 'Viennoiseries',
         family: { id: 'fam_morning', name: 'Viennoiseries', position: 0 },
         saleUnit: 'piece',
+        internal: false,
       },
       {
         sku: 'BAG',
@@ -66,6 +70,7 @@ class FakeBakehouse {
         categoryName: 'Pains',
         family: { id: 'fam_bread', name: 'Pains', position: 0 },
         saleUnit: 'piece',
+        internal: false,
       },
       ...(this.weighed
         ? [
@@ -76,6 +81,20 @@ class FakeBakehouse {
               categoryName: 'Traiteur',
               family: { id: 'fam_deli', name: 'Traiteur', position: 0 },
               saleUnit: 'weight' as const,
+              internal: false,
+            },
+          ]
+        : []),
+      ...(this.withInternal
+        ? [
+            {
+              sku: 'COO',
+              name: 'Cookie formule',
+              categoryId: 'fam_morning',
+              categoryName: 'Viennoiseries',
+              family: { id: 'fam_morning', name: 'Viennoiseries', position: 0 },
+              saleUnit: 'piece' as const,
+              internal: true,
             },
           ]
         : []),
@@ -630,6 +649,24 @@ describe('BakehouseResupplyCard', () => {
       expect(root.querySelector('[data-bakehouse-draft-missing]')).not.toBeNull();
       expect(card['lines']()).toEqual([]);
     });
+  });
+
+  it('marque « Interne » le seul article réservé au réassort', async () => {
+    const bakehouse = new FakeBakehouse();
+    bakehouse.withInternal = true;
+    const { root } = await mount(undefined, bakehouse);
+
+    const badges = [...root.querySelectorAll('[data-internal-badge]')];
+    expect(badges).toHaveLength(1);
+    expect(badges[0]?.parentElement?.textContent).toContain('Cookie formule');
+    expect(badges[0]?.getAttribute('title')).toBe('Réservé au réassort, jamais vendu en ligne');
+    expect(badges[0]?.textContent).toContain('Interne');
+  });
+
+  it('ne marque aucun article publié', async () => {
+    const { root } = await mount();
+
+    expect(root.querySelector('[data-internal-badge]')).toBeNull();
   });
 
   it('dit l’échec de lecture des points par un état fold', async () => {

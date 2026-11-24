@@ -13,6 +13,7 @@ export const CROISSANT: ResupplyArticle = {
   categoryName: "Viennoiseries",
   family: { id: "fam_morning", name: "Viennoiseries", position: 0 },
   saleUnit: "piece",
+  internal: false,
 };
 
 export const PAIN_AU_CHOCOLAT: ResupplyArticle = {
@@ -22,6 +23,7 @@ export const PAIN_AU_CHOCOLAT: ResupplyArticle = {
   categoryName: "Viennoiseries",
   family: { id: "fam_morning", name: "Viennoiseries", position: 0 },
   saleUnit: "piece",
+  internal: false,
 };
 
 export const BAGUETTE: ResupplyArticle = {
@@ -31,6 +33,7 @@ export const BAGUETTE: ResupplyArticle = {
   categoryName: "Pains",
   family: { id: "fam_bread", name: "Pains", position: 1 },
   saleUnit: "piece",
+  internal: false,
 };
 
 /** Au poids : sa quantité compte des grammes (L2b-1). */
@@ -41,6 +44,7 @@ export const SALMON: ResupplyArticle = {
   categoryName: "Traiteur",
   family: { id: "fam_deli", name: "Traiteur", position: 2 },
   saleUnit: "weight",
+  internal: false,
 };
 
 /** Les deux viennoiseries, le jeu le plus courant. */

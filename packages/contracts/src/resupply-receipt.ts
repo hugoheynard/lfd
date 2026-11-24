@@ -135,6 +135,11 @@ export interface ResupplyArticleView {
   readonly family: CatalogFamilyView;
   /** Son unité de vente : au poids, une quantité de réassort compte des grammes (lot L2b-1). */
   readonly saleUnit: OrderSaleUnit;
+  /**
+   * Réservé au réassort (audience `resupply`), jamais vendu en ligne : les
+   * écrans du réassort le signalent d'un badge « Interne ».
+   */
+  readonly internal: boolean;
 }
 
 const DAY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;

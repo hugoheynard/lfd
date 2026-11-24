@@ -13,6 +13,7 @@ const CROISSANT: ResupplyArticleView = {
   categoryName: 'Viennoiseries',
   family: { id: 'm', name: 'Viennoiseries', position: 0 },
   saleUnit: 'piece',
+  internal: false,
 };
 
 class FakePanels {

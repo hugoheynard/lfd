@@ -74,6 +74,7 @@ const VIEW: ResupplyProductionDayView = {
       categoryName: 'Pains',
       family: { id: 'fam_bread', name: 'Pains', position: 0 },
       saleUnit: 'piece' as const,
+      internal: false,
     },
     {
       sku: 'CRO',
@@ -82,6 +83,7 @@ const VIEW: ResupplyProductionDayView = {
       categoryName: 'Viennoiseries',
       family: { id: 'fam_morning', name: 'Viennoiseries', position: 0 },
       saleUnit: 'piece' as const,
+      internal: false,
     },
     {
       sku: 'PAC',
@@ -90,6 +92,7 @@ const VIEW: ResupplyProductionDayView = {
       categoryName: 'Viennoiseries',
       family: { id: 'fam_morning', name: 'Viennoiseries', position: 0 },
       saleUnit: 'piece',
+      internal: false,
     },
   ],
 };

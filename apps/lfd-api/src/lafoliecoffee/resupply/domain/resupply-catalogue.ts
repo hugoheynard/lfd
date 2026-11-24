@@ -23,6 +23,11 @@ export interface ResupplyArticle {
    * au poids, la quantité compte des grammes.
    */
   readonly saleUnit: SaleUnit;
+  /**
+   * Réservé au réassort (audience `resupply`) : aucune vitrine ne le sert. Tiré
+   * de la provenance — le lecteur des articles de réassort —, jamais du nom.
+   */
+  readonly internal: boolean;
 }
 
 /**

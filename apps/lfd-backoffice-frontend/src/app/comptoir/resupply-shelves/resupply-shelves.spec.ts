@@ -21,6 +21,7 @@ const NESTED: readonly ResupplyArticleView[] = [
     categoryName: 'Viennoiserie fine',
     family: { id: 'fam_fine', name: 'Viennoiserie fine', position: 1, ancestors: [VIENNOISERIE] },
     saleUnit: 'piece',
+    internal: false,
   },
   {
     sku: 'BRI',
@@ -29,6 +30,7 @@ const NESTED: readonly ResupplyArticleView[] = [
     categoryName: 'Brioches',
     family: { id: 'fam_brio', name: 'Brioches', position: 2, ancestors: [VIENNOISERIE] },
     saleUnit: 'piece',
+    internal: false,
   },
   {
     sku: 'BAG',
@@ -37,6 +39,7 @@ const NESTED: readonly ResupplyArticleView[] = [
     categoryName: 'Pains',
     family: { id: 'fam_b', name: 'Pains', position: 3 },
     saleUnit: 'piece',
+    internal: false,
   },
 ];
 

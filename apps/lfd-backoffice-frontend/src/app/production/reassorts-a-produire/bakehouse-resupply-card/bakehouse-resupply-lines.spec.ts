@@ -11,6 +11,7 @@ const ARTICLES: readonly ResupplyArticleView[] = [
     categoryName: 'Viennoiseries',
     family: { id: 'm', name: 'Viennoiseries', position: 0 },
     saleUnit: 'piece',
+    internal: false,
   },
   {
     sku: 'GRA',
@@ -19,6 +20,7 @@ const ARTICLES: readonly ResupplyArticleView[] = [
     categoryName: 'Traiteur',
     family: { id: 't', name: 'Traiteur', position: 0 },
     saleUnit: 'weight',
+    internal: false,
   },
   {
     sku: 'BAG',
@@ -27,6 +29,7 @@ const ARTICLES: readonly ResupplyArticleView[] = [
     categoryName: 'Pains',
     family: { id: 'b', name: 'Pains', position: 0 },
     saleUnit: 'piece',
+    internal: false,
   },
 ];
 

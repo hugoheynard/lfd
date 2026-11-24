@@ -27,6 +27,7 @@ export const ARTICLES: readonly ResupplyArticleView[] = [
     categoryName: 'Pains',
     family: { id: 'fam_bread', name: 'Pains', position: 0 },
     saleUnit: 'piece' as const,
+    internal: false,
   },
   {
     sku: 'CRO',
@@ -35,6 +36,7 @@ export const ARTICLES: readonly ResupplyArticleView[] = [
     categoryName: 'Viennoiseries',
     family: { id: 'fam_morning', name: 'Viennoiseries', position: 0 },
     saleUnit: 'piece' as const,
+    internal: false,
   },
   {
     sku: 'PAC',
@@ -43,6 +45,7 @@ export const ARTICLES: readonly ResupplyArticleView[] = [
     categoryName: 'Viennoiseries',
     family: { id: 'fam_morning', name: 'Viennoiseries', position: 0 },
     saleUnit: 'piece',
+    internal: false,
   },
 ];
 

@@ -142,6 +142,7 @@ describe("une ligne de modèle face au catalogue", () => {
     categoryName: "Viennoiseries",
     family: { id: "fam", name: "Viennoiseries", position: 0 },
     saleUnit: "piece" as const,
+    internal: false,
   };
 
   it("s'applique quand l'article est publié dans la même unité", () => {

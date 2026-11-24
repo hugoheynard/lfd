@@ -8,7 +8,10 @@ import {
 import { type ResupplyArticle, ResupplyCatalogue } from "../domain/resupply-catalogue.js";
 import { familyView } from "../../catalog/domain/catalog-family.js";
 import { staffViewer } from "../../catalog/domain/catalog-viewer.js";
-import { ResupplyOnlyArticlesReader } from "../../catalog/domain/ports/resupply-only-articles.reader.js";
+import {
+  type ResupplyOnlyArticle,
+  ResupplyOnlyArticlesReader,
+} from "../../catalog/domain/ports/resupply-only-articles.reader.js";
 
 /** La vitrine sert les particuliers : c'est leur catalogue qu'elle reçoit. */
 const SHOP_AUDIENCE = "public";
@@ -46,7 +49,10 @@ export class CatalogResupplyCatalogue extends ResupplyCatalogue {
       this.catalog.listSellable(staffViewer(SHOP_AUDIENCE)),
       this.resupplyOnly.articles(),
     ]);
-    return withinFamilies(items.filter(isShownAsTile).map(toArticle), resupplyOnly);
+    return withinFamilies(
+      items.filter(isShownAsTile).map(toArticle),
+      resupplyOnly.map(toInternalArticle),
+    );
   }
 
   async article(sku: string): Promise<ResupplyArticle | null> {
@@ -54,7 +60,8 @@ export class CatalogResupplyCatalogue extends ResupplyCatalogue {
     if (item !== null && isShownAsTile(item)) {
       return toArticle(item);
     }
-    return this.resupplyOnly.article(sku);
+    const internal = await this.resupplyOnly.article(sku);
+    return internal === null ? null : toInternalArticle(internal);
   }
 }
 
@@ -66,7 +73,13 @@ function toArticle(item: ResolvedCatalogItem): ResupplyArticle {
     categoryName: item.categoryName,
     family: familyView(item.family),
     saleUnit: item.saleUnit,
+    internal: false,
   };
+}
+
+/** Un article du lecteur des articles de réassort : interne par provenance. */
+function toInternalArticle(article: ResupplyOnlyArticle): ResupplyArticle {
+  return { ...article, internal: true };
 }
 
 /**

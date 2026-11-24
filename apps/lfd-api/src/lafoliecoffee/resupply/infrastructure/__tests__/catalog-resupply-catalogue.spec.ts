@@ -131,8 +131,30 @@ describe("CatalogResupplyCatalogue — les articles réservés au réassort", ()
       new ResupplyOnly([FORMULA_COOKIE]),
     );
 
-    await expect(catalogue.article("VIE-009-1")).resolves.toEqual(FORMULA_COOKIE);
+    await expect(catalogue.article("VIE-009-1")).resolves.toEqual({
+      ...FORMULA_COOKIE,
+      internal: true,
+    });
     await expect(catalogue.article("INCONNU-1")).resolves.toBeNull();
+  });
+});
+
+describe("CatalogResupplyCatalogue — interne par provenance", () => {
+  it("marque interne l'article du lecteur de réassort, jamais celui du catalogue publié", async () => {
+    const catalogue = new CatalogResupplyCatalogue(
+      new Catalog(),
+      new ResupplyOnly([FORMULA_COOKIE]),
+    );
+
+    const articles = await catalogue.articles();
+
+    expect(articles.map((article) => [article.sku, article.internal])).toEqual([
+      ["VIE-001-1", false],
+      ["VIE-002-2", false],
+      ["VIE-009-1", true],
+    ]);
+    await expect(catalogue.article("VIE-001-1")).resolves.toMatchObject({ internal: false });
+    await expect(catalogue.article("VIE-009-1")).resolves.toMatchObject({ internal: true });
   });
 });
 
@@ -189,19 +211,20 @@ describe("CatalogResupplyCatalogue — la famille et sa lignée", () => {
 });
 
 describe("withinFamilies", () => {
+  const COOKIE = { ...FORMULA_COOKIE, internal: true };
   const BREADS = {
-    ...FORMULA_COOKIE,
+    ...COOKIE,
     sku: "PAI-001-1",
     categoryId: "pains",
     categoryName: "Pains",
   };
   const shop = [
-    { ...FORMULA_COOKIE, sku: "VIE-001-1" },
+    { ...COOKIE, sku: "VIE-001-1", internal: false },
     { ...BREADS, sku: "PAI-002-1" },
   ];
 
   it("range un article après le dernier de sa famille", () => {
-    expect(withinFamilies(shop, [FORMULA_COOKIE]).map((article) => article.sku)).toEqual([
+    expect(withinFamilies(shop, [COOKIE]).map((article) => article.sku)).toEqual([
       "VIE-001-1",
       "VIE-009-1",
       "PAI-002-1",
@@ -209,7 +232,7 @@ describe("withinFamilies", () => {
   });
 
   it("met à la fin un article dont la famille n'a aucun article public", () => {
-    const pastry = { ...FORMULA_COOKIE, sku: "PAT-001-1", categoryId: "patisseries" };
+    const pastry = { ...COOKIE, sku: "PAT-001-1", categoryId: "patisseries" };
 
     expect(withinFamilies(shop, [pastry]).map((article) => article.sku)).toEqual([
       "VIE-001-1",

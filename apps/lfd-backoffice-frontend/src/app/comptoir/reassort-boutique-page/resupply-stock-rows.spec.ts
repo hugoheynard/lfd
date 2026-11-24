@@ -85,6 +85,7 @@ describe('les lignes de la table du réassort', () => {
           categoryName: 'Brioches',
           family: { id: 'fam_brio', name: 'Brioches', position: 1, ancestors: [viennoiserie] },
           saleUnit: 'piece',
+          internal: false,
         },
       ],
       stock: [

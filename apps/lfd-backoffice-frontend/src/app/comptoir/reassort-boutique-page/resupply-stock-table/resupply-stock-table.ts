@@ -32,6 +32,7 @@ import {
   FoldViewToggleComponent,
   type FoldTableColumn,
   type FoldTableTone,
+  FoldBadgeComponent,
 } from 'fold-ng';
 
 import { ResupplyNameField } from '../../../shared/resupply-name-field/resupply-name-field';
@@ -91,6 +92,7 @@ const PHONE_QUERY = '(max-width: 768px)';
   selector: 'app-resupply-stock-table',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    FoldBadgeComponent,
     CatalogShelfNav,
     ProductSearch,
     FoldButtonComponent,

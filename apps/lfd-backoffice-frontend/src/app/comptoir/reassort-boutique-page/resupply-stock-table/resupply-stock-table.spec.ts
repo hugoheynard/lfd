@@ -458,6 +458,7 @@ describe('ResupplyStockTable', () => {
           ancestors: [viennoiserie],
         },
         saleUnit: 'piece',
+        internal: false,
       },
       {
         sku: 'BRI',
@@ -466,6 +467,7 @@ describe('ResupplyStockTable', () => {
         categoryName: 'Brioches',
         family: { id: 'fam_brio', name: 'Brioches', position: 2, ancestors: [viennoiserie] },
         saleUnit: 'piece',
+        internal: false,
       },
     ];
     const { fixture, table } = await mount({ articles: nested });
@@ -519,6 +521,7 @@ describe('ResupplyStockTable', () => {
       categoryName: 'Traiteur',
       family: { id: 'fam_deli', name: 'Traiteur', position: 0 },
       saleUnit: 'weight',
+      internal: false,
     };
 
     it('dit le stock « 3,75 kg », saisit en grammes avec des pas en grammes, et envoie des grammes', async () => {
@@ -620,6 +623,7 @@ describe('ResupplyStockTable', () => {
         categoryName: 'Tartes',
         family: { id: 'fam_tart', name: 'Tartes', position: 0 },
         saleUnit: 'piece',
+        internal: false,
       },
       {
         sku: 'TAR-1',
@@ -628,6 +632,7 @@ describe('ResupplyStockTable', () => {
         categoryName: 'Tartes',
         family: { id: 'fam_tart', name: 'Tartes', position: 0 },
         saleUnit: 'piece',
+        internal: false,
       },
     ];
     const { fixture, table } = await mount({ articles: variants });
@@ -636,6 +641,49 @@ describe('ResupplyStockTable', () => {
     table['shelf'].set('fam_tart');
     await settle(fixture);
     expect(order(fixture)).toEqual(['TAR-6', 'TAR-1']);
+  });
+});
+
+describe('ResupplyStockTable — le badge « Interne »', () => {
+  const COOKIE: ResupplyArticleView = {
+    sku: 'COO',
+    name: 'Cookie formule',
+    categoryId: 'fam_morning',
+    categoryName: 'Viennoiseries',
+    family: { id: 'fam_morning', name: 'Viennoiseries', position: 0 },
+    saleUnit: 'piece',
+    internal: true,
+  };
+
+  const badgedSkus = (fixture: ComponentFixture<ResupplyStockTable>): readonly (string | null)[] =>
+    [...root(fixture).querySelectorAll('[data-internal-badge]')].map(
+      (badge) => badge.closest('[data-resupply-row]')?.getAttribute('data-resupply-row') ?? null,
+    );
+
+  it('marque l’article réservé au réassort, et lui seul', async () => {
+    const { fixture } = await mount({ articles: [...ARTICLES, COOKIE] });
+
+    expect(badgedSkus(fixture)).toEqual(['COO']);
+    expect(root(fixture).querySelector('[data-internal-badge]')?.getAttribute('title')).toBe(
+      'Réservé au réassort, jamais vendu en ligne',
+    );
+  });
+
+  it('ne marque pas une ligne reçue dont l’article a quitté le catalogue', async () => {
+    const { fixture } = await mount({
+      stock: [
+        {
+          sku: 'OLD',
+          label: 'Ancien',
+          receivedQuantity: 3,
+          estimatedStock: 3,
+          saleUnit: 'piece' as const,
+        },
+      ],
+    });
+
+    expect(root(fixture).querySelector('[data-resupply-row="OLD"]')).not.toBeNull();
+    expect(badgedSkus(fixture)).toEqual([]);
   });
 });
 

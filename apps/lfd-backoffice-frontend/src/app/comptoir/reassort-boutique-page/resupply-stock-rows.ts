@@ -33,6 +33,11 @@ export interface StockRow {
    * (lot L2b-4).
    */
   readonly saleUnit: OrderSaleUnit;
+  /**
+   * Réservé au réassort, jamais vendu en ligne : badge « Interne ». `false`
+   * pour un article reçu puis retiré du catalogue — on n'en sait plus rien.
+   */
+  readonly internal: boolean;
   readonly stock: number;
   readonly state: RowState;
   readonly asap: number;
@@ -74,6 +79,7 @@ export function buildStockRows(sources: StockRowSources): readonly StockRow[] {
     categoryId: product.categoryId,
     family: product.family,
     saleUnit: product.saleUnit,
+    internal: product.internal,
     stock: stock.get(unitKey(product))?.estimatedStock ?? 0,
     state: sources.alertLevels.get(product.sku) ?? 'ok',
     asap: asap.get(product.sku) ?? 0,
@@ -113,15 +119,16 @@ export function rowStateLabel(state: RowState): string {
 /** Les articles du catalogue, puis ceux reçus mais retirés du catalogue depuis. */
 function productsOf(
   sources: StockRowSources,
-): readonly Pick<StockRow, 'sku' | 'name' | 'categoryId' | 'family' | 'saleUnit'>[] {
+): readonly Pick<StockRow, 'sku' | 'name' | 'categoryId' | 'family' | 'saleUnit' | 'internal'>[] {
   const known = new Set(sources.articles.map((article) => article.sku));
   return [
-    ...sources.articles.map(({ sku, name, categoryId, family, saleUnit }) => ({
+    ...sources.articles.map(({ sku, name, categoryId, family, saleUnit, internal }) => ({
       sku,
       name,
       categoryId,
       family,
       saleUnit,
+      internal,
     })),
     ...sources.stock
       .filter((line) => !known.has(line.sku))
@@ -131,6 +138,7 @@ function productsOf(
         categoryId: null,
         family: null,
         saleUnit: line.saleUnit,
+        internal: false,
       })),
   ];
 }
