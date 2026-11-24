@@ -16,12 +16,11 @@
   `645e1d7bf`, et la migration du registre
   (`20261123140000_le_registre_des_echeances`) est appliquée depuis le
   2026-11-23.
-- **R3 est sur `main` mais pas déployé** : les cinq déploiements de
-  `9766608dc` ont échoué, la CI étant rouge (une e2e de rejeu qui créait un
-  panier sans créneau, et les durées e2e d'une suite neuve). La migration du
-  créneau n'est pas appliquée en production. Le correctif est commité sur
-  `dev` (`4dcd49e0a`), pas encore poussé.
-- **R4 n'est sur aucune branche distante** (`015b6260d`).
+- **R3 et R4 sont en production** depuis le 2026-11-24 (`a169ea13a`) :
+  la passation d'une échéance, le créneau du panier (migration
+  `20261124230000_le_creneau_du_panier_recurrent` appliquée) et le balayage
+  horaire. Les déploiements de `9766608dc` avaient d'abord échoué sur une CI
+  rouge, réparée avant la promotion.
 - **La production ne contient aucune donnée de panier** (Q-B5) : zéro
   panier, zéro ligne, zéro dérogation, zéro commande issue d'un panier. Le
   registre n'a jamais été écrit, aucun balayage n'ayant tourné.
