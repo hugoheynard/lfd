@@ -475,6 +475,7 @@ describe('ResupplyStockTable', () => {
       name: 'Saumon gravlax',
       categoryId: 'fam_deli',
       categoryName: 'Traiteur',
+      family: { id: 'fam_deli', name: 'Traiteur', position: 0 },
       saleUnit: 'weight',
     };
 
@@ -575,6 +576,7 @@ describe('ResupplyStockTable', () => {
         name: 'Tarte citron 6 parts',
         categoryId: 'fam_tart',
         categoryName: 'Tartes',
+        family: { id: 'fam_tart', name: 'Tartes', position: 0 },
         saleUnit: 'piece',
       },
       {
@@ -582,6 +584,7 @@ describe('ResupplyStockTable', () => {
         name: 'Tarte citron part',
         categoryId: 'fam_tart',
         categoryName: 'Tartes',
+        family: { id: 'fam_tart', name: 'Tartes', position: 0 },
         saleUnit: 'piece',
       },
     ];

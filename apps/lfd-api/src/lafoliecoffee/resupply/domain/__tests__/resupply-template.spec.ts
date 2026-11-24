@@ -140,6 +140,7 @@ describe("une ligne de modèle face au catalogue", () => {
     name: "Croissant",
     categoryId: "fam",
     categoryName: "Viennoiseries",
+    family: { id: "fam", name: "Viennoiseries", position: 0 },
     saleUnit: "piece" as const,
   };
 

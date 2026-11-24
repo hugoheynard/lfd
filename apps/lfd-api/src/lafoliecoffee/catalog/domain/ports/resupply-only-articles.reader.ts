@@ -1,3 +1,5 @@
+import type { CatalogFamilyView } from "@lfd/contracts";
+
 import type { CatalogSaleUnit } from "../catalog-sale-unit.js";
 
 /**
@@ -9,6 +11,8 @@ export interface ResupplyOnlyArticle {
   readonly name: string;
   readonly categoryId: string;
   readonly categoryName: string;
+  /** Sa famille avec ses parentes : le rail des rayons range en arbre. */
+  readonly family: CatalogFamilyView;
   readonly saleUnit: CatalogSaleUnit;
 }
 

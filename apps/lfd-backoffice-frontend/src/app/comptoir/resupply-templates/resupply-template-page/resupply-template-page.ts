@@ -47,7 +47,12 @@ import { narrowViewport } from '../../../shared/viewport/narrow-viewport';
 import { ResupplyReceiptsService } from '../../reassort-boutique-page/resupply-receipts.service';
 import { compositionOf, LINE_ISSUE_LABELS, templateLines } from '../resupply-template-composition';
 import { ResupplyTemplatesStore } from '../resupply-templates.store';
-import { ALL_SHELVES, articlesOnShelf, resupplyShelvesOf } from '../resupply-shelves';
+import {
+  ALL_SHELVES,
+  articlesOnShelf,
+  resupplyShelfIdOf,
+  resupplyShelvesOf,
+} from '../resupply-shelves';
 
 /** Le téléphone — le même seuil que la table du fournil. */
 const PHONE_QUERY = '(max-width: 768px)';
@@ -190,10 +195,10 @@ export class ResupplyTemplatePage {
     const refusal = this.arrivalRefusal();
     return refusal === null ? [] : [requiredError({ message: refusal })];
   });
-  /** Les rayons du rail, à plat : l'article ne porte que sa famille. */
+  /** Les rayons du rail, en arbre : l'article porte sa famille et ses parentes. */
   protected readonly shelves = computed(() => resupplyShelvesOf(this.articles() ?? []));
   protected readonly shelfItems = computed(() =>
-    (this.articles() ?? []).map((article) => ({ shelfId: article.categoryId })),
+    (this.articles() ?? []).map((article) => ({ shelfId: resupplyShelfIdOf(article) })),
   );
   protected readonly visibleArticles = computed(() =>
     articlesOnShelf(this.articles() ?? [], this.shelf(), this.query()),

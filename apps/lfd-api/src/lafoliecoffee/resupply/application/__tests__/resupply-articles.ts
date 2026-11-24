@@ -11,6 +11,7 @@ export const CROISSANT: ResupplyArticle = {
   name: "Croissant",
   categoryId: "fam_morning",
   categoryName: "Viennoiseries",
+  family: { id: "fam_morning", name: "Viennoiseries", position: 0 },
   saleUnit: "piece",
 };
 
@@ -19,6 +20,7 @@ export const PAIN_AU_CHOCOLAT: ResupplyArticle = {
   name: "Pain au chocolat",
   categoryId: "fam_morning",
   categoryName: "Viennoiseries",
+  family: { id: "fam_morning", name: "Viennoiseries", position: 0 },
   saleUnit: "piece",
 };
 
@@ -27,6 +29,7 @@ export const BAGUETTE: ResupplyArticle = {
   name: "Baguette",
   categoryId: "fam_bread",
   categoryName: "Pains",
+  family: { id: "fam_bread", name: "Pains", position: 1 },
   saleUnit: "piece",
 };
 
@@ -36,6 +39,7 @@ export const SALMON: ResupplyArticle = {
   name: "Saumon gravlax",
   categoryId: "fam_deli",
   categoryName: "Traiteur",
+  family: { id: "fam_deli", name: "Traiteur", position: 2 },
   saleUnit: "weight",
 };
 

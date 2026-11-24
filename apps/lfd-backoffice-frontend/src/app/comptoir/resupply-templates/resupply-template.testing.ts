@@ -14,6 +14,7 @@ export const ARTICLES: readonly ResupplyArticleView[] = [
     name: 'Croissant',
     categoryId: 'fam_m',
     categoryName: 'Viennoiseries',
+    family: { id: 'fam_m', name: 'Viennoiseries', position: 0 },
     saleUnit: 'piece',
   },
   {
@@ -21,9 +22,17 @@ export const ARTICLES: readonly ResupplyArticleView[] = [
     name: 'Pain au chocolat',
     categoryId: 'fam_m',
     categoryName: 'Viennoiseries',
+    family: { id: 'fam_m', name: 'Viennoiseries', position: 0 },
     saleUnit: 'piece',
   },
-  { sku: 'BAG', name: 'Baguette', categoryId: 'fam_b', categoryName: 'Pains', saleUnit: 'piece' },
+  {
+    sku: 'BAG',
+    name: 'Baguette',
+    categoryId: 'fam_b',
+    categoryName: 'Pains',
+    family: { id: 'fam_b', name: 'Pains', position: 1 },
+    saleUnit: 'piece',
+  },
 ];
 
 /** « Base matin » : une ligne qui s'applique, une retirée, une d'unité changée. */

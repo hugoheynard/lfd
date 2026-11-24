@@ -6,6 +6,7 @@ import {
   type ResolvedCatalogItem,
 } from "../../catalog/domain/ports/catalog.reader.js";
 import { type ResupplyArticle, ResupplyCatalogue } from "../domain/resupply-catalogue.js";
+import { familyView } from "../../catalog/domain/catalog-family.js";
 import { staffViewer } from "../../catalog/domain/catalog-viewer.js";
 import { ResupplyOnlyArticlesReader } from "../../catalog/domain/ports/resupply-only-articles.reader.js";
 
@@ -63,6 +64,7 @@ function toArticle(item: ResolvedCatalogItem): ResupplyArticle {
     name: item.name,
     categoryId: item.categoryId,
     categoryName: item.categoryName,
+    family: familyView(item.family),
     saleUnit: item.saleUnit,
   };
 }

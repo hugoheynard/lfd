@@ -72,6 +72,7 @@ const VIEW: ResupplyProductionDayView = {
       name: 'Baguette',
       categoryId: 'fam_bread',
       categoryName: 'Pains',
+      family: { id: 'fam_bread', name: 'Pains', position: 0 },
       saleUnit: 'piece' as const,
     },
     {
@@ -79,6 +80,7 @@ const VIEW: ResupplyProductionDayView = {
       name: 'Croissant',
       categoryId: 'fam_morning',
       categoryName: 'Viennoiseries',
+      family: { id: 'fam_morning', name: 'Viennoiseries', position: 0 },
       saleUnit: 'piece' as const,
     },
     {
@@ -86,6 +88,7 @@ const VIEW: ResupplyProductionDayView = {
       name: 'Pain au chocolat',
       categoryId: 'fam_morning',
       categoryName: 'Viennoiseries',
+      family: { id: 'fam_morning', name: 'Viennoiseries', position: 0 },
       saleUnit: 'piece',
     },
   ],

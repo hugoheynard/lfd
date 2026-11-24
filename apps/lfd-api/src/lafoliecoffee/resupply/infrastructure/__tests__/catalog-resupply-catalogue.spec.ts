@@ -49,7 +49,9 @@ const HIDDEN = item("VIE-001-3");
 
 /** Le catalogue doublé : il ÉTEND le port, et sert les mêmes trois articles. */
 class Catalog extends CatalogReader {
-  private readonly items = [DEFAULT, TILED, HIDDEN];
+  constructor(private readonly items: readonly ResolvedCatalogItem[] = [DEFAULT, TILED, HIDDEN]) {
+    super();
+  }
 
   listSellable(): Promise<ResolvedCatalogItem[]> {
     return Promise.resolve([...this.items]);
@@ -70,6 +72,7 @@ const FORMULA_COOKIE: ResupplyOnlyArticle = {
   name: "Cookie formule",
   categoryId: VIENNOISERIES.id,
   categoryName: VIENNOISERIES.name,
+  family: { id: VIENNOISERIES.id, name: VIENNOISERIES.name, position: VIENNOISERIES.position },
   saleUnit: "piece",
 };
 
@@ -130,6 +133,58 @@ describe("CatalogResupplyCatalogue — les articles réservés au réassort", ()
 
     await expect(catalogue.article("VIE-009-1")).resolves.toEqual(FORMULA_COOKIE);
     await expect(catalogue.article("INCONNU-1")).resolves.toBeNull();
+  });
+});
+
+describe("CatalogResupplyCatalogue — la famille et sa lignée", () => {
+  const FINE = {
+    id: "fam-fine",
+    name: "Viennoiserie fine",
+    position: 3,
+    slug: "fam-fine",
+    path: ["fam-fine", VIENNOISERIES.id],
+    ancestors: [
+      {
+        id: VIENNOISERIES.id,
+        name: VIENNOISERIES.name,
+        position: VIENNOISERIES.position,
+        nameTranslations: NO_TRANSLATIONS,
+      },
+    ],
+  };
+
+  it("sert la famille avec ses parentes, réduites à ce qu'un rayon lit", async () => {
+    const nested = item("VIE-010-1", {
+      isDefault: true,
+      categoryId: FINE.id,
+      categoryName: FINE.name,
+      family: FINE,
+    });
+    const catalogue = new CatalogResupplyCatalogue(new Catalog([nested]), new ResupplyOnly());
+
+    const [article] = await catalogue.articles();
+
+    expect(article?.categoryId).toBe(FINE.id);
+    expect(article?.family).toEqual({
+      id: FINE.id,
+      name: FINE.name,
+      position: FINE.position,
+      root: { id: VIENNOISERIES.id, name: VIENNOISERIES.name, position: VIENNOISERIES.position },
+      path: FINE.path,
+      ancestors: [
+        { id: VIENNOISERIES.id, name: VIENNOISERIES.name, position: VIENNOISERIES.position },
+      ],
+    });
+  });
+
+  it("ne sert aucune parente à une famille de tête", async () => {
+    const [article] = await new CatalogResupplyCatalogue(
+      new Catalog(),
+      new ResupplyOnly(),
+    ).articles();
+
+    expect(article?.family).not.toHaveProperty("ancestors");
+    expect(article?.family).toMatchObject({ id: VIENNOISERIES.id, name: VIENNOISERIES.name });
   });
 });
 

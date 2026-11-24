@@ -48,6 +48,7 @@ class FakeBakehouse {
         name: 'Croissant',
         categoryId: 'fam_morning',
         categoryName: 'Viennoiseries',
+        family: { id: 'fam_morning', name: 'Viennoiseries', position: 0 },
         saleUnit: 'piece',
       },
       {
@@ -55,6 +56,7 @@ class FakeBakehouse {
         name: 'Pain au chocolat',
         categoryId: 'fam_morning',
         categoryName: 'Viennoiseries',
+        family: { id: 'fam_morning', name: 'Viennoiseries', position: 0 },
         saleUnit: 'piece',
       },
       {
@@ -62,6 +64,7 @@ class FakeBakehouse {
         name: 'Baguette',
         categoryId: 'fam_bread',
         categoryName: 'Pains',
+        family: { id: 'fam_bread', name: 'Pains', position: 0 },
         saleUnit: 'piece',
       },
       ...(this.weighed
@@ -71,6 +74,7 @@ class FakeBakehouse {
               name: 'Saumon gravlax',
               categoryId: 'fam_deli',
               categoryName: 'Traiteur',
+              family: { id: 'fam_deli', name: 'Traiteur', position: 0 },
               saleUnit: 'weight' as const,
             },
           ]

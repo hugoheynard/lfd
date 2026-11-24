@@ -9,10 +9,25 @@ const ARTICLES: readonly ResupplyArticleView[] = [
     name: 'Croissant',
     categoryId: 'm',
     categoryName: 'Viennoiseries',
+    family: { id: 'm', name: 'Viennoiseries', position: 0 },
     saleUnit: 'piece',
   },
-  { sku: 'GRA', name: 'Gravlax', categoryId: 't', categoryName: 'Traiteur', saleUnit: 'weight' },
-  { sku: 'BAG', name: 'Baguette', categoryId: 'b', categoryName: 'Pains', saleUnit: 'piece' },
+  {
+    sku: 'GRA',
+    name: 'Gravlax',
+    categoryId: 't',
+    categoryName: 'Traiteur',
+    family: { id: 't', name: 'Traiteur', position: 0 },
+    saleUnit: 'weight',
+  },
+  {
+    sku: 'BAG',
+    name: 'Baguette',
+    categoryId: 'b',
+    categoryName: 'Pains',
+    family: { id: 'b', name: 'Pains', position: 0 },
+    saleUnit: 'piece',
+  },
 ];
 
 describe('les lignes d’un réassort du fournil', () => {

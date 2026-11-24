@@ -7,7 +7,11 @@ import {
 } from "../domain/ports/resupply-only-articles.reader.js";
 import { servedToResupply } from "../domain/served-to.js";
 import { isShownAsTile, shopItemName, shopSkuOf } from "../domain/shop-sku.js";
+import type { CatalogFamilyView } from "@lfd/contracts";
+
+import { familyView } from "../domain/catalog-family.js";
 import { saleUnitOf } from "./catalog-sale-unit.js";
+import { FLAT_LINEAGE, type Lineage, lineageFrom } from "./catalog-family-lineage.js";
 import { timeCatalogueRead } from "./catalogue-read-timing.js";
 import { STILL_SOLD } from "./sellable-filter.js";
 
@@ -24,7 +28,7 @@ const ARTICLE_SELECT = {
   customRecipe: true,
   publicReviewPending: true,
   proReviewPending: true,
-  category: { select: { id: true, name: true } },
+  category: { select: { id: true, name: true, position: true, slug: true, parentId: true } },
   override: { select: { isHidden: true, isHiddenPublic: true } },
   _count: { select: { reservations: true } },
 } as const;
@@ -51,8 +55,9 @@ export class PrismaResupplyOnlyArticlesReader extends ResupplyOnlyArticlesReader
         orderBy: [{ category: { position: "asc" } }, { position: "asc" }, { sku: "asc" }],
       }),
     );
+    const lineage = await this.lineage(rows);
     return rows.flatMap((row) => {
-      const article = articleOf(row);
+      const article = articleOf(row, lineage);
       return article === null ? [] : [article];
     });
   }
@@ -64,11 +69,30 @@ export class PrismaResupplyOnlyArticlesReader extends ResupplyOnlyArticlesReader
         select: ARTICLE_SELECT,
       }),
     );
-    return row === null ? null : articleOf(row);
+    return row === null ? null : articleOf(row, await this.lineage([row]));
+  }
+
+  /**
+   * La lignée des familles lues, comme `PrismaCatalogReader` la lit : aucune
+   * lecture de plus tant qu'aucune famille lue n'a de parente ; sinon le
+   * miroir des familles entier, en UNE requête (il ne porte que `parent_id`,
+   * et tient en quelques lignes) — jamais une lecture par article.
+   */
+  private async lineage(rows: readonly ArticleRow[]): Promise<Lineage> {
+    if (rows.every((row) => row.category.parentId === null)) {
+      return FLAT_LINEAGE;
+    }
+    const families = await timeCatalogueRead(() =>
+      this.prisma.catalogCategory.findMany({
+        select: { id: true, parentId: true, name: true, position: true, nameTranslations: true },
+      }),
+    );
+    return lineageFrom(families);
   }
 }
 
-interface ArticleRow {
+/** Une ligne lue, réduite à ce que l'article réservé au réassort porte. */
+export interface ArticleRow {
   readonly sku: string;
   readonly name: string;
   readonly audience: string | null;
@@ -78,12 +102,19 @@ interface ArticleRow {
   readonly customRecipe: boolean;
   readonly publicReviewPending: boolean;
   readonly proReviewPending: boolean;
-  readonly category: { readonly id: string; readonly name: string };
+  readonly category: {
+    readonly id: string;
+    readonly name: string;
+    readonly position: number;
+    readonly slug: string;
+    readonly parentId: string | null;
+  };
   readonly override: { readonly isHidden: boolean; readonly isHiddenPublic: boolean } | null;
   readonly _count: { readonly reservations: number };
 }
 
-function articleOf(row: ArticleRow): ResupplyOnlyArticle | null {
+/** L'article servi au réassort, ou `null` s'il ne l'est pas (masqué, réservé, hors rayon). */
+export function articleOf(row: ArticleRow, lineage: Lineage): ResupplyOnlyArticle | null {
   const served = servedToResupply({
     audience: "resupply",
     isHidden: row.override?.isHidden ?? false,
@@ -101,6 +132,20 @@ function articleOf(row: ArticleRow): ResupplyOnlyArticle | null {
     name: shopItemName(row.name),
     categoryId: row.category.id,
     categoryName: row.category.name,
+    family: familyOf(row.category, lineage),
     saleUnit: saleUnitOf(row.sku, row.saleUnit),
   };
+}
+
+/** La famille servie, parentes comprises quand elle en a — la forme du catalogue des commandes. */
+function familyOf(category: ArticleRow["category"], lineage: Lineage): CatalogFamilyView {
+  const { path, ancestors } = lineage(category.id);
+  return familyView({
+    id: category.id,
+    name: category.name,
+    position: category.position,
+    slug: category.slug,
+    path,
+    ...(ancestors.length === 0 ? {} : { ancestors }),
+  });
 }

@@ -11,6 +11,7 @@ const CROISSANT: ResupplyArticleView = {
   name: 'Croissant',
   categoryId: 'm',
   categoryName: 'Viennoiseries',
+  family: { id: 'm', name: 'Viennoiseries', position: 0 },
   saleUnit: 'piece',
 };
 

@@ -1,3 +1,5 @@
+import type { CatalogFamilyView } from "@lfd/contracts";
+
 import type { SaleUnit } from "./resupply-sale-unit.js";
 
 /**
@@ -9,6 +11,12 @@ export interface ResupplyArticle {
   readonly name: string;
   readonly categoryId: string;
   readonly categoryName: string;
+  /**
+   * Sa famille, parentes comprises (décidé avec Hugo le 2026-11-24) : le rail
+   * des rayons d'un modèle la range en arbre, comme la saisie de commande.
+   * `categoryId` / `categoryName` en restent la tête, pour leurs lecteurs.
+   */
+  readonly family: CatalogFamilyView;
   /**
    * L'unité de vente, FIGÉE sur la ligne de réassort à son ajout (L2b-1,
    * Hugo 2026-11-02 : « un article au poids doit avoir un stock au poids ») :

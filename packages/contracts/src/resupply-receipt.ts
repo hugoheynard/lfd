@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import type { CatalogFamilyView } from "./catalog.js";
 import type { OrderSaleUnit } from "./order.js";
 import type { ResupplyOrigin, ResupplyTarget } from "./site-resupply.js";
 
@@ -126,6 +127,12 @@ export interface ResupplyArticleView {
    */
   readonly categoryId: string;
   readonly categoryName: string;
+  /**
+   * Sa famille avec ses parentes (`ancestors`, absentes pour une famille de
+   * tête) : le rail des rayons d'un modèle de réassort la range en arbre,
+   * comme la saisie de commande. `categoryId` / `categoryName` en sont la tête.
+   */
+  readonly family: CatalogFamilyView;
   /** Son unité de vente : au poids, une quantité de réassort compte des grammes (lot L2b-1). */
   readonly saleUnit: OrderSaleUnit;
 }

@@ -85,6 +85,29 @@ describe("un article réservé au réassort des boutiques", () => {
     expect(await resupplyCatalogue()).not.toContain(witness.variantSku);
   });
 
+  it("sert sa famille avec ses parentes, pour le rail des rayons en arbre", async () => {
+    const cookie = await anActiveFiche(staff, "Cookie formule", "resupply");
+    const parent = await anActiveFiche(staff, "Croissant", "public");
+    await staff()
+      .put(`/pim/catalogue/categories/${cookie.categoryId}/parent`)
+      .send({ parentId: parent.categoryId })
+      .expect(200);
+
+    await relayAll(ctx);
+
+    const articles = await ctx.app.get(ResupplyCatalogue).articles();
+    const served = articles.find((article) => article.sku === cookie.variantSku);
+    expect(served?.categoryId).toBe(cookie.categoryId);
+    expect(served?.family).toMatchObject({
+      id: cookie.categoryId,
+      path: [cookie.categoryId, parent.categoryId],
+      ancestors: [expect.objectContaining({ id: parent.categoryId, name: "Famille Croissant" })],
+    });
+    await expect(ctx.app.get(ResupplyCatalogue).article(cookie.variantSku)).resolves.toMatchObject({
+      family: { ancestors: [expect.objectContaining({ id: parent.categoryId })] },
+    });
+  });
+
   /**
    * Régression : une fiche `resupply` sans aucun prix s'activait, puis la
    * projection du fait la jugeait « vendable sans prix » et levait une 500.

@@ -70,6 +70,7 @@ class FakeResupplies {
           name: 'Croissant',
           categoryId: 'fam_m',
           categoryName: 'Viennoiseries',
+          family: { id: 'fam_m', name: 'Viennoiseries', position: 0 },
           saleUnit: 'piece' as const,
         },
         {
@@ -77,6 +78,7 @@ class FakeResupplies {
           name: 'Baguette',
           categoryId: 'fam_b',
           categoryName: 'Pains',
+          family: { id: 'fam_b', name: 'Pains', position: 0 },
           saleUnit: 'piece' as const,
         },
       ],
@@ -104,6 +106,7 @@ function withWeight(view: ResupplyProductionDayView): ResupplyProductionDayView 
         name: 'Gravlax',
         categoryId: 'fam_t',
         categoryName: 'Traiteur',
+        family: { id: 'fam_t', name: 'Traiteur', position: 0 },
         saleUnit: 'weight',
       },
     ],

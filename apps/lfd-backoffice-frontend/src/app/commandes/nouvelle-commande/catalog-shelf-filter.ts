@@ -1,4 +1,4 @@
-import type { CatalogFamilyNodeView, CatalogItemView } from '@lfd/contracts';
+import type { CatalogFamilyNodeView, CatalogFamilyView } from '@lfd/contracts';
 import {
   type CatalogShelfNavLabels,
   inSubtree,
@@ -32,6 +32,14 @@ export interface FamilyShelves {
 }
 
 /**
+ * Ce que le rail range : un article qui porte sa famille et ses parentes — un
+ * article du catalogue vendable, ou un article du réassort (2026-11-24).
+ */
+export interface ShelvedItem {
+  readonly family: CatalogFamilyView | null;
+}
+
+/**
  * **Les rayons de la saisie, en arbre** (2026-11-03) — le filtre de la
  * boutique, monté sur le catalogue que le staff compose pour un client.
  *
@@ -42,7 +50,7 @@ export interface FamilyShelves {
  * leur propre pastille.
  */
 export function familyShelvesOf(
-  items: readonly CatalogItemView[],
+  items: readonly ShelvedItem[],
   allLabel: string,
   unknownLabel: string,
 ): FamilyShelves {
@@ -76,11 +84,11 @@ export function familyShelvesOf(
 }
 
 /** Le rayon d'un article, tel que le rail le compte. */
-export function shelfIdOf(item: CatalogItemView): string {
+export function shelfIdOf(item: ShelvedItem): string {
   return item.family?.id ?? UNKNOWN_FAMILY_SHELF;
 }
 
 /** L'article est-il sous le rayon choisi ? « Tout » montre tout ; une parente, son sous-arbre. */
-export function inChosenShelf(tree: ShelfTree, item: CatalogItemView, chosen: string): boolean {
+export function inChosenShelf(tree: ShelfTree, item: ShelvedItem, chosen: string): boolean {
   return chosen === ALL_FAMILIES || inSubtree(tree, shelfIdOf(item), chosen);
 }
