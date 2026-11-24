@@ -384,6 +384,7 @@ export type {
   MonthlyInvoiceSignalView,
   MonthlyInvoiceView,
   MonthlyInvoicesView,
+  MonthlyPeriodQuoteView,
 } from "./monthly-invoices.js";
 export type {
   UnconfirmedDeliveriesView,

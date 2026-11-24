@@ -271,6 +271,9 @@ model LegalEntity {
   // Les plafonds de la convention d'émission, par schéma (PL1,
   // `plan-plafonds-de-la-banque.md`). Côté inverse obligatoire.
   bankLimits             LegalEntityBankLimits[]
+  // Les devis de période et leur compteur (P2 bis, QD3). Côté inverse obligatoire.
+  periodQuotes           PeriodQuote[]
+  periodQuoteCounters    PeriodQuoteCounter[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")

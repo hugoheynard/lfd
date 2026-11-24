@@ -19,7 +19,7 @@ import {
 import { MonthlyInvoicingReader } from "../../../domain/ports/monthly-invoicing.reader.js";
 import { OrderBudgetCommitmentsReader } from "../../../domain/ports/order-budget-commitments.reader.js";
 import { PayerCommitmentRequirementsReader } from "../../../domain/ports/payer-commitment-requirements.reader.js";
-import type { PayerCommitmentRequirement } from "../../../domain/services/public-commitment-blocker.js";
+import type { PayerCommitmentSheet } from "../../../domain/services/public-commitment-blocker.js";
 import type { InvoiceBudgetCommitment } from "../../../domain/value-objects/invoice-budget-commitment.js";
 import {
   PayerBillingModesReader,
@@ -67,6 +67,8 @@ export class FakeMonthlyReader extends MonthlyInvoicingReader {
   follows: BillingFollow[] = [];
   forms = new Map<string, CollectionFormName>();
   readonly asked: { readonly from: Date; readonly to: Date }[] = [];
+  /** Les bons rangés dans un devis de période en attente (P2 bis) : écartés comme facturés. */
+  readonly quotedOrders = new Set<string>();
 
   constructor(
     private readonly invoices: MemoryInvoices,
@@ -85,7 +87,11 @@ export class FakeMonthlyReader extends MonthlyInvoicingReader {
         invoice.toState().orders.map((order) => order.orderId),
       ),
     );
-    return Promise.resolve(this.orders.filter((order) => !taken.has(order.orderId)));
+    return Promise.resolve(
+      this.orders.filter(
+        (order) => !taken.has(order.orderId) && !this.quotedOrders.has(order.orderId),
+      ),
+    );
   }
   billingFollowsOf(): Promise<readonly BillingFollow[]> {
     return Promise.resolve(this.follows);
@@ -172,8 +178,8 @@ export class CurrentCommitments extends OrderBudgetCommitmentsReader {
 
 /** La fiche Chorus des payeurs publics ; aucune par défaut (tous privés). */
 export class FixedCommitmentRequirements extends PayerCommitmentRequirementsReader {
-  readonly requirements = new Map<string, PayerCommitmentRequirement>();
-  requirementsOf(): Promise<ReadonlyMap<string, PayerCommitmentRequirement>> {
+  readonly requirements = new Map<string, PayerCommitmentSheet>();
+  requirementsOf(): Promise<ReadonlyMap<string, PayerCommitmentSheet>> {
     return Promise.resolve(this.requirements);
   }
 }

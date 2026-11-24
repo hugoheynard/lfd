@@ -100,6 +100,8 @@ model Invoice {
   orders          InvoiceOrder[]
   monthlyOutcome  InvoiceMonthlyOutcome?
   chorusDeposits  InvoiceChorusDeposit[]
+  /// Le devis de période dont la facture est née (P2 bis) ; aucun pour les autres.
+  periodQuote     PeriodQuote?
   cardOutcome     CardInvoiceOutcome?
   collectionLines CollectionBatchLineInvoice[]
   /// Le remboursement par carte que cet avoir constate (plan M2, lot P1) —

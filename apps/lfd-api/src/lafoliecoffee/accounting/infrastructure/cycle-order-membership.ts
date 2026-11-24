@@ -11,6 +11,7 @@ import {
 } from "../domain/services/pending-order-cycle.js";
 import { accountOrderWhere, dayColumnOf } from "./billable-order-criterion.js";
 import { ISSUED_OUTCOME } from "./prisma-monthly-invoice-outcomes.js";
+import { AWAITING_QUOTE_STATE } from "./prisma-period-quote.repository.js";
 
 /** `AAAA-MM-JJ`. */
 const DAY_LENGTH = 10;
@@ -31,6 +32,10 @@ const PASSED_RUN_OUTCOMES: readonly InvoiceAutopilotOutcome[] = ["issued", "noth
  * - **Déjà facturé** : le bon est au cycle de SA facture 380 — l'issue
  *   `issued` dont la clôture est celle du cycle. La pièce fait foi, quel que
  *   soit son jour de réception.
+ * - **Rangé dans un devis de période en attente** (P2 bis, plan
+ *   `plan-clients-publics-chorus.md`, § 6 sexies, v5 S6) : au cycle de la
+ *   clôture du devis — c'est sa facture qui le portera —, jamais au cycle
+ *   ouvert suivant.
  * - **Pas encore facturé** : au cycle dont la facture le prendra
  *   (`pendingOrderIsInCycle`), qui applique la même assiette que la facture.
  *
@@ -57,17 +62,23 @@ export async function cycleOrderMembership(
   cycle: BillingCycle,
 ): Promise<CycleOrderMembership> {
   const progress = await invoicingProgress(prisma);
-  const [invoiced, pending] = await Promise.all([
+  const [invoiced, quoted, pending] = await Promise.all([
     invoicedInCycle(prisma, companyIds, cycle),
+    quotedInCycle(prisma, companyIds, cycle),
     pendingInCycle(prisma, companyIds, cycle, progress),
   ]);
-  return { invoiced, pending };
+  return { invoiced, quoted, pending };
 }
 
 /** Les bons d'un cycle, selon que sa facture les porte déjà ou les portera. */
 export interface CycleOrderMembership {
   /** Portés par la 380 émise du cycle — quel que soit leur statut aujourd'hui. */
   readonly invoiced: readonly string[];
+  /**
+   * Rangés dans un devis de période en attente de cette clôture : comme les
+   * bons à venir, l'assiette vivante s'y applique (un bon annulé depuis sort).
+   */
+  readonly quoted: readonly string[];
   /** Pas encore facturés : l'assiette vivante (`accountOrderWhere`) s'y applique. */
   readonly pending: readonly string[];
 }
@@ -87,7 +98,12 @@ export function cycleOrderWhere(
       {
         OR: [
           { id: { in: [...membership.invoiced] } },
-          { AND: [accountOrderWhere(), { id: { in: [...membership.pending] } }] },
+          {
+            AND: [
+              accountOrderWhere(),
+              { id: { in: [...membership.quoted, ...membership.pending] } },
+            ],
+          },
         ],
       },
     ],
@@ -147,6 +163,25 @@ async function invoicedInCycle(
   return rows.map((row) => row.orderId);
 }
 
+/**
+ * Les bons des devis de période EN ATTENTE de cette clôture, pour ces payeurs.
+ * Le mur : le devis porte son payeur, filtré comme celui d'une facture.
+ */
+async function quotedInCycle(
+  prisma: PrismaService,
+  companyIds: readonly string[],
+  cycle: BillingCycle,
+): Promise<readonly string[]> {
+  const rows = await prisma.periodQuoteOrder.findMany({
+    where: {
+      quoteState: AWAITING_QUOTE_STATE,
+      quote: { payerCompanyId: { in: [...companyIds] }, periodClosesAt: cycle.closesAt },
+    },
+    select: { orderId: true },
+  });
+  return rows.map((row) => row.orderId);
+}
+
 async function pendingInCycle(
   prisma: PrismaService,
   companyIds: readonly string[],
@@ -171,11 +206,20 @@ async function pendingInCycle(
       // `@db.Date` : minuit UTC, dont la date ISO EST le jour de Paris.
       pendingOrderIsInCycle(row.settledOn.toISOString().slice(0, DAY_LENGTH), cycle, progress),
   );
-  const invoiced = await prisma.invoiceOrder.findMany({
-    where: { invoiceType: COMMERCIAL_INVOICE, orderId: { in: inCycle.map((row) => row.id) } },
-    select: { orderId: true },
-  });
-  const taken = new Set(invoiced.map((row) => row.orderId));
+  const ids = inCycle.map((row) => row.id);
+  const [invoiced, quoted] = await Promise.all([
+    prisma.invoiceOrder.findMany({
+      where: { invoiceType: COMMERCIAL_INVOICE, orderId: { in: ids } },
+      select: { orderId: true },
+    }),
+    // Un bon d'un devis en attente est au cycle de SA clôture (`quotedInCycle`),
+    // pas à celui que son jour de solde désignerait.
+    prisma.periodQuoteOrder.findMany({
+      where: { quoteState: AWAITING_QUOTE_STATE, orderId: { in: ids } },
+      select: { orderId: true },
+    }),
+  ]);
+  const taken = new Set([...invoiced, ...quoted].map((row) => row.orderId));
   return inCycle.filter((row) => !taken.has(row.id)).map((row) => row.id);
 }
 

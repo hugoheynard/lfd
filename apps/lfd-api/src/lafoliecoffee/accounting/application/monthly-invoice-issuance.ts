@@ -53,6 +53,8 @@ export type PayerIssue =
       readonly issuedOn: string;
     }
   | { readonly kind: "blocked"; readonly payerCompanyId: string; readonly message: string }
+  /** Le groupe est rangé dans un devis de période (P2 bis) : pas de facture. */
+  | { readonly kind: "quoted"; readonly payerCompanyId: string; readonly number: string }
   /**
    * Toutes ses commandes ont été annulées entre la préparation et l'émission
    * (lot C5, C5.3) : rien d'émis, rien de signalé.
@@ -156,6 +158,7 @@ export function report(
     ),
     alreadyInvoiced,
     unbillableOrders: invoices.reduce((sum, invoice) => sum + invoice.unbillable.length, 0),
+    quoted: issues.filter((issue) => issue.kind === "quoted").length,
   };
 }
 

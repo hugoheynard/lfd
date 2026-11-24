@@ -18,6 +18,7 @@ import {
   type InvoiceableOrder,
 } from "../../../domain/services/monthly-invoicing.js";
 import { InvoiceIssuer } from "../../services/invoice-issuer.js";
+import { PeriodQuoteShelver } from "../../services/period-quote-shelver.js";
 import { IssueMonthlyInvoicesCommand } from "../issue-monthly-invoices.command.js";
 import { IssueMonthlyInvoicesHandler } from "../issue-monthly-invoices.handler.js";
 import { meansRow, PayerMeansStore, StorePayersMeansReader } from "./collection-means-doubles.js";
@@ -40,6 +41,7 @@ import {
   MemoryInvoices,
   MemoryOutcomes,
 } from "./monthly-invoice-doubles.js";
+import { MemoryPeriodQuotes } from "./period-quote-doubles.js";
 import { RecordingDurable } from "./notice-doubles.js";
 
 /**
@@ -134,6 +136,15 @@ function harness(
     new FakeCancelled(),
     commitments,
     requirements,
+    new PeriodQuoteShelver(
+      new MemoryPeriodQuotes(reader.quotedOrders),
+      new RecordingRowsLock({ log: [] }),
+      new FakeCancelled(),
+      commitments,
+      new UlidSequence(),
+      new RecordingDurable(),
+      uow,
+    ),
     new UlidSequence(),
     events,
     clock,
@@ -229,6 +240,7 @@ describe("IssueMonthlyInvoices — l'engagement budgétaire (P2)", () => {
     h.requirements.requirements.set("c_port", {
       commitmentRequired: true,
       serviceCodeRequired: false,
+      timing: "at_order",
     });
     const missing = bon("c_port");
     h.reader.orders = [missing, bon("c_port", { budgetCommitment: ARMY_A })];

@@ -57,6 +57,27 @@ export interface MonthlyInvoiceSignalView {
   readonly recordedAt: string;
 }
 
+/**
+ * **Un devis de période en attente** de son numéro d'engagement (plan
+ * `plan-clients-publics-chorus.md`, § 6 sexies, QD3) : la clôture a rangé les
+ * commandes d'un payeur public dans ce devis au lieu d'en émettre la facture.
+ */
+export interface MonthlyPeriodQuoteView {
+  readonly quoteId: string;
+  /** `D-<AAAAMMJJ>-<rang>` — partagé par les versions d'un même devis. */
+  readonly number: string;
+  readonly version: number;
+  readonly payerCompanyId: string;
+  readonly payerName: string;
+  /** Le code service des commandes ; `null` sans code. */
+  readonly serviceCode: string | null;
+  /** TTC de la facture à venir, en centimes. */
+  readonly totalCents: number;
+  readonly orderCount: number;
+  /** ISO — le rangement de cette version. */
+  readonly createdAt: string;
+}
+
 /** Issue de la tentative automatique (une par clôture). */
 export type MonthlyInvoiceAutopilotOutcomeView =
   "pending" | "issued" | "nothing_to_invoice" | "not_yet_open" | "failed";
@@ -111,6 +132,12 @@ export interface MonthlyClosureView {
   readonly open: boolean;
   readonly invoices: readonly MonthlyInvoiceView[];
   readonly signaled: readonly MonthlyInvoiceSignalView[];
+  /**
+   * Les devis de période EN ATTENTE de cette clôture (P2 bis) : leurs payeurs
+   * n'ont ni facture ni signalement, ils attendent leur numéro d'engagement.
+   * Absent d'une réponse d'avant le devis ; le serveur le sert toujours.
+   */
+  readonly periodQuotes?: readonly MonthlyPeriodQuoteView[];
   /** La tentative automatique de CETTE clôture ; `null` s'il n'y en a pas eu. */
   readonly autopilotRun: MonthlyInvoiceAutopilotRunView | null;
   /** Les lots clos à cet instant (un par schéma), annulés compris ; vide s'il n'y en a pas. */
@@ -154,4 +181,6 @@ export interface MonthlyInvoiceReportView {
   readonly blocked: readonly { readonly payerCompanyId: string; readonly message: string }[];
   readonly alreadyInvoiced: number;
   readonly unbillableOrders: number;
+  /** Devis de période rangés par ce passage (P2 bis) ; absent d'une réponse d'avant. */
+  readonly quoted?: number;
 }

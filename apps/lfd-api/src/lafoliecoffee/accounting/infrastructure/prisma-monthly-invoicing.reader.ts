@@ -24,6 +24,7 @@ import {
   freeDeliveryFieldOf,
 } from "./invoice-free-delivery.columns.js";
 import { ISSUED_OUTCOME, mandateIdOfColumn } from "./prisma-monthly-invoice-outcomes.js";
+import { AWAITING_QUOTE_STATE } from "./prisma-period-quote.repository.js";
 
 /** `AAAA-MM-JJ`. */
 const DAY_LENGTH = 10;
@@ -64,14 +65,21 @@ export class PrismaMonthlyInvoicingReader extends MonthlyInvoicingReader {
         budgetCommitmentServiceCode: true,
       },
     });
-    const invoiced = await this.prisma.invoiceOrder.findMany({
-      where: {
-        orderId: { in: orders.map((order) => order.id) },
-        invoiceType: COMMERCIAL_INVOICE,
-      },
-      select: { orderId: true },
-    });
-    const taken = new Set(invoiced.map((row) => row.orderId));
+    const ids = orders.map((order) => order.id);
+    const [invoiced, quoted] = await Promise.all([
+      this.prisma.invoiceOrder.findMany({
+        where: { orderId: { in: ids }, invoiceType: COMMERCIAL_INVOICE },
+        select: { orderId: true },
+      }),
+      // Rangée dans un devis de période en attente (P2 bis) : sa facture
+      // naîtra du devis, la période suivante ne la reprend pas. Un devis
+      // facturé n'a pas à être lu : sa facture porte déjà ses commandes.
+      this.prisma.periodQuoteOrder.findMany({
+        where: { orderId: { in: ids }, quoteState: AWAITING_QUOTE_STATE },
+        select: { orderId: true },
+      }),
+    ]);
+    const taken = new Set([...invoiced, ...quoted].map((row) => row.orderId));
     return orders.flatMap((order) =>
       order.companyId === null || taken.has(order.id)
         ? []

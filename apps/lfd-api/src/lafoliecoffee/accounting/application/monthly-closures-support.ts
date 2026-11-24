@@ -30,6 +30,7 @@ export function closureView(
     open: read.floorAt !== null && read.floorAt.getTime() < closesAt.getTime(),
     invoices: read.invoices,
     signaled: read.signaled,
+    periodQuotes: read.periodQuotes,
     autopilotRun: read.autopilotRun,
     batches: batchesAt(batches, closesAt),
   };

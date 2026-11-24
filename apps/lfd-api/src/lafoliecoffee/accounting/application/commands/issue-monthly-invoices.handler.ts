@@ -50,9 +50,12 @@ import {
 import {
   ordersByPayer,
   planMonthlyInvoices,
-  type MonthlyInvoicePlan,
   type PayerInvoicePlan,
 } from "../../domain/services/monthly-invoicing.js";
+import {
+  splitForPeriodQuotes,
+  type PeriodQuoteSplit,
+} from "../../domain/services/period-quote-split.js";
 import {
   draftOf,
   later,
@@ -66,6 +69,7 @@ import { readInvoicingCalendar } from "../invoicing-calendar-support.js";
 import { readMonthlyContext } from "../monthly-invoice-support.js";
 import { unique } from "../unique-ids.js";
 import { InvoiceIssuer } from "../services/invoice-issuer.js";
+import { PeriodQuoteShelver } from "../services/period-quote-shelver.js";
 import { IssueMonthlyInvoicesCommand } from "./issue-monthly-invoices.command.js";
 
 /**
@@ -98,7 +102,11 @@ import { IssueMonthlyInvoicesCommand } from "./issue-monthly-invoices.command.js
  *   émise, le payeur est **signalé** — rangé dans `invoice_monthly_outcome`,
  *   journalisé (`invoice.signalled`, dans la transaction de l'issue) — et les
  *   autres continuent. Rien n'est avalé ;
- * - un bon non facturable est signalé et laissé hors de la facture.
+ * - un bon non facturable est signalé et laissé hors de la facture ;
+ * - un payeur public qui donne son numéro sur le devis (`on_period_quote`,
+ *   plan `plan-clients-publics-chorus.md`, § 6 sexies) : ses groupes sans
+ *   numéro sont RANGÉS dans un devis de période (`PeriodQuoteShelver`), pas
+ *   facturés — aucune issue, le rapport les compte (`quoted`).
  *
  * ⚠️ L'échéance est celle du calendrier AU JOUR de l'émission : un lot
  * préparé tard (D4) prélève après elle ; la facture ne se réécrit pas.
@@ -125,6 +133,7 @@ export class IssueMonthlyInvoicesHandler implements ICommandHandler<
     private readonly cancelled: CancelledOrdersReader,
     private readonly commitments: OrderBudgetCommitmentsReader,
     private readonly requirements: PayerCommitmentRequirementsReader,
+    private readonly quotes: PeriodQuoteShelver,
     private readonly ids: IdGenerator,
     private readonly events: DomainEventPublisher,
     private readonly clock: Clock,
@@ -152,10 +161,13 @@ export class IssueMonthlyInvoicesHandler implements ICommandHandler<
       at,
     );
     const issues: PayerIssue[] = [];
-    for (const invoice of plan.invoices) {
+    for (const group of plan.toQuote) {
+      issues.push(await this.quoteFor(group, issuance));
+    }
+    for (const invoice of plan.toIssue) {
       issues.push(await this.issueFor(invoice, issuance));
     }
-    return report(issuance, issues, invoiced.size, plan.invoices);
+    return report(issuance, issues, invoiced.size, plan.toIssue);
   }
 
   /** Tout ce qu'on lit avant la première facture — une fois pour tous les payeurs. */
@@ -164,7 +176,7 @@ export class IssueMonthlyInvoicesHandler implements ICommandHandler<
     { period, calendar }: { readonly period: BillingCycle; readonly calendar: InvoicingCalendar },
     at: Date,
   ): Promise<{
-    readonly plan: MonthlyInvoicePlan;
+    readonly plan: PeriodQuoteSplit;
     readonly invoiced: ReadonlySet<string>;
     readonly issuance: Issuance;
   }> {
@@ -194,7 +206,9 @@ export class IssueMonthlyInvoicesHandler implements ICommandHandler<
         periodStartOf: (payerId) => calendar.payerPeriodOf(payerId, closesAt).startsAt,
       },
     );
-    const plan = planMonthlyInvoices(payers, { legalEntityId, ...context }, invoiced);
+    const { invoices } = planMonthlyInvoices(payers, { legalEntityId, ...context }, invoiced);
+    // Après le plan : les groupes n'existent qu'une fois faits (v5 B4).
+    const plan = splitForPeriodQuotes(invoices, context.commitmentRequirements);
     const { preNotificationDays, collectionDaysAfterClosure } = creditor;
     // Jamais d'antidate : émise après la veille de la clôture, la facture
     // porte le jour réel (Paris) ; la période facturée reste la même.
@@ -277,10 +291,26 @@ export class IssueMonthlyInvoicesHandler implements ICommandHandler<
         };
       });
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      this.logger.warn({ message: "monthly_invoice_blocked", payerId, reason: message });
-      return this.signal(key, message);
+      this.warn(payerId, error);
+      return this.signal(key, messageOf(error));
     }
+  }
+
+  /**
+   * Le groupe rangé dans un devis de période (P2 bis) ; son refus est signalé
+   * comme celui d'une facture, et les autres payeurs continuent.
+   */
+  private async quoteFor(planned: PayerInvoicePlan, issuance: Issuance): Promise<PayerIssue> {
+    try {
+      return await this.quotes.shelve(planned, issuance);
+    } catch (error) {
+      this.warn(planned.payerId, error);
+      return this.signal(outcomeKey(planned, issuance), messageOf(error));
+    }
+  }
+
+  private warn(payerId: string, error: unknown): void {
+    this.logger.warn({ message: "monthly_invoice_blocked", payerId, reason: messageOf(error) });
   }
 
   /**
@@ -322,4 +352,8 @@ export class IssueMonthlyInvoicesHandler implements ICommandHandler<
     });
     return { kind: "blocked", payerCompanyId: key.payerCompanyId, message };
   }
+}
+
+function messageOf(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
 }

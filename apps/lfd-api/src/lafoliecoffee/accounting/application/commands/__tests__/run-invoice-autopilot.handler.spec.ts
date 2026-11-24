@@ -92,6 +92,7 @@ const ISSUED: MonthlyInvoiceReport = {
   blocked: [{ payerCompanyId: "c_quai", message: "SIREN manquant" }],
   alreadyInvoiced: 0,
   unbillableOrders: 0,
+  quoted: 0,
 };
 
 interface Calendar {
@@ -238,6 +239,28 @@ describe("RunInvoiceAutopilot — une tentative par (entité, clôture)", () => 
     await h.handler.execute();
 
     expect(h.runs.rows.get(`${ENTITY}:${OCT_1}`)?.outcome).toBe("nothing_to_invoice");
+  });
+
+  it("une clôture qui ne range que des devis de période reste `nothing_to_invoice`, et les compte", async () => {
+    const h = harness(() => ({ ...ISSUED, issued: [], blocked: [], quoted: 2 }));
+
+    await h.handler.execute();
+
+    expect(h.runs.rows.get(`${ENTITY}:${OCT_1}`)).toMatchObject({
+      outcome: "nothing_to_invoice",
+      message: "Aucun bon à facturer ; 2 devis de période rangé(s)",
+    });
+  });
+
+  it("des factures ET des devis : `issued`, la phrase dit les signalés puis les devis", async () => {
+    const h = harness(() => ({ ...ISSUED, quoted: 1 }));
+
+    await h.handler.execute();
+
+    expect(h.runs.rows.get(`${ENTITY}:${OCT_1}`)).toMatchObject({
+      outcome: "issued",
+      message: "1 payeur(s) signalé(s) ; 1 devis de période rangé(s)",
+    });
   });
 
   it("rattrape TOUTES les clôtures manquées depuis le plancher, de la plus ancienne à la plus récente", async () => {

@@ -4,7 +4,7 @@ import type { CollectionMandatesReader } from "../domain/ports/collection-mandat
 import type { MonthlyInvoicingReader } from "../domain/ports/monthly-invoicing.reader.js";
 import type { PayerCommitmentRequirementsReader } from "../domain/ports/payer-commitment-requirements.reader.js";
 import type { PayersCollectionMeansReader } from "../domain/ports/payers-collection-means.reader.js";
-import type { PayerCommitmentRequirement } from "../domain/services/public-commitment-blocker.js";
+import type { PayerCommitmentSheet } from "../domain/services/public-commitment-blocker.js";
 import type { BillingFollow } from "../domain/ports/statement-billing.reader.js";
 import type { StatementBuyerReader } from "../domain/ports/statement-buyer.reader.js";
 import type { PayerOrders } from "../domain/services/monthly-invoicing.js";
@@ -52,8 +52,11 @@ export interface MonthlyContext {
    * (V3', K10) : la facture le fige, le lot le relira sur elle.
    */
   readonly collectionMeansOf: (payerId: string) => CollectionMeans;
-  /** L'exigence d'engagement des payeurs publics (E7) ; absent = rien d'exigé. */
-  readonly commitmentRequirements: ReadonlyMap<string, PayerCommitmentRequirement>;
+  /**
+   * L'exigence d'engagement des payeurs publics (E7) et le moment du numéro
+   * (P2 bis) ; absent = rien d'exigé, à la commande.
+   */
+  readonly commitmentRequirements: ReadonlyMap<string, PayerCommitmentSheet>;
 }
 
 /**

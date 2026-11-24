@@ -29,6 +29,7 @@ export class FixedPeriodInvoices extends MonthlyInvoicesReader {
       floorAt: this.floorAt,
       invoices: this.invoices,
       signaled: [],
+      periodQuotes: [],
       autopilotRun: null,
     });
   }

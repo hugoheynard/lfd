@@ -32,6 +32,7 @@ import {
 import type { PayerModeSegments } from "../../../domain/ports/payer-billing-modes.reader.js";
 import { paris } from "../../../domain/services/__tests__/billing-mode-fixtures.js";
 import { InvoiceIssuer } from "../../services/invoice-issuer.js";
+import { PeriodQuoteShelver } from "../../services/period-quote-shelver.js";
 import { RecordingDurable } from "./notice-doubles.js";
 import { meansRow, PayerMeansStore, StorePayersMeansReader } from "./collection-means-doubles.js";
 import { IssueMonthlyInvoicesCommand } from "../issue-monthly-invoices.command.js";
@@ -55,6 +56,7 @@ import {
   MemoryInvoices,
   MemoryOutcomes,
 } from "./monthly-invoice-doubles.js";
+import { MemoryPeriodQuotes } from "./period-quote-doubles.js";
 
 /**
  * La facture par période (lot E4, par clôture depuis R3) — l'orchestration,
@@ -174,6 +176,15 @@ function harness(
     cancelled,
     commitments,
     requirements,
+    new PeriodQuoteShelver(
+      new MemoryPeriodQuotes(reader.quotedOrders),
+      rows,
+      cancelled,
+      commitments,
+      new UlidSequence(),
+      durable,
+      uow,
+    ),
     new UlidSequence(),
     events,
     clock,
@@ -535,6 +546,15 @@ describe("IssueMonthlyInvoices — la facture du mois (E4)", () => {
         new FakeCancelled(),
         new CurrentCommitments(h.reader),
         new FixedCommitmentRequirements(),
+        new PeriodQuoteShelver(
+          new MemoryPeriodQuotes(),
+          new RecordingRowsLock({ log: [] }),
+          new FakeCancelled(),
+          new CurrentCommitments(h.reader),
+          new UlidSequence(),
+          new RecordingDurable(),
+          new DirectUnitOfWork(),
+        ),
         new UlidSequence(),
         h.events,
         new FixedClock(AFTER_MOMENT),

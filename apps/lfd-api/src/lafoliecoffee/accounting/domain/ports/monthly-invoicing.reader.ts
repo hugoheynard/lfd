@@ -23,7 +23,8 @@ export abstract class BillingFollowsReader {
 export abstract class MonthlyInvoicingReader extends BillingFollowsReader {
   /**
    * Les bons passés au compte sur `[from, to[` qu'aucune facture (380) ne
-   * porte encore, du plus ancien au plus récent.
+   * porte encore, ni aucun devis de période en attente (P2 bis), du plus
+   * ancien au plus récent.
    */
   abstract uninvoicedOrders(from: Date, to: Date): Promise<readonly InvoiceableOrder[]>;
 

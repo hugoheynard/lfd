@@ -35,7 +35,13 @@ class RecordingReader extends MonthlyInvoicesReader {
   readonly asked: Date[] = [];
   ofPeriod(_legalEntityId: string, periodClosesAt: Date): Promise<MonthlyInvoicesRead> {
     this.asked.push(periodClosesAt);
-    return Promise.resolve({ floorAt: FLOOR, invoices: [], signaled: [], autopilotRun: null });
+    return Promise.resolve({
+      floorAt: FLOOR,
+      invoices: [],
+      signaled: [],
+      periodQuotes: [],
+      autopilotRun: null,
+    });
   }
 }
 

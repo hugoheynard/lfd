@@ -21,4 +21,9 @@ export interface MonthlyInvoiceReport {
   readonly alreadyInvoiced: number;
   /** Bons signalés non facturables, tous payeurs confondus. */
   readonly unbillableOrders: number;
+  /**
+   * Devis de période rangés par ce passage (P2 bis) : leurs groupes n'ont pas
+   * de facture, ils attendent leur numéro d'engagement.
+   */
+  readonly quoted: number;
 }

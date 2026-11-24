@@ -1,0 +1,24 @@
+-- RETOUR ARRIÈRE de 20261124220000_le_devis_de_periode
+-- (documentation/comptabilite/facturation/plan-clients-publics-chorus.md, § 6 sexies, QD3).
+--
+-- 🔴 NON APPLIQUÉ, et Prisma ne le lit pas. La migration reste inscrite
+-- « appliquée ».
+--
+-- Le code d'avant ignore les trois tables : le retour arrière est le retour du
+-- code seul. Mais les commandes rangées dans un devis `awaiting` redeviennent
+-- alors « non facturées » pour ce code, et la clôture suivante de leur payeur
+-- les reprend — bloquée, faute de numéro d'engagement
+-- (`public_commitment_missing`). Le devis, lui, reste en base.
+--
+-- Retirer les tables perdrait les devis envoyés et leur lien aux factures ; à
+-- faire seulement sur décision de Hugo, et sur une base sans devis :
+--
+--   DROP TRIGGER "period_quote_counter_monotonic" ON "public"."period_quote_counter";
+--   DROP FUNCTION "public"."period_quote_counter_monotonic"();
+--   DROP TRIGGER "period_quote_order_kept" ON "public"."period_quote_order";
+--   DROP FUNCTION "public"."period_quote_order_kept"();
+--   DROP TRIGGER "period_quote_final" ON "public"."period_quote";
+--   DROP FUNCTION "public"."period_quote_final"();
+--   DROP TABLE "public"."period_quote_counter";
+--   DROP TABLE "public"."period_quote_order";
+--   DROP TABLE "public"."period_quote";

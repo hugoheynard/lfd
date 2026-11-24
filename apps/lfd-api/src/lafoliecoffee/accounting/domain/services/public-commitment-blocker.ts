@@ -1,3 +1,5 @@
+import type { CommitmentTiming } from "@lfd/contracts";
+
 import type { InvoiceIssuanceBlocker } from "./invoice-issuance-blockers.js";
 import type { InvoiceBudgetCommitment } from "../value-objects/invoice-budget-commitment.js";
 
@@ -8,6 +10,17 @@ import type { InvoiceBudgetCommitment } from "../value-objects/invoice-budget-co
 export interface PayerCommitmentRequirement {
   readonly commitmentRequired: boolean;
   readonly serviceCodeRequired: boolean;
+}
+
+/**
+ * La fiche Chorus d'un payeur public telle que la clôture la lit : ce qu'elle
+ * exige, et **quand le numéro arrive** (plan `plan-clients-publics-chorus.md`,
+ * § 6 sexies, v5 B4). En `on_period_quote`, la clôture range les commandes
+ * sans numéro dans un devis (`splitForPeriodQuotes`) au lieu d'en émettre la
+ * facture : le filet ci-dessous ne les juge donc jamais.
+ */
+export interface PayerCommitmentSheet extends PayerCommitmentRequirement {
+  readonly timing: CommitmentTiming;
 }
 
 /**

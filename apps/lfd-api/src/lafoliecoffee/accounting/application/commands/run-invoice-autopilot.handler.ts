@@ -151,17 +151,33 @@ function latest(left: Date | null, right: Date | null): Date | null {
   return left.getTime() >= right.getTime() ? left : right;
 }
 
-/** Le rapport d'un passage réussi, dit en une issue, deux nombres et une phrase. */
+/**
+ * Le rapport d'un passage réussi, dit en une issue, deux nombres et une phrase.
+ *
+ * Les devis de période rangés (P2 bis) n'ont pas d'issue à eux — le CHECK de
+ * `invoice_autopilot_run` et les issues « passées » restent : une clôture qui
+ * ne range que des devis est `nothing_to_invoice`, et la phrase les compte
+ * (plan `plan-clients-publics-chorus.md`, § 6 sexies, v5 S3).
+ */
 function issueOf(report: MonthlyInvoiceReport): InvoiceAutopilotIssue {
   const counts = { issuedCount: report.issued.length, signalledCount: report.blocked.length };
   const signaled =
     report.blocked.length === 0 ? null : `${String(report.blocked.length)} payeur(s) signalé(s)`;
+  const quoted = report.quoted === 0 ? null : `${String(report.quoted)} devis de période rangé(s)`;
   if (report.issued.length > 0) {
-    return { ...counts, outcome: "issued", message: signaled };
+    return { ...counts, outcome: "issued", message: joined(signaled, quoted) };
   }
   return {
     ...counts,
     outcome: "nothing_to_invoice",
-    message: signaled ?? "Aucun bon à facturer pour cette période.",
+    message:
+      joined(signaled, quoted === null ? null : `Aucun bon à facturer ; ${quoted}`) ??
+      "Aucun bon à facturer pour cette période.",
   };
+}
+
+/** Les phrases présentes, séparées d'un point-virgule ; `null` s'il n'y en a aucune. */
+function joined(...parts: readonly (string | null)[]): string | null {
+  const present = parts.filter((part): part is string => part !== null);
+  return present.length === 0 ? null : present.join(" ; ");
 }

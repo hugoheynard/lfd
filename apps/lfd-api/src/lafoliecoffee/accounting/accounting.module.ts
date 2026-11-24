@@ -7,6 +7,7 @@ import {
 } from "./chorus-deposit.providers.js";
 import { BILLING_MODE_CONTROLLERS, BILLING_MODE_PROVIDERS } from "./billing-mode.providers.js";
 import { CARD_INVOICE_PROVIDERS } from "./card-invoice.providers.js";
+import { PERIOD_QUOTE_PROVIDERS } from "./period-quote.providers.js";
 import { UNCONFIRMED_DELIVERIES_PROVIDERS } from "./unconfirmed-deliveries.providers.js";
 import { MANDATE_BANK_EXPORT_PROVIDERS } from "./mandate-bank-export.providers.js";
 import {
@@ -353,6 +354,7 @@ import { PrismaOrderRowsLock } from "./infrastructure/prisma-order-rows-lock.js"
     SendCollectionNotice,
     ...ISSUED_INVOICE_PROVIDERS,
     ...CARD_INVOICE_PROVIDERS,
+    ...PERIOD_QUOTE_PROVIDERS,
     ...UNCONFIRMED_DELIVERIES_PROVIDERS,
     ...BILLING_MODE_PROVIDERS,
     ...BANK_TRANSFER_PROVIDERS,

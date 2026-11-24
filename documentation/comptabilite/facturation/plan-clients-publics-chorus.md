@@ -1040,9 +1040,49 @@ règles **priment** sur le texte de la v4 ci-dessus.
 | **S6** `cycle-order-membership`                                                                                                                                  | Troisième branche : une commande d'un devis `awaiting` va au cycle de `period_closes_at`, et **sort** de `pending`. Testée côté relevé **et** côté dossier.                                                                                                                                                                                                                                                                                                                                                                |
 | Mineurs                                                                                                                                                          | Deux entrées dans `schema-drift-admitted.json` (les index partiels) ; la colonne s'appelle `mandate_id` `default ''`, comme `invoice_monthly_outcome` ; « `planMonthlyInvoices` et ses bloqueurs » était faux.                                                                                                                                                                                                                                                                                                             |
 
+### Les lecteurs de « non facturé » face à un devis (Q3, ouverts le 2026-11-24)
+
+Une commande rangée dans un devis `awaiting` n'a pas de ligne `invoice_order`.
+Chaque lecteur a été ouvert et rangé :
+
+| Lecteur                                                          | Voit la commande en devis ?                                          | Pourquoi                                                                                                                                                                                             |
+| ---------------------------------------------------------------- | -------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `prisma-monthly-invoicing.reader.ts` (`uninvoicedOrders`)        | **Non** — écartée (lit `period_quote_order`, `awaiting`)             | La clôture suivante ne la reprend pas ; sa facture naîtra du devis (S5 de la v5, B1 de la v4).                                                                                                       |
+| `cycle-order-membership.ts` (relevé et dossier)                  | **Oui, au cycle de `period_closes_at`** — troisième branche `quoted` | Le relevé et le dossier suivent la facture ; elle sort de `pending` (S6). Éprouvé côté relevé et côté dossier par `apps/lfd-api/test/period-quote-closure.e2e-spec.ts`.                              |
+| `prisma-monthly-invoices.reader.ts` (vue de la période)          | **Oui** — `periodQuotes`, devis `awaiting` de la clôture             | Sans lui, un payeur qui n'a qu'un devis n'a ni facture ni signalement à l'écran. Contrat additif (`MonthlyClosureView.periodQuotes?`).                                                               |
+| `prisma-billable-orders.reader.ts` (aperçu de l'assiette)        | **Oui, comptée** — inchangé                                          | C'est de l'encours : livrée, soldée, due.                                                                                                                                                            |
+| `prisma-payer-order-history.reader.ts` (`hasEverOrdered`)        | Oui — inchangé                                                       | La question est « a-t-il déjà commandé ? », pas « est-ce facturé ? ».                                                                                                                                |
+| `prisma-procedure-orders.reader.ts` (onglet de la procédure)     | Oui, comme une commande facturable non encore facturée — inchangé    | La procédure de prélèvement montre l'assiette de la période ; un payeur sur devis est au virement, aucun lot ne le prend (ci-dessous).                                                               |
+| `prisma-unconfirmed-deliveries.reader.ts` (bons à constater)     | Non, par construction — inchangé                                     | Il ne lit que `settled_on IS NULL` ; une commande en devis est soldée.                                                                                                                               |
+| `prisma-order-engagement.reader.ts` (annulation)                 | Oui, « non facturée » — inchangé                                     | Une commande en devis reste annulable (QD2) ; la clôture ou « Engagement reçu » la retire sous le verrou.                                                                                            |
+| `prisma-payer-uninvoiced-orders.reader.ts` (Q1, changer de mode) | **Oui, non facturée** — inchangé, vérifié                            | Il ne lit que `invoice_order` : une commande en devis y compte, et le geste refuse de changer de mode (409 `timingLockedByOrders`, éprouvé en e2e).                                                  |
+| `prisma-collection-candidates.reader.ts` (lot de prélèvement)    | Lue, jamais prélevée — inchangé                                      | `assembleCollection` ne prend après le plancher que des bons **facturés** : un bon sans facture « attend la sienne ». La commande en devis n'entre dans aucun lot, quel que soit le moyen du payeur. |
+
+**Ce que Q3 a tranché en bâtissant :**
+
+- **Un bon non soldé (`settlement = unsettled`) n'entre pas au devis.** Le
+  plan le range parmi les facturables, mais sa facture ne part pas (bloqueur
+  `order_unsettled`) : dans le devis, il bloquerait « Engagement reçu ». Il
+  reste sur le chemin d'aujourd'hui, qui le nomme (`splitForPeriodQuotes`).
+- **Le numéro est `D-<AAAAMMJJ>-<rang>`**, l'étiquette étant le dernier jour
+  de la période (`periodTagOf`, celle des fichiers de lot) ; le compteur est
+  par (entité, étiquette). Un rang pris par un passage qui ne range rien est
+  perdu : un devis n'est pas une pièce comptable.
+- **`payer_name`** est figé sur le devis, comme sur `invoice_monthly_outcome`,
+  pour la vue de la période.
+- **L'empreinte n'entre pas l'engagement** : le numéro reçu ne change pas la
+  facture que le devis annonçait.
+- **Un refus au rangement** (base, devis vide) est signalé comme le refus
+  d'une facture (`invoice_monthly_outcome` `blocked`, `invoice.signalled`) :
+  rien n'est avalé. Seul le succès n'écrit pas d'issue.
+- **Aucune entrée dans `schema-drift-admitted.json`** : la porte ne constate
+  aucun écart pour les deux index partiels (vérifié le 2026-11-24, porte
+  verte sans elles, rouge « admis mais plus constaté » avec elles).
+- **Déclencheurs** : un devis et ses commandes ne se suppriment pas, un état
+  final ne se quitte pas, le compteur ne recule pas.
+
 ### Non vérifié
 
-- Le lot de prélèvement face à une commande en devis (Q3 le lit).
 - Que la révision ne lit pas `AccountEngagement` pour refuser
   (`order-revision.providers.ts`) : sans effet dans la v4, qui ne le change
   pas.

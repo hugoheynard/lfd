@@ -22,6 +22,7 @@ import { budgetCommitmentOf } from "../domain/value-objects/invoice-budget-commi
 import { chorusStandingOfRows } from "./chorus-deposit-rows.js";
 import { invoicePaymentMeansSchema } from "./invoice-json.schema.js";
 import { invoicePayerOf } from "./invoice-payer-name.js";
+import { awaitingPeriodQuotesOf } from "./period-quote-views.js";
 import { BLOCKED_OUTCOME, ISSUED_OUTCOME } from "./prisma-monthly-invoice-outcomes.js";
 
 const OUTCOMES: readonly MonthlyInvoiceAutopilotOutcomeView[] = [
@@ -33,8 +34,9 @@ const OUTCOMES: readonly MonthlyInvoiceAutopilotOutcomeView[] = [
 ];
 
 /**
- * Les issues d'une clôture, leurs factures, et la tentative automatique —
- * trois lectures ; deux de plus quand un payeur est signalé (E10).
+ * Les issues d'une clôture, leurs factures, ses devis de période en attente
+ * (P2 bis), et la tentative automatique — quatre lectures ; deux de plus
+ * quand un payeur est signalé (E10).
  */
 @Injectable()
 export class PrismaMonthlyInvoicesReader extends MonthlyInvoicesReader {
@@ -43,7 +45,7 @@ export class PrismaMonthlyInvoicesReader extends MonthlyInvoicesReader {
   }
 
   async ofPeriod(legalEntityId: string, periodClosesAt: Date): Promise<MonthlyInvoicesRead> {
-    const [floor, outcomes, run] = await Promise.all([
+    const [floor, outcomes, run, periodQuotes] = await Promise.all([
       // `findFirst`, jamais `findUnique` : Prisma regroupe les `findUnique`
       // simultanés en un `id: { in: [...] }`, qu'une clé booléenne refuse
       // (« Unknown argument `in` ») — la vue lit une clôture par carte, en
@@ -72,6 +74,7 @@ export class PrismaMonthlyInvoicesReader extends MonthlyInvoicesReader {
       this.prisma.invoiceAutopilotRun.findUnique({
         where: { legalEntityId_periodClosesAt: { legalEntityId, periodClosesAt } },
       }),
+      awaitingPeriodQuotesOf(this.prisma, legalEntityId, periodClosesAt),
     ]);
     const blocked = outcomes.filter((row) => row.outcome === BLOCKED_OUTCOME);
     return {
@@ -107,6 +110,7 @@ export class PrismaMonthlyInvoicesReader extends MonthlyInvoicesReader {
         unbillableOrders: row.unbillableOrders,
         recordedAt: row.recordedAt.toISOString(),
       })),
+      periodQuotes,
       autopilotRun: run === null ? null : runView(run),
     };
   }
