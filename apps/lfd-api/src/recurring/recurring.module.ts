@@ -29,6 +29,11 @@ import { OccurrenceRepository } from "./occurrence/domain/ports/occurrence.repos
 import { RecurringOccurrencesSweepController } from "./occurrence/http/recurring-occurrences-sweep.controller.js";
 import { PrismaBasketsBehindPlan } from "./occurrence/infrastructure/prisma-baskets-behind-plan.js";
 import { PrismaOccurrenceRepository } from "./occurrence/infrastructure/prisma-occurrence.repository.js";
+import { OccurrenceIssueBell } from "./occurrence/application/services/occurrence-issue-bell.js";
+import {
+  RingOnOccurrenceMissed,
+  RingOnOccurrenceRefused,
+} from "./occurrence/application/handlers/ring-on-occurrence-issue.handler.js";
 
 /**
  * **Le bloc des paniers récurrents** : le panier, ses échéances, leur
@@ -60,6 +65,9 @@ import { PrismaOccurrenceRepository } from "./occurrence/infrastructure/prisma-o
     // L'annonce d'une nouvelle version des CGV (§ 7, Q-B7) : l'abonné durable
     // du dépôt du PDF, et l'origine de la boutique pour son lien.
     AnnounceSalesTermsToBaskets,
+    OccurrenceIssueBell,
+    RingOnOccurrenceRefused,
+    RingOnOccurrenceMissed,
     {
       provide: BasketMailOrigins,
       inject: [AppConfig],

@@ -11,6 +11,7 @@ import { ADMIN_VERIFIER_OVERRIDE } from "./delivery-rounds-scene.js";
 import { bootstrapE2e, serviceDay, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { pickupSite } from "./order-factory.js";
+import { TEST_RECOMPUTE_TOKEN } from "./setup-env.js";
 import {
   occurrenceStates,
   openBasket,
@@ -55,6 +56,16 @@ beforeEach(async () => {
 const open = (workspace: string): Promise<string> =>
   openBasket(ctx, BUYER, workspace, weeklyBasket({ pickupAddressId: pickupId }));
 
+/** La boîte d'envoi relayée comme le cron du Worker, puis le travail de fond vidé. */
+async function relayOutbox(): Promise<void> {
+  await ctx
+    .http()
+    .post("/admin/outbox/sweep")
+    .set("x-lfc-recompute-token", TEST_RECOMPUTE_TOKEN)
+    .expect(200);
+  await ctx.drain();
+}
+
 describe("le balayage des échéances dues", () => {
   it("passe l'échéance de l'horizon une seule fois, l'inscrit, et écrit son fait", async () => {
     const id = await open(companyId);
@@ -96,6 +107,22 @@ describe("le balayage des échéances dues", () => {
       await ctx.prisma.outboxMessage.count({ where: { type: "recurring.occurrence_refused" } }),
     ).toBe(1);
     expect((await occurrenceStates(ctx, id))[0]).toEqual([FIRST, "refused"]);
+
+    // R5 : le fait de refus sonne pour ceux qui gèrent les paniers — une seule
+    // fois, même relayé deux fois.
+    await relayOutbox();
+    await relayOutbox();
+    expect(
+      await ctx.prisma.staffNotification.findMany({
+        where: { kind: "recurring.occurrence_refused" },
+        select: { audience: true, link: true },
+      }),
+    ).toEqual([
+      {
+        audience: "b2b_subscriptions:read",
+        link: `/comptes-clients/${companyId}/paniers-recurrents`,
+      },
+    ]);
 
     await ctx.prisma.company.update({
       where: { id: companyId },
