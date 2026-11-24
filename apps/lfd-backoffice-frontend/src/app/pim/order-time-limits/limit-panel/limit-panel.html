@@ -1,87 +1,103 @@
 <fold-panel-header [title]="heading()" />
 
 <div class="body">
-  @if (picking()) {
-    <fold-listbox
-      label="La portée"
-      [options]="scopeChoices"
-      [value]="pickedType()"
-      (selectionChange)="onScopeType($event)"
-    />
-    @if (pickedType() === 'category') {
-      <fold-listbox
-        label="La famille"
-        placeholder="Choisir une famille"
-        [options]="familyChoices()"
-        [value]="pickedId()"
-        (selectionChange)="onTarget($event)"
-      />
-    } @else {
-      <fold-listbox
-        label="Le produit"
-        placeholder="Choisir un produit"
-        [options]="productChoices()"
-        [value]="pickedId()"
-        (selectionChange)="onTarget($event)"
-      />
+  <p class="intro">
+    Une limite de commande fixe jusqu'à quand on peut commander un produit avant sa date de retrait
+    ou de livraison. Si plusieurs limites visent un même produit (la sienne, celle de sa famille),
+    c'est la plus stricte qui s'applique.
+  </p>
+
+  <div class="group">
+    <fold-fieldset legend="S'applique à">
+      @if (picking()) {
+        <fold-listbox
+          label="La portée"
+          [options]="scopeChoices"
+          [value]="pickedType()"
+          (selectionChange)="onScopeType($event)"
+        />
+        @if (pickedType() === 'category') {
+          <fold-listbox
+            label="La famille"
+            placeholder="Choisir une famille"
+            [options]="familyChoices()"
+            [value]="pickedId()"
+            (selectionChange)="onTarget($event)"
+          />
+        } @else {
+          <fold-listbox
+            label="Le produit"
+            placeholder="Choisir un produit"
+            [options]="productChoices()"
+            [value]="pickedId()"
+            (selectionChange)="onTarget($event)"
+          />
+        }
+      }
+      @if (reach(); as target) {
+        <p class="aside">
+          S'applique à <strong>{{ target.label }}</strong
+          >{{ target.rest }}
+        </p>
+      }
+    </fold-fieldset>
+
+    <!-- Reposer une limite de famille archivée remet ses exclusions en vigueur :
+         le dire AVANT la validation, pas après. -->
+    @if (reinstatedExclusions(); as excluded) {
+      <fold-callout variant="warning">
+        Cette limite était archivée. En la reposant, <strong>{{ excluded }}</strong> — ils échappent
+        toujours à la limite de cette famille.
+      </fold-callout>
     }
-  }
+  </div>
 
-  @if (reach(); as target) {
-    <fold-callout appearance="inset" variant="neutral">
-      S'applique à <strong>{{ target.label }}</strong
-      >{{ target.rest }}
-    </fold-callout>
-  }
+  <div class="group">
+    <fold-fieldset legend="Quand">
+      <div class="when">
+        <fold-number-input
+          label="Le délai, en jours avant"
+          hint="0 = le jour même, 1 = la veille, 7 = une semaine avant."
+          [value]="daysBefore()"
+          (valueChange)="onDays($event)"
+          [min]="0"
+          [max]="maxDays"
+          integer
+        />
 
-  <!-- Reposer une limite de famille archivée remet ses exclusions en vigueur :
-       le dire AVANT la validation, pas après. -->
-  @if (reinstatedExclusions(); as excluded) {
-    <fold-callout variant="warning">
-      Cette limite était archivée. En la reposant, <strong>{{ excluded }}</strong> — ils échappent
-      toujours à la limite de cette famille.
-    </fold-callout>
-  }
+        <!-- `<input type="time">` en natif : fold ne couvre pas les heures, et le
+             contrôle du navigateur vaut mieux qu'un masque maison. -->
+        <label class="time">
+          <span class="time-label">L'heure</span>
+          <input type="time" [value]="time()" (change)="onTime($event)" />
+        </label>
+      </div>
+      <p class="recap">{{ recap() }}</p>
+    </fold-fieldset>
 
-  <fold-listbox
-    label="Le délai"
-    [options]="daysChoices"
-    [value]="daysBefore()"
-    (selectionChange)="onDays($event)"
-  />
+    @if (overriddenBy(); as family) {
+      <fold-callout variant="warning">
+        Sans effet&nbsp;: la famille <strong>{{ family.name }}</strong> impose {{ family.limit }}.
+        Pour assouplir ce produit, excluez-le de la limite de la famille.
+      </fold-callout>
+    }
+  </div>
 
-  <!-- `<input type="time">` en natif : fold ne couvre pas les heures, et le
-       contrôle du navigateur vaut mieux qu'un masque maison. -->
-  <label class="time">
-    <span class="time-label">L'heure</span>
-    <input type="time" [value]="time()" (change)="onTime($event)" />
-  </label>
-
-  @if (overriddenBy(); as family) {
-    <fold-callout variant="warning">
-      Sans effet&nbsp;: la famille <strong>{{ family.name }}</strong> impose {{ family.limit }}.
-      Pour assouplir ce produit, excluez-le de la limite de la famille.
-    </fold-callout>
-  }
-
-  <fold-checkbox
-    label="L'équipe peut passer outre cette limite"
-    hint="Une personne qui a le droit pourra saisir pour un client après cette limite, avec un motif. L'heure limite générale reste opposée."
-    [checked]="staffMayExceed()"
-    (checkedChange)="staffMayExceed.set($event)"
-  />
-
-  <fold-callout appearance="inset" variant="neutral">
-    Passer outre n'est possible que si toutes les limites qui visent ce produit le permettent.
-  </fold-callout>
+  <fold-fieldset legend="Exception">
+    <fold-checkbox
+      label="L'équipe peut passer outre cette limite"
+      hint="Une personne qui a le droit pourra saisir pour un client après cette limite, avec un motif — seulement si toutes les limites qui visent ce produit le permettent. L'heure limite générale reste opposée."
+      [checked]="staffMayExceed()"
+      (checkedChange)="staffMayExceed.set($event)"
+    />
+  </fold-fieldset>
 
   <!-- Pas de rattrapage par produit (Hugo, 2026-10-21) : le dire, parce que
        l'écran en proposait un. -->
-  <fold-callout variant="info">{{ recap() }}</fold-callout>
-  <fold-callout appearance="inset" variant="neutral">
+  <p class="note">
     Pas de rattrapage sur une limite du référentiel&nbsp;: le seul rattrapage est celui de la règle
     générale (Réglages › Commandes › Heure limite), où une dérogation peut s'accorder.
-  </fold-callout>
+  </p>
 </div>
 
 <div class="actions">

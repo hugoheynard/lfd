@@ -1,0 +1,83 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xl);
+  padding: var(--fold-space-md);
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* Un groupe et l'alerte qui le concerne, serrés l'un contre l'autre. */
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+.intro,
+.aside {
+  margin: 0;
+  font-size: var(--fold-text-sm);
+  line-height: var(--fold-leading-normal);
+  color: var(--fold-color-text-muted);
+}
+
+/* Délai et heure côte à côte ; l'un sous l'autre quand le panneau est étroit. */
+.when {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: var(--fold-space-md);
+  align-items: start;
+}
+
+.time {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+}
+
+.time-label {
+  font-size: var(--fold-text-sm);
+  font-weight: var(--fold-weight-semibold);
+}
+
+.time input {
+  padding: var(--fold-space-sm);
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-sm);
+  background: var(--fold-color-surface-card);
+  color: inherit;
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+}
+
+/* LA phrase du panneau : ce que la limite dira au client. */
+.recap {
+  margin: 0;
+  font-size: var(--fold-text-base);
+  font-weight: var(--fold-weight-semibold);
+  line-height: var(--fold-leading-snug);
+  color: var(--fold-color-text);
+}
+
+.note {
+  margin: 0;
+  font-size: var(--fold-text-xs);
+  line-height: var(--fold-leading-normal);
+  color: var(--fold-color-text-muted);
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--fold-space-sm);
+  padding: var(--fold-space-md);
+  border-top: 1px solid var(--fold-color-border);
+}

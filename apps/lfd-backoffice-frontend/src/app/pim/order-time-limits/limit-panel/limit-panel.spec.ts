@@ -6,7 +6,7 @@ import type {
   OrderTimeLimitView,
 } from '@lfd/pim-contracts';
 import { By } from '@angular/platform-browser';
-import { FoldListboxComponent, FoldPanelRef } from 'fold-ng';
+import { FoldListboxComponent, FoldNumberInputComponent, FoldPanelRef } from 'fold-ng';
 import { describe, expect, it } from 'vitest';
 
 import { NotifyService } from '../../../notify.service';
@@ -156,7 +156,7 @@ describe('LimitPanel — la case « l’équipe peut passer outre »', () => {
   it('dit la règle du point de décision unique', async () => {
     const { fixture } = await render({ scope: PRODUCT, label: 'Bûche', rule: null });
     expect((fixture.nativeElement as HTMLElement).textContent).toContain(
-      "Passer outre n'est possible que si toutes les limites qui visent ce produit le permettent.",
+      'seulement si toutes les limites qui visent ce produit le permettent.',
     );
   });
 });
@@ -237,15 +237,15 @@ describe('LimitPanel — une limite de produit sans effet face à sa famille', (
   });
 
   async function typed(
-    days: string,
+    days: number | null,
     time: string,
     excludesProduct = false,
+    api = new FakeApi(),
   ): Promise<ComponentFixture<LimitPanel>> {
-    const api = new FakeApi();
-    api.lineage = lineage(excludesProduct);
+    api.lineage ??= lineage(excludesProduct);
     const { fixture } = await render({ scope: PRODUCT, label: 'Bûche', rule: null }, api);
-    const listbox = fixture.debugElement.query(By.directive(FoldListboxComponent));
-    (listbox.componentInstance as FoldListboxComponent<string>).selectionChange.emit(days);
+    const field = fixture.debugElement.query(By.directive(FoldNumberInputComponent));
+    (field.componentInstance as FoldNumberInputComponent).value.set(days);
     const input = (fixture.nativeElement as HTMLElement).querySelector(
       'input[type="time"]',
     ) as HTMLInputElement;
@@ -258,7 +258,7 @@ describe('LimitPanel — une limite de produit sans effet face à sa famille', (
   }
 
   it('avertit pendant la saisie quand la famille est plus stricte, sans bloquer', async () => {
-    const fixture = await typed('1', '18:00');
+    const fixture = await typed(1, '18:00');
     expect(text(fixture)).toContain("Sans effet : la famille Gâteaux impose l'avant-veille, 12:00");
     expect(text(fixture)).toContain('excluez-le de la limite de la famille');
     const buttons = (fixture.nativeElement as HTMLElement).querySelectorAll('button');
@@ -266,17 +266,57 @@ describe('LimitPanel — une limite de produit sans effet face à sa famille', (
   });
 
   it('avertit aussi quand elle est égale', async () => {
-    const fixture = await typed('2', '12:00');
+    const fixture = await typed(2, '12:00');
     expect(text(fixture)).toContain('Sans effet');
   });
 
   it('se tait quand la limite du produit est plus stricte', async () => {
-    const fixture = await typed('3', '18:00');
+    const fixture = await typed(3, '18:00');
     expect(text(fixture)).not.toContain('Sans effet');
   });
 
   it('se tait quand le produit est exclu de la famille', async () => {
-    const fixture = await typed('1', '18:00', true);
+    const fixture = await typed(1, '18:00', true);
     expect(text(fixture)).not.toContain('Sans effet');
+  });
+
+  it('accepte un délai libre, comme 5 jours, et l’envoie tel quel', async () => {
+    const api = new FakeApi();
+    const fixture = await typed(5, '12:00', false, api);
+    expect(text(fixture)).toContain('5 jours avant');
+    const buttons = (fixture.nativeElement as HTMLElement).querySelectorAll('button');
+    const submit = buttons[buttons.length - 1] as HTMLButtonElement;
+    expect(submit.disabled).toBe(false);
+    submit.click();
+    await fixture.whenStable();
+    expect(api.sent[0]?.daysBefore).toBe(5);
+  });
+
+  it.each([null, 15, -1, 2.5])(
+    'refuse de poser un délai vide ou hors bornes (%s)',
+    async (days) => {
+      const fixture = await typed(days, '12:00');
+      const buttons = (fixture.nativeElement as HTMLElement).querySelectorAll('button');
+      expect((buttons[buttons.length - 1] as HTMLButtonElement).disabled).toBe(true);
+      expect(text(fixture)).toContain('Renseignez le délai');
+    },
+  );
+});
+
+describe('LimitPanel — la mise en page', () => {
+  it('ne rend aucun encadré quand rien n’est à signaler', async () => {
+    const { fixture } = await render({
+      scope: { type: 'category', id: 'f1' },
+      label: 'Gâteaux',
+      rule: null,
+    });
+    const host = fixture.nativeElement as HTMLElement;
+    expect(host.querySelectorAll('fold-callout').length).toBe(0);
+    expect(text(fixture)).toContain("S'applique à Gâteaux");
+    expect(text(fixture)).toContain(
+      "Une limite de commande fixe jusqu'à quand on peut commander un produit",
+    );
+    expect(text(fixture)).toContain("c'est la plus stricte qui s'applique");
+    expect(text(fixture)).toContain('Pas de rattrapage sur une limite du référentiel');
   });
 });

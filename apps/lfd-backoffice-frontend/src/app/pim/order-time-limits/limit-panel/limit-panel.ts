@@ -18,7 +18,9 @@ import {
   FoldButtonComponent,
   FoldCalloutComponent,
   FoldCheckboxComponent,
+  FoldFieldsetComponent,
   FoldListboxComponent,
+  FoldNumberInputComponent,
   FoldPanelHeaderComponent,
   FoldPanelRef,
   type FoldSelectOption,
@@ -63,11 +65,13 @@ const SCOPE_CHOICES: FoldSelectOption<LimitScopeType>[] = [
   { value: 'category', label: 'Une famille' },
 ];
 
-/** Les délais proposés. Pas d'entrée « hériter » : il n'y a plus de rang au-dessus. */
-const DAYS_CHOICES: FoldSelectOption<string>[] = [0, 1, 2, 3, 7].map((days) => ({
-  value: String(days),
-  label: days === 7 ? 'Une semaine avant' : daysPhrase(days),
-}));
+/** Le délai le plus long que le serveur accepte (`orderTimeLimitPayloadSchema`). */
+const MAX_DAYS_BEFORE = 14;
+
+/** Un délai saisi est un nombre entier de jours, de 0 (le jour même) à {@link MAX_DAYS_BEFORE}. */
+function isValidDays(days: number | null): days is number {
+  return days !== null && Number.isInteger(days) && days >= 0 && days <= MAX_DAYS_BEFORE;
+}
 
 /**
  * Panneau **Limite de commande** — pose ou modifie la limite d'un produit ou
@@ -90,9 +94,12 @@ const DAYS_CHOICES: FoldSelectOption<string>[] = [0, 1, 2, 3, 7].map((days) => (
     FoldButtonComponent,
     FoldCalloutComponent,
     FoldCheckboxComponent,
+    FoldFieldsetComponent,
     FoldListboxComponent,
+    FoldNumberInputComponent,
   ],
   templateUrl: './limit-panel.html',
+  styleUrl: './limit-panel.scss',
 })
 export class LimitPanel {
   private readonly api = inject(OrderTimeLimitsService);
@@ -103,7 +110,7 @@ export class LimitPanel {
 
   readonly data = input<LimitPanelData | undefined>(undefined);
 
-  protected readonly daysChoices = DAYS_CHOICES;
+  protected readonly maxDays = MAX_DAYS_BEFORE;
   protected readonly scopeChoices = SCOPE_CHOICES;
   /** La portée choisie ici, quand l'ouverture ne l'a pas fixée. */
   protected readonly pickedType = signal<LimitScopeType>('category');
@@ -188,7 +195,7 @@ export class LimitPanel {
       ? { label, rest: ', à ses sous-familles et à tous leurs produits, sauf les produits exclus.' }
       : { label, rest: ', et à toutes ses déclinaisons.' };
   });
-  protected readonly daysBefore = signal<string>('1');
+  protected readonly daysBefore = signal<number | null>(1);
   protected readonly time = signal<string>('');
   /** L'équipe peut passer outre. Décochée par défaut : une limite neuve est infranchissable. */
   protected readonly staffMayExceed = signal(false);
@@ -217,14 +224,23 @@ export class LimitPanel {
 
   /** Le délai ET l'heure : une limite qui n'en dit qu'un ne refuserait rien. */
   protected readonly canSubmit = computed(
-    () => this.scope() !== null && this.time().trim() !== '' && !this.saving(),
+    () =>
+      this.scope() !== null &&
+      isValidDays(this.daysBefore()) &&
+      this.time().trim() !== '' &&
+      !this.saving(),
   );
 
-  protected readonly recap = computed(() =>
-    this.time().trim() === ''
-      ? "Renseignez l'heure : une limite dit le délai et l'heure."
-      : `Commander au plus tard ${daysPhrase(Number(this.daysBefore())).toLowerCase()}, avant ${this.time()}. Passé cette heure, la commande est refusée.`,
-  );
+  protected readonly recap = computed(() => {
+    const days = this.daysBefore();
+    if (!isValidDays(days)) {
+      return `Renseignez le délai : un nombre de jours, de 0 (le jour même) à ${MAX_DAYS_BEFORE}.`;
+    }
+    if (this.time().trim() === '') {
+      return "Renseignez l'heure : une limite dit le délai et l'heure.";
+    }
+    return `Commander au plus tard ${daysPhrase(days).toLowerCase()}, avant ${this.time()}. Passé cette heure, la commande est refusée.`;
+  });
 
   /** La lignée du produit visé et les limites qui la portent, ou `null`. */
   private readonly effective = signal<EffectiveOrderTimeLimitView | null>(null);
@@ -244,11 +260,13 @@ export class LimitPanel {
     const effective = this.effective();
     const productId = this.productId();
     const time = this.time().trim();
+    const days = this.daysBefore();
     if (
       effective === null ||
       productId === null ||
       effective.productId !== productId ||
-      time === ''
+      time === '' ||
+      !isValidDays(days)
     ) {
       return null;
     }
@@ -268,7 +286,7 @@ export class LimitPanel {
       return null;
     }
     const standing = compareToFamily(
-      { daysBefore: Number(this.daysBefore()), time },
+      { daysBefore: days, time },
       family,
       productId,
       strictest.from.id,
@@ -314,7 +332,7 @@ export class LimitPanel {
       if (rule === null) {
         return;
       }
-      this.daysBefore.set(String(rule.daysBefore ?? 1));
+      this.daysBefore.set(rule.daysBefore ?? 1);
       this.time.set(rule.time ?? '');
       this.staffMayExceed.set(rule.staffMayExceed);
     });
@@ -341,7 +359,7 @@ export class LimitPanel {
     this.pickedId.set(value);
   }
 
-  protected onDays(value: string): void {
+  protected onDays(value: number | null): void {
     this.daysBefore.set(value);
   }
 
@@ -351,13 +369,14 @@ export class LimitPanel {
 
   protected async submit(): Promise<void> {
     const scope = this.scope();
-    if (!this.canSubmit() || scope === null) {
+    const days = this.daysBefore();
+    if (!this.canSubmit() || scope === null || !isValidDays(days)) {
       return;
     }
     this.saving.set(true);
     const payload: OrderTimeLimitPayload = {
       scope: { type: scope.type, id: scope.id },
-      daysBefore: Number(this.daysBefore()),
+      daysBefore: days,
       time: this.time(),
       graceMinutes: null,
       staffMayExceed: this.staffMayExceed(),
