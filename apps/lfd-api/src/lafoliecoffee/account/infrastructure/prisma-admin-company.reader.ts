@@ -17,6 +17,7 @@ import { warningInputOf, warningPayersOf } from "./company-warnings.projection.j
 import { transferPayersAmong } from "./transfer-payers.projection.js";
 import { dossierPieces } from "../domain/services/dossier-pieces.js";
 import { requiresVatNumber } from "../domain/value-objects/vat-liability.js";
+import { isPublicFormeJuridique } from "../domain/value-objects/public-nature.js";
 import { projectContacts } from "./company-contacts.projection.js";
 import { CHORUS_SERVICE_SELECT, chorusServiceView } from "./chorus-service.projection.js";
 import { readHierarchy } from "./company-hierarchy.projection.js";
@@ -174,7 +175,7 @@ export class PrismaAdminCompanyReader extends AdminCompanyReader {
     // carnet n'a pas de lien de base vers un compte, et c'est l'e-mail qui les
     // relie — la même clé humaine que le commercial a sous les yeux.
     const now = this.clock.now();
-    const [addresses, book, access, hierarchy, transfer] = await Promise.all([
+    const [addresses, book, access, hierarchy, transfer, payerIsPublic] = await Promise.all([
       this.addresses.read(companyId),
       this.prisma.companyContact.findMany({
         where: { companyId },
@@ -203,6 +204,7 @@ export class PrismaAdminCompanyReader extends AdminCompanyReader {
       }),
       readHierarchy(this.prisma, row, now),
       transferPayersAmong(this.prisma, warningPayersOf([row], now), now),
+      this.chorusServicePayerIsPublic(row, now),
     ]);
     return {
       ...toView(row, this.clock.now(), transfer),
@@ -243,9 +245,28 @@ export class PrismaAdminCompanyReader extends AdminCompanyReader {
       hierarchy,
       chorusRouting: chorusRoutingView(row.chorusRouting),
       chorusService: chorusServiceView(row.chorusService),
+      chorusServicePayerIsPublic: payerIsPublic,
       archivedByName: row.archivedAt === null ? null : row.archivedByName,
       archiveReason: row.archivedAt === null ? null : row.archiveReason,
     };
+  }
+
+  /**
+   * Le payeur d'aujourd'hui est-il public ? Le principal dont la société suit
+   * la facturation à `now`, sinon elle-même — la règle de
+   * `RecordChorusServiceHandler`, lue ici pour que la carte ne s'offre pas
+   * là où le geste serait refusé.
+   */
+  private async chorusServicePayerIsPublic(row: CompanyRow, now: Date): Promise<boolean> {
+    const billing = row.follows.find((follow) => follow.validFrom <= now) ?? null;
+    if (billing === null) {
+      return isPublicFormeJuridique(row.formeJuridique);
+    }
+    const payer = await this.prisma.company.findUnique({
+      where: { id: billing.parentId },
+      select: { formeJuridique: true },
+    });
+    return payer !== null && isPublicFormeJuridique(payer.formeJuridique);
   }
 }
 

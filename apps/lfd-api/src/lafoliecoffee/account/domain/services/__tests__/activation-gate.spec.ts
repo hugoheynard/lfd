@@ -55,6 +55,7 @@ function detail(over: Partial<AdminCompanyDetailView> = {}): AdminCompanyDetailV
     suspensionCause: null,
     contacts: [],
     chorusService: null,
+    chorusServicePayerIsPublic: false,
     chorusRouting: null,
     fulfillmentPreference: {
       method: null,

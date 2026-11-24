@@ -46,6 +46,7 @@ function company(hierarchy: Partial<CompanyHierarchyView> = {}): AdminCompanyDet
     piecesReached: [],
     chorusRouting: null,
     chorusService: null,
+    chorusServicePayerIsPublic: false,
     activatedAt: null,
     warnings: [],
     activation: null,
@@ -283,5 +284,26 @@ describe('InformationsPage — le mode de facturation', () => {
         ? payment.compareDocumentPosition(card) & Node.DOCUMENT_POSITION_FOLLOWING
         : 0,
     ).toBeTruthy();
+  });
+});
+
+describe('InformationsPage — la carte du service Chorus', () => {
+  const SITE = [{ aspect: 'billing' as const, since: '2026-09-10T08:00:00.000Z' }];
+
+  /**
+   * Régression : la carte s'offrait sur tout site qui suivait la facturation
+   * d'un principal, même privé, et le serveur refusait l'enregistrement.
+   */
+  it('ne s’offre pas sur un site dont le payeur est privé', async () => {
+    const host = (await boot(child(SITE))).nativeElement as HTMLElement;
+
+    expect(host.querySelector('app-chorus-service-card')).toBeNull();
+  });
+
+  it('s’offre quand le serveur dit le payeur public', async () => {
+    const host = (await boot({ ...child(SITE), chorusServicePayerIsPublic: true }))
+      .nativeElement as HTMLElement;
+
+    expect(host.querySelector('app-chorus-service-card')).not.toBeNull();
   });
 });

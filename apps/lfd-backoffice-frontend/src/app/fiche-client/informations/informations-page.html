@@ -238,15 +238,17 @@
               (changed)="fiche.reload()"
             />
           }
-          <!-- Le service Chorus d'une société qui commande : un organisme public,
-               ou un site facturé à son principal (le serveur juge le payeur). -->
-          @if (showsChorusService() && fiche.company(); as c) {
-            <app-chorus-service-card
-              [company]="c"
-              [canManage]="canManage()"
-              (changed)="fiche.reload()"
-            />
-          }
+        }
+
+        <!-- Le service Chorus d'une société qui commande, sous son identité :
+             un organisme public, ou un site — l'unité sous le SIRET de son
+             principal — dont le payeur est public (le serveur le dit). -->
+        @if (!fiche.draft() && showsChorusService() && fiche.company(); as c) {
+          <app-chorus-service-card
+            [company]="c"
+            [canManage]="canManage()"
+            (changed)="fiche.reload()"
+          />
         }
 
         <!-- Ce que le compte EST, juste sous son identité : une holding qui

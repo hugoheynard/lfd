@@ -204,6 +204,34 @@ describe("la fiche du service Chorus d'une unité", () => {
   });
 });
 
+describe("la fiche staff dit si le payeur admet le service Chorus", () => {
+  const payerIsPublic = async (companyId: string): Promise<unknown> =>
+    jsonBody<{ chorusServicePayerIsPublic: unknown }>(
+      await ctx.asSub(E2E_STAFF_SUB).get(`/admin/companies/${companyId}`).expect(200),
+    ).chorusServicePayerIsPublic;
+
+  it("vrai sur une unité facturée à un principal public, et sur le principal", async () => {
+    const principalId = await publicPrincipal("Armée de terre", "ARMEE");
+    const unitId = await unitUnder(principalId);
+
+    expect(await payerIsPublic(unitId)).toBe(true);
+    expect(await payerIsPublic(principalId)).toBe(true);
+  });
+
+  it("faux sur une société privée, et sur un site facturé à un principal privé", async () => {
+    const principal = await createCompany(ctx.prisma, { raisonSociale: "Chalets SAS" });
+    const site = await createCompany(ctx.prisma, {
+      raisonSociale: "Chalet Arolle",
+      siret: "",
+      siren: "",
+    });
+    await followBilling(site.id, principal.id, daysAgo(30));
+
+    expect(await payerIsPublic(principal.id)).toBe(false);
+    expect(await payerIsPublic(site.id)).toBe(false);
+  });
+});
+
 describe("la vue des exigences de l'engagement", () => {
   it("propose le code et l'engagement de l'unité, avec les exigences du principal", async () => {
     const principalId = await publicPrincipal("Armées", "PLATEFORME");

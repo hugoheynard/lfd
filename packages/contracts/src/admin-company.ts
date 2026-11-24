@@ -218,6 +218,13 @@ export interface AdminCompanyDetailView extends AdminCompanyView {
    */
   readonly chorusService: ChorusServiceView | null;
 
+  /**
+   * Le payeur d'aujourd'hui — le principal dont la société suit la facturation,
+   * sinon elle-même — est un organisme public : la fiche du service Chorus
+   * peut se poser. La même règle que le serveur applique au geste.
+   */
+  readonly chorusServicePayerIsPublic: boolean;
+
   /** Qui l'a supprimé, nom figé ce jour-là ; `null` si inconnu de l'annuaire ou non supprimé. */
   readonly archivedByName: string | null;
   /** Le motif de la suppression ; `null` si le compte n'est pas supprimé. */

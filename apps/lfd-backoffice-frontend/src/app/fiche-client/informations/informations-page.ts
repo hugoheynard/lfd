@@ -204,20 +204,17 @@ export class InformationsPage {
   );
 
   /**
-   * La carte du service Chorus : sur un organisme public, sur un site qui suit
-   * la facturation d'un principal (la nature du principal n'est pas servie ici,
-   * le serveur refuse un payeur privé), et partout où une fiche est déjà posée.
+   * La carte du service Chorus : là où le payeur d'aujourd'hui est public
+   * (la société, ou le principal dont elle suit la facturation — le serveur
+   * le dit), et partout où une fiche est déjà posée, pour qu'elle reste
+   * lisible après un changement de payeur.
    */
   protected readonly showsChorusService = computed(() => {
     const company = this.fiche.company();
     if (company === null) {
       return false;
     }
-    return (
-      this.isPublic() ||
-      company.chorusService !== null ||
-      company.hierarchy.follows.some((f) => f.aspect === 'billing')
-    );
+    return company.chorusServicePayerIsPublic || company.chorusService !== null;
   });
 
   /** Le mode choisi à l'ouverture — exigé, sauf quand il n'y a rien à choisir ici. */

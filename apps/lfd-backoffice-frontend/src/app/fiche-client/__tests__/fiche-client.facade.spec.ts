@@ -48,6 +48,7 @@ const COMPANY: AdminCompanyDetail = {
   piecesReached: [],
   chorusRouting: null,
   chorusService: null,
+  chorusServicePayerIsPublic: false,
   activatedAt: null,
   warnings: [],
   vatNumberRequired: true,

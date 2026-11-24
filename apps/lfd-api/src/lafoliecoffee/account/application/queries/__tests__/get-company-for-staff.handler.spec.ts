@@ -63,6 +63,7 @@ const detail: AdminCompanyDetailView = {
   suspensionCause: null,
   contacts: [],
   chorusService: null,
+  chorusServicePayerIsPublic: false,
   chorusRouting: null,
   fulfillmentPreference: {
     method: null,
