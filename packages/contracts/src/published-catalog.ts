@@ -83,6 +83,13 @@ export interface PublishedVariantView {
   readonly reviewPending: { readonly pro: boolean; readonly public: boolean };
   readonly pro: PublishedProCellView;
   readonly public: PublishedPublicCellView;
+  /**
+   * L'audience de CETTE déclinaison, sur laquelle ses deux cellules sont
+   * jugées (`plan-audience-par-declinaison.md`, AD1) — celle de la fiche
+   * quand la déclinaison la suit. Le serveur l'envoie toujours ; facultative
+   * pour que les doublures d'écran d'avant elle restent valides.
+   */
+  readonly audience?: CatalogItemAudience | undefined;
 }
 
 /** Une fiche reçue du référentiel, vendue ou non. */

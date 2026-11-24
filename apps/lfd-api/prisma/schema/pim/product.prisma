@@ -300,6 +300,12 @@ model ProductVariant {
   /// (V5, tenu par l'agrégat `Product`).
   customRecipe Boolean @default(false) @map("custom_recipe")
 
+  /// **À qui la déclinaison vend, quand elle ne suit pas sa fiche** — `pro` |
+  /// `public` | `both` | `resupply`, ou `NULL` : elle suit sa fiche, qui suit
+  /// peut-être sa famille (`plan-audience-par-declinaison.md`, A1). Le défaut
+  /// n'en porte jamais (A2, tenu par l'agrégat `Product`). `CHECK` en base.
+  audience String?
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
   updatedBy String?  @map("updated_by")

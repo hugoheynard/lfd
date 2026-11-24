@@ -503,6 +503,18 @@ export const REFERENTIAL_CATALOGUE_FACTS = {
     }),
   ),
   /**
+   * À qui une déclinaison vend : sa propre clientèle, ou `null` — elle suit sa
+   * fiche (`plan-audience-par-declinaison.md`, A8). Le défaut n'en porte
+   * jamais : sa fiche décide pour lui.
+   */
+  "product.variant_audience_changed": fact(
+    payload({
+      subjectLabel: subjectLabel(),
+      variant: named("variant"),
+      audience: fromTo(catalogueAudience().nullable()),
+    }),
+  ),
+  /**
    * **La quantité minimale d'une déclinaison** — son minimum pro et son
    * minimum public en pièces, ou « suit le défaut » (`plan-quantite-minimale.md`,
    * M1). Avant et après en entier. Par audience seulement : aucun contexte.

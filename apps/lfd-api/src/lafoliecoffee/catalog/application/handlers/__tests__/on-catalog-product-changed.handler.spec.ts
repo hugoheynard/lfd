@@ -19,7 +19,6 @@ import {
 import { RecordingOrderLimits } from "../../../domain/ports/__tests__/recording-order-limits.js";
 import { OrderLimitsRefresher } from "../../order-limits-refresher.service.js";
 import { CatalogProductFactsProjection } from "../../../domain/ports/catalog-product-facts.projection.js";
-import type { CatalogAudience } from "../../../domain/served-to.js";
 import { OnCatalogCategoryChangedHandler } from "../on-catalog-category-changed.handler.js";
 import { OnCatalogProductChangedHandler } from "../on-catalog-product-changed.handler.js";
 
@@ -105,7 +104,6 @@ class SpyingProduct extends CatalogProductFactsProjection {
   readonly calls: string[] = [];
   entry: ReceivedCatalogProduct | null = null;
   onSale: readonly ReceivedCatalogItem[] = [];
-  audience: CatalogAudience | null = null;
   kept: readonly string[] = [];
 
   constructor(private readonly newer: boolean) {
@@ -120,10 +118,9 @@ class SpyingProduct extends CatalogProductFactsProjection {
     this.calls.push(`family:${family.id}`);
     return Promise.resolve();
   }
-  putOnSale(items: readonly ReceivedCatalogItem[], audience: CatalogAudience): Promise<void> {
+  putOnSale(items: readonly ReceivedCatalogItem[]): Promise<void> {
     this.calls.push("onSale");
     this.onSale = items;
-    this.audience = audience;
     return Promise.resolve();
   }
   withdrawOthers(productId: string, keptSkus: readonly string[]): Promise<void> {
@@ -169,8 +166,27 @@ describe("OnCatalogProductChangedHandler", () => {
       priceMillicents: 100_000,
       orderTimeLimit: null,
     });
-    expect(projection.audience).toBe("pro");
+    // Un fait sans audience de déclinaison : l'article prend celle de l'en-tête (A6).
+    expect(projection.onSale[0]?.audience).toBe("pro");
     expect(projection.kept).toEqual(["VIE-1-1"]);
+  });
+
+  /** `plan-audience-par-declinaison.md`, A6 : présente, l'audience de la déclinaison gagne. */
+  it("met chaque article en vente à l'audience de SA déclinaison", async () => {
+    const projection = new SpyingProduct(true);
+
+    await deliver(
+      projection,
+      productFact("active", {
+        audience: "public",
+        variants: [VARIANT, { ...VARIANT, id: "var_2", sku: "VIE-1-2", audience: "resupply" }],
+      }),
+    );
+
+    expect(projection.onSale.map((item) => [item.sku, item.audience])).toEqual([
+      ["VIE-1-1", "public"],
+      ["VIE-1-2", "resupply"],
+    ]);
   });
 
   /** Un fait plus ancien que la ligne — rejoué, ou livré à l'envers — n'écrit rien d'autre. */

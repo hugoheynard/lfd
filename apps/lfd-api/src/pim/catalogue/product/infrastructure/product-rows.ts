@@ -61,6 +61,7 @@ interface VariantRow extends MinQuantityColumns {
   nutritionFollowsDefault: boolean;
   minQuantityFollowsDefault: boolean;
   customRecipe: boolean;
+  audience: string | null;
   allergenSheet: AllergensRow | null;
   nutritionValues: NutritionRow | null;
 }
@@ -124,6 +125,7 @@ function toVariant(row: VariantRow): VariantSnapshot {
     minQuantities: minQuantitiesOf(row),
     minQuantityFollowsDefault: row.minQuantityFollowsDefault,
     customRecipe: row.customRecipe,
+    audience: row.audience === null ? null : audience(row.audience),
     // 🔴 Pas de ligne = personne n'a déclaré (`null`) ; une ligne, même à
     // tableau vide, est une AFFIRMATION (« aucun allergène »). C'est tout
     // l'intérêt d'une table séparée : le tri-état est structurel.

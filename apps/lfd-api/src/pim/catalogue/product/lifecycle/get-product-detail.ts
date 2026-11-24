@@ -141,6 +141,7 @@ export class GetProductDetailHandler implements IQueryHandler<
         ...variant,
         internalLabel: product.variantInternalLabel(variant.id),
         customRecipe: variant.customRecipe ?? false,
+        audience: variant.audience ?? null,
       })),
       ...audienceView(product, category.audience),
       editorial,

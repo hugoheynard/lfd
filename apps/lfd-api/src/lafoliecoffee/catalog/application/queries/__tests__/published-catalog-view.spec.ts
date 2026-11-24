@@ -163,6 +163,7 @@ describe("publishedCatalogViewOf", () => {
         reviewPending: { pro: false, public: false },
         pro: { state: "en_vente", htMillicents: 120_000 },
         public: { state: "en_vente", ttcCents: 180 },
+        audience: "both",
       },
     ]);
   });
@@ -179,6 +180,7 @@ describe("publishedCatalogViewOf", () => {
         reviewPending: { pro: false, public: false },
         pro: { state: "incomplet", htMillicents: null },
         public: { state: "incomplet", ttcCents: null },
+        audience: "both",
       },
     ]);
   });
@@ -271,5 +273,71 @@ describe("publishedCatalogViewOf", () => {
     const croissant = weighed.entries.find((e) => e.productSku === "VIE-1");
     expect(croissant?.variants.find((v) => v.sku === "VIE-1-1")?.saleUnit).toBe("weight");
     expect(view.entries.find((e) => e.productSku === "VIE-2")?.variants[0]?.saleUnit).toBeNull();
+  });
+});
+
+/**
+ * `plan-audience-par-declinaison.md`, AD1 : chaque cellule se juge sur
+ * l'audience de SA déclinaison — la fiche publique du cookie, sa formule
+ * réservée au réassort.
+ */
+describe("publishedCatalogViewOf — l'audience de chaque déclinaison", () => {
+  const view = publishedCatalogViewOf({
+    families: [],
+    entries: [
+      entry({
+        audience: "public",
+        variants: [
+          {
+            sku: "VIE-1-2",
+            name: "Formule",
+            isDefault: false,
+            proHtMillicents: null,
+            publicTtcCents: null,
+            audience: "resupply",
+          },
+        ],
+      }),
+    ],
+    items: [item({ audience: "public" })],
+  });
+  const variants = view.entries[0]?.variants ?? [];
+
+  it("juge l'article en vente sur sa propre audience", () => {
+    expect(variants.find((v) => v.sku === "VIE-1-1")).toMatchObject({
+      audience: "public",
+      pro: { state: "pas_vendu" },
+      public: { state: "en_vente" },
+    });
+  });
+
+  it("juge la déclinaison proposée sur l'audience que l'entrée range pour elle", () => {
+    expect(variants.find((v) => v.sku === "VIE-1-2")).toMatchObject({
+      audience: "resupply",
+      pro: { state: "pas_vendu" },
+      public: { state: "pas_vendu" },
+    });
+  });
+
+  it("une entrée écrite avant l'audience par déclinaison se lit à l'audience de la fiche", () => {
+    const old = publishedCatalogViewOf({
+      families: [],
+      entries: [
+        entry({
+          audience: "pro",
+          variants: [
+            {
+              sku: "VIE-1-3",
+              name: "Vieille",
+              isDefault: false,
+              proHtMillicents: 1,
+              publicTtcCents: null,
+            },
+          ],
+        }),
+      ],
+      items: [],
+    });
+    expect(old.entries[0]?.variants[0]?.audience).toBe("pro");
   });
 });

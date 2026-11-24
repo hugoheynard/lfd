@@ -73,7 +73,7 @@ export class ProductCompleteness {
       vatPercents,
       rules,
       citedAllergens,
-      effectiveAudience(this.ownAudience, categoryAudience),
+      effectiveAudience(null, this.ownAudience, categoryAudience),
     );
   }
 

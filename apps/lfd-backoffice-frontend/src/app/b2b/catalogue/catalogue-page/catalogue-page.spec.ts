@@ -334,6 +334,26 @@ describe('CataloguePage — la colonne Audience', () => {
     expect(cell(fixture, '.audience-cell')).toContain('fiche');
   });
 
+  it('dit l’audience de la déclinaison quand le fait la porte, sans l’origine de la fiche', async () => {
+    const api = new FakeCatalogue();
+    api.view = {
+      ...viewOf(api.items),
+      entries: [
+        entry({
+          audience: 'both',
+          audienceInherited: true,
+          variants: [variantView({ audience: 'pro' })],
+        }),
+      ],
+    };
+    const fixture = await render(api);
+
+    const audience = cell(fixture, '.audience-cell');
+    expect(audience).toContain('Pros');
+    expect(audience).not.toContain('et public');
+    expect(audience).not.toContain('famille');
+  });
+
   it('ne dit rien de l’origine sur un fait d’avant le lot 3', async () => {
     const api = new FakeCatalogue();
     api.view = { ...viewOf(api.items), entries: [entry({ audienceInherited: null })] };

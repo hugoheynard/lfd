@@ -180,11 +180,23 @@ export class ShelfCatalogue {
   protected readonly rowTone = (row: PublishedRow): FoldTableTone =>
     row.item?.vatRatePercent === null ? 'warning' : null;
 
+  /**
+   * L'audience de la LIGNE : celle de sa déclinaison quand le fait la porte
+   * (`plan-audience-par-declinaison.md`, AD1), sinon celle de la fiche.
+   */
   protected audience(row: PublishedRow): string {
-    return audienceLabel(row.entry.audience);
+    return audienceLabel(row.variant.audience ?? row.entry.audience);
   }
 
+  /**
+   * D'où vient l'audience. Une déclinaison qui vend à une autre clientèle que
+   * sa fiche y déroge : l'origine de la fiche ne la dirait pas, on se tait.
+   */
   protected origin(row: PublishedRow): string | null {
+    const own = row.variant.audience;
+    if (own !== undefined && own !== row.entry.audience) {
+      return null;
+    }
     return audienceOrigin(row.entry.audienceInherited);
   }
 

@@ -173,7 +173,7 @@ function entryVariantsOf(raw: unknown): readonly EntryVariant[] {
     if (value === null || typeof value !== "object") {
       return [];
     }
-    const { sku, name, isDefault, proHtMillicents, publicTtcCents } = value as Record<
+    const { sku, name, isDefault, proHtMillicents, publicTtcCents, audience } = value as Record<
       string,
       unknown
     >;
@@ -187,7 +187,10 @@ function entryVariantsOf(raw: unknown): readonly EntryVariant[] {
     }
     // `null` = pas de prix pro (2026-10-27) — lu tel quel, jamais zéro.
     const ttc = typeof publicTtcCents === "number" ? publicTtcCents : null;
-    return [{ sku, name, isDefault, proHtMillicents, publicTtcCents: ttc }];
+    // L'audience de la déclinaison (AD1) : absente d'une entrée d'avant elle.
+    const own =
+      typeof audience === "string" ? (catalogAudienceOf(audience) ?? undefined) : undefined;
+    return [{ sku, name, isDefault, proHtMillicents, publicTtcCents: ttc, audience: own }];
   });
 }
 

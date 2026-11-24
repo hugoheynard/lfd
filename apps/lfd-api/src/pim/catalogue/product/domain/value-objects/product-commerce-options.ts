@@ -107,12 +107,13 @@ export class ProductCommerceOptions {
   }
 
   /**
-   * Les réglages d'une fiche **née d'un détachement** : l'opération, le froid
-   * et l'audience de la fiche d'origine, et les vignettes montrées — son défaut
+   * Les réglages d'une fiche **née d'un détachement** : l'opération et le
+   * froid de la fiche d'origine, l'audience propre de la déclinaison sinon
+   * celle que la fiche d'origine pose, et les vignettes montrées — son défaut
    * garde le sur mesure de la déclinaison qu'il était, si bien que le
    * détachement n'ouvre à tous les pros aucune recette réservée.
    */
-  forDetachedProduct(): ProductCommerceOptions {
-    return this.withVariantsAsTiles(true);
+  forDetachedProduct(variantAudience: Audience | null): ProductCommerceOptions {
+    return this.withVariantsAsTiles(true).withAudience(variantAudience ?? this.audience);
   }
 }

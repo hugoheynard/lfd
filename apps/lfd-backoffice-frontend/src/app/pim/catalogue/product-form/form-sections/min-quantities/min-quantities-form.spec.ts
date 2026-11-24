@@ -20,6 +20,7 @@ function variant(id: string, overrides: Partial<Variant> = {}): Variant {
     isDefault: false,
     isDiscontinued: false,
     customRecipe: false,
+    audience: null,
     position: 0,
     priceCents: null,
     weightGrams: null,

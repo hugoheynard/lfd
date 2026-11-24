@@ -14,7 +14,7 @@ export interface AudienceView {
  */
 export function audienceView(product: Product, categoryAudience: Audience): AudienceView {
   return {
-    effectiveAudience: effectiveAudience(product.audience, categoryAudience),
+    effectiveAudience: effectiveAudience(null, product.audience, categoryAudience),
     audienceInherited: product.audience === null,
   };
 }

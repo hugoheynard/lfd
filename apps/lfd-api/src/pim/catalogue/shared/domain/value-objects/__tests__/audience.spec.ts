@@ -14,15 +14,15 @@ describe("Audience — à qui l'on vend", () => {
 
 describe("effectiveAudience — la fiche d'abord, la famille ensuite", () => {
   it("rend celle de la famille quand la fiche hérite", () => {
-    expect(effectiveAudience(null, "pro")).toBe("pro");
+    expect(effectiveAudience(null, null, "pro")).toBe("pro");
   });
 
   it("rend celle de la fiche quand elle déroge, même plus large", () => {
-    expect(effectiveAudience("both", "pro")).toBe("both");
+    expect(effectiveAudience(null, "both", "pro")).toBe("both");
   });
 
   it("rend celle de la fiche quand elle déroge, plus étroite", () => {
-    expect(effectiveAudience("public", "both")).toBe("public");
+    expect(effectiveAudience(null, "public", "both")).toBe("public");
   });
 });
 

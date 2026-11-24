@@ -28,9 +28,11 @@ export const PROJECT_CATALOG_PRODUCT = "catalog.project-catalog-product";
  * 2. l'entrée `catalog_entries` s'écrit **si ce fait est plus récent** que la
  *    ligne (`applied_seq`) — sinon rien d'autre ne s'écrit : un fait ancien
  *    rejoué, ou livré deux fois, est inerte ;
- * 3. les déclinaisons vendables d'une fiche active sont mises en vente — une
- *    ligne NEUVE dont l'audience contient le public naît « à valider pour la
- *    boutique publique » (lot 3), jamais une ligne existante ;
+ * 3. les déclinaisons vendables d'une fiche active sont mises en vente, chacune
+ *    à SON audience — une ligne NEUVE naît « à valider » pour chaque clientèle
+ *    que son audience contient (lot 3), et une ligne existante le redevient
+ *    quand son audience s'élargit à une clientèle (Q1 de
+ *    `plan-audience-par-declinaison.md`, décidé par Hugo le 2026-11-24) ;
  * 4. tout autre article de la fiche encore en vente est retiré — fiche
  *    inactive ou archivée, déclinaison devenue incomplète, SKU renommé ;
  * 5. les limites de commande des articles en vente de la fiche sont
@@ -68,7 +70,7 @@ export class OnCatalogProductChangedHandler implements DurableSubscriber {
       return;
     }
     const onSale = itemsOnSale(product);
-    await this.projection.putOnSale(onSale, product.audience);
+    await this.projection.putOnSale(onSale);
     await this.projection.withdrawOthers(
       product.productId,
       onSale.map((item) => item.sku),

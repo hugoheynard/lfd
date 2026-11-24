@@ -2,6 +2,8 @@ import {
   awaitsReview,
   entryVariantsOf,
   itemsOnSale,
+  reopenedReviewScope,
+  reviewReopenedBy,
   type ReceivedCatalogItem,
   type ReceivedCatalogProduct,
 } from "../catalog-product-facts.js";
@@ -29,6 +31,7 @@ function product(status: ReceivedCatalogProduct["status"]): ReceivedCatalogProdu
 function fact(): ReceivedCatalogItem {
   return {
     variantId: "var_1",
+    audience: "both",
     nameTranslations: null,
     noteTranslations: null,
     sku: ITEM.sku,
@@ -87,6 +90,53 @@ describe("awaitsReview", () => {
   });
 });
 
+/**
+ * Q1 de `plan-audience-par-declinaison.md` (Hugo, 2026-11-24) : l'attente se
+ * repose quand l'audience d'un article s'élargit à une clientèle.
+ */
+describe("reviewReopenedBy", () => {
+  it("rouvre l'attente publique quand l'audience s'élargit au public", () => {
+    expect(reviewReopenedBy("pro", "both", "public")).toBe(true);
+    expect(reviewReopenedBy("resupply", "public", "public")).toBe(true);
+  });
+
+  it("rouvre l'attente pro quand l'audience s'élargit aux pros", () => {
+    expect(reviewReopenedBy("public", "both", "pro")).toBe(true);
+    expect(reviewReopenedBy("resupply", "pro", "pro")).toBe(true);
+  });
+
+  it("ne rouvre rien quand la clientèle était déjà servie, ou n'est pas atteinte", () => {
+    expect(reviewReopenedBy("both", "public", "public")).toBe(false);
+    expect(reviewReopenedBy("public", "resupply", "public")).toBe(false);
+    expect(reviewReopenedBy("pro", "pro", "public")).toBe(false);
+    expect(reviewReopenedBy("pro", "public", "pro")).toBe(false);
+  });
+
+  it("une colonne vide se lit « les deux » : elle ne s'élargit jamais", () => {
+    expect(reviewReopenedBy(null, "both", "public")).toBe(false);
+  });
+});
+
+/** La même règle, dans la forme de l'écriture conditionnée que l'adaptateur pose. */
+describe("reopenedReviewScope", () => {
+  const items = [
+    { ...fact(), sku: "A", audience: "both" as const },
+    { ...fact(), sku: "B", audience: "resupply" as const },
+    { ...fact(), sku: "C", audience: "public" as const },
+  ];
+
+  it("vise les articles qui servent désormais la clientèle, depuis les audiences qui ne la servaient pas", () => {
+    expect(reopenedReviewScope(items, "public")).toEqual({
+      skus: ["A", "C"],
+      from: ["pro", "resupply"],
+    });
+    expect(reopenedReviewScope(items, "pro")).toEqual({
+      skus: ["A"],
+      from: ["public", "resupply"],
+    });
+  });
+});
+
 /** Lot 3 : ce que l'entrée de la fiche range de ses déclinaisons complètes. */
 describe("entryVariantsOf", () => {
   it("garde le SKU, le nom, le défaut et les deux prix proposés", () => {
@@ -97,6 +147,7 @@ describe("entryVariantsOf", () => {
       isDefault: true,
       proHtMillicents: 100_000,
       publicTtcCents: 120,
+      audience: "both",
     });
   });
 });

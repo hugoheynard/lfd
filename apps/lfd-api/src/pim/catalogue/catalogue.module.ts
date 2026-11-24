@@ -68,6 +68,7 @@ import { SetProductOperationOnlyHandler } from "./product/sale/set-product-opera
 import { SetProductColdRequirementHandler } from "./product/sale/set-product-cold-requirement.js";
 import { SetProductVariantsAsTilesHandler } from "./product/sale/set-product-variants-as-tiles.js";
 import { SetVariantCustomRecipeHandler } from "./product/variants/set-variant-custom-recipe.js";
+import { SetVariantAudienceHandler } from "./product/variants/set-variant-audience.js";
 import { SetProductVatHandler } from "./product/sale/set-product-vat.js";
 import { UpdateProductEditorialHandler } from "./product/media/update-product-editorial.js";
 import { UpdateProductIdentityHandler } from "./product/lifecycle/update-product-identity.js";
@@ -105,6 +106,7 @@ import { ProductMinQuantitiesController } from "./product/http/product-min-quant
 import { ProductVariantsAsTilesController } from "./product/http/product-variants-as-tiles.controller.js";
 import { ProductDeletionController } from "./product/http/product-deletion.controller.js";
 import { VariantCustomRecipeController } from "./product/http/variant-custom-recipe.controller.js";
+import { VariantAudienceController } from "./product/http/variant-audience.controller.js";
 import { ProductVariantLifecycleController } from "./product/http/product-variant-lifecycle.controller.js";
 import { ReferenceController } from "./shared/http/reference.controller.js";
 import { PrismaCategoryRepository } from "./category/infrastructure/prisma-category.repository.js";
@@ -158,6 +160,7 @@ import { PrismaSkuAvailability } from "./product/infrastructure/prisma-sku-avail
     ProductMinQuantitiesController,
     ProductVariantsAsTilesController,
     VariantCustomRecipeController,
+    VariantAudienceController,
     ProductVariantLifecycleController,
     ProductHistoryController,
     ReferenceController,
@@ -190,6 +193,7 @@ import { PrismaSkuAvailability } from "./product/infrastructure/prisma-sku-avail
     SetProductColdRequirementHandler,
     SetProductVariantsAsTilesHandler,
     SetVariantCustomRecipeHandler,
+    SetVariantAudienceHandler,
     SetProductVatHandler,
     UpdateProductEditorialHandler,
     SaveVariantAllergensHandler,

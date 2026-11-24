@@ -2168,6 +2168,13 @@ export class ProductFormStore {
     );
   }
 
+  /** L'audience propre d'une déclinaison, posée tout de suite (et remise sur un refus). */
+  setVariantAudience(variantId: string, audience: CatalogueAudience | null): void {
+    this.variantsValue.update((variants) =>
+      variants.map((variant) => (variant.id === variantId ? { ...variant, audience } : variant)),
+    );
+  }
+
   /** **Archive une déclinaison** — puis relit : l'onglet disparaît, la liste à part la montre. */
   discontinueVariant(variantId: string): Promise<boolean> {
     return this.runVariantGesture((id) => this.products.discontinueVariant(id, variantId));

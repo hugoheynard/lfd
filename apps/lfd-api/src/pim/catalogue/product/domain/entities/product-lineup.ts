@@ -1,3 +1,4 @@
+import type { Audience } from "../../../shared/domain/value-objects/audience.js";
 import type { LocalizedText } from "../../../shared/domain/value-objects/localized-text.js";
 import type { AllergenDeclaration } from "../value-objects/nutrition-declaration.js";
 import type { MinQuantities } from "../value-objects/min-quantities.js";
@@ -5,6 +6,11 @@ import type { SaleUnitClearance } from "../value-objects/sale-reference-usage.js
 import type { DefaultVariantChange } from "./product-state.js";
 import { VariantLineup, type NewVariantInput } from "./variant-lineup.js";
 import type { Sku } from "../value-objects/sku.value-object.js";
+import {
+  changeVariantAudience,
+  refuseUntiledOwnAudiences,
+  refuseUntiledRestore,
+} from "./variant-audience.js";
 import {
   Variant,
   type VariantAspect,
@@ -130,6 +136,22 @@ export class ProductLineup {
   }
 
   /**
+   * **Pose l'audience propre d'une déclinaison**, ou `null` pour qu'elle suive
+   * sa fiche (`plan-audience-par-declinaison.md`, A1–A4). Toute audience, plus
+   * large ou plus étroite que la fiche ; jamais sur le défaut, jamais sans
+   * vignettes ({@link changeVariantAudience}).
+   *
+   * @returns `false` quand elle le disait déjà.
+   */
+  changeVariantAudience(
+    variantId: string,
+    next: Audience | null,
+    variantsAsTiles: boolean,
+  ): boolean {
+    return changeVariantAudience(this.lineup.get(variantId), next, variantsAsTiles);
+  }
+
+  /**
    * **Archive une déclinaison** — hors vente, en base pour toujours : elle
    * RESTE dans la fiche et son rang reste pris. Les refus (le défaut, la
    * dernière vivante, une déjà archivée) sont ceux de {@link VariantLineup}.
@@ -141,9 +163,11 @@ export class ProductLineup {
   /**
    * **Désarchive une déclinaison** — elle reprend son rang et sa référence.
    * Refuse celle devenue un produit ; `detachedProductLabel` est le nom de ce
-   * produit, pour que le refus le dise.
+   * produit, pour que le refus le dise. Refuse aussi celle qui a sa propre
+   * audience sur une fiche sans vignettes ({@link refuseUntiledRestore}).
    */
-  restoreVariant(variantId: string, detachedProductLabel?: string): void {
+  restoreVariant(variantId: string, variantsAsTiles: boolean, detachedProductLabel?: string): void {
+    refuseUntiledRestore(this.lineup.get(variantId), variantsAsTiles);
     this.lineup.restore(variantId, detachedProductLabel);
   }
 
@@ -190,9 +214,10 @@ export class ProductLineup {
     return this.lineup.ownSnapshots();
   }
 
-  /** Refuse de retirer les vignettes d'une fiche dont le défaut est sur mesure. */
-  refuseUntiledCustomDefault(variantsAsTiles: boolean): void {
+  /** Refuse de retirer les vignettes d'une fiche dont le défaut est sur mesure, ou dont une déclinaison a sa propre audience. */
+  refuseUntiled(variantsAsTiles: boolean): void {
     this.lineup.refuseCustomDefaultWithoutTiles(this.lineup.defaultVariant, variantsAsTiles);
+    refuseUntiledOwnAudiences(this.lineup.all(), variantsAsTiles);
   }
 
   /** La mise en vente de la fiche publie toutes ses déclinaisons. */
@@ -207,7 +232,11 @@ export class ProductLineup {
   detachInto(
     variantId: string,
     input: { id: string; defaultVariant: { id: string; sku: Sku } },
-  ): { readonly name: LocalizedText; readonly lineup: ProductLineup } {
+  ): {
+    readonly name: LocalizedText;
+    readonly lineup: ProductLineup;
+    readonly audience: Audience | null;
+  } {
     const resolved = this.lineup.detach(variantId, input.id);
     const opened = Variant.openDefaultFrom(resolved, {
       ...input.defaultVariant,
@@ -216,6 +245,7 @@ export class ProductLineup {
     return {
       name: resolved.name,
       lineup: new ProductLineup(VariantLineup.fromDetached(input.id, opened)),
+      audience: resolved.audience ?? null,
     };
   }
 }

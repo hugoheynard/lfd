@@ -65,19 +65,22 @@ export function projectFamilyFact(
  */
 export function projectProductFact(input: ProductFactInput): CatalogProductFactBody {
   const { product, family, showcase } = input;
-  const audience = effectiveAudience(product.audience, family.audience);
+  const audience = effectiveAudience(null, product.audience, family.audience);
   const variants: CatalogVariantFact[] = [];
   const gaps: Record<string, readonly string[]> = {};
   for (const variant of product.variants) {
     if (variant.isDiscontinued) {
       continue;
     }
-    const missing = variantGaps(variant, input.percents, input.rules, audience);
+    // Chaque déclinaison est jugée et émise à SON audience (A5, A6 de
+    // `plan-audience-par-declinaison.md`) ; l'en-tête garde celle de la fiche.
+    const own = effectiveAudience(variant.audience ?? null, product.audience, family.audience);
+    const missing = variantGaps(variant, input.percents, input.rules, own);
     if (missing.length > 0) {
       gaps[variant.sku] = missing;
       continue;
     }
-    variants.push(sellableVariant(variant, input, audience));
+    variants.push(sellableVariant(variant, input, own));
   }
   return {
     status: STATUS_OF[product.status],
@@ -145,6 +148,7 @@ function sellableVariant(
       variant.detachedFromVariantId == null
         ? null
         : (input.variantOrigins.get(variant.detachedFromVariantId) ?? null),
+    audience,
   };
 }
 

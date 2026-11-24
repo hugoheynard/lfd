@@ -17,6 +17,7 @@ import type {
 } from "../../domain/ports/published-catalog.reader.js";
 import type { EntryVariant } from "../../domain/catalog-product-facts.js";
 import { publishedCellOf } from "../../domain/published-catalog-cells.js";
+import type { CatalogAudience } from "../../domain/served-to.js";
 
 /**
  * **Compose la vue « Catalogue publié »** depuis les trois lectures — pur,
@@ -133,11 +134,19 @@ function entryViewOf(
   };
 }
 
-/** Ce que la cellule lit de la fiche, sans l'article. */
-function cellInputOf(entry: PublishedEntryRow, gaps: readonly string[]) {
+/**
+ * Ce que la cellule lit de la fiche et de la déclinaison, sans l'article :
+ * l'audience est celle de la DÉCLINAISON (`plan-audience-par-declinaison.md`,
+ * AD1), celle de la fiche quand rien ne la porte.
+ */
+function cellInputOf(
+  entry: PublishedEntryRow,
+  gaps: readonly string[],
+  audience: CatalogAudience | null | undefined,
+) {
   return {
     entryActive: entry.status === "active",
-    audience: entry.audience,
+    audience: audience ?? entry.audience,
     hasGaps: gaps.length > 0,
   };
 }
@@ -146,7 +155,7 @@ function cellInputOf(entry: PublishedEntryRow, gaps: readonly string[]) {
 function onSaleViewOf(entry: PublishedEntryRow, item: PublishedItemRow): PublishedVariantView {
   const gaps = entry.gaps[item.sku] ?? [];
   const input = {
-    ...cellInputOf(entry, gaps),
+    ...cellInputOf(entry, gaps, item.audience),
     article: {
       isHidden: item.isHidden,
       isHiddenPublic: item.isHiddenPublic,
@@ -168,12 +177,13 @@ function onSaleViewOf(entry: PublishedEntryRow, item: PublishedItemRow): Publish
     reviewPending: reviewPendingOf(item),
     pro: { state: publishedCellOf("pro", input), htMillicents: item.proHtMillicents },
     public: { state: publishedCellOf("public", input), ttcCents: item.publicTtcCents },
+    audience: input.audience,
   };
 }
 
 /** Une déclinaison complète que la plateforme ne vend pas : prix PROPOSÉS par le fait. */
 function proposedViewOf(entry: PublishedEntryRow, variant: EntryVariant): PublishedVariantView {
-  const input = { ...cellInputOf(entry, []), article: null };
+  const input = { ...cellInputOf(entry, [], variant.audience), article: null };
   return {
     sku: variant.sku,
     name: variant.name,
@@ -184,6 +194,7 @@ function proposedViewOf(entry: PublishedEntryRow, variant: EntryVariant): Publis
     reviewPending: { pro: false, public: false },
     pro: { state: publishedCellOf("pro", input), htMillicents: variant.proHtMillicents },
     public: { state: publishedCellOf("public", input), ttcCents: variant.publicTtcCents },
+    audience: input.audience,
   };
 }
 
@@ -193,7 +204,9 @@ function incompleteViewOf(
   sku: string,
   gaps: readonly string[],
 ): PublishedVariantView {
-  const input = { ...cellInputOf(entry, gaps), article: null };
+  // Le fait ne porte des incomplètes que le SKU et les manques : la cellule
+  // lit l'audience de la fiche (écart au plan, signalé au rapport d'AD1).
+  const input = { ...cellInputOf(entry, gaps, null), article: null };
   return {
     sku,
     name: null,
@@ -204,6 +217,7 @@ function incompleteViewOf(
     reviewPending: { pro: false, public: false },
     pro: { state: publishedCellOf("pro", input), htMillicents: null },
     public: { state: publishedCellOf("public", input), ttcCents: null },
+    audience: input.audience,
   };
 }
 

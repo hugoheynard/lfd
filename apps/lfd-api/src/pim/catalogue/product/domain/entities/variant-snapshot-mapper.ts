@@ -1,3 +1,4 @@
+import type { Audience } from "../../../shared/domain/value-objects/audience.js";
 import type { LocalizedText } from "../../../shared/domain/value-objects/localized-text.js";
 import { NO_MIN_QUANTITIES } from "../value-objects/min-quantities.js";
 import { PIECE_SALE_TERMS } from "../value-objects/sale-terms.js";
@@ -48,6 +49,7 @@ export function openedDefaultSnapshot(input: {
     hasBeenPublished: false,
     minQuantities: NO_MIN_QUANTITIES,
     minQuantityFollowsDefault: false,
+    audience: null,
     // Elle ne peut pas se suivre elle-même : c'est ELLE, le défaut.
     regulatoryFollowsDefault: false,
     pricingFollowsDefault: false,
@@ -93,6 +95,8 @@ export function openedSnapshot(input: OpenedVariantInput): VariantSnapshot {
     minQuantities: NO_MIN_QUANTITIES,
     minQuantityFollowsDefault: false,
     customRecipe: input.customRecipe,
+    // Elle suit sa fiche : une déclinaison ajoutée vend ce que vend la fiche.
+    audience: null,
     regulatoryFollowsDefault: true,
     nutritionFollowsDefault: true,
     pricingFollowsDefault: false,
@@ -127,6 +131,9 @@ export function defaultSnapshotFrom(
     position: 0,
     hasBeenPublished: false,
     minQuantityFollowsDefault: false,
+    // Le défaut suit toujours sa fiche (A2) : l'audience propre qu'elle
+    // portait devient celle de la fiche neuve (`detachedFields`).
+    audience: null,
     regulatoryFollowsDefault: false,
     pricingFollowsDefault: false,
     nutritionFollowsDefault: false,
@@ -142,6 +149,7 @@ export interface VariantCore {
   readonly options: Readonly<Record<string, string>>;
   readonly position: number;
   readonly customRecipe: boolean;
+  readonly audience: Audience | null;
 }
 
 /**
@@ -179,6 +187,10 @@ export function variantSnapshot(
     minQuantities: f.minQuantities,
     minQuantityFollowsDefault: f.minQuantityFollowsDefault,
     customRecipe: core.customRecipe,
+    // Absente quand la déclinaison suit sa fiche : l'instantané est haché par
+    // la révision du catalogue, et une clé `null` ajoutée partout ferait
+    // paraître chaque fiche modifiée.
+    ...(core.audience === null ? {} : { audience: core.audience }),
     regulatoryFollowsDefault: regulatory.followsAllergens,
     pricingFollowsDefault: f.followsPricing,
     nutritionFollowsDefault: regulatory.followsNutrition,

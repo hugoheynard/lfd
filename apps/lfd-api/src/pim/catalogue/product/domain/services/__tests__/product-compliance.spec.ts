@@ -199,3 +199,52 @@ describe("productCompliance — le prix d'une audience manque", () => {
     expect(findings).toEqual([]);
   });
 });
+
+/** L'audience par déclinaison (`plan-audience-par-declinaison.md`, A5). */
+describe("productCompliance — chaque déclinaison jugée à SON audience", () => {
+  const unpriced = { priceCents: null, proPriceMillicents: null };
+
+  it("une déclinaison `resupply` sans aucun prix est complète, sur une fiche publique", () => {
+    const findings = productCompliance(
+      [variant({}), variant({ id: "var_2", sku: "PAIN-2", ...unpriced, audience: "resupply" })],
+      ALL,
+      RULES,
+      [],
+      "public",
+    );
+
+    expect(findings).toEqual([]);
+  });
+
+  it("une déclinaison `pro` sur une fiche publique exige le prix pro, pas le public", () => {
+    const findings = productCompliance(
+      [variant({}), variant({ id: "var_2", sku: "PAIN-2", ...unpriced, audience: "pro" })],
+      ALL,
+      RULES,
+      [],
+      "public",
+    );
+
+    expect(findings).toEqual([
+      expect.objectContaining({
+        code: "variant_incomplete",
+        variantId: "var_2",
+        missing: ["pro_price"],
+      }),
+    ]);
+  });
+
+  it("le constat « un seul des deux prix » suit la déclinaison « les deux », pas la fiche", () => {
+    const findings = productCompliance(
+      [variant({ id: "var_2", sku: "PAIN-2", proPriceMillicents: null, audience: "both" })],
+      ALL,
+      RULES,
+      [],
+      "public",
+    );
+
+    expect(findings).toEqual([
+      expect.objectContaining({ code: "price_missing_for_audience", audience: "pro" }),
+    ]);
+  });
+});

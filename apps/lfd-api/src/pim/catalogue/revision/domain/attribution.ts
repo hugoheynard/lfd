@@ -109,6 +109,9 @@ const TOUCHES: Readonly<Record<string, readonly string[] | "changes" | "*">> = {
   // Le sur mesure d'une déclinaison non plus (`RevisionItemInput`, vérifié le
   // 2026-11-18) : il traverse le fil v18.
   [PIM_EVENTS.variantCustomRecipeChanged]: [],
+  // L'audience d'une déclinaison non plus (`RevisionItemInput`, vérifié le
+  // 2026-11-24) : elle traverse le fil, par déclinaison.
+  [PIM_EVENTS.variantAudienceChanged]: [],
   // La quantité minimale n'est dans aucun champ de révision
   // (`RevisionItemInput`, vérifié le 2026-10-29) : elle traverse le fil v15.
   [PIM_EVENTS.productMinQuantitiesChanged]: [],

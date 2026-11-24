@@ -112,6 +112,11 @@ export interface Variant {
    * Catalogue publié, aucun pro ne voit cette déclinaison.
    */
   customRecipe: boolean;
+  /**
+   * **Son audience propre** (`plan-audience-par-declinaison.md`, A1) ; `null` =
+   * elle suit sa fiche. Toujours `null` sur le défaut (A2).
+   */
+  audience: CatalogueAudience | null;
   /** Le rang, à partir de 0 — c'est lui que la référence suffixe (`-1`, `-2`). */
   position: number;
   /** Prix public TTC en centimes ; `null` = pas encore tarifé. */

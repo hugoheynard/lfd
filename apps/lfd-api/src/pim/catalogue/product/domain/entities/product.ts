@@ -106,12 +106,13 @@ export class Product {
   /**
    * **Montre chaque déclinaison en vignette** au rayon — ou seulement le défaut.
    * @throws {CustomRecipeDefaultWithoutTilesError} le défaut est sur mesure.
+   * @throws {TilesHoldVariantAudienceError} une déclinaison a sa propre audience.
    */
   showVariantsAsTiles(variantsAsTiles: boolean): boolean {
     if (this.fields.options.variantsAsTiles === variantsAsTiles) {
       return false;
     }
-    this.lineup.refuseUntiledCustomDefault(variantsAsTiles);
+    this.lineup.refuseUntiled(variantsAsTiles);
     return this.changeOptions(this.fields.options.withVariantsAsTiles(variantsAsTiles));
   }
   /** À qui la fiche vend — `null` la rend à sa famille. */
@@ -128,7 +129,7 @@ export class Product {
     return true;
   }
 
-  /** Une archivée ne se modifie pas — identité, textes, visuels : on la restaure d'abord. */
+  /** Une archivée ne se modifie pas : on la restaure d'abord. */
   requireEditable(gesture: Parameters<typeof refuseEditOfArchived>[2]): void {
     refuseEditOfArchived(this.fields.status, this.fields.id, gesture);
   }
@@ -215,15 +216,12 @@ export class Product {
     variantId: string,
     input: { id: string; sku: Sku; defaultVariant: { id: string; sku: Sku } },
   ): Product {
-    const { name, lineup } = this.lineup.detachInto(variantId, input);
-    const identity = { id: input.id, sku: input.sku.value, name };
+    const { name, lineup, audience } = this.lineup.detachInto(variantId, input);
+    const identity = { id: input.id, sku: input.sku.value, name, audience };
     return new Product(detachedFields(this.fields, identity, variantId), lineup);
   }
 
-  /**
-   * L'instantané, **héritage résolu** (une alignée sort avec les allergènes du
-   * défaut) : canaux, empreinte de révision et parité le lisent tous.
-   */
+  /** L'instantané, **héritage résolu** : canaux, empreinte de révision et parité le lisent tous. */
   snapshot(): ProductSnapshot {
     return productSnapshot(this.fields, this.lineup.resolvedVariants());
   }
@@ -236,8 +234,7 @@ export class Product {
     return productSnapshot(this.fields, this.lineup.ownVariants());
   }
 
-  // Les gestes adressés à une déclinaison, délégués à `ProductLineup` qui porte leurs
-  // règles et leur documentation ; ses signatures, pour qu'une délégation n'en dérive pas.
+  // Les gestes adressés à une déclinaison, délégués à `ProductLineup` qui porte leurs règles.
 
   resolvedVariants(): VariantSnapshot[] {
     return this.lineup.resolvedVariants();
@@ -279,8 +276,11 @@ export class Product {
   discontinueVariant(...args: Parameters<ProductLineup["discontinueVariant"]>): void {
     this.lineup.discontinueVariant(...args);
   }
-  restoreVariant(...args: Parameters<ProductLineup["restoreVariant"]>): void {
-    this.lineup.restoreVariant(...args);
+  restoreVariant(variantId: string, detachedProductLabel?: string): void {
+    this.lineup.restoreVariant(variantId, this.variantsAsTiles, detachedProductLabel);
+  }
+  changeVariantAudience(variantId: string, next: Audience | null): boolean {
+    return this.lineup.changeVariantAudience(variantId, next, this.variantsAsTiles);
   }
   makeVariantDefault(variantId: string): DefaultVariantChange {
     return this.lineup.makeVariantDefault(variantId, this.variantsAsTiles);

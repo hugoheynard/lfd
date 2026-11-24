@@ -32,6 +32,7 @@ import type { CreatedIdResponse } from '@lfd/contracts';
 import type {
   SetProductOperationOnlyPayload,
   SetVariantCustomRecipePayload,
+  SetVariantAudiencePayload,
   SetProductColdRequirementPayload,
   SetProductVariantsAsTilesPayload,
   UpdateVariantPricingPayload,
@@ -162,6 +163,7 @@ function toVariant(variant: VariantView): Variant {
     isDefault: variant.isDefault,
     isDiscontinued: variant.isDiscontinued,
     customRecipe: variant.customRecipe,
+    audience: variant.audience ?? null,
     position: variant.position,
     priceCents: variant.priceCents,
     weightGrams: variant.weightGrams,
@@ -640,6 +642,21 @@ export class ProductHttpApi {
   ): Promise<void> {
     const payload: SetVariantCustomRecipePayload = { customRecipe };
     await this.put(`products/${productId}/variants/${variantId}/custom-recipe`, payload);
+  }
+
+  /**
+   * **L'audience d'une déclinaison** (`plan-audience-par-declinaison.md`, A1) —
+   * une écriture à part, journalisée par le serveur
+   * (`product.variant_audience_changed`) ; `null` = elle suit sa fiche. Le
+   * serveur refuse le défaut et une fiche qui ne montre pas chaque déclinaison.
+   */
+  async setVariantAudience(
+    productId: string,
+    variantId: string,
+    audience: CatalogueAudience | null,
+  ): Promise<void> {
+    const payload: SetVariantAudiencePayload = { audience };
+    await this.put(`products/${productId}/variants/${variantId}/audience`, payload);
   }
 
   /**

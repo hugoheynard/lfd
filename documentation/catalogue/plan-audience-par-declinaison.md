@@ -168,6 +168,17 @@ devra avoir « Montrer chaque déclinaison » coché.
   `list-products.ts:102`, `list-product-compliance-warnings.ts:71,119` et
   `activate-product.ts:89` passent à l'audience de chaque déclinaison pour la
   complétude et les constats.
+  **✅ Bâti le 2026-11-24** (commit avec AD2). Écarts au plan, tranchés au
+  bâti :
+  - le fait s'appelle `product.variant_audience_changed` (et non
+    `variant.audience_changed`) : tous les faits de déclinaison du dépôt sont
+    `product.variant_*` sur le sujet `product` ;
+  - les déclinaisons **incomplètes** du catalogue publié gardent l'audience de
+    la fiche : le fait ne porte, pour elles, que leurs manques. Les couvrir
+    demanderait l'audience dans `gaps` — non fait ;
+  - l'instantané d'une déclinaison qui suit sa fiche **n'a pas** de clé
+    `audience` : la révision du catalogue hache l'instantané entier, et une clé
+    `null` ajoutée partout aurait fait paraître chaque fiche modifiée.
 - **AD2 back-office** : le sélecteur (Q2), la phrase du journal, l'audience
   affichée par ligne de déclinaison au catalogue publié (servie par AD1).
 - **Tests** : domaine (héritage à trois niveaux, refus A2/A3, journal

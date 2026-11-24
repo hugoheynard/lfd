@@ -110,6 +110,9 @@ const CONTENT_FACTS: Readonly<Record<string, boolean>> = {
   [PIM_EVENTS.productCustomRecipeChanged]: true,
   // Le même fait, posé par déclinaison (`plan-sur-mesure-par-declinaison.md`, V1).
   [PIM_EVENTS.variantCustomRecipeChanged]: true,
+  // L'audience posée par déclinaison, comme celle de la fiche
+  // (`plan-audience-par-declinaison.md`, A8).
+  [PIM_EVENTS.variantAudienceChanged]: true,
   // La quantité minimale change ce qu'un client doit prendre : un signataire
   // qui a relu la fiche sans minimum voudrait la revoir avec
   // (`plan-quantite-minimale.md`, M1).

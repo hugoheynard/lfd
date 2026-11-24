@@ -403,6 +403,20 @@ export const syncVariantSchema = z.object({
    * laisser lire « ouvert à tous ».
    */
   customRecipe: z.boolean(),
+  /**
+   * **L'audience EFFECTIVE de cette déclinaison** — la sienne, sinon celle de
+   * sa fiche, sinon celle de sa famille
+   * (`documentation/catalogue/plan-audience-par-declinaison.md`, A6). Le
+   * récepteur la pose sur l'article de ce SKU ; l'en-tête garde celle de la
+   * fiche.
+   *
+   * ⚠️ **Ajouté sans changer de version**, et **facultatif** : absent (un fait
+   * d'avant le champ, ou le push), le récepteur prend l'audience de l'en-tête —
+   * ce qu'il faisait, donc rien ne s'élargit pendant le déploiement. L'autre
+   * sens n'est pas couvert : un code d'avant qui relit un fait neuf ignore le
+   * champ et écrit l'audience de l'en-tête sur l'article.
+   */
+  audience: z.enum(["pro", "public", "both", "resupply"]).optional(),
 });
 
 export type SyncVariant = z.infer<typeof syncVariantSchema>;

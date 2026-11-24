@@ -9,13 +9,14 @@ import { Clock } from "../../../platform/time/clock.js";
 import {
   awaitsReview,
   entryVariantsOf,
+  reopenedReviewScope,
   type ReceivedCatalogItem,
   type ReceivedCatalogProduct,
 } from "../domain/catalog-product-facts.js";
 import type { PimFacts } from "../domain/entities/catalog-item.js";
 import type { ReceivedCatalogFamily } from "../domain/ports/catalog-family-facts.projection.js";
 import { CatalogProductFactsProjection } from "../domain/ports/catalog-product-facts.projection.js";
-import type { CatalogAudience } from "../domain/served-to.js";
+import type { ShopAudience } from "../domain/ports/catalog.reader.js";
 import { pimFactsColumns } from "./catalog-item-columns.js";
 import { upsertCatalogItems } from "./catalog-item-upsert.js";
 import { lastRecordedPrices, priceTraceRows } from "./catalog-price-trace.js";
@@ -101,10 +102,14 @@ export class PrismaCatalogProductFactsProjection extends CatalogProductFactsProj
     }
   }
 
-  async putOnSale(items: readonly ReceivedCatalogItem[], audience: CatalogAudience): Promise<void> {
+  async putOnSale(items: readonly ReceivedCatalogItem[]): Promise<void> {
     if (items.length === 0) {
       return;
     }
+    // AVANT l'upsert, qui réécrit l'audience : l'élargissement se lit sur
+    // la colonne d'avant, dans le `where` — une écriture conditionnée.
+    await this.reopenReviews(items, "public");
+    await this.reopenReviews(items, "pro");
     // UN upsert pour toutes les déclinaisons : une instruction par article
     // allongeait la transaction de la livraison avec la fiche (P2028,
     // 2026-10-17). Les limites et l'attente ne s'écrivent qu'à la création.
@@ -113,7 +118,7 @@ export class PrismaCatalogProductFactsProjection extends CatalogProductFactsProj
       items.map((facts) => ({
         sku: facts.sku,
         ...pimFactsColumns(facts),
-        audience,
+        audience: facts.audience,
         variantId: facts.variantId,
         // Les traductions (lot des langues) : réécrites à chaque fait, `null`
         // compris — un fait d'avant elles dit « on ne sait pas », et la
@@ -121,14 +126,14 @@ export class PrismaCatalogProductFactsProjection extends CatalogProductFactsProj
         nameTranslations: facts.nameTranslations,
         noteTranslations: facts.noteTranslations,
         withdrawnAt: null,
-        publicReviewPending: awaitsReview(audience, "public"),
-        proReviewPending: awaitsReview(audience, "pro"),
+        publicReviewPending: awaitsReview(facts.audience, "public"),
+        proReviewPending: awaitsReview(facts.audience, "pro"),
       })),
       // 🔴 À la CRÉATION seulement — premier SKU arrivé (lot 3) : un conflit ne
-      // les réécrit pas, donc rien de ce qui existe ne repasse en attente, ni
-      // une modification ni un élargissement d'audience. Les limites non plus :
-      // elles descendent des règles (`OrderLimitsRefresher`), et les remettre
-      // à `null` ici effacerait ce que le push a posé.
+      // les réécrit pas, donc une modification ne repasse pas en attente ; un
+      // élargissement d'audience, si (`reopenReviews`, juste avant). Les
+      // limites non plus : elles descendent des règles (`OrderLimitsRefresher`),
+      // et les remettre à `null` ici effacerait ce que le push a posé.
       [
         "publicReviewPending",
         "proReviewPending",
@@ -154,6 +159,25 @@ export class PrismaCatalogProductFactsProjection extends CatalogProductFactsProj
     if (count > 0) {
       this.shelves.changed(ALL_SHELVES);
     }
+  }
+
+  /**
+   * Remet en attente de validation, pour cette clientèle, les articles déjà
+   * en base dont l'audience s'y élargit (Q1, décidé par Hugo le 2026-11-24).
+   * Un article neuf n'a pas de ligne : il reçoit son attente à la création.
+   */
+  private async reopenReviews(
+    items: readonly ReceivedCatalogItem[],
+    viewer: ShopAudience,
+  ): Promise<void> {
+    const { skus, from } = reopenedReviewScope(items, viewer);
+    if (skus.length === 0) {
+      return;
+    }
+    await this.prisma.catalogItem.updateMany({
+      where: { sku: { in: [...skus] }, audience: { in: [...from] } },
+      data: viewer === "public" ? { publicReviewPending: true } : { proReviewPending: true },
+    });
   }
 
   /** La trace du tarif, par la règle partagée — le prix du référentiel seul (lot D). */

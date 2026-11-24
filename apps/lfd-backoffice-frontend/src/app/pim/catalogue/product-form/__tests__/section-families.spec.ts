@@ -41,6 +41,7 @@ const DEFAULT_VARIANT: Variant = {
   isDefault: true,
   isDiscontinued: false,
   customRecipe: false,
+  audience: null,
   position: 0,
   priceCents: 250,
   weightGrams: 100,

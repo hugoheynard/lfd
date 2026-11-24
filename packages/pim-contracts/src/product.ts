@@ -356,6 +356,14 @@ export interface VariantView {
    */
   readonly customRecipe: boolean;
   /**
+   * **Son audience propre** (`plan-audience-par-declinaison.md`, A1) ; `null`
+   * = elle suit sa fiche. Jamais posée sur le défaut, jamais résolue : la
+   * fiche dit la sienne (`effectiveAudience` de la fiche). Le serveur
+   * l'envoie toujours ; facultative dans le contrat pour que les doublures
+   * d'écran d'avant elle restent des `VariantView`.
+   */
+  readonly audience?: CatalogueAudience | null | undefined;
+  /**
    * La déclaration d'allergènes, traces comprises ; `null` = non renseignée.
    *
    * ⚠️ **Résolue.** Une déclinaison alignée rend ici la déclaration du défaut,
@@ -662,6 +670,17 @@ export const setProductAudiencePayloadSchema = z.strictObject({
   audience: catalogueAudienceSchema.nullable(),
 });
 export type SetProductAudiencePayload = z.infer<typeof setProductAudiencePayloadSchema>;
+
+/**
+ * **À qui une déclinaison vend** — sa propre audience, ou `null` pour suivre
+ * sa fiche (`PUT /pim/catalogue/products/:id/variants/:variantId/audience`,
+ * `documentation/catalogue/plan-audience-par-declinaison.md`, A1). La forme
+ * seule : le défaut et la fiche sans vignettes sont refusés par le référentiel.
+ */
+export const setVariantAudiencePayloadSchema = z.strictObject({
+  audience: catalogueAudienceSchema.nullable(),
+});
+export type SetVariantAudiencePayload = z.infer<typeof setVariantAudiencePayloadSchema>;
 
 /**
  * **La quantité minimale d'une déclinaison**, en pièces : un minimum pro,

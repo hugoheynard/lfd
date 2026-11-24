@@ -1,3 +1,4 @@
+import type { Audience } from "../../../shared/domain/value-objects/audience.js";
 import type { LocalizedText } from "../../../shared/domain/value-objects/localized-text.js";
 import type { MinQuantities } from "../value-objects/min-quantities.js";
 import type { ProPriceHt } from "../value-objects/pro-price-ht.js";
@@ -173,6 +174,14 @@ export interface VariantSnapshot {
    * déclinaison porte le sien.
    */
   readonly customRecipe?: boolean | undefined;
+  /**
+   * **Son audience propre** (`plan-audience-par-declinaison.md`, A1) ; `null` =
+   * elle suit sa fiche, qui suit peut-être sa famille. Jamais posée sur le
+   * défaut (A2), jamais résolue ici : l'audience effective se lit par
+   * `effectiveAudience`, avec la fiche et la famille. Facultatif à la LECTURE
+   * (absent = `null`), comme `customRecipe`.
+   */
+  readonly audience?: Audience | null | undefined;
   /**
    * La déclaration d'allergènes, traces comprises. `null` = **non
    * renseignée** ; `declared: []` = « aucun allergène » déclaré.

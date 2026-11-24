@@ -101,6 +101,18 @@ export const OPERATION_AUDIENCE = domain('clientèle d’une opération', {
   both: 'Professionnels et particuliers',
 });
 
+/**
+ * L'audience d'une famille, d'une fiche ou d'une déclinaison : les clientèles
+ * d'une opération, plus le réassort des boutiques seul, qu'aucune opération
+ * ne vise.
+ */
+export const CATALOGUE_AUDIENCE = domain('audience du catalogue', {
+  pro: 'Professionnels',
+  public: 'Particuliers',
+  both: 'Professionnels et particuliers',
+  resupply: 'Réassort des boutiques seulement',
+});
+
 /** L'unité de vente d'une déclinaison (`vente-au-poids.md`, P1) — les mots du sélecteur. */
 export const SALE_UNIT = domain('unité de vente', {
   piece: 'À la pièce',
@@ -116,6 +128,7 @@ export const REFERENTIAL_VALUES: ValueFamily = {
     PUSH_CHANNEL,
     PRO_PRICE_METHOD_WRITTEN,
     OPERATION_AUDIENCE,
+    CATALOGUE_AUDIENCE,
     SALE_UNIT,
   ],
   literals: {

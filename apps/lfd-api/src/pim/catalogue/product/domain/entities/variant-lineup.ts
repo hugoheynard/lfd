@@ -17,6 +17,7 @@ import type { LocalizedText } from "../../../shared/domain/value-objects/localiz
 import type { Sku } from "../value-objects/sku.value-object.js";
 import type { DefaultVariantChange } from "./product-state.js";
 import { resolveVariant } from "./variant-resolution.js";
+import { refuseOwnAudienceDefault } from "./variant-audience.js";
 import { Variant, type VariantAspect, type VariantSnapshot } from "./variant.js";
 
 /** Ce qu'il faut pour ouvrir une déclinaison de plus. */
@@ -218,6 +219,7 @@ export class VariantLineup {
    * @throws {VariantAlreadyDefaultError} elle l'est déjà.
    * @throws {DiscontinuedVariantNotDefaultableError} elle est archivée.
    * @throws {CustomRecipeDefaultWithoutTilesError} sur mesure sur une fiche sans vignettes.
+   * @throws {OwnAudienceVariantNotDefaultableError} elle a sa propre audience (A2).
    * @throws {PricingAlignmentAcrossUnitsError} une sœur suivrait un tarif d'une autre unité.
    */
   makeDefault(variantId: string, variantsAsTiles: boolean): DefaultVariantChange {
@@ -229,6 +231,7 @@ export class VariantLineup {
       throw new DiscontinuedVariantNotDefaultableError(target.sku);
     }
     this.refuseCustomDefaultWithoutTiles(target, variantsAsTiles);
+    refuseOwnAudienceDefault(target);
     const previous = this.defaultVariant;
     const resolved = this.resolved(target);
     const inherited = {

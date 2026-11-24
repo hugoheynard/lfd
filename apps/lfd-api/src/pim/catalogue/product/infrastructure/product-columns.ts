@@ -71,6 +71,7 @@ export function variantUpdateColumns(variant: VariantSnapshot) {
     nutritionFollowsDefault: variant.nutritionFollowsDefault,
     minQuantityFollowsDefault: variant.minQuantityFollowsDefault,
     customRecipe: variant.customRecipe ?? false,
+    audience: variant.audience ?? null,
     ...minQuantityColumns(variant.minQuantities),
   };
 }

@@ -1,4 +1,5 @@
 import { DefaultVariantCannotFollowItselfError } from "../errors/product-errors.js";
+import type { Audience } from "../../../shared/domain/value-objects/audience.js";
 import type { LocalizedText } from "../../../shared/domain/value-objects/localized-text.js";
 import type { AllergenDeclaration } from "../value-objects/nutrition-declaration.js";
 import type { Sku } from "../value-objects/sku.value-object.js";
@@ -51,6 +52,7 @@ export class Variant {
   private readonly optionsValue: Readonly<Record<string, string>>;
   private readonly positionValue: number;
   private customRecipeFlag: boolean;
+  private audienceValue: Audience | null;
 
   /** L'instantané plutôt que des arguments positionnels : le tarif seul aligne des `number | null` voisins qu'aucun compilateur ne distingue. */
   private constructor(snapshot: VariantSnapshot) {
@@ -61,6 +63,7 @@ export class Variant {
     this.optionsValue = snapshot.options;
     this.positionValue = snapshot.position;
     this.customRecipeFlag = snapshot.customRecipe ?? false;
+    this.audienceValue = snapshot.audience ?? null;
     this.lifecycle = VariantLifecycle.fromSnapshot(snapshot);
     this.regulatory = VariantRegulatory.fromSnapshot(snapshot);
     this.sale = VariantSale.fromSnapshot(snapshot);
@@ -131,13 +134,9 @@ export class Variant {
   }
 
   /**
-   * **La moitié « sécurité » seule** — ce que la déclinaison contient, et ses
-   * traces. Le verbe existe pour que l'agrégat ne soit pas périmé après une
-   * écriture : l'invariant 7 se juge sur l'état d'APRÈS.
-   *
-   * 🔴 **L'écriture reste au port dédié** : `save()` réécrit TOUTES les
-   * déclinaisons, et un renommage écraserait une déclaration faite entre temps.
-   * La déclaration arrive déjà construite par `allergenDeclaration()`.
+   * **La moitié « sécurité » seule**, pour que l'agrégat juge l'état d'APRÈS.
+   * 🔴 L'écriture reste au port dédié : `save()` réécrit TOUTES les
+   * déclinaisons, et écraserait une déclaration faite entre temps.
    */
   declareAllergens(declaration: AllergenDeclaration): void {
     this.regulatory = this.regulatory.declareAllergens(declaration);
@@ -149,9 +148,7 @@ export class Variant {
   }
 
   /**
-   * S'aligne sur le défaut pour CETTE section, ou reprend la sienne : le
-   * geste ne touche **que le drapeau**, la saisie propre dort.
-   *
+   * S'aligne sur le défaut pour CETTE section, ou reprend la sienne (le drapeau seul).
    * @throws {DefaultVariantCannotFollowItselfError} le défaut ne se suit pas.
    */
   alignOnDefault(aspect: VariantAspect, aligned: boolean): void {
@@ -168,8 +165,7 @@ export class Variant {
 
   /** **Change le nom de BOUTIQUE** — « Boîte de 220 g », pas le nom de la fiche ; la référence reste immuable. */
   renameForShop(name: LocalizedText): void {
-    // Le libellé se FIGE au premier écart : tant qu'il n'est pas posé, il se
-    // lit sur le nom de boutique, et changer celui-ci renommerait l'onglet.
+    // Le libellé se FIGE au premier écart, sans quoi renommer la boutique renommerait l'onglet.
     this.internalLabelValue ??= this.nameValue.fr;
     this.nameValue = name;
   }
@@ -196,13 +192,7 @@ export class Variant {
     return this.sale.fields.minQuantityFollowsDefault;
   }
 
-  /**
-   * **Pose sa quantité minimale** — une paire pro/public, ou `"follow"` pour
-   * suivre celle du défaut ({@link VariantSale.changeMinQuantities}). La paire
-   * arrive déjà lue (`minQuantities`).
-   *
-   * @returns `false` quand elle le disait déjà.
-   */
+  /** **Pose sa quantité minimale** — une paire, ou `"follow"` ({@link VariantSale.changeMinQuantities}). `false` : déjà celle-là. */
   changeMinQuantities(next: MinQuantities | "follow"): boolean {
     const { sale, changed } = this.sale.changeMinQuantities(next, {
       isDefault: this.lifecycle.isDefault,
@@ -222,6 +212,20 @@ export class Variant {
       return false;
     }
     this.customRecipeFlag = customRecipe;
+    return true;
+  }
+
+  /** Son audience propre ; `null` = elle suit sa fiche. */
+  get audience(): Audience | null {
+    return this.audienceValue;
+  }
+
+  /** **Pose son audience**, ou `null` pour suivre la fiche (les refus liés à la fiche sont ceux de l'agrégat). `false` : déjà celle-là. */
+  changeAudience(next: Audience | null): boolean {
+    if (this.audienceValue === next) {
+      return false;
+    }
+    this.audienceValue = next;
     return true;
   }
 
@@ -260,11 +264,9 @@ export class Variant {
 
   /**
    * **Devient la déclinaison par défaut** — elle ne peut plus se suivre
-   * elle-même (CHECK `product_variant_default_*_follows_itself`), donc chaque
-   * moitié qu'elle suivait passe en PROPRE avec la valeur qu'elle voyait.
-   * `resolved` est son instantané RÉSOLU par la fiche AVANT la bascule. Les
-   * refus qui dépendent de la fiche (l'archivée, celle qui l'est déjà) sont
-   * ceux de l'agrégat ; tout est jugé avant la première écriture.
+   * elle-même, donc chaque moitié qu'elle suivait passe en PROPRE avec la
+   * valeur qu'elle voyait (`resolved`, résolu AVANT la bascule). Les refus
+   * qui dépendent de la fiche sont ceux de l'agrégat.
    *
    * @throws {DormantSheetWouldWakeError} cf. {@link VariantRegulatory.promote}.
    */
@@ -288,6 +290,7 @@ export class Variant {
         options: this.optionsValue,
         position: this.positionValue,
         customRecipe: this.customRecipeFlag,
+        audience: this.audienceValue,
       },
       this.lifecycle,
       this.regulatory,

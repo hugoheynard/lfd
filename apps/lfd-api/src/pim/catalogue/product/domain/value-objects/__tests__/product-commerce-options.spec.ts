@@ -36,11 +36,21 @@ describe("ProductCommerceOptions — les réglages de vente d'une fiche", () => 
       audience: "pro",
       variantsAsTiles: false,
     });
-    expect(origin.forDetachedProduct()).toMatchObject({
+    expect(origin.forDetachedProduct(null)).toMatchObject({
       operationOnly: true,
       requiresCold: true,
       audience: "pro",
       variantsAsTiles: true,
     });
+  });
+
+  it("une fiche née d'une déclinaison à audience propre prend cette audience", () => {
+    const origin = ProductCommerceOptions.of({
+      operationOnly: false,
+      requiresCold: false,
+      audience: "public",
+      variantsAsTiles: true,
+    });
+    expect(origin.forDetachedProduct("resupply").audience).toBe("resupply");
   });
 });

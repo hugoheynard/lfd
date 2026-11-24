@@ -44,3 +44,22 @@ export function productAudienceOptions(
       : `Hérite de la famille (${AUDIENCE_LABELS[familyAudience]})`;
   return [{ value: INHERIT, label: inherited }, ...FAMILY_AUDIENCE_OPTIONS];
 }
+
+/** La valeur du sélecteur d'une déclinaison qui suit sa fiche (`null` au serveur). */
+export const FOLLOW_PRODUCT = 'product';
+export type VariantAudienceChoice = CatalogueAudience | typeof FOLLOW_PRODUCT;
+
+/**
+ * Les choix d'une déclinaison (`plan-audience-par-declinaison.md`, Q2) : suivre
+ * la fiche (en nommant son audience effective), puis les quatre audiences.
+ * `productAudience` `null` = l'audience de la fiche n'est pas encore connue.
+ */
+export function variantAudienceOptions(
+  productAudience: CatalogueAudience | null,
+): readonly FoldSelectOption<VariantAudienceChoice>[] {
+  const follows =
+    productAudience === null
+      ? 'Comme la fiche'
+      : `Comme la fiche (${AUDIENCE_LABELS[productAudience]})`;
+  return [{ value: FOLLOW_PRODUCT, label: follows }, ...FAMILY_AUDIENCE_OPTIONS];
+}

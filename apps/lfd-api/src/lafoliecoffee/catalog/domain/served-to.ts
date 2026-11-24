@@ -20,7 +20,7 @@ export type CatalogAudience = "pro" | "public" | "both" | "resupply";
 /** L'audience d'un article servi à un acheteur : jamais `resupply`, que `servedTo` refuse. */
 export type SoldAudience = Exclude<CatalogAudience, "resupply">;
 
-const AUDIENCES: readonly CatalogAudience[] = ["pro", "public", "both", "resupply"];
+export const CATALOG_AUDIENCES: readonly CatalogAudience[] = ["pro", "public", "both", "resupply"];
 
 /**
  * Ce que `servedTo` lit d'un article — la colonne d'audience, les deux
@@ -132,7 +132,7 @@ export function servedToAnyone(item: ServableItem): boolean {
  * rayon : le `CHECK` en base la refuse déjà à l'écriture.
  */
 export function catalogAudienceOf(raw: string | null): CatalogAudience | null {
-  return AUDIENCES.find((candidate) => candidate === raw) ?? null;
+  return CATALOG_AUDIENCES.find((candidate) => candidate === raw) ?? null;
 }
 
 /**

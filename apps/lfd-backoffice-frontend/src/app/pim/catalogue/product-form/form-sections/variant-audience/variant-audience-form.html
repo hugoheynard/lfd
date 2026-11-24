@@ -1,0 +1,12 @@
+@if (isDefault()) {
+  <p>La déclinaison par défaut vend à l'audience de la fiche : elle la suit toujours.</p>
+} @else {
+  <fold-listbox
+    label="Audience"
+    [hint]="hint()"
+    [options]="options()"
+    [value]="choice()"
+    [disabled]="busy() || needsTiles()"
+    (selectionChange)="onChange($event)"
+  />
+}

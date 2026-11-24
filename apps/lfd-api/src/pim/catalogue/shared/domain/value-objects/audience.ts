@@ -24,17 +24,21 @@ export function audience(raw: string): Audience {
 }
 
 /**
- * La clientèle **réelle** d'une fiche : la sienne si elle en a posé une, celle
- * de sa famille sinon.
+ * La clientèle **réelle**, sur trois niveaux
+ * (`plan-audience-par-declinaison.md`, A1) : celle de la déclinaison si elle
+ * en a posé une, sinon celle de sa fiche, sinon celle de sa famille. Pour la
+ * fiche elle-même (l'en-tête, son défaut), `variantAudience` vaut `null` : le
+ * défaut n'a jamais d'audience propre.
  *
  * Écrite une fois, ici : c'est elle qui décidera ce qui se vend à qui, et deux
  * copies finiraient par ne plus répondre la même chose.
  */
 export function effectiveAudience(
+  variantAudience: Audience | null,
   productAudience: Audience | null,
   categoryAudience: Audience,
 ): Audience {
-  return productAudience ?? categoryAudience;
+  return variantAudience ?? productAudience ?? categoryAudience;
 }
 
 /** Une clientèle à qui l'on vend, une seule : ni `both`, ni le réassort. */

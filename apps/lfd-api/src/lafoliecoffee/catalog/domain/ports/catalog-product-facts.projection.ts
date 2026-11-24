@@ -1,5 +1,4 @@
 import type { ReceivedCatalogItem, ReceivedCatalogProduct } from "../catalog-product-facts.js";
-import type { CatalogAudience } from "../served-to.js";
 import type { ReceivedCatalogFamily } from "./catalog-family-facts.projection.js";
 
 /**
@@ -39,14 +38,15 @@ export abstract class CatalogProductFactsProjection {
   /**
    * Met en vente (ou y laisse) ces articles : faits du référentiel réécrits,
    * identifiant de déclinaison posé, `withdrawnAt` remis à `null`, audience
-   * posée. Les décisions locales ne sont pas touchées ; les limites de
-   * commande non plus — elles se descendent des règles reçues, à part
-   * (`OrderLimitsRefresher`, lot 2b). Trace le prix effectif s'il change.
+   * DE CHAQUE ARTICLE posée. Les décisions locales ne sont pas touchées ; les
+   * limites de commande non plus — elles se descendent des règles reçues, à
+   * part (`OrderLimitsRefresher`, lot 2b). Trace le prix effectif s'il change.
+   *
+   * L'attente de validation se pose à la création d'après l'audience de
+   * l'article, et de nouveau quand l'audience d'un article existant
+   * s'élargit à une clientèle (`reviewReopenedBy`).
    */
-  abstract putOnSale(
-    items: readonly ReceivedCatalogItem[],
-    audience: CatalogAudience,
-  ): Promise<void>;
+  abstract putOnSale(items: readonly ReceivedCatalogItem[]): Promise<void>;
 
   /**
    * Retire de la vente les articles de la fiche dont le SKU n'est pas dans

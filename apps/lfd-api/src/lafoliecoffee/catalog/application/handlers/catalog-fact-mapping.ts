@@ -32,6 +32,9 @@ export function receivedProductOf(fact: CatalogProductChangedFact): ReceivedCata
     receivedAt,
     items: body.variants.map((variant) => ({
       variantId: variant.id,
+      // L'audience de la déclinaison (A6) ; un fait d'avant le champ n'en
+      // porte pas, et l'en-tête dit alors ce qu'elle vendait.
+      audience: variant.audience ?? body.audience,
       sku: variant.sku,
       productId: product.id,
       productSku: product.sku,

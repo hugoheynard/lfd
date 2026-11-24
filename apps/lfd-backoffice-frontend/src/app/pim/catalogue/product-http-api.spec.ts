@@ -26,6 +26,7 @@ function backendProduct(overrides: Partial<BackendVariantLike> = {}) {
     isDefault: true,
     isDiscontinued: false,
     customRecipe: false,
+    audience: null,
     priceCents: 450,
     weightGrams: 250,
     proPriceMillicents: null,

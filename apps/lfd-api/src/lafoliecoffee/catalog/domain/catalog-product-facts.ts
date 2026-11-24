@@ -1,7 +1,7 @@
 import type { CatalogTranslations } from "./catalog-translations.js";
 import type { PimFacts } from "./entities/catalog-item.js";
 import type { ShopAudience } from "./ports/catalog.reader.js";
-import { audienceIncludes, type CatalogAudience } from "./served-to.js";
+import { audienceIncludes, CATALOG_AUDIENCES, type CatalogAudience } from "./served-to.js";
 
 /**
  * Un article reçu par le fait de sa fiche : les faits d'un article, plus
@@ -10,6 +10,12 @@ import { audienceIncludes, type CatalogAudience } from "./served-to.js";
  */
 export interface ReceivedCatalogItem extends PimFacts {
   readonly variantId: string;
+  /**
+   * L'audience de CET article — celle que le fait porte pour sa déclinaison,
+   * sinon celle de l'en-tête (fait d'avant le champ ;
+   * `plan-audience-par-declinaison.md`, A6).
+   */
+  readonly audience: CatalogAudience;
   /**
    * Les traductions du nom de la déclinaison et de la ligne de la fiche (lot
    * des langues). `null` = fait émis avant elles : on ne sait pas, et la
@@ -63,11 +69,44 @@ export function itemsOnSale(product: ReceivedCatalogProduct): readonly ReceivedC
  *
  * Seulement si son audience la contient (lot 3 ; côté pro aussi depuis la
  * décision de Hugo du 2026-10-15). Une ligne née `pro` n'attend rien côté
- * public : l'y mettre en attente la ferait attendre le jour où son audience
- * s'élargit, ce que le plan exclut (« pas pour un élargissement d'audience »).
+ * public : elle attendra le jour où son audience s'élargit au public
+ * ({@link reviewReopenedBy}).
  */
 export function awaitsReview(audience: CatalogAudience, viewer: ShopAudience): boolean {
   return audienceIncludes(audience, viewer);
+}
+
+/**
+ * L'audience d'un article existant **s'élargit-elle** à cette clientèle ? Alors
+ * il attend de nouveau d'être validé pour elle — décidé par Hugo le 2026-11-24
+ * (`plan-audience-par-declinaison.md`, Q1), pour une fiche comme pour une
+ * déclinaison : un geste du staff au référentiel reste un geste à regarder
+ * avant la vitrine. Une colonne vide se lit `both` (`audienceIncludes`) : elle
+ * ne s'élargit donc jamais.
+ */
+export function reviewReopenedBy(
+  previous: CatalogAudience | null,
+  next: CatalogAudience,
+  viewer: ShopAudience,
+): boolean {
+  return !audienceIncludes(previous, viewer) && audienceIncludes(next, viewer);
+}
+
+/**
+ * **Ce que l'élargissement rouvre, pour une clientèle**, dans la forme d'une
+ * écriture conditionnée : les articles reçus qui la servent désormais, et les
+ * audiences d'avant qui ne la servaient pas ({@link reviewReopenedBy}). Une
+ * ligne en base dont l'audience est dans `from` et le SKU dans `skus`
+ * s'élargit — c'est elle, et elle seule, qui repasse en attente.
+ */
+export function reopenedReviewScope(
+  items: readonly ReceivedCatalogItem[],
+  viewer: ShopAudience,
+): { readonly skus: readonly string[]; readonly from: readonly CatalogAudience[] } {
+  return {
+    skus: items.filter((item) => audienceIncludes(item.audience, viewer)).map((item) => item.sku),
+    from: CATALOG_AUDIENCES.filter((previous) => !audienceIncludes(previous, viewer)),
+  };
 }
 
 /**
@@ -84,6 +123,11 @@ export interface EntryVariant {
   readonly proHtMillicents: number | null;
   /** L'étiquette publique proposée, en centimes TTC — `null` si le fait n'en porte pas. */
   readonly publicTtcCents: number | null;
+  /**
+   * L'audience de la déclinaison (`plan-audience-par-declinaison.md`, AD1) ;
+   * absente d'une entrée écrite avant elle — la cellule lit alors la fiche.
+   */
+  readonly audience?: CatalogAudience | undefined;
 }
 
 /** Les déclinaisons complètes d'une fiche reçue, dans la forme de son entrée. */
@@ -94,5 +138,6 @@ export function entryVariantsOf(product: ReceivedCatalogProduct): readonly Entry
     isDefault: item.isDefault,
     proHtMillicents: item.priceMillicents,
     publicTtcCents: item.publicTtcCents,
+    audience: item.audience,
   }));
 }

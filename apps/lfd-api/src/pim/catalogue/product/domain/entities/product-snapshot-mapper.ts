@@ -1,3 +1,4 @@
+import type { Audience } from "../../../shared/domain/value-objects/audience.js";
 import type { VariantSnapshot } from "./variant.js";
 import type { LocalizedText } from "../../../shared/domain/value-objects/localized-text.js";
 import { ProductCommerceOptions } from "../value-objects/product-commerce-options.js";
@@ -108,10 +109,20 @@ export function openedFields(input: NewProductInput): ProductFields {
  * la famille, le genre, la TVA et les réglages de la fiche d'origine (copiés,
  * jamais partagés), et brouillon — un produit neuf n'a jamais été relu sous sa
  * nouvelle référence.
+ *
+ * L'audience est celle que la déclinaison portait en propre, sinon celle que
+ * la fiche d'origine POSE (`null` compris : la fiche neuve suit sa famille) —
+ * jamais l'audience effective, qui figerait toute fiche détachée
+ * (`plan-audience-par-declinaison.md`, AD1).
  */
 export function detachedFields(
   origin: ProductFields,
-  born: { readonly id: string; readonly sku: string; readonly name: LocalizedText },
+  born: {
+    readonly id: string;
+    readonly sku: string;
+    readonly name: LocalizedText;
+    readonly audience: Audience | null;
+  },
   variantId: string,
 ): ProductFields {
   return {
@@ -123,7 +134,7 @@ export function detachedFields(
     categoryId: origin.categoryId,
     status: "draft",
     vat: origin.vat.copy(),
-    options: origin.options.forDetachedProduct(),
+    options: origin.options.forDetachedProduct(born.audience),
     originVariantId: variantId,
   };
 }

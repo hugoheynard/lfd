@@ -1,7 +1,7 @@
 import type { CategoryVatPercents } from "../../../shared/domain/value-objects/vat-percents.js";
 import type { VariantSnapshot } from "../entities/variant.js";
 import { effectiveAllergens } from "./effective-allergens.js";
-import type { Audience } from "../../../shared/domain/value-objects/audience.js";
+import { effectiveAudience, type Audience } from "../../../shared/domain/value-objects/audience.js";
 import {
   missingAudiencePrices,
   variantGaps,
@@ -76,8 +76,10 @@ export type ComplianceFinding =
  * Les allergènes ne refusent plus rien (2026-10-27) : la règle A corrige ce
  * que la composition cite, sans constat ; la règle B signale seulement.
  *
- * `audience` : la clientèle EFFECTIVE de la fiche — un prix n'est exigé que
- * pour les audiences visées (2026-10-27).
+ * `audience` : la clientèle EFFECTIVE de la fiche. Chaque déclinaison est
+ * jugée contre la SIENNE ({@link variantAudience}) : un prix n'est exigé que
+ * pour les audiences qu'elle vise, et une déclinaison `resupply` n'en exige
+ * aucun (`plan-audience-par-declinaison.md`, A5).
  *
  * Une déclinaison arrêtée n'est jugée sur rien : elle ne se vend plus.
  */
@@ -94,7 +96,7 @@ export function productCompliance(
   }
   const judged = live.map((variant) => ({
     variant,
-    missing: variantGaps(variant, vatPercents, rules, audience),
+    missing: variantGaps(variant, vatPercents, rules, variantAudience(variant, audience)),
   }));
   const severity: ComplianceSeverity = judged.some((entry) => entry.missing.length === 0)
     ? "warning"
@@ -117,17 +119,26 @@ export function isCompliantForActivation(findings: readonly ComplianceFinding[])
 }
 
 /**
- * Les déclinaisons d'une fiche « les deux » à qui manque UN prix — sans aucun,
- * c'est `variant_incomplete` qui le dit, pas une seconde ligne.
+ * L'audience EFFECTIVE d'une déclinaison : la sienne, sinon celle — déjà
+ * résolue — de sa fiche.
+ */
+export function variantAudience(variant: VariantSnapshot, productAudience: Audience): Audience {
+  return effectiveAudience(variant.audience ?? null, null, productAudience);
+}
+
+/**
+ * Les déclinaisons « les deux » à qui manque UN prix — sans aucun, c'est
+ * `variant_incomplete` qui le dit, pas une seconde ligne.
  */
 function halfPriced(
   live: readonly VariantSnapshot[],
-  audience: Audience,
+  productAudience: Audience,
 ): PriceMissingForAudienceFinding[] {
-  if (audience !== "both") {
-    return [];
-  }
   return live.flatMap((variant) => {
+    const audience = variantAudience(variant, productAudience);
+    if (audience !== "both") {
+      return [];
+    }
     const unpriced = missingAudiencePrices(variant, audience);
     const [missing] = unpriced;
     return unpriced.length === 1 && missing !== undefined

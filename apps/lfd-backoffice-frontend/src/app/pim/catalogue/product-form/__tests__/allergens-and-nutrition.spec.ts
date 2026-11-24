@@ -48,6 +48,7 @@ function variant(over: Partial<Variant> = {}): Variant {
     isDefault: true,
     isDiscontinued: false,
     customRecipe: false,
+    audience: null,
     position: 0,
     priceCents: 250,
     weightGrams: 100,
