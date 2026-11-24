@@ -128,6 +128,7 @@ export class CreateSubscriptionHandler implements ICommandHandler<
         method: payload.fulfillmentMethod,
         deliveryAddress: payload.deliveryAddress,
         pickupAddressId: payload.pickupAddressId,
+        window: payload.requestedWindow,
       },
       note: payload.note,
       lines: payload.lines.map((line) =>

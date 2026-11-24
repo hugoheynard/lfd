@@ -3,11 +3,13 @@ import type {
   FulfillmentMethod,
   Recurrence,
   SubscriptionStatus,
+  FulfillmentWindow,
 } from "@lfd/contracts";
 
 import {
   EmptyOverrideError,
   SubscriptionCancelledError,
+  SubscriptionWindowRequiredError,
   EmptySubscriptionError,
   InvalidDateRangeError,
   InvalidRoutingError,
@@ -35,6 +37,12 @@ export interface SubscriptionRouting {
   readonly method: FulfillmentMethod;
   readonly deliveryAddress: BillingAddressPayload | null;
   readonly pickupAddressId: string | null;
+  /**
+   * Le créneau de chaque échéance. Exigé à l'ouverture ; `null` seulement
+   * pour un panier ouvert avant qu'il soit demandé, dont les échéances sont
+   * refusées faute de créneau.
+   */
+  readonly window: FulfillmentWindow | null;
 }
 
 /** Dérogation d'une échéance précise (« modifier cette commande uniquement »). */
@@ -121,6 +129,7 @@ export interface SubscriptionState {
   readonly fulfillmentMethod: FulfillmentMethod;
   readonly deliveryAddress: BillingAddressPayload | null;
   readonly pickupAddressId: string | null;
+  readonly requestedWindow: FulfillmentWindow | null;
   readonly note: string;
   readonly lines: readonly PersistedLine[];
   readonly overrides: readonly PersistedOverride[];
@@ -189,6 +198,9 @@ export class Subscription {
     }
     if (input.endDate !== null && input.endDate.isBefore(input.startDate)) {
       throw new InvalidDateRangeError(input.startDate.toString(), input.endDate.toString());
+    }
+    if (input.routing.window === null) {
+      throw new SubscriptionWindowRequiredError();
     }
     const routing = normalizeRouting(input.routing);
     return new Subscription(
@@ -272,6 +284,26 @@ export class Subscription {
     if (this.armedFrom === null) {
       this.armedFrom = today;
     }
+  }
+
+  /** L'acheminement figé de chaque échéance, créneau compris. */
+  get fulfilment(): SubscriptionRouting {
+    return this.routing;
+  }
+
+  /** Celui qui a ouvert le panier : l'acheteur de chaque échéance. */
+  get buyerUserId(): string {
+    return this.placedByUserId;
+  }
+
+  /** Le gabarit : les lignes de chaque échéance sans dérogation. */
+  get templateLines(): readonly SubscriptionLine[] {
+    return this.lines;
+  }
+
+  /** La note du panier, reprise sur chaque commande. */
+  get templateNote(): string {
+    return this.note;
   }
 
   /** La borne basse du planificateur, `null` tant que le panier n'est pas armé. */
@@ -379,6 +411,7 @@ export class Subscription {
       fulfillmentMethod: this.routing.method,
       deliveryAddress: this.routing.deliveryAddress,
       pickupAddressId: this.routing.pickupAddressId,
+      requestedWindow: this.routing.window,
       note: this.note,
       lines: this.lines.map((line) => ({ sku: line.sku, quantity: line.quantity })),
       overrides: [...this.overrides.values()].map(toPersistedOverride),
@@ -393,12 +426,18 @@ function normalizeRouting(routing: SubscriptionRouting): SubscriptionRouting {
     if (routing.deliveryAddress === null) {
       throw new InvalidRoutingError("Une livraison exige une adresse.");
     }
-    return { method: "delivery", deliveryAddress: routing.deliveryAddress, pickupAddressId: null };
+    return {
+      method: "delivery",
+      deliveryAddress: routing.deliveryAddress,
+      pickupAddressId: null,
+      window: routing.window,
+    };
   }
   return {
     method: routing.method,
     deliveryAddress: null,
     pickupAddressId: routing.pickupAddressId,
+    window: routing.window,
   };
 }
 

@@ -70,6 +70,7 @@ function weekly(sku: string): Record<string, unknown> {
     fulfillmentMethod: "pickup",
     deliveryAddress: null,
     pickupAddressId: null,
+    requestedWindow: { start: "08:00", end: "10:00" },
     lines: [{ sku, quantity: 2 }],
     note: "",
   };

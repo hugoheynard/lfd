@@ -45,6 +45,7 @@ async function createSubscription(): Promise<string> {
       fulfillmentMethod: "pickup",
       deliveryAddress: null,
       pickupAddressId: null,
+      requestedWindow: { start: "08:00", end: "10:00" },
       lines: [{ sku: "VIE-001-1", quantity: 3 }],
       note: "",
     })

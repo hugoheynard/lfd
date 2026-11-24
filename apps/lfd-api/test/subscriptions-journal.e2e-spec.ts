@@ -60,6 +60,7 @@ function weeklyDelivery(): Record<string, unknown> {
       pays: "France",
     },
     pickupAddressId: null,
+    requestedWindow: { start: "08:00", end: "10:00" },
     lines: [{ sku: "VIE-001-1", quantity: 3 }],
     note: `Sonner au ${NOTE_PHONE}`,
   };

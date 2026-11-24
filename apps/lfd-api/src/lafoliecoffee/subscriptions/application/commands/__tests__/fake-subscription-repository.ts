@@ -41,7 +41,12 @@ export function activeSubscription(id = "sub_1", companyId: string | null = null
     status: "active",
     startDate: IsoDate.fromString("2026-08-10"),
     endDate: IsoDate.fromString("2026-12-10"),
-    routing: { method: "pickup", deliveryAddress: null, pickupAddressId: null },
+    routing: {
+      method: "pickup",
+      deliveryAddress: null,
+      pickupAddressId: null,
+      window: { start: "08:00", end: "10:00" },
+    },
     note: "",
     lines: [SubscriptionLine.create("SKU-1", 2)],
     overrides: [],

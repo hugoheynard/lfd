@@ -1,6 +1,20 @@
+import type { RecurringDeltas } from "@lfd/contracts";
+
 import type { Order } from "../entities/order.js";
 import type { FirstHandoverStatus } from "../services/shipment-settlement.js";
 import type { HandoverVia } from "../services/handover.js";
+
+/**
+ * **D'où vient une commande générée** par le planificateur des paniers
+ * récurrents : le panier, et l'écart de ce jour avec son gabarit. Une trace de
+ * provenance, écrite une fois à la création et jamais relue par l'agrégat :
+ * aucune règle de la commande ne dépend d'elle, d'où sa place à côté de
+ * l'agrégat plutôt que dans son état.
+ */
+export interface RecurringProvenance {
+  readonly subscriptionId: string;
+  readonly deltas: RecurringDeltas;
+}
 
 /** Ce que la passation renvoie : l'id technique et le numéro humain. */
 export interface PlacedOrder {
@@ -38,7 +52,7 @@ export abstract class OrderRepository {
    * dispositif ne survit pas — la commande existe, la clé n'est pas résolue :
    * ni rendable, ni reprenable.
    */
-  abstract place(order: Order): Promise<PlacedOrder>;
+  abstract place(order: Order, recurring?: RecurringProvenance): Promise<PlacedOrder>;
 
   /**
    * Marque **payée** la commande portant cette intention Stripe. **Idempotent** :

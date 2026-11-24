@@ -12,7 +12,11 @@ export type OccurrenceRefusalCause =
   | "unavailable_sku"
   | "day_closed"
   | "plan_closed"
-  | "no_settlement";
+  | "no_settlement"
+  | "no_window"
+  | "shop_closed"
+  /** Un autre refus métier de la passation : sa phrase dit le cas. */
+  | "order_refused";
 
 /** Ce que le planificateur a fait d'une échéance. */
 export type OccurrenceRunOutcome =

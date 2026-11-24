@@ -1,5 +1,6 @@
 import {
   billingAddressPayloadSchema,
+  fulfillmentWindowSchema,
   recurrenceSchema,
   subscriptionStatusSchema,
   type AdminSubscriptionRow,
@@ -72,6 +73,7 @@ const SELECT = {
   fulfillmentMethod: true,
   deliveryAddressSnapshot: true,
   pickupAddressId: true,
+  requestedWindow: true,
   note: true,
   createdAt: true,
   lines: { select: { sku: true, quantity: true } },
@@ -91,6 +93,7 @@ interface SubscriptionRow {
   fulfillmentMethod: SubscriptionView["fulfillmentMethod"];
   deliveryAddressSnapshot: Prisma.JsonValue | null;
   pickupAddressId: string | null;
+  requestedWindow: Prisma.JsonValue | null;
   note: string;
   createdAt: Date;
   lines: { sku: string; quantity: number }[];
@@ -107,6 +110,8 @@ function toView(row: SubscriptionRow): SubscriptionView {
     fulfillmentMethod: row.fulfillmentMethod,
     deliveryAddress: parseAddress(row.deliveryAddressSnapshot),
     pickupAddressId: row.pickupAddressId,
+    requestedWindow:
+      row.requestedWindow === null ? null : fulfillmentWindowSchema.parse(row.requestedWindow),
     note: row.note,
     lines: row.lines.map((line) => ({ sku: line.sku, quantity: line.quantity })),
     overrides: row.occurrences.map((occ) => toOverride(occ)),

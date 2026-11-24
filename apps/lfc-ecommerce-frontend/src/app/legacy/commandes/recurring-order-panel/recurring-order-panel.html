@@ -22,7 +22,7 @@
 
   <div class="fld-row">
     <label class="fld">
-      <span class="fld-lbl">Première commande</span>
+      <span class="fld-lbl">Premier retrait ou livraison</span>
       <input class="fld-ctl" type="date" [value]="startDate()" (input)="onDate('start', $event)" />
     </label>
     <label class="fld">
@@ -36,7 +36,15 @@
       />
     </label>
   </div>
-  <p class="fld-hint">Retrait / livraison le lendemain de chaque commande.</p>
+  @if (windowLabel(); as label) {
+    <p class="fld-hint" data-window>
+      Chaque commande est passée une semaine avant, au créneau {{ label }} de la commande d'origine.
+    </p>
+  } @else {
+    <fold-callout variant="warning" data-no-window>
+      Cette commande n'a pas de créneau : elle ne peut pas devenir un panier récurrent.
+    </fold-callout>
+  }
 
   <div class="fld">
     <span class="fld-lbl">Acheminement</span>

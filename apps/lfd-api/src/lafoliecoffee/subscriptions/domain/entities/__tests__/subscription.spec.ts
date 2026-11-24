@@ -9,6 +9,7 @@ import {
   SubscriptionAlreadyActiveError,
   SubscriptionAlreadyPausedError,
   SubscriptionCancelledError,
+  SubscriptionWindowRequiredError,
 } from "../../errors/subscription-errors.js";
 import { IsoDate } from "../../value-objects/iso-date.js";
 import { SubscriptionLine } from "../../value-objects/subscription-line.js";
@@ -33,7 +34,12 @@ function openInput(overrides: Partial<OpenSubscriptionInput> = {}): OpenSubscrip
     recurrence: "weekly",
     startDate: IsoDate.fromString("2026-08-10"),
     endDate: IsoDate.fromString("2026-12-10"),
-    routing: { method: "pickup", deliveryAddress: null, pickupAddressId: null },
+    routing: {
+      method: "pickup",
+      deliveryAddress: null,
+      pickupAddressId: null,
+      window: { start: "08:00", end: "10:00" },
+    },
     note: "",
     lines: [line("SKU-1", 2)],
     ...overrides,
@@ -84,7 +90,12 @@ describe("Subscription.open", () => {
     it("livraison : exige une adresse et vide le point de retrait résiduel", () => {
       const state = Subscription.open(
         openInput({
-          routing: { method: "delivery", deliveryAddress: ADDRESS, pickupAddressId: "pickup_x" },
+          routing: {
+            method: "delivery",
+            deliveryAddress: ADDRESS,
+            pickupAddressId: "pickup_x",
+            window: { start: "08:00", end: "10:00" },
+          },
         }),
       ).toPersistence();
       expect(state.deliveryAddress).toEqual(ADDRESS);
@@ -95,7 +106,12 @@ describe("Subscription.open", () => {
       expect(() =>
         Subscription.open(
           openInput({
-            routing: { method: "delivery", deliveryAddress: null, pickupAddressId: null },
+            routing: {
+              method: "delivery",
+              deliveryAddress: null,
+              pickupAddressId: null,
+              window: { start: "08:00", end: "10:00" },
+            },
           }),
         ),
       ).toThrow(InvalidRoutingError);
@@ -104,7 +120,12 @@ describe("Subscription.open", () => {
     it("retrait : vide toute adresse de livraison résiduelle", () => {
       const state = Subscription.open(
         openInput({
-          routing: { method: "pickup", deliveryAddress: ADDRESS, pickupAddressId: "pickup_x" },
+          routing: {
+            method: "pickup",
+            deliveryAddress: ADDRESS,
+            pickupAddressId: "pickup_x",
+            window: { start: "08:00", end: "10:00" },
+          },
         }),
       ).toPersistence();
       expect(state.deliveryAddress).toBeNull();
@@ -263,7 +284,12 @@ describe("Subscription — ce que le journal en relit", () => {
   it("decision() dit ce que le panier décide, sans son adresse ni sa note", () => {
     const sub = Subscription.open(
       openInput({
-        routing: { method: "delivery", deliveryAddress: ADDRESS, pickupAddressId: null },
+        routing: {
+          method: "delivery",
+          deliveryAddress: ADDRESS,
+          pickupAddressId: null,
+          window: { start: "08:00", end: "10:00" },
+        },
         note: "Code portail 1234",
       }),
     );
@@ -358,5 +384,25 @@ describe("Subscription.arm — la borne basse du planificateur", () => {
     sub.arm(IsoDate.fromString("2026-11-23"));
     sub.arm(IsoDate.fromString("2026-12-01"));
     expect(sub.armedSince?.toString()).toBe("2026-11-23");
+  });
+});
+
+describe("Subscription.open — le créneau", () => {
+  it("refuse un panier sans créneau : chaque échéance en exige un", () => {
+    const base = openInput();
+    expect(() =>
+      Subscription.open({ ...base, routing: { ...base.routing, window: null } }),
+    ).toThrow(SubscriptionWindowRequiredError);
+  });
+
+  it("garde le créneau choisi, en retrait comme en livraison", () => {
+    const base = openInput();
+    const window = { start: null, end: "11:00" };
+    const sub = Subscription.open({
+      ...base,
+      routing: { method: "delivery", deliveryAddress: ADDRESS, pickupAddressId: null, window },
+    });
+    expect(sub.toPersistence().requestedWindow).toEqual(window);
+    expect(sub.fulfilment.window).toEqual(window);
   });
 });

@@ -1,16 +1,21 @@
 import { z } from "zod";
 
-import { billingAddressPayloadSchema, type BillingAddressPayload } from "./address.js";
+import {
+  billingAddressPayloadSchema,
+  fulfillmentWindowSchema,
+  type BillingAddressPayload,
+  type FulfillmentWindow,
+} from "./address.js";
 import { fulfillmentMethodSchema, type FulfillmentMethod } from "./order.js";
 
 /**
- * **Panier récurrent** (abonnement) — un gabarit de commande qui se répète. Il ne
- * déclenche pas encore de commande (le planificateur viendra plus tard) ; on
- * capture ici l'intention : quelles lignes, à quel rythme, entre quelles dates,
- * comment l'acheminer et la régler.
+ * **Panier récurrent** (abonnement) — un gabarit de commande qui se répète :
+ * quelles lignes, à quel rythme, entre quelles dates, comment l'acheminer et
+ * dans quel créneau. Le planificateur en passe une commande à chaque échéance
+ * (`documentation/commandes/paniers-recurrents/plan-planificateur.md`).
  *
- * Périmètre tranché : **paiement carte** (pas de sélecteur de terme) et, en
- * livraison, une **adresse libre** figée (comme le coursier zéro friction).
+ * En livraison, l'adresse est **libre** et figée, comme le coursier zéro
+ * friction.
  */
 
 /** Rythme de récurrence. */
@@ -48,6 +53,12 @@ export const createSubscriptionPayloadSchema = z
     fulfillmentMethod: fulfillmentMethodSchema,
     deliveryAddress: billingAddressPayloadSchema.nullable().default(null),
     pickupAddressId: z.string().nullable().default(null),
+    /**
+     * Le créneau de chaque échéance — obligatoire, comme pour toute commande
+     * (décision de Hugo du 2026-10-14 : pas de commande sans créneau ; repris
+     * pour le panier le 2026-11-24).
+     */
+    requestedWindow: fulfillmentWindowSchema,
     lines: z.array(subscriptionLinePayloadSchema).min(1, "au moins une ligne"),
     note: z.string().default(""),
   })
@@ -112,6 +123,8 @@ export interface SubscriptionView {
   /** Adresse de livraison **libre figée** (livraison), ou `null` (retrait). */
   readonly deliveryAddress: BillingAddressPayload | null;
   readonly pickupAddressId: string | null;
+  /** Le créneau de chaque échéance ; `null` pour un panier ouvert avant qu'il soit demandé. */
+  readonly requestedWindow: FulfillmentWindow | null;
   readonly note: string;
   readonly lines: readonly SubscriptionLineView[];
   /** Dérogations par échéance (sautée / lignes remplacées). */

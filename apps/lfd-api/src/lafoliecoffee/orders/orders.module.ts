@@ -149,7 +149,9 @@ import { PrismaOrderCardStandingReader } from "./infrastructure/prisma-order-car
 import { DiscardOrderDraftHandler } from "./application/commands/discard-order-draft.handler.js";
 import { PlaceOrderForCustomerHandler } from "./application/commands/place-order-for-customer.handler.js";
 import { SaveOrderDraftHandler } from "./application/commands/save-order-draft.handler.js";
+import { SubscriptionsModule } from "../subscriptions/subscriptions.module.js";
 import { PlaceOrderHandler } from "./application/commands/place-order.handler.js";
+import { PlaceRecurringOccurrenceHandler } from "./application/commands/place-recurring-occurrence.handler.js";
 import { QuoteOrderHandler } from "./application/queries/quote-order.handler.js";
 import { EstimateOrderForCustomerHandler } from "./application/queries/estimate-order-for-customer.handler.js";
 import { AdminOrderEstimatesController } from "./http/admin-order-estimates.controller.js";
@@ -364,6 +366,8 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
 @Module({
   imports: [
     BrandModule,
+    // Le planificateur des paniers récurrents : l'échéance à passer et son registre.
+    SubscriptionsModule,
     PickupAddressesModule,
     DeliveryZonesModule,
     // À qui la livraison est proposée : `CartAdjustments` le refuse au serveur.
@@ -474,6 +478,7 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     GetMyOrderAdmissionHandler,
     GetGuestOrderAdmissionHandler,
     PlaceOrderHandler,
+    PlaceRecurringOccurrenceHandler,
     PlaceOrderForCustomerHandler,
     PlaceParticularOrderAtCounterHandler,
     PlaceOfferedParticularOrderHandler,

@@ -13,6 +13,8 @@ import { ListSubscriptionsHandler } from "./application/queries/list-subscriptio
 import { SubscriptionReader } from "./domain/ports/subscription.reader.js";
 import { OccurrenceRunLedger } from "./domain/ports/occurrence-run.ledger.js";
 import { SubscriptionRepository } from "./domain/ports/subscription.repository.js";
+import { RecurringOccurrences } from "./domain/ports/recurring-occurrences.js";
+import { PrismaRecurringOccurrences } from "./infrastructure/prisma-recurring-occurrences.js";
 import { PrismaOccurrenceRunLedger } from "./infrastructure/prisma-occurrence-run.ledger.js";
 import { PrismaSubscriptionReader } from "./infrastructure/prisma-subscription.reader.js";
 import { PrismaSubscriptionRepository } from "./infrastructure/prisma-subscription.repository.js";
@@ -40,9 +42,10 @@ import { SubscriptionsController } from "./http/subscriptions.controller.js";
     { provide: SubscriptionRepository, useClass: PrismaSubscriptionRepository },
     { provide: SubscriptionReader, useClass: PrismaSubscriptionReader },
     { provide: OccurrenceRunLedger, useClass: PrismaOccurrenceRunLedger },
+    { provide: RecurringOccurrences, useClass: PrismaRecurringOccurrences },
   ],
-  // Le registre des échéances : la passation d'une échéance l'écrit dans sa
-  // propre unité de travail (plan du planificateur, § 5).
-  exports: [OccurrenceRunLedger],
+  // Ce que la passation d'une échéance lit et écrit chez les paniers : son
+  // échéance, et le registre, dans sa propre unité de travail.
+  exports: [OccurrenceRunLedger, RecurringOccurrences],
 })
 export class SubscriptionsModule {}

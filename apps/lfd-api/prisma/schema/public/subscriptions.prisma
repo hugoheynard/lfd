@@ -29,6 +29,10 @@ model Subscription {
   fulfillmentMethod       FulfillmentMethod @map("fulfillment_method")
   deliveryAddressSnapshot Json?             @map("delivery_address_snapshot")
   pickupAddressId         String?           @map("pickup_address_id")
+  /// Le créneau de chaque échéance (`{ start, end }`, comme une commande).
+  /// `null` pour un panier ouvert avant qu'il soit demandé : ses échéances
+  /// sont refusées, faute de créneau.
+  requestedWindow         Json?             @map("requested_window")
 
   note String @default("")
 
@@ -107,7 +111,7 @@ model SubscriptionOccurrenceRun {
   orderId String? @map("order_id")
 
   /// La cause d'un refus, code stable (`buyer_left`, `deadline_closed`…).
-  cause String?
+  cause  String?
   /// La phrase de l'alerte, qui nomme le cas et le geste de sortie.
   reason String?
 

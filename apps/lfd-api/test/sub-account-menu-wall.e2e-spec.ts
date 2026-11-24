@@ -211,6 +211,7 @@ describe("hors carte, verrouillé (`visible_locked`)", () => {
         fulfillmentMethod: "pickup",
         deliveryAddress: null,
         pickupAddressId: null,
+        requestedWindow: { start: "08:00", end: "10:00" },
         lines: [{ sku: X, quantity: 3 }],
         note: "",
       })

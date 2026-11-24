@@ -94,6 +94,22 @@ export class RecurringOrderPanel {
 
   protected readonly isCourier = computed(() => this.method() === 'delivery');
 
+  /**
+   * Le créneau de chaque échéance : celui de la commande d'origine, honoré
+   * même si l'adresse ne le propose plus le jour servi (Hugo, 2026-11-24).
+   * Une commande sans créneau ne donne pas de panier.
+   */
+  protected readonly window = computed(() => this.data().fulfillment.window.value);
+
+  /** Le créneau tel qu'on le lit : « 08:00 – 10:00 » ou « avant 10:00 ». */
+  protected readonly windowLabel = computed(() => {
+    const window = this.window();
+    if (window === null) {
+      return null;
+    }
+    return window.start === null ? `avant ${window.end}` : `${window.start} – ${window.end}`;
+  });
+
   /** Les points de retrait, en options de listbox — libellé identique à l'ancien. */
   protected readonly pickupOptions = computed<readonly FoldSelectOption<string>[]>(() =>
     this.pickups.addresses().map((point) => ({
@@ -104,7 +120,7 @@ export class RecurringOrderPanel {
 
   /** Formulaire prêt : coursier ⇒ adresse minimale ; retrait ⇒ un point choisi ou qui s'impose. */
   protected readonly ready = computed(() => {
-    if (this.startDate() === '') {
+    if (this.startDate() === '' || this.window() === null) {
       return false;
     }
     if (this.isCourier()) {
@@ -166,6 +182,11 @@ export class RecurringOrderPanel {
     const order = this.data();
     const courier = this.isCourier();
     const a = this.address();
+    const window = this.window();
+    if (window === null) {
+      this.submitting.set(false);
+      return;
+    }
     const payload: CreateSubscriptionPayload = {
       fromOrderId: order.id,
       recurrence: this.recurrence(),
@@ -185,6 +206,7 @@ export class RecurringOrderPanel {
       pickupAddressId: courier
         ? null
         : this.pickupId() || (this.pickups.preselectedPickup()?.id ?? null),
+      requestedWindow: window,
       lines: order.lines.map((line) => ({ sku: line.sku, quantity: line.quantity })),
       note: '',
     };

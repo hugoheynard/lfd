@@ -1,5 +1,6 @@
 import {
   billingAddressPayloadSchema,
+  fulfillmentWindowSchema,
   recurrenceSchema,
   subscriptionStatusSchema,
 } from "@lfd/contracts";
@@ -51,6 +52,7 @@ export class PrismaSubscriptionRepository extends SubscriptionRepository {
         fulfillmentMethod: state.fulfillmentMethod,
         deliveryAddressSnapshot: state.deliveryAddress ?? Prisma.DbNull,
         pickupAddressId: state.pickupAddressId,
+        requestedWindow: state.requestedWindow ?? Prisma.DbNull,
         note: state.note,
         lines: { create: state.lines.map((line) => ({ sku: line.sku, quantity: line.quantity })) },
         occurrences: { create: state.overrides.map(toOccurrenceData) },
@@ -69,12 +71,9 @@ export class PrismaSubscriptionRepository extends SubscriptionRepository {
         placedByUserId: ownerUserId,
         status: { not: CANCELLED_SUBSCRIPTION },
       },
-      include: {
-        lines: { select: { sku: true, quantity: true } },
-        occurrences: { select: { occurrenceDate: true, skipped: true, lines: true, note: true } },
-      },
+      include: SUBSCRIPTION_INCLUDE,
     });
-    return row === null ? null : toDomain(row);
+    return row === null ? null : subscriptionFromRow(row);
   }
 
   async save(subscription: Subscription): Promise<void> {
@@ -128,7 +127,14 @@ function toOccurrenceData(override: PersistedOverride): {
 }
 
 /** Row Prisma (abonnement + lignes + dérogations) → agrégat reconstitué. */
-function toDomain(row: {
+/** Ce que le chargement d'un panier lit en plus de ses colonnes. */
+export const SUBSCRIPTION_INCLUDE = {
+  lines: { select: { sku: true, quantity: true } },
+  occurrences: { select: { occurrenceDate: true, skipped: true, lines: true, note: true } },
+} as const;
+
+/** Une ligne relue → l'agrégat ; ses value objects revalident. */
+export function subscriptionFromRow(row: {
   id: string;
   placedByUserId: string;
   companyId: string | null;
@@ -141,6 +147,7 @@ function toDomain(row: {
   fulfillmentMethod: SubscriptionState["fulfillmentMethod"];
   deliveryAddressSnapshot: Prisma.JsonValue;
   pickupAddressId: string | null;
+  requestedWindow: Prisma.JsonValue;
   note: string;
   lines: readonly { sku: string; quantity: number }[];
   occurrences: readonly {
@@ -167,6 +174,8 @@ function toDomain(row: {
           ? null
           : billingAddressPayloadSchema.parse(row.deliveryAddressSnapshot),
       pickupAddressId: row.pickupAddressId,
+      window:
+        row.requestedWindow === null ? null : fulfillmentWindowSchema.parse(row.requestedWindow),
     },
     note: row.note,
     lines: row.lines.map((line) => SubscriptionLine.create(line.sku, line.quantity)),

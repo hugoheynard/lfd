@@ -49,7 +49,18 @@ export function preferredWindowOf(
  * Un particulier (`individual`) n'a ni carnet ni commercial. `staff`, libre
  * de l'heure, ne reste qu'à l'équipe sur une commande sans société.
  */
-export type WindowRequester = "pro" | "individual" | "staff";
+export type WindowRequester = "pro" | "individual" | "staff" | "subscription";
+
+/**
+ * L'échéance d'un panier récurrent : le créneau a été choisi à l'ouverture du
+ * panier, et il est **honoré** même si l'adresse ne le propose plus le jour
+ * servi (décidé par Hugo le 2026-11-24 — une commande générée une semaine à
+ * l'avance tient l'engagement pris, pas le réglage du moment). Le client
+ * n'est pas non plus responsable du remplissage du créneau par le reste de
+ * l'activité : une capacité de créneau, si elle vient un jour, ne refuse pas
+ * cette commande-là (même décision).
+ */
+export const SUBSCRIPTION_WINDOW: WindowRequester = "subscription";
 
 /**
  * **Qui demande la fenêtre**, pour la passation comme pour la révision — UNE
@@ -98,6 +109,13 @@ export function ensureDeliveryWindow(input: {
   readonly requestedBy: WindowRequester;
 }): void {
   if (input.method !== "delivery") {
+    return;
+  }
+  if (input.requestedBy === SUBSCRIPTION_WINDOW) {
+    // Le créneau du panier est honoré tel qu'il a été choisi (cf. SUBSCRIPTION_WINDOW).
+    if (input.agreed === null) {
+      throw new FulfillmentWindowRequiredError("delivery");
+    }
     return;
   }
   if (input.mode === "deadline" && input.requested?.start != null) {

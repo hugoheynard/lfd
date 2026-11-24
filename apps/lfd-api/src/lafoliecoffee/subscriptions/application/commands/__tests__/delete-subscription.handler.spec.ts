@@ -70,7 +70,12 @@ describe("DeleteSubscriptionHandler", () => {
         status: "active",
         startDate: IsoDate.fromString("2026-08-10"),
         endDate: null,
-        routing: { method: "pickup", deliveryAddress: null, pickupAddressId },
+        routing: {
+          method: "pickup",
+          deliveryAddress: null,
+          pickupAddressId,
+          window: { start: "08:00", end: "10:00" },
+        },
         note: "",
         lines: [SubscriptionLine.create("SKU-1", 2)],
         overrides: [],

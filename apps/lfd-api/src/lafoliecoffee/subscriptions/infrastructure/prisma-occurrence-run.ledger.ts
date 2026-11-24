@@ -22,6 +22,9 @@ const CAUSES = [
   "day_closed",
   "plan_closed",
   "no_settlement",
+  "no_window",
+  "shop_closed",
+  "order_refused",
 ] as const satisfies readonly OccurrenceRefusalCause[];
 const outcomeSchema = z.enum(OUTCOMES);
 const causeSchema = z.enum(CAUSES).nullable();

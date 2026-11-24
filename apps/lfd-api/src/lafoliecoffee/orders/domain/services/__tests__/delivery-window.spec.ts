@@ -13,6 +13,7 @@ import {
   ensureDeliveryWindow,
   ensureWindowChosen,
   preferredWindowOf,
+  SUBSCRIPTION_WINDOW,
 } from "../delivery-window.js";
 
 const SLOT = { start: "06:00", end: "08:00" };
@@ -265,5 +266,47 @@ describe("une commande sans créneau choisi", () => {
       "individual",
     );
     expect(agreed.window.value).toEqual(SLOT);
+  });
+});
+
+describe("le créneau d'un panier récurrent est honoré (Hugo, 2026-11-24)", () => {
+  const RETIRED = { start: "09:00", end: "10:00" };
+
+  it("un créneau que l'adresse ne propose plus passe pour l'échéance d'un panier", () => {
+    expect(() =>
+      ensureDeliveryWindow({
+        method: "delivery",
+        mode: "slot",
+        requested: RETIRED,
+        agreed: RETIRED,
+        ...FROM_SHOP,
+        requestedBy: SUBSCRIPTION_WINDOW,
+      }),
+    ).not.toThrow();
+  });
+
+  it("un créneau à début passe même si l'adresse est passée en mode échéance", () => {
+    expect(() =>
+      ensureDeliveryWindow({
+        method: "delivery",
+        mode: "deadline",
+        requested: SLOT,
+        agreed: SLOT,
+        ...FROM_SHOP,
+        requestedBy: SUBSCRIPTION_WINDOW,
+      }),
+    ).not.toThrow();
+  });
+
+  it("le même créneau est refusé à un pro qui le demande aujourd'hui", () => {
+    expect(() =>
+      ensureDeliveryWindow({
+        method: "delivery",
+        mode: "slot",
+        requested: RETIRED,
+        agreed: RETIRED,
+        ...FROM_SHOP,
+      }),
+    ).toThrow();
   });
 });

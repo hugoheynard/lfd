@@ -8,7 +8,11 @@ import { Injectable, Logger } from "@nestjs/common";
 import { CartAdjustments } from "./cart-adjustments.service.js";
 import { CustomerAudiences } from "./customer-audiences.service.js";
 import { DeliveryDefaultsReader } from "../../domain/ports/delivery-defaults.reader.js";
-import { windowRequesterOf } from "../../domain/services/delivery-window.js";
+import {
+  SUBSCRIPTION_WINDOW,
+  windowRequesterOf,
+  type WindowRequester,
+} from "../../domain/services/delivery-window.js";
 import { Order, type OrderSalesTerms, type OrderVoucher } from "../../domain/entities/order.js";
 import { ProductionPlanClosedError } from "../../domain/errors/production-plan-closed.error.js";
 import { OrderDeliveryVatReader } from "../../domain/ports/order-delivery-vat.reader.js";
@@ -44,6 +48,31 @@ import { ShelfCircuit } from "./shelf-circuit.service.js";
 import type { PricingCaller } from "../../../pricing/application/pricing-caller.js";
 
 export type { OrderContent } from "./order-content.js";
+
+/**
+ * **Ce que la porte permet** à la composition. Le client, l'invité et
+ * l'équipe composent sous {@link PLACEMENT_POLICY} ; l'échéance d'un panier
+ * récurrent sous {@link RECURRING_OCCURRENCE_POLICY}.
+ */
+export interface DraftPolicy {
+  /** La dérogation d'heure limite de la société peut-elle être dépensée ? */
+  readonly deadlineWaiver: "consider" | "ignore";
+  /** Qui demande le créneau ; `null` : déduit des parties ({@link windowRequesterOf}). */
+  readonly windowRequester: WindowRequester | null;
+}
+
+/** La passation d'une personne : la dérogation se dépense, le créneau se juge. */
+export const PLACEMENT_POLICY: DraftPolicy = { deadlineWaiver: "consider", windowRequester: null };
+
+/**
+ * L'échéance d'un panier récurrent, passée sans personne devant l'écran :
+ * aucune dérogation dépensée (donc aucun frais de retard), et le créneau du
+ * panier honoré tel qu'il a été choisi ({@link SUBSCRIPTION_WINDOW}).
+ */
+export const RECURRING_OCCURRENCE_POLICY: DraftPolicy = {
+  deadlineWaiver: "ignore",
+  windowRequester: SUBSCRIPTION_WINDOW,
+};
 
 /**
  * Une commande composée, et ce qu'il a fallu pour qu'elle passe.
@@ -148,6 +177,7 @@ export class OrderDrafting {
     requestedShortcut?: StaffEntryShortcut,
     // D'où vient la saisie de l'équipe (Hugo, 2026-11-04) ; `null` pour le client.
     entryOrigin: OrderEntryOrigin | null = null,
+    policy: DraftPolicy = PLACEMENT_POLICY,
   ): Promise<DraftedOrder> {
     // 🔴 Le payeur se décide ICI, et en premier : c'est le seul chemin que les
     // trois portes de passation partagent (client, saisie staff, boutique), et
@@ -195,6 +225,7 @@ export class OrderDrafting {
       content,
       parties,
       pickupSiteOf(loaded.context),
+      policy,
     );
     // APRÈS le délai de fabrication, et sans la dérogation (D6 du plan des
     // opérations datées) : c'est le premier geste d'`arrange`.
@@ -202,7 +233,8 @@ export class OrderDrafting {
       content,
       parties,
       loaded.context,
-      windowRequesterOf(parties.companyId, parties.placedByStaffId !== null),
+      policy.windowRequester ??
+        windowRequesterOf(parties.companyId, parties.placedByStaffId !== null),
       this.clock.now(),
     );
     // C'est un VERDICT qui a un prix (§ 2.3) : `priceBasket` l'applique au
@@ -269,9 +301,10 @@ export class OrderDrafting {
     content: OrderContent,
     parties: OrderParties,
     siteId: string | null,
+    policy: DraftPolicy,
   ): Promise<DeadlineAdmission> {
     if (supply.supply === "planned") {
-      return this.ensureNotTooLate(content, parties);
+      return this.ensureNotTooLate(content, parties, policy);
     }
     await this.shelf.ensureOpen(parties, siteId);
     return NOTHING_OWED;
@@ -304,7 +337,8 @@ export class OrderDrafting {
   /**
    * Oppose l'heure limite de commande, s'il y en a une à opposer : le verdict
    * du délai de commande, appliqué par la passation — avec la dérogation de la
-   * société et son prix.
+   * société et son prix, quand la politique de la porte permet de la dépenser
+   * (jamais pour l'échéance d'un panier récurrent).
    *
    * La limite d'un article se lit en clientèle `pro` : la saisie par l'équipe
    * exige une société (cf. `place-order-for-customer`), et c'est la lecture
@@ -316,6 +350,7 @@ export class OrderDrafting {
   private async ensureNotTooLate(
     content: OrderContent,
     parties: OrderParties,
+    policy: DraftPolicy,
   ): Promise<DeadlineAdmission> {
     const day = content.requestedDeliveryDate;
     if (day === null) {
@@ -329,7 +364,7 @@ export class OrderDrafting {
       asker: {
         audience: "pro",
         companyId: parties.companyId,
-        waiver: "consider",
+        waiver: policy.deadlineWaiver,
         exceedItemLimits: parties.exceedItemLimits,
         // La saisie : la règle générale est opposée, un dépassement ne la franchit pas.
         itemLimitFloor: "general_rule_open",

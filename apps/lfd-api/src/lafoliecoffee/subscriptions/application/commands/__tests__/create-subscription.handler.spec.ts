@@ -30,6 +30,7 @@ const payload: CreateSubscriptionPayload = {
   fulfillmentMethod: "pickup",
   deliveryAddress: null,
   pickupAddressId: null,
+  requestedWindow: { start: "08:00", end: "10:00" },
   lines: [{ sku: "SKU-1", quantity: 2 }],
   note: "",
 };

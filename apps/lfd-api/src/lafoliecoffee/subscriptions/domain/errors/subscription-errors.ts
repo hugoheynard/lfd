@@ -49,6 +49,16 @@ export class InvalidRoutingError extends DomainError {
   }
 }
 
+/** Pas de panier sans créneau : chaque échéance devient une commande, qui en exige un. */
+export class SubscriptionWindowRequiredError extends DomainError {
+  constructor() {
+    super(
+      "subscriptions.window.required",
+      "Choisissez le créneau de retrait ou de livraison de chaque commande du panier.",
+    );
+  }
+}
+
 export class EmptyOverrideError extends DomainError {
   constructor() {
     super(

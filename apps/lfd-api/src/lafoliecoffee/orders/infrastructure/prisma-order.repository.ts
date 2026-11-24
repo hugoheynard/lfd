@@ -18,6 +18,7 @@ import {
   OrderRepository,
   type AbandonedSettlement,
   type PlacedOrder,
+  type RecurringProvenance,
 } from "../domain/ports/order.repository.js";
 import { formatOrderNumber } from "../domain/services/order-number.js";
 import type { FirstHandoverStatus } from "../domain/services/shipment-settlement.js";
@@ -97,7 +98,7 @@ export class PrismaOrderRepository extends OrderRepository {
     return formatOrderNumber(rank);
   }
 
-  async place(order: Order): Promise<PlacedOrder> {
+  async place(order: Order, recurring?: RecurringProvenance): Promise<PlacedOrder> {
     // L'agrégat a validé et calculé ; on lit son état sérialisé. Coursier et
     // retrait ont déjà figé leurs adresses en snapshot (plus d'adresse d'entreprise).
     const state = order.toPersistence();
@@ -150,6 +151,16 @@ export class PrismaOrderRepository extends OrderRepository {
           supply: state.supply,
           entryShortcut: state.entryShortcut,
           entryOrigin: state.entryOrigin,
+          // La provenance d'une échéance de panier récurrent, ou rien.
+          ...(recurring === undefined
+            ? {}
+            : {
+                fromSubscriptionId: recurring.subscriptionId,
+                recurringDeltas: {
+                  added: [...recurring.deltas.added],
+                  removed: [...recurring.deltas.removed],
+                },
+              }),
           customerCancellableUntil: state.customerCancellableUntil,
           ...customerCancellationColumnsOf(state.customerCancellation),
           requestedDeliveryDate: state.requestedDeliveryDate,
