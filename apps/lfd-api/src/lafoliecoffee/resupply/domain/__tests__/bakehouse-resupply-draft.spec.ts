@@ -1,4 +1,11 @@
-import { BakehouseResupplyDraft } from "../bakehouse-resupply-draft.js";
+import {
+  InvalidResupplyArrivalTimeError,
+  ResupplyArrivalOnAsapError,
+} from "../resupply-arrival-errors.js";
+import {
+  BakehouseResupplyDraft,
+  type BakehouseResupplyDraftContent,
+} from "../bakehouse-resupply-draft.js";
 import {
   BakehouseResupplyDraftChangedMeanwhileError,
   BakehouseResupplyDraftClosedError,
@@ -39,6 +46,7 @@ describe("le brouillon d'un réassort du fournil", () => {
       siteId: "site_1",
       target: "tomorrow",
       name: "Vitrine du matin",
+      arrivalBy: null,
       lines: [{ sku: "CRO", quantity: 4, saleUnit: "piece" as const }],
     });
   });
@@ -146,5 +154,19 @@ describe("le brouillon d'un réassort du fournil", () => {
 
     expect(() => draft.assertReplayableFor("site_1")).not.toThrow();
     expect(() => draft.assertReplayableFor("site_2")).toThrow(BakehouseResupplyDraftKeyTakenError);
+  });
+});
+
+describe("le brouillon d'un réassort du fournil — son heure d'arrivée (H1)", () => {
+  it("est facultative, gardée, et jamais sur « au plus tôt »", () => {
+    const open = (content: BakehouseResupplyDraftContent) =>
+      BakehouseResupplyDraft.open({ id: "d9", content, trace: TRACE });
+
+    expect(open({ ...CONTENT, arrivalBy: "05:45" }).content.arrivalBy).toBe("05:45");
+    expect(open(CONTENT).content.arrivalBy).toBeNull();
+    expect(() => open({ ...CONTENT, arrivalBy: "25:00" })).toThrow(InvalidResupplyArrivalTimeError);
+    expect(() => open({ ...CONTENT, target: "asap", arrivalBy: "05:45" })).toThrow(
+      ResupplyArrivalOnAsapError,
+    );
   });
 });

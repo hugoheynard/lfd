@@ -1,4 +1,6 @@
 import { FixedIdGenerator } from "../../../../platform/id/fixed-id-generator.js";
+import { ResupplyArrivalRequiredError } from "../../domain/resupply-arrival-errors.js";
+import { FixedResupplyArrivals } from "./resupply-arrival-doubles.js";
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
 import { RecordingAdmissionDesk } from "../../../orders/application/commands/__tests__/plan-doubles.js";
 import {
@@ -44,6 +46,7 @@ const CONTENT = {
   siteId: SITE,
   target: "tomorrow" as const,
   name: "Vitrine du matin",
+  arrivalBy: "06:30",
   lines: [{ sku: "CRO", quantity: 4, saleUnit: "piece" as const }],
 };
 
@@ -55,6 +58,7 @@ function world(
 ) {
   const log = new WriteLog();
   const clock = new FixedClock(NOW);
+  const arrivals = new FixedResupplyArrivals(new Map([[SITE, "06:15"]]));
   const drafts = new InMemoryBakehouseDrafts(log);
   const resupplies = new LoggedSiteResupplies(log);
   const staff = new Directory({ name: "Lou Martin", role: "bakehouse" });
@@ -68,6 +72,7 @@ function world(
   return {
     log,
     clock,
+    arrivals,
     drafts,
     resupplies,
     uow,
@@ -86,7 +91,11 @@ function world(
       gate,
       uow,
     ),
-    list: new ListBakehouseResupplyDraftsHandler(new InMemoryBakehouseDraftReader(drafts)),
+    list: new ListBakehouseResupplyDraftsHandler(
+      new InMemoryBakehouseDraftReader(drafts),
+      arrivals,
+      clock,
+    ),
   };
 }
 
@@ -280,5 +289,55 @@ describe("les brouillons du réassort du fournil", () => {
 
     expect(w.drafts.row(id)).toEqual(before);
     expect(w.resupplies.all()).toEqual([]);
+  });
+});
+
+describe("les brouillons du fournil — l'heure d'arrivée (H1, H-D3)", () => {
+  it("se listent avec leur heure, et l'heure que leur point demande pour demain", async () => {
+    const w = world();
+    const key = freshSendingKey();
+    await w.create.execute(new CreateBakehouseResupplyDraftCommand(CONTENT, "s", key));
+
+    const [listed] = await w.list.execute();
+
+    expect(listed).toMatchObject({ arrivalBy: "06:30", suggestedArrivalBy: "06:15" });
+    expect(w.arrivals.askedDays).toEqual(["2026-03-11"]);
+  });
+
+  it("un point sans heure calculable n'en propose pas", async () => {
+    const w = world({ sites: [SITE, "site_labo"] });
+    await w.create.execute(
+      new CreateBakehouseResupplyDraftCommand(
+        { ...CONTENT, siteId: "site_labo", arrivalBy: null },
+        "s",
+        freshSendingKey(),
+      ),
+    );
+
+    const [listed] = await w.list.execute();
+
+    expect(listed).toMatchObject({ arrivalBy: null, suggestedArrivalBy: null });
+  });
+
+  it("envoyé, le réassort part avec l'heure du brouillon", async () => {
+    const w = world();
+    const key = freshSendingKey();
+    await w.create.execute(new CreateBakehouseResupplyDraftCommand(CONTENT, "s", key));
+
+    const id = await w.send.execute(new SendBakehouseResupplyDraftCommand(key, CONTENT, 1, "s"));
+
+    expect(w.resupplies.all().find((row) => row.id === id)?.arrivalBy).toBe("06:30");
+  });
+
+  it("« pour demain » sans heure ne part pas, et le brouillon reste ouvert", async () => {
+    const w = world();
+    const key = freshSendingKey();
+    const bare = { ...CONTENT, arrivalBy: null };
+    await w.create.execute(new CreateBakehouseResupplyDraftCommand(bare, "s", key));
+
+    await expect(
+      w.send.execute(new SendBakehouseResupplyDraftCommand(key, bare, 1, "s")),
+    ).rejects.toBeInstanceOf(ResupplyArrivalRequiredError);
+    expect((await w.list.execute()).map((draft) => draft.id)).toEqual([key]);
   });
 });

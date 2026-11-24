@@ -16,6 +16,7 @@ export interface ResupplyTemplateRow {
   readonly siteId: string;
   readonly name: string;
   readonly target: string;
+  readonly arrivalBy: string | null;
   readonly lines: unknown;
   readonly version: number;
   readonly createdAt: Date;
@@ -51,7 +52,12 @@ export function templateSnapshotOf(row: ResupplyTemplateRow): ResupplyTemplateSn
     id: row.id,
     siteId: row.siteId,
     version: row.version,
-    content: { name: row.name, target: resupplyTargetOf(row.target), lines: linesOf(row) },
+    content: {
+      name: row.name,
+      target: resupplyTargetOf(row.target),
+      arrivalBy: row.arrivalBy,
+      lines: linesOf(row),
+    },
     created: trace(row.createdAt, row.createdByStaffId, row.createdByName, row.createdByRole),
     updated: trace(row.updatedAt, row.updatedByStaffId, row.updatedByName, row.updatedByRole),
     archived: wholeTraceOf(
@@ -72,6 +78,7 @@ export function templateColumnsOf(template: ResupplyTemplate) {
   return {
     name: content.name,
     target: content.target,
+    arrivalBy: content.arrivalBy ?? null,
     lines: content.lines.map((line) => ({
       sku: line.sku,
       quantity: line.quantity,

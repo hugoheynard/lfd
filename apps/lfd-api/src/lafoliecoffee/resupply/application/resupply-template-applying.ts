@@ -1,5 +1,6 @@
 import type { ResupplyTemplateApplyMode, SkippedResupplyTemplateLine } from "@lfd/contracts";
 
+import { ResupplyArrivalTime } from "../domain/resupply-arrival-time.js";
 import type { ResupplyArticle } from "../domain/resupply-catalogue.js";
 import type { ResupplyTemplate } from "../domain/resupply-template.js";
 import { templateLineIssueOf } from "../domain/resupply-template-applicability.js";
@@ -93,4 +94,17 @@ function replaceLines(
       draft.addLine(line);
     }
   }
+}
+
+/**
+ * L'heure du modèle, RECOPIÉE (H-D5 : jamais liée) sur une demande « pour
+ * demain » qui n'en a pas encore : celle que le poste a déjà choisie reste.
+ * Une demande « au plus tôt » n'en porte jamais, quel que soit le modèle.
+ */
+export function copyTemplateArrival(draft: SiteResupply, template: ResupplyTemplate): void {
+  const arrivalBy = template.content.arrivalBy ?? null;
+  if (draft.target !== "tomorrow" || draft.arrivalBy !== null || arrivalBy === null) {
+    return;
+  }
+  draft.setArrivalBy(ResupplyArrivalTime.of(arrivalBy));
 }

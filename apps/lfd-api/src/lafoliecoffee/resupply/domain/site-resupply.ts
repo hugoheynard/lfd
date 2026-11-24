@@ -4,6 +4,7 @@ import {
 } from "./site-resupply-errors.js";
 import { ReserveNotTodayError } from "./site-resupply-gate-errors.js";
 import type { ResupplyOrigin } from "./resupply-origin.js";
+import { assertArrivalFitsTarget, ResupplyArrivalTime } from "./resupply-arrival-time.js";
 import {
   assertCancellable,
   assertPlaceable,
@@ -59,8 +60,9 @@ export {
  * ADDITIONNE sa quantité — le geste naturel en plein service), des quantités
  * entières > 0, au moins une ligne pour passer, l'heure limite opposée à
  * `tomorrow` (jamais à `asap`), une journée pas encore passée à l'envoi, et
- * brouillon → passé → annulé, dans cet ordre seulement. Le nom et les lignes
- * ne changent plus une fois envoyé.
+ * brouillon → passé → annulé, dans cet ordre seulement. Le nom, l'heure
+ * d'arrivée et les lignes ne changent plus une fois envoyé. « Pour demain »
+ * part avec une heure d'arrivée, « au plus tôt » jamais (H-D2).
  *
  * Le brouillon est « la demande en cours » du point pour une visée : une
  * seule par (point, visée, journée), tenue par un index unique partiel en
@@ -98,6 +100,7 @@ export class SiteResupply {
   static sentByBakehouse(input: BakehouseResupplyInput): SiteResupply {
     const resupply = SiteResupply.blank(input, input.trace.at, "bakehouse");
     resupply.rename(input.name);
+    resupply.setArrivalBy(input.arrivalBy);
     for (const line of input.lines) {
       resupply.addLine(line);
     }
@@ -143,6 +146,7 @@ export class SiteResupply {
       new SiteResupplyContent(
         snapshot.name,
         snapshot.lines.map((line) => SiteResupplyLine.of(line)),
+        ResupplyArrivalTime.ofNullable(snapshot.arrivalBy ?? null),
       ),
       snapshot.placed,
       snapshot.cancelled,
@@ -174,6 +178,18 @@ export class SiteResupply {
   rename(name: string | null): void {
     this.assertDraft();
     this.content.rename(name);
+  }
+
+  /** L'heure d'arrivée voulue au point (H1), ou `null`. */
+  get arrivalBy(): ResupplyArrivalTime | null {
+    return this.content.arrivalBy;
+  }
+
+  /** Pose ou retire l'heure, comme une ligne : envoyée, elle ne change plus. Jamais sur `asap`. */
+  setArrivalBy(arrivalBy: ResupplyArrivalTime | null): void {
+    this.assertDraft();
+    assertArrivalFitsTarget(this.target, arrivalBy);
+    this.content.setArrivalBy(arrivalBy);
   }
 
   get lines(): readonly SiteResupplyLine[] {
@@ -270,7 +286,8 @@ export class SiteResupply {
   place(trace: ResupplyTrace, check: PlacementCheck): void {
     this.assertDraft();
     const lineCount = this.content.lines.length;
-    assertPlaceable({ ...this.gateContext(), ...check, lineCount, at: trace.at });
+    const hasArrivalBy = this.content.arrivalBy !== null;
+    assertPlaceable({ ...this.gateContext(), ...check, lineCount, hasArrivalBy, at: trace.at });
     this.placedTrace = trace;
   }
 

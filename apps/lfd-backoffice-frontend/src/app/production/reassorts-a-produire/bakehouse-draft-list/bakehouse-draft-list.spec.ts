@@ -12,6 +12,8 @@ describe('BakehouseDraftList', () => {
     siteId: 'site_v',
     target: 'asap',
     name,
+    arrivalBy: null,
+    suggestedArrivalBy: null,
     lines: Array.from({ length: count }, (_, i) => ({ sku: `S${String(i)}`, quantity: 1 })),
     savedByName: 'Hugo',
     savedAt: '2026-10-28T10:00:00.000Z',

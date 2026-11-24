@@ -23,7 +23,11 @@ import { ResupplyTemplateNotFoundError } from "../domain/resupply-template-error
 import { ResupplyTemplateRepository } from "../domain/resupply-template.repository.js";
 import { SiteResupplyRepository } from "../domain/site-resupply.repository.js";
 import { ApplyResupplyTemplateCommand } from "./apply-resupply-template.command.js";
-import { applyTemplateLines, sortTemplateLines } from "./resupply-template-applying.js";
+import {
+  applyTemplateLines,
+  copyTemplateArrival,
+  sortTemplateLines,
+} from "./resupply-template-applying.js";
 import { loadResupplyTemplate } from "./resupply-template-support.js";
 import { currentDraft } from "./site-resupply-draft.js";
 
@@ -34,7 +38,8 @@ import { currentDraft } from "./site-resupply-draft.js";
  * (les inapplicables écartées et rendues), posées sur la demande en cours de
  * la visée — ouverte si aucune ne l'est. Un réassort envoyé n'est jamais
  * touché : seul le brouillon est la demande en cours. Une demande sans nom
- * prend celui du modèle.
+ * prend celui du modèle, une demande « pour demain » sans heure, la sienne
+ * (H1).
  *
  * **Une fois par intention** : en `add`, la même requête renvoyée doublerait
  * les quantités. La clé de l'écran est scellée dans la transaction de
@@ -92,6 +97,7 @@ export class ApplyResupplyTemplateHandler implements ICommandHandler<
     if (draft.name === null) {
       draft.rename(template.content.name);
     }
+    copyTemplateArrival(draft, template);
     const result = { resupplyId: draft.id, skipped };
     await this.uow.run(async () => {
       await this.resupplies.save(draft);

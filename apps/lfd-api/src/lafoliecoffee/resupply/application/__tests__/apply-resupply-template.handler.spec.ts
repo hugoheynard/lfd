@@ -6,6 +6,7 @@ import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct
 import { inMemoryIntents } from "../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
 import { FixedIdGenerator } from "../../../../platform/id/fixed-id-generator.js";
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
+import { ResupplyArrivalTime } from "../../domain/resupply-arrival-time.js";
 import { ResupplyTemplate } from "../../domain/resupply-template.js";
 import {
   ResupplyTemplateArchivedError,
@@ -49,7 +50,11 @@ function world() {
 async function seedTemplate(
   templates: InMemoryResupplyTemplates,
   lines: readonly { readonly sku: string; readonly quantity: number }[],
-  input: { readonly siteId?: string; readonly archived?: boolean } = {},
+  input: {
+    readonly siteId?: string;
+    readonly archived?: boolean;
+    readonly arrivalBy?: string;
+  } = {},
 ): Promise<void> {
   const template = ResupplyTemplate.create({
     id: TEMPLATE_ID,
@@ -57,6 +62,7 @@ async function seedTemplate(
     content: {
       name: "Base matin",
       target: "tomorrow",
+      arrivalBy: input.arrivalBy ?? null,
       lines: lines.map((line) => ({ ...line, saleUnit: "piece" as const })),
     },
     trace: TRACE,
@@ -206,7 +212,7 @@ describe("appliquer un modèle à la demande en cours", () => {
     const w = world();
     const sent = await w.add.execute(addCommand("CRO", 3));
     await w.send.execute(
-      new SendSiteResupplyCommand(VILLAGE, sent, versionOf(w.store, sent), "staff_1"),
+      new SendSiteResupplyCommand(VILLAGE, sent, versionOf(w.store, sent), "staff_1", "06:30"),
     );
     await seedTemplate(w.templates, [{ sku: "CRO", quantity: 12 }]);
 
@@ -215,5 +221,61 @@ describe("appliquer un modèle à la demande en cours", () => {
     expect(result.resupplyId).not.toBe(sent);
     expect(linesOf(w, sent)).toEqual([["CRO", 3]]);
     expect(linesOf(w, result.resupplyId)).toEqual([["CRO", 12]]);
+  });
+});
+
+describe("appliquer un modèle — son heure d'arrivée (H1, H-D5)", () => {
+  const arrivalOf = (w: ReturnType<typeof world>, id: string) =>
+    w.store.all().find((row) => row.id === id)?.arrivalBy ?? null;
+
+  it("recopie l'heure du modèle sur une demande « pour demain » qui n'en a pas", async () => {
+    const w = world();
+    await seedTemplate(w.templates, [{ sku: "CRO", quantity: 12 }], { arrivalBy: "06:30" });
+
+    const result = await w.apply.execute(applyCommand("add"));
+
+    expect(arrivalOf(w, result.resupplyId)).toBe("06:30");
+  });
+
+  it("garde l'heure que la demande porte déjà", async () => {
+    const w = world();
+    const id = await w.add.execute(addCommand("PAC", 2));
+    const draft = await w.store.load(VILLAGE, id);
+    draft?.setArrivalBy(ResupplyArrivalTime.of("05:30"));
+    if (draft !== null) {
+      await w.store.save(draft);
+    }
+    await seedTemplate(w.templates, [{ sku: "CRO", quantity: 12 }], { arrivalBy: "13:00" });
+
+    const result = await w.apply.execute(applyCommand("replace"));
+
+    expect(arrivalOf(w, result.resupplyId)).toBe("05:30");
+  });
+
+  it("ne pose jamais d'heure sur une demande « au plus tôt »", async () => {
+    const w = world();
+    await seedTemplate(w.templates, [{ sku: "CRO", quantity: 12 }], { arrivalBy: "06:30" });
+
+    const result = await w.apply.execute(
+      new ApplyResupplyTemplateCommand(
+        VILLAGE,
+        "asap",
+        TEMPLATE_ID,
+        "add",
+        "staff_1",
+        randomUUID(),
+      ),
+    );
+
+    expect(arrivalOf(w, result.resupplyId)).toBeNull();
+  });
+
+  it("un modèle sans heure laisse la demande sans heure", async () => {
+    const w = world();
+    await seedTemplate(w.templates, [{ sku: "CRO", quantity: 12 }]);
+
+    const result = await w.apply.execute(applyCommand("add"));
+
+    expect(arrivalOf(w, result.resupplyId)).toBeNull();
   });
 });

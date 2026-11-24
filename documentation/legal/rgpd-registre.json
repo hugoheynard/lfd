@@ -3323,6 +3323,18 @@
   ],
   "exclusions": [
     {
+      "colonne": "public.site_resupply.arrival_by",
+      "raison": "L'heure d'arrivée voulue d'un réassort au point (`HH:MM`, plan de l'heure du réassort, H1) : une heure de la journée de service, jamais l'instant d'un geste ni une personne. L'auteur de l'envoi est dans `placed_by_staff_id`, déjà au registre."
+    },
+    {
+      "colonne": "public.bakehouse_resupply_drafts.arrival_by",
+      "raison": "Voir `public.site_resupply.arrival_by` : l'heure d'arrivée voulue d'un brouillon du fournil, une heure de service, pas une personne."
+    },
+    {
+      "colonne": "public.resupply_templates.arrival_by",
+      "raison": "Voir `public.site_resupply.arrival_by` : l'heure d'arrivée proposée par un modèle de réassort, une heure de service, pas une personne."
+    },
+    {
       "colonne": "public.collection_batch.constituted_by",
       "raison": "Un GENRE d'auteur (`staff` | `system`), jamais une personne : la fiche du membre du staff est dans `constituted_by_staff_id`, déjà au registre, et un lot `system` n'en a pas (CHECK `collection_batch_constituted_by_author`, migration 20261008170000_la_constitution_automatique)."
     },

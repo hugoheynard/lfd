@@ -139,8 +139,9 @@ export class SiteResuppliesStore {
     return this.act((siteId) => this.service.withdrawLine(siteId, draft.id, sku, draft.version));
   }
 
-  send(draft: SiteResupplyDraftView): Promise<boolean> {
-    return this.act((siteId) => this.service.send(siteId, draft.id, draft.version));
+  /** Envoie la demande ; `arrivalBy` : l'heure d'arrivée d'une demande « pour demain ». */
+  send(draft: SiteResupplyDraftView, arrivalBy?: string): Promise<boolean> {
+    return this.act((siteId) => this.service.send(siteId, draft.id, draft.version, arrivalBy));
   }
 
   cancel(resupply: SiteResupplyView): Promise<boolean> {

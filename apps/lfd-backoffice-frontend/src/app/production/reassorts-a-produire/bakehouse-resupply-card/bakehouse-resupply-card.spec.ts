@@ -93,11 +93,14 @@ class FakeBakehouse {
     return Promise.resolve(this.stored);
   }
   readonly draftKeys: string[] = [];
+  /** L'heure portée par chaque écriture de brouillon (création, réécriture, envoi). */
+  readonly draftArrivals: (string | null)[] = [];
   createDraft(
     payload: CreateBakehouseResupplyDraftPayload,
   ): Promise<{ id: string; version: number }> {
     this.draftKeys.push(payload.key);
     this.draftCalls.push(`create:${JSON.stringify(payload.lines)}`);
+    this.draftArrivals.push(payload.arrivalBy ?? null);
     return Promise.resolve({ id: 'dr_new', version: 1 });
   }
   saveDraft(
@@ -105,10 +108,12 @@ class FakeBakehouse {
     payload: UpdateBakehouseResupplyDraftPayload,
   ): Promise<{ id: string; version: number }> {
     this.draftCalls.push(`save:${id}:v${String(payload.version)}`);
+    this.draftArrivals.push(payload.arrivalBy ?? null);
     return Promise.resolve({ id, version: payload.version + 1 });
   }
   sendDraft(id: string, payload: UpdateBakehouseResupplyDraftPayload): Promise<{ id: string }> {
     this.draftCalls.push(`send:${id}:v${String(payload.version)}:${JSON.stringify(payload.lines)}`);
+    this.draftArrivals.push(payload.arrivalBy ?? null);
     return Promise.resolve({ id: 'rs_from_draft' });
   }
   discardDraft(id: string, version: number): Promise<void> {
@@ -219,6 +224,7 @@ describe('BakehouseResupplyCard', () => {
     const { fixture, card, bakehouse, add, root, sentCount } = await mount();
     card['siteId'].set('site_v');
     card['pickTarget']('tomorrow');
+    card['arrivalBy'].set('06:30');
     add('CRO', 10);
     add('PAC', 4);
     add('CRO', 2);
@@ -232,6 +238,7 @@ describe('BakehouseResupplyCard', () => {
           key: expect.any(String),
           target: 'tomorrow',
           name: null,
+          arrivalBy: '06:30',
           lines: [
             { sku: 'CRO', quantity: 12 },
             { sku: 'PAC', quantity: 4 },
@@ -264,10 +271,31 @@ describe('BakehouseResupplyCard', () => {
           key: expect.any(String),
           target: 'asap',
           name: null,
+          arrivalBy: null,
           lines: [{ sku: 'CRO', quantity: 3 }],
         },
       },
     ]);
+  });
+
+  it('une composition neuve « pour demain » part sans heure proposée ; « au plus tôt » n’en a pas', async () => {
+    const { fixture, card, bakehouse, add, root } = await mount();
+    card['siteId'].set('site_v');
+    add('CRO', 1);
+    expect(root.querySelector('[data-bakehouse-arrival]')).toBeNull();
+
+    card['pickTarget']('tomorrow');
+    fixture.detectChanges();
+    expect(root.querySelector('[data-bakehouse-arrival]')).not.toBeNull();
+    expect(card['arrivalBy']()).toBe('');
+    expect(root.querySelector<HTMLButtonElement>('[data-bakehouse-send]')?.disabled).toBe(true);
+
+    // L'heure saisie ne part pas si l'on revient à « au plus tôt ».
+    card['arrivalBy'].set('06:00');
+    card['pickTarget']('asap');
+    fixture.detectChanges();
+    await clickSend(fixture);
+    expect(bakehouse.sent[0]?.payload.arrivalBy).toBeNull();
   });
 
   it('propose les noms déjà employés au point choisi, et envoie le nom avec le réassort (R1g)', async () => {
@@ -403,6 +431,8 @@ describe('BakehouseResupplyCard', () => {
       siteId: 'site_l',
       target: 'tomorrow',
       name: 'Goûter',
+      arrivalBy: null,
+      suggestedArrivalBy: '06:30',
       lines: [{ sku: 'PAC', quantity: 12 }],
       savedByName: 'Hugo',
       savedAt: '2026-10-28T10:00:00.000Z',
@@ -458,7 +488,40 @@ describe('BakehouseResupplyCard', () => {
       expect(sentCount()).toBe(1);
     });
 
-    /** Régression (D3) : un brouillon repris se laissait déplacer vers un autre point. */
+    it('reprend l’heure du brouillon, sinon celle que son point demande (H1)', async () => {
+      const bakehouse = new FakeBakehouse();
+      bakehouse.stored = [DRAFT, { ...DRAFT, id: 'dr_2', arrivalBy: '05:45' }];
+      const first = await mount(new FakePickups(), bakehouse, new FakePanels(), 'dr_1');
+      await settle(first.fixture);
+      expect(first.card['arrivalBy']()).toBe('06:30');
+
+      const second = await mount(new FakePickups(), bakehouse, new FakePanels(), 'dr_2');
+      await settle(second.fixture);
+      expect(second.card['arrivalBy']()).toBe('05:45');
+      await clickSend(second.fixture);
+      expect(bakehouse.draftArrivals.at(-1)).toBe('05:45');
+    });
+
+    it('enregistre un brouillon « pour demain » sans heure, mais ne l’envoie pas', async () => {
+      const { fixture, card, bakehouse, add, root } = await mount();
+      card['siteId'].set('site_v');
+      card['pickTarget']('tomorrow');
+      add('CRO', 2);
+      fixture.detectChanges();
+
+      expect(root.querySelector<HTMLButtonElement>('[data-bakehouse-send]')?.disabled).toBe(true);
+      expect(root.querySelector('[data-bakehouse-arrival]')?.textContent).toContain('ne part pas');
+      click(root, '[data-bakehouse-save-draft]');
+      await settle(fixture);
+      expect(bakehouse.draftCalls).toEqual(['create:[{"sku":"CRO","quantity":2}]']);
+      expect(bakehouse.draftArrivals).toEqual([null]);
+
+      card['arrivalBy'].set('07:00');
+      click(root, '[data-bakehouse-save-draft]');
+      await settle(fixture);
+      expect(bakehouse.draftArrivals.at(-1)).toBe('07:00');
+    });
+
     it('fige le point d’un brouillon repris ; une carte neuve le laisse choisir', async () => {
       const bakehouse = new FakeBakehouse();
       bakehouse.stored = [DRAFT];
@@ -599,6 +662,7 @@ describe('BakehouseResupplyCard — partir d’un modèle (commander.md § 6, T4
     expect(card['lines']()).toEqual([{ sku: 'CRO', quantity: 12 }]);
     expect(card['target']()).toBe('tomorrow');
     expect(card['name']()).toBe('Base matin');
+    expect(card['arrivalBy']()).toBe('');
     expect(bakehouse.sent).toEqual([]);
     expect(bakehouse.draftCalls).toEqual([]);
     expect(templates.calls).toEqual(['list site_v']);
@@ -630,5 +694,19 @@ describe('BakehouseResupplyCard — partir d’un modèle (commander.md § 6, T4
     add('PAC', 2);
     await card['fromTemplate'](baseMatin());
     expect(card['lines']()).toEqual([{ sku: 'PAC', quantity: 2 }]);
+  });
+});
+
+describe('BakehouseResupplyCard — l’heure d’un modèle (H1)', () => {
+  it('recopie l’heure du modèle sur une carte qui n’en a pas, jamais par-dessus', async () => {
+    const { card } = await mount();
+    await card['pickSite']('site_v');
+    await card['fromTemplate']({ ...baseMatin(), arrivalBy: '06:15' });
+    expect(card['arrivalBy']()).toBe('06:15');
+
+    card['arrivalBy'].set('07:00');
+    card['quantities'].set(new Map());
+    await card['fromTemplate']({ ...baseMatin(), arrivalBy: '06:15' });
+    expect(card['arrivalBy']()).toBe('07:00');
   });
 });

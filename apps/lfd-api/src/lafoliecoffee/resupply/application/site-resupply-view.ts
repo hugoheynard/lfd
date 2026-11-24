@@ -16,6 +16,7 @@ export function siteResupplyView(snapshot: PlacedSiteResupplySnapshot): SiteResu
     target: snapshot.target,
     origin: snapshot.origin,
     name: snapshot.name,
+    arrivalBy: snapshot.arrivalBy ?? null,
     status: snapshot.cancelled === null ? "placed" : "cancelled",
     lines: snapshot.lines.map((line) => ({
       sku: line.sku,
@@ -44,6 +45,7 @@ export function siteResupplyDraftView(snapshot: SiteResupplySnapshot): SiteResup
     serviceDay: snapshot.serviceDay,
     version: snapshot.version,
     name: snapshot.name,
+    arrivalBy: snapshot.arrivalBy ?? null,
     lines: snapshot.lines.map((line) => ({
       sku: line.sku,
       label: line.label,

@@ -70,6 +70,7 @@ export class BakehouseDraftsStore {
           key: this.compositionKey,
           target: content.target,
           name: content.name,
+          arrivalBy: content.arrivalBy,
           lines: content.lines,
         });
       } else {

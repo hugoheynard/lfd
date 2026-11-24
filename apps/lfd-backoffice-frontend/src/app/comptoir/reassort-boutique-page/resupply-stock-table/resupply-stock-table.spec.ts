@@ -66,11 +66,15 @@ async function mount(
     readonly now?: number;
     readonly articles?: readonly ResupplyArticleView[];
     readonly stockTracking?: boolean;
+    readonly suggestedArrivalBy?: string | null;
   } = {},
 ): Promise<Mounted> {
   const resupplies = new FakeResupplies();
   resupplies.tomorrowOrderUntil = options.tomorrowOrderUntil ?? null;
   resupplies.stockTracking = options.stockTracking ?? true;
+  if (options.suggestedArrivalBy !== undefined) {
+    resupplies.suggestedArrivalBy = options.suggestedArrivalBy;
+  }
   const alerts = options.alerts ?? new FakeAlerts();
   const receipts = new FakeReceipts();
   TestBed.resetTestingModule();
@@ -249,6 +253,73 @@ describe('ResupplyStockTable', () => {
     buttons[0]?.click();
     await settle(fixture);
     expect(resupplies.calls.at(-1)).toBe('send draft_asap');
+  });
+
+  describe('l’heure d’arrivée (H1)', () => {
+    const arrivalField = (fixture: ComponentFixture<ResupplyStockTable>): Element | null =>
+      root(fixture).querySelector('[data-resupply-arrival]');
+    const sendButton = (fixture: ComponentFixture<ResupplyStockTable>): HTMLButtonElement | null =>
+      root(fixture).querySelector<HTMLButtonElement>('[data-resupply-send]');
+
+    it('« pour demain » propose l’heure que le point demande, et l’envoie', async () => {
+      const { fixture, table, resupplies } = await mount();
+      table['chooseTarget']('tomorrow');
+      await store().addLine('tomorrow', 'CRO', 2);
+      await settle(fixture);
+
+      expect(arrivalField(fixture)).not.toBeNull();
+      expect(table['arrivalBy']()).toBe('06:30');
+      sendButton(fixture)?.click();
+      await settle(fixture);
+      expect(resupplies.calls.at(-1)).toBe('send draft_tomorrow 06:30');
+    });
+
+    it('l’heure déjà posée par un modèle passe avant la suggestion', async () => {
+      const { fixture, table, resupplies } = await mount();
+      table['chooseTarget']('tomorrow');
+      resupplies.arrivals.set('tomorrow', '05:45');
+      await store().addLine('tomorrow', 'CRO', 2);
+      await settle(fixture);
+
+      expect(table['arrivalBy']()).toBe('05:45');
+    });
+
+    it('l’heure saisie survit à la relecture d’un ajout', async () => {
+      const { fixture, table } = await mount();
+      table['chooseTarget']('tomorrow');
+      await store().addLine('tomorrow', 'CRO', 2);
+      await settle(fixture);
+      table['arrivalBy'].set('07:15');
+
+      await store().addLine('tomorrow', 'PAC', 1);
+      await settle(fixture);
+      expect(table['arrivalBy']()).toBe('07:15');
+    });
+
+    it('sans heure, « pour demain » ne s’envoie pas et le dit', async () => {
+      const { fixture, table, resupplies } = await mount({ suggestedArrivalBy: null });
+      table['chooseTarget']('tomorrow');
+      await store().addLine('tomorrow', 'CRO', 2);
+      await settle(fixture);
+
+      expect(table['arrivalBy']()).toBe('');
+      expect(sendButton(fixture)?.disabled).toBe(true);
+      expect(arrivalField(fixture)?.textContent).toContain('ne part pas');
+      await table['send']('tomorrow');
+      expect(resupplies.calls.some((call) => call.startsWith('send'))).toBe(false);
+    });
+
+    it('« au plus tôt » n’a pas de champ et n’envoie pas d’heure', async () => {
+      const { fixture, table, resupplies } = await mount();
+      table['chooseTarget']('asap');
+      await store().addLine('asap', 'CRO', 1);
+      await settle(fixture);
+
+      expect(arrivalField(fixture)).toBeNull();
+      sendButton(fixture)?.click();
+      await settle(fixture);
+      expect(resupplies.calls.at(-1)).toBe('send draft_asap');
+    });
   });
 
   /** R1f (2026-10-21) : une colonne, la visée choisie par l'heure limite puis d'un clic. */

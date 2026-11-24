@@ -18,6 +18,7 @@ function resupply(
     target: 'tomorrow',
     origin: 'counter',
     name: null,
+    arrivalBy: null,
     status: 'placed',
     lines: [
       { sku: 'CRO', label: 'Croissant', quantity: 10, saleUnit: 'piece' as const },

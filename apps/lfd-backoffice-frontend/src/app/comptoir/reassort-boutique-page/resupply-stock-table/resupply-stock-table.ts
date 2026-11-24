@@ -28,6 +28,7 @@ import {
   FoldDropdownItemComponent,
   FoldIconComponent,
   FoldSearchComponent,
+  FoldTimeComponent,
   FoldViewToggleComponent,
   type FoldTableColumn,
   type FoldTableTone,
@@ -94,6 +95,7 @@ const PHONE_QUERY = '(max-width: 768px)';
     FoldDropdownItemComponent,
     FoldIconComponent,
     FoldSearchComponent,
+    FoldTimeComponent,
     FoldViewToggleComponent,
     ResupplyNameField,
     ResupplyQuantityCell,
@@ -264,6 +266,34 @@ export class ResupplyStockTable {
   protected readonly nameText = linkedSignal(() => this.draftName() ?? '');
   protected readonly usedNames = this.resupplies.usedNames;
 
+  /**
+   * L'heure proposée à la demande « pour demain » (H-D3) : celle déjà posée
+   * (par un modèle appliqué), sinon celle que le point demande pour demain.
+   * Comparée par sa demande ET sa valeur : une relecture après un « +1 »
+   * rend une vue neuve, et le champ ne doit pas perdre l'heure saisie.
+   */
+  private readonly arrivalSeed = computed(
+    () => {
+      const draft = this.tomorrowDraft();
+      return {
+        draftId: draft?.id ?? null,
+        hour: draft?.arrivalBy ?? this.resupplies.view()?.suggestedArrivalBy ?? '',
+      };
+    },
+    { equal: (a, b) => a.draftId === b.draftId && a.hour === b.hour },
+  );
+  /** L'heure d'arrivée saisie (`HH:MM`) ; vide : aucune, l'envoi « pour demain » attend. */
+  protected readonly arrivalBy = linkedSignal(() => this.arrivalSeed().hour);
+  /** « Pour demain » sans heure ne part pas (400 `resupply.arrival.required`). */
+  protected readonly arrivalMissing = computed(
+    () => this.target() === 'tomorrow' && this.arrivalBy() === '',
+  );
+  protected readonly arrivalHint = computed(() =>
+    this.arrivalMissing()
+      ? "Choisissez l'heure d'arrivée au point : sans elle, le réassort pour demain ne part pas."
+      : "L'heure à laquelle le réassort doit être au point.",
+  );
+
   constructor() {
     const clock = setInterval(() => this.now.set(Date.now()), NOW_POLL_MS);
     inject(DestroyRef).onDestroy(() => clearInterval(clock));
@@ -306,9 +336,17 @@ export class ResupplyStockTable {
   }
 
   protected async send(target: ResupplyTarget): Promise<void> {
-    const draft = target === 'asap' ? this.asapDraft() : this.tomorrowDraft();
-    if (draft !== null) {
-      await this.resupplies.send(draft);
+    if (target === 'asap') {
+      const draft = this.asapDraft();
+      if (draft !== null) {
+        await this.resupplies.send(draft);
+      }
+      return;
+    }
+    const draft = this.tomorrowDraft();
+    const arrivalBy = this.arrivalBy();
+    if (draft !== null && arrivalBy !== '') {
+      await this.resupplies.send(draft, arrivalBy);
     }
   }
 

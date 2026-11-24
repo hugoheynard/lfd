@@ -113,8 +113,8 @@ describe("le double clic sur « Envoyer » au comptoir (D5)", () => {
     expect(version).toBeDefined();
 
     const answers = await Promise.all([
-      staff().post(`${base}/${id}/send`).send({ version }),
-      staff().post(`${base}/${id}/send`).send({ version }),
+      staff().post(`${base}/${id}/send`).send({ version, arrivalBy: "06:30" }),
+      staff().post(`${base}/${id}/send`).send({ version, arrivalBy: "06:30" }),
     ]);
 
     expect(answers.map((answer) => answer.status)).toEqual([204, 204]);

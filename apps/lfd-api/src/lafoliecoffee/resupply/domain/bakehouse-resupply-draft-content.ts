@@ -4,6 +4,7 @@ import {
   EmptyBakehouseResupplyDraftError,
   TooManyBakehouseResupplyDraftLinesError,
 } from "./bakehouse-resupply-draft-errors.js";
+import { arrivalByOf } from "./resupply-arrival-time.js";
 import { resupplyNameOf } from "./resupply-name.js";
 import {
   RESUPPLY_LIST_MAX_LINES,
@@ -40,13 +41,16 @@ export function draftLineOf(line: {
 }
 
 /**
- * **Ce que compose l'écran** : un point, une visée, un nom, des lignes. Sans
- * journée — elle se calcule à l'envoi, depuis la visée et l'instant.
+ * **Ce que compose l'écran** : un point, une visée, un nom, une heure
+ * d'arrivée facultative (H1), des lignes. Sans journée — elle se calcule à
+ * l'envoi, depuis la visée et l'instant.
  */
 export interface BakehouseResupplyDraftContent {
   readonly siteId: string;
   readonly target: ResupplyTarget;
   readonly name: string | null;
+  /** `HH:MM` ou `null` ; absente vaut `null` (un brouillon d'avant H1). */
+  readonly arrivalBy?: string | null;
   readonly lines: readonly BakehouseResupplyDraftLine[];
 }
 
@@ -60,7 +64,7 @@ const DRAFT_REFUSALS: ResupplyListRefusals = {
 /**
  * Le contenu validé : le nom suit la règle des réassorts (`resupplyNameOf`),
  * les lignes celle d'une composition ({@link resupplyListOf}) sous les refus
- * du brouillon. Les SKU ne sont pas lus au catalogue : un article retiré se
+ * du brouillon, l'heure celle d'une heure d'arrivée ({@link arrivalByOf}). Les SKU ne sont pas lus au catalogue : un article retiré se
  * refuse à l'envoi, pour qu'un brouillon reste toujours rouvrable.
  */
 export function draftContentOf(
@@ -70,6 +74,7 @@ export function draftContentOf(
     siteId: input.siteId,
     target: input.target,
     name: resupplyNameOf(input.name),
+    arrivalBy: arrivalByOf(input.target, input.arrivalBy ?? null),
     lines: resupplyListOf(input.lines, DRAFT_REFUSALS),
   };
 }

@@ -68,6 +68,7 @@ describe('ResupplyTemplatePage', () => {
     expect(service.adjusted[0]?.payload).toEqual({
       name: 'Base matin',
       target: 'tomorrow',
+      arrivalBy: null,
       version: 1,
       lines: [
         { sku: 'CRO', quantity: 12, saleUnit: 'piece' },
@@ -77,6 +78,54 @@ describe('ResupplyTemplatePage', () => {
     });
     expect(root.querySelector('[data-template-done]')).not.toBeNull();
     expect(page['version']()).toBe(2);
+  });
+
+  describe('l’heure par défaut (H1)', () => {
+    it('reprend l’heure du modèle, et l’enregistre ajustée', async () => {
+      const service = new FakeTemplatesService();
+      service.templates = [{ ...baseMatin(), arrivalBy: '06:30' }];
+      const { page, root, save } = await mount('tpl_1', service);
+      expect(page['arrivalBy']()).toBe('06:30');
+      expect(root.querySelector('[data-template-arrival]')).not.toBeNull();
+
+      page['typeArrival']('05:45');
+      await save();
+      expect(service.adjusted[0]?.payload.arrivalBy).toBe('05:45');
+    });
+
+    it('est facultative : vide, le modèle s’enregistre sans heure', async () => {
+      const { page, service, save } = await mount(undefined);
+      page['typeName']('Goûter');
+      page['setQuantity']('BAG', 6);
+      await save();
+      expect(service.created[0]?.payload.arrivalBy).toBeNull();
+    });
+
+    it('n’existe pas pour un modèle « au plus tôt », et n’y part jamais', async () => {
+      const service = new FakeTemplatesService();
+      service.templates = [{ ...baseMatin(), arrivalBy: '06:30' }];
+      const { page, root, fixture, save } = await mount('tpl_1', service);
+      page['pickTarget']('asap');
+      fixture.detectChanges();
+      expect(root.querySelector('[data-template-arrival]')).toBeNull();
+      await save();
+      expect(service.adjusted[0]?.payload).toMatchObject({ target: 'asap', arrivalBy: null });
+    });
+
+    it('un refus de l’heure se dit sur le champ', async () => {
+      const service = new FakeTemplatesService();
+      service.adjustFailure = refusal(
+        400,
+        'resupply.arrival.invalid',
+        '« 25:00 » n’est pas une heure',
+      );
+      const { page, save, root } = await mount('tpl_1', service);
+      await save();
+      expect(page['arrivalErrors']()[0]?.message).toContain('25:00');
+      expect(root.querySelector('[data-template-failure]')).toBeNull();
+      page['typeArrival']('06:00');
+      expect(page['arrivalErrors']()).toEqual([]);
+    });
   });
 
   it('un nom pris se dit sur le champ', async () => {

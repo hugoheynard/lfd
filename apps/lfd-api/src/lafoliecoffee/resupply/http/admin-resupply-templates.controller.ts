@@ -101,5 +101,10 @@ export class AdminResupplyTemplatesController {
 
 /** Le contenu du modèle tel que l'écran l'envoie. */
 function contentOf(body: ResupplyTemplateContentPayload): ResupplyTemplateContent {
-  return { name: body.name, target: body.target, lines: body.lines };
+  return {
+    name: body.name,
+    target: body.target,
+    arrivalBy: body.arrivalBy ?? null,
+    lines: body.lines,
+  };
 }

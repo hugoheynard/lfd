@@ -3,6 +3,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { StaffDirectory } from "../../account/domain/ports/staff-directory.js";
+import { ResupplyArrivalTime } from "../domain/resupply-arrival-time.js";
 import { ResupplyCutoff } from "../domain/resupply-cutoff.js";
 import { SiteResupplyNotFoundError } from "../domain/site-resupply-errors.js";
 import { SiteResupplyPlanKeyReader } from "../domain/site-resupply-plan-key.reader.js";
@@ -15,7 +16,9 @@ import { loadSiteResupply } from "./site-resupply-draft.js";
 /**
  * **Envoie la demande en cours** (R1c) : `place()` sous la version que
  * le poste a vue — l'heure du réassort pour « pour demain », jamais pour
- * « au plus tôt » ; une demande vide ou d'une journée passée ne part pas. Le
+ * « au plus tôt » ; une demande vide ou d'une journée passée ne part pas.
+ * L'heure d'arrivée voulue (H1) se pose avec l'envoi, sur la demande, avant
+ * `place()` : « pour demain » ne part pas sans elle, « au plus tôt » pas avec. Le
  * prochain ajout de la visée ouvrira une nouvelle demande.
  *
  * Depuis le 2026-10-21 (R3a), « pour demain » s'admet au plan SOUS le
@@ -57,6 +60,9 @@ export class SendSiteResupplyHandler implements ICommandHandler<SendSiteResupply
         return;
       }
       draft.assertSeen(command.seenVersion);
+      if (command.arrivalBy !== undefined) {
+        draft.setArrivalBy(ResupplyArrivalTime.ofNullable(command.arrivalBy));
+      }
       const deadline = await this.cutoff.deadlineFor(draft.serviceDay);
       draft.place(trace, { deadline, planStopped: stopped });
       await this.resupplies.save(draft);

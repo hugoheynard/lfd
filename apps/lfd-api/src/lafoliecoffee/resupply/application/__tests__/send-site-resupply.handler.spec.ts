@@ -1,4 +1,8 @@
 import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
+import {
+  InvalidResupplyArrivalTimeError,
+  ResupplyArrivalRequiredError,
+} from "../../domain/resupply-arrival-errors.js";
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
 import { RecordingAdmissionDesk } from "../../../orders/application/commands/__tests__/plan-doubles.js";
 import type { SiteResupply, SiteResupplySnapshot } from "../../domain/site-resupply.js";
@@ -35,6 +39,7 @@ const DRAFT: SiteResupplySnapshot = {
   version: SEEN,
   origin: "counter",
   name: null,
+  arrivalBy: "06:30",
   lines: [{ sku: "CRO", label: "Croissant", quantity: 6, saleUnit: "piece" }],
   placed: null,
   cancelled: null,
@@ -111,5 +116,45 @@ describe("SendSiteResupplyHandler — le double clic (D5)", () => {
     await expect(
       handler.execute(new SendSiteResupplyCommand(SITE, "rs_1", SEEN - 1, "staff_lou")),
     ).rejects.toBeInstanceOf(SiteResupplyChangedMeanwhileError);
+  });
+});
+
+describe("SendSiteResupplyHandler — l'heure d'arrivée (H1)", () => {
+  const arrival = (store: ReturnType<typeof subject>["store"]) => store.all()[0]?.arrivalBy;
+
+  it("pose l'heure envoyée avec la demande, puis l'envoie", async () => {
+    const { handler, store } = subject();
+
+    await handler.execute(new SendSiteResupplyCommand(SITE, "rs_1", SEEN, "staff_lou", "05:15"));
+
+    expect(arrival(store)).toBe("05:15");
+    expect(store.all()[0]?.placed).not.toBeNull();
+  });
+
+  it("sans heure dans la requête, celle déjà posée sur la demande part", async () => {
+    const { handler, store } = subject();
+
+    await handler.execute(new SendSiteResupplyCommand(SITE, "rs_1", SEEN, "staff_lou"));
+
+    expect(arrival(store)).toBe("06:30");
+  });
+
+  it("« pour demain » dont on retire l'heure est refusé, et rien n'est écrit", async () => {
+    const { handler, store } = subject();
+    const saves = store.saves;
+
+    await expect(
+      handler.execute(new SendSiteResupplyCommand(SITE, "rs_1", SEEN, "staff_lou", null)),
+    ).rejects.toBeInstanceOf(ResupplyArrivalRequiredError);
+    expect(store.saves).toBe(saves);
+    expect(store.all()[0]?.placed).toBeNull();
+  });
+
+  it("une heure mal formée est refusée en nommant la forme", async () => {
+    const { handler } = subject();
+
+    await expect(
+      handler.execute(new SendSiteResupplyCommand(SITE, "rs_1", SEEN, "staff_lou", "6h30")),
+    ).rejects.toBeInstanceOf(InvalidResupplyArrivalTimeError);
   });
 });

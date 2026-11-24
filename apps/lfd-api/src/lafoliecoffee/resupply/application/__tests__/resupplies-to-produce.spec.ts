@@ -1,4 +1,5 @@
 import { CancelSiteResupplyCommand } from "../cancel-site-resupply.command.js";
+import { arrivalFor } from "./resupply-arrival-doubles.js";
 import { SendBakehouseResupplyCommand } from "../send-bakehouse-resupply.command.js";
 import { freshSendingKey } from "./site-resupply-doubles.js";
 import { LABO, setup, TODAY, TOMORROW, VILLAGE } from "./site-resupply-bench.js";
@@ -14,6 +15,8 @@ describe("les réassorts à produire", () => {
           target,
           [{ sku, quantity, saleUnit: "piece" as const }],
           "s",
+          null,
+          arrivalFor(target),
         ),
       );
     await order(VILLAGE, "asap", "CRO", 10);
@@ -50,6 +53,8 @@ describe("les réassorts à produire, une fois le plan arrêté (R3a)", () => {
           target,
           [{ sku: "CRO", quantity, saleUnit: "piece" as const }],
           "s",
+          null,
+          arrivalFor(target),
         ),
       );
     await send("asap", 4);

@@ -92,6 +92,7 @@ async function bakehouseSends(site: string, name?: string): Promise<string> {
     .send({
       key: randomUUID(),
       target: "tomorrow",
+      arrivalBy: "06:30",
       ...(name === undefined ? {} : { name }),
       lines: [{ sku: await article(), quantity: 6 }],
     })
@@ -118,7 +119,7 @@ describe("le nom d'un réassort (R1g)", () => {
     await ctx
       .asSub(STAFF)
       .post(`/admin/site-resupplies/sites/${site}/${named.id}/send`)
-      .send({ version: draft?.version })
+      .send({ version: draft?.version, arrivalBy: "06:30" })
       .expect(204);
 
     const after = await listOf(site);

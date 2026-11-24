@@ -235,6 +235,7 @@ import { SiteDaySettingsReader } from "./domain/ports/site-day-settings.reader.j
 import { SiteDeadlines } from "./application/services/site-deadlines.service.js";
 import { SitedDayOrders } from "./application/services/sited-day-orders.service.js";
 import { CommerceTransferSites } from "./application/services/commerce-transfer-sites.service.js";
+import { CommerceResupplyArrivals } from "./application/services/commerce-resupply-arrivals.service.js";
 import { DueThresholds } from "./application/services/due-thresholds.service.js";
 import { DeadlineOrdersReader } from "./domain/ports/deadline-orders.reader.js";
 import { PrismaDeadlineOrdersReader } from "./infrastructure/prisma-deadline-orders.reader.js";
@@ -556,6 +557,8 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     // les retraits VIVANTS du jour — pas le plan, vide après l'arrêt (2026-10-24).
     { provide: SiteArrivalOrdersReader, useClass: PrismaSiteArrivalOrdersReader },
     CommerceTransferSites,
+    // L'heure d'arrivée que le réassort propose (plan de l'heure du réassort, H1).
+    CommerceResupplyArrivals,
     PrismaHandoverSubjectReader,
     PrismaPendingOrdersReader,
     // Le compte à rebours du fournil (vagues, V0) : implémente un port de la
@@ -777,6 +780,8 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     // pour être importés par le fournil : le token qu'il connaît est le sien.
     SitedDayOrders,
     CommerceTransferSites,
+    // Relié au port du réassort par `appBootstrap/resupply-arrival-feed.module.ts`.
+    CommerceResupplyArrivals,
     PrismaHandoverSubjectReader,
     PrismaPendingOrdersReader,
     PendingSettlementSweep,

@@ -17,6 +17,7 @@ function draft(target: 'asap' | 'tomorrow', lines: [string, number][]): SiteResu
     serviceDay: '2026-03-10',
     version: 1,
     name: null,
+    arrivalBy: null,
     lines: lines.map(([sku, quantity]) => ({ sku, label: sku, quantity, saleUnit: 'piece' })),
   };
 }

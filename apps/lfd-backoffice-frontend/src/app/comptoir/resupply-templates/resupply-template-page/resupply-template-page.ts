@@ -33,6 +33,7 @@ import {
   FoldLoadingStateComponent,
   FoldPageLayoutComponent,
   FoldSearchComponent,
+  FoldTimeComponent,
   FoldViewToggleComponent,
   type FoldTableColumn,
 } from 'fold-ng';
@@ -70,6 +71,11 @@ const TARGET_OPTIONS = [
 const NAME_TAKEN = 'resupply.template.name_taken';
 const NAME_REQUIRED = 'resupply.template.name_required';
 const CHANGED_MEANWHILE = 'resupply.template.changed_meanwhile';
+/** Les refus de l'heure (forme, ou heure sur un « au plus tôt ») : dits sur le champ. */
+const ARRIVAL_REFUSALS: ReadonlySet<string> = new Set([
+  'resupply.arrival.invalid',
+  'resupply.arrival.asap',
+]);
 /** L'écran des modèles, hors de `/comptoir/reassort` : son onglet ne s'y allume pas. */
 const TEMPLATES_URL = '/comptoir/modeles-reassort';
 
@@ -107,6 +113,7 @@ const TEMPLATES_URL = '/comptoir/modeles-reassort';
     FoldLoadingStateComponent,
     FoldPageLayoutComponent,
     FoldSearchComponent,
+    FoldTimeComponent,
     FoldViewToggleComponent,
     SaleQuantityPipe,
   ],
@@ -138,6 +145,13 @@ export class ResupplyTemplatePage {
   /** Le refus du serveur sur le nom (pris, ou vide) ; vidé à la saisie. */
   protected readonly nameRefusal = signal<string | null>(null);
   protected readonly target = signal<ResupplyTarget>('tomorrow');
+  /**
+   * L'heure d'arrivée proposée (`HH:MM`), facultative, pour un modèle « pour
+   * demain » seulement ; vide : aucune. Recopiée à l'application, jamais liée.
+   */
+  protected readonly arrivalBy = signal('');
+  /** Le refus du serveur sur l'heure ; vidé à la saisie. */
+  protected readonly arrivalRefusal = signal<string | null>(null);
   protected readonly targetOptions = TARGET_OPTIONS;
   protected readonly quantities = signal<ReadonlyMap<string, number>>(new Map());
   protected readonly stale = signal<readonly ResupplyTemplateLineView[]>([]);
@@ -170,6 +184,10 @@ export class ResupplyTemplatePage {
 
   protected readonly nameErrors = computed(() => {
     const refusal = this.nameRefusal();
+    return refusal === null ? [] : [requiredError({ message: refusal })];
+  });
+  protected readonly arrivalErrors = computed(() => {
+    const refusal = this.arrivalRefusal();
     return refusal === null ? [] : [requiredError({ message: refusal })];
   });
   protected readonly familyOptions = computed(() =>
@@ -241,6 +259,8 @@ export class ResupplyTemplatePage {
     const composition = compositionOf(template);
     this.name.set(template.name);
     this.target.set(template.target);
+    this.arrivalBy.set(template.arrivalBy ?? '');
+    this.arrivalRefusal.set(null);
     this.quantities.set(composition.quantities);
     this.stale.set(composition.stale);
     this.version.set(template.version);
@@ -256,6 +276,12 @@ export class ResupplyTemplatePage {
     if (target === 'asap' || target === 'tomorrow') {
       this.target.set(target);
     }
+  }
+
+  protected typeArrival(arrivalBy: string): void {
+    this.arrivalBy.set(arrivalBy);
+    this.arrivalRefusal.set(null);
+    this.done.set(null);
   }
 
   protected quantityOf(sku: string): number | null {
@@ -285,6 +311,8 @@ export class ResupplyTemplatePage {
     const content: ResupplyTemplateContentPayload = {
       name,
       target: this.target(),
+      // Un « au plus tôt » ne porte jamais d'heure (400 `resupply.arrival.asap`).
+      arrivalBy: this.target() === 'tomorrow' && this.arrivalBy() !== '' ? this.arrivalBy() : null,
       lines: this.lines(),
     };
     const templateId = this.templateId();
@@ -345,6 +373,10 @@ export class ResupplyTemplatePage {
     const message = httpErrorMessage(error, fallback);
     if (code === NAME_TAKEN || code === NAME_REQUIRED) {
       this.nameRefusal.set(message);
+      return;
+    }
+    if (code !== null && ARRIVAL_REFUSALS.has(code)) {
+      this.arrivalRefusal.set(message);
       return;
     }
     if (code === CHANGED_MEANWHILE) {

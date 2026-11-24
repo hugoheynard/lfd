@@ -1,4 +1,5 @@
 import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
+import { arrivalFor } from "./resupply-arrival-doubles.js";
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
 import { ServiceDay, ServiceRange } from "../../../../production/channels/commerce/index.js";
 import type { PlacedSiteResupplySnapshot } from "../../domain/site-resupply.js";
@@ -74,6 +75,8 @@ async function world() {
         target,
         [{ sku, quantity, saleUnit: "piece" as const }],
         "s",
+        null,
+        arrivalFor(target),
       ),
     );
   await send(VILLAGE, "asap", "CRO", 4);

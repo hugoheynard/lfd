@@ -5,6 +5,15 @@ import { jsonBody, type E2eContext } from "./e2e-harness.js";
 import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 /**
+ * L'heure d'arrivée qu'une visée porte à l'envoi (plan de l'heure du
+ * réassort, H-D2) : une heure du jour pour « pour demain », aucune pour « au
+ * plus tôt ». Une heure, pas une date : elle ne vieillit pas.
+ */
+export function arrivalFor(target: ResupplyTarget): string | null {
+  return target === "tomorrow" ? "06:30" : null;
+}
+
+/**
  * Le geste du comptoir pour envoyer un réassort, par ses vraies routes (lot
  * R1c) : chaque ligne s'ajoute à la demande en cours de la visée, puis la
  * demande part sous la version relue. Le `POST` d'un seul tenant qu'on
@@ -31,7 +40,7 @@ export async function counterSends(
   const version = view.drafts.find((draft) => draft.id === id)?.version ?? 0;
   const sent = await agent
     .post(`/admin/site-resupplies/sites/${siteId}/${id}/send`)
-    .send({ version });
+    .send({ version, arrivalBy: arrivalFor(target) });
   return { id, sent };
 }
 

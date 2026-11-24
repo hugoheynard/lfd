@@ -12,7 +12,7 @@ import { SiteResupplyRepository } from "../domain/site-resupply.repository.js";
 import { SITE_RESUPPLY_LINES, snapshotOf } from "./site-resupply.row.js";
 import { dayColumn } from "./day-column.js";
 
-/** Le nom (R1g) et les colonnes des trois gestes datés (l'arrivée au point depuis R3e), `null` tant qu'ils n'ont pas eu lieu. */
+/** Le nom (R1g), l'heure d'arrivée (H1) et les colonnes des trois gestes datés (l'arrivée au point depuis R3e), `null` tant qu'ils n'ont pas eu lieu. */
 function tracesOf(resupply: SiteResupply) {
   const { placed, cancelled, arrived } = resupply;
   // Le lancement (R4a) et le départ (R4d) ne sont que des affichages, posés
@@ -22,6 +22,7 @@ function tracesOf(resupply: SiteResupply) {
   // 2026-11-02) — un `save` concurrent échoue au lieu d'effacer l'affichage.
   return {
     name: resupply.name,
+    arrivalBy: resupply.arrivalBy?.value ?? null,
     placedAt: placed?.at ?? null,
     placedByStaffId: placed?.author.staffUserId ?? null,
     placedByName: placed?.author.name ?? null,

@@ -1,4 +1,5 @@
 import { SiteResupply } from "../site-resupply.js";
+import { MORNING_ARRIVAL } from "./site-resupply-fixtures.js";
 import {
   ResupplyFrozenInPlanError,
   ResupplyLaunchedNotCancellableError,
@@ -28,6 +29,7 @@ function placed(target: ResupplyTarget = "asap"): SiteResupply {
       saleUnit: "piece" as const,
     }),
   );
+  resupply.setArrivalBy(target === "tomorrow" ? MORNING_ARRIVAL : null);
   resupply.place({ at: PLACED_AT, author: LOU }, UNGATED_PLACEMENT);
   return resupply;
 }

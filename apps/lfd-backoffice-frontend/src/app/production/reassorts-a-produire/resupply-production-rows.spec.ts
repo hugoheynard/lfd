@@ -22,6 +22,7 @@ function resupply(
     target,
     origin: 'counter',
     name,
+    arrivalBy: null,
     status: 'placed',
     lines: lines.map(([sku, label, quantity]) => ({
       sku,

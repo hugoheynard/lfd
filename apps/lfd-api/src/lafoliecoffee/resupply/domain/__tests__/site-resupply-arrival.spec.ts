@@ -1,4 +1,5 @@
 import { SiteResupply } from "../site-resupply.js";
+import { MORNING_ARRIVAL } from "./site-resupply-fixtures.js";
 import {
   ResupplyNotArrivableError,
   ResupplyNotLaunchedNotMountableError,
@@ -155,6 +156,7 @@ describe("SiteResupply.markMounted (R4c, Q4 : « Lancer » puis « Monté »)", 
         saleUnit: "piece" as const,
       }),
     );
+    resupply.setArrivalBy(MORNING_ARRIVAL);
     resupply.place({ at: PLACED_AT, author: LOU }, UNGATED_PLACEMENT);
 
     expect(

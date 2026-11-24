@@ -105,6 +105,21 @@
         (textChange)="name.set($event)"
       />
 
+      <!-- L'heure d'ARRIVÉE au point, pour « pour demain » seulement : un
+           « au plus tôt » part quand le fournil le lance (H-D2). -->
+      @if (target() === 'tomorrow') {
+        <fold-time
+          data-bakehouse-arrival
+          label="Pour quelle heure ?"
+          required
+          [step]="60"
+          [hint]="arrivalHint()"
+          [disabled]="pending()"
+          [value]="arrivalBy()"
+          (valueChange)="arrivalBy.set($event)"
+        />
+      }
+
       @if (groupingLost(); as lost) {
         <fold-callout variant="warning" data-grouping-lost>{{ lost }}</fold-callout>
       }

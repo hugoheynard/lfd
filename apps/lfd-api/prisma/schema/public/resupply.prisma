@@ -104,6 +104,12 @@ model SiteResupply {
   /// Son nom libre et facultatif (lot R1g), « Vitrine du matin » : rogné,
   /// 1 à 60 caractères (CHECK `site_resupply_name_trimmed`), `null` : sans nom.
   name       String?  @db.VarChar(60)
+  /// L'heure d'ARRIVÉE voulue au point, `HH:MM` (lot H1 de
+  /// `reassort-boutiques/plan-heure-du-reassort.md`) : exigée par l'agrégat
+  /// pour un « pour demain » envoyé, jamais sur un « au plus tôt » (CHECK
+  /// `site_resupply_arrival_by_not_asap`, forme `…_arrival_by_clock`).
+  /// `null` sur les réassorts envoyés avant elle.
+  arrivalBy  String?  @map("arrival_by") @db.VarChar(5)
 
   /// Verrou optimiste : deux postes qui remplissent, envoient ou annulent en
   /// même temps ne s'écrasent pas.
@@ -239,14 +245,17 @@ model BakehouseResupplyDraft {
   id String @id
 
   /// Le point de retrait (`pickup_addresses.id`), sans clé étrangère.
-  siteId String  @map("site_id")
+  siteId    String  @map("site_id")
   /// `tomorrow` | `asap`.
-  target String
+  target    String
   /// Son nom libre et facultatif, rogné, 1 à 60 caractères (CHECK
   /// `bakehouse_resupply_draft_name_trimmed`), `null` : sans nom.
-  name   String? @db.VarChar(60)
+  name      String? @db.VarChar(60)
+  /// L'heure d'arrivée voulue, `HH:MM`, facultative ; jamais sur `asap`
+  /// (CHECK `bakehouse_resupply_draft_arrival_by_not_asap`).
+  arrivalBy String? @map("arrival_by") @db.VarChar(5)
   /// Les lignes `[{ sku, quantity, saleUnit? }]` (`saleUnit` absent : `piece`) : remplacées ensemble, jamais lues une à une.
-  lines  Json
+  lines     Json
 
   /// `open` → `sent` | `discarded` (CHECK `bakehouse_resupply_draft_status_known`).
   status         String  @default("open")

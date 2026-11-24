@@ -59,6 +59,21 @@ export interface TransferDeparture {
 
 const MINUTES_PER_HOUR = 60;
 
+/** Ce que l'heure d'arrivée requise lit : tout, sauf le trajet. */
+export type RequiredArrivalInput = Omit<TransferDepartureInput, "travelMinutes">;
+
+/**
+ * L'heure à laquelle ce qui sert le point doit y ÊTRE — référence moins la
+ * mise en place, `HH:mm` — ou `null` sans heure de référence. Elle ne
+ * dépend pas du trajet : un point servi sur place la tient aussi (le
+ * réassort « monté pour », H-D6 du plan de l'heure du réassort). Ramenée à
+ * `00:00` au plus tôt.
+ */
+export function requiredArrival(input: RequiredArrivalInput): string | null {
+  const arrival = arrivalMinute(input);
+  return arrival === null ? null : clockOf(arrival);
+}
+
 /**
  * Le départ requis, ou `null` s'il ne se calcule pas (aucune heure de
  * référence, ou trajet inconnu). Ramené à `00:00` au plus tôt : rien ne part
@@ -66,10 +81,10 @@ const MINUTES_PER_HOUR = 60;
  */
 export function transferDeparture(input: TransferDepartureInput): TransferDeparture | null {
   const reference = referenceMinute(input);
-  if (reference === null || input.travelMinutes === null) {
+  const arrival = arrivalMinute(input);
+  if (reference === null || arrival === null || input.travelMinutes === null) {
     return null;
   }
-  const arrival = Math.max(0, reference - input.counterSetupMinutes);
   const departure = Math.max(0, arrival - input.travelMinutes);
   return {
     reference: clockOf(reference),
@@ -78,8 +93,13 @@ export function transferDeparture(input: TransferDepartureInput): TransferDepart
   };
 }
 
+function arrivalMinute(input: RequiredArrivalInput): number | null {
+  const reference = referenceMinute(input);
+  return reference === null ? null : Math.max(0, reference - input.counterSetupMinutes);
+}
+
 /** Le plus tôt de l'ouverture pros et du premier créneau public ouvert ; sinon les commandes. */
-function referenceMinute(input: TransferDepartureInput): number | null {
+function referenceMinute(input: RequiredArrivalInput): number | null {
   const site = [
     input.proPickup === null ? null : windowMinute(input.proPickup),
     firstOpenPublicSlot(input.publicRules, input.publicClosures),

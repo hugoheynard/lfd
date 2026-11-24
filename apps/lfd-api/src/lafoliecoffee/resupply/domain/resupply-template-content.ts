@@ -1,3 +1,4 @@
+import { arrivalByOf } from "./resupply-arrival-time.js";
 import { resupplyNameOf } from "./resupply-name.js";
 import {
   type ResupplyListLine,
@@ -20,6 +21,11 @@ import type { ResupplyTarget } from "./site-resupply-snapshot.js";
 export interface ResupplyTemplateContent {
   readonly name: string;
   readonly target: ResupplyTarget;
+  /**
+   * L'heure d'arrivée proposée, `HH:MM` (H1), recopiée à l'application,
+   * jamais liée (H-D5) ; absente vaut `null`.
+   */
+  readonly arrivalBy?: string | null;
   readonly lines: readonly ResupplyListLine[];
 }
 
@@ -33,7 +39,8 @@ const TEMPLATE_REFUSALS: ResupplyListRefusals = {
 /**
  * Le contenu validé : le nom suit la règle des réassorts (`resupplyNameOf`)
  * mais il est OBLIGATOIRE — un modèle se choisit par son nom ; les lignes
- * suivent la règle d'une composition sous les refus du modèle.
+ * suivent la règle d'une composition sous les refus du modèle ; l'heure,
+ * facultative, celle d'une heure d'arrivée ({@link arrivalByOf}).
  *
  * @throws {ResupplyTemplateNameRequiredError} nom vide une fois rogné.
  */
@@ -42,5 +49,10 @@ export function templateContentOf(input: ResupplyTemplateContent): ResupplyTempl
   if (name === null) {
     throw new ResupplyTemplateNameRequiredError();
   }
-  return { name, target: input.target, lines: resupplyListOf(input.lines, TEMPLATE_REFUSALS) };
+  return {
+    name,
+    target: input.target,
+    arrivalBy: arrivalByOf(input.target, input.arrivalBy ?? null),
+    lines: resupplyListOf(input.lines, TEMPLATE_REFUSALS),
+  };
 }

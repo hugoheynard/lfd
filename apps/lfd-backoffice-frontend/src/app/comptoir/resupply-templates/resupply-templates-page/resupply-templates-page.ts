@@ -26,6 +26,7 @@ import {
 import { PermissionsStore } from '../../../auth/permissions.store';
 import { PickupAddressesService } from '../../../b2b/reglages/pickup-addresses.service';
 import { RESUPPLY_TARGET_LABELS } from '../../../shared/resupply-labels';
+import { timeLabel } from '../../../shared/window-label';
 import { staleCount } from '../resupply-template-composition';
 import { ResupplyTemplatesStore } from '../resupply-templates.store';
 
@@ -44,14 +45,21 @@ export interface TemplateCard {
   readonly warning: string | null;
 }
 
-/** « Pour demain · 12 articles » ; l'avertissement des lignes inapplicables à part. */
+/**
+ * « Pour demain, 6 h 30 · 12 articles » (l'heure seulement si le modèle en
+ * porte une) ; l'avertissement des lignes inapplicables à part.
+ */
 export function templateCardOf(template: ResupplyTemplateView): TemplateCard {
   const count = template.lines.length;
+  const target =
+    template.target === 'tomorrow' && template.arrivalBy !== null
+      ? `${RESUPPLY_TARGET_LABELS[template.target]}, ${timeLabel(template.arrivalBy)}`
+      : RESUPPLY_TARGET_LABELS[template.target];
   const stale = staleCount(template);
   return {
     id: template.id,
     name: template.name,
-    summary: `${RESUPPLY_TARGET_LABELS[template.target]} · ${String(count)} article${count > 1 ? 's' : ''}`,
+    summary: `${target} · ${String(count)} article${count > 1 ? 's' : ''}`,
     warning:
       stale === 0
         ? null

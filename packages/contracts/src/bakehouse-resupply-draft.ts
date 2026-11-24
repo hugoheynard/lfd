@@ -45,6 +45,11 @@ export const saveBakehouseResupplyDraftSchema = z
     target: z.enum(RESUPPLY_TARGETS),
     /** Son nom (R1g) ; `null` ou vide : sans nom. */
     name: z.string().nullable(),
+    /**
+     * L'heure d'arrivée voulue, `HH:MM` (H1) : facultative sur le brouillon,
+     * exigée à l'envoi d'un `tomorrow`, refusée sur un `asap`. Absente : aucune.
+     */
+    arrivalBy: z.string().nullable().optional(),
     lines: z.array(bakehouseResupplyDraftLineSchema).min(1).max(200),
   })
   .strict();
@@ -91,6 +96,13 @@ export interface BakehouseResupplyDraftView {
   readonly siteId: string;
   readonly target: ResupplyTarget;
   readonly name: string | null;
+  /** L'heure d'arrivée voulue, `HH:MM`, ou `null` (H1). */
+  readonly arrivalBy: string | null;
+  /**
+   * L'heure d'arrivée que le point du brouillon demande pour demain (H-D3),
+   * proposée quand le brouillon n'en a pas ; `null` : incalculable.
+   */
+  readonly suggestedArrivalBy: string | null;
   readonly lines: readonly BakehouseResupplyDraftLine[];
   /** Le dernier enregistrement : son auteur (nom figé) et son instant ISO. */
   readonly savedByName: string;

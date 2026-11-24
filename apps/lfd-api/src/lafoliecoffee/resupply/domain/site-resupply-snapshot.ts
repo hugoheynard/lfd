@@ -55,6 +55,13 @@ export interface SiteResupplySnapshot {
   readonly origin: ResupplyOrigin;
   /** Son nom libre (R1g) ; `null` : sans nom. */
   readonly name: string | null;
+  /**
+   * L'heure d'arrivée voulue au point, `HH:MM` (H1) ; `null` : sans heure —
+   * un « au plus tôt », un brouillon qui n'en a pas encore, ou un réassort
+   * envoyé avant elle. Facultative à la RÉHYDRATATION seulement (absente
+   * vaut `null`).
+   */
+  readonly arrivalBy?: string | null;
   /** `saleUnit` figée à l'ajout (le réassort au poids, L2b-1) : la quantité compte des grammes si `weight`. */
   readonly lines: readonly ResupplyLineShape[];
   readonly placed: ResupplyTrace | null;

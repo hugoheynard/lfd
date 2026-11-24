@@ -35,6 +35,12 @@ export const resupplyTemplateContentSchema = z
   .object({
     name: z.string(),
     target: z.enum(RESUPPLY_TARGETS),
+    /**
+     * L'heure d'arrivée proposée, `HH:MM` (H1), facultative ; refusée sur un
+     * `asap`. Recopiée à l'application sur une demande « pour demain » qui
+     * n'en a pas encore, jamais liée. Absente : aucune.
+     */
+    arrivalBy: z.string().nullable().optional(),
     lines: z.array(resupplyTemplateLineSchema).min(1).max(200),
   })
   .strict();
@@ -86,6 +92,8 @@ export interface ResupplyTemplateView {
   readonly siteId: string;
   readonly name: string;
   readonly target: ResupplyTarget;
+  /** L'heure d'arrivée proposée, `HH:MM`, ou `null` (H1). */
+  readonly arrivalBy: string | null;
   readonly lines: readonly ResupplyTemplateLineView[];
   /** Le dernier ajustement : son auteur (nom figé) et son instant ISO. */
   readonly updatedByName: string;

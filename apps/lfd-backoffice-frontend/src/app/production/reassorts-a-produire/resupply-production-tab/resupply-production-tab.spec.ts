@@ -46,6 +46,7 @@ class FakeResupplies {
               target: this.asap ? 'asap' : 'tomorrow',
               origin: 'counter',
               name: null,
+              arrivalBy: null,
               status: 'placed',
               lines: [{ sku: 'CRO', label: 'Croissant', quantity: 10, saleUnit: 'piece' as const }],
               placedAt: '2026-01-02T17:00:00.000Z',

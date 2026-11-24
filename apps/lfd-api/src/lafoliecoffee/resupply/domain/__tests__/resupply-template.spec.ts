@@ -1,3 +1,7 @@
+import {
+  InvalidResupplyArrivalTimeError,
+  ResupplyArrivalOnAsapError,
+} from "../resupply-arrival-errors.js";
 import { DuplicateBakehouseResupplyDraftLineError } from "../bakehouse-resupply-draft-errors.js";
 import { draftContentOf } from "../bakehouse-resupply-draft-content.js";
 import { ResupplyTemplate } from "../resupply-template.js";
@@ -52,6 +56,7 @@ describe("un modèle de réassort", () => {
     expect(template.content).toEqual({
       name: "Base matin",
       target: "tomorrow",
+      arrivalBy: null,
       lines: [{ sku: "CRO", quantity: 4, saleUnit: "piece" }],
     });
   });
@@ -157,5 +162,32 @@ describe("la règle des lignes partagée avec le brouillon du fournil", () => {
     expect(() =>
       draftContentOf({ siteId: "s", target: "asap", name: null, lines: [line, line] }),
     ).toThrow(DuplicateBakehouseResupplyDraftLineError);
+  });
+});
+
+describe("un modèle de réassort — son heure d'arrivée (H1)", () => {
+  const base = {
+    name: "Base matin",
+    target: "tomorrow" as const,
+    lines: [{ sku: "CRO", quantity: 4, saleUnit: "piece" as const }],
+  };
+  const make = (content: typeof base & { readonly arrivalBy?: string | null }) =>
+    ResupplyTemplate.create({ id: "t9", siteId: "site_1", content, trace: TRACE });
+
+  it("est facultative, et se garde telle qu'écrite", () => {
+    expect(make(base).content.arrivalBy).toBeNull();
+    expect(make({ ...base, arrivalBy: "06:30" }).content.arrivalBy).toBe("06:30");
+  });
+
+  it("refuse une heure mal formée et une heure sur « au plus tôt »", () => {
+    expect(() => make({ ...base, arrivalBy: "6h30" })).toThrow(InvalidResupplyArrivalTimeError);
+    expect(() =>
+      ResupplyTemplate.create({
+        id: "t9",
+        siteId: "site_1",
+        content: { ...base, target: "asap", arrivalBy: "06:30" },
+        trace: TRACE,
+      }),
+    ).toThrow(ResupplyArrivalOnAsapError);
   });
 });

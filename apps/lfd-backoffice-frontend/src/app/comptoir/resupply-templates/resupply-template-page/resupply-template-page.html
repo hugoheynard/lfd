@@ -72,6 +72,21 @@
             [value]="target()"
             (valueChange)="pickTarget($event)"
           />
+          <!-- L'heure d'arrivée proposée, pour « pour demain » seulement (H-D2). -->
+          @if (target() === 'tomorrow') {
+            <fold-time
+              data-template-arrival
+              label="Heure par défaut"
+              optional
+              optionalLabel="facultative"
+              hint="Proposée comme heure d'arrivée au point quand le modèle est appliqué."
+              [step]="60"
+              [touched]="true"
+              [errors]="arrivalErrors()"
+              [value]="arrivalBy()"
+              (valueChange)="typeArrival($event)"
+            />
+          }
         </div>
       </fold-card>
 

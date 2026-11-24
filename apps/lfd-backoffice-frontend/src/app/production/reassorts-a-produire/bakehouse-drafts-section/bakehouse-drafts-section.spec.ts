@@ -15,6 +15,8 @@ describe('BakehouseDraftsSection', () => {
     siteId: 'site_v',
     target: 'asap',
     name: null,
+    arrivalBy: null,
+    suggestedArrivalBy: null,
     lines: [{ sku: 'CRO', quantity: 4 }],
     savedByName: 'Hugo',
     savedAt: '2026-10-28T10:00:00.000Z',

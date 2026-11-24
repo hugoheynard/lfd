@@ -21,6 +21,7 @@ export interface BakehouseResupplyDraftRow {
   readonly siteId: string;
   readonly target: string;
   readonly name: string | null;
+  readonly arrivalBy: string | null;
   readonly lines: unknown;
   readonly status: string;
   readonly sentResupplyId: string | null;
@@ -62,6 +63,7 @@ export function draftSnapshotOf(row: BakehouseResupplyDraftRow): BakehouseResupp
       siteId: row.siteId,
       target: resupplyTargetOf(row.target),
       name: row.name,
+      arrivalBy: row.arrivalBy,
       lines: linesOf(row),
     },
     created: trace(row.createdAt, row.createdByStaffId, row.createdByName, row.createdByRole),
@@ -86,6 +88,7 @@ export function draftColumnsOf(draft: BakehouseResupplyDraft) {
     siteId: content.siteId,
     target: content.target,
     name: content.name,
+    arrivalBy: content.arrivalBy ?? null,
     lines: content.lines.map((line) => ({
       sku: line.sku,
       quantity: line.quantity,

@@ -1,3 +1,4 @@
+import { ResupplyArrivalTime } from "../resupply-arrival-time.js";
 import { SiteResupply } from "../site-resupply.js";
 import { SiteResupplyLine } from "../site-resupply-line.js";
 
@@ -9,6 +10,9 @@ export const LATE_NIGHT = new Date("2026-01-02T22:30:00Z");
 export const AFTER_MIDNIGHT = new Date("2026-01-02T23:30:00Z");
 /** L'heure limite de demain : 18 h à Paris le 2 janvier. */
 export const DEADLINE = new Date("2026-01-02T17:00:00Z");
+
+/** L'heure d'arrivée voulue d'un « pour demain » (H1) : une heure du jour, pas une date. */
+export const MORNING_ARRIVAL = ResupplyArrivalTime.of("06:30");
 
 export const AUTHOR = { staffUserId: "staff_1", name: "Lou", role: "counter" };
 
@@ -23,5 +27,9 @@ export function line(sku: string, quantity: number): SiteResupplyLine {
 export function draft(target: "tomorrow" | "asap", at = EVENING): SiteResupply {
   const resupply = SiteResupply.draft({ id: "rs1", siteId: "site_1", target, at });
   resupply.addLine(line("CRO", 12));
+  // « Pour demain » ne part pas sans heure d'arrivée (H1) : le brouillon en porte une.
+  if (target === "tomorrow") {
+    resupply.setArrivalBy(MORNING_ARRIVAL);
+  }
   return resupply;
 }

@@ -11,13 +11,17 @@ model ResupplyTemplate {
   id String @id
 
   /// Le point de retrait (`pickup_addresses.id`), sans clé étrangère ; figé à la création.
-  siteId String @map("site_id")
+  siteId    String  @map("site_id")
   /// Obligatoire, rogné, 1 à 60 caractères (CHECK `resupply_template_name_trimmed`).
-  name   String @db.VarChar(60)
+  name      String  @db.VarChar(60)
   /// La visée proposée à l'application : `tomorrow` | `asap`.
-  target String
+  target    String
+  /// L'heure d'arrivée proposée, `HH:MM`, facultative, recopiée à
+  /// l'application (jamais liée) ; jamais sur `asap` (CHECK
+  /// `resupply_template_arrival_by_not_asap`).
+  arrivalBy String? @map("arrival_by") @db.VarChar(5)
   /// Les lignes `[{ sku, quantity, saleUnit }]` : remplacées ensemble, jamais lues une à une.
-  lines  Json
+  lines     Json
 
   /// Verrou optimiste : deux écrans qui ajustent le même modèle ne s'écrasent pas.
   version Int @default(1)

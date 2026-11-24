@@ -18,6 +18,7 @@ function viewOf(
     siteId: template.siteId,
     name: template.content.name,
     target: template.content.target,
+    arrivalBy: template.content.arrivalBy ?? null,
     lines: template.content.lines.map((line) => {
       const article = articles.get(line.sku);
       return {

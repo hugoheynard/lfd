@@ -1,4 +1,5 @@
 import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
+import { FixedResupplyArrivals } from "./resupply-arrival-doubles.js";
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
 import { ResupplyLaunchedEvent } from "../../../../production/channels/commerce/index.js";
 import {
@@ -80,6 +81,7 @@ function setup() {
       clock,
       new InMemoryResupplyUsedNames(store),
       new TrackedSites([]),
+      new FixedResupplyArrivals(),
     ),
     toProduce: new ListResuppliesToProduceHandler(
       reader,
@@ -152,6 +154,8 @@ describe("annuler un « au plus tôt » lancé (R4a)", () => {
         "tomorrow",
         [{ sku: "CRO", quantity: 3, saleUnit: "piece" as const }],
         "s",
+        null,
+        "06:30",
       ),
     );
 

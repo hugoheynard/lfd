@@ -1,6 +1,7 @@
 import { instantToLocal } from "@lfd/contracts";
 
 import type { ResupplyOrigin } from "./resupply-origin.js";
+import { ResupplyArrivalRequiredError } from "./resupply-arrival-errors.js";
 import { EmptyResupplyError } from "./site-resupply-errors.js";
 import {
   BakehouseResupplyAfterStopError,
@@ -27,6 +28,8 @@ import type { ResupplyTrace } from "./resupply-trace.js";
 /** Ce que l'envoi lit du réassort et de ce que l'appelant a lu sous verrou. */
 export interface PlacementState {
   readonly lineCount: number;
+  /** Le réassort porte-t-il une heure d'arrivée (H1) ? */
+  readonly hasArrivalBy: boolean;
   readonly target: ResupplyTarget;
   readonly origin: ResupplyOrigin;
   readonly serviceDay: string;
@@ -36,7 +39,9 @@ export interface PlacementState {
 }
 
 /**
- * Au moins une ligne, une journée pas encore passée, et — pour « pour
+ * Au moins une ligne, une heure d'arrivée pour « pour demain » (H-D2 ; « au
+ * plus tôt » n'en porte jamais, ce que l'agrégat refuse dès qu'on la pose),
+ * une journée pas encore passée, et — pour « pour
  * demain » seulement — avant l'heure du réassort et avant l'arrêt du plan.
  * `deadline` est l'heure du réassort pour sa journée (« la veille, HH:MM »,
  * (R3a)), `null` si elle n'existe pas ce jour-là ; `planStopped` dit si le
@@ -48,6 +53,9 @@ export interface PlacementState {
 export function assertPlaceable(state: PlacementState): void {
   if (state.lineCount === 0) {
     throw new EmptyResupplyError();
+  }
+  if (state.target === "tomorrow" && !state.hasArrivalBy) {
+    throw new ResupplyArrivalRequiredError();
   }
   if (instantToLocal(state.at).day > state.serviceDay) {
     throw new ResupplyDayPassedError(state.serviceDay);

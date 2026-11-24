@@ -37,6 +37,7 @@ describe("snapshotOf (site_resupply)", () => {
     version: 1,
     origin: "counter",
     name: null,
+    arrivalBy: null,
     placedAt: AT,
     placedByStaffId: null,
     placedByName: null,

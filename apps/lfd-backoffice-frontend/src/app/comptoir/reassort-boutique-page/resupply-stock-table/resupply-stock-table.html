@@ -173,11 +173,25 @@
         (textChange)="nameText.set($event)"
         (committed)="rename($event)"
       />
+      <!-- L'heure d'ARRIVÉE au point, pour « pour demain » seulement : un
+           « au plus tôt » part quand le fournil le lance (H-D2). -->
+      @if (target() === 'tomorrow') {
+        <fold-time
+          data-resupply-arrival
+          label="Pour quelle heure ?"
+          required
+          [step]="60"
+          [hint]="arrivalHint()"
+          [disabled]="resuppliesPending()"
+          [value]="arrivalBy()"
+          (valueChange)="arrivalBy.set($event)"
+        />
+      }
       <button
         foldButton
         type="button"
         data-resupply-send
-        [disabled]="targetCount() === 0 || resuppliesPending()"
+        [disabled]="targetCount() === 0 || resuppliesPending() || arrivalMissing()"
         (click)="send(target())"
       >
         Envoyer — {{ targetLabel() }} ({{ targetCount() }})

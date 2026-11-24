@@ -34,6 +34,7 @@ export function baseMatin(version = 1): ResupplyTemplateView {
     siteId: 'site_v',
     name: 'Base matin',
     target: 'tomorrow',
+    arrivalBy: null,
     lines: [
       { sku: 'CRO', quantity: 12, saleUnit: 'piece', articleName: 'Croissant', issue: null },
       { sku: 'OLD', quantity: 3, saleUnit: 'piece', articleName: null, issue: 'withdrawn' },

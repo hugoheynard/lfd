@@ -22,6 +22,7 @@ import {
   EVENING,
   LATE_NIGHT,
   line,
+  MORNING_ARRIVAL,
   trace,
 } from "./site-resupply-fixtures.js";
 import { UNGATED_PLACEMENT } from "../site-resupply-checks.js";
@@ -138,6 +139,7 @@ describe("SiteResupply — l'origine (R1d)", () => {
       id: "rs2",
       siteId: "site_1",
       target: "asap",
+      arrivalBy: null,
       lines: [line("CRO", 5), line("PAC", 2), line("CRO", 3)],
       trace: trace(EVENING),
       deadline: null,
@@ -160,6 +162,7 @@ describe("SiteResupply — l'origine (R1d)", () => {
         id: "rs3",
         siteId: "site_1",
         target: "tomorrow",
+        arrivalBy: MORNING_ARRIVAL,
         lines,
         trace: trace(LATE_NIGHT),
         deadline,
@@ -201,6 +204,7 @@ describe("SiteResupply — le plan du fournil arrêté (lot R3a)", () => {
         id: "rs4",
         siteId: "site_1",
         target: "tomorrow",
+        arrivalBy: MORNING_ARRIVAL,
         lines: [line("CRO", 1)],
         trace: trace(EVENING),
         deadline: DEADLINE,

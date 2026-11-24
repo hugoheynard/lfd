@@ -58,6 +58,10 @@ export class FakeResupplies {
   /** Réglages › Comptoir : le point suit-il son stock ? Suivi par défaut dans les doublures. */
   stockTracking = true;
   usedNames: readonly string[] = [];
+  /** L'heure que le point demande pour demain (H-D3) ; `null` : incalculable. */
+  suggestedArrivalBy: string | null = '06:30';
+  /** L'heure déjà posée sur chaque demande (par un modèle appliqué). */
+  readonly arrivals = new Map<ResupplyTarget, string>();
 
   list(siteId: string): Promise<SiteResuppliesView> {
     const drafts = (['asap', 'tomorrow'] as const).flatMap((target) => {
@@ -72,6 +76,7 @@ export class FakeResupplies {
               serviceDay: TODAY,
               version: this.version,
               name,
+              arrivalBy: this.arrivals.get(target) ?? null,
               lines: lines.map(([sku, quantity]) => ({
                 sku,
                 label: sku,
@@ -86,6 +91,7 @@ export class FakeResupplies {
       today: TODAY,
       tomorrow: TODAY,
       tomorrowOrderUntil: this.tomorrowOrderUntil,
+      suggestedArrivalBy: this.suggestedArrivalBy,
       drafts,
       resupplies: [],
       usedNames: this.usedNames,
@@ -158,8 +164,8 @@ export class FakeResupplies {
     this.version += 1;
     return Promise.resolve({ resupplyId: `draft_${target}`, skipped: this.skipped });
   }
-  send(_s: string, id: string): Promise<void> {
-    this.calls.push(`send ${id}`);
+  send(_s: string, id: string, _version: number, arrivalBy?: string): Promise<void> {
+    this.calls.push(arrivalBy === undefined ? `send ${id}` : `send ${id} ${arrivalBy}`);
     this.lines.get(id === 'draft_asap' ? 'asap' : 'tomorrow')?.clear();
     this.version += 1;
     return Promise.resolve();

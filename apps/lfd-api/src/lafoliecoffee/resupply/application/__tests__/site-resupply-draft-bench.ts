@@ -1,4 +1,5 @@
 import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
+import { FixedResupplyArrivals } from "./resupply-arrival-doubles.js";
 import { inMemoryIntents } from "../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
 import { FixedIdGenerator } from "../../../../platform/id/fixed-id-generator.js";
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
@@ -49,10 +50,13 @@ export function setup(deadline: Date | null = null, stopped: readonly string[] =
   const launches = new FixedLaunches();
   const gate = new ResupplyPlanGate(desk, launches);
   const uow = new DirectUnitOfWork();
+  // Le point Village demande 06:15 ; le Labo n'a pas d'heure calculable (H-D3).
+  const arrivals = new FixedResupplyArrivals(new Map([[VILLAGE, "06:15"]]));
   return {
     store,
     clock,
     desk,
+    arrivals,
     add: new AddSiteResupplyLineHandler(
       store,
       catalogue,
@@ -89,6 +93,7 @@ export function setup(deadline: Date | null = null, stopped: readonly string[] =
       clock,
       new InMemoryResupplyUsedNames(store),
       new TrackedSites([]),
+      arrivals,
     ),
   };
 }

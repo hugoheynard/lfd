@@ -1,9 +1,11 @@
+import type { ResupplyArrivalTime } from "./resupply-arrival-time.js";
 import { resupplyNameOf } from "./resupply-name.js";
 import type { SiteResupplyLine } from "./site-resupply-line.js";
 import { withLineAdded, withLineCorrected, withLineWithdrawn } from "./site-resupply-lines.js";
 
 /**
- * **Le contenu d'une demande en cours** — son nom et ses lignes, et le fait
+ * **Le contenu d'une demande en cours** — son nom, son heure d'arrivée
+ * voulue (H1) et ses lignes, et le fait
  * qu'elles ont bougé depuis la lecture. Une part de `SiteResupply`, sortie de
  * l'agrégat pour qu'il tienne en un fichier (dette du réassort, 2026-11-02) :
  * seul l'agrégat la construit et l'appelle, APRÈS avoir vérifié que la
@@ -15,7 +17,17 @@ export class SiteResupplyContent {
   constructor(
     private currentName: string | null,
     private lineList: readonly SiteResupplyLine[],
+    private currentArrival: ResupplyArrivalTime | null,
   ) {}
+
+  get arrivalBy(): ResupplyArrivalTime | null {
+    return this.currentArrival;
+  }
+
+  /** L'heure d'arrivée voulue ; `null` la retire. La visée est gardée par l'agrégat. */
+  setArrivalBy(arrivalBy: ResupplyArrivalTime | null): void {
+    this.currentArrival = arrivalBy;
+  }
 
   get name(): string | null {
     return this.currentName;

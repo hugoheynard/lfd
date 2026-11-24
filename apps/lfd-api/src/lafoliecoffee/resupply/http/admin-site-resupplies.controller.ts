@@ -13,6 +13,8 @@ import {
   type ResupplyTarget,
   type SeenSiteResupplyVersionPayload,
   seenSiteResupplyVersionSchema,
+  type SendSiteResupplyPayload,
+  sendSiteResupplySchema,
   type SiteResuppliesView,
 } from "@lfd/contracts";
 import {
@@ -206,11 +208,11 @@ export class AdminSiteResuppliesController {
   async send(
     @Param("siteId") siteId: string,
     @Param("resupplyId") resupplyId: string,
-    @Body(new ZodBody(seenSiteResupplyVersionSchema)) body: SeenSiteResupplyVersionPayload,
+    @Body(new ZodBody(sendSiteResupplySchema)) body: SendSiteResupplyPayload,
     @StaffUserId() staffUserId: string,
   ): Promise<void> {
     await this.commands.execute<SendSiteResupplyCommand, void>(
-      new SendSiteResupplyCommand(siteId, resupplyId, body.version, staffUserId),
+      new SendSiteResupplyCommand(siteId, resupplyId, body.version, staffUserId, body.arrivalBy),
     );
   }
 }

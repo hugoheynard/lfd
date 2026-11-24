@@ -243,7 +243,7 @@ describe("le fournil envoie un réassort (R1d)", () => {
 
     const refused = await sender
       .post(route)
-      .send({ key: randomUUID(), target: "tomorrow", lines })
+      .send({ key: randomUUID(), target: "tomorrow", arrivalBy: "06:30", lines })
       .expect(409);
     expect(refused.body).toMatchObject({ code: "resupply.order.bakehouse_after_stop" });
     await sender.post(route).send({ key: randomUUID(), target: "asap", lines }).expect(201);

@@ -85,7 +85,7 @@ describe("la demande en cours — envoyer", () => {
     );
 
     const refusal = send.execute(
-      new SendSiteResupplyCommand(VILLAGE, id, versionOf(store, id), "s"),
+      new SendSiteResupplyCommand(VILLAGE, id, versionOf(store, id), "s", "06:30"),
     );
 
     await expect(refusal).rejects.toThrow(ResupplyPastCutoffError);
@@ -100,7 +100,9 @@ describe("la demande en cours — envoyer", () => {
       new AddSiteResupplyLineCommand(VILLAGE, "tomorrow", "CRO", 5, "staff_1", randomUUID()),
     );
 
-    await send.execute(new SendSiteResupplyCommand(VILLAGE, id, versionOf(store, id), "s"));
+    await send.execute(
+      new SendSiteResupplyCommand(VILLAGE, id, versionOf(store, id), "s", "06:30"),
+    );
 
     expect(desk.held).toEqual([TOMORROW]);
     expect(store.all()[0]?.placed).not.toBeNull();
@@ -113,7 +115,7 @@ describe("la demande en cours — envoyer", () => {
     );
 
     await expect(
-      send.execute(new SendSiteResupplyCommand(VILLAGE, id, versionOf(store, id), "s")),
+      send.execute(new SendSiteResupplyCommand(VILLAGE, id, versionOf(store, id), "s", "06:30")),
     ).rejects.toThrow(ResupplyPlanStoppedError);
     expect(store.all()[0]?.placed).toBeNull();
   });
@@ -126,7 +128,7 @@ describe("la demande en cours — envoyer", () => {
     clock.set(new Date(NOW.getTime() + 2 * DAY_MS));
 
     await expect(
-      send.execute(new SendSiteResupplyCommand(VILLAGE, id, versionOf(store, id), "s")),
+      send.execute(new SendSiteResupplyCommand(VILLAGE, id, versionOf(store, id), "s", "06:30")),
     ).rejects.toThrow(ResupplyDayPassedError);
     expect((await list.execute(new ListSiteResuppliesQuery(VILLAGE))).drafts).toEqual([]);
   });

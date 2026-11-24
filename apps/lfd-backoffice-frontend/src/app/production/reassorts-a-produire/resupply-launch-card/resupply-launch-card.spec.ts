@@ -19,6 +19,7 @@ function resupply(
     target: 'asap',
     origin: 'counter',
     name: null,
+    arrivalBy: null,
     status: 'placed',
     lines: [{ sku: 'CRO', label: 'Croissant', quantity: 6, saleUnit: 'piece' as const }],
     placedAt: '2026-01-03T06:00:00.000Z',

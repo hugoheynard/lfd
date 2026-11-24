@@ -26,5 +26,7 @@ export class SendBakehouseResupplyCommand {
     readonly staffUserId: string,
     /** Son nom libre (R1g) ; `null` ou vide : sans nom. */
     readonly name: string | null = null,
+    /** L'heure d'arrivée voulue, `HH:MM` (H1) : exigée pour `tomorrow`, refusée pour `asap`. */
+    readonly arrivalBy: string | null = null,
   ) {}
 }

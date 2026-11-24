@@ -47,6 +47,7 @@ describe("la demande en cours — ajouter", () => {
         serviceDay: TOMORROW,
         version: 1,
         name: null,
+        arrivalBy: null,
         lines: [{ sku: "CRO", label: "Croissant", quantity: 12, saleUnit: "piece" as const }],
       },
     ]);
@@ -230,5 +231,22 @@ describe("la demande en cours — ajouter une fois par intention", () => {
     );
 
     expect(store.all()[0]?.lines.map((line) => [line.sku, line.quantity])).toEqual([["CRO", 2]]);
+  });
+});
+
+describe("la demande en cours — l'heure proposée (H-D3)", () => {
+  it("le comptoir reçoit l'heure que son point demande pour demain, lue pour demain", async () => {
+    const { list, arrivals } = setup();
+
+    const view = await list.execute(new ListSiteResuppliesQuery(VILLAGE));
+
+    expect(view.suggestedArrivalBy).toBe("06:15");
+    expect(arrivals.askedDays).toEqual([TOMORROW]);
+  });
+
+  it("un point sans heure calculable n'en reçoit pas : rien n'est inventé", async () => {
+    const { list } = setup();
+
+    expect((await list.execute(new ListSiteResuppliesQuery(LABO))).suggestedArrivalBy).toBeNull();
   });
 });

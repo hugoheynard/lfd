@@ -214,7 +214,10 @@ describe("la demande en cours", () => {
 
     await add(agent, siteId, "tomorrow", croissant.sku, 1).expect(201);
     draft = await draftOf(agent, siteId, "tomorrow");
-    await agent.post(`${route}/${draft.id}/send`).send({ version: draft.version }).expect(204);
+    await agent
+      .post(`${route}/${draft.id}/send`)
+      .send({ version: draft.version, arrivalBy: "06:30" })
+      .expect(204);
     const frozen = await agent
       .patch(`${route}/${draft.id}/lines/${croissant.sku}`)
       .send({ quantity: 4, version: draft.version + 1 })
@@ -234,7 +237,7 @@ describe("la demande en cours", () => {
     expect((await listOf(agent, siteId)).drafts).toEqual([]);
     const refused = await agent
       .post(`/admin/site-resupplies/sites/${siteId}/${stale.id}/send`)
-      .send({ version: stale.version })
+      .send({ version: stale.version, arrivalBy: "06:30" })
       .expect(409);
     expect(refused.body).toMatchObject({ code: "resupply.order.day_passed" });
     // Le prochain ajout ouvre la demande de la journée en cours, à côté.

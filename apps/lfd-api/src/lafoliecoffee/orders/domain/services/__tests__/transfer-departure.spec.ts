@@ -1,5 +1,6 @@
 import {
   firstOpenPublicSlot,
+  requiredArrival,
   type TransferDepartureInput,
   transferDeparture,
 } from "../transfer-departure.js";
@@ -101,5 +102,43 @@ describe("firstOpenPublicSlot", () => {
 
   it("un pas nul fait de la règle un seul créneau", () => {
     expect(firstOpenPublicSlot([{ start: "07:00", end: "08:00", slotMinutes: 0 }], [])).toBe(420);
+  });
+});
+
+describe("requiredArrival — l'heure à laquelle ce qui sert le point doit y être", () => {
+  it("vaut la référence moins la mise en place, la même que l'arrivée du transfert", () => {
+    const input = {
+      ...BASE,
+      proPickup: { start: "06:30", end: "08:00" },
+      counterSetupMinutes: 15,
+    };
+
+    expect(requiredArrival(input)).toBe("06:15");
+    expect(requiredArrival(input)).toBe(transferDeparture(input)?.arrivalBy);
+  });
+
+  it("ne dépend pas du trajet : un trajet inconnu ne l'efface pas", () => {
+    const input = {
+      ...BASE,
+      travelMinutes: null,
+      publicRules: [{ start: "07:00", end: "12:00", slotMinutes: 30 }],
+    };
+
+    expect(transferDeparture(input)).toBeNull();
+    expect(requiredArrival(input)).toBe("07:00");
+  });
+
+  it("sans aucune heure de référence, il n'y en a pas", () => {
+    expect(requiredArrival(BASE)).toBeNull();
+  });
+
+  it("ne remonte pas avant minuit", () => {
+    expect(
+      requiredArrival({
+        ...BASE,
+        proPickup: { start: "00:10", end: "01:00" },
+        counterSetupMinutes: 30,
+      }),
+    ).toBe("00:00");
   });
 });

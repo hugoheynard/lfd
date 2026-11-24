@@ -108,6 +108,7 @@ describe("les brouillons du réassort du fournil", () => {
           siteId: site,
           target: "tomorrow",
           name: " Vitrine du matin ",
+          arrivalBy: "06:30",
           lines: [{ sku, quantity: 4 }],
         })
         .expect(201),
@@ -119,6 +120,7 @@ describe("les brouillons du réassort du fournil", () => {
         siteId: site,
         name: "Vitrine du matin",
         version: 1,
+        arrivalBy: "06:30",
       }),
     ]);
 
@@ -146,6 +148,7 @@ describe("les brouillons du réassort du fournil", () => {
           siteId: site,
           target: "tomorrow",
           name: "Goûter",
+          arrivalBy: "05:45",
           lines: [{ sku, quantity: 9 }],
           version: 2,
         })
@@ -157,6 +160,7 @@ describe("les brouillons du réassort du fournil", () => {
       select: {
         origin: true,
         name: true,
+        arrivalBy: true,
         placedAt: true,
         lines: { select: { sku: true, quantity: true } },
       },
@@ -164,6 +168,7 @@ describe("les brouillons du réassort du fournil", () => {
     expect(resupply).toMatchObject({
       origin: "bakehouse",
       name: "Goûter",
+      arrivalBy: "05:45",
       lines: [{ sku, quantity: 9 }],
     });
     expect(resupply?.placedAt).not.toBeNull();
@@ -181,6 +186,7 @@ describe("les brouillons du réassort du fournil", () => {
           siteId: site,
           target: "tomorrow",
           name: "Goûter",
+          arrivalBy: "05:45",
           lines: [{ sku, quantity: 9 }],
           version: 2,
         })

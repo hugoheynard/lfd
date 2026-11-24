@@ -10,7 +10,11 @@ import {
   SiteDaySettingsReader,
 } from "../../domain/ports/site-day-settings.reader.js";
 import type { DeadlineOrder, DeadlineSite } from "../../domain/services/deadline-thresholds.js";
-import { type ClockWindow, transferDeparture } from "../../domain/services/transfer-departure.js";
+import {
+  type ClockWindow,
+  requiredArrival,
+  transferDeparture,
+} from "../../domain/services/transfer-departure.js";
 
 /** Une commande du jour, réduite à ce qui désigne son site. */
 export interface SitedOrder {
@@ -88,6 +92,33 @@ export class SiteDeadlines {
       resolved.set(id, await this.resolve(day, id, site, origin, windows));
     }
     return resolved;
+  }
+
+  /**
+   * L'heure d'arrivée requise de chaque point demandé, AVEC ou SANS retrait
+   * ce jour-là (le réassort la propose, H-D3 du plan de l'heure du
+   * réassort) : la même règle que {@link forDay} — ouverture pros ou premier
+   * créneau public, moins la mise en place —, sans le repli sur les créneaux
+   * des commandes, qu'un point sans commande n'a pas. Sans trajet : un point
+   * servi sur place la tient aussi. Un point inconnu ou sans horaire ce
+   * jour-là est ABSENT du résultat.
+   */
+  async requiredArrivals(
+    day: string,
+    siteIds: readonly string[],
+  ): Promise<ReadonlyMap<string, string>> {
+    if (siteIds.length === 0) {
+      return new Map();
+    }
+    const settings = await this.sites.forDay(day, siteIds);
+    const arrivals = new Map<string, string>();
+    for (const [id, site] of settings) {
+      const arrival = requiredArrival({ ...site, orderWindows: [] });
+      if (arrival !== null) {
+        arrivals.set(id, arrival);
+      }
+    }
+    return arrivals;
   }
 
   private async resolve(

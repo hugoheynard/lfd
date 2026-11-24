@@ -46,6 +46,12 @@ describe('templateCardOf', () => {
     expect(card.warning).toContain('2 lignes');
   });
 
+  it('dit l’heure par défaut d’un modèle « pour demain » (H1)', () => {
+    expect(templateCardOf({ ...baseMatin(), arrivalBy: '06:30' }).summary).toBe(
+      'Pour demain, 6 h 30 · 3 articles',
+    );
+  });
+
   it('ne dit rien quand tout s’applique', () => {
     const template = { ...baseMatin(), lines: baseMatin().lines.slice(0, 1) };
     expect(templateCardOf(template)).toMatchObject({

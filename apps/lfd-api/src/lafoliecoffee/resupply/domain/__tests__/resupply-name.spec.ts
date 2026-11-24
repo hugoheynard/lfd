@@ -63,7 +63,14 @@ describe("le nom d'un réassort (R1g)", () => {
         saleUnit: "piece" as const,
       }),
     ];
-    const base = { id: "rs2", siteId: "site_1", target: "asap" as const, lines, trace: TRACE };
+    const base = {
+      id: "rs2",
+      siteId: "site_1",
+      target: "asap" as const,
+      arrivalBy: null,
+      lines,
+      trace: TRACE,
+    };
     const sent = SiteResupply.sentByBakehouse({
       ...base,
       name: "Vitrine du soir",

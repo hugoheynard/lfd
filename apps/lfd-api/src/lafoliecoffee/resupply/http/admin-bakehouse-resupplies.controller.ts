@@ -83,6 +83,7 @@ export class AdminBakehouseResuppliesController {
         body.lines,
         staffUserId,
         body.name ?? null,
+        body.arrivalBy ?? null,
       ),
     );
     return { id };
@@ -192,6 +193,7 @@ function contentOf(body: SaveBakehouseResupplyDraftPayload) {
     siteId: body.siteId,
     target: body.target,
     name: body.name,
+    arrivalBy: body.arrivalBy ?? null,
     lines: body.lines.map(draftLineOf),
   };
 }

@@ -1,3 +1,4 @@
+import { ResupplyArrivalTime } from "../domain/resupply-arrival-time.js";
 import type { ResupplyCatalogue } from "../domain/resupply-catalogue.js";
 import type { ResupplyCutoff } from "../domain/resupply-cutoff.js";
 import { ResupplySiteUnknownError } from "../domain/resupply-site-errors.js";
@@ -37,6 +38,8 @@ export interface BakehouseSendingRequest {
   readonly siteId: string;
   readonly target: ResupplyTarget;
   readonly name: string | null;
+  /** L'heure d'arrivée voulue, `HH:MM` (H1) ; absente vaut `null`. */
+  readonly arrivalBy?: string | null;
   readonly lines: readonly RequestedResupplyLine[];
 }
 
@@ -44,10 +47,14 @@ export interface BakehouseSendingRequest {
 export interface PreparedBakehouseResupply {
   readonly request: BakehouseSendingRequest;
   readonly lines: readonly SiteResupplyLine[];
+  readonly arrivalBy: ResupplyArrivalTime | null;
   readonly trace: ResupplyTrace;
 }
 
-/** @throws {ResupplySiteUnknownError} le point n'existe pas ou est archivé. */
+/**
+ * @throws {ResupplySiteUnknownError} le point n'existe pas ou est archivé.
+ * @throws {InvalidResupplyArrivalTimeError} l'heure n'est pas une heure `HH:MM`.
+ */
 export async function prepareBakehouseResupply(
   ports: BakehouseSendingPorts,
   request: BakehouseSendingRequest,
@@ -59,7 +66,8 @@ export async function prepareBakehouseResupply(
   const lines = await Promise.all(
     request.lines.map((requested) => catalogueLine(ports.catalogue, requested)),
   );
-  return { request, lines, trace };
+  const arrivalBy = ResupplyArrivalTime.ofNullable(request.arrivalBy ?? null);
+  return { request, lines, arrivalBy, trace };
 }
 
 /**
@@ -82,6 +90,7 @@ export async function writeBakehouseResupply(
     siteId: request.siteId,
     target: request.target,
     name: request.name,
+    arrivalBy: prepared.arrivalBy,
     lines: prepared.lines,
     trace,
     deadline,

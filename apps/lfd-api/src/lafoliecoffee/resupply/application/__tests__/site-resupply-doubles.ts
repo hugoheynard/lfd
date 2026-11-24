@@ -37,6 +37,7 @@ function snapshotOf(resupply: SiteResupply, version: number): SiteResupplySnapsh
     version,
     origin: resupply.origin,
     name: resupply.name,
+    arrivalBy: resupply.arrivalBy?.value ?? null,
     lines: resupply.lines,
     placed: resupply.placed,
     cancelled: resupply.cancelled,

@@ -33,6 +33,7 @@ import {
   FoldListboxComponent,
   FoldPanelHostService,
   FoldSearchComponent,
+  FoldTimeComponent,
   FoldViewToggleComponent,
   type FoldSelectOption,
   type FoldTableColumn,
@@ -120,6 +121,7 @@ interface SiteChoice {
     FoldIconComponent,
     FoldListboxComponent,
     FoldSearchComponent,
+    FoldTimeComponent,
     FoldViewToggleComponent,
     NgTemplateOutlet,
     ResupplyNameField,
@@ -211,6 +213,21 @@ export class BakehouseResupplyCard {
   protected readonly name = signal('');
   /** Les noms déjà employés au point choisi ; vides tant qu'aucun n'est choisi. */
   protected readonly usedNames = signal<readonly string[]>([]);
+  /**
+   * L'heure d'ARRIVÉE au point (`HH:MM`) d'un réassort « pour demain » (H1) :
+   * celle du brouillon repris, sinon celle que son point demande. Une
+   * composition neuve n'a aucune suggestion servie : le champ part vide.
+   */
+  protected readonly arrivalBy = signal('');
+  /** « Pour demain » sans heure ne part pas (400 `resupply.arrival.required`). */
+  protected readonly arrivalMissing = computed(
+    () => this.target() === 'tomorrow' && this.arrivalBy() === '',
+  );
+  protected readonly arrivalHint = computed(() =>
+    this.arrivalMissing()
+      ? "Choisissez l'heure d'arrivée au point : sans elle, le réassort pour demain ne part pas."
+      : "L'heure à laquelle le réassort doit être au point.",
+  );
   protected readonly pending = signal(false);
   protected readonly failure = signal<string | null>(null);
   protected readonly done = signal<string | null>(null);
@@ -229,11 +246,12 @@ export class BakehouseResupplyCard {
   );
   protected readonly nothingFound = { title: 'Aucun produit ne correspond.' };
 
-  protected readonly canSend = computed(
+  /** Enregistrer demande un point et une ligne ; l'heure y est facultative. */
+  protected readonly canSaveDraft = computed(
     () => this.siteId() !== null && this.lines().length > 0 && !this.pending(),
   );
-  /** Enregistrer demande ce qu'envoyer demande : un point et une ligne. */
-  protected readonly canSaveDraft = this.canSend;
+  /** Envoyer demande en plus l'heure d'un « pour demain ». */
+  protected readonly canSend = computed(() => this.canSaveDraft() && !this.arrivalMissing());
 
   constructor() {
     // L'entrée n'est posée qu'après le constructeur : on suit `draftId` — un
@@ -338,6 +356,10 @@ export class BakehouseResupplyCard {
     if (this.name().trim() === '') {
       this.name.set(template.name);
     }
+    // L'heure du modèle est recopiée si la carte n'en a pas encore (H-D5).
+    if (this.arrivalBy() === '' && template.arrivalBy !== null) {
+      this.arrivalBy.set(template.arrivalBy);
+    }
     this.failure.set(null);
     this.done.set(null);
     this.templateNotice.set(skippedNotice(filled.skipped, this.articles(), template));
@@ -356,7 +378,16 @@ export class BakehouseResupplyCard {
       return null;
     }
     const name = this.name().trim();
-    return { siteId, target: this.target(), name: name === '' ? null : name, lines: this.lines() };
+    const target = this.target();
+    // Un « au plus tôt » ne porte jamais d'heure (400 `resupply.arrival.asap`).
+    const arrivalBy = target === 'tomorrow' && this.arrivalBy() !== '' ? this.arrivalBy() : null;
+    return {
+      siteId,
+      target,
+      name: name === '' ? null : name,
+      arrivalBy,
+      lines: this.lines(),
+    };
   }
 
   /** « Enregistrer comme brouillon » : crée, ou réécrit le brouillon repris. */
@@ -376,6 +407,7 @@ export class BakehouseResupplyCard {
     this.draftsStore.take(draft);
     this.target.set(draft.target);
     this.name.set(draft.name ?? '');
+    this.arrivalBy.set(draft.arrivalBy ?? draft.suggestedArrivalBy ?? '');
     this.quantities.set(new Map(draft.lines.map((line) => [line.sku, line.quantity] as const)));
     this.failure.set(null);
     this.done.set(null);
@@ -399,6 +431,7 @@ export class BakehouseResupplyCard {
   private clear(): void {
     this.quantities.set(new Map());
     this.name.set('');
+    this.arrivalBy.set('');
     this.templateNotice.set(null);
   }
 

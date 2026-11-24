@@ -1,3 +1,4 @@
+import type { ResupplyArrivalTime } from "./resupply-arrival-time.js";
 import type { SiteResupplyLine } from "./site-resupply-line.js";
 import type { ResupplyTarget } from "./site-resupply-snapshot.js";
 import type { ResupplyTrace } from "./resupply-trace.js";
@@ -16,6 +17,8 @@ export interface BakehouseResupplyInput {
   readonly siteId: string;
   readonly target: ResupplyTarget;
   readonly name: string | null;
+  /** Exigée pour « pour demain », refusée pour « au plus tôt » (H-D2). */
+  readonly arrivalBy: ResupplyArrivalTime | null;
   readonly lines: readonly SiteResupplyLine[];
   readonly trace: ResupplyTrace;
   readonly deadline: Date | null;

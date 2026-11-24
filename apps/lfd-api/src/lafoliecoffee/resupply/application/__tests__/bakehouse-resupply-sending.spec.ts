@@ -28,6 +28,8 @@ describe("le fournil envoie un réassort (R1d)", () => {
         "tomorrow",
         [{ sku: "CRO", quantity: 24, saleUnit: "piece" as const }],
         "staff_lou",
+        null,
+        "06:30",
       ),
     );
 
@@ -43,6 +45,7 @@ describe("le fournil envoie un réassort (R1d)", () => {
         target: "tomorrow",
         origin: "bakehouse",
         name: null,
+        arrivalBy: "06:30",
         status: "placed",
         lines: [{ sku: "CRO", label: "Croissant", quantity: 24, saleUnit: "piece" as const }],
         placedAt: NOW.toISOString(),
@@ -69,6 +72,8 @@ describe("le fournil envoie un réassort (R1d)", () => {
         "tomorrow",
         [{ sku: "CRO", quantity: 1, saleUnit: "piece" as const }],
         "s",
+        null,
+        "06:30",
       ),
     );
 
@@ -89,6 +94,8 @@ describe("le fournil envoie un réassort (R1d)", () => {
         "tomorrow",
         [{ sku: "CRO", quantity: 1, saleUnit: "piece" as const }],
         "s",
+        null,
+        "06:30",
       ),
     );
     await place.execute(
@@ -116,6 +123,8 @@ describe("le fournil envoie un réassort (R1d)", () => {
           "tomorrow",
           [{ sku: "CRO", quantity: 1, saleUnit: "piece" as const }],
           "s",
+          null,
+          "06:30",
         ),
       ),
     ).rejects.toThrow(BakehouseResupplyAfterStopError);
@@ -243,7 +252,15 @@ describe("le fournil envoie un réassort — une clé, un envoi (C-A, C-B)", () 
     });
 
     await place.execute(
-      new SendBakehouseResupplyCommand(VILLAGE, freshSendingKey(), "tomorrow", lines, "s"),
+      new SendBakehouseResupplyCommand(
+        VILLAGE,
+        freshSendingKey(),
+        "tomorrow",
+        lines,
+        "s",
+        null,
+        "06:30",
+      ),
     );
 
     expect(askedBeforeHold).toBe(0);

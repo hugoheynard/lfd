@@ -27,6 +27,7 @@ export interface SiteResupplyRow {
   readonly version: number;
   readonly origin: string;
   readonly name: string | null;
+  readonly arrivalBy: string | null;
   readonly placedAt: Date | null;
   readonly placedByStaffId: string | null;
   readonly placedByName: string | null;
@@ -66,6 +67,7 @@ export function snapshotOf(row: SiteResupplyRow): SiteResupplySnapshot {
     version: row.version,
     origin: resupplyOriginOf(row.origin),
     name: row.name,
+    arrivalBy: row.arrivalBy,
     lines: row.lines.map((line) => ({
       sku: line.sku,
       label: line.label,

@@ -585,6 +585,7 @@
   "test/request-reasons-access.e2e-spec.ts": 2473,
   "test/resend-webhook.e2e-spec.ts": 4754,
   "test/reserve-sent-to-shop.e2e-spec.ts": 8046,
+  "test/resupply-arrival-time.e2e-spec.ts": 15711,
   "test/resupply-arrived.e2e-spec.ts": 3318,
   "test/resupply-asap-packing.e2e-spec.ts": 4932,
   "test/resupply-asap-transfer.e2e-spec.ts": 3805,

@@ -67,6 +67,8 @@ describe("annuler un réassort", () => {
         "tomorrow",
         [{ sku: "CRO", quantity: 3, saleUnit: "piece" as const }],
         "s",
+        null,
+        "06:30",
       ),
     );
     const { cancel, store, desk } = setup(null, [TOMORROW]);

@@ -104,7 +104,7 @@ async function counterSendsNamed(s: VillageScene, village: string): Promise<stri
     await staffOf(s).get(base).expect(200),
   );
   const version = view.drafts.find((draft) => draft.id === id)?.version;
-  await staffOf(s).post(`${base}/${id}/send`).send({ version }).expect(204);
+  await staffOf(s).post(`${base}/${id}/send`).send({ version, arrivalBy: "06:30" }).expect(204);
   return id;
 }
 

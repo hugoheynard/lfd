@@ -129,7 +129,7 @@ async function counterSendsNamed(labo: string): Promise<string> {
     await staff().get(base).expect(200),
   );
   const version = view.drafts.find((draft) => draft.id === id)?.version;
-  await staff().post(`${base}/${id}/send`).send({ version }).expect(204);
+  await staff().post(`${base}/${id}/send`).send({ version, arrivalBy: "06:30" }).expect(204);
   return id;
 }
 

@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 
+import { FixedResupplyArrivals } from "./resupply-arrival-doubles.js";
 import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { inMemoryIntents } from "../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
 import { RESUPPLY_NAME_MAX, RESUPPLY_USED_NAMES_MAX } from "@lfd/contracts";
@@ -92,6 +93,7 @@ function setup() {
       clock,
       names,
       new TrackedSites([]),
+      new FixedResupplyArrivals(),
     ),
     usedNames: new ListResupplyUsedNamesHandler(names),
   };

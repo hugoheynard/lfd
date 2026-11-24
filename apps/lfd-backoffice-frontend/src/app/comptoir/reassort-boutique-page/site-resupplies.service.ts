@@ -6,6 +6,7 @@ import type {
   ApplyResupplyTemplatePayload,
   PlacedSiteResupplyResponse,
   ResupplyTarget,
+  SendSiteResupplyPayload,
   SiteResuppliesView,
 } from '@lfd/contracts';
 import { firstValueFrom } from 'rxjs';
@@ -114,11 +115,15 @@ export class SiteResuppliesService {
     );
   }
 
-  /** « Envoyer le réassort » : la demande en cours part au fournil. */
-  send(siteId: string, resupplyId: string, version: number): Promise<void> {
-    return firstValueFrom(
-      this.http.post<void>(`${this.resupply(siteId, resupplyId)}/send`, { version }),
-    );
+  /**
+   * « Envoyer le réassort » : la demande en cours part au fournil, avec son
+   * heure d'arrivée (`HH:MM`) pour une demande « pour demain ». Absente (un
+   * « au plus tôt ») : le corps n'en porte pas.
+   */
+  send(siteId: string, resupplyId: string, version: number, arrivalBy?: string): Promise<void> {
+    const body: SendSiteResupplyPayload =
+      arrivalBy === undefined ? { version } : { version, arrivalBy };
+    return firstValueFrom(this.http.post<void>(`${this.resupply(siteId, resupplyId)}/send`, body));
   }
 
   cancel(siteId: string, resupplyId: string): Promise<void> {

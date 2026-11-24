@@ -73,6 +73,11 @@ export interface SiteResupplyView {
   readonly origin: ResupplyOrigin;
   /** Son nom libre (R1g), « Vitrine du matin » ; `null` : sans nom. */
   readonly name: string | null;
+  /**
+   * L'heure d'ARRIVÉE voulue au point, `HH:MM` (plan de l'heure du réassort,
+   * H1) ; `null` pour un « au plus tôt », ou un réassort envoyé avant elle.
+   */
+  readonly arrivalBy: string | null;
   readonly status: SiteResupplyStatus;
   /** Dans l'ordre de saisie. */
   readonly lines: readonly SiteResupplyLineView[];
@@ -122,6 +127,8 @@ export interface SiteResupplyDraftView {
   readonly version: number;
   /** Le nom posé sur la demande (R1g) ; `null` : sans nom. */
   readonly name: string | null;
+  /** L'heure d'arrivée voulue, `HH:MM`, si elle est déjà posée (H1) ; `null` sinon. */
+  readonly arrivalBy: string | null;
   /** Dans l'ordre de premier ajout ; peut être vide (tout a été retiré). */
   readonly lines: readonly SiteResupplyLineView[];
 }
@@ -140,6 +147,14 @@ export interface SiteResuppliesView {
    * heure limite posée, ou réassort réglé « sans limite ».
    */
   readonly tomorrowOrderUntil: string | null;
+  /**
+   * L'heure d'arrivée que le point demande pour demain, `HH:MM` (H-D3) :
+   * celle qu'un transfert ou la mise en place tiendraient sans réassort —
+   * l'ouverture pros ou le premier créneau public, moins la mise en place.
+   * Proposée quand aucun modèle n'en donne ; `null` : incalculable (aucun
+   * horaire ce jour-là).
+   */
+  readonly suggestedArrivalBy: string | null;
   /**
    * Les demandes en cours du point pour aujourd'hui et demain. Une demande
    * dont la journée est passée n'y figure plus : elle ne s'envoie plus.
@@ -201,6 +216,11 @@ export const placeSiteResupplySchema = z
     target: z.enum(RESUPPLY_TARGETS),
     /** Son nom (R1g) ; absent, `null` ou vide : sans nom. */
     name: z.string().nullable().optional(),
+    /**
+     * L'heure d'arrivée voulue, `HH:MM` (H1) : exigée pour `tomorrow`, refusée
+     * pour `asap` — règles du domaine (400 `resupply.arrival.*`), comme sa forme.
+     */
+    arrivalBy: z.string().nullable().optional(),
     lines: z
       .array(z.object({ sku: z.string().trim().min(1), quantity: z.number() }).strict())
       .max(200),
@@ -234,6 +254,18 @@ export type CorrectSiteResupplyLinePayload = z.infer<typeof correctSiteResupplyL
  */
 export const seenSiteResupplyVersionSchema = z.object({ version: seenVersion }).strict();
 export type SeenSiteResupplyVersionPayload = z.infer<typeof seenSiteResupplyVersionSchema>;
+
+/**
+ * `POST …/sites/:siteId/:resupplyId/send` — envoyer la demande au fournil,
+ * sous la version vue, avec son heure d'arrivée (H1). `arrivalBy` absent :
+ * celle déjà posée sur la demande (par un modèle) ; `null` : aucune. Un
+ * « pour demain » sans heure est refusé (400 `resupply.arrival.required`),
+ * un « au plus tôt » avec une heure aussi (400 `resupply.arrival.asap`).
+ */
+export const sendSiteResupplySchema = z
+  .object({ version: seenVersion, arrivalBy: z.string().nullable().optional() })
+  .strict();
+export type SendSiteResupplyPayload = z.infer<typeof sendSiteResupplySchema>;
 
 /** Réponse de la passation ou d'un ajout : l'identifiant ; l'écran relit la liste. */
 export interface PlacedSiteResupplyResponse {

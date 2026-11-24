@@ -78,6 +78,7 @@ import { ParticularNoShowCountsModule } from "./particular-no-show-counts.module
 import { CompanyHasOrdersModule } from "./company-has-orders.module.js";
 import { PackingFeedModule } from "./packing-feed.module.js";
 import { ShelfDrawsFeedModule } from "./shelf-draws-feed.module.js";
+import { ResupplyArrivalFeedModule } from "./resupply-arrival-feed.module.js";
 import { PackingCommerceFeedModule } from "./packing-commerce-feed.module.js";
 import { CitedAllergensFeedModule } from "./cited-allergens-feed.module.js";
 import { VatRateUsageFeedModule } from "./vat-rate-usage-feed.module.js";
@@ -276,6 +277,7 @@ import { DevImpersonation } from "../platform/auth/dev-impersonation.js";
     CompanyHasOrdersModule,
     PackingFeedModule,
     ShelfDrawsFeedModule,
+    ResupplyArrivalFeedModule,
     PackingDeliveryFeedModule,
     PackingCommerceFeedModule,
     CitedAllergensFeedModule,

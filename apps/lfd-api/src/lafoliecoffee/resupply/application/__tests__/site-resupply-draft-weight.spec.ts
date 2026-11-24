@@ -35,7 +35,9 @@ describe("la demande en cours — un article au poids (lot L2b-1)", () => {
       new AddSiteResupplyLineCommand(VILLAGE, "tomorrow", "CRO", 12, "staff_1", randomUUID()),
     );
 
-    await send.execute(new SendSiteResupplyCommand(VILLAGE, id, versionOf(store, id), "s"));
+    await send.execute(
+      new SendSiteResupplyCommand(VILLAGE, id, versionOf(store, id), "s", "06:30"),
+    );
 
     const sent = store.all().find((row) => row.id === id);
     expect(sent?.placed).not.toBeNull();
