@@ -586,6 +586,8 @@
   "test/ready-order-counts.e2e-spec.ts": 3382,
   "test/recognised-shelf-cache.e2e-spec.ts": 3282,
   "test/recompute.e2e-spec.ts": 2684,
+  "test/recurring-occurrence-placement.e2e-spec.ts": 8000,
+  "test/recurring-occurrences-sweep.e2e-spec.ts": 8000,
   "test/refund-credit-credit-note.e2e-spec.ts": 4000,
   "test/remainder-settlement.e2e-spec.ts": 6543,
   "test/reopened-fact-rearrest-race.e2e-spec.ts": 4954,

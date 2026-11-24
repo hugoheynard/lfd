@@ -41,6 +41,7 @@ export const COMMERCE_SCENARIOS: ScenarioSet = {
         fulfillmentMethod: "pickup",
         deliveryAddress: null,
         pickupAddressId: null,
+        requestedWindow: { start: "07:00", end: "08:00" },
         lines: [{ sku: "VIE-001-1", quantity: 3 }],
         note: "",
       },
