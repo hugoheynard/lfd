@@ -331,9 +331,9 @@ model CatalogItem {
   thumbnailFocalX Float?  @map("thumbnail_focal_x")
   thumbnailFocalY Float?  @map("thumbnail_focal_y")
 
-  orderLimitDaysBefore   Int?    @map("order_limit_days_before")
-  orderLimitTime         String? @map("order_limit_time")
-  orderLimitGraceMinutes Int?    @map("order_limit_grace_minutes")
+  orderLimitDaysBefore     Int?    @map("order_limit_days_before")
+  orderLimitTime           String? @map("order_limit_time")
+  orderLimitGraceMinutes   Int?    @map("order_limit_grace_minutes")
   /// La case « l'équipe peut passer outre » de la limite, reçue du référentiel.
   /// `false` sans limite : il n'y a rien à dépasser.
   orderLimitStaffMayExceed Boolean @default(false) @map("order_limit_staff_may_exceed")

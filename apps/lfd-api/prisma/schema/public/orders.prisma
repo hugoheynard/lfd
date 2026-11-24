@@ -396,11 +396,11 @@ model Order {
   /// commande aurait coûté au calcul normal — TTC, TVA, TVA par taux
   /// `[{ rate, amountCents }]`. Une commande offerte a un total nul (CHECK
   /// `orders_offered_is_free`). NULL pour toute commande payée.
-  offerNature       String? @map("offer_nature")
-  offerNote         String? @map("offer_note")
-  offeredTotalCents Int?    @map("offered_total_cents")
-  offeredVatCents   Int?    @map("offered_vat_cents")
-  offeredVatShares  Json?   @map("offered_vat_shares")
+  offerNature           String?  @map("offer_nature")
+  offerNote             String?  @map("offer_note")
+  offeredTotalCents     Int?     @map("offered_total_cents")
+  offeredVatCents       Int?     @map("offered_vat_cents")
+  offeredVatShares      Json?    @map("offered_vat_shares")
   /// Le client reçoit-il les e-mails automatiques ? `false` par défaut pour une
   /// commande offerte (décidé par Hugo le 2026-11-23) ; NULL pour une commande payée.
   offerNotifiesCustomer Boolean? @map("offer_notifies_customer")
@@ -478,10 +478,10 @@ model Order {
   // l'id de la fiche staff qui a fait le geste (pas une clé étrangère) — CHECK
   // `orders_no_show_together` / `orders_no_show_notice_together`. L'e-mail est
   // DEMANDÉ à l'instant écrit, jamais attesté reçu.
-  noShowAt                        DateTime? @map("no_show_at") @db.Timestamptz(6)
-  noShowByStaffId                 String?   @map("no_show_by_staff_id")
-  noShowNoticeRequestedAt         DateTime? @map("no_show_notice_requested_at") @db.Timestamptz(6)
-  noShowNoticeRequestedByStaffId  String?   @map("no_show_notice_requested_by_staff_id")
+  noShowAt                       DateTime? @map("no_show_at") @db.Timestamptz(6)
+  noShowByStaffId                String?   @map("no_show_by_staff_id")
+  noShowNoticeRequestedAt        DateTime? @map("no_show_notice_requested_at") @db.Timestamptz(6)
+  noShowNoticeRequestedByStaffId String?   @map("no_show_notice_requested_by_staff_id")
 
   // 🔴 COLONNES MORTES depuis le 2026-10-26 (plan E7 reliquat, lot LB,
   // choix 15) : le manque est PAR ENVOI, dans `order_shortfall` — ces quatre
@@ -697,27 +697,27 @@ model OrderShortfallDecision {
 }
 
 model OrderRevisionEntry {
-  id               String   @id @default(cuid())
-  orderId          String   @map("order_id")
-  order            Order    @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  id                String   @id @default(cuid())
+  orderId           String   @map("order_id")
+  order             Order    @relation(fields: [orderId], references: [id], onDelete: Restrict)
   /// La révision REMPLACÉE : `0` pour la composition de la passation.
-  replacedRevision Int      @map("replaced_revision")
+  replacedRevision  Int      @map("replaced_revision")
   /// La composition remplacée, telle qu'elle était écrite (colonnes de
   /// `orders` qui changent et lignes complètes).
-  composition      Json
+  composition       Json
   /// Ce que la révision a changé (`lines`, `date`, `method`…).
-  changes          String[]
-  totalBeforeCents Int      @map("total_before_cents")
-  totalAfterCents  Int      @map("total_after_cents")
+  changes           String[]
+  totalBeforeCents  Int      @map("total_before_cents")
+  totalAfterCents   Int      @map("total_after_cents")
   /// Le HT avant et après (`orderPretaxCents`) : l'historique d'une commande
   /// pro dit le HT. Nuls sur une révision gardée avant le 2026-11-21.
-  pretaxBeforeCents Int?    @map("pretax_before_cents")
-  pretaxAfterCents  Int?    @map("pretax_after_cents")
+  pretaxBeforeCents Int?     @map("pretax_before_cents")
+  pretaxAfterCents  Int?     @map("pretax_after_cents")
   /// `customer` ou `staff` — tenu par un CHECK.
-  revisedByKind    String   @map("revised_by_kind")
-  revisedByUserId  String?  @map("revised_by_user_id")
-  revisedByStaffId String?  @map("revised_by_staff_id")
-  revisedAt        DateTime @map("revised_at") @db.Timestamptz(6)
+  revisedByKind     String   @map("revised_by_kind")
+  revisedByUserId   String?  @map("revised_by_user_id")
+  revisedByStaffId  String?  @map("revised_by_staff_id")
+  revisedAt         DateTime @map("revised_at") @db.Timestamptz(6)
 
   @@unique([orderId, replacedRevision])
   @@map("order_revision")

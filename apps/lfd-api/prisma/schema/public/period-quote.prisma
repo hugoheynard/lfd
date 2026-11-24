@@ -22,32 +22,32 @@
 /// UN devis de période, dans UNE version. `state` : `awaiting` | `invoiced` |
 /// `superseded`.
 model PeriodQuote {
-  id              String      @id
+  id             String      @id
   /// `D-<AAAAMMJJ>-<rang>` — partagé par les versions d'un même devis.
-  number          String
-  version         Int
-  legalEntityId   String      @map("legal_entity_id")
-  legalEntity     LegalEntity @relation(fields: [legalEntityId], references: [id], onDelete: Restrict)
+  number         String
+  version        Int
+  legalEntityId  String      @map("legal_entity_id")
+  legalEntity    LegalEntity @relation(fields: [legalEntityId], references: [id], onDelete: Restrict)
   /// Le payeur légal — opaque.
-  payerCompanyId  String      @map("payer_company_id")
+  payerCompanyId String      @map("payer_company_id")
   /// Sa raison sociale au rangement, pour l'écran.
-  payerName       String      @map("payer_name")
+  payerName      String      @map("payer_name")
   /// Le mandat effectif du groupe ; `""` = aucun (jamais NULL, comme
   /// `invoice_monthly_outcome.mandate_id`).
-  mandateId       String      @default("") @map("mandate_id")
+  mandateId      String      @default("") @map("mandate_id")
   /// Le code service des commandes ; `""` = aucun.
-  serviceCode     String      @default("") @map("service_code")
+  serviceCode    String      @default("") @map("service_code")
   /// Le début de la période DU PAYEUR.
-  periodStartsAt  DateTime    @map("period_starts_at") @db.Timestamptz(3)
-  periodClosesAt  DateTime    @map("period_closes_at") @db.Timestamptz(3)
-  state           String
+  periodStartsAt DateTime    @map("period_starts_at") @db.Timestamptz(3)
+  periodClosesAt DateTime    @map("period_closes_at") @db.Timestamptz(3)
+  state          String
   /// SHA-256 (hexadécimal) du calcul de la facture sur ses commandes.
-  fingerprint     String
-  totalTtcCents   Int         @map("total_ttc_cents")
+  fingerprint    String
+  totalTtcCents  Int         @map("total_ttc_cents")
   /// La facture émise de ce devis ; posée avec `invoiced`.
-  invoiceId       String?     @unique @map("invoice_id")
-  invoice         Invoice?    @relation(fields: [invoiceId], references: [id], onDelete: Restrict)
-  createdAt       DateTime    @map("created_at") @db.Timestamptz(3)
+  invoiceId      String?     @unique @map("invoice_id")
+  invoice        Invoice?    @relation(fields: [invoiceId], references: [id], onDelete: Restrict)
+  createdAt      DateTime    @map("created_at") @db.Timestamptz(3)
 
   orders PeriodQuoteOrder[]
 

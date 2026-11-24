@@ -549,7 +549,7 @@ model PaymentLink {
   company   Company @relation(fields: [companyId], references: [id], onDelete: Restrict)
 
   /// Centimes, entier > 0 (tenu par l'agrégat ET par la contrainte `CHECK`).
-  amountCents Int    @map("amount_cents")
+  amountCents Int     @map("amount_cents")
   /// Repris tel quel sur la page Stripe — 1 à 140 caractères.
   label       String
   /// La nature de la demande, clé du registre `FREE_CHARGE_NATURES`

@@ -69,34 +69,34 @@ enum CardPaymentRole {
 ///   (`20261122170000_la_relecture_des_paiements_en_attente`).
 model CardPayment {
   /// ULID posé par le code (`IdGenerator`) ; la reprise en fabrique un en SQL.
-  id          String           @id
+  id                String           @id
   /// Le type du sujet, opaque pour le bloc (`order` aujourd'hui).
-  subjectType String           @map("subject_type")
+  subjectType       String           @map("subject_type")
   /// L'identifiant du sujet dans son bloc — jamais une clé étrangère.
-  subjectId   String           @map("subject_id")
+  subjectId         String           @map("subject_id")
   /// Le compte d'encaissement (§3.2) qui porte l'intention : relire, annuler,
   /// rembourser lisent le compte SUR LA LIGNE, jamais un défaut.
-  account     String
+  account           String
   /// La référence chez le prestataire (`pi_…` pour Stripe). Unique PAR
   /// compte : deux prestataires peuvent émettre la même chaîne.
-  providerRef String?          @map("provider_ref")
-  role        CardPaymentRole
+  providerRef       String?          @map("provider_ref")
+  role              CardPaymentRole
   /// Le montant demandé, en centimes, strictement positif.
-  amountCents Int              @map("amount_cents")
-  state       CardPaymentState
+  amountCents       Int              @map("amount_cents")
+  state             CardPaymentState
   /// Le rattachement de l'intention à son sujet (pour la reprise : la
   /// passation de la commande).
-  createdAt   DateTime         @map("created_at") @db.Timestamptz(6)
+  createdAt         DateTime         @map("created_at") @db.Timestamptz(6)
   /// L'instant où le paiement est devenu `paid` ; `null` sinon.
-  paidAt      DateTime?        @map("paid_at") @db.Timestamptz(6)
+  paidAt            DateTime?        @map("paid_at") @db.Timestamptz(6)
   /// Le lien de paiement dont la page a fait naître l'intention ; `null` pour
   /// un paiement pris ailleurs (la boutique). Immuable (`card_payment_guard`).
-  payLinkId   String?          @map("pay_link_id")
-  payLink     PayLink?         @relation(fields: [payLinkId], references: [id], onDelete: Restrict)
+  payLinkId         String?          @map("pay_link_id")
+  payLink           PayLink?         @relation(fields: [payLinkId], references: [id], onDelete: Restrict)
   /// La dernière relecture chez le prestataire par le balayage des paiements
   /// en attente (l'instant du `Clock`) ; `null` : jamais relu. Un curseur
   /// technique, sans invariant ni fait journalisé.
-  providerCheckedAt DateTime? @map("provider_checked_at") @db.Timestamptz(6)
+  providerCheckedAt DateTime?        @map("provider_checked_at") @db.Timestamptz(6)
 
   /// Les demandes de remboursement de ce paiement (lot P1, §5.1).
   refundRequests CardRefundRequest[]
