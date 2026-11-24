@@ -11,7 +11,13 @@ import { staffViewer } from "../src/lafoliecoffee/catalog/domain/catalog-viewer.
 import { ResupplyCatalogue } from "../src/lafoliecoffee/resupply/domain/resupply-catalogue.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { OutboxRelayTrigger } from "../src/platform/outbox/outbox-relay-trigger.js";
-import { anActiveFiche, relayAll, SILENT_TRIGGER } from "./catalog-facts-scene.js";
+import {
+  activateFiche,
+  aDraftFiche,
+  anActiveFiche,
+  relayAll,
+  SILENT_TRIGGER,
+} from "./catalog-facts-scene.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 
 const stubAdminVerifier = {
@@ -75,6 +81,28 @@ describe("un article réservé au réassort des boutiques", () => {
     });
     // Le témoin public attend sa validation : le réassort suit la vitrine.
     expect(await resupplyCatalogue()).not.toContain(witness.variantSku);
+  });
+
+  /**
+   * Régression : une fiche `resupply` sans aucun prix s'activait, puis la
+   * projection du fait la jugeait « vendable sans prix » et levait une 500.
+   */
+  it("s'active sans aucun prix, et se commande au réassort", async () => {
+    const cookie = await activateFiche(
+      staff,
+      await aDraftFiche(staff, "Cookie formule"),
+      "resupply",
+      [],
+      false,
+    );
+
+    await relayAll(ctx);
+
+    expect(
+      await ctx.prisma.catalogItem.findUnique({ where: { sku: cookie.variantSku } }),
+    ).toMatchObject({ audience: "resupply", priceMillicents: null });
+    expect(await resupplyCatalogue()).toContain(cookie.variantSku);
+    expect(await publicShelf()).not.toContain(cookie.variantSku);
   });
 
   it("se règle aussi sur la famille, et se trace au journal", async () => {

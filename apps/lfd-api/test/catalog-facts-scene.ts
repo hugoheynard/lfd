@@ -83,6 +83,7 @@ export async function activateFiche(
   fiche: Fiche,
   audience: "pro" | "public" | "both" | "resupply" | null = null,
   allergens: readonly string[] | null = [],
+  priced = true,
 ): Promise<Fiche> {
   const detail = await detailOf(staff, fiche.id);
   const variantId = detail.variants.find((entry) => entry.isDefault)?.id ?? "";
@@ -98,10 +99,12 @@ export async function activateFiche(
     .put(`${category}/vat`)
     .send({ vatByContext: { b2b: rateId, takeaway: rateId, eatIn: rateId } })
     .expect(200);
-  await staff()
-    .put(`${PRODUCTS}/${fiche.id}/variants/${variantId}/pricing`)
-    .send({ priceCents: PRICE_CENTS, weightGrams: null, proPriceHt: PRO_PRICE_HT })
-    .expect(200);
+  if (priced) {
+    await staff()
+      .put(`${PRODUCTS}/${fiche.id}/variants/${variantId}/pricing`)
+      .send({ priceCents: PRICE_CENTS, weightGrams: null, proPriceHt: PRO_PRICE_HT })
+      .expect(200);
+  }
   if (audience !== null) {
     // Posée AVANT l'activation : la première ligne en vente naît avec elle (lot 3).
     await staff().put(`${PRODUCTS}/${fiche.id}/audience`).send({ audience }).expect(200);

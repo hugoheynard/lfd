@@ -6,7 +6,11 @@ import type { ProductStatus } from "../../../catalogue/product/domain/entities/p
 import { variantGaps } from "../../../catalogue/product/domain/services/variant-completeness.js";
 import type { CatalogFamilyRecord } from "../domain/ports/catalog-facts.reader.js";
 import type { CategoryVatPercents } from "../../../catalogue/shared/domain/value-objects/vat-percents.js";
-import { effectiveAudience } from "../../../catalogue/shared/domain/value-objects/audience.js";
+import {
+  effectiveAudience,
+  servedAudiences,
+  type Audience,
+} from "../../../catalogue/shared/domain/value-objects/audience.js";
 import type {
   CatalogEntryStatus,
   CatalogFamilyFactBody,
@@ -73,7 +77,7 @@ export function projectProductFact(input: ProductFactInput): CatalogProductFactB
       gaps[variant.sku] = missing;
       continue;
     }
-    variants.push(sellableVariant(variant, input));
+    variants.push(sellableVariant(variant, input, audience));
   }
   return {
     status: STATUS_OF[product.status],
@@ -108,13 +112,22 @@ type VariantOf = ProductRecord["variants"][number];
  * Un prix absent part `null` — et `publicByContext` vide sans prix public :
  * la déclinaison ne se vend qu'à l'audience dont elle a le prix.
  *
- * @throws {IncompleteVariantProjectedError} appelée sur une déclinaison sans
- *   AUCUN prix — faute de cette projection, `variantGaps` devait l'avoir écartée.
+ * Une déclinaison réservée au réassort (`resupply`) part sans prix : elle ne
+ * se vend à personne, et `variantGaps` n'en exige aucun.
+ *
+ * @throws {IncompleteVariantProjectedError} appelée sur une déclinaison vendue
+ *   à un acheteur sans AUCUN prix — faute de cette projection, `variantGaps`
+ *   devait l'avoir écartée.
  */
-function sellableVariant(variant: VariantOf, input: ProductFactInput): CatalogVariantFact {
+function sellableVariant(
+  variant: VariantOf,
+  input: ProductFactInput,
+  audience: Audience,
+): CatalogVariantFact {
   const vatRatePercent = vatOf(input.percents);
   const proPrice = proPriceOf(vatRatePercent, variant.proPriceMillicents);
-  if (proPrice === null && variant.priceCents === null) {
+  const sold = servedAudiences(audience).length > 0;
+  if (sold && proPrice === null && variant.priceCents === null) {
     throw new IncompleteVariantProjectedError(variant.sku);
   }
   return {
