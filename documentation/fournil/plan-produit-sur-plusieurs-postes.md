@@ -195,6 +195,26 @@ finishes }[]>` ; la position se lit par (produit, poste).
 - « À ranger » : un produit sans aucun poste. Par invariant, un produit placé a
   toujours un poste qui finit.
 
+**Les sommes, relevées le 2026-11-25 (L2)** — « par poste » : la charge d'un
+groupe, où une ligne à plusieurs postes compte dans chacun ; « générale » :
+comptée une fois par SKU, jamais en additionnant les groupes.
+
+| Somme                                                                                | Où                                                                 | Rang                                                                                                                                                |
+| ------------------------------------------------------------------------------------ | ------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `lineCount`, `doneCount`, `totalUnits`, `remainingUnits`, `doneUnits` d'une fiche    | `atelier/domain/services/production-worksheet-groups.ts`           | par poste                                                                                                                                           |
+| `ProductionWorksheetView.lines` (dépréciée) et la dérive `addedUnits`                | `atelier/domain/services/production-worksheet.ts`                  | générale — sur les lignes, avant le rangement                                                                                                       |
+| `DossierRecapGroup.quantity`, `resupplyQuantity`                                     | `plan/domain/services/day-dossier.ts`                              | par poste                                                                                                                                           |
+| `DayDossier.pieces`, `resupplyPieces` (« N pièces dont M de réassort » de l'en-tête) | idem                                                               | **générale** — sommaient les fiches ; somment désormais les produits                                                                                |
+| Le calendrier par tranche, une page par fiche                                        | `plan/domain/services/day-dossier-calendar.ts`                     | par poste                                                                                                                                           |
+| `dossierCountsOf` (l'e-mail du dossier)                                              | `plan/application/services/dossier-dispatch.service.ts`            | générale — lignes à lignes, hors rangement                                                                                                          |
+| Les libellés de la fenêtre d'impression                                              | `plan/application/services/dossier-group-labels.ts`                | aucune somme                                                                                                                                        |
+| Couverture de la simulation : `lineCount`                                            | `plan/domain/services/production-simulation.ts`                    | générale (les articles)                                                                                                                             |
+| Couverture de la simulation : `lineCount` d'un groupe                                | idem, `production-simulation-pdf.ts`                               | par poste                                                                                                                                           |
+| Couverture de la simulation : « à ranger »                                           | idem                                                               | une fois — un produit sans poste n'est que dans un groupe                                                                                           |
+| Spécimen de la simulation                                                            | `plan/application/document-specimens/specimen-simulation.ts`       | un poste par produit : aucune somme ne change                                                                                                       |
+| Rangement servi aux écrans (`entries`)                                               | `workstations/application/services/grouping-entries.ts`            | une entrée par couple (SKU, groupe), avec `role`                                                                                                    |
+| Prévisionnel, récapitulatif, filtres des réassorts (front)                           | `served-groups.ts`, `workstation-filter.ts`, `production-recap.ts` | **une seule entrée par SKU**, celle qui n'est pas `step` : l'écran range encore sous le seul poste qui finit, ses totaux restent ceux d'aujourd'hui |
+
 ### 2.8 Les niveaux de suivi
 
 - Le niveau de chaque poste reste celui figé du jour

@@ -8,6 +8,7 @@ import {
 import {
   type GroupingArticle,
   type GroupingPlacement,
+  type GroupingStation,
   type ProductionGroup,
   groupingOf,
 } from "../production-grouping.js";
@@ -44,15 +45,21 @@ const WORKSTATIONS = [
   { id: "ws_pastry", name: "Pâtisserie" },
 ];
 
+/** Chaque produit sur un seul poste, qui le finit ; sa place dans la pile s'il en a une. */
 function placement(
   byProduct: readonly (readonly [string, string])[],
   positions: readonly (readonly [string, number])[] = [],
 ): GroupingPlacement {
+  const placeOf = new Map(positions);
   return {
     workstations: WORKSTATIONS,
     articles: ARTICLES,
-    byProduct: new Map(byProduct),
-    positions: new Map(positions),
+    byProduct: new Map(
+      byProduct.map(([product, workstationId]) => [
+        product,
+        [{ workstationId, finishes: true, position: placeOf.get(product) ?? null }],
+      ]),
+    ),
   };
 }
 
@@ -78,6 +85,7 @@ describe("groupingOf — mode boutique", () => {
         unplaced: false,
         sections: shelf.sections,
         lines: shelf.items,
+        roles: new Map(),
       })),
     );
     expect(groups.at(-1)).toEqual({
@@ -89,6 +97,7 @@ describe("groupingOf — mode boutique", () => {
       unplaced: false,
       sections: [],
       lines: reference.unshelved,
+      roles: new Map(),
     });
   });
 
@@ -176,13 +185,19 @@ describe("groupingOf — mode prod", () => {
         { id: "ws_s", name: "Traiteur salé" },
       ],
       articles: ARTICLES,
-      positions: new Map(),
-      byProduct: new Map([
-        ["BAG", "ws_b"],
-        ["TAR", "ws_p"],
-        ["QUI", "ws_s"],
-        ["CAK", "ws_s"],
-      ]),
+      byProduct: new Map(
+        (
+          [
+            ["BAG", "ws_b"],
+            ["TAR", "ws_p"],
+            ["QUI", "ws_s"],
+            ["CAK", "ws_s"],
+          ] as const
+        ).map(([product, workstationId]) => [
+          product,
+          [{ workstationId, finishes: true, position: null }],
+        ]),
+      ),
     };
     const known = LINES.filter((line) => ARTICLES.has(line));
     const prod = groupingOf(known, sku, { mode: "workstation", placement: sameNames });
@@ -195,7 +210,7 @@ describe("groupingOf — mode prod", () => {
   });
 });
 
-describe("groupingOf — toute ligne ressort une fois", () => {
+describe("groupingOf — un seul poste par produit : toute ligne ressort une fois", () => {
   const sources = [
     ["mode boutique", { mode: "shelf", shelves: SHELVES }],
     ["mode boutique, rayons illisibles", { mode: "shelf", shelves: null }],
@@ -263,5 +278,82 @@ describe("groupingOf — la pile d'un poste", () => {
 
   it("sans aucune place, garde l'ordre reçu", () => {
     expect(pastryLines([])).toEqual(["TAR-1", "QUI-8", "CAK-1", "QUI-6"]);
+  });
+});
+
+/**
+ * Un produit sur plusieurs postes (plan
+ * `documentation/fournil/plan-produit-sur-plusieurs-postes.md`, § 2.7).
+ */
+describe("groupingOf — un produit sur plusieurs postes", () => {
+  const station = (
+    workstationId: string,
+    finishes: boolean,
+    position: number | null = null,
+  ): GroupingStation => ({ workstationId, finishes, position });
+
+  /** La quiche passe à la Boulangerie (la pâte, une étape) et finit en Pâtisserie. */
+  const SANDWICHED: GroupingPlacement = {
+    workstations: WORKSTATIONS,
+    articles: ARTICLES,
+    byProduct: new Map([
+      ["QUI", [station("ws_pastry", true, 1), station("ws_bakery", false, 0)]],
+      ["BAG", [station("ws_bakery", true, 1)]],
+      ["TAR", [station("ws_pastry", true, 0)]],
+    ]),
+  };
+
+  it("ressort sous CHACUN de ses postes, avec son rôle dans chacun", () => {
+    const groups = groupingOf(["TAR-1", "QUI-6", "BAG-1"], sku, {
+      mode: "workstation",
+      placement: SANDWICHED,
+    });
+
+    expect(groups.map((group) => [group.key, group.lines])).toEqual([
+      ["ws:ws_bakery", ["QUI-6", "BAG-1"]],
+      ["ws:ws_pastry", ["TAR-1", "QUI-6"]],
+    ]);
+    const [bakery, pastry] = groups;
+    expect(bakery?.roles.get("QUI-6")).toBe("step");
+    expect(bakery?.roles.get("BAG-1")).toBe("finishes");
+    expect(pastry?.roles.get("QUI-6")).toBe("finishes");
+    expect(pastry?.roles.get("TAR-1")).toBe("finishes");
+  });
+
+  it("trie chaque pile par la place du produit DANS CE poste", () => {
+    const groups = groupingOf(["BAG-1", "QUI-6", "TAR-1"], sku, {
+      mode: "workstation",
+      placement: SANDWICHED,
+    });
+
+    // Première à la Boulangerie (place 0), seconde en Pâtisserie (place 1).
+    expect(groups.find((group) => group.key === "ws:ws_bakery")?.lines).toEqual(["QUI-6", "BAG-1"]);
+    expect(groups.find((group) => group.key === "ws:ws_pastry")?.lines).toEqual(["TAR-1", "QUI-6"]);
+  });
+
+  it("un poste d'étape archivé n'est pas lu : la ligne reste sous celui qui finit", () => {
+    const groups = groupingOf(["QUI-6"], sku, {
+      mode: "workstation",
+      placement: { ...SANDWICHED, workstations: [{ id: "ws_pastry", name: "Pâtisserie" }] },
+    });
+
+    expect(groups.map((group) => group.key)).toEqual(["ws:ws_pastry"]);
+  });
+
+  it("le mode boutique la range une fois, sans rôle", () => {
+    const groups = groupingOf(["QUI-6", "BAG-1"], sku, { mode: "shelf", shelves: SHELVES });
+
+    expect(linesOf(groups)).toHaveLength(2);
+    expect(groups.every((group) => group.roles.size === 0)).toBe(true);
+  });
+
+  it("un groupe « à ranger » ou hors catalogue ne donne aucun rôle", () => {
+    const groups = groupingOf(["CAK-1", "XXX-1"], sku, {
+      mode: "workstation",
+      placement: SANDWICHED,
+    });
+
+    expect(groups.map((group) => group.kind)).toEqual(["unplaced", "off_catalog"]);
+    expect(groups.every((group) => group.roles.size === 0)).toBe(true);
   });
 });

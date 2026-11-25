@@ -4,6 +4,7 @@ import {
   type ProductionArticle,
   ProductionArticlesReader,
 } from "../../../channels/commerce/index.js";
+import type { ProductStation } from "../../domain/entities/product-placements.js";
 import { PlacedProducts } from "../../domain/ports/placed-products.js";
 import { WorkstationMapVersion } from "../../domain/ports/workstation-map-version.js";
 import {
@@ -69,27 +70,47 @@ export function shelfArticles(
   );
 }
 
-/** Les postes, dans l'ordre reçu, et le poste de quelques produits. */
+/**
+ * Les postes, dans l'ordre reçu, et le poste de quelques produits : chacun
+ * sur un seul poste, qui le finit — ou, par `withStations`, sur plusieurs.
+ */
 export class FixedWorkstationOfProducts extends WorkstationOfProducts {
   readonly asked: (readonly string[])[] = [];
+  private readonly stations: ReadonlyMap<string, readonly ProductStation[]>;
 
   constructor(
     private readonly workstations: readonly PlacedWorkstation[],
-    private readonly placements: ReadonlyMap<string, string>,
-    private readonly positions: ReadonlyMap<string, number> = new Map(),
+    placements: ReadonlyMap<string, string>,
+    positions: ReadonlyMap<string, number> = new Map(),
+    several: ReadonlyMap<string, readonly ProductStation[]> = new Map(),
   ) {
     super();
+    this.stations = new Map([
+      ...[...placements].map(
+        ([product, workstationId]) =>
+          [
+            product,
+            [{ workstationId, finishes: true, position: positions.get(product) ?? null }],
+          ] as const,
+      ),
+      ...several,
+    ]);
+  }
+
+  /** Des produits sur plusieurs postes, tels quels. */
+  static withStations(
+    workstations: readonly PlacedWorkstation[],
+    stations: ReadonlyMap<string, readonly ProductStation[]>,
+  ): FixedWorkstationOfProducts {
+    return new FixedWorkstationOfProducts(workstations, new Map(), new Map(), stations);
   }
 
   workstationsOf(productSkus: readonly string[]): Promise<WorkstationsOfProducts> {
     this.asked.push(productSkus);
     const byProduct = new Map(
-      [...this.placements].filter(([product]) => productSkus.includes(product)),
+      [...this.stations].filter(([product]) => productSkus.includes(product)),
     );
-    const positions = new Map(
-      [...this.positions].filter(([product]) => productSkus.includes(product)),
-    );
-    return Promise.resolve({ workstations: this.workstations, byProduct, positions });
+    return Promise.resolve({ workstations: this.workstations, byProduct });
   }
 }
 

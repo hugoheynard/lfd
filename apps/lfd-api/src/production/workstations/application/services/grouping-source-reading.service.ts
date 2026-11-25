@@ -6,6 +6,7 @@ import {
   ProductionArticlesReader,
 } from "../../../channels/commerce/index.js";
 import type { GroupingSource } from "../../../shared/print/index.js";
+import type { ProductStation } from "../../domain/entities/product-placements.js";
 import { WorkstationOfProducts } from "../../domain/ports/workstation-of-products.js";
 
 /** Ce que le rangement lit, et ce que ses lectures ont pu dire. */
@@ -84,8 +85,8 @@ export class GroupingSourceReading {
   }
 
   /**
-   * **Le poste de chaque SKU** — SKU → id de son poste ; un SKU absent n'a
-   * pas de poste. Lu par la fiche quand un poste a un niveau de suivi propre
+   * **Les postes de chaque SKU** — SKU → les postes de son produit, celui qui
+   * finit et ceux d'étape ; un SKU absent n'a pas de poste. Lu par la fiche quand un poste a un niveau de suivi propre
    * (`fournil/les-niveaux-de-suivi.md`), quel que soit le mode
    * de rangement : un rangement par poste déjà lu (`read`) suffit, sans
    * relire. `null` : articles ou postes illisibles — panne journalisée avec
@@ -95,7 +96,7 @@ export class GroupingSourceReading {
     skus: readonly string[],
     about: string,
     read: GroupingSource,
-  ): Promise<ReadonlyMap<string, string> | null> {
+  ): Promise<ReadonlyMap<string, readonly ProductStation[]> | null> {
     if (read.mode === "workstation") {
       return workstationBySku(read.placement);
     }
@@ -117,9 +118,8 @@ export class GroupingSourceReading {
     const articles: ReadonlyMap<string, ProductionArticle> =
       skus.length === 0 ? new Map() : await this.articles.articlesOf(skus);
     const productSkus = [...new Set([...articles.values()].map((item) => item.productSku))];
-    const { workstations, byProduct, positions } =
-      await this.workstations.workstationsOf(productSkus);
-    return { workstations, articles, byProduct, positions };
+    const { workstations, byProduct } = await this.workstations.workstationsOf(productSkus);
+    return { workstations, articles, byProduct };
   }
 
   /** Le rayon de chaque SKU connu du miroir, ou `null` : panne journalisée, jamais tue. */
@@ -143,15 +143,15 @@ export class GroupingSourceReading {
   }
 }
 
-/** SKU → id du poste de son produit, d'après un rangement par poste. */
+/** SKU → les postes de son produit, d'après un rangement par poste. */
 function workstationBySku(
   placement: Extract<GroupingSource, { readonly mode: "workstation" }>["placement"],
-): ReadonlyMap<string, string> {
-  const bySku = new Map<string, string>();
+): ReadonlyMap<string, readonly ProductStation[]> {
+  const bySku = new Map<string, readonly ProductStation[]>();
   for (const [sku, article] of placement.articles) {
-    const workstation = placement.byProduct.get(article.productSku);
-    if (workstation !== undefined) {
-      bySku.set(sku, workstation);
+    const stations = placement.byProduct.get(article.productSku);
+    if (stations !== undefined && stations.length > 0) {
+      bySku.set(sku, stations);
     }
   }
   return bySku;

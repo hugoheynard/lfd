@@ -176,7 +176,9 @@ describe("Ce que les postes savent répondre", () => {
     const answer = await ctx.app.get(WorkstationOfProducts).workstationsOf(["SAL-001", "PAI-001"]);
 
     expect(answer.workstations.map((station) => station.id)).toEqual([bread, pastry]);
-    expect(answer.byProduct).toEqual(new Map([["SAL-001", pastry]]));
+    expect(answer.byProduct).toEqual(
+      new Map([["SAL-001", [{ workstationId: pastry, finishes: true, position: 1 }]]]),
+    );
     expect(await ctx.app.get(PlacedProducts).count()).toBe(2);
   });
 });
@@ -232,6 +234,68 @@ describe("La fiche d'atelier en mode prod", () => {
       ["fam-vien", "unplaced", true, ["VIE-002-1"]],
     ]);
     expect(sheet.groups[0]?.workstation).toEqual({ id: pastry, name: "Pâtisserie" });
+    expect(sheet.groups[0]?.lines.map((line) => line.role)).toEqual(["finishes"]);
+    expect(sheet.groups[1]?.lines.map((line) => line.role)).toEqual([null]);
+    expect(sheet.lines.map((line) => line.role)).toEqual([null, null]);
     expect(sheet.shelvesKnown).toBe(true);
+  });
+
+  it("sert une ligne à deux postes sous chacun, étape chez l'un, sortie chez l'autre", async () => {
+    const station = async (name: string): Promise<string> =>
+      jsonBody<CreatedIdResponse>(
+        await admin(ctx)
+          .post("/admin/production/workstations")
+          .set(INTENT_KEY, freshIntent())
+          .send({ name })
+          .expect(201),
+      ).id;
+    const bread = await station("Boulangerie");
+    const savory = await station("Salé traiteur");
+    for (const workstationId of [savory, bread]) {
+      await admin(ctx)
+        .post(`/admin/production/workstations/${workstationId}/products`)
+        .set(INTENT_KEY, freshIntent())
+        .send({ productSkus: ["VIE-001"] })
+        .expect(204);
+    }
+    const answer = await ctx.app.get(WorkstationOfProducts).workstationsOf(["VIE-001"]);
+    expect(
+      [...(answer.byProduct.get("VIE-001") ?? [])].sort((left, right) =>
+        left.workstationId.localeCompare(right.workstationId),
+      ),
+    ).toEqual(
+      [
+        { workstationId: savory, finishes: true, position: 0 },
+        { workstationId: bread, finishes: false, position: 0 },
+      ].sort((left, right) => left.workstationId.localeCompare(right.workstationId)),
+    );
+    await ctx.app
+      .get(ProductionDisplaySettingsRepository)
+      .save(
+        ProductionDisplaySettings.of({ showSubcategories: false, grouping: "workstation" }),
+        CLOSED_AT,
+        { staffUserId: E2E_STAFF_ID, name: null },
+      );
+    const day = serviceDay(1);
+    const days = ctx.app.get(ProductionDayRepository);
+    const closed = await days.load(ServiceDay.of(day));
+    closed.close([order("VIE-001-1", "Croissant")], NONE, CLOSED_AT, null);
+    await days.save(closed);
+
+    const sheet = jsonBody<ProductionWorksheetView>(
+      await admin(ctx).get(`/admin/production/worksheet?date=${day}`).expect(200),
+    );
+
+    expect(
+      sheet.groups.map((group) => [
+        group.key,
+        group.totalUnits,
+        group.lines.map((line) => [line.sku, line.quantity, line.role]),
+      ]),
+    ).toEqual([
+      [`ws:${bread}`, 2, [["VIE-001-1", 2, "step"]]],
+      [`ws:${savory}`, 2, [["VIE-001-1", 2, "finishes"]]],
+    ]);
+    expect(sheet.lines).toHaveLength(1);
   });
 });

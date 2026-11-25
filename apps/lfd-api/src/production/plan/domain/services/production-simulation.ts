@@ -71,6 +71,11 @@ export interface SimulationCoverGroup {
 /** Ce que la couverture de la simulation affirme. */
 export interface SimulationCover {
   readonly mode: ProductionGrouping;
+  /**
+   * Les articles simulés, chacun une fois — une somme GÉNÉRALE. Celle d'un
+   * groupe est PAR POSTE : en mode prod, un article à deux postes compte
+   * dans les deux groupes, et la somme des groupes dépasse celle-ci.
+   */
   readonly lineCount: number;
   readonly groups: readonly SimulationCoverGroup[];
   /** Les articles sans poste en mode prod, par nom ; toujours vide en mode boutique. */
@@ -83,6 +88,7 @@ export function simulationCoverOf(
   source: GroupingSource,
 ): SimulationCover {
   const groups = groupingOf(lines, (line) => line.sku, source);
+  // Un article sans poste n'est que dans un groupe « à ranger » : nommé une fois.
   const unplaced = groups
     .filter((group) => group.unplaced)
     .flatMap((group) => group.lines.map((line) => line.productName))

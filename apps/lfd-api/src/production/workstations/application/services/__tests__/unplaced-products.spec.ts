@@ -24,8 +24,7 @@ describe("unplacedProductsOf — l'alerte du Prod manager", () => {
       ARTICLES,
       {
         workstations: [{ id: "ws-pat", name: "Pâtisserie", position: 0 }],
-        positions: new Map(),
-        byProduct: new Map([["TAR", "ws-pat"]]),
+        byProduct: finishingAt([["TAR", "ws-pat"]]),
       },
     );
 
@@ -38,8 +37,7 @@ describe("unplacedProductsOf — l'alerte du Prod manager", () => {
   it("tient pour « à ranger » un produit dont le poste n'est plus en service", () => {
     const result = unplacedProductsOf([{ sku: "OLD-1", productName: "Vieux" }], ARTICLES, {
       workstations: [],
-      positions: new Map(),
-      byProduct: new Map([["OLD", "ws-archived"]]),
+      byProduct: finishingAt([["OLD", "ws-archived"]]),
     });
 
     expect(result.products.map((product) => product.productSku)).toEqual(["OLD"]);
@@ -52,10 +50,22 @@ describe("unplacedProductsOf — l'alerte du Prod manager", () => {
         { sku: "GONE", productName: "Brioche retirée" },
       ],
       ARTICLES,
-      { workstations: [], byProduct: new Map(), positions: new Map() },
+      { workstations: [], byProduct: new Map() },
     );
 
     expect(result.products).toEqual([]);
     expect(result.offCatalog).toEqual([{ sku: "GONE", productName: "Brioche retirée" }]);
   });
 });
+
+/** Chaque produit sur un seul poste, qui le finit, sans place réglée. */
+function finishingAt(
+  pairs: readonly (readonly [string, string])[],
+): ReadonlyMap<string, readonly { workstationId: string; finishes: boolean; position: null }[]> {
+  return new Map(
+    pairs.map(([product, workstationId]) => [
+      product,
+      [{ workstationId, finishes: true, position: null }],
+    ]),
+  );
+}

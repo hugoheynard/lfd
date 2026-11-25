@@ -68,8 +68,7 @@ function placement(byProduct: readonly (readonly [string, string])[]): GroupingP
     articles: new Map(
       [...SHELVES].map(([sku, family]) => [sku, { productSku: sku.slice(0, 3), family }]),
     ),
-    positions: new Map(),
-    byProduct: new Map(byProduct),
+    byProduct: finishingAt(byProduct),
   };
 }
 
@@ -153,3 +152,55 @@ describe("dayDossierFrom", () => {
     expect(prod.pieces).toBe(shelf.pieces);
   });
 });
+
+describe("dayDossierFrom — un produit sur plusieurs postes", () => {
+  /** La quiche : la pâte à la Boulangerie (étape), finie en Pâtisserie. */
+  const TWO_STATIONS: GroupingSource = {
+    mode: "workstation",
+    placement: {
+      ...placement([["BAG", "ws_bakery"]]),
+      byProduct: new Map([
+        ["BAG", [{ workstationId: "ws_bakery", finishes: true, position: null }]],
+        [
+          "QUI",
+          [
+            { workstationId: "ws_pastry", finishes: true, position: null },
+            { workstationId: "ws_bakery", finishes: false, position: null },
+          ],
+        ],
+      ]),
+    },
+  };
+
+  it("répète la ligne sous chaque poste, chaque fiche comptant sa charge", () => {
+    const dossier = dayDossierFrom(ORDERS, TWO_STATIONS);
+
+    expect(dossier.recap.map((group) => [group.label, group.quantity, skusOf([group])])).toEqual([
+      ["Boulangerie", 48, ["BAG-1", "QUI-8", "QUI-6"]],
+      ["Pâtisserie", 8, ["QUI-8", "QUI-6"]],
+      ["Traiteur salé — à ranger", 2, ["CAK-1"]],
+      ["Hors catalogue — à ranger", 1, ["OLD-1"]],
+    ]);
+  });
+
+  it("compte les pièces du lot une fois par produit, pas une fois par fiche", () => {
+    const dossier = dayDossierFrom(ORDERS, TWO_STATIONS);
+
+    // 3 + 40 + 5 + 2 + 1 : la quiche n'est enfournée qu'une fois.
+    expect(dossier.pieces).toBe(51);
+    expect(dossier.recap.reduce((sum, group) => sum + group.quantity, 0)).toBe(59);
+    expect(dossier.pieces).toBe(dayDossierOf(ORDERS, SHELVES).pieces);
+  });
+});
+
+/** Chaque produit sur un seul poste, qui le finit, sans place réglée. */
+function finishingAt(
+  pairs: readonly (readonly [string, string])[],
+): ReadonlyMap<string, readonly { workstationId: string; finishes: boolean; position: null }[]> {
+  return new Map(
+    pairs.map(([product, workstationId]) => [
+      product,
+      [{ workstationId, finishes: true, position: null }],
+    ]),
+  );
+}

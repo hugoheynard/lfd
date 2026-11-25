@@ -10,18 +10,35 @@ import {
   lineLevelOf,
 } from "../../domain/services/tracking-levels.js";
 
-/** Le niveau de chaque ligne, et s'il a pu être lu en entier. */
+/** Les niveaux de chaque ligne, et s'ils ont pu être lus en entier. */
 export interface WorksheetTrackingLevels {
-  readonly levelOf: (sku: string) => ProductionTrackingLevel;
+  /**
+   * Le niveau de SORTIE de la ligne : celui du poste qui la finit, sinon celui
+   * du fournil. C'est lui qui règle la fournée — automatique en toujours vert,
+   * déclarée par « Fait » sinon.
+   */
+  readonly outputLevelOf: (sku: string) => ProductionTrackingLevel;
+  /**
+   * Le niveau de l'ÉTAPE que ce poste fait de la ligne : celui du poste dans
+   * la journée, sinon celui du fournil ; détaillé si les postes sont
+   * illisibles. Il ne dit pas si le poste EST une étape de la ligne : la
+   * carte courante le dit, et c'est au geste de l'étape de le vérifier — le
+   * lire ici forcerait la lecture des postes quand tous sont au niveau du
+   * fournil.
+   */
+  readonly stepLevelOf: (sku: string, workstationId: string) => ProductionTrackingLevel;
   /** `false` : les postes n'ont pas pu être lus — les lignes sont servies en détaillé. */
   readonly known: boolean;
 }
 
 /**
- * **Le niveau de suivi de chaque ligne de la fiche** (
- * `documentation/fournil/les-niveaux-de-suivi.md`) : celui du poste
- * de son produit dans la journée, sinon celui du fournil. Servi par ligne,
- * il vaut quel que soit le groupe où la ligne est rangée.
+ * **Les niveaux de suivi de chaque ligne de la fiche** (
+ * `documentation/fournil/les-niveaux-de-suivi.md` ; plan
+ * `documentation/fournil/plan-produit-sur-plusieurs-postes.md`, § 2.8) : le
+ * niveau de sortie, celui du poste qui finit la ligne, et le niveau de chaque
+ * étape, celui du poste qui la fait. Le niveau d'un poste est celui que la
+ * journée a figé ; les postes d'une ligne se lisent sur la carte courante.
+ * Servis par ligne, ils valent quel que soit le groupe où la ligne est rangée.
  *
  * Il ne lit le poste des articles que s'il le faut : tous les postes au
  * niveau du fournil, chaque ligne l'est ; en mode prod, le rangement les a
@@ -40,7 +57,7 @@ export class WorksheetTrackingLevelsReading {
     source: GroupingSource,
   ): Promise<WorksheetTrackingLevels> {
     if (isUniform(levels)) {
-      return { levelOf: () => levels.house, known: true };
+      return { outputLevelOf: () => levels.house, stepLevelOf: () => levels.house, known: true };
     }
     const bySku = await this.grouping.workstationOfSkus(
       skus,
@@ -48,8 +65,13 @@ export class WorksheetTrackingLevelsReading {
       source,
     );
     if (bySku === null) {
-      return { levelOf: () => "detailed", known: false };
+      return { outputLevelOf: () => "detailed", stepLevelOf: () => "detailed", known: false };
     }
-    return { levelOf: (sku) => lineLevelOf(levels, bySku.get(sku)), known: true };
+    return {
+      outputLevelOf: (sku) =>
+        lineLevelOf(levels, bySku.get(sku)?.find((station) => station.finishes)?.workstationId),
+      stepLevelOf: (_sku, workstationId) => lineLevelOf(levels, workstationId),
+      known: true,
+    };
   }
 }

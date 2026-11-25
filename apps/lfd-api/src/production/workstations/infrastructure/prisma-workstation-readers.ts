@@ -25,15 +25,6 @@ const ACTIVE_STATIONS = {
   select: { id: true, name: true, position: true },
 };
 
-/** Référence produit → sa place réglée ; un produit sans place est absent. */
-function positionsOf(
-  rows: readonly { readonly productSku: string; readonly position: number | null }[],
-): ReadonlyMap<string, number> {
-  return new Map(
-    rows.flatMap((row) => (row.position === null ? [] : [[row.productSku, row.position] as const])),
-  );
-}
-
 /**
  * La carte des postes pour la page Postes : sans verrou, sans agrégat. Un
  * produit placé l'est toujours sur des postes en service (l'agrégat refuse
@@ -64,9 +55,8 @@ export class PrismaWorkstationMapReader extends WorkstationMapReader {
 }
 
 /**
- * Le poste qui finit chacun des produits demandés, en une requête sur ces
- * produits seulement. Les postes d'étape n'y sont pas encore : le rangement
- * ne range une ligne que sous celui qui la finit.
+ * Tous les postes de chacun des produits demandés — celui qui finit et ceux
+ * d'étape —, en une requête sur ces produits seulement.
  */
 @Injectable()
 export class PrismaWorkstationOfProducts extends WorkstationOfProducts {
@@ -80,15 +70,11 @@ export class PrismaWorkstationOfProducts extends WorkstationOfProducts {
       productSkus.length === 0
         ? Promise.resolve([])
         : this.prisma.productionWorkstationProduct.findMany({
-            where: { productSku: { in: [...productSkus] }, finishes: true },
-            select: { productSku: true, workstationId: true, position: true },
+            where: { productSku: { in: [...productSkus] } },
+            select: PLACEMENT_SELECT,
           }),
     ]);
-    return {
-      workstations,
-      byProduct: new Map(placements.map((row) => [row.productSku, row.workstationId])),
-      positions: positionsOf(placements),
-    };
+    return { workstations, byProduct: placementsOf(placements) };
   }
 }
 

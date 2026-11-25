@@ -55,7 +55,10 @@ export interface DossierRecapLine {
 /** Un rayon du récapitulatif — la fiche de poste. */
 export interface DossierRecapGroup {
   readonly label: string;
-  /** Le total du rayon en pièces, réassorts compris — un article au poids compte pour un. */
+  /**
+   * Le total du rayon ou du poste en pièces, réassorts compris — un article
+   * au poids compte pour un. Une somme PAR POSTE : la charge de la fiche.
+   */
   readonly quantity: number;
   /**
    * Dont réassort, en PIÈCES : un article au poids y compte pour une ligne de
@@ -84,7 +87,13 @@ export interface DayDossier {
   readonly sheets: readonly ProductionOrderSnapshot[];
   /** Un bon par réassort, par point puis par identifiant — même raison. */
   readonly resupplySheets: readonly ProductionResupplySnapshot[];
-  /** Toutes les pièces à enfourner, réassorts compris. */
+  /**
+   * Toutes les pièces à enfourner, réassorts compris — une somme GÉNÉRALE,
+   * comptée une fois par produit : en mode prod, une ligne à plusieurs postes
+   * figure dans plusieurs fiches du récapitulatif, et la somme des fiches la
+   * compterait deux fois (plan `documentation/fournil/plan-produit-sur-plusieurs-postes.md`,
+   * § 2.7).
+   */
   readonly pieces: number;
   /** Dont réassort, en pièces — la même règle que le rayon. */
   readonly resupplyPieces: number;
@@ -121,7 +130,8 @@ export function dayDossierFrom(
   resupplies: readonly ProductionResupplySnapshot[] = [],
   showSubcategories = false,
 ): DayDossier {
-  const recap = recapOf(talliesOf(orders, resupplies), source, showSubcategories);
+  const tallies = talliesOf(orders, resupplies);
+  const recap = recapOf(tallies, source, showSubcategories);
   return {
     recap,
     sheets: [...orders].sort((left, right) => compareCodes(left.reference, right.reference)),
@@ -130,8 +140,10 @@ export function dayDossierFrom(
         siteLabelOf(left).localeCompare(siteLabelOf(right), "fr") ||
         compareCodes(left.resupplyId, right.resupplyId),
     ),
-    pieces: recap.reduce((sum, group) => sum + group.quantity, 0),
-    resupplyPieces: recap.reduce((sum, group) => sum + group.resupplyQuantity, 0),
+    // Sur les produits, jamais sur les fiches : une ligne à deux postes est
+    // dans deux fiches, et ses pièces ne s'enfournent qu'une fois.
+    pieces: tallies.reduce((sum, line) => sum + recapPieces(line), 0),
+    resupplyPieces: tallies.reduce((sum, line) => sum + recapResupplyPieces(line), 0),
   };
 }
 

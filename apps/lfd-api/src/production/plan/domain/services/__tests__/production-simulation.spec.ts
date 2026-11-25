@@ -67,8 +67,7 @@ describe("simulationCoverOf", () => {
           ["QUI-6", { productSku: "QUI", family: SALTY }],
           ["BAG", { productSku: "BAG", family: BREADS }],
         ]),
-        positions: new Map(),
-        byProduct: new Map([["QUI", "ws_pastry"]]),
+        byProduct: finishingAt([["QUI", "ws_pastry"]]),
       },
     };
 
@@ -83,3 +82,15 @@ describe("simulationCoverOf", () => {
     expect(cover.unplaced).toEqual(["Baguette", "Tasse"]);
   });
 });
+
+/** Chaque produit sur un seul poste, qui le finit, sans place réglée. */
+function finishingAt(
+  pairs: readonly (readonly [string, string])[],
+): ReadonlyMap<string, readonly { workstationId: string; finishes: boolean; position: null }[]> {
+  return new Map(
+    pairs.map(([product, workstationId]) => [
+      product,
+      [{ workstationId, finishes: true, position: null }],
+    ]),
+  );
+}

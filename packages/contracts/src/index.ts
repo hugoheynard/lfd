@@ -1178,6 +1178,7 @@ export {
   UNPLACED_GROUP_SUFFIX,
   WORKSTATION_GROUP_KEY_PREFIX,
   WORKSHOP_GROUP_KINDS,
+  WORKSHOP_LINE_ROLES,
   productionContainerSchema,
   productionWorksheetQuerySchema,
   workshopInitialsSchema,
@@ -1194,6 +1195,7 @@ export type {
   WorkshopLine,
   WorkshopSection,
   WorkshopGroupKind,
+  WorkshopLineRole,
 } from "./production-worksheet.js";
 export { reportWorkshopProblemSchema } from "./production-problems.js";
 export type {

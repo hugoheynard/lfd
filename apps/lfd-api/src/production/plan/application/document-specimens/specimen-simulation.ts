@@ -21,6 +21,9 @@ export const SPECIMEN_SIMULATION_ARTICLES: readonly SimulatedArticle[] = [
 
 /** Ce que le mode prod a lu pour ranger. */
 type GroupingPlacement = Extract<GroupingSource, { readonly mode: "workstation" }>["placement"];
+/** Un des postes d'un produit, tel que le rangement le lit. */
+type ProductStation =
+  GroupingPlacement["byProduct"] extends ReadonlyMap<string, readonly (infer S)[]> ? S : never;
 
 const BAKERY = { id: "specimen-ws-bakery", name: "EXEMPLE — Boulangerie" };
 const LAMINATION = { id: "specimen-ws-lamination", name: "EXEMPLE — Tourier" };
@@ -35,9 +38,13 @@ export const SPECIMEN_SIMULATION_PLACEMENT: GroupingPlacement = {
   workstations: [BAKERY, LAMINATION],
   articles: SPECIMEN_ARTICLES,
   byProduct: new Map([
-    ["EXEMPLE-BAG", BAKERY.id],
-    ["EXEMPLE-CAM", BAKERY.id],
-    ["EXEMPLE-CRO", LAMINATION.id],
+    ["EXEMPLE-BAG", [finishedAt(BAKERY.id)]],
+    ["EXEMPLE-CAM", [finishedAt(BAKERY.id)]],
+    ["EXEMPLE-CRO", [finishedAt(LAMINATION.id)]],
   ]),
-  positions: new Map(),
 };
+
+/** Un seul poste, qui finit, sans place réglée. */
+function finishedAt(workstationId: string): ProductStation {
+  return { workstationId, finishes: true, position: null };
+}

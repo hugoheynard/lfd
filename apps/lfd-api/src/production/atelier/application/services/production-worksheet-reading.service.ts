@@ -183,7 +183,7 @@ export class ProductionWorksheetReading {
       tranches,
       quality: new Map(quality.map((status) => [status.sku, status])),
       waiting,
-      trackingLevelOf: tracked.levelOf,
+      trackingLevelOf: tracked.outputLevelOf,
       problems: new Map(problems.map((problem) => [problem.sku, problem])),
     });
     const sheet = {

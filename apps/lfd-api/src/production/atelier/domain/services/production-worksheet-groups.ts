@@ -1,4 +1,4 @@
-import type { CatalogFamilyView, WorkshopGroupKind } from "@lfd/contracts";
+import type { CatalogFamilyView, WorkshopGroupKind, WorkshopLineRole } from "@lfd/contracts";
 
 import { linePieces } from "../../../shared/print/index.js";
 import {
@@ -34,6 +34,12 @@ export interface WorksheetGroup {
   /** Déprécié au contrat, servi toujours à `null` (cf. `WorkshopGroup.category`). */
   readonly category: null;
   readonly label: string;
+  /**
+   * Les compteurs de CETTE fiche : sa charge. En mode prod, une ligne à
+   * plusieurs postes compte dans chacune de leurs fiches (plan
+   * `documentation/fournil/plan-produit-sur-plusieurs-postes.md`, § 2.7) ;
+   * les additionner d'une fiche à l'autre compterait deux fois la ligne.
+   */
   readonly lineCount: number;
   readonly doneCount: number;
   readonly totalUnits: number;
@@ -45,6 +51,8 @@ export interface WorksheetGroup {
   readonly done: readonly WorksheetLine[];
   /** Ses sous-catégories, seulement si le réglage les affiche. */
   readonly sections?: readonly WorksheetSection[];
+  /** SKU → ce que le poste fait de la ligne ; vide hors d'une fiche de poste. */
+  readonly roles: ReadonlyMap<string, WorkshopLineRole>;
 }
 
 /** Une sous-catégorie d'une fiche ; `key: null` = la racine elle-même. */
@@ -116,6 +124,7 @@ function worksheetGroupOf(
     workstation: group.workstation,
     unplaced: group.unplaced,
     label: group.title,
+    roles: group.roles,
   };
   if (!showSubcategories || group.kind === "off_catalog") {
     return groupOf(head, group.lines);
@@ -135,7 +144,7 @@ function sectionOf(section: ProductionGroup<WorksheetLine>["sections"][number]):
 
 type GroupHead = Pick<
   WorksheetGroup,
-  "key" | "family" | "kind" | "workstation" | "unplaced" | "label"
+  "key" | "family" | "kind" | "workstation" | "unplaced" | "label" | "roles"
 >;
 
 /** Une fiche et ses compteurs — les deux listes dans l'ordre reçu. */

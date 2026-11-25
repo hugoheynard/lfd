@@ -13,8 +13,9 @@ import {
  * qui rangeaient eux-mêmes (prévisionnel, récapitulatif, réassorts du fournil).
  *
  * Le rangement est celui de la fiche et du dossier, au mot près : même
- * fonction, mêmes titres, même ordre des groupes. Chaque SKU ressort une fois,
- * dans l'ordre du rangement : les groupes dans leur ordre, et dans un groupe
+ * fonction, mêmes titres, même ordre des groupes. Chaque SKU ressort une fois
+ * par groupe — en mode prod, sous chacun des postes de son produit, avec son
+ * rôle (`finishes` | `step`) —, dans l'ordre du rangement : les groupes dans leur ordre, et dans un groupe
  * l'ordre reçu — section par section quand le réglage affiche les intertitres.
  * Le groupe sans rayon n'a jamais d'intertitre, comme sur la fiche.
  */
@@ -35,7 +36,12 @@ function entriesOf(
 ): readonly ProductionGroupingEntryView[] {
   const head = { key: group.key, title: group.title, kind: group.kind, order };
   if (!showSubcategories || group.kind === "off_catalog") {
-    return group.lines.map((sku) => ({ sku, ...head, section: null }));
+    return group.lines.map((sku) => ({
+      sku,
+      ...head,
+      section: null,
+      role: group.roles.get(sku) ?? null,
+    }));
   }
   const sectionOf = new Map<string, ProductionGroupingSectionView>();
   group.sections.forEach((section, index) => {
@@ -53,5 +59,6 @@ function entriesOf(
     sku,
     ...head,
     section: sectionOf.get(sku) ?? null,
+    role: group.roles.get(sku) ?? null,
   }));
 }

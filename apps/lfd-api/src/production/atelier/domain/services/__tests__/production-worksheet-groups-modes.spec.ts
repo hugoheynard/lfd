@@ -49,8 +49,7 @@ function placement(names: readonly (readonly [string, string])[]): GroupingPlace
       ["QUI-8", { productSku: "QUI", family: QUICHES }],
       ["BAG-1", { productSku: "BAG", family: BREADS }],
     ]),
-    positions: new Map(),
-    byProduct: new Map(
+    byProduct: finishingAt(
       bread === undefined || quiche === undefined
         ? []
         : [
@@ -112,8 +111,7 @@ describe("worksheetGroupsFrom", () => {
         placement: {
           ...placement([]),
           workstations: [{ id: "ws_all", name: "Fournil" }],
-          positions: new Map(),
-          byProduct: new Map([
+          byProduct: finishingAt([
             ["QUI", "ws_all"],
             ["BAG", "ws_all"],
           ]),
@@ -167,3 +165,15 @@ describe("worksheetGroupsFrom", () => {
     expect(shelf.map((group) => group.key)).toEqual(["fam-bread", "fam-salty"]);
   });
 });
+
+/** Chaque produit sur un seul poste, qui le finit, sans place réglée. */
+function finishingAt(
+  pairs: readonly (readonly [string, string])[],
+): ReadonlyMap<string, readonly { workstationId: string; finishes: boolean; position: null }[]> {
+  return new Map(
+    pairs.map(([product, workstationId]) => [
+      product,
+      [{ workstationId, finishes: true, position: null }],
+    ]),
+  );
+}

@@ -49,6 +49,7 @@ export function lineViewOf(marks: LineMarks): (line: WorksheetLine) => WorkshopL
     waitingOrders: waitingOf(marks.waiting, line.sku),
     trackingLevel: marks.trackingLevelOf(line.sku),
     ...ceilingOf(line, marks.problems.get(line.sku)),
+    role: null,
   });
 }
 
@@ -121,14 +122,23 @@ function lineView(line: WorksheetLine): WorkshopLine {
   };
 }
 
+/**
+ * Une fiche au contrat : chaque ligne porte le rôle que CETTE fiche lui
+ * donne — la même ligne est `finishes` chez un poste, `step` chez l'autre.
+ */
 export function groupView(
   group: WorksheetGroup,
   viewOf: (line: WorksheetLine) => WorkshopLine,
 ): ProductionWorksheetView["groups"][number] {
+  const { roles, ...head } = group;
+  const inGroup = (line: WorksheetLine): WorkshopLine => ({
+    ...viewOf(line),
+    role: roles.get(line.sku) ?? null,
+  });
   return {
-    ...group,
-    lines: group.lines.map(viewOf),
-    pending: group.pending.map(viewOf),
-    done: group.done.map(viewOf),
+    ...head,
+    lines: group.lines.map(inGroup),
+    pending: group.pending.map(inGroup),
+    done: group.done.map(inGroup),
   };
 }

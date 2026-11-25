@@ -17,7 +17,11 @@ export function workstationFilterOf(
   if (grouping?.mode !== 'workstation') {
     return null;
   }
-  return new Map(grouping.entries.map((entry) => [entry.sku, entry]));
+  // Un SKU à plusieurs postes a une entrée par poste ; le filtre ne le range
+  // encore que sous celui qui le finit (les étapes sont écartées).
+  return new Map(
+    grouping.entries.filter((entry) => entry.role !== 'step').map((entry) => [entry.sku, entry]),
+  );
 }
 
 /**

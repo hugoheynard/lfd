@@ -31,6 +31,6 @@ export class AlwaysGreenLines {
       return [];
     }
     const tracked = await this.lineLevels.read(day, levels, skus, NO_GROUPING_READ);
-    return skus.filter((sku) => tracked.levelOf(sku) === "always_green");
+    return skus.filter((sku) => tracked.outputLevelOf(sku) === "always_green");
   }
 }

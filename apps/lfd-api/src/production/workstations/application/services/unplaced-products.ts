@@ -19,7 +19,8 @@ export interface UnplacedProducts {
  * **Les produits du jour à ranger** (`documentation/fournil/les-postes-du-fournil.md`,
  * § 3.10) — une fonction pure. Chaque SKU du jour est ramené à son produit ;
  * un produit sans poste, ou dont le poste n'est plus en service, est « à
- * ranger », avec les déclinaisons du jour qui le portent. Un SKU absent du
+ * ranger », avec les déclinaisons du jour qui le portent. Un produit qui a
+ * au moins un poste en service est rangé, même si d'autres manquent. Un SKU absent du
  * miroir est hors catalogue : il ne peut pas recevoir de poste, et se compte à
  * part. Chaque produit et chaque SKU une fois, dans l'ordre des références.
  */
@@ -37,8 +38,8 @@ export function unplacedProductsOf(
       offCatalog.set(sku, offCatalog.get(sku) ?? { sku, productName });
       continue;
     }
-    const station = placement.byProduct.get(article.productSku);
-    if (station !== undefined && active.has(station)) {
+    const stations = placement.byProduct.get(article.productSku) ?? [];
+    if (stations.some((station) => active.has(station.workstationId))) {
       continue;
     }
     const entry = products.get(article.productSku) ?? {

@@ -47,7 +47,13 @@ export function servedGroups<T extends { readonly sku: string }>(
   grouping: ProductionGroupingView | null,
   compare: (left: T, right: T) => number,
 ): readonly ServedGroup<T>[] {
-  const entryOf = new Map((grouping?.entries ?? []).map((entry) => [entry.sku, entry]));
+  // Un SKU à plusieurs postes a une entrée par poste ; l'écran ne le range
+  // encore que sous celui qui le finit (les étapes sont écartées).
+  const entryOf = new Map(
+    (grouping?.entries ?? [])
+      .filter((entry) => entry.role !== 'step')
+      .map((entry) => [entry.sku, entry]),
+  );
   const buckets = new Map<string, Bucket<T>>();
   const ungrouped: T[] = [];
   for (const item of items) {

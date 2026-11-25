@@ -1,3 +1,5 @@
+import type { ProductStation } from "../entities/product-placements.js";
+
 /** Un poste en service, dans l'ordre des fiches. */
 export interface PlacedWorkstation {
   readonly id: string;
@@ -5,24 +7,22 @@ export interface PlacedWorkstation {
   readonly position: number;
 }
 
-/** Le poste de chaque produit demandé, et la liste ordonnée des postes. */
+/** Les postes de chaque produit demandé, et la liste ordonnée des postes. */
 export interface WorkstationsOfProducts {
   /** Les postes en service, dans l'ordre des fiches. */
   readonly workstations: readonly PlacedWorkstation[];
   /**
-   * Référence produit → id de son poste. Un produit sans poste est **absent**,
-   * jamais présent à `null` : il reste « à ranger ».
+   * Référence produit → tous ses postes, chacun avec `finishes` et la place
+   * du produit dans la pile de CE poste (`position: null` : sans place
+   * réglée, il vient après ceux qui en ont une), dans aucun ordre promis.
+   * Un produit sans poste est **absent**, jamais présent à `[]` : il reste
+   * « à ranger ».
    */
-  readonly byProduct: ReadonlyMap<string, string>;
-  /**
-   * Référence produit → sa place dans la pile de son poste. Un produit sans
-   * place réglée est **absent** : il vient après ceux qui en ont une.
-   */
-  readonly positions: ReadonlyMap<string, number>;
+  readonly byProduct: ReadonlyMap<string, readonly ProductStation[]>;
 }
 
 /**
- * **« À quel poste ces produits vont-ils ? »** — la lecture que les postes
+ * **« À quels postes ces produits vont-ils ? »** — la lecture que les postes
  * publient pour la fiche d'atelier et le dossier du jour (plan
  * `documentation/fournil/les-postes-du-fournil.md`, § 3.1). Une requête sur les produits
  * demandés, jamais la carte entière chargée puis filtrée.

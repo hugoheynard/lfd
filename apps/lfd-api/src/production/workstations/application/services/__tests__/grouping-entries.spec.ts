@@ -21,8 +21,7 @@ const PLACEMENT = {
     ["CAKE-1", article("CAKE-1", "CAKE", SALTY_ROOT)],
     ["BAG-1", article("BAG-1", "BAG", BREADS)],
   ]),
-  positions: new Map(),
-  byProduct: new Map([["QUI", "ws-pat"]]),
+  byProduct: finishingAt([["QUI", "ws-pat"]]),
 };
 
 describe("groupingEntriesOf — mode boutique", () => {
@@ -74,6 +73,7 @@ describe("groupingEntriesOf — mode boutique", () => {
         kind: "off_catalog",
         order: 0,
         section: null,
+        role: null,
       },
     ]);
   });
@@ -106,7 +106,7 @@ describe("groupingEntriesOf — mode prod", () => {
     expect(entries[0]?.section).toEqual({ key: null, label: null, order: 0 });
   });
 
-  it("rend chaque SKU reçu exactement une fois", () => {
+  it("rend chaque SKU d'un seul poste exactement une fois", () => {
     const skus = ["BAG-1", "QUI-8", "GHOST", "CAKE-1"];
     for (const showSubcategories of [false, true]) {
       const entries = groupingEntriesOf(
@@ -118,3 +118,55 @@ describe("groupingEntriesOf — mode prod", () => {
     }
   });
 });
+
+describe("groupingEntriesOf — un produit sur plusieurs postes", () => {
+  const TWO_STATIONS = {
+    ...PLACEMENT,
+    workstations: [
+      { id: "ws-bread", name: "Boulangerie" },
+      { id: "ws-pat", name: "Pâtisserie" },
+    ],
+    byProduct: new Map([
+      [
+        "QUI",
+        [
+          { workstationId: "ws-pat", finishes: true, position: null },
+          { workstationId: "ws-bread", finishes: false, position: null },
+        ],
+      ],
+    ]),
+  };
+
+  it("rend une entrée par poste, avec le rôle du SKU dans chacun", () => {
+    for (const showSubcategories of [false, true]) {
+      const entries = groupingEntriesOf(
+        ["QUI-8"],
+        { mode: "workstation", placement: TWO_STATIONS },
+        showSubcategories,
+      );
+
+      expect(entries.map(({ sku, key, order, role }) => [sku, key, order, role])).toEqual([
+        ["QUI-8", "ws:ws-bread", 0, "step"],
+        ["QUI-8", "ws:ws-pat", 1, "finishes"],
+      ]);
+    }
+  });
+
+  it("le mode boutique la rend une fois, sans rôle", () => {
+    const entries = groupingEntriesOf(["QUI-8"], { mode: "shelf", shelves: SHELVES }, false);
+
+    expect(entries.map(({ sku, role }) => [sku, role])).toEqual([["QUI-8", null]]);
+  });
+});
+
+/** Chaque produit sur un seul poste, qui le finit, sans place réglée. */
+function finishingAt(
+  pairs: readonly (readonly [string, string])[],
+): ReadonlyMap<string, readonly { workstationId: string; finishes: boolean; position: null }[]> {
+  return new Map(
+    pairs.map(([product, workstationId]) => [
+      product,
+      [{ workstationId, finishes: true, position: null }],
+    ]),
+  );
+}

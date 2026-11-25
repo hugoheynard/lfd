@@ -7,6 +7,7 @@ import {
   type CatalogFamilyNodeView,
   type CatalogFamilyView,
   type WorkshopGroupKind,
+  type WorkshopLineRole,
 } from "@lfd/contracts";
 
 import { rootShelvesOf, type ShelfSection } from "./root-shelves.js";
@@ -25,7 +26,11 @@ import { rootShelvesOf, type ShelfSection } from "./root-shelves.js";
  *   pas pu être lus).
  * - **Mode prod** : un groupe par poste qui a des lignes, dans l'ordre des
  *   postes, ses lignes dans la pile du poste (la place du produit de chaque
- *   ligne ; sans place, après, dans l'ordre reçu) ; puis, pour les produits sans poste, un groupe par rayon titré
+ *   ligne dans CE poste ; sans place, après, dans l'ordre reçu). Une ligne
+ *   dont le produit a plusieurs postes ressort sous **chacun**, avec son rôle
+ *   dans ce poste (`finishes` | `step`, `roles`) — plan
+ *   `documentation/fournil/plan-produit-sur-plusieurs-postes.md`, § 2.7 ;
+ *   puis, pour les produits sans poste, un groupe par rayon titré
  *   « … — à ranger » ; puis « Hors catalogue — à ranger » pour un SKU absent
  *   du miroir du catalogue, qui n'a pas de produit et ne peut donc pas
  *   recevoir de poste.
@@ -35,7 +40,10 @@ import { rootShelvesOf, type ShelfSection } from "./root-shelves.js";
  * ou retiré se range sous son vrai rayon. « Hors catalogue » ne vaut que pour
  * un SKU absent du miroir.
  *
- * Toute ligne reçue ressort dans exactement un groupe, dans les deux modes.
+ * En mode boutique, toute ligne reçue ressort dans exactement un groupe ; en
+ * mode prod, au moins un — une fois par poste de son produit. Une somme
+ * GÉNÉRALE sur les groupes compterait donc deux fois une ligne à deux postes :
+ * elle se fait sur les lignes, dédoublonnées par SKU, jamais sur les groupes.
  * Aucun groupe vide.
  */
 
@@ -43,6 +51,14 @@ import { rootShelvesOf, type ShelfSection } from "./root-shelves.js";
 export interface GroupingWorkstation {
   readonly id: string;
   readonly name: string;
+}
+
+/** Un des postes d'un produit : s'il le finit, et la place du produit dans sa pile. */
+export interface GroupingStation {
+  readonly workstationId: string;
+  readonly finishes: boolean;
+  /** `null` : sans place réglée, le produit vient après ceux qui en ont une. */
+  readonly position: number | null;
 }
 
 /** Ce que le mode prod sait d'un SKU : son produit et son rayon de boutique. */
@@ -57,13 +73,11 @@ export interface GroupingPlacement {
   readonly workstations: readonly GroupingWorkstation[];
   /** SKU → son article ; un SKU absent est hors catalogue. */
   readonly articles: ReadonlyMap<string, GroupingArticle>;
-  /** Référence produit → id de son poste ; un produit absent n'a pas de poste. */
-  readonly byProduct: ReadonlyMap<string, string>;
   /**
-   * Référence produit → sa place dans la pile de son poste ; un produit
-   * absent n'a pas de place réglée et vient après ceux qui en ont une.
+   * Référence produit → ses postes, chacun avec sa place dans sa pile ; un
+   * produit absent (ou sans poste) n'a pas de poste.
    */
-  readonly positions: ReadonlyMap<string, number>;
+  readonly byProduct: ReadonlyMap<string, readonly GroupingStation[]>;
 }
 
 /** Ce que le rangement reçoit : le mode, et ce qui a été lu pour lui. */
@@ -95,6 +109,11 @@ export interface ProductionGroup<T> {
   readonly sections: readonly ShelfSection<T>[];
   /** Ses lignes, dans l'ordre reçu. */
   readonly lines: readonly T[];
+  /**
+   * SKU → ce que le poste fait de la ligne. Rempli pour un groupe
+   * `workstation` seulement ; vide ailleurs, où une ligne n'a pas de rôle.
+   */
+  readonly roles: ReadonlyMap<string, WorkshopLineRole>;
 }
 
 /** Range les lignes selon le mode. */
@@ -137,6 +156,7 @@ function shelvedGroupsOf<T>(
     unplaced,
     sections: shelf.sections,
     lines: shelf.items,
+    roles: NO_ROLES,
   }));
   if (shelving.unshelved.length > 0) {
     groups.push(offCatalogGroupOf(shelving.unshelved, unshelvedTitle, unplaced));
@@ -158,7 +178,16 @@ function offCatalogGroupOf<T>(
     unplaced,
     sections: [],
     lines,
+    roles: NO_ROLES,
   };
+}
+
+const NO_ROLES: ReadonlyMap<string, WorkshopLineRole> = new Map();
+
+/** Une ligne dans la pile d'un poste : sa place, et son rôle. */
+interface StationEntry<T> {
+  readonly line: T;
+  readonly station: GroupingStation;
 }
 
 function workstationGroupsOf<T>(
@@ -167,7 +196,7 @@ function workstationGroupsOf<T>(
   placement: GroupingPlacement,
 ): readonly ProductionGroup<T>[] {
   const known = new Set(placement.workstations.map((workstation) => workstation.id));
-  const byWorkstation = new Map<string, T[]>();
+  const byWorkstation = new Map<string, StationEntry<T>[]>();
   const withoutWorkstation: T[] = [];
   const offCatalog: T[] = [];
   for (const line of lines) {
@@ -176,53 +205,49 @@ function workstationGroupsOf<T>(
       offCatalog.push(line);
       continue;
     }
-    const workstationId = placement.byProduct.get(article.productSku);
     // Un poste hors de la liste ne peut être qu'archivé, ce que la carte
-    // refuse tant qu'il porte des produits : la ligne reste « à ranger ».
-    if (workstationId === undefined || !known.has(workstationId)) {
+    // refuse tant qu'il porte des produits : sans poste connu, la ligne
+    // reste « à ranger ».
+    const stations = (placement.byProduct.get(article.productSku) ?? []).filter((station) =>
+      known.has(station.workstationId),
+    );
+    if (stations.length === 0) {
       withoutWorkstation.push(line);
       continue;
     }
-    const bucket = byWorkstation.get(workstationId) ?? [];
-    byWorkstation.set(workstationId, bucket);
-    bucket.push(line);
+    for (const station of stations) {
+      const bucket = byWorkstation.get(station.workstationId) ?? [];
+      byWorkstation.set(station.workstationId, bucket);
+      bucket.push({ line, station });
+    }
   }
   const familyOf = (line: T): CatalogFamilyView | undefined =>
     placement.articles.get(skuOf(line))?.family;
-  const stations = placement.workstations.flatMap((workstation) => {
-    const items = byWorkstation.get(workstation.id);
-    return items === undefined
-      ? []
-      : [stationGroupOf(workstation, inPile(items, skuOf, placement))];
+  const groups = placement.workstations.flatMap((workstation) => {
+    const entries = byWorkstation.get(workstation.id);
+    return entries === undefined ? [] : [stationGroupOf(workstation, inPile(entries), skuOf)];
   });
   // Une ligne sans poste a un article, donc un rayon : rien n'y reste sans rayon.
   const shelved = shelvedGroupsOf(withoutWorkstation, familyOf, true, offCatalogTitle());
   const tail =
     offCatalog.length === 0 ? [] : [offCatalogGroupOf(offCatalog, offCatalogTitle(), true)];
-  return [...stations, ...shelved, ...tail];
+  return [...groups, ...shelved, ...tail];
 }
 
 /**
  * Les lignes d'un poste dans sa pile : par place du produit de chaque ligne
- * (une déclinaison suit son produit), les lignes sans place après, et l'ordre
- * reçu entre deux lignes de même rang — le tri est stable.
+ * DANS CE POSTE (une déclinaison suit son produit), les lignes sans place
+ * après, et l'ordre reçu entre deux lignes de même rang — le tri est stable.
  */
-function inPile<T>(
-  lines: readonly T[],
-  skuOf: (line: T) => string,
-  placement: GroupingPlacement,
-): readonly T[] {
-  const rankOf = (line: T): number => {
-    const productSku = placement.articles.get(skuOf(line))?.productSku;
-    const position = productSku === undefined ? undefined : placement.positions.get(productSku);
-    return position ?? Number.POSITIVE_INFINITY;
-  };
-  return lines
-    .map((line, index) => ({ line, index, rank: rankOf(line) }))
+function inPile<T>(entries: readonly StationEntry<T>[]): readonly StationEntry<T>[] {
+  const rankOf = (entry: StationEntry<T>): number =>
+    entry.station.position ?? Number.POSITIVE_INFINITY;
+  return entries
+    .map((entry, index) => ({ entry, index, rank: rankOf(entry) }))
     .sort((left, right) =>
       left.rank === right.rank ? left.index - right.index : left.rank - right.rank,
     )
-    .map((entry) => entry.line);
+    .map((ranked) => ranked.entry);
 }
 
 function offCatalogTitle(): string {
@@ -239,8 +264,15 @@ function offCatalogTitle(): string {
  */
 function stationGroupOf<T>(
   workstation: GroupingWorkstation,
-  lines: readonly T[],
+  entries: readonly StationEntry<T>[],
+  skuOf: (line: T) => string,
 ): ProductionGroup<T> {
+  const lines = entries.map((entry) => entry.line);
+  const roles = new Map(
+    entries.map(
+      (entry) => [skuOf(entry.line), entry.station.finishes ? "finishes" : "step"] as const,
+    ),
+  );
   const sections: readonly ShelfSection<T>[] = [{ family: null, items: lines }];
   return {
     key: `${WORKSTATION_GROUP_KEY_PREFIX}${workstation.id}`,
@@ -251,5 +283,6 @@ function stationGroupOf<T>(
     unplaced: false,
     sections,
     lines,
+    roles,
   };
 }

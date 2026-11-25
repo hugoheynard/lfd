@@ -164,6 +164,15 @@ export interface WorkshopLine {
    * seulement : le serveur l'envoie toujours.
    */
   readonly waitingOrders?: WorkshopWaitingOrders | null;
+  /**
+   * **Ce que la fiche de poste fait de la ligne** — `finishes` ou `step`.
+   * Une ligne dont le produit a plusieurs postes figure dans la fiche de
+   * CHACUN, avec la même quantité : le rôle dit lequel compte des pièces.
+   * `null` hors d'une fiche de poste (mode boutique, « à ranger », hors
+   * catalogue) et dans la liste dépréciée `ProductionWorksheetView.lines`.
+   * Facultatif dans le TYPE seulement : le serveur l'envoie toujours.
+   */
+  readonly role?: WorkshopLineRole | null;
 }
 
 /** Le rouge ouvert d'une ligne, pour le panneau « Combien est réellement sorti ? ». */
@@ -215,6 +224,15 @@ export const WORKSTATION_GROUP_KEY_PREFIX = "ws:";
  * rayon dont les produits n'ont pas de poste (mode prod), ou les SKU sans
  * rayon connu.
  */
+/**
+ * Ce qu'un poste fait d'une ligne, en mode prod (plan
+ * `documentation/fournil/plan-produit-sur-plusieurs-postes.md`, § 2.7) :
+ * `finishes` — il la finit, seul son « Fait » compte des pièces ; `step` —
+ * il en fait une étape, qui ne compte aucune pièce.
+ */
+export const WORKSHOP_LINE_ROLES = ["finishes", "step"] as const;
+export type WorkshopLineRole = (typeof WORKSHOP_LINE_ROLES)[number];
+
 export const WORKSHOP_GROUP_KINDS = ["workstation", "shelf", "unplaced", "off_catalog"] as const;
 export type WorkshopGroupKind = (typeof WORKSHOP_GROUP_KINDS)[number];
 

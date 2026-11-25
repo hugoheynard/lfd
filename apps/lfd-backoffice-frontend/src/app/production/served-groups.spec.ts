@@ -108,4 +108,17 @@ describe('le rangement servi', () => {
     expect(groups.map((group) => group.key)).toEqual(['ws:four', UNGROUPED_KEY]);
     expect(groups[1]?.lines.map((line) => line.sku)).toEqual(['PAC', 'TAR', 'QUI']);
   });
+
+  it("un SKU à deux postes ne se range que sous celui qui le finit, pas sous l'étape", () => {
+    const groups = servedGroups(
+      [{ sku: 'SAN', quantity: 10 }],
+      grouping([
+        { ...entry('SAN', 'ws:bread', 'Boulangerie', 0), role: 'step' },
+        { ...entry('SAN', 'ws:savory', 'Salé traiteur', 1), role: 'finishes' },
+      ]),
+      biggestFirst,
+    );
+
+    expect(groups.map((group) => [group.key, group.lines.length])).toEqual([['ws:savory', 1]]);
+  });
 });

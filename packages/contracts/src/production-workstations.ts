@@ -8,7 +8,7 @@ import {
   type ProductionGrouping,
   type ProductionTrackingLevel,
 } from "./production-settings.js";
-import type { WorkshopGroupKind } from "./production-worksheet.js";
+import type { WorkshopGroupKind, WorkshopLineRole } from "./production-worksheet.js";
 
 /**
  * **Les postes du fournil** — Prod manager › Postes (plan
@@ -241,6 +241,12 @@ export interface ProductionGroupingEntryView {
   readonly order: number;
   /** `null` : le réglage n'affiche pas les intertitres, ou le groupe n'en a pas. */
   readonly section: ProductionGroupingSectionView | null;
+  /**
+   * Ce que le poste du groupe fait du SKU : `finishes` ou `step` ; `null`
+   * hors d'un groupe `workstation`. Facultatif dans le TYPE seulement : le
+   * serveur l'envoie toujours.
+   */
+  readonly role?: WorkshopLineRole | null;
 }
 
 /**
@@ -255,7 +261,12 @@ export interface ProductionGroupingView {
   readonly shelvesKnown: boolean;
   /** `false` : en mode prod, les postes n'ont pas pu être lus — rangé par rayon. */
   readonly workstationsKnown: boolean;
-  /** Un par SKU demandé, sans doublon, dans l'ordre du rangement. */
+  /**
+   * Dans l'ordre du rangement : un par SKU demandé, et un de plus par poste
+   * supplémentaire de son produit en mode prod (une entrée par couple SKU,
+   * groupe ; plan `documentation/fournil/plan-produit-sur-plusieurs-postes.md`,
+   * § 2.7). Un total général se dédoublonne par SKU.
+   */
   readonly entries: readonly ProductionGroupingEntryView[];
 }
 
