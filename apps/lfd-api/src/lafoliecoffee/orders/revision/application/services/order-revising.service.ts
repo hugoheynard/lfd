@@ -313,6 +313,9 @@ export class OrderRevising {
       // Le tarif de livraison du jour de la passation (1a, Hugo, 2026-11-05) :
       // un frais relevé depuis ne renchérit pas la commande.
       frozenDeliveryFee: frozenDeliveryFeeOf(order),
+      // Le port offert d'une commande issue d'un reliquat (décision 14) : le
+      // seuil du franco vaut 0 dans toute zone, même celle d'une autre adresse.
+      offeredDelivery: order.deliveryOffered,
       // Le payeur de la commande et le jour révisé : les lignes nouvelles sont
       // tenues au tarif convenu (QD8).
       negotiated: { payerCompanyId: order.billedCompanyId, day: content.requestedDeliveryDate },

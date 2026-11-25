@@ -236,6 +236,8 @@ export class PrismaOrderRepository extends OrderRepository {
             paymentStatus: state.paymentStatus,
             // Figé ici : la base en refuse toute modification ultérieure.
             settlementVenue: state.settlementVenue,
+            // Figé ici aussi : la base en refuse toute modification ultérieure.
+            deliveryOffered: state.deliveryOffered,
             stripePaymentIntentId: state.stripePaymentIntentId,
             note: state.note,
             // L'engagement budgétaire d'un payeur public (P2) ; deux NULL sinon.

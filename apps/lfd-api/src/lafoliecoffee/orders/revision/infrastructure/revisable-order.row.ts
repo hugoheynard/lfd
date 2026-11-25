@@ -52,7 +52,8 @@ const DOCUMENT_OF_ROW_KEY: ReadonlyMap<string, SalesTermsDocument> = new Map([
   ["sales-terms-pro", salesTermsDocuments[1]],
 ]);
 
-const LINE_SELECT = {
+/** Les colonnes d'une ligne figée, telles que le rejeu d'un prix les relit. */
+export const REVISABLE_LINE_SELECT = {
   id: true,
   sku: true,
   productNameSnapshot: true,
@@ -96,6 +97,7 @@ export const REVISABLE_ORDER_SELECT = {
   status: true,
   paymentStatus: true,
   settlementVenue: true,
+  deliveryOffered: true,
   totalCents: true,
   ...ORDER_OFFER_REASON_SELECT,
   // Les gestes du HT (`orderPretaxCents`) : l'e-mail « commande modifiée » dit l'ancien HT d'un pro.
@@ -138,13 +140,14 @@ export const REVISABLE_ORDER_SELECT = {
   customerCancellationHoursBefore: true,
   // Un départ décidé sur UN envoi suffit à figer la commande (plan E7 reliquat, LB).
   shortfallDecisions: { select: { id: true }, take: 1 },
-  lines: { select: LINE_SELECT, orderBy: { sku: "asc" } },
+  lines: { select: REVISABLE_LINE_SELECT, orderBy: { sku: "asc" } },
   // Les remises ACTIVES, par rang, avec leurs termes figés : ce que la
   // révision rejoue (plan des remises acquises, § 10.2) et l'« avant » de L9.
   discounts: REVISABLE_ORDER_DISCOUNTS_SELECT,
 } as const;
 
-interface RevisableLineRow extends OrderLineRow {
+/** La forme que Prisma rend pour {@link REVISABLE_LINE_SELECT}. */
+export interface RevisableLineRow extends OrderLineRow {
   readonly id: string;
   readonly productId: string | null;
   readonly categoryId: string | null;
@@ -166,6 +169,7 @@ export interface RevisableOrderRow {
   readonly status: OrderStatus;
   readonly paymentStatus: PaymentStatus;
   readonly settlementVenue: RevisableOrder["settlementVenue"];
+  readonly deliveryOffered: boolean;
   readonly totalCents: number;
   readonly offerNature: string | null;
   readonly offerNote: string | null;
@@ -233,6 +237,7 @@ export function toRevisableOrder(row: RevisableOrderRow, refunds: RefundPosition
     status: row.status,
     paymentStatus: row.paymentStatus,
     settlementVenue: row.settlementVenue,
+    deliveryOffered: row.deliveryOffered,
     totalCents: row.totalCents,
     ...offerOf(row),
     pretaxCents: orderPretaxCents(row),
@@ -260,7 +265,7 @@ export function toRevisableOrder(row: RevisableOrderRow, refunds: RefundPosition
     },
     agreed: fulfillmentOf(row.fulfillment),
     note: row.note,
-    lines: row.lines.map(toLineSnapshot),
+    lines: row.lines.map(revisableLineSnapshotOf),
     lateFeeAdjustment: lateFeeOf(row.lateFeeAdjustment),
     discountPromotionId: row.discountPromotionId,
     discountAdjustment:
@@ -296,7 +301,8 @@ export function toRevisableOrder(row: RevisableOrderRow, refunds: RefundPosition
   };
 }
 
-function toLineSnapshot(line: RevisableLineRow): OrderLineSnapshot {
+/** Une ligne figée → son instantané, prix et traces revalidés. */
+export function revisableLineSnapshotOf(line: RevisableLineRow): OrderLineSnapshot {
   return {
     sku: line.sku,
     productName: line.productNameSnapshot,

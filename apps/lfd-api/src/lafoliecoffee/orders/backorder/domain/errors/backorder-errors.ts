@@ -1,4 +1,9 @@
-import { BusinessError, DomainError } from "../../../../../platform/shared/errors/app-error.js";
+import {
+  BusinessError,
+  DomainError,
+  ResourceNotFoundError,
+  TechnicalError,
+} from "../../../../../platform/shared/errors/app-error.js";
 
 /**
  * Les refus du **reliquat de commande** (plan
@@ -62,6 +67,52 @@ export class BackorderClosedError extends BusinessError {
       "orders.backorder.closed",
       `Ce reliquat est ${CLOSED_WORDS[state]}, et c'est définitif : rien n'a été changé. ` +
         "Rechargez la commande d'origine pour voir son état ; pour livrer encore, passez une commande ordinaire.",
+    );
+  }
+}
+
+/** Un reliquat naît des lignes de son origine : un article absent dit une donnée corrompue. */
+export class BackorderOriginLineMissingError extends TechnicalError {
+  constructor(sku: string) {
+    super(
+      "orders.backorder.origin_line_missing",
+      `L'article « ${sku} » du reliquat ne figure pas sur la commande d'origine : son prix d'origine est introuvable, ` +
+        "rien n'a été transformé. Prévenir l'équipe technique.",
+    );
+  }
+}
+
+/** Le reliquat demandé n'existe pas. */
+export class BackorderNotFoundError extends ResourceNotFoundError {
+  constructor(id: string) {
+    super(
+      "orders.backorder.not_found",
+      `Le reliquat ${id} est introuvable. Rechargez la commande d'origine pour voir son reliquat.`,
+    );
+  }
+}
+
+/** La commande d'origine d'un reliquat est introuvable : sa clé étrangère l'interdit. */
+export class BackorderOriginNotFoundError extends TechnicalError {
+  constructor(originOrderId: string) {
+    super(
+      "orders.backorder.origin_not_found",
+      `La commande d'origine ${originOrderId} du reliquat est introuvable : rien n'a été transformé. ` +
+        "Prévenir l'équipe technique.",
+    );
+  }
+}
+
+/**
+ * Un reliquat de particulier se transforme par les gestes du comptoir (plan,
+ * § 5 bis), pas par la saisie de l'équipe, qui exige une société.
+ */
+export class ParticularBackorderNotConvertibleError extends BusinessError {
+  constructor() {
+    super(
+      "orders.backorder.particular_not_convertible",
+      "Ce reliquat est celui d'un particulier : il ne se transforme pas par la saisie de l'équipe, " +
+        "qui exige une société. Passez une commande du particulier au comptoir.",
     );
   }
 }

@@ -97,6 +97,14 @@ export interface PricingRequest {
    */
   readonly frozenDeliveryFee: FrozenDeliveryFee | null;
   /**
+   * Le port offert d'une commande issue d'un reliquat (décisions 7 et 14 du
+   * plan du reliquat) : le seuil du franco de la route vaut 0, quelle que soit
+   * la zone, à la passation comme en révision. Jamais lu d'un corps de
+   * requête : la politique de la passation le pose, la révision le relit sur
+   * la commande. Obligatoire : un appelant oublié ne compile pas.
+   */
+  readonly offeredDelivery: boolean;
+  /**
    * Le payeur et le jour de livraison, que le tarif convenu juge (QD8) : la
    * passation y met le payeur qu'elle vient de résoudre, la révision celui
    * copié sur la commande. Obligatoire : un appelant oublié ne compile pas.
@@ -176,7 +184,10 @@ export class PricingContext {
       companyStatus,
       buyerKind: request.parties.buyerKind,
     };
-    const routed = await this.routeOf(request.content, buyer, request.frozenDeliveryFee);
+    const routed = await this.routeOf(request.content, buyer, {
+      frozenFee: request.frozenDeliveryFee,
+      offeredDelivery: request.offeredDelivery,
+    });
     if ("refusal" in routed) {
       return refused(routed.refusal);
     }
@@ -304,11 +315,16 @@ export class PricingContext {
    * **Coursier** : la zone déduite du code postal livré — toujours lue, car
    * elle dit si la livraison reste ouverte et quelles promotions s'y lisent ;
    * son barème cède au barème figé quand la révision livre la même zone.
+   * Le port offert remplace le seuil par 0 : le barème reste lu et figé, le
+   * franco est toujours atteint, et `priceBasket` met le frais à zéro.
    */
   private async routeOf(
     content: OrderContent,
     buyer: PickupBuyer,
-    frozenFee: FrozenDeliveryFee | null,
+    {
+      frozenFee,
+      offeredDelivery,
+    }: { readonly frozenFee: FrozenDeliveryFee | null; readonly offeredDelivery: boolean },
   ): Promise<Attempt<Pick<BasketPricingContext, "route" | "promotions">>> {
     if (content.fulfillmentMethod === "pickup") {
       return this.pickupRouteOf(content, buyer);
@@ -334,7 +350,9 @@ export class PricingContext {
     // seuil figé est celui de la ROUTE : une promotion qui a offert n'y entre
     // jamais (§ 2.8, B3). Elle est rejugée avec celles du jour — vivante,
     // éligible, dans la zone —, et n'offre plus si elle a pris fin.
-    const threshold = tariff.freeDeliveryThresholdCents ?? zone.value.freeDeliveryThresholdCents;
+    const threshold = offeredDelivery
+      ? OFFERED_DELIVERY_THRESHOLD_CENTS
+      : (tariff.freeDeliveryThresholdCents ?? zone.value.freeDeliveryThresholdCents);
     const route: BasketRoute = {
       method: "delivery",
       zoneId,
@@ -365,6 +383,9 @@ export class PricingContext {
     return { value: { route: { method: "pickup", point: toSnapshot(point) }, promotions } };
   }
 }
+
+/** Le seuil du port offert : une base de marchandises vaut toujours 0 ou plus. */
+const OFFERED_DELIVERY_THRESHOLD_CENTS = 0;
 
 function refused(refusal: AppError): LoadedPricing {
   return { refusals: [refusal], loaded: null };

@@ -9,7 +9,7 @@ import {
   staffEntryOriginOf,
 } from "../../domain/services/order-supply-rules.js";
 import { REGISTERED_BUYER } from "../../domain/value-objects/order-buyer-kind.js";
-import type { DraftedOrder, OrderDrafting } from "./order-drafting.service.js";
+import type { DraftedOrder, DraftPolicy, OrderDrafting } from "./order-drafting.service.js";
 import { offerPartyOf } from "./order-offering.js";
 import { counterCompanyStatusRefusal } from "./staff-settlement-refusal.js";
 
@@ -38,6 +38,10 @@ export interface StaffOrderPreparationPorts {
  * Rien n'est écrit : ni la vitrine ou la journée tenues, ni la commande, ni
  * le règlement, ni la dérogation consommée — c'est à l'appelant.
  *
+ * `policy` : `PLACEMENT_POLICY` pour la saisie ordinaire ; la transformation
+ * d'un reliquat passe la sienne (rejeu des prix d'origine, port offert, sans
+ * surtaxe), à l'estimation comme à la passation — une seule arithmétique.
+ *
  * @throws {OrderCompanyNotFoundError} l'acheteur n'est pas membre de la société.
  * @throws {CounterLinkSettlementRefusedError} un lien de règlement au comptoir.
  * @throws {CounterAccountSettlementNotGrantedError} le même lien, quand la
@@ -51,6 +55,7 @@ export async function prepareStaffOrder(
   caller: PricingCaller,
   // Le droit de passer outre la limite d'un produit, lu au contrôleur.
   exceedItemLimits: boolean,
+  policy: DraftPolicy,
 ): Promise<DraftedOrder> {
   const { companyId, buyerUserId } = payload;
   // Un 404 non-divulguant, comme sur le chemin client : le back-office a la
@@ -92,6 +97,7 @@ export async function prepareStaffOrder(
     payload.entryShortcut,
     // D'où vient la saisie, gardée sur la commande (Hugo, 2026-11-04).
     staffEntryOriginOf(payload.entryOrigin, payload.entryShortcut),
+    policy,
   );
 }
 

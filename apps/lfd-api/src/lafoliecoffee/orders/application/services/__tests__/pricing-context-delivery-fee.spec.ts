@@ -40,6 +40,7 @@ function request(over: Partial<PricingRequest> = {}): PricingRequest {
     frozenDeliveryVatMode: null,
     frozenAudience: null,
     frozenDeliveryFee: null,
+    offeredDelivery: false,
     negotiated: { payerCompanyId: null, day: null },
     ...over,
   };

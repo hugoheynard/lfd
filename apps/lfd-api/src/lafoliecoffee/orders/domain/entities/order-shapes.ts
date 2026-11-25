@@ -324,6 +324,8 @@ export interface OrderToPlace {
   readonly paymentStatus: PaymentStatus;
   /** Où le règlement se fera hors de chez nous, `null` sinon (cf. `SettlementVenue`). */
   readonly settlementVenue: SettlementVenue | null;
+  /** Le port offert d'une commande issue d'un reliquat, figé à la passation. */
+  readonly deliveryOffered: boolean;
   readonly stripePaymentIntentId: string | null;
   /** Les CGV figées (cf. {@link DraftOrderInput.salesTerms}). */
   readonly salesTerms: OrderSalesTerms;

@@ -165,7 +165,7 @@ flowchart LR
   et unité ; un article absent du stock vaut 0, d'où le refus du **panier
   mixte**. Un refus annule l'intention Stripe sur les trois portes
   (`place-order.handler.ts:244`, `place-shop-order.handler.ts:237`,
-  `place-order-for-customer.handler.ts:146`).
+  `staff-order-placement.ts:228`).
 - **Le pro sans crédit, au comptoir** (Q7) : une `shelf` au lien de paiement
   d'un payeur sans crédit est refusée si le réglage dit « refuser » ; « lien
   de paiement » la laisse passer, en attente de règlement. Au compte, la règle

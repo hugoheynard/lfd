@@ -468,6 +468,32 @@ de l'origine même après une hausse du catalogue, double clic = une seule
 commande, reliquat abandonné refusé ; **une seule arithmétique** : l'estimation
 et la passation donnent le même total.
 
+**Tranché au bâti de B3 (2026-11-25)** :
+
+- `BACKORDER_POLICY` est une fonction, `backorderPolicyOf(rejeu)`
+  (`orders/backorder/application/backorder-placement.ts`) : le rejeu dépend
+  du reliquat.
+- Le lecteur du rejeu est un port à part, `BackorderReplayReader.replayOf`,
+  et non une méthode de `BackorderOriginReader` : la naissance n'en a pas
+  besoin (ISP). Il relit l'origine avec les colonnes et les mappers de la
+  révision.
+- La passation de l'équipe est sortie de son handler dans
+  `StaffOrderPlacement` (`orders/application/services/staff-order-placement.ts`),
+  et son estimation dans `StaffOrderEstimation` : la saisie ordinaire et la
+  transformation partagent le même code, la seconde ajoutant le verrou du
+  reliquat en tête de transaction et sa fermeture après la commande. Les
+  constructeurs des deux handlers existants ne changent pas.
+- Le reliquat se relit sans juger son état AVANT l'intention (un double clic
+  après le succès retrouve sa commande), puis l'état se juge dans l'intention
+  et de nouveau sous le verrou.
+- Le corps de `convert` et de `quote` est strict : un champ inconnu (un
+  frais, par exemple) est un 400.
+- `Order.offerDelivery()` refuse un port non nul (HT ou TTC) avec une
+  `TechnicalError` nommée, et `Order.recompose` le rejuge sur une commande
+  au port offert : une erreur de chargement ne devient jamais un 500 du CHECK.
+- L'écriture de la révision n'écrit pas `delivery_offered` (vérifié : son
+  `update` ne liste pas la colonne).
+
 ### 5. B4 — abandonner, et les écrans
 
 - `POST admin/backorders/:id/abandon` sous `b2b_orders_shortfall:write` ;
@@ -740,7 +766,7 @@ un bon de fidélité (déjà refusés à la décision, `termsRefusalOf`).
 | --- | -------------------------------------------------- | -------------------------------------------------------------------------- |
 | B1  | migration, agrégat, dépôt — ✅ bâti le 2026-11-25  | unitaires de l'agrégat, e2e des CHECK                                      |
 | B2  | naissance dans la décision — ✅ bâti le 2026-11-25 | unitaires, e2e managers et comptoir                                        |
-| B3  | transformer, rejeu du prix d'origine               | unitaires du rejeu, e2e prix et idempotence                                |
+| B3  | transformer (pros) — ✅ bâti le 2026-11-25         | unitaires du rejeu, e2e prix et idempotence                                |
 | B4  | abandonner, liste, écrans                          | e2e, specs des composants                                                  |
 | B4b | traçabilité : versions du BL, historique, fiche    | e2e documents et historique, specs ; `vitruve` d'abord                     |
 | B5  | démontage du second envoi                          | inventaire et `vitruve` d'abord                                            |

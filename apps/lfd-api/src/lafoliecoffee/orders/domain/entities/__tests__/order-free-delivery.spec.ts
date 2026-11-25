@@ -214,6 +214,7 @@ function revisableOf(state: OrderToPlace): RevisableOrder {
     status: "placed",
     paymentStatus: "not_required",
     settlementVenue: null,
+    deliveryOffered: false,
     shortfallDecided: false,
     discountPromotionId: state.discountPromotionId,
     discountAdjustment: state.discountAdjustment,

@@ -40,6 +40,7 @@ const BY_STAFF_FOR_CLIENT: PricingRequest = {
   frozenDeliveryVatMode: null,
   frozenAudience: null,
   frozenDeliveryFee: null,
+  offeredDelivery: false,
   negotiated: { payerCompanyId: null, day: null },
 };
 

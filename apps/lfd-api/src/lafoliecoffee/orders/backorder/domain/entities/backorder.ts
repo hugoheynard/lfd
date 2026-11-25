@@ -85,7 +85,7 @@ export class Backorder {
    * @throws {BackorderConvertedIntoOriginError} `orderId` est la commande d'origine.
    */
   convert(orderId: string, at: Date, by: string): void {
-    this.assertOpen();
+    this.ensureOpen();
     if (orderId === this.state.originOrderId) {
       throw new BackorderConvertedIntoOriginError();
     }
@@ -104,7 +104,7 @@ export class Backorder {
    * @throws {BackorderClosedError} déjà transformé ou abandonné.
    */
   abandon(at: Date, by: string): void {
-    this.assertOpen();
+    this.ensureOpen();
     this.state = { ...this.state, state: "abandoned", closedAt: at, closedByStaffId: by };
   }
 
@@ -116,6 +116,19 @@ export class Backorder {
     return this.state.originOrderId;
   }
 
+  /** La société de l'origine ; `null` pour un particulier. */
+  get companyId(): string | null {
+    return this.state.companyId;
+  }
+
+  get buyerUserId(): string {
+    return this.state.buyerUserId;
+  }
+
+  get lines(): readonly BackorderLine[] {
+    return this.state.lines;
+  }
+
   get isOpen(): boolean {
     return this.state.state === "open";
   }
@@ -124,7 +137,13 @@ export class Backorder {
     return { ...this.state, lines: [...this.state.lines] };
   }
 
-  private assertOpen(): void {
+  /**
+   * Refuse un reliquat fermé, avant de composer sa commande : la
+   * transformation le rejuge sous verrou par {@link convert}.
+   *
+   * @throws {BackorderClosedError} déjà transformé ou abandonné.
+   */
+  ensureOpen(): void {
     if (this.state.state !== "open") {
       throw new BackorderClosedError(this.state.state);
     }

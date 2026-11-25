@@ -119,7 +119,7 @@ export const orderOfferSchema = z.object({
 export type OrderOffer = z.infer<typeof orderOfferSchema>;
 
 /** Le motif est là si et seulement si la commande est offerte. */
-function hasOfferIffOffered(payload: {
+export function hasOfferIffOffered(payload: {
   readonly settlement: StaffSettlement;
   readonly offer?: OrderOffer | undefined;
 }): boolean {
@@ -131,14 +131,14 @@ function hasOfferIffOffered(payload: {
  * « Offerte », avant que le motif soit écrit, et le serveur chiffre alors la
  * valeur pleine. Un motif sans `offered` reste refusé.
  */
-function hasOfferOnlyWhenOffered(payload: {
+export function hasOfferOnlyWhenOffered(payload: {
   readonly settlement: StaffSettlement;
   readonly offer?: OrderOffer | undefined;
 }): boolean {
   return payload.offer === undefined || payload.settlement === "offered";
 }
 
-function offerIssue(): { readonly message: string; readonly path: string[] } {
+export function offerIssue(): { readonly message: string; readonly path: string[] } {
   return {
     message: "une commande offerte exige un motif, et seule elle en porte",
     path: ["offer"],
@@ -225,7 +225,8 @@ export const itemLimitOverrideReasonSchema = z
   .min(1, "motif requis")
   .max(ITEM_LIMIT_OVERRIDE_REASON_MAX_LENGTH, "motif trop long");
 
-const adminOrderEntryShape = {
+/** Les champs de la saisie de l'équipe, que la transformation d'un reliquat reprend. */
+export const adminOrderEntryShape = {
   companyId: z.string().trim().min(1, "société requise"),
   buyerUserId: z.string().trim().min(1, "client requis"),
   settlement: staffSettlementSchema,

@@ -105,6 +105,7 @@ function placed(
     status: "placed",
     paymentStatus: "not_required",
     settlementVenue: null,
+    deliveryOffered: false,
     shortfallDecided: false,
     discountPromotionId: null,
     discountAdjustment: null,

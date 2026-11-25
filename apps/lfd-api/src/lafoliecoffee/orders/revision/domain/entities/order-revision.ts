@@ -73,6 +73,11 @@ export interface RevisableOrder {
   readonly offer?: OrderOfferReason;
   /** Où le règlement se fera hors de chez nous, figé à la passation — `shop_till`, ou `null`. */
   readonly settlementVenue: SettlementVenue | null;
+  /**
+   * Le port offert, figé à la passation d'une commande issue d'un reliquat :
+   * la révision force le seuil du franco à 0, quelle que soit la zone.
+   */
+  readonly deliveryOffered: boolean;
   /** Le HT de la composition écrite (`orderPretaxCents`), relu pour l'ancien HT de l'e-mail. */
   readonly pretaxCents: number;
   /**

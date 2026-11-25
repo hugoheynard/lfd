@@ -78,6 +78,10 @@ import type { OrderBuyerKind } from "../value-objects/order-buyer-kind.js";
 import type { OrderLocale } from "../value-objects/order-locale.js";
 import type { SettlementVenue } from "../value-objects/settlement-venue.js";
 import { ShopTillOrderShapeError } from "../errors/shop-till-order-errors.js";
+import {
+  OfferedDeliveryChargedError,
+  OfferedDeliveryTooLateError,
+} from "../errors/offered-delivery-errors.js";
 import type { OrderOffer } from "../value-objects/order-offer.js";
 import { offerAppliedTo, offerCarriedOn } from "./order-offered-amounts.js";
 import { ensureShopTillPickup } from "../services/shop-till-rules.js";
@@ -129,6 +133,8 @@ export class Order {
   private budgetCommitment: BudgetCommitment | null = null;
   // Posé par `settleAtShopTill` seulement, à la passation ; `null` sinon.
   private settlementVenueValue: SettlementVenue | null = null;
+  // Posé par `offerDelivery` seulement — la commande issue d'un reliquat.
+  private deliveryOfferedValue = false;
   private constructor(
     private readonly companyId: string | null,
     private readonly billedCompanyIdValue: string | null,
@@ -324,6 +330,11 @@ export class Order {
         windowStart: current.agreed.window.value?.start ?? null,
       }),
     );
+    // Le port offert est une propriété de la commande (décision 14 du plan du
+    // reliquat) : la recomposition le rejuge, et la base refuse de le changer.
+    if (current.deliveryOffered) {
+      revised.offerDelivery();
+    }
     // Le règlement de la commande n'est jamais réécrit par la révision
     // (`revisions.save` n'écrit aucune colonne de paiement) : `deferPayment`
     // ne sert qu'à composer, et `revisionOf` ne lit plus `onAccount` sur lui
@@ -468,6 +479,37 @@ export class Order {
     this.settlementVenueValue = "shop_till";
   }
 
+  /**
+   * **Le port offert** d'une commande issue d'un reliquat (plan
+   * `documentation/commandes/reliquat/plan-reliquat-de-commande.md`,
+   * décisions 7, 14 et 16) : posé à la composition, retrait compris, et figé
+   * — la base en refuse toute modification après la passation. La composition
+   * l'a déjà rendu nul en forçant le seuil du franco à 0 ; l'agrégat vérifie
+   * qu'aucun port n'est facturé, HT comme TTC, image du CHECK
+   * `orders_delivery_offered_waives_fee`.
+   *
+   * @throws {OfferedDeliveryTooLateError} le règlement est déjà décidé.
+   * @throws {OfferedDeliveryChargedError} la composition facture un port.
+   */
+  offerDelivery(): void {
+    if (this.payment !== null) {
+      throw new OfferedDeliveryTooLateError();
+    }
+    const charged = Math.max(
+      this.drafted.deliveryFeeCents,
+      this.drafted.ttcTerms?.deliveryFeeCents ?? 0,
+    );
+    if (charged !== 0) {
+      throw new OfferedDeliveryChargedError(charged);
+    }
+    this.deliveryOfferedValue = true;
+  }
+
+  /** Le port est offert sur cette commande (cf. {@link offerDelivery}). */
+  get deliveryOffered(): boolean {
+    return this.deliveryOfferedValue;
+  }
+
   /** Règlement **différé** (terme d'entreprise) ou gratuit : rien à encaisser. */
   deferPayment(): void {
     this.payment = { status: "not_required", intentId: null };
@@ -608,6 +650,7 @@ export class Order {
       offer: this.offerValue,
       paymentStatus: this.payment.status,
       settlementVenue: this.settlementVenueValue,
+      deliveryOffered: this.deliveryOfferedValue,
       stripePaymentIntentId: this.payment.intentId,
       salesTerms: this.salesTerms,
       locale: this.locale?.code ?? null,

@@ -1574,6 +1574,14 @@ export type {
   CustomerShelfPriceView,
   CustomerShelfPricesView,
 } from "./admin-order-estimate.js";
+export {
+  adminBackorderConvertPayloadSchema,
+  adminBackorderQuotePayloadSchema,
+} from "./admin-backorder.js";
+export type {
+  AdminBackorderConvertPayload,
+  AdminBackorderQuotePayload,
+} from "./admin-backorder.js";
 export type {
   StaffSettlement,
   AdminPlaceOrderPayload,

@@ -46,17 +46,37 @@ import type { OrderSupplyDecision } from "../../domain/value-objects/order-suppl
 import { sameDayDoorOf } from "../../../order-cutoffs/domain/same-day-doors.js";
 import { ShelfCircuit } from "./shelf-circuit.service.js";
 import type { PricingCaller } from "../../../pricing/application/pricing-caller.js";
+import type { RevisedFrom } from "../../revision/application/services/revised-line-pricing.js";
 
 export type { OrderContent } from "./order-content.js";
 
 /**
  * **Ce que la porte permet** à la composition. Le client, l'invité et
  * l'équipe composent sous {@link PLACEMENT_POLICY} ; l'échéance d'un panier
- * récurrent sous {@link RECURRING_OCCURRENCE_POLICY}.
+ * récurrent sous {@link RECURRING_OCCURRENCE_POLICY} ; la transformation d'un
+ * reliquat sous la politique que `backorderPolicyOf` construit avec son rejeu.
+ * Aucune route ne la reçoit d'un corps : c'est le cas d'usage qui la choisit.
  */
 export interface DraftPolicy {
   /** La dérogation d'heure limite de la société peut-elle être dépensée ? */
   readonly deadlineWaiver: "consider" | "ignore";
+  /**
+   * La surtaxe de retard que le verdict pose : appliquée, ou levée quel que
+   * soit le verdict. Levée, la dérogation se dépense quand même — elle admet
+   * la commande —, mais elle ne coûte rien au client.
+   */
+  readonly lateFee: "apply" | "waive";
+  /**
+   * Le port offert : le seuil du franco de la route vaut 0, donc toujours
+   * atteint, et la commande porte le drapeau `delivery_offered` que la
+   * révision relit. Le calcul reste celui de `priceBasket`.
+   */
+  readonly offeredDelivery: boolean;
+  /**
+   * Les lignes figées et les remises à rejouer à la place d'une composition
+   * aux prix du jour — le chemin de la révision ; `null` : les prix du jour.
+   */
+  readonly replayed: RevisedFrom | null;
   /** Qui demande le créneau ; `null` : déduit des parties ({@link windowRequesterOf}). */
   readonly windowRequester: WindowRequester | null;
   /**
@@ -68,7 +88,13 @@ export interface DraftPolicy {
 }
 
 /** La passation d'une personne : la dérogation se dépense, le créneau se juge. */
-export const PLACEMENT_POLICY: DraftPolicy = { deadlineWaiver: "consider", windowRequester: null };
+export const PLACEMENT_POLICY: DraftPolicy = {
+  deadlineWaiver: "consider",
+  lateFee: "apply",
+  offeredDelivery: false,
+  replayed: null,
+  windowRequester: null,
+};
 
 /**
  * L'échéance d'un panier récurrent, passée sans personne devant l'écran :
@@ -78,6 +104,9 @@ export const PLACEMENT_POLICY: DraftPolicy = { deadlineWaiver: "consider", windo
  */
 export const RECURRING_OCCURRENCE_POLICY: DraftPolicy = {
   deadlineWaiver: "ignore",
+  lateFee: "apply",
+  offeredDelivery: false,
+  replayed: null,
   windowRequester: SUBSCRIPTION_WINDOW,
 };
 
@@ -216,12 +245,13 @@ export class OrderDrafting {
     const loaded = await this.composition.load({
       content,
       parties,
-      revised: null,
+      revised: policy.replayed,
       caller,
       vatMethod,
       frozenDeliveryVatMode: null,
       frozenAudience: null,
       frozenDeliveryFee: null,
+      offeredDelivery: policy.offeredDelivery,
       negotiated: { payerCompanyId: billedCompanyId, day: content.requestedDeliveryDate },
     });
     // APRÈS le chargement : un panier qu'on ne sait pas charger est refusé pour
@@ -247,7 +277,7 @@ export class OrderDrafting {
     // C'est un VERDICT qui a un prix (§ 2.3) : `priceBasket` l'applique au
     // sous-total ; le devis d'une société le prévoit par la même source.
     const composed = OrderComposition.draftOf(content, loaded.context, arranged, {
-      lateFee: admission.lateFee,
+      lateFee: policy.lateFee === "waive" ? null : admission.lateFee,
     });
     const order = Order.draft(
       {
@@ -271,6 +301,9 @@ export class OrderDrafting {
       supply,
       entryOrigin,
     );
+    if (policy.offeredDelivery) {
+      order.offerDelivery();
+    }
     // Sur LE chiffrage de l'agrégat : il n'est plus refait ici (L7, 2026-11-04).
     warnBeyondCap(this.logger, order.pricingNotes());
     return { order, waiverUsed: admission.waiverUsed, exceeded: admission.exceeded };
