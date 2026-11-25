@@ -60,7 +60,7 @@ export function servedGroups<T extends { readonly sku: string }>(
 ): readonly ServedGroup<T>[] {
   // Un SKU à plusieurs postes a une entrée par poste, étapes comprises : sa
   // ligne ressort sous CHACUN, et compte dans la charge de chacun
-  // (`plan-produit-sur-plusieurs-postes.md`, § 2.7). Un total général se
+  // (`un-produit-sur-plusieurs-postes.md`, § 2.2). Un total général se
   // dédoublonne par SKU (`distinctBySku`).
   const entriesOf = new Map<string, ProductionGroupingEntryView[]>();
   for (const entry of grouping?.entries ?? []) {

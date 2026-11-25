@@ -1,6 +1,6 @@
 /**
  * **Décocher une étape** — elle attend de nouveau (
- * `documentation/fournil/plan-produit-sur-plusieurs-postes.md`, § 2.11, point 2).
+ * `documentation/fournil/un-produit-sur-plusieurs-postes.md`, § 2.3).
  */
 export class UndoStepCommand {
   constructor(

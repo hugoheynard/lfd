@@ -49,7 +49,7 @@ export interface StationGesture {
 
 /**
  * Les gestes qui mènent des postes servis à ceux choisis, dans l'ordre que
- * la carte accepte (`plan-produit-sur-plusieurs-postes.md`, § 2.4) :
+ * la carte accepte (`un-produit-sur-plusieurs-postes.md`, § 2.1) :
  *
  * 1. aucun poste choisi : le produit retourne « à ranger » (`place` à `null`) ;
  * 2. sinon, les postes ajoutés — celui qui finit d'abord quand le produit
@@ -106,7 +106,7 @@ export function stationGestures(
 }
 
 /**
- * **Les postes d'un produit** (`fournil/plan-produit-sur-plusieurs-postes.md`,
+ * **Les postes d'un produit** (`fournil/un-produit-sur-plusieurs-postes.md`,
  * § 2.9) : une case par poste, et le choix de celui qui finit — seul son
  * « Fait » compte des pièces ; les autres cochent une étape. Une feuille du
  * bas au téléphone, un dialogue centré au bureau.

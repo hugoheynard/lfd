@@ -184,7 +184,21 @@ export interface WorkshopLine {
    * l'envoie toujours.
    */
   readonly stepsPending?: readonly string[];
+  /**
+   * **L'étape du poste de CETTE fiche**, ** pour une ligne `role === "step"` :
+   * `pending` (jamais cochée ou décochée), `done`, ou `red` — un rouge
+   * attend toujours dans `stepsPending`, et c'est ce champ qui le distingue.
+   * `null` sur toute autre ligne. Facultatif dans le TYPE seulement : le
+   * serveur l'envoie toujours.
+   */
+  readonly stepState?: WorkshopStepState | null;
+  /** La raison du rouge de cette étape ; `null` hors d'un rouge, ou rouge sans raison. */
+  readonly stepRedReason?: string | null;
 }
+
+/** L'état de l'étape d'un poste sur une ligne qu'il ne finit pas. */
+export const WORKSHOP_STEP_STATES = ["pending", "done", "red"] as const;
+export type WorkshopStepState = (typeof WORKSHOP_STEP_STATES)[number];
 
 /** Le rouge ouvert d'une ligne, pour le panneau « Combien est réellement sorti ? ». */
 export interface WorkshopLineProblem {
@@ -237,7 +251,7 @@ export const WORKSTATION_GROUP_KEY_PREFIX = "ws:";
  */
 /**
  * Ce qu'un poste fait d'une ligne, en mode prod (plan
- * `documentation/fournil/plan-produit-sur-plusieurs-postes.md`, § 2.7) :
+ * `documentation/fournil/un-produit-sur-plusieurs-postes.md`, § 2.2) :
  * `finishes` — il la finit, seul son « Fait » compte des pièces ; `step` —
  * il en fait une étape, qui ne compte aucune pièce.
  */

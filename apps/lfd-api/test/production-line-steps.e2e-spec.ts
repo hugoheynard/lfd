@@ -1,6 +1,6 @@
 /**
  * E2E des **étapes d'une ligne** — plan
- * `documentation/fournil/plan-produit-sur-plusieurs-postes.md`, § 2.6 et
+ * `documentation/fournil/un-produit-sur-plusieurs-postes.md`, § 2.3 et
  * § 2.8, sur le vrai Postgres jetable.
  *
  * Ce que seule cette suite prouve :

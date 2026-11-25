@@ -7,6 +7,8 @@ faut régler à l'écran : « À la mise en service », plus bas.
 La fiche elle-même (lignes, paliers, fournées) est décrite dans
 [`la-fiche-d-atelier.md`](la-fiche-d-atelier.md) ; les postes dans
 [`les-postes-du-fournil.md`](les-postes-du-fournil.md).
+Un produit sur plusieurs postes (niveau de sortie, niveau d'une étape) :
+[`un-produit-sur-plusieurs-postes.md`](un-produit-sur-plusieurs-postes.md).
 
 ---
 

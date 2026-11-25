@@ -1,7 +1,7 @@
 /**
  * **Le rouge d'une étape** — un poste qui ne finit pas la ligne dit que sa
  * part ne se fera pas, avec une raison s'il veut ; sans plafond (
- * `documentation/fournil/plan-produit-sur-plusieurs-postes.md`, § 1).
+ * `documentation/fournil/un-produit-sur-plusieurs-postes.md`, § 1).
  */
 export class MarkStepRedCommand {
   constructor(

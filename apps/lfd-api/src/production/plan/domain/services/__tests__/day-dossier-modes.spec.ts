@@ -191,6 +191,21 @@ describe("dayDossierFrom — un produit sur plusieurs postes", () => {
     expect(dossier.recap.reduce((sum, group) => sum + group.quantity, 0)).toBe(59);
     expect(dossier.pieces).toBe(dayDossierOf(ORDERS, SHELVES).pieces);
   });
+
+  it("dit « étape » ou « finit » sous chaque poste, pour les seuls produits à plusieurs postes", () => {
+    const dossier = dayDossierFrom(ORDERS, TWO_STATIONS);
+
+    expect(dossier.recap.map((group) => [group.label, Object.fromEntries(group.roles)])).toEqual([
+      ["Boulangerie", { "QUI-8": "step", "QUI-6": "step" }],
+      ["Pâtisserie", { "QUI-8": "finishes", "QUI-6": "finishes" }],
+      ["Traiteur salé — à ranger", {}],
+      ["Hors catalogue — à ranger", {}],
+    ]);
+  });
+
+  it("ne dit rien en mode boutique", () => {
+    expect(dayDossierOf(ORDERS, SHELVES).recap.every((group) => group.roles.size === 0)).toBe(true);
+  });
 });
 
 /** Chaque produit sur un seul poste, qui le finit, sans place réglée. */

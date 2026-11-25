@@ -26,8 +26,8 @@ export interface StepRedPanelData {
 }
 
 /**
- * **Le rouge d'une étape** (`fournil/plan-produit-sur-plusieurs-postes.md`,
- * § 2.6) : un poste qui ne finit pas la ligne met sa part en rouge, une
+ * **Le rouge d'une étape** (`fournil/un-produit-sur-plusieurs-postes.md`,
+ * § 2.3) : un poste qui ne finit pas la ligne met sa part en rouge, une
  * raison si on veut. Aucune quantité ni plafond — l'étape ne compte aucune
  * pièce ; la Supervision la montre parmi les problèmes, marquée « étape ».
  *

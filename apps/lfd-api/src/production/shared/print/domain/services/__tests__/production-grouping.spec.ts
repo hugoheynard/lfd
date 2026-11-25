@@ -283,7 +283,7 @@ describe("groupingOf — la pile d'un poste", () => {
 
 /**
  * Un produit sur plusieurs postes (plan
- * `documentation/fournil/plan-produit-sur-plusieurs-postes.md`, § 2.7).
+ * `documentation/fournil/un-produit-sur-plusieurs-postes.md`, § 2.2).
  */
 describe("groupingOf — un produit sur plusieurs postes", () => {
   const station = (

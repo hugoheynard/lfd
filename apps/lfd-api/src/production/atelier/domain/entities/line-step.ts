@@ -31,7 +31,7 @@ export interface LineStepState extends LineStepKey {
 
 /**
  * **L'étape d'un poste qui ne finit pas la ligne** (
- * `documentation/fournil/plan-produit-sur-plusieurs-postes.md`, § 2.6).
+ * `documentation/fournil/un-produit-sur-plusieurs-postes.md`, § 2.3).
  *
  * Elle ne compte aucune pièce : cocher, mettre en rouge ou décocher ne touche
  * jamais une fournée. Chaque geste qui la change monte la version ; un geste

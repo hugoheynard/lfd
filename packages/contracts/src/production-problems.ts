@@ -63,8 +63,8 @@ export interface ProductionUnconfirmedLineView {
 }
 
 /**
- * **Le rouge d'une étape** (`documentation/fournil/plan-produit-sur-plusieurs-postes.md`,
- * § 2.6) : un poste qui ne finit pas la ligne a mis sa part en rouge. Sans
+ * **Le rouge d'une étape** (`documentation/fournil/un-produit-sur-plusieurs-postes.md`,
+ * § 2.3) : un poste qui ne finit pas la ligne a mis sa part en rouge. Sans
  * plafond, et sans « Marquer traité » : l'étape sort du rouge quand le poste
  * la coche ou la décoche. La Supervision le montre dans la même liste que
  * les problèmes, marqué « étape ».

@@ -10,7 +10,7 @@ import { SetFinishingWorkstationCommand } from "./set-finishing-workstation.comm
 
 /**
  * Ce poste finit désormais le produit : seul son « Fait » comptera des pièces
- * (`fournil/plan-produit-sur-plusieurs-postes.md`, § 2.4). Celui qui le
+ * (`fournil/un-produit-sur-plusieurs-postes.md`, § 2.1). Celui qui le
  * finissait devient une étape. **Une fois par intention** ; le poste qui
  * finit déjà, redésigné, n'écrit ni ne journalise rien.
  *

@@ -6,7 +6,7 @@ import {
 
 /**
  * **Les étapes d'une ligne** (
- * `documentation/fournil/plan-produit-sur-plusieurs-postes.md`, § 2.6) — des
+ * `documentation/fournil/un-produit-sur-plusieurs-postes.md`, § 2.3) — des
  * fonctions pures. Les postes d'une ligne se lisent sur la carte courante :
  * ceux qui ne finissent pas le produit sont ses étapes.
  */

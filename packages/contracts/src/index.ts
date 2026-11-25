@@ -1196,6 +1196,7 @@ export type {
   WorkshopSection,
   WorkshopGroupKind,
   WorkshopLineRole,
+  WorkshopStepState,
 } from "./production-worksheet.js";
 export { markWorkshopStepRedSchema, reportWorkshopProblemSchema } from "./production-problems.js";
 export type {

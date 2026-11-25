@@ -7,8 +7,12 @@
 </span>
 
 <span class="lt-actions">
-  @if (stepDone()) {
-    <fold-badge variant="success" content="✓ étape faite" data-step-done-badge />
+  @if (state() !== 'pending') {
+    @if (state() === 'red') {
+      <fold-badge variant="alert" [content]="redLabel()" data-step-red-badge />
+    } @else {
+      <fold-badge variant="success" content="✓ Faite" data-step-done-badge />
+    }
     <button
       foldButton
       type="button"

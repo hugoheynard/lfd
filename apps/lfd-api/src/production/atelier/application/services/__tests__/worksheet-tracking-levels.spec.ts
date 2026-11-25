@@ -13,7 +13,7 @@ import { WorksheetTrackingLevelsReading } from "../worksheet-tracking-levels.js"
 
 /**
  * **Le niveau de sortie et le niveau d'étape d'une ligne** (plan
- * `documentation/fournil/plan-produit-sur-plusieurs-postes.md`, § 2.8) : le
+ * `documentation/fournil/un-produit-sur-plusieurs-postes.md`, § 2.4) : le
  * poste qui finit règle la fournée, chaque poste d'étape règle son étape,
  * chacun au niveau que la journée a figé pour lui.
  */

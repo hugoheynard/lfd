@@ -5,7 +5,7 @@ import {
 } from "../../errors/line-step-errors.js";
 import { assertStepOf, type LineStation, pendingStepsOf } from "../line-steps.js";
 
-/** Les étapes d'une ligne (`fournil/plan-produit-sur-plusieurs-postes.md`, § 2.6). */
+/** Les étapes d'une ligne (`fournil/un-produit-sur-plusieurs-postes.md`, § 2.3). */
 const STATIONS: readonly LineStation[] = [
   { workstationId: "pain", finishes: false },
   { workstationId: "traiteur", finishes: true },

@@ -5,7 +5,7 @@ import type { LineStepState } from "../entities/line-step.js";
 
 /**
  * **Les faits d'une étape** (
- * `documentation/fournil/plan-produit-sur-plusieurs-postes.md`, § 2.6) : un
+ * `documentation/fournil/un-produit-sur-plusieurs-postes.md`, § 2.3) : un
  * par geste qui change l'étape. La table ne garde que le dernier ; le journal
  * garde chacun.
  */

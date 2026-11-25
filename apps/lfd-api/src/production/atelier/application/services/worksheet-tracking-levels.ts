@@ -34,7 +34,7 @@ export interface WorksheetTrackingLevels {
 /**
  * **Les niveaux de suivi de chaque ligne de la fiche** (
  * `documentation/fournil/les-niveaux-de-suivi.md` ; plan
- * `documentation/fournil/plan-produit-sur-plusieurs-postes.md`, § 2.8) : le
+ * `documentation/fournil/un-produit-sur-plusieurs-postes.md`, § 2.4) : le
  * niveau de sortie, celui du poste qui finit la ligne, et le niveau de chaque
  * étape, celui du poste qui la fait. Le niveau d'un poste est celui que la
  * journée a figé ; les postes d'une ligne se lisent sur la carte courante.

@@ -200,8 +200,8 @@ export class WorkshopGestures {
   }
 
   /**
-   * **« Étape faite »** (`fournil/plan-produit-sur-plusieurs-postes.md`,
-   * § 2.6) : le poste `workstationId` coche sa part de la ligne, sans compter
+   * **« Étape faite »** (`fournil/un-produit-sur-plusieurs-postes.md`,
+   * § 2.3) : le poste `workstationId` coche sa part de la ligne, sans compter
    * de pièce. Par intention ; pas de file hors ligne — l'étape ne retient ni
    * le colisage ni la clôture, elle se recoche au retour du réseau.
    */

@@ -29,8 +29,8 @@ import { SupervisionService } from '../supervision.service';
  * problème ; un succès fait relire la liste (`resolved`), un refus reste
  * écrit au-dessus des cartes.
  *
- * Dans la même liste, les étapes en rouge (`plan-produit-sur-plusieurs-postes.md`,
- * § 2.11), marquées « étape » : un poste qui ne finit pas la ligne a mis sa
+ * Dans la même liste, les étapes en rouge (`un-produit-sur-plusieurs-postes.md`,
+ * § 2.3), marquées « étape » : un poste qui ne finit pas la ligne a mis sa
  * part en rouge. Ni plafond ni « Marquer traité » — l'étape sort du rouge
  * quand son poste la coche ou la décoche.
  *

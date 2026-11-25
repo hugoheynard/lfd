@@ -6,6 +6,9 @@ Après le déploiement : accorder `production_workstations` dans
 `/admin/roles` (écran « Rôles »), sans quoi les pages Postes et Simulation restent
 fermées.
 
+Un produit peut avoir **plusieurs postes** — un qui finit, les autres font une
+étape : [`un-produit-sur-plusieurs-postes.md`](un-produit-sur-plusieurs-postes.md).
+
 ---
 
 ## 1. En simple
@@ -256,9 +259,6 @@ relecture.
 ---
 
 ## 3. Reste à faire
-
-- Un produit sur plusieurs postes : plan
-  [`plan-produit-sur-plusieurs-postes.md`](plan-produit-sur-plusieurs-postes.md).
 
 - Recompter les SKU en production avant de basculer : la borne de 500 a été
   calculée sur le dev (99 SKU non retirés).

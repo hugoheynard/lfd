@@ -26,6 +26,7 @@ function group(label: string, lines: readonly DossierRecapLine[]): DossierRecapG
     quantity: lines.reduce((sum, item) => sum + item.quantity, 0),
     resupplyQuantity: 0,
     lines,
+    roles: new Map(),
   };
 }
 

@@ -15,7 +15,7 @@ import { MarkStepDoneCommand } from "../mark-step-done.command.js";
 import { MarkStepRedCommand } from "../mark-step-red.command.js";
 import { UndoStepCommand } from "../undo-step.command.js";
 
-/** Les gestes d'une étape (`fournil/plan-produit-sur-plusieurs-postes.md`, § 2.6), ports doublés. */
+/** Les gestes d'une étape (`fournil/un-produit-sur-plusieurs-postes.md`, § 2.3), ports doublés. */
 const KEY = { serviceDay: SCENE_DAY, sku: SCENE_SKU, workstationId: STEP_STATION };
 
 function done(workstationId = STEP_STATION, key = nextIntent(), sku = SCENE_SKU) {

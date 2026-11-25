@@ -187,7 +187,7 @@ export function recapResupplyPieces(line: ProductionRecapLine): number {
 /**
  * Le total de pièces du lot, réassorts compris — le chiffre qu'on annonce au
  * fournil. Un total GÉNÉRAL : un produit répété sous plusieurs postes n'y
- * compte qu'une fois (`plan-produit-sur-plusieurs-postes.md`, § 2.7).
+ * compte qu'une fois (`un-produit-sur-plusieurs-postes.md`, § 2.2).
  */
 export function totalPieces(groups: readonly ProductionRecapGroup[]): number {
   return distinctBySku(groups).reduce((sum, line) => sum + recapPieces(line), 0);

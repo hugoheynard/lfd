@@ -1,6 +1,6 @@
 /**
  * E2E d'**un produit sur plusieurs postes**
- * (`fournil/plan-produit-sur-plusieurs-postes.md`, L0–L1), sur le vrai
+ * (`fournil/un-produit-sur-plusieurs-postes.md`, L0–L1), sur le vrai
  * Postgres jetable.
  *
  * Ce que seule cette suite prouve : la clé (produit, poste) et l'index

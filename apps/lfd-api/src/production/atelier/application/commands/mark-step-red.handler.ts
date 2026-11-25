@@ -11,7 +11,7 @@ import { LineStepGestures } from "../services/line-step-gestures.service.js";
 import { MarkStepRedCommand } from "./mark-step-red.command.js";
 
 /**
- * **Le rouge d'une étape** (`documentation/fournil/plan-produit-sur-plusieurs-postes.md`,
+ * **Le rouge d'une étape** (`documentation/fournil/un-produit-sur-plusieurs-postes.md`,
  * § 1 et § 2.11, point 6) : sans plafond, il ne touche aucune fournée ; la
  * Supervision le montre dans la liste des problèmes, marqué « étape ». Déjà
  * en rouge pour la même raison : rien n'est écrit ni journalisé.

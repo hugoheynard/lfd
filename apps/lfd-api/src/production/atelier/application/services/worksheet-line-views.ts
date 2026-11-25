@@ -14,6 +14,7 @@ import type { ProductionProblemState } from "../../domain/entities/production-pr
 import { remainderUnderCeiling } from "../../domain/services/line-remainder.js";
 import type { WorksheetGroup } from "../../domain/services/production-worksheet-groups.js";
 import type { WorksheetLine } from "../../domain/services/production-worksheet.js";
+import type { StepView } from "./worksheet-line-steps.js";
 
 /**
  * **L'affichage d'une ligne de la fiche d'atelier** : la traduction du
@@ -53,6 +54,8 @@ export function lineViewOf(marks: LineMarks): (line: WorksheetLine) => WorkshopL
     ...ceilingOf(line, marks.problems.get(line.sku)),
     role: null,
     stepsPending: marks.stepsPendingOf(line.sku),
+    stepState: null,
+    stepRedReason: null,
   });
 }
 
@@ -127,17 +130,21 @@ function lineView(line: WorksheetLine): WorkshopLine {
 
 /**
  * Une fiche au contrat : chaque ligne porte le rôle que CETTE fiche lui
- * donne — la même ligne est `finishes` chez un poste, `step` chez l'autre.
+ * donne — la même ligne est `finishes` chez un poste, `step` chez l'autre —
+ * et, pour une étape, l'état de l'étape de CE poste.
  */
 export function groupView(
   group: WorksheetGroup,
   viewOf: (line: WorksheetLine) => WorkshopLine,
+  stepOf: (sku: string, workstationId: string) => StepView,
 ): ProductionWorksheetView["groups"][number] {
   const { roles, ...head } = group;
-  const inGroup = (line: WorksheetLine): WorkshopLine => ({
-    ...viewOf(line),
-    role: roles.get(line.sku) ?? null,
-  });
+  const stationId = group.workstation?.id ?? null;
+  const inGroup = (line: WorksheetLine): WorkshopLine => {
+    const role = roles.get(line.sku) ?? null;
+    const step = role === "step" && stationId !== null ? stepOf(line.sku, stationId) : null;
+    return { ...viewOf(line), role, ...step };
+  };
   return {
     ...head,
     lines: group.lines.map(inGroup),

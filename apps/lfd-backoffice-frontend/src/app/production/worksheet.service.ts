@@ -97,7 +97,7 @@ export class WorksheetService {
   }
 
   /**
-   * **« Étape faite »** (`fournil/plan-produit-sur-plusieurs-postes.md`, § 2.6) :
+   * **« Étape faite »** (`fournil/un-produit-sur-plusieurs-postes.md`, § 2.3) :
    * le poste coche sa part de la ligne, sans compter de pièce. Par intention ;
    * 409 si ce poste finit la ligne ou n'en est pas un poste.
    */

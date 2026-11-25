@@ -37,7 +37,7 @@ export interface WorksheetGroup {
   /**
    * Les compteurs de CETTE fiche : sa charge. En mode prod, une ligne à
    * plusieurs postes compte dans chacune de leurs fiches (plan
-   * `documentation/fournil/plan-produit-sur-plusieurs-postes.md`, § 2.7) ;
+   * `documentation/fournil/un-produit-sur-plusieurs-postes.md`, § 2.2) ;
    * les additionner d'une fiche à l'autre compterait deux fois la ligne.
    */
   readonly lineCount: number;

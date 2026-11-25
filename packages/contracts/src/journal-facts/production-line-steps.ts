@@ -4,7 +4,7 @@ import { count, day, fact, payload, subjectLabel } from "./fact.js";
 
 /**
  * **Les étapes d'une ligne du fournil** (
- * `documentation/fournil/plan-produit-sur-plusieurs-postes.md`, § 2.6) : un
+ * `documentation/fournil/un-produit-sur-plusieurs-postes.md`, § 2.3) : un
  * poste qui ne finit pas le produit coche sa part, la met en rouge, ou la
  * décoche. Une étape ne compte aucune pièce : seul « Fait » du poste qui
  * finit en déclare.

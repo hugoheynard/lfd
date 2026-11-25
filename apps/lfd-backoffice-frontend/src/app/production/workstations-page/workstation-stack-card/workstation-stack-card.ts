@@ -46,8 +46,8 @@ function stationOf(
 
 /**
  * La pile d'un poste : tous les produits qui ont une ligne chez lui — qu'il
- * les finisse ou en fasse une étape (`plan-produit-sur-plusieurs-postes.md`,
- * § 2.4) —, ceux qui ont une place dans CE poste du plus petit rang au plus
+ * les finisse ou en fasse une étape (`un-produit-sur-plusieurs-postes.md`,
+ * § 2.1) —, ceux qui ont une place dans CE poste du plus petit rang au plus
  * grand, puis ceux sans place dans l'ordre reçu (celui du catalogue).
  */
 export function stackOf(

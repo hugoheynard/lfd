@@ -2,7 +2,8 @@ import type { Buffer } from "node:buffer";
 
 import type { DeliveryNoteDrawing } from "../../../../channels/commerce/planned-delivery-notes.reader.js";
 import type { ProductionOrderSnapshot } from "../../../../day/index.js";
-import { type DayDossier, dayDossierOf } from "../day-dossier.js";
+import { type DayDossier, dayDossierFrom, dayDossierOf } from "../day-dossier.js";
+import { recapNameOf } from "../day-dossier-recap-pdf.js";
 import { type DossierStamp, dayDossierPdfKey, renderDayDossierPdf } from "../day-dossier-pdf.js";
 import { dossierCalendarOf } from "../day-dossier-calendar.js";
 import { PAPER_LOGO } from "../../../../shared/print/domain/services/__tests__/paper-logo.fixture.js";
@@ -649,5 +650,46 @@ describe("renderDayDossierPdf — la mise en page du 2026-10-25 (Hugo)", () => {
       ...pdf.toString("latin1").matchAll(/\/MediaBox \[0 0 ([\d.]+) ([\d.]+)\]/gu),
     ].map((match) => Number(match[1]) > Number(match[2]));
     expect(boxes).toEqual([false, false, false, false, false]);
+  });
+});
+
+describe("renderDayDossierPdf — un produit sur plusieurs postes", () => {
+  it("écrit « étape » ou « finit » sous chaque poste, comme l'écran", async () => {
+    const dossier = dayDossierFrom([order("ORD-0001", 6)], {
+      mode: "workstation",
+      placement: {
+        workstations: [
+          { id: "ws_bakery", name: "Boulangerie" },
+          { id: "ws_oven", name: "Four" },
+        ],
+        articles: new Map([
+          [
+            "VIE-001",
+            { productSku: "VIE", family: { id: "fam-vie", name: "Viennoiseries", position: 0 } },
+          ],
+        ]),
+        byProduct: new Map([
+          [
+            "VIE",
+            [
+              { workstationId: "ws_oven", finishes: true, position: null },
+              { workstationId: "ws_bakery", finishes: false, position: null },
+            ],
+          ],
+        ]),
+      },
+    });
+
+    const text = pdfPages(await rendered(dossier, STAMP, () => "", NO_COLORS, NO_COLORS)).join(
+      "\n",
+    );
+
+    expect(text).toContain("Croissant · étape");
+    expect(text).toContain("Croissant · finit");
+  });
+
+  it("un produit sur un seul poste ne dit rien : son poste le finit", () => {
+    expect(recapNameOf("Croissant", undefined)).toBe("Croissant");
+    expect(recapNameOf("Croissant", "step")).toBe("Croissant · étape");
   });
 });

@@ -22,7 +22,7 @@ const NO_CONTENT = 204;
 
 /**
  * **Les étapes d'une ligne** (
- * `documentation/fournil/plan-produit-sur-plusieurs-postes.md`, § 2.6) : un
+ * `documentation/fournil/un-produit-sur-plusieurs-postes.md`, § 2.3) : un
  * poste qui ne finit pas la ligne coche sa part, la met en rouge, ou la
  * décoche. Sous le même droit que « Fait » (`production_worksheet`), et par
  * intention : un double appui ne refait pas le geste.

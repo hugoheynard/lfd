@@ -10,7 +10,7 @@ import { AddWorkstationToProductsCommand } from "./add-workstation-to-products.c
 
 /**
  * Un poste de plus pour des produits, en bas de sa pile
- * (`fournil/plan-produit-sur-plusieurs-postes.md`, § 2.4) : le premier
+ * (`fournil/un-produit-sur-plusieurs-postes.md`, § 2.1) : le premier
  * poste d'un produit le finit, les suivants sont des étapes. **Une fois par
  * intention**. Le fait ne nomme que les produits qui ont réellement gagné le
  * poste ; aucun : rien n'est écrit.

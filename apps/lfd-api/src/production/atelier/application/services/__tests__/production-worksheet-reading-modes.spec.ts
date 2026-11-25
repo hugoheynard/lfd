@@ -249,7 +249,7 @@ describe("ProductionWorksheetReading — le niveau de suivi de chaque ligne", ()
   });
 });
 
-describe("ProductionWorksheetReading — les étapes de chaque ligne (plan-produit-sur-plusieurs-postes, § 2.6)", () => {
+describe("ProductionWorksheetReading — les étapes de chaque ligne (un-produit-sur-plusieurs-postes, § 2.3)", () => {
   const STATIONS = [
     { id: "ws_bread", name: "Boulangerie", position: 0 },
     { id: "ws_salty", name: "Salé traiteur", position: 1 },
@@ -302,6 +302,80 @@ describe("ProductionWorksheetReading — les étapes de chaque ligne (plan-produ
     // « done » garde son sens : la fournée atteint l'attendu, rien n'est sorti.
     expect(croissants.every((line) => !line.done)).toBe(true);
     expect(content.sheet.lines.find((line) => line.sku === BAGUETTE)?.stepsPending).toEqual([]);
+  });
+
+  it("chaque fiche d'étape sert l'état de SON étape — faite, en rouge avec sa raison, ou en attente", async () => {
+    const steps = new InMemoryLineSteps();
+    const mark = { at: TIRAGE, staffId: "s", name: null };
+    steps.seed({
+      serviceDay: DAY.value,
+      sku: CROISSANT,
+      workstationId: "ws_bread",
+      status: "done",
+      reason: null,
+      checked: mark,
+      version: 1,
+    });
+    steps.seed({
+      serviceDay: DAY.value,
+      sku: CROISSANT,
+      workstationId: "ws_oven",
+      status: "red",
+      reason: "Four en panne",
+      checked: mark,
+      version: 2,
+    });
+    const { reading } = subject("workstation", CROISSANT_ON_THREE(), {}, steps.dayReader());
+
+    const content = await reading.contentOf(DAY);
+
+    const byStation = new Map(
+      content.sheet.groups.map((group) => [
+        group.workstation?.id,
+        group.lines.find((line) => line.sku === CROISSANT),
+      ]),
+    );
+    expect(byStation.get("ws_bread")).toMatchObject({
+      role: "step",
+      stepState: "done",
+      stepRedReason: null,
+    });
+    expect(byStation.get("ws_oven")).toMatchObject({
+      role: "step",
+      stepState: "red",
+      stepRedReason: "Four en panne",
+    });
+    // Le poste qui finit n'a pas d'étape : rien à servir.
+    expect(byStation.get("ws_salty")).toMatchObject({
+      role: "finishes",
+      stepState: null,
+      stepRedReason: null,
+    });
+    // Un rouge attend toujours.
+    expect(byStation.get("ws_oven")?.stepsPending).toEqual(["ws_oven"]);
+  });
+
+  it("une étape décochée, ou jamais touchée, se sert en attente", async () => {
+    const steps = new InMemoryLineSteps();
+    const mark = { at: TIRAGE, staffId: "s", name: null };
+    steps.seed({
+      serviceDay: DAY.value,
+      sku: CROISSANT,
+      workstationId: "ws_bread",
+      status: "undone",
+      reason: null,
+      checked: mark,
+      version: 3,
+    });
+    const { reading } = subject("workstation", CROISSANT_ON_THREE(), {}, steps.dayReader());
+
+    const content = await reading.contentOf(DAY);
+
+    const states = content.sheet.groups
+      .filter((group) => group.workstation?.id !== "ws_salty")
+      .map((group) => group.lines.find((line) => line.sku === CROISSANT)?.stepState);
+    expect(states).toEqual(["pending", "pending"]);
+    expect(content.sheet.lines.every((line) => line.stepState === null)).toBe(true);
   });
 
   it("le mode boutique n'exige aucune étape", async () => {

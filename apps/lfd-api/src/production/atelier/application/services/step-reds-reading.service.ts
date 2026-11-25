@@ -7,7 +7,7 @@ import { DayLineStepsReader } from "../../domain/ports/line-step.ports.js";
 
 /**
  * **Les étapes en rouge d'une journée**, pour la Supervision (
- * `documentation/fournil/plan-produit-sur-plusieurs-postes.md`, § 2.11,
+ * `documentation/fournil/un-produit-sur-plusieurs-postes.md`, § 2.3,
  * point 6) : elles vont dans la même liste que les problèmes, marquées
  * « étape ». Les plus anciennes d'abord.
  *

@@ -17,7 +17,7 @@ export interface AlwaysGreenStepsReport {
 
 /**
  * **Les étapes cochées d'office** (
- * `documentation/fournil/plan-produit-sur-plusieurs-postes.md`, § 2.8) : le
+ * `documentation/fournil/un-produit-sur-plusieurs-postes.md`, § 2.4) : le
  * même tour que la fournée automatique, pour les postes d'étape en toujours
  * vert. Une étape échue (`alwaysGreenStepCheck`) et jamais touchée est
  * écrite `done`, auteur `system:always-green`, par une insertion qui ignore

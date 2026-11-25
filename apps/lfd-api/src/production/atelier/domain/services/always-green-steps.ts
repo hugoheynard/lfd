@@ -4,7 +4,7 @@ import { type AlwaysGreenDeadline, dueCumulative, hasTimedDeadline } from "./alw
 
 /**
  * **L'étape d'un poste en toujours vert** (
- * `documentation/fournil/plan-produit-sur-plusieurs-postes.md`, § 2.8) — une
+ * `documentation/fournil/un-produit-sur-plusieurs-postes.md`, § 2.4) — une
  * fonction pure.
  *
  * Une étape ne compte aucune pièce : elle n'avance pas par paliers, elle se

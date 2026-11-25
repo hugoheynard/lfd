@@ -15,7 +15,7 @@ import { isStepLine, trackingLevelOf } from '../rules/workshop-line-gestures';
  *
  * Seul endroit de la vue produit qui choisit entre toujours vert, simple et
  * détaillé — ou l'étape, quand le poste de la fiche ne finit pas le produit
- * (`plan-produit-sur-plusieurs-postes.md`, § 2.7) : les lignes à faire et les lignes faites passent par lui, sans
+ * (`un-produit-sur-plusieurs-postes.md`, § 2.2) : les lignes à faire et les lignes faites passent par lui, sans
  * recopier le choix. Il ne décide aucun geste — il les remonte tels quels.
  * L'hôte ne dessine rien (`display: contents`) : la grille de la liste reste
  * celle de la ligne.

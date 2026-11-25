@@ -17,7 +17,7 @@ export type StepChange = (known: LineStep | null) => LineStep | null;
 
 /**
  * **Le passage commun des gestes d'une étape** (
- * `documentation/fournil/plan-produit-sur-plusieurs-postes.md`, § 2.6) —
+ * `documentation/fournil/un-produit-sur-plusieurs-postes.md`, § 2.3) —
  * cocher, mettre en rouge, décocher. Dans l'unité de travail de l'appelant,
  * sous le verrou de la journée comme « Fait » :
  *

@@ -10,8 +10,8 @@ import { LineStepGestures } from "../services/line-step-gestures.service.js";
 import { UndoStepCommand } from "./undo-step.command.js";
 
 /**
- * **Décocher une étape** (`documentation/fournil/plan-produit-sur-plusieurs-postes.md`,
- * § 2.11, point 2) : sous le même droit que « Fait », tant que la journée est
+ * **Décocher une étape** (`documentation/fournil/un-produit-sur-plusieurs-postes.md`,
+ * § 2.3) : sous le même droit que « Fait », tant que la journée est
  * arrêtée. L'étape reste en base, `undone`, sa version monte. Jamais touchée
  * ou déjà décochée : rien n'est écrit ni journalisé.
  *

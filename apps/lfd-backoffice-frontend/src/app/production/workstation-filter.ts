@@ -18,7 +18,7 @@ export function workstationFilterOf(
     return null;
   }
   // Un SKU à plusieurs postes a une entrée par poste, étapes comprises : il
-  // se voit sous la puce de chacun (`plan-produit-sur-plusieurs-postes.md`, § 2.7).
+  // se voit sous la puce de chacun (`un-produit-sur-plusieurs-postes.md`, § 2.2).
   const bySku = new Map<string, ProductionGroupingEntryView[]>();
   for (const entry of grouping.entries) {
     bySku.set(entry.sku, [...(bySku.get(entry.sku) ?? []), entry]);

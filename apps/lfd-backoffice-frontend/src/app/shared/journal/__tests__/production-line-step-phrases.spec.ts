@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { renderFact, type FactInput } from '../render-fact';
 
-/** **Les étapes d'une ligne** (`fournil/plan-produit-sur-plusieurs-postes.md`, § 2.6). */
+/** **Les étapes d'une ligne** (`fournil/un-produit-sur-plusieurs-postes.md`, § 2.3). */
 
 function fact(type: string, payload: Record<string, unknown>): FactInput {
   return {

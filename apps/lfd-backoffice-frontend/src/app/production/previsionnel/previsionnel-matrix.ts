@@ -142,7 +142,7 @@ export function shelvedRayons(
 /**
  * Le total de pièces de la plage — le chiffre qu'on annonce en une phrase. Un
  * total GÉNÉRAL : un produit répété sous plusieurs postes n'y compte qu'une
- * fois (`plan-produit-sur-plusieurs-postes.md`, § 2.7).
+ * fois (`un-produit-sur-plusieurs-postes.md`, § 2.2).
  */
 export function totalOfRayons(rayons: readonly ForecastRayon[]): number {
   return distinctBySku(rayons).reduce((sum, product) => sum + piecesOf(product), 0);

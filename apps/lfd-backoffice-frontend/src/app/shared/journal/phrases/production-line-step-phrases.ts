@@ -13,8 +13,8 @@ import {
 
 /**
  * **Les étapes d'une ligne du fournil** — le miroir de `production_line.*`
- * dans `@lfd/contracts` (`documentation/fournil/plan-produit-sur-plusieurs-postes.md`,
- * § 2.6). Le sujet est le produit de la ligne ; la phrase nomme le poste
+ * dans `@lfd/contracts` (`documentation/fournil/un-produit-sur-plusieurs-postes.md`,
+ * § 2.3). Le sujet est le produit de la ligne ; la phrase nomme le poste
  * dont c'est l'étape, parce qu'un produit en a plusieurs.
  */
 function product(fact: PhraseFact): Segment {

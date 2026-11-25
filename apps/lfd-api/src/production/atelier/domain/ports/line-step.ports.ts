@@ -3,7 +3,7 @@ import type { LineStep, LineStepKey, LineStepState } from "../entities/line-step
 
 /**
  * **Le port d'écriture des étapes** (
- * `documentation/fournil/plan-produit-sur-plusieurs-postes.md`, § 2.6) : il
+ * `documentation/fournil/un-produit-sur-plusieurs-postes.md`, § 2.3) : il
  * prend et rend l'agrégat. Les gestes le relisent sous le verrou de la
  * journée, le mutent par une méthode métier, puis le sauvent.
  */

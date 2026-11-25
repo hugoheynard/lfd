@@ -199,7 +199,7 @@ import { ProductionBatchShortcutsModule } from "./production-batch-shortcuts.mod
     { provide: ProductionProblemRepository, useClass: PrismaProductionProblemRepository },
     { provide: OpenProductionProblemsReader, useClass: PrismaOpenProductionProblemsReader },
     { provide: DayProblemsReader, useClass: PrismaDayProblemsReader },
-    // Les étapes d'une ligne (`fournil/plan-produit-sur-plusieurs-postes.md`) :
+    // Les étapes d'une ligne (`fournil/un-produit-sur-plusieurs-postes.md`) :
     // les gestes, leur rouge à la Supervision, la coche d'office du toujours
     // vert — écrire, lire la journée et cocher d'office sont trois ports (ISP).
     LineStepGestures,

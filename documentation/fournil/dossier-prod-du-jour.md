@@ -3,6 +3,8 @@
 Ce que contient le papier qui part au fournil, **d'où vient chaque
 information**, et comment il part par e-mail. Il naît de l'arrêt du plan :
 [`arret-du-plan.md`](arret-du-plan.md).
+En mode prod, un produit à plusieurs postes figure sous chacun, marqué « étape »
+ou « finit » : [`un-produit-sur-plusieurs-postes.md`](un-produit-sur-plusieurs-postes.md).
 
 ## En bref
 

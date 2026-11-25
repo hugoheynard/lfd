@@ -3,8 +3,8 @@ import { localToInstant } from "@lfd/contracts";
 import { type AlwaysGreenStepLine, alwaysGreenStepCheck } from "../always-green-steps.js";
 
 /**
- * L'étape en toujours vert (`fournil/plan-produit-sur-plusieurs-postes.md`,
- * § 2.8) : cochée d'un coup quand tous les paliers à heure de la ligne sont
+ * L'étape en toujours vert (`fournil/un-produit-sur-plusieurs-postes.md`,
+ * § 2.4) : cochée d'un coup quand tous les paliers à heure de la ligne sont
  * échus, marge comprise. Les dates ne sont comparées qu'à un instant
  * construit sur la même journée.
  */

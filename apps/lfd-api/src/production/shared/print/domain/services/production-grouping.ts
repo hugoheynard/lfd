@@ -29,7 +29,7 @@ import { rootShelvesOf, type ShelfSection } from "./root-shelves.js";
  *   ligne dans CE poste ; sans place, après, dans l'ordre reçu). Une ligne
  *   dont le produit a plusieurs postes ressort sous **chacun**, avec son rôle
  *   dans ce poste (`finishes` | `step`, `roles`) — plan
- *   `documentation/fournil/plan-produit-sur-plusieurs-postes.md`, § 2.7 ;
+ *   `documentation/fournil/un-produit-sur-plusieurs-postes.md`, § 2.2 ;
  *   puis, pour les produits sans poste, un groupe par rayon titré
  *   « … — à ranger » ; puis « Hors catalogue — à ranger » pour un SKU absent
  *   du miroir du catalogue, qui n'a pas de produit et ne peut donc pas

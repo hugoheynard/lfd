@@ -207,7 +207,7 @@ class FailingStepChecks extends AutomaticStepChecks {
   }
 }
 
-describe("RunAlwaysGreenRoundHandler — les étapes (plan-produit-sur-plusieurs-postes, § 2.8)", () => {
+describe("RunAlwaysGreenRoundHandler — les étapes (un-produit-sur-plusieurs-postes, § 2.4)", () => {
   it("coche d'office l'étape échue d'un poste en toujours vert ; la fournée part de son côté", async () => {
     const { scene, round } = roundOn({ map: mapOf() });
 

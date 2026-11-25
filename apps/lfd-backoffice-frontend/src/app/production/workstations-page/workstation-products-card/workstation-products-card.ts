@@ -79,7 +79,7 @@ function rootOf(
  * **Les produits et leur poste** (`documentation/fournil/les-postes-du-fournil.md`,
  * § 3.8) : chaque produit avec son rayon, ses déclinaisons dessous pour
  * information, et ses postes en puces — celui qui finit marqué « finit »
- * (`plan-produit-sur-plusieurs-postes.md`, § 2.9). Les régler ouvre un
+ * (`un-produit-sur-plusieurs-postes.md`, § 2.9). Les régler ouvre un
  * dialogue, en feuille du bas au téléphone. Les déclinaisons en héritent.
  *
  * Filtres : « à ranger » (avec son compte), « commandé ces jours-ci », un

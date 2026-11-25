@@ -1,4 +1,4 @@
-import { type CatalogFamilyView, resupplyTitleOf } from "@lfd/contracts";
+import { type CatalogFamilyView, type WorkshopLineRole, resupplyTitleOf } from "@lfd/contracts";
 import type { SaleUnit } from "@lfd/money";
 
 import type {
@@ -74,6 +74,13 @@ export interface DossierRecapGroup {
    * sous-catégorie → son nom. Absent quand le réglage est éteint.
    */
   readonly intertitles?: ReadonlyMap<string, string>;
+  /**
+   * SKU → « étape » ou « finit » (plan
+   * `documentation/fournil/un-produit-sur-plusieurs-postes.md`, point 13) :
+   * pour les seuls produits rangés sous plusieurs postes, comme l'écran ;
+   * seul, son poste le finit sans le dire. Vide hors du mode prod.
+   */
+  readonly roles: ReadonlyMap<string, WorkshopLineRole>;
 }
 
 /** Le dossier, prêt à mettre en page. */
@@ -91,8 +98,8 @@ export interface DayDossier {
    * Toutes les pièces à enfourner, réassorts compris — une somme GÉNÉRALE,
    * comptée une fois par produit : en mode prod, une ligne à plusieurs postes
    * figure dans plusieurs fiches du récapitulatif, et la somme des fiches la
-   * compterait deux fois (plan `documentation/fournil/plan-produit-sur-plusieurs-postes.md`,
-   * § 2.7).
+   * compterait deux fois (`documentation/fournil/un-produit-sur-plusieurs-postes.md`,
+   * § 2.2).
    */
   readonly pieces: number;
   /** Dont réassort, en pièces — la même règle que le rayon. */
@@ -200,16 +207,24 @@ function recapOf(
   source: GroupingSource,
   showSubcategories: boolean,
 ): readonly DossierRecapGroup[] {
-  return groupingOf(lines, (line) => line.sku, source).map((group) =>
-    recapGroupOf(group, showSubcategories),
-  );
+  const groups = groupingOf(lines, (line) => line.sku, source);
+  const stations = new Map<string, number>();
+  for (const group of groups) {
+    for (const sku of group.roles.keys()) {
+      stations.set(sku, (stations.get(sku) ?? 0) + 1);
+    }
+  }
+  return groups.map((group) => ({
+    ...recapGroupOf(group, showSubcategories),
+    roles: new Map([...group.roles].filter(([sku]) => (stations.get(sku) ?? 0) > 1)),
+  }));
 }
 
 /** Un groupe du rangement, en fiche de poste du récapitulatif. */
 function recapGroupOf(
   group: ProductionGroup<DossierRecapLine>,
   showSubcategories: boolean,
-): DossierRecapGroup {
+): Omit<DossierRecapGroup, "roles"> {
   if (!showSubcategories || group.kind === "off_catalog") {
     return groupOf(group.title, group.lines);
   }
@@ -241,7 +256,7 @@ function groupOf(
   label: string,
   lines: readonly DossierRecapLine[],
   sort = true,
-): DossierRecapGroup {
+): Omit<DossierRecapGroup, "roles"> {
   const sorted = sort ? [...lines].sort(biggestFirst) : lines;
   return {
     label,

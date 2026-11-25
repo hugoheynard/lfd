@@ -11,8 +11,8 @@ import { LineStepGestures } from "../services/line-step-gestures.service.js";
 import { MarkStepDoneCommand } from "./mark-step-done.command.js";
 
 /**
- * **« Étape faite »** (`documentation/fournil/plan-produit-sur-plusieurs-postes.md`,
- * § 2.6) : la part du poste est cochée. Aucune pièce n'est comptée — seul
+ * **« Étape faite »** (`documentation/fournil/un-produit-sur-plusieurs-postes.md`,
+ * § 2.3) : la part du poste est cochée. Aucune pièce n'est comptée — seul
  * « Fait » du poste qui finit en déclare. Déjà faite : rien n'est écrit ni
  * journalisé.
  *

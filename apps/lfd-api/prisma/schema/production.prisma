@@ -1015,7 +1015,7 @@ model ProductionProblem {
   @@schema("production")
 }
 
-/// **L'étape d'un poste qui ne finit pas** (`fournil/plan-produit-sur-plusieurs-postes.md`,
+/// **L'étape d'un poste qui ne finit pas** (`fournil/un-produit-sur-plusieurs-postes.md`,
 /// § 2.6) : la part d'une ligne du jour qu'un poste d'étape coche. Elle ne
 /// compte aucune pièce — seule la fournée du poste qui finit en compte.
 model ProductionLineStep {

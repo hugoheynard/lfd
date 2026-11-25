@@ -41,7 +41,7 @@ export class AlwaysGreenLines {
 
   /**
    * **Les étapes en toujours vert** (
-   * `documentation/fournil/plan-produit-sur-plusieurs-postes.md`, § 2.8) :
+   * `documentation/fournil/un-produit-sur-plusieurs-postes.md`, § 2.4) :
    * chaque poste d'une ligne au compte qui ne la finit pas, sur la carte
    * courante, dont le niveau figé du jour est `always_green`. Les postes sont
    * relus : une étape existe quel que soit le niveau du fournil. Illisibles,

@@ -843,7 +843,7 @@ export const ORDERS_PRODUCTION_FACTS = {
   ...PRODUCTION_WORKSTATION_FACTS,
   /** **Les problèmes du fournil** (`fournil/les-niveaux-de-suivi.md`) — même famille. */
   ...PRODUCTION_PROBLEM_FACTS,
-  /** **Les étapes d'une ligne** (`fournil/plan-produit-sur-plusieurs-postes.md`) — même famille. */
+  /** **Les étapes d'une ligne** (`fournil/un-produit-sur-plusieurs-postes.md`) — même famille. */
   ...PRODUCTION_LINE_STEP_FACTS,
 
   /**

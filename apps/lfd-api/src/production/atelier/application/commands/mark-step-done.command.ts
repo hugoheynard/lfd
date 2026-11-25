@@ -1,6 +1,6 @@
 /**
  * **« Étape faite »** — un poste qui ne finit pas la ligne coche sa part (
- * `documentation/fournil/plan-produit-sur-plusieurs-postes.md`, § 2.6).
+ * `documentation/fournil/un-produit-sur-plusieurs-postes.md`, § 2.3).
  */
 export class MarkStepDoneCommand {
   constructor(

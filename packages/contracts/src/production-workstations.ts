@@ -73,7 +73,7 @@ export type PlaceProductsPayload = z.infer<typeof placeProductsPayloadSchema>;
 
 /**
  * Un poste de plus pour des produits, ou un poste qui les quitte
- * (`fournil/plan-produit-sur-plusieurs-postes.md`, § 2.4). Le premier poste
+ * (`fournil/un-produit-sur-plusieurs-postes.md`, § 2.1). Le premier poste
  * d'un produit le finit ; on ne retire pas celui qui finit tant qu'il en
  * reste d'autres — la carte le refuse et dit quoi faire.
  */
@@ -264,8 +264,8 @@ export interface ProductionGroupingView {
   /**
    * Dans l'ordre du rangement : un par SKU demandé, et un de plus par poste
    * supplémentaire de son produit en mode prod (une entrée par couple SKU,
-   * groupe ; plan `documentation/fournil/plan-produit-sur-plusieurs-postes.md`,
-   * § 2.7). Un total général se dédoublonne par SKU.
+   * groupe ; `documentation/fournil/un-produit-sur-plusieurs-postes.md`,
+   * § 2.2). Un total général se dédoublonne par SKU.
    */
   readonly entries: readonly ProductionGroupingEntryView[];
 }

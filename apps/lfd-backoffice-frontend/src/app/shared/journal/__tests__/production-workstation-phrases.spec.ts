@@ -44,7 +44,7 @@ describe('le suivi d’un poste (production_workstation.tracking_level_set)', ()
   });
 });
 
-/** **Un produit sur plusieurs postes** (`fournil/plan-produit-sur-plusieurs-postes.md`, § 2.5). */
+/** **Un produit sur plusieurs postes** (`fournil/un-produit-sur-plusieurs-postes.md`, § 2.1). */
 function stationFact(type: string, payload: Record<string, unknown>): FactInput {
   return { ...fact(payload), type };
 }

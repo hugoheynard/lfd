@@ -176,6 +176,7 @@ describe("dayDossierOf", () => {
           resupplyCount: 1,
         },
       ],
+      roles: new Map(),
     });
     expect(dossier.pieces).toBe(118);
     expect(dossier.resupplyPieces).toBe(25);

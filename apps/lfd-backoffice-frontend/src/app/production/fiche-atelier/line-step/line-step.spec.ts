@@ -64,6 +64,39 @@ describe('une ligne d’étape', () => {
     expect(undone).toBe(1);
   });
 
+  it('en rouge (servi par `stepState`) : le rouge et sa raison, « Décocher », sans « Étape faite »', () => {
+    const fixture = render({ ...LINE, stepState: 'red', stepRedReason: 'Four en panne' });
+    const root = host(fixture);
+    let undone = 0;
+    fixture.componentInstance.undone.subscribe(() => (undone += 1));
+
+    expect(root.classList.contains('is-red')).toBe(true);
+    expect(root.querySelector('[data-step-red-badge]')?.textContent).toContain(
+      'Rouge — Four en panne',
+    );
+    expect(root.querySelector('[data-step-done-button]')).toBeNull();
+    expect(root.querySelector('[data-step-red-button]')).toBeNull();
+    root.querySelector<HTMLButtonElement>('[data-step-undo-button]')?.click();
+    expect(undone).toBe(1);
+  });
+
+  it('`stepState` l’emporte sur `stepsPending` : faite, malgré un poste encore en attente', () => {
+    const root = host(render({ ...LINE, stepState: 'done', stepRedReason: null }));
+
+    expect(root.querySelector('[data-step-done-badge]')).not.toBeNull();
+    expect(root.querySelector('[data-step-undo-button]')).not.toBeNull();
+  });
+
+  it('en attente (servi par `stepState`) : « Étape faite » et « Rouge », sans « Décocher »', () => {
+    const root = host(
+      render({ ...LINE, stepsPending: [], stepState: 'pending', stepRedReason: null }),
+    );
+
+    expect(root.querySelector('[data-step-done-button]')).not.toBeNull();
+    expect(root.querySelector('[data-step-red-button]')).not.toBeNull();
+    expect(root.querySelector('[data-step-undo-button]')).toBeNull();
+  });
+
   it('désarme ses gestes pendant un envoi', () => {
     const fixture = render();
     fixture.componentRef.setInput('busy', true);

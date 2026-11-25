@@ -1,3 +1,5 @@
+import type { WorkshopLineRole } from "@lfd/contracts";
+
 import type { DayDossier, DossierRecapGroup } from "./day-dossier.js";
 import type { MakeRoom } from "./day-dossier-resupplies-pdf.js";
 import { methodSplitOf } from "./dossier-addressees.js";
@@ -56,6 +58,20 @@ export function lotCount(dossier: DayDossier): string {
     : `${lot} dont ${String(dossier.resupplyPieces)} de réassort`;
 }
 
+/** Ce que la fiche écrit d'un rôle — les mots de l'écran. */
+const ROLE_MENTIONS: Readonly<Record<WorkshopLineRole, string>> = {
+  step: "étape",
+  finishes: "finit",
+};
+
+/**
+ * Le nom du produit, suivi de « · étape » ou « · finit » quand il est rangé
+ * sous plusieurs postes ; seul, son poste le finit sans le dire.
+ */
+export function recapNameOf(productName: string, role: WorkshopLineRole | undefined): string {
+  return role === undefined ? productName : `${productName} · ${ROLE_MENTIONS[role]}`;
+}
+
 /**
  * Une fiche de poste : son total, puis ses produits. Le rayon est le titre
  * de la page (« Viennoiserie — total à produire »), posé par le cadre. Rend le
@@ -93,7 +109,10 @@ export function drawRecapGroup(
     }
     y = room(y, (line.resupplyQuantity > 0 ? 15 : 10) * MM);
     put(doc, lineFigure(line), LEFT, y - 1.2 * MM, { size: figureFontSize(line, 16), bold: true });
-    put(doc, line.productName, LEFT + 20 * MM, y, { size: 12, width: WIDTH - 75 * MM });
+    put(doc, recapNameOf(line.productName, group.roles.get(line.sku)), LEFT + 20 * MM, y, {
+      size: 12,
+      width: WIDTH - 75 * MM,
+    });
     putRight(doc, line.sku, RIGHT - 22 * MM, y + 1 * MM, 9);
     // Sur combien de commandes ça se répartit : 240 en 3 fois ne se prépare
     // pas comme 240 en 40.

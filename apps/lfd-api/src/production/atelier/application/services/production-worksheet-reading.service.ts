@@ -22,7 +22,7 @@ import { ServiceRange } from "../../../day/index.js";
 import { DayTrackingLevelsReading } from "./day-tracking-levels-reading.service.js";
 import type { WorksheetContent } from "./worksheet-content.js";
 import { WorksheetDeadlinesReading } from "./worksheet-deadlines-reading.service.js";
-import { stepsPendingOf } from "./worksheet-line-steps.js";
+import { stepsPendingOf, stepViewOf } from "./worksheet-line-steps.js";
 import { groupView, lineViewOf } from "./worksheet-line-views.js";
 import { WorksheetTrackingLevelsReading } from "./worksheet-tracking-levels.js";
 
@@ -199,6 +199,7 @@ export class ProductionWorksheetReading {
       problems: new Map(problems.map((problem) => [problem.sku, problem])),
       stepsPendingOf: stepsPendingOf(grouping.source, steps),
     });
+    const stepOf = stepViewOf(steps);
     const sheet = {
       date: day.value,
       generatedAt: worksheet.generatedAt?.toISOString() ?? null,
@@ -206,7 +207,7 @@ export class ProductionWorksheetReading {
       lines: worksheet.lines.map(viewOf),
       drift: worksheet.drift,
       groups: worksheetGroupsFrom(worksheet.lines, grouping.source, settings.showSubcategories).map(
-        (group) => groupView(group, viewOf),
+        (group) => groupView(group, viewOf, stepOf),
       ),
       shelvesKnown: grouping.shelvesKnown,
       grouping: settings.grouping,

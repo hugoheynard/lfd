@@ -9,8 +9,8 @@ import { activeStation } from "../workstation-support.js";
 import { RemoveWorkstationFromProductsCommand } from "./remove-workstation-from-products.command.js";
 
 /**
- * Un poste quitte des produits (`fournil/plan-produit-sur-plusieurs-postes.md`,
- * § 2.4). Le dernier poste d'un produit le remet « à ranger » ; celui qui
+ * Un poste quitte des produits (`fournil/un-produit-sur-plusieurs-postes.md`,
+ * § 2.1). Le dernier poste d'un produit le remet « à ranger » ; celui qui
  * finit ne part pas tant qu'il en reste d'autres — la carte refuse tout le
  * geste. **Une fois par intention**. Le poste quitté est réécrit : le numéro
  * de la carte monte, et la fiche gardée se refait.

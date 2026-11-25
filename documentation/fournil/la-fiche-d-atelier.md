@@ -3,6 +3,8 @@
 L'écran du fournil (`/fournil`) : ce qu'il faut sortir du four aujourd'hui,
 rayon par rayon, et le geste qui déclare ce qui est sorti. Le contexte qui le
 sert : [`architecture-contexte-production.md`](architecture-contexte-production.md).
+En mode prod, une ligne dont le produit a plusieurs postes ressort sous chacun ;
+la ligne d'étape et ses gestes : [`un-produit-sur-plusieurs-postes.md`](un-produit-sur-plusieurs-postes.md).
 
 ## En bref
 
