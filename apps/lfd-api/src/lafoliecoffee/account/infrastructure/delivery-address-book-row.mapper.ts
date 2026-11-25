@@ -57,8 +57,14 @@ export function deliveryAddressBookRowOf(
     stopMinutes: read?.stopMinutes ?? null,
     ...signatureOf(read?.signatureRequired ?? null, source.companySignatureRequired),
     hasProcedure: source.hasProcedure,
+    windowMode: read?.windowMode ?? null,
+    slots: read?.slotList ?? NO_SLOTS,
+    deadlines: read?.deadlines ?? null,
   };
 }
+
+/** « Aucun créneau » tel que les consignes l'écrivent. */
+const NO_SLOTS = { mode: "everyday", slots: [] } as const satisfies DeliveryAddressBookRow["slots"];
 
 function pointOf(lat: number | null, lng: number | null): GpsPoint | null {
   return lat === null || lng === null ? null : { lat, lng };

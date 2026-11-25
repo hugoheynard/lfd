@@ -7,13 +7,21 @@
  *   facturation, ni une adresse archivée, ni celle d'une société supprimée ;
  * - le tri est celui de la base : client, puis libellé ;
  * - la porte, le stationnement et la note sont lus du carnet ;
- * - le mur des droits : `delivery_rounds:read` lit, un autre droit 403.
+ * - le mur des droits : `delivery_rounds:read` lit, un autre droit 403 ;
+ * - la vue du jour (`/day/:day`) ne rend que les livraisons attendues ce
+ *   jour-là, reliées à leur adresse du carnet, avec leur heure convenue.
  */
-import type { DeliveryAddressBookView } from "@lfd/contracts";
+import type { DeliveryAddressBookView, DeliveryDayAddressesView } from "@lfd/contracts";
 
 import { staffWithRole } from "./delivery-driver-scene.js";
-import { ADMIN_VERIFIER_OVERRIDE } from "./delivery-rounds-scene.js";
-import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { ADMIN_VERIFIER_OVERRIDE, forgetCustomer, seedDelivery } from "./delivery-rounds-scene.js";
+import {
+  bootstrapE2e,
+  E2E_STAFF_SUB,
+  jsonBody,
+  serviceDay,
+  type E2eContext,
+} from "./e2e-harness.js";
 import { addBillingAddress, createCompany } from "./factories.js";
 
 const BOOK = "/admin/delivery/address-book";
@@ -30,6 +38,7 @@ afterAll(async () => {
 
 beforeEach(async () => {
   await ctx.reset();
+  forgetCustomer();
 });
 
 async function deliveryAddress(
@@ -130,5 +139,44 @@ describe("GET /admin/delivery/address-book", () => {
     const other = await staffWithRole(ctx, "comptoir-1", "comptoir-seul");
 
     await other.agent.get(BOOK).expect(403);
+  });
+});
+
+describe("GET /admin/delivery/address-book/day/:day", () => {
+  it("rend les livraisons du jour, avec leur adresse du carnet et leur heure", async () => {
+    const day = serviceDay();
+    const first = await seedDelivery(ctx, day);
+    const second = await seedDelivery(ctx, day);
+    await seedDelivery(ctx, serviceDay(8));
+    await roleWith("lecteur-jour", "delivery_rounds", "read");
+    const reader = await staffWithRole(ctx, "lecteur-2", "lecteur-jour");
+
+    const view = jsonBody<DeliveryDayAddressesView>(
+      await reader.agent.get(`${BOOK}/day/${day}`).expect(200),
+    );
+
+    expect(view.day).toBe(day);
+    expect(view.orders.map((order) => order.reference).sort()).toEqual(
+      [first.reference, second.reference].sort(),
+    );
+    const book = jsonBody<DeliveryAddressBookView>(await reader.agent.get(BOOK).expect(200));
+    expect(view.orders[0]).toMatchObject({
+      customerLabel: "Chalet des Tournées",
+      addressId: book.addresses[0]?.addressId,
+      companyId: book.addresses[0]?.companyId,
+      address: { ville: "Val d'Isère" },
+      window: { start: null, end: "10:00" },
+    });
+    expect(book.addresses[0]).toMatchObject({
+      windowMode: "deadline",
+      deadlines: { mode: "everyday", times: ["10:00"] },
+    });
+  });
+
+  it("refuse un jour mal écrit, et sans `delivery_rounds:read` : 403", async () => {
+    await ctx.asSub(E2E_STAFF_SUB).get(`${BOOK}/day/demain`).expect(400);
+    await roleWith("comptoir-jour", "handover_counter", "write");
+    const other = await staffWithRole(ctx, "comptoir-2", "comptoir-jour");
+    await other.agent.get(`${BOOK}/day/${serviceDay()}`).expect(403);
   });
 });

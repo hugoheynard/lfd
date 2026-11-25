@@ -87,6 +87,7 @@ export {
 } from "./delivery-address-points.reader.js";
 // Le carnet entier, pour l'onglet « Adresses » de Tour manager (2026-11-24).
 export { DeliveryAddressBookReader } from "./delivery-address-book.reader.js";
+export { DeliveryDayOrdersReader } from "./delivery-day-orders.reader.js";
 export {
   DeliveryAddressPointCorrector,
   type DeliveryAddressPointCorrection,

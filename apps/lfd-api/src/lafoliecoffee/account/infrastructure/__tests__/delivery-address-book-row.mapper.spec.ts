@@ -63,6 +63,31 @@ describe("deliveryAddressBookRowOf", () => {
     }
   });
 
+  it("rend le mode, les créneaux et les échéances de l'adresse, ou « global, aucun » sans consignes", () => {
+    const row = deliveryAddressBookRowOf(
+      source({
+        deliverySpecs: {
+          note: "",
+          deliveryContact: null,
+          gps: null,
+          windowMode: "deadline",
+          deadlines: { mode: "everyday", times: ["06:00", "11:00"] },
+          slotList: { mode: "everyday", slots: [{ start: "08:00", end: "10:00" }] },
+        },
+      }),
+    );
+    expect(row).toMatchObject({
+      windowMode: "deadline",
+      deadlines: { mode: "everyday", times: ["06:00", "11:00"] },
+      slots: { mode: "everyday", slots: [{ start: "08:00", end: "10:00" }] },
+    });
+    expect(deliveryAddressBookRowOf(source())).toMatchObject({
+      windowMode: null,
+      deadlines: null,
+      slots: { mode: "everyday", slots: [] },
+    });
+  });
+
   it("un stationnement à moitié posé n'est pas un point", () => {
     expect(deliveryAddressBookRowOf(source({ parkingLng: null })).parking).toBeNull();
   });

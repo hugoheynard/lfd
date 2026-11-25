@@ -1,4 +1,5 @@
-import type { DeliveryContact, GpsPoint } from "./address.js";
+import type { DeliveryContact, GpsPoint, PreferredDeadlines, PreferredSlots } from "./address.js";
+import type { WindowMode } from "./delivery-availability.values.js";
 
 /**
  * **Une adresse de livraison du carnet, vue de Tour manager** — onglet
@@ -47,6 +48,15 @@ export interface DeliveryAddressBookRow {
   readonly signatureSource: DeliveryAddressBookSignatureSource;
   /** Une procédure de livraison (étapes photo) est rangée pour l'adresse. */
   readonly hasProcedure: boolean;
+  /**
+   * Créneau ou échéance pour CETTE adresse ; `null` : elle suit le réglage
+   * global de livraison.
+   */
+  readonly windowMode: WindowMode | null;
+  /** Ses créneaux préférés (lus en mode créneau) ; « aucun » = liste vide. */
+  readonly slots: PreferredSlots;
+  /** Ses échéances préférées (lues en mode échéance), ou `null` : aucune. */
+  readonly deadlines: PreferredDeadlines | null;
 }
 
 /** L'origine de la signature effective d'une adresse du carnet. */
@@ -55,4 +65,48 @@ export type DeliveryAddressBookSignatureSource = "address" | "company";
 /** La réponse de `GET /admin/delivery/address-book`, triée client puis libellé. */
 export interface DeliveryAddressBookView {
   readonly addresses: readonly DeliveryAddressBookRow[];
+}
+
+/** Une heure convenue, `HH:MM` ; `start` nul : « avant `end` » (une échéance). */
+export interface DeliveryDayWindow {
+  readonly start: string | null;
+  readonly end: string;
+}
+
+/** L'adresse livrée telle que la commande l'a figée à la passation. */
+export interface DeliveryDayShippedAddress {
+  readonly label: string;
+  readonly ligne1: string;
+  readonly ligne2: string;
+  readonly codePostal: string;
+  readonly ville: string;
+  readonly pays: string;
+}
+
+/**
+ * **Une livraison du jour, vue du carnet d'adresses** — la vue « Aujourd'hui /
+ * Demain » de Tour manager (demandée par Hugo le 2026-11-25) : quelle
+ * adresse, pour quelle commande, à quelle heure. Ni montant, ni ligne.
+ */
+export interface DeliveryDayAddressOrder {
+  readonly orderId: string;
+  readonly reference: string;
+  /** La raison sociale, ou le nom de qui a commandé. */
+  readonly customerLabel: string;
+  /** La société de la commande, ou `null` pour un particulier. */
+  readonly companyId: string | null;
+  /** L'adresse du carnet à laquelle la commande est reliée, ou `null`. */
+  readonly addressId: string | null;
+  /** L'adresse livrée, figée à la passation, ou `null`. */
+  readonly address: DeliveryDayShippedAddress | null;
+  /** L'heure convenue, ou `null` : aucune. */
+  readonly window: DeliveryDayWindow | null;
+}
+
+/** La réponse de `GET /admin/delivery/address-book/day/:day`. */
+export interface DeliveryDayAddressesView {
+  /** Le jour lu, `AAAA-MM-JJ`. */
+  readonly day: string;
+  /** Les livraisons attendues ce jour-là, annulées exclues, sans ordre promis. */
+  readonly orders: readonly DeliveryDayAddressOrder[];
 }

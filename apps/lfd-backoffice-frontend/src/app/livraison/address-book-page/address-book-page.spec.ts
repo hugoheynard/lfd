@@ -1,7 +1,11 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
-import type { DeliveryAddressBookView, DeliveryProcedureView } from '@lfd/contracts';
+import type {
+  DeliveryAddressBookView,
+  DeliveryDayAddressesView,
+  DeliveryProcedureView,
+} from '@lfd/contracts';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { B2B_API_BASE } from '../../api/api-config';
@@ -15,6 +19,7 @@ import {
 } from '../address-book';
 import { readHiddenColumns, writeHiddenColumns } from '../address-book-columns';
 import { addressBookRowOf } from '../address-book.fixture';
+import { parisDayOf, shiftDay } from '../run-sheet';
 import { AddressBookPage } from './address-book-page';
 
 const URL = `${B2B_API_BASE}/admin/delivery/address-book`;
@@ -97,6 +102,7 @@ describe('AddressBookPage', () => {
       'Adresse',
       'Contact',
       'Note livreurs',
+      'Livraison',
       'Signature BL',
       'Procédure détaillée',
     ]);
@@ -214,6 +220,63 @@ describe('AddressBookPage', () => {
     );
     expect(steps).toEqual(['1. Portail', '2. Réserve']);
     expect(element.textContent).toContain('Code 1234');
+    http.verify();
+  });
+
+  it('demain : lit les livraisons du jour et les classe par heure, avec leurs commandes', async () => {
+    const { fixture, element, http } = await boot();
+    http.expectOne(URL).flush(VIEW);
+    await settle(fixture);
+    expect(element.querySelector('thead')?.textContent).not.toContain('Heure');
+
+    const tomorrow = shiftDay(parisDayOf(new Date()), 1);
+    const buttons = Array.from(element.querySelectorAll<HTMLElement>('[data-view-toggle] button'));
+    buttons.find((button) => button.textContent?.includes('Demain'))?.click();
+    await settle(fixture);
+    expect(element.querySelector('fold-loading')).not.toBeNull();
+
+    const order = {
+      customerLabel: 'Café Bastille',
+      companyId: 'c1',
+      address: null,
+    } as const;
+    http.expectOne(`${URL}/day/${tomorrow}`).flush({
+      day: tomorrow,
+      orders: [
+        {
+          ...order,
+          orderId: 'o1',
+          reference: 'C-9',
+          addressId: 'a2',
+          window: { start: null, end: '11:00' },
+        },
+        {
+          ...order,
+          orderId: 'o2',
+          reference: 'C-3',
+          addressId: 'a1',
+          window: { start: '07:00', end: '09:00' },
+        },
+        {
+          ...order,
+          orderId: 'o3',
+          reference: 'C-4',
+          addressId: 'a1',
+          window: { start: '07:00', end: '09:00' },
+        },
+      ],
+    } satisfies DeliveryDayAddressesView);
+    await new Promise((resolve) => setTimeout(resolve));
+    await settle(fixture);
+
+    expect(
+      Array.from(element.querySelectorAll('[data-time]')).map((cell) => cell.textContent?.trim()),
+    ).toEqual(['07:00–09:00', 'avant 11:00']);
+    expect(element.querySelector('[data-orders]')?.textContent).toContain('C-3');
+    expect(element.querySelector('[data-orders]')?.textContent).toContain('C-4');
+    expect(element.querySelector('[data-count]')?.textContent).toContain(
+      '2 adresses · 3 livraisons',
+    );
     http.verify();
   });
 

@@ -11,6 +11,7 @@ export const ADDRESS_BOOK_OPTIONAL_COLUMNS = [
   { key: 'address', label: 'Adresse' },
   { key: 'contact', label: 'Contact' },
   { key: 'note', label: 'Note livreurs' },
+  { key: 'delivery', label: 'Livraison' },
   { key: 'parking', label: 'Stationnement' },
   { key: 'deposit', label: 'Dépôt' },
   { key: 'signature', label: 'Signature BL' },

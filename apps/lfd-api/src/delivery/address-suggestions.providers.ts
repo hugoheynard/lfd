@@ -3,6 +3,7 @@ import type { Provider, Type } from "@nestjs/common";
 import { ApplyAddressPointSuggestionHandler } from "./application/commands/apply-address-point-suggestion.handler.js";
 import { IgnoreAddressPointSuggestionHandler } from "./application/commands/ignore-address-point-suggestion.handler.js";
 import { GetDeliveryAddressBookHandler } from "./application/queries/get-delivery-address-book.handler.js";
+import { GetDeliveryDayAddressesHandler } from "./application/queries/get-delivery-day-addresses.handler.js";
 import { GetAddressPointSuggestionsHandler } from "./application/queries/get-address-point-suggestions.handler.js";
 import { AddressSuggestionDecisionLock } from "./domain/ports/address-suggestion-decision.lock.js";
 import { AddressSuggestionDecisionRepository } from "./domain/ports/address-suggestion-decision.repository.js";
@@ -33,6 +34,7 @@ export const ADDRESS_SUGGESTIONS_CONTROLLERS: readonly Type[] = [
 export const ADDRESS_SUGGESTIONS_PROVIDERS: readonly Provider[] = [
   GetAddressPointSuggestionsHandler,
   GetDeliveryAddressBookHandler,
+  GetDeliveryDayAddressesHandler,
   ApplyAddressPointSuggestionHandler,
   IgnoreAddressPointSuggestionHandler,
   { provide: GesturePositionsReader, useClass: PrismaGesturePositionsReader },

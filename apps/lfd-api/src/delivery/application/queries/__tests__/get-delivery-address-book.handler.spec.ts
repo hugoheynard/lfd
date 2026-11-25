@@ -37,6 +37,9 @@ function row(addressId: string, legalName: string): DeliveryAddressBookRow {
     signatureRequired: false,
     signatureSource: "company",
     hasProcedure: false,
+    windowMode: null,
+    slots: { mode: "everyday", slots: [] },
+    deadlines: null,
   };
 }
 

@@ -26,6 +26,9 @@ export function addressBookRowOf(
     signatureRequired: false,
     signatureSource: 'company',
     hasProcedure: false,
+    windowMode: null,
+    slots: { mode: 'everyday', slots: [] },
+    deadlines: null,
     ...overrides,
   };
 }

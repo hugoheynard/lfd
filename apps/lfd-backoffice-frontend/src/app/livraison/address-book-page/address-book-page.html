@@ -18,137 +18,184 @@
       </fold-empty-state>
     }
     @case ('ready') {
-      <fold-data-table
-        caption="Adresses de livraison"
-        narrowLayout="cards"
-        [columns]="columns()"
-        [rows]="rows()"
-        [rowKey]="rowKey"
-        [empty]="empty()"
-      >
-        <div foldToolbar class="toolbar">
-          <fold-search
-            placeholder="Client, ville, libellé, note…"
-            ariaLabel="Rechercher une adresse"
-            [value]="query()"
-            (valueChange)="query.set($event)"
-            data-search
-          />
-          <fold-checkbox
-            label="Sans point GPS"
-            [checked]="withoutGpsOnly()"
-            (checkedChange)="withoutGpsOnly.set($event)"
-            data-without-gps
-          />
-          <fold-badge radius="square" variant="neutral" [content]="countLabel()" data-count />
-          <fold-popover placement="bottom-end" data-columns>
-            <button foldButton foldPopoverTrigger emphasis="outline" size="sm" icon="settings">
-              Colonnes
-            </button>
-            <div foldPopoverPanel class="columns-panel">
-              @for (column of optionalColumns; track column.key) {
-                <fold-checkbox
-                  [label]="column.label"
-                  [checked]="isShown(column.key)"
-                  (checkedChange)="toggleColumn(column.key, $event)"
-                  [attr.data-column-toggle]="column.key"
-                />
-              }
+      <div class="view">
+        <fold-view-toggle
+          ariaLabel="Vue des adresses"
+          activeStyle="raised"
+          [options]="viewOptions"
+          [value]="view()"
+          (valueChange)="pickView($event)"
+          data-view-toggle
+        />
+        @if (onDay() && dayState().status === 'loading') {
+          <fold-loading message="Lecture des livraisons du jour…" />
+        } @else if (onDay() && dayState().status === 'error') {
+          <fold-empty-state
+            tone="alert"
+            title="Livraisons du jour illisibles"
+            subtitle="Le serveur n’a pas répondu. Réessayez dans un instant."
+            data-day-error
+          >
+            <button foldButton emphasis="outline" (click)="retryDay()">Réessayer</button>
+          </fold-empty-state>
+        } @else {
+          <fold-data-table
+            caption="Adresses de livraison"
+            narrowLayout="cards"
+            [columns]="columns()"
+            [rows]="rows()"
+            [rowKey]="rowKey"
+            [empty]="empty()"
+          >
+            <div foldToolbar class="toolbar">
+              <fold-search
+                placeholder="Client, ville, libellé, note…"
+                ariaLabel="Rechercher une adresse"
+                [value]="query()"
+                (valueChange)="query.set($event)"
+                data-search
+              />
+              <fold-checkbox
+                label="Sans point GPS"
+                [checked]="withoutGpsOnly()"
+                (checkedChange)="withoutGpsOnly.set($event)"
+                data-without-gps
+              />
+              <fold-badge radius="square" variant="neutral" [content]="countLabel()" data-count />
+              <fold-popover placement="bottom-end" data-columns>
+                <button foldButton foldPopoverTrigger emphasis="outline" size="sm" icon="settings">
+                  Colonnes
+                </button>
+                <div foldPopoverPanel class="columns-panel">
+                  @for (column of optionalColumns; track column.key) {
+                    <fold-checkbox
+                      [label]="column.label"
+                      [checked]="isShown(column.key)"
+                      (checkedChange)="toggleColumn(column.key, $event)"
+                      [attr.data-column-toggle]="column.key"
+                    />
+                  }
+                </div>
+              </fold-popover>
             </div>
-          </fold-popover>
-        </div>
 
-        <ng-template foldCell="customer" let-row>
-          <span class="stack" data-customer>
-            @if (row.tradeName) {
-              <strong data-trade-name>{{ row.tradeName }}</strong>
-              <span data-legal-name>{{ row.legalName }}</span>
-            } @else {
-              <strong data-legal-name>{{ row.legalName }}</strong>
-            }
-          </span>
-        </ng-template>
+            <ng-template foldCell="time" let-row>
+              <strong class="time" data-time>{{ row.timeLabel }}</strong>
+            </ng-template>
 
-        <ng-template foldCell="address" let-row>
-          <span class="stack">
-            <span class="line">
-              <strong>{{ row.addressLabel }}</strong>
-              @if (row.isDefault) {
-                <fold-badge radius="square" variant="info" content="par défaut" data-default />
-              }
-            </span>
-            <span>{{ row.ligne1 }}</span>
-            @if (row.ligne2) {
-              <span>{{ row.ligne2 }}</span>
-            }
-            <span>{{ row.codePostal }} {{ row.ville }}</span>
-            @if (row.door; as point) {
-              <span class="line" data-gps>
-                GPS
-                <fold-link [href]="osmUrlOf(point)" target="_blank" rel="noopener" data-door>
+            <ng-template foldCell="orders" let-row>
+              <span class="stack" data-orders>
+                @for (reference of row.references; track reference) {
+                  <span>{{ reference }}</span>
+                }
+              </span>
+            </ng-template>
+
+            <ng-template foldCell="delivery" let-row>
+              @let times = deliveryTimesOf(row);
+              <span class="stack" data-delivery>
+                <small class="muted">{{ times.mode }}</small>
+                @for (line of times.lines; track line) {
+                  <span>{{ line }}</span>
+                } @empty {
+                  <span>—</span>
+                }
+              </span>
+            </ng-template>
+
+            <ng-template foldCell="customer" let-row>
+              <span class="stack" data-customer>
+                @if (row.tradeName) {
+                  <strong data-trade-name>{{ row.tradeName }}</strong>
+                  <span data-legal-name>{{ row.legalName }}</span>
+                } @else {
+                  <strong data-legal-name>{{ row.legalName }}</strong>
+                }
+              </span>
+            </ng-template>
+
+            <ng-template foldCell="address" let-row>
+              <span class="stack">
+                <span class="line">
+                  <strong>{{ row.addressLabel }}</strong>
+                  @if (row.isDefault) {
+                    <fold-badge radius="square" variant="info" content="par défaut" data-default />
+                  }
+                </span>
+                <span>{{ row.ligne1 }}</span>
+                @if (row.ligne2) {
+                  <span>{{ row.ligne2 }}</span>
+                }
+                <span>{{ row.codePostal }} {{ row.ville }}</span>
+                @if (row.door; as point) {
+                  <span class="line" data-gps>
+                    GPS
+                    <fold-link [href]="osmUrlOf(point)" target="_blank" rel="noopener" data-door>
+                      {{ gpsLabelOf(point) }}
+                    </fold-link>
+                  </span>
+                }
+              </span>
+            </ng-template>
+
+            <ng-template foldCell="parking" let-row>
+              @if (row.parking; as point) {
+                <fold-link [href]="osmUrlOf(point)" target="_blank" rel="noopener" data-parking>
                   {{ gpsLabelOf(point) }}
                 </fold-link>
+              } @else {
+                —
+              }
+            </ng-template>
+
+            <ng-template foldCell="note" let-row>
+              <span class="note">{{ row.note || '—' }}</span>
+            </ng-template>
+
+            <ng-template foldCell="contact" let-row>
+              @if (row.deliveryContact; as contact) {
+                <span class="stack">
+                  <span>{{ contact.prenom }} {{ contact.nom }}</span>
+                  <fold-link [href]="'tel:' + contact.telephone" data-phone>
+                    {{ contact.telephone }}
+                  </fold-link>
+                </span>
+              } @else {
+                —
+              }
+            </ng-template>
+
+            <ng-template foldCell="signature" let-row>
+              <span class="line" data-signature>
+                @if (row.signatureRequired) {
+                  <fold-icon name="check" size="sm" aria-hidden="true" data-signature-required />
+                  <span class="sr-only">Signature exigée</span>
+                } @else {
+                  <span class="muted" aria-hidden="true">—</span>
+                  <span class="sr-only">Signature non exigée</span>
+                }
+                @if (row.signatureSource === 'company') {
+                  <small class="muted" data-signature-inherited>(société)</small>
+                }
               </span>
-            }
-          </span>
-        </ng-template>
+            </ng-template>
 
-        <ng-template foldCell="parking" let-row>
-          @if (row.parking; as point) {
-            <fold-link [href]="osmUrlOf(point)" target="_blank" rel="noopener" data-parking>
-              {{ gpsLabelOf(point) }}
-            </fold-link>
-          } @else {
-            —
-          }
-        </ng-template>
-
-        <ng-template foldCell="note" let-row>
-          <span class="note">{{ row.note || '—' }}</span>
-        </ng-template>
-
-        <ng-template foldCell="contact" let-row>
-          @if (row.deliveryContact; as contact) {
-            <span class="stack">
-              <span>{{ contact.prenom }} {{ contact.nom }}</span>
-              <fold-link [href]="'tel:' + contact.telephone" data-phone>
-                {{ contact.telephone }}
-              </fold-link>
-            </span>
-          } @else {
-            —
-          }
-        </ng-template>
-
-        <ng-template foldCell="signature" let-row>
-          <span class="line" data-signature>
-            @if (row.signatureRequired) {
-              <fold-icon name="check" size="sm" aria-hidden="true" data-signature-required />
-              <span class="sr-only">Signature exigée</span>
-            } @else {
-              <span class="muted" aria-hidden="true">—</span>
-              <span class="sr-only">Signature non exigée</span>
-            }
-            @if (row.signatureSource === 'company') {
-              <small class="muted" data-signature-inherited>(société)</small>
-            }
-          </span>
-        </ng-template>
-
-        <ng-template foldCell="procedure" let-row>
-          @if (row.hasProcedure && canReadProcedure()) {
-            <app-address-procedure-preview
-              [companyId]="row.companyId"
-              [addressId]="row.addressId"
-              [attr.data-procedure]="row.addressId"
-            />
-          } @else if (row.hasProcedure) {
-            Oui
-          } @else {
-            —
-          }
-        </ng-template>
-      </fold-data-table>
+            <ng-template foldCell="procedure" let-row>
+              @if (row.hasProcedure && canReadProcedure()) {
+                <app-address-procedure-preview
+                  [companyId]="row.companyId"
+                  [addressId]="row.addressId"
+                  [attr.data-procedure]="row.addressId"
+                />
+              } @else if (row.hasProcedure) {
+                Oui
+              } @else {
+                —
+              }
+            </ng-template>
+          </fold-data-table>
+        }
+      </div>
     }
   }
 </fold-page-layout>

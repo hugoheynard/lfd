@@ -2920,7 +2920,14 @@ export type {
   AddressPointDecisionPayload,
 } from "./delivery-address-suggestions.js";
 export type { RoadRoutingReadinessView } from "./road-routing-readiness.js";
-export type { DeliveryAddressBookRow, DeliveryAddressBookView } from "./delivery-address-book.js";
+export type {
+  DeliveryAddressBookRow,
+  DeliveryAddressBookView,
+  DeliveryDayAddressesView,
+  DeliveryDayAddressOrder,
+  DeliveryDayShippedAddress,
+  DeliveryDayWindow,
+} from "./delivery-address-book.js";
 export type { DeadLetterView, DeadLettersView } from "./outbox-dead-letters.js";
 export {
   MAIL_SEND_DELIVERIES,

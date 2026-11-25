@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import type { DeliveryAddressBookView } from '@lfd/contracts';
+import type { DeliveryAddressBookView, DeliveryDayAddressesView } from '@lfd/contracts';
 import { firstValueFrom } from 'rxjs';
 
 import { B2B_API_BASE } from '../api/api-config';
@@ -17,5 +17,12 @@ export class DeliveryAddressBookService {
 
   list(): Promise<DeliveryAddressBookView> {
     return firstValueFrom(this.http.get<DeliveryAddressBookView>(ADDRESS_BOOK));
+  }
+
+  /** Les livraisons attendues ce jour-là (`AAAA-MM-JJ`), annulées exclues. */
+  day(day: string): Promise<DeliveryDayAddressesView> {
+    return firstValueFrom(
+      this.http.get<DeliveryDayAddressesView>(`${ADDRESS_BOOK}/day/${encodeURIComponent(day)}`),
+    );
   }
 }

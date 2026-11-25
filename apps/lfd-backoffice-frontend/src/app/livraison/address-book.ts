@@ -56,10 +56,10 @@ function fold(text: string): string {
 }
 
 /** Les adresses qui répondent à la recherche (client, ville, libellé, note) et au filtre. */
-export function filterAddressBook(
-  rows: readonly DeliveryAddressBookRow[],
+export function filterAddressBook<Row extends DeliveryAddressBookRow>(
+  rows: readonly Row[],
   filter: AddressBookFilter,
-): readonly DeliveryAddressBookRow[] {
+): readonly Row[] {
   const needle = fold(filter.query.trim());
   return rows.filter((row) => {
     if (filter.withoutGpsOnly && !lacksGps(row)) {
