@@ -20,10 +20,13 @@ saisie. Le bon de livraison ne porte que ce qui part, et la facture ne compte
 que les bons remis : le client ne paie pas ce qu'il n'a pas reçu. L'équipe
 peut ensuite **écrire au client** pour le prévenir.
 
-Le **reste** est aujourd'hui toujours **abandonné**. Le système sait déjà
-fabriquer, coliser, livrer, retirer et facturer un **second envoi** de la même
-commande (le « reliquat », avec son propre bon) — mais aucun écran ne permet
-encore de le créer.
+Le **reste** est toujours **abandonné** pour cette commande. Décidé par Hugo
+le 2026-11-25, **pas encore bâti** : un reliquat de commande naîtra avec la
+décision, et l'équipe le transformera en commande ordinaire aux prix de
+l'origine, ou l'abandonnera (plan
+[`plan-reliquat-de-commande.md`](plan-reliquat-de-commande.md)). Le second
+envoi de la même commande (§ 6) est bâti, mais aucun geste ne le crée ; il
+sera retiré.
 
 Une commande payée **par carte** ou avec un **bon de fidélité** ne part jamais
 incomplète : il faudrait rembourser la part non livrée, et ce n'est pas
@@ -36,9 +39,7 @@ flowchart LR
     A --> BL["Bon de livraison de ce qui part"]
     BL --> R["Remise au client"]
     R --> F["Facture sur ce qui est parti"]
-    D -.->|"pas encore à l'écran"| B2["Reste à relivrer, second bon"]
-    B2 -.-> R2["Second envoi, puis solde"]
-    R2 -.-> F
+    A -.->|"le client veut le reste"| N["Reliquat, puis nouvelle commande (prévu)"]
     D -->|"carte ou bon de fidélité"| X["Refusé"]
 ```
 
@@ -244,10 +245,12 @@ de vie **par bon** plutôt qu'une commande de suite (« A »).
   prend sur son rang, tant que son BL est `planned` (refus
   `remainder_not_planned`).
 
-**Ce qui n'existe pas** : aucun geste ne crée un reste. `planRemainder` n'est
-appelé que par les tests ; le sort « à relivrer », les sources du jour qui
-liraient un BL de rang > 1 et l'abandon d'un reste après coup sont dans
-[`todo-reliquat.md`](todo-reliquat.md#2-le-reliquat-à-lécran-l7-l8-l9). Avec
+**Ce qui n'existe pas, et n'est plus prévu** : aucun geste ne crée un reste.
+`planRemainder` n'est appelé que par les tests ; le sort « à relivrer » et
+les sources du jour qui liraient un BL de rang > 1 ont été abandonnés par
+Hugo le 2026-11-25 au profit d'un reliquat transformé en commande ; ce
+mécanisme sera retiré
+([`todo-reliquat.md`](todo-reliquat.md#2-le-reliquat-de-commande)). Avec
 un seul envoi, tout se comporte comme avant le reliquat.
 
 ## 7. La facture somme les bons remis

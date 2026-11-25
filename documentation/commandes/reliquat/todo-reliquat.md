@@ -36,34 +36,15 @@ la baisse d'une commande carte le répartit déjà sur ses paiements
   elle part aujourd'hui à la remise, ce qui reste juste tant qu'il n'y a pas
   de reste.
 
-## 2. Le reliquat à l'écran (L7, L8, L9)
+## 2. Le reliquat de commande
 
-Plan de L7 et L8 : [`plan-l7-l8-reste-relivre.md`](plan-l7-l8-reste-relivre.md).
-
-**Ce qui manque.** Aucun geste ne crée un reste : `DeliveryNote.planRemainder`
-n'est appelé que par les tests, et le sort du reste n'a qu'une valeur
-(`shortfallRemainderSchema = z.literal("abandoned")`,
-`packages/contracts/src/admin-order-detail.ts`, et le CHECK en base).
-
-- **L7 — les sources du jour lisent les BL de rang > 1** : fournil, colisage
-  (une seconde feuille par reste), tournées, feuille de route, « Ma tournée »,
-  file du comptoir au jour du reste. Aucun lecteur ne les sélectionne
-  aujourd'hui : elles lisent les commandes par `requestedDeliveryDate`.
-- **L8 — « reste à relivrer le <date> »** dans la décision : le BL-2 naît
-  (`planRemainder`, montants déjà écrits), entre au plan de son jour (journée
-  ouverte), ou au retirage étendu (journée tirée : le retirage n'absorbe que
-  des commandes `placed`). Le **même jour** n'est proposé que si le reste à
-  faire du fournil couvre le reste (`quantité − Σ fournées ≥ reste`, par un
-  port que le fournil déclare dans `production/channels/commerce/`) ; sinon,
-  un autre jour seulement. Les écrans disent « reste relivré le <date> »
-  (colisage, Supervision, comptoir, feuille de route, fiche commande), et le
-  courrier du manque annonce la date. Au comptoir, D6 : « le client
-  repasse » ou « on le lui porte », dans le même dialogue.
-- **L9 (ex-E8) — abandonner un reste après coup** : le superviseur, par le
-  même geste que la décision (Q-R2), puis le solde.
-
-**Pourquoi c'est arrêté.** Le mandat du 2026-10-25 s'est arrêté après LB ; L8
-touche l'argent et le plan du fournil : il demande un plan relu et `vitruve`.
+**Décidé par Hugo le 2026-11-25** : pas de second envoi de la même commande
+(L7, L8 et L9 abandonnés, « on fait trop compliqué »). Le reste reste
+abandonné côté origine ; un **reliquat** (`Backorder`) naît dans la
+transaction de la décision, et l'équipe le transforme en commande ordinaire,
+aux prix de l'origine, ou l'abandonne. Le second envoi bâti (rangs,
+`planRemainder`) est du code mort à retirer. Plan :
+[`plan-reliquat-de-commande.md`](plan-reliquat-de-commande.md) (lots B1 à B5).
 
 ## 3. Le bon de fidélité
 
