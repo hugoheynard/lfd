@@ -134,6 +134,21 @@ export const PRODUCTION_SCENARIOS: ScenarioSet = {
     body: { productSkus: ["VIE-001"], workstationId: await workstation(ctx, "Viennoiserie") },
   }),
 
+  [routeKey(CONTROLLER, "reorderProducts")]: async ({ ctx }) => {
+    const id = await workstation(ctx, "Viennoiserie");
+    await ctx
+      .asSub(STAFF)
+      .put(`${WORKSTATIONS}/placements`)
+      .set(INTENT_KEY, freshIntent())
+      .send({ productSkus: ["VIE-001"], workstationId: id })
+      .expect(204);
+    return {
+      sub: STAFF,
+      path: `${WORKSTATIONS}/${id}/products/order`,
+      body: { skus: ["VIE-001"] },
+    };
+  },
+
   ...WORKSHEET_SCENARIOS,
   ...TRACKING_SCENARIOS,
   ...PRINT_SCENARIOS,
