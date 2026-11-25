@@ -223,14 +223,22 @@ relecture.
   `production_settings:read` ; sans lui, les choix partent du mode boutique
   sans sous-catégories, et la page le dit. Le PDF s'ouvre dans un onglet, un
   lien de téléchargement le remplace si le navigateur le bloque.
-- `production/workstations-page/` : le rangement (le mode, et un lien vers la
-  simulation), les
-  postes — chacun une carte qu'on glisse par sa poignée à six points, ou
-  qu'on déplace au clavier par les flèches sur celle-ci ; le renommage et
-  l'archivage restent dans la carte —, la pile d'un poste, les produits avec un `fold-listbox` par ligne et les filtres
-  (`?filtre=a-ranger`). Elle vit aux Réglages (`/reglages/production/postes`,
+- `production/workstations-page/` : quatre onglets horizontaux, fixés en
+  haut au défilement (`fold-tabs`, faits pour le mobile) :
+  - **Postes** — chacun une carte qu'on glisse par sa poignée à six points, ou
+    qu'on déplace au clavier par les flèches sur celle-ci ; le renommage et
+    l'archivage restent dans la carte ; « Ajouter un poste », en tête de la
+    carte, ouvre un popover (le nom, puis Ajouter ou Annuler) ;
+  - **Pile de poste** — la pile du poste choisi ;
+  - **Produits** — un `fold-listbox` par ligne et les filtres ; le compte des
+    produits « à ranger » en badge, et `?filtre=a-ranger` ouvre cet onglet ;
+  - **Général fournil** — le rangement (le mode, et un lien vers la
+    simulation).
+
+  Elle vit aux Réglages (`/reglages/production/postes`,
   décidé par Hugo le 2026-11-17), au rail comme aux tuiles du menu mobile ;
   l'ancienne adresse `/prod-manager/postes` y redirige, filtre compris.
+
 - `production/fiche-atelier/` : les fiches de poste, `/fournil?poste=<id>`
   (l'adresse suit la fiche choisie), le choix retenu par personne dans
   `nav_prefs.worksheetCategory`.

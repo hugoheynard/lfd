@@ -79,19 +79,47 @@ async function mount(
 }
 
 describe('la page Postes', () => {
-  it('montre les trois cartes, et compte les produits commandés sans poste', async () => {
+  it('range la page en quatre onglets, Postes ouvert d’abord, une carte par onglet', async () => {
     const { fixture } = await mount(
       () => Promise.resolve(PAGE),
       ['production_workstations:read', 'production_settings:read'],
     );
     const el = fixture.nativeElement as HTMLElement;
+    const page = fixture.componentInstance;
 
     expect(el.querySelector('fold-page-layout')).not.toBeNull();
-    expect(el.querySelector('[data-grouping-card]')).not.toBeNull();
+    expect(page['tabs']().map((tab) => tab.label)).toEqual([
+      'Postes',
+      'Pile de poste',
+      'Produits',
+      'Général fournil',
+    ]);
     expect(el.querySelector('[data-workstation-list]')).not.toBeNull();
-    expect(el.querySelector('[data-workstation-products]')).not.toBeNull();
-    expect(fixture.componentInstance['unplacedOrdered']()).toBe(1);
-    expect(fixture.componentInstance['display']()).toEqual(SETTINGS.display);
+    expect(el.querySelector('[data-workstation-products]')).toBeNull();
+
+    const shows = async (tab: 'stack' | 'products' | 'general', selector: string) => {
+      page['tab'].set(tab);
+      fixture.detectChanges();
+      await fixture.whenStable();
+      expect(el.querySelector(selector)).not.toBeNull();
+      expect(el.querySelector('[data-workstation-list]')).toBeNull();
+    };
+    await shows('products', '[data-workstation-products]');
+    await shows('general', '[data-grouping-card]');
+    expect(page['unplacedOrdered']()).toBe(1);
+    expect(page['display']()).toEqual(SETTINGS.display);
+  });
+
+  it('ouvre l’onglet Produits quand on arrive pour ranger (?filtre=a-ranger)', async () => {
+    const { fixture } = await mount(() => Promise.resolve(PAGE), ['production_workstations:read']);
+    fixture.componentRef.setInput('filtre', 'a-ranger');
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(fixture.componentInstance['tab']()).toBe('products');
+    expect(
+      (fixture.nativeElement as HTMLElement).querySelector('[data-workstation-products]'),
+    ).not.toBeNull();
   });
 
   it('ne lit pas le réglage sans son droit', async () => {

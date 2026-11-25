@@ -15,36 +15,58 @@
     }
     @default {
       @if (view(); as page) {
-        <div class="cards">
-          <app-production-grouping-card
-            [display]="display()"
-            [unplacedOrdered]="unplacedOrdered()"
-            [canWrite]="canSetMode()"
-            [canRead]="canReadMode()"
-            (saved)="load()"
-          />
-          <app-workstation-list-card
-            [workstations]="page.workstations"
-            [products]="page.products"
-            [canWrite]="canWrite()"
-            (changed)="load()"
-          />
-          <app-workstation-stack-card
-            [workstations]="page.workstations"
-            [products]="page.products"
-            [canWrite]="canWrite()"
-            (changed)="load()"
-          />
-          <app-workstation-products-card
-            [products]="page.products"
-            [offCatalog]="page.offCatalog"
-            [workstations]="page.workstations"
-            [unplacedCount]="page.unplacedCount"
-            [canWrite]="canWrite()"
-            [unplacedFirst]="unplacedFirst()"
-            (changed)="load()"
-          />
-        </div>
+        <fold-tabs
+          #bar="foldTabs"
+          direction="horizontal"
+          justify="stretch"
+          size="compact"
+          activeStyle="fill"
+          background="surface"
+          sticky
+          [tabs]="tabs()"
+          [(activeKey)]="tab"
+          data-workstations-tabs
+        />
+        <fold-tab-panel [tabs]="bar" [key]="tab()">
+          @switch (tab()) {
+            @case ('stations') {
+              <app-workstation-list-card
+                [workstations]="page.workstations"
+                [products]="page.products"
+                [canWrite]="canWrite()"
+                (changed)="load()"
+              />
+            }
+            @case ('stack') {
+              <app-workstation-stack-card
+                [workstations]="page.workstations"
+                [products]="page.products"
+                [canWrite]="canWrite()"
+                (changed)="load()"
+              />
+            }
+            @case ('products') {
+              <app-workstation-products-card
+                [products]="page.products"
+                [offCatalog]="page.offCatalog"
+                [workstations]="page.workstations"
+                [unplacedCount]="page.unplacedCount"
+                [canWrite]="canWrite()"
+                [unplacedFirst]="unplacedFirst()"
+                (changed)="load()"
+              />
+            }
+            @case ('general') {
+              <app-production-grouping-card
+                [display]="display()"
+                [unplacedOrdered]="unplacedOrdered()"
+                [canWrite]="canSetMode()"
+                [canRead]="canReadMode()"
+                (saved)="load()"
+              />
+            }
+          }
+        </fold-tab-panel>
       }
     }
   }

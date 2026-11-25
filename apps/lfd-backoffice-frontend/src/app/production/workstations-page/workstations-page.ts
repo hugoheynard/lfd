@@ -1,10 +1,21 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  input,
+  linkedSignal,
+  signal,
+} from '@angular/core';
 import type { ProductionDisplayView, WorkstationsPageView } from '@lfd/contracts';
 import {
   FoldButtonComponent,
   FoldEmptyStateComponent,
   FoldLoadingStateComponent,
   FoldPageLayoutComponent,
+  FoldTabPanelComponent,
+  FoldTabsComponent,
+  type FoldTabItem,
 } from 'fold-ng';
 
 import { PermissionsStore } from '../../auth/permissions.store';
@@ -19,6 +30,17 @@ import { WorkstationStackCard } from './workstation-stack-card/workstation-stack
 export const UNPLACED_FILTER = 'a-ranger';
 
 type LoadState = 'loading' | 'error' | 'ready';
+
+/** Les onglets de la page, dans l'ordre où on les règle. */
+export type WorkstationsTab = 'stations' | 'stack' | 'products' | 'general';
+
+const TAB_LABELS: Readonly<Record<WorkstationsTab, string>> = {
+  stations: 'Postes',
+  stack: 'Pile de poste',
+  products: 'Produits',
+  general: 'Général fournil',
+};
+const TAB_KEYS: readonly WorkstationsTab[] = ['stations', 'stack', 'products', 'general'];
 
 /**
  * **Prod manager › Postes** (`documentation/fournil/les-postes-du-fournil.md`,
@@ -37,6 +59,8 @@ type LoadState = 'loading' | 'error' | 'ready';
     FoldEmptyStateComponent,
     FoldLoadingStateComponent,
     FoldPageLayoutComponent,
+    FoldTabPanelComponent,
+    FoldTabsComponent,
     ProductionGroupingCard,
     WorkstationListCard,
     WorkstationProductsCard,
@@ -53,6 +77,19 @@ export class WorkstationsPage {
   /** `?filtre=a-ranger` : l'alerte du Prod manager ouvre la liste filtrée. */
   readonly filter = input<string | undefined>(undefined, { alias: 'filtre' });
   protected readonly unplacedFirst = computed(() => this.filter() === UNPLACED_FILTER);
+
+  /** L'onglet ouvert : « Produits » quand on arrive pour ranger, sinon « Postes ». */
+  protected readonly tab = linkedSignal<WorkstationsTab>(() =>
+    this.unplacedFirst() ? 'products' : 'stations',
+  );
+  protected readonly tabs = computed<readonly FoldTabItem<WorkstationsTab>[]>(() =>
+    TAB_KEYS.map((key) => {
+      const unplaced = key === 'products' ? (this.view()?.unplacedCount ?? 0) : 0;
+      return unplaced > 0
+        ? { key, label: TAB_LABELS[key], badge: unplaced }
+        : { key, label: TAB_LABELS[key] };
+    }),
+  );
 
   protected readonly canWrite = computed(() =>
     this.permissions.can('production_workstations:write'),

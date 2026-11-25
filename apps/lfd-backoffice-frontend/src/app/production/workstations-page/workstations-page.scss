@@ -1,5 +1,5 @@
-.cards {
-  display: flex;
-  flex-direction: column;
-  gap: var(--fold-space-lg);
+/* Les onglets en tête, le contenu de l'onglet dessous. */
+fold-tab-panel {
+  display: block;
+  margin-block-start: var(--fold-space-md);
 }
