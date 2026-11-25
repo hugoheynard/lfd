@@ -20,6 +20,17 @@
 .product {
   display: flex;
   flex-direction: column;
+  gap: var(--fold-space-xs);
+}
+
+.name {
+  font-weight: var(--fold-weight-semibold);
+}
+
+/* La référence sous le nom : une ligne par déclinaison, le nom de la
+   déclinaison seulement s'il diffère de celui du produit. */
+.ref {
+  font-family: var(--fold-font-mono);
 }
 
 .muted {

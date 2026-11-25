@@ -88,11 +88,13 @@
       </ng-template>
       <ng-template foldCell="product" let-product>
         <span class="product">
-          {{ nameOf(product) }}
+          <span class="name">{{ nameOf(product) }}</span>
           @for (variant of product.variants; track variant.sku) {
-            <span class="muted">
-              {{ variant.variantName }} · {{ variant.sku
-              }}{{ variant.sellable ? '' : ' · pas en vente' }}
+            <span class="muted ref">
+              @if (variant.variantName !== nameOf(product)) {
+                {{ variant.variantName }} ·
+              }
+              {{ variant.sku }}{{ variant.sellable ? '' : ' · pas en vente' }}
             </span>
           }
         </span>
