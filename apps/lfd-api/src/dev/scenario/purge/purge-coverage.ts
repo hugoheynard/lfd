@@ -210,6 +210,15 @@ export const SCENARIO_PURGED_TABLES: readonly PurgedTable[] = [
     referencedBy: ["payment.card_refund"],
   },
   { table: "payment.card_refund", purgedIn: "card-payment.purge.ts", referencedBy: [] },
+  // Le schéma `recurring` n'a aucune clé vers le commerce : ses deux clés
+  // internes tiennent le panier, et partent avant lui.
+  {
+    table: "recurring.basket",
+    purgedIn: "recurring.purge.ts",
+    referencedBy: ["recurring.basket_line", "recurring.occurrence"],
+  },
+  { table: "recurring.basket_line", purgedIn: "recurring.purge.ts", referencedBy: [] },
+  { table: "recurring.occurrence", purgedIn: "recurring.purge.ts", referencedBy: [] },
   { table: "ops.mail_send", purgedIn: "journals.purge.ts", referencedBy: [] },
   { table: "growth.activity_events", purgedIn: "journals.purge.ts", referencedBy: [] },
   { table: "public.order_change", purgedIn: "journals.purge.ts", referencedBy: [] },

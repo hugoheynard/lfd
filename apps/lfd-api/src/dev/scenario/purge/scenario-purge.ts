@@ -11,6 +11,7 @@ import { purgeMailRequests } from "./mail.purge.js";
 import { purgeOutbox } from "./outbox.purge.js";
 import { purgePacking } from "./packing.purge.js";
 import { purgeProduction } from "./production.purge.js";
+import { purgeRecurring } from "./recurring.purge.js";
 import { purgeReserveResupplies } from "./resupply.purge.js";
 import { PURGE_TRANSACTION_TIMEOUT_MS, type ScenarioScope } from "./scenario-scope.js";
 import { purgeStorage, scenarioPrefixes, type ScenarioBuckets } from "./storage.purge.js";
@@ -61,6 +62,8 @@ export async function purgeScenario(
   // traces techniques des gestes rejoués, sans métier propre.
   const intents = await prisma.$transaction((tx) => purgeSeedIntents(tx), options);
   const commerce = await prisma.$transaction((tx) => purgeCommerce(tx, scope), options);
+  // Les paniers récurrents comptent avec les commandes qu'ils passent.
+  const recurring = await prisma.$transaction((tx) => purgeRecurring(tx, scope), options);
   // Les paiements par carte comptent avec leurs commandes ; transaction à
   // part, parce que leur garde `SET LOCAL` ne doit rien couvrir d'autre.
   const cardPayments = await prisma.$transaction((tx) => purgeCardPayments(tx, scope), options);
@@ -72,12 +75,12 @@ export async function purgeScenario(
   );
   return {
     removed: [
-      { category: "orders", rows: commerce.rows + resupplies + cardPayments },
+      { category: "orders", rows: commerce.rows + resupplies + cardPayments + recurring.rows },
       { category: "production", rows: production.rows },
       { category: "packing", rows: packing },
       { category: "delivery", rows: delivery.rows },
       { category: "outbox", rows: outbox + mails + intents },
-      { category: "journals", rows: journals },
+      { category: "journals", rows: journals + recurring.journal },
     ],
     orders: commerce.orders,
     storage,

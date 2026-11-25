@@ -25,6 +25,7 @@ import { featureSeededItems } from "./featured.seed.js";
 import { paintSeededSites } from "./site-colors.seed.js";
 import { placeTomorrowRounds, TOMORROW_ROUNDS_SKUS } from "./tomorrow-rounds.seed.js";
 import { prepareClients, type ScenarioClients } from "./scenario-clients.seed.js";
+import { seedRecurringBaskets } from "./recurring-baskets.seed.js";
 import { ApproveReviewCommand } from "../../lafoliecoffee/catalog/application/commands/approve-review.command.js";
 
 export type { SeedContext } from "./order-placing.seed.js";
@@ -217,9 +218,12 @@ async function placeScenario(
     today,
     halves: [await spreadLines(context, 0), await spreadLines(context, 1)],
   });
+  // Les paniers récurrents, et leurs commandes d'aujourd'hui et de demain
+  // passées par le balayage — avant l'arrêt du plan du soir.
+  const recurring = await seedRecurringBaskets(context, clients.byEnseigne, day);
 
   return {
-    placed: placed + 1 + todayCount + TOMORROW.length + tomorrowRounds + 2,
+    placed: placed + 1 + todayCount + TOMORROW.length + tomorrowRounds + 2 + recurring.placed,
     yesterday: isoDay(shiftDays(today, -1)),
     today: day.forDay,
     counterToday: COUNTER.length,

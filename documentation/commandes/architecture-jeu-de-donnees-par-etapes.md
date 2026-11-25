@@ -31,6 +31,20 @@ L'étape est atteinte dès que le calcul a placé une livraison — ce qu'il lai
 les livraisons seront colisées ; le demi-bac se partage avec l'arrêt qui suit
 l'ouvreur dans SA tournée, quand il y en a un de prêt.
 
+**Les paniers récurrents** sont posés à l'étape 0, avant le plan du soir
+(`seeding/recurring-baskets.seed.ts`), par les vrais gestes et à l'heure des
+commandes du jour (la veille, `ORDER_HOUR`) : trois paniers hebdomadaires de
+clients au compte — le Petit Chaudron au comptoir dès aujourd'hui (échéance de
+la semaine prochaine sautée), l'Hôtel Le Lac Blanc au comptoir dès demain
+(quantités de la semaine prochaine modifiées), la Fromagerie du Parc en
+livraison à partir de la semaine prochaine. Le vrai balayage passe ensuite les
+échéances d'aujourd'hui et de demain : **deux commandes au compte**, qui
+entrent au plan comme les autres. Si les CGV des professionnels ne sont pas
+publiées, le semis les publie d'abord (`seeding/pro-sales-terms.seed.ts`) :
+sans elles, un panier ne s'ouvre pas. Aucun client pro du scénario n'est sans
+crédit : aucun refus `no_settlement` n'est fabriqué. La purge les retire
+(`scenario/purge/recurring.purge.ts`).
+
 ⚠️ **L'ordre est celui du code** : les tournées sont composées _avant_ la
 production, parce que depuis K3c un bac de livraison naît au colisage et qu'un
 demi-bac ne se partage qu'entre deux arrêts consécutifs d'une même tournée. Les
