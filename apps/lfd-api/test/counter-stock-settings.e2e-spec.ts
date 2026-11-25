@@ -77,8 +77,14 @@ function admin(): request.Agent {
   return ctx.asSub(E2E_STAFF_SUB);
 }
 
-function setTracking(siteId: string, stockTracking: boolean): request.Test {
-  return admin().put(`/admin/counter-settings/${siteId}`).send({ stockTracking });
+function setTracking(
+  siteId: string,
+  stockTracking: boolean,
+  immediateWithoutStock = false,
+): request.Test {
+  return admin()
+    .put(`/admin/counter-settings/${siteId}`)
+    .send({ stockTracking, immediateWithoutStock });
 }
 
 async function settingsOf(
@@ -119,6 +125,7 @@ describe("le réglage", () => {
       siteId,
       siteLabel: "Val Village",
       stockTracking: false,
+      immediateWithoutStock: false,
       updatedAt: null,
       updatedBy: null,
     });
@@ -146,13 +153,28 @@ describe("le réglage", () => {
     expect(await counterView()).toBe(true);
   });
 
+  it("le retrait immédiat sans stock se pose et se relit, sans toucher au suivi", async () => {
+    const siteId = await seedSite("Val Village");
+
+    await setTracking(siteId, false, true).expect(204);
+
+    await expect(settingsOf(siteId)).resolves.toMatchObject({
+      stockTracking: false,
+      immediateWithoutStock: true,
+    });
+  });
+
   it("refuse un point inconnu (404) et une charge mal formée (400)", async () => {
     const siteId = await seedSite("Val Village");
 
     await setTracking("site_inconnu", true).expect(404);
     await admin()
       .put(`/admin/counter-settings/${siteId}`)
-      .send({ stockTracking: "oui" })
+      .send({ stockTracking: "oui", immediateWithoutStock: false })
+      .expect(400);
+    await admin()
+      .put(`/admin/counter-settings/${siteId}`)
+      .send({ stockTracking: true })
       .expect(400);
     expect(await ctx.prisma.counterStockSetting.count()).toBe(0);
   });
@@ -166,14 +188,17 @@ describe("le réglage", () => {
     await counter.get("/admin/counter-settings").expect(403);
     await counter
       .put(`/admin/counter-settings/${siteId}`)
-      .send({ stockTracking: true })
+      .send({ stockTracking: true, immediateWithoutStock: false })
       .expect(403);
 
     const reader = await holderOf("reglages-lecture", [
       { resource: "lfc_order_settings", action: "read" },
     ]);
     await reader.get("/admin/counter-settings").expect(200);
-    await reader.put(`/admin/counter-settings/${siteId}`).send({ stockTracking: true }).expect(403);
+    await reader
+      .put(`/admin/counter-settings/${siteId}`)
+      .send({ stockTracking: true, immediateWithoutStock: false })
+      .expect(403);
   });
 });
 

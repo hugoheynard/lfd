@@ -74,7 +74,7 @@ export class ShelfRevising {
    */
   async hold(order: RevisableOrder, revision: OrderRevisionToSave): Promise<void> {
     const before = revisedShelfClaimOf(order);
-    const after = shelfClaimOf(revision.state);
+    const after = shelfClaimOf(revision.state, before?.atCounter ?? false);
     if (before === null || after === null) {
       return;
     }

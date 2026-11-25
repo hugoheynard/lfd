@@ -70,7 +70,7 @@ async function seedSite(label = "Val Village"): Promise<string> {
   await ctx
     .asSub(E2E_STAFF_SUB)
     .put(`/admin/counter-settings/${site.id}`)
-    .send({ stockTracking: true })
+    .send({ stockTracking: true, immediateWithoutStock: false })
     .expect(204);
   return site.id;
 }

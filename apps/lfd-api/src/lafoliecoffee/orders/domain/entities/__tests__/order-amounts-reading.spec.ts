@@ -208,7 +208,7 @@ describe("Order.shelfClaim", () => {
   it("rend la prise de la forme persistée, sans règlement décidé", () => {
     const order = Order.draft(input(), SHELF);
 
-    expect(order.shelfClaim).toEqual(shelfClaimOf(persisted(input(), SHELF)));
+    expect(order.shelfClaim).toEqual(shelfClaimOf(persisted(input(), SHELF), false));
     expect(order.shelfClaim?.siteId).toBe("site_village");
   });
 

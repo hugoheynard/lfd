@@ -16,6 +16,13 @@ export interface CounterSiteSettingsView {
   readonly siteLabel: string;
   /** `false` tant que le point n'a jamais été réglé. */
   readonly stockTracking: boolean;
+  /**
+   * Le « Retrait immédiat » du comptoir passe-t-il sans vérifier le stock
+   * reçu ? `false` tant que le point n'a jamais été réglé. Activé, la vente
+   * reste comptée au stock du jour, qui peut devenir négatif ; une commande
+   * en ligne reste bornée par le reste.
+   */
+  readonly immediateWithoutStock: boolean;
   /** Instant de la dernière modification (ISO 8601) ; `null` si jamais réglé. */
   readonly updatedAt: string | null;
   /** Nom figé de qui l'a modifié en dernier ; `null` si jamais réglé. */
@@ -27,6 +34,8 @@ export interface CounterSettingsView {
   readonly sites: readonly CounterSiteSettingsView[];
 }
 
-/** `PUT /admin/counter-settings/:siteId` — pose le suivi du stock du point. */
-export const counterStockTrackingSchema = z.object({ stockTracking: z.boolean() }).strict();
-export type CounterStockTrackingPayload = z.infer<typeof counterStockTrackingSchema>;
+/** `PUT /admin/counter-settings/:siteId` — pose les deux réglages du point. */
+export const counterSettingsSchema = z
+  .object({ stockTracking: z.boolean(), immediateWithoutStock: z.boolean() })
+  .strict();
+export type CounterSettingsPayload = z.infer<typeof counterSettingsSchema>;

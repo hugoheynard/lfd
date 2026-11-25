@@ -46,6 +46,7 @@ function bench() {
     settings.put({
       siteId,
       stockTracking,
+      immediateWithoutStock: false,
       updated: { at: NOW, author: { staffUserId: "staff_lou", name: "Lou Martin", role: "admin" } },
     });
   return {

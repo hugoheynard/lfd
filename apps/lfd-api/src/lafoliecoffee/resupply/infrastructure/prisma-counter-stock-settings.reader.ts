@@ -24,6 +24,7 @@ export class PrismaCounterStockSettingsReader extends CounterStockSettingsReader
         {
           siteId: row.siteId,
           stockTracking: row.stockTracking,
+          immediateWithoutStock: row.immediateWithoutStock,
           updated: {
             at: row.updatedAt,
             author: {

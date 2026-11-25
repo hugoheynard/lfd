@@ -9,6 +9,7 @@ import {
   type SameDayDoor,
 } from "../../../order-cutoffs/domain/same-day-doors.js";
 import { DayShelfStock } from "../../../resupply/application/day-shelf-stock.js";
+import { CounterImmediateWithoutStock } from "../../../resupply/domain/counter-immediate-without-stock.js";
 import { ShelfStockLock } from "../../../resupply/domain/shelf-stock-lock.js";
 import type { Order } from "../../domain/entities/order.js";
 import { SameDayOrderClosedError } from "../../domain/errors/same-day-order-closed.error.js";
@@ -54,6 +55,7 @@ export class ShelfCircuit {
     private readonly lock: ShelfStockLock,
     private readonly stock: DayShelfStock,
     private readonly clock: Clock,
+    private readonly withoutStock: CounterImmediateWithoutStock,
   ) {}
 
   /**
@@ -146,7 +148,9 @@ export class ShelfCircuit {
     }
     const siteId = siteOf(claim);
     await this.lock.lock(claim.serviceDay, siteId);
-    ensureShelfStockCovers(claim.lines, await this.stock.at(siteId, claim.serviceDay));
+    if (!(await this.passesWithoutStock(claim))) {
+      ensureShelfStockCovers(claim.lines, await this.stock.at(siteId, claim.serviceDay));
+    }
     return true;
   }
 
@@ -169,6 +173,9 @@ export class ShelfCircuit {
     if (claim.siteId === null) {
       return new NoPickupLeftTodayError(null);
     }
+    if (await this.passesWithoutStock(claim)) {
+      return null;
+    }
     return shelfStockShortfallOf(claim.lines, await this.stock.at(claim.siteId, claim.serviceDay));
   }
 
@@ -186,11 +193,27 @@ export class ShelfCircuit {
       throw new NoPickupLeftTodayError(null);
     }
     await this.lock.lock(before.serviceDay, before.siteId);
+    if (await this.passesWithoutStock(before)) {
+      return;
+    }
     ensureShelfRevisionCovered(
       before.lines,
       after.lines,
       await this.stock.at(before.siteId, before.serviceDay),
     );
+  }
+
+  /**
+   * **Le comptoir passe-t-il sans le stock reçu ?** (Réglages › Comptoir,
+   * Hugo 2026-11-25) — une saisie du comptoir, sur un point qui le permet.
+   * Le verrou reste pris par l'appelant et le prélèvement reste compté : le
+   * reste du jour peut devenir négatif, et la Supervision le montre.
+   */
+  private async passesWithoutStock(claim: ShelfClaim): Promise<boolean> {
+    if (!claim.atCounter || claim.siteId === null) {
+      return false;
+    }
+    return this.withoutStock.allowsAt(claim.siteId);
   }
 
   /**

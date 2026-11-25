@@ -1,7 +1,7 @@
 import {
   type CounterSettingsView,
-  type CounterStockTrackingPayload,
-  counterStockTrackingSchema,
+  type CounterSettingsPayload,
+  counterSettingsSchema,
 } from "@lfd/contracts";
 import { Body, Controller, Get, HttpCode, HttpStatus, Param, Put } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
@@ -11,7 +11,7 @@ import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { Idempotent } from "../../../platform/shared/http/idempotent.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { GetCounterSettingsQuery } from "../application/get-counter-settings.query.js";
-import { SetCounterStockTrackingCommand } from "../application/set-counter-stock-tracking.command.js";
+import { SetCounterSettingsCommand } from "../application/set-counter-settings.command.js";
 
 /**
  * **Réglages › Comptoir** — le suivi du stock au comptoir, point par point
@@ -36,15 +36,20 @@ export class AdminCounterSettingsController {
   @Put(":siteId")
   @HttpCode(HttpStatus.NO_CONTENT)
   @Idempotent(
-    "pose une valeur : rejouée, elle réécrit le même suivi sur la ligne du point, qui n'est jamais qu'une ; aucun fait, aucun e-mail",
+    "pose une valeur : rejouée, elle réécrit les mêmes réglages sur la ligne du point, qui n'est jamais qu'une ; aucun fait, aucun e-mail",
   )
-  async setStockTracking(
+  async setSettings(
     @Param("siteId") siteId: string,
-    @Body(new ZodBody(counterStockTrackingSchema)) body: CounterStockTrackingPayload,
+    @Body(new ZodBody(counterSettingsSchema)) body: CounterSettingsPayload,
     @StaffUserId() staffUserId: string,
   ): Promise<void> {
-    await this.commands.execute<SetCounterStockTrackingCommand, void>(
-      new SetCounterStockTrackingCommand(siteId, body.stockTracking, staffUserId),
+    await this.commands.execute<SetCounterSettingsCommand, void>(
+      new SetCounterSettingsCommand(
+        siteId,
+        body.stockTracking,
+        body.immediateWithoutStock,
+        staffUserId,
+      ),
     );
   }
 }

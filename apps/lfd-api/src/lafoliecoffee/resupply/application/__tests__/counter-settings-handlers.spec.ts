@@ -1,8 +1,8 @@
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
 import { ResupplySiteUnknownError } from "../../domain/resupply-site-errors.js";
 import { GetCounterSettingsHandler } from "../get-counter-settings.handler.js";
-import { SetCounterStockTrackingCommand } from "../set-counter-stock-tracking.command.js";
-import { SetCounterStockTrackingHandler } from "../set-counter-stock-tracking.handler.js";
+import { SetCounterSettingsCommand } from "../set-counter-settings.command.js";
+import { SetCounterSettingsHandler } from "../set-counter-settings.handler.js";
 import {
   FixedCounterSites,
   InMemoryCounterStockSettings,
@@ -19,7 +19,7 @@ function setup() {
   const settings = new InMemoryCounterStockSettings();
   return {
     settings,
-    set: new SetCounterStockTrackingHandler(
+    set: new SetCounterSettingsHandler(
       new Sites([VILLAGE, LABO]),
       settings,
       new Directory({ name: "Lou Martin", role: "admin" }),
@@ -45,6 +45,7 @@ describe("Réglages › Comptoir", () => {
           siteId: LABO,
           siteLabel: "Le Labo",
           stockTracking: false,
+          immediateWithoutStock: false,
           updatedAt: null,
           updatedBy: null,
         },
@@ -52,6 +53,7 @@ describe("Réglages › Comptoir", () => {
           siteId: VILLAGE,
           siteLabel: "Val Village",
           stockTracking: false,
+          immediateWithoutStock: false,
           updatedAt: null,
           updatedBy: null,
         },
@@ -62,7 +64,7 @@ describe("Réglages › Comptoir", () => {
   it("activer pose le réglage du seul point visé, auteur et instant compris", async () => {
     const { get, set } = setup();
 
-    await set.execute(new SetCounterStockTrackingCommand(VILLAGE, true, "staff_lou"));
+    await set.execute(new SetCounterSettingsCommand(VILLAGE, true, false, "staff_lou"));
 
     const { sites } = await get.execute();
     expect(sites).toEqual([
@@ -79,11 +81,27 @@ describe("Réglages › Comptoir", () => {
   it("désactiver après avoir activé réécrit la même ligne", async () => {
     const { set, settings } = setup();
 
-    await set.execute(new SetCounterStockTrackingCommand(VILLAGE, true, "staff_lou"));
-    await set.execute(new SetCounterStockTrackingCommand(VILLAGE, false, "staff_lou"));
+    await set.execute(new SetCounterSettingsCommand(VILLAGE, true, false, "staff_lou"));
+    await set.execute(new SetCounterSettingsCommand(VILLAGE, false, false, "staff_lou"));
 
     expect([...settings.rows.values()]).toEqual([
       expect.objectContaining({ siteId: VILLAGE, stockTracking: false }),
+    ]);
+  });
+
+  it("le retrait immédiat sans stock se pose avec le suivi, chacun pour lui", async () => {
+    const { get, set } = setup();
+
+    await set.execute(new SetCounterSettingsCommand(VILLAGE, false, true, "staff_lou"));
+
+    const { sites } = await get.execute();
+    expect(sites).toEqual([
+      expect.objectContaining({ siteId: LABO, immediateWithoutStock: false }),
+      expect.objectContaining({
+        siteId: VILLAGE,
+        stockTracking: false,
+        immediateWithoutStock: true,
+      }),
     ]);
   });
 
@@ -91,7 +109,7 @@ describe("Réglages › Comptoir", () => {
     const { set, settings } = setup();
 
     await expect(
-      set.execute(new SetCounterStockTrackingCommand("site_inconnu", true, "staff_lou")),
+      set.execute(new SetCounterSettingsCommand("site_inconnu", true, false, "staff_lou")),
     ).rejects.toThrow(ResupplySiteUnknownError);
     expect(settings.rows.size).toBe(0);
   });

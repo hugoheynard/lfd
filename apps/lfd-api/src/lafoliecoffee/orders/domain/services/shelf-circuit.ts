@@ -5,6 +5,7 @@ import type { RevisableOrder } from "../../revision/domain/entities/order-revisi
 import type { OrderToPlace } from "../entities/order-shapes.js";
 import { ShelfStockShortError } from "../errors/shelf-circuit-errors.js";
 import type { SiteDaySettings } from "../ports/site-day-settings.reader.js";
+import { COUNTER_ENTRY } from "../value-objects/order-supply.js";
 
 /**
  * Les règles PURES du circuit du jour J à la passation (plan
@@ -89,6 +90,11 @@ export interface ShelfClaimLine {
 export interface ShelfClaim {
   readonly serviceDay: string;
   readonly siteId: string | null;
+  /**
+   * Saisie au comptoir (origine `counter`) : seule une telle commande peut
+   * passer sans le stock reçu, si son point le permet (Réglages › Comptoir).
+   */
+  readonly atCounter: boolean;
   readonly lines: readonly ShelfClaimLine[];
 }
 
@@ -106,7 +112,7 @@ export type ShelfClaimSource = Pick<
  * (`planned`). Lue sur la forme persistée : c'est elle que le dépôt écrira,
  * et donc elle que les prélèvements reliront.
  */
-export function shelfClaimOf(order: ShelfClaimSource): ShelfClaim | null {
+export function shelfClaimOf(order: ShelfClaimSource, atCounter: boolean): ShelfClaim | null {
   if (order.supply !== "shelf" || order.requestedDeliveryDate === null) {
     return null;
   }
@@ -114,6 +120,7 @@ export function shelfClaimOf(order: ShelfClaimSource): ShelfClaim | null {
     // `@db.Date` composé à minuit UTC : le jour se relit tel quel.
     serviceDay: order.requestedDeliveryDate.toISOString().slice(0, 10),
     siteId: order.pickupAddress?.siteId ?? null,
+    atCounter,
     lines: order.lines.map((line) => ({
       sku: line.sku,
       productName: line.productName,
@@ -135,6 +142,7 @@ export function revisedShelfClaimOf(order: RevisableOrder): ShelfClaim | null {
   return {
     serviceDay: order.serviceDay,
     siteId: order.fulfillment.pickupAddress?.siteId ?? null,
+    atCounter: order.entryOrigin === COUNTER_ENTRY,
     lines: order.lines.map((line) => ({
       sku: line.sku,
       productName: line.productName,

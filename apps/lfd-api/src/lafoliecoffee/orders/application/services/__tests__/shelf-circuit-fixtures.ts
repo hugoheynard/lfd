@@ -5,7 +5,10 @@ import {
   pricedInput,
   type OrderIdentity,
 } from "../../../domain/entities/__tests__/priced-input.fixture.js";
-import type { OrderSupplyDecision } from "../../../domain/value-objects/order-supply.js";
+import type {
+  OrderEntryOrigin,
+  OrderSupplyDecision,
+} from "../../../domain/value-objects/order-supply.js";
 
 /**
  * Les commandes et le reste en vitrine des suites du circuit du jour J —
@@ -28,6 +31,7 @@ export function shelfOrder(
   quantity: number,
   supply: OrderSupplyDecision = SHELF_TODAY,
   siteId: string | null = SITE,
+  entryOrigin: OrderEntryOrigin | null = null,
 ): Order {
   const identity: OrderIdentity = {
     companyId: "co_1",
@@ -77,6 +81,7 @@ export function shelfOrder(
       ],
     }),
     supply,
+    entryOrigin,
   );
   order.deferPayment();
   return order;

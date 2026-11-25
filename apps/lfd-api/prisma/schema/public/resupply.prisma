@@ -297,8 +297,10 @@ model BakehouseResupplyDraft {
 /// réécrite, jamais supprimée.
 model CounterStockSetting {
   /// Le point de retrait (`site.id`), sans clé étrangère.
-  siteId        String  @id @map("site_id")
-  stockTracking Boolean @default(false) @map("stock_tracking")
+  siteId                String  @id @map("site_id")
+  stockTracking         Boolean @default(false) @map("stock_tracking")
+  /// Le « Retrait immédiat » du comptoir passe sans vérifier le stock reçu.
+  immediateWithoutStock Boolean @default(false) @map("immediate_without_stock")
 
   /// La dernière modification : instant du `Clock`, auteur figé.
   updatedAt        DateTime @map("updated_at")

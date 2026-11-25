@@ -4,6 +4,7 @@ import {
   FixedShelfDraws,
   RecordingShelfStockLock,
 } from "../../../../resupply/application/__tests__/shelf-stock-doubles.js";
+import { FixedImmediateWithoutStock } from "../../../../resupply/application/__tests__/counter-settings-doubles.js";
 import type { EstimatedStockLine } from "../../../../resupply/domain/estimated-stock.js";
 import type { ResupplyReceiptSnapshot } from "../../../../resupply/domain/resupply-receipt.js";
 import { ResupplyReceiptReader } from "../../../../resupply/domain/resupply-receipt.reader.js";
@@ -88,6 +89,8 @@ export interface ShelfCircuitDoubles {
   readonly lock?: ShelfStockLock;
   readonly stock?: DayShelfStock;
   readonly now?: Date;
+  /** Les points dont le comptoir passe sans le stock reçu ; aucun par défaut. */
+  readonly withoutStockAt?: readonly string[];
 }
 
 /**
@@ -107,5 +110,6 @@ export function shelfCircuitOf(
     doubles.lock ?? new RecordingShelfStockLock(),
     doubles.stock ?? new FixedShelfStock(),
     new FixedClock(doubles.now ?? GATE_NOW),
+    new FixedImmediateWithoutStock(doubles.withoutStockAt),
   );
 }

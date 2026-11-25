@@ -412,12 +412,15 @@ export class Order {
    * par la même prise que la passation sous verrou (lot P2).
    */
   get shelfClaim(): ShelfClaim | null {
-    return shelfClaimOf({
-      supply: this.supplyMark.supply,
-      requestedDeliveryDate: this.requestedDeliveryDate,
-      pickupAddress: this.fulfillment.pickupAddress,
-      lines: this.drafted.lines,
-    });
+    return shelfClaimOf(
+      {
+        supply: this.supplyMark.supply,
+        requestedDeliveryDate: this.requestedDeliveryDate,
+        pickupAddress: this.fulfillment.pickupAddress,
+        lines: this.drafted.lines,
+      },
+      this.supplyMark.entryOrigin === COUNTER_ENTRY,
+    );
   }
 
   /**

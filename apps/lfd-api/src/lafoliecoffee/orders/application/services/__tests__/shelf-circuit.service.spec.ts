@@ -323,6 +323,7 @@ describe("ShelfCircuit.holdRevision — verrou, hausses, site", () => {
   const claim = (quantity: number, siteId: string | null = SITE) => ({
     serviceDay: TODAY,
     siteId,
+    atCounter: false,
     lines: [{ sku: "VIE-001-1", productName: "Croissant", saleUnit: "piece" as const, quantity }],
   });
 
@@ -365,5 +366,56 @@ describe("ShelfCircuit.hold — une commande sur stock sans site", () => {
       NoPickupLeftTodayError,
     );
     expect(lock.taken).toEqual([]);
+  });
+});
+
+describe("ShelfCircuit — le retrait immédiat sans le stock reçu (Réglages › Comptoir)", () => {
+  const counterOrder = (quantity: number) => shelfOrder(quantity, SHELF_TODAY, SITE, "counter");
+  const counterClaim = (quantity: number, atCounter = true) => ({
+    serviceDay: TODAY,
+    siteId: SITE,
+    atCounter,
+    lines: [{ sku: "VIE-001-1", productName: "Croissant", saleUnit: "piece" as const, quantity }],
+  });
+
+  it("une saisie du comptoir passe vitrine vide quand son point le permet, verrou pris", async () => {
+    const lock = new RecordingShelfStockLock();
+    const stock = new FixedShelfStock().set(TODAY, SITE, []);
+    const circuit = shelfCircuitOf(gateOf(), { lock, stock, withoutStockAt: [SITE] });
+    await expect(circuit.hold(counterOrder(3))).resolves.toBe(true);
+    expect(lock.taken).toEqual([`${TODAY}:${SITE}`]);
+    expect(stock.read).toEqual([]);
+  });
+
+  it("la même saisie est refusée sur un point qui ne le permet pas", async () => {
+    const stock = new FixedShelfStock().set(TODAY, SITE, []);
+    const circuit = shelfCircuitOf(gateOf(), { stock, withoutStockAt: ["autre_site"] });
+    await expect(circuit.hold(counterOrder(1))).rejects.toBeInstanceOf(ShelfStockShortError);
+  });
+
+  it("une commande qui ne vient pas du comptoir reste bornée, même sur un point qui le permet", async () => {
+    const stock = new FixedShelfStock().set(TODAY, SITE, CROISSANTS(1));
+    const circuit = shelfCircuitOf(gateOf(), { stock, withoutStockAt: [SITE] });
+    await expect(circuit.hold(shelfOrder(2))).rejects.toBeInstanceOf(ShelfStockShortError);
+  });
+
+  it("l'estimation de la saisie ne signale aucun manque quand le comptoir passe sans stock", async () => {
+    const stock = new FixedShelfStock().set(TODAY, SITE, []);
+    const circuit = shelfCircuitOf(gateOf(), { stock, withoutStockAt: [SITE] });
+    await expect(circuit.stockShortfallOf(counterOrder(4))).resolves.toBeNull();
+    await expect(
+      shelfCircuitOf(gateOf(), { stock }).stockShortfallOf(counterOrder(4)),
+    ).resolves.toBeInstanceOf(ShelfStockShortError);
+  });
+
+  it("une hausse au comptoir passe au-delà du reste, verrou pris ; hors comptoir, refusée", async () => {
+    const lock = new RecordingShelfStockLock();
+    const stock = new FixedShelfStock().set(TODAY, SITE, CROISSANTS(0));
+    const circuit = shelfCircuitOf(gateOf(), { lock, stock, withoutStockAt: [SITE] });
+    await expect(circuit.holdRevision(counterClaim(1), counterClaim(9))).resolves.toBeUndefined();
+    expect(lock.taken).toEqual([`${TODAY}:${SITE}`]);
+    await expect(
+      circuit.holdRevision(counterClaim(1, false), counterClaim(9, false)),
+    ).rejects.toBeInstanceOf(ShelfStockShortError);
   });
 });

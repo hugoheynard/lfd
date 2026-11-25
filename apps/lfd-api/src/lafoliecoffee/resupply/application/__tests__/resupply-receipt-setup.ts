@@ -1,3 +1,4 @@
+import { FixedImmediateWithoutStock } from "./counter-settings-doubles.js";
 import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { FixedIdGenerator } from "../../../../platform/id/fixed-id-generator.js";
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
@@ -119,6 +120,7 @@ export function setup() {
       new InMemorySiteResupplyReader(resupplies),
       packed,
       stock,
+      new FixedImmediateWithoutStock(),
     ),
   };
 }

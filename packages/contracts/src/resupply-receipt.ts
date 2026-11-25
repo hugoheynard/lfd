@@ -115,6 +115,12 @@ export interface ResupplyReceiptView {
   readonly unordered: UnorderedReceiptView;
   /** Le reste du jour, par article et unité : reçus − prélèvements sur stock. */
   readonly stock: readonly ResupplyReceiptLineView[];
+  /**
+   * Le « Retrait immédiat » de ce point passe sans vérifier le stock reçu
+   * (Réglages › Comptoir) : la saisie propose alors tout le catalogue et ne
+   * borne plus le panier par le reste.
+   */
+  readonly immediateWithoutStock: boolean;
 }
 
 /** Un article proposable à la réception : le catalogue publié de la boutique. */

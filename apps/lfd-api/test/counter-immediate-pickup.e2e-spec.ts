@@ -17,6 +17,7 @@
 import { instantToLocal, localToInstant } from "@lfd/contracts";
 import type request from "supertest";
 
+import { DayShelfStock } from "../src/lafoliecoffee/resupply/application/day-shelf-stock.js";
 import { MonthlyInvoicingReader } from "../src/lafoliecoffee/accounting/domain/ports/monthly-invoicing.reader.js";
 import { CardProviders } from "../src/payment/card/domain/ports/card-providers.js";
 import { CompanyStatus } from "../src/platform/database/client/client.js";
@@ -143,8 +144,20 @@ async function placeImmediate(
   // Sans le raccourci : une prise sur la vitrine qui n'est pas le « Retrait
   // immédiat » — le seul chemin qui règle encore par lien depuis E4.
   shortcut: "immediate_pickup" | null = "immediate_pickup",
+  quantity = 3,
 ): Promise<Placed> {
-  const response = await staff()
+  const response = await placing(pro, settlement, shortcut, quantity).expect(201);
+  return jsonBody<Placed>(response);
+}
+
+/** La même passation, sans attente de statut. */
+function placing(
+  pro: { readonly companyId: string; readonly userId: string },
+  settlement: "account" | "link",
+  shortcut: "immediate_pickup" | null,
+  quantity: number,
+): request.Test {
+  return staff()
     .post("/admin/orders")
     .set(INTENT_KEY, freshIntent())
     .send({
@@ -157,10 +170,8 @@ async function placeImmediate(
       fulfillmentMethod: "pickup",
       pickupAddressId: siteId,
       requestedWindow: { start: "12:00", end: "13:00" },
-      lines: [{ sku: CROISSANT, quantity: 3 }],
-    })
-    .expect(201);
-  return jsonBody<Placed>(response);
+      lines: [{ sku: CROISSANT, quantity }],
+    });
 }
 
 async function noteNumberOf(orderId: string): Promise<string> {
@@ -400,5 +411,44 @@ describe("la tolérance de retard au comptoir (Hugo, 2026-11-03)", () => {
     expect(posed.body).toEqual({ lateToleranceMinutes: 25 });
     // Le réglage entier, lui, reste à l'équipe Commandes.
     await seller.get("/admin/order-cutoff-settings").expect(403);
+  });
+});
+
+describe("le « Retrait immédiat » sans le stock reçu (Réglages › Comptoir)", () => {
+  const BEYOND = RECEIVED + 2;
+
+  async function allowWithoutStock(allowed: boolean): Promise<void> {
+    await staff()
+      .put(`/admin/counter-settings/${siteId}`)
+      .send({ stockTracking: false, immediateWithoutStock: allowed })
+      .expect(204);
+  }
+
+  async function croissantsLeft(): Promise<number | undefined> {
+    const lines = await ctx.app.get(DayShelfStock).at(siteId, day);
+    return lines.find((line) => line.sku === CROISSANT)?.estimatedStock;
+  }
+
+  it("par défaut, le comptoir est borné par le reçu", async () => {
+    const pro = await seedCreditedPro("borne");
+    const refused = await placing(pro, "account", "immediate_pickup", BEYOND).expect(409);
+    expect(jsonBody<{ code: string }>(refused).code).toBe("orders.shelf.stock_short");
+  });
+
+  it("le point le permet : la vente passe au-delà du reçu, et le reste devient négatif", async () => {
+    const pro = await seedCreditedPro("sans-stock");
+    await allowWithoutStock(true);
+
+    await placeImmediate(pro, "account", "immediate_pickup", BEYOND);
+
+    expect(await croissantsLeft()).toBe(RECEIVED - BEYOND);
+  });
+
+  it("une prise sur la vitrine qui ne vient pas du comptoir reste bornée", async () => {
+    const pro = await seedCreditedPro("hors-comptoir");
+    await allowWithoutStock(true);
+
+    const refused = await placing(pro, "link", null, BEYOND).expect(409);
+    expect(jsonBody<{ code: string }>(refused).code).toBe("orders.shelf.stock_short");
   });
 });

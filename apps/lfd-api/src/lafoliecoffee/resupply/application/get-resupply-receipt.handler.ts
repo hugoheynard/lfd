@@ -2,6 +2,7 @@ import type { ResupplyReceiptView } from "@lfd/contracts";
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
 import { PackedResuppliesReader } from "../../../packing/channels/commerce/index.js";
+import { CounterImmediateWithoutStock } from "../domain/counter-immediate-without-stock.js";
 import { ResupplyReceipt } from "../domain/resupply-receipt.js";
 import { ResupplyReceiptReader } from "../domain/resupply-receipt.reader.js";
 import { isPlaced } from "../domain/site-resupply.js";
@@ -29,12 +30,14 @@ export class GetResupplyReceiptHandler implements IQueryHandler<
     private readonly resupplies: SiteResupplyReader,
     private readonly packed: PackedResuppliesReader,
     private readonly stock: DayShelfStock,
+    private readonly withoutStock: CounterImmediateWithoutStock,
   ) {}
 
   async execute(query: GetResupplyReceiptQuery): Promise<ResupplyReceiptView> {
-    const [snapshots, resupplies] = await Promise.all([
+    const [snapshots, resupplies, immediateWithoutStock] = await Promise.all([
       this.receipts.on(query.siteId, query.serviceDay),
       this.resupplies.forSite(query.siteId, [query.serviceDay]),
+      this.withoutStock.allowsAt(query.siteId),
     ]);
     const receipts = snapshots.map((snapshot) => ResupplyReceipt.restore(snapshot));
     const byResupply = new Map(
@@ -59,6 +62,7 @@ export class GetResupplyReceiptHandler implements IQueryHandler<
       receptions,
       unordered: unorderedView(receipts.find((receipt) => receipt.resupplyId === null) ?? null),
       stock: await this.stock.of(query.siteId, query.serviceDay, receipts),
+      immediateWithoutStock,
     };
   }
 }

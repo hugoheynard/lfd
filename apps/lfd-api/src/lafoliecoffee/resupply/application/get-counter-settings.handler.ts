@@ -2,7 +2,10 @@ import type { CounterSettingsView } from "@lfd/contracts";
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
 import { CounterSites } from "../domain/counter-sites.js";
-import { STOCK_TRACKING_BY_DEFAULT } from "../domain/counter-stock-setting.js";
+import {
+  IMMEDIATE_WITHOUT_STOCK_BY_DEFAULT,
+  STOCK_TRACKING_BY_DEFAULT,
+} from "../domain/counter-stock-setting.js";
 import { CounterStockSettingsReader } from "../domain/counter-stock-settings.reader.js";
 import { GetCounterSettingsQuery } from "./get-counter-settings.query.js";
 
@@ -30,6 +33,8 @@ export class GetCounterSettingsHandler implements IQueryHandler<
           siteId: site.id,
           siteLabel: site.label,
           stockTracking: setting?.stockTracking ?? STOCK_TRACKING_BY_DEFAULT,
+          immediateWithoutStock:
+            setting?.immediateWithoutStock ?? IMMEDIATE_WITHOUT_STOCK_BY_DEFAULT,
           updatedAt: setting?.updated.at.toISOString() ?? null,
           updatedBy: setting?.updated.author.name ?? null,
         };

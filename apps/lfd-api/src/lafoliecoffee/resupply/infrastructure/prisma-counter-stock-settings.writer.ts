@@ -17,6 +17,7 @@ export class PrismaCounterStockSettingsWriter extends CounterStockSettingsWriter
   async put(setting: CounterStockSetting): Promise<void> {
     const columns = {
       stockTracking: setting.stockTracking,
+      immediateWithoutStock: setting.immediateWithoutStock,
       updatedAt: setting.updated.at,
       updatedByStaffId: setting.updated.author.staffUserId,
       updatedByName: setting.updated.author.name,

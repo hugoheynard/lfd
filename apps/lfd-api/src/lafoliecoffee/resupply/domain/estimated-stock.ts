@@ -34,10 +34,11 @@ export interface EstimatedStockLine {
  *   le fournil les a cuites pour elles, elles ne sont pas dans la vitrine.
  * - Un article pris sans avoir été reçu apparaît quand même, reçu 0 et reste
  *   NÉGATIF : une vente au-delà du stock est un fait à montrer, pas à taire.
- *   Aucun chemin ne le produit aujourd'hui (vérifié le 2026-11-02 : la
- *   baisse d'un reçu est refusée sous le déjà-pris par
- *   `ReceivedStockLowering`, et la passation refuse au-delà du reste par
- *   `ShelfCircuitService`, `ShelfStockShortError`, lot L4).
+ *   Un seul chemin le produit (vérifié le 2026-11-25) : le « Retrait
+ *   immédiat » d'un point réglé sans le stock reçu (`ShelfCircuit`,
+ *   `CounterImmediateWithoutStock`). Ailleurs, la passation refuse au-delà du
+ *   reste (`ShelfStockShortError`) et la baisse d'un reçu est refusée quand
+ *   elle creuse un reste négatif (`ReceivedStockLowering`).
  *
  * - Le compte se fait par (article, unité), jamais pièces et grammes ensemble
  *   (L2b-1) : un article reçu au poids puis passé à la pièce au catalogue

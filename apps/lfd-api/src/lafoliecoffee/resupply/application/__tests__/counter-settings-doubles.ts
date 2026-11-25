@@ -1,3 +1,4 @@
+import { CounterImmediateWithoutStock } from "../../domain/counter-immediate-without-stock.js";
 import { CounterSites, type CounterSite } from "../../domain/counter-sites.js";
 import {
   STOCK_TRACKING_BY_DEFAULT,
@@ -60,5 +61,16 @@ export class FixedCounterSites extends CounterSites {
 
   active(): Promise<readonly CounterSite[]> {
     return Promise.resolve(this.sites);
+  }
+}
+
+/** Le retrait immédiat sans stock, permis sur une liste fixe de points ; aucun par défaut. */
+export class FixedImmediateWithoutStock extends CounterImmediateWithoutStock {
+  constructor(private readonly sites: readonly string[] = []) {
+    super();
+  }
+
+  allowsAt(siteId: string): Promise<boolean> {
+    return Promise.resolve(this.sites.includes(siteId));
   }
 }
