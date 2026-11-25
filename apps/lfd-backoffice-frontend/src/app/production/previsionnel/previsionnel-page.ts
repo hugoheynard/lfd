@@ -1,10 +1,12 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  ElementRef,
   computed,
   effect,
   inject,
   signal,
+  viewChild,
 } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import type {
@@ -16,6 +18,7 @@ import {
   FoldButtonComponent,
   FoldButtonIconComponent,
   FoldCalloutComponent,
+  FoldDateComponent,
   FoldEmptyStateComponent,
   FoldInlineConfirmComponent,
   FoldLoadingStateComponent,
@@ -34,6 +37,8 @@ import { ForecastTable } from './forecast-table/forecast-table';
 import { ReopenDay } from './reopen-day/reopen-day';
 import { forecastRayons, totalOfRayons } from './previsionnel-matrix';
 import { WorkstationsService } from '../workstations.service';
+import { rememberDay, rememberedDay } from './phone-memory';
+import { phoneMedia } from './forecast-table/forecast-phone';
 import { autoCloseAheadLabel } from './auto-close-label';
 import {
   DAY_FOOT_ROWS,
@@ -46,6 +51,9 @@ import {
 } from './previsionnel-range';
 import { batchWithOrders, capitalized } from './batch-wording';
 import type { ForecastColumnAction, ForecastColumnEntry } from './forecast-table/forecast-table';
+
+/** Le poste ne reprend pas le jour du téléphone : il ouvre sa semaine à aujourd'hui. */
+const isPhone = (): boolean => phoneMedia()?.matches === true;
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -133,6 +141,7 @@ type ForecastView = 'matrix' | 'dossier' | 'tranches';
     FoldButtonComponent,
     FoldButtonIconComponent,
     FoldCalloutComponent,
+    FoldDateComponent,
     FoldEmptyStateComponent,
     FoldInlineConfirmComponent,
     FoldLoadingStateComponent,
@@ -235,7 +244,14 @@ export class PrevisionnelPage {
   private readonly today = isoDay(new Date());
 
   /** La borne basse de la fenêtre — de l'URL si elle en porte une, sinon aujourd'hui. */
-  protected readonly from = signal(this.route.snapshot.queryParamMap.get('from') ?? this.today);
+  protected readonly from = signal(
+    this.route.snapshot.queryParamMap.get('from') ??
+      (isPhone() ? rememberedDay(this.today) : null) ??
+      this.today,
+  );
+
+  /** Le jour lu sur téléphone, retenu pour la prochaine ouverture. */
+  protected readonly rememberDay = rememberDay;
 
   /** La matrice lue. Nommée `forecast` et non `view` : `view` est la lecture ouverte. */
   private readonly forecast = signal<ProductionForecastView | null>(null);
@@ -486,6 +502,24 @@ export class PrevisionnelPage {
   /** Une fenêtre en avant ou en arrière — sept jours, pas une semaine calendaire. */
   protected shift(weeks: number): void {
     this.go(shiftDay(this.from(), weeks * FORECAST_DAYS));
+  }
+
+  /** Le champ date caché que l'icône calendrier ouvre. */
+  private readonly datePicker = viewChild('datePicker', { read: ElementRef });
+
+  /** Ouvre le calendrier natif du téléphone sur le champ date caché. */
+  protected openDatePicker(): void {
+    const field: unknown = this.datePicker()?.nativeElement;
+    const input = field instanceof HTMLElement ? field.querySelector('input') : null;
+    input?.showPicker();
+  }
+
+  /** Le jour choisi au calendrier ouvre la fenêtre qui commence ce jour-là. */
+  protected pickDate(date: string): void {
+    if (date === '') {
+      return;
+    }
+    this.go(date);
   }
 
   /** Retour à la fenêtre glissante qui commence aujourd'hui. */

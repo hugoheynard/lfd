@@ -277,3 +277,27 @@ fold-panel-host .panel-dock .panel[data-side='bottom'] {
   size: A4;
   margin: 14mm 12mm;
 }
+
+/* ── LE TÉLÉPHONE SE TIENT DEBOUT (Hugo, 2026-11-25) ────────────────────────
+   Le web ne peut pas verrouiller la rotation : Safari n'expose pas
+   `screen.orientation.lock`, et le manifeste (`portrait-primary`) n'est lu que
+   par l'app installée sur Android. Un téléphone couché — écran tactile, moins
+   de 500 px de haut — voit donc un voile qui demande de le redresser ; une
+   tablette ou un poste couché n'est pas concerné. */
+@media (orientation: landscape) and (max-height: 500px) and (pointer: coarse) {
+  body::after {
+    content: 'Tournez votre téléphone à la verticale';
+    position: fixed;
+    inset: 0;
+    z-index: 2147483647;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--fold-space-xl);
+    text-align: center;
+    font-size: var(--fold-text-lg);
+    font-weight: var(--fold-weight-bold);
+    color: var(--fold-color-text);
+    background: var(--fold-color-bg-page);
+  }
+}

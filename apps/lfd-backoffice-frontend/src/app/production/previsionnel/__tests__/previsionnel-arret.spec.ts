@@ -571,7 +571,7 @@ describe('le prévisionnel — arrêter le plan', () => {
   /**
    * Depuis le 2026-10-21 (`plan-une-seule-heure.md` §5), le plan s'arrête tout
    * seul à l'heure limite générale, et un arrêt à la main avant est refusé :
-   * le bouton du soir dit l'heure plutôt que de proposer un refus.
+   * l'écran ne propose rien avant l'heure (Hugo, 2026-11-25).
    */
   describe('le bouton du soir et l’arrêt automatique', () => {
     const HOUR = 60 * 60 * 1000;
@@ -580,16 +580,13 @@ describe('le prévisionnel — arrêter le plan', () => {
       return el.querySelector('button.pv-arrest')?.textContent?.replace(/\s+/g, ' ').trim() ?? '';
     }
 
-    it('avant l’heure limite, dit l’arrêt automatique, désactivé', async () => {
+    it('avant l’heure limite, ne montre aucun bouton d’arrêt', async () => {
       const later = new Date(Date.now() + 3 * HOUR).toISOString();
       const el = await render(
         forecast([day(dayIn(0), { closed: true }), day(dayIn(1), { closesAt: later })]),
       );
 
-      const button = el.querySelector('button.pv-arrest') as HTMLButtonElement;
-      expect(button.hasAttribute('data-auto-close-ahead')).toBe(true);
-      expect(button.disabled).toBe(true);
-      expect(arrestText(el)).toContain('Arrêt automatique');
+      expect(el.querySelector('button.pv-arrest')).toBeNull();
     });
 
     it('l’heure limite passée, propose l’arrêt à la main — sans « maintenant (avant …) »', async () => {

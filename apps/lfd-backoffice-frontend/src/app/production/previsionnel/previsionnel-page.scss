@@ -164,3 +164,37 @@ app-day-tranche-wall {
 app-dossier-du-jour {
   flex: 0 0 auto;
 }
+
+/* Le champ date n'a pas de place à l'écran : l'icône calendrier ouvre son
+   sélecteur natif. Hors du flux, mais rendu — `display: none` empêcherait
+   `showPicker()`. */
+.pv-date-picker {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+
+/* Sur téléphone, la table porte ses propres flèches, jour par jour : celles de
+   la semaine feraient deux sélecteurs de temps côte à côte. */
+@media (max-width: 640px) {
+  /* Opérationnel : le compte de la semaine et son surtitre ne servent pas à
+     qui lit un jour à la fois ; la colonne porte son propre total. */
+  /* Seulement quand la table est là : une semaine vide n'a pas de barre de
+     flèches, et la bande garde alors les siennes pour en sortir. */
+  :host:has(app-forecast-table) :is(.pv-week-step, .pv-today, .pv-said--matrix) {
+    display: none;
+  }
+
+  /* Rien à dire ni à faire dans la bande (pas d'arrêt à proposer) : elle
+     disparaît, la barre des flèches de la table suffit. */
+  :host:has(app-forecast-table)
+    .pv-masthead:has(.pv-said--matrix):not(:has(.pv-nav > :not(.pv-week-step, .pv-today))) {
+    display: none;
+  }
+
+  .pv-masthead {
+    padding-block: var(--fold-space-md) var(--fold-space-sm);
+  }
+}

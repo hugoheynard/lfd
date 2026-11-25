@@ -4,3 +4,9 @@
   flex: 0 0 auto;
   padding: var(--fold-space-sm) var(--fold-page-gutter) 0;
 }
+
+/* Rien à dire : pas de bande. Sans cette règle, la marge du haut restait seule
+   et dessinait une bande blanche sous les onglets (Hugo, 2026-11-25). */
+:host:empty {
+  display: none;
+}

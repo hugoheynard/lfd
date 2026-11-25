@@ -75,7 +75,7 @@
   -->
   <fold-page-section bleed class="pv-masthead" foldSurface="chrome">
     <div class="pv-masthead-bar">
-      <div class="pv-said">
+      <div class="pv-said" [class.pv-said--matrix]="view() === 'matrix'">
         @if (view() === 'matrix') {
           <p class="pv-eyebrow">Semaine {{ windowLabel() }}</p>
           @if (state() === 'ready') {
@@ -106,6 +106,7 @@
             foldButton
             emphasis="outline"
             size="sm"
+            class="pv-today"
             [disabled]="atToday"
             (click)="backToToday()"
           >
@@ -114,12 +115,14 @@
           <fold-button-icon
             icon="chevron-left"
             size="sm"
+            class="pv-week-step"
             tooltip="Semaine précédente"
             (clicked)="shift(-1)"
           />
           <fold-button-icon
             icon="chevron-right"
             size="sm"
+            class="pv-week-step"
             tooltip="Semaine suivante"
             (clicked)="shift(1)"
           />
@@ -140,20 +143,9 @@
           -->
           @if (state() === 'ready' && canArrest()) {
             @if (dayToArrest(); as day) {
-              @if (autoCloseAhead(); as label) {
-                <!-- Avant l'heure limite, le serveur refuse l'arrêt à la main
-                     (2026-10-21) : le bouton dit quand le plan s'arrêtera seul. -->
-                <button
-                  foldButton
-                  emphasis="solid"
-                  intent="primary"
-                  size="sm"
-                  class="pv-arrest"
-                  disabled
-                  data-auto-close-ahead
-                >
-                  {{ label }}
-                </button>
+              <!-- Avant l'heure limite, le plan s'arrête seul et le serveur refuse
+                   l'arrêt à la main : rien à proposer (Hugo, 2026-11-25). -->
+              @if (autoCloseAhead() !== null) {
               } @else if (arrestingDay() === day.date) {
                 <fold-inline-confirm
                   [open]="true"
@@ -339,7 +331,38 @@
           [rayons]="rayons()"
           [columnActions]="columnActions"
           (columnEntered)="enterDay($event)"
-        />
+          (stepBeyond)="shift($event)"
+          (focusedKey)="rememberDay($event)"
+        >
+          <!-- Sur téléphone, « Aujourd'hui » cède la place à deux icônes, dans
+               la barre des flèches : un calendrier pour choisir le jour, et le
+               retour à aujourd'hui (Hugo, 2026-11-25). -->
+          <ng-container ngProjectAs="[phoneTools]">
+            <fold-button-icon
+              icon="calendar"
+              size="sm"
+              tooltip="Choisir une date"
+              data-pick-date
+              (clicked)="openDatePicker()"
+            />
+            @if (!atToday) {
+              <fold-button-icon
+                icon="reset"
+                size="sm"
+                tooltip="Revenir à aujourd’hui"
+                data-back-to-today
+                (clicked)="backToToday()"
+              />
+            }
+            <fold-date
+              #datePicker
+              class="pv-date-picker"
+              label="Date"
+              [value]="from()"
+              (valueChange)="pickDate($event)"
+            />
+          </ng-container>
+        </app-forecast-table>
       }
     }
   }

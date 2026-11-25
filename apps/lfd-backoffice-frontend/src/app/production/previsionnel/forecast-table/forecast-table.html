@@ -15,53 +15,127 @@
        produits. Chaque colonne dit sa distance, son jour, son poids —
        la distance d'abord, c'est la vraie question. Une tranche dit son
        heure, sa charge et, le jour même, son état. -->
-  <div class="pv-row pv-row--head" foldSurface="chrome">
-    <div class="pv-cell pv-cell--label">
-      <span class="pv-col-label">Produit</span>
+  <!-- Le téléphone (Hugo, 2026-11-25) : une colonne à la fois, des flèches
+       pour passer à la voisine, et les gestes de la colonne en icônes. -->
+  @if (phone()) {
+    @if (mobile.focused(); as column) {
+      <div class="pv-phone-nav" foldSurface="chrome" data-phone-nav>
+        <fold-button-icon
+          icon="chevron-left"
+          size="sm"
+          tooltip="Précédent"
+          data-phone-previous
+          (clicked)="mobile.step(-1)"
+        />
+        <span class="pv-phone-title"
+          >{{ column.title }}{{ column.mention ? ' · ' + column.mention : '' }}</span
+        >
+        <ng-content select="[phoneTools]" />
+        @for (action of columnActions(); track action.id) {
+          <fold-button-icon
+            [icon]="action.icon"
+            size="sm"
+            [tooltip]="action.label"
+            [attr.data-column-action]="action.id"
+            (clicked)="columnEntered.emit({ action: action.id, key: column.key })"
+          />
+        }
+        <fold-button-icon
+          icon="chevron-right"
+          size="sm"
+          tooltip="Suivant"
+          data-phone-next
+          (clicked)="mobile.step(1)"
+        />
+      </div>
+    }
+  }
+
+  @if (phone()) {
+    <!-- Sur téléphone, la ligne de tête cède la place au choix du poste : le
+         jour est déjà dans la barre des flèches (Hugo, 2026-11-25). -->
+    <div class="pv-phone-group" foldSurface="chrome" data-phone-group>
+      <!-- Recréée à chaque jour : fold-listbox garde le libellé de son
+           déclencheur tant que la valeur ne change pas, et il dirait les
+           chiffres du jour d'avant (vu le 2026-11-25). -->
+      @for (day of [mobile.focused()?.key]; track day) {
+        <fold-listbox
+          size="sm"
+          ariaLabel="Poste"
+          [options]="mobile.groupOptions()"
+          [value]="mobile.pickedGroup()"
+          (selectionChange)="mobile.pickGroup($event)"
+        />
+      }
+      @if (split()) {
+        <div class="pv-row pv-phone-split-head" data-phone-split-head>
+          <span class="pv-cell pv-cell--label"></span>
+          <!-- Des icônes, pas des mots : trois colonnes de 3,5 rem n'ont pas
+               la place d'un libellé (Hugo, 2026-11-25). Le nom reste pour le
+               lecteur d'écran et l'infobulle. -->
+          <span class="pv-cell pv-split-icon" title="Total" aria-label="Total">
+            <fold-icon name="production" size="sm" />
+          </span>
+          <span class="pv-cell pv-split-icon" title="Commandes" aria-label="Commandes">
+            <fold-icon name="receipt" size="sm" />
+          </span>
+          <span class="pv-cell pv-split-icon" title="Boutiques" aria-label="Boutiques">
+            <fold-icon name="store" size="sm" />
+          </span>
+        </div>
+      }
     </div>
-    @for (column of columns(); track column.key) {
-      <div
-        class="pv-cell pv-day"
-        [class.is-peak]="column.peak"
-        [class.is-open]="!column.settled"
-        [attr.data-tone]="column.tone"
-      >
-        @if (column.overline; as overline) {
-          <span class="pv-day-offset">{{ overline }}</span>
-        }
-        <span class="pv-day-date">{{ column.title }}</span>
-        @if (column.subtitle; as subtitle) {
-          <span class="pv-day-subtitle">{{ subtitle }}</span>
-        }
-        <span class="pv-day-total">{{ column.figure }}</span>
-        @if (column.mention; as mention) {
-          <span class="pv-day-state">{{ mention }}</span>
-        }
-        @if (columnActions().length > 0) {
-          <!-- Entrer dans la colonne (Hugo, 2026-11-02) : la journée de CE
+  } @else {
+    <div class="pv-row pv-row--head" foldSurface="chrome">
+      <div class="pv-cell pv-cell--label">
+        <span class="pv-col-label">Produit</span>
+      </div>
+      @for (index of shown(); track index) {
+        @if (columns()[index]; as column) {
+          <div
+            class="pv-cell pv-day"
+            [class.is-peak]="column.peak"
+            [class.is-open]="!column.settled"
+            [attr.data-tone]="column.tone"
+          >
+            @if (column.overline; as overline) {
+              <span class="pv-day-offset">{{ overline }}</span>
+            }
+            <span class="pv-day-date">{{ column.title }}</span>
+            @if (column.subtitle; as subtitle) {
+              <span class="pv-day-subtitle">{{ subtitle }}</span>
+            }
+            <span class="pv-day-total">{{ column.figure }}</span>
+            @if (column.mention; as mention) {
+              <span class="pv-day-state">{{ mention }}</span>
+            }
+            @if (columnActions().length > 0 && !phone()) {
+              <!-- Entrer dans la colonne (Hugo, 2026-11-02) : la journée de CE
                jour, sans passer par un sélecteur de date. -->
-          <div class="pv-day-actions">
-            @for (action of columnActions(); track action.id) {
-              <button
-                foldButton
-                emphasis="soft"
-                size="sm"
-                class="pv-day-enter"
-                [icon]="action.icon"
-                [attr.data-column-action]="action.id"
-                [attr.aria-label]="action.label + ' — ' + column.title"
-                (click)="columnEntered.emit({ action: action.id, key: column.key })"
-              >
-                {{ action.label }}
-              </button>
+              <div class="pv-day-actions">
+                @for (action of columnActions(); track action.id) {
+                  <button
+                    foldButton
+                    emphasis="soft"
+                    size="sm"
+                    class="pv-day-enter"
+                    [icon]="action.icon"
+                    [attr.data-column-action]="action.id"
+                    [attr.aria-label]="action.label + ' — ' + column.title"
+                    (click)="columnEntered.emit({ action: action.id, key: column.key })"
+                  >
+                    {{ action.label }}
+                  </button>
+                }
+              </div>
             }
           </div>
         }
-      </div>
-    }
-  </div>
+      }
+    </div>
+  }
 
-  @for (rayon of rayons(); track rayon.label) {
+  @for (rayon of mobile.shownRayons(); track rayon.label) {
     <!-- La ligne de rayon est sombre, et c'est le SEUL zébrage de la
          grille : les lignes produit restent sur le papier. Deux
          systèmes de rayure se combattent.
@@ -69,31 +143,39 @@
          Elle est aussi un bouton — replier son groupe est l'issue du
          débordement, et c'est un geste de l'équipe plutôt qu'un seuil
          qui décide pour elle. -->
-    <button
-      type="button"
-      class="pv-row pv-row--rayon"
-      foldSurface="chrome"
-      [attr.aria-expanded]="!isFolded(rayon.label)"
-      (click)="toggleRayon(rayon.label)"
-    >
-      <span class="pv-cell pv-cell--label pv-rayon-name">
-        {{ rayon.label }}
-        <span class="pv-rayon-count"
-          >{{ rayon.lines.length }} réf.{{ isFolded(rayon.label) ? ' · replié' : '' }}</span
-        >
-      </span>
-      @for (column of columns(); track column.key; let index = $index) {
-        <span
-          class="pv-cell pv-rayon-sum"
-          [class.is-peak]="column.peak"
-          [attr.data-tone]="column.tone"
-        >
-          {{ rayon.quantities[index] || '' }}
+    @if (!mobile.onePicked()) {
+      <button
+        type="button"
+        class="pv-row pv-row--rayon"
+        foldSurface="chrome"
+        [attr.aria-expanded]="!isFolded(rayon.label)"
+        (click)="toggleRayon(rayon.label)"
+      >
+        <span class="pv-cell pv-cell--label pv-rayon-name">
+          {{ rayon.label }}
+          <span class="pv-rayon-count"
+            >{{ rayon.lines.length }} réf.{{ isFolded(rayon.label) ? ' · replié' : '' }}</span
+          >
         </span>
-      }
-    </button>
+        @for (index of shown(); track index) {
+          @if (columns()[index]; as column) {
+            <span
+              class="pv-cell pv-rayon-sum"
+              [class.is-peak]="column.peak"
+              [attr.data-tone]="column.tone"
+            >
+              {{ rayon.quantities[index] || '' }}
+            </span>
+          }
+        }
+        @if (split()) {
+          <span class="pv-cell pv-rayon-sum"></span>
+          <span class="pv-cell pv-rayon-sum"></span>
+        }
+      </button>
+    }
 
-    @if (!isFolded(rayon.label)) {
+    @if (mobile.onePicked() || !isFolded(rayon.label)) {
       @for (line of rayon.lines; track line.sku) {
         <!-- Une sous-catégorie, dans le rayon de sa racine : un intertitre,
              jamais un rayon à elle (2026-10-30). -->
@@ -110,44 +192,56 @@
               <fold-badge variant="warning" [content]="warning" data-forecast-warning />
             }
           </div>
-          @for (cell of line.cells; track $index; let column = $index) {
-            <!-- Un zéro est une cellule VIDE, pas un « 0 » : une
+          @for (column of shown(); track column) {
+            @if (line.cells[column]; as cell) {
+              <!-- Un zéro est une cellule VIDE, pas un « 0 » : une
                  grille de zéros se lit comme une grille pleine. -->
-            <div
-              class="pv-cell pv-qty"
-              [class.is-peak]="columns()[column]?.peak"
-              [attr.data-tone]="cellTone(cell, columns()[column])"
-            >
-              @if (cell.quantity > 0) {
-                <!-- La journée par tranche : « sorti / à sortir » toujours, et le
+              <div
+                class="pv-cell pv-qty"
+                [class.is-peak]="columns()[column]?.peak"
+                [attr.data-tone]="cellTone(cell, columns()[column])"
+              >
+                @if (cell.quantity > 0) {
+                  <!-- La journée par tranche : « sorti / à sortir » toujours, et le
                      jour même l'état écrit — la couleur ne le dit pas seule. -->
-                @if (cell.progress; as progress) {
-                  <span class="pv-qty-value">{{ progress.label }}</span>
-                  @if (progress.stateLabel; as stateLabel) {
-                    <span class="pv-progress" [attr.data-state]="progress.state">{{
-                      stateLabel
-                    }}</span>
+                  @if (cell.progress; as progress) {
+                    <span class="pv-qty-value">{{ progress.label }}</span>
+                    @if (progress.stateLabel; as stateLabel) {
+                      <span class="pv-progress" [attr.data-state]="progress.state">{{
+                        stateLabel
+                      }}</span>
+                    }
+                  } @else {
+                    <span class="pv-qty-value">{{ cell.label }}</span>
                   }
-                } @else {
-                  <span class="pv-qty-value">{{ cell.label }}</span>
-                }
-                @for (note of cell.notes ?? []; track note) {
-                  <fold-badge variant="warning" [content]="note" data-forecast-note />
-                }
-                <!-- La part des réassorts, à part des commandes (lot R3d) : déjà
+                  @for (note of cell.notes ?? []; track note) {
+                    <fold-badge variant="warning" [content]="note" data-forecast-note />
+                  }
+                  <!-- La part des réassorts, à part des commandes (lot R3d) : déjà
                      comptée dans le chiffre, jamais en plus. -->
-                @if (cell.resupply > 0) {
-                  <span class="pv-resupply" data-forecast-resupply
-                    >dont {{ cell.resupply }} réassort</span
-                  >
+                  @if (cell.resupply > 0) {
+                    <span class="pv-resupply" data-forecast-resupply
+                      >dont {{ cell.resupply }} réassort</span
+                    >
+                  }
+                  @if (cell.exceptional) {
+                    <span class="pv-exceptional" title="Bien au-delà de l’ordinaire pour ce produit"
+                      >exceptionnel</span
+                    >
+                  }
                 }
-                @if (cell.exceptional) {
-                  <span class="pv-exceptional" title="Bien au-delà de l’ordinaire pour ce produit"
-                    >exceptionnel</span
-                  >
-                }
+              </div>
+              @if (split()) {
+                <!-- Les deux parts du total, sur téléphone : commandes, puis
+                     boutiques. Vide pour zéro, comme partout dans la grille. -->
+                <div class="pv-cell pv-qty pv-qty--part" data-part="orders">
+                  {{ mobile.partLabel(line, cell, 'orders') }}
+                </div>
+                <div class="pv-cell pv-qty pv-qty--part" data-part="shops">
+                  {{ mobile.partLabel(line, cell, 'shops') }}
+                </div>
               }
-            </div>
+            }
           }
         </div>
       }
@@ -184,18 +278,28 @@
         <div class="pv-cell pv-cell--label">
           <span class="pv-col-label">{{ row.label }}</span>
         </div>
-        @for (column of columns(); track column.key) {
-          <div
-            class="pv-cell"
-            [class.pv-foot-total]="row.kind === 'total'"
-            [class.pv-foot-detail]="row.kind === 'detail'"
-            [class.pv-foot-resupplies]="row.kind === 'resupplies'"
-            [class.is-peak]="column.peak"
-            [class.is-open]="row.kind === 'total' && !column.settled"
-            [attr.data-tone]="column.tone"
-            [attr.data-foot]="row.key"
-          >
-            {{ column.foot[line] }}
+        @for (index of shown(); track index) {
+          @if (columns()[index]; as column) {
+            <div
+              class="pv-cell"
+              [class.pv-foot-total]="row.kind === 'total'"
+              [class.pv-foot-detail]="row.kind === 'detail'"
+              [class.pv-foot-resupplies]="row.kind === 'resupplies'"
+              [class.is-peak]="column.peak"
+              [class.is-open]="row.kind === 'total' && !column.settled"
+              [attr.data-tone]="column.tone"
+              [attr.data-foot]="row.key"
+            >
+              {{ mobile.footValue(column, line, row.key) }}
+            </div>
+          }
+        }
+        @if (split() && row.kind === 'total') {
+          <div class="pv-cell pv-foot-total pv-foot-part" data-foot-part="orders">
+            {{ mobile.totals().orders || '' }}
+          </div>
+          <div class="pv-cell pv-foot-total pv-foot-part" data-foot-part="shops">
+            {{ mobile.totals().shops || '' }}
           </div>
         }
       </div>

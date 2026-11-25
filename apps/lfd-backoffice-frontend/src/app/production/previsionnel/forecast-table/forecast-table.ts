@@ -2,10 +2,14 @@ import { ChangeDetectionStrategy, Component, computed, input, output, signal } f
 import {
   FoldBadgeComponent,
   FoldButtonComponent,
+  FoldButtonIconComponent,
+  FoldIconComponent,
   type FoldIconName,
+  FoldListboxComponent,
   FoldSurfaceDirective,
 } from 'fold-ng';
 
+import { ForecastPhone, type ForecastStepBeyond } from './forecast-phone';
 import type { ForecastCell, ForecastRayon } from '../previsionnel-matrix';
 import type { ForecastColumn, ForecastColumnTone, ForecastFootRow } from '../forecast-column';
 
@@ -61,7 +65,14 @@ const DENSE_ABOVE = 24;
 @Component({
   selector: 'app-forecast-table',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldBadgeComponent, FoldButtonComponent, FoldSurfaceDirective],
+  imports: [
+    FoldBadgeComponent,
+    FoldButtonComponent,
+    FoldButtonIconComponent,
+    FoldIconComponent,
+    FoldListboxComponent,
+    FoldSurfaceDirective,
+  ],
   templateUrl: './forecast-table.html',
   styleUrl: './forecast-table.scss',
 })
@@ -90,6 +101,31 @@ export class ForecastTable {
   /** Les rayons, déjà groupés et triés — la table ne range rien. */
   readonly rayons = input.required<readonly ForecastRayon[]>();
 
+  /**
+  /**
+   * Une flèche du téléphone dépasse la première ou la dernière colonne : la
+   * page déplace sa fenêtre (ou sa journée), et la table se pose sur la
+   * colonne du bord d'où l'on arrive. Sans abonné, les flèches s'arrêtent
+   * aux bords.
+   */
+  readonly stepBeyond = output<ForecastStepBeyond>();
+
+  /**
+   * La colonne montrée sur téléphone, à chaque changement — la page la retient.
+   * N'émet pas hors téléphone.
+   */
+  readonly focusedKey = output<string>();
+
+  /** La lecture au téléphone : une colonne, un groupe (`forecast-phone.ts`). */
+  protected readonly mobile = new ForecastPhone(this.columns, this.rayons, {
+    stepBeyond: (direction) => this.stepBeyond.emit(direction),
+    focused: (key) => this.focusedKey.emit(key),
+  });
+
+  protected readonly phone = this.mobile.phone;
+  protected readonly shown = this.mobile.shown;
+  protected readonly split = this.mobile.split;
+
   /** Les rayons repliés — l'issue du débordement, et un geste de l'équipe. */
   private readonly folded = signal<ReadonlySet<string>>(new Set());
 
@@ -101,8 +137,13 @@ export class ForecastTable {
   protected readonly dense = computed(() => this.references() > DENSE_ABOVE);
 
   /** `230px` pour le produit, puis des colonnes strictement égales. */
-  protected readonly template = computed(
-    () => `230px repeat(${String(this.columns().length)}, minmax(0, 1fr))`,
+  protected readonly template = computed(() =>
+    this.phone()
+      ? this.split()
+        ? // La colonne du chiffre, partagée en trois : même largeur qu'avant.
+          'minmax(0, 1fr) repeat(3, minmax(1.75rem, calc(40% / 3)))'
+        : 'minmax(0, 1fr) minmax(5.5rem, 40%)'
+      : `230px repeat(${String(this.columns().length)}, minmax(0, 1fr))`,
   );
 
   /**
@@ -110,8 +151,8 @@ export class ForecastTable {
    * plus quand les colonnes sont nombreuses — une journée à douze tranches ne
    * s'écrase pas, elle défile à l'horizontale.
    */
-  protected readonly rowMin = computed(
-    () => `max(60rem, calc(230px + ${String(this.columns().length)} * 6rem))`,
+  protected readonly rowMin = computed(() =>
+    this.phone() ? '0' : `max(60rem, calc(230px + ${String(this.columns().length)} * 6rem))`,
   );
 
   /**
