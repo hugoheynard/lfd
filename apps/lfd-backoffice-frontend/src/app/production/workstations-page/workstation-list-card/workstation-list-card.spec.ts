@@ -64,6 +64,7 @@ function product(
     productName: sku,
     family,
     workstationId,
+    position: null,
     ordered: false,
     variants: [],
   };

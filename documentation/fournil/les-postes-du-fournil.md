@@ -109,7 +109,7 @@ fait : `production_workstation.declared`, `.renamed`, `.reordered`,
 
 ### La pile d'un poste
 
-🟨 **En cours de bâti (décidé par Hugo le 2026-11-25).** Chaque produit a une
+🟨 **Bâti, pas encore déployé (décidé par Hugo le 2026-11-25).** Chaque produit a une
 place dans son poste : c'est l'ordre dans lequel le poste le voit, sur la
 fiche, le dossier, le prévisionnel, le récapitulatif et les réassorts — partout
 où le **mode prod** range. Le mode boutique ne change pas.
@@ -129,8 +129,11 @@ où le **mode prod** range. Le mode boutique ne change pas.
 - Les déclinaisons suivent leur produit, comme elles suivent son poste.
 - Sixième geste : `PUT :id/products/order` `{ skus }`, par intention, fait
   `production_workstation.products_reordered`.
-- À l'écran, la page Postes montre la pile de chaque poste, réordonnée par
-  glisser-déposer ou par les boutons monter / descendre (clavier).
+- À l'écran, la carte « La pile d'un poste » de la page Postes
+  (`workstations-page/workstation-stack-card/`) : on choisit le poste, sa pile
+  se réordonne par glisser-déposer (appui long au toucher) ou par les boutons
+  monter / descendre, annoncés au lecteur d'écran. Chaque déplacement envoie
+  toute la pile ; un refus remet la pile d'avant et la relit.
 
 ### Le produit d'une ligne
 

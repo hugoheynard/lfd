@@ -13,6 +13,7 @@ import { WorkstationsService } from '../workstations.service';
 import { ProductionGroupingCard } from './production-grouping-card/production-grouping-card';
 import { WorkstationListCard } from './workstation-list-card/workstation-list-card';
 import { WorkstationProductsCard } from './workstation-products-card/workstation-products-card';
+import { WorkstationStackCard } from './workstation-stack-card/workstation-stack-card';
 
 /** La valeur de `?filtre=` qui ouvre la liste sur les produits sans poste. */
 export const UNPLACED_FILTER = 'a-ranger';
@@ -39,6 +40,7 @@ type LoadState = 'loading' | 'error' | 'ready';
     ProductionGroupingCard,
     WorkstationListCard,
     WorkstationProductsCard,
+    WorkstationStackCard,
   ],
   templateUrl: './workstations-page.html',
   styleUrl: './workstations-page.scss',

@@ -55,6 +55,17 @@ export class WorkstationsService {
     await firstValueFrom(this.http.put(`${WORKSTATIONS}/order`, { ids }, intentOptions(intentKey)));
   }
 
+  /** La pile d'un poste : exactement ses produits, du haut vers le bas. */
+  async reorderProducts(id: string, skus: readonly string[], intentKey: string): Promise<void> {
+    await firstValueFrom(
+      this.http.put(
+        `${WORKSTATIONS}/${encodeURIComponent(id)}/products/order`,
+        { skus },
+        intentOptions(intentKey),
+      ),
+    );
+  }
+
   /** Le niveau de suivi propre au poste ; `null` : il suit le fournil. */
   async setTrackingLevel(
     id: string,

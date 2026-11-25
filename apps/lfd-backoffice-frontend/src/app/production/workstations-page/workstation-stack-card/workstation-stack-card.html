@@ -1,0 +1,86 @@
+<fold-card data-workstation-stack>
+  <fold-element-title
+    cardHeader
+    variant="title"
+    title="La pile d’un poste"
+    subtitle="L’ordre dans lequel le poste voit ses produits en mode prod. Un produit qui arrive au poste se range en bas."
+  />
+
+  <div class="body">
+    @if (workstations().length === 0) {
+      <fold-empty-state title="Aucun poste" subtitle="Ajoutez un poste pour régler sa pile.">
+        <fold-icon empty-icon name="croissant" size="lg" />
+      </fold-empty-state>
+    } @else {
+      <fold-listbox
+        class="picker"
+        size="sm"
+        label="Poste"
+        [options]="options()"
+        [value]="selected()"
+        (valueChange)="select($event)"
+        data-stack-station
+      />
+
+      @if (refusal(); as message) {
+        <fold-callout variant="alert" announce data-stack-refusal>{{ message }}</fold-callout>
+      }
+
+      @if (stack().length === 0) {
+        <fold-empty-state
+          title="Aucun produit à ce poste"
+          subtitle="Placez des produits à ce poste dans la liste des produits."
+        >
+          <fold-icon empty-icon name="croissant" size="lg" />
+        </fold-empty-state>
+      } @else {
+        <ol
+          class="stack"
+          cdkDropList
+          [cdkDropListDisabled]="!canWrite() || busy()"
+          (cdkDropListDropped)="dropped($event)"
+          aria-label="Pile du poste, du haut vers le bas"
+          data-stack
+        >
+          @for (
+            product of stack();
+            track product.productSku;
+            let index = $index;
+            let first = $first;
+            let last = $last
+          ) {
+            <li
+              class="item"
+              cdkDrag
+              [cdkDragStartDelay]="dragDelay"
+              [attr.data-stack-item]="product.productSku"
+            >
+              <span class="rank">{{ index + 1 }}</span>
+              <span class="name">{{ nameOf(product) }}</span>
+              @if (canWrite()) {
+                <fold-button-icon
+                  icon="chevron-up"
+                  size="sm"
+                  [tooltip]="'Monter « ' + nameOf(product) + ' »'"
+                  [disabled]="busy() || first"
+                  (clicked)="move(index, -1)"
+                  data-stack-up
+                />
+                <fold-button-icon
+                  icon="chevron-down"
+                  size="sm"
+                  [tooltip]="'Descendre « ' + nameOf(product) + ' »'"
+                  [disabled]="busy() || last"
+                  (clicked)="move(index, 1)"
+                  data-stack-down
+                />
+              }
+            </li>
+          }
+        </ol>
+      }
+    }
+
+    <p class="sr-only" aria-live="polite" data-stack-announce>{{ announcement() }}</p>
+  </div>
+</fold-card>

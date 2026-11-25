@@ -1,0 +1,65 @@
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.picker {
+  max-inline-size: 20rem;
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+/* Une ligne par produit : son rang, son nom, puis les boutons du clavier. */
+.item {
+  display: flex;
+  gap: var(--fold-space-sm);
+  align-items: center;
+  padding: var(--fold-space-xs) var(--fold-space-sm);
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-sm);
+  background: var(--fold-color-surface);
+  cursor: grab;
+}
+
+.rank {
+  min-inline-size: 2ch;
+  color: var(--fold-color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.name {
+  flex: 1;
+}
+
+.cdk-drag-preview {
+  opacity: 0.6;
+}
+
+.cdk-drag-animating,
+.stack.cdk-drop-list-dragging .item {
+  transition: transform 0.2s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cdk-drag-animating,
+  .stack.cdk-drop-list-dragging .item {
+    transition: none;
+  }
+}
+
+.sr-only {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

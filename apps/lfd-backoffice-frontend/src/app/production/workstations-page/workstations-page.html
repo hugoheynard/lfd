@@ -29,6 +29,12 @@
             [canWrite]="canWrite()"
             (changed)="load()"
           />
+          <app-workstation-stack-card
+            [workstations]="page.workstations"
+            [products]="page.products"
+            [canWrite]="canWrite()"
+            (changed)="load()"
+          />
           <app-workstation-products-card
             [products]="page.products"
             [offCatalog]="page.offCatalog"

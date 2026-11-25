@@ -30,6 +30,7 @@ function product(
     productName: sku,
     family,
     workstationId: null,
+    position: null,
     ordered: false,
     variants: [],
     ...over,
