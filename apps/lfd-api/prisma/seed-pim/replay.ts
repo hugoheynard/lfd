@@ -8,7 +8,7 @@ import { SaveVariantAllergensCommand } from "../../src/pim/catalogue/product/reg
 import { SaveVariantNutritionCommand } from "../../src/pim/catalogue/product/regulatory/save-variant-nutrition.js";
 import { DeclareProductReadyCommand } from "../../src/pim/catalogue/product/readiness/declare-product-ready.js";
 import { ActivateProductCommand } from "../../src/pim/catalogue/product/lifecycle/activate-product.js";
-import { ProductNotActivatableError } from "../../src/pim/catalogue/product/domain/errors/product-errors.js";
+import { ProductNotActivatableError } from "../../src/pim/catalogue/product/domain/errors/product-status-errors.js";
 import { SetProductVatCommand } from "../../src/pim/catalogue/product/sale/set-product-vat.js";
 import { UpdateProductEditorialCommand } from "../../src/pim/catalogue/product/media/update-product-editorial.js";
 import { UpdateVariantPricingCommand } from "../../src/pim/catalogue/product/sale/update-variant-pricing.js";
