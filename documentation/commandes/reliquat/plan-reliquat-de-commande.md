@@ -314,7 +314,7 @@ offeredDelivery: true, replayed: <le rejeu>, windowRequester: null }` —
 - **Les préparations** ne prennent aujourd'hui ni politique ni rejeu
   (`staff-order-preparation.ts:66` ; pour B6, `counter-particular-order-preparation.ts:51`
   et `offered-particular-order-preparation.ts:48`, cette dernière appelant
-  `draft` avec `PLACEMENT_POLICY` par défaut, l. 184). Chacune gagne un
+  `draft` l. 48, donc avec `PLACEMENT_POLICY`, défaut de `OrderDrafting.draft` à `order-drafting.service.ts:184`). Chacune gagne un
   paramètre `policy`, et leurs appelants (une estimation et une passation
   chacune) passent `PLACEMENT_POLICY` comme aujourd'hui.
 - **Une seule arithmétique** : `POST admin/backorders/:id/quote` passe par
@@ -347,7 +347,7 @@ DEFAULT false` (même migration que la table du reliquat), posée par
   figée comme le lieu de règlement (déclencheur qui refuse de la modifier
   après la passation, précédent `orders_settlement_venue_frozen` de
   `commande-particulier-reglee-en-boutique.md` § 4.3). La base refuse
-  l'incohérence : `CHECK (NOT delivery_offered OR delivery_fee_cents = 0)`
+  l'incohérence : `CHECK (NOT delivery_offered OR (delivery_fee_cents = 0 AND COALESCE(delivery_fee_ttc_cents, 0) = 0))` — le TTC d'une commande `exact_ht` compris, comme le précédent `orders_free_delivery_waives_fee` (migration `20261120120000`)
   (`delivery_fee_cents`, `orders.prisma:346`). La **révision** relit
   `order.deliveryOffered` et le passe à `PricingRequest.offeredDelivery`, à
   côté de `frozenDeliveryFee` (`order-revising.service.ts:315`) : dans une
@@ -357,11 +357,35 @@ DEFAULT false` (même migration que la table du reliquat), posée par
   retrait porte le drapeau, et une révision vers une livraison a le port
   offert. Test e2e : transformée en retrait, révisée vers une livraison en
   zone à frais, port nul.
-- **Le déclencheur** laisse passer l'INSERT et refuse l'UPDATE, comme
+- **Le déclencheur** laisse passer l'INSERT et refuse un **changement** de
+  valeur (`IS DISTINCT FROM`, sans quoi chaque `save()` qui réécrit toutes
+  les colonnes échouerait), comme
   `orders_settlement_venue_frozen`. La colonne entre dans `orders.prisma`
   dans le même lot (`schema-drift`). L'écrivain de la révision
   (`prisma-order-revision.repository.ts`) ne l'écrit pas : à vérifier au bâti.
-- **L'ordre dans `priceBasket`** : le CHECK `delivery_fee_cents = 0` dépend
+- **Qui relit le drapeau** : toute recomposition d'une commande existante
+  passe par `OrderRevising` — la révision (`revise-order.handler.ts:95`),
+  la hausse carte (`propose-card-increase.handler.ts:167`,
+  `apply-card-increase.handler.ts:102`) et les deux devis
+  (`quote-order-revision.handler.ts:45`, `quote-order-change-request.handler.ts:47`,
+  par `revising.quote`). Un seul `composition.load` y existe
+  (`order-revising.service.ts:299-315`) : B3 charge `delivery_offered` dans
+  `RevisableOrder` (`revision/infrastructure/revisable-order.row.ts`) et le
+  passe là. Le devis et la révision lisent donc la même chose ; un e2e
+  compare le devis de révision et la révision d'une commande issue d'un
+  reliquat passée en livraison.
+- **Une promotion « livraison offerte » dès 0 €** gagne l'égalité des seuils
+  contre la route (`free-delivery-candidates.ts:88-99`, « la promotion avant
+  la route ») : le port reste nul, mais la livraison offerte figée est
+  attribuée à la promotion (`free_delivery_promotion_id`), et l'export et le
+  journal la comptent à son crédit. **Assumé** : le client n'y perd rien ;
+  un test l'épingle pour que ce ne soit pas une surprise.
+- **Les écrans** qui montrent la progression vers le franco (récapitulatif de
+  la boutique, écran de révision) n'ont pas été ouverts : avec un seuil figé
+  à 0, ils doivent dire « Livraison offerte », pas « encore 0 € ». À vérifier
+  au bâti de B3, spec de composant à l'appui.
+- **L'ordre dans `priceBasket`** (tient déjà par construction,
+  `basket-terms.ts:104-118` : un franco jugé met le frais à 0, `vitruve`) : le CHECK dépend
   de `judgedFreeDelivery` ; une promotion de frais (`deliveryFeePromotions`)
   appliquée après le franco ne doit pas rendre un frais non nul. Un unitaire
   de `priceBasket` (seuil 0 + promotion de frais) le tient — sans quoi une
@@ -590,11 +614,11 @@ un bon de fidélité (déjà refusés à la décision, `termsRefusalOf`).
 
 ### 9. Lots
 
-| Lot | Contenu                              | Tests                                              |
-| --- | ------------------------------------ | -------------------------------------------------- |
-| B1  | migration, agrégat, dépôt            | unitaires de l'agrégat, e2e des CHECK              |
-| B2  | naissance dans la décision           | unitaires, e2e managers et comptoir                |
-| B3  | transformer, rejeu du prix d'origine | unitaires du rejeu, e2e prix et idempotence        |
-| B4  | abandonner, liste, écrans            | e2e, specs des composants                          |
-| B5  | démontage du second envoi            | inventaire et `vitruve` d'abord                    |
-| B6  | particuliers : boutique, offerte     | e2e `shop_till`, offerte, TTC, carte puis boutique |
+| Lot | Contenu                              | Tests                                                                      |
+| --- | ------------------------------------ | -------------------------------------------------------------------------- |
+| B1  | migration, agrégat, dépôt            | unitaires de l'agrégat, e2e des CHECK                                      |
+| B2  | naissance dans la décision           | unitaires, e2e managers et comptoir                                        |
+| B3  | transformer, rejeu du prix d'origine | unitaires du rejeu, e2e prix et idempotence                                |
+| B4  | abandonner, liste, écrans            | e2e, specs des composants                                                  |
+| B5  | démontage du second envoi            | inventaire et `vitruve` d'abord                                            |
+| B6  | particuliers : boutique, offerte     | e2e `shop_till`, offerte, TTC, carte puis boutique, estimation = passation |
