@@ -29,6 +29,8 @@ import { DecideOrderShortfallHandler } from "../decide-order-shortfall.handler.j
 import { ShortfallDeparture } from "../../services/shortfall-departure.js";
 import { RecordingDeliveryNoteFollowing } from "./delivery-note-following-double.js";
 import { RecordingDurable } from "./durable-doubles.js";
+import { backorderOpeningScene } from "../../../backorder/application/__tests__/backorder-doubles.js";
+import type { BackorderOrigin } from "../../../backorder/domain/ports/backorder-origin.reader.js";
 
 // Instants comparés entre eux, jamais à l'horloge.
 const NOW = new Date(5_000);
@@ -150,8 +152,19 @@ function locked(
   };
 }
 
-function scene(subject: LockedShortfallSubject | null, refusal: BusinessError | null = null) {
+const ORIGIN: BackorderOrigin = {
+  companyId: "co_1",
+  buyerUserId: "u_1",
+  lines: [{ sku: "CRO", quantity: 12, saleUnit: "piece" }],
+};
+
+function scene(
+  subject: LockedShortfallSubject | null,
+  refusal: BusinessError | null = null,
+  origin: BackorderOrigin = ORIGIN,
+) {
   const trace: Trace = [];
+  const backorder = backorderOpeningScene(origin, trace);
   const decisions = new FixedSubjects(trace, subject);
   const shortfalls = new RecordingShortfalls(trace);
   const desk = new RecordingDesk(trace, refusal);
@@ -165,9 +178,10 @@ function scene(subject: LockedShortfallSubject | null, refusal: BusinessError | 
     durable,
     new FixedIdGenerator("dec"),
     new FixedClock(NOW),
+    backorder.opening,
   );
   const handler = new DecideOrderShortfallHandler(decisions, departure, new DirectUnitOfWork());
-  return { trace, decisions, shortfalls, desk, notes, durable, handler };
+  return { trace, decisions, shortfalls, desk, notes, durable, handler, backorder };
 }
 
 const COMMAND = new DecideOrderShortfallCommand("ord_1", "staff_1", "abandoned", 1);
@@ -180,7 +194,13 @@ describe("DecideOrderShortfallHandler — « Décider du départ » (E6b)", () =
 
     // Le signal avant la décision : depuis LB, la décision désigne sa ligne
     // (clé étrangère vers `order_shortfall`).
-    expect(trace).toEqual(["lock-order", "authorize-sheet", "save-signal", "save-decision"]);
+    expect(trace).toEqual([
+      "lock-order",
+      "authorize-sheet",
+      "save-signal",
+      "save-decision",
+      "save-backorder",
+    ]);
     expect(desk.authorized).toEqual([
       { orderId: "ord_1", rank: 1, departing: [{ sku: "CRO", quantity: 9 }], by: "staff_1" },
     ]);
@@ -267,19 +287,93 @@ describe("DecideOrderShortfallHandler — « Décider du départ » (E6b)", () =
    * commande est prête ; la fiche, le BL, le fait et la clé sont ceux de SON rang.
    */
   it("décide le manque d'un reliquat à son rang : fiche, BL, fait et clé de ce rang", async () => {
-    const { decisions, desk, notes, durable, handler } = scene(
+    const { decisions, desk, notes, durable, handler, backorder } = scene(
       locked("account", [{ sku: "CRO", due: 3, packed: 1 }], { rank: 2, status: "ready" }),
     );
 
     await handler.execute(new DecideOrderShortfallCommand("ord_1", "staff_1", "abandoned", 2));
 
     expect(decisions.asked).toEqual([2]);
+    expect(backorder.backorders.saved).toEqual([]);
     expect(decisions.saved[0]).toMatchObject({ rank: 2, departing: [{ sku: "CRO", quantity: 1 }] });
     expect(desk.authorized[0]).toMatchObject({ orderId: "ord_1", rank: 2 });
     expect(notes.calls).toEqual(["follow-decision:ord_1:r2"]);
     expect(durable.facts[0]).toMatchObject({
       key: "order.shortfall_decided:ord_1:r2",
       payload: { rank: 2 },
+    });
+  });
+
+  describe("le reliquat naît de la décision (plan du reliquat de commande, B2)", () => {
+    it("au rang 1, ce qui n'est pas parti devient un reliquat, APRÈS la décision", async () => {
+      const { trace, backorder, handler } = scene(locked());
+
+      await handler.execute(COMMAND);
+
+      expect(trace.indexOf("save-backorder")).toBeGreaterThan(trace.indexOf("save-decision"));
+      expect(backorder.backorders.saved[0]).toMatchObject({
+        originOrderId: "ord_1",
+        companyId: "co_1",
+        createdAt: NOW,
+        lines: [{ sku: "CRO", quantity: 3, saleUnit: "piece" }],
+      });
+      expect(backorder.journal.types()).toEqual(["backorder.opened"]);
+    });
+
+    it("tout est parti : aucun reliquat", async () => {
+      const { backorder, handler } = scene(
+        locked("account", [{ sku: "CRO", due: 12, packed: 12 }]),
+      );
+
+      await handler.execute(COMMAND);
+
+      expect(backorder.backorders.saved).toEqual([]);
+      expect(backorder.journal.facts).toEqual([]);
+    });
+
+    it("un refus du colisage n'ouvre aucun reliquat", async () => {
+      const { backorder, handler } = scene(locked(), new BoxClosedError());
+
+      await expect(handler.execute(COMMAND)).rejects.toThrow(BoxClosedError);
+      expect(backorder.backorders.saved).toEqual([]);
+    });
+
+    // Un rang > 1 est le second envoi : il ne relit même pas l'origine.
+    it("à un rang > 1, l'origine n'est pas lue", async () => {
+      const { backorder, handler } = scene(
+        locked("account", [{ sku: "CRO", due: 3, packed: 1 }], { rank: 2, status: "ready" }),
+      );
+
+      await handler.execute(new DecideOrderShortfallCommand("ord_1", "staff_1", "abandoned", 2));
+
+      expect(backorder.origins.asked).toEqual([]);
+      expect(backorder.journal.facts).toEqual([]);
+    });
+
+    // Sans reliquat (particulier), la décision va quand même jusqu'au bout.
+    it("sans société, le BL suit et le fait part quand même", async () => {
+      const { notes, durable, handler } = scene(locked(), null, { ...ORIGIN, companyId: null });
+
+      await handler.execute(COMMAND);
+
+      expect(notes.calls).toEqual(["follow-decision:ord_1"]);
+      expect(durable.facts).toHaveLength(1);
+    });
+
+    it("un refus du colisage ne lit pas l'origine", async () => {
+      const { backorder, handler } = scene(locked(), new BoxClosedError());
+
+      await expect(handler.execute(COMMAND)).rejects.toBeInstanceOf(BoxClosedError);
+      expect(backorder.origins.asked).toEqual([]);
+      expect(backorder.journal.facts).toEqual([]);
+    });
+
+    it("une commande sans société n'ouvre aucun reliquat (jusqu'à B6)", async () => {
+      const { backorder, handler } = scene(locked(), null, { ...ORIGIN, companyId: null });
+
+      await handler.execute(COMMAND);
+
+      expect(backorder.backorders.saved).toEqual([]);
     });
   });
 });

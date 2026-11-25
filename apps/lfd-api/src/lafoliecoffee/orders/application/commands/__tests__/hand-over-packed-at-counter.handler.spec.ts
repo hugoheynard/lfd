@@ -34,6 +34,7 @@ import { HandOverPackedAtCounterCommand } from "../hand-over-packed-at-counter.c
 import { HandOverPackedAtCounterHandler } from "../hand-over-packed-at-counter.handler.js";
 import { RecordingDeliveryNoteFollowing } from "./delivery-note-following-double.js";
 import { RecordingDurable } from "./durable-doubles.js";
+import { backorderOpeningScene } from "../../../backorder/application/__tests__/backorder-doubles.js";
 
 // Instants comparés entre eux, jamais à l'horloge.
 const POSTE_SIGNAL_AT = new Date(1_000);
@@ -183,6 +184,17 @@ function scene(options: {
   readonly bin?: readonly ShortfallReportedLine[] | BusinessError;
 }) {
   const trace: Trace = [];
+  const backorder = backorderOpeningScene(
+    {
+      companyId: "co_1",
+      buyerUserId: "u_1",
+      lines: [
+        { sku: "CRO", quantity: 12, saleUnit: "piece" },
+        { sku: "PAC", quantity: 6, saleUnit: "piece" },
+      ],
+    },
+    trace,
+  );
   const orders = new LockedOrders(
     trace,
     options.subject === undefined ? locked() : options.subject,
@@ -200,6 +212,7 @@ function scene(options: {
     durable,
     new FixedIdGenerator("dec"),
     clock,
+    backorder.opening,
   );
   const counter = new Counter(trace, options.counterRefusal ?? null);
   const handler = new HandOverPackedAtCounterHandler(
@@ -210,14 +223,14 @@ function scene(options: {
     clock,
     new DirectUnitOfWork(),
   );
-  return { trace, orders, signals, sheets, notes, durable, handler, counter };
+  return { trace, orders, signals, sheets, notes, durable, handler, counter, backorder };
 }
 
 const COMMAND = new HandOverPackedAtCounterCommand("ord_1", "staff_9", "abandoned");
 
 describe("HandOverPackedAtCounterHandler — le départ incomplet décidé au comptoir", () => {
   it("verrouille, juge, fige le bac, écrit signal puis décision, réécrit le BL, puis remet", async () => {
-    const { trace, handler, signals, orders, sheets, notes, durable } = scene({});
+    const { trace, handler, signals, orders, sheets, notes, durable, backorder } = scene({});
 
     await handler.execute(COMMAND);
 
@@ -228,8 +241,14 @@ describe("HandOverPackedAtCounterHandler — le départ incomplet décidé au co
       "authorize-sheet",
       "save-signal",
       "save-decision",
+      "save-backorder",
       "hand-over:staff_9",
     ]);
+    expect(backorder.backorders.saved[0]).toMatchObject({
+      originOrderId: "ord_1",
+      lines: [{ sku: "CRO", quantity: 3, saleUnit: "piece" }],
+    });
+    expect(backorder.journal.types()).toEqual(["backorder.opened"]);
     expect(signals.saved[0]).toMatchObject({ reportedAt: NOW, lines: IN_BIN, decidedAt: NOW });
     expect(orders.saved[0]).toMatchObject({
       decidedBy: "staff_9",

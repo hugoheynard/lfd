@@ -5,6 +5,7 @@ import { ShortfallDesk } from "../../../../packing/channels/commerce/index.js";
 import { DurablePublisher } from "../../../../platform/outbox/durable-publisher.js";
 import { IdGenerator } from "../../../../platform/id/id-generator.js";
 import { Clock } from "../../../../platform/time/clock.js";
+import { BackorderOpening } from "../../backorder/application/backorder-opening.js";
 import type { OrderShortfall } from "../../domain/entities/order-shortfall.js";
 import { ShortfallDecision } from "../../domain/entities/shortfall-decision.js";
 import { OrderShortfallDecidedEvent } from "../../domain/events/order-shortfall-decided.event.js";
@@ -14,6 +15,9 @@ import {
   ShortfallDecisionRepository,
   type LockedShortfallSubject,
 } from "../../domain/ports/shortfall-decision.repository.js";
+
+/** L'envoi d'origine : le seul dont la décision fait naître un reliquat. */
+const FIRST_SHIPMENT_RANK = 1;
 
 /** Qui décide, et du sort du reste. */
 export interface ShortfallDepartureAct {
@@ -35,7 +39,8 @@ export interface ShortfallDepartureAct {
  * l'agrégat juge et résout le signal, le colisage autorise sous le verrou de
  * la fiche (`ShortfallDesk`), le signal puis la décision s'écrivent, le BL
  * de l'envoi se réécrit (`followDecision`), et `order.shortfall_decided`
- * part dans la boîte d'envoi.
+ * part dans la boîte d'envoi. Au rang 1, ce qui n'est pas parti devient un
+ * reliquat (`BackorderOpening`), dans la même unité de travail.
  */
 @Injectable()
 export class ShortfallDeparture {
@@ -47,6 +52,7 @@ export class ShortfallDeparture {
     private readonly durable: DurablePublisher,
     private readonly ids: IdGenerator,
     private readonly clock: Clock,
+    private readonly backorders: BackorderOpening,
   ) {}
 
   /**
@@ -58,9 +64,10 @@ export class ShortfallDeparture {
     act: ShortfallDepartureAct,
   ): Promise<void> {
     const { orderId, rank, reference } = locked.subject;
+    const decidedAt = this.clock.now();
     const decision = ShortfallDecision.decide(locked.subject, shortfall, {
       id: this.ids.next(),
-      decidedAt: this.clock.now(),
+      decidedAt,
       decidedBy: act.staffUserId,
       remainder: act.remainder,
     });
@@ -68,6 +75,16 @@ export class ShortfallDeparture {
     // Le signal d'abord : la décision désigne sa ligne (clé étrangère).
     await this.shortfalls.save(shortfall);
     await this.decisions.save(decision);
+    // Le reliquat ne naît que de la décision du premier envoi (plan du
+    // reliquat de commande, § 3) : un rang > 1 est le second envoi mort.
+    if (rank === FIRST_SHIPMENT_RANK) {
+      await this.backorders.openAfter({
+        originOrderId: orderId,
+        originReference: reference,
+        departing: decision.departing,
+        decidedAt,
+      });
+    }
     await this.deliveryNotes.followDecision(orderId, rank);
     await this.durable.publish(
       new OrderShortfallDecidedEvent(
