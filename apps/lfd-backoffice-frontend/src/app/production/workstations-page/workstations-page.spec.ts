@@ -122,6 +122,23 @@ describe('la page Postes', () => {
     ).not.toBeNull();
   });
 
+  it('une carte de poste ouvre l’onglet Produits ou la pile, sur ce poste', async () => {
+    const { fixture } = await mount(async () => PAGE, ['production_workstations:write']);
+    const page = fixture.componentInstance;
+    const el = fixture.nativeElement as HTMLElement;
+
+    el.querySelector<HTMLButtonElement>('[data-workstation="ws_p"] [data-open-products]')?.click();
+    fixture.detectChanges();
+    expect(page['tab']()).toBe('products');
+    expect(page['focusedStation']()).toBe('ws_p');
+    expect(el.querySelector('[data-workstation-products]')).not.toBeNull();
+
+    page['openOn']('stack', 'ws_p');
+    fixture.detectChanges();
+    expect(page['tab']()).toBe('stack');
+    expect(el.querySelector('[data-workstation-list]')).toBeNull();
+  });
+
   it('ne lit pas le réglage sans son droit', async () => {
     const { fixture, settingsReads } = await mount(
       () => Promise.resolve(PAGE),

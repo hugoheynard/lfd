@@ -103,6 +103,8 @@ export class WorkstationProductsCard {
   readonly canWrite = input.required<boolean>();
   /** Le filtre « à ranger » demandé par l'adresse (l'alerte du Prod manager). */
   readonly unplacedFirst = input(false);
+  /** Le poste dont on veut les produits (« Produits du poste ») ; `null` : tous. */
+  readonly station = input<string | null>(null);
   /** Après un placement accepté : le parent relit. */
   readonly changed = output();
 
@@ -110,7 +112,12 @@ export class WorkstationProductsCard {
   protected readonly skuOf = (product: WorkstationProductView): string => product.productSku;
   protected readonly nothingFound = { title: 'Aucun produit ne correspond.' };
 
-  protected readonly onlyUnplaced = linkedSignal(() => this.unplacedFirst());
+  /** Le filtre par poste, reparti de la demande de la page ; effaçable dans la carte. */
+  protected readonly stationFilter = linkedSignal(() => this.station());
+  /** « À ranger » n'a pas de sens avec un poste choisi : arriver sur un poste l'éteint. */
+  protected readonly onlyUnplaced = linkedSignal(
+    () => this.unplacedFirst() && this.station() === null,
+  );
   protected readonly onlyOrdered = signal(false);
   protected readonly shelf = signal<string | null>(null);
   protected readonly query = signal('');
@@ -148,10 +155,12 @@ export class WorkstationProductsCard {
 
   protected readonly visibleProducts = computed(() => {
     const shelf = this.shelf();
+    const station = this.stationFilter();
     return searchProducts(
       this.products().filter(
         (product) =>
           (!this.onlyUnplaced() || product.workstationId === null) &&
+          (station === null || product.workstationId === station) &&
           (!this.onlyOrdered() || product.ordered) &&
           (shelf === null || rootOf(product)?.id === shelf),
       ),

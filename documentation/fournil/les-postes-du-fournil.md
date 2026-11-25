@@ -226,11 +226,17 @@ relecture.
 - `production/workstations-page/` : quatre onglets horizontaux, fixés en
   haut au défilement (`fold-tabs`, faits pour le mobile) :
   - **Postes** — chacun une carte qu'on glisse par sa poignée à six points, ou
-    qu'on déplace au clavier par les flèches sur celle-ci ; le renommage et
-    l'archivage restent dans la carte ; « Ajouter un poste », en tête de la
-    carte, ouvre un popover (le nom, puis Ajouter ou Annuler) ;
-  - **Pile de poste** — la pile du poste choisi ;
-  - **Produits** — un `fold-listbox` par ligne et les filtres ; le compte des
+    qu'on déplace au clavier par les flèches sur celle-ci. La carte dit
+    « Poste n » en surtitre, le nom, le nombre de produits rangés ; à droite,
+    un crayon (le renommage, en popover) et une corbeille (l'archivage,
+    confirmé), absents sans le droit d'écrire. Dessous, « Produits du poste »
+    et « Organiser les lignes » ouvrent les onglets Produits et Pile sur ce
+    poste. « Ajouter un poste », en tête de la carte, ouvre un popover (le
+    nom, puis Ajouter ou Annuler) ;
+  - **Pile de poste** — la pile du poste choisi, ou de celui qu'une carte de
+    Postes a demandé ; le choix reste réglable ;
+  - **Produits** — un `fold-listbox` par ligne et les filtres, dont le poste
+    (effaçable ; arriver sur un poste éteint « à ranger ») ; le compte des
     produits « à ranger » en badge, et `?filtre=a-ranger` ouvre cet onglet ;
   - **Général fournil** — le rangement (le mode, et un lien vers la
     simulation).

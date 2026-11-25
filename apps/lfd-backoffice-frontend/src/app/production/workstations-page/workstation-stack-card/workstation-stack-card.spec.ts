@@ -99,6 +99,17 @@ describe('la pile d’un poste', () => {
     expect(skusOf(fixture)).toEqual(['T']);
   });
 
+  it('montre le poste que la page demande, et reste réglable dans la carte', async () => {
+    const { fixture } = await mount();
+    fixture.componentRef.setInput('focus', 'ws_b');
+    fixture.detectChanges();
+    expect(skusOf(fixture)).toEqual(['T']);
+
+    fixture.componentInstance['select']('ws_a');
+    fixture.detectChanges();
+    expect(skusOf(fixture)).toEqual(['A', 'B', 'X', 'Y']);
+  });
+
   it('descendre envoie toute la pile, par intention, annonce la place, puis fait relire', async () => {
     const { fixture, changes } = await mount();
     await fixture.componentInstance['move'](0, 1);

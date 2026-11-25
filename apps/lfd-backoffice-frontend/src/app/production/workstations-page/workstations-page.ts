@@ -82,6 +82,8 @@ export class WorkstationsPage {
   protected readonly tab = linkedSignal<WorkstationsTab>(() =>
     this.unplacedFirst() ? 'products' : 'stations',
   );
+  /** Le poste qu'une carte de « Postes » a demandé de montrer dans un autre onglet. */
+  protected readonly focusedStation = signal<string | null>(null);
   protected readonly tabs = computed<readonly FoldTabItem<WorkstationsTab>[]>(() =>
     TAB_KEYS.map((key) => {
       const unplaced = key === 'products' ? (this.view()?.unplacedCount ?? 0) : 0;
@@ -108,6 +110,12 @@ export class WorkstationsPage {
       this.view()?.products.filter((product) => product.ordered && product.workstationId === null)
         .length ?? 0,
   );
+
+  /** « Produits du poste » / « Organiser les lignes » : l'onglet, ouvert sur ce poste. */
+  protected openOn(tab: 'products' | 'stack', stationId: string): void {
+    this.focusedStation.set(stationId);
+    this.tab.set(tab);
+  }
 
   constructor() {
     void this.load();

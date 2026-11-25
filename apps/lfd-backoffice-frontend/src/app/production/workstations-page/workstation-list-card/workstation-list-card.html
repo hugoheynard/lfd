@@ -98,48 +98,113 @@
           >
             <fold-card padding="sm" radius="sm">
               <div class="station">
-                @if (canWrite()) {
-                  <app-reorder-handle
-                    class="handle"
-                    cdkDragHandle
-                    [itemName]="station.name"
-                    (step)="move(index, $event)"
-                  />
-                  <fold-input
-                    class="name"
-                    size="sm"
-                    [label]="'Poste ' + (index + 1)"
-                    [value]="draftOf(station.id)"
-                    (valueChange)="setDraft(station.id, $event)"
-                  />
+                <div class="head">
+                  @if (canWrite()) {
+                    <app-reorder-handle
+                      class="handle"
+                      cdkDragHandle
+                      [itemName]="station.name"
+                      (step)="move(index, $event)"
+                    />
+                  }
+                  <div class="title">
+                    <span class="rank" data-station-rank>Poste {{ index + 1 }}</span>
+                    <span class="name" [title]="station.name" data-station-name>{{
+                      station.name
+                    }}</span>
+                    <span class="count" data-station-count>{{ countLabel(station.id) }}</span>
+                  </div>
+                  @if (canWrite()) {
+                    <fold-popover
+                      placement="bottom-end"
+                      [open]="renaming() === station.id"
+                      (openChange)="setRenaming(station, $event)"
+                    >
+                      <fold-button-icon
+                        foldPopoverTrigger
+                        icon="edit"
+                        size="lg"
+                        [tooltip]="'Renommer « ' + station.name + ' »'"
+                        [disabled]="busy()"
+                        data-rename-open
+                      />
+                      <form
+                        foldPopoverPanel
+                        class="add"
+                        role="dialog"
+                        [attr.aria-labelledby]="'rename-title-' + station.id"
+                        (submit)="$event.preventDefault(); rename(station)"
+                      >
+                        <header class="add-head">
+                          <h3 [id]="'rename-title-' + station.id" class="add-title">
+                            Renommer le poste
+                          </h3>
+                        </header>
+                        <fold-input
+                          label="Nom du poste"
+                          required
+                          [value]="renameDraft()"
+                          (valueChange)="renameDraft.set($event)"
+                          data-rename-name
+                        />
+                        <div class="add-actions">
+                          <button
+                            foldButton
+                            type="button"
+                            size="sm"
+                            emphasis="soft"
+                            (click)="setRenaming(station, false)"
+                          >
+                            Annuler
+                          </button>
+                          <button
+                            foldButton
+                            type="submit"
+                            size="sm"
+                            intent="primary"
+                            [disabled]="busy() || !renamable(station)"
+                            data-rename
+                          >
+                            Enregistrer
+                          </button>
+                        </div>
+                      </form>
+                    </fold-popover>
+                    <fold-inline-confirm
+                      intent="danger"
+                      [message]="'Archiver « ' + station.name + ' » ?'"
+                      (confirmed)="archive(station)"
+                    >
+                      <fold-button-icon
+                        icon="bin"
+                        size="lg"
+                        [tooltip]="'Archiver « ' + station.name + ' »'"
+                        [disabled]="busy()"
+                        data-archive
+                      />
+                    </fold-inline-confirm>
+                  }
+                </div>
+                <div class="links">
                   <button
                     foldButton
                     size="sm"
-                    emphasis="soft"
-                    [disabled]="busy() || !renamable(station)"
-                    (click)="rename(station)"
-                    data-rename
+                    emphasis="outline"
+                    (click)="openProducts.emit(station.id)"
+                    data-open-products
                   >
-                    Renommer
+                    Produits du poste
                   </button>
-                  <fold-inline-confirm
-                    intent="danger"
-                    [message]="'Archiver « ' + station.name + ' » ?'"
-                    (confirmed)="archive(station)"
+                  <button
+                    foldButton
+                    size="sm"
+                    emphasis="outline"
+                    (click)="openStack.emit(station.id)"
+                    data-open-stack
                   >
-                    <button
-                      foldButton
-                      size="sm"
-                      emphasis="soft"
-                      intent="danger"
-                      [disabled]="busy()"
-                    >
-                      Archiver
-                    </button>
-                  </fold-inline-confirm>
-                } @else {
-                  <span class="name">{{ index + 1 }}. {{ station.name }}</span>
-                }
+                    Organiser les lignes
+                  </button>
+                </div>
               </div>
             </fold-card>
             <div class="placeholder" *cdkDragPlaceholder></div>

@@ -121,7 +121,8 @@ describe('les postes du fournil', () => {
     const [boulangerie] = STATIONS;
     if (boulangerie === undefined) throw new Error('fixture');
 
-    card['setDraft']('ws_a', 'Pain');
+    card.setRenaming(boulangerie, true);
+    card.renameDraft.set('Pain');
     api.refuseNext = new HttpErrorResponse({
       status: 503,
       error: { message: 'Serveur occupé.' },
@@ -133,6 +134,49 @@ describe('les postes du fournil', () => {
     const [first, second] = api.calls;
     expect(second?.detail).toEqual({ id: 'ws_a', name: 'Pain' });
     expect(second?.key).toBe(first?.key);
+  });
+
+  it('le crayon ouvre le renommage prérempli ; « Enregistrer » renomme, puis le referme', async () => {
+    const { fixture, changes } = await mount(STATIONS, []);
+    const card = fixture.componentInstance;
+    const el = fixture.nativeElement as HTMLElement;
+    const [boulangerie] = STATIONS;
+    if (boulangerie === undefined) throw new Error('fixture');
+
+    expect(
+      el.querySelector('[data-workstation="ws_a"] [data-station-rank]')?.textContent,
+    ).toContain('Poste 1');
+    expect(
+      el.querySelector('[data-workstation="ws_a"] [data-station-name]')?.textContent,
+    ).toContain('Boulangerie');
+    expect(el.querySelector('[data-workstation="ws_a"] [data-rename-open]')).not.toBeNull();
+    expect(
+      el.querySelector('[data-workstation="ws_a"] [data-station-count]')?.textContent,
+    ).toContain('Aucun produit');
+
+    card.setRenaming(boulangerie, true);
+    expect(card.renameDraft()).toBe('Boulangerie');
+    card.renameDraft.set(' Pain ');
+    await card.rename(boulangerie);
+
+    expect(api.calls).toEqual([
+      { gesture: 'rename', detail: { id: 'ws_a', name: 'Pain' }, key: expect.any(String) },
+    ]);
+    expect(card.renaming()).toBeNull();
+    expect(changes).toHaveLength(1);
+  });
+
+  it('« Produits du poste » et « Organiser les lignes » nomment le poste à la page', async () => {
+    const { fixture } = await mount(STATIONS, []);
+    const el = fixture.nativeElement as HTMLElement;
+    const opened: string[] = [];
+    fixture.componentInstance.openProducts.subscribe((id) => opened.push(`products:${id}`));
+    fixture.componentInstance.openStack.subscribe((id) => opened.push(`stack:${id}`));
+
+    el.querySelector<HTMLButtonElement>('[data-workstation="ws_b"] [data-open-products]')?.click();
+    el.querySelector<HTMLButtonElement>('[data-workstation="ws_a"] [data-open-stack]')?.click();
+
+    expect(opened).toEqual(['products:ws_b', 'stack:ws_a']);
   });
 
   it('flèche haut sur la poignée monte un poste : l’ordre complet part, et la place s’annonce', async () => {
@@ -221,6 +265,10 @@ describe('les postes du fournil', () => {
 
     expect(el.querySelector('[data-from-shelves]')).toBeNull();
     expect(el.querySelector('[data-declare]')).toBeNull();
+    expect(el.querySelector('[data-rename-open]')).toBeNull();
+    expect(el.querySelector('[data-archive]')).toBeNull();
+    expect(el.querySelector('[data-open-products]')).not.toBeNull();
+    expect(el.querySelector('[data-open-stack]')).not.toBeNull();
     expect(el.textContent).toContain('Pâtisserie');
   });
 });

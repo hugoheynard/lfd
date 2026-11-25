@@ -23,6 +23,17 @@
       <fold-listbox
         class="filter"
         size="sm"
+        label="Poste"
+        placeholder="Tous les postes"
+        allowClear
+        [options]="targetOptions()"
+        [value]="stationFilter()"
+        (valueChange)="stationFilter.set($event)"
+        data-filter-station
+      />
+      <fold-listbox
+        class="filter"
+        size="sm"
         label="Rayon"
         placeholder="Tous les rayons"
         allowClear

@@ -55,6 +55,7 @@ let api: FakeWorkstations;
 
 async function mount(
   unplacedFirst = false,
+  station: string | null = null,
 ): Promise<{ fixture: ComponentFixture<WorkstationProductsCard>; card: WorkstationProductsCard }> {
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
@@ -68,6 +69,7 @@ async function mount(
   fixture.componentRef.setInput('unplacedCount', 3);
   fixture.componentRef.setInput('canWrite', true);
   fixture.componentRef.setInput('unplacedFirst', unplacedFirst);
+  fixture.componentRef.setInput('station', station);
   fixture.detectChanges();
   await fixture.whenStable();
   return { fixture, card: fixture.componentInstance };
@@ -86,6 +88,15 @@ describe('les produits et leur poste', () => {
 
     expect(skus(card)).toEqual(['PAC', 'QUI', 'TAR']);
     expect(card['unplacedLabel']()).toBe('À ranger (3)');
+  });
+
+  it('ouvert sur un poste, ne montre que ses produits — même arrivé pour ranger — et le filtre s’efface', async () => {
+    const { card } = await mount(true, 'ws_p');
+
+    expect(skus(card)).toEqual(['CRO']);
+    expect(card['onlyUnplaced']()).toBe(false);
+    card['stationFilter'].set(null);
+    expect(skus(card)).toEqual(['CRO', 'PAC', 'QUI', 'TAR']);
   });
 
   it('filtre par rayon racine et par « commandé ces jours-ci »', async () => {

@@ -84,13 +84,28 @@ export class WorkstationStackCard {
   readonly canWrite = input.required<boolean>();
   /** Après un geste (accepté ou refusé) : le parent relit. */
   readonly changed = output();
+  /** Le poste à montrer, choisi ailleurs (« Organiser les lignes ») ; le choix reste réglable ici. */
+  readonly focus = input<string | null>(null);
 
   protected readonly dragDelay = DRAG_START_DELAY;
 
-  /** Le poste choisi ; reste le même à la relecture tant qu'il existe, sinon le premier. */
-  protected readonly selected = linkedSignal<readonly WorkstationView[], string | null>({
-    source: () => this.workstations(),
-    computation: (stations, previous) => {
+  /**
+   * Le poste choisi : celui que la page demande quand cette demande change ;
+   * sinon le même à la relecture tant qu'il existe, sinon le premier.
+   */
+  protected readonly selected = linkedSignal<
+    { readonly stations: readonly WorkstationView[]; readonly focus: string | null },
+    string | null
+  >({
+    source: () => ({ stations: this.workstations(), focus: this.focus() }),
+    computation: ({ stations, focus }, previous) => {
+      if (
+        focus !== null &&
+        focus !== previous?.source.focus &&
+        stations.some((s) => s.id === focus)
+      ) {
+        return focus;
+      }
       const kept = previous?.value;
       if (kept != null && stations.some((station) => station.id === kept)) {
         return kept;

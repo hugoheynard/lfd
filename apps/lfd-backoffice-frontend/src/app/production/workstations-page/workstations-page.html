@@ -35,6 +35,8 @@
                 [products]="page.products"
                 [canWrite]="canWrite()"
                 (changed)="load()"
+                (openProducts)="openOn('products', $event)"
+                (openStack)="openOn('stack', $event)"
               />
             }
             @case ('stack') {
@@ -42,6 +44,7 @@
                 [workstations]="page.workstations"
                 [products]="page.products"
                 [canWrite]="canWrite()"
+                [focus]="focusedStation()"
                 (changed)="load()"
               />
             }
@@ -53,6 +56,7 @@
                 [unplacedCount]="page.unplacedCount"
                 [canWrite]="canWrite()"
                 [unplacedFirst]="unplacedFirst()"
+                [station]="focusedStation()"
                 (changed)="load()"
               />
             }

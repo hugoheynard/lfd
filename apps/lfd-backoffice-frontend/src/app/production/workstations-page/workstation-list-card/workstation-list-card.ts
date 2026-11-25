@@ -19,6 +19,7 @@ import type { WorkstationProductView, WorkstationView } from '@lfd/contracts';
 import { httpErrorMessage } from '@lfd/endpoints';
 import {
   FoldButtonComponent,
+  FoldButtonIconComponent,
   FoldCalloutComponent,
   FoldCardComponent,
   FoldElementTitleComponent,
@@ -64,6 +65,7 @@ interface ShelfSeed {
     CdkDragPlaceholder,
     CdkDropList,
     FoldButtonComponent,
+    FoldButtonIconComponent,
     FoldCalloutComponent,
     FoldCardComponent,
     FoldElementTitleComponent,
@@ -87,6 +89,10 @@ export class WorkstationListCard {
   readonly canWrite = input.required<boolean>();
   /** Après un geste accepté : le parent relit. */
   readonly changed = output();
+  /** « Produits du poste » : la page ouvre l'onglet des produits sur ce poste. */
+  readonly openProducts = output<string>();
+  /** « Organiser les lignes » : la page ouvre la pile de ce poste. */
+  readonly openStack = output<string>();
 
   protected readonly dragDelay = DRAG_START_DELAY;
 
@@ -98,10 +104,26 @@ export class WorkstationListCard {
   protected readonly newName = signal('');
   /** Le popover « Ajouter un poste » — public pour que la spec joue le geste sans le DOM projeté. */
   readonly addOpen = signal(false);
-  /** Les noms en cours d'édition, par poste ; repartent des noms servis à chaque relecture. */
-  protected readonly drafts = linkedSignal<ReadonlyMap<string, string>>(
-    () => new Map(this.workstations().map((station) => [station.id, station.name])),
-  );
+  /** Le nombre de produits rangés à chaque poste — la ligne secondaire de sa carte. */
+  protected readonly counts = computed<ReadonlyMap<string, number>>(() => {
+    const counts = new Map<string, number>();
+    for (const product of this.products()) {
+      if (product.workstationId !== null) {
+        counts.set(product.workstationId, (counts.get(product.workstationId) ?? 0) + 1);
+      }
+    }
+    return counts;
+  });
+
+  protected countLabel(id: string): string {
+    const count = this.counts().get(id) ?? 0;
+    return count === 0 ? 'Aucun produit' : count === 1 ? '1 produit' : `${String(count)} produits`;
+  }
+
+  /** Le poste dont le popover « Renommer » est ouvert — public pour que la spec joue le geste. */
+  readonly renaming = signal<string | null>(null);
+  /** Le nom en cours d'édition dans ce popover, reparti du nom servi à l'ouverture. */
+  readonly renameDraft = signal('');
   protected readonly busy = signal(false);
   protected readonly refusal = signal<string | null>(null);
 
@@ -125,16 +147,18 @@ export class WorkstationListCard {
       .map(([id, seed]) => ({ id, name: seed.name, unplacedSkus: seed.skus }));
   });
 
-  protected draftOf(id: string): string {
-    return this.drafts().get(id) ?? '';
-  }
-
-  protected setDraft(id: string, name: string): void {
-    this.drafts.update((drafts) => new Map([...drafts, [id, name]]));
+  /** Ouvre (ou ferme) le popover « Renommer » d'un poste, prérempli de son nom. */
+  setRenaming(station: WorkstationView, open: boolean): void {
+    if (open) {
+      this.renameDraft.set(station.name);
+      this.renaming.set(station.id);
+    } else if (this.renaming() === station.id) {
+      this.renaming.set(null);
+    }
   }
 
   protected renamable(station: WorkstationView): boolean {
-    const draft = this.draftOf(station.id).trim();
+    const draft = this.renameDraft().trim();
     return draft !== '' && draft !== station.name;
   }
 
@@ -147,15 +171,14 @@ export class WorkstationListCard {
     }, 'Le poste n’a pas pu être ajouté.');
   }
 
-  protected rename(station: WorkstationView): Promise<void> {
-    const name = this.draftOf(station.id).trim();
-    return this.run(
-      () =>
-        shownOnce(this.intents, `rename:${station.id}:${name}`, (key) =>
-          this.api.rename(station.id, name, key),
-        ),
-      'Le poste n’a pas pu être renommé.',
-    );
+  rename(station: WorkstationView): Promise<void> {
+    const name = this.renameDraft().trim();
+    return this.run(async () => {
+      await shownOnce(this.intents, `rename:${station.id}:${name}`, (key) =>
+        this.api.rename(station.id, name, key),
+      );
+      this.renaming.set(null);
+    }, 'Le poste n’a pas pu être renommé.');
   }
 
   /** Monte (`-1`) ou descend (`+1`) un poste d'un rang — les flèches sur sa poignée. */

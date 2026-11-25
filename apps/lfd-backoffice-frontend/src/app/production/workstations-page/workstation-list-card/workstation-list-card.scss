@@ -4,30 +4,79 @@
   gap: var(--fold-space-sm);
 }
 
-/* Un poste par ligne : son nom à gauche, ses gestes à droite, alignés au bas du champ. */
+/* Un poste : son nom et ses gestes en tête, puis les liens vers les autres onglets. */
 .station {
   display: flex;
-  flex-wrap: wrap;
-  gap: var(--fold-space-sm);
-  align-items: flex-end;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+/* La ligne du haut ne passe jamais à la ligne : le nom se tronque, les icônes restent. */
+.head {
+  display: flex;
+  gap: var(--fold-space-xs);
+  align-items: center;
+  min-inline-size: 0;
+}
+
+/* Le titre prend la place qui reste ; le nom se tronque, le compte dessous. */
+.title {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-inline-size: 0;
 }
 
 .name {
-  flex: 1 1 14rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--fold-text-md);
+  font-weight: var(--fold-weight-semibold);
+}
+
+/* Le surtitre « POSTE 2 » : la majuscule n'est qu'un rendu, le DOM dit « Poste 2 ». */
+.rank {
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-xs);
+  font-weight: var(--fold-weight-semibold);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: var(--fold-tracking-caps);
+  text-transform: uppercase;
+}
+
+.count {
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+}
+
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-xs);
 }
 
 .stations {
   display: flex;
   flex-direction: column;
-  gap: var(--fold-space-xs);
+  gap: var(--fold-space-sm);
   padding: 0;
   margin: 0;
   list-style: none;
 }
 
-/* La poignée se cale au milieu du champ, pas au bas des gestes. */
+/* Une carte qu'on peut glisser se signale au survol, sans promettre de clic. */
+.item > fold-card {
+  transition: box-shadow var(--fold-motion-fast);
+}
+
+.item:hover > fold-card {
+  box-shadow: var(--fold-shadow-sm);
+}
+
+/* La poignée ne se sélectionne pas : un appui long la saisit. */
 .handle {
-  align-self: center;
+  flex: none;
   user-select: none;
   -webkit-user-select: none;
   -webkit-touch-callout: none;

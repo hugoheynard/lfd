@@ -55,7 +55,15 @@
                     <app-reorder-handle [itemName]="nameOf(product)" (step)="move(index, $event)" />
                   }
                   <span class="rank">{{ index + 1 }}</span>
-                  <span class="name">{{ nameOf(product) }}</span>
+                  <span class="text">
+                    <span class="name">{{ nameOf(product) }}</span>
+                    <span class="meta" data-stack-meta>
+                      {{ product.productSku }}
+                      @if (product.family; as family) {
+                        · {{ family.name }}
+                      }
+                    </span>
+                  </span>
                 </div>
               </fold-card>
               <div class="placeholder" *cdkDragPlaceholder></div>
