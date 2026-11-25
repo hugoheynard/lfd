@@ -1,6 +1,6 @@
 # Plan — les événements et leurs fiches de fonction
 
-> 🟦 **Bâti en local, non commité** (2026-11-24) : E0–E3, archivage, remplacement. Reste : la partie « Fiches de fonction » dans la fenêtre d'impression du front. Demande de Hugo du même jour.
+> ✅ **En production depuis le 2026-11-25** (`7ae983e40`) : E0–E3, archivage, remplacement, partie « Fiches de fonction » de la fenêtre d'impression. Mise en service : accorder la ressource `events` à l'écran `/admin/staff-roles`. Demande de Hugo du même jour.
 > Hors des quatre cas de `vitruve` (ni argent, ni migration de données, ni
 > frontière de sécurité déplacée, ni runbook) : les affirmations sur
 > l'existant ci-dessous ont été ouvertes le 2026-11-24.
