@@ -110,8 +110,12 @@ section qui déborde dit « (1/2) », « (2/2) » dans son titre. L'ordre :
    le carré de la couleur de la commande (`OrderPrintColorsReader`).
    **Suivie de son BL de transport en deux exemplaires** (non chiffré ; décidé par Hugo le 2026-11-25), dessiné par le commerce par
    le port `PlannedDeliveryNotesReader` (`production/channels/commerce/`) : le
-   premier BL non annulé, lu au tirage. Une commande sans BL n'en a pas ; un
-   commerce muet laisse partir le dossier sans BL, **non archivé**.
+   premier BL non annulé, lu au tirage. **Le dossier arrêté porte toujours
+   tous les BL** (décidé par Hugo le 2026-11-25) : une commande dont le BL
+   n'est pas encore né rend le tirage **non archivé** (journalisé « incomplet »),
+   et le tirage suivant le refait ; un commerce muet laisse partir le dossier
+   sans BL, non archivé de même. Une impression **provisoire** n'en porte
+   aucun : les BL naissent à l'arrêt.
 4. **Une fiche par réassort** — « Fiche de réassort ».
 5. **Les fiches de fonction** des événements du jour
    ([`../evenements/plan-evenements.md`](../evenements/plan-evenements.md)) —
@@ -223,6 +227,15 @@ Reste : décider la durée de conservation de `printed_by` au registre RGPD
 refusé (la fenêtre dit aujourd'hui un message générique).
 
 ### L'envoi par e-mail
+
+**Il attend tous les BL.** L'arrêt est écouté par deux abonnés sans ordre
+entre eux : le commerce fait naître les BL (`OnProductionDayClosed`), le
+fournil envoie le dossier (`SendDossierOnDayClosed`, et
+`SendDossierOnDayRetaken` au retirage). Avant d'envoyer, le fournil demande au
+commerce les commandes encore sans BL (`DeliveryNotesBornReader`,
+`production/channels/commerce/`) ; s'il en reste, il lève
+`DossierAwaitsDeliveryNotesError` et la livraison du fait est rejouée
+(30 s, puis le double, dix essais). Sans destinataire, rien n'attend.
 
 **Production › Réglages › Dossier du jour par e-mail** tient la liste des
 destinataires (`production_settings`) :

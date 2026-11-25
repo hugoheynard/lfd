@@ -61,7 +61,7 @@ function papersWith(sheets: EventFunctionSheetsReader): ProductionPaperRenderer 
     new OrderSheetPaper(new NoAdminOrigin(), new FixedOrderPrintColors(), new FixedPaperLogo()),
     new FixedResupplyPrintColors(),
     new FixedPaperLogo(),
-    new FixedPlannedDeliveryNotes(),
+    FixedPlannedDeliveryNotes.forEveryOrder(),
     new InMemoryDisplaySettings().reader(),
     new FixedTrancheReading(),
     new DossierFunctionSheetsReading(sheets),

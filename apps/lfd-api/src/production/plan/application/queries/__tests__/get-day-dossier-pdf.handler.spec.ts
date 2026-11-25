@@ -99,7 +99,7 @@ class NoAdminOrigin extends AppConfig {
 function setup(
   day: ProductionDay,
   colors = new FixedOrderPrintColors(),
-  deliveryNotes = new FixedPlannedDeliveryNotes(),
+  deliveryNotes = FixedPlannedDeliveryNotes.forEveryOrder(),
   tranches = new FixedTrancheReading(),
 ): {
   handler: GetDayDossierPdfHandler;
@@ -180,7 +180,7 @@ describe("GetDayDossierPdfHandler", () => {
     const { handler, store } = setup(
       closedDay(),
       new FixedOrderPrintColors(),
-      new FixedPlannedDeliveryNotes(),
+      FixedPlannedDeliveryNotes.forEveryOrder(),
       new FixedTrancheReading(null),
     );
     const paper = await handler.execute(new GetDayDossierPdfQuery(DAY));

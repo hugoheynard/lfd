@@ -122,6 +122,7 @@ export { ResupplyPrintColorsReader } from "./resupply-print-colors.reader.js";
 // 2026-10-25) : dessiné par le commerce, posé par le fournil.
 export {
   type DeliveryNoteDrawing,
+  DeliveryNotesBornReader,
   PlannedDeliveryNotesReader,
   SpecimenDeliveryNoteReader,
 } from "./planned-delivery-notes.reader.js";

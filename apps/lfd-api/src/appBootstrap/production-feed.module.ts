@@ -5,6 +5,7 @@ import {
   ProductionPlannedDeliveryNotesReader,
   ProductionSpecimenDeliveryNoteReader,
 } from "../lafoliecoffee/delivery-notes/infrastructure/production-planned-delivery-notes.reader.js";
+import { ProductionDeliveryNotesBornReader } from "../lafoliecoffee/delivery-notes/infrastructure/production-delivery-notes-born.reader.js";
 import { DeliveryNotesModule } from "../lafoliecoffee/delivery-notes/delivery-notes.module.js";
 import { CatalogSellableArticlesReader } from "../lafoliecoffee/catalog/infrastructure/catalog-sellable-articles.reader.js";
 import { CatalogProductionArticlesReader } from "../lafoliecoffee/catalog/infrastructure/catalog-production-articles.reader.js";
@@ -28,6 +29,7 @@ import {
   CommerceDayVersionReader,
   DayOrdersReader,
   DayResuppliesReader,
+  DeliveryNotesBornReader,
   DueThresholdsReader,
   ExpectedProductionReader,
   ExpectedResuppliesReader,
@@ -126,6 +128,9 @@ import {
     // ses ports de lecture.
     { provide: PlannedDeliveryNotesReader, useExisting: ProductionPlannedDeliveryNotesReader },
     { provide: SpecimenDeliveryNoteReader, useExisting: ProductionSpecimenDeliveryNoteReader },
+    // Avant d'envoyer le dossier à l'arrêt, le fournil demande quels BL ne sont
+    // pas encore nés (décidé par Hugo le 2026-11-25 : tous les BL, toujours).
+    { provide: DeliveryNotesBornReader, useExisting: ProductionDeliveryNotesBornReader },
     // La version de la journée au commerce, gardée par chaque impression
     // provisoire du dossier : « la journée a changé depuis #N ». Un port du
     // fournil à lui (ISP), même requête que celui de la livraison.
@@ -135,6 +140,7 @@ import {
     CommerceDayVersionReader,
     DayOrdersReader,
     DayResuppliesReader,
+    DeliveryNotesBornReader,
     DueThresholdsReader,
     ExpectedProductionReader,
     ExpectedResuppliesReader,

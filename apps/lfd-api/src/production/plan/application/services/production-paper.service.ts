@@ -63,6 +63,8 @@ interface DossierInputs {
   readonly resupplyColors: Awaited<ReturnType<ResupplyPrintColorsReader["colorsOf"]>>;
   readonly logo: Awaited<ReturnType<BrandLogoSource["load"]>>;
   readonly deliveryNotes: ReadonlyMap<string, DeliveryNoteDrawing> | null;
+  /** Les commandes du papier sans BL vivant : un dossier qui en a n'est pas archivé. */
+  readonly missingDeliveryNotes: number;
   readonly showSubcategories: boolean;
   readonly tranches: Awaited<ReturnType<DossierDeadlinesReading["read"]>>;
   /** `null` : illisibles ; vide quand la partie n'est pas cochée. */
@@ -235,6 +237,9 @@ export class ProductionPaperRenderer {
     const causes = [
       inputs.grouping.shelvesKnown ? null : "rayons",
       inputs.deliveryNotes === null ? "bons de livraison" : null,
+      inputs.missingDeliveryNotes > 0
+        ? `${String(inputs.missingDeliveryNotes)} bon(s) de livraison pas encore né(s)`
+        : null,
       inputs.tranches === null ? "tranches" : null,
       inputs.grouping.workstationsKnown ? null : "postes",
       inputs.functionSheets === null ? "fiches de fonction" : null,
@@ -243,7 +248,7 @@ export class ProductionPaperRenderer {
       return true;
     }
     this.logger.warn(
-      `Dossier du ${serviceDay} : tiré sans être archivé (illisibles : ${causes.join(", ")}) — le prochain tirage le refera.`,
+      `Dossier du ${serviceDay} : tiré sans être archivé (incomplet : ${causes.join(", ")}) — le prochain tirage le refera.`,
     );
     return false;
   }
@@ -287,6 +292,10 @@ export class ProductionPaperRenderer {
       resupplyColors,
       logo,
       deliveryNotes,
+      missingDeliveryNotes:
+        deliveryNotes === null
+          ? 0
+          : orderIds.filter((orderId) => !deliveryNotes.has(orderId)).length,
       showSubcategories,
       tranches,
       functionSheets,

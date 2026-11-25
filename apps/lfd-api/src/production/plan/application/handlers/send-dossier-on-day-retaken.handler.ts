@@ -1,3 +1,5 @@
+import { DeliveryNotesBornReader } from "../../../channels/commerce/index.js";
+import { ensureDeliveryNotesBorn } from "./dossier-delivery-notes-guard.js";
 import { Injectable } from "@nestjs/common";
 
 import { AfterCommit } from "../../../../platform/database/after-commit.js";
@@ -39,6 +41,7 @@ export class SendDossierOnDayRetaken implements DurableSubscriber {
   constructor(
     private readonly days: ProductionDayRepository,
     private readonly dispatch: DossierDispatch,
+    private readonly notes: DeliveryNotesBornReader,
     private readonly afterCommit: AfterCommit,
     private readonly work: BackgroundWork,
   ) {}
@@ -50,6 +53,9 @@ export class SendDossierOnDayRetaken implements DurableSubscriber {
       return;
     }
     const prepared = await this.dispatch.prepare();
+    if (prepared.addressees.length > 0) {
+      await ensureDeliveryNotesBorn(this.notes, day);
+    }
     const occasion: DossierOccasion = { at: event.retakenAt, completed: true };
     this.afterCommit.defer(
       () =>

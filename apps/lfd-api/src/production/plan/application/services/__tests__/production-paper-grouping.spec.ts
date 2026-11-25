@@ -65,7 +65,7 @@ function renderer(
     new OrderSheetPaper(new NoAdminOrigin(), new FixedOrderPrintColors(), new FixedPaperLogo()),
     new FixedResupplyPrintColors(),
     new FixedPaperLogo(),
-    new FixedPlannedDeliveryNotes(),
+    FixedPlannedDeliveryNotes.forEveryOrder(),
     new InMemoryDisplaySettings(
       ProductionDisplaySettings.of({ showSubcategories: false, grouping }),
     ).reader(),
@@ -123,7 +123,7 @@ describe("ProductionPaperRenderer — le dossier selon le mode", () => {
     expect(shelves.asked).toHaveLength(2);
     expect(pdfPages(paper.bytes).join("")).toContain("Traiteur salé");
     expect(logs.errors).toEqual([expect.stringContaining("postes illisibles")]);
-    expect(logs.warnings).toEqual([expect.stringContaining("(illisibles : postes)")]);
+    expect(logs.warnings).toEqual([expect.stringContaining("(incomplet : postes)")]);
   });
 
   it("chaque cause d'un tirage non archivable est journalisée", async () => {
@@ -136,6 +136,35 @@ describe("ProductionPaperRenderer — le dossier selon le mode", () => {
     const paper = await papers.dossierOf(theDay());
 
     expect(paper.archivable).toBe(false);
-    expect(logs.warnings).toEqual([expect.stringContaining("(illisibles : tranches, postes)")]);
+    expect(logs.warnings).toEqual([expect.stringContaining("(incomplet : tranches, postes)")]);
+  });
+
+  /**
+   * Régression : un dossier tiré avant la naissance des BL était archivé
+   * sans eux, et resservi tel quel (dossier du 26/11/2026, ORD-20).
+   */
+  it("une commande sans BL rend le dossier non archivable, et le journalise", async () => {
+    const papers = new ProductionPaperRenderer(
+      new GroupingSourceReading(
+        new FixedProductionArticles([UNSOLD_CROISSANT]),
+        new UnreadWorkstationOfProducts(),
+      ),
+      new OrderSheetPaper(new NoAdminOrigin(), new FixedOrderPrintColors(), new FixedPaperLogo()),
+      new FixedResupplyPrintColors(),
+      new FixedPaperLogo(),
+      new FixedPlannedDeliveryNotes(new Map([["ord_1", "BL-1-1"]])),
+      new InMemoryDisplaySettings(
+        ProductionDisplaySettings.of({ showSubcategories: false, grouping: "shelf" }),
+      ).reader(),
+      new FixedTrancheReading(),
+      new DossierFunctionSheetsReading(new FixedEventFunctionSheets()),
+    );
+
+    const paper = await papers.dossierOf(theDay());
+
+    expect(paper.archivable).toBe(false);
+    expect(logs.warnings).toEqual([
+      expect.stringContaining("(incomplet : 1 bon(s) de livraison pas encore né(s))"),
+    ]);
   });
 });

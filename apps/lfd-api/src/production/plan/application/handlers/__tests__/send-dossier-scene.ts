@@ -49,7 +49,10 @@ import {
 } from "../../../../channels/commerce/__tests__/order-print-colors-doubles.js";
 import { FixedTrancheReading } from "../../__tests__/tranche-reading-doubles.js";
 import { FixedPaperLogo } from "../../../../shared/print/application/__tests__/paper-logo-doubles.js";
-import { FixedPlannedDeliveryNotes } from "../../../../channels/commerce/__tests__/planned-delivery-notes-doubles.js";
+import {
+  FixedDeliveryNotesBorn,
+  FixedPlannedDeliveryNotes,
+} from "../../../../channels/commerce/__tests__/planned-delivery-notes-doubles.js";
 import { SendDossierOnDayClosed } from "../send-dossier-on-day-closed.handler.js";
 import { SendDossierOnDayRetaken } from "../send-dossier-on-day-retaken.handler.js";
 import { GroupingSourceReading } from "../../../../workstations/index.js";
@@ -186,6 +189,8 @@ export interface SceneOptions {
   readonly days?: ProductionDayRepository;
   readonly recipients?: DossierRecipientsReader;
   readonly store?: ProductionDocumentStore;
+  /** Les BL nés ou non, vus par la garde de l'envoi ; par défaut, tous nés. */
+  readonly born?: FixedDeliveryNotesBorn;
 }
 
 export function setup(
@@ -205,7 +210,7 @@ export function setup(
       new OrderSheetPaper(new NoAdminOrigin(), new FixedOrderPrintColors(), new FixedPaperLogo()),
       new FixedResupplyPrintColors(),
       new FixedPaperLogo(),
-      new FixedPlannedDeliveryNotes(),
+      FixedPlannedDeliveryNotes.forEveryOrder(),
       new InMemoryDisplaySettings().reader(),
       new FixedTrancheReading(),
       new DossierFunctionSheetsReading(new FixedEventFunctionSheets()),
@@ -218,11 +223,12 @@ export function setup(
     new FixedClock(NOW),
   );
   const days = options.days ?? new OneDay(day);
+  const born = options.born ?? new FixedDeliveryNotesBorn();
   const work = new BackgroundWork();
   const afterCommit = new AmbientAfterCommit();
   const handlers = {
-    closed: new SendDossierOnDayClosed(days, dispatch, afterCommit, work),
-    retaken: new SendDossierOnDayRetaken(days, dispatch, afterCommit, work),
+    closed: new SendDossierOnDayClosed(days, dispatch, born, afterCommit, work),
+    retaken: new SendDossierOnDayRetaken(days, dispatch, born, afterCommit, work),
   };
   return {
     mailer,

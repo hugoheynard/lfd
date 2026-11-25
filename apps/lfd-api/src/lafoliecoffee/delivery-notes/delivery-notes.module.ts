@@ -47,6 +47,7 @@ import { OnRemainderHandedOver } from "./application/handlers/on-remainder-hande
 import { RecordDeliveryNotePrintHandler } from "./application/commands/record-delivery-note-print.handler.js";
 import { PrismaDeliveryNoteReprintsReader } from "./infrastructure/prisma-delivery-note-reprints.reader.js";
 import { OrderBillingCloser } from "./application/services/order-billing-closer.js";
+import { ProductionDeliveryNotesBornReader } from "./infrastructure/production-delivery-notes-born.reader.js";
 import {
   ProductionPlannedDeliveryNotesReader,
   ProductionSpecimenDeliveryNoteReader,
@@ -109,12 +110,14 @@ import {
     DeliveryNoteFollower,
     OrderBillingCloser,
     PrismaDeliveryNoteReprintsReader,
+    ProductionDeliveryNotesBornReader,
     ProductionPlannedDeliveryNotesReader,
     ProductionSpecimenDeliveryNoteReader,
   ],
   exports: [
     DeliveryNoteFollower,
     PrismaDeliveryNoteReprintsReader,
+    ProductionDeliveryNotesBornReader,
     ProductionPlannedDeliveryNotesReader,
     ProductionSpecimenDeliveryNoteReader,
   ],

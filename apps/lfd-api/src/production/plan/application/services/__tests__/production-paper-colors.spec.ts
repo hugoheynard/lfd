@@ -55,7 +55,7 @@ class NoAdminOrigin extends AppConfig {
 function papersWith(
   colors: FixedOrderPrintColors,
   resupplyColors = new FixedResupplyPrintColors(),
-  deliveryNotes = new FixedPlannedDeliveryNotes(),
+  deliveryNotes = FixedPlannedDeliveryNotes.forEveryOrder(),
 ): { papers: ProductionPaperRenderer } {
   return {
     papers: new ProductionPaperRenderer(
