@@ -201,6 +201,10 @@ describe("la vitrine publique", () => {
       // l'article se vend, `public` ou `both` sur cette route — « aussi pour
       // les professionnels ». Rien que le rayon pro ne montre déjà.
       "audience",
+      // ⚠️ **Un élargissement ASSUMÉ** (décidé par Hugo le 2026-11-25) : la
+      // description longue de la fiche, texte éditorial que la page produit
+      // affiche sous la ligne courte. Rien qui ne soit déjà publié sur la fiche.
+      "description",
       "image",
       "isFeatured",
       // ⚠️ **Un élargissement ASSUMÉ** (2026-10-29, Hugo — M2 de
