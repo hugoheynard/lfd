@@ -48,6 +48,7 @@ describe("le réassort sans commande", () => {
       receptions: [],
       unordered: { lines: [], updatedAt: null, updatedBy: null },
       stock: [],
+      immediateWithoutStock: false,
     });
     expect(receipts.all()).toEqual([]);
   });
