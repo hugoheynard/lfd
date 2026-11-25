@@ -44,8 +44,16 @@ const WORKSTATIONS = [
   { id: "ws_pastry", name: "Pâtisserie" },
 ];
 
-function placement(byProduct: readonly (readonly [string, string])[]): GroupingPlacement {
-  return { workstations: WORKSTATIONS, articles: ARTICLES, byProduct: new Map(byProduct) };
+function placement(
+  byProduct: readonly (readonly [string, string])[],
+  positions: readonly (readonly [string, number])[] = [],
+): GroupingPlacement {
+  return {
+    workstations: WORKSTATIONS,
+    articles: ARTICLES,
+    byProduct: new Map(byProduct),
+    positions: new Map(positions),
+  };
 }
 
 const LINES = ["TAR-1", "QUI-8", "BAG-1", "XXX-1", "QUI-6", "CAK-1"];
@@ -168,6 +176,7 @@ describe("groupingOf — mode prod", () => {
         { id: "ws_s", name: "Traiteur salé" },
       ],
       articles: ARTICLES,
+      positions: new Map(),
       byProduct: new Map([
         ["BAG", "ws_b"],
         ["TAR", "ws_p"],
@@ -220,5 +229,39 @@ describe("groupingOf — toute ligne ressort une fois", () => {
         [...group.lines].sort(),
       );
     }
+  });
+});
+
+describe("groupingOf — la pile d'un poste", () => {
+  const ALL_PASTRY: readonly (readonly [string, string])[] = [
+    ["QUI", "ws_pastry"],
+    ["TAR", "ws_pastry"],
+    ["CAK", "ws_pastry"],
+  ];
+
+  function pastryLines(positions: readonly (readonly [string, number])[]): readonly string[] {
+    const groups = groupingOf(["TAR-1", "QUI-8", "CAK-1", "QUI-6"], sku, {
+      mode: "workstation",
+      placement: placement(ALL_PASTRY, positions),
+    });
+    return groups.find((group) => group.key === "ws:ws_pastry")?.lines ?? [];
+  }
+
+  it("range les lignes d'un poste par la place de leur produit, chaque déclinaison sous le sien", () => {
+    expect(
+      pastryLines([
+        ["CAK", 0],
+        ["QUI", 1],
+        ["TAR", 2],
+      ]),
+    ).toEqual(["CAK-1", "QUI-8", "QUI-6", "TAR-1"]);
+  });
+
+  it("met les produits sans place après, dans l'ordre reçu", () => {
+    expect(pastryLines([["CAK", 0]])).toEqual(["CAK-1", "TAR-1", "QUI-8", "QUI-6"]);
+  });
+
+  it("sans aucune place, garde l'ordre reçu", () => {
+    expect(pastryLines([])).toEqual(["TAR-1", "QUI-8", "CAK-1", "QUI-6"]);
   });
 });

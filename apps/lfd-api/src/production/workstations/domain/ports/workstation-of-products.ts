@@ -14,6 +14,11 @@ export interface WorkstationsOfProducts {
    * jamais présent à `null` : il reste « à ranger ».
    */
   readonly byProduct: ReadonlyMap<string, string>;
+  /**
+   * Référence produit → sa place dans la pile de son poste. Un produit sans
+   * place réglée est **absent** : il vient après ceux qui en ont une.
+   */
+  readonly positions: ReadonlyMap<string, number>;
 }
 
 /**

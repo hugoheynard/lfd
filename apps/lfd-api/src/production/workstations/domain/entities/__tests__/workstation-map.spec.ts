@@ -111,6 +111,7 @@ describe("WorkstationMap — la différence à écrire", () => {
         ["QUI-001", "ws-pat"],
         ["TAR-002", "ws-pat"],
       ]),
+      positions: new Map(),
     });
     map.place([QUICHE], "ws-pat");
     map.place([TART], null);
@@ -129,6 +130,7 @@ describe("WorkstationMap — la différence à écrire", () => {
         { id: "ws-tou", name: "Tourier", position: 1, archivedAt: null, trackingLevel: null },
       ],
       placements: new Map([["QUI-001", "ws-pat"]]),
+      positions: new Map(),
     });
     map.place([QUICHE], null);
     expect(map.changes().workstations.map((station) => station.id)).toEqual(["ws-pat"]);
@@ -149,6 +151,7 @@ function withTwoRehydrated(): WorkstationMap {
       { id: "ws-tou", name: "Tourier", position: 1, archivedAt: null, trackingLevel: null },
     ],
     placements: new Map(),
+    positions: new Map(),
   });
 }
 

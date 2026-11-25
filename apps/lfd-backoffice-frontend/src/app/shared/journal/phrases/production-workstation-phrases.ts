@@ -86,6 +86,21 @@ const productsPlaced: Phrase = (fact) => {
   );
 };
 
+const productsReordered: Phrase = (fact) => {
+  const skus = fact.payload['skus'];
+  const reordered = countOf(Array.isArray(skus) ? skus.length : null, 'produit', 'produits');
+  return byActor(
+    fact,
+    [
+      text('a réordonné '),
+      reordered ?? text('les produits'),
+      text(' dans la pile du poste '),
+      station(fact),
+    ],
+    ['subjectLabel', 'skus'],
+  );
+};
+
 /** Le niveau propre, ou `null` : le poste suit le fournil. */
 function ownLevel(raw: unknown): Segment | null {
   return raw === null || raw === undefined
@@ -114,5 +129,6 @@ export const PRODUCTION_WORKSTATION_PHRASES = {
   'production_workstation.reordered': reordered,
   'production_workstation.archived': archived,
   'production_workstation.products_placed': productsPlaced,
+  'production_workstation.products_reordered': productsReordered,
   'production_workstation.tracking_level_set': trackingLevelSet,
 } satisfies Partial<Record<JournalFactType, Phrase>>;

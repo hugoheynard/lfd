@@ -6,6 +6,8 @@ import {
   placeProductsPayloadSchema,
   type RenameWorkstationPayload,
   renameWorkstationPayloadSchema,
+  type ReorderWorkstationProductsPayload,
+  reorderWorkstationProductsPayloadSchema,
   type ReorderWorkstationsPayload,
   reorderWorkstationsPayloadSchema,
   type SetWorkstationTrackingLevelPayload,
@@ -23,6 +25,7 @@ import { ArchiveWorkstationCommand } from "../application/commands/archive-works
 import { DeclareWorkstationCommand } from "../application/commands/declare-workstation.command.js";
 import { PlaceProductsCommand } from "../application/commands/place-products.command.js";
 import { RenameWorkstationCommand } from "../application/commands/rename-workstation.command.js";
+import { ReorderWorkstationProductsCommand } from "../application/commands/reorder-workstation-products.command.js";
 import { ReorderWorkstationsCommand } from "../application/commands/reorder-workstations.command.js";
 import { SetWorkstationTrackingLevelCommand } from "../application/commands/set-workstation-tracking-level.command.js";
 import { ListWorkstationsQuery } from "../application/queries/list-workstations.query.js";
@@ -97,6 +100,21 @@ export class ProductionWorkstationsController {
   ): Promise<void> {
     await this.commands.execute<RenameWorkstationCommand, void>(
       new RenameWorkstationCommand(id, payload.name, staffUserId, intentKey),
+    );
+  }
+
+  /** La pile du poste : exactement ses produits, du haut vers le bas. */
+  @Put(":id/products/order")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async reorderProducts(
+    @Param("id") id: string,
+    @Body(new ZodBody(reorderWorkstationProductsPayloadSchema))
+    payload: ReorderWorkstationProductsPayload,
+    @StaffUserId() staffUserId: string,
+    @IntentKey() intentKey: string,
+  ): Promise<void> {
+    await this.commands.execute<ReorderWorkstationProductsCommand, void>(
+      new ReorderWorkstationProductsCommand(id, payload.skus, staffUserId, intentKey),
     );
   }
 

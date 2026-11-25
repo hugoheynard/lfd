@@ -41,6 +41,7 @@ interface WorkstationRow {
 interface PlacementRow {
   readonly productSku: string;
   readonly workstationId: string;
+  readonly position: number | null;
 }
 
 function toDomain(
@@ -53,6 +54,11 @@ function toDomain(
       trackingLevel: trackingLevelOrNull(row.trackingLevel),
     })),
     placements: new Map(placements.map((row) => [row.productSku, row.workstationId])),
+    positions: new Map(
+      placements.flatMap((row) =>
+        row.position === null ? [] : [[row.productSku, row.position] as const],
+      ),
+    ),
   };
   return WorkstationMap.rehydrate(state);
 }
@@ -79,7 +85,10 @@ function toPersistence(station: Workstation, stamp: WorkstationMapStamp) {
  *
  * Un produit remis « à ranger » perd sa ligne de placement : une ligne de
  * placement n'est pas un agrégat, elle dit seulement « ce produit est à ce
- * poste », et son absence est l'état « à ranger » que la table décrit. Le
+ * poste, à cette place », et son absence est l'état « à ranger » que la
+ * table décrit — la place s'en va avec elle. Réordonner réécrit les lignes
+ * dont la place change, à l'instant du geste : le numéro de la carte
+ * (`WorkstationMapVersion`) monte, et la fiche gardée se refait. Le
  * poste, lui, s'archive et ne s'efface jamais.
  */
 @Injectable()
@@ -95,7 +104,7 @@ export class PrismaWorkstationMapRepository extends WorkstationMapRepository {
         select: { id: true, name: true, position: true, archivedAt: true, trackingLevel: true },
       }),
       this.prisma.productionWorkstationProduct.findMany({
-        select: { productSku: true, workstationId: true },
+        select: { productSku: true, workstationId: true, position: true },
       }),
     ]);
     return toDomain(stations, placements);
@@ -114,10 +123,11 @@ export class PrismaWorkstationMapRepository extends WorkstationMapRepository {
         where: { productSku: { in: removed } },
       });
     }
-    for (const [productSku, workstationId] of placements) {
-      if (workstationId !== null) {
+    for (const [productSku, placement] of placements) {
+      if (placement !== null) {
         const row = {
-          workstationId,
+          workstationId: placement.workstationId,
+          position: placement.position,
           updatedAt: stamp.at,
           updatedByStaffId: stamp.staffUserId,
           updatedByName: stamp.name,

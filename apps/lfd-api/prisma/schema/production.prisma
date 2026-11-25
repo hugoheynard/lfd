@@ -912,6 +912,9 @@ model ProductionWorkstationProduct {
   productSku       String                @id @map("product_sku")
   workstationId    String                @map("workstation_id")
   workstation      ProductionWorkstation @relation(fields: [workstationId], references: [id], onDelete: Restrict)
+  /// Sa place dans la pile du poste, à partir de 0. `null` : jamais réglée —
+  /// le produit vient après ceux qui en ont une, dans l'ordre reçu.
+  position         Int?
   updatedAt        DateTime              @map("updated_at") @db.Timestamptz(6)
   /// Qui l'a placé : l'id de fiche survit à tout, le nom est un instantané.
   updatedByStaffId String                @map("updated_by_staff_id")

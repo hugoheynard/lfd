@@ -6,7 +6,11 @@ import {
   authorsKnownAs,
   FixedStaffAuthorDirectory,
 } from "../../../../staff/directory/domain/__tests__/fixed-staff-author-directory.js";
-import { type Workstation, WorkstationMap } from "../../domain/entities/workstation-map.js";
+import {
+  type ProductPlacement,
+  type Workstation,
+  WorkstationMap,
+} from "../../domain/entities/workstation-map.js";
 import {
   WorkstationMapRepository,
   type WorkstationMapStamp,
@@ -16,7 +20,7 @@ import { WorkstationMapGesture } from "../services/workstation-map-gesture.servi
 /** Ce que le double a reçu à chaque `save` : la différence, et l'auteur. */
 export interface SavedChanges {
   readonly workstations: readonly Workstation[];
-  readonly placements: ReadonlyMap<string, string | null>;
+  readonly placements: ReadonlyMap<string, ProductPlacement | null>;
   readonly stamp: WorkstationMapStamp;
 }
 
@@ -28,22 +32,32 @@ export interface SavedChanges {
 export class InMemoryWorkstationMaps extends WorkstationMapRepository {
   readonly saved: SavedChanges[] = [];
   private readonly stations = new Map<string, Workstation>();
-  private readonly placements = new Map<string, string>();
+  private readonly placements = new Map<string, ProductPlacement>();
 
   constructor(
     stations: readonly Workstation[] = [],
     placements: ReadonlyMap<string, string> = new Map(),
+    positions: ReadonlyMap<string, number> = new Map(),
   ) {
     super();
     stations.forEach((station) => this.stations.set(station.id, station));
-    placements.forEach((station, product) => this.placements.set(product, station));
+    placements.forEach((workstationId, product) =>
+      this.placements.set(product, { workstationId, position: positions.get(product) ?? null }),
+    );
   }
 
   load(): Promise<WorkstationMap> {
     return Promise.resolve(
       WorkstationMap.rehydrate({
         workstations: [...this.stations.values()],
-        placements: new Map(this.placements),
+        placements: new Map(
+          [...this.placements].map(([product, placed]) => [product, placed.workstationId]),
+        ),
+        positions: new Map(
+          [...this.placements].flatMap(([product, placed]) =>
+            placed.position === null ? [] : [[product, placed.position] as const],
+          ),
+        ),
       }),
     );
   }
@@ -52,11 +66,11 @@ export class InMemoryWorkstationMaps extends WorkstationMapRepository {
     const changes = map.changes();
     this.saved.push({ ...changes, stamp });
     changes.workstations.forEach((station) => this.stations.set(station.id, station));
-    changes.placements.forEach((station, product) => {
-      if (station === null) {
+    changes.placements.forEach((placed, product) => {
+      if (placed === null) {
         this.placements.delete(product);
       } else {
-        this.placements.set(product, station);
+        this.placements.set(product, placed);
       }
     });
     return Promise.resolve();
@@ -67,7 +81,11 @@ export class InMemoryWorkstationMaps extends WorkstationMapRepository {
   }
 
   workstationOf(product: string): string | null {
-    return this.placements.get(product) ?? null;
+    return this.placements.get(product)?.workstationId ?? null;
+  }
+
+  positionOf(product: string): number | null {
+    return this.placements.get(product)?.position ?? null;
   }
 }
 

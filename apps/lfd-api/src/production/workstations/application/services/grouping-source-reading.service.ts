@@ -117,8 +117,9 @@ export class GroupingSourceReading {
     const articles: ReadonlyMap<string, ProductionArticle> =
       skus.length === 0 ? new Map() : await this.articles.articlesOf(skus);
     const productSkus = [...new Set([...articles.values()].map((item) => item.productSku))];
-    const { workstations, byProduct } = await this.workstations.workstationsOf(productSkus);
-    return { workstations, articles, byProduct };
+    const { workstations, byProduct, positions } =
+      await this.workstations.workstationsOf(productSkus);
+    return { workstations, articles, byProduct, positions };
   }
 
   /** Le rayon de chaque SKU connu du miroir, ou `null` : panne journalisée, jamais tue. */

@@ -24,7 +24,8 @@ import { rootShelvesOf, type ShelfSection } from "./root-shelves.js";
  *   racine, puis « Hors catalogue » (ou « Rayon inconnu » si les rayons n'ont
  *   pas pu être lus).
  * - **Mode prod** : un groupe par poste qui a des lignes, dans l'ordre des
- *   postes ; puis, pour les produits sans poste, un groupe par rayon titré
+ *   postes, ses lignes dans la pile du poste (la place du produit de chaque
+ *   ligne ; sans place, après, dans l'ordre reçu) ; puis, pour les produits sans poste, un groupe par rayon titré
  *   « … — à ranger » ; puis « Hors catalogue — à ranger » pour un SKU absent
  *   du miroir du catalogue, qui n'a pas de produit et ne peut donc pas
  *   recevoir de poste.
@@ -58,6 +59,11 @@ export interface GroupingPlacement {
   readonly articles: ReadonlyMap<string, GroupingArticle>;
   /** Référence produit → id de son poste ; un produit absent n'a pas de poste. */
   readonly byProduct: ReadonlyMap<string, string>;
+  /**
+   * Référence produit → sa place dans la pile de son poste ; un produit
+   * absent n'a pas de place réglée et vient après ceux qui en ont une.
+   */
+  readonly positions: ReadonlyMap<string, number>;
 }
 
 /** Ce que le rangement reçoit : le mode, et ce qui a été lu pour lui. */
@@ -185,13 +191,38 @@ function workstationGroupsOf<T>(
     placement.articles.get(skuOf(line))?.family;
   const stations = placement.workstations.flatMap((workstation) => {
     const items = byWorkstation.get(workstation.id);
-    return items === undefined ? [] : [stationGroupOf(workstation, items)];
+    return items === undefined
+      ? []
+      : [stationGroupOf(workstation, inPile(items, skuOf, placement))];
   });
   // Une ligne sans poste a un article, donc un rayon : rien n'y reste sans rayon.
   const shelved = shelvedGroupsOf(withoutWorkstation, familyOf, true, offCatalogTitle());
   const tail =
     offCatalog.length === 0 ? [] : [offCatalogGroupOf(offCatalog, offCatalogTitle(), true)];
   return [...stations, ...shelved, ...tail];
+}
+
+/**
+ * Les lignes d'un poste dans sa pile : par place du produit de chaque ligne
+ * (une déclinaison suit son produit), les lignes sans place après, et l'ordre
+ * reçu entre deux lignes de même rang — le tri est stable.
+ */
+function inPile<T>(
+  lines: readonly T[],
+  skuOf: (line: T) => string,
+  placement: GroupingPlacement,
+): readonly T[] {
+  const rankOf = (line: T): number => {
+    const productSku = placement.articles.get(skuOf(line))?.productSku;
+    const position = productSku === undefined ? undefined : placement.positions.get(productSku);
+    return position ?? Number.POSITIVE_INFINITY;
+  };
+  return lines
+    .map((line, index) => ({ line, index, rank: rankOf(line) }))
+    .sort((left, right) =>
+      left.rank === right.rank ? left.index - right.index : left.rank - right.rank,
+    )
+    .map((entry) => entry.line);
 }
 
 function offCatalogTitle(): string {

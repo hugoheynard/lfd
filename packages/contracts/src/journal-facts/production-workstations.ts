@@ -44,6 +44,10 @@ export const PRODUCTION_WORKSTATION_FACTS = {
       count: count(),
     }),
   ),
+  /** La pile du poste : ses produits (références produit), du haut vers le bas. */
+  "production_workstation.products_reordered": fact(
+    payload({ subjectLabel: subjectLabel(), skus: z.array(z.string().min(1)) }),
+  ),
   /**
    * Le niveau de suivi propre au poste (`fournil/les-niveaux-de-suivi.md`) ;
    * `null` : il suit le fournil. `previous` dit celui qu'il avait. Il vaut à

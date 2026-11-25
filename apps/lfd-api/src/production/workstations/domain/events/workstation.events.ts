@@ -16,6 +16,7 @@ export const WORKSTATION_FACTS = {
   reordered: "production_workstation.reordered",
   archived: "production_workstation.archived",
   productsPlaced: "production_workstation.products_placed",
+  productsReordered: "production_workstation.products_reordered",
   trackingLevelSet: "production_workstation.tracking_level_set",
 } as const satisfies Readonly<Record<string, JournalFactType>>;
 
@@ -113,6 +114,20 @@ export class WorkstationProductsPlacedEvent implements JournaledEvent {
     return stationFact(WORKSTATION_FACTS.productsPlaced, this.station, {
       workstation: { id: this.station.id, name: this.station.name },
       ...placement,
+    });
+  }
+}
+
+/** La pile du poste : ses produits (références produit), du haut vers le bas. */
+export class WorkstationProductsReorderedEvent implements JournaledEvent {
+  constructor(
+    readonly station: Workstation,
+    readonly productSkus: readonly string[],
+  ) {}
+
+  journalFact(): JournalFact {
+    return stationFact(WORKSTATION_FACTS.productsReordered, this.station, {
+      skus: [...this.productSkus],
     });
   }
 }

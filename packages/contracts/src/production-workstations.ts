@@ -22,6 +22,8 @@ import type { WorkshopGroupKind } from "./production-worksheet.js";
  * - `PUT admin/production/workstations/order` ← {@link ReorderWorkstationsPayload} ;
  * - `POST admin/production/workstations/:id/archive` ;
  * - `PUT admin/production/workstations/placements` ← {@link PlaceProductsPayload} ;
+ * - `PUT admin/production/workstations/:id/products/order` ←
+ *   {@link ReorderWorkstationProductsPayload} — la pile du poste ;
  * - `PUT admin/production/workstations/:id/tracking-level` ←
  *   {@link SetWorkstationTrackingLevelPayload} (`fournil/les-niveaux-de-suivi.md`) ;
  * - `POST admin/production/workstations/grouping` ← {@link ProductionGroupingPayload}
@@ -62,6 +64,18 @@ export const placeProductsPayloadSchema = z.object({
   workstationId: z.string().min(1).nullable(),
 });
 export type PlaceProductsPayload = z.infer<typeof placeProductsPayloadSchema>;
+
+/**
+ * La pile d'un poste : exactement ses produits (références produit), chacun
+ * une fois, du haut vers le bas. Un poste porte au plus les produits d'un
+ * geste de placement.
+ */
+export const reorderWorkstationProductsPayloadSchema = z.object({
+  skus: z.array(z.string().min(1).max(PRODUCT_SKU_WIRE_MAX)).max(PLACED_PRODUCTS_MAX),
+});
+export type ReorderWorkstationProductsPayload = z.infer<
+  typeof reorderWorkstationProductsPayloadSchema
+>;
 
 /**
  * Le niveau de suivi propre à un poste ; `null` : le poste suit le fournil.
@@ -114,6 +128,11 @@ export interface WorkstationProductView {
   readonly family: CatalogFamilyView | null;
   /** `null` : « à ranger ». */
   readonly workstationId: string | null;
+  /**
+   * Sa place dans la pile de son poste, à partir de 0 ; `null` : sans poste,
+   * ou jamais réglée — il vient alors après ceux qui en ont une.
+   */
+  readonly position: number | null;
   /** Commandé ces jours-ci : une journée arrêtée récente, ou la demande à venir. */
   readonly ordered: boolean;
   readonly variants: readonly WorkstationProductVariantView[];
@@ -127,6 +146,10 @@ export interface OffCatalogArticleView {
 
 export interface WorkstationsPageView {
   readonly workstations: readonly WorkstationView[];
+  /**
+   * Dans l'ordre du catalogue. La pile d'un poste se lit sur `position` :
+   * les places réglées, puis les autres dans l'ordre de cette liste.
+   */
   readonly products: readonly WorkstationProductView[];
   readonly offCatalog: readonly OffCatalogArticleView[];
   /** Les produits sans poste — le compte du filtre « à ranger ». */

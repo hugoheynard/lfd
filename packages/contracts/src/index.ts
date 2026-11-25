@@ -3512,6 +3512,7 @@ export {
   productionSimulationQuerySchema,
   unplacedProductsOfDayQuerySchema,
   renameWorkstationPayloadSchema,
+  reorderWorkstationProductsPayloadSchema,
   reorderWorkstationsPayloadSchema,
   setWorkstationTrackingLevelPayloadSchema,
 } from "./production-workstations.js";
@@ -3525,6 +3526,7 @@ export type {
   ProductionGroupingView,
   ProductionSimulationQuery,
   RenameWorkstationPayload,
+  ReorderWorkstationProductsPayload,
   ReorderWorkstationsPayload,
   SetWorkstationTrackingLevelPayload,
   UnplacedProductOfDayView,

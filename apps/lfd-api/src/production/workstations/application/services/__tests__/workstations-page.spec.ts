@@ -34,6 +34,7 @@ const LISTING: WorkstationListing = {
     ["QUI-001", "ws_pastry"],
     ["OLD-009", "ws_pastry"],
   ]),
+  positions: new Map([["QUI-001", 0]]),
 };
 
 describe("workstationsPageOf — la page Postes", () => {
@@ -53,6 +54,7 @@ describe("workstationsPageOf — la page Postes", () => {
       productName: "Quiche lorraine",
       family: SAVORY,
       workstationId: "ws_pastry",
+      position: 0,
       ordered: false,
       variants: [
         { sku: "QUI-001-6", variantName: "Quiche 6 parts", sellable: true },
@@ -63,6 +65,7 @@ describe("workstationsPageOf — la page Postes", () => {
       productSku: "TAR-002",
       productName: null,
       workstationId: null,
+      position: null,
     });
   });
 
@@ -74,6 +77,7 @@ describe("workstationsPageOf — la page Postes", () => {
       family: null,
       variants: [],
       workstationId: "ws_pastry",
+      position: null,
     });
   });
 
@@ -114,6 +118,7 @@ describe("workstationsPageOf — la page Postes", () => {
           ...LISTING.workstations,
           { id: "ws_bread", name: "Boulangerie", position: 1, trackingLevel: null },
         ],
+        positions: new Map(),
         placements: new Map(),
       },
       [],

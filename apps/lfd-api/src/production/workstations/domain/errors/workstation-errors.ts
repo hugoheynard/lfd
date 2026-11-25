@@ -68,12 +68,17 @@ export class WorkstationArchivedError extends BusinessError {
   }
 }
 
-/** Un nouvel ordre qui ne nomme pas exactement les postes en service. */
+/**
+ * Un nouvel ordre qui ne nomme pas exactement ce qu'il range : les postes en
+ * service, ou — `workstationName` donné — les produits de ce poste.
+ */
 export class WorkstationOrderMismatchError extends BusinessError {
-  constructor() {
+  constructor(workstationName?: string) {
     super(
       "production.workstation.order_mismatch",
-      "L'ordre envoyé ne correspond plus aux postes en service : rechargez la page Postes et recommencez.",
+      workstationName === undefined
+        ? "L'ordre envoyé ne correspond plus aux postes en service : rechargez la page Postes et recommencez."
+        : `L'ordre envoyé ne correspond plus aux produits du poste « ${workstationName} » : quelqu'un les a peut-être changés entre-temps. Rechargez la page Postes et recommencez.`,
     );
   }
 }

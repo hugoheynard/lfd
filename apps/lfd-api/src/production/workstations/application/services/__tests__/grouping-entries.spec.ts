@@ -21,6 +21,7 @@ const PLACEMENT = {
     ["CAKE-1", article("CAKE-1", "CAKE", SALTY_ROOT)],
     ["BAG-1", article("BAG-1", "BAG", BREADS)],
   ]),
+  positions: new Map(),
   byProduct: new Map([["QUI", "ws-pat"]]),
 };
 

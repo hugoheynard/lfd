@@ -63,6 +63,7 @@ function productsOf(
       productName: null,
       family: null,
       workstationId,
+      position: listing.positions.get(productSku) ?? null,
       ordered: false,
       variants: [],
     }));
@@ -81,6 +82,7 @@ function productOf(
     productName: variants.find((variant) => variant.productName !== null)?.productName ?? null,
     family: first === undefined ? null : first.family,
     workstationId: listing.placements.get(productSku) ?? null,
+    position: listing.positions.get(productSku) ?? null,
     ordered: variants.some((variant) => orderedSkus.has(variant.sku)),
     variants: variants.map(({ sku, variantName, sellable }) => ({ sku, variantName, sellable })),
   };

@@ -26,13 +26,32 @@ export interface WorkstationMapState {
   readonly workstations: readonly Workstation[];
   /** Référence produit → id du poste. */
   readonly placements: ReadonlyMap<string, string>;
+  /** Référence produit → sa place dans la pile de son poste ; absent : pas encore réglée. */
+  readonly positions: ReadonlyMap<string, number>;
+}
+
+/** Un produit sur son poste, et sa place dans la pile du poste. */
+export interface ProductPlacement {
+  readonly workstationId: string;
+  /** `null` : jamais réglée — le produit vient après ceux qui en ont une, dans l'ordre reçu. */
+  readonly position: number | null;
 }
 
 /** Ce qu'un `save` doit écrire : la différence, jamais la carte entière. */
 export interface WorkstationMapChanges {
   readonly workstations: readonly Workstation[];
-  /** Référence produit → poste, ou `null` : remis « à ranger ». */
-  readonly placements: ReadonlyMap<string, string | null>;
+  /** Référence produit → son poste et sa place, ou `null` : remis « à ranger ». */
+  readonly placements: ReadonlyMap<string, ProductPlacement | null>;
+}
+
+/** `list` nomme exactement `expected`, chacun une fois, dans n'importe quel ordre. */
+function namesExactly(list: readonly string[], expected: readonly string[]): boolean {
+  const known = new Set(expected);
+  return (
+    new Set(list).size === list.length &&
+    list.length === known.size &&
+    list.every((name) => known.has(name))
+  );
 }
 
 /**
@@ -51,18 +70,23 @@ export interface WorkstationMapChanges {
  */
 export class WorkstationMap {
   private readonly stations: Map<string, Workstation>;
-  private readonly placed: Map<string, string>;
+  private readonly placed: Map<string, ProductPlacement>;
   private readonly changedStations = new Set<string>();
   private readonly changedPlacements = new Set<string>();
 
   private constructor(state: WorkstationMapState) {
     this.stations = new Map(state.workstations.map((station) => [station.id, station]));
-    this.placed = new Map(state.placements);
+    this.placed = new Map(
+      [...state.placements].map(([product, workstationId]) => [
+        product,
+        { workstationId, position: state.positions.get(product) ?? null },
+      ]),
+    );
   }
 
   /** Personne n'a encore rien réglé. */
   static empty(): WorkstationMap {
-    return new WorkstationMap({ workstations: [], placements: new Map() });
+    return new WorkstationMap({ workstations: [], placements: new Map(), positions: new Map() });
   }
 
   /** La carte relue en base : ses noms ont déjà été validés à l'écriture. */
@@ -78,7 +102,12 @@ export class WorkstationMap {
   }
 
   workstationOf(product: string): string | null {
-    return this.placed.get(product) ?? null;
+    return this.placed.get(product)?.workstationId ?? null;
+  }
+
+  /** Sa place dans la pile de son poste ; `null` : sans poste, ou jamais réglée. */
+  positionOf(product: string): number | null {
+    return this.placed.get(product)?.position ?? null;
   }
 
   placedCount(): number {
@@ -120,12 +149,11 @@ export class WorkstationMap {
    */
   reorder(ids: readonly string[]): void {
     const active = this.active();
-    const expected = new Set(active.map((station) => station.id));
-    const distinct = new Set(ids);
     if (
-      distinct.size !== ids.length ||
-      ids.length !== expected.size ||
-      ids.some((id) => !expected.has(id))
+      !namesExactly(
+        ids,
+        active.map((station) => station.id),
+      )
     ) {
       throw new WorkstationOrderMismatchError();
     }
@@ -144,7 +172,7 @@ export class WorkstationMap {
    */
   archive(id: string, at: Date): void {
     const station = this.activeStation(id);
-    const used = [...this.placed.values()].filter((placed) => placed === id).length;
+    const used = this.productsOn(id).length;
     if (used > 0) {
       throw new WorkstationStillUsedError(station.name, used);
     }
@@ -185,7 +213,7 @@ export class WorkstationMap {
       this.activeStation(workstationId);
     }
     for (const product of products) {
-      const current = this.placed.get(product.value) ?? null;
+      const current = this.placed.get(product.value)?.workstationId ?? null;
       if (current === workstationId) {
         continue;
       }
@@ -195,10 +223,34 @@ export class WorkstationMap {
       if (workstationId === null) {
         this.placed.delete(product.value);
       } else {
-        this.placed.set(product.value, workstationId);
+        this.placed.set(product.value, { workstationId, position: this.bottomOf(workstationId) });
       }
       this.changedPlacements.add(product.value);
     }
+  }
+
+  /**
+   * **La pile d'un poste** : l'ordre dans lequel le poste voit ses produits,
+   * partout où le mode prod range. `productSkus` nomme exactement les
+   * produits du poste, chacun une fois, du haut vers le bas. Les places qui
+   * ne changent pas ne s'écrivent pas.
+   *
+   * @throws {WorkstationNotFoundError}
+   * @throws {WorkstationArchivedError} un poste archivé ne se règle plus.
+   * @throws {WorkstationOrderMismatchError} la liste n'est pas exactement la pile du poste.
+   */
+  reorderProducts(workstationId: string, productSkus: readonly ProductSku[]): void {
+    const station = this.activeStation(workstationId);
+    const skus = productSkus.map((product) => product.value);
+    if (!namesExactly(skus, this.productsOn(workstationId))) {
+      throw new WorkstationOrderMismatchError(station.name);
+    }
+    skus.forEach((sku, position) => {
+      if (this.placed.get(sku)?.position !== position) {
+        this.placed.set(sku, { workstationId, position });
+        this.changedPlacements.add(sku);
+      }
+    });
   }
 
   /** Ce que le dépôt écrit. */
@@ -207,10 +259,34 @@ export class WorkstationMap {
       const station = this.stations.get(id);
       return station === undefined ? [] : [station];
     });
-    const placements = new Map(
+    const placements = new Map<string, ProductPlacement | null>(
       [...this.changedPlacements].map((product) => [product, this.placed.get(product) ?? null]),
     );
     return { workstations, placements };
+  }
+
+  private productsOn(workstationId: string): string[] {
+    return [...this.placed]
+      .filter(([, placement]) => placement.workstationId === workstationId)
+      .map(([product]) => product);
+  }
+
+  /**
+   * La place d'un produit qui arrive sur un poste : **en bas** de sa pile.
+   * Tant qu'un produit du poste n'a pas de place réglée, le nouveau n'en a
+   * pas non plus : il rejoint la queue sans place, après les places réglées
+   * (une place numérotée le ferait passer AU-DESSUS de cette queue).
+   */
+  private bottomOf(workstationId: string): number | null {
+    let last = -1;
+    for (const product of this.productsOn(workstationId)) {
+      const position = this.placed.get(product)?.position ?? null;
+      if (position === null) {
+        return null;
+      }
+      last = Math.max(last, position);
+    }
+    return last + 1;
   }
 
   private activeStation(id: string): Workstation {

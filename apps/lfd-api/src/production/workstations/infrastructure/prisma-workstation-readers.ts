@@ -24,6 +24,15 @@ const ACTIVE_STATIONS = {
   select: { id: true, name: true, position: true },
 };
 
+/** Référence produit → sa place réglée ; un produit sans place est absent. */
+function positionsOf(
+  rows: readonly { readonly productSku: string; readonly position: number | null }[],
+): ReadonlyMap<string, number> {
+  return new Map(
+    rows.flatMap((row) => (row.position === null ? [] : [[row.productSku, row.position] as const])),
+  );
+}
+
 /**
  * La carte des postes pour la page Postes : sans verrou, sans agrégat. Un
  * produit placé l'est toujours sur un poste en service (l'agrégat refuse
@@ -42,7 +51,7 @@ export class PrismaWorkstationMapReader extends WorkstationMapReader {
         select: { ...ACTIVE_STATIONS.select, trackingLevel: true },
       }),
       this.prisma.productionWorkstationProduct.findMany({
-        select: { productSku: true, workstationId: true },
+        select: { productSku: true, workstationId: true, position: true },
       }),
     ]);
     return {
@@ -51,6 +60,7 @@ export class PrismaWorkstationMapReader extends WorkstationMapReader {
         trackingLevel: trackingLevelOrNull(station.trackingLevel),
       })),
       placements: new Map(placements.map((row) => [row.productSku, row.workstationId])),
+      positions: positionsOf(placements),
     };
   }
 }
@@ -69,12 +79,13 @@ export class PrismaWorkstationOfProducts extends WorkstationOfProducts {
         ? Promise.resolve([])
         : this.prisma.productionWorkstationProduct.findMany({
             where: { productSku: { in: [...productSkus] } },
-            select: { productSku: true, workstationId: true },
+            select: { productSku: true, workstationId: true, position: true },
           }),
     ]);
     return {
       workstations,
       byProduct: new Map(placements.map((row) => [row.productSku, row.workstationId])),
+      positions: positionsOf(placements),
     };
   }
 }

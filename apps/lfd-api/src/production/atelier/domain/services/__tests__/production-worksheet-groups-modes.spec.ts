@@ -49,6 +49,7 @@ function placement(names: readonly (readonly [string, string])[]): GroupingPlace
       ["QUI-8", { productSku: "QUI", family: QUICHES }],
       ["BAG-1", { productSku: "BAG", family: BREADS }],
     ]),
+    positions: new Map(),
     byProduct: new Map(
       bread === undefined || quiche === undefined
         ? []
@@ -111,6 +112,7 @@ describe("worksheetGroupsFrom", () => {
         placement: {
           ...placement([]),
           workstations: [{ id: "ws_all", name: "Fournil" }],
+          positions: new Map(),
           byProduct: new Map([
             ["QUI", "ws_all"],
             ["BAG", "ws_all"],

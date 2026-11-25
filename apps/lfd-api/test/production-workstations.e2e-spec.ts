@@ -199,3 +199,66 @@ describe("Prod manager › Postes — la page", () => {
     expect(after.unplacedCount).toBe(before.unplacedCount - 2);
   });
 });
+
+describe("Prod manager › Postes — la pile d'un poste", () => {
+  async function reorderProducts(id: string, skus: readonly string[], status: number) {
+    return admin(ctx)
+      .put(`${WORKSTATIONS}/${id}/products/order`)
+      .set(INTENT_KEY, freshIntent())
+      .send({ skus })
+      .expect(status);
+  }
+
+  function positionsOf(view: WorkstationsPageView): ReadonlyMap<string, number | null> {
+    return new Map(view.products.map((product) => [product.productSku, product.position]));
+  }
+
+  it("met en bas un produit placé, pose la pile, la sert à la page et la journalise", async () => {
+    const pastry = await declare("Viennoiserie");
+    await place(["VIE-001", "VIE-002"], pastry);
+    const placed = positionsOf(await page());
+    expect(["VIE-001", "VIE-002", "VIE-003"].map((sku) => placed.get(sku))).toEqual([0, 1, null]);
+    const before = await ctx.prisma.productionWorkstationProduct.findUniqueOrThrow({
+      where: { productSku: "VIE-001" },
+    });
+
+    await reorderProducts(pastry, ["VIE-002", "VIE-001"], 204);
+
+    const view = positionsOf(await page());
+    expect([view.get("VIE-002"), view.get("VIE-001")]).toEqual([0, 1]);
+    // Le numéro de la carte (le plus grand `updated_at`) monte : la fiche gardée se refait.
+    const after = await ctx.prisma.productionWorkstationProduct.findUniqueOrThrow({
+      where: { productSku: "VIE-001" },
+    });
+    expect(after.updatedAt.getTime()).toBeGreaterThan(before.updatedAt.getTime());
+    const reordered = (await facts()).filter(
+      (fact) => fact.type === "production_workstation.products_reordered",
+    );
+    expect(reordered.map((fact) => checkJournalFact(fact.type, fact.payload))).toEqual([null]);
+    expect(reordered[0]?.payload).toMatchObject({ skus: ["VIE-002", "VIE-001"] });
+  });
+
+  it("refuse une liste qui n'est plus la pile du poste, sans rien écrire", async () => {
+    const pastry = await declare("Viennoiserie");
+    await place(["VIE-001", "VIE-002"], pastry);
+
+    const refused = await reorderProducts(pastry, ["VIE-002"], 409);
+
+    expect(jsonBody<{ code: string }>(refused).code).toBe("production.workstation.order_mismatch");
+    expect(positionsOf(await page()).get("VIE-001")).toBe(0);
+  });
+
+  it("efface la place d'un produit remis « à ranger »", async () => {
+    const pastry = await declare("Viennoiserie");
+    await place(["VIE-001"], pastry);
+    await place(["VIE-001"], null);
+
+    expect(positionsOf(await page()).get("VIE-001")).toBeNull();
+    expect(await ctx.prisma.productionWorkstationProduct.count()).toBe(0);
+  });
+
+  it("exige la clé d'intention", async () => {
+    const pastry = await declare("Viennoiserie");
+    await admin(ctx).put(`${WORKSTATIONS}/${pastry}/products/order`).send({ skus: [] }).expect(400);
+  });
+});

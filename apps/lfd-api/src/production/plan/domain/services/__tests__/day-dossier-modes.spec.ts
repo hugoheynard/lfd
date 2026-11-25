@@ -68,6 +68,7 @@ function placement(byProduct: readonly (readonly [string, string])[]): GroupingP
     articles: new Map(
       [...SHELVES].map(([sku, family]) => [sku, { productSku: sku.slice(0, 3), family }]),
     ),
+    positions: new Map(),
     byProduct: new Map(byProduct),
   };
 }

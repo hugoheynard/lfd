@@ -10,6 +10,7 @@ import { ArchiveWorkstationHandler } from "./application/commands/archive-workst
 import { DeclareWorkstationHandler } from "./application/commands/declare-workstation.handler.js";
 import { PlaceProductsHandler } from "./application/commands/place-products.handler.js";
 import { RenameWorkstationHandler } from "./application/commands/rename-workstation.handler.js";
+import { ReorderWorkstationProductsHandler } from "./application/commands/reorder-workstation-products.handler.js";
 import { ReorderWorkstationsHandler } from "./application/commands/reorder-workstations.handler.js";
 import { SetWorkstationTrackingLevelHandler } from "./application/commands/set-workstation-tracking-level.handler.js";
 import { ListWorkstationsHandler } from "./application/queries/list-workstations.handler.js";
@@ -52,6 +53,7 @@ import {
     DeclareWorkstationHandler,
     RenameWorkstationHandler,
     ReorderWorkstationsHandler,
+    ReorderWorkstationProductsHandler,
     ArchiveWorkstationHandler,
     PlaceProductsHandler,
     SetWorkstationTrackingLevelHandler,

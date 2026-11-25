@@ -24,6 +24,7 @@ describe("unplacedProductsOf — l'alerte du Prod manager", () => {
       ARTICLES,
       {
         workstations: [{ id: "ws-pat", name: "Pâtisserie", position: 0 }],
+        positions: new Map(),
         byProduct: new Map([["TAR", "ws-pat"]]),
       },
     );
@@ -37,6 +38,7 @@ describe("unplacedProductsOf — l'alerte du Prod manager", () => {
   it("tient pour « à ranger » un produit dont le poste n'est plus en service", () => {
     const result = unplacedProductsOf([{ sku: "OLD-1", productName: "Vieux" }], ARTICLES, {
       workstations: [],
+      positions: new Map(),
       byProduct: new Map([["OLD", "ws-archived"]]),
     });
 
@@ -50,7 +52,7 @@ describe("unplacedProductsOf — l'alerte du Prod manager", () => {
         { sku: "GONE", productName: "Brioche retirée" },
       ],
       ARTICLES,
-      { workstations: [], byProduct: new Map() },
+      { workstations: [], byProduct: new Map(), positions: new Map() },
     );
 
     expect(result.products).toEqual([]);

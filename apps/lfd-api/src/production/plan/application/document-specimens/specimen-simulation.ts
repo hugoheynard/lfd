@@ -39,4 +39,5 @@ export const SPECIMEN_SIMULATION_PLACEMENT: GroupingPlacement = {
     ["EXEMPLE-CAM", BAKERY.id],
     ["EXEMPLE-CRO", LAMINATION.id],
   ]),
+  positions: new Map(),
 };

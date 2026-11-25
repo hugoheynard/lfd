@@ -67,6 +67,7 @@ describe("simulationCoverOf", () => {
           ["QUI-6", { productSku: "QUI", family: SALTY }],
           ["BAG", { productSku: "BAG", family: BREADS }],
         ]),
+        positions: new Map(),
         byProduct: new Map([["QUI", "ws_pastry"]]),
       },
     };

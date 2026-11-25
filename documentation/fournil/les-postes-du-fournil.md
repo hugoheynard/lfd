@@ -85,7 +85,7 @@ entre métiers qu'il ajoute (`dev-toolbox/gates/lib/production-subcontexts-graph
 
 ```
 production.production_workstation           id, name, position, archived_at, updated_*
-production.production_workstation_product   product_sku (pk), workstation_id → RESTRICT
+production.production_workstation_product   product_sku (pk), workstation_id → RESTRICT, position (nullable)
 production.production_display_settings      + grouping 'shelf' | 'workstation'
 ```
 
@@ -103,9 +103,34 @@ archivé. L'adaptateur écrit la différence sous un verrou consultatif. Remettr
 un produit « à ranger » efface sa ligne de placement : c'est un réglage, et
 l'historique reste dans le journal.
 
-Cinq gestes, tous par intention (`@IntentKey`, `runSealed`), chacun avec son
+Six gestes, tous par intention (`@IntentKey`, `runSealed`), chacun avec son
 fait : `production_workstation.declared`, `.renamed`, `.reordered`,
-`.archived`, `.products_placed`.
+`.archived`, `.products_placed`, `.products_reordered`.
+
+### La pile d'un poste
+
+🟨 **En cours de bâti (décidé par Hugo le 2026-11-25).** Chaque produit a une
+place dans son poste : c'est l'ordre dans lequel le poste le voit, sur la
+fiche, le dossier, le prévisionnel, le récapitulatif et les réassorts — partout
+où le **mode prod** range. Le mode boutique ne change pas.
+
+- `production_workstation_product.position` est **nullable**. Un produit sans
+  position vient **après** ceux qui en ont une, dans l'ordre reçu : la pile
+  d'avant ne bouge pas tant que personne ne la règle (aucune recopie de
+  données).
+- `WorkstationMap.reorderProducts(workstationId, skus)` refuse une liste qui
+  n'est pas exactement l'ensemble des produits du poste
+  (`WorkstationOrderMismatchError`) et un poste archivé ou inconnu.
+- Placer un produit, ou le changer de poste, le met **en bas** de la pile de
+  son nouveau poste : la place qui suit la dernière si toute la pile est
+  réglée, sinon aucune place (il rejoint la queue des produits sans place, ce
+  qui est aussi le bas) — `WorkstationMap.bottomOf` ; le remettre « à ranger » efface sa ligne, position
+  comprise.
+- Les déclinaisons suivent leur produit, comme elles suivent son poste.
+- Sixième geste : `PUT :id/products/order` `{ skus }`, par intention, fait
+  `production_workstation.products_reordered`.
+- À l'écran, la page Postes montre la pile de chaque poste, réordonnée par
+  glisser-déposer ou par les boutons monter / descendre (clavier).
 
 ### Le produit d'une ligne
 
@@ -161,11 +186,11 @@ disent dans un encadré.
 
 ### Les autres routes (`admin/production/workstations`)
 
-| Route                                                                     | Ce qu'elle fait                                                                                                                          |
-| ------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| `GET`                                                                     | la page Postes : les postes, et les produits (miroir, journées arrêtées de J−30, demande des 14 prochains jours, commandes et réassorts) |
-| `POST`, `PUT order`, `PUT :id/name`, `POST :id/archive`, `PUT placements` | les cinq gestes                                                                                                                          |
-| `GET unplaced?date=`                                                      | l'alerte : avant l'arrêt sur la demande du jour, après sur les lignes du jour (`KnownArticles`, publié par `day/`)                       |
+| Route                                                                                               | Ce qu'elle fait                                                                                                                          |
+| --------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET`                                                                                               | la page Postes : les postes, et les produits (miroir, journées arrêtées de J−30, demande des 14 prochains jours, commandes et réassorts) |
+| `POST`, `PUT order`, `PUT :id/name`, `POST :id/archive`, `PUT placements`, `PUT :id/products/order` | les six gestes                                                                                                                           |
+| `GET unplaced?date=`                                                                                | l'alerte : avant l'arrêt sur la demande du jour, après sur les lignes du jour (`KnownArticles`, publié par `day/`)                       |
 
 La simulation a sa propre adresse, hors des postes, parce qu'elle simule tout
 le dossier (rangement et sous-catégories) : `GET /admin/production/simulation.pdf?mode=&showSubcategories=`,

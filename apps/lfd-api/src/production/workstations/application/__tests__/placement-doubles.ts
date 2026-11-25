@@ -76,6 +76,7 @@ export class FixedWorkstationOfProducts extends WorkstationOfProducts {
   constructor(
     private readonly workstations: readonly PlacedWorkstation[],
     private readonly placements: ReadonlyMap<string, string>,
+    private readonly positions: ReadonlyMap<string, number> = new Map(),
   ) {
     super();
   }
@@ -85,7 +86,10 @@ export class FixedWorkstationOfProducts extends WorkstationOfProducts {
     const byProduct = new Map(
       [...this.placements].filter(([product]) => productSkus.includes(product)),
     );
-    return Promise.resolve({ workstations: this.workstations, byProduct });
+    const positions = new Map(
+      [...this.positions].filter(([product]) => productSkus.includes(product)),
+    );
+    return Promise.resolve({ workstations: this.workstations, byProduct, positions });
   }
 }
 

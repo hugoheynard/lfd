@@ -15,6 +15,8 @@ export interface WorkstationListing {
   readonly workstations: readonly ListedWorkstation[];
   /** Référence produit → id du poste. */
   readonly placements: ReadonlyMap<string, string>;
+  /** Référence produit → sa place dans la pile de son poste ; absent : pas encore réglée. */
+  readonly positions: ReadonlyMap<string, number>;
 }
 
 /**

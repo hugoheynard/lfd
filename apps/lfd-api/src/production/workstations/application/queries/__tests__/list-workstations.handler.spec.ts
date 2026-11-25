@@ -23,6 +23,7 @@ class FixedListing extends WorkstationMapReader {
       workstations: [
         { id: "ws_pastry", name: "Pâtisserie", position: 0, trackingLevel: "detailed" },
       ],
+      positions: new Map(),
       placements: new Map([["QUI-001", "ws_pastry"]]),
     });
   }
