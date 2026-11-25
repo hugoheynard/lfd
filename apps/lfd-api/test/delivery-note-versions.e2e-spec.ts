@@ -226,7 +226,7 @@ describe("l'historique d'un départ partiel (B4b.3)", () => {
   });
 });
 
-describe("la table des versions (migration 20261125150000)", () => {
+describe("la table des versions (migration 20261125170000)", () => {
   it("refuse une cause inconnue, un doublon de version et un bon inexistant", async () => {
     const order = await decidedOrder();
     const note = await ctx.prisma.deliveryNote.findFirstOrThrow({ where: { orderId: order.id } });

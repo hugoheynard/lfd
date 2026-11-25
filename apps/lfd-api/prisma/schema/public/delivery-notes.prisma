@@ -132,7 +132,7 @@ model DeliveryNoteLine {
 /// `rendered` : l'entrée complète du rendu PDF client — le BL chiffré composé
 /// et ce qui manque encore —, d'où le PDF de la version se rend seul. Aucune
 /// purge : c'est une trace. CHECK de `cause` et de forme dans la migration
-/// `20261125150000`.
+/// `20261125170000`.
 model DeliveryNoteVersion {
   id             String       @id
   deliveryNoteId String       @map("delivery_note_id")
