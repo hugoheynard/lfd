@@ -135,10 +135,21 @@ describe('la pile d’un poste', () => {
     expect(changes).toHaveLength(1);
   });
 
-  it('sans droit d’écriture : la pile se lit, sans bouton ni envoi', async () => {
+  it('flèche bas sur la poignée d’un produit le descend d’une place', async () => {
+    const { fixture } = await mount();
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('[data-stack-up], [data-stack-down]')).toBeNull();
+    const handle = root.querySelector('[data-stack-item="A"] [data-reorder-handle]');
+    expect(handle?.querySelector('button')?.getAttribute('aria-label')).toContain('« Nom A »');
+    handle?.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+    await fixture.whenStable();
+    expect(api.sent[0]?.skus).toEqual(['B', 'A', 'X', 'Y']);
+  });
+
+  it('sans droit d’écriture : la pile se lit, sans poignée ni envoi', async () => {
     const { fixture } = await mount(false);
     const root = fixture.nativeElement as HTMLElement;
-    expect(root.querySelector('[data-stack-up]')).toBeNull();
+    expect(root.querySelector('[data-reorder-handle]')).toBeNull();
     await fixture.componentInstance['move'](0, 1);
     expect(api.sent).toEqual([]);
   });

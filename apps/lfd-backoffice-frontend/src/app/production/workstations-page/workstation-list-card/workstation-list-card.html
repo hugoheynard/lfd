@@ -21,62 +21,79 @@
   </fold-element-title>
 
   <div class="body">
-    @for (station of workstations(); track station.id; let index = $index; let last = $last) {
-      <div class="station" [attr.data-workstation]="station.id">
-        @if (canWrite()) {
-          <fold-input
-            class="name"
-            size="sm"
-            [label]="'Poste ' + (index + 1)"
-            [value]="draftOf(station.id)"
-            (valueChange)="setDraft(station.id, $event)"
-          />
-          <button
-            foldButton
-            size="sm"
-            emphasis="soft"
-            [disabled]="busy() || !renamable(station)"
-            (click)="rename(station)"
-            data-rename
-          >
-            Renommer
-          </button>
-          <fold-button-icon
-            icon="chevron-up"
-            size="sm"
-            tooltip="Monter"
-            [disabled]="busy() || index === 0"
-            (clicked)="move(index, -1)"
-            data-move-up
-          />
-          <fold-button-icon
-            icon="chevron-down"
-            size="sm"
-            tooltip="Descendre"
-            [disabled]="busy() || last"
-            (clicked)="move(index, 1)"
-            data-move-down
-          />
-          <fold-inline-confirm
-            intent="danger"
-            [message]="'Archiver « ' + station.name + ' » ?'"
-            (confirmed)="archive(station)"
-          >
-            <button foldButton size="sm" emphasis="soft" intent="danger" [disabled]="busy()">
-              Archiver
-            </button>
-          </fold-inline-confirm>
-        } @else {
-          <span class="name">{{ index + 1 }}. {{ station.name }}</span>
-        }
-      </div>
-    } @empty {
+    @if (stations().length === 0) {
       <fold-empty-state
         title="Aucun poste"
         subtitle="Ajoutez les postes du fournil, ou partez des rayons de la boutique pour un premier jeu à renommer."
       >
         <fold-icon empty-icon name="croissant" size="lg" />
       </fold-empty-state>
+    } @else {
+      <ol
+        class="stations"
+        cdkDropList
+        [cdkDropListDisabled]="!canWrite() || busy()"
+        (cdkDropListDropped)="dropped($event)"
+        aria-label="Les postes, dans l’ordre des fiches"
+        data-workstation-order
+      >
+        @for (station of stations(); track station.id; let index = $index) {
+          <li
+            class="item"
+            cdkDrag
+            [cdkDragStartDelay]="dragDelay"
+            [attr.data-workstation]="station.id"
+          >
+            <fold-card padding="sm" radius="sm">
+              <div class="station">
+                @if (canWrite()) {
+                  <app-reorder-handle
+                    class="handle"
+                    cdkDragHandle
+                    [itemName]="station.name"
+                    (step)="move(index, $event)"
+                  />
+                  <fold-input
+                    class="name"
+                    size="sm"
+                    [label]="'Poste ' + (index + 1)"
+                    [value]="draftOf(station.id)"
+                    (valueChange)="setDraft(station.id, $event)"
+                  />
+                  <button
+                    foldButton
+                    size="sm"
+                    emphasis="soft"
+                    [disabled]="busy() || !renamable(station)"
+                    (click)="rename(station)"
+                    data-rename
+                  >
+                    Renommer
+                  </button>
+                  <fold-inline-confirm
+                    intent="danger"
+                    [message]="'Archiver « ' + station.name + ' » ?'"
+                    (confirmed)="archive(station)"
+                  >
+                    <button
+                      foldButton
+                      size="sm"
+                      emphasis="soft"
+                      intent="danger"
+                      [disabled]="busy()"
+                    >
+                      Archiver
+                    </button>
+                  </fold-inline-confirm>
+                } @else {
+                  <span class="name">{{ index + 1 }}. {{ station.name }}</span>
+                }
+              </div>
+            </fold-card>
+            <div class="placeholder" *cdkDragPlaceholder></div>
+          </li>
+        }
+      </ol>
     }
 
     @if (canWrite()) {
@@ -106,5 +123,7 @@
     @if (refusal(); as message) {
       <fold-callout variant="alert" announce data-workstation-refusal>{{ message }}</fold-callout>
     }
+
+    <p class="sr-only" aria-live="polite" data-workstation-announce>{{ announcement() }}</p>
   </div>
 </fold-card>

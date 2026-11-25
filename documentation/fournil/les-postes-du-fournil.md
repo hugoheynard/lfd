@@ -130,10 +130,14 @@ où le **mode prod** range. Le mode boutique ne change pas.
 - Sixième geste : `PUT :id/products/order` `{ skus }`, par intention, fait
   `production_workstation.products_reordered`.
 - À l'écran, la carte « La pile d'un poste » de la page Postes
-  (`workstations-page/workstation-stack-card/`) : on choisit le poste, sa pile
-  se réordonne par glisser-déposer (appui long au toucher) ou par les boutons
-  monter / descendre, annoncés au lecteur d'écran. Chaque déplacement envoie
-  toute la pile ; un refus remet la pile d'avant et la relit.
+  (`workstations-page/workstation-stack-card/`) : on choisit le poste ;
+  chaque produit est une petite carte qu'on glisse (curseur main, appui long
+  au toucher), avec à gauche une poignée à six points. Au clavier, la poignée
+  se focalise et les flèches haut / bas déplacent le produit d'une place ; le
+  focus le suit et sa nouvelle place est annoncée au lecteur d'écran. Chaque
+  déplacement envoie toute la pile ; un refus remet la pile d'avant et la
+  relit. La poignée est partagée avec la carte des postes
+  (`workstations-page/reorder-handle/`).
 
 ### Le produit d'une ligne
 
@@ -221,7 +225,9 @@ relecture.
   lien de téléchargement le remplace si le navigateur le bloque.
 - `production/workstations-page/` : le rangement (le mode, et un lien vers la
   simulation), les
-  postes, les produits avec un `fold-listbox` par ligne et les filtres
+  postes — chacun une carte qu'on glisse par sa poignée à six points, ou
+  qu'on déplace au clavier par les flèches sur celle-ci ; le renommage et
+  l'archivage restent dans la carte —, la pile d'un poste, les produits avec un `fold-listbox` par ligne et les filtres
   (`?filtre=a-ranger`). Elle vit aux Réglages (`/reglages/production/postes`,
   décidé par Hugo le 2026-11-17), au rail comme aux tuiles du menu mobile ;
   l'ancienne adresse `/prod-manager/postes` y redirige, filtre compris.

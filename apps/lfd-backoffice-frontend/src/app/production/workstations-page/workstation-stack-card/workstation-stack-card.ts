@@ -1,4 +1,4 @@
-import { type CdkDragDrop, CdkDrag, CdkDropList } from '@angular/cdk/drag-drop';
+import { type CdkDragDrop, CdkDrag, CdkDragPlaceholder, CdkDropList } from '@angular/cdk/drag-drop';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -12,7 +12,6 @@ import {
 import type { WorkstationProductView, WorkstationView } from '@lfd/contracts';
 import { httpErrorCode, httpErrorMessage } from '@lfd/endpoints';
 import {
-  FoldButtonIconComponent,
   FoldCalloutComponent,
   FoldCardComponent,
   FoldElementTitleComponent,
@@ -24,6 +23,7 @@ import {
 
 import { GestureIntents, shownOnce } from '../../../shared/gesture-intents';
 import { WorkstationsService } from '../../workstations.service';
+import { ReorderHandle, type ReorderStep } from '../reorder-handle/reorder-handle';
 
 /** Le refus d'une pile périmée : la liste envoyée n'est plus celle du poste. */
 export const ORDER_MISMATCH = 'production.workstation.order_mismatch';
@@ -53,8 +53,8 @@ function nameOf(product: WorkstationProductView): string {
 /**
  * **La pile d'un poste** (`documentation/fournil/les-postes-du-fournil.md`,
  * « La pile d'un poste ») : l'ordre dans lequel un poste voit ses produits en
- * mode prod. On choisit un poste, puis on déplace ses produits par
- * glisser-déposer ou par les boutons monter / descendre (clavier). Chaque
+ * mode prod. On choisit un poste, puis on déplace ses produits — de petites
+ * cartes — par glisser-déposer, ou au clavier par les flèches sur leur poignée. Chaque
  * déplacement envoie la pile entière, par intention ; le parent relit ensuite.
  */
 @Component({
@@ -62,14 +62,15 @@ function nameOf(product: WorkstationProductView): string {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     CdkDrag,
+    CdkDragPlaceholder,
     CdkDropList,
-    FoldButtonIconComponent,
     FoldCalloutComponent,
     FoldCardComponent,
     FoldElementTitleComponent,
     FoldEmptyStateComponent,
     FoldIconComponent,
     FoldListboxComponent,
+    ReorderHandle,
   ],
   templateUrl: './workstation-stack-card.html',
   styleUrl: './workstation-stack-card.scss',
@@ -121,8 +122,8 @@ export class WorkstationStackCard {
     this.announcement.set('');
   }
 
-  /** Monte (`-1`) ou descend (`+1`) un produit d'une place. */
-  protected move(index: number, delta: -1 | 1): Promise<void> {
+  /** Monte (`-1`) ou descend (`+1`) un produit d'une place — les flèches sur sa poignée. */
+  protected move(index: number, delta: ReorderStep): Promise<void> {
     return this.moveTo(index, index + delta);
   }
 

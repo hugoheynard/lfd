@@ -135,12 +135,43 @@ describe('les postes du fournil', () => {
     expect(second?.key).toBe(first?.key);
   });
 
-  it('monte un poste : l’ordre envoyé est l’ordre complet, échangé', async () => {
+  it('flèche haut sur la poignée monte un poste : l’ordre complet part, et la place s’annonce', async () => {
     const { fixture } = await mount(STATIONS, []);
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('[data-move-up], [data-move-down]')).toBeNull();
+    const handle = root.querySelector('[data-workstation="ws_b"] [data-reorder-handle]');
+    expect(handle?.querySelector('button')?.getAttribute('aria-label')).toContain('« Pâtisserie »');
+
+    handle?.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true }));
+    await fixture.whenStable();
+
+    expect(api.calls[0]).toMatchObject({ gesture: 'reorder', detail: ['ws_b', 'ws_a'] });
+    expect(fixture.componentInstance['announcement']()).toBe(
+      '« Pâtisserie » est maintenant en place 1 sur 2.',
+    );
+  });
+
+  it('un dépôt par glisser envoie l’ordre complet', async () => {
+    const { fixture } = await mount(STATIONS, []);
+
+    await fixture.componentInstance['dropped']({ previousIndex: 0, currentIndex: 1 } as never);
+
+    expect(api.calls[0]).toMatchObject({ gesture: 'reorder', detail: ['ws_b', 'ws_a'] });
+  });
+
+  it('un ordre refusé remet l’ordre d’avant et le dit', async () => {
+    const { fixture } = await mount(STATIONS, []);
+    api.refuseNext = new HttpErrorResponse({ status: 409, error: { message: 'Ordre périmé.' } });
 
     await fixture.componentInstance['move'](1, -1);
 
-    expect(api.calls[0]).toMatchObject({ gesture: 'reorder', detail: ['ws_b', 'ws_a'] });
+    expect(fixture.componentInstance['stations']().map((station) => station.id)).toEqual([
+      'ws_a',
+      'ws_b',
+    ]);
+    expect(fixture.componentInstance['announcement']()).toBe(
+      'Le déplacement n’a pas été enregistré.',
+    );
   });
 
   it('ne monte pas le premier', async () => {

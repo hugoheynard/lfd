@@ -1,0 +1,12 @@
+/* La poignée se saisit : la main ouverte au survol, fermée pendant le glisser.
+   Le bouton de fold pose `cursor: pointer` sur son élément interne et n'a pas
+   d'entrée pour le changer — d'où `::ng-deep`, borné à cet hôte. */
+:host ::ng-deep .handle button {
+  cursor: grab;
+}
+
+:host-context(.cdk-drag-dragging) ::ng-deep .handle button,
+:host-context(.cdk-drag-preview) ::ng-deep .handle button,
+:host ::ng-deep .handle button:active {
+  cursor: grabbing;
+}

@@ -1,4 +1,11 @@
 import {
+  type CdkDragDrop,
+  CdkDrag,
+  CdkDragHandle,
+  CdkDragPlaceholder,
+  CdkDropList,
+} from '@angular/cdk/drag-drop';
+import {
   ChangeDetectionStrategy,
   Component,
   computed,
@@ -12,7 +19,6 @@ import type { WorkstationProductView, WorkstationView } from '@lfd/contracts';
 import { httpErrorMessage } from '@lfd/endpoints';
 import {
   FoldButtonComponent,
-  FoldButtonIconComponent,
   FoldCalloutComponent,
   FoldCardComponent,
   FoldElementTitleComponent,
@@ -24,6 +30,10 @@ import {
 
 import { GestureIntents, shownOnce } from '../../../shared/gesture-intents';
 import { WorkstationsService } from '../../workstations.service';
+import { ReorderHandle, type ReorderStep } from '../reorder-handle/reorder-handle';
+
+/** Au toucher, un appui long avant de saisir : le doigt fait d'abord défiler. */
+const DRAG_START_DELAY = { touch: 250, mouse: 0 } as const;
 
 /** Un rayon racine et les produits sans poste qu'il porte — « Partir des rayons ». */
 interface ShelfSeed {
@@ -34,8 +44,9 @@ interface ShelfSeed {
 
 /**
  * **Les postes du fournil** (`documentation/fournil/les-postes-du-fournil.md`, § 3.8) :
- * les ajouter (nommés à l'écran), les renommer, les ordonner, les archiver, et
- * « Partir des rayons ».
+ * les ajouter (nommés à l'écran), les renommer, les ordonner — chaque poste est
+ * une carte qu'on glisse par sa poignée, ou qu'on déplace au clavier par les
+ * flèches sur celle-ci —, les archiver, et « Partir des rayons ».
  *
  * Chaque geste porte la clé d'une intention : un double clic ne déclare pas
  * deux postes, et un renommage rejoué ne défait pas celui d'un autre. Le
@@ -46,8 +57,11 @@ interface ShelfSeed {
   selector: 'app-workstation-list-card',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    CdkDrag,
+    CdkDragHandle,
+    CdkDragPlaceholder,
+    CdkDropList,
     FoldButtonComponent,
-    FoldButtonIconComponent,
     FoldCalloutComponent,
     FoldCardComponent,
     FoldElementTitleComponent,
@@ -55,6 +69,7 @@ interface ShelfSeed {
     FoldIconComponent,
     FoldInlineConfirmComponent,
     FoldInputComponent,
+    ReorderHandle,
   ],
   templateUrl: './workstation-list-card.html',
   styleUrl: './workstation-list-card.scss',
@@ -68,6 +83,13 @@ export class WorkstationListCard {
   readonly canWrite = input.required<boolean>();
   /** Après un geste accepté : le parent relit. */
   readonly changed = output();
+
+  protected readonly dragDelay = DRAG_START_DELAY;
+
+  /** Les postes servis, puis l'ordre qu'on vient d'envoyer, le temps que la relecture arrive. */
+  protected readonly stations = linkedSignal<readonly WorkstationView[]>(() => this.workstations());
+  /** Lu par les lecteurs d'écran (`aria-live`) après chaque déplacement. */
+  protected readonly announcement = signal('');
 
   protected readonly newName = signal('');
   /** Les noms en cours d'édition, par poste ; repartent des noms servis à chaque relecture. */
@@ -129,22 +151,43 @@ export class WorkstationListCard {
     );
   }
 
-  /** Monte (`-1`) ou descend (`+1`) un poste d'un rang. */
-  protected move(index: number, delta: -1 | 1): Promise<void> {
-    const ids = this.workstations().map((station) => station.id);
-    const target = index + delta;
-    const moved = ids[index];
-    const swapped = ids[target];
-    if (moved === undefined || swapped === undefined) {
-      return Promise.resolve();
+  /** Monte (`-1`) ou descend (`+1`) un poste d'un rang — les flèches sur sa poignée. */
+  protected move(index: number, delta: ReorderStep): Promise<void> {
+    return this.moveTo(index, index + delta);
+  }
+
+  protected dropped(event: CdkDragDrop<unknown>): Promise<void> {
+    return this.moveTo(event.previousIndex, event.currentIndex);
+  }
+
+  /** Envoie l'ordre complet, par intention ; un refus remet l'ordre d'avant. */
+  private async moveTo(from: number, to: number): Promise<void> {
+    const current = this.stations();
+    const moved = current[from];
+    if (moved === undefined || from === to || to < 0 || to >= current.length) {
+      return;
     }
-    ids[index] = swapped;
-    ids[target] = moved;
-    return this.run(
+    if (!this.canWrite() || this.busy()) {
+      return;
+    }
+    const next = [...current];
+    next.splice(from, 1);
+    next.splice(to, 0, moved);
+    const ids = next.map((station) => station.id);
+    this.stations.set(next);
+    await this.run(
       () =>
         shownOnce(this.intents, `reorder:${ids.join(',')}`, (key) => this.api.reorder(ids, key)),
       'L’ordre des postes n’a pas pu être enregistré.',
     );
+    if (this.refusal() === null) {
+      this.announcement.set(
+        `« ${moved.name} » est maintenant en place ${String(to + 1)} sur ${String(next.length)}.`,
+      );
+    } else {
+      this.stations.set(current);
+      this.announcement.set('Le déplacement n’a pas été enregistré.');
+    }
   }
 
   protected archive(station: WorkstationView): Promise<void> {

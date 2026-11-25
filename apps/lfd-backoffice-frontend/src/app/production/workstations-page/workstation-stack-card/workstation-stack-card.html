@@ -42,39 +42,23 @@
           aria-label="Pile du poste, du haut vers le bas"
           data-stack
         >
-          @for (
-            product of stack();
-            track product.productSku;
-            let index = $index;
-            let first = $first;
-            let last = $last
-          ) {
+          @for (product of stack(); track product.productSku; let index = $index) {
             <li
               class="item"
               cdkDrag
               [cdkDragStartDelay]="dragDelay"
               [attr.data-stack-item]="product.productSku"
             >
-              <span class="rank">{{ index + 1 }}</span>
-              <span class="name">{{ nameOf(product) }}</span>
-              @if (canWrite()) {
-                <fold-button-icon
-                  icon="chevron-up"
-                  size="sm"
-                  [tooltip]="'Monter « ' + nameOf(product) + ' »'"
-                  [disabled]="busy() || first"
-                  (clicked)="move(index, -1)"
-                  data-stack-up
-                />
-                <fold-button-icon
-                  icon="chevron-down"
-                  size="sm"
-                  [tooltip]="'Descendre « ' + nameOf(product) + ' »'"
-                  [disabled]="busy() || last"
-                  (clicked)="move(index, 1)"
-                  data-stack-down
-                />
-              }
+              <fold-card padding="sm" radius="sm">
+                <div class="item-row">
+                  @if (canWrite()) {
+                    <app-reorder-handle [itemName]="nameOf(product)" (step)="move(index, $event)" />
+                  }
+                  <span class="rank">{{ index + 1 }}</span>
+                  <span class="name">{{ nameOf(product) }}</span>
+                </div>
+              </fold-card>
+              <div class="placeholder" *cdkDragPlaceholder></div>
             </li>
           }
         </ol>

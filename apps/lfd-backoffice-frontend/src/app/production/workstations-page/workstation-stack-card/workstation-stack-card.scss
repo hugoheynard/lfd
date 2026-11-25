@@ -17,16 +17,16 @@
   list-style: none;
 }
 
-/* Une ligne par produit : son rang, son nom, puis les boutons du clavier. */
+/* Chaque produit est une petite carte glissable entière : la main ouverte au
+   survol, fermée pendant le glisser (sur l'aperçu, qui suit le pointeur). */
 .item {
+  cursor: grab;
+}
+
+.item-row {
   display: flex;
   gap: var(--fold-space-sm);
   align-items: center;
-  padding: var(--fold-space-xs) var(--fold-space-sm);
-  border: 1px solid var(--fold-color-border);
-  border-radius: var(--fold-radius-sm);
-  background: var(--fold-color-surface);
-  cursor: grab;
 }
 
 .rank {
@@ -40,12 +40,21 @@
 }
 
 .cdk-drag-preview {
-  opacity: 0.6;
+  cursor: grabbing;
+  box-shadow: var(--fold-shadow-md);
+}
+
+/* L'emplacement où la carte tombera : un cadre pointillé de la hauteur d'une carte. */
+.placeholder {
+  min-block-size: var(--fold-space-xl);
+  border: 1px dashed var(--fold-color-primary);
+  border-radius: var(--fold-radius-sm);
+  background: var(--fold-color-primary-surface);
 }
 
 .cdk-drag-animating,
 .stack.cdk-drop-list-dragging .item {
-  transition: transform 0.2s ease;
+  transition: transform var(--fold-motion-slow);
 }
 
 @media (prefers-reduced-motion: reduce) {
