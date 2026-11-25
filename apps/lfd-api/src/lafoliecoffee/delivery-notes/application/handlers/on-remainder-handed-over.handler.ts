@@ -1,48 +1,31 @@
 import { Injectable } from "@nestjs/common";
-import { CommandBus } from "@nestjs/cqrs";
 
-import {
-  HANDOVER_HANDED_OVER,
-  OrderHandedOverEvent,
-} from "../../../../handover/channels/commerce/index.js";
-import type { DurableDelivery } from "../../../../platform/outbox/durable-event.js";
+import { HANDOVER_HANDED_OVER } from "../../../../handover/channels/commerce/index.js";
 import {
   DurableHandler,
   type DurableSubscriber,
 } from "../../../../platform/outbox/durable-handler.js";
-import { FIRST_SHIPMENT_RANK } from "../../../../production/channels/commerce/index.js";
-import { HandOverRemainderNoteCommand } from "../commands/hand-over-remainder-note.command.js";
 
 /** Nom STABLE de l'abonné — clé de son reçu dans la boîte d'envoi. */
 export const ON_REMAINDER_HANDED_OVER = "b2b.delivery-notes.hand-over-remainder";
 
 /**
- * **Un reliquat est remis au client** (plan E7 reliquat, choix 3, lot L4b).
+ * **Un abonné muet**, gardé inscrit pour la boîte d'envoi.
  *
- * Même figure que `OnRemainderPacked` : un second abonné à
- * `handover.handed_over` plutôt qu'une branche dans `OnOrderHandedOver`. Le
- * rang 1 ferme la COMMANDE (et son BL suit) ; un rang > 1 ne remet que SON
- * BL. Chacun ignore l'autre moitié des faits sans trace, puisqu'elle a son
- * lecteur.
+ * Le second envoi d'une commande n'existe plus : le reste d'un départ
+ * incomplet devient une nouvelle commande (`documentation/commandes/reliquat/reliquat.md`).
+ * Chaque `handover.handed_over` publié crée pourtant une livraison par abonné
+ * inscrit, et une livraison dont l'abonné a disparu finit en lettre morte.
+ * L'abonné reste donc inscrit, sous le même nom, et rend la main sans rien
+ * faire : le rang 1 a son propre abonné (`OnOrderHandedOver`).
+ *
+ * Il sortira du code une fois constaté qu'aucune livraison ne l'attend plus
+ * dans `platform.outbox_delivery` (inventaire B5, § 0).
  */
 @Injectable()
 @DurableHandler({ type: HANDOVER_HANDED_OVER, subscriber: ON_REMAINDER_HANDED_OVER })
 export class OnRemainderHandedOver implements DurableSubscriber {
-  constructor(private readonly commands: CommandBus) {}
-
-  async handle(delivery: DurableDelivery): Promise<void> {
-    const event = OrderHandedOverEvent.fromPayload(delivery.payload);
-    if (event.rank === FIRST_SHIPMENT_RANK) {
-      return;
-    }
-    await this.commands.execute(
-      new HandOverRemainderNoteCommand(
-        event.orderId,
-        event.rank,
-        event.handedOverAt,
-        event.handedOverBy,
-        event.via,
-      ),
-    );
+  handle(): Promise<void> {
+    return Promise.resolve();
   }
 }

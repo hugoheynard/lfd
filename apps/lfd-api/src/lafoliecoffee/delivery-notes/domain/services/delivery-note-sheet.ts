@@ -13,11 +13,7 @@ import type {
 } from "@lfd/contracts";
 import { orderPretaxCents } from "@lfd/money";
 
-import {
-  FIRST_DELIVERY_NOTE_RANK,
-  reprintNeededOf,
-  type DeliveryNoteState,
-} from "../entities/delivery-note.js";
+import { reprintNeededOf, type DeliveryNoteState } from "../entities/delivery-note.js";
 import { DeliveryNoteWithoutTermsError } from "../errors/delivery-note-errors.js";
 import type { DeliveryNoteLineState } from "../value-objects/delivery-note-line.js";
 import type {
@@ -177,29 +173,22 @@ function moneyOf(
   if (note.terms === null) {
     throw new DeliveryNoteWithoutTermsError(note.number);
   }
-  return moneyFrom(note, note.terms, billing, parts);
+  return moneyFrom(note.terms, billing, parts);
 }
 
 /**
- * **La livraison offerte suit le port** : elle ne s'écrit que sur le BL de
- * rang 1, celui qui porte le frais de livraison de la commande (Q-I2 — un
- * montant fixe reste entier sur le premier BL, un reliquat n'a ni port ni
- * surtaxe, `remainderAdjustmentsOf`). Le franco s'est jugé sur le panier
- * commandé, une fois : la ligne recopie ce que la commande a figé, et un
- * reliquat ne la répète pas — elle offrirait deux fois la même livraison.
+ * **La livraison offerte suit le port** : elle s'écrit sur le BL, qui porte
+ * le frais de livraison de la commande. Le franco s'est jugé sur le panier
+ * commandé, une fois : la ligne recopie ce que la commande a figé.
  * Affichée seulement : aucun montant du BL n'en dépend.
  */
 function freeDeliveryOf(
-  note: DeliveryNoteState,
   freeDelivery: SheetMoney["freeDelivery"],
 ): Pick<SheetMoney, "freeDelivery"> {
-  return freeDelivery === undefined || note.rank !== FIRST_DELIVERY_NOTE_RANK
-    ? {}
-    : { freeDelivery };
+  return freeDelivery === undefined ? {} : { freeDelivery };
 }
 
 function moneyFrom(
-  note: DeliveryNoteState,
   terms: DeliveryNoteTerms,
   billing: DeliveryNoteOrderBilling,
   parts: readonly NoteDiscountPartView[],
@@ -219,7 +208,7 @@ function moneyFrom(
     ...meta,
     ...(pickupDiscountBase === undefined ? {} : { pickupDiscountBase }),
     ...discountLinesOf(parts),
-    ...freeDeliveryOf(note, freeDelivery),
+    ...freeDeliveryOf(freeDelivery),
     // Les TTC du BL lui-même — recomposés sur le livré (plan du centime, § 5).
     ...(terms.ttcTerms === null ? {} : ttcFieldsOf(terms.ttcTerms)),
   };
@@ -284,7 +273,7 @@ export function staffNoteOf(
 ): StaffNote {
   return {
     ...pricedShapeOf(note, head, billing),
-    money: note.terms === null ? null : moneyFrom(note, note.terms, billing, parts),
+    money: note.terms === null ? null : moneyFrom(note.terms, billing, parts),
     audience: "staff",
     status: note.status,
     plannedAt: note.plannedAt.toISOString(),

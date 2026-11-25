@@ -8,7 +8,6 @@ import {
 } from "../../../../orders/domain/services/__tests__/frozen-basket-discounts.fixture.js";
 import type { DeliveryNoteSourceLine } from "../../value-objects/delivery-note-line.js";
 import { DeliveryNoteTerms } from "../../value-objects/delivery-note-terms.js";
-import { remainderAdjustmentsOf } from "../remainder-decision-source.js";
 
 /** Le bon partiel `line_ht`, chaque remise sur ses lignes (plan des promotions, § 18.8 n° 3, M4). */
 
@@ -89,22 +88,5 @@ describe("composePartial — une remise par étape, sur SES lignes", () => {
   it("une remise sans ajustement figé ne se recompose pas, comme la remise nulle d'hier", () => {
     const unknown = { ...tableDiscount("od_1", TEN, ["PAIN"]), adjustment: null };
     expect(partial([unknown]).discountCents).toBe(0);
-  });
-});
-
-describe("remainderAdjustmentsOf — la règle du reliquat, remise par remise", () => {
-  it("garde les pourcentages dans leur ordre, retire les montants fixes", () => {
-    const percent = tableDiscount("od_2", TEN, ["PAIN"]);
-    const kept = remainderAdjustmentsOf(
-      rules([tableDiscount("od_1", THREE_EUROS, ["PAIN"]), percent]),
-    );
-    expect(kept.discounts).toEqual([percent]);
-  });
-
-  it("une commande non reprise garde sa remise en % lue dans les colonnes", () => {
-    expect(remainderAdjustmentsOf(rules(columnDiscounts(TEN))).discounts).toEqual(
-      columnDiscounts(TEN),
-    );
-    expect(remainderAdjustmentsOf(rules(columnDiscounts(THREE_EUROS))).discounts).toEqual([]);
   });
 });

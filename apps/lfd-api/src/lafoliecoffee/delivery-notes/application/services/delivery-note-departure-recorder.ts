@@ -11,8 +11,7 @@ import { deliveryNoteDiscountPartsOf } from "../../domain/services/delivery-note
  * y reçoit sa part (`delivery_note_discounts`), rejouée sur ses lignes par
  * le domaine.
  *
- * Appelé par les deux écrivains qui remettent un bon — l'alignement du BL-1
- * et la remise d'un reliquat —, dans leur unité de travail, après
+ * Appelé par l'alignement qui remet le bon, dans son unité de travail, après
  * l'écriture du bon. Un bon pas encore parti n'en a pas : ses lignes peuvent
  * encore changer.
  *

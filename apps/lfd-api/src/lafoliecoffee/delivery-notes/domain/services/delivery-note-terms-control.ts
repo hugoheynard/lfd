@@ -6,7 +6,7 @@ import type { FollowedOrder } from "./delivery-note-alignment.js";
 const CONTROLLED_STATUSES: ReadonlySet<FollowedOrder["status"]> = new Set([
   "confirmed",
   "ready",
-  // Plan E7 reliquat (L5a) : le BL-1 est remis, contrôlé comme sous `fulfilled`.
+  // Valeur gardée en base, qu'aucun chemin n'écrit plus : contrôlé comme `fulfilled`.
   "partially_handed_over",
   "fulfilled",
 ]);
@@ -45,25 +45,21 @@ export function termsGapsOf(
   if (!CONTROLLED_STATUSES.has(order.status) || order.lines.length === 0) {
     return [];
   }
-  return (
-    notes
-      // Un reliquat porte SES lignes et SES montants (plan E7, choix 10) : seul le
-      // BL-1 doit reprendre la commande.
-      .filter((note) => note.orderId === order.orderId && note.isLive && note.followsItsOrder)
-      .flatMap((note) => {
-        const fields = gapFields(order, note);
-        return fields.length === 0
-          ? []
-          : [
-              {
-                orderId: order.orderId,
-                orderNumber: order.orderNumber,
-                noteNumber: note.number,
-                fields,
-              },
-            ];
-      })
-  );
+  return notes
+    .filter((note) => note.orderId === order.orderId && note.isLive)
+    .flatMap((note) => {
+      const fields = gapFields(order, note);
+      return fields.length === 0
+        ? []
+        : [
+            {
+              orderId: order.orderId,
+              orderNumber: order.orderNumber,
+              noteNumber: note.number,
+              fields,
+            },
+          ];
+    });
 }
 
 function gapFields(order: FollowedOrder, note: DeliveryNote): readonly string[] {

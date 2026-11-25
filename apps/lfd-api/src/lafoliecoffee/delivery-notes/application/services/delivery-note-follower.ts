@@ -6,9 +6,6 @@ import { Clock } from "../../../../platform/time/clock.js";
 import { DeliveryNoteAligner } from "./delivery-note-aligner.js";
 import { DeliveryNotePlanner } from "./delivery-note-planner.js";
 import { OrderBillingCloser } from "./order-billing-closer.js";
-import { RemainderDecisionFollower } from "./remainder-decision-follower.js";
-import { FIRST_DELIVERY_NOTE_RANK } from "../../domain/entities/delivery-note.js";
-import { DeliveryNoteRepository } from "../../domain/ports/delivery-note.repository.js";
 
 /**
  * **Le BL suit la commande** — l'implémentation de {@link DeliveryNoteFollowing}
@@ -28,8 +25,6 @@ export class DeliveryNoteFollower extends DeliveryNoteFollowing {
     private readonly aligner: DeliveryNoteAligner,
     private readonly clock: Clock,
     private readonly billing: OrderBillingCloser,
-    private readonly notes: DeliveryNoteRepository,
-    private readonly remainderDecisions: RemainderDecisionFollower,
   ) {
     super();
   }
@@ -54,13 +49,8 @@ export class DeliveryNoteFollower extends DeliveryNoteFollowing {
   /**
    * Strict : un BL qui ne peut pas suivre la décision la fait échouer — sans
    * quoi elle partirait avec une fiche réduite et un BL plein (plan E6, § 13).
-   * Le rang 1 aligne le BL-1 sur la commande et sa décision ; un reliquat a
-   * son propre suivi (plan E7 reliquat, LB).
    */
-  followDecision(orderId: string, rank: number): Promise<void> {
-    if (rank !== FIRST_DELIVERY_NOTE_RANK) {
-      return this.remainderDecisions.follow(orderId, rank);
-    }
+  followDecision(orderId: string): Promise<void> {
     return this.follow(orderId, this.clock.now(), true);
   }
 
@@ -69,21 +59,9 @@ export class DeliveryNoteFollower extends DeliveryNoteFollowing {
     return this.follow(orderId, this.clock.now(), false, true);
   }
 
-  /**
-   * Le BL-1 suit la commande annulée ; les restes, que l'alignement laisse à
-   * leur envoi, s'annulent ici (plan E7 reliquat, L5a) : une commande annulée
-   * n'a plus rien à livrer. Un reste remis n'arrive pas jusqu'ici — l'annulation
-   * le refuse sous le même verrou (`ShipmentHandoverReader`).
-   */
-  async voidLiveFor(orderId: string, at: Date): Promise<void> {
-    await this.follow(orderId, at);
-    const remainders = (await this.notes.loadForOrders([orderId])).filter(
-      (note) => note.isLive && !note.followsItsOrder,
-    );
-    for (const note of remainders) {
-      note.void(at);
-      await this.notes.save(note);
-    }
+  /** Le BL suit la commande annulée : une commande annulée n'a plus rien à livrer. */
+  voidLiveFor(orderId: string, at: Date): Promise<void> {
+    return this.follow(orderId, at);
   }
 
   /** `now` ne sert qu'à dater une annulation ; les autres instants sont ceux de la commande. */

@@ -16,7 +16,6 @@ import {
   type DeliveryNoteTerms,
 } from "../value-objects/delivery-note-terms.js";
 import { DeliveryNoteNumber } from "../value-objects/delivery-note-number.js";
-import { RemainderSchedule } from "../value-objects/remainder-schedule.js";
 import type { DeliveryNoteChangeCause } from "../services/delivery-note-version.js";
 
 /**
@@ -27,7 +26,10 @@ import type { DeliveryNoteChangeCause } from "../services/delivery-note-version.
 export const DELIVERY_NOTE_STATUSES = ["planned", "prepared", "handed_over", "voided"] as const;
 export type DeliveryNoteStatus = (typeof DELIVERY_NOTE_STATUSES)[number];
 
-/** Le premier BL d'une commande — le seul que le système écrit jusqu'aux reliquats. */
+/**
+ * Le rang du BL d'une commande — le seul que le système écrit : le reste d'un
+ * départ incomplet devient une nouvelle commande, avec son propre BL.
+ */
 export const FIRST_DELIVERY_NOTE_RANK = 1;
 
 /** Un jour civil `AAAA-MM-JJ` — la forme de la date de réception d'une commande. */
@@ -46,21 +48,13 @@ export interface DeliveryNoteSource {
   readonly departureDecided?: boolean;
 }
 
-/** La source d'un reliquat : la commande, et son jour demandé `AAAA-MM-JJ` (D1). */
-export interface DeliveryNoteRemainderSource extends DeliveryNoteSource {
-  readonly orderDay: string;
-}
-
 /** L'état complet d'un BL, tel que l'adaptateur l'écrit et le relit. */
 export interface DeliveryNoteState {
   readonly id: string;
   readonly orderId: string;
   readonly rank: number;
   readonly number: string;
-  /**
-   * Jour de service `AAAA-MM-JJ` d'un reliquat (rang > 1) ; `null` au rang 1,
-   * dont le jour est celui de la commande (plan E7, choix 2).
-   */
+  /** Toujours `null` : le jour d'un BL est celui de sa commande (colonne gardée en base). */
   readonly serviceDay: string | null;
   readonly status: DeliveryNoteStatus;
   readonly plannedAt: Date;
@@ -154,37 +148,6 @@ export class DeliveryNote {
     return note;
   }
 
-  /**
-   * **Un reliquat** (plan E7, lot L1) : un BL de rang > 1, né d'une décision,
-   * prévu pour SON jour de service, ses lignes celles du reste à relivrer. Les
-   * lots suivants s'en servent aussi pour leurs données de test.
-   *
-   * @throws {InvalidDeliveryNoteRemainderError} rang 1, jour absent ou mal
-   *   formé, jour antérieur à celui de la commande.
-   * @throws {DeliveryNoteWithoutLinesError} le reste n'a aucune ligne.
-   */
-  static planRemainder(
-    id: string,
-    source: DeliveryNoteRemainderSource,
-    rank: number,
-    serviceDay: string,
-    plannedAt: Date,
-  ): DeliveryNote {
-    const schedule = RemainderSchedule.of(source.orderNumber, rank, serviceDay, source.orderDay);
-    const number = DeliveryNoteNumber.of(source.orderNumber, schedule.rank);
-    const identity = {
-      id,
-      orderId: source.orderId,
-      rank: schedule.rank,
-      number: number.value,
-      serviceDay: schedule.serviceDay,
-      plannedAt,
-    };
-    const note = new DeliveryNote(identity, PLANNED, linesOf(source), null, FIRST_PAPER);
-    note.copyTermsFrom(source);
-    return note;
-  }
-
   /** Recharge un BL écrit ; ses lignes revalident. */
   static rehydrate(state: DeliveryNoteState): DeliveryNote {
     const { status, voidedAt, preparedAt, handedOverAt, receivedOn, lines, terms } = state;
@@ -215,20 +178,9 @@ export class DeliveryNote {
     return this.progress.status;
   }
 
-  /**
-   * Vivant = pas annulé. Une commande vivante en a exactement un PAR RANG
-   * (plan E7, choix 3) : un BL-1 remis reste vivant à côté d'un reliquat.
-   */
+  /** Vivant = pas annulé. Une commande vivante en a exactement un. */
   get isLive(): boolean {
     return this.progress.status !== "voided";
-  }
-
-  /**
-   * Le BL de rang 1, le seul qui suit sa commande (plan E7, choix 3) : un
-   * reliquat a son propre état, que seuls les gestes de son envoi font avancer.
-   */
-  get followsItsOrder(): boolean {
-    return this.identity.rank === FIRST_DELIVERY_NOTE_RANK;
   }
 
   /**

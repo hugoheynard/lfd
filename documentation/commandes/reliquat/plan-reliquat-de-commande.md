@@ -141,7 +141,7 @@ Ce que l'équipe doit savoir :
 - **La règle d'argent d'un reste** existe déjà : `remainderDiscountsOf`
   (`lafoliecoffee/delivery-notes/domain/services/note-basket-discounts.ts`) — les
   pourcentages restent, les montants fixes sortent ; port et surtaxe à zéro
-  (`remainderAdjustmentsOf`, `remainder-decision-source.ts`).
+  (`remainderAdjustmentsOf`, remainder-decision-source (retiré en B5a)).
 
 ### 2. B1 — la table et l'agrégat (migration additive)
 
@@ -801,9 +801,9 @@ pas sans recréer le type, en-tête de `20261026100000_la_commande_en_partie_ret
 
 Dans le commerce, les fichiers qui portent le mécanisme (grep du 2026-11-25
 sur `planRemainder|RemainderSchedule|remainder-note|RemainderSettle|RemainderShipment|settlesOnRemainder|DECIDABLE_REMAINDER_NOTE|partially_handed_over`,
-hors tests) : `delivery-note.ts` (`planRemainder`), `remainder-schedule.ts`,
-`remainder-decision-source.ts`, `remainder-decision-follower.ts`,
-`prepare-remainder-note.handler.ts`, `hand-over-remainder-note.handler.ts`,
+hors tests) : `delivery-note.ts` (`planRemainder`), remainder-schedule (retiré en B5a),
+remainder-decision-source (retiré en B5a), remainder-decision-follower (retiré en B5a),
+prepare-remainder-note.handler (retiré en B5a), hand-over-remainder-note.handler (retiré en B5a),
 `on-remainder-packed.handler.ts`, `on-remainder-handed-over.handler.ts`,
 `order-remainder-settler.ts`, `remainder-settlement.ts`,
 `remainder-shipment.reader.ts` et son adaptateur Prisma,

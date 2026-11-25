@@ -27,8 +27,8 @@ const HANDED_OVER: DeliveryNoteStatus = "handed_over";
  * 404, qui ne dit pas qu'un numéro existe. Un BL prévu ou préparé n'est pas
  * encore un fait que le client peut opposer : il n'a rien reçu.
  *
- * ⚠️ Un seul BL remis par commande jusqu'aux reliquats (E6) : le dernier par
- * rang est servi. E6 décidera comment le client choisit entre plusieurs.
+ * Une commande n'a qu'un BL remis : le reste d'un départ incomplet devient
+ * une nouvelle commande, avec son propre BL.
  */
 @QueryHandler(GetClientNotePdfQuery)
 export class GetClientNotePdfHandler implements IQueryHandler<

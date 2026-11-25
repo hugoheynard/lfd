@@ -6,14 +6,12 @@ import {
   FixedConfirmedOrders,
   InMemoryDeliveryNotes,
   InMemoryOrderProgress,
-  InMemoryRemainderDecisions,
   InMemoryShortfallDecisions,
   billingCloserOf,
 } from "../../__tests__/delivery-note-doubles.js";
 import { DeliveryNote } from "../../../domain/entities/delivery-note.js";
 import { DeliveryNoteAligner } from "../delivery-note-aligner.js";
 import { DeliveryNoteFollower } from "../delivery-note-follower.js";
-import { RemainderDecisionFollower } from "../remainder-decision-follower.js";
 import { DeliveryNotePlanner } from "../delivery-note-planner.js";
 import { departureRecorderOf } from "../../__tests__/departure-doubles.js";
 
@@ -83,8 +81,6 @@ function scene() {
     new DeliveryNoteAligner(notes, ids, new InMemoryShortfallDecisions(), departureRecorderOf()),
     clock,
     billingCloserOf(notes),
-    notes,
-    new RemainderDecisionFollower(progress, notes, new InMemoryRemainderDecisions()),
   );
   return { notes, progress, follower };
 }
@@ -145,43 +141,6 @@ describe("DeliveryNoteFollower — les gestes (plan E2, § 8.3)", () => {
     ]);
   });
 
-  /**
-   * Plan E7 reliquat (L5a) : l'alignement laisse un reste à son envoi ; la
-   * commande annulée n'a plus rien à livrer, ses restes s'annulent avec elle.
-   */
-  it("annulation → les restes vivants passent `voided` avec le BL-1", async () => {
-    const { notes, progress, follower } = scene();
-    progress.put(order({ status: "ready", readyAt: READY_AT }));
-    await follower.prepare("ord_1");
-    const rest = DeliveryNote.planRemainder(
-      "dn_r2",
-      { ...order(), orderDay: "1970-01-01" },
-      2,
-      "1970-01-02",
-      READY_AT,
-    );
-    rest.prepare(READY_AT);
-    await notes.save(rest);
-    await notes.save(
-      DeliveryNote.planRemainder(
-        "dn_r3",
-        { ...order(), orderDay: "1970-01-01" },
-        3,
-        "1970-01-03",
-        READY_AT,
-      ),
-    );
-    progress.put(order({ status: "cancelled", readyAt: READY_AT }));
-
-    await follower.voidLiveFor("ord_1", CANCELLED_AT);
-
-    expect(notes.forOrder("ord_1").map((note) => [note.rank, note.status, note.voidedAt])).toEqual([
-      [1, "voided", CANCELLED_AT],
-      [2, "voided", CANCELLED_AT],
-      [3, "voided", CANCELLED_AT],
-    ]);
-  });
-
   it("un écart non réparable ne lève pas : la commande avance quand même", async () => {
     const { notes, progress, follower } = scene();
     progress.put(order({ status: "ready", readyAt: READY_AT, orderNumber: "CMD-1" }));
@@ -217,8 +176,6 @@ describe("DeliveryNoteFollower — les gestes (plan E2, § 8.3)", () => {
       new DeliveryNoteAligner(notes, ids, new InMemoryShortfallDecisions(), departureRecorderOf()),
       clock,
       billingCloserOf(notes),
-      notes,
-      new RemainderDecisionFollower(progress, notes, new InMemoryRemainderDecisions()),
     );
     await notes.save(DeliveryNote.planFromOrder("dn_other", order(), CONFIRMED_AT));
     progress.put(order({ status: "ready", readyAt: READY_AT }));

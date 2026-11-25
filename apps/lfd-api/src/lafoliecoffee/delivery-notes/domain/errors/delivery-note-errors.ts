@@ -162,52 +162,6 @@ export class DecisionNoteNotFollowedError extends BusinessError {
 }
 
 /**
- * Un reliquat (BL de rang > 1, plan E7, lot L1) se prévoit avec un rang au-delà
- * du premier et un jour de service valide, au plus tôt celui de la commande.
- */
-export class InvalidDeliveryNoteRemainderError extends DomainError {
-  constructor(orderNumber: string, reason: string) {
-    super(
-      "delivery_notes.remainder.invalid",
-      `Reste à relivrer de la commande ${orderNumber} refusé : ${reason}. ` +
-        "Aucun bon n'a été écrit ; reprendre la décision, et prévenir l'équipe technique si le refus revient.",
-    );
-  }
-}
-
-/**
- * Le colisage a fermé le bac d'un reliquat dont le commerce n'a aucun BL
- * (plan E7 reliquat, choix 4, lot L4a). Une feuille de rang > 1 ne naît que
- * d'un BL de ce rang : c'est une divergence, pas un cas d'usage.
- */
-export class RemainderNoteNotFoundError extends ResourceNotFoundError {
-  constructor(orderId: string, rank: number) {
-    super(
-      "delivery_notes.remainder.not_found",
-      `Le bac du reliquat de rang ${rank} de la commande ${orderId} a été fermé au colisage, ` +
-        "mais aucun bon de livraison de ce rang n'existe pour elle. Rien n'a été écrit ; " +
-        "prévenir l'équipe technique, puis rejouer ce message depuis la carte de santé.",
-    );
-  }
-}
-
-/**
- * Le retrait a remis un reliquat dont le commerce n'a aucun BL (plan E7
- * reliquat, lot L4b). Un envoi de rang > 1 ne naît que d'un BL de ce rang :
- * c'est une divergence, pas un cas d'usage.
- */
-export class HandedOverRemainderNoteNotFoundError extends ResourceNotFoundError {
-  constructor(orderId: string, rank: number) {
-    super(
-      "delivery_notes.remainder.handed_over_not_found",
-      `Le reliquat de rang ${String(rank)} de la commande ${orderId} a été remis au client, ` +
-        "mais aucun bon de livraison de ce rang n'existe pour elle. Rien n'a été écrit ; " +
-        "prévenir l'équipe technique, puis rejouer ce message depuis la carte de santé.",
-    );
-  }
-}
-
-/**
  * Le comptoir ne lit que le BL chiffré **qu'il a lui-même remis** : celui d'un
  * retrait, une fois remis (plan du jour J, lot L6). Les autres restent sous
  * `b2b_orders`. Un 404 : le poste du comptoir n'a pas à apprendre qu'un autre

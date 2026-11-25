@@ -38,14 +38,3 @@ export function noteBasketDiscountsOf(
         ],
   );
 }
-
-/**
- * La règle du reliquat (plan E7 reliquat, choix 10 ; § 18.2 du plan des
- * promotions) : un pourcentage se recompose sur chaque envoi, un montant fixe
- * est compté entier sur le BL-1 et n'entre jamais dans un reliquat.
- */
-export function remainderDiscountsOf(
-  discounts: readonly FrozenBasketDiscount[],
-): readonly FrozenBasketDiscount[] {
-  return discounts.filter((discount) => discount.adjustment?.mode === "percent");
-}

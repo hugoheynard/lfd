@@ -38,7 +38,7 @@ export interface ShortfallDepartureAct {
  * Dans l'unité de travail de l'appelant, APRÈS le verrou de la commande :
  * l'agrégat juge et résout le signal, le colisage autorise sous le verrou de
  * la fiche (`ShortfallDesk`), le signal puis la décision s'écrivent, le BL
- * de l'envoi se réécrit (`followDecision`), et `order.shortfall_decided`
+ * de la commande se réécrit (`followDecision`), et `order.shortfall_decided`
  * part dans la boîte d'envoi. Au rang 1, ce qui n'est pas parti devient un
  * reliquat (`BackorderOpening`), dans la même unité de travail.
  */
@@ -85,7 +85,7 @@ export class ShortfallDeparture {
         decidedAt,
       });
     }
-    await this.deliveryNotes.followDecision(orderId, rank);
+    await this.deliveryNotes.followDecision(orderId);
     await this.durable.publish(
       new OrderShortfallDecidedEvent(
         orderId,

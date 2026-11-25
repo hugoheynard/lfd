@@ -23,7 +23,6 @@ import { FixedIdGenerator } from "../../../../platform/id/fixed-id-generator.js"
 import { DurablePublisher } from "../../../../platform/outbox/durable-publisher.js";
 import type { DurableFact } from "../../../../platform/outbox/durable-event.js";
 import {
-  RemainderDecisionReader,
   ShortfallDecisionReader,
   type DecidedDeparture,
 } from "../../../orders/domain/ports/shortfall-decision.reader.js";
@@ -153,15 +152,6 @@ export class InMemoryShortfallDecisions extends ShortfallDecisionReader {
     return Promise.resolve(
       new Map([...this.decided].filter(([orderId]) => orderIds.includes(orderId))),
     );
-  }
-}
-
-/** Les décisions des reliquats (plan E7 reliquat, LB), par `commande:rang`, posées par le test. */
-export class InMemoryRemainderDecisions extends RemainderDecisionReader {
-  readonly decided = new Map<string, DecidedDeparture>();
-
-  decisionOf(orderId: string, rank: number): Promise<DecidedDeparture | null> {
-    return Promise.resolve(this.decided.get(`${orderId}:${String(rank)}`) ?? null);
   }
 }
 

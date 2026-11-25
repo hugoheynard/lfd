@@ -1,43 +1,31 @@
 import { Injectable } from "@nestjs/common";
-import { CommandBus } from "@nestjs/cqrs";
 
-import type { DurableDelivery } from "../../../../platform/outbox/durable-event.js";
 import {
   DurableHandler,
   type DurableSubscriber,
 } from "../../../../platform/outbox/durable-handler.js";
-import { FIRST_SHIPMENT_RANK } from "../../../../production/channels/commerce/index.js";
-import {
-  PACKING_ORDER_PACKED,
-  PackingOrderPackedEvent,
-} from "../../../../packing/channels/commerce/index.js";
-import { PrepareRemainderNoteCommand } from "../commands/prepare-remainder-note.command.js";
+import { PACKING_ORDER_PACKED } from "../../../../packing/channels/commerce/index.js";
 
 /** Nom STABLE de l'abonné — clé de son reçu dans la boîte d'envoi. */
 export const ON_REMAINDER_PACKED = "b2b.delivery-notes.prepare-remainder";
 
 /**
- * **Le bac d'un reliquat est fermé au colisage** (plan E7 reliquat, choix 4,
- * lot L4a).
+ * **Un abonné muet**, gardé inscrit pour la boîte d'envoi.
  *
- * Un second abonné au même fait plutôt qu'une branche dans
- * `OnPackingOrderPacked` : le rang 1 rend la COMMANDE prête (commerce, et son
- * BL suit), un rang > 1 ne prépare que SON BL. Deux raisons de changer, deux
- * abonnés ; chacun ignore l'autre moitié des faits sans trace, puisqu'elle a
- * son lecteur.
+ * Le second envoi d'une commande n'existe plus : le reste d'un départ
+ * incomplet devient une nouvelle commande (`documentation/commandes/reliquat/reliquat.md`).
+ * Chaque `packing.order_packed` publié crée pourtant une livraison par abonné
+ * inscrit, et une livraison dont l'abonné a disparu finit en lettre morte.
+ * L'abonné reste donc inscrit, sous le même nom, et rend la main sans rien
+ * faire : le rang 1 a son propre abonné (`OnPackingOrderPacked`).
+ *
+ * Il sortira du code une fois constaté qu'aucune livraison ne l'attend plus
+ * dans `platform.outbox_delivery` (inventaire B5, § 0).
  */
 @Injectable()
 @DurableHandler({ type: PACKING_ORDER_PACKED, subscriber: ON_REMAINDER_PACKED })
 export class OnRemainderPacked implements DurableSubscriber {
-  constructor(private readonly commands: CommandBus) {}
-
-  async handle(delivery: DurableDelivery): Promise<void> {
-    const event = PackingOrderPackedEvent.fromPayload(delivery.payload);
-    if (event.rank === FIRST_SHIPMENT_RANK) {
-      return;
-    }
-    await this.commands.execute(
-      new PrepareRemainderNoteCommand(event.orderId, event.rank, event.packedAt),
-    );
+  handle(): Promise<void> {
+    return Promise.resolve();
   }
 }

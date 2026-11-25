@@ -21,7 +21,7 @@ const OFFERED: DeliveryNoteOrderBilling = {
 };
 
 describe("le bon de livraison et la livraison offerte", () => {
-  it("le BL de rang 1 porte la ligne de la promotion, au barème figé, sans bouger un total", () => {
+  it("le BL porte la ligne de la promotion, au barème figé, sans bouger un total", () => {
     const state = handedOverNote();
     const note = clientNoteOf(state, HEAD, OFFERED);
     const plain = clientNoteOf(state, HEAD, PRO_BILLING);
@@ -37,14 +37,6 @@ describe("le bon de livraison et la livraison offerte", () => {
     expect(staffNoteOf(state, HEAD, OFFERED).money?.freeDelivery).toEqual(
       OFFERED.money.freeDelivery,
     );
-  });
-
-  it("un reliquat (rang 2) ne répète pas la livraison offerte : le port est sur le BL-1", () => {
-    const state = { ...handedOverNote(), rank: 2 };
-    const note = clientNoteOf(state, HEAD, OFFERED);
-
-    expect(note.money.freeDelivery).toBeUndefined();
-    expect(totalRows(note)).toEqual(totalRows(clientNoteOf(state, HEAD, PRO_BILLING)));
   });
 
   it("sans livraison offerte, le bon est celui d'aujourd'hui", () => {

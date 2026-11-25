@@ -1,25 +1,14 @@
 /**
- * E2E du **retrait par envoi** (plan E7 reliquat, lot L4b —
- * `documentation/commandes/reliquat/reliquat.md`).
+ * E2E du **retrait d'une commande** (`documentation/commandes/reliquat/reliquat.md`).
  *
- * Ce que seul le vrai Postgres prouve : qu'un reliquat se remet sous sa
- * propre attestation (`(commande, rang)` unique, référence `-2`), que la
- * boîte d'envoi porte son fait jusqu'à SON bon de livraison sans toucher la
- * commande — ni statut, ni solde, ni facture, ni points avant L5 —, qu'un
- * double retrait du même envoi est refusé, et que la commande annulée
- * refuse aussi son reliquat. Avec un seul envoi, le retrait rend ce qu'il
- * rendait.
- *
- * Le rang n'a pas encore de route (le panneau par envoi est L4c) : le geste
- * passe par le service que le scan et la saisie appellent.
+ * Ce que seul le vrai Postgres prouve : par le geste commun du scan et de la
+ * saisie, la commande retirée est soldée et son BL remis, sans message en
+ * souffrance ; un second retrait est refusé en le nommant.
  *
  * Doublés : la signature des jetons (le jeton EST le `sub`) et Stripe.
  */
 import type { AdminPlacedOrderResponse } from "@lfd/contracts";
 
-import { DeliveryNote } from "../src/lafoliecoffee/delivery-notes/domain/entities/delivery-note.js";
-import { DeliveryNoteRepository } from "../src/lafoliecoffee/delivery-notes/domain/ports/delivery-note.repository.js";
-import { ORDER_TERMS } from "../src/lafoliecoffee/delivery-notes/domain/value-objects/__tests__/delivery-note-terms.fixture.js";
 import { CardProviders } from "../src/payment/card/domain/ports/card-providers.js";
 import { HandoverAttestation } from "../src/handover/application/services/handover-attestation.service.js";
 import { HandoverSubjectReader } from "../src/handover/channels/commerce/handover-subject.reader.js";
@@ -45,7 +34,6 @@ import { cardGatewayDouble } from "./order-factory.js";
 import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const DAY = serviceDay(7);
-const NEXT_DAY = serviceDay(8);
 const BUYER = "auth0|acheteur-retrait-envoi";
 
 const fakeGateway = cardGatewayDouble("pi_hbs");
@@ -152,41 +140,8 @@ function notesOf(orderId: string) {
   return ctx.prisma.deliveryNote.findMany({
     where: { orderId },
     orderBy: { rank: "asc" },
-    select: { id: true, rank: true, status: true, updatedAt: true, serviceDay: true },
+    select: { id: true, rank: true, status: true, updatedAt: true },
   });
-}
-
-/** Le reliquat, par la fabrique du domaine (lot L1) — jamais un INSERT brut. */
-async function planRemainder(orderId: string): Promise<void> {
-  const saved = await ctx.app.get(DeliveryNoteRepository).saveNew(
-    DeliveryNote.planRemainder(
-      `dn_rest_${orderId}`,
-      {
-        orderId,
-        orderNumber: await numberOf(orderId),
-        orderDay: DAY,
-        terms: ORDER_TERMS,
-        lines: [
-          {
-            sku: "VIE-001-1",
-            productName: "Croissant",
-            unitPriceMillicents: 95_000,
-            vatRate: 5.5,
-            quantity: 2,
-            saleUnit: "piece" as const,
-            lineTotalCents: 1_900,
-            unitPriceTtcCents: null,
-            lineTotalTtcCents: null,
-            pickupDiscountEligible: true,
-          },
-        ],
-      },
-      2,
-      NEXT_DAY,
-      new Date(),
-    ),
-  );
-  expect(saved).toBe(true);
 }
 
 /** Le bac fermé au colisage, publié comme le colisage le publie : dans une unité de travail. */
@@ -236,12 +191,6 @@ function attestationsOf(orderId: string) {
   });
 }
 
-function factTypes(): Promise<string[]> {
-  return ctx.prisma.outboxMessage
-    .findMany({ orderBy: { id: "asc" }, select: { type: true } })
-    .then((rows) => rows.map((row) => row.type).sort());
-}
-
 async function undelivered() {
   return ctx.prisma.outboxDelivery.findMany({
     where: { deliveredAt: null },
@@ -258,7 +207,7 @@ async function handedOverAtCounter(): Promise<string> {
   return account;
 }
 
-describe("le retrait par envoi (plan E7 reliquat, lot L4b)", () => {
+describe("le retrait d'une commande", () => {
   it("avec un seul envoi : la commande soldée, son BL remis, comme avant", async () => {
     const account = await handedOverAtCounter();
 
@@ -272,63 +221,13 @@ describe("le retrait par envoi (plan E7 reliquat, lot L4b)", () => {
     expect(await undelivered()).toEqual([]);
   });
 
-  it("le reliquat remis passe SON BL remis ; la commande, son solde et ses points ne bougent pas", async () => {
+  it("un second retrait est refusé en le nommant, sans message en souffrance", async () => {
     const account = await handedOverAtCounter();
-    await planRemainder(account);
-    await packed(account, 2);
-    const orderBefore = await orderStateOf(account);
-    const factsBefore = await factTypes();
-    const pointsBefore = await ctx.prisma.loyaltyLedgerEntry.count();
 
-    await handOver(account, 2);
-
-    const reference = await numberOf(account);
-    expect(await attestationsOf(account)).toEqual([
-      { rank: 1, reference },
-      { rank: 2, reference: `${reference}-2` },
-    ]);
-    expect((await notesOf(account)).map(({ rank, status }) => ({ rank, status }))).toEqual([
-      { rank: 1, status: "handed_over" },
-      { rank: 2, status: "handed_over" },
-    ]);
-    // Avant L5 : ni statut, ni date, ni montants facturables, ni `order.fulfilled`
-    // (donc ni points ni facture) — seul le fait du retrait est écrit.
-    expect(await orderStateOf(account)).toEqual(orderBefore);
-    expect(await factTypes()).toEqual([...factsBefore, "handover.handed_over"].sort());
-    expect(await ctx.prisma.loyaltyLedgerEntry.count()).toBe(pointsBefore);
-    expect(await undelivered()).toEqual([]);
-  });
-
-  it("un double retrait du même reliquat est refusé en le nommant ; le rang 1 l'est aussi", async () => {
-    const account = await handedOverAtCounter();
-    await planRemainder(account);
-    await packed(account, 2);
-    await handOver(account, 2);
-
-    await expect(handOver(account, 2)).rejects.toThrow(
-      "Le reste de cette commande (envoi 2) a déjà été retiré.",
-    );
     await expect(handOver(account, 1)).rejects.toThrow("Cette commande a déjà été retirée.");
-    expect(await attestationsOf(account)).toHaveLength(2);
-    // Chaque refus réannonce l'attestation de SON envoi : rejouées, elles
-    // sont sans effet de part et d'autre, sans message en souffrance.
+    expect(await attestationsOf(account)).toHaveLength(1);
     await ctx.drain();
     expect(await undelivered()).toEqual([]);
-    expect((await notesOf(account)).map(({ status }) => status)).toEqual([
-      "handed_over",
-      "handed_over",
-    ]);
-  });
-
-  it("une commande annulée refuse aussi son reliquat, sous le verrou commun", async () => {
-    const account = await placeOnAccount(await scene());
-    await planRemainder(account);
-    await staff()
-      .post(`/admin/orders/${account}/cancel`)
-      .send({ reason: "Le client a renoncé." })
-      .expect(204);
-
-    await expect(handOver(account, 2)).rejects.toThrow("Cette commande est annulée.");
-    expect(await attestationsOf(account)).toEqual([]);
+    expect((await notesOf(account)).map(({ status }) => status)).toEqual(["handed_over"]);
   });
 });

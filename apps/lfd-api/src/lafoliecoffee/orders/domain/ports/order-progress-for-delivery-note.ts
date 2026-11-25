@@ -43,12 +43,9 @@ export abstract class OrderProgressForDeliveryNote {
  * {@link OrderProgressForDeliveryNote} (ISP) : seul le réconciliateur
  * PARCOURT (`pageAfter`).
  *
- * ⚠️ Il disait « seul le réconciliateur parcourt et verrouille » : faux
- * depuis L4a du plan E7 reliquat. `lockProgressOf` est aussi pris par le prêt
- * et la remise d'un reste (`prepare-remainder-note.handler.ts`,
- * `hand-over-remainder-note.handler.ts`) et par l'impression d'un BL
- * (`record-delivery-note-print.handler.ts`) ; la remise du rang 1 prend la
- * même ligne par `OrderLock` (vérifié le 2026-10-26).
+ * `lockProgressOf` est aussi pris par l'impression d'un BL
+ * (`record-delivery-note-print.handler.ts`) ; la remise prend la même ligne
+ * par `OrderLock` (vérifié le 2026-11-25).
  */
 export abstract class OrdersToReconcileDeliveryNotes {
   /**

@@ -2,14 +2,10 @@ import { chainLineHtBasketDiscounts } from "../../../orders/domain/services/bask
 import { composeExactOrder } from "../../../orders/domain/services/exact-order-composition.js";
 import type { FrozenBasketDiscount } from "../../../orders/domain/services/frozen-basket-discounts.js";
 import type { DiscountVatShare } from "../../../orders/domain/services/order-discount-recovery-shapes.js";
-import { FIRST_DELIVERY_NOTE_RANK, type DeliveryNoteState } from "../entities/delivery-note.js";
+import type { DeliveryNoteState } from "../entities/delivery-note.js";
 import type { DeliveryNoteSourceLine } from "../value-objects/delivery-note-line.js";
 import type { DeliveryNoteTerms } from "../value-objects/delivery-note-terms.js";
-import {
-  noteBasketDiscountsOf,
-  remainderDiscountsOf,
-  type NoteBasketDiscount,
-} from "./note-basket-discounts.js";
+import { noteBasketDiscountsOf, type NoteBasketDiscount } from "./note-basket-discounts.js";
 
 /** La part d'une remise de commande sur un bon (`delivery_note_discounts`). */
 export interface DeliveryNoteDiscountPart {
@@ -44,11 +40,9 @@ interface ReplayedStep {
  * Chaque remise de la commande est rejouée sur les lignes du bon par la
  * fonction qui a composé son en-tête (`chainLineHtBasketDiscounts` en
  * `line_ht`, `composeExactOrder` en `exact_ht`) ; la somme doit redonner la
- * remise de l'en-tête, au centime, sans quoi rien n'est écrit. Un reliquat
- * ne rejoue que les pourcentages : un montant fixe n'a qu'une part, sur le
- * BL-1, et n'est jamais compté deux fois.
+ * remise de l'en-tête, au centime, sans quoi rien n'est écrit.
  *
- * **Dette existante, non aggravée** (§ 18.2) : sur le BL-1, un fixe reste
+ * **Dette existante, non aggravée** (§ 18.2) : un fixe reste
  * borné à l'assiette des lignes qui partent — sa part est ce que l'en-tête a
  * compté, pas le montant de la commande.
  *
@@ -57,21 +51,19 @@ interface ReplayedStep {
  * ce bon avec celle de sa commande (`backfill-order-discounts.ts`).
  */
 export function deliveryNoteDiscountPartsOf(
-  note: Pick<DeliveryNoteState, "rank" | "lines" | "terms">,
+  note: Pick<DeliveryNoteState, "lines" | "terms">,
   discounts: readonly FrozenBasketDiscount[],
 ): DeliveryNoteDiscountParts {
   const { terms } = note;
   if (terms === null) {
     return unrecorded("bon sans en-tête");
   }
-  const considered =
-    note.rank === FIRST_DELIVERY_NOTE_RANK ? discounts : remainderDiscountsOf(discounts);
   // Une ligne d'avant E4a ne disait rien : les bons d'avant étaient tous éligibles.
   const lines = note.lines.map((line): DeliveryNoteSourceLine => ({
     ...line,
     pickupDiscountEligible: line.pickupDiscountEligible ?? true,
   }));
-  const replayed = noteBasketDiscountsOf(considered, lines);
+  const replayed = noteBasketDiscountsOf(discounts, lines);
   const steps =
     terms.ttcTerms === null ? lineHtSteps(lines, replayed) : exactSteps(lines, replayed);
   const gap = gapOf(steps, terms);

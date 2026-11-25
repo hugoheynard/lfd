@@ -22,8 +22,7 @@ import { DecideOrderShortfallCommand } from "./decide-order-shortfall.command.js
  *    lignes dues y sont réduites ;
  * 3. la décision et le signal résolu s'écrivent ;
  * 4. le BL de l'envoi se réécrit aux quantités décidées, ses montants
- *    recomposés (`DeliveryNoteFollowing.followDecision`) — le BL-1 au rang 1,
- *    celui du reliquat au-delà ; l'autre ne bouge pas.
+ *    recomposés (`DeliveryNoteFollowing.followDecision`).
  *
  * Un refus à n'importe quelle étape annule tout : ni fiche réduite sans
  * décision, ni décision sans fiche réduite.

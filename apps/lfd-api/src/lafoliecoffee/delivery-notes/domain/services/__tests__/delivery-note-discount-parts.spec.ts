@@ -10,13 +10,11 @@ import type { DeliveryNoteSourceLine } from "../../value-objects/delivery-note-l
 import { DeliveryNoteTerms } from "../../value-objects/delivery-note-terms.js";
 import { deliveryNoteDiscountPartsOf } from "../delivery-note-discount-parts.js";
 import { exactDepartureOf } from "../exact-departure.js";
-import { remainderAdjustmentsOf } from "../remainder-decision-source.js";
 
 /** Les parts d'un bon par remise, au départ (plan des promotions, § 18.2, M4). */
 
 const TEN: CartAdjustment = { mode: "percent", bp: 1_000 };
 const FIVE_PERCENT: CartAdjustment = { mode: "percent", bp: 500 };
-const THREE_EUROS: CartAdjustment = { mode: "amount", cents: 300 };
 const FIVE_EUROS: CartAdjustment = { mode: "amount", cents: 500 };
 
 function line(
@@ -98,30 +96,6 @@ describe("deliveryNoteDiscountPartsOf — line_ht", () => {
     ]);
   });
 
-  it("un reliquat ne porte que les %, jamais un fixe — compté entier sur le BL-1", () => {
-    const discounts = [
-      tableDiscount("od_1", THREE_EUROS, ["PAIN"]),
-      tableDiscount("od_2", FIVE_PERCENT, ["PAIN", "JUS"]),
-    ];
-    const note = lineHtNote(2, PRO_LINES, remainderAdjustmentsOf(rules(discounts)));
-
-    const parts = deliveryNoteDiscountPartsOf(note, discounts);
-    expect(parts).toEqual({
-      kind: "parts",
-      parts: [
-        {
-          orderDiscountId: "od_2",
-          amountCents: 75,
-          amountTtcCents: null,
-          vatShares: [
-            { rate: 5.5, htCents: 50 },
-            { rate: 20, htCents: 25 },
-          ],
-        },
-      ],
-    });
-  });
-
   it("deux remises sur le BL-1 : une part chacune, leur somme est la remise de l'en-tête", () => {
     const discounts = [
       tableDiscount("od_1", TEN, ["PAIN"]),
@@ -170,7 +144,7 @@ describe("deliveryNoteDiscountPartsOf — exact_ht", () => {
     const departure = exactDepartureOf({
       orderNumber: "ORD-2",
       lines: [BREAD, JUICE],
-      adjustments: rank === 1 ? adjustments : remainderAdjustmentsOf(adjustments),
+      adjustments,
       exact: NO_VOUCHER,
     });
     return { rank, lines: departure.lines, terms: departure.terms };
@@ -189,13 +163,5 @@ describe("deliveryNoteDiscountPartsOf — exact_ht", () => {
     expect(part?.amountTtcCents).toBe(510);
     expect(part?.vatShares.reduce((sum, share) => sum + share.htCents, 0)).toBe(part?.amountCents);
     expect(part?.vatShares.reduce((sum, share) => sum + (share.ttcCents ?? 0), 0)).toBe(510);
-  });
-
-  it("un fixe sur un reliquat exact : aucune part, il est compté sur le BL-1", () => {
-    const discounts = [tableDiscount("od_1", THREE_EUROS, ["BAN", "JUS"])];
-    expect(deliveryNoteDiscountPartsOf(exactNote(2, discounts), discounts)).toEqual({
-      kind: "parts",
-      parts: [],
-    });
   });
 });

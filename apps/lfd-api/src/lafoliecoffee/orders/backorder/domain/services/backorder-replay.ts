@@ -21,8 +21,8 @@ import type { BackorderLine } from "../value-objects/backorder-line.js";
  *   nouvelle quantité ; le chiffrage ne les lit pas, il recalcule tout dans
  *   `priceBasket`.
  * - **Les remises** : celles que la commande d'origine rejouerait, réduites
- *   à la règle du reste (`remainderDiscountsOf` des bons de livraison) — un
- *   pourcentage reste, un montant fixe a déjà servi sur l'origine et sort,
+ *   à la règle du reste (`isRemainderDiscount`) — un pourcentage reste, un
+ *   montant fixe a déjà servi sur l'origine et sort,
  *   comme une remise reprise sans ajustement. Le seuil (`min_quantity`) n'est
  *   pas jugé ici : sous la passation, un reste sous le seuil garde sa remise.
  *

@@ -1,11 +1,12 @@
 /**
- * E2E de l'**alignement par rang** (plan E7, lot L2 —
- * `documentation/commandes/reliquat/reliquat.md`, choix 3).
+ * E2E du **BL de rang 1**, le seul qu'une commande porte : le reste d'un
+ * départ incomplet devient une nouvelle commande
+ * (`documentation/commandes/reliquat/reliquat.md`).
  *
- * Ce que seul le vrai Postgres prouve : qu'un BL-1 remis par les vrais gestes
- * et un reliquat prévu par `planRemainder` cohabitent sans que le
- * réconciliateur crie `several_live_notes`, ni ne touche au reliquat ; et
- * qu'avec un seul envoi, le passage rend ce qu'il rendait.
+ * Ce que seul le vrai Postgres prouve : qu'un BL remis par les vrais gestes
+ * reste aligné, qu'un bac fermé rend la commande prête et son BL préparé, et
+ * qu'un fait de rang > 1 encore en vol est livré aux abonnés muets du second
+ * envoi sans finir en lettre morte.
  *
  * Doublés : la signature des jetons (le jeton EST le `sub`) et Stripe.
  */
@@ -13,9 +14,6 @@ import type { AdminPlacedOrderResponse } from "@lfd/contracts";
 import { CommandBus } from "@nestjs/cqrs";
 
 import type { DeliveryNoteReconciliationReport } from "../src/lafoliecoffee/delivery-notes/application/commands/reconcile-delivery-notes.command.js";
-import { DeliveryNote } from "../src/lafoliecoffee/delivery-notes/domain/entities/delivery-note.js";
-import { DeliveryNoteRepository } from "../src/lafoliecoffee/delivery-notes/domain/ports/delivery-note.repository.js";
-import { ORDER_TERMS } from "../src/lafoliecoffee/delivery-notes/domain/value-objects/__tests__/delivery-note-terms.fixture.js";
 import { MarkOrderFulfilledCommand } from "../src/lafoliecoffee/orders/application/commands/mark-order-fulfilled.command.js";
 import { MarkOrderReadyCommand } from "../src/lafoliecoffee/orders/application/commands/mark-order-ready.command.js";
 import { CardProviders } from "../src/payment/card/domain/ports/card-providers.js";
@@ -41,7 +39,6 @@ import { cardGatewayDouble } from "./order-factory.js";
 import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const DAY = serviceDay(7);
-const NEXT_DAY = serviceDay(8);
 const BUYER = "auth0|acheteur-bl-rangs";
 
 const fakeGateway = cardGatewayDouble("pi_blr");
@@ -163,7 +160,7 @@ function notesOf(orderId: string) {
   return ctx.prisma.deliveryNote.findMany({
     where: { orderId },
     orderBy: { rank: "asc" },
-    select: { id: true, rank: true, status: true, updatedAt: true, serviceDay: true },
+    select: { id: true, rank: true, status: true, updatedAt: true },
   });
 }
 
@@ -181,40 +178,7 @@ async function handedOverOnAccount(): Promise<string> {
   return account;
 }
 
-/** Le reliquat, par la fabrique du domaine (lot L1) — jamais un INSERT brut. */
-async function planRemainder(orderId: string): Promise<void> {
-  const saved = await ctx.app.get(DeliveryNoteRepository).saveNew(
-    DeliveryNote.planRemainder(
-      `dn_rest_${orderId}`,
-      {
-        orderId,
-        orderNumber: await numberOf(orderId),
-        orderDay: DAY,
-        terms: ORDER_TERMS,
-        lines: [
-          {
-            sku: "VIE-001-1",
-            productName: "Croissant",
-            unitPriceMillicents: 95_000,
-            vatRate: 5.5,
-            quantity: 2,
-            saleUnit: "piece" as const,
-            lineTotalCents: 1_900,
-            unitPriceTtcCents: null,
-            lineTotalTtcCents: null,
-            pickupDiscountEligible: true,
-          },
-        ],
-      },
-      2,
-      NEXT_DAY,
-      new Date(),
-    ),
-  );
-  expect(saved).toBe(true);
-}
-
-describe("le réconciliateur aligne par rang (plan E7, choix 3)", () => {
+describe("le réconciliateur et le BL de la commande", () => {
   it("avec un seul envoi : rien ne change — aligné, compté, non réécrit", async () => {
     const account = await handedOverOnAccount();
     const before = await notesOf(account);
@@ -224,22 +188,6 @@ describe("le réconciliateur aligne par rang (plan E7, choix 3)", () => {
     expect(report).toMatchObject({ created: 0, advanced: 0, voided: 0, unrepaired: [] });
     expect(report.terms).toEqual({ compared: 1, gaps: [] });
     expect(await notesOf(account)).toEqual(before);
-  });
-
-  it("BL-1 remis + reliquat vivant : aligné, pas `several_live_notes`, le reliquat intact", async () => {
-    const account = await handedOverOnAccount();
-    await planRemainder(account);
-    const before = await notesOf(account);
-
-    const report = await reconcile();
-
-    expect(report).toMatchObject({ created: 0, advanced: 0, voided: 0, failed: 0, unrepaired: [] });
-    expect(report.terms).toEqual({ compared: 1, gaps: [] });
-    expect(await notesOf(account)).toEqual(before);
-    expect(before.map(({ rank, status }) => ({ rank, status }))).toEqual([
-      { rank: 1, status: "handed_over" },
-      { rank: 2, status: "planned" },
-    ]);
   });
 });
 
@@ -265,7 +213,7 @@ function orderStateOf(orderId: string) {
   });
 }
 
-describe("prêt par envoi (plan E7, choix 4, lot L4a)", () => {
+describe("prêt au bac fermé", () => {
   it("avec un seul envoi : le bac fermé rend la commande prête et son BL préparé, comme avant", async () => {
     const account = await placeOnAccount(await scene());
     await closePlan();
@@ -278,18 +226,15 @@ describe("prêt par envoi (plan E7, choix 4, lot L4a)", () => {
     ]);
   });
 
-  it("le bac du reliquat prépare le BL-2 seul : la commande et le BL-1 restent ceux du rang 1", async () => {
+  it("un fait de rang 2 en vol : ni la commande ni son BL ne bougent, aucune lettre morte", async () => {
     const account = await handedOverOnAccount();
-    await planRemainder(account);
     const orderBefore = await orderStateOf(account);
+    const notesBefore = await notesOf(account);
 
     await packed(account, 2);
 
     expect(await orderStateOf(account)).toEqual(orderBefore);
-    expect((await notesOf(account)).map(({ rank, status }) => ({ rank, status }))).toEqual([
-      { rank: 1, status: "handed_over" },
-      { rank: 2, status: "prepared" },
-    ]);
+    expect(await notesOf(account)).toEqual(notesBefore);
     const receipts = await ctx.prisma.outboxDelivery.findMany({
       where: { deliveredAt: null },
       select: { subscriber: true, lastError: true },
@@ -312,7 +257,7 @@ async function readinessOf(orderId: string) {
   return { keys: facts.map(({ key }) => key), mails };
 }
 
-describe("le reste prêt prévient le client (plan E7, choix 17, lot L4d)", () => {
+describe("la commande prête prévient le client", () => {
   it("avec un seul envoi : un fait, sa clé d'avant, un courriel", async () => {
     const account = await placeOnAccount(await scene());
     await closePlan();
@@ -320,18 +265,5 @@ describe("le reste prêt prévient le client (plan E7, choix 17, lot L4d)", () =
     await packed(account, 1);
 
     expect(await readinessOf(account)).toEqual({ keys: [`order.ready:${account}`], mails: 1 });
-  });
-
-  it("le reste colisé publie `order.ready` à son rang, et un second courriel part", async () => {
-    const account = await handedOverOnAccount();
-    await planRemainder(account);
-    const before = await readinessOf(account);
-
-    await packed(account, 2);
-    await packed(account, 2);
-
-    const after = await readinessOf(account);
-    expect(after.keys).toEqual([...before.keys, `order.ready:${account}:r2`]);
-    expect(after.mails).toBe(before.mails + 1);
   });
 });

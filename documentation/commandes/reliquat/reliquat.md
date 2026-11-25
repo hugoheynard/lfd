@@ -226,10 +226,10 @@ de vie **par bon** plutôt qu'une commande de suite (« A »).
   un jour antérieur à celui de la commande). Ses montants : les lignes du
   reste seul, les pourcentages de remise réappliqués, port, surtaxe et remise
   fixe à zéro (`remainderAdjustmentsOf`,
-  `lafoliecoffee/delivery-notes/domain/services/remainder-decision-source.ts`) — un
+  remainder-decision-source (retiré en B5a)) — un
   reste ne paie pas de livraison (Hugo, 2026-10-26).
 - **Prêt et retrait.** Un reste colisé prépare son BL
-  (`prepare-remainder-note.handler.ts`) ; le retrait se juge par envoi, la
+  (prepare-remainder-note.handler (retiré en B5a)) ; le retrait se juge par envoi, la
   référence prend `-<rang>` (`handover/domain/services/handover-shipments.ts`) ;
   au comptoir, le QR et la saisie `ORD-…-2` rendent les envois prêts, et le
   comptoir choisit entre deux. Chaque BL suit la règle de son propre arrêt

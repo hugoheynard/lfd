@@ -40,12 +40,9 @@ import { DeliveryNoteDepartureRecorder } from "./application/services/delivery-n
 import { DeliveryNoteDiscountWriter } from "./domain/ports/delivery-note-discount.writer.js";
 import { PrismaDeliveryNoteDiscountWriter } from "./infrastructure/prisma-delivery-note-discount.writer.js";
 import { DeliveryNoteFollower } from "./application/services/delivery-note-follower.js";
-import { RemainderDecisionFollower } from "./application/services/remainder-decision-follower.js";
 import { DeliveryNoteRepository } from "./domain/ports/delivery-note.repository.js";
 import { PrismaDeliveryNoteRepository } from "./infrastructure/prisma-delivery-note.repository.js";
-import { PrepareRemainderNoteHandler } from "./application/commands/prepare-remainder-note.handler.js";
 import { OnRemainderPacked } from "./application/handlers/on-remainder-packed.handler.js";
-import { HandOverRemainderNoteHandler } from "./application/commands/hand-over-remainder-note.handler.js";
 import { OnRemainderHandedOver } from "./application/handlers/on-remainder-handed-over.handler.js";
 import { RecordDeliveryNotePrintHandler } from "./application/commands/record-delivery-note-print.handler.js";
 import { PrismaDeliveryNoteReprintsReader } from "./infrastructure/prisma-delivery-note-reprints.reader.js";
@@ -81,9 +78,7 @@ import {
   providers: [
     ReconcileDeliveryNotesHandler,
     RecordDeliveryNotePrintHandler,
-    PrepareRemainderNoteHandler,
     OnRemainderPacked,
-    HandOverRemainderNoteHandler,
     OnRemainderHandedOver,
     ListOrderDeliveryNotesHandler,
     GetCarrierNotePdfHandler,
@@ -112,7 +107,6 @@ import {
     DeliveryNoteDepartureRecorder,
     { provide: DeliveryNoteDiscountWriter, useClass: PrismaDeliveryNoteDiscountWriter },
     DeliveryNoteFollower,
-    RemainderDecisionFollower,
     OrderBillingCloser,
     PrismaDeliveryNoteReprintsReader,
     ProductionPlannedDeliveryNotesReader,

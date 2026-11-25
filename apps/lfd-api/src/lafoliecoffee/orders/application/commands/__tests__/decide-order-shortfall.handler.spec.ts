@@ -297,7 +297,7 @@ describe("DecideOrderShortfallHandler — « Décider du départ » (E6b)", () =
     expect(backorder.backorders.saved).toEqual([]);
     expect(decisions.saved[0]).toMatchObject({ rank: 2, departing: [{ sku: "CRO", quantity: 1 }] });
     expect(desk.authorized[0]).toMatchObject({ orderId: "ord_1", rank: 2 });
-    expect(notes.calls).toEqual(["follow-decision:ord_1:r2"]);
+    expect(notes.calls).toEqual(["follow-decision:ord_1"]);
     expect(durable.facts[0]).toMatchObject({
       key: "order.shortfall_decided:ord_1:r2",
       payload: { rank: 2 },
