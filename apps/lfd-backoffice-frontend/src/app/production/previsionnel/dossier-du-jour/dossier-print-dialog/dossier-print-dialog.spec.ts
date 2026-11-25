@@ -19,6 +19,7 @@ const PRINT_3 = {
   run: 3,
   printedAt: '2026-11-26T09:42:00.000Z',
   printedByName: 'Ana Lopez',
+  functionSheetsReplaced: false,
 };
 
 const OPEN_DAY: ProductionPrintOptionsView = {
@@ -31,7 +32,10 @@ const OPEN_DAY: ProductionPrintOptionsView = {
   ],
   prints: [PRINT_3],
   changedSinceLast: true,
+  functionSheets: [],
 };
+
+const SHEET = { sheetId: 'fs1', fileName: 'mariage.pdf', eventName: 'Mariage Durand' };
 
 class FakeApi {
   views: ProductionPrintOptionsView[] = [];
@@ -251,6 +255,53 @@ describe('DossierPrintDialog — avant l’arrêt', () => {
     await settle();
 
     expect(el().querySelector('[data-blocked] a')?.getAttribute('href')).toBe('blob:x');
+  });
+});
+
+describe('DossierPrintDialog — fiches de fonction', () => {
+  it('sans fiche du jour, la partie est désactivée et ne part pas', async () => {
+    const api = new FakeApi();
+    api.views = [OPEN_DAY];
+    const { el, text } = await render(api);
+    expect(checkbox(el(), 'Fiches de fonction').disabled).toBe(true);
+    expect(text()).toContain('Aucune fiche de fonction ce jour');
+  });
+
+  it('avec des fiches, la partie est cochée, comptée, et part', async () => {
+    const api = new FakeApi();
+    api.views = [{ ...OPEN_DAY, functionSheets: [SHEET, { ...SHEET, sheetId: 'fs2' }] }];
+    const { el, text, printButton, settle } = await render(api);
+
+    expect(checkbox(el(), 'Fiches de fonction').checked).toBe(true);
+    expect(text()).toContain('2 fiches du jour');
+    printButton().click();
+    await settle();
+
+    expect(api.draws[0]?.payload.parts).toContain('functionSheets');
+  });
+
+  it('dit qu’une fiche a été remplacée depuis la dernière impression', async () => {
+    const api = new FakeApi();
+    api.views = [
+      {
+        ...OPEN_DAY,
+        functionSheets: [SHEET],
+        prints: [{ ...PRINT_3, functionSheetsReplaced: true }],
+      },
+    ];
+    const { el } = await render(api);
+    expect(el().querySelector('[data-sheets-replaced]')?.textContent).toContain(
+      'Fiche de fonction remplacée depuis l’impression #3',
+    );
+  });
+
+  it('après l’arrêt, des fiches toutes cochées demandent le dossier archivé', async () => {
+    const api = new FakeApi();
+    api.views = [{ ...OPEN_DAY, arrested: true, changedSinceLast: false, functionSheets: [SHEET] }];
+    const { printButton, settle } = await render(api);
+    printButton().click();
+    await settle();
+    expect(api.frozen).toEqual([{}]);
   });
 });
 

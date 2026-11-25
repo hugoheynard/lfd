@@ -110,6 +110,11 @@ const BLOCK_OF = {
   //   étrangère. Il DÉCLARE ce dont il a besoin (`channels/commerce/`) et le
   //   commerce l'implémente ; `recurring → lafoliecoffee` reste INTERDIT.
   recurring: "recurring",
+  // ▸ LES ÉVÉNEMENTS (`documentation/evenements/plan-evenements.md`). Son
+  //   schéma `events`, sans clé étrangère qui sort. Transverse aux
+  //   applications : il n'importe que le socle et la plateforme, et seule la
+  //   racine l'importe.
+  events: "events",
 
   // ▸ LA RACINE DE COMPOSITION — le seul endroit qui a le droit de connaître
   //   tout le monde, parce que son unique travail est de relier les blocs
@@ -233,6 +238,10 @@ const ALLOWED = {
   // Le socle (l'autorisation de la route du staff), la plateforme, et le
   // canal des e-mails (le changement des CGV, plan § 7) ; aucun bloc métier.
   recurring: new Set(["staff", "platform", "mail"]),
+  // Le socle (l'autorisation des routes du staff), la plateforme, et le
+  // fournil par son canal SEULEMENT (`PORT_SURFACE`) : les événements
+  // implémentent les fiches de fonction que le dossier du jour déclare.
+  events: new Set(["staff", "platform", "production"]),
   platform: new Set([]),
   ops: new Set(["platform"]),
   root: new Set([
@@ -250,6 +259,7 @@ const ALLOWED = {
     "payment",
     "shop-cart",
     "recurring",
+    "events",
   ]),
 };
 
@@ -410,6 +420,11 @@ const PORT_SURFACE = {
   // (`channels/commerce/` : passer une échéance, l'acheteur, les articles,
   // les points de retrait, les CGV). `recurring → lafoliecoffee` reste INTERDIT.
   "lafoliecoffee→recurring": "recurring/channels/",
+  // Les ÉVÉNEMENTS implémentent ce que le fournil déclare : les fiches de
+  // fonction en vigueur d'un jour de service, pour le dossier du jour
+  // (`evenements/plan-evenements.md`). `production → events` reste INTERDIT :
+  // le fournil ne sait pas qui lui fournit des fiches.
+  "events→production": "production/channels/events/",
 };
 
 /**

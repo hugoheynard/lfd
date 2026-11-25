@@ -20,6 +20,7 @@ const SUMMARY = {
   printedAt: true,
   printedBy: true,
   commerceVersion: true,
+  functionSheetIds: true,
 } as const;
 
 interface SummaryRow {
@@ -28,6 +29,7 @@ interface SummaryRow {
   readonly printedAt: Date;
   readonly printedBy: string;
   readonly commerceVersion: bigint;
+  readonly functionSheetIds: readonly string[];
 }
 
 function summaryOf(row: SummaryRow): ProvisionalPrintSummary {
@@ -64,6 +66,7 @@ export class PrismaProvisionalPrintLedger extends ProvisionalPrintLedger {
           printedBy: state.printedBy,
           orderFingerprints: Object.fromEntries(state.orderFingerprints),
           parts: { ...plainChoiceOf(state.choice) },
+          functionSheetIds: [...state.functionSheetIds],
         },
       ],
       skipDuplicates: true,

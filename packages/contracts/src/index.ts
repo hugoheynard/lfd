@@ -3608,6 +3608,7 @@ export type {
   IssuedExportReaderKeyResponse,
 } from "./export-reader-keys.js";
 export type {
+  PrintOptionFunctionSheet,
   ProductionDossierPart,
   PrintOptionOrder,
   PrintOptionRun,
@@ -3615,3 +3616,20 @@ export type {
   ProvisionalPrintOrders,
   ProvisionalPrintPayload,
 } from "./production-print-options.js";
+export {
+  EVENT_FUNCTION_SHEET_FIELD,
+  EVENT_FUNCTION_SHEET_MAX_BYTES,
+  createEventPayloadSchema,
+  listEventsQuerySchema,
+  reviseEventPayloadSchema,
+} from "./admin-events.js";
+export type {
+  CreateEventPayload,
+  EventCreated,
+  EventDetailView,
+  EventSummaryView,
+  FunctionSheetUploaded,
+  FunctionSheetView,
+  ListEventsQuery,
+  ReviseEventPayload,
+} from "./admin-events.js";

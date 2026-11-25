@@ -12,7 +12,8 @@ import { DossierSelectionUnknownError } from "../errors/dossier-selection-errors
  * - `calendar` : sa page « par tranche horaire » ;
  * - `orders` : la fiche de chaque commande ;
  * - `deliveryNotes` : le BL de transport derrière elle ;
- * - `resupplies` : la fiche de chaque réassort.
+ * - `resupplies` : la fiche de chaque réassort ;
+ * - `functionSheets` : les fiches de fonction des événements du jour, à la fin.
  */
 export type DossierPart = (typeof DOSSIER_PARTS)[number];
 
@@ -24,6 +25,7 @@ export const DOSSIER_PARTS = [
   "orders",
   "deliveryNotes",
   "resupplies",
+  "functionSheets",
 ] as const;
 
 /**

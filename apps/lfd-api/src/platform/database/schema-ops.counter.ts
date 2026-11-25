@@ -371,6 +371,13 @@ const NON_PUBLIC_SCHEMA_OF_MODEL: Readonly<Record<string, string>> = {
   PackingResupply: "packing",
   PackingResupplyLine: "packing",
   PackingStockReservation: "packing",
+  // Les paniers récurrents, dans leur bloc `src/recurring/`.
+  Basket: "recurring",
+  BasketLine: "recurring",
+  Occurrence: "recurring",
+  // Les événements et leurs fiches de fonction, dans leur bloc `src/events/`.
+  Event: "events",
+  FunctionSheet: "events",
 };
 
 /** Le schéma d'un modèle, ou le seau du SQL brut quand il n'y a pas de modèle. */

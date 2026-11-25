@@ -1,3 +1,5 @@
+import { DossierFunctionSheetsReading } from "../dossier-function-sheets-reading.service.js";
+import { FixedEventFunctionSheets } from "../../../../channels/events/__tests__/event-function-sheets-doubles.js";
 import { instantToLocal, type CatalogFamilyView } from "@lfd/contracts";
 
 import { AppConfig } from "../../../../../platform/config/app-config.js";
@@ -68,6 +70,7 @@ function renderer(
       ProductionDisplaySettings.of({ showSubcategories: false, grouping }),
     ).reader(),
     tranches,
+    new DossierFunctionSheetsReading(new FixedEventFunctionSheets()),
   );
   return { papers, shelves };
 }

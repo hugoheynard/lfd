@@ -16,6 +16,7 @@ const STATE: ProvisionalPrintState = {
   printedAt: new Date(),
   printedBy: "staff_1",
   orderFingerprints: new Map(),
+  functionSheetIds: [],
   choice: { parts: new Set(DOSSIER_PARTS), groups: "all", orders: { kind: "all" } },
 };
 

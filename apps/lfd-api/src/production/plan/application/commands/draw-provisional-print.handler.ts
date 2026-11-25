@@ -111,7 +111,7 @@ export class DrawProvisionalPrintHandler implements ICommandHandler<
   ): Promise<{ readonly print: ProvisionalPrint; readonly bytes: Buffer }> {
     const run = ProvisionalPrint.nextRunAfter(await this.ledger.lastRunOf(day));
     const printedAt = this.clock.now();
-    const bytes = await this.renderer.provisionalOf(
+    const paper = await this.renderer.provisionalOf(
       intake.content,
       { run, printedAt },
       intake.selection,
@@ -125,7 +125,8 @@ export class DrawProvisionalPrintHandler implements ICommandHandler<
       printedBy: who.by,
       orderFingerprints: intake.fingerprints,
       choice: who.choice,
+      functionSheetIds: paper.functionSheetIds,
     });
-    return { print, bytes };
+    return { print, bytes: paper.bytes };
   }
 }

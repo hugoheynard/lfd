@@ -19,10 +19,10 @@ On n'imprime pas depuis le navigateur : le papier est toujours le PDF du
 serveur.
 
 Le PDF serveur ne bouge plus une fois tiré : il est archivé
-(`<jour>/dossier-du-jour-v13.pdf`, `DOSSIER_LAYOUT_VERSION` dans
+(`<jour>/dossier-du-jour-v15.pdf`, `DOSSIER_LAYOUT_VERSION` dans
 `day-dossier-pdf.ts`). Après un retirage qui ajoute des commandes, un second
 dossier « complété » est archivé à côté
-(`<jour>/dossier-du-jour-v13-retirage-<instant>.pdf`) ; l'original reste. Le
+(`<jour>/dossier-du-jour-v15-retirage-<instant>.pdf`) ; l'original reste. Le
 dossier ne porte **aucun prix ni total en euros** : le fournil fabrique, il ne
 facture pas.
 
@@ -46,7 +46,7 @@ flowchart LR
 Le bouton « Imprimer le dossier » ouvre une **fenêtre**. On y choisit :
 
 - les **parties** : couverture, totaux par rayon, calendriers par tranche,
-  fiches de commande, BL, fiches de réassort ;
+  fiches de commande, BL, fiches de réassort, fiches de fonction ;
 - les **rayons ou postes** : tous, ou une liste ;
 - les **commandes** : toutes, celles **nouvelles ou modifiées depuis
   l'impression #N**, ou des commandes choisies une à une.
@@ -113,6 +113,19 @@ section qui déborde dit « (1/2) », « (2/2) » dans son titre. L'ordre :
    premier BL non annulé, lu au tirage. Une commande sans BL n'en a pas ; un
    commerce muet laisse partir le dossier sans BL, **non archivé**.
 4. **Une fiche par réassort** — « Fiche de réassort ».
+5. **Les fiches de fonction** des événements du jour
+   ([`../evenements/plan-evenements.md`](../evenements/plan-evenements.md)) —
+   par événement, un intercalaire « Événement : <nom> — fiches de fonction »
+   qui liste les fiches et leurs pages, puis les pages des PDF déposés, dans
+   l'ordre du rang, réduites pour tenir au-dessus du folio. Les fiches
+   **en vigueur au tirage** : une fiche remplacée sort dans sa version
+   nouvelle au tirage suivant (retirage, extrait, provisoire) ; un dossier
+   déjà archivé garde celle qu'il a imprimée. Lues par le port
+   `EventFunctionSheetsReader` (`production/channels/events/`), que le bloc
+   `events` implémente ; fusionnées par `pdf-lib` après le rendu `pdfkit`. Un
+   PDF illisible prend une page « Fiche illisible : <nom> » à sa place ; des
+   événements muets laissent partir le dossier sans les fiches, **non
+   archivé**, et le pied le dit.
 
 La fiche d'atelier (« ORD-… // Fiche de préparation », clé
 `fiche-atelier-v2.pdf`) et le compte à produire (clé
@@ -161,7 +174,7 @@ et ce qui manque est omis, jamais deviné.
 automatiquement le … » pour l'arrêt automatique, « Arrêté le … » quand l'auteur
 est inconnu —, puis « — complété par … le
 … » après un retirage, puis le folio « x/N » (« 3/12 ») : toutes les pages du fichier sont
-comptées, pages de suite et de BL comprises — une feuille manquante se voit. Le jour de
+comptées, pages de suite, de BL et de fiches de fonction comprises — une feuille manquante se voit. Le jour de
 la semaine est aussi dans les pieds de la feuille d'atelier et du compte à
 produire (même formatteur). L'auteur de l'arrêt est **figé à l'arrêt** (`production_day.closed_by` : l'id de
 la fiche, ou `auto-close` ; `closed_by_name` : son nom ce jour-là), et celui du
@@ -183,7 +196,11 @@ est renommée. L'heure est **celle de Paris** : en UTC, un arrêt fait après
   version du commerce (`public.day_change`, lue par le port
   `CommerceDayVersionReader` du canal `production/channels/commerce/`),
   l'instant, l'auteur (id de la fiche), les **empreintes** des fiches
-  imprimées et les parties cochées.
+  imprimées, les parties cochées et les fiches de fonction imprimées
+  (`function_sheet_ids`) : la fenêtre dit, par tirage, qu'une fiche a été
+  remplacée ou retirée depuis (`functionSheetsReplaced`), et liste les
+  fiches en vigueur du jour (`functionSheets`, lues par
+  `InForceFunctionSheetsReader`).
 - **L'empreinte** d'une commande est un sha256 de ce qui s'imprime sur sa
   fiche. « Depuis #N » = commandes absentes de #N ou d'empreinte différente ;
   rien de changé est refusé (409) plutôt que d'imprimer une page vide. Les

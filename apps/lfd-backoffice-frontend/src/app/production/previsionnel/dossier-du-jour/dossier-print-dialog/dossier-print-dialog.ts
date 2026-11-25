@@ -63,6 +63,7 @@ export const DOSSIER_PART_LABELS: readonly {
   { part: 'orders', label: 'Fiches de commande' },
   { part: 'deliveryNotes', label: 'BL' },
   { part: 'resupplies', label: 'Fiches de réassort' },
+  { part: 'functionSheets', label: 'Fiches de fonction' },
 ];
 
 const ALL_PARTS: readonly ProductionDossierPart[] = DOSSIER_PART_LABELS.map(({ part }) => part);
@@ -142,6 +143,20 @@ export class DossierPrintDialog implements FoldPanelContent<DossierPrintDialogDa
   protected readonly arrested = computed(() => this.options()?.arrested ?? false);
   protected readonly prints = computed(() => this.options()?.prints ?? []);
   protected readonly lastPrint = computed(() => this.prints().at(-1) ?? null);
+  /** Les fiches de fonction du jour : sans elles, la partie ne se coche pas. */
+  protected readonly functionSheets = computed(() => this.options()?.functionSheets ?? []);
+  protected readonly functionSheetsLabel = computed(() => {
+    const count = this.functionSheets().length;
+    return count === 0
+      ? 'Aucune fiche de fonction ce jour'
+      : `${String(count)} fiche${count > 1 ? 's' : ''} du jour`;
+  });
+  /** Les parties que la journée peut imprimer, dans l'ordre du papier. */
+  private readonly availableParts = computed(() =>
+    this.functionSheets().length > 0
+      ? ALL_PARTS
+      : ALL_PARTS.filter((part) => part !== 'functionSheets'),
+  );
   protected readonly orders = computed(() => this.options()?.orders ?? []);
   protected readonly groupNames = computed(() => this.options()?.groups ?? []);
   protected readonly groupsLegend = computed(() =>
@@ -181,7 +196,13 @@ export class DossierPrintDialog implements FoldPanelContent<DossierPrintDialogDa
     this.state.set('loading');
     try {
       const options = await this.api.printOptions(this.data().date);
+      const hadSheets = (this.options()?.functionSheets.length ?? 0) > 0;
       this.options.set(options);
+      if (options.functionSheets.length === 0) {
+        this.togglePart('functionSheets', false);
+      } else if (!hadSheets) {
+        this.togglePart('functionSheets', true);
+      }
       this.sinceRun.set(options.prints.at(-1)?.run ?? null);
       if (this.ordersMode() === 'since' && (options.arrested || options.prints.length === 0)) {
         this.ordersMode.set('all');
@@ -267,7 +288,7 @@ export class DossierPrintDialog implements FoldPanelContent<DossierPrintDialogDa
 
   private payload(): ProvisionalPrintPayload {
     return {
-      parts: ALL_PARTS.filter((part) => this.parts().has(part)),
+      parts: this.availableParts().filter((part) => this.parts().has(part)),
       groups: this.allGroups() ? 'all' : this.checkedGroups(),
       orders: this.ordersChoice(),
     };
@@ -287,9 +308,10 @@ export class DossierPrintDialog implements FoldPanelContent<DossierPrintDialogDa
 
   /** Après l'arrêt : seul ce qui est décoché part en paramètre ; rien → le dossier archivé. */
   private frozenSelection(): FrozenDossierSelection {
-    const parts = ALL_PARTS.filter((part) => this.parts().has(part));
+    const available = this.availableParts();
+    const parts = available.filter((part) => this.parts().has(part));
     return {
-      ...(parts.length < ALL_PARTS.length ? { parts } : {}),
+      ...(parts.length < available.length ? { parts } : {}),
       ...(this.allGroups() ? {} : { groups: this.checkedGroups() }),
       ...(this.ordersMode() === 'chosen' ? { orders: this.checkedOrders() } : {}),
     };

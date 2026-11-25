@@ -420,4 +420,9 @@ export const STAFF_RESOURCE_SCOPES: Readonly<Record<StaffResource, StaffResource
     write:
       "Créer une clé (son secret n'est montré qu'une fois) et la révoquer : la révocation coupe l'export à l'appel suivant.",
   },
+  events: {
+    read: "Voir la table des événements, le détail de chacun et ses fiches de fonction, et les télécharger.",
+    write:
+      "Créer un événement, changer son nom ou sa date, déposer une fiche de fonction en PDF et la retirer.",
+  },
 };

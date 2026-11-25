@@ -9,6 +9,8 @@ import {
   orderLine,
   producibleOrder,
 } from "../../../../channels/commerce/__tests__/producible-order.fixture.js";
+import { FixedInForceFunctionSheets } from "../../../../channels/events/__tests__/event-function-sheets-doubles.js";
+import type { InForceFunctionSheet } from "../../../../channels/events/index.js";
 import { InMemoryProductionStore } from "../../../../shared/print/application/__tests__/production-store-doubles.js";
 import { InMemoryDisplaySettings } from "../../../../shared/print/application/__tests__/production-display-settings-doubles.js";
 import { placementPorts } from "../../../../workstations/application/__tests__/placement-doubles.js";
@@ -61,7 +63,11 @@ class OpenDays extends ProductionDayRepository {
   }
 }
 
-function printed(run: number, commerceVersion: number): ProvisionalPrint {
+function printed(
+  run: number,
+  commerceVersion: number,
+  functionSheetIds: readonly string[] = [],
+): ProvisionalPrint {
   return ProvisionalPrint.drawn({
     id: `print_${String(run)}`,
     serviceDay: DAY,
@@ -70,11 +76,12 @@ function printed(run: number, commerceVersion: number): ProvisionalPrint {
     printedAt: NOW,
     printedBy: "staff_1",
     orderFingerprints: new Map(),
+    functionSheetIds,
     choice: { parts: new Set(DOSSIER_PARTS), groups: "all", orders: { kind: "all" } },
   });
 }
 
-function options(closed: boolean, version: number) {
+function options(closed: boolean, version: number, sheets: readonly InForceFunctionSheet[] = []) {
   const table = new ProvisionalPrintTable();
   const handler = new GetPrintOptionsHandler(
     new ArrestedOrNot(closed),
@@ -87,6 +94,7 @@ function options(closed: boolean, version: number) {
     new InMemoryProvisionalReader(table),
     new FixedCommerceVersion(version),
     new NoAuthors(),
+    new FixedInForceFunctionSheets(sheets),
   );
   return { table, read: () => handler.execute(new GetPrintOptionsQuery(DAY)) };
 }
@@ -116,10 +124,37 @@ describe("GetPrintOptionsHandler", () => {
     const unchanged = await same.read();
     expect(unchanged.changedSinceLast).toBe(false);
     expect(unchanged.prints).toEqual([
-      { id: "print_1", run: 1, printedAt: NOW.toISOString(), printedByName: null },
-      { id: "print_2", run: 2, printedAt: NOW.toISOString(), printedByName: null },
+      {
+        id: "print_1",
+        run: 1,
+        printedAt: NOW.toISOString(),
+        printedByName: null,
+        functionSheetsReplaced: false,
+      },
+      {
+        id: "print_2",
+        run: 2,
+        printedAt: NOW.toISOString(),
+        printedByName: null,
+        functionSheetsReplaced: false,
+      },
     ]);
     expect((await moved.read()).changedSinceLast).toBe(true);
+  });
+
+  it("liste les fiches de fonction en vigueur et dit qu'une fiche a été remplacée depuis #N", async () => {
+    const current = { sheetId: "sheet_v2", fileName: "deroule-v2.pdf", eventName: "Mariage" };
+    const { table, read } = options(false, 7, [current]);
+    table.rows.push(printed(1, 7, ["sheet_v1"]), printed(2, 7, ["sheet_v2"]), printed(3, 7));
+
+    const view = await read();
+
+    expect(view.functionSheets).toEqual([current]);
+    expect(view.prints.map((print) => [print.run, print.functionSheetsReplaced])).toEqual([
+      [1, true],
+      [2, false],
+      [3, false],
+    ]);
   });
 });
 

@@ -1,3 +1,5 @@
+import { DossierFunctionSheetsReading } from "../../services/dossier-function-sheets-reading.service.js";
+import { FixedEventFunctionSheets } from "../../../../channels/events/__tests__/event-function-sheets-doubles.js";
 import {
   orderLine,
   producibleOrder,
@@ -114,6 +116,7 @@ function setup(
     deliveryNotes,
     new InMemoryDisplaySettings().reader(),
     tranches,
+    new DossierFunctionSheetsReading(new FixedEventFunctionSheets()),
   );
   return {
     handler: new GetDayDossierPdfHandler(

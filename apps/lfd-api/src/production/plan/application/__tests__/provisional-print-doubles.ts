@@ -1,3 +1,5 @@
+import { DossierFunctionSheetsReading } from "../services/dossier-function-sheets-reading.service.js";
+import { FixedEventFunctionSheets } from "../../../channels/events/__tests__/event-function-sheets-doubles.js";
 import {
   StaffAuthorDirectory,
   StaffAuthors,
@@ -44,8 +46,8 @@ export class ProvisionalPrintTable {
 }
 
 function summaryOf(print: ProvisionalPrint): ProvisionalPrintSummary {
-  const { id, run, printedAt, printedBy, commerceVersion } = print.state;
-  return { id, run, printedAt, printedBy, commerceVersion };
+  const { id, run, printedAt, printedBy, commerceVersion, functionSheetIds } = print.state;
+  return { id, run, printedAt, printedBy, commerceVersion, functionSheetIds };
 }
 
 /**
@@ -174,5 +176,6 @@ export function provisionalRenderer(): ProductionPaperRenderer {
     new FixedPlannedDeliveryNotes(),
     new InMemoryDisplaySettings().reader(),
     new FixedTrancheReading(),
+    new DossierFunctionSheetsReading(new FixedEventFunctionSheets()),
   );
 }

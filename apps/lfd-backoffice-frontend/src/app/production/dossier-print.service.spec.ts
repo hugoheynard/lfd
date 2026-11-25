@@ -31,6 +31,7 @@ describe('DossierPrintService', () => {
       orders: [],
       prints: [],
       changedSinceLast: false,
+      functionSheets: [],
     };
     const pending = service.printOptions('2026-11-26');
     http.expectOne(`${BATCH}/print-options`).flush(view);

@@ -1,0 +1,60 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// EVENTS — les événements et leurs fiches de fonction, leur propre schéma
+// ─────────────────────────────────────────────────────────────────────────────
+//
+// Propriétaire : le bloc `src/events/`. Aucune clé étrangère ne sort de
+// `events` : l'auteur d'un geste s'y désigne par l'identifiant du staff. Les
+// identifiants sont posés par l'application (`IdGenerator`), les horodatages
+// par l'horloge (`Clock`) : aucun défaut en base.
+//
+// Ce que Prisma ne sait pas dire vit dans le `migration.sql`
+// (`20261125100000_le_bloc_des_evenements`) : les `CHECK` de forme ; et
+// l'unicité partielle du rang (`20261125110000_la_version_plus_recente_d_une_fiche`).
+
+/// **Un événement** : une journée d'event, qui dit quelles applications il
+/// concerne. Ne se supprime pas : il s'archive.
+model Event {
+  id           String    @id
+  name         String
+  eventDate    DateTime  @map("event_date") @db.Date
+  /// Les applications concernées — non vide, valeurs connues (CHECK en base).
+  applications String[]
+  archivedAt   DateTime? @map("archived_at") @db.Timestamptz(6)
+  createdBy    String    @map("created_by")
+  createdAt    DateTime  @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime  @map("updated_at") @db.Timestamptz(6)
+
+  functionSheets FunctionSheet[]
+
+  @@index([eventDate])
+  @@map("event")
+  @@schema("events")
+}
+
+/// **Une fiche de fonction** : un PDF déposé pour un événement, rangé au
+/// stockage du fournil sous `storage_key`. Ne se supprime pas : elle s'archive.
+model FunctionSheet {
+  id              String         @id
+  eventId         String         @map("event_id")
+  event           Event          @relation(fields: [eventId], references: [id], onDelete: Restrict)
+  fileName        String         @map("file_name")
+  storageKey      String         @map("storage_key")
+  /// `application/pdf` seulement (CHECK en base).
+  contentType     String         @map("content_type")
+  sizeBytes       Int            @map("size_bytes")
+  /// Le rang dans l'événement : un dépôt prend le plus haut + 1, archivées
+  /// comprises ; un remplacement prend celui de la fiche remplacée.
+  position        Int
+  uploadedBy      String         @map("uploaded_by")
+  uploadedAt      DateTime       @map("uploaded_at") @db.Timestamptz(6)
+  archivedAt      DateTime?      @map("archived_at") @db.Timestamptz(6)
+  /// La fiche que celle-ci remplace — archivée, gardée en base et au stockage.
+  replacesSheetId String?        @unique @map("replaces_sheet_id")
+  replaces        FunctionSheet? @relation("FunctionSheetReplacement", fields: [replacesSheetId], references: [id], onDelete: Restrict)
+  replacedBy      FunctionSheet? @relation("FunctionSheetReplacement")
+
+  /// Le rang est unique parmi les fiches EN VIGUEUR seulement : index partiel
+  /// `function_sheet_active_position_key` posé en SQL, que Prisma ne sait pas décrire.
+  @@map("function_sheet")
+  @@schema("events")
+}

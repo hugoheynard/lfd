@@ -98,6 +98,10 @@ const BLOCKS = new Set([
   //   ligne, `src/recurring/` serait ignoré, et la fiche client ou le
   //   catalogue pourraient relire `recurring.basket` sans que rien ne rougisse.
   "recurring",
+  // ▸ LES ÉVÉNEMENTS (`plan-evenements.md`). Sans cette ligne, `src/events/`
+  //   serait ignoré, et le fournil pourrait relire `events.function_sheet` en
+  //   direct au lieu du port qu'il déclare.
+  "events",
 ]);
 
 /**

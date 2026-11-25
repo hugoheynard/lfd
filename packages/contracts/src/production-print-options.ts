@@ -9,10 +9,11 @@ import type { ProductionGrouping } from "./production-settings.js";
  * - `calendar` : sa page « par tranche horaire » ;
  * - `orders` : la fiche de chaque commande ;
  * - `deliveryNotes` : le BL de transport derrière elle ;
- * - `resupplies` : la fiche de chaque réassort.
+ * - `resupplies` : la fiche de chaque réassort ;
+ * - `functionSheets` : les fiches de fonction des événements du jour, à la fin.
  */
 export type ProductionDossierPart =
-  "cover" | "recap" | "calendar" | "orders" | "deliveryNotes" | "resupplies";
+  "cover" | "recap" | "calendar" | "orders" | "deliveryNotes" | "resupplies" | "functionSheets";
 
 /** Une commande que la fenêtre propose de cocher. */
 export interface PrintOptionOrder {
@@ -29,6 +30,18 @@ export interface PrintOptionRun {
   readonly printedAt: string;
   /** « Prénom Nom », `null` : fiche inconnue ou sans nom. */
   readonly printedByName: string | null;
+  /**
+   * Une fiche de fonction imprimée par ce tirage a été remplacée ou retirée
+   * depuis : « fiche de fonction remplacée depuis l'impression #N ».
+   */
+  readonly functionSheetsReplaced: boolean;
+}
+
+/** Une fiche de fonction en vigueur ce jour, que le dossier joint à la fin. */
+export interface PrintOptionFunctionSheet {
+  readonly sheetId: string;
+  readonly fileName: string;
+  readonly eventName: string;
 }
 
 /**
@@ -43,7 +56,10 @@ export interface PrintOptionRun {
  * - `prints` : les impressions provisoires du jour, par numéro croissant ;
  * - `changedSinceLast` : les commandes ont bougé au commerce depuis la
  *   dernière impression provisoire — toujours `false` sans impression, ou une
- *   fois le plan arrêté.
+ *   fois le plan arrêté ;
+ * - `functionSheets` : les fiches de fonction en vigueur du jour — la partie
+ *   « Fiches de fonction » se coche par défaut quand il y en a. Toujours
+ *   servi ; optionnel tant que la fenêtre ne le lit pas.
  */
 export interface ProductionPrintOptionsView {
   readonly arrested: boolean;
@@ -52,6 +68,7 @@ export interface ProductionPrintOptionsView {
   readonly orders: readonly PrintOptionOrder[];
   readonly prints: readonly PrintOptionRun[];
   readonly changedSinceLast: boolean;
+  readonly functionSheets: readonly PrintOptionFunctionSheet[];
 }
 
 /** Les commandes d'une impression provisoire : toutes, depuis le tirage `run`, ou cochées. */

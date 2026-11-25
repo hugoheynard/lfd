@@ -81,6 +81,7 @@
     "node:url": { "class": "local", "reason": "Analyse d'URL, sans requête." },
     "node:util": { "class": "local", "reason": "Utilitaires de Node." },
     "node:zlib": { "class": "local", "reason": "Compression en mémoire." },
+    "pdf-lib": { "class": "local", "reason": "Lecture et fusion de PDF en mémoire." },
     "pdfkit": { "class": "local", "reason": "Rendu de PDF en mémoire." },
     "qrcode-generator": { "class": "local", "reason": "Calcul d'un QR code en mémoire." },
     "rxjs": { "class": "local", "reason": "Flux en mémoire (bus, intercepteurs)." },

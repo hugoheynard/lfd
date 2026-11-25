@@ -48,6 +48,7 @@ import { ListDossierStaffCandidatesHandler } from "./application/queries/list-do
 import { BusAutomaticDayCloser } from "./application/services/bus-automatic-day-closer.js";
 import { DossierDispatch } from "./application/services/dossier-dispatch.service.js";
 import { DossierDeadlinesReading } from "./application/services/dossier-deadlines-reading.service.js";
+import { DossierFunctionSheetsReading } from "./application/services/dossier-function-sheets-reading.service.js";
 import { PlanArrestAdmission } from "./application/services/plan-arrest-admission.js";
 import { PlanArrestBell } from "./application/services/plan-arrest-bell.js";
 import { PlanArrestRecording } from "./application/services/plan-arrest-recording.js";
@@ -149,6 +150,7 @@ import { PrismaProductionSettingsReader } from "./infrastructure/prisma-producti
     GetProductionSimulationSpecimenHandler,
     GetProductionCountSpecimenHandler,
     DossierDeadlinesReading,
+    DossierFunctionSheetsReading,
     // Ce que le dossier lit pour se ranger : rayons, ou articles et postes.
     // Les papiers du plan : le rendu, le dossier et le compte.
     ProductionPaperRenderer,

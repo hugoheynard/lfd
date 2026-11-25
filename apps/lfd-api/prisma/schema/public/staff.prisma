@@ -277,6 +277,11 @@ enum StaffResource {
   /// § 6.1). Accordée à l'écran.
   exports
 
+  /// LES ÉVÉNEMENTS — la table des événements, leur détail et leurs fiches de
+  /// fonction ; écrire = créer, renommer, déposer, retirer (2026-11-24,
+  /// `documentation/evenements/plan-evenements.md`). Accordée à l'écran.
+  events
+
   activity
 
   @@schema("public")

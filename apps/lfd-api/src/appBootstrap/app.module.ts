@@ -112,6 +112,8 @@ import { StaffUsersModule } from "../staff/staff.module.js";
 import { StaffAuthorsModule } from "../staff/directory/staff-authors.module.js";
 import { RecurringModule } from "../recurring/recurring.module.js";
 import { RecurringFeedModule } from "./recurring-feed.module.js";
+import { EventsBlockModule } from "../events/events.module.js";
+import { EventsFeedModule } from "./events-feed.module.js";
 import { AuthModule } from "../platform/auth/auth.module.js";
 import { AppConfigModule } from "../platform/config/config.module.js";
 import { envFilePaths } from "../platform/config/env-readers.js";
@@ -328,6 +330,9 @@ import { DevImpersonation } from "../platform/auth/dev-impersonation.js";
     // Paniers récurrents (abonnements) — murés par le seul client connecté.
     RecurringModule,
     RecurringFeedModule,
+    // Les événements et leurs fiches de fonction — un bloc à part, transverse.
+    EventsBlockModule,
+    EventsFeedModule,
     // Croissance (cross-domain) : journal d'événements, consommé par les émetteurs.
     GrowthModule,
     // Alertes de compte client : surveille un compte DÉJÀ client (produit inédit,

@@ -106,6 +106,22 @@
             ></a>
           }
 
+          @if (canSeeEvents()) {
+            <!-- ÉVÉNEMENTS — les journées d'événement et leurs fiches de fonction,
+               à côté de la production (evenements/plan-evenements.md). La même
+               entrée existe aux tuiles. -->
+            <a
+              fold-menu-item
+              icon="planning"
+              label="Événements"
+              routerLink="/evenements"
+              routerLinkActive
+              #eventsRla="routerLinkActive"
+              [active]="eventsRla.isActive"
+              (click)="mobileNavOpen.set(false)"
+            ></a>
+          }
+
           @if (canSeeTourManager()) {
             <!-- TOUR MANAGER — l'organisation des tournées, sortie de la Livraison
                (2026-10-10, Hugo) et rangée sous Prod manager. -->
@@ -939,6 +955,19 @@
               routerLinkActive
               #prodManagerTile="routerLinkActive"
               [active]="prodManagerTile.isActive"
+              (click)="mobileNavOpen.set(false)"
+            ></a>
+          }
+          @if (canSeeEvents()) {
+            <!-- La MÊME entrée qu'au rail, sous Prod manager. -->
+            <a
+              fold-nav-tile
+              icon="planning"
+              label="Événements"
+              routerLink="/evenements"
+              routerLinkActive
+              #eventsTile="routerLinkActive"
+              [active]="eventsTile.isActive"
               (click)="mobileNavOpen.set(false)"
             ></a>
           }

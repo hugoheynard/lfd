@@ -1,0 +1,89 @@
+<fold-card>
+  <div class="sheets">
+    <fold-element-title
+      variant="title"
+      title="Fiches de fonction"
+      subtitle="Le déroulé de la journée et ce qu’il faut produire, dans l’ordre de dépôt."
+    />
+
+    @if (sheets().length === 0) {
+      <fold-empty-state
+        title="Aucune fiche de fonction"
+        subtitle="Déposez la fiche de l’événement en PDF : elle sortira avec le dossier du jour."
+      >
+        <fold-icon empty-icon name="contracts" [size]="28" />
+      </fold-empty-state>
+    } @else {
+      <fold-data-table
+        caption="Fiches de fonction"
+        narrowLayout="cards"
+        zebra
+        [columns]="columns"
+        [rows]="sheets()"
+        [rowKey]="rowKey"
+      >
+        <ng-template foldCell="actions" let-row>
+          <div class="row-actions">
+            <button
+              foldButton
+              size="sm"
+              emphasis="outline"
+              icon="download"
+              [loading]="pending() === row.id"
+              (click)="download(row)"
+              data-sheet-download
+            >
+              Télécharger
+            </button>
+            @if (canWrite()) {
+              <button
+                foldButton
+                size="sm"
+                emphasis="outline"
+                icon="upload"
+                [disabled]="depositing()"
+                (click)="replacing.set(row)"
+                data-sheet-replace
+              >
+                Remplacer
+              </button>
+              <fold-inline-confirm
+                intent="danger"
+                message="Retirer cette fiche ? Elle ne sortira plus avec le dossier du jour."
+                [labels]="{ confirm: 'Retirer' }"
+                [loading]="pending() === row.id"
+                (confirmed)="archive(row)"
+              >
+                <button foldButton size="sm" emphasis="outline" intent="danger" data-sheet-archive>
+                  Retirer
+                </button>
+              </fold-inline-confirm>
+            }
+          </div>
+        </ng-template>
+      </fold-data-table>
+    }
+
+    @if (canWrite()) {
+      @if (replacing(); as replaced) {
+        <fold-callout variant="info" data-replacing>
+          Déposez la version plus récente de « {{ replaced.fileName }} » : elle prendra sa place
+          dans le dossier du jour, l’ancienne est gardée.
+          <button foldButton size="sm" emphasis="soft" (click)="replacing.set(null)">
+            Annuler
+          </button>
+        </fold-callout>
+      }
+      <fold-file-dropzone
+        [label]="
+          replacing() === null ? 'Déposer une fiche de fonction' : 'Déposer la nouvelle version'
+        "
+        accept="application/pdf,.pdf"
+        [hint]="hint"
+        [busy]="depositing()"
+        busyLabel="Dépôt de la fiche…"
+        (filesPicked)="picked($event)"
+      />
+    }
+  </div>
+</fold-card>

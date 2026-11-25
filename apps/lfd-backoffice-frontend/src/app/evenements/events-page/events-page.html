@@ -1,0 +1,84 @@
+<fold-page-layout icon="planning" title="Événements" separator>
+  <p description>
+    Les journées d’événement et leurs fiches de fonction, imprimées avec le dossier de production du
+    jour.
+  </p>
+
+  @if (canWrite()) {
+    <div pageActions>
+      <fold-popover placement="bottom-end" [(open)]="createOpen">
+        <button foldButton foldPopoverTrigger intent="primary" icon="plus" data-create-open>
+          Créer un événement
+        </button>
+        <form
+          foldPopoverPanel
+          class="create"
+          role="dialog"
+          aria-label="Créer un événement"
+          data-create
+          (submit)="$event.preventDefault(); create()"
+        >
+          <fold-input
+            label="Nom"
+            placeholder="Mariage Durand"
+            required
+            [value]="draftName()"
+            (valueChange)="draftName.set($event)"
+            data-create-name
+          />
+          <fold-date
+            label="Date"
+            required
+            [value]="draftDate()"
+            (valueChange)="draftDate.set($event)"
+            data-create-date
+          />
+          <button
+            foldButton
+            type="submit"
+            intent="primary"
+            [disabled]="!canCreate()"
+            [loading]="creating()"
+            data-create-submit
+          >
+            Créer
+          </button>
+        </form>
+      </fold-popover>
+    </div>
+  }
+
+  @switch (state()) {
+    @case ('loading') {
+      <fold-loading message="Chargement des événements…" />
+    }
+    @case ('error') {
+      <fold-empty-state tone="alert" title="Impossible de charger les événements">
+        <button foldButton (click)="reload()">Réessayer</button>
+      </fold-empty-state>
+    }
+    @default {
+      @if (events().length === 0) {
+        <fold-empty-state
+          title="Aucun événement"
+          subtitle="Créez un événement pour y déposer ses fiches de fonction."
+        >
+          <fold-icon empty-icon name="calendar" [size]="28" />
+        </fold-empty-state>
+      } @else {
+        <fold-card>
+          <fold-data-table
+            caption="Événements"
+            narrowLayout="cards"
+            zebra
+            clickable
+            [columns]="columns"
+            [rows]="events()"
+            [rowKey]="rowKey"
+            (rowClick)="open($event)"
+          />
+        </fold-card>
+      }
+    }
+  }
+</fold-page-layout>

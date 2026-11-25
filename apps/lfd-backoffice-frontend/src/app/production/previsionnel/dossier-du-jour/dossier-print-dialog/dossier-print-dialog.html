@@ -28,11 +28,19 @@
           </fold-callout>
         }
 
+        @if (lastPrint()?.functionSheetsReplaced && lastPrint(); as last) {
+          <fold-callout variant="warning" data-sheets-replaced>
+            Fiche de fonction remplacée depuis l’impression #{{ last.run }}.
+          </fold-callout>
+        }
+
         <fold-fieldset legend="Parties" direction="horizontal">
           @for (entry of partLabels; track entry.part) {
             <fold-checkbox
               [label]="entry.label"
               [checked]="parts().has(entry.part)"
+              [disabled]="entry.part === 'functionSheets' && functionSheets().length === 0"
+              [hint]="entry.part === 'functionSheets' ? functionSheetsLabel() : undefined"
               (checkedChange)="togglePart(entry.part, $event)"
               [attr.data-part]="entry.part"
             />

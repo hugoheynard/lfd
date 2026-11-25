@@ -787,6 +787,15 @@ export const staffResourceSchema = z.enum([
    * elle s'accorde à l'écran ; la graine ne la donne qu'à l'administrateur.
    */
   "exports",
+  /**
+   * **Les événements** — la table des événements, leur détail et leurs
+   * fiches de fonction (`documentation/evenements/plan-evenements.md`).
+   * `read` : voir la table et le détail, télécharger une fiche ; `write` :
+   * créer, renommer, déplacer, déposer, retirer. Sans préfixe : la clé est le
+   * nom du bloc, transverse aux applications. Ajoutée sans être accordée :
+   * elle s'accorde à l'écran ; la graine ne la donne qu'à l'administrateur.
+   */
+  "events",
 ]);
 export type StaffResource = z.infer<typeof staffResourceSchema>;
 
@@ -964,6 +973,7 @@ export const STAFF_RESOURCE_LABELS: Readonly<Record<StaffResource, string>> = {
   ops_post_deploy: "Opérations après déploiement",
   activity: "Journal d'activité",
   exports: "Export des ventes",
+  events: "Événements",
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1186,6 +1196,9 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     // L'administrateur seul (2026-11-23, plan de l'export des ventes, E2) : en
     // production, accordée à l'écran.
     exports: "write",
+    // L'administrateur seul (2026-11-24, plan des événements, E1) : en
+    // production, accordée à l'écran.
+    events: "write",
   },
   commercial: {
     b2b_companies: "write",

@@ -1,3 +1,5 @@
+import { DossierFunctionSheetsReading } from "../dossier-function-sheets-reading.service.js";
+import { FixedEventFunctionSheets } from "../../../../channels/events/__tests__/event-function-sheets-doubles.js";
 import { InMemoryDisplaySettings } from "../../../../shared/print/application/__tests__/production-display-settings-doubles.js";
 import { AppConfig } from "../../../../../platform/config/app-config.js";
 import type { ProducibleOrder } from "../../../../channels/commerce/day-orders.reader.js";
@@ -64,6 +66,7 @@ function papersWith(
       deliveryNotes,
       new InMemoryDisplaySettings().reader(),
       new FixedTrancheReading(),
+      new DossierFunctionSheetsReading(new FixedEventFunctionSheets()),
     ),
   };
 }

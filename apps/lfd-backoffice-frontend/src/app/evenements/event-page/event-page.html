@@ -1,0 +1,83 @@
+<fold-page-layout [title]="title()" separator>
+  <fold-back-link pageEyebrow icon="arrow-back" label="Événements" routerLink="/evenements" />
+  @if (subtitle(); as line) {
+    <p description>{{ line }}</p>
+  }
+
+  @switch (state()) {
+    @case ('loading') {
+      <fold-loading message="Chargement de l’événement…" />
+    }
+    @case ('error') {
+      <fold-empty-state tone="alert" title="Impossible de charger l’événement">
+        <button foldButton (click)="reload()">Réessayer</button>
+      </fold-empty-state>
+    }
+    @default {
+      @if (event(); as current) {
+        <div class="sections">
+          @if (archived()) {
+            <fold-callout variant="info" data-archived>
+              Cet événement est archivé : son nom, sa date et ses fiches ne changent plus.
+            </fold-callout>
+          }
+
+          <fold-card>
+            <div class="identity">
+              <fold-element-title variant="title" title="Nom et date" />
+              <fold-input
+                label="Nom"
+                required
+                [value]="draftName()"
+                [readOnly]="!editable()"
+                (valueChange)="draftName.set($event)"
+                data-event-name
+              />
+              <fold-date
+                label="Date"
+                required
+                hint="Les fiches de fonction sortent avec le dossier de production de ce jour."
+                [value]="draftDate()"
+                [readOnly]="!editable()"
+                (valueChange)="draftDate.set($event)"
+                data-event-date
+              />
+              @if (editable()) {
+                <div class="actions">
+                  <button
+                    foldButton
+                    intent="primary"
+                    [disabled]="revision() === null"
+                    [loading]="saving()"
+                    (click)="save()"
+                    data-event-save
+                  >
+                    Enregistrer
+                  </button>
+                </div>
+              }
+            </div>
+          </fold-card>
+
+          <app-function-sheets-card
+            [eventId]="current.id"
+            [sheets]="current.functionSheets"
+            [canWrite]="editable()"
+            (changed)="refresh()"
+          />
+
+          @if (editable()) {
+            <fold-danger-zone
+              appearance="section"
+              title="Archiver cet événement"
+              actionLabel="Archiver"
+              message="L’événement sort de la table et ses fiches ne sortent plus avec le dossier du jour. Rien n’est effacé."
+              (confirmed)="archive()"
+              data-event-archive
+            />
+          }
+        </div>
+      }
+    }
+  }
+</fold-page-layout>

@@ -1,0 +1,11 @@
+.sections,
+.identity {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+}

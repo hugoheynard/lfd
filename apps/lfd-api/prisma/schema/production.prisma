@@ -1031,6 +1031,9 @@ model ProductionProvisionalPrint {
   orderFingerprints Json     @map("order_fingerprints")
   /// Ce qui a été coché : parties, rayons ou postes, choix des commandes.
   parts             Json
+  /// Les fiches de fonction imprimées (identifiants opaques du bloc des
+  /// événements, sans clé étrangère) : « remplacée depuis l'impression #N ».
+  functionSheetIds  String[] @default([]) @map("function_sheet_ids")
 
   @@unique([serviceDay, run])
   @@map("provisional_print")

@@ -11,6 +11,12 @@ import { drawOrder, lotBanner } from "./day-dossier-order-sheet-pdf.js";
 import { drawRecapGroup } from "./day-dossier-recap-pdf.js";
 import { drawResupplySheet } from "./day-dossier-resupplies-pdf.js";
 import {
+  FUNCTION_SHEET_BAND,
+  type PreparedEventSheets,
+  drawFunctionSheets,
+  functionSheetsFooter,
+} from "./day-dossier-function-sheets-pdf.js";
+import {
   type DossierPart,
   type DossierSelection,
   WHOLE_DOSSIER,
@@ -23,6 +29,7 @@ import {
   type Doc,
 } from "../../../../platform/pdf/paper-pdf-kit.js";
 import { contentRightOf, PaperPages } from "../../../../platform/pdf/paper-pages.js";
+import { type PdfOverlay, overlaidPdf } from "../../../../platform/pdf/embedded-pdf.js";
 import {
   PROVISIONAL_FOOTER,
   type ProvisionalStamp,
@@ -30,19 +37,12 @@ import {
 } from "./provisional-stamp.js";
 
 /**
- * **Le dossier du jour, en PDF** — une couverture, le récapitulatif (un rayon
- * par page), puis un bon par commande suivi de son BL de transport, et un bon
- * par réassort, en UN fichier : c'est le paquet qui part au fournil (plan
- * `documentation/fournil/dossier-prod-du-jour.md`, E1).
- *
- * Même mise en page que la feuille d'atelier et le compte à produire, dont il
- * partage la trousse (`paper-pdf-kit.ts`). Comme l'écran : le lot est
- * **compté** (« N commandes · P pièces »), chaque bon est **numéroté**
- * (« bon 3/14 ») — si l'imprimante manque de feuilles, le trou se voit — et la
- * pile suit la référence. Aucun montant : la journée figée n'en porte pas.
- *
- * Déterministe : ses dates viennent de la clôture et du retirage, jamais de
- * l'horloge, si bien qu'un second tirage écrit les mêmes octets.
+ * **Le dossier du jour, en PDF** — couverture, un rayon par page, un bon par
+ * commande suivi de son BL, un bon par réassort, puis les fiches de fonction
+ * des événements du jour, en UN fichier
+ * (`documentation/fournil/dossier-prod-du-jour.md`). Le lot est compté, chaque
+ * bon numéroté, et aucun montant n'y figure. Déterministe : ses dates
+ * viennent de la clôture et du retirage, jamais de l'horloge.
  */
 
 /** Les instants qui datent le papier. */
@@ -70,13 +70,12 @@ export interface DossierStamp {
  *
  * - `colisageUrlOf` rend l'URL du QR d'un bon, ou une chaîne vide — aucun code
  *   n'est alors imprimé, comme sur la feuille d'atelier.
- * - `colors` porte la pastille de chaque commande, par `orderId` (§0 bis du
- *   plan de la planche des documents v2, 2026-10-22), posée devant son
- *   acheminement (« Retrait Village · pro ») ; une commande absente n'en a pas.
- * - `resupplyColors` porte, par `siteId`, la teinte de réassort du site
- *   destinataire (Hugo, 2026-10-22) ; un site absent n'en a pas.
- * - `deliveryNotes` porte, par `orderId`, le BL de transport imprimé derrière
- *   le bon (Hugo, 2026-10-25) ; une commande absente n'en a pas.
+ * - `colors` porte la pastille de chaque commande, par `orderId`, posée devant
+ *   son acheminement ; une commande absente n'en a pas.
+ * - `resupplyColors` porte, par `siteId`, la teinte de réassort du site.
+ * - `deliveryNotes` porte, par `orderId`, le BL imprimé derrière le bon.
+ * - `functionSheets` porte les fiches de fonction des événements du jour,
+ *   jointes à la fin ; absent : aucune ; `null` : illisibles, le pied le dit.
  */
 export interface DossierPrint {
   readonly logo: Buffer;
@@ -84,12 +83,12 @@ export interface DossierPrint {
   readonly colors: ReadonlyMap<string, string>;
   readonly resupplyColors: ReadonlyMap<string, string>;
   readonly deliveryNotes: ReadonlyMap<string, DeliveryNoteDrawing>;
+  readonly functionSheets?: readonly PreparedEventSheets[] | null;
 }
 
 /**
- * Ce qu'un tirage partiel prend du dossier : les parties et les rayons de la
- * sélection — les commandes, elles, sont filtrées par l'appelant avant le
- * montage (`selectedOrders`) —, et la mention d'en-tête qui le dit.
+ * Les parties et rayons d'un tirage partiel (les commandes sont filtrées par
+ * l'appelant, `selectedOrders`), et la mention d'en-tête qui le dit.
  */
 export interface DossierExtract {
   readonly selection: DossierSelection;
@@ -102,9 +101,10 @@ export const WHOLE_EXTRACT: DossierExtract = { selection: WHOLE_DOSSIER, notice:
 
 /**
  * Rend le dossier, ou les parties choisies. Le folio compte les pages du
- * fichier tiré : une feuille manquante se voit toujours.
+ * fichier tiré, fiches de fonction comprises : une feuille manquante se voit
+ * toujours.
  */
-export function renderDayDossierPdf(
+export async function renderDayDossierPdf(
   dossier: DayDossier,
   stamp: DossierStamp,
   print: DossierPrint,
@@ -113,7 +113,8 @@ export function renderDayDossierPdf(
   extract: DossierExtract = WHOLE_EXTRACT,
 ): Promise<Buffer> {
   const { parts } = extract.selection;
-  return render(
+  let overlays: readonly PdfOverlay[] = [];
+  const paper = await render(
     stamp.retakenAt ?? stamp.closedAt,
     `Dossier du jour ${stamp.serviceDay}`,
     (doc) => {
@@ -146,16 +147,23 @@ export function renderDayDossierPdf(
       if (parts.has("resupplies")) {
         drawResupplies(doc, pages, dossier, stamp, print);
       }
+      if (parts.has("functionSheets")) {
+        overlays = drawFunctionSheets(doc, pages, print.functionSheets ?? []);
+      }
       const header = pageHeader(stamp);
       pages.finish({
         logo: print.logo,
         headerRight: extract.notice === null ? header : `${header} · ${extract.notice}`,
         headerRightBold: true,
-        footerLeft: stampLine(stamp),
+        footerLeft: functionSheetsFooter(
+          stampLine(stamp),
+          parts.has("functionSheets") && print.functionSheets === null,
+        ),
       });
     },
     true,
   );
+  return overlaidPdf(paper, overlays, FUNCTION_SHEET_BAND);
 }
 
 /** Ce que la boucle des bons lit au-delà du dossier. */
@@ -249,7 +257,7 @@ export function drawRecapWithCalendars(
  * Une impression provisoire n'est pas archivée ici : elle ne la fait pas
  * monter.
  */
-export const DOSSIER_LAYOUT_VERSION = "v14";
+export const DOSSIER_LAYOUT_VERSION = "v15";
 
 export function dayDossierPdfKey(serviceDay: string, retakenAt: Date | null): string {
   const base = `${serviceDay}/dossier-du-jour-${DOSSIER_LAYOUT_VERSION}`;

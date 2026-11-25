@@ -72,6 +72,8 @@ export interface ProvisionalPrintState {
   /** L'empreinte de chaque commande dont la fiche a été imprimée. */
   readonly orderFingerprints: ReadonlyMap<string, string>;
   readonly choice: ProvisionalChoice;
+  /** Les fiches de fonction imprimées, identifiants opaques ; vide sans elles. */
+  readonly functionSheetIds: readonly string[];
 }
 
 /**

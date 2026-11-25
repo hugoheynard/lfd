@@ -110,6 +110,9 @@ export interface ToolGroup {
  * - `resupply_templates` : les modèles de réassort se tiennent au comptoir
  *   (Comptoir › Réassort, plan `commander.md § 6`, 2026-11-19) ;
  *   rangés au retrait, avec `handover_counter`, plutôt qu'en « Transverse ».
+ * - `events` : les fiches de fonction d'un événement sortent avec le dossier de
+ *   production du jour (`evenements/plan-evenements.md`) ; rangé au fournil,
+ *   à côté de la production, plutôt qu'en « Transverse ».
  */
 const RESOURCE_TOOL_EXCEPTIONS: Readonly<Partial<Record<StaffResource, StaffTool>>> = {
   shop_bundles: 'lfc',
@@ -117,6 +120,7 @@ const RESOURCE_TOOL_EXCEPTIONS: Readonly<Partial<Record<StaffResource, StaffTool
   collection_test: 'b2b',
   pay_link_test: 'b2b',
   resupply_templates: 'handover',
+  events: 'production',
 };
 
 /**

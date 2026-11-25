@@ -26,6 +26,7 @@ function printed(day: string, run: number): ProvisionalPrint {
     printedAt: NOW,
     printedBy: "staff_1",
     orderFingerprints: new Map(),
+    functionSheetIds: [],
     choice: { parts: new Set(DOSSIER_PARTS), groups: "all", orders: { kind: "all" } },
   });
 }

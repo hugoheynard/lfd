@@ -8,6 +8,8 @@ export interface ProvisionalPrintSummary {
   /** L'id de la fiche staff. */
   readonly printedBy: string;
   readonly commerceVersion: number;
+  /** Les fiches de fonction qu'elle a imprimées. */
+  readonly functionSheetIds: readonly string[];
 }
 
 /**

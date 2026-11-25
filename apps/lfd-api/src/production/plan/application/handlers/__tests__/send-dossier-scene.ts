@@ -1,3 +1,5 @@
+import { DossierFunctionSheetsReading } from "../../services/dossier-function-sheets-reading.service.js";
+import { FixedEventFunctionSheets } from "../../../../channels/events/__tests__/event-function-sheets-doubles.js";
 import type { Buffer } from "node:buffer";
 
 import { InMemoryDisplaySettings } from "../../../../shared/print/application/__tests__/production-display-settings-doubles.js";
@@ -206,6 +208,7 @@ export function setup(
       new FixedPlannedDeliveryNotes(),
       new InMemoryDisplaySettings().reader(),
       new FixedTrancheReading(),
+      new DossierFunctionSheetsReading(new FixedEventFunctionSheets()),
     ),
     new ProductionPaperArchive(options.store ?? new InMemoryProductionStore()),
     log,

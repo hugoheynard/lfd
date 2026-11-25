@@ -287,12 +287,21 @@ export class App {
    */
   protected readonly devTools = DEV_TOOLS;
 
+  /**
+   * Les Événements — SON droit, celui que les routes serveur opposent
+   * (`@AdminSurface("events")`) et que garde `/evenements`. Rangés sous Prod
+   * manager : leurs fiches sortent avec le dossier de production du jour. Le
+   * même `computed` tient le rail et la tuile.
+   */
+  protected readonly canSeeEvents = computed(() => this.permissions.can('events:read'));
+
   /** Le PIM — même droit que le catalogue, puisque c'est le catalogue. */
   /** La section « App exploitation » : au moins un des postes du jour ouvert. */
   protected readonly canSeeOperationsApps = computed(
     () =>
       this.canSeeSupervision() ||
       this.canSeeProdManager() ||
+      this.canSeeEvents() ||
       this.canSeeTourManager() ||
       this.canSeeBakehouse() ||
       this.canSeePacking() ||

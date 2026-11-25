@@ -2,6 +2,7 @@ import { type IQueryHandler, QueryHandler } from "@nestjs/cqrs";
 
 import { StaffAuthorDirectory } from "../../../../staff/directory/domain/staff-author-directory.js";
 import { CommerceDayVersionReader } from "../../../channels/commerce/commerce-day-version.reader.js";
+import { InForceFunctionSheetsReader } from "../../../channels/events/index.js";
 import {
   ProductionDayRepository,
   ProductionDayStatusReader,
@@ -26,6 +27,8 @@ import {
  *
  * Arrêtée, la journée se lit dans ce qu'elle a figé ; sinon, dans ce que
  * l'arrêt figerait (`LiveDossierContent`), comme le tirage provisoire.
+ * Les fiches de fonction sont celles en vigueur : un tirage dont une fiche a
+ * été remplacée ou retirée depuis le dit.
  */
 @QueryHandler(GetPrintOptionsQuery)
 export class GetPrintOptionsHandler implements IQueryHandler<
@@ -40,13 +43,19 @@ export class GetPrintOptionsHandler implements IQueryHandler<
     private readonly prints: ProvisionalPrintsReader,
     private readonly versions: CommerceDayVersionReader,
     private readonly authors: StaffAuthorDirectory,
+    private readonly functionSheets: InForceFunctionSheetsReader,
   ) {}
 
   async execute(query: GetPrintOptionsQuery): Promise<ProductionPrintOptionsView> {
     const day = ServiceDay.of(query.serviceDay);
     const arrested = await this.status.isClosed(day);
     const content = arrested ? await this.frozen(day) : await this.live.read(day);
-    const [labels, prints] = await Promise.all([this.groups.read(content), this.prints.ofDay(day)]);
+    const [labels, prints, sheets] = await Promise.all([
+      this.groups.read(content),
+      this.prints.ofDay(day),
+      this.functionSheets.inForceOn(day.value),
+    ]);
+    const inForce = new Set(sheets.map((sheet) => sheet.sheetId));
     const [names, changedSinceLast] = await Promise.all([
       this.authors.identify(prints.map((print) => print.printedBy)),
       arrested ? Promise.resolve(false) : this.changedSince(day, prints.at(-1)),
@@ -65,8 +74,14 @@ export class GetPrintOptionsHandler implements IQueryHandler<
         run: print.run,
         printedAt: print.printedAt.toISOString(),
         printedByName: names.nameOf(print.printedBy),
+        functionSheetsReplaced: print.functionSheetIds.some((id) => !inForce.has(id)),
       })),
       changedSinceLast,
+      functionSheets: sheets.map(({ sheetId, fileName, eventName }) => ({
+        sheetId,
+        fileName,
+        eventName,
+      })),
     };
   }
 

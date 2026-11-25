@@ -414,6 +414,24 @@
       "information": false
     },
     {
+      "colonne": "events.event.created_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`created_by`) sur `event` (`evenements/plan-evenements.md`).",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "events.function_sheet.uploaded_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`uploaded_by`) sur `function_sheet` (`evenements/plan-evenements.md`).",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
       "colonne": "packing.container.opened_by",
       "personne": "staff",
       "categorie": "auteur-geste",
