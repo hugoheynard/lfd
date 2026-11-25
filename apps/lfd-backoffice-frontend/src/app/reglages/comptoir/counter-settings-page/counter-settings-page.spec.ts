@@ -1,10 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
-import type {
-  CounterSettingsView,
-  CounterStockTrackingPayload,
-  StaffPermission,
-} from '@lfd/contracts';
+import type { CounterSettingsView, CounterSettingsPayload, StaffPermission } from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
 import { PermissionsStore } from '../../../auth/permissions.store';
@@ -22,6 +18,7 @@ const SETTINGS: CounterSettingsView = {
       siteId: 'site_labo',
       siteLabel: 'Labo',
       stockTracking: false,
+      immediateWithoutStock: false,
       updatedAt: null,
       updatedBy: null,
     },
@@ -29,6 +26,7 @@ const SETTINGS: CounterSettingsView = {
       siteId: 'site_village',
       siteLabel: 'Village',
       stockTracking: true,
+      immediateWithoutStock: false,
       updatedAt: '2026-01-02T08:30:00.000Z',
       updatedBy: 'Lou',
     },
@@ -36,7 +34,7 @@ const SETTINGS: CounterSettingsView = {
 };
 
 class FakeSettings {
-  readonly puts: { siteId: string; payload: CounterStockTrackingPayload }[] = [];
+  readonly puts: { siteId: string; payload: CounterSettingsPayload }[] = [];
   refusal: unknown = null;
 
   constructor(private current: CounterSettingsView | Error) {}
@@ -48,7 +46,7 @@ class FakeSettings {
   }
 
   /** Comme la route : `204`, aucun corps. */
-  setStockTracking(siteId: string, payload: CounterStockTrackingPayload): Promise<void> {
+  setSettings(siteId: string, payload: CounterSettingsPayload): Promise<void> {
     this.puts.push({ siteId, payload });
     if (this.refusal !== null) {
       return Promise.reject(this.refusal);
@@ -60,6 +58,7 @@ class FakeSettings {
             ? {
                 ...site,
                 stockTracking: payload.stockTracking,
+                immediateWithoutStock: payload.immediateWithoutStock,
                 updatedAt: '2026-01-03T09:00:00.000Z',
                 updatedBy: 'Max',
               }
@@ -99,6 +98,20 @@ async function settle(fixture: ComponentFixture<CounterSettingsPage>): Promise<v
   fixture.detectChanges();
 }
 
+function immediateBox(
+  fixture: ComponentFixture<CounterSettingsPage>,
+  siteId: string,
+): HTMLInputElement {
+  const host = fixture.nativeElement as HTMLElement;
+  const input = host.querySelector<HTMLInputElement>(
+    `[data-immediate-without-stock="${siteId}"] input[type="checkbox"]`,
+  );
+  if (input === null) {
+    throw new Error(`Pas de case de retrait immédiat pour ${siteId}.`);
+  }
+  return input;
+}
+
 function box(fixture: ComponentFixture<CounterSettingsPage>, siteId: string): HTMLInputElement {
   const host = fixture.nativeElement as HTMLElement;
   const input = host.querySelector<HTMLInputElement>(
@@ -130,9 +143,25 @@ describe('CounterSettingsPage — Réglages › Comptoir', () => {
     box(fixture, 'site_labo').click();
     await settle(fixture);
 
-    expect(api.puts).toEqual([{ siteId: 'site_labo', payload: { stockTracking: true } }]);
+    expect(api.puts).toEqual([
+      { siteId: 'site_labo', payload: { stockTracking: true, immediateWithoutStock: false } },
+    ]);
     expect(box(fixture, 'site_labo').checked).toBe(true);
     expect(text(fixture)).toContain('Modifié par Max');
+  });
+
+  it('laisse le retrait immédiat passer sans le stock reçu, sans toucher au suivi', async () => {
+    const api = new FakeSettings(SETTINGS);
+    const fixture = await mount(api);
+
+    immediateBox(fixture, 'site_village').click();
+    await settle(fixture);
+
+    expect(api.puts).toEqual([
+      { siteId: 'site_village', payload: { stockTracking: true, immediateWithoutStock: true } },
+    ]);
+    expect(immediateBox(fixture, 'site_village').checked).toBe(true);
+    expect(box(fixture, 'site_village').checked).toBe(true);
   });
 
   it('un refus se dit, et la case revient à l’état servi', async () => {

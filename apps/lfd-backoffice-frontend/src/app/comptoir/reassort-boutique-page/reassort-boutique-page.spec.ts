@@ -99,6 +99,7 @@ class FakeReceipts {
       receptions: this.receptions,
       unordered: { lines: this.unordered, updatedAt: null, updatedBy: null },
       stock: this.stock(),
+      immediateWithoutStock: false,
     });
   }
   receiveResupply(_site: string, resupplyId: string): Promise<void> {

@@ -1,7 +1,13 @@
 import type { PickupSlot, ResupplyReceiptLineView } from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
-import { currentSlotOf, shelfHintOf, shelfShortageOf, shelfStockBySku } from '../immediate-pickup';
+import {
+  currentSlotOf,
+  immediateCatalogueOf,
+  shelfHintOf,
+  shelfShortageOf,
+  shelfStockBySku,
+} from '../immediate-pickup';
 
 /** Lot L6 (plan du jour J) : ce que le « Retrait immédiat » dérive. */
 
@@ -76,5 +82,22 @@ describe('shelfHintOf', () => {
   it('dit le reste en pièces, ou au poids', () => {
     expect(shelfHintOf(3, 'piece')).toBe('reste 3');
     expect(shelfHintOf(1250, 'weight')).toContain('kg');
+  });
+});
+
+describe('immediateCatalogueOf — le catalogue du « Retrait immédiat »', () => {
+  const CATALOGUE = [{ sku: 'CRO' }, { sku: 'PAC' }];
+
+  it('se réduit à ce qui reste en vitrine', () => {
+    expect(immediateCatalogueOf(CATALOGUE, new Map([['CRO', 2]]), false)).toEqual([{ sku: 'CRO' }]);
+  });
+
+  it('ne propose rien tant que le reste n’est pas lu', () => {
+    expect(immediateCatalogueOf(CATALOGUE, null, false)).toEqual([]);
+  });
+
+  it('propose tout le catalogue sur un point qui vend sans le stock reçu', () => {
+    expect(immediateCatalogueOf(CATALOGUE, new Map(), true)).toEqual(CATALOGUE);
+    expect(immediateCatalogueOf(CATALOGUE, null, true)).toEqual(CATALOGUE);
   });
 });

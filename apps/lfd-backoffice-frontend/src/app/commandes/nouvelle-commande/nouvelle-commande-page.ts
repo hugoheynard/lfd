@@ -49,7 +49,12 @@ import { HandoverQueueService } from '../../handover-shop/handover-queue.service
 import { pointOf } from './order-entry-return';
 import { ResupplyReceiptsService } from '../../comptoir/reassort-boutique-page/resupply-receipts.service';
 import { CounterDeliveryNoteService } from '../../comptoir/counter-delivery-note.service';
-import { isoDayOf, shelfShortageOf, shelfStockBySku } from './immediate-pickup';
+import {
+  immediateCatalogueOf,
+  isoDayOf,
+  shelfShortageOf,
+  shelfStockBySku,
+} from './immediate-pickup';
 
 /**
  * L'accalmie au bout de laquelle on chiffre, en millisecondes.
@@ -252,14 +257,20 @@ export class NouvelleCommandePage {
    */
   protected readonly shelfLeft = signal<ReadonlyMap<string, number> | null>(null);
   protected readonly shelfFailed = signal(false);
+  /**
+   * Le point du comptoir vend sans vérifier le stock reçu (Réglages ›
+   * Comptoir) : la saisie garde tout le catalogue et ne borne plus le panier.
+   */
+  protected readonly withoutStock = signal(false);
 
-  /** Au retrait immédiat, le catalogue se réduit à ce qui reste en vitrine. */
+  /**
+   * Au retrait immédiat, le catalogue se réduit à ce qui reste en vitrine —
+   * sauf sur un point qui vend sans le stock reçu.
+   */
   protected readonly shownCatalogue = computed<readonly CatalogItemView[]>(() => {
-    if (!this.immediate()) {
-      return this.catalogue();
-    }
-    const left = this.shelfLeft();
-    return left === null ? [] : this.catalogue().filter((item) => left.has(item.sku));
+    return this.immediate()
+      ? immediateCatalogueOf(this.catalogue(), this.shelfLeft(), this.withoutStock())
+      : this.catalogue();
   });
 
   /** Ce qui empêche de remettre depuis la vitrine — relayé au panier. */
@@ -268,9 +279,10 @@ export class NouvelleCommandePage {
       return 'Le stock de la vitrine n’a pas pu être lu — réessayez, ou passez une commande programmée.';
     }
     const left = this.shelfLeft();
-    return left === null
-      ? 'Lecture du stock de la vitrine…'
-      : shelfShortageOf(this.cart.lines(), left);
+    if (left === null) {
+      return 'Lecture du stock de la vitrine…';
+    }
+    return this.withoutStock() ? null : shelfShortageOf(this.cart.lines(), left);
   });
 
   /** La case « enregistrer au carnet » n'existe que si la source peut l'honorer. */
@@ -502,9 +514,11 @@ export class NouvelleCommandePage {
   protected async loadShelf(placeId: string): Promise<void> {
     this.shelfLeft.set(null);
     this.shelfFailed.set(false);
+    this.withoutStock.set(false);
     try {
       const receipt = await this.receipts.read(placeId, isoDayOf(new Date()));
       if (placeId === this.counterPlaceId()) {
+        this.withoutStock.set(receipt.immediateWithoutStock);
         this.shelfLeft.set(shelfStockBySku(receipt.stock, this.catalogue()));
       }
     } catch {

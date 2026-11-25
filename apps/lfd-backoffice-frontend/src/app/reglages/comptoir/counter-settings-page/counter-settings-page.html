@@ -45,6 +45,25 @@
           </fold-empty-state>
         }
       </fold-card>
+
+      <fold-card>
+        <fold-element-title
+          cardHeader
+          variant="title"
+          title="Retrait immédiat sans vérifier le stock reçu"
+          subtitle="Le comptoir peut vendre au-delà du réassort réceptionné : tout le catalogue est proposé au « Retrait immédiat », et le stock du jour peut devenir négatif. Les commandes en ligne restent limitées au stock. Désactivé par défaut."
+        />
+
+        @for (site of sites(); track site) {
+          <fold-checkbox
+            [label]="site.siteLabel"
+            [checked]="site.immediateWithoutStock"
+            (checkedChange)="setImmediateWithoutStock(site, $event)"
+            [disabled]="!canWrite() || saving() !== null"
+            [attr.data-immediate-without-stock]="site.siteId"
+          />
+        }
+      </fold-card>
     }
   }
 </fold-page-layout>

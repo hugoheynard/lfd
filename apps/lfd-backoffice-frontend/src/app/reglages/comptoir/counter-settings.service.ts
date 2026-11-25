@@ -1,17 +1,18 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import type { CounterSettingsView, CounterStockTrackingPayload } from '@lfd/contracts';
+import type { CounterSettingsView, CounterSettingsPayload } from '@lfd/contracts';
 import { firstValueFrom } from 'rxjs';
 
 import { B2B_API_BASE } from '../../api/api-config';
 
 /**
- * **Les réglages du comptoir** — Réglages › Comptoir : le suivi de l'état du
- * stock, point par point, désactivé tant que le point n'a pas été réglé
- * (décidé par Hugo le 2026-11-19).
+ * **Les réglages du comptoir** — Réglages › Comptoir, point par point : le
+ * suivi de l'état du stock (Hugo, 2026-11-19) et le « Retrait immédiat » sans
+ * le stock reçu (Hugo, 2026-11-25), désactivés tant que le point n'a pas été
+ * réglé.
  *
- * La pose est idempotente côté serveur (`@Idempotent` : rejouer
- * `{ stockTracking }` pose le même état) : aucune clé d'intention.
+ * La pose est idempotente côté serveur (`@Idempotent` : rejouer les deux
+ * réglages pose le même état) : aucune clé d'intention.
  */
 @Injectable({ providedIn: 'root' })
 export class CounterSettingsService {
@@ -21,8 +22,8 @@ export class CounterSettingsService {
     return firstValueFrom(this.http.get<CounterSettingsView>(this.url()));
   }
 
-  /** Pose le suivi du stock d'un point. `204` sans corps : l'appelant relit. */
-  setStockTracking(siteId: string, payload: CounterStockTrackingPayload): Promise<void> {
+  /** Pose les deux réglages d'un point. `204` sans corps : l'appelant relit. */
+  setSettings(siteId: string, payload: CounterSettingsPayload): Promise<void> {
     return firstValueFrom(
       this.http.put<void>(`${this.url()}/${encodeURIComponent(siteId)}`, payload),
     );

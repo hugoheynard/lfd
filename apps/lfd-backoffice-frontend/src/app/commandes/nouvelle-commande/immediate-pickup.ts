@@ -84,3 +84,19 @@ export function shelfShortageOf(
   }
   return `Pas assez en vitrine pour : ${short.map((line) => line.name).join(', ')}.`;
 }
+
+/**
+ * Le catalogue que propose le « Retrait immédiat » : ce qui reste en vitrine,
+ * ou tout le catalogue quand le point vend sans le stock reçu (Réglages ›
+ * Comptoir) ; rien tant que le reste n'est pas lu.
+ */
+export function immediateCatalogueOf<T extends Pick<CatalogItemView, 'sku'>>(
+  catalogue: readonly T[],
+  left: ReadonlyMap<string, number> | null,
+  withoutStock: boolean,
+): readonly T[] {
+  if (withoutStock) {
+    return catalogue;
+  }
+  return left === null ? [] : catalogue.filter((item) => left.has(item.sku));
+}

@@ -1,5 +1,9 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import type { CounterSettingsView, CounterSiteSettingsView } from '@lfd/contracts';
+import type {
+  CounterSettingsPayload,
+  CounterSettingsView,
+  CounterSiteSettingsView,
+} from '@lfd/contracts';
 import { httpErrorMessage } from '@lfd/endpoints';
 import {
   FoldButtonComponent,
@@ -25,9 +29,10 @@ const MODIFIED_AT = new Intl.DateTimeFormat('fr-FR', {
 });
 
 /**
- * **Réglages › Comptoir** — suivre l'état du stock au comptoir, point par
- * point, désactivé par défaut (décidé par Hugo le 2026-11-19). Une case par
- * point ; chaque bascule s'applique tout de suite, puis relit.
+ * **Réglages › Comptoir** — point par point, désactivés par défaut : suivre
+ * l'état du stock (Hugo, 2026-11-19), et laisser le « Retrait immédiat »
+ * passer sans le stock reçu (Hugo, 2026-11-25). Une case par point et par
+ * réglage ; chaque bascule s'applique tout de suite, puis relit.
  *
  * Sous `lfc_order_settings`, comme les routes `admin/counter-settings` : la
  * page se fige sans `:write`.
@@ -87,10 +92,32 @@ export class CounterSettingsPage {
       : `Modifié par ${site.updatedBy}, le ${when}.`;
   }
 
-  /** Bascule le suivi d'un point, puis relit. Un refus laisse l'état servi, avec la raison. */
-  protected async setStockTracking(
+  /** Bascule le suivi d'un point, puis relit. */
+  protected setStockTracking(site: CounterSiteSettingsView, stockTracking: boolean): Promise<void> {
+    return this.save(
+      site,
+      { stockTracking, immediateWithoutStock: site.immediateWithoutStock },
+      `Le suivi du stock de « ${site.siteLabel} » n'a pas pu être enregistré.`,
+    );
+  }
+
+  /** Bascule le retrait immédiat sans stock d'un point, puis relit. */
+  protected setImmediateWithoutStock(
     site: CounterSiteSettingsView,
-    stockTracking: boolean,
+    immediateWithoutStock: boolean,
+  ): Promise<void> {
+    return this.save(
+      site,
+      { stockTracking: site.stockTracking, immediateWithoutStock },
+      `Le retrait immédiat de « ${site.siteLabel} » n'a pas pu être enregistré.`,
+    );
+  }
+
+  /** Pose les deux réglages, puis relit. Un refus laisse l'état servi, avec la raison. */
+  private async save(
+    site: CounterSiteSettingsView,
+    payload: CounterSettingsPayload,
+    fallback: string,
   ): Promise<void> {
     if (this.saving() !== null) {
       return;
@@ -98,15 +125,10 @@ export class CounterSettingsPage {
     this.saving.set(site.siteId);
     this.failure.set(null);
     try {
-      await this.service.setStockTracking(site.siteId, { stockTracking });
+      await this.service.setSettings(site.siteId, payload);
       this.settings.set(await this.service.read());
     } catch (error) {
-      this.failure.set(
-        httpErrorMessage(
-          error,
-          `Le suivi du stock de « ${site.siteLabel} » n'a pas pu être enregistré.`,
-        ),
-      );
+      this.failure.set(httpErrorMessage(error, fallback));
       // La case revient à l'état servi : des lignes neuves recréent les cases.
       this.settings.update((view) =>
         view === null ? null : { sites: view.sites.map((line) => ({ ...line })) },

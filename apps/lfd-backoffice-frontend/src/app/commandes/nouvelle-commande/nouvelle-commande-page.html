@@ -133,6 +133,11 @@
             Relire le stock
           </button>
         </fold-callout>
+      } @else if (withoutStock()) {
+        <fold-callout variant="info">
+          Ce point vend au comptoir sans vérifier le réassort reçu : tout le catalogue est proposé,
+          et le stock du jour peut passer sous zéro.
+        </fold-callout>
       } @else if (shelfLeft()?.size === 0) {
         <fold-callout variant="warning">
           Rien en vitrine au point du comptoir aujourd’hui : aucun réassort reçu, ou tout est parti.
