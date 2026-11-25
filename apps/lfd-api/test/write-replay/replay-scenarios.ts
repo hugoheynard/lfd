@@ -1,5 +1,6 @@
 import { ACCOUNT_SCENARIOS } from "./account-scenarios.js";
 import { ACCOUNTING_SCENARIOS } from "./accounting-scenarios.js";
+import { BACKORDER_SCENARIOS } from "./backorder-scenarios.js";
 import { CARD_PAYMENT_SCENARIOS } from "./card-payment-scenarios.js";
 import { COMMERCE_SCENARIOS } from "./commerce-scenarios.js";
 import { CONTACT_SCENARIOS } from "./contact-scenarios.js";
@@ -16,6 +17,7 @@ import { PACKING_SCENARIOS } from "./packing-scenarios.js";
 import { PIM_SCENARIOS } from "./pim-scenarios.js";
 import { PRICING_SCENARIOS } from "./pricing-scenarios.js";
 import { PRODUCTION_SCENARIOS } from "./production-scenarios.js";
+import { PRODUCTION_STEPS_SCENARIOS } from "./production-steps-scenarios.js";
 import { REPORTING_SCENARIOS } from "./reporting-scenarios.js";
 import { REVIEW_SCENARIOS } from "./review-scenarios.js";
 import type { ScenarioSet } from "./scenario.js";
@@ -28,6 +30,7 @@ import { SETTINGS_SCENARIOS } from "./settings-scenarios.js";
 export const REPLAY_SCENARIOS: ScenarioSet = {
   ...ACCOUNT_SCENARIOS,
   ...ACCOUNTING_SCENARIOS,
+  ...BACKORDER_SCENARIOS,
   ...CARD_PAYMENT_SCENARIOS,
   ...IDENTITY_SCENARIOS,
   ...MAIL_SCENARIOS,
@@ -44,6 +47,7 @@ export const REPLAY_SCENARIOS: ScenarioSet = {
   ...PIM_SCENARIOS,
   ...PRICING_SCENARIOS,
   ...PRODUCTION_SCENARIOS,
+  ...PRODUCTION_STEPS_SCENARIOS,
   ...REPORTING_SCENARIOS,
   ...REVIEW_SCENARIOS,
   ...SETTINGS_SCENARIOS,
