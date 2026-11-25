@@ -232,12 +232,16 @@ refusé (la fenêtre dit aujourd'hui un message générique).
 
 **Il attend tous les BL.** L'arrêt est écouté par deux abonnés sans ordre
 entre eux : le commerce fait naître les BL (`OnProductionDayClosed`), le
-fournil envoie le dossier (`SendDossierOnDayClosed`, et
-`SendDossierOnDayRetaken` au retirage). Avant d'envoyer, le fournil demande au
+fournil envoie le dossier (`SendDossierOnDayClosed`). Avant d'envoyer, le fournil demande au
 commerce les commandes encore sans BL (`DeliveryNotesBornReader`,
 `production/channels/commerce/`) ; s'il en reste, il lève
 `DossierAwaitsDeliveryNotesError` et la livraison du fait est rejouée
 (30 s, puis le double, dix essais). Sans destinataire, rien n'attend.
+
+Au retirage, le dossier complété (`SendDossierOnDayRetaken`) n'attend aucun
+BL : ceux des commandes arrêtées sont nés avant l'envoi de l'arrêt, et les
+arrivées du retirage ne sont pas confirmées par le commerce, donc n'en ont pas.
+Le tirage auquel il en manque un n'est pas archivé, et le suivant le refait.
 
 **Production › Réglages › Dossier du jour par e-mail** tient la liste des
 destinataires (`production_settings`) :

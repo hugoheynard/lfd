@@ -228,7 +228,7 @@ export function setup(
   const afterCommit = new AmbientAfterCommit();
   const handlers = {
     closed: new SendDossierOnDayClosed(days, dispatch, born, afterCommit, work),
-    retaken: new SendDossierOnDayRetaken(days, dispatch, born, afterCommit, work),
+    retaken: new SendDossierOnDayRetaken(days, dispatch, afterCommit, work),
   };
   return {
     mailer,

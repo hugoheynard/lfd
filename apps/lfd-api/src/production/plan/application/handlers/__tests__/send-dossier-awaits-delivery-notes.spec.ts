@@ -20,12 +20,16 @@ describe("le dossier attend tous ses BL avant de partir", () => {
     expect(mailer.sent.map((mail) => mail.to)).toEqual(["paul@fournil.fr"]);
   });
 
-  it("au retirage, attend de même le BL de la commande admise", async () => {
+  /**
+   * Régression : l'arrivée d'un retirage n'a jamais de BL, et le dossier
+   * complété l'attendait jusqu'à épuiser ses essais, sans jamais partir.
+   */
+  it("au retirage, part sans attendre le BL de la commande arrivée", async () => {
     const born = new FixedDeliveryNotesBorn(["ord_2"]);
     const { retaken, mailer } = setup([PAUL], retakenDay(), { born });
 
-    await expect(retaken.handle(retake())).rejects.toBeInstanceOf(DossierAwaitsDeliveryNotesError);
-    expect(mailer.sent).toEqual([]);
+    await retaken.handle(retake());
+    expect(mailer.sent.map((mail) => mail.to)).toEqual(["paul@fournil.fr"]);
   });
 
   it("sans destinataire, n'attend rien : il n'y a rien à envoyer", async () => {

@@ -10,7 +10,9 @@
 import { Buffer } from "node:buffer";
 
 import { MAILER } from "../src/mail/templates/mailer.tokens.js";
-import { jsonBody, type E2eContext } from "./e2e-harness.js";
+import { SEND_DOSSIER_ON_DAY_CLOSED } from "../src/production/plan/application/handlers/send-dossier-on-day-closed.handler.js";
+import { SEND_DOSSIER_ON_DAY_RETAKEN } from "../src/production/plan/application/handlers/send-dossier-on-day-retaken.handler.js";
+import { daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { createUser } from "./factories.js";
 import {
   CROISSANT,
@@ -20,6 +22,7 @@ import {
   bootstrapProductionDay,
   closePlan,
   place,
+  relayGate,
   retake,
 } from "./production-day-fixture.js";
 import { placeLateByStaff } from "./staff-late-order.js";
@@ -73,6 +76,30 @@ async function addExternal(email: string, firstName: string): Promise<void> {
     .expect(201);
 }
 
+/**
+ * Vide la file jusqu'au calme. À l'arrêt, l'envoi du dossier attend les BL
+ * que le commerce fait naître sur le même fait : s'il passe le premier, il
+ * lève, et sa livraison est reprogrammée. On ramène l'échéance des seules
+ * livraisons du dossier à hier pour la rejouer tout de suite.
+ */
+async function settle(): Promise<void> {
+  await ctx.drain();
+  for (let round = 0; round < 4; round += 1) {
+    const pending = await ctx.prisma.outboxDelivery.updateMany({
+      where: {
+        deliveredAt: null,
+        subscriber: { in: [SEND_DOSSIER_ON_DAY_CLOSED, SEND_DOSSIER_ON_DAY_RETAKEN] },
+      },
+      data: { nextAttemptAt: new Date(daysAgo(1)) },
+    });
+    if (pending.count === 0) {
+      return;
+    }
+    await relayGate.relay?.sweep();
+    await ctx.drain();
+  }
+}
+
 function dossiers(): readonly SentMail[] {
   return sentMails.filter((mail) => mail.template === "staff.production-dossier");
 }
@@ -84,7 +111,7 @@ describe("l'envoi du dossier du jour (E3)", () => {
     await place(ctx, issued, [{ sku: CROISSANT, quantity: 12 }]);
 
     await closePlan(ctx);
-    await ctx.drain();
+    await settle();
 
     expect(
       dossiers()
@@ -120,7 +147,7 @@ describe("l'envoi du dossier du jour (E3)", () => {
     await place(ctx, issued, [{ sku: CROISSANT, quantity: 12 }]);
 
     await closePlan(ctx);
-    await ctx.drain();
+    await settle();
 
     expect(dossiers().map((mail) => mail.data)).toMatchObject([
       { firstName: "", arrestedBy: "par Opérateur E2E" },
@@ -133,12 +160,12 @@ describe("l'envoi du dossier du jour (E3)", () => {
     await addExternal("jeanne@imprimerie.fr", "Jeanne");
     await place(ctx, issued, [{ sku: CROISSANT, quantity: 12 }]);
     await closePlan(ctx);
-    await ctx.drain();
+    await settle();
     // Le plan est arrêté : depuis O3, seule la saisie de l'équipe y entre.
     await placeLateByStaff(ctx, SERVICE_DAY, [{ sku: CROISSANT, quantity: 4 }]);
 
     await retake(ctx);
-    await ctx.drain();
+    await settle();
 
     expect(dossiers().map((mail) => [mail.data.completed, mail.data.orderCount])).toEqual([
       [false, 1],
@@ -150,13 +177,13 @@ describe("l'envoi du dossier du jour (E3)", () => {
     await addExternal("jeanne@imprimerie.fr", "Jeanne");
     await place(ctx, issued, [{ sku: CROISSANT, quantity: 12 }]);
     await closePlan(ctx);
-    await ctx.drain();
+    await settle();
 
     const response = await ctx
       .asSub(STAFF)
       .post(`/admin/production/worksheet/${SERVICE_DAY}/retake`)
       .expect(201);
-    await ctx.drain();
+    await settle();
 
     expect(jsonBody<{ absorbed: number }>(response).absorbed).toBe(0);
     expect(dossiers()).toHaveLength(1);
@@ -168,7 +195,7 @@ describe("l'envoi du dossier du jour (E3)", () => {
   it("sans destinataire, l'arrêt n'écrit à personne", async () => {
     await place(ctx, issued, [{ sku: CROISSANT, quantity: 12 }]);
     await closePlan(ctx);
-    await ctx.drain();
+    await settle();
 
     expect(dossiers()).toEqual([]);
   });

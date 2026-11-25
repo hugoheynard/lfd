@@ -1,5 +1,3 @@
-import { DeliveryNotesBornReader } from "../../../channels/commerce/index.js";
-import { ensureDeliveryNotesBorn } from "./dossier-delivery-notes-guard.js";
 import { Injectable } from "@nestjs/common";
 
 import { AfterCommit } from "../../../../platform/database/after-commit.js";
@@ -34,6 +32,12 @@ export const SEND_DOSSIER_ON_DAY_RETAKEN = "production.send-dossier-on-retake";
  * sont lus dans la transaction de la garde — illisibles, la livraison échoue
  * et sera rejouée ; le papier, la trace et les envois suivent la validation,
  * hors transaction.
+ *
+ * **Il n'attend aucun BL**, contrairement à l'arrêt. Le dossier arrêté a déjà
+ * attendu ceux de toutes ses commandes ; les arrivées d'un retirage, elles, ne
+ * sont pas confirmées par le commerce et n'ont pas de BL qui puisse naître —
+ * les attendre retiendrait le dossier complété pour toujours. Un tirage où il
+ * en manque un n'est pas archivé : le suivant le refait.
  */
 @Injectable()
 @DurableHandler({ type: PRODUCTION_DAY_RETAKEN, subscriber: SEND_DOSSIER_ON_DAY_RETAKEN })
@@ -41,7 +45,6 @@ export class SendDossierOnDayRetaken implements DurableSubscriber {
   constructor(
     private readonly days: ProductionDayRepository,
     private readonly dispatch: DossierDispatch,
-    private readonly notes: DeliveryNotesBornReader,
     private readonly afterCommit: AfterCommit,
     private readonly work: BackgroundWork,
   ) {}
@@ -53,9 +56,6 @@ export class SendDossierOnDayRetaken implements DurableSubscriber {
       return;
     }
     const prepared = await this.dispatch.prepare();
-    if (prepared.addressees.length > 0) {
-      await ensureDeliveryNotesBorn(this.notes, day);
-    }
     const occasion: DossierOccasion = { at: event.retakenAt, completed: true };
     this.afterCommit.defer(
       () =>
