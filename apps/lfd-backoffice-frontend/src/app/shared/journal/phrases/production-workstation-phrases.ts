@@ -101,6 +101,41 @@ const productsReordered: Phrase = (fact) => {
   );
 };
 
+/** « 3 produits » — le compte du fait, ou ce qui en tient lieu. */
+function productsOf(fact: PhraseFact): Segment {
+  return countOf(fact.payload['count'], 'produit', 'produits') ?? text('des produits');
+}
+
+const workstationAdded: Phrase = (fact) =>
+  byActor(
+    fact,
+    [text('a ajouté le poste '), station(fact), text(' à '), productsOf(fact)],
+    ['subjectLabel', 'workstation', 'skus', 'count', 'finishingSkus'],
+  );
+
+const workstationRemoved: Phrase = (fact) =>
+  byActor(
+    fact,
+    [text('a retiré le poste '), station(fact), text(' de '), productsOf(fact)],
+    ['subjectLabel', 'workstation', 'skus', 'count', 'unplacedSkus'],
+  );
+
+const finishingSet: Phrase = (fact) => {
+  const sku = fact.payload['sku'];
+  const before = citedName(recordOf(fact.payload['previous'])?.['workstation']);
+  return byActor(
+    fact,
+    [
+      text('a désigné le poste '),
+      station(fact),
+      text(' pour finir '),
+      typeof sku === 'string' ? name(sku) : text('un produit'),
+      ...(before === null ? [] : [text(' ; c’était '), name(before)]),
+    ],
+    ['subjectLabel', 'workstation', 'sku', 'previous'],
+  );
+};
+
 /** Le niveau propre, ou `null` : le poste suit le fournil. */
 function ownLevel(raw: unknown): Segment | null {
   return raw === null || raw === undefined
@@ -130,5 +165,8 @@ export const PRODUCTION_WORKSTATION_PHRASES = {
   'production_workstation.archived': archived,
   'production_workstation.products_placed': productsPlaced,
   'production_workstation.products_reordered': productsReordered,
+  'production_workstation.products_workstation_added': workstationAdded,
+  'production_workstation.products_workstation_removed': workstationRemoved,
+  'production_workstation.finishing_workstation_set': finishingSet,
   'production_workstation.tracking_level_set': trackingLevelSet,
 } satisfies Partial<Record<JournalFactType, Phrase>>;

@@ -49,6 +49,45 @@ export const PRODUCTION_WORKSTATION_FACTS = {
     payload({ subjectLabel: subjectLabel(), skus: z.array(z.string().min(1)) }),
   ),
   /**
+   * Le poste ajouté à des produits (références produit) : le premier poste
+   * d'un produit le finit (`finishingSkus`), les suivants sont des étapes.
+   * `count` : combien l'ont réellement gagné.
+   */
+  "production_workstation.products_workstation_added": fact(
+    payload({
+      subjectLabel: subjectLabel(),
+      workstation: workstation(),
+      skus: z.array(z.string().min(1)),
+      count: count(),
+      finishingSkus: z.array(z.string().min(1)),
+    }),
+  ),
+  /**
+   * Le poste retiré de produits ; `unplacedSkus` : ceux qui n'ont plus aucun
+   * poste, remis « à ranger ».
+   */
+  "production_workstation.products_workstation_removed": fact(
+    payload({
+      subjectLabel: subjectLabel(),
+      workstation: workstation(),
+      skus: z.array(z.string().min(1)),
+      count: count(),
+      unplacedSkus: z.array(z.string().min(1)),
+    }),
+  ),
+  /**
+   * Le poste finit désormais le produit `sku` : seul son « Fait » compte des
+   * pièces. `previous.workstation` : celui qui le finissait, devenu une étape.
+   */
+  "production_workstation.finishing_workstation_set": fact(
+    payload({
+      subjectLabel: subjectLabel(),
+      workstation: workstation(),
+      sku: z.string().min(1),
+      previous: payload({ workstation: workstation().nullable() }),
+    }),
+  ),
+  /**
    * Le niveau de suivi propre au poste (`fournil/les-niveaux-de-suivi.md`) ;
    * `null` : il suit le fournil. `previous` dit celui qu'il avait. Il vaut à
    * partir de la prochaine journée arrêtée.

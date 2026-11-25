@@ -22,6 +22,12 @@ import type { WorkshopGroupKind } from "./production-worksheet.js";
  * - `PUT admin/production/workstations/order` ← {@link ReorderWorkstationsPayload} ;
  * - `POST admin/production/workstations/:id/archive` ;
  * - `PUT admin/production/workstations/placements` ← {@link PlaceProductsPayload} ;
+ * - `POST admin/production/workstations/:id/products` ←
+ *   {@link WorkstationProductsPayload} — ce poste de plus pour ces produits ;
+ * - `POST admin/production/workstations/:id/products/removal` ←
+ *   {@link WorkstationProductsPayload} — ce poste quitte ces produits ;
+ * - `PUT admin/production/workstations/:id/finishing` ←
+ *   {@link SetFinishingWorkstationPayload} — ce poste finit ce produit ;
  * - `PUT admin/production/workstations/:id/products/order` ←
  *   {@link ReorderWorkstationProductsPayload} — la pile du poste ;
  * - `PUT admin/production/workstations/:id/tracking-level` ←
@@ -64,6 +70,28 @@ export const placeProductsPayloadSchema = z.object({
   workstationId: z.string().min(1).nullable(),
 });
 export type PlaceProductsPayload = z.infer<typeof placeProductsPayloadSchema>;
+
+/**
+ * Un poste de plus pour des produits, ou un poste qui les quitte
+ * (`fournil/plan-produit-sur-plusieurs-postes.md`, § 2.4). Le premier poste
+ * d'un produit le finit ; on ne retire pas celui qui finit tant qu'il en
+ * reste d'autres — la carte le refuse et dit quoi faire.
+ */
+export const workstationProductsPayloadSchema = z
+  .object({
+    productSkus: z
+      .array(z.string().min(1).max(PRODUCT_SKU_WIRE_MAX))
+      .min(1)
+      .max(PLACED_PRODUCTS_MAX),
+  })
+  .strict();
+export type WorkstationProductsPayload = z.infer<typeof workstationProductsPayloadSchema>;
+
+/** Le poste de la route finit désormais ce produit : il doit déjà en être un poste. */
+export const setFinishingWorkstationPayloadSchema = z
+  .object({ productSku: z.string().min(1).max(PRODUCT_SKU_WIRE_MAX) })
+  .strict();
+export type SetFinishingWorkstationPayload = z.infer<typeof setFinishingWorkstationPayloadSchema>;
 
 /**
  * La pile d'un poste : exactement ses produits (références produit), chacun
@@ -119,20 +147,37 @@ export interface WorkstationProductVariantView {
   readonly sellable: boolean;
 }
 
-/** Un produit de la page Postes, et son poste. */
+/** Un des postes d'un produit. */
+export interface WorkstationProductStationView {
+  readonly workstationId: string;
+  /** Ce poste finit le produit : seul son « Fait » compte des pièces. Un seul par produit. */
+  readonly finishes: boolean;
+  /**
+   * La place du produit dans la pile DE CE POSTE, à partir de 0 ; `null` :
+   * jamais réglée — il vient après ceux qui en ont une.
+   */
+  readonly position: number | null;
+}
+
+/** Un produit de la page Postes, et ses postes. */
 export interface WorkstationProductView {
   readonly productSku: string;
   /** `null` : le référentiel n'a pas envoyé de nom de fiche — l'écran dit la déclinaison. */
   readonly productName: string | null;
   /** Son rayon de boutique ; `null` : le produit n'est plus au miroir (placé, puis retiré). */
   readonly family: CatalogFamilyView | null;
-  /** `null` : « à ranger ». */
+  /** Le poste qui le finit ; `null` : « à ranger ». */
   readonly workstationId: string | null;
   /**
-   * Sa place dans la pile de son poste, à partir de 0 ; `null` : sans poste,
-   * ou jamais réglée — il vient alors après ceux qui en ont une.
+   * Sa place dans la pile du poste qui le finit, à partir de 0 ; `null` :
+   * sans poste, ou jamais réglée — il vient alors après ceux qui en ont une.
    */
   readonly position: number | null;
+  /**
+   * Tous ses postes, celui qui finit en premier, puis dans l'ordre des
+   * fiches ; vide : « à ranger ».
+   */
+  readonly workstations: readonly WorkstationProductStationView[];
   /** Commandé ces jours-ci : une journée arrêtée récente, ou la demande à venir. */
   readonly ordered: boolean;
   readonly variants: readonly WorkstationProductVariantView[];

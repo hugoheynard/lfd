@@ -31,10 +31,9 @@ function article(
 const LISTING: WorkstationListing = {
   workstations: [{ id: "ws_pastry", name: "Pâtisserie", position: 0, trackingLevel: "detailed" }],
   placements: new Map([
-    ["QUI-001", "ws_pastry"],
-    ["OLD-009", "ws_pastry"],
+    ["QUI-001", [{ workstationId: "ws_pastry", finishes: true, position: 0 }]],
+    ["OLD-009", [{ workstationId: "ws_pastry", finishes: true, position: null }]],
   ]),
-  positions: new Map([["QUI-001", 0]]),
 };
 
 describe("workstationsPageOf — la page Postes", () => {
@@ -55,6 +54,7 @@ describe("workstationsPageOf — la page Postes", () => {
       family: SAVORY,
       workstationId: "ws_pastry",
       position: 0,
+      workstations: [{ workstationId: "ws_pastry", finishes: true, position: 0 }],
       ordered: false,
       variants: [
         { sku: "QUI-001-6", variantName: "Quiche 6 parts", sellable: true },
@@ -118,7 +118,6 @@ describe("workstationsPageOf — la page Postes", () => {
           ...LISTING.workstations,
           { id: "ws_bread", name: "Boulangerie", position: 1, trackingLevel: null },
         ],
-        positions: new Map(),
         placements: new Map(),
       },
       [],
@@ -129,5 +128,50 @@ describe("workstationsPageOf — la page Postes", () => {
       { id: "ws_pastry", name: "Pâtisserie", position: 0, trackingLevel: "detailed" },
       { id: "ws_bread", name: "Boulangerie", position: 1, trackingLevel: null },
     ]);
+  });
+
+  it("sert tous les postes d'un produit, celui qui finit en premier, et garde `workstationId` sur lui", () => {
+    const page = workstationsPageOf(
+      {
+        workstations: [
+          { id: "ws_bread", name: "Boulangerie", position: 0, trackingLevel: null },
+          { id: "ws_savory", name: "Salé traiteur", position: 1, trackingLevel: null },
+          { id: "ws_cold", name: "Froid", position: 2, trackingLevel: null },
+        ],
+        placements: new Map([
+          [
+            "SAN-001",
+            [
+              { workstationId: "ws_cold", finishes: false, position: null },
+              { workstationId: "ws_bread", finishes: false, position: 3 },
+              { workstationId: "ws_savory", finishes: true, position: 1 },
+            ],
+          ],
+        ]),
+      },
+      [article("SAN-001-1", "SAN-001")],
+      [],
+    );
+
+    expect(page.products[0]).toMatchObject({
+      productSku: "SAN-001",
+      workstationId: "ws_savory",
+      position: 1,
+      workstations: [
+        { workstationId: "ws_savory", finishes: true, position: 1 },
+        { workstationId: "ws_bread", finishes: false, position: 3 },
+        { workstationId: "ws_cold", finishes: false, position: null },
+      ],
+    });
+    expect(page.unplacedCount).toBe(0);
+  });
+
+  it("un produit « à ranger » n'a aucun poste", () => {
+    const page = workstationsPageOf(LISTING, [article("TAR-002-1", "TAR-002")], []);
+    expect(page.products.find((product) => product.productSku === "TAR-002")).toMatchObject({
+      workstationId: null,
+      position: null,
+      workstations: [],
+    });
   });
 });

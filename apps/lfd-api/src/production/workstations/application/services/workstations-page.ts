@@ -1,5 +1,6 @@
 import type {
   OffCatalogArticleView,
+  WorkstationProductStationView,
   WorkstationProductView,
   WorkstationsPageView,
 } from "@lfd/contracts";
@@ -16,7 +17,7 @@ export interface OrderedArticle {
 /**
  * **La page Postes** (`documentation/fournil/les-postes-du-fournil.md`, § 3.8) — une
  * fonction pure : les postes, puis chaque produit du miroir avec ses
- * déclinaisons, son rayon et son poste, dans l'ordre du catalogue.
+ * déclinaisons, son rayon et ses postes, dans l'ordre du catalogue.
  *
  * - un produit placé que le miroir ne porte plus (retiré) reste listé, sans
  *   rayon, pour qu'on puisse le remettre « à ranger » ;
@@ -56,18 +57,44 @@ function productsOf(
   const listed = [...byProduct].map(([productSku, variants]) =>
     productOf(productSku, variants, listing, orderedSkus),
   );
-  const gone = [...listing.placements]
-    .filter(([productSku]) => !byProduct.has(productSku))
-    .map(([productSku, workstationId]) => ({
+  const gone = [...listing.placements.keys()]
+    .filter((productSku) => !byProduct.has(productSku))
+    .map((productSku) => ({
       productSku,
       productName: null,
       family: null,
-      workstationId,
-      position: listing.positions.get(productSku) ?? null,
+      ...stationsOf(productSku, listing),
       ordered: false,
       variants: [],
     }));
   return [...listed, ...gone];
+}
+
+/**
+ * Les postes d'un produit : celui qui finit en premier, puis dans l'ordre des
+ * fiches. `workstationId` et `position` disent celui qui finit — le contrat
+ * qu'un écran à un seul poste lit encore.
+ */
+function stationsOf(
+  productSku: string,
+  listing: WorkstationListing,
+): Pick<WorkstationProductView, "workstationId" | "position" | "workstations"> {
+  const rank = new Map(listing.workstations.map((station, index) => [station.id, index]));
+  const workstations: WorkstationProductStationView[] = [
+    ...(listing.placements.get(productSku) ?? []),
+  ]
+    .sort(
+      (left, right) =>
+        Number(right.finishes) - Number(left.finishes) ||
+        (rank.get(left.workstationId) ?? rank.size) - (rank.get(right.workstationId) ?? rank.size),
+    )
+    .map(({ workstationId, finishes, position }) => ({ workstationId, finishes, position }));
+  const finisher = workstations.find((station) => station.finishes) ?? null;
+  return {
+    workstationId: finisher?.workstationId ?? null,
+    position: finisher?.position ?? null,
+    workstations,
+  };
 }
 
 function productOf(
@@ -81,8 +108,7 @@ function productOf(
     productSku,
     productName: variants.find((variant) => variant.productName !== null)?.productName ?? null,
     family: first === undefined ? null : first.family,
-    workstationId: listing.placements.get(productSku) ?? null,
-    position: listing.positions.get(productSku) ?? null,
+    ...stationsOf(productSku, listing),
     ordered: variants.some((variant) => orderedSkus.has(variant.sku)),
     variants: variants.map(({ sku, variantName, sellable }) => ({ sku, variantName, sellable })),
   };

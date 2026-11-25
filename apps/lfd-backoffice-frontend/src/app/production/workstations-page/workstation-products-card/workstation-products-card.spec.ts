@@ -31,6 +31,7 @@ function product(
     family,
     workstationId: null,
     position: null,
+    workstations: [],
     ordered: false,
     variants: [],
     ...over,

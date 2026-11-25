@@ -11,8 +11,9 @@ import { PlaceProductsCommand } from "./place-products.command.js";
 const UNPLACED_TARGET = "unplaced";
 
 /**
- * Place des produits sur un poste, ou les remet « à ranger » — « tout ce
- * rayon → ce poste » passe ici, sans laisser de règle (plan
+ * Place des produits sur un seul poste, qui les finit, ou les remet « à
+ * ranger » ; leurs autres postes les quittent — « tout ce rayon → ce poste »
+ * passe ici, sans laisser de règle (plan
  * `documentation/fournil/les-postes-du-fournil.md`, § 3.8). **Une fois par intention**.
  * Le fait ne nomme que les produits qui ont réellement changé ; aucun : rien
  * n'est écrit.
@@ -44,8 +45,7 @@ export class PlaceProductsHandler implements ICommandHandler<PlaceProductsComman
         this.gesture.apply(
           command.staffUserId,
           (map) => {
-            map.place(products, command.workstationId);
-            const moved = [...map.changes().placements.keys()];
+            const moved = map.place(products, command.workstationId);
             const station =
               command.workstationId === null
                 ? null

@@ -1,92 +1,78 @@
-import type { ProductionTrackingLevel } from "@lfd/contracts";
-
 import {
-  WorkstationArchivedError,
-  WorkstationNameTakenError,
-  WorkstationNotFoundError,
+  FinishingWorkstationStillNeededError,
+  WorkstationNotOfProductError,
   WorkstationOrderMismatchError,
-  WorkstationStillUsedError,
 } from "../errors/workstation-errors.js";
 import type { ProductSku } from "../value-objects/product-sku.js";
-import { WorkstationName } from "../value-objects/workstation-name.js";
+import {
+  type PlacementChange,
+  type ProductStation,
+  ProductPlacements,
+} from "./product-placements.js";
+import { namesExactly, type Workstation, WorkstationRoster } from "./workstation-roster.js";
 
-/** Un poste, tel que la carte le tient. */
-export interface Workstation {
-  readonly id: string;
-  readonly name: string;
-  readonly position: number;
-  /** `null` : en service. */
-  readonly archivedAt: Date | null;
-  /** Le niveau de suivi propre au poste ; `null` : il suit le fournil. */
-  readonly trackingLevel: ProductionTrackingLevel | null;
-}
+export type { Workstation } from "./workstation-roster.js";
+export type { PlacementChange, ProductStation } from "./product-placements.js";
 
 /** L'état d'une carte, tel qu'un dépôt le relit (`toDomain`). */
 export interface WorkstationMapState {
   readonly workstations: readonly Workstation[];
-  /** Référence produit → id du poste. */
-  readonly placements: ReadonlyMap<string, string>;
-  /** Référence produit → sa place dans la pile de son poste ; absent : pas encore réglée. */
-  readonly positions: ReadonlyMap<string, number>;
-}
-
-/** Un produit sur son poste, et sa place dans la pile du poste. */
-export interface ProductPlacement {
-  readonly workstationId: string;
-  /** `null` : jamais réglée — le produit vient après ceux qui en ont une, dans l'ordre reçu. */
-  readonly position: number | null;
+  /** Référence produit → ses postes ; un produit absent est « à ranger ». */
+  readonly placements: ReadonlyMap<string, readonly ProductStation[]>;
 }
 
 /** Ce qu'un `save` doit écrire : la différence, jamais la carte entière. */
 export interface WorkstationMapChanges {
+  /** Les postes à réécrire — dont ceux qu'un produit vient de quitter. */
   readonly workstations: readonly Workstation[];
-  /** Référence produit → son poste et sa place, ou `null` : remis « à ranger ». */
-  readonly placements: ReadonlyMap<string, ProductPlacement | null>;
+  readonly placements: readonly PlacementChange[];
 }
 
-/** `list` nomme exactement `expected`, chacun une fois, dans n'importe quel ordre. */
-function namesExactly(list: readonly string[], expected: readonly string[]): boolean {
-  const known = new Set(expected);
-  return (
-    new Set(list).size === list.length &&
-    list.length === known.size &&
-    list.every((name) => known.has(name))
-  );
+/** Ce qu'un ajout de poste a changé. */
+export interface WorkstationAdded {
+  /** Les produits qui ont gagné ce poste. */
+  readonly products: readonly string[];
+  /** Parmi eux, ceux qui n'avaient aucun poste : celui-ci les finit. */
+  readonly finishing: readonly string[];
+}
+
+/** Ce qu'un retrait de poste a changé. */
+export interface WorkstationRemoved {
+  /** Les produits qui ont perdu ce poste. */
+  readonly products: readonly string[];
+  /** Parmi eux, ceux qui n'ont plus aucun poste : « à ranger ». */
+  readonly unplaced: readonly string[];
 }
 
 /**
- * **La carte des postes du fournil** : ses postes et le poste de chaque
- * produit (décision de Hugo, 2026-11-16 — un poste par produit, ses
- * déclinaisons en héritent).
+ * **La carte des postes du fournil** : ses postes et les postes de chaque
+ * produit (décisions de Hugo, 2026-11-16 et 2026-11-25 — un produit peut
+ * passer par plusieurs postes, un seul le finit ; ses déclinaisons en
+ * héritent).
  *
- * Un agrégat, parce que trois règles refusent une écriture, et que chacune se
- * juge sur l'ensemble : deux postes en service ne portent pas le même nom, un
- * poste qui porte des produits ne s'archive pas, et aucun produit ne va sur un
- * poste archivé. Les refus vivent ici : un handler de plus ne peut pas les
- * oublier.
+ * Un agrégat, parce que ses règles refusent une écriture et se jugent sur
+ * l'ensemble : deux postes en service ne portent pas le même nom, un poste
+ * qui porte des produits ne s'archive pas, aucun produit ne va sur un poste
+ * archivé, et **un produit placé a exactement un poste qui finit** — la base
+ * tient « au plus un » (index partiel), la carte tient « au moins un ».
  *
  * La carte retient ce qu'elle a changé (`changes`) : le dépôt n'écrit que la
- * différence, sur une carte de quelques centaines de produits.
+ * différence. Un poste qu'un produit quitte est réécrit à l'instant du
+ * geste : une ligne supprimée ne bougerait pas le numéro de la carte
+ * (`WorkstationMapVersion`, le plus récent `updated_at`), et la fiche gardée
+ * resterait celle d'avant.
  */
-export class WorkstationMap {
-  private readonly stations: Map<string, Workstation>;
-  private readonly placed: Map<string, ProductPlacement>;
-  private readonly changedStations = new Set<string>();
-  private readonly changedPlacements = new Set<string>();
+export class WorkstationMap extends WorkstationRoster {
+  private readonly placed: ProductPlacements;
 
   private constructor(state: WorkstationMapState) {
-    this.stations = new Map(state.workstations.map((station) => [station.id, station]));
-    this.placed = new Map(
-      [...state.placements].map(([product, workstationId]) => [
-        product,
-        { workstationId, position: state.positions.get(product) ?? null },
-      ]),
-    );
+    super(state.workstations);
+    this.placed = new ProductPlacements(state.placements);
   }
 
   /** Personne n'a encore rien réglé. */
   static empty(): WorkstationMap {
-    return new WorkstationMap({ workstations: [], placements: new Map(), positions: new Map() });
+    return new WorkstationMap({ workstations: [], placements: new Map() });
   }
 
   /** La carte relue en base : ses noms ont déjà été validés à l'écriture. */
@@ -94,181 +80,197 @@ export class WorkstationMap {
     return new WorkstationMap(state);
   }
 
-  /** Les postes en service, dans l'ordre des fiches. */
-  active(): readonly Workstation[] {
-    return [...this.stations.values()]
-      .filter((station) => station.archivedAt === null)
-      .sort((left, right) => left.position - right.position);
-  }
-
+  /** Le poste qui finit le produit ; `null` : « à ranger ». */
   workstationOf(product: string): string | null {
-    return this.placed.get(product)?.workstationId ?? null;
+    return this.placed.finisherOf(product);
   }
 
-  /** Sa place dans la pile de son poste ; `null` : sans poste, ou jamais réglée. */
-  positionOf(product: string): number | null {
-    return this.placed.get(product)?.position ?? null;
+  /** Les postes du produit, celui qui finit en premier. */
+  stationsOf(product: string): readonly ProductStation[] {
+    return this.placed.stationsOf(product);
   }
 
+  /** Sa place dans la pile d'un poste (par défaut celui qui le finit) ; `null` : sans ligne, ou jamais réglée. */
+  positionOf(product: string, workstationId?: string): number | null {
+    const station = workstationId ?? this.placed.finisherOf(product);
+    return station === null ? null : (this.placed.slotOf(product, station)?.position ?? null);
+  }
+
+  /** Combien de produits ont au moins un poste. */
   placedCount(): number {
-    return this.placed.size;
+    return this.placed.productCount();
   }
 
   /**
-   * Un poste neuf, en dernier.
-   *
-   * @throws {WorkstationNameTakenError} un poste en service porte déjà ce nom.
-   */
-  declare(id: string, rawName: string): void {
-    const name = WorkstationName.of(rawName);
-    this.refuseTakenName(name, null);
-    const last = this.active().at(-1)?.position ?? -1;
-    this.write({ id, name: name.value, position: last + 1, archivedAt: null, trackingLevel: null });
-  }
-
-  /**
-   * @throws {WorkstationNotFoundError}
-   * @throws {WorkstationArchivedError} un poste archivé ne se renomme plus.
-   * @throws {WorkstationNameTakenError}
-   */
-  rename(id: string, rawName: string): void {
-    const station = this.activeStation(id);
-    const name = WorkstationName.of(rawName);
-    this.refuseTakenName(name, id);
-    if (station.name === name.value) {
-      return;
-    }
-    this.write({ ...station, name: name.value });
-  }
-
-  /**
-   * Le nouvel ordre des fiches : exactement les postes en service, chacun une
-   * fois.
-   *
-   * @throws {WorkstationOrderMismatchError}
-   */
-  reorder(ids: readonly string[]): void {
-    const active = this.active();
-    if (
-      !namesExactly(
-        ids,
-        active.map((station) => station.id),
-      )
-    ) {
-      throw new WorkstationOrderMismatchError();
-    }
-    ids.forEach((id, position) => {
-      const station = this.activeStation(id);
-      if (station.position !== position) {
-        this.write({ ...station, position });
-      }
-    });
-  }
-
-  /**
-   * @throws {WorkstationNotFoundError}
-   * @throws {WorkstationArchivedError} déjà archivé.
-   * @throws {WorkstationStillUsedError} il porte encore des produits.
-   */
-  archive(id: string, at: Date): void {
-    const station = this.activeStation(id);
-    const used = this.productsOn(id).length;
-    if (used > 0) {
-      throw new WorkstationStillUsedError(station.name, used);
-    }
-    this.write({ ...station, archivedAt: at });
-  }
-
-  /**
-   * Le niveau de suivi propre au poste, ou `null` : il suit le fournil (
-   * `fournil/les-niveaux-de-suivi.md`). Il vaut à partir de la
-   * prochaine journée arrêtée : une journée garde le niveau figé à son premier
-   * passage. Le même niveau, reposé, ne change rien.
-   *
-   * @throws {WorkstationNotFoundError}
-   * @throws {WorkstationArchivedError} un poste archivé ne se règle plus.
-   */
-  setTrackingLevel(id: string, level: ProductionTrackingLevel | null): void {
-    const station = this.activeStation(id);
-    if (station.trackingLevel === level) {
-      return;
-    }
-    this.write({ ...station, trackingLevel: level });
-  }
-
-  /**
-   * Place des produits sur un poste, ou les remet « à ranger » (`null`).
-   *
-   * Le poste qu'un produit quitte compte parmi les changements : sa ligne est
-   * réécrite à l'instant du geste. Sans quoi un produit remis « à ranger »
-   * n'écrirait qu'une suppression, et le numéro de la carte
-   * (`WorkstationMapVersion`), qui lit l'instant le plus récent, ne bougerait
-   * pas.
+   * « Ces produits sur ce seul poste, qui les finit » ; `null` : remis « à
+   * ranger ». Leurs autres postes les quittent. Rend les produits qui ont
+   * réellement changé.
    *
    * @throws {WorkstationNotFoundError}
    * @throws {WorkstationArchivedError}
    */
-  place(products: readonly ProductSku[], workstationId: string | null): void {
+  place(products: readonly ProductSku[], workstationId: string | null): readonly string[] {
     if (workstationId !== null) {
       this.activeStation(workstationId);
     }
-    for (const product of products) {
-      const current = this.placed.get(product.value)?.workstationId ?? null;
-      if (current === workstationId) {
-        continue;
+    return products.flatMap(({ value: product }) => {
+      const stations = this.placed.stationsOf(product);
+      if (this.alreadyAlone(stations, workstationId)) {
+        return [];
       }
-      if (current !== null && this.stations.has(current)) {
-        this.changedStations.add(current);
+      const kept = workstationId === null ? null : this.placed.slotOf(product, workstationId);
+      for (const station of stations) {
+        if (station.workstationId !== workstationId) {
+          this.leave(product, station.workstationId);
+        }
       }
-      if (workstationId === null) {
-        this.placed.delete(product.value);
-      } else {
-        this.placed.set(product.value, { workstationId, position: this.bottomOf(workstationId) });
+      if (workstationId !== null) {
+        const position = kept === null ? this.bottomOf(workstationId) : kept.position;
+        this.placed.set(product, workstationId, { finishes: true, position });
       }
-      this.changedPlacements.add(product.value);
-    }
+      return [product];
+    });
   }
 
   /**
-   * **La pile d'un poste** : l'ordre dans lequel le poste voit ses produits,
-   * partout où le mode prod range. `productSkus` nomme exactement les
-   * produits du poste, chacun une fois, du haut vers le bas. Les places qui
-   * ne changent pas ne s'écrivent pas.
+   * Un poste de plus pour ces produits, en bas de sa pile. Le premier poste
+   * d'un produit le finit ; les suivants sont des étapes.
+   *
+   * @throws {WorkstationNotFoundError}
+   * @throws {WorkstationArchivedError}
+   */
+  addWorkstationToProducts(
+    products: readonly ProductSku[],
+    workstationId: string,
+  ): WorkstationAdded {
+    this.activeStation(workstationId);
+    const added: string[] = [];
+    const finishing: string[] = [];
+    for (const { value: product } of products) {
+      if (this.placed.slotOf(product, workstationId) !== null) {
+        continue;
+      }
+      const finishes = this.placed.stationsOf(product).length === 0;
+      this.placed.set(product, workstationId, { finishes, position: this.bottomOf(workstationId) });
+      added.push(product);
+      if (finishes) {
+        finishing.push(product);
+      }
+    }
+    return { products: added, finishing };
+  }
+
+  /**
+   * Ce poste quitte ces produits. Retirer le dernier poste d'un produit le
+   * remet « à ranger » ; retirer celui qui finit alors qu'il en reste
+   * d'autres est refusé, pour tout le geste.
+   *
+   * @throws {WorkstationNotFoundError}
+   * @throws {WorkstationArchivedError}
+   * @throws {FinishingWorkstationStillNeededError}
+   */
+  removeWorkstationFromProducts(
+    products: readonly ProductSku[],
+    workstationId: string,
+  ): WorkstationRemoved {
+    const station = this.activeStation(workstationId);
+    const concerned = products
+      .map(({ value }) => value)
+      .filter((product) => this.placed.slotOf(product, workstationId) !== null);
+    for (const product of concerned) {
+      const slot = this.placed.slotOf(product, workstationId);
+      if (slot?.finishes === true && this.placed.stationsOf(product).length > 1) {
+        throw new FinishingWorkstationStillNeededError(station.name, product);
+      }
+    }
+    const removed = [...new Set(concerned)];
+    for (const product of removed) {
+      this.leave(product, workstationId);
+    }
+    const unplaced = removed.filter((product) => this.placed.stationsOf(product).length === 0);
+    return { products: removed, unplaced };
+  }
+
+  /**
+   * Ce poste finit désormais le produit ; celui qui le finissait devient une
+   * étape. Rend le poste qui finissait, ou `null` : rien n'a changé.
+   *
+   * @throws {WorkstationNotFoundError}
+   * @throws {WorkstationArchivedError}
+   * @throws {WorkstationNotOfProductError} le poste n'est pas encore un poste du produit.
+   */
+  setFinishingWorkstation(product: ProductSku, workstationId: string): string | null {
+    const station = this.activeStation(workstationId);
+    const slot = this.placed.slotOf(product.value, workstationId);
+    if (slot === null) {
+      throw new WorkstationNotOfProductError(station.name, product.value);
+    }
+    if (slot.finishes) {
+      return null;
+    }
+    const previous = this.placed.finisherOf(product.value);
+    if (previous !== null) {
+      const before = this.placed.slotOf(product.value, previous);
+      this.placed.set(product.value, previous, {
+        finishes: false,
+        position: before?.position ?? null,
+      });
+    }
+    this.placed.set(product.value, workstationId, { finishes: true, position: slot.position });
+    return previous;
+  }
+
+  /**
+   * **La pile d'un poste** : l'ordre dans lequel le poste voit ses produits —
+   * tous ceux qui ont une ligne chez lui, qu'il les finisse ou non.
+   * `productSkus` les nomme exactement, chacun une fois, du haut vers le bas.
+   * Les places qui ne changent pas ne s'écrivent pas.
    *
    * @throws {WorkstationNotFoundError}
    * @throws {WorkstationArchivedError} un poste archivé ne se règle plus.
    * @throws {WorkstationOrderMismatchError} la liste n'est pas exactement la pile du poste.
    */
-  reorderProducts(workstationId: string, productSkus: readonly ProductSku[]): void {
+  reorderProducts(workstationId: string, productSkus: readonly ProductSku[]): boolean {
     const station = this.activeStation(workstationId);
     const skus = productSkus.map((product) => product.value);
-    if (!namesExactly(skus, this.productsOn(workstationId))) {
+    if (!namesExactly(skus, this.placed.productsOn(workstationId))) {
       throw new WorkstationOrderMismatchError(station.name);
     }
+    let moved = false;
     skus.forEach((sku, position) => {
-      if (this.placed.get(sku)?.position !== position) {
-        this.placed.set(sku, { workstationId, position });
-        this.changedPlacements.add(sku);
+      const slot = this.placed.slotOf(sku, workstationId);
+      if (slot !== null && slot.position !== position) {
+        this.placed.set(sku, workstationId, { ...slot, position });
+        moved = true;
       }
     });
+    return moved;
   }
 
   /** Ce que le dépôt écrit. */
   changes(): WorkstationMapChanges {
-    const workstations = [...this.changedStations].flatMap((id) => {
-      const station = this.stations.get(id);
-      return station === undefined ? [] : [station];
-    });
-    const placements = new Map<string, ProductPlacement | null>(
-      [...this.changedPlacements].map((product) => [product, this.placed.get(product) ?? null]),
-    );
-    return { workstations, placements };
+    return { workstations: this.changedWorkstations(), placements: this.placed.changes() };
   }
 
-  private productsOn(workstationId: string): string[] {
-    return [...this.placed]
-      .filter(([, placement]) => placement.workstationId === workstationId)
-      .map(([product]) => product);
+  protected productCountOn(workstationId: string): number {
+    return this.placed.productsOn(workstationId).length;
+  }
+
+  /** Le produit est déjà sur ce seul poste, qui le finit (ou déjà « à ranger »). */
+  private alreadyAlone(stations: readonly ProductStation[], workstationId: string | null): boolean {
+    if (workstationId === null) {
+      return stations.length === 0;
+    }
+    const [only] = stations;
+    return stations.length === 1 && only?.workstationId === workstationId && only.finishes;
+  }
+
+  /** Le poste quitte le produit, et sa ligne de poste est réécrite (le numéro de la carte). */
+  private leave(product: string, workstationId: string): void {
+    this.placed.remove(product, workstationId);
+    if (this.stations.has(workstationId)) {
+      this.changedStations.add(workstationId);
+    }
   }
 
   /**
@@ -279,38 +281,13 @@ export class WorkstationMap {
    */
   private bottomOf(workstationId: string): number | null {
     let last = -1;
-    for (const product of this.productsOn(workstationId)) {
-      const position = this.placed.get(product)?.position ?? null;
+    for (const product of this.placed.productsOn(workstationId)) {
+      const position = this.placed.slotOf(product, workstationId)?.position ?? null;
       if (position === null) {
         return null;
       }
       last = Math.max(last, position);
     }
     return last + 1;
-  }
-
-  private activeStation(id: string): Workstation {
-    const station = this.stations.get(id);
-    if (station === undefined) {
-      throw new WorkstationNotFoundError();
-    }
-    if (station.archivedAt !== null) {
-      throw new WorkstationArchivedError(station.name);
-    }
-    return station;
-  }
-
-  private refuseTakenName(name: WorkstationName, except: string | null): void {
-    const taken = this.active().find(
-      (station) => station.id !== except && WorkstationName.of(station.name).sameAs(name),
-    );
-    if (taken !== undefined) {
-      throw new WorkstationNameTakenError(taken.name);
-    }
-  }
-
-  private write(station: Workstation): void {
-    this.stations.set(station.id, station);
-    this.changedStations.add(station.id);
   }
 }

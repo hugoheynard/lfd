@@ -1,5 +1,6 @@
 import { Injectable } from "@nestjs/common";
 
+import { PLACEMENT_SELECT, type PlacementRow, placementsOf } from "./placement-rows.js";
 import { trackingLevelOrNull } from "./tracking-level-column.js";
 
 import { isUniqueViolation } from "../../../platform/database/json-columns.js";
@@ -7,6 +8,7 @@ import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { currentTransaction } from "../../../platform/database/transaction.store.js";
 import { TechnicalError } from "../../../platform/shared/errors/app-error.js";
 import {
+  type PlacementChange,
   type Workstation,
   WorkstationMap,
   type WorkstationMapState,
@@ -38,12 +40,6 @@ interface WorkstationRow {
   readonly trackingLevel: string | null;
 }
 
-interface PlacementRow {
-  readonly productSku: string;
-  readonly workstationId: string;
-  readonly position: number | null;
-}
-
 function toDomain(
   stations: readonly WorkstationRow[],
   placements: readonly PlacementRow[],
@@ -53,14 +49,22 @@ function toDomain(
       ...row,
       trackingLevel: trackingLevelOrNull(row.trackingLevel),
     })),
-    placements: new Map(placements.map((row) => [row.productSku, row.workstationId])),
-    positions: new Map(
-      placements.flatMap((row) =>
-        row.position === null ? [] : [[row.productSku, row.position] as const],
-      ),
-    ),
+    placements: placementsOf(placements),
   };
   return WorkstationMap.rehydrate(state);
+}
+
+/**
+ * L'ordre d'écriture des lignes changées : les suppressions, puis les postes
+ * qui ne finissent pas, puis ceux qui finissent. L'index unique partiel
+ * (au plus un poste qui finit par produit) se juge à chaque instruction :
+ * le poste qui finit désormais ne s'écrit qu'après que l'ancien a cessé.
+ */
+function writeOrder(change: PlacementChange): number {
+  if (change.station === null) {
+    return 0;
+  }
+  return change.station.finishes ? 2 : 1;
 }
 
 function toPersistence(station: Workstation, stamp: WorkstationMapStamp) {
@@ -83,10 +87,10 @@ function toPersistence(station: Workstation, stamp: WorkstationMapStamp) {
  * l'agrégat (nom unique, poste vide avant l'archivage, poste en service)
  * restent vraies. La sauvegarde n'écrit que la différence.
  *
- * Un produit remis « à ranger » perd sa ligne de placement : une ligne de
- * placement n'est pas un agrégat, elle dit seulement « ce produit est à ce
- * poste, à cette place », et son absence est l'état « à ranger » que la
- * table décrit — la place s'en va avec elle. Réordonner réécrit les lignes
+ * Un poste qui quitte un produit perd sa ligne (produit, poste) : une ligne
+ * n'est pas un agrégat, elle dit seulement « ce produit passe à ce poste, à
+ * cette place, et le finit ou non » ; un produit sans ligne est « à ranger »
+ * — la place s'en va avec elle. Réordonner réécrit les lignes
  * dont la place change, à l'instant du geste : le numéro de la carte
  * (`WorkstationMapVersion`) monte, et la fiche gardée se refait. Le
  * poste, lui, s'archive et ne s'efface jamais.
@@ -104,7 +108,7 @@ export class PrismaWorkstationMapRepository extends WorkstationMapRepository {
         select: { id: true, name: true, position: true, archivedAt: true, trackingLevel: true },
       }),
       this.prisma.productionWorkstationProduct.findMany({
-        select: { productSku: true, workstationId: true, position: true },
+        select: PLACEMENT_SELECT,
       }),
     ]);
     return toDomain(stations, placements);
@@ -115,30 +119,30 @@ export class PrismaWorkstationMapRepository extends WorkstationMapRepository {
     for (const station of workstations) {
       await this.writeStation(toPersistence(station, stamp));
     }
-    const removed = [...placements].flatMap(([product, station]) =>
-      station === null ? [product] : [],
-    );
-    if (removed.length > 0) {
-      await this.prisma.productionWorkstationProduct.deleteMany({
-        where: { productSku: { in: removed } },
-      });
+    const ordered = [...placements].sort((left, right) => writeOrder(left) - writeOrder(right));
+    for (const change of ordered) {
+      await this.writePlacement(change, stamp);
     }
-    for (const [productSku, placement] of placements) {
-      if (placement !== null) {
-        const row = {
-          workstationId: placement.workstationId,
-          position: placement.position,
-          updatedAt: stamp.at,
-          updatedByStaffId: stamp.staffUserId,
-          updatedByName: stamp.name,
-        };
-        await this.prisma.productionWorkstationProduct.upsert({
-          where: { productSku },
-          create: { productSku, ...row },
-          update: row,
-        });
-      }
+  }
+
+  private async writePlacement(change: PlacementChange, stamp: WorkstationMapStamp): Promise<void> {
+    const key = { productSku: change.productSku, workstationId: change.workstationId };
+    if (change.station === null) {
+      await this.prisma.productionWorkstationProduct.deleteMany({ where: key });
+      return;
     }
+    const row = {
+      finishes: change.station.finishes,
+      position: change.station.position,
+      updatedAt: stamp.at,
+      updatedByStaffId: stamp.staffUserId,
+      updatedByName: stamp.name,
+    };
+    await this.prisma.productionWorkstationProduct.upsert({
+      where: { productSku_workstationId: key },
+      create: { ...key, ...row },
+      update: row,
+    });
   }
 
   private async writeStation(row: ReturnType<typeof toPersistence>): Promise<void> {

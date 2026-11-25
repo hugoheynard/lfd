@@ -19,11 +19,12 @@ function pastry(positions: ReadonlyMap<string, number>): WorkstationMap {
       { id: "ws-tou", name: "Tourier", position: 1, archivedAt: null, trackingLevel: null },
       { id: "ws-old", name: "Ancien", position: 2, archivedAt: AT, trackingLevel: null },
     ],
-    placements: new Map([
-      ["QUI-001", "ws-pat"],
-      ["TAR-002", "ws-pat"],
-    ]),
-    positions,
+    placements: new Map(
+      ["QUI-001", "TAR-002"].map((sku) => [
+        sku,
+        [{ workstationId: "ws-pat", finishes: true, position: positions.get(sku) ?? null }],
+      ]),
+    ),
   });
 }
 
@@ -36,8 +37,12 @@ describe("WorkstationMap — la pile d'un poste", () => {
   it("pose la place de chaque produit, du haut vers le bas, et n'écrit que ce qui change", () => {
     const map = pastry(new Map([["QUI-001", 0]]));
     map.reorderProducts("ws-pat", [QUICHE, TART]);
-    expect([...map.changes().placements]).toEqual([
-      ["TAR-002", { workstationId: "ws-pat", position: 1 }],
+    expect(map.changes().placements).toEqual([
+      {
+        productSku: "TAR-002",
+        workstationId: "ws-pat",
+        station: { workstationId: "ws-pat", finishes: true, position: 1 },
+      },
     ]);
     expect(map.positionOf("QUI-001")).toBe(0);
   });
@@ -54,7 +59,7 @@ describe("WorkstationMap — la pile d'un poste", () => {
     expect(() => map.reorderProducts("ws-tou", [QUICHE, TART])).toThrow(
       WorkstationOrderMismatchError,
     );
-    expect(map.changes().placements.size).toBe(0);
+    expect(map.changes().placements).toEqual([]);
   });
 
   it("nomme le poste dans le refus, pour qu'on sache quelle pile a changé", () => {
@@ -78,9 +83,10 @@ describe("WorkstationMap — la pile d'un poste", () => {
     map.place([FLAN], "ws-tou");
     map.place([QUICHE], "ws-tou");
     expect([map.positionOf("FLA-003"), map.positionOf("QUI-001")]).toEqual([0, 1]);
-    expect(map.changes().placements.get("QUI-001")).toEqual({
+    expect(map.changes().placements).toContainEqual({
+      productSku: "QUI-001",
       workstationId: "ws-tou",
-      position: 1,
+      station: { workstationId: "ws-tou", finishes: true, position: 1 },
     });
   });
 
@@ -95,14 +101,16 @@ describe("WorkstationMap — la pile d'un poste", () => {
     const map = pastry(SETTLED);
     map.place([QUICHE], "ws-pat");
     expect(map.positionOf("QUI-001")).toBe(0);
-    expect(map.changes().placements.size).toBe(0);
+    expect(map.changes().placements).toEqual([]);
   });
 
   it("efface la ligne, place comprise, d'un produit remis « à ranger »", () => {
     const map = pastry(SETTLED);
     map.place([QUICHE], null);
     expect(map.positionOf("QUI-001")).toBeNull();
-    expect(map.changes().placements.get("QUI-001")).toBeNull();
+    expect(map.changes().placements).toEqual([
+      { productSku: "QUI-001", workstationId: "ws-pat", station: null },
+    ]);
     map.place([QUICHE], "ws-pat");
     expect(map.positionOf("QUI-001")).toBe(2);
   });

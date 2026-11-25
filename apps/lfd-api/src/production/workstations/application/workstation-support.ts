@@ -19,3 +19,12 @@ export function changedStation(map: WorkstationMap, id: string): Workstation {
   }
   return station;
 }
+
+/** Un poste en service qu'un geste vient de viser : la carte l'a déjà vérifié. */
+export function activeStation(map: WorkstationMap, id: string): Workstation {
+  const station = map.active().find((candidate) => candidate.id === id);
+  if (station === undefined) {
+    throw new UnrecordedWorkstationChangeError();
+  }
+  return station;
+}

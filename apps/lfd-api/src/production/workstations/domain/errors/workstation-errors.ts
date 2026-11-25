@@ -82,3 +82,28 @@ export class WorkstationOrderMismatchError extends BusinessError {
     );
   }
 }
+
+/**
+ * On ne retire pas d'un produit le poste qui le finit tant qu'il lui reste
+ * d'autres postes : la ligne n'aurait plus personne pour compter ses pièces.
+ */
+export class FinishingWorkstationStillNeededError extends BusinessError {
+  constructor(workstationName: string, productSku: string) {
+    super(
+      "production.workstation.finishing_still_needed",
+      `Le poste « ${workstationName} » finit le produit ${productSku}, qui a d'autres postes. ` +
+        "Choisissez d'abord un autre poste qui finit ce produit, puis retirez celui-ci.",
+    );
+  }
+}
+
+/** Le poste qui doit finir un produit n'est pas encore un de ses postes. */
+export class WorkstationNotOfProductError extends BusinessError {
+  constructor(workstationName: string, productSku: string) {
+    super(
+      "production.workstation.not_of_product",
+      `Le poste « ${workstationName} » ne fait pas le produit ${productSku}. ` +
+        "Ajoutez-le d'abord aux postes de ce produit, puis désignez-le comme celui qui finit.",
+    );
+  }
+}

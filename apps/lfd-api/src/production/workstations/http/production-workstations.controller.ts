@@ -10,8 +10,12 @@ import {
   reorderWorkstationProductsPayloadSchema,
   type ReorderWorkstationsPayload,
   reorderWorkstationsPayloadSchema,
+  type SetFinishingWorkstationPayload,
+  setFinishingWorkstationPayloadSchema,
   type SetWorkstationTrackingLevelPayload,
   setWorkstationTrackingLevelPayloadSchema,
+  type WorkstationProductsPayload,
+  workstationProductsPayloadSchema,
   type WorkstationsPageView,
 } from "@lfd/contracts";
 import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post, Put } from "@nestjs/common";
@@ -21,12 +25,15 @@ import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js"
 import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { IntentKey } from "../../../platform/shared/http/intent-key.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
+import { AddWorkstationToProductsCommand } from "../application/commands/add-workstation-to-products.command.js";
 import { ArchiveWorkstationCommand } from "../application/commands/archive-workstation.command.js";
 import { DeclareWorkstationCommand } from "../application/commands/declare-workstation.command.js";
 import { PlaceProductsCommand } from "../application/commands/place-products.command.js";
+import { RemoveWorkstationFromProductsCommand } from "../application/commands/remove-workstation-from-products.command.js";
 import { RenameWorkstationCommand } from "../application/commands/rename-workstation.command.js";
 import { ReorderWorkstationProductsCommand } from "../application/commands/reorder-workstation-products.command.js";
 import { ReorderWorkstationsCommand } from "../application/commands/reorder-workstations.command.js";
+import { SetFinishingWorkstationCommand } from "../application/commands/set-finishing-workstation.command.js";
 import { SetWorkstationTrackingLevelCommand } from "../application/commands/set-workstation-tracking-level.command.js";
 import { ListWorkstationsQuery } from "../application/queries/list-workstations.query.js";
 
@@ -100,6 +107,49 @@ export class ProductionWorkstationsController {
   ): Promise<void> {
     await this.commands.execute<RenameWorkstationCommand, void>(
       new RenameWorkstationCommand(id, payload.name, staffUserId, intentKey),
+    );
+  }
+
+  /** Ce poste de plus pour ces produits : le premier poste d'un produit le finit. */
+  @Post(":id/products")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async addToProducts(
+    @Param("id") id: string,
+    @Body(new ZodBody(workstationProductsPayloadSchema)) payload: WorkstationProductsPayload,
+    @StaffUserId() staffUserId: string,
+    @IntentKey() intentKey: string,
+  ): Promise<void> {
+    await this.commands.execute<AddWorkstationToProductsCommand, void>(
+      new AddWorkstationToProductsCommand(id, payload.productSkus, staffUserId, intentKey),
+    );
+  }
+
+  /** Ce poste quitte ces produits ; un `POST` nommé — un geste, pas une ressource qu'on efface. */
+  @Post(":id/products/removal")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async removeFromProducts(
+    @Param("id") id: string,
+    @Body(new ZodBody(workstationProductsPayloadSchema)) payload: WorkstationProductsPayload,
+    @StaffUserId() staffUserId: string,
+    @IntentKey() intentKey: string,
+  ): Promise<void> {
+    await this.commands.execute<RemoveWorkstationFromProductsCommand, void>(
+      new RemoveWorkstationFromProductsCommand(id, payload.productSkus, staffUserId, intentKey),
+    );
+  }
+
+  /** Ce poste finit désormais ce produit ; celui qui le finissait devient une étape. */
+  @Put(":id/finishing")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async setFinishing(
+    @Param("id") id: string,
+    @Body(new ZodBody(setFinishingWorkstationPayloadSchema))
+    payload: SetFinishingWorkstationPayload,
+    @StaffUserId() staffUserId: string,
+    @IntentKey() intentKey: string,
+  ): Promise<void> {
+    await this.commands.execute<SetFinishingWorkstationCommand, void>(
+      new SetFinishingWorkstationCommand(id, payload.productSku, staffUserId, intentKey),
     );
   }
 

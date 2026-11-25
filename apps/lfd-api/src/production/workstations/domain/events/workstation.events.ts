@@ -17,6 +17,9 @@ export const WORKSTATION_FACTS = {
   archived: "production_workstation.archived",
   productsPlaced: "production_workstation.products_placed",
   productsReordered: "production_workstation.products_reordered",
+  workstationAdded: "production_workstation.products_workstation_added",
+  workstationRemoved: "production_workstation.products_workstation_removed",
+  finishingSet: "production_workstation.finishing_workstation_set",
   trackingLevelSet: "production_workstation.tracking_level_set",
 } as const satisfies Readonly<Record<string, JournalFactType>>;
 
@@ -114,6 +117,68 @@ export class WorkstationProductsPlacedEvent implements JournaledEvent {
     return stationFact(WORKSTATION_FACTS.productsPlaced, this.station, {
       workstation: { id: this.station.id, name: this.station.name },
       ...placement,
+    });
+  }
+}
+
+/**
+ * Le poste ajouté aux produits `productSkus` ; `finishingSkus` : ceux qui
+ * n'avaient aucun poste, et qu'il finit.
+ */
+export class WorkstationAddedToProductsEvent implements JournaledEvent {
+  constructor(
+    readonly station: Workstation,
+    readonly productSkus: readonly string[],
+    readonly finishingSkus: readonly string[],
+  ) {}
+
+  journalFact(): JournalFact {
+    return stationFact(WORKSTATION_FACTS.workstationAdded, this.station, {
+      workstation: { id: this.station.id, name: this.station.name },
+      skus: [...this.productSkus],
+      count: this.productSkus.length,
+      finishingSkus: [...this.finishingSkus],
+    });
+  }
+}
+
+/**
+ * Le poste retiré des produits `productSkus` ; `unplacedSkus` : ceux qui
+ * n'ont plus aucun poste, remis « à ranger ».
+ */
+export class WorkstationRemovedFromProductsEvent implements JournaledEvent {
+  constructor(
+    readonly station: Workstation,
+    readonly productSkus: readonly string[],
+    readonly unplacedSkus: readonly string[],
+  ) {}
+
+  journalFact(): JournalFact {
+    return stationFact(WORKSTATION_FACTS.workstationRemoved, this.station, {
+      workstation: { id: this.station.id, name: this.station.name },
+      skus: [...this.productSkus],
+      count: this.productSkus.length,
+      unplacedSkus: [...this.unplacedSkus],
+    });
+  }
+}
+
+/** Le poste finit désormais le produit `productSku` ; `previous` : celui qui le finissait. */
+export class FinishingWorkstationSetEvent implements JournaledEvent {
+  constructor(
+    readonly station: Workstation,
+    readonly productSku: string,
+    readonly previous: Workstation | null,
+  ) {}
+
+  journalFact(): JournalFact {
+    return stationFact(WORKSTATION_FACTS.finishingSet, this.station, {
+      workstation: { id: this.station.id, name: this.station.name },
+      sku: this.productSku,
+      previous: {
+        workstation:
+          this.previous === null ? null : { id: this.previous.id, name: this.previous.name },
+      },
     });
   }
 }

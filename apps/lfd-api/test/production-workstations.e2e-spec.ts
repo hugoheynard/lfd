@@ -219,7 +219,7 @@ describe("Prod manager › Postes — la pile d'un poste", () => {
     const placed = positionsOf(await page());
     expect(["VIE-001", "VIE-002", "VIE-003"].map((sku) => placed.get(sku))).toEqual([0, 1, null]);
     const before = await ctx.prisma.productionWorkstationProduct.findUniqueOrThrow({
-      where: { productSku: "VIE-001" },
+      where: { productSku_workstationId: { productSku: "VIE-001", workstationId: pastry } },
     });
 
     await reorderProducts(pastry, ["VIE-002", "VIE-001"], 204);
@@ -228,7 +228,7 @@ describe("Prod manager › Postes — la pile d'un poste", () => {
     expect([view.get("VIE-002"), view.get("VIE-001")]).toEqual([0, 1]);
     // Le numéro de la carte (le plus grand `updated_at`) monte : la fiche gardée se refait.
     const after = await ctx.prisma.productionWorkstationProduct.findUniqueOrThrow({
-      where: { productSku: "VIE-001" },
+      where: { productSku_workstationId: { productSku: "VIE-001", workstationId: pastry } },
     });
     expect(after.updatedAt.getTime()).toBeGreaterThan(before.updatedAt.getTime());
     const reordered = (await facts()).filter(

@@ -1,5 +1,7 @@
 import type { ProductionTrackingLevel } from "@lfd/contracts";
 
+import type { ProductStation } from "../entities/product-placements.js";
+
 /** Un poste en service, tel que la page le lit. */
 export interface ListedWorkstation {
   readonly id: string;
@@ -9,14 +11,12 @@ export interface ListedWorkstation {
   readonly trackingLevel: ProductionTrackingLevel | null;
 }
 
-/** Les postes en service et le poste de chaque produit placé. */
+/** Les postes en service et les postes de chaque produit placé. */
 export interface WorkstationListing {
   /** Dans l'ordre des fiches. */
   readonly workstations: readonly ListedWorkstation[];
-  /** Référence produit → id du poste. */
-  readonly placements: ReadonlyMap<string, string>;
-  /** Référence produit → sa place dans la pile de son poste ; absent : pas encore réglée. */
-  readonly positions: ReadonlyMap<string, number>;
+  /** Référence produit → ses postes (un seul finit) ; un produit absent est « à ranger ». */
+  readonly placements: ReadonlyMap<string, readonly ProductStation[]>;
 }
 
 /**

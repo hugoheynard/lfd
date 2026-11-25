@@ -85,6 +85,7 @@ model ProductionDay {
   returns       ProductionReturnRequest[]
   trackingLevel ProductionDayTrackingLevel?
   problems      ProductionProblem[]
+  lineSteps     ProductionLineStep[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -902,17 +903,21 @@ model ProductionWorkstation {
   @@schema("production")
 }
 
-/// **Le poste d'un produit** (plan `fournil/les-postes-du-fournil.md`,
-/// § 3.2) : la référence PRODUIT (opaque, aucune clé vers le catalogue), et
-/// le poste qui le fait. Toutes ses déclinaisons en héritent. Pas de ligne :
-/// le produit est « à ranger ».
+/// **Un poste d'un produit** (`fournil/les-postes-du-fournil.md`, § 3.2) :
+/// la référence PRODUIT (opaque, aucune clé vers le catalogue), et UN des
+/// postes qui le font — une ligne par couple (produit, poste). Toutes ses
+/// déclinaisons en héritent. Pas de ligne : le produit est « à ranger ».
 ///
 /// **Aucune journée** : exception écrite dans `test/day-change-triggers.e2e-spec.ts`.
 model ProductionWorkstationProduct {
-  productSku       String                @id @map("product_sku")
+  productSku       String                @map("product_sku")
   workstationId    String                @map("workstation_id")
   workstation      ProductionWorkstation @relation(fields: [workstationId], references: [id], onDelete: Restrict)
-  /// Sa place dans la pile du poste, à partir de 0. `null` : jamais réglée —
+  /// Ce poste est celui qui finit le produit : seul son « Fait » compte des
+  /// pièces. Au plus un par produit (index unique partiel posé en SQL,
+  /// `production_workstation_product_one_finisher`) ; au moins un : l'agrégat.
+  finishes         Boolean
+  /// Sa place dans la pile DE CE POSTE, à partir de 0. `null` : jamais réglée —
   /// le produit vient après ceux qui en ont une, dans l'ordre reçu.
   position         Int?
   updatedAt        DateTime              @map("updated_at") @db.Timestamptz(6)
@@ -921,6 +926,7 @@ model ProductionWorkstationProduct {
   /// `null` : la fiche ne portait pas de nom au moment du geste — on n'en invente pas.
   updatedByName    String?               @map("updated_by_name")
 
+  @@id([productSku, workstationId])
   @@index([workstationId])
   @@map("production_workstation_product")
   @@schema("production")
@@ -1006,6 +1012,33 @@ model ProductionProblem {
 
   @@unique([serviceDay, sku])
   @@map("production_problem")
+  @@schema("production")
+}
+
+/// **L'étape d'un poste qui ne finit pas** (`fournil/plan-produit-sur-plusieurs-postes.md`,
+/// § 2.6) : la part d'une ligne du jour qu'un poste d'étape coche. Elle ne
+/// compte aucune pièce — seule la fournée du poste qui finit en compte.
+model ProductionLineStep {
+  serviceDay       String        @map("service_day") @db.VarChar(10)
+  day              ProductionDay @relation(fields: [serviceDay], references: [serviceDay], onDelete: Cascade)
+  /// Le SKU de la ligne, opaque.
+  sku              String
+  /// Le poste d'étape, opaque : une étape survit au poste qui quitte le produit.
+  workstationId    String        @map("workstation_id")
+  /// `done` | `red` (CHECK).
+  status           String
+  /// Rognée, 1 à 500 caractères (CHECK) ; `null` : aucune raison donnée.
+  reason           String?
+  checkedAt        DateTime      @map("checked_at") @db.Timestamptz(6)
+  /// Qui l'a cochée : l'id de fiche survit à tout, le nom est un instantané.
+  checkedByStaffId String        @map("checked_by_staff_id")
+  /// `null` : la fiche ne portait pas de nom au moment du geste — on n'en invente pas.
+  checkedByName    String?       @map("checked_by_name")
+  /// Monte à chaque geste (≥ 1, CHECK).
+  version          Int           @default(1)
+
+  @@id([serviceDay, sku, workstationId])
+  @@map("production_line_step")
   @@schema("production")
 }
 

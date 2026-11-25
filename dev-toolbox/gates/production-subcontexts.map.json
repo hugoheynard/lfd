@@ -16,6 +16,7 @@
     "ProductionDossierDispatch": "plan",
     "ProductionDossierRecipient": "plan",
     "ProductionHandoff": "day",
+    "ProductionLineStep": "atelier",
     "ProductionOrder": "day",
     "ProductionOrderLine": "day",
     "ProductionProblem": "atelier",

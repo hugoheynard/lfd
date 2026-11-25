@@ -7,6 +7,7 @@ import {
   WorkstationStillUsedError,
 } from "../../errors/workstation-errors.js";
 import { ProductSku } from "../../value-objects/product-sku.js";
+import type { ProductStation } from "../product-placements.js";
 import { WorkstationMap } from "../workstation-map.js";
 
 const AT = new Date(Date.UTC(2026, 0, 1));
@@ -108,10 +109,9 @@ describe("WorkstationMap — la différence à écrire", () => {
         { id: "ws-tou", name: "Tourier", position: 1, archivedAt: null, trackingLevel: null },
       ],
       placements: new Map([
-        ["QUI-001", "ws-pat"],
-        ["TAR-002", "ws-pat"],
+        ["QUI-001", finishingOn("ws-pat")],
+        ["TAR-002", finishingOn("ws-pat")],
       ]),
-      positions: new Map(),
     });
     map.place([QUICHE], "ws-pat");
     map.place([TART], null);
@@ -120,7 +120,9 @@ describe("WorkstationMap — la différence à écrire", () => {
     const changes = map.changes();
     // La Pâtisserie a perdu la tarte : elle est réécrite, pas renommée.
     expect(changes.workstations.map((station) => station.name)).toEqual(["Pâtisserie", "Tourière"]);
-    expect([...changes.placements]).toEqual([["TAR-002", null]]);
+    expect(changes.placements).toEqual([
+      { productSku: "TAR-002", workstationId: "ws-pat", station: null },
+    ]);
   });
 
   it("réécrit le poste qu'un produit quitte, pour que le numéro de la carte bouge", () => {
@@ -129,8 +131,7 @@ describe("WorkstationMap — la différence à écrire", () => {
         { id: "ws-pat", name: "Pâtisserie", position: 0, archivedAt: null, trackingLevel: null },
         { id: "ws-tou", name: "Tourier", position: 1, archivedAt: null, trackingLevel: null },
       ],
-      placements: new Map([["QUI-001", "ws-pat"]]),
-      positions: new Map(),
+      placements: new Map([["QUI-001", finishingOn("ws-pat")]]),
     });
     map.place([QUICHE], null);
     expect(map.changes().workstations.map((station) => station.id)).toEqual(["ws-pat"]);
@@ -140,9 +141,14 @@ describe("WorkstationMap — la différence à écrire", () => {
     const map = withTwoRehydrated();
     map.place([QUICHE], null);
     expect(map.changes().workstations).toEqual([]);
-    expect(map.changes().placements.size).toBe(0);
+    expect(map.changes().placements).toEqual([]);
   });
 });
+
+/** Un seul poste pour le produit, qui le finit, sans place réglée. */
+function finishingOn(workstationId: string): readonly ProductStation[] {
+  return [{ workstationId, finishes: true, position: null }];
+}
 
 function withTwoRehydrated(): WorkstationMap {
   return WorkstationMap.rehydrate({
@@ -151,7 +157,6 @@ function withTwoRehydrated(): WorkstationMap {
       { id: "ws-tou", name: "Tourier", position: 1, archivedAt: null, trackingLevel: null },
     ],
     placements: new Map(),
-    positions: new Map(),
   });
 }
 

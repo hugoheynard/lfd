@@ -34,6 +34,7 @@ function product(
     family: null,
     workstationId,
     position,
+    workstations: workstationId === null ? [] : [{ workstationId, finishes: true, position }],
     ordered: false,
     variants: [],
   };

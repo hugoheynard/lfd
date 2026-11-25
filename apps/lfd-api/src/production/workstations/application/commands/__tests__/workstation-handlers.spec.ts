@@ -274,7 +274,9 @@ describe("PlaceProductsHandler", () => {
     await handler.execute(new PlaceProductsCommand(["QUI-001"], null, STAFF_ID, nextKey()));
 
     expect(maps.workstationOf("QUI-001")).toBeNull();
-    expect(maps.saved[0]?.placements).toEqual(new Map([["QUI-001", null]]));
+    expect(maps.saved[0]?.placements).toEqual([
+      { productSku: "QUI-001", workstationId: "ws_pastry", station: null },
+    ]);
     expect(tools.events.traced[0]?.journalFact()).toMatchObject({
       subjectId: "house",
       payload: { subjectLabel: "À ranger", workstation: null, skus: ["QUI-001"], count: 1 },

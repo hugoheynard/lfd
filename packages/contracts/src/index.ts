@@ -3554,7 +3554,9 @@ export {
   renameWorkstationPayloadSchema,
   reorderWorkstationProductsPayloadSchema,
   reorderWorkstationsPayloadSchema,
+  setFinishingWorkstationPayloadSchema,
   setWorkstationTrackingLevelPayloadSchema,
+  workstationProductsPayloadSchema,
 } from "./production-workstations.js";
 export type {
   DeclareWorkstationPayload,
@@ -3568,10 +3570,13 @@ export type {
   RenameWorkstationPayload,
   ReorderWorkstationProductsPayload,
   ReorderWorkstationsPayload,
+  SetFinishingWorkstationPayload,
   SetWorkstationTrackingLevelPayload,
   UnplacedProductOfDayView,
   UnplacedProductsOfDayQuery,
   UnplacedProductsOfDayView,
+  WorkstationProductStationView,
+  WorkstationProductsPayload,
   WorkstationProductVariantView,
   WorkstationProductView,
   WorkstationsPageView,

@@ -44,11 +44,10 @@ export class ReorderWorkstationProductsHandler implements ICommandHandler<
         this.gesture.apply(
           command.staffUserId,
           (map) => {
-            map.reorderProducts(command.workstationId, products);
+            const moved = map.reorderProducts(command.workstationId, products);
             const station = map
               .active()
               .find((candidate) => candidate.id === command.workstationId);
-            const moved = map.changes().placements.size > 0;
             return {
               result: undefined,
               events:

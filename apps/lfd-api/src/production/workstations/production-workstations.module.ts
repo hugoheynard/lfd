@@ -6,12 +6,15 @@ import { GetProductionGroupingHandler } from "./application/queries/get-producti
 import { GetUnplacedProductsOfDayHandler } from "./application/queries/get-unplaced-products-of-day.handler.js";
 import { GroupingSourceReading } from "./application/services/grouping-source-reading.service.js";
 import { ProductionWorkstationReadingsController } from "./http/production-workstation-readings.controller.js";
+import { AddWorkstationToProductsHandler } from "./application/commands/add-workstation-to-products.handler.js";
 import { ArchiveWorkstationHandler } from "./application/commands/archive-workstation.handler.js";
 import { DeclareWorkstationHandler } from "./application/commands/declare-workstation.handler.js";
 import { PlaceProductsHandler } from "./application/commands/place-products.handler.js";
+import { RemoveWorkstationFromProductsHandler } from "./application/commands/remove-workstation-from-products.handler.js";
 import { RenameWorkstationHandler } from "./application/commands/rename-workstation.handler.js";
 import { ReorderWorkstationProductsHandler } from "./application/commands/reorder-workstation-products.handler.js";
 import { ReorderWorkstationsHandler } from "./application/commands/reorder-workstations.handler.js";
+import { SetFinishingWorkstationHandler } from "./application/commands/set-finishing-workstation.handler.js";
 import { SetWorkstationTrackingLevelHandler } from "./application/commands/set-workstation-tracking-level.handler.js";
 import { ListWorkstationsHandler } from "./application/queries/list-workstations.handler.js";
 import { WorkstationMapGesture } from "./application/services/workstation-map-gesture.service.js";
@@ -56,6 +59,9 @@ import {
     ReorderWorkstationProductsHandler,
     ArchiveWorkstationHandler,
     PlaceProductsHandler,
+    AddWorkstationToProductsHandler,
+    RemoveWorkstationFromProductsHandler,
+    SetFinishingWorkstationHandler,
     SetWorkstationTrackingLevelHandler,
     ListWorkstationsHandler,
     GetProductionGroupingHandler,

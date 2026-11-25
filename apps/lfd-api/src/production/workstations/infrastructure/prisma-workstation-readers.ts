@@ -15,6 +15,7 @@ import {
   type WorkstationOwnTrackingLevel,
   WorkstationTrackingLevels,
 } from "../domain/ports/workstation-tracking-levels.js";
+import { PLACEMENT_SELECT, placementsOf } from "./placement-rows.js";
 import { trackingLevelOrNull } from "./tracking-level-column.js";
 
 /** Les postes en service, dans l'ordre des fiches (l'id départage deux rangs égaux). */
@@ -35,7 +36,7 @@ function positionsOf(
 
 /**
  * La carte des postes pour la page Postes : sans verrou, sans agrégat. Un
- * produit placé l'est toujours sur un poste en service (l'agrégat refuse
+ * produit placé l'est toujours sur des postes en service (l'agrégat refuse
  * d'archiver un poste qui porte des produits).
  */
 @Injectable()
@@ -50,22 +51,23 @@ export class PrismaWorkstationMapReader extends WorkstationMapReader {
         ...ACTIVE_STATIONS,
         select: { ...ACTIVE_STATIONS.select, trackingLevel: true },
       }),
-      this.prisma.productionWorkstationProduct.findMany({
-        select: { productSku: true, workstationId: true, position: true },
-      }),
+      this.prisma.productionWorkstationProduct.findMany({ select: PLACEMENT_SELECT }),
     ]);
     return {
       workstations: workstations.map((station) => ({
         ...station,
         trackingLevel: trackingLevelOrNull(station.trackingLevel),
       })),
-      placements: new Map(placements.map((row) => [row.productSku, row.workstationId])),
-      positions: positionsOf(placements),
+      placements: placementsOf(placements),
     };
   }
 }
 
-/** Le poste des produits demandés, en une requête sur ces produits seulement. */
+/**
+ * Le poste qui finit chacun des produits demandés, en une requête sur ces
+ * produits seulement. Les postes d'étape n'y sont pas encore : le rangement
+ * ne range une ligne que sous celui qui la finit.
+ */
 @Injectable()
 export class PrismaWorkstationOfProducts extends WorkstationOfProducts {
   constructor(private readonly prisma: PrismaService) {
@@ -78,7 +80,7 @@ export class PrismaWorkstationOfProducts extends WorkstationOfProducts {
       productSkus.length === 0
         ? Promise.resolve([])
         : this.prisma.productionWorkstationProduct.findMany({
-            where: { productSku: { in: [...productSkus] } },
+            where: { productSku: { in: [...productSkus] }, finishes: true },
             select: { productSku: true, workstationId: true, position: true },
           }),
     ]);
@@ -90,7 +92,7 @@ export class PrismaWorkstationOfProducts extends WorkstationOfProducts {
   }
 }
 
-/** Combien de produits ont un poste : un `count`. */
+/** Combien de produits ont un poste : un `count` des postes qui finissent, un par produit placé. */
 @Injectable()
 export class PrismaPlacedProducts extends PlacedProducts {
   constructor(private readonly prisma: PrismaService) {
@@ -98,7 +100,7 @@ export class PrismaPlacedProducts extends PlacedProducts {
   }
 
   count(): Promise<number> {
-    return this.prisma.productionWorkstationProduct.count();
+    return this.prisma.productionWorkstationProduct.count({ where: { finishes: true } });
   }
 }
 

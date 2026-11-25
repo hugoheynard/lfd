@@ -43,3 +43,45 @@ describe('le suivi d’un poste (production_workstation.tracking_level_set)', ()
     );
   });
 });
+
+/** **Un produit sur plusieurs postes** (`fournil/plan-produit-sur-plusieurs-postes.md`, § 2.5). */
+function stationFact(type: string, payload: Record<string, unknown>): FactInput {
+  return { ...fact(payload), type };
+}
+
+describe('les postes d’un produit', () => {
+  it('dit le poste ajouté et à combien de produits', () => {
+    const added = stationFact('production_workstation.products_workstation_added', {
+      subjectLabel: 'Boulangerie',
+      workstation: { id: 'ws-1', name: 'Boulangerie' },
+      skus: ['SAN-001', 'PAI-003'],
+      count: 2,
+      finishingSkus: ['PAI-003'],
+    });
+    expect(sentence(added)).toBe('Colette Martin a ajouté le poste Boulangerie à 2 produits');
+    expect(renderFact(added).detail).toEqual([]);
+  });
+
+  it('dit le poste retiré', () => {
+    const removed = stationFact('production_workstation.products_workstation_removed', {
+      subjectLabel: 'Boulangerie',
+      workstation: { id: 'ws-1', name: 'Boulangerie' },
+      skus: ['SAN-001'],
+      count: 1,
+      unplacedSkus: [],
+    });
+    expect(sentence(removed)).toBe('Colette Martin a retiré le poste Boulangerie de 1 produit');
+  });
+
+  it('dit le poste qui finit, et celui qui finissait', () => {
+    const set = stationFact('production_workstation.finishing_workstation_set', {
+      subjectLabel: 'Boulangerie',
+      workstation: { id: 'ws-1', name: 'Boulangerie' },
+      sku: 'SAN-001',
+      previous: { workstation: { id: 'ws-2', name: 'Salé traiteur' } },
+    });
+    expect(sentence(set)).toBe(
+      'Colette Martin a désigné le poste Boulangerie pour finir SAN-001 ; c’était Salé traiteur',
+    );
+  });
+});
