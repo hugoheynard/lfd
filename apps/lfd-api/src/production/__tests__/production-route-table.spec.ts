@@ -144,6 +144,7 @@ const EXPECTED: readonly string[] = [
   "PUT | admin/production/settings/tranches | production_settings | [] | 204 | public | AdminAuthGuard+StaffAccessGuard",
   "PUT | admin/production/worksheet/:date/lines/:sku/batches/:batchId | production_worksheet | [] | 204 | public | AdminAuthGuard+StaffAccessGuard",
   "PUT | admin/production/workstations/:id/name | production_workstations | [] | 204 | public | AdminAuthGuard+StaffAccessGuard",
+  "PUT | admin/production/workstations/:id/products/order | production_workstations | [] | 204 | public | AdminAuthGuard+StaffAccessGuard",
   "PUT | admin/production/workstations/:id/tracking-level | production_workstations | [] | 204 | public | AdminAuthGuard+StaffAccessGuard",
   "PUT | admin/production/workstations/order | production_workstations | [] | 204 | public | AdminAuthGuard+StaffAccessGuard",
   "PUT | admin/production/workstations/placements | production_workstations | [] | 204 | public | AdminAuthGuard+StaffAccessGuard",
