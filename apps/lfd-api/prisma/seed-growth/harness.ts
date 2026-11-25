@@ -13,7 +13,7 @@ import { PrismaService } from "../../src/platform/database/prisma.service.js";
 import { CardProviders } from "../../src/payment/card/domain/ports/card-providers.js";
 import { FakeEstablishmentDirectory } from "./fake-establishment-directory.js";
 import { FakeDocumentStore } from "./fake-document-store.js";
-import { FakeCardProviders } from "./fake-card-providers.js";
+import { FakeCardProviders, parkSeededIntents } from "./fake-card-providers.js";
 import { refuseNonLocalTarget } from "../local-target.js";
 
 /**
@@ -81,6 +81,8 @@ export async function bootstrapHarness(): Promise<SeedHarness> {
     settle: () => module.get(BackgroundWork, { strict: false }).whenIdle(),
     close: async () => {
       await module.get(BackgroundWork, { strict: false }).whenIdle();
+      // Une ligne de commande est l'adaptateur de son propre instant (`clock-port`).
+      await parkSeededIntents(module.get(PrismaService, { strict: false }), new Date());
       await module.close();
     },
   };
