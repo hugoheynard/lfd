@@ -352,19 +352,20 @@ export const routes: Routes = [
   {
     // **Événements** — les journées d'événement et leurs fiches de fonction
     // (`documentation/evenements/plan-evenements.md`, E1–E2). Route de premier
-    // niveau sous SON droit, celui que les routes serveur opposent
-    // (`@AdminSurface("events")`).
+    // niveau ; chaque écran porte SON droit, celui que les routes serveur
+    // opposent (`@AdminSurface("events")`).
     path: 'evenements',
-    canActivate: [permissionGuard('events:read')],
     children: [
       {
         path: '',
+        canActivate: [permissionGuard('events:read')],
         title: 'Événements — LFC B2B admin',
         loadComponent: () =>
           import('./evenements/events-page/events-page').then((m) => m.EventsPage),
       },
       {
         path: ':id',
+        canActivate: [permissionGuard('events:read')],
         title: 'Événement — LFC B2B admin',
         loadComponent: () => import('./evenements/event-page/event-page').then((m) => m.EventPage),
       },

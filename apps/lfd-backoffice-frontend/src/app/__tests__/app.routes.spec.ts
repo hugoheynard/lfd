@@ -198,6 +198,10 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   // **Matrice des allergènes** — hors de `pim/` (gardé par `pim_catalog`),
   // derrière SON droit, celui des trois routes serveur (plan Q6, 2026-10-20).
   'matrice-allergenes': 'allergen_matrix:read',
+  // Les événements et leurs fiches de fonction : lire ouvre la table et le
+  // détail ; les gestes demandent l'écriture, que l'écran seul propose.
+  evenements: 'events:read',
+  'evenements/:id': 'events:read',
 
   // **Opérations datées** et **Promotions** — premier niveau depuis le
   // 2026-10-13 (Hugo), sous le mur des espaces qu'elles ont quittés :

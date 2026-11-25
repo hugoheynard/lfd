@@ -4,6 +4,7 @@ import { CARD_PAYMENT_SCENARIOS } from "./card-payment-scenarios.js";
 import { COMMERCE_SCENARIOS } from "./commerce-scenarios.js";
 import { CONTACT_SCENARIOS } from "./contact-scenarios.js";
 import { COUNTER_SCENARIOS } from "./counter-scenarios.js";
+import { EVENTS_SCENARIOS } from "./events-scenarios.js";
 import { DOCUMENTS_SCENARIOS } from "./documents-scenarios.js";
 import { GROWTH_SCENARIOS } from "./growth-scenarios.js";
 import { IDENTITY_SCENARIOS } from "./identity-scenarios.js";
@@ -36,6 +37,7 @@ export const REPLAY_SCENARIOS: ScenarioSet = {
   ...CONTACT_SCENARIOS,
   ...COUNTER_SCENARIOS,
   ...DOCUMENTS_SCENARIOS,
+  ...EVENTS_SCENARIOS,
   ...GROWTH_SCENARIOS,
   ...OPS_SCENARIOS,
   ...PACKING_SCENARIOS,
