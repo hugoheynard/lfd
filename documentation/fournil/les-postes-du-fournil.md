@@ -257,6 +257,9 @@ relecture.
 
 ## 3. Reste à faire
 
+- Un produit sur plusieurs postes : plan
+  [`plan-produit-sur-plusieurs-postes.md`](plan-produit-sur-plusieurs-postes.md).
+
 - Recompter les SKU en production avant de basculer : la borne de 500 a été
   calculée sur le dev (99 SKU non retirés).
 - Mesurer en production le coût de la page Postes (quatre sources), de
