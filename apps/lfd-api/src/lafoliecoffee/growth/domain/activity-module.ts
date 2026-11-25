@@ -110,6 +110,8 @@ const PREFIXES: Readonly<Record<ActivityModule, readonly string[]>> = {
   // pas avec les prix.
   commandes: [
     "order.",
+    // Le reliquat de commande : ce qui n'est pas parti, transformé ou abandonné.
+    "backorder.",
     "delivery_zone.",
     // Le réglage global de livraison par audience (0b, 2026-11-05) : ce que
     // coûte une livraison, dans toute zone qui ne le remplace pas.

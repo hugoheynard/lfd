@@ -1,0 +1,34 @@
+/// **Le reliquat de commande** (`documentation/commandes/reliquat/plan-reliquat-de-commande.md`,
+/// § 2) : ce qui n'est pas parti d'une commande incomplète, pour qui, et son
+/// sort. Ce n'est PAS une commande : le fournil, le colisage, la livraison et
+/// la facture ne le lisent pas. `open` → `converted` (une commande ordinaire,
+/// `convertedOrderId`) ou `abandoned`, définitif (CHECK en base).
+///
+/// Aucun prix : il se relit sur les lignes de la commande d'origine, qui ne
+/// bougent plus après la décision du départ. `companyId` (nul pour un
+/// particulier), `buyerUserId` et `closedByStaffId` sont des identifiants
+/// recopiés, sans clé étrangère, comme `orders.placed_by_staff_id`. Le mur
+/// tenant se pose sur `companyId` quand il existe.
+model Backorder {
+  id               String    @id
+  originOrderId    String    @unique @map("origin_order_id")
+  originOrder      Order     @relation("BackorderOrigin", fields: [originOrderId], references: [id], onDelete: Restrict)
+  companyId        String?   @map("company_id")
+  buyerUserId      String    @map("buyer_user_id")
+  /// `[{ sku, quantity, sale_unit }]` — des pièces, ou des GRAMMES au poids.
+  lines            Json
+  /// `open` | `converted` | `abandoned` (CHECK).
+  state            String
+  convertedOrderId String?   @unique @map("converted_order_id")
+  convertedOrder   Order?    @relation("BackorderConverted", fields: [convertedOrderId], references: [id], onDelete: Restrict)
+  closedAt         DateTime? @map("closed_at") @db.Timestamptz(6)
+  /// Un `StaffUser.id`, pas une clé étrangère ; avec `closedAt` ou aucun (CHECK).
+  closedByStaffId  String?   @map("closed_by_staff_id")
+  /// L'instant de la décision du départ qui l'a fait naître.
+  createdAt        DateTime  @map("created_at") @db.Timestamptz(6)
+
+  @@index([companyId, state])
+  @@index([state, createdAt])
+  @@map("backorder")
+  @@schema("public")
+}

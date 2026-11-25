@@ -3,6 +3,7 @@ import type { JournalFactType } from '@lfd/contracts/journal-facts';
 import type { Phrase } from '../phrase';
 
 import { ACCOUNTING_PHRASES } from './accounting-phrases';
+import { BACKORDER_PHRASES } from './backorder-phrases';
 import { BILLING_MODE_PHRASES } from './billing-mode-phrases';
 import { BUNDLE_PHRASES } from './bundle-phrases';
 import { CARD_INCREASE_PHRASES } from './card-increase-phrases';
@@ -211,6 +212,7 @@ export const PHRASES: Readonly<Record<JournalFactType, Phrase>> = {
   ...INVOICE_PHRASES,
   ...PERIOD_QUOTE_PHRASES,
   ...REFUND_PHRASES,
+  ...BACKORDER_PHRASES,
   ...CARD_INCREASE_PHRASES,
   ...CARD_PAYMENT_PHRASES,
   ...COLLECTION_BATCH_REJECTION_PHRASES,

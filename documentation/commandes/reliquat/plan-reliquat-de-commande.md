@@ -198,6 +198,20 @@ zéro ligne et une quantité ≤ 0 ; `convert(orderId, at, by)` et
 Retour arrière écrit en tête de la migration : `DROP TABLE` tant qu'aucune
 ligne n'existe ; au-delà, la table reste, morte.
 
+**Tranché au bâti de B1 (2026-11-25)** :
+
+- `company_id` et `buyer_user_id` sont des identifiants recopiés, **sans clé
+  étrangère** (comme `placed_by_staff_id`) : les modèles `Company` et `User`
+  restent intouchés. Les deux commandes, elles, ont leur clé (`RESTRICT`).
+- Un CHECK de plus, `backorder_not_its_own_origin` : la commande issue n'est
+  jamais l'origine.
+- `Backorder.restore` ne rejuge pas les règles d'état (converti ⇔ commande
+  issue ; fermé ⇔ instant et auteur) : **la base les tient** par ses CHECK,
+  et le mapper refuse une ligne mal formée.
+- Les faits ont pour sujet la **commande d'origine** (`order`), avec les clés
+  déjà nommées du journal ; chaque type a sa phrase au back-office
+  (`apps/lfd-backoffice-frontend/src/app/shared/journal/phrases/backorder-phrases.ts`).
+
 ### 3. B2 — la naissance, dans la décision
 
 **Ce qui manque pour la faire, et que le plan ajoute** : ni
@@ -479,6 +493,67 @@ et la passation donnent le même total.
 
 Droits : aucun nouveau. Une migration n'accorde aucun droit (`CLAUDE.md` § 3).
 
+### 5 ter. B4b — tracer tout ce qui s'est passé, et la fiche d'un départ partiel
+
+**Exigence de Hugo (2026-11-25), principe de tout le chantier** : « on doit
+pouvoir tracer absolument ce qui s'est passé ». Cas réel : ORD-13 (CLOS
+BELLEVARDE), départ décidé avec trois articles abandonnés, puis « Prête ».
+
+**Ce qui est tracé aujourd'hui, et ce qui manque** (audit du 2026-11-25,
+lecture du code de `dev`) :
+
+| Étape                               | Tracé                                                                                                                                                                                                              | Manque                                                                                                                                                                                                                                                                     |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Commande, confirmation              | bon de commande rangé au stockage à la passation (`orders/application/services/order-sheet-archive.service.ts:95-111`), joint à l'accusé                                                                           | —                                                                                                                                                                                                                                                                          |
+| Manque au colisage                  | fait durable `packing.shortfall_reported` (`packing/application/station/report-packing-shortfall.handler.ts:39-61`), `order_shortfall.lines`                                                                       | aucune ligne d'historique ; un second signal écrase le premier                                                                                                                                                                                                             |
+| Décision                            | `order_shortfall_decision` (qui, quand, ce qui part) ; activité `order.shortfall_decided` (`growth/application/handlers/on-order-shortfall-decided.handler.ts:42-59`)                                              | —                                                                                                                                                                                                                                                                          |
+| **BL**                              | `contentVersion`, dernière impression seule (`apps/lfd-api/prisma/schema/public/delivery-notes.prisma`)                                                                                                            | **réécrit en place** : `DeliveryNoteAligner` (`delivery-notes/application/services/delivery-note-aligner.ts:77-104`) puis `replaceLines` (`prisma-delivery-note.repository.ts:99-104`) ; **la version d'origine est perdue**, aucun PDF rangé, impressions hors historique |
+| « Tout est prêt » après la décision | ne ressort **pas** le reste : les lignes sont réduites à ce qui est au bac avant le remplissage (`packing/domain/entities/packing-sheet.ts:258-277`, `declare-all-ready.handler.ts:79-95`) ; `order.ready` ensuite | le geste lui-même n'est pas à l'historique                                                                                                                                                                                                                                 |
+| Remise                              | activité `order.handed_over`                                                                                                                                                                                       | —                                                                                                                                                                                                                                                                          |
+| Remboursement carte (E9)            | `order.shortfall_refund_blocked` au journal ; demande au bloc `payment`                                                                                                                                            | le succès du remboursement n'est pas lu à l'historique de la commande (non vérifié)                                                                                                                                                                                        |
+| Lettre au client                    | `customerNotifiedAt/By`, suivi des e-mails                                                                                                                                                                         | aucune ligne d'historique                                                                                                                                                                                                                                                  |
+| Reliquat                            | faits `backorder.*` (B1)                                                                                                                                                                                           | —                                                                                                                                                                                                                                                                          |
+
+**B4b.1 — les versions du BL, jamais écrasées (migration, `vitruve`).**
+Table `public.delivery_note_version` (à créer) : `(delivery_note_id,
+content_version)` unique, le **contenu figé** du bon à cette version (en-tête
+et lignes, en `jsonb`, dans la forme que le PDF lit), `cause`
+(`planned` | `departure_decided` | `realigned`), `recorded_at`. Écrite par
+`DeliveryNoteAligner` **avant** `replaceLines`, dans la même transaction,
+chaque fois que `contentVersion` monte — et une première fois à la
+naissance du bon. Une version est une **lecture figée** : elle n'est ni un
+second BL, ni une ligne comptée ; « livré = Σ des BL » et la facture ne la
+lisent jamais (garde : `lint:prisma-model-ownership`, la table n'est lue que
+par le lecteur de l'historique des documents). Les impressions
+(`printedVersion`) désignent désormais une version qui existe.
+
+**B4b.2 — l'historique des documents** de la fiche, dans l'ordre :
+confirmation de commande d'origine (le bon rangé), **BL d'origine** (la
+version d'avant la décision, PDF rendu depuis la version figée), **BL
+définitif** (le bon courant) si le départ est partiel, puis factures et
+preuve de remise comme aujourd'hui. Route existante étendue :
+`GET admin/orders/:id/delivery-notes` sert les versions,
+`…/:number/versions/:version/client.pdf` les rend.
+
+**B4b.3 — l'historique de la commande complet.** Faits au journal (activité
+de la commande) pour ce qui manque : le manque signalé (chaque signal, avec
+ses quantités, sans écraser le précédent à l'historique), « Tout est prêt »,
+chaque impression d'un BL (version), la lettre au client, le remboursement
+carte réussi. Chaque fait dit **qui et quand**. Le journal touchant les bons,
+B4b passe par `vitruve`.
+
+**B4b.4 — la fiche commande d'un départ partiel.** La décision du départ **en
+tête** de la fiche (plus sous la note) ; dans la composition, une colonne
+**« Parti »** à côté de « Commandé », le reste abandonné marqué et un lien
+vers son reliquat ; des montants qui distinguent **commandé** et **livré**
+(on facture sur le BL : `billable_*`).
+
+Tests : e2e de la liste des documents (bon d'origine, BL d'origine, BL
+définitif, dans l'ordre, et la Σ des BL inchangée par les versions) ; e2e de
+l'historique (chaque étape d'ORD-13 rejouée : signal, décision, prêt,
+impression, remise, lettre, reliquat) ; e2e de migration ; specs des
+composants (colonne Parti, montants, décision en tête).
+
 ### 5 bis. B6 — les particuliers (décision 13), après les pros
 
 **Priorité de Hugo (2026-11-25) : les pros d'abord.** B1 à B4 se bâtissent
@@ -614,11 +689,12 @@ un bon de fidélité (déjà refusés à la décision, `termsRefusalOf`).
 
 ### 9. Lots
 
-| Lot | Contenu                              | Tests                                                                      |
-| --- | ------------------------------------ | -------------------------------------------------------------------------- |
-| B1  | migration, agrégat, dépôt            | unitaires de l'agrégat, e2e des CHECK                                      |
-| B2  | naissance dans la décision           | unitaires, e2e managers et comptoir                                        |
-| B3  | transformer, rejeu du prix d'origine | unitaires du rejeu, e2e prix et idempotence                                |
-| B4  | abandonner, liste, écrans            | e2e, specs des composants                                                  |
-| B5  | démontage du second envoi            | inventaire et `vitruve` d'abord                                            |
-| B6  | particuliers : boutique, offerte     | e2e `shop_till`, offerte, TTC, carte puis boutique, estimation = passation |
+| Lot | Contenu                                           | Tests                                                                      |
+| --- | ------------------------------------------------- | -------------------------------------------------------------------------- |
+| B1  | migration, agrégat, dépôt — ✅ bâti le 2026-11-25 | unitaires de l'agrégat, e2e des CHECK                                      |
+| B2  | naissance dans la décision                        | unitaires, e2e managers et comptoir                                        |
+| B3  | transformer, rejeu du prix d'origine              | unitaires du rejeu, e2e prix et idempotence                                |
+| B4  | abandonner, liste, écrans                         | e2e, specs des composants                                                  |
+| B4b | traçabilité : versions du BL, historique, fiche   | e2e documents et historique, specs ; `vitruve` d'abord                     |
+| B5  | démontage du second envoi                         | inventaire et `vitruve` d'abord                                            |
+| B6  | particuliers : boutique, offerte                  | e2e `shop_till`, offerte, TTC, carte puis boutique, estimation = passation |

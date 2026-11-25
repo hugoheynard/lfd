@@ -42,4 +42,35 @@ export const ORDER_SHORTFALL_FACTS = {
       stoppedAmount: z.boolean(),
     }),
   ),
+  /**
+   * **Le reliquat de commande** (plan
+   * `documentation/commandes/reliquat/plan-reliquat-de-commande.md`, § 2) :
+   * ce qui n'est pas parti, gardé pour une commande à venir. Le sujet est la
+   * COMMANDE D'ORIGINE (un reliquat par origine), son libellé son numéro ;
+   * l'auteur et l'instant viennent du contexte. `opened` : naît avec la
+   * décision du départ, `lines` le reste par article — des pièces, ou des
+   * grammes au poids. `converted` : la commande qui en est issue
+   * (`orderId`, `orderNumber`). `abandoned` : le client n'en veut pas.
+   * 🔴 Types irréversibles.
+   */
+  "backorder.opened": fact(
+    payload({
+      subjectLabel: subjectLabel(),
+      lines: z.array(
+        z.object({
+          sku: z.string().min(1),
+          quantity: count(),
+          saleUnit: z.enum(["piece", "weight"]),
+        }),
+      ),
+    }),
+  ),
+  "backorder.converted": fact(
+    payload({
+      subjectLabel: subjectLabel(),
+      orderId: ref("order"),
+      orderNumber: z.string(),
+    }),
+  ),
+  "backorder.abandoned": fact(payload({ subjectLabel: subjectLabel() })),
 };

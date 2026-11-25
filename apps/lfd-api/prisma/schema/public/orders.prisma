@@ -460,6 +460,12 @@ model Order {
   // sinon. Figé à la passation : un déclencheur refuse sa modification.
   settlementVenue SettlementVenue? @map("settlement_venue")
 
+  // Le port est offert sur une commande issue d'un reliquat (plan du reliquat,
+  // décisions 7, 14 et 16), quelle que soit la zone, révision comprise. Figé à
+  // la passation : un déclencheur refuse sa modification, un CHECK refuse un
+  // frais de livraison (HT ou TTC) posé avec lui.
+  deliveryOffered Boolean @default(false) @map("delivery_offered")
+
   // Le COLISAGE : la fabrication est finie. Écrit par l'atelier, au scan du QR
   // de la fiche — lequel n'encode que le NUMÉRO de commande, déjà imprimé en
   // clair sur la même feuille. Le scanner est donc sans risque : il ne porte
@@ -619,6 +625,10 @@ model Order {
   itemLimitOverrides OrderItemLimitOverride[]
   /// Ses visas, en cours et retirés (plan du visa des commandes).
   reviews            OrderReview[]
+  /// Son reliquat, si elle est partie incomplète (`backorder.origin_order_id`).
+  backorder          Backorder?               @relation("BackorderOrigin")
+  /// Le reliquat dont elle est issue (`backorder.converted_order_id`).
+  fromBackorder      Backorder?               @relation("BackorderConverted")
 
   @@index([companyId])
   @@index([billedCompanyId])

@@ -54,6 +54,7 @@ import {
   ORDER_REVISION_CONTROLLERS,
   ORDER_REVISION_PROVIDERS,
 } from "./revision/order-revision.providers.js";
+import { ORDER_BACKORDER_PROVIDERS } from "./backorder/backorder.providers.js";
 import {
   ORDER_SHORTFALL_CONTROLLERS,
   ORDER_SHORTFALL_EXPORTS,
@@ -516,6 +517,7 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     ...ORDER_REVISION_PROVIDERS,
     ...CARD_INCREASE_PROVIDERS,
     ...ORDER_SHORTFALL_PROVIDERS,
+    ...ORDER_BACKORDER_PROVIDERS,
     ...ORDER_BUDGET_COMMITMENT_PROVIDERS,
     ...ORDER_REVIEW_PROVIDERS,
     VoucherRestitutionRefusal,

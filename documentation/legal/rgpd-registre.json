@@ -3018,6 +3018,15 @@
       "information": false
     },
     {
+      "colonne": "public.backorder.closed_by_staff_id",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a transformé en commande ou abandonné le reliquat d'une commande partie incomplète (`backorder`, `documentation/commandes/reliquat/plan-reliquat-de-commande.md` § 2).",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
       "colonne": "public.order_shortfall_decision.customer_notified_by_staff_id",
       "personne": "staff",
       "categorie": "auteur-geste",
