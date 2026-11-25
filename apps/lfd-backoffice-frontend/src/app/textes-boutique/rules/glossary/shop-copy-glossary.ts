@@ -11,6 +11,7 @@ import { GLOSSARY_ORDER_REVISION } from './glossary-order-revision';
 import { GLOSSARY_ORDERS_SUMMARY } from './glossary-orders-summary';
 import { GLOSSARY_P } from './glossary-p';
 import { GLOSSARY_PAY_LINK } from './glossary-pay-link';
+import { GLOSSARY_RECURRING_BASKETS } from './glossary-recurring-baskets';
 import { GLOSSARY_Q_R } from './glossary-q-r';
 import { GLOSSARY_S } from './glossary-s';
 import { GLOSSARY_SITE_MENU } from './glossary-site-menu';
@@ -24,6 +25,7 @@ import { GLOSSARY_T_W } from './glossary-t-w';
  */
 export const SHOP_COPY_GLOSSARY: Readonly<Record<string, string>> = {
   ...GLOSSARY_PAY_LINK,
+  ...GLOSSARY_RECURRING_BASKETS,
   ...GLOSSARY_ORDER_CANCEL,
   ...GLOSSARY_ORDER_REVISION,
   ...GLOSSARY_ORDERS_SUMMARY,

@@ -395,6 +395,7 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   // (Hugo, 2026-10-26) et son adresse redirige.
   'tour-manager': OPEN,
   'tour-manager/tournees': 'delivery_rounds:read',
+  'tour-manager/adresses': 'delivery_rounds:read',
   'livraison/non-remis': 'delivery_rounds:read',
   // « À décider » (a-la-porte.md, B3) : le droit de décider, pas celui des
   // tournées ni des comptes (2026-10-02) ; la page s'ouvre en lecture, les

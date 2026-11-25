@@ -56,10 +56,13 @@ const ROLLBACK = join(
  * Les tables que la migration nomme et qui ont changé de schéma depuis : le
  * fichier, appliqué en production, ne se touche pas (son empreinte Prisma) ;
  * le rejeu, lui, tourne sur le schéma d'aujourd'hui et vise la table là où
- * elle vit. Le panier vit dans `cart` (migration `20261120180000`).
+ * elle vit. Le panier vit dans `cart` (migration `20261120180000`), les
+ * paniers récurrents dans `recurring` (migration `20261125090000`).
  */
 const MOVED_TABLES: readonly (readonly [string, string])[] = [
   ["'public.shop_carts'", "'cart.shop_carts'"],
+  ["'public.subscription_occurrences'", "'recurring.occurrence'"],
+  ["'public.subscription_lines'", "'recurring.basket_line'"],
 ];
 
 /** Joue le fichier, garde-fou forcé ; rend l'erreur levée, ou `null`. */

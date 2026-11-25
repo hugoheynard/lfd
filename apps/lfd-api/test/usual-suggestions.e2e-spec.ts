@@ -123,13 +123,17 @@ async function seedOrder(order: SeedOrder): Promise<void> {
     await payByCard(ctx, placed);
   }
   if (order.fromSubscription === true) {
-    // Écriture brute GARDÉE (plan T, 2026-10-24) : une commande de panier
-    // récurrent naît de la génération des abonnements, qu'aucune entrée de
-    // test ne déclenche pour un jour passé. La commande est vraie ; seule sa
-    // provenance est posée après coup, et c'est elle que la requête exclut.
-    await ctx.prisma.order.update({
-      where: { id: placed.id },
-      data: { fromSubscriptionId: `sub-${String(seq)}` },
+    // Une commande de panier récurrent naît de la passation d'une échéance,
+    // qu'aucune entrée de test ne déclenche pour ce jour-là ; et le déclencheur
+    // `orders_keep_recurring_provenance` refuse de poser la provenance après
+    // coup. Elle est donc posée déclencheurs suspendus, le temps de la seule
+    // instruction — c'est elle que la requête exclut.
+    await ctx.prisma.$transaction(async (tx) => {
+      await tx.$executeRawUnsafe("SET LOCAL session_replication_role = replica");
+      await tx.order.update({
+        where: { id: placed.id },
+        data: { fromSubscriptionId: `sub-${String(seq)}` },
+      });
     });
   }
 }
