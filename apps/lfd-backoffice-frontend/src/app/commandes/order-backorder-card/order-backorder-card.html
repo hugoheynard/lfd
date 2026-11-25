@@ -25,7 +25,7 @@
           <strong>Reliquat abandonné</strong> le {{ b.closedAt | date: "dd/MM 'à' HH:mm" }}.
         }
       }
-      @if (canConvert() || canAbandon()) {
+      @if (hasGesture()) {
         <div actions>
           @if (canConvert()) {
             <a
@@ -36,6 +36,29 @@
               data-backorder-convert
             >
               Transformer
+            </a>
+          }
+          @if (canSettleAtShop()) {
+            <a
+              foldButton
+              size="sm"
+              emphasis="soft"
+              [routerLink]="particularLink()"
+              data-backorder-shop-till
+            >
+              Réglée en boutique
+            </a>
+          }
+          @if (canOffer()) {
+            <a
+              foldButton
+              size="sm"
+              emphasis="soft"
+              [routerLink]="particularLink()"
+              [queryParams]="{ venue: 'offered' }"
+              data-backorder-offered
+            >
+              Offerte
             </a>
           }
           @if (canAbandon()) {

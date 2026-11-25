@@ -527,6 +527,18 @@ export const routes: Routes = [
       ),
   },
   {
+    // Transformer le reliquat d'un particulier (même plan, § 5 bis) : en
+    // commande réglée à la caisse de la boutique, ou offerte (`?venue=offered`,
+    // le droit d'offrir se juge à l'écran et au serveur).
+    path: 'commandes/:orderId/reliquat-particulier',
+    canActivate: [permissionGuard('b2b_place_order:write')],
+    title: 'Transformer le reliquat — LFC B2B admin',
+    loadComponent: () =>
+      import('./commandes/particular-backorder-conversion-page/particular-backorder-conversion-page').then(
+        (m) => m.ParticularBackorderConversionPage,
+      ),
+  },
+  {
     // Les reliquats ouverts, du plus ancien au plus récent (même plan, § 5) :
     // une liste de commandes à reprendre, sous le droit de lire les commandes.
     path: 'reliquats',

@@ -133,7 +133,7 @@ describe("La naissance du reliquat, dans la décision du départ (B2)", () => {
     expect(await openedFactsOf(order.id)).toHaveLength(1);
   });
 
-  it("une commande sans société n'en fait naître aucun (jusqu'au lot B6)", async () => {
+  it("une commande sans société (un particulier) fait naître le sien, sans société", async () => {
     const buyer = await createUser(ctx.prisma, { auth0Sub: MEMBER });
     const placed = await placeOrder(ctx, {
       buyerUserId: buyer.id,
@@ -147,8 +147,15 @@ describe("La naissance du reliquat, dans la décision du départ (B2)", () => {
 
     expect((await decide(ctx, order.id)).status).toBe(204);
 
-    expect(await backordersOf(order.id)).toEqual([]);
-    expect(await openedFactsOf(order.id)).toEqual([]);
+    const backorders = await backordersOf(order.id);
+    expect(backorders).toHaveLength(1);
+    expect(backorders[0]).toMatchObject({
+      state: "open",
+      companyId: null,
+      buyerUserId: buyer.id,
+      lines: [{ sku: CROISSANT, quantity: 2, sale_unit: "piece" }],
+    });
+    expect(await openedFactsOf(order.id)).toHaveLength(1);
   });
 
   /**

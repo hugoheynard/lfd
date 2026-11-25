@@ -4,7 +4,7 @@ import type { ParticularStandingReader } from "../../../account/domain/ports/par
 import type { PricingCaller } from "../../../pricing/application/pricing-caller.js";
 import { staffEntryOriginOf } from "../../domain/services/order-supply-rules.js";
 import { REGISTERED_BUYER } from "../../domain/value-objects/order-buyer-kind.js";
-import type { DraftedOrder, OrderDrafting } from "./order-drafting.service.js";
+import type { DraftedOrder, DraftPolicy, OrderDrafting } from "./order-drafting.service.js";
 import { offerPartyOf } from "./order-offering.js";
 import { ensureParticular } from "./particular-buyer-wall.js";
 
@@ -43,6 +43,8 @@ export async function prepareOfferedParticularOrder(
   // La forme de l'estimation, plus large : la passation y entre, motif exigé.
   payload: OfferedParticularOrderEstimatePayload,
   caller: PricingCaller,
+  // `PLACEMENT_POLICY` pour la saisie ; celle du reliquat pour sa transformation.
+  policy: DraftPolicy,
 ): Promise<DraftedOrder> {
   await ensureParticular(ports.particulars, payload.buyerUserId);
   return ports.drafting.draft(
@@ -66,5 +68,6 @@ export async function prepareOfferedParticularOrder(
     undefined,
     // Une offre se saisit hors du comptoir : l'origine du commercial.
     staffEntryOriginOf(undefined, undefined),
+    policy,
   );
 }

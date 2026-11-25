@@ -704,8 +704,8 @@ compose seulement ; `fixOn` (le délai d'annulation), `ensureTotalSeen` et
 service que les deux handlers partagent, plutôt que de les recopier : oublié,
 `settleAtShopTill` laisserait la commande en carte `pending`, et `fixOn` le
 délai d'annulation non figé. Un e2e épingle les trois. L'estimation sœur du
-particulier : `estimate-particular-order-at-counter.handler.ts:73` (boutique)
-et `estimate-offered-particular-order.handler.ts:72` (offerte), sous la même
+particulier : `estimate-particular-order-at-counter.handler.ts` (boutique)
+et `estimate-offered-particular-order.handler.ts` (offerte), sous la même
 politique.
 
 **Le corps particulier** porte `expectedTotalCents` (exigé par
@@ -760,6 +760,31 @@ et une page de règlement que le client ouvre connecté (`settle.guard.ts`).
 C'est une surface neuve, hors de ce plan ; si Hugo la veut, elle s'ajoute à
 B6 comme quatrième geste.
 
+**Tranché au bâti de B6 (2026-11-25)** :
+
+- `convert` et `quote` reçoivent une union de deux corps stricts
+  (`adminBackorderConvertBodySchema`, `adminBackorderQuoteBodySchema`) : celui
+  d'un particulier se reconnaît à son `venue`. Le contrôleur envoie chacun à
+  son cas d'usage — `ConvertParticularBackorderHandler` /
+  `QuoteParticularBackorderHandler` à côté des handlers pro, sans branche dans
+  ceux-ci. Un corps pro sur un reliquat de particulier rend
+  `ParticularBackorderNotConvertibleError` (409), l'inverse
+  `CompanyBackorderNeedsStaffEntryError` (409).
+- Les deux passations du particulier sont sorties de leurs handlers dans
+  `ShopTillParticularPlacement` et `OfferedParticularPlacement`
+  (`orders/application/services/`), qui prennent une politique et ce que le
+  cas d'usage écrit avec la commande (la forme de `StaffOrderPlacement`) :
+  `fixOn`, le total vu et `settleAtShopTill` n'ont qu'un endroit. L'estimation
+  des trois passations du particulier partage `estimateParticularOrder`. La
+  fermeture du reliquat (`backorderClosing`) est commune aux trois
+  transformations.
+- `buyerUserId` est facultatif dans le corps du particulier : absent,
+  l'acheteur d'origine, qui passe le mur du particulier.
+- L'intention a son geste, `orders.backorder.convert-particular` : sa réponse
+  (`{ id, orderNumber, venue, totalCents }`) n'est pas celle de la saisie pro.
+- L'écran (`/commandes/:orderId/reliquat-particulier`, `?venue=offered`) ne
+  propose que le retrait ; une offerte livrée reste possible par l'API.
+
 ### 6. Questions pour Hugo
 
 Toutes tranchées le 2026-11-25 (décisions 7 à 16). Aucune ne reste.
@@ -804,12 +829,12 @@ un bon de fidélité (déjà refusés à la décision, `termsRefusalOf`).
 
 ### 9. Lots
 
-| Lot | Contenu                                            | Tests                                                                      |
-| --- | -------------------------------------------------- | -------------------------------------------------------------------------- |
-| B1  | migration, agrégat, dépôt — ✅ bâti le 2026-11-25  | unitaires de l'agrégat, e2e des CHECK                                      |
-| B2  | naissance dans la décision — ✅ bâti le 2026-11-25 | unitaires, e2e managers et comptoir                                        |
-| B3  | transformer (pros) — ✅ bâti le 2026-11-25         | unitaires du rejeu, e2e prix et idempotence                                |
-| B4  | abandonner, liste, écrans — ✅ bâti le 2026-11-25  | e2e, specs des composants                                                  |
-| B4b | traçabilité : versions du BL, historique, fiche    | e2e documents et historique, specs ; `vitruve` d'abord                     |
-| B5  | démontage du second envoi                          | inventaire et `vitruve` d'abord                                            |
-| B6  | particuliers : boutique, offerte                   | e2e `shop_till`, offerte, TTC, carte puis boutique, estimation = passation |
+| Lot | Contenu                                                  | Tests                                                                      |
+| --- | -------------------------------------------------------- | -------------------------------------------------------------------------- |
+| B1  | migration, agrégat, dépôt — ✅ bâti le 2026-11-25        | unitaires de l'agrégat, e2e des CHECK                                      |
+| B2  | naissance dans la décision — ✅ bâti le 2026-11-25       | unitaires, e2e managers et comptoir                                        |
+| B3  | transformer (pros) — ✅ bâti le 2026-11-25               | unitaires du rejeu, e2e prix et idempotence                                |
+| B4  | abandonner, liste, écrans — ✅ bâti le 2026-11-25        | e2e, specs des composants                                                  |
+| B4b | traçabilité : versions du BL, historique, fiche          | e2e documents et historique, specs ; `vitruve` d'abord                     |
+| B5  | démontage du second envoi                                | inventaire et `vitruve` d'abord                                            |
+| B6  | particuliers : boutique, offerte — ✅ bâti le 2026-11-25 | e2e `shop_till`, offerte, TTC, carte puis boutique, estimation = passation |

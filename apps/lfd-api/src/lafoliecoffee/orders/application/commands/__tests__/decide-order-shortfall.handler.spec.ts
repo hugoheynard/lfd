@@ -368,12 +368,14 @@ describe("DecideOrderShortfallHandler — « Décider du départ » (E6b)", () =
       expect(backorder.journal.facts).toEqual([]);
     });
 
-    it("une commande sans société n'ouvre aucun reliquat (jusqu'à B6)", async () => {
+    // Décision 13 : un particulier a son reliquat, sans société.
+    it("une commande sans société (un particulier) ouvre son reliquat", async () => {
       const { backorder, handler } = scene(locked(), null, { ...ORIGIN, companyId: null });
 
       await handler.execute(COMMAND);
 
-      expect(backorder.backorders.saved).toEqual([]);
+      expect(backorder.backorders.saved).toHaveLength(1);
+      expect(backorder.backorders.saved[0]).toMatchObject({ companyId: null, state: "open" });
     });
   });
 });

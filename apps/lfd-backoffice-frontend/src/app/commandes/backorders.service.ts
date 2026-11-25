@@ -3,7 +3,9 @@ import { inject, Injectable } from '@angular/core';
 import { firstValueFrom, type Observable } from 'rxjs';
 import type {
   AdminBackorderConvertPayload,
-  AdminBackorderQuotePayload,
+  AdminBackorderParticularConvertPayload,
+  AdminBackorderParticularPlacedResponse,
+  AdminBackorderQuoteBody,
   AdminBackorderView,
   AdminOrderEstimateView,
   AdminPlacedOrderResponse,
@@ -43,9 +45,10 @@ export class AdminBackordersService {
 
   /**
    * L'estimation de la commande issue du reliquat. Un `Observable`, comme
-   * l'estimation de la saisie : la requête en vol s'annule au changement.
+   * l'estimation de la saisie : la requête en vol s'annule au changement. Le
+   * corps d'un particulier porte son `venue` (boutique ou offerte).
    */
-  quote(id: string, payload: AdminBackorderQuotePayload): Observable<AdminOrderEstimateView> {
+  quote(id: string, payload: AdminBackorderQuoteBody): Observable<AdminOrderEstimateView> {
     return this.http.post<AdminOrderEstimateView>(
       `${BASE}/${encodeURIComponent(id)}/quote`,
       payload,
@@ -63,6 +66,24 @@ export class AdminBackordersService {
   ): Promise<AdminPlacedOrderResponse> {
     return firstValueFrom(
       this.http.post<AdminPlacedOrderResponse>(
+        `${BASE}/${encodeURIComponent(id)}/convert`,
+        payload,
+        intentOptions(intentKey),
+      ),
+    );
+  }
+
+  /**
+   * Le reliquat d'un **particulier** : réglée à la caisse de la boutique ou
+   * offerte, sur la même route et sous la même clé d'intention.
+   */
+  async convertParticular(
+    id: string,
+    payload: AdminBackorderParticularConvertPayload,
+    intentKey: string,
+  ): Promise<AdminBackorderParticularPlacedResponse> {
+    return firstValueFrom(
+      this.http.post<AdminBackorderParticularPlacedResponse>(
         `${BASE}/${encodeURIComponent(id)}/convert`,
         payload,
         intentOptions(intentKey),

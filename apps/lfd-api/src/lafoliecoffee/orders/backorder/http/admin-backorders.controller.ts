@@ -2,13 +2,15 @@ import {
   type AdminBackorderListQuery,
   adminBackorderListQuerySchema,
   type AdminBackorderView,
-  type AdminBackorderConvertPayload,
-  adminBackorderConvertPayloadSchema,
-  type AdminBackorderQuotePayload,
-  adminBackorderQuotePayloadSchema,
+  type AdminBackorderConvertBody,
+  adminBackorderConvertBodySchema,
+  type AdminBackorderParticularPlacedResponse,
+  type AdminBackorderQuoteBody,
+  adminBackorderQuoteBodySchema,
   type AdminOrderEstimateView,
   type AdminPlacedOrderResponse,
   hasStaffPermission,
+  isParticularBackorderBody,
   type StaffPermission,
 } from "@lfd/contracts";
 import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post, Query } from "@nestjs/common";
@@ -25,7 +27,12 @@ import { ZodBody, ZodQuery } from "../../../../platform/shared/http/zod-body.pip
 import type { PlaceOrderForCustomerResult } from "../../application/commands/place-order-for-customer.command.js";
 import { mayExceedItemLimits } from "../../http/item-limit-override-permissions.js";
 import { ConvertBackorderCommand } from "../application/commands/convert-backorder.command.js";
+import {
+  ConvertParticularBackorderCommand,
+  type ConvertParticularBackorderResult,
+} from "../application/commands/convert-particular-backorder.command.js";
 import { QuoteBackorderQuery } from "../application/queries/quote-backorder.query.js";
+import { QuoteParticularBackorderQuery } from "../application/queries/quote-particular-backorder.query.js";
 import { AbandonBackorderCommand } from "../application/commands/abandon-backorder.command.js";
 import { ListBackordersQuery } from "../application/queries/list-backorders.query.js";
 
@@ -79,6 +86,11 @@ export class AdminBackordersController {
     );
   }
 
+  /**
+   * **L'estimation** : le corps d'un pro (la saisie de l'équipe) ou celui d'un
+   * particulier, reconnu à son `venue` ; le serveur refuse un corps qui ne
+   * correspond pas au reliquat.
+   */
   @Post(":id/quote")
   @RequirePermission("b2b_place_order:write")
   @HttpCode(HttpStatus.OK)
@@ -88,9 +100,14 @@ export class AdminBackordersController {
   async quote(
     @Param("id") id: string,
     @StaffUserId() staffUserId: string,
-    @Body(new ZodBody(adminBackorderQuotePayloadSchema)) payload: AdminBackorderQuotePayload,
+    @Body(new ZodBody(adminBackorderQuoteBodySchema)) payload: AdminBackorderQuoteBody,
     @StaffPermissions() permissions: readonly StaffPermission[],
   ): Promise<AdminOrderEstimateView> {
+    if (isParticularBackorderBody(payload)) {
+      return this.queries.execute<QuoteParticularBackorderQuery, AdminOrderEstimateView>(
+        new QuoteParticularBackorderQuery(staffUserId, id, payload),
+      );
+    }
     return this.queries.execute<QuoteBackorderQuery, AdminOrderEstimateView>(
       new QuoteBackorderQuery(staffUserId, id, payload, mayExceedItemLimits(permissions)),
     );
@@ -99,6 +116,8 @@ export class AdminBackordersController {
   /**
    * Une fois par intention : l'écran envoie sa clé (`Idempotency-Key`), tirée
    * une fois par transformation voulue ; un double clic rend la même commande.
+   * Le corps d'un particulier (`venue`) passe par sa passation — réglée en
+   * boutique ou offerte —, celui d'un pro par la saisie de l'équipe.
    */
   @Post(":id/convert")
   @RequirePermission("b2b_place_order:write")
@@ -106,10 +125,17 @@ export class AdminBackordersController {
   async convert(
     @Param("id") id: string,
     @StaffUserId() staffUserId: string,
-    @Body(new ZodBody(adminBackorderConvertPayloadSchema)) payload: AdminBackorderConvertPayload,
+    @Body(new ZodBody(adminBackorderConvertBodySchema)) payload: AdminBackorderConvertBody,
     @IntentKey() intentKey: string,
     @StaffPermissions() permissions: readonly StaffPermission[],
-  ): Promise<AdminPlacedOrderResponse> {
+  ): Promise<AdminPlacedOrderResponse | AdminBackorderParticularPlacedResponse> {
+    const mayOffer = hasStaffPermission(permissions, "b2b_offer_order:write");
+    if (isParticularBackorderBody(payload)) {
+      return this.commands.execute<
+        ConvertParticularBackorderCommand,
+        ConvertParticularBackorderResult
+      >(new ConvertParticularBackorderCommand(staffUserId, id, payload, intentKey, mayOffer));
+    }
     const placed = await this.commands.execute<
       ConvertBackorderCommand,
       PlaceOrderForCustomerResult
@@ -120,7 +146,7 @@ export class AdminBackordersController {
         payload,
         intentKey,
         mayExceedItemLimits(permissions),
-        hasStaffPermission(permissions, "b2b_offer_order:write"),
+        mayOffer,
       ),
     );
     const { paymentUrl, ...placedOrder } = placed;

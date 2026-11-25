@@ -68,13 +68,24 @@ describe("BackorderOpening — la naissance du reliquat", () => {
     expect(journal.facts).toEqual([]);
   });
 
-  it("une origine sans société n'ouvre aucun reliquat (plan § 5 bis, jusqu'à B6)", async () => {
+  // Décision 13 : un particulier a son reliquat, que l'équipe transforme en
+  // commande réglée en boutique ou offerte, ou abandonne.
+  it("une origine sans société (un particulier) ouvre son reliquat, sans société", async () => {
     const { backorders, journal, opening } = backorderOpeningScene({ ...ORIGIN, companyId: null });
 
     await opening.openAfter(birth([{ sku: "CRO", quantity: 9 }]));
 
-    expect(backorders.saved).toEqual([]);
-    expect(journal.facts).toEqual([]);
+    expect(backorders.saved).toHaveLength(1);
+    expect(backorders.saved[0]).toMatchObject({
+      companyId: null,
+      buyerUserId: "u_1",
+      state: "open",
+      lines: [
+        { sku: "CRO", quantity: 3, saleUnit: "piece" },
+        { sku: "PAI", quantity: 4, saleUnit: "piece" },
+      ],
+    });
+    expect(journal.facts.map((fact) => fact.type)).toEqual(["backorder.opened"]);
   });
 
   it("une origine introuvable n'ouvre rien", async () => {

@@ -23,8 +23,11 @@ import { AdminBackordersService } from '../backorders.service';
  * état, ce qui reste dû, et la commande qui en est issue. Tant qu'il est
  * ouvert, deux gestes :
  *
- * - « Transformer » (pro seulement, `b2b_place_order:write`) mène à la saisie
+ * - pour un pro, « Transformer » (`b2b_place_order:write`) mène à la saisie
  *   garnie du reliquat — c'est passer une commande à la place du client ;
+ * - pour un particulier (§ 5 bis, décision 13), « Réglée en boutique » (même
+ *   droit) et « Offerte » (avec le droit d'offrir) mènent à l'écran de
+ *   transformation du particulier ;
  * - « Abandonner » (`b2b_orders_shortfall:write`, le droit de la décision du
  *   départ qui l'a fait naître), après confirmation. Le parent relit la fiche.
  *
@@ -54,12 +57,20 @@ export class OrderBackorderCard {
   private readonly permissions = inject(PermissionsStore);
 
   protected readonly open = computed(() => this.backorder()?.state === 'open');
+  private readonly particular = computed(() => this.backorder()?.company === null);
+  private readonly mayPlace = computed(
+    () => this.open() && this.permissions.can('b2b_place_order:write'),
+  );
   /** Transformer : un pro, et le droit de passer une commande pour lui. */
-  protected readonly canConvert = computed(
-    () =>
-      this.open() &&
-      this.backorder()?.company !== null &&
-      this.permissions.can('b2b_place_order:write'),
+  protected readonly canConvert = computed(() => this.mayPlace() && !this.particular());
+  /** Réglée en boutique : un particulier, et le droit de passer une commande. */
+  protected readonly canSettleAtShop = computed(() => this.mayPlace() && this.particular());
+  /** Offerte : un particulier, et le droit d'offrir en plus. */
+  protected readonly canOffer = computed(
+    () => this.canSettleAtShop() && this.permissions.can('b2b_offer_order:write'),
+  );
+  protected readonly hasGesture = computed(
+    () => this.canConvert() || this.canSettleAtShop() || this.canAbandon(),
   );
   protected readonly canAbandon = computed(
     () => this.open() && this.permissions.can('b2b_orders_shortfall:write'),
@@ -68,6 +79,13 @@ export class OrderBackorderCard {
   protected readonly convertLink = computed(() => {
     const backorder = this.backorder();
     return backorder === null ? null : ['/commandes', backorder.origin.orderId, 'reliquat'];
+  });
+  /** L'écran de transformation du particulier, ouvert depuis la commande d'origine. */
+  protected readonly particularLink = computed(() => {
+    const backorder = this.backorder();
+    return backorder === null
+      ? null
+      : ['/commandes', backorder.origin.orderId, 'reliquat-particulier'];
   });
 
   protected readonly saving = signal(false);

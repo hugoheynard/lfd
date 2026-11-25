@@ -27,9 +27,9 @@ export interface BackorderBirth {
  * verrou de la commande, ce qui n'est pas parti devient un reliquat `open`
  * et `backorder.opened` s'écrit au journal.
  *
- * Rien ne naît quand tout est parti, ni pour une commande sans société : un
- * reliquat de particulier n'a pas encore de geste pour se fermer (plan, § 5
- * bis) — son reste est abandonné et remboursé comme la décision le fait.
+ * Rien ne naît quand tout est parti. Une commande de particulier (sans
+ * société) a son reliquat comme celle d'un pro (décision 13) : l'équipe le
+ * transforme en commande réglée en boutique ou offerte, ou l'abandonne.
  */
 @Injectable()
 export class BackorderOpening {
@@ -42,7 +42,7 @@ export class BackorderOpening {
 
   async openAfter(birth: BackorderBirth): Promise<void> {
     const origin = await this.origins.ofLocked(birth.originOrderId);
-    if (origin === null || origin.companyId === null) {
+    if (origin === null) {
       return;
     }
     const lines = backorderRemainderOf(origin.lines, birth.departing);

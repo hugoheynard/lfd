@@ -5,7 +5,7 @@ import type { PricingCaller } from "../../../pricing/application/pricing-caller.
 import { ensureShopTillPickup } from "../../domain/services/shop-till-rules.js";
 import { REGISTERED_BUYER } from "../../domain/value-objects/order-buyer-kind.js";
 import { COUNTER_ENTRY } from "../../domain/value-objects/order-supply.js";
-import type { DraftedOrder, OrderDrafting } from "./order-drafting.service.js";
+import type { DraftedOrder, DraftPolicy, OrderDrafting } from "./order-drafting.service.js";
 import { ensureParticular } from "./particular-buyer-wall.js";
 
 /** Ce que la préparation lit, et rien d'autre. */
@@ -43,6 +43,8 @@ export async function prepareCounterParticularOrder(
   staffUserId: string,
   payload: CounterParticularOrderEstimatePayload,
   caller: PricingCaller,
+  // `PLACEMENT_POLICY` pour la saisie ; celle du reliquat pour sa transformation.
+  policy: DraftPolicy,
 ): Promise<DraftedOrder> {
   ensureShopTillPickup(payload.fulfillmentMethod);
   await ensureParticular(ports.particulars, payload.buyerUserId);
@@ -70,5 +72,6 @@ export async function prepareCounterParticularOrder(
     undefined,
     undefined,
     COUNTER_ENTRY,
+    policy,
   );
 }

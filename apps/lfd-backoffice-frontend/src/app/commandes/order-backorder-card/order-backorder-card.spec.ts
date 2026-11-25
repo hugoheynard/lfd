@@ -153,3 +153,50 @@ describe('OrderBackorderCard — le reliquat sur la fiche d’origine', () => {
     expect(el(fixture).querySelector('[data-backorder-abandon]')).toBeNull();
   });
 });
+
+describe('OrderBackorderCard — le reliquat d’un particulier (décision 13)', () => {
+  const PARTICULAR: AdminBackorderView = { ...OPEN, company: null };
+  const WITH_OFFER: readonly StaffPermission[] = [...ALL, 'b2b_offer_order:write'];
+
+  it('propose « Réglée en boutique », « Offerte » et « Abandonner », jamais « Transformer »', () => {
+    const { fixture } = mount(PARTICULAR, WITH_OFFER);
+    const shop = el(fixture).querySelector<HTMLAnchorElement>('[data-backorder-shop-till]');
+    const offered = el(fixture).querySelector<HTMLAnchorElement>('[data-backorder-offered]');
+    expect(shop?.getAttribute('href')).toBe('/commandes/ord_1/reliquat-particulier');
+    expect(offered?.getAttribute('href')).toBe(
+      '/commandes/ord_1/reliquat-particulier?venue=offered',
+    );
+    expect(el(fixture).querySelector('[data-backorder-abandon]')).not.toBeNull();
+    expect(el(fixture).querySelector('[data-backorder-convert]')).toBeNull();
+  });
+
+  it('sans le droit d’offrir, pas d’« Offerte » ; sans celui de passer, ni l’un ni l’autre', () => {
+    const noOffer = mount(PARTICULAR, ALL);
+    expect(el(noOffer.fixture).querySelector('[data-backorder-shop-till]')).not.toBeNull();
+    expect(el(noOffer.fixture).querySelector('[data-backorder-offered]')).toBeNull();
+
+    const noPlace = mount(PARTICULAR, [
+      'b2b_orders:read',
+      'b2b_orders_shortfall:write',
+      'b2b_offer_order:write',
+    ]);
+    expect(el(noPlace.fixture).querySelector('[data-backorder-shop-till]')).toBeNull();
+    expect(el(noPlace.fixture).querySelector('[data-backorder-offered]')).toBeNull();
+    expect(el(noPlace.fixture).querySelector('[data-backorder-abandon]')).not.toBeNull();
+  });
+
+  it('les gestes d’un particulier ne paraissent pas sur un pro', () => {
+    const { fixture } = mount(OPEN, WITH_OFFER);
+    expect(el(fixture).querySelector('[data-backorder-shop-till]')).toBeNull();
+    expect(el(fixture).querySelector('[data-backorder-offered]')).toBeNull();
+  });
+
+  it('fermé : plus aucun geste du particulier', () => {
+    const { fixture } = mount(
+      { ...PARTICULAR, state: 'abandoned', closedAt: '2030-01-11T10:00:00.000Z' },
+      WITH_OFFER,
+    );
+    expect(el(fixture).querySelector('[data-backorder-shop-till]')).toBeNull();
+    expect(el(fixture).querySelector('[data-backorder-offered]')).toBeNull();
+  });
+});

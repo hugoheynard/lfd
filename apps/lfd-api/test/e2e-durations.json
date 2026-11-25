@@ -42,6 +42,7 @@
   "test/backorder-conversion.e2e-spec.ts": 20344,
   "test/backorder-lifecycle.e2e-spec.ts": 19700,
   "test/backorder-opening.e2e-spec.ts": 10744,
+  "test/backorder-particular.e2e-spec.ts": 13969,
   "test/backorder-schema.e2e-spec.ts": 6000,
   "test/bakehouse-resupply-drafts.e2e-spec.ts": 4038,
   "test/bank-collection-limits.e2e-spec.ts": 4423,

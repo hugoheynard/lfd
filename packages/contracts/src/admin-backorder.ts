@@ -6,13 +6,16 @@ import {
   hasOfferOnlyWhenOffered,
   hasWindowWhenPickedUp,
   offerIssue,
+  orderOfferSchema,
   pickupWindowIssue,
+  type OrderOffer,
 } from "./admin-order.js";
 import {
   deliveryAddressIssue,
   expectedTotalCentsSchema,
   hasAddressWhenDelivered,
   hasPickupPointWhenPickedUp,
+  orderContentShape,
   pickupPointIssue,
   type OrderSaleUnit,
 } from "./order.js";
@@ -57,6 +60,105 @@ export const adminBackorderQuotePayloadSchema = z
   .refine(hasWindowWhenPickedUp, pickupWindowIssue())
   .refine(hasOfferOnlyWhenOffered, offerIssue());
 export type AdminBackorderQuotePayload = z.infer<typeof adminBackorderQuotePayloadSchema>;
+
+/**
+ * **Les deux lieux de règlement d'un reliquat de particulier** (plan, § 5 bis,
+ * décision 13) : la caisse de la boutique, au retrait — notre système
+ * n'encaisse rien —, ou offerte, sous le droit d'offrir.
+ */
+export const BACKORDER_PARTICULAR_VENUES = ["shop_till", "offered"] as const;
+export const backorderParticularVenueSchema = z.enum(BACKORDER_PARTICULAR_VENUES);
+export type BackorderParticularVenue = z.infer<typeof backorderParticularVenueSchema>;
+
+/**
+ * Le corps d'un reliquat de **particulier** : le lieu de règlement, et le
+ * panier de la saisie du particulier SANS ses lignes (reprises du reliquat).
+ * `buyerUserId` absent : l'acheteur d'origine, qui passe le mur du
+ * particulier comme à la saisie du comptoir. Strict, comme le corps pro : le
+ * port offert et l'absence de surtaxe ne s'expriment pas.
+ */
+const backorderParticularEntryShape = {
+  venue: backorderParticularVenueSchema,
+  buyerUserId: z.string().trim().min(1, "client requis").optional(),
+  // Le motif d'une commande offerte : exigé avec `offered` à la transformation.
+  offer: orderOfferSchema.optional(),
+  ...z.object(orderContentShape).omit({ lines: true }).shape,
+};
+
+interface ParticularVenueAndOffer {
+  readonly venue: BackorderParticularVenue;
+  readonly offer?: OrderOffer | undefined;
+}
+
+/** Offerte ⇔ motif, à la transformation. */
+function hasOfferIffVenueOffered(payload: ParticularVenueAndOffer): boolean {
+  return (payload.venue === "offered") === (payload.offer !== undefined);
+}
+
+/** L'estimation admet `offered` sans motif ; la caisse de la boutique n'en porte jamais. */
+function hasOfferOnlyWhenVenueOffered(payload: ParticularVenueAndOffer): boolean {
+  return payload.offer === undefined || payload.venue === "offered";
+}
+
+export const adminBackorderParticularConvertPayloadSchema = z
+  .strictObject({
+    ...backorderParticularEntryShape,
+    // Le TTC que l'estimation du reliquat a montré : zéro pour une offerte.
+    expectedTotalCents: expectedTotalCentsSchema,
+  })
+  .refine(hasAddressWhenDelivered, deliveryAddressIssue())
+  .refine(hasPickupPointWhenPickedUp, pickupPointIssue())
+  .refine(hasWindowWhenPickedUp, pickupWindowIssue())
+  .refine(hasOfferIffVenueOffered, offerIssue());
+export type AdminBackorderParticularConvertPayload = z.infer<
+  typeof adminBackorderParticularConvertPayloadSchema
+>;
+
+export const adminBackorderParticularQuotePayloadSchema = z
+  .strictObject(backorderParticularEntryShape)
+  .refine(hasAddressWhenDelivered, deliveryAddressIssue())
+  .refine(hasPickupPointWhenPickedUp, pickupPointIssue())
+  .refine(hasWindowWhenPickedUp, pickupWindowIssue())
+  .refine(hasOfferOnlyWhenVenueOffered, offerIssue());
+export type AdminBackorderParticularQuotePayload = z.infer<
+  typeof adminBackorderParticularQuotePayloadSchema
+>;
+
+/**
+ * **Le corps de `convert`** : celui d'un pro (la saisie de l'équipe) ou celui
+ * d'un particulier, reconnu à son `venue`. Les deux sont stricts, donc
+ * exclusifs : un corps pro qui porterait `venue` est refusé, et l'inverse.
+ * Le serveur refuse ensuite un corps qui ne correspond pas au reliquat.
+ */
+export const adminBackorderConvertBodySchema = z.union([
+  adminBackorderParticularConvertPayloadSchema,
+  adminBackorderConvertPayloadSchema,
+]);
+export type AdminBackorderConvertBody = z.infer<typeof adminBackorderConvertBodySchema>;
+
+/** Le corps de `quote`, sur la même partition. */
+export const adminBackorderQuoteBodySchema = z.union([
+  adminBackorderParticularQuotePayloadSchema,
+  adminBackorderQuotePayloadSchema,
+]);
+export type AdminBackorderQuoteBody = z.infer<typeof adminBackorderQuoteBodySchema>;
+
+/** Le corps est-il celui d'un particulier ? Le `venue` n'existe que chez lui. */
+export function isParticularBackorderBody<
+  P extends { readonly venue: BackorderParticularVenue },
+  Q extends object,
+>(body: P | Q): body is P {
+  return "venue" in body;
+}
+
+/** Ce que rend la transformation d'un reliquat de particulier : la commande et son TTC. */
+export interface AdminBackorderParticularPlacedResponse {
+  readonly id: string;
+  readonly orderNumber: string;
+  readonly venue: BackorderParticularVenue;
+  /** Le TTC à encaisser à la caisse de la boutique ; zéro pour une offerte. */
+  readonly totalCents: number;
+}
 
 /** Les trois sorts d'un reliquat : ouvert, puis transformé ou abandonné, définitivement. */
 export const BACKORDER_STATES = ["open", "converted", "abandoned"] as const;

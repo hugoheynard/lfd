@@ -14,25 +14,16 @@ import { STAFF_PLACEMENT_REPLAY } from "../../../application/commands/staff-plac
 import { ensureMayOffer } from "../../../application/services/order-offering.js";
 import { OrderDrafting } from "../../../application/services/order-drafting.service.js";
 import { ShelfCircuit } from "../../../application/services/shelf-circuit.service.js";
-import {
-  StaffOrderPlacement,
-  type StaffPlacementBinding,
-} from "../../../application/services/staff-order-placement.js";
+import { StaffOrderPlacement } from "../../../application/services/staff-order-placement.js";
 import { ItemLimitOverrideRecorder } from "../../../domain/ports/item-limit-override.recorder.js";
 import { OrderCutoffWaiverGate } from "../../../domain/ports/order-cutoff-waiver.gate.js";
 import { OrderGuardReader } from "../../../domain/ports/order-guard.reader.js";
 import { OrderRepository } from "../../../domain/ports/order.repository.js";
 import { PayerCommitmentRequirements } from "../../../domain/ports/payer-commitment-requirements.js";
-import { BackorderNotFoundError } from "../../domain/errors/backorder-errors.js";
 import { BackorderRepository } from "../../domain/ports/backorder.repository.js";
 import { BackorderReplayReader } from "../../domain/ports/backorder-replay.reader.js";
-import { BackorderJournalFacts } from "../backorder-journal-facts.js";
-import {
-  backorderEntryOf,
-  backorderPricingOf,
-  loadBackorder,
-  type LoadedBackorder,
-} from "../backorder-placement.js";
+import { backorderClosing } from "../backorder-closing.js";
+import { backorderEntryOf, backorderPricingOf, loadBackorder } from "../backorder-placement.js";
 import { backorderConversionIntent } from "./backorder-conversion-intent.js";
 import { ConvertBackorderCommand } from "./convert-backorder.command.js";
 
@@ -96,7 +87,7 @@ export class ConvertBackorderHandler implements ICommandHandler<
 
   /**
    * @throws {BackorderNotFoundError} reliquat inconnu.
-   * @throws {ParticularBackorderNotConvertibleError} reliquat de particulier (lot B6).
+   * @throws {ParticularBackorderNotConvertibleError} reliquat de particulier : ses gestes sont la caisse de la boutique ou l'offerte.
    * @throws {BackorderClosedError} déjà transformé ou abandonné, sous une autre clé.
    * @throws {OfferNotPermittedError} une commande offerte sans le droit `b2b_offer_order`.
    * @throws {IntentKeyReusedError} la clé a déjà transformé une autre saisie.
@@ -118,40 +109,15 @@ export class ConvertBackorderHandler implements ICommandHandler<
             exceedItemLimits: command.exceedItemLimits,
           },
           policy,
-          this.closing(loaded, origin.originOrderNumber, command.staffUserId),
+          backorderClosing(
+            { backorders: this.backorders, clock: this.clock, journal: this.journal },
+            loaded.backorder,
+            origin.originOrderNumber,
+            command.staffUserId,
+          ),
           seal,
         );
       },
     );
-  }
-
-  /** Le reliquat verrouillé avant la commande, fermé sur elle après. */
-  private closing(
-    loaded: LoadedBackorder,
-    originReference: string,
-    staffUserId: string,
-  ): StaffPlacementBinding {
-    const id = loaded.backorder.id;
-    let locked = loaded.backorder;
-    return {
-      beforePlace: async () => {
-        const fresh = await this.backorders.loadLocked(id);
-        if (fresh === null) {
-          throw new BackorderNotFoundError(id);
-        }
-        fresh.ensureOpen();
-        locked = fresh;
-      },
-      afterPlace: async (placed) => {
-        locked.convert(placed.id, this.clock.now(), staffUserId);
-        await this.backorders.save(locked);
-        await this.journal.append(
-          BackorderJournalFacts.converted(locked, originReference, {
-            id: placed.id,
-            number: placed.orderNumber,
-          }),
-        );
-      },
-    };
   }
 }

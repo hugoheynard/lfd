@@ -1577,15 +1577,28 @@ export type {
   CustomerShelfPricesView,
 } from "./admin-order-estimate.js";
 export {
+  adminBackorderConvertBodySchema,
   adminBackorderConvertPayloadSchema,
   adminBackorderListQuerySchema,
+  adminBackorderParticularConvertPayloadSchema,
+  adminBackorderParticularQuotePayloadSchema,
+  adminBackorderQuoteBodySchema,
   adminBackorderQuotePayloadSchema,
+  BACKORDER_PARTICULAR_VENUES,
+  backorderParticularVenueSchema,
+  isParticularBackorderBody,
   BACKORDER_STATES,
   backorderStateSchema,
 } from "./admin-backorder.js";
 export type {
+  AdminBackorderConvertBody,
   AdminBackorderConvertPayload,
   AdminBackorderLine,
+  AdminBackorderParticularConvertPayload,
+  AdminBackorderParticularPlacedResponse,
+  AdminBackorderParticularQuotePayload,
+  AdminBackorderQuoteBody,
+  BackorderParticularVenue,
   AdminBackorderListQuery,
   AdminBackorderOrderRef,
   AdminBackorderOriginView,

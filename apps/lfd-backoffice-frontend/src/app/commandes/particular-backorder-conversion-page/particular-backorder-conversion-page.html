@@ -1,0 +1,128 @@
+<fold-page-layout icon="package-return" [title]="title()">
+  <fold-back-link icon="arrow-back" label="La commande d’origine" [routerLink]="back()" />
+
+  @switch (state()) {
+    @case ('loading') {
+      <fold-loading message="Préparation de la commande du reliquat…" />
+    }
+    @case ('error') {
+      <fold-empty-state
+        tone="alert"
+        title="Impossible de transformer ce reliquat"
+        [subtitle]="loadError() ?? 'La commande n’a pas pu être lue.'"
+      >
+        <button foldButton (click)="load(orderId())">Réessayer</button>
+      </fold-empty-state>
+    }
+    @default {
+      @if (backorder(); as b) {
+        <div class="columns">
+          <div class="column">
+            <fold-card>
+              <fold-element-title
+                cardHeader
+                variant="title"
+                [level]="2"
+                title="Ce qui reste dû"
+                [subtitle]="
+                  b.buyer.name +
+                  ' — lignes et prix de la commande ' +
+                  b.origin.orderNumber +
+                  ', non modifiables.'
+                "
+              />
+              <app-backorder-lines [lines]="b.lines" />
+            </fold-card>
+
+            <fold-card>
+              <fold-element-title cardHeader variant="title" [level]="2" title="Le retrait" />
+              <div class="form">
+                <fold-listbox
+                  label="Point de retrait"
+                  placeholder="Où le client retire-t-il ?"
+                  [options]="pickupOptions()"
+                  [value]="pickupId()"
+                  (selectionChange)="onPickup($event)"
+                  data-pickup
+                />
+                <fold-date
+                  label="Retrait le"
+                  required
+                  hint="Aujourd’hui compris."
+                  [value]="requestedDate()"
+                  (valueChange)="requestedDate.set($event)"
+                />
+                @if (slotOptions().length > 0) {
+                  <!-- Obligatoire et jamais prérempli : une heure suggérée devient une promesse. -->
+                  <fold-listbox
+                    label="Créneau de retrait"
+                    required
+                    placeholder="Quand le client passe-t-il ?"
+                    [options]="slotOptions()"
+                    [value]="slotId()"
+                    (selectionChange)="onSlot($event)"
+                    data-slot
+                  />
+                }
+                <fold-textarea
+                  label="Note"
+                  placeholder="Ce que l’atelier doit savoir."
+                  [rows]="2"
+                  [value]="note()"
+                  (valueChange)="note.set($event)"
+                />
+                @if (chosenVenue() === 'offered') {
+                  <app-offer-reason-fields
+                    data-offer
+                    [(nature)]="offerNature"
+                    [(note)]="offerNote"
+                    [(notifyCustomer)]="offerNotifiesCustomer"
+                  />
+                }
+              </div>
+            </fold-card>
+          </div>
+
+          <div class="column">
+            <fold-card>
+              <fold-element-title
+                cardHeader
+                variant="title"
+                [level]="2"
+                title="Montant"
+                subtitle="Calculé par le serveur au prix de la commande d’origine."
+              />
+              <div class="form">
+                @if (totalRows(); as rows) {
+                  <app-montants-panier [rows]="rows" data-backorder-amounts />
+                } @else {
+                  <fold-callout variant="info">
+                    Le montant s’affiche dès que le point, le jour et le créneau sont choisis.
+                  </fold-callout>
+                }
+                @for (blocker of blockers(); track blocker) {
+                  <fold-callout variant="warning" data-backorder-blocker>{{
+                    blocker
+                  }}</fold-callout>
+                }
+                <fold-inline-confirm
+                  [message]="words().confirm"
+                  [labels]="{ confirm: 'Confirmer', cancel: 'Revenir' }"
+                  keepOpenOnConfirm
+                  [loading]="submitting()"
+                  [open]="confirming()"
+                  (openChange)="confirming.set($event)"
+                  (confirmed)="convert()"
+                >
+                  <button foldButton [disabled]="!canConvert()" data-backorder-convert>
+                    {{ convertLabel() }}
+                  </button>
+                </fold-inline-confirm>
+              </div>
+            </fold-card>
+          </div>
+        </div>
+      }
+    }
+  }
+</fold-page-layout>

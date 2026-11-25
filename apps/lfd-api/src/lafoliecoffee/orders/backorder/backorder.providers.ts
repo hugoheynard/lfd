@@ -8,7 +8,9 @@ import { PrismaBackorderRepository } from "./infrastructure/prisma-backorder.rep
 import { BackorderReplayReader } from "./domain/ports/backorder-replay.reader.js";
 import { PrismaBackorderReplayReader } from "./infrastructure/prisma-backorder-replay.reader.js";
 import { ConvertBackorderHandler } from "./application/commands/convert-backorder.handler.js";
+import { ConvertParticularBackorderHandler } from "./application/commands/convert-particular-backorder.handler.js";
 import { QuoteBackorderHandler } from "./application/queries/quote-backorder.handler.js";
+import { QuoteParticularBackorderHandler } from "./application/queries/quote-particular-backorder.handler.js";
 import { AdminBackordersController } from "./http/admin-backorders.controller.js";
 import { BackorderAbandonment } from "./application/backorder-abandonment.js";
 import { AbandonBackorderHandler } from "./application/commands/abandon-backorder.handler.js";
@@ -35,7 +37,9 @@ export const ORDER_BACKORDER_PROVIDERS: readonly Provider[] = [
   { provide: BackorderReplayReader, useClass: PrismaBackorderReplayReader },
   BackorderOpening,
   ConvertBackorderHandler,
+  ConvertParticularBackorderHandler,
   QuoteBackorderHandler,
+  QuoteParticularBackorderHandler,
   { provide: BackorderListReader, useClass: PrismaBackorderListReader },
   { provide: OrderBackorderReader, useClass: PrismaOrderBackorderReader },
   { provide: BackorderOriginNumberReader, useClass: PrismaBackorderOriginNumberReader },

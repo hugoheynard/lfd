@@ -104,15 +104,31 @@ export class BackorderOriginNotFoundError extends TechnicalError {
 }
 
 /**
- * Un reliquat de particulier se transforme par les gestes du comptoir (plan,
- * § 5 bis), pas par la saisie de l'équipe, qui exige une société.
+ * Un reliquat de particulier se transforme par ses gestes à lui — réglée en
+ * boutique ou offerte (plan, § 5 bis) —, pas par la saisie de l'équipe, qui
+ * exige une société.
  */
 export class ParticularBackorderNotConvertibleError extends BusinessError {
   constructor() {
     super(
       "orders.backorder.particular_not_convertible",
-      "Ce reliquat est celui d'un particulier : il ne se transforme pas par la saisie de l'équipe, " +
-        "qui exige une société. Passez une commande du particulier au comptoir.",
+      "Ce reliquat est celui d'un particulier : il ne se transforme pas par la saisie pour une société. " +
+        "Choisissez « Réglée en boutique » ou « Offerte » sur la fiche de la commande d'origine.",
+    );
+  }
+}
+
+/**
+ * Un reliquat de pro se transforme par la saisie de l'équipe, avec son
+ * règlement : la caisse de la boutique et l'offerte du particulier ne
+ * s'appliquent pas à une société.
+ */
+export class CompanyBackorderNeedsStaffEntryError extends BusinessError {
+  constructor() {
+    super(
+      "orders.backorder.company_needs_staff_entry",
+      "Ce reliquat est celui d'une société : il ne se règle ni à la caisse de la boutique ni comme une offerte à un particulier. " +
+        "Utilisez « Transformer » sur la fiche de la commande d'origine.",
     );
   }
 }

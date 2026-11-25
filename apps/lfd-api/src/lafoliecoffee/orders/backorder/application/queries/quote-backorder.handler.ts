@@ -37,7 +37,7 @@ export class QuoteBackorderHandler implements IQueryHandler<
 
   /**
    * @throws {BackorderNotFoundError} reliquat inconnu.
-   * @throws {ParticularBackorderNotConvertibleError} reliquat de particulier (lot B6).
+   * @throws {ParticularBackorderNotConvertibleError} reliquat de particulier : son estimation prend le corps du particulier.
    * @throws {BackorderClosedError} déjà transformé ou abandonné.
    */
   async execute(query: QuoteBackorderQuery): Promise<AdminOrderEstimateView> {

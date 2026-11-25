@@ -1,14 +1,12 @@
-import type { AdminOrderEstimateNotice, AdminOrderEstimateView } from "@lfd/contracts";
+import type { AdminOrderEstimateView } from "@lfd/contracts";
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
 import { ParticularStandingReader } from "../../../account/domain/ports/particular-standing.reader.js";
 import { withCatalogueSnapshot } from "../../../catalog/application/catalogue-snapshot-scope.js";
-import { PLANNED_SUPPLY } from "../../domain/value-objects/order-supply.js";
 import { prepareOfferedParticularOrder } from "../services/offered-particular-order-preparation.js";
 import { OrderCutoffNotice } from "../services/order-cutoff-notice.service.js";
-import { OrderDrafting, type DraftedOrder } from "../services/order-drafting.service.js";
-import { amountsViewOf } from "./estimate-order-for-customer.handler.js";
-import { isParticularCompositionRefusal } from "./estimate-particular-order-at-counter.handler.js";
+import { OrderDrafting, PLACEMENT_POLICY } from "../services/order-drafting.service.js";
+import { estimateParticularOrder } from "../services/particular-order-estimation.js";
 import { EstimateOfferedParticularOrderQuery } from "./estimate-offered-particular-order.query.js";
 
 /**
@@ -39,47 +37,19 @@ export class EstimateOfferedParticularOrderHandler implements IQueryHandler<
 
   /** Le catalogue lu dans l'instantané : l'estimation chiffre, la passation fait foi. */
   execute(query: EstimateOfferedParticularOrderQuery): Promise<AdminOrderEstimateView> {
-    return withCatalogueSnapshot(() => this.estimate(query));
-  }
-
-  private async estimate(
-    query: EstimateOfferedParticularOrderQuery,
-  ): Promise<AdminOrderEstimateView> {
-    const { payload } = query;
-    const drafted = await this.draftOrRefusal(query);
-    // La passation ne passe outre aucune limite de produit : `false`.
-    const cutoff = await this.cutoffNotice.forDay(
-      payload.lines.map((line) => line.sku),
-      payload.requestedDeliveryDate,
-      PLANNED_SUPPLY.supply,
-      false,
-    );
-    if (!("order" in drafted)) {
-      return { amounts: null, cutoff, refusal: drafted, warnings: [] };
-    }
-    return {
-      amounts: amountsViewOf(drafted.order.amounts(), drafted.order.offer),
-      cutoff,
-      refusal: null,
-      warnings: [],
-    };
-  }
-
-  private async draftOrRefusal(
-    query: EstimateOfferedParticularOrderQuery,
-  ): Promise<DraftedOrder | AdminOrderEstimateNotice> {
-    try {
-      return await prepareOfferedParticularOrder(
-        { particulars: this.particulars, drafting: this.drafting },
-        query.staffUserId,
+    return withCatalogueSnapshot(() =>
+      estimateParticularOrder(
+        () =>
+          prepareOfferedParticularOrder(
+            { particulars: this.particulars, drafting: this.drafting },
+            query.staffUserId,
+            query.payload,
+            "estimate",
+            PLACEMENT_POLICY,
+          ),
+        this.cutoffNotice,
         query.payload,
-        "estimate",
-      );
-    } catch (error) {
-      if (isParticularCompositionRefusal(error)) {
-        return { code: error.code, message: error.message };
-      }
-      throw error;
-    }
+      ),
+    );
   }
 }

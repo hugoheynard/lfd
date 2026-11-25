@@ -143,7 +143,7 @@ function pricer(): Pricer {
 }
 
 /** La composition réelle. */
-function drafting(): OrderDrafting {
+export function drafting(): OrderDrafting {
   const plans = openPlanGate();
   return new OrderDrafting(
     new OrderLinePricing(
@@ -186,10 +186,11 @@ export class FixedParticularStandings extends ParticularStandingReader {
 }
 
 /** Le dépôt doublé : il garde chaque commande écrite, sous un numéro croissant. */
-function capturingRepo(placed: OrderToPlace[]): OrderRepository {
+export function capturingRepo(placed: OrderToPlace[], trace: string[] = []): OrderRepository {
   const unused = (): Promise<never> => Promise.reject(new Error("non utilisé"));
   return {
     place: (order) => {
+      trace.push("place");
       placed.push(order.toPersistence());
       return Promise.resolve({
         id: `order_${placed.length}`,
