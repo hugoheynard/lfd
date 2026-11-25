@@ -243,12 +243,16 @@ Tests aux trois niveaux à chaque lot ; un e2e de bout en bout : un sandwich
 sur deux postes, les deux fiches, l'étape, « Fait », **une** fournée et **une**
 remise de 10, le dossier avec la ligne répétée.
 
-### 2.11 Questions ouvertes
+### 2.11 Questions tranchées
 
-1. La fournée automatique doit-elle attendre les étapes ? Proposé : non.
-2. Peut-on décocher une étape, et qui ? À trancher avant L4 : la réponse fixe
-   le contrat de `status` et `version`.
-3. Un ordre imposé entre postes (pain avant garniture) ? Proposé : aucun.
-4. Une alerte de retard par poste, plus tard, comme chantier à part ?
-5. La ligne d'étape compte-t-elle dans la charge du poste ? Proposé : oui.
-6. Le rouge d'étape : dans la liste des problèmes de la Supervision, ou à part ?
+Hugo a dit « bâtis » le 2026-11-25 sur les propositions ; les points sans
+proposition sont tranchés ici, et se discutent encore :
+
+1. La fournée automatique n'attend pas les étapes.
+2. Une étape se décoche (`UndoStep`), sous le même droit que « Fait », tant
+   que la journée n'est pas close ; `version` monte à chaque geste.
+3. Aucun ordre imposé entre postes.
+4. Pas d'alerte de retard par poste dans ce chantier.
+5. Une étape compte dans la charge de son poste.
+6. Le rouge d'étape va dans la même liste que les problèmes de la Supervision,
+   marqué « étape ».
