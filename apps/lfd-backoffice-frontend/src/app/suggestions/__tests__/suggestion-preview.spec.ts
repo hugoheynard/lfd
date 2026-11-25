@@ -129,6 +129,7 @@ describe('la carte', () => {
     sku: 'BOI-001',
     name: 'Café',
     note: null,
+    description: null,
     image: null,
     thumbnail: null,
     unitPriceMillicents: 123_456,

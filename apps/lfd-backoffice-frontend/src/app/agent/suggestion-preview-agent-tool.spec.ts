@@ -8,6 +8,7 @@ function item(sku: string, name: string): ShopItemView {
     sku,
     name,
     note: null,
+    description: null,
     image: null,
     thumbnail: null,
     unitPriceMillicents: 100_000,
