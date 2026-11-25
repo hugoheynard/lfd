@@ -151,7 +151,9 @@ describe('ProductFormPage — en-tête', () => {
     expect(sections.length).toBeGreaterThan(0);
     expect(sections.every((s) => s.hasAttribute('data-collapsible'))).toBe(true);
 
-    const first = sections[0]!;
+    // La première section qui porte un état enregistrable (« Toute la fiche »
+    // écrit tout de suite et n'en a pas).
+    const first = sections.find((s) => s.querySelector('app-section-state') !== null)!;
     first.querySelector<HTMLButtonElement>('.section-toggle')!.click();
     fixture.detectChanges();
 

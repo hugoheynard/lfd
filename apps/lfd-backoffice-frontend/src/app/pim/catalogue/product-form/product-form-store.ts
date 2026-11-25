@@ -1954,6 +1954,8 @@ export class ProductFormStore {
         name: variant.internalLabel,
         sku: variant.sku,
         isDefault: variant.isDefault,
+        /** Son audience propre quand elle ne suit pas la fiche, `null` sinon (le défaut la suit toujours). */
+        ownAudience: variant.isDefault ? null : variant.audience,
         selected: variant.id === this.variantId(),
       })),
   );

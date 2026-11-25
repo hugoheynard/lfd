@@ -382,6 +382,15 @@ export class ProductFormPage implements HasPendingChanges {
     return this.store.isEdit() && (filter === 'all' || filter === 'danger');
   });
 
+  /**
+   * La carte « Toute la fiche », au-dessus des déclinaisons : sur toutes les
+   * familles, parce qu'elle ne règle aucune déclinaison — sauf « Danger », qui
+   * ne montre que ce qui sort quelque chose du catalogue.
+   */
+  protected readonly showsWholeSheet = computed(
+    () => this.store.isEdit() && this.activeFilter() !== 'danger',
+  );
+
   private isVisible(key: FormSection): boolean {
     const filter = this.activeFilter();
     return filter === 'all' || this.familyByKey.get(key) === filter || this.store.isDirty(key);

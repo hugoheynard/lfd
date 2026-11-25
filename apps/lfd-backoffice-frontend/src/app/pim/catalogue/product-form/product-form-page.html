@@ -102,6 +102,29 @@
            creuse un vide DANS une boîte, ce qui se lit comme un trou plutôt
            que comme une frontière. Un bord ferme, et 16px suffisent alors. -->
       <div class="sections">
+        <!-- TOUTE LA FICHE — à qui elle vend, et si ses déclinaisons paraissent
+             seules. Au-dessus de la barre des déclinaisons, et pas parmi leurs
+             cartes : ce qui est sous la barre règle la déclinaison ouverte, ce
+             qui est au-dessus règle la fiche entière. Écrites tout de suite,
+             hors de « Tout enregistrer ». -->
+        @if (showsWholeSheet()) {
+          <fold-card>
+            <fold-page-section
+              title="Toute la fiche"
+              separator
+              collapsible
+              [open]="sectionOpen('audience')()"
+              (openChange)="setSectionOpen('audience', $event)"
+            >
+              <span sectionSubtitle>
+                À qui la fiche est vendue. S'applique à toutes ses déclinaisons, sauf celles qui ont
+                leur propre audience.
+              </span>
+              <app-audience-form />
+              <app-variants-as-tiles-form />
+            </fold-page-section>
+          </fold-card>
+        }
         <app-variant-bar />
         <!-- LE FILTRE DE FAMILLES. Il ne vit que sur une fiche existante : à la
              création, la fiche se remplit d'un seul geste, et restreindre ce
@@ -130,34 +153,6 @@
           }
         }
         @for (section of visibleSections(); track section.key) {
-          @if (section.key === 'tarif') {
-            <!-- AUDIENCE — à qui la fiche vend (lot 3 du plan du catalogue
-             synchronisé, H1). PREMIÈRE carte du commerce, AVANT le tarif
-             (Hugo, 2026-10-29) : on décide à qui l'on vend avant de dire à
-             quel prix — le tarif pro n'a de sens que si les pros achètent. Seule, sur sa route, hors de
-             « Tout enregistrer », comme la vente en opération. -->
-            @if (store.isEdit()) {
-              <fold-card>
-                <fold-page-section
-                  title="Audience"
-                  separator
-                  collapsible
-                  [open]="sectionOpen('audience')()"
-                  (openChange)="setSectionOpen('audience', $event)"
-                >
-                  <span sectionSubtitle>
-                    À qui la fiche est vendue : aux pros, au public, ou aux deux. S'applique à
-                    toutes ses déclinaisons.
-                  </span>
-                  <app-audience-form />
-                  <!-- Les vignettes de déclinaison, à côté de l'audience : l'une dit à
-                       qui la fiche se vend, l'autre ce qui en paraît au rayon
-                       (`plan-declinaisons-en-vignette.md`). Écrite tout de suite. -->
-                  <app-variants-as-tiles-form />
-                </fold-page-section>
-              </fold-card>
-            }
-          }
           <fold-card>
             <fold-page-section
               [title]="section.label"

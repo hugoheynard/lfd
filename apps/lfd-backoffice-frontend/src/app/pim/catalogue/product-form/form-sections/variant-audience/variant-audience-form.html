@@ -1,6 +1,14 @@
 @if (isDefault()) {
-  <p>La déclinaison par défaut vend à l'audience de la fiche : elle la suit toujours.</p>
+  <p>
+    La déclinaison par défaut vend à l'audience de la fiche{{ productAudienceSuffix() }}. Pour la
+    changer, réglez « Toute la fiche », au-dessus des déclinaisons.
+  </p>
 } @else {
+  @if (ownAudienceLabel(); as own) {
+    <fold-callout variant="info">
+      Cette déclinaison ne suit pas la fiche : elle est vendue à « {{ own }} ».
+    </fold-callout>
+  }
   <fold-listbox
     label="Audience"
     [hint]="hint()"

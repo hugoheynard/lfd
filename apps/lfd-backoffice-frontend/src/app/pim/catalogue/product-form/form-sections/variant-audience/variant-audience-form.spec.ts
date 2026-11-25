@@ -106,11 +106,22 @@ describe('VariantAudienceForm', () => {
     expect(form['hint']()).toBe(VARIANT_AUDIENCE_NEEDS_TILES);
   });
 
+  it('dit en clair qu’une déclinaison ne suit pas la fiche, et à qui elle vend', async () => {
+    const { host, fixture, form } = setup(async () => undefined);
+    expect(host.querySelector('fold-callout')).toBeNull();
+    await form['onChange']('public');
+    fixture.detectChanges();
+    expect(host.querySelector('fold-callout')?.textContent).toContain(
+      'ne suit pas la fiche : elle est vendue à « Public »',
+    );
+  });
+
   it('est absent sur le défaut, qui suit la fiche', async () => {
     const sent: unknown[] = [];
     const { host, form } = setup(async (...args) => void sent.push(args), { selected: 'v-6' });
     expect(host.querySelector('fold-listbox')).toBeNull();
-    expect(host.textContent).toContain('elle la suit toujours');
+    expect(host.textContent).toContain("vend à l'audience de la fiche (Les deux)");
+    expect(host.textContent).toContain('« Toute la fiche »');
     await form['onChange']('pro');
     expect(sent).toEqual([]);
   });

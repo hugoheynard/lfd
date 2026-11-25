@@ -1,9 +1,10 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import type { CatalogueAudience } from '@lfd/pim-contracts';
-import { FoldListboxComponent } from 'fold-ng';
+import { FoldCalloutComponent, FoldListboxComponent } from 'fold-ng';
 
 import { NotifyService } from '../../../../../notify.service';
 import {
+  audienceLabel,
   FOLLOW_PRODUCT,
   variantAudienceOptions,
   type VariantAudienceChoice,
@@ -27,7 +28,7 @@ export const VARIANT_AUDIENCE_NEEDS_TILES =
 @Component({
   selector: 'app-variant-audience-form',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldListboxComponent],
+  imports: [FoldCalloutComponent, FoldListboxComponent],
   templateUrl: './variant-audience-form.html',
 })
 export class VariantAudienceForm {
@@ -46,13 +47,28 @@ export class VariantAudienceForm {
   /** Sans vignettes, une déclinaison ne paraît pas seule : pas d'audience propre (A3). */
   protected readonly needsTiles = computed(() => !this.store.variantsAsTiles());
 
-  protected readonly options = computed(() =>
-    variantAudienceOptions(this.store.audience() ?? this.store.familyAudience()),
-  );
+  protected readonly options = computed(() => variantAudienceOptions(this.productAudience()));
 
   protected readonly choice = computed<VariantAudienceChoice>(
     () => this.variant()?.audience ?? FOLLOW_PRODUCT,
   );
+
+  /** L'audience que la fiche sert réellement (la sienne, ou celle de sa famille). */
+  private readonly productAudience = computed<CatalogueAudience | null>(
+    () => this.store.audience() ?? this.store.familyAudience(),
+  );
+
+  /** « (Pros) » — vide tant que l'audience de la fiche n'est pas connue. */
+  protected readonly productAudienceSuffix = computed(() => {
+    const audience = this.productAudience();
+    return audience === null ? '' : ` (${audienceLabel(audience)})`;
+  });
+
+  /** L'audience propre de la déclinaison, nommée ; `null` quand elle suit la fiche. */
+  protected readonly ownAudienceLabel = computed(() => {
+    const own = this.variant()?.audience ?? null;
+    return own === null ? null : audienceLabel(own);
+  });
 
   protected readonly hint = computed(() =>
     this.needsTiles()

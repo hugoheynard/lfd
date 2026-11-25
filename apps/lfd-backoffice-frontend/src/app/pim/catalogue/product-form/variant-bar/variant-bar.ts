@@ -7,6 +7,7 @@ import {
   FoldInputComponent,
 } from 'fold-ng';
 
+import { audienceLabel } from '../../audience/audience-options';
 import { ProductFormStore } from '../product-form-store';
 import { DetachedDecisions } from '../detached-decisions/detached-decisions';
 import { VariantLifecycle } from '../variant-lifecycle/variant-lifecycle';
@@ -50,6 +51,7 @@ import { VariantProOffer } from '../variant-pro-offer/variant-pro-offer';
 })
 export class VariantBar {
   protected readonly store = inject(ProductFormStore);
+  protected readonly audienceLabel = audienceLabel;
 
   /** Le formulaire, replié tant qu'on ne l'ouvre pas. */
   protected readonly creating = signal(false);

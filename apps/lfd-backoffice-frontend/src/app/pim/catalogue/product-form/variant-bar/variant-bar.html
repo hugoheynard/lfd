@@ -21,6 +21,15 @@
               @if (tab.isDefault) {
                 <fold-badge content="Défaut" variant="neutral" />
               }
+              <!-- Celle qui ne suit pas l'audience de la fiche le dit sur son
+                   onglet : on voit lesquelles dérogent sans les ouvrir. -->
+              @if (tab.ownAudience; as own) {
+                <fold-badge
+                  [content]="audienceLabel(own)"
+                  variant="info"
+                  [attr.title]="'Audience propre : ne suit pas la fiche'"
+                />
+              }
             </span>
             <!-- La référence sous le libellé : c'est elle qu'on dicte au labo et
                  qu'on retrouve dans un envoi, pas « Déclinaison 2 ». -->
