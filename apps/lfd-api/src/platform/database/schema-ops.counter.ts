@@ -287,6 +287,9 @@ const NON_PUBLIC_SCHEMA_OF_MODEL: Readonly<Record<string, string>> = {
   // La remise au colisage (2026-10-04, `colisage/colisage.md`, K1) :
   // une ligne par fournée déclarée, et une par retour.
   ProductionHandoff: "production",
+  // L'étape d'une ligne sur un poste qui ne finit pas (un produit sur
+  // plusieurs postes, `fournil/un-produit-sur-plusieurs-postes.md`).
+  ProductionLineStep: "production",
   // L'arrêt du plan et l'envoi du dossier (2026-10-06,
   // `fournil/arret-du-plan.md`, `fournil/dossier-prod-du-jour.md`) : le
   // réglage, les jours fermés, la tentative d'arrêt automatique, les

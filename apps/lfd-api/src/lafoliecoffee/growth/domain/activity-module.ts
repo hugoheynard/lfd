@@ -214,6 +214,9 @@ const PREFIXES: Readonly<Record<ActivityModule, readonly string[]>> = {
     // `production_tracking_settings.` n'est pas sous `production_settings.`.
     "production_tracking_settings.",
     "production_problem.",
+    // Les étapes d'une ligne sur un poste qui ne finit pas (un produit sur
+    // plusieurs postes, `fournil/un-produit-sur-plusieurs-postes.md`).
+    "production_line.",
     // Les destinataires du dossier du jour par e-mail (E1, 2026-10-06).
     "production_dossier_recipient.",
   ],
