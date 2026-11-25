@@ -21,6 +21,10 @@
    survol, fermée pendant le glisser (sur l'aperçu, qui suit le pointeur). */
 .item {
   cursor: grab;
+  /* Glisser ne sélectionne pas le texte de la carte. */
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
 }
 
 .item-row {
@@ -41,6 +45,8 @@
 
 .cdk-drag-preview {
   cursor: grabbing;
+  user-select: none;
+  -webkit-user-select: none;
   box-shadow: var(--fold-shadow-md);
 }
 

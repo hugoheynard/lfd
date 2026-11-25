@@ -28,10 +28,21 @@
 /* La poignée se cale au milieu du champ, pas au bas des gestes. */
 .handle {
   align-self: center;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* Pendant un glisser, rien de la liste ne se sélectionne. */
+.stations.cdk-drop-list-dragging {
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .cdk-drag-preview {
   cursor: grabbing;
+  user-select: none;
+  -webkit-user-select: none;
   box-shadow: var(--fold-shadow-md);
 }
 
