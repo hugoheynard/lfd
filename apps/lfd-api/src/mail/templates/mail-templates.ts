@@ -240,8 +240,7 @@ function fontOf(brand: MailBranding): { readonly brandFontUrl?: string } {
  * `plan-textes-des-e-mails.md`, E4).
  */
 /**
- * L'en-tête du courriel « prête » : l'annonce du colisage, l'annonce du RESTE
- * (un envoi de rang > 1, plan E7 reliquat, choix 17), ou le RAPPEL au
+ * L'en-tête du courriel « prête » : l'annonce du colisage, ou le RAPPEL au
  * client qui n'est pas venu — qui ne dit plus « c'est prêt » mais « elle vous
  * attend au point de retrait … ». Le reste du courriel (QR, itinéraire) est
  * le même : c'est maintenant qu'il s'en sert.
@@ -261,14 +260,6 @@ function orderReadyHeading(
         site === null || site === ""
           ? copy.introReminderWithoutSite
           : fill(copy.introReminder, { site }),
-    };
-  }
-  if (data.remainder !== undefined) {
-    return {
-      subject: copy.subjectRemainder,
-      kicker: copy.kickerRemainder,
-      title: pickup ? copy.titleRemainderPickup : copy.titleRemainderDelivery,
-      intro: pickup ? copy.introRemainderPickup : copy.introRemainderDelivery,
     };
   }
   return {
@@ -321,10 +312,10 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
     "customer.order-ready": (data) => {
       const copy = mailCopyOf(data.locale)["customer.order-ready"];
       const showQr = data.handoverToken !== null && data.handoverUrl !== "";
-      const content =
-        data.remainder === undefined
-          ? contentOf(data.sheet.lines, { pieces: copy.piecesLabel, weighed: copy.weighedLabel })
-          : fill(copy.piecesLabel, { count: String(data.remainder.pieces) });
+      const content = contentOf(data.sheet.lines, {
+        pieces: copy.piecesLabel,
+        weighed: copy.weighedLabel,
+      });
       const heading = orderReadyHeading(copy, data);
       return {
         subject: sanitiseSubject(fill(heading.subject, { ref: data.sheet.reference })),

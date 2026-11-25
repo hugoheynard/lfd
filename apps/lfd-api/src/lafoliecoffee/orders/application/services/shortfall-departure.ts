@@ -16,9 +16,6 @@ import {
   type LockedShortfallSubject,
 } from "../../domain/ports/shortfall-decision.repository.js";
 
-/** L'envoi d'origine : le seul dont la décision fait naître un reliquat. */
-const FIRST_SHIPMENT_RANK = 1;
-
 /** Qui décide, et du sort du reste. */
 export interface ShortfallDepartureAct {
   readonly staffUserId: string;
@@ -39,8 +36,10 @@ export interface ShortfallDepartureAct {
  * l'agrégat juge et résout le signal, le colisage autorise sous le verrou de
  * la fiche (`ShortfallDesk`), le signal puis la décision s'écrivent, le BL
  * de la commande se réécrit (`followDecision`), et `order.shortfall_decided`
- * part dans la boîte d'envoi. Au rang 1, ce qui n'est pas parti devient un
- * reliquat (`BackorderOpening`), dans la même unité de travail.
+ * part dans la boîte d'envoi. Ce qui n'est pas parti devient un reliquat
+ * (`BackorderOpening`), dans la même unité de travail. Ses deux portes
+ * verrouillent la commande au rang 1 : la décision porte sur la commande
+ * elle-même.
  */
 @Injectable()
 export class ShortfallDeparture {
@@ -75,16 +74,12 @@ export class ShortfallDeparture {
     // Le signal d'abord : la décision désigne sa ligne (clé étrangère).
     await this.shortfalls.save(shortfall);
     await this.decisions.save(decision);
-    // Le reliquat ne naît que de la décision du premier envoi (plan du
-    // reliquat de commande, § 3) : un rang > 1 est le second envoi mort.
-    if (rank === FIRST_SHIPMENT_RANK) {
-      await this.backorders.openAfter({
-        originOrderId: orderId,
-        originReference: reference,
-        departing: decision.departing,
-        decidedAt,
-      });
-    }
+    await this.backorders.openAfter({
+      originOrderId: orderId,
+      originReference: reference,
+      departing: decision.departing,
+      decidedAt,
+    });
     await this.deliveryNotes.followDecision(orderId);
     await this.durable.publish(
       new OrderShortfallDecidedEvent(

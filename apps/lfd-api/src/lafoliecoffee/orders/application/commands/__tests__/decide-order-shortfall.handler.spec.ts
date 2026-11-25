@@ -133,7 +133,6 @@ function locked(
       reference: "ORD-0001",
       rank: shipment.rank,
       status: shipment.status,
-      remainderNoteStatus: shipment.rank === 1 ? null : "planned",
       settlementRegime,
       increasePending: false,
       voucherDiscountCents: 0,
@@ -184,7 +183,7 @@ function scene(
   return { trace, decisions, shortfalls, desk, notes, durable, handler, backorder };
 }
 
-const COMMAND = new DecideOrderShortfallCommand("ord_1", "staff_1", "abandoned", 1);
+const COMMAND = new DecideOrderShortfallCommand("ord_1", "staff_1", "abandoned");
 
 describe("DecideOrderShortfallHandler — « Décider du départ » (E6b)", () => {
   it("verrouille la commande, puis la fiche ; écrit la décision et le signal résolu ; réécrit le BL", async () => {
@@ -282,26 +281,12 @@ describe("DecideOrderShortfallHandler — « Décider du départ » (E6b)", () =
     await expect(scene(null).handler.execute(COMMAND)).rejects.toThrow(OrderNotFoundError);
   });
 
-  /**
-   * Plan E7 reliquat, LB : le manque d'un reliquat se décide pendant que la
-   * commande est prête ; la fiche, le BL, le fait et la clé sont ceux de SON rang.
-   */
-  it("décide le manque d'un reliquat à son rang : fiche, BL, fait et clé de ce rang", async () => {
-    const { decisions, desk, notes, durable, handler, backorder } = scene(
-      locked("account", [{ sku: "CRO", due: 3, packed: 1 }], { rank: 2, status: "ready" }),
-    );
+  it("verrouille la commande au rang 1", async () => {
+    const { decisions, handler } = scene(locked());
 
-    await handler.execute(new DecideOrderShortfallCommand("ord_1", "staff_1", "abandoned", 2));
+    await handler.execute(COMMAND);
 
-    expect(decisions.asked).toEqual([2]);
-    expect(backorder.backorders.saved).toEqual([]);
-    expect(decisions.saved[0]).toMatchObject({ rank: 2, departing: [{ sku: "CRO", quantity: 1 }] });
-    expect(desk.authorized[0]).toMatchObject({ orderId: "ord_1", rank: 2 });
-    expect(notes.calls).toEqual(["follow-decision:ord_1"]);
-    expect(durable.facts[0]).toMatchObject({
-      key: "order.shortfall_decided:ord_1:r2",
-      payload: { rank: 2 },
-    });
+    expect(decisions.asked).toEqual([1]);
   });
 
   describe("le reliquat naît de la décision (plan du reliquat de commande, B2)", () => {
@@ -336,18 +321,6 @@ describe("DecideOrderShortfallHandler — « Décider du départ » (E6b)", () =
 
       await expect(handler.execute(COMMAND)).rejects.toThrow(BoxClosedError);
       expect(backorder.backorders.saved).toEqual([]);
-    });
-
-    // Un rang > 1 est le second envoi : il ne relit même pas l'origine.
-    it("à un rang > 1, l'origine n'est pas lue", async () => {
-      const { backorder, handler } = scene(
-        locked("account", [{ sku: "CRO", due: 3, packed: 1 }], { rank: 2, status: "ready" }),
-      );
-
-      await handler.execute(new DecideOrderShortfallCommand("ord_1", "staff_1", "abandoned", 2));
-
-      expect(backorder.origins.asked).toEqual([]);
-      expect(backorder.journal.facts).toEqual([]);
     });
 
     // Sans reliquat (particulier), la décision va quand même jusqu'au bout.

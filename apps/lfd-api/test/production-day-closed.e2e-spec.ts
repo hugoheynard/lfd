@@ -20,7 +20,6 @@ import {
   type PlacedOrder,
 } from "../src/lafoliecoffee/orders/domain/ports/order.repository.js";
 import type { HandoverVia } from "../src/lafoliecoffee/orders/domain/services/handover.js";
-import type { FirstHandoverStatus } from "../src/lafoliecoffee/orders/domain/services/shipment-settlement.js";
 import { ON_PRODUCTION_DAY_CLOSED } from "../src/lafoliecoffee/orders/application/handlers/on-production-day-closed.handler.js";
 import { PrismaOrderRepository } from "../src/lafoliecoffee/orders/infrastructure/prisma-order.repository.js";
 import { CardProviders } from "../src/payment/card/domain/ports/card-providers.js";
@@ -92,9 +91,8 @@ class FlakyOrders extends OrderRepository {
     by: string,
     via: HandoverVia,
     receivedOn: string,
-    status: FirstHandoverStatus,
   ): Promise<boolean> {
-    return this.real.markFulfilled(reference, at, by, via, receivedOn, status);
+    return this.real.markFulfilled(reference, at, by, via, receivedOn);
   }
   markReady(reference: string, at: Date, by: string): Promise<boolean> {
     return this.real.markReady(reference, at, by);

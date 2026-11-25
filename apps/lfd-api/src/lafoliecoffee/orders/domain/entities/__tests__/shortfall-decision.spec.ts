@@ -4,7 +4,6 @@ import {
   CardOrderUnpaidShortfallError,
   NothingDepartsError,
   OrderTooOldForShortfallError,
-  RemainderNotDecidableError,
   ShortfallAlreadyDecidedError,
   ShortfallOrderNotConfirmedError,
   VoucherOrderShortfallError,
@@ -28,7 +27,6 @@ function subject(overrides: Partial<ShortfallDecisionSubject> = {}): ShortfallDe
     reference: "ORD-0001",
     rank: 1,
     status: "confirmed",
-    remainderNoteStatus: null,
     settlementRegime: "account",
     increasePending: false,
     voucherDiscountCents: 0,
@@ -249,73 +247,6 @@ describe("ShortfallDecision — frontières du départ incomplet", () => {
     });
     expect(() => ShortfallDecision.decide(subject(), cleared, ACT)).toThrow(
       NoShortfallToDecideError,
-    );
-  });
-});
-
-/**
- * Plan E7 reliquat, LB (choix 11) : la décision lit le statut de l'ENVOI
- * signalé. Régression : elle lisait celui de la commande, et un reliquat ne
- * se décidait jamais — sa commande, retirée ou prête, n'est plus « confirmée ».
- */
-describe("ShortfallDecision — le manque d'un reliquat (LB)", () => {
-  function remainderSignalled(): OrderShortfall {
-    return OrderShortfall.fromSnapshot({
-      orderId: "ord_1",
-      rank: 2,
-      reference: "ORD-0001",
-      reportedAt: REPORTED_AT,
-      lines: [{ sku: "CRO", due: 3, packed: 1 }],
-      clearedAt: null,
-    });
-  }
-
-  it.each(["ready", "partially_handed_over"] as const)(
-    "se décide sur un BL prévu, la commande « %s »",
-    (status) => {
-      const remainder = subject({ rank: 2, status, remainderNoteStatus: "planned" });
-
-      const decision = ShortfallDecision.decide(remainder, remainderSignalled(), ACT);
-
-      expect(decision.toSnapshot()).toMatchObject({
-        rank: 2,
-        departing: [{ sku: "CRO", quantity: 1 }],
-      });
-    },
-  );
-
-  it.each([["prepared"], ["handed_over"], [null]] as const)(
-    "refuse un reliquat dont le BL n'est plus prévu (%s)",
-    (remainderNoteStatus) => {
-      const remainder = subject({ rank: 2, status: "ready", remainderNoteStatus });
-
-      expect(() => ShortfallDecision.decide(remainder, remainderSignalled(), ACT)).toThrow(
-        RemainderNotDecidableError,
-      );
-    },
-  );
-
-  it("un BL du reliquat prévu ne rend pas décidable le rang 1 d'une commande prête", () => {
-    const first = subject({ rank: 1, status: "ready", remainderNoteStatus: "planned" });
-
-    expect(() => ShortfallDecision.decide(first, signalled(), ACT)).toThrow(
-      ShortfallOrderNotConfirmedError,
-    );
-  });
-
-  it("nomme l'envoi dans ses refus : le reliquat se dit ORD-…-2", () => {
-    const decided = subject({ rank: 2, decided: true, remainderNoteStatus: "planned" });
-
-    expect(() => ShortfallDecision.decide(decided, remainderSignalled(), ACT)).toThrow(
-      /ORD-0001-2/,
-    );
-  });
-
-  it("garde les refus de la commande : une carte pas encaissée ne part pas incomplète, même au rang 2", () => {
-    const card = subject({ rank: 2, remainderNoteStatus: "planned", settlementRegime: "due" });
-
-    expect(() => ShortfallDecision.decide(card, remainderSignalled(), ACT)).toThrow(
-      CardOrderUnpaidShortfallError,
     );
   });
 });

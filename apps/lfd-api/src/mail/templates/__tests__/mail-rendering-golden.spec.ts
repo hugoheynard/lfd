@@ -61,11 +61,6 @@ import {
  * (« Rappel au client ») — leurs empreintes ajoutées sans toucher aux
  * existantes.
  *
- * 2026-10-26 (plan E7 reliquat, lot L4d) : cas neufs `remainderPickup`,
- * `remainderDelivery` (« prête ») et `remainder` (« en route ») — « le reste
- * de votre commande ». Empreintes ajoutées, aucune existante touchée : le
- * premier envoi rend le même courriel qu'avant.
- *
  * 2026-10-27 (plan du centime, § 9 quinquies) : cas neuf `exactHt` de
  * `customer.order-placed` — le pied au format du ticket, « dont TVA » par
  * taux. Empreinte ajoutée, aucune existante touchée : une commande `line_ht`
@@ -109,7 +104,7 @@ import {
  * rend exactement l'empreinte d'avant. Aucun autre e-mail n'a bougé.
  *
  * **Régénérées le 2026-11-07 pour les SIX cas à QR** (`customer.order-placed`
- * paidPickup, account ; `customer.order-ready` pickup, remainderPickup,
+ * paidPickup, account ; `customer.order-ready` pickup, remainderPickup (retiré depuis),
  * reminder, reminderWithoutSite) : la ligne sous le QR dit « qui atteste le
  * retrait » au lieu de « la remise » (lexique, `CLAUDE.md` § 8). Vérifié avant
  * de régénérer : objet et pièces jointes identiques, et le HTML, ce mot

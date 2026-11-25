@@ -45,9 +45,8 @@ export class OnOrderHandedOver implements DurableSubscriber {
 
   async handle(delivery: DurableDelivery): Promise<void> {
     const event = OrderHandedOverEvent.fromPayload(delivery.payload);
-    // Un reliquat remis ne ferme pas la commande : son BL a son abonné
-    // (`OnRemainderHandedOver`, bons de livraison, L4b). La commande reste au
-    // rang 1 jusqu'au solde dérivé (L5).
+    // Seul le retrait du rang 1 — la commande elle-même — la ferme ; le reste
+    // d'un manque est une commande à part, qui a son propre retrait.
     if (event.rank !== FIRST_SHIPMENT_RANK) {
       return;
     }

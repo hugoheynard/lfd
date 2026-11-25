@@ -595,7 +595,6 @@ describe('HandoverShopPage — changer de journée', () => {
           blockedReason: null,
           rank: 1,
           reference: orderNumber,
-          shipments: [],
           settleAtShopTill: null,
         },
       };

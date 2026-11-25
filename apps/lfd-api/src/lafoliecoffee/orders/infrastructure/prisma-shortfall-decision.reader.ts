@@ -6,7 +6,6 @@ import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { TechnicalError } from "../../../platform/shared/errors/app-error.js";
 import type { DepartingQuantity } from "../domain/entities/shortfall-decision.js";
 import {
-  RemainderDecisionReader,
   ShortfallDecisionReader,
   type DecidedDeparture,
 } from "../domain/ports/shortfall-decision.reader.js";
@@ -74,21 +73,5 @@ export class PrismaShortfallDecisionReader extends ShortfallDecisionReader {
       select: DECIDED_SELECT,
     });
     return new Map(rows.map((row) => [row.orderId, departureOf(row)]));
-  }
-}
-
-/** La décision d'un reliquat comme entrée de SON BL (plan E7 reliquat, LB) — par le client routé. */
-@Injectable()
-export class PrismaRemainderDecisionReader extends RemainderDecisionReader {
-  constructor(private readonly prisma: PrismaService) {
-    super();
-  }
-
-  async decisionOf(orderId: string, rank: number): Promise<DecidedDeparture | null> {
-    const row = await this.prisma.orderShortfallDecision.findUnique({
-      where: { orderId_rank: { orderId, rank } },
-      select: DECIDED_SELECT,
-    });
-    return row === null ? null : departureOf(row);
   }
 }

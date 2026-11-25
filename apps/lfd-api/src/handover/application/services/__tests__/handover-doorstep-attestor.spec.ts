@@ -51,7 +51,6 @@ function subjectOf(orderId: string, status: HandoverSubject["status"] = "ready")
     fulfillmentMethod: "delivery",
     note: "",
     lines: [],
-    laterShipments: [],
   };
 }
 

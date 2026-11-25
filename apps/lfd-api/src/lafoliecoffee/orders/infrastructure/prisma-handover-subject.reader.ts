@@ -6,7 +6,6 @@ import {
 } from "../../../handover/channels/commerce/index.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { HANDOVER_SELECT, toHandoverSubject } from "./handover-order.query.js";
-import { LATER_SHIPMENTS_SELECT, laterShipmentsOf } from "./handover-later-shipments.query.js";
 
 /**
  * **Ce que le commerce rend à la remise pour UNE commande**, et rien de plus.
@@ -68,14 +67,9 @@ export class PrismaHandoverSubjectReader extends HandoverSubjectReader {
     }
     const rows = await this.prisma.order.findMany({
       where: { id: { in: [...orderIds] } },
-      select: { ...HANDOVER_SELECT, deliveryNotes: LATER_SHIPMENTS_SELECT },
+      select: HANDOVER_SELECT,
     });
-    return new Map(
-      rows.map((row): [string, HandoverSubject] => [
-        row.id,
-        { ...toHandoverSubject(row), laterShipments: laterShipmentsOf(row.deliveryNotes) },
-      ]),
-    );
+    return new Map(rows.map((row): [string, HandoverSubject] => [row.id, toHandoverSubject(row)]));
   }
 
   /** La même lecture, trois clés — cf. l'en-tête de cette classe. */
@@ -87,11 +81,8 @@ export class PrismaHandoverSubjectReader extends HandoverSubjectReader {
   ): Promise<HandoverSubject | null> {
     const row = await this.prisma.order.findUnique({
       where,
-      select: { ...HANDOVER_SELECT, deliveryNotes: LATER_SHIPMENTS_SELECT },
+      select: HANDOVER_SELECT,
     });
-    // Les restes avec la commande (L4c) : le comptoir liste les envois prêts.
-    return row === null
-      ? null
-      : { ...toHandoverSubject(row), laterShipments: laterShipmentsOf(row.deliveryNotes) };
+    return row === null ? null : toHandoverSubject(row);
   }
 }

@@ -173,13 +173,13 @@ function orderStateOf(orderId: string) {
   });
 }
 
-/** Le retrait d'un envoi, par le geste commun du scan et de la saisie, puis la boîte d'envoi. */
-async function handOver(orderId: string, rank: number): Promise<void> {
+/** Le retrait de la commande, par le geste commun du scan et de la saisie, puis la boîte d'envoi. */
+async function handOver(orderId: string): Promise<void> {
   const subject = await ctx.app.get(HandoverSubjectReader).byOrderId(orderId);
   if (subject === null) {
     throw new TypeError(`commande ${orderId} introuvable côté commerce`);
   }
-  await ctx.app.get(HandoverAttestation).attest(subject, [rank], E2E_STAFF_ID, "manual");
+  await ctx.app.get(HandoverAttestation).attest(subject, E2E_STAFF_ID, "manual");
   await ctx.drain();
 }
 
@@ -203,7 +203,7 @@ async function handedOverAtCounter(): Promise<string> {
   const account = await placeOnAccount(await scene());
   await closePlan();
   await packed(account, 1);
-  await handOver(account, 1);
+  await handOver(account);
   return account;
 }
 
@@ -224,7 +224,7 @@ describe("le retrait d'une commande", () => {
   it("un second retrait est refusé en le nommant, sans message en souffrance", async () => {
     const account = await handedOverAtCounter();
 
-    await expect(handOver(account, 1)).rejects.toThrow("Cette commande a déjà été retirée.");
+    await expect(handOver(account)).rejects.toThrow("Cette commande a déjà été retirée.");
     expect(await attestationsOf(account)).toHaveLength(1);
     await ctx.drain();
     expect(await undelivered()).toEqual([]);

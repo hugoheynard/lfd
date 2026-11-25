@@ -16,9 +16,7 @@ import { OrderReader, type OwnedOrder } from "../../../../domain/ports/order.rea
 import { OrderReadyMail } from "../../services/order-ready-mail.service.js";
 import { SendOrderReadyMail } from "../send-order-ready-mail.handler.js";
 import { AT_PLACEMENT } from "../../../../domain/services/order-sheet.js";
-import type { RemainderShipment } from "../../../../domain/ports/remainder-shipment.reader.js";
 import { LastMailRequest } from "../../../../application/handlers/__tests__/order-placed-mail-doubles.js";
-import { FixedRemainders } from "../../../../application/handlers/__tests__/remainder-shipment-doubles.js";
 
 /**
  * Le courriel de mise à disposition. Ce qu'on éprouve ici est ce que l'abonné ne
@@ -32,12 +30,8 @@ const DELIVERY = {
   ...new OrderReadyFact("order_1", 1).durableFact(),
 };
 
-/** Le reste de rang 2 de `order_1`, colisé : trois pièces. */
-const REMAINDER: ReadonlyMap<string, RemainderShipment> = new Map([
-  ["order_1:2", { pieces: 3, handedOver: false }],
-]);
-
-const REMAINDER_READY = { eventId: "evt_2", ...new OrderReadyFact("order_1", 2).durableFact() };
+/** Un fait de rang 2 : un envoi qui n’a plus de courriel. */
+const LATER_RANK_READY = { eventId: "evt_2", ...new OrderReadyFact("order_1", 2).durableFact() };
 
 function view(overrides: Partial<OrderView> = {}): OrderView {
   return {
@@ -202,17 +196,14 @@ function handler(options: {
   email?: string | null;
   client?: string | null;
   admin?: string | null;
-  remainders?: ReadonlyMap<string, RemainderShipment>;
   subject?: CustomerCancellationSubject;
   silenced?: boolean;
 }): {
   readonly run: SendOrderReadyMail;
   readonly mail: OrderReadyMail;
   readonly mailer: LastMailRequest;
-  readonly remainders: FixedRemainders;
 } {
   const mailer = new LastMailRequest();
-  const remainders = new FixedRemainders(options.remainders);
   // 🔴 L'abonné est monté SUR le composeur réel, pas sur un doublé de celui-ci.
   // Ce que ces cas tiennent — à qui on écrit, ce que le message emporte, la clé
   // — se joue dans `OrderReadyMail` depuis que le rappel du comptoir partage le
@@ -227,10 +218,9 @@ function handler(options: {
     ),
     orderPageLink(options.subject ?? null),
     mailer,
-    remainders,
   );
   const run = new SendOrderReadyMail(mail);
-  return { run, mail, mailer, remainders };
+  return { run, mail, mailer };
 }
 
 function readyData(
@@ -345,46 +335,11 @@ describe("le courriel « votre commande est prête »", () => {
     expect(subject.mailer.last?.subjects).toEqual([{ type: "order", id: "order_1" }]);
   });
 
-  /** Plan E7 reliquat, choix 17 : une clé oubliée avale le courriel du second envoi. */
-  it("un reliquat prêt a sa clé de courriel", async () => {
-    const subject = handler({ remainders: REMAINDER });
-    await subject.run.handle({
-      eventId: "evt_2",
-      ...new OrderReadyFact("order_1", 2).durableFact(),
-    });
+  it("se tait pour un fait de rang > 1 : seule la commande elle-même a son courriel", async () => {
+    const subject = handler({});
+    await subject.run.handle(LATER_RANK_READY);
 
-    expect(subject.mailer.last?.idempotencyKey).toBe("order.ready:order_1:r2");
-  });
-
-  it("un reste prêt dit « le reste », avec les pièces de SON bon", async () => {
-    const subject = handler({ remainders: REMAINDER });
-    await subject.run.handle(REMAINDER_READY);
-
-    const data = subject.mailer.last?.data as B2bMails["customer.order-ready"];
-    expect(data.remainder).toEqual({ pieces: 3 });
-    // Le QR reste celui de la commande : le comptoir montre le reste prêt (L4c).
-    expect(data.handoverUrl).toBe("https://admin.lfc.test/retrait/tok_secret_42");
-  });
-
-  it("le premier envoi est composé comme avant : sans reste, sans lire de bon", async () => {
-    const subject = handler({ remainders: REMAINDER });
-    await fire(subject);
-
-    const data = subject.mailer.last?.data as B2bMails["customer.order-ready"];
-    expect(data).not.toHaveProperty("remainder");
-    expect(subject.remainders.asked).toEqual([]);
-  });
-
-  it("se tait pour un reste déjà remis, annulé ou absent", async () => {
-    const handedOver = handler({
-      remainders: new Map([["order_1:2", { pieces: 3, handedOver: true }]]),
-    });
-    await handedOver.run.handle(REMAINDER_READY);
-    const absent = handler({});
-    await absent.run.handle(REMAINDER_READY);
-
-    expect(handedOver.mailer.last).toBeNull();
-    expect(absent.mailer.last).toBeNull();
+    expect(subject.mailer.last).toBeNull();
   });
 
   it("n'invente pas de code sur une LIVRAISON", async () => {

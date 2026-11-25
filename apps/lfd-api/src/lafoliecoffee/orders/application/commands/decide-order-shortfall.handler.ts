@@ -1,5 +1,6 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
+import { FIRST_SHIPMENT_RANK } from "../../../../production/channels/commerce/index.js";
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { OrderShortfall } from "../../domain/entities/order-shortfall.js";
 import { OrderNotFoundError } from "../../domain/errors/order-errors.js";
@@ -50,7 +51,7 @@ export class DecideOrderShortfallHandler implements ICommandHandler<
 
   async execute(command: DecideOrderShortfallCommand): Promise<void> {
     await this.uow.run(async () => {
-      const locked = await this.decisions.lockSubject(command.orderId, command.rank);
+      const locked = await this.decisions.lockSubject(command.orderId, FIRST_SHIPMENT_RANK);
       if (locked === null) {
         throw new OrderNotFoundError(command.orderId);
       }

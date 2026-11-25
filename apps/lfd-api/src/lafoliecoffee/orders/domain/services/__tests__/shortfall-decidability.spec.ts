@@ -4,7 +4,6 @@ import {
   CardIncreasePendingShortfallError,
   CardOrderUnpaidShortfallError,
   OrderTooOldForShortfallError,
-  RemainderNotDecidableError,
   ShortfallAlreadyDecidedError,
   ShortfallOrderNotConfirmedError,
   VoucherOrderShortfallError,
@@ -26,7 +25,6 @@ function subject(overrides: Partial<ShortfallDecisionSubject> = {}): ShortfallDe
     reference: "ORD-0001",
     rank: 1,
     status: "confirmed",
-    remainderNoteStatus: null,
     settlementRegime: "account",
     increasePending: false,
     voucherDiscountCents: 0,
@@ -53,11 +51,6 @@ describe("decidabilityRefusalOf — la règle de la décision, rendue", () => {
       "not_confirmed",
       { status: "ready", settlementRegime: "paid" },
       ShortfallOrderNotConfirmedError,
-    ],
-    [
-      "remainder_not_planned",
-      { rank: 2, remainderNoteStatus: "prepared" },
-      RemainderNotDecidableError,
     ],
     [
       "card_unpaid",
@@ -94,10 +87,6 @@ describe("decidabilityRefusalOf — la règle de la décision, rendue", () => {
 
   it("une hausse vivante n'est lue que sur une carte encaissée", () => {
     expect(decidabilityRefusalOf(subject({ increasePending: true }))).toBeNull();
-  });
-
-  it("un reliquat prévu se décide", () => {
-    expect(decidabilityRefusalOf(subject({ rank: 2, remainderNoteStatus: "planned" }))).toBeNull();
   });
 });
 

@@ -22,11 +22,6 @@ export interface DeliveryEnRouteMailData {
   /** L'app cliente, pour « voir ma commande ». Vide = pas de bouton. */
   readonly orderUrl: string;
   readonly locale: ContentLocale;
-  /**
-   * L'envoi de rang > 1 part (plan E7 reliquat, choix 17) : le courriel dit
-   * « le reste de votre commande ». Absent = le premier envoi, inchangé.
-   */
-  readonly remainder?: boolean;
 }
 
 /** La coquille client, prêtée par le registre : l'enseigne y est déjà posée. */
@@ -46,14 +41,13 @@ export function renderDeliveryEnRouteMail(
   shell: CustomerShell,
 ): RenderedMail {
   const copy = mailCopyOf(data.locale)["customer.delivery-en-route"];
-  const remainder = data.remainder === true;
   const address = addressWithWindow(data, copy);
   return {
-    subject: sanitiseSubject(remainder ? copy.subjectRemainder : copy.subject),
+    subject: sanitiseSubject(copy.subject),
     ...shell({
       kicker: copy.kicker,
-      title: remainder ? copy.titleRemainder : copy.title,
-      body: `${remainder ? copy.introRemainder : copy.intro}\n\n${data.reference}`,
+      title: copy.title,
+      body: `${copy.intro}\n\n${data.reference}`,
       rows: [
         { label: copy.referenceLabel, value: data.reference },
         ...(address === "" ? [] : [{ label: copy.addressLabel, value: address }]),

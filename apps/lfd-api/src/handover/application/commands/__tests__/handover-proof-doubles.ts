@@ -133,7 +133,6 @@ export class NumberedSubjects extends HandoverSubjectReader {
             fulfillmentMethod: "delivery",
             note: "",
             lines: [],
-            laterShipments: [],
           },
     );
   }

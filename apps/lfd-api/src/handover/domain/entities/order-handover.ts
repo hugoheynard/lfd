@@ -44,8 +44,8 @@ export class OrderHandover {
   private constructor(
     readonly orderId: string,
     /**
-     * Le rang de l'envoi retiré — 1 = la commande (plan E7 reliquat, choix 5,
-     * lot L3d) ; au-delà, un reliquat, retiré pour lui-même (lot L4b).
+     * Le rang de l'envoi retiré — 1 = la commande ; la colonne garde le rang
+     * des retraits passés.
      */
     readonly rank: number,
     readonly reference: string,
@@ -188,8 +188,8 @@ function candidateOf(
     status: subject.status,
     rank,
     handedOverAt: standing.handedOverAt,
-    // Un reste pas encore colisé n'est pas un sac (L4c) ; le rang 1 l'est toujours.
-    prepared: shipmentPrepared(subject, rank),
+    // Le rang 1 se tend toujours ; un rang > 1 n'a plus rien à tendre.
+    prepared: shipmentPrepared(rank),
     qualityHold: standing.qualityHold,
     settled: subject.settled,
   };

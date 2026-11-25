@@ -126,22 +126,10 @@ export interface OrderHandoverView {
    * du serveur porte déjà, et il ne se perd plus en traversant le contrat.
    */
   readonly fulfillmentMethod: FulfillmentMethod;
-  /**
-   * L'envoi que cette vue montre (plan E7 reliquat, choix 13, lot L4c) : 1 =
-   * la commande elle-même, au-delà le **reste de la commande**. `lines`,
-   * `totalUnits`, `handedOverAt` et `blockedReason` sont les siens. Avec un
-   * seul envoi, toujours 1 : l'écran n'a rien à changer.
-   */
+  /** L'envoi que cette vue montre : 1, la commande elle-même. */
   readonly rank: number;
   /** Le numéro de l'envoi : celui de la commande au rang 1, `-<rang>` au-delà. */
   readonly reference: string;
-  /**
-   * Les envois **prêts et pas encore retirés** de la commande, par rang. Deux
-   * ou plus — le client n'est pas venu entre les deux —, l'écran les liste,
-   * cochés par défaut, et « Remettre » envoie les rangs cochés
-   * (`ConfirmHandoverPayload`). Zéro ou un : rien à choisir.
-   */
-  readonly shipments: readonly OrderHandoverShipmentView[];
   /**
    * La commande se règle à la caisse de la boutique : le comptoir montre
    * « encaisser sur la caisse de la boutique — X € TTC ». Une **information**,
@@ -155,14 +143,6 @@ export interface OrderHandoverView {
 /** Ce que le comptoir encaissera sur la caisse de la boutique : le TTC de la commande. */
 export interface ShopTillSettlementView {
   readonly totalCents: number;
-}
-
-/** Un envoi prêt à retirer — ce qu'on recompte, jamais un montant. */
-export interface OrderHandoverShipmentView {
-  readonly rank: number;
-  readonly reference: string;
-  readonly totalUnits: number;
-  readonly lines: readonly OrderHandoverLine[];
 }
 
 /**

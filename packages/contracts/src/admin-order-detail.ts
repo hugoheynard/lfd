@@ -302,14 +302,11 @@ export type AdminShortfallLetterPayload = z.infer<typeof adminShortfallLetterPay
 /**
  * Corps de `POST /admin/orders/:id/shortfall-decision` (lot E6b). Les
  * quantités ne voyagent pas : ce qui part est ce que le colisage a figé au
- * signal en vigueur, relu par le serveur sous verrou.
- *
- * `rank` : l'envoi dont on décide (plan E7 reliquat, lot LB) — absent = 1, la
- * commande elle-même ; au-delà, un reliquat.
+ * signal en vigueur, relu par le serveur sous verrou. La décision porte sur
+ * la commande elle-même.
  */
 export const adminShortfallDecisionPayloadSchema = z.object({
   remainder: shortfallRemainderSchema,
-  rank: z.number().int().positive().optional(),
 });
 export type AdminShortfallDecisionPayload = z.infer<typeof adminShortfallDecisionPayloadSchema>;
 

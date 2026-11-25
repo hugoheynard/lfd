@@ -28,12 +28,6 @@
     },
     "reminderWithoutSite": {
       "textSha256": "6ece0d947725b44229ff3332e02a8ab3eacc682d19358944d2ecf5e120fa9b94"
-    },
-    "remainderPickup": {
-      "textSha256": "a6b37765533c323ff4effb8125dbfc92faf9428725296f74bf1d53f35b6ec2ed"
-    },
-    "remainderDelivery": {
-      "textSha256": "12a8034cc1020012f6d3034eaf5f2ab3e34a07e78c6b132ff8b0766d70674865"
     }
   },
   "customer.delivery-en-route": {
@@ -48,9 +42,6 @@
     },
     "windowBefore": {
       "textSha256": "729d819022937c999b44862e3128b2eef5d9d863bee8e7227f4034f6ba9638d6"
-    },
-    "remainder": {
-      "textSha256": "6200f837a4ae8a55863d2745c98cb737c369c0b652563466fc1a05c39c8ba5c5"
     }
   },
   "customer.order-delayed": {

@@ -36,10 +36,7 @@ export class ConfirmHandoverHandler implements ICommandHandler<
     if (subject === null) {
       throw new HandoverTokenNotFoundError();
     }
-    // Le jeton résout la COMMANDE ; les envois sont ceux cochés, sinon celui
-    // que l'écran montrait (plan E7 reliquat, L4c).
-    const ranks = await this.counter.ranksToHandOver(subject, command.ranks);
-    await this.attestation.attest(subject, ranks, command.staffUserId, "scan");
-    return this.counter.viewOf(subject, ranks[0] ?? null);
+    await this.attestation.attest(subject, command.staffUserId, "scan");
+    return this.counter.viewOf(subject);
   }
 }

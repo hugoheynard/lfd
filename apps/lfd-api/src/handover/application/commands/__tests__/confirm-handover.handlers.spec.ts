@@ -11,7 +11,6 @@ import {
 } from "../../../channels/commerce/handover-subject.reader.js";
 import type { OrderHandover } from "../../../domain/entities/order-handover.js";
 import { HandoverReferenceNotFoundError } from "../../../domain/errors/handover-errors.js";
-import { HandedOverOrdersReader } from "../../../domain/ports/handed-over-orders.reader.js";
 import { OrderHandoverRepository } from "../../../domain/ports/order-handover.repository.js";
 import { FixedOrderLock } from "../../__tests__/fixed-order-lock.js";
 import { FixedQualityHolds } from "../../__tests__/fixed-quality-holds.js";
@@ -24,9 +23,8 @@ import { ConfirmManualHandoverCommand } from "../confirm-manual-handover.command
 import { ConfirmManualHandoverHandler } from "../confirm-manual-handover.handler.js";
 
 /**
- * Le scan et la saisie, par envoi (plan E7 reliquat, choix 13, lot L4c) : le
- * jeton et le numéro résolvent la COMMANDE ; « Remettre » vise les envois
- * cochés, sinon celui que l'écran montrait.
+ * Le scan et la saisie : le jeton et le numéro résolvent la COMMANDE, et
+ * « Remettre » atteste son envoi, le rang 1.
  */
 
 const AT = new Date(0);
@@ -49,17 +47,6 @@ class Attestations extends OrderHandoverRepository {
 
   ranks(): number[] {
     return this.all.map(({ rank }) => rank);
-  }
-}
-
-class AttestedAmong extends HandedOverOrdersReader {
-  constructor(private readonly attestations: Attestations) {
-    super();
-  }
-
-  handedOverAmong(shipments: readonly ShipmentRef[]): Promise<readonly ShipmentRef[]> {
-    const ranks = new Set(this.attestations.ranks());
-    return Promise.resolve(shipments.filter(({ rank }) => ranks.has(rank)));
   }
 }
 
@@ -93,7 +80,7 @@ class OneOrder extends HandoverSubjectReader {
   }
 }
 
-function subject(withPackedRest: boolean): HandoverSubject {
+function subject(): HandoverSubject {
   return {
     orderId: "ord_1",
     orderNumber: NUMBER,
@@ -109,21 +96,10 @@ function subject(withPackedRest: boolean): HandoverSubject {
     fulfillmentMethod: "pickup",
     note: "",
     lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 10, saleUnit: "piece" }],
-    laterShipments: withPackedRest
-      ? [
-          {
-            rank: 2,
-            prepared: true,
-            lines: [
-              { sku: "VIE-001", productName: "Croissant", quantity: 2, saleUnit: "piece" as const },
-            ],
-          },
-        ]
-      : [],
   };
 }
 
-function scene(withPackedRest: boolean) {
+function scene() {
   const attestations = new Attestations();
   const uow = new TransactionalUnitOfWork();
   const holds = new FixedQualityHolds();
@@ -136,13 +112,8 @@ function scene(withPackedRest: boolean) {
     new FixedTransferStatus(),
     new FixedOrderLock(),
   );
-  const counter = new HandoverCounterView(
-    attestations,
-    new AttestedAmong(attestations),
-    new FixedStaffAuthorDirectory(),
-    holds,
-  );
-  const subjects = new OneOrder(subject(withPackedRest));
+  const counter = new HandoverCounterView(attestations, new FixedStaffAuthorDirectory(), holds);
+  const subjects = new OneOrder(subject());
   return {
     attestations,
     scan: new ConfirmHandoverHandler(subjects, attestation, counter),
@@ -150,68 +121,30 @@ function scene(withPackedRest: boolean) {
   };
 }
 
-describe("le retrait par envoi au comptoir (L4c)", () => {
-  it("un seul envoi, sans choix : la commande, au rang 1, comme avant", async () => {
-    const { attestations, scan } = scene(false);
+describe("le retrait au comptoir", () => {
+  it("le scan atteste la commande au rang 1, sous son numéro", async () => {
+    const { attestations, scan } = scene();
 
     const view = await scan.execute(new ConfirmHandoverCommand("jeton", "staff-1"));
 
     expect(attestations.ranks()).toEqual([1]);
     expect(view).toMatchObject({ rank: 1, reference: NUMBER, handedOverVia: "scan" });
-    expect(view.shipments).toEqual([]);
   });
 
-  it("deux envois cochés : les deux remis d'un geste, plus rien à cocher", async () => {
-    const { attestations, scan } = scene(true);
+  it("la saisie du numéro de commande atteste la commande, et grave `manual`", async () => {
+    const { attestations, manual } = scene();
 
-    const view = await scan.execute(new ConfirmHandoverCommand("jeton", "staff-1", [1, 2]));
+    const view = await manual.execute(new ConfirmManualHandoverCommand(NUMBER, "staff-1"));
 
-    expect(attestations.ranks()).toEqual([1, 2]);
-    expect(view.rank).toBe(1);
-    expect(view.shipments).toEqual([]);
+    expect(attestations.ranks()).toEqual([1]);
+    expect(view).toMatchObject({ rank: 1, handedOverVia: "manual" });
   });
 
-  it("un seul envoi coché sur deux : l'autre reste à tendre", async () => {
-    const { attestations, scan } = scene(true);
-
-    const view = await scan.execute(new ConfirmHandoverCommand("jeton", "staff-1", [2]));
-
-    expect(attestations.ranks()).toEqual([2]);
-    expect(view).toMatchObject({ rank: 2, reference: `${NUMBER}-2` });
-    expect(view.shipments.map(({ rank }) => rank)).toEqual([1]);
-  });
-
-  it("la commande déjà retirée, sans choix : le scan remet le reste qu'il montrait", async () => {
-    const { attestations, scan } = scene(true);
-    await scan.execute(new ConfirmHandoverCommand("jeton", "staff-1", [1]));
-
-    await scan.execute(new ConfirmHandoverCommand("jeton", "staff-1"));
-
-    expect(attestations.ranks()).toEqual([1, 2]);
-  });
-
-  it("la saisie d'un numéro de reste (`ORD-…-2`) remet ce reste, et grave `manual`", async () => {
-    const { attestations, manual } = scene(true);
-
-    const view = await manual.execute(new ConfirmManualHandoverCommand(`${NUMBER}-2`, "staff-1"));
-
-    expect(attestations.ranks()).toEqual([2]);
-    expect(view).toMatchObject({ rank: 2, handedOverVia: "manual" });
-  });
-
-  it("la saisie du numéro de commande mène au même choix que le scan", async () => {
-    const { attestations, manual } = scene(true);
-
-    await manual.execute(new ConfirmManualHandoverCommand(NUMBER, "staff-1", [1, 2]));
-
-    expect(attestations.ranks()).toEqual([1, 2]);
-  });
-
-  it("un numéro qui ne désigne ni commande ni reste est introuvable", async () => {
-    const { attestations, manual } = scene(true);
+  it("un numéro de reste (`ORD-…-2`) n'est plus reconnu : introuvable", async () => {
+    const { attestations, manual } = scene();
 
     await expect(
-      manual.execute(new ConfirmManualHandoverCommand("ORD-INCONNUE-2", "staff-1")),
+      manual.execute(new ConfirmManualHandoverCommand(`${NUMBER}-2`, "staff-1")),
     ).rejects.toBeInstanceOf(HandoverReferenceNotFoundError);
     expect(attestations.ranks()).toEqual([]);
   });

@@ -28,23 +28,6 @@ export class ShortfallOrderNotConfirmedError extends BusinessError {
 }
 
 /**
- * Plan E7 reliquat, choix 11 : le départ d'un reliquat ne se décide que tant
- * que son BL est prévu — son bac n'est pas fermé.
- */
-export class RemainderNotDecidableError extends BusinessError {
-  constructor(reference: string, rank: number, noteStatus: string | null) {
-    super(
-      "orders.shortfall_decision.remainder_not_planned",
-      noteStatus === null
-        ? `Le reste n° ${String(rank)} de ${reference} n'a pas de bon de livraison vivant : il a été annulé ou n'existe pas, ` +
-            "et son départ ne se décide pas. Rechargez la commande pour voir ses envois."
-        : `Le reste n° ${String(rank)} de ${reference} n'est plus à coliser (bon de livraison « ${noteStatus} ») : ` +
-            "son départ ne se décide pas. Un reste déjà préparé est parti complet ; rechargez la commande pour le voir.",
-    );
-  }
-}
-
-/**
  * La carte n'est pas encore encaissée : le reste se rembourse sur ce qui a été
  * payé, et rien ne l'est (plan `documentation/commandes/reliquat/plan-e9-reste-carte.md`, § 2.1).
  */

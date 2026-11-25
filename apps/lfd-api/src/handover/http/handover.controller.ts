@@ -1,6 +1,4 @@
 import {
-  type ConfirmHandoverPayload,
-  confirmHandoverPayloadSchema,
   type HandoverQueueView,
   type OrderHandoverView,
   type ReceiveTransferPayload,
@@ -93,8 +91,7 @@ export class HandoverController {
   }
 
   /**
-   * **Le retrait SAISI À LA MAIN**, par le numéro de commande — ou d'un reste,
-   * `ORD-…-2` (plan E7 reliquat, L4c). Corps : les envois cochés, ou `{}`.
+   * **Le retrait SAISI À LA MAIN**, par le numéro de commande. Sans corps.
    *
    * Déclarée **avant** `:token` : deux segments, donc `:token` ne l'avalerait
    * pas — mais l'ordre rend l'intention lisible sans avoir à y réfléchir.
@@ -106,10 +103,9 @@ export class HandoverController {
   async confirmManually(
     @Param("reference") reference: string,
     @StaffUserId() staffUserId: string,
-    @Body(new ZodBody(confirmHandoverPayloadSchema)) payload: ConfirmHandoverPayload,
   ): Promise<OrderHandoverView> {
     return this.commands.execute<ConfirmManualHandoverCommand, OrderHandoverView>(
-      new ConfirmManualHandoverCommand(reference, staffUserId, payload.ranks ?? null),
+      new ConfirmManualHandoverCommand(reference, staffUserId),
     );
   }
 
@@ -176,8 +172,7 @@ export class HandoverController {
   }
 
   /**
-   * Atteste le retrait — des envois cochés, ou de celui que l'écran montrait
-   * (corps `{}`, plan E7 reliquat, L4c). Rend l'attestation obtenue (qui, quand) plutôt qu'un
+   * Atteste le retrait de la commande, sans corps. Rend l'attestation obtenue (qui, quand) plutôt qu'un
    * corps vide : au comptoir, la confirmation doit s'afficher dans la seconde,
    * sans second aller-retour.
    */
@@ -188,10 +183,9 @@ export class HandoverController {
   async confirm(
     @Param("token") token: string,
     @StaffUserId() staffUserId: string,
-    @Body(new ZodBody(confirmHandoverPayloadSchema)) payload: ConfirmHandoverPayload,
   ): Promise<OrderHandoverView> {
     return this.commands.execute<ConfirmHandoverCommand, OrderHandoverView>(
-      new ConfirmHandoverCommand(token, staffUserId, payload.ranks ?? null),
+      new ConfirmHandoverCommand(token, staffUserId),
     );
   }
 }

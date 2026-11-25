@@ -42,7 +42,6 @@ import {
   type IncompleteHandoverDialogData,
   type IncompleteHandoverOutcome,
 } from '../incomplete-handover-dialog/incomplete-handover-dialog';
-import { allRanks, ShipmentChoice } from '../shipment-choice/shipment-choice';
 import { formatWindow, missingSummary, stillRemittable, type ScanProof } from '../handover-queue';
 import { transferBlockReason } from '../handover-transfer';
 import {
@@ -107,7 +106,6 @@ const PLACED_AT = new Intl.DateTimeFormat('fr-FR', {
   imports: [
     HandoverNoShow,
     SaleQuantityPipe,
-    ShipmentChoice,
     FoldBadgeComponent,
     FoldButtonComponent,
     FoldCalloutComponent,
@@ -178,21 +176,6 @@ export class HandoverDetail {
     () => this.order()?.lines ?? [],
   );
   protected readonly remitting = signal(false);
-
-  /**
-   * Les envois prêts quand il y en a au moins DEUX (plan E7 reliquat, choix
-   * 13, L4c) — vide sinon, et l'écran reste celui d'avant.
-   */
-  protected readonly shipments = computed(() => {
-    const shipments = this.order()?.shipments ?? [];
-    return shipments.length > 1 ? shipments : [];
-  });
-  /** Les rangs cochés — tous, à chaque commande ouverte. */
-  protected readonly checked = signal<readonly number[]>([]);
-  /** Deux envois et aucun coché : rien à remettre, le bouton se tait. */
-  protected readonly nothingChecked = computed(
-    () => this.shipments().length > 0 && this.checked().length === 0,
-  );
 
   /** Le reste abandonné d'un départ incomplet décidé — vide sinon. */
   /** Le résumé du départ incomplet, commun à la file et au rail. */
@@ -275,11 +258,11 @@ export class HandoverDetail {
    * **Le sac n'est pas fini** : le bouton du rail devient « Procédure commande
    * incomplète » (Hugo, 2026-11-03). Faute de fiche de colis (plan non
    * arrêté, commande hors plan), il n'y a rien à juger : la remise ordinaire
-   * reste. Deux envois prêts gardent leur propre geste (L4c).
+   * reste.
    */
   protected readonly incompleteProcedure = computed<boolean>(() => {
     const bag = this.readiness();
-    return bag !== null && !bag.ready && this.shipments().length === 0;
+    return bag !== null && !bag.ready;
   });
 
   /** Peut-on encore tendre ce sac ? La règle vit dans `handover-queue.ts`. */
@@ -333,7 +316,6 @@ export class HandoverDetail {
     try {
       const order = await this.handovers.byOrderId(entry.orderId);
       this.order.set(order);
-      this.checked.set(allRanks(order.shipments));
       this.state.set('ready');
     } catch {
       this.state.set('error');
@@ -437,14 +419,12 @@ export class HandoverDetail {
       return;
     }
     const proof = this.activeProof();
-    // Deux envois prêts : les rangs cochés ; un seul : le corps d'avant (L4c).
-    const ranks = this.shipments().length > 0 ? this.checked() : null;
     this.remitting.set(true);
     try {
       if (proof !== null) {
-        await this.handovers.confirmScanned(proof.token, ranks);
+        await this.handovers.confirmScanned(proof.token);
       } else {
-        await this.handovers.confirmManually(entry.reference, ranks);
+        await this.handovers.confirmManually(entry.reference);
       }
       this.remitted.emit();
     } catch (caught) {

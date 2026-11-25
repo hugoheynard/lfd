@@ -61,41 +61,22 @@ export class HandoverAttestation {
   ) {}
 
   /**
-   * Atteste les envois `ranks` de la commande, écrit leurs faits, et rend les
-   * attestations obtenues — au comptoir.
-   *
-   * **Une seule transaction pour tous les envois cochés** (plan E7 reliquat,
-   * choix 13, lot L4c) : deux sacs tendus d'un geste partent ensemble, ou
-   * aucun — un refus sur l'un (déjà retiré, pas colisé) annule l'autre, et le
-   * comptoir relit. Une attestation et un fait par envoi. Avec un seul rang,
-   * le geste d'avant à l'identique.
-   *
-   * La vue de l'accusé est l'affaire de l'appelant (`HandoverCounterView`) :
-   * elle dépend aussi des envois qui restent, que ce service n'a pas à lire.
+   * Atteste le retrait de la commande (son envoi de rang 1), écrit son fait,
+   * et rend l'attestation obtenue — au comptoir. La vue de l'accusé est
+   * l'affaire de l'appelant (`HandoverCounterView`).
    *
    * La règle est celle du comptoir (`OrderHandover.attestAtCounter`) : un
    * manque qui attend la décision du superviseur refuse la remise.
    *
    * @throws {HandoverRefusedError} l'état l'interdit, ou un autre poste a gagné.
    */
-  async attest(
-    subject: HandoverSubject,
-    ranks: readonly number[],
-    by: string,
-    via: HandoverVia,
-  ): Promise<readonly OrderHandover[]> {
-    const shipments = ranks.map((rank) => ShipmentRef.of(subject.orderId, rank));
+  async attest(subject: HandoverSubject, by: string, via: HandoverVia): Promise<OrderHandover> {
+    const shipment = ShipmentRef.firstOf(subject.orderId);
     try {
-      // Les faits ne sont écrits que par le GAGNANT : le perdant lève dans
+      // Le fait n'est écrit que par le GAGNANT : le perdant lève dans
       // l'unité, qui annule tout — sa violation d'unicité a de toute façon
       // condamné la transaction.
-      return await this.uow.run(async () => {
-        const engraved: OrderHandover[] = [];
-        for (const shipment of shipments) {
-          engraved.push(await this.engrave(subject, shipment, by, via, AT_COUNTER));
-        }
-        return engraved;
-      });
+      return await this.uow.run(() => this.engrave(subject, shipment, by, via, AT_COUNTER));
     } catch (error) {
       // 🔴 **Le geste est refusé, la propagation est réparée.** Les deux ne sont
       // pas la même question : le sac est peut-être parti (rien à refaire), sans
@@ -109,11 +90,7 @@ export class HandoverAttestation {
       // perdant de course trouve ainsi celle du gagnant. Puis le refus part tel
       // quel : c'est l'agrégat qui choisit le mot.
       if (error instanceof HandoverRefusedError) {
-        await this.uow.run(async () => {
-          for (const shipment of shipments) {
-            await this.reannounceExisting(shipment);
-          }
-        });
+        await this.uow.run(() => this.reannounceExisting(shipment));
       }
       throw error;
     }

@@ -43,7 +43,6 @@ const DECLARED_VARIABLES = {
     qrAlt: ["ref"],
     subjectReminder: ["ref"],
     introReminder: ["site"],
-    subjectRemainder: ["ref"],
   },
   "customer.delivery-en-route": { windowBetween: ["start", "end"], windowBefore: ["end"] },
   "customer.order-delayed": { subject: ["ref"] },

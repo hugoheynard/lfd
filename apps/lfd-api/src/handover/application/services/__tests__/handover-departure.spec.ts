@@ -31,7 +31,6 @@ function subjectOf(orderId: string, requestedDeliveryDate: Date | null): Handove
     fulfillmentMethod: "delivery",
     note: "",
     lines: [],
-    laterShipments: [],
   };
 }
 

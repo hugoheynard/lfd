@@ -57,7 +57,6 @@ export {
   HandoverSubjectReader,
   type HandoverSubject,
   type HandoverSubjectLine,
-  type HandoverSubjectShipment,
 } from "./handover-subject.reader.js";
 export { HandoverProofReader } from "./handover-proof.reader.js";
 export { HandoverOrderLock } from "./handover-order.lock.js";

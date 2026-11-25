@@ -5,16 +5,7 @@ import { DEFAULT_MAIL_LOCALE } from "../../../../../mail/channels/templates/mail
 import { Mail } from "../../../../../mail/channels/requests/mail.js";
 import { OrderMailOrigins } from "../../../domain/ports/order-mail-origins.js";
 import { OrderRecipientReader } from "../../../domain/ports/order-recipient.reader.js";
-import {
-  isCustomerNotified,
-  OrderReader,
-  type OwnedOrder,
-} from "../../../domain/ports/order.reader.js";
-import { RemainderShipmentReader } from "../../../domain/ports/remainder-shipment.reader.js";
-import {
-  FIRST_SHIPMENT_RANK,
-  ShipmentRef,
-} from "../../../../../production/channels/commerce/index.js";
+import { isCustomerNotified, OrderReader } from "../../../domain/ports/order.reader.js";
 import { OrderManageLink } from "../../../application/services/order-manage-link.js";
 import { clientSheetOf } from "../../../domain/services/order-sheet.js";
 
@@ -27,11 +18,6 @@ import { clientSheetOf } from "../../../domain/services/order-sheet.js";
  * par tournée (`delivery.en_route:<orderId>:<roundId>`, `plan-depart-durable.md`,
  * §5) : un fait relivré ne fait pas partir de second message, et une commande
  * rapportée qui repart dans une autre tournée a le sien.
- *
- * **Par envoi** depuis le lot L4d (plan E7 reliquat, choix 17) : un reste
- * (rang > 1) dit « le reste de votre commande », sa clé gagne `:r<rang>`, et
- * il se tait quand SON BL est remis ou annulé — la commande, elle, est
- * peut-être déjà retirée au rang 1. Le rang 1 est inchangé.
  */
 @Injectable()
 export class DeliveryEnRouteMail {
@@ -41,21 +27,19 @@ export class DeliveryEnRouteMail {
     private readonly origins: OrderMailOrigins,
     private readonly orderPage: OrderManageLink,
     private readonly mail: Mail,
-    private readonly remainders: RemainderShipmentReader,
   ) {}
 
   /**
    * Envoie, ou ne fait rien quand il n'y a plus rien à annoncer : commande
-   * disparue, **annulée**, envoi **déjà retiré** au moment de l'envoi, ou client
+   * disparue, **annulée**, **déjà retirée** au moment de l'envoi, ou client
    * sans adresse lisible. Aucun de ces cas n'est une erreur pour un abonné de
    * fond — la tournée est partie, c'est le courriel qui n'a pas d'objet.
    *
    * @returns `true` si le message a été remis au mailer.
    */
-  async send(shipment: ShipmentRef, roundId: string): Promise<boolean> {
-    const { orderId } = shipment;
+  async send(orderId: string, roundId: string): Promise<boolean> {
     const owned = await this.orders.findById(orderId);
-    if (owned === null || !(await this.stillOnItsWay(owned, shipment))) {
+    if (owned === null || !stillOnItsWay(owned.view)) {
       return false;
     }
     // Une commande offerte qui ne prévient pas le client : aucun e-mail
@@ -82,28 +66,15 @@ export class DeliveryEnRouteMail {
         window: sheet.fulfillment.window,
         orderUrl: await this.orderPage.urlFor(orderId, client),
         locale: DEFAULT_MAIL_LOCALE,
-        ...(shipment.rank === FIRST_SHIPMENT_RANK ? {} : { remainder: true }),
       },
-      idempotencyKey: `delivery.en_route:${orderId}:${roundId}${shipment.keySuffix()}`,
+      idempotencyKey: `delivery.en_route:${orderId}:${roundId}`,
       subjects: [{ type: "order", id: orderId }],
     });
     return true;
   }
-
-  /** Le rang 1 se lit sur la commande ; un reste sur son BL, la commande non annulée. */
-  private async stillOnItsWay(owned: OwnedOrder, shipment: ShipmentRef): Promise<boolean> {
-    if (shipment.rank === FIRST_SHIPMENT_RANK) {
-      return firstStillOnItsWay(owned.view);
-    }
-    if (owned.view.status === "cancelled") {
-      return false;
-    }
-    const remainder = await this.remainders.find(shipment.orderId, shipment.rank);
-    return remainder !== null && !remainder.handedOver;
-  }
 }
 
 /** Ni annulée, ni déjà retirée — la règle de la porte (`PrismaDeliveryOrderStatesReader`). */
-function firstStillOnItsWay(view: OrderView): boolean {
+function stillOnItsWay(view: OrderView): boolean {
   return view.status !== "cancelled" && view.status !== "fulfilled" && view.handedOverAt === null;
 }

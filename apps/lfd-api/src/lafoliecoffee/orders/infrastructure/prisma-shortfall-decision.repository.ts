@@ -1,7 +1,6 @@
 import { Injectable } from "@nestjs/common";
 
 import type { Prisma } from "../../../platform/database/client/client.js";
-import { FIRST_SHIPMENT_RANK } from "../../../production/channels/commerce/index.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import type { ShortfallDecision } from "../domain/entities/shortfall-decision.js";
 import {
@@ -49,7 +48,6 @@ interface ShipmentRows {
   readonly shortfall: Prisma.OrderShortfallGetPayload<{
     select: typeof SHORTFALL_STATE_SELECT & { decision: { select: { id: true } } };
   }> | null;
-  readonly remainderNoteStatus: string | null;
   readonly increasePending: boolean;
 }
 
@@ -60,7 +58,6 @@ function lockedOf(row: SubjectRow, shipment: ShipmentRows): LockedShortfallSubje
       reference: row.orderNumber,
       rank: shipment.rank,
       status: row.status,
-      remainderNoteStatus: shipment.remainderNoteStatus,
       settlementRegime: settlementRegimeOf(
         row.paymentStatus,
         row.totalCents,
@@ -96,8 +93,8 @@ function discountsHaveAdjustments(row: SubjectRow): boolean {
 }
 
 /**
- * L'adaptateur de la décision du départ incomplet (E6b), par envoi (plan E7
- * reliquat, LB), par le client routé.
+ * L'adaptateur de la décision du départ incomplet (E6b), rangée par envoi,
+ * par le client routé.
  */
 @Injectable()
 export class PrismaShortfallDecisionRepository extends ShortfallDecisionRepository {
@@ -146,12 +143,11 @@ export async function readShortfallSubject(
   if (row === null) {
     return null;
   }
-  const [shortfall, remainderNoteStatus, liveIncreases] = await Promise.all([
+  const [shortfall, liveIncreases] = await Promise.all([
     prisma.orderShortfall.findUnique({
       where: { orderId_rank: { orderId, rank } },
       select: { ...SHORTFALL_STATE_SELECT, decision: { select: { id: true } } },
     }),
-    remainderNoteStatusOf(prisma, orderId, rank),
     prisma.orderRevisionProposal.count({
       where: { orderId, state: { in: [...LIVE_CARD_INCREASE_STATES] } },
     }),
@@ -159,26 +155,6 @@ export async function readShortfallSubject(
   return lockedOf(row, {
     rank,
     shortfall,
-    remainderNoteStatus,
     increasePending: liveIncreases > 0,
   });
-}
-
-/**
- * Le statut du BL VIVANT de ce rang, au-delà du rang 1 (plan E7 reliquat,
- * choix 11) ; `null` sans BL vivant. Le rang 1 suit sa commande : rien à lire.
- */
-async function remainderNoteStatusOf(
-  prisma: PrismaService,
-  orderId: string,
-  rank: number,
-): Promise<string | null> {
-  if (rank === FIRST_SHIPMENT_RANK) {
-    return null;
-  }
-  const note = await prisma.deliveryNote.findFirst({
-    where: { orderId, rank, status: { not: "voided" } },
-    select: { status: true },
-  });
-  return note?.status ?? null;
 }

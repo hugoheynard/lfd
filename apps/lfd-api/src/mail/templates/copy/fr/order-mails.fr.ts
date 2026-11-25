@@ -63,12 +63,6 @@ export const ORDER_MAILS_FR: OrderMailsCopy = {
     titleReminder: "Elle vous attend.",
     introReminder: "Votre commande vous attend au point de retrait {site}.",
     introReminderWithoutSite: "Votre commande vous attend au point de retrait.",
-    subjectRemainder: "Le reste de votre commande {ref} est prêt",
-    kickerRemainder: "Le reste",
-    titleRemainderPickup: "Le reste est prêt.",
-    titleRemainderDelivery: "Le reste est prêt à partir.",
-    introRemainderPickup: "Le reste de votre commande vous attend au comptoir.",
-    introRemainderDelivery: "Le reste de votre commande part vers vous.",
   },
   "customer.delivery-en-route": {
     kicker: "Livraison en route",
@@ -80,9 +74,6 @@ export const ORDER_MAILS_FR: OrderMailsCopy = {
     windowBetween: "entre {start} et {end}",
     windowBefore: "avant {end}",
     cta: "Voir ma commande",
-    subjectRemainder: "Le reste de votre commande est en route",
-    titleRemainder: "Le reste de votre commande est en route.",
-    introRemainder: "Votre livreur est parti avec le reste de votre commande. Il arrive bientôt.",
   },
   "customer.order-delayed": {
     kicker: "Retard",

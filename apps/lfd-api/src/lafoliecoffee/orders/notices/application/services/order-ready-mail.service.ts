@@ -6,8 +6,6 @@ import { Mail } from "../../../../../mail/channels/requests/mail.js";
 import { OrderMailOrigins } from "../../../domain/ports/order-mail-origins.js";
 import { OrderRecipientReader } from "../../../domain/ports/order-recipient.reader.js";
 import { isCustomerNotified, OrderReader } from "../../../domain/ports/order.reader.js";
-import { RemainderShipmentReader } from "../../../domain/ports/remainder-shipment.reader.js";
-import { FIRST_SHIPMENT_RANK } from "../../../../../production/channels/commerce/index.js";
 import { handoverUrlOf } from "../../../domain/services/handover-url.js";
 import { OrderManageLink } from "../../../application/services/order-manage-link.js";
 import { clientSheetOf } from "../../../domain/services/order-sheet.js";
@@ -37,16 +35,7 @@ import { clientSheetOf } from "../../../domain/services/order-sheet.js";
  * partir un second message. Le rappel a la sienne, une par commande depuis
  * qu'il ne part qu'une fois (2026-10-25). Ce choix appartient au geste, pas
  * au gabarit.
- *
- * ## Par envoi (plan E7 reliquat, choix 17, lot L4d)
- *
- * Un reste prêt (rang > 1) a son courriel : « le reste de votre commande »,
- * avec les pièces de SON bon de livraison. Le rang 1 est composé exactement
- * comme avant — sans lire le BL.
  */
-/** Le premier envoi : la commande elle-même, composée comme avant le reliquat. */
-const FIRST_SHIPMENT = "first" as const;
-
 @Injectable()
 export class OrderReadyMail {
   constructor(
@@ -55,12 +44,10 @@ export class OrderReadyMail {
     private readonly origins: OrderMailOrigins,
     private readonly orderPage: OrderManageLink,
     private readonly mail: Mail,
-    private readonly remainders: RemainderShipmentReader,
   ) {}
 
   /**
-   * Envoie, ou ne fait rien si la commande ou son destinataire ont disparu —
-   * ou, pour un reste, si son BL est annulé, absent ou déjà remis.
+   * Envoie, ou ne fait rien si la commande ou son destinataire ont disparu.
    *
    * ⚠️ Rend un booléen plutôt que de lever : l'appelant historique est un
    * abonné de fond, et une commande introuvable n'y est pas une erreur — c'est
@@ -72,7 +59,7 @@ export class OrderReadyMail {
   async send(
     orderId: string,
     idempotencyKey: string,
-    options: { readonly reminder?: boolean; readonly rank?: number } = {},
+    options: { readonly reminder?: boolean } = {},
   ): Promise<boolean> {
     const owned = await this.orders.findById(orderId);
     if (owned === null) {
@@ -81,10 +68,6 @@ export class OrderReadyMail {
     // Une commande offerte qui ne prévient pas le client : aucun e-mail
     // automatique ; le rappel de retrait, geste de l'équipe, part quand même (décidé par Hugo le 2026-11-23, `la-commande-offerte.md`, § 2.9).
     if (!isCustomerNotified(owned) && options.reminder !== true) {
-      return false;
-    }
-    const remainder = await this.remainderOf(orderId, options.rank ?? FIRST_SHIPMENT_RANK);
-    if (remainder === null) {
       return false;
     }
     const recipient = await this.recipients.findById(owned.placedByUserId);
@@ -108,26 +91,10 @@ export class OrderReadyMail {
         handoverUrl: handoverUrlOf(admin, token),
         locale: DEFAULT_MAIL_LOCALE,
         ...(options.reminder === true ? { reminder: true } : {}),
-        ...(remainder === FIRST_SHIPMENT ? {} : { remainder: { pieces: remainder.pieces } }),
       },
       idempotencyKey,
       subjects: [{ type: "order", id: orderId }],
     });
     return true;
-  }
-
-  /**
-   * Le premier envoi n'a rien à lire ; un reste se lit sur son BL, et `null`
-   * dit qu'il n'y a plus rien à annoncer.
-   */
-  private async remainderOf(
-    orderId: string,
-    rank: number,
-  ): Promise<typeof FIRST_SHIPMENT | { readonly pieces: number } | null> {
-    if (rank === FIRST_SHIPMENT_RANK) {
-      return FIRST_SHIPMENT;
-    }
-    const shipment = await this.remainders.find(orderId, rank);
-    return shipment === null || shipment.handedOver ? null : { pieces: shipment.pieces };
   }
 }

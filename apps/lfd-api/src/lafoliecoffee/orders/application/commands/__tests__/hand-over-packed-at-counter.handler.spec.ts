@@ -153,7 +153,6 @@ function locked(
       reference: "ORD-0001",
       rank: 1,
       status: "confirmed",
-      remainderNoteStatus: null,
       settlementRegime: "account",
       increasePending: false,
       voucherDiscountCents: 0,

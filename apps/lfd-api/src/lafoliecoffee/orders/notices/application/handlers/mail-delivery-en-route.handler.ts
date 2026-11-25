@@ -9,6 +9,7 @@ import {
   DurableHandler,
   type DurableSubscriber,
 } from "../../../../../platform/outbox/durable-handler.js";
+import { FIRST_SHIPMENT_RANK } from "../../../../../production/channels/commerce/index.js";
 import { DeliveryEnRouteMail } from "../services/delivery-en-route-mail.service.js";
 
 /** Nom STABLE de l'abonné — clé de son reçu dans la boîte d'envoi. */
@@ -17,8 +18,8 @@ export const MAIL_DELIVERY_EN_ROUTE = "b2b.mail-delivery-en-route";
 /**
  * **« Votre livraison est en route »** — le commerce entend le départ d'une
  * tournée (`documentation/livraisons/livreur/en-route.md`) : un courriel par
- * ENVOI (plan E7 reliquat, choix 17, lot L4d) — le reste d'une commande a le
- * sien, qui dit « le reste de votre commande ».
+ * commande partie. Le fait porte des envois par rang ; seul le rang 1 — la
+ * commande elle-même — en a un.
  *
  * Abonné DURABLE depuis le 2026-10-06 (DD1) : le relais le livre au premier
  * réveil après la validation du départ, et le balayage rattrape un réveil
@@ -43,13 +44,14 @@ export class MailDeliveryEnRoute implements DurableSubscriber {
 
   async handle(delivery: DurableDelivery): Promise<void> {
     const fact = DeliveryRoundDepartedFact.fromPayload(delivery.payload);
-    // Un courriel par ENVOI (choix 17) ; un envoi répété dans le fait n'en
-    // fait partir qu'un.
-    const shipments = fact.shipments.filter(
-      (shipment, index) => fact.shipments.findIndex((other) => other.equals(shipment)) === index,
+    // Une commande répétée dans le fait ne fait partir qu'un courriel.
+    const orderIds = new Set(
+      fact.shipments
+        .filter((shipment) => shipment.rank === FIRST_SHIPMENT_RANK)
+        .map((shipment) => shipment.orderId),
     );
-    for (const shipment of shipments) {
-      await this.mail.send(shipment, fact.roundId);
+    for (const orderId of orderIds) {
+      await this.mail.send(orderId, fact.roundId);
     }
   }
 }

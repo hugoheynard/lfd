@@ -1,15 +1,14 @@
 /**
- * E2E du **rang à la livraison** (plan E7 reliquat, lot L3c,
- * `documentation/commandes/reliquat/reliquat.md`) : un arrêt dessert un
- * ENVOI `(commande, rang)`, et le plan arrêté range des envois.
+ * E2E du **rang à la livraison** : un arrêt dessert un ENVOI `(commande,
+ * rang)`, et une commande part en un seul envoi, son rang 1 — le reste d'un
+ * manque devient une commande à part.
  *
- * Ce que seul le vrai Postgres prouve : que l'index I3 recréé sur
- * `(order_id, rank)` laisse deux arrêts vivants d'une même commande à deux
- * rangs, et refuse toujours deux arrêts vivants du MÊME envoi ; que la table
- * fille du plan arrêté garde les deux rangs, et que l'écran les compte.
+ * Ce que seul le vrai Postgres prouve : que l'arrêt posé par le geste est au
+ * rang 1, que l'index I3 sur `(order_id, rank)` refuse deux arrêts vivants du
+ * même envoi, et que la table fille du plan arrêté range l'envoi et que
+ * l'écran le compte.
  *
- * Aucun geste ne pose encore un arrêt de rang 2 (il viendra avec L7/L8) :
- * l'arrêt est ajouté à la tournée RÉHYDRATÉE, puis rangé par le vrai
+ * Le second arrêt est ajouté à la tournée RÉHYDRATÉE, puis rangé par le vrai
  * adaptateur — jamais par une écriture brute.
  */
 import type { DeliveryDayReadinessView } from "@lfd/contracts";
@@ -101,37 +100,26 @@ async function setup(): Promise<{ readonly roundId: string; readonly orderId: st
   return { roundId, orderId: order.id };
 }
 
-describe("deux arrêts d'une commande, deux rangs (plan E7 reliquat, L3c)", () => {
+describe("l'arrêt d'une commande, au rang 1", () => {
   it("l'arrêt posé par le geste est l'envoi de rang 1", async () => {
     const { orderId } = await setup();
 
     expect(await stopRanksOf(orderId)).toEqual([1]);
   });
 
-  it("le rang 2 de la même commande entre dans une tournée vivante à côté du rang 1", async () => {
-    const { roundId, orderId } = await setup();
-
-    await addShipmentStop(roundId, "stop_rank_2", ShipmentRef.of(orderId, 2));
-
-    expect(await stopRanksOf(orderId)).toEqual([1, 2]);
-  });
-
   it("deux arrêts vivants du MÊME envoi restent refusés par l'index I3", async () => {
     const { roundId, orderId } = await setup();
-    await addShipmentStop(roundId, "stop_rank_2", ShipmentRef.of(orderId, 2));
 
     await expect(
-      addShipmentStop(roundId, "stop_rank_2_bis", ShipmentRef.of(orderId, 2)),
+      addShipmentStop(roundId, "stop_rank_1_bis", ShipmentRef.firstOf(orderId)),
     ).rejects.toBeInstanceOf(OrderAlreadyInRoundError);
-    expect(await stopRanksOf(orderId)).toEqual([1, 2]);
+    expect(await stopRanksOf(orderId)).toEqual([1]);
   });
 
-  it("le plan arrêté range les deux envois, et l'écran les compte placés", async () => {
-    const { roundId, orderId } = await setup();
-    await addShipmentStop(roundId, "stop_rank_2", ShipmentRef.of(orderId, 2));
+  it("le plan arrêté range l'envoi, et l'écran le compte placé", async () => {
+    const { orderId } = await setup();
     const retake = new ProductionDayRetakenEvent(DAY, new Date(daysAgo(0)), 1, [
       ShipmentRef.firstOf(orderId),
-      ShipmentRef.of(orderId, 2),
     ]).durableFact();
 
     await ctx.app
@@ -139,21 +127,17 @@ describe("deux arrêts d'une commande, deux rangs (plan E7 reliquat, L3c)", () =
       .run(() =>
         ctx.app
           .get(LearnRetakenPlan)
-          .handle({ eventId: "e_rank_2", type: retake.type, payload: retake.payload }),
+          .handle({ eventId: "e_rank_1", type: retake.type, payload: retake.payload }),
       );
 
     const rows = await ctx.prisma.deliveryDayReadinessShipment.findMany({
       where: { serviceDay: DAY },
       select: { orderId: true, rank: true },
-      orderBy: { rank: "asc" },
     });
-    expect(rows).toEqual([
-      { orderId, rank: 1 },
-      { orderId, rank: 2 },
-    ]);
+    expect(rows).toEqual([{ orderId, rank: 1 }]);
     const view = jsonBody<DeliveryDayReadinessView>(
       await admin(ctx).get(`${ROUNDS}/plan-stopped?day=${DAY}`).expect(200),
     );
-    expect(view.arrested).toMatchObject({ deliveryCount: 2, unplacedCount: 0 });
+    expect(view.arrested).toMatchObject({ deliveryCount: 1, unplacedCount: 0 });
   });
 });

@@ -18,8 +18,6 @@ import {
 import { OrderReader, type OrderAuthor } from "../../../domain/ports/order.reader.js";
 import { OrderRepository } from "../../../domain/ports/order.repository.js";
 import { OrderLock } from "../../../domain/ports/order-lock.js";
-import { PendingRemaindersReader } from "../../../domain/ports/pending-remainders.reader.js";
-import type { FirstHandoverStatus } from "../../../domain/services/shipment-settlement.js";
 import { MarkOrderFulfilledCommand } from "../mark-order-fulfilled.command.js";
 import { MarkOrderFulfilledHandler } from "../mark-order-fulfilled.handler.js";
 import { RecordingDeliveryNoteFollowing } from "./delivery-note-following-double.js";
@@ -58,7 +56,6 @@ class Repository extends OrderRepository {
   writes = 0;
   insideUnit: boolean[] = [];
   receivedOn: string[] = [];
-  statuses: FirstHandoverStatus[] = [];
 
   constructor(
     private readonly uow: TransactionalUnitOfWork,
@@ -73,11 +70,9 @@ class Repository extends OrderRepository {
     _by: string,
     _via: string,
     receivedOn: string,
-    status: FirstHandoverStatus,
   ): Promise<boolean> {
     this.insideUnit.push(this.uow.isOpen);
     this.receivedOn.push(receivedOn);
-    this.statuses.push(status);
     this.journal.push("write");
     if (this.fulfilled) {
       return Promise.resolve(false);
@@ -111,21 +106,6 @@ class Lock extends OrderLock {
   }
 }
 
-/** Les restes vivants : `pending` décide. */
-class Remainders extends PendingRemaindersReader {
-  constructor(
-    private readonly pending: boolean,
-    private readonly journal: string[],
-  ) {
-    super();
-  }
-
-  anyPending(orderId: string): Promise<boolean> {
-    this.journal.push(`pending:${orderId}`);
-    return Promise.resolve(this.pending);
-  }
-}
-
 /** Ce que le retrait a attesté, commande par commande. */
 class Handovers extends OrderHandoverHistoryReader {
   constructor(private readonly facts: readonly OrderHandoverHistoryFact[]) {
@@ -152,8 +132,6 @@ interface World {
   readonly author?: OrderAuthor | null;
   readonly handovers?: readonly OrderHandoverHistoryFact[];
   readonly stops?: readonly OrderDeliveryStopFact[];
-  /** Un reste vivant attend encore son retrait (L5b). */
-  readonly pending?: boolean;
 }
 
 function subject(world: World = {}) {
@@ -170,7 +148,6 @@ function subject(world: World = {}) {
     new Stops(world.stops ?? []),
     notes,
     new Lock(uow, journal),
-    new Remainders(world.pending ?? false, journal),
   );
   return { handler, repository, uow, notes, journal };
 }
@@ -300,34 +277,20 @@ describe("le BL suit la remise (plan E2, § 8.3)", () => {
   });
 });
 
-describe("retirée en partie, ou soldée (plan E7 reliquat, L5b)", () => {
-  it("sans reste vivant : `fulfilled` et `order.fulfilled`, comme avant", async () => {
-    const { handler, repository, uow } = subject();
+describe("soldée par sa remise", () => {
+  it("publie `order.fulfilled`", async () => {
+    const { handler, uow } = subject();
 
     await handler.execute(handOver());
 
-    expect(repository.statuses).toEqual(["fulfilled"]);
     expect(uow.of(ORDER_FULFILLED)).toHaveLength(1);
   });
 
-  it("un reste vivant : `partially_handed_over`, la date posée, ni fait du solde ni solde", async () => {
-    const { handler, repository, uow, notes } = subject({ pending: true });
+  it("écrit SOUS le verrou de la commande, dans l'unité de travail", async () => {
+    const { handler, journal } = subject();
 
     await handler.execute(handOver());
 
-    expect(repository.statuses).toEqual(["partially_handed_over"]);
-    expect(repository.receivedOn).toEqual([HANDED_OVER_DAY]);
-    expect(uow.of(ORDER_FULFILLED)).toEqual([]);
-    // Le BL-1 suit quand même la remise ; son solde ne se pose pas
-    // (`settlementOf` ne solde que `fulfilled`).
-    expect(notes.calls).toEqual(["hand-over:ord_1"]);
-  });
-
-  it("juge le reste SOUS le verrou de la commande, dans l'unité de travail, avant d'écrire", async () => {
-    const { handler, journal } = subject({ pending: true });
-
-    await handler.execute(handOver());
-
-    expect(journal).toEqual(["lock:ord_1:true", "pending:ord_1", "write"]);
+    expect(journal).toEqual(["lock:ord_1:true", "write"]);
   });
 });

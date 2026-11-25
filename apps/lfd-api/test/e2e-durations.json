@@ -639,8 +639,6 @@
   "test/shelf-stock-today.e2e-spec.ts": 5402,
   "test/shelf-stock-weight.e2e-spec.ts": 3174,
   "test/shelf-stock.e2e-spec.ts": 2853,
-  "test/shipment-rank-handover.e2e-spec.ts": 3081,
-  "test/shipment-rank-sheets.e2e-spec.ts": 1671,
   "test/shop-cart.e2e-spec.ts": 4844,
   "test/shop-catalogue-allergens.e2e-spec.ts": 3311,
   "test/shop-catalogue-languages.e2e-spec.ts": 4006,

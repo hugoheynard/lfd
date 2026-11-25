@@ -1,14 +1,6 @@
 import type { ClientSheet, SettlementRegime } from "@lfd/contracts";
 
-import {
-  PRESENCE,
-  presence,
-  specimenCase,
-  specimenOnly,
-  variantCase,
-  YES_NO,
-  yesNo,
-} from "./case-builders.js";
+import { PRESENCE, presence, specimenCase, specimenOnly, variantCase } from "./case-builders.js";
 import type { MailCaseAxis, MailCaseTables } from "./mail-specimen-case.types.js";
 
 /** Les cas des e-mails d'une commande : confirmation, retrait, livraison, retard. */
@@ -37,9 +29,8 @@ const methodAxis = {
 
 const readyMomentAxis: MailCaseAxis<"customer.order-ready"> = {
   id: "moment",
-  values: ["announced", "reminder", "remainder"],
-  of: (data) =>
-    data.reminder === true ? "reminder" : data.remainder === undefined ? "announced" : "remainder",
+  values: ["announced", "reminder"],
+  of: (data) => (data.reminder === true ? "reminder" : "announced"),
 };
 
 export const ORDER_CASE_TABLES: Pick<
@@ -79,10 +70,6 @@ export const ORDER_CASE_TABLES: Pick<
         ...data,
         reminder: true,
       })),
-      variantCase("customer.order-ready", "remainder", "Le reste de la commande", (data) => ({
-        ...data,
-        remainder: { pieces: 3 },
-      })),
     ],
     axes: [methodAxis, readyMomentAxis],
   },
@@ -98,10 +85,6 @@ export const ORDER_CASE_TABLES: Pick<
         window: null,
         addressLines: [],
       })),
-      variantCase("customer.delivery-en-route", "remainder", "Le reste de la commande", (data) => ({
-        ...data,
-        remainder: true,
-      })),
     ],
     axes: [
       {
@@ -111,7 +94,6 @@ export const ORDER_CASE_TABLES: Pick<
           data.window === null ? "none" : data.window.start === null ? "before" : "between",
       },
       { id: "address", values: PRESENCE, of: (data) => presence(data.addressLines.join("")) },
-      { id: "remainder", values: YES_NO, of: (data) => yesNo(data.remainder) },
     ],
   },
   "customer.order-delayed": {

@@ -3,7 +3,6 @@ import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
 import type {
-  ConfirmHandoverPayload,
   CounterLateToleranceView,
   HandoverQueueView,
   OrderHandoverView,
@@ -87,14 +86,11 @@ export class HandoverQueueService {
    * jeton, et le serveur grave `scan` comme avant. La lecture
    * (`GET /admin/handover/:token`) ne grave rien — seul ce `POST` écrit.
    */
-  async confirmScanned(
-    token: string,
-    ranks: readonly number[] | null = null,
-  ): Promise<OrderHandoverView> {
+  async confirmScanned(token: string): Promise<OrderHandoverView> {
     return firstValueFrom(
       this.http.post<OrderHandoverView>(
         `${B2B_API_BASE}/admin/handover/${encodeURIComponent(token)}`,
-        confirmPayloadOf(ranks),
+        {},
       ),
     );
   }
@@ -107,20 +103,14 @@ export class HandoverQueueService {
    * comme un scan le rendrait faux plutôt que faible — c'est pour cela que le
    * serveur porte deux verbes, et que l'écran écrit « sans code » à côté.
    *
-   * `ranks` : les envois cochés quand la commande en a deux prêts (plan E7
-   * reliquat, L4c) ; `null` = l'envoi montré, et le corps reste `{}`.
-   *
    * Elle vit ici et non dans `HandoverService` (`retrait/`) parce qu'elle ne
    * touche aucun jeton : ce service est celui des gestes qui partent de la file.
    */
-  async confirmManually(
-    reference: string,
-    ranks: readonly number[] | null = null,
-  ): Promise<OrderHandoverView> {
+  async confirmManually(reference: string): Promise<OrderHandoverView> {
     return firstValueFrom(
       this.http.post<OrderHandoverView>(
         `${B2B_API_BASE}/admin/handover/manual/${encodeURIComponent(reference)}`,
-        confirmPayloadOf(ranks),
+        {},
       ),
     );
   }
@@ -141,12 +131,4 @@ export class HandoverQueueService {
       ),
     );
   }
-}
-
-/**
- * Le corps d'un « Remettre » : `{}` avec un seul envoi — la requête d'avant
- * L4c, à l'octet près —, les rangs cochés sinon.
- */
-export function confirmPayloadOf(ranks: readonly number[] | null): ConfirmHandoverPayload {
-  return ranks === null ? {} : { ranks: [...ranks] };
 }

@@ -48,7 +48,6 @@ function subject(overrides: Partial<HandoverSubject> = {}): HandoverSubject {
     fulfillmentMethod: "pickup",
     note: "",
     lines: [{ sku: "CRO", productName: "Croissant", quantity: 12, saleUnit: "piece" }],
-    laterShipments: [],
     ...overrides,
   };
 }

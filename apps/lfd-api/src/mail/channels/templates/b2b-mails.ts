@@ -96,13 +96,6 @@ export interface B2bMails {
      * retrait … » au lieu de « c'est prêt ». Absent = l'annonce du colisage.
      */
     readonly reminder?: boolean;
-    /**
-     * **Le reste de la commande** (plan E7 reliquat, choix 17) : l'envoi de
-     * rang > 1 est prêt. Le courriel dit « le reste de votre commande », et
-     * compte les pièces DU RESTE — la feuille, elle, reste celle de la
-     * commande. Absent = le premier envoi, inchangé.
-     */
-    readonly remainder?: { readonly pieces: number };
   };
   /**
    * **L'avis de prélèvement** (pré-notification SEPA) — premier avis,

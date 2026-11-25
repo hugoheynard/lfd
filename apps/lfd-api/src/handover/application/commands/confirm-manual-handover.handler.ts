@@ -1,12 +1,8 @@
 import type { OrderHandoverView } from "@lfd/contracts";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
-import {
-  HandoverSubjectReader,
-  type HandoverSubject,
-} from "../../channels/commerce/handover-subject.reader.js";
+import { HandoverSubjectReader } from "../../channels/commerce/handover-subject.reader.js";
 import { HandoverReferenceNotFoundError } from "../../domain/errors/handover-errors.js";
-import { remainderReferenceOf } from "../../domain/services/handover-shipments.js";
 import { HandoverAttestation } from "../services/handover-attestation.service.js";
 import { HandoverCounterView } from "../services/handover-counter-view.js";
 import { ConfirmManualHandoverCommand } from "./confirm-manual-handover.command.js";
@@ -43,29 +39,11 @@ export class ConfirmManualHandoverHandler implements ICommandHandler<
   ) {}
 
   async execute(command: ConfirmManualHandoverCommand): Promise<OrderHandoverView> {
-    const { subject, rank } = await this.resolve(command.reference);
-    const ranks = await this.counter.ranksToHandOver(subject, command.ranks, rank);
-    await this.attestation.attest(subject, ranks, command.staffUserId, "manual");
-    return this.counter.viewOf(subject, ranks[0] ?? null);
-  }
-
-  /**
-   * Le numéro d'une commande d'abord, puis celui d'un reste (`ORD-…-2`, plan
-   * E7 reliquat, L4c) : la commande `ORD-…`, et le rang que le numéro nomme.
-   */
-  private async resolve(
-    reference: string,
-  ): Promise<{ readonly subject: HandoverSubject; readonly rank: number | null }> {
-    const order = await this.subjects.byReference(reference);
-    if (order !== null) {
-      return { subject: order, rank: null };
+    const subject = await this.subjects.byReference(command.reference);
+    if (subject === null) {
+      throw new HandoverReferenceNotFoundError(command.reference);
     }
-    const remainder = remainderReferenceOf(reference);
-    const subject =
-      remainder === null ? null : await this.subjects.byReference(remainder.orderNumber);
-    if (subject === null || remainder === null) {
-      throw new HandoverReferenceNotFoundError(reference);
-    }
-    return { subject, rank: remainder.rank };
+    await this.attestation.attest(subject, command.staffUserId, "manual");
+    return this.counter.viewOf(subject);
   }
 }

@@ -237,7 +237,7 @@ de vie **par bon** plutôt qu'une commande de suite (« A »).
   (`RemainderShipmentReader`).
 - **Le solde.** La remise du rang 1 écrit `partially_handed_over` si un reste
   vivant attend, sinon `fulfilled` (`statusAfterFirstHandover`,
-  `lafoliecoffee/orders/domain/services/shipment-settlement.ts`) ; le dernier reste
+  lafoliecoffee/orders/domain/services/shipment-settlement.ts (retiré en B5)) ; le dernier reste
   remis solde la commande (`OrderRemainderSettler`). Un reste abandonné n'est
   pas vivant (Q-R3). Annuler annule tous les BL vivants et refuse dès qu'un
   envoi est retiré. Le client voit « En partie retirée / livrée ».

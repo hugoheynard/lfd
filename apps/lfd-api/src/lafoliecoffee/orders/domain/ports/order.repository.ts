@@ -1,7 +1,6 @@
 import type { RecurringDeltas } from "@lfd/contracts";
 
 import type { Order } from "../entities/order.js";
-import type { FirstHandoverStatus } from "../services/shipment-settlement.js";
 import type { HandoverVia } from "../services/handover.js";
 
 /**
@@ -151,10 +150,8 @@ export abstract class OrderRepository {
    * déjà posée n'est jamais remplacée (elle est figée en base), et ne
    * bloque pas la remise.
    *
-   * **Le statut écrit est celui que l'appelant a jugé** (plan E7 reliquat,
-   * choix 8, lot L5b) : `fulfilled` si plus rien n'est à remettre,
-   * `partially_handed_over` si un reste vivant attend encore — jugé sous le
-   * verrou de la commande, par `statusAfterFirstHandover`.
+   * La commande passe `fulfilled` : sa remise la solde, le reste d'un
+   * manque devient une commande à part (le reliquat).
    */
   abstract markFulfilled(
     reference: string,
@@ -162,7 +159,6 @@ export abstract class OrderRepository {
     by: string,
     via: HandoverVia,
     receivedOn: string,
-    status: FirstHandoverStatus,
   ): Promise<boolean>;
 
   /**

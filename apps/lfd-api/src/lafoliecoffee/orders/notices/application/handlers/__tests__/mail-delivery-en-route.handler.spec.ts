@@ -27,8 +27,6 @@ import {
 } from "../../../../application/handlers/__tests__/payment-failure-doubles.js";
 import { AT_PLACEMENT } from "../../../../domain/services/order-sheet.js";
 import { ShipmentRef } from "../../../../../../production/channels/commerce/index.js";
-import type { RemainderShipment } from "../../../../domain/ports/remainder-shipment.reader.js";
-import { FixedRemainders } from "../../../../application/handlers/__tests__/remainder-shipment-doubles.js";
 
 /*
  * Le commerce entend le départ, fait durable (en-route.md ; plan-depart-durable.md,
@@ -145,7 +143,6 @@ function subscriber(
   views: readonly OrderView[],
   options: {
     readonly email?: string | null;
-    readonly remainders?: ReadonlyMap<string, RemainderShipment>;
     readonly failFor?: string;
     readonly silenced?: boolean;
   } = {},
@@ -161,7 +158,6 @@ function subscriber(
     new FixedOrigins(),
     orderPageLink(),
     mailer,
-    new FixedRemainders(options.remainders ?? new Map()),
   );
   const handler = new MailDeliveryEnRoute(mail);
   const subject: DurableSubscriber = {
@@ -272,54 +268,14 @@ describe("MailDeliveryEnRoute — abonné durable « en route »", () => {
     expect(mailer.queued.map((sent) => sent.idempotencyKey)).toEqual(["delivery.en_route:o_4:r_1"]);
   });
 
-  describe("par envoi (plan E7 reliquat, choix 17)", () => {
-    const REST = ShipmentRef.of("o_1", 2);
+  it("n'écrit que pour le rang 1, une fois par commande", async () => {
+    const { subject, mailer } = subscriber([delivered("o_1"), delivered("o_2")]);
 
-    it("le reste a son courriel, sa clé, et dit « le reste »", async () => {
-      const { subject, mailer } = subscriber(
-        [delivered("o_1", { status: "fulfilled", handedOverAt: new Date(0).toISOString() })],
-        { remainders: new Map([["o_1:2", { pieces: 2, handedOver: false }]]) },
-      );
+    await subject.handle(
+      departed("r_1", ["o_1", "o_1"], [ShipmentRef.of("o_1", 2), ShipmentRef.of("o_2", 2)]),
+    );
 
-      await subject.handle(departed("r_1", [], [REST]));
-
-      expect(mailer.queued.map((sent) => sent.idempotencyKey)).toEqual([
-        "delivery.en_route:o_1:r_1:r2",
-      ]);
-      expect(mailer.queued[0]?.data).toMatchObject({ reference: "ORD-o_1", remainder: true });
-    });
-
-    it("deux envois de la même commande dans la tournée : deux courriels", async () => {
-      const { subject, mailer } = subscriber([delivered("o_1")], {
-        remainders: new Map([["o_1:2", { pieces: 2, handedOver: false }]]),
-      });
-
-      await subject.handle(departed("r_1", ["o_1"], [REST]));
-
-      expect(mailer.queued.map((sent) => sent.idempotencyKey)).toEqual([
-        "delivery.en_route:o_1:r_1",
-        "delivery.en_route:o_1:r_1:r2",
-      ]);
-      expect(mailer.queued[0]?.data).not.toHaveProperty("remainder");
-    });
-
-    it("se tait pour un reste remis, annulé, ou d'une commande annulée", async () => {
-      const { subject, mailer } = subscriber(
-        [delivered("o_1"), delivered("o_2", { status: "cancelled" })],
-        {
-          remainders: new Map([
-            ["o_1:2", { pieces: 2, handedOver: true }],
-            ["o_2:2", { pieces: 2, handedOver: false }],
-          ]),
-        },
-      );
-
-      await subject.handle(
-        departed("r_1", [], [REST, ShipmentRef.of("o_1", 3), ShipmentRef.of("o_2", 2)]),
-      );
-
-      expect(mailer.queued).toEqual([]);
-    });
+    expect(mailer.queued.map((sent) => sent.idempotencyKey)).toEqual(["delivery.en_route:o_1:r_1"]);
   });
 
   it("se tait pour une commande disparue ou un client sans adresse", async () => {

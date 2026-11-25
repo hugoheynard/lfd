@@ -9,7 +9,6 @@ import {
   CardIncreasePendingShortfallError,
   CardOrderUnpaidShortfallError,
   OrderTooOldForShortfallError,
-  RemainderNotDecidableError,
   ShortfallAlreadyDecidedError,
   ShortfallOrderNotConfirmedError,
   VoucherOrderShortfallError,
@@ -17,14 +16,13 @@ import {
 
 /**
  * Pourquoi le départ de cet envoi ne se décide pas, sans lire le bac — dans
- * l'ordre où la décision juge : déjà décidé, envoi plus à coliser (commande
- * pas confirmée, reliquat pas prévu), carte pas encore encaissée, hausse par
- * carte en cours, bon de fidélité, termes non figés.
+ * l'ordre où la décision juge : déjà décidé, commande plus à coliser (pas
+ * confirmée), carte pas encore encaissée, hausse par carte en cours, bon de
+ * fidélité, termes non figés.
  */
 export type ShortfallDecisionRefusal =
   | "already_decided"
   | "not_confirmed"
-  | "remainder_not_planned"
   | "card_unpaid"
   | "card_increase_pending"
   | "voucher"
@@ -35,9 +33,6 @@ const PAID_CARD: SettlementRegime = "paid";
 
 /** Le rang de la commande elle-même (comme `order-billing.ts`). */
 const FIRST_SHIPMENT_RANK = 1;
-
-/** Le seul état d'un reliquat dont le départ se décide : son bac n'est pas fermé. */
-const DECIDABLE_REMAINDER_NOTE = "planned";
 
 /**
  * **Les refus qui ne dépendent pas du bac**, rendus au lieu d'être levés —
@@ -51,22 +46,7 @@ export function decidabilityRefusalOf(
   if (subject.decided) {
     return "already_decided";
   }
-  return shipmentToPackRefusalOf(subject) ?? termsRefusalOf(subject);
-}
-
-/**
- * L'envoi SIGNALÉ est encore à coliser (plan E7 reliquat, choix 11) : au
- * rang 1, la commande confirmée, comme avant ; au-delà, le BL du reliquat
- * prévu. Le même jour, la commande peut être prête pendant que son reste
- * colise : c'est le reste qui décide.
- */
-function shipmentToPackRefusalOf(
-  subject: ShortfallDecisionSubject,
-): ShortfallDecisionRefusal | null {
-  if (subject.rank === FIRST_SHIPMENT_RANK) {
-    return subject.status === "confirmed" ? null : "not_confirmed";
-  }
-  return subject.remainderNoteStatus === DECIDABLE_REMAINDER_NOTE ? null : "remainder_not_planned";
+  return (subject.status === "confirmed" ? null : "not_confirmed") ?? termsRefusalOf(subject);
 }
 
 /**
@@ -98,8 +78,6 @@ const REFUSAL_ERRORS: Readonly<
   already_decided: (subject) => new ShortfallAlreadyDecidedError(shipmentLabelOf(subject)),
   not_confirmed: (subject) =>
     new ShortfallOrderNotConfirmedError(subject.reference, subject.status),
-  remainder_not_planned: (subject) =>
-    new RemainderNotDecidableError(subject.reference, subject.rank, subject.remainderNoteStatus),
   card_unpaid: (subject) => new CardOrderUnpaidShortfallError(subject.reference),
   card_increase_pending: (subject) => new CardIncreasePendingShortfallError(subject.reference),
   voucher: (subject) => new VoucherOrderShortfallError(subject.reference),

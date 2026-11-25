@@ -147,7 +147,7 @@ Ce que l'équipe doit savoir :
 
 **Nom** : `Backorder` (« reliquat de commande » en anglais commercial), table
 `public.backorder`. `OrderRemainder` est écarté : `OrderRemainderSettler`
-(`orders/application/services/order-remainder-settler.ts`) porte déjà le mot
+(orders/application/services/order-remainder-settler.ts (retiré en B5)) porte déjà le mot
 pour le second envoi mort, et deux sens d'un même mot dans un contexte se
 confondent (décision 9).
 
@@ -805,9 +805,9 @@ hors tests) : `delivery-note.ts` (`planRemainder`), remainder-schedule (retiré 
 remainder-decision-source (retiré en B5a), remainder-decision-follower (retiré en B5a),
 prepare-remainder-note.handler (retiré en B5a), hand-over-remainder-note.handler (retiré en B5a),
 `on-remainder-packed.handler.ts`, `on-remainder-handed-over.handler.ts`,
-`order-remainder-settler.ts`, `remainder-settlement.ts`,
-`remainder-shipment.reader.ts` et son adaptateur Prisma,
-`shipment-settlement.ts`, le refus `remainder_not_planned` de
+order-remainder-settler.ts (retiré en B5), remainder-settlement.ts (retiré en B5),
+remainder-shipment.reader.ts (retiré en B5) et son adaptateur Prisma,
+shipment-settlement.ts (retiré en B5), le refus `remainder_not_planned` de
 `shortfall-decidability.ts`, et **43** lecteurs de `partially_handed_over`
 hors tests (compte de `vitruve`, 2026-11-25), dont des contrats servis aux
 fronts et des fichiers générés (`shop-copy-manifest.json`, sous

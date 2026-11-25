@@ -32,7 +32,6 @@ const DECISION_REFUSALS: Readonly<
 > = {
   already_decided: "already_decided",
   not_confirmed: "not_confirmed",
-  remainder_not_planned: "not_confirmed",
   card_unpaid: "card_unpaid",
   card_increase_pending: "card_increase_pending",
   voucher: "voucher",

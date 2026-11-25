@@ -33,12 +33,6 @@ export interface ShortfallDecisionSubject {
   readonly rank: number;
   /** Le statut de la COMMANDE — celui de l'envoi de rang 1. */
   readonly status: OrderStatus;
-  /**
-   * Au-delà du rang 1, le statut du BL vivant de ce rang (`planned`,
-   * `prepared`, `handed_over`) ; `null` sans BL vivant. Ignoré au rang 1, dont
-   * l'état est celui de la commande (plan E7 reliquat, choix 3).
-   */
-  readonly remainderNoteStatus: string | null;
   readonly settlementRegime: SettlementRegime;
   /**
    * Un projet de hausse par carte est vivant (`awaiting_payment`, `ready`,
@@ -82,9 +76,8 @@ export interface ShortfallDecisionAct {
  * colisage a figé au signal en vigueur — jamais une saisie : la fiche le
  * revérifie sous son verrou (`ShortfallDesk.authorize`).
  *
- * Elle porte l'invariant de ce qui peut partir incomplet : un envoi encore à
- * coliser — la commande confirmée au rang 1, le BL du reliquat prévu au-delà
- * (choix 11) —, une commande au compte, sans bon de fidélité, dont chaque montant garde la
+ * Elle porte l'invariant de ce qui peut partir incomplet : une commande encore
+ * à coliser (confirmée), une commande au compte, sans bon de fidélité, dont chaque montant garde la
  * règle qui l'a produit — sans quoi le bon de livraison partiel ne saurait
  * pas recomposer ses montants (`composePartial`) —, et dont au moins une pièce
  * est au bac.
@@ -96,7 +89,7 @@ export class ShortfallDecision {
 
   /**
    * @throws {ShortfallAlreadyDecidedError} @throws {NoShortfallToDecideError}
-   * @throws {ShortfallOrderNotConfirmedError} @throws {RemainderNotDecidableError}
+   * @throws {ShortfallOrderNotConfirmedError}
    * @throws {CardOrderUnpaidShortfallError} @throws {CardIncreasePendingShortfallError}
    * @throws {VoucherOrderShortfallError} @throws {OrderTooOldForShortfallError}
    * @throws {NothingDepartsError}
@@ -139,7 +132,7 @@ export class ShortfallDecision {
    * départ ne se décidera pas. `decide` les rejuge : ce sont les mêmes.
    *
    * @throws {ShortfallAlreadyDecidedError} @throws {ShortfallOrderNotConfirmedError}
-   * @throws {RemainderNotDecidableError} @throws {CardOrderUnpaidShortfallError}
+   * @throws {CardOrderUnpaidShortfallError}
    * @throws {CardIncreasePendingShortfallError}
    * @throws {VoucherOrderShortfallError} @throws {OrderTooOldForShortfallError}
    */

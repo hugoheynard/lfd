@@ -2,8 +2,7 @@
  * E2E du **comptoir** (`documentation/commandes/reliquat/reliquat.md`).
  *
  * Ce que seul le vrai Postgres prouve : que le jeton d'une commande colisée
- * la rend prête au rang 1, que `{}` la remet par le scan, et qu'un corps hors
- * forme est refusé avant tout geste.
+ * la rend prête au rang 1, et que le scan la remet.
  *
  * Doublés : la signature des jetons (le jeton EST le `sub`) et Stripe.
  */
@@ -169,7 +168,7 @@ async function tokenOf(orderId: string): Promise<string> {
 }
 
 describe("le comptoir", () => {
-  it("un seul envoi : le scan rend la commande au rang 1, et `{}` la remet comme avant", async () => {
+  it("le scan rend la commande au rang 1, et la remet", async () => {
     const account = await placeOnAccount(await scene());
     await closePlan();
     await packed(account, 1);
@@ -180,24 +179,11 @@ describe("le comptoir", () => {
       await staff().get(`/admin/handover/${token}`).expect(200),
     );
     expect(seen).toMatchObject({ rank: 1, reference: number, blockedReason: null });
-    expect(seen.shipments.map(({ rank }) => rank)).toEqual([1]);
 
     const done = jsonBody<OrderHandoverView>(
-      await staff().post(`/admin/handover/${token}`).send({}).expect(201),
+      await staff().post(`/admin/handover/${token}`).expect(201),
     );
-    expect(done).toMatchObject({ rank: 1, handedOverVia: "scan", shipments: [] });
+    expect(done).toMatchObject({ rank: 1, handedOverVia: "scan" });
     expect(await attestationsOf(account)).toEqual([{ rank: 1, reference: number }]);
-  });
-
-  it("un corps hors forme est refusé avant tout geste", async () => {
-    const account = await placeOnAccount(await scene());
-    await closePlan();
-    await packed(account, 1);
-
-    await staff()
-      .post(`/admin/handover/${await tokenOf(account)}`)
-      .send({ ranks: [1, 1] })
-      .expect(400);
-    expect(await attestationsOf(account)).toEqual([]);
   });
 });

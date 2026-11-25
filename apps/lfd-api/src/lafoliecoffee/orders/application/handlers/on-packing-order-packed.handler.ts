@@ -25,10 +25,9 @@ export const ON_PACKING_ORDER_PACKED = "b2b.orders.mark-ready-from-packing";
  * avec lui. `MarkOrderReadyCommand` ne fait rien sur une commande déjà prête :
  * une réannonce est sans effet.
  *
- * Un fait de rang > 1 n'est pas le sien : le bac d'un reliquat prépare SON
- * bon de livraison, par l'abonné `OnRemainderPacked` des bons de livraison
- * (plan E7 reliquat, choix 4, lot L4a). La commande, elle, reste celle du
- * rang 1 (choix 3).
+ * Seul un fait de rang 1 — la commande elle-même — la rend prête. Le fait
+ * porte un rang ; un rang > 1 n'a plus de commande à faire avancer : le reste
+ * d'un manque devient une commande à part (le reliquat), qui a son propre bac.
  */
 @Injectable()
 @DurableHandler({ type: PACKING_ORDER_PACKED, subscriber: ON_PACKING_ORDER_PACKED })

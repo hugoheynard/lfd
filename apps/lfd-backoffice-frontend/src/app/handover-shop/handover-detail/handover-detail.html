@@ -275,9 +275,6 @@
         @if (caution(); as why) {
           <p class="hd-muted-note" data-muted-note>{{ why }}</p>
         }
-        @if (shipments().length > 0) {
-          <app-shipment-choice [shipments]="shipments()" [(checked)]="checked" />
-        }
         @if (activeProof() === null) {
           <p class="hd-muted-note" data-proof="manual">
             QR non scanné : la remise sera enregistrée sans code.
@@ -294,7 +291,6 @@
           [intent]="muted() ? 'neutral' : 'primary'"
           data-action="remit"
           [loading]="remitting()"
-          [disabled]="nothingChecked()"
           (click)="incompleteProcedure() ? startIncomplete() : remit()"
         >
           <!-- Sac pas fini : la procédure, qui lit le bac avant tout geste
@@ -302,7 +298,7 @@
           @if (incompleteProcedure()) {
             Procédure commande incomplète
           } @else {
-            {{ shipments().length > 0 ? 'Remettre les envois cochés' : 'Remettre la commande' }}
+            Remettre la commande
           }
         </button>
       }

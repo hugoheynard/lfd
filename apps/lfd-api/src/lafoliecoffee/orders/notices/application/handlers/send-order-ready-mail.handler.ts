@@ -5,7 +5,7 @@ import {
   DurableHandler,
   type DurableSubscriber,
 } from "../../../../../platform/outbox/durable-handler.js";
-import { shipmentKeySuffix } from "../../../../../production/channels/commerce/index.js";
+import { FIRST_SHIPMENT_RANK } from "../../../../../production/channels/commerce/index.js";
 import { ORDER_READY, OrderReadyFact } from "../../../domain/events/order-ready.fact.js";
 import { OrderReadyMail } from "../services/order-ready-mail.service.js";
 
@@ -57,14 +57,11 @@ export class SendOrderReadyMail implements DurableSubscriber {
     // ne fait pas partir un second message. Le rappel du comptoir, lui, en
     // compose une datée — c'est la même fonction d'envoi, et c'est l'appelant
     // qui choisit s'il se répète.
-    // Par ENVOI (plan E7 reliquat, choix 17) : le rang 1 garde la clé d'avant.
-    // Un reste (rang > 1) dit « le reste de votre commande » (lot L4d).
-    await this.mail.send(
-      fact.orderId,
-      `order.ready:${fact.orderId}${shipmentKeySuffix(fact.rank)}`,
-      {
-        rank: fact.rank,
-      },
-    );
+    // Le fait porte un rang ; seul le rang 1 — la commande elle-même — a un
+    // courriel. Le reste d'un manque devient une commande à part, qui a le sien.
+    if (fact.rank !== FIRST_SHIPMENT_RANK) {
+      return;
+    }
+    await this.mail.send(fact.orderId, `order.ready:${fact.orderId}`);
   }
 }

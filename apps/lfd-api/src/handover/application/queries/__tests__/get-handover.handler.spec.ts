@@ -3,7 +3,6 @@ import {
   type HandoverSubject,
 } from "../../../channels/commerce/handover-subject.reader.js";
 import { OrderHandover } from "../../../domain/entities/order-handover.js";
-import { HandedOverOrdersReader } from "../../../domain/ports/handed-over-orders.reader.js";
 import { OrderHandoverRepository } from "../../../domain/ports/order-handover.repository.js";
 import { ShipmentRef } from "../../../../production/channels/handover/index.js";
 import { HandoverCounterView } from "../../services/handover-counter-view.js";
@@ -40,7 +39,6 @@ function subject(overrides: Partial<HandoverSubject> = {}): HandoverSubject {
     fulfillmentMethod: "pickup",
     note: "",
     lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 2, saleUnit: "piece" }],
-    laterShipments: [],
     ...overrides,
   };
 }
@@ -88,16 +86,6 @@ class FixedHandovers extends OrderHandoverRepository {
     return Promise.resolve(this.byRank.get(shipment.rank) ?? null);
   }
 
-  /** Le même dépôt, lu comme la question « lesquels sont partis ? ». */
-  asHandedOver(): HandedOverOrdersReader {
-    const ranks = new Set(this.byRank.keys());
-    return new (class extends HandedOverOrdersReader {
-      handedOverAmong(shipments: readonly ShipmentRef[]): Promise<readonly ShipmentRef[]> {
-        return Promise.resolve(shipments.filter((shipment) => ranks.has(shipment.rank)));
-      }
-    })();
-  }
-
   attest(): Promise<boolean> {
     return Promise.resolve(false);
   }
@@ -110,12 +98,7 @@ function counterOf(existing: Attested, holds: FixedQualityHolds): HandoverCounte
   const handovers = new FixedHandovers(
     existing === null ? [] : existing instanceof OrderHandover ? [existing] : existing,
   );
-  return new HandoverCounterView(
-    handovers,
-    handovers.asHandedOver(),
-    new FixedStaffAuthorDirectory(),
-    holds,
-  );
+  return new HandoverCounterView(handovers, new FixedStaffAuthorDirectory(), holds);
 }
 
 const READERS = [
@@ -210,30 +193,6 @@ describe.each(READERS)("$name — la commande à régler en boutique", ({ read }
   });
 });
 
-/** Un reste de la commande, colisé ou non (plan E7 reliquat, L4c). */
-function withRemainder(prepared: boolean): HandoverSubject {
-  return subject({
-    laterShipments: [
-      {
-        rank: 2,
-        prepared,
-        lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 1, saleUnit: "piece" }],
-      },
-    ],
-  });
-}
-
-function attestedAt(rank: number): OrderHandover {
-  return OrderHandover.rehydrate(
-    "ord_1",
-    rank === 1 ? "ORD-ABCD-1234" : `ORD-ABCD-1234-${String(rank)}`,
-    new Date("2026-09-08T07:00:00.000Z"),
-    "staff-0",
-    "scan",
-    rank,
-  );
-}
-
 /** P6 de `pricing/vente-au-poids.md` : le comptoir recompte des pièces, pas des grammes. */
 describe.each(READERS)("$name — une commande mêlée pièce et poids", ({ read }) => {
   it("compte 12 croissants et UN saumon : 13, et garde l'unité de chaque ligne", async () => {
@@ -271,67 +230,10 @@ describe.each(READERS)("$name — une commande mêlée pièce et poids", ({ read
   });
 });
 
-describe.each(READERS)("$name — les envois prêts (plan E7 reliquat, L4c)", ({ read }) => {
-  it("un seul envoi : la commande, au rang 1, comme avant", async () => {
+describe.each(READERS)("$name — l'envoi montré", ({ read }) => {
+  it("la commande, au rang 1, sous son numéro", async () => {
     const view = await read(subject(), null, new FixedQualityHolds());
 
     expect(view).toMatchObject({ rank: 1, reference: "ORD-ABCD-1234", totalUnits: 2 });
-    expect(view.shipments.map(({ rank }) => rank)).toEqual([1]);
-  });
-
-  it("deux envois prêts, rien de retiré : les deux sont rendus, la vue reste sur la commande", async () => {
-    const view = await read(withRemainder(true), null, new FixedQualityHolds());
-
-    expect(view.rank).toBe(1);
-    expect(view.shipments).toEqual([
-      {
-        rank: 1,
-        reference: "ORD-ABCD-1234",
-        totalUnits: 2,
-        lines: [
-          { sku: "VIE-001", productName: "Croissant", quantity: 2, saleUnit: "piece" as const },
-        ],
-      },
-      {
-        rank: 2,
-        reference: "ORD-ABCD-1234-2",
-        totalUnits: 1,
-        lines: [
-          { sku: "VIE-001", productName: "Croissant", quantity: 1, saleUnit: "piece" as const },
-        ],
-      },
-    ]);
-  });
-
-  it("la commande retirée, son reste colisé : la vue montre le reste, remettable", async () => {
-    const view = await read(withRemainder(true), attestedAt(1), new FixedQualityHolds());
-
-    expect(view).toMatchObject({
-      rank: 2,
-      reference: "ORD-ABCD-1234-2",
-      totalUnits: 1,
-      handedOverAt: null,
-      blockedReason: null,
-    });
-    expect(view.shipments.map(({ rank }) => rank)).toEqual([2]);
-  });
-
-  it("un reste prévu, pas encore colisé, n'est pas à tendre", async () => {
-    const view = await read(withRemainder(false), attestedAt(1), new FixedQualityHolds());
-
-    expect(view.rank).toBe(1);
-    expect(view.blockedReason).toBe("Cette commande a déjà été retirée.");
-    expect(view.shipments).toEqual([]);
-  });
-
-  it("tout est retiré : la vue dit la commande « déjà retirée », plus rien à cocher", async () => {
-    const view = await read(
-      withRemainder(true),
-      [attestedAt(1), attestedAt(2)],
-      new FixedQualityHolds(),
-    );
-
-    expect(view.blockedReason).toBe("Cette commande a déjà été retirée.");
-    expect(view.shipments).toEqual([]);
   });
 });
