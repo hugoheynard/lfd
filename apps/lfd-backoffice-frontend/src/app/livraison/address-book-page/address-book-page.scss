@@ -17,3 +17,21 @@
   align-items: center;
   gap: var(--fold-space-xs);
 }
+
+.columns-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+  padding: var(--fold-space-md);
+}
+
+.note {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.stack,
+.line {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}

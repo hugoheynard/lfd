@@ -2,7 +2,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import type { DeliveryAddressBookView } from '@lfd/contracts';
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 
 import { B2B_API_BASE } from '../../api/api-config';
 import {
@@ -12,6 +12,7 @@ import {
   osmUrlOf,
   stopMinutesLabelOf,
 } from '../address-book';
+import { readHiddenColumns, writeHiddenColumns } from '../address-book-columns';
 import { addressBookRowOf } from '../address-book.fixture';
 import { AddressBookPage } from './address-book-page';
 
@@ -62,6 +63,40 @@ async function boot(): Promise<{
 }
 
 describe('AddressBookPage', () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  it('masque stationnement, règle et temps sur place par défaut, et montre une colonne cochée', async () => {
+    const { fixture, element, http } = await boot();
+    http.expectOne(URL).flush(VIEW);
+    await settle(fixture);
+    const headers = (): string => element.querySelector('thead')?.textContent ?? '';
+    expect(headers()).not.toContain('Stationnement');
+    expect(
+      Array.from(element.querySelectorAll('thead th')).map((th) => th.textContent?.trim()),
+    ).toEqual(['Client', 'Adresse', 'Contact', 'Note livreurs', 'Dépôt', 'Procédure']);
+    expect(element.querySelector('[data-gps]')?.textContent).toContain('GPS');
+
+    element.querySelector<HTMLElement>('[data-columns] button')?.click();
+    await settle(fixture);
+    element.querySelector<HTMLInputElement>('[data-column-toggle="parking"] input')?.click();
+    await settle(fixture);
+
+    expect(headers()).toContain('Stationnement');
+    expect(readHiddenColumns(localStorage)).toEqual(['rule', 'stop']);
+  });
+
+  it('reprend les colonnes masquées retenues par ce navigateur', async () => {
+    writeHiddenColumns(localStorage, ['note']);
+    const { fixture, element, http } = await boot();
+    http.expectOne(URL).flush(VIEW);
+    await settle(fixture);
+    const headers = element.querySelector('thead')?.textContent ?? '';
+    expect(headers).not.toContain('Note livreurs');
+    expect(headers).toContain('Stationnement');
+  });
+
   it('attend le carnet, puis montre chaque adresse et le compte', async () => {
     const { fixture, element, http } = await boot();
     expect(element.querySelector('fold-loading')).not.toBeNull();
@@ -75,8 +110,6 @@ describe('AddressBookPage', () => {
     expect(element.querySelector('[data-count]')?.textContent).toContain('2 adresses');
     expect(element.querySelectorAll('[data-default]')).toHaveLength(1);
     expect(element.querySelector('[data-door]')?.textContent).toContain('45.566080, 5.918000');
-    expect(element.textContent).toContain('Rapporter');
-    expect(element.textContent).toContain('Réglage global');
     http.verify();
   });
 
@@ -139,5 +172,17 @@ describe('le carnet d’adresses, en mots', () => {
     expect(doorstepRuleLabelOf(null)).toBe('Réglage global');
     expect(stopMinutesLabelOf(null)).toBe('global');
     expect(stopMinutesLabelOf(5)).toBe('5 min');
+  });
+});
+
+describe('readHiddenColumns', () => {
+  it('rend le réglage par défaut sans mémoire, ou sur une mémoire illisible', () => {
+    localStorage.clear();
+    expect(readHiddenColumns(localStorage)).toEqual(['parking', 'rule', 'stop']);
+    expect(readHiddenColumns(null)).toEqual(['parking', 'rule', 'stop']);
+    localStorage.setItem('lfd.tour-manager.address-book.hidden-columns', '{pas du json');
+    expect(readHiddenColumns(localStorage)).toEqual(['parking', 'rule', 'stop']);
+    localStorage.setItem('lfd.tour-manager.address-book.hidden-columns', '[1,2]');
+    expect(readHiddenColumns(localStorage)).toEqual(['parking', 'rule', 'stop']);
   });
 });

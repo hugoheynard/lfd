@@ -21,7 +21,7 @@
       <fold-data-table
         caption="Adresses de livraison"
         narrowLayout="cards"
-        [columns]="columns"
+        [columns]="columns()"
         [rows]="rows()"
         [rowKey]="rowKey"
         [empty]="empty()"
@@ -41,6 +41,21 @@
             data-without-gps
           />
           <fold-badge radius="square" variant="neutral" [content]="countLabel()" data-count />
+          <fold-popover placement="bottom-end" data-columns>
+            <button foldButton foldPopoverTrigger emphasis="outline" size="sm" icon="settings">
+              Colonnes
+            </button>
+            <div foldPopoverPanel class="columns-panel">
+              @for (column of optionalColumns; track column.key) {
+                <fold-checkbox
+                  [label]="column.label"
+                  [checked]="isShown(column.key)"
+                  (checkedChange)="toggleColumn(column.key, $event)"
+                  [attr.data-column-toggle]="column.key"
+                />
+              }
+            </div>
+          </fold-popover>
         </div>
 
         <ng-template foldCell="customer" let-row>
@@ -67,17 +82,15 @@
               <span>{{ row.ligne2 }}</span>
             }
             <span>{{ row.codePostal }} {{ row.ville }}</span>
+            @if (row.door; as point) {
+              <span class="line" data-gps>
+                GPS
+                <fold-link [href]="osmUrlOf(point)" target="_blank" rel="noopener" data-door>
+                  {{ gpsLabelOf(point) }}
+                </fold-link>
+              </span>
+            }
           </span>
-        </ng-template>
-
-        <ng-template foldCell="door" let-row>
-          @if (row.door; as point) {
-            <fold-link [href]="osmUrlOf(point)" target="_blank" rel="noopener" data-door>
-              {{ gpsLabelOf(point) }}
-            </fold-link>
-          } @else {
-            —
-          }
         </ng-template>
 
         <ng-template foldCell="parking" let-row>
@@ -90,7 +103,9 @@
           }
         </ng-template>
 
-        <ng-template foldCell="note" let-row>{{ row.note || '—' }}</ng-template>
+        <ng-template foldCell="note" let-row>
+          <span class="note">{{ row.note || '—' }}</span>
+        </ng-template>
 
         <ng-template foldCell="contact" let-row>
           @if (row.deliveryContact; as contact) {

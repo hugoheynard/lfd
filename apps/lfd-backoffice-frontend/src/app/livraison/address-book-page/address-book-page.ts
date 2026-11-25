@@ -1,3 +1,4 @@
+import { DOCUMENT } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import type { DeliveryAddressBookRow } from '@lfd/contracts';
 import {
@@ -10,6 +11,8 @@ import {
   FoldLinkComponent,
   FoldLoadingStateComponent,
   FoldPageLayoutComponent,
+  FoldPopoverComponent,
+  FoldPopoverTriggerDirective,
   FoldSearchComponent,
   type FoldTableColumn,
   type FoldTableEmpty,
@@ -22,7 +25,47 @@ import {
   osmUrlOf,
   stopMinutesLabelOf,
 } from '../address-book';
+import {
+  ADDRESS_BOOK_OPTIONAL_COLUMNS,
+  readHiddenColumns,
+  writeHiddenColumns,
+} from '../address-book-columns';
 import { DeliveryAddressBookService } from '../delivery-address-book.service';
+
+/** Les colonnes de la table, dans l’ordre ; le réglage en masque. */
+const ALL_COLUMNS: readonly FoldTableColumn<DeliveryAddressBookRow>[] = [
+  { key: 'customer', label: 'Client' },
+  { key: 'address', label: 'Adresse' },
+  { key: 'contact', label: 'Contact' },
+  { key: 'note', label: 'Note livreurs' },
+  { key: 'parking', label: 'Stationnement' },
+  {
+    key: 'deposit',
+    label: 'Dépôt',
+    value: (row) => (row.depositAllowed ? 'Oui' : 'Non'),
+  },
+  {
+    key: 'rule',
+    label: 'Règle à la porte',
+    value: (row) => doorstepRuleLabelOf(row.doorstepRule),
+  },
+  {
+    key: 'stop',
+    label: 'Temps sur place',
+    numeric: true,
+    value: (row) => stopMinutesLabelOf(row.stopMinutes),
+  },
+  { key: 'procedure', label: 'Procédure', value: (row) => (row.hasProcedure ? 'Oui' : 'Non') },
+];
+
+/** Le stockage de ce navigateur, ou `null` quand il est refusé. */
+function storageOf(document: Document): Storage | null {
+  try {
+    return document.defaultView?.localStorage ?? null;
+  } catch {
+    return null;
+  }
+}
 
 type AddressBookState =
   | { readonly status: 'loading' }
@@ -48,6 +91,8 @@ type AddressBookState =
     FoldLinkComponent,
     FoldLoadingStateComponent,
     FoldPageLayoutComponent,
+    FoldPopoverComponent,
+    FoldPopoverTriggerDirective,
     FoldSearchComponent,
   ],
   templateUrl: './address-book-page.html',
@@ -55,10 +100,13 @@ type AddressBookState =
 })
 export class AddressBookPage {
   private readonly addressBook = inject(DeliveryAddressBookService);
+  private readonly storage = storageOf(inject(DOCUMENT));
 
   protected readonly state = signal<AddressBookState>({ status: 'loading' });
   protected readonly query = signal('');
   protected readonly withoutGpsOnly = signal(false);
+  protected readonly hidden = signal<readonly string[]>(readHiddenColumns(this.storage));
+  protected readonly optionalColumns = ADDRESS_BOOK_OPTIONAL_COLUMNS;
 
   private readonly all = computed(() => {
     const state = this.state();
@@ -84,31 +132,23 @@ export class AddressBookPage {
       : { title: 'Aucune adresse ne correspond', subtitle: 'Modifiez la recherche ou le filtre.' },
   );
 
-  protected readonly columns: readonly FoldTableColumn<DeliveryAddressBookRow>[] = [
-    { key: 'customer', label: 'Client' },
-    { key: 'address', label: 'Adresse' },
-    { key: 'door', label: 'Porte GPS' },
-    { key: 'parking', label: 'Stationnement' },
-    { key: 'note', label: 'Note livreurs' },
-    { key: 'contact', label: 'Contact sur place' },
-    {
-      key: 'deposit',
-      label: 'Dépôt autorisé',
-      value: (row) => (row.depositAllowed ? 'Oui' : 'Non'),
-    },
-    {
-      key: 'rule',
-      label: 'Règle à la porte',
-      value: (row) => doorstepRuleLabelOf(row.doorstepRule),
-    },
-    {
-      key: 'stop',
-      label: 'Temps sur place',
-      numeric: true,
-      value: (row) => stopMinutesLabelOf(row.stopMinutes),
-    },
-    { key: 'procedure', label: 'Procédure', value: (row) => (row.hasProcedure ? 'Oui' : 'Non') },
-  ];
+  /** Les colonnes affichées : toutes, moins celles que le réglage masque. */
+  protected readonly columns = computed(() =>
+    ALL_COLUMNS.filter((column) => !this.hidden().includes(column.key)),
+  );
+
+  protected isShown(key: string): boolean {
+    return !this.hidden().includes(key);
+  }
+
+  protected toggleColumn(key: string, shown: boolean): void {
+    const next = shown
+      ? this.hidden().filter((hiddenKey) => hiddenKey !== key)
+      : [...this.hidden(), key];
+    this.hidden.set(next);
+    writeHiddenColumns(this.storage, next);
+  }
+
   protected readonly rowKey = (row: DeliveryAddressBookRow): string => row.addressId;
 
   protected readonly gpsLabelOf = gpsLabelOf;
