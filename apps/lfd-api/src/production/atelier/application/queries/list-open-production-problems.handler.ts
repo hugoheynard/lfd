@@ -5,6 +5,7 @@ import { ProductionDayRepository, ServiceDay } from "../../../day/index.js";
 import type { ProductionDay } from "../../../day/index.js";
 import type { ProductionProblemState } from "../../domain/entities/production-problem.js";
 import { OpenProductionProblemsReader } from "../../domain/ports/production-problem.ports.js";
+import { StepRedsReading } from "../services/step-reds-reading.service.js";
 import { UnconfirmedLinesReading } from "../services/unconfirmed-lines-reading.service.js";
 import { ListOpenProductionProblemsQuery } from "./list-open-production-problems.query.js";
 
@@ -18,7 +19,8 @@ import { ListOpenProductionProblemsQuery } from "./list-open-production-problems
  * rouge n'a pas pu corriger. Les plus anciens d'abord.
  *
  * À côté, les lignes « à confirmer » : en toujours vert sans palier
- * à heure, la fournée automatique ne les complète pas.
+ * à heure, la fournée automatique ne les complète pas ; et les étapes en
+ * rouge, que l'écran range dans la même liste, marquées « étape ».
  */
 @QueryHandler(ListOpenProductionProblemsQuery)
 export class ListOpenProductionProblemsHandler implements IQueryHandler<
@@ -29,6 +31,7 @@ export class ListOpenProductionProblemsHandler implements IQueryHandler<
     private readonly reader: OpenProductionProblemsReader,
     private readonly days: ProductionDayRepository,
     private readonly unconfirmed: UnconfirmedLinesReading,
+    private readonly stepReds: StepRedsReading,
   ) {}
 
   async execute(query: ListOpenProductionProblemsQuery): Promise<ProductionProblemsView> {
@@ -37,8 +40,11 @@ export class ListOpenProductionProblemsHandler implements IQueryHandler<
     const problems = [...open]
       .sort((left, right) => left.reported.at.getTime() - right.reported.at.getTime())
       .map((problem) => viewOf(problem, current));
-    const unconfirmed = await this.unconfirmed.of(day, current);
-    return { serviceDay: day.value, problems, unconfirmed };
+    const [unconfirmed, stepReds] = await Promise.all([
+      this.unconfirmed.of(day, current),
+      this.stepReds.of(day, current),
+    ]);
+    return { serviceDay: day.value, problems, unconfirmed, stepReds };
   }
 }
 

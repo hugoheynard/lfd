@@ -1,3 +1,4 @@
+import { noLineSteps } from "../../__tests__/line-step-doubles.js";
 import {
   orderLine,
   producibleOrder,
@@ -145,6 +146,7 @@ function bareReading(
     new GroupingSourceReading(...placementPorts()),
     ...trackingPorts(),
     problems.dayReader(),
+    noLineSteps(),
   );
 }
 
@@ -375,6 +377,7 @@ function resupplyReadingOf(day: ProductionDay): ProductionWorksheetReading {
     new GroupingSourceReading(...placementPorts()),
     ...trackingPorts(),
     new InMemoryProblems().dayReader(),
+    noLineSteps(),
   );
 }
 

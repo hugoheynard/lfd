@@ -33,6 +33,8 @@ export interface LineMarks {
   readonly trackingLevelOf: (sku: string) => ProductionTrackingLevel;
   /** Le problème de chaque SKU de la journée, traité ou non : le plafond survit au « traité ». */
   readonly problems: ReadonlyMap<string, ProductionProblemState>;
+  /** Les postes d'étape qui n'ont pas coché (`worksheet-line-steps.ts`). */
+  readonly stepsPendingOf: (sku: string) => readonly string[];
 }
 
 /** Le domaine parle en `Date`, le contrat en ISO. La traduction vit ici. */
@@ -50,6 +52,7 @@ export function lineViewOf(marks: LineMarks): (line: WorksheetLine) => WorkshopL
     trackingLevel: marks.trackingLevelOf(line.sku),
     ...ceilingOf(line, marks.problems.get(line.sku)),
     role: null,
+    stepsPending: marks.stepsPendingOf(line.sku),
   });
 }
 

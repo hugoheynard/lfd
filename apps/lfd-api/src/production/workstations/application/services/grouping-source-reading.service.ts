@@ -21,6 +21,12 @@ export interface GroupingSourceRead {
   readonly workstationsKnown: boolean;
 }
 
+/** Les postes d'une ligne, et les postes en service. */
+export interface LineStations {
+  readonly stations: readonly ProductStation[];
+  readonly workstations: readonly { readonly id: string; readonly name: string }[];
+}
+
 /**
  * **Ce qu'un papier ou un écran du fournil lit pour ranger des SKU** (plan
  * `documentation/fournil/les-postes-du-fournil.md`, § 3.4–3.7), selon le mode : le rayon
@@ -109,6 +115,20 @@ export class GroupingSourceReading {
       );
       return null;
     }
+  }
+
+  /**
+   * **Les postes d'une ligne, sur la carte courante** — ceux de son produit,
+   * celui qui finit et ceux d'étape (`[]` : produit sans poste ou SKU hors
+   * miroir), et les postes en service pour leurs noms. Lu par le geste d'une
+   * étape, qui ne coche rien à l'aveugle : une panne **lève**.
+   */
+  async stationsOfLine(sku: string): Promise<LineStations> {
+    const placement = await this.placementOf([sku]);
+    return {
+      stations: workstationBySku(placement).get(sku) ?? [],
+      workstations: placement.workstations,
+    };
   }
 
   /** Le produit et le rayon de chaque SKU, sans les filtres de vente, puis leurs postes. Une panne lève. */

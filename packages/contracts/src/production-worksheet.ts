@@ -173,6 +173,17 @@ export interface WorkshopLine {
    * Facultatif dans le TYPE seulement : le serveur l'envoie toujours.
    */
   readonly role?: WorkshopLineRole | null;
+  /**
+   * **Les postes d'étape qui n'ont pas coché** (« en attente de :
+   * Boulangerie ») — les postes de la ligne qui ne la finissent pas, lus sur
+   * la carte courante, dont l'étape n'est pas faite (une étape en rouge
+   * attend toujours). La ligne est finie à l'œil quand `done` et que cette
+   * liste est vide ; `done` garde son sens : la fournée atteint l'attendu.
+   * `[]` en mode boutique, ou postes illisibles : aucune étape n'est exigée.
+   * Dans l'ordre des postes. Facultatif dans le TYPE seulement : le serveur
+   * l'envoie toujours.
+   */
+  readonly stepsPending?: readonly string[];
 }
 
 /** Le rouge ouvert d'une ligne, pour le panneau « Combien est réellement sorti ? ». */

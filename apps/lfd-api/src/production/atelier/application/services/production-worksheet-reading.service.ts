@@ -9,6 +9,7 @@ import {
 } from "../../../channels/packing/oven-waiting-orders.reader.js";
 import { ProductionDisplaySettings } from "../../../shared/print/index.js";
 import { ProductionDisplaySettingsReader } from "../../../shared/print/index.js";
+import { DayLineStepsReader } from "../../domain/ports/line-step.ports.js";
 import { DayProblemsReader } from "../../domain/ports/production-problem.ports.js";
 import { ProductionContainerReader } from "../../domain/ports/production-container.reader.js";
 import { ProductionDayRepository } from "../../../day/index.js";
@@ -21,6 +22,7 @@ import { ServiceRange } from "../../../day/index.js";
 import { DayTrackingLevelsReading } from "./day-tracking-levels-reading.service.js";
 import type { WorksheetContent } from "./worksheet-content.js";
 import { WorksheetDeadlinesReading } from "./worksheet-deadlines-reading.service.js";
+import { stepsPendingOf } from "./worksheet-line-steps.js";
 import { groupView, lineViewOf } from "./worksheet-line-views.js";
 import { WorksheetTrackingLevelsReading } from "./worksheet-tracking-levels.js";
 
@@ -90,6 +92,13 @@ import { WorksheetTrackingLevelsReading } from "./worksheet-tracking-levels.js";
  * « traité », le panneau rouge ne montre que l'ouvert. La table écrit au
  * journal de la journée par déclencheur : un rouge fait relire la fiche.
  *
+ * ## Les étapes de chaque ligne
+ *
+ * En mode prod, chaque ligne dit quels postes d'étape n'ont pas coché, lus
+ * sur la carte courante et sur les étapes de la journée (`stepsPending`) ;
+ * la table écrit au journal de la journée par déclencheur. En mode boutique,
+ * aucune étape n'est exigée.
+ *
  * ## Sans horloge
  *
  * Le contenu ne lit pas l'heure : il se range tel quel dans l'objet des
@@ -118,6 +127,7 @@ export class ProductionWorksheetReading {
     private readonly tracking: DayTrackingLevelsReading,
     private readonly lineLevels: WorksheetTrackingLevelsReading,
     private readonly problems: DayProblemsReader,
+    private readonly steps: DayLineStepsReader,
   ) {}
 
   /** Le contenu de la fiche d'une journée, sans rien qui dépende de l'heure. */
@@ -137,6 +147,7 @@ export class ProductionWorksheetReading {
       display,
       levels,
       problems,
+      steps,
     ] = await Promise.all([
       loading,
       this.expected.expectedBetween(ServiceRange.of(day.value, day.value)),
@@ -149,6 +160,7 @@ export class ProductionWorksheetReading {
       this.display.current(),
       loading.then((loaded) => this.tracking.levelsOf(day, loaded)),
       this.problems.allOf(day),
+      this.steps.allOf(day),
     ]);
 
     // 🔴 Le filtre par `orderId` n'est pas un confort. La clôture publie un
@@ -185,6 +197,7 @@ export class ProductionWorksheetReading {
       waiting,
       trackingLevelOf: tracked.outputLevelOf,
       problems: new Map(problems.map((problem) => [problem.sku, problem])),
+      stepsPendingOf: stepsPendingOf(grouping.source, steps),
     });
     const sheet = {
       date: day.value,

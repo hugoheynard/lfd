@@ -6,7 +6,14 @@ import { ProductionTrancheSettings } from "../../../day/index.js";
 import { ProductionTrackingSettings } from "../../domain/entities/production-tracking-settings.js";
 import { RunAlwaysGreenLineHandler } from "../commands/run-always-green-line.handler.js";
 import { GroupingSourceReading } from "../../../workstations/index.js";
-import { placementPorts } from "../../../workstations/application/__tests__/placement-doubles.js";
+import {
+  FixedWorkstationOfProducts,
+  placementPorts,
+} from "../../../workstations/application/__tests__/placement-doubles.js";
+import type { WorkstationOfProducts } from "../../../workstations/index.js";
+import { AlwaysGreenStepsRound } from "../services/always-green-steps.service.js";
+import { StepRedsReading } from "../services/step-reds-reading.service.js";
+import { InMemoryLineSteps } from "./line-step-doubles.js";
 import { AlwaysGreenLines } from "../services/always-green-lines.service.js";
 import { UnconfirmedLinesReading } from "../services/unconfirmed-lines-reading.service.js";
 import { WorksheetDeadlinesReading } from "../services/worksheet-deadlines-reading.service.js";
@@ -41,20 +48,33 @@ export const CROISSANT_DUE: DayDueThresholds = {
 export const SCENE_MARGIN = 15;
 export { BAGUETTE };
 
-export function alwaysGreenScene(due: DayDueThresholds | "down" = CROISSANT_DUE) {
+/** Aucun produit n'a de poste : la carte est lue, et ne dit rien. */
+const EMPTY_MAP = (): WorkstationOfProducts => new FixedWorkstationOfProducts([], new Map());
+
+/**
+ * @param placement les articles et la carte des postes que le tour lit ;
+ * par défaut, aucun produit n'a de poste.
+ */
+export function alwaysGreenScene(
+  due: DayDueThresholds | "down" = CROISSANT_DUE,
+  placement: ReturnType<typeof placementPorts> = placementPorts([], EMPTY_MAP()),
+) {
   const scene = problemScene();
+  const steps = new InMemoryLineSteps();
   const tranches = new InMemoryTrancheSettings(ProductionTrancheSettings.set("computed", []));
   const settings = new InMemoryTrackingSettings(
     ProductionTrackingSettings.of({ level: "always_green", marginMinutes: SCENE_MARGIN }),
   );
   const deadlines = new WorksheetDeadlinesReading(new FixedDueThresholds(due), tranches.reader());
-  const lines = new AlwaysGreenLines(
-    new WorksheetTrackingLevelsReading(new GroupingSourceReading(...placementPorts())),
-  );
+  const grouping = new GroupingSourceReading(...placement);
+  const lines = new AlwaysGreenLines(new WorksheetTrackingLevelsReading(grouping), grouping);
   return {
     ...scene,
     deadlines,
     lines,
+    steps,
+    stepsRound: new AlwaysGreenStepsRound(steps.dayReader(), steps.automaticChecks()),
+    stepReds: new StepRedsReading(steps.dayReader(), placement[1]),
     trackingSettings: settings,
     unconfirmed: new UnconfirmedLinesReading(
       trackingReadingOf({ frozen: scene.frozen, settings }),

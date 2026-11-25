@@ -62,10 +62,49 @@ export interface ProductionUnconfirmedLineView {
   readonly output: number;
 }
 
+/**
+ * **Le rouge d'une étape** (`documentation/fournil/plan-produit-sur-plusieurs-postes.md`,
+ * § 2.6) : un poste qui ne finit pas la ligne a mis sa part en rouge. Sans
+ * plafond, et sans « Marquer traité » : l'étape sort du rouge quand le poste
+ * la coche ou la décoche. La Supervision le montre dans la même liste que
+ * les problèmes, marqué « étape ».
+ */
+export interface ProductionStepRedView {
+  readonly sku: string;
+  readonly productName: string;
+  readonly workstationId: string;
+  /** `null` : le poste n'est plus en service. */
+  readonly workstationName: string | null;
+  /** `null` : aucune raison donnée. */
+  readonly reason: string | null;
+  /** ISO du rouge : « depuis quand ». */
+  readonly reportedAt: string;
+  /** `null` : la fiche ne portait pas de nom au moment du geste. */
+  readonly reportedByName: string | null;
+  /** Monte à chaque geste sur l'étape. */
+  readonly version: number;
+}
+
 /** `GET /admin/supervision/production-problems?date=` — les problèmes ouverts du jour. */
 export interface ProductionProblemsView {
   readonly serviceDay: string;
   readonly problems: readonly ProductionProblemView[];
   /** Les lignes en toujours vert sans palier, pas encore sorties en entier. */
   readonly unconfirmed: readonly ProductionUnconfirmedLineView[];
+  /**
+   * Les étapes en rouge du jour, les plus anciennes d'abord. Facultatif dans
+   * le TYPE seulement : le serveur l'envoie toujours.
+   */
+  readonly stepReds?: readonly ProductionStepRedView[];
 }
+
+/**
+ * **Le rouge d'une étape** — une raison si on veut. Sa longueur est une règle
+ * du domaine, qui la refuse avec un message à lire au fournil.
+ */
+export const markWorkshopStepRedSchema = z
+  .object({
+    reason: z.string().optional(),
+  })
+  .strict();
+export type MarkWorkshopStepRed = z.infer<typeof markWorkshopStepRedSchema>;

@@ -1,3 +1,4 @@
+import { noLineSteps } from "../../__tests__/line-step-doubles.js";
 import { InMemoryProblems } from "../../__tests__/problem-doubles.js";
 import {
   orderLine,
@@ -156,6 +157,7 @@ function handlerFor(
         new GroupingSourceReading(shelves, new UnreadWorkstationOfProducts()),
         ...trackingPorts(),
         new InMemoryProblems().dayReader(),
+        noLineSteps(),
       ),
       new FixedClock(NOW),
     ),

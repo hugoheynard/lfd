@@ -77,6 +77,23 @@ import { ProductionAtelierSheetController } from "./http/production-atelier-shee
 import { ProductionDisplaySettingsController } from "./http/production-display-settings.controller.js";
 import { ProductionSupervisionController } from "./http/production-supervision.controller.js";
 import { ProductionWorksheetController } from "./http/production-worksheet.controller.js";
+import { ProductionLineStepsController } from "./http/production-line-steps.controller.js";
+import { MarkStepDoneHandler } from "./application/commands/mark-step-done.handler.js";
+import { MarkStepRedHandler } from "./application/commands/mark-step-red.handler.js";
+import { UndoStepHandler } from "./application/commands/undo-step.handler.js";
+import { AlwaysGreenStepsRound } from "./application/services/always-green-steps.service.js";
+import { LineStepGestures } from "./application/services/line-step-gestures.service.js";
+import { StepRedsReading } from "./application/services/step-reds-reading.service.js";
+import {
+  AutomaticStepChecks,
+  DayLineStepsReader,
+  LineStepRepository,
+} from "./domain/ports/line-step.ports.js";
+import {
+  PrismaAutomaticStepChecks,
+  PrismaDayLineStepsReader,
+  PrismaLineStepRepository,
+} from "./infrastructure/prisma-line-step.repository.js";
 import {
   PrismaProductionContainerReader,
   PrismaProductionContainerRepository,
@@ -109,6 +126,8 @@ import { ProductionBatchShortcutsModule } from "./production-batch-shortcuts.mod
   controllers: [
     ProductionAtelierSheetController,
     ProductionWorksheetController,
+    // Les étapes d'une ligne : un poste qui ne la finit pas coche sa part.
+    ProductionLineStepsController,
     ProductionSupervisionController,
     ProductionDisplaySettingsController,
     ProductionTrackingSettingsController,
@@ -180,6 +199,18 @@ import { ProductionBatchShortcutsModule } from "./production-batch-shortcuts.mod
     { provide: ProductionProblemRepository, useClass: PrismaProductionProblemRepository },
     { provide: OpenProductionProblemsReader, useClass: PrismaOpenProductionProblemsReader },
     { provide: DayProblemsReader, useClass: PrismaDayProblemsReader },
+    // Les étapes d'une ligne (`fournil/plan-produit-sur-plusieurs-postes.md`) :
+    // les gestes, leur rouge à la Supervision, la coche d'office du toujours
+    // vert — écrire, lire la journée et cocher d'office sont trois ports (ISP).
+    LineStepGestures,
+    MarkStepDoneHandler,
+    MarkStepRedHandler,
+    UndoStepHandler,
+    StepRedsReading,
+    AlwaysGreenStepsRound,
+    { provide: LineStepRepository, useClass: PrismaLineStepRepository },
+    { provide: DayLineStepsReader, useClass: PrismaDayLineStepsReader },
+    { provide: AutomaticStepChecks, useClass: PrismaAutomaticStepChecks },
   ],
 })
 export class ProductionAtelierModule {}

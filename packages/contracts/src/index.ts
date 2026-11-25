@@ -1197,10 +1197,12 @@ export type {
   WorkshopGroupKind,
   WorkshopLineRole,
 } from "./production-worksheet.js";
-export { reportWorkshopProblemSchema } from "./production-problems.js";
+export { markWorkshopStepRedSchema, reportWorkshopProblemSchema } from "./production-problems.js";
 export type {
+  MarkWorkshopStepRed,
   ProductionProblemView,
   ProductionProblemsView,
+  ProductionStepRedView,
   ProductionUnconfirmedLineView,
   ReportWorkshopProblem,
 } from "./production-problems.js";

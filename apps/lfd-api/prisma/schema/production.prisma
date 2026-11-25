@@ -1025,7 +1025,7 @@ model ProductionLineStep {
   sku              String
   /// Le poste d'étape, opaque : une étape survit au poste qui quitte le produit.
   workstationId    String        @map("workstation_id")
-  /// `done` | `red` (CHECK).
+  /// `done` | `red` | `undone` (CHECK) : `undone`, l'étape a été décochée et attend.
   status           String
   /// Rognée, 1 à 500 caractères (CHECK) ; `null` : aucune raison donnée.
   reason           String?

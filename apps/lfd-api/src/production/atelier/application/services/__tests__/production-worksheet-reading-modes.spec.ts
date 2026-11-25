@@ -1,3 +1,5 @@
+import { InMemoryLineSteps, noLineSteps } from "../../__tests__/line-step-doubles.js";
+import type { DayLineStepsReader } from "../../../domain/ports/line-step.ports.js";
 import { InMemoryProblems } from "../../__tests__/problem-doubles.js";
 import { instantToLocal, type CatalogFamilyView, type WorkshopLine } from "@lfd/contracts";
 
@@ -100,6 +102,7 @@ function subject(
   grouping: "shelf" | "workstation",
   workstations: WorkstationOfProducts,
   tracking: TrackingScene = {},
+  steps: DayLineStepsReader = noLineSteps(),
 ) {
   const articles = new FixedProductionArticles(ARTICLES);
   const groupingReading = new GroupingSourceReading(articles, workstations);
@@ -119,6 +122,7 @@ function subject(
     groupingReading,
     ...trackingPorts(tracking, groupingReading),
     new InMemoryProblems().dayReader(),
+    steps,
   );
   return { reading, articles };
 }
@@ -242,5 +246,69 @@ describe("ProductionWorksheetReading — le niveau de suivi de chaque ligne", ()
     } finally {
       logs.release();
     }
+  });
+});
+
+describe("ProductionWorksheetReading — les étapes de chaque ligne (plan-produit-sur-plusieurs-postes, § 2.6)", () => {
+  const STATIONS = [
+    { id: "ws_bread", name: "Boulangerie", position: 0 },
+    { id: "ws_salty", name: "Salé traiteur", position: 1 },
+    { id: "ws_oven", name: "Four", position: 2 },
+  ];
+  /** Le croissant : la Boulangerie et le Four font une étape, le Salé traiteur finit. */
+  const CROISSANT_ON_THREE = () =>
+    FixedWorkstationOfProducts.withStations(
+      STATIONS,
+      new Map([
+        [
+          "VIE",
+          [
+            { workstationId: "ws_oven", finishes: false, position: null },
+            { workstationId: "ws_salty", finishes: true, position: null },
+            { workstationId: "ws_bread", finishes: false, position: null },
+          ],
+        ],
+      ]),
+    );
+
+  function breadDone(): DayLineStepsReader {
+    const steps = new InMemoryLineSteps();
+    steps.seed({
+      serviceDay: DAY.value,
+      sku: CROISSANT,
+      workstationId: "ws_bread",
+      status: "done",
+      reason: null,
+      checked: { at: TIRAGE, staffId: "s", name: null },
+      version: 1,
+    });
+    return steps.dayReader();
+  }
+
+  it("le mode prod sert les étapes qui n'ont pas coché, dans l'ordre des postes, sur chaque fiche", async () => {
+    const { reading } = subject("workstation", CROISSANT_ON_THREE(), {}, breadDone());
+
+    const content = await reading.contentOf(DAY);
+
+    const croissants = content.sheet.groups.flatMap((group) =>
+      group.lines.filter((line) => line.sku === CROISSANT),
+    );
+    expect(croissants).toHaveLength(3);
+    expect(croissants.map((line) => line.stepsPending)).toEqual([
+      ["ws_oven"],
+      ["ws_oven"],
+      ["ws_oven"],
+    ]);
+    // « done » garde son sens : la fournée atteint l'attendu, rien n'est sorti.
+    expect(croissants.every((line) => !line.done)).toBe(true);
+    expect(content.sheet.lines.find((line) => line.sku === BAGUETTE)?.stepsPending).toEqual([]);
+  });
+
+  it("le mode boutique n'exige aucune étape", async () => {
+    const { reading } = subject("shelf", CROISSANT_ON_THREE(), {}, breadDone());
+
+    const content = await reading.contentOf(DAY);
+
+    expect(content.sheet.lines.map((line) => line.stepsPending)).toEqual([[], []]);
   });
 });

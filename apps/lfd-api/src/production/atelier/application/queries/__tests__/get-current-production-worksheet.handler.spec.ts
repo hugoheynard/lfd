@@ -1,3 +1,4 @@
+import { noLineSteps } from "../../__tests__/line-step-doubles.js";
 import { InMemoryProblems } from "../../__tests__/problem-doubles.js";
 import { addDays, instantToLocal, localToInstant } from "@lfd/contracts";
 
@@ -123,6 +124,7 @@ function handlerFor(days: Days, now: Date = NOW): GetCurrentProductionWorksheetH
     new GroupingSourceReading(...placementPorts()),
     ...trackingPorts(),
     new InMemoryProblems().dayReader(),
+    noLineSteps(),
   );
   return new GetCurrentProductionWorksheetHandler(
     days,

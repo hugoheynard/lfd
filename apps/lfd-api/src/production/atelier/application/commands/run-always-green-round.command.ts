@@ -6,6 +6,8 @@
  */
 export class RunAlwaysGreenRoundCommand {}
 
+import type { AlwaysGreenStepsReport } from "../services/always-green-steps.service.js";
+
 /** Ce que le tour a fait d'une journée. */
 export interface AlwaysGreenDayReport {
   /** `AAAA-MM-JJ`. */
@@ -18,6 +20,11 @@ export interface AlwaysGreenDayReport {
   readonly toConfirm: readonly string[];
   /** Les SKU dont le passage a levé : journalisés, les autres ont continué. */
   readonly failed: readonly string[];
+  /**
+   * Les étapes des postes en toujours vert (`fournil/plan-produit-sur-plusieurs-postes.md`,
+   * § 2.8) ; `null` : leur passage a levé (journalisé), les fournées ont continué.
+   */
+  readonly steps: AlwaysGreenStepsReport | null;
   /** La journée entière n'a pas pu être lue ou figée (journalisé) ; `null` sinon. */
   readonly error: string | null;
 }

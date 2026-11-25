@@ -1,3 +1,4 @@
+import { noLineSteps } from "../../__tests__/line-step-doubles.js";
 import { InMemoryProblems } from "../../__tests__/problem-doubles.js";
 import { instantToLocal } from "@lfd/contracts";
 
@@ -126,6 +127,7 @@ function around(outage: Outage = "none") {
     ),
     ...trackingPorts(),
     new InMemoryProblems().dayReader(),
+    noLineSteps(),
   );
   const cache = new MemoryDayContents();
   const clock = new FixedClock(NOW);

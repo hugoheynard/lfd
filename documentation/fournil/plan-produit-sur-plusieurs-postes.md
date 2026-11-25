@@ -276,3 +276,24 @@ proposition sont tranchés ici, et se discutent encore :
 5. Une étape compte dans la charge de son poste.
 6. Le rouge d'étape va dans la même liste que les problèmes de la Supervision,
    marqué « étape ».
+
+**Tranché au bâti de L4–L5 (2026-11-25), à rediscuter si besoin :**
+
+7. Décocher garde la ligne : `status` gagne `undone` (migration
+   `20261125170000_l_etape_se_decoche`, CHECK élargi) — supprimer la ligne
+   perdrait la version et l'auteur du dernier geste.
+8. Le rouge d'une étape a sa route, `POST …/steps/:workstationId/red`
+   (`{ reason? }`) ; « Étape faite » et « décocher » sont `POST` et `DELETE`
+   sur `…/steps/:workstationId`. Les trois sont par intention, refusés comme
+   « Fait » (journée non arrêtée, SKU hors compte) et vérifiés sur la carte
+   courante (409 si le poste finit la ligne ou n'en est pas un poste).
+   Faits : `production_line.step_done`, `step_red`, `step_undone`.
+9. « Étape faite » ne déclare rien d'autre ; la cloche ne sonne pas sur un
+   rouge d'étape.
+10. Une étape en toujours vert se coche quand **tous** les paliers à heure de
+    la ligne sont échus, marge comprise (elle n'avance pas par paliers).
+11. La Supervision reçoit les rouges d'étape dans un champ à part,
+    `stepReds`, que l'écran range dans la même liste, marqués « étape » :
+    une entrée de `problems` porte « Marquer traité » et un plafond, qu'une
+    étape n'a pas. Tous les rouges du jour y sont, même d'un poste qui a
+    quitté le produit depuis.

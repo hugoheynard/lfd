@@ -10,12 +10,17 @@ import {
   todayOf,
   tomorrowOf,
 } from "../../../day/index.js";
+import type { LineStepKey } from "../../domain/entities/line-step.js";
 import { ProductionTrackingSettings } from "../../domain/entities/production-tracking-settings.js";
 import { DayProblemsReader } from "../../domain/ports/production-problem.ports.js";
 import { ProductionTrackingSettingsReader } from "../../domain/ports/production-tracking-settings.ports.js";
 import { alwaysGreenStep } from "../../domain/services/always-green.js";
 import { alwaysGreenLineOf, type AlwaysGreenDayReads } from "../services/always-green-line-of.js";
 import { AlwaysGreenLines } from "../services/always-green-lines.service.js";
+import {
+  type AlwaysGreenStepsReport,
+  AlwaysGreenStepsRound,
+} from "../services/always-green-steps.service.js";
 import { WorksheetDeadlinesReading } from "../services/worksheet-deadlines-reading.service.js";
 import { DayTrackingLevelsFreezing } from "../services/day-tracking-levels-freezing.service.js";
 import { AlwaysGreenLineRunner } from "../../domain/ports/always-green-line-runner.js";
@@ -28,6 +33,9 @@ import {
 
 import { TrackingLevelsCommissioning } from "../../domain/ports/tracking-levels-commissioning.js";
 import { mayRunAlwaysGreen } from "../../domain/services/tracking-levels.js";
+
+/** Aucune étape touchée : la journée n'en a pas, ou n'a pas été lue. */
+const NO_STEPS: AlwaysGreenStepsReport = { checked: 0, toConfirm: [] };
 
 /** Le code rendu au Worker quand une journée échoue ; le détail est au journal. */
 const DAY_FAILED = "always_green_day_failed";
@@ -44,6 +52,10 @@ const DAY_FAILED = "always_green_day_failed";
  * journée arrêtée avant la mise en service est en détaillé : aucune ligne ;
  * avant la mise en service, le tour ne lit rien. Une journée dont aucune
  * ligne ne peut être en toujours vert n'est pas chargée.
+ *
+ * Les étapes des postes en toujours vert passent ensuite
+ * (`AlwaysGreenStepsRound`) : la fournée ne les attend pas, et leur panne
+ * n'efface pas ce que les fournées ont fait.
  *
  * **Chaque ligne est isolée**, comme chaque journée : une erreur se
  * journalise et les autres continuent. Le passage suivant, cinq minutes plus
@@ -70,6 +82,7 @@ export class RunAlwaysGreenRoundHandler implements ICommandHandler<
     private readonly deadlines: WorksheetDeadlinesReading,
     private readonly settings: ProductionTrackingSettingsReader,
     private readonly problems: DayProblemsReader,
+    private readonly stepsRound: AlwaysGreenStepsRound,
   ) {}
 
   async execute(): Promise<AlwaysGreenRoundReport> {
@@ -87,7 +100,13 @@ export class RunAlwaysGreenRoundHandler implements ICommandHandler<
   }
 
   private async forDay(day: ServiceDay): Promise<AlwaysGreenDayReport> {
-    const untouched = { serviceDay: day.value, recorded: [], toConfirm: [], failed: [] };
+    const untouched = {
+      serviceDay: day.value,
+      recorded: [],
+      toConfirm: [],
+      failed: [],
+      steps: NO_STEPS,
+    };
     let arrested = false;
     try {
       arrested = await this.status.isClosed(day);
@@ -100,12 +119,14 @@ export class RunAlwaysGreenRoundHandler implements ICommandHandler<
       }
       const current = await this.days.load(day);
       const skus = await this.lines.skusOf(day, current, levels);
-      const reads = await this.readsOf(day, skus);
+      const steps = await this.lines.stepsOf(day, current, levels);
+      const reads = await this.readsOf(day, skus.length + steps.length > 0);
       return {
         serviceDay: day.value,
         arrested,
         error: null,
         ...(await this.runLines(day, current, skus, reads)),
+        steps: await this.runSteps(day, current, steps, reads),
       };
     } catch (error) {
       this.logger.error({
@@ -118,9 +139,9 @@ export class RunAlwaysGreenRoundHandler implements ICommandHandler<
     }
   }
 
-  /** Les lectures de la journée, une fois pour toutes ses lignes ; aucune sans ligne. */
-  private async readsOf(day: ServiceDay, skus: readonly string[]): Promise<AlwaysGreenDayReads> {
-    if (skus.length === 0) {
+  /** Les lectures de la journée, une fois pour toutes ses lignes ; aucune sans ligne ni étape. */
+  private async readsOf(day: ServiceDay, needed: boolean): Promise<AlwaysGreenDayReads> {
+    if (!needed) {
       return { tranches: null, marginMinutes: 0, ceilings: new Map() };
     }
     const [tranches, settings, problems] = await Promise.all([
@@ -161,6 +182,25 @@ export class RunAlwaysGreenRoundHandler implements ICommandHandler<
       if (outcome === "failed") failed.push(sku);
     }
     return { recorded, toConfirm, failed };
+  }
+
+  /** Les étapes, isolées : une panne se journalise, les fournées restent faites. */
+  private async runSteps(
+    day: ServiceDay,
+    current: ProductionDay,
+    steps: readonly LineStepKey[],
+    reads: AlwaysGreenDayReads,
+  ): Promise<AlwaysGreenStepsReport | null> {
+    try {
+      return await this.stepsRound.run(current, day, steps, reads, this.clock.now());
+    } catch (error) {
+      this.logger.error({
+        message: "always_green_steps_failed",
+        serviceDay: day.value,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return null;
+    }
   }
 
   private async runLine(day: ServiceDay, sku: string): Promise<AlwaysGreenLineOutcome | "failed"> {
