@@ -514,6 +514,28 @@ export const routes: Routes = [
       ),
   },
   {
+    // Transformer le reliquat d'une commande en commande (plan
+    // `documentation/commandes/reliquat/plan-reliquat-de-commande.md`, § 4) :
+    // la saisie garnie du reliquat, ouverte depuis la commande d'origine, sous
+    // le droit de la saisie de l'équipe — c'est passer une commande.
+    path: 'commandes/:orderId/reliquat',
+    canActivate: [permissionGuard('b2b_place_order:write')],
+    title: 'Transformer le reliquat — LFC B2B admin',
+    loadComponent: () =>
+      import('./commandes/backorder-conversion-page/backorder-conversion-page').then(
+        (m) => m.BackorderConversionPage,
+      ),
+  },
+  {
+    // Les reliquats ouverts, du plus ancien au plus récent (même plan, § 5) :
+    // une liste de commandes à reprendre, sous le droit de lire les commandes.
+    path: 'reliquats',
+    canActivate: [permissionGuard('b2b_orders:read')],
+    title: 'Reliquats à traiter — LFC B2B admin',
+    loadComponent: () =>
+      import('./commandes/backorders-page/backorders-page').then((m) => m.BackordersPage),
+  },
+  {
     // L'ancienne adresse de la saisie, depuis la fiche : une seule saisie,
     // `/nouvelle-commande/:id` (décidé par Hugo le 2026-11-21), qui ramène au
     // dossier du compte une fois finie.

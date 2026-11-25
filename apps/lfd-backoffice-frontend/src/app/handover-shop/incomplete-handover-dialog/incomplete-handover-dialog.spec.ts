@@ -111,7 +111,7 @@ async function render(
   };
 }
 
-const PARTIAL = 'Remettre ce qui est au bac — le reste est abandonné';
+const PARTIAL = 'Remettre ce qui est au bac — le reste en reliquat';
 
 describe('IncompleteHandoverDialog', () => {
   it('dit ce qui part et ce qui ne part pas, dans l’unité de chaque article', async () => {

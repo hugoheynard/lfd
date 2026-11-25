@@ -38,6 +38,10 @@ export class RecordingBackorders extends BackorderRepository {
     return Promise.reject(new RangeError("la naissance ne verrouille pas de reliquat"));
   }
 
+  loadLockedByOrigin(): Promise<Backorder | null> {
+    return Promise.reject(new RangeError("la naissance ne cherche pas de reliquat par origine"));
+  }
+
   save(backorder: Backorder): Promise<void> {
     this.trace.push("save-backorder");
     this.saved.push(backorder.toSnapshot());

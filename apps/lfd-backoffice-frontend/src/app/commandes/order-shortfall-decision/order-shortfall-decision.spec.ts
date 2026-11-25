@@ -85,7 +85,24 @@ describe('« Décider du départ » (E6b)', () => {
     expect(el(mount(null).fixture).querySelector('[data-shortfall-decide]')).toBeNull();
   });
 
-  it('montre ce qui part, en lecture, puis décide « reste abandonné »', async () => {
+  it('annonce que le reste devient un reliquat à traiter, plus « abandonné » tout court', () => {
+    const { fixture } = mount(AWAITING);
+    const text = (fixture.componentInstance['confirmMessage']() as string).replace(/\s+/gu, ' ');
+    expect(text).toContain('le reste devient un reliquat à traiter');
+    expect(text).toContain('transformer en commande ou l’abandonner');
+    expect(text).not.toContain('le reste est abandonné');
+  });
+
+  it('une fois décidé, dit que le reste devient un reliquat à traiter', () => {
+    const { fixture } = mount(DECIDED);
+    const decided = (
+      el(fixture).querySelector('[data-shortfall-decided]')?.textContent ?? ''
+    ).replace(/\s+/gu, ' ');
+    expect(decided).toContain('le reste devient un reliquat à traiter');
+    expect(decided).not.toContain('le reste est abandonné');
+  });
+
+  it('montre ce qui part, en lecture, puis décide du départ', async () => {
     const { fixture, decideShortfall, done } = mount(AWAITING);
     fixture.componentInstance['open'].set(true);
     fixture.detectChanges();

@@ -1,0 +1,5 @@
+<ul class="lines" data-backorder-lines>
+  @for (line of lines(); track line.sku) {
+    <li>{{ sentence(line) }}</li>
+  }
+</ul>

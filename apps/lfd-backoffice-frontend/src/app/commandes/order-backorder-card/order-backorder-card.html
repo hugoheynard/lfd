@@ -1,0 +1,66 @@
+@if (backorder(); as b) {
+  <div class="backorder">
+    <fold-callout
+      appearance="inset"
+      [variant]="b.state === 'open' ? 'warning' : 'info'"
+      data-backorder
+      [attr.data-state]="b.state"
+    >
+      @switch (b.state) {
+        @case ('open') {
+          <strong>Reliquat à traiter</strong> — ce qui n’est pas parti reste dû au client depuis le
+          {{ b.createdAt | date: "dd/MM 'à' HH:mm" }}.
+        }
+        @case ('converted') {
+          <strong>Reliquat transformé</strong> le {{ b.closedAt | date: "dd/MM 'à' HH:mm" }}
+          @if (b.convertedOrder; as issued) {
+            en commande
+            <a [routerLink]="['/commandes', issued.orderId]" data-backorder-issued>{{
+              issued.orderNumber
+            }}</a>
+          }
+          .
+        }
+        @case ('abandoned') {
+          <strong>Reliquat abandonné</strong> le {{ b.closedAt | date: "dd/MM 'à' HH:mm" }}.
+        }
+      }
+      @if (canConvert() || canAbandon()) {
+        <div actions>
+          @if (canConvert()) {
+            <a
+              foldButton
+              size="sm"
+              emphasis="soft"
+              [routerLink]="convertLink()"
+              data-backorder-convert
+            >
+              Transformer
+            </a>
+          }
+          @if (canAbandon()) {
+            <fold-inline-confirm
+              message="Le reste ne sera pas livré au client. Le geste est définitif."
+              [labels]="{ confirm: 'Abandonner le reliquat', cancel: 'Garder' }"
+              keepOpenOnConfirm
+              [loading]="saving()"
+              [open]="confirming()"
+              (openChange)="confirming.set($event)"
+              (confirmed)="abandon()"
+            >
+              <button foldButton size="sm" emphasis="outline" data-backorder-abandon>
+                Abandonner
+              </button>
+            </fold-inline-confirm>
+          }
+        </div>
+      }
+    </fold-callout>
+    <app-backorder-lines [lines]="b.lines" />
+    @if (error(); as message) {
+      <fold-callout appearance="inset" variant="alert" announce data-backorder-error>{{
+        message
+      }}</fold-callout>
+    }
+  </div>
+}

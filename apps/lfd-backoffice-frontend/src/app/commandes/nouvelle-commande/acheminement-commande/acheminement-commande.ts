@@ -138,6 +138,12 @@ export class AcheminementCommande {
    */
   readonly counterPlaceId = input<string | null>(null);
 
+  /**
+   * Le port est offert d'office — la commande issue d'un reliquat (décision 7
+   * du plan du reliquat). Le secteur reste dit, le frais devient « livraison
+   * offerte ». Faux par défaut : la saisie ordinaire montre le barème.
+   */
+  readonly deliveryOffered = input(false);
   readonly choiceChange = output<FulfillmentChoice>();
 
   protected readonly method = computed(() => this.draft().method());
@@ -269,14 +275,17 @@ export class AcheminementCommande {
     resolveZoneForPostalCode(this.zones(), this.address().codePostal.trim()),
   );
 
-  /** « Secteur Nord — livraison 8,00 € », ou `null` quand la zone est inconnue. */
+  /** « Secteur Nord — livraison 8,00 € » (ou « — livraison offerte »), `null` si la zone est inconnue. */
   protected readonly zoneLabel = computed<string | null>(() => {
     const zone = this.zone();
     if (zone === null) {
       return null;
     }
     const name = zone.label || zone.postalPrefixes[0] || '';
-    return `Secteur ${name} — livraison ${formatAdjustment(zone.fee)}`.trim();
+    const fee = this.deliveryOffered()
+      ? 'livraison offerte'
+      : `livraison ${formatAdjustment(zone.fee)}`;
+    return `Secteur ${name} — ${fee}`.trim();
   });
 
   protected readonly pickupOptions = computed(() =>

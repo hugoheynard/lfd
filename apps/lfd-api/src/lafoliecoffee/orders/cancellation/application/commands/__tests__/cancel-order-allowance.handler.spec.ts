@@ -1,3 +1,4 @@
+import { backorderAbandonmentScene } from "../../../../backorder/application/__tests__/backorder-abandonment-doubles.js";
 import { FixedHandoverHistory } from "../../../../application/commands/__tests__/handover-history-double.js";
 import { increaseCancellation } from "../../../../revision/application/commands/__tests__/card-increase-scene.js";
 import type { CustomerCancellationStage } from "@lfd/contracts";
@@ -81,6 +82,7 @@ function scene(input: {
       new FixedClock(NOW),
       new FixedHandoverHistory(),
       increaseCancellation().cancellation,
+      backorderAbandonmentScene().abandonment,
     ),
   );
   return { handler, trace, settings, rows, bakery, packing, durable };

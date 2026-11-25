@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import type { AdminBackorderOriginView, AdminBackorderView } from "./admin-backorder.js";
 import type { AdminOrderCardIncrease } from "./admin-order-card-increase.js";
 import type { OrderOfferNature } from "./admin-order.js";
 import type { AdminOrderReviewState } from "./order-review.js";
@@ -120,6 +121,18 @@ export interface AdminOrderView extends OrderView {
    * une trace. Facultatif : un serveur plus ancien ne le sert pas.
    */
   readonly review?: AdminOrderReviewState;
+  /**
+   * **Le reliquat né de cette commande** (plan du reliquat, § 5) — ce qui
+   * n'est pas parti, son état, et la commande qui en est issue ; `null` si
+   * elle n'en a pas. Facultatif : un serveur plus ancien ne le sert pas.
+   */
+  readonly backorder?: AdminBackorderView | null;
+  /**
+   * **D'où vient cette commande**, si elle est issue d'un reliquat : le
+   * reliquat et sa commande d'origine ; `null` sinon. Facultatif : un
+   * serveur plus ancien ne le sert pas.
+   */
+  readonly backorderOrigin?: AdminBackorderOriginView | null;
 }
 
 /** Une commande déclarée non retirée, telle que la fiche la raconte. */

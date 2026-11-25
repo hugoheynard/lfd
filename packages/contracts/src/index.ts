@@ -1576,11 +1576,20 @@ export type {
 } from "./admin-order-estimate.js";
 export {
   adminBackorderConvertPayloadSchema,
+  adminBackorderListQuerySchema,
   adminBackorderQuotePayloadSchema,
+  BACKORDER_STATES,
+  backorderStateSchema,
 } from "./admin-backorder.js";
 export type {
   AdminBackorderConvertPayload,
+  AdminBackorderLine,
+  AdminBackorderListQuery,
+  AdminBackorderOrderRef,
+  AdminBackorderOriginView,
   AdminBackorderQuotePayload,
+  AdminBackorderView,
+  BackorderState,
 } from "./admin-backorder.js";
 export type {
   StaffSettlement,

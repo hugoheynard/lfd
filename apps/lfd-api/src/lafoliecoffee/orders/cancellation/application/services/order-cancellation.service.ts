@@ -42,6 +42,7 @@ import { CardIncreaseCancellation } from "./card-increase-cancellation.js";
 import { OrderCardCancellation } from "../../../domain/ports/order-card-payments.js";
 import { OrderWorkshopWithdrawal } from "../../../application/services/order-workshop-withdrawal.js";
 import { VoucherRestitutionRefusal } from "../../../application/services/voucher-restitution-refusal.js";
+import { BackorderAbandonment } from "../../../backorder/application/backorder-abandonment.js";
 
 /**
  * **Le noyau de l'annulation d'une commande** (doc
@@ -114,7 +115,7 @@ import { VoucherRestitutionRefusal } from "../../../application/services/voucher
  * colisage, la retirent ({@link OrderWorkshopWithdrawal}). Une livraison
  * inscrite reste refusée (`delivery_after_plan`). Ordre des verrous (§ 2.4) : ligne
  * `orders` → journée → feuille → bac → réserve triée par SKU → BL → bon →
- * remboursement.
+ * reliquat → remboursement.
  */
 @Injectable()
 export class OrderCancellation {
@@ -137,6 +138,7 @@ export class OrderCancellation {
     private readonly clock: Clock,
     private readonly handovers: ShipmentHandoverReader,
     private readonly increases: CardIncreaseCancellation,
+    private readonly backorders: BackorderAbandonment,
   ) {}
 
   /**
@@ -300,6 +302,12 @@ export class OrderCancellation {
       orderId: locked.orderId,
       orderNumber: locked.orderNumber,
     });
+    // Le reliquat OUVERT de l'origine est abandonné avec elle ; un reliquat
+    // transformé n'est pas touché (plan du reliquat, § 5).
+    await this.backorders.abandonOnOriginCancelled(
+      { orderId: locked.orderId, orderNumber: locked.orderNumber },
+      staffSheet,
+    );
     // Lot C4 : APRÈS le bon — un bon qui refuse annule tout, demande comprise.
     const refund =
       regime === "paid" ? await this.refunds.requestFor(locked.orderId, staffSheet) : null;

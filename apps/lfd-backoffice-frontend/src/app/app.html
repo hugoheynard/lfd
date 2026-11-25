@@ -58,6 +58,17 @@
           [active]="ordersRla.isActive"
           (click)="mobileNavOpen.set(false)"
         ></a>
+        <!-- Les reliquats ouverts, sous les commandes. La même entrée est aux tuiles. -->
+        <a
+          fold-menu-item
+          icon="package-return"
+          label="Reliquats à traiter"
+          routerLink="/reliquats"
+          routerLinkActive
+          #backordersRla="routerLinkActive"
+          [active]="backordersRla.isActive"
+          (click)="mobileNavOpen.set(false)"
+        ></a>
       }
 
       @if (canSeeOperationsApps()) {
@@ -926,6 +937,17 @@
           routerLinkActive
           #ordersTile="routerLinkActive"
           [active]="ordersTile.isActive"
+          (click)="mobileNavOpen.set(false)"
+        ></a>
+        <!-- La MÊME entrée qu'au rail : les deux arbres ne partagent pas leur modèle. -->
+        <a
+          fold-nav-tile
+          icon="package-return"
+          label="Reliquats à traiter"
+          routerLink="/reliquats"
+          routerLinkActive
+          #backordersTile="routerLinkActive"
+          [active]="backordersTile.isActive"
           (click)="mobileNavOpen.set(false)"
         ></a>
       }

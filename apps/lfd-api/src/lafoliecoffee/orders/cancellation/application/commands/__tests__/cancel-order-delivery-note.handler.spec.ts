@@ -1,3 +1,4 @@
+import { backorderAbandonmentScene } from "../../../../backorder/application/__tests__/backorder-abandonment-doubles.js";
 import { FixedHandoverHistory } from "../../../../application/commands/__tests__/handover-history-double.js";
 import { increaseCancellation } from "../../../../revision/application/commands/__tests__/card-increase-scene.js";
 import { DirectUnitOfWork } from "../../../../../../platform/database/__tests__/direct-unit-of-work.js";
@@ -66,6 +67,7 @@ function scene(desk: OrderWithdrawalOutcome = "withdrawn") {
       new FixedClock(NOW),
       new FixedHandoverHistory(),
       increaseCancellation().cancellation,
+      backorderAbandonmentScene().abandonment,
     ),
   );
   return { handler, trace, notes };

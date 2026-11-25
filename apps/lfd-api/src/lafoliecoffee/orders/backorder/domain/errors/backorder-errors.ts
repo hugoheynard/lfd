@@ -116,3 +116,17 @@ export class ParticularBackorderNotConvertibleError extends BusinessError {
     );
   }
 }
+
+/**
+ * L'annulation d'une commande abandonne son reliquat ouvert, et l'abandon
+ * nomme un membre de l'équipe : un client ne l'annule pas à sa place.
+ */
+export class BackorderAbandonNeedsStaffError extends BusinessError {
+  constructor() {
+    super(
+      "orders.backorder.abandon_needs_staff",
+      "Cette commande a un reliquat en attente : seule l'équipe peut l'annuler, en abandonnant ce reliquat. " +
+        "Rien n'a été annulé ; contactez La Folie Coffee.",
+    );
+  }
+}

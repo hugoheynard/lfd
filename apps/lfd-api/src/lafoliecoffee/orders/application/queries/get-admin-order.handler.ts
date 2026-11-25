@@ -44,6 +44,7 @@ import { noShowAuthorsOf, noShowViewOf } from "./admin-order-no-show-view.js";
 import { OrderReviewsReader } from "../../domain/ports/order-reviews.reader.js";
 import { reviewAuthorsOf, reviewStateOf } from "./admin-order-review-view.js";
 import type { ItemLimitOverride } from "../../domain/services/item-limit-overrides.js";
+import { OrderBackorderReader } from "../../backorder/domain/ports/order-backorder.reader.js";
 
 /**
  * Sert une commande au staff, avec QUI l'a passée — la personne, sa société,
@@ -81,6 +82,9 @@ import type { ItemLimitOverride } from "../../domain/services/item-limit-overrid
  *
  * Et son visa (plan du visa des commandes) : en cours, son historique, et si
  * elle se vise — servi à qui lit la commande, c'est une trace.
+ *
+ * Et ses reliquats (plan du reliquat, § 5) : celui né de cette commande, et
+ * celui dont elle est issue.
  */
 @QueryHandler(GetAdminOrderQuery)
 export class GetAdminOrderHandler implements IQueryHandler<GetAdminOrderQuery, AdminOrderView> {
@@ -102,6 +106,7 @@ export class GetAdminOrderHandler implements IQueryHandler<GetAdminOrderQuery, A
     private readonly itemLimitOverrides: ItemLimitOverrideReader,
     private readonly noShows: OrderNoShowReader,
     private readonly reviews: OrderReviewsReader,
+    private readonly backorders: OrderBackorderReader,
   ) {}
 
   async execute(query: GetAdminOrderQuery): Promise<AdminOrderView> {
@@ -117,6 +122,7 @@ export class GetAdminOrderHandler implements IQueryHandler<GetAdminOrderQuery, A
       overrides,
       noShow,
       reviews,
+      backorders,
     ] = await Promise.all([
       this.orders.findById(query.orderId),
       this.authors.authorOf(query.orderId),
@@ -129,6 +135,7 @@ export class GetAdminOrderHandler implements IQueryHandler<GetAdminOrderQuery, A
       query.withItemLimitOverrides ? this.itemLimitOverrides.forOrder(query.orderId) : null,
       this.noShows.of(query.orderId),
       this.reviews.of(query.orderId),
+      this.backorders.of(query.orderId),
     ]);
     if (owned === null || author === null || cancellability === null || revision === null) {
       throw new OrderNotFoundError(query.orderId);
@@ -162,6 +169,8 @@ export class GetAdminOrderHandler implements IQueryHandler<GetAdminOrderQuery, A
       cardIncrease: adminCardIncreaseOf(increase),
       shortfallRefund,
       noShow: noShowViewOf(noShow, staffAuthors),
+      backorder: backorders.backorder,
+      backorderOrigin: backorders.origin,
       ...(reviews === null ? {} : { review: reviewStateOf(reviews, staffAuthors) }),
       ...(overrides === null
         ? {}

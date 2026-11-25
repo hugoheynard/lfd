@@ -21,6 +21,13 @@ export abstract class BackorderRepository {
   abstract loadLocked(id: string): Promise<Backorder | null>;
 
   /**
+   * Le reliquat d'une commande d'origine, sous verrou de ligne, dans l'unité
+   * de travail de l'appelant — l'annulation de l'origine, qui tient déjà le
+   * verrou de la commande. `null` : la commande n'a pas de reliquat.
+   */
+  abstract loadLockedByOrigin(originOrderId: string): Promise<Backorder | null>;
+
+  /**
    * Écrit le reliquat : l'insère à sa naissance, réécrit son sort ensuite.
    * L'unicité par commande d'origine refuse un second reliquat en base.
    */

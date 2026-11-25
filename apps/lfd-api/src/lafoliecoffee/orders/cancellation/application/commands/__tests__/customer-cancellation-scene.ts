@@ -1,3 +1,4 @@
+import { backorderAbandonmentScene } from "../../../../backorder/application/__tests__/backorder-abandonment-doubles.js";
 import { FixedHandoverHistory } from "../../../../application/commands/__tests__/handover-history-double.js";
 import { increaseCancellation } from "../../../../revision/application/commands/__tests__/card-increase-scene.js";
 import type { CustomerCancellationSettingsView } from "@lfd/contracts";
@@ -95,6 +96,7 @@ export function customerScene(options: CustomerScene) {
     new FixedClock(options.now),
     new FixedHandoverHistory(),
     increaseCancellation().cancellation,
+    backorderAbandonmentScene().abandonment,
   );
   const customers = new FixedCustomerSubjects(customer);
   const signer = new ReadableSigner();

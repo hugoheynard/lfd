@@ -10,8 +10,8 @@
       <fold-callout variant="success" icon="check" data-settled>
         <strong>{{ done }}</strong>
         @if (settledByDecision()) {
-          Remettez ce qui est au bac&nbsp;: le reste est abandonné, le bon de livraison ne chiffre
-          que ce qui part.
+          Remettez ce qui est au bac&nbsp;: le reste devient un reliquat à traiter, le bon de
+          livraison ne chiffre que ce qui part.
         }
       </fold-callout>
     }
@@ -73,7 +73,7 @@
       [loading]="saving()"
       (click)="submit()"
     >
-      Remettre ce qui est au bac — le reste est abandonné
+      Remettre ce qui est au bac — le reste en reliquat
     </button>
   } @else {
     <button foldButton emphasis="outline" intent="neutral" type="button" (click)="cancel()">

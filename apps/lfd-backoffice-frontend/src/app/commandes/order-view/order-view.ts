@@ -36,6 +36,8 @@ import { OrderRefundBanner } from '../order-refund-banner/order-refund-banner';
 import { OrderShortfallBanner } from '../order-shortfall-banner/order-shortfall-banner';
 import { OrderShortfallDecision } from '../order-shortfall-decision/order-shortfall-decision';
 import { OrderShortfallLetter } from '../order-shortfall-letter/order-shortfall-letter';
+import { OrderBackorderCard } from '../order-backorder-card/order-backorder-card';
+import { OrderBackorderOrigin } from '../order-backorder-origin/order-backorder-origin';
 import {
   OrderItemLimitOverridesCard,
   limitOverrideBadges,
@@ -91,6 +93,8 @@ type LoadState = 'loading' | 'ready' | 'error';
     OrderShortfallBanner,
     OrderShortfallDecision,
     OrderShortfallLetter,
+    OrderBackorderCard,
+    OrderBackorderOrigin,
     OrderItemLimitOverridesCard,
     OrderRefundsCard,
   ],

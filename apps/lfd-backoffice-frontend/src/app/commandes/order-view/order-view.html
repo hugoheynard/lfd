@@ -60,6 +60,8 @@
           >
             <!-- Le contact, en tête du rail : la personne à rappeler, d'un geste. -->
             <app-order-placed-by asideTop [order]="o" />
+            <!-- Une commande née d'un reliquat : le lien vers son origine. -->
+            <app-order-backorder-origin asideTop [origin]="o.backorderOrigin ?? null" />
             <!-- Une commande offerte : le motif, que le client ne voit jamais. -->
             @if (o.offer; as offer) {
               <div asideTop>
@@ -108,6 +110,12 @@
               [orderId]="o.id"
               [shortfall]="o.shortfall"
               (sent)="load()"
+            />
+            <!-- Le reliquat de la commande d'origine : son état et ses gestes. -->
+            <app-order-backorder-card
+              belowComposition
+              [backorder]="o.backorder ?? null"
+              (changed)="load()"
             />
 
             <!-- La hausse par carte qui attend (plan S2, §2.8) : rien sans projet vivant. -->

@@ -3,7 +3,7 @@
     @if (s.decision; as d) {
       <fold-callout appearance="inset" variant="info" data-shortfall-decided>
         Départ décidé le {{ d.decidedAt | date: "dd/MM 'à' HH:mm" }} : ce qui était au bac est
-        parti, le reste est abandonné.
+        parti, le reste devient un reliquat à traiter — le transformer en commande ou l’abandonner.
         @if (refundedAtSettlement()) {
           <span data-shortfall-refunded-at-settlement>
             Réglée par carte : il est remboursé sur la carte au solde, et suivi dans le bandeau des
@@ -39,7 +39,7 @@
       }
       <fold-inline-confirm
         [message]="confirmMessage()"
-        [labels]="{ confirm: 'Confirmer : reste abandonné', cancel: 'Attendre' }"
+        [labels]="{ confirm: 'Confirmer : reste en reliquat', cancel: 'Attendre' }"
         keepOpenOnConfirm
         [loading]="saving()"
         [open]="open()"

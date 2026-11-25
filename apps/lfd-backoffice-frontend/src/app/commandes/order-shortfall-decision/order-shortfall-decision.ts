@@ -49,7 +49,7 @@ interface DepartingLine {
  * sous le bandeau du manque signalé.
  *
  * Les quantités sont en lecture : ce qui part est ce que le colisage a figé.
- * Le reste est abandonné — « à relivrer » arrive avec E7. Absent sans
+ * Le reste devient un reliquat à traiter (transformer ou abandonner). Absent sans
  * `b2b_orders_shortfall:write`. Une fois la décision prise, il la dit, et dit
  * « réimprimez-le » si le BL avait été imprimé avant (calculé par le serveur).
  */
@@ -111,7 +111,7 @@ export class OrderShortfallDecision {
   );
   protected readonly confirmMessage = computed(
     () =>
-      'Ce qui est au bac part ; le reste est abandonné et ne sera pas facturé.' +
+      'Ce qui est au bac part ; le reste devient un reliquat à traiter (le transformer en commande ou l’abandonner) et n’est pas facturé sur cette commande.' +
       (this.refundedAtSettlement() ? ' Il sera remboursé sur la carte au solde.' : '') +
       ' Une pièce qui arriverait ensuite reste en réserve. La décision est définitive.',
   );

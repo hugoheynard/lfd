@@ -36,6 +36,12 @@ export class InMemoryBackorders extends BackorderRepository {
     return this.load(id);
   }
 
+  loadLockedByOrigin(originOrderId: string): Promise<Backorder | null> {
+    this.trace.push("lock-backorder-by-origin");
+    const row = [...this.rows.values()].find((saved) => saved.originOrderId === originOrderId);
+    return Promise.resolve(row === undefined ? null : Backorder.restore(row));
+  }
+
   save(backorder: Backorder): Promise<void> {
     this.trace.push("save-backorder");
     const snapshot = backorder.toSnapshot();

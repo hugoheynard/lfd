@@ -519,6 +519,27 @@ et la passation donnent le même total.
 
 Droits : aucun nouveau. Une migration n'accorde aucun droit (`CLAUDE.md` § 3).
 
+**Tranché au bâti de B4 (2026-11-25)** :
+
+- **Annulée par un client** : le CHECK exige l'auteur staff d'une fermeture ;
+  une annulation par un client qui trouverait un reliquat ouvert est
+  refusée (`BackorderAbandonNeedsStaffError`) plutôt que d'écrire un
+  abandon sans auteur. Inatteignable aujourd'hui : un départ décidé suppose
+  le colisage commencé, et B2 ne fait naître de reliquat que pour une
+  société.
+- **Le reliquat se sert au détail de la commande** (`AdminOrderView.backorder`
+  sur l'origine, `backorderOrigin` sur la commande issue), pas dans la
+  décision : la commande issue n'a pas de décision. B4b.4 réutilise ces
+  champs.
+- **« Livraison offerte » à l'écran de transformation** : la ligne est posée
+  par le front quand la commande est livrée ; le total, lui, vient du
+  serveur (`/quote`), et le port y vaut 0. La ligne ne fait que nommer un
+  port nul : elle ne calcule rien. Le bandeau d'acheminement dit aussi le
+  port offert (entrée `deliveryOffered` d'`AcheminementCommande`, fausse
+  partout ailleurs).
+- La liste n'est pas paginée : un reliquat ouvert n'a pas de limite de durée
+  (décision 12) ; une pagination viendra si la liste grandit.
+
 ### 5 ter. B4b — tracer tout ce qui s'est passé, et la fiche d'un départ partiel
 
 **Exigence de Hugo (2026-11-25), principe de tout le chantier** : « on doit
@@ -767,7 +788,7 @@ un bon de fidélité (déjà refusés à la décision, `termsRefusalOf`).
 | B1  | migration, agrégat, dépôt — ✅ bâti le 2026-11-25  | unitaires de l'agrégat, e2e des CHECK                                      |
 | B2  | naissance dans la décision — ✅ bâti le 2026-11-25 | unitaires, e2e managers et comptoir                                        |
 | B3  | transformer (pros) — ✅ bâti le 2026-11-25         | unitaires du rejeu, e2e prix et idempotence                                |
-| B4  | abandonner, liste, écrans                          | e2e, specs des composants                                                  |
+| B4  | abandonner, liste, écrans — ✅ bâti le 2026-11-25  | e2e, specs des composants                                                  |
 | B4b | traçabilité : versions du BL, historique, fiche    | e2e documents et historique, specs ; `vitruve` d'abord                     |
 | B5  | démontage du second envoi                          | inventaire et `vitruve` d'abord                                            |
 | B6  | particuliers : boutique, offerte                   | e2e `shop_till`, offerte, TTC, carte puis boutique, estimation = passation |

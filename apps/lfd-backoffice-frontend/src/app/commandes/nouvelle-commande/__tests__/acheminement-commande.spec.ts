@@ -762,3 +762,28 @@ describe('AcheminementCommande — retrait immédiat', () => {
     expect(last()?.issue).toContain('Le point du comptoir n’est pas ouvert');
   });
 });
+
+describe('AcheminementCommande — le port offert d’office', () => {
+  function sectorText(deliveryOffered: boolean | undefined): string {
+    const fixture = mount([LABO]);
+    if (deliveryOffered !== undefined) {
+      fixture.componentRef.setInput('deliveryOffered', deliveryOffered);
+    }
+    fixture.componentInstance['onMethod']('delivery');
+    fixture.detectChanges();
+    return ((fixture.nativeElement as HTMLElement).textContent ?? '').replace(/\s+/gu, ' ');
+  }
+
+  it('la saisie ordinaire montre le frais du secteur', () => {
+    const text = sectorText(undefined);
+    expect(text).toContain('Secteur Ouest — livraison');
+    expect(text).toContain('8,00');
+    expect(text).not.toContain('livraison offerte');
+  });
+
+  it('offerte (commande issue d’un reliquat) : le secteur reste, le frais devient « livraison offerte »', () => {
+    const text = sectorText(true);
+    expect(text).toContain('Secteur Ouest — livraison offerte');
+    expect(text).not.toContain('8,00');
+  });
+});

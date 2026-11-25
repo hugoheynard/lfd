@@ -27,6 +27,13 @@ export class PrismaBackorderRepository extends BackorderRepository {
     return this.load(id);
   }
 
+  async loadLockedByOrigin(originOrderId: string): Promise<Backorder | null> {
+    const locked = await this.prisma.$queryRaw<{ id: string }[]>`
+      SELECT "id" FROM "public"."backorder" WHERE "origin_order_id" = ${originOrderId} FOR UPDATE`;
+    const id = locked[0]?.id;
+    return id === undefined ? null : this.load(id);
+  }
+
   async save(backorder: Backorder): Promise<void> {
     const state = backorder.toSnapshot();
     const fate = {

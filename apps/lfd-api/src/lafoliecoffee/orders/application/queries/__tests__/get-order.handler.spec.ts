@@ -74,6 +74,10 @@ const VIEW: OrderView = { ...orderView(), id: "ord_1", orderNumber: "ORD-0001" }
 
 import { ItemLimitOverrideReader } from "../../../domain/ports/item-limit-override.reader.js";
 import type { ItemLimitOverride } from "../../../domain/services/item-limit-overrides.js";
+import {
+  OrderBackorderReader,
+  type OrderBackorders,
+} from "../../../backorder/domain/ports/order-backorder.reader.js";
 /** Lecteur doublé : rend la commande demandée (ou rien), et compte ses appels. */
 function reader(owned: OwnedOrder | null): OrderReader {
   return {
@@ -277,6 +281,17 @@ class NoReviews extends OrderReviewsReader {
   }
 }
 
+/** Les reliquats de la commande, fixés par le test (par défaut : aucun). */
+class FixedOrderBackorders extends OrderBackorderReader {
+  constructor(private readonly backorders: OrderBackorders = { backorder: null, origin: null }) {
+    super();
+  }
+
+  override of(): Promise<OrderBackorders> {
+    return Promise.resolve(this.backorders);
+  }
+}
+
 /** Le détail staff, avec ce que l'annulation lit d'elle (par défaut : annulable). */
 function adminHandler(
   owned: OwnedOrder | null,
@@ -296,6 +311,7 @@ function adminHandler(
   overrides: ItemLimitOverrideReader = new RecordedOverrides([]),
   noShows: OrderNoShowReader = new NoNoShow(),
   reviews: OrderReviewsReader = new NoReviews(),
+  backorders: OrderBackorderReader = new FixedOrderBackorders(),
 ): GetAdminOrderHandler {
   const subjects = new FixedSubjects(subject, others);
   const inscriptions = new FixedInscription(inscribedDay);
@@ -329,6 +345,7 @@ function adminHandler(
     overrides,
     noShows,
     reviews,
+    backorders,
   );
 }
 
@@ -361,7 +378,48 @@ describe("GetAdminOrderHandler", () => {
       cardIncrease: null,
       shortfallRefund: null,
       noShow: null,
+      backorder: null,
+      backorderOrigin: null,
     });
+  });
+
+  it("plan du reliquat, § 5 : sert le reliquat né de la commande et celui dont elle est issue", async () => {
+    const backorder = {
+      id: "bo_1",
+      state: "converted",
+      createdAt: "2026-11-25T08:00:00.000Z",
+      origin: { orderId: "ord_1", orderNumber: "ORD-1" },
+      company: { id: "cmp_1", name: "Le Comptoir" },
+      buyer: { userId: "usr_1", name: "Ada Lovelace" },
+      lines: [{ sku: "CRO", productName: "Croissant", quantity: 4, saleUnit: "piece" }],
+      convertedOrder: { orderId: "ord_2", orderNumber: "ORD-2" },
+      closedAt: "2026-11-25T09:00:00.000Z",
+    } as const;
+    const origin = { backorderId: "bo_0", origin: { orderId: "ord_0", orderNumber: "ORD-0" } };
+    const view = await adminHandler(
+      ofCompany("cmp_1"),
+      { customer: CUSTOMER, company: COMPANY, placedByStaffId: null },
+      directory(),
+      // Les quatorze lectures suivantes gardent leur valeur par défaut.
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      new FixedOrderBackorders({ backorder, origin }),
+    ).execute(new GetAdminOrderQuery("ord_1", false));
+
+    expect(view.backorder).toEqual(backorder);
+    expect(view.backorderOrigin).toEqual(origin);
   });
 
   it("plan S2, §2.8 : dit la hausse par carte qui attend son complément", async () => {

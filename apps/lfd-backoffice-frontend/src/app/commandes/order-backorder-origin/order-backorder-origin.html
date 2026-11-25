@@ -1,0 +1,9 @@
+@if (origin(); as o) {
+  <fold-callout variant="info" data-backorder-origin>
+    Issue du reliquat de
+    <a [routerLink]="['/commandes', o.origin.orderId]" data-backorder-origin-link>{{
+      o.origin.orderNumber
+    }}</a>
+    — lignes et prix de la commande d’origine, livraison offerte.
+  </fold-callout>
+}

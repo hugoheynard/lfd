@@ -1,0 +1,147 @@
+<fold-page-layout icon="package-return" [title]="title()">
+  <fold-back-link icon="arrow-back" label="La commande d’origine" [routerLink]="back()" />
+
+  @switch (state()) {
+    @case ('loading') {
+      <fold-loading message="Préparation de la commande du reliquat…" />
+    }
+    @case ('error') {
+      <fold-empty-state
+        tone="alert"
+        title="Impossible de transformer ce reliquat"
+        [subtitle]="loadError() ?? 'La commande ou le compte n’ont pas pu être lus.'"
+      >
+        <button foldButton (click)="load(orderId())">Réessayer</button>
+      </fold-empty-state>
+    }
+    @default {
+      @if (backorder(); as b) {
+        <div class="columns">
+          <div class="column">
+            <fold-card>
+              <fold-element-title
+                cardHeader
+                variant="title"
+                [level]="2"
+                title="Ce qui reste dû"
+                [subtitle]="
+                  (b.company?.name ?? '') +
+                  ' — lignes et prix de la commande ' +
+                  b.origin.orderNumber +
+                  ', non modifiables.'
+                "
+              />
+              <app-backorder-lines [lines]="b.lines" />
+            </fold-card>
+
+            <fold-card>
+              <fold-element-title cardHeader variant="title" [level]="2" title="La commande" />
+              <div class="form">
+                @if (originBuyerGone()) {
+                  <fold-callout variant="warning" data-origin-buyer-gone>
+                    {{ b.buyer.name }}, qui portait la commande d’origine, n’a plus d’accès au
+                    compte : choisissez un autre interlocuteur.
+                  </fold-callout>
+                }
+                <fold-listbox
+                  label="Commande portée par"
+                  [options]="buyerOptions()"
+                  [value]="buyer()"
+                  (selectionChange)="draft.buyerUserId.set($event)"
+                />
+
+                <app-acheminement-commande
+                  [pickups]="pickups()"
+                  [addresses]="addresses()"
+                  [zones]="zones()"
+                  [deliveryAvailability]="deliveryAvailability()"
+                  [audience]="audience()"
+                  [preferredPickupId]="company()?.preferredPickupId ?? null"
+                  [draft]="draft"
+                  [canKeepAddress]="false"
+                  [deliveryOffered]="true"
+                  (choiceChange)="onFulfillment($event)"
+                />
+
+                <fold-date
+                  [label]="dateLabel()"
+                  [value]="draft.requestedDate()"
+                  [hint]="
+                    draft.dateProposed()
+                      ? 'Proposée : demain. Aujourd’hui est possible.'
+                      : 'Aujourd’hui compris.'
+                  "
+                  (valueChange)="onDate($event)"
+                />
+
+                <fold-textarea
+                  label="Note"
+                  placeholder="Ce que l’atelier doit savoir."
+                  [rows]="2"
+                  [value]="draft.note()"
+                  (valueChange)="draft.note.set($event)"
+                />
+
+                <fold-listbox
+                  label="Règlement"
+                  [options]="settlementOptions()"
+                  [value]="draft.settlement()"
+                  (selectionChange)="onSettlement($event)"
+                />
+                @if (draft.settlement() === 'offered') {
+                  <app-offer-reason-fields
+                    [(nature)]="draft.offerNature"
+                    [(note)]="draft.offerNote"
+                    [(notifyCustomer)]="draft.offerNotifiesCustomer"
+                  />
+                }
+              </div>
+            </fold-card>
+          </div>
+
+          <div class="column">
+            <fold-card>
+              <fold-element-title
+                cardHeader
+                variant="title"
+                [level]="2"
+                title="Montant"
+                subtitle="Calculé par le serveur au prix de la commande d’origine."
+              />
+              <div class="form">
+                @if (totalRows(); as rows) {
+                  <app-montants-panier [rows]="rows" data-backorder-amounts />
+                } @else {
+                  <fold-callout variant="info">
+                    Le montant s’affiche dès que l’acheminement et le jour sont choisis.
+                  </fold-callout>
+                }
+                @for (blocker of blockers(); track blocker) {
+                  <fold-callout variant="warning" data-backorder-blocker>{{
+                    blocker
+                  }}</fold-callout>
+                }
+                @for (warning of warnings(); track warning) {
+                  <fold-callout variant="info">{{ warning }}</fold-callout>
+                }
+                <fold-inline-confirm
+                  message="La commande sera créée au prix d’origine, livraison offerte, et le reliquat fermé."
+                  [labels]="{ confirm: 'Confirmer', cancel: 'Revenir' }"
+                  keepOpenOnConfirm
+                  [loading]="submitting()"
+                  [open]="confirming()"
+                  (openChange)="confirming.set($event)"
+                  (confirmed)="convert()"
+                >
+                  <button foldButton [disabled]="!canConvert()" data-backorder-convert>
+                    {{ convertLabel() }}
+                  </button>
+                </fold-inline-confirm>
+              </div>
+            </fold-card>
+          </div>
+        </div>
+      }
+    }
+  }
+</fold-page-layout>

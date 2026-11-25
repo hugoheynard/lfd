@@ -1,4 +1,7 @@
 import {
+  type AdminBackorderListQuery,
+  adminBackorderListQuerySchema,
+  type AdminBackorderView,
   type AdminBackorderConvertPayload,
   adminBackorderConvertPayloadSchema,
   type AdminBackorderQuotePayload,
@@ -8,7 +11,7 @@ import {
   hasStaffPermission,
   type StaffPermission,
 } from "@lfd/contracts";
-import { Body, Controller, HttpCode, HttpStatus, Param, Post } from "@nestjs/common";
+import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post, Query } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
 import {
@@ -18,21 +21,25 @@ import {
 import { StaffPermissions, StaffUserId } from "../../../../platform/auth/staff.decorator.js";
 import { Idempotent } from "../../../../platform/shared/http/idempotent.decorator.js";
 import { IntentKey } from "../../../../platform/shared/http/intent-key.decorator.js";
-import { ZodBody } from "../../../../platform/shared/http/zod-body.pipe.js";
+import { ZodBody, ZodQuery } from "../../../../platform/shared/http/zod-body.pipe.js";
 import type { PlaceOrderForCustomerResult } from "../../application/commands/place-order-for-customer.command.js";
 import { mayExceedItemLimits } from "../../http/item-limit-override-permissions.js";
 import { ConvertBackorderCommand } from "../application/commands/convert-backorder.command.js";
 import { QuoteBackorderQuery } from "../application/queries/quote-backorder.query.js";
+import { AbandonBackorderCommand } from "../application/commands/abandon-backorder.command.js";
+import { ListBackordersQuery } from "../application/queries/list-backorders.query.js";
 
 /**
  * **Le reliquat de commande, vu de l'équipe** (plan
  * `documentation/commandes/reliquat/plan-reliquat-de-commande.md`, § 4) :
- * l'estimer et le transformer en commande. C'est l'écran qui appelle ces
+ * la liste « Reliquats à traiter », l'estimer, le transformer en commande ou
+ * l'abandonner. C'est l'écran qui appelle ces
  * routes, jamais `POST /admin/orders` : une passation ordinaire ne fermerait
  * pas le reliquat et facturerait le prix du jour.
  *
- * Même surface et même droit que la saisie de l'équipe : transformer un
- * reliquat, c'est passer une commande à la place du client.
+ * Transformer est sous le droit de la saisie de l'équipe : c'est passer une
+ * commande à la place du client. Abandonner est sous le droit de la décision
+ * du départ, qui fait naître le reliquat.
  */
 @Controller("admin/backorders")
 @AdminSurface("b2b_orders")
@@ -41,6 +48,36 @@ export class AdminBackordersController {
     private readonly commands: CommandBus,
     private readonly queries: QueryBus,
   ) {}
+
+  /**
+   * **La liste**, du plus ancien au plus récent : `?state=` (`open` par
+   * défaut), `?companyId=` facultatif. Sans société, les reliquats de
+   * particuliers y sont aussi : la surface est celle de l'équipe.
+   */
+  @Get()
+  async list(
+    @Query(new ZodQuery(adminBackorderListQuerySchema)) params: AdminBackorderListQuery,
+  ): Promise<readonly AdminBackorderView[]> {
+    return this.queries.execute<ListBackordersQuery, readonly AdminBackorderView[]>(
+      new ListBackordersQuery({ state: params.state, companyId: params.companyId ?? null }),
+    );
+  }
+
+  /**
+   * **Abandonner** : le client ne veut pas du reste. `204` : la commande
+   * d'origine se relit. Refus `409` : déjà transformé ou abandonné.
+   */
+  @Post(":id/abandon")
+  @RequirePermission("b2b_orders_shortfall:write")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Idempotent(
+    "transition : rejouée, le reliquat relu sous verrou est déjà fermé et l'agrégat refuse (409 « déjà abandonné ») avant toute écriture",
+  )
+  async abandon(@Param("id") id: string, @StaffUserId() staffUserId: string): Promise<void> {
+    await this.commands.execute<AbandonBackorderCommand, void>(
+      new AbandonBackorderCommand(staffUserId, id),
+    );
+  }
 
   @Post(":id/quote")
   @RequirePermission("b2b_place_order:write")

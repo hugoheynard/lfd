@@ -214,6 +214,7 @@ describe('OrderViewComponent — les onglets', () => {
       'app-order-shortfall-banner',
       'app-order-shortfall-decision',
       'app-order-shortfall-letter',
+      'app-order-backorder-card',
       'app-order-card-increase-banner',
       'app-order-refund-banner',
       'app-order-refunds-card',

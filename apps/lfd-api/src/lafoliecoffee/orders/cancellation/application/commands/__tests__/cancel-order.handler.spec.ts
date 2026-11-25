@@ -1,3 +1,4 @@
+import { backorderAbandonmentScene } from "../../../../backorder/application/__tests__/backorder-abandonment-doubles.js";
 import { FixedHandoverHistory } from "../../../../application/commands/__tests__/handover-history-double.js";
 import { increaseCancellation } from "../../../../revision/application/commands/__tests__/card-increase-scene.js";
 import type { CardIncreaseProposal } from "../../../../revision/domain/entities/card-increase-proposal.js";
@@ -125,6 +126,7 @@ function scene(options: Scene = {}) {
         // La chronologie n'enregistre le projet que lorsqu'il y en a un (R9).
         options.increase === undefined ? [] : trace,
       ).cancellation,
+      backorderAbandonmentScene().abandonment,
     ),
   );
   return { handler, trace, rows, gateway, vouchers, durable, engagements, cards };
@@ -473,6 +475,7 @@ describe("CancelOrderHandler — les refus", () => {
         new FixedClock(NOW),
         new FixedHandoverHistory(),
         increaseCancellation().cancellation,
+        backorderAbandonmentScene().abandonment,
       ),
     );
 

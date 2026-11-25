@@ -1,0 +1,53 @@
+<fold-page-layout icon="package-return" title="Reliquats à traiter">
+  <p description>
+    Ce qui n’est pas parti avec une commande et reste dû au client. Transformez-le en commande ou
+    abandonnez-le depuis la fiche de la commande d’origine.
+  </p>
+
+  @switch (state()) {
+    @case ('loading') {
+      <fold-loading message="Chargement des reliquats…" />
+    }
+    @case ('error') {
+      <fold-empty-state
+        tone="alert"
+        title="Impossible de lire les reliquats"
+        [subtitle]="loadError() ?? 'La liste n’a pas pu être lue.'"
+      >
+        <button foldButton (click)="load()">Réessayer</button>
+      </fold-empty-state>
+    }
+    @default {
+      @if (backorders().length === 0) {
+        <fold-empty-state
+          title="Aucun reliquat à traiter"
+          subtitle="Tout ce qui restait dû a été transformé en commande ou abandonné."
+        >
+          <fold-icon empty-icon name="package-check" />
+        </fold-empty-state>
+      } @else {
+        <ul class="list" data-backorders>
+          @for (backorder of backorders(); track backorder.id) {
+            <li>
+              <fold-card [attr.data-backorder]="backorder.id">
+                <fold-element-title
+                  cardHeader
+                  variant="title"
+                  [level]="2"
+                  [title]="backorder.company?.name ?? 'Particulier'"
+                  [subtitle]="'Né ' + ageOf(backorder) + ' · porté par ' + backorder.buyer.name"
+                />
+                <div class="body">
+                  <a [routerLink]="['/commandes', backorder.origin.orderId]" data-backorder-origin>
+                    Commande d’origine {{ backorder.origin.orderNumber }}
+                  </a>
+                  <app-backorder-lines [lines]="backorder.lines" />
+                </div>
+              </fold-card>
+            </li>
+          }
+        </ul>
+      }
+    }
+  }
+</fold-page-layout>

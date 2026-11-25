@@ -140,6 +140,9 @@ describe("BackorderOpening — la naissance du reliquat", () => {
       loadLocked(): Promise<Backorder | null> {
         return Promise.resolve(null);
       }
+      loadLockedByOrigin(): Promise<Backorder | null> {
+        return Promise.resolve(null);
+      }
       save(): Promise<void> {
         return Promise.reject(new RangeError("base indisponible"));
       }
