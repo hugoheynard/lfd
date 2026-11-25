@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import type { StaffNote } from '@lfd/contracts';
+import type { AdminDeliveryNoteView } from '@lfd/contracts';
 import { firstValueFrom } from 'rxjs';
 
 import { B2B_API_BASE } from '../api/api-config';
@@ -22,8 +22,23 @@ export const REPRINT_SENTENCE =
 export class DeliveryNotesService {
   private readonly http = inject(HttpClient);
 
-  ofOrder(orderId: string): Promise<readonly StaffNote[]> {
-    return firstValueFrom(this.http.get<readonly StaffNote[]>(this.base(orderId)));
+  /** Les BL de la commande, chacun avec ses exemplaires figés, dans l'ordre. */
+  ofOrder(orderId: string): Promise<readonly AdminDeliveryNoteView[]> {
+    return firstValueFrom(this.http.get<readonly AdminDeliveryNoteView[]>(this.base(orderId)));
+  }
+
+  /**
+   * Un exemplaire figé du BL client (plan du reliquat, § 5 ter) — le papier tel
+   * qu'il était à sa naissance. Ce n'est pas une impression : le serveur ne la
+   * trace pas.
+   */
+  editionPdf(orderId: string, noteNumber: string, edition: number): Promise<Blob> {
+    return firstValueFrom(
+      this.http.get(
+        `${this.base(orderId)}/${encodeURIComponent(noteNumber)}/editions/${edition}/client.pdf`,
+        { responseType: 'blob' },
+      ),
+    );
   }
 
   /** Le BL de transport — aucun montant. */

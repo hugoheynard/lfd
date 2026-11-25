@@ -1,7 +1,7 @@
 import type { AdminOrderShortfall } from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
-import { abandonedOfShortfall, abandonedSentence } from './shortfall-remainder';
+import { abandonedOfShortfall, abandonedSentence, departedCells } from './shortfall-remainder';
 
 const NAMES = new Map([
   ['CRO', 'Croissant'],
@@ -73,5 +73,50 @@ describe('le reste abandonné, au poids', () => {
         new Map([['SAU', 'Saumon gravlax']]),
       ),
     ).toEqual([{ sku: 'SAU', productName: 'Saumon gravlax', quantity: 250, saleUnit: 'weight' }]);
+  });
+});
+
+describe('departedCells — la colonne « Parti »', () => {
+  const LINES = [
+    { sku: 'CRO', quantity: 3, saleUnit: 'piece' as const },
+    { sku: 'PAI', quantity: 2, saleUnit: 'piece' as const },
+    { sku: 'SAU', quantity: 1000, saleUnit: 'weight' as const },
+  ];
+  const decided = (departing: { sku: string; quantity: number }[]): AdminOrderShortfall => ({
+    ...shortfall(true),
+    decision: {
+      decidedAt: '2030-01-01T06:00:00.000Z',
+      remainder: 'abandoned',
+      customerNotice: null,
+      departing: departing.map((line) => ({
+        ...line,
+        saleUnit: line.sku === 'SAU' ? ('weight' as const) : ('piece' as const),
+      })),
+    },
+  });
+
+  it('ne pose aucune colonne sans décision, ni d’un serveur qui ne sert pas ce qui part', () => {
+    expect(departedCells(null, LINES)).toBeNull();
+    expect(departedCells(shortfall(false), LINES)).toBeNull();
+    expect(departedCells(shortfall(true), LINES)).toBeNull();
+  });
+
+  it('dit ce qui est parti et ce qui reste, article par article', () => {
+    const cells = departedCells(
+      decided([
+        { sku: 'CRO', quantity: 1 },
+        { sku: 'PAI', quantity: 2 },
+        { sku: 'SAU', quantity: 750 },
+      ]),
+      LINES,
+    );
+    expect(cells?.get('CRO')).toEqual({ label: '1', remainder: '2 en reliquat' });
+    expect(cells?.get('PAI')).toEqual({ label: '2', remainder: null });
+    expect(cells?.get('SAU')?.remainder).toContain('en reliquat');
+  });
+
+  it('un article absent de ce qui part n’est pas parti', () => {
+    const cells = departedCells(decided([{ sku: 'PAI', quantity: 2 }]), LINES);
+    expect(cells?.get('CRO')).toEqual({ label: '0', remainder: '3 en reliquat' });
   });
 });

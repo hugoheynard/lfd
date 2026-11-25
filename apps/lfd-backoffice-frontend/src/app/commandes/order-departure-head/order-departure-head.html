@@ -1,0 +1,37 @@
+@if (decision(); as d) {
+  <fold-callout variant="info" data-departure-head>
+    <strong>Départ incomplet décidé</strong> le {{ d.decidedAt | date: "dd/MM/yyyy 'à' HH:mm" }}
+    @if (by(); as who) {
+      <span data-departure-by>{{ who }}</span>
+    }
+    .
+    @if (departed(); as gone) {
+      <span data-departure-departed>Parti : {{ gone }}.</span>
+    }
+    <app-abandoned-remainder [lines]="abandoned()" />
+    @if ((backorder()?.state ?? 'open') === 'open') {
+      <span data-departure-pending>
+        Le reste devient un reliquat à traiter — le transformer en commande ou l’abandonner.
+      </span>
+    }
+    @if (backorder(); as b) {
+      @switch (b.state) {
+        @case ('open') {
+          <a routerLink="/reliquats" data-departure-backorder>Le reliquat, à traiter</a>
+        }
+        @case ('converted') {
+          @if (b.convertedOrder; as issued) {
+            Le reliquat est devenu la commande
+            <a [routerLink]="['/commandes', issued.orderId]" data-departure-backorder>{{
+              issued.orderNumber
+            }}</a
+            >.
+          }
+        }
+        @case ('abandoned') {
+          <span data-departure-backorder>Le reliquat a été abandonné.</span>
+        }
+      }
+    }
+  </fold-callout>
+}

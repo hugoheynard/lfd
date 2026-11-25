@@ -1,4 +1,3 @@
-import { DatePipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -24,9 +23,7 @@ import { FoldButtonComponent, FoldCalloutComponent, FoldInlineConfirmComponent }
 import { PermissionsStore } from '../../auth/permissions.store';
 import { NotifyService } from '../../notify.service';
 import { DeliveryNotesService, REPRINT_SENTENCE } from '../delivery-notes.service';
-import { AbandonedRemainder } from '../abandoned-remainder/abandoned-remainder';
 import { AdminOrdersService } from '../orders.service';
-import { abandonedOfShortfall } from '../shortfall-remainder';
 import {
   isShortfallCardRefusal,
   SHORTFALL_CARD_TEXT,
@@ -50,19 +47,15 @@ interface DepartingLine {
  *
  * Les quantités sont en lecture : ce qui part est ce que le colisage a figé.
  * Le reste devient un reliquat à traiter (transformer ou abandonner). Absent sans
- * `b2b_orders_shortfall:write`. Une fois la décision prise, il la dit, et dit
- * « réimprimez-le » si le BL avait été imprimé avant (calculé par le serveur).
+ * `b2b_orders_shortfall:write`. Une fois la décision prise, elle se lit en tête
+ * de la fiche (`app-order-departure-head`) ; ici restent le remboursement au
+ * solde d'une commande réglée par carte, et « réimprimez-le » si le BL avait
+ * été imprimé avant (calculé par le serveur).
  */
 @Component({
   selector: 'app-order-shortfall-decision',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    AbandonedRemainder,
-    DatePipe,
-    FoldButtonComponent,
-    FoldCalloutComponent,
-    FoldInlineConfirmComponent,
-  ],
+  imports: [FoldButtonComponent, FoldCalloutComponent, FoldInlineConfirmComponent],
   templateUrl: './order-shortfall-decision.html',
   styleUrl: './order-shortfall-decision.scss',
 })
@@ -114,14 +107,6 @@ export class OrderShortfallDecision {
       'Ce qui est au bac part ; le reste devient un reliquat à traiter (le transformer en commande ou l’abandonner) et n’est pas facturé sur cette commande.' +
       (this.refundedAtSettlement() ? ' Il sera remboursé sur la carte au solde.' : '') +
       ' Une pièce qui arriverait ensuite reste en réserve. La décision est définitive.',
-  );
-
-  /** Le départ décidé : ce qui n'est pas parti, ligne par ligne (Hugo, 2026-10-25). */
-  protected readonly abandoned = computed(() =>
-    abandonedOfShortfall(
-      this.shortfall(),
-      new Map(this.lines().map((line) => [line.sku, line.productName])),
-    ),
   );
 
   protected readonly departing = computed<readonly DepartingLine[]>(() => {

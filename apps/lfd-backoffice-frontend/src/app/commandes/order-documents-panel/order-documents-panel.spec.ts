@@ -3,9 +3,9 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { SectionTitle } from '@lfd/b2b-ui/order';
 import type {
+  AdminDeliveryNoteView,
   IssuedInvoiceSummaryView,
   OrderMailView,
-  StaffNote,
   StaffPermission,
 } from '@lfd/contracts';
 import { NgTemplateOutlet } from '@angular/common';
@@ -26,7 +26,7 @@ import { AdminOrdersService } from '../orders.service';
 import { OrderDocumentsPanel } from './order-documents-panel';
 
 /** Des dates seulement affichées : aucune n'est comparée à l'horloge. */
-const NOTE: StaffNote = {
+const NOTE: AdminDeliveryNoteView = {
   audience: 'staff',
   number: 'BL-9-1',
   orderId: 'ord_9',
@@ -55,6 +55,8 @@ const NOTE: StaffNote = {
   handedOverAt: null,
   voidedAt: null,
   reprintNeeded: false,
+  versions: [{ version: 1, cause: 'born', recordedAt: '2026-09-07T20:00:00.000Z' }],
+  originKept: true,
 };
 
 const INVOICE: IssuedInvoiceSummaryView = {
@@ -84,7 +86,7 @@ const MAIL: OrderMailView = {
 
 const PDF = new Blob(['%PDF-1.3'], { type: 'application/pdf' });
 
-async function render() {
+async function render(notes: readonly AdminDeliveryNoteView[] = [NOTE]) {
   const printer = { print: vi.fn(), download: vi.fn() };
   const sheetPdf = vi.fn(async () => PDF);
   const permissions: readonly StaffPermission[] = ['b2b_accounting:read', 'mail_sends:read'];
@@ -99,7 +101,7 @@ async function render() {
       },
       {
         provide: DeliveryNotesService,
-        useValue: { ofOrder: async () => [NOTE], carrierPdf: async () => PDF },
+        useValue: { ofOrder: async () => notes, carrierPdf: async () => PDF },
       },
       {
         provide: IssuedInvoicesService,
@@ -189,5 +191,36 @@ describe('OrderDocumentsPanel — l’onglet « Documents »', () => {
     const status = group(el, 'sends')?.querySelector('[data-order-mail-status]');
     expect(status?.textContent).toContain('Non envoyé — mode dev');
     expect(el.textContent).not.toMatch(/Resend|à blanc/u);
+  });
+
+  it('range la confirmation, le BL d’origine, puis le BL définitif, avant les factures', async () => {
+    const rewritten: AdminDeliveryNoteView = {
+      ...NOTE,
+      versions: [
+        { version: 1, cause: 'born', recordedAt: '2026-09-07T20:00:00.000Z' },
+        { version: 3, cause: 'departure_decided', recordedAt: '2026-09-08T05:00:00.000Z' },
+      ],
+    };
+    const { el } = await render([rewritten]);
+    const titles = [...(group(el, 'pieces')?.querySelectorAll('[data-doc-row]') ?? [])].map((row) =>
+      row.querySelector('.dr-title')?.textContent?.trim(),
+    );
+    expect(titles).toEqual([
+      'Confirmation de commande',
+      'BL d’origine BL-9-1',
+      'BL définitif BL-9-1',
+      'FA-LFD-2026-000007',
+      'Facture',
+    ]);
+  });
+
+  it('un BL sans origine conservée le dit, sans ligne d’origine', async () => {
+    const { el } = await render([{ ...NOTE, originKept: false, versions: [] }]);
+    const row = el.querySelector('[data-delivery-note="BL-9-1"]');
+    expect(row?.textContent).toContain('Bon de livraison BL-9-1');
+    expect(row?.textContent).toContain(
+      'version d’origine non conservée (bon antérieur au 2026-11-25)',
+    );
+    expect(el.querySelector('[data-delivery-note-origin]')).toBeNull();
   });
 });

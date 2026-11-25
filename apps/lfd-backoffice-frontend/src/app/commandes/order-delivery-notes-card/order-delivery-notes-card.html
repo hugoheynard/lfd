@@ -6,12 +6,34 @@
 } @else if (notes().length > 0) {
   <div class="rows" data-order-delivery-notes>
     @for (note of notes(); track note.number) {
+      @let first = origin(note);
+      <!-- Le BL d'origine, avant le définitif : le papier tel qu'il est né. -->
+      @if (first) {
+        <app-document-row
+          icon="truck"
+          [title]="'BL d’origine ' + note.number"
+          [meta]="originMeta(first.recordedAt)"
+          [attr.data-delivery-note-origin]="note.number"
+        >
+          <button
+            rowActions
+            foldButton
+            size="sm"
+            emphasis="soft"
+            title="L’exemplaire du client tel qu’il était à sa naissance"
+            (click)="downloadOrigin(note, first.version)"
+            data-doc-download
+          >
+            Télécharger
+          </button>
+        </app-document-row>
+      }
       <!-- Imprimer : le bon de TRANSPORT, celui que le livreur emporte (l'impression
            est tracée). Télécharger : le bon CHIFFRÉ du client quand il existe,
            sinon le bon de transport. -->
       <app-document-row
         icon="truck"
-        [title]="'Bon de livraison ' + note.number"
+        [title]="(first ? 'BL définitif ' : 'Bon de livraison ') + note.number"
         [meta]="meta(note)"
         [attr.data-delivery-note]="note.number"
       >

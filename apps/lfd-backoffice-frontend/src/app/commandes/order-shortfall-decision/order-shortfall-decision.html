@@ -1,17 +1,14 @@
 @if (shortfall(); as s) {
   <div class="decision">
-    @if (s.decision; as d) {
-      <fold-callout appearance="inset" variant="info" data-shortfall-decided>
-        Départ décidé le {{ d.decidedAt | date: "dd/MM 'à' HH:mm" }} : ce qui était au bac est
-        parti, le reste devient un reliquat à traiter — le transformer en commande ou l’abandonner.
-        @if (refundedAtSettlement()) {
-          <span data-shortfall-refunded-at-settlement>
-            Réglée par carte : il est remboursé sur la carte au solde, et suivi dans le bandeau des
-            remboursements.
-          </span>
-        }
-      </fold-callout>
-      <app-abandoned-remainder [lines]="abandoned()" />
+    @if (s.decision) {
+      <!-- La décision elle-même se lit en tête de la fiche (app-order-departure-head) ;
+           ici, ce qu'elle laisse à faire. -->
+      @if (refundedAtSettlement()) {
+        <fold-callout appearance="inset" variant="info" data-shortfall-refunded-at-settlement>
+          Réglée par carte : le reste est remboursé sur la carte au solde, et suivi dans le bandeau
+          des remboursements.
+        </fold-callout>
+      }
       @for (note of toReprint(); track note.number) {
         <fold-callout appearance="inset" variant="warning" [attr.data-reprint-needed]="note.number">
           {{ reprintSentence }}

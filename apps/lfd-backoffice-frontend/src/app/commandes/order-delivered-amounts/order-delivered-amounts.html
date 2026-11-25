@@ -1,0 +1,15 @@
+@if (rows(); as r) {
+  <fold-card data-delivered-amounts>
+    <lfd-section-title title="Commandé et livré" />
+    <fold-field-list>
+      <fold-field label="Commandé, HT" data-amount-ordered-pretax>{{ r.orderedPretax }}</fold-field>
+      <fold-field label="Commandé, TTC" data-amount-ordered>{{ r.orderedTotal }}</fold-field>
+      @if (r.delivered; as d) {
+        <fold-field label="Livré, HT" data-amount-delivered-pretax>{{ d.pretax }}</fold-field>
+        <fold-field label="Livré, TTC (facturable)" data-amount-delivered>{{ d.total }}</fold-field>
+      } @else {
+        <fold-field label="Livré" data-amount-delivered>au solde</fold-field>
+      }
+    </fold-field-list>
+  </fold-card>
+}

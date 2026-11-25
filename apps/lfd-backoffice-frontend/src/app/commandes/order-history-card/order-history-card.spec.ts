@@ -84,4 +84,31 @@ describe('OrderHistoryCard', () => {
     fixture.detectChanges();
     expect(element.querySelectorAll('[data-order-history-line]')).toHaveLength(1);
   });
+
+  it('raconte un départ partiel : manque signalé, bon imprimé, lettre au client (§ 5 ter)', async () => {
+    const trace = (id: string, type: string, payload: Record<string, unknown>) => ({
+      ...PLACED,
+      id,
+      type,
+      subjectType: 'order',
+      subjectId: 'o_1',
+      payload: { subjectLabel: 'ORD-13', ...payload },
+    });
+    const { fixture } = await boot(() =>
+      Promise.resolve([
+        trace('evt_3', 'order.shortfall_letter_sent', {}),
+        trace('evt_2', 'delivery_note.printed', { noteNumber: 'BL-13-1', contentVersion: 2 }),
+        trace('evt_1', 'order.shortfall_reported', {}),
+      ]),
+    );
+    const rows = [
+      ...(fixture.nativeElement as HTMLElement).querySelectorAll('[data-order-history-line]'),
+    ].map((row) => (row.textContent ?? '').replace(/\s+/gu, ' '));
+
+    expect(rows).toHaveLength(3);
+    expect(rows[0]).toContain('a écrit au client du départ incomplet');
+    expect(rows[1]).toContain('a imprimé le bon de livraison');
+    expect(rows[1]).toContain('BL-13-1');
+    expect(rows[2]).toContain('a signalé un manque au colisage');
+  });
 });

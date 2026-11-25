@@ -203,6 +203,12 @@ fold-aside-layout {
   color: var(--fold-color-text-muted);
 }
 
+/* Le reste d'un départ décidé, sous la quantité partie. */
+.od-remainder {
+  display: block;
+  font-weight: 400;
+}
+
 .od-removed {
   margin: var(--fold-space-sm) 0 0;
   display: flex;

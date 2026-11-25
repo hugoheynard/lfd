@@ -96,4 +96,27 @@ describe("DeliveryNoteVersionRecorder", () => {
     ).rejects.toBeInstanceOf(OrderNotFoundError);
     expect(writer.recorded).toEqual([]);
   });
+
+  // La cause vient du dépôt, jamais devinée ici : un départ décidé et une
+  // replanification se rangent sous leur nom, chacun sous sa version.
+  it.each(["departure_decided", "replanned"] as const)(
+    "range la version 2 sous la cause « %s » sans la réécrire en « born »",
+    async (cause) => {
+      const { note, writer, keeper } = scene();
+
+      await keeper.keep({ id: note.id, orderId: "ord_1", number: note.number }, 2, cause);
+
+      expect(writer.recorded).toHaveLength(1);
+      expect(writer.recorded[0]).toMatchObject({ contentVersion: 2, cause });
+    },
+  );
+
+  it("compose le bon désigné par son numéro : un numéro inconnu de la commande n'est pas rangé", async () => {
+    const { note, writer, keeper } = scene();
+
+    await expect(
+      keeper.keep({ id: note.id, orderId: "ord_1", number: "BL-9-9" }, 1, "born"),
+    ).rejects.toThrow();
+    expect(writer.recorded).toEqual([]);
+  });
 });

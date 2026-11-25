@@ -262,4 +262,48 @@ describe('OrderViewComponent — les onglets', () => {
     const badges: unknown = detail === null ? null : Reflect.get(detail, 'lineBadges');
     expect(badges instanceof Map ? badges.get('PAIN-LEV') : null).toBe('hors délai');
   });
+
+  describe('un départ partiel (plan du reliquat, § 5 ter)', () => {
+    const decided = adminOrder({
+      shortfall: {
+        reportedAt: '2026-11-24T05:00:00.000Z',
+        lines: [],
+        decision: {
+          decidedAt: '2026-11-24T06:00:00.000Z',
+          remainder: 'abandoned',
+          customerNotice: null,
+          departing: [],
+        },
+      },
+    });
+
+    it('la décision du départ ouvre la fiche, avant le détail', async () => {
+      const h = await open('/commandes/ord_9', decided);
+      const head = panel(h, 'detail').querySelector('app-order-departure-head');
+      const detail = panel(h, 'detail').querySelector('lfd-order-detail');
+      expect(head).not.toBeNull();
+      expect(detail).not.toBeNull();
+      expect(
+        head !== null && detail !== null
+          ? head.compareDocumentPosition(detail) & Node.DOCUMENT_POSITION_FOLLOWING
+          : 0,
+      ).toBeTruthy();
+      expect(detail?.contains(head ?? null)).toBe(false);
+      expect(
+        panel(h, 'detail').querySelector('lfd-order-detail app-order-delivered-amounts[asideTop]'),
+      ).not.toBeNull();
+    });
+
+    it('demande la colonne « Parti » au détail partagé', async () => {
+      const h = await open('/commandes/ord_9', decided);
+      const detail = panel(h, 'detail').querySelector('lfd-order-detail');
+      expect(detail === null ? null : Reflect.get(detail, 'departed')).toBeInstanceOf(Map);
+    });
+
+    it('sans décision, pas de colonne « Parti »', async () => {
+      const h = await open('/commandes/ord_9');
+      const detail = panel(h, 'detail').querySelector('lfd-order-detail');
+      expect(detail === null ? undefined : Reflect.get(detail, 'departed')).toBeNull();
+    });
+  });
 });

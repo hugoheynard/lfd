@@ -58,6 +58,54 @@ describe("renderedJson / renderedOf", () => {
   });
 });
 
+describe("renderedJson / renderedOf — chemins de bord", () => {
+  it("garde une entrée sans ligne non livrée et une ligne vendue au poids", () => {
+    const empty: RenderedClientNote = { ...RENDERED, undelivered: [] };
+    const reread: unknown = JSON.parse(JSON.stringify(renderedJson(empty)));
+    expect(renderedOf("dn_1", 1, reread as Prisma.JsonValue)).toEqual(empty);
+    const weight: RenderedClientNote = {
+      ...RENDERED,
+      undelivered: [{ productName: "Farine", quantity: 1500, saleUnit: "weight" }],
+    };
+    expect(renderedJson(weight)).toEqual(weight);
+  });
+
+  it.each([
+    ["une quantité décimale", { productName: "Pain", quantity: 1.5, saleUnit: "piece" }],
+    ["une quantité négative", { productName: "Pain", quantity: -1, saleUnit: "piece" }],
+    ["une unité de vente inconnue", { productName: "Pain", quantity: 1, saleUnit: "box" }],
+    [
+      "un champ en trop sur la ligne",
+      { productName: "Pain", quantity: 1, saleUnit: "piece", x: 1 },
+    ],
+  ])("refuse de relire une ligne non livrée avec %s", (_cas, line) => {
+    expect(() => renderedOf("dn_1", 1, { ...stored(), undelivered: [line] })).toThrow(
+      DeliveryNoteVersionUnreadableError,
+    );
+  });
+
+  it.each([null, "texte", 3, []])(
+    "refuse de relire une valeur rangée qui n'est pas un objet (%j)",
+    (raw) => {
+      expect(() => renderedOf("dn_1", 1, raw)).toThrow(DeliveryNoteVersionUnreadableError);
+    },
+  );
+
+  it("relit une entrée dont les clés sont rangées dans un autre ordre", () => {
+    const { note, undelivered } = stored();
+    expect(renderedOf("dn_1", 1, { undelivered, note })).toEqual(RENDERED);
+  });
+
+  it("l'erreur de lecture nomme le bon et la version", () => {
+    expect(() => causeOf("dn_9", 7, "printed")).toThrow(/version 7 du bon dn_9/);
+  });
+
+  it("l'erreur d'écriture nomme le numéro du bon", () => {
+    const widened = { ...RENDERED, note: { ...RENDERED.note, extra: 1 } };
+    expect(() => renderedJson(widened)).toThrow(new RegExp(RENDERED.note.number));
+  });
+});
+
 describe("causeOf", () => {
   it("relit les trois causes et refuse le reste", () => {
     expect(causeOf("dn_1", 1, "born")).toBe("born");

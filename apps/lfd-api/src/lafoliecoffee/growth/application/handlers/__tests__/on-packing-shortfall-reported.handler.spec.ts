@@ -90,4 +90,40 @@ describe("OnPackingShortfallReportedActivity", () => {
     ).rejects.toThrow(PackingShortfallPayloadError);
     expect(recorder.records).toEqual([]);
   });
+
+  // Le rejeu d'un même signal porte la MÊME clé : c'est elle qui fait qu'une
+  // livraison rejouée par la boîte d'envoi n'écrit pas une seconde ligne.
+  it("un rejeu du même signal porte la même clé qu'à la première livraison", async () => {
+    const { recorder, run } = handler();
+    const payload = event(FIRST_AT).durableFact().payload;
+
+    await run.handle(delivery(payload));
+    await run.handle(delivery(payload));
+
+    expect(recorder.records).toHaveLength(2);
+    expect(recorder.records[1]?.idempotencyKey).toBe(recorder.records[0]?.idempotencyKey);
+  });
+
+  it("un signal sans auteur n'écrit rien : l'historique ne cite pas « personne »", async () => {
+    const { recorder, run } = handler();
+    const { reportedBy: _absent, ...withoutAuthor } = event(FIRST_AT).durableFact().payload;
+
+    await expect(run.handle(delivery(withoutAuthor))).rejects.toBeInstanceOf(
+      PackingShortfallPayloadError,
+    );
+    expect(recorder.records).toEqual([]);
+  });
+
+  it("un article du bac vide (0 emballé) reste écrit : c'est le manque entier", async () => {
+    const { recorder, run } = handler();
+    const total = new PackingShortfallReportedEvent("order_9", 1, "ORD-9", FIRST_AT, "fiche_1", [
+      { sku: "CRO", due: 3, packed: 0 },
+    ]);
+
+    await run.handle(delivery(total.durableFact().payload));
+
+    expect(recorder.records[0]?.payload).toMatchObject({
+      lines: [{ sku: "CRO", due: 3, packed: 0 }],
+    });
+  });
 });

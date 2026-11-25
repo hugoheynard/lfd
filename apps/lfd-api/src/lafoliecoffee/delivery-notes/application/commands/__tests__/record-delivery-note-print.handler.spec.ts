@@ -44,22 +44,24 @@ const ORDER: DeliveryNoteOrderProgress = {
   terms: ORDER_TERMS,
 };
 
-async function scene(known = true) {
+async function scene(known = true, contentVersion = 1) {
   const notes = new InMemoryDeliveryNotes();
   const orders = new InMemoryOrderProgress();
   if (known) {
     orders.put(ORDER);
   }
-  await notes.save(DeliveryNote.planFromOrder("dn_1", ORDER, PLANNED_AT));
+  const planned = DeliveryNote.planFromOrder("dn_1", ORDER, PLANNED_AT);
+  await notes.save(DeliveryNote.rehydrate({ ...planned.toState(), contentVersion }));
   const journal = new RecordingJournal();
+  const clock = new FixedClock(PRINTED_AT);
   const handler = new RecordDeliveryNotePrintHandler(
     orders.scan,
     notes,
-    new FixedClock(PRINTED_AT),
+    clock,
     new DirectUnitOfWork(),
     journal,
   );
-  return { notes, journal, handler };
+  return { notes, journal, handler, clock };
 }
 
 describe("RecordDeliveryNotePrintHandler", () => {
@@ -96,5 +98,35 @@ describe("RecordDeliveryNotePrintHandler", () => {
     await handler.execute(new RecordDeliveryNotePrintCommand("ord_a", "BL-42-1", "staff_1"));
 
     expect(journal.facts).toEqual([]);
+  });
+
+  // L'impression ne fait PAS monter la version du contenu : elle dit laquelle
+  // a été imprimée. Une impression du bon en version 2 ne retombe pas à 1.
+  it("une impression du bon en version 2 trace la version 2, et ne la fait pas monter", async () => {
+    const { notes, journal, handler } = await scene(true, 2);
+
+    await handler.execute(new RecordDeliveryNotePrintCommand("ord_a", "BL-42-1", "staff_1"));
+
+    const row = notes.rows.get("dn_1");
+    expect(row?.contentVersion).toBe(2);
+    expect(row?.printed?.version).toBe(2);
+    expect(journal.facts[0]?.idempotencyKey).toBe(
+      `delivery_note.printed:dn_1:2:${PRINTED_AT.toISOString()}`,
+    );
+  });
+
+  // Deux impressions à deux instants = deux lignes d'historique ; la colonne
+  // ne garde que la dernière.
+  it("deux impressions à deux instants portent deux clés, la colonne garde la dernière", async () => {
+    const { notes, journal, handler, clock } = await scene();
+
+    await handler.execute(new RecordDeliveryNotePrintCommand("ord_a", "BL-42-1", "staff_1"));
+    clock.advanceMs(1_000);
+    await handler.execute(new RecordDeliveryNotePrintCommand("ord_a", "BL-42-1", "staff_2"));
+
+    const keys = journal.facts.map((entry) => entry.idempotencyKey);
+    expect(keys).toHaveLength(2);
+    expect(new Set(keys).size).toBe(2);
+    expect(notes.rows.get("dn_1")?.printed?.by).toBe("staff_2");
   });
 });

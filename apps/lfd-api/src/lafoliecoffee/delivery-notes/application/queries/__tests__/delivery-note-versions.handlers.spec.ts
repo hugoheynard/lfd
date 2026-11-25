@@ -4,6 +4,7 @@ import {
   OneOrderReader,
   view,
 } from "../../../../orders/application/handlers/__tests__/order-placed-mail-doubles.js";
+import { OrderNotFoundError } from "../../../../orders/domain/errors/order-errors.js";
 import type { OwnedOrder } from "../../../../orders/domain/ports/order.reader.js";
 import { AT_PLACEMENT } from "../../../../orders/domain/services/order-sheet.js";
 import { ART } from "../../../../orders/domain/services/__tests__/client-sheet.fixture.js";
@@ -167,5 +168,84 @@ describe("GetDeliveryNoteVersionPdfHandler — le PDF d'une version figée", () 
       handler.execute(new GetDeliveryNoteVersionPdfQuery("ord_1", "BL-9-1", 1)),
     ).rejects.toBeInstanceOf(DeliveryNoteNotFoundError);
     expect(kept.asked).toEqual([]);
+  });
+
+  describe("GetDeliveryNoteVersionPdfHandler — les frontières de l'exemplaire", () => {
+    // Une version rangée sous un AUTRE bon ne se sert jamais sous celui-ci :
+    // l'exemplaire se cherche par (bon de CETTE commande, version).
+    it("une version qui n'existe que sous un autre bon répond « non conservée »", async () => {
+      const rendered = await documents().clientNote("ord_1", NOTE.number);
+      const kept = new FixedRendered(
+        new Map([["dn_autre:1", { note: rendered.note, undelivered: [] }]]),
+      );
+      const handler = new GetDeliveryNoteVersionPdfHandler(documents(), kept);
+
+      await expect(
+        handler.execute(new GetDeliveryNoteVersionPdfQuery("ord_1", NOTE.number, 1)),
+      ).rejects.toBeInstanceOf(DeliveryNoteVersionNotKeptError);
+      expect(kept.asked).toEqual([`${NOTE.id}:1`]);
+    });
+
+    it("une version future (jamais figée) répond « non conservée », même si la 1 l'est", async () => {
+      const rendered = await documents().clientNote("ord_1", NOTE.number);
+      const kept = new FixedRendered(
+        new Map([[`${NOTE.id}:1`, { note: rendered.note, undelivered: [] }]]),
+      );
+      const handler = new GetDeliveryNoteVersionPdfHandler(documents(), kept);
+
+      await expect(
+        handler.execute(new GetDeliveryNoteVersionPdfQuery("ord_1", NOTE.number, 2)),
+      ).rejects.toBeInstanceOf(DeliveryNoteVersionNotKeptError);
+    });
+
+    it("deux versions du même bon se téléchargent sous deux noms", async () => {
+      const rendered = await documents().clientNote("ord_1", NOTE.number);
+      const entry = { note: rendered.note, undelivered: [] };
+      const kept = new FixedRendered(
+        new Map([
+          [`${NOTE.id}:1`, entry],
+          [`${NOTE.id}:2`, entry],
+        ]),
+      );
+      const handler = new GetDeliveryNoteVersionPdfHandler(documents(), kept);
+
+      const first = await handler.execute(
+        new GetDeliveryNoteVersionPdfQuery("ord_1", NOTE.number, 1),
+      );
+      const second = await handler.execute(
+        new GetDeliveryNoteVersionPdfQuery("ord_1", NOTE.number, 2),
+      );
+
+      expect(first.fileName).not.toBe(second.fileName);
+      expect(second.fileName).toBe("bon-de-livraison-BL-1042-1-v2.pdf");
+    });
+  });
+
+  describe("ListOrderDeliveryNotesHandler — les frontières des versions", () => {
+    it("les versions d'un autre bon ne se glissent pas dans celui-ci", async () => {
+      const handler = new ListOrderDeliveryNotesHandler(
+        documents(),
+        new FixedVersions(
+          new Map([
+            ["dn_autre", [{ contentVersion: 1, cause: "born" as const, recordedAt: BORN_AT }]],
+          ]),
+        ),
+      );
+
+      const [note] = await handler.execute(new ListOrderDeliveryNotesQuery("ord_1"));
+
+      expect(note).toMatchObject({ versions: [], originKept: false });
+    });
+
+    it("une commande inconnue répond 404 avant toute lecture de version", async () => {
+      const handler = new ListOrderDeliveryNotesHandler(
+        documents(new OneOrderReader(null)),
+        new FixedVersions(),
+      );
+
+      await expect(
+        handler.execute(new ListOrderDeliveryNotesQuery("ord_x")),
+      ).rejects.toBeInstanceOf(OrderNotFoundError);
+    });
   });
 });

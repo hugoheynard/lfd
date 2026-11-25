@@ -93,13 +93,11 @@ describe('« Décider du départ » (E6b)', () => {
     expect(text).not.toContain('le reste est abandonné');
   });
 
-  it('une fois décidé, dit que le reste devient un reliquat à traiter', () => {
+  it('une fois décidé, ne redit pas la décision : elle est en tête de la fiche', () => {
     const { fixture } = mount(DECIDED);
-    const decided = (
-      el(fixture).querySelector('[data-shortfall-decided]')?.textContent ?? ''
-    ).replace(/\s+/gu, ' ');
-    expect(decided).toContain('le reste devient un reliquat à traiter');
-    expect(decided).not.toContain('le reste est abandonné');
+    expect(el(fixture).querySelector('[data-shortfall-decided]')).toBeNull();
+    expect(el(fixture).querySelector('[data-abandoned-remainder]')).toBeNull();
+    expect(el(fixture).querySelector('[data-shortfall-decide]')).toBeNull();
   });
 
   it('montre ce qui part, en lecture, puis décide du départ', async () => {
@@ -131,14 +129,13 @@ describe('« Décider du départ » (E6b)', () => {
     expect(done).not.toHaveBeenCalled();
   });
 
-  it('une fois décidé, le dit, et demande de réimprimer un BL imprimé avant (§ 14)', async () => {
+  it('une fois décidé, demande de réimprimer un BL imprimé avant (§ 14)', async () => {
     const { fixture, openCarrier } = mount(DECIDED, {
       notes: [{ number: 'BL-0001-1', reprintNeeded: true }],
     });
     await fixture.whenStable();
     fixture.detectChanges();
 
-    expect(el(fixture).querySelector('[data-shortfall-decided]')).not.toBeNull();
     expect(el(fixture).querySelector('[data-reprint-needed="BL-0001-1"]')?.textContent).toContain(
       'réimprimez-le',
     );
@@ -152,13 +149,6 @@ describe('« Décider du départ » (E6b)', () => {
     fixture.detectChanges();
 
     expect(el(fixture).querySelector('[data-reprint-needed]')).toBeNull();
-  });
-
-  it('une fois décidé, dit le reste abandonné ligne par ligne', () => {
-    const { fixture } = mount(DECIDED);
-    expect(el(fixture).querySelector('[data-abandoned-remainder]')?.textContent).toContain(
-      'Reste abandonné : 3 Croissant',
-    );
   });
 });
 

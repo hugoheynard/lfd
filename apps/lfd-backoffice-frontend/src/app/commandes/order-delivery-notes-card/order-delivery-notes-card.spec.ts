@@ -1,5 +1,5 @@
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
-import type { StaffNote } from '@lfd/contracts';
+import type { AdminDeliveryNoteView } from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
 import { NotifyService } from '../../notify.service';
@@ -7,7 +7,7 @@ import { DeliveryNotesService } from '../delivery-notes.service';
 import { OrderDeliveryNotesCard } from './order-delivery-notes-card';
 
 /** Des dates seulement affichées : aucune n'est comparée à l'horloge. */
-const NOTE: StaffNote = {
+const NOTE: AdminDeliveryNoteView = {
   audience: 'staff',
   number: 'BL-1042-1',
   orderId: 'o_1',
@@ -49,6 +49,17 @@ const NOTE: StaffNote = {
   handedOverAt: '2026-09-08T07:00:00.000Z',
   voidedAt: null,
   reprintNeeded: false,
+  versions: [{ version: 1, cause: 'born', recordedAt: '2026-09-07T20:00:00.000Z' }],
+  originKept: true,
+};
+
+/** Le BL d'ORD-13 : né, puis réécrit par la décision du départ. */
+const REWRITTEN: AdminDeliveryNoteView = {
+  ...NOTE,
+  versions: [
+    { version: 1, cause: 'born', recordedAt: '2026-09-07T20:00:00.000Z' },
+    { version: 2, cause: 'departure_decided', recordedAt: '2026-09-08T05:00:00.000Z' },
+  ],
 };
 
 interface Booted {
@@ -56,7 +67,7 @@ interface Booted {
   readonly element: HTMLElement;
 }
 
-async function boot(read: () => Promise<readonly StaffNote[]>): Promise<Booted> {
+async function boot(read: () => Promise<readonly AdminDeliveryNoteView[]>): Promise<Booted> {
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     providers: [
@@ -67,9 +78,10 @@ async function boot(read: () => Promise<readonly StaffNote[]>): Promise<Booted> 
           carrierPdf: () => Promise.resolve(new Blob()),
           clientPdf: () => Promise.resolve(new Blob()),
           openCarrier: () => Promise.resolve(),
+          editionPdf: () => Promise.resolve(new Blob()),
         } satisfies Pick<
           DeliveryNotesService,
-          'ofOrder' | 'carrierPdf' | 'clientPdf' | 'openCarrier'
+          'ofOrder' | 'carrierPdf' | 'clientPdf' | 'openCarrier' | 'editionPdf'
         >,
       },
       {
@@ -127,5 +139,36 @@ describe('OrderDeliveryNotesCard', () => {
     const { element } = await boot(() => Promise.resolve([NOTE]));
 
     expect(element.querySelector('[data-reprint-needed]')).toBeNull();
+  });
+
+  it("range le BL d'origine avant le BL définitif quand le bon a changé", async () => {
+    const { element } = await boot(() => Promise.resolve([REWRITTEN]));
+
+    const rows = [...element.querySelectorAll('app-document-row')];
+    expect(rows.map((row) => row.getAttribute('data-delivery-note-origin') ?? 'current')).toEqual([
+      'BL-1042-1',
+      'current',
+    ]);
+    expect(rows[0]?.textContent).toContain('BL d’origine BL-1042-1');
+    expect(rows[1]?.textContent).toContain('BL définitif BL-1042-1');
+  });
+
+  it("n'a qu'une ligne pour un bon à une seule version", async () => {
+    const { element } = await boot(() => Promise.resolve([NOTE]));
+
+    expect(element.querySelector('[data-delivery-note-origin]')).toBeNull();
+    expect(element.textContent).toContain('Bon de livraison BL-1042-1');
+    expect(element.textContent).not.toContain('définitif');
+  });
+
+  it("dit l'origine non conservée d'un bon antérieur au 2026-11-25", async () => {
+    const { element } = await boot(() =>
+      Promise.resolve([{ ...REWRITTEN, originKept: false, versions: REWRITTEN.versions.slice(1) }]),
+    );
+
+    expect(element.querySelector('[data-delivery-note-origin]')).toBeNull();
+    expect(element.querySelector('[data-delivery-note="BL-1042-1"]')?.textContent).toContain(
+      'version d’origine non conservée (bon antérieur au 2026-11-25)',
+    );
   });
 });

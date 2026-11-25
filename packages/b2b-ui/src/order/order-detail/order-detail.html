@@ -76,7 +76,12 @@
             <thead>
               <tr>
                 <th scope="col" class="od-col-sku">SKU</th>
-                <th scope="col" class="od-col-qty">Qté</th>
+                @if (departed() === null) {
+                  <th scope="col" class="od-col-qty">Qté</th>
+                } @else {
+                  <th scope="col" class="od-col-qty" data-col-ordered>Commandé</th>
+                  <th scope="col" class="od-col-qty" data-col-departed>Parti</th>
+                }
                 <th scope="col">Article</th>
                 <th scope="col" class="od-col-num od-col-unit">PU HT</th>
                 <th scope="col" class="od-col-num od-col-vat">TVA</th>
@@ -88,6 +93,17 @@
                 <tr>
                   <td class="od-col-sku">{{ line.sku }}</td>
                   <td class="od-col-qty">{{ quantityOf(line) }}</td>
+                  @if (departed(); as cells) {
+                    @let cell = cells.get(line.sku);
+                    <td class="od-col-qty" [attr.data-departed]="line.sku">
+                      {{ cell?.label ?? '0' }}
+                      @if (cell?.remainder; as rest) {
+                        <span class="od-muted od-remainder" data-departed-remainder>{{
+                          rest
+                        }}</span>
+                      }
+                    </td>
+                  }
                   <td>
                     <!-- Empilées, chacune seulement si elle a quelque chose à dire : le
                        nom, le SKU (visible quand sa colonne a cédé), la remise, puis

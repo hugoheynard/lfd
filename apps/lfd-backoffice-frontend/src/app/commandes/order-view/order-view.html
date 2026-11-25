@@ -40,6 +40,15 @@
 
       @if (bar(); as activeBar) {
         <fold-tab-panel class="ov-panel" [tabs]="activeBar" key="detail" data-tab="detail">
+          <!-- La décision du départ, EN TÊTE : qui, quand, ce qui part, le reliquat.
+               Rien pour une commande sans décision. -->
+          @if (o.shortfall?.decision) {
+            <app-order-departure-head
+              [shortfall]="o.shortfall"
+              [lines]="o.lines"
+              [backorder]="o.backorder ?? null"
+            />
+          }
           <!-- `audience="staff"` : les mêmes étapes que chez le client, mais
              chacune dit ce qu'elle veut dire dans l'atelier. Au téléphone, le
              commercial a l'écran du client sous les yeux, augmenté — jamais un
@@ -56,12 +65,15 @@
             [entryStep]="entryStep()"
             [framed]="true"
             [lineBadges]="limitBadges()"
+            [departed]="departed()"
             (lineSelected)="explain($event)"
           >
             <!-- Le contact, en tête du rail : la personne à rappeler, d'un geste. -->
             <app-order-placed-by asideTop [order]="o" />
             <!-- Une commande née d'un reliquat : le lien vers son origine. -->
             <app-order-backorder-origin asideTop [origin]="o.backorderOrigin ?? null" />
+            <!-- Un départ décidé : le commandé à côté du livré (facturable). -->
+            <app-order-delivered-amounts asideTop [order]="o" />
             <!-- Une commande offerte : le motif, que le client ne voit jamais. -->
             @if (o.offer; as offer) {
               <div asideTop>

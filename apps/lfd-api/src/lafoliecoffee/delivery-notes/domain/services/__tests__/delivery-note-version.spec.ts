@@ -37,6 +37,17 @@ describe("versionToKeep", () => {
     expect(versionToKeep(2, 3, null)).toEqual({ contentVersion: 3, cause: "replanned" });
   });
 
+  it("la naissance l'emporte sur toute cause et sur le numéro écrit", () => {
+    expect(versionToKeep(null, 3, "departure_decided")).toEqual({
+      contentVersion: 3,
+      cause: "born",
+    });
+  });
+
+  it("une version qui recule ne fige rien", () => {
+    expect(versionToKeep(3, 2, "replanned")).toBeNull();
+  });
+
   it("une écriture sans changement de contenu (un pas d'état, une impression) ne fige rien", () => {
     expect(versionToKeep(2, 2, null)).toBeNull();
     expect(versionToKeep(2, 2, "replanned")).toBeNull();
@@ -84,5 +95,21 @@ describe("versionViewsOf", () => {
       { version: 1, cause: "born", recordedAt: PLANNED_AT.toISOString() },
       { version: 2, cause: "departure_decided", recordedAt: later.toISOString() },
     ]);
+  });
+
+  it("rend une liste vide pour aucune version", () => {
+    expect(versionViewsOf([])).toEqual([]);
+  });
+
+  it("rend une version seule, et ne réordonne pas la liste reçue", () => {
+    const kept = [
+      { contentVersion: 3, cause: "replanned" as const, recordedAt: PLANNED_AT },
+      { contentVersion: 1, cause: "born" as const, recordedAt: PLANNED_AT },
+    ];
+    expect(versionViewsOf(kept.slice(0, 1))).toEqual([
+      { version: 3, cause: "replanned", recordedAt: PLANNED_AT.toISOString() },
+    ]);
+    versionViewsOf(kept);
+    expect(kept.map((v) => v.contentVersion)).toEqual([3, 1]);
   });
 });

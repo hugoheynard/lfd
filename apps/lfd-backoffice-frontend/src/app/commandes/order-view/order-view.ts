@@ -38,6 +38,9 @@ import { OrderShortfallDecision } from '../order-shortfall-decision/order-shortf
 import { OrderShortfallLetter } from '../order-shortfall-letter/order-shortfall-letter';
 import { OrderBackorderCard } from '../order-backorder-card/order-backorder-card';
 import { OrderBackorderOrigin } from '../order-backorder-origin/order-backorder-origin';
+import { OrderDeliveredAmounts } from '../order-delivered-amounts/order-delivered-amounts';
+import { OrderDepartureHead } from '../order-departure-head/order-departure-head';
+import { departedCells } from '../shortfall-remainder';
 import {
   OrderItemLimitOverridesCard,
   limitOverrideBadges,
@@ -95,6 +98,8 @@ type LoadState = 'loading' | 'ready' | 'error';
     OrderShortfallLetter,
     OrderBackorderCard,
     OrderBackorderOrigin,
+    OrderDeliveredAmounts,
+    OrderDepartureHead,
     OrderItemLimitOverridesCard,
     OrderRefundsCard,
   ],
@@ -145,6 +150,12 @@ export class OrderViewComponent {
   protected readonly limitBadges = computed(() =>
     limitOverrideBadges(this.order()?.itemLimitOverrides),
   );
+
+  /** La colonne « Parti » d'un départ décidé ; `null` — pas de colonne — sinon. */
+  protected readonly departed = computed(() => {
+    const order = this.order();
+    return order === null ? null : departedCells(order.shortfall, order.lines);
+  });
 
   /** Qui a pris la commande — la première étape de l'avancement. */
   protected readonly entryStep = computed(() => {

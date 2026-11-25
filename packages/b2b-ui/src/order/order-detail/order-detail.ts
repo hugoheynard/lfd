@@ -132,6 +132,14 @@ interface RemovedLine {
  * **projetées** dans le slot `[actions]` — elles n'ont rien de commun entre les
  * deux côtés, et c'est la seule chose qui diffère.
  */
+/** Une case de la colonne « Parti » : la quantité partie, et le reste s'il y en a un. */
+export interface DepartedCell {
+  /** « 3 », « 750 g ». */
+  readonly label: string;
+  /** « 2 en reliquat » ; `null` quand tout est parti. */
+  readonly remainder: string | null;
+}
+
 @Component({
   selector: 'lfd-order-detail',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -277,6 +285,15 @@ export class OrderDetail {
    * la boutique ne reçoit pas ces données.
    */
   readonly lineBadges = input<ReadonlyMap<string, string>>(new Map());
+
+  /**
+   * **Ce qui est parti**, par SKU (plan du reliquat, § 5 ter, B4b.4) — côté
+   * staff, sur une commande au départ décidé : la colonne « Qté » devient
+   * « Commandé » et une colonne « Parti » la suit ; un article dont une part
+   * est restée le marque sous la quantité partie. `null` (par défaut) : pas
+   * de colonne — la boutique et toute commande sans décision.
+   */
+  readonly departed = input<ReadonlyMap<string, DepartedCell> | null>(null);
 
   /**
    * L'URL que le **QR de retrait** encode, ou `null` pour ne rien afficher.
