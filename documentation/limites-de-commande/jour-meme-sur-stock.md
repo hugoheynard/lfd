@@ -240,6 +240,18 @@ sequenceDiagram
 - **Le catalogue réduit** au reste du point, lu par
   `GET /admin/resupply-receipts/:siteId/:day` (`stock[]` = `DayShelfStock`) ;
   le panier refuse ce que la vitrine ne couvre pas, le serveur rejuge.
+- **Sans le stock reçu, sur option** (Hugo, 2026-11-25) : un point réglé
+  « Retrait immédiat sans vérifier le stock reçu » (Réglages › Comptoir,
+  `counter_stock_settings.immediate_without_stock`, désactivé par défaut)
+  laisse passer une saisie **du comptoir** (`entryOrigin = counter`,
+  `ShelfClaim.atCounter`) au-delà du reste. `ShelfCircuit` prend toujours le
+  verrou du stock, mais ne juge plus le reste dans `hold`, `holdRevision` ni
+  `stockShortfallOf` (port `CounterImmediateWithoutStock`). La commande reste
+  une `shelf` : son prélèvement est compté et le reste du jour peut devenir
+  **négatif** (la Supervision le montre). Une `shelf` en ligne ou saisie par
+  le commercial reste bornée. L'écran l'apprend par `immediateWithoutStock` de
+  la vue de réception : il propose alors tout le catalogue, sans borne au
+  panier, avec un encadré qui le dit.
 - **Le règlement pré-rempli** par le **payeur** : `settlesOnAccount`
   (`lafoliecoffee/account/application/queries/get-counter-customer.handler.ts:72`), la
   règle du serveur (`order-settlement.ts:125`). Aucun défaut serveur : la

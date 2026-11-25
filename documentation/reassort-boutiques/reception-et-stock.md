@@ -200,3 +200,9 @@ alertes) se règle **point par point**, dans **Réglages › Comptoir**.
   2026-11-19 — l'encadré du comptoir le propose) et par la réception d'un
   réassort de l'article (§ 3). Le stock du jour, la
   réception et le jour même qui y puise ne changent pas.
+- **Une seconde case, indépendante** (Hugo, 2026-11-25) : « Retrait immédiat
+  sans vérifier le stock reçu » (`immediate_without_stock`, désactivée par
+  défaut). Le `PUT` porte donc les deux réglages,
+  `{ stockTracking, immediateWithoutStock }`, tous deux obligatoires. Ce
+  qu'elle change à la passation :
+  [`../limites-de-commande/jour-meme-sur-stock.md`](../limites-de-commande/jour-meme-sur-stock.md) § 8.
