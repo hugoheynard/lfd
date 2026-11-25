@@ -350,6 +350,9 @@ const PRODUCTION_ZONE = "production";
  * `documentation/fournil/les-postes-du-fournil.md`) porte le cycle commun aux cinq gestes
  * de la carte des postes — charger sous verrou, muter, sauver, journaliser —
  * dans l'unité de travail ; ses cinq handlers y délèguent.
+ * `LineStepGestures` (`documentation/fournil/un-produit-sur-plusieurs-postes.md`,
+ * § 2.3) porte de même le passage commun des trois gestes d'une étape —
+ * cocher, mettre en rouge, décocher — et publie leur fait par `publishTraced`.
  */
 const PRODUCTION_DELEGATES = new Map([
   [
@@ -362,9 +365,17 @@ const PRODUCTION_DELEGATES = new Map([
       "workstation-map-gesture.service.ts",
     ),
   ],
+  [
+    "LineStepGestures",
+    join("production", "atelier", "application", "services", "line-step-gestures.service.ts"),
+  ],
 ]);
 
-/** Un handler du fournil trace, ou délègue à un service de `PRODUCTION_DELEGATES` qui le fait. */
+/**
+ * Un handler du fournil trace, ou délègue à un service de `PRODUCTION_DELEGATES`
+ * qui publie le fait — sous une unité de travail ouverte par le service, ou par
+ * le handler quand celui-ci scelle son intention autour (`LineStepGestures`).
+ */
 function auditProduction(source, index, params, handler) {
   const delegate = [...PRODUCTION_DELEGATES.keys()].find((name) => params.includes(name));
   if (delegate === undefined) {
@@ -372,7 +383,9 @@ function auditProduction(source, index, params, handler) {
   }
   checked += 1;
   const service = readFileSync(join(SRC, PRODUCTION_DELEGATES.get(delegate)), "utf8");
-  const traced = service.includes("publishTraced") && service.includes("uow.run(");
+  const traced =
+    service.includes("publishTraced") &&
+    (service.includes("uow.run(") || source.includes("uow.run("));
   return traced
     ? { traced: true }
     : { traced: false, missing: [`un ${delegate} qui journalise sous UnitOfWork`], handler };

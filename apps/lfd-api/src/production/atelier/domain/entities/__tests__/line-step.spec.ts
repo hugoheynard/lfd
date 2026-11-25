@@ -2,7 +2,7 @@ import { InvalidStepReasonError } from "../../errors/line-step-errors.js";
 import { LineStep, STEP_REASON_MAX } from "../line-step.js";
 
 /** L'étape d'un poste qui ne finit pas la ligne (`fournil/un-produit-sur-plusieurs-postes.md`). */
-const KEY = { serviceDay: "2030-03-12", sku: "SAND", workstationId: "pain" };
+const KEY = { serviceDay: "2030-03-12", sku: "SAND", workstationId: "petrissage" };
 const FIRST = { at: new Date("2030-03-12T05:00:00.000Z"), staffId: "s1", name: "Marie" };
 const LATER = { at: new Date("2030-03-12T06:00:00.000Z"), staffId: "s2", name: null };
 
