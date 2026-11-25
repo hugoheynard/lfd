@@ -264,6 +264,13 @@ function startTsc() {
   tsc = spawn(TSC, ["-p", "tsconfig.build.json", "--watch", "--preserveWatchOutput"], {
     cwd: API,
     stdio: ["ignore", "pipe", "inherit"],
+    // Un `tsc --watch` tenu des heures garde chaque programme recompilé : au
+    // tas par défaut, V8 finit par abandonner (SIGABRT, « heap out of
+    // memory ») et la pile ne recompile plus. Même plafond que `dev:typecheck`.
+    env: {
+      ...process.env,
+      NODE_OPTIONS: `${process.env.NODE_OPTIONS ?? ""} --max-old-space-size=8192`.trim(),
+    },
   });
   createInterface({ input: tsc.stdout }).on("line", (line) => {
     console.log(line);
