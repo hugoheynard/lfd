@@ -117,7 +117,10 @@ section qui déborde dit « (1/2) », « (2/2) » dans son titre. L'ordre :
    ([`../evenements/plan-evenements.md`](../evenements/plan-evenements.md)) —
    par événement, un intercalaire « Événement : <nom> — fiches de fonction »
    qui liste les fiches et leurs pages, puis les pages des PDF déposés, dans
-   l'ordre du rang, réduites pour tenir au-dessus du folio. Les fiches
+   l'ordre du rang, réduites pour tenir au-dessus du folio. Une page en
+   paysage (`/Rotate` compris) est tournée d'un quart de tour pour occuper la
+   feuille portrait, comme les calendriers : elle se lit en tournant la
+   feuille (`turnToPortrait`, `platform/pdf/embedded-pdf.ts`). Les fiches
    **en vigueur au tirage** : une fiche remplacée sort dans sa version
    nouvelle au tirage suivant (retirage, extrait, provisoire) ; un dossier
    déjà archivé garde celle qu'il a imprimée. Lues par le port
