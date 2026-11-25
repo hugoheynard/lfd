@@ -83,6 +83,8 @@ model DeliveryNote {
   lines     DeliveryNoteLine[]
   /// Ses parts de remise de panier, une par remise (§ 18.2, M2).
   discounts DeliveryNoteDiscount[]
+  /// Chaque contenu du bon, figé à sa naissance (B4b.1).
+  versions  DeliveryNoteVersion[]
 
   @@unique([orderId, rank])
   @@map("delivery_note")
@@ -118,5 +120,30 @@ model DeliveryNoteLine {
 
   @@index([noteId])
   @@map("delivery_note_line")
+  @@schema("public")
+}
+
+/// **Une version d'un bon de livraison**, figée quand elle devient courante :
+/// à la naissance du bon, puis à chaque montée de `content_version`
+/// (`documentation/commandes/reliquat/plan-reliquat-de-commande.md`, § 5 ter).
+/// Écrite par le dépôt des bons, dans la transaction de l'écriture ; lue par
+/// le seul historique des documents (`lint:delivery-note-version-readers`).
+///
+/// `rendered` : l'entrée complète du rendu PDF client — le BL chiffré composé
+/// et ce qui manque encore —, d'où le PDF de la version se rend seul. Aucune
+/// purge : c'est une trace. CHECK de `cause` et de forme dans la migration
+/// `20261125150000`.
+model DeliveryNoteVersion {
+  id             String       @id
+  deliveryNoteId String       @map("delivery_note_id")
+  note           DeliveryNote @relation(fields: [deliveryNoteId], references: [id], onDelete: Restrict)
+  contentVersion Int          @map("content_version")
+  rendered       Json
+  /// `born` | `departure_decided` | `replanned`.
+  cause          String
+  recordedAt     DateTime     @map("recorded_at") @db.Timestamptz(6)
+
+  @@unique([deliveryNoteId, contentVersion])
+  @@map("delivery_note_version")
   @@schema("public")
 }

@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import { SHORTFALL_REFUND_CAUSES, shortfallRemainderSchema } from "../admin-order-detail.js";
-import { cents, count, fact, namedOrBare, payload, ref, subjectLabel } from "./fact.js";
+import { cents, count, fact, instant, namedOrBare, payload, ref, subjectLabel } from "./fact.js";
 
 /**
  * **Le départ incomplet décidé** (plan
@@ -13,6 +13,30 @@ import { cents, count, fact, namedOrBare, payload, ref, subjectLabel } from "./f
  * (`abandoned` seul jusqu'au reliquat, E7).
  */
 export const ORDER_SHORTFALL_FACTS = {
+  /**
+   * **Un manque signalé au colisage** (plan du reliquat, § 5 ter, B4b.3) —
+   * l'historique de la commande garde CHAQUE signal : le suivant ne l'écrase
+   * pas. Le sujet est la COMMANDE, son libellé son numéro ; écrit par l'abonné
+   * du commerce au fait `packing.shortfall_reported` (acteur `system`) :
+   * `reportedBy` dit la fiche staff qui a signalé, `reportedAt` l'instant du
+   * geste, `rank` l'envoi, `lines` dû et au bac par article. 🔴 Type irréversible.
+   */
+  "order.shortfall_reported": fact(
+    payload({
+      subjectLabel: subjectLabel(),
+      reportedBy: namedOrBare("staff_user"),
+      reportedAt: instant(),
+      rank: z.number().int().min(1),
+      lines: z.array(z.object({ sku: z.string().min(1), due: count(), packed: count() })),
+    }),
+  ),
+  /**
+   * **Le client prévenu d'un départ incomplet** (plan du reliquat, § 5 ter,
+   * B4b.3) — « Écrire au client », une fois par décision. Le sujet est la
+   * COMMANDE ; qui et quand viennent du contexte. Le texte n'est pas recopié :
+   * il est au suivi des e-mails. 🔴 Type irréversible.
+   */
+  "order.shortfall_letter_sent": fact(payload({ subjectLabel: subjectLabel() })),
   "order.shortfall_decided": fact(
     payload({
       subjectLabel: subjectLabel().optional(),

@@ -34,6 +34,7 @@ import { GetCounterCarrierNotePdfQuery } from "../get-counter-carrier-note-pdf.q
 import { ListOrderDeliveryNotesHandler } from "../list-order-delivery-notes.handler.js";
 import { ListOrderDeliveryNotesQuery } from "../list-order-delivery-notes.query.js";
 import { FixedNoteDiscountParts } from "../../__tests__/departure-doubles.js";
+import { FixedVersions } from "../../__tests__/delivery-note-version-doubles.js";
 
 const COMPANY = "co_1";
 const BUYER = "user_buyer";
@@ -161,7 +162,10 @@ describe("GetCarrierNotePdfHandler — le BL de transport pour l'équipe", () =>
 
 describe("ListOrderDeliveryNotesHandler — la liste de la fiche commande", () => {
   it("rend chaque BL avec son état", async () => {
-    const handler = new ListOrderDeliveryNotesHandler(documents([handedOverNote()]));
+    const handler = new ListOrderDeliveryNotesHandler(
+      documents([handedOverNote()]),
+      new FixedVersions(),
+    );
 
     const notes = await handler.execute(new ListOrderDeliveryNotesQuery("ord_1"));
 

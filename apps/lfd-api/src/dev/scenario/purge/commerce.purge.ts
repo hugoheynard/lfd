@@ -52,6 +52,7 @@ export async function purgeCommerce(
     await tx.orderItemLimitOverride.deleteMany({ where: { orderId: { in: orderIds } } }),
     await tx.orderReview.deleteMany({ where: { orderId: { in: orderIds } } }),
     await tx.deliveryNoteLine.deleteMany({ where: { note: { orderId: { in: orderIds } } } }),
+    await tx.deliveryNoteVersion.deleteMany({ where: { note: { orderId: { in: orderIds } } } }),
     await tx.deliveryNote.deleteMany({ where: { orderId: { in: orderIds } } }),
   ];
   // Les lignes suivent la commande en cascade.
@@ -69,6 +70,12 @@ async function purgeOrderChildren(
 ): Promise<readonly { readonly count: number }[]> {
   const ofOrders = { orderId: { in: [...orderIds] } };
   return [
+    // Le reliquat tient sa commande d'origine et celle qui en est issue.
+    await tx.backorder.deleteMany({
+      where: {
+        OR: [{ originOrderId: { in: [...orderIds] } }, { convertedOrderId: { in: [...orderIds] } }],
+      },
+    }),
     // La décision d'abord : elle tient le manque de son envoi (LB).
     await tx.orderShortfallDecision.deleteMany({ where: ofOrders }),
     await tx.orderShortfall.deleteMany({ where: ofOrders }),

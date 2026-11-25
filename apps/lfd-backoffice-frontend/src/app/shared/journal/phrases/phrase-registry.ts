@@ -31,6 +31,7 @@ import { PACKING_RESERVE_PHRASES } from './packing-reserve-phrases';
 import { LOYALTY_PHRASES } from './loyalty-phrases';
 import { COMMERCE_OPERATION_PHRASES, OPERATION_PHRASES } from './operation-phrases';
 import { ORDERS_PHRASES } from './orders-phrases';
+import { ORDER_TRACE_PHRASES } from './order-trace-phrases';
 import { PRICING_PHRASES } from './pricing-phrases';
 import { PRODUCTION_QUALITY_PHRASES } from './production-quality-phrases';
 import { PRODUCTION_SETTINGS_PHRASES } from './production-settings-phrases';
@@ -213,6 +214,7 @@ export const PHRASES: Readonly<Record<JournalFactType, Phrase>> = {
   ...PERIOD_QUOTE_PHRASES,
   ...REFUND_PHRASES,
   ...BACKORDER_PHRASES,
+  ...ORDER_TRACE_PHRASES,
   ...CARD_INCREASE_PHRASES,
   ...CARD_PAYMENT_PHRASES,
   ...COLLECTION_BATCH_REJECTION_PHRASES,

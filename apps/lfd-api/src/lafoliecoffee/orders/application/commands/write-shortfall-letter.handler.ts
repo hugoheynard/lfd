@@ -1,6 +1,7 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
+import { Journal } from "../../../../platform/journal/journal.js";
 import { DEFAULT_MAIL_LOCALE } from "../../../../mail/channels/templates/mail-locale.js";
 import { Mail } from "../../../../mail/channels/requests/mail.js";
 import { Clock } from "../../../../platform/time/clock.js";
@@ -12,6 +13,9 @@ import { OrderRecipientReader } from "../../domain/ports/order-recipient.reader.
 import { ShortfallNoticeRepository } from "../../domain/ports/shortfall-notice.repository.js";
 import { ShortfallLetter } from "../../domain/value-objects/shortfall-letter.js";
 import { WriteShortfallLetterCommand } from "./write-shortfall-letter.command.js";
+
+const LETTER_SENT = "order.shortfall_letter_sent";
+const ORDER_SUBJECT = "order";
 
 /**
  * **« Écrire au client »** (lot E6d, plan
@@ -29,6 +33,10 @@ import { WriteShortfallLetterCommand } from "./write-shortfall-letter.command.js
  * fournisseur l'a accepté » : l'envoi se fait après la validation, et son
  * issue se lit au suivi des e-mails (clé `order-shortfall:<décision>`).
  *
+ * L'envoi entre à l'historique de la commande (plan du reliquat, § 5 ter,
+ * B4b.3) dans la même transaction : `order.shortfall_letter_sent`, clé
+ * `order.shortfall_letter_sent:<commande>` — une par décision.
+ *
  * L'adresse n'est jamais écrite au journal de l'API.
  *
  * @throws {ShortfallLetterWithoutDecisionError} @throws {ShortfallLetterNoRecipientError}
@@ -45,6 +53,7 @@ export class WriteShortfallLetterHandler implements ICommandHandler<
     private readonly mail: Mail,
     private readonly clock: Clock,
     private readonly uow: UnitOfWork,
+    private readonly journal: Journal,
   ) {}
 
   async execute(command: WriteShortfallLetterCommand): Promise<void> {
@@ -57,6 +66,13 @@ export class WriteShortfallLetterHandler implements ICommandHandler<
       const { notice } = locked;
       notice.notify(this.clock.now(), command.staffUserId);
       await this.notices.save(notice);
+      await this.journal.append({
+        type: LETTER_SENT,
+        subjectType: ORDER_SUBJECT,
+        subjectId: command.orderId,
+        payload: { subjectLabel: notice.reference },
+        idempotencyKey: `${LETTER_SENT}:${command.orderId}`,
+      });
       const recipient = await this.recipients.findById(locked.placedByUserId);
       if (recipient === null) {
         throw new ShortfallLetterNoRecipientError(notice.reference);

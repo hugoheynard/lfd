@@ -642,6 +642,25 @@ décision **en tête** ; dans la composition, une colonne **« Parti »** (lue
 sur la décision) à côté de « Commandé », le reste abandonné marqué et un
 lien vers son reliquat ; les montants **commandé** et **livré** (facturable).
 
+**Tranché au bâti de B4b (2026-11-25)** :
+
+- Le dépôt appelle le gardien, qui compose le bon et écrit par un écrivain
+  dédié ; la porte `lint:delivery-note-version-readers` admet l'écrivain, le
+  lecteur de l'historique et la purge de démonstration (qui efface).
+- La route de l'exemplaire figé dit `editions/:edition` : la porte
+  `lint:day-version-door` refuse tout chemin qui dit « version ».
+- **Assumé** : les parts par remise ne s'écrivent qu'à la remise ; un bon
+  qui naît déjà remis, sur une commande à plusieurs remises, a son
+  exemplaire figé sans ce détail (le total est juste).
+- **Assumé** : une composition qui échoue annule l'écriture du bon, donc le
+  geste — plutôt qu'un exemplaire amputé. Un test épingle que le schéma du
+  rendu couvre exactement le type du bon, pour que ce refus ne puisse pas
+  naître d'un schéma en retard.
+- **Assumé** : après une décision, toute réécriture du bon est classée
+  `departure_decided`.
+- La lettre a une clé par commande (sans rang) : le rang > 1 est retiré en
+  B5.
+
 Tests : e2e de la liste des documents (bon d'origine, BL d'origine, BL
 définitif, dans l'ordre, et la Σ des BL inchangée par les versions) ; e2e de
 l'historique (chaque étape d'ORD-13 rejouée : signal, décision, prêt,
@@ -746,6 +765,8 @@ B6 comme quatrième geste.
 Toutes tranchées le 2026-11-25 (décisions 7 à 16). Aucune ne reste.
 
 ### 7. B5 — retirer le second envoi (code mort, décision 6)
+
+L'inventaire, relu par `vitruve` : [`inventaire-b5-second-envoi.md`](inventaire-b5-second-envoi.md).
 
 Après B2 en service. Rien ne crée de BL de rang > 1 en base aujourd'hui
 (`planRemainder` n'a d'appelant que dans les tests) : le démontage est du code

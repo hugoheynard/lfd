@@ -119,6 +119,11 @@ export const KEY_LABELS: Readonly<Record<string, string>> = {
   declared: 'Fiche réglementaire',
   // Le départ incomplet décidé (`order.shortfall_decided`, plan E6c2, § 5).
   departing: 'Ce qui part',
+  // Le manque signalé au colisage (plan du reliquat, B4b.3).
+  due: 'Dû',
+  packed: 'Au bac',
+  rank: 'Envoi',
+  reportedAt: 'Signalé le',
   deliveryAddress: 'Adresse de livraison',
   deliveryAddressId: 'Adresse de livraison',
   deliveryColorB2b: 'Couleur de la livraison pro',

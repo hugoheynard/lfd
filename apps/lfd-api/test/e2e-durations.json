@@ -206,6 +206,7 @@
   "test/delivery-my-round-packing.e2e-spec.ts": 8233,
   "test/delivery-my-round-photo.e2e-spec.ts": 4175,
   "test/delivery-my-round.e2e-spec.ts": 6151,
+  "test/delivery-note-versions.e2e-spec.ts": 14000,
   "test/delivery-notes-discounts-backfill.e2e-spec.ts": 3672,
   "test/delivery-notes-discounts.e2e-spec.ts": 6195,
   "test/delivery-notes-following.e2e-spec.ts": 7379,

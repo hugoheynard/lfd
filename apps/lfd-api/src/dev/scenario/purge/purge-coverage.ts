@@ -53,6 +53,7 @@ export const SCENARIO_PURGED_TABLES: readonly PurgedTable[] = [
     table: "public.orders",
     purgedIn: COMMERCE,
     referencedBy: [
+      "public.backorder",
       "public.delivery_note",
       "public.order_discounts",
       "public.order_item_limit_overrides",
@@ -72,6 +73,7 @@ export const SCENARIO_PURGED_TABLES: readonly PurgedTable[] = [
   { table: "public.staff_notifications", purgedIn: COMMERCE, referencedBy: [] },
   { table: "public.day_change", purgedIn: COMMERCE, referencedBy: [] },
   { table: "public.order_shortfall_decision", purgedIn: COMMERCE, referencedBy: [] },
+  { table: "public.backorder", purgedIn: COMMERCE, referencedBy: [] },
   {
     table: "public.order_shortfall",
     purgedIn: COMMERCE,
@@ -82,9 +84,14 @@ export const SCENARIO_PURGED_TABLES: readonly PurgedTable[] = [
   {
     table: "public.delivery_note",
     purgedIn: COMMERCE,
-    referencedBy: ["public.delivery_note_discounts", "public.delivery_note_line"],
+    referencedBy: [
+      "public.delivery_note_discounts",
+      "public.delivery_note_line",
+      "public.delivery_note_version",
+    ],
   },
   { table: "public.delivery_note_line", purgedIn: COMMERCE, referencedBy: [] },
+  { table: "public.delivery_note_version", purgedIn: COMMERCE, referencedBy: [] },
   {
     table: "public.order_discounts",
     purgedIn: COMMERCE,

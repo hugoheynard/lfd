@@ -166,6 +166,8 @@ const BARE_REFS: Readonly<Record<string, string>> = {
     "une fiche staff que l'annuaire ne nomme pas se cite par son id",
   "order.shortfall_decided:decidedBy":
     "une fiche staff que l'annuaire ne nomme pas se cite par son id",
+  "order.shortfall_reported:reportedBy":
+    "une fiche staff que l'annuaire ne nomme pas se cite par son id",
   // La demande de modification après l'heure limite (plan de modification, M4, 2026-10-23).
   "order.change_requested:orderId": "voisine son nom figé (`orderNumber`)",
   "order.change_requested:requestId":

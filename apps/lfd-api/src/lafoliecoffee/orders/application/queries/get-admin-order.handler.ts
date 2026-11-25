@@ -3,9 +3,7 @@ import type {
   AdminCancellationVoucher,
   AdminOrderCancellability,
   AdminOrderItemLimitOverride,
-  AdminOrderShortfall,
   AdminOrderView,
-  AdminShortfallCustomerNotice,
 } from "@lfd/contracts";
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
@@ -21,10 +19,9 @@ import { CancellationSubjectReader } from "../../cancellation/domain/ports/cance
 import { Clock } from "../../../../platform/time/clock.js";
 import type { VoucherRestitution } from "../../domain/ports/loyalty-voucher-redemption.js";
 import { OrderReader } from "../../domain/ports/order.reader.js";
-import {
-  OrderShortfallReader,
-  type OrderShortfallReading,
-} from "../../domain/ports/order-shortfall.reader.js";
+import { OrderShortfallReader } from "../../domain/ports/order-shortfall.reader.js";
+import { OrderBillableReader } from "../../domain/ports/order-billable.reader.js";
+import { shortfallAuthorsOf, shortfallViewOf } from "./admin-order-shortfall-view.js";
 import { VoucherRestitutionPreview } from "../../domain/ports/voucher-restitution-preview.js";
 import { cancellationVoucherSentenceOf } from "../../cancellation/domain/services/order-cancellation-voucher.js";
 import { cancellationRefusalOf } from "../../cancellation/domain/services/order-cancellation.js";
@@ -84,7 +81,7 @@ import { OrderBackorderReader } from "../../backorder/domain/ports/order-backord
  * elle se vise — servi à qui lit la commande, c'est une trace.
  *
  * Et ses reliquats (plan du reliquat, § 5) : celui né de cette commande, et
- * celui dont elle est issue.
+ * celui dont elle est issue ; ses montants facturables, une fois soldée.
  */
 @QueryHandler(GetAdminOrderQuery)
 export class GetAdminOrderHandler implements IQueryHandler<GetAdminOrderQuery, AdminOrderView> {
@@ -107,6 +104,7 @@ export class GetAdminOrderHandler implements IQueryHandler<GetAdminOrderQuery, A
     private readonly noShows: OrderNoShowReader,
     private readonly reviews: OrderReviewsReader,
     private readonly backorders: OrderBackorderReader,
+    private readonly billables: OrderBillableReader,
   ) {}
 
   async execute(query: GetAdminOrderQuery): Promise<AdminOrderView> {
@@ -123,6 +121,7 @@ export class GetAdminOrderHandler implements IQueryHandler<GetAdminOrderQuery, A
       noShow,
       reviews,
       backorders,
+      billable,
     ] = await Promise.all([
       this.orders.findById(query.orderId),
       this.authors.authorOf(query.orderId),
@@ -136,17 +135,18 @@ export class GetAdminOrderHandler implements IQueryHandler<GetAdminOrderQuery, A
       this.noShows.of(query.orderId),
       this.reviews.of(query.orderId),
       this.backorders.of(query.orderId),
+      this.billables.of(query.orderId),
     ]);
     if (owned === null || author === null || cancellability === null || revision === null) {
       throw new OrderNotFoundError(query.orderId);
     }
-    const notifier = shortfall?.decision?.customerNotice?.byStaffId;
-    // Une seule lecture de l'annuaire : qui a saisi, qui a prévenu, qui a
+    // Une seule lecture de l'annuaire : qui a saisi, qui a décidé le départ et
+    // qui a prévenu, qui a
     // passé outre une limite de produit, qui a déclaré la commande non retirée,
     // qui l'a visée.
     const staffAuthors = await this.staff.identify([
       author.placedByStaffId,
-      ...(notifier === undefined ? [] : [notifier]),
+      ...shortfallAuthorsOf(shortfall),
       ...(overrides ?? []).map((override) => override.staffUserId),
       ...noShowAuthorsOf(noShow),
       ...reviewAuthorsOf(reviews),
@@ -171,6 +171,7 @@ export class GetAdminOrderHandler implements IQueryHandler<GetAdminOrderQuery, A
       noShow: noShowViewOf(noShow, staffAuthors),
       backorder: backorders.backorder,
       backorderOrigin: backorders.origin,
+      billable,
       ...(reviews === null ? {} : { review: reviewStateOf(reviews, staffAuthors) }),
       ...(overrides === null
         ? {}
@@ -228,36 +229,6 @@ function overrideViewOf(
     origin: override.origin,
     recordedAt: override.createdAt.toISOString(),
   };
-}
-
-/** Le manque signalé, dans la forme du contrat (E6a) ; le client prévenu, nommé (E6d). */
-function shortfallViewOf(reading: OrderShortfallReading, staff: StaffAuthors): AdminOrderShortfall {
-  return {
-    reportedAt: reading.reportedAt.toISOString(),
-    lines: reading.lines.map((line) => ({
-      sku: line.sku,
-      due: line.due,
-      packed: line.packed,
-      saleUnit: line.saleUnit,
-    })),
-    decision:
-      reading.decision === null
-        ? null
-        : {
-            decidedAt: reading.decision.decidedAt.toISOString(),
-            remainder: reading.decision.remainder,
-            customerNotice: customerNoticeViewOf(reading.decision.customerNotice, staff),
-          },
-  };
-}
-
-function customerNoticeViewOf(
-  notice: { readonly at: Date; readonly byStaffId: string } | null,
-  staff: StaffAuthors,
-): AdminShortfallCustomerNotice | null {
-  return notice === null
-    ? null
-    : { notifiedAt: notice.at.toISOString(), notifiedByName: staff.nameOf(notice.byStaffId) };
 }
 
 /** Lot C4 (C4.9) : ce que l'annulation d'une payée rendra — `null` hors carte payée. */

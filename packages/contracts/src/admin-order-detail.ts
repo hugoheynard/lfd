@@ -133,6 +133,11 @@ export interface AdminOrderView extends OrderView {
    * serveur plus ancien ne le sert pas.
    */
   readonly backorderOrigin?: AdminBackorderOriginView | null;
+  /**
+   * **Ce qui se facture**, une fois la commande soldée ; `null` avant.
+   * Facultatif : un serveur plus ancien ne le sert pas.
+   */
+  readonly billable?: AdminOrderBillable | null;
 }
 
 /** Une commande déclarée non retirée, telle que la fiche la raconte. */
@@ -231,6 +236,42 @@ export interface AdminOrderShortfallDecision {
    * personne ne lui a écrit. Une fois par décision : « Client prévenu le … par … ».
    */
   readonly customerNotice: AdminShortfallCustomerNotice | null;
+  /**
+   * **Ce qui part**, par article (plan du reliquat, § 5 ter, B4b.4) — la
+   * colonne « Parti » de la composition, lue sur la décision. Des pièces, ou
+   * des grammes au poids. Facultatif : un serveur plus ancien ne le sert pas.
+   */
+  readonly departing?: readonly AdminShortfallDepartingLine[];
+  /**
+   * Qui a décidé (« Prénom Nom », `null` = fiche introuvable). Facultatif : un
+   * serveur plus ancien ne le sert pas.
+   */
+  readonly decidedByName?: string | null;
+}
+
+/** Une ligne de ce qui part : l'article, sa quantité décidée, son unité. */
+export interface AdminShortfallDepartingLine {
+  readonly sku: string;
+  readonly quantity: number;
+  readonly saleUnit: "piece" | "weight";
+}
+
+/**
+ * **Les montants facturables** d'une commande (plan du reliquat, § 5 ter,
+ * B4b.4) — posés à son solde : la recopie des totaux pour une commande à un
+ * BL complet, la somme des BL remis sinon. C'est le « livré » de la fiche, à
+ * côté du « commandé » (les totaux de la commande). En centimes ;
+ * `settledOn` le jour (Paris, `AAAA-MM-JJ`) du solde.
+ */
+export interface AdminOrderBillable {
+  readonly subtotalCents: number;
+  readonly discountCents: number;
+  readonly voucherDiscountCents: number;
+  readonly deliveryFeeCents: number;
+  readonly lateFeeCents: number;
+  readonly vatCents: number;
+  readonly totalCents: number;
+  readonly settledOn: string;
 }
 
 /** L'instant ISO de l'envoi, et qui l'a fait (« Prénom Nom », `null` = fiche introuvable). */

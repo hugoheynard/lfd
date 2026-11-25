@@ -244,6 +244,11 @@
 >   garde de la clé d'export n'est posée que sur le contrôleur de l'export des
 >   ventes — ailleurs, elle ouvrirait une route à la clé de la Direction, et à
 >   quiconque la lui aurait volée.
+>   Et **85** depuis le 2026-11-25 avec `lint:delivery-note-version-readers`
+>   (plan `documentation/commandes/reliquat/plan-reliquat-de-commande.md`,
+>   § 5 ter) : les versions figées d'un bon de livraison ne sont lues que par
+>   l'écrivain des versions et l'historique des documents — la facture et
+>   « livré = Σ des BL » lisent le bon courant, jamais une version.
 >   C'est la
 >   **seule** correction faite dans le corps, parce qu'un chiffre faux se vérifie
 >   en une commande et trompe tout de suite ;
@@ -1553,7 +1558,7 @@ pnpm --filter lfd-api seed:pim       # catalogue rejoué PAR LE BUS (cible local
 pnpm lint               # turbo, toutes les apps
 pnpm test
 pnpm build
-pnpm lint:gates         # les 84 portes du dépôt, toutes, et un résumé à la fin
+pnpm lint:gates         # les 85 portes du dépôt, toutes, et un résumé à la fin
 pnpm gate <nom>         # une porte (pnpm gate --list : la liste, avec ce qu'elle tient)
 pnpm lint:watch         # relance les portes dont un fichier lu change
 pnpm tool               # les outils occasionnels (digests, carte, axe…) ; pnpm tool <nom>

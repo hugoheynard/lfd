@@ -125,6 +125,8 @@ import { OrderCancellationRepository } from "./cancellation/domain/ports/order-c
 import { OrderShortfallRepository } from "./domain/ports/order-shortfall.repository.js";
 import { OrderShortfallReader } from "./domain/ports/order-shortfall.reader.js";
 import { PrismaOrderShortfallReader } from "./infrastructure/prisma-order-shortfall.reader.js";
+import { OrderBillableReader } from "./domain/ports/order-billable.reader.js";
+import { PrismaOrderBillableReader } from "./infrastructure/prisma-order-billable.reader.js";
 import { PrismaOrderShortfallRepository } from "./infrastructure/prisma-order-shortfall.repository.js";
 import { RecordOrderShortfallHandler } from "./application/commands/record-order-shortfall.handler.js";
 import { ClearOrderShortfallHandler } from "./application/commands/clear-order-shortfall.handler.js";
@@ -535,6 +537,7 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     { provide: OrderCancellationRepository, useClass: PrismaOrderCancellationRepository },
     { provide: OrderShortfallRepository, useClass: PrismaOrderShortfallRepository },
     { provide: OrderShortfallReader, useClass: PrismaOrderShortfallReader },
+    { provide: OrderBillableReader, useClass: PrismaOrderBillableReader },
     ListCompanyOrdersHandler,
     SummarizeCompanyOrdersHandler,
     ExportCompanyOrderSummaryPdfHandler,

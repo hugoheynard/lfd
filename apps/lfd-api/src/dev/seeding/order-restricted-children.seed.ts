@@ -27,7 +27,12 @@ export async function dropOrderRestrictedChildren(
   await prisma.orderItemLimitOverride.deleteMany({ where: { order: orders } });
   await prisma.orderReview.deleteMany({ where: { order: orders } });
   await prisma.deliveryNoteLine.deleteMany({ where: { note: { order: orders } } });
+  await prisma.deliveryNoteVersion.deleteMany({ where: { note: { order: orders } } });
   await prisma.deliveryNote.deleteMany({ where: { order: orders } });
+  // Le reliquat tient sa commande d'origine et celle qui en est issue.
+  await prisma.backorder.deleteMany({
+    where: { OR: [{ originOrder: orders }, { convertedOrder: orders }] },
+  });
   // La décision d'abord : elle tient le manque de son envoi.
   await prisma.orderShortfallDecision.deleteMany({ where: { order: orders } });
   await prisma.orderShortfall.deleteMany({ where: { order: orders } });

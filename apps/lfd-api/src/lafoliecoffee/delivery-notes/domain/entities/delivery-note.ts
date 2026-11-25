@@ -17,6 +17,7 @@ import {
 } from "../value-objects/delivery-note-terms.js";
 import { DeliveryNoteNumber } from "../value-objects/delivery-note-number.js";
 import { RemainderSchedule } from "../value-objects/remainder-schedule.js";
+import type { DeliveryNoteChangeCause } from "../services/delivery-note-version.js";
 
 /**
  * Le cycle d'un BL : `planned` à l'arrêt du plan (E1), `prepared` au bac
@@ -121,6 +122,9 @@ const PLANNED: Progress = {
  * il reste en base et consomme son numéro ; remis, il ne bouge plus.
  */
 export class DeliveryNote {
+  /** Pourquoi le contenu a changé depuis le chargement ; `null` = il n'a pas changé. */
+  private changeCause: DeliveryNoteChangeCause | null = null;
+
   private constructor(
     private readonly identity: Identity,
     private progress: Progress,
@@ -244,7 +248,16 @@ export class DeliveryNote {
     if (changed) {
       // Le contenu a changé : un papier déjà imprimé ment désormais (§ 14).
       this.paper = { ...this.paper, contentVersion: this.paper.contentVersion + 1 };
+      this.changeCause = source.departureDecided === true ? "departure_decided" : "replanned";
     }
+  }
+
+  /**
+   * Pourquoi la version du contenu a monté depuis le chargement — le dépôt
+   * la fige sous ce nom (plan du reliquat, § 5 ter). `null` : rien n'a changé.
+   */
+  get contentChangeCause(): DeliveryNoteChangeCause | null {
+    return this.changeCause;
   }
 
   /**

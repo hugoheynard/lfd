@@ -19,6 +19,7 @@ import { ORDER_CARD_INCREASE_FACTS } from "./order-card-increases.js";
 import { ORDER_CHANGE_REQUEST_FACTS } from "./order-change-requests.js";
 import { ORDER_REFUND_FACTS } from "./order-refunds.js";
 import { ORDER_SHORTFALL_FACTS } from "./order-shortfalls.js";
+import { DELIVERY_NOTE_PRINT_FACTS } from "./delivery-note-prints.js";
 import { ORDER_BUDGET_COMMITMENT_FACTS } from "./order-budget-commitments.js";
 import { ORDER_OFFER_FACTS } from "./order-offers.js";
 import { AFTER_CLOSE_WITHDRAWAL_FACTS } from "./after-close-withdrawals.js";
@@ -819,6 +820,8 @@ export const ORDERS_PRODUCTION_FACTS = {
   /** **Les remboursements Stripe constatés** (lot R1) — même famille. */
   ...ORDER_REFUND_FACTS,
   ...ORDER_SHORTFALL_FACTS,
+  /** **L'impression d'un bon de livraison** (plan du reliquat, B4b.3) — même famille. */
+  ...DELIVERY_NOTE_PRINT_FACTS,
   /** **L'engagement budgétaire corrigé** (P2, E3′) — même famille. */
   ...ORDER_BUDGET_COMMITMENT_FACTS,
   ...ORDER_OFFER_FACTS,

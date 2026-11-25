@@ -1,3 +1,4 @@
+import type { SaleUnit } from "@lfd/money";
 import { Injectable } from "@nestjs/common";
 
 import { FIRST_SHIPMENT_RANK } from "../../../production/channels/commerce/index.js";
@@ -6,9 +7,9 @@ import {
   OrderShortfallReader,
   type OrderShortfallReading,
 } from "../domain/ports/order-shortfall.reader.js";
-import type { ShortfallQuantity } from "../domain/entities/order-shortfall.js";
 import { orderLineSaleUnitOf } from "./order-line-row.js";
 import { shortfallLinesOf } from "./prisma-order-shortfall.repository.js";
+import { departingOf } from "./prisma-shortfall-decision.reader.js";
 
 /**
  * La lecture du manque signalé, pour la fiche commande (lot E6a).
@@ -36,6 +37,8 @@ export class PrismaOrderShortfallReader extends OrderShortfallReader {
             remainder: true,
             customerNotifiedAt: true,
             customerNotifiedByStaffId: true,
+            decidedByStaffId: true,
+            departing: true,
           },
         },
       },
@@ -44,9 +47,10 @@ export class PrismaOrderShortfallReader extends OrderShortfallReader {
       return null;
     }
     const decision = row.decision;
+    const units = unitsOf(row.order.lines);
     return {
       reportedAt: row.reportedAt,
-      lines: withUnits(shortfallLinesOf(row.lines), row.order.lines),
+      lines: shortfallLinesOf(row.lines).map((line) => ({ ...line, saleUnit: units(line.sku) })),
       // `abandoned` seul : le CHECK de la table n'admet rien d'autre (E6b).
       decision:
         decision === null || decision.remainder !== "abandoned"
@@ -61,21 +65,25 @@ export class PrismaOrderShortfallReader extends OrderShortfallReader {
                       at: decision.customerNotifiedAt,
                       byStaffId: decision.customerNotifiedByStaffId,
                     },
+              decidedByStaffId: decision.decidedByStaffId,
+              departing: departingOf(orderId, decision.departing).map((line) => ({
+                ...line,
+                saleUnit: units(line.sku),
+              })),
             },
     };
   }
 }
 
 /**
- * Chaque article du manque prend l'unité de sa ligne de commande ; un article
- * absent des lignes se lit en pièces, ce qu'était toute ligne d'avant le poids.
+ * Chaque article prend l'unité de sa ligne de commande ; un article absent
+ * des lignes se lit en pièces, ce qu'était toute ligne d'avant le poids.
  */
-function withUnits(
-  lines: readonly ShortfallQuantity[],
+function unitsOf(
   orderLines: readonly { readonly sku: string; readonly saleUnit: string }[],
-): OrderShortfallReading["lines"] {
+): (sku: string) => SaleUnit {
   const units = new Map(
     orderLines.map((line) => [line.sku, orderLineSaleUnitOf(line.sku, line.saleUnit)]),
   );
-  return lines.map((line) => ({ ...line, saleUnit: units.get(line.sku) ?? "piece" }));
+  return (sku) => units.get(sku) ?? "piece";
 }

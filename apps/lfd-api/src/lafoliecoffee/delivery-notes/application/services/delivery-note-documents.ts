@@ -11,10 +11,13 @@ import { DeliveryNoteNotFoundError } from "../../domain/errors/delivery-note-err
 import { DeliveryNoteReader } from "../../domain/ports/delivery-note.reader.js";
 import { DeliveryNoteDiscountPartsReader } from "../../domain/ports/delivery-note-discount-parts.reader.js";
 import type { DeliveryNoteArt } from "../../domain/services/delivery-note-pdf-parts.js";
-import type {
-  DeliveryNoteOrderBilling,
-  DeliveryNoteOrderHead,
-  NoteDiscountPartView,
+import type { RenderedClientNote } from "../../domain/services/rendered-client-note.js";
+import { undeliveredOf } from "../../domain/services/undelivered-lines.js";
+import {
+  clientNoteOf,
+  type DeliveryNoteOrderBilling,
+  type DeliveryNoteOrderHead,
+  type NoteDiscountPartView,
 } from "../../domain/services/delivery-note-sheet.js";
 
 /** Un BL rendu, et le nom proposé au téléchargement. */
@@ -92,6 +95,26 @@ export class DeliveryNoteDocuments {
       throw new DeliveryNoteNotFoundError(orderId, number);
     }
     return found;
+  }
+
+  /**
+   * **Le composeur du BL client** — un seul, lu par la route du PDF et par le
+   * gardien des versions (plan du reliquat, § 5 ter) : une version figée est
+   * exactement le papier que la route aurait rendu à cet instant.
+   *
+   * @throws {OrderNotFoundError} @throws {DeliveryNoteNotFoundError}
+   * @throws {DeliveryNoteWithoutTermsError} le BL n'a pas encore son en-tête.
+   */
+  async clientNote(orderId: string, number: string): Promise<RenderedClientNote> {
+    const { owned, head, billing } = await this.order(orderId);
+    const notes = await this.listFor(orderId);
+    const state = notes.find((n) => n.number === number);
+    if (state === undefined) {
+      throw new DeliveryNoteNotFoundError(orderId, number);
+    }
+    const undelivered = undeliveredOf(owned.view.lines, notes, state);
+    const parts = await this.partsOf([state.id]);
+    return { note: clientNoteOf(state, head, billing, parts.get(state.id)), undelivered };
   }
 
   async art(): Promise<DeliveryNoteArt> {

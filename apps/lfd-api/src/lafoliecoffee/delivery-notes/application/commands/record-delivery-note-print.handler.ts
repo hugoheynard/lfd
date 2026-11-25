@@ -1,10 +1,14 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
+import { Journal } from "../../../../platform/journal/journal.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import { OrdersToReconcileDeliveryNotes } from "../../../orders/domain/ports/order-progress-for-delivery-note.js";
 import { DeliveryNoteRepository } from "../../domain/ports/delivery-note.repository.js";
 import { RecordDeliveryNotePrintCommand } from "./record-delivery-note-print.command.js";
+
+const PRINTED = "delivery_note.printed";
+const ORDER_SUBJECT = "order";
 
 /**
  * Trace la dernière impression d'un BL (plan E6, § 14) : la version du
@@ -15,7 +19,11 @@ import { RecordDeliveryNotePrintCommand } from "./record-delivery-note-print.com
  * Un BL introuvable n'est pas une erreur ici : la lecture du PDF a déjà
  * répondu 404 avant que ce geste parte.
  *
- * @sans-journal la trace EST la colonne `printed_*` ; rien ne la lit au journal.
+ * La colonne `printed_*` garde la DERNIÈRE impression ; l'historique de la
+ * commande les garde TOUTES (plan du reliquat, § 5 ter, B4b.3) : le fait
+ * `delivery_note.printed`, dans la même transaction, sous la clé
+ * `delivery_note.printed:<bon>:<version>:<instant>` — qui et quand viennent
+ * du contexte.
  */
 @CommandHandler(RecordDeliveryNotePrintCommand)
 export class RecordDeliveryNotePrintHandler implements ICommandHandler<
@@ -27,11 +35,13 @@ export class RecordDeliveryNotePrintHandler implements ICommandHandler<
     private readonly notes: DeliveryNoteRepository,
     private readonly clock: Clock,
     private readonly uow: UnitOfWork,
+    private readonly journal: Journal,
   ) {}
 
   async execute(command: RecordDeliveryNotePrintCommand): Promise<void> {
     await this.uow.run(async () => {
-      if ((await this.orders.lockProgressOf(command.orderId)) === null) {
+      const order = await this.orders.lockProgressOf(command.orderId);
+      if (order === null) {
         return;
       }
       const notes = await this.notes.loadForOrders([command.orderId]);
@@ -39,8 +49,18 @@ export class RecordDeliveryNotePrintHandler implements ICommandHandler<
       if (note === undefined) {
         return;
       }
-      note.recordPrint(this.clock.now(), command.staffUserId);
+      const printedAt = this.clock.now();
+      note.recordPrint(printedAt, command.staffUserId);
       await this.notes.save(note);
+      const { id, contentVersion = 1 } = note.toState();
+      await this.journal.append({
+        type: PRINTED,
+        subjectType: ORDER_SUBJECT,
+        subjectId: command.orderId,
+        payload: { subjectLabel: order.orderNumber, noteNumber: note.number, contentVersion },
+        occurredAt: printedAt,
+        idempotencyKey: `${PRINTED}:${id}:${String(contentVersion)}:${printedAt.toISOString()}`,
+      });
     });
   }
 }

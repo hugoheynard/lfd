@@ -1,10 +1,10 @@
-import type { StaffNote } from "@lfd/contracts";
+import type { AdminDeliveryNoteView } from "@lfd/contracts";
 import {
   contentDispositionAttachment,
   contentDispositionInline,
   sanitiseFileName,
 } from "@lfd/storage";
-import { Controller, Get, Param, Res, StreamableFile } from "@nestjs/common";
+import { Controller, Get, Param, ParseIntPipe, Res, StreamableFile } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import type { Response } from "express";
 
@@ -12,6 +12,7 @@ import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js"
 import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { RecordDeliveryNotePrintCommand } from "../application/commands/record-delivery-note-print.command.js";
 import { GetAdminClientNotePdfQuery } from "../application/queries/get-admin-client-note-pdf.query.js";
+import { GetDeliveryNoteVersionPdfQuery } from "../application/queries/get-delivery-note-version-pdf.query.js";
 import { GetCarrierNotePdfQuery } from "../application/queries/get-carrier-note-pdf.query.js";
 import { ListOrderDeliveryNotesQuery } from "../application/queries/list-order-delivery-notes.query.js";
 import type { DeliveryNotePdf } from "../application/services/delivery-note-documents.js";
@@ -28,6 +29,9 @@ import type { DeliveryNotePdf } from "../application/services/delivery-note-docu
  * Depuis le plan E6 (§ 14), chaque PDF servi trace son impression — la
  * version du contenu imprimée — par une commande, APRÈS la lecture : un BL
  * introuvable répond 404 sans rien écrire.
+ *
+ * Le PDF d'une **version figée** (plan du reliquat, § 5 ter) se rend de la
+ * version seule, et n'est PAS une impression : il ne trace rien.
  */
 @Controller("admin/orders/:orderId/delivery-notes")
 @AdminSurface("b2b_orders")
@@ -38,8 +42,8 @@ export class AdminOrderDeliveryNotesController {
   ) {}
 
   @Get()
-  list(@Param("orderId") orderId: string): Promise<readonly StaffNote[]> {
-    return this.queries.execute<ListOrderDeliveryNotesQuery, readonly StaffNote[]>(
+  list(@Param("orderId") orderId: string): Promise<readonly AdminDeliveryNoteView[]> {
+    return this.queries.execute<ListOrderDeliveryNotesQuery, readonly AdminDeliveryNoteView[]>(
       new ListOrderDeliveryNotesQuery(orderId),
     );
   }
@@ -76,6 +80,25 @@ export class AdminOrderDeliveryNotesController {
       new GetAdminClientNotePdfQuery(orderId, number),
     );
     await this.recordPrint(orderId, number, staffUserId);
+    response.setHeader("Content-Type", "application/pdf");
+    response.setHeader(
+      "Content-Disposition",
+      contentDispositionAttachment(sanitiseFileName(pdf.fileName, "bon-de-livraison.pdf")),
+    );
+    return new StreamableFile(pdf.bytes);
+  }
+
+  /** Une version figée du BL chiffré, téléchargée — sans trace d'impression. */
+  @Get(":number/editions/:edition/client.pdf")
+  async versionPdf(
+    @Param("orderId") orderId: string,
+    @Param("number") number: string,
+    @Param("edition", ParseIntPipe) version: number,
+    @Res({ passthrough: true }) response: Response,
+  ): Promise<StreamableFile> {
+    const pdf = await this.queries.execute<GetDeliveryNoteVersionPdfQuery, DeliveryNotePdf>(
+      new GetDeliveryNoteVersionPdfQuery(orderId, number, version),
+    );
     response.setHeader("Content-Type", "application/pdf");
     response.setHeader(
       "Content-Disposition",

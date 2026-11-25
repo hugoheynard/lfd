@@ -8,6 +8,19 @@ import { GetCarrierNotePdfHandler } from "./application/queries/get-carrier-note
 import { GetCarrierNoteSpecimenHandler } from "./application/queries/get-carrier-note-specimen.handler.js";
 import { GetClientNotePdfHandler } from "./application/queries/get-client-note-pdf.handler.js";
 import { GetClientNoteSpecimenHandler } from "./application/queries/get-client-note-specimen.handler.js";
+import { GetDeliveryNoteVersionPdfHandler } from "./application/queries/get-delivery-note-version-pdf.handler.js";
+import { DeliveryNoteVersionRecorder } from "./application/services/delivery-note-version-recorder.js";
+import { DeliveryNoteVersionKeeper } from "./domain/ports/delivery-note-version.keeper.js";
+import { DeliveryNoteVersionWriter } from "./domain/ports/delivery-note-version.writer.js";
+import {
+  DeliveryNoteVersionRenderedReader,
+  DeliveryNoteVersionsReader,
+} from "./domain/ports/delivery-note-versions.reader.js";
+import { PrismaDeliveryNoteVersionWriter } from "./infrastructure/prisma-delivery-note-version.writer.js";
+import {
+  PrismaDeliveryNoteVersionRenderedReader,
+  PrismaDeliveryNoteVersionsReader,
+} from "./infrastructure/prisma-delivery-note-versions.reader.js";
 import { ListOrderDeliveryNotesHandler } from "./application/queries/list-order-delivery-notes.handler.js";
 import { DeliveryNoteDocuments } from "./application/services/delivery-note-documents.js";
 import { DeliveryNoteReader } from "./domain/ports/delivery-note.reader.js";
@@ -75,12 +88,20 @@ import {
     ListOrderDeliveryNotesHandler,
     GetCarrierNotePdfHandler,
     GetAdminClientNotePdfHandler,
+    GetDeliveryNoteVersionPdfHandler,
     GetCounterCarrierNotePdfHandler,
     GetClientNotePdfHandler,
     GetCarrierNoteSpecimenHandler,
     GetClientNoteSpecimenHandler,
     DeliveryNoteDocuments,
     { provide: DeliveryNoteRepository, useClass: PrismaDeliveryNoteRepository },
+    { provide: DeliveryNoteVersionKeeper, useClass: DeliveryNoteVersionRecorder },
+    { provide: DeliveryNoteVersionWriter, useClass: PrismaDeliveryNoteVersionWriter },
+    { provide: DeliveryNoteVersionsReader, useClass: PrismaDeliveryNoteVersionsReader },
+    {
+      provide: DeliveryNoteVersionRenderedReader,
+      useClass: PrismaDeliveryNoteVersionRenderedReader,
+    },
     { provide: DeliveryNoteReader, useClass: PrismaDeliveryNoteReader },
     {
       provide: DeliveryNoteDiscountPartsReader,

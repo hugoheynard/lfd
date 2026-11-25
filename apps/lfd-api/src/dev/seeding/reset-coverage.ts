@@ -56,10 +56,15 @@ export const RESET_WIPED_TABLES: readonly CoveredTable[] = [
   { table: "public.company_follows", referencedBy: [] },
   {
     table: "public.delivery_note",
-    referencedBy: ["public.delivery_note_discounts", "public.delivery_note_line"],
+    referencedBy: [
+      "public.delivery_note_discounts",
+      "public.delivery_note_line",
+      "public.delivery_note_version",
+    ],
   },
   { table: "public.delivery_note_discounts", referencedBy: [] },
   { table: "public.delivery_note_line", referencedBy: [] },
+  { table: "public.delivery_note_version", referencedBy: [] },
   { table: "public.delivery_procedures", referencedBy: [] },
   { table: "public.delivery_zones", referencedBy: [] },
   { table: "public.loyalty_ledger_entries", referencedBy: [] },
@@ -79,9 +84,11 @@ export const RESET_WIPED_TABLES: readonly CoveredTable[] = [
   { table: "public.order_revision_proposal", referencedBy: [] },
   { table: "public.order_shortfall", referencedBy: ["public.order_shortfall_decision"] },
   { table: "public.order_shortfall_decision", referencedBy: [] },
+  { table: "public.backorder", referencedBy: [] },
   {
     table: "public.orders",
     referencedBy: [
+      "public.backorder",
       "public.delivery_note",
       "public.order_discounts",
       "public.order_item_limit_overrides",

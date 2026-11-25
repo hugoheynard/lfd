@@ -16,6 +16,14 @@ export interface OrderShortfallReading {
     readonly remainder: ShortfallRemainder;
     /** « Écrire au client » (E6d) : quand, et l'id de la fiche staff ; `null` = pas prévenu. */
     readonly customerNotice: { readonly at: Date; readonly byStaffId: string } | null;
+    /** La fiche staff qui a décidé. */
+    readonly decidedByStaffId: string;
+    /** Ce qui part, par article, dans l'unité de sa ligne de commande. */
+    readonly departing: readonly {
+      readonly sku: string;
+      readonly quantity: number;
+      readonly saleUnit: SaleUnit;
+    }[];
   } | null;
 }
 

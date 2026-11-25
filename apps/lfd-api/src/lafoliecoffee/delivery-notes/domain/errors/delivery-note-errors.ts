@@ -237,3 +237,19 @@ export class CounterDeliveryNoteNotYetError extends ResourceNotFoundError {
     );
   }
 }
+
+/**
+ * La version demandée d'un bon n'est pas conservée : un bon né avant le
+ * 2026-11-25 n'a de versions qu'à partir de sa première réécriture suivante,
+ * et une version inconnue n'existe pas.
+ */
+export class DeliveryNoteVersionNotKeptError extends ResourceNotFoundError {
+  constructor(number: string, version: number) {
+    super(
+      "delivery_notes.version.not_kept",
+      `La version ${String(version)} du bon de livraison ${number} n'est pas conservée ` +
+        "(un bon antérieur au 2026-11-25 n'a de versions qu'à partir de sa réécriture suivante). " +
+        "Ouvrir la liste des bons de la commande pour voir les versions conservées.",
+    );
+  }
+}

@@ -91,6 +91,7 @@ export const ACTIVITY_TYPES = {
    * 2026-10-25.
    */
   orderShortfallDecided: "order.shortfall_decided",
+  orderShortfallReported: "order.shortfall_reported",
   /**
    * L'équipe a **corrigé l'engagement budgétaire** d'une commande d'organisme
    * public (plan `plan-clients-publics-chorus.md`, § 6 quater, E3′) : la

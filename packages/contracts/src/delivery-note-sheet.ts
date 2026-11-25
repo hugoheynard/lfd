@@ -179,6 +179,35 @@ export interface StaffNote extends Omit<ClientNote, "audience" | "money"> {
   readonly reprintNeeded: boolean;
 }
 
+/**
+ * Pourquoi une version d'un BL est née (plan du reliquat, § 5 ter) : `born`,
+ * le bon naît ; `departure_decided`, un départ incomplet est décidé ;
+ * `replanned`, toute autre réécriture.
+ */
+export const deliveryNoteVersionCauseSchema = z.enum(["born", "departure_decided", "replanned"]);
+export type DeliveryNoteVersionCause = z.infer<typeof deliveryNoteVersionCauseSchema>;
+
+/** Une version figée d'un BL : son numéro de contenu, sa cause, son instant ISO. */
+export interface DeliveryNoteVersionView {
+  readonly version: number;
+  readonly cause: DeliveryNoteVersionCause;
+  readonly recordedAt: string;
+}
+
+/**
+ * Un BL dans la liste de la fiche commande (`GET admin/orders/:id/delivery-notes`) :
+ * le BL de l'équipe, et ses versions figées, dans l'ordre. Le PDF d'une
+ * version : `…/delivery-notes/:number/editions/:edition/client.pdf` — ce
+ * n'est pas une impression.
+ *
+ * `originKept` : la version 1 est conservée. Faux pour un bon né avant le
+ * 2026-11-25 : l'écran dit « version d'origine non conservée ».
+ */
+export interface AdminDeliveryNoteView extends StaffNote {
+  readonly versions: readonly DeliveryNoteVersionView[];
+  readonly originKept: boolean;
+}
+
 /** Le BL, tous lecteurs. Un rendu qui veut un montant doit prouver qu'il n'est pas devant un BL de transport. */
 export const deliveryNoteSheetSchema = z.discriminatedUnion("audience", [
   carrierNoteSchema,

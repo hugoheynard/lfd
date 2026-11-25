@@ -33,8 +33,8 @@ class ActivityJournal extends Journal {
   }
 
   /**
-   * Aucune clé d'idempotence n'est fournie : le recorder la dérive du `traceId`
-   * qu'il écrit lui-même. Elle se calculait ici, et c'était un doublon avec un
+   * Sans clé métier de l'émetteur, aucune clé d'idempotence n'est fournie : le
+   * recorder la dérive du `traceId` qu'il écrit lui-même. Elle se calculait ici, et c'était un doublon avec un
    * repli différent hors requête — une constante d'un côté, une trace neuve de
    * l'autre. Deux faits distincts d'un script partageaient alors une clé, et le
    * second disparaissait sans erreur.
@@ -61,6 +61,7 @@ function inputOf(fact: JournalFact): RecordActivityInput {
     subjectId: fact.subjectId,
     payload: fact.payload,
     ...(fact.occurredAt === undefined ? {} : { occurredAt: fact.occurredAt }),
+    ...(fact.idempotencyKey === undefined ? {} : { idempotencyKey: fact.idempotencyKey }),
   };
 }
 

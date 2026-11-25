@@ -22,6 +22,13 @@ export interface JournalFact {
   readonly payload: Record<string, unknown>;
   /** Temps **métier**, si l'émetteur en connaît un autre que maintenant. */
   readonly occurredAt?: Date;
+  /**
+   * Clé d'idempotence **métier**, quand le fait se déduit d'un objet durable
+   * (`delivery_note.printed:<bon>:<version>:<instant>`) : un rejeu écrit la
+   * même ligne, donc rien. Absente, elle se dérive de la trace — jamais du
+   * contexte chez l'émetteur (cf. `RecordActivityInput.idempotencyKey`).
+   */
+  readonly idempotencyKey?: string;
 }
 
 /**

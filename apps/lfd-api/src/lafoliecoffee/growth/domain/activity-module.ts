@@ -112,6 +112,8 @@ const PREFIXES: Readonly<Record<ActivityModule, readonly string[]>> = {
     "order.",
     // Le reliquat de commande : ce qui n'est pas parti, transformé ou abandonné.
     "backorder.",
+    // L'impression d'un bon de livraison : un geste sur la commande.
+    "delivery_note.",
     "delivery_zone.",
     // Le réglage global de livraison par audience (0b, 2026-11-05) : ce que
     // coûte une livraison, dans toute zone qui ne le remplace pas.

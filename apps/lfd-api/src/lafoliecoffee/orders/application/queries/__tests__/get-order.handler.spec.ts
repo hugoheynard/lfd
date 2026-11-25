@@ -1,7 +1,8 @@
-import type { AdminOrderCancellability, OrderView } from "@lfd/contracts";
+import type { AdminOrderBillable, AdminOrderCancellability, OrderView } from "@lfd/contracts";
 
 import type { OrderReviews } from "../../../domain/entities/order-reviews.js";
 import { OrderReviewsReader } from "../../../domain/ports/order-reviews.reader.js";
+import { OrderBillableReader } from "../../../domain/ports/order-billable.reader.js";
 import {
   OrderNoShowReader,
   type OrderNoShowTraces,
@@ -282,6 +283,17 @@ class NoReviews extends OrderReviewsReader {
 }
 
 /** Les reliquats de la commande, fixés par le test (par défaut : aucun). */
+/** Les montants facturables : ceux qu'on lui donne, `null` par défaut (pas soldée). */
+class FixedBillable extends OrderBillableReader {
+  constructor(private readonly billable: AdminOrderBillable | null = null) {
+    super();
+  }
+
+  override of(): Promise<AdminOrderBillable | null> {
+    return Promise.resolve(this.billable);
+  }
+}
+
 class FixedOrderBackorders extends OrderBackorderReader {
   constructor(private readonly backorders: OrderBackorders = { backorder: null, origin: null }) {
     super();
@@ -312,6 +324,7 @@ function adminHandler(
   noShows: OrderNoShowReader = new NoNoShow(),
   reviews: OrderReviewsReader = new NoReviews(),
   backorders: OrderBackorderReader = new FixedOrderBackorders(),
+  billables: OrderBillableReader = new FixedBillable(),
 ): GetAdminOrderHandler {
   const subjects = new FixedSubjects(subject, others);
   const inscriptions = new FixedInscription(inscribedDay);
@@ -346,6 +359,7 @@ function adminHandler(
     noShows,
     reviews,
     backorders,
+    billables,
   );
 }
 
@@ -380,6 +394,7 @@ describe("GetAdminOrderHandler", () => {
       noShow: null,
       backorder: null,
       backorderOrigin: null,
+      billable: null,
     });
   });
 
@@ -420,6 +435,48 @@ describe("GetAdminOrderHandler", () => {
 
     expect(view.backorder).toEqual(backorder);
     expect(view.backorderOrigin).toEqual(origin);
+  });
+
+  it("plan du reliquat, B4b.4 : sert les montants facturables d'une commande soldée, null avant", async () => {
+    const billable: AdminOrderBillable = {
+      subtotalCents: 1_000,
+      discountCents: 0,
+      voucherDiscountCents: 0,
+      deliveryFeeCents: 0,
+      lateFeeCents: 0,
+      vatCents: 55,
+      totalCents: 1_055,
+      settledOn: "2026-11-25",
+    };
+    const owner = { customer: CUSTOMER, company: COMPANY, placedByStaffId: null };
+    const settled = await adminHandler(
+      ofCompany("cmp_1"),
+      owner,
+      directory(),
+      // Les quatorze lectures suivantes gardent leur valeur par défaut.
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      new FixedOrderBackorders(),
+      new FixedBillable(billable),
+    ).execute(new GetAdminOrderQuery("ord_1", false));
+    const open = await adminHandler(ofCompany("cmp_1"), owner).execute(
+      new GetAdminOrderQuery("ord_1", false),
+    );
+
+    expect(settled.billable).toEqual(billable);
+    expect(open.billable).toBeNull();
   });
 
   it("plan S2, §2.8 : dit la hausse par carte qui attend son complément", async () => {
@@ -489,15 +546,53 @@ describe("GetAdminOrderHandler", () => {
           decidedAt: NOW,
           remainder: "abandoned",
           customerNotice: { at: NOW, byStaffId: "stf_1" },
+          decidedByStaffId: "stf_1",
+          departing: [{ sku: "CRO", quantity: 9, saleUnit: "piece" as const }],
         },
       },
     ).execute(new GetAdminOrderQuery("ord_1", false));
 
-    expect(staff.asked).toEqual([null, "stf_1"]);
+    // Une seule lecture de l'annuaire : qui a décidé, qui a prévenu.
+    expect(staff.asked).toEqual([null, "stf_1", "stf_1"]);
     expect(view.shortfall?.decision).toEqual({
       decidedAt: NOW.toISOString(),
       remainder: "abandoned",
       customerNotice: { notifiedAt: NOW.toISOString(), notifiedByName: "Hugo H" },
+      departing: [{ sku: "CRO", quantity: 9, saleUnit: "piece" }],
+      decidedByName: "Hugo H",
+    });
+  });
+
+  it("plan du reliquat, B4b.4 : dit ce qui part et qui l'a décidé, même sans client prévenu", async () => {
+    const view = await adminHandler(
+      ofCompany("cmp_1"),
+      { customer: CUSTOMER, company: COMPANY, placedByStaffId: null },
+      directory(),
+      cancellationSubject(),
+      null,
+      new FixedRestitutionPreview({ kind: "already" }),
+      {},
+      { kind: "free" },
+      new FixedCardRefundRequests(),
+      PLACED,
+      {
+        reportedAt: NOW,
+        lines: [{ sku: "CRO", due: 12, packed: 9, saleUnit: "piece" as const }],
+        decision: {
+          decidedAt: NOW,
+          remainder: "abandoned",
+          customerNotice: null,
+          decidedByStaffId: "stf_gone",
+          departing: [{ sku: "CRO", quantity: 9, saleUnit: "piece" as const }],
+        },
+      },
+    ).execute(new GetAdminOrderQuery("ord_1", false));
+
+    // Une fiche que l'annuaire ne connaît plus : pas de nom inventé.
+    expect(view.shortfall?.decision).toMatchObject({
+      customerNotice: null,
+      departing: [{ sku: "CRO", quantity: 9, saleUnit: "piece" }],
+      decidedByName: null,
     });
   });
 

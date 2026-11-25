@@ -651,6 +651,13 @@
       "watch": ["apps/lfd-api/src/**", "dev-toolbox/gates/export-key-guard.mjs"]
     },
     {
+      "name": "delivery-note-version-readers",
+      "script": "dev-toolbox/gates/delivery-note-version-readers.mjs",
+      "holds": "Les versions figées d'un bon de livraison (`delivery_note_version`) ne sont lues que par l'écrivain des versions et l'historique des documents : la facture et « livré = Σ des BL » lisent le bon courant, jamais une version.",
+      "since": "2026-11-25",
+      "watch": ["apps/lfd-api/src/**", "dev-toolbox/gates/delivery-note-version-readers.mjs"]
+    },
+    {
       "name": "schema-drift",
       "script": "dev-toolbox/gates/schema-drift.mjs",
       "holds": "Le schéma Prisma dit ce que les migrations construisent : rejouées sur une base fantôme, elles ne diffèrent du schéma que par les écarts admis (`apps/lfd-api/prisma/schema-drift-admitted.json`), chacun avec sa raison.",

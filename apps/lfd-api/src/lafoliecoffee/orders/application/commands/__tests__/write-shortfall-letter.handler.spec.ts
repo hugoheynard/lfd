@@ -8,6 +8,7 @@ import {
   RecordingMail,
 } from "../../../../../mail/channels/requests/__tests__/recording-mail.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
+import { RecordingJournal } from "../../../../../platform/journal/__tests__/recording-journal.js";
 import {
   ShortfallNotice,
   type ShortfallNoticeSnapshot,
@@ -109,16 +110,18 @@ function scene(
   const notices = new FixedNotices(trace, snapshot, locale);
   const unitOfWork = new OpenableUnitOfWork();
   const mailer = new TracedMail(trace, unitOfWork);
+  const journal = new RecordingJournal();
   const handler = new WriteShortfallLetterHandler(
     notices,
     new Recipients(email),
     mailer,
     new FixedClock(NOW),
     unitOfWork,
+    journal,
   );
   const write = (message = "  Il manque deux croissants.  "): Promise<void> =>
     handler.execute(new WriteShortfallLetterCommand("ord_1", "staff_1", message));
-  return { trace, notices, mailer, write };
+  return { trace, notices, mailer, journal, write };
 }
 
 describe("« Écrire au client » (E6d)", () => {
@@ -140,6 +143,29 @@ describe("« Écrire au client » (E6d)", () => {
         data: { reference: "ORD-0001", message: "Il manque deux croissants.", locale: "it" },
       },
     ]);
+  });
+
+  it("écrit l'envoi à l'historique de la commande, une fois par décision (B4b.3)", async () => {
+    const { journal, write } = scene();
+
+    await write();
+
+    expect(journal.facts).toEqual([
+      {
+        type: "order.shortfall_letter_sent",
+        subjectType: "order",
+        subjectId: "ord_1",
+        payload: { subjectLabel: "ORD-0001" },
+        idempotencyKey: "order.shortfall_letter_sent:ord_1",
+      },
+    ]);
+  });
+
+  it("un second envoi refusé n'écrit rien à l'historique", async () => {
+    const { journal, write } = scene({ ...BLANK, notifiedAt: NOW, notifiedBy: "staff_0" });
+
+    await expect(write()).rejects.toBeInstanceOf(ShortfallCustomerAlreadyNotifiedError);
+    expect(journal.facts).toEqual([]);
   });
 
   it("écrit en français une commande sans langue", async () => {

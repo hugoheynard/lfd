@@ -4,6 +4,8 @@ import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { IdGenerator } from "../../../platform/id/id-generator.js";
 import { DeliveryNote, type DeliveryNoteState } from "../domain/entities/delivery-note.js";
 import { DeliveryNoteRepository } from "../domain/ports/delivery-note.repository.js";
+import { DeliveryNoteVersionKeeper } from "../domain/ports/delivery-note-version.keeper.js";
+import { versionToKeep } from "../domain/services/delivery-note-version.js";
 import { dateOf, NOTE_INCLUDE, stateOf } from "./delivery-note.rows.js";
 import { termsColumns } from "./delivery-note-terms.columns.js";
 
@@ -35,12 +37,20 @@ function progressColumns(head: Omit<DeliveryNoteState, "lines">) {
  *
  * Il injecte `PrismaService`, routé vers la transaction ambiante : il écrit
  * dans l'unité de travail de son appelant (plan E2, § 8.3).
+ *
+ * **Chaque version du contenu se fige ici** (plan du reliquat, § 5 ter) : à
+ * la naissance du bon, et chaque fois que sa `content_version` monte par
+ * rapport à celle de la base, lue juste avant l'écriture — sous le verrou de
+ * la commande que tout écrivain tient déjà. Le gardien compose et range la
+ * version dans la même transaction, APRÈS les lignes : il fige ce qui vient
+ * d'être écrit. Aucun écrivain du bon ne peut l'oublier.
  */
 @Injectable()
 export class PrismaDeliveryNoteRepository extends DeliveryNoteRepository {
   constructor(
     private readonly prisma: PrismaService,
     private readonly ids: IdGenerator,
+    private readonly versions: DeliveryNoteVersionKeeper,
   ) {
     super();
   }
@@ -57,6 +67,10 @@ export class PrismaDeliveryNoteRepository extends DeliveryNoteRepository {
   async save(note: DeliveryNote): Promise<void> {
     const { lines, ...head } = note.toState();
     const columns = progressColumns(head);
+    const previous = await this.prisma.deliveryNote.findUnique({
+      where: { id: head.id },
+      select: { contentVersion: true },
+    });
     await this.prisma.deliveryNote.upsert({
       where: { id: head.id },
       create: {
@@ -70,6 +84,7 @@ export class PrismaDeliveryNoteRepository extends DeliveryNoteRepository {
       update: columns,
     });
     await this.replaceLines(head.id, lines);
+    await this.keepVersion(note, previous?.contentVersion ?? null, columns.contentVersion);
   }
 
   async saveNew(note: DeliveryNote): Promise<boolean> {
@@ -93,7 +108,21 @@ export class PrismaDeliveryNoteRepository extends DeliveryNoteRepository {
       return false;
     }
     await this.replaceLines(head.id, lines);
+    await this.keepVersion(note, null, progressColumns(head).contentVersion);
     return true;
+  }
+
+  private async keepVersion(
+    note: DeliveryNote,
+    previous: number | null,
+    written: number,
+  ): Promise<void> {
+    const toKeep = versionToKeep(previous, written, note.contentChangeCause);
+    if (toKeep === null) {
+      return;
+    }
+    const { id, orderId, number } = note.toState();
+    await this.versions.keep({ id, orderId, number }, toKeep.contentVersion, toKeep.cause);
   }
 
   private async replaceLines(noteId: string, lines: DeliveryNoteState["lines"]): Promise<void> {
