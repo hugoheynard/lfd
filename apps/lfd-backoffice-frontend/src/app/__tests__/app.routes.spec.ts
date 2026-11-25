@@ -58,6 +58,12 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   commandes: 'b2b_orders:read',
   'commandes/:orderId': 'b2b_orders:read',
   'commandes/:orderId/modifier': 'b2b_place_order:write',
+  // Transformer un reliquat en commande, pro ou particulier : c'est passer une
+  // commande (`documentation/commandes/reliquat/reliquat.md`).
+  'commandes/:orderId/reliquat': 'b2b_place_order:write',
+  'commandes/:orderId/reliquat-particulier': 'b2b_place_order:write',
+  // La liste des reliquats ouverts, sous le droit de lire les commandes.
+  reliquats: 'b2b_orders:read',
   // Cible du QR de colisage imprimé sur la fiche d'atelier — c'est une VALEUR
   // encodée dans du papier en circulation, pas un choix d'arborescence, d'où le
   // premier niveau.
