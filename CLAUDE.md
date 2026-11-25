@@ -245,8 +245,8 @@
 >   ventes — ailleurs, elle ouvrirait une route à la clé de la Direction, et à
 >   quiconque la lui aurait volée.
 >   Et **85** depuis le 2026-11-25 avec `lint:delivery-note-version-readers`
->   (plan `documentation/commandes/reliquat/plan-reliquat-de-commande.md`,
->   § 5 ter) : les versions figées d'un bon de livraison ne sont lues que par
+>   (doc `documentation/commandes/reliquat/reliquat.md`,
+>   § 7) : les versions figées d'un bon de livraison ne sont lues que par
 >   l'écrivain des versions et l'historique des documents — la facture et
 >   « livré = Σ des BL » lisent le bon courant, jamais une version.
 >   C'est la
