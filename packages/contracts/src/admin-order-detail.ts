@@ -122,7 +122,7 @@ export interface AdminOrderView extends OrderView {
    */
   readonly review?: AdminOrderReviewState;
   /**
-   * **Le reliquat né de cette commande** (plan du reliquat, § 5) — ce qui
+   * **Le reliquat né de cette commande** (`documentation/commandes/reliquat/reliquat.md`, § 6.5) — ce qui
    * n'est pas parti, son état, et la commande qui en est issue ; `null` si
    * elle n'en a pas. Facultatif : un serveur plus ancien ne le sert pas.
    */
@@ -237,7 +237,7 @@ export interface AdminOrderShortfallDecision {
    */
   readonly customerNotice: AdminShortfallCustomerNotice | null;
   /**
-   * **Ce qui part**, par article (plan du reliquat, § 5 ter, B4b.4) — la
+   * **Ce qui part**, par article (`documentation/commandes/reliquat/reliquat.md`, § 7) — la
    * colonne « Parti » de la composition, lue sur la décision. Des pièces, ou
    * des grammes au poids. Facultatif : un serveur plus ancien ne le sert pas.
    */
@@ -257,8 +257,7 @@ export interface AdminShortfallDepartingLine {
 }
 
 /**
- * **Les montants facturables** d'une commande (plan du reliquat, § 5 ter,
- * B4b.4) — posés à son solde : la recopie des totaux pour une commande à un
+ * **Les montants facturables** d'une commande (`documentation/commandes/reliquat/reliquat.md`, § 7) — posés à son solde : la recopie des totaux pour une commande à un
  * BL complet, la somme des BL remis sinon. C'est le « livré » de la fiche, à
  * côté du « commandé » (les totaux de la commande). En centimes ;
  * `settledOn` le jour (Paris, `AAAA-MM-JJ`) du solde.

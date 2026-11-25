@@ -25,7 +25,7 @@ import { ListOrderDeliveryNotesHandler } from "../list-order-delivery-notes.hand
 import { ListOrderDeliveryNotesQuery } from "../list-order-delivery-notes.query.js";
 
 /**
- * **L'historique des documents** (plan du reliquat, § 5 ter, B4b.2) : la
+ * **L'historique des documents** (`documentation/commandes/reliquat/reliquat.md`, § 7) : la
  * liste dit les versions de chaque bon, et le PDF d'une version se rend de
  * la version figée SEULE. Instants recopiés, jamais comparés à l'horloge.
  */

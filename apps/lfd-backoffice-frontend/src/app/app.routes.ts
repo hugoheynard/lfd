@@ -514,8 +514,7 @@ export const routes: Routes = [
       ),
   },
   {
-    // Transformer le reliquat d'une commande en commande (plan
-    // `documentation/commandes/reliquat/plan-reliquat-de-commande.md`, § 4) :
+    // Transformer le reliquat d'une commande en commande (`documentation/commandes/reliquat/reliquat.md`, § 6.3) :
     // la saisie garnie du reliquat, ouverte depuis la commande d'origine, sous
     // le droit de la saisie de l'équipe — c'est passer une commande.
     path: 'commandes/:orderId/reliquat',

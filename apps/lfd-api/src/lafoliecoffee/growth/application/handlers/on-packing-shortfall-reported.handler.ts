@@ -22,7 +22,7 @@ const ORDER_SUBJECT = "order";
 
 /**
  * Abonné du journal : `packing.shortfall_reported` → **le manque signalé, à
- * l'historique de la commande** (plan du reliquat, § 5 ter, B4b.3).
+ * l'historique de la commande** (`documentation/commandes/reliquat/reliquat.md`, § 7).
  *
  * Le commerce garde le signal le plus récent sur `order_shortfall` ;
  * l'historique, lui, garde CHAQUE signal : la clé porte l'instant du geste,

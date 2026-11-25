@@ -38,7 +38,7 @@ function progressColumns(head: Omit<DeliveryNoteState, "lines">) {
  * Il injecte `PrismaService`, routé vers la transaction ambiante : il écrit
  * dans l'unité de travail de son appelant (plan E2, § 8.3).
  *
- * **Chaque version du contenu se fige ici** (plan du reliquat, § 5 ter) : à
+ * **Chaque version du contenu se fige ici** (`documentation/commandes/reliquat/reliquat.md`, § 7) : à
  * la naissance du bon, et chaque fois que sa `content_version` monte par
  * rapport à celle de la base, lue juste avant l'écriture — sous le verrou de
  * la commande que tout écrivain tient déjà. Le gardien compose et range la

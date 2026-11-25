@@ -2,8 +2,8 @@ import type { AdminBackorderParticularQuotePayload } from "@lfd/contracts";
 
 /**
  * **Ce que la transformation d'un reliquat de particulier coûterait, au
- * centime** (plan `documentation/commandes/reliquat/plan-reliquat-de-commande.md`,
- * § 5 bis) : composée par la même préparation et sous la même politique que
+ * centime** (`documentation/commandes/reliquat/reliquat.md`,
+ * § 6.4) : composée par la même préparation et sous la même politique que
  * la transformation — une seule arithmétique.
  */
 export class QuoteParticularBackorderQuery {

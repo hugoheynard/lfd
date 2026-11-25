@@ -38,7 +38,7 @@ export interface ShopTillParticularRequest {
  * l'intention réclamée** (`commande-particulier-reglee-en-boutique.md`,
  * § 4–5) — partagée par la saisie du comptoir
  * (`PlaceParticularOrderAtCounterHandler`) et la transformation d'un reliquat
- * de particulier (plan du reliquat, § 5 bis), qui ne diffèrent que par leur
+ * de particulier (`documentation/commandes/reliquat/reliquat.md`, § 6.4), qui ne diffèrent que par leur
  * politique de composition et ce qu'elles écrivent avec la commande.
  *
  * Trois gestes qu'une copie finirait par oublier, et qui vivent donc ici

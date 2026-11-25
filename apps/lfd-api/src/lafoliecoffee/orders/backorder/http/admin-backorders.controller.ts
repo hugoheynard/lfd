@@ -37,8 +37,7 @@ import { AbandonBackorderCommand } from "../application/commands/abandon-backord
 import { ListBackordersQuery } from "../application/queries/list-backorders.query.js";
 
 /**
- * **Le reliquat de commande, vu de l'équipe** (plan
- * `documentation/commandes/reliquat/plan-reliquat-de-commande.md`, § 4) :
+ * **Le reliquat de commande, vu de l'équipe** (`documentation/commandes/reliquat/reliquat.md`, § 6.3) :
  * la liste « Reliquats à traiter », l'estimer, le transformer en commande ou
  * l'abandonner. C'est l'écran qui appelle ces
  * routes, jamais `POST /admin/orders` : une passation ordinaire ne fermerait

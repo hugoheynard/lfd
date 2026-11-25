@@ -1,6 +1,6 @@
 /**
  * E2E de la **vie d'un reliquat après sa naissance** (lot B4, plan
- * `documentation/commandes/reliquat/plan-reliquat-de-commande.md`, § 5), sur
+ * `documentation/commandes/reliquat/reliquat.md`, § 6.5), sur
  * le vrai Postgres : l'abandonner (fait au journal, refus du second et d'un
  * transformé, droit requis), la liste « Reliquats à traiter » (ordre, filtre
  * par société, un reliquat fermé hors de `open`), les deux fiches — l'origine

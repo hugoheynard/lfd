@@ -398,7 +398,7 @@ describe("GetAdminOrderHandler", () => {
     });
   });
 
-  it("plan du reliquat, § 5 : sert le reliquat né de la commande et celui dont elle est issue", async () => {
+  it("`documentation/commandes/reliquat/reliquat.md`, § 6.5 : sert le reliquat né de la commande et celui dont elle est issue", async () => {
     const backorder = {
       id: "bo_1",
       state: "converted",
@@ -437,7 +437,7 @@ describe("GetAdminOrderHandler", () => {
     expect(view.backorderOrigin).toEqual(origin);
   });
 
-  it("plan du reliquat, B4b.4 : sert les montants facturables d'une commande soldée, null avant", async () => {
+  it("sert les montants facturables d'une commande soldée, null avant", async () => {
     const billable: AdminOrderBillable = {
       subtotalCents: 1_000,
       discountCents: 0,
@@ -563,7 +563,7 @@ describe("GetAdminOrderHandler", () => {
     });
   });
 
-  it("plan du reliquat, B4b.4 : dit ce qui part et qui l'a décidé, même sans client prévenu", async () => {
+  it("dit ce qui part et qui l'a décidé, même sans client prévenu", async () => {
     const view = await adminHandler(
       ofCompany("cmp_1"),
       { customer: CUSTOMER, company: COMPANY, placedByStaffId: null },

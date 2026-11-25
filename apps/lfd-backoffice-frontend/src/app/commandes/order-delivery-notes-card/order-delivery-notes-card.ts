@@ -51,7 +51,7 @@ export const ORIGIN_NOT_KEPT = 'version d’origine non conservée (bon antérie
  * pas. Un BL d'avant les totaux (`money: null`) n'a pas de chiffré — le
  * serveur le refuserait : « Télécharger » y rend le BL de transport.
  *
- * **La trace des versions** (plan du reliquat, § 5 ter, B4b.2) : un BL réécrit
+ * **La trace des versions** (`documentation/commandes/reliquat/reliquat.md`, § 7) : un BL réécrit
  * (départ décidé, replanification) montre d'abord son **BL d'origine** — le
  * premier exemplaire figé, en téléchargement seul, ce n'est pas une
  * impression — puis le **BL définitif**, la ligne courante. Un bon né avant

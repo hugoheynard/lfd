@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 /**
- * Gate : **seul l'historique des documents lit les versions du bon** (plan
- * `documentation/commandes/reliquat/plan-reliquat-de-commande.md`, § 5 ter, B4b.1).
+ * Gate : **seul l'historique des documents lit les versions du bon** (`documentation/commandes/reliquat/reliquat.md`, § 7).
  *
  * `public.delivery_note_version` fige chaque contenu d'un bon de livraison à
  * sa naissance. La facture et « livré = Σ des BL » vivent dans le même bloc :
@@ -124,7 +123,7 @@ function main() {
     for (const failure of failures) console.error(`  ${failure}`);
     console.error(
       `\n  ${failures.length} écart(s). Une version de bon ne se lit que par l'historique des documents ` +
-        "(plan-reliquat-de-commande.md, § 5 ter).\n",
+        "(reliquat.md, § 7).\n",
     );
     process.exit(1);
   }

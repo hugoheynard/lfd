@@ -289,7 +289,7 @@ describe("DecideOrderShortfallHandler — « Décider du départ » (E6b)", () =
     expect(decisions.asked).toEqual([1]);
   });
 
-  describe("le reliquat naît de la décision (plan du reliquat de commande, B2)", () => {
+  describe("le reliquat naît de la décision (`documentation/commandes/reliquat/reliquat.md` de commande, B2)", () => {
     it("au rang 1, ce qui n'est pas parti devient un reliquat, APRÈS la décision", async () => {
       const { trace, backorder, handler } = scene(locked());
 

@@ -1,6 +1,5 @@
 /**
- * **Pourquoi un contenu de bon est né** (plan
- * `documentation/commandes/reliquat/plan-reliquat-de-commande.md`, § 5 ter) :
+ * **Pourquoi un contenu de bon est né** (`documentation/commandes/reliquat/reliquat.md`, § 7) :
  * `born`, le bon naît ; `departure_decided`, il suit un départ incomplet
  * décidé ; `replanned`, toute autre réécriture de ses lignes ou de ses
  * montants. 🔴 Valeurs écrites en base (CHECK `delivery_note_version_cause_known`).

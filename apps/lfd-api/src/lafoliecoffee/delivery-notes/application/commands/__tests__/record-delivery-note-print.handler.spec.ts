@@ -12,7 +12,7 @@ import { RecordDeliveryNotePrintCommand } from "../record-delivery-note-print.co
 import { RecordDeliveryNotePrintHandler } from "../record-delivery-note-print.handler.js";
 
 /**
- * **Une impression de BL** (plan E6 § 14 ; plan du reliquat, § 5 ter, B4b.3) :
+ * **Une impression de BL** (plan E6 § 14 ; `documentation/commandes/reliquat/reliquat.md`, § 7) :
  * la colonne garde la dernière, l'historique de la commande les garde toutes.
  * Instants comparés entre eux seulement, jamais à l'horloge.
  */

@@ -28,8 +28,7 @@ import { backorderConversionIntent } from "./backorder-conversion-intent.js";
 import { ConvertBackorderCommand } from "./convert-backorder.command.js";
 
 /**
- * **Transforme un reliquat en commande ordinaire** (plan
- * `documentation/commandes/reliquat/plan-reliquat-de-commande.md`, § 4) : la
+ * **Transforme un reliquat en commande ordinaire** (`documentation/commandes/reliquat/reliquat.md`, § 6.3) : la
  * saisie de l'équipe ({@link StaffOrderPlacement}) garnie des lignes du
  * reliquat, sous la politique du reliquat — prix de l'origine rejoué, port
  * offert, aucune surtaxe —, puis le reliquat fermé sur la commande créée.

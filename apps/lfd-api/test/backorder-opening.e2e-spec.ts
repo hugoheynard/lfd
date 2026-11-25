@@ -1,6 +1,6 @@
 /**
  * E2E de la **naissance du reliquat** (lot B2, plan
- * `documentation/commandes/reliquat/plan-reliquat-de-commande.md`, § 3) : la
+ * `documentation/commandes/reliquat/reliquat.md`, § 6.2) : la
  * décision du départ incomplet — par les managers ou au comptoir — fait
  * naître, dans sa transaction, un reliquat `open` de ce qui n'est pas parti,
  * et `backorder.opened` au journal.

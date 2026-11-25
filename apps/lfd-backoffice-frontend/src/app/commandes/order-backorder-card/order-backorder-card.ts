@@ -18,8 +18,7 @@ import { BackorderLines } from '../backorder-lines/backorder-lines';
 import { AdminBackordersService } from '../backorders.service';
 
 /**
- * **Le reliquat d'une commande d'origine**, sur sa fiche (plan
- * `documentation/commandes/reliquat/plan-reliquat-de-commande.md`, § 5) : son
+ * **Le reliquat d'une commande d'origine**, sur sa fiche (`documentation/commandes/reliquat/reliquat.md`, § 6.5) : son
  * état, ce qui reste dû, et la commande qui en est issue. Tant qu'il est
  * ouvert, deux gestes :
  *

@@ -14,7 +14,7 @@ import { cents, count, fact, instant, namedOrBare, payload, ref, subjectLabel } 
  */
 export const ORDER_SHORTFALL_FACTS = {
   /**
-   * **Un manque signalé au colisage** (plan du reliquat, § 5 ter, B4b.3) —
+   * **Un manque signalé au colisage** (`documentation/commandes/reliquat/reliquat.md`, § 7) —
    * l'historique de la commande garde CHAQUE signal : le suivant ne l'écrase
    * pas. Le sujet est la COMMANDE, son libellé son numéro ; écrit par l'abonné
    * du commerce au fait `packing.shortfall_reported` (acteur `system`) :
@@ -31,8 +31,8 @@ export const ORDER_SHORTFALL_FACTS = {
     }),
   ),
   /**
-   * **Le client prévenu d'un départ incomplet** (plan du reliquat, § 5 ter,
-   * B4b.3) — « Écrire au client », une fois par décision. Le sujet est la
+   * **Le client prévenu d'un départ incomplet** (`documentation/commandes/reliquat/reliquat.md`,
+   * § 7) — « Écrire au client », une fois par décision. Le sujet est la
    * COMMANDE ; qui et quand viennent du contexte. Le texte n'est pas recopié :
    * il est au suivi des e-mails. 🔴 Type irréversible.
    */
@@ -67,8 +67,7 @@ export const ORDER_SHORTFALL_FACTS = {
     }),
   ),
   /**
-   * **Le reliquat de commande** (plan
-   * `documentation/commandes/reliquat/plan-reliquat-de-commande.md`, § 2) :
+   * **Le reliquat de commande** (`documentation/commandes/reliquat/reliquat.md`, § 6.1) :
    * ce qui n'est pas parti, gardé pour une commande à venir. Le sujet est la
    * COMMANDE D'ORIGINE (un reliquat par origine), son libellé son numéro ;
    * l'auteur et l'instant viennent du contexte. `opened` : naît avec la

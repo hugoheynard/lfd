@@ -9,8 +9,7 @@ export interface OrderBackorders {
 }
 
 /**
- * Port de **lecture** des reliquats d'une commande, pour sa fiche staff (plan
- * `documentation/commandes/reliquat/plan-reliquat-de-commande.md`, § 5) :
+ * Port de **lecture** des reliquats d'une commande, pour sa fiche staff (`documentation/commandes/reliquat/reliquat.md`, § 6.5) :
  * l'origine montre son reliquat et son état, la commande issue montre son
  * origine. Sans verrou : c'est un affichage.
  */

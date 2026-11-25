@@ -287,7 +287,7 @@ export class OrderDetail {
   readonly lineBadges = input<ReadonlyMap<string, string>>(new Map());
 
   /**
-   * **Ce qui est parti**, par SKU (plan du reliquat, § 5 ter, B4b.4) — côté
+   * **Ce qui est parti**, par SKU (`documentation/commandes/reliquat/reliquat.md`, § 7) — côté
    * staff, sur une commande au départ décidé : la colonne « Qté » devient
    * « Commandé » et une colonne « Parti » la suit ; un article dont une part
    * est restée le marque sous la quantité partie. `null` (par défaut) : pas

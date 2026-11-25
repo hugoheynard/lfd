@@ -5,8 +5,7 @@ import type { Backorder } from "../domain/entities/backorder.js";
 const ORIGIN_ORDER_SUBJECT = "order";
 
 /**
- * **Les faits du reliquat** (plan
- * `documentation/commandes/reliquat/plan-reliquat-de-commande.md`, § 2) :
+ * **Les faits du reliquat** (`documentation/commandes/reliquat/reliquat.md`, § 6.1) :
  * écrits par `Journal.append`, dans la transaction de l'écriture du
  * reliquat. Le sujet est la commande d'origine, sous son numéro
  * (`originReference`) ; qui et quand viennent du contexte de requête.

@@ -820,7 +820,7 @@ export const ORDERS_PRODUCTION_FACTS = {
   /** **Les remboursements Stripe constatés** (lot R1) — même famille. */
   ...ORDER_REFUND_FACTS,
   ...ORDER_SHORTFALL_FACTS,
-  /** **L'impression d'un bon de livraison** (plan du reliquat, B4b.3) — même famille. */
+  /** **L'impression d'un bon de livraison** (`documentation/commandes/reliquat/reliquat.md`, § 7) — même famille. */
   ...DELIVERY_NOTE_PRINT_FACTS,
   /** **L'engagement budgétaire corrigé** (P2, E3′) — même famille. */
   ...ORDER_BUDGET_COMMITMENT_FACTS,

@@ -14,9 +14,8 @@ import {
 } from '../phrase';
 
 /**
- * **Ce qui s'est passé sur une commande après le colisage** (plan
- * `documentation/commandes/reliquat/plan-reliquat-de-commande.md`, § 5 ter,
- * B4b.3) — le manque signalé, l'impression d'un bon de livraison, la lettre
+ * **Ce qui s'est passé sur une commande après le colisage** (`documentation/commandes/reliquat/reliquat.md`, § 7)
+ * — le manque signalé, l'impression d'un bon de livraison, la lettre
  * au client. Le sujet est la commande ; le détail rend le reste de la charge.
  */
 

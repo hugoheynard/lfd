@@ -28,7 +28,7 @@ export class DeliveryNotesService {
   }
 
   /**
-   * Un exemplaire figé du BL client (plan du reliquat, § 5 ter) — le papier tel
+   * Un exemplaire figé du BL client (`documentation/commandes/reliquat/reliquat.md`, § 7) — le papier tel
    * qu'il était à sa naissance. Ce n'est pas une impression : le serveur ne la
    * trace pas.
    */

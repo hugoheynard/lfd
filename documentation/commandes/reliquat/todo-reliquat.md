@@ -1,52 +1,56 @@
 # TODO — le départ incomplet et le reliquat
 
-> Ouvert le 2026-11-10, chaque point relu contre le code ce jour-là. L'état
-> bâti est dans [`reliquat.md`](reliquat.md). Un point pris se réduit ici à un
-> renvoi vers son plan.
+> Relu le 2026-11-25 contre le code. L'état bâti est dans
+> [`reliquat.md`](reliquat.md). Un point pris se réduit ici à un renvoi vers
+> son plan.
 
-## 1. Le départ incomplet d'une commande carte (E9)
+## 1. Avant le déploiement : les requêtes de contrôle
 
-**Ce qui manque.** Une commande réglée par carte (`due`, `paid`) ne part
-jamais incomplète : `termsRefusalOf` rend `card`
-(`apps/lfd-api/src/lafoliecoffee/orders/domain/services/shortfall-decidability.ts`) et
-`CardOrderShortfallError` renvoie à « E9 ». Un particulier ne peut donc pas
-emporter un sac incomplet.
+Le second envoi est retiré du code (`reliquat.md` § 8) sans migration. Deux
+requêtes, **en lecture seule**, pour Hugo avant le déploiement qui le porte.
 
-**Ce qui le débloque, depuis le 2026-11-10.** Le remboursement d'un montant
-existe (`CardRefunds.requestAmount`,
-`apps/lfd-api/src/payment/channels/requests/card-refunds.ts`, lot P1), et
-la baisse d'une commande carte le répartit déjà sur ses paiements
-(`apps/lfd-api/src/lafoliecoffee/orders/revision/domain/services/revision-card-refund.ts`, lot S1).
+**Aucun second envoi n'existe** — trois zéros attendus, sinon le
+déploiement attend :
 
-**Ce qu'il faut trancher avant de bâtir** (argent : `vitruve`) :
+```sql
+SELECT
+  (SELECT count(*) FROM public.delivery_note WHERE rank > 1) AS bl_reste,
+  (SELECT count(*) FROM public.orders WHERE status = 'partially_handed_over') AS en_partie,
+  (SELECT count(*) FROM public.order_shortfall_decision WHERE rank > 1) AS decisions_reste;
+```
 
-- **Le montant à rendre** : commande − Σ des BL remis (le reste abandonné),
-  demandé dans la transaction de la décision, avec une clé par décision.
-- **La facture carte.** Elle compare encaissé − remboursé d'ajustement au
-  **total de la commande** (`moneySquares`,
-  `apps/lfd-api/src/lafoliecoffee/accounting/domain/services/card-invoicing.ts`) et
-  facture les totaux de la commande (`frozen: toFrozenInvoiceOrder(order)`,
-  `apps/lfd-api/src/lafoliecoffee/accounting/infrastructure/prisma-card-invoicing.reader.ts`).
-  Une baisse S1 réécrit la commande, donc l'égalité tient ; un départ
-  incomplet **laisse la commande intacte** : remboursé, la facture resterait
-  `blocked` pour toujours, et elle porterait des lignes non livrées. Il faut
-  que la facture carte lise les montants facturables (Σ des BL), comme la
-  facture au compte, et que l'égalité les compare.
-- **Quand la facture part** : Q-R4 (Hugo, 2026-10-25) la veut « au solde » ;
-  elle part aujourd'hui à la remise, ce qui reste juste tant qu'il n'y a pas
-  de reste.
+**La file des deux abonnés muets** :
 
-## 2. Le reliquat de commande
+```sql
+SELECT subscriber, count(*) FROM platform.outbox_delivery
+WHERE subscriber IN ('b2b.delivery-notes.prepare-remainder','b2b.delivery-notes.hand-over-remainder')
+  AND delivered_at IS NULL GROUP BY 1;
+```
 
-**Décidé par Hugo le 2026-11-25** : pas de second envoi de la même commande
-(L7, L8 et L9 abandonnés, « on fait trop compliqué »). Le reste reste
-abandonné côté origine ; un **reliquat** (`Backorder`) naît dans la
-transaction de la décision, et l'équipe le transforme en commande ordinaire,
-aux prix de l'origine, ou l'abandonne. Le second envoi bâti (rangs,
-`planRemainder`) est du code mort à retirer. Plan :
-[`plan-reliquat-de-commande.md`](plan-reliquat-de-commande.md) (lots B1 à B5).
+## 2. Retirer les deux abonnés muets
 
-## 3. Le bon de fidélité
+`OnRemainderPacked` (`b2b.delivery-notes.prepare-remainder`) et
+`OnRemainderHandedOver` (`b2b.delivery-notes.hand-over-remainder`),
+`apps/lfd-api/src/lafoliecoffee/delivery-notes/application/handlers/`,
+restent inscrits et rendent la main sans rien faire : sans eux, une
+livraison en vol finirait en lettre morte. Ils sortent du code, avec leur
+entrée dans `delivery-notes.module.ts`, **une fois que Hugo a constaté leur
+file vide** (seconde requête du § 1, lancée après le déploiement). La porte
+`durable-cross-block` se relance.
+
+## 3. Le reliquat — ce qui n'est pas fait
+
+- **Une offerte livrée de particulier n'a pas d'écran** : l'écran de
+  transformation d'un particulier ne propose que le retrait ; la livraison
+  passe par l'API seule.
+- **La liste des reliquats n'est pas paginée** (`GET admin/backorders`) : un
+  reliquat ouvert n'a pas de limite de durée ; une pagination viendra si la
+  liste grandit.
+- **Rappel, rien à faire** : le BL d'origine d'ORD-13 (BL-13-1) est
+  irrécupérable — réécrit en place avant que les exemplaires du bon soient
+  figés, aucun PDF n'en a été rangé.
+
+## 4. Le bon de fidélité
 
 **Ce qui manque.** Une commande qui porte un bon de fidélité ne part jamais
 incomplète (`VoucherOrderShortfallError`, « un départ incomplet ne sait pas
@@ -54,7 +58,7 @@ encore le répartir »). Le BL partiel ne sait pas où mettre un montant fixe de
 bon : sur le BL-1 seul (comme le port d'un reste), ou au prorata. **À
 trancher par Hugo**, puis à bâtir dans `departingSourceOf`.
 
-## 4. Le manquant constaté à la porte ou au comptoir (G4, R1, R2)
+## 5. Le manquant constaté à la porte ou au comptoir (G4, R1, R2)
 
 **Ce qui manque.** Le retrait et la livraison n'ont ni manquant ni réserve à
 la remise : `handover/` et `delivery/` lisent le manque du colisage pour
@@ -64,10 +68,8 @@ BL remis) et R2 (l'avoir 381) du plan-cadre
 ([`../plan-commande-bon-de-livraison-facture.md`](../plan-commande-bon-de-livraison-facture.md),
 § 11.3), reportés par Hugo le 2026-10-24. Argent : `vitruve`.
 
-## 5. Les petits restes
+## 6. Les petits restes
 
-- **L'avertissement de retard d'un reste** : `warn-customer-of-delay.handler.ts`
-  avertit une fois par commande, au rang 1.
 - **Les colonnes mortes du manque sur `orders`** (`shortfall_reported_at`,
   `shortfall_lines`, `shortfall_cleared_at`) : le manque vit dans
   `order_shortfall` depuis LB ; leur resserrement est une migration à part.
@@ -78,8 +80,7 @@ BL remis) et R2 (l'avoir 381) du plan-cadre
   fournil tire ensuite une commande déjà retirée, sa fiche naîtra ouverte.
 - **Questions laissées le 2026-10-26, non revérifiées** : faut-il retirer le
   réglage « dépôt autorisé » des adresses côté boutique, que la règle d'arrêt
-  ne lit plus ? Une commande en attente de son reste laisse l'onglet Factures
-  à « fait » : faut-il un état « en attente » ?
+  ne lit plus ?
 
 ## Hors de ce dossier
 
@@ -90,4 +91,4 @@ Les autres chantiers du plan-cadre
 (modifier après l'arrêt) dans [`../modification/`](../modification/modifier-une-commande.md) ;
 H2 est ouvert (`draft` et `in_production` sont toujours dans l'énuméré
 `OrderStatus`, relu le 2026-11-10) ; H1 n'est pas revérifié ici. E3 (le
-retrait par BL) est bâti : lots L3d et L4b, [`reliquat.md`](reliquat.md) § 6.
+retrait par BL) est bâti : [`reliquat.md`](reliquat.md) § 8.

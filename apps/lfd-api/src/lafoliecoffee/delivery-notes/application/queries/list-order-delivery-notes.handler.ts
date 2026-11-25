@@ -12,7 +12,7 @@ import { ListOrderDeliveryNotesQuery } from "./list-order-delivery-notes.query.j
 
 /**
  * Les BL d'une commande, **pour l'équipe** : numéro, état, dates, montants,
- * et leurs versions figées (plan du reliquat, § 5 ter) — la première est le
+ * et leurs versions figées (`documentation/commandes/reliquat/reliquat.md`, § 7) — la première est le
  * BL d'origine, la dernière le BL définitif.
  * Sans mur de société : `@AdminSurface` a déjà décidé, comme pour le bon.
  */

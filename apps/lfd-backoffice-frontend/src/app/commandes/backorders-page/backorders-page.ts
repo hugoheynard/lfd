@@ -19,8 +19,7 @@ import { AdminBackordersService } from '../backorders.service';
 type LoadState = 'loading' | 'error' | 'ready';
 
 /**
- * **« Reliquats à traiter »** (plan
- * `documentation/commandes/reliquat/plan-reliquat-de-commande.md`, § 5) : les
+ * **« Reliquats à traiter »** (`documentation/commandes/reliquat/reliquat.md`, § 6.5) : les
  * reliquats ouverts, du plus ancien au plus récent — la société, la commande
  * d'origine, ce qui reste dû, et depuis quand. Les gestes (transformer,
  * abandonner) vivent sur la fiche de la commande d'origine, où l'on voit ce

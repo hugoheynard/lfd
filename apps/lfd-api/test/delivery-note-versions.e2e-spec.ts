@@ -1,7 +1,7 @@
 /**
  * **Les versions du bon de livraison, et l'historique d'un départ partiel**
- * (plan `documentation/commandes/reliquat/plan-reliquat-de-commande.md`,
- * § 5 ter, B4b.1 à B4b.4) — sur le vrai Postgres.
+ * (`documentation/commandes/reliquat/reliquat.md`,
+ * § 7) — sur le vrai Postgres.
  *
  * Ce que seul le vrai chemin prouve : le dépôt fige la version d'un bon à sa
  * naissance et à la décision du départ, dans la transaction de l'écriture ;

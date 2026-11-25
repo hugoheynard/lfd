@@ -10,7 +10,7 @@ import type { DeliveryNoteVersionCause } from "../../domain/services/delivery-no
 import { DeliveryNoteDocuments } from "./delivery-note-documents.js";
 
 /**
- * **Le gardien des versions du bon** (plan du reliquat, § 5 ter) : compose le
+ * **Le gardien des versions du bon** (`documentation/commandes/reliquat/reliquat.md`, § 7) : compose le
  * BL client par {@link DeliveryNoteDocuments.clientNote} — le composeur de la
  * route du PDF — et le range. Appelé par le dépôt dans sa transaction : les
  * lectures du composeur voient le bon tel qu'il vient d'être écrit.

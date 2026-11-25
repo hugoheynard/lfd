@@ -9,8 +9,7 @@ import type { BackorderOriginReplay } from "../ports/backorder-replay.reader.js"
 import type { BackorderLine } from "../value-objects/backorder-line.js";
 
 /**
- * **Le prix d'origine d'un reliquat, en rejeu** (plan
- * `documentation/commandes/reliquat/plan-reliquat-de-commande.md`, § 4,
+ * **Le prix d'origine d'un reliquat, en rejeu** (`documentation/commandes/reliquat/reliquat.md`, § 6.3,
  * décisions 5 et 11). Pur.
  *
  * - **Les lignes** : celles de la commande d'origine pour les articles du

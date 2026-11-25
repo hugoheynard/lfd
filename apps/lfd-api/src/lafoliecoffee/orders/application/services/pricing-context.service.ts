@@ -98,7 +98,7 @@ export interface PricingRequest {
   readonly frozenDeliveryFee: FrozenDeliveryFee | null;
   /**
    * Le port offert d'une commande issue d'un reliquat (décisions 7 et 14 du
-   * plan du reliquat) : le seuil du franco de la route vaut 0, quelle que soit
+   * `documentation/commandes/reliquat/reliquat.md`) : le seuil du franco de la route vaut 0, quelle que soit
    * la zone, à la passation comme en révision. Jamais lu d'un corps de
    * requête : la politique de la passation le pose, la révision le relit sur
    * la commande. Obligatoire : un appelant oublié ne compile pas.

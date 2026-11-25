@@ -18,8 +18,7 @@ import { intentOptions } from '../shared/gesture-intents';
 const BASE = `${B2B_API_BASE}/admin/backorders`;
 
 /**
- * **Les reliquats de commande** (plan
- * `documentation/commandes/reliquat/plan-reliquat-de-commande.md`, § 4 et § 5) :
+ * **Les reliquats de commande** (`documentation/commandes/reliquat/reliquat.md`, § 6.3 et § 6.5) :
  * la liste, l'abandon, et la transformation en commande. Transformer passe par
  * `/quote` puis `/convert`, jamais par `POST /admin/orders` : une passation
  * ordinaire ne fermerait pas le reliquat, et ne garderait pas le prix

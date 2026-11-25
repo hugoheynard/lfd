@@ -1,6 +1,6 @@
 /**
  * **La scène de la transformation d'un reliquat** (lot B3, plan
- * `documentation/commandes/reliquat/plan-reliquat-de-commande.md`, § 4) : un
+ * `documentation/commandes/reliquat/reliquat.md`, § 6.3) : un
  * pro au compte, un point de retrait, deux zones à frais et leurs adresses au
  * carnet, la commande d'origine passée par l'équipe, puis son reliquat.
  *

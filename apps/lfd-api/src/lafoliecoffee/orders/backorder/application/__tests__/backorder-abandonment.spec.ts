@@ -4,8 +4,7 @@ import { BackorderLine } from "../../domain/value-objects/backorder-line.js";
 import { backorderAbandonmentScene } from "./backorder-abandonment-doubles.js";
 
 /**
- * L'origine annulée abandonne son reliquat ouvert (plan
- * `documentation/commandes/reliquat/plan-reliquat-de-commande.md`, § 5).
+ * L'origine annulée abandonne son reliquat ouvert (`documentation/commandes/reliquat/reliquat.md`, § 6.5).
  */
 
 /** Recopié dans l'écriture, jamais comparé à l'horloge. */

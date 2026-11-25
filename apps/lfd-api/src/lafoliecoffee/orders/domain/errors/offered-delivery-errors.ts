@@ -1,8 +1,7 @@
 import { TechnicalError } from "../../../../platform/shared/errors/app-error.js";
 
 /**
- * **Le port offert n'a pas mis le frais à zéro** (plan
- * `documentation/commandes/reliquat/plan-reliquat-de-commande.md`, décision 7).
+ * **Le port offert n'a pas mis le frais à zéro** (`documentation/commandes/reliquat/reliquat.md`, § 6.6, décision 7).
  * La composition d'une commande issue d'un reliquat force le seuil du franco
  * à 0 : un frais non nul dit que le calcul a été changé sans que cette règle
  * suive. Refusé ici, avec son nom, plutôt que par le CHECK

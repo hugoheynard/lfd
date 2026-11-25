@@ -480,9 +480,8 @@ export class Order {
   }
 
   /**
-   * **Le port offert** d'une commande issue d'un reliquat (plan
-   * `documentation/commandes/reliquat/plan-reliquat-de-commande.md`,
-   * décisions 7, 14 et 16) : posé à la composition, retrait compris, et figé
+   * **Le port offert** d'une commande issue d'un reliquat (`documentation/commandes/reliquat/reliquat.md`,
+   * § 6.6, décisions 7, 14 et 16) : posé à la composition, retrait compris, et figé
    * — la base en refuse toute modification après la passation. La composition
    * l'a déjà rendu nul en forçant le seuil du franco à 0 ; l'agrégat vérifie
    * qu'aucun port n'est facturé, HT comme TTC, image du CHECK

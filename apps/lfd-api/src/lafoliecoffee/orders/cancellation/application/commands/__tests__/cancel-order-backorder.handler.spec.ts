@@ -38,8 +38,7 @@ import {
 
 /**
  * L'annulation de la commande d'origine abandonne son reliquat OUVERT, dans
- * sa transaction ; un reliquat transformé n'est pas touché (plan
- * `documentation/commandes/reliquat/plan-reliquat-de-commande.md`, § 5).
+ * sa transaction ; un reliquat transformé n'est pas touché (`documentation/commandes/reliquat/reliquat.md`, § 6.5).
  */
 
 /** Recopié dans l'écriture, jamais comparé à l'horloge. */

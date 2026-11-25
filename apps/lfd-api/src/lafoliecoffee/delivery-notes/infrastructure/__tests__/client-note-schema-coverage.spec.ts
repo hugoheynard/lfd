@@ -3,8 +3,7 @@ import type { z } from "zod";
 import { clientNoteSchema, type ClientNote } from "@lfd/contracts";
 
 /**
- * **Le schéma du BL client couvre exactement son type** (plan du reliquat,
- * § 5 ter, faille 2). Une version figée du bon passe par `clientNoteSchema` à
+ * **Le schéma du BL client couvre exactement son type** (`documentation/commandes/reliquat/reliquat.md`, § 7, faille 2). Une version figée du bon passe par `clientNoteSchema` à
  * l'écriture ; un champ du type `ClientNote` que le schéma ignore ferait
  * refuser l'écriture du bon — donc la décision du départ — en production. Ce
  * test épingle l'égalité des chemins de clés, à tous les niveaux, dans les

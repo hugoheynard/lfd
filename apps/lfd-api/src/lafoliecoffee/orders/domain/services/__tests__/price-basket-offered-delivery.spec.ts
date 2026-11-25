@@ -10,9 +10,8 @@ import type { LivePromotion } from "../../../../promotions/domain/live-promotion
 import { BOISSON, PAIN, PICKUP, contextOf } from "./price-basket.fixture.js";
 
 /**
- * **Le port offert d'une commande issue d'un reliquat** (plan
- * `documentation/commandes/reliquat/plan-reliquat-de-commande.md`,
- * décision 7) : la route arrive avec un franco de 0, toujours atteint, et
+ * **Le port offert d'une commande issue d'un reliquat** (`documentation/commandes/reliquat/reliquat.md`,
+ * § 6.6, décision 7) : la route arrive avec un franco de 0, toujours atteint, et
  * `priceBasket` fige une livraison offerte. Aucune règle neuve ici : ces cas
  * épinglent que le franco existant suffit, et que l'ordre des frais ne rend
  * jamais un port non nul que le CHECK `orders_delivery_offered_waives_fee`

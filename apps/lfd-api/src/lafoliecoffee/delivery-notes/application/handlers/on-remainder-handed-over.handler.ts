@@ -20,7 +20,7 @@ export const ON_REMAINDER_HANDED_OVER = "b2b.delivery-notes.hand-over-remainder"
  * faire : le rang 1 a son propre abonné (`OnOrderHandedOver`).
  *
  * Il sortira du code une fois constaté qu'aucune livraison ne l'attend plus
- * dans `platform.outbox_delivery` (inventaire B5, § 0).
+ * dans `platform.outbox_delivery` (`documentation/commandes/reliquat/todo-reliquat.md`, § 2).
  */
 @Injectable()
 @DurableHandler({ type: HANDOVER_HANDED_OVER, subscriber: ON_REMAINDER_HANDED_OVER })

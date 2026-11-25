@@ -16,8 +16,7 @@ import type {
 import { backorderReplayOf } from "../domain/services/backorder-replay.js";
 
 /**
- * **La politique d'une commande issue d'un reliquat** (plan
- * `documentation/commandes/reliquat/plan-reliquat-de-commande.md`, § 4) : le
+ * **La politique d'une commande issue d'un reliquat** (`documentation/commandes/reliquat/reliquat.md`, § 6.3) : le
  * prix d'origine rejoué, le port offert (décision 7) et aucune surtaxe de
  * retard (décision 8). La dérogation d'heure limite se dépense (décision 10) :
  * c'est le seul couple « la dérogation se dépense, la surtaxe non ».

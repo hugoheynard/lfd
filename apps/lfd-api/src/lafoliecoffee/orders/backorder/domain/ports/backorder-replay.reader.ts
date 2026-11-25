@@ -2,8 +2,7 @@ import type { ReplayableOrder } from "../../../domain/services/basket-discount-r
 import type { OrderLineSnapshot } from "../../../domain/value-objects/order-line.js";
 
 /**
- * **Ce que la commande d'origine porte pour rejouer son prix** (plan
- * `documentation/commandes/reliquat/plan-reliquat-de-commande.md`, § 4) : ses
+ * **Ce que la commande d'origine porte pour rejouer son prix** (`documentation/commandes/reliquat/reliquat.md`, § 6.3) : ses
  * lignes figées et ses remises actives, colonnes `discount_*` comprises. Les
  * lignes ne bougent plus après la décision du départ : la révision est
  * refusée dès qu'une décision existe.

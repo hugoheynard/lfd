@@ -263,7 +263,7 @@ describe('OrderViewComponent — les onglets', () => {
     expect(badges instanceof Map ? badges.get('PAIN-LEV') : null).toBe('hors délai');
   });
 
-  describe('un départ partiel (plan du reliquat, § 5 ter)', () => {
+  describe('un départ partiel', () => {
     const decided = adminOrder({
       shortfall: {
         reportedAt: '2026-11-24T05:00:00.000Z',

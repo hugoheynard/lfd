@@ -20,7 +20,7 @@ export const ON_REMAINDER_PACKED = "b2b.delivery-notes.prepare-remainder";
  * faire : le rang 1 a son propre abonné (`OnPackingOrderPacked`).
  *
  * Il sortira du code une fois constaté qu'aucune livraison ne l'attend plus
- * dans `platform.outbox_delivery` (inventaire B5, § 0).
+ * dans `platform.outbox_delivery` (`documentation/commandes/reliquat/todo-reliquat.md`, § 2).
  */
 @Injectable()
 @DurableHandler({ type: PACKING_ORDER_PACKED, subscriber: ON_REMAINDER_PACKED })

@@ -14,8 +14,7 @@ export interface CancelledOrigin {
 }
 
 /**
- * **Abandonner un reliquat** (plan
- * `documentation/commandes/reliquat/plan-reliquat-de-commande.md`, § 5) :
+ * **Abandonner un reliquat** (`documentation/commandes/reliquat/reliquat.md`, § 6.5) :
  * l'agrégat refuse un reliquat déjà fermé, le dépôt écrit son sort, et
  * `backorder.abandoned` part au journal — dans l'unité de travail de
  * l'appelant, qui tient le verrou du reliquat.

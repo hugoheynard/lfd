@@ -67,8 +67,8 @@ le dépassement :
 
 **Aujourd'hui.** Environ **48 fichiers** dans `orders` : le manque constaté
 (`OrderShortfall`), la décision (`ShortfallDecision`), l'avis
-(`ShortfallNotice`), le courrier, les reliquats et leur expédition
-(order-remainder-settler (retiré en B5), `remainder-shipment`). Il écoute déjà le
+(`ShortfallNotice`), le courrier, et le reliquat de commande (`Backorder`,
+`orders/backorder/`). Il écoute déjà le
 colisage par des faits (`on-packing-shortfall-reported` / `-cleared`). Doc
 d'état : [`reliquat/reliquat.md`](reliquat/reliquat.md).
 

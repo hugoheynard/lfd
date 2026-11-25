@@ -12,7 +12,7 @@ interface AmountRows {
 }
 
 /**
- * **Commandé et livré** (plan du reliquat, § 5 ter, B4b.4) — sur une commande
+ * **Commandé et livré** (`documentation/commandes/reliquat/reliquat.md`, § 7) — sur une commande
  * au départ décidé, les totaux de la commande (le « commandé ») à côté des
  * montants facturables (`billable`, le « livré »), posés au solde. Avant le
  * solde, le livré le dit. Rien sans décision : une commande partie entière

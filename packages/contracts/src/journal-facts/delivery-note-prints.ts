@@ -3,7 +3,7 @@ import { z } from "zod";
 import { fact, payload, subjectLabel } from "./fact.js";
 
 /**
- * **L'impression d'un bon de livraison** (plan du reliquat, § 5 ter, B4b.3) —
+ * **L'impression d'un bon de livraison** (`documentation/commandes/reliquat/reliquat.md`, § 7) —
  * PDF de transport ou BL chiffré ouvert par l'équipe. Le sujet est la
  * COMMANDE, son libellé son numéro ; qui et quand viennent du contexte.
  * `noteNumber` : le bon (`BL-13-1`) ; `contentVersion` : la version du

@@ -37,8 +37,7 @@ type Seal = (result: ConvertParticularBackorderResult) => Promise<void>;
 type Placed = { readonly id: string; readonly orderNumber: string; readonly totalCents: number };
 
 /**
- * **Transforme un reliquat de particulier en commande** (plan
- * `documentation/commandes/reliquat/plan-reliquat-de-commande.md`, § 5 bis,
+ * **Transforme un reliquat de particulier en commande** (`documentation/commandes/reliquat/reliquat.md`, § 6.4,
  * décision 13) par les passations du particulier qui existent — réglée à la
  * caisse de la boutique ({@link ShopTillParticularPlacement}) ou offerte
  * ({@link OfferedParticularPlacement}, sous le droit d'offrir) —, garnies des

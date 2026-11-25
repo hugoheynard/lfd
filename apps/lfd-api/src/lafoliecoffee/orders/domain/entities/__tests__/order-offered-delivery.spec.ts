@@ -11,9 +11,8 @@ import { placed } from "../../../revision/domain/entities/__tests__/revisable-or
 import { draftFrom, replayedOf, type DraftSpec } from "./priced-input.fixture.js";
 
 /**
- * **Le port offert, gardé par l'agrégat** (plan
- * `documentation/commandes/reliquat/plan-reliquat-de-commande.md`,
- * décisions 7, 14 et 16) : posé à la composition, il exige un port nul — HT
+ * **Le port offert, gardé par l'agrégat** (`documentation/commandes/reliquat/reliquat.md`,
+ * § 6.6, décisions 7, 14 et 16) : posé à la composition, il exige un port nul — HT
  * comme TTC —, image du CHECK `orders_delivery_offered_waives_fee` ; une
  * révision d'une commande au port offert le rejuge.
  */

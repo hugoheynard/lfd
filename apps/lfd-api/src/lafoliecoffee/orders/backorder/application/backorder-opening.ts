@@ -21,8 +21,7 @@ export interface BackorderBirth {
 }
 
 /**
- * **La naissance du reliquat** (plan
- * `documentation/commandes/reliquat/plan-reliquat-de-commande.md`, § 3,
+ * **La naissance du reliquat** (`documentation/commandes/reliquat/reliquat.md`, § 6.2,
  * décision 1) : dans l'unité de travail de la décision du départ, sous le
  * verrou de la commande, ce qui n'est pas parti devient un reliquat `open`
  * et `backorder.opened` s'écrit au journal.

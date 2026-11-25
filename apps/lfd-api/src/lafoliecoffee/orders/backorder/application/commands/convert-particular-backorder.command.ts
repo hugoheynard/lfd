@@ -5,8 +5,7 @@ import type {
 
 /**
  * **Transformer un reliquat de particulier en commande**, réglée à la caisse
- * de la boutique ou offerte (plan
- * `documentation/commandes/reliquat/plan-reliquat-de-commande.md`, § 5 bis,
+ * de la boutique ou offerte (`documentation/commandes/reliquat/reliquat.md`, § 6.4,
  * décision 13).
  *
  * `staffUserId` vient de la porte staff ; `payload.buyerUserId`, du corps

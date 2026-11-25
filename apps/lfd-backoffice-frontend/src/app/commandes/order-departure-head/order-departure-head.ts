@@ -9,8 +9,7 @@ import { AbandonedRemainder } from '../abandoned-remainder/abandoned-remainder';
 import { abandonedOfShortfall } from '../shortfall-remainder';
 
 /**
- * **La décision du départ, en tête de la fiche** (plan du reliquat, § 5 ter,
- * B4b.4 ; Hugo, 2026-11-25 : « on doit pouvoir tracer absolument ce qui s'est
+ * **La décision du départ, en tête de la fiche** (`documentation/commandes/reliquat/reliquat.md`, § 7 ; Hugo, 2026-11-25 : « on doit pouvoir tracer absolument ce qui s'est
  * passé »). Qui a décidé, quand, ce qui est parti, le reste abandonné ligne à
  * ligne, et le lien vers son reliquat. Rien sans décision.
  */

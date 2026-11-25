@@ -206,7 +206,7 @@ export class DeliveryNote {
 
   /**
    * Pourquoi la version du contenu a monté depuis le chargement — le dépôt
-   * la fige sous ce nom (plan du reliquat, § 5 ter). `null` : rien n'a changé.
+   * la fige sous ce nom (`documentation/commandes/reliquat/reliquat.md`, § 7). `null` : rien n'a changé.
    */
   get contentChangeCause(): DeliveryNoteChangeCause | null {
     return this.changeCause;

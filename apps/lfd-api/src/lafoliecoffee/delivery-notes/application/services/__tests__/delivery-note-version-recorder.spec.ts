@@ -17,7 +17,7 @@ import { DeliveryNoteDocuments } from "../delivery-note-documents.js";
 import { DeliveryNoteVersionRecorder } from "../delivery-note-version-recorder.js";
 
 /**
- * **Le gardien des versions** (plan du reliquat, § 5 ter) : il compose le BL
+ * **Le gardien des versions** (`documentation/commandes/reliquat/reliquat.md`, § 7) : il compose le BL
  * client par le composeur de la route du PDF, et le range sous la version et
  * la cause que le dépôt lui donne. Instant fixe, jamais comparé à l'horloge.
  */

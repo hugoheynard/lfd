@@ -1,5 +1,5 @@
-/// **Le reliquat de commande** (`documentation/commandes/reliquat/plan-reliquat-de-commande.md`,
-/// § 2) : ce qui n'est pas parti d'une commande incomplète, pour qui, et son
+/// **Le reliquat de commande** (`documentation/commandes/reliquat/reliquat.md`,
+/// § 6.1) : ce qui n'est pas parti d'une commande incomplète, pour qui, et son
 /// sort. Ce n'est PAS une commande : le fournil, le colisage, la livraison et
 /// la facture ne le lisent pas. `open` → `converted` (une commande ordinaire,
 /// `convertedOrderId`) ou `abandoned`, définitif (CHECK en base).

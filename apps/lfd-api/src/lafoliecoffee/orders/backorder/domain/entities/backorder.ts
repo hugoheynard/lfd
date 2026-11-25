@@ -38,8 +38,7 @@ export interface BackorderOpening {
 }
 
 /**
- * **Le reliquat de commande** (plan
- * `documentation/commandes/reliquat/plan-reliquat-de-commande.md`, § 2) : ce
+ * **Le reliquat de commande** (`documentation/commandes/reliquat/reliquat.md`, § 6.1) : ce
  * qui n'est pas parti d'une commande incomplète. Ce n'est pas une commande :
  * il attend que l'équipe le transforme en commande ordinaire ou l'abandonne,
  * et l'un comme l'autre est définitif (décision 2).

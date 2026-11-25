@@ -9,8 +9,7 @@ import {
 } from "./revision-scene.js";
 
 /**
- * **La révision relit le port offert** (plan
- * `documentation/commandes/reliquat/plan-reliquat-de-commande.md`, décisions 14
+ * **La révision relit le port offert** (`documentation/commandes/reliquat/reliquat.md`, § 6.6, décisions 14
  * et 16) : une commande issue d'un reliquat garde un port nul dans toute zone,
  * et le devis de la révision dit la même chose que la révision.
  */

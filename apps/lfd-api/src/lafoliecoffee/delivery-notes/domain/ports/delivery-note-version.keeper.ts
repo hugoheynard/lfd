@@ -8,8 +8,7 @@ export interface KeptDeliveryNote {
 }
 
 /**
- * **Fige une version d'un bon** quand elle devient courante (plan
- * `documentation/commandes/reliquat/plan-reliquat-de-commande.md`, § 5 ter) —
+ * **Fige une version d'un bon** quand elle devient courante (`documentation/commandes/reliquat/reliquat.md`, § 7) —
  * appelé par le dépôt des bons, sous l'écriture, dans la même transaction :
  * aucun écrivain ne peut l'oublier.
  *

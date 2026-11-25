@@ -1,8 +1,7 @@
 import type { Backorder } from "../entities/backorder.js";
 
 /**
- * Port d'**écriture** du reliquat de commande (plan
- * `documentation/commandes/reliquat/plan-reliquat-de-commande.md`, § 2) : il
+ * Port d'**écriture** du reliquat de commande (`documentation/commandes/reliquat/reliquat.md`, § 6.1) : il
  * prend et rend l'agrégat. Les lectures de l'écran (la liste, la fiche) sont
  * d'autres ports.
  *

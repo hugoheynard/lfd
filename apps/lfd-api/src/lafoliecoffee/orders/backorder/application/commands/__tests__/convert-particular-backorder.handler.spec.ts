@@ -46,7 +46,7 @@ import { ConvertParticularBackorderCommand } from "../convert-particular-backord
 import { ConvertParticularBackorderHandler } from "../convert-particular-backorder.handler.js";
 
 /**
- * **Transformer le reliquat d'un particulier** (plan du reliquat, § 5 bis) :
+ * **Transformer le reliquat d'un particulier** (`documentation/commandes/reliquat/reliquat.md`, § 6.4) :
  * la vraie composition du particulier (scène du comptoir), sous la politique
  * du reliquat — prix d'origine rejoué —, et le reliquat fermé avec la commande.
  *

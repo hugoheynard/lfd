@@ -21,8 +21,7 @@ import {
 } from "./order.js";
 
 /**
- * **Transformer un reliquat en commande** (plan
- * `documentation/commandes/reliquat/plan-reliquat-de-commande.md`, § 4) : le
+ * **Transformer un reliquat en commande** (`documentation/commandes/reliquat/reliquat.md`, § 6.3) : le
  * corps de la saisie de l'équipe, SANS la société ni les lignes — reprises du
  * reliquat, aux prix de la commande d'origine. `buyerUserId` est proposé à
  * l'acheteur d'origine et modifiable : un acheteur parti de la société est

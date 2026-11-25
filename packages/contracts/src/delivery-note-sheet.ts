@@ -180,7 +180,7 @@ export interface StaffNote extends Omit<ClientNote, "audience" | "money"> {
 }
 
 /**
- * Pourquoi une version d'un BL est née (plan du reliquat, § 5 ter) : `born`,
+ * Pourquoi une version d'un BL est née (`documentation/commandes/reliquat/reliquat.md`, § 7) : `born`,
  * le bon naît ; `departure_decided`, un départ incomplet est décidé ;
  * `replanned`, toute autre réécriture.
  */

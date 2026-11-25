@@ -12,8 +12,7 @@ import { AbandonBackorderCommand } from "../abandon-backorder.command.js";
 import { AbandonBackorderHandler } from "../abandon-backorder.handler.js";
 
 /**
- * **Abandonner un reliquat** (plan
- * `documentation/commandes/reliquat/plan-reliquat-de-commande.md`, § 5) :
+ * **Abandonner un reliquat** (`documentation/commandes/reliquat/reliquat.md`, § 6.5) :
  * verrou, abandon par l'agrégat, écriture, fait — et le refus d'un reliquat
  * déjà fermé, sans rien écrire.
  */

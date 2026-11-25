@@ -140,7 +140,7 @@ export class AcheminementCommande {
 
   /**
    * Le port est offert d'office — la commande issue d'un reliquat (décision 7
-   * du plan du reliquat). Le secteur reste dit, le frais devient « livraison
+   * du `documentation/commandes/reliquat/reliquat.md`). Le secteur reste dit, le frais devient « livraison
    * offerte ». Faux par défaut : la saisie ordinaire montre le barème.
    */
   readonly deliveryOffered = input(false);

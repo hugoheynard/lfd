@@ -99,7 +99,7 @@ export class DeliveryNoteDocuments {
 
   /**
    * **Le composeur du BL client** — un seul, lu par la route du PDF et par le
-   * gardien des versions (plan du reliquat, § 5 ter) : une version figée est
+   * gardien des versions (`documentation/commandes/reliquat/reliquat.md`, § 7) : une version figée est
    * exactement le papier que la route aurait rendu à cet instant.
    *
    * @throws {OrderNotFoundError} @throws {DeliveryNoteNotFoundError}

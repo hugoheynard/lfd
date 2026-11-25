@@ -79,8 +79,7 @@ type LoadState = 'loading' | 'error' | 'ready';
 const convertSubject = (backorderId: string): string => `backorder-convert:${backorderId}`;
 
 /**
- * **Transformer un reliquat en commande** (plan
- * `documentation/commandes/reliquat/plan-reliquat-de-commande.md`, § 4 et § 5) :
+ * **Transformer un reliquat en commande** (`documentation/commandes/reliquat/reliquat.md`, § 6.3 et § 6.5) :
  * la saisie de l'équipe, garnie du reliquat. Les lignes sont en lecture — le
  * serveur les reprend au prix de la commande d'origine ; l'équipe choisit le
  * jour (aujourd'hui compris), le règlement, le mode et l'adresse, et

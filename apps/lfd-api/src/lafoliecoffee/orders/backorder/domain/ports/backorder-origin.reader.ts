@@ -15,8 +15,7 @@ export interface BackorderOrigin {
 }
 
 /**
- * Port de **lecture** de l'origine d'un reliquat (plan
- * `documentation/commandes/reliquat/plan-reliquat-de-commande.md`, § 3) :
+ * Port de **lecture** de l'origine d'un reliquat (`documentation/commandes/reliquat/reliquat.md`, § 6.2) :
  * la société, l'acheteur et les lignes commandées.
  *
  * Lu APRÈS le verrou de la commande que la décision du départ a déjà pris

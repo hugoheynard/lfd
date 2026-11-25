@@ -20,7 +20,7 @@ const ORDER_SUBJECT = "order";
  * répondu 404 avant que ce geste parte.
  *
  * La colonne `printed_*` garde la DERNIÈRE impression ; l'historique de la
- * commande les garde TOUTES (plan du reliquat, § 5 ter, B4b.3) : le fait
+ * commande les garde TOUTES (`documentation/commandes/reliquat/reliquat.md`, § 7) : le fait
  * `delivery_note.printed`, dans la même transaction, sous la clé
  * `delivery_note.printed:<bon>:<version>:<instant>` — qui et quand viennent
  * du contexte.

@@ -8,7 +8,7 @@ import type { UndeliveredLine } from "./undelivered-lines.js";
  * que la commande attend encore, calculé sur TOUS les bons frères. Le PDF se
  * rend d'elle seule (avec le logo, qui n'est pas du contenu).
  *
- * C'est elle qu'une version du bon fige (plan du reliquat, § 5 ter) : figer
+ * C'est elle qu'une version du bon fige (`documentation/commandes/reliquat/reliquat.md`, § 7) : figer
  * « en-tête et lignes » rendrait un document recalculé qui ne correspond à
  * aucun papier sorti.
  */

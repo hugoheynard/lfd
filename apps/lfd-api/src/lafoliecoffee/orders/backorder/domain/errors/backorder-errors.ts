@@ -6,8 +6,7 @@ import {
 } from "../../../../../platform/shared/errors/app-error.js";
 
 /**
- * Les refus du **reliquat de commande** (plan
- * `documentation/commandes/reliquat/plan-reliquat-de-commande.md`, § 2). Lus
+ * Les refus du **reliquat de commande** (`documentation/commandes/reliquat/reliquat.md`, § 6.1). Lus
  * par l'équipe : chacun nomme le cas et le geste de sortie.
  */
 

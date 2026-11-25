@@ -213,8 +213,7 @@ WHERE "order_number" = $1 FOR UPDATE`
   Constructeur l. 59 (`billings`, `notes`, `engagements`, `settlement`,
   `clock`, `uow`, `facts` — le `DurablePublisher` de F —, `ids`, et depuis
   E9a `shortfallRefunds`) ; `closeLocked` l. 72, appelé par
-  `delivery-note-follower.ts:51` (remise) et
-  hand-over-remainder-note.handler (retiré en B5a) (reste remis) ; le réconciliateur
+  `delivery-note-follower.ts:51` (remise) ; le réconciliateur
   `reconcile` l. 88 → `verdictOf` (l. 105, `frozen` l. 136) → `repair`
   (l. 139, sa propre `uow.run`, `closed` ou `corrected` l. 158) ; `persist`
   l. 171 publie `order.billing_settled` (l. 191) après un `save` réussi ;
@@ -313,9 +312,9 @@ WHERE "order_number" = $1 FOR UPDATE`
   clé d'intention. Précédent : « Relancer »
   (`payment/card/http/admin-card-refunds.controller.ts:36-42`).
 - **Particulier** : il a un BL et un solde ; ses frais de retard sont nuls.
-- **Frais de retard sur un reste** : aucun (remainder-decision-source (retiré en B5a)).
-- **Reste à relivrer** : `DeliveryNote.planRemainder` sans appelant de
-  production ; une commande carte n'a jamais de rang > 1.
+- **Reste à relivrer** : une commande part en un seul envoi ; le reste
+  devient un reliquat, qui se transforme en une commande à part
+  ([`reliquat.md`](reliquat.md) § 6, § 8).
 
 ### 2. La décision (E9a)
 

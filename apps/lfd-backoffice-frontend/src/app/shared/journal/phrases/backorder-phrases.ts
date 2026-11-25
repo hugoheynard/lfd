@@ -11,8 +11,7 @@ import {
 } from '../phrase';
 
 /**
- * **Le reliquat de commande** (plan
- * `documentation/commandes/reliquat/plan-reliquat-de-commande.md`, § 2) —
+ * **Le reliquat de commande** (`documentation/commandes/reliquat/reliquat.md`, § 6.1) —
  * `backorder.*`, famille `ordersAndProduction`. Le sujet est la commande
  * d'origine ; le détail rend les lignes du reste et la commande issue.
  */

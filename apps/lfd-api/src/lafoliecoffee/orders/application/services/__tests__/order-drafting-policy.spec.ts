@@ -18,8 +18,7 @@ import { PLACEMENT_POLICY, type DraftPolicy } from "../order-drafting.service.js
 import type { OrderParties } from "../order-parties.js";
 
 /**
- * **`OrderDrafting` sous ses politiques** (plan
- * `documentation/commandes/reliquat/plan-reliquat-de-commande.md`, § 4) : la
+ * **`OrderDrafting` sous ses politiques** (`documentation/commandes/reliquat/reliquat.md`, § 6.3) : la
  * passation ordinaire ne change pas — prix du jour, surtaxe d'une dérogation
  * dépensée, port de la zone ; la politique du reliquat rejoue le prix
  * d'origine, dépense la dérogation sans surtaxe, et offre le port.

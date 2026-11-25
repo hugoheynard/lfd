@@ -8,8 +8,7 @@ export interface BackorderListFilter {
 }
 
 /**
- * Port de **lecture** de la liste « Reliquats à traiter » (plan
- * `documentation/commandes/reliquat/plan-reliquat-de-commande.md`, § 5) :
+ * Port de **lecture** de la liste « Reliquats à traiter » (`documentation/commandes/reliquat/reliquat.md`, § 6.5) :
  * du plus ancien au plus récent. Une société donnée pose `company_id` dans
  * le `where` ; un reliquat de particulier n'a pas de société et n'apparaît
  * que sans filtre — la surface est celle de l'équipe seule.

@@ -23,8 +23,7 @@ import { PrismaBackorderOriginNumberReader } from "./infrastructure/prisma-backo
 import { PrismaOrderBackorderReader } from "./infrastructure/prisma-order-backorder.reader.js";
 
 /**
- * Les providers du **reliquat de commande** (plan
- * `documentation/commandes/reliquat/plan-reliquat-de-commande.md`) : le
+ * Les providers du **reliquat de commande** (`documentation/commandes/reliquat/reliquat.md`) : le
  * dépôt, l'origine relue sous le verrou de la décision, et la naissance que
  * `ShortfallDeparture` appelle ; le prix d'origine relu pour la
  * transformation, et ses deux cas (transformer, estimer) ; l'abandon, que

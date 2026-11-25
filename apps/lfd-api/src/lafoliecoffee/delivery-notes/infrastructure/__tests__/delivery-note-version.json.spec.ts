@@ -15,8 +15,7 @@ import {
 } from "../delivery-note-version.json.js";
 
 /**
- * **L'entrée figée d'une version, aller et retour** (plan du reliquat,
- * § 5 ter) : elle se relit exactement comme elle a été écrite, et une forme
+ * **L'entrée figée d'une version, aller et retour** (`documentation/commandes/reliquat/reliquat.md`, § 7) : elle se relit exactement comme elle a été écrite, et une forme
  * que le schéma amputerait est refusée — à l'écriture comme à la lecture —
  * plutôt que de rendre un papier différent de celui qui est sorti.
  */

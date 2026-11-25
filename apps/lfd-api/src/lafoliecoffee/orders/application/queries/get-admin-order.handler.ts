@@ -80,7 +80,7 @@ import { OrderBackorderReader } from "../../backorder/domain/ports/order-backord
  * Et son visa (plan du visa des commandes) : en cours, son historique, et si
  * elle se vise — servi à qui lit la commande, c'est une trace.
  *
- * Et ses reliquats (plan du reliquat, § 5) : celui né de cette commande, et
+ * Et ses reliquats (`documentation/commandes/reliquat/reliquat.md`, § 6.5) : celui né de cette commande, et
  * celui dont elle est issue ; ses montants facturables, une fois soldée.
  */
 @QueryHandler(GetAdminOrderQuery)

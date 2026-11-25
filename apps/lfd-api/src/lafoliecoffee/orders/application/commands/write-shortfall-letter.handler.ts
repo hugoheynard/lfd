@@ -33,8 +33,7 @@ const ORDER_SUBJECT = "order";
  * fournisseur l'a accepté » : l'envoi se fait après la validation, et son
  * issue se lit au suivi des e-mails (clé `order-shortfall:<décision>`).
  *
- * L'envoi entre à l'historique de la commande (plan du reliquat, § 5 ter,
- * B4b.3) dans la même transaction : `order.shortfall_letter_sent`, clé
+ * L'envoi entre à l'historique de la commande (`documentation/commandes/reliquat/reliquat.md`, § 7) dans la même transaction : `order.shortfall_letter_sent`, clé
  * `order.shortfall_letter_sent:<commande>` — une par décision.
  *
  * L'adresse n'est jamais écrite au journal de l'API.

@@ -23,8 +23,8 @@ import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 /**
  * E2E — **ce que la base tient du reliquat de commande et du port offert**
- * (plan `documentation/commandes/reliquat/plan-reliquat-de-commande.md`, lot
- * B1 ; migration `20261125140000_le_reliquat_de_commande`).
+ * (`documentation/commandes/reliquat/reliquat.md`, § 6.1 ;
+ * migration `20261125140000_le_reliquat_de_commande`).
  *
  * Ce que seul ce niveau prouve : l'adaptateur écrit et relit l'agrégat, et les
  * CHECK, UNIQUE et le déclencheur refusent ce qu'une écriture hors de

@@ -35,8 +35,7 @@ export function abandonedSentence(line: PackingAbandonedLine): string {
 }
 
 /**
- * **La colonne « Parti »** de la composition (plan du reliquat, § 5 ter,
- * B4b.4), lue sur la décision du départ : par SKU, ce qui est parti, et le
+ * **La colonne « Parti »** de la composition (`documentation/commandes/reliquat/reliquat.md`, § 7), lue sur la décision du départ : par SKU, ce qui est parti, et le
  * reste quand une part est restée. Un article de la commande absent de
  * `departing` n'est pas parti. `null` — pas de colonne — sans décision, ou
  * quand le serveur ne sert pas encore ce qui part.

@@ -1,6 +1,6 @@
 /**
  * E2E du **reliquat d'un particulier** (lot B6, plan
- * `documentation/commandes/reliquat/plan-reliquat-de-commande.md`, § 5 bis,
+ * `documentation/commandes/reliquat/reliquat.md`, § 6.4,
  * décision 13), sur le vrai Postgres : il naît à la décision du départ d'une
  * commande `exact_ht` payée par carte ; il se transforme en commande réglée
  * à la caisse de la boutique (`shop_till`, `not_required`, CHECK

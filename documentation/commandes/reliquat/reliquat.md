@@ -1,46 +1,54 @@
-# Le départ incomplet et le reliquat
+# Le départ incomplet et le reliquat de commande
 
-> ✅ **Doc d'état, écrite le 2026-11-10** contre le code de `dev` et de `main`
-> (tous les commits cités ici sont sur `main`, vérifié le 2026-11-10). Elle
-> réunit et remplace la doc d'état du départ incomplet au comptoir
-> (2026-11-03) et les plans du reliquat E7 (programme, plan de bâti, plan
-> E7.1, recensement, état du chantier), retirés le 2026-11-10 : leur texte se
-> relit dans l'historique git. Ce qui n'est pas bâti est dans
-> [`todo-reliquat.md`](todo-reliquat.md). Voisine :
-> [`../bon-de-livraison.md`](../bon-de-livraison.md) (le bon de livraison, ses
-> montants et son gel).
+> ✅ **Doc d'état, relue le 2026-11-25** contre le code du chantier du
+> reliquat (chaque chemin cité a été ouvert ce jour-là). Ce qui n'est pas
+> bâti est dans [`todo-reliquat.md`](todo-reliquat.md). Voisines :
+> [`../bon-de-livraison.md`](../bon-de-livraison.md) (le bon de livraison,
+> ses montants et son gel) et [`plan-e9-reste-carte.md`](plan-e9-reste-carte.md)
+> (le reste d'une commande carte, remboursé au solde).
 
 ## En bref
 
 Au colisage, il arrive qu'un article manque : le bac ne se remplit pas. La
 commande peut alors **partir incomplète**, mais seulement si quelqu'un le
 **décide** — un manager depuis la fiche commande, ou le vendeur du comptoir au
-moment de la remise. Ce qui part, c'est **ce qui est au bac**, jamais une
+moment du retrait. Ce qui part, c'est **ce qui est au bac**, jamais une
 saisie. Le bon de livraison ne porte que ce qui part, et la facture ne compte
-que les bons remis : le client ne paie pas ce qu'il n'a pas reçu. L'équipe
-peut ensuite **écrire au client** pour le prévenir.
+que les bons remis : le client ne paie pas ce qu'il n'a pas reçu. Une carte
+déjà encaissée est remboursée du reste au solde. L'équipe peut ensuite
+**écrire au client** pour le prévenir.
 
-Le **reste** est toujours **abandonné** pour cette commande. Décidé par Hugo
-le 2026-11-25, **pas encore bâti** : un reliquat de commande naîtra avec la
-décision, et l'équipe le transformera en commande ordinaire aux prix de
-l'origine, ou l'abandonnera (plan
-[`plan-reliquat-de-commande.md`](plan-reliquat-de-commande.md)). Le second
-envoi de la même commande (§ 6) est bâti, mais aucun geste ne le crée ; il
-sera retiré.
+Côté commande d'origine, le reste est **abandonné**. Mais au même instant,
+dans la même transaction, **un reliquat naît** : il garde ce qui n'est pas
+parti, pour qui, et à quel prix. Ce n'est pas une commande — ni le fournil,
+ni le colisage, ni la livraison, ni la facture ne le voient. Il attend dans
+la liste « Reliquats à traiter », et l'équipe :
 
-Une commande payée **par carte** ou avec un **bon de fidélité** ne part jamais
-incomplète : il faudrait rembourser la part non livrée, et ce n'est pas
-branché.
+- le **transforme en commande** ordinaire, pour le jour que veut le client,
+  aujourd'hui compris, **aux prix de la commande d'origine**, port offert,
+  sans surtaxe de retard. Un pro passe par la saisie de l'équipe (au compte,
+  par lien ou offerte) ; un particulier repart en commande **réglée en
+  boutique** (la caisse de la boutique encaisse au retrait) ou **offerte** ;
+- ou l'**abandonne** : le client ne veut pas du reste.
+
+Transformé ou abandonné, c'est définitif. Une commande ne part qu'en **un
+seul envoi** : il n'y a pas de second bon pour la même commande.
 
 ```mermaid
-flowchart LR
-    M["Il manque au colisage"] --> D{"Décision"}
-    D -->|"manager ou comptoir"| A["Le reste est abandonné"]
-    A --> BL["Bon de livraison de ce qui part"]
-    BL --> R["Remise au client"]
+flowchart TD
+    M["Il manque au colisage"] --> D{"Décision du départ"}
+    D -->|"carte non encaissée ou bon de fidélité"| X["Refusé"]
+    D -->|"manager ou comptoir"| A["Le reste est abandonné sur l'origine"]
+    A --> BL["Bon de livraison de ce qui part, figé"]
+    BL --> R["Retrait ou livraison"]
     R --> F["Facture sur ce qui est parti"]
-    A -.->|"le client veut le reste"| N["Reliquat, puis nouvelle commande (prévu)"]
-    D -->|"carte ou bon de fidélité"| X["Refusé"]
+    R --> E9["Carte encaissée : reste remboursé au solde"]
+    A --> B["Reliquat ouvert, même transaction"]
+    B --> L["Liste : reliquats à traiter"]
+    L --> T{"Que veut le client ?"}
+    T -->|"le reste, tel jour"| CV["Transformer : prix d'origine, port offert"]
+    T -->|"rien"| AB["Abandonner"]
+    CV --> N["Nouvelle commande ordinaire"]
 ```
 
 ## 1. Le manque constaté au colisage
@@ -58,7 +66,7 @@ côté bon : [`../bon-de-livraison.md`](../bon-de-livraison.md#le-départ-incomp
 
 ## 2. La décision du départ
 
-Une décision par envoi (`ShortfallDecision`,
+Une décision par commande (`ShortfallDecision`,
 `lafoliecoffee/orders/domain/entities/shortfall-decision.ts`, table
 `order_shortfall_decision`, unique par `(order_id, rank)`), définitive. Le
 sort du reste ne prend qu'une valeur : `abandoned` (`shortfallRemainderSchema`,
@@ -67,11 +75,11 @@ décision par `shortfall-departure.ts` (`lafoliecoffee/orders/application/servic
 
 ### 2.1 Le manager
 
-`POST admin/orders/:id/shortfall-decision`, corps `{ remainder: "abandoned",
-rank? }` (`rank` absent = la commande elle-même), sous
+`POST admin/orders/:id/shortfall-decision`, corps `{ remainder: "abandoned" }`, sous
 `b2b_orders_shortfall:write` (`admin-order-shortfall.controller.ts`). Refus
 `409` : déjà décidée, aucun manque, pas confirmée, carte, bon de fidélité,
 trop ancienne, rien au bac, bac déjà fermé, bac changé depuis le signal.
+Le corps ne porte pas de rang : une commande part en un seul envoi (§ 8).
 
 ### 2.2 Le comptoir — les décisions de Hugo du 2026-11-03
 
@@ -80,7 +88,7 @@ trop ancienne, rien au bac, bac déjà fermé, bac changé depuis le signal.
 | D1  | Le comptoir décide lui-même du départ incomplet.                                                                                                        |
 | D2  | **Tout vendeur du comptoir** (`handover_counter:write`) peut le décider ; la décision est tracée (qui, quand).                                          |
 | D3  | Ce qui part = **ce qui est au bac**, jamais une saisie.                                                                                                 |
-| D4  | Le reste est abandonné ; le reliquat viendra ([`todo-reliquat.md`](todo-reliquat.md)).                                                                  |
+| D4  | Le reste est abandonné sur l'origine ; un reliquat naît (§ 6).                                                                                          |
 | D5  | **Pas de dialogue sur le chemin heureux** : sac fini, « Remettre la commande » remet directement.                                                       |
 | D6  | Le reliquat se choisira au comptoir : le client repasse à une heure convenue, ou on le lui porte — le plus souvent à pied, sans réveiller la livraison. |
 | Q1  | « Remettre la commande entière » malgré un manque n'est **pas** offert : il facturerait le commandé sur la parole du vendeur ; on corrige le colisage.  |
@@ -96,13 +104,13 @@ et, quand le départ est déjà tranché, `decision` (`decidedAt`,
 `decidedByName`). Rien n'est écrit, rien n'est promis : le geste rejuge sous
 verrou.
 
-| Code                                                                                                                                                   | Ce que voit le vendeur                                                      |
-| ------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------- |
-| `null`                                                                                                                                                 | « Remettre ce qui est au bac — le reste est abandonné »                     |
-| `nothing_short` (tout réparti, bac pas fermé)                                                                                                          | la remise ordinaire, sans dialogue                                          |
-| `already_decided`, `already_authorized`                                                                                                                | « Départ incomplet validé par <nom> à <heure> » et « Remettre la commande » |
-| `sealed` (le colisage a fermé le sac)                                                                                                                  | « Le colisage a fermé ce sac. » et « Remettre la commande »                 |
-| `card`, `voucher`, `not_confirmed`, `too_old`, `nothing_departs`, `not_drawn`, `withdrawn`, `counted`, `handover_refused`, `not_a_pickup`, `other_day` | une phrase, et seulement « Fermer »                                         |
+| Code                                                                                                                                                                                   | Ce que voit le vendeur                                                      |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| `null`                                                                                                                                                                                 | « Remettre ce qui est au bac — le reste est abandonné »                     |
+| `nothing_short` (tout réparti, bac pas fermé)                                                                                                                                          | la remise ordinaire, sans dialogue                                          |
+| `already_decided`, `already_authorized`                                                                                                                                                | « Départ incomplet validé par <nom> à <heure> » et « Remettre la commande » |
+| `sealed` (le colisage a fermé le sac)                                                                                                                                                  | « Le colisage a fermé ce sac. » et « Remettre la commande »                 |
+| `card_unpaid`, `card_increase_pending`, `voucher`, `not_confirmed`, `too_old`, `nothing_departs`, `not_drawn`, `withdrawn`, `counted`, `handover_refused`, `not_a_pickup`, `other_day` | une phrase, et seulement « Fermer »                                         |
 
 Chaque bloc expose sa règle « rendue au lieu de levée », partagée par l'aperçu
 et le geste : `packing/domain/services/shortfall-standing.ts`,
@@ -167,23 +175,27 @@ une commande partie incomplète se dit en une ligne (« Commande incomplète ·
 
 ## 3. Ce qui est refusé
 
-| Cas                                           | Pourquoi                                                                                       | Refus                                            |
-| --------------------------------------------- | ---------------------------------------------------------------------------------------------- | ------------------------------------------------ |
-| Commande réglée par **carte** (`due`, `paid`) | la part non livrée devrait être remboursée, et le départ incomplet ne le demande pas           | `CardOrderShortfallError`, aperçu `card`         |
-| Commande avec un **bon de fidélité**          | un départ incomplet ne sait pas encore répartir le bon sur ce qui part                         | `VoucherOrderShortfallError`, aperçu `voucher`   |
-| Rien au bac                                   | rien ne part : on annule la commande                                                           | `NothingDepartsError`, aperçu `nothing_departs`  |
-| Commande trop ancienne                        | un montant non nul sans la règle figée qui l'a produit : le BL partiel ne se recomposerait pas | `OrderTooOldForShortfallError`, aperçu `too_old` |
+| Cas                                           | Pourquoi                                                                                       | Refus                                                               |
+| --------------------------------------------- | ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| Commande carte **pas encore encaissée**       | il n'y a rien à répartir entre ce qui part et ce qui est rendu                                 | `CardOrderUnpaidShortfallError`, aperçu `card_unpaid`               |
+| Commande carte avec une **hausse en attente** | le montant encaissé n'est pas encore celui de la commande                                      | `CardIncreasePendingShortfallError`, aperçu `card_increase_pending` |
+| Commande avec un **bon de fidélité**          | un départ incomplet ne sait pas encore répartir le bon sur ce qui part                         | `VoucherOrderShortfallError`, aperçu `voucher`                      |
+| Rien au bac                                   | rien ne part : on annule la commande                                                           | `NothingDepartsError`, aperçu `nothing_departs`                     |
+| Commande trop ancienne                        | un montant non nul sans la règle figée qui l'a produit : le BL partiel ne se recomposerait pas | `OrderTooOldForShortfallError`, aperçu `too_old`                    |
 
-Conséquence : **une commande de particulier ne part jamais incomplète**, elle
-paie en ligne par carte (noté par Hugo le 2026-11-03).
+L'aperçu ne produit plus `card`, gardé dans la liste du contrat servi.
+Les refus de conditions se lisent dans `termsRefusalOf`
+(`lafoliecoffee/orders/domain/services/shortfall-decidability.ts`).
 
-> **Note du 2026-11-10.** Le remboursement d'un montant existe désormais :
-> `CardRefunds.requestAmount` (`src/payment/channels/requests/card-refunds.ts`,
-> lot P1 du bloc `card-payment`) et la répartition d'une baisse sur les
-> paiements (`lafoliecoffee/orders/revision/domain/services/revision-card-refund.ts`, lot S1 de
-> la modification de commande), tous deux sur `main`. Le départ incomplet ne
-> s'en sert pas : le refus `card` tient. Ce qu'il faudrait :
-> [`todo-reliquat.md`](todo-reliquat.md#1-le-départ-incomplet-dune-commande-carte-e9).
+**Une commande carte encaissée part incomplète.** Le reste ne se rembourse
+pas à la décision mais **au solde** : à `order.billing_settled`, l'abonné
+`RefundShortfallOnBillingSettled`
+(`lafoliecoffee/orders/application/handlers/refund-shortfall-on-billing-settled.handler.ts`)
+demande au bloc `payment` le montant `shortfallRefundOf`
+(`lafoliecoffee/orders/domain/services/shortfall-refund.ts`) : encaissé −
+ajustements − facturable. La facture carte lit les montants facturables
+(`lafoliecoffee/accounting/infrastructure/prisma-card-invoicing.reader.ts`).
+Le détail, ses refus et son blocage : [`plan-e9-reste-carte.md`](plan-e9-reste-carte.md).
 
 ## 4. Le bon de livraison de ce qui part
 
@@ -206,69 +218,272 @@ rend une proposition, `POST` envoie le texte relu par le bloc `mail`, sous
 décision » (clé `order-shortfall:<décision>`) et trace qui, quand. « Prévenu »
 veut dire « le courriel est demandé » ; son issue se lit au suivi des e-mails.
 
-## 6. Le reliquat — un second envoi de la même commande
+## 6. Le reliquat de commande
 
-Décisions de Hugo (2026-10-25) : le reliquat est la suite de la **même**
-commande, aux mêmes prix ; il a son propre bon et son propre jour ; un cycle
-de vie **par bon** plutôt qu'une commande de suite (« A »).
+### 6.1 L'agrégat et sa table
 
-**Ce qui est bâti** (lots L1 à L5c et LB, 2026-10-26) :
+`Backorder` (`lafoliecoffee/orders/backorder/domain/entities/backorder.ts`),
+table `public.backorder` (`prisma/schema/public/backorder.prisma`). Le
+contexte est celui des commandes : aucun autre bloc ne le lit.
 
-- **L'envoi.** Un envoi se désigne par `(commande, rang)` ; le rang 1 est la
-  commande elle-même, ses écrans et ses clés n'ont pas changé.
-  `ShipmentRef` (`production/day/domain/value-objects/shipment-ref.value-object.ts`)
-  porte le rang dans les faits du flux ; les clés d'idempotence gagnent
-  `:r<rang>` au-delà du rang 1. Le rang est en base au fournil, au colisage,
-  à la livraison et au retrait (migrations `20261026070000` à `20261026090000`).
-- **Son bon et son jour.** `DeliveryNote.planRemainder`
-  (`lafoliecoffee/delivery-notes/domain/entities/delivery-note.ts`) fabrique un BL de
-  rang > 1 avec son `service_day` (`RemainderSchedule` refuse un rang ≤ 1 ou
-  un jour antérieur à celui de la commande). Ses montants : les lignes du
-  reste seul, les pourcentages de remise réappliqués, port, surtaxe et remise
-  fixe à zéro (`remainderAdjustmentsOf`,
-  remainder-decision-source (retiré en B5a)) — un
-  reste ne paie pas de livraison (Hugo, 2026-10-26).
-- **Prêt et retrait.** Un reste colisé prépare son BL
-  (prepare-remainder-note.handler (retiré en B5a)) ; le retrait se juge par envoi, la
-  référence prend `-<rang>` (`handover/domain/services/handover-shipments.ts`) ;
-  au comptoir, le QR et la saisie `ORD-…-2` rendent les envois prêts, et le
-  comptoir choisit entre deux. Chaque BL suit la règle de son propre arrêt
-  (Q-R1). Le reste a ses courriels « prête » et « en route »
-  (`RemainderShipmentReader`).
-- **Le solde.** La remise du rang 1 écrit `partially_handed_over` si un reste
-  vivant attend, sinon `fulfilled` (`statusAfterFirstHandover`,
-  lafoliecoffee/orders/domain/services/shipment-settlement.ts (retiré en B5)) ; le dernier reste
-  remis solde la commande (`OrderRemainderSettler`). Un reste abandonné n'est
-  pas vivant (Q-R3). Annuler annule tous les BL vivants et refuse dès qu'un
-  envoi est retiré. Le client voit « En partie retirée / livrée ».
-- **Le manque par envoi.** Un reste peut lui-même manquer : sa décision se
-  prend sur son rang, tant que son BL est `planned` (refus
-  `remainder_not_planned`).
+| Colonne                           | Rôle                                                                                      |
+| --------------------------------- | ----------------------------------------------------------------------------------------- |
+| `origin_order_id` → `orders`      | `UNIQUE` : un reliquat par commande d'origine                                             |
+| `company_id`, `buyer_user_id`     | recopiés de l'origine, sans clé étrangère ; `company_id` nul pour un particulier          |
+| `lines` `jsonb`                   | `[{ sku, quantity, sale_unit }]`, quantités en grammes au poids                           |
+| `state`                           | `open`, `converted` ou `abandoned` (CHECK)                                                |
+| `converted_order_id` → `orders`   | `UNIQUE`, non nul **ssi** `converted` ; jamais l'origine (`backorder_not_its_own_origin`) |
+| `closed_at`, `closed_by_staff_id` | non nuls ssi l'état n'est pas `open` ; `closed_by_staff_id` est au registre RGPD          |
 
-**Ce qui n'existe pas, et n'est plus prévu** : aucun geste ne crée un reste.
-`planRemainder` n'est appelé que par les tests ; le sort « à relivrer » et
-les sources du jour qui liraient un BL de rang > 1 ont été abandonnés par
-Hugo le 2026-11-25 au profit d'un reliquat transformé en commande ; ce
-mécanisme sera retiré
-([`todo-reliquat.md`](todo-reliquat.md#2-le-reliquat-de-commande)). Avec
-un seul envoi, tout se comporte comme avant le reliquat.
+**Aucun prix dans le reliquat** : le prix se relit sur les lignes de la
+commande d'origine, qui ne bougent plus après la décision (la révision est
+refusée dès qu'une décision existe). Une copie serait un second endroit où
+le prix vit.
 
-## 7. La facture somme les bons remis
+L'agrégat refuse zéro ligne, une quantité nulle ou négative et un SKU en
+double ; `convert` et `abandon` refusent tout état autre que `open`
+(`BackorderClosedError`, 409). `Backorder.restore` ne rejuge pas les règles
+d'état : les CHECK de la base les tiennent, et le mapper refuse une ligne mal
+formée. Port `BackorderRepository` (`load`/`save`).
+
+Les faits `backorder.opened`, `backorder.converted` et `backorder.abandoned`
+s'écrivent au journal dans la transaction de chaque écriture, avec la
+**commande d'origine** pour sujet (`backorder-journal-facts.ts`) ; le
+back-office les dit en phrases
+(`apps/lfd-backoffice-frontend/src/app/shared/journal/phrases/backorder-phrases.ts`).
+
+**Assumé** : un reliquat converti dont la nouvelle commande est ensuite
+annulée est perdu — l'équipe repasse une commande ordinaire.
+
+### 6.2 La naissance, dans la décision
+
+`ShortfallDeparture.decide`
+(`lafoliecoffee/orders/application/services/shortfall-departure.ts`) est
+partagé par la décision des managers et le départ au comptoir. Après
+l'écriture de la décision, il appelle `BackorderOpening`
+(`orders/backorder/application/backorder-opening.ts`), qui lit l'origine
+sous le verrou déjà pris (`BackorderOriginReader.ofLocked`) et calcule le
+reste par SKU — commandé moins ce qui part (`backorder-remainder.ts`). Reste
+vide : aucun reliquat. Sinon `Backorder.open`, dans la même transaction.
+Pros et particuliers ont tous deux un reliquat.
+
+### 6.3 Transformer — un pro, par la saisie de l'équipe
+
+`POST admin/backorders/:id/convert` et son estimation
+`POST admin/backorders/:id/quote`, sous `b2b_place_order:write`
+(`orders/backorder/http/admin-backorders.controller.ts`). Le corps est celui
+de la saisie de l'équipe, sans société ni lignes (reprises du reliquat), et
+**strict** : un champ inconnu, un frais par exemple, est un 400. L'acheteur
+d'origine est proposé ; s'il a quitté la société, l'équipe en choisit un
+autre. L'écran appelle ces deux routes, jamais `POST admin/orders` : une
+passation ordinaire ne fermerait pas le reliquat.
+
+`ConvertBackorderHandler` scelle son intention (`runSealed`, intention
+portant l'`id` du reliquat : un double clic rend la même commande) puis,
+dans une transaction : verrou du reliquat, état rejugé, passation par
+`StaffOrderPlacement` (`orders/application/services/staff-order-placement.ts`,
+le même code que la saisie ordinaire), fermeture (`backorder-closing.ts`).
+L'estimation passe par `StaffOrderEstimation` sous la **même** politique :
+une seule arithmétique.
+
+**La politique** `backorderPolicyOf(rejeu)`
+(`orders/backorder/application/backorder-placement.ts`) :
+
+- **le prix d'origine, par le rejeu.** `backorderReplayOf`
+  (`orders/backorder/domain/services/backorder-replay.ts`) prend les lignes
+  de l'origine ramenées aux quantités du reliquat, et le chemin de la
+  révision (`priceRevisedLines`) garde leur prix unitaire figé : ni
+  retarification, ni palier rejugé. L'étiquette TTC d'une ligne se déduit du
+  prix HT figé, donc un particulier `exact_ht` garde son étiquette au
+  centime. Les remises de panier sont rejouées : les **pourcentages**
+  restent, les **montants fixes** sortent (ils ont servi sur l'origine), et
+  une remise sous son seuil est gardée ;
+- **le port offert** (`offeredDelivery: true`) : le seuil de franco de la
+  route est forcé à 0 dans `PricingContext`, et `priceBasket` fige une
+  « Livraison offerte ». Aucune route ne le reçoit d'un corps ;
+- **aucune surtaxe de retard** (`lateFee: "waive"`) : la dérogation d'heure
+  limite se dépense quand même, elle admet la commande.
+
+**Le port offert est durable.** Colonne `orders.delivery_offered`, posée par
+`Order.offerDelivery()` à la passation issue d'un reliquat — retrait compris
+—, figée par un déclencheur qui refuse un changement de valeur, et tenue par
+un CHECK (port HT et TTC nuls quand elle est vraie). Toute recomposition
+(`OrderRevising` : révision, devis, hausse carte) la relit : une commande
+modifiée vers une autre zone, ou passée du retrait à la livraison, garde son
+port offert. Une promotion « livraison offerte » dès 0 € gagne l'égalité des
+seuils : le port reste nul, mais la livraison offerte est attribuée à la
+promotion.
+
+La nouvelle commande ne reprend de l'origine ni le barème de livraison, ni
+les CGV (celles du jour), ni le bon de fidélité. Elle se paie comme toute
+commande, **sans transfert d'encaissement** : l'origine ne facture que ce
+qui est parti, et rembourse son reste carte au solde.
+
+### 6.4 Transformer — un particulier, réglée en boutique ou offerte
+
+Un particulier ne passe pas par la saisie de l'équipe (elle exige une
+société). Les mêmes routes reçoivent un second corps, reconnu à son `venue`
+(`adminBackorderConvertBodySchema`, `packages/contracts/src/admin-backorder.ts`) :
+`"shop_till"` ou `"offered"`, le point de retrait, le jour, le créneau, le
+total vu, l'acheteur facultatif (absent, l'acheteur d'origine, qui passe le
+mur du particulier). `ConvertParticularBackorderHandler` et
+`QuoteParticularBackorderHandler` passent par les passations du particulier,
+sous la même politique :
+
+- **réglée en boutique** — `ShopTillParticularPlacement`
+  (`orders/application/services/shop-till-particular-placement.ts`) : le
+  délai d'annulation figé, le total vu, `settleAtShopTill()`. Retrait
+  seulement ; notre système n'encaisse rien, la caisse certifiée de la
+  boutique encaisse au retrait ;
+- **offerte** — `OfferedParticularPlacement`, sous le droit d'offrir
+  (`b2b_offer_order:write`).
+
+Un corps pro sur un reliquat de particulier rend
+`ParticularBackorderNotConvertibleError` (409), l'inverse
+`CompanyBackorderNeedsStaffEntryError` (409). L'heure limite d'un
+particulier passe par le « hors plan » du comptoir ; il n'a pas de
+dérogation. Une origine carte remboursée au solde et une commande réglée en
+boutique sont deux argents indépendants : aucun lien entre eux chez nous.
+
+L'écran (`/commandes/:orderId/reliquat-particulier`, `?venue=offered`) ne
+propose que le retrait ; une offerte livrée reste possible par l'API.
+
+### 6.5 Abandonner, la liste et les écrans
+
+- `POST admin/backorders/:id/abandon`, sous `b2b_orders_shortfall:write`,
+  `@Idempotent` (une seconde fois rend `BackorderClosedError`).
+- **Annuler l'origine** abandonne son reliquat ouvert dans la même
+  transaction (noyau `OrderCancellation`) ; un reliquat converti n'est pas
+  touché. Une annulation par un client qui trouverait un reliquat ouvert est
+  refusée (`BackorderAbandonNeedsStaffError`) plutôt que d'écrire un abandon
+  sans auteur.
+- `GET admin/backorders?state=open` : la liste, du plus ancien au plus
+  récent, non paginée (un reliquat ouvert n'a pas de limite de durée).
+- Le détail d'une commande sert `backorder` sur l'origine et
+  `backorderOrigin` sur la commande issue (`AdminOrderView`).
+- Back-office (`apps/lfd-backoffice-frontend/src/app/commandes/`) : la liste
+  « Reliquats » (`backorders-page/`, route `/reliquats`), la carte du
+  reliquat sur la fiche (`order-backorder-card/`), le rappel de l'origine
+  (`order-backorder-origin/`), l'écran de transformation d'un pro
+  (`backorder-conversion-page/`, `/commandes/:orderId/reliquat`) et d'un
+  particulier (`particular-backorder-conversion-page/`). Le total vient du
+  serveur ; la ligne « Livraison offerte » ne fait que nommer un port nul.
+
+Aucun droit nouveau.
+
+### 6.6 Les décisions de Hugo du 2026-11-25
+
+| #   | Décision                                                                                                                             |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| 1   | Le reliquat se crée automatiquement, dans la même transaction que la décision du départ incomplet.                                   |
+| 2   | Ce n'est pas une commande : il passe de `open` à `converted` (une commande pour un jour choisi, aujourd'hui compris) ou `abandoned`. |
+| 3   | Côté origine, le reste reste `abandoned`.                                                                                            |
+| 4   | L'origine solde et rembourse son reste comme avant (E9) ; la commande issue se paie comme toute commande, sans transfert.            |
+| 5   | La commande issue du reliquat garde le prix de la commande d'origine.                                                                |
+| 6   | Le second envoi (`planRemainder`, BL de rang > 1) est du code mort à retirer.                                                        |
+| 7   | Le port est offert, obligatoirement, sur la commande issue d'un reliquat : « on fait tout dans l'intérêt du client ».                |
+| 8   | Aucune surtaxe de retard sur la commande issue d'un reliquat.                                                                        |
+| 9   | Le nom est `Backorder`.                                                                                                              |
+| 10  | Pour aujourd'hui après l'heure limite : la dérogation commune de l'équipe.                                                           |
+| 11  | Une remise de l'origine est gardée même si le reste n'atteint plus son seuil.                                                        |
+| 12  | Un reliquat ouvert n'a pas de limite de durée.                                                                                       |
+| 13  | Les particuliers ont un reliquat : réglée en boutique, offerte, ou abandon.                                                          |
+| 14  | Le port reste offert quelle que soit la zone, y compris après une modification qui change la zone.                                   |
+| 15  | Pour l'heure limite d'un particulier, le « hors plan » du comptoir suffit.                                                           |
+| 16  | `delivery_offered` est posé sur toute commande issue d'un reliquat, retrait compris.                                                 |
+
+Exigence de Hugo du même jour, principe du chantier : « on doit pouvoir
+tracer absolument ce qui s'est passé » (§ 7).
+
+## 7. Tracer ce qui s'est passé
+
+```mermaid
+flowchart LR
+    N["Bon né"] --> V1["Exemplaire 1 figé (born)"]
+    DD["Départ décidé"] --> V2["Exemplaire suivant (departure_decided)"]
+    RP["Autre réécriture"] --> V3["Exemplaire suivant (replanned)"]
+    V1 --> H["Historique des documents"]
+    V2 --> H
+    V3 --> H
+```
+
+**Chaque exemplaire du bon client est figé à sa naissance.** Table
+`public.delivery_note_version` (`(delivery_note_id, content_version)`
+unique, `rendered jsonb`, `cause` = `born` | `departure_decided` |
+`replanned`, `recorded_at`). Ce qui se fige est l'**entrée complète du
+rendu** (le bon client que le composeur produit, `rendered-client-note.ts`),
+pas la ligne du bon : le PDF d'un exemplaire se rend d'elle seule. Le dépôt
+du bon compare la version écrite à celle en base et appelle le port
+`DeliveryNoteVersionKeeper`
+(`lafoliecoffee/delivery-notes/domain/ports/delivery-note-version.keeper.ts`),
+dans la même transaction : aucun écrivain ne peut l'oublier. Une composition
+qui échoue annule l'écriture du bon. Les règles de cause :
+`delivery-note-version.ts` (`domain/services/`). Aucune purge : c'est une
+trace. La porte `lint:delivery-note-version-readers` limite les lecteurs à
+l'écrivain, au lecteur de l'historique et à la purge de démonstration.
+
+Le PDF d'un exemplaire :
+`GET …/delivery-notes/:number/editions/:edition/client.pdf`
+(`admin-order-delivery-notes.controller.ts`) — ce n'est pas une impression,
+il n'est pas compté comme tel. Les bons nés avant la table n'ont pas
+d'exemplaire d'origine : l'historique dit « version d'origine non
+conservée ».
+
+**L'historique des documents** de la fiche : le bon de commande rangé à la
+passation, le **BL d'origine** (premier exemplaire), le **BL définitif**
+(dernier) s'il diffère, puis factures et preuve de retrait.
+
+**L'historique de la commande** lit les activités (`growth.activity_events`),
+chacune avec qui et quand : manque signalé (un par signal, le précédent
+jamais écrasé), impression d'un BL, lettre au client, faits du reliquat,
+prête, retrait. Le remboursement carte se lit à la fiche par le lecteur du
+bloc `payment`, pas par un fait.
+
+**La fiche d'un départ partiel** : la décision en tête (ce qui part, qui a
+décidé, le reliquat et son état), une colonne « Parti » à côté de
+« Commandé », le reste abandonné marqué avec un lien vers son reliquat, et
+les montants **commandé** et **livré** (facturable).
+
+## 8. Un seul envoi par commande
+
+La commande part en **un** envoi, le rang 1. Le second envoi d'une même
+commande (un BL de rang 2 avec son jour, son colisage, son retrait et un
+solde à la dernière remise) a été retiré du code, sur décision de Hugo du
+2026-11-25 (décision 6) : le reste devient un reliquat (§ 6).
+
+Ce qui reste, **sans migration** :
+
+- les colonnes `rank` au fournil, au colisage, à la livraison et au retrait,
+  `ShipmentRef` et `shipmentKeySuffix`
+  (`production/day/domain/value-objects/shipment-ref.value-object.ts`) : le
+  rang vaut toujours 1, et les clés de la boîte d'envoi restent identiques ;
+  `delivery_note.service_day` aussi ;
+- la valeur d'énumération `partially_handed_over`, en base **sans
+  écrivain** : une valeur ne se retire pas sans recréer le type. Ses
+  lecteurs (comptabilité, annulation, révision, client) restent, et ne la
+  rencontrent jamais ;
+- **deux abonnés durables muets**, `b2b.delivery-notes.prepare-remainder`
+  (`OnRemainderPacked`) et `b2b.delivery-notes.hand-over-remainder`
+  (`OnRemainderHandedOver`), dans
+  `lafoliecoffee/delivery-notes/application/handlers/` : chaque
+  `packing.order_packed` et `handover.handed_over` publié crée une livraison
+  par abonné inscrit, et une livraison dont l'abonné a disparu finit en
+  lettre morte. Ils restent inscrits et rendent la main sans rien faire,
+  jusqu'à ce que Hugo constate leur file vide
+  ([`todo-reliquat.md`](todo-reliquat.md)).
+
+La décision du départ ne prend plus de rang ; le retrait juge un seul envoi.
+
+## 9. La facture somme les bons remis
 
 Au compte, la facture du mois et le prélèvement lisent les montants
 **facturables** de la commande (`billable_*`), qui valent la somme des BL
-remis une fois le sort du reste décidé ; une commande `partially_handed_over`
-n'a rien de facturable, et l'onglet Factures la montre « Partielle — reste à
-relivrer ». Les points de fidélité portent sur les mêmes montants, au solde.
-Les livraisons non confirmées nomment une commande en partie remise « en
-attente du reste » (`lafoliecoffee/accounting/domain/ports/unconfirmed-deliveries.reader.ts`).
-Le gel et l'engagement : [`../bon-de-livraison.md`](../bon-de-livraison.md#les-montants-facturables-et-leur-gel).
+remis une fois le sort du reste décidé. La facture carte lit les mêmes
+montants (§ 3). Les points de fidélité portent sur les mêmes montants, au
+solde. Le gel et l'engagement :
+[`../bon-de-livraison.md`](../bon-de-livraison.md#les-montants-facturables-et-leur-gel).
 
-La facture **carte** garde les totaux de la **commande**
-(`lafoliecoffee/accounting/infrastructure/prisma-card-invoicing.reader.ts`) : c'est
-juste tant qu'une commande carte ne part jamais incomplète (§ 3).
-
-## 8. La fiche de colis après la remise
+## 10. La fiche de colis après la remise
 
 Le colisage écoute `handover.handed_over` par `handover/channels/packing/`
 (`@DurableHandler` `packing/application/handlers/on-order-handed-over.handler.ts`)
@@ -277,41 +492,18 @@ retirée ; quelque chose au bac, fermée telle quelle ; déjà fermée, inchang�
 Idempotent. Un « prête » qui arrive ensuite sur une commande déjà retirée est
 un succès sans effet (`mark-order-ready.handler.ts`).
 
-## 9. Renvois des documents retirés
+## 11. Renvois des documents retirés
 
-Le code cite encore les sections des documents retirés le 2026-11-10.
+Le code cite encore les sections de documents retirés ; leur texte se relit
+dans l'historique git.
 
-| Renvoi dans le code                                                   | Ici                                                                                                   |
-| --------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| départ incomplet § 2, § 3                                             | [§ 2.2](#22-le-comptoir--les-décisions-de-hugo-du-2026-11-03), [§ 3](#3-ce-qui-est-refusé)            |
-| départ incomplet § 4.1                                                | [§ 2.2.1](#221-laperçu)                                                                               |
-| départ incomplet § 4.2                                                | [§ 2.2.2](#222-le-geste--une-transaction-dans-le-commerce)                                            |
-| départ incomplet § 4.3                                                | [§ 2.2.3](#223-le-droit)                                                                              |
-| départ incomplet § 4.4                                                | [§ 2.2.4](#224-lécran)                                                                                |
-| départ incomplet § 7                                                  | [§ 8](#8-la-fiche-de-colis-après-la-remise)                                                           |
-| plan E7 reliquat, choix 2, 3, 5, 6, 12, 13 ; lots L1 à L4c ; annexe F | [§ 6](#6-le-reliquat--un-second-envoi-de-la-même-commande)                                            |
-| plan E7 reliquat, choix 4, 17 ; lot L4d                               | [§ 6](#6-le-reliquat--un-second-envoi-de-la-même-commande), prêt et retrait                           |
-| plan E7 reliquat, choix 8 ; lots L5a, L5b, L5c                        | [§ 6](#6-le-reliquat--un-second-envoi-de-la-même-commande), le solde                                  |
-| plan E7 reliquat, choix 10 ; choix 16 (les points)                    | [§ 6](#6-le-reliquat--un-second-envoi-de-la-même-commande), [§ 7](#7-la-facture-somme-les-bons-remis) |
-| plan E7 reliquat, choix 11 ; lot LB                                   | [§ 1](#1-le-manque-constaté-au-colisage), [§ 6](#6-le-reliquat--un-second-envoi-de-la-même-commande)  |
-| plan E7 reliquat, choix 7 ; lots L7, L8, L9                           | [`todo-reliquat.md`](todo-reliquat.md)                                                                |
-
-Le texte intégral du plan de bâti et de la doc du départ incomplet se relit
-dans l'historique git, au commit qui les retire (2026-11-10).
-
-## 10. Les lots bâtis
-
-Tous sur `main` (vérifié le 2026-11-10, `git merge-base --is-ancestor`).
-
-| Lot       | Ce qu'il a posé                                                              | Commit                                             |
-| --------- | ---------------------------------------------------------------------------- | -------------------------------------------------- |
-| L-points  | les points de fidélité sur ce qui est parti (`billable_*`)                   | `d9851af88`                                        |
-| L1        | `delivery_note.service_day`, `DeliveryNote.planRemainder`                    | `6668de6fd`                                        |
-| L3a       | les faits portent l'envoi (`ShipmentRef`), clés `:r<rang>`                   | `1d03edf9e`                                        |
-| L3b à L3d | le rang en base au fournil, au colisage, à la livraison, au retrait          | `0361e4501`, `32d636973`, `d6a5386d9`              |
-| L4a à L4d | prêt et retrait par envoi, le choix au comptoir, les courriels du reste      | `41d23158f`, `82651e355`, `e8d0c243e`, `c283d04fa` |
-| L5a à L5c | « En partie retirée », le solde au dernier envoi, le suivi client            | `28566239c`, `3a1268d83`, `84fd906f4`              |
-| LB        | le manque et sa décision par envoi (`order_shortfall`)                       | `f1c5fdcc3`                                        |
-| —         | « Prête » compte, Partielle aux Factures, le port du reste n'est pas affiché | `c46d4f6a0`                                        |
-| C1, C1b   | le départ incomplet au comptoir, l'aperçu, la fiche qui quitte le colisage   | `19d471d42`, `b405087d7`                           |
-| C2        | le dialogue, le départ déjà tranché, le jeton du QR                          | `9521dd2ed`, `a9d87343b`, `6c43e704a`              |
+| Renvoi dans le code                         | Ici                                                                                        |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| départ incomplet § 2, § 3                   | [§ 2.2](#22-le-comptoir--les-décisions-de-hugo-du-2026-11-03), [§ 3](#3-ce-qui-est-refusé) |
+| départ incomplet § 4.1                      | [§ 2.2.1](#221-laperçu)                                                                    |
+| départ incomplet § 4.2                      | [§ 2.2.2](#222-le-geste--une-transaction-dans-le-commerce)                                 |
+| départ incomplet § 4.3                      | [§ 2.2.3](#223-le-droit)                                                                   |
+| départ incomplet § 4.4                      | [§ 2.2.4](#224-lécran)                                                                     |
+| départ incomplet § 7                        | [§ 10](#10-la-fiche-de-colis-après-la-remise)                                              |
+| plan E7 reliquat (choix, lots L1 à L5c, LB) | [§ 8](#8-un-seul-envoi-par-commande), [§ 9](#9-la-facture-somme-les-bons-remis)            |
+| plan E7 reliquat, choix 7 ; lots L7, L8, L9 | [§ 6](#6-le-reliquat-de-commande)                                                          |

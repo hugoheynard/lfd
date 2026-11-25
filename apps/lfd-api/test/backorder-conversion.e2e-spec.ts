@@ -1,6 +1,6 @@
 /**
  * E2E de la **transformation d'un reliquat en commande** (lot B3, plan
- * `documentation/commandes/reliquat/plan-reliquat-de-commande.md`, § 4), sur
+ * `documentation/commandes/reliquat/reliquat.md`, § 6.3), sur
  * le vrai Postgres : le prix d'origine après une hausse du catalogue, la
  * remise en pourcentage rejouée et la remise fixe sortie, le seuil non
  * atteint gardé, le poids, le port offert durable à travers les révisions,

@@ -13,7 +13,7 @@ import {
 import { GetDeliveryNoteVersionPdfQuery } from "./get-delivery-note-version-pdf.query.js";
 
 /**
- * **Une version figée du BL client, en PDF** (plan du reliquat, § 5 ter) :
+ * **Une version figée du BL client, en PDF** (`documentation/commandes/reliquat/reliquat.md`, § 7) :
  * rendue de l'entrée rangée seule — rien n'est relu sur la commande ni sur
  * les bons frères, qui ont pu changer depuis. Le bon est cherché dans SA
  * commande : un numéro d'une autre commande répond 404. Sans mur de

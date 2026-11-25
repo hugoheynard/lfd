@@ -39,7 +39,7 @@ export interface OfferedParticularRequest {
  * **La commande offerte à un particulier, une fois le droit jugé et
  * l'intention réclamée** (`la-commande-offerte.md`, § 2.5) — partagée par la
  * saisie (`PlaceOfferedParticularOrderHandler`) et la transformation d'un
- * reliquat de particulier (plan du reliquat, § 5 bis), qui ne diffèrent que
+ * reliquat de particulier (`documentation/commandes/reliquat/reliquat.md`, § 6.4), qui ne diffèrent que
  * par leur politique de composition et ce qu'elles écrivent avec la commande.
  *
  * Le délai d'annulation figé, le total vu (zéro), la valeur offerte, le

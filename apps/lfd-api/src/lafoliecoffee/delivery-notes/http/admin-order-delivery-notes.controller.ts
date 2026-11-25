@@ -30,7 +30,7 @@ import type { DeliveryNotePdf } from "../application/services/delivery-note-docu
  * version du contenu imprimée — par une commande, APRÈS la lecture : un BL
  * introuvable répond 404 sans rien écrire.
  *
- * Le PDF d'une **version figée** (plan du reliquat, § 5 ter) se rend de la
+ * Le PDF d'une **version figée** (`documentation/commandes/reliquat/reliquat.md`, § 7) se rend de la
  * version seule, et n'est PAS une impression : il ne trace rien.
  */
 @Controller("admin/orders/:orderId/delivery-notes")

@@ -460,7 +460,7 @@ model Order {
   // sinon. Figé à la passation : un déclencheur refuse sa modification.
   settlementVenue SettlementVenue? @map("settlement_venue")
 
-  // Le port est offert sur une commande issue d'un reliquat (plan du reliquat,
+  // Le port est offert sur une commande issue d'un reliquat (`documentation/commandes/reliquat/reliquat.md`,
   // décisions 7, 14 et 16), quelle que soit la zone, révision comprise. Figé à
   // la passation : un déclencheur refuse sa modification, un CHECK refuse un
   // frais de livraison (HT ou TTC) posé avec lui.

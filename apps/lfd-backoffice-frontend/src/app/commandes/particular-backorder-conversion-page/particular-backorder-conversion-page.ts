@@ -68,8 +68,7 @@ type LoadState = 'loading' | 'error' | 'ready';
 const convertSubject = (backorderId: string): string => `backorder-convert:${backorderId}`;
 
 /**
- * **Transformer le reliquat d'un particulier** (plan
- * `documentation/commandes/reliquat/plan-reliquat-de-commande.md`, § 5 bis,
+ * **Transformer le reliquat d'un particulier** (`documentation/commandes/reliquat/reliquat.md`, § 6.4,
  * décision 13) : en commande réglée à la caisse de la boutique, ou offerte
  * (`?venue=offered`, sous le droit d'offrir). Les lignes sont en lecture — le
  * serveur les reprend au prix de la commande d'origine ; l'équipe choisit le

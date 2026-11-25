@@ -303,7 +303,7 @@ export class OrderCancellation {
       orderNumber: locked.orderNumber,
     });
     // Le reliquat OUVERT de l'origine est abandonné avec elle ; un reliquat
-    // transformé n'est pas touché (plan du reliquat, § 5).
+    // transformé n'est pas touché (`documentation/commandes/reliquat/reliquat.md`, § 6.5).
     await this.backorders.abandonOnOriginCancelled(
       { orderId: locked.orderId, orderNumber: locked.orderNumber },
       staffSheet,

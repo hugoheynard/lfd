@@ -5,9 +5,8 @@ import { loadedOrRefused, type PricingRequest } from "../pricing-context.service
 import { LABO, pricingContextOf, ZONE } from "./pricing-context.doubles.js";
 
 /**
- * **Le port offert, au chargement** (plan
- * `documentation/commandes/reliquat/plan-reliquat-de-commande.md`,
- * décisions 7 et 14) : `offeredDelivery` remplace le seuil du franco de la
+ * **Le port offert, au chargement** (`documentation/commandes/reliquat/reliquat.md`,
+ * § 6.6, décisions 7 et 14) : `offeredDelivery` remplace le seuil du franco de la
  * route par 0, à la passation comme en révision, dans la zone figée comme
  * dans une autre. Le barème, lui, reste lu : `priceBasket` fige ce qui a été
  * offert.

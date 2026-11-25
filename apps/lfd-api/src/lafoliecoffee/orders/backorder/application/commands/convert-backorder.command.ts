@@ -1,8 +1,7 @@
 import type { AdminBackorderConvertPayload } from "@lfd/contracts";
 
 /**
- * **Transformer un reliquat en commande**, depuis le back-office (plan
- * `documentation/commandes/reliquat/plan-reliquat-de-commande.md`, § 4).
+ * **Transformer un reliquat en commande**, depuis le back-office (`documentation/commandes/reliquat/reliquat.md`, § 6.3).
  *
  * `staffUserId` vient de la porte staff ; `payload.buyerUserId`, du corps —
  * l'acheteur d'origine proposé par l'écran, vérifié contre la société comme

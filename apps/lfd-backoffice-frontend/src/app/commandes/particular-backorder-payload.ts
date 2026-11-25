@@ -85,7 +85,7 @@ export function particularBackorderBlockersOf(input: {
     blockers.push(...offerReasonIssues(choice.offerNature, choice.offerNote));
   }
   // Tout refus retient : la dérogation d'heure limite se tient par société,
-  // et un particulier n'en a pas (plan du reliquat, décision 15).
+  // et un particulier n'en a pas (`documentation/commandes/reliquat/reliquat.md`, § 6.6, décision 15).
   if (input.refusal !== null) {
     blockers.push(input.refusal.message);
   }

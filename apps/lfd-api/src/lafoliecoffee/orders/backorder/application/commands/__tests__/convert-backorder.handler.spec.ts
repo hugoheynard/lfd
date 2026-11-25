@@ -28,8 +28,7 @@ import {
 import { ConvertBackorderCommand } from "../convert-backorder.command.js";
 
 /**
- * **Transformer un reliquat** (plan
- * `documentation/commandes/reliquat/plan-reliquat-de-commande.md`, § 4) sur
+ * **Transformer un reliquat** (`documentation/commandes/reliquat/reliquat.md`, § 6.3) sur
  * la vraie composition : le prix d'origine, le port offert, aucune surtaxe,
  * la dérogation dépensée, le reliquat fermé sur la commande dans la même
  * transaction — et rien d'écrit quand il ne peut pas l'être.

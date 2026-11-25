@@ -10,7 +10,7 @@ import { ORDER_TERMS } from "../../value-objects/__tests__/delivery-note-terms.f
 import { versionToKeep, versionViewsOf } from "../delivery-note-version.js";
 
 /**
- * **Quelle version d'un bon se fige, et pourquoi** (plan du reliquat, § 5 ter) :
+ * **Quelle version d'un bon se fige, et pourquoi** (`documentation/commandes/reliquat/reliquat.md`, § 7) :
  * la naissance, puis chaque montée de version — jamais une écriture sans
  * changement de contenu. Instants recopiés, jamais comparés à l'horloge.
  */

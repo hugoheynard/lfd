@@ -8,8 +8,7 @@ import {
 } from "../../../application/__tests__/backorder-conversion-doubles.js";
 
 /**
- * **Le prix d'origine d'un reliquat, en rejeu** (plan
- * `documentation/commandes/reliquat/plan-reliquat-de-commande.md`, § 4,
+ * **Le prix d'origine d'un reliquat, en rejeu** (`documentation/commandes/reliquat/reliquat.md`, § 6.3,
  * décisions 5 et 11) : les lignes de l'origine à la quantité du reliquat, et
  * les seules remises en pourcentage.
  */

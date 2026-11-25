@@ -15,7 +15,7 @@ export function shortfallAuthorsOf(reading: OrderShortfallReading | null): reado
 
 /**
  * Le manque signalé, dans la forme du contrat (E6a) ; le client prévenu,
- * nommé (E6d) ; ce qui part et qui l'a décidé (plan du reliquat, B4b.4).
+ * nommé (E6d) ; ce qui part et qui l'a décidé (`documentation/commandes/reliquat/reliquat.md`, § 7).
  */
 export function shortfallViewOf(
   reading: OrderShortfallReading,
