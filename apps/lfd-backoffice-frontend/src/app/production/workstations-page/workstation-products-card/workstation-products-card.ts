@@ -36,9 +36,9 @@ import { WorkstationsService } from '../../workstations.service';
 export const UNPLACED = '';
 
 const COLUMNS: readonly FoldTableColumn<WorkstationProductView>[] = [
-  { key: 'shelf', label: 'Rayon' },
   { key: 'product', label: 'Produit' },
   { key: 'workstation', label: 'Poste' },
+  { key: 'shelf', label: 'Rayon' },
 ];
 
 /** Le nom du produit ; à défaut, celui de sa première déclinaison. */
