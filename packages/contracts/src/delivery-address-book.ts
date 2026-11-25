@@ -11,8 +11,10 @@ import type { DeliveryContact, GpsPoint } from "./address.js";
 export interface DeliveryAddressBookRow {
   readonly addressId: string;
   readonly companyId: string;
+  /** L'enseigne du client — chaîne vide quand elle n'est pas renseignée. */
+  readonly tradeName: string;
   /** La raison sociale du client. */
-  readonly customerLabel: string;
+  readonly legalName: string;
   /** Le libellé de l'adresse au carnet (« Boutique Bastille »). */
   readonly addressLabel: string;
   readonly ligne1: string;

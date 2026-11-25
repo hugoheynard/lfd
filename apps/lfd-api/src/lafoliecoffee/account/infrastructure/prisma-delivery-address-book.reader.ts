@@ -21,7 +21,7 @@ const ADDRESS_SELECT = {
   doorstepRule: true,
   parkingLat: true,
   parkingLng: true,
-  company: { select: { raisonSociale: true } },
+  company: { select: { raisonSociale: true, enseigne: true } },
   deliveryProcedure: { select: { id: true } },
 } as const;
 
@@ -49,7 +49,8 @@ export class PrismaDeliveryAddressBookReader extends DeliveryAddressBookReader {
     return rows.map((row) =>
       deliveryAddressBookRowOf({
         ...row,
-        customerLabel: row.company.raisonSociale,
+        tradeName: row.company.enseigne.trim(),
+        legalName: row.company.raisonSociale,
         hasProcedure: row.deliveryProcedure !== null,
       }),
     );

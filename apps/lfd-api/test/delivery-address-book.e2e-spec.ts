@@ -68,6 +68,10 @@ describe("GET /admin/delivery/address-book", () => {
   it("rend les adresses de livraison vivantes, triées client puis libellé", async () => {
     const beta = await createCompany(ctx.prisma, { raisonSociale: "Bêta SARL" });
     const alpha = await createCompany(ctx.prisma, { raisonSociale: "Alpha SAS" });
+    await ctx.prisma.company.update({
+      where: { id: alpha.id },
+      data: { enseigne: "Le Comptoir Alpha" },
+    });
     const gone = await createCompany(ctx.prisma, { raisonSociale: "Aaa supprimée" });
     await ctx.prisma.company.update({
       where: { id: gone.id },
@@ -92,10 +96,10 @@ describe("GET /admin/delivery/address-book", () => {
 
     const view = jsonBody<DeliveryAddressBookView>(await reader.agent.get(BOOK).expect(200));
 
-    expect(view.addresses.map((a) => [a.customerLabel, a.addressLabel])).toEqual([
-      ["Alpha SAS", "Comptoir"],
-      ["Alpha SAS", "Zinc"],
-      ["Bêta SARL", "Entrepôt"],
+    expect(view.addresses.map((a) => [a.tradeName, a.legalName, a.addressLabel])).toEqual([
+      ["Le Comptoir Alpha", "Alpha SAS", "Comptoir"],
+      ["Le Comptoir Alpha", "Alpha SAS", "Zinc"],
+      ["", "Bêta SARL", "Entrepôt"],
     ]);
     expect(view.addresses[0]).toMatchObject({
       addressId: door,

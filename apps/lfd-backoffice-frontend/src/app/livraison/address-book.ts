@@ -68,7 +68,7 @@ export function filterAddressBook(
     if (needle === '') {
       return true;
     }
-    return [row.customerLabel, row.ville, row.addressLabel, row.note].some((field) =>
+    return [row.tradeName, row.legalName, row.ville, row.addressLabel, row.note].some((field) =>
       fold(field).includes(needle),
     );
   });

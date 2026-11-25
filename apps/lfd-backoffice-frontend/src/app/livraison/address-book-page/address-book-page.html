@@ -43,7 +43,16 @@
           <fold-badge radius="square" variant="neutral" [content]="countLabel()" data-count />
         </div>
 
-        <ng-template foldCell="customer" let-row>{{ row.customerLabel }}</ng-template>
+        <ng-template foldCell="customer" let-row>
+          <span class="stack" data-customer>
+            @if (row.tradeName) {
+              <strong data-trade-name>{{ row.tradeName }}</strong>
+              <span data-legal-name>{{ row.legalName }}</span>
+            } @else {
+              <strong data-legal-name>{{ row.legalName }}</strong>
+            }
+          </span>
+        </ng-template>
 
         <ng-template foldCell="address" let-row>
           <span class="stack">

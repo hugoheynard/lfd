@@ -22,7 +22,8 @@ const VIEW: DeliveryAddressBookView = {
     addressBookRowOf(),
     addressBookRowOf({
       addressId: 'a2',
-      customerLabel: 'Café Bastille',
+      tradeName: '',
+      legalName: 'Café Bastille',
       addressLabel: 'Bastille',
       ville: 'Annecy',
       isDefault: false,
@@ -77,6 +78,20 @@ describe('AddressBookPage', () => {
     expect(element.textContent).toContain('Rapporter');
     expect(element.textContent).toContain('Réglage global');
     http.verify();
+  });
+
+  it('met l’enseigne en gras, la raison sociale dessous, et la raison sociale seule à défaut', async () => {
+    const { fixture, element, http } = await boot();
+    http.expectOne(URL).flush(VIEW);
+    await settle(fixture);
+
+    const [withTrade, without] = Array.from(element.querySelectorAll('[data-customer]'));
+    expect(withTrade?.querySelector('strong')?.textContent?.trim()).toBe('Hôtel du Parc');
+    expect(withTrade?.querySelector('[data-legal-name]')?.textContent?.trim()).toBe(
+      'Hôtel du Parc SAS',
+    );
+    expect(without?.querySelector('[data-trade-name]')).toBeNull();
+    expect(without?.querySelector('strong')?.textContent?.trim()).toBe('Café Bastille');
   });
 
   it('dit l’échec et relit au « Réessayer »', async () => {

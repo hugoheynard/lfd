@@ -7,7 +7,8 @@ export function addressBookRowOf(
   return {
     addressId: 'a1',
     companyId: 'c1',
-    customerLabel: 'Hôtel du Parc SAS',
+    tradeName: 'Hôtel du Parc',
+    legalName: 'Hôtel du Parc SAS',
     addressLabel: 'Hôtel du Parc',
     ligne1: '2 avenue du Parc',
     ligne2: '',

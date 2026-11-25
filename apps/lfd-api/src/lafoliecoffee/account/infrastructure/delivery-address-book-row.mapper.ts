@@ -16,7 +16,8 @@ export interface DeliveryAddressBookSource {
   readonly doorstepRule: string | null;
   readonly parkingLat: number | null;
   readonly parkingLng: number | null;
-  readonly customerLabel: string;
+  readonly tradeName: string;
+  readonly legalName: string;
   readonly hasProcedure: boolean;
 }
 
@@ -33,7 +34,8 @@ export function deliveryAddressBookRowOf(
   return {
     addressId: source.id,
     companyId: source.companyId,
-    customerLabel: source.customerLabel,
+    tradeName: source.tradeName,
+    legalName: source.legalName,
     addressLabel: source.label,
     ligne1: source.ligne1,
     ligne2: source.ligne2,

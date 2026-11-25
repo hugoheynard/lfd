@@ -19,7 +19,8 @@ function source(overrides: Partial<DeliveryAddressBookSource> = {}): DeliveryAdd
     doorstepRule: "deposit",
     parkingLat: 48.85,
     parkingLng: 2.37,
-    customerLabel: "Café Bastille",
+    tradeName: "Le Zinc",
+    legalName: "Café Bastille SARL",
     hasProcedure: true,
     ...overrides,
   };
@@ -40,7 +41,8 @@ describe("deliveryAddressBookRowOf", () => {
     );
     expect(row).toMatchObject({
       addressId: "a1",
-      customerLabel: "Café Bastille",
+      tradeName: "Le Zinc",
+      legalName: "Café Bastille SARL",
       addressLabel: "Boutique Bastille",
       door: { lat: 48.853, lng: 2.369 },
       parking: { lat: 48.85, lng: 2.37 },

@@ -14,11 +14,12 @@ class FixedAddressBook extends DeliveryAddressBookReader {
   }
 }
 
-function row(addressId: string, customerLabel: string): DeliveryAddressBookRow {
+function row(addressId: string, legalName: string): DeliveryAddressBookRow {
   return {
     addressId,
     companyId: `c-${addressId}`,
-    customerLabel,
+    tradeName: "",
+    legalName,
     addressLabel: "Boutique",
     ligne1: "1 rue de la Paix",
     ligne2: "",
