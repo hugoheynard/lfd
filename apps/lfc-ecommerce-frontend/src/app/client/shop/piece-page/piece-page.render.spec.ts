@@ -197,11 +197,27 @@ describe('findPublicPiece / renderPieceHead', () => {
   it('sans visuel : ni og:image, carte twitter simple', () => {
     const html = renderPieceHead(
       INDEX_HTML,
-      { sku: 'A', name: 'A', note: null, image: null },
+      { sku: 'A', name: 'A', note: null, description: null, image: null },
       ZONE_CLIENT_FRONT,
     );
     expect(html).not.toContain('og:image');
     expect(html).toContain('<meta name="twitter:card" content="summary" />');
+  });
+
+  it('sans note, la description longue sert de balise ; sans les deux, le nom', () => {
+    const withLong = findPublicPiece(
+      catalogue(item('L', { note: null, description: 'Levain naturel, 48 h.' })),
+      'L',
+    );
+    expect(withLong?.description).toBe('Levain naturel, 48 h.');
+    if (withLong === null) {
+      throw new TypeError('article public attendu');
+    }
+    const html = renderPieceHead(INDEX_HTML, withLong, ZONE_CLIENT_FRONT);
+    expect(html).toContain('<meta name="description" content="Levain naturel, 48 h." />');
+    // Un article d'avant le champ : pas de `description` dans la réponse.
+    const bare = findPublicPiece(catalogue(item('B', { note: null })), 'B');
+    expect(bare?.description).toBeNull();
   });
 
   /** Extrait réel de `GET /shop/catalogue` en production (2026-10-23). */

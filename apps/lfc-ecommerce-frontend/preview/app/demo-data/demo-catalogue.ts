@@ -41,6 +41,7 @@ function item(
     sku,
     name,
     note,
+    description: null,
     image,
     thumbnail: image,
     unitPriceMillicents,

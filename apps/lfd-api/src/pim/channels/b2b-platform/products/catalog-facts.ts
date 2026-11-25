@@ -43,6 +43,10 @@ export interface CatalogProductHead {
   readonly note: string | null;
   /** Les traductions de la ligne de vitrine — `null` sur un fait d'avant le lot des langues. */
   readonly noteTranslations: CatalogTranslations | null;
+  /** La description longue, affichée sur la fiche de la boutique — `null` sur un fait d'avant elle. */
+  readonly description: string | null;
+  /** Ses traductions — `null` sur un fait d'avant elle. */
+  readonly descriptionTranslations: CatalogTranslations | null;
   readonly image: SyncMedia | null;
   readonly thumbnail: SyncMedia | null;
   readonly operationOnly: boolean;

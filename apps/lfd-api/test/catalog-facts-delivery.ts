@@ -179,7 +179,13 @@ export function productBody(
     status: "active",
     audience: "both",
     audienceInherited: true,
-    product: { ...head, noteTranslations: {}, detachedFromSku: null },
+    product: {
+      ...head,
+      noteTranslations: {},
+      description: null,
+      descriptionTranslations: {},
+      detachedFromSku: null,
+    },
     variants: variants.map((variant) => ({
       ...variant,
       nameTranslations: {},

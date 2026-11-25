@@ -46,6 +46,14 @@ export interface Showcase {
   readonly note: string | null;
   /** Les traductions de la ligne — vides quand rien n'est traduit, ou rien d'écrit. */
   readonly noteTranslations: CatalogTranslations;
+  /**
+   * La description longue (`descriptionLong`), que la fiche de la boutique
+   * affiche sous la ligne courte — décision de Hugo, 2026-11-25. `null` = rien
+   * d'écrit.
+   */
+  readonly description: string | null;
+  /** Les traductions de la description longue — vides quand rien n'est traduit. */
+  readonly descriptionTranslations: CatalogTranslations;
   readonly image: SyncMedia | null;
   /** La vignette de rayon — `null` si la fiche n'en désigne pas. */
   readonly thumbnail: SyncMedia | null;

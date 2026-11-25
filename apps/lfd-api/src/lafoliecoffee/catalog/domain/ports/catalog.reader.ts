@@ -70,13 +70,14 @@ export interface ResolvedCatalogItem {
    */
   readonly menu: MenuMark;
   /**
-   * Les traductions de `name`, `note` et `categoryName` (lot des langues,
+   * Les traductions de `name`, `note`, `description` et `categoryName` (lot des langues,
    * 2026-10-18). Vides tant que rien n'est reçu : la vitrine sert alors le
    * français (`inLanguage`).
    */
   readonly translations: {
     readonly name: CatalogTranslations;
     readonly note: CatalogTranslations;
+    readonly description: CatalogTranslations;
     readonly categoryName: CatalogTranslations;
   };
   /**
@@ -146,6 +147,12 @@ export interface ResolvedCatalogItem {
    * là-bas — jamais une chaîne vide, qui dirait « effacé ».
    */
   readonly note: string | null;
+  /**
+   * La **description longue** de la fiche, que la fiche de la boutique
+   * affiche sous la ligne (décision de Hugo, 2026-11-25) — la tuile du rayon
+   * ne la lit pas. `null` = rien d'écrit, ou pas encore reçue.
+   */
+  readonly description: string | null;
   readonly image: {
     readonly url: string;
     readonly alt: string;

@@ -43,6 +43,14 @@
   color: var(--fold-color-text-secondary);
 }
 
+.description {
+  margin: 0;
+  font-size: var(--fold-text-sm);
+  line-height: var(--lfc-leading-body);
+  color: var(--fold-color-text-secondary);
+  white-space: pre-line;
+}
+
 /* La limite propre de la pièce : une phrase, pas un fait du tableau. */
 .made-to-order {
   margin: 0;

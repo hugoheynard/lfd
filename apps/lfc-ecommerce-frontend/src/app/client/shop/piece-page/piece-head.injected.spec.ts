@@ -41,6 +41,7 @@ describe('PieceHead sur un en-tête déjà posé par la Function', () => {
           sku: croissant.sku,
           name: croissant.name,
           note: croissant.note,
+          description: croissant.description,
           image: { url: '/a.jpg', alt: 'a', width: 10, height: 10 },
         },
         origin,

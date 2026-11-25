@@ -297,6 +297,15 @@ model CatalogItem {
   nameTranslations Json? @map("name_translations")
   noteTranslations Json? @map("note_translations")
 
+  /// La **description longue** de la fiche, reçue du fait du référentiel
+  /// (`descriptionLong`, en français) : la fiche de la boutique l'affiche sous
+  /// la ligne courte (décision de Hugo, 2026-11-25). `NULL` = rien d'écrit, ou
+  /// pas encore reçue — la prochaine émission de la fiche la remplit.
+  description             String?
+  /// Ses traductions, `{ "en": …, "it": … }` — `NULL` = pas encore reçues, et
+  /// la vitrine sert le français.
+  descriptionTranslations Json?   @map("description_translations")
+
   /// Le **packshot** — les quatre colonnes ne servent qu'ensemble.
   ///
   /// Les dimensions accompagnent l'URL parce que la grille réserve la place du

@@ -85,6 +85,8 @@ function productFact(
       kind: "daily",
       note: null,
       noteTranslations: {},
+      description: null,
+      descriptionTranslations: {},
       image: null,
       thumbnail: null,
       operationOnly: false,

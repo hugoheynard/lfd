@@ -63,6 +63,8 @@ export function receivedProductOf(fact: CatalogProductChangedFact): ReceivedCata
       note: product.note,
       nameTranslations: variant.nameTranslations,
       noteTranslations: product.noteTranslations,
+      description: product.description,
+      descriptionTranslations: product.descriptionTranslations,
       image: pimImageOf(product.image),
       thumbnail: pimImageOf(product.thumbnail),
       operationOnly: product.operationOnly,

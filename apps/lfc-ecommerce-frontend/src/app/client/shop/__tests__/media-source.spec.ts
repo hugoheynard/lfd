@@ -104,6 +104,7 @@ function piece(over: Partial<ShopItemView> = {}): ShopItemView {
     sku: 'VIE-001',
     name: 'Croissant',
     note: null,
+    description: null,
     image: null,
     thumbnail: null,
     unitPriceMillicents: 140_000,

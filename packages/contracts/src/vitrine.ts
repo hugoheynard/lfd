@@ -71,7 +71,9 @@ export const VITRINE_DELIVERY_HEADER = "vitrine-delivery";
  * (2026-10-28, P4 de `vente-au-poids.md`). La quantité minimale non plus
  * (2026-10-29, M2 de `plan-quantite-minimale.md`). Les promotions qu'un
  * acheminement ouvrirait non plus (2026-10-30, L10 du plan des promotions) :
- * l'agence n'a pas de panier où les choisir.
+ * l'agence n'a pas de panier où les choisir. La description longue non
+ * plus (2026-11-25) : Hugo l'a décidée pour la fiche de la boutique, pas
+ * pour le flux de l'agence.
  */
 export type VitrineItemView = Omit<
   ShopItemView,
@@ -89,6 +91,7 @@ export type VitrineItemView = Omit<
   | "minQuantity"
   | "fulfillmentOffers"
   | "promotionNames"
+  | "description"
 > & {
   readonly isFeatured?: boolean;
   readonly operation?: ShopItemView["operation"];

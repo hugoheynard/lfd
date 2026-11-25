@@ -115,6 +115,20 @@ describe('ProductSheet', () => {
     expect(img?.hasAttribute('data-house-mark')).toBe(true);
   });
 
+  // La description longue, sous la ligne (Hugo, 2026-11-25).
+  it('montre la description longue sous la ligne, retours à la ligne gardés', () => {
+    const description = 'Beurre AOP.\nTourage en trois jours.';
+    mount({ ...(TEST_ITEMS[0] as ShopItemView), description }, 0, false);
+    const shown = el().querySelector('[data-description]');
+    expect(shown?.textContent).toBe(description);
+    expect(getComputedStyle(shown as Element).whiteSpace).toBe('pre-line');
+  });
+
+  it('ne montre aucune description quand la fiche n’en a pas', () => {
+    mount({ ...(TEST_ITEMS[0] as ShopItemView), description: null }, 0, false);
+    expect(el().querySelector('[data-description]')).toBeNull();
+  });
+
   it('garde la photo quand la pièce en a une', () => {
     const url = 'https://media.example/products/croissant.jpg';
     mount(

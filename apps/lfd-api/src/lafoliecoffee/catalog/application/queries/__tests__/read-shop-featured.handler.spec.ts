@@ -50,6 +50,7 @@ const CROISSANT = catalogItem("VIE-001", {
   translations: {
     name: { en: "Butter croissant" },
     note: {},
+    description: {},
     categoryName: {},
   },
 });

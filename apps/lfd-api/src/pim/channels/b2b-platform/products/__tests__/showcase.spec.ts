@@ -71,6 +71,29 @@ describe("showcaseOf", () => {
     });
   });
 
+  /** La description longue voyage à côté de la ligne (décision de Hugo, 2026-11-25). */
+  it("emporte la description longue et ses traductions, sans le français", () => {
+    const shown = showcaseOf(
+      [product("prd_1")],
+      new Map([
+        [
+          "prd_1",
+          editorial({
+            descriptionShort: null,
+            descriptionLong: { fr: "Beurre AOP.\nTourage en trois jours.", en: "PDO butter." },
+          }),
+        ],
+      ]),
+      new Map(),
+    );
+
+    expect(shown.get("prd_1")).toMatchObject({
+      note: null,
+      description: "Beurre AOP.\nTourage en trois jours.",
+      descriptionTranslations: { en: "PDO butter." },
+    });
+  });
+
   it("emporte la ligne courte et le packshot", () => {
     const shown = showcaseOf(
       [product("prd_1")],
@@ -81,6 +104,8 @@ describe("showcaseOf", () => {
     expect(shown.get("prd_1")).toEqual({
       note: "Tourage patient",
       noteTranslations: {},
+      description: null,
+      descriptionTranslations: {},
       image: {
         url: "https://media.example/croissant.jpg",
         alt: "Un croissant doré",
@@ -183,6 +208,8 @@ describe("showcaseOf", () => {
     expect(shown.get("prd_1")).toEqual({
       note: null,
       noteTranslations: {},
+      description: null,
+      descriptionTranslations: {},
       image: null,
       thumbnail: null,
     });

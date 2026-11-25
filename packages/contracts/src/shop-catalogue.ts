@@ -24,7 +24,7 @@ import type { ShopItemFulfillmentOfferView } from "./promotion-offer.js";
  * **Les langues de la vue** (lot des langues, 2026-10-18 —
  * `documentation/webhooks/vitrine.md` §5).
  *
- * `GET /shop/catalogue?lang=en` rend `name` et `note` des articles et `name`
+ * `GET /shop/catalogue?lang=en` rend `name`, `note` et `description` des articles et `name`
  * des rayons dans la langue demandée, **en français quand le référentiel ne
  * les a pas traduits** ; sans paramètre, en français — la vue d'avant ce lot.
  * La FORME ne change pas avec la langue : un paramètre plutôt que des champs
@@ -110,6 +110,13 @@ export interface ShopItemView {
    * toutes les langues. Traduite comme {@link name}.
    */
   readonly note: string | null;
+  /**
+   * La **description longue** de la fiche, que la fiche produit affiche sous
+   * la ligne (décision de Hugo, 2026-11-25) ; la tuile du rayon ne la montre
+   * pas. Texte brut, retours à la ligne compris. `null` = le référentiel n'en
+   * a pas écrit. Traduite comme {@link name}.
+   */
+  readonly description: string | null;
   readonly image: ShopImageView | null;
   /**
    * La **vignette de rayon** — cadrée serré pour être lisible à 200 px dans la

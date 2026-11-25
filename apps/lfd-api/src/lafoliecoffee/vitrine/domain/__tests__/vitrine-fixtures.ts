@@ -12,6 +12,7 @@ export function item(sku: string, overrides: Partial<ShopItemView> = {}): ShopIt
     sku,
     name: `Article ${sku}`,
     note: null,
+    description: null,
     image: null,
     thumbnail: null,
     unitPriceMillicents: 250_000,

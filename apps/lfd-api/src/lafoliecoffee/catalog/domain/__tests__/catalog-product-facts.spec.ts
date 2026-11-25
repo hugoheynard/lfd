@@ -34,6 +34,8 @@ function fact(): ReceivedCatalogItem {
     audience: "both",
     nameTranslations: null,
     noteTranslations: null,
+    description: null,
+    descriptionTranslations: null,
     sku: ITEM.sku,
     productId: "p1",
     productSku: "VIE-1",

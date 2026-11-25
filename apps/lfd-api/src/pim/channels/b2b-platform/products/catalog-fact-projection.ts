@@ -94,6 +94,8 @@ export function projectProductFact(input: ProductFactInput): CatalogProductFactB
       kind: product.kind,
       note: showcase?.note ?? null,
       noteTranslations: showcase?.noteTranslations ?? {},
+      description: showcase?.description ?? null,
+      descriptionTranslations: showcase?.descriptionTranslations ?? {},
       image: showcase?.image ?? null,
       thumbnail: showcase?.thumbnail ?? null,
       operationOnly: product.operationOnly,

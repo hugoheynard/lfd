@@ -29,7 +29,12 @@ const CROISSANT: ResolvedCatalogItem = {
   audience: "both",
   reservation: "none",
   menu: "on",
-  translations: { name: NO_TRANSLATIONS, note: NO_TRANSLATIONS, categoryName: NO_TRANSLATIONS },
+  translations: {
+    name: NO_TRANSLATIONS,
+    note: NO_TRANSLATIONS,
+    description: NO_TRANSLATIONS,
+    categoryName: NO_TRANSLATIONS,
+  },
   family: VIENNOISERIES,
   isDefault: true,
   variantsAsTiles: true,
@@ -42,6 +47,7 @@ const CROISSANT: ResolvedCatalogItem = {
   shopAllergens: { codes: null, incomplete: false, precautionary: false, texts: null },
   orderTimeLimit: null,
   note: null,
+  description: null,
   image: null,
   thumbnail: null,
 };

@@ -28,6 +28,8 @@ export interface ArticleFixture {
   readonly note: string | null;
   readonly nameTranslations: unknown;
   readonly noteTranslations: unknown;
+  readonly description: string | null;
+  readonly descriptionTranslations: unknown;
   readonly imageUrl: string | null;
   readonly imageAlt: string | null;
   readonly imageWidth: number | null;
@@ -152,6 +154,8 @@ export function article(sku: string, overrides: Partial<ArticleFixture> = {}): A
     note: null,
     nameTranslations: null,
     noteTranslations: null,
+    description: null,
+    descriptionTranslations: null,
     imageUrl: null,
     imageAlt: null,
     imageWidth: null,

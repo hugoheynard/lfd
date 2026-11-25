@@ -47,10 +47,14 @@ export function showcaseOf(
 ): ReadonlyMap<string, Showcase> {
   const showcase = new Map<string, Showcase>();
   for (const product of products) {
-    const note = notes.get(product.id)?.descriptionShort ?? null;
+    const editorial = notes.get(product.id);
+    const note = editorial?.descriptionShort ?? null;
+    const description = editorial?.descriptionLong ?? null;
     showcase.set(product.id, {
       note: note?.[SOURCE_LOCALE] ?? null,
       noteTranslations: translationsOf(note),
+      description: description?.[SOURCE_LOCALE] ?? null,
+      descriptionTranslations: translationsOf(description),
       image: mediaOf(medias.get(product.id) ?? [], SHOWCASE_ROLE),
       thumbnail: mediaOf(medias.get(product.id) ?? [], THUMBNAIL_ROLE),
     });

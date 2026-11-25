@@ -93,6 +93,7 @@ function shopItem(sku: string): ShopItemView {
     sku,
     name: sku,
     note: null,
+    description: null,
     image: null,
     thumbnail: null,
     unitPriceMillicents: 123_000,

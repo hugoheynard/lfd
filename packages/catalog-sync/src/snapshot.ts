@@ -543,11 +543,12 @@ export const syncProductSchema = z.object({
    * La **ligne de vitrine** — `descriptionShort` du référentiel, aplatie en
    * français. `null` = aucun éditorial saisi.
    *
-   * Une seule des sept lignes éditoriales traverse, et c'est délibéré : une
-   * boutique en montre une sous le nom. Faire voyager `descriptionLong`,
-   * `story`, `pairing` et le SEO donnerait au récepteur quatre champs qu'aucun
-   * écran ne lit et qu'il faudrait pourtant tenir à jour — et le jour où il en
-   * affiche un, c'est une décision de produit, pas un élargissement de tuyau.
+   * La description longue (`descriptionLong`) voyage aussi, mais par le fait
+   * du catalogue seul (`pim.catalog_product_changed`, champ `description`),
+   * pas par ce fil : la fiche de la boutique l'affiche sous la ligne courte
+   * (décision de Hugo, 2026-11-25). `story`, `pairing` et le SEO restent chez
+   * l'émetteur : aucun écran du récepteur ne les lit, et en afficher un est
+   * une décision de produit, pas un élargissement de tuyau.
    *
    * ⚠️ **`null` n'est pas la chaîne vide.** Rien n'a été écrit, ce qui n'est pas
    * la même chose qu'une ligne effacée ; l'écran de réception doit pouvoir dire

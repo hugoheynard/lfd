@@ -25,6 +25,7 @@ const CROISSANT = catalogItem("VIE-001", {
   translations: {
     name: { en: "Butter croissant" },
     note: { it: "Sfogliatura paziente" },
+    description: {},
     categoryName: { en: "Pastries" },
   },
 });

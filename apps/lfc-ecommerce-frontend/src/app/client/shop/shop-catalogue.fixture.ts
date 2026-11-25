@@ -34,6 +34,7 @@ export const TEST_SHELVES = [
 function item(over: Partial<ShopItemView> & Pick<ShopItemView, 'sku' | 'name'>): ShopItemView {
   return {
     note: null,
+    description: null,
     image: null,
     thumbnail: null,
     unitPriceMillicents: 140_000,

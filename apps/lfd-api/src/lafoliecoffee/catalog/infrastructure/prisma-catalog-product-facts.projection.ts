@@ -125,6 +125,9 @@ export class PrismaCatalogProductFactsProjection extends CatalogProductFactsProj
         // vitrine sert alors le français jusqu'au suivant.
         nameTranslations: facts.nameTranslations,
         noteTranslations: facts.noteTranslations,
+        // La description longue, réécrite à chaque fait comme la ligne.
+        description: facts.description,
+        descriptionTranslations: facts.descriptionTranslations,
         withdrawnAt: null,
         publicReviewPending: awaitsReview(facts.audience, "public"),
         proReviewPending: awaitsReview(facts.audience, "pro"),

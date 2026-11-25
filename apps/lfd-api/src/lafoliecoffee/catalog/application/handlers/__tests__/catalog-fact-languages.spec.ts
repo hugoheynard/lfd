@@ -96,8 +96,29 @@ describe("receivedProductOf — les langues", () => {
       name: "Croissant",
       nameTranslations: null,
       noteTranslations: null,
+      description: null,
+      descriptionTranslations: null,
     });
     expect(receivedFamilyOf(fact.body.family, new Date(EMITTED)).nameTranslations).toBeNull();
+  });
+});
+
+describe("receivedProductOf — la description longue", () => {
+  it("range la description longue et ses traductions sur chaque article", () => {
+    const fact = CatalogProductChangedFact.fromPayload(
+      payload({
+        product: {
+          description: "Beurre AOP, tourage en trois jours.",
+          descriptionTranslations: { en: "PDO butter." },
+        },
+      }),
+    );
+
+    expect(receivedProductOf(fact).items[0]).toMatchObject({
+      note: "Tourage patient",
+      description: "Beurre AOP, tourage en trois jours.",
+      descriptionTranslations: { en: "PDO butter." },
+    });
   });
 });
 

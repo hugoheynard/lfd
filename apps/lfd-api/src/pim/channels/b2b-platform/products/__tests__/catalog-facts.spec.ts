@@ -364,6 +364,8 @@ describe("projectProductFact — les langues", () => {
         showcase: {
           note: "Acidulée",
           noteTranslations: { en: "Tangy" },
+          description: "Une pâte sablée, un citron de Menton.",
+          descriptionTranslations: { en: "A shortcrust, a Menton lemon." },
           image: null,
           thumbnail: null,
         },
@@ -373,6 +375,11 @@ describe("projectProductFact — les langues", () => {
 
     expect(shown.product).toMatchObject({ note: "Acidulée", noteTranslations: { en: "Tangy" } });
     expect(bare.product).toMatchObject({ note: null, noteTranslations: {} });
+    expect(shown.product).toMatchObject({
+      description: "Une pâte sablée, un citron de Menton.",
+      descriptionTranslations: { en: "A shortcrust, a Menton lemon." },
+    });
+    expect(bare.product).toMatchObject({ description: null, descriptionTranslations: {} });
   });
 
   it("porte le nom traduit de la famille, sans le français", () => {

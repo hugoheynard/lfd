@@ -70,6 +70,8 @@ export const CATALOGUE_SNAPSHOT_COLUMNS = {
       "note",
       "nameTranslations",
       "noteTranslations",
+      "description",
+      "descriptionTranslations",
       "imageUrl",
       "imageAlt",
       "imageWidth",

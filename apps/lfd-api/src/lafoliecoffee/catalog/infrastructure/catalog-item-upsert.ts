@@ -15,7 +15,9 @@ export type ItemColumn =
   | "audience"
   | "variantId"
   | "nameTranslations"
-  | "noteTranslations";
+  | "noteTranslations"
+  | "description"
+  | "descriptionTranslations";
 
 /** Une ligne à écrire : ses colonnes, sous leur nom de modèle. */
 export type ItemUpsertRow = Readonly<Partial<Record<ItemColumn, unknown>>> & {
@@ -88,6 +90,8 @@ const SQL_NAMES = {
   variantId: "variant_id",
   nameTranslations: "name_translations",
   noteTranslations: "note_translations",
+  description: "description",
+  descriptionTranslations: "description_translations",
 } as const satisfies Record<ItemColumn, string>;
 
 /** Les colonnes `jsonb` : leur valeur part sérialisée, et castée. */
@@ -99,6 +103,7 @@ const JSON_COLUMNS: ReadonlySet<ItemColumn> = new Set([
   "allergenTexts",
   "nameTranslations",
   "noteTranslations",
+  "descriptionTranslations",
 ]);
 
 /**

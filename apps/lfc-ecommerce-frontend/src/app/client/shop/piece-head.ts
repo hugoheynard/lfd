@@ -65,10 +65,11 @@ export class PieceHead {
     for (const selector of ROBOT_ONLY_IMAGE_TAGS) {
       this.meta.removeTag(selector);
     }
-    this.put({ name: 'description', content: item.note ?? item.name });
+    const description = item.note ?? item.description ?? item.name;
+    this.put({ name: 'description', content: description });
     this.put({ property: 'og:type', content: 'product' });
     this.put({ property: 'og:title', content: item.name });
-    this.put({ property: 'og:description', content: item.note ?? item.name });
+    this.put({ property: 'og:description', content: description });
     this.put({ property: 'og:url', content: url });
     this.put({
       name: 'twitter:card',

@@ -42,6 +42,8 @@ export interface PublicPiece {
   readonly sku: string;
   readonly name: string;
   readonly note: string | null;
+  /** La description longue — repli de la balise quand la ligne manque. */
+  readonly description: string | null;
   readonly image: PieceImage | null;
 }
 
@@ -72,11 +74,13 @@ export function findPublicPiece(payload: unknown, sku: string): PublicPiece | nu
     return null;
   }
   const note = raw['note'];
+  const description = raw['description'];
   const name = raw['name'];
   return {
     sku,
     name,
     note: typeof note === 'string' && note.trim() !== '' ? note : null,
+    description: typeof description === 'string' && description.trim() !== '' ? description : null,
     image: pieceImage(raw['image'], name) ?? pieceImage(raw['thumbnail'], name),
   };
 }
@@ -113,7 +117,7 @@ function positiveInteger(value: unknown): number | null {
  */
 export function renderPieceHead(indexHtml: string, piece: PublicPiece, origin: string): string {
   const url = productUrl(origin, piece.sku) ?? origin;
-  const description = piece.note ?? piece.name;
+  const description = piece.note ?? piece.description ?? piece.name;
   const tags = [
     `<meta name="description" content="${escapeHtml(description)}" />`,
     `<link rel="canonical" href="${escapeHtml(url)}" />`,

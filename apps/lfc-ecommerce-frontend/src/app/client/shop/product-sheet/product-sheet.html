@@ -31,6 +31,11 @@
       @if (piece.note) {
         <p class="note">{{ piece.note }}</p>
       }
+      <!-- La description longue, sous la ligne (Hugo, 2026-11-25) : texte
+           brut, ses retours à la ligne gardés. La tuile ne la montre pas. -->
+      @if (piece.description) {
+        <p class="description" data-description>{{ piece.description }}</p>
+      }
       <!-- La limite propre de la pièce : seulement quand elle est plus stricte
            que la règle générale de la boutique (le serveur en décide). -->
       @if (madeToOrder(); as limit) {

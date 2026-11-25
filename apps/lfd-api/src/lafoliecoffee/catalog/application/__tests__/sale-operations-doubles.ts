@@ -37,7 +37,12 @@ export function catalogItem(
     audience: "both",
     reservation: "none",
     menu: "on",
-    translations: { name: NO_TRANSLATIONS, note: NO_TRANSLATIONS, categoryName: NO_TRANSLATIONS },
+    translations: {
+      name: NO_TRANSLATIONS,
+      note: NO_TRANSLATIONS,
+      description: NO_TRANSLATIONS,
+      categoryName: NO_TRANSLATIONS,
+    },
     family: {
       id: "fam-patisseries",
       name: "Pâtisseries",
@@ -55,6 +60,7 @@ export function catalogItem(
     allergens: null,
     shopAllergens: { codes: null, incomplete: false, precautionary: false, texts: null },
     note: null,
+    description: null,
     image: null,
     thumbnail: null,
     ...over,

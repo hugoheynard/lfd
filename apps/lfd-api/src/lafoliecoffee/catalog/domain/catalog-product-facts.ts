@@ -23,6 +23,14 @@ export interface ReceivedCatalogItem extends PimFacts {
    */
   readonly nameTranslations: CatalogTranslations | null;
   readonly noteTranslations: CatalogTranslations | null;
+  /**
+   * La description longue de la fiche, que la fiche de la boutique affiche
+   * sous la ligne courte (décision de Hugo, 2026-11-25). Comme les
+   * traductions, elle n'est portée que par le fait : l'agrégat ne la connaît
+   * pas, aucune règle ne la lit. `null` = rien d'écrit, ou fait d'avant elle.
+   */
+  readonly description: string | null;
+  readonly descriptionTranslations: CatalogTranslations | null;
 }
 
 /** L'état d'une fiche reçue, dans les mots de l'écran. */

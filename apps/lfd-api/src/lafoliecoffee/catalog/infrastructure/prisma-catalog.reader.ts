@@ -60,6 +60,8 @@ export interface ItemRow extends AccessRow {
   readonly note: string | null;
   readonly nameTranslations: unknown;
   readonly noteTranslations: unknown;
+  readonly description: string | null;
+  readonly descriptionTranslations: unknown;
   readonly imageUrl: string | null;
   readonly thumbnailUrl: string | null;
   readonly thumbnailAlt: string | null;
@@ -385,6 +387,7 @@ function resolve(
     translations: {
       name: nameTranslationsOf(row),
       note: translationsColumnOf(row.noteTranslations),
+      description: translationsColumnOf(row.descriptionTranslations),
       categoryName: translationsColumnOf(row.category.nameTranslations),
     },
     family: {
@@ -409,6 +412,7 @@ function resolve(
     shopAllergens: shopAllergenFactsOf(row),
     orderTimeLimit: orderTimeLimitOf(row),
     note: row.note,
+    description: row.description,
     image: imageOf(row),
     thumbnail: thumbnailOf(row),
   };

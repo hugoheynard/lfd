@@ -115,6 +115,7 @@ function toItem(item: ResolvedCatalogItem, audience: ShopAudience): ShopItemView
     sku: shopSkuOf(item),
     name: item.name,
     note: item.note,
+    description: item.description,
     image: item.image,
     thumbnail: item.thumbnail,
     // Le prix EFFECTIF — celui du B2B s'il a été décidé, celui du référentiel
@@ -192,6 +193,7 @@ export function inShopLanguage(
             ...item,
             name: inLanguage(item.name, source.translations.name, language),
             note: inLanguage(item.note, source.translations.note, language),
+            description: inLanguage(item.description, source.translations.description, language),
             ...allergensOf(source, language),
           };
     }),

@@ -39,6 +39,11 @@ const payloadSchema = z.object({
   // émis avant lui, et lues `null` — le récepteur sert alors le français.
   product: syncProductSchema.omit({ variants: true }).extend({
     noteTranslations: catalogTranslationsSchema,
+    // La description longue (décision de Hugo, 2026-11-25) : absente d'un
+    // fait émis avant elle, et lue `null` — rien n'avait voyagé, la fiche
+    // la reçoit à sa prochaine émission.
+    description: z.string().nullable().default(null),
+    descriptionTranslations: catalogTranslationsSchema,
     // Fil v16 (`plan-declinaisons-en-vignette.md`) : absente d'un fait émis
     // avant elle, et lue `true` — la valeur que la colonne du référentiel a
     // donnée à toute fiche existante.
