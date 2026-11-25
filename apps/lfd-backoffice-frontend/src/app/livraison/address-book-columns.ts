@@ -13,13 +13,19 @@ export const ADDRESS_BOOK_OPTIONAL_COLUMNS = [
   { key: 'note', label: 'Note livreurs' },
   { key: 'parking', label: 'Stationnement' },
   { key: 'deposit', label: 'Dépôt' },
+  { key: 'signature', label: 'Signature BL' },
   { key: 'rule', label: 'Règle à la porte' },
   { key: 'stop', label: 'Temps sur place' },
-  { key: 'procedure', label: 'Procédure' },
+  { key: 'procedure', label: 'Procédure détaillée' },
 ] as const;
 
 /** Masquées tant que personne n'a choisi (Hugo, 2026-11-25) : la table tient sans défilement horizontal. */
-export const ADDRESS_BOOK_HIDDEN_BY_DEFAULT: readonly string[] = ['parking', 'rule', 'stop'];
+export const ADDRESS_BOOK_HIDDEN_BY_DEFAULT: readonly string[] = [
+  'parking',
+  'rule',
+  'stop',
+  'deposit',
+];
 
 const STORAGE_KEY = 'lfd.tour-manager.address-book.hidden-columns';
 

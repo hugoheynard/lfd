@@ -19,12 +19,17 @@ export interface DeliveryAddressBookSource {
   readonly tradeName: string;
   readonly legalName: string;
   readonly hasProcedure: boolean;
+  /** Le socle de la société (`Company.deliverySignatureRequired`). */
+  readonly companySignatureRequired: boolean;
 }
 
 /**
  * Une ligne du carnet pour Tour manager. Des consignes illisibles se lisent
  * « sans consignes » (ni porte, ni note, ni contact, ni temps sur place) :
  * une adresse mal formée ne doit pas éteindre toute la table.
+ *
+ * La signature est l'effective : `signatureRequired` des consignes quand il est
+ * posé, sinon le socle de la société — des consignes illisibles héritent.
  */
 export function deliveryAddressBookRowOf(
   source: DeliveryAddressBookSource,
@@ -50,10 +55,20 @@ export function deliveryAddressBookRowOf(
     depositAllowed: source.depositAllowed,
     doorstepRule: source.doorstepRule,
     stopMinutes: read?.stopMinutes ?? null,
+    ...signatureOf(read?.signatureRequired ?? null, source.companySignatureRequired),
     hasProcedure: source.hasProcedure,
   };
 }
 
 function pointOf(lat: number | null, lng: number | null): GpsPoint | null {
   return lat === null || lng === null ? null : { lat, lng };
+}
+
+function signatureOf(
+  own: boolean | null,
+  company: boolean,
+): Pick<DeliveryAddressBookRow, "signatureRequired" | "signatureSource"> {
+  return own === null
+    ? { signatureRequired: company, signatureSource: "company" }
+    : { signatureRequired: own, signatureSource: "address" };
 }

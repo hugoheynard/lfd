@@ -8,6 +8,7 @@ import {
   FoldCheckboxComponent,
   FoldDataTableComponent,
   FoldEmptyStateComponent,
+  FoldIconComponent,
   FoldLinkComponent,
   FoldLoadingStateComponent,
   FoldPageLayoutComponent,
@@ -18,6 +19,8 @@ import {
   type FoldTableEmpty,
 } from 'fold-ng';
 
+import { PermissionsStore } from '../../auth/permissions.store';
+import { AddressProcedurePreview } from '../address-procedure-preview/address-procedure-preview';
 import {
   doorstepRuleLabelOf,
   filterAddressBook,
@@ -44,6 +47,7 @@ const ALL_COLUMNS: readonly FoldTableColumn<DeliveryAddressBookRow>[] = [
     label: 'Dépôt',
     value: (row) => (row.depositAllowed ? 'Oui' : 'Non'),
   },
+  { key: 'signature', label: 'Signature BL' },
   {
     key: 'rule',
     label: 'Règle à la porte',
@@ -55,7 +59,7 @@ const ALL_COLUMNS: readonly FoldTableColumn<DeliveryAddressBookRow>[] = [
     numeric: true,
     value: (row) => stopMinutesLabelOf(row.stopMinutes),
   },
-  { key: 'procedure', label: 'Procédure', value: (row) => (row.hasProcedure ? 'Oui' : 'Non') },
+  { key: 'procedure', label: 'Procédure détaillée' },
 ];
 
 /** Le stockage de ce navigateur, ou `null` quand il est refusé. */
@@ -88,12 +92,14 @@ type AddressBookState =
     FoldCheckboxComponent,
     FoldDataTableComponent,
     FoldEmptyStateComponent,
+    FoldIconComponent,
     FoldLinkComponent,
     FoldLoadingStateComponent,
     FoldPageLayoutComponent,
     FoldPopoverComponent,
     FoldPopoverTriggerDirective,
     FoldSearchComponent,
+    AddressProcedurePreview,
   ],
   templateUrl: './address-book-page.html',
   styleUrl: './address-book-page.scss',
@@ -101,6 +107,12 @@ type AddressBookState =
 export class AddressBookPage {
   private readonly addressBook = inject(DeliveryAddressBookService);
   private readonly storage = storageOf(inject(DOCUMENT));
+  private readonly permissions = inject(PermissionsStore);
+
+  /** L'œil de la procédure suit le droit de lire les procédures. */
+  protected readonly canReadProcedure = computed(() =>
+    this.permissions.can('delivery_procedures:read'),
+  );
 
   protected readonly state = signal<AddressBookState>({ status: 'loading' });
   protected readonly query = signal('');

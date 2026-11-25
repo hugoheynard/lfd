@@ -34,6 +34,8 @@ function row(addressId: string, legalName: string): DeliveryAddressBookRow {
     depositAllowed: false,
     doorstepRule: null,
     stopMinutes: null,
+    signatureRequired: false,
+    signatureSource: "company",
     hasProcedure: false,
   };
 }
@@ -45,6 +47,19 @@ describe("GetDeliveryAddressBookHandler", () => {
     const view = await new GetDeliveryAddressBookHandler(reader).execute();
     expect(view.addresses.map((r) => r.addressId)).toEqual(["a2", "a1"]);
     expect(reader.calls).toBe(1);
+  });
+
+  it("rend la signature effective et son origine telles que le commerce les sert", async () => {
+    const own = {
+      ...row("a1", "Alpha"),
+      signatureRequired: true,
+      signatureSource: "address" as const,
+    };
+    const view = await new GetDeliveryAddressBookHandler(new FixedAddressBook([own])).execute();
+    expect(view.addresses[0]).toMatchObject({
+      signatureRequired: true,
+      signatureSource: "address",
+    });
   });
 
   it("un carnet vide rend une liste vide", async () => {

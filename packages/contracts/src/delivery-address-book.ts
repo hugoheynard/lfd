@@ -38,9 +38,19 @@ export interface DeliveryAddressBookRow {
   readonly doorstepRule: string | null;
   /** Temps sur place en minutes, ou `null` : le réglage global. */
   readonly stopMinutes: number | null;
+  /**
+   * La signature exigée à la remise, EFFECTIVE : celle de l'adresse quand elle
+   * la redéfinit, sinon le socle de sa société.
+   */
+  readonly signatureRequired: boolean;
+  /** D'où vient {@link signatureRequired} : l'adresse, ou le socle de la société. */
+  readonly signatureSource: DeliveryAddressBookSignatureSource;
   /** Une procédure de livraison (étapes photo) est rangée pour l'adresse. */
   readonly hasProcedure: boolean;
 }
+
+/** L'origine de la signature effective d'une adresse du carnet. */
+export type DeliveryAddressBookSignatureSource = "address" | "company";
 
 /** La réponse de `GET /admin/delivery/address-book`, triée client puis libellé. */
 export interface DeliveryAddressBookView {

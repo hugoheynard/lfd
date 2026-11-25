@@ -70,7 +70,7 @@ describe("GET /admin/delivery/address-book", () => {
     const alpha = await createCompany(ctx.prisma, { raisonSociale: "Alpha SAS" });
     await ctx.prisma.company.update({
       where: { id: alpha.id },
-      data: { enseigne: "Le Comptoir Alpha" },
+      data: { enseigne: "Le Comptoir Alpha", deliverySignatureRequired: true },
     });
     const gone = await createCompany(ctx.prisma, { raisonSociale: "Aaa supprimée" });
     await ctx.prisma.company.update({
@@ -88,6 +88,7 @@ describe("GET /admin/delivery/address-book", () => {
         deliveryContact: null,
         gps: { lat: 45.571, lng: 5.921 },
         stopMinutes: 6,
+        signatureRequired: false,
         slotList: { mode: "everyday", slots: [] },
       },
     });
@@ -107,9 +108,21 @@ describe("GET /admin/delivery/address-book", () => {
       parking: { lat: 45.57, lng: 5.92 },
       note: "Sonner à l'arrière",
       stopMinutes: 6,
+      signatureRequired: false,
+      signatureSource: "address",
       hasProcedure: false,
     });
-    expect(view.addresses[1]).toMatchObject({ door: null, note: "", stopMinutes: null });
+    expect(view.addresses[1]).toMatchObject({
+      door: null,
+      note: "",
+      stopMinutes: null,
+      signatureRequired: true,
+      signatureSource: "company",
+    });
+    expect(view.addresses[2]).toMatchObject({
+      signatureRequired: false,
+      signatureSource: "company",
+    });
   });
 
   it("sans `delivery_rounds:read` : 403", async () => {

@@ -23,6 +23,8 @@ export function addressBookRowOf(
     depositAllowed: false,
     doorstepRule: null,
     stopMinutes: null,
+    signatureRequired: false,
+    signatureSource: 'company',
     hasProcedure: false,
     ...overrides,
   };

@@ -1,10 +1,11 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
-import type { DeliveryAddressBookView } from '@lfd/contracts';
+import type { DeliveryAddressBookView, DeliveryProcedureView } from '@lfd/contracts';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { B2B_API_BASE } from '../../api/api-config';
+import { PermissionsStore } from '../../auth/permissions.store';
 import {
   doorstepRuleLabelOf,
   filterAddressBook,
@@ -35,6 +36,8 @@ const VIEW: DeliveryAddressBookView = {
       depositAllowed: true,
       doorstepRule: 'bring_back',
       stopMinutes: 7,
+      signatureRequired: true,
+      signatureSource: 'address',
       hasProcedure: true,
     }),
   ],
@@ -46,13 +49,27 @@ async function settle(fixture: ComponentFixture<AddressBookPage>): Promise<void>
   fixture.detectChanges();
 }
 
-async function boot(): Promise<{
+const PROCEDURE_URL = `${B2B_API_BASE}/admin/companies/c1/delivery-addresses/a2/procedure`;
+
+async function boot(canReadProcedure = true): Promise<{
   fixture: ComponentFixture<AddressBookPage>;
   element: HTMLElement;
   http: HttpTestingController;
 }> {
   TestBed.resetTestingModule();
-  TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] });
+  TestBed.configureTestingModule({
+    providers: [
+      provideHttpClient(),
+      provideHttpClientTesting(),
+      {
+        provide: PermissionsStore,
+        useValue: {
+          can: (permission: string) =>
+            canReadProcedure || permission !== 'delivery_procedures:read',
+        },
+      },
+    ],
+  });
   const fixture = TestBed.createComponent(AddressBookPage);
   fixture.detectChanges();
   return {
@@ -67,7 +84,7 @@ describe('AddressBookPage', () => {
     localStorage.clear();
   });
 
-  it('masque stationnement, règle et temps sur place par défaut, et montre une colonne cochée', async () => {
+  it('masque stationnement, dépôt, règle et temps sur place par défaut, et montre une colonne cochée', async () => {
     const { fixture, element, http } = await boot();
     http.expectOne(URL).flush(VIEW);
     await settle(fixture);
@@ -75,7 +92,14 @@ describe('AddressBookPage', () => {
     expect(headers()).not.toContain('Stationnement');
     expect(
       Array.from(element.querySelectorAll('thead th')).map((th) => th.textContent?.trim()),
-    ).toEqual(['Client', 'Adresse', 'Contact', 'Note livreurs', 'Dépôt', 'Procédure']);
+    ).toEqual([
+      'Client',
+      'Adresse',
+      'Contact',
+      'Note livreurs',
+      'Signature BL',
+      'Procédure détaillée',
+    ]);
     expect(element.querySelector('[data-gps]')?.textContent).toContain('GPS');
 
     element.querySelector<HTMLElement>('[data-columns] button')?.click();
@@ -84,7 +108,7 @@ describe('AddressBookPage', () => {
     await settle(fixture);
 
     expect(headers()).toContain('Stationnement');
-    expect(readHiddenColumns(localStorage)).toEqual(['rule', 'stop']);
+    expect(readHiddenColumns(localStorage)).toEqual(['rule', 'stop', 'deposit']);
   });
 
   it('reprend les colonnes masquées retenues par ce navigateur', async () => {
@@ -146,6 +170,60 @@ describe('AddressBookPage', () => {
     await settle(fixture);
     expect(element.textContent).toContain('Aucune adresse de livraison');
   });
+
+  it('coche la signature BL exigée et dit « (société) » quand elle est héritée', async () => {
+    const { fixture, element, http } = await boot();
+    http.expectOne(URL).flush(VIEW);
+    await settle(fixture);
+
+    const [inherited, own] = Array.from(element.querySelectorAll('[data-signature]'));
+    expect(inherited?.querySelector('[data-signature-required]')).toBeNull();
+    expect(inherited?.querySelector('[data-signature-inherited]')?.textContent).toContain(
+      '(société)',
+    );
+    expect(own?.querySelector('[data-signature-required]')).not.toBeNull();
+    expect(own?.textContent).toContain('Signature exigée');
+    expect(own?.querySelector('[data-signature-inherited]')).toBeNull();
+  });
+
+  it('ne lit la procédure qu’à l’ouverture de l’œil, puis montre ses étapes dans l’ordre', async () => {
+    const { fixture, element, http } = await boot();
+    const book: DeliveryAddressBookView = {
+      addresses: [addressBookRowOf({ addressId: 'a2', companyId: 'c1', hasProcedure: true })],
+    };
+    http.expectOne(URL).flush(book);
+    await settle(fixture);
+    http.expectNone(PROCEDURE_URL);
+    expect(element.querySelectorAll('[data-procedure-open]')).toHaveLength(1);
+
+    element.querySelector<HTMLElement>('[data-procedure-open] button')?.click();
+    await settle(fixture);
+    http.expectOne(PROCEDURE_URL).flush({
+      addressId: 'a2',
+      steps: [
+        { id: 's1', number: 1, title: 'Portail', body: 'Code 1234', photoRevision: null },
+        { id: 's2', number: 2, title: 'Réserve', body: '', photoRevision: null },
+      ],
+    } satisfies DeliveryProcedureView);
+    // La lecture de la passerelle se résout hors de la détection de changements.
+    await new Promise((resolve) => setTimeout(resolve));
+    await settle(fixture);
+
+    const steps = Array.from(element.querySelectorAll('[data-procedure-step]')).map((step) =>
+      step.querySelector('strong')?.textContent?.trim(),
+    );
+    expect(steps).toEqual(['1. Portail', '2. Réserve']);
+    expect(element.textContent).toContain('Code 1234');
+    http.verify();
+  });
+
+  it('sans le droit de lire les procédures, pas d’œil', async () => {
+    const { fixture, element, http } = await boot(false);
+    http.expectOne(URL).flush(VIEW);
+    await settle(fixture);
+    expect(element.querySelector('[data-procedure-open]')).toBeNull();
+    http.verify();
+  });
 });
 
 describe('le carnet d’adresses, en mots', () => {
@@ -178,11 +256,11 @@ describe('le carnet d’adresses, en mots', () => {
 describe('readHiddenColumns', () => {
   it('rend le réglage par défaut sans mémoire, ou sur une mémoire illisible', () => {
     localStorage.clear();
-    expect(readHiddenColumns(localStorage)).toEqual(['parking', 'rule', 'stop']);
-    expect(readHiddenColumns(null)).toEqual(['parking', 'rule', 'stop']);
+    expect(readHiddenColumns(localStorage)).toEqual(['parking', 'rule', 'stop', 'deposit']);
+    expect(readHiddenColumns(null)).toEqual(['parking', 'rule', 'stop', 'deposit']);
     localStorage.setItem('lfd.tour-manager.address-book.hidden-columns', '{pas du json');
-    expect(readHiddenColumns(localStorage)).toEqual(['parking', 'rule', 'stop']);
+    expect(readHiddenColumns(localStorage)).toEqual(['parking', 'rule', 'stop', 'deposit']);
     localStorage.setItem('lfd.tour-manager.address-book.hidden-columns', '[1,2]');
-    expect(readHiddenColumns(localStorage)).toEqual(['parking', 'rule', 'stop']);
+    expect(readHiddenColumns(localStorage)).toEqual(['parking', 'rule', 'stop', 'deposit']);
   });
 });

@@ -22,6 +22,7 @@ function source(overrides: Partial<DeliveryAddressBookSource> = {}): DeliveryAdd
     tradeName: "Le Zinc",
     legalName: "Café Bastille SARL",
     hasProcedure: true,
+    companySignatureRequired: false,
     ...overrides,
   };
 }
@@ -64,5 +65,30 @@ describe("deliveryAddressBookRowOf", () => {
 
   it("un stationnement à moitié posé n'est pas un point", () => {
     expect(deliveryAddressBookRowOf(source({ parkingLng: null })).parking).toBeNull();
+  });
+
+  it("une adresse qui redéfinit la signature l'emporte sur le socle de la société", () => {
+    const row = deliveryAddressBookRowOf(
+      source({
+        companySignatureRequired: true,
+        deliverySpecs: {
+          note: "",
+          deliveryContact: null,
+          gps: null,
+          signatureRequired: false,
+          slotList: { mode: "everyday", slots: [] },
+        },
+      }),
+    );
+    expect(row).toMatchObject({ signatureRequired: false, signatureSource: "address" });
+  });
+
+  it("sans redéfinition, ou des consignes illisibles, l'adresse hérite du socle de la société", () => {
+    for (const deliverySpecs of [null, { gps: "pas un point" }]) {
+      const row = deliveryAddressBookRowOf(
+        source({ companySignatureRequired: true, deliverySpecs }),
+      );
+      expect(row).toMatchObject({ signatureRequired: true, signatureSource: "company" });
+    }
   });
 });

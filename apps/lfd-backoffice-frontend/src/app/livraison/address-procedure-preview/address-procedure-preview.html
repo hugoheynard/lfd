@@ -1,0 +1,45 @@
+<fold-popover placement="bottom-end" (openChange)="onOpenChange($event)">
+  <fold-button-icon
+    foldPopoverTrigger
+    icon="eye"
+    size="sm"
+    tooltip="Voir la procédure"
+    data-procedure-open
+  />
+  <div foldPopoverPanel class="panel" data-procedure-panel>
+    @switch (state().status) {
+      @case ('error') {
+        <fold-empty-state
+          tone="alert"
+          title="Procédure illisible"
+          subtitle="Le serveur n’a pas répondu. Réessayez dans un instant."
+          data-procedure-error
+        >
+          <button foldButton emphasis="outline" size="sm" (click)="retry()">Réessayer</button>
+        </fold-empty-state>
+      }
+      @case ('ready') {
+        @if (steps().length === 0) {
+          <p class="empty">Aucune étape.</p>
+        } @else {
+          <ol class="steps">
+            @for (step of steps(); track step.id) {
+              <li class="step" data-procedure-step>
+                <strong>{{ step.number }}. {{ step.title }}</strong>
+                @if (step.body) {
+                  <p class="body">{{ step.body }}</p>
+                }
+                @if (photos().get(step.id); as url) {
+                  <img class="photo" [src]="url" [alt]="'Photo de l’étape ' + step.number" />
+                }
+              </li>
+            }
+          </ol>
+        }
+      }
+      @case ('loading') {
+        <fold-loading message="Lecture de la procédure…" />
+      }
+    }
+  </div>
+</fold-popover>

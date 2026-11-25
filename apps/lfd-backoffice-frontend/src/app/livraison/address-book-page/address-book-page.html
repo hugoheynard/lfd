@@ -119,6 +119,35 @@
             —
           }
         </ng-template>
+
+        <ng-template foldCell="signature" let-row>
+          <span class="line" data-signature>
+            @if (row.signatureRequired) {
+              <fold-icon name="check" size="sm" aria-hidden="true" data-signature-required />
+              <span class="sr-only">Signature exigée</span>
+            } @else {
+              <span class="muted" aria-hidden="true">—</span>
+              <span class="sr-only">Signature non exigée</span>
+            }
+            @if (row.signatureSource === 'company') {
+              <small class="muted" data-signature-inherited>(société)</small>
+            }
+          </span>
+        </ng-template>
+
+        <ng-template foldCell="procedure" let-row>
+          @if (row.hasProcedure && canReadProcedure()) {
+            <app-address-procedure-preview
+              [companyId]="row.companyId"
+              [addressId]="row.addressId"
+              [attr.data-procedure]="row.addressId"
+            />
+          } @else if (row.hasProcedure) {
+            Oui
+          } @else {
+            —
+          }
+        </ng-template>
       </fold-data-table>
     }
   }
