@@ -39,8 +39,8 @@ describe("GetDayDossierSpecimenHandler", () => {
     expect(text).toContain("RÉASSORT 1/1");
     expect(text).toContain("Dossier de production du");
     expect(text).toContain("Viennoiseries");
-    // Le BL de transport d'exemple, derrière le premier bon seulement.
-    expect(text.match(/BON DE LIVRAISON BL-EXEMPLE/g)).toHaveLength(1);
+    // Le BL de transport d'exemple, derrière le premier bon seulement, en deux exemplaires.
+    expect(text.match(/BON DE LIVRAISON BL-EXEMPLE/g)).toHaveLength(2);
     expect(text).not.toContain("€");
   });
 

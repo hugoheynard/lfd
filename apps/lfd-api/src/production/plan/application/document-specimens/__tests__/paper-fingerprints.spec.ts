@@ -34,8 +34,8 @@ import { GetProductionCountSpecimenHandler } from "../../queries/get-production-
  * `FINGERPRINTS`, et dire dans le commit pourquoi le papier a changé.
  */
 const FINGERPRINTS = {
-  dayDossier: "3d1d13a38dadc302e89e6083a8db2d9c95b2b7b660527cf85ce561f52b7e5608",
-  dayDossierWithQr: "767cdfd58d4d3085b176ba606a8aa14f73892ba00d775ef9f00b7931d3ce969d",
+  dayDossier: "b0456763c8b4a83d12ff0dc6716a462c5ec00b4f957dd05b03e6acc384409bd4",
+  dayDossierWithQr: "64cf1af6a1cd404def87414fefdc03287807b1ae7961a9c63cc4dbf5be443d31",
   productionCount: "ae2d87bb35d06986769dd95ccf739611500577940a16bc5e93bd45f310e5af39",
 } as const;
 

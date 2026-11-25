@@ -295,7 +295,7 @@ describe("renderDayDossierPdf", () => {
 describe("dayDossierPdfKey — la version de mise en page", () => {
   it("n'est plus la clé d'avant E1b : un dossier archivé à l'ancien papier n'est jamais resservi", () => {
     expect(dayDossierPdfKey(DAY, null)).not.toBe(`${DAY}/dossier-du-jour.pdf`);
-    expect(dayDossierPdfKey(DAY, RETAKEN)).toContain("-v15-retirage-");
+    expect(dayDossierPdfKey(DAY, RETAKEN)).toContain("-v16-retirage-");
   });
 });
 
@@ -303,7 +303,7 @@ describe("dayDossierPdfKey", () => {
   it("une clé pour la clôture, une autre par retirage : le complément n'écrase pas l'original", () => {
     const original = dayDossierPdfKey(DAY, null);
     const completed = dayDossierPdfKey(DAY, RETAKEN);
-    expect(original).toBe(`${DAY}/dossier-du-jour-v15.pdf`);
+    expect(original).toBe(`${DAY}/dossier-du-jour-v16.pdf`);
     expect(completed).not.toBe(original);
     expect(completed.startsWith(`${DAY}/`)).toBe(true);
   });
@@ -586,7 +586,7 @@ describe("renderDayDossierPdf — la mise en page du 2026-10-25 (Hugo)", () => {
     expect(sheets[1]).toMatch(/ORD-0001 .{0,2}Fiche de commande \(2\/2\)/);
   });
 
-  it("imprime le BL de transport derrière le bon de sa commande, sans l'en-tête du dossier", async () => {
+  it("imprime le BL de transport en deux exemplaires derrière le bon de sa commande, sans l'en-tête du dossier", async () => {
     const bl = (number: string) => (doc: Parameters<DeliveryNoteDrawing>[0]) => {
       doc.font("Helvetica").fontSize(12).text(`BON DE LIVRAISON ${number}`, 40, 60);
     };
@@ -600,13 +600,16 @@ describe("renderDayDossierPdf — la mise en page du 2026-10-25 (Hugo)", () => {
         new Map([["id-ORD-0001", bl("BL-0001-1")]]),
       ),
     );
-    // couverture, deux rayons, bon 1, son BL, bon 2
-    expect(pages).toHaveLength(6);
+    // couverture, deux rayons, bon 1, son BL deux fois, bon 2
+    expect(pages).toHaveLength(7);
     expect(pages[3]).toContain("BON 1/2");
-    expect(pages[4]).toContain("BON DE LIVRAISON BL-0001-1");
-    expect(pages[4]).not.toContain("Fiche de commande");
-    expect(pages[4]).toContain("5/6");
-    expect(pages[5]).toContain("BON 2/2");
+    for (const copy of [pages[4], pages[5]]) {
+      expect(copy).toContain("BON DE LIVRAISON BL-0001-1");
+      expect(copy).not.toContain("Fiche de commande");
+    }
+    expect(pages[4]).toContain("5/7");
+    expect(pages[5]).toContain("6/7");
+    expect(pages[6]).toContain("BON 2/2");
   });
 
   it("pose le calendrier d'un rayon juste après sa page de total, tourné sur une feuille portrait", async () => {

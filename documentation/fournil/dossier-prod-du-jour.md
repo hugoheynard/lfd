@@ -19,10 +19,10 @@ On n'imprime pas depuis le navigateur : le papier est toujours le PDF du
 serveur.
 
 Le PDF serveur ne bouge plus une fois tiré : il est archivé
-(`<jour>/dossier-du-jour-v15.pdf`, `DOSSIER_LAYOUT_VERSION` dans
+(`<jour>/dossier-du-jour-v16.pdf`, `DOSSIER_LAYOUT_VERSION` dans
 `day-dossier-pdf.ts`). Après un retirage qui ajoute des commandes, un second
 dossier « complété » est archivé à côté
-(`<jour>/dossier-du-jour-v15-retirage-<instant>.pdf`) ; l'original reste. Le
+(`<jour>/dossier-du-jour-v16-retirage-<instant>.pdf`) ; l'original reste. Le
 dossier ne porte **aucun prix ni total en euros** : le fournil fabrique, il ne
 facture pas.
 
@@ -108,7 +108,7 @@ section qui déborde dit « (1/2) », « (2/2) » dans son titre. L'ordre :
 3. **Une fiche par commande** — « ORD-… — Fiche de commande ». L'acheminement
    s'écrit « Retrait <site> · pro / particulier » ou « Livraison · … », derrière
    le carré de la couleur de la commande (`OrderPrintColorsReader`).
-   **Suivie de son BL de transport** (non chiffré), dessiné par le commerce par
+   **Suivie de son BL de transport en deux exemplaires** (non chiffré ; décidé par Hugo le 2026-11-25), dessiné par le commerce par
    le port `PlannedDeliveryNotesReader` (`production/channels/commerce/`) : le
    premier BL non annulé, lu au tirage. Une commande sans BL n'en a pas ; un
    commerce muet laisse partir le dossier sans BL, **non archivé**.

@@ -151,13 +151,14 @@ describe("renderDayDossierPdf — un tirage partiel", () => {
     expect(pages[1]).toContain("2/2");
   });
 
-  it("ne tire que les BL, sans les fiches", async () => {
+  it("ne tire que les BL, sans les fiches, chacun en deux exemplaires", async () => {
     const pages = await pagesOf({
       selection: selection({ parts: parts("deliveryNotes") }),
       notice: null,
     });
-    expect(pages).toHaveLength(1);
+    expect(pages).toHaveLength(2);
     expect(pages[0]).toContain("BON DE LIVRAISON BL-0001-1");
+    expect(pages[1]).toContain("BON DE LIVRAISON BL-0001-1");
   });
 
   it("ne tire que le total et le calendrier d'un rayon choisi", async () => {

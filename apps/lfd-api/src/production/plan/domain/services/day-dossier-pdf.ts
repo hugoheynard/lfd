@@ -173,6 +173,9 @@ interface OrdersPass {
   readonly parts: ReadonlySet<DossierPart>;
 }
 
+/** Le BL s'imprime en deux exemplaires (décidé par Hugo le 2026-11-25). */
+const DELIVERY_NOTE_COPIES = 2;
+
 /** Un bon par commande, chacun suivi de son BL — l'un, l'autre ou les deux. */
 function drawOrders(doc: Doc, pages: PaperPages, dossier: DayDossier, pass: OrdersPass): void {
   const room = (at: number, needed: number): number => pages.room(at, needed);
@@ -184,7 +187,9 @@ function drawOrders(doc: Doc, pages: PaperPages, dossier: DayDossier, pass: Orde
     }
     const note = pass.print.deliveryNotes.get(order.orderId);
     if (pass.parts.has("deliveryNotes") && note !== undefined) {
-      pages.foreign(note);
+      for (let copy = 0; copy < DELIVERY_NOTE_COPIES; copy += 1) {
+        pages.foreign(note);
+      }
     }
   });
 }
@@ -257,7 +262,7 @@ export function drawRecapWithCalendars(
  * Une impression provisoire n'est pas archivée ici : elle ne la fait pas
  * monter.
  */
-export const DOSSIER_LAYOUT_VERSION = "v15";
+export const DOSSIER_LAYOUT_VERSION = "v16";
 
 export function dayDossierPdfKey(serviceDay: string, retakenAt: Date | null): string {
   const base = `${serviceDay}/dossier-du-jour-${DOSSIER_LAYOUT_VERSION}`;
