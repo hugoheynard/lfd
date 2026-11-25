@@ -21,6 +21,9 @@
    transfert d'encaissement**.
 5. La commande issue du reliquat garde le **prix de la commande d'origine**.
 6. `planRemainder` et les BL de rang > 1 sont du **code mort à retirer**.
+7. Le **port est offert**, obligatoirement, sur la commande issue d'un
+   reliquat : « on fait tout dans l'intérêt du client ». La transformation
+   l'impose ; ni l'équipe ni le calcul ne peuvent le remettre.
 
 ## Partie 1 — En clair
 
@@ -66,6 +69,7 @@ Ce que l'équipe doit savoir :
 
 - le prix est celui de l'origine, y compris ses **remises en pourcentage** ;
   une remise en montant fixe a déjà servi sur l'origine et ne revient pas ;
+- le **port est offert** sur la commande issue d'un reliquat, toujours ;
 - l'**heure limite** vaut comme pour toute commande passée par l'équipe :
   après l'heure, il faut une dérogation (§ 6, question 2) ;
 - un client carte remboursé du reste paie la nouvelle commande à part :
@@ -271,15 +275,59 @@ ne recopie pas `unitPriceTtcCents`, et ce chemin n'aura pas à le faire.
    la note de la commande (`orders.note`, `packages/contracts/src/order.ts:315`,
    visible du client) reste celle que l'équipe saisit, sans ajout automatique.
 
-**Ce que la nouvelle commande ne reprend pas de l'origine** : le port et le
-barème (une commande nouvelle a ses frais, § 6 question 3), la clientèle et
+**Le port offert (décision 7), par le franco qui existe.** Le franco de la
+route est le mécanisme : `priceBasket` juge `judgedFreeDelivery`
+(`orders/domain/services/free-delivery-judgement.ts:43-56`), « atteint quand
+la base vaut le seuil ou plus », et fige une `FreeDelivery` (frais facturé
+nul, ligne « Livraison offerte » affichée, barème retenu —
+`orders/domain/value-objects/free-delivery.ts`). Un seuil de **0** est
+toujours atteint. Le seuil vient de la route, dans
+`PricingContext.routeOf` (`orders/application/services/pricing-context.service.ts:308-345`) :
+`tariff.freeDeliveryThresholdCents ?? zone.value.freeDeliveryThresholdCents`.
+
+- **Le geste** : la transformation passe à la composition un seuil de franco
+  **forcé à 0** — un champ `offeredDelivery: true` de `PricingRequest`, lu
+  par `routeOf` seul, qui remplace le seuil de la route par 0. Ce n'est pas
+  un champ du corps de la route `convert` : l'équipe ne peut pas l'ôter, et
+  la passation ordinaire ne peut pas le poser. Le calcul reste celui de
+  `priceBasket` (une seule arithmétique) ; la commande fige le seuil 0 comme
+  tout franco.
+- **Pourquoi pas `frozenDeliveryFee`** : il ne s'applique que si sa
+  `zoneId` égale la zone résolue de l'adresse (`pricing-context.service.ts:330`),
+  qu'on ne connaît qu'au chargement ; le construire avant serait deviner la
+  zone.
+- **En retrait** : aucun frais, rien à offrir (`judgedFreeDelivery` rend
+  `null` quand la livraison ne coûte rien).
+- ⚠️ **La révision de la commande issue du reliquat** : la révision relit le
+  seuil figé dans la même zone (`pricing-context.service.ts:330`, « Même
+  zone : le tarif de la passation, barème et franco ») — le port reste offert.
+  **Dans une autre zone**, elle prend le barème et le seuil du jour : le port
+  redeviendrait payant. Ça contredit « ni l'équipe ni le calcul ne peuvent
+  le remettre » : § 6, question 7.
+- ⚠️ **La surtaxe de retard existe sur ce chemin** (signalé, pas tranché) :
+  une commande pour un jour dont l'heure est passée, admise par une
+  dérogation, porte la surtaxe réglée — `priceLateness`
+  (`order-cutoffs/domain/deadline/judge-order-deadline.ts:196-204`) l'ajoute
+  quand le verdict est en rattrapage, qu'une dérogation fait passer et qu'un
+  réglage existe ; la saisie de l'équipe la reçoit
+  (`orders/application/services/order-drafting.service.ts:250`, `admission.lateFee`).
+  § 6, question 8.
+
+**Ce que la nouvelle commande ne reprend pas de l'origine** : le barème de
+livraison (sans objet, le port est offert), la clientèle et
 les CGV (celles du jour, comme toute passation), le bon de fidélité (jamais
 dépensé par l'équipe).
 
 **Mur tenant** : le reliquat se lit par `company_id` ; l'acheteur doit encore
 être membre de la société (`ensureOrderMember` dans `prepareStaffOrder`).
 
-Tests : unitaire de `backorder-replay` (poids, remise % et fixe, seuil,
+Tests : **le port offert** — unitaire de `routeOf` (`offeredDelivery` met le
+seuil à 0, la passation ordinaire garde celui de la route) ; e2e : un reliquat
+transformé en livraison, dans une zone à frais et sous le franco, donne une
+commande à frais facturé nul avec « Livraison offerte » figée, la même dans
+l'estimation et la passation, et un corps `convert` qui tenterait d'y
+ajouter un frais n'a aucun champ pour le faire (schéma strict) ; unitaire de
+`backorder-replay` (poids, remise % et fixe, seuil,
 mercuriale) ; unitaire du handler (ordre, refus `converted`) ; e2e :
 transformer pour J+1 puis aujourd'hui avec dérogation, prix unitaire = celui
 de l'origine même après une hausse du catalogue, double clic = une seule
@@ -315,8 +363,8 @@ Droits : aucun nouveau. Une migration n'accorde aucun droit (`CLAUDE.md` § 3).
    l'équipe, la dérogation existante après l'heure (recommandé : l'équipe
    n'échappe à rien) ; ou la transformation d'un reliquat passe l'heure de
    droit ?
-3. **Le port** de la commande issue du reliquat : celui du jour, comme toute
-   commande (recommandé), ou offert parce que c'est un reste ?
+3. ~~Le port~~ — **tranché par Hugo le 2026-11-25** : offert, obligatoirement
+   (décision 7).
 4. **Le seuil d'une remise** acquise sur l'origine et que le reste n'atteint
    plus : la garder (recommandé, c'est le « prix d'origine »).
 5. **Un reliquat jamais traité** : reste ouvert sans limite (recommandé pour
@@ -324,6 +372,12 @@ Droits : aucun nouveau. Une migration n'accorde aucun droit (`CLAUDE.md` § 3).
 6. **Les particuliers** (commande sans société) : aucun reliquat
    (recommandé ; la saisie de l'équipe ne sait pas les servir), ou une autre
    porte à concevoir ?
+7. **Révision dans une autre zone** de la commande issue d'un reliquat : le
+   port y redeviendrait payant (règle de la révision). Garder le port offert
+   quelle que soit la zone (le seuil 0 figé l'emporte sur le barème du
+   jour), ou laisser la règle commune ?
+8. **La surtaxe de retard** sur une transformation après l'heure, avec
+   dérogation : la laisser (règle commune), ou l'ôter comme le port ?
 
 ### 7. B5 — retirer le second envoi (code mort, décision 6)
 
