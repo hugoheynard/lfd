@@ -38,6 +38,11 @@
     boutique ou offert ou abandon »).
 14. Le port reste **offert quelle que soit la zone**, y compris après une
     modification de la commande qui change la zone de livraison.
+15. Pour l'heure limite d'un **particulier**, le geste « hors plan » du
+    comptoir suffit.
+16. Le drapeau `delivery_offered` est posé sur **toute** commande issue d'un
+    reliquat, retrait compris : si elle passe ensuite en livraison, le port
+    reste offert.
 
 ## Partie 1 — En clair
 
@@ -348,10 +353,10 @@ DEFAULT false` (même migration que la table du reliquat), posée par
   côté de `frozenDeliveryFee` (`order-revising.service.ts:315`) : dans une
   autre zone, le barème du jour est lu, mais le seuil reste 0, donc le port
   reste offert.
-- **Posé même en retrait** (assumé, à confirmer par Hugo, § 6) : la décision
-  14 dit « quelle que soit la zone, y compris après une modification » ; une
-  commande transformée en retrait garde le drapeau, et une révision vers une
-  livraison aura le port offert.
+- **Posé même en retrait** (décision 16) : une commande transformée en
+  retrait porte le drapeau, et une révision vers une livraison a le port
+  offert. Test e2e : transformée en retrait, révisée vers une livraison en
+  zone à frais, port nul.
 - **Le déclencheur** laisse passer l'INSERT et refuse l'UPDATE, comme
   `orders_settlement_venue_frozen`. La colonne entre dans `orders.prisma`
   dans le même lot (`schema-drift`). L'écrivain de la révision
@@ -507,9 +512,8 @@ comme dans la saisie du particulier, sans rattachement automatique.
 **L'heure limite d'un particulier** : les dérogations sont tenues par
 société, un particulier n'en a pas ; ses exceptions passent par les gestes
 du comptoir (« jour même par la porte du comptoir, plan arrêté → hors
-plan », même doc § 5). La décision 10 vaut donc pour les pros ; pour un
-particulier, c'est le hors plan du comptoir. ⚠️ À confirmer par Hugo
-(§ 6).
+plan », même doc § 5). La décision 10 vaut pour les pros ; pour un
+particulier, le hors plan du comptoir suffit (décision 15).
 
 **Carte et paiement en boutique, dans l'ordre** : (1) décision du départ
 incomplet sur l'origine payée par carte, et naissance du reliquat ; (2)
@@ -546,13 +550,7 @@ B6 comme quatrième geste.
 
 ### 6. Questions pour Hugo
 
-Tranchées le 2026-11-25 : le nom, l'heure limite, le port, la surtaxe, le
-seuil, la durée, les particuliers, la zone (décisions 7 à 14). Restent :
-
-1. **L'heure limite d'un particulier** : pas de dérogation pour lui ; le
-   « hors plan » du comptoir suffit-il pour la décision 10 ?
-2. **Le drapeau du port offert en retrait** : posé aussi (lecture retenue de
-   la décision 14), ou seulement quand la commande transformée est livrée ?
+Toutes tranchées le 2026-11-25 (décisions 7 à 16). Aucune ne reste.
 
 ### 7. B5 — retirer le second envoi (code mort, décision 6)
 
