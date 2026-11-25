@@ -29,6 +29,8 @@ export class LineSimple {
   readonly line = input.required<WorkshopLine>();
   /** Un geste de cette ligne est en vol. */
   readonly busy = input(false);
+  /** « En attente de : Boulangerie » — les étapes qui n'ont pas coché ; `null` : aucune. */
+  readonly stepsWaiting = input<string | null>(null);
 
   /** Un « Fait » gardé sans réseau : il partira seul, la ligne le dit. */
   readonly doneWaiting = input(false);

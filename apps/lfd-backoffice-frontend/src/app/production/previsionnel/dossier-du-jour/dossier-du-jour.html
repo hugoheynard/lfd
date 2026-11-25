@@ -138,6 +138,16 @@
                       <td class="pr-qty">{{ line.label }}</td>
                       <td>
                         <span class="pr-product">{{ line.productName }}</span>
+                        <!-- Un produit sur plusieurs postes ressort sous chacun :
+                             la mention dit lequel compte les pièces. -->
+                        @switch (group.roles.get(line.sku)) {
+                          @case ('step') {
+                            <span class="pr-part" data-line-role="step">étape</span>
+                          }
+                          @case ('finishes') {
+                            <span class="pr-part" data-line-role="finishes">finit</span>
+                          }
+                        }
                         @if (line.resupplyQuantity > 0) {
                           <span class="pr-part">dont {{ line.resupplyLabel }} réassort</span>
                         }

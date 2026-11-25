@@ -54,3 +54,8 @@
 .lg-note:empty {
   display: none;
 }
+
+/* « En attente de : … » sous les chiffres, à sa largeur. */
+.lg-waiting {
+  align-self: flex-start;
+}

@@ -33,6 +33,8 @@ export class LineAlwaysGreen {
   readonly line = input.required<WorkshopLine>();
   /** Un geste de cette ligne est en vol. */
   readonly busy = input(false);
+  /** « En attente de : Boulangerie » — les étapes qui n'ont pas coché ; `null` : aucune. */
+  readonly stepsWaiting = input<string | null>(null);
 
   /** « Problème » : le parent ouvre le panneau rouge. */
   readonly problem = output<void>();

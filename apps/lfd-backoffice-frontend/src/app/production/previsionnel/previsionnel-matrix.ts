@@ -7,7 +7,7 @@ import {
 import { saleQuantityLabel } from '@lfd/b2b-ui/catalog';
 
 import type { SlotState } from '../fiche-atelier/rules/workshop-deadlines';
-import { servedGroups } from '../served-groups';
+import { distinctBySku, servedGroups } from '../served-groups';
 
 /**
  * La **matrice du prévisionnel**, telle que l'écran la lit — et rien d'autre.
@@ -139,9 +139,13 @@ export function shelvedRayons(
   });
 }
 
-/** Le total de pièces de la plage — le chiffre qu'on annonce en une phrase. */
+/**
+ * Le total de pièces de la plage — le chiffre qu'on annonce en une phrase. Un
+ * total GÉNÉRAL : un produit répété sous plusieurs postes n'y compte qu'une
+ * fois (`plan-produit-sur-plusieurs-postes.md`, § 2.7).
+ */
 export function totalOfRayons(rayons: readonly ForecastRayon[]): number {
-  return rayons.reduce((sum, rayon) => sum + rayon.totalUnits, 0);
+  return distinctBySku(rayons).reduce((sum, product) => sum + piecesOf(product), 0);
 }
 
 /**

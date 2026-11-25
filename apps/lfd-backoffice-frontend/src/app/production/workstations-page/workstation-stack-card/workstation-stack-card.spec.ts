@@ -92,6 +92,40 @@ describe('la pile d’un poste', () => {
     ]);
   });
 
+  /** Un sandwich fini à la Pâtisserie, avec une étape à la Boulangerie, à sa place dans chaque pile. */
+  const SANDWICH: WorkstationProductView = {
+    ...product('S', 'ws_b', 0),
+    workstations: [
+      { workstationId: 'ws_b', finishes: true, position: 0 },
+      { workstationId: 'ws_a', finishes: false, position: 2 },
+    ],
+  };
+
+  it('un produit d’étape figure dans la pile de chacun de ses postes, à la place de ce poste', () => {
+    const products = [...PRODUCTS, SANDWICH];
+    expect(stackOf(products, 'ws_a').map((entry) => entry.productSku)).toEqual([
+      'A',
+      'B',
+      'S',
+      'X',
+      'Y',
+    ]);
+    expect(stackOf(products, 'ws_b').map((entry) => entry.productSku)).toEqual(['S', 'T']);
+  });
+
+  it('marque « étape » le produit que ce poste ne finit pas, et lui seul', async () => {
+    const { fixture } = await mount();
+    fixture.componentRef.setInput('products', [...PRODUCTS, SANDWICH]);
+    fixture.detectChanges();
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelectorAll('[data-stack-step]')).toHaveLength(1);
+    expect(root.querySelector('[data-stack-item="S"] [data-stack-step]')).not.toBeNull();
+
+    fixture.componentInstance['select']('ws_b');
+    fixture.detectChanges();
+    expect(root.querySelector('[data-stack-step]')).toBeNull();
+  });
+
   it('montre la pile du premier poste, puis celle du poste choisi', async () => {
     const { fixture } = await mount();
     expect(skusOf(fixture)).toEqual(['A', 'B', 'X', 'Y']);

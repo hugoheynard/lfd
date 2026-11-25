@@ -1,6 +1,7 @@
 import type { WorkshopLine, WorkshopShortcutView } from '@lfd/contracts';
 
 import type { LinePending } from '../outbox/workshop-outbox';
+import { stepsWaitingLabel } from './workshop-line-gestures';
 
 /**
  * **Une rangée de la vue produit** : la ligne servie, et tout ce que l'écran
@@ -17,6 +18,8 @@ export interface WorkshopRow {
   readonly shortcuts: readonly WorkshopShortcutView[];
   /** La ligne que le lien de la cloche désigne. */
   readonly linked: boolean;
+  /** « En attente de : Boulangerie » — les étapes qui n'ont pas coché ; `null` : aucune. */
+  readonly stepsWaiting: string | null;
 }
 
 /** Ce que les rangées lisent de l'écran, ligne par ligne. */
@@ -27,6 +30,8 @@ export interface WorkshopRowSources {
   readonly doneWaiting: (sku: string) => boolean;
   readonly shortcuts: ReadonlyMap<string, readonly WorkshopShortcutView[]>;
   readonly linkedSku: string | null;
+  /** Les postes du jour, par id — pour nommer les étapes qui attendent. */
+  readonly stationNames: ReadonlyMap<string, string>;
 }
 
 export function workshopRows(
@@ -41,5 +46,6 @@ export function workshopRows(
     doneWaiting: sources.doneWaiting(line.sku),
     shortcuts: sources.shortcuts.get(line.sku) ?? [],
     linked: sources.linkedSku === line.sku,
+    stepsWaiting: stepsWaitingLabel(line, sources.stationNames),
   }));
 }

@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 import { WORKSHOP_NARROW } from '../rules/workshop-view';
 import { WorkshopProblemPanel } from '../workshop-problem-panel/workshop-problem-panel';
+import { WorkshopStepRedPanel } from '../workshop-step-red-panel/workshop-step-red-panel';
 import { WorkshopProblemOpener } from './workshop-problem-opener';
 
 class RecordingPanels {
@@ -87,5 +88,16 @@ describe("le panneau « Problème » de la fiche d'atelier", () => {
       panels.answer = answer;
       await expect(opener.openFor('2030-01-01', LINE)).resolves.toBe(false);
     }
+  });
+
+  it('ouvre le rouge d’une étape avec le poste dont c’est l’étape, au même côté', async () => {
+    const { opener, panels } = setup();
+    setNarrow(true);
+    panels.answer = true;
+    await expect(opener.openStepRedFor('2030-01-01', LINE, 'ws_b')).resolves.toBe(true);
+    expect(panels.opened[0]).toEqual({
+      component: WorkshopStepRedPanel,
+      config: { data: { date: '2030-01-01', line: LINE, workstationId: 'ws_b' }, side: 'bottom' },
+    });
   });
 });

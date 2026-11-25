@@ -37,6 +37,27 @@
   </fold-card>
 }
 
+@for (red of stepReds(); track red.sku + '|' + red.workstationId) {
+  <fold-card radius="sm" class="problem" [attr.data-step-red]="red.sku + '|' + red.workstationId">
+    <fold-element-title
+      cardHeader
+      variant="title"
+      [level]="3"
+      [title]="red.productName"
+      [subtitle]="red.sku"
+    >
+      <fold-badge titleAction variant="alert" radius="square" content="Étape" />
+    </fold-element-title>
+    <div class="problem-body">
+      <span class="problem-figures" data-step-red-station>{{ stepOf(red) }}</span>
+      @if (red.reason !== null) {
+        <span class="problem-reason" data-problem-reason>{{ red.reason }}</span>
+      }
+      <span class="problem-since">{{ since(red) }}</span>
+    </div>
+  </fold-card>
+}
+
 @for (line of unconfirmed(); track line.sku) {
   <fold-card radius="sm" class="unconfirmed" [attr.data-unconfirmed]="line.sku">
     <fold-element-title

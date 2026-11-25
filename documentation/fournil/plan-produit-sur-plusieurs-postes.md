@@ -297,3 +297,24 @@ proposition sont tranchés ici, et se discutent encore :
     une entrée de `problems` porte « Marquer traité » et un plafond, qu'une
     étape n'a pas. Tous les rouges du jour y sont, même d'un poste qui a
     quitté le produit depuis.
+
+**Tranché au bâti de L6–L7 (front, 2026-11-25), à rediscuter si besoin :**
+
+12. L'écran Postes règle les postes d'un produit dans un dialogue (feuille
+    du bas au téléphone) : une case par poste, et « Le poste qui finit »
+    parmi les cochés. Enregistrer joue les gestes dans l'ordre que la carte
+    accepte — ajouts (le futur finisseur d'abord pour un produit à ranger),
+    puis `finishing`, puis retraits ; tout décocher remet « à ranger » par
+    `placements`. Chaque geste a sa clé d'intention ; un refus s'arrête là.
+13. La puce « finit » n'est écrite que sur un produit à plusieurs postes ;
+    seul, son poste le finit sans le dire. La même règle vaut pour la
+    mention « étape » / « finit » du récapitulatif du dossier du jour.
+14. Prévisionnel, récapitulatif et filtres des réassorts répètent la ligne
+    sous chaque poste ; leurs totaux généraux (`totalPieces`,
+    `resupplyPieces`, `totalOfRayons`) se dédoublonnent par SKU.
+15. Sur la fiche, une ligne `step` n'a ni « Fait », ni fournée, ni
+    « Problème » (vue par tranche comprise) ; l'étape est « faite » quand le
+    poste n'est plus dans `stepsPending`. **Un rouge d'étape ne se voit pas
+    sur la fiche** : `WorkshopLine` ne sert pas l'état de l'étape, et un
+    rouge reste dans `stepsPending` comme une étape qui attend. Il se voit à
+    la Supervision.

@@ -3,10 +3,11 @@ import {
   type OrderSaleUnit,
   type ProductionDayResupply,
   type ProductionGroupingView,
+  type WorkshopLineRole,
 } from '@lfd/contracts';
 import { saleQuantityLabel } from '@lfd/b2b-ui/catalog';
 
-import { servedGroups } from './served-groups';
+import { distinctBySku, servedGroups } from './served-groups';
 
 /**
  * La **récapitulation de production** : ce que le lot représente, rayon par
@@ -58,6 +59,8 @@ export interface ProductionRecapGroup {
   readonly lines: readonly ProductionRecapLine[];
   /** Les intertitres de sous-catégorie (SKU de la première ligne → nom) ; vide, réglage éteint. */
   readonly intertitles: ReadonlyMap<string, string>;
+  /** SKU → « étape » ou « finit », pour les seuls produits à plusieurs postes. */
+  readonly roles: ReadonlyMap<string, WorkshopLineRole>;
 }
 
 interface Tally {
@@ -96,6 +99,7 @@ export function productionRecap(
     resupplyQuantity: group.lines.reduce((sum, line) => sum + recapResupplyPieces(line), 0),
     lines: group.lines,
     intertitles: group.intertitles,
+    roles: group.roles,
   }));
 }
 
@@ -180,12 +184,16 @@ export function recapResupplyPieces(line: ProductionRecapLine): number {
   return line.saleUnit === 'weight' ? line.resupplyCount : line.resupplyQuantity;
 }
 
-/** Le total de pièces du lot, réassorts compris — le chiffre qu'on annonce au fournil. */
+/**
+ * Le total de pièces du lot, réassorts compris — le chiffre qu'on annonce au
+ * fournil. Un total GÉNÉRAL : un produit répété sous plusieurs postes n'y
+ * compte qu'une fois (`plan-produit-sur-plusieurs-postes.md`, § 2.7).
+ */
 export function totalPieces(groups: readonly ProductionRecapGroup[]): number {
-  return groups.reduce((sum, group) => sum + group.quantity, 0);
+  return distinctBySku(groups).reduce((sum, line) => sum + recapPieces(line), 0);
 }
 
-/** Les pièces de réassort du lot — le détail du total. */
+/** Les pièces de réassort du lot — le détail du total, dédoublonné comme lui. */
 export function resupplyPieces(groups: readonly ProductionRecapGroup[]): number {
-  return groups.reduce((sum, group) => sum + group.resupplyQuantity, 0);
+  return distinctBySku(groups).reduce((sum, line) => sum + recapResupplyPieces(line), 0);
 }

@@ -1,6 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
-import type { ProductionProblemView } from '@lfd/contracts';
+import type { ProductionProblemView, ProductionStepRedView } from '@lfd/contracts';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { SupervisionService } from '../supervision.service';
@@ -131,6 +131,36 @@ describe('les problèmes du fournil en Supervision', () => {
     expect(el.querySelector('[data-unconfirmed-figures]')?.textContent).toContain(
       '24 au compte · 0 déclarée(s)',
     );
+    expect(el.querySelector('[data-problem-resolve]')).toBeNull();
+  });
+});
+
+describe('les étapes en rouge, dans la même liste', () => {
+  const RED: ProductionStepRedView = {
+    sku: 'SAN',
+    productName: 'Sandwich jambon',
+    workstationId: 'ws_b',
+    workstationName: 'Boulangerie',
+    reason: 'plus de farine',
+    reportedAt: '2026-11-25T08:12:00.000Z',
+    reportedByName: 'Léa Martin',
+    version: 2,
+  };
+
+  it('marque « étape », nomme le poste et la raison, sans « Marquer traité »', () => {
+    const { fixture, el } = render(true, []);
+    fixture.componentRef.setInput('stepReds', [RED, { ...RED, sku: 'WRA', workstationName: null }]);
+    fixture.detectChanges();
+
+    const cards = el.querySelectorAll('[data-step-red]');
+    expect(cards).toHaveLength(2);
+    expect(cards[0]?.textContent).toContain('Étape');
+    expect(cards[0]?.querySelector('[data-step-red-station]')?.textContent).toContain(
+      'Étape de Boulangerie',
+    );
+    expect(cards[0]?.textContent).toContain('plus de farine');
+    expect(cards[0]?.textContent).toContain('par Léa Martin');
+    expect(cards[1]?.textContent).toContain('n’est plus en service');
     expect(el.querySelector('[data-problem-resolve]')).toBeNull();
   });
 });

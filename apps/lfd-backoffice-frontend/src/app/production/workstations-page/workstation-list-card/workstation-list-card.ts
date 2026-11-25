@@ -104,12 +104,16 @@ export class WorkstationListCard {
   protected readonly newName = signal('');
   /** Le popover « Ajouter un poste » — public pour que la spec joue le geste sans le DOM projeté. */
   readonly addOpen = signal(false);
-  /** Le nombre de produits rangés à chaque poste — la ligne secondaire de sa carte. */
+  /**
+   * Le nombre de produits de chaque poste — la ligne secondaire de sa carte.
+   * Un produit compte chez chacun de ses postes, étapes comprises : c'est ce
+   * qui retient l'archivage.
+   */
   protected readonly counts = computed<ReadonlyMap<string, number>>(() => {
     const counts = new Map<string, number>();
     for (const product of this.products()) {
-      if (product.workstationId !== null) {
-        counts.set(product.workstationId, (counts.get(product.workstationId) ?? 0) + 1);
+      for (const { workstationId } of product.workstations) {
+        counts.set(workstationId, (counts.get(workstationId) ?? 0) + 1);
       }
     }
     return counts;

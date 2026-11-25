@@ -1,0 +1,37 @@
+<fold-panel-header
+  title="Étape en rouge"
+  [subtitle]="data().line.productName"
+  closeLabel="Fermer"
+/>
+
+<fold-panel-body>
+  <div class="sr-form">
+    <fold-input
+      label="Raison"
+      optional
+      placeholder="matière manquante, panne, retard…"
+      [value]="reason()"
+      (valueChange)="reason.set($event)"
+      data-step-red-reason
+    />
+    @if (refusal(); as refused) {
+      <fold-callout variant="alert" data-step-red-refused>{{ refused }}</fold-callout>
+    }
+  </div>
+</fold-panel-body>
+
+<fold-panel-footer align="end">
+  <button foldButton type="button" emphasis="outline" intent="neutral" (click)="close()">
+    Annuler
+  </button>
+  <button
+    foldButton
+    type="button"
+    intent="danger"
+    data-step-red-submit
+    [disabled]="sending()"
+    (click)="submit()"
+  >
+    Mettre l’étape en rouge
+  </button>
+</fold-panel-footer>

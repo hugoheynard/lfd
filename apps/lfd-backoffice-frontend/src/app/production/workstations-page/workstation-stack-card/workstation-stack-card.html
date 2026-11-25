@@ -64,6 +64,9 @@
                       }
                     </span>
                   </span>
+                  @if (isStep(product)) {
+                    <fold-badge content="étape" variant="neutral" data-stack-step />
+                  }
                 </div>
               </fold-card>
               <div class="placeholder" *cdkDragPlaceholder></div>

@@ -153,6 +153,8 @@ export class SupervisionPage {
   protected readonly problems = computed(() => dataOf(this.reads.problems())?.problems ?? []);
   /** Les lignes en toujours vert sans palier : la fournée automatique ne les complète pas. */
   protected readonly unconfirmed = computed(() => dataOf(this.reads.problems())?.unconfirmed ?? []);
+  /** Les étapes en rouge du jour, rangées avec les problèmes, marquées « étape ». */
+  protected readonly stepReds = computed(() => dataOf(this.reads.problems())?.stepReds ?? []);
   protected readonly problemsLost = computed(() => {
     const state = this.reads.problems();
     return state.status === 'error' || (state.status === 'ready' && state.stale);

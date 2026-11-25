@@ -198,10 +198,15 @@
                 [now]="now()"
                 [shortcuts]="row.shortcuts"
                 [linked]="row.linked"
+                [workstationId]="workstationId()"
+                [stepsWaiting]="row.stepsWaiting"
                 (recorded)="gestures.record(row.line, $event)"
                 (cancelled)="gestures.cancel(row.line, $event)"
                 (done)="gestures.markDone(row.line)"
                 (problem)="gestures.reportProblem(row.line)"
+                (stepDone)="stepDone(row.line)"
+                (stepRed)="stepRed(row.line)"
+                (stepUndone)="stepUndone(row.line)"
               />
             } @empty {
               <fold-empty-state
@@ -261,10 +266,15 @@
                     [doneWaiting]="row.doneWaiting"
                     [now]="now()"
                     [shortcuts]="row.shortcuts"
+                    [workstationId]="workstationId()"
+                    [stepsWaiting]="row.stepsWaiting"
                     (recorded)="gestures.record(row.line, $event)"
                     (cancelled)="gestures.cancel(row.line, $event)"
                     (done)="gestures.markDone(row.line)"
                     (problem)="gestures.reportProblem(row.line)"
+                    (stepDone)="stepDone(row.line)"
+                    (stepRed)="stepRed(row.line)"
+                    (stepUndone)="stepUndone(row.line)"
                   />
                 }
               </div>

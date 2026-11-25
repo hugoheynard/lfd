@@ -82,3 +82,41 @@ describe('les deux vues de la fiche, niveau par niveau', () => {
     expect(productView('detailed').querySelector('app-worksheet-line')).not.toBeNull();
   });
 });
+
+describe('une ligne d’étape (un produit sur plusieurs postes)', () => {
+  function stepView(level: ProductionTrackingLevel, workstationId: string | null): HTMLElement {
+    const fixture = TestBed.createComponent(WorkshopLineView);
+    fixture.componentRef.setInput('line', { ...line(level), role: 'step', stepsPending: ['ws_b'] });
+    fixture.componentRef.setInput('now', NOW);
+    fixture.componentRef.setInput('workstationId', workstationId);
+    fixture.detectChanges();
+    return fixture.nativeElement;
+  }
+
+  it('sur la fiche de son poste, se montre en étape à chaque niveau, sans « Fait » ni comptage', () => {
+    for (const level of ['always_green', 'simple', 'detailed'] as const) {
+      const host = stepView(level, 'ws_b');
+      expect(host.querySelector('app-line-step')).not.toBeNull();
+      expect(kinds(host)).toEqual({ count: false, check: false, report: false });
+    }
+  });
+
+  it('la vue par tranche n’offre aucun geste à une étape', () => {
+    const fixture = TestBed.createComponent(WorksheetSlots);
+    fixture.componentRef.setInput('lines', [{ ...line('simple'), role: 'step' }]);
+    fixture.componentRef.setInput('now', NOW);
+    fixture.detectChanges();
+    expect(kinds(fixture.nativeElement)).toEqual({ count: false, check: false, report: false });
+  });
+
+  it('la ligne qui finit dit les étapes qui attendent', () => {
+    const fixture = TestBed.createComponent(WorkshopLineView);
+    fixture.componentRef.setInput('line', { ...line('simple'), role: 'finishes' });
+    fixture.componentRef.setInput('now', NOW);
+    fixture.componentRef.setInput('stepsWaiting', 'En attente de : Boulangerie');
+    fixture.detectChanges();
+    const host: HTMLElement = fixture.nativeElement;
+    expect(host.querySelector('[data-line-steps-waiting]')).not.toBeNull();
+    expect(host.querySelector('app-line-step')).toBeNull();
+  });
+});

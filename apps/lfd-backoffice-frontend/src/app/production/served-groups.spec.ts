@@ -1,7 +1,7 @@
 import type { ProductionGroupingEntryView, ProductionGroupingView } from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
-import { servedGroups, UNGROUPED_KEY } from './served-groups';
+import { distinctBySku, servedGroups, UNGROUPED_KEY } from './served-groups';
 
 interface Line {
   readonly sku: string;
@@ -109,16 +109,29 @@ describe('le rangement servi', () => {
     expect(groups[1]?.lines.map((line) => line.sku)).toEqual(['PAC', 'TAR', 'QUI']);
   });
 
-  it("un SKU à deux postes ne se range que sous celui qui le finit, pas sous l'étape", () => {
+  it('un SKU à deux postes ressort sous chacun, et ne compte qu’une fois au total général', () => {
     const groups = servedGroups(
-      [{ sku: 'SAN', quantity: 10 }],
+      [
+        { sku: 'SAN', quantity: 10 },
+        { sku: 'PAI', quantity: 30 },
+      ],
       grouping([
         { ...entry('SAN', 'ws:bread', 'Boulangerie', 0), role: 'step' },
+        { ...entry('PAI', 'ws:bread', 'Boulangerie', 0), role: 'finishes' },
         { ...entry('SAN', 'ws:savory', 'Salé traiteur', 1), role: 'finishes' },
       ]),
       biggestFirst,
     );
 
-    expect(groups.map((group) => [group.key, group.lines.length])).toEqual([['ws:savory', 1]]);
+    expect(groups.map((group) => [group.key, group.lines.map((line) => line.sku)])).toEqual([
+      ['ws:bread', ['PAI', 'SAN']],
+      ['ws:savory', ['SAN']],
+    ]);
+    expect(distinctBySku(groups).map((line) => line.sku)).toEqual(['PAI', 'SAN']);
+    // La mention ne vaut que pour un produit à plusieurs postes.
+    expect(groups.map((group) => [...group.roles])).toEqual([
+      [['SAN', 'step']],
+      [['SAN', 'finishes']],
+    ]);
   });
 });

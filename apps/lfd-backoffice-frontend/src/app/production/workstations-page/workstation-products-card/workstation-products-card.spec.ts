@@ -7,8 +7,11 @@ import type {
 } from '@lfd/contracts';
 import { beforeEach, describe, expect, it } from 'vitest';
 
+import { FoldPanelHostService } from 'fold-ng';
+
 import { WorkstationsService } from '../../workstations.service';
-import { UNPLACED, WorkstationProductsCard } from './workstation-products-card';
+import type { ProductStationsDialogData } from '../product-stations-dialog/product-stations-dialog';
+import { WorkstationProductsCard } from './workstation-products-card';
 
 class FakeWorkstations {
   readonly placed: { payload: PlaceProductsPayload; key: string }[] = [];
@@ -38,14 +41,39 @@ function product(
   };
 }
 
+/** Le dialogue doublé : il rend ce qu'on lui a fait répondre, et garde ce qu'on lui a ouvert. */
+class FakePanels {
+  answer: boolean | undefined = true;
+  readonly asked: { data: ProductStationsDialogData; side: string }[] = [];
+  open(
+    _component: unknown,
+    config: { data: ProductStationsDialogData; side: string },
+  ): { closed: Promise<boolean | undefined> } {
+    this.asked.push(config);
+    return { closed: Promise.resolve(this.answer) };
+  }
+}
+
 const STATIONS: readonly WorkstationView[] = [
   { id: 'ws_p', name: 'Pâtisserie', position: 0, trackingLevel: null },
+  { id: 'ws_b', name: 'Boulangerie', position: 1, trackingLevel: null },
 ];
 
 const PRODUCTS = [
-  product('CRO', VIENNOISERIE, { workstationId: 'ws_p', ordered: true }),
+  product('CRO', VIENNOISERIE, {
+    workstationId: 'ws_p',
+    workstations: [{ workstationId: 'ws_p', finishes: true, position: null }],
+    ordered: true,
+  }),
   product('PAC', VIENNOISERIE),
   product('QUI', TRAITEUR, { ordered: true }),
+  product('SAN', TRAITEUR, {
+    workstationId: 'ws_p',
+    workstations: [
+      { workstationId: 'ws_p', finishes: true, position: 0 },
+      { workstationId: 'ws_b', finishes: false, position: 2 },
+    ],
+  }),
   product('TAR', TRAITEUR, {
     productName: null,
     variants: [{ sku: 'TAR-6', variantName: 'Tarte 6 parts', sellable: false }],
@@ -53,6 +81,7 @@ const PRODUCTS = [
 ];
 
 let api: FakeWorkstations;
+let panels: FakePanels;
 
 async function mount(
   unplacedFirst = false,
@@ -61,7 +90,10 @@ async function mount(
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     imports: [WorkstationProductsCard],
-    providers: [{ provide: WorkstationsService, useValue: api }],
+    providers: [
+      { provide: WorkstationsService, useValue: api },
+      { provide: FoldPanelHostService, useValue: panels },
+    ],
   });
   const fixture = TestBed.createComponent(WorkstationProductsCard);
   fixture.componentRef.setInput('products', PRODUCTS);
@@ -82,6 +114,7 @@ const skus = (card: WorkstationProductsCard): string[] =>
 describe('les produits et leur poste', () => {
   beforeEach(() => {
     api = new FakeWorkstations();
+    panels = new FakePanels();
   });
 
   it('ouvre filtré « à ranger » quand l’adresse le demande, avec le compte servi', async () => {
@@ -94,17 +127,19 @@ describe('les produits et leur poste', () => {
   it('ouvert sur un poste, ne montre que ses produits — même arrivé pour ranger — et le filtre s’efface', async () => {
     const { card } = await mount(true, 'ws_p');
 
-    expect(skus(card)).toEqual(['CRO']);
+    expect(skus(card)).toEqual(['CRO', 'SAN']);
     expect(card['onlyUnplaced']()).toBe(false);
+    card['stationFilter'].set('ws_b');
+    expect(skus(card)).toEqual(['SAN']);
     card['stationFilter'].set(null);
-    expect(skus(card)).toEqual(['CRO', 'PAC', 'QUI', 'TAR']);
+    expect(skus(card)).toEqual(['CRO', 'PAC', 'QUI', 'SAN', 'TAR']);
   });
 
   it('filtre par rayon racine et par « commandé ces jours-ci »', async () => {
     const { card } = await mount();
 
     card['shelf'].set('fam_t');
-    expect(skus(card)).toEqual(['QUI', 'TAR']);
+    expect(skus(card)).toEqual(['QUI', 'SAN', 'TAR']);
     card['onlyOrdered'].set(true);
     expect(skus(card)).toEqual(['QUI']);
   });
@@ -119,28 +154,53 @@ describe('les produits et leur poste', () => {
     expect(card['nameOf'](tarte)).toBe('Tarte 6 parts');
   });
 
-  it('place un produit à un poste, ou le remet « à ranger », avec une clé d’intention', async () => {
-    const { card } = await mount();
-    const [croissant, pac] = PRODUCTS;
-    if (croissant === undefined || pac === undefined) throw new Error('fixture');
+  it('montre les postes en puces, celui qui finit marqué « finit » quand il y en a plusieurs', async () => {
+    const { fixture } = await mount();
+    const host = fixture.nativeElement as HTMLElement;
 
-    await card['place'](pac, 'ws_p');
-    await card['place'](croissant, UNPLACED);
-
-    expect(api.placed).toEqual([
-      { payload: { productSkus: ['PAC'], workstationId: 'ws_p' }, key: expect.any(String) },
-      { payload: { productSkus: ['CRO'], workstationId: null }, key: expect.any(String) },
+    const sandwich = [...host.querySelectorAll('[data-stations="SAN"] [data-station-chip]')];
+    expect(sandwich.map((chip) => chip.textContent?.trim())).toEqual([
+      'Pâtisserie · finit',
+      'Boulangerie',
     ]);
+    expect(sandwich.map((chip) => chip.hasAttribute('data-finishes'))).toEqual([true, false]);
+    expect(host.querySelector('[data-stations="CRO"]')?.textContent).toContain('Pâtisserie');
+    expect(host.querySelector('[data-stations="CRO"]')?.textContent).not.toContain('finit');
+    expect(host.querySelector('[data-stations="PAC"]')?.textContent).toContain('À ranger');
   });
 
-  it('ne renvoie rien quand le poste choisi est déjà le sien', async () => {
+  it('ouvre le dialogue des postes du produit, et relit s’il a changé la carte', async () => {
+    const { fixture, card } = await mount();
+    let reloads = 0;
+    card.changed.subscribe(() => (reloads += 1));
+
+    (fixture.nativeElement as HTMLElement)
+      .querySelector<HTMLButtonElement>('[data-edit-stations="SAN"]')
+      ?.click();
+    await fixture.whenStable();
+
+    expect(panels.asked[0]?.data).toMatchObject({
+      productSku: 'SAN',
+      stations: [
+        { workstationId: 'ws_p', finishes: true },
+        { workstationId: 'ws_b', finishes: false },
+      ],
+      workstations: STATIONS,
+    });
+    expect(reloads).toBe(1);
+  });
+
+  it('ne relit pas quand le dialogue est fermé sans rien changer', async () => {
     const { card } = await mount();
+    panels.answer = undefined;
+    let reloads = 0;
+    card.changed.subscribe(() => (reloads += 1));
     const [croissant] = PRODUCTS;
     if (croissant === undefined) throw new Error('fixture');
 
-    await card['place'](croissant, 'ws_p');
+    await card['editStations'](croissant);
 
-    expect(api.placed).toEqual([]);
+    expect(reloads).toBe(0);
   });
 
   it('« tout ce rayon → ce poste » place tout le rayon, quels que soient les autres filtres', async () => {
@@ -151,7 +211,10 @@ describe('les produits et leur poste', () => {
     card['bulkTarget'].set('ws_p');
     await card['placeShelf']();
 
-    expect(api.placed[0]?.payload).toEqual({ productSkus: ['QUI', 'TAR'], workstationId: 'ws_p' });
+    expect(api.placed[0]?.payload).toEqual({
+      productSkus: ['QUI', 'SAN', 'TAR'],
+      workstationId: 'ws_p',
+    });
   });
 
   it('dit les SKU commandés qui ne sont plus au catalogue', async () => {

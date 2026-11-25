@@ -9,7 +9,7 @@ import type { ProductionGroupingEntryView, ProductionGroupingView } from '@lfd/c
  *
  * `null` : mode boutique, ou rangement non lu — le filtre par famille vaut.
  */
-export type WorkstationFilter = ReadonlyMap<string, ProductionGroupingEntryView>;
+export type WorkstationFilter = ReadonlyMap<string, readonly ProductionGroupingEntryView[]>;
 
 export function workstationFilterOf(
   grouping: ProductionGroupingView | null,
@@ -17,24 +17,29 @@ export function workstationFilterOf(
   if (grouping?.mode !== 'workstation') {
     return null;
   }
-  // Un SKU à plusieurs postes a une entrée par poste ; le filtre ne le range
-  // encore que sous celui qui le finit (les étapes sont écartées).
-  return new Map(
-    grouping.entries.filter((entry) => entry.role !== 'step').map((entry) => [entry.sku, entry]),
-  );
+  // Un SKU à plusieurs postes a une entrée par poste, étapes comprises : il
+  // se voit sous la puce de chacun (`plan-produit-sur-plusieurs-postes.md`, § 2.7).
+  const bySku = new Map<string, ProductionGroupingEntryView[]>();
+  for (const entry of grouping.entries) {
+    bySku.set(entry.sku, [...(bySku.get(entry.sku) ?? []), entry]);
+  }
+  return bySku;
 }
 
 /**
- * La clé de filtre d'un article : son groupe servi en mode prod, sa famille
- * sinon. `null` : un SKU que le rangement ne nomme pas — il ne se voit que
- * sous « Tout ».
+ * Les clés de filtre d'un article : ses groupes servis en mode prod — un par
+ * poste du produit —, sa famille sinon. Vide : un SKU que le rangement ne
+ * nomme pas — il ne se voit que sous « Tout ».
  */
-export function filterKeyOf(
+export function filterKeysOf(
   filter: WorkstationFilter | null,
   sku: string,
   categoryId: string | null,
-): string | null {
-  return filter === null ? categoryId : (filter.get(sku)?.key ?? null);
+): readonly string[] {
+  if (filter === null) {
+    return categoryId === null ? [] : [categoryId];
+  }
+  return (filter.get(sku) ?? []).map((entry) => entry.key);
 }
 
 /** Les puces du mode prod, dans l'ordre des fiches, pour ces SKU. */
@@ -44,9 +49,10 @@ export function workstationOptionsOf(
 ): readonly { readonly value: string; readonly label: string; readonly order: number }[] {
   const groups = new Map<string, { value: string; label: string; order: number }>();
   for (const sku of skus) {
-    const entry = filter.get(sku);
-    if (entry !== undefined && !groups.has(entry.key)) {
-      groups.set(entry.key, { value: entry.key, label: entry.title, order: entry.order });
+    for (const entry of filter.get(sku) ?? []) {
+      if (!groups.has(entry.key)) {
+        groups.set(entry.key, { value: entry.key, label: entry.title, order: entry.order });
+      }
     }
   }
   return [...groups.values()].sort((left, right) => left.order - right.order);

@@ -2,7 +2,7 @@ import { type ProductSearchKeys } from '@lfd/b2b-ui/search';
 import type { ResupplyArticleView } from '@lfd/contracts';
 
 import {
-  filterKeyOf,
+  filterKeysOf,
   type WorkstationFilter,
   workstationOptionsOf,
 } from '../../workstation-filter';
@@ -38,15 +38,13 @@ export function familyOptionsOf(
     }
   }
   for (const article of articles) {
-    const key = filterKeyOf(stations, article.sku, article.categoryId);
-    if (key === null) {
-      continue;
+    for (const key of filterKeysOf(stations, article.sku, article.categoryId)) {
+      const family = families.get(key) ?? { label: article.categoryName, asked: 0 };
+      if ((quantities.get(article.sku) ?? 0) > 0) {
+        family.asked += 1;
+      }
+      families.set(key, family);
     }
-    const family = families.get(key) ?? { label: article.categoryName, asked: 0 };
-    if ((quantities.get(article.sku) ?? 0) > 0) {
-      family.asked += 1;
-    }
-    families.set(key, family);
   }
   return [
     { value: ALL_FAMILIES, label: 'Tout' },
@@ -65,7 +63,7 @@ export function articlesOfFamily(
 ): readonly ResupplyArticleView[] {
   return family === ALL_FAMILIES
     ? articles
-    : articles.filter(
-        (article) => filterKeyOf(stations, article.sku, article.categoryId) === family,
+    : articles.filter((article) =>
+        filterKeysOf(stations, article.sku, article.categoryId).includes(family),
       );
 }

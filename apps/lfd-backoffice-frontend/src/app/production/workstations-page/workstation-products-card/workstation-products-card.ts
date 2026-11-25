@@ -17,6 +17,7 @@ import type {
 } from '@lfd/contracts';
 import { httpErrorMessage } from '@lfd/endpoints';
 import {
+  FoldBadgeComponent,
   FoldButtonComponent,
   FoldCalloutComponent,
   FoldCardComponent,
@@ -25,19 +26,29 @@ import {
   FoldDataTableComponent,
   FoldElementTitleComponent,
   FoldListboxComponent,
+  FoldPanelHostService,
   type FoldSelectOption,
   type FoldTableColumn,
 } from 'fold-ng';
 
+import { dialogSide } from '../../../b2b/reglages/delivery-zones-section/delivery-audiences';
 import { GestureIntents, shownOnce } from '../../../shared/gesture-intents';
 import { WorkstationsService } from '../../workstations.service';
+import {
+  ProductStationsDialog,
+  type ProductStationsDialogData,
+} from '../product-stations-dialog/product-stations-dialog';
 
-/** La valeur « à ranger » du choix de poste : hors de l'espace des identifiants. */
-export const UNPLACED = '';
+/** Une puce de poste : son nom, et s'il finit le produit. */
+export interface StationChip {
+  readonly id: string;
+  readonly name: string;
+  readonly finishes: boolean;
+}
 
 const COLUMNS: readonly FoldTableColumn<WorkstationProductView>[] = [
   { key: 'product', label: 'Produit' },
-  { key: 'workstation', label: 'Poste' },
+  { key: 'workstation', label: 'Postes' },
   { key: 'shelf', label: 'Rayon' },
 ];
 
@@ -67,7 +78,9 @@ function rootOf(
 /**
  * **Les produits et leur poste** (`documentation/fournil/les-postes-du-fournil.md`,
  * § 3.8) : chaque produit avec son rayon, ses déclinaisons dessous pour
- * information, et le choix de son poste. Les déclinaisons en héritent.
+ * information, et ses postes en puces — celui qui finit marqué « finit »
+ * (`plan-produit-sur-plusieurs-postes.md`, § 2.9). Les régler ouvre un
+ * dialogue, en feuille du bas au téléphone. Les déclinaisons en héritent.
  *
  * Filtres : « à ranger » (avec son compte), « commandé ces jours-ci », un
  * rayon, et la recherche. Un rayon choisi ouvre « tout ce rayon → ce poste »,
@@ -79,6 +92,7 @@ function rootOf(
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     ProductSearch,
+    FoldBadgeComponent,
     FoldButtonComponent,
     FoldCalloutComponent,
     FoldCardComponent,
@@ -93,6 +107,7 @@ function rootOf(
 })
 export class WorkstationProductsCard {
   private readonly api = inject(WorkstationsService);
+  private readonly panels = inject(FoldPanelHostService);
   private readonly intents = new GestureIntents();
 
   readonly products = input.required<readonly WorkstationProductView[]>();
@@ -128,12 +143,6 @@ export class WorkstationProductsCard {
 
   protected readonly unplacedLabel = computed(() => `À ranger (${String(this.unplacedCount())})`);
 
-  /** « À ranger », puis les postes dans l'ordre des fiches. */
-  protected readonly workstationOptions = computed<readonly FoldSelectOption<string>[]>(() => [
-    { value: UNPLACED, label: 'À ranger' },
-    ...this.workstations().map((station) => ({ value: station.id, label: station.name })),
-  ]);
-
   /** Les postes seuls : la cible de « tout ce rayon ». */
   protected readonly targetOptions = computed<readonly FoldSelectOption<string>[]>(() =>
     this.workstations().map((station) => ({ value: station.id, label: station.name })),
@@ -159,8 +168,9 @@ export class WorkstationProductsCard {
     return searchProducts(
       this.products().filter(
         (product) =>
-          (!this.onlyUnplaced() || product.workstationId === null) &&
-          (station === null || product.workstationId === station) &&
+          (!this.onlyUnplaced() || product.workstations.length === 0) &&
+          (station === null ||
+            product.workstations.some((placed) => placed.workstationId === station)) &&
           (!this.onlyOrdered() || product.ordered) &&
           (shelf === null || rootOf(product)?.id === shelf),
       ),
@@ -184,22 +194,44 @@ export class WorkstationProductsCard {
     return product.family?.name ?? 'Plus au catalogue';
   }
 
-  /** Le nom du poste d'un produit, pour qui ne peut pas le changer. */
-  protected workstationNameOf(product: WorkstationProductView): string {
-    const id = product.workstationId;
-    return this.workstations().find((station) => station.id === id)?.name ?? 'À ranger';
+  /** Ses postes en puces, celui qui finit en premier ; un poste archivé n'en a pas. */
+  protected chipsOf(product: WorkstationProductView): readonly StationChip[] {
+    const names = new Map(this.workstations().map((station) => [station.id, station.name]));
+    return product.workstations.flatMap((placed) => {
+      const name = names.get(placed.workstationId);
+      return name === undefined
+        ? []
+        : [{ id: placed.workstationId, name, finishes: placed.finishes }];
+    });
   }
 
-  protected placementOf(product: WorkstationProductView): string {
-    return product.workstationId ?? UNPLACED;
+  /** La puce dit le poste, et « finit » pour celui qui compte les pièces. */
+  protected chipLabel(chip: StationChip, alone: boolean): string {
+    return chip.finishes && !alone ? `${chip.name} · finit` : chip.name;
   }
 
-  protected place(product: WorkstationProductView, value: string): Promise<void> {
-    const workstationId = value === UNPLACED ? null : value;
-    if (workstationId === product.workstationId) {
-      return Promise.resolve();
+  /** Le dialogue des postes du produit ; la page relit s'il a changé quelque chose. */
+  protected async editStations(product: WorkstationProductView): Promise<void> {
+    if (!this.canWrite()) {
+      return;
     }
-    return this.send([product.productSku], workstationId);
+    const changed = await this.panels.open<ProductStationsDialogData, boolean>(
+      ProductStationsDialog,
+      {
+        data: {
+          productSku: product.productSku,
+          productName: productNameOf(product),
+          stations: product.workstations,
+          workstations: this.workstations(),
+        },
+        side: dialogSide(),
+        width: 'sm',
+        surface: 'solid',
+      },
+    ).closed;
+    if (changed === true) {
+      this.changed.emit();
+    }
   }
 
   protected placeShelf(): Promise<void> {
@@ -211,17 +243,15 @@ export class WorkstationProductsCard {
     return this.send(skus, target);
   }
 
-  private async send(productSkus: readonly string[], workstationId: string | null): Promise<void> {
+  private async send(productSkus: readonly string[], workstationId: string): Promise<void> {
     if (!this.canWrite() || this.busy()) {
       return;
     }
     this.busy.set(true);
     this.refusal.set(null);
     try {
-      await shownOnce(
-        this.intents,
-        `place:${productSkus.join(',')}:${workstationId ?? UNPLACED}`,
-        (key) => this.api.place({ productSkus: [...productSkus], workstationId }, key),
+      await shownOnce(this.intents, `place:${productSkus.join(',')}:${workstationId}`, (key) =>
+        this.api.place({ productSkus: [...productSkus], workstationId }, key),
       );
       this.changed.emit();
     } catch (error) {

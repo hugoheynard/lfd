@@ -3,6 +3,7 @@ import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
 import type {
+  MarkWorkshopStepRed,
   ProductionWorksheetRetake,
   ProductionWorksheetView,
   RecordWorkshopBatch,
@@ -95,6 +96,51 @@ export class WorksheetService {
     await firstValueFrom(this.http.post<void>(url, payload, intentOptions(intentKey)));
   }
 
+  /**
+   * **« Étape faite »** (`fournil/plan-produit-sur-plusieurs-postes.md`, § 2.6) :
+   * le poste coche sa part de la ligne, sans compter de pièce. Par intention ;
+   * 409 si ce poste finit la ligne ou n'en est pas un poste.
+   */
+  async markStepDone(
+    date: string,
+    sku: string,
+    workstationId: string,
+    intentKey: string,
+  ): Promise<void> {
+    await firstValueFrom(
+      this.http.post<void>(this.stepUrl(date, sku, workstationId), {}, intentOptions(intentKey)),
+    );
+  }
+
+  /** **Le rouge d'une étape**, une raison si on veut ; sans plafond. Par intention. */
+  async markStepRed(
+    date: string,
+    sku: string,
+    workstationId: string,
+    payload: MarkWorkshopStepRed,
+    intentKey: string,
+  ): Promise<void> {
+    await firstValueFrom(
+      this.http.post<void>(
+        `${this.stepUrl(date, sku, workstationId)}/red`,
+        payload,
+        intentOptions(intentKey),
+      ),
+    );
+  }
+
+  /** **Décocher** une étape : elle attend de nouveau. Par intention. */
+  async undoStep(
+    date: string,
+    sku: string,
+    workstationId: string,
+    intentKey: string,
+  ): Promise<void> {
+    await firstValueFrom(
+      this.http.delete<void>(this.stepUrl(date, sku, workstationId), intentOptions(intentKey)),
+    );
+  }
+
   /** Le **retirage** : absorber ce qui est arrivé depuis que le plan est arrêté. */
   async retake(date: string): Promise<ProductionWorksheetRetake> {
     return firstValueFrom(
@@ -103,6 +149,10 @@ export class WorksheetService {
         {},
       ),
     );
+  }
+
+  private stepUrl(date: string, sku: string, workstationId: string): string {
+    return `${this.worksheetUrl(date)}/lines/${encodeURIComponent(sku)}/steps/${encodeURIComponent(workstationId)}`;
   }
 
   private worksheetUrl(date: string): string {

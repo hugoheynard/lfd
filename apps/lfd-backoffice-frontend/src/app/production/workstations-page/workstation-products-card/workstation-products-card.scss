@@ -37,3 +37,11 @@
   font-size: var(--fold-text-xs);
   color: var(--fold-color-text-muted);
 }
+
+/* Les postes du produit en puces, puis le geste qui les règle. */
+.stations {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-xs);
+  align-items: center;
+}

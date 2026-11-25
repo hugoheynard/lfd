@@ -1,6 +1,15 @@
 <span class="lg-what">
   <span class="lg-name">{{ line().productName }}</span>
   <span class="lg-figures" data-line-figures>{{ figures() }}</span>
+  @if (stepsWaiting(); as said) {
+    <fold-badge
+      class="lg-waiting"
+      variant="neutral"
+      radius="square"
+      [content]="said"
+      data-line-steps-waiting
+    />
+  }
 </span>
 
 <span class="lg-steps" aria-label="Paliers">

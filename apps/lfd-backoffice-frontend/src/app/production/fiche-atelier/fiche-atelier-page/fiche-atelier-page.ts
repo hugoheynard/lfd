@@ -224,6 +224,21 @@ export class FicheAtelier {
   /** Le nom du poste de la fiche ouverte (mode prod) ; `null` pour un rayon. */
   protected readonly workstationName = computed(() => this.current()?.workstation?.name ?? null);
 
+  /** Le poste de la fiche ouverte : celui dont une ligne d'étape est l'étape. */
+  protected readonly workstationId = computed(() => this.current()?.workstation?.id ?? null);
+
+  /** Les postes des fiches du jour, par id — pour nommer les étapes qui attendent. */
+  private readonly stationNames = computed<ReadonlyMap<string, string>>(
+    () =>
+      new Map(
+        this.day
+          .groups()
+          .flatMap((group) =>
+            group.workstation == null ? [] : [[group.workstation.id, group.workstation.name]],
+          ),
+      ),
+  );
+
   /** Le rang de la fiche dans la liste servie — « fiche 2 sur 5 ». */
   protected readonly rank = computed(() => {
     const current = this.current();
@@ -320,7 +335,24 @@ export class FicheAtelier {
       doneWaiting: (sku) => this.outbox.doneWaiting(date, sku),
       shortcuts: this.shortcuts.bySku(),
       linkedSku: this.linkedSku(),
+      stationNames: this.stationNames(),
     });
+  }
+
+  /** Les gestes d'une étape visent le poste de la fiche ouverte. */
+  protected stepDone(line: WorkshopLine): void {
+    const station = this.workstationId();
+    if (station !== null) void this.gestures.markStepDone(line, station);
+  }
+
+  protected stepRed(line: WorkshopLine): void {
+    const station = this.workstationId();
+    if (station !== null) void this.gestures.reportStepRed(line, station);
+  }
+
+  protected stepUndone(line: WorkshopLine): void {
+    const station = this.workstationId();
+    if (station !== null) void this.gestures.undoStep(line, station);
   }
 
   protected toggleDone(): void {

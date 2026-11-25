@@ -1,0 +1,47 @@
+<span class="lt-what">
+  <span class="lt-name">
+    {{ line().productName }}
+    <fold-badge radius="square" variant="neutral" content="étape" data-line-step-badge />
+  </span>
+  <span class="lt-figures" data-line-figures>{{ figures() }}</span>
+</span>
+
+<span class="lt-actions">
+  @if (stepDone()) {
+    <fold-badge variant="success" content="✓ étape faite" data-step-done-badge />
+    <button
+      foldButton
+      type="button"
+      emphasis="outline"
+      intent="neutral"
+      data-step-undo-button
+      [disabled]="busy()"
+      (click)="undone.emit()"
+    >
+      Décocher
+    </button>
+  } @else {
+    <button
+      foldButton
+      type="button"
+      size="lg"
+      data-step-done-button
+      [disabled]="busy()"
+      (click)="done.emit()"
+    >
+      Étape faite
+    </button>
+    <button
+      foldButton
+      type="button"
+      size="lg"
+      intent="danger"
+      emphasis="outline"
+      data-step-red-button
+      [disabled]="busy()"
+      (click)="red.emit()"
+    >
+      Rouge
+    </button>
+  }
+</span>

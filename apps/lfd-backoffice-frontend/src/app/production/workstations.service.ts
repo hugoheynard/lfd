@@ -97,6 +97,47 @@ export class WorkstationsService {
     );
   }
 
+  /** Ce poste de plus pour ces produits : le premier poste d'un produit le finit. */
+  async addToProducts(
+    id: string,
+    productSkus: readonly string[],
+    intentKey: string,
+  ): Promise<void> {
+    await firstValueFrom(
+      this.http.post(
+        `${WORKSTATIONS}/${encodeURIComponent(id)}/products`,
+        { productSkus },
+        intentOptions(intentKey),
+      ),
+    );
+  }
+
+  /** Ce poste quitte ces produits ; refusé pour celui qui finit tant qu'il en reste d'autres. */
+  async removeFromProducts(
+    id: string,
+    productSkus: readonly string[],
+    intentKey: string,
+  ): Promise<void> {
+    await firstValueFrom(
+      this.http.post(
+        `${WORKSTATIONS}/${encodeURIComponent(id)}/products/removal`,
+        { productSkus },
+        intentOptions(intentKey),
+      ),
+    );
+  }
+
+  /** Ce poste finit désormais ce produit : il doit déjà en être un poste. */
+  async setFinishing(id: string, productSku: string, intentKey: string): Promise<void> {
+    await firstValueFrom(
+      this.http.put(
+        `${WORKSTATIONS}/${encodeURIComponent(id)}/finishing`,
+        { productSku },
+        intentOptions(intentKey),
+      ),
+    );
+  }
+
   /**
    * Le rangement de ces SKU selon le réglage du fournil (§ 3.7) — une LECTURE
    * en `POST`. Au-delà de la borne du serveur, la liste est coupée : c'est le

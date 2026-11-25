@@ -35,6 +35,7 @@ import { ORDER_TRACE_PHRASES } from './order-trace-phrases';
 import { PRICING_PHRASES } from './pricing-phrases';
 import { PRODUCTION_QUALITY_PHRASES } from './production-quality-phrases';
 import { PRODUCTION_SETTINGS_PHRASES } from './production-settings-phrases';
+import { PRODUCTION_LINE_STEP_PHRASES } from './production-line-step-phrases';
 import { PRODUCTION_PROBLEM_PHRASES } from './production-problem-phrases';
 import { PRODUCTION_WORKSTATION_PHRASES } from './production-workstation-phrases';
 import { QUALITY_CONTROL_SETTINGS_PHRASES } from './quality-control-settings-phrases';
@@ -204,6 +205,7 @@ export const PHRASES: Readonly<Record<JournalFactType, Phrase>> = {
   ...PRODUCTION_SETTINGS_PHRASES,
   ...PRODUCTION_WORKSTATION_PHRASES,
   ...PRODUCTION_PROBLEM_PHRASES,
+  ...PRODUCTION_LINE_STEP_PHRASES,
   ...QUALITY_CONTROL_SETTINGS_PHRASES,
   ...PRICING_PHRASES,
   ...ACCOUNTS_PHRASES,

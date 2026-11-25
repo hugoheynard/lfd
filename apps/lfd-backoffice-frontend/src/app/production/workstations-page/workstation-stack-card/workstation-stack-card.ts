@@ -9,9 +9,14 @@ import {
   output,
   signal,
 } from '@angular/core';
-import type { WorkstationProductView, WorkstationView } from '@lfd/contracts';
+import type {
+  WorkstationProductStationView,
+  WorkstationProductView,
+  WorkstationView,
+} from '@lfd/contracts';
 import { httpErrorCode, httpErrorMessage } from '@lfd/endpoints';
 import {
+  FoldBadgeComponent,
   FoldCalloutComponent,
   FoldCardComponent,
   FoldElementTitleComponent,
@@ -31,19 +36,31 @@ export const ORDER_MISMATCH = 'production.workstation.order_mismatch';
 /** Au toucher, un appui long avant de saisir : le doigt fait d'abord défiler. */
 const DRAG_START_DELAY = { touch: 250, mouse: 0 } as const;
 
+/** La ligne d'un produit chez ce poste, ou `undefined` s'il n'en est pas un poste. */
+function stationOf(
+  product: WorkstationProductView,
+  workstationId: string,
+): WorkstationProductStationView | undefined {
+  return product.workstations.find((station) => station.workstationId === workstationId);
+}
+
 /**
- * La pile d'un poste : ses produits qui ont une place, du plus petit rang au
- * plus grand, puis ceux sans place dans l'ordre reçu (celui du catalogue).
+ * La pile d'un poste : tous les produits qui ont une ligne chez lui — qu'il
+ * les finisse ou en fasse une étape (`plan-produit-sur-plusieurs-postes.md`,
+ * § 2.4) —, ceux qui ont une place dans CE poste du plus petit rang au plus
+ * grand, puis ceux sans place dans l'ordre reçu (celui du catalogue).
  */
 export function stackOf(
   products: readonly WorkstationProductView[],
   workstationId: string,
 ): readonly WorkstationProductView[] {
-  const mine = products.filter((product) => product.workstationId === workstationId);
+  const positionOf = (product: WorkstationProductView): number | null =>
+    stationOf(product, workstationId)?.position ?? null;
+  const mine = products.filter((product) => stationOf(product, workstationId) !== undefined);
   const placed = mine
-    .filter((product) => product.position !== null)
-    .sort((left, right) => (left.position ?? 0) - (right.position ?? 0));
-  return [...placed, ...mine.filter((product) => product.position === null)];
+    .filter((product) => positionOf(product) !== null)
+    .sort((left, right) => (positionOf(left) ?? 0) - (positionOf(right) ?? 0));
+  return [...placed, ...mine.filter((product) => positionOf(product) === null)];
 }
 
 function nameOf(product: WorkstationProductView): string {
@@ -53,7 +70,8 @@ function nameOf(product: WorkstationProductView): string {
 /**
  * **La pile d'un poste** (`documentation/fournil/les-postes-du-fournil.md`,
  * « La pile d'un poste ») : l'ordre dans lequel un poste voit ses produits en
- * mode prod. On choisit un poste, puis on déplace ses produits — de petites
+ * mode prod — ceux dont il fait une étape y figurent, marqués « étape ». On
+ * choisit un poste, puis on déplace ses produits — de petites
  * cartes — par glisser-déposer, ou au clavier par les flèches sur leur poignée. Chaque
  * déplacement envoie la pile entière, par intention ; le parent relit ensuite.
  */
@@ -64,6 +82,7 @@ function nameOf(product: WorkstationProductView): string {
     CdkDrag,
     CdkDragPlaceholder,
     CdkDropList,
+    FoldBadgeComponent,
     FoldCalloutComponent,
     FoldCardComponent,
     FoldElementTitleComponent,
@@ -130,6 +149,12 @@ export class WorkstationStackCard {
   protected readonly announcement = signal('');
 
   protected readonly nameOf = nameOf;
+
+  /** Ce poste ne finit pas le produit : il en fait une étape, qui ne compte aucune pièce. */
+  protected isStep(product: WorkstationProductView): boolean {
+    const id = this.selected();
+    return id !== null && stationOf(product, id)?.finishes === false;
+  }
 
   protected select(id: string | null): void {
     this.selected.set(id);

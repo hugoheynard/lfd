@@ -39,6 +39,9 @@
     @if (waiting(); as said) {
       <fold-badge class="wl-waiting" variant="warning" radius="square" [content]="said" />
     }
+    @if (stepsWaiting(); as said) {
+      <fold-badge variant="neutral" radius="square" [content]="said" data-line-steps-waiting />
+    }
     @if (quality(); as badge) {
       <fold-badge
         class="wl-quality"

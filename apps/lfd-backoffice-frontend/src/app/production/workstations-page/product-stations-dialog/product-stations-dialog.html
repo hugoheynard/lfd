@@ -1,0 +1,50 @@
+<fold-panel-header title="Postes du produit" [subtitle]="data().productName" />
+
+<fold-panel-body>
+  <div class="fields">
+    <fold-fieldset
+      legend="Les postes qui le font"
+      [hint]="finisherOptions().length === 0 ? 'Sans poste, le produit retourne « à ranger ».' : ''"
+      [disabled]="saving()"
+      data-station-choices
+    >
+      @for (station of data().workstations; track station.id) {
+        <fold-checkbox
+          [label]="station.name"
+          [checked]="isChosen(station.id)"
+          (checkedChange)="toggle(station.id, $event)"
+          [attr.data-station-choice]="station.id"
+        />
+      }
+    </fold-fieldset>
+
+    @if (finisherOptions().length > 1) {
+      <fold-listbox
+        label="Le poste qui finit"
+        hint="Seul son « Fait » compte des pièces et les remet au colisage ; les autres cochent une étape."
+        [options]="finisherOptions()"
+        [value]="finishing()"
+        [disabled]="saving()"
+        (selectionChange)="finisher.set($event)"
+        data-station-finisher
+      />
+    }
+
+    @if (failure(); as message) {
+      <fold-callout variant="alert" announce data-stations-refusal>{{ message }}</fold-callout>
+    }
+  </div>
+</fold-panel-body>
+
+<fold-panel-footer>
+  <button foldButton emphasis="outline" intent="neutral" (click)="cancel()">Annuler</button>
+  <button
+    foldButton
+    data-stations-submit
+    [disabled]="gestures().length === 0 || saving()"
+    [loading]="saving()"
+    (click)="submit()"
+  >
+    Enregistrer
+  </button>
+</fold-panel-footer>

@@ -131,6 +131,18 @@ class FakeWorksheetService {
     await this.answer();
   }
 
+  readonly steps: { gesture: string; sku: string; station: string; key: string }[] = [];
+
+  async markStepDone(_date: string, sku: string, station: string, key: string): Promise<void> {
+    this.steps.push({ gesture: 'done', sku, station, key });
+    await this.answer();
+  }
+
+  async undoStep(_date: string, sku: string, station: string, key: string): Promise<void> {
+    this.steps.push({ gesture: 'undo', sku, station, key });
+    await this.answer();
+  }
+
   release(): void {
     for (const resolve of this.held.splice(0)) {
       resolve();
@@ -168,6 +180,13 @@ class StubProblemOpener {
   failure: unknown = null;
   hold = false;
   private readonly held: (() => void)[] = [];
+
+  readonly stepReds: { sku: string; station: string }[] = [];
+
+  async openStepRedFor(_date: string, opened: WorkshopLine, station: string): Promise<boolean> {
+    this.stepReds.push({ sku: opened.sku, station });
+    return this.answer;
+  }
 
   async openFor(date: string, opened: WorkshopLine): Promise<boolean> {
     this.opened.push({ date, sku: opened.sku });
@@ -676,6 +695,63 @@ describe('WorkshopGestures — « Problème »', () => {
     );
     expect(feedback.refused_.at(-1)).toBe(gestures.refused());
     expect(gestures.isBusy(BAGUETTE)).toBe(false);
+  });
+});
+
+describe('WorkshopGestures — les étapes', () => {
+  const SANDWICH = line({ sku: 'SAN', productName: 'Sandwich', role: 'step' });
+
+  it('« Étape faite » vise le poste, sous une clé, relit et le dit', async () => {
+    const { gestures, day } = build();
+    await day.load();
+
+    await gestures.markStepDone(SANDWICH, 'ws_b');
+
+    expect(api.steps).toEqual([
+      { gesture: 'done', sku: 'SAN', station: 'ws_b', key: expect.any(String) },
+    ]);
+    expect(api.reads).toBe(2);
+    expect(feedback.accepted_).toEqual(['Sandwich : étape faite']);
+    expect(day.busy().size).toBe(0);
+  });
+
+  it('après un refus, le réessai repart sous la MÊME clé ; abouti, le suivant est neuf', async () => {
+    const { gestures, day } = build();
+    await day.load();
+    api.writeError = refusal409('Ce poste finit la ligne.');
+
+    await gestures.markStepDone(SANDWICH, 'ws_b');
+    expect(gestures.refused()).toContain('Ce poste finit la ligne.');
+    api.writeError = null;
+    await gestures.markStepDone(SANDWICH, 'ws_b');
+    await gestures.markStepDone(SANDWICH, 'ws_b');
+
+    const keys = api.steps.map((step) => step.key);
+    expect(keys[1]).toBe(keys[0]);
+    expect(keys[2]).not.toBe(keys[1]);
+  });
+
+  it('décocher a sa propre clé', async () => {
+    const { gestures, day } = build();
+    await day.load();
+
+    await gestures.markStepDone(SANDWICH, 'ws_b');
+    await gestures.undoStep(SANDWICH, 'ws_b');
+
+    expect(api.steps.map((step) => step.gesture)).toEqual(['done', 'undo']);
+    expect(api.steps[1]?.key).not.toBe(api.steps[0]?.key);
+  });
+
+  it('le rouge d’une étape ouvre son panneau sur le poste, et relit s’il est pris', async () => {
+    const { gestures, day } = build();
+    await day.load();
+    opener.answer = true;
+
+    await gestures.reportStepRed(SANDWICH, 'ws_b');
+
+    expect(opener.stepReds).toEqual([{ sku: 'SAN', station: 'ws_b' }]);
+    expect(api.reads).toBe(2);
+    expect(day.busy().size).toBe(0);
   });
 });
 

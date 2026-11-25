@@ -7,7 +7,11 @@ import {
   FoldElementTitleComponent,
 } from 'fold-ng';
 
-import type { ProductionProblemView, ProductionUnconfirmedLineView } from '@lfd/contracts';
+import type {
+  ProductionProblemView,
+  ProductionStepRedView,
+  ProductionUnconfirmedLineView,
+} from '@lfd/contracts';
 
 import { serverMessageOf } from '../../production/server-message';
 import { hourLabel } from '../../production/worksheet-day';
@@ -24,6 +28,11 @@ import { SupervisionService } from '../supervision.service';
  * « Marquer traité » part sous la clé d'une {@link GestureIntents} par
  * problème ; un succès fait relire la liste (`resolved`), un refus reste
  * écrit au-dessus des cartes.
+ *
+ * Dans la même liste, les étapes en rouge (`plan-produit-sur-plusieurs-postes.md`,
+ * § 2.11), marquées « étape » : un poste qui ne finit pas la ligne a mis sa
+ * part en rouge. Ni plafond ni « Marquer traité » — l'étape sort du rouge
+ * quand son poste la coche ou la décoche.
  *
  * Sous les rouges, les lignes « à confirmer » : en toujours vert,
  * sans palier à heure ce jour-là, la fournée automatique ne les complète pas
@@ -47,6 +56,8 @@ export class ProductionProblems {
   private readonly intents = new GestureIntents();
 
   readonly problems = input.required<readonly ProductionProblemView[]>();
+  /** Les étapes en rouge du jour, les plus anciennes d'abord. */
+  readonly stepReds = input<readonly ProductionStepRedView[]>([]);
   /** Les lignes en toujours vert sans palier, pas encore sorties en entier. */
   readonly unconfirmed = input<readonly ProductionUnconfirmedLineView[]>([]);
   /** `b2b_supervision:write` : « Marquer traité ». */
@@ -71,8 +82,15 @@ export class ProductionProblems {
     return `${String(line.quantity)} au compte · ${String(line.output)} déclarée(s)`;
   }
 
+  /** « Étape de Boulangerie », ou d'un poste qui n'est plus en service. */
+  protected stepOf(red: ProductionStepRedView): string {
+    return red.workstationName === null
+      ? 'Étape d’un poste qui n’est plus en service'
+      : `Étape de ${red.workstationName}`;
+  }
+
   /** « depuis 9 h 12 · par Léa Martin » */
-  protected since(problem: ProductionProblemView): string {
+  protected since(problem: ProductionProblemView | ProductionStepRedView): string {
     const at = hourLabel(problem.reportedAt);
     const since = at === null ? '' : `depuis ${at}`;
     const by = problem.reportedByName === null ? '' : `par ${problem.reportedByName}`;

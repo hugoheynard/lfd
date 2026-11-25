@@ -3,7 +3,7 @@
     cardHeader
     variant="title"
     title="Les produits"
-    subtitle="Le poste d’un produit vaut pour toutes ses déclinaisons. Un produit sans poste reste sous son rayon, « à ranger »."
+    subtitle="Les postes d’un produit valent pour toutes ses déclinaisons ; seul celui qui finit compte les pièces. Un produit sans poste reste sous son rayon, « à ranger »."
   />
 
   <div class="body">
@@ -77,7 +77,7 @@
       data-products-table
       density="compact"
       hover
-      caption="Les produits du fournil et leur poste"
+      caption="Les produits du fournil et leurs postes"
       [columns]="columns"
       [rows]="visibleProducts()"
       [rowKey]="skuOf"
@@ -100,19 +100,33 @@
         </span>
       </ng-template>
       <ng-template foldCell="workstation" let-product>
-        @if (canWrite()) {
-          <fold-listbox
-            size="sm"
-            [ariaLabel]="'Poste de ' + nameOf(product)"
-            [options]="workstationOptions()"
-            [value]="placementOf(product)"
-            [disabled]="busy()"
-            (selectionChange)="place(product, $event)"
-            [attr.data-placement]="product.productSku"
-          />
-        } @else {
-          <span>{{ workstationNameOf(product) }}</span>
-        }
+        <span class="stations" [attr.data-stations]="product.productSku">
+          @let chips = chipsOf(product);
+          @for (chip of chips; track chip.id) {
+            <fold-badge
+              [content]="chipLabel(chip, chips.length === 1)"
+              [variant]="chip.finishes ? 'accent' : 'neutral'"
+              [attr.data-station-chip]="chip.id"
+              [attr.data-finishes]="chip.finishes ? '' : null"
+            />
+          } @empty {
+            <span class="muted">À ranger</span>
+          }
+          @if (canWrite()) {
+            <button
+              foldButton
+              size="sm"
+              emphasis="outline"
+              intent="neutral"
+              [disabled]="busy()"
+              [attr.aria-label]="'Postes de ' + nameOf(product)"
+              (click)="editStations(product)"
+              [attr.data-edit-stations]="product.productSku"
+            >
+              Postes
+            </button>
+          }
+        </span>
       </ng-template>
     </fold-data-table>
 

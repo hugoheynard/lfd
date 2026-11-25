@@ -322,3 +322,58 @@ describe('le récapitulatif de production, par catégorie racine (2026-10-30)', 
     expect(line).toMatchObject({ saleUnit: 'weight', label: '1,25 kg', quantity: 1250 });
   });
 });
+
+describe('le récapitulatif de production, un produit sur deux postes', () => {
+  it('la ligne compte dans la charge de chaque poste, et une seule fois au total du lot', () => {
+    const recap = servedRecap(
+      [
+        sheet('C-1', [
+          ['SAN', 'Sandwich', 10],
+          ['BAG', 'Baguette', 30],
+        ]),
+      ],
+      {
+        mode: 'workstation',
+        showSubcategories: false,
+        shelvesKnown: true,
+        workstationsKnown: true,
+        entries: [
+          {
+            sku: 'SAN',
+            key: 'ws:bread',
+            title: 'Boulangerie',
+            kind: 'workstation',
+            order: 0,
+            section: null,
+            role: 'step',
+          },
+          {
+            sku: 'BAG',
+            key: 'ws:bread',
+            title: 'Boulangerie',
+            kind: 'workstation',
+            order: 0,
+            section: null,
+            role: 'finishes',
+          },
+          {
+            sku: 'SAN',
+            key: 'ws:savory',
+            title: 'Salé traiteur',
+            kind: 'workstation',
+            order: 1,
+            section: null,
+            role: 'finishes',
+          },
+        ],
+      },
+    );
+
+    expect(recap.map((group) => [group.label, group.quantity])).toEqual([
+      ['Boulangerie', 40],
+      ['Salé traiteur', 10],
+    ]);
+    expect(totalPieces(recap)).toBe(40);
+    expect(resupplyPieces(recap)).toBe(0);
+  });
+});

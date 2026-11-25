@@ -1,6 +1,15 @@
 <span class="ls-what">
   <span class="ls-name">{{ line().productName }}</span>
   <span class="ls-figures" data-line-figures>{{ figures() }}</span>
+  @if (stepsWaiting(); as said) {
+    <fold-badge
+      class="ls-waiting"
+      variant="neutral"
+      radius="square"
+      [content]="said"
+      data-line-steps-waiting
+    />
+  }
 </span>
 
 <span class="ls-actions">

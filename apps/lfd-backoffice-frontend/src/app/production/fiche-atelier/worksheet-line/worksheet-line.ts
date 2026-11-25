@@ -86,6 +86,8 @@ export class WorksheetLine {
    * barre n'avance que quand le serveur l'a dit.
    */
   readonly pending = input<LinePending | null>(null);
+  /** « En attente de : Boulangerie » — les étapes qui n'ont pas coché ; `null` : aucune. */
+  readonly stepsWaiting = input<string | null>(null);
 
   readonly recorded = output<number>();
   readonly cancelled = output<WorkshopBatch>();

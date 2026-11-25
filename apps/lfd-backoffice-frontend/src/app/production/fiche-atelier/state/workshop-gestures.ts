@@ -200,6 +200,79 @@ export class WorkshopGestures {
   }
 
   /**
+   * **« Étape faite »** (`fournil/plan-produit-sur-plusieurs-postes.md`,
+   * § 2.6) : le poste `workstationId` coche sa part de la ligne, sans compter
+   * de pièce. Par intention ; pas de file hors ligne — l'étape ne retient ni
+   * le colisage ni la clôture, elle se recoche au retour du réseau.
+   */
+  async markStepDone(line: WorkshopLine, workstationId: string): Promise<void> {
+    await this.stepGesture(
+      line,
+      `step-done|${line.sku}|${workstationId}`,
+      (date, key) => this.api.markStepDone(date, line.sku, workstationId, key),
+      'L’étape n’a pas été cochée',
+      `${line.productName} : étape faite`,
+    );
+  }
+
+  /** **Décocher** l'étape : elle attend de nouveau. */
+  async undoStep(line: WorkshopLine, workstationId: string): Promise<void> {
+    await this.stepGesture(
+      line,
+      `step-undo|${line.sku}|${workstationId}`,
+      (date, key) => this.api.undoStep(date, line.sku, workstationId, key),
+      'L’étape n’a pas été décochée',
+      `${line.productName} : étape décochée`,
+    );
+  }
+
+  /** **Le rouge d'une étape** : ouvre son panneau, qui envoie lui-même ; pris, la fiche relit. */
+  async reportStepRed(line: WorkshopLine, workstationId: string): Promise<void> {
+    const date = this.day.date();
+    if (date === null || this.isBusy(line)) {
+      return;
+    }
+    this.refusal.set(null);
+    const key = markKey(date, line.sku);
+    this.day.setBusy(key, true);
+    try {
+      if (await this.problems.openStepRedFor(date, line, workstationId)) {
+        await this.day.rereadAfterWrite();
+      }
+    } catch (error) {
+      this.sayRefused(
+        `L’étape n’a pas pu être mise en rouge — ${line.productName} : ${reasonOf(error)}`,
+      );
+    } finally {
+      this.day.setBusy(key, false);
+    }
+  }
+
+  /** Un geste d'étape sous la clé de son intention, oubliée une fois accepté. */
+  private async stepGesture(
+    line: WorkshopLine,
+    gesture: string,
+    write: (date: string, intentKey: string) => Promise<void>,
+    failure: string,
+    success: string,
+  ): Promise<void> {
+    const sent: { subject: string | null } = { subject: null };
+    const accepted = await this.send(
+      line,
+      async (date) => {
+        const subject = `${gesture}|${date}`;
+        await write(date, this.intents.keyFor(subject));
+        sent.subject = subject;
+      },
+      failure,
+      success,
+    );
+    if (accepted && sent.subject !== null) {
+      this.intents.done(sent.subject);
+    }
+  }
+
+  /**
    * « Annuler » du bandeau : annule la dernière fournée acceptée, puis relit.
    * Elle n'est oubliée qu'une fois annulée : refusée, l'annulation reste offerte
    * par le bandeau. Un second appui pendant l'envoi est ignoré (ligne occupée).

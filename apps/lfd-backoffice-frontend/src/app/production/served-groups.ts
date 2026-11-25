@@ -3,6 +3,7 @@ import {
   type ProductionGroupingEntryView,
   type ProductionGroupingView,
   type WorkshopGroupKind,
+  type WorkshopLineRole,
 } from '@lfd/contracts';
 
 /**
@@ -14,6 +15,10 @@ import {
  * en mode prod, un rayon « à ranger »), son rang et son intertitre. L'écran ne
  * fait plus que trier À L'INTÉRIEUR d'un groupe (le plus gros d'abord), parce
  * que cet ordre dépend des quantités qu'il affiche.
+ *
+ * En mode prod, une ligne dont le produit a plusieurs postes ressort sous
+ * chacun : la charge d'un poste la compte, un total général la compte une
+ * fois ({@link distinctBySku}).
  *
  * Un rangement absent (la lecture a échoué) ou un SKU qu'il ne nomme pas (coupé
  * par la borne du serveur) tombe dans un groupe « Rayon inconnu », en dernier :
@@ -28,6 +33,12 @@ export interface ServedGroup<T> {
   readonly lines: readonly T[];
   /** Les intertitres : SKU de la première ligne d'une section → son nom. */
   readonly intertitles: ReadonlyMap<string, string>;
+  /**
+   * SKU → ce que le poste du groupe fait de la ligne, pour les seuls produits
+   * à plusieurs postes : la mention « étape » ou « finit ». Absent : un seul
+   * poste, rien à dire.
+   */
+  readonly roles: ReadonlyMap<string, WorkshopLineRole>;
 }
 
 /** La clé du groupe de repli, quand le rangement n'a rien dit d'un SKU. */
@@ -47,24 +58,26 @@ export function servedGroups<T extends { readonly sku: string }>(
   grouping: ProductionGroupingView | null,
   compare: (left: T, right: T) => number,
 ): readonly ServedGroup<T>[] {
-  // Un SKU à plusieurs postes a une entrée par poste ; l'écran ne le range
-  // encore que sous celui qui le finit (les étapes sont écartées).
-  const entryOf = new Map(
-    (grouping?.entries ?? [])
-      .filter((entry) => entry.role !== 'step')
-      .map((entry) => [entry.sku, entry]),
-  );
+  // Un SKU à plusieurs postes a une entrée par poste, étapes comprises : sa
+  // ligne ressort sous CHACUN, et compte dans la charge de chacun
+  // (`plan-produit-sur-plusieurs-postes.md`, § 2.7). Un total général se
+  // dédoublonne par SKU (`distinctBySku`).
+  const entriesOf = new Map<string, ProductionGroupingEntryView[]>();
+  for (const entry of grouping?.entries ?? []) {
+    entriesOf.set(entry.sku, [...(entriesOf.get(entry.sku) ?? []), entry]);
+  }
   const buckets = new Map<string, Bucket<T>>();
   const ungrouped: T[] = [];
   for (const item of items) {
-    const entry = entryOf.get(item.sku);
-    if (entry === undefined) {
+    const entries = entriesOf.get(item.sku) ?? [];
+    if (entries.length === 0) {
       ungrouped.push(item);
-      continue;
     }
-    const bucket = buckets.get(entry.key) ?? { entry, items: [] };
-    buckets.set(entry.key, bucket);
-    bucket.items.push({ item, entry });
+    for (const entry of entries) {
+      const bucket = buckets.get(entry.key) ?? { entry, items: [] };
+      buckets.set(entry.key, bucket);
+      bucket.items.push({ item, entry });
+    }
   }
   const withSections = grouping?.showSubcategories === true;
   const groups: ServedGroup<T>[] = [...buckets.values()]
@@ -74,6 +87,7 @@ export function servedGroups<T extends { readonly sku: string }>(
       title: bucket.entry.title,
       kind: bucket.entry.kind,
       ...arranged(bucket.items, compare, withSections),
+      roles: rolesOf(bucket.items, entriesOf),
     }));
   if (ungrouped.length > 0) {
     groups.push({
@@ -82,9 +96,42 @@ export function servedGroups<T extends { readonly sku: string }>(
       kind: null,
       lines: [...ungrouped].sort(compare),
       intertitles: new Map(),
+      roles: new Map(),
     });
   }
   return groups;
+}
+
+/** Le rôle de chaque ligne du groupe dont le produit a plusieurs postes. */
+function rolesOf<T extends { readonly sku: string }>(
+  items: readonly { readonly item: T; readonly entry: ProductionGroupingEntryView }[],
+  entriesOf: ReadonlyMap<string, readonly ProductionGroupingEntryView[]>,
+): ReadonlyMap<string, WorkshopLineRole> {
+  const roles = new Map<string, WorkshopLineRole>();
+  for (const { item, entry } of items) {
+    if (entry.role != null && (entriesOf.get(item.sku)?.length ?? 0) > 1) {
+      roles.set(item.sku, entry.role);
+    }
+  }
+  return roles;
+}
+
+/**
+ * Les lignes de tous les groupes, chacune une fois : une ligne répétée sous
+ * plusieurs postes ne compte qu'une fois dans un total général.
+ */
+export function distinctBySku<T extends { readonly sku: string }>(
+  groups: readonly { readonly lines: readonly T[] }[],
+): readonly T[] {
+  const seen = new Map<string, T>();
+  for (const group of groups) {
+    for (const line of group.lines) {
+      if (!seen.has(line.sku)) {
+        seen.set(line.sku, line);
+      }
+    }
+  }
+  return [...seen.values()];
 }
 
 /** Les lignes d'un groupe : à plat, ou section par section avec leurs intertitres. */

@@ -28,7 +28,7 @@ import { shiftDay } from '../../previsionnel/previsionnel-range';
 import { BakehouseDraftsSection } from '../bakehouse-drafts-section/bakehouse-drafts-section';
 import { LiveStockAlertsService } from '../live-stock-alerts.service';
 import {
-  filterKeyOf,
+  filterKeysOf,
   type WorkstationFilter,
   GROUPING_LOSS_TEXT,
   readWorkstationFilter,
@@ -211,7 +211,7 @@ export class ResupplyProductionTab {
       this.rows().filter(
         (row) =>
           category === ALL_CATEGORIES ||
-          filterKeyOf(stations, row.sku, row.categoryId) === category,
+          filterKeysOf(stations, row.sku, row.categoryId).includes(category),
       ),
       this.query(),
       ROW_SEARCH,

@@ -29,6 +29,7 @@ const SOURCES: WorkshopRowSources = {
   doneWaiting: (sku) => sku === 'PAIN',
   shortcuts: new Map([['CRO', [{ id: 'bs-1', label: '1 plaque', pieces: 30 }]]]),
   linkedSku: 'PAIN',
+  stationNames: new Map([['ws_b', 'Boulangerie']]),
 };
 
 describe('les rangées de la vue produit', () => {
@@ -50,6 +51,13 @@ describe('les rangées de la vue produit', () => {
       doneWaiting: true,
       shortcuts: [],
       linked: true,
+      stepsWaiting: null,
     });
+  });
+
+  it('nomme les étapes qui attendent sur la ligne', () => {
+    const [sandwich] = workshopRows([{ ...line('SAN'), stepsPending: ['ws_b'] }], SOURCES);
+
+    expect(sandwich?.stepsWaiting).toBe('En attente de : Boulangerie');
   });
 });

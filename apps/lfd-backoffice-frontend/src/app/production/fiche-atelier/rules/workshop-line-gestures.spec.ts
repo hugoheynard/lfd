@@ -1,7 +1,7 @@
 import type { WorkshopLine } from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
-import { lineGestures } from './workshop-line-gestures';
+import { lineGestures, stepsWaitingLabel } from './workshop-line-gestures';
 
 function line(over: Partial<WorkshopLine> = {}): WorkshopLine {
   return {
@@ -65,5 +65,30 @@ describe('les gestes d’une ligne selon son niveau', () => {
       check: false,
       report: true,
     });
+  });
+});
+
+describe('une ligne d’étape (un produit sur plusieurs postes)', () => {
+  it('n’a ni comptage, ni « Fait », ni « Problème », quel que soit son niveau', () => {
+    for (const trackingLevel of ['detailed', 'simple', 'always_green'] as const) {
+      expect(flags(line({ trackingLevel, role: 'step' }))).toEqual({
+        count: false,
+        check: false,
+        report: false,
+      });
+    }
+  });
+
+  it('la ligne qui finit garde les gestes de son niveau', () => {
+    expect(flags(line({ trackingLevel: 'simple', role: 'finishes' })).check).toBe(true);
+  });
+
+  it('nomme les postes d’étape qui n’ont pas coché, et se tait quand aucun n’attend', () => {
+    const names = new Map([['ws_b', 'Boulangerie']]);
+    expect(stepsWaitingLabel(line({ stepsPending: ['ws_b', 'ws_x'] }), names)).toBe(
+      'En attente de : Boulangerie, un autre poste',
+    );
+    expect(stepsWaitingLabel(line({ stepsPending: [] }), names)).toBeNull();
+    expect(stepsWaitingLabel(line(), names)).toBeNull();
   });
 });
