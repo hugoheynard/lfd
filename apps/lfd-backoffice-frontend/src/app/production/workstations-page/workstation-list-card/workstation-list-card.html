@@ -5,18 +5,70 @@
     title="Les postes"
     subtitle="Dans l’ordre des fiches de poste. Un poste archivé ne range plus rien : ses produits redeviennent « à ranger »."
   >
-    @if (canWrite() && shelfSeeds().length > 0) {
-      <button
-        titleAction
-        foldButton
-        size="sm"
-        emphasis="outline"
-        [disabled]="busy()"
-        (click)="fromShelves()"
-        data-from-shelves
-      >
-        Partir des rayons
-      </button>
+    @if (canWrite()) {
+      <div titleAction class="actions">
+        @if (shelfSeeds().length > 0) {
+          <button
+            foldButton
+            size="sm"
+            emphasis="outline"
+            [disabled]="busy()"
+            (click)="fromShelves()"
+            data-from-shelves
+          >
+            Partir des rayons
+          </button>
+        }
+        <fold-popover placement="bottom-end" [(open)]="addOpen">
+          <button foldButton foldPopoverTrigger size="sm" icon="plus" data-add-open>
+            Ajouter un poste
+          </button>
+          <form
+            foldPopoverPanel
+            class="add"
+            role="dialog"
+            aria-labelledby="add-workstation-title"
+            (submit)="$event.preventDefault(); declare()"
+          >
+            <header class="add-head">
+              <h3 id="add-workstation-title" class="add-title">Nouveau poste</h3>
+              <p class="add-hint">
+                Il prend place en bas de la liste ; glissez-le ensuite où il faut.
+              </p>
+            </header>
+            <fold-input
+              label="Nom du poste"
+              placeholder="Pâtisserie, tourier…"
+              required
+              [value]="newName()"
+              (valueChange)="newName.set($event)"
+              data-new-name
+            />
+            <div class="add-actions">
+              <button
+                foldButton
+                type="button"
+                size="sm"
+                emphasis="soft"
+                (click)="addOpen.set(false)"
+              >
+                Annuler
+              </button>
+              <button
+                foldButton
+                type="submit"
+                size="sm"
+                intent="primary"
+                icon="plus"
+                [disabled]="busy() || newName().trim() === ''"
+                data-declare
+              >
+                Ajouter
+              </button>
+            </div>
+          </form>
+        </fold-popover>
+      </div>
     }
   </fold-element-title>
 
@@ -94,30 +146,6 @@
           </li>
         }
       </ol>
-    }
-
-    @if (canWrite()) {
-      <div class="station">
-        <fold-input
-          class="name"
-          size="sm"
-          label="Nouveau poste"
-          placeholder="Pâtisserie, tourier…"
-          [value]="newName()"
-          (valueChange)="newName.set($event)"
-          data-new-name
-        />
-        <button
-          foldButton
-          size="sm"
-          icon="plus"
-          [disabled]="busy() || newName().trim() === ''"
-          (click)="declare()"
-          data-declare
-        >
-          Ajouter
-        </button>
-      </div>
     }
 
     @if (refusal(); as message) {

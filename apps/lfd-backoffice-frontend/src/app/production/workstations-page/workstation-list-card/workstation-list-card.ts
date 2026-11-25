@@ -26,6 +26,8 @@ import {
   FoldIconComponent,
   FoldInlineConfirmComponent,
   FoldInputComponent,
+  FoldPopoverComponent,
+  FoldPopoverTriggerDirective,
 } from 'fold-ng';
 
 import { GestureIntents, shownOnce } from '../../../shared/gesture-intents';
@@ -69,6 +71,8 @@ interface ShelfSeed {
     FoldIconComponent,
     FoldInlineConfirmComponent,
     FoldInputComponent,
+    FoldPopoverComponent,
+    FoldPopoverTriggerDirective,
     ReorderHandle,
   ],
   templateUrl: './workstation-list-card.html',
@@ -92,6 +96,8 @@ export class WorkstationListCard {
   protected readonly announcement = signal('');
 
   protected readonly newName = signal('');
+  /** Le popover « Ajouter un poste » — public pour que la spec joue le geste sans le DOM projeté. */
+  readonly addOpen = signal(false);
   /** Les noms en cours d'édition, par poste ; repartent des noms servis à chaque relecture. */
   protected readonly drafts = linkedSignal<ReadonlyMap<string, string>>(
     () => new Map(this.workstations().map((station) => [station.id, station.name])),
@@ -137,6 +143,7 @@ export class WorkstationListCard {
     return this.run(async () => {
       await shownOnce(this.intents, `declare:${name}`, (key) => this.api.declare(name, key));
       this.newName.set('');
+      this.addOpen.set(false);
     }, 'Le poste n’a pas pu être ajouté.');
   }
 

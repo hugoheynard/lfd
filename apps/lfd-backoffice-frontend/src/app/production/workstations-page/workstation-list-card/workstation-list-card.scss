@@ -74,3 +74,43 @@
   clip-path: inset(50%);
   white-space: nowrap;
 }
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-xs);
+}
+
+.add {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+  inline-size: min(22rem, calc(100vw - 2 * var(--fold-space-md)));
+  padding: var(--fold-space-xs);
+}
+
+.add-head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+}
+
+.add-title {
+  margin: 0;
+  font-size: var(--fold-text-md);
+  font-weight: var(--fold-weight-semibold);
+}
+
+.add-hint {
+  margin: 0;
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+}
+
+.add-actions {
+  display: flex;
+  gap: var(--fold-space-xs);
+  justify-content: flex-end;
+  padding-block-start: var(--fold-space-sm);
+  border-block-start: 1px solid var(--fold-color-border);
+}
