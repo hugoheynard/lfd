@@ -28,6 +28,7 @@ export const PEOPLE_VALUE_CARDS: Pick<
   | "payer"
   | "purpose"
   | "reason"
+  | "replaced"
   | "reference"
   | "resupplies"
   | "revision"
@@ -88,6 +89,11 @@ export const PEOPLE_VALUE_CARDS: Pick<
     example: "EXEMPLE — Hôtel des Trois Ponts",
     senses: {
       "customer.order-cancelled": SAME_SENSE,
+      "customer.in-house-recap": {
+        label: "Restaurant",
+        description: "Le nom du restaurant maison à qui les BL du récapitulatif ont été remis.",
+        example: "EXEMPLE — Restaurant du Port",
+      },
       "customer.mandate-to-sign": SAME_SENSE,
       "customer.access-opened": SAME_SENSE,
       "customer.company-attached": SAME_SENSE,
@@ -168,6 +174,11 @@ export const PEOPLE_VALUE_CARDS: Pick<
     label: "Motif de la demande",
     description: "Le motif choisi dans le formulaire de la demande.",
     example: "Produit abîmé",
+  },
+  replaced: {
+    label: "Récapitulatif remplacé",
+    description: "Le numéro du récapitulatif des BL que ce rectificatif remplace.",
+    example: "EXEMPLE-RBL-202610-0000",
   },
   reference: {
     label: "Référence de l'objet du geste",

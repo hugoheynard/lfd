@@ -36,6 +36,9 @@ export const MAIL_SUBJECT_TYPES = [
   // Le panier récurrent auquel s'adresse l'annonce d'une nouvelle version
   // des CGV (`customer.recurring-sales-terms-changed`).
   "recurring_basket",
+  // Le récapitulatif des BL d'un restaurant maison (`customer.in-house-recap`) :
+  // il remplace la facture, il a son propre objet.
+  "in_house_recap",
 ] as const;
 
 export type MailSubjectType = (typeof MAIL_SUBJECT_TYPES)[number];

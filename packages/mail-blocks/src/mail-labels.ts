@@ -105,6 +105,12 @@ const MAIL_LABELS: Readonly<Record<string, MailLabel>> = {
     recipient: "La facturation du payeur et des sous-comptes",
     moment: "à l’émission de la facture",
   },
+  "customer.in-house-recap": {
+    title: "Récapitulatif des BL d’un restaurant maison",
+    recipient: "La facturation du restaurant, sinon son détenteur",
+    moment:
+      "le 1er du mois, pour le mois clos ; à la réémission d’un rectificatif, et quand l’équipe renvoie l’e-mail",
+  },
   "customer.period-quote": {
     title: "Devis de période",
     recipient: "La facturation de l’organisme payeur",

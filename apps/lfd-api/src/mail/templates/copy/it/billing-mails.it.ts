@@ -94,6 +94,21 @@ export const BILLING_MAILS_IT: BillingMailsCopy = {
     creditorIdentifierLabel: "Identificativo del creditore (ICS)",
     creditorLabel: "Creditore",
   },
+  "customer.in-house-recap": {
+    kicker: "Riepilogo dei DDT",
+    title: "Riepilogo dei DDT {number}",
+    subject: "{title} — {period}",
+    greeting: "Buongiorno,",
+    intro:
+      "Ecco il riepilogo dei documenti di trasporto consegnati a {company} in {period}: la quantità totale di ogni prodotto, poi l'elenco dei DDT coperti.",
+    rectification:
+      "Questo riepilogo è una rettifica: sostituisce il {replaced}, che non fa più fede.",
+    internalNote: "Documento interno — senza fatturazione: non richiede alcun pagamento.",
+    recapLabel: "Riepilogo",
+    periodLabel: "Mese",
+    footer:
+      "Il riepilogo è allegato a questo messaggio in formato PDF. Per qualsiasi domanda, risponda a questo messaggio.",
+  },
   "customer.period-quote": {
     kicker: "Preventivo del periodo",
     title: "Preventivo {number}",

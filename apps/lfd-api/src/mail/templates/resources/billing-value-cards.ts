@@ -139,6 +139,11 @@ export const BILLING_VALUE_CARDS: Pick<
     senses: {
       "customer.invoice-issued": SAME_SENSE,
       "customer.collection-notice": SAME_SENSE,
+      "customer.in-house-recap": {
+        label: "Numéro du récapitulatif",
+        description: "Le numéro du récapitulatif des BL d'un restaurant maison.",
+        example: "EXEMPLE-RBL-202610-0001",
+      },
       "customer.period-quote": {
         label: "Numéro du devis",
         description: "Le numéro du devis de période, partagé par ses versions.",
@@ -157,6 +162,11 @@ export const BILLING_VALUE_CARDS: Pick<
     example: "du 21 au 27 septembre 2026",
     senses: {
       "customer.invoice-issued": SAME_SENSE,
+      "customer.in-house-recap": {
+        label: "Mois du récapitulatif",
+        description: "Le mois civil dont le récapitulatif reprend les BL remis.",
+        example: "octobre 2026",
+      },
       "customer.period-quote": {
         label: "Période du devis",
         description: "La période des commandes que le devis chiffre, son dernier jour compris.",
@@ -202,6 +212,11 @@ export const BILLING_VALUE_CARDS: Pick<
     example: "Votre facture EXEMPLE-FA-0001",
     senses: {
       "customer.invoice-issued": SAME_SENSE,
+      "customer.in-house-recap": {
+        label: "Titre de l'e-mail",
+        description: "Le titre du récapitulatif tel que l'e-mail l'affiche, repris dans l'objet.",
+        example: "Récapitulatif des BL EXEMPLE-RBL-202610-0001",
+      },
       "customer.period-quote": {
         label: "Titre de l'e-mail",
         description: "Le titre du devis tel que l'e-mail l'affiche, repris dans l'objet.",

@@ -69,4 +69,11 @@ export class PrismaInHouseRecapRepository extends InHouseRecapRepository {
       data: { replacedById: old.replacedById },
     });
   }
+
+  async saveDocument(recap: InHouseRecap): Promise<void> {
+    await this.prisma.inHouseRecap.updateMany({
+      where: { id: recap.id, storageKey: null },
+      data: { storageKey: recap.storageKey },
+    });
+  }
 }

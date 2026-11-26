@@ -30,6 +30,12 @@ export class InMemoryInHouseRecaps extends InHouseRecapRepository {
     return Promise.resolve();
   }
 
+  saveDocument(recap: InHouseRecap): Promise<void> {
+    this.writes.push(`document:${recap.id}`);
+    this.byId.set(recap.id, recap);
+    return Promise.resolve();
+  }
+
   /** Le récapitulatif non remplacé qui couvre ce BL, s'il y en a un. */
   coveringOf(deliveryNoteId: string): string | null {
     for (const recap of this.byId.values()) {

@@ -156,6 +156,16 @@ domaine `domain/services/monthly-invoicing.ts`. Routes
 (`MONTHLY_INVOICE_CRON`, `apps/lfd-api/container/worker.ts` et
 `apps/lfd-api/wrangler.jsonc`).
 
+Les **restaurants maison** n'entrent pas dans ce passage : leurs commandes
+internes sont des commandes offertes (total nul, hors facture). Leur
+document du mois est le **récapitulatif des BL**, sans montant, émis par un
+cron à lui — `30 22,23 * * *` (`IN_HOUSE_RECAPS_CRON`, 00h30 à Paris,
+`POST admin/in-house-recaps/run`) —, rangé au stockage des pièces client
+sous `in-house-recaps/<payeur>/<numéro>.pdf` et envoyé par e-mail
+(`customer.in-house-recap`) au destinataire de la facture du payeur ; aucune
+branche dans l'automatisme des factures
+([`plan-restaurants-maison.md`](plan-restaurants-maison.md), D9–D10).
+
 - **Périmètre** (lot ZL, 2026-10-22) : les bons passés au compte et non
   annulés (`billableOrderWhere`) **livrés** depuis le plancher jusqu'au
   dernier jour de la période — `received_on` comparé jour à jour, à Paris —

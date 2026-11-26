@@ -6,6 +6,7 @@ import type { CustomerRequestMailData } from "../../templates/customer-request-m
 import type { DeliveryEnRouteMailData } from "../../templates/delivery-en-route-mail.js";
 import type { InvoiceIssuedMailData } from "../../templates/invoice-issued-mail.js";
 import type { PeriodQuoteMailData } from "../../templates/period-quote-mail.js";
+import type { InHouseRecapMailData } from "../../templates/in-house-recap-mail.js";
 import type { RecurringSalesTermsChangedMailData } from "../../templates/recurring-sales-terms-changed-mail.js";
 import type { LinkPaymentReceivedMailData } from "../../templates/link-payment-received-mail.js";
 import type { MarketingConfirmMailData } from "../../templates/marketing-confirm-mail.js";
@@ -42,6 +43,7 @@ import type { VitrineNoticeMailData } from "../../templates/vitrine-notice-mail.
 export type {
   InvoiceIssuedMailData,
   PeriodQuoteMailData,
+  InHouseRecapMailData,
   OrderCancelledMailData,
   OrderRevisedMoneyNote,
   OrderSheetMailDocument,
@@ -115,6 +117,13 @@ export interface B2bMails {
    * facturation du payeur. Cf. `period-quote-mail.ts`.
    */
   "customer.period-quote": PeriodQuoteMailData;
+  /**
+   * **« Récapitulatif des BL RBL-… »** — à la place de la facture d'un de nos
+   * restaurants, les quantités remises sur un mois, sans montant (plan
+   * `plan-restaurants-maison.md`, D10). Destinataire : la facturation du
+   * payeur, sinon son détenteur. Cf. `in-house-recap-mail.ts`.
+   */
+  "customer.in-house-recap": InHouseRecapMailData;
   /** **La tournée est partie.** Destinataire : le client. Cf. `delivery-en-route-mail.ts`. */
   "customer.delivery-en-route": DeliveryEnRouteMailData;
   /**

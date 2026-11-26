@@ -44,11 +44,21 @@ const QUOTE: B2bMails["customer.period-quote"] = {
   locale: "fr",
 };
 
+const RECAP: B2bMails["customer.in-house-recap"] = {
+  payerName: "Restaurant du Port",
+  month: "2026-10",
+  recapNumber: "RBL-202610-0001",
+  replacesNumber: null,
+  document: { fileName: "RBL-202610-0001.pdf", pdfBase64: "JVBERi0=" },
+  locale: "fr",
+};
+
 export const CUSTOMER_CASES: Pick<
   MailCases,
   | "customer.collection-notice"
   | "customer.invoice-issued"
   | "customer.period-quote"
+  | "customer.in-house-recap"
   | "customer.mandate-to-sign"
   | "customer.sub-account-activity"
   | "customer.sub-account-gesture"
@@ -82,6 +92,10 @@ export const CUSTOMER_CASES: Pick<
       bankTransferReference: "FA-LFD-2026-000001",
       publicPaymentDeadlineDays: 30,
     },
+  },
+  "customer.in-house-recap": {
+    first: RECAP,
+    rectification: { ...RECAP, recapNumber: "RBL-202610-0002", replacesNumber: "RBL-202610-0001" },
   },
   "customer.period-quote": {
     full: QUOTE,

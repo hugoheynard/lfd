@@ -13,6 +13,7 @@ export type SpecimenKey =
   | 'sepa-mandate-b2b'
   | 'sepa-mandate-core'
   | 'order-summary'
+  | 'in-house-recap'
   | 'allergen-matrix'
   | 'production-count'
   | 'day-dossier'
@@ -36,6 +37,7 @@ export const SPECIMEN_LABELS: Readonly<Record<SpecimenKey, string>> = {
   'sepa-mandate-b2b': 'Mandat SEPA interentreprises (B2B)',
   'sepa-mandate-core': 'Mandat SEPA CORE',
   'order-summary': 'Récapitulatif de commandes',
+  'in-house-recap': 'Récapitulatif des BL — restaurant maison',
   'allergen-matrix': 'Matrice des allergènes',
   'production-count': 'Compte à produire',
   'day-dossier': 'Dossier du jour',
@@ -64,7 +66,8 @@ function group(title: string, keys: readonly SpecimenKey[]): SpecimenGroup {
  * avec la marchandise), les papiers du fournil pour la journée (compte à
  * produire, dossier du jour), la facture, le devis de période d'un organisme
  * public, les deux mandats SEPA, le récapitulatif de
- * commandes d'une société, la matrice des allergènes du catalogue, et les
+ * commandes d'une société, le récapitulatif des BL d'un restaurant maison
+ * (sans montant), la matrice des allergènes du catalogue, et les
  * étiquettes A6 du colisage — sac et bac (2026-10-25). Il n'y
  * a pas de bon « bureau » : le bon que le staff ouvre est celui du client.
  */
@@ -85,7 +88,7 @@ export const SPECIMEN_GROUPS: readonly SpecimenGroup[] = [
   group('Factures', ['invoice', 'invoice-bank-transfer']),
   group('Devis', ['period-quote']),
   group('Mandats', ['sepa-mandate-b2b', 'sepa-mandate-core']),
-  group('Récapitulatifs', ['order-summary']),
+  group('Récapitulatifs', ['order-summary', 'in-house-recap']),
   group('Catalogue', ['allergen-matrix']),
   group('Étiquettes', ['bag-label', 'bin-label']),
 ];

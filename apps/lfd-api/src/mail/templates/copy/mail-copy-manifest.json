@@ -1275,6 +1275,78 @@
         "fr": "Créancier"
       }
     },
+    "customer.in-house-recap": {
+      "kicker": {
+        "variables": [],
+        "required": [],
+        "fr": "Récapitulatif des BL"
+      },
+      "title": {
+        "variables": [
+          "number"
+        ],
+        "required": [
+          "number"
+        ],
+        "fr": "Récapitulatif des BL {number}"
+      },
+      "subject": {
+        "variables": [
+          "title",
+          "period"
+        ],
+        "required": [
+          "title",
+          "period"
+        ],
+        "fr": "{title} — {period}"
+      },
+      "greeting": {
+        "variables": [],
+        "required": [],
+        "fr": "Bonjour,"
+      },
+      "intro": {
+        "variables": [
+          "company",
+          "period"
+        ],
+        "required": [
+          "company",
+          "period"
+        ],
+        "fr": "Voici le récapitulatif des bons de livraison remis à {company} en {period} : la quantité totale de chaque produit, puis la liste des BL couverts."
+      },
+      "rectification": {
+        "variables": [
+          "replaced"
+        ],
+        "required": [
+          "replaced"
+        ],
+        "fr": "Ce récapitulatif est un rectificatif : il remplace le {replaced}, qui ne fait plus foi."
+      },
+      "internalNote": {
+        "variables": [],
+        "required": [],
+        "fr": "Document interne — sans facturation : il n'appelle aucun paiement."
+      },
+      "recapLabel": {
+        "variables": [],
+        "required": [],
+        "fr": "Récapitulatif"
+      },
+      "periodLabel": {
+        "variables": [],
+        "required": [],
+        "fr": "Mois"
+      },
+      "footer": {
+        "variables": [],
+        "required": [],
+        "fr": "Le récapitulatif est joint à ce message au format PDF. Pour toute question, répondez à ce message."
+      }
+    },
     "customer.period-quote": {
       "kicker": {
         "variables": [],

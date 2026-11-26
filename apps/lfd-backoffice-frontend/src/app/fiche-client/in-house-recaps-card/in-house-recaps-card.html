@@ -1,0 +1,88 @@
+@if (loadError()) {
+  <fold-callout variant="alert" data-in-house-recaps-error>
+    Impossible de lire les récapitulatifs des BL de ce compte.
+    <button foldButton size="sm" emphasis="soft" (click)="retry()">Réessayer</button>
+  </fold-callout>
+} @else if (visible()) {
+  <fold-card data-in-house-recaps>
+    <fold-element-title
+      cardHeader
+      variant="title"
+      icon="receipt"
+      title="Récapitulatifs des BL"
+      [subtitle]="subtitle()"
+    />
+    <div class="body">
+      <p class="meta">
+        Un restaurant maison n’est pas facturé : chaque mois, il reçoit par e-mail le récapitulatif
+        des BL remis, les quantités par produit, sans montant.
+      </p>
+
+      @if (missedMonths(); as missed) {
+        <fold-callout variant="warning" data-in-house-recaps-missed>
+          Mois sans récapitulatif ni passage : {{ missed }}. Le passage mensuel ne les a pas faits ;
+          signalez-le à l’équipe technique.
+        </fold-callout>
+      }
+
+      @if (emptyMonths(); as empty) {
+        <p class="meta" data-in-house-recaps-empty>Mois sans BL remis : {{ empty }}.</p>
+      }
+
+      @for (row of rows(); track row.recap.id) {
+        <div class="recap" [attr.data-in-house-recap]="row.recap.id">
+          <div class="head">
+            <strong>{{ row.title }}</strong>
+            @if (row.replaced) {
+              <fold-badge variant="neutral" content="Remplacé" />
+            } @else if (row.revised !== null) {
+              <fold-badge variant="warning" content="BL révisé" />
+            }
+          </div>
+          <p class="meta">{{ row.meta }}</p>
+          @if (!row.replaced && row.revised; as revised) {
+            <p class="meta" data-in-house-recap-revised>{{ revised }}</p>
+          }
+          <div class="actions">
+            @if (row.recap.hasDocument) {
+              <button
+                foldButton
+                size="sm"
+                emphasis="soft"
+                icon="download"
+                [attr.aria-label]="'Télécharger le PDF du récapitulatif ' + row.recap.number"
+                [loading]="busy() === row.recap.id"
+                (click)="download(row.recap)"
+                data-in-house-recap-pdf
+              >
+                PDF
+              </button>
+            }
+            @if (!row.replaced && canWrite()) {
+              <button
+                foldButton
+                size="sm"
+                emphasis="outline"
+                [disabled]="busy() !== null"
+                (click)="resend(row.recap)"
+                data-in-house-recap-resend
+              >
+                Renvoyer l’e-mail
+              </button>
+              <button
+                foldButton
+                size="sm"
+                [emphasis]="row.revised === null ? 'outline' : 'solid'"
+                [disabled]="busy() !== null"
+                (click)="reissue(row.recap)"
+                data-in-house-recap-reissue
+              >
+                Réémettre
+              </button>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  </fold-card>
+}

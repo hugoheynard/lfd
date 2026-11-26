@@ -201,6 +201,18 @@
       "attachmentsSha256": "899883488a5d7fa42040b19622c271147ed447c7e1eb4ccfce825251369a2429"
     }
   },
+  "customer.in-house-recap": {
+    "first": {
+      "subject": "Récapitulatif des BL RBL-202610-0001 — octobre 2026",
+      "htmlSha256": "f79cac612a5d3985e10f5d60bdcc64ae79283593d52dc53125e5e51f0993d47e",
+      "attachmentsSha256": "3679e0f9a5784ba5446f23715cdebbb812bbbf17e0e126fb1e2492f6b9e62640"
+    },
+    "rectification": {
+      "subject": "Récapitulatif des BL RBL-202610-0002 — octobre 2026",
+      "htmlSha256": "44d6024982213e4fd9b8fe4e3345308dd7036df69340368f7f5c7a0d71d86e7b",
+      "attachmentsSha256": "3679e0f9a5784ba5446f23715cdebbb812bbbf17e0e126fb1e2492f6b9e62640"
+    }
+  },
   "customer.mandate-to-sign": {
     "core": {
       "subject": "Votre mandat de prélèvement SEPA — RUM-1",

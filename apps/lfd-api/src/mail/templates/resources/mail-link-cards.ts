@@ -35,6 +35,7 @@ export const MAIL_LINK_CARDS: { readonly [K in keyof B2bMails]: MailLinkCards } 
   "customer.order-payment-link": { cta: { label: "Lien de règlement" } },
   "customer.invoice-issued": { cta: { label: "Ses factures" } },
   "customer.period-quote": {},
+  "customer.in-house-recap": {},
   "customer.collection-notice": {},
   "customer.mandate-to-sign": {},
   "customer.access-opened": {

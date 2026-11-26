@@ -124,6 +124,9 @@ type OpenedByReference =
   | "customer.order-revised"
   | "customer.invoice-issued"
   | "customer.period-quote"
+  // Le récapitulatif des BL d'un restaurant maison, rangé sous
+  // `in-house-recaps/<payeur>/<numéro>.pdf` (`plan-restaurants-maison.md`, D10).
+  | "customer.in-house-recap"
   | "customer.mandate-to-sign"
   // Le PDF des CGV déposé, rangé sous `legal/…/<fichier>.pdf` : l'annonce d'une
   // nouvelle version aux paniers récurrents (plan du bloc récurrent, § 7).

@@ -75,6 +75,12 @@ const DECLARED_VARIABLES = {
     publicDue: ["days"],
     publicBankTransfer: ["number"],
   },
+  "customer.in-house-recap": {
+    title: ["number"],
+    subject: ["title", "period"],
+    intro: ["company", "period"],
+    rectification: ["replaced"],
+  },
   "customer.period-quote": {
     title: ["number"],
     subject: ["title", "seller"],

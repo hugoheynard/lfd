@@ -621,6 +621,17 @@ export type {
 } from "./chorus-routing.js";
 export { inHousePayerPayloadSchema } from "./in-house-payer.js";
 export type { InHousePayerPayload, InHousePayerView } from "./in-house-payer.js";
+export type {
+  InHouseRecapDetailView,
+  InHouseRecapLineView,
+  InHouseRecapNoteView,
+  InHouseRecapReissuedView,
+  InHouseRecapResentView,
+  InHouseRecapSummaryView,
+  PayerInHouseRecapsView,
+  RevisedInHouseRecapNoteView,
+  RevisedInHouseRecapView,
+} from "./in-house-recap.js";
 export { CHORUS_SERVICE_ERRORS, chorusServicePayloadSchema } from "./chorus-service.js";
 export type {
   ChorusServicePayload,

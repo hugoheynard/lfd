@@ -1,0 +1,30 @@
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.recap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+}
+
+.head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--fold-space-sm);
+}
+
+.meta {
+  margin: 0;
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-muted);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-sm);
+}

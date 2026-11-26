@@ -105,6 +105,21 @@ export const BILLING_MAILS_FR: BillingMailsCopy = {
     creditorIdentifierLabel: "Identifiant créancier (ICS)",
     creditorLabel: "Créancier",
   },
+  "customer.in-house-recap": {
+    kicker: "Récapitulatif des BL",
+    title: "Récapitulatif des BL {number}",
+    subject: "{title} — {period}",
+    greeting: "Bonjour,",
+    intro:
+      "Voici le récapitulatif des bons de livraison remis à {company} en {period} : la quantité totale de chaque produit, puis la liste des BL couverts.",
+    rectification:
+      "Ce récapitulatif est un rectificatif : il remplace le {replaced}, qui ne fait plus foi.",
+    internalNote: "Document interne — sans facturation : il n'appelle aucun paiement.",
+    recapLabel: "Récapitulatif",
+    periodLabel: "Mois",
+    footer:
+      "Le récapitulatif est joint à ce message au format PDF. Pour toute question, répondez à ce message.",
+  },
   "customer.period-quote": {
     kicker: "Devis de période",
     title: "Devis {number}",

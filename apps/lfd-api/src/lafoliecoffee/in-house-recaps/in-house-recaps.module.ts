@@ -3,6 +3,9 @@ import { Module } from "@nestjs/common";
 import { AccountModule } from "../account/account.module.js";
 import { IssueInHouseRecapsHandler } from "./application/commands/issue-in-house-recaps.handler.js";
 import { ReissueInHouseRecapHandler } from "./application/commands/reissue-in-house-recap.handler.js";
+import { ResendInHouseRecapHandler } from "./application/commands/resend-in-house-recap.handler.js";
+import { GetInHouseRecapDocumentHandler } from "./application/queries/get-in-house-recap-document.handler.js";
+import { GetInHouseRecapSpecimenHandler } from "./application/queries/get-in-house-recap-specimen.handler.js";
 import { GetInHouseRecapHandler } from "./application/queries/get-in-house-recap.handler.js";
 import { ListPayerInHouseRecapsHandler } from "./application/queries/list-payer-in-house-recaps.handler.js";
 import { ListRevisedInHouseRecapsHandler } from "./application/queries/list-revised-in-house-recaps.handler.js";
@@ -13,12 +16,17 @@ import { InHouseRecapRepository } from "./domain/ports/in-house-recap.repository
 import { InHouseRecapRuns } from "./domain/ports/in-house-recap-runs.js";
 import { InHouseRecapRunsReader } from "./domain/ports/in-house-recap-runs.reader.js";
 import { PayerRecapsReader } from "./domain/ports/payer-recaps.reader.js";
+import { InHouseRecapDocumentKeeper } from "./application/services/in-house-recap-document-keeper.js";
+import { InHouseRecapMailer } from "./application/services/in-house-recap-mailer.js";
+import { MailedInHouseRecapDocument } from "./application/services/mailed-in-house-recap.document.js";
+import { RecapRecipientReader } from "./domain/ports/recap-recipient.reader.js";
+import { ReplacedRecapReader } from "./domain/ports/replaced-recap.reader.js";
 import { RecapDeliveryNotesReader } from "./domain/ports/recap-delivery-notes.reader.js";
 import { RecapNumbering } from "./domain/ports/recap-numbering.js";
 import { RevisedRecapsReader } from "./domain/ports/revised-recaps.reader.js";
 import { AdminInHouseRecapsController } from "./http/admin-in-house-recaps.controller.js";
+import { AdminInHouseRecapSpecimenController } from "./http/admin-in-house-recap-specimen.controller.js";
 import { InHouseRecapsAutopilotController } from "./http/in-house-recaps-autopilot.controller.js";
-import { NoInHouseRecapDocumentYet } from "./infrastructure/noop-in-house-recap.document.js";
 import {
   PrismaInHouseRecapRuns,
   PrismaInHouseRecapRunsReader,
@@ -27,6 +35,8 @@ import { PrismaInHouseRecapReader } from "./infrastructure/prisma-in-house-recap
 import { PrismaInHouseRecapRepository } from "./infrastructure/prisma-in-house-recap.repository.js";
 import { PrismaRecapDeliveryNotesReader } from "./infrastructure/prisma-recap-delivery-notes.reader.js";
 import { PrismaRecapNumbering } from "./infrastructure/prisma-recap-numbering.js";
+import { PrismaRecapRecipientReader } from "./infrastructure/prisma-recap-recipient.reader.js";
+import { PrismaReplacedRecapReader } from "./infrastructure/prisma-replaced-recap.reader.js";
 import {
   PrismaCurrentNoteVersionsReader,
   PrismaPayerRecapsReader,
@@ -46,13 +56,22 @@ import {
  */
 @Module({
   imports: [AccountModule],
-  controllers: [InHouseRecapsAutopilotController, AdminInHouseRecapsController],
+  controllers: [
+    InHouseRecapsAutopilotController,
+    AdminInHouseRecapsController,
+    AdminInHouseRecapSpecimenController,
+  ],
   providers: [
     IssueInHouseRecapsHandler,
     ReissueInHouseRecapHandler,
     ListPayerInHouseRecapsHandler,
     GetInHouseRecapHandler,
     ListRevisedInHouseRecapsHandler,
+    ResendInHouseRecapHandler,
+    GetInHouseRecapDocumentHandler,
+    GetInHouseRecapSpecimenHandler,
+    InHouseRecapDocumentKeeper,
+    InHouseRecapMailer,
     { provide: InHouseRecapRepository, useClass: PrismaInHouseRecapRepository },
     { provide: InHouseRecapReader, useClass: PrismaInHouseRecapReader },
     { provide: RecapDeliveryNotesReader, useClass: PrismaRecapDeliveryNotesReader },
@@ -62,8 +81,10 @@ import {
     { provide: CurrentNoteVersionsReader, useClass: PrismaCurrentNoteVersionsReader },
     { provide: PayerRecapsReader, useClass: PrismaPayerRecapsReader },
     { provide: RevisedRecapsReader, useClass: PrismaRevisedRecapsReader },
-    // Le point d'extension du document (D10) : le lot L4 y branche le PDF et l'e-mail.
-    { provide: InHouseRecapDocument, useClass: NoInHouseRecapDocumentYet },
+    { provide: RecapRecipientReader, useClass: PrismaRecapRecipientReader },
+    { provide: ReplacedRecapReader, useClass: PrismaReplacedRecapReader },
+    // Le document d'un récapitulatif émis (D10) : le PDF rangé, puis l'e-mail.
+    { provide: InHouseRecapDocument, useClass: MailedInHouseRecapDocument },
   ],
 })
 export class InHouseRecapsModule {}

@@ -95,6 +95,21 @@ export const BILLING_MAILS_EN: BillingMailsCopy = {
     creditorIdentifierLabel: "Creditor identifier (ICS)",
     creditorLabel: "Creditor",
   },
+  "customer.in-house-recap": {
+    kicker: "Delivery notes summary",
+    title: "Delivery notes summary {number}",
+    subject: "{title} — {period}",
+    greeting: "Hello,",
+    intro:
+      "Here is the summary of the delivery notes handed over to {company} in {period}: the total quantity of each product, then the list of the delivery notes covered.",
+    rectification:
+      "This summary is a correction: it replaces {replaced}, which is no longer valid.",
+    internalNote: "Internal document — not an invoice: no payment is due.",
+    recapLabel: "Summary",
+    periodLabel: "Month",
+    footer:
+      "The summary is attached to this message as a PDF. For any question, reply to this message.",
+  },
   "customer.period-quote": {
     kicker: "Period quote",
     title: "Quote {number}",

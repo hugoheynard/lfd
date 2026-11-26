@@ -15,6 +15,8 @@ const MANDATE = `${SPECIMEN_MARK}-RUM-0001`;
 const INVOICE = `${SPECIMEN_MARK}-FA-0001`;
 const QUOTE = `${SPECIMEN_MARK}-D-20261031-1`;
 const PUBLIC_PAYER = `${SPECIMEN_MARK} — Caserne des Alpes`;
+const IN_HOUSE_RESTAURANT = `${SPECIMEN_MARK} — Restaurant du Port`;
+const RECAP = `${SPECIMEN_MARK}-RBL-202610-0001`;
 const SITE = `${SPECIMEN_MARK} — Chalet Gentiane`;
 const TICKET_URL = `${SPECIMEN_URL}/mot-de-passe`;
 const MARKETING_CONFIRM_URL = `${SPECIMEN_URL}/api/lfd/mail/marketing/confirm/exemple`;
@@ -24,6 +26,7 @@ export const CUSTOMER_SPECIMENS: Pick<
   | "customer.collection-notice"
   | "customer.invoice-issued"
   | "customer.period-quote"
+  | "customer.in-house-recap"
   | "customer.mandate-to-sign"
   | "customer.sub-account-activity"
   | "customer.sub-account-gesture"
@@ -79,6 +82,17 @@ export const CUSTOMER_SPECIMENS: Pick<
       total: "1 234,56 €",
       serviceCode: `${SPECIMEN_MARK}-SERV`,
       document: { fileName: `${QUOTE}-v1.pdf`, pdfBase64: SPECIMEN_PDF_BASE64 },
+      locale,
+    }),
+  },
+  "customer.in-house-recap": {
+    family: "billing",
+    data: (locale) => ({
+      payerName: IN_HOUSE_RESTAURANT,
+      month: "2026-10",
+      recapNumber: RECAP,
+      replacesNumber: null,
+      document: { fileName: `${RECAP}.pdf`, pdfBase64: SPECIMEN_PDF_BASE64 },
       locale,
     }),
   },

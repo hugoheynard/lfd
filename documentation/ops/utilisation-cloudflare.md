@@ -26,7 +26,7 @@
 | Transformations Images                                  | 5 000 uniques/mois gratuites                                                                                   | **estimées** : images × 4                                          | Santé → seuils média               |
 | Analytics Engine                                        | 10 M points écrits, 1 M lectures / mois (non facturé à ce jour)                                                | rien sur le volume ; c'est lui qui porte le trafic                 | —                                  |
 | Limites de débit (`ratelimits`)                         | 300/min (API), 120/min et 1 200/min (planificateur), par IP                                                    | les `429` par la passerelle                                        | Santé → trafic (« rejets »)        |
-| Cron Triggers                                           | 250 par compte                                                                                                 | **10** déclarés, aucun suivi d'exécution                           | —                                  |
+| Cron Triggers                                           | 250 par compte                                                                                                 | **11** déclarés, aucun suivi d'exécution                           | —                                  |
 
 ## 2. Le plan Cloudflare
 
@@ -47,7 +47,7 @@ flowchart LR
     NAV --> PG["Pages : lfc-ecommerce (+ Functions),<br/>lfd-backoffice, aperçu des textes"]
     NAV --> IMG["media.lafoliecoffee.info<br/>transformations Images"]
     IMG --> RM[("R2 lfc-media")]
-    GW -->|service binding LFD_BACKEND| API["Worker lfd-api<br/>10 crons · ratelimit 300/min"]
+    GW -->|service binding LFD_BACKEND| API["Worker lfd-api<br/>11 crons · ratelimit 300/min"]
     API --> DOA["DO Backend"] --> CA["Container standard-1<br/>NestJS, 1 instance, WEUR"]
     GW -->|service binding ROUTE_PLANNER| RP["Worker lfd-route-planner"]
     RP --> DOR["DO Osrm"] --> CR["Container basic<br/>OSRM, 1 instance, WEUR"]
@@ -84,11 +84,14 @@ flowchart LR
   qu'elle l'était sous `unsafe.bindings` et ne l'est plus en premier niveau.
   Non tranché ici.
 - `workers_dev: false` (l. 104), `observability.enabled` (l. 218-220).
-- **Dix crons** (l. 189-202) : `*/5` (chauffe, boîte d'envoi, expiration des
+- **Onze crons** (`triggers.crons`, l. 234-246) : `*/5` (chauffe, boîte d'envoi, expiration des
   commandes boutique), `0 3`, `0 11`, `0 19` (recompute), `30 3` (visuels
   orphelins), `0 2` (fidélité), `0 *` (rappels de règlement), `45 3` (photos de
-  contrôle), `15 *` (prélèvement automatique), `55 21,22` (facture du mois).
-  Soit environ **288 + 24 + 24 + 8 ≈ 344 invocations par jour**, ≈ 10 400 par
+  contrôle), `15 *` (prélèvement automatique), `55 21,22` (facture du mois),
+  `30 22,23` (récapitulatif des BL des restaurants maison, 00h30 à Paris —
+  `IN_HOUSE_RECAPS_CRON`, `POST admin/in-house-recaps/run` ; le passage du
+  mois clos range le PDF et demande l'e-mail de chaque récapitulatif émis).
+  Soit environ **288 + 24 + 24 + 10 ≈ 346 invocations par jour**, ≈ 10 500 par
   mois, chacune un aller-retour vers le container.
 
 ### 3.3 Le planificateur `lfd-route-planner` (Worker + container)
@@ -153,7 +156,7 @@ Source : [Workers limits](https://developers.cloudflare.com/workers/platform/lim
 | Taille du Worker             | 64 Mio         | 64 Mio                                  |
 | Durée (wall time)            | —              | ni facturée ni limitée                  |
 
-Les dix crons de l'API dépasseraient à eux seuls le plafond Free (5).
+Les onze crons de l'API dépasseraient à eux seuls le plafond Free (5).
 
 ### 4.2 Containers
 

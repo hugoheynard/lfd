@@ -99,3 +99,53 @@ export class RecapNumberingOutsideTransactionError extends TechnicalError {
     );
   }
 }
+
+/** Un second PDF pour un récapitulatif déjà rangé : le document parti est le seul gardé. */
+export class InHouseRecapDocumentAlreadyKeptError extends BusinessError {
+  constructor(readonly recapNumber: string) {
+    super(
+      "in_house_recap.document_already_kept",
+      `Le PDF du récapitulatif ${recapNumber} est déjà rangé : il ne se remplace pas. Pour corriger le document, réémettez le récapitulatif.`,
+    );
+  }
+}
+
+/** Le PDF n'est pas encore rangé : l'émission n'a pas pu le produire. */
+export class InHouseRecapDocumentNotKeptError extends ResourceNotFoundError {
+  constructor(readonly recapNumber: string) {
+    super(
+      "in_house_recap.document_not_kept",
+      `Le PDF du récapitulatif ${recapNumber} n'est pas encore rangé : « Renvoyer l'e-mail » le produit et l'envoie.`,
+    );
+  }
+}
+
+/** Le payeur n'a personne à qui envoyer le récapitulatif. */
+export class InHouseRecapNobodyToNotifyError extends BusinessError {
+  constructor(readonly recapNumber: string) {
+    super(
+      "in_house_recap.nobody_to_notify",
+      `Le récapitulatif ${recapNumber} n'a pas de destinataire : ce restaurant n'a ni contact de facturation ni détenteur avec une adresse e-mail. Ajoutez un contact de facturation sur la fiche client, puis renvoyez l'e-mail.`,
+    );
+  }
+}
+
+/** Renvoyer un récapitulatif remplacé : c'est le rectificatif qui fait foi. */
+export class ReplacedInHouseRecapNotSentError extends BusinessError {
+  constructor(readonly recapNumber: string) {
+    super(
+      "in_house_recap.replaced_not_sent",
+      `Le récapitulatif ${recapNumber} a été remplacé par un rectificatif : renvoyez le plus récent, en tête de la liste.`,
+    );
+  }
+}
+
+/** Le payeur d'un récapitulatif a disparu de l'annuaire : la clé étrangère l'interdit. */
+export class RecapPayerMissingError extends TechnicalError {
+  constructor(readonly recapNumber: string) {
+    super(
+      "in_house_recap.payer_missing",
+      `Le payeur du récapitulatif ${recapNumber} est introuvable : le PDF n'est pas produit. Signalez-le à l'équipe technique.`,
+    );
+  }
+}

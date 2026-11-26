@@ -84,6 +84,7 @@ export const CUSTOMER_CASE_TABLES: Pick<
   | "customer.collection-notice"
   | "customer.invoice-issued"
   | "customer.period-quote"
+  | "customer.in-house-recap"
   | "customer.mandate-to-sign"
   | "customer.sub-account-activity"
   | "customer.sub-account-gesture"
@@ -167,6 +168,16 @@ export const CUSTOMER_CASE_TABLES: Pick<
       ),
     ],
     axes: [{ id: "document", values: PRESENCE, of: (data) => presence(data.document?.fileName) }],
+  },
+  "customer.in-house-recap": {
+    cases: [
+      specimenCase("customer.in-house-recap", "Première émission"),
+      variantCase("customer.in-house-recap", "rectification", "Rectificatif", (data) => ({
+        ...data,
+        replacesNumber: "EXEMPLE-RBL-202610-0000",
+      })),
+    ],
+    axes: [{ id: "replacesNumber", values: PRESENCE, of: (data) => presence(data.replacesNumber) }],
   },
   "customer.period-quote": {
     cases: [

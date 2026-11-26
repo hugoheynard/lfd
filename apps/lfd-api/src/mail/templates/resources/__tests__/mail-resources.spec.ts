@@ -57,9 +57,9 @@ function allValueCards(): readonly (readonly [string, MailValueCard])[] {
 }
 
 describe("les fiches des valeurs", () => {
-  it("couvrent les 60 variables relevées, et aucune autre", () => {
+  it("couvrent les 61 variables relevées, et aucune autre", () => {
     expect(Object.keys(MAIL_VALUE_CARDS).sort()).toEqual([...USERS.keys()].sort());
-    expect(USERS.size).toBe(60);
+    expect(USERS.size).toBe(61);
   });
 
   it("n'ont ni nom, ni description, ni exemple vides", () => {

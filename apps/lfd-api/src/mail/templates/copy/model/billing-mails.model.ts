@@ -154,10 +154,35 @@ export interface PeriodQuoteCopy {
   readonly footer: string;
 }
 
+/**
+ * **« Récapitulatif des BL »** — à la place de la facture d'un de nos
+ * restaurants, les quantités remises sur un mois, sans montant
+ * (`plan-restaurants-maison.md`, D10). Le PDF est joint.
+ */
+export interface InHouseRecapCopy {
+  /** Le sous-titre du bandeau d'en-tête, sous l'enseigne — rendu en capitales. */
+  readonly kicker: string;
+  /** `{number}` — « Récapitulatif des BL RBL-202611-0001 ». */
+  readonly title: string;
+  /** `{title}`, `{period}`. */
+  readonly subject: string;
+  readonly greeting: string;
+  /** `{company}`, `{period}`. */
+  readonly intro: string;
+  /** `{replaced}` : le numéro du récapitulatif que celui-ci remplace. */
+  readonly rectification: string;
+  /** Qu'il n'appelle aucun paiement. */
+  readonly internalNote: string;
+  readonly recapLabel: string;
+  readonly periodLabel: string;
+  readonly footer: string;
+}
+
 /** La famille « facturation et prélèvement », une section par clé du registre. */
 export interface BillingMailsCopy {
   readonly "customer.invoice-issued": InvoiceIssuedCopy;
   readonly "customer.period-quote": PeriodQuoteCopy;
+  readonly "customer.in-house-recap": InHouseRecapCopy;
   readonly "customer.collection-notice": CollectionNoticeCopy;
   readonly "customer.mandate-to-sign": MandateToSignCopy;
 }

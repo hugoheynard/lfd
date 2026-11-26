@@ -11,26 +11,27 @@ d'exemple fixes** : jamais une vraie commande, **rien d'écrit en base, rien
 d'archivé, rien d'envoyé**. On choisit un document à gauche, l'aperçu PDF
 s'affiche à droite, et « Ouvrir dans un onglet » sert à l'imprimer.
 
-| Groupe            | Document                        | Route (`GET`)                                           | Bloc qui le sert               | Rendu pur utilisé           |
-| ----------------- | ------------------------------- | ------------------------------------------------------- | ------------------------------ | --------------------------- |
-| Bons chiffrés     | confirmation de commande pro    | `admin/document-specimens/order-sheet-pro.pdf`          | `lafoliecoffee/orders`         | `renderOrderSheetPdf`       |
-| Bons chiffrés     | confirmation de commande public | `admin/document-specimens/order-sheet-public.pdf`       | `lafoliecoffee/orders`         | `renderOrderSheetPdf`       |
-| Bons non chiffrés | fiche d'atelier                 | `admin/document-specimens/atelier-sheet.pdf`            | `production`                   | `renderAtelierSheetPdf`     |
-| Bons non chiffrés | feuille de tournée (livreur)    | `admin/document-specimens/round-paper.pdf`              | `delivery`                     | `renderRoundPaperPdf`       |
-| Bons non chiffrés | dossier des tournées du jour    | `admin/document-specimens/rounds-dossier.pdf`           | `delivery`                     | `renderDayRoundsDossierPdf` |
-| Bons chiffrés     | bon de livraison client pro     | `admin/document-specimens/delivery-note-client-pro.pdf` | `lafoliecoffee/delivery-notes` | `renderClientNotePdf`       |
-| Bons non chiffrés | bon de livraison transport      | `admin/document-specimens/delivery-note-carrier.pdf`    | `lafoliecoffee/delivery-notes` | `renderCarrierNotePdf`      |
-| Fournil           | compte à produire               | `admin/document-specimens/production-count.pdf`         | `production`                   | `renderProductionCountPdf`  |
-| Fournil           | dossier du jour                 | `admin/document-specimens/day-dossier.pdf`              | `production`                   | `renderDayDossierPdf`       |
-| Factures          | facture Factur-X (PDF/A-3)      | `admin/document-specimens/invoice.pdf`                  | `lafoliecoffee/accounting`     | `renderInvoicePdf`          |
-| Factures          | facture Factur-X au virement    | `admin/document-specimens/invoice-bank-transfer.pdf`    | `lafoliecoffee/accounting`     | `renderInvoicePdf`          |
-| Devis             | devis de période (public)       | `admin/document-specimens/period-quote.pdf`             | `lafoliecoffee/accounting`     | `renderPeriodQuotePdf`      |
-| Mandats           | mandat SEPA interentreprises    | `admin/document-specimens/sepa-mandate-b2b.pdf`         | `lafoliecoffee/accounting`     | `renderSepaMandatePdf`      |
-| Mandats           | mandat SEPA CORE                | `admin/document-specimens/sepa-mandate-core.pdf`        | `lafoliecoffee/accounting`     | `renderSepaMandatePdf`      |
-| Récapitulatifs    | récapitulatif de commandes      | `admin/document-specimens/order-summary.pdf`            | `lafoliecoffee/orders`         | `renderOrderSummaryPdf`     |
-| Catalogue         | matrice des allergènes          | `admin/document-specimens/allergen-matrix.pdf`          | `pim`                          | `renderAllergenMatrixPdf`   |
-| Étiquettes        | étiquette de sac (A6)           | `admin/document-specimens/bag-label.pdf`                | `packing`                      | `renderBagLabelsPdf`        |
-| Étiquettes        | étiquette de bac (A6)           | `admin/document-specimens/bin-label.pdf`                | `delivery`                     | `renderBinLabelsPdf`        |
+| Groupe            | Document                        | Route (`GET`)                                           | Bloc qui le sert                | Rendu pur utilisé           |
+| ----------------- | ------------------------------- | ------------------------------------------------------- | ------------------------------- | --------------------------- |
+| Bons chiffrés     | confirmation de commande pro    | `admin/document-specimens/order-sheet-pro.pdf`          | `lafoliecoffee/orders`          | `renderOrderSheetPdf`       |
+| Bons chiffrés     | confirmation de commande public | `admin/document-specimens/order-sheet-public.pdf`       | `lafoliecoffee/orders`          | `renderOrderSheetPdf`       |
+| Bons non chiffrés | fiche d'atelier                 | `admin/document-specimens/atelier-sheet.pdf`            | `production`                    | `renderAtelierSheetPdf`     |
+| Bons non chiffrés | feuille de tournée (livreur)    | `admin/document-specimens/round-paper.pdf`              | `delivery`                      | `renderRoundPaperPdf`       |
+| Bons non chiffrés | dossier des tournées du jour    | `admin/document-specimens/rounds-dossier.pdf`           | `delivery`                      | `renderDayRoundsDossierPdf` |
+| Bons chiffrés     | bon de livraison client pro     | `admin/document-specimens/delivery-note-client-pro.pdf` | `lafoliecoffee/delivery-notes`  | `renderClientNotePdf`       |
+| Bons non chiffrés | bon de livraison transport      | `admin/document-specimens/delivery-note-carrier.pdf`    | `lafoliecoffee/delivery-notes`  | `renderCarrierNotePdf`      |
+| Fournil           | compte à produire               | `admin/document-specimens/production-count.pdf`         | `production`                    | `renderProductionCountPdf`  |
+| Fournil           | dossier du jour                 | `admin/document-specimens/day-dossier.pdf`              | `production`                    | `renderDayDossierPdf`       |
+| Factures          | facture Factur-X (PDF/A-3)      | `admin/document-specimens/invoice.pdf`                  | `lafoliecoffee/accounting`      | `renderInvoicePdf`          |
+| Factures          | facture Factur-X au virement    | `admin/document-specimens/invoice-bank-transfer.pdf`    | `lafoliecoffee/accounting`      | `renderInvoicePdf`          |
+| Devis             | devis de période (public)       | `admin/document-specimens/period-quote.pdf`             | `lafoliecoffee/accounting`      | `renderPeriodQuotePdf`      |
+| Mandats           | mandat SEPA interentreprises    | `admin/document-specimens/sepa-mandate-b2b.pdf`         | `lafoliecoffee/accounting`      | `renderSepaMandatePdf`      |
+| Mandats           | mandat SEPA CORE                | `admin/document-specimens/sepa-mandate-core.pdf`        | `lafoliecoffee/accounting`      | `renderSepaMandatePdf`      |
+| Récapitulatifs    | récapitulatif de commandes      | `admin/document-specimens/order-summary.pdf`            | `lafoliecoffee/orders`          | `renderOrderSummaryPdf`     |
+| Récapitulatifs    | récapitulatif des BL (maison)   | `admin/document-specimens/in-house-recap.pdf`           | `lafoliecoffee/in-house-recaps` | `renderInHouseRecapPdf`     |
+| Catalogue         | matrice des allergènes          | `admin/document-specimens/allergen-matrix.pdf`          | `pim`                           | `renderAllergenMatrixPdf`   |
+| Étiquettes        | étiquette de sac (A6)           | `admin/document-specimens/bag-label.pdf`                | `packing`                       | `renderBagLabelsPdf`        |
+| Étiquettes        | étiquette de bac (A6)           | `admin/document-specimens/bin-label.pdf`                | `delivery`                      | `renderBinLabelsPdf`        |
 
 ## Pourquoi chaque bloc sert ses propres exemplaires
 
@@ -45,6 +46,7 @@ flowchart LR
   screen["Back-office<br/>Comptabilité › Planche des documents"]
   screen -->|order-sheet-*.pdf| orders["b2b/orders<br/>AdminOrderSheetSpecimensController"]
   screen -->|order-summary.pdf| summary["b2b/orders<br/>AdminOrderSummarySpecimenController"]
+  screen -->|in-house-recap.pdf| recaps["b2b/in-house-recaps<br/>AdminInHouseRecapSpecimenController"]
   screen -->|invoice.pdf, period-quote.pdf| accounting["b2b/accounting<br/>AdminInvoiceSpecimenController"]
   screen -->|sepa-mandate-*.pdf| mandates["b2b/accounting<br/>AdminSepaMandateSpecimensController"]
   screen -->|allergen-matrix.pdf| pim["pim<br/>AdminAllergenMatrixSpecimenController"]
@@ -133,6 +135,11 @@ n'appartiennent à personne.
   commande pro d'exemple — une pour la société, une pour un de ses sites, une
   annulée —, résumées par `summarizeOrders`, le calcul des vraies sélections.
   On y voit la table d'un site et la liste des commandes hors totaux.
+- **Récapitulatif des BL** (`lafoliecoffee/in-house-recaps/…/get-in-house-recap-specimen.handler.ts`) :
+  le rectificatif d'un restaurant maison pour le dernier mois clos de
+  l'horloge — trois produits (dont un au poids), quatre BL dont un reliquat,
+  la mention « Document interne — sans facturation » et le numéro remplacé.
+  Aucun montant : le document n'en porte jamais.
 - **Matrice des allergènes** (`pim/…/allergen-matrix/application/document-specimens/specimen-matrix.ts`) :
   posée telle que `buildAllergenMatrix` la rend, **sans** passer par lui (il
   lirait des fiches et le référentiel réels) — quatorze colonnes de l'annexe

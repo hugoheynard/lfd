@@ -145,6 +145,14 @@
       "textSha256": "036d6a6fe5ac29a11f0dc18eea5668c3a9cfc48aaabf6041b2a16a0d7a4aefd5"
     }
   },
+  "customer.in-house-recap": {
+    "first": {
+      "textSha256": "6e267ae5f79cdf12254dee80e0df8e91d106c4fbacdc994603bd2b928eb914fc"
+    },
+    "rectification": {
+      "textSha256": "e070242a6099c820fd9ab766f422527d29e81fc4e30fdd7a5cdee5be37f42672"
+    }
+  },
   "customer.mandate-to-sign": {
     "core": {
       "textSha256": "34ae235b97759129b39e0204ca0cec1e60aa4c465c8d35aacb4a57776e2160c3"

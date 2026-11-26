@@ -1,6 +1,7 @@
 import {
   EmptyInHouseRecapError,
   InHouseRecapAlreadyReplacedError,
+  InHouseRecapDocumentAlreadyKeptError,
   RecapNoteDuplicatedError,
   RecapNoteOutsideMonthError,
 } from "../errors/in-house-recap-errors.js";
@@ -118,6 +119,25 @@ export class InHouseRecap {
     return rectified;
   }
 
+  /**
+   * Range le PDF du récapitulatif (D10) : un document figé n'a qu'un
+   * exemplaire. La même clé une seconde fois ne change rien ; une autre clé
+   * est refusée — le PDF parti est celui qui est gardé.
+   *
+   * @returns `true` si la clé vient d'être posée, `false` si elle l'était déjà.
+   * @throws {InHouseRecapDocumentAlreadyKeptError} une autre clé est déjà rangée.
+   */
+  recordDocument(storageKey: string): boolean {
+    if (this.state.storageKey === storageKey) {
+      return false;
+    }
+    if (this.state.storageKey !== null) {
+      throw new InHouseRecapDocumentAlreadyKeptError(this.state.number);
+    }
+    this.state = { ...this.state, storageKey };
+    return true;
+  }
+
   /** Les BL révisés depuis l'émission : leur version courante dépasse la figée (D8). */
   revisedNotes(current: readonly CurrentNoteVersion[]): readonly CoveredNote[] {
     const versions = new Map(current.map((one) => [one.deliveryNoteId, one.contentVersion]));
@@ -136,6 +156,14 @@ export class InHouseRecap {
 
   get month(): RecapMonth {
     return this.state.month;
+  }
+
+  get number(): string {
+    return this.state.number;
+  }
+
+  get storageKey(): string | null {
+    return this.state.storageKey;
   }
 
   get isReplaced(): boolean {

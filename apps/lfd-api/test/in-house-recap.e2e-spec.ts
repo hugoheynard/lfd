@@ -9,10 +9,15 @@
  * - un BL non remis, ou d'une commande qui n'est pas interne, n'entre pas ;
  * - un mois vide s'écrit comme une issue, et n'est pas manqué ;
  * - le rejeu du passage ne réécrit rien (unicité de l'issue, index partiel) ;
- * - le rectificatif remplace l'ancien et libère ses BL dans une transaction.
+ * - le rectificatif remplace l'ancien et libère ses BL dans une transaction ;
+ * - le document (D10) : le PDF rangé sous la clé du récapitulatif, la demande
+ *   d'e-mail dans la boîte d'envoi, la pièce par référence ; renvoyer ; le
+ *   rectificatif part avec son propre PDF.
  *
  * Une frontière doublée : la signature du jeton staff (le jeton EST le `sub`).
  */
+import { Buffer } from "node:buffer";
+
 import { E2E_STAFF_SUB, bootstrapE2e, daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { INTENT_KEY, freshIntent } from "./intent-key.js";
 import {
@@ -28,6 +33,7 @@ import {
 import { placeOrder, pickupSite } from "./order-factory.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
+import { CustomerDocumentStore } from "../src/platform/storage/customer-document-store.js";
 import { CompanyStatus, CustomerRole } from "../src/platform/database/client/client.js";
 
 /** Le jeton porteur EST le `sub`. */
@@ -243,6 +249,102 @@ describe("le rectificatif (D8)", () => {
       .expect(409);
 
     expect(jsonBody<{ code: string }>(refused).code).toBe("in_house_recap.already_replaced");
+  });
+});
+
+describe("le document du récapitulatif (D10)", () => {
+  /** Les demandes d'e-mail « récapitulatif » écrites dans la boîte d'envoi, par clé. */
+  async function recapMails(): Promise<readonly { key: string; payload: string }[]> {
+    const rows = await ctx.prisma.outboxMessage.findMany({
+      where: { type: "mail.requested", key: { startsWith: "mail.requested:in-house-recap" } },
+      orderBy: { key: "asc" },
+      select: { key: true, payload: true },
+    });
+    return rows.map((row) => ({ key: row.key, payload: JSON.stringify(row.payload) }));
+  }
+
+  async function issuedScene(): Promise<{ readonly recapId: string; readonly noteId: string }> {
+    const orderId = await internalOrder(ctx, resto);
+    const noteId = await seedNote(ctx, {
+      orderId,
+      rank: 1,
+      handedOverAt: inLastClosedMonth(6),
+      quantity: 4,
+    });
+    return { recapId: issuedOf(await runRecaps(ctx), resto.companyId), noteId };
+  }
+
+  it("🔴 à l'émission, le PDF est rangé et la demande d'e-mail le joint par référence", async () => {
+    const { recapId } = await issuedScene();
+
+    const row = await ctx.prisma.inHouseRecap.findUniqueOrThrow({ where: { id: recapId } });
+    const key = `in-house-recaps/${resto.companyId}/${row.number}.pdf`;
+    expect(row.storageKey).toBe(key);
+    const pdf = await ctx.app.get(CustomerDocumentStore).readIfPresent(key);
+    expect(Buffer.from(pdf ?? []).toString("latin1", 0, 5)).toBe("%PDF-");
+
+    const mails = await recapMails();
+    expect(mails.map((mail) => mail.key)).toEqual([
+      `mail.requested:in-house-recap:${recapId}:user:${resto.buyerId}`,
+    ]);
+    expect(mails[0]?.payload).toContain('"pdfStored"');
+    expect(mails[0]?.payload).toContain(key);
+    expect(mails[0]?.payload).not.toContain("pdfBase64");
+    expect(mails[0]?.key).not.toContain("@");
+    expect((await listOf(resto.companyId)).recaps).toEqual([
+      expect.objectContaining({ id: recapId, hasDocument: true }),
+    ]);
+
+    const download = await staff().get(`/admin/in-house-recaps/${recapId}/document`).expect(200);
+    expect(download.headers["content-type"]).toContain("application/pdf");
+  });
+
+  it("« Renvoyer l'e-mail » repart sous la clé de l'intention, une fois par intention", async () => {
+    const { recapId } = await issuedScene();
+    const key = freshIntent();
+    const resend = () =>
+      staff().post(`/admin/in-house-recaps/${recapId}/resend`).set(INTENT_KEY, key).send({});
+
+    expect(jsonBody<{ recapId: string }>(await resend().expect(200)).recapId).toBe(recapId);
+    await resend().expect(200);
+
+    expect((await recapMails()).map((mail) => mail.key)).toEqual([
+      `mail.requested:in-house-recap-resend:${key}:user:${resto.buyerId}`,
+      `mail.requested:in-house-recap:${recapId}:user:${resto.buyerId}`,
+    ]);
+  });
+
+  it("le rectificatif part avec son propre PDF, qui nomme ce qu'il remplace ; l'ancien ne se renvoie plus", async () => {
+    const { recapId, noteId } = await issuedScene();
+    await reviseNote(noteId, 7);
+
+    const rectified = jsonBody<{ id: string }>(
+      await staff()
+        .post(`/admin/in-house-recaps/${recapId}/reissue`)
+        .set(INTENT_KEY, freshIntent())
+        .send({})
+        .expect(201),
+    ).id;
+
+    const [old, fresh] = await Promise.all([
+      ctx.prisma.inHouseRecap.findUniqueOrThrow({ where: { id: recapId } }),
+      ctx.prisma.inHouseRecap.findUniqueOrThrow({ where: { id: rectified } }),
+    ]);
+    expect(fresh.storageKey).toBe(`in-house-recaps/${resto.companyId}/${fresh.number}.pdf`);
+    const mails = await recapMails();
+    expect(mails.map((mail) => mail.key)).toContain(
+      `mail.requested:in-house-recap:${rectified}:user:${resto.buyerId}`,
+    );
+    expect(mails.find((mail) => mail.key.includes(rectified))?.payload).toContain(
+      `"replacesNumber":"${old.number}"`,
+    );
+
+    const refused = await staff()
+      .post(`/admin/in-house-recaps/${recapId}/resend`)
+      .set(INTENT_KEY, freshIntent())
+      .send({})
+      .expect(409);
+    expect(jsonBody<{ code: string }>(refused).code).toBe("in_house_recap.replaced_not_sent");
   });
 });
 

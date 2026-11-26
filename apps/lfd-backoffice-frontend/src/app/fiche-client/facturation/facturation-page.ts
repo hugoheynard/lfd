@@ -32,6 +32,7 @@ import { periodCsv, periodFileName } from './billing-csv';
 import { CycleStatementCard } from './cycle-statement-card/cycle-statement-card';
 import { CollectionReturnsCard } from '../collection-returns-card/collection-returns-card';
 import { DetachedUnpaidCard } from '../detached-unpaid-card/detached-unpaid-card';
+import { InHouseRecapsCard } from '../in-house-recaps-card/in-house-recaps-card';
 import { IssuedInvoicesCard } from '../issued-invoices-card/issued-invoices-card';
 import { PeriodQuotesCard } from '../period-quotes-card/period-quotes-card';
 import { PayerBillingModeNote } from '../payer-billing-mode-note/payer-billing-mode-note';
@@ -77,6 +78,7 @@ const ORDERS_WINDOW = 200;
     DetachedUnpaidCard,
     IssuedInvoicesCard,
     PeriodQuotesCard,
+    InHouseRecapsCard,
     PayerBillingModeNote,
     TransferInvoicesCard,
     FoldBadgeComponent,

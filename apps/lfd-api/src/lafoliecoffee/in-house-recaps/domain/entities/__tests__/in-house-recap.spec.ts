@@ -1,6 +1,7 @@
 import {
   EmptyInHouseRecapError,
   InHouseRecapAlreadyReplacedError,
+  InHouseRecapDocumentAlreadyKeptError,
   RecapNoteDuplicatedError,
   RecapNoteOutsideMonthError,
 } from "../../errors/in-house-recap-errors.js";
@@ -111,5 +112,31 @@ describe("InHouseRecap — révision et rectificatif (D8)", () => {
       recap.reissue({ id: "recap-2", number: "RBL-202610-0002", issuedAt: ISSUED_AT, notes: [] }),
     ).toThrow(EmptyInHouseRecapError);
     expect(recap.isReplaced).toBe(false);
+  });
+});
+
+describe("InHouseRecap.recordDocument", () => {
+  const KEY = "in-house-recaps/resto/RBL-202610-0001.pdf";
+
+  it("pose la clé du PDF sur un récapitulatif qui n'en a pas", () => {
+    const recap = issue([note("a", IN_OCTOBER)]);
+    expect(recap.recordDocument(KEY)).toBe(true);
+    expect(recap.storageKey).toBe(KEY);
+  });
+
+  it("la même clé une seconde fois ne change rien", () => {
+    const recap = issue([note("a", IN_OCTOBER)]);
+    recap.recordDocument(KEY);
+    expect(recap.recordDocument(KEY)).toBe(false);
+    expect(recap.storageKey).toBe(KEY);
+  });
+
+  it("refuse une autre clé : le PDF parti est le seul gardé", () => {
+    const recap = issue([note("a", IN_OCTOBER)]);
+    recap.recordDocument(KEY);
+    expect(() => recap.recordDocument("in-house-recaps/resto/autre.pdf")).toThrow(
+      InHouseRecapDocumentAlreadyKeptError,
+    );
+    expect(recap.storageKey).toBe(KEY);
   });
 });

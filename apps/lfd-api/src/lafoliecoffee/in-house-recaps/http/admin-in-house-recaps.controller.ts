@@ -1,10 +1,24 @@
-import { Controller, Get, HttpCode, HttpStatus, Param, Post } from "@nestjs/common";
+import { contentDispositionAttachment, sanitiseFileName } from "@lfd/storage";
+import {
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Post,
+  Res,
+  StreamableFile,
+} from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
+import type { Response } from "express";
 
 import { AdminSurface, RequirePermission } from "../../../platform/auth/admin-surface.decorator.js";
 import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { IntentKey } from "../../../platform/shared/http/intent-key.decorator.js";
 import { ReissueInHouseRecapCommand } from "../application/commands/reissue-in-house-recap.command.js";
+import { ResendInHouseRecapCommand } from "../application/commands/resend-in-house-recap.command.js";
+import type { InHouseRecapPdf } from "../application/queries/get-in-house-recap-document.handler.js";
+import { GetInHouseRecapDocumentQuery } from "../application/queries/get-in-house-recap-document.query.js";
 import { GetInHouseRecapQuery } from "../application/queries/get-in-house-recap.query.js";
 import type {
   InHouseRecapDetailView,
@@ -17,8 +31,9 @@ import { ListRevisedInHouseRecapsQuery } from "../application/queries/list-revis
 /**
  * **Les récapitulatifs des BL** d'un restaurant maison, pour l'onglet de la
  * fiche client (`plan-restaurants-maison.md`, D8–D10). Se lisent sous
- * `b2b_companies:read`, comme la fiche ; « Réémettre » se fait sous
- * `b2b_in_house_payers:write`, le droit de la nature maison.
+ * `b2b_companies:read`, comme la fiche, PDF compris ; « Renvoyer l'e-mail »
+ * et « Réémettre » se font sous `b2b_in_house_payers:write`, le droit de la
+ * nature maison, chacun sous la clé d'intention de l'écran.
  */
 @Controller("admin")
 @AdminSurface("b2b_companies")
@@ -69,5 +84,41 @@ export class AdminInHouseRecapsController {
       new ReissueInHouseRecapCommand(recapId, staffUserId, intentKey),
     );
     return { id };
+  }
+
+  /** Le PDF rangé, en téléchargement ; `404` nommé tant qu'il n'est pas rangé. */
+  @Get("in-house-recaps/:recapId/document")
+  async document(
+    @Param("recapId") recapId: string,
+    @Res({ passthrough: true }) response: Response,
+  ): Promise<StreamableFile> {
+    const pdf = await this.queries.execute<GetInHouseRecapDocumentQuery, InHouseRecapPdf>(
+      new GetInHouseRecapDocumentQuery(recapId),
+    );
+    response.setHeader("Content-Type", "application/pdf");
+    response.setHeader(
+      "Content-Disposition",
+      contentDispositionAttachment(sanitiseFileName(pdf.fileName, "recapitulatif.pdf")),
+    );
+    return new StreamableFile(pdf.bytes);
+  }
+
+  /**
+   * Renvoie l'e-mail du récapitulatif, le PDF joint (rendu s'il manquait) ;
+   * `200` et son identifiant. `409` nommé pour un récapitulatif remplacé ou un
+   * payeur sans destinataire. Une fois par intention de l'écran.
+   */
+  @Post("in-house-recaps/:recapId/resend")
+  @RequirePermission("b2b_in_house_payers:write")
+  @HttpCode(HttpStatus.OK)
+  async resend(
+    @Param("recapId") recapId: string,
+    @StaffUserId() staffUserId: string,
+    @IntentKey() intentKey: string,
+  ): Promise<{ readonly recapId: string }> {
+    const sent = await this.commands.execute<ResendInHouseRecapCommand, string>(
+      new ResendInHouseRecapCommand(recapId, staffUserId, intentKey),
+    );
+    return { recapId: sent };
   }
 }

@@ -47,6 +47,7 @@ export const CUSTOMER_MAIL_LAYOUTS: Readonly<
     | "customer.collection-notice"
     | "customer.invoice-issued"
     | "customer.period-quote"
+    | "customer.in-house-recap"
     | "customer.mandate-to-sign"
     | "customer.access-opened"
     | "customer.company-attached"
@@ -140,6 +141,16 @@ export const CUSTOMER_MAIL_LAYOUTS: Readonly<
         ],
       },
       { id: "cta", texts: texts("cta") },
+      { id: "footer", texts: texts("footer") },
+    ],
+  },
+  "customer.in-house-recap": {
+    subject: SUBJECT,
+    header: KICKER,
+    sections: [
+      { id: "title", texts: texts("title") },
+      { id: "body", texts: texts("greeting", "intro", "rectification", "internalNote") },
+      { id: "summary", texts: texts("recapLabel", "periodLabel") },
       { id: "footer", texts: texts("footer") },
     ],
   },
