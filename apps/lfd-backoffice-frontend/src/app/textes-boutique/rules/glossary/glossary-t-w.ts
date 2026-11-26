@@ -13,6 +13,7 @@ export const GLOSSARY_T_W: Readonly<Record<string, string>> = {
   termGrantedTransferSub: 'Règlement mensuel — accordé, par virement',
   termMonthly: 'Règlement mensuel',
   termNoneSub: 'Règlement mensuel — sur demande',
+  termParentSub: 'Règlement mensuel — site facturé par sa maison mère',
   termOrder: 'Règlement à la commande',
   termOrderSub: 'Règlement à la commande — détail',
   termRequest: 'Demander le règlement mensuel',
