@@ -173,6 +173,8 @@ describe("le schéma payment — les noms écrits à la main", () => {
       "card_payment_",
       "card_refund_",
       "card_takeover_",
+      "card_customer_",
+      "card_intent_relabel_",
       "pay_link_",
       "transfer_received_",
       "transfer_allocation_",

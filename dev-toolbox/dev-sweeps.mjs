@@ -29,6 +29,9 @@ export const EVERY_FIVE_MINUTES = [
   // Les paiements restés en attente (plan B) : le filet d'un webhook perdu,
   // relu chez le prestataire du compte — en dev, son mode test.
   "admin/card-payments/pending/sweep",
+  // Le libellé définitif des intentions (numéro de commande) : reprend les
+  // reposes échouées chez le prestataire.
+  "admin/card-payments/labels/sweep",
   // Les hausses payées par carte (plan S2, §2.6, §2.7) : appliquer les
   // compléments payés, rattraper un webhook perdu, abandonner au délai.
   "admin/orders/card-increases/sweep",
