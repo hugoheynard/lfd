@@ -4,7 +4,7 @@ import { FoldPanelHostService } from 'fold-ng';
 import { CompletionCallout } from '../../completion/completion-callout/completion-callout';
 import type { CompletionItem, CompletionTarget } from '../../completion/completion-items';
 import { ClientCompany } from '../../../client-company.service';
-import { ClientCopyService } from '../../../copy/client-copy.service';
+import { ClientCopyService, fill } from '../../../copy/client-copy.service';
 import { CardFoot } from '../../card-foot/card-foot';
 import { IdentityPanel } from '../identity-panel/identity-panel';
 import { canEditIdentity } from '../identity-section';
@@ -29,6 +29,7 @@ export class IdentityMobileCard {
   readonly completionAction = output<CompletionTarget>();
 
   protected readonly t = inject(ClientCopyService).t;
+  protected readonly fill = fill;
   protected readonly client = inject(ClientCompany);
   private readonly panels = inject(FoldPanelHostService);
 

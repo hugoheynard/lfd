@@ -1,6 +1,14 @@
 <h2 class="title">{{ t().account.sections.identity }}</h2>
 <app-completion-callout [items]="completion()" (act)="completionAction.emit($event)" />
-@if (client.company(); as identity) {
+@if (client.billedBy(); as payer) {
+  <dl class="facts">
+    <div class="fact">
+      <dt>{{ t().account.identityBrand }}</dt>
+      <dd>{{ client.name() }}</dd>
+    </div>
+  </dl>
+  <p class="note" data-billed-by>{{ fill(t().account.siteLegalNote, { payer }) }}</p>
+} @else if (client.company(); as identity) {
   <dl class="facts">
     <div class="fact">
       <dt>{{ t().account.identityBrand }}</dt>

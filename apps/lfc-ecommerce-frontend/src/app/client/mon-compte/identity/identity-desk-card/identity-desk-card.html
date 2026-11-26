@@ -7,7 +7,14 @@
   }
 </header>
 <app-completion-callout [items]="completion()" (act)="completionAction.emit($event)" />
-@if (client.company(); as identity) {
+@if (client.billedBy(); as payer) {
+  <!-- Un site facturé par son principal : seule l'enseigne est à lui. -->
+  <dl class="facts">
+    <dt>{{ t().account.identityBrand }}</dt>
+    <dd>{{ client.name() }}</dd>
+  </dl>
+  <p class="note" data-billed-by>{{ fill(t().account.siteLegalNote, { payer }) }}</p>
+} @else if (client.company(); as identity) {
   <dl class="facts">
     <dt>{{ t().account.identityBrand }}</dt>
     <dd>{{ client.name() }}</dd>
@@ -27,4 +34,6 @@
   </dl>
 }
 <!-- La règle est ÉCRITE, pas grisée. -->
-<p class="note">{{ t().account.identityNote }}</p>
+@if (client.billedBy() === null) {
+  <p class="note">{{ t().account.identityNote }}</p>
+}

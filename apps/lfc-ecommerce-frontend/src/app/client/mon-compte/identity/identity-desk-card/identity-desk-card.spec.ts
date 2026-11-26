@@ -23,6 +23,19 @@ describe('IdentityDeskCard', () => {
     expect(el.querySelectorAll('input').length).toBe(0);
   });
 
+  /**
+   * Régression : un site facturé par son principal affichait ses propres
+   * mentions légales, vides (« — »), au lieu de celles du principal.
+   */
+  it('dit d’un site que ses mentions légales sont celles de son principal', () => {
+    const site = { ...TOMMEUSES, billedByParent: true, payerName: 'Chalets du Lac', siret: '' };
+    const el = bootCard(IdentityDeskCard, [site]).nativeElement as HTMLElement;
+
+    expect(el.querySelector('[data-billed-by]')?.textContent).toContain('Chalets du Lac');
+    expect(el.querySelector('.facts')?.textContent).not.toContain(FR.account.identitySiret);
+    expect(el.textContent).not.toContain(FR.account.identityNote);
+  });
+
   it('lit la forme juridique par son libellé, et une saisie inconnue telle quelle', () => {
     const form = (formeJuridique: string): string => {
       const el = bootCard(IdentityDeskCard, [{ ...TOMMEUSES, formeJuridique }])

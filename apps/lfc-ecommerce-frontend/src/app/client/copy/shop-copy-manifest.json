@@ -9425,6 +9425,20 @@
           "variables": []
         },
         {
+          "key": "account.siteLegalNote",
+          "fr": "Ce site est facturé au nom de {payer} : ses mentions légales et son extrait KBIS font foi.",
+          "en": "This site is invoiced in the name of {payer}: its legal details and company registration extract apply.",
+          "it": "Questo sito è fatturato a nome di {payer}: valgono i suoi dati legali e la sua visura camerale.",
+          "variables": ["payer"]
+        },
+        {
+          "key": "account.siteBillingNote",
+          "fr": "La facture est adressée à {payer}, à son adresse de facturation.",
+          "en": "Invoices are sent to {payer}, at its billing address.",
+          "it": "La fattura è intestata a {payer}, al suo indirizzo di fatturazione.",
+          "variables": ["payer"]
+        },
+        {
           "key": "account.billingNote",
           "fr": "Une seule adresse de facturation : c’est elle qui figure sur les factures et sur le mandat.",
           "en": "One billing address only: it is the one on your invoices and on the direct-debit mandate.",

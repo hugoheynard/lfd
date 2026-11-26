@@ -4,7 +4,7 @@
 >
 > La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.
 
-## Sommaire — 2035 textes
+## Sommaire — 2037 textes
 
 Clés présentes dans une langue et absentes d'une autre : 0.
 
@@ -43,7 +43,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Annuler une commande — Mes commandes et la page invité](#espace-ordercancel) | `orderCancel` | 57 |
 | [Payer par lien — la page publique /payer](#espace-paylink) | `payLink` | 24 |
 | [Fidélité](#espace-loyalty) | `loyalty` | 38 |
-| [Mon compte (factures comprises)](#espace-account) | `account` | 535 |
+| [Mon compte (factures comprises)](#espace-account) | `account` | 537 |
 | [Le compte pro — le dictionnaire général](#espace-pro) | `pro` | 8 |
 | [Le compte pro — l’écran](#espace-proaccount) | `proAccount` | 27 |
 | [Mes sites — la carte de chaque site, réglée par le compte principal](#espace-sitemenu) | `siteMenu` | 78 |
@@ -53,7 +53,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Les cases des e-mails marketing, « Mes e-mails » et le pied de page](#espace-marketingconsent) | `marketingConsent` | 29 |
 | [Les documents légaux](#espace-legaldocument) | `legalDocument` | 14 |
 | [Le suivi des corrections d’accessibilité — sous la déclaration](#espace-accessibilityfollowup) | `accessibilityFollowUp` | 28 |
-| **Total** | | **2035** |
+| **Total** | | **2037** |
 
 ## Le parcours de commande
 
@@ -1521,7 +1521,7 @@ Source : `screens/loyalty.copy.ts` · 38 textes.
 
 ### Mon compte (factures comprises) — `account`
 
-Source : `screens/account.{fr,en,it}.ts · screens/account-invoices.copy.ts` · 535 textes.
+Source : `screens/account.{fr,en,it}.ts · screens/account-invoices.copy.ts` · 537 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -1677,6 +1677,8 @@ Source : `screens/account.{fr,en,it}.ts · screens/account-invoices.copy.ts` · 
 | `account.kbisSaveFailed` | Le KBIS n’a pas été déposé. | The KBIS was not uploaded. | Il KBIS non è stato depositato. |  |
 | `account.kbisFetchFailed` | Le KBIS n’a pas pu être récupéré. Réessayez. | The KBIS could not be retrieved. Please try again. | Non è stato possibile recuperare il KBIS. Riprovate. |  |
 | `account.billingHead` | Facturation | Billing | Fatturazione |  |
+| `account.siteLegalNote` | Ce site est facturé au nom de {payer} : ses mentions légales et son extrait KBIS font foi. | This site is invoiced in the name of {payer}: its legal details and company registration extract apply. | Questo sito è fatturato a nome di {payer}: valgono i suoi dati legali e la sua visura camerale. | `{payer}` |
+| `account.siteBillingNote` | La facture est adressée à {payer}, à son adresse de facturation. | Invoices are sent to {payer}, at its billing address. | La fattura è intestata a {payer}, al suo indirizzo di fatturazione. | `{payer}` |
 | `account.billingNote` | Une seule adresse de facturation : c’est elle qui figure sur les factures et sur le mandat. | One billing address only: it is the one on your invoices and on the direct-debit mandate. | Un solo indirizzo di fatturazione: è quello che figura sulle fatture e sul mandato. |  |
 | `account.deliveryHead` | Livraison | Delivery | Consegna |  |
 | `account.deliveryCount` | {n} adresses | {n} addresses | {n} indirizzi | `{n}` |

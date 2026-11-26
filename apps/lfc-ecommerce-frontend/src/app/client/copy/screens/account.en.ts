@@ -196,6 +196,9 @@ export const ACCOUNT_EN: AccountCopy = {
   kbisSaveFailed: 'The KBIS was not uploaded.',
   kbisFetchFailed: 'The KBIS could not be retrieved. Please try again.',
   billingHead: 'Billing',
+  siteLegalNote:
+    'This site is invoiced in the name of {payer}: its legal details and company registration extract apply.',
+  siteBillingNote: 'Invoices are sent to {payer}, at its billing address.',
   billingNote:
     'One billing address only: it is the one on your invoices and on the direct-debit mandate.',
   deliveryHead: 'Delivery',

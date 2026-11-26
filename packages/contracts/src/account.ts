@@ -143,6 +143,12 @@ export interface CompanyView {
    * serveur ; facultatif pour la même raison que `payerIsPublic`.
    */
   readonly billedByParent?: boolean;
+  /**
+   * Le nom du principal qui facture ce site (son enseigne, sinon sa raison
+   * sociale) quand `billedByParent` ; `null` sinon. Mon compte le nomme là où
+   * l'identité, l'extrait KBIS et l'adresse de facturation sont les siens.
+   */
+  readonly payerName?: string | null;
   /** Rôle de la personne dans CETTE société. */
   readonly role: CompanyMemberRole;
   /** Contact **principal** (carte « Admin du compte entreprise »), toujours présent. */

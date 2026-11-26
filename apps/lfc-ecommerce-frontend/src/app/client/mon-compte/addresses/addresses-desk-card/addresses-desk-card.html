@@ -3,9 +3,13 @@
 <div class="row">
   <div class="block">
     <p class="sub">{{ t().account.billingHead }}</p>
-    <p class="line">{{ billing() ?? t().account.addressNone }}</p>
-    <p class="note">{{ t().account.billingNote }}</p>
-    @if (canWrite()) {
+    @if (billedBy(); as payer) {
+      <p class="note" data-billed-by>{{ fill(t().account.siteBillingNote, { payer }) }}</p>
+    } @else {
+      <p class="line">{{ billing() ?? t().account.addressNone }}</p>
+      <p class="note">{{ t().account.billingNote }}</p>
+    }
+    @if (canWrite() && billedBy() === null) {
       <button
         foldButton
         class="gesture"

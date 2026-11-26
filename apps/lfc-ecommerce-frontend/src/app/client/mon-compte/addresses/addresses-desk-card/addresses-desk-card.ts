@@ -5,7 +5,7 @@ import { CompletionCallout } from '../../completion/completion-callout/completio
 import type { CompletionItem, CompletionTarget } from '../../completion/completion-items';
 import { ClientAddresses } from '../../../client-addresses.service';
 import { ClientCompany } from '../../../client-company.service';
-import { ClientCopyService } from '../../../copy/client-copy.service';
+import { ClientCopyService, fill } from '../../../copy/client-copy.service';
 import { deliveryProcedureCopy } from '../../../copy/screens/delivery-procedure.copy';
 import { screenCopy } from '../../../copy/shop-copy-composer';
 import { ServicePoints } from '../../../shop/pickup-points.store';
@@ -51,6 +51,9 @@ export class AddressesDeskCard {
   protected readonly t = inject(ClientCopyService).t;
   private readonly procedureCopy = screenCopy('deliveryProcedure', deliveryProcedureCopy);
   private readonly client = inject(ClientCompany);
+  protected readonly fill = fill;
+  /** Le principal qui facture ce site : l'adresse de facturation est la sienne. */
+  protected readonly billedBy = this.client.billedBy;
   private readonly addresses = inject(ClientAddresses);
   private readonly service = inject(ServicePoints);
   private readonly panels = inject(FoldPanelHostService);

@@ -27,6 +27,8 @@ export const GLOSSARY_S: Readonly<Record<string, string>> = {
   settleAction: 'Régler maintenant',
   settleCard: 'Règlement — paiement direct',
   settleTitle: 'Règlement — question',
+  siteBillingNote: 'Facturation — site facturé par son principal',
+  siteLegalNote: 'Identité légale — site facturé par son principal',
   signInLabel: 'Connexion — nom de la carte (lecteur d’écran)',
   signInToOrder: 'Se connecter pour commander',
   signInPitch: 'Connexion — ce qu’on y retrouve',

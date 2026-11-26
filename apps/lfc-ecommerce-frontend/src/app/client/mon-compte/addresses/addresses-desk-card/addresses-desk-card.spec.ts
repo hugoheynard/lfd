@@ -72,6 +72,20 @@ describe('AddressesDeskCard', () => {
     expect(el.textContent).toContain(FR.account.addressNoZone);
   });
 
+  /**
+   * Régression : un site facturé par son principal se voyait proposer
+   * « Renseigner la facturation » pour une adresse qui est celle du principal.
+   */
+  it('dit d’un site que la facture va à son principal, sans geste de saisie', () => {
+    const site = { ...TOMMEUSES, billedByParent: true, payerName: 'Chalets du Lac' };
+    const el = bootCard(AddressesDeskCard, [site], carnet(null, [CHALET]))
+      .nativeElement as HTMLElement;
+
+    expect(el.querySelector('[data-billed-by]')?.textContent).toContain('Chalets du Lac');
+    expect(el.textContent).not.toContain(FR.account.billingFill);
+    expect(el.textContent).not.toContain(FR.account.addressNone);
+  });
+
   /** Régression : « Livraison · 1 adresses » (relevé le 2026-09-14). */
   it('accorde le nombre de livraisons : une adresse, puis deux adresses', () => {
     const one = bootCard(AddressesDeskCard, [TOMMEUSES], carnet(SIEGE, [CHALET]))

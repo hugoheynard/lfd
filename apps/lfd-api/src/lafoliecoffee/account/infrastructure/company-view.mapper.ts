@@ -58,6 +58,8 @@ export const COMPANY_VIEW_SELECT = {
           grantedTerms: true,
           directDebitBlockedAt: true,
           inHouse: IN_HOUSE_LIVE,
+          enseigne: true,
+          raisonSociale: true,
         },
       },
     },
@@ -104,6 +106,7 @@ export function toCompanyView(role: CustomerRole, company: CompanyViewRow): Comp
     payerIsPublic: isPublicFormeJuridique(payer.formeJuridique),
     payerIsInHouse: payer.inHouse.length > 0,
     billedByParent: company.follows.length > 0,
+    payerName: payerNameOf(company.follows[0]?.parent ?? null),
     fulfillmentPreference: {
       method: company.preferredFulfillmentMethod,
       pickupAddressId: company.preferredPickupAddressId,
@@ -134,6 +137,16 @@ export function toCompanyView(role: CustomerRole, company: CompanyViewRow): Comp
           }
         : null,
   };
+}
+
+/** L'enseigne du principal qui facture, sinon sa raison sociale ; `null` sans principal. */
+function payerNameOf(
+  parent: { readonly enseigne: string; readonly raisonSociale: string } | null,
+): string | null {
+  if (parent === null) {
+    return null;
+  }
+  return parent.enseigne.trim() !== "" ? parent.enseigne : parent.raisonSociale;
 }
 
 /** Une ligne de contact additionnel → la vue (renommage prenom→firstName, etc.). */

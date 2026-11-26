@@ -263,6 +263,10 @@ export interface AccountCopy {
   readonly kbisSaveFailed: string;
   readonly kbisFetchFailed: string;
   readonly billingHead: string;
+  /** Un site facturé par son principal : ses mentions légales et son KBIS sont ceux du principal. `{payer}`. */
+  readonly siteLegalNote: string;
+  /** Un site facturé par son principal : la facture va à l'adresse du principal. `{payer}`. */
+  readonly siteBillingNote: string;
   readonly billingNote: string;
   readonly deliveryHead: string;
   /** `{n}` est remplacé par le nombre d'adresses de livraison. */

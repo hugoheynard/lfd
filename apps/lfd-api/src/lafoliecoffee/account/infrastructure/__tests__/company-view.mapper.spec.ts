@@ -59,6 +59,8 @@ describe("toCompanyView", () => {
             grantedTerms: [],
             directDebitBlockedAt: null,
             inHouse: [],
+            enseigne: "Chalets du Lac",
+            raisonSociale: "Chalets SAS",
           },
         },
       ],
@@ -81,6 +83,8 @@ describe("toCompanyView", () => {
             grantedTerms: ROW.grantedTerms,
             directDebitBlockedAt: null,
             inHouse: [],
+            enseigne: "Chalets du Lac",
+            raisonSociale: "Chalets SAS",
           },
         },
       ],
@@ -100,6 +104,8 @@ describe("toCompanyView", () => {
             grantedTerms: ROW.grantedTerms,
             directDebitBlockedAt: UPLOADED,
             inHouse: [],
+            enseigne: "Chalets du Lac",
+            raisonSociale: "Chalets SAS",
           },
         },
       ],
@@ -119,11 +125,38 @@ describe("toCompanyView", () => {
             grantedTerms: [],
             directDebitBlockedAt: null,
             inHouse: [{ id: "ih_principal" }],
+            enseigne: "",
+            raisonSociale: "Chalets SAS",
           },
         },
       ],
     };
     expect(toCompanyView("owner", site).payerIsInHouse).toBe(true);
+  });
+
+  it("nomme le payeur d'un site : son enseigne, sinon sa raison sociale ; personne pour un compte seul", () => {
+    expect(toCompanyView("owner", ROW).payerName).toBeNull();
+    const site = {
+      ...ROW,
+      follows: [
+        {
+          parent: {
+            formeJuridique: "SAS",
+            grantedTerms: [],
+            directDebitBlockedAt: null,
+            inHouse: [],
+            enseigne: "Chalets du Lac",
+            raisonSociale: "Chalets SAS",
+          },
+        },
+      ],
+    };
+    expect(toCompanyView("owner", site).payerName).toBe("Chalets du Lac");
+    const unnamed = {
+      ...site,
+      follows: [{ parent: { ...site.follows[0]!.parent, enseigne: " " } }],
+    };
+    expect(toCompanyView("owner", unnamed).payerName).toBe("Chalets SAS");
   });
 
   it("porte le rôle que l'appelant a établi — le rôle effectif d'un site atteint", () => {

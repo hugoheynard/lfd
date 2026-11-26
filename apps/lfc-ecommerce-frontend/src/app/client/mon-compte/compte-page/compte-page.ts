@@ -356,8 +356,11 @@ export class ComptePage {
     const labels = this.t().account.sections;
     const bank = this.showsBank();
     const mandate = this.showsMandate();
+    // Un site facturé par son principal n'a pas de carte KBIS : l'extrait est celui du principal.
+    const kbis = this.client.billedBy() === null;
     const shown = SECTIONS.filter(
-      (key) => (bank || key !== 'bank') && (mandate || key !== 'mandate'),
+      (key) =>
+        (bank || key !== 'bank') && (mandate || key !== 'mandate') && (kbis || key !== 'kbis'),
     );
     return shown.map((key, index) => ({
       key,

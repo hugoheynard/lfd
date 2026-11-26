@@ -55,6 +55,16 @@ export class ClientCompany {
     return companyName(company);
   });
 
+  /**
+   * Le principal qui facture ce site, par son nom ; `null` pour une société
+   * facturée à son propre nom. Son identité légale, son extrait KBIS et son
+   * adresse de facturation sont alors ceux du principal.
+   */
+  readonly billedBy = computed(() => {
+    const company = this.company();
+    return company?.billedByParent === true ? (company.payerName ?? null) : null;
+  });
+
   /** Le compte est-il ouvert ? La pastille de la carte n'affirme plus « Actif » à l'aveugle. */
   readonly isActive = computed(() => this.company()?.status === 'active');
 

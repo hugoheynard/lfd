@@ -5,7 +5,7 @@ import { CompletionCallout } from '../../completion/completion-callout/completio
 import type { CompletionItem, CompletionTarget } from '../../completion/completion-items';
 import { ClientAddresses } from '../../../client-addresses.service';
 import { ClientCompany } from '../../../client-company.service';
-import { ClientCopyService } from '../../../copy/client-copy.service';
+import { ClientCopyService, fill } from '../../../copy/client-copy.service';
 import { CardFoot } from '../../card-foot/card-foot';
 import { AddressesPanel } from '../addresses-panel/addresses-panel';
 import { type AddressesView, deliveryCountLabel, postalLine } from '../addresses-section';
@@ -31,6 +31,9 @@ export class AddressesMobileCard {
 
   protected readonly t = inject(ClientCopyService).t;
   private readonly client = inject(ClientCompany);
+  protected readonly fill = fill;
+  /** Le principal qui facture ce site : l'adresse de facturation est la sienne. */
+  protected readonly billedBy = this.client.billedBy;
   private readonly addresses = inject(ClientAddresses);
   private readonly panels = inject(FoldPanelHostService);
 

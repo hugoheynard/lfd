@@ -198,6 +198,9 @@ export const ACCOUNT_FR: AccountCopy = {
   kbisSaveFailed: 'Le KBIS n’a pas été déposé.',
   kbisFetchFailed: 'Le KBIS n’a pas pu être récupéré. Réessayez.',
   billingHead: 'Facturation',
+  siteLegalNote:
+    'Ce site est facturé au nom de {payer} : ses mentions légales et son extrait KBIS font foi.',
+  siteBillingNote: 'La facture est adressée à {payer}, à son adresse de facturation.',
   billingNote:
     'Une seule adresse de facturation : c’est elle qui figure sur les factures et sur le mandat.',
   deliveryHead: 'Livraison',

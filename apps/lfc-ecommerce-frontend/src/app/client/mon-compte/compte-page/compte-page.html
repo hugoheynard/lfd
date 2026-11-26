@@ -146,18 +146,21 @@
               />
             </section>
 
-            <section class="card kbis" id="compte-kbis">
-              <app-kbis-desk-card
-                class="desk"
-                [completion]="cardCompletion().kbis"
-                (completionAction)="complete($event)"
-              />
-              <app-kbis-mobile-card
-                class="mobile"
-                [completion]="cardCompletion().kbis"
-                (completionAction)="complete($event)"
-              />
-            </section>
+            <!-- Un site facturé par son principal n'a pas d'extrait à lui. -->
+            @if (client.billedBy() === null) {
+              <section class="card kbis" id="compte-kbis">
+                <app-kbis-desk-card
+                  class="desk"
+                  [completion]="cardCompletion().kbis"
+                  (completionAction)="complete($event)"
+                />
+                <app-kbis-mobile-card
+                  class="mobile"
+                  [completion]="cardCompletion().kbis"
+                  (completionAction)="complete($event)"
+                />
+              </section>
+            }
 
             <section class="card users" id="compte-users">
               <app-users-desk-card
