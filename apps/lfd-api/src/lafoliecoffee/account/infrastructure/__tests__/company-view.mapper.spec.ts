@@ -51,9 +51,46 @@ describe("toCompanyView", () => {
     const site = {
       ...ROW,
       formeJuridique: "",
-      follows: [{ parent: { formeJuridique: "public_state" } }],
+      follows: [
+        {
+          parent: { formeJuridique: "public_state", grantedTerms: [], directDebitBlockedAt: null },
+        },
+      ],
     };
     expect(toCompanyView("owner", site).payerIsPublic).toBe(true);
+  });
+
+  /**
+   * Régression : un site facturé chez son principal servait SON crédit (vide),
+   * et la boutique cachait « au compte » alors que la passation l'acceptait.
+   */
+  it("sert le crédit et la suspension du PAYEUR pour un site facturé chez son principal", () => {
+    const site = {
+      ...ROW,
+      grantedTerms: [],
+      follows: [
+        {
+          parent: { formeJuridique: "SAS", grantedTerms: ["monthly"], directDebitBlockedAt: null },
+        },
+      ],
+    };
+    expect(toCompanyView("admin", site)).toMatchObject({
+      grantedTerms: ["monthly"],
+      directDebitBlocked: false,
+    });
+    const suspended = {
+      ...site,
+      follows: [
+        {
+          parent: {
+            formeJuridique: "SAS",
+            grantedTerms: ["monthly"],
+            directDebitBlockedAt: UPLOADED,
+          },
+        },
+      ],
+    };
+    expect(toCompanyView("admin", suspended).directDebitBlocked).toBe(true);
   });
 
   it("porte le rôle que l'appelant a établi — le rôle effectif d'un site atteint", () => {

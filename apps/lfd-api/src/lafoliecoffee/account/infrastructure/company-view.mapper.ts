@@ -36,12 +36,17 @@ export const COMPANY_VIEW_SELECT = {
   contactFonction: true,
   contactEmail: true,
   contactTelephone: true,
-  // Le principal suivi en `billing` (période ouverte) : c'est le PAYEUR, et
-  // sa nature décide de la carte. Une période s'ouvre et se ferme à
-  // l'instant du geste : ouverte veut dire en cours.
+  // Le principal suivi en `billing` (période ouverte) : c'est le PAYEUR. Sa
+  // nature décide de la carte, et son crédit décide du « au compte » — la
+  // passation lit le même payeur (`accountStanding`). Une période s'ouvre et
+  // se ferme à l'instant du geste : ouverte veut dire en cours.
   follows: {
     where: { aspect: "billing", validTo: null },
-    select: { parent: { select: { formeJuridique: true } } },
+    select: {
+      parent: {
+        select: { formeJuridique: true, grantedTerms: true, directDebitBlockedAt: true },
+      },
+    },
   },
   contacts: {
     orderBy: { createdAt: "asc" },
@@ -65,6 +70,9 @@ export type CompanyViewRow = Prisma.CompanyGetPayload<{ select: typeof COMPANY_V
  * membership pour une société propre, le rôle EFFECTIF pour un site atteint.
  */
 export function toCompanyView(role: CustomerRole, company: CompanyViewRow): CompanyView {
+  // Un site facturé chez son principal règle selon le crédit du principal :
+  // c'est lui qui reçoit la facture et le prélèvement.
+  const payer = company.follows[0]?.parent ?? company;
   return {
     id: company.id,
     reference: company.reference,
@@ -76,12 +84,10 @@ export function toCompanyView(role: CustomerRole, company: CompanyViewRow): Comp
     vatNumber: company.vatNumber,
     vatNumberRequired: requiresVatNumber(company.formeJuridique),
     status: company.status,
-    grantedTerms: company.grantedTerms,
+    grantedTerms: payer.grantedTerms,
     requestedTerm: company.requestedTerm,
-    directDebitBlocked: company.directDebitBlockedAt !== null,
-    payerIsPublic: isPublicFormeJuridique(
-      company.follows[0]?.parent.formeJuridique ?? company.formeJuridique,
-    ),
+    directDebitBlocked: payer.directDebitBlockedAt !== null,
+    payerIsPublic: isPublicFormeJuridique(payer.formeJuridique),
     fulfillmentPreference: {
       method: company.preferredFulfillmentMethod,
       pickupAddressId: company.preferredPickupAddressId,
