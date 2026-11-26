@@ -174,7 +174,26 @@ describe('InformationsPage — un SITE (suit la facturation)', () => {
     expect(host.querySelector('[data-billing-carried]')?.textContent).toContain('Chalets du Lac');
     expect(host.textContent).toContain('1 place du Lac');
     expect(host.querySelector('[data-site-payment]')?.textContent).toContain('par carte');
+    expect(host.querySelector('[data-site-payment]')?.textContent).toContain(
+      'Pas de commande au compte',
+    );
     expect(host.querySelector('app-paiement-section')).toBeNull();
+  });
+
+  /**
+   * Régression : la note d'un site ne disait pas si « au compte » lui était
+   * ouvert, et la boutique affichait « Non accordé » pour un site dont le
+   * principal avait le crédit.
+   */
+  it('dit que le site commande au compte quand son payeur a le crédit', async () => {
+    const site = {
+      ...child([{ aspect: 'billing', since: '2026-09-10T08:00:00.000Z' }]),
+      payerSettlesOnAccount: true,
+    };
+    const host = (await boot(site)).nativeElement as HTMLElement;
+    expect(host.querySelector('[data-site-payment]')?.textContent).toContain(
+      'Ce site commande au compte',
+    );
   });
 
   it('n’a plus de case « facturation », et met la case « contacts » dans la carte Contacts', async () => {

@@ -1,5 +1,12 @@
 <fold-callout variant="info" icon="credit-card" data-site-payment>
-  Les commandes passées au compte sont prélevées sur le compte de
-  <a [routerLink]="['/comptes-clients', parent().id]">{{ parent().enseigne }}</a
-  >. Un site peut aussi régler par carte.
+  @if (settlesOnAccount()) {
+    Ce site commande au compte, sur le crédit de
+    <a [routerLink]="['/comptes-clients', parent().id]">{{ parent().enseigne }}</a
+    >, qui le facture et le prélève. Il peut aussi régler par carte.
+  } @else {
+    Pas de commande au compte : le crédit de
+    <a [routerLink]="['/comptes-clients', parent().id]">{{ parent().enseigne }}</a
+    >, qui facture ce site, n'est pas accordé ou son prélèvement est suspendu. Il s'accorde sur la
+    fiche de {{ parent().enseigne }}. Le site règle par carte à la commande.
+  }
 </fold-callout>

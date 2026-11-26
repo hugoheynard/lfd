@@ -339,7 +339,10 @@
           <!-- En bas de fiche : c'est ce qu'on regarde en dernier, une fois le
                dossier constitué, et c'est là que vit le mandat SEPA. -->
           @if (isSite() && fiche.company()?.hierarchy?.parent; as parent) {
-            <app-site-payment-note [parent]="parent" />
+            <app-site-payment-note
+              [parent]="parent"
+              [settlesOnAccount]="fiche.company()?.payerSettlesOnAccount ?? false"
+            />
             <!-- Un site n'a pas de bloc « Paiement différé » : la carte du mode
                  reste sous sa note, et dit qu'il suit son payeur. -->
             @if (fiche.company(); as c) {
