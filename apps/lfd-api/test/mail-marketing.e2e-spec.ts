@@ -242,7 +242,9 @@ describe("C1 — la double confirmation, puis l'envoi marketing", () => {
   it("jeton altéré, rejoué, expiré : la même page, et rien n'est écrit", async () => {
     const token = await requestUnverified();
     const before = await registry();
-    const altered = `${token.slice(0, -2)}${token.endsWith("A") ? "B" : "A"}${token.slice(-1)}`;
+    // Régression : le caractère remplacé est l'avant-dernier ; tester le dernier
+    // laissait, une fois sur 64, le jeton intact — donc accepté.
+    const altered = `${token.slice(0, -2)}${token.at(-2) === "A" ? "B" : "A"}${token.slice(-1)}`;
     const issuedAt = new Date(daysAgo(8));
     const addresses = ctx.app.get(MarketingAddresses);
     await ctx.app.get(MarketingPreferenceRepository).save(
