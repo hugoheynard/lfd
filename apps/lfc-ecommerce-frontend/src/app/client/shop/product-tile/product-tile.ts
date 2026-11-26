@@ -21,6 +21,7 @@ import { lockedReason } from '../locked-item';
 import { operationGate } from '../operations';
 import { ShopCatalogue } from '../shop-catalogue.store';
 import { objectPositionOf, tileArtOf } from '../shelf-display';
+import { FavoriteToggle } from '../favorite-toggle/favorite-toggle';
 import { HouseMark } from '../house-mark/house-mark';
 import { mediaSrcset, sizedMedia, TILE_WIDTHS } from '../media-source';
 import {
@@ -66,7 +67,7 @@ let tileSequence = 0;
 @Component({
   selector: 'app-product-tile',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldBadgeComponent, FoldIconComponent, HouseMark],
+  imports: [FoldBadgeComponent, FoldIconComponent, HouseMark, FavoriteToggle],
   templateUrl: './product-tile.html',
   styleUrl: './product-tile.scss',
 })

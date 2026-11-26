@@ -71,6 +71,9 @@ le référentiel pour une préférence.
 - Le cœur sur la vignette (`product-tile`) et la fiche : un bouton
   `aria-pressed`, libellé « Ajouter aux favoris » / « Retirer des favoris »
   dans les dictionnaires (FR, EN, IT), puis `pnpm tool copy:digest`.
+  Sur la vignette, il est le second arrêt de tabulation, à côté du nom qui
+  ouvre la fiche (décidé par Hugo le 2026-11-26, entorse assumée au « un seul
+  arrêt par produit » du lot RGAA A2).
 - `legacy/data/favorites.service.ts` (le POC en mémoire) est retiré ou laissé
   tel quel s'il sert encore au legacy — il ne sert pas à la boutique.
 

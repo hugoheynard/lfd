@@ -499,3 +499,12 @@
   filter: grayscale(1);
   opacity: 0.6;
 }
+
+// Le cœur, en haut à droite de la photo : la pastille de quantité et la
+// mise en avant gardent leurs coins.
+.favorite {
+  position: absolute;
+  top: var(--fold-space-sm);
+  right: var(--fold-space-sm);
+  z-index: 1;
+}

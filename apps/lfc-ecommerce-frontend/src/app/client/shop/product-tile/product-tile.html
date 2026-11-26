@@ -31,6 +31,9 @@
       <span class="badge">★ {{ t().product.bestSeller }}</span>
     }
 
+    <!-- Le favori, second arrêt de tabulation de la tuile (Hugo, 2026-11-26). -->
+    <app-favorite-toggle class="favorite" [sku]="product().sku" />
+
     <!-- La quantité au panier, en pastille sur la photo (Hugo, 2026-10-11) :
          le « + » garde sa place et son sens, et ce qu'on a pris se lit là où
          l'œil reconnaît l'article. Le lecteur d'écran l'entend par les
