@@ -21,6 +21,7 @@ export type SpecimenKey =
   | 'production-simulation'
   | 'delivery-note-carrier'
   | 'delivery-note-client-pro'
+  | 'delivery-note-in-house'
   | 'bag-label'
   | 'bin-label';
 
@@ -45,6 +46,7 @@ export const SPECIMEN_LABELS: Readonly<Record<SpecimenKey, string>> = {
   'production-simulation': 'Simulation du catalogue',
   'delivery-note-carrier': 'Bon de livraison — transport',
   'delivery-note-client-pro': 'Bon de livraison — client pro',
+  'delivery-note-in-house': 'Bon de livraison — commande interne',
   'bag-label': 'Étiquette de sac',
   'bin-label': 'Étiquette de bac',
 };
@@ -78,6 +80,7 @@ export const SPECIMEN_GROUPS: readonly SpecimenGroup[] = [
     'round-paper',
     'rounds-dossier',
     'delivery-note-carrier',
+    'delivery-note-in-house',
   ]),
   group('Fournil', [
     'production-count',

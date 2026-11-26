@@ -63,7 +63,7 @@ describe('la planche des documents', () => {
       'Catalogue',
       'Étiquettes',
     ]);
-    expect(page['groups'].flatMap((group) => group.options).length).toBe(21);
+    expect(page['groups'].flatMap((group) => group.options).length).toBe(22);
   });
 
   it('charge l’exemplaire choisi et révoque l’URL précédente', async () => {

@@ -8,6 +8,7 @@ import { GetCarrierNotePdfHandler } from "./application/queries/get-carrier-note
 import { GetCarrierNoteSpecimenHandler } from "./application/queries/get-carrier-note-specimen.handler.js";
 import { GetClientNotePdfHandler } from "./application/queries/get-client-note-pdf.handler.js";
 import { GetClientNoteSpecimenHandler } from "./application/queries/get-client-note-specimen.handler.js";
+import { GetInHouseNoteSpecimenHandler } from "./application/queries/get-in-house-note-specimen.handler.js";
 import { GetDeliveryNoteVersionPdfHandler } from "./application/queries/get-delivery-note-version-pdf.handler.js";
 import { DeliveryNoteVersionRecorder } from "./application/services/delivery-note-version-recorder.js";
 import { DeliveryNoteVersionKeeper } from "./domain/ports/delivery-note-version.keeper.js";
@@ -89,6 +90,7 @@ import {
     GetClientNotePdfHandler,
     GetCarrierNoteSpecimenHandler,
     GetClientNoteSpecimenHandler,
+    GetInHouseNoteSpecimenHandler,
     DeliveryNoteDocuments,
     { provide: DeliveryNoteRepository, useClass: PrismaDeliveryNoteRepository },
     { provide: DeliveryNoteVersionKeeper, useClass: DeliveryNoteVersionRecorder },

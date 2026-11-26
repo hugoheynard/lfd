@@ -6,6 +6,7 @@ import type { Response } from "express";
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
 import { GetCarrierNoteSpecimenQuery } from "../application/queries/get-carrier-note-specimen.query.js";
 import { GetClientNoteSpecimenQuery } from "../application/queries/get-client-note-specimen.query.js";
+import { GetInHouseNoteSpecimenQuery } from "../application/queries/get-in-house-note-specimen.query.js";
 import type { DeliveryNotePdf } from "../application/services/delivery-note-documents.js";
 
 /**
@@ -28,8 +29,13 @@ export class AdminDeliveryNoteSpecimensController {
     return this.serve(new GetClientNoteSpecimenQuery(), response);
   }
 
+  @Get("delivery-note-in-house.pdf")
+  inHouse(@Res({ passthrough: true }) response: Response): Promise<StreamableFile> {
+    return this.serve(new GetInHouseNoteSpecimenQuery(), response);
+  }
+
   private async serve(
-    query: GetCarrierNoteSpecimenQuery | GetClientNoteSpecimenQuery,
+    query: GetCarrierNoteSpecimenQuery | GetClientNoteSpecimenQuery | GetInHouseNoteSpecimenQuery,
     response: Response,
   ): Promise<StreamableFile> {
     const pdf = await this.queries.execute<typeof query, DeliveryNotePdf>(query);

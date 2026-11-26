@@ -40,6 +40,7 @@ const DOCUMENTS = [
   "production-simulation.pdf",
   "delivery-note-carrier.pdf",
   "delivery-note-client-pro.pdf",
+  "delivery-note-in-house.pdf",
   // Les étiquettes A6 du colisage (2026-10-25) : le sac, et le bac de la livraison.
   "bag-label.pdf",
   "bin-label.pdf",
