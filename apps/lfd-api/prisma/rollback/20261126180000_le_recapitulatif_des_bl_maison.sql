@@ -1,0 +1,14 @@
+-- RETOUR ARRIÈRE de 20261126180000_le_recapitulatif_des_bl_maison
+-- (documentation/comptabilite/facturation/plan-restaurants-maison.md, D7–D9).
+--
+-- 🔴 NON APPLIQUÉ, et Prisma ne le lit pas. La migration reste inscrite
+-- « appliquée ».
+--
+-- Le code d'avant ignore les tables : le retour arrière est le retour du code
+-- seul. Les retirer perdrait les récapitulatifs émis ; à faire seulement sur
+-- décision de Hugo :
+--
+--   DROP TABLE "public"."in_house_recap_run";
+--   DROP TABLE "public"."in_house_recap_note";
+--   DROP TABLE "public"."in_house_recap_line";
+--   DROP TABLE "public"."in_house_recap";

@@ -5,7 +5,13 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { dueSweeps, FIVE_MINUTES_MS, HOUR_MS, unclassifiedWorkerPaths } from "../dev-sweeps.mjs";
+import {
+  dueSweeps,
+  FIVE_MINUTES_MS,
+  HOUR_MS,
+  NOT_IN_DEV,
+  unclassifiedWorkerPaths,
+} from "../dev-sweeps.mjs";
 
 const WORKER = join(
   dirname(fileURLToPath(import.meta.url)),
@@ -43,4 +49,10 @@ test("une route neuve du Worker est signalée", () => {
   assert.deepEqual(unclassifiedWorkerPaths('postSweep(env, token, "admin/neuf/sweep");'), [
     "admin/neuf/sweep",
   ]);
+});
+
+test("le récapitulatif des restaurants maison est au Worker, et écarté du poste de dev", () => {
+  const worker = readFileSync(WORKER, "utf8");
+  assert.ok(worker.includes('"admin/in-house-recaps/run"'));
+  assert.ok(NOT_IN_DEV.has("admin/in-house-recaps/run"));
 });

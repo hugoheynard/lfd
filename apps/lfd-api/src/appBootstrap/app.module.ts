@@ -15,6 +15,7 @@ import { PayerCommitmentRequirementsModule } from "./payer-commitment-requiremen
 import { AlertsModule } from "../lafoliecoffee/alerts/alerts.module.js";
 import { ClientNotesModule } from "../lafoliecoffee/client-notes/client-notes.module.js";
 import { SubAccountNoticesModule } from "../lafoliecoffee/sub-account-notices/sub-account-notices.module.js";
+import { InHouseRecapsModule } from "../lafoliecoffee/in-house-recaps/in-house-recaps.module.js";
 import { ShopFavoritesModule } from "../lafoliecoffee/shop-favorites/shop-favorites.module.js";
 import { ReportingModule } from "../lafoliecoffee/reporting/reporting.module.js";
 import { DeliveryZonesModule } from "../lafoliecoffee/delivery-zones/delivery-zones.module.js";
@@ -343,6 +344,8 @@ import { DevImpersonation } from "../platform/auth/dev-impersonation.js";
     SubAccountNoticesModule,
     // L'export des ventes (plan de l'export, E1) : il compose les lectures des propriétaires.
     ReportingModule,
+    // Le récapitulatif des BL des restaurants maison (plan-restaurants-maison.md, L3).
+    InHouseRecapsModule,
     // Les favoris de la boutique, par espace (commandes/boutique/les-favoris.md).
     ShopFavoritesModule,
   ],

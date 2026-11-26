@@ -197,6 +197,12 @@ import { PrismaBillingNatureNeighboursReader } from "./infrastructure/prisma-bil
 import { InHouseBillingNeighboursReader } from "./domain/ports/in-house-billing-neighbours.reader.js";
 import { InHouseDeclarationReader } from "./domain/ports/in-house-declaration.reader.js";
 import { InHousePayerReader } from "./domain/ports/in-house-payer.reader.js";
+import { InHouseMonthPayersReader } from "./domain/ports/in-house-month-payers.reader.js";
+import { InHousePeriodsReader } from "./domain/ports/in-house-periods.reader.js";
+import {
+  PrismaInHouseMonthPayersReader,
+  PrismaInHousePeriodsReader,
+} from "./infrastructure/prisma-in-house-periods.reader.js";
 import { InHousePayerRepository } from "./domain/ports/in-house-payer.repository.js";
 import { PrismaInHouseBillingNeighboursReader } from "./infrastructure/prisma-in-house-billing-neighbours.reader.js";
 import { PrismaInHouseDeclarationReader } from "./infrastructure/prisma-in-house-declaration.reader.js";
@@ -454,6 +460,8 @@ import { PrismaPrincipalSitesMenuReader } from "./infrastructure/prisma-principa
     // La nature « maison » (plan-restaurants-maison.md, D1) : un dépôt, et trois lectures étroites.
     { provide: InHousePayerRepository, useClass: PrismaInHousePayerRepository },
     { provide: InHousePayerReader, useClass: PrismaInHousePayerReader },
+    { provide: InHouseMonthPayersReader, useClass: PrismaInHouseMonthPayersReader },
+    { provide: InHousePeriodsReader, useClass: PrismaInHousePeriodsReader },
     { provide: InHouseDeclarationReader, useClass: PrismaInHouseDeclarationReader },
     { provide: InHouseBillingNeighboursReader, useClass: PrismaInHouseBillingNeighboursReader },
     { provide: CompanyFollowsRepository, useClass: PrismaCompanyFollowsRepository },
@@ -674,6 +682,10 @@ import { PrismaPrincipalSitesMenuReader } from "./infrastructure/prisma-principa
     // La lecture publiée de la nature « maison » (plan-restaurants-maison.md,
     // D5) : les passations la liront pour décider du régime d'une commande.
     InHousePayerReader,
+    // Les payeurs maison d'un mois et les périodes d'un payeur (D9) : le
+    // récapitulatif des BL les lit pour ses issues et ses mois manqués.
+    InHouseMonthPayersReader,
+    InHousePeriodsReader,
   ],
 })
 export class AccountModule {}

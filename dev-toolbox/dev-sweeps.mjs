@@ -96,6 +96,10 @@ export const NOT_IN_DEV = new Map([
     "admin/accounting/monthly-invoices/autopilot",
     "émet les factures du mois : à jouer à la main quand on l'éprouve",
   ],
+  [
+    "admin/in-house-recaps/run",
+    "émet les récapitulatifs des BL des restaurants maison : à jouer à la main quand on l'éprouve",
+  ],
 ]);
 
 export const FIVE_MINUTES_MS = 5 * 60_000;

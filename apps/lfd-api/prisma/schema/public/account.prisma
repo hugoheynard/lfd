@@ -336,11 +336,14 @@ model Company {
   clientNotebook ClientNotebook?
 
   /// La fiche Chorus Pro d'un organisme public — au plus une.
-  chorusRouting CompanyChorusRouting?
+  chorusRouting    CompanyChorusRouting?
   /// La nature « maison » du payeur — présente : c'est un de nos restaurants.
-  inHouse       PayerInHouse[]
+  inHouse          PayerInHouse[]
+  /// Les récapitulatifs des BL d'un restaurant maison, et leurs issues mensuelles.
+  inHouseRecaps    InHouseRecap[]
+  inHouseRecapRuns InHouseRecapRun[]
   /// La fiche du service Chorus de la société qui commande — au plus une.
-  chorusService CompanyChorusService?
+  chorusService    CompanyChorusService?
 
   // Unicité du SIRET : index PARTIEL (`siret <> ''`), donc invisible du schéma
   // Prisma — il vit dans la migration `20260811160000_unicite_siret_et_interlocuteur`.

@@ -561,6 +561,21 @@ async function triggerMonthlyInvoices(env: Env): Promise<void> {
 }
 
 /**
+ * Réveille le container et passe le récapitulatif des BL des restaurants
+ * maison (`documentation/comptabilite/facturation/plan-restaurants-maison.md`,
+ * D9) : le dernier mois clos à Paris. Idempotent : une issue par payeur et par
+ * mois, tenue en base — les autres soirs se taisent, et rattrapent un 1er
+ * manqué.
+ */
+async function triggerInHouseRecaps(env: Env): Promise<void> {
+  const token = env.RECOMPUTE_TOKEN;
+  if (!token) {
+    return;
+  }
+  await postSweep(env, token, "admin/in-house-recaps/run");
+}
+
+/**
  * Un appel machine du cron, qui ne lève jamais et ne se tait jamais : un
  * statut non 2xx ou une erreur réseau s'écrit dans les logs du Worker, puis le
  * cron continue (2026-10-06 : les échecs étaient avalés en silence, et un
@@ -916,6 +931,16 @@ const COLLECTION_AUTOPILOT_CRON = "15 * * * *";
 const MONTHLY_INVOICE_CRON = "55 21,22 * * *";
 
 /**
+ * Le récapitulatif des BL des restaurants maison — 00h30 à Paris (plan
+ * `documentation/comptabilite/facturation/plan-restaurants-maison.md`, D9).
+ * Les crons sont en UTC : 22h30 UTC est 00h30 l'été, 23h30 UTC l'est l'hiver.
+ * Les deux tombent CHAQUE jour ; le backend traite le dernier mois clos et se
+ * tait sur les issues déjà rangées. Même règle : identique à `wrangler.jsonc`,
+ * sinon il partirait en recompute.
+ */
+const IN_HOUSE_RECAPS_CRON = "30 22,23 * * *";
+
+/**
  * Garde l'instance chaude en la sollicitant plus souvent que son `sleepAfter`.
  *
  * C'est ce qui fait la différence entre « s'endort après une heure de calme » et
@@ -954,6 +979,8 @@ function dispatchCron(cron: string, env: Env): Promise<void> {
       return triggerCollectionAutopilot(env);
     case MONTHLY_INVOICE_CRON:
       return triggerMonthlyInvoices(env);
+    case IN_HOUSE_RECAPS_CRON:
+      return triggerInHouseRecaps(env);
     default:
       return triggerRecompute(env);
   }
@@ -982,12 +1009,13 @@ export default {
     return withServerTiming(response, "worker", performance.now() - startedAt, request.cf?.colo);
   },
 
-  // Cloudflare Cron Trigger (cf. `triggers.crons` dans wrangler.jsonc). Dix
+  // Cloudflare Cron Trigger (cf. `triggers.crons` dans wrangler.jsonc). Onze
   // expressions sur le même handler, départagées par l'expression (`dispatchCron`) :
   // toutes les 5 min pour garder le container chaud, toutes les heures pour les
   // liens de paiement non réglés à l'heure limite et la réconciliation des BL, toutes les heures au quart
   // pour la constitution automatique du prélèvement, à 21h55 et 22h55 UTC pour
-  // la facture du mois (23h55 à Paris, été comme hiver), 3×/jour aux heures creuses
+  // la facture du mois (23h55 à Paris, été comme hiver), à 22h30 et 23h30 UTC
+  // pour le récapitulatif des restaurants maison (00h30 à Paris), 3×/jour aux heures creuses
   // pour le recompute batch, et 1×/nuit pour la fidélité, le ramassage des
   // visuels orphelins et le balayage des photos de contrôle. `waitUntil` garde le Worker vivant jusqu'à la fin de
   // l'appel container.

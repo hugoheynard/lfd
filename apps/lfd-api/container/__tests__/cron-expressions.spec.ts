@@ -53,6 +53,12 @@ describe("les crons du Worker et de wrangler.jsonc", () => {
     expect(WORKER).toContain('"admin/accounting/monthly-invoices/autopilot"');
   });
 
+  it("le récapitulatif des restaurants maison a son cron PROPRE, 00h30 à Paris été comme hiver (D9)", () => {
+    // 22h30 UTC = 00h30 en heure d'été (UTC+2) ; 23h30 UTC = 00h30 en hiver (UTC+1).
+    expect(workerCrons().get("IN_HOUSE_RECAPS_CRON")).toBe("30 22,23 * * *");
+    expect(WORKER).toContain('"admin/in-house-recaps/run"');
+  });
+
   it("la vitrine passe au cron de rafraîchissement, avec les autres balayages (W3′)", () => {
     expect(WORKER).toContain('"admin/vitrine/sweep"');
     expect(WORKER).toMatch(/refreshSweeps[\s\S]*triggerVitrineSweep\(env\)/);

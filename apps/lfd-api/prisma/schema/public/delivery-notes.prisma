@@ -80,11 +80,13 @@ model DeliveryNote {
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  lines     DeliveryNoteLine[]
+  lines             DeliveryNoteLine[]
   /// Ses parts de remise de panier, une par remise (§ 18.2, M2).
-  discounts DeliveryNoteDiscount[]
+  discounts         DeliveryNoteDiscount[]
   /// Chaque contenu du bon, figé à sa naissance.
-  versions  DeliveryNoteVersion[]
+  versions          DeliveryNoteVersion[]
+  /// Les récapitulatifs maison qui l'ont couvert (au plus un non remplacé).
+  inHouseRecapNotes InHouseRecapNote[]
 
   @@unique([orderId, rank])
   @@map("delivery_note")

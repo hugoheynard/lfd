@@ -1,0 +1,83 @@
+/// **Le récapitulatif des BL d'un restaurant maison**, pour un mois civil de
+/// Paris (`[period_from, period_to[`) — un document figé, sans montant. Un
+/// rectificatif le remplace (`replaced_by_id`) ; l'ancien reste, marqué.
+/// `storage_key` : le PDF rangé, posé après l'émission. Doc :
+/// `documentation/comptabilite/facturation/plan-restaurants-maison.md`, D7–D9.
+model InHouseRecap {
+  id           String        @id
+  payerId      String        @map("payer_id")
+  payer        Company       @relation(fields: [payerId], references: [id], onDelete: Restrict)
+  /// Le mois civil de Paris, `AAAA-MM`.
+  month        String
+  periodFrom   DateTime      @map("period_from") @db.Timestamptz(3)
+  periodTo     DateTime      @map("period_to") @db.Timestamptz(3)
+  number       String        @unique
+  issuedAt     DateTime      @map("issued_at") @db.Timestamptz(3)
+  storageKey   String?       @map("storage_key")
+  replacedById String?       @unique @map("replaced_by_id")
+  replacedBy   InHouseRecap? @relation("InHouseRecapReplacement", fields: [replacedById], references: [id], onDelete: Restrict)
+  replaces     InHouseRecap? @relation("InHouseRecapReplacement")
+
+  lines InHouseRecapLine[]
+  notes InHouseRecapNote[]
+
+  @@index([payerId, month])
+  @@map("in_house_recap")
+  @@schema("public")
+}
+
+/// Une ligne du récapitulatif : la quantité totale remise d'un produit, par
+/// (`sku`, `sale_unit`), et le nom du BL remis le plus tard.
+model InHouseRecapLine {
+  id          String       @id
+  recapId     String       @map("recap_id")
+  recap       InHouseRecap @relation(fields: [recapId], references: [id], onDelete: Restrict)
+  position    Int
+  sku         String
+  productName String       @map("product_name")
+  saleUnit    String       @map("sale_unit")
+  quantity    Int
+
+  @@unique([recapId, position])
+  @@map("in_house_recap_line")
+  @@schema("public")
+}
+
+/// Un BL couvert par le récapitulatif, sa version de contenu figée. Un BL
+/// n'est couvert que par un récapitulatif non remplacé
+/// (`in_house_recap_note_covered_once`, index unique partiel sur
+/// `replaced_at IS NULL`, posé en migration).
+model InHouseRecapNote {
+  id             String       @id
+  recapId        String       @map("recap_id")
+  recap          InHouseRecap @relation(fields: [recapId], references: [id], onDelete: Restrict)
+  deliveryNoteId String       @map("delivery_note_id")
+  deliveryNote   DeliveryNote @relation(fields: [deliveryNoteId], references: [id], onDelete: Restrict)
+  number         String
+  handedOverAt   DateTime     @map("handed_over_at") @db.Timestamptz(3)
+  contentVersion Int          @map("content_version")
+  /// Posé quand le récapitulatif est remplacé : le BL est libre pour le rectificatif.
+  replacedAt     DateTime?    @map("replaced_at") @db.Timestamptz(3)
+
+  @@index([recapId])
+  @@index([deliveryNoteId])
+  @@map("in_house_recap_note")
+  @@schema("public")
+}
+
+/// **L'issue du passage mensuel** pour un (payeur, mois) : une seule, tenue
+/// par l'unicité. `recap_id` nul : le mois était vide — distinct d'un mois
+/// manqué, qui n'a pas de ligne. Sans clé étrangère vers le récapitulatif :
+/// l'issue s'écrit avant lui, dans la même transaction.
+model InHouseRecapRun {
+  id          String   @id
+  payerId     String   @map("payer_id")
+  payer       Company  @relation(fields: [payerId], references: [id], onDelete: Restrict)
+  month       String
+  recapId     String?  @map("recap_id")
+  attemptedAt DateTime @map("attempted_at") @db.Timestamptz(3)
+
+  @@unique([payerId, month])
+  @@map("in_house_recap_run")
+  @@schema("public")
+}

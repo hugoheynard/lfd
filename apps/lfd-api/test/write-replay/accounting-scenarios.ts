@@ -1,5 +1,12 @@
 import { TEST_COLLECTION_MIN_BUSINESS_DAYS } from "../../src/lafoliecoffee/accounting/domain/services/collection-test-file.js";
 import { businessDaysAfter } from "../../src/lafoliecoffee/accounting/domain/services/target2-calendar.js";
+import {
+  inHouseBuyer,
+  inLastClosedMonth,
+  internalOrder,
+  runRecaps,
+  seedNote,
+} from "../in-house-recap-scene.js";
 import { routeKey, STAFF, type ScenarioSet } from "./scenario.js";
 import {
   ENTITIES,
@@ -182,4 +189,18 @@ export const ACCOUNTING_SCENARIOS: ScenarioSet = {
       },
     };
   },
+
+  // Réémettre un récapitulatif maison : le rejeu rend le même rectificatif, sans rien réécrire.
+  [routeKey("lafoliecoffee/in-house-recaps/http/admin-in-house-recaps.controller.ts", "reissue")]:
+    async ({ ctx }) => {
+      const resto = await inHouseBuyer(ctx, "auth0|resto-rejeu");
+      const orderId = await internalOrder(ctx, resto);
+      await seedNote(ctx, { orderId, rank: 1, handedOverAt: inLastClosedMonth(4), quantity: 2 });
+      const issued = (await runRecaps(ctx)).outcomes.find((one) => one.kind === "issued");
+      return {
+        sub: STAFF,
+        path: `/admin/in-house-recaps/${issued?.recapId ?? ""}/reissue`,
+        body: {},
+      };
+    },
 };
