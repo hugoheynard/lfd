@@ -28,6 +28,11 @@ import { PreferFulfillmentHandler } from "../prefer-fulfillment.handler.js";
 import { TablePickupPointNames } from "../../../domain/ports/__tests__/table-pickup-point-names.js";
 import { RemoveCompanyContactHandler } from "../remove-company-contact.handler.js";
 import { RemoveDeliveryAddressHandler } from "../remove-delivery-address.handler.js";
+import {
+  NoFollows,
+  FollowsBillingOf,
+} from "../../../domain/ports/__tests__/company-follows-doubles.js";
+import { SiteTermRequestError } from "../../../domain/errors/account-errors.js";
 import { RequestPaymentTermHandler } from "../request-payment-term.handler.js";
 import { SaveBillingAddressHandler } from "../save-billing-address.handler.js";
 import { SetDefaultDeliveryAddressHandler } from "../set-default-delivery-address.handler.js";
@@ -308,13 +313,39 @@ describe("l'identité et le délai, par le client", () => {
   it("le délai demandé dit la demande d'avant et celle d'après", async () => {
     const { events, uow, member, companies } = build();
 
-    await new RequestPaymentTermHandler(member, companies, events, uow).execute(
-      new RequestPaymentTermCommand("u1", "c1", "monthly"),
-    );
+    await new RequestPaymentTermHandler(
+      member,
+      companies,
+      events,
+      uow,
+      new NoFollows(),
+      new FixedClock(new Date(0)),
+    ).execute(new RequestPaymentTermCommand("u1", "c1", "monthly"));
 
     expect(events.traced.map((event) => event.journalFact())).toEqual([
       fact("company.payment_term_requested", { before: null, after: "monthly" }),
     ]);
+  });
+
+  /**
+   * Régression : un site facturé chez son principal pouvait demander le
+   * règlement mensuel à son nom — une demande que personne ne lisait.
+   */
+  it("refuse la demande d'un site facturé chez son principal, sans rien écrire", async () => {
+    const { events, uow, member, companies } = build();
+    const handler = new RequestPaymentTermHandler(
+      member,
+      companies,
+      events,
+      uow,
+      new FollowsBillingOf("c_principal"),
+      new FixedClock(new Date(0)),
+    );
+
+    await expect(
+      handler.execute(new RequestPaymentTermCommand("u1", "c1", "monthly")),
+    ).rejects.toBeInstanceOf(SiteTermRequestError);
+    expect(events.traced).toEqual([]);
   });
 });
 

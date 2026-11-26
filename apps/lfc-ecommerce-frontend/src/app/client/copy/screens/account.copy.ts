@@ -315,6 +315,8 @@ export interface AccountCopy {
   readonly termGrantedTransferSub: string;
   readonly termRequestedSub: string;
   readonly termNoneSub: string;
+  /** Un site facturé par sa maison mère : le crédit est le sien, et se demande à son nom. */
+  readonly termParentSub: string;
   /**
    * Le crédit est accordé mais la comptabilité a suspendu le prélèvement
    * (`directDebitBlocked`) : le crédit reste, les commandes se règlent par carte.

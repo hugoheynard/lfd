@@ -788,3 +788,17 @@ export class InvalidChorusRoutingError extends DomainError {
     super("account.chorus_routing.invalid", `Fiche Chorus Pro — ${field} : ${reason}`);
   }
 }
+
+/**
+ * Un site facturé chez son principal ne demande pas de crédit à son nom : il
+ * règle selon le crédit du principal, qui reçoit la facture et le prélèvement.
+ * Une demande posée sur le site ne serait lue par personne.
+ */
+export class SiteTermRequestError extends BusinessError {
+  constructor(readonly companyId: string) {
+    super(
+      "account.company.site_term_request",
+      "Ce site est facturé par sa maison mère : le règlement mensuel se demande au nom de la maison mère, qui en fixe les conditions.",
+    );
+  }
+}

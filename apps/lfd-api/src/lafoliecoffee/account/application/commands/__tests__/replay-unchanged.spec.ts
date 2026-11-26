@@ -19,6 +19,7 @@ import { GrantTermsHandler } from "../grant-terms.handler.js";
 import { PreferFulfillmentByStaffCommand } from "../prefer-fulfillment-by-staff.command.js";
 import { PreferFulfillmentByStaffHandler } from "../prefer-fulfillment-by-staff.handler.js";
 import { PreferFulfillmentHandler } from "../prefer-fulfillment.handler.js";
+import { NoFollows } from "../../../domain/ports/__tests__/company-follows-doubles.js";
 import { RequestPaymentTermHandler } from "../request-payment-term.handler.js";
 import { RevokeKbisCertificationCommand } from "../revoke-kbis-certification.command.js";
 import { RevokeKbisCertificationHandler } from "../revoke-kbis-certification.handler.js";
@@ -186,7 +187,14 @@ describe("rejouer un geste du client qui ne change rien", () => {
     await expectReplayIsNoop(b, () =>
       prefer.execute(new PreferFulfillmentCommand("u1", "c1", PREFERENCE)),
     );
-    const request = new RequestPaymentTermHandler(b.member, b.companies, b.events, b.uow);
+    const request = new RequestPaymentTermHandler(
+      b.member,
+      b.companies,
+      b.events,
+      b.uow,
+      new NoFollows(),
+      new FixedClock(new Date(0)),
+    );
     await expectReplayIsNoop(b, () =>
       request.execute(new RequestPaymentTermCommand("u1", "c1", "monthly")),
     );

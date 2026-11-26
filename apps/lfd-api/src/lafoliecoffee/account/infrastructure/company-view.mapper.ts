@@ -88,6 +88,7 @@ export function toCompanyView(role: CustomerRole, company: CompanyViewRow): Comp
     requestedTerm: company.requestedTerm,
     directDebitBlocked: payer.directDebitBlockedAt !== null,
     payerIsPublic: isPublicFormeJuridique(payer.formeJuridique),
+    billedByParent: company.follows.length > 0,
     fulfillmentPreference: {
       method: company.preferredFulfillmentMethod,
       pickupAddressId: company.preferredPickupAddressId,

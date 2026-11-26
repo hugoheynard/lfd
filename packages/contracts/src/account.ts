@@ -129,6 +129,13 @@ export interface CompanyView {
    * valides.
    */
   readonly payerIsPublic?: boolean;
+  /**
+   * La société est un site facturé chez son principal : `grantedTerms` et
+   * `directDebitBlocked` sont alors ceux du principal, et un crédit ne se
+   * demande pas au nom du site (le serveur le refuse). Toujours envoyé par le
+   * serveur ; facultatif pour la même raison que `payerIsPublic`.
+   */
+  readonly billedByParent?: boolean;
   /** Rôle de la personne dans CETTE société. */
   readonly role: CompanyMemberRole;
   /** Contact **principal** (carte « Admin du compte entreprise »), toujours présent. */

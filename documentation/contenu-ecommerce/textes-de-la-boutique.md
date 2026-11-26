@@ -4,7 +4,7 @@
 >
 > La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.
 
-## Sommaire — 2024 textes
+## Sommaire — 2025 textes
 
 Clés présentes dans une langue et absentes d'une autre : 0.
 
@@ -43,7 +43,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Annuler une commande — Mes commandes et la page invité](#espace-ordercancel) | `orderCancel` | 57 |
 | [Payer par lien — la page publique /payer](#espace-paylink) | `payLink` | 24 |
 | [Fidélité](#espace-loyalty) | `loyalty` | 38 |
-| [Mon compte (factures comprises)](#espace-account) | `account` | 534 |
+| [Mon compte (factures comprises)](#espace-account) | `account` | 535 |
 | [Le compte pro — le dictionnaire général](#espace-pro) | `pro` | 8 |
 | [Le compte pro — l’écran](#espace-proaccount) | `proAccount` | 27 |
 | [Mes sites — la carte de chaque site, réglée par le compte principal](#espace-sitemenu) | `siteMenu` | 78 |
@@ -53,7 +53,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Les cases des e-mails marketing, « Mes e-mails » et le pied de page](#espace-marketingconsent) | `marketingConsent` | 29 |
 | [Les documents légaux](#espace-legaldocument) | `legalDocument` | 14 |
 | [Le suivi des corrections d’accessibilité — sous la déclaration](#espace-accessibilityfollowup) | `accessibilityFollowUp` | 28 |
-| **Total** | | **2024** |
+| **Total** | | **2025** |
 
 ## Le parcours de commande
 
@@ -1511,7 +1511,7 @@ Source : `screens/loyalty.copy.ts` · 38 textes.
 
 ### Mon compte (factures comprises) — `account`
 
-Source : `screens/account.{fr,en,it}.ts · screens/account-invoices.copy.ts` · 534 textes.
+Source : `screens/account.{fr,en,it}.ts · screens/account-invoices.copy.ts` · 535 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -1797,6 +1797,7 @@ Source : `screens/account.{fr,en,it}.ts · screens/account-invoices.copy.ts` · 
 | `account.termGrantedTransferSub` | Paiement au compte, par virement à réception de facture. Nos coordonnées bancaires et la référence à reporter figurent sur chaque facture (PDF). | Paid on account, by bank transfer on receipt of invoice. Our bank details and the reference to quote are on each invoice (PDF). | Pagamento su conto, con bonifico al ricevimento della fattura. Le nostre coordinate bancarie e la causale da indicare sono su ogni fattura (PDF). |  |
 | `account.termRequestedSub` | Demande envoyée : votre commercial la valide. | Request sent: your sales contact will approve it. | Richiesta inviata: il vostro commerciale la convalida. |  |
 | `account.termNoneSub` | Sur demande : votre commercial l’accorde société par société. | On request: your sales contact grants it company by company. | Su richiesta: il vostro commerciale lo concede società per società. |  |
+| `account.termParentSub` | Ce site est facturé par sa maison mère : le règlement mensuel suit le sien, et se demande en son nom. | This site is invoiced through its parent company: monthly payment follows the parent’s terms and is requested in its name. | Questo sito è fatturato tramite la società madre: il pagamento mensile segue le sue condizioni e si richiede a suo nome. |  |
 | `account.termSuspendedSub` | Prélèvement mensuel suspendu — vos commandes se règlent par carte. | Monthly direct debit suspended — your orders are paid by card. | Addebito mensile sospeso — gli ordini si pagano con carta. |  |
 | `account.termOrder` | À la commande | At checkout | All’ordine |  |
 | `account.termOrderSub` | Carte ou Apple Pay, sans attendre la facture | Card or Apple Pay, without waiting for the invoice | Carta o Apple Pay, senza aspettare la fattura |  |

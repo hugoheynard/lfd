@@ -10,6 +10,8 @@ const GRANTED: CompanyView = TOMMEUSES;
 const REQUESTED: CompanyView = { ...TOMMEUSES, grantedTerms: [], requestedTerm: 'monthly' };
 const NONE: CompanyView = { ...TOMMEUSES, grantedTerms: [], requestedTerm: null };
 const SUSPENDED: CompanyView = { ...TOMMEUSES, directDebitBlocked: true };
+/** Un site facturé par sa maison mère, qui n'a pas le crédit. */
+const SITE: CompanyView = { ...NONE, billedByParent: true };
 
 describe('l’état du crédit mensuel', () => {
   it('se lit sur `grantedTerms` puis `requestedTerm`, et rien d’autre', () => {
@@ -54,6 +56,22 @@ describe('l’état du crédit mensuel', () => {
     expect(monthlyTermView('granted', FR.account, null).note).toBe(FR.account.termGrantedSub);
   });
 
+  /**
+   * Régression : un site facturé par sa maison mère se voyait proposer
+   * « Demander le règlement mensuel » à son nom — une demande que personne ne
+   * lisait, et que le serveur refuse désormais.
+   */
+  it('dit qu’un site suit sa maison mère, et ne lui laisse pas demander', () => {
+    expect(monthlyTermState(SITE)).toBe('parent');
+    expect(canRequestMonthly(SITE)).toBe(false);
+    expect(monthlyTermState({ ...GRANTED, billedByParent: true })).toBe('granted');
+    expect(monthlyTermView('parent', FR.account)).toEqual({
+      badge: FR.account.stateUnavailable,
+      variant: 'neutral',
+      note: FR.account.termParentSub,
+    });
+  });
+
   it('nomme chaque état par sa pastille, son ton et sa phrase', () => {
     expect(monthlyTermView('granted', FR.account)).toEqual({
       badge: FR.account.stateActive,
@@ -80,7 +98,7 @@ describe('l’état du crédit mensuel', () => {
   it('n’affirme ni date ni plafond, dans aucune langue et dans aucun état', () => {
     for (const copy of [FR.account, EN.account, IT.account]) {
       expect('termMonthlySub' in copy).toBe(false);
-      for (const state of ['granted', 'requested', 'none'] as const) {
+      for (const state of ['granted', 'parent', 'requested', 'none'] as const) {
         const { badge, note } = monthlyTermView(state, copy);
         expect(`${badge} ${note}`).not.toMatch(/\d/);
         expect(`${badge} ${note}`).not.toMatch(/€/);

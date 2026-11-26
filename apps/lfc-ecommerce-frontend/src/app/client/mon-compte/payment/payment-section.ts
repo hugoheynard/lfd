@@ -14,10 +14,12 @@ export { MONTHLY };
  * - `granted` : le commercial l'a accordé, et il s'exerce ;
  * - `suspended` : accordé, mais la comptabilité a suspendu le prélèvement —
  *   les commandes se règlent par carte, le crédit n'est pas retiré ;
+ * - `parent` : un site facturé par sa maison mère, qui n'a pas le crédit —
+ *   il se demande au nom de la maison mère, jamais du site (le serveur refuse) ;
  * - `requested` : le client l'a demandé, le commercial n'a pas tranché ;
  * - `none` : ni l'un ni l'autre.
  */
-export type MonthlyTermState = 'granted' | 'suspended' | 'requested' | 'none';
+export type MonthlyTermState = 'granted' | 'suspended' | 'parent' | 'requested' | 'none';
 
 /**
  * Les rôles qui demandent un crédit : ceux que l'API laisse écrire (vérifié le
@@ -34,6 +36,9 @@ export function monthlyTermState(company: CompanyView | null): MonthlyTermState 
   }
   if (directDebitSuspended(company)) {
     return 'suspended';
+  }
+  if (company.billedByParent === true) {
+    return 'parent';
   }
   return company.requestedTerm === MONTHLY ? 'requested' : 'none';
 }
@@ -69,6 +74,8 @@ export function monthlyTermView(
       };
     case 'suspended':
       return { badge: copy.stateSuspended, variant: 'warning', note: copy.termSuspendedSub };
+    case 'parent':
+      return { badge: copy.stateUnavailable, variant: 'neutral', note: copy.termParentSub };
     case 'requested':
       return { badge: copy.stateRequested, variant: 'warning', note: copy.termRequestedSub };
     case 'none':

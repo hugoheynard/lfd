@@ -77,7 +77,9 @@ describe("toCompanyView", () => {
     expect(toCompanyView("admin", site)).toMatchObject({
       grantedTerms: ["monthly"],
       directDebitBlocked: false,
+      billedByParent: true,
     });
+    expect(toCompanyView("admin", ROW).billedByParent).toBe(false);
     const suspended = {
       ...site,
       follows: [

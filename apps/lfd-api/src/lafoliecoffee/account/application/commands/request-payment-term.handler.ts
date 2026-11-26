@@ -2,9 +2,11 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
+import { Clock } from "../../../../platform/time/clock.js";
 import { PaymentTermRequestedEvent } from "../../domain/events/member-acts.event.js";
 import { companyNamed } from "../../domain/events/journal-names.js";
-import { CompanyNotFoundError } from "../../domain/errors/account-errors.js";
+import { CompanyNotFoundError, SiteTermRequestError } from "../../domain/errors/account-errors.js";
+import { CompanyFollowsReader } from "../../domain/ports/company-follows.reader.js";
 import { CompanyRepository } from "../../domain/ports/company.repository.js";
 import { MembershipReader } from "../../domain/ports/membership.reader.js";
 import { ensureCompanyAdmin } from "../../domain/services/company-access.js";
@@ -19,6 +21,11 @@ import { RequestPaymentTermCommand } from "./company-settings-commands.js";
  * Journalisé dans la transaction de l'écriture depuis le 2026-09-19 (plan
  * `documentation/journalisation/plan-journal-d-activite.md` §3, décision 1) :
  * la demande d'avant et celle d'après.
+ *
+ * Un site facturé chez son principal ne DEMANDE pas : il règle selon le crédit
+ * du principal (`accountStanding` lit le payeur).
+ *
+ * @throws {SiteTermRequestError} une demande sur un site qui suit la facturation.
  */
 @CommandHandler(RequestPaymentTermCommand)
 export class RequestPaymentTermHandler implements ICommandHandler<RequestPaymentTermCommand, void> {
@@ -27,6 +34,8 @@ export class RequestPaymentTermHandler implements ICommandHandler<RequestPayment
     private readonly companies: CompanyRepository,
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
+    private readonly follows: CompanyFollowsReader,
+    private readonly clock: Clock,
   ) {}
 
   async execute(command: RequestPaymentTermCommand): Promise<void> {
@@ -36,6 +45,9 @@ export class RequestPaymentTermHandler implements ICommandHandler<RequestPayment
     const company = await this.companies.load(command.companyId);
     if (company === null) {
       throw new CompanyNotFoundError(command.companyId);
+    }
+    if ((await this.follows.followsAt(command.companyId, "billing", this.clock.now())) !== null) {
+      throw new SiteTermRequestError(command.companyId);
     }
     const before = company.requestedTerm;
     // Rejouer le geste ne change rien : ni écriture, ni fait au journal.
