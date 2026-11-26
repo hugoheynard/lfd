@@ -10231,16 +10231,16 @@
         },
         {
           "key": "account.termMonthly",
-          "fr": "Paiement à 30 jours fin de mois",
-          "en": "30 days end of month",
-          "it": "Pagamento a 30 giorni fine mese",
+          "fr": "Paiement au compte",
+          "en": "Payment on account",
+          "it": "Pagamento a conto",
           "variables": []
         },
         {
           "key": "account.termGrantedSub",
-          "fr": "Accordé par votre commercial : vos commandes se règlent en fin de mois.",
-          "en": "Granted by your sales contact: your orders are settled at month end.",
-          "it": "Concesso dal vostro commerciale: gli ordini si saldano a fine mese.",
+          "fr": "Accordé par votre commercial : vos commandes se règlent sur facture, au rythme de votre facturation.",
+          "en": "Granted by your sales contact: your orders are settled on invoice, at your billing frequency.",
+          "it": "Concesso dal vostro commerciale: gli ordini si saldano su fattura, alla frequenza della vostra fatturazione.",
           "variables": []
         },
         {
@@ -10273,9 +10273,9 @@
         },
         {
           "key": "account.termSuspendedSub",
-          "fr": "Prélèvement mensuel suspendu — vos commandes se règlent par carte.",
-          "en": "Monthly direct debit suspended — your orders are paid by card.",
-          "it": "Addebito mensile sospeso — gli ordini si pagano con carta.",
+          "fr": "Prélèvement suspendu — vos commandes se règlent par carte.",
+          "en": "Direct debit suspended — your orders are paid by card.",
+          "it": "Addebito sospeso — gli ordini si pagano con carta.",
           "variables": []
         },
         {
@@ -10322,16 +10322,16 @@
         },
         {
           "key": "account.paymentNote",
-          "fr": "Deux régimes, pas plus : fin de mois quand un crédit est accordé, à la commande sinon — et tout le monde peut commander à la commande.",
-          "en": "Two regimes, no more: end of month when credit is granted, at checkout otherwise — and everyone can order at checkout.",
-          "it": "Due regimi, non di più: fine mese quando un credito è concesso, all’ordine altrimenti — e tutti possono ordinare all’ordine.",
+          "fr": "Deux régimes, pas plus : au compte quand un crédit est accordé, à la commande sinon — et tout le monde peut commander à la commande.",
+          "en": "Two regimes, no more: on account when credit is granted, at checkout otherwise — and everyone can order at checkout.",
+          "it": "Due regimi, non di più: a conto quando un credito è concesso, all’ordine altrimenti — e tutti possono ordinare all’ordine.",
           "variables": []
         },
         {
           "key": "account.termRequest",
-          "fr": "Demander le règlement mensuel",
-          "en": "Request monthly payment",
-          "it": "Richiedere il pagamento mensile",
+          "fr": "Demander le règlement au compte",
+          "en": "Request payment on account",
+          "it": "Richiedere il pagamento a conto",
           "variables": []
         },
         {

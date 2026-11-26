@@ -1792,21 +1792,21 @@ Source : `screens/account.{fr,en,it}.ts · screens/account-invoices.copy.ts` · 
 | `account.deliveryForm.specs.deadlineAdd` | Ajouter | Add | Aggiungi |  |
 | `account.deliveryForm.specs.deadlineRemove` | Retirer {deadline} | Remove {deadline} | Rimuovi {deadline} | `{deadline}` |
 | `account.deliveryForm.specs.deadlinesNone` | Aucune échéance | No deadline | Nessuna scadenza |  |
-| `account.termMonthly` | Paiement à 30 jours fin de mois | 30 days end of month | Pagamento a 30 giorni fine mese |  |
-| `account.termGrantedSub` | Accordé par votre commercial : vos commandes se règlent en fin de mois. | Granted by your sales contact: your orders are settled at month end. | Concesso dal vostro commerciale: gli ordini si saldano a fine mese. |  |
+| `account.termMonthly` | Paiement au compte | Payment on account | Pagamento a conto |  |
+| `account.termGrantedSub` | Accordé par votre commercial : vos commandes se règlent sur facture, au rythme de votre facturation. | Granted by your sales contact: your orders are settled on invoice, at your billing frequency. | Concesso dal vostro commerciale: gli ordini si saldano su fattura, alla frequenza della vostra fatturazione. |  |
 | `account.termGrantedTransferSub` | Paiement au compte, par virement à réception de facture. Nos coordonnées bancaires et la référence à reporter figurent sur chaque facture (PDF). | Paid on account, by bank transfer on receipt of invoice. Our bank details and the reference to quote are on each invoice (PDF). | Pagamento su conto, con bonifico al ricevimento della fattura. Le nostre coordinate bancarie e la causale da indicare sono su ogni fattura (PDF). |  |
 | `account.termRequestedSub` | Demande envoyée : votre commercial la valide. | Request sent: your sales contact will approve it. | Richiesta inviata: il vostro commerciale la convalida. |  |
 | `account.termNoneSub` | Sur demande : votre commercial l’accorde société par société. | On request: your sales contact grants it company by company. | Su richiesta: il vostro commerciale lo concede società per società. |  |
 | `account.termParentSub` | Ce site est facturé par sa maison mère : le règlement au compte suit le sien, et se demande en son nom. | This site is invoiced through its parent company: payment on account follows the parent’s terms and is requested in its name. | Questo sito è fatturato tramite la società madre: il pagamento a conto segue le sue condizioni e si richiede a suo nome. |  |
-| `account.termSuspendedSub` | Prélèvement mensuel suspendu — vos commandes se règlent par carte. | Monthly direct debit suspended — your orders are paid by card. | Addebito mensile sospeso — gli ordini si pagano con carta. |  |
+| `account.termSuspendedSub` | Prélèvement suspendu — vos commandes se règlent par carte. | Direct debit suspended — your orders are paid by card. | Addebito sospeso — gli ordini si pagano con carta. |  |
 | `account.termOrder` | À la commande | At checkout | All’ordine |  |
 | `account.termOrderSub` | Carte ou Apple Pay, sans attendre la facture | Card or Apple Pay, without waiting for the invoice | Carta o Apple Pay, senza aspettare la fattura |  |
 | `account.stateActive` | Actif | Active | Attivo |  |
 | `account.stateAvailable` | Disponible | Available | Disponibile |  |
 | `account.stateRequested` | En attente | Pending | In attesa |  |
 | `account.stateSuspended` | Suspendu | Suspended | Sospeso |  |
-| `account.paymentNote` | Deux régimes, pas plus : fin de mois quand un crédit est accordé, à la commande sinon — et tout le monde peut commander à la commande. | Two regimes, no more: end of month when credit is granted, at checkout otherwise — and everyone can order at checkout. | Due regimi, non di più: fine mese quando un credito è concesso, all’ordine altrimenti — e tutti possono ordinare all’ordine. |  |
-| `account.termRequest` | Demander le règlement mensuel | Request monthly payment | Richiedere il pagamento mensile |  |
+| `account.paymentNote` | Deux régimes, pas plus : au compte quand un crédit est accordé, à la commande sinon — et tout le monde peut commander à la commande. | Two regimes, no more: on account when credit is granted, at checkout otherwise — and everyone can order at checkout. | Due regimi, non di più: a conto quando un credito è concesso, all’ordine altrimenti — e tutti possono ordinare all’ordine. |  |
+| `account.termRequest` | Demander le règlement au compte | Request payment on account | Richiedere il pagamento a conto |  |
 | `account.termRequestNote` | C’est une demande : rien ne change tant que votre commercial ne l’a pas validée. | This is a request: nothing changes until your sales contact approves it. | È una richiesta: nulla cambia finché il vostro commerciale non l’ha convalidata. |  |
 | `account.termRequestFailed` | La demande n’a pas été enregistrée. | The request was not saved. | La richiesta non è stata registrata. |  |
 | `account.prefPickup` | Retrait habituel | Usual pickup | Ritiro abituale |  |

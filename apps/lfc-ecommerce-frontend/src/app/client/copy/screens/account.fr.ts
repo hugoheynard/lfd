@@ -291,15 +291,16 @@ export const ACCOUNT_FR: AccountCopy = {
       deadlinesNone: 'Aucune échéance',
     },
   },
-  termMonthly: 'Paiement à 30 jours fin de mois',
-  termGrantedSub: 'Accordé par votre commercial : vos commandes se règlent en fin de mois.',
+  termMonthly: 'Paiement au compte',
+  termGrantedSub:
+    'Accordé par votre commercial : vos commandes se règlent sur facture, au rythme de votre facturation.',
   termGrantedTransferSub:
     'Paiement au compte, par virement à réception de facture. Nos coordonnées bancaires et la référence à reporter figurent sur chaque facture (PDF).',
   termRequestedSub: 'Demande envoyée : votre commercial la valide.',
   termNoneSub: 'Sur demande : votre commercial l’accorde société par société.',
   termParentSub:
     'Ce site est facturé par sa maison mère : le règlement au compte suit le sien, et se demande en son nom.',
-  termSuspendedSub: 'Prélèvement mensuel suspendu — vos commandes se règlent par carte.',
+  termSuspendedSub: 'Prélèvement suspendu — vos commandes se règlent par carte.',
   termOrder: 'À la commande',
   termOrderSub: 'Carte ou Apple Pay, sans attendre la facture',
   stateActive: 'Actif',
@@ -307,8 +308,8 @@ export const ACCOUNT_FR: AccountCopy = {
   stateRequested: 'En attente',
   stateSuspended: 'Suspendu',
   paymentNote:
-    'Deux régimes, pas plus : fin de mois quand un crédit est accordé, à la commande sinon — et tout le monde peut commander à la commande.',
-  termRequest: 'Demander le règlement mensuel',
+    'Deux régimes, pas plus : au compte quand un crédit est accordé, à la commande sinon — et tout le monde peut commander à la commande.',
+  termRequest: 'Demander le règlement au compte',
   termRequestNote:
     'C’est une demande : rien ne change tant que votre commercial ne l’a pas validée.',
   termRequestFailed: 'La demande n’a pas été enregistrée.',

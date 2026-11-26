@@ -9,7 +9,7 @@ export class PublicPayerTermsRequiredError extends BusinessError {
   constructor(readonly companyId: string) {
     super(
       "account.public_payer.terms_required",
-      "Ce client est un organisme public : il règle toujours au compte, par virement. Le règlement mensuel ne peut pas lui être retiré.",
+      "Ce client est un organisme public : il règle toujours au compte, par virement. Le règlement au compte ne peut pas lui être retiré.",
     );
   }
 }

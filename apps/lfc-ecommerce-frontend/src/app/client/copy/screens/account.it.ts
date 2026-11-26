@@ -290,15 +290,16 @@ export const ACCOUNT_IT: AccountCopy = {
       deadlinesNone: 'Nessuna scadenza',
     },
   },
-  termMonthly: 'Pagamento a 30 giorni fine mese',
-  termGrantedSub: 'Concesso dal vostro commerciale: gli ordini si saldano a fine mese.',
+  termMonthly: 'Pagamento a conto',
+  termGrantedSub:
+    'Concesso dal vostro commerciale: gli ordini si saldano su fattura, alla frequenza della vostra fatturazione.',
   termGrantedTransferSub:
     'Pagamento su conto, con bonifico al ricevimento della fattura. Le nostre coordinate bancarie e la causale da indicare sono su ogni fattura (PDF).',
   termRequestedSub: 'Richiesta inviata: il vostro commerciale la convalida.',
   termNoneSub: 'Su richiesta: il vostro commerciale lo concede società per società.',
   termParentSub:
     'Questo sito è fatturato tramite la società madre: il pagamento a conto segue le sue condizioni e si richiede a suo nome.',
-  termSuspendedSub: 'Addebito mensile sospeso — gli ordini si pagano con carta.',
+  termSuspendedSub: 'Addebito sospeso — gli ordini si pagano con carta.',
   termOrder: 'All’ordine',
   termOrderSub: 'Carta o Apple Pay, senza aspettare la fattura',
   stateActive: 'Attivo',
@@ -306,8 +307,8 @@ export const ACCOUNT_IT: AccountCopy = {
   stateRequested: 'In attesa',
   stateSuspended: 'Sospeso',
   paymentNote:
-    'Due regimi, non di più: fine mese quando un credito è concesso, all’ordine altrimenti — e tutti possono ordinare all’ordine.',
-  termRequest: 'Richiedere il pagamento mensile',
+    'Due regimi, non di più: a conto quando un credito è concesso, all’ordine altrimenti — e tutti possono ordinare all’ordine.',
+  termRequest: 'Richiedere il pagamento a conto',
   termRequestNote:
     'È una richiesta: nulla cambia finché il vostro commerciale non l’ha convalidata.',
   termRequestFailed: 'La richiesta non è stata registrata.',

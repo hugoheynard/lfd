@@ -60,12 +60,12 @@ describe('PaymentDeskCard', () => {
   });
 
   /** Le crédit n'est pas retiré : le client doit lire qu'il est suspendu, et pourquoi il paie par carte. */
-  it('suspendu : « Suspendu », « Prélèvement mensuel suspendu — vos commandes se règlent par carte », rien à demander', () => {
+  it('suspendu : « Suspendu », « Prélèvement suspendu — vos commandes se règlent par carte », rien à demander', () => {
     const el = render(SUSPENDED);
 
     expect(badges(el)).toEqual([FR.account.stateSuspended, FR.account.stateAvailable]);
     expect(el.querySelector('.monthly')?.textContent).toContain(
-      'Prélèvement mensuel suspendu — vos commandes se règlent par carte',
+      'Prélèvement suspendu — vos commandes se règlent par carte',
     );
     expect(requestButton(el)).toBeUndefined();
   });

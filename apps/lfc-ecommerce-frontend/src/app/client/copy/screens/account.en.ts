@@ -288,15 +288,16 @@ export const ACCOUNT_EN: AccountCopy = {
       deadlinesNone: 'No deadline',
     },
   },
-  termMonthly: '30 days end of month',
-  termGrantedSub: 'Granted by your sales contact: your orders are settled at month end.',
+  termMonthly: 'Payment on account',
+  termGrantedSub:
+    'Granted by your sales contact: your orders are settled on invoice, at your billing frequency.',
   termGrantedTransferSub:
     'Paid on account, by bank transfer on receipt of invoice. Our bank details and the reference to quote are on each invoice (PDF).',
   termRequestedSub: 'Request sent: your sales contact will approve it.',
   termNoneSub: 'On request: your sales contact grants it company by company.',
   termParentSub:
     'This site is invoiced through its parent company: payment on account follows the parent’s terms and is requested in its name.',
-  termSuspendedSub: 'Monthly direct debit suspended — your orders are paid by card.',
+  termSuspendedSub: 'Direct debit suspended — your orders are paid by card.',
   termOrder: 'At checkout',
   termOrderSub: 'Card or Apple Pay, without waiting for the invoice',
   stateActive: 'Active',
@@ -304,8 +305,8 @@ export const ACCOUNT_EN: AccountCopy = {
   stateRequested: 'Pending',
   stateSuspended: 'Suspended',
   paymentNote:
-    'Two regimes, no more: end of month when credit is granted, at checkout otherwise — and everyone can order at checkout.',
-  termRequest: 'Request monthly payment',
+    'Two regimes, no more: on account when credit is granted, at checkout otherwise — and everyone can order at checkout.',
+  termRequest: 'Request payment on account',
   termRequestNote: 'This is a request: nothing changes until your sales contact approves it.',
   termRequestFailed: 'The request was not saved.',
   prefPickup: 'Usual pickup',
