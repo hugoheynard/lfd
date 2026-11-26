@@ -297,7 +297,7 @@ export const ACCOUNT_IT: AccountCopy = {
   termRequestedSub: 'Richiesta inviata: il vostro commerciale la convalida.',
   termNoneSub: 'Su richiesta: il vostro commerciale lo concede società per società.',
   termParentSub:
-    'Questo sito è fatturato tramite la società madre: il pagamento mensile segue le sue condizioni e si richiede a suo nome.',
+    'Questo sito è fatturato tramite la società madre: il pagamento a conto segue le sue condizioni e si richiede a suo nome.',
   termSuspendedSub: 'Addebito mensile sospeso — gli ordini si pagano con carta.',
   termOrder: 'All’ordine',
   termOrderSub: 'Carta o Apple Pay, senza aspettare la fattura',

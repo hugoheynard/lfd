@@ -10266,9 +10266,9 @@
         },
         {
           "key": "account.termParentSub",
-          "fr": "Ce site est facturé par sa maison mère : le règlement mensuel suit le sien, et se demande en son nom.",
-          "en": "This site is invoiced through its parent company: monthly payment follows the parent’s terms and is requested in its name.",
-          "it": "Questo sito è fatturato tramite la società madre: il pagamento mensile segue le sue condizioni e si richiede a suo nome.",
+          "fr": "Ce site est facturé par sa maison mère : le règlement au compte suit le sien, et se demande en son nom.",
+          "en": "This site is invoiced through its parent company: payment on account follows the parent’s terms and is requested in its name.",
+          "it": "Questo sito è fatturato tramite la società madre: il pagamento a conto segue le sue condizioni e si richiede a suo nome.",
           "variables": []
         },
         {

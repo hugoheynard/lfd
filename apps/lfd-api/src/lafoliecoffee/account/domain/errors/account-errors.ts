@@ -798,7 +798,7 @@ export class SiteTermRequestError extends BusinessError {
   constructor(readonly companyId: string) {
     super(
       "account.company.site_term_request",
-      "Ce site est facturé par sa maison mère : le règlement mensuel se demande au nom de la maison mère, qui en fixe les conditions.",
+      "Ce site est facturé par sa maison mère : le règlement au compte se demande au nom de la maison mère, qui en fixe les conditions.",
     );
   }
 }

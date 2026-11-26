@@ -298,7 +298,7 @@ export const ACCOUNT_FR: AccountCopy = {
   termRequestedSub: 'Demande envoyée : votre commercial la valide.',
   termNoneSub: 'Sur demande : votre commercial l’accorde société par société.',
   termParentSub:
-    'Ce site est facturé par sa maison mère : le règlement mensuel suit le sien, et se demande en son nom.',
+    'Ce site est facturé par sa maison mère : le règlement au compte suit le sien, et se demande en son nom.',
   termSuspendedSub: 'Prélèvement mensuel suspendu — vos commandes se règlent par carte.',
   termOrder: 'À la commande',
   termOrderSub: 'Carte ou Apple Pay, sans attendre la facture',
