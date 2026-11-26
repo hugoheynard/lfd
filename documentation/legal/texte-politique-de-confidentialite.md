@@ -131,7 +131,7 @@ Elles sont aussi traitées, pour notre compte et sur nos instructions, par les p
 - Cloudflare — hébergement du site, de l'application et des documents (factures, bons de commande, pièces justificatives) — [À VÉRIFIER : localisation des données] ;
 - Prisma (Prisma Postgres) — hébergement de la base de données — [À VÉRIFIER : région d'hébergement] ;
 - Okta (Auth0) — authentification et connexion au service — [À VÉRIFIER : région du tenant] ;
-- Stripe — paiement en ligne et prélèvement — [À VÉRIFIER : entité et localisation] ;
+- Stripe — paiement en ligne et prélèvement ; lors d'un paiement par carte, vos nom et adresse électronique lui sont transmis pour rattacher le paiement à votre compte client chez Stripe (Stripe ne vous envoie aucun reçu) — [À VÉRIFIER : entité et localisation] ;
 - Resend — envoi des courriers électroniques — [À VÉRIFIER : localisation] ;
 - Google — connexion avec Google, si vous choisissez cette méthode ;
 - Meta Platforms Ireland Limited — connexion avec Facebook, si vous choisissez cette méthode.

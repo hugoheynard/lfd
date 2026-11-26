@@ -154,7 +154,9 @@ source, le serveur (§ 5, obj. 7).
 ### Lot 5 — RGPD
 
 - Inscrire le flux « nom + email client → Stripe (Customer) » au registre et
-  dans la politique de confidentialité.
+  dans la politique de confidentialité. Phrase validée par Hugo le
+  2026-11-26, écrite dans `../legal/texte-politique-de-confidentialite.md` ;
+  elle reste à saisir au back-office (le texte publié vit en base).
 - Ajouter au parcours « supprimer mon compte »
   (`documentation/legal/plan-supprimer-mon-compte.md`) la suppression ou
   l'anonymisation des Customers Stripe du client, **sur chaque compte**.
