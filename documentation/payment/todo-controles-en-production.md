@@ -8,6 +8,11 @@
 
 ## Déjà faits
 
+- ~~**Le lien de paiement d'essai**~~ (2026-11-26, Hugo) : 1 € débité par un
+  vrai lien `/payer/…`, puis remboursé tout seul. Éprouvés d'un coup : la
+  page, l'encaissement Stripe, le webhook des cartes, le remboursement
+  automatique.
+
 - ~~**V — un paiement sur les tables renommées**~~ (2026-11-22) : une
   modification de commande vers le haut, complément de 1,52 € payé ; la ligne
   `payment.card_payment` (`role = complement`, `state = paid`) est relue en
