@@ -50,6 +50,9 @@ const PUBLIC_PIECES: readonly PieceRule[] = [
   { piece: "billing", blocking: true },
 ];
 
+/** Les pièces que le principal porte pour un site qui suit sa facturation. */
+const CARRIED_PIECES: ReadonlySet<ActivationPiece> = new Set(["vat", "kbis", "billing"]);
+
 const PIECE_BLOCKERS: Readonly<Partial<Record<ActivationPiece, ActivationBlocker>>> = {
   vat: "vat",
   billing: "facturation",
@@ -57,7 +60,15 @@ const PIECE_BLOCKERS: Readonly<Partial<Record<ActivationPiece, ActivationBlocker
 };
 
 export function activationGate(company: AdminCompanyDetailView): ActivationGate {
-  const pieces = isPublicFormeJuridique(company.formeJuridique) ? PUBLIC_PIECES : PIECES;
+  // Un sous-compte qui suit `billing` d'un principal ACTIF est facturé au nom
+  // du principal : ni identité légale ni détenteur propres (sous-comptes
+  // §2.1 bis). `Company.activate` tient la même règle.
+  const carried = isLegallyCarried(company);
+  const pieces = (isPublicFormeJuridique(company.formeJuridique) ? PUBLIC_PIECES : PIECES).filter(
+    // Ses TVA, extrait KBIS et adresse de facturation sont ceux du payeur : ils
+    // ne sont pas à fournir par le site, et la liste ne les lui réclame pas.
+    (piece) => !carried || !CARRIED_PIECES.has(piece.piece),
+  );
   const checklist = pieces.map((piece) => ({
     piece: piece.piece,
     blocking: piece.blocking,
@@ -65,10 +76,6 @@ export function activationGate(company: AdminCompanyDetailView): ActivationGate 
   }));
 
   const blocking: ActivationBlocker[] = [];
-  // Un sous-compte qui suit `billing` d'un principal ACTIF est facturé au nom
-  // du principal : ni identité légale ni détenteur propres (sous-comptes
-  // §2.1 bis). `Company.activate` tient la même règle.
-  const carried = isLegallyCarried(company);
   // L'identité légale n'est pas une pièce parmi d'autres : sans SIRET, il n'y a
   // rien à facturer.
   if (!hasLegalIdentity(company) && !carried) {

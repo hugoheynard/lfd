@@ -296,6 +296,28 @@ describe("activationGate — le verdict, et il n'y en a qu'un", () => {
       ).toEqual(["identite_legale", "detenteur", "vat", "facturation"]);
     });
 
+    /**
+     * Régression : la liste des pièces réclamait au site un extrait KBIS et une
+     * adresse de facturation, et Mon compte l'affichait « à compléter ».
+     */
+    it("ne lui réclame ni TVA, ni KBIS, ni facturation dans la liste des pièces", () => {
+      const bare = {
+        ...CHALET,
+        vatNumber: "",
+        kbis: null,
+        addresses: { billing: null, deliveries: [] },
+      };
+
+      expect(
+        activationGate(detail({ ...bare, hierarchy: followingBilling("active") })).checklist,
+      ).toEqual([]);
+      expect(
+        activationGate(detail({ ...bare, hierarchy: followingBilling("pending") })).checklist.map(
+          (check) => check.piece,
+        ),
+      ).toEqual(["vat", "kbis", "billing"]);
+    });
+
     it("le principal, lui, ne s'active pas sans TVA ni facturation : c'est là qu'elles sont exigées", () => {
       const principal = detail({
         ...COMPLETE,
