@@ -3,6 +3,7 @@ import { CLIENT_RAISON_SOCIALE } from "./client.seed.js";
 import { dropSitelessPickups } from "./siteless-pickups.seed.js";
 import { SEEDED_POINT_LABELS, SEEDED_ZONE_LABELS } from "./station.seed.js";
 import { dropOrderRestrictedChildren } from "./order-restricted-children.seed.js";
+import { dropInHouseRestrictedRows } from "./in-house-restricted-rows.seed.js";
 
 /**
  * ⚠️ **Remet la base sur ce que le seed déclare.** Destructif, et c'est tout ce
@@ -205,6 +206,7 @@ async function wipe(prisma: PrismaClient, companyIds: string[], userIds: string[
   await dropOrderRestrictedChildren(prisma, ofOrders);
   await prisma.order.deleteMany({ where: ofOrders });
   await dropHolderRestrictedRows(prisma, companyIds, userIds);
+  await dropInHouseRestrictedRows(prisma, companyIds);
   // Les paniers récurrents (schéma `recurring`) ne pointent plus personne :
   // aucune cascade ne les vide, ils se vident ici, échéances et lignes avant
   // le panier (clés `Restrict` internes au schéma).

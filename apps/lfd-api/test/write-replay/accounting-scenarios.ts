@@ -203,4 +203,18 @@ export const ACCOUNTING_SCENARIOS: ScenarioSet = {
         body: {},
       };
     },
+
+  // Renvoyer l'e-mail d'un récapitulatif maison : le rejeu ne redemande pas l'envoi.
+  [routeKey("lafoliecoffee/in-house-recaps/http/admin-in-house-recaps.controller.ts", "resend")]:
+    async ({ ctx }) => {
+      const resto = await inHouseBuyer(ctx, "auth0|resto-rejeu-envoi");
+      const orderId = await internalOrder(ctx, resto);
+      await seedNote(ctx, { orderId, rank: 1, handedOverAt: inLastClosedMonth(4), quantity: 2 });
+      const issued = (await runRecaps(ctx)).outcomes.find((one) => one.kind === "issued");
+      return {
+        sub: STAFF,
+        path: `/admin/in-house-recaps/${issued?.recapId ?? ""}/resend`,
+        body: {},
+      };
+    },
 };

@@ -4,7 +4,6 @@ import {
   type CounterParticularOrderPayload,
   type PickupAddressView,
 } from "@lfd/contracts";
-import { KnownInHousePayers } from "../../../../account/application/commands/__tests__/in-house-doubles.js";
 
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
@@ -172,7 +171,6 @@ export function drafting(): OrderDrafting {
     new FixedSalesTerms(),
     new FixedLineClassifications(),
     shelfCircuitOf(plans),
-    new KnownInHousePayers(),
   );
 }
 

@@ -5,6 +5,8 @@ export interface OrderPayerFollow {
   readonly payerId: string;
   readonly payerName: string;
   readonly payerStatus: OrderCompanyStatus;
+  /** Le principal est un de nos restaurants (une période maison vivante). */
+  readonly payerInHouse: boolean;
 }
 
 /** Ce que la passation doit savoir de la société qui commande pour en déduire le payeur. */
@@ -22,6 +24,12 @@ export interface OrderPayerStanding {
   readonly principalId: string | null;
   /** Une période `pricing` est en cours à l'instant demandé (Q1 : le principal voit le montant). */
   readonly followsPricing: boolean;
+  /**
+   * La société elle-même est un de nos restaurants (une période maison
+   * vivante) — lue sur la MÊME requête que le payeur, pour que la commande
+   * interne ne coûte aucune lecture de plus à la composition.
+   */
+  readonly inHouse: boolean;
 }
 
 /**

@@ -111,7 +111,8 @@ describe("ouvrir un e-mail", () => {
   it("liste les e-mails du registre et ouvre le document de départ sans rien écrire", async () => {
     const list = jsonBody<MailEditorListView>(await staff().get(EDITOR).expect(200));
     // Les e-mails du registre, moins la sonde de déploiement, hors de l'éditeur.
-    expect(list.mails).toHaveLength(40);
+    expect(list.mails).toHaveLength(41);
+    expect(list.mails.map((mail) => mail.template)).toContain("customer.in-house-recap");
     expect(list.mails.map((mail) => mail.template)).toContain("customer.order-not-collected");
     expect(list.mails.map((mail) => mail.template)).not.toContain("ops.deploy-check");
     const view = await open();

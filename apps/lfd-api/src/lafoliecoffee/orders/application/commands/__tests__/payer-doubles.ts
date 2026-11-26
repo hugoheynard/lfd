@@ -1,3 +1,4 @@
+import type { InHousePayerReader } from "../../../../account/domain/ports/in-house-payer.reader.js";
 import {
   OrderPayerReader,
   type OrderPayerStanding,
@@ -11,13 +12,17 @@ import {
 export class FixedOrderPayers extends OrderPayerReader {
   readonly asked: { companyId: string; at: Date }[] = [];
 
-  constructor(private readonly standings: ReadonlyMap<string, OrderPayerStanding> = new Map()) {
+  constructor(
+    private readonly standings: ReadonlyMap<string, OrderPayerStanding> = new Map(),
+    // Qui est maison, pour une société qui paie seule ; aucune par défaut.
+    private readonly inHouse: InHousePayerReader | null = null,
+  ) {
     super();
   }
 
-  standingAt(companyId: string, at: Date): Promise<OrderPayerStanding | null> {
+  async standingAt(companyId: string, at: Date): Promise<OrderPayerStanding | null> {
     this.asked.push({ companyId, at });
-    return Promise.resolve(
+    return (
       this.standings.get(companyId) ?? {
         companyId,
         companyName: companyId,
@@ -25,12 +30,13 @@ export class FixedOrderPayers extends OrderPayerReader {
         billingFollow: null,
         principalId: null,
         followsPricing: false,
-      },
+        inHouse: (await this.inHouse?.isInHousePayer(companyId)) ?? false,
+      }
     );
   }
 }
 
 /** Chaque société paie pour elle-même — le cas de toutes les suites d'avant S4. */
-export function ownPayers(): FixedOrderPayers {
-  return new FixedOrderPayers();
+export function ownPayers(inHouse: InHousePayerReader | null = null): FixedOrderPayers {
+  return new FixedOrderPayers(new Map(), inHouse);
 }

@@ -358,13 +358,12 @@ export function draftingIn(
     clock,
     new CustomerAudiences(new MemberGuard()),
     new OrderOperations(noSaleOperations(clock.now())),
-    ownPayers(),
+    ownPayers(options.inHouse ?? null),
     new FixedDeliveryVat(),
     plans,
     new FixedSalesTerms(),
     new FixedLineClassifications(),
     shelfCircuitOf(plans),
-    options.inHouse ?? new KnownInHousePayers(),
   );
 }
 

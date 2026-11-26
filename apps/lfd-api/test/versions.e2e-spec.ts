@@ -47,6 +47,7 @@ const WATCHED: Readonly<Record<"company_change" | "order_change", readonly strin
     "delivery_procedure_steps",
     "delivery_procedures",
     "memberships",
+    "payer_in_house",
     "payment_mandates",
     "principal_sites_menu",
     "principal_sites_menu_entry",

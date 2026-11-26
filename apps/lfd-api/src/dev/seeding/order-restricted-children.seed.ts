@@ -26,6 +26,8 @@ export async function dropOrderRestrictedChildren(
   await prisma.orderDiscount.deleteMany({ where: { order: orders } });
   await prisma.orderItemLimitOverride.deleteMany({ where: { order: orders } });
   await prisma.orderReview.deleteMany({ where: { order: orders } });
+  // Le récapitulatif maison tient les BL qu'il couvre.
+  await prisma.inHouseRecapNote.deleteMany({ where: { deliveryNote: { order: orders } } });
   await prisma.deliveryNoteLine.deleteMany({ where: { note: { order: orders } } });
   await prisma.deliveryNoteVersion.deleteMany({ where: { note: { order: orders } } });
   await prisma.deliveryNote.deleteMany({ where: { order: orders } });

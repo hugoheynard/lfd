@@ -9,6 +9,7 @@ function standing(over: Partial<OrderPayerStanding> = {}): OrderPayerStanding {
     billingFollow: null,
     principalId: "alpes",
     followsPricing: false,
+    inHouse: false,
     ...over,
   };
 }
@@ -17,6 +18,7 @@ const BILLING = {
   payerId: "alpes",
   payerName: "Alpes Chalets Privés",
   payerStatus: "active",
+  payerInHouse: false,
 } as const;
 
 describe("orderPrincipalOf — le principal copié à la passation (avis au principal, §2, Q1)", () => {

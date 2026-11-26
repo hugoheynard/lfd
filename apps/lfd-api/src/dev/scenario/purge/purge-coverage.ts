@@ -88,8 +88,10 @@ export const SCENARIO_PURGED_TABLES: readonly PurgedTable[] = [
       "public.delivery_note_discounts",
       "public.delivery_note_line",
       "public.delivery_note_version",
+      "public.in_house_recap_note",
     ],
   },
+  { table: "public.in_house_recap_note", purgedIn: COMMERCE, referencedBy: [] },
   { table: "public.delivery_note_line", purgedIn: COMMERCE, referencedBy: [] },
   { table: "public.delivery_note_version", purgedIn: COMMERCE, referencedBy: [] },
   {

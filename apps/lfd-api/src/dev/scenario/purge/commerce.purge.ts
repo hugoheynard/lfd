@@ -51,6 +51,9 @@ export async function purgeCommerce(
     await tx.orderDiscount.deleteMany({ where: { orderId: { in: orderIds } } }),
     await tx.orderItemLimitOverride.deleteMany({ where: { orderId: { in: orderIds } } }),
     await tx.orderReview.deleteMany({ where: { orderId: { in: orderIds } } }),
+    await tx.inHouseRecapNote.deleteMany({
+      where: { deliveryNote: { orderId: { in: orderIds } } },
+    }),
     await tx.deliveryNoteLine.deleteMany({ where: { note: { orderId: { in: orderIds } } } }),
     await tx.deliveryNoteVersion.deleteMany({ where: { note: { orderId: { in: orderIds } } } }),
     await tx.deliveryNote.deleteMany({ where: { orderId: { in: orderIds } } }),

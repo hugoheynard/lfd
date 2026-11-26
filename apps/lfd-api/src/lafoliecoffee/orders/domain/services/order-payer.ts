@@ -35,3 +35,15 @@ export function orderPayerOf(standing: OrderPayerStanding | null): string | null
   }
   return follow.payerId;
 }
+
+/**
+ * **Le payeur décidé est-il un de nos restaurants ?** — sur la même lecture
+ * que {@link orderPayerOf}, à appeler après lui : le principal suivi en
+ * `billing`, sinon la société elle-même. Sans société, personne.
+ */
+export function orderPayerInHouseOf(standing: OrderPayerStanding | null): boolean {
+  if (standing === null) {
+    return false;
+  }
+  return standing.billingFollow === null ? standing.inHouse : standing.billingFollow.payerInHouse;
+}

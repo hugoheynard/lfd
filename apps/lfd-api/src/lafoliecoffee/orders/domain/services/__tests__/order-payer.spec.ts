@@ -3,7 +3,7 @@ import {
   OrderPayerNotActiveError,
 } from "../../errors/order-payer-errors.js";
 import type { OrderPayerStanding } from "../../ports/order-payer.reader.js";
-import { orderPayerOf } from "../order-payer.js";
+import { orderPayerInHouseOf, orderPayerOf } from "../order-payer.js";
 
 function standing(over: Partial<OrderPayerStanding> = {}): OrderPayerStanding {
   return {
@@ -13,11 +13,16 @@ function standing(over: Partial<OrderPayerStanding> = {}): OrderPayerStanding {
     billingFollow: null,
     principalId: null,
     followsPricing: false,
+    inHouse: false,
     ...over,
   };
 }
 
-const PRINCIPAL = { payerId: "alpes", payerName: "Alpes Chalets Privés" } as const;
+const PRINCIPAL = {
+  payerId: "alpes",
+  payerName: "Alpes Chalets Privés",
+  payerInHouse: false,
+} as const;
 
 describe("orderPayerOf — le payeur copié à la passation (sous-comptes §2.3, §2.4)", () => {
   it("n'a pas de payeur pour une commande sans société", () => {
@@ -50,5 +55,28 @@ describe("orderPayerOf — le payeur copié à la passation (sous-comptes §2.3,
     });
     expect(() => orderPayerOf(group)).toThrow(GroupAccountOrderRefusedError);
     expect(() => orderPayerOf(group)).toThrow(/sous-comptes/u);
+  });
+});
+
+describe("orderPayerInHouseOf — la commande interne se lit sur le payeur décidé", () => {
+  it("personne n'est maison sans société", () => {
+    expect(orderPayerInHouseOf(null)).toBe(false);
+  });
+
+  it("lit la société elle-même quand elle paie seule", () => {
+    expect(orderPayerInHouseOf(standing({ inHouse: true }))).toBe(true);
+    expect(orderPayerInHouseOf(standing())).toBe(false);
+  });
+
+  it("lit le principal d'un site qui suit `billing`, pas le site", () => {
+    const follow = { ...PRINCIPAL, payerStatus: "active" as const };
+    expect(
+      orderPayerInHouseOf(
+        standing({ inHouse: true, billingFollow: { ...follow, payerInHouse: false } }),
+      ),
+    ).toBe(false);
+    expect(
+      orderPayerInHouseOf(standing({ billingFollow: { ...follow, payerInHouse: true } })),
+    ).toBe(true);
   });
 });

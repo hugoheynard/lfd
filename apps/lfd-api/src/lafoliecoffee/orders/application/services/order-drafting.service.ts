@@ -23,7 +23,7 @@ import {
 } from "../../domain/ports/order-payer.reader.js";
 import { OrderSalesTermsReader } from "../../domain/ports/order-sales-terms.reader.js";
 import { salesTermsOf } from "../../domain/services/sales-terms-of.js";
-import { orderPayerOf } from "../../domain/services/order-payer.js";
+import { orderPayerInHouseOf, orderPayerOf } from "../../domain/services/order-payer.js";
 import { orderPrincipalOf } from "../../domain/services/order-principal.js";
 import type { OrderEntryOrigin } from "../../domain/value-objects/order-supply.js";
 import { OrderDeadline, type ExceededItemLimit } from "../../../order-cutoffs/index.js";
@@ -33,7 +33,6 @@ import {
   type DeadlineAdmission,
 } from "../../domain/services/admit-within-deadline.js";
 import { Clock } from "../../../../platform/time/clock.js";
-import { InHousePayerReader } from "../../../account/domain/ports/in-house-payer.reader.js";
 import {
   IN_HOUSE_ORDER_REASON,
   type OrderOfferReason,
@@ -174,7 +173,6 @@ export class OrderDrafting {
     private readonly salesTerms: OrderSalesTermsReader,
     classifications: OrderLineClassificationReader,
     private readonly shelf: ShelfCircuit,
-    private readonly inHouse: InHousePayerReader,
   ) {
     this.composition = new OrderComposition(
       linePricing,
@@ -229,7 +227,7 @@ export class OrderDrafting {
     const billedCompanyId = orderPayerOf(standing);
     // Un de nos restaurants : la commande naît interne, sur la même lecture du
     // payeur. L'agrégat en calcule la ligne « offert » et le total nul.
-    const offer = await this.offerFor(billedCompanyId, parties.offer);
+    const offer = offerFor(orderPayerInHouseOf(standing), parties.offer);
     // Le principal se copie sur la MÊME lecture que le payeur : aucun
     // historique des rattachements ne permettrait de le retrouver ensuite
     // (avis au principal, §2).
@@ -316,23 +314,6 @@ export class OrderDrafting {
     // Sur LE chiffrage de l'agrégat : il n'est plus refait ici (L7, 2026-11-04).
     warnBeyondCap(this.logger, order.pricingNotes());
     return { order, waiverUsed: admission.waiverUsed, exceeded: admission.exceeded };
-  }
-
-  /**
-   * **L'offre que la commande porte** : celle d'une commande interne quand le
-   * payeur est un de nos restaurants — elle remplace toute autre, car rien ne
-   * se facture à un restaurant maison —, sinon celle que l'équipe a posée.
-   * Le régime vaut pour les commandes passées après le marquage : il est lu
-   * à chaque composition, jamais copié sur la société.
-   */
-  private async offerFor(
-    payerId: string | null,
-    requested: OrderOfferReason | undefined,
-  ): Promise<OrderOfferReason | undefined> {
-    if (payerId !== null && (await this.inHouse.isInHousePayer(payerId))) {
-      return IN_HOUSE_ORDER_REASON;
-    }
-    return requested;
   }
 
   /**
@@ -451,4 +432,18 @@ export class OrderDrafting {
   private async salesTermsIn(document: SalesTermsDocument): Promise<OrderSalesTerms> {
     return { document, ...(await this.salesTerms.inForce(document)) };
   }
+}
+
+/**
+ * **L'offre que la commande porte** : celle d'une commande interne quand le
+ * payeur est un de nos restaurants — elle remplace toute autre, car rien ne
+ * se facture à un restaurant maison —, sinon celle que l'équipe a posée.
+ * Le régime vaut pour les commandes passées après le marquage : il est lu
+ * à chaque composition, jamais copié sur la société.
+ */
+function offerFor(
+  payerInHouse: boolean,
+  requested: OrderOfferReason | undefined,
+): OrderOfferReason | undefined {
+  return payerInHouse ? IN_HOUSE_ORDER_REASON : requested;
 }

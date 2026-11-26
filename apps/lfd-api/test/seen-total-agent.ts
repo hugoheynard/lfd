@@ -55,6 +55,15 @@ let preflightSequence = 0;
 const confirmedByKey = new Map<string, number>();
 
 /**
+ * La tentative EN COURS, par le même corps entier : deux envois identiques
+ * partis ensemble (la course de passation) partagent une seule tentative.
+ * Sans elle, la seconde tentative trouvait la clé tenue par la première,
+ * recevait « en vol » au lieu du total, et la vraie requête partait à un
+ * total nul — refusée pour le total, pas pour la course qu'elle éprouvait.
+ */
+const pendingByKey = new Map<string, Promise<number>>();
+
+/**
  * Habille un agent du harnais : ses passations sans total sont confirmées.
  * `fresh` rend un agent identique, non habillé, pour la tentative.
  */
@@ -136,7 +145,7 @@ function confirmingTotal(test: request.Test, source: TotalSource): request.Test 
         send({ expectedTotalCents: known });
         return end(fn);
       }
-      void source.totalOf(headers, seen).then(
+      void totalShared(key, () => source.totalOf(headers, seen)).then(
         (expectedTotalCents) => {
           if (key !== null) {
             confirmedByKey.set(key, expectedTotalCents);
@@ -149,6 +158,20 @@ function confirmingTotal(test: request.Test, source: TotalSource): request.Test 
       return test;
     },
   });
+}
+
+/** Une seule tentative par corps entier tant qu'elle n'a pas répondu. */
+function totalShared(key: string | null, attempt: () => Promise<number>): Promise<number> {
+  if (key === null) {
+    return attempt();
+  }
+  const pending = pendingByKey.get(key);
+  if (pending !== undefined) {
+    return pending;
+  }
+  const started = attempt().finally(() => pendingByKey.delete(key));
+  pendingByKey.set(key, started);
+  return started;
 }
 
 async function composedTotal(
