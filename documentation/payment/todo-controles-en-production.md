@@ -122,20 +122,40 @@ Quand Hugo a de nouveau accès au tableau de bord Stripe :
 ## Après la saison — le ménage de F2
 
 > Reporté par Hugo le 2026-11-26 : « je ne veux pas toucher un truc qui
-> marche ». Rien ne casse en attendant : ce sont des restes de Stripe
-> Checkout, retiré du code ; les événements qui arriveraient encore sont
-> rangés sans effet.
+> marche ». Rien ne casse en attendant : ce sont des restes de l'ancien
+> système de liens (Stripe Checkout), retiré du code le 2026-11-22 ; les
+> événements qui arriveraient encore sont rangés sans effet.
+
+**Pourquoi le faire quand même, un jour** : chaque reste est un point
+d'entrée ou un secret qui ne sert plus. Un secret inutilisé peut fuiter
+sans que personne s'en aperçoive (on ne surveille pas ce dont on ne se sert
+pas), et une destination de webhook oubliée peut être réactivée par erreur
+et renvoyer des événements vers une adresse qui n'existe plus. Le ménage
+réduit ce qu'il faut protéger, et rend la configuration lisible : ce qui
+est réglé chez Stripe, Cloudflare et GitHub dit alors exactement ce que le
+code utilise.
 
 1. **Stripe › Développeurs › Webhooks** : supprimer la destination
    désactivée « lfd-api production — liens de paiement »
    (`/payments/links/webhook`). Ne pas toucher à celle des cartes.
+   _Pourquoi_ : l'adresse qu'elle vise a été retirée de l'API ; réactivée
+   par erreur, elle enverrait chaque paiement vers une route qui répond
+   « introuvable », et Stripe finirait par signaler l'endpoint en échec.
 2. **Stripe**, destination des cartes : décocher `checkout.session.completed`,
    `checkout.session.async_payment_succeeded` et `checkout.session.expired` ;
    garder tout le reste.
+   _Pourquoi_ : plus aucune page Stripe Checkout n'est créée, donc ces
+   événements n'arrivent plus. Les garder cochés ne coûte rien, mais laisse
+   croire, à la lecture du tableau de bord, que le code s'en sert encore.
 3. **Cloudflare**, Worker de l'API : supprimer le secret
    `STRIPE_LINKS_WEBHOOK_SECRET` s'il y figure
    (`wrangler secret delete STRIPE_LINKS_WEBHOOK_SECRET`).
+   _Pourquoi_ : le code ne le lit plus ; c'est une clé de signature Stripe
+   qui traîne dans la configuration de production sans rien protéger.
 4. **GitHub › Settings › Secrets and variables › Actions** : supprimer
-   `STRIPE_LINKS_WEBHOOK_SECRET`. ⚠️ **Ne pas toucher `FIELD_ENCRYPTION_KEY`**,
-   dans la même liste (voir
+   `STRIPE_LINKS_WEBHOOK_SECRET`.
+   _Pourquoi_ : le workflow de déploiement ne le transmet plus ; le garder,
+   c'est garder une copie d'un secret Stripe pour rien.
+   ⚠️ **Ne pas toucher `FIELD_ENCRYPTION_KEY`**, dans la même liste : c'est
+   la clé qui protège les IBAN, et Hugo n'en possède plus la valeur (voir
    [`../todos/todo-cle-de-chiffrement-des-champs.md`](../todos/todo-cle-de-chiffrement-des-champs.md)).
