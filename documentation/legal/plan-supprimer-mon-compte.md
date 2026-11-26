@@ -18,6 +18,14 @@
     anonymisation, ou « Client supprimé » (§8).
 - **À relever au bâti** : chaque ligne du §3 rouverte à la main (✔), et les
   systèmes tiers (Stripe, émetteur de factures, Resend) avec leur geste.
+- **Stripe (2026-11-26)** : depuis `plan-pointage-stripe.md` (lot 1), le nom et
+  l'e-mail du payeur partent sur un client Stripe, **un par compte
+  d'encaissement**, rattaché par `payment.card_customer`. Le geste S1 appelle
+  `CardCustomerErasure.eraseCustomersOf(userId)`
+  (`payment/channels/requests/`, seule porte vers `payment`, CLAUDE.md §3)
+  dans sa transaction : mise en file, `customers.del` après validation,
+  repris jusqu'au succès, identifiants seuls au journal. Le port est déclaré ;
+  son adaptateur se bâtit avec S1.
 - **Le texte publié** ne change pas avant le déploiement du geste (§6).
 
 ## 1. Ce qui existe (relu le 2026-10-05)
@@ -53,23 +61,24 @@ reste tant qu'elle est cliente. Ce que la personne portait **pour** la société
 Relevé par un agent `Explore` le 2026-10-05, à partir des tables ; **à
 revérifier table par table au bâti** (marqué ✔ quand rouvert à la main).
 
-| Donnée                                                       | Geste                                                                                     | Pourquoi                                           |
-| ------------------------------------------------------------ | ----------------------------------------------------------------------------------------- | -------------------------------------------------- |
-| `users` : prénom, nom, téléphone, préférences                | **anonymiser** (« Client supprimé », vides)                                               | identité                                           |
-| `users.email`                                                | **anonymiser** (`supprime+<id>@invalid`)                                                  | identité ; une adresse vide casserait les lectures |
-| `users.auth0_sub` ✔ (unique)                                 | **effacer** (null) après suppression chez Auth0                                           | plus aucune connexion possible                     |
-| Méthodes de connexion (Google, Facebook)                     | **délier** puis supprimer l'utilisateur chez Auth0                                        | le fournisseur garde sinon l'identité              |
-| Paniers, clés d'idempotence                                  | **effacer**                                                                               | éphémères, sans valeur                             |
-| Demandes de support, rendez-vous, lead lié                   | **effacer** ou **anonymiser**                                                             | CRM, sans obligation                               |
-| Carnet d'adresses d'un particulier                           | **anonymiser** les adresses non utilisées par une commande à conserver                    | identité                                           |
-| Commandes : snapshot d'adresse, nom                          | **conserver**, détachées du compte                                                        | facture et pièce comptable, 10 ans                 |
-| Factures, avoirs                                             | **conserver**                                                                             | obligation comptable                               |
-| Fidélité (écritures, bons)                                   | **conserver** les montants ; le solde est perdu                                           | comptabilité des bons émis                         |
-| Mandat SEPA, compte bancaire                                 | **conserver** RUM, preuve, IBAN scellé ; **anonymiser** le titulaire si c'est la personne | preuve de mandat (contestations)                   |
-| Journal (`growth.activity_events`)                           | **conserver** ; le nom figé de la personne dans un fait est **à trancher** (§5, Q2)       | journal opposable                                  |
-| Courriels envoyés (`ops.mail_send`)                          | **anonymiser** le destinataire                                                            | trace d'envoi, sans l'adresse                      |
-| Preuves de retrait (nom du réceptionnaire, photo, signature) | **conserver** jusqu'à leur purge existante ; **anonymiser** le nom                        | preuve de remise                                   |
-| Exécution de tournée, incidents (contact, adresse recopiés)  | **anonymiser** le contact ; l'adresse suit la commande                                    | preuve de livraison                                |
+| Donnée                                                       | Geste                                                                                        | Pourquoi                                           |
+| ------------------------------------------------------------ | -------------------------------------------------------------------------------------------- | -------------------------------------------------- |
+| `users` : prénom, nom, téléphone, préférences                | **anonymiser** (« Client supprimé », vides)                                                  | identité                                           |
+| `users.email`                                                | **anonymiser** (`supprime+<id>@invalid`)                                                     | identité ; une adresse vide casserait les lectures |
+| `users.auth0_sub` ✔ (unique)                                 | **effacer** (null) après suppression chez Auth0                                              | plus aucune connexion possible                     |
+| Méthodes de connexion (Google, Facebook)                     | **délier** puis supprimer l'utilisateur chez Auth0                                           | le fournisseur garde sinon l'identité              |
+| Paniers, clés d'idempotence                                  | **effacer**                                                                                  | éphémères, sans valeur                             |
+| Demandes de support, rendez-vous, lead lié                   | **effacer** ou **anonymiser**                                                                | CRM, sans obligation                               |
+| Carnet d'adresses d'un particulier                           | **anonymiser** les adresses non utilisées par une commande à conserver                       | identité                                           |
+| Commandes : snapshot d'adresse, nom                          | **conserver**, détachées du compte                                                           | facture et pièce comptable, 10 ans                 |
+| Factures, avoirs                                             | **conserver**                                                                                | obligation comptable                               |
+| Fidélité (écritures, bons)                                   | **conserver** les montants ; le solde est perdu                                              | comptabilité des bons émis                         |
+| Mandat SEPA, compte bancaire                                 | **conserver** RUM, preuve, IBAN scellé ; **anonymiser** le titulaire si c'est la personne    | preuve de mandat (contestations)                   |
+| Journal (`growth.activity_events`)                           | **conserver** ; le nom figé de la personne dans un fait est **à trancher** (§5, Q2)          | journal opposable                                  |
+| Courriels envoyés (`ops.mail_send`)                          | **anonymiser** le destinataire                                                               | trace d'envoi, sans l'adresse                      |
+| Preuves de retrait (nom du réceptionnaire, photo, signature) | **conserver** jusqu'à leur purge existante ; **anonymiser** le nom                           | preuve de remise                                   |
+| Exécution de tournée, incidents (contact, adresse recopiés)  | **anonymiser** le contact ; l'adresse suit la commande                                       | preuve de livraison                                |
+| Client Stripe (nom, e-mail), un par compte d'encaissement    | **effacer** (`customers.del`) sur chaque compte, par `CardCustomerErasure`, hors transaction | le prestataire garde sinon l'identité              |
 
 ## 4. Les cas qui refusent
 
