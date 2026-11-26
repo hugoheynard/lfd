@@ -293,6 +293,7 @@
   "test/home-suggestions.e2e-spec.ts": 2839,
   "test/in-house-order.e2e-spec.ts": 4000,
   "test/in-house-payer.e2e-spec.ts": 4000,
+  "test/in-house-recap.e2e-spec.ts": 4000,
   "test/intent-key-content.e2e-spec.ts": 11042,
   "test/internal-transfer-attach-race.e2e-spec.ts": 2353,
   "test/internal-transfer-bins.e2e-spec.ts": 3349,
