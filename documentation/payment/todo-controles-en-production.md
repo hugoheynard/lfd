@@ -118,3 +118,24 @@ Quand Hugo a de nouveau accès au tableau de bord Stripe :
   et F2 la retirera) ;
 - les moyens de paiement en plusieurs fois disponibles sur le compte, si le
   sujet revient (feuille de route, §4.3).
+
+## Après la saison — le ménage de F2
+
+> Reporté par Hugo le 2026-11-26 : « je ne veux pas toucher un truc qui
+> marche ». Rien ne casse en attendant : ce sont des restes de Stripe
+> Checkout, retiré du code ; les événements qui arriveraient encore sont
+> rangés sans effet.
+
+1. **Stripe › Développeurs › Webhooks** : supprimer la destination
+   désactivée « lfd-api production — liens de paiement »
+   (`/payments/links/webhook`). Ne pas toucher à celle des cartes.
+2. **Stripe**, destination des cartes : décocher `checkout.session.completed`,
+   `checkout.session.async_payment_succeeded` et `checkout.session.expired` ;
+   garder tout le reste.
+3. **Cloudflare**, Worker de l'API : supprimer le secret
+   `STRIPE_LINKS_WEBHOOK_SECRET` s'il y figure
+   (`wrangler secret delete STRIPE_LINKS_WEBHOOK_SECRET`).
+4. **GitHub › Settings › Secrets and variables › Actions** : supprimer
+   `STRIPE_LINKS_WEBHOOK_SECRET`. ⚠️ **Ne pas toucher `FIELD_ENCRYPTION_KEY`**,
+   dans la même liste (voir
+   [`../todos/todo-cle-de-chiffrement-des-champs.md`](../todos/todo-cle-de-chiffrement-des-champs.md)).
