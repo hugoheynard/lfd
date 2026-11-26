@@ -1,0 +1,27 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// LE CLIENT DU PAYEUR CHEZ LE PRESTATAIRE — schéma `payment`
+// ─────────────────────────────────────────────────────────────────────────────
+//
+// Plan `documentation/payment/plan-pointage-stripe.md`, lot 1 (objection 2).
+// Propriétaire : `src/payment/card/`.
+
+/// **La correspondance personne → client du prestataire, par compte** — table
+/// `payment.card_customer`. Un client appartient à UN compte : la clé est le
+/// couple `(account, user_id)`. Gardée chez nous parce que la recherche du
+/// prestataire relit avec du retard : deux paiements rapprochés feraient deux
+/// clients. Ni nom ni adresse ici — ils sont chez le prestataire.
+model CardCustomer {
+  /// Le compte d'encaissement du registre (`lfc-stripe`).
+  account     String
+  /// L'identifiant opaque de la personne dans l'application qui encaisse —
+  /// jamais une clé étrangère.
+  userId      String   @map("user_id")
+  /// La référence du client chez le prestataire (`cus_…` pour Stripe).
+  providerRef String   @map("provider_ref")
+  createdAt   DateTime @map("created_at") @db.Timestamptz(6)
+
+  @@id([account, userId])
+  @@unique([account, providerRef])
+  @@map("card_customer")
+  @@schema("payment")
+}

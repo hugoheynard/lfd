@@ -2,6 +2,7 @@ import { Global, Module } from "@nestjs/common";
 
 import { BlockCardPayments } from "./application/block-card-payments.js";
 import { CardAccountChoice } from "./application/card-account-choice.js";
+import { CardCustomerResolution } from "./application/card-customer-resolution.js";
 import { IssueCardRefundHandler } from "./application/commands/issue-card-refund.handler.js";
 import { RecordProviderEventHandler } from "./application/commands/record-provider-event.handler.js";
 import { ReplayFirstPaymentsHandler } from "./application/commands/replay-first-payments.handler.js";
@@ -9,6 +10,9 @@ import { RetryCardRefundHandler } from "./application/commands/retry-card-refund
 import { SettleCardRefundElsewhereHandler } from "./application/commands/settle-card-refund-elsewhere.handler.js";
 import { SweepCardRefundsHandler } from "./application/commands/sweep-card-refunds.handler.js";
 import { SweepPendingCardPaymentsHandler } from "./application/commands/sweep-pending-card-payments.handler.js";
+import { SweepIntentRelabelsHandler } from "./application/commands/sweep-intent-relabels.handler.js";
+import { BlockCardPaymentLabels } from "./application/labels/block-card-payment-labels.js";
+import { IntentRelabelPoster } from "./application/labels/intent-relabel-poster.js";
 import { IntentOutcomeRecorder } from "./application/intent-outcome-recorder.js";
 import { ProviderPaymentResolver } from "./application/provider-payment-resolver.js";
 import { GetCardPublishableKeyHandler } from "./application/queries/get-card-publishable-key.handler.js";
@@ -26,27 +30,41 @@ import { CardRefundOutcomes } from "./application/refunds/card-refund-outcomes.j
 import { CardRefundRetrier } from "./application/refunds/card-refund-retrier.js";
 import { CardRefundScope } from "./application/refunds/card-refund-scope.js";
 import { CardPayments } from "../channels/requests/card-payments.js";
+import { CardPaymentLabels } from "../channels/requests/card-payment-labels.js";
 import { CardRefunds } from "../channels/requests/card-refunds.js";
 import { CardSettlementReader } from "../channels/requests/card-settlement.reader.js";
 import { SucceededCardRefundsReader } from "../channels/requests/succeeded-card-refunds.reader.js";
+import { CardCustomerReader } from "./domain/ports/card-customer.reader.js";
+import { CardCustomerRecorder } from "./domain/ports/card-customer.recorder.js";
 import { CardPaymentRepository } from "./domain/ports/card-payment.repository.js";
 import { CardProviders } from "./domain/ports/card-providers.js";
 import { CardRefundLedgerRepository } from "./domain/ports/card-refund-ledger.repository.js";
 import { CardRefundRequestLease } from "./domain/ports/card-refund-request.lease.js";
 import { CardRefundRequestRepository } from "./domain/ports/card-refund-request.repository.js";
 import { CardRefundSweepReader } from "./domain/ports/card-refund-sweep.reader.js";
+import { IntentRelabelQueue } from "./domain/ports/intent-relabel-queue.reader.js";
+import { IntentRelabelRepository } from "./domain/ports/intent-relabel.repository.js";
 import { PendingCardPaymentsReader } from "./domain/ports/pending-card-payments.reader.js";
 import { TakeoverReader } from "./domain/ports/takeover.reader.js";
 import { AdminCardRefundsController } from "./http/admin-card-refunds.controller.js";
 import { CardPaymentsWebhookController } from "./http/card-payments-webhook.controller.js";
 import { CardRefundSweepController } from "./http/card-refund-sweep.controller.js";
+import { IntentRelabelSweepController } from "./http/intent-relabel-sweep.controller.js";
 import { PendingCardPaymentsSweepController } from "./http/pending-card-payments-sweep.controller.js";
 import { ReplayFirstPaymentsController } from "./http/replay-first-payments.controller.js";
+import {
+  PrismaCardCustomerDirectory,
+  PrismaCardCustomerRecorder,
+} from "./infrastructure/prisma-card-customer.directory.js";
 import { PrismaCardPaymentRepository } from "./infrastructure/prisma-card-payment.repository.js";
 import { PrismaCardRefundLedgerRepository } from "./infrastructure/prisma-card-refund-ledger.repository.js";
 import { PrismaCardRefundRequestLease } from "./infrastructure/prisma-card-refund-request.lease.js";
 import { PrismaCardRefundRequestRepository } from "./infrastructure/prisma-card-refund-request.repository.js";
 import { PrismaCardRefundSweepReader } from "./infrastructure/prisma-card-refund-sweep.reader.js";
+import {
+  PrismaIntentRelabelQueue,
+  PrismaIntentRelabelRepository,
+} from "./infrastructure/prisma-intent-relabel.repository.js";
 import { PrismaCardSettlementReader } from "./infrastructure/prisma-card-settlement.reader.js";
 import { PrismaSucceededCardRefundsReader } from "./infrastructure/prisma-succeeded-card-refunds.reader.js";
 import { PrismaPendingCardPaymentsReader } from "./infrastructure/prisma-pending-card-payments.reader.js";
@@ -81,15 +99,26 @@ import { RegistryCardProviders } from "./infrastructure/registry-card-providers.
     AdminCardRefundsController,
     CardRefundSweepController,
     PendingCardPaymentsSweepController,
+    IntentRelabelSweepController,
   ],
   providers: [
     { provide: CardPaymentRepository, useClass: PrismaCardPaymentRepository },
     { provide: TakeoverReader, useClass: PrismaTakeoverReader },
     { provide: CardProviders, useClass: RegistryCardProviders },
     CardAccountChoice,
+    // Le client du payeur, par compte (plan-pointage-stripe.md, lot 1).
+    { provide: CardCustomerReader, useClass: PrismaCardCustomerDirectory },
+    { provide: CardCustomerRecorder, useClass: PrismaCardCustomerRecorder },
+    CardCustomerResolution,
     ProviderPaymentResolver,
     IntentOutcomeRecorder,
     { provide: CardPayments, useClass: BlockCardPayments },
+    // Le libellé définitif, une fois le sujet enregistré (plan-pointage-stripe.md, lot 2).
+    { provide: IntentRelabelRepository, useClass: PrismaIntentRelabelRepository },
+    { provide: IntentRelabelQueue, useClass: PrismaIntentRelabelQueue },
+    IntentRelabelPoster,
+    { provide: CardPaymentLabels, useClass: BlockCardPaymentLabels },
+    SweepIntentRelabelsHandler,
     { provide: CardSettlementReader, useClass: PrismaCardSettlementReader },
     // L'argent rendu, par lot, que l'export des ventes lit (plan
     // `documentation/commandes/export/plan-export-des-ventes.md`, § 5).
@@ -122,6 +151,7 @@ import { RegistryCardProviders } from "./infrastructure/registry-card-providers.
   ],
   exports: [
     CardPayments,
+    CardPaymentLabels,
     CardSettlementReader,
     SucceededCardRefundsReader,
     CardRefunds,

@@ -191,12 +191,13 @@ describe("OrderSubjectSettlement — ce que le bloc demande", () => {
     expect(steps.seen).toEqual(["lock:ord_1"]);
   });
 
-  it("describe : le numéro et l'écran de la commande au back-office", async () => {
+  it("describe : le numéro et l'écran de la commande au back-office, et ses clés de pointage", async () => {
     const { settlement } = build();
 
     await expect(settlement.describe(ORDER)).resolves.toEqual({
       label: "Commande ORD-0001",
       link: "/commandes/ord_1",
+      metadata: { app: "la-folie-coffee", order_number: "ORD-0001" },
     });
   });
 

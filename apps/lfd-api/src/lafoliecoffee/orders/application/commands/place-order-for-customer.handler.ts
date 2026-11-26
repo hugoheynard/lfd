@@ -10,6 +10,7 @@ import { DurablePublisher } from "../../../../platform/outbox/durable-publisher.
 import { CardPayments } from "../../../../payment/channels/requests/index.js";
 import { OrderGuardReader } from "../../domain/ports/order-guard.reader.js";
 import { OrderRepository } from "../../domain/ports/order.repository.js";
+import { OrderRecipientReader } from "../../domain/ports/order-recipient.reader.js";
 import { ShelfCircuit } from "../services/shelf-circuit.service.js";
 import { OrderDrafting, PLACEMENT_POLICY } from "../services/order-drafting.service.js";
 import { PayerCommitmentRequirements } from "../../domain/ports/payer-commitment-requirements.js";
@@ -72,6 +73,7 @@ export class PlaceOrderForCustomerHandler implements ICommandHandler<
     commitments: PayerCommitmentRequirements,
     overrides: ItemLimitOverrideRecorder,
     ids: IdGenerator,
+    recipients: OrderRecipientReader,
   ) {
     this.placement = new StaffOrderPlacement({
       guard,
@@ -88,6 +90,7 @@ export class PlaceOrderForCustomerHandler implements ICommandHandler<
       commitments,
       overrides,
       ids,
+      recipients,
     });
   }
 

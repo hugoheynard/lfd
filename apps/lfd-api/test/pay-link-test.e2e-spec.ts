@@ -98,8 +98,18 @@ beforeAll(async () => {
       {
         token: PayLinkOrigins,
         value: new FixedOrigins([
-          { name: "lafoliecoffee", label: "La Folie Coffee", publicRoot: ROOT },
-          { name: "lafoliecoffee_test", label: "Essai — La Folie Coffee", publicRoot: ROOT },
+          {
+            name: "lafoliecoffee",
+            label: "La Folie Coffee",
+            providerApp: "la-folie-coffee",
+            publicRoot: ROOT,
+          },
+          {
+            name: "lafoliecoffee_test",
+            label: "Essai — La Folie Coffee",
+            providerApp: "la-folie-coffee",
+            publicRoot: ROOT,
+          },
         ]),
       },
     ],

@@ -9,6 +9,7 @@ describe("ConfiguredPayLinkOrigins", () => {
     expect(origins.find("lafoliecoffee")).toEqual({
       name: "lafoliecoffee",
       label: "La Folie Coffee",
+      providerApp: "la-folie-coffee",
       publicRoot: config.clientBaseUrl(),
     });
   });

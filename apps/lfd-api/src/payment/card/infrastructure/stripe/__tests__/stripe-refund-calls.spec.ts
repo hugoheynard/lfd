@@ -59,6 +59,7 @@ const PARAMS: RefundParams = {
   requestId: "req_1",
   generation: 2,
   subjectLabel: "order:ord_1",
+  labelMetadata: { order_number: "2030-00042", app: "la-folie-coffee" },
   amountCents: null,
 };
 
@@ -163,6 +164,18 @@ describe("StripeRefundCalls.refund — créer", () => {
     // P1 (§5.2) : le SUJET, plus l'identifiant de la demande — un ULID de demande
     // se lirait comme un numéro de commande chez Stripe.
     expect(create?.body.get(`metadata[${REFUND_METADATA.order}]`)).toBe("order:ord_1");
+  });
+
+  it("le pointage (lot 3) : le numéro et l'application À CÔTÉ des clés `lfd_*`, inchangées", async () => {
+    const { http, calls } = callsWith([list([]), { status: 200, body: refundObject() }]);
+
+    await calls.refund(PI, PARAMS);
+
+    const body = http.seen[1]?.body;
+    expect(body?.get("metadata[order_number]")).toBe("2030-00042");
+    expect(body?.get("metadata[app]")).toBe("la-folie-coffee");
+    expect(body?.get(`metadata[${REFUND_METADATA.order}]`)).toBe("order:ord_1");
+    expect(body?.get(`metadata[${REFUND_METADATA.request}]`)).toBe("req_1");
   });
 
   it("une `amount` porte SON montant (§3.5)", async () => {

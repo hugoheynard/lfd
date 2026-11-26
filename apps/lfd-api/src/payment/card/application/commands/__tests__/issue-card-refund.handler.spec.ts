@@ -48,9 +48,34 @@ describe("IssueCardRefundHandler — l'appel", () => {
         requestId: "req_1",
         generation: 1,
         subjectLabel: "order:ord_1",
+        labelMetadata: {},
         amountCents: null,
       },
     ]);
+  });
+
+  it("le pointage (lot 3) : les clés que le sujet déclare partent avec le remboursement", async () => {
+    const h = ready();
+    h.settlement.describedMetadata = { order_number: "2030-00042", app: "la-folie-coffee" };
+    h.provider.issuances.push({ kind: "issued", refund: issued() });
+
+    await issue(h);
+
+    expect(h.provider.refunds[0]?.labelMetadata).toEqual({
+      order_number: "2030-00042",
+      app: "la-folie-coffee",
+    });
+  });
+
+  it("🔴 une clé réservée au bloc ne bloque pas le remboursement : il part sans clés de pointage", async () => {
+    const h = ready();
+    h.settlement.describedMetadata = { lfd_order_id: "autre" };
+    h.provider.issuances.push({ kind: "issued", refund: issued() });
+
+    await issue(h);
+
+    expect(h.provider.refunds[0]?.labelMetadata).toEqual({});
+    expect(h.store.request("req_1")?.state).toBe("issued");
   });
 
   it("une `amount` porte son montant", async () => {

@@ -3,6 +3,7 @@ import Stripe from "stripe";
 import type {
   CardIntentState,
   IntentCancellation,
+  IntentDescribing,
 } from "../../domain/ports/card-provider-types.js";
 
 // Copié de `lafoliecoffee/payments/infrastructure/stripe-intent-translation.ts` le
@@ -93,4 +94,23 @@ export function refusedWithoutState(error: unknown): boolean {
     error.code === UNEXPECTED_STATE &&
     error.payment_intent?.status === undefined
   );
+}
+
+/**
+ * Traduit ce que `paymentIntents.update` a levé. Un `StripeInvalidRequestError`
+ * (400/404 : intention inconnue de ce compte, paramètre refusé) ne se
+ * reprend pas : `refused`. Le reste — réseau, 5xx, 429, authentification — est
+ * `unavailable`, et se reprend.
+ */
+export function describingFromError(error: unknown): IntentDescribing {
+  if (error instanceof Stripe.errors.StripeInvalidRequestError) {
+    return { kind: "refused", reason: `${error.type}: ${error.message}` };
+  }
+  if (error instanceof Stripe.errors.StripeError) {
+    return { kind: "unavailable", reason: `${error.type}: ${error.message}` };
+  }
+  return {
+    kind: "unavailable",
+    reason: error instanceof Error ? error.message : "erreur inconnue",
+  };
 }

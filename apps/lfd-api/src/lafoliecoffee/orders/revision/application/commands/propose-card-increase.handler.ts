@@ -2,6 +2,7 @@ import type { CardComplementPaymentView } from "@lfd/contracts";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import {
+  type CardPaymentLabel,
   type CardPaymentPreparation,
   CardPayments,
   type PreparedCardPayment,
@@ -40,6 +41,12 @@ import {
   orderCardSubject,
   orderCardTag,
 } from "../../../application/services/order-card-subject.js";
+import {
+  orderCardChannelOf,
+  orderCardLabel,
+  orderCardPayer,
+} from "../../../application/services/order-card-label.js";
+import { OrderRecipientReader } from "../../../domain/ports/order-recipient.reader.js";
 import { OrderRevising } from "../services/order-revising.service.js";
 import { RevisionCutoffs } from "../services/revision-cutoffs.js";
 import { RevisionWall } from "../services/revision-wall.js";
@@ -106,6 +113,7 @@ export class ProposeCardIncreaseHandler implements ICommandHandler<
     private readonly clock: Clock,
     private readonly ids: IdGenerator,
     private readonly intents: OncePerIntent,
+    private readonly recipients: OrderRecipientReader,
   ) {}
 
   /** @throws {CardIncreaseAlreadyProposedError} la même clé a déjà préparé ce complément. */
@@ -140,6 +148,7 @@ export class ProposeCardIncreaseHandler implements ICommandHandler<
       ORDER_CARD_SUBJECT_TYPE,
       revision.totalAfterCents - revision.totalBeforeCents,
       orderCardTag(current.companyId),
+      await this.labelOf(current, command.actor),
     );
     const frame = { revision, released, prepared: preparation.prepared, cutoff };
     try {
@@ -152,6 +161,17 @@ export class ProposeCardIncreaseHandler implements ICommandHandler<
       await this.cards.release(preparation.prepared);
       throw error;
     }
+  }
+
+  /** Le libellé du complément : la commande existe, son numéro aussi. */
+  private async labelOf(current: RevisableOrder, actor: RevisionActor): Promise<CardPaymentLabel> {
+    return orderCardLabel({
+      channel: orderCardChannelOf(current.companyId),
+      kind: "complement",
+      orderId: current.orderId,
+      orderNumber: current.orderNumber,
+      payer: await orderCardPayer(this.recipients, payerOf(actor, current)),
+    });
   }
 
   /** Étape 1 : tous les refus avant le prestataire, le règlement avant le total vu (R15). */
@@ -223,6 +243,14 @@ export class ProposeCardIncreaseHandler implements ICommandHandler<
 /** L'acteur de l'intention : le client résolu en base, ou la fiche du staff. */
 function intentActorOf(actor: RevisionActor): string {
   return actor.kind === "customer" ? customerIntentActor(actor.userId) : actor.staffId;
+}
+
+/**
+ * Qui paie le complément (plan-pointage-stripe.md, D5) : le client connecté
+ * qui le demande ; demandé par le staff, le porteur de la commande.
+ */
+function payerOf(actor: RevisionActor, order: RevisableOrder): string {
+  return actor.kind === "customer" ? actor.userId : order.placedByUserId;
 }
 
 /** R7 : la hausse porte la révision qu'elle corrige. */

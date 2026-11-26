@@ -24,6 +24,7 @@ import { REGISTERED_BUYER } from "../../domain/value-objects/order-buyer-kind.js
 import { OrderDrafting, RECURRING_OCCURRENCE_POLICY } from "./order-drafting.service.js";
 import { OrderIntake } from "./order-intake.service.js";
 import { recurringRefusalOf } from "./recurring-refusal.js";
+import { orderCardLabel } from "./order-card-label.js";
 import { settleOrder } from "./order-settlement.js";
 
 /** Une échéance se règle au compte, et seulement au compte (Q2, Hugo, 2026-11-23). */
@@ -142,7 +143,24 @@ export class RecurringOccurrencePlacement extends OccurrencePlacement {
       },
     );
     await this.cancellationDeadline.fixOn(order);
-    await settleOrder({ guard: this.guard, payments: this.payments }, order, companyId, ON_ACCOUNT);
+    await settleOrder(
+      { guard: this.guard, payments: this.payments },
+      order,
+      companyId,
+      ON_ACCOUNT,
+      // Jamais lu : au compte, aucune intention ne se prépare — le refus d'un
+      // crédit non accordé lève avant. Sans payeur, il ne lirait rien.
+      () =>
+        Promise.resolve(
+          orderCardLabel({
+            channel: "pro",
+            kind: "first",
+            orderId: null,
+            orderNumber: null,
+            payer: null,
+          }),
+        ),
+    );
     const placed = await this.persist(order, request);
     this.events.publish(
       new OrderPlacedEvent(

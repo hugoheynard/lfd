@@ -8,6 +8,8 @@ export {
   type CardCollection,
   type CardIntentState,
   type CardPaymentCancellation,
+  type CardPaymentLabel,
+  type CardPaymentPayer,
   type CardPaymentPreparation,
   CardPayments,
   type CardPaymentSource,
@@ -15,6 +17,8 @@ export {
   type PreparedCardPayment,
   type RetrievedCardPayment,
 } from "./card-payments.js";
+export { type CardPaymentDescription, CardPaymentLabels } from "./card-payment-labels.js";
+export { CardCustomerErasure } from "./card-customer-erasure.js";
 export {
   type CardPaymentLine,
   type CardRefundForm,

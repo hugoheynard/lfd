@@ -7,6 +7,7 @@ import { DurablePublisher } from "../../../../platform/outbox/durable-publisher.
 import { CommerceOrderPlacedFact } from "../../../../delivery/channels/commerce/index.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import {
+  type CardPaymentPayer,
   CardPayments,
   type CardPaymentPreparation,
 } from "../../../../payment/channels/requests/index.js";
@@ -38,6 +39,7 @@ import {
   PERSONAL_CARD_TAG,
   orderCardSubject,
 } from "../services/order-card-subject.js";
+import { orderCardLabel } from "../services/order-card-label.js";
 
 /**
  * **Commander sans compte** — plan
@@ -183,7 +185,12 @@ export class PlaceShopOrderHandler implements ICommandHandler<
     // Le total vu, avant le règlement : aucune intention sans commande (T2).
     ensureTotalSeen(order.totalCents, payload.expectedTotalCents);
 
-    const intent = await this.settle(order);
+    const declared = buyer.forRegistration();
+    const intent = await this.settle(order, {
+      userId: buyerUserId,
+      name: declared.firstName,
+      email: declared.email,
+    });
     const placed = await this.persist(order, payload, intent);
 
     // Fait de domaine, publié APRÈS persistance. C'est lui qui déclenche le
@@ -316,7 +323,10 @@ export class PlaceShopOrderHandler implements ICommandHandler<
    * Un total nul ne crée aucune intention : Stripe refuserait un montant de
    * zéro, et il n'y a rien à encaisser.
    */
-  private async settle(order: Order): Promise<CardPaymentPreparation | null> {
+  private async settle(
+    order: Order,
+    payer: CardPaymentPayer,
+  ): Promise<CardPaymentPreparation | null> {
     if (order.totalCents <= 0) {
       order.deferPayment();
       return null;
@@ -325,6 +335,8 @@ export class PlaceShopOrderHandler implements ICommandHandler<
       ORDER_CARD_SUBJECT_TYPE,
       order.totalCents,
       PERSONAL_CARD_TAG,
+      // L'acheteur qui vient de se déclarer paie (plan-pointage-stripe.md, D5).
+      orderCardLabel({ channel: "shop", kind: "first", orderId: null, orderNumber: null, payer }),
     );
     order.payByCard(preparation.prepared.providerRef);
     return preparation;

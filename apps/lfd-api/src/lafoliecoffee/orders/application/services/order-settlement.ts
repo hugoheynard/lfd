@@ -1,6 +1,7 @@
 import type { OrderSettlement } from "@lfd/contracts";
 
 import type {
+  CardPaymentLabel,
   CardPaymentPreparation,
   CardPayments,
 } from "../../../../payment/channels/requests/index.js";
@@ -29,7 +30,9 @@ export interface SettlementPorts {
  * `card-payment` (plan M2, §4.2), qui choisit le compte. Renvoie la
  * préparation (le `clientSecret`, la clé publique, et ce que la passation
  * rattachera dans sa transaction) ou `null` (différé / gratuit). L'intention
- * est dimensionnée sur `order.totalCents`.
+ * est dimensionnée sur `order.totalCents`, et porte le libellé que `labelOf`
+ * compose — lu seulement quand une carte est requise (le payeur se lit à
+ * l'annuaire).
  *
  * La transition elle-même (`payByCard` / `deferPayment`) reste à l'agrégat :
  * ce module ne fait que choisir laquelle appeler.
@@ -39,6 +42,7 @@ export async function settleOrder(
   order: Order,
   companyId: string | null,
   settlement: OrderSettlement | null,
+  labelOf: () => Promise<CardPaymentLabel>,
 ): Promise<CardPaymentPreparation | null> {
   const requiresCard =
     (await requiresCardFor(
@@ -54,6 +58,7 @@ export async function settleOrder(
     ORDER_CARD_SUBJECT_TYPE,
     order.totalCents,
     orderCardTag(companyId),
+    await labelOf(),
   );
   // `orders.stripe_payment_intent_id` reste écrit (§4.2) : la compatibilité
   // jusqu'à P2, et la clé de `markPaid`.

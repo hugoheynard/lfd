@@ -16,6 +16,24 @@ export interface CreateIntentParams {
    * traçabilité chez le prestataire, jamais un mur — le mur reste serveur.
    */
   readonly tag: string;
+  /** Ce que le tableau de bord du prestataire montre de l'intention. */
+  readonly description: string;
+  /** Les clés de l'appelant, déjà bornées par `IntentLabel` ; `companyId` s'y ajoute. */
+  readonly metadata: Readonly<Record<string, string>>;
+  /** Le client du compte qui paie ; absent : aucun (un payeur anonyme). */
+  readonly customerRef?: string;
+}
+
+/**
+ * **Un client à créer chez le prestataire**, pour un compte. La clé
+ * d'idempotence est déterministe (compte + personne) : deux paiements
+ * rapprochés ne font qu'un client.
+ */
+export interface CreateCustomerParams {
+  readonly userId: string;
+  readonly name: string;
+  readonly email: string;
+  readonly idempotencyKey: string;
 }
 
 /**
@@ -77,6 +95,28 @@ export type IntentCancellation =
   | { readonly kind: "unavailable"; readonly reason: string };
 
 /**
+ * **Le libellé définitif d'une intention** (plan
+ * `documentation/payment/plan-pointage-stripe.md`, lot 2) — la description et
+ * les clés de l'appelant, déjà bornées par `IntentLabel`. Rien d'autre ne
+ * change : ni montant, ni client.
+ */
+export interface IntentDescription {
+  readonly description: string;
+  readonly metadata: Readonly<Record<string, string>>;
+}
+
+/**
+ * L'issue d'un libellé posé — jamais une exception : `described`, `refused`
+ * (le prestataire refuse la demande elle-même : intention inconnue, requête
+ * invalide — la reprendre ne changerait rien), `unavailable` (réseau, 5xx,
+ * 429 : à reprendre).
+ */
+export type IntentDescribing =
+  | { readonly kind: "described" }
+  | { readonly kind: "refused"; readonly reason: string }
+  | { readonly kind: "unavailable"; readonly reason: string };
+
+/**
  * Les statuts d'un remboursement chez le prestataire. Un statut inconnu de
  * cette liste rend l'événement `other` plutôt que de le faire passer pour un
  * autre.
@@ -112,6 +152,11 @@ export interface RefundParams {
   readonly generation: number;
   /** Le sujet, tel qu'on le lit chez le prestataire ; jamais un identifiant de demande. */
   readonly subjectLabel: string;
+  /**
+   * Les clés de pointage du sujet (`order_number`, `app`…), déjà bornées par
+   * `IntentLabel` : aucune ne recouvre une clé `lfd_*` (plan-pointage-stripe.md, lot 3).
+   */
+  readonly labelMetadata: Readonly<Record<string, string>>;
   /** `null` : le reste du paiement ; sinon le montant exact d'une `amount`, en centimes. */
   readonly amountCents: number | null;
 }

@@ -9,9 +9,12 @@ import type { CardProviderEvent } from "../src/payment/card/domain/ports/card-pr
 import { CardProvider } from "../src/payment/card/domain/ports/card-provider.js";
 import type {
   CardIntentState,
+  CreateCustomerParams,
   CreateIntentParams,
   CreatedIntent,
   IntentCancellation,
+  IntentDescribing,
+  IntentDescription,
   RefundIssuance,
   RefundLookup,
   RefundLookupParams,
@@ -25,6 +28,12 @@ import type { E2eContext, E2eOverride } from "./e2e-harness.js";
 
 /** Le seul compte du registre aujourd'hui — celui que les commandes encaissent. */
 export const E2E_CARD_ACCOUNT = "lfc-stripe";
+
+/** Le libellé d'une intention préparée directement par une suite, sans payeur. */
+export const E2E_LABEL = {
+  description: "LFD · La Folie Coffee pro · complément",
+  metadata: { app: "la-folie-coffee", channel: "pro", kind: "complement" },
+} as const;
 
 /** Un webhook signé pour le prestataire doublé : le corps et sa « signature ». */
 export interface SignedCardEvent {
@@ -86,6 +95,20 @@ export class E2eCardProvider extends CardProvider {
     super();
   }
 
+  /** Les clients créés, un par personne et par clé : la clé rejouée rend le même. */
+  readonly customers = new Map<string, string>();
+
+  createCustomer(params: CreateCustomerParams): Promise<string> {
+    assertOutsideTransaction("e2e.CardProvider.createCustomer");
+    const existing = this.customers.get(params.idempotencyKey);
+    if (existing !== undefined) {
+      return Promise.resolve(existing);
+    }
+    const ref = `cus_${this.prefix}_${String(this.customers.size + 1)}`;
+    this.customers.set(params.idempotencyKey, ref);
+    return Promise.resolve(ref);
+  }
+
   createIntent(_params: CreateIntentParams): Promise<CreatedIntent> {
     assertOutsideTransaction("e2e.CardProvider.createIntent");
     this.intents += 1;
@@ -100,6 +123,15 @@ export class E2eCardProvider extends CardProvider {
         token: `${providerRef}_secret`,
       },
     });
+  }
+
+  /** Les libellés définitifs posés (lot 2 du pointage), dans l'ordre. */
+  readonly descriptions: { readonly providerRef: string; readonly label: IntentDescription }[] = [];
+
+  describeIntent(providerRef: string, label: IntentDescription): Promise<IntentDescribing> {
+    assertOutsideTransaction("e2e.CardProvider.describeIntent");
+    this.descriptions.push({ providerRef, label });
+    return Promise.resolve({ kind: "described" });
   }
 
   retrieveIntent(providerRef: string): Promise<RetrievedIntent> {

@@ -31,6 +31,37 @@ export interface CardPaymentSource {
   readonly payLinkId: string;
 }
 
+/**
+ * **Le payeur d'une intention**, quand l'appelant le connaît et que c'est bien
+ * lui qui paie (plan `documentation/payment/plan-pointage-stripe.md`, D5).
+ * Le bloc en fait un client chez le prestataire, un par compte ; le nom et
+ * l'adresse n'y sont jamais journalisés.
+ */
+export interface CardPaymentPayer {
+  /** L'identifiant opaque de la personne dans l'application appelante. */
+  readonly userId: string;
+  readonly name: string;
+  readonly email: string;
+}
+
+/**
+ * **Ce que l'intention montre chez le prestataire, pour être pointée** (plan
+ * `documentation/payment/plan-pointage-stripe.md`, lot 1) — composé par
+ * l'appelant : le bloc ne sait pas ce qu'est une commande (D2).
+ */
+export interface CardPaymentLabel {
+  /** Ex. « LFD · La Folie Coffee boutique · paiement ». */
+  readonly description: string;
+  /**
+   * Les clés de l'appelant (`app`, `channel`, `kind`…). Le bloc les borne aux
+   * limites du prestataire et refuse celles qu'il se réserve (`companyId`,
+   * `lfd_…`).
+   */
+  readonly metadata: Readonly<Record<string, string>>;
+  /** Absent : aucun client chez le prestataire (un payeur anonyme). */
+  readonly payer?: CardPaymentPayer;
+}
+
 /** La ligne rattachée. */
 export interface AttachedCardPayment {
   readonly paymentId: string;
@@ -78,7 +109,10 @@ export abstract class CardPayments {
   /**
    * Crée l'intention chez le prestataire du compte de ce type de sujet.
    * 🔴 HORS transaction. `tag` est opaque (`companyId` ou `personal`).
+   * `label` est ce que le prestataire montre de l'intention ; un payeur
+   * donné y devient un client du compte, créé au premier paiement.
    *
+   * @throws {InvalidCardPaymentLabelError} une clé réservée, mal formée, ou trop de clés.
    * @throws {NoCardAccountForSubjectTypeError} aucun compte pour ce type.
    * @throws {CardAccountUnavailableError} compte non configuré.
    * @throws {CardProviderUnavailableError} réponse inexploitable.
@@ -87,6 +121,7 @@ export abstract class CardPayments {
     subjectType: string,
     amountCents: number,
     tag: string,
+    label: CardPaymentLabel,
   ): Promise<CardPaymentPreparation>;
 
   /**

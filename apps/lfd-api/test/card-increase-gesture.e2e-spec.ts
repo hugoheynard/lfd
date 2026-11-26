@@ -25,7 +25,7 @@ import { CardIncreaseProposal } from "../src/lafoliecoffee/orders/revision/domai
 import { CardIncreaseProposalRepository } from "../src/lafoliecoffee/orders/revision/domain/ports/card-increase-proposal.repository.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { UnitOfWork } from "../src/platform/database/unit-of-work.js";
-import { cardProvidersDouble } from "./card-payments.js";
+import { cardProvidersDouble, E2E_LABEL } from "./card-payments.js";
 import {
   bootstrapE2e,
   E2E_STAFF_SUB,
@@ -274,7 +274,7 @@ describe("La hausse demandée (§2.4)", () => {
   it("R5 : un autre auteur pendant un complément en attente est refusé, jamais l'index brut", async () => {
     const order = await paidOrder();
     const payments = ctx.app.get(CardPayments);
-    const { prepared } = await payments.prepare("order", 1_200, "personal");
+    const { prepared } = await payments.prepare("order", 1_200, "personal", E2E_LABEL);
     await ctx.app.get(UnitOfWork).run(async () => {
       const attached = await payments.attach(
         { type: "order", id: order.id },

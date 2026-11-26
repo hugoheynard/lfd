@@ -102,6 +102,8 @@ model CardPayment {
   refundRequests CardRefundRequest[]
   /// Le carnet de ses remboursements (lot P1, §5.1).
   refunds        CardRefund[]
+  /// Le libellé définitif à poser chez le prestataire (plan-pointage-stripe.md, lot 2).
+  relabel        CardIntentRelabel?
 
   @@unique([account, providerRef])
   /// La cible de la clé composée `card_refund (payment_id, account)` : un

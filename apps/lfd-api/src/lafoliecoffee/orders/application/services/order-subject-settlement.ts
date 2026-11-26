@@ -23,6 +23,7 @@ import {
 } from "../../domain/ports/order-card-standing.reader.js";
 import { OrderLock } from "../../domain/ports/order-lock.js";
 import { OrderRepository } from "../../domain/ports/order.repository.js";
+import { orderCardMetadata } from "./order-card-label.js";
 import { ORDER_CARD_SUBJECT_TYPE, orderCardSubject } from "./order-card-subject.js";
 import { OrderComplementSettlement } from "./order-complement-settlement.js";
 import { OrderRefundOutcomes } from "./order-refund-outcomes.js";
@@ -138,6 +139,7 @@ export class OrderSubjectSettlement extends SubjectSettlement {
     return {
       label: `Commande ${standing.orderNumber}`,
       link: `${ORDER_SCREEN}/${standing.orderId}`,
+      metadata: orderCardMetadata(standing.orderNumber),
     };
   }
 

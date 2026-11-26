@@ -199,6 +199,8 @@ Déclarées et implémentées par le bloc, dans `payment/channels/requests/` :
 | ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `CardPayments`         | `prepare` (hors transaction), `attach` (dans la transaction de l'appelant : la ligne naît `pending`), `release` (la transaction a échoué : annuler au mieux), `retrieve`, `cancel`, `settleFromProvider`, `adopt` |
 | `CardRefunds`          | `requestRemainder` (tout le reste d'un paiement, ou de chaque paiement encaissé d'un sujet), `requestAmount` (un montant), `retry` — dans la transaction de l'appelant                                            |
+| `CardPaymentLabels`    | `describe` : garder le libellé définitif d'une intention, dans la transaction de l'appelant, posé après validation (§ 2.9)                                                                                        |
+| `CardCustomerErasure`  | `eraseCustomersOf` : effacer les clients du prestataire d'une personne, sur chaque compte (§ 2.9) — déclaré, sans appelant ni adaptateur                                                                          |
 | `CardSettlementReader` | par lot : `positionOf` (paiements, encaissé, remboursé par nature, demandes en cours), `succeededRefundsOf`, `refundsOf`, `refundRequestsOf`, `remainderOf`                                                       |
 
 `cancel` rend `cancelled | already_cancelled | already_paid | in_progress |
@@ -287,6 +289,49 @@ Le **journal** du bloc (sujet `card_payment`, phrases dans
 `packages/contracts/src/journal-facts/card-payment.ts`) :
 `card_payment.issued`, `attempt_failed`, `retried`, `stopped`,
 `settled_elsewhere`, `unmatched`.
+
+### 2.9 Le pointage : le client du prestataire et le libellé définitif
+
+Plan [`plan-pointage-stripe.md`](plan-pointage-stripe.md). Chaque intention
+porte une **description** et des **métadonnées** composées par l'appelant
+(`CardPaymentLabel`, opaque pour le bloc), bornées par `IntentLabel` : clés
+préfixées, longueurs et nombre de clés de Stripe, clés du bloc (`companyId`,
+`lfd_*`) réservées.
+
+**Le client du prestataire** — table `payment.card_customer`, clé
+`(account, user_id)` → `provider_ref` (`cus_…`). Un client appartient à UN
+compte d'encaissement : une personne en a un par compte.
+`CardCustomerResolution` le cherche dans la table, sinon le crée chez le
+prestataire avec une clé d'idempotence déterministe
+(`lfd-customer:<compte>:<personne>`) — jamais de recherche chez Stripe, qui
+relit avec retard. Hors transaction ; un échec laisse partir l'intention sans
+client. Le nom et l'e-mail ne sont **que** chez Stripe : ni dans la table, ni
+au journal (identifiants seuls). Aucun `receipt_email` : Stripe n'envoie pas
+de reçu.
+
+**Le libellé définitif** — table `payment.card_intent_relabel`, une ligne
+par paiement (clé vers `card_payment`, `CASCADE`). Une passation ne connaît
+son numéro qu'après l'insertion : l'abonné durable du commerce
+(`DescribeCardPaymentOnOrderPlaced`, sur `commerce.order_placed`) appelle
+`CardPaymentLabels.describe` dans sa transaction ; le bloc garde le libellé
+si l'intention est bien un paiement de ce sujet, puis `IntentRelabelPoster`
+appelle `paymentIntents.update` (description et métadonnées, rien d'autre)
+après validation. L'agrégat `IntentRelabel` porte la révision : un libellé
+identique ne relance rien, un libellé neuf monte la révision, chaque écriture
+s'y conditionne. Une panne se reprend après 5 min, doublées jusqu'à 6 h, huit
+essais au plus ; un refus ou les essais épuisés : `abandoned`, le paiement
+jamais touché.
+
+**Le balayage des libellés** : `POST admin/card-payments/labels/sweep`
+(`sweep-intent-relabels.handler.ts`), au plus 50 lignes `pending` à échéance
+par passage (`INTENT_RELABEL_SWEEP_LIMIT`), une à une, hors transaction.
+
+**L'effacement à la suppression d'un compte** : `CardCustomerErasure`
+(`payment/channels/requests/`) est le port que le parcours « supprimer mon
+compte » appellera (`documentation/legal/plan-supprimer-mon-compte.md`) —
+mise en file dans sa transaction, `customers.del` sur chaque compte après
+validation, repris jusqu'au succès. Le parcours n'est pas bâti : le port n'a
+ni appelant ni adaptateur.
 
 ## 3. Le remboursement
 
@@ -537,18 +582,21 @@ suivantes ; un écart déjà sonné ne sonne pas deux fois (clé de la cloche).
 
 ## 7. Les tables du schéma `payment`
 
-| Table                 | Propriétaire       | Ce qu'elle porte                                        |
-| --------------------- | ------------------ | ------------------------------------------------------- |
-| `card_payment`        | `payment/card`     | un paiement par carte (§ 2.1)                           |
-| `card_takeover`       | `payment/card`     | le témoin d'une reprise, pour le rattrapage (§ 5)       |
-| `card_refund_request` | `payment/card`     | une demande de remboursement (§ 3.1)                    |
-| `card_refund`         | `payment/card`     | le carnet (§ 3.3)                                       |
-| `pay_link`            | `payment/link`     | un lien vers un sujet ([doc](les-liens-de-paiement.md)) |
-| `transfer_received`   | `payment/transfer` | un virement reçu (§ 6.3)                                |
-| `transfer_allocation` | `payment/transfer` | une part d'un virement (§ 6.3)                          |
+| Table                 | Propriétaire       | Ce qu'elle porte                                            |
+| --------------------- | ------------------ | ----------------------------------------------------------- |
+| `card_payment`        | `payment/card`     | un paiement par carte (§ 2.1)                               |
+| `card_customer`       | `payment/card`     | le client du prestataire d'une personne, par compte (§ 2.9) |
+| `card_intent_relabel` | `payment/card`     | le libellé définitif d'une intention, à poser (§ 2.9)       |
+| `card_takeover`       | `payment/card`     | le témoin d'une reprise, pour le rattrapage (§ 5)           |
+| `card_refund_request` | `payment/card`     | une demande de remboursement (§ 3.1)                        |
+| `card_refund`         | `payment/card`     | le carnet (§ 3.3)                                           |
+| `pay_link`            | `payment/link`     | un lien vers un sujet ([doc](les-liens-de-paiement.md))     |
+| `transfer_received`   | `payment/transfer` | un virement reçu (§ 6.3)                                    |
+| `transfer_allocation` | `payment/transfer` | une part d'un virement (§ 6.3)                              |
 
 Schéma Prisma : `apps/lfd-api/prisma/schema/payment/` (`card.prisma`,
-`link.prisma`, `transfer.prisma`). Ce que Prisma ne sait pas écrire (`CHECK`,
+`card-customer.prisma`, `card-intent-relabel.prisma`, `link.prisma`,
+`transfer.prisma`). Ce que Prisma ne sait pas écrire (`CHECK`,
 index partiels, déclencheurs) vit dans les `migration.sql`, nommés dans le
 commentaire de tête de chaque fichier. Les clés **à l'intérieur** du schéma
 sont réelles ; aucune n'en sort, aucune n'y entre.
@@ -566,6 +614,7 @@ Tous dans `apps/lfd-api/container/worker.ts`, par `RECOMPUTE_TOKEN` et le
 | ------------------------------- | --------------------------------------------- | ------------------------------- |
 | rafraîchissement, `*/5 * * * *` | `admin/card-payments/sweep`                   | les remboursements dus (§ 3.5)  |
 | rafraîchissement, `*/5 * * * *` | `admin/card-payments/pending/sweep`           | les paiements en attente (§ 4)  |
+| rafraîchissement, `*/5 * * * *` | `admin/card-payments/labels/sweep`            | les libellés dus (§ 2.9)        |
 | horaire, `0 * * * *`            | `admin/card-payments/first-payments/replay`   | le rattrapage (§ 5)             |
 | nuit, `45 3 * * *` (UTC)        | `admin/accounting/bank-transfers/consistency` | le contrôle du virement (§ 6.4) |
 

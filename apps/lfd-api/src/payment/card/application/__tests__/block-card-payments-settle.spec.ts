@@ -23,6 +23,7 @@ import {
   TimelineUnitOfWork,
 } from "./card-payment-doubles.js";
 import { RecordingLinkPaymentNotice } from "./recording-link-payment-notice.js";
+import { inMemoryCustomerResolution } from "./card-customer-doubles.js";
 
 /** L'instant de l'horloge doublée — rien ne le compare à l'heure réelle. */
 const NOW = new Date("2030-01-10T09:00:00.000Z");
@@ -34,6 +35,7 @@ function harness() {
   const provider = new OutsideWorkCardProvider(uow);
   const settlement = new TestSubjectSettlement(timeline);
   const providers = new StaticCardProviders(new Map([["lfc-stripe", provider]]));
+  const customers = inMemoryCustomerResolution(new FixedClock(NOW));
   const payments = new BlockCardPayments(
     new CardAccountChoice(new DeclaredCardAccountDefaults({ order: "lfc-stripe" }), providers),
     providers,
@@ -48,6 +50,7 @@ function harness() {
       new FixedClock(NOW),
       new RecordingLinkPaymentNotice(timeline),
     ),
+    customers.resolution,
   );
   return { repo, provider, payments, timeline, settlement };
 }

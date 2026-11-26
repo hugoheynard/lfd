@@ -1,5 +1,6 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
+import { OrderRecipientReader } from "../../../domain/ports/order-recipient.reader.js";
 import { AppConfig } from "../../../../../platform/config/app-config.js";
 import { UnitOfWork } from "../../../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../../../platform/events/domain-event-publisher.js";
@@ -65,6 +66,7 @@ export class ConvertBackorderHandler implements ICommandHandler<
     private readonly backorders: BackorderRepository,
     private readonly replays: BackorderReplayReader,
     private readonly journal: Journal,
+    recipients: OrderRecipientReader,
   ) {
     this.placement = new StaffOrderPlacement({
       guard,
@@ -81,6 +83,7 @@ export class ConvertBackorderHandler implements ICommandHandler<
       commitments,
       overrides,
       ids,
+      recipients,
     });
   }
 

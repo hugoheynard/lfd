@@ -19,20 +19,38 @@ export interface PayLinkOriginDeclaration {
   readonly name: string;
   /** Comment l'équipe et le payeur la lisent. */
   readonly label: string;
+  /**
+   * L'application, telle que le prestataire des cartes la montre (métadonnée
+   * `app`) — la MÊME valeur que les intentions de la même application posent
+   * ailleurs, pour qu'un seul filtre du tableau de bord les réunisse (plan
+   * `documentation/payment/plan-pointage-stripe.md`, D3).
+   */
+  readonly providerApp: string;
   readonly publicRoot: PayLinkPublicRoot;
 }
 
 /** Les origines déclarées. */
 export const PAY_LINK_ORIGINS: readonly PayLinkOriginDeclaration[] = [
-  { name: "lafoliecoffee", label: "La Folie Coffee", publicRoot: "client" },
+  {
+    name: "lafoliecoffee",
+    label: "La Folie Coffee",
+    providerApp: "la-folie-coffee",
+    publicRoot: "client",
+  },
   // Les liens d'essai du bloc `payment` : la même page de la boutique, et un
   // libellé qui dit l'essai jusque dans l'avis à la comptabilité.
-  { name: "lafoliecoffee_test", label: "Essai — La Folie Coffee", publicRoot: "client" },
+  {
+    name: "lafoliecoffee_test",
+    label: "Essai — La Folie Coffee",
+    providerApp: "la-folie-coffee",
+    publicRoot: "client",
+  },
 ];
 
 /** Une origine, sa racine résolue : `null` quand l'environnement ne la pose pas. */
 export interface PayLinkOrigin {
   readonly name: string;
   readonly label: string;
+  readonly providerApp: string;
   readonly publicRoot: string | null;
 }

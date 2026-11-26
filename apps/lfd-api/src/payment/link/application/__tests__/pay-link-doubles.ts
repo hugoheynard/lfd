@@ -1,6 +1,7 @@
 import {
   type AttachedCardPayment,
   type CardPaymentCancellation,
+  type CardPaymentLabel,
   type CardPaymentPreparation,
   CardPayments,
   type CardPaymentSource,
@@ -119,6 +120,7 @@ export class FixedOrigins extends PayLinkOrigins {
 export const LFC_ORIGIN: PayLinkOriginEntry = {
   name: "lafoliecoffee",
   label: "La Folie Coffee",
+  providerApp: "la-folie-coffee",
   publicRoot: "https://app.lfc.test/",
 };
 
@@ -176,12 +178,17 @@ export class ScriptedCards extends CardPayments {
   /** Joué pendant `prepare` : ce qui croise l'appel au prestataire (une annulation). */
   duringPrepare: (() => Promise<void>) | null = null;
 
+  /** Les libellés reçus par `prepare`, dans l'ordre. */
+  readonly labels: CardPaymentLabel[] = [];
+
   async prepare(
     subjectType: string,
     amountCents: number,
     tag: string,
+    label: CardPaymentLabel,
   ): Promise<CardPaymentPreparation> {
     this.calls.push(`prepare:${subjectType}:${String(amountCents)}:${tag}`);
+    this.labels.push(label);
     await this.duringPrepare?.();
     return {
       prepared: { account: "lfc-stripe", providerRef: "pi_new", amountCents },

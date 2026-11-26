@@ -37,6 +37,12 @@ import { OrderIntake } from "../services/order-intake.service.js";
 import { OrderCardRetrieval } from "../../domain/ports/order-card-payments.js";
 import { orderCardSubject } from "../services/order-card-subject.js";
 import { settleOrder } from "../services/order-settlement.js";
+import {
+  orderCardChannelOf,
+  orderCardLabel,
+  orderCardPayer,
+} from "../services/order-card-label.js";
+import { OrderRecipientReader } from "../../domain/ports/order-recipient.reader.js";
 import { PlaceOrderCommand, type PlaceOrderResult } from "./place-order.command.js";
 import { REGISTERED_BUYER } from "../../domain/value-objects/order-buyer-kind.js";
 
@@ -76,6 +82,7 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, Pla
     private readonly cancellationDeadline: CustomerCancellationDeadline,
     private readonly consent: OrderMarketingConsent,
     private readonly commitments: PayerCommitmentRequirements,
+    private readonly recipients: OrderRecipientReader,
   ) {}
 
   /**
@@ -194,6 +201,16 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, Pla
       order,
       companyId,
       payload.settlement,
+      // L'acheteur connecté paie (plan-pointage-stripe.md, D5) ; le numéro
+      // n'existe pas encore.
+      async () =>
+        orderCardLabel({
+          channel: orderCardChannelOf(companyId),
+          kind: "first",
+          orderId: null,
+          orderNumber: null,
+          payer: await orderCardPayer(this.recipients, command.actorUserId),
+        }),
     );
     const placed = await this.persist(command, order, intent, waiverUsed);
 

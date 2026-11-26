@@ -3,6 +3,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import {
   type CardCollection,
+  type CardPaymentLabel,
   CardPayments,
   type PreparedCardPayment,
 } from "../../../channels/requests/card-payments.js";
@@ -17,6 +18,7 @@ import {
   SubjectNotLinkableError,
   SubjectNotSettleableError,
 } from "../../domain/errors/pay-link-errors.js";
+import { PayLinkOrigins } from "../../domain/ports/pay-link-origins.js";
 import { PayLinkRepository } from "../../domain/ports/pay-link.repository.js";
 import {
   type FirstCardPayment,
@@ -36,6 +38,9 @@ type Attachment =
       readonly kind: "refused";
       readonly error: PayLinkSubjectNotPayableError | PayLinkWithdrawnError;
     };
+
+/** Le canal et le mouvement d'un paiement né d'un lien, en métadonnée. */
+const PAY_LINK_CHANNEL = "pay_link";
 
 /** Ce que la page reçoit : comment faire payer, et combien. */
 export interface PayLinkPaymentStart {
@@ -77,6 +82,7 @@ export class StartPayLinkPaymentHandler implements ICommandHandler<
     private readonly cards: CardPayments,
     private readonly links: PayLinkRepository,
     private readonly uow: UnitOfWork,
+    private readonly origins: PayLinkOrigins,
   ) {}
 
   /**
@@ -127,6 +133,7 @@ export class StartPayLinkPaymentHandler implements ICommandHandler<
       subject.type,
       amountCents,
       `pay-link:${link.id}`,
+      this.labelOf(link, subject),
     );
     const attachment = await this.attachUnderLock(link, subject, prepared, async () =>
       settlement.lockSubject(subject),
@@ -176,6 +183,28 @@ export class StartPayLinkPaymentHandler implements ICommandHandler<
       await this.cards.release(prepared);
       throw error;
     }
+  }
+
+  /**
+   * Le libellé d'un paiement par lien (plan-pointage-stripe.md, D5) : aucun
+   * payeur — la page est anonyme —, l'application d'origine du lien et le
+   * sujet opaque. `app` est la valeur que l'application pose sur ses autres
+   * intentions (un seul filtre chez le prestataire) ; l'origine persistée
+   * reste lisible sous `origin`. Une origine sortie du registre se nomme par
+   * sa valeur.
+   */
+  private labelOf(link: PayLink, subject: CardSubject): CardPaymentLabel {
+    const origin = this.origins.find(link.origin);
+    return {
+      description: `LFD · ${origin?.label ?? link.origin} lien de paiement · lien`,
+      metadata: {
+        app: origin?.providerApp ?? link.origin,
+        origin: link.origin,
+        channel: PAY_LINK_CHANNEL,
+        kind: PAY_LINK_CHANNEL,
+        subject_id: subject.id,
+      },
+    };
   }
 
   private async reread(first: FirstCardPayment): Promise<PayLinkPaymentStart> {

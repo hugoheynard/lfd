@@ -1,0 +1,49 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// LE LIBELLÉ DÉFINITIF D'UNE INTENTION — schéma `payment`
+// ─────────────────────────────────────────────────────────────────────────────
+//
+// Plan `documentation/payment/plan-pointage-stripe.md`, lot 2.
+// Propriétaire : `src/payment/card/`.
+
+/// L'état d'un libellé à poser. 🔴 Valeurs écrites en base.
+enum CardIntentRelabelState {
+  /// À poser chez le prestataire (dû à `next_attempt_at`).
+  pending
+  /// Posé.
+  posted
+  /// Refusé par le prestataire, ou essais épuisés — le paiement n'en est pas touché.
+  abandoned
+
+  @@schema("payment")
+}
+
+/// **Le libellé définitif d'une intention, à poser chez le prestataire** —
+/// table `payment.card_intent_relabel`, une ligne par paiement. Composé par
+/// le sujet une fois enregistré (la commande et son numéro), opaque pour le
+/// bloc ; posé après validation, repris par le balayage. Aucune donnée
+/// personnelle : une description et des clés de pointage.
+///
+/// La clé vers `card_payment` suit sa suppression (`CASCADE`) : la ligne n'a
+/// pas de sens sans son paiement, et la purge du scénario n'a rien à en savoir.
+model CardIntentRelabel {
+  paymentId     String                 @id @map("payment_id")
+  payment       CardPayment            @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  /// La description posée chez le prestataire.
+  description   String
+  /// Les clés de l'appelant, déjà bornées (`IntentLabel`).
+  metadata      Json
+  /// Monte à chaque libellé neuf ; chaque écriture s'y conditionne.
+  revision      Int
+  state         CardIntentRelabelState
+  /// Essais en échec pour la révision courante.
+  attempts      Int                    @default(0)
+  /// Quand le balayage peut la reprendre.
+  nextAttemptAt DateTime               @map("next_attempt_at") @db.Timestamptz(6)
+  /// La raison brute du dernier échec, bornée à 500 caractères.
+  lastFailure   String?                @map("last_failure")
+  updatedAt     DateTime               @map("updated_at") @db.Timestamptz(6)
+
+  @@index([state, nextAttemptAt])
+  @@map("card_intent_relabel")
+  @@schema("payment")
+}

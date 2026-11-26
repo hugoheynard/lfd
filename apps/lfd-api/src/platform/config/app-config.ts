@@ -276,6 +276,7 @@ export class AppConfig {
     return PAY_LINK_ORIGINS.map((origin) => ({
       name: origin.name,
       label: origin.label,
+      providerApp: origin.providerApp,
       publicRoot: roots[origin.publicRoot],
     }));
   }

@@ -14,7 +14,9 @@ import {
 } from "../../../domain/errors/pay-link-errors.js";
 import { LivePayLinkLookup } from "../../live-pay-link-lookup.js";
 import {
+  FixedOrigins,
   InMemoryPayLinks,
+  LFC_ORIGIN,
   ScriptedCards,
   ScriptedFirsts,
   ScriptedLinkable,
@@ -54,6 +56,7 @@ async function scene() {
     cards,
     links,
     new DirectUnitOfWork(),
+    new FixedOrigins([LFC_ORIGIN]),
   );
   const run = (token = TOKEN) => handler.execute(new StartPayLinkPaymentCommand(token));
   return { links, timeline, linkable, firsts, cards, run };
@@ -76,6 +79,25 @@ describe("StartPayLinkPaymentHandler", () => {
       },
     ]);
     expect(timeline.steps).toEqual(["channel.lockSubject:fc_1"]);
+  });
+
+  it("libelle l'intention par l'application du lien (le même `app` que ses commandes), sans payeur", async () => {
+    const { cards, run } = await scene();
+
+    await run();
+
+    expect(cards.labels).toEqual([
+      {
+        description: "LFD · La Folie Coffee lien de paiement · lien",
+        metadata: {
+          app: "la-folie-coffee",
+          origin: "lafoliecoffee",
+          channel: "pay_link",
+          kind: "pay_link",
+          subject_id: "fc_1",
+        },
+      },
+    ]);
   });
 
   it("relit le first existant au lieu d'en créer un second (le rejeu)", async () => {

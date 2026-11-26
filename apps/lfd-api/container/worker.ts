@@ -727,6 +727,21 @@ async function triggerPendingCardPaymentSweep(env: Env): Promise<void> {
 }
 
 /**
+ * Réveille le container et pose chez le prestataire les libellés définitifs
+ * restés en attente (plan `documentation/payment/plan-pointage-stripe.md`,
+ * lot 2) : le filet de l'envoi d'après validation, au plus 50 par passage,
+ * essais bornés. Même porte et même jeton que les remboursements ;
+ * idempotent — poser deux fois le même libellé ne change rien.
+ */
+async function triggerIntentRelabelSweep(env: Env): Promise<void> {
+  const token = env.RECOMPUTE_TOKEN;
+  if (!token) {
+    return;
+  }
+  await postSweep(env, token, "admin/card-payments/labels/sweep");
+}
+
+/**
  * Réveille le container et passe les hausses payées par carte (doc
  * `documentation/commandes/modification/modifier-une-commande.md`, §2.7.5, §2.7.7) :
  * le balayage reprend les compléments payés à appliquer (réveil perdu, panne
@@ -839,6 +854,7 @@ async function refreshSweeps(env: Env): Promise<void> {
     triggerUnsettledShopOrderExpiry(env),
     triggerCardRefundSweep(env),
     triggerPendingCardPaymentSweep(env),
+    triggerIntentRelabelSweep(env),
     triggerCardIncreases(env),
     triggerVitrineSweep(env),
   ]);

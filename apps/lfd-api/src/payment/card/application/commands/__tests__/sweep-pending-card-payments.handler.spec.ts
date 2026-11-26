@@ -26,6 +26,7 @@ import {
 } from "../../__tests__/card-payment-doubles.js";
 import { RecordingLinkPaymentNotice } from "../../__tests__/recording-link-payment-notice.js";
 import { SweepPendingCardPaymentsHandler } from "../sweep-pending-card-payments.handler.js";
+import { inMemoryCustomerResolution } from "../../__tests__/card-customer-doubles.js";
 
 /** L'instant du balayage — rien ne le compare à l'heure réelle. */
 const NOW = new Date("2030-01-10T09:00:00.000Z");
@@ -62,6 +63,7 @@ function harness(ids: readonly string[]) {
   const settlement = new TestSubjectSettlement(timeline);
   const providers = new StaticCardProviders(new Map([["lfc-stripe", provider]]));
   const clock = new FixedClock(NOW);
+  const customers = inMemoryCustomerResolution(clock);
   const cards = new BlockCardPayments(
     new CardAccountChoice(new DeclaredCardAccountDefaults({ order: "lfc-stripe" }), providers),
     providers,
@@ -76,6 +78,7 @@ function harness(ids: readonly string[]) {
       clock,
       new RecordingLinkPaymentNotice(timeline),
     ),
+    customers.resolution,
   );
   const pending = new ListedPendingPayments(ids);
   const handler = new SweepPendingCardPaymentsHandler(pending, repo, cards, clock);

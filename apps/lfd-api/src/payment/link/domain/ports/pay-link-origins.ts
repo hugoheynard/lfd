@@ -2,6 +2,8 @@
 export interface PayLinkOriginEntry {
   readonly name: string;
   readonly label: string;
+  /** La valeur de la métadonnée `app` chez le prestataire des cartes. */
+  readonly providerApp: string;
   readonly publicRoot: string | null;
 }
 

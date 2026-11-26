@@ -13,9 +13,12 @@ import type { CardProviderEvent } from "../../domain/ports/card-provider-event.j
 import { CardProvider } from "../../domain/ports/card-provider.js";
 import type {
   CardCollection,
+  CreateCustomerParams,
   CreateIntentParams,
   CreatedIntent,
   IntentCancellation,
+  IntentDescribing,
+  IntentDescription,
   RefundIssuance,
   RefundLookup,
   RefundLookupParams,
@@ -26,6 +29,7 @@ import { reduceEvent } from "./stripe-event-reduction.js";
 import {
   cancellationFromError,
   cancellationFromRefusedState,
+  describingFromError,
   intentStateOf,
   refusedWithoutState,
 } from "./stripe-intent-translation.js";
@@ -69,13 +73,26 @@ export class StripeCardProvider extends CardProvider {
       amount: params.amountCents,
       currency: params.currency,
       payment_method_types: [...ACCEPTED_PAYMENT_METHOD_TYPES],
-      // La métadonnée d'avant le bloc, inchangée (§4.2).
-      metadata: { companyId: params.tag },
+      description: params.description,
+      // Les clés de l'appelant, puis celle d'avant le bloc, inchangée (§4.2) :
+      // `IntentLabel` a refusé toute clé qui l'écraserait.
+      metadata: { ...params.metadata, companyId: params.tag },
+      // Jamais `receipt_email` (D1) : Stripe n'envoie aucun reçu en plus des nôtres.
+      ...(params.customerRef === undefined ? {} : { customer: params.customerRef }),
     });
     if (intent.client_secret === null) {
       throw new CardProviderUnavailableError("client_secret absent de la PaymentIntent");
     }
     return { providerRef: intent.id, collection: this.embedded(intent.client_secret) };
+  }
+
+  async createCustomer(params: CreateCustomerParams): Promise<string> {
+    assertOutsideTransaction("Stripe.customers.create");
+    const customer = await this.client.customers.create(
+      { name: params.name, email: params.email, metadata: { lfd_user_id: params.userId } },
+      { idempotencyKey: params.idempotencyKey },
+    );
+    return customer.id;
   }
 
   async retrieveIntent(providerRef: string): Promise<RetrievedIntent> {
@@ -124,6 +141,21 @@ export class StripeCardProvider extends CardProvider {
       return cancellationFromRefusedState(intent.status);
     } catch (error) {
       return cancellationFromError(error);
+    }
+  }
+
+  async describeIntent(providerRef: string, label: IntentDescription): Promise<IntentDescribing> {
+    assertOutsideTransaction("Stripe.paymentIntents.update");
+    try {
+      // Stripe fusionne les métadonnées : `companyId` et les clés posées à la
+      // création restent. Ni montant ni client ne bougent (objection 4).
+      await this.client.paymentIntents.update(providerRef, {
+        description: label.description,
+        metadata: { ...label.metadata },
+      });
+      return { kind: "described" };
+    } catch (error) {
+      return describingFromError(error);
     }
   }
 

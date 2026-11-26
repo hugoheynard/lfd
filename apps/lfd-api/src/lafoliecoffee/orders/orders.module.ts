@@ -22,6 +22,7 @@ import { SendOrderReadyMail } from "./notices/application/handlers/send-order-re
 import { DeliveryEnRouteMail } from "./notices/application/services/delivery-en-route-mail.service.js";
 import { SendOrderSettledMail } from "./notices/application/handlers/send-order-settled-mail.handler.js";
 import { RingFailedProSettlement } from "./application/handlers/ring-failed-pro-settlement.handler.js";
+import { DescribeCardPaymentOnOrderPlaced } from "./application/handlers/describe-card-payment-on-order-placed.handler.js";
 import { SendPaymentExpiredMail } from "./notices/application/handlers/send-payment-expired-mail.handler.js";
 import { FailedSettlementReader } from "./domain/ports/failed-settlement.reader.js";
 import { PrismaFailedSettlementReader } from "./infrastructure/prisma-failed-settlement.reader.js";
@@ -615,6 +616,9 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     SendOrderRevisedMail,
     // Tout règlement pro qui meurt sonne, quelle qu'en soit la cause (D4).
     RingFailedProSettlement,
+    // Le numéro de commande chez le prestataire des cartes, une fois écrite
+    // (plan-pointage-stripe.md, lot 2).
+    DescribeCardPaymentOnOrderPlaced,
     { provide: FailedSettlementReader, useClass: PrismaFailedSettlementReader },
     // Les avis au principal (plan-notifications-sous-comptes.md, N2) lisent la
     // commande par ce port, jamais dans ses tables.

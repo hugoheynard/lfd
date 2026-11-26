@@ -1,4 +1,5 @@
 import { orderPretaxCents } from "@lfd/money";
+import { FixedRecipients } from "./intake-doubles.js";
 import { FixedIdGenerator } from "../../../../../platform/id/fixed-id-generator.js";
 import { UnitOfWork } from "../../../../../platform/database/unit-of-work.js";
 import { ItemLimitOverrideRecorder } from "../../../domain/ports/item-limit-override.recorder.js";
@@ -16,6 +17,7 @@ import { AppConfig } from "../../../../../platform/config/app-config.js";
 import {
   type AttachedCardPayment,
   type CardPaymentCancellation,
+  type CardPaymentLabel,
   type CardPaymentPreparation,
   CardPayments,
   type CardProviderSettlement,
@@ -303,12 +305,20 @@ interface CardPreparationRequest {
 
 /** Le bloc `card-payment` doublé, côté passation (lot P0.c2) : sans réseau. */
 class PreparingCardPayments extends CardPayments {
-  constructor(private readonly sink: { intent: CardPreparationRequest | null }) {
+  constructor(
+    private readonly sink: { intent: CardPreparationRequest | null; label?: CardPaymentLabel },
+  ) {
     super();
   }
 
-  prepare(subjectType: string, amountCents: number, tag: string): Promise<CardPaymentPreparation> {
+  prepare(
+    subjectType: string,
+    amountCents: number,
+    tag: string,
+    label: CardPaymentLabel,
+  ): Promise<CardPaymentPreparation> {
     this.sink.intent = { subjectType, amountCents, tag };
+    this.sink.label = label;
     return Promise.resolve({
       prepared: { account: "lfc-stripe", providerRef: "pi_1", amountCents },
       collection: {
@@ -411,6 +421,8 @@ function payload(over: Partial<AdminPlaceOrderPayload> = {}): AdminPlaceOrderPay
 
 interface HandlerOptions {
   readonly payments?: CardPayments;
+  /** L'annuaire des payeurs ; absent : personne de connu. */
+  readonly recipients?: FixedRecipients;
   readonly events?: RecordingPublisher;
   readonly clientBaseUrl?: string | null;
   readonly delivery?: DeliveryAvailabilityView;
@@ -520,6 +532,7 @@ function handler(
     new FixedCommitmentTerms(),
     options.overrides ?? new RecordingOverrides(),
     new FixedIdGenerator("ovr"),
+    options.recipients ?? new FixedRecipients(),
   );
 }
 
@@ -1052,6 +1065,24 @@ describe("PlaceOrderForCustomerHandler — le règlement", () => {
     expect(result.paymentUrl).toBe("https://boutique.lfc.fr/reglement/order_1");
   });
 
+  it("lien : libelle l'intention « saisie staff », le client de la commande en payeur (D5)", async () => {
+    const intents: { intent: CardPreparationRequest | null; label?: CardPaymentLabel } = {
+      intent: null,
+    };
+    const sink = { placed: null as OrderToPlace | null };
+
+    await handler(guard("orders"), sink, {
+      payments: payments(intents),
+      recipients: new FixedRecipients({ buyer_1: "buyer@example.test" }),
+    }).execute(placement("staff_1", payload({ settlement: "link" })));
+
+    expect(intents.label).toEqual({
+      description: "LFD · La Folie Coffee saisie staff · paiement",
+      metadata: { app: "la-folie-coffee", channel: "staff", kind: "first" },
+      payer: { userId: "buyer_1", name: "Client", email: "buyer@example.test" },
+    });
+  });
+
   it("lien SANS racine cliente configurée : la commande passe, sans lien", async () => {
     // On préfère « pas de lien » à une URL inventée : le commercial le dit au
     // client plutôt que de lui dicter une adresse qui ne mène nulle part.
@@ -1144,6 +1175,7 @@ describe("PlaceOrderForCustomerHandler — le règlement", () => {
       new FixedCommitmentTerms(),
       new RecordingOverrides(),
       new FixedIdGenerator("ovr"),
+      new FixedRecipients(),
     );
 
     const result = await free.execute(placement("staff_1", payload({ settlement: "link" })));
@@ -1645,9 +1677,10 @@ class CountingCardPayments extends PreparingCardPayments {
     subjectType: string,
     amountCents: number,
     tag: string,
+    label: CardPaymentLabel,
   ): Promise<CardPaymentPreparation> {
     this.prepared += 1;
-    return super.prepare(subjectType, amountCents, tag);
+    return super.prepare(subjectType, amountCents, tag, label);
   }
 }
 

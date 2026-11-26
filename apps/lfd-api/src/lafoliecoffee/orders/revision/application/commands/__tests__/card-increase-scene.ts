@@ -1,7 +1,9 @@
 import { inMemoryIntents } from "../../../../../../platform/intent/__tests__/in-memory-gesture-intent.ledger.js";
+import { FixedRecipients } from "../../../../application/commands/__tests__/intake-doubles.js";
 import {
   type AttachedCardPayment,
   type CardPaymentCancellation,
+  type CardPaymentLabel,
   type CardPaymentPreparation,
   type CardIntentState,
   CardPayments,
@@ -80,12 +82,20 @@ export class IncreaseCardPayments extends CardPayments {
   intentState: CardIntentState = "awaiting_payment";
   attachFailure: Error | null = null;
   readonly released: PreparedCardPayment[] = [];
+  /** Les libellés reçus par `prepare`, dans l'ordre. */
+  readonly labels: CardPaymentLabel[] = [];
 
   constructor(private readonly steps: Steps) {
     super();
   }
 
-  prepare(subjectType: string, amountCents: number, tag: string): Promise<CardPaymentPreparation> {
+  prepare(
+    subjectType: string,
+    amountCents: number,
+    tag: string,
+    label: CardPaymentLabel,
+  ): Promise<CardPaymentPreparation> {
+    this.labels.push(label);
     this.steps.seen.push(`prepare:${subjectType}:${String(amountCents)}:${tag}`);
     return Promise.resolve({
       prepared: { account: "lfc-stripe", providerRef: "pi_complement", amountCents },
@@ -202,6 +212,8 @@ export function increaseScene(
     clock,
     new FixedIdGenerator("prop"),
     inMemoryIntents(),
+    // Le client connecté du geste, connu de l'annuaire (le payeur du complément).
+    new FixedRecipients({ usr_1: "client@example.test" }),
   );
   return { handler, steps, cards, journal, proposals, reader, abandonment, wall, revising };
 }

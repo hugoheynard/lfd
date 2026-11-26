@@ -23,9 +23,12 @@ import type { CardProviderEvent } from "../../domain/ports/card-provider-event.j
 import { CardProvider } from "../../domain/ports/card-provider.js";
 import type {
   CardIntentState,
+  CreateCustomerParams,
   CreateIntentParams,
   CreatedIntent,
   IntentCancellation,
+  IntentDescribing,
+  IntentDescription,
   RefundIssuance,
   RefundLookup,
   RefundLookupParams,
@@ -159,13 +162,28 @@ export class RecordingCardProvider extends CardProvider {
   cancellation: IntentCancellation = { kind: "cancelled" };
   signatureRefused: Error | null = null;
   createdRef = "pi_new";
+  /** Les intentions demandées, paramètres complets (le libellé, le client). */
+  readonly intents: CreateIntentParams[] = [];
+  /** Les clients demandés ; `customerFailure` posé : la création échoue. */
+  readonly customers: CreateCustomerParams[] = [];
+  customerFailure: Error | null = null;
 
   constructor(private readonly key = "pk_test_1") {
     super();
   }
 
+  createCustomer(params: CreateCustomerParams): Promise<string> {
+    this.calls.push(`createCustomer:${params.userId}:${params.idempotencyKey}`);
+    this.customers.push(params);
+    if (this.customerFailure !== null) {
+      return Promise.reject(this.customerFailure);
+    }
+    return Promise.resolve(`cus_${params.userId}`);
+  }
+
   createIntent(params: CreateIntentParams): Promise<CreatedIntent> {
     this.calls.push(`createIntent:${String(params.amountCents)}:${params.currency}:${params.tag}`);
+    this.intents.push(params);
     return Promise.resolve({
       providerRef: this.createdRef,
       collection: {
@@ -200,6 +218,16 @@ export class RecordingCardProvider extends CardProvider {
   cancelIntent(providerRef: string): Promise<IntentCancellation> {
     this.calls.push(`cancelIntent:${providerRef}`);
     return Promise.resolve(this.cancellation);
+  }
+
+  /** Les libellés posés, par intention ; `describing` : l'issue des prochains. */
+  readonly descriptions: { readonly providerRef: string; readonly label: IntentDescription }[] = [];
+  describing: IntentDescribing = { kind: "described" };
+
+  describeIntent(providerRef: string, label: IntentDescription): Promise<IntentDescribing> {
+    this.calls.push(`describeIntent:${providerRef}`);
+    this.descriptions.push({ providerRef, label });
+    return Promise.resolve(this.describing);
   }
 
   publishableKey(): string {
@@ -341,8 +369,15 @@ export class TestSubjectSettlement extends SubjectSettlement {
     return Promise.resolve(this.cancelled.has(subject.id));
   }
 
+  /** Les clés de pointage que le sujet déclare (lot 3) ; absentes : aucune. */
+  describedMetadata: Readonly<Record<string, string>> | undefined = undefined;
+
   describe(subject: CardSubject): Promise<SubjectDescription> {
-    return Promise.resolve({ label: `Commande ${subject.id}`, link: `/commandes/${subject.id}` });
+    return Promise.resolve({
+      label: `Commande ${subject.id}`,
+      link: `/commandes/${subject.id}`,
+      ...(this.describedMetadata === undefined ? {} : { metadata: this.describedMetadata }),
+    });
   }
 
   claim(account: string, providerRef: string): Promise<SubjectClaim | null> {

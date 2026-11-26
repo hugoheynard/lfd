@@ -1,8 +1,11 @@
 import type { CardProviderEvent } from "./card-provider-event.js";
 import type {
+  CreateCustomerParams,
   CreateIntentParams,
   CreatedIntent,
   IntentCancellation,
+  IntentDescribing,
+  IntentDescription,
   RefundIssuance,
   RefundLookup,
   RefundLookupParams,
@@ -31,11 +34,26 @@ export abstract class CardProvider {
   abstract createIntent(params: CreateIntentParams): Promise<CreatedIntent>;
 
   /**
+   * Crée le client d'une personne sur ce compte, sous la clé d'idempotence
+   * donnée, et rend sa référence (`cus_…`). Jamais de recherche : la
+   * correspondance est gardée chez nous (`CardCustomerRepository`).
+   * @throws {CardProviderUnavailableError} réponse inexploitable.
+   */
+  abstract createCustomer(params: CreateCustomerParams): Promise<string>;
+
+  /**
    * Relit une intention pour son secret client et son état : le secret n'est
    * jamais persisté chez nous, il se redemande.
    * @throws {CardProviderUnavailableError} intention inconnue ou réponse sans secret.
    */
   abstract retrieveIntent(providerRef: string): Promise<RetrievedIntent>;
+
+  /**
+   * **Pose le libellé définitif** d'une intention : sa description, et les
+   * clés de l'appelant ajoutées à celles qu'elle porte (aucune n'est
+   * retirée). Ne lève pas : chaque issue, panne comprise, est rendue.
+   */
+  abstract describeIntent(providerRef: string, label: IntentDescription): Promise<IntentDescribing>;
 
   /** Annule une intention. Ne lève pas : chaque issue, panne comprise, est rendue. */
   abstract cancelIntent(providerRef: string): Promise<IntentCancellation>;

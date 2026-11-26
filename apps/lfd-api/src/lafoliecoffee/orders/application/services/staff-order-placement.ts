@@ -18,6 +18,7 @@ import type { ItemLimitOverrideRecorder } from "../../domain/ports/item-limit-ov
 import type { OrderCutoffWaiverGate } from "../../domain/ports/order-cutoff-waiver.gate.js";
 import type { OrderGuardReader } from "../../domain/ports/order-guard.reader.js";
 import type { OrderRepository, PlacedOrder } from "../../domain/ports/order.repository.js";
+import type { OrderRecipientReader } from "../../domain/ports/order-recipient.reader.js";
 import type { PayerCommitmentRequirements } from "../../domain/ports/payer-commitment-requirements.js";
 import {
   itemLimitOverridesOf,
@@ -28,6 +29,7 @@ import { paymentUrlFor } from "../../domain/services/payment-link.js";
 import { ensureTotalSeen } from "../../domain/services/seen-total.js";
 import type { PlaceOrderForCustomerResult } from "../commands/place-order-for-customer.command.js";
 import { commitOrderBudget } from "./order-budget-commitment.js";
+import { orderCardLabel, orderCardPayer } from "./order-card-label.js";
 import { ORDER_CARD_SUBJECT_TYPE, orderCardSubject, orderCardTag } from "./order-card-subject.js";
 import type { DraftPolicy, OrderDrafting } from "./order-drafting.service.js";
 import { publishOrderOffered } from "./order-offering.js";
@@ -52,6 +54,8 @@ export interface StaffOrderPlacementPorts {
   readonly commitments: PayerCommitmentRequirements;
   readonly overrides: ItemLimitOverrideRecorder;
   readonly ids: IdGenerator;
+  /** Le client de la commande, nommé chez le prestataire (plan-pointage-stripe.md, D5). */
+  readonly recipients: OrderRecipientReader;
 }
 
 /** Une saisie de l'équipe : qui saisit, ce qu'il saisit, et son droit de passer une limite. */
@@ -290,6 +294,14 @@ export class StaffOrderPlacement {
       ORDER_CARD_SUBJECT_TYPE,
       order.totalCents,
       orderCardTag(companyId),
+      orderCardLabel({
+        channel: "staff",
+        kind: "first",
+        orderId: null,
+        orderNumber: null,
+        // Le client de la commande : c'est lui qui suit le lien de règlement.
+        payer: await orderCardPayer(this.ports.recipients, payload.buyerUserId),
+      }),
     );
     order.payByCard(prepared.providerRef);
     return prepared;

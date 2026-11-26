@@ -163,9 +163,11 @@ const NON_PUBLIC_SCHEMA_OF_MODEL: Readonly<Record<string, string>> = {
   MailCharterVersion: "mail",
   MailSenderIdentity: "mail",
   // L'encaissement (`src/payment/`) : les paiements par carte, le témoin de
-  // leur reprise, les demandes de remboursement, le carnet, et les liens, les
-  // virements reçus et leurs parts.
+  // leur reprise, les demandes de remboursement, le carnet, le client du
+  // payeur par compte, et les liens, les virements reçus et leurs parts.
   CardPayment: "payment",
+  CardCustomer: "payment",
+  CardIntentRelabel: "payment",
   CardPaymentTakeover: "payment",
   CardRefundRequest: "payment",
   CardRefund: "payment",

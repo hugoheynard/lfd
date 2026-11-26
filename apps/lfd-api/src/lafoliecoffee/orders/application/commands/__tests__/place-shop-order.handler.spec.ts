@@ -31,6 +31,7 @@ import type { DeliveryZoneFeeReader } from "../../../domain/ports/delivery-zone-
 import {
   type AttachedCardPayment,
   type CardPaymentCancellation,
+  type CardPaymentLabel,
   type CardPaymentPreparation,
   CardPayments,
   type CardProviderSettlement,
@@ -355,6 +356,8 @@ interface CardPreparationRequest {
 /** Ce que les doubles de paiement ont vu passer. */
 interface PaymentCalls {
   intent: CardPreparationRequest | null;
+  /** Le libellé de la dernière intention préparée. */
+  label?: CardPaymentLabel;
   retrieved: number;
   /** Les intentions rendues après coup (lot L4 : refus sous le verrou du stock). */
   cancelled?: string[];
@@ -366,8 +369,14 @@ class PreparingCardPayments extends CardPayments {
     super();
   }
 
-  prepare(subjectType: string, amountCents: number, tag: string): Promise<CardPaymentPreparation> {
+  prepare(
+    subjectType: string,
+    amountCents: number,
+    tag: string,
+    label: CardPaymentLabel,
+  ): Promise<CardPaymentPreparation> {
     this.sink.intent = { subjectType, amountCents, tag };
+    this.sink.label = label;
     return Promise.resolve({
       prepared: { account: "lfc-stripe", providerRef: "pi_public", amountCents },
       collection: {
@@ -702,6 +711,18 @@ describe("PlaceShopOrderHandler — la commande produite", () => {
 });
 
 describe("PlaceShopOrderHandler — le règlement", () => {
+  it("libelle l'intention « boutique », l'invité déclaré en payeur (plan-pointage-stripe.md, D5)", async () => {
+    const { handler, paid } = scene();
+
+    await handler.execute(new PlaceShopOrderCommand(payload()));
+
+    expect(paid.label).toEqual({
+      description: "LFD · La Folie Coffee boutique · paiement",
+      metadata: { app: "la-folie-coffee", channel: "shop", kind: "first" },
+      payer: { userId: "user_guest", name: "Camille", email: "camille@exemple.fr" },
+    });
+  });
+
   it("demande une carte, TOUJOURS, et sans société", async () => {
     // Le compte se négocie avec une société cliente ; un panier n'en est pas
     // une. Le contrat public ne porte donc aucun `settlement` à lire.

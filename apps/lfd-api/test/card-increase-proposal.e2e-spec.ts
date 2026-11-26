@@ -20,7 +20,7 @@ import { ComplementWithoutProposalError } from "../src/lafoliecoffee/orders/revi
 import { CardIncreaseProposalRepository } from "../src/lafoliecoffee/orders/revision/domain/ports/card-increase-proposal.repository.js";
 import { PaymentStatus } from "../src/platform/database/client/client.js";
 import { UnitOfWork } from "../src/platform/database/unit-of-work.js";
-import { cardPaid, cardProvidersDouble } from "./card-payments.js";
+import { cardPaid, cardProvidersDouble, E2E_LABEL } from "./card-payments.js";
 import { bootstrapE2e, type E2eContext } from "./e2e-harness.js";
 import { createUser } from "./factories.js";
 import { payByCard, pickupSite, placeOrder } from "./order-factory.js";
@@ -74,7 +74,7 @@ async function proposeIncrease(
   order: PaidOrder,
 ): Promise<{ readonly proposalId: string; readonly providerRef: string }> {
   const payments = ctx.app.get(CardPayments);
-  const { prepared } = await payments.prepare("order", COMPLEMENT_CENTS, "personal");
+  const { prepared } = await payments.prepare("order", COMPLEMENT_CENTS, "personal", E2E_LABEL);
   sequence += 1;
   const proposalId = `prop_e2e_${String(sequence)}`;
   await ctx.app.get(UnitOfWork).run(async () => {
@@ -182,7 +182,7 @@ describe("Le webhook d'un complément (plan S2, §2.5)", () => {
   it("🔴 un complément sans projet est refusé bruyamment, et reste à encaisser", async () => {
     const order = await paidOrder();
     const payments = ctx.app.get(CardPayments);
-    const { prepared } = await payments.prepare("order", COMPLEMENT_CENTS, "personal");
+    const { prepared } = await payments.prepare("order", COMPLEMENT_CENTS, "personal", E2E_LABEL);
     const attached = await ctx.app
       .get(UnitOfWork)
       .run(() => payments.attach({ type: "order", id: order.id }, prepared, "complement"));

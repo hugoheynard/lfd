@@ -158,3 +158,42 @@ export class DuplicateSubjectSettlementError extends TechnicalError {
     );
   }
 }
+
+/**
+ * Le libellé d'une intention que le prestataire refuserait, ou qui écraserait
+ * une clé du bloc — faute de l'appelant qui le compose, jamais d'un client.
+ */
+export class InvalidCardPaymentLabelError extends DomainError {
+  constructor(reason: string) {
+    super(
+      "card_payment.label.invalid",
+      `Libellé de paiement refusé : ${reason}. Corrigez la composition du libellé chez ` +
+        "l'appelant (plan-pointage-stripe.md, lot 1).",
+    );
+  }
+}
+
+/** La correspondance d'un client, introuvable juste après son écriture : la base a perdu la ligne. */
+export class MissingCardCustomerError extends TechnicalError {
+  constructor(account: string, userId: string) {
+    super(
+      "card_payment.customer.missing",
+      `Le client du compte ${account} pour la personne ${userId} est introuvable juste après ` +
+        "son écriture : vérifiez la table payment.card_customer.",
+    );
+  }
+}
+
+/**
+ * Deux libellés du même paiement écrits en même temps : celui-ci a perdu la
+ * course. L'abonné qui l'a demandé est rejoué par la boîte d'envoi.
+ */
+export class IntentRelabelConflictError extends TechnicalError {
+  constructor(paymentId: string) {
+    super(
+      "card_payment.relabel.conflict",
+      `Le libellé du paiement ${paymentId} a été réécrit pendant cette demande : elle sera ` +
+        "rejouée par la boîte d'envoi. Rien à faire, sauf si la lettre morte apparaît.",
+    );
+  }
+}

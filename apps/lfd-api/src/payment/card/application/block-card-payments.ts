@@ -6,6 +6,7 @@ import { Clock } from "../../../platform/time/clock.js";
 import {
   type AttachedCardPayment,
   type CardPaymentCancellation,
+  type CardPaymentLabel,
   type CardPaymentPreparation,
   CardPayments,
   type CardPaymentSource,
@@ -23,8 +24,10 @@ import { CardPaymentNotFoundError } from "../domain/errors/card-payment-errors.j
 import { CardPaymentRepository } from "../domain/ports/card-payment.repository.js";
 import { CardProviders } from "../domain/ports/card-providers.js";
 import { PaymentAccount } from "../domain/value-objects/payment-account.js";
+import { IntentLabel } from "../domain/value-objects/intent-label.js";
 import { PaymentSubject } from "../domain/value-objects/payment-subject.js";
 import { CardAccountChoice } from "./card-account-choice.js";
+import { CardCustomerResolution } from "./card-customer-resolution.js";
 import { IntentOutcomeRecorder } from "./intent-outcome-recorder.js";
 
 /** Devise unique de la plateforme : les montants sont des centimes d'euro. */
@@ -50,6 +53,7 @@ export class BlockCardPayments extends CardPayments {
     private readonly clock: Clock,
     private readonly uow: UnitOfWork,
     private readonly outcomes: IntentOutcomeRecorder,
+    private readonly customers: CardCustomerResolution,
   ) {
     super();
   }
@@ -58,9 +62,19 @@ export class BlockCardPayments extends CardPayments {
     subjectType: string,
     amountCents: number,
     tag: string,
+    label: CardPaymentLabel,
   ): Promise<CardPaymentPreparation> {
+    const shown = IntentLabel.of(label);
     const { account, provider } = this.choice.forSubjectType(subjectType);
-    const intent = await provider.createIntent({ amountCents, currency: CARD_CURRENCY, tag });
+    const customerRef = await this.customers.customerOf(account, provider, label.payer);
+    const intent = await provider.createIntent({
+      amountCents,
+      currency: CARD_CURRENCY,
+      tag,
+      description: shown.description,
+      metadata: shown.metadata,
+      ...(customerRef === null ? {} : { customerRef }),
+    });
     return {
       prepared: { account: account.name, providerRef: intent.providerRef, amountCents },
       collection: intent.collection,

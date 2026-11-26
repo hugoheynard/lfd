@@ -76,6 +76,9 @@ export class StripeRefundCalls {
           ...(params.amountCents === null ? {} : { amount: params.amountCents }),
           reason: "requested_by_customer",
           metadata: {
+            // Les clés de pointage du sujet d'abord : celles du bloc, posées
+            // après, ne peuvent pas être recouvertes (lot 3 du pointage).
+            ...params.labelMetadata,
             [REFUND_METADATA.request]: params.requestId,
             [REFUND_METADATA.generation]: String(params.generation),
             [REFUND_METADATA.order]: params.subjectLabel,

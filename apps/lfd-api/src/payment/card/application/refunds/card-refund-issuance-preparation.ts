@@ -8,6 +8,7 @@ import { CardRefundRequestRepository } from "../../domain/ports/card-refund-requ
 import { amountInProgress } from "../../domain/services/refund-siblings.js";
 import { CardRefundEffectsWriter, RefundEffects } from "./card-refund-effects.js";
 import { stoppedFact } from "./card-refund-journal.js";
+import { refundLabelOf } from "./card-refund-label.js";
 import { CardRefundScope, type LockedPayment } from "./card-refund-scope.js";
 
 /** Le motif écrit quand le paiement n'a pas de référence chez le prestataire. */
@@ -67,7 +68,7 @@ export class CardRefundIssuancePreparation {
     request: CardRefundRequest,
     effects: RefundEffects,
   ): Promise<RefundCall | null> {
-    const { ledger, subject } = locked;
+    const { ledger, subject, settlement } = locked;
     if (request.current !== "to_issue") {
       return null;
     }
@@ -93,6 +94,7 @@ export class CardRefundIssuancePreparation {
         requestId: request.id,
         generation: request.generation,
         subjectLabel: `${subject.type}:${subject.id}`,
+        labelMetadata: await refundLabelOf(settlement, subject),
         amountCents: request.view.amountCents,
       },
     };

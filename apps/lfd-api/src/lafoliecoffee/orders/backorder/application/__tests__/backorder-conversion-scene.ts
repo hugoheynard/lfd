@@ -9,6 +9,7 @@ import {
   type PickupAddressView,
 } from "@lfd/contracts";
 
+import { FixedRecipients } from "../../../application/commands/__tests__/intake-doubles.js";
 import { AppConfig } from "../../../../../platform/config/app-config.js";
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
@@ -391,6 +392,7 @@ export function conversionScene(options: SceneOptions) {
     options.backorders,
     options.replays,
     journal,
+    new FixedRecipients(),
   );
   const quote = new QuoteBackorderHandler(
     guard,

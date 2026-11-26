@@ -58,6 +58,31 @@ async function proposeMore(
   );
 }
 
+describe("ProposeCardIncreaseHandler — le libellé du complément (plan-pointage-stripe.md)", () => {
+  it("nomme la commande par son numéro, et le client connecté en payeur", async () => {
+    const order = await paidOrder();
+    const { handler, cards } = increaseScene(order);
+
+    await handler.execute(await proposeMore(order));
+
+    const channel = order.companyId === null ? "shop" : "pro";
+    const words = order.companyId === null ? "boutique" : "pro";
+    expect(cards.labels).toEqual([
+      {
+        description: `LFD · La Folie Coffee ${words} · Commande n° ${order.orderNumber} · complément`,
+        metadata: {
+          app: "la-folie-coffee",
+          channel,
+          kind: "complement",
+          subject_id: order.orderId,
+          order_number: order.orderNumber,
+        },
+        payer: { userId: "usr_1", name: "Client", email: "client@example.test" },
+      },
+    ]);
+  });
+});
+
 describe("ProposeCardIncreaseHandler — la hausse demandée", () => {
   /** Régression : un double envoi préparait deux paiements chez le prestataire. */
   it("rejouée sous la même clé : 409 nommé, un seul paiement préparé, un seul projet", async () => {
