@@ -85,6 +85,8 @@ interface Paper {
 /** Les colonnes d'un lecteur : où finit le nom, et qui pose les prix. */
 interface Columns {
   readonly skuRight: number | null;
+  /** Faux sur un BL interne : sans prix, l'astérisque de la remise ne veut rien dire. */
+  readonly marksPickupDiscount?: boolean;
   readonly heads: (doc: Doc, y: number) => void;
   readonly row: (doc: Doc, index: number, y: number) => void;
 }
@@ -127,7 +129,10 @@ function articleRow(
   put(doc, quantityText(line), LEFT, y - 1.2 * MM, { size: 14, bold: true });
   const nameRight = columns.skuRight === null ? RIGHT - 2 * MM : columns.skuRight - COL_SKU;
   // L'astérisque d'une ligne hors remise de retrait, expliqué au pied.
-  const excluded = "pickupDiscountEligible" in line && line.pickupDiscountEligible === false;
+  const excluded =
+    columns.marksPickupDiscount !== false &&
+    "pickupDiscountEligible" in line &&
+    line.pickupDiscountEligible === false;
   const name = excluded ? `${line.productName} *` : line.productName;
   put(doc, name, X_NAME, y, { size: 11.5, width: nameRight - X_NAME });
   if (columns.skuRight !== null) {
@@ -262,6 +267,26 @@ function pricedColumns(note: ClientNote): Columns {
   };
 }
 
+/** Les colonnes d'un BL interne : le SKU et la quantité, aucun montant. */
+function quantityColumns(note: ClientNote): Columns {
+  return {
+    skuRight: note.variant === "pro" ? RIGHT : null,
+    marksPickupDiscount: false,
+    heads: () => undefined,
+    row: () => undefined,
+  };
+}
+
+/** Sous le tableau d'un BL interne, la seule mention « sans facturation ». */
+function unbilledMention(doc: Doc, note: ClientNote, top: number): number {
+  const unbilled = unbilledNoteOf(note.money.settlement);
+  if (unbilled === null) {
+    return top;
+  }
+  put(doc, unbilled, RIGHT - 78 * MM, top + 5 * MM, { size: 9 });
+  return top + 10 * MM;
+}
+
 /** La colonne des montants du pavé de totaux, que le libellé ne mord pas. */
 const TOTAL_VALUE_WIDTH = 26 * MM;
 
@@ -307,18 +332,23 @@ export async function renderClientNotePdf(
   art: DeliveryNoteArt,
   undelivered: readonly UndeliveredLine[] = [],
 ): Promise<Buffer> {
-  const excluded = note.lines.some((line) => line.pickupDiscountEligible === false);
+  // Une commande interne ne se chiffre pas : ni prix, ni totaux, seulement
+  // les quantités et la mention « sans facturation » (décidé par Hugo le
+  // 2026-11-26, plan-restaurants-maison.md, Q2).
+  const inHouse = note.money.settlement === "in_house";
+  const excluded = !inHouse && note.lines.some((line) => line.pickupDiscountEligible === false);
   return render(
     new Date(note.issuedAt),
     `Bon de livraison ${note.number}`,
     (doc) => {
       const paper: Paper = { note, art, tail: undeliveredSpace(doc, undelivered) };
       const top = noteParties(doc, note, noteHeader(doc, note, art.logo));
-      const end = undeliveredMention(doc, undelivered, table(doc, paper, pricedColumns(note), top));
+      const columns = inHouse ? quantityColumns(note) : pricedColumns(note);
+      const end = undeliveredMention(doc, undelivered, table(doc, paper, columns, top));
       noteFooter(
         doc,
         note,
-        noteRemark(doc, note, totals(doc, note, end)),
+        noteRemark(doc, note, inHouse ? unbilledMention(doc, note, end) : totals(doc, note, end)),
         excluded ? [PICKUP_DISCOUNT_EXCLUDED_NOTE] : [],
       );
       noteFolios(doc, note);

@@ -196,6 +196,14 @@ function showsSku(sheet: ClientSheet): boolean {
   return sheet.variant === "pro";
 }
 
+/**
+ * Une commande interne ne se chiffre pas : ni prix, ni totaux, seulement les
+ * quantités (décidé par Hugo le 2026-11-26, plan-restaurants-maison.md, Q2).
+ */
+function isPriced(sheet: ClientSheet): boolean {
+  return sheet.money.settlement !== "in_house";
+}
+
 /** L'annonce du tableau, puis sa barre de titres. */
 function tableHead(doc: Doc, sheet: ClientSheet, top: number, withHeading: boolean): number {
   let y = top + 5 * MM;
@@ -209,9 +217,11 @@ function tableHead(doc: Doc, sheet: ClientSheet, top: number, withHeading: boole
     putRight(doc, "SKU", X_SKU_RIGHT, y, 9);
   }
   // 🔴 **Les titres suivent les montants, dans le même geste** (R3, 2026-09-21).
-  const ttc = sheetShowsTtc(sheet);
-  putRight(doc, ttc ? "PU TTC" : "PU HT", X_UNIT_RIGHT, y, 9);
-  putRight(doc, ttc ? "Total TTC" : "Total HT", CONTENT_RIGHT, y, 9);
+  if (isPriced(sheet)) {
+    const ttc = sheetShowsTtc(sheet);
+    putRight(doc, ttc ? "PU TTC" : "PU HT", X_UNIT_RIGHT, y, 9);
+    putRight(doc, ttc ? "Total TTC" : "Total HT", CONTENT_RIGHT, y, 9);
+  }
   const bottom = y + 4 * MM;
   rule(doc, bottom, 1);
   return bottom + 1;
@@ -224,8 +234,8 @@ function articleRow(
   line: ClientSheet["lines"][number],
   top: number,
 ): number {
-  const ttc = sheetShowsTtc(sheet);
-  const labels = line.priceLabels.join(" · ");
+  const priced = isPriced(sheet);
+  const labels = priced ? line.priceLabels.join(" · ") : "";
   const y = top + 4.6 * MM;
   // Un poids (« 1,25 kg ») est plus large qu'un compte : il s'imprime plus petit.
   put(doc, quantityText(line), CONTENT_LEFT, y - 1.2 * MM, {
@@ -235,13 +245,39 @@ function articleRow(
   // Le nom est BORNÉ à sa colonne ; sans SKU, la colonne s'étend jusqu'au prix.
   const nameRight = showsSku(sheet) ? X_SKU_RIGHT - COL_SKU : X_SKU_RIGHT - 2 * MM;
   // L'astérisque d'une ligne hors remise de retrait, expliqué au pied (lot C).
-  const name = line.pickupDiscountEligible === false ? `${line.productName} *` : line.productName;
+  const name =
+    priced && line.pickupDiscountEligible === false ? `${line.productName} *` : line.productName;
   put(doc, name, X_NAME, y, { size: 11.5, width: nameRight - X_NAME });
   if (showsSku(sheet)) {
     putRight(doc, line.sku, X_SKU_RIGHT, y + 0.8 * MM, 8.5);
   }
-  // Le hors taxe est en millicentimes et garde ses décimales, le taxe compris
-  // est en centimes : c'est un montant que la vitrine a déjà arrêté.
+  if (priced) {
+    priceCells(doc, sheet, line, y);
+  }
+
+  let bottom = y + 4.6 * MM;
+  if (labels !== "") {
+    // Les libellés tarifaires SOUS le nom : ce sont eux qui expliquent un prix
+    // qui n'est pas celui du catalogue.
+    put(doc, labels, X_NAME, bottom + 0.4 * MM, { size: 8.5 });
+    bottom += 4 * MM;
+  }
+  rule(doc, bottom, 0.6, ROW_GRAY);
+  return bottom + 0.6;
+}
+
+/**
+ * Les deux cellules chiffrées d'une ligne. Le hors taxe est en millicentimes
+ * et garde ses décimales, le taxe compris est en centimes : c'est un montant
+ * que la vitrine a déjà arrêté.
+ */
+function priceCells(
+  doc: Doc,
+  sheet: ClientSheet,
+  line: ClientSheet["lines"][number],
+  y: number,
+): void {
+  const ttc = sheetShowsTtc(sheet);
   putRight(
     doc,
     (ttc && line.unitPriceTtcCents !== null
@@ -259,16 +295,6 @@ function articleRow(
     10.5,
     true,
   );
-
-  let bottom = y + 4.6 * MM;
-  if (labels !== "") {
-    // Les libellés tarifaires SOUS le nom : ce sont eux qui expliquent un prix
-    // qui n'est pas celui du catalogue.
-    put(doc, labels, X_NAME, bottom + 0.4 * MM, { size: 8.5 });
-    bottom += 4 * MM;
-  }
-  rule(doc, bottom, 0.6, ROW_GRAY);
-  return bottom + 0.6;
 }
 
 /**
@@ -294,7 +320,7 @@ function totals(doc: Doc, sheet: ClientSheet, handoverUrl: string, top: number):
   const blockLeft = CONTENT_RIGHT - 78 * MM;
   let y = top + 5 * MM;
   const qrBottom = handoverQr(doc, sheet, handoverUrl, y);
-  for (const row of totalRows(sheet)) {
+  for (const row of isPriced(sheet) ? totalRows(sheet) : []) {
     if (row.rule === true) {
       doc
         .save()
@@ -350,7 +376,7 @@ function footer(doc: Doc, sheet: ClientSheet, top: number): void {
   let y = top + 4 * MM;
   rule(doc, y, 1);
   y += 3 * MM;
-  if (sheet.lines.some((line) => line.pickupDiscountEligible === false)) {
+  if (isPriced(sheet) && sheet.lines.some((line) => line.pickupDiscountEligible === false)) {
     put(doc, PICKUP_DISCOUNT_EXCLUDED_NOTE, CONTENT_LEFT, y, { size: 9 });
     y += 4 * MM;
   }
@@ -360,14 +386,16 @@ function footer(doc: Doc, sheet: ClientSheet, top: number): void {
     put(doc, `Arrêté le ${longDate(sheet.issuedAt)}`, CONTENT_LEFT, y, { size: 9 });
     return;
   }
-  put(
-    doc,
-    "Aucun numéro de série, aucune mention légale : la facture est émise séparément.",
-    CONTENT_LEFT,
-    y,
-    { size: 9 },
-  );
-  y += 4 * MM;
+  if (isPriced(sheet)) {
+    put(
+      doc,
+      "Aucun numéro de série, aucune mention légale : la facture est émise séparément.",
+      CONTENT_LEFT,
+      y,
+      { size: 9 },
+    );
+    y += 4 * MM;
+  }
   put(
     doc,
     `Arrêté le ${longDate(sheet.issuedAt)} · révision ${String(sheet.revision)}`,

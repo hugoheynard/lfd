@@ -183,3 +183,23 @@ describe("le folio et l'en-tête sur chaque page (Hugo, 2026-11-03)", () => {
     expect(text).toContain("Page 1 / 1");
   });
 });
+
+describe("le BL d'une commande interne", () => {
+  const IN_HOUSE_BILLING = {
+    ...PRO_BILLING,
+    money: { ...PRO_BILLING.money, settlement: "in_house" as const },
+  };
+
+  it("ne porte aucun prix ni total, seulement les quantités et la mention", async () => {
+    const note = clientNoteOf(handedOverNote(), HEAD, IN_HOUSE_BILLING);
+    const text = pdfText(await renderClientNotePdf(note, DELIVERY_ART));
+
+    expect(text).toContain("BL-1042-1");
+    expect(text).toContain("Pain de campagne");
+    expect(text).toContain("sans facturation.");
+    expect(text).not.toContain(EURO);
+    expect(text).not.toContain("PU HT");
+    expect(text).not.toContain("Total HT");
+    expect(text).not.toContain("Non concerné par la remise retrait");
+  });
+});

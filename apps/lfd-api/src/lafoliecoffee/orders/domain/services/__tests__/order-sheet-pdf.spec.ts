@@ -232,3 +232,19 @@ describe("le bon d'un pro au compte (F5)", () => {
     },
   );
 });
+
+describe("la feuille d'une commande interne", () => {
+  const base = sheet();
+  const inHouse = sheet({ money: { ...base.money, settlement: "in_house" } });
+
+  it("ne porte aucun prix ni total, seulement les quantités et la mention", async () => {
+    const text = pdfText(await renderOrderSheetPdf(inHouse, ART));
+
+    expect(text).toContain(LINE.productName);
+    expect(text).toContain("sans facturation.");
+    expect(text).not.toContain("\u0080");
+    expect(text).not.toContain("PU HT");
+    expect(text).not.toContain("Total HT");
+    expect(text).not.toContain("la facture est émise séparément");
+  });
+});
