@@ -65,6 +65,7 @@ const COMPANY: AdminCompanyDetail = {
   chorusRouting: null,
   chorusService: null,
   chorusServicePayerIsPublic: false,
+  payerSettlesOnAccount: false,
   activatedAt: null,
   warnings: [],
   vatNumberRequired: true,

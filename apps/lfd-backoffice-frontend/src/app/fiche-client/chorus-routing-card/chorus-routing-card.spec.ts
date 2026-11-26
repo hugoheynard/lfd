@@ -70,6 +70,7 @@ function organisme(
     chorusRouting,
     chorusService: null,
     chorusServicePayerIsPublic: false,
+    payerSettlesOnAccount: false,
   };
 }
 

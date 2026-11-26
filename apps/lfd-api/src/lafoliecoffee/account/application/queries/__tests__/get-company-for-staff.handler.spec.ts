@@ -64,6 +64,7 @@ const detail: AdminCompanyDetailView = {
   contacts: [],
   chorusService: null,
   chorusServicePayerIsPublic: false,
+  payerSettlesOnAccount: false,
   chorusRouting: null,
   fulfillmentPreference: {
     method: null,

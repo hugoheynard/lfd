@@ -180,7 +180,7 @@ export class PrismaAdminCompanyReader extends AdminCompanyReader {
     // carnet n'a pas de lien de base vers un compte, et c'est l'e-mail qui les
     // relie — la même clé humaine que le commercial a sous les yeux.
     const now = this.clock.now();
-    const [addresses, book, access, hierarchy, ledger, payerIsPublic] = await Promise.all([
+    const [addresses, book, access, hierarchy, ledger, payer] = await Promise.all([
       this.addresses.read(companyId),
       this.prisma.companyContact.findMany({
         where: { companyId },
@@ -209,7 +209,7 @@ export class PrismaAdminCompanyReader extends AdminCompanyReader {
       }),
       readHierarchy(this.prisma, row, now),
       warningLedgerOf(this.prisma, [row], now),
-      this.chorusServicePayerIsPublic(row, now),
+      this.payerOf(row, now),
     ]);
     return {
       ...toView(row, this.clock.now(), ledger),
@@ -250,29 +250,49 @@ export class PrismaAdminCompanyReader extends AdminCompanyReader {
       hierarchy,
       chorusRouting: chorusRoutingView(row.chorusRouting),
       chorusService: chorusServiceView(row.chorusService),
-      chorusServicePayerIsPublic: payerIsPublic,
+      chorusServicePayerIsPublic: payer.isPublic,
+      payerSettlesOnAccount: payer.settlesOnAccount,
       archivedByName: row.archivedAt === null ? null : row.archivedByName,
       archiveReason: row.archivedAt === null ? null : row.archiveReason,
     };
   }
 
   /**
-   * Le payeur d'aujourd'hui est-il public ? Le principal dont la société suit
-   * la facturation à `now`, sinon elle-même — la règle de
-   * `RecordChorusServiceHandler`, lue ici pour que la carte ne s'offre pas
-   * là où le geste serait refusé.
+   * Le payeur d'aujourd'hui : le principal dont la société suit la
+   * facturation à `now`, sinon elle-même. Sa nature est la règle de
+   * `RecordChorusServiceHandler` ; son crédit, celle de la passation
+   * (`accountStanding`) — lues ici pour que l'écran n'offre pas ce que le
+   * geste refuserait, ni ne cache ce qu'il accepterait.
    */
-  private async chorusServicePayerIsPublic(row: CompanyRow, now: Date): Promise<boolean> {
+  private async payerOf(row: CompanyRow, now: Date): Promise<PayerFacts> {
     const billing = row.follows.find((follow) => follow.validFrom <= now) ?? null;
     if (billing === null) {
-      return isPublicFormeJuridique(row.formeJuridique);
+      return payerFacts(row);
     }
     const payer = await this.prisma.company.findUnique({
       where: { id: billing.parentId },
-      select: { formeJuridique: true },
+      select: { formeJuridique: true, grantedTerms: true, directDebitBlockedAt: true },
     });
-    return payer !== null && isPublicFormeJuridique(payer.formeJuridique);
+    return payer === null ? { isPublic: false, settlesOnAccount: false } : payerFacts(payer);
   }
+}
+
+/** Ce que la fiche dit de son payeur. */
+interface PayerFacts {
+  readonly isPublic: boolean;
+  readonly settlesOnAccount: boolean;
+}
+
+/** Nature et crédit d'un payeur, depuis ses colonnes. */
+function payerFacts(payer: {
+  readonly formeJuridique: string;
+  readonly grantedTerms: readonly string[];
+  readonly directDebitBlockedAt: Date | null;
+}): PayerFacts {
+  return {
+    isPublic: isPublicFormeJuridique(payer.formeJuridique),
+    settlesOnAccount: payer.grantedTerms.length > 0 && payer.directDebitBlockedAt === null,
+  };
 }
 
 /** La fiche Chorus Pro rangée, telle que la fiche staff la montre. */

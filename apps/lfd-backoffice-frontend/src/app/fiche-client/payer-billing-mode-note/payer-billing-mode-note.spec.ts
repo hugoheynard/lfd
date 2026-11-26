@@ -43,6 +43,7 @@ function company(hierarchy: Partial<CompanyHierarchyView> = {}): AdminCompanyDet
     chorusRouting: null,
     chorusService: null,
     chorusServicePayerIsPublic: false,
+    payerSettlesOnAccount: false,
     activatedAt: null,
     warnings: [],
     activation: null,

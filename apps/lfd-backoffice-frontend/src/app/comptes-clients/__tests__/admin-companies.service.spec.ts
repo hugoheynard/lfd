@@ -95,6 +95,7 @@ describe('AdminCompaniesService', () => {
       chorusRouting: null,
       chorusService: null,
       chorusServicePayerIsPublic: false,
+      payerSettlesOnAccount: false,
       ...company,
       vatNumberRequired: true,
       hasBankAccount: false,

@@ -90,6 +90,7 @@ function schoolView(formeJuridique: string): AdminCompanyDetailView {
     ],
     chorusService: null,
     chorusServicePayerIsPublic: false,
+    payerSettlesOnAccount: false,
     chorusRouting: {
       commitmentRequired: true,
       serviceCodeRequired: false,

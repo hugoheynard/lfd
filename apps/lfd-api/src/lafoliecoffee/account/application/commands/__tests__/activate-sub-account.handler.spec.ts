@@ -95,6 +95,7 @@ function chaletView(parentStatus: "active" | "pending"): AdminCompanyDetailView 
     ],
     chorusService: null,
     chorusServicePayerIsPublic: false,
+    payerSettlesOnAccount: false,
     chorusRouting: null,
     fulfillmentPreference: {
       method: null,

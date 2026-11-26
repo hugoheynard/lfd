@@ -47,6 +47,7 @@ function company(over: Partial<AdminCompanyDetail> = {}): AdminCompanyDetail {
     chorusRouting: null,
     chorusService: null,
     chorusServicePayerIsPublic: false,
+    payerSettlesOnAccount: false,
     activatedAt: null,
     warnings: [],
     // Le DÉTAIL : c'est lui que la fiche projette, et lui seul qui sait si la

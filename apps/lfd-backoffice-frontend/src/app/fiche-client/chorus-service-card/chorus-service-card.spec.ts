@@ -69,6 +69,7 @@ function unite(chorusService: ChorusServiceView | null, followsBilling = true): 
     chorusRouting: null,
     chorusService,
     chorusServicePayerIsPublic: true,
+    payerSettlesOnAccount: false,
   };
 }
 

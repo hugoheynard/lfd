@@ -49,8 +49,7 @@ function fiche(overrides: Partial<AdminCompanyFacts> = {}): AdminCompanyFacts {
     raisonSociale: 'Boulangerie Périn SARL',
     enseigne: '',
     status: 'active',
-    grantedTerms: ['monthly'],
-    directDebitBlocked: false,
+    payerSettlesOnAccount: true,
     formeJuridique: 'sarl',
     addresses: { deliveries: [ADDRESS] },
     fulfillmentPreference: NO_FULFILLMENT_PREFERENCE,
@@ -140,10 +139,22 @@ describe('customerFromAdminCompany', () => {
 
   it.each([
     ['la société n’est pas active', { status: 'pending' as const }],
-    ['aucun terme n’est accordé', { grantedTerms: [] }],
-    ['la comptabilité a bloqué le prélèvement', { directDebitBlocked: true }],
+    [
+      'le payeur n’a pas de crédit, ou son prélèvement est suspendu',
+      { payerSettlesOnAccount: false },
+    ],
   ])('ne règle pas au compte quand %s', (_label, overrides) => {
     expect(customerFromAdminCompany(fiche(overrides), []).settlesOnAccount).toBe(false);
+  });
+
+  /**
+   * Régression : la saisie lisait le crédit du SITE, vide, et bloquait « au
+   * compte » pour un site facturé chez un principal qui l'avait.
+   */
+  it('règle au compte selon le crédit du payeur, même sans crédit propre au site', () => {
+    expect(
+      customerFromAdminCompany(fiche({ payerSettlesOnAccount: true }), []).settlesOnAccount,
+    ).toBe(true);
   });
 
   it('reconnaît un organisme public à sa forme juridique', () => {

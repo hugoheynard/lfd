@@ -52,16 +52,15 @@ export type AdminCompanyFacts = Pick<
   | 'raisonSociale'
   | 'enseigne'
   | 'status'
-  | 'grantedTerms'
-  | 'directDebitBlocked'
+  | 'payerSettlesOnAccount'
   | 'formeJuridique'
   | 'fulfillmentPreference'
 > & { readonly addresses: Pick<AdminCompanyDetail['addresses'], 'deliveries'> };
 
 /**
  * La fiche du Commercial, projetée. `settlesOnAccount` y est le miroir de la
- * règle serveur — active, au moins un terme accordé, prélèvement non bloqué —,
- * la fiche portant les champs qui la fondent.
+ * règle serveur : société active, et crédit du PAYEUR — le principal d'un site
+ * facturé chez lui — accordé sans prélèvement suspendu.
  */
 export function customerFromAdminCompany(
   company: AdminCompanyFacts,
@@ -70,8 +69,7 @@ export function customerFromAdminCompany(
   return {
     displayName: companyDisplayName(company),
     status: company.status,
-    settlesOnAccount:
-      company.status === 'active' && company.grantedTerms.length > 0 && !company.directDebitBlocked,
+    settlesOnAccount: company.status === 'active' && company.payerSettlesOnAccount,
     // La forme de la société suffit : un site ne suit en facturation qu'un
     // principal de même nature (plan clients publics, B6).
     payerIsPublic: isPublicForm(company.formeJuridique),

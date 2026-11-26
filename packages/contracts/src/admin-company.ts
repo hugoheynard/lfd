@@ -225,6 +225,14 @@ export interface AdminCompanyDetailView extends AdminCompanyView {
    */
   readonly chorusServicePayerIsPublic: boolean;
 
+  /**
+   * Le payeur d'aujourd'hui (même règle) a un crédit accordé et un prélèvement
+   * non suspendu : une commande de la société peut se régler au compte. Un
+   * site facturé chez son principal règle selon le crédit du principal — la
+   * règle que la passation applique (`accountStanding`).
+   */
+  readonly payerSettlesOnAccount: boolean;
+
   /** Qui l'a supprimé, nom figé ce jour-là ; `null` si inconnu de l'annuaire ou non supprimé. */
   readonly archivedByName: string | null;
   /** Le motif de la suppression ; `null` si le compte n'est pas supprimé. */

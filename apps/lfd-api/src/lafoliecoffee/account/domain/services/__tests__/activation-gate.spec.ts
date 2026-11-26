@@ -56,6 +56,7 @@ function detail(over: Partial<AdminCompanyDetailView> = {}): AdminCompanyDetailV
     contacts: [],
     chorusService: null,
     chorusServicePayerIsPublic: false,
+    payerSettlesOnAccount: false,
     chorusRouting: null,
     fulfillmentPreference: {
       method: null,
