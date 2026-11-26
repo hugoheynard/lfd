@@ -24,6 +24,7 @@ export const GLOSSARY_S: Readonly<Record<string, string>> = {
   sent: 'Message envoyé',
   settle: 'Régler',
   settleAccount: 'Règlement — ajouter au compte',
+  settleInHouse: 'Règlement — commande interne, sans facture',
   settleAction: 'Régler maintenant',
   settleCard: 'Règlement — paiement direct',
   settleTitle: 'Règlement — question',

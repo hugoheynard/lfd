@@ -25,6 +25,7 @@ export const GLOSSARY_I_L: Readonly<Record<string, string>> = {
   identityVatRequiredHint: 'Identité — TVA obligatoire, aide',
   identityVatUndecidedHint: 'Identité — TVA selon la forme, aide',
   inCart: 'Déjà au panier',
+  inHouse: 'Commande interne — confirmation',
   incomplete: 'Dossier à compléter',
   installAction: 'Installer l’app — bouton',
   installIosOther: 'Installer l’app — autre navigateur iOS',

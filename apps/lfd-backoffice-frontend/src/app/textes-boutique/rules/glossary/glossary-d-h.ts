@@ -184,4 +184,7 @@ export const GLOSSARY_D_H: Readonly<Record<string, string>> = {
   filterAll: 'Filtre — tout',
   exclude: 'Carte d’un site — exclu',
   familyWhole: 'Carte d’un site — toute la famille',
+  favoriteAdd: 'Favoris — ajouter (lecteur d’écran)',
+  favoriteRemove: 'Favoris — retirer (lecteur d’écran)',
+  favoritesShelf: 'Favoris — rayon',
 };

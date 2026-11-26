@@ -2,6 +2,7 @@ import type {
   ActivationGate,
   AudienceContactSettingsView,
   FeatureLevelsView,
+  MyFavoritesView,
   MyMarketingPreferencesView,
   PlacedOrderResponse,
   PublicStorefrontPageView,
@@ -30,6 +31,9 @@ import {
 import { demoMyQuote, demoQuote, readQuoteRequest } from '../demo-data/demo-quote';
 import { demoDay } from '../demo-data/demo-days';
 import type { PreviewWorld } from '../journeys/preview-world';
+
+/** La personne du parcours n'a encore rien mis en favori. */
+const NO_FAVORITES: MyFavoritesView = { skus: [] };
 
 /** La personne du parcours n'a jamais été sollicitée par la boulangerie. */
 const DEMO_MARKETING_PREFERENCES: MyMarketingPreferencesView = {
@@ -199,6 +203,12 @@ export const DEMO_ROUTES: readonly DemoRoute[] = [
     pattern: /^\/me\/loyalty$/u,
     serves: 'la fidélité du parcours',
     answer: (_request, _match, world) => ok(world.loyalty),
+  },
+  {
+    method: 'GET',
+    pattern: /^\/me\/favorites$/u,
+    serves: 'aucun favori : le rayon des favoris reste caché',
+    answer: () => ok(NO_FAVORITES),
   },
   {
     method: 'GET',
