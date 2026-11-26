@@ -1,5 +1,6 @@
 import { Global, Module } from "@nestjs/common";
 
+import { Ord35InHouseOperation } from "../lafoliecoffee/orders/infrastructure/ord-35-in-house.operation.js";
 import {
   POST_DEPLOY_OPERATIONS,
   type PostDeployOperation,
@@ -13,11 +14,8 @@ import {
  * seule la racine voit les trois. L'ORDRE de la liste est l'ordre d'affichage
  * et d'exécution (§ 7.1).
  *
- * La liste est **vide** depuis le 2026-11-01 : les deux premières (politiques
- * des mercuriales, remises des commandes) ont été simulées à zéro en
- * production et retirées (§ 8). Le mécanisme, la trace et l'écran restent
- * pour la prochaine reprise. Une opération faite en production se retire au
- * lot suivant : sa ligne ici, son fichier, et la note dans le plan (§ 7.12).
+ * Une opération faite en production se retire au lot suivant : sa ligne ici,
+ * son fichier, et la note dans le plan (§ 7.12).
  *
  * `@Global` : la liste est injectée par le module d'`ops`, qui ne peut pas
  * importer celui-ci.
@@ -25,9 +23,11 @@ import {
 @Global()
 @Module({
   providers: [
+    Ord35InHouseOperation,
     {
       provide: POST_DEPLOY_OPERATIONS,
-      useValue: [] satisfies readonly PostDeployOperation[],
+      useFactory: (ord35: Ord35InHouseOperation): readonly PostDeployOperation[] => [ord35],
+      inject: [Ord35InHouseOperation],
     },
   ],
   exports: [POST_DEPLOY_OPERATIONS],
