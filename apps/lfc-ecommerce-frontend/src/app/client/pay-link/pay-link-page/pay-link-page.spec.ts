@@ -43,6 +43,8 @@ const READY_INTENT: PayLinkIntentResult = {
 /** Le service de collecte doublé : la page ne voit jamais un prestataire. */
 class FakeCollector implements Pick<CardCollector, 'mount'> {
   readonly outcomes: CollectOutcome[] = [];
+  /** Le nom passé à chaque collecte : le payeur d'un lien reste anonyme. */
+  readonly payerNames: unknown[] = [];
   mounted = 0;
   constructor(private readonly mountable: boolean | 'throws' = true) {}
 
@@ -56,7 +58,10 @@ class FakeCollector implements Pick<CardCollector, 'mount'> {
     }
     return Promise.resolve({
       setLocale: () => undefined,
-      collect: () => Promise.resolve(this.outcomes.shift() ?? { kind: 'succeeded' }),
+      collect: (payerName?: string | null) => {
+        this.payerNames.push(payerName);
+        return Promise.resolve(this.outcomes.shift() ?? { kind: 'succeeded' });
+      },
     });
   }
 }
@@ -242,6 +247,7 @@ describe('PayLinkPage', () => {
     expect(booted.el.querySelector('[data-paid]')?.textContent).toContain(FR.paidTitle);
     expect(booted.el.querySelector('[role="status"]')?.textContent).toContain(FR.paidSubtitle);
     expect(payButton(booted.el)).toBeNull();
+    expect(booted.collector.payerNames).toEqual([undefined]);
   });
 
   it('un refus garde la phrase du prestataire, relie l’erreur au bouton, et se réessaie', async () => {

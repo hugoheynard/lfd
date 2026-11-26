@@ -10,6 +10,7 @@ import { type AbandonOutcome, ClientOrderAbandon } from '../../client-order-aban
 import { CARD_DUE, provideRecognised } from '../../client-orders.fixture';
 import { ClientLocale } from '../../client-locale.service';
 import { ClientWorkspace } from '../../client-workspace.service';
+import { ClientIdentity } from '../../client-identity.service';
 import { ClientOrders } from '../../client-orders.service';
 import { FR } from '../../copy/fr';
 import { NotifyService } from '../../../notify.service';
@@ -28,7 +29,7 @@ type Outcome =
  * chargement vit dans `StripeLoader` — le composant de paiement `legacy/`, qui
  * appelle `loadStripe` en direct, n'est traversé par aucun test.
  */
-function stripeThatAnswers(outcome: Outcome, mounted: string[] = []) {
+function stripeThatAnswers(outcome: Outcome, mounted: string[] = [], confirmed: unknown[] = []) {
   return {
     load: () =>
       Promise.resolve({
@@ -38,7 +39,10 @@ function stripeThatAnswers(outcome: Outcome, mounted: string[] = []) {
             return { mount: () => undefined };
           },
         }),
-        confirmPayment: () => Promise.resolve(outcome),
+        confirmPayment: (options: unknown) => {
+          confirmed.push(options);
+          return Promise.resolve(outcome);
+        },
       }),
   };
 }
@@ -195,6 +199,24 @@ describe('ReglementPage', () => {
 
     expect(paid).toHaveBeenCalledWith('ord_9');
     expect(gone).toEqual([['/confirmation-de-commande']]);
+  });
+
+  it('passe le nom du client connecté à Stripe comme titulaire, sans e-mail', async () => {
+    const confirmed: unknown[] = [];
+    const { fixture } = await boot(
+      stripeThatAnswers({ paymentIntent: { status: 'succeeded' } }, [], confirmed),
+    );
+    vi.spyOn(TestBed.inject(ClientIdentity), 'fullName').mockReturnValue('Pierre Martin');
+
+    button(fixture, FR.pay.submit.split('{')[0]!.trim()).click();
+    await Promise.resolve();
+
+    expect(confirmed).toEqual([
+      expect.objectContaining({
+        redirect: 'if_required',
+        confirmParams: { payment_method_data: { billing_details: { name: 'Pierre Martin' } } },
+      }),
+    ]);
   });
 
   /**

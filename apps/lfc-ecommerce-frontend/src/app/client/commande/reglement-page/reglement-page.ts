@@ -23,6 +23,7 @@ import { ClientChrome } from '../../client-chrome.service';
 import { type AbandonOutcome, ClientOrderAbandon } from '../../client-order-abandon.service';
 import { ClientOrders } from '../../client-orders.service';
 import { ClientWorkspace } from '../../client-workspace.service';
+import { ClientIdentity } from '../../client-identity.service';
 import { ClientLocale } from '../../client-locale.service';
 import { ClientCopyService, fill } from '../../copy/client-copy.service';
 import { formatCents } from '../../format-money';
@@ -90,6 +91,7 @@ export class ReglementPage {
   private readonly router = inject(Router);
   private readonly orders = inject(ClientOrders);
   private readonly collector = inject(CardCollector);
+  private readonly identity = inject(ClientIdentity);
   private readonly notify = inject(NotifyService);
   private readonly abandoning = inject(ClientOrderAbandon);
   private readonly workspace = inject(ClientWorkspace);
@@ -241,7 +243,7 @@ export class ReglementPage {
     }
     this.phase.set('paying');
     this.error.set(null);
-    const outcome = await collection.collect();
+    const outcome = await collection.collect(this.identity.fullName());
     if (outcome.kind === 'redirected') {
       return;
     }

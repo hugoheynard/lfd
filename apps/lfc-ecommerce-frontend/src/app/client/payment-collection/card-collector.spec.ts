@@ -14,6 +14,7 @@ interface Seen {
   elementsWith: unknown;
   mounted: boolean;
   updates: unknown[];
+  confirmedWith: Record<string, unknown> | null;
 }
 
 /** Un Stripe doublé — la seule frontière qu'on double. `null` : le script ne charge pas. */
@@ -32,7 +33,10 @@ function stripeLoader(seen: Seen, confirmation: Confirmation | null) {
             update: (options: unknown) => seen.updates.push(options),
           };
         },
-        confirmPayment: () => Promise.resolve(confirmation),
+        confirmPayment: (options: Record<string, unknown>) => {
+          seen.confirmedWith = options;
+          return Promise.resolve(confirmation);
+        },
       });
     },
   };
@@ -49,7 +53,13 @@ function collector(
   confirmation: Confirmation | null,
   assign: (url: string) => void = () => undefined,
 ): { service: CardCollector; seen: Seen } {
-  const seen: Seen = { loadedWith: null, elementsWith: null, mounted: false, updates: [] };
+  const seen: Seen = {
+    loadedWith: null,
+    elementsWith: null,
+    mounted: false,
+    updates: [],
+    confirmedWith: null,
+  };
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     providers: [
@@ -79,6 +89,28 @@ describe('CardCollector — le seul endroit qui connaît un prestataire', () => 
     const mounted = await service.mount(EMBEDDED, host(), 'fr');
 
     expect(await mounted?.collect()).toEqual({ kind: 'succeeded' });
+  });
+
+  it('transmet le nom du payeur comme titulaire, sans e-mail, en gardant la redirection au besoin', async () => {
+    const { service, seen } = collector({ paymentIntent: { status: 'succeeded' } });
+    const mounted = await service.mount(EMBEDDED, host(), 'fr');
+
+    await mounted?.collect('  Pierre Martin ');
+
+    expect(seen.confirmedWith).toEqual({
+      elements: expect.anything(),
+      redirect: 'if_required',
+      confirmParams: { payment_method_data: { billing_details: { name: 'Pierre Martin' } } },
+    });
+  });
+
+  it.each([undefined, null, '', '   '])('ne transmet rien sans nom connu (%s)', async (name) => {
+    const { service, seen } = collector({ paymentIntent: { status: 'succeeded' } });
+    const mounted = await service.mount(EMBEDDED, host(), 'fr');
+
+    await mounted?.collect(name);
+
+    expect(seen.confirmedWith).toEqual({ elements: expect.anything(), redirect: 'if_required' });
   });
 
   it('rend le refus avec la phrase de Stripe, écrite pour le porteur', async () => {

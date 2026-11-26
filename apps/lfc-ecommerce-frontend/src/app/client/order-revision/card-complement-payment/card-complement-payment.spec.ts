@@ -2,6 +2,7 @@ import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import type { CardComplementPaymentView, CustomerOrderDetailView } from '@lfd/contracts';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { ClientIdentity } from '../../client-identity.service';
 import { LIVE_PICKUP } from '../../mes-commandes/order-view.fixture';
 import { StripeLoader } from '../../stripe-loader.service';
 import {
@@ -20,12 +21,15 @@ import {
 type Outcome = { error: { message: string } } | { paymentIntent: { status: string } };
 
 /** Un Stripe doublé — la seule frontière qu'on double, comme la page de règlement. */
-function stripeThatAnswers(outcome: Outcome) {
+function stripeThatAnswers(outcome: Outcome, confirmed: unknown[] = []) {
   return {
     load: () =>
       Promise.resolve({
         elements: () => ({ create: () => ({ mount: () => undefined }), update: () => undefined }),
-        confirmPayment: () => Promise.resolve(outcome),
+        confirmPayment: (options: unknown) => {
+          confirmed.push(options);
+          return Promise.resolve(outcome);
+        },
       }),
   };
 }
@@ -58,6 +62,7 @@ interface Doubles {
   readonly revisions?: readonly number[];
   readonly abandon?: RevisionOutcome<null>;
   readonly expiresInMs?: number;
+  readonly confirmed?: unknown[];
 }
 
 async function mount(doubles: Doubles = {}) {
@@ -74,7 +79,10 @@ async function mount(doubles: Doubles = {}) {
       { provide: OrderRevisionGateway, useValue: gateway },
       {
         provide: StripeLoader,
-        useValue: stripeThatAnswers(doubles.outcome ?? { paymentIntent: { status: 'succeeded' } }),
+        useValue: stripeThatAnswers(
+          doubles.outcome ?? { paymentIntent: { status: 'succeeded' } },
+          doubles.confirmed,
+        ),
       },
     ],
   });
@@ -110,6 +118,20 @@ describe('CardComplementPayment', () => {
     expect(el.querySelector('[data-complement-lead]')?.textContent).toContain('12,00');
     expect(el.querySelector('[data-remaining]')?.textContent).toMatch(/\d+:\d{2}/);
     expect(el.querySelector<HTMLButtonElement>('[data-pay]')?.disabled).toBe(false);
+  });
+
+  it('passe le nom du client connecté à Stripe comme titulaire, sans e-mail', async () => {
+    const confirmed: unknown[] = [];
+    const { fixture, el } = await mount({ confirmed });
+    vi.spyOn(TestBed.inject(ClientIdentity), 'fullName').mockReturnValue('Pierre Martin');
+    el.querySelector<HTMLButtonElement>('[data-pay]')?.click();
+    await fixture.whenStable();
+    expect(confirmed).toEqual([
+      expect.objectContaining({
+        redirect: 'if_required',
+        confirmParams: { payment_method_data: { billing_details: { name: 'Pierre Martin' } } },
+      }),
+    ]);
   });
 
   it('payé : relit la commande toutes les 2 s jusqu’à voir la révision monter', async () => {

@@ -25,8 +25,13 @@ export type CollectOutcome =
 export interface MountedCollection {
   /** La langue changée pendant le règlement suit dans les champs. */
   setLocale(locale: LocaleCode): void;
-  /** Le client a validé : on fait payer. */
-  collect(): Promise<CollectOutcome>;
+  /**
+   * Le client a validé : on fait payer. `payerName` — le nom du client connecté,
+   * transmis au prestataire comme titulaire ; **jamais l'e-mail**, que seul le
+   * serveur pose (doc `documentation/payment/plan-pointage-stripe.md`, lot 4).
+   * Absent, vide ou payeur anonyme (lien de paiement) : rien ne part.
+   */
+  collect(payerName?: string | null): Promise<CollectOutcome>;
 }
 
 /**
@@ -95,8 +100,15 @@ function stripeCollection(
         elements.update({ locale });
       }
     },
-    collect: async () => {
-      const result = await stripe.confirmPayment({ elements, redirect: 'if_required' });
+    collect: async (payerName) => {
+      const name = payerName?.trim() ?? '';
+      const result = await stripe.confirmPayment({
+        elements,
+        redirect: 'if_required',
+        ...(name === ''
+          ? {}
+          : { confirmParams: { payment_method_data: { billing_details: { name } } } }),
+      });
       if (result.error !== undefined) {
         return { kind: 'refused', message: result.error.message ?? null };
       }

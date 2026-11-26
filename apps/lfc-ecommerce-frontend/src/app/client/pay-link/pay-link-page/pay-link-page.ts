@@ -237,6 +237,7 @@ export class PayLinkPage {
     }
     this.phase.set('paying');
     this.error.set(null);
+    // Payeur anonyme : aucun nom ne part au prestataire (plan-pointage-stripe, D5).
     const outcome = await collection.collect();
     switch (outcome.kind) {
       case 'redirected':

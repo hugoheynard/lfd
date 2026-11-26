@@ -21,6 +21,7 @@ import {
   FoldLoadingStateComponent,
 } from 'fold-ng';
 
+import { ClientIdentity } from '../../client-identity.service';
 import { ClientLocale } from '../../client-locale.service';
 import { ClientCopyService, fill } from '../../copy/client-copy.service';
 import { formatCents } from '../../format-money';
@@ -89,6 +90,7 @@ export class CardComplementPayment {
 
   private readonly gateway = inject(OrderRevisionGateway);
   private readonly collector = inject(CardCollector);
+  private readonly identity = inject(ClientIdentity);
   private readonly locale = inject(ClientLocale).current;
   private readonly t = inject(ClientCopyService).t;
 
@@ -197,7 +199,7 @@ export class CardComplementPayment {
     }
     this.phase.set('paying');
     this.error.set(null);
-    const outcome = await collection.collect();
+    const outcome = await collection.collect(this.identity.fullName());
     if (outcome.kind === 'redirected') {
       return;
     }
