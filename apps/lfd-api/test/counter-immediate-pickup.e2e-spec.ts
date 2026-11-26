@@ -452,3 +452,15 @@ describe("le « Retrait immédiat » sans le stock reçu (Réglages › Comptoir
     expect(jsonBody<{ code: string }>(refused).code).toBe("orders.shelf.stock_short");
   });
 });
+
+describe("le « Retrait immédiat » est toujours ouvert (Hugo, 2026-11-26)", () => {
+  it("passe même quand le réglage ferme le jour même à tous", async () => {
+    const pro = await seedCreditedPro("recours");
+    await staff()
+      .patch("/admin/order-cutoff-settings")
+      .send({ sameDayProAllowed: false, sameDayPublicAllowed: false })
+      .expect(204);
+
+    await placeImmediate(pro, "account");
+  });
+});

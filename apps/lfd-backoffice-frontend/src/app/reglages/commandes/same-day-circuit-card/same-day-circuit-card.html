@@ -27,7 +27,7 @@
           />
           <fold-checkbox
             label="Pros : commander pour aujourd’hui"
-            hint="Au comptoir, saisi par l’équipe."
+            hint="Une commande programmée pour aujourd’hui, saisie par l’équipe. Le « Retrait immédiat » du comptoir reste toujours ouvert."
             [checked]="current.sameDayProAllowed"
             (checkedChange)="set('sameDayProAllowed', $event)"
             [disabled]="!canWrite() || pending()"

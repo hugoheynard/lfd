@@ -109,17 +109,22 @@ export class ShelfCircuit {
    * quand elle est ouverte. Partagé par la passation ({@link ensureOpen}) et
    * par la révision d'une commande sur stock, qui en fait aussi un verdict
    * d'écran (lot L5).
+   *
+   * 🔴 **Le comptoir est toujours ouvert** (Hugo, 2026-11-26) : le « Retrait
+   * immédiat » est le recours de l'équipe pour les cas particuliers, il ne
+   * dépend ni du réglage « jour même » ni des créneaux restants. Les portes
+   * en ligne, elles, suivent le réglage.
    */
   async refusalFor(
     door: SameDayDoor,
     siteId: string | null,
   ): Promise<SameDayOrderClosedError | NoPickupLeftTodayError | null> {
+    if (door === "counter") {
+      return null;
+    }
     const today = this.plans.today();
     if (!sameDayOpenTo(await this.sameDay.settings(), door)) {
       return new SameDayOrderClosedError(today);
-    }
-    if (door === "counter") {
-      return null;
     }
     const site =
       siteId === null ? null : ((await this.sites.forDay(today, [siteId])).get(siteId) ?? null);

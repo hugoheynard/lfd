@@ -744,17 +744,16 @@ describe("PlaceOrderForCustomerHandler — sur la vitrine (L4)", () => {
     expect(desk.held).toEqual([]);
   });
 
-  it("refusée quand le réglage n'ouvre pas aujourd'hui aux pros", async () => {
+  it("passe même quand le réglage n'ouvre pas aujourd'hui aux pros : le comptoir est le recours", async () => {
     const sink = { placed: null as OrderToPlace | null };
     const plans = gateOf();
 
-    await expect(
-      handler(guard("orders", "active", "granted"), sink, {
-        plans,
-        shelf: shelfFor(plans, { sameDay: new FixedSameDay({ sameDayPublicAllowed: true }) }),
-      }).execute(placement("staff_1", shelfPayload())),
-    ).rejects.toBeInstanceOf(SameDayOrderClosedError);
-    expect(sink.placed).toBeNull();
+    await handler(guard("orders", "active", "granted"), sink, {
+      plans,
+      shelf: shelfFor(plans, { sameDay: new FixedSameDay({ sameDayPublicAllowed: true }) }),
+    }).execute(placement("staff_1", shelfPayload()));
+
+    expect(sink.placed).toMatchObject({ supply: "shelf" });
   });
 
   it("refusée au-delà du reste", async () => {

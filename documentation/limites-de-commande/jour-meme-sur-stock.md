@@ -154,7 +154,12 @@ flowchart LR
 
 - **La clientèle** : `sameDayDoorOf` / `sameDayOpenTo`
   (`lafoliecoffee/order-cutoffs/domain/same-day-doors.ts:24`, `:40`) — trois portes :
-  particulier, pro en ligne, comptoir.
+  particulier, pro en ligne, comptoir. 🔴 **Le comptoir est toujours ouvert
+  à une commande sur stock** (Hugo, 2026-11-26) : le « Retrait immédiat »
+  est le recours de l'équipe pour les cas particuliers, et
+  `ShelfCircuit.refusalFor` ne lit pas le réglage pour la porte `counter`.
+  Le réglage « pros » ne garde plus, côté équipe, que la commande
+  **programmée** pour aujourd'hui (`OrderPlanGate`).
 - **Le créneau restant** : `pickupLeftToday`
   (`lafoliecoffee/orders/domain/services/shelf-circuit.ts:37`) — créneaux publics et
   fermetures pour le particulier (un créneau dont le début est après
@@ -315,13 +320,13 @@ Colonnes de `order_cutoff_settings` (migration `20261102200000_les_reglages_du_j
 `prisma/schema/public/settings.prisma:373-381`), droit `lfc_order_settings`,
 page `apps/lfd-backoffice-frontend/src/app/reglages/commandes/same-day-circuit-card/` :
 
-| Colonne                       | Sens                                                       | Défaut   |
-| ----------------------------- | ---------------------------------------------------------- | -------- |
-| `same_day_public_allowed`     | les particuliers commandent pour aujourd'hui               | `false`  |
-| `same_day_pro_allowed`        | les pros aussi — au comptoir seulement sans l'option       | `false`  |
-| `same_day_pro_online`         | un pro le fait aussi en ligne                              | `false`  |
-| `same_day_pro_without_credit` | pro sans crédit au comptoir : `refuse` / `payment_link`    | `refuse` |
-| `shelf_hold_minutes`          | tenue du stock par un paiement en cours, bornée de 5 à 120 | 30       |
+| Colonne                       | Sens                                                                                           | Défaut   |
+| ----------------------------- | ---------------------------------------------------------------------------------------------- | -------- |
+| `same_day_public_allowed`     | les particuliers commandent pour aujourd'hui                                                   | `false`  |
+| `same_day_pro_allowed`        | les pros aussi — programmée par l'équipe sans l'option ; le « Retrait immédiat » ne le lit pas | `false`  |
+| `same_day_pro_online`         | un pro le fait aussi en ligne                                                                  | `false`  |
+| `same_day_pro_without_credit` | pro sans crédit au comptoir : `refuse` / `payment_link`                                        | `refuse` |
+| `shelf_hold_minutes`          | tenue du stock par un paiement en cours, bornée de 5 à 120                                     | 30       |
 
 `same_day_allowed` est une **colonne morte** (tranché par Hugo le 2026-11-02) :
 elle reste en base, aucune décision ne la lit

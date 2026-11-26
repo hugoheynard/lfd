@@ -323,14 +323,10 @@ describe("l'estimation de la saisie et la commande passée", () => {
   });
 
   it("rend le refus de la composition au lieu des montants, sans rien écrire", async () => {
-    await staff()
-      .patch("/admin/order-cutoff-settings")
-      .send({ sameDayProAllowed: false })
-      .expect(204);
+    // Un « Retrait immédiat » daté d'un autre jour qu'aujourd'hui : refusé à la composition.
     const body = pickupBody({
       supply: "shelf",
       entryShortcut: "immediate_pickup",
-      requestedDeliveryDate: today(),
       requestedWindow: { start: "12:00", end: "13:00" },
     });
 
@@ -339,7 +335,7 @@ describe("l'estimation de la saisie et la commande passée", () => {
       .post("/admin/orders")
       .set(INTENT_KEY, freshIntent())
       .send(body)
-      .expect(409);
+      .expect(400);
 
     expect(view.amounts).toBeNull();
     expect(view.refusal).toEqual({

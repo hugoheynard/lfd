@@ -208,14 +208,14 @@ describe("ShelfCircuit.ensureOpen — chaque porte × chaque réglage", () => {
   });
   const sites = () => new FixedSiteDays(new Map([[SITE, AFTERNOON]]));
 
-  it("les particuliers ouverts seuls : le pro et le comptoir sont refusés", async () => {
+  it("les particuliers ouverts seuls : le pro est refusé, le comptoir passe", async () => {
     const circuit = shelfCircuitOf(gateOf(), {
       sameDay: new FixedSameDay({ sameDayPublicAllowed: true }),
       sites: sites(),
     });
     await expect(circuit.ensureOpen(CLIENT, SITE)).resolves.toBeUndefined();
     await expect(circuit.ensureOpen(PRO, SITE)).rejects.toBeInstanceOf(SameDayOrderClosedError);
-    await expect(circuit.ensureOpen(STAFF, SITE)).rejects.toBeInstanceOf(SameDayOrderClosedError);
+    await expect(circuit.ensureOpen(STAFF, SITE)).resolves.toBeUndefined();
   });
 
   it("« pros » sans « en ligne » : le comptoir passe, le pro en ligne est refusé", async () => {
@@ -235,9 +235,10 @@ describe("ShelfCircuit.ensureOpen — chaque porte × chaque réglage", () => {
     await expect(circuit.ensureOpen(PRO, SITE)).resolves.toBeUndefined();
   });
 
-  it("le comptoir fermé par le réglage est refusé même sans site", async () => {
+  it("le comptoir passe même quand le réglage ferme tout le jour même : c'est le recours de l'équipe", async () => {
     const circuit = shelfCircuitOf(gateOf(), { sameDay: new FixedSameDay(false) });
-    await expect(circuit.ensureOpen(STAFF, null)).rejects.toBeInstanceOf(SameDayOrderClosedError);
+    await expect(circuit.ensureOpen(STAFF, SITE)).resolves.toBeUndefined();
+    await expect(circuit.ensureOpen(STAFF, null)).resolves.toBeUndefined();
   });
 
   it("un particulier sans site, ou sur un site inconnu, est refusé sans libellé inventé", async () => {
