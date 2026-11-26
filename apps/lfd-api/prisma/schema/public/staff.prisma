@@ -114,6 +114,10 @@ enum StaffResource {
   /// CHANGER LE MOYEN D'ENCAISSEMENT d'un payeur au compte — prélèvement ou
   /// virement (le-paiement-par-virement.md, V10). Accordée à l'écran.
   b2b_collection_means
+  /// LES RESTAURANTS MAISON — marquer / démarquer un payeur « maison »
+  /// (2026-11-26, `comptabilite/facturation/plan-restaurants-maison.md`, D2).
+  /// Accordée à l'écran.
+  b2b_in_house_payers
   /// LE PRÉLÈVEMENT D'ESSAI — déclarer nos établissements, générer un fichier
   /// `pain.008` d'essai, marquer un essai remboursé (2026-10-22,
   /// `documentation/comptabilite/prelevement/plan-prelevement-d-essai.md`).

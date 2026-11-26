@@ -64,6 +64,10 @@ export const ACCOUNT_FACTS = {
   directDebitBlocked: "company.direct_debit_blocked",
   /** La comptabilité rétablit le prélèvement mensuel. */
   directDebitUnblocked: "company.direct_debit_unblocked",
+  /** L'équipe marque la société « maison » : un de nos restaurants. */
+  inHouseDeclared: "company.in_house_declared",
+  /** L'équipe retire la nature « maison ». */
+  inHouseWithdrawn: "company.in_house_withdrawn",
   /** L'équipe supprime (archive) un compte qui n'a jamais commandé. */
   archived: "company.archived",
   /** L'équipe rend un compte supprimé. */

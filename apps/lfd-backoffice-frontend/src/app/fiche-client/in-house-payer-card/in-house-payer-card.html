@@ -1,0 +1,63 @@
+<fold-card>
+  <fold-element-title cardHeader variant="title" icon="company" title="Restaurant maison" />
+  <div class="body">
+    <p class="explain">
+      Un de nos restaurants, enregistré comme client : ses commandes partent au fournil et en
+      livraison comme les autres, mais ne sont ni facturées ni prélevées.
+    </p>
+
+    @switch (state()) {
+      @case ('loading') {
+        <fold-loading message="Lecture de la nature du compte…" />
+      }
+      @case ('error') {
+        <fold-empty-state tone="alert" title="Impossible de lire la nature « maison »">
+          <button foldButton (click)="load()">Réessayer</button>
+        </fold-empty-state>
+      }
+      @default {
+        <p class="state" data-in-house-state>
+          @if (inHouse()) {
+            <strong>Ce client est un de nos restaurants</strong>
+            @if (since(); as day) {
+              , depuis le {{ day }}
+            }
+            .
+          } @else {
+            <strong>Ce client est facturé normalement.</strong>
+          }
+        </p>
+
+        @if (canWrite()) {
+          @if (confirming()) {
+            <fold-inline-confirm
+              [open]="true"
+              [intent]="inHouse() ? 'primary' : 'danger'"
+              [message]="confirmMessage()"
+              [loading]="saving()"
+              (confirmed)="apply()"
+              (cancelled)="confirming.set(false)"
+              data-in-house-confirm
+            >
+              <span hidden></span>
+            </fold-inline-confirm>
+          } @else {
+            <button
+              foldButton
+              size="sm"
+              [emphasis]="inHouse() ? 'outline' : 'solid'"
+              (click)="confirming.set(true)"
+              data-in-house-toggle
+            >
+              {{ inHouse() ? 'Retirer « restaurant maison »' : 'Marquer « restaurant maison »' }}
+            </button>
+          }
+        }
+
+        @if (refusal(); as message) {
+          <fold-callout variant="alert" announce data-in-house-refusal>{{ message }}</fold-callout>
+        }
+      }
+    }
+  </div>
+</fold-card>

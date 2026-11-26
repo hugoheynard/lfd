@@ -889,6 +889,8 @@ export const ACCOUNTS_PHRASES = {
   'company.status_changed': statusChanged,
   'company.direct_debit_blocked': directDebitBlocked,
   'company.direct_debit_unblocked': onClient('a rétabli le prélèvement mensuel ', 'of'),
+  'company.in_house_declared': onClient('a marqué « restaurant maison » ', 'the'),
+  'company.in_house_withdrawn': onClient('a retiré la nature « restaurant maison » ', 'to'),
   'company.archived': companyArchived,
   'company.unarchived': onClient('a rendu le compte supprimé ', 'of'),
   'company.contacted': companyContacted,

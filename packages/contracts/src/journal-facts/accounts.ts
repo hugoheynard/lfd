@@ -252,6 +252,14 @@ export const ACCOUNTS_AND_CARTS_FACTS = {
   ),
   "company.direct_debit_unblocked": fact(payload({ subjectLabel: subjectLabel() })),
   /**
+   * L'équipe marque la société comme un de nos restaurants (« maison ») :
+   * ses commandes passées ensuite ne seront plus facturées. L'auteur est sur
+   * la ligne, pas dans la charge.
+   */
+  "company.in_house_declared": fact(payload({ subjectLabel: subjectLabel() })),
+  /** L'équipe retire la nature « maison » : les commandes suivantes sont de nouveau facturées. */
+  "company.in_house_withdrawn": fact(payload({ subjectLabel: subjectLabel() })),
+  /**
    * L'équipe supprime un compte qui n'a jamais commandé (« Supprimer le
    * compte ») : un archivage, rien n'est effacé. Le motif est obligatoire.
    * L'auteur est sur la ligne, pas dans la charge.

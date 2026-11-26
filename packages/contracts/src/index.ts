@@ -619,6 +619,8 @@ export type {
   ChorusRoutingView,
   CommitmentTiming,
 } from "./chorus-routing.js";
+export { inHousePayerPayloadSchema } from "./in-house-payer.js";
+export type { InHousePayerPayload, InHousePayerView } from "./in-house-payer.js";
 export { CHORUS_SERVICE_ERRORS, chorusServicePayloadSchema } from "./chorus-service.js";
 export type {
   ChorusServicePayload,

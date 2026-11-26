@@ -1,4 +1,5 @@
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
+import { KnownInHousePayers } from "./in-house-doubles.js";
 import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import { chaletCompany } from "../../../domain/entities/__tests__/company-hierarchy-fixtures.js";
@@ -20,6 +21,7 @@ function correct(formeJuridique: string, neighbours: BillingNatureNeighbours) {
     new DirectUnitOfWork(),
     new FixedNatureNeighbours(neighbours),
     clock,
+    new KnownInHousePayers(),
   );
   const run = () =>
     handler.execute(

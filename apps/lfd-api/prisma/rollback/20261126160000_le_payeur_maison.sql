@@ -1,0 +1,14 @@
+-- RETOUR ARRIÈRE de 20261126160000_le_payeur_maison
+-- (documentation/comptabilite/facturation/plan-restaurants-maison.md, D1).
+--
+-- 🔴 NON APPLIQUÉ, et Prisma ne le lit pas. La migration reste inscrite
+-- « appliquée ».
+--
+-- Le code d'avant ignore la table : le retour arrière est le retour du code
+-- seul. La retirer perdrait les restaurants marqués ; à faire seulement sur
+-- décision de Hugo :
+--
+--   DROP TRIGGER "payer_in_house_company_change_insert" ON "public"."payer_in_house";
+--   DROP TRIGGER "payer_in_house_company_change_update" ON "public"."payer_in_house";
+--   DROP TRIGGER "payer_in_house_company_change_delete" ON "public"."payer_in_house";
+--   DROP TABLE "public"."payer_in_house";

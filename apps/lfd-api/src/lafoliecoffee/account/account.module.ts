@@ -194,6 +194,17 @@ import { PrismaAccountHierarchyLock } from "./infrastructure/prisma-account-hier
 import { PrismaCompanyFollowsReader } from "./infrastructure/prisma-company-follows.reader.js";
 import { BillingNatureNeighboursReader } from "./domain/ports/billing-nature-neighbours.reader.js";
 import { PrismaBillingNatureNeighboursReader } from "./infrastructure/prisma-billing-nature-neighbours.reader.js";
+import { InHouseBillingNeighboursReader } from "./domain/ports/in-house-billing-neighbours.reader.js";
+import { InHouseDeclarationReader } from "./domain/ports/in-house-declaration.reader.js";
+import { InHousePayerReader } from "./domain/ports/in-house-payer.reader.js";
+import { InHousePayerRepository } from "./domain/ports/in-house-payer.repository.js";
+import { PrismaInHouseBillingNeighboursReader } from "./infrastructure/prisma-in-house-billing-neighbours.reader.js";
+import { PrismaInHouseDeclarationReader } from "./infrastructure/prisma-in-house-declaration.reader.js";
+import { PrismaInHousePayerReader } from "./infrastructure/prisma-in-house-payer.reader.js";
+import { PrismaInHousePayerRepository } from "./infrastructure/prisma-in-house-payer.repository.js";
+import { AdminCompanyInHouseController } from "./http/admin-company-in-house.controller.js";
+import { GetInHousePayerHandler } from "./application/queries/get-in-house-payer.handler.js";
+import { SetInHousePayerHandler } from "./application/commands/set-in-house-payer.handler.js";
 import { PrismaCompanyFollowsRepository } from "./infrastructure/prisma-company-follows.repository.js";
 import { AdminCompanyMembersController } from "./http/admin-company-members.controller.js";
 import { AdminCompanyContactsController } from "./http/admin-company-contacts.controller.js";
@@ -348,6 +359,7 @@ import { PrismaPrincipalSitesMenuReader } from "./infrastructure/prisma-principa
     AdminCompanyPricingFollowController,
     CompanySubAccountMenuController,
     AdminCompanySubAccountMenuController,
+    AdminCompanyInHouseController,
     CompanySitesMenuController,
     AdminCompanySitesMenuController,
   ],
@@ -439,6 +451,11 @@ import { PrismaPrincipalSitesMenuReader } from "./infrastructure/prisma-principa
     { provide: AccountHierarchyLock, useClass: PrismaAccountHierarchyLock },
     { provide: CompanyFollowsReader, useClass: PrismaCompanyFollowsReader },
     { provide: BillingNatureNeighboursReader, useClass: PrismaBillingNatureNeighboursReader },
+    // La nature « maison » (plan-restaurants-maison.md, D1) : un dépôt, et trois lectures étroites.
+    { provide: InHousePayerRepository, useClass: PrismaInHousePayerRepository },
+    { provide: InHousePayerReader, useClass: PrismaInHousePayerReader },
+    { provide: InHouseDeclarationReader, useClass: PrismaInHouseDeclarationReader },
+    { provide: InHouseBillingNeighboursReader, useClass: PrismaInHouseBillingNeighboursReader },
     { provide: CompanyFollowsRepository, useClass: PrismaCompanyFollowsRepository },
     { provide: CollectionFormRepository, useClass: PrismaCollectionFormRepository },
     ChangeCompanyStatusHandler,
@@ -502,6 +519,7 @@ import { PrismaPrincipalSitesMenuReader } from "./infrastructure/prisma-principa
     SetSubAccountMenuByStaffHandler,
     GetSubAccountMenuHandler,
     GetSubAccountMenuForStaffHandler,
+    GetInHousePayerHandler,
     SubAccountMenuWriting,
     { provide: SubAccountMenuRepository, useClass: PrismaSubAccountMenuRepository },
     { provide: SubAccountMenuReader, useClass: PrismaSubAccountMenuReader },
@@ -510,6 +528,7 @@ import { PrismaPrincipalSitesMenuReader } from "./infrastructure/prisma-principa
     SetPrincipalSitesMenuByStaffHandler,
     SetSubAccountMenuStateHandler,
     SetSubAccountMenuStateByStaffHandler,
+    SetInHousePayerHandler,
     GetPrincipalSitesMenuHandler,
     GetPrincipalSitesMenuForStaffHandler,
     { provide: PrincipalSitesMenuRepository, useClass: PrismaPrincipalSitesMenuRepository },
@@ -652,6 +671,9 @@ import { PrismaPrincipalSitesMenuReader } from "./infrastructure/prisma-principa
     // La commande d'un particulier notée au comptoir vérifie la fiche choisie
     // (commande-particulier-reglee-en-boutique.md, § 3).
     ParticularStandingReader,
+    // La lecture publiée de la nature « maison » (plan-restaurants-maison.md,
+    // D5) : les passations la liront pour décider du régime d'une commande.
+    InHousePayerReader,
   ],
 })
 export class AccountModule {}

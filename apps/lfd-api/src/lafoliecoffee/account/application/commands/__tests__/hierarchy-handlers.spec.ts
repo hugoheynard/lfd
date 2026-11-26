@@ -1,5 +1,6 @@
 import type { CreateSubAccountPayload } from "@lfd/contracts";
 
+import { KnownInHousePayers } from "./in-house-doubles.js";
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
 import { FixedIdGenerator } from "../../../../../platform/id/fixed-id-generator.js";
@@ -98,6 +99,7 @@ function createHandler(w: World): CreateSubAccountHandler {
     w.pricing,
     inMemoryIntents(),
     new KnownStaff(new Map([["staff_1", { name: "Lou Martin", role: "Commerciale" }]])),
+    new KnownInHousePayers(),
   );
 }
 
@@ -365,6 +367,7 @@ describe("Suivre et cesser de suivre", () => {
       clock,
       new DirectUnitOfWork(),
       w.pricing,
+      new KnownInHousePayers(),
     );
   }
   function stopHandler(w: World): StopFollowingParentHandler {

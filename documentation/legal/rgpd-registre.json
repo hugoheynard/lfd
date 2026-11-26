@@ -1341,6 +1341,24 @@
       "information": false
     },
     {
+      "colonne": "public.payer_in_house.declared_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a marqué un client « restaurant maison » (`declared_by`) sur `payer_in_house`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.payer_in_house.withdrawn_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a retiré la nature « restaurant maison » (`withdrawn_by`) sur `payer_in_house`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
       "colonne": "public.companies.kbis_certified_by_name",
       "personne": "staff",
       "categorie": "identite",

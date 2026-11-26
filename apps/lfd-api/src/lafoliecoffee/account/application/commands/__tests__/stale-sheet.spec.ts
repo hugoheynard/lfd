@@ -1,4 +1,5 @@
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
+import { KnownInHousePayers } from "./in-house-doubles.js";
 import { FixedNatureNeighbours } from "./hierarchy-doubles.js";
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
@@ -62,6 +63,7 @@ function build() {
         uow,
         new FixedNatureNeighbours(),
         NATURE_CLOCK,
+        new KnownInHousePayers(),
       ).execute(new UpdateIdentityByStaffCommand("c1", IDENTITY, revision)),
     contact: (revision) =>
       new UpdatePrimaryContactByStaffHandler(companies, events, uow, silentGestures()).execute(

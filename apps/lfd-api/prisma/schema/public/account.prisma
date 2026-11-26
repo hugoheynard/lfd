@@ -337,6 +337,8 @@ model Company {
 
   /// La fiche Chorus Pro d'un organisme public — au plus une.
   chorusRouting CompanyChorusRouting?
+  /// La nature « maison » du payeur — présente : c'est un de nos restaurants.
+  inHouse       PayerInHouse[]
   /// La fiche du service Chorus de la société qui commande — au plus une.
   chorusService CompanyChorusService?
 
@@ -439,6 +441,31 @@ model CompanyChorusRouting {
   checkedByRole       String   @default("") @map("checked_by_role")
 
   @@map("company_chorus_routing")
+  @@schema("public")
+}
+
+/// **La nature « maison » d'un payeur** — un de nos restaurants, enregistré
+/// comme client (`documentation/comptabilite/facturation/plan-restaurants-maison.md`,
+/// D1). Un historique : une ligne par période de marquage. La nature EST une
+/// ligne vivante (`withdrawn_at IS NULL`) ; démarquer la clôt, remarquer en
+/// écrit une neuve. Au plus une ligne vivante par société : index unique
+/// PARTIEL `payer_in_house_live_company`, posé en SQL (Prisma ne sait pas le
+/// décrire). Écrite par le contexte `account` seul ; les autres la lisent par
+/// la lecture publiée `InHousePayerReader`.
+model PayerInHouse {
+  id          String    @id
+  companyId   String    @map("company_id")
+  company     Company   @relation(fields: [companyId], references: [id])
+  declaredAt  DateTime  @map("declared_at") @db.Timestamptz(3)
+  /// L'id de fiche de l'agent qui a marqué — sans clé étrangère, comme les autres traces.
+  declaredBy  String    @map("declared_by")
+  /// `null` : la période est en cours.
+  withdrawnAt DateTime? @map("withdrawn_at") @db.Timestamptz(3)
+  /// L'id de fiche de l'agent qui a démarqué — sans clé étrangère.
+  withdrawnBy String?   @map("withdrawn_by")
+
+  @@index([companyId])
+  @@map("payer_in_house")
   @@schema("public")
 }
 

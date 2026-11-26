@@ -10,12 +10,13 @@ import { HierarchyPlace } from "../../value-objects/hierarchy-place.js";
 export function principalCompany(
   status: CompanyStatus = "active",
   hasSubAccounts = false,
+  formeJuridique = "SAS",
 ): Company {
   return Company.reconstitute({
     id: "groupe",
     raisonSociale: "Alpes Chalets SAS",
     enseigne: "Alpes Chalets",
-    formeJuridique: "SAS",
+    formeJuridique,
     siret: "81245678900021",
     vatNumber: "FR66812456789",
     contact: ContactDetails.create({

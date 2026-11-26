@@ -1,4 +1,5 @@
 import { FixedNatureNeighbours } from "./hierarchy-doubles.js";
+import { KnownInHousePayers } from "./in-house-doubles.js";
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
@@ -260,6 +261,7 @@ describe("rejouer un geste du staff qui ne change rien", () => {
       b.uow,
       new FixedNatureNeighbours(),
       NATURE_CLOCK,
+      new KnownInHousePayers(),
     );
     const payload = {
       enseigne: "Marais Café",

@@ -1,4 +1,5 @@
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
+import { KnownInHousePayers } from "./in-house-doubles.js";
 import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
 import { FixedIdGenerator } from "../../../../../platform/id/fixed-id-generator.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
@@ -69,6 +70,7 @@ function follow(w: World) {
     clock,
     new DirectUnitOfWork(),
     w.pricing,
+    new KnownInHousePayers(),
   );
 }
 
@@ -130,6 +132,7 @@ describe("le suivi du tarif, au journal des prix", () => {
       w.pricing,
       inMemoryIntents(),
       new KnownStaff(),
+      new KnownInHousePayers(),
     ).execute(
       new CreateSubAccountCommand(
         "groupe",

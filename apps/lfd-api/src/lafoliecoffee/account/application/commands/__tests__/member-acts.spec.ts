@@ -1,4 +1,5 @@
 import { FixedNatureNeighbours } from "./hierarchy-doubles.js";
+import { KnownInHousePayers } from "./in-house-doubles.js";
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
 import { FixedIdGenerator } from "../../../../../platform/id/fixed-id-generator.js";
@@ -283,6 +284,7 @@ describe("l'identité et le délai, par le client", () => {
       uow,
       new FixedNatureNeighbours(),
       NATURE_CLOCK,
+      new KnownInHousePayers(),
     ).execute(new UpdateCompanyIdentityCommand("u1", "c1", IDENTITY));
 
     expect(events.factTypes()).toEqual(["company.identity_edited"]);
@@ -302,6 +304,7 @@ describe("l'identité et le délai, par le client", () => {
       uow,
       new FixedNatureNeighbours(),
       NATURE_CLOCK,
+      new KnownInHousePayers(),
     );
     await handler.execute(new UpdateCompanyIdentityCommand("u1", "c1", IDENTITY));
 

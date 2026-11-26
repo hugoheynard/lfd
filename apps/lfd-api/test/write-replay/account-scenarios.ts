@@ -233,6 +233,12 @@ export const ACCOUNT_SCENARIOS: ScenarioSet = {
     };
   },
 
+  // Marquer un restaurant maison : le rejeu ne réécrit ni la ligne ni le fait.
+  [routeKey(`${HTTP}/admin-company-in-house.controller.ts`, "set")]: async ({ ctx }) => {
+    const resto = await createCompany(ctx.prisma, { enseigne: "Restaurant Maison du Rejeu" });
+    return { sub: STAFF, path: `/admin/companies/${resto.id}/in-house`, body: { inHouse: true } };
+  },
+
   [routeKey(`${HTTP}/company-delivery-procedure.controller.ts`, "addStep")]: ({ ctx }) =>
     addStepScenario(ctx, ""),
   [routeKey(`${HTTP}/admin-company-delivery-procedure.controller.ts`, "addStep")]: ({ ctx }) =>

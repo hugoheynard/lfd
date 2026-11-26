@@ -259,6 +259,12 @@
           }
         }
 
+        <!-- Un de nos restaurants : ses commandes ne sont plus facturées. Pas
+             sur un organisme public, que le serveur refuserait. -->
+        @if (!fiche.draft() && !isPublic() && fiche.company(); as c) {
+          <app-in-house-payer-card [companyId]="c.id" />
+        }
+
         @if (!fiche.draft()) {
           <!-- UNE carte : les interlocuteurs, détenteur compris, chacun portant
                l'état de son accès. Éditable comme côté client — le commercial

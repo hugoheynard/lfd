@@ -20,8 +20,10 @@ import { AccountHierarchyLock } from "../../domain/ports/account-hierarchy.lock.
 import { CompanyAddressRepository } from "../../domain/ports/company-address.repository.js";
 import { CompanyFollowsRepository } from "../../domain/ports/company-follows.repository.js";
 import { CompanyRepository } from "../../domain/ports/company.repository.js";
+import { InHousePayerReader } from "../../domain/ports/in-house-payer.reader.js";
 import { PricingFollowJournal } from "../../domain/ports/pricing-follow.journal.js";
 import { StaffDirectory } from "../../domain/ports/staff-directory.js";
+import { ensureBillingFollowKeepsInHouse } from "../../domain/services/in-house-billing-follow.js";
 import { CompanyOpening } from "../../domain/value-objects/company-opening.js";
 import { loadCompany, named } from "../services/account-hierarchy-support.js";
 import { CreateSubAccountCommand } from "./create-sub-account.command.js";
@@ -59,6 +61,7 @@ export class CreateSubAccountHandler implements ICommandHandler<CreateSubAccount
     private readonly pricingJournal: PricingFollowJournal,
     private readonly intents: OncePerIntent,
     private readonly staff: StaffDirectory,
+    private readonly inHouse: InHousePayerReader,
   ) {}
 
   execute(command: CreateSubAccountCommand): Promise<string> {
@@ -103,7 +106,15 @@ export class CreateSubAccountHandler implements ICommandHandler<CreateSubAccount
       await this.addFirstAddress(id, command, now);
 
       const follows = SubAccountFollows.none(id);
+      // Un site neuf n'est jamais maison : il ne suit pas la facturation d'un principal maison (D3).
+      const parentInHouse = await this.inHouse.isInHousePayer(parent.id);
       for (const aspect of aspects) {
+        ensureBillingFollowKeepsInHouse({
+          aspect,
+          parentId: parent.id,
+          childInHouse: false,
+          parentInHouse,
+        });
         follows.follow(aspect, company, parent.company, now);
       }
       await this.follows.save(follows);

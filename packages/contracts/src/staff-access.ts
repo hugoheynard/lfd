@@ -289,6 +289,14 @@ export const staffResourceSchema = z.enum([
    */
   "b2b_collection_means",
   /**
+   * **Marquer un payeur « maison »** — un de nos restaurants, enregistré comme
+   * client (`plan-restaurants-maison.md`, D2). Ses commandes cesseront d'être
+   * facturées : un geste à part de `b2b_companies`. Lire la nature reste sous
+   * `b2b_companies:read`. Accordée à l'écran ; aucune migration ne la donne à
+   * un rôle.
+   */
+  "b2b_in_house_payers",
+  /**
    * **Le prélèvement d'essai** — déclarer nos établissements, générer un
    * fichier `pain.008` d'essai sur l'un d'eux, le télécharger, marquer un essai
    * remboursé (2026-10-22,
@@ -942,6 +950,7 @@ export const STAFF_RESOURCE_LABELS: Readonly<Record<StaffResource, string>> = {
   b2b_accounting: "Comptabilité",
   b2b_deferred_payment_block: "Blocage du prélèvement",
   b2b_collection_means: "Moyen d'encaissement",
+  b2b_in_house_payers: "Restaurants maison",
   collection_test: "Prélèvement d'essai",
   lfc_price_limits: "Limites de prix",
   b2b_late_fee: "Surtaxe de retard",
@@ -1102,6 +1111,8 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     b2b_accounting: "write",
     b2b_deferred_payment_block: "write",
     b2b_collection_means: "write",
+    // La graine seule : en production, le geste s'accorde à l'écran.
+    b2b_in_house_payers: "write",
     // L'administrateur seul (2026-10-22, plan du prélèvement d'essai) : en
     // production, accordée à l'écran.
     collection_test: "write",

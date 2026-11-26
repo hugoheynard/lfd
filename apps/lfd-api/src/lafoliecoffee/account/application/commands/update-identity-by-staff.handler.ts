@@ -1,6 +1,8 @@
 import { Clock } from "../../../../platform/time/clock.js";
 import { BillingNatureNeighboursReader } from "../../domain/ports/billing-nature-neighbours.reader.js";
 import { ensureBillingNatureKept } from "../../domain/services/billing-nature-kept.js";
+import { InHousePayerReader } from "../../domain/ports/in-house-payer.reader.js";
+import { ensureInHouseStaysPrivate } from "../../domain/services/in-house-billing-follow.js";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
@@ -33,6 +35,7 @@ export class UpdateIdentityByStaffHandler implements ICommandHandler<
     private readonly uow: UnitOfWork,
     private readonly neighbours: BillingNatureNeighboursReader,
     private readonly clock: Clock,
+    private readonly inHouse: InHousePayerReader,
   ) {}
 
   async execute(command: UpdateIdentityByStaffCommand): Promise<void> {
@@ -66,6 +69,14 @@ export class UpdateIdentityByStaffHandler implements ICommandHandler<
       formAfter: company.formeJuridique,
       neighbours: await this.neighbours.neighboursOf(command.companyId, this.clock.now()),
     });
+    // Un restaurant maison n'est pas un organisme public (D3) : lu seulement quand la forme le rend public.
+    if (company.isPublic && company.formeJuridique !== formBefore) {
+      ensureInHouseStaysPrivate({
+        companyId: command.companyId,
+        inHouse: await this.inHouse.isInHousePayer(command.companyId),
+        isPublicAfter: true,
+      });
+    }
     await this.uow.run(async () => {
       await this.companies.save(company);
       await this.events.publishTraced(

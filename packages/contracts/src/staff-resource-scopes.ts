@@ -165,6 +165,11 @@ export const STAFF_RESOURCE_SCOPES: Readonly<Record<StaffResource, StaffResource
     write:
       "Passer un payeur au compte du prélèvement au virement, ou l'inverse, et annuler un changement programmé. L'écran demande aussi Comptabilité en lecture.",
   },
+  b2b_in_house_payers: {
+    read: "N'ouvre rien : la nature « maison » d'un client se lit sur sa fiche, avec Comptes clients.",
+    write:
+      "Marquer un client comme un de nos restaurants, ou retirer ce marquage. Effet immédiat, sur les commandes passées ensuite seulement. L'écran demande aussi Comptes clients en lecture.",
+  },
   collection_test: {
     read: "Voir nos établissements et la liste des prélèvements d'essai. L'écran vit dans la Comptabilité, qui demande aussi son droit en lecture.",
     write:

@@ -62,6 +62,7 @@ import { ChorusRoutingCard } from '../chorus-routing-card/chorus-routing-card';
 import { ChorusServiceCard } from '../chorus-service-card/chorus-service-card';
 import { SitePaymentNote } from '../site-payment-note/site-payment-note';
 import { GroupAccountCard } from '../group-account-card/group-account-card';
+import { InHousePayerCard } from '../in-house-payer-card/in-house-payer-card';
 import { KbisCertification } from '../kbis-certification/kbis-certification';
 import { frenchDay, kbisAgeNote, kbisAgeTone } from '../../comptes-clients/kbis-age-wording';
 import { parisToday } from '../../shared/paris-today';
@@ -96,6 +97,7 @@ import { watchCompanySubjects } from '../../comptes-clients/company-cache/compan
   imports: [
     KbisCertification,
     GroupAccountCard,
+    InHousePayerCard,
     PayerBillingModeCard,
     BillingModeChoice,
     FoldAsideLayoutComponent,
