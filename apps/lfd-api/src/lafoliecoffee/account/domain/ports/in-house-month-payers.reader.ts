@@ -1,6 +1,6 @@
 /**
- * **Lecture publiée** de la nature « maison » (`plan-restaurants-maison.md`,
- * D1, D9) : les payeurs dont une période `[déclarée, retirée[` touche la
+ * **Lecture publiée** de la nature « maison » (`restaurants-maison.md`) :
+ * les payeurs dont une période `[déclarée, retirée[` touche la
  * fenêtre `[from, to[`. Le récapitulatif des BL leur donne une issue, vide
  * s'ils n'ont aucun BL.
  */

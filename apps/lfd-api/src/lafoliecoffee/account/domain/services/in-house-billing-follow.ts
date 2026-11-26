@@ -7,7 +7,7 @@ import {
 
 /**
  * **Un suivi `billing` relie deux comptes de même nature « maison »**
- * (`plan-restaurants-maison.md`, D3) : sans quoi un site serait facturé au
+ * (`restaurants-maison.md`) : sans quoi un site serait facturé au
  * nom d'un restaurant qui ne facture pas, ou l'inverse. Les autres aspects
  * ne disent rien du règlement : ils passent.
  *

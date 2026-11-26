@@ -8,7 +8,7 @@ export interface InHouseRecapRun {
 }
 
 /**
- * **Une issue par (payeur, mois)** (`plan-restaurants-maison.md`, D9), tenue
+ * **Une issue par (payeur, mois)** (`restaurants-maison.md`), tenue
  * par l'unicité de `in_house_recap_run`. `claim` l'écrit dans la transaction
  * de l'émission : `false` si une issue existe déjà, et le passage se tait.
  */

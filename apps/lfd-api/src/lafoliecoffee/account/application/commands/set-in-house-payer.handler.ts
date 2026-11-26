@@ -22,7 +22,7 @@ export const SET_IN_HOUSE_PAYER_GESTURE = "account.set-in-house-payer";
 
 /**
  * Marque une société « maison », ou retire ce marquage — immédiat, il ne vaut
- * que pour les commandes passées ensuite (`plan-restaurants-maison.md`, D2).
+ * que pour les commandes passées ensuite (`restaurants-maison.md`).
  *
  * Sous le verrou de la hiérarchie : les suivis `billing` relus (D3) sont ceux
  * du moment, et un suivi ne s'ouvre pas entre la lecture et l'écriture. Une

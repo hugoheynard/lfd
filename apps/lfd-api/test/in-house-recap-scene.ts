@@ -1,6 +1,6 @@
 /**
  * La scène du **récapitulatif des BL** d'un restaurant maison
- * (`documentation/comptabilite/facturation/plan-restaurants-maison.md`, L3) :
+ * (`documentation/comptabilite/facturation/restaurants-maison.md`) :
  * un payeur marqué par la vraie route, ses commandes internes passées par le
  * bus, et leurs BL remis.
  *

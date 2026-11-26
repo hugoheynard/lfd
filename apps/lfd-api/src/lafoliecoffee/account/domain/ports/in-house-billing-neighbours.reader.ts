@@ -12,7 +12,7 @@ export interface InHouseBillingNeighbours {
 /**
  * Port de **lecture** des voisins de facturation, que le marquage « maison »
  * lit pour garder une même nature des deux côtés d'un suivi `billing`
- * (`plan-restaurants-maison.md`, D3). Étroit : il ne rend que des natures.
+ * (`restaurants-maison.md`). Étroit : il ne rend que des natures.
  */
 export abstract class InHouseBillingNeighboursReader {
   /** Les voisins à l'instant `at` (périodes qui le couvrent, début inclus, fin exclue). */

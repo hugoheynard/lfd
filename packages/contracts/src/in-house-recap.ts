@@ -1,7 +1,7 @@
 /**
  * **Le récapitulatif des BL d'un restaurant maison**, tel que le back-office
- * le lit (`documentation/comptabilite/facturation/plan-restaurants-maison.md`,
- * D7–D10) : un document figé, sans montant, des quantités remises par
+ * le lit (`documentation/comptabilite/facturation/restaurants-maison.md`) :
+ * un document figé, sans montant, des quantités remises par
  * produit sur un mois civil de Paris.
  *
  * Routes : `GET /admin/companies/:companyId/in-house-recaps` (la liste du

@@ -125,7 +125,7 @@ type OpenedByReference =
   | "customer.invoice-issued"
   | "customer.period-quote"
   // Le récapitulatif des BL d'un restaurant maison, rangé sous
-  // `in-house-recaps/<payeur>/<numéro>.pdf` (`plan-restaurants-maison.md`, D10).
+  // `in-house-recaps/<payeur>/<numéro>.pdf` (`restaurants-maison.md`).
   | "customer.in-house-recap"
   | "customer.mandate-to-sign"
   // Le PDF des CGV déposé, rangé sous `legal/…/<fichier>.pdf` : l'annonce d'une

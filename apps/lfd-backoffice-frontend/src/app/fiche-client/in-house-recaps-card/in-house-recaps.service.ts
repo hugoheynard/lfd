@@ -12,7 +12,7 @@ import { intentOptions } from '../../shared/gesture-intents';
 
 /**
  * **Les récapitulatifs des BL** d'un restaurant maison
- * (`comptabilite/facturation/plan-restaurants-maison.md`, D8–D10) : la liste
+ * (`comptabilite/facturation/restaurants-maison.md`) : la liste
  * du payeur et le PDF, sous `b2b_companies:read` ; « Renvoyer l'e-mail » et
  * « Réémettre », sous `b2b_in_house_payers:write`, chacun avec la clé
  * d'intention de l'écran.

@@ -7,7 +7,7 @@ import {
 
 /**
  * Les refus du **récapitulatif des BL** d'un restaurant maison
- * (`comptabilite/facturation/plan-restaurants-maison.md`, D7–D9). Chaque
+ * (`comptabilite/facturation/restaurants-maison.md`). Chaque
  * message nomme le cas réel et le geste de sortie.
  */
 

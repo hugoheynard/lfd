@@ -1,7 +1,7 @@
 /**
  * E2E de la **nature « maison »** d'un payeur
  * (`/admin/companies/:companyId/in-house`,
- * `documentation/comptabilite/facturation/plan-restaurants-maison.md`, L1).
+ * `documentation/comptabilite/facturation/restaurants-maison.md`).
  *
  * Ce que seul le vrai SQL prouve :
  * - marquer insère une période `payer_in_house` et le fait au journal, dans

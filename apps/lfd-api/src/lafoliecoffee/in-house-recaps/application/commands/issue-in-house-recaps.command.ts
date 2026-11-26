@@ -12,7 +12,7 @@ export interface InHouseRecapsReport {
 }
 
 /**
- * **Le passage mensuel des récapitulatifs** (`plan-restaurants-maison.md`,
- * D9) : le dernier mois clos à Paris, une issue par payeur maison.
+ * **Le passage mensuel des récapitulatifs** (`restaurants-maison.md`) :
+ * le dernier mois clos à Paris, une issue par payeur maison.
  */
 export class IssueInHouseRecapsCommand {}

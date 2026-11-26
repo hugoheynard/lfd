@@ -35,7 +35,7 @@ interface Accumulated {
 }
 
 /**
- * **L'agrégation du récapitulatif** (`plan-restaurants-maison.md`, D7) : la
+ * **L'agrégation du récapitulatif** (`restaurants-maison.md`) : la
  * quantité totale remise par (`sku`, `sale_unit`) — deux unités de vente d'un
  * même produit ne s'additionnent pas. Le nom affiché est celui du BL remis le
  * plus tard, départagé par le numéro le plus grand : un produit renommé dans

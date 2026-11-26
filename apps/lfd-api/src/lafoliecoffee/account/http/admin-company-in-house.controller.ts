@@ -15,7 +15,7 @@ import { GetInHousePayerQuery } from "../application/queries/get-in-house-payer.
 
 /**
  * **La nature « maison » d'un payeur**, sur sa fiche client
- * (`comptabilite/facturation/plan-restaurants-maison.md`, D1–D3). Se lit sous
+ * (`comptabilite/facturation/restaurants-maison.md`). Se lit sous
  * `b2b_companies:read`, comme la fiche ; se pose sous
  * `b2b_in_house_payers:write`, un droit à part : marquer un restaurant change
  * la façon dont ses commandes seront réglées.

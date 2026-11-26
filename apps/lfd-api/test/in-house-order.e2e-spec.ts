@@ -1,7 +1,7 @@
 /**
  * E2E de la **commande interne** d'un de nos restaurants — un payeur marqué
- * « maison » (`documentation/comptabilite/facturation/plan-restaurants-maison.md`,
- * L2). Par chacune des quatre portes : l'espace client, la saisie de l'équipe,
+ * « maison » (`documentation/comptabilite/facturation/restaurants-maison.md`)
+ * . Par chacune des quatre portes : l'espace client, la saisie de l'équipe,
  * l'échéance d'un panier récurrent et la transformation d'un reliquat.
  *
  * Ce que seul le vrai SQL prouve, dans chaque cas :

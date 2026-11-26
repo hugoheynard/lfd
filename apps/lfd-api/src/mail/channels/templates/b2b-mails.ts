@@ -120,7 +120,7 @@ export interface B2bMails {
   /**
    * **« Récapitulatif des BL RBL-… »** — à la place de la facture d'un de nos
    * restaurants, les quantités remises sur un mois, sans montant (plan
-   * `plan-restaurants-maison.md`, D10). Destinataire : la facturation du
+   * `restaurants-maison.md`). Destinataire : la facturation du
    * payeur, sinon son détenteur. Cf. `in-house-recap-mail.ts`.
    */
   "customer.in-house-recap": InHouseRecapMailData;

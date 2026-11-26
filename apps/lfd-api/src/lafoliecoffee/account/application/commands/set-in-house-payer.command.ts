@@ -1,6 +1,6 @@
 /**
  * Commande **staff** : marquer une société « maison » (un de nos
- * restaurants), ou retirer ce marquage (`plan-restaurants-maison.md`, D2).
+ * restaurants), ou retirer ce marquage (`restaurants-maison.md`).
  * Sous `b2b_in_house_payers:write`, gardé à la route.
  */
 export class SetInHousePayerCommand {

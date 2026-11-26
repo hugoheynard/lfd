@@ -157,7 +157,7 @@ export interface PeriodQuoteCopy {
 /**
  * **« Récapitulatif des BL »** — à la place de la facture d'un de nos
  * restaurants, les quantités remises sur un mois, sans montant
- * (`plan-restaurants-maison.md`, D10). Le PDF est joint.
+ * (`restaurants-maison.md`). Le PDF est joint.
  */
 export interface InHouseRecapCopy {
   /** Le sous-titre du bandeau d'en-tête, sous l'enseigne — rendu en capitales. */

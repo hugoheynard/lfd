@@ -334,7 +334,7 @@ export async function renderClientNotePdf(
 ): Promise<Buffer> {
   // Une commande interne ne se chiffre pas : ni prix, ni totaux, seulement
   // les quantités et la mention « sans facturation » (décidé par Hugo le
-  // 2026-11-26, plan-restaurants-maison.md, Q2).
+  // 2026-11-26, restaurants-maison.md).
   const inHouse = note.money.settlement === "in_house";
   const excluded = !inHouse && note.lines.some((line) => line.pickupDiscountEligible === false);
   return render(

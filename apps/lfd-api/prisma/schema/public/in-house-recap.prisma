@@ -2,7 +2,7 @@
 /// Paris (`[period_from, period_to[`) — un document figé, sans montant. Un
 /// rectificatif le remplace (`replaced_by_id`) ; l'ancien reste, marqué.
 /// `storage_key` : le PDF rangé, posé après l'émission. Doc :
-/// `documentation/comptabilite/facturation/plan-restaurants-maison.md`, D7–D9.
+/// `documentation/comptabilite/facturation/restaurants-maison.md`.
 model InHouseRecap {
   id           String        @id
   payerId      String        @map("payer_id")

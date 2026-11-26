@@ -21,7 +21,7 @@ export interface InHouseWithdrawal {
 
 /**
  * **La nature « maison » d'un payeur** — un de nos restaurants, enregistré
- * comme client (`comptabilite/facturation/plan-restaurants-maison.md`, D1–D3).
+ * comme client (`comptabilite/facturation/restaurants-maison.md`).
  *
  * Le geste est immédiat dans les deux sens et ne vaut que pour les commandes
  * passées après : chaque commande porte son régime. Il tient deux exclusions :

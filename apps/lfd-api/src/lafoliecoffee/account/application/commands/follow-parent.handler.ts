@@ -17,7 +17,7 @@ import { FollowParentCommand } from "./follow-parent.command.js";
  * Ouvre une période de suivi. Sous le verrou de la hiérarchie : le principal
  * relu est bien le principal actuel, et son statut (exigé actif pour
  * `billing`, §2.4) est celui du moment, comme la nature maison des deux
- * comptes (`plan-restaurants-maison.md`, D3).
+ * comptes (`restaurants-maison.md`).
  *
  * Idempotent : suivre ce qu'on suit déjà ne rouvre rien et ne s'inscrit pas.
  */

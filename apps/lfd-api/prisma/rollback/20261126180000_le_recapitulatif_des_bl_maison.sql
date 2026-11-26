@@ -1,5 +1,5 @@
 -- RETOUR ARRIÈRE de 20261126180000_le_recapitulatif_des_bl_maison
--- (documentation/comptabilite/facturation/plan-restaurants-maison.md, D7–D9).
+-- (documentation/comptabilite/facturation/restaurants-maison.md).
 --
 -- 🔴 NON APPLIQUÉ, et Prisma ne le lit pas. La migration reste inscrite
 -- « appliquée ».

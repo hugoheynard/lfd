@@ -74,7 +74,7 @@ export function recapRow(recap: InHouseRecapSummaryView): InHouseRecapRow {
 
 /**
  * **Les récapitulatifs des BL** d'un restaurant maison
- * (`comptabilite/facturation/plan-restaurants-maison.md`, D8–D10) : à la
+ * (`comptabilite/facturation/restaurants-maison.md`) : à la
  * place des factures, un document par mois, sans montant. La carte liste les
  * récapitulatifs (remplacés compris), les mois vides et les mois manqués,
  * signale les BL révisés, et porte le PDF, « Renvoyer l'e-mail » et

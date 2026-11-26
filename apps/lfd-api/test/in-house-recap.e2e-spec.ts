@@ -1,7 +1,7 @@
 /**
  * E2E du **récapitulatif des BL** des restaurants maison
- * (`documentation/comptabilite/facturation/plan-restaurants-maison.md`, L3,
- * D7–D9), par la route machine du cron et les routes de la fiche client.
+ * (`documentation/comptabilite/facturation/restaurants-maison.md`),
+ * par la route machine du cron et les routes de la fiche client.
  *
  * Ce que seul le vrai SQL prouve :
  * - la fenêtre du mois clos à Paris, sur le BL COURANT remis ;

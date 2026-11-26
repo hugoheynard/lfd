@@ -53,7 +53,7 @@ export interface CurrentNoteVersion {
 
 /**
  * **Le récapitulatif des BL d'un restaurant maison** — un document figé, sans
- * montant (`plan-restaurants-maison.md`, D7, D8). Il porte trois invariants :
+ * montant (`restaurants-maison.md`). Il porte trois invariants :
  * chaque BL couvert a été remis dans SON mois, n'y figure qu'une fois, et un
  * récapitulatif n'est remplacé qu'une fois — par un rectificatif du même
  * payeur et du même mois. Un mois sans BL n'a pas de récapitulatif : c'est

@@ -151,7 +151,7 @@ describe('grantGroups', () => {
    * (commandes/export/plan-export-des-ventes.md, E2). 81 le 2026-11-24 :
    * `pay_link_test`, le lien de paiement d'essai (payment/plan-lien-de-paiement-d-essai.md).
    * 82 le même jour : `events`, les événements (evenements/plan-evenements.md).
-   * 83 : `b2b_in_house_payers`, les restaurants maison (plan-restaurants-maison.md).
+   * 83 : `b2b_in_house_payers`, les restaurants maison (restaurants-maison.md).
    */
   it('compte les domaines du catalogue', () => {
     expect(RESOURCE_COUNT).toBe(83);

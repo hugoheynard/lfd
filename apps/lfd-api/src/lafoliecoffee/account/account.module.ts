@@ -457,7 +457,7 @@ import { PrismaPrincipalSitesMenuReader } from "./infrastructure/prisma-principa
     { provide: AccountHierarchyLock, useClass: PrismaAccountHierarchyLock },
     { provide: CompanyFollowsReader, useClass: PrismaCompanyFollowsReader },
     { provide: BillingNatureNeighboursReader, useClass: PrismaBillingNatureNeighboursReader },
-    // La nature « maison » (plan-restaurants-maison.md, D1) : un dépôt, et trois lectures étroites.
+    // La nature « maison » (restaurants-maison.md) : un dépôt, et trois lectures étroites.
     { provide: InHousePayerRepository, useClass: PrismaInHousePayerRepository },
     { provide: InHousePayerReader, useClass: PrismaInHousePayerReader },
     { provide: InHouseMonthPayersReader, useClass: PrismaInHouseMonthPayersReader },
@@ -679,8 +679,8 @@ import { PrismaPrincipalSitesMenuReader } from "./infrastructure/prisma-principa
     // La commande d'un particulier notée au comptoir vérifie la fiche choisie
     // (commande-particulier-reglee-en-boutique.md, § 3).
     ParticularStandingReader,
-    // La lecture publiée de la nature « maison » (plan-restaurants-maison.md,
-    // D5) : les passations la liront pour décider du régime d'une commande.
+    // La lecture publiée de la nature « maison » (restaurants-maison.md) :
+    // les passations la liront pour décider du régime d'une commande.
     InHousePayerReader,
     // Les payeurs maison d'un mois et les périodes d'un payeur (D9) : le
     // récapitulatif des BL les lit pour ses issues et ses mois manqués.

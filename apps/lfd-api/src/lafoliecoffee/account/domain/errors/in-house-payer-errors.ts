@@ -2,7 +2,7 @@ import { BusinessError } from "../../../../platform/shared/errors/app-error.js";
 
 /**
  * Les refus de la **nature « maison »** d'un payeur (plan
- * `comptabilite/facturation/plan-restaurants-maison.md`, D3). Chaque message
+ * `comptabilite/facturation/restaurants-maison.md`). Chaque message
  * nomme le cas réel et le geste de sortie.
  */
 

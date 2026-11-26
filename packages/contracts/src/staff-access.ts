@@ -290,7 +290,7 @@ export const staffResourceSchema = z.enum([
   "b2b_collection_means",
   /**
    * **Marquer un payeur « maison »** — un de nos restaurants, enregistré comme
-   * client (`plan-restaurants-maison.md`, D2). Ses commandes cesseront d'être
+   * client (`restaurants-maison.md`). Ses commandes cesseront d'être
    * facturées : un geste à part de `b2b_companies`. Lire la nature reste sous
    * `b2b_companies:read`. Accordée à l'écran ; aucune migration ne la donne à
    * un rôle.

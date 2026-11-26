@@ -22,7 +22,7 @@ import {
 } from "./issue-in-house-recaps.command.js";
 
 /**
- * **Le passage mensuel** (`plan-restaurants-maison.md`, D7, D9). Pour le
+ * **Le passage mensuel** (`restaurants-maison.md`). Pour le
  * dernier mois clos à Paris, chaque payeur maison du mois — marqué pendant le
  * mois, ou payeur d'un BL interne remis dans le mois — reçoit UNE issue :
  * un récapitulatif, ou un mois vide. L'issue et le document s'écrivent dans

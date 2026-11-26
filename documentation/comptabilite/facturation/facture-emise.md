@@ -164,7 +164,7 @@ cron à lui — `30 22,23 * * *` (`IN_HOUSE_RECAPS_CRON`, 00h30 à Paris,
 sous `in-house-recaps/<payeur>/<numéro>.pdf` et envoyé par e-mail
 (`customer.in-house-recap`) au destinataire de la facture du payeur ; aucune
 branche dans l'automatisme des factures
-([`plan-restaurants-maison.md`](plan-restaurants-maison.md), D9–D10).
+([`restaurants-maison.md`](restaurants-maison.md), § 3).
 
 - **Périmètre** (lot ZL, 2026-10-22) : les bons passés au compte et non
   annulés (`billableOrderWhere`) **livrés** depuis le plancher jusqu'au

@@ -2,8 +2,8 @@ import { z } from "zod";
 
 /**
  * **La nature « maison » d'un payeur** — un de nos restaurants, enregistré
- * comme client (`documentation/comptabilite/facturation/plan-restaurants-maison.md`,
- * D1–D3). Lue sous `b2b_companies:read` (`GET
+ * comme client (`documentation/comptabilite/facturation/restaurants-maison.md`)
+ * . Lue sous `b2b_companies:read` (`GET
  * /admin/companies/:companyId/in-house`), posée sous `b2b_in_house_payers:write`
  * (`PUT`, clé d'intention obligatoire).
  *

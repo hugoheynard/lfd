@@ -1,5 +1,5 @@
 -- RETOUR ARRIÈRE de 20261126160000_le_payeur_maison
--- (documentation/comptabilite/facturation/plan-restaurants-maison.md, D1).
+-- (documentation/comptabilite/facturation/restaurants-maison.md).
 --
 -- 🔴 NON APPLIQUÉ, et Prisma ne le lit pas. La migration reste inscrite
 -- « appliquée ».

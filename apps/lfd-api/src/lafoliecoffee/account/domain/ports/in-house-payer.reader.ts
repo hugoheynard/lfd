@@ -1,6 +1,6 @@
 /**
- * **La lecture publiée de la nature « maison »** (`plan-restaurants-maison.md`,
- * D1, D5) : le compte la possède, et les passations la lisent par ce port,
+ * **La lecture publiée de la nature « maison »** (`restaurants-maison.md`) :
+ * le compte la possède, et les passations la lisent par ce port,
  * jamais par la table `payer_in_house`. Une seule question, une seule méthode.
  */
 export abstract class InHousePayerReader {

@@ -9,7 +9,7 @@ export interface RecapRecipient {
 }
 
 /**
- * **À qui part le récapitulatif** (`plan-restaurants-maison.md`, D10) : le
+ * **À qui part le récapitulatif** (`restaurants-maison.md`) : le
  * destinataire de la facture du payeur — son contact de facturation le plus
  * ancien, à défaut son détenteur —, la règle même de « Votre facture ».
  * `null` : personne à prévenir, jamais une adresse devinée.

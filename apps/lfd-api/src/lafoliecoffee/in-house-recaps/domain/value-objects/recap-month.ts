@@ -14,7 +14,7 @@ export interface RecapWindow {
 
 /**
  * **Un mois civil de Paris** — la période d'un récapitulatif
- * (`plan-restaurants-maison.md`, D7, D9). Ses bornes sont les minuits de
+ * (`restaurants-maison.md`). Ses bornes sont les minuits de
  * Paris du 1er et du 1er suivant, convertis par la brique de
  * `lint:business-day` : un BL remis le 1er à 00h30 (heure de Paris) entre dans
  * son mois, pas dans le précédent.

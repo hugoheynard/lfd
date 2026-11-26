@@ -45,8 +45,8 @@ import {
 
 /**
  * **Le récapitulatif des BL des restaurants maison**
- * (`documentation/comptabilite/facturation/plan-restaurants-maison.md`,
- * D7–D9) : à la place de la facture, un document figé, sans montant, des
+ * (`documentation/comptabilite/facturation/restaurants-maison.md`) :
+ * à la place de la facture, un document figé, sans montant, des
  * quantités remises par produit sur le mois civil de Paris.
  *
  * Contexte à part de la facturation : il ne facture rien, ne lit aucune de

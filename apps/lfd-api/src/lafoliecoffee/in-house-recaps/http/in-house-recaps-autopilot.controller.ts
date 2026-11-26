@@ -11,7 +11,7 @@ import {
 
 /**
  * Endpoint **machine** du récapitulatif mensuel des BL des restaurants maison
- * (`plan-restaurants-maison.md`, D9) : présenté par le Worker sur son cron
+ * (`restaurants-maison.md`) : présenté par le Worker sur son cron
  * PROPRE (`IN_HOUSE_RECAPS_CRON`, `30 22,23 * * *` UTC — 00h30 à Paris l'été
  * pour l'un, l'hiver pour l'autre), avec le jeton du `RecomputeGuard`.
  *

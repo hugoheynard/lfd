@@ -55,7 +55,7 @@ const TOP = MARGIN_Y;
 
 /**
  * **Le PDF du récapitulatif des BL** d'un restaurant maison
- * (`plan-restaurants-maison.md`, D7, D10) : en-tête (payeur, mois, numéro,
+ * (`restaurants-maison.md`) : en-tête (payeur, mois, numéro,
  * « Document interne — sans facturation »), un tableau produit / unité /
  * quantité totale, puis les BL couverts. **Aucun montant** : l'entrée n'en
  * porte pas. Un rectificatif dit le numéro qu'il remplace.

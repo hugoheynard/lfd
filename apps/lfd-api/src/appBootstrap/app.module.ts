@@ -344,7 +344,7 @@ import { DevImpersonation } from "../platform/auth/dev-impersonation.js";
     SubAccountNoticesModule,
     // L'export des ventes (plan de l'export, E1) : il compose les lectures des propriétaires.
     ReportingModule,
-    // Le récapitulatif des BL des restaurants maison (plan-restaurants-maison.md, L3).
+    // Le récapitulatif des BL des restaurants maison (restaurants-maison.md).
     InHouseRecapsModule,
     // Les favoris de la boutique, par espace (commandes/boutique/les-favoris.md).
     ShopFavoritesModule,

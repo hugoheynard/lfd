@@ -7,7 +7,7 @@ export interface InHousePeriod {
 }
 
 /**
- * **Les mois manqués** d'un payeur (`plan-restaurants-maison.md`, D9) : les
+ * **Les mois manqués** d'un payeur (`restaurants-maison.md`) : les
  * mois clos où il a été maison au moins un instant et qui n'ont aucune issue
  * — ni récapitulatif, ni mois vide. Un mois vide n'est pas manqué : le
  * passage l'a vu et n'avait rien à récapituler. Du plus ancien au plus récent.

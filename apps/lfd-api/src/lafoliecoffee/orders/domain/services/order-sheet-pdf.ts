@@ -198,7 +198,7 @@ function showsSku(sheet: ClientSheet): boolean {
 
 /**
  * Une commande interne ne se chiffre pas : ni prix, ni totaux, seulement les
- * quantités (décidé par Hugo le 2026-11-26, plan-restaurants-maison.md, Q2).
+ * quantités (décidé par Hugo le 2026-11-26, restaurants-maison.md).
  */
 function isPriced(sheet: ClientSheet): boolean {
   return sheet.money.settlement !== "in_house";

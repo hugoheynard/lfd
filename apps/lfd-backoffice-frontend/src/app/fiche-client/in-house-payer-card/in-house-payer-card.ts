@@ -29,7 +29,7 @@ type LoadState = 'loading' | 'ready' | 'error';
 
 /**
  * **« Restaurant maison »** — un de nos restaurants, enregistré comme client
- * (`comptabilite/facturation/plan-restaurants-maison.md`, D1–D3).
+ * (`comptabilite/facturation/restaurants-maison.md`).
  *
  * L'état se lit avec la fiche ; le bouton n'apparaît qu'avec
  * `b2b_in_house_payers:write`. Le geste est immédiat et ne vaut que pour les

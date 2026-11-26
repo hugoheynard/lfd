@@ -6,7 +6,7 @@ export interface InHousePeriod {
 
 /**
  * **Lecture publiée** des périodes « maison » d'un payeur
- * (`plan-restaurants-maison.md`, D1, D9), de la plus ancienne à la plus
+ * (`restaurants-maison.md`), de la plus ancienne à la plus
  * récente : le récapitulatif des BL en déduit les mois manqués.
  */
 export abstract class InHousePeriodsReader {

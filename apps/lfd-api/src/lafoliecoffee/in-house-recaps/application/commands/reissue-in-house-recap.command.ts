@@ -1,5 +1,5 @@
 /**
- * **Réémettre** un récapitulatif (`plan-restaurants-maison.md`, D8) : un
+ * **Réémettre** un récapitulatif (`restaurants-maison.md`) : un
  * rectificatif sur les BL d'aujourd'hui, qui remplace l'ancien. Une fois par
  * intention de l'écran.
  */

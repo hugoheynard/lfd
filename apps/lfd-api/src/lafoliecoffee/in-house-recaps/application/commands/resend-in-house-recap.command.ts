@@ -1,6 +1,6 @@
 /**
- * **« Renvoyer l'e-mail »** d'un récapitulatif (`plan-restaurants-maison.md`,
- * D10) : après une adresse corrigée, ou quand l'émission n'a pas pu produire
+ * **« Renvoyer l'e-mail »** d'un récapitulatif (`restaurants-maison.md`) :
+ * après une adresse corrigée, ou quand l'émission n'a pas pu produire
  * le PDF — il est alors rendu et rangé avant l'envoi.
  */
 export class ResendInHouseRecapCommand {

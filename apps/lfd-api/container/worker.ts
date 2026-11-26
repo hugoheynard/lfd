@@ -562,8 +562,8 @@ async function triggerMonthlyInvoices(env: Env): Promise<void> {
 
 /**
  * Réveille le container et passe le récapitulatif des BL des restaurants
- * maison (`documentation/comptabilite/facturation/plan-restaurants-maison.md`,
- * D9) : le dernier mois clos à Paris. Idempotent : une issue par payeur et par
+ * maison (`documentation/comptabilite/facturation/restaurants-maison.md`) :
+ * le dernier mois clos à Paris. Idempotent : une issue par payeur et par
  * mois, tenue en base — les autres soirs se taisent, et rattrapent un 1er
  * manqué.
  */
@@ -932,7 +932,7 @@ const MONTHLY_INVOICE_CRON = "55 21,22 * * *";
 
 /**
  * Le récapitulatif des BL des restaurants maison — 00h30 à Paris (plan
- * `documentation/comptabilite/facturation/plan-restaurants-maison.md`, D9).
+ * `documentation/comptabilite/facturation/restaurants-maison.md`).
  * Les crons sont en UTC : 22h30 UTC est 00h30 l'été, 23h30 UTC l'est l'hiver.
  * Les deux tombent CHAQUE jour ; le backend traite le dernier mois clos et se
  * tait sur les issues déjà rangées. Même règle : identique à `wrangler.jsonc`,

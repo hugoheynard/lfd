@@ -7,8 +7,8 @@ import type { MailBody } from "./mail-logo.js";
 
 /**
  * Les données de l'e-mail **« Récapitulatif des BL »** d'un de nos
- * restaurants (`documentation/comptabilite/facturation/plan-restaurants-maison.md`,
- * D10) : à la place de la facture, les quantités remises sur un mois, sans
+ * restaurants (`documentation/comptabilite/facturation/restaurants-maison.md`) :
+ * à la place de la facture, les quantités remises sur un mois, sans
  * montant. Destinataire : le destinataire de la facture du payeur — son
  * contact de facturation, sinon son détenteur.
  *

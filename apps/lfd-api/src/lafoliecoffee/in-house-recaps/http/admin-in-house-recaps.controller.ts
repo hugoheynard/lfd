@@ -30,7 +30,7 @@ import { ListRevisedInHouseRecapsQuery } from "../application/queries/list-revis
 
 /**
  * **Les récapitulatifs des BL** d'un restaurant maison, pour l'onglet de la
- * fiche client (`plan-restaurants-maison.md`, D8–D10). Se lisent sous
+ * fiche client (`restaurants-maison.md`). Se lisent sous
  * `b2b_companies:read`, comme la fiche, PDF compris ; « Renvoyer l'e-mail »
  * et « Réémettre » se font sous `b2b_in_house_payers:write`, le droit de la
  * nature maison, chacun sous la clé d'intention de l'écran.

@@ -5,8 +5,8 @@ import { InHousePayer } from "../domain/entities/in-house-payer.js";
 import { InHousePayerRepository } from "../domain/ports/in-house-payer.repository.js";
 
 /**
- * Le dépôt de la nature « maison », un historique (`plan-restaurants-maison.md`,
- * D1) : la période vivante est la ligne sans `withdrawn_at`. Un marquage
+ * Le dépôt de la nature « maison », un historique (`restaurants-maison.md`) :
+ * la période vivante est la ligne sans `withdrawn_at`. Un marquage
  * insère une période, un démarquage clôt la vivante ; rien ne s'efface.
  * Deux marquages simultanés butent sur l'index unique partiel
  * `payer_in_house_live_company`.

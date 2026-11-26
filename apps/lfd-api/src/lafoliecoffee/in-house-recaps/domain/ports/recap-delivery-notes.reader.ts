@@ -2,7 +2,7 @@ import type { RecapSourceNote } from "../services/recap-aggregation.js";
 import type { RecapWindow } from "../value-objects/recap-month.js";
 
 /**
- * **Les BL qu'un récapitulatif couvre** (`plan-restaurants-maison.md`, D7) :
+ * **Les BL qu'un récapitulatif couvre** (`restaurants-maison.md`) :
  * les BL COURANTS (jamais une version figée) au statut `handed_over`, dont
  * `handed_over_at` tombe dans `[from, to[`, d'une commande interne
  * (`offer_nature = 'in_house'`) dont le payeur est
