@@ -8,6 +8,7 @@ import {
   type OrderCutoffView,
   type PickupAddressView,
 } from "@lfd/contracts";
+import { KnownInHousePayers } from "../../../../account/application/commands/__tests__/in-house-doubles.js";
 
 import { FixedRecipients } from "../../../application/commands/__tests__/intake-doubles.js";
 import { AppConfig } from "../../../../../platform/config/app-config.js";
@@ -316,6 +317,8 @@ export interface SceneOptions {
   readonly backorders: InMemoryBackorders;
   readonly replays: FixedBackorderReplays;
   readonly role?: OrderRole | null;
+  /** Les payeurs maison : la commande naît interne (aucun par défaut). */
+  readonly inHouse?: KnownInHousePayers;
 }
 
 function clockOf(options: Pick<SceneOptions, "late">): FixedClock {
@@ -324,7 +327,7 @@ function clockOf(options: Pick<SceneOptions, "late">): FixedClock {
 
 /** La composition réelle, à l'horloge de la scène. */
 export function draftingIn(
-  options: Pick<SceneOptions, "late" | "waiver" | "lateFee">,
+  options: Pick<SceneOptions, "late" | "waiver" | "lateFee" | "inHouse">,
 ): OrderDrafting {
   const clock = clockOf(options);
   const plans = openPlanGate();
@@ -361,6 +364,7 @@ export function draftingIn(
     new FixedSalesTerms(),
     new FixedLineClassifications(),
     shelfCircuitOf(plans),
+    options.inHouse ?? new KnownInHousePayers(),
   );
 }
 
@@ -393,6 +397,7 @@ export function conversionScene(options: SceneOptions) {
     options.replays,
     journal,
     new FixedRecipients(),
+    options.inHouse ?? new KnownInHousePayers(),
   );
   const quote = new QuoteBackorderHandler(
     guard,

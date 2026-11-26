@@ -111,6 +111,7 @@ export function anOrder(overrides: Partial<SalesExportOrder> = {}): SalesExportO
     paymentStatus: "not_required",
     settlementVenue: null,
     offered: false,
+    offerNature: null,
     offeredTotalCents: null,
     clientele: "pro",
     buyerKind: "registered",

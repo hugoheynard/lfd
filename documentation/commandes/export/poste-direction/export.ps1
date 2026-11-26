@@ -326,7 +326,7 @@ $TallyColumns = @('orders', 'revenueHt', 'goodsHt', 'vat', 'revenueTtc', 'return
 
 function Write-AllCsv($Base) {
     $orderColumns = @('orderNumber', 'placedAt', 'receivedOn', 'status', 'cancelledAt', 'countsAsRevenue',
-        'paymentStatus', 'settlementVenue', 'offered', 'offeredTtc', 'clientele', 'buyerKind', 'companyName',
+        'paymentStatus', 'settlementVenue', 'offered', 'offerNature', 'offeredTtc', 'clientele', 'buyerKind', 'companyName',
         'nafCode', 'fulfillment', 'vatMethod', 'subtotalHt', 'discountHt', 'voucherHt', 'deliveryFeeHt',
         'lateFeeHt', 'totalHt', 'goodsHt', 'vat', 'totalTtc', 'returnRefundedTtc', 'settled.settledOn',
         'settled.subtotalHt', 'settled.discountHt', 'settled.voucherHt', 'settled.deliveryFeeHt',

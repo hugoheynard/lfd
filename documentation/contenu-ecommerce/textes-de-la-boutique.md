@@ -4,7 +4,7 @@
 >
 > La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.
 
-## Sommaire — 2025 textes
+## Sommaire — 2032 textes
 
 Clés présentes dans une langue et absentes d'une autre : 0.
 
@@ -31,15 +31,15 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Choix de l’heure — le sélecteur de créneau](#espace-slotpicker) | `slotPicker` | 15 |
 | [Choix de l’heure — l’étape du créneau](#espace-slotstep) | `slotStep` | 11 |
 | [Choix de l’heure — le rappel téléphonique](#espace-rappel) | `rappel` | 12 |
-| [Panier, connexion et saisie invité](#espace-cart) | `cart` | 116 |
+| [Panier, connexion et saisie invité](#espace-cart) | `cart` | 119 |
 | [Règlement](#espace-pay) | `pay` | 21 |
-| [Confirmation](#espace-done) | `done` | 31 |
+| [Confirmation](#espace-done) | `done` | 33 |
 | [Confirmation — le QR de retrait](#espace-qr) | `qr` | 12 |
 | **Le reste de la boutique** | | |
 | [Le cadre — bandeaux et erreurs générales](#espace-chrome) | `chrome` | 62 |
 | [La navigation](#espace-nav) | `nav` | 17 |
 | [La colonne d’accompagnement](#espace-aside) | `aside` | 4 |
-| [Mes commandes (récapitulatif compris)](#espace-orders) | `orders` | 289 |
+| [Mes commandes (récapitulatif compris)](#espace-orders) | `orders` | 291 |
 | [Annuler une commande — Mes commandes et la page invité](#espace-ordercancel) | `orderCancel` | 57 |
 | [Payer par lien — la page publique /payer](#espace-paylink) | `payLink` | 24 |
 | [Fidélité](#espace-loyalty) | `loyalty` | 38 |
@@ -53,7 +53,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Les cases des e-mails marketing, « Mes e-mails » et le pied de page](#espace-marketingconsent) | `marketingConsent` | 29 |
 | [Les documents légaux](#espace-legaldocument) | `legalDocument` | 14 |
 | [Le suivi des corrections d’accessibilité — sous la déclaration](#espace-accessibilityfollowup) | `accessibilityFollowUp` | 28 |
-| **Total** | | **2025** |
+| **Total** | | **2032** |
 
 ## Le parcours de commande
 
@@ -739,7 +739,7 @@ Source : `fr.ts · en.ts · it.ts` · 12 textes.
 
 ### Panier, connexion et saisie invité — `cart`
 
-Source : `fr.ts · en.ts · it.ts` · 116 textes.
+Source : `fr.ts · en.ts · it.ts` · 119 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -771,6 +771,7 @@ Source : `fr.ts · en.ts · it.ts` · 116 textes.
 | `cart.vat` | TVA {rate} | VAT {rate} | IVA {rate} | `{rate}` |
 | `cart.total` | Total TTC | Total incl. VAT | Totale IVA incl. |  |
 | `cart.totalPretax` | Total HT | Total excl. VAT | Totale IVA escl. |  |
+| `cart.totalInHouse` | Valeur, non facturée | Value, not invoiced | Valore, non fatturato |  |
 | `cart.pretaxNote` | TVA et TTC sur la facture du mois | VAT and total incl. VAT on the monthly invoice | IVA e totale IVA inclusa sulla fattura del mese |  |
 | `cart.courierOffered` | Coursier offert | Courier on us | Corriere offerto |  |
 | `cart.freeDeliveryShort` | Plus que {amount} HT pour la livraison offerte | Only {amount} excl. VAT more for free delivery | Ancora {amount} IVA esclusa per la consegna gratuita | `{amount}` |
@@ -806,6 +807,8 @@ Source : `fr.ts · en.ts · it.ts` · 116 textes.
 | `cart.settleAccount` | Ajouter au compte | Add to the account | Aggiungi al conto |  |
 | `cart.payHintPublic` | Au compte — facture déposée sur Chorus Pro, réglée par virement. | On account — invoice filed on Chorus Pro, paid by bank transfer. | Sul conto — fattura depositata su Chorus Pro, saldata con bonifico. |  |
 | `cart.publicAccountUnavailable` | Votre organisme règle uniquement au compte, et ce compte ne peut pas régler aujourd’hui. Contactez-nous pour le rétablir : la commande ne peut pas se payer par carte. | Your organisation pays on account only, and that account cannot settle today. Contact us to restore it: the order cannot be paid by card. | Il vostro ente paga solo sul conto, e questo conto oggi non può saldare. Ci contatti per ripristinarlo: l’ordine non può essere pagato con carta. |  |
+| `cart.settleInHouse` | Passer la commande interne | Place the internal order | Invia l’ordine interno |  |
+| `cart.payHintInHouse` | Commande interne — sans facturation : rien n’est à régler. | Internal order — not invoiced: nothing to pay. | Ordine interno — senza fatturazione: nulla da pagare. |  |
 | `cart.commitmentTitle` | Votre bon de commande | Your purchase order | Il vostro buono d’ordine |  |
 | `cart.commitmentNumber` | N° d’engagement | Commitment number | N. di impegno |  |
 | `cart.commitmentNumberRequiredHint` | Exigé par votre organisme : il figure sur votre bon de commande. | Required by your organisation: it is on your purchase order. | Richiesto dal vostro ente: è indicato sul buono d’ordine. |  |
@@ -894,7 +897,7 @@ Source : `fr.ts · en.ts · it.ts` · 21 textes.
 
 ### Confirmation — `done`
 
-Source : `fr.ts · en.ts · it.ts` · 31 textes.
+Source : `fr.ts · en.ts · it.ts` · 33 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -902,6 +905,7 @@ Source : `fr.ts · en.ts · it.ts` · 31 textes.
 | `done.title` | C’est réglé.<br>On s’y met à 4 h 15. | All paid.<br>We start at 4.15 am. | È pagato.<br>Si comincia alle 4.15. |  |
 | `done.titleDue` | Commande enregistrée.<br>Il reste à la régler. | Order on file.<br>One thing left: paying. | Ordine registrato.<br>Resta da pagare. |  |
 | `done.titleAccount` | Commande enregistrée.<br>Elle part sur votre compte. | Order on file.<br>It goes on your account. | Ordine registrato.<br>Va sul suo conto. |  |
+| `done.titleInHouse` | Commande enregistrée.<br>Commande interne, sans facturation. | Order on file.<br>Internal order, not invoiced. | Ordine registrato.<br>Ordine interno, senza fatturazione. |  |
 | `done.intro` | Votre commande entre dans la fournée de demain matin. | Your order joins tomorrow morning’s batch. | Il suo ordine entra nell’infornata di domani mattina. |  |
 | `done.keptTitle` | Gardée dans votre espace | Kept in your space | Conservato nel suo spazio |  |
 | `done.keptLine` | Retrouvez-la, avec son QR de retrait, dans « Mes commandes ». | Find it again, with its collection QR, under “My orders”. | Lo ritrova, col suo QR di ritiro, in « I miei ordini ». |  |
@@ -926,6 +930,7 @@ Source : `fr.ts · en.ts · it.ts` · 31 textes.
 | `done.toSettle` | Reste à régler | Left to pay | Resta da pagare |  |
 | `done.onAccount` | Porté à votre compte | Charged to your account | Addebitato sul conto |  |
 | `done.onAccountPretax` | Porté à votre compte, HT | Charged to your account, excl. VAT | Addebitato sul conto, IVA escl. |  |
+| `done.inHouse` | Commande interne — sans facturation | Internal order — not invoiced | Ordine interno — senza fatturazione |  |
 | `done.settleAction` | Régler maintenant | Pay now | Paga adesso |  |
 | `done.qr` | Voir mon code de retrait | View my pickup code | Vedere il mio codice di ritiro |  |
 | `done.changeNote` | Un changement ? Appelez le fournil — une commande passée entre en fabrication. | Need a change? Call the bakery — a placed order goes into production. | Un cambiamento? Chiami il forno — un ordine inviato entra in produzione. |  |
@@ -1067,7 +1072,7 @@ Source : `fr.ts · en.ts · it.ts` · 4 textes.
 
 ### Mes commandes (récapitulatif compris) — `orders`
 
-Source : `screens/orders.copy.ts · screens/order-summary.copy.ts · screens/order-change-request.copy.ts` · 289 textes.
+Source : `screens/orders.copy.ts · screens/order-summary.copy.ts · screens/order-change-request.copy.ts` · 291 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -1293,6 +1298,8 @@ Source : `screens/orders.copy.ts · screens/order-summary.copy.ts · screens/ord
 | `orders.payRefusedNote` | votre banque a refusé la carte | your bank declined the card | la tua banca ha rifiutato la carta |  |
 | `orders.payShopTill` | À régler en boutique | To pay at the shop | Da pagare in negozio |  |
 | `orders.payShopTillNote` | à la caisse de la boutique, au retrait | at the shop till, on collection | alla cassa del negozio, al ritiro |  |
+| `orders.payInHouse` | Commande interne | Internal order | Ordine interno |  |
+| `orders.payInHouseNote` | sans facturation, rien à régler | not invoiced, nothing to pay | senza fatturazione, nulla da pagare |  |
 | `orders.settle` | Régler | Pay | Paga |  |
 | `orders.detailRefund` | Remboursement | Refund | Rimborso |  |
 | `orders.detailCommitment` | Bon de commande | Purchase order | Buono d’ordine |  |

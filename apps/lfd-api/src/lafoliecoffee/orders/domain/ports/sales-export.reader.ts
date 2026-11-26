@@ -59,6 +59,12 @@ export interface SalesExportOrder {
   readonly paymentStatus: PaymentStatus;
   readonly settlementVenue: SettlementVenue | null;
   readonly offered: boolean;
+  /**
+   * La nature de l'offre (`tasting`, `in_house`…), `null` hors offre : la
+   * comptabilité ne confond pas un cadeau et la consommation d'un de nos
+   * restaurants.
+   */
+  readonly offerNature: string | null;
   /** La valeur TTC d'une commande offerte, dont le total est nul ; `null` sinon. */
   readonly offeredTotalCents: number | null;
   readonly clientele: SalesExportClientele;

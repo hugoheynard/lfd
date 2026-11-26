@@ -811,6 +811,11 @@ export interface ClientCopy {
      * facture du mois, un TTC par commande la contredirait.
      */
     readonly totalPretax: string;
+    /**
+     * Le total d'une commande interne d'un de nos restaurants : ce qu'elle
+     * vaut, jamais un montant à régler.
+     */
+    readonly totalInHouse: string;
     /** Sous ce total : où sont la TVA et le TTC. */
     readonly pretaxNote: string;
     /**
@@ -921,6 +926,13 @@ export interface ClientCopy {
     readonly payHintPublic: string;
     /** Un organisme public dont le compte ne règle pas : ni compte, ni carte — pas de bouton. */
     readonly publicAccountUnavailable: string;
+    /**
+     * **Un de nos restaurants** (payeur marqué « maison ») : sa commande est
+     * interne, sans facturation. Un seul bouton, sans carte ni compte, et la
+     * note dit pourquoi rien n'est à régler.
+     */
+    readonly settleInHouse: string;
+    readonly payHintInHouse: string;
     /**
      * **Le bon de commande d'un organisme public** (plan clients publics,
      * § 6 quater) : son numéro d'engagement et son code service Chorus Pro,
@@ -1107,6 +1119,8 @@ export interface ClientCopy {
     readonly titleDue: string;
     /** Quand rien n'est à encaisser : elle part au compte de la société. */
     readonly titleAccount: string;
+    /** Le titre d'une commande interne d'un de nos restaurants : rien ne part sur un compte. */
+    readonly titleInHouse: string;
     readonly intro: string;
     /**
      * Où RETROUVER la commande.
@@ -1157,6 +1171,8 @@ export interface ClientCopy {
     readonly onAccount: string;
     /** La même, hors taxe : un pro au compte ne lit que le HT (F5). */
     readonly onAccountPretax: string;
+    /** La ligne de total d'une commande interne d'un de nos restaurants : rien n'est dû. */
+    readonly inHouse: string;
     /** Le bouton qui ramène à l'étape de règlement. */
     readonly settleAction: string;
     readonly qr: string;

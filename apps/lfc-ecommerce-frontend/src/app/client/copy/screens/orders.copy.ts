@@ -602,6 +602,9 @@ export interface OrdersCopy {
    */
   readonly payShopTill: string;
   readonly payShopTillNote: string;
+  /** Une commande interne d'un de nos restaurants : ni facturée, ni réglée. */
+  readonly payInHouse: string;
+  readonly payInHouseNote: string;
   /** Le bouton qui rouvre l'écran de règlement de la MÊME commande. */
   readonly settle: string;
   /** L'intitulé de la ligne « Remboursement » — absente sans remboursement. */
@@ -781,6 +784,8 @@ export const ORDERS_FR: OrdersCopy = {
   payRefusedNote: 'votre banque a refusé la carte',
   payShopTill: 'À régler en boutique',
   payShopTillNote: 'à la caisse de la boutique, au retrait',
+  payInHouse: 'Commande interne',
+  payInHouseNote: 'sans facturation, rien à régler',
   settle: 'Régler',
   detailRefund: 'Remboursement',
   detailCommitment: 'Bon de commande',
@@ -923,6 +928,8 @@ export const ORDERS_EN: OrdersCopy = {
   payRefusedNote: 'your bank declined the card',
   payShopTill: 'To pay at the shop',
   payShopTillNote: 'at the shop till, on collection',
+  payInHouse: 'Internal order',
+  payInHouseNote: 'not invoiced, nothing to pay',
   settle: 'Pay',
   detailRefund: 'Refund',
   detailCommitment: 'Purchase order',
@@ -1065,6 +1072,8 @@ export const ORDERS_IT: OrdersCopy = {
   payRefusedNote: 'la tua banca ha rifiutato la carta',
   payShopTill: 'Da pagare in negozio',
   payShopTillNote: 'alla cassa del negozio, al ritiro',
+  payInHouse: 'Ordine interno',
+  payInHouseNote: 'senza fatturazione, nulla da pagare',
   settle: 'Paga',
   detailRefund: 'Rimborso',
   detailCommitment: 'Buono d’ordine',

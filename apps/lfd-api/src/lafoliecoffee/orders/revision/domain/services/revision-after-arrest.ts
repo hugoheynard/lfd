@@ -1,7 +1,7 @@
 import type { PaymentStatus } from "@lfd/contracts";
 
 import type { RevisionChange } from "../entities/order-revision.js";
-import { settlementRegimeOf } from "../../../domain/services/settlement-regime.js";
+import { isOfferRegime, settlementRegimeOf } from "../../../domain/services/settlement-regime.js";
 import type { SettlementVenue } from "../../../domain/value-objects/settlement-venue.js";
 
 /**
@@ -38,7 +38,7 @@ export function quantitiesAfterArrestAllowed(
   const regime = settlementRegimeOf(paymentStatus, totalCents, venue, offered);
   return (
     actorKind === "staff" &&
-    (regime === "account" || regime === "shop_till" || regime === "offered")
+    (regime === "account" || regime === "shop_till" || isOfferRegime(regime))
   );
 }
 

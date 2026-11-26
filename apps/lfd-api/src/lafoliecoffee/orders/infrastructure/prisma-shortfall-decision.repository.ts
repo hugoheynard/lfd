@@ -8,7 +8,7 @@ import {
   basketDiscountsOfRow,
   DISCOUNT_COVERAGE_LINES_SELECT,
 } from "./order-discounts.columns.js";
-import { settlementRegimeOf } from "../domain/services/settlement-regime.js";
+import { offerMarkOf, settlementRegimeOf } from "../domain/services/settlement-regime.js";
 import { LIVE_CARD_INCREASE_STATES } from "../revision/domain/entities/card-increase-proposal.js";
 import {
   ShortfallDecisionRepository,
@@ -62,7 +62,7 @@ function lockedOf(row: SubjectRow, shipment: ShipmentRows): LockedShortfallSubje
         row.paymentStatus,
         row.totalCents,
         row.settlementVenue,
-        row.offerNature !== null,
+        offerMarkOf(row.offerNature),
       ),
       increasePending: shipment.increasePending,
       voucherDiscountCents: row.voucherDiscountCents,

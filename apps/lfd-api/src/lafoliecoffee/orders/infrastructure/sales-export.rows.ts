@@ -153,6 +153,7 @@ export function salesExportOrderOf(row: SalesExportOrderRow): SalesExportOrder {
     paymentStatus: row.paymentStatus,
     settlementVenue: row.settlementVenue,
     offered,
+    offerNature: row.offerNature,
     offeredTotalCents: row.offeredTotalCents,
     clientele: row.clientele,
     buyerKind: buyerKindOf(row.id, row.buyerKind),

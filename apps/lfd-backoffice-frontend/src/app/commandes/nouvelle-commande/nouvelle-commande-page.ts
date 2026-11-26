@@ -402,8 +402,14 @@ export class NouvelleCommandePage {
    * 2026-11-03) : règlement au compte seulement, et le serveur le refuse.
    */
   protected readonly linkOffered = computed(
-    () => this.origin() !== 'counter' && !(this.company()?.payerIsPublic ?? false),
+    () =>
+      this.origin() !== 'counter' &&
+      !(this.company()?.payerIsPublic ?? false) &&
+      !(this.company()?.payerIsInHouse ?? false),
   );
+
+  /** Un de nos restaurants : commande interne, sans facturation — rien à choisir. */
+  protected readonly payerIsInHouse = computed(() => this.company()?.payerIsInHouse ?? false);
 
   /** Un organisme public : au compte, facture Chorus — rien à choisir. */
   protected readonly payerIsPublic = computed(() => this.company()?.payerIsPublic ?? false);
@@ -585,7 +591,10 @@ export class NouvelleCommandePage {
       // Au comptoir, le lien n'est pas proposé (E4) : au compte, toujours. Un
       // organisme public non plus : au compte, toujours (plan clients publics, B5).
       this.draft.settlement.set(
-        company.settlesOnAccount || company.payerIsPublic || this.origin() === 'counter'
+        company.settlesOnAccount ||
+          company.payerIsPublic ||
+          company.payerIsInHouse ||
+          this.origin() === 'counter'
           ? 'account'
           : 'link',
       );
@@ -594,6 +603,10 @@ export class NouvelleCommandePage {
       if (company.payerIsPublic) {
         this.draft.settlement.set('account');
         void this.loadCommitmentRequirements(companyId);
+      }
+      // Ni à un de nos restaurants : sa commande est interne.
+      if (company.payerIsInHouse) {
+        this.draft.settlement.set('account');
       }
       this.state.set('ready');
     } catch (error) {
@@ -733,6 +746,7 @@ export class NouvelleCommandePage {
         estimateReady: this.estimateReady,
         linkOffered: this.linkOffered(),
         payerIsPublic: this.payerIsPublic(),
+        payerIsInHouse: this.payerIsInHouse(),
         commitmentRequirements: this.commitmentRequirements.asReadonly(),
         commitmentRequirementsFailed: this.commitmentRequirementsFailed.asReadonly(),
         savingDraft: this.savingDraft.asReadonly(),

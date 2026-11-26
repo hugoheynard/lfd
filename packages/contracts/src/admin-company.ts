@@ -233,6 +233,14 @@ export interface AdminCompanyDetailView extends AdminCompanyView {
    */
   readonly payerSettlesOnAccount: boolean;
 
+  /**
+   * Le payeur d'aujourd'hui (même règle) est un de nos restaurants, marqué
+   * « maison » : ses commandes sont internes, sans facturation — la saisie ne
+   * demande ni crédit ni lien. Facultatif : un écran construit sans lui
+   * reste valide.
+   */
+  readonly payerIsInHouse?: boolean;
+
   /** Qui l'a supprimé, nom figé ce jour-là ; `null` si inconnu de l'annuaire ou non supprimé. */
   readonly archivedByName: string | null;
   /** Le motif de la suppression ; `null` si le compte n'est pas supprimé. */

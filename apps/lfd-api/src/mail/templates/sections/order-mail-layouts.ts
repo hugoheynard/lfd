@@ -8,13 +8,14 @@ import {
   type MailLayouts,
 } from "./mail-layout.types.js";
 
-/** Les trois régimes d'une commande, tels que le courriel les distingue. */
+/** Les régimes d'une commande, tels que le courriel les distingue. */
 const SETTLEMENTS = {
   paid: "Commande payée par carte",
   due: "Commande à régler",
   account: "Commande au compte",
   shopTill: "Commande à régler à la caisse de la boutique",
   offered: "Commande offerte",
+  inHouse: "Commande interne d'un de nos restaurants",
 };
 
 /** Le QR de retrait : sa légende et son texte de repli. `qrTitle` n'est rendu nulle part (vu le 2026-10-23). */

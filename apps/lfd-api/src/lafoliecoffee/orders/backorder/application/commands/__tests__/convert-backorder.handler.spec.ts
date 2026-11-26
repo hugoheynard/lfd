@@ -1,4 +1,5 @@
 import { OrderTotalChangedError } from "../../../../domain/errors/order-total-changed.error.js";
+import { KnownInHousePayers } from "../../../../../account/application/commands/__tests__/in-house-doubles.js";
 import { OfferNotPermittedError } from "../../../../domain/errors/order-offer-errors.js";
 import { IntentKeyReusedError } from "../../../../../../platform/intent/intent-errors.js";
 import { Backorder } from "../../../domain/entities/backorder.js";
@@ -274,7 +275,7 @@ describe("ConvertBackorderHandler — le reliquat fermé avec la commande", () =
     );
   });
 
-  it("une commande offerte sans le droit d'offrir : refus avant toute lecture", async () => {
+  it("une commande offerte sans le droit d'offrir : refus, sans rien écrire", async () => {
     const s = scene();
 
     await expect(
@@ -285,6 +286,7 @@ describe("ConvertBackorderHandler — le reliquat fermé avec la commande", () =
         }),
       ),
     ).rejects.toBeInstanceOf(OfferNotPermittedError);
+    expect(s.placed).toHaveLength(0);
   });
 
   it("le total vu périmé est refusé, et le reliquat reste ouvert", async () => {
@@ -294,5 +296,41 @@ describe("ConvertBackorderHandler — le reliquat fermé avec la commande", () =
       OrderTotalChangedError,
     );
     expect(s.backorders.stateOf(BACKORDER)?.state).toBe("open");
+  });
+});
+
+/** Un de nos restaurants : le reliquat devient une commande interne. */
+describe("ConvertBackorderHandler — le reliquat d'un restaurant maison", () => {
+  function inHouseScene() {
+    const backorders = new InMemoryBackorders([openBackorder()]);
+    return conversionScene({
+      backorders,
+      replays: new FixedBackorderReplays(originReplay()),
+      inHouse: new KnownInHousePayers(["co_bistrot"]),
+    });
+  }
+
+  it("🔴 au compte, sans crédit à juger : commande interne, total nul, reliquat fermé", async () => {
+    const s = inHouseScene();
+
+    const result = await s.convert.execute(command({ expectedTotalCents: 0 }));
+
+    expect(result.totalCents).toBe(0);
+    expect(s.placed[0]?.offer?.reason.nature).toBe("in_house");
+    expect(s.placed[0]?.paymentStatus).toBe("not_required");
+  });
+
+  it("le droit d'offrir ne se juge pas : la commande sera interne quel que soit le choix", async () => {
+    const s = inHouseScene();
+
+    await s.convert.execute(
+      command({
+        expectedTotalCents: 0,
+        settlement: "offered",
+        offer: { nature: "goodwill", note: "Désolés", notifyCustomer: false },
+      }),
+    );
+
+    expect(s.placed[0]?.offer?.reason.nature).toBe("in_house");
   });
 });

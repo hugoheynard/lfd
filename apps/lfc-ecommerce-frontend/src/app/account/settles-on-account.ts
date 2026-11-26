@@ -47,3 +47,12 @@ export function directDebitSuspended(company: CompanyView | null): boolean {
 export function payerIsPublic(company: CompanyView | null): boolean {
   return company?.payerIsPublic === true;
 }
+
+/**
+ * **Le payeur est-il un de nos restaurants ?** Calculé au serveur sur le
+ * PAYEUR : ses commandes sont internes, sans facturation — ni carte ni compte
+ * ne lui sont proposés, le serveur refuse la carte par son nom.
+ */
+export function payerIsInHouse(company: CompanyView | null): boolean {
+  return company?.payerIsInHouse === true;
+}

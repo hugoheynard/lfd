@@ -54,6 +54,8 @@ export interface SalesExportOrderView {
   readonly paymentStatus: PaymentStatus;
   readonly settlementVenue: string | null;
   readonly offered: boolean;
+  /** La nature de l'offre (`in_house` : une commande interne d'un de nos restaurants), `null` hors offre. */
+  readonly offerNature: string | null;
   readonly offeredTtc: number | null;
   readonly clientele: "pro" | "public" | null;
   readonly buyerKind: string;

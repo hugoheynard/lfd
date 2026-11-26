@@ -252,6 +252,7 @@ export class PrismaAdminCompanyReader extends AdminCompanyReader {
       chorusService: chorusServiceView(row.chorusService),
       chorusServicePayerIsPublic: payer.isPublic,
       payerSettlesOnAccount: payer.settlesOnAccount,
+      payerIsInHouse: payer.isInHouse,
       archivedByName: row.archivedAt === null ? null : row.archivedByName,
       archiveReason: row.archivedAt === null ? null : row.archiveReason,
     };
@@ -267,13 +268,27 @@ export class PrismaAdminCompanyReader extends AdminCompanyReader {
   private async payerOf(row: CompanyRow, now: Date): Promise<PayerFacts> {
     const billing = row.follows.find((follow) => follow.validFrom <= now) ?? null;
     if (billing === null) {
-      return payerFacts(row);
+      return { ...payerFacts(row), isInHouse: await this.isInHouse(row.id) };
     }
-    const payer = await this.prisma.company.findUnique({
-      where: { id: billing.parentId },
-      select: { formeJuridique: true, grantedTerms: true, directDebitBlockedAt: true },
+    const [payer, isInHouse] = await Promise.all([
+      this.prisma.company.findUnique({
+        where: { id: billing.parentId },
+        select: { formeJuridique: true, grantedTerms: true, directDebitBlockedAt: true },
+      }),
+      this.isInHouse(billing.parentId),
+    ]);
+    return payer === null
+      ? { isPublic: false, settlesOnAccount: false, isInHouse }
+      : { ...payerFacts(payer), isInHouse };
+  }
+
+  /** La période « maison » en cours du payeur : un de nos restaurants. */
+  private async isInHouse(payerId: string): Promise<boolean> {
+    const live = await this.prisma.payerInHouse.findFirst({
+      where: { companyId: payerId, withdrawnAt: null },
+      select: { id: true },
     });
-    return payer === null ? { isPublic: false, settlesOnAccount: false } : payerFacts(payer);
+    return live !== null;
   }
 }
 
@@ -281,6 +296,7 @@ export class PrismaAdminCompanyReader extends AdminCompanyReader {
 interface PayerFacts {
   readonly isPublic: boolean;
   readonly settlesOnAccount: boolean;
+  readonly isInHouse: boolean;
 }
 
 /** Nature et crédit d'un payeur, depuis ses colonnes. */
@@ -288,7 +304,7 @@ function payerFacts(payer: {
   readonly formeJuridique: string;
   readonly grantedTerms: readonly string[];
   readonly directDebitBlockedAt: Date | null;
-}): PayerFacts {
+}): Omit<PayerFacts, "isInHouse"> {
   return {
     isPublic: isPublicFormeJuridique(payer.formeJuridique),
     settlesOnAccount: payer.grantedTerms.length > 0 && payer.directDebitBlockedAt === null,

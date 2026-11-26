@@ -3799,6 +3799,13 @@
           "variables": []
         },
         {
+          "key": "cart.totalInHouse",
+          "fr": "Valeur, non facturée",
+          "en": "Value, not invoiced",
+          "it": "Valore, non fatturato",
+          "variables": []
+        },
+        {
           "key": "cart.pretaxNote",
           "fr": "TVA et TTC sur la facture du mois",
           "en": "VAT and total incl. VAT on the monthly invoice",
@@ -4041,6 +4048,20 @@
           "fr": "Votre organisme règle uniquement au compte, et ce compte ne peut pas régler aujourd’hui. Contactez-nous pour le rétablir : la commande ne peut pas se payer par carte.",
           "en": "Your organisation pays on account only, and that account cannot settle today. Contact us to restore it: the order cannot be paid by card.",
           "it": "Il vostro ente paga solo sul conto, e questo conto oggi non può saldare. Ci contatti per ripristinarlo: l’ordine non può essere pagato con carta.",
+          "variables": []
+        },
+        {
+          "key": "cart.settleInHouse",
+          "fr": "Passer la commande interne",
+          "en": "Place the internal order",
+          "it": "Invia l’ordine interno",
+          "variables": []
+        },
+        {
+          "key": "cart.payHintInHouse",
+          "fr": "Commande interne — sans facturation : rien n’est à régler.",
+          "en": "Internal order — not invoiced: nothing to pay.",
+          "it": "Ordine interno — senza fatturazione: nulla da pagare.",
           "variables": []
         },
         {
@@ -4608,6 +4629,13 @@
           "variables": []
         },
         {
+          "key": "done.titleInHouse",
+          "fr": "Commande enregistrée.\nCommande interne, sans facturation.",
+          "en": "Order on file.\nInternal order, not invoiced.",
+          "it": "Ordine registrato.\nOrdine interno, senza fatturazione.",
+          "variables": []
+        },
+        {
           "key": "done.intro",
           "fr": "Votre commande entre dans la fournée de demain matin.",
           "en": "Your order joins tomorrow morning’s batch.",
@@ -4773,6 +4801,13 @@
           "fr": "Porté à votre compte, HT",
           "en": "Charged to your account, excl. VAT",
           "it": "Addebitato sul conto, IVA escl.",
+          "variables": []
+        },
+        {
+          "key": "done.inHouse",
+          "fr": "Commande interne — sans facturation",
+          "en": "Internal order — not invoiced",
+          "it": "Ordine interno — senza fatturazione",
           "variables": []
         },
         {
@@ -6968,6 +7003,20 @@
           "fr": "à la caisse de la boutique, au retrait",
           "en": "at the shop till, on collection",
           "it": "alla cassa del negozio, al ritiro",
+          "variables": []
+        },
+        {
+          "key": "orders.payInHouse",
+          "fr": "Commande interne",
+          "en": "Internal order",
+          "it": "Ordine interno",
+          "variables": []
+        },
+        {
+          "key": "orders.payInHouseNote",
+          "fr": "sans facturation, rien à régler",
+          "en": "not invoiced, nothing to pay",
+          "it": "senza fatturazione, nulla da pagare",
           "variables": []
         },
         { "key": "orders.settle", "fr": "Régler", "en": "Pay", "it": "Paga", "variables": [] },

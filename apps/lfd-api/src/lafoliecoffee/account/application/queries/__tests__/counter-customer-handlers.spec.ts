@@ -4,6 +4,7 @@ import type {
   DeliveryAddressView,
 } from "@lfd/contracts";
 
+import { KnownInHousePayers } from "../../commands/__tests__/in-house-doubles.js";
 import { Company } from "../../../domain/entities/company.js";
 import { CounterCustomerNotFoundError } from "../../../domain/errors/counter-errors.js";
 import { CompanyAddressReader } from "../../../domain/ports/company-address.reader.js";
@@ -173,6 +174,7 @@ function detail(
   stored: Company | null,
   members: readonly CompanyMemberRecord[] = [],
   payer: Company | null = null,
+  inHouse: KnownInHousePayers = new KnownInHousePayers(),
 ): { handler: GetCounterCustomerHandler; companies: StoredCompanies } {
   const companies = new StoredCompanies(
     stored,
@@ -185,6 +187,7 @@ function detail(
     new FixedMembers(members),
     new FixedBillingFollow(payer === null ? null : "p1"),
     new FixedClock(JOINED_AT),
+    inHouse,
   );
   return { handler, companies };
 }
@@ -215,6 +218,7 @@ describe("GetCounterCustomerHandler", () => {
       status: "active",
       settlesOnAccount: true,
       payerIsPublic: false,
+      payerIsInHouse: false,
       deliveryAddresses: [DELIVERY],
       buyers: [
         {
@@ -273,6 +277,19 @@ describe("GetCounterCustomerHandler", () => {
     expect((await handler.execute(new GetCounterCustomerQuery("c1"))).payerIsPublic).toBe(true);
   });
 
+  it("dit que le payeur est un de nos restaurants, lu sur le principal suivi en facturation", async () => {
+    const principal = company({ id: "p1", onAccount: false });
+    const { handler } = detail(
+      CARD,
+      company({ onAccount: false }),
+      [],
+      principal,
+      new KnownInHousePayers(["p1"]),
+    );
+
+    expect((await handler.execute(new GetCounterCustomerQuery("c1"))).payerIsInHouse).toBe(true);
+  });
+
   it("dit « pas au compte » pour un site dont le principal suivi n'a pas de crédit", async () => {
     const principal = company({ id: "p1", onAccount: false });
     const { handler } = detail(CARD, company({ onAccount: true }), [], principal);
@@ -305,6 +322,7 @@ describe("GetCounterCustomerHandler", () => {
       new FixedMembers([]),
       new FixedBillingFollow(null),
       new FixedClock(JOINED_AT),
+      new KnownInHousePayers(),
     );
 
     expect((await handler.execute(new GetCounterCustomerQuery("c1"))).settlesOnAccount).toBe(true);

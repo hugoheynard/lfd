@@ -20,6 +20,7 @@ export const ORDER_MAILS_FR: OrderMailsCopy = {
       account: "Porté à votre compte",
       shopTill: "À régler en boutique",
       offered: "Offerte",
+      inHouse: "Commande interne — sans facturation",
     },
     recapDay: "Jour",
     recapPickup: "Retrait",

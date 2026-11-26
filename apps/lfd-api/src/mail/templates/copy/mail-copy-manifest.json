@@ -75,6 +75,11 @@
         "required": [],
         "fr": "Offerte"
       },
+      "totalLabel.inHouse": {
+        "variables": [],
+        "required": [],
+        "fr": "Commande interne — sans facturation"
+      },
       "recapDay": {
         "variables": [],
         "required": [],

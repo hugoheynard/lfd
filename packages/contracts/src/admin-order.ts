@@ -73,6 +73,7 @@ export const orderOfferNatureSchema = z.enum([
   "goodwill",
   "replacement",
   "sample",
+  "in_house",
 ]);
 
 /** Une clé du registre des natures d'une commande offerte. */
@@ -84,7 +85,21 @@ const OFFER_NATURE_LABELS: Readonly<Record<OrderOfferNature, string>> = {
   goodwill: "Geste commercial",
   replacement: "Remplacement après réclamation",
   sample: "Échantillon",
+  in_house: "Commande interne",
 };
+
+/**
+ * **La nature d'une commande interne** — passée par un de nos restaurants,
+ * marqué « maison » à sa fiche client. Elle ne s'offre
+ * pas à la main : elle naît de la passation quand le payeur est maison, et
+ * l'équipe ne la choisit jamais dans la saisie « Offerte ».
+ */
+export const IN_HOUSE_OFFER_NATURE = "in_house" satisfies OrderOfferNature;
+
+/** Une nature que l'équipe peut choisir dans la saisie « Offerte » : toutes, sauf la commande interne. */
+export function isStaffGrantableOfferNature(nature: OrderOfferNature): boolean {
+  return nature !== IN_HOUSE_OFFER_NATURE;
+}
 
 /** **Le registre des natures**, dans l'ordre de l'écran : la clé et son libellé. */
 export const ORDER_OFFER_NATURES: readonly {

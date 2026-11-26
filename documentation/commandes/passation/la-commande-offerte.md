@@ -75,7 +75,8 @@ flowchart LR
 - `staffSettlementSchema = z.enum(["account", "link", "offered"])`, sans
   défaut ; libellé « Offerte ».
 - `orderOfferSchema` : `nature` (registre `ORDER_OFFER_NATURES` : `tasting`,
-  `event`, `goodwill`, `replacement`, `sample`), `note` (1 à
+  `event`, `goodwill`, `replacement`, `sample`, `in_house` — cette dernière
+  ne se choisit pas à la main, cf. § 2.11), `note` (1 à
   `ORDER_OFFER_NOTE_MAX_LENGTH` = 280 caractères), `notifyCustomer`
   (`false` par défaut).
 - La passation exige `offer` **si et seulement si** `settlement === "offered"`.
@@ -255,6 +256,43 @@ il sert à la commerciale et au colisage.
 
 Tests de bout en bout : `apps/lfd-api/test/admin-place-order.e2e-spec.ts`,
 `offered-particular-order.e2e-spec.ts`, `offered-order-readers.e2e-spec.ts`.
+
+### 2.11 La commande interne d'un de nos restaurants (`in_house`)
+
+Un payeur marqué « maison » à sa fiche client (`payer_in_house`, lecture
+publiée `InHousePayerReader`) est un de nos restaurants. Chacune de ses
+commandes passées après le marquage naît **interne** : `OrderDrafting`, une
+fois le payeur résolu (`orderPayerOf`), pose l'offre
+`{ nature: "in_house", note: "Commande interne", notifyCustomer: true }`
+(`IN_HOUSE_ORDER_REASON`) avant `Order.draft`, à la place de toute autre
+offre. Toutes les passations d'une société y passent : l'espace client, la
+saisie de l'équipe, l'échéance d'un panier récurrent, la transformation d'un
+reliquat.
+
+- **Régime `in_house`** (`settlementRegimeSchema`) : une offre sans offrant.
+  Partout où l'argent se juge (annulation, modification après l'arrêt), il
+  se comporte comme `offered` (`isOfferRegime`) ; partout où il se dit, il
+  dit « Commande interne — sans facturation » (courriels, bon de commande,
+  bon de livraison, fiche et liste du back-office, « Mes commandes »).
+- **Aucun règlement** : la carte est refusée par son nom
+  (`InHouseBuyerCardRefusedError`, avant la branche du payeur public, sans
+  lire le crédit), le lien aussi (`InHouseBuyerLinkRefusedError`) ; « au
+  compte » passe sans crédit accordé.
+- **Ne s'offre pas à la main** : la saisie « Offerte » refuse la nature
+  (`InHouseOfferNotStaffGrantableError`, 400) et le menu ne la propose pas.
+  La transformation d'un reliquat d'un restaurant ne juge pas le droit
+  d'offrir.
+- **Aucun fait d'offre** : ni `order.offered` ni `order.offer_revalued` ;
+  la commande est témoignée par `order.placed`, sa nature se lit sur la
+  commande.
+- **La boutique** : le panier d'un restaurant (`CompanyView.payerIsInHouse`)
+  n'a qu'un bouton, ni carte ni compte ; le total s'y lit « Valeur, non
+  facturée », et la confirmation ne montre aucun montant à régler.
+- **L'export des ventes** porte `offerNature` à côté de `offered`.
+
+Un payeur démarqué recommande comme avant : ses commandes suivantes sont au
+compte (ou par carte). Une commande passée avant le marquage garde son
+régime.
 
 ---
 

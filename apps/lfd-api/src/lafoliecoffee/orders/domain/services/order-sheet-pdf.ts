@@ -30,7 +30,7 @@ import {
 } from "./order-sheet-pdf-format.js";
 import {
   PICKUP_DISCOUNT_EXCLUDED_NOTE,
-  OFFERED_NOTE,
+  unbilledNoteOf,
   PRETAX_ONLY_NOTE,
   totalRows,
 } from "./order-sheet-pdf-totals.js";
@@ -318,8 +318,9 @@ function totals(doc: Doc, sheet: ClientSheet, handoverUrl: string, top: number):
     put(doc, PRETAX_ONLY_NOTE, blockLeft, y, { size: 9 });
     y += 5 * MM;
   }
-  if (sheet.money.settlement === "offered") {
-    put(doc, OFFERED_NOTE, blockLeft, y, { size: 9 });
+  const unbilled = unbilledNoteOf(sheet.money.settlement);
+  if (unbilled !== null) {
+    put(doc, unbilled, blockLeft, y, { size: 9 });
     y += 5 * MM;
   }
   return Math.max(y, qrBottom);

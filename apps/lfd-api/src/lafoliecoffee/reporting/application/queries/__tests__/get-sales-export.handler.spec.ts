@@ -44,6 +44,7 @@ describe("GetSalesExportHandler — les commandes et les lignes", () => {
       receivedOn: null,
       cancelledAt: null,
       settlementVenue: null,
+      offerNature: null,
       offeredTtc: null,
       vatByRate: null,
       settled: null,
@@ -70,6 +71,7 @@ describe("GetSalesExportHandler — les commandes et les lignes", () => {
   it("sert une commande offerte avec sa valeur, hors du CA", async () => {
     const offered = anOrder({
       offered: true,
+      offerNature: "tasting",
       countsAsRevenue: false,
       offeredTotalCents: 2110,
       amounts: { ...anOrder().amounts, vatCents: 0, vatShares: [], totalCents: 0 },
@@ -79,6 +81,20 @@ describe("GetSalesExportHandler — les commandes et les lignes", () => {
 
     expect(view.orders[0]).toMatchObject({ offered: true, offeredTtc: 21.1, totalTtc: 0 });
     expect(dayOf(view, DAY)).toMatchObject({ orders: 0, revenueTtc: 0 });
+  });
+
+  it("dit la nature de l'offre : une commande interne ne se confond pas avec un cadeau", async () => {
+    const internal = anOrder({
+      offered: true,
+      offerNature: "in_house",
+      countsAsRevenue: false,
+      offeredTotalCents: 2110,
+      amounts: { ...anOrder().amounts, vatCents: 0, vatShares: [], totalCents: 0 },
+    });
+
+    const view = await sceneOf({ orders: [internal] }).run();
+
+    expect(view.orders[0]).toMatchObject({ offered: true, offerNature: "in_house", totalTtc: 0 });
   });
 
   it("garde les cinq décimales du prix au kilo d'une vente au poids", async () => {

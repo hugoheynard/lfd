@@ -2,11 +2,18 @@ import { Order } from "../order.js";
 import { offerAppliedTo } from "../order-offered-amounts.js";
 import type { DraftOrderInput } from "../order-shapes.js";
 import {
+  InHouseOfferNotStaffGrantableError,
   InvalidOrderOfferError,
   OfferChangeOnRevisionError,
   OfferedOrderWithVoucherError,
 } from "../../errors/order-offer-errors.js";
-import { orderOfferReasonOf, type OrderOfferReason } from "../../value-objects/order-offer.js";
+import {
+  IN_HOUSE_ORDER_REASON,
+  isInHouseReason,
+  orderOfferReasonOf,
+  staffOfferReasonOf,
+  type OrderOfferReason,
+} from "../../value-objects/order-offer.js";
 import {
   LABO,
   input,
@@ -165,5 +172,60 @@ describe("orderOfferReasonOf", () => {
     ["un texte trop long", { nature: "tasting", note: "x".repeat(281) }],
   ])("refuse %s", (_label, raw) => {
     expect(() => orderOfferReasonOf(raw)).toThrow(InvalidOrderOfferError);
+  });
+});
+
+describe("la commande interne d'un restaurant maison", () => {
+  it("🔴 tombe à zéro comme une offre, garde sa valeur, et se dit interne", () => {
+    const paid = stateOf(Order.draft(input({ lines: TWO_RATES })));
+    const internal = Order.draft(input({ lines: TWO_RATES, offer: IN_HOUSE_ORDER_REASON }));
+
+    expect(internal.totalCents).toBe(0);
+    expect(internal.offer?.value.totalCents).toBe(paid.totalCents);
+    expect(internal.isInHouse).toBe(true);
+    internal.deferPayment();
+    expect(internal.settlementRegime).toBe("in_house");
+  });
+
+  it("une offre de l'équipe n'est pas une commande interne", () => {
+    const offered = Order.draft(input({ offer: TASTING }));
+
+    expect(offered.isInHouse).toBe(false);
+    offered.deferPayment();
+    expect(offered.settlementRegime).toBe("offered");
+  });
+
+  it("prévient le restaurant : c'est sa commande, pas un cadeau qu'on lui apporte", () => {
+    expect(IN_HOUSE_ORDER_REASON).toEqual({
+      nature: "in_house",
+      note: "Commande interne",
+      notifyCustomer: true,
+    });
+    expect(isInHouseReason(IN_HOUSE_ORDER_REASON)).toBe(true);
+    expect(isInHouseReason(TASTING)).toBe(false);
+    expect(isInHouseReason(null)).toBe(false);
+  });
+
+  it("🔴 une modification ne la rend pas payante", () => {
+    const current = placed();
+    expect(() =>
+      Order.revise(current, revised(current, { lines: [line("VIE-001", 20)], offer: TASTING })),
+    ).toThrow(OfferChangeOnRevisionError);
+  });
+});
+
+describe("staffOfferReasonOf — le motif d'une saisie de l'équipe", () => {
+  it("🔴 refuse « Commande interne » : elle ne s'offre pas à la main", () => {
+    expect(() => staffOfferReasonOf({ nature: "in_house", note: "Restaurant" })).toThrow(
+      InHouseOfferNotStaffGrantableError,
+    );
+  });
+
+  it("garde toute autre nature du registre", () => {
+    expect(staffOfferReasonOf({ nature: "sample", note: "Échantillon" }).nature).toBe("sample");
+  });
+
+  it("refuse comme le motif ordinaire une nature hors registre", () => {
+    expect(() => staffOfferReasonOf({ nature: "gift", note: "x" })).toThrow(InvalidOrderOfferError);
   });
 });

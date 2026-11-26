@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 
 import { OrderOfferRevaluedEvent } from "../../../domain/events/order-offered.event.js";
+import { isInHouseReason } from "../../../domain/value-objects/order-offer.js";
 import { CommerceOrderRevisedFact } from "../../../../../delivery/channels/commerce/index.js";
 import { DurablePublisher } from "../../../../../platform/outbox/durable-publisher.js";
 import { Clock } from "../../../../../platform/time/clock.js";
@@ -97,7 +98,8 @@ export class OrderRevisionRecording {
       ).durableFact(),
     );
     // Une commande offerte : sa valeur après le geste, pour le cumul offert.
-    if (revision.state.offer !== null) {
+    // Pas une commande interne : personne ne l'a offerte, rien ne se cumule.
+    if (revision.state.offer !== null && !isInHouseReason(revision.state.offer.reason)) {
       await this.durable.publish(
         new OrderOfferRevaluedEvent(
           revision.orderId,

@@ -1,11 +1,15 @@
 import {
+  IN_HOUSE_OFFER_NATURE,
   ORDER_OFFER_NATURES,
   ORDER_OFFER_NOTE_MAX_LENGTH,
   type OrderOfferNature,
 } from "@lfd/contracts";
 import type { VatShare } from "@lfd/money";
 
-import { InvalidOrderOfferError } from "../errors/order-offer-errors.js";
+import {
+  InHouseOfferNotStaffGrantableError,
+  InvalidOrderOfferError,
+} from "../errors/order-offer-errors.js";
 
 const ADMITTED: readonly string[] = ORDER_OFFER_NATURES.map((nature) => nature.key);
 
@@ -74,4 +78,44 @@ export function orderOfferReasonOf(raw: {
 
 function isAdmittedNature(nature: string): nature is OrderOfferNature {
   return ADMITTED.includes(nature);
+}
+
+/**
+ * **Le motif qu'une saisie de l'équipe pose** : celui de {@link orderOfferReasonOf},
+ * sauf la commande interne. Une commande interne n'a pas d'offrant — elle naît
+ * de la passation quand le payeur est un de nos restaurants
+ * ({@link IN_HOUSE_ORDER_REASON}) —, et l'équipe ne la choisit pas à la main.
+ *
+ * @throws {InHouseOfferNotStaffGrantableError} la nature `in_house`.
+ * @throws {InvalidOrderOfferError} nature hors registre, texte vide ou trop long.
+ */
+export function staffOfferReasonOf(raw: {
+  readonly nature: string;
+  readonly note: string;
+  readonly notifyCustomer?: boolean | undefined;
+}): OrderOfferReason {
+  if (raw.nature === IN_HOUSE_OFFER_NATURE) {
+    throw new InHouseOfferNotStaffGrantableError();
+  }
+  return orderOfferReasonOf(raw);
+}
+
+/** Le texte que porte une commande interne : la nature dit déjà tout. */
+export const IN_HOUSE_ORDER_NOTE = "Commande interne";
+
+/**
+ * **Le motif d'une commande interne**, posé par la composition quand le payeur
+ * est un de nos restaurants. Le restaurant est prévenu comme pour toute
+ * commande qu'il passe lui-même : c'est sa commande, pas un cadeau qu'on lui
+ * apporte.
+ */
+export const IN_HOUSE_ORDER_REASON: OrderOfferReason = {
+  nature: IN_HOUSE_OFFER_NATURE,
+  note: IN_HOUSE_ORDER_NOTE,
+  notifyCustomer: true,
+};
+
+/** Le motif est-il celui d'une commande interne ? */
+export function isInHouseReason(reason: OrderOfferReason | null | undefined): boolean {
+  return reason?.nature === IN_HOUSE_OFFER_NATURE;
 }

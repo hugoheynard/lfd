@@ -386,6 +386,23 @@ describe('PanierCommande — un organisme public', () => {
   });
 });
 
+/** Un de nos restaurants : commande interne, sans facturation — rien à choisir. */
+describe('PanierCommande — un restaurant maison', () => {
+  it('ne propose aucun règlement à choisir, et dit la commande interne', () => {
+    const { host } = mountFull(new CartStore(), {
+      payerIsInHouse: true,
+      settlesOnAccount: false,
+      linkOffered: false,
+    });
+
+    expect(host.querySelector('input[name="settlement"]')).toBeNull();
+    expect(host.querySelector('[data-in-house-payer]')?.textContent).toContain(
+      'Commande interne — sans facturation',
+    );
+    expect(host.textContent).not.toContain('aucun crédit ne lui a été accordé');
+  });
+});
+
 /** Plan des dépassements, § 3.7 : la ligne fermée par la limite de son produit. */
 describe('PanierCommande — la limite d’un produit', () => {
   const exceeded: AdminOrderEstimateView = {

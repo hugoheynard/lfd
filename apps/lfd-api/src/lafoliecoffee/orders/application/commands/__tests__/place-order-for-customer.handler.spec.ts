@@ -1,4 +1,5 @@
 import { orderPretaxCents } from "@lfd/money";
+import { KnownInHousePayers } from "../../../../account/application/commands/__tests__/in-house-doubles.js";
 import { FixedRecipients } from "./intake-doubles.js";
 import { FixedIdGenerator } from "../../../../../platform/id/fixed-id-generator.js";
 import { UnitOfWork } from "../../../../../platform/database/unit-of-work.js";
@@ -92,7 +93,11 @@ import { EstimateOrderForCustomerHandler } from "../../queries/estimate-order-fo
 import { EstimateOrderForCustomerQuery } from "../../queries/estimate-order-for-customer.query.js";
 import { OrderCutoffNotice } from "../../services/order-cutoff-notice.service.js";
 import { RecordingShelfStockLock } from "../../../../resupply/application/__tests__/shelf-stock-doubles.js";
-import { OfferNotPermittedError } from "../../../domain/errors/order-offer-errors.js";
+import { InHouseBuyerLinkRefusedError } from "../../../domain/errors/in-house-buyer-errors.js";
+import {
+  InHouseOfferNotStaffGrantableError,
+  OfferNotPermittedError,
+} from "../../../domain/errors/order-offer-errors.js";
 import {
   CounterAccountSettlementNotGrantedError,
   CounterLinkSettlementRefusedError,
@@ -436,12 +441,13 @@ interface HandlerOptions {
   readonly catalog?: InMemoryProductCatalog;
   readonly overrides?: RecordingOverrides;
   readonly unitOfWork?: TrackingUnitOfWork;
+  readonly inHouse?: KnownInHousePayers;
 }
 
 /** Ce que le constructeur de la composition lit des options d'un cas. */
 type DraftingOptions = Pick<
   HandlerOptions,
-  "delivery" | "payers" | "plans" | "salesTerms" | "shelf" | "cutoffs" | "catalog"
+  "delivery" | "payers" | "plans" | "salesTerms" | "shelf" | "cutoffs" | "catalog" | "inHouse"
 >;
 
 /** La composition sur les doubles de ces suites — partagée par la passation et l'estimation. */
@@ -492,6 +498,7 @@ function draftingFor(guardDouble: OrderGuardReader, options: DraftingOptions = {
     options.salesTerms ?? new FixedSalesTerms(),
     new FixedLineClassifications(),
     options.shelf ?? shelfCircuitOf(options.plans ?? openPlanGate()),
+    options.inHouse ?? new KnownInHousePayers(),
   );
 }
 
@@ -1161,6 +1168,7 @@ describe("PlaceOrderForCustomerHandler — le règlement", () => {
         new FixedSalesTerms(),
         new FixedLineClassifications(),
         shelfCircuitOf(openPlanGate()),
+        new KnownInHousePayers(),
       ),
       repo(sink),
       payments(intents),
@@ -1984,5 +1992,91 @@ describe("PlaceOrderForCustomerHandler — la commande offerte", () => {
     );
 
     expect(sink.placed?.totalCents).toBe(0);
+  });
+});
+
+/** Un de nos restaurants : la commande naît interne, quoi que l'écran ait choisi. */
+describe("PlaceOrderForCustomerHandler — la commande interne d'un restaurant maison", () => {
+  const inHouse = () => new KnownInHousePayers(["c1"]);
+
+  it("🔴 au compte sans crédit accordé : total nul, nature `in_house`, rien à encaisser", async () => {
+    const sink = { placed: null as OrderToPlace | null };
+    const durable = new RecordingDurable();
+
+    const result = await handler(guard("orders", "active", "none"), sink, {
+      inHouse: inHouse(),
+      durable,
+    }).execute(placement("staff_1", payload({ expectedTotalCents: 0 })));
+
+    expect(result.totalCents).toBe(0);
+    expect(result.paymentUrl).toBeUndefined();
+    expect(sink.placed?.paymentStatus).toBe("not_required");
+    expect(sink.placed?.offer?.reason).toEqual({
+      nature: "in_house",
+      note: "Commande interne",
+      notifyCustomer: true,
+    });
+    expect(sink.placed?.offer?.value.totalCents).toBe(400);
+    // Personne n'a offert : pas de témoin « commande offerte ».
+    expect(durable.facts.some((fact) => fact.type === "order.offered")).toBe(false);
+  });
+
+  it("🔴 refuse le lien de règlement par son nom, sans rien écrire", async () => {
+    const sink = { placed: null as OrderToPlace | null };
+
+    await expect(
+      handler(guard("orders"), sink, { inHouse: inHouse() }).execute(
+        placement("staff_1", payload({ settlement: "link", expectedTotalCents: 0 })),
+      ),
+    ).rejects.toBeInstanceOf(InHouseBuyerLinkRefusedError);
+    expect(sink.placed).toBeNull();
+  });
+
+  it("l'emporte sur une offre de l'équipe : la commande reste interne, sans témoin d'offre", async () => {
+    const sink = { placed: null as OrderToPlace | null };
+    const durable = new RecordingDurable();
+    const offer = { nature: "tasting" as const, note: "Dégustation", notifyCustomer: false };
+
+    await handler(guard("orders"), sink, { inHouse: inHouse(), durable }).execute(
+      placement(
+        "staff_1",
+        payload({ settlement: "offered", offer, expectedTotalCents: 0 }),
+        randomUUID(),
+        false,
+        true,
+      ),
+    );
+
+    expect(sink.placed?.offer?.reason.nature).toBe("in_house");
+    expect(durable.facts.some((fact) => fact.type === "order.offered")).toBe(false);
+  });
+
+  it("🔴 refuse une offre « Commande interne » choisie à la main", async () => {
+    const sink = { placed: null as OrderToPlace | null };
+    const offer = { nature: "in_house" as const, note: "Restaurant", notifyCustomer: false };
+
+    await expect(
+      handler(guard("orders"), sink).execute(
+        placement(
+          "staff_1",
+          payload({ settlement: "offered", offer, expectedTotalCents: 0 }),
+          randomUUID(),
+          false,
+          true,
+        ),
+      ),
+    ).rejects.toBeInstanceOf(InHouseOfferNotStaffGrantableError);
+    expect(sink.placed).toBeNull();
+  });
+
+  it("un payeur démarqué recommande au compte, facturé", async () => {
+    const sink = { placed: null as OrderToPlace | null };
+
+    await handler(guard("orders"), sink, { inHouse: new KnownInHousePayers() }).execute(
+      placement("staff_1", payload()),
+    );
+
+    expect(sink.placed?.offer).toBeNull();
+    expect(sink.placed?.totalCents).toBe(400);
   });
 });

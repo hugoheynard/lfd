@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, model } from '@angular/core';
 import {
+  isStaffGrantableOfferNature,
   ORDER_OFFER_NATURES,
   ORDER_OFFER_NOTE_MAX_LENGTH,
   type OrderOfferNature,
@@ -37,8 +38,14 @@ export class OfferReasonFields {
   readonly note = model('');
   readonly notifyCustomer = model(false);
 
-  /** Les natures d'une commande offerte, dans l'ordre du registre. */
-  protected readonly natureOptions = ORDER_OFFER_NATURES.map((nature) => ({
+  /**
+   * Les natures d'une commande offerte, dans l'ordre du registre — sauf la
+   * commande interne, qui ne s'offre pas à la main : elle naît de la
+   * passation d'un de nos restaurants, et le serveur la refuse ici.
+   */
+  protected readonly natureOptions = ORDER_OFFER_NATURES.filter((nature) =>
+    isStaffGrantableOfferNature(nature.key),
+  ).map((nature) => ({
     value: nature.key,
     label: nature.label,
   }));

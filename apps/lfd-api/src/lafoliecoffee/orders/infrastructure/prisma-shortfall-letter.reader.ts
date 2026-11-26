@@ -6,7 +6,7 @@ import {
   ShortfallLetterReader,
   type ShortfallLetterSubject,
 } from "../domain/ports/shortfall-letter.reader.js";
-import { settlementRegimeOf } from "../domain/services/settlement-regime.js";
+import { offerMarkOf, settlementRegimeOf } from "../domain/services/settlement-regime.js";
 import { orderLineSaleUnitOf } from "./order-line-row.js";
 import { orderLocaleOf } from "./order-locale-column.js";
 import { shortfallLinesOf } from "./prisma-order-shortfall.repository.js";
@@ -54,7 +54,7 @@ export class PrismaShortfallLetterReader extends ShortfallLetterReader {
         row.paymentStatus,
         row.totalCents,
         row.settlementVenue,
-        row.offerNature !== null,
+        offerMarkOf(row.offerNature),
       ),
       notified: decision.customerNotifiedAt !== null,
       lines: shortfallLinesOf(lines),

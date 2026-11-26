@@ -204,6 +204,7 @@ export class HistoryTable {
       due: copy.payDue,
       refused: copy.payRefused,
       shop_till: copy.payShopTill,
+      in_house: copy.payInHouse,
     };
     return labels[payment];
   }

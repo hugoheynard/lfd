@@ -104,6 +104,12 @@ export interface PlacedOrder {
    */
   readonly onAccount?: boolean;
   /**
+   * **Commande interne** d'un de nos restaurants : le serveur a rendu le régime
+   * `in_house`. Rien n'est dû, la confirmation le dit au lieu d'un montant.
+   * Absent d'une commande gardée avant : lu `false`.
+   */
+  readonly inHouse?: boolean;
+  /**
    * Les points que cette commande AURAIT rapportés avec un compte — rendu par
    * `POST /shop/orders` à un visiteur seulement. Un conditionnel : il n'a rien
    * gagné. Absent quand le serveur n'en annonce aucun, et sur toute commande
@@ -470,6 +476,7 @@ export class ClientOrders {
       // décide, jamais l'écran.
       settlement: payment === null ? 'not_required' : 'due',
       onAccount: placed.settlement === 'account',
+      inHouse: placed.settlement === 'in_house',
       ...shownCommitmentOf(commitment.budgetCommitment),
     };
     this.commitment.forget(workspace);

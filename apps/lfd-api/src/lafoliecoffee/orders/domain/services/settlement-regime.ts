@@ -1,4 +1,4 @@
-import type { PaymentStatus, SettlementRegime } from "@lfd/contracts";
+import { IN_HOUSE_OFFER_NATURE, type PaymentStatus, type SettlementRegime } from "@lfd/contracts";
 
 import type { SettlementVenue } from "../value-objects/settlement-venue.js";
 
@@ -15,6 +15,9 @@ const DUE: ReadonlySet<PaymentStatus> = new Set<PaymentStatus>(["pending", "fail
  * - `free` — total nul, rien à régler ;
  * - `offered` — offerte par l'équipe (`offer_nature` posée) : son total est nul
  *   comme `free`, mais c'est une décision tracée, pas un panier tombé à zéro ;
+ * - `in_house` — une commande interne d'un de nos restaurants (`offer_nature`
+ *   = `in_house`) : une offre sans offrant, qui se comporte comme `offered`
+ *   partout où l'argent est jugé, et se dit « Commande interne » ;
  * - `shop_till` — notée au comptoir pour un particulier, à régler à la caisse
  *   de la boutique. Son `paymentStatus` est `not_required`, comme une commande
  *   au compte : c'est le LIEU (`settlement_venue`, figé en base à la passation)
@@ -45,9 +48,12 @@ export function settlementRegimeOf(
   paymentStatus: PaymentStatus,
   totalCents: number,
   venue: SettlementVenue | null,
-  offered: boolean,
+  offer: OfferMark,
 ): SettlementRegime {
-  if (offered) {
+  if (offer === IN_HOUSE_OFFER_NATURE) {
+    return "in_house";
+  }
+  if (offer) {
     return "offered";
   }
   if (venue === "shop_till") {
@@ -57,4 +63,27 @@ export function settlementRegimeOf(
     return totalCents > 0 ? "account" : "free";
   }
   return DUE.has(paymentStatus) ? "due" : "paid";
+}
+
+/**
+ * **Ce que le régime sait de l'offre** : aucune (`false`), une offre de
+ * l'équipe (`true`), ou une commande interne (`"in_house"`). Un appelant qui
+ * ne lit que la présence d'une offre passe un booléen : il ne distingue pas
+ * la commande interne, et n'en a pas besoin pour juger l'argent.
+ */
+export type OfferMark = boolean | typeof IN_HOUSE_OFFER_NATURE;
+
+/** La marque d'offre d'une ligne, lue sur sa nature (`offer_nature`). */
+export function offerMarkOf(offerNature: string | null): OfferMark {
+  if (offerNature === IN_HOUSE_OFFER_NATURE) {
+    return IN_HOUSE_OFFER_NATURE;
+  }
+  return offerNature !== null;
+}
+
+/** Le régime ne demande et n'encaisse rien parce que la commande est offerte, ou interne. */
+export function isOfferRegime(
+  regime: SettlementRegime,
+): regime is "offered" | typeof IN_HOUSE_OFFER_NATURE {
+  return regime === "offered" || regime === IN_HOUSE_OFFER_NATURE;
 }

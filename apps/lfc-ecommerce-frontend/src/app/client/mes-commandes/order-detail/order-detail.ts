@@ -98,6 +98,7 @@ export class OrderDetail {
       due: copy.payDue,
       refused: copy.payRefused,
       shop_till: copy.payShopTill,
+      in_house: copy.payInHouse,
     };
     return labels[this.order().payment];
   });
@@ -200,6 +201,7 @@ export class OrderDetail {
       due: copy.payDueNote,
       refused: copy.payRefusedNote,
       shop_till: copy.payShopTillNote,
+      in_house: copy.payInHouseNote,
     };
     return notes[this.order().payment];
   });

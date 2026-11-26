@@ -4,7 +4,7 @@
  * d'une adresse. Section par clé du registre (`B2bMails`).
  */
 
-/** Les trois régimes de règlement, tels que le client les lit. */
+/** Les régimes de règlement, tels que le client les lit. */
 export interface OrderSettlementCopy {
   /** Déjà réglée par carte. */
   readonly paid: string;
@@ -16,6 +16,8 @@ export interface OrderSettlementCopy {
   readonly shopTill: string;
   /** Offerte par l'équipe : rien n'est dû, rien ne sera facturé. */
   readonly offered: string;
+  /** Une commande interne d'un de nos restaurants : ni facturée, ni encaissée. */
+  readonly inHouse: string;
 }
 
 /** Ce que dit le courriel de confirmation d'une commande. */

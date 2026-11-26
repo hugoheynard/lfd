@@ -88,6 +88,8 @@ interface Monde {
   readonly blocked?: boolean;
   /** Le payeur est un organisme public (`payerIsPublic`). */
   readonly publicPayer?: boolean;
+  /** Le payeur est un de nos restaurants (`payerIsInHouse`). */
+  readonly inHousePayer?: boolean;
   readonly service?: ServiceChoice | null;
   readonly panier?: boolean;
   /** Le réglage « Ouverture de la boutique » ; absent = pas encore lu (ouvert). */
@@ -190,6 +192,7 @@ function boot({
   granted = [],
   blocked = false,
   publicPayer = false,
+  inHousePayer = false,
   opening,
   unservable = false,
   exempted = false,
@@ -250,9 +253,14 @@ function boot({
         provide: ClientCompany,
         useValue: {
           company: signal(
-            granted.length === 0 && !publicPayer
+            granted.length === 0 && !publicPayer && !inHousePayer
               ? null
-              : { grantedTerms: granted, directDebitBlocked: blocked, payerIsPublic: publicPayer },
+              : {
+                  grantedTerms: granted,
+                  directDebitBlocked: blocked,
+                  payerIsPublic: publicPayer,
+                  payerIsInHouse: inHousePayer,
+                },
           ),
         },
       },
@@ -697,6 +705,28 @@ describe('le panier d’un organisme public', () => {
 
     expect(el(fixture).querySelector('button.pay')).toBeNull();
     expect(el(fixture).querySelector('[data-public-account-unavailable]')).not.toBeNull();
+  });
+});
+
+/** Un de nos restaurants : commande interne, ni carte ni compte à choisir. */
+describe('le panier d’un restaurant maison', () => {
+  it('🔴 un seul bouton, ni carte ni compte ; le serveur pose le régime', async () => {
+    const fixture = boot({ auth: RECONNU, granted: ['monthly'], inHousePayer: true });
+    const text = el(fixture).textContent ?? '';
+
+    expect(text).not.toContain(FR.cart.settleCard);
+    expect(text).not.toContain(FR.cart.settleAccount);
+    expect(text).toContain(FR.cart.payHintInHouse);
+    el(fixture).querySelector<HTMLButtonElement>('button[data-settle-in-house]')?.click();
+    await Promise.resolve();
+    expect(regle).toEqual([null]);
+  });
+
+  it('sans crédit accordé, le bouton reste : rien n’est à régler', () => {
+    const fixture = boot({ auth: RECONNU, granted: [], inHousePayer: true });
+
+    expect(el(fixture).querySelector('button[data-settle-in-house]')).not.toBeNull();
+    expect(el(fixture).textContent).not.toContain(FR.cart.settleCard);
   });
 });
 

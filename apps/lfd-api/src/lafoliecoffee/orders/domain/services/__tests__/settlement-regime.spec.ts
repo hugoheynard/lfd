@@ -1,4 +1,4 @@
-import { settlementRegimeOf } from "../settlement-regime.js";
+import { isOfferRegime, offerMarkOf, settlementRegimeOf } from "../settlement-regime.js";
 
 describe("settlementRegimeOf", () => {
   it("une commande différée et non nulle est au compte", () => {
@@ -21,5 +21,25 @@ describe("settlementRegimeOf", () => {
   });
   it("le lieu prime, même sur un total nul", () => {
     expect(settlementRegimeOf("not_required", 0, "shop_till", false)).toBe("shop_till");
+  });
+  it("🔴 une commande interne est « interne », ni offerte ni au compte", () => {
+    expect(settlementRegimeOf("not_required", 0, null, "in_house")).toBe("in_house");
+  });
+});
+
+describe("offerMarkOf", () => {
+  it("lit la nature de la ligne", () => {
+    expect(offerMarkOf(null)).toBe(false);
+    expect(offerMarkOf("tasting")).toBe(true);
+    expect(offerMarkOf("in_house")).toBe("in_house");
+  });
+});
+
+describe("isOfferRegime", () => {
+  it("une offre et une commande interne ne demandent rien ; les autres régimes si", () => {
+    expect(isOfferRegime("offered")).toBe(true);
+    expect(isOfferRegime("in_house")).toBe(true);
+    expect(isOfferRegime("free")).toBe(false);
+    expect(isOfferRegime("account")).toBe(false);
   });
 });

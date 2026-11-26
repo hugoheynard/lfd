@@ -64,7 +64,7 @@ import {
   type CustomerCancellationPolicy,
   type FixedCustomerCancellation,
 } from "../../cancellation/domain/services/customer-cancellation-window.js";
-import { settlementRegimeOf } from "../services/settlement-regime.js";
+import { offerMarkOf, settlementRegimeOf } from "../services/settlement-regime.js";
 import type { FreeDelivery } from "../value-objects/free-delivery.js";
 import {
   budgetCommitmentFor,
@@ -82,7 +82,7 @@ import {
   OfferedDeliveryChargedError,
   OfferedDeliveryTooLateError,
 } from "../errors/offered-delivery-errors.js";
-import type { OrderOffer } from "../value-objects/order-offer.js";
+import { isInHouseReason, type OrderOffer } from "../value-objects/order-offer.js";
 import { offerAppliedTo, offerCarriedOn } from "./order-offered-amounts.js";
 import { ensureShopTillPickup } from "../services/shop-till-rules.js";
 import { placementVatMethodOf, type OrderVatMethod } from "../value-objects/order-vat-method.js";
@@ -352,7 +352,16 @@ export class Order {
     return this.billedCompanyIdValue;
   }
 
+  /**
+   * Une commande interne d'un de nos restaurants : l'offre que la composition
+   * a posée parce que le payeur est maison.
+   */
+  get isInHouse(): boolean {
+    return isInHouseReason(this.offerValue?.reason);
+  }
+
   /** Le motif et la valeur d'une commande offerte, `null` sinon. */
+
   get offer(): OrderOffer | null {
     return this.offerValue;
   }
@@ -527,7 +536,7 @@ export class Order {
       this.payment.status,
       this.drafted.totalCents,
       this.settlementVenueValue,
-      this.offerValue !== null,
+      this.offerValue === null ? false : offerMarkOf(this.offerValue.reason.nature),
     );
   }
 

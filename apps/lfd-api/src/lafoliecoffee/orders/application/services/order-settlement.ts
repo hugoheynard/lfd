@@ -6,6 +6,7 @@ import type {
   CardPayments,
 } from "../../../../payment/channels/requests/index.js";
 import type { Order } from "../../domain/entities/order.js";
+import { InHouseBuyerCardRefusedError } from "../../domain/errors/in-house-buyer-errors.js";
 import { TermsNotGrantedError } from "../../domain/errors/order-errors.js";
 import {
   PublicBuyerAccountUnavailableError,
@@ -47,7 +48,7 @@ export async function settleOrder(
   const requiresCard =
     (await requiresCardFor(
       ports.guard,
-      { companyId, payerId: order.billedCompanyId },
+      { companyId, payerId: order.billedCompanyId, inHouse: order.isInHouse },
       settlement,
     )) && order.totalCents > 0;
   if (!requiresCard) {
@@ -70,15 +71,21 @@ export async function settleOrder(
  * **La carte est-elle requise ?** — le choix du client d'abord, la règle ensuite.
  *
  * @throws {TermsNotGrantedError} le compte a été demandé sans crédit accordé.
+ * @throws {InHouseBuyerCardRefusedError} la carte, pour une commande interne.
  * @throws {PublicBuyerCardRefusedError} la carte, pour un payeur public.
  * @throws {PublicBuyerAccountUnavailableError} un payeur public dont le
  * compte ne règle pas : jamais de repli sur la carte.
  */
 async function requiresCardFor(
   guard: SettlementPorts["guard"],
-  parties: SettlementParties,
+  parties: SettlementParties & { readonly inHouse: boolean },
   settlement: OrderSettlement | null,
 ): Promise<boolean> {
+  // Un de nos restaurants : rien à encaisser, la carte est refusée par son
+  // nom. Ni le crédit ni la nature publique ne se lisent.
+  if (parties.inHouse) {
+    return inHouseBuyerRequiresCard(settlement);
+  }
   const { companyId } = parties;
   const standing = await accountStanding(guard, parties);
   const onAccount = standing === "granted";
@@ -119,6 +126,17 @@ function publicBuyerRequiresCard(onAccount: boolean, settlement: OrderSettlement
   }
   if (!onAccount) {
     throw new PublicBuyerAccountUnavailableError();
+  }
+  return false;
+}
+
+/**
+ * Une commande interne d'un de nos restaurants n'a ni carte ni compte à
+ * juger : la carte demandée est refusée, tout autre choix passe.
+ */
+function inHouseBuyerRequiresCard(settlement: OrderSettlement | null): false {
+  if (settlement === "card") {
+    throw new InHouseBuyerCardRefusedError();
   }
   return false;
 }

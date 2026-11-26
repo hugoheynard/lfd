@@ -83,6 +83,11 @@ export const counterCustomerViewSchema = z.object({
    * organisme public : il ne paie jamais par carte ni par lien.
    */
   payerIsPublic: z.boolean(),
+  /**
+   * Le payeur est un de nos restaurants, marqué « maison » : ses commandes
+   * sont internes, sans facturation. Absent d'un serveur d'avant : lu `false`.
+   */
+  payerIsInHouse: z.boolean().default(false),
   /** Livraisons non archivées, la défaut en tête. */
   deliveryAddresses: z.array(counterDeliveryAddressSchema),
   buyers: z.array(counterCustomerBuyerSchema),

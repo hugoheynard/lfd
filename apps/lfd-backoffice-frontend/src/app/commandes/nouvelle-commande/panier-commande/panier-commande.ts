@@ -183,6 +183,11 @@ export class PanierCommande {
    * compte, facture déposée sur Chorus Pro. Ni choix du règlement, ni lien.
    */
   readonly payerIsPublic = input(false);
+  /**
+   * Le payeur est un de nos restaurants : sa commande est interne, sans
+   * facturation. Ni choix du règlement, ni lien — le serveur pose le régime.
+   */
+  readonly payerIsInHouse = input(false);
   /** Ce que le payeur public exige de son engagement — `null` tant que non lu. */
   readonly commitmentRequirements = input<BudgetCommitmentRequirementsView | null>(null);
   /** La lecture des exigences a échoué : les champs restent, l'échec est dit. */
@@ -371,6 +376,7 @@ export class PanierCommande {
       offerNature: this.draft().offerNature(),
       offerNote: this.draft().offerNote(),
       payerIsPublic: this.payerIsPublic(),
+      payerIsInHouse: this.payerIsInHouse(),
       commitmentGaps: budgetCommitmentGaps(
         this.commitmentRequirements(),
         this.commitmentNumber(),

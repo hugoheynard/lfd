@@ -10,7 +10,7 @@ import {
   type AdminOrderListSlice,
 } from "../domain/ports/admin-order-list.reader.js";
 import { orderEntryOriginOf, orderOriginOf } from "../domain/services/order-origin.js";
-import { settlementRegimeOf } from "../domain/services/settlement-regime.js";
+import { offerMarkOf, settlementRegimeOf } from "../domain/services/settlement-regime.js";
 import { viewWhere } from "./admin-order-list-view.where.js";
 import { customerLabelOf } from "./handover-order.query.js";
 import { fulfillmentOf, windowOf } from "./order-fulfillment.parse.js";
@@ -195,7 +195,7 @@ function toAdminRow(row: AdminRow): AdminOrderRow {
       row.paymentStatus,
       row.totalCents,
       row.settlementVenue,
-      row.offerNature !== null,
+      offerMarkOf(row.offerNature),
     ),
     fulfillmentMethod: row.fulfillmentMethod,
     fulfillmentDay:

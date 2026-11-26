@@ -43,6 +43,8 @@ export interface PanierPanelData {
   readonly linkOffered: boolean;
   /** Un organisme public : au compte, facture Chorus. */
   readonly payerIsPublic: boolean;
+  /** Un de nos restaurants : commande interne, sans facturation. */
+  readonly payerIsInHouse: boolean;
   /** Ce que le payeur public exige de son engagement — `null` tant que non lu. */
   readonly commitmentRequirements: Signal<BudgetCommitmentRequirementsView | null>;
   readonly commitmentRequirementsFailed: Signal<boolean>;

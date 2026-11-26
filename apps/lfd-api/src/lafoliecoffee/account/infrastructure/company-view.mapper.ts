@@ -4,6 +4,13 @@ import type { CompanyView, ContactView } from "../domain/ports/account.reader.js
 import { isPublicFormeJuridique } from "../domain/value-objects/public-nature.js";
 import { requiresVatNumber } from "../domain/value-objects/vat-liability.js";
 
+/** La période « maison » en cours d'une société, s'il y en a une. */
+const IN_HOUSE_LIVE = {
+  where: { withdrawnAt: null },
+  select: { id: true },
+  take: 1,
+} as const;
+
 /**
  * Ce qu'une `CompanyView` lit d'une société — UNE sélection pour les deux
  * listes de `GET /me` : les sociétés propres et les sites atteints par
@@ -23,6 +30,8 @@ export const COMPANY_VIEW_SELECT = {
   grantedTerms: true,
   requestedTerm: true,
   directDebitBlockedAt: true,
+  // Sa période « maison » en cours : la nature d'un restaurant à nous.
+  inHouse: IN_HOUSE_LIVE,
   preferredFulfillmentMethod: true,
   preferredPickupAddressId: true,
   preferredDeliveryAddressId: true,
@@ -44,7 +53,12 @@ export const COMPANY_VIEW_SELECT = {
     where: { aspect: "billing", validTo: null },
     select: {
       parent: {
-        select: { formeJuridique: true, grantedTerms: true, directDebitBlockedAt: true },
+        select: {
+          formeJuridique: true,
+          grantedTerms: true,
+          directDebitBlockedAt: true,
+          inHouse: IN_HOUSE_LIVE,
+        },
       },
     },
   },
@@ -88,6 +102,7 @@ export function toCompanyView(role: CustomerRole, company: CompanyViewRow): Comp
     requestedTerm: company.requestedTerm,
     directDebitBlocked: payer.directDebitBlockedAt !== null,
     payerIsPublic: isPublicFormeJuridique(payer.formeJuridique),
+    payerIsInHouse: payer.inHouse.length > 0,
     billedByParent: company.follows.length > 0,
     fulfillmentPreference: {
       method: company.preferredFulfillmentMethod,

@@ -77,6 +77,16 @@ describe('ConfirmationPage — le récapitulatif selon le régime', () => {
     expect(el.textContent).not.toContain(formatCents(1055));
   });
 
+  it('🔴 une commande interne : aucun montant à régler, ni TVA, et le titre le dit', () => {
+    const el = render(placed({ inHouse: true }));
+
+    expect(paid(el)).toContain(FR.done.inHouse);
+    expect(paid(el)).toContain(formatCents(0));
+    expect(el.querySelectorAll('.row.vat')).toHaveLength(0);
+    expect(el.textContent).not.toContain(formatCents(1055));
+    expect(el.textContent).not.toContain(FR.done.onAccount);
+  });
+
   it('une commande d’avant F5, sans le drapeau, garde son TTC', () => {
     const el = render(placed());
 

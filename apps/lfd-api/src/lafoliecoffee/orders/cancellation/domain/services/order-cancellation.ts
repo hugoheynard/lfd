@@ -14,7 +14,11 @@ import {
   remainderCancelledRefusalOf,
   remainderEngagedRefusalOf,
 } from "./order-cancellation-voucher.js";
-import { settlementRegimeOf } from "../../../domain/services/settlement-regime.js";
+import {
+  isOfferRegime,
+  settlementRegimeOf,
+  type OfferMark,
+} from "../../../domain/services/settlement-regime.js";
 import type { SettlementVenue } from "../../../domain/value-objects/settlement-venue.js";
 
 /**
@@ -34,8 +38,11 @@ export interface CancellationState {
   readonly totalCents: number;
   /** Où le règlement se fera hors de chez nous — `shop_till`, ou `null`. */
   readonly settlementVenue: SettlementVenue | null;
-  /** Offerte par l'équipe : rien n'est dû ni facturé (`la-commande-offerte.md`). */
-  readonly offered: boolean;
+  /**
+   * Offerte par l'équipe, ou commande interne d'un de nos restaurants : rien
+   * n'est dû ni facturé (`la-commande-offerte.md`).
+   */
+  readonly offered: OfferMark;
   /** Le jour de service `AAAA-MM-JJ`, ou `null` (commande sans jour). */
   readonly serviceDay: string | null;
   /** Retrait ou livraison : une livraison inscrite ne se retire pas (plan A1, § 1). */
@@ -158,7 +165,7 @@ function cancellableRegimeOf(state: CancellationState): CancellableRegime {
     state.offered,
   );
   // Rien n'a été encaissé chez nous, rien ne sera facturé ni prélevé.
-  return regime === "shop_till" || regime === "offered" ? "free" : regime;
+  return regime === "shop_till" || isOfferRegime(regime) ? "free" : regime;
 }
 
 /** La décision : annulable sous tel régime, ou bloquée, et pourquoi. */

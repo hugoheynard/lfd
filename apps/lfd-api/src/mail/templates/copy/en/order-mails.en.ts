@@ -15,6 +15,7 @@ export const ORDER_MAILS_EN: OrderMailsCopy = {
       account: "Charged to your account",
       shopTill: "To pay at the shop",
       offered: "On the house",
+      inHouse: "Internal order — not invoiced",
     },
     recapDay: "Day",
     recapPickup: "Pickup",

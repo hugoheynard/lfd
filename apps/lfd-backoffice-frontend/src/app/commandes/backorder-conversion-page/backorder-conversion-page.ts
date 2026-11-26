@@ -175,7 +175,12 @@ export class BackorderConversionPage {
   protected readonly canOffer = computed(() => this.permissions.can('b2b_offer_order:write'));
   protected readonly settlesOnAccount = computed(() => this.company()?.settlesOnAccount ?? false);
   protected readonly payerIsPublic = computed(() => this.company()?.payerIsPublic ?? false);
+  /** Un de nos restaurants : la commande sera interne, sans facturation — rien à choisir. */
+  protected readonly payerIsInHouse = computed(() => this.company()?.payerIsInHouse ?? false);
   protected readonly settlementOptions = computed<FoldSelectItem<StaffSettlement>[]>(() => {
+    if (this.payerIsInHouse()) {
+      return [{ value: 'account', label: 'Commande interne — sans facturation' }];
+    }
     const modes: StaffSettlement[] = [
       ...(this.settlesOnAccount() || this.payerIsPublic() ? (['account'] as const) : []),
       ...(this.payerIsPublic() ? [] : (['link'] as const)),
@@ -250,6 +255,7 @@ export class BackorderConversionPage {
       offerNature: this.draft.offerNature(),
       offerNote: this.draft.offerNote(),
       payerIsPublic: this.payerIsPublic(),
+      payerIsInHouse: this.payerIsInHouse(),
       refusal: this.estimate()?.refusal ?? null,
     }).map((blocker) => blocker.text);
   });
@@ -332,7 +338,9 @@ export class BackorderConversionPage {
       // L'acheteur d'origine est proposé ; `buyerOf` le remplace s'il est parti.
       this.draft.buyerUserId.set(backorder.buyer.userId);
       this.draft.settlement.set(
-        company.settlesOnAccount || company.payerIsPublic ? 'account' : 'link',
+        company.settlesOnAccount || company.payerIsPublic || company.payerIsInHouse
+          ? 'account'
+          : 'link',
       );
       this.backorder.set(backorder);
       this.state.set('ready');

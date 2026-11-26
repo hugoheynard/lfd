@@ -69,6 +69,7 @@ const CUSTOMER: OrderEntryCustomer = {
   status: 'active',
   settlesOnAccount: true,
   payerIsPublic: false,
+  payerIsInHouse: false,
   addresses: [ADRESSE],
   buyers: [
     { userId: 'u_1', firstName: 'Léa', lastName: 'Martin', email: 'lea@exemple.fr', role: 'owner' },

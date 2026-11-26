@@ -158,7 +158,10 @@ export interface SheetFulfillment {
  * total nul ; `shop_till` — notée au comptoir pour un particulier, à régler
  * à la caisse de la boutique : notre système ne sait jamais qu'elle est
  * payée ; `offered` — offerte par l'équipe, avec son motif : rien n'est dû,
- * rien n'est facturé (`la-commande-offerte.md`). Un particulier n'est
+ * rien n'est facturé (`la-commande-offerte.md`) ; `in_house` — une commande
+ * interne d'un de nos restaurants (offre de nature `in_house`) : un `offered`
+ * qui n'a pas d'offrant, dit « Commande interne » partout où l'autre dit
+ * « offerte ». Un particulier n'est
  * jamais `account`.
  */
 export const settlementRegimeSchema = z.enum([
@@ -168,6 +171,7 @@ export const settlementRegimeSchema = z.enum([
   "free",
   "shop_till",
   "offered",
+  "in_house",
 ]);
 export type SettlementRegime = z.infer<typeof settlementRegimeSchema>;
 

@@ -66,6 +66,7 @@ describe('customerFromCounter', () => {
     status: 'active',
     settlesOnAccount: true,
     payerIsPublic: false,
+    payerIsInHouse: false,
     deliveryAddresses: [ADDRESS],
     buyers: [
       { userId: 'u1', firstName: 'Anne', lastName: 'Périn', email: 'a@b.fr', role: 'owner' },
@@ -78,6 +79,7 @@ describe('customerFromCounter', () => {
       status: 'active',
       settlesOnAccount: true,
       payerIsPublic: false,
+      payerIsInHouse: false,
       addresses: [ADDRESS],
       buyers: counter.buyers,
       // Le comptoir ne lit pas la préférence : la présélection retombe sur le
@@ -94,6 +96,10 @@ describe('customerFromCounter', () => {
 
   it('prend `payerIsPublic` tel que le serveur l’a calculé', () => {
     expect(customerFromCounter({ ...counter, payerIsPublic: true }).payerIsPublic).toBe(true);
+  });
+
+  it('prend `payerIsInHouse` tel que le serveur l’a calculé : un de nos restaurants', () => {
+    expect(customerFromCounter({ ...counter, payerIsInHouse: true }).payerIsInHouse).toBe(true);
   });
 
   it('prend `settlesOnAccount` tel que le serveur l’a calculé', () => {
@@ -120,6 +126,7 @@ describe('customerFromAdminCompany', () => {
       status: 'active',
       settlesOnAccount: true,
       payerIsPublic: false,
+      payerIsInHouse: false,
       addresses: [ADDRESS],
       buyers: [MEMBER],
       preferredPickupId: null,
@@ -163,5 +170,10 @@ describe('customerFromAdminCompany', () => {
         .payerIsPublic,
     ).toBe(true);
     expect(customerFromAdminCompany(fiche({ formeJuridique: '' }), []).payerIsPublic).toBe(false);
+  });
+
+  it('lit la nature « maison » du payeur sur la fiche, faute de quoi elle ne l’est pas', () => {
+    expect(customerFromAdminCompany(fiche({ payerIsInHouse: true }), []).payerIsInHouse).toBe(true);
+    expect(customerFromAdminCompany(fiche(), []).payerIsInHouse).toBe(false);
   });
 });

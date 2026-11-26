@@ -396,6 +396,7 @@ export const FR: ClientCopy = {
     vat: 'TVA {rate}',
     total: 'Total TTC',
     totalPretax: 'Total HT',
+    totalInHouse: 'Valeur, non facturée',
     pretaxNote: 'TVA et TTC sur la facture du mois',
     courierOffered: 'Coursier offert',
     freeDeliveryShort: 'Plus que {amount} HT pour la livraison offerte',
@@ -437,6 +438,8 @@ export const FR: ClientCopy = {
     payHintPublic: 'Au compte — facture déposée sur Chorus Pro, réglée par virement.',
     publicAccountUnavailable:
       'Votre organisme règle uniquement au compte, et ce compte ne peut pas régler aujourd’hui. Contactez-nous pour le rétablir : la commande ne peut pas se payer par carte.',
+    settleInHouse: 'Passer la commande interne',
+    payHintInHouse: 'Commande interne — sans facturation : rien n’est à régler.',
     commitmentTitle: 'Votre bon de commande',
     commitmentNumber: 'N° d’engagement',
     commitmentNumberRequiredHint:
@@ -541,6 +544,7 @@ export const FR: ClientCopy = {
     title: 'C’est réglé.\nOn s’y met à 4 h 15.',
     titleDue: 'Commande enregistrée.\nIl reste à la régler.',
     titleAccount: 'Commande enregistrée.\nElle part sur votre compte.',
+    titleInHouse: 'Commande enregistrée.\nCommande interne, sans facturation.',
     intro: 'Votre commande entre dans la fournée de demain matin.',
     keptTitle: 'Gardée dans votre espace',
     keptLine: 'Retrouvez-la, avec son QR de retrait, dans « Mes commandes ».',
@@ -569,6 +573,7 @@ export const FR: ClientCopy = {
     toSettle: 'Reste à régler',
     onAccount: 'Porté à votre compte',
     onAccountPretax: 'Porté à votre compte, HT',
+    inHouse: 'Commande interne — sans facturation',
     settleAction: 'Régler maintenant',
     qr: 'Voir mon code de retrait',
     changeNote: 'Un changement ? Appelez le fournil — une commande passée entre en fabrication.',

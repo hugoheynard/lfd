@@ -304,6 +304,14 @@ describe("le régime de règlement du courriel de confirmation", () => {
     expect(html).not.toContain("Reste à régler");
   });
 
+  it("une commande interne d'un de nos restaurants le dit, ni offerte ni portée au compte", () => {
+    const html = render({ sheet: withSettlement("in_house") }).html;
+
+    expect(html).toContain("Commande interne — sans facturation");
+    expect(html).not.toContain("Offerte");
+    expect(html).not.toContain("Porté à votre compte");
+  });
+
   it("un total nul garde le libellé du compte", () => {
     const html = render({ sheet: withSettlement("free") }).html;
 

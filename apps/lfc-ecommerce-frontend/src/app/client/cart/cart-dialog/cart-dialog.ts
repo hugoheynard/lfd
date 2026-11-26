@@ -27,7 +27,11 @@ import { GuestIdentityForm, type GuestIdentity } from '../guest-identity-form/gu
 import type { OrderSettlement } from '@lfd/contracts';
 
 import { AuthFacade } from '../../../auth/auth.facade';
-import { payerIsPublic, settlesOnAccount } from '../../../account/settles-on-account';
+import {
+  payerIsInHouse,
+  payerIsPublic,
+  settlesOnAccount,
+} from '../../../account/settles-on-account';
 import { ClientCompany } from '../../client-company.service';
 import { formatCents } from '../../format-money';
 import { ClientCart } from '../client-cart.service';
@@ -226,6 +230,13 @@ export class CartDialog {
   protected readonly publicPayer = computed(() => payerIsPublic(this.firm.company()));
 
   /**
+   * **Un de nos restaurants** : sa commande est interne, sans facturation. Un
+   * seul bouton, ni carte ni compte — le serveur pose le régime, et refuse
+   * la carte par son nom.
+   */
+  protected readonly inHousePayer = computed(() => payerIsInHouse(this.firm.company()));
+
+  /**
    * **Le bon de commande se demande** à un organisme public qui peut
    * commander (au compte, panier non vide) : sans compte, aucun bouton, rien
    * à joindre.
@@ -363,6 +374,9 @@ export class CartDialog {
   private readonly settleHint = computed(() => {
     const c = this.t().cart;
     const delivery = this.choice()?.mode === 'delivery';
+    if (this.inHousePayer()) {
+      return c.payHintInHouse;
+    }
     if (this.publicPayer()) {
       return c.payHintPublic;
     }

@@ -6,6 +6,7 @@ import {
   AccountSettlementNotGrantedError,
   SuspendedCompanyAccountSettlementError,
 } from "../../domain/errors/order-errors.js";
+import { InHouseBuyerLinkRefusedError } from "../../domain/errors/in-house-buyer-errors.js";
 import { CounterAccountSettlementNotGrantedError } from "../../domain/errors/shelf-order-errors.js";
 import { ShelfWithoutCreditRefusedError } from "../../domain/errors/shelf-circuit-errors.js";
 import {
@@ -37,6 +38,8 @@ export interface StaffSettlementPorts {
  * - `link` sur la vitrine suit le réglage du pro sans crédit (Q7) ;
  * - `offered` n'a rien à encaisser : ni crédit, ni statut, ni payeur à juger.
  *   Le droit d'offrir se garde au handler.
+ * - une commande interne (payeur maison) refuse le lien, et passe sinon sans
+ *   lire ni crédit ni statut : il n'y a rien à encaisser.
  *
  * - un payeur public (sa forme juridique) ne règle jamais par lien, et un
  *   compte qui ne règle pas lui est refusé sans repli.
@@ -59,8 +62,14 @@ export async function staffSettlementRefusal(
   | ShelfWithoutCreditRefusedError
   | PublicBuyerCardRefusedError
   | PublicBuyerAccountUnavailableError
+  | InHouseBuyerLinkRefusedError
   | null
 > {
+  // Une commande interne d'un de nos restaurants n'encaisse rien : pas de
+  // lien, et aucun crédit à juger pour le reste.
+  if (order.isInHouse) {
+    return settlement === "link" ? new InHouseBuyerLinkRefusedError() : null;
+  }
   if (settlement === "offered") {
     return null;
   }

@@ -16,6 +16,7 @@ const ROW: CompanyViewRow = {
   grantedTerms: ["monthly"],
   requestedTerm: null,
   directDebitBlockedAt: null,
+  inHouse: [],
   preferredFulfillmentMethod: null,
   preferredPickupAddressId: null,
   preferredDeliveryAddressId: null,
@@ -53,7 +54,12 @@ describe("toCompanyView", () => {
       formeJuridique: "",
       follows: [
         {
-          parent: { formeJuridique: "public_state", grantedTerms: [], directDebitBlockedAt: null },
+          parent: {
+            formeJuridique: "public_state",
+            grantedTerms: [],
+            directDebitBlockedAt: null,
+            inHouse: [],
+          },
         },
       ],
     };
@@ -74,6 +80,7 @@ describe("toCompanyView", () => {
             formeJuridique: "SAS",
             grantedTerms: ROW.grantedTerms,
             directDebitBlockedAt: null,
+            inHouse: [],
           },
         },
       ],
@@ -92,11 +99,31 @@ describe("toCompanyView", () => {
             formeJuridique: "SAS",
             grantedTerms: ROW.grantedTerms,
             directDebitBlockedAt: UPLOADED,
+            inHouse: [],
           },
         },
       ],
     };
     expect(toCompanyView("admin", suspended).directDebitBlocked).toBe(true);
+  });
+
+  it("dit si le PAYEUR est un de nos restaurants : sa période « maison » en cours", () => {
+    expect(toCompanyView("owner", ROW).payerIsInHouse).toBe(false);
+    expect(toCompanyView("owner", { ...ROW, inHouse: [{ id: "ih1" }] }).payerIsInHouse).toBe(true);
+    const site = {
+      ...ROW,
+      follows: [
+        {
+          parent: {
+            formeJuridique: "SAS",
+            grantedTerms: [],
+            directDebitBlockedAt: null,
+            inHouse: [{ id: "ih_principal" }],
+          },
+        },
+      ],
+    };
+    expect(toCompanyView("owner", site).payerIsInHouse).toBe(true);
   });
 
   it("porte le rôle que l'appelant a établi — le rôle effectif d'un site atteint", () => {

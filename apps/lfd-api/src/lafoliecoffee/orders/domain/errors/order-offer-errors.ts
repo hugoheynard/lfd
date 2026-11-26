@@ -67,3 +67,17 @@ export class OfferedOrderWithoutOfferError extends TechnicalError {
     );
   }
 }
+
+/**
+ * **Une commande interne ne s'offre pas à la main.** Elle naît de la passation
+ * quand le payeur est un de nos restaurants, marqué « maison » à sa fiche
+ * client ; la saisie « Offerte » de l'équipe ne la propose pas.
+ */
+export class InHouseOfferNotStaffGrantableError extends DomainError {
+  constructor() {
+    super(
+      "orders.offer.in_house_not_grantable",
+      "« Commande interne » ne se choisit pas comme motif d'offre : elle est posée d'elle-même pour un de nos restaurants. Choisissez une autre nature, ou marquez le client « maison » à sa fiche.",
+    );
+  }
+}

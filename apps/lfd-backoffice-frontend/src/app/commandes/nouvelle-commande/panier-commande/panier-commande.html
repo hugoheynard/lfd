@@ -98,7 +98,10 @@
           Prise sur le stock de la vitrine, la commande sera <strong>remise aussitôt</strong> ; le
           bon de livraison s’ouvrira pour être imprimé et signé par le client.
         }
-        @if (settlement() === 'account') {
+        @if (payerIsInHouse()) {
+          Cette commande est une <strong>commande interne</strong> d’un de nos restaurants : ni
+          facturée ni prélevée.
+        } @else if (settlement() === 'account') {
           Cette commande partira <strong>au compte</strong> et sera facturée sur la période en
           cours. Rien ne sera encaissé maintenant.
           @if (payerIsPublic()) {
@@ -229,7 +232,12 @@
       ></textarea>
     </label>
 
-    @if (payerIsPublic()) {
+    @if (payerIsInHouse()) {
+      <fold-callout variant="info" data-in-house-payer>
+        <strong>Commande interne — sans facturation</strong>&nbsp;: un de nos restaurants, rien à
+        régler.
+      </fold-callout>
+    } @else if (payerIsPublic()) {
       <fold-callout variant="info" data-public-payer>
         <strong>Organisme public</strong>&nbsp;: au compte, facture Chorus.
       </fold-callout>

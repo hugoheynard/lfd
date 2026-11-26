@@ -55,7 +55,7 @@ import { companyDisplayName, vatSharesSchema, type VatShareView } from "@lfd/con
 
 import { orderEntryOriginOf, orderOriginOf } from "../domain/services/order-origin.js";
 import { pickupDiscountBaseOf } from "../domain/services/pickup-discount-base.js";
-import { settlementRegimeOf } from "../domain/services/settlement-regime.js";
+import { offerMarkOf, settlementRegimeOf } from "../domain/services/settlement-regime.js";
 import type { SettlementVenue } from "../domain/value-objects/settlement-venue.js";
 import { ORDER_TTC_TERMS_SELECT, orderTtcTermsFieldOf } from "./order-ttc-terms.columns.js";
 import {
@@ -570,7 +570,7 @@ export function toOrderView(row: OrderRow, refunds: OrderRefundsReading): OrderV
       row.paymentStatus,
       row.totalCents,
       row.settlementVenue,
-      row.offerNature !== null,
+      offerMarkOf(row.offerNature),
     ),
     requestedDeliveryDate: toIsoDate(row.requestedDeliveryDate),
     fulfillmentMethod: row.fulfillmentMethod,

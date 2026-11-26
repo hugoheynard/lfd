@@ -6,7 +6,8 @@ import { OfferNotPermittedError } from "../../domain/errors/order-offer-errors.j
 import { OrderOfferedEvent } from "../../domain/events/order-offered.event.js";
 import type { PlacedOrder } from "../../domain/ports/order.repository.js";
 import {
-  orderOfferReasonOf,
+  isInHouseReason,
+  staffOfferReasonOf,
   type OrderOfferReason,
 } from "../../domain/value-objects/order-offer.js";
 
@@ -37,18 +38,20 @@ export function ensureMayOffer(offering: boolean, mayOffer: boolean): void {
  * la composition (`OrderParties.offer`) — ou rien, sans offre.
  *
  * @throws {InvalidOrderOfferError} un motif mal formé.
+ * @throws {InHouseOfferNotStaffGrantableError} la nature `in_house`, qui ne s'offre pas à la main.
  */
 export function offerPartyOf(offer: OrderOffer | undefined): {
   readonly offer?: OrderOfferReason;
 } {
-  return offer === undefined ? {} : { offer: orderOfferReasonOf(offer) };
+  return offer === undefined ? {} : { offer: staffOfferReasonOf(offer) };
 }
 
 /**
  * Le témoin d'une commande offerte, `order.offered` : dans la transaction qui
  * écrit la commande, avec le bénéficiaire (`buyerUserId`, la personne au nom
  * de qui la commande est portée — membre d'une société ou particulier) et
- * celui qui offre. Rien sur une commande qui n'est pas offerte.
+ * celui qui offre. Rien sur une commande qui n'est pas offerte, ni sur une
+ * commande interne d'un de nos restaurants.
  */
 export async function publishOrderOffered(
   durable: Pick<DurablePublisher, "publish">,
@@ -56,7 +59,9 @@ export async function publishOrderOffered(
   placed: PlacedOrder,
   people: { readonly buyerUserId: string; readonly staffUserId: string },
 ): Promise<void> {
-  if (order.offer === null) {
+  // Une commande interne n'a pas d'offrant : `order.placed` la témoigne, et sa
+  // nature se lit sur la commande.
+  if (order.offer === null || isInHouseReason(order.offer.reason)) {
     return;
   }
   await durable.publish(

@@ -27,7 +27,7 @@ import { ClientAudience } from '../../client-audience.service';
 import { ClientLocale } from '../../client-locale.service';
 import { ClientWorkspace } from '../../client-workspace.service';
 import { ClientCompany } from '../../client-company.service';
-import { settlesOnAccount } from '../../../account/settles-on-account';
+import { payerIsInHouse, settlesOnAccount } from '../../../account/settles-on-account';
 import { OrderContextStore } from '../../order-context.store';
 import { ClientCopyService, fill } from '../../copy/client-copy.service';
 import { VoucherChoice } from '../voucher-choice.service';
@@ -102,6 +102,17 @@ export class CartSummary implements OnInit {
   protected readonly totalPending = computed(() => this.cart.pricing() === 'loading');
 
   protected readonly onAccount = computed(() => settlesOnAccount(this.firm.company()));
+
+  /** Un de nos restaurants : le total dit ce que la commande vaut, rien n'est à régler. */
+  protected readonly inHouse = computed(() => payerIsInHouse(this.firm.company()));
+
+  protected readonly totalLabel = computed(() => {
+    const c = this.t().cart;
+    if (this.inHouse()) {
+      return c.totalInHouse;
+    }
+    return this.onAccount() ? c.totalPretax : c.total;
+  });
 
   protected readonly totals = this.cart.totals;
 

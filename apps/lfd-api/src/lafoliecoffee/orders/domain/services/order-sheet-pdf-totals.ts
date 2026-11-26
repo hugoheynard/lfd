@@ -48,6 +48,24 @@ export const PRETAX_ONLY_NOTE = "TVA et TTC sur la facture du mois.";
 export const OFFERED_NOTE = "Commande offerte — sans facturation.";
 
 /**
+ * La mention d'une commande interne d'un de nos restaurants : ni cadeau ni
+ * vente, rien n'est dû et aucune facture ne viendra.
+ */
+export const IN_HOUSE_NOTE = "Commande interne — sans facturation.";
+
+/**
+ * La mention d'un papier dont rien ne se facture — offerte ou interne —, ou
+ * `null`. Le bon de commande et le bon de livraison la lisent ici, pour dire
+ * la même chose.
+ */
+export function unbilledNoteOf(settlement: SheetMoney["settlement"]): string | null {
+  if (settlement === "offered") {
+    return OFFERED_NOTE;
+  }
+  return settlement === "in_house" ? IN_HOUSE_NOTE : null;
+}
+
+/**
  * La mention qui explique l'astérisque d'une ligne exclue de la remise de
  * retrait — écrite une fois, au pied du bon (lot C).
  */

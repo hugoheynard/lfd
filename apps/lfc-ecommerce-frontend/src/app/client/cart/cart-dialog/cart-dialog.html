@@ -184,6 +184,19 @@
         <strong>{{ t().cart.ordersClosed }}</strong>
         {{ t().cart.ordersClosedHint }}
       </fold-callout>
+    } @else if (inHousePayer()) {
+      <!-- Un de nos restaurants : commande interne, sans facturation. Ni carte
+         ni compte à choisir — le serveur pose le régime. -->
+      <button
+        class="pay"
+        type="button"
+        [disabled]="payBlocked()"
+        [attr.aria-describedby]="payNoteId"
+        data-settle-in-house
+        (click)="void proceed()"
+      >
+        {{ t().cart.settleInHouse }}
+      </button>
     } @else if (publicPayer()) {
       <!-- Un organisme public règle au compte, par virement : jamais la carte
          (plan clients publics, B5). Sans compte, aucun bouton. -->
@@ -253,7 +266,7 @@
         [attr.data-slot-missing]="slotMissing() ? '' : null"
       >
         <!-- Un organisme public lit toujours comment il règle : il n'a pas le choix. -->
-        @if (payNoteIsReason() || (publicPayer() && mayUseAccount())) {
+        @if (payNoteIsReason() || inHousePayer() || (publicPayer() && mayUseAccount())) {
           {{ payNote() }}
         }
       </p>

@@ -77,15 +77,23 @@
             <!-- Une commande offerte : le motif, que le client ne voit jamais. -->
             @if (o.offer; as offer) {
               <div asideTop>
-                <fold-callout variant="info" data-order-offer>
-                  <strong>Commande offerte</strong> — {{ offerNatureLabel(offer.nature) }} :
-                  {{ offer.note }}.
-                  {{
-                    offer.notifyCustomer
-                      ? 'Le client est prévenu par e-mail.'
-                      : 'Le client n’est pas prévenu.'
-                  }}
-                </fold-callout>
+                @if (offer.nature === 'in_house') {
+                  <!-- Un de nos restaurants : personne ne l'a offerte. -->
+                  <fold-callout variant="info" data-order-in-house>
+                    <strong>Commande interne — sans facturation</strong> : passée par un de nos
+                    restaurants, ni facturée ni prélevée. Sa valeur est gardée sur la commande.
+                  </fold-callout>
+                } @else {
+                  <fold-callout variant="info" data-order-offer>
+                    <strong>Commande offerte</strong> — {{ offerNatureLabel(offer.nature) }} :
+                    {{ offer.note }}.
+                    {{
+                      offer.notifyCustomer
+                        ? 'Le client est prévenu par e-mail.'
+                        : 'Le client n’est pas prévenu.'
+                    }}
+                  </fold-callout>
+                }
               </div>
             }
             <!-- La vérification d'une commande pro passée par le client seul : rien hors de ce périmètre. -->

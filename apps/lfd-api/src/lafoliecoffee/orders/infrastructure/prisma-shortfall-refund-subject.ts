@@ -7,7 +7,7 @@ import {
   ShortfallRefundSubjectLock,
   ShortfallRefundSubjectReader,
 } from "../domain/ports/shortfall-refund-subject.js";
-import { settlementRegimeOf } from "../domain/services/settlement-regime.js";
+import { offerMarkOf, settlementRegimeOf } from "../domain/services/settlement-regime.js";
 import type { ShortfallRefundSubject } from "../domain/services/shortfall-refund.js";
 import { LIVE_CARD_INCREASE_STATES } from "../revision/domain/entities/card-increase-proposal.js";
 
@@ -60,7 +60,7 @@ export class PrismaShortfallRefundSubjects
         row.paymentStatus,
         row.totalCents,
         row.settlementVenue,
-        row.offerNature !== null,
+        offerMarkOf(row.offerNature),
       ),
       billableTotalCents: row.billableTotalCents,
       invoiced: invoices > 0,

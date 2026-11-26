@@ -95,6 +95,9 @@ const SHOP_TILL: Labelled = { label: 'À régler en boutique', variant: 'neutral
  */
 const OFFERED: Labelled = { label: 'Offerte', variant: 'neutral' };
 
+/** Une commande interne d'un de nos restaurants : ni facturée, ni réglée. */
+const IN_HOUSE: Labelled = { label: 'Commande interne — sans facturation', variant: 'neutral' };
+
 /** Ce qu'on lit d'une commande pour dire son règlement. */
 export interface SettlementShown {
   readonly paymentStatus: PaymentStatus;
@@ -104,6 +107,9 @@ export interface SettlementShown {
 function settlementShownOf(order: SettlementShown): Labelled {
   if (order.settlement === 'offered') {
     return OFFERED;
+  }
+  if (order.settlement === 'in_house') {
+    return IN_HOUSE;
   }
   return order.settlement === 'shop_till' ? SHOP_TILL : PAYMENT[order.paymentStatus];
 }

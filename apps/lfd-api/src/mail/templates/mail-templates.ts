@@ -174,7 +174,7 @@ function pretaxTotalRows(sheet: ClientSheet, locale: ContentLocale): readonly La
 }
 
 /**
- * Le régime de la feuille, ramené aux quatre libellés du courriel.
+ * Le régime de la feuille, ramené aux libellés du courriel.
  *
  * `free` (total nul) garde le libellé qu'il avait avant que la feuille porte
  * le régime : celui du compte (décision du 2026-10-08, lot F5-0). Le régime,
@@ -184,6 +184,9 @@ function settlementCopyKeyOf(sheet: ClientSheet): keyof OrderSettlementCopy {
   const regime = sheet.money.settlement;
   if (regime === "shop_till") {
     return "shopTill";
+  }
+  if (regime === "in_house") {
+    return "inHouse";
   }
   return regime === "free" ? "account" : regime;
 }

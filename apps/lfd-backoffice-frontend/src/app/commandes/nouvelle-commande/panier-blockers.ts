@@ -34,6 +34,8 @@ export interface PanierBlockerFacts {
   readonly offerNote?: string;
   /** Un organisme public : au compte, toujours ; le serveur dit le refus. */
   readonly payerIsPublic?: boolean;
+  /** Un de nos restaurants : commande interne, ni crédit ni lien. */
+  readonly payerIsInHouse?: boolean;
   /** Ce qui manque à l'engagement budgétaire d'un organisme public (`budgetCommitmentGaps`). */
   readonly commitmentGaps?: readonly string[];
   readonly refusal: AdminOrderEstimateNotice | null;
@@ -79,6 +81,16 @@ export function panierBlockersOf(facts: PanierBlockerFacts): readonly PanierBloc
 
 /** Les refus du règlement : un mode qui n'est pas proposé, ou un compte fermé. */
 function settlementBlockers(facts: PanierBlockerFacts): readonly PanierBlocker[] {
+  if (facts.payerIsInHouse === true) {
+    return facts.settlement === 'link'
+      ? [
+          {
+            text: 'Un de nos restaurants n’a pas de lien de règlement : sa commande est interne, sans facturation.',
+            view: 'settings',
+          },
+        ]
+      : [];
+  }
   if (facts.settlement === 'link' && !facts.linkOffered) {
     return [
       {

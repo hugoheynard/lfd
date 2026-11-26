@@ -190,7 +190,8 @@ export function originLabelOf(
  * - `due` — passée par carte, paiement pas encore abouti ;
  * - `refused` — passée par carte, paiement refusé par la banque ;
  * - `shop_till` — notée par l'équipe, à régler à la caisse de la boutique au
- *   retrait : jamais « réglée », notre système ne sait pas qu'elle l'est.
+ *   retrait : jamais « réglée », notre système ne sait pas qu'elle l'est ;
+ * - `in_house` — commande interne d'un de nos restaurants : ni facturée, ni réglée.
  *
  * ⚠️ Ce type disait « il n'y a QUE deux états » jusqu'au 2026-10-09, et
  * l'étiquette « Réglée · CB » se lisait sur le régime : une commande carte
@@ -199,7 +200,7 @@ export function originLabelOf(
  * se règlent depuis l'écran de règlement de la même commande ; le serveur
  * annule celles qui restent en l'air.
  */
-export type OrderPayment = 'account' | 'card' | 'due' | 'refused' | 'shop_till';
+export type OrderPayment = 'account' | 'card' | 'due' | 'refused' | 'shop_till' | 'in_house';
 
 /**
  * Ce que Stripe a rendu sur la commande (lot R1 du plan
@@ -502,6 +503,9 @@ function paymentOf(order: CustomerOrderView): OrderPayment {
   // Avant tout : son `paymentStatus` (`not_required`) se lirait « réglée ».
   if (order.settlement === 'shop_till') {
     return 'shop_till';
+  }
+  if (order.settlement === 'in_house') {
+    return 'in_house';
   }
   // Une commande offerte se lit comme une commande à total nul : « Mes
   // commandes » ne liste que les commandes personnelles, et une commande

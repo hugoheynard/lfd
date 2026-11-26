@@ -1,4 +1,5 @@
 import { FixedLineClassifications } from "../../../domain/ports/__tests__/line-classification-doubles.js";
+import { KnownInHousePayers } from "../../../../account/application/commands/__tests__/in-house-doubles.js";
 import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
 import { FixedOrderPayers, ownPayers } from "./payer-doubles.js";
 import {
@@ -45,6 +46,7 @@ import {
   PickupNotConfiguredError,
   TermsNotGrantedError,
 } from "../../../domain/errors/order-errors.js";
+import { InHouseBuyerCardRefusedError } from "../../../domain/errors/in-house-buyer-errors.js";
 import {
   PublicBuyerAccountUnavailableError,
   PublicBuyerCardRefusedError,
@@ -541,6 +543,7 @@ function drafting(
     readonly limits?: InMemoryProductCatalog;
     readonly classifications?: FixedLineClassifications;
     readonly shelf?: ShelfCircuit;
+    readonly inHouse?: KnownInHousePayers;
   } = {},
 ): OrderDrafting {
   const classifications = audience.classifications ?? new FixedLineClassifications();
@@ -592,6 +595,7 @@ function drafting(
     audience.salesTerms ?? new FixedSalesTerms(),
     classifications,
     audience.shelf ?? shelfCircuitOf(audience.plans ?? openPlanGate()),
+    audience.inHouse ?? new KnownInHousePayers(),
   );
 }
 
@@ -1849,6 +1853,93 @@ describe("PlaceOrderHandler — payeur public", () => {
     await expect(refusal).rejects.toBeInstanceOf(PublicBuyerAccountUnavailableError);
     expect(intentSink.intent).toBeNull();
     expect(sink.placed).toBeNull();
+  });
+});
+
+/**
+ * **Un de nos restaurants** : sa commande naît interne — total nul, rien à
+ * encaisser —, sans crédit à juger ; la carte demandée est refusée par son nom.
+ */
+describe("PlaceOrderHandler — un restaurant maison", () => {
+  function inHouseHandler(
+    sink: { placed: OrderToPlace | null },
+    intentSink: { intent: CardPreparationRequest | null },
+    inHouse: KnownInHousePayers = new KnownInHousePayers(["c1"]),
+  ): PlaceOrderHandler {
+    return new SeeingPlaceOrderHandler(
+      guard("orders", "active", "none"),
+      drafting(pickups(LABO_POINT), zones(), { inHouse }),
+      capturingRepo(sink),
+      payments(intentSink),
+      noRetrieval,
+      events(),
+      noWaivers,
+      new FixedClock(PRICED_AT),
+      freeKeys,
+      noReader,
+      directWork,
+      new FixedVoucherQuotes(),
+      new RecordingRedemption(),
+      new RecordingDurable(),
+      intakeAt(),
+      new CustomerCancellationDeadline(new FixedCancellationSettings()),
+      noOrderMarketing(),
+      new FixedCommitmentTerms(),
+      new FixedRecipients(),
+    );
+  }
+
+  it("🔴 sans crédit accordé ni règlement choisi : commande interne, total nul, aucune carte", async () => {
+    const sink = { placed: null as OrderToPlace | null };
+    const intentSink = { intent: null as CardPreparationRequest | null };
+
+    const result = await inHouseHandler(sink, intentSink).execute(
+      new PlaceOrderCommand("u1", payload(), "c1"),
+    );
+
+    expect(result.settlement).toBe("in_house");
+    expect(sink.placed?.totalCents).toBe(0);
+    expect(sink.placed?.paymentStatus).toBe("not_required");
+    expect(sink.placed?.offer?.reason.nature).toBe("in_house");
+    expect(intentSink.intent).toBeNull();
+  });
+
+  it("« au compte » demandé passe aussi, sans lire de crédit", async () => {
+    const sink = { placed: null as OrderToPlace | null };
+    const intentSink = { intent: null as CardPreparationRequest | null };
+
+    await inHouseHandler(sink, intentSink).execute(
+      new PlaceOrderCommand("u1", payload({ settlement: "account" }), "c1"),
+    );
+
+    expect(sink.placed?.offer?.reason.nature).toBe("in_house");
+    expect(intentSink.intent).toBeNull();
+  });
+
+  it("🔴 REFUSE la carte par son nom, sans intention ni commande", async () => {
+    const sink = { placed: null as OrderToPlace | null };
+    const intentSink = { intent: null as CardPreparationRequest | null };
+
+    const refusal = inHouseHandler(sink, intentSink).execute(
+      new PlaceOrderCommand("u1", payload({ settlement: "card" }), "c1"),
+    );
+
+    await expect(refusal).rejects.toBeInstanceOf(InHouseBuyerCardRefusedError);
+    expect(sink.placed).toBeNull();
+    expect(intentSink.intent).toBeNull();
+  });
+
+  it("un payeur démarqué recommande comme avant : la carte faute de crédit", async () => {
+    const sink = { placed: null as OrderToPlace | null };
+    const intentSink = { intent: null as CardPreparationRequest | null };
+
+    await inHouseHandler(sink, intentSink, new KnownInHousePayers()).execute(
+      new PlaceOrderCommand("u1", payload(), "c1"),
+    );
+
+    expect(sink.placed?.offer).toBeNull();
+    expect(sink.placed?.totalCents).toBeGreaterThan(0);
+    expect(intentSink.intent).not.toBeNull();
   });
 });
 

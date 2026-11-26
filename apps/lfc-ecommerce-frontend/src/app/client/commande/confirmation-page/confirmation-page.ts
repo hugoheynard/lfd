@@ -59,6 +59,9 @@ export class ConfirmationPage {
    */
   private readonly title = computed(() => {
     const done = this.t().done;
+    if (this.inHouse()) {
+      return done.titleInHouse;
+    }
     switch (this.order()?.settlement) {
       case 'paid':
         return done.title;
@@ -75,6 +78,9 @@ export class ConfirmationPage {
   /** Le libellé de la ligne de total — il nomme l'état, il ne l'invente pas. */
   protected readonly totalLabel = computed(() => {
     const done = this.t().done;
+    if (this.inHouse()) {
+      return done.inHouse;
+    }
     switch (this.order()?.settlement) {
       case 'paid':
         return done.paidOnline;
@@ -225,10 +231,13 @@ export class ConfirmationPage {
    */
   protected readonly onAccount = computed(() => this.order()?.onAccount === true);
 
+  /** Une commande interne d'un de nos restaurants : aucun montant à régler. */
+  protected readonly inHouse = computed(() => this.order()?.inHouse === true);
+
   /** Le total montré : HT au compte (`pretaxCents`, lu sur le devis), TTC sinon. */
   protected readonly shownTotalCents = computed(() => {
     const totals = this.order()?.totals;
-    if (totals === undefined) {
+    if (totals === undefined || this.inHouse()) {
       return 0;
     }
     if (!this.onAccount()) {
@@ -239,7 +248,7 @@ export class ConfirmationPage {
 
   protected readonly vatLines = computed(() => {
     const c = this.t().cart;
-    if (this.onAccount()) {
+    if (this.onAccount() || this.inHouse()) {
       return [];
     }
     return (this.order()?.totals.vat ?? []).map((share) => ({

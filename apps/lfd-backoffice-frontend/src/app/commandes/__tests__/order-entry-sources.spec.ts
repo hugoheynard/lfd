@@ -22,6 +22,7 @@ const COUNTER_VIEW: CounterCustomerView = {
   status: 'active',
   settlesOnAccount: false,
   payerIsPublic: false,
+  payerIsInHouse: false,
   deliveryAddresses: [],
   buyers: [],
 };

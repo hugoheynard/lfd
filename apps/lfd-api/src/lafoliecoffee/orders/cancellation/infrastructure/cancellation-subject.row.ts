@@ -1,4 +1,5 @@
 import type { CancellationSubject } from "../domain/ports/cancellation-subject.reader.js";
+import { offerMarkOf } from "../../domain/services/settlement-regime.js";
 import type { RefundPosition } from "../../domain/value-objects/refund-position.js";
 
 /**
@@ -62,7 +63,7 @@ export function toCancellationSubject(
     paymentStatus: row.paymentStatus,
     totalCents: row.totalCents,
     settlementVenue: row.settlementVenue,
-    offered: row.offerNature !== null,
+    offered: offerMarkOf(row.offerNature),
     serviceDay:
       row.requestedDeliveryDate === null
         ? null

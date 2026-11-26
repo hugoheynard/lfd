@@ -1562,6 +1562,8 @@ export {
   orderOfferNatureSchema,
   ORDER_OFFER_NATURES,
   orderOfferNatureLabel,
+  IN_HOUSE_OFFER_NATURE,
+  isStaffGrantableOfferNature,
   ORDER_OFFER_NOTE_MAX_LENGTH,
   orderOfferSchema,
   adminPlaceOrderPayloadSchema,

@@ -100,7 +100,8 @@
 }
 
 .tag[data-status='ready'],
-.tag[data-payment='account'] {
+.tag[data-payment='account'],
+.tag[data-payment='in_house'] {
   background: var(--fold-color-info-surface);
   color: var(--fold-color-info-text);
 }

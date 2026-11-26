@@ -102,6 +102,17 @@ describe("salesExportOrderOf — une commande pour l'export des ventes", () => {
     expect(order).toMatchObject({ offered: true, offeredTotalCents: 950, countsAsRevenue: false });
   });
 
+  it("une commande interne porte sa nature, et reste hors du CA", () => {
+    const order = salesExportOrderOf({
+      ...ROW,
+      offerNature: "in_house",
+      offeredTotalCents: 950,
+      totalCents: 0,
+    });
+
+    expect(order).toMatchObject({ offered: true, offerNature: "in_house", countsAsRevenue: false });
+  });
+
   it("une commande à régler à la caisse de la boutique est servie, hors du CA", () => {
     expect(salesExportOrderOf({ ...ROW, settlementVenue: "shop_till" }).countsAsRevenue).toBe(
       false,

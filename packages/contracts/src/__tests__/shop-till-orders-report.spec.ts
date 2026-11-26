@@ -2,7 +2,7 @@ import { settlementRegimeSchema } from "../order-sheet.js";
 import { shopTillOrdersReportQuerySchema } from "../shop-till-orders-report.js";
 
 describe("le régime de règlement — à régler en boutique", () => {
-  it("admet `shop_till` et `offered`, à côté des régimes d'avant", () => {
+  it("admet `shop_till`, `offered` et `in_house`, à côté des régimes d'avant", () => {
     expect(settlementRegimeSchema.options).toEqual([
       "paid",
       "due",
@@ -10,6 +10,7 @@ describe("le régime de règlement — à régler en boutique", () => {
       "free",
       "shop_till",
       "offered",
+      "in_house",
     ]);
   });
 });

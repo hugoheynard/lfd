@@ -34,6 +34,11 @@ export interface OrderEntryCustomer {
    * Chorus Pro : ni choix du règlement, ni lien de paiement par carte.
    */
   readonly payerIsPublic: boolean;
+  /**
+   * Le payeur est-il un de nos restaurants ? Sa commande est interne, sans
+   * facturation : ni crédit ni lien — le serveur pose le régime.
+   */
+  readonly payerIsInHouse: boolean;
   /** Le carnet de livraison, la défaut en tête. */
   readonly addresses: readonly DeliveryAddressView[];
   readonly buyers: readonly OrderEntryBuyer[];
@@ -53,6 +58,7 @@ export type AdminCompanyFacts = Pick<
   | 'enseigne'
   | 'status'
   | 'payerSettlesOnAccount'
+  | 'payerIsInHouse'
   | 'formeJuridique'
   | 'fulfillmentPreference'
 > & { readonly addresses: Pick<AdminCompanyDetail['addresses'], 'deliveries'> };
@@ -73,6 +79,7 @@ export function customerFromAdminCompany(
     // La forme de la société suffit : un site ne suit en facturation qu'un
     // principal de même nature (plan clients publics, B6).
     payerIsPublic: isPublicForm(company.formeJuridique),
+    payerIsInHouse: company.payerIsInHouse ?? false,
     addresses: company.addresses.deliveries,
     // Toute personne rattachée peut porter une commande de l'équipe, invitation
     // acceptée ou non (décidé par Hugo le 2026-11-23) ; seul un compte
@@ -95,6 +102,7 @@ export function customerFromCounter(customer: CounterCustomerView): OrderEntryCu
     status: customer.status,
     settlesOnAccount: customer.settlesOnAccount,
     payerIsPublic: customer.payerIsPublic,
+    payerIsInHouse: customer.payerIsInHouse,
     addresses: customer.deliveryAddresses,
     buyers: customer.buyers,
     preferredPickupId: null,

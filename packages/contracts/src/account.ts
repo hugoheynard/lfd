@@ -130,6 +130,13 @@ export interface CompanyView {
    */
   readonly payerIsPublic?: boolean;
   /**
+   * Le PAYEUR est un de nos restaurants (marqué « maison ») : ses commandes
+   * sont internes, sans facturation ni règlement — la boutique ne propose ni
+   * carte ni compte. Toujours envoyé par le serveur ; facultatif pour la même
+   * raison que `payerIsPublic`.
+   */
+  readonly payerIsInHouse?: boolean;
+  /**
    * La société est un site facturé chez son principal : `grantedTerms` et
    * `directDebitBlocked` sont alors ceux du principal, et un crédit ne se
    * demande pas au nom du site (le serveur le refuse). Toujours envoyé par le

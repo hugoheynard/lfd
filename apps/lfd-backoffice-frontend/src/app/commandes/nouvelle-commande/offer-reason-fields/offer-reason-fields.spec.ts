@@ -25,6 +25,16 @@ describe('OfferReasonFields — le motif d’une commande offerte', () => {
     expect(fixture.componentInstance['noteHint']()).toContain('5 /');
   });
 
+  it('🔴 ne propose pas « Commande interne » : elle ne s’offre pas à la main', () => {
+    TestBed.resetTestingModule();
+    const fixture = TestBed.createComponent(OfferReasonFields);
+    fixture.detectChanges();
+
+    const options = fixture.componentInstance['natureOptions'];
+    expect(options.map((option) => option.value)).not.toContain('in_house');
+    expect(options.map((option) => option.value)).toContain('tasting');
+  });
+
   it('remonte la nature choisie', () => {
     TestBed.resetTestingModule();
     const fixture = TestBed.createComponent(OfferReasonFields);

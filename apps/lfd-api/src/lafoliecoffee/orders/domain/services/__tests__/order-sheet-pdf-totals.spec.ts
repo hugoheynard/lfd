@@ -1,6 +1,11 @@
 import type { ClientSheet } from "@lfd/contracts";
 
-import { totalRows } from "../order-sheet-pdf-totals.js";
+import {
+  IN_HOUSE_NOTE,
+  OFFERED_NOTE,
+  totalRows,
+  unbilledNoteOf,
+} from "../order-sheet-pdf-totals.js";
 import { LINE, sheet } from "./client-sheet.fixture.js";
 
 /**
@@ -201,5 +206,22 @@ describe("la remise de retrait se nomme", () => {
         discountLabel: { fr: "Offre inscrits", en: "Members offer", it: "Offerta iscritti" },
       }),
     ).toContain("Offre inscrits (5 %)");
+  });
+});
+
+describe("unbilledNoteOf — la mention d'un papier qui ne se facture pas", () => {
+  it("dit « offerte » pour une offre de l'équipe", () => {
+    expect(unbilledNoteOf("offered")).toBe(OFFERED_NOTE);
+  });
+
+  it("dit « interne » pour un de nos restaurants, jamais « offerte »", () => {
+    expect(unbilledNoteOf("in_house")).toBe(IN_HOUSE_NOTE);
+    expect(IN_HOUSE_NOTE).toBe("Commande interne — sans facturation.");
+  });
+
+  it("ne dit rien d'une commande qui se règle", () => {
+    expect(unbilledNoteOf("account")).toBeNull();
+    expect(unbilledNoteOf("free")).toBeNull();
+    expect(unbilledNoteOf("paid")).toBeNull();
   });
 });

@@ -1,4 +1,5 @@
 import { orderPretaxCents } from "@lfd/money";
+import { KnownInHousePayers } from "../../../../account/application/commands/__tests__/in-house-doubles.js";
 import { FixedLineClassifications } from "../../../domain/ports/__tests__/line-classification-doubles.js";
 import { OrderTotalChangedError } from "../../../domain/errors/order-total-changed.error.js";
 import {
@@ -307,6 +308,7 @@ function drafting(
     salesTerms,
     new FixedLineClassifications(),
     shelf,
+    new KnownInHousePayers(),
   );
 }
 

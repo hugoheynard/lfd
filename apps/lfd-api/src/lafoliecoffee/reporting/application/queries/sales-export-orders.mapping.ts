@@ -40,6 +40,7 @@ export function orderViewOf(
     paymentStatus: order.paymentStatus,
     settlementVenue: order.settlementVenue,
     offered: order.offered,
+    offerNature: order.offerNature,
     offeredTtc: eurosOfNullableCents(order.offeredTotalCents),
     clientele: order.clientele,
     buyerKind: order.buyerKind,

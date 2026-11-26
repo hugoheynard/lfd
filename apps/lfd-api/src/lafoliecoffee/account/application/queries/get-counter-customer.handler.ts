@@ -12,6 +12,7 @@ import {
 import { CompanyFollowsReader } from "../../domain/ports/company-follows.reader.js";
 import { CompanyRepository } from "../../domain/ports/company.repository.js";
 import { CounterCustomerReader } from "../../domain/ports/counter-customer.reader.js";
+import { InHousePayerReader } from "../../domain/ports/in-house-payer.reader.js";
 import { GetCounterCustomerQuery } from "./get-counter-customer.query.js";
 
 /**
@@ -46,6 +47,7 @@ export class GetCounterCustomerHandler implements IQueryHandler<
     private readonly members: CompanyMemberReader,
     private readonly follows: CompanyFollowsReader,
     private readonly clock: Clock,
+    private readonly inHouse: InHousePayerReader,
   ) {}
 
   async execute(query: GetCounterCustomerQuery): Promise<CounterCustomerView> {
@@ -63,6 +65,8 @@ export class GetCounterCustomerHandler implements IQueryHandler<
       this.members.listOf(query.companyId),
       this.payerOf(company, query.companyId),
     ]);
+    const payerId = payer?.id ?? null;
+    const payerIsInHouse = payerId !== null && (await this.inHouse.isInHousePayer(payerId));
     return {
       id: card.id,
       name: card.name,
@@ -71,6 +75,7 @@ export class GetCounterCustomerHandler implements IQueryHandler<
       status: company.status,
       settlesOnAccount: payer?.status === "active" && payer.settlesOnAccount(),
       payerIsPublic: payer?.isPublic ?? false,
+      payerIsInHouse,
       deliveryAddresses: [...addresses.deliveries],
       buyers: members.filter((member) => member.status === "active").map(toBuyer),
     };

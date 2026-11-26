@@ -49,6 +49,11 @@ describe("cancellationOf — ce qui s'annule", () => {
       "paid",
     ],
     ["remboursée en entier depuis Stripe (lot C4)", state({ paymentStatus: "refunded" }), "paid"],
+    [
+      "commande interne d'un restaurant maison : rien d'engagé au compte",
+      state({ paymentStatus: "not_required", totalCents: 0, offered: "in_house" }),
+      "free",
+    ],
   ] as const)("%s → annulable, régime %s", (_, subject, regime) => {
     expect(cancellationOf(subject, BEFORE_INSCRIPTION)).toEqual({ cancellable: true, regime });
   });

@@ -3,6 +3,7 @@ import type { OrderStatus, PaymentStatus } from "@lfd/contracts";
 import type { RefundPosition } from "../../../domain/value-objects/refund-position.js";
 import type { OrderSupply } from "../../../domain/value-objects/order-supply.js";
 import type { SettlementVenue } from "../../../domain/value-objects/settlement-venue.js";
+import type { OfferMark } from "../../../domain/services/settlement-regime.js";
 
 /**
  * **Une commande, vue de l'annulation staff** — ce que la règle lit, et ce
@@ -35,8 +36,11 @@ export interface CancellationSubject {
   readonly totalCents: number;
   /** Où le règlement se fera hors de chez nous — `shop_till`, ou `null`. */
   readonly settlementVenue: SettlementVenue | null;
-  /** Offerte par l'équipe : rien n'est dû ni facturé (`la-commande-offerte.md`). */
-  readonly offered: boolean;
+  /**
+   * Offerte par l'équipe, ou commande interne d'un de nos restaurants : rien
+   * n'est dû ni facturé (`la-commande-offerte.md`).
+   */
+  readonly offered: OfferMark;
   /** `AAAA-MM-JJ`, ou `null` : commande sans jour de service. */
   readonly serviceDay: string | null;
   /** L'instant d'une annulation staff ; `null` pour une annulation automatique. */

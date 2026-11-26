@@ -35,6 +35,13 @@ describe('settlementStatusLabel — une commande à régler à la caisse de la b
     expect(settlementStatusVariant(order)).toBe('neutral');
   });
 
+  it('🔴 dit « Commande interne » pour un de nos restaurants, jamais « Offerte »', () => {
+    const order = { paymentStatus: 'not_required', settlement: 'in_house' } as const;
+
+    expect(settlementStatusLabel(order)).toBe('Commande interne — sans facturation');
+    expect(settlementStatusVariant(order)).toBe('neutral');
+  });
+
   it('garde le libellé du règlement pour toute autre commande', () => {
     expect(settlementStatusLabel({ paymentStatus: 'not_required', settlement: 'account' })).toBe(
       'Au compte — à facturer',

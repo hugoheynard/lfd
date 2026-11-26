@@ -1,5 +1,6 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
+import { InHousePayerReader } from "../../../../account/domain/ports/in-house-payer.reader.js";
 import { OrderRecipientReader } from "../../../domain/ports/order-recipient.reader.js";
 import { AppConfig } from "../../../../../platform/config/app-config.js";
 import { UnitOfWork } from "../../../../../platform/database/unit-of-work.js";
@@ -67,6 +68,7 @@ export class ConvertBackorderHandler implements ICommandHandler<
     private readonly replays: BackorderReplayReader,
     private readonly journal: Journal,
     recipients: OrderRecipientReader,
+    private readonly inHouse: InHousePayerReader,
   ) {
     this.placement = new StaffOrderPlacement({
       guard,
@@ -95,9 +97,13 @@ export class ConvertBackorderHandler implements ICommandHandler<
    * @throws {IntentKeyReusedError} la clé a déjà transformé une autre saisie.
    */
   async execute(command: ConvertBackorderCommand): Promise<PlaceOrderForCustomerResult> {
-    ensureMayOffer(command.payload.settlement === "offered", command.mayOffer);
     // Sans juger l'état : un double clic après le succès retrouve sa commande.
     const loaded = await loadBackorder(this.backorders, command.backorderId);
+    // Un de nos restaurants : la commande sera interne quel que soit le choix
+    // de l'écran, et personne ne l'offre — le droit d'offrir ne se juge pas.
+    if (!(await this.inHouse.isInHousePayer(loaded.companyId))) {
+      ensureMayOffer(command.payload.settlement === "offered", command.mayOffer);
+    }
     const entry = backorderEntryOf(loaded.backorder, loaded.companyId, command.payload);
     return await this.intents.runSealed(
       backorderConversionIntent(command.staffUserId, command.intentKey, command.backorderId, entry),
