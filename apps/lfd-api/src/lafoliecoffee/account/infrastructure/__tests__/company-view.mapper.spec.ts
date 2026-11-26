@@ -70,7 +70,11 @@ describe("toCompanyView", () => {
       grantedTerms: [],
       follows: [
         {
-          parent: { formeJuridique: "SAS", grantedTerms: ["monthly"], directDebitBlockedAt: null },
+          parent: {
+            formeJuridique: "SAS",
+            grantedTerms: ROW.grantedTerms,
+            directDebitBlockedAt: null,
+          },
         },
       ],
     };
@@ -86,7 +90,7 @@ describe("toCompanyView", () => {
         {
           parent: {
             formeJuridique: "SAS",
-            grantedTerms: ["monthly"],
+            grantedTerms: ROW.grantedTerms,
             directDebitBlockedAt: UPLOADED,
           },
         },
