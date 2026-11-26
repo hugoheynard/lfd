@@ -1,0 +1,11 @@
+-- RETOUR ARRIÈRE de 20261126190000_les_favoris_de_la_boutique
+-- (documentation/commandes/boutique/les-favoris.md, lot B1).
+--
+-- 🔴 NON APPLIQUÉ, et Prisma ne le lit pas. La migration reste inscrite
+-- « appliquée ».
+--
+-- Le code d'avant ignore la table : le retour arrière est le retour du code
+-- seul. La retirer perdrait les favoris des clients ; à faire seulement sur
+-- décision de Hugo :
+--
+--   DROP TABLE "public"."shop_favorite";

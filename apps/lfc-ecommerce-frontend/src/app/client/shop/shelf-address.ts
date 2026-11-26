@@ -7,7 +7,8 @@ import { operationShelfId } from './operations';
 import { ShopCatalogue } from './shop-catalogue.store';
 import { ShopStore } from './shop.store';
 import { Shop } from './shop.service';
-import { ALL_SHELVES, FEATURED_SHELF, SHELF_PARAM } from './shelves';
+import { ShopFavorites } from './shop-favorites.store';
+import { ALL_SHELVES, FAVORITES_SHELF, FEATURED_SHELF, SHELF_PARAM } from './shelves';
 
 /** Sentinelle « aucun paramètre encore lu » — distincte de `null` (paramètre absent). */
 const UNREAD = Symbol('unread');
@@ -34,6 +35,7 @@ export class ShelfAddress {
   private readonly catalogue = inject(ShopCatalogue);
   private readonly store = inject(ShopStore);
   private readonly shop = inject(Shop);
+  private readonly favorites = inject(ShopFavorites);
 
   private readonly param = toSignal(
     this.route.queryParamMap.pipe(map((params) => params.get(SHELF_PARAM))),
@@ -45,6 +47,9 @@ export class ShelfAddress {
     () =>
       new Set<string>([
         ALL_SHELVES,
+        ...(this.catalogue.items().some((item) => this.favorites.skus().has(item.sku))
+          ? [FAVORITES_SHELF]
+          : []),
         ...(this.catalogue.items().some((item) => item.isFeatured) ? [FEATURED_SHELF] : []),
         ...this.catalogue.operations().map((operation) => operationShelfId(operation.key)),
         ...this.catalogue.shelves().map((shelf) => shelf.id),

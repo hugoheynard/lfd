@@ -22,6 +22,7 @@
           decoding="async"
         />
       }
+      <app-favorite-toggle class="favorite" [sku]="piece.sku" />
       @if (piece.isFeatured) {
         <span class="badge">★ {{ t().product.bestSeller }}</span>
       }

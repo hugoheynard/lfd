@@ -5,7 +5,8 @@ import { ShopCatalogue } from './shop-catalogue.store';
 import { ShopStore } from './shop.store';
 import { ClientLocale } from '../client-locale.service';
 import { operationKeyOf, operationText } from './operations';
-import { ALL_SHELVES, FEATURED_SHELF } from './shelves';
+import { ShopFavorites } from './shop-favorites.store';
+import { ALL_SHELVES, FAVORITES_SHELF, FEATURED_SHELF } from './shelves';
 import { inSubtree, shelfTreeOf } from '@lfd/b2b-ui/catalog';
 
 /**
@@ -44,6 +45,7 @@ export class Shop {
   private readonly catalogue = inject(ShopCatalogue);
   private readonly t = inject(ClientCopyService).t;
   private readonly locale = inject(ClientLocale);
+  private readonly favorites = inject(ShopFavorites);
 
   /** Le terme cherché — écrit directement par le champ, qui en est la vue. */
   readonly query = this.store.query;
@@ -76,6 +78,10 @@ export class Shop {
     }
     if (shelf === FEATURED_SHELF) {
       return items.filter((item) => item.isFeatured);
+    }
+    if (shelf === FAVORITES_SHELF) {
+      const favorites = this.favorites.skus();
+      return items.filter((item) => favorites.has(item.sku));
     }
     const operationKey = operationKeyOf(shelf);
     if (operationKey !== null) {
@@ -140,6 +146,9 @@ export class Shop {
   private shelfTitle(shelf: string, fallback: string): string {
     if (shelf === FEATURED_SHELF) {
       return this.t().product.bestSeller;
+    }
+    if (shelf === FAVORITES_SHELF) {
+      return this.t().shop.favoritesShelf;
     }
     const operationKey = operationKeyOf(shelf);
     if (operationKey !== null) {

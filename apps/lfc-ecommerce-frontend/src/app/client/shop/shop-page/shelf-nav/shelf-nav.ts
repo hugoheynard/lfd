@@ -5,7 +5,8 @@ import { ClientCopyService, fill } from '../../../copy/client-copy.service';
 import { ShopCatalogue } from '../../shop-catalogue.store';
 import { ClientLocale } from '../../../client-locale.service';
 import { operationShelfId, operationText } from '../../operations';
-import { ALL_SHELVES, FEATURED_SHELF } from '../../shelves';
+import { ALL_SHELVES, FAVORITES_SHELF, FEATURED_SHELF } from '../../shelves';
+import { ShopFavorites } from '../../shop-favorites.store';
 
 /**
  * **Le rail des rayons de la boutique** — « Tout », la mise en avant, les
@@ -41,6 +42,7 @@ export class ShelfNav {
   private readonly t = inject(ClientCopyService).t;
   protected readonly catalogue = inject(ShopCatalogue);
   private readonly locale = inject(ClientLocale);
+  private readonly favorites = inject(ShopFavorites);
 
   /**
    * Une opération servie est un rayon **juste après « Tout »**, dans l'ordre du
@@ -52,6 +54,10 @@ export class ShelfNav {
    */
   protected readonly shelves = computed(() => [
     { id: ALL_SHELVES, label: this.t().shop.allShelves },
+    // Les favoris, juste avant les incontournables — seulement si un article servi en est un.
+    ...(this.catalogue.items().some((item) => this.favorites.skus().has(item.sku))
+      ? [{ id: FAVORITES_SHELF, label: this.t().shop.favoritesShelf }]
+      : []),
     ...(this.catalogue.items().some((item) => item.isFeatured)
       ? [{ id: FEATURED_SHELF, label: this.t().product.bestSeller }]
       : []),

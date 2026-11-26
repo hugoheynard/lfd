@@ -24,6 +24,7 @@ import { madeToOrderLabel } from '../made-to-order';
 import { lockedReason } from '../locked-item';
 import { operationGate, pickupSpan } from '../operations';
 import { artOf, objectPositionOf } from '../shelf-display';
+import { FavoriteToggle } from '../favorite-toggle/favorite-toggle';
 import { HouseMark } from '../house-mark/house-mark';
 import { mediaSrcset, sizedMedia, SHEET_WIDTHS } from '../media-source';
 import { ShopCatalogue } from '../shop-catalogue.store';
@@ -79,6 +80,7 @@ export type SheetCtaState = 'add' | 'update' | 'inCart';
     ClientDialog,
     FoldCalloutComponent,
     FoldDisclosureComponent,
+    FavoriteToggle,
     HouseMark,
     NgTemplateOutlet,
     QuantityRail,

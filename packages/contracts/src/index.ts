@@ -3689,3 +3689,8 @@ export type {
   ListEventsQuery,
   ReviseEventPayload,
 } from "./admin-events.js";
+export {
+  FAVORITE_SKU_MAX_LENGTH,
+  favoriteSkuSchema,
+  type MyFavoritesView,
+} from "./shop-favorites.js";

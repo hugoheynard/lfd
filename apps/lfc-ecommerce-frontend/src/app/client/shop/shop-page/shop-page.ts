@@ -32,7 +32,7 @@ import { ShelfAddress } from '../shelf-address';
 import { PickupLink } from '../pickup-link';
 import { PieceAddress } from '../piece-address';
 import { PieceHead } from '../piece-head';
-import { FEATURED_SHELF } from '../shelves';
+import { FAVORITES_SHELF, FEATURED_SHELF } from '../shelves';
 import { CartFulfillmentDays } from '../cart-fulfillment-days.service';
 import { OrderBar } from '../order-bar/order-bar';
 import { OrderDoors } from '../order-doors';
@@ -145,7 +145,9 @@ export class ShopPage {
    */
   private readonly pageState = computed(() => {
     const shelf = this.shop.activeShelf();
-    return shelf === null || shelf === FEATURED_SHELF ? null : this.storefront.stateOf(shelf);
+    return shelf === null || shelf === FEATURED_SHELF || shelf === FAVORITES_SHELF
+      ? null
+      : this.storefront.stateOf(shelf);
   });
 
   /**
@@ -277,7 +279,7 @@ export class ShopPage {
       const shelf = this.shop.activeShelf();
       this.storefront.reader();
       // La mise en avant n'a pas de page de vitrine : c'est un filtre.
-      if (shelf !== null && shelf !== FEATURED_SHELF) {
+      if (shelf !== null && shelf !== FEATURED_SHELF && shelf !== FAVORITES_SHELF) {
         untracked(() => {
           void this.storefront.load(shelf);
         });

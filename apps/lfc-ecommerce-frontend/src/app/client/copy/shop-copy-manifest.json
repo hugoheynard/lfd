@@ -1468,6 +1468,13 @@
           "variables": []
         },
         {
+          "key": "shop.favoritesShelf",
+          "fr": "Favoris",
+          "en": "Favourites",
+          "it": "Preferiti",
+          "variables": []
+        },
+        {
           "key": "shop.resultsFor",
           "fr": "Résultats pour « {query} »",
           "en": "Results for “{query}”",
@@ -2000,6 +2007,20 @@
           "fr": "Incontournable",
           "en": "Must-have",
           "it": "Imperdibile",
+          "variables": []
+        },
+        {
+          "key": "product.favoriteAdd",
+          "fr": "Ajouter aux favoris",
+          "en": "Add to favourites",
+          "it": "Aggiungi ai preferiti",
+          "variables": []
+        },
+        {
+          "key": "product.favoriteRemove",
+          "fr": "Retirer des favoris",
+          "en": "Remove from favourites",
+          "it": "Rimuovi dai preferiti",
           "variables": []
         },
         {

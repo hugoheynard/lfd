@@ -246,6 +246,7 @@ export const FR: ClientCopy = {
     clearSearch: 'Effacer la recherche',
     allShelves: 'Tout',
     allShelvesTitle: 'Tout le rayon',
+    favoritesShelf: 'Favoris',
     resultsFor: 'Résultats pour « {query} »',
     piecesUnit: 'pièces',
     emptyTitle: 'Rien sous ce nom.',
@@ -333,6 +334,8 @@ export const FR: ClientCopy = {
   },
   product: {
     bestSeller: 'Incontournable',
+    favoriteAdd: 'Ajouter aux favoris',
+    favoriteRemove: 'Retirer des favoris',
     operationPickup: 'Retrait',
     operationPickupSpan: 'du {from} au {until}',
     operationPickupDay: 'le {day}',

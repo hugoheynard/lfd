@@ -1,0 +1,16 @@
+/// **Un favori de la boutique** : un SKU qu'un espace garde sous le cœur.
+/// L'espace est une société (`holder_type = company`) ou l'espace personnel
+/// d'une personne (`user`). Le SKU est opaque, sans clé vers le référentiel ;
+/// pas de clé étrangère vers le titulaire non plus (deux tables possibles).
+/// Une préférence, pas un agrégat : retirée, la ligne s'efface. Doc :
+/// `documentation/commandes/boutique/les-favoris.md`.
+model ShopFavorite {
+  holderType String   @map("holder_type")
+  holderId   String   @map("holder_id")
+  sku        String
+  createdAt  DateTime @map("created_at") @db.Timestamptz(3)
+
+  @@id([holderType, holderId, sku])
+  @@map("shop_favorite")
+  @@schema("public")
+}

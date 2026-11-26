@@ -25,3 +25,10 @@ export const SHELF_PARAM = 'rayon';
  * donc elle ne peut pas en rencontrer un dans `?rayon=`.
  */
 export const FEATURED_SHELF = 'vitrine:featured';
+
+/**
+ * **Les favoris de l'espace, en rayon** — n'ouvre que les articles servis que
+ * {@link ShopFavorites} tient en favori (`commandes/boutique/les-favoris.md`).
+ * Un filtre de vitrine, comme {@link FEATURED_SHELF}, et la même forme de clé.
+ */
+export const FAVORITES_SHELF = 'vitrine:favorites';

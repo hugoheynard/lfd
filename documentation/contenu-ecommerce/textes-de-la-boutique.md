@@ -4,7 +4,7 @@
 >
 > La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.
 
-## Sommaire — 2032 textes
+## Sommaire — 2035 textes
 
 Clés présentes dans une langue et absentes d'une autre : 0.
 
@@ -18,8 +18,8 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Accueil — la carte d'événement](#espace-event) | `event` | 5 |
 | [Connexion et création de compte](#espace-signup) | `signup` | 24 |
 | [Commander — l'écran d'entrée de la commande](#espace-commande) | `commande` | 39 |
-| [Rayon / boutique](#espace-shop) | `shop` | 89 |
-| [Rayon — la fiche produit](#espace-product) | `product` | 34 |
+| [Rayon / boutique](#espace-shop) | `shop` | 90 |
+| [Rayon — la fiche produit](#espace-product) | `product` | 36 |
 | [Barre de commande — la maison et l’heure retenues](#espace-commandterms) | `commandTerms` | 39 |
 | [Choix du jour — la première question d’une commande](#espace-daypicker) | `dayPicker` | 20 |
 | [Modifier — ce qu’on change d’une commande située](#espace-servicechange) | `serviceChange` | 9 |
@@ -53,7 +53,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Les cases des e-mails marketing, « Mes e-mails » et le pied de page](#espace-marketingconsent) | `marketingConsent` | 29 |
 | [Les documents légaux](#espace-legaldocument) | `legalDocument` | 14 |
 | [Le suivi des corrections d’accessibilité — sous la déclaration](#espace-accessibilityfollowup) | `accessibilityFollowUp` | 28 |
-| **Total** | | **2032** |
+| **Total** | | **2035** |
 
 ## Le parcours de commande
 
@@ -312,7 +312,7 @@ Source : `fr.ts · en.ts · it.ts` · 39 textes.
 
 ### Rayon / boutique — `shop`
 
-Source : `fr.ts · en.ts · it.ts` · 89 textes.
+Source : `fr.ts · en.ts · it.ts` · 90 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -330,6 +330,7 @@ Source : `fr.ts · en.ts · it.ts` · 89 textes.
 | `shop.clearSearch` | Effacer la recherche | Clear the search | Cancella la ricerca |  |
 | `shop.allShelves` | Tout | Everything | Tutto |  |
 | `shop.allShelvesTitle` | Tout le rayon | The whole counter | Tutto il banco |  |
+| `shop.favoritesShelf` | Favoris | Favourites | Preferiti |  |
 | `shop.resultsFor` | Résultats pour « {query} » | Results for “{query}” | Risultati per « {query} » | `{query}` |
 | `shop.piecesUnit` | pièces | items | pezzi |  |
 | `shop.emptyTitle` | Rien sous ce nom. | Nothing under that name. | Niente con questo nome. |  |
@@ -410,11 +411,13 @@ Source : `fr.ts · en.ts · it.ts` · 89 textes.
 
 ### Rayon — la fiche produit — `product`
 
-Source : `fr.ts · en.ts · it.ts` · 34 textes.
+Source : `fr.ts · en.ts · it.ts` · 36 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
 | `product.bestSeller` | Incontournable | Must-have | Imperdibile |  |
+| `product.favoriteAdd` | Ajouter aux favoris | Add to favourites | Aggiungi ai preferiti |  |
+| `product.favoriteRemove` | Retirer des favoris | Remove from favourites | Rimuovi dai preferiti |  |
 | `product.operationPickup` | Retrait | Collection | Ritiro |  |
 | `product.operationPickupSpan` | du {from} au {until} | {from} to {until} | dal {from} al {until} | `{from}` `{until}` |
 | `product.operationPickupDay` | le {day} | on {day} | il {day} | `{day}` |

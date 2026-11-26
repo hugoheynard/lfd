@@ -325,3 +325,10 @@
     max-height: 25dvh;
   }
 }
+
+/* Le cœur, en bas à droite de la photo : le haut porte la pastille et la quantité. */
+.favorite {
+  position: absolute;
+  right: var(--fold-space-sm);
+  bottom: var(--fold-space-sm);
+}

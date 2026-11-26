@@ -441,6 +441,8 @@ export interface ClientCopy {
     readonly clearSearch: string;
     readonly allShelves: string;
     readonly allShelvesTitle: string;
+    /** L'onglet des favoris de l'espace, juste avant les incontournables. */
+    readonly favoritesShelf: string;
     /** `{query}` est remplacé par ce qui a été cherché. */
     readonly resultsFor: string;
     /** `{count}` est remplacé par le nombre de références montrées. */
@@ -650,6 +652,10 @@ export interface ClientCopy {
      * nom : une valeur n'est pas un nom.
      */
     readonly bestSeller: string;
+    /** Le cœur d'un article, éteint : son nom accessible. */
+    readonly favoriteAdd: string;
+    /** Le cœur d'un article, allumé. */
+    readonly favoriteRemove: string;
     /** La ligne de fiche d'un article d'opération ouverte : ses jours de retrait. */
     readonly operationPickup: string;
     /** `{from}` et `{until}` = premier et dernier jours de retrait (« 20 », « 24 déc. »). */

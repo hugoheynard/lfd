@@ -3,7 +3,7 @@ import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 
-import { ALL_SHELVES, FEATURED_SHELF } from '../../shelves';
+import { ALL_SHELVES, FAVORITES_SHELF, FEATURED_SHELF } from '../../shelves';
 import {
   hydrateWith,
   NESTED_CATALOGUE,
@@ -16,6 +16,8 @@ import { ClientLocale } from '../../../client-locale.service';
 import { ShopCatalogue } from '../../shop-catalogue.store';
 import { FR } from '../../../copy/fr';
 import { ShelfNav } from './shelf-nav';
+import { AuthFacade } from '../../../../auth/auth.facade';
+import { of } from 'rxjs';
 
 describe('ShelfNav', () => {
   let fixture: ComponentFixture<ShelfNav>;
@@ -246,3 +248,57 @@ describe('ShelfNav — familles imbriquées', () => {
 function labels(buttons: readonly HTMLButtonElement[]): string[] {
   return buttons.map((b) => b.textContent?.trim() ?? '');
 }
+
+describe('ShelfNav — l’onglet des favoris', () => {
+  const chipsOf = (fixture: ComponentFixture<ShelfNav>): HTMLButtonElement[] =>
+    Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('button'));
+
+  const mount = (favorites: readonly string[] | null): ComponentFixture<ShelfNav> => {
+    localStorage.removeItem('lfc.favorites');
+    if (favorites !== null) {
+      localStorage.setItem('lfc.favorites', JSON.stringify(favorites));
+    }
+    TestBed.configureTestingModule({
+      imports: [ShelfNav],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        {
+          provide: AuthFacade,
+          useValue: { isAuthenticated: () => false, accessToken$: () => of('jeton') },
+        },
+      ],
+    });
+    hydrateWith(TestBed.inject(ShopCatalogue), TEST_CATALOGUE);
+    const fixture = TestBed.createComponent(ShelfNav);
+    fixture.detectChanges();
+    return fixture;
+  };
+
+  afterEach(() => localStorage.removeItem('lfc.favorites'));
+
+  it('place « Favoris » juste avant « Incontournable » quand un article servi est en favori', () => {
+    const fixture = mount(['VIE-002']);
+    expect(labels(chipsOf(fixture)).slice(0, 3)).toEqual([
+      FR.shop.allShelves,
+      FR.shop.favoritesShelf,
+      FR.product.bestSeller,
+    ]);
+  });
+
+  it('n’a pas d’onglet sans favori', () => {
+    expect(labels(chipsOf(mount(null)))).not.toContain(FR.shop.favoritesShelf);
+  });
+
+  it('n’a pas d’onglet quand les favoris ne sont plus servis', () => {
+    expect(labels(chipsOf(mount(['RETIRE-999'])))).not.toContain(FR.shop.favoritesShelf);
+  });
+
+  it('signale la clé dédiée quand on choisit les favoris', () => {
+    const fixture = mount(['VIE-002']);
+    const picked: string[] = [];
+    fixture.componentInstance.picked.subscribe((id) => picked.push(id));
+    chipsOf(fixture)[1]?.click();
+    expect(picked).toEqual([FAVORITES_SHELF]);
+  });
+});
