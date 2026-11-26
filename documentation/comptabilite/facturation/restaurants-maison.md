@@ -2,7 +2,6 @@
 
 > ✅ **Implémenté** (2026-11-26, commits `f0100b8db`, `606eadaac`, `5fd97cc10`,
 > `02737ef0c`, `b67219c3e`, `9a1a9d355`), sur `dev`, pas en production.
-> **Question ouverte avant la mise en production** : le cadre fiscal (§ 3).
 
 # Partie 1 — En simple
 
@@ -121,11 +120,10 @@ Contexte `src/lafoliecoffee/in-house-recaps/`, tables
 - **Écran** : carte `fiche-client/in-house-recaps-card/` de l'onglet
   facturation — liste, PDF, renvoyer, réémettre.
 
-## 4. Reste à faire
+## 4. Hors du système
 
-- **Cadre fiscal (Hugo / cabinet), avant la mise en production** : si un
-  restaurant est une société distincte, une livraison entre sociétés est en
-  principe une vente facturable. `in_house` est écrit au CHECK, et une nature
-  d'offre ne se retire jamais.
+- **La refacturation entre sociétés** ne passe pas par le système : le
+  directeur financier et l'expert-comptable la font à leur façon (décidé par
+  Hugo le 2026-11-26).
 - **La valeur interne** (ce que les commandes auraient coûté) est gardée sur
   chaque commande ; aucun écran ne la somme par restaurant.
