@@ -1,3 +1,4 @@
+import { InMemoryOfferedOptionGroups } from "../../../../catalog/infrastructure/in-memory-offered-option-groups.js";
 import type { CatalogPricing } from "@lfd/contracts";
 
 import { Clock } from "../../../../../platform/time/clock.js";
@@ -98,6 +99,7 @@ function pricingWith(history: CanonicalPriceHistoryReader): OrderLinePricing {
     ),
     new CatalogViewers(new InMemoryServedCompanies()),
     new UnboundedNegotiatedScope(),
+    new InMemoryOfferedOptionGroups(),
   );
 }
 

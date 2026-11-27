@@ -1,3 +1,4 @@
+import { InMemoryOfferedOptionGroups } from "../../../../catalog/infrastructure/in-memory-offered-option-groups.js";
 import { FixedLineClassifications } from "../../../domain/ports/__tests__/line-classification-doubles.js";
 import { KnownInHousePayers } from "../../../../account/application/commands/__tests__/in-house-doubles.js";
 import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
@@ -572,6 +573,7 @@ function drafting(
       ),
       new CatalogViewers(new InMemoryServedCompanies()),
       new UnboundedNegotiatedScope(),
+      new InMemoryOfferedOptionGroups(),
     ),
     new CartAdjustments(
       pickupsDouble,
@@ -973,6 +975,8 @@ describe("PlaceOrderHandler", () => {
         productId: null,
         categoryId: null,
         madeToOrder: null,
+        // Aucune option demandée : la ligne n'en porte aucune.
+        optionChoices: [],
         // Aucune règle dans ces doubles : la trace existe et dit qu'aucun étage
         // n'a joué. C'est une affirmation, pas une absence.
         pricing: {

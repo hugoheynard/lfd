@@ -2,6 +2,15 @@ import { createHash } from "node:crypto";
 
 import type { BillingAddressPayload, FulfillmentMethod } from "@lfd/contracts";
 
+/** Une ligne telle que l'empreinte la lit : son SKU, sa quantité, ses options. */
+export interface FingerprintedLine {
+  readonly sku: string;
+  readonly quantity: number;
+  readonly optionChoices?:
+    | readonly { readonly group: string; readonly choice: string; readonly quantity: number }[]
+    | undefined;
+}
+
 /**
  * **Ce dont l'empreinte est faite** — et donc tout ce que cette fonction lit.
  *
@@ -18,7 +27,7 @@ export interface OrderFingerprintMaterial {
   readonly deliveryAddressId: string | null;
   readonly deliveryAddress: BillingAddressPayload | null;
   readonly requestedDeliveryDate: string;
-  readonly lines: readonly { readonly sku: string; readonly quantity: number }[];
+  readonly lines: readonly FingerprintedLine[];
   /** Le bon de fidélité nommé — seule la passation du client connecté en porte un. */
   readonly voucherId?: string | undefined;
 }
@@ -59,9 +68,7 @@ export function orderFingerprint(
   payload: OrderFingerprintMaterial,
   companyId: string | null,
 ): string {
-  const lines = [...payload.lines]
-    .map((line) => `${line.sku}:${String(line.quantity)}`)
-    .sort((a, b) => a.localeCompare(b));
+  const lines = [...payload.lines].map(lineMaterial).sort((a, b) => a.localeCompare(b));
   const material = JSON.stringify({
     // La société entre dans l'empreinte bien qu'elle ne soit plus dans le
     // payload : deux commandes identiques passées pour deux maisons différentes
@@ -84,4 +91,25 @@ export function orderFingerprint(
     ...(payload.voucherId === undefined ? {} : { voucherId: payload.voucherId }),
   });
   return createHash("sha256").update(material).digest("hex");
+}
+
+/**
+ * Le matériau d'une ligne. **Sans option, exactement `sku:quantité`** — une
+ * clé en vol au déploiement des options reste un rejeu
+ * (`plan-options-de-commande.md`, § 3.3). Avec options, un suffixe
+ * `|["groupe","choix"]:quantité,…` trié : deux écrans qui citent les mêmes options
+ * dans un autre ordre font le même panier. Les clés sont encodées en JSON,
+ * pour qu'aucune clé de choix ne puisse imiter un séparateur.
+ */
+function lineMaterial(line: FingerprintedLine): string {
+  const head = `${line.sku}:${String(line.quantity)}`;
+  const options = line.optionChoices ?? [];
+  if (options.length === 0) {
+    return head;
+  }
+  const suffix = options
+    .map((option) => `${JSON.stringify([option.group, option.choice])}:${String(option.quantity)}`)
+    .sort((a, b) => a.localeCompare(b))
+    .join(",");
+  return `${head}|${suffix}`;
 }

@@ -1,3 +1,4 @@
+import { InMemoryOfferedOptionGroups } from "../../../../catalog/infrastructure/in-memory-offered-option-groups.js";
 import { orderPretaxCents } from "@lfd/money";
 import { KnownInHousePayers } from "../../../../account/application/commands/__tests__/in-house-doubles.js";
 import { FixedRecipients } from "./intake-doubles.js";
@@ -475,6 +476,7 @@ function draftingFor(guardDouble: OrderGuardReader, options: DraftingOptions = {
       ),
       new CatalogViewers(new InMemoryServedCompanies()),
       new UnboundedNegotiatedScope(),
+      new InMemoryOfferedOptionGroups(),
     ),
     new CartAdjustments(
       pickups,
@@ -1144,6 +1146,7 @@ describe("PlaceOrderForCustomerHandler — le règlement", () => {
           ),
           new CatalogViewers(new InMemoryServedCompanies()),
           new UnboundedNegotiatedScope(),
+          new InMemoryOfferedOptionGroups(),
         ),
         new CartAdjustments(
           pickups,

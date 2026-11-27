@@ -39,12 +39,17 @@ import {
 import { fulfillmentOf } from "./order-fulfillment.parse.js";
 import { siteIdOf } from "./pickup-site.parse.js";
 import {
+  ORDER_LINE_OPTIONS_SELECT,
   orderLineSaleUnitOf,
   parseAllergens,
   parseTrace,
+  type OrderLineOptionRow,
   type OrderLineRow,
 } from "./order-line-row.js";
 import { productionWhere } from "./plan-filter.js";
+
+/** Une ligne de la vue, et ses options figées. */
+type ViewedLineRow = OrderLineRow & { readonly options: readonly OrderLineOptionRow[] };
 import {
   OrderReader,
   type OrderAuthor,
@@ -118,7 +123,7 @@ export interface OrderRow extends FreeDeliveryRow {
   readonly readyAt: Date | null;
   readonly handedOverAt: Date | null;
   readonly createdAt: Date;
-  readonly lines: readonly OrderLineRow[];
+  readonly lines: readonly ViewedLineRow[];
   /** Les remises de panier actives, dans l'ordre des rangs (lot M6). */
   readonly discounts: readonly OrderDiscountAmountRow[];
   readonly offerNature: string | null;
@@ -190,6 +195,8 @@ export const ORDER_SELECT = {
       pricingRejected: true,
       allergens: true,
       pickupDiscountEligible: true,
+      // Les options figées de la ligne (`plan-options-de-commande.md`, § 3.3).
+      options: ORDER_LINE_OPTIONS_SELECT,
     },
   },
   // Les remises de panier actives (lot M6), lues avec leur repli sur les colonnes.
@@ -671,7 +678,7 @@ function parseDeltas(value: Prisma.JsonValue | null): RecurringDeltas | null {
   return value === null ? null : recurringDeltasSchema.parse(value);
 }
 
-function toLineView(line: OrderLineRow): OrderLineView {
+function toLineView(line: ViewedLineRow): OrderLineView {
   return {
     sku: line.sku,
     productName: line.productNameSnapshot,
@@ -685,6 +692,18 @@ function toLineView(line: OrderLineRow): OrderLineView {
     pricing: parseTrace(line),
     allergens: parseAllergens(line.allergens),
     ...(line.pickupDiscountEligible ? {} : { pickupDiscountEligible: false as const }),
+    // Absentes sans option : la vue d'une commande sans option ne change pas.
+    ...(line.options.length === 0
+      ? {}
+      : {
+          optionChoices: line.options.map((option) => ({
+            group: option.groupId,
+            groupName: option.groupName,
+            choice: option.choiceKey,
+            choiceLabel: option.choiceLabel,
+            quantity: option.quantity,
+          })),
+        }),
   };
 }
 

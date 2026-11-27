@@ -10,9 +10,14 @@ import {
   type DurableSubscriber,
 } from "../../../../platform/outbox/durable-handler.js";
 import { itemsOnSale } from "../../domain/catalog-product-facts.js";
+import { CatalogOptionGroupsProjection } from "../../domain/ports/catalog-option-groups.projection.js";
 import { CatalogProductFactsProjection } from "../../domain/ports/catalog-product-facts.projection.js";
 import { OrderLimitsRefresher } from "../order-limits-refresher.service.js";
-import { receivedFamilyOf, receivedProductOf } from "./catalog-fact-mapping.js";
+import {
+  receivedFamilyOf,
+  receivedOptionGroupsOf,
+  receivedProductOf,
+} from "./catalog-fact-mapping.js";
 
 /** Nom STABLE de l'abonné — clé de son reçu dans la boîte d'envoi. */
 export const PROJECT_CATALOG_PRODUCT = "catalog.project-catalog-product";
@@ -37,7 +42,9 @@ export const PROJECT_CATALOG_PRODUCT = "catalog.project-catalog-product";
  *    inactive ou archivée, déclinaison devenue incomplète, SKU renommé ;
  * 5. les limites de commande des articles en vente de la fiche sont
  *    redescendues de l'échelle reçue (lot 2b) — un article neuf reçoit les
- *    siennes. Sans échelle reçue, rien ne bouge.
+ *    siennes. Sans échelle reçue, rien ne bouge ;
+ * 6. les groupes d'options de chaque déclinaison sont réécrits
+ *    (`plan-options-de-commande.md`, § 3.2), toutes clientèles confondues.
  *
  * ## Ce qu'il ne fait jamais
  *
@@ -58,6 +65,7 @@ export class OnCatalogProductChangedHandler implements DurableSubscriber {
   constructor(
     private readonly projection: CatalogProductFactsProjection,
     private readonly limits: OrderLimitsRefresher,
+    private readonly optionGroups: CatalogOptionGroupsProjection,
   ) {}
 
   async handle(delivery: DurableDelivery): Promise<void> {
@@ -77,5 +85,10 @@ export class OnCatalogProductChangedHandler implements DurableSubscriber {
       product.receivedAt,
     );
     await this.limits.refresh(product.productId);
+    await this.optionGroups.record(
+      product.productId,
+      receivedOptionGroupsOf(fact),
+      product.receivedAt,
+    );
   }
 }

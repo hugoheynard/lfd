@@ -1,3 +1,4 @@
+import { InMemoryOfferedOptionGroups } from "../../../../../catalog/infrastructure/in-memory-offered-option-groups.js";
 import { orderPretaxCents } from "@lfd/money";
 import {
   DEFAULT_DELIVERY_AVAILABILITY,
@@ -267,6 +268,7 @@ export function revisingAt(
       pricer(clock),
       new CatalogViewers(new InMemoryServedCompanies()),
       new UnboundedNegotiatedScope(),
+      new InMemoryOfferedOptionGroups(),
     ),
     new CartAdjustments(
       pickups,

@@ -753,3 +753,30 @@ model CatalogRules {
   @@map("catalog_rules")
   @@schema("public")
 }
+
+/// **Les groupes d'options d'un article, tels que le référentiel les a
+/// apportés** (lot G2 de `documentation/catalogue/plan-options-de-commande.md`,
+/// § 3.2) : une ligne par SKU, les groupes actifs et leurs choix au format du
+/// fil (`[{ id, name, choices: [{ key, label, audience }] }]`), TOUTES
+/// clientèles confondues — le filtre de l'audience se fait à la lecture, par
+/// le serveur.
+///
+/// Écrite par le seul récepteur de `pim.catalog_product_changed`, dans la
+/// transaction du fait et derrière sa condition `applied_seq` : la ligne dit
+/// donc ce que dit le dernier fait appliqué de la fiche. `[]` = aucun groupe.
+/// Pas de clé étrangère vers `catalog_items` : un fait peut porter un SKU que
+/// la plateforme ne vend pas (fiche inactive), et la commande ne lit ces
+/// groupes que pour un article qu'elle a déjà résolu.
+///
+/// Ni le rayon ni l'instantané du catalogue ne la lisent : elle ne fait monter
+/// aucune version de contexte.
+model CatalogItemOptionGroups {
+  sku        String   @id
+  productId  String   @map("product_id")
+  groups     Json     @default("[]")
+  receivedAt DateTime @map("received_at")
+
+  @@index([productId])
+  @@map("catalog_item_option_groups")
+  @@schema("public")
+}

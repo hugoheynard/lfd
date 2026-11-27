@@ -151,6 +151,9 @@ export type OrderSaleUnit = z.infer<typeof orderSaleUnitSchema>;
  */
 export const MAX_LINE_WEIGHT_GRAMS = 1_000_000;
 
+/** Une ligne ne porte pas plus de choix d'options que ça — une garde de forme, pas une règle. */
+export const MAX_LINE_OPTION_CHOICES = 20;
+
 /**
  * La quantité d'une ligne, **dans son unité** : un entier positif, borné à la
  * plus large des deux gardes. La borne propre à l'unité se juge sur la ligne
@@ -195,6 +198,28 @@ export const orderLineInputSchema = z
     sku: z.string().trim().min(1, "sku requis"),
     quantity: orderQuantitySchema,
     saleUnit: orderSaleUnitSchema.optional(),
+    /**
+     * **Les options choisies** (« dont 2 tranchés »,
+     * `documentation/catalogue/plan-options-de-commande.md`, § 3.3) : par
+     * groupe et par choix, combien d'unités de la ligne les portent. Le reste
+     * de la ligne est « sans ». Absent = aucune option — ce qu'envoie tout
+     * écran d'avant elles. Nommé `optionChoices` parce que `options` désigne
+     * déjà les axes d'une déclinaison.
+     *
+     * La forme seule se juge ici ; le groupe actif sur le SKU, la clientèle
+     * du choix, la somme d'un groupe et la règle du poids se jugent au
+     * domaine, contre l'article.
+     */
+    optionChoices: z
+      .array(
+        z.object({
+          group: z.string().trim().min(1, "groupe d'options requis"),
+          choice: z.string().trim().min(1, "choix d'option requis"),
+          quantity: z.number().int(),
+        }),
+      )
+      .max(MAX_LINE_OPTION_CHOICES)
+      .optional(),
   })
   .superRefine(refinePieceBound);
 export type OrderLineInput = z.infer<typeof orderLineInputSchema>;
@@ -633,6 +658,23 @@ export interface OrderLineView {
    * d'avant le drapeau, qui l'étaient toutes.
    */
   readonly pickupDiscountEligible?: false;
+  /**
+   * **Les options figées** de la ligne (« dont 2 tranchés »,
+   * `plan-options-de-commande.md`, § 3.3), avec les libellés du groupe et du
+   * choix tels qu'ils étaient à la passation. Absent = aucune option, ce
+   * qu'est toute commande d'avant elles.
+   */
+  readonly optionChoices?: readonly OrderLineOptionChoiceView[];
+}
+
+/** Une option figée d'une ligne : son groupe, son choix, leurs libellés d'alors, et combien. */
+export interface OrderLineOptionChoiceView {
+  readonly group: string;
+  readonly groupName: string;
+  readonly choice: string;
+  readonly choiceLabel: string;
+  /** Des pièces — ou, au poids, les grammes de toute la ligne. */
+  readonly quantity: number;
 }
 
 /** Une mention d'étiquette telle qu'elle a été **dite au client**, ce jour-là. */
@@ -1152,6 +1194,8 @@ export interface CustomerOrderLineView {
   readonly allergens: OrderLineAllergens | null;
   /** Cf. {@link OrderLineView.pickupDiscountEligible}. */
   readonly pickupDiscountEligible?: false;
+  /** Cf. {@link OrderLineView.optionChoices}. */
+  readonly optionChoices?: readonly OrderLineOptionChoiceView[];
   /**
    * L'étiquette et le TTC scellés d'une ligne de commande composée en TTC
    * (`exact_ht`) — absents sinon : « Mes commandes » les écrit au format du
@@ -1331,6 +1375,8 @@ export function toCustomerOrder(view: OrderView): CustomerOrderView {
             },
       allergens: line.allergens,
       ...(line.pickupDiscountEligible === false ? { pickupDiscountEligible: false as const } : {}),
+      // Les options sont celles du client lui-même : elles sortent telles quelles.
+      ...(line.optionChoices === undefined ? {} : { optionChoices: line.optionChoices }),
       // Les TTC scellés ne sortent que pour une commande composée en TTC.
       ...(view.ttcTerms === undefined ||
       line.unitPriceTtcCents === null ||

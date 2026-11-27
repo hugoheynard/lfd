@@ -1,0 +1,12 @@
+-- RETOUR ARRIÈRE de 20261127120000_les_options_sur_la_ligne
+-- (documentation/catalogue/plan-options-de-commande.md, lot G2).
+--
+-- 🔴 NON APPLIQUÉ, et Prisma ne le lit pas. La migration reste inscrite
+-- « appliquée ».
+--
+-- Le code d'avant ignore les deux tables : le retour arrière est le retour
+-- du code seul. Retirer `order_line_option` perdrait les options des
+-- commandes passées ; à faire seulement sur décision de Hugo :
+--
+--   DROP TABLE "public"."order_line_option";
+--   DROP TABLE "public"."catalog_item_option_groups";

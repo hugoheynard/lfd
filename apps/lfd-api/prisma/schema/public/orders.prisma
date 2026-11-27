@@ -908,6 +908,8 @@ model OrderLine {
   // commandée » n'aurait plus de définition unique.
   /// Les remises de panier qui couvrent cette ligne (§ 18.2, M2).
   discounts OrderLineDiscount[]
+  /// Les options figées de la ligne (« dont 2 tranchés », plan G2).
+  options   OrderLineOption[]
 
   @@unique([orderId, sku])
   @@index([orderId])
@@ -1220,5 +1222,36 @@ model OrderNumberCounter {
   lastRank  Int     @map("last_rank")
 
   @@map("order_number_counter")
+  @@schema("public")
+}
+
+/// **Une option figée d'une ligne de commande** (« dont 2 tranchés », lot G2
+/// de `documentation/catalogue/plan-options-de-commande.md`, § 3.3).
+///
+/// La ligne reste UNE par SKU (`@@unique([orderId, sku])` intact) ; ses
+/// options se comptent ici, par groupe et par choix. Les libellés du groupe et
+/// du choix sont figés à la passation, comme le nom du produit : un groupe
+/// renommé ou archivé demain ne réécrit pas la commande d'hier.
+///
+/// 🔴 **Aucune colonne d'argent** : les options sont gratuites (décision de
+/// Hugo du 2026-11-19). Le prix, la TVA, les remises et la facture ne lisent
+/// pas cette table.
+///
+/// Écrite avec sa ligne, par la même fonction à la passation et à la révision
+/// (qui réécrit les lignes : la cascade emporte leurs options, réécrites avec
+/// elles). `quantity` : des pièces, ou au poids les grammes de toute la ligne.
+model OrderLineOption {
+  orderLineId String    @map("order_line_id")
+  orderLine   OrderLine @relation(fields: [orderLineId], references: [id], onDelete: Cascade)
+  groupId     String    @map("group_id")
+  choiceKey   String    @map("choice_key")
+  groupName   String    @map("group_name")
+  choiceLabel String    @map("choice_label")
+  quantity    Int
+  /// L'ordre d'affichage de la ligne, celui du référentiel à la passation.
+  position    Int
+
+  @@id([orderLineId, groupId, choiceKey])
+  @@map("order_line_option")
   @@schema("public")
 }

@@ -2,6 +2,7 @@ import type { CatalogFamilyFactBody } from "../../../../pim/channels/b2b-platfor
 import type { CatalogProductChangedFact } from "../../../../pim/channels/b2b-platform/products/catalog-product-changed.fact.js";
 import type { ReceivedCatalogProduct } from "../../domain/catalog-product-facts.js";
 import type { ReceivedCatalogFamily } from "../../domain/ports/catalog-family-facts.projection.js";
+import type { ReceivedOptionGroups } from "../../domain/ports/catalog-option-groups.projection.js";
 import { NO_CATALOG_MIN_QUANTITIES } from "../../domain/catalog-min-quantities.js";
 import { pimImageOf } from "../pim-image.js";
 
@@ -107,4 +108,27 @@ export function receivedFamilyOf(
     vatRatePercent: family.vatRatePercent,
     receivedAt,
   };
+}
+
+/**
+ * Les groupes d'options de chaque déclinaison du fait (v19,
+ * `plan-options-de-commande.md`, § 3.2), toutes clientèles confondues : le
+ * filtre de l'audience se fait à la lecture. Un fait d'avant v19 n'en porte
+ * pas et se lit sans option.
+ */
+export function receivedOptionGroupsOf(
+  fact: CatalogProductChangedFact,
+): readonly ReceivedOptionGroups[] {
+  return fact.body.variants.map((variant) => ({
+    sku: variant.sku,
+    groups: variant.optionGroups.map((group) => ({
+      id: group.id,
+      name: group.name,
+      choices: group.choices.map((choice) => ({
+        key: choice.key,
+        label: choice.label,
+        audience: choice.audience,
+      })),
+    })),
+  }));
 }

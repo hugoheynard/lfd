@@ -36,6 +36,12 @@ import { CatalogRulesProjection } from "./domain/ports/catalog-rules.projection.
 import { PrismaCatalogOrderLimits } from "./infrastructure/prisma-catalog-order-limits.js";
 import { PrismaCatalogRulesProjection } from "./infrastructure/prisma-catalog-rules.projection.js";
 import { CatalogProductFactsProjection } from "./domain/ports/catalog-product-facts.projection.js";
+import { CatalogOptionGroupsProjection } from "./domain/ports/catalog-option-groups.projection.js";
+import { OfferedOptionGroupsReader } from "./domain/ports/offered-option-groups.reader.js";
+import {
+  PrismaCatalogOptionGroupsProjection,
+  PrismaOfferedOptionGroupsReader,
+} from "./infrastructure/prisma-catalog-option-groups.js";
 import { CatalogFamilyFactsProjection } from "./domain/ports/catalog-family-facts.projection.js";
 import { PrismaCatalogProductFactsProjection } from "./infrastructure/prisma-catalog-product-facts.projection.js";
 import { PrismaCatalogFamilyFactsProjection } from "./infrastructure/prisma-catalog-family-facts.projection.js";
@@ -252,6 +258,10 @@ import { PrismaResupplyOnlyArticlesReader } from "./infrastructure/prisma-resupp
     { provide: CatalogItemRepository, useClass: PrismaCatalogItemRepository },
     { provide: CatalogVisualsProjection, useClass: PrismaCatalogVisualsProjection },
     { provide: CatalogProductFactsProjection, useClass: PrismaCatalogProductFactsProjection },
+    // Les groupes d'options par SKU (`plan-options-de-commande.md`, G2) : le
+    // récepteur du fait de fiche les écrit, la commande les lit filtrés.
+    { provide: CatalogOptionGroupsProjection, useClass: PrismaCatalogOptionGroupsProjection },
+    { provide: OfferedOptionGroupsReader, useClass: PrismaOfferedOptionGroupsReader },
     { provide: CatalogFamilyFactsProjection, useClass: PrismaCatalogFamilyFactsProjection },
     { provide: CatalogRulesProjection, useClass: PrismaCatalogRulesProjection },
     { provide: CatalogOrderLimits, useClass: PrismaCatalogOrderLimits },
@@ -327,6 +337,8 @@ import { PrismaResupplyOnlyArticlesReader } from "./infrastructure/prisma-resupp
     // Pour la caisse, le tarificateur et la projection : tous trois résolvent un
     // SKU avant de tarifer, et aucun n'a de raison de passer par `orders` pour ça.
     ProductCatalogReader,
+    // Pour la commande : les options qu'une ligne peut porter, par clientèle (G2).
+    OfferedOptionGroupsReader,
     // Pour le relais des produits vers la livraison (lot 4 bis) : le froid.
     CatalogColdReader,
     // Pour la tarification : une décision ne vise pas un article retiré (L5).

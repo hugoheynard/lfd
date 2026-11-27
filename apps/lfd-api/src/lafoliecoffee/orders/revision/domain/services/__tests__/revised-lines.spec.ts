@@ -23,6 +23,7 @@ function snapshot(sku: string, unitPriceMillicents: number): OrderLineSnapshot {
     productId: "prod_old",
     categoryId: "cat_old",
     madeToOrder: null,
+    optionChoices: [],
   };
 }
 
@@ -43,6 +44,7 @@ describe("revisedLineRequests", () => {
       quantity: 8,
       pricing: null,
       allergens: null,
+      optionChoices: [],
     });
   });
 

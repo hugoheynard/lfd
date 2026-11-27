@@ -9,6 +9,7 @@ import {
 } from "@lfd/contracts";
 
 import type { Prisma } from "../../../platform/database/client/client.js";
+import type { OrderLineOptionChoice } from "../domain/value-objects/order-line-options.js";
 import { TechnicalError } from "../../../platform/shared/errors/app-error.js";
 
 // Sortis de `prisma-order.reader.ts` le 2026-10-23 : la révision d'une
@@ -129,4 +130,46 @@ export function orderLineSaleUnitOf(sku: string, value: string): "piece" | "weig
     return value;
   }
   throw new StoredOrderLineSaleUnitUnknownError(sku, value);
+}
+
+/**
+ * Les options figées d'une ligne, telles qu'on les sélectionne
+ * (`plan-options-de-commande.md`, § 3.3) — dans leur ordre d'affichage.
+ * Un sélecteur à part plutôt qu'un champ de {@link OrderLineRow} : seuls la
+ * commande, sa révision et ses lectures de détail les lisent.
+ */
+export const ORDER_LINE_OPTIONS_SELECT = {
+  select: {
+    groupId: true,
+    choiceKey: true,
+    groupName: true,
+    choiceLabel: true,
+    quantity: true,
+    position: true,
+  },
+  orderBy: { position: "asc" },
+} as const;
+
+/** Une option figée telle que {@link ORDER_LINE_OPTIONS_SELECT} la sélectionne. */
+export interface OrderLineOptionRow {
+  readonly groupId: string;
+  readonly choiceKey: string;
+  readonly groupName: string;
+  readonly choiceLabel: string;
+  readonly quantity: number;
+  readonly position: number;
+}
+
+/** Les lignes d'options → les options figées, dans les mots du domaine. */
+export function optionChoicesOf(
+  rows: readonly OrderLineOptionRow[],
+): readonly OrderLineOptionChoice[] {
+  return rows.map((row) => ({
+    group: row.groupId,
+    groupName: row.groupName,
+    choice: row.choiceKey,
+    choiceLabel: row.choiceLabel,
+    quantity: row.quantity,
+    position: row.position,
+  }));
 }

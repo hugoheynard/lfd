@@ -94,6 +94,7 @@ export function originLine(over: Partial<OrderLineSnapshot> = {}): OrderLineSnap
     productId: "p_pain",
     categoryId: "c_pains",
     madeToOrder: true,
+    optionChoices: [],
     ...over,
   };
 }

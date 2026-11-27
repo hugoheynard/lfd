@@ -32,6 +32,7 @@ function kept(
     productId: null,
     categoryId: null,
     madeToOrder: null,
+    optionChoices: [],
     ...over,
   };
 }

@@ -350,9 +350,23 @@ function changesOf(order: RevisableOrder, state: OrderToPlace): RevisionChange[]
 }
 
 /** Les lignes comparables : SKU et quantité, dans un ordre stable. */
-function linesKey(lines: readonly { readonly sku: string; readonly quantity: number }[]) {
+/**
+ * La composition comparée : SKU, quantité, et options (« dont 2 tranchés ») —
+ * changer les seules options d'une ligne est un changement des lignes
+ * (`plan-options-de-commande.md`, § 3.3).
+ */
+function linesKey(lines: readonly Pick<OrderLineSnapshot, "sku" | "quantity" | "optionChoices">[]) {
   return lines
-    .map((line) => [line.sku, line.quantity] as const)
+    .map(
+      (line) =>
+        [
+          line.sku,
+          line.quantity,
+          line.optionChoices
+            .map((option) => [option.group, option.choice, option.quantity] as const)
+            .sort((a, b) => `${a[0]}\u0000${a[1]}`.localeCompare(`${b[0]}\u0000${b[1]}`)),
+        ] as const,
+    )
     .sort(([a], [b]) => a.localeCompare(b));
 }
 

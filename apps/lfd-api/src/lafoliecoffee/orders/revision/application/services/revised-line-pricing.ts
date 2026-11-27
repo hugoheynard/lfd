@@ -14,7 +14,9 @@ import {
   ensureKeptMinimums,
   keptQuantityChanges,
   revisedLineRequests,
+  type RevisedLineRequests,
 } from "../../domain/services/revised-lines.js";
+import { freezeOptionChoices } from "../../../domain/services/line-option-choices.js";
 import type {
   OrderLineInput,
   OrderLineSnapshot,
@@ -97,8 +99,9 @@ export async function priceRevisedLines(
       ? []
       : await linePricing.resolve(split.fresh, { ...parties, negotiated }, "checkout");
   const freshBySku = new Map(fresh.map((entry) => [entry.line.sku, entry.line]));
+  const frozen = await withKeptOptions(linePricing, split, revised.lines, parties);
   const lines = split.order
-    .map((sku) => split.frozen.get(sku) ?? freshBySku.get(sku))
+    .map((sku) => frozen.get(sku) ?? freshBySku.get(sku))
     .filter((line): line is OrderLineInput => line !== undefined);
   return { lines, refusals, sealing: sealingBySku(fresh) };
 }
@@ -111,6 +114,44 @@ export function sealingBySku(
     resolved.flatMap((entry) => {
       const sealing = lineSealingOf(entry.priced);
       return sealing === null ? [] : [[entry.line.sku, sealing] as const];
+    }),
+  );
+}
+
+/**
+ * Les lignes gardées, leurs options redites jugées contre le catalogue
+ * (`plan-options-de-commande.md`, § 3.3) : à la clientèle du client, un choix
+ * déjà figé sur la ligne restant admis sous ses libellés d'alors. Changer les
+ * seules options ne juge aucun prix — la quantité, elle, n'a pas bougé.
+ *
+ * @throws {OptionGroupNotOfferedError} un groupe que l'article ne propose pas.
+ * @throws {OptionChoiceNotOfferedError} un choix hors de la clientèle du client.
+ * @throws {OptionQuantityAboveLineError} un groupe compte plus que la ligne.
+ */
+async function withKeptOptions(
+  linePricing: OrderLinePricing,
+  split: RevisedLineRequests,
+  previous: readonly OrderLineSnapshot[],
+  parties: OrderParties,
+): Promise<ReadonlyMap<string, OrderLineInput>> {
+  if (split.keptOptions.size === 0) {
+    return split.frozen;
+  }
+  const offered = await linePricing.keptOptionGroups([...split.keptOptions.keys()], parties);
+  const before = new Map(previous.map((line) => [line.sku, line]));
+  return new Map(
+    [...split.frozen].map(([sku, line]) => {
+      const requested = split.keptOptions.get(sku);
+      if (requested === undefined) {
+        return [sku, line] as const;
+      }
+      const optionChoices = freezeOptionChoices(
+        line,
+        requested,
+        offered.get(sku) ?? [],
+        before.get(sku)?.optionChoices ?? [],
+      );
+      return [sku, { ...line, optionChoices }] as const;
     }),
   );
 }

@@ -67,5 +67,21 @@ export function orderLineDataOf(line: OrderLineSnapshot): Prisma.OrderLineCreate
                 : line.allergens.labels.map((entry) => ({ ...entry })),
             incomplete: line.allergens.incomplete,
           },
+    // Les options figées (`plan-options-de-commande.md`, § 3.3), imbriquées
+    // sous leur ligne : la révision, qui réécrit les lignes, les réécrit avec.
+    ...(line.optionChoices.length === 0
+      ? {}
+      : {
+          options: {
+            create: line.optionChoices.map((option) => ({
+              groupId: option.group,
+              choiceKey: option.choice,
+              groupName: option.groupName,
+              choiceLabel: option.choiceLabel,
+              quantity: option.quantity,
+              position: option.position,
+            })),
+          },
+        }),
   };
 }

@@ -35,6 +35,14 @@ import {
   type CatalogViewer,
 } from "../../../catalog/domain/catalog-viewer.js";
 import { refuseUnorderable } from "../../../catalog/domain/errors/reserved-article-refused.error.js";
+import type { OfferedOptionGroup } from "../../../catalog/domain/option-groups/catalog-option-groups.js";
+import type { ShopAudience } from "../../../catalog/domain/ports/catalog.reader.js";
+import { OfferedOptionGroupsReader } from "../../../catalog/domain/ports/offered-option-groups.reader.js";
+import {
+  freezeOptionChoices,
+  mergeRequestedOptions,
+} from "../../domain/services/line-option-choices.js";
+import type { RequestedOptionChoice } from "../../domain/value-objects/order-line-options.js";
 import { OutsideNegotiatedScopeError } from "../../domain/errors/outside-negotiated-scope.error.js";
 import { NegotiatedScope, type NegotiatedPayer } from "../../domain/ports/negotiated-scope.js";
 import {
@@ -82,6 +90,7 @@ export class OrderLinePricing {
     private readonly pricer: Pricer,
     private readonly viewers: CatalogViewers,
     private readonly negotiatedScope: NegotiatedScope,
+    private readonly offeredOptions: OfferedOptionGroupsReader,
   ) {}
 
   /**
@@ -165,6 +174,23 @@ export class OrderLinePricing {
     return new Map(
       [...catalogue].map(([sku, item]) => [sku, minQuantityFor(item.minQuantities, audience)]),
     );
+  }
+
+  /**
+   * **Les groupes d'options proposés aux lignes GARDÉES d'une révision** qui
+   * redisent leurs options (`plan-options-de-commande.md`, § 3.3) — à la
+   * clientèle du client de la commande, même lecteur que {@link minimumsOf}.
+   * Une lecture, rien si aucun SKU.
+   */
+  async keptOptionGroups(
+    skus: readonly string[],
+    parties: ServedCompany,
+  ): Promise<ReadonlyMap<string, readonly OfferedOptionGroup[]>> {
+    if (skus.length === 0) {
+      return new Map();
+    }
+    const viewer = await this.viewers.forKeptLines(parties.companyId);
+    return this.offeredOptions.offeredFor(skus, viewerAudience(viewer));
   }
 
   /**
@@ -340,6 +366,19 @@ export class OrderLinePricing {
         quantity,
       );
     }
+    // Les options demandées (`plan-options-de-commande.md`, § 3.3), fusionnées
+    // par SKU comme les quantités, puis jugées contre ce que le catalogue
+    // propose à la clientèle du CLIENT — l'audience du lecteur, celle du
+    // client même quand l'équipe saisit. Un panier sans option ne lit rien.
+    const requestedOptions = mergeRequestedOptions(
+      input.map((line) => ({
+        sku: line.sku,
+        quantity: line.quantity,
+        saleUnit: saleUnitOfLine(line),
+        optionChoices: line.optionChoices,
+      })),
+    );
+    const offered = await this.offeredOptionsFor(requestedOptions, audience);
     const lines = [...quantities].map(([sku, quantity]) => {
       const found = foundOrRefused(catalogue, sku);
       const item: LineToPrice = {
@@ -378,7 +417,33 @@ export class OrderLinePricing {
       caller,
     });
 
-    return lines.map(({ item, quantity }) => priceLine({ item, quantity, withTiers }, lot));
+    return lines.map(({ item, quantity }) => {
+      const resolved = priceLine({ item, quantity, withTiers }, lot);
+      const requested = requestedOptions.get(item.sku);
+      return requested === undefined
+        ? resolved
+        : {
+            ...resolved,
+            line: {
+              ...resolved.line,
+              optionChoices: freezeOptionChoices(
+                { ...resolved.line, productName: item.name },
+                requested,
+                offered.get(item.sku) ?? [],
+              ),
+            },
+          };
+    });
+  }
+
+  /** Les groupes proposés aux SKU qui demandent une option — aucune lecture sinon. */
+  private async offeredOptionsFor(
+    requested: ReadonlyMap<string, readonly RequestedOptionChoice[]>,
+    audience: ShopAudience,
+  ): Promise<ReadonlyMap<string, readonly OfferedOptionGroup[]>> {
+    return requested.size === 0
+      ? new Map()
+      : this.offeredOptions.offeredFor([...requested.keys()], audience);
   }
 
   /**

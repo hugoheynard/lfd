@@ -1,3 +1,4 @@
+import { InMemoryOfferedOptionGroups } from "../../../../catalog/infrastructure/in-memory-offered-option-groups.js";
 import {
   type AudiencePickupDiscount,
   type CatalogPricing,
@@ -164,6 +165,8 @@ export function pricingOf(
     readonly history?: CanonicalPriceHistoryReader;
     /** Le tarif convenu des payeurs ; par défaut, aucun n'est sur devis de période. */
     readonly scope?: NegotiatedScope;
+    /** Les groupes d'options par SKU ; par défaut, aucun. */
+    readonly options?: InMemoryOfferedOptionGroups;
   } = {},
 ): OrderLinePricing {
   const rules = () => Promise.resolve([...(decisions.rules ?? [])]);
@@ -205,6 +208,7 @@ export function pricingOf(
     pricer,
     new CatalogViewers(new InMemoryServedCompanies()),
     gate.scope ?? new UnboundedNegotiatedScope(),
+    gate.options ?? new InMemoryOfferedOptionGroups(),
   );
 }
 

@@ -12,6 +12,11 @@ import {
 } from "@lfd/money";
 
 import { InvalidOrderLineError } from "../errors/order-errors.js";
+import {
+  ensureLineOptions,
+  NO_OPTION_CHOICES,
+  type OrderLineOptionChoice,
+} from "./order-line-options.js";
 
 /** Ce que le catalogue résout pour une ligne (déjà autoritaire côté serveur). */
 export interface OrderLineInput {
@@ -75,6 +80,13 @@ export interface OrderLineInput {
    * pas, ligne écrite avant le lot) — jamais `false` inventé.
    */
   readonly madeToOrder?: boolean | null;
+  /**
+   * **Les options figées** (« dont 2 tranchés »,
+   * `plan-options-de-commande.md`, § 3.3), déjà résolues contre le catalogue
+   * et la clientèle du client. Absent = aucune. La ligne en tient
+   * l'invariant ({@link ensureLineOptions}) ; aucun montant n'en dépend.
+   */
+  readonly optionChoices?: readonly OrderLineOptionChoice[];
 }
 
 /** Une ligne prête à persister (snapshots figés + total calculé). */
@@ -117,6 +129,8 @@ export interface OrderLineSnapshot extends OrderLineInput {
   readonly categoryId: string | null;
   /** Requis ici : `null` est un aveu (« on ne savait pas »), que le type oblige à poser. */
   readonly madeToOrder: boolean | null;
+  /** Requis ici : `[]` = aucune option, ce qu'est toute ligne d'avant elles. */
+  readonly optionChoices: readonly OrderLineOptionChoice[];
 }
 
 /**
@@ -142,6 +156,7 @@ export class OrderLine {
     readonly productId: string | null,
     readonly categoryId: string | null,
     readonly madeToOrder: boolean | null,
+    readonly optionChoices: readonly OrderLineOptionChoice[],
   ) {}
 
   /**
@@ -191,6 +206,7 @@ export class OrderLine {
       input.productId ?? null,
       input.categoryId ?? null,
       input.madeToOrder ?? null,
+      optionsOf(input),
     );
   }
 
@@ -244,6 +260,7 @@ export class OrderLine {
       input.productId ?? null,
       input.categoryId ?? null,
       input.madeToOrder ?? null,
+      optionsOf(input),
     );
   }
 
@@ -264,8 +281,23 @@ export class OrderLine {
       productId: this.productId,
       categoryId: this.categoryId,
       madeToOrder: this.madeToOrder,
+      optionChoices: this.optionChoices,
     };
   }
+}
+
+/**
+ * Les options de la ligne, sous son invariant. Aucun calcul de montant ne
+ * les lit : une ligne avec ou sans options vaut le même prix.
+ */
+function optionsOf(input: OrderLineInput): readonly OrderLineOptionChoice[] {
+  const choices = input.optionChoices ?? NO_OPTION_CHOICES;
+  return choices.length === 0
+    ? NO_OPTION_CHOICES
+    : ensureLineOptions(
+        { sku: input.sku, saleUnit: input.saleUnit, quantity: input.quantity },
+        choices,
+      );
 }
 
 /** Ce que la composition TTC rend pour une ligne — la forme de `TtcComposedLine`. */

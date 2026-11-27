@@ -5,6 +5,9 @@ import {
   WeightAboveGuardError,
 } from "../../../domain/errors/sale-quantity-errors.js";
 import { ensureMinimumQuantity } from "../../../domain/services/sale-quantity-rules.js";
+import { mergeRequestedOptions } from "../../../domain/services/line-option-choices.js";
+import type { RequestedOptionChoice } from "../../../domain/value-objects/order-line-options.js";
+import { carriedOptionChoices } from "./carried-option-choices.js";
 import type {
   OrderLineInput,
   OrderLineSnapshot,
@@ -16,6 +19,12 @@ export interface RequestedLine {
   readonly quantity: number;
   /** Absent = `piece` (le contrat de la passation). */
   readonly saleUnit?: "piece" | "weight" | undefined;
+  /**
+   * Les options demandées. **Absent = garder celles de la ligne**, réduites
+   * à la nouvelle quantité ({@link carriedOptionChoices}) ; présent, même
+   * vide, elles remplacent.
+   */
+  readonly optionChoices?: RequestedOptionChoice[] | undefined;
 }
 
 /**
@@ -29,6 +38,12 @@ export interface RevisedLineRequests {
   readonly frozen: ReadonlyMap<string, OrderLineInput>;
   /** Les lignes nouvelles, à tarifer au jour de la modification. */
   readonly fresh: readonly RequestedLine[];
+  /**
+   * Les options REDEMANDÉES d'une ligne gardée, par SKU — à juger contre le
+   * catalogue avant de remplacer celles de `frozen`, qui portent d'ici là les
+   * options d'avant réduites à la nouvelle quantité.
+   */
+  readonly keptOptions: ReadonlyMap<string, readonly RequestedOptionChoice[]>;
 }
 
 /**
@@ -59,6 +74,7 @@ export function revisedLineRequests(
   const before = new Map(previous.map((line) => [line.sku, line]));
   const quantities = new Map<string, number>();
   const units = new Map<string, "piece" | "weight">();
+  const optioned = new Set<string>();
   for (const line of requested) {
     const unit = line.saleUnit ?? "piece";
     const kept = before.get(line.sku);
@@ -67,18 +83,34 @@ export function revisedLineRequests(
     }
     quantities.set(line.sku, (quantities.get(line.sku) ?? 0) + line.quantity);
     units.set(line.sku, unit);
+    if (line.optionChoices !== undefined) {
+      optioned.add(line.sku);
+    }
   }
+  const options = mergeRequestedOptions(
+    requested.map((line) => ({ ...line, saleUnit: line.saleUnit ?? "piece" })),
+  );
   const frozen = new Map<string, OrderLineInput>();
   const fresh: RequestedLine[] = [];
+  const keptOptions = new Map<string, readonly RequestedOptionChoice[]>();
   for (const [sku, quantity] of quantities) {
     const kept = before.get(sku);
     if (kept === undefined) {
-      fresh.push({ sku, quantity, saleUnit: units.get(sku) });
+      const optionChoices = options.get(sku);
+      fresh.push({
+        sku,
+        quantity,
+        saleUnit: units.get(sku),
+        optionChoices: optionChoices === undefined ? undefined : [...optionChoices],
+      });
     } else {
       frozen.set(sku, frozenLineOf(kept, quantity));
+      if (optioned.has(sku)) {
+        keptOptions.set(sku, options.get(sku) ?? []);
+      }
     }
   }
-  return { order: [...quantities.keys()], frozen, fresh };
+  return { order: [...quantities.keys()], frozen, fresh, keptOptions };
 }
 
 /**
@@ -99,6 +131,9 @@ function frozenLineOf(line: OrderLineSnapshot, quantity: number): OrderLineInput
     saleUnit: line.saleUnit,
     pricing: line.pricing,
     allergens: line.allergens,
+    // Les options d'avant, réduites à la nouvelle quantité : le « sans »
+    // d'abord, puis les options. Remplacées ensuite si la demande en redit.
+    optionChoices: carriedOptionChoices(line, quantity),
   };
 }
 

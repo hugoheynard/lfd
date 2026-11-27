@@ -1,3 +1,4 @@
+import { InMemoryOfferedOptionGroups } from "../../../../catalog/infrastructure/in-memory-offered-option-groups.js";
 import { orderPretaxCents } from "@lfd/money";
 import { FixedLineClassifications } from "../../../domain/ports/__tests__/line-classification-doubles.js";
 import { OrderTotalChangedError } from "../../../domain/errors/order-total-changed.error.js";
@@ -284,6 +285,7 @@ function drafting(
       ),
       new CatalogViewers(new InMemoryServedCompanies()),
       new UnboundedNegotiatedScope(),
+      new InMemoryOfferedOptionGroups(),
     ),
     new CartAdjustments(
       pickups(),

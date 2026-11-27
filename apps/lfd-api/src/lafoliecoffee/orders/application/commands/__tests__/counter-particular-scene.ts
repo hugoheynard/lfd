@@ -1,3 +1,4 @@
+import { InMemoryOfferedOptionGroups } from "../../../../catalog/infrastructure/in-memory-offered-option-groups.js";
 import {
   DEFAULT_DELIVERY_AVAILABILITY,
   type CatalogPricing,
@@ -151,6 +152,7 @@ export function drafting(): OrderDrafting {
       pricer(),
       new CatalogViewers(new InMemoryServedCompanies()),
       new UnboundedNegotiatedScope(),
+      new InMemoryOfferedOptionGroups(),
     ),
     new CartAdjustments(
       pickups,

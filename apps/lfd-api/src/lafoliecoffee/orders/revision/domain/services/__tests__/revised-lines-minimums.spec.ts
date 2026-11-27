@@ -29,6 +29,7 @@ function snapshot(
     productId: null,
     categoryId: null,
     madeToOrder: null,
+    optionChoices: [],
   };
 }
 

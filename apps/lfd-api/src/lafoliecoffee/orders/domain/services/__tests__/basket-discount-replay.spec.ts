@@ -236,5 +236,6 @@ function snapshot(sku: string, eligible: boolean): OrderLineSnapshot {
     productId: null,
     categoryId: null,
     madeToOrder: null,
+    optionChoices: [],
   };
 }

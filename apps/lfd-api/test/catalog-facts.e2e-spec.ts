@@ -514,3 +514,69 @@ describe("réémettre", () => {
     await staff().get(`${REEMIT}/inconnu`).expect(404);
   });
 });
+
+/**
+ * Les groupes d'options d'une déclinaison (`plan-options-de-commande.md`,
+ * § 3.2) : le miroir les garde par SKU, toutes clientèles confondues, sous la
+ * condition `applied_seq` de la fiche.
+ */
+describe("les groupes d'options d'une déclinaison", () => {
+  const SLICING = {
+    id: "og_slicing",
+    name: "Tranchage",
+    choices: [
+      { key: "sliced", label: "tranché", audience: "both" },
+      { key: "crate", label: "en caisse", audience: "pro" },
+    ],
+  };
+
+  function withGroups(
+    payload: Readonly<Record<string, unknown>>,
+    seq: number,
+    groups: readonly object[],
+  ): Readonly<Record<string, unknown>> {
+    const variants = payload["variants"];
+    if (!Array.isArray(variants)) {
+      throw new RangeError("fait de fiche hors forme");
+    }
+    const list: unknown[] = variants;
+    return {
+      ...payload,
+      seq,
+      variants: list.map((variant) =>
+        typeof variant === "object" && variant !== null
+          ? { ...variant, optionGroups: groups }
+          : variant,
+      ),
+    };
+  }
+
+  it("garde les groupes reçus, puis les vide quand la fiche n'en active plus", async () => {
+    const fiche = await anActiveFiche(staff, "Pain de campagne");
+    const [last] = (await productFactsOf(ctx, fiche.id)).slice(-1);
+    const seq = last?.seq ?? 0;
+
+    await deliverDirectly(ctx, withGroups(last?.payload ?? {}, seq + 1, [SLICING]));
+    expect(
+      await ctx.prisma.catalogItemOptionGroups.findUnique({ where: { sku: fiche.variantSku } }),
+    ).toMatchObject({ productId: fiche.id, groups: [SLICING] });
+
+    await deliverDirectly(ctx, withGroups(last?.payload ?? {}, seq + 2, []));
+    expect(
+      await ctx.prisma.catalogItemOptionGroups.findUnique({ where: { sku: fiche.variantSku } }),
+    ).toMatchObject({ groups: [] });
+  });
+
+  it("un fait plus ancien que la fiche ne réécrit pas ses groupes", async () => {
+    const fiche = await anActiveFiche(staff, "Pain de seigle");
+    const [last] = (await productFactsOf(ctx, fiche.id)).slice(-1);
+    const seq = last?.seq ?? 0;
+
+    await deliverDirectly(ctx, withGroups(last?.payload ?? {}, seq + 2, [SLICING]));
+    await deliverDirectly(ctx, withGroups(last?.payload ?? {}, seq + 1, []));
+
+    expect(
+      await ctx.prisma.catalogItemOptionGroups.findUnique({ where: { sku: fiche.variantSku } }),
+    ).toMatchObject({ groups: [SLICING] });
+  });
+});

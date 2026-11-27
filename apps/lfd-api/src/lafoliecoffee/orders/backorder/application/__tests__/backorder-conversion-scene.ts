@@ -1,3 +1,4 @@
+import { InMemoryOfferedOptionGroups } from "../../../../catalog/infrastructure/in-memory-offered-option-groups.js";
 import {
   DEFAULT_DELIVERY_AVAILABILITY,
   type AdminBackorderConvertPayload,
@@ -337,6 +338,7 @@ export function draftingIn(
       pricer(clock),
       new CatalogViewers(new InMemoryServedCompanies()),
       new UnboundedNegotiatedScope(),
+      new InMemoryOfferedOptionGroups(),
     ),
     new CartAdjustments(
       pickups,

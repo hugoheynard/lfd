@@ -40,9 +40,12 @@ import {
   offerReasonOfRow,
 } from "../../infrastructure/order-offer.columns.js";
 import {
+  ORDER_LINE_OPTIONS_SELECT,
+  optionChoicesOf,
   orderLineSaleUnitOf,
   parseAllergens,
   parseTrace,
+  type OrderLineOptionRow,
   type OrderLineRow,
 } from "../../infrastructure/order-line-row.js";
 
@@ -76,6 +79,8 @@ export const REVISABLE_LINE_SELECT = {
   madeToOrder: true,
   productId: true,
   categoryId: true,
+  // Les options figées : la révision les garde, ou les remplace (G2).
+  options: ORDER_LINE_OPTIONS_SELECT,
 } as const;
 
 /**
@@ -152,6 +157,7 @@ export interface RevisableLineRow extends OrderLineRow {
   readonly productId: string | null;
   readonly categoryId: string | null;
   readonly madeToOrder: boolean | null;
+  readonly options: readonly OrderLineOptionRow[];
 }
 
 /** La forme que Prisma rend pour {@link REVISABLE_ORDER_SELECT}. */
@@ -319,6 +325,7 @@ export function revisableLineSnapshotOf(line: RevisableLineRow): OrderLineSnapsh
     productId: line.productId,
     categoryId: line.categoryId,
     madeToOrder: line.madeToOrder,
+    optionChoices: optionChoicesOf(line.options),
   };
 }
 

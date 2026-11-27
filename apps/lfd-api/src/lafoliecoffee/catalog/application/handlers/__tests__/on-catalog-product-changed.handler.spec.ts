@@ -19,6 +19,10 @@ import {
 import { RecordingOrderLimits } from "../../../domain/ports/__tests__/recording-order-limits.js";
 import { OrderLimitsRefresher } from "../../order-limits-refresher.service.js";
 import { CatalogProductFactsProjection } from "../../../domain/ports/catalog-product-facts.projection.js";
+import {
+  CatalogOptionGroupsProjection,
+  type ReceivedOptionGroups,
+} from "../../../domain/ports/catalog-option-groups.projection.js";
 import { OnCatalogCategoryChangedHandler } from "../on-catalog-category-changed.handler.js";
 import { OnCatalogProductChangedHandler } from "../on-catalog-product-changed.handler.js";
 
@@ -133,6 +137,15 @@ class SpyingProduct extends CatalogProductFactsProjection {
   }
 }
 
+/** Les groupes d'options écrits, retenus tels quels. */
+class RecordingOptionGroups extends CatalogOptionGroupsProjection {
+  readonly recorded: { productId: string; items: readonly ReceivedOptionGroups[] }[] = [];
+  record(productId: string, items: readonly ReceivedOptionGroups[]): Promise<void> {
+    this.recorded.push({ productId, items });
+    return Promise.resolve();
+  }
+}
+
 /** La descente des limites, sur un double qui retient les fiches demandées. */
 function refresher(limits = new RecordingOrderLimits([])): OrderLimitsRefresher {
   return new OrderLimitsRefresher(limits);
@@ -142,8 +155,9 @@ async function deliver(
   projection: CatalogProductFactsProjection,
   fact: CatalogProductChangedFact,
   limits = new RecordingOrderLimits([]),
+  groups = new RecordingOptionGroups(),
 ): Promise<void> {
-  await new OnCatalogProductChangedHandler(projection, refresher(limits)).handle({
+  await new OnCatalogProductChangedHandler(projection, refresher(limits), groups).handle({
     eventId: "evt_1",
     ...fact.durableFact(),
   });
@@ -269,7 +283,11 @@ describe("OnCatalogProductChangedHandler", () => {
       delete variant["allergenTexts"];
     }
 
-    await new OnCatalogProductChangedHandler(projection, refresher()).handle({
+    await new OnCatalogProductChangedHandler(
+      projection,
+      refresher(),
+      new RecordingOptionGroups(),
+    ).handle({
       eventId: "evt_1",
       type: durable.type,
       payload,
@@ -303,7 +321,11 @@ describe("OnCatalogProductChangedHandler", () => {
     };
     delete payload.product["detachedFromSku"];
 
-    await new OnCatalogProductChangedHandler(projection, refresher()).handle({
+    await new OnCatalogProductChangedHandler(
+      projection,
+      refresher(),
+      new RecordingOptionGroups(),
+    ).handle({
       eventId: "evt_1",
       type: durable.type,
       payload,
@@ -332,7 +354,11 @@ describe("OnCatalogProductChangedHandler", () => {
     };
     delete payload.variants[0]?.["detachedFromVariantSku"];
 
-    await new OnCatalogProductChangedHandler(projection, refresher()).handle({
+    await new OnCatalogProductChangedHandler(
+      projection,
+      refresher(),
+      new RecordingOptionGroups(),
+    ).handle({
       eventId: "evt_1",
       type: durable.type,
       payload,
@@ -341,11 +367,52 @@ describe("OnCatalogProductChangedHandler", () => {
     expect(projection.onSale[0]).toMatchObject({ detachedFromVariantSku: null });
   });
 
+  /** `plan-options-de-commande.md`, § 3.2 : les groupes par SKU, toutes clientèles confondues. */
+  it("écrit les groupes d'options de chaque déclinaison, choix réservés aux pros compris", async () => {
+    const groups = new RecordingOptionGroups();
+    const slicing = {
+      id: "og_slicing",
+      name: "Tranchage",
+      choices: [
+        { key: "sliced", label: "tranché", audience: "both" as const },
+        { key: "crate", label: "en caisse", audience: "pro" as const },
+      ],
+    };
+
+    await deliver(
+      new SpyingProduct(true),
+      productFact("active", { variants: [{ ...VARIANT, optionGroups: [slicing] }] }),
+      new RecordingOrderLimits([]),
+      groups,
+    );
+
+    expect(groups.recorded).toEqual([
+      { productId: "prd_1", items: [{ sku: "VIE-1-1", groups: [slicing] }] },
+    ]);
+  });
+
+  it("un fait plus ancien n'écrit aucun groupe", async () => {
+    const groups = new RecordingOptionGroups();
+
+    await deliver(
+      new SpyingProduct(false),
+      productFact("active"),
+      new RecordingOrderLimits([]),
+      groups,
+    );
+
+    expect(groups.recorded).toEqual([]);
+  });
+
   it("lève sur un fait illisible : la livraison se rejoue, rien n'est avalé", async () => {
     const projection = new SpyingProduct(true);
 
     await expect(
-      new OnCatalogProductChangedHandler(projection, refresher()).handle({
+      new OnCatalogProductChangedHandler(
+        projection,
+        refresher(),
+        new RecordingOptionGroups(),
+      ).handle({
         eventId: "evt_1",
         type: "pim.catalog_product_changed",
         payload: { productId: "prd_1", seq: "sept" },
