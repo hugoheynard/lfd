@@ -283,6 +283,10 @@ demande `AfterCommit`, l'en-tête « Version n ».
 Tests : rangé au geste, non rangé puis rangé à la lecture, version dépassée
 jamais rangée, révision rangée sous sa propre version.
 
+**H2b — la version de chaque envoi.** `plan_version` sur
+`production_dossier_dispatch` (migration additive), posé à `claim`. Tests :
+arrêt puis retirage, chaque destinataire porte la version de son papier.
+
 **H3 — comparer et expliquer.** `diffPlanVersions` (§ 1.16 à 1.21), tests
 unitaires exhaustifs, dont le cas du 2026-11-27 rejoué.
 
@@ -293,6 +297,15 @@ leurs routes sous le contrôleur de la journée ; droit de lecture du dossier.
 qui, quand, papier rangé ou non), comparer deux versions (par défaut la
 courante contre la précédente) : l'effet par produit en tête, les sorties
 inexpliquées en orange, puis les changements expliqués. fold-ng d'abord.
+
+**H6 — le réenvoi.** Sur l'écran des versions : la liste des destinataires
+avec la dernière version reçue, et le geste « renvoyer la version courante »
+— à un destinataire ou à tous ceux qui ont une version dépassée. Un e-mail
+« dossier mis à jour » (texte au dictionnaire des e-mails, manifeste
+régénéré), le papier de la version courante joint, une trace par envoi
+comme aujourd'hui (clé `(journée, instant du réenvoi, destinataire)`), la
+clé d'intention de l'écran (`lint:intent-key-gestures`). Ce que l'e-mail dit
+du changement (le résumé du diff ?) est à décider avec Hugo avant H6.
 
 ## 4. Ce que ce plan ne fait pas
 
@@ -337,12 +350,23 @@ chantier à part ; H-1 n'en ferme que la perte silencieuse.
 - Qu'aucun reliquat n'inscrit encore de rang supérieur à 1 au plan.
 - La taille de `content` sur la journée la plus chargée.
 
-## 7. Questions pour Hugo
+## 7. Décisions de Hugo (2026-11-27)
 
-- **Q1** — durée de conservation des versions (libellés clients, noms du
-  staff) : la même que les papiers rangés, ou une borne ?
-- **Q2** — l'envoi du dossier par e-mail doit-il noter la version envoyée à
-  chaque destinataire ?
+- **Q1 — conservation : sans limite pour le moment.** Les versions ne
+  s'effacent pas. Au registre `documentation/legal/rgpd-registre.json`, la
+  durée de `recorded_by_name` s'écrit « non bornée, décision du
+  2026-11-27, à revoir » — `lint:rgpd-staff` la compte parmi les durées non
+  décidées, ce qui est voulu : elle reste visible.
+- **Q2 — chaque envoi du dossier note sa version.** La trace existante,
+  `production.production_dossier_dispatch` (une ligne par journée, instant
+  d'origine et destinataire), gagne `plan_version int NULL`, écrit par
+  `DossierDispatchLog.claim` depuis la journée que l'abonné a chargée (§ 1.3 :
+  l'état et son numéro viennent de la même ligne, donc le numéro est celui du
+  papier joint). `NULL` pour les envois d'avant H2.
+
+  But : **le réenvoi**. Quand une version plus récente existe, l'écran des
+  versions dit, pour chaque destinataire, quelle version il a reçue en
+  dernier, et propose de lui renvoyer la courante (lot H6).
 
 ## 8. Ce que vitruve a contredit (2026-11-27)
 
