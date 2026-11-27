@@ -60,11 +60,11 @@ export interface OwnedOrder {
    */
   readonly loyaltyVoucherId: string | null;
   /**
-   * Le client tel que le bon de commande le NOMME quand la commande a été
-   * réglée par un autre que la société qui a commandé (`sous-comptes.md`
-   * §2.3, §3) : le nom du site, et la raison sociale du payeur COPIÉ — une
-   * mention légale, relue après un détachement telle qu'elle était à la
-   * passation. `null` quand la société paie elle-même, ou sans payeur copié.
+   * Le client tel que le bon de commande du client (et le BL) le NOMME :
+   * l'enseigne de la société en tête, la raison sociale en mention légale.
+   * Quand un autre que la société a réglé (`sous-comptes.md` §2.3, §3), la
+   * mention légale est la raison sociale du payeur COPIÉE à la passation.
+   * `null` sans société (le public) : la feuille nomme alors `customerLabel`.
    */
   readonly billedCustomer: SheetCustomer | null;
   /**

@@ -288,13 +288,11 @@ export function atelierSheetOf(
 }
 
 /**
- * Le client, tel que la commande le connaît.
- *
- * ⚠️ `customerLabel` est la **raison sociale** (ou la personne, sur une commande
- * zéro friction). L'ENSEIGNE — « Hôtel des Trois Ponts » — vit sur la société et
- * demande une jointure que `OrderView` ne fait pas ; le dessin de référence la
- * met en tête, on n'a que l'autre. Les deux champs portent donc la même valeur
- * plutôt qu'un nom commercial inventé, et le document n'affiche qu'une ligne.
+ * Le client, tel que la seule commande le connaît : `customerLabel`, la
+ * personne (le public) ou la raison sociale. Repli de la feuille du client
+ * quand l'appelant ne lui passe pas le client de la société (`billedCustomer`,
+ * qui porte l'enseigne) ; les deux champs portent la même valeur plutôt
+ * qu'un nom commercial inventé, et le document n'imprime qu'une ligne.
  */
 function clientCustomerOf(order: OrderView): SheetCustomer {
   return { tradeName: order.customerLabel, legalName: order.customerLabel };
@@ -326,10 +324,10 @@ function customerPhoneOf(variant: SheetVariant, buyerPhone: string | null): stri
 /**
  * La feuille du client : son engagement, dans ses mots.
  *
- * `billedCustomer` : quand un AUTRE a réglé — un site facturé à son principal
- * (`sous-comptes.md` §2.3, §3) —, le bon porte le nom du site et la
- * raison sociale du PAYEUR copié à la passation : c'est la mention légale.
- * `null`, et c'est le cas de toute commande d'une société qui paie seule.
+ * `billedCustomer` : le client de la société, lu par l'appelant — l'enseigne
+ * en tête et la raison sociale en mention légale, celle du PAYEUR copiée à la
+ * passation quand un autre a réglé (`sous-comptes.md` §2.3, §3). `null` sans
+ * société : la feuille se replie sur `customerLabel`.
  *
  * `buyerPhone` : le téléphone de l'acheteur (`placedByUserId`), lu par
  * l'appelant au moment de construire la feuille. Seul le bon public l'imprime.

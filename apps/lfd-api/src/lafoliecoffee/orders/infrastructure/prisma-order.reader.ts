@@ -14,7 +14,6 @@ import {
   type OrderStatus,
   type OrderView,
   type PaymentStatus,
-  type SheetCustomer,
   type AtelierSheet,
   type RecurringDeltas,
   recurringDeltasSchema,
@@ -37,6 +36,7 @@ import {
   type OrderRefundsReading,
 } from "./order-card-refund-readings.js";
 import { fulfillmentOf } from "./order-fulfillment.parse.js";
+import { billedCustomerOf } from "./order-sheet-customer.js";
 import { siteIdOf } from "./pickup-site.parse.js";
 import {
   ORDER_LINE_OPTIONS_SELECT,
@@ -56,7 +56,7 @@ import {
   type OwnedOrder,
   type PackingOrder,
 } from "../domain/ports/order.reader.js";
-import { companyDisplayName, vatSharesSchema, type VatShareView } from "@lfd/contracts";
+import { vatSharesSchema, type VatShareView } from "@lfd/contracts";
 
 import { orderEntryOriginOf, orderOriginOf } from "../domain/services/order-origin.js";
 import { pickupDiscountBaseOf } from "../domain/services/pickup-discount-base.js";
@@ -490,30 +490,6 @@ interface NameableRow {
     readonly email: string;
     readonly firstName: string;
     readonly lastName: string;
-  };
-}
-
-/**
- * Le client du bon quand un AUTRE a réglé (sous-comptes §2.3) : le nom du
- * site en tête, la raison sociale du payeur copié en mention légale.
- */
-function billedCustomerOf(row: {
-  readonly companyId: string | null;
-  readonly billedCompanyId: string | null;
-  readonly billedCompany: { readonly raisonSociale: string } | null;
-  readonly company: { readonly raisonSociale: string; readonly enseigne: string } | null;
-}): SheetCustomer | null {
-  if (
-    row.billedCompanyId === null ||
-    row.billedCompanyId === row.companyId ||
-    row.billedCompany === null ||
-    row.company === null
-  ) {
-    return null;
-  }
-  return {
-    tradeName: companyDisplayName(row.company),
-    legalName: row.billedCompany.raisonSociale,
   };
 }
 
