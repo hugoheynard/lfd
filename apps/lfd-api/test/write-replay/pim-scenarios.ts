@@ -18,7 +18,7 @@ async function family(ctx: E2eContext): Promise<string> {
   return jsonBody<{ id: string }>(response).id;
 }
 
-/** Le référentiel : fiches et déclinaisons. */
+/** Le référentiel : fiches, déclinaisons et groupes d'options. */
 export const PIM_SCENARIOS: ScenarioSet = {
   [routeKey("pim/catalogue/product/http/product.controller.ts", "createProduct")]: async ({
     ctx,
@@ -41,4 +41,14 @@ export const PIM_SCENARIOS: ScenarioSet = {
       body: { name: { fr: "Boîte de 6" }, options: { format: "6" } },
     };
   },
+
+  [routeKey("pim/reference/product-options/http/option-group.controller.ts", "create")]: () =>
+    Promise.resolve({
+      sub: STAFF,
+      path: "/pim/option-groups",
+      body: {
+        name: "Tranchage du rejeu",
+        choices: [{ key: "tranche", label: "Tranché", audience: "both" }],
+      },
+    }),
 };

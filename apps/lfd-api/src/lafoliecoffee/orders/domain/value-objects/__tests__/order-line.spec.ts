@@ -25,6 +25,7 @@ describe("OrderLine", () => {
       productId: null,
       categoryId: null,
       madeToOrder: null,
+      optionChoices: [],
     });
   });
 

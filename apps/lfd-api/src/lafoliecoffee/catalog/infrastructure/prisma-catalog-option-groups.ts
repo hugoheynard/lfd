@@ -14,6 +14,7 @@ import {
 } from "../domain/ports/catalog-option-groups.projection.js";
 import type { ShopAudience } from "../domain/ports/catalog.reader.js";
 import { OfferedOptionGroupsReader } from "../domain/ports/offered-option-groups.reader.js";
+import { ShelfOptionGroupsReader } from "../domain/ports/shelf-option-groups.reader.js";
 
 const GROUPS_SCHEMA = z.array(
   z.object({
@@ -51,19 +52,32 @@ export class PrismaCatalogOptionGroupsProjection extends CatalogOptionGroupsProj
     super();
   }
 
+  /**
+   * Deux écritures quel que soit le nombre de déclinaisons : effacer les lignes
+   * de ces SKU, puis les réécrire toutes, dans une même transaction. Une
+   * fiche de soixante-dix déclinaisons ne coûte pas soixante-dix allers.
+   */
   async record(
     productId: string,
     items: readonly ReceivedOptionGroups[],
     receivedAt: Date,
   ): Promise<void> {
-    for (const item of items) {
-      const groups = groupsJson(item.groups);
-      await this.prisma.catalogItemOptionGroups.upsert({
-        where: { sku: item.sku },
-        create: { sku: item.sku, productId, groups, receivedAt },
-        update: { productId, groups, receivedAt },
-      });
+    if (items.length === 0) {
+      return;
     }
+    await this.prisma.$transaction([
+      this.prisma.catalogItemOptionGroups.deleteMany({
+        where: { sku: { in: items.map((item) => item.sku) } },
+      }),
+      this.prisma.catalogItemOptionGroups.createMany({
+        data: items.map((item) => ({
+          sku: item.sku,
+          productId,
+          groups: groupsJson(item.groups),
+          receivedAt,
+        })),
+      }),
+    ]);
   }
 }
 
@@ -85,19 +99,44 @@ export class PrismaOfferedOptionGroupsReader extends OfferedOptionGroupsReader {
       where: { sku: { in: [...skus] } },
       select: { sku: true, groups: true },
     });
-    const offered = new Map<string, readonly OfferedOptionGroup[]>();
-    for (const row of rows) {
-      const parsed = GROUPS_SCHEMA.safeParse(row.groups);
-      if (!parsed.success) {
-        throw new UnreadableOptionGroupsError(row.sku);
-      }
-      const groups = optionGroupsOfferedTo(parsed.data, audience);
-      if (groups.length > 0) {
-        offered.set(row.sku, groups);
-      }
-    }
-    return offered;
+    return offeredOf(rows, audience);
   }
+}
+
+/** Tout le miroir, pour les écrans qui proposent de choisir : une lecture, filtrée par l'audience. */
+@Injectable()
+export class PrismaShelfOptionGroupsReader extends ShelfOptionGroupsReader {
+  constructor(private readonly prisma: PrismaService) {
+    super();
+  }
+
+  async offeredTo(
+    audience: ShopAudience,
+  ): Promise<ReadonlyMap<string, readonly OfferedOptionGroup[]>> {
+    const rows = await this.prisma.catalogItemOptionGroups.findMany({
+      select: { sku: true, groups: true },
+    });
+    return offeredOf(rows, audience);
+  }
+}
+
+/** Les lignes relues, réduites à ce que l'audience se voit proposer ; un SKU sans groupe disparaît. */
+function offeredOf(
+  rows: readonly { readonly sku: string; readonly groups: unknown }[],
+  audience: ShopAudience,
+): ReadonlyMap<string, readonly OfferedOptionGroup[]> {
+  const offered = new Map<string, readonly OfferedOptionGroup[]>();
+  for (const row of rows) {
+    const parsed = GROUPS_SCHEMA.safeParse(row.groups);
+    if (!parsed.success) {
+      throw new UnreadableOptionGroupsError(row.sku);
+    }
+    const groups = optionGroupsOfferedTo(parsed.data, audience);
+    if (groups.length > 0) {
+      offered.set(row.sku, groups);
+    }
+  }
+  return offered;
 }
 
 /** Recopiés en objets nus : Prisma refuse une interface dans un champ JSON. */

@@ -207,6 +207,11 @@ const NON_PUBLIC_SCHEMA_OF_MODEL: Readonly<Record<string, string>> = {
   OrderTimeLimit: "pim",
   OrderTimeLimitExclusion: "pim",
   ProductEditorial: "pim",
+  // Les options de commande : les groupes, leurs choix, et leur activation
+  // sur une fiche.
+  OptionGroup: "pim",
+  OptionChoice: "pim",
+  ProductOptionActivation: "pim",
   ProductReadiness: "pim",
   CatalogContent: "pim",
   CatalogRevision: "pim",

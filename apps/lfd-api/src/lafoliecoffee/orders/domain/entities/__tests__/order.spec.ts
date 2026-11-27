@@ -135,6 +135,8 @@ describe("Order.draft — calcul monétaire", () => {
         productId: null,
         categoryId: null,
         madeToOrder: null,
+        // Aucune option choisie sur la ligne.
+        optionChoices: [],
       },
     ]);
   });
