@@ -385,6 +385,7 @@ const NON_PUBLIC_SCHEMA_OF_MODEL: Readonly<Record<string, string>> = {
   Basket: "recurring",
   BasketLine: "recurring",
   Occurrence: "recurring",
+  PlannedColumn: "recurring",
   // Les événements et leurs fiches de fonction, dans leur bloc `src/events/`.
   Event: "events",
   FunctionSheet: "events",

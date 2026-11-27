@@ -49,6 +49,24 @@ export const COMMERCE_SCENARIOS: ScenarioSet = {
     };
   },
 
+  [routeKey("recurring/planned/http/planner.controller.ts", "open")]: async ({ ctx }) => {
+    // Un pro rattaché à une seule société agit pour elle sans en-tête d'espace.
+    await companyWithOwner(ctx, BUYER, true);
+    return {
+      sub: BUYER,
+      path: "/planner/columns",
+      body: {
+        day: serviceDay(2),
+        routing: {
+          method: "pickup",
+          deliveryAddress: null,
+          pickupAddressId: null,
+          window: { start: "07:00", end: "09:00" },
+        },
+      },
+    };
+  },
+
   [routeKey("lafoliecoffee/account/http/companies.controller.ts", "create")]: async ({ ctx }) => {
     await createUser(ctx.prisma, {
       auth0Sub: BUYER,
