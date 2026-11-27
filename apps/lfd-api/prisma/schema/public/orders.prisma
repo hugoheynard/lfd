@@ -433,6 +433,12 @@ model Order {
   fromOccurrenceDay  DateTime? @map("from_occurrence_day") @db.Date
   recurringDeltas    Json?     @map("recurring_deltas")
 
+  // Origine planifiée : la colonne du planificateur des pros
+  // (`recurring.planned_columns`, identifiant opaque) qui a produit cette
+  // commande. Unique — une colonne, au plus une commande — et un déclencheur
+  // en refuse la modification.
+  fromPlannedColumnId String? @unique(map: "orders_one_per_planned_column") @map("from_planned_column_id")
+
   // Le PLAN DU SOIR a absorbé la commande : elle est entrée dans le compte à
   // produire. Écrit d'un coup pour toute une journée de service, à la clôture —
   // personne ne confirme commande par commande, et la colonne ne porte donc

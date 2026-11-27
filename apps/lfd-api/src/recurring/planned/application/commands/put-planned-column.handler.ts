@@ -11,11 +11,13 @@ import {
 } from "../../domain/errors/planned-column-errors.js";
 import { PlannedColumnRepository } from "../../domain/ports/planned-column.repository.js";
 import { PlannedLine } from "../../domain/value-objects/planned-line.js";
+import { ConversionSchedule } from "../services/conversion-schedule.js";
 import { PlannerWall } from "../services/planner-wall.js";
 import { PutPlannedColumnCommand } from "./put-planned-column.command.js";
 
 /**
- * **Écrit une colonne** : ses lignes et son acheminement, en entier.
+ * **Écrit une colonne** : ses lignes et son acheminement, en entier, puis son
+ * instant de conversion, redemandé au commerce sur les lignes écrites.
  * L'agrégat refuse un jour passé ou une colonne gelée ; la version lue
  * refuse l'écrasement d'un autre onglet.
  *
@@ -25,7 +27,7 @@ import { PutPlannedColumnCommand } from "./put-planned-column.command.js";
  *
  * @sans-journal une colonne est un brouillon : elle ne réserve rien, le fournil
  * ne la voit pas, et rien ne se fabrique ni ne se facture tant qu'elle n'est
- * pas convertie. C'est la conversion (lot L2) qui laissera une trace.
+ * pas convertie. C'est la conversion qui laisse une trace (la commande).
  */
 @CommandHandler(PutPlannedColumnCommand)
 export class PutPlannedColumnHandler implements ICommandHandler<
@@ -35,6 +37,7 @@ export class PutPlannedColumnHandler implements ICommandHandler<
   constructor(
     private readonly wall: PlannerWall,
     private readonly columns: PlannedColumnRepository,
+    private readonly schedule: ConversionSchedule,
     private readonly uow: UnitOfWork,
     private readonly clock: Clock,
   ) {}
@@ -65,6 +68,9 @@ export class PutPlannedColumnHandler implements ICommandHandler<
         throw new PlannedColumnVersionConflictError(column.serviceDay.value);
       }
       column.writtenBy(command.actorUserId);
+      // L'instant du gel suit les lignes : chaque écriture le redemande (§ 4).
+      const instants = await this.schedule.instantsOf([column], now);
+      column.scheduleConversion(instants.get(column.id) ?? null);
       return { version: await this.columns.save(column, now) };
     });
   }

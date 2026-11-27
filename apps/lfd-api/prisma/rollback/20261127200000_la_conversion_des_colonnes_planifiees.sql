@@ -1,0 +1,14 @@
+-- RETOUR ARRIÈRE de 20261127200000_la_conversion_des_colonnes_planifiees
+-- (documentation/commandes/planificateur/plan-planificateur-de-commandes.md, lot L2).
+--
+-- 🔴 NON APPLIQUÉ, et Prisma ne le lit pas. La migration reste inscrite
+-- « appliquée ».
+--
+-- Le code d'avant ignore la colonne : le retour arrière est le retour du code
+-- seul. La retirer perdrait la provenance des commandes déjà converties ; à
+-- faire seulement sur décision de Hugo :
+--
+--   DROP TRIGGER "orders_keep_planned_provenance" ON "public"."orders";
+--   DROP FUNCTION "public"."orders_keep_planned_provenance"();
+--   DROP INDEX "public"."orders_one_per_planned_column";
+--   ALTER TABLE "public"."orders" DROP COLUMN "from_planned_column_id";

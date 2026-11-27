@@ -142,3 +142,28 @@ describe("PlannedColumn — retirer et issues", () => {
     expect(() => day.markPlaced("order_1")).toThrow(PlannedColumnAlreadySettledError);
   });
 });
+
+describe("PlannedColumn.scheduleConversion — l'instant du gel", () => {
+  const AT = new Date("2026-12-02T08:45:00.000Z");
+
+  it("pose l'instant, puis ne change rien au même instant", () => {
+    const column = openOn();
+    expect(column.scheduleConversion(AT)).toBe(true);
+    expect(column.convertsAt).toEqual(AT);
+    expect(column.scheduleConversion(new Date(AT.getTime()))).toBe(false);
+  });
+
+  it("une fois l'instant atteint, la colonne refuse toute écriture du client", () => {
+    const column = openOn();
+    column.scheduleConversion(AT);
+    expect(() =>
+      column.replaceLines([PlannedLine.create("CRO", 4)], { ...MOMENT, now: AT }),
+    ).toThrow(PlannedColumnFrozenError);
+  });
+
+  it("refuse une colonne qui a déjà son issue", () => {
+    const column = openOn();
+    column.markMissed();
+    expect(() => column.scheduleConversion(AT)).toThrow(PlannedColumnAlreadySettledError);
+  });
+});

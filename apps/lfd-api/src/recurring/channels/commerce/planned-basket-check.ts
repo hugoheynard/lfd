@@ -11,6 +11,12 @@ export interface PlannedBasketCheckItem {
   /** `AAAA-MM-JJ`. */
   readonly day: string;
   readonly columnId: string | null;
+  /**
+   * La quantité de la ligne ; `null` pour un article de la liste d'envies,
+   * dont la quantité se règle après le dépôt : seuls les juges qui tiennent à
+   * l'article et au jour lui répondent.
+   */
+  readonly quantity: number | null;
 }
 
 /** Ce qui ferait refuser la passation de cet article ce jour-là. */
@@ -31,7 +37,9 @@ export interface PlannedLineCheck {
   /**
    * Vrai quand le blocage (ou l'absence de blocage) tient à l'article et au
    * jour seuls : l'écran grise la colonne pendant un glisser. Faux quand il
-   * dépend de la quantité, qui se règle après le dépôt.
+   * dépend de la quantité, qui se règle après le dépôt (le minimum d'achat),
+   * ou de la société entière (boutique fermée, règlement au compte
+   * impossible, acheteur parti) : griser un jour n'y changerait rien.
    */
   readonly quantityIndependent: boolean;
 }
@@ -39,14 +47,18 @@ export interface PlannedLineCheck {
 /** La question, pour toute la grille affichée. */
 export interface PlannedBasketCheckRequest {
   readonly companyId: string;
+  /** Qui commanderait : l'acheteur de la colonne, ou la personne devant l'écran. */
+  readonly buyerUserId: string;
   readonly items: readonly PlannedBasketCheckItem[];
 }
 
 /**
  * **« Que dirait la passation de ce panier ? »** — déclaré par le
  * planificateur, implémenté par le commerce avec les juges mêmes de la
- * passation d'une échéance : heure limite sans dérogation, article servi à la
- * société (plan du planificateur, § 4 bis). L'avertissement à l'écran et le
+ * passation d'une échéance : la société et son règlement au compte, le jour
+ * (premier jour commandable, plan arrêté, jour même), l'article servi à la
+ * société, l'heure limite sans dérogation, le minimum d'achat (plan du
+ * planificateur, § 4 bis). L'avertissement à l'écran et le
  * refus à la conversion sortent du même calcul, et ne peuvent pas diverger.
  *
  * Une question par grille, pas par colonne. Ne dépense rien, n'écrit rien.

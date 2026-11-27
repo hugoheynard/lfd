@@ -18,7 +18,7 @@ import {
   OrderRepository,
   type AbandonedSettlement,
   type PlacedOrder,
-  type RecurringProvenance,
+  type OrderProvenance,
 } from "../domain/ports/order.repository.js";
 import { formatOrderNumber } from "../domain/services/order-number.js";
 import { issuesHandoverToken, type HandoverVia } from "../domain/services/handover.js";
@@ -98,7 +98,7 @@ export class PrismaOrderRepository extends OrderRepository {
     return formatOrderNumber(rank);
   }
 
-  async place(order: Order, recurring?: RecurringProvenance): Promise<PlacedOrder> {
+  async place(order: Order, provenance?: OrderProvenance): Promise<PlacedOrder> {
     // L'agrégat a validé et calculé ; on lit son état sérialisé. Coursier et
     // retrait ont déjà figé leurs adresses en snapshot (plus d'adresse d'entreprise).
     const state = order.toPersistence();
@@ -152,17 +152,8 @@ export class PrismaOrderRepository extends OrderRepository {
             supply: state.supply,
             entryShortcut: state.entryShortcut,
             entryOrigin: state.entryOrigin,
-            // La provenance d'une échéance de panier récurrent, ou rien.
-            ...(recurring === undefined
-              ? {}
-              : {
-                  fromSubscriptionId: recurring.subscriptionId,
-                  fromOccurrenceDay: new Date(`${recurring.occurrenceDay}T00:00:00.000Z`),
-                  recurringDeltas: {
-                    added: [...recurring.deltas.added],
-                    removed: [...recurring.deltas.removed],
-                  },
-                }),
+            // La provenance d'une échéance ou d'une colonne planifiée, ou rien.
+            ...provenanceColumnsOf(provenance),
             customerCancellableUntil: state.customerCancellableUntil,
             ...customerCancellationColumnsOf(state.customerCancellation),
             requestedDeliveryDate: state.requestedDeliveryDate,
@@ -251,7 +242,7 @@ export class PrismaOrderRepository extends OrderRepository {
         return placed;
       })
       .catch((error: unknown) => {
-        throw occurrenceDuplicateOf(error, recurring) ?? error;
+        throw occurrenceDuplicateOf(error, provenance) ?? error;
       });
   }
 
@@ -457,4 +448,22 @@ export class PrismaOrderRepository extends OrderRepository {
     });
     return count === 1;
   }
+}
+
+/** Les colonnes de provenance d'une commande passée par une machine. */
+function provenanceColumnsOf(provenance: OrderProvenance | undefined) {
+  if (provenance === undefined) {
+    return {};
+  }
+  if ("plannedColumnId" in provenance) {
+    return { fromPlannedColumnId: provenance.plannedColumnId };
+  }
+  return {
+    fromSubscriptionId: provenance.subscriptionId,
+    fromOccurrenceDay: new Date(`${provenance.occurrenceDay}T00:00:00.000Z`),
+    recurringDeltas: {
+      added: [...provenance.deltas.added],
+      removed: [...provenance.deltas.removed],
+    },
+  };
 }

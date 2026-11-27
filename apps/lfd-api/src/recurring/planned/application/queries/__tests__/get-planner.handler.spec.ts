@@ -77,10 +77,11 @@ describe("GetPlannerHandler", () => {
     const view = await handler.execute(new GetPlannerQuery("user_1", "chalet", "2026-12-12"));
     expect(check.asked).toHaveLength(1);
     expect(check.asked[0]?.items).toEqual([
-      { sku: "CRO-01", day: "2026-12-12", columnId: "a" },
-      { sku: "CRO-01", day: "2026-12-12", columnId: "b" },
-      { sku: "BAG-01", day: "2026-12-12", columnId: null },
+      { sku: "CRO-01", day: "2026-12-12", columnId: "a", quantity: 40 },
+      { sku: "CRO-01", day: "2026-12-12", columnId: "b", quantity: 40 },
+      { sku: "BAG-01", day: "2026-12-12", columnId: null, quantity: null },
     ]);
+    expect(check.asked[0]?.buyerUserId).toBe("user_1");
     expect(view.checks).toHaveLength(3);
   });
 

@@ -1,4 +1,5 @@
 import { OccurrenceAlreadyServedError } from "../../domain/errors/occurrence-already-served.error.js";
+import { PlannedColumnAlreadyServedError } from "../../domain/errors/planned-column-already-served.error.js";
 import { occurrenceDuplicateOf } from "../occurrence-duplicate.js";
 
 const PROVENANCE = {
@@ -43,5 +44,19 @@ describe("occurrenceDuplicateOf — une échéance, au plus une commande", () =>
 
   it("laisse passer toute autre erreur", () => {
     expect(occurrenceDuplicateOf(new TypeError("réseau"), PROVENANCE)).toBeNull();
+  });
+});
+
+describe("occurrenceDuplicateOf — une colonne planifiée, au plus une commande", () => {
+  const COLUMN = { plannedColumnId: "col_1" };
+
+  it("reconnaît l'index des colonnes par son NOM", () => {
+    expect(
+      occurrenceDuplicateOf(uniqueViolation("orders_one_per_planned_column"), COLUMN),
+    ).toBeInstanceOf(PlannedColumnAlreadyServedError);
+  });
+
+  it("ne prend pas l'index des échéances pour celui des colonnes", () => {
+    expect(occurrenceDuplicateOf(uniqueViolation("orders_one_per_occurrence"), COLUMN)).toBeNull();
   });
 });

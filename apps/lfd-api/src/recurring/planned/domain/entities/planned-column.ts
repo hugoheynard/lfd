@@ -3,7 +3,6 @@ import type { BillingAddressPayload, FulfillmentMethod, FulfillmentWindow } from
 import type { IsoDate } from "../../../basket/domain/value-objects/iso-date.js";
 import type { OccurrenceRefusalCause } from "../../../occurrence/domain/refusal-cause.js";
 import {
-  InvalidPlannedRoutingError,
   PlannedColumnAlreadySettledError,
   PlannedColumnBeyondHorizonError,
   PlannedColumnFrozenError,
@@ -11,6 +10,7 @@ import {
   PlannedColumnWithoutCompanyError,
 } from "../errors/planned-column-errors.js";
 import { PlannedLine } from "../value-objects/planned-line.js";
+import { normalizeRouting, sameRouting } from "../value-objects/planned-routing.js";
 
 /** Combien de jours à l'avance une colonne peut être préparée (Q5, Hugo, 2026-11-27). */
 export const PLANNING_HORIZON_DAYS = 28;
@@ -137,6 +137,18 @@ export class PlannedColumn {
     return this.state.version === 0;
   }
 
+  get isDraft(): boolean {
+    return this.state.status === "draft";
+  }
+
+  get hasLines(): boolean {
+    return this.state.lines.length > 0;
+  }
+
+  get convertsAt(): Date | null {
+    return this.state.convertsAt;
+  }
+
   snapshot(): PlannedColumnSnapshot {
     return this.state;
   }
@@ -199,6 +211,24 @@ export class PlannedColumn {
     return true;
   }
 
+  /**
+   * Pose l'instant de conversion — celui du gel (règle 6) —, calculé à chaque
+   * écriture et redemandé à chaque balayage : une limite d'article peut avoir
+   * changé depuis. Rend `false` quand rien ne change.
+   *
+   * @throws {PlannedColumnAlreadySettledError} la colonne a déjà son issue.
+   */
+  scheduleConversion(at: Date | null): boolean {
+    if (this.state.status !== "draft") {
+      throw new PlannedColumnAlreadySettledError(this.state.serviceDay.value);
+    }
+    if (this.state.convertsAt?.getTime() === at?.getTime()) {
+      return false;
+    }
+    this.state = { ...this.state, convertsAt: at };
+    return true;
+  }
+
   /** @throws {PlannedColumnAlreadySettledError} la colonne a déjà son issue. */
   markPlaced(orderId: string): void {
     this.settle({ status: "placed", orderId, refusal: null });
@@ -246,16 +276,6 @@ function ensureWithinHorizon(day: IsoDate, today: IsoDate): void {
   }
 }
 
-function normalizeRouting(routing: PlannedRouting): PlannedRouting {
-  if (routing.method === "delivery") {
-    if (routing.deliveryAddress === null) {
-      throw new InvalidPlannedRoutingError("Une livraison exige une adresse.");
-    }
-    return { ...routing, pickupAddressId: null };
-  }
-  return { ...routing, deliveryAddress: null };
-}
-
 function sameLines(a: readonly PlannedLine[], b: readonly PlannedLine[]): boolean {
   return (
     a.length === b.length &&
@@ -264,28 +284,4 @@ function sameLines(a: readonly PlannedLine[], b: readonly PlannedLine[]): boolea
       return other !== undefined && line.equals(other);
     })
   );
-}
-
-function sameRouting(a: PlannedRouting, b: PlannedRouting): boolean {
-  return (
-    a.method === b.method &&
-    a.pickupAddressId === b.pickupAddressId &&
-    a.window.start === b.window.start &&
-    a.window.end === b.window.end &&
-    stableJson(a.deliveryAddress) === stableJson(b.deliveryAddress)
-  );
-}
-
-/** Une adresse relue et une adresse reçue n'ont pas forcément leurs clés dans le même ordre. */
-function stableJson(value: unknown): string {
-  if (Array.isArray(value)) {
-    return `[${value.map(stableJson).join(",")}]`;
-  }
-  if (typeof value === "object" && value !== null) {
-    const entries = Object.entries(value)
-      .filter(([, entry]) => entry !== undefined)
-      .sort(([left], [right]) => left.localeCompare(right));
-    return `{${entries.map(([key, entry]) => `${JSON.stringify(key)}:${stableJson(entry)}`).join(",")}}`;
-  }
-  return JSON.stringify(value);
 }

@@ -51,7 +51,10 @@ export class GetPlannerHandler implements IQueryHandler<GetPlannerQuery, Planner
     const columns = visibleColumns(stored, today);
     const shown = shownDays({ from, today, last, columns });
     const items = gridItems(shown, columns, wishlist);
-    const checks = items.length === 0 ? [] : await this.check.check({ companyId, items });
+    const checks =
+      items.length === 0
+        ? []
+        : await this.check.check({ companyId, buyerUserId: query.actorUserId, items });
     return {
       from: from.value,
       lastPlannableDay: last.value,

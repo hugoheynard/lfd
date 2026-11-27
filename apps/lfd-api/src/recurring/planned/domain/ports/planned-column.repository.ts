@@ -24,6 +24,15 @@ export abstract class PlannedColumnRepository {
   abstract loadSlot(slot: PlannedColumnSlot): Promise<PlannedColumn | null>;
 
   /**
+   * Les colonnes en BROUILLON servies au plus tard `lastDay`, toutes sociétés
+   * confondues — ce que le balayage lit (index partiel `planned_columns_draft_idx`),
+   * par jour servi puis instant de conversion croissants, au plus `limit`.
+   * La machine n'a pas de mur : elle passe chaque colonne sous le mur de son
+   * acheteur, rejoué par la passation.
+   */
+  abstract draftsThrough(lastDay: IsoDate, limit: number): Promise<PlannedColumn[]>;
+
+  /**
    * Écrit la colonne (insérée si neuve) et rend sa nouvelle version.
    *
    * @throws {PlannedColumnVersionConflictError} écrite ailleurs depuis la lecture.

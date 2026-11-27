@@ -7,6 +7,7 @@ import { CatalogBasketArticles } from "../lafoliecoffee/catalog/application/cata
 import { CatalogModule } from "../lafoliecoffee/catalog/catalog.module.js";
 import { OrdersBasketSalesTerms } from "../lafoliecoffee/orders/application/services/orders-basket-sales-terms.js";
 import { CommercePlannedBasketCheck } from "../lafoliecoffee/orders/application/services/commerce-planned-basket-check.js";
+import { CommercePlannedColumnPlacement } from "../lafoliecoffee/orders/application/services/commerce-planned-column-placement.js";
 import { RecurringOccurrencePlacement } from "../lafoliecoffee/orders/application/services/recurring-occurrence-placement.js";
 import { OrdersModule } from "../lafoliecoffee/orders/orders.module.js";
 import { SiteBasketPickupPoints } from "../lafoliecoffee/pickup-addresses/infrastructure/site-basket-pickup-points.js";
@@ -19,13 +20,14 @@ import {
   BasketSalesTerms,
   OccurrencePlacement,
   PlannedBasketCheck,
+  PlannedColumnPlacement,
 } from "../recurring/channels/commerce/index.js";
 
 /**
  * **Le fil des paniers récurrents, relié** (plan `plan-bloc-recurrent.md`,
  * § 6.1) : les ports que `recurring/channels/commerce/` déclare, branchés sur
  * leurs implémentations du commerce — la passation d'une échéance, les CGV et
- * ce que dirait la passation d'un panier planifié (`orders`), l'acheteur et son adresse (`account`), les articles (`catalog`), les points de
+ * ce que dirait la passation d'un panier planifié et sa passation (`orders`), l'acheteur et son adresse (`account`), les articles (`catalog`), les points de
  * retrait (`pickup-addresses`).
  *
  * `@Global` pour la raison des autres fils : `recurring` ne peut pas importer
@@ -38,6 +40,7 @@ import {
     { provide: OccurrencePlacement, useExisting: RecurringOccurrencePlacement },
     { provide: BasketSalesTerms, useExisting: OrdersBasketSalesTerms },
     { provide: PlannedBasketCheck, useExisting: CommercePlannedBasketCheck },
+    { provide: PlannedColumnPlacement, useExisting: CommercePlannedColumnPlacement },
     { provide: BasketBuyerStanding, useClass: AccountBasketBuyerStanding },
     { provide: BasketBuyerContacts, useClass: AccountBasketBuyerContacts },
     { provide: BasketArticles, useClass: CatalogBasketArticles },
@@ -47,6 +50,7 @@ import {
     OccurrencePlacement,
     BasketSalesTerms,
     PlannedBasketCheck,
+    PlannedColumnPlacement,
     BasketBuyerStanding,
     BasketBuyerContacts,
     BasketArticles,

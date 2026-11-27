@@ -840,6 +840,23 @@ async function triggerRecurringOccurrences(env: Env): Promise<void> {
 }
 
 /**
+ * Réveille le container et passe le planificateur des pros
+ * (`documentation/commandes/planificateur/plan-planificateur-de-commandes.md`,
+ * § 4) : les colonnes des deux prochains jours dont l'instant de conversion
+ * est atteint deviennent des commandes. Sur le cron de RAFRAÎCHISSEMENT : une
+ * colonne se commande quinze minutes avant sa première fermeture, une heure
+ * de retard la ferait manquer. Même porte et même jeton que la boîte
+ * d'envoi ; idempotent (une colonne close n'est plus lue).
+ */
+async function triggerPlannerSweep(env: Env): Promise<void> {
+  const token = env.RECOMPUTE_TOKEN;
+  if (!token) {
+    return;
+  }
+  await postSweep(env, token, "admin/planner/sweep");
+}
+
+/**
  * Les passages du cron horaire, chacun pour soi : l'échec de l'un ne prive
  * pas l'autre de son tour (`postSweep` l'écrit dans les logs du Worker).
  */
@@ -872,6 +889,7 @@ async function refreshSweeps(env: Env): Promise<void> {
     triggerIntentRelabelSweep(env),
     triggerCardIncreases(env),
     triggerVitrineSweep(env),
+    triggerPlannerSweep(env),
   ]);
 }
 

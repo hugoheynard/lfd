@@ -38,7 +38,7 @@ const OPEN_COLUMN_GESTURE = "planner.columns.open";
  *
  * @sans-journal une colonne est un brouillon : elle ne réserve rien, le fournil
  * ne la voit pas, et rien ne se fabrique ni ne se facture tant qu'elle n'est
- * pas convertie. C'est la conversion (lot L2) qui laissera une trace.
+ * pas convertie. C'est la conversion qui laisse une trace (la commande).
  */
 @CommandHandler(OpenPlannedColumnCommand)
 export class OpenPlannedColumnHandler implements ICommandHandler<

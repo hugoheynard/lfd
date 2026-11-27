@@ -5,6 +5,7 @@ import {
   type PlannedBasketCheckRequest,
   type PlannedLineCheck,
 } from "../../../channels/commerce/planned-basket-check.js";
+import type { IsoDate } from "../../../basket/domain/value-objects/iso-date.js";
 import { PlannedColumn } from "../../domain/entities/planned-column.js";
 import {
   PlannedColumnVersionConflictError,
@@ -34,6 +35,15 @@ export class InMemoryPlannedColumns extends PlannedColumnRepository {
 
   loadSlot(slot: PlannedColumnSlot): Promise<PlannedColumn | null> {
     return Promise.resolve(this.live().find((day) => sameSlot(day, slot)) ?? null);
+  }
+
+  draftsThrough(lastDay: IsoDate, limit: number): Promise<PlannedColumn[]> {
+    return Promise.resolve(
+      [...this.rows.values()]
+        .filter((day) => day.isDraft && !day.serviceDay.isAfter(lastDay))
+        .sort((a, b) => a.serviceDay.value.localeCompare(b.serviceDay.value))
+        .slice(0, limit),
+    );
   }
 
   save(day: PlannedColumn, _at: Date): Promise<number> {
@@ -144,17 +154,32 @@ export class InMemoryWishlist implements WishlistReader, WishlistWriter {
   }
 }
 
-/** Rend « rien ne bloque » pour chaque article, et garde les questions. */
+/** Ce que la vérification répond pour un article, quel que soit le jour. */
+export interface ScriptedLineAnswer {
+  readonly closesAt?: Date | null;
+  readonly blocking?: PlannedLineCheck["blocking"];
+}
+
+/**
+ * Rend, pour chaque article, la réponse écrite pour son SKU (« rien ne
+ * bloque, rien ne ferme » par défaut), et garde les questions.
+ */
 export class RecordingBasketCheck extends PlannedBasketCheck {
   readonly asked: PlannedBasketCheckRequest[] = [];
+
+  constructor(private readonly answers: Readonly<Record<string, ScriptedLineAnswer>> = {}) {
+    super();
+  }
 
   check(request: PlannedBasketCheckRequest): Promise<readonly PlannedLineCheck[]> {
     this.asked.push(request);
     return Promise.resolve(
       request.items.map((item) => ({
-        ...item,
-        closesAt: null,
-        blocking: null,
+        sku: item.sku,
+        day: item.day,
+        columnId: item.columnId,
+        closesAt: this.answers[item.sku]?.closesAt ?? null,
+        blocking: this.answers[item.sku]?.blocking ?? null,
         quantityIndependent: true,
       })),
     );

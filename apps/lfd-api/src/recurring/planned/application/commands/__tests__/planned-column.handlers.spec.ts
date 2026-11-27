@@ -15,8 +15,9 @@ import {
   PlannerMembershipLostError,
   PlannerProOnlyError,
 } from "../../../domain/errors/planned-column-errors.js";
+import { ConversionSchedule } from "../../services/conversion-schedule.js";
 import { PlannerWall } from "../../services/planner-wall.js";
-import { InMemoryPlannedColumns } from "../../__tests__/planner-doubles.js";
+import { InMemoryPlannedColumns, RecordingBasketCheck } from "../../__tests__/planner-doubles.js";
 import { OpenPlannedColumnCommand } from "../open-planned-column.command.js";
 import { OpenPlannedColumnHandler } from "../open-planned-column.handler.js";
 import { PutPlannedColumnCommand } from "../put-planned-column.command.js";
@@ -34,14 +35,19 @@ const MORNING: PlannedRoutingPayload = {
   window: { start: "07:00", end: "09:00" },
 };
 const NOON: PlannedRoutingPayload = { ...MORNING, window: { start: "11:00", end: "12:00" } };
+/** Le seigle ferme la veille à 10 h (Paris, UTC+1) ; le croissant n'a rien à opposer. */
+const RYE_CLOSES = new Date("2026-12-02T09:00:00.000Z");
 
 function scene() {
   const columns = new InMemoryPlannedColumns();
   const wall = new PlannerWall(new FixedStanding(new Set(["user_1/chalet", "user_1/autre"])));
   const clock = new FixedClock(NOW);
   const uow = new DirectUnitOfWork();
+  const check = new RecordingBasketCheck({ SEIGLE: { closesAt: RYE_CLOSES } });
   return {
     columns,
+    clock,
+    check,
     open: new OpenPlannedColumnHandler(
       wall,
       columns,
@@ -50,7 +56,7 @@ function scene() {
       new FixedIdGenerator("col"),
       clock,
     ),
-    put: new PutPlannedColumnHandler(wall, columns, uow, clock),
+    put: new PutPlannedColumnHandler(wall, columns, new ConversionSchedule(check), uow, clock),
     withdraw: new WithdrawPlannedColumnHandler(wall, columns, uow, clock),
   };
 }
@@ -65,11 +71,17 @@ const openCommand = (
   intentKey = `intent-${String((intents += 1))}`,
 ) => new OpenPlannedColumnCommand(user, company, { day, routing }, intentKey);
 
-const putCommand = (id: string, version: number, quantity = 40, routing = MORNING) =>
+const putCommand = (
+  id: string,
+  version: number,
+  quantity = 40,
+  routing = MORNING,
+  skus: readonly string[] = ["CRO-01"],
+) =>
   new PutPlannedColumnCommand("user_1", "chalet", id, {
     version,
     routing,
-    lines: [{ sku: "CRO-01", quantity }],
+    lines: skus.map((sku) => ({ sku, quantity })),
   });
 
 describe("OpenPlannedColumnHandler", () => {
@@ -166,6 +178,53 @@ describe("PutPlannedColumnHandler", () => {
     const { id } = await open.execute(openCommand());
     columns.rows.get(id)?.markPlaced("order_1");
     await expect(put.execute(putCommand(id, 1))).rejects.toThrow(PlannedColumnFrozenError);
+  });
+});
+
+describe("PutPlannedColumnHandler — l'instant de conversion (§ 4)", () => {
+  it("se pose quinze minutes avant la PREMIÈRE fermeture parmi les lignes", async () => {
+    const { open, put, columns, check } = scene();
+    const { id } = await open.execute(openCommand());
+    await put.execute(putCommand(id, 1, 40, MORNING, ["CRO-01", "SEIGLE"]));
+    expect(columns.rows.get(id)?.convertsAt).toEqual(new Date("2026-12-02T08:45:00.000Z"));
+    expect(check.asked[0]).toMatchObject({ companyId: "chalet", buyerUserId: "user_1" });
+    expect(check.asked[0]?.items).toEqual([
+      { sku: "CRO-01", day: DAY, columnId: id, quantity: 40 },
+      { sku: "SEIGLE", day: DAY, columnId: id, quantity: 40 },
+    ]);
+  });
+
+  it("sans fermeture à opposer, la veille du jour servi à 23 h 45 (Q9)", async () => {
+    const { open, put, columns } = scene();
+    const { id } = await open.execute(openCommand());
+    await put.execute(putCommand(id, 1));
+    expect(columns.rows.get(id)?.convertsAt).toEqual(new Date("2026-12-02T22:45:00.000Z"));
+  });
+
+  it("retirer l'article qui fermait le premier repousse l'instant", async () => {
+    const { open, put, columns } = scene();
+    const { id } = await open.execute(openCommand());
+    await put.execute(putCommand(id, 1, 40, MORNING, ["CRO-01", "SEIGLE"]));
+    await put.execute(putCommand(id, 2, 40, MORNING, ["CRO-01"]));
+    expect(columns.rows.get(id)?.convertsAt).toEqual(new Date("2026-12-02T22:45:00.000Z"));
+  });
+
+  it("une colonne vidée n'a plus d'instant : rien ne la gèle", async () => {
+    const { open, put, columns } = scene();
+    const { id } = await open.execute(openCommand());
+    await put.execute(putCommand(id, 1));
+    await put.execute(putCommand(id, 2, 40, MORNING, []));
+    expect(columns.rows.get(id)?.convertsAt).toBeNull();
+  });
+
+  it("refuse l'écriture une fois l'instant atteint : la colonne se commande", async () => {
+    const { open, put, clock } = scene();
+    const { id } = await open.execute(openCommand());
+    await put.execute(putCommand(id, 1, 40, MORNING, ["SEIGLE"]));
+    clock.set(new Date("2026-12-02T08:45:00.000Z"));
+    await expect(put.execute(putCommand(id, 2, 12, MORNING, ["SEIGLE"]))).rejects.toThrow(
+      PlannedColumnFrozenError,
+    );
   });
 });
 

@@ -18,6 +18,19 @@ export interface RecurringProvenance {
   readonly deltas: RecurringDeltas;
 }
 
+/**
+ * **D'où vient une commande passée pour une colonne du planificateur** : la
+ * colonne, identifiant opaque du bloc des paniers. Écrite une fois à la
+ * création (un déclencheur en refuse la modification), unique en base : une
+ * colonne, au plus une commande.
+ */
+export interface PlannedColumnProvenance {
+  readonly plannedColumnId: string;
+}
+
+/** Une provenance de commande passée par une machine : une échéance, ou une colonne. */
+export type OrderProvenance = RecurringProvenance | PlannedColumnProvenance;
+
 /** Ce que la passation renvoie : l'id technique et le numéro humain. */
 export interface PlacedOrder {
   readonly id: string;
@@ -54,11 +67,13 @@ export abstract class OrderRepository {
    * dispositif ne survit pas — la commande existe, la clé n'est pas résolue :
    * ni rendable, ni reprenable.
    *
-   * @throws {OccurrenceAlreadyServedError} `recurring` nomme une échéance qui a
-   *   déjà sa commande (index `orders_one_per_occurrence`) : la transaction
+   * @throws {OccurrenceAlreadyServedError} la provenance nomme une échéance qui
+   *   a déjà sa commande (index `orders_one_per_occurrence`) : la transaction
    *   est annulée, et l'appelant relit la commande existante.
+   * @throws {PlannedColumnAlreadyServedError} la provenance nomme une colonne
+   *   qui a déjà sa commande (index `orders_one_per_planned_column`) : même geste.
    */
-  abstract place(order: Order, recurring?: RecurringProvenance): Promise<PlacedOrder>;
+  abstract place(order: Order, provenance?: OrderProvenance): Promise<PlacedOrder>;
 
   /**
    * Marque **payée** la commande portant cette intention Stripe. **Idempotent** :

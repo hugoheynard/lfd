@@ -41,6 +41,8 @@ export const EVERY_FIVE_MINUTES = [
   "admin/mail/requests/sweep",
   // La surveillance des envois (S8) : sonne la cloche quand Resend se tait.
   "admin/mail/requests/watch",
+  // Le planificateur des pros : les colonnes dont l'instant de conversion est atteint.
+  "admin/planner/sweep",
 ];
 
 /** À chaque heure pile, comme le cron `0 *` du Worker (`hourlySweeps`). */

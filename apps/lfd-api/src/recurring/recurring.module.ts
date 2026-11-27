@@ -27,6 +27,13 @@ import { PutPlannedColumnHandler } from "./planned/application/commands/put-plan
 import { RemoveWishlistItemHandler } from "./planned/application/commands/remove-wishlist-item.handler.js";
 import { WithdrawPlannedColumnHandler } from "./planned/application/commands/withdraw-planned-column.handler.js";
 import { GetPlannerHandler } from "./planned/application/queries/get-planner.handler.js";
+import { ConversionSchedule } from "./planned/application/services/conversion-schedule.js";
+import { SweepPlannedColumnsHandler } from "./planned/application/commands/sweep-planned-columns.handler.js";
+import { RingOnPlannedColumnMissed } from "./planned/application/handlers/ring-on-planned-column-missed.handler.js";
+import { RingOnPlannedColumnRefused } from "./planned/application/handlers/ring-on-planned-column-refused.handler.js";
+import { PlannedColumnConversion } from "./planned/application/services/planned-column-conversion.js";
+import { PlannedColumnIssueBell } from "./planned/application/services/planned-column-issue-bell.js";
+import { PlannerSweepController } from "./planned/http/planner-sweep.controller.js";
 import { PlannerWall } from "./planned/application/services/planner-wall.js";
 import { PlannedColumnRepository } from "./planned/domain/ports/planned-column.repository.js";
 import { PlannedColumnsReader } from "./planned/domain/ports/planned-columns.reader.js";
@@ -68,6 +75,7 @@ import {
     AdminSubscriptionsController,
     RecurringOccurrencesSweepController,
     PlannerController,
+    PlannerSweepController,
   ],
   providers: [
     OpenBasketHandler,
@@ -89,6 +97,13 @@ import {
     RingOnOccurrenceMissed,
     // Le planificateur de commandes des pros (`planned/`).
     PlannerWall,
+    ConversionSchedule,
+    // La conversion des colonnes (L2) : le balayage, l'issue, la cloche du staff.
+    SweepPlannedColumnsHandler,
+    PlannedColumnConversion,
+    PlannedColumnIssueBell,
+    RingOnPlannedColumnRefused,
+    RingOnPlannedColumnMissed,
     GetPlannerHandler,
     OpenPlannedColumnHandler,
     PutPlannedColumnHandler,

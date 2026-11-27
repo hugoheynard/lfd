@@ -151,6 +151,12 @@ import { SaveOrderDraftHandler } from "./application/commands/save-order-draft.h
 import { PlaceOrderHandler } from "./application/commands/place-order.handler.js";
 import { CommercePlannedBasketCheck } from "./application/services/commerce-planned-basket-check.js";
 import { RecurringOccurrencePlacement } from "./application/services/recurring-occurrence-placement.js";
+import { CommercePlannedColumnPlacement } from "./application/services/commerce-planned-column-placement.js";
+import { UnattendedOrderPlacement } from "./application/services/unattended-order-placement.js";
+import { CommercePlannedOrderingGates } from "./application/services/commerce-planned-ordering-gates.js";
+import { PlannedOrderingGates } from "./application/services/planned-ordering-gates.js";
+import { PlannedColumnOrderReader } from "./domain/ports/planned-column-order.reader.js";
+import { PrismaPlannedColumnOrderReader } from "./infrastructure/prisma-planned-column-order.reader.js";
 import { OrdersBasketSalesTerms } from "./application/services/orders-basket-sales-terms.js";
 import { OccurrenceOrderReader } from "./domain/ports/occurrence-order.reader.js";
 import { PrismaOccurrenceOrderReader } from "./infrastructure/prisma-occurrence-order.reader.js";
@@ -482,10 +488,14 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     PlaceOrderHandler,
     // Ce que les paniers récurrents déclarent et que le commerce implémente
     // (`recurring/channels/commerce/`), relié par `appBootstrap/recurring-feed.module.ts`.
+    UnattendedOrderPlacement,
     RecurringOccurrencePlacement,
+    CommercePlannedColumnPlacement,
     OrdersBasketSalesTerms,
     CommercePlannedBasketCheck,
+    { provide: PlannedOrderingGates, useClass: CommercePlannedOrderingGates },
     { provide: OccurrenceOrderReader, useClass: PrismaOccurrenceOrderReader },
+    { provide: PlannedColumnOrderReader, useClass: PrismaPlannedColumnOrderReader },
     PlaceOrderForCustomerHandler,
     PlaceParticularOrderAtCounterHandler,
     PlaceOfferedParticularOrderHandler,
@@ -791,8 +801,9 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     // La passation d'une échéance et les CGV d'un panier, pour le fil des paniers récurrents.
     RecurringOccurrencePlacement,
     OrdersBasketSalesTerms,
-    // Ce que dirait la passation d'un panier planifié, pour le planificateur.
+    // Ce que dirait la passation d'un panier planifié, et sa passation, pour le planificateur.
     CommercePlannedBasketCheck,
+    CommercePlannedColumnPlacement,
     // La source du journal du commerce, reliée au registre par `appBootstrap/day-version-sources.module.ts`.
     OrdersDayVersionSource,
     // Le numéro de toutes les commandes, relié au registre au même endroit.

@@ -24,6 +24,11 @@ export {
   type PlannedLineBlocking,
   type PlannedLineCheck,
 } from "./planned-basket-check.js";
+export {
+  PlannedColumnPlacement,
+  type PlannedColumnPlacementOutcome,
+  type PlannedColumnPlacementRequest,
+} from "./planned-column-placement.js";
 /**
  * Ce que le bloc écoute (déclaré ici, émis par le contenu du commerce au
  * dépôt du PDF des CGV, § 7) :

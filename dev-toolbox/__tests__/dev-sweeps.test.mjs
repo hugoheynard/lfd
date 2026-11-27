@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 
 import {
   dueSweeps,
+  EVERY_FIVE_MINUTES,
   FIVE_MINUTES_MS,
   HOUR_MS,
   NOT_IN_DEV,
@@ -55,4 +56,10 @@ test("le récapitulatif des restaurants maison est au Worker, et écarté du pos
   const worker = readFileSync(WORKER, "utf8");
   assert.ok(worker.includes('"admin/in-house-recaps/run"'));
   assert.ok(NOT_IN_DEV.has("admin/in-house-recaps/run"));
+});
+
+test("le planificateur des pros passe aux cinq minutes, au Worker comme en dev", () => {
+  const worker = readFileSync(WORKER, "utf8");
+  assert.ok(worker.includes('"admin/planner/sweep"'));
+  assert.ok(EVERY_FIVE_MINUTES.includes("admin/planner/sweep"));
 });

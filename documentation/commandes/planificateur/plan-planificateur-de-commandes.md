@@ -386,13 +386,37 @@ Le commerce implémente `PlannedDayPlacement`, sur le modèle exact de
   attente pour ne pas écrire à chaque clic. Le devis suit, colonne par
   colonne.
 
-### 6.2 La boutique en mode « liste d'envies »
+### 6.2 La colonne de gauche : les favoris (Hugo, 2026-11-27)
 
-L'onglet « Liste d'envies » ouvre la boutique habituelle avec un paramètre
-de mode. Dans ce mode, le « ＋ » des cartes devient « Ajouter à la liste
-d'envies » : la grille branche `StorefrontActions.productAdded` vers la
-liste au lieu du panier. Le panier n'est pas touché, et un bandeau rappelle le
-mode avec un bouton « Retour au planificateur ».
+**La liste d'envies, ce sont les favoris.** Ils sont en production depuis le
+2026-11-27 ([`les-favoris.md`](../boutique/les-favoris.md)) : un cœur sur
+chaque article, l'onglet « Favoris » du menu des rayons, gardés **par
+espace** (`public.shop_favorite`). Comme un site est son propre espace, les
+favoris d'un site sont ceux de son planificateur. Il n'y a donc pas de
+second objet, ni de mode « liste d'envies » de la boutique :
+
+- la colonne de gauche du planificateur montre les **favoris de l'espace** ;
+- son bouton « Ajouter des articles » ouvre la boutique sur l'onglet
+  « Favoris » (`FAVORITES_SHELF`), où le cœur fait déjà ce qu'il faut ;
+- un favori retiré disparaît de la colonne, sans toucher aux jours déjà
+  remplis.
+
+**Le chemin.** Le bloc des paniers ne lit pas `shop_favorite` (propriété du
+commerce). Il déclare dans `recurring/channels/commerce/` une lecture
+`PlannerFavoriteSkus` (« les favoris de cette société »), que le commerce
+implémente avec le store des favoris. `GET /planner` la compose avec
+`PlannedBasketCheck` pour griser les jours (§ 4 bis).
+
+Cela remplace Q3 (« une liste par personne ») : les favoris sont partagés
+par tous les membres de l'espace, ce qui est le comportement déjà en
+production.
+
+**Ce que L1 avait bâti et qui disparaît** : la table
+`recurring.wishlist_items`, ses routes `PUT/DELETE /planner/wishlist/:sku`,
+ses handlers et ses contrats. Comme la migration de L1 est déjà appliquée à
+la base de dev, la table est retirée par une **nouvelle** migration
+(`DROP TABLE`, jamais déployée, vide). Le `migration.sql` de L1 reste tel
+quel.
 
 ### 6.2 bis Le prévisionnel du fournil (Hugo, 2026-11-27)
 
@@ -444,32 +468,32 @@ lecture seule, et les refus mis en évidence, comme les paniers récurrents.
 
 ## 7. Les lots
 
-| Lot                      | Contenu                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | Migration |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
-| ~~**L1**~~ ✅ 2026-11-27 | Bâti sous le nom `PlannedColumn` (table `recurring.planned_columns`, une ligne par jour × créneau ; le site est la société de l'espace, pas de `site_key`). Les tables dans le schéma `recurring`, `PlannedBasketCheck` servi avec les colonnes, l'agrégat `PlannedDay`, la liste d'envies, les routes `GET /planner?from&site`, `PUT /planner/days/:day`, `PUT`/`DELETE /planner/wishlist/:sku` (pros seulement, mur `company_id`, `@Idempotent`) ; tests aux trois niveaux, dont le mur entre deux sociétés | additive  |
-| **L2**                   | `converts_at` et le gel, la provenance `planned_day` dans le port de passation existant, la provenance sur la commande, le balayage des cinq minutes sur les deux prochains jours, la cloche du staff ; e2e : convertie, double balayage, édition refusée après le gel, article fermé plus tôt, acheteur parti, sans crédit, manquée                                                                                                                                                                          | additive  |
-| **L3**                   | La page du planificateur : date de départ, ligne du site, colonnes, « ＋ », totaux par devis, lignes bloquantes en avertissement avec leur explication et leurs gestes de sortie, colonnes grisées et callout pendant un glisser, états, glisser-déposer et son équivalent clavier, affichage au téléphone                                                                                                                                                                                                    | —         |
-| **L4**                   | La boutique en mode liste d'envies, et l'onglet qui l'ouvre                                                                                                                                                                                                                                                                                                                                                                                                                                                   | —         |
-| **L4 bis**               | Le prévisionnel : `PlannedQuantitiesReader` (déclaré et fait par le bloc), le commerce le joint à `ExpectedProductionReader`, le contrat gagne `plannedQuantities` / `plannedUnits`, l'écran les montre à part (§ 6.2 bis) ; test : un brouillon n'entre jamais dans `totalUnits` ni dans l'arrêt                                                                                                                                                                                                             | —         |
-| **L5**                   | (facultatif) la lecture au back-office                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | —         |
+| Lot                      | Contenu                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | Migration |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
+| ~~**L1**~~ ✅ 2026-11-27 | Bâti sous le nom `PlannedColumn` (table `recurring.planned_columns`, une ligne par jour × créneau ; le site est la société de l'espace, pas de `site_key`). Les tables dans le schéma `recurring`, `PlannedBasketCheck` servi avec les colonnes, l'agrégat `PlannedDay`, la liste d'envies, les routes `GET /planner?from&site`, `PUT /planner/days/:day`, `PUT`/`DELETE /planner/wishlist/:sku` (pros seulement, mur `company_id`, `@Idempotent`) ; tests aux trois niveaux, dont le mur entre deux sociétés                                  | additive  |
+| ~~**L2**~~ ✅ 2026-11-27 | Bâti : port frère `PlannedColumnPlacement` sur une passation commune sans personne devant l'écran (`UnattendedOrderPlacement`, partagée avec les récurrents), provenance `orders.from_planned_column_id`. `converts_at` et le gel, la provenance `planned_day` dans le port de passation existant, la provenance sur la commande, le balayage des cinq minutes sur les deux prochains jours, la cloche du staff ; e2e : convertie, double balayage, édition refusée après le gel, article fermé plus tôt, acheteur parti, sans crédit, manquée | additive  |
+| **L3**                   | La page du planificateur : date de départ, ligne du site, colonnes, « ＋ », totaux par devis, lignes bloquantes en avertissement avec leur explication et leurs gestes de sortie, colonnes grisées et callout pendant un glisser, états, glisser-déposer et son équivalent clavier, affichage au téléphone                                                                                                                                                                                                                                     | —         |
+| **L4**                   | Les favoris à la place de la liste d'envies (§ 6.2) : `PlannerFavoriteSkus` fait par le commerce, la liste d'envies de L1 retirée (nouvelle migration `DROP TABLE`, routes, handlers, contrats), le bouton qui ouvre la boutique sur l'onglet « Favoris »                                                                                                                                                                                                                                                                                      | —         |
+| **L4 bis**               | Le prévisionnel : `PlannedQuantitiesReader` (déclaré et fait par le bloc), le commerce le joint à `ExpectedProductionReader`, le contrat gagne `plannedQuantities` / `plannedUnits`, l'écran les montre à part (§ 6.2 bis) ; test : un brouillon n'entre jamais dans `totalUnits` ni dans l'arrêt                                                                                                                                                                                                                                              | —         |
+| **L5**                   | (facultatif) la lecture au back-office                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | —         |
 
 L1 et L2 d'abord, parce que l'écran sans conversion serait un tableau qui
 promet une commande qu'il ne passe pas.
 
 ## 8. Les décisions (prises par Hugo le 2026-11-27 : les propositions)
 
-| #   | Question                                                                                                            | Proposition                                                                                                                     |
-| --- | ------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| Q1  | Quand une colonne se convertit-elle, sachant que des articles ferment plus tôt que d'autres ?                       | à la **première** fermeture parmi ses lignes, 15 min avant ; affichée sur la colonne                                            |
-| Q2  | Un article ne passe plus à la conversion : on refuse tout le jour, ou on commande le reste ?                        | tout le jour refusé, définitivement (la colonne est gelée) ; le client le voit, le staff est sonné et peut commander à sa place |
-| Q3  | La liste d'envies : une par personne, ou partagée par toute la société ?                                            | une par personne et par société, comme le panier                                                                                |
-| Q4  | « Le site choisi » : un planificateur par site d'une société (carte des sites), ou un acheminement libre par jour ? | un planificateur par site, et l'acheminement du site par défaut                                                                 |
-| Q5  | Combien de jours à l'avance au plus ?                                                                               | 28 jours                                                                                                                        |
-| Q6  | Le client voit-il « vient du planificateur » sur sa commande, et le staff dans la liste ?                           | oui, une provenance comme pour les récurrents                                                                                   |
-| Q7  | Ouvert à tous les pros d'un coup, ou d'abord au client demandeur (drapeau par société) ?                            | d'abord le client demandeur                                                                                                     |
-| Q9  | Une colonne dont aucun article n'a d'heure limite : quand se convertit-elle ?                                       | à l'heure limite générale du jour, sinon la veille à 23 h 45                                                                    |
-| Q10 | Le planificateur vit dans le bloc `recurring/` (pas de doublon), au prix d'un nom qui ne dit plus tout : d'accord ? | oui ; renommer le bloc le jour d'un troisième usage                                                                             |
-| Q8  | Le client est-il averti par e-mail d'un jour refusé ou manqué ?                                                     | non dans le premier bâti : la colonne le dit, et le staff appelle (comme les récurrents)                                        |
+| #      | Question                                                                                                            | Proposition                                                                                                                     |
+| ------ | ------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| Q1     | Quand une colonne se convertit-elle, sachant que des articles ferment plus tôt que d'autres ?                       | à la **première** fermeture parmi ses lignes, 15 min avant ; affichée sur la colonne                                            |
+| Q2     | Un article ne passe plus à la conversion : on refuse tout le jour, ou on commande le reste ?                        | tout le jour refusé, définitivement (la colonne est gelée) ; le client le voit, le staff est sonné et peut commander à sa place |
+| ~~Q3~~ | La liste d'envies : une par personne, ou partagée par toute la société ?                                            | une par personne et par société, comme le panier                                                                                |
+| Q4     | « Le site choisi » : un planificateur par site d'une société (carte des sites), ou un acheminement libre par jour ? | un planificateur par site, et l'acheminement du site par défaut                                                                 |
+| Q5     | Combien de jours à l'avance au plus ?                                                                               | 28 jours                                                                                                                        |
+| Q6     | Le client voit-il « vient du planificateur » sur sa commande, et le staff dans la liste ?                           | oui, une provenance comme pour les récurrents                                                                                   |
+| Q7     | Ouvert à tous les pros d'un coup, ou d'abord au client demandeur (drapeau par société) ?                            | d'abord le client demandeur                                                                                                     |
+| Q9     | Une colonne dont aucun article n'a d'heure limite : quand se convertit-elle ?                                       | à l'heure limite générale du jour, sinon la veille à 23 h 45                                                                    |
+| Q10    | Le planificateur vit dans le bloc `recurring/` (pas de doublon), au prix d'un nom qui ne dit plus tout : d'accord ? | oui ; renommer le bloc le jour d'un troisième usage                                                                             |
+| Q8     | Le client est-il averti par e-mail d'un jour refusé ou manqué ?                                                     | non dans le premier bâti : la colonne le dit, et le staff appelle (comme les récurrents)                                        |
 
 ## 9. La contradiction (`vitruve`, 2026-11-27)
 

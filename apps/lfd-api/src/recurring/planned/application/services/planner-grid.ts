@@ -74,10 +74,12 @@ export function gridItems(
   for (const day of shown) {
     for (const column of columns) {
       if (column.day === day && column.status === "draft") {
-        column.lines.forEach((line) => items.push({ sku: line.sku, day, columnId: column.id }));
+        column.lines.forEach((line) =>
+          items.push({ sku: line.sku, day, columnId: column.id, quantity: line.quantity }),
+        );
       }
     }
-    wishlist.forEach((item) => items.push({ sku: item.sku, day, columnId: null }));
+    wishlist.forEach((item) => items.push({ sku: item.sku, day, columnId: null, quantity: null }));
   }
   return items;
 }
