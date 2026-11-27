@@ -106,7 +106,7 @@ export interface ToolGroup {
  *   `b2b_accounting` (2026-10-22, plan `plan-prelevement-d-essai.md`) ; sa clé
  *   n'a pas de préfixe d'outil.
  * - `pay_link_test` : le lien de paiement d'essai vit dans la Comptabilité, à
- *   côté du prélèvement d'essai (plan `plan-lien-de-paiement-d-essai.md`).
+ *   côté du prélèvement d'essai (doc `payment/les-liens-de-paiement.md`, § 4 bis).
  * - `resupply_templates` : les modèles de réassort se tiennent au comptoir
  *   (Comptoir › Réassort, plan `commander.md § 6`, 2026-11-19) ;
  *   rangés au retrait, avec `handover_counter`, plutôt qu'en « Transverse ».

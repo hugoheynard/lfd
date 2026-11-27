@@ -123,7 +123,7 @@ export const comptabiliteRoutes: Routes = [
       {
         // LE LIEN DE PAIEMENT D'ESSAI — 1 € à un membre du staff, encaissé puis
         // remboursé. Sous `pay_link_test` ; envoyer demande `pay_link_test:write`.
-        // Plan : documentation/payment/plan-lien-de-paiement-d-essai.md.
+        // Doc : documentation/payment/les-liens-de-paiement.md, § 4 bis.
         path: 'lien-de-paiement-d-essai',
         canActivate: [permissionGuard('pay_link_test:read')],
         title: "Lien de paiement d'essai — LFC B2B admin",

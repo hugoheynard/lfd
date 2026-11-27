@@ -56,7 +56,7 @@ const INTENT_SUBJECT = 'pay-link-test';
 
 /**
  * **Comptabilité › Lien de paiement d'essai** (plan
- * `documentation/payment/plan-lien-de-paiement-d-essai.md`, § 5 et § 8 bis) —
+ * `documentation/payment/les-liens-de-paiement.md`, § 4 bis) —
  * envoyer un lien de 1 € à un membre du staff, encaissé puis remboursé
  * automatiquement, et suivre les essais. Le destinataire se choisit dans la
  * liste des membres : aucune adresse libre.

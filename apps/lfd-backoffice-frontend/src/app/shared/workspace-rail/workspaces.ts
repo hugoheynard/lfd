@@ -855,7 +855,7 @@ export const COMPTABILITE_VIEWS: readonly WorkspaceView[] = [
     needs: 'collection_test:read',
   },
   {
-    // Son propre droit : `pay_link_test` (plan `plan-lien-de-paiement-d-essai.md`).
+    // Son propre droit : `pay_link_test` (doc `payment/les-liens-de-paiement.md`, § 4 bis).
     key: 'lien-de-paiement-d-essai',
     label: "Lien de paiement d'essai",
     link: '/comptabilite/lien-de-paiement-d-essai',

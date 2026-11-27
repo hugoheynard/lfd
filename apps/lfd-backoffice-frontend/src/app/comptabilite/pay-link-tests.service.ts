@@ -13,7 +13,7 @@ import { intentOptions } from '../shared/gesture-intents';
 
 /**
  * **Le lien de paiement d'essai** (plan
- * `documentation/payment/plan-lien-de-paiement-d-essai.md`), sous le droit
+ * `documentation/payment/les-liens-de-paiement.md`, § 4 bis), sous le droit
  * `pay_link_test` : 1 € encaissé puis remboursé, envoyé à un membre du staff.
  */
 @Injectable({ providedIn: 'root' })

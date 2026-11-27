@@ -149,7 +149,7 @@ describe('grantGroups', () => {
    * `b2b_offer_order`, offrir une commande (commandes/passation/la-commande-offerte.md).
    * 80 le même jour : `exports`, les clés de l'export des ventes
    * (commandes/export/plan-export-des-ventes.md, E2). 81 le 2026-11-24 :
-   * `pay_link_test`, le lien de paiement d'essai (payment/plan-lien-de-paiement-d-essai.md).
+   * `pay_link_test`, le lien de paiement d'essai (payment/les-liens-de-paiement.md, § 4 bis).
    * 82 le même jour : `events`, les événements (evenements/plan-evenements.md).
    * 83 : `b2b_in_house_payers`, les restaurants maison (restaurants-maison.md).
    */
