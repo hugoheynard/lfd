@@ -18,18 +18,23 @@ export class KnownInHousePayers extends InHousePayerReader {
   }
 }
 
-/** Des voisins de facturation fixes (aucun suivi par défaut). */
+/** Aucun suivi de facturation. */
+const ALONE: InHouseBillingNeighbours = { principalInHouse: null, sites: [] };
+
+/**
+ * Des voisins de facturation fixes : les mêmes pour toute société, ou une
+ * table par société (aucun suivi pour une société absente de la table).
+ */
 export class FixedInHouseNeighbours extends InHouseBillingNeighboursReader {
   constructor(
-    private readonly neighbours: InHouseBillingNeighbours = {
-      principalInHouse: null,
-      sitesInHouse: [],
-    },
+    private readonly neighbours:
+      InHouseBillingNeighbours | ReadonlyMap<string, InHouseBillingNeighbours> = ALONE,
   ) {
     super();
   }
-  neighboursOf(): Promise<InHouseBillingNeighbours> {
-    return Promise.resolve(this.neighbours);
+  neighboursOf(companyId: string): Promise<InHouseBillingNeighbours> {
+    const table = this.neighbours;
+    return Promise.resolve("principalInHouse" in table ? table : (table.get(companyId) ?? ALONE));
   }
 }
 

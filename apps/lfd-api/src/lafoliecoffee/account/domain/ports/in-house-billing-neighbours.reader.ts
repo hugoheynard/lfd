@@ -1,3 +1,9 @@
+/** Un site qui suit la facturation d'une société. */
+export interface InHouseBillingSite {
+  readonly companyId: string;
+  readonly inHouse: boolean;
+}
+
 /**
  * La nature « maison » de l'autre bout des suivis `billing` ouverts d'une
  * société : le principal qu'elle suit, et les sites qui la suivent.
@@ -5,8 +11,8 @@
 export interface InHouseBillingNeighbours {
   /** Le principal suivi en `billing` est-il maison ? `null` : elle règle seule. */
   readonly principalInHouse: boolean | null;
-  /** Pour chaque site qui la suit en `billing` : est-il maison ? */
-  readonly sitesInHouse: readonly boolean[];
+  /** Les sites qui la suivent en `billing`, et leur nature maison. */
+  readonly sites: readonly InHouseBillingSite[];
 }
 
 /**

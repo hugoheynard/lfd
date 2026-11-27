@@ -51,6 +51,11 @@ deux.
   payeur public ne devient pas maison, et un payeur maison ne devient pas
   public ; un site ne suit la facturation d'un principal que si les deux ont
   la même nature (`in-house-billing-follow.ts`).
+- **Un compte entraîne les sites qui suivent sa facturation** (décidé par
+  Hugo le 2026-11-27) : le marquer ou le démarquer fait de même pour eux,
+  dans la même transaction, chacun avec sa période et son fait. Un site qui
+  suit la facturation de son principal ne se marque pas seul ; un site qui
+  règle seul se marque sur sa propre fiche.
 - `declared_by` / `withdrawn_by` sont au registre RGPD (`lint:rgpd-staff`).
 
 ## 2. La commande interne

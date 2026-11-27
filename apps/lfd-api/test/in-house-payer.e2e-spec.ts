@@ -167,14 +167,35 @@ describe("les refus nommés (D3)", () => {
     expect(await ctx.prisma.payerInHouse.count()).toBe(0);
   });
 
-  it("marquer un principal dont un site suit la facturation : 409", async () => {
-    const { groupId } = await siteFollowingBilling();
+  /**
+   * Régression : marquer un principal dont un site suit la facturation était
+   * refusé, et le site ne pouvait pas être marqué le premier.
+   */
+  it("marquer un principal marque les sites qui suivent sa facturation, démarquer aussi", async () => {
+    const { groupId, siteId } = await siteFollowingBilling();
+    const live = () =>
+      ctx.prisma.payerInHouse.findMany({
+        where: { withdrawnAt: null },
+        select: { companyId: true },
+        orderBy: { companyId: "asc" },
+      });
 
-    const response = await set(ctx.asSub(E2E_STAFF_SUB), groupId, true).expect(409);
+    await set(ctx.asSub(E2E_STAFF_SUB), groupId, true).expect(204);
+    expect((await live()).map((row) => row.companyId)).toEqual([groupId, siteId].sort());
+
+    await set(ctx.asSub(E2E_STAFF_SUB), groupId, false).expect(204);
+    expect(await live()).toEqual([]);
+  });
+
+  it("un site qui suit la facturation ne se marque pas seul : 409", async () => {
+    const { siteId } = await siteFollowingBilling();
+
+    const response = await set(ctx.asSub(E2E_STAFF_SUB), siteId, true).expect(409);
 
     expect(jsonBody<{ code: string }>(response).code).toBe(
       "account.in_house.across_billing_follow",
     );
+    expect(await ctx.prisma.payerInHouse.count()).toBe(0);
   });
 
   it("un site non maison ne suit pas la facturation d'un principal maison : 409", async () => {

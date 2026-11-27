@@ -126,7 +126,7 @@ export class InHousePayer {
     if (neighbours.principalInHouse !== null && neighbours.principalInHouse !== inHouse) {
       throw new InHouseAcrossBillingFollowError(this.companyId, "principal");
     }
-    if (neighbours.sitesInHouse.some((site) => site !== inHouse)) {
+    if (neighbours.sites.some((site) => site.inHouse !== inHouse)) {
       throw new InHouseAcrossBillingFollowError(this.companyId, "sites");
     }
   }

@@ -6,7 +6,7 @@ import {
 
 /** Les dates ne sont comparées qu'entre elles : aucune horloge n'est lue. */
 const AT = new Date("2030-03-01T08:00:00.000Z");
-const ALONE = { principalInHouse: null, sitesInHouse: [] } as const;
+const ALONE = { principalInHouse: null, sites: [] } as const;
 const PRIVATE = { isPublic: false } as const;
 
 /** Le côté nommé par le refus, ou `null` si le geste passe. */
@@ -60,7 +60,7 @@ describe("InHousePayer — la nature « maison » d'un payeur", () => {
 
   it("refuse de marquer un site qui suit la facturation d'un principal non maison", () => {
     const payer = InHousePayer.reconstitute("site", null);
-    const neighbours = { principalInHouse: false, sitesInHouse: [] };
+    const neighbours = { principalInHouse: false, sites: [] };
 
     expect(
       sideOf(() => payer.declare({ company: PRIVATE, neighbours, id: "p1", at: AT, by: "s" })),
@@ -69,7 +69,13 @@ describe("InHousePayer — la nature « maison » d'un payeur", () => {
 
   it("refuse de marquer un principal dont un site suit la facturation sans être maison", () => {
     const payer = InHousePayer.reconstitute("groupe", null);
-    const neighbours = { principalInHouse: null, sitesInHouse: [true, false] };
+    const neighbours = {
+      principalInHouse: null,
+      sites: [
+        { companyId: "a", inHouse: true },
+        { companyId: "b", inHouse: false },
+      ],
+    };
 
     expect(() =>
       payer.declare({ company: PRIVATE, neighbours, id: "p1", at: AT, by: "s" }),
@@ -78,7 +84,7 @@ describe("InHousePayer — la nature « maison » d'un payeur", () => {
 
   it("marque un site dont le principal suivi est maison", () => {
     const payer = InHousePayer.reconstitute("site", null);
-    const neighbours = { principalInHouse: true, sitesInHouse: [] };
+    const neighbours = { principalInHouse: true, sites: [] };
 
     expect(payer.declare({ company: PRIVATE, neighbours, id: "p1", at: AT, by: "s" })).toBe(true);
   });
@@ -107,7 +113,7 @@ describe("InHousePayer — la nature « maison » d'un payeur", () => {
     expect(
       sideOf(() =>
         payer.withdraw({
-          neighbours: { principalInHouse: null, sitesInHouse: [true] },
+          neighbours: { principalInHouse: null, sites: [{ companyId: "a", inHouse: true }] },
           at: AT,
           by: "s",
         }),

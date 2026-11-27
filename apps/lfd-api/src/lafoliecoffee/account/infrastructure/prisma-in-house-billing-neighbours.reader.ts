@@ -37,9 +37,9 @@ export class PrismaInHouseBillingNeighboursReader extends InHouseBillingNeighbou
     const followed = rows.find((row) => row.companyId === companyId);
     return {
       principalInHouse: followed === undefined ? null : followed.parent.inHouse.length > 0,
-      sitesInHouse: rows
+      sites: rows
         .filter((row) => row.companyId !== companyId)
-        .map((row) => row.company.inHouse.length > 0),
+        .map((row) => ({ companyId: row.companyId, inHouse: row.company.inHouse.length > 0 })),
     };
   }
 }
