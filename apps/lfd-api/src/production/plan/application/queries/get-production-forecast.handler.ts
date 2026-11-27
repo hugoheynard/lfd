@@ -8,6 +8,7 @@ import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 import { Clock } from "../../../../platform/time/clock.js";
 import { ExpectedProductionReader } from "../../../channels/commerce/expected-production.reader.js";
 import { ExpectedResuppliesReader } from "../../../channels/commerce/expected-resupplies.reader.js";
+import { ExpectedPlannedReader } from "../../../channels/commerce/expected-planned.reader.js";
 import {
   AutoCloseAttemptLog,
   type DatedAttemptTrace,
@@ -19,7 +20,11 @@ import { ProductionSettingsReader } from "../../domain/ports/production-settings
 import { forecastDayState, type HouseMoment } from "../../domain/services/forecast-day-state.js";
 import { type OrderCutoffRule, planStopsAt } from "../../../day/index.js";
 import { PlanStopRules } from "../services/plan-stop-rules.js";
-import { forecastMatrix, type ForecastColumn } from "../../domain/services/production-forecast.js";
+import { forecastMatrix } from "../../domain/services/production-forecast.js";
+import {
+  type PlannedForecastColumn,
+  withPlannedLayer,
+} from "../../domain/services/forecast-planned-layer.js";
 import { ServiceRange } from "../../../day/index.js";
 import { GetProductionForecastQuery } from "./get-production-forecast.query.js";
 
@@ -45,6 +50,10 @@ import { GetProductionForecastQuery } from "./get-production-forecast.query.js";
  * figés au fournil pour une journée close, envoyés au commerce pour une
  * journée ouverte — que la matrice compte à part des commandes.
  *
+ * Il lit enfin les brouillons du planificateur des pros (`ExpectedPlannedReader`),
+ * posés en couche à part sur la matrice déjà calculée : ils n'entrent ni dans
+ * les totaux, ni dans le pic, ni dans l'état d'une colonne.
+ *
  * Il n'écrit rien, pas même un compteur — §4.
  */
 @QueryHandler(GetProductionForecastQuery)
@@ -61,11 +70,12 @@ export class GetProductionForecastHandler implements IQueryHandler<
     private readonly stopRules: PlanStopRules,
     private readonly resupplies: ExpectedResuppliesReader,
     private readonly display: ProductionDisplaySettingsReader,
+    private readonly planned: ExpectedPlannedReader,
   ) {}
 
   async execute(query: GetProductionForecastQuery): Promise<ProductionForecastView> {
     const range = ServiceRange.of(query.from, query.to);
-    const [arrested, expected, rules, closedDays, attempts, frozen, sent, display] =
+    const [arrested, expected, rules, closedDays, attempts, frozen, sent, display, drafts] =
       await Promise.all([
         this.plan.arrestedBetween(range),
         this.expected.expectedBetween(range),
@@ -75,8 +85,12 @@ export class GetProductionForecastHandler implements IQueryHandler<
         this.plan.arrestedResuppliesBetween(range),
         this.resupplies.expectedBetween(range),
         this.display.current(),
+        this.planned.plannedBetween(range),
       ]);
-    const matrix = forecastMatrix(range, arrested, expected, { arrested: frozen, expected: sent });
+    const matrix = withPlannedLayer(
+      forecastMatrix(range, arrested, expected, { arrested: frozen, expected: sent }),
+      drafts,
+    );
     const now = this.clock.now();
     const local = instantToLocal(now);
     const moment: HouseMoment = { today: local.day, now };
@@ -93,7 +107,7 @@ export class GetProductionForecastHandler implements IQueryHandler<
 }
 
 function withState(
-  column: ForecastColumn,
+  column: PlannedForecastColumn,
   moment: HouseMoment,
   rules: readonly OrderCutoffRule[],
   closedDays: ReadonlySet<string>,

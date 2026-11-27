@@ -244,6 +244,22 @@
             }
           }
         </div>
+        <!-- Planifié, non commandé : les brouillons du planificateur des pros,
+             sous leur produit, en italique atténué. Jamais dans le chiffre. -->
+        @if (line.planned; as planned) {
+          <div class="pv-row pv-row--planned" data-forecast-planned>
+            <span class="pv-cell pv-cell--label pv-planned-label">dont planifié</span>
+            @for (column of shown(); track column) {
+              <span class="pv-cell pv-planned" [attr.data-tone]="columns()[column]?.tone">{{
+                planned[column]
+              }}</span>
+            }
+            @if (split()) {
+              <span class="pv-cell pv-planned"></span>
+              <span class="pv-cell pv-planned"></span>
+            }
+          </div>
+        }
       }
     }
   }
@@ -273,6 +289,7 @@
         [class.pv-row--total]="row.kind === 'total'"
         [class.pv-row--detail]="row.kind === 'detail'"
         [class.pv-row--resupplies]="row.kind === 'resupplies'"
+        [class.pv-row--planned-foot]="row.kind === 'planned'"
         foldSurface="chrome"
       >
         <div class="pv-cell pv-cell--label">
@@ -285,6 +302,7 @@
               [class.pv-foot-total]="row.kind === 'total'"
               [class.pv-foot-detail]="row.kind === 'detail'"
               [class.pv-foot-resupplies]="row.kind === 'resupplies'"
+              [class.pv-foot-planned]="row.kind === 'planned'"
               [class.is-peak]="column.peak"
               [class.is-open]="row.kind === 'total' && !column.settled"
               [attr.data-tone]="column.tone"

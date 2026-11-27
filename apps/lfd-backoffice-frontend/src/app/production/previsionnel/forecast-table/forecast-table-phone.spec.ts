@@ -25,6 +25,7 @@ function header(date: string, over: Partial<ForecastHeader> = {}): ForecastHeade
     totalUnits: 0,
     orderCount: 0,
     resupplyUnits: 0,
+    plannedUnits: 0,
     closed: false,
     today: false,
     peak: false,

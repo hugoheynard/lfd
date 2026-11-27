@@ -13,6 +13,10 @@ import {
   type DatedAttemptTrace,
 } from "../../../domain/ports/auto-close-attempt-log.js";
 import { ProductionPlanReader } from "../../../domain/ports/production-plan.reader.js";
+import {
+  type ExpectedDayPlanned,
+  ExpectedPlannedReader,
+} from "../../../../channels/commerce/expected-planned.reader.js";
 import type { DayDemand, DayResupplyDemand } from "../../../domain/services/production-forecast.js";
 import type { ServiceRange } from "../../../../day/index.js";
 import { GetProductionForecastHandler } from "../get-production-forecast.handler.js";
@@ -66,6 +70,7 @@ function handlerOf(
   expected: ExpectedProductionReader,
   w: World = world(),
   resupplies: ExpectedResuppliesReader = new ResuppliesStub([]),
+  planned: ExpectedPlannedReader = new PlannedStub([]),
 ): GetProductionForecastHandler {
   return new GetProductionForecastHandler(
     plan,
@@ -76,7 +81,19 @@ function handlerOf(
     stopRulesOf(w.cutoffs),
     resupplies,
     (w.display ?? new InMemoryDisplaySettings()).reader(),
+    planned,
   );
+}
+
+/** Les brouillons du planificateur, doublés. */
+class PlannedStub extends ExpectedPlannedReader {
+  constructor(private readonly days: readonly ExpectedDayPlanned[]) {
+    super();
+  }
+
+  plannedBetween(): Promise<readonly ExpectedDayPlanned[]> {
+    return Promise.resolve(this.days);
+  }
 }
 
 /** Le plan arrêté, doublé : il retient la plage qu'on lui a demandée. */
@@ -156,6 +173,7 @@ describe("GetProductionForecastHandler", () => {
         date: "2026-09-03",
         totalUnits: 186,
         resupplyUnits: 0,
+        plannedUnits: 0,
         orderCount: 12,
         closed: true,
         state: "closed",
@@ -165,6 +183,7 @@ describe("GetProductionForecastHandler", () => {
         date: "2026-09-04",
         totalUnits: 0,
         resupplyUnits: 0,
+        plannedUnits: 0,
         orderCount: 0,
         closed: false,
         state: "open",
@@ -174,6 +193,7 @@ describe("GetProductionForecastHandler", () => {
         date: "2026-09-05",
         totalUnits: 410,
         resupplyUnits: 0,
+        plannedUnits: 0,
         orderCount: 47,
         closed: false,
         state: "open",
@@ -187,11 +207,71 @@ describe("GetProductionForecastHandler", () => {
         saleUnit: "piece",
         quantities: [186, 0, 410],
         resupplyQuantities: [0, 0, 0],
+        plannedQuantities: [0, 0, 0],
         totalUnits: 596,
       },
     ]);
     expect(view.peakDate).toBe("2026-09-05");
     expect(view.totalUnits).toBe(596);
+  });
+
+  /**
+   * La couche « planifié, non commandé » (`le-previsionnel.md`) : un brouillon
+   * ne se fabrique qu'en devenant une commande.
+   */
+  describe("les brouillons du planificateur", () => {
+    const query = new GetProductionForecastQuery("2026-09-03", "2026-09-05");
+    const arrested = new PlanStub([
+      {
+        day: "2026-09-03",
+        items: [{ sku: "PAI-BAG", productName: "Baguette", quantity: 186, saleUnit: "piece" }],
+        orderCount: 12,
+      },
+    ]);
+    const demand = new ExpectedStub([
+      {
+        day: "2026-09-05",
+        items: [{ sku: "PAI-BAG", productName: "Baguette", quantity: 410, saleUnit: "piece" }],
+        orderCount: 47,
+      },
+    ]);
+    const drafts = new PlannedStub([
+      {
+        day: "2026-09-03",
+        items: [{ sku: "PAI-BAG", productName: "Baguette", quantity: 99, saleUnit: "piece" }],
+      },
+      {
+        day: "2026-09-05",
+        items: [
+          { sku: "PAI-BAG", productName: "Baguette", quantity: 40, saleUnit: "piece" },
+          { sku: "VIE-CRO", productName: "Croissant", quantity: 30, saleUnit: "piece" },
+        ],
+      },
+    ]);
+
+    it("n'entrent jamais dans les totaux, le pic, le compte de commandes ni l'état", async () => {
+      const without = await handlerOf(arrested, demand).execute(query);
+      const view = await handlerOf(arrested, demand, world(), undefined, drafts).execute(query);
+
+      expect(view.totalUnits).toBe(without.totalUnits);
+      expect(view.peakDate).toBe(without.peakDate);
+      expect(
+        view.days.map((day) => [day.totalUnits, day.orderCount, day.closed, day.state]),
+      ).toEqual(without.days.map((day) => [day.totalUnits, day.orderCount, day.closed, day.state]));
+      expect(view.days.map((day) => day.plannedUnits)).toEqual([0, 0, 70]);
+    });
+
+    it("ne pose rien sur une journée arrêtée, et ajoute la ligne d'un article seulement planifié", async () => {
+      const view = await handlerOf(arrested, demand, world(), undefined, drafts).execute(query);
+
+      expect(view.lines.map((line) => [line.sku, line.quantities, line.plannedQuantities])).toEqual(
+        [
+          ["PAI-BAG", [186, 0, 410], [0, 0, 40]],
+          ["VIE-CRO", [0, 0, 0], [0, 0, 30]],
+        ],
+      );
+      expect(view.lines.find((line) => line.sku === "VIE-CRO")?.totalUnits).toBe(0);
+    });
   });
 
   it("porte le rangement du fournil : sous-catégories éteintes par défaut, affichées si posées", async () => {

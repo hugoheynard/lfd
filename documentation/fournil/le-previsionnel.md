@@ -20,6 +20,23 @@ Une colonne **arrêtée** montre le compte figé à l'arrêt — un fait. Une co
 **ouverte** montre la demande du commerce — elle bougera encore. La colonne dit
 laquelle des deux elle porte.
 
+Sous chaque produit, une ligne **« dont planifié »** en italique atténué montre
+ce que les pros ont posé dans leur planificateur sans l'avoir encore commandé,
+et le pied dit **« Planifié, non commandé : +N »** par jour. C'est une couche à
+part, pour se faire une idée : elle n'entre jamais dans le total, l'arrêt du
+plan, le dossier du jour ni les tranches. Une colonne planifiée ne devient de
+la production qu'en devenant une commande, à sa propre fermeture. Une journée
+arrêtée ne la montre pas.
+
+```
+                  lun. 1   mar. 2
+Croissant          320      280
+  dont planifié    +40      +40      ← italique, encre atténuée
+──────────────────────────────────
+Total pièces       980      910
+Planifié, non commandé  +70  +70
+```
+
 ```mermaid
 flowchart LR
   C[Commerce : chaque commande et son heure, moins une marge] -->|seuils par produit| R[Fournil : rangement en tranches fixes ou calculées]
@@ -53,6 +70,45 @@ contrat `packages/contracts/src/production-forecast.ts`).
 - L'état d'une colonne (en retard, arrêtée, passée, fournil fermé) est calculé
   au serveur (`domain/services/forecast-day-state.ts`) — détail dans
   [`arret-du-plan.md`](arret-du-plan.md).
+
+#### La couche « planifié, non commandé »
+
+Les colonnes du planificateur des pros encore en brouillon
+(`recurring.planned_columns`, `status = 'draft'`,
+[`plan-planificateur-de-commandes.md`](../commandes/planificateur/plan-planificateur-de-commandes.md))
+se lisent à part de la demande :
+
+```mermaid
+flowchart LR
+  P["recurring : PlannedQuantitiesReader (déclaré et fait par le bloc)"] --> C["commerce : ProductionPlannedQuantities (nom et unité au miroir du catalogue)"]
+  C -->|"ExpectedPlannedReader (déclaré par le fournil)"| H[GetProductionForecastHandler]
+  H --> L["withPlannedLayer : plannedQuantities, plannedUnits"]
+```
+
+- `PlannedQuantitiesReader` (`recurring/channels/commerce/`) est déclaré et
+  implémenté par le bloc des paniers (`PrismaPlannedQuantitiesReader`) : une
+  requête qui déroule le `jsonb` des lignes et somme par jour et par SKU, sur
+  les seules colonnes `draft` de la plage. Une colonne convertie est déjà une
+  commande ; refusée, manquée ou retirée, elle ne sera pas produite.
+- Le commerce l'appelle dans `ProductionPlannedQuantities`
+  (`lafoliecoffee/catalog/infrastructure/`), qui nomme les articles et lit
+  leur unité au miroir du catalogue (le nom d'aujourd'hui : un brouillon n'a
+  rien de figé). Un article inconnu du miroir garde son SKU pour nom et se lit
+  à la pièce. Le fournil le lit par `ExpectedPlannedReader`
+  (`production/channels/commerce/`), un port à part d'`ExpectedProductionReader` :
+  la production ne lit jamais `recurring`.
+- `withPlannedLayer` (`apps/lfd-api/src/production/plan/domain/services/forecast-planned-layer.ts`) pose la
+  couche sur la matrice déjà calculée : chaque ligne gagne `plannedQuantities`
+  (longueur de `days`, trou = 0), chaque jour `plannedUnits` (un article au
+  poids y compte pour une pièce). `totalUnits`, `orderCount`, `peakDate`,
+  `quantities` et l'état des colonnes sont ceux de la matrice sans brouillon.
+  Une journée **arrêtée** porte `0` partout. Un article seulement planifié a
+  sa ligne, à zéro dans `quantities`.
+- Les deux champs sont facultatifs dans le contrat : absents, ils valent `0`.
+  L'écran ne recalcule rien : `forecastRayons` met en forme
+  `plannedQuantities` (`+40`, vide pour zéro) et la table pose la ligne
+  `data-forecast-planned` sous le produit qui en a ; le pied `planned` lit
+  `plannedUnits`.
 
 Le **rangement en rayons se fait à l'écran** (`forecastRayons`,
 `previsionnel/previsionnel-matrix.ts`), avec les mêmes règles que la fiche

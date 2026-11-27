@@ -25,6 +25,7 @@ function header(over: Partial<ForecastHeader> = {}): ForecastHeader {
     totalUnits: 100,
     orderCount: 4,
     resupplyUnits: 0,
+    plannedUnits: 0,
     closed: true,
     today: true,
     peak: false,
@@ -113,8 +114,9 @@ describe('ForecastTable', () => {
     const fixture = mount();
     const rows = fixture.nativeElement.querySelectorAll('.pv-row');
 
-    // tête + rayon + deux produits + trois pieds (pièces, dont réassorts, commandes — R3d)
-    expect(rows).toHaveLength(7);
+    // tête + rayon + deux produits + quatre pieds (pièces, dont réassorts,
+    // commandes, planifié non commandé)
+    expect(rows).toHaveLength(8);
     for (const row of rows) {
       expect(row.querySelectorAll('.pv-cell')).toHaveLength(HEADERS.length + 1);
     }
@@ -335,18 +337,18 @@ describe('ForecastTable', () => {
     fixture.detectChanges();
     const el: HTMLElement = fixture.nativeElement;
 
-    // tête + rayon + deux produits + trois pieds = sept cellules par colonne
-    // (le pied « dont réassorts » porte le repère de colonne, R3d)
-    expect(el.querySelectorAll('[data-tone="overdue"]')).toHaveLength(7);
-    expect(el.querySelectorAll('[data-tone="closedDay"]')).toHaveLength(7);
+    // tête + rayon + deux produits + quatre pieds = huit cellules par colonne
+    // (les pieds « dont réassorts » et « planifié » portent le repère de colonne)
+    expect(el.querySelectorAll('[data-tone="overdue"]')).toHaveLength(8);
+    expect(el.querySelectorAll('[data-tone="closedDay"]')).toHaveLength(8);
     const labels = [...el.querySelectorAll('.pv-day-state')].map((n) => n.textContent?.trim());
     expect(labels).toEqual(['Plan non arrêté', 'Fournil fermé']);
   });
 
   it('ne pose aucune surcouche sur une colonne sans ton', () => {
     const fixture = mount();
-    expect(fixture.nativeElement.querySelectorAll('[data-tone="current"]')).toHaveLength(7);
-    expect(fixture.nativeElement.querySelectorAll('[data-tone]')).toHaveLength(7);
+    expect(fixture.nativeElement.querySelectorAll('[data-tone="current"]')).toHaveLength(8);
+    expect(fixture.nativeElement.querySelectorAll('[data-tone]')).toHaveLength(8);
   });
 
   it('sans action, aucune colonne ne porte de bouton d’entrée', () => {

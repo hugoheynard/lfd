@@ -86,6 +86,14 @@ export interface ProductionForecastDay {
    */
   readonly resupplyUnits: number;
   /**
+   * **Planifié, non commandé** : les pièces des colonnes du planificateur des
+   * pros encore en brouillon pour ce jour — JAMAIS dans `totalUnits`, ni dans
+   * `orderCount`, ni dans l'arrêt du plan. Un brouillon ne se fabrique qu'en
+   * devenant une commande. `0` sur une journée arrêtée : son compte est figé,
+   * la couche n'y apparaît pas. Absent (serveur d'avant la couche) vaut `0`.
+   */
+  readonly plannedUnits?: number;
+  /**
    * `true` = la journée est **close**, et sa colonne est le compte à produire
    * arrêté à la clôture — un fait, pas une prévision.
    *
@@ -127,6 +135,13 @@ export interface ProductionForecastLine {
   readonly quantities: readonly number[];
   /** La part des réassorts dans `quantities`, jour par jour (lot R3d). */
   readonly resupplyQuantities: readonly number[];
+  /**
+   * **Planifié, non commandé**, jour par jour : même longueur que `days`, un
+   * trou vaut `0`, une journée arrêtée aussi. Jamais dans `quantities` ni
+   * dans `totalUnits`. Un article seulement planifié a sa ligne, à `0` dans
+   * `quantities`. Absent (serveur d'avant la couche) vaut des `0`.
+   */
+  readonly plannedQuantities?: readonly number[];
   /** Le poids du produit sur toute la plage — l'ordre de lecture d'un rayon. */
   readonly totalUnits: number;
 }

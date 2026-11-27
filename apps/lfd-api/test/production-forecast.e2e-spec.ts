@@ -15,7 +15,14 @@ import { randomUUID } from "node:crypto";
  * sources vivent dans deux schémas Postgres différents, et rien d'autre qu'un
  * aller-retour complet ne peut dire qu'elles se recollent.
  */
-import { addDays, localToInstant, type ProductionForecastView } from "@lfd/contracts";
+import {
+  WORKSPACE_HEADER,
+  addDays,
+  localToInstant,
+  type PlannedColumnOpened,
+  type PlannedRoutingPayload,
+  type ProductionForecastView,
+} from "@lfd/contracts";
 
 import { CustomerRole } from "../src/platform/database/client/client.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
@@ -26,6 +33,7 @@ import { bootstrapE2e, jsonBody, serviceDay, type E2eContext } from "./e2e-harne
 import { grantAccount, placeByStaff } from "./staff-late-order.js";
 import { cardProvidersDouble, settleCardPayments } from "./card-payments.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
+import { INTENT_KEY, freshIntent } from "./intent-key.js";
 
 const MEMBER = "auth0|member";
 
@@ -230,6 +238,7 @@ describe("le prévisionnel du fournil", () => {
       date: DAY_1,
       totalUnits: 6,
       resupplyUnits: 0,
+      plannedUnits: 0,
       orderCount: 1,
       closed: false,
       state: "open",
@@ -244,6 +253,7 @@ describe("le prévisionnel du fournil", () => {
       date: DAY_1,
       totalUnits: 6,
       resupplyUnits: 0,
+      plannedUnits: 0,
       orderCount: 1,
       closed: true,
       state: "closed",
@@ -346,6 +356,95 @@ describe("le prévisionnel du fournil", () => {
 
       const rows = await ctx.prisma.productionDayChange.findMany({ select: { serviceDay: true } });
       expect(rows.map((row) => row.serviceDay)).toContain(DAY_2);
+    });
+  });
+
+  /**
+   * La couche « planifié, non commandé » (`le-previsionnel.md`) : les
+   * brouillons du planificateur des pros se lisent à part, par le bloc des
+   * paniers, et ne se fabriquent qu'en devenant des commandes.
+   */
+  describe("les brouillons du planificateur", () => {
+    const ROUTING: PlannedRoutingPayload = {
+      method: "pickup",
+      deliveryAddress: null,
+      pickupAddressId: null,
+      window: { start: "07:00", end: "09:00" },
+    };
+
+    async function planDraft(
+      companyId: string,
+      day: string,
+      lines: readonly { sku: string; quantity: number }[],
+    ): Promise<string> {
+      const opened = jsonBody<PlannedColumnOpened>(
+        await ctx
+          .asSub(MEMBER)
+          .post("/planner/columns")
+          .set(WORKSPACE_HEADER, companyId)
+          .set(INTENT_KEY, freshIntent())
+          .send({ day, routing: ROUTING })
+          .expect(200),
+      );
+      await ctx
+        .asSub(MEMBER)
+        .put(`/planner/columns/${opened.id}`)
+        .set(WORKSPACE_HEADER, companyId)
+        .send({ version: opened.version, routing: ROUTING, lines })
+        .expect(200);
+      return opened.id;
+    }
+
+    it("se lisent à part : ni dans les totaux, ni dans le compte de commandes, ni dans le pic", async () => {
+      const companyId = await seedSociete();
+      await placeOrder(companyId, DAY_1, [{ sku: "VIE-001-1", quantity: 2 }]);
+      await planDraft(companyId, DAY_2, [
+        { sku: "VIE-001-1", quantity: 40 },
+        { sku: "PLAN-SEUL", quantity: 3 },
+      ]);
+      await planDraft(companyId, DAY_3, [{ sku: "VIE-001-1", quantity: 5 }]);
+
+      const view = await forecast(DAY_1, DAY_3);
+
+      expect(view.days.map((day) => day.totalUnits)).toEqual([2, 0, 0]);
+      expect(view.days.map((day) => day.orderCount)).toEqual([1, 0, 0]);
+      expect(view.days.map((day) => day.plannedUnits)).toEqual([0, 43, 5]);
+      expect(view.totalUnits).toBe(2);
+      expect(view.peakDate).toBe(DAY_1);
+      expect(view.lines.map((line) => [line.sku, line.quantities, line.plannedQuantities])).toEqual(
+        [
+          ["PLAN-SEUL", [0, 0, 0], [0, 3, 0]],
+          ["VIE-001-1", [2, 0, 0], [0, 40, 5]],
+        ],
+      );
+      expect(view.lines[0]?.totalUnits).toBe(0);
+    });
+
+    it("une colonne retirée ne compte plus", async () => {
+      const companyId = await seedSociete();
+      const id = await planDraft(companyId, DAY_2, [{ sku: "VIE-001-1", quantity: 9 }]);
+      await ctx
+        .asSub(MEMBER)
+        .delete(`/planner/columns/${id}`)
+        .set(WORKSPACE_HEADER, companyId)
+        .expect(204);
+
+      const view = await forecast(DAY_1, DAY_3);
+      expect(view.days.map((day) => day.plannedUnits)).toEqual([0, 0, 0]);
+      expect(view.lines).toEqual([]);
+    });
+
+    it("n'entrent pas dans l'arrêt du plan, et une journée arrêtée ne porte plus la couche", async () => {
+      const companyId = await seedSociete();
+      await placeOrder(companyId, DAY_1, [{ sku: "VIE-001-1", quantity: 6 }]);
+      await planDraft(companyId, DAY_1, [{ sku: "VIE-001-1", quantity: 50 }]);
+      expect((await forecast(DAY_1, DAY_1)).days[0]?.plannedUnits).toBe(50);
+
+      await ctx.asSub("staff-e2e").post(`/admin/production/batch/${DAY_1}/close`).expect(201);
+
+      const after = await forecast(DAY_1, DAY_1);
+      expect(after.days[0]).toMatchObject({ closed: true, totalUnits: 6, plannedUnits: 0 });
+      expect(after.lines[0]).toMatchObject({ quantities: [6], plannedQuantities: [0] });
     });
   });
 });

@@ -39,6 +39,11 @@ export interface ForecastHeader {
   readonly orderCount: number;
   /** La part des réassorts pour demain dans `totalUnits` (lot R3d). */
   readonly resupplyUnits: number;
+  /**
+   * Planifié, non commandé : les brouillons du planificateur des pros, à part
+   * de `totalUnits`. `0` sur une journée arrêtée (le serveur le dit ainsi).
+   */
+  readonly plannedUnits: number;
   /** La journée est arrêtée : son chiffre est un fait, pas une prévision. */
   readonly closed: boolean;
   readonly today: boolean;
@@ -137,6 +142,7 @@ export function forecastHeaders(
       totalUnits: day.totalUnits,
       orderCount: day.orderCount,
       resupplyUnits: day.resupplyUnits,
+      plannedUnits: day.plannedUnits ?? 0,
       closed: day.closed,
       today: day.date === today,
       peak: day.date === peakDate,
@@ -161,16 +167,25 @@ function offsetLabel(today: string, date: string): string {
   return days > 0 ? `J+${String(days)}` : `J−${String(-days)}`;
 }
 
-/** Le pied du prévisionnel par jours : pièces, part des réassorts, commandes. */
+/**
+ * Le pied du prévisionnel par jours : pièces, part des réassorts, commandes,
+ * et ce qui est planifié sans être commandé — à part, jamais dans le total.
+ */
 export const DAY_FOOT_ROWS: readonly ForecastFootRow[] = [
   { key: 'pieces', label: 'Total pièces', kind: 'total' },
   { key: 'resupplies', label: 'dont réassorts', kind: 'resupplies' },
   { key: 'orders', label: 'Commandes', kind: 'detail' },
+  { key: 'planned', label: 'Planifié, non commandé', kind: 'planned' },
 ];
 
 /** Un nombre de pied : un zéro est une case vide, pas un « 0 ». */
 function footFigure(value: number): string {
   return value === 0 ? '' : String(value);
+}
+
+/** Un « en plus » de pied : `+70`, et vide pour zéro. */
+function plannedFigure(value: number): string {
+  return value === 0 ? '' : `+${String(value)}`;
 }
 
 /**
@@ -188,6 +203,11 @@ export function dayColumns(headers: readonly ForecastHeader[]): readonly Forecas
     settled: day.closed,
     peak: day.peak,
     tone: day.tone,
-    foot: [footFigure(day.totalUnits), footFigure(day.resupplyUnits), footFigure(day.orderCount)],
+    foot: [
+      footFigure(day.totalUnits),
+      footFigure(day.resupplyUnits),
+      footFigure(day.orderCount),
+      plannedFigure(day.plannedUnits),
+    ],
   }));
 }

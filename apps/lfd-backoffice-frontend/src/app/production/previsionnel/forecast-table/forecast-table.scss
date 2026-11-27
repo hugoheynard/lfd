@@ -143,7 +143,8 @@
 
 .pv-row--total,
 .pv-row--resupplies,
-.pv-row--detail {
+.pv-row--detail,
+.pv-row--planned-foot {
   background: var(--fold-color-bg-rail-primary);
 }
 
@@ -343,7 +344,8 @@
 
 .pv-row--total .pv-cell,
 .pv-row--resupplies .pv-cell,
-.pv-row--detail .pv-cell {
+.pv-row--detail .pv-cell,
+.pv-row--planned-foot .pv-cell {
   padding-block: var(--fold-space-xs);
 }
 
@@ -387,7 +389,8 @@
 .pv-rayon-sum,
 .pv-foot-total,
 .pv-foot-resupplies,
-.pv-foot-detail {
+.pv-foot-detail,
+.pv-foot-planned {
   align-self: stretch;
   display: flex;
   flex-direction: column;
@@ -687,4 +690,35 @@
    chiffres tiennent sans déborder sur la part voisine. */
 .pv-grid:has([data-phone-split-head]) .pv-qty-value {
   font-size: var(--fold-text-lg);
+}
+
+/* ── PLANIFIÉ, NON COMMANDÉ ────────────────────────────────────────────────
+   Les brouillons du planificateur des pros : une couche à part, sous leur
+   produit et au pied, en italique et en encre atténuée. Ils ne sont pas de la
+   production tant qu'ils ne sont pas des commandes. */
+.pv-row--planned {
+  border-bottom: 1px solid var(--fold-color-border-subtle);
+}
+
+.pv-row--planned .pv-cell--label {
+  background: var(--fold-color-bg-page);
+}
+
+.pv-planned-label,
+.pv-planned,
+.pv-foot-planned {
+  font-size: var(--fold-text-2xs);
+  font-style: italic;
+  color: var(--fold-color-text-muted);
+}
+
+.pv-planned,
+.pv-foot-planned {
+  font-family: var(--fold-font-mono);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.pv-foot-planned {
+  font-size: var(--fold-text-xs);
 }

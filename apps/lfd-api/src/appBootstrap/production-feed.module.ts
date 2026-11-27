@@ -8,6 +8,7 @@ import {
 import { ProductionDeliveryNotesBornReader } from "../lafoliecoffee/delivery-notes/infrastructure/production-delivery-notes-born.reader.js";
 import { DeliveryNotesModule } from "../lafoliecoffee/delivery-notes/delivery-notes.module.js";
 import { CatalogSellableArticlesReader } from "../lafoliecoffee/catalog/infrastructure/catalog-sellable-articles.reader.js";
+import { ProductionPlannedQuantities } from "../lafoliecoffee/catalog/infrastructure/production-planned-quantities.js";
 import { CatalogProductionArticlesReader } from "../lafoliecoffee/catalog/infrastructure/catalog-production-articles.reader.js";
 import { ProductionOrderCutoffRulesReader } from "../lafoliecoffee/order-cutoffs/infrastructure/production-order-cutoff-rules.reader.js";
 import { ProductionResupplyCutoffTimeReader } from "../lafoliecoffee/order-cutoffs/infrastructure/production-resupply-cutoff-time.reader.js";
@@ -31,6 +32,7 @@ import {
   DayResuppliesReader,
   DeliveryNotesBornReader,
   DueThresholdsReader,
+  ExpectedPlannedReader,
   ExpectedProductionReader,
   ExpectedResuppliesReader,
   OrderCutoffRulesReader,
@@ -118,6 +120,9 @@ import {
     { provide: DayResuppliesReader, useExisting: ProductionDayResupplies },
     // Le prévisionnel compte les réassorts pour demain, à part (lot R3d).
     { provide: ExpectedResuppliesReader, useExisting: ProductionRangeResupplies },
+    // La couche « planifié, non commandé » : le commerce lit les brouillons au
+    // bloc des paniers par son canal, et les nomme par le miroir du catalogue.
+    { provide: ExpectedPlannedReader, useClass: ProductionPlannedQuantities },
     // La pastille par commande des papiers du fournil (2026-10-22) : la
     // couleur lue au tirage, par la règle du bon de commande.
     { provide: OrderPrintColorsReader, useClass: ProductionOrderPrintColorsReader },
@@ -142,6 +147,7 @@ import {
     DayResuppliesReader,
     DeliveryNotesBornReader,
     DueThresholdsReader,
+    ExpectedPlannedReader,
     ExpectedProductionReader,
     ExpectedResuppliesReader,
     OrderCutoffRulesReader,

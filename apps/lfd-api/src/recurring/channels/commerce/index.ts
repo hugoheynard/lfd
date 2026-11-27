@@ -67,3 +67,4 @@ export {
 /** Ce que le bloc sait répondre (déclaré et implémenté par lui) : */
 export { RecurringBasketCounts } from "./recurring-basket-counts.js";
 export { RecurringSkuUsage } from "./recurring-sku-usage.js";
+export { type PlannedQuantity, PlannedQuantitiesReader } from "./planned-quantities.js";

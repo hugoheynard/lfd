@@ -71,6 +71,8 @@ export {
   ExpectedResuppliesReader,
   type ExpectedDayResupplies,
 } from "./expected-resupplies.reader.js";
+// La couche « planifié, non commandé » : les brouillons du planificateur des pros, à part.
+export { ExpectedPlannedReader, type ExpectedDayPlanned } from "./expected-planned.reader.js";
 // L'annulation staff (doc `documentation/commandes/annulation/annulation-par-le-staff.md`, C3.4,
 // 2026-10-12) : deux ports que le fournil DÉCLARE et IMPLÉMENTE pour le
 // commerce — retirer une commande sous le verrou de la journée, et dire si

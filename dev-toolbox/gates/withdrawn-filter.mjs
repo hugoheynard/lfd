@@ -58,6 +58,10 @@ const ALLOWED = new Set([
   // range sous son rayon, le fournil est agnostique de la vente (Hugo,
   // 2026-11-17). Ce n'est pas une mise en vente.
   "apps/lfd-api/src/lafoliecoffee/catalog/infrastructure/catalog-production-articles.reader.ts",
+  // Le nom et l'unité des articles planifiés au prévisionnel du fournil
+  // (`le-previsionnel.md`) : un brouillon posé avant un retrait se montre
+  // encore au fournil. Ce n'est pas une mise en vente.
+  "apps/lfd-api/src/lafoliecoffee/catalog/infrastructure/production-planned-quantities.ts",
   // Les prix au kilo du rayon (`saisir-un-prix.md`, K3, 2026-10-28) : il
   // PORTE le filtre (`...STILL_SOLD`) — un article retiré n'est pas au rayon.
   "apps/lfd-api/src/lafoliecoffee/catalog/infrastructure/prisma-catalog-price-per-kg.reader.ts",

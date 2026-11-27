@@ -37,11 +37,13 @@ export type ForecastColumnTone = 'overdue' | 'current' | 'past' | 'closedDay';
 
 /**
  * Une ligne du pied. `total` est le verdict (gros chiffre, barre d'état) ;
- * `detail` le qualifie en petit ; `resupplies` est un détail teinté (R3d).
+ * `detail` le qualifie en petit ; `resupplies` est un détail teinté (R3d) ;
+ * `planned` dit ce qui est planifié et pas encore commandé, en italique
+ * atténué : jamais dans le total.
  */
 export interface ForecastFootRow {
   /** Repère stable, posé en `data-foot` sur chaque case de la ligne. */
   readonly key: string;
   readonly label: string;
-  readonly kind: 'total' | 'detail' | 'resupplies';
+  readonly kind: 'total' | 'detail' | 'resupplies' | 'planned';
 }

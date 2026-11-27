@@ -21,6 +21,8 @@ import { PrismaRecurringBasketCounts } from "./basket/infrastructure/prisma-recu
 import { PrismaRecurringSkuUsage } from "./basket/infrastructure/prisma-recurring-sku-usage.js";
 import { RecurringBasketCounts } from "./channels/commerce/recurring-basket-counts.js";
 import { RecurringSkuUsage } from "./channels/commerce/recurring-sku-usage.js";
+import { PlannedQuantitiesReader } from "./channels/commerce/planned-quantities.js";
+import { PrismaPlannedQuantitiesReader } from "./planned/infrastructure/prisma-planned-quantities.reader.js";
 import { OpenPlannedColumnHandler } from "./planned/application/commands/open-planned-column.handler.js";
 import { PutPlannedColumnHandler } from "./planned/application/commands/put-planned-column.handler.js";
 import { WithdrawPlannedColumnHandler } from "./planned/application/commands/withdraw-planned-column.handler.js";
@@ -118,7 +120,8 @@ import {
     { provide: BasketsBehindPlan, useClass: PrismaBasketsBehindPlan },
     { provide: RecurringBasketCounts, useClass: PrismaRecurringBasketCounts },
     { provide: RecurringSkuUsage, useClass: PrismaRecurringSkuUsage },
+    { provide: PlannedQuantitiesReader, useClass: PrismaPlannedQuantitiesReader },
   ],
-  exports: [RecurringBasketCounts, RecurringSkuUsage],
+  exports: [RecurringBasketCounts, RecurringSkuUsage, PlannedQuantitiesReader],
 })
 export class RecurringModule {}

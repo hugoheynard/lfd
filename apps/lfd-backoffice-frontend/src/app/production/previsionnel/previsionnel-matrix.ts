@@ -71,6 +71,12 @@ export interface ForecastProduct {
   readonly totalUnits: number;
   /** Une alerte sur la ligne entière (journée par tranche : sources désynchronisées). */
   readonly warning?: string;
+  /**
+   * « dont planifié », colonne par colonne (`+40`, vide pour zéro) : les
+   * brouillons du planificateur des pros, à part des quantités. Absent quand
+   * le produit n'en a aucun — la table ne pose alors pas de ligne.
+   */
+  readonly planned?: readonly string[];
 }
 
 /** Un rayon : son nom, son poids par jour, et ses produits. */
@@ -190,6 +196,24 @@ function productOf(
       };
     }),
     totalUnits: line.totalUnits,
+    ...plannedOf(line, width),
+  };
+}
+
+/** La ligne « dont planifié » d'un produit, telle que le serveur la chiffre ; rien sans brouillon. */
+function plannedOf(
+  line: ProductionForecastLine,
+  width: number,
+): { readonly planned?: readonly string[] } {
+  const planned = line.plannedQuantities ?? [];
+  if (!planned.some((quantity) => quantity > 0)) {
+    return {};
+  }
+  return {
+    planned: Array.from({ length: width }, (_unused, column) => {
+      const quantity = planned[column] ?? 0;
+      return quantity > 0 ? `+${saleQuantityLabel(quantity, line.saleUnit)}` : '';
+    }),
   };
 }
 
