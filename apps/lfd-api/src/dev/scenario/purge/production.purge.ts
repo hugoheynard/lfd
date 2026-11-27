@@ -42,6 +42,9 @@ export async function purgeProduction(
     await tx.productionHandoff.deleteMany({ where: ofDays }),
     await tx.productionBatch.deleteMany({ where: ofDays }),
     await tx.productionDay.deleteMany({ where: ofDays }),
+    // Les versions du plan tiennent la journée par son jour, sans clé : une
+    // journée resemée qui les retrouverait reprendrait leur numérotation.
+    await tx.planVersion.deleteMany({ where: ofDays }),
     await tx.productionDayChange.deleteMany({ where: ofDays }),
     // Le retrait n'appartient à aucune journée : il se vise par la commande.
     await tx.orderHandoverProof.deleteMany({ where: ofOrders }),

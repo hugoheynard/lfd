@@ -52,6 +52,7 @@ export interface ProductionTables {
   readonly productionHandoff: Deletable;
   readonly productionBatch: Deletable;
   readonly productionDay: DayTable;
+  readonly planVersion: Deletable;
   readonly orderHandover: Deletable;
   readonly packingLine: Deletable;
   readonly packingContainerLine: Deletable;
@@ -138,6 +139,9 @@ export async function resetProduction(prisma: ProductionTables): Promise<Product
   await prisma.productionHandoff.deleteMany();
   await prisma.productionBatch.deleteMany();
   const days = await prisma.productionDay.deleteMany();
+  // Les versions du plan tiennent la journée par son jour, sans clé : une
+  // journée resemée qui les retrouverait reprendrait leur numérotation.
+  await prisma.planVersion.deleteMany();
   // Le colisage tient ses copies des mêmes journées, sans clé vers le fournil :
   // la frontière, voulue. Les lignes avant leur bac (`Restrict`).
   await prisma.packingLine.deleteMany();

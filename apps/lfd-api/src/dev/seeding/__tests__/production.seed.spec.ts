@@ -47,6 +47,7 @@ function prismaSpy(
   const prisma: ProductionTables = {
     productionReturnRequest: table("productionReturnRequest"),
     productionHandoff: table("productionHandoff"),
+    planVersion: table("planVersion"),
     packingLine: table("packingLine"),
     packingContainerLine: table("packingContainerLine"),
     packingContainer: table("packingContainer"),
@@ -98,6 +99,9 @@ describe("resetProduction", () => {
       "productionHandoff",
       "productionBatch",
       "productionDay",
+      // Régression du 2026-11-27 : les versions du plan restaient, et la
+      // journée resemée refusait son arrêt (numéro hors suite).
+      "planVersion",
       "packingLine",
       // Régression du 2026-10-05 : les contenants manquaient, et la coupe
       // échouait sur leur clé `Restrict` vers la commande au colisage.
