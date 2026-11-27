@@ -2,6 +2,7 @@ import type { PrismaService } from "../../platform/database/prisma.service.js";
 import { PackingSheet, type SheetLine } from "../domain/entities/packing-sheet.js";
 import { packingTrackingLevelOf } from "../domain/entities/packing-tracking-level.js";
 import { CONTAINER_SELECT, containerModeOf, containerOf } from "./packing-container.mapper.js";
+import { packingLineOptionsOf } from "./line-options.column.js";
 import { packingSaleUnitOf } from "./sale-unit.column.js";
 
 /** Une ligne de `packing_line`, telle qu'on la relit. */
@@ -14,6 +15,7 @@ interface LineRow {
   readonly packedAt: Date | null;
   readonly packedBy: string | null;
   readonly packedInitials: string;
+  readonly options: unknown;
 }
 
 function lineOf(row: LineRow): SheetLine {
@@ -27,6 +29,7 @@ function lineOf(row: LineRow): SheetLine {
       row.packedAt === null || row.packedBy === null
         ? null
         : { at: row.packedAt, by: row.packedBy, initials: row.packedInitials },
+    options: packingLineOptionsOf(row.sku, row.options),
   };
 }
 
@@ -68,6 +71,7 @@ export async function loadPackingSheet(
           packedAt: true,
           packedBy: true,
           packedInitials: true,
+          options: true,
         },
         orderBy: { sku: "asc" },
       },

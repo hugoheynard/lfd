@@ -6,7 +6,12 @@ import type { OrderSheetDetails, ServiceDay } from "../../../production/channels
 import { DayOrdersSource, type SourcedDayOrder } from "../domain/ports/day-orders.source.js";
 import { contactOf, pickupLabelOf } from "./atelier-sheet-parts.js";
 import { fulfillmentOf } from "./order-fulfillment.parse.js";
-import { orderLineSaleUnitOf } from "./order-line-row.js";
+import { productionOptionsOf } from "../domain/services/production-line-options.js";
+import {
+  ORDER_LINE_OPTIONS_SELECT,
+  optionChoicesOf,
+  orderLineSaleUnitOf,
+} from "./order-line-row.js";
 import { siteIdOf } from "./pickup-site.parse.js";
 import { planWhere } from "./plan-filter.js";
 
@@ -88,6 +93,7 @@ export class PrismaDayOrdersSource extends DayOrdersSource {
             quantity: true,
             saleUnit: true,
             madeToOrder: true,
+            options: ORDER_LINE_OPTIONS_SELECT,
           },
         },
       },
@@ -117,6 +123,9 @@ export class PrismaDayOrdersSource extends DayOrdersSource {
           // Scellé à la passation (`plan-sur-mesure-partout.md`, M2), servi
           // tel quel : le fournil ne relit jamais le catalogue.
           madeToOrder: line.madeToOrder,
+          // Les options figées (`plan-options-de-commande.md`, § 3.4) : le
+          // fournil les recopie et les affiche, le compte n'en dépend pas.
+          options: productionOptionsOf(optionChoicesOf(line.options)),
         })),
         sheetDetails: sheetDetailsOf(row),
       },

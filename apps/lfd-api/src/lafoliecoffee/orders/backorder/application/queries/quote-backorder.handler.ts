@@ -42,10 +42,10 @@ export class QuoteBackorderHandler implements IQueryHandler<
    */
   async execute(query: QuoteBackorderQuery): Promise<AdminOrderEstimateView> {
     const { backorder, companyId } = await loadBackorder(this.backorders, query.backorderId);
-    const { policy } = await backorderPricingOf(this.replays, backorder);
+    const { origin, policy } = await backorderPricingOf(this.replays, backorder);
     return this.estimation.estimate(
       query.staffUserId,
-      backorderEntryOf(backorder, companyId, query.payload),
+      backorderEntryOf(backorder, companyId, query.payload, origin.lines),
       query.exceedItemLimits,
       policy,
     );

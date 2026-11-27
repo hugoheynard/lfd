@@ -7,7 +7,12 @@ import {
   ttcByRateOf,
   vatMethodOf,
 } from "./order-money-columns.js";
-import { orderLineSaleUnitOf } from "./order-line-row.js";
+import {
+  ORDER_LINE_OPTIONS_SELECT,
+  optionChoicesOf,
+  orderLineSaleUnitOf,
+  type OrderLineOptionRow,
+} from "./order-line-row.js";
 import type { Prisma } from "../../../platform/database/client/client.js";
 
 /**
@@ -28,6 +33,7 @@ export const DELIVERY_NOTE_LINE_SELECT = {
     unitPriceTtcCents: true,
     lineTotalTtcCents: true,
     pickupDiscountEligible: true,
+    options: ORDER_LINE_OPTIONS_SELECT,
   },
 } as const;
 
@@ -81,6 +87,7 @@ export interface DeliveryNoteOrderRow {
     readonly unitPriceTtcCents: number | null;
     readonly lineTotalTtcCents: number | null;
     readonly pickupDiscountEligible: boolean;
+    readonly options: readonly OrderLineOptionRow[];
   }[];
 }
 
@@ -89,8 +96,9 @@ export function toDeliveryNoteOrder(row: DeliveryNoteOrderRow): DeliveryNoteOrde
   return {
     orderId: row.id,
     orderNumber: row.orderNumber,
-    lines: row.lines.map(({ productNameSnapshot, vatRate, ...line }) => ({
+    lines: row.lines.map(({ productNameSnapshot, vatRate, options, ...line }) => ({
       ...line,
+      optionChoices: optionChoicesOf(options),
       productName: productNameSnapshot,
       vatRate: vatRate.toNumber(),
       saleUnit: orderLineSaleUnitOf(line.sku, line.saleUnit),

@@ -20,6 +20,7 @@ export {
   DayOrdersReader,
   type OrderSheetDetails,
   type ProducibleLine,
+  type ProductionLineOption,
   type ProducibleOrder,
   type SheetAddress,
   type SheetContact,

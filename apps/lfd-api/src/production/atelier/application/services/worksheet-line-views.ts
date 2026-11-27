@@ -118,6 +118,7 @@ function lineView(line: WorksheetLine): WorkshopLine {
       pendingReturn: batch.pendingReturn,
     })),
     pendingReturn: line.pendingReturn,
+    options: (line.options ?? []).map((option) => ({ ...option })),
     container:
       line.container === null
         ? null

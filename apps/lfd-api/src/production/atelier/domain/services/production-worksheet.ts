@@ -1,6 +1,9 @@
 import type { SaleUnit } from "@lfd/money";
 
-import type { ProducibleOrder } from "../../../channels/commerce/day-orders.reader.js";
+import type {
+  ProducibleOrder,
+  ProductionLineOption,
+} from "../../../channels/commerce/day-orders.reader.js";
 import type { ProducedItemSnapshot, ProductionBatchSnapshot } from "../../../day/index.js";
 import { activeBatchesOf, countedBatch, outputOf } from "../../../day/index.js";
 import { driftOf } from "./production-worksheet-drift.js";
@@ -59,6 +62,11 @@ export interface WorksheetSources {
    */
   readonly arrivals: readonly ProducibleOrder[];
   readonly containers: ReadonlyMap<string, ContainerRule>;
+  /**
+   * Les options par article, toutes commandes confondues (`optionsBySku`) —
+   * la mention « dont 2 tranchés ». Absente : aucune.
+   */
+  readonly options?: ReadonlyMap<string, readonly ProductionLineOption[]>;
 }
 
 export interface WorksheetLine {
@@ -89,6 +97,8 @@ export interface WorksheetLine {
    * encore comptées dans `produced` : « sorti » ne baisse qu'à la réponse.
    */
   readonly pendingReturn: number;
+  /** « dont 2 tranchés » — les options de l'article sur les commandes du jour ; absent ou `[]` = aucune. */
+  readonly options?: readonly ProductionLineOption[];
 }
 
 export interface WorksheetDriftLine {
@@ -141,12 +151,14 @@ export interface Worksheet {
 export function worksheetOf(sources: WorksheetSources): Worksheet {
   const closed = sources.closedAt !== null;
   const batches = closed ? effectiveBatches(sources) : [];
-  const lines = closed
-    ? [
-        ...sources.counts.map((item) => line(item, sources.containers, batches)),
-        ...outOfCount(sources.counts, batches, sources.containers),
-      ]
-    : sources.demand.map((item) => line(item, sources.containers, []));
+  const lines = (
+    closed
+      ? [
+          ...sources.counts.map((item) => line(item, sources.containers, batches)),
+          ...outOfCount(sources.counts, batches, sources.containers),
+        ]
+      : sources.demand.map((item) => line(item, sources.containers, []))
+  ).map((built) => ({ ...built, options: sources.options?.get(built.sku) ?? [] }));
   return {
     generatedAt: sources.closedAt,
     retakenAt: sources.retakenAt,

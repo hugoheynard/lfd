@@ -97,6 +97,10 @@ model PackingLine {
   /// Le marqueur « sur mesure » recopié du fait `production.packing_list_drawn`
   /// (plan sur mesure, M4) ; `null` = ligne inscrite avant, ou fait sans le champ.
   madeToOrder Boolean? @map("made_to_order")
+  /// Les options de la ligne (« dont 2 tranchés »), recopiées du fait
+  /// `production.packing_list_drawn` et de la révision ; `[]` = aucune.
+  /// Hors de la clé : une option ne fait pas une seconde ligne.
+  options     Json     @default("[]")
 
   /// Au bac (K2) : réversible tant que le bac est ouvert. `null` = pas au bac.
   packedAt       DateTime? @map("packed_at") @db.Timestamptz(6)

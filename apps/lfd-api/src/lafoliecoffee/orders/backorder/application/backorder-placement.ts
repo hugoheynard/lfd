@@ -13,6 +13,10 @@ import type {
   BackorderOriginReplay,
   BackorderReplayReader,
 } from "../domain/ports/backorder-replay.reader.js";
+import {
+  backorderOptionChoicesOf,
+  type OriginOptionedLine,
+} from "../domain/services/backorder-option-choices.js";
 import { backorderReplayOf } from "../domain/services/backorder-replay.js";
 
 /**
@@ -79,29 +83,81 @@ export async function backorderPricingOf(
   backorder: Backorder,
 ): Promise<BackorderPricing> {
   backorder.ensureOpen();
+  return backorderPricingFrom(backorder, await backorderOriginOf(replays, backorder));
+}
+
+/**
+ * Relit la commande d'origine d'un reliquat, sans juger son état : la saisie
+ * en reprend les options avant de sceller son intention.
+ *
+ * @throws {BackorderOriginNotFoundError} commande d'origine introuvable.
+ */
+export async function backorderOriginOf(
+  replays: BackorderReplayReader,
+  backorder: Backorder,
+): Promise<BackorderOriginReplay> {
   const origin = await replays.replayOf(backorder.originOrderId);
   if (origin === null) {
     throw new BackorderOriginNotFoundError(backorder.originOrderId);
   }
+  return origin;
+}
+
+/**
+ * {@link backorderPricingOf} sur une origine déjà relue.
+ *
+ * @throws {BackorderClosedError} déjà transformé ou abandonné.
+ */
+export function backorderPricingFrom(
+  backorder: Backorder,
+  origin: BackorderOriginReplay,
+): BackorderPricing {
+  backorder.ensureOpen();
   return { origin, policy: backorderPolicyOf(backorderReplayOf(origin, backorder.lines)) };
 }
 
 /**
+ * Les lignes de la saisie, garnies par le reliquat : ses quantités (des
+ * grammes au poids), son unité, et les options de la ligne d'origine
+ * plafonnées à ce qui reste (`backorderOptionChoicesOf`). Une ligne sans
+ * option n'écrit pas le champ : l'intention d'avant les options est la même.
+ */
+export function backorderLinesOf(
+  backorder: Backorder,
+  origin: readonly OriginOptionedLine[],
+): readonly BackorderEntryLine[] {
+  return backorder.lines.map((line) => {
+    const optionChoices = backorderOptionChoicesOf(origin, line);
+    return {
+      sku: line.sku,
+      quantity: line.quantity,
+      saleUnit: line.saleUnit,
+      ...(optionChoices.length === 0 ? {} : { optionChoices: [...optionChoices] }),
+    };
+  });
+}
+
+/** Une ligne de saisie issue d'un reliquat. */
+export interface BackorderEntryLine {
+  readonly sku: string;
+  readonly quantity: number;
+  readonly saleUnit: "piece" | "weight";
+  readonly optionChoices?: { group: string; choice: string; quantity: number }[];
+}
+
+/**
  * Le corps de la saisie de l'équipe, garni par le reliquat : sa société et
- * ses lignes, à ses quantités (des grammes au poids) et dans son unité.
+ * ses lignes ({@link backorderLinesOf}), options de l'origine comprises.
  */
 export function backorderEntryOf<T extends object>(
   backorder: Backorder,
   companyId: string,
   body: T,
+  origin: readonly OriginOptionedLine[],
 ): T & Pick<AdminPlaceOrderPayload & AdminOrderEstimatePayload, "companyId" | "lines"> {
   return {
     ...body,
     companyId,
-    lines: backorder.lines.map((line) => ({
-      sku: line.sku,
-      quantity: line.quantity,
-      saleUnit: line.saleUnit,
-    })),
+    lines: [...backorderLinesOf(backorder, origin)],
   };
 }

@@ -33,7 +33,13 @@ describe("ReviseOrderHandler — après l'arrêt du plan (plan A2)", () => {
       lines: [{ sku: "VIE-001", quantity: 14 }],
     });
     expect(packing.revised).toEqual([
-      { day: DAY, orderId: "ord_1", lines: [{ sku: "VIE-001", quantity: 14 }], by: "stf_1" },
+      // Les options à jour suivent le dû : aucune ici (`plan-options-de-commande.md`, § 4).
+      {
+        day: DAY,
+        orderId: "ord_1",
+        lines: [{ sku: "VIE-001", quantity: 14, options: [] }],
+        by: "stf_1",
+      },
     ]);
     expect(revisions.saved).toHaveLength(1);
     expect(notes.calls).toEqual(["follow-revision:ord_1"]);
@@ -45,7 +51,7 @@ describe("ReviseOrderHandler — après l'arrêt du plan (plan A2)", () => {
 
     await handler.execute(await asSeen("ord_1", STAFF, 0, FEWER));
 
-    expect(packing.revised[0]?.lines).toEqual([{ sku: "VIE-001", quantity: 4 }]);
+    expect(packing.revised[0]?.lines).toEqual([{ sku: "VIE-001", quantity: 4, options: [] }]);
     expect(notes.calls).toEqual(["follow-revision:ord_1"]);
   });
 

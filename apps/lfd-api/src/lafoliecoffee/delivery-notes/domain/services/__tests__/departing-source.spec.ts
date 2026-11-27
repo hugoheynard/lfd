@@ -235,3 +235,42 @@ describe("departingSourceOf — frontières", () => {
     });
   });
 });
+
+/** Les options d'un départ partiel (`plan-options-de-commande.md`, § 3.4). */
+describe("departingSourceOf — les options, plafonnées à ce qui part", () => {
+  const sliced = (quantity: number) => ({
+    group: "tranchage",
+    groupName: "Tranchage",
+    choice: "tranche",
+    choiceLabel: "tranché",
+    quantity,
+    position: 0,
+  });
+
+  it("4 pains « dont 2 tranchés », 2 partent : le bon dit au plus « dont 2 tranchés »", () => {
+    const order = { ...ORDER, lines: [{ ...line("PAIN", 4), optionChoices: [sliced(2)] }] };
+
+    const two = departingSourceOf(order, decided([{ sku: "PAIN", quantity: 2 }]));
+    const one = departingSourceOf(order, decided([{ sku: "PAIN", quantity: 1 }]));
+    const none = departingSourceOf(order, decided([{ sku: "PAIN", quantity: 0 }]));
+
+    expect(two.lines[0]?.optionChoices).toEqual([sliced(2)]);
+    expect(one.lines[0]?.optionChoices).toEqual([sliced(1)]);
+    expect(none.lines[0]?.optionChoices).toEqual([]);
+  });
+
+  it("au poids, la mention suit la ligne entière", () => {
+    const byWeight = {
+      ...line("SEIGLE", 1200),
+      saleUnit: "weight" as const,
+      lineTotalCents: 120_000,
+      optionChoices: [sliced(1200)],
+    };
+    const source = departingSourceOf(
+      { ...ORDER, lines: [byWeight] },
+      decided([{ sku: "SEIGLE", quantity: 800 }]),
+    );
+
+    expect(source.lines[0]?.optionChoices).toEqual([sliced(800)]);
+  });
+});

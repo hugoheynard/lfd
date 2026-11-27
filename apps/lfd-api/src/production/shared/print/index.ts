@@ -43,11 +43,8 @@ export {
   piecesOfLines,
 } from "./domain/services/line-tally.js";
 export type { TalliedLine } from "./domain/services/line-tally.js";
-export {
-  MADE_TO_ORDER_MENTION,
-  countPaperRowsOf,
-  isMadeToOrder,
-} from "./domain/services/made-to-order.js";
+export { countPaperRowsOf } from "./domain/services/made-to-order.js";
+export { drawLineMentions, lineMentionsHeight } from "./domain/services/line-mentions-pdf.js";
 export type { CountPaperRow } from "./domain/services/made-to-order.js";
 export { drawOrderSwatch } from "./domain/services/order-color-swatch.js";
 export { drawRouting } from "./domain/services/order-routing-pdf.js";

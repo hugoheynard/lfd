@@ -2,12 +2,15 @@ import {
   RevisedLinesMismatchError,
   RevisedOrderNotInPlanError,
 } from "../errors/order-revision-errors.js";
+import type { ProductionLineOption } from "../../../channels/commerce/day-orders.reader.js";
 import type { ProductionOrderSnapshot } from "./production-day.snapshot.js";
 
-/** Une ligne révisée : l'article et sa nouvelle quantité due. */
+/** Une ligne révisée : l'article, sa nouvelle quantité due, et ses options à jour. */
 export interface RevisedLine {
   readonly sku: string;
   readonly quantity: number;
+  /** Les options révisées ; `[]` = aucune. Absent : la ligne garde les siennes. */
+  readonly options?: readonly ProductionLineOption[];
 }
 
 /** Une ligne montée par la révision : de → à. Le fait de la hausse les porte. */
@@ -32,6 +35,9 @@ export interface RevisedPlan {
  *
  * Mêmes articles, quantités entières ≥ 1 : la clé (jour, commande, article)
  * ne bouge jamais, et une ligne à zéro ne s'écrirait pas au colisage (§ 7, B1).
+ * Les options de chaque ligne sont remplacées par celles de la révision
+ * (`plan-options-de-commande.md`, § 4) — une révision qui ne change qu'elles
+ * ne monte rien.
  *
  * @throws {RevisedOrderNotInPlanError} la commande n'est pas sur ce plan.
  * @throws {RevisedLinesMismatchError} un article ajouté, retiré, ou une quantité < 1.
@@ -47,13 +53,18 @@ export function revisedPlanOf(
     throw new RevisedOrderNotInPlanError(orderId, serviceDay);
   }
   const due = dueBySku(orderId, order, lines);
+  const options = new Map(lines.map((line) => [line.sku, line.options]));
   const raised: RaisedLine[] = [];
   const revisedLines = order.lines.map((line) => {
     const to = due.get(line.sku) ?? line.quantity;
     if (to > line.quantity) {
       raised.push({ sku: line.sku, productName: line.productName, from: line.quantity, to });
     }
-    return { ...line, quantity: to };
+    // Les options suivent la révision comme la quantité ; le compte n'en dépend pas.
+    const revisedOptions = options.get(line.sku);
+    return revisedOptions === undefined
+      ? { ...line, quantity: to }
+      : { ...line, quantity: to, options: [...revisedOptions] };
   });
   return {
     orders: orders.map((candidate) =>

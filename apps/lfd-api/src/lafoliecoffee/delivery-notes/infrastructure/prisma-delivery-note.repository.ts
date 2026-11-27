@@ -8,6 +8,7 @@ import { DeliveryNoteVersionKeeper } from "../domain/ports/delivery-note-version
 import { versionToKeep } from "../domain/services/delivery-note-version.js";
 import { dateOf, NOTE_INCLUDE, stateOf } from "./delivery-note.rows.js";
 import { termsColumns } from "./delivery-note-terms.columns.js";
+import { deliveryNoteLineOptionsColumnOf } from "./delivery-note-line-options.column.js";
 
 /** Les colonnes qui bougent avec l'état du BL. */
 function progressColumns(head: Omit<DeliveryNoteState, "lines">) {
@@ -128,7 +129,12 @@ export class PrismaDeliveryNoteRepository extends DeliveryNoteRepository {
   private async replaceLines(noteId: string, lines: DeliveryNoteState["lines"]): Promise<void> {
     await this.prisma.deliveryNoteLine.deleteMany({ where: { noteId } });
     await this.prisma.deliveryNoteLine.createMany({
-      data: lines.map((line) => ({ id: this.ids.next(), noteId, ...line })),
+      data: lines.map(({ optionChoices, ...line }) => ({
+        id: this.ids.next(),
+        noteId,
+        ...line,
+        options: deliveryNoteLineOptionsColumnOf(optionChoices),
+      })),
     });
   }
 }

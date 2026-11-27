@@ -31,7 +31,7 @@ import {
   shortfallRefusalError,
   type ShortfallStanding,
 } from "../services/shortfall-standing.js";
-import { type DueRevision, type RevisedDueLine, revisedDueOf } from "../services/revised-due.js";
+import { type DueRevision, type RevisedDue, revisedDueOf } from "../services/revised-due.js";
 import {
   type AuthorizedLine,
   authorizedLinesOf,
@@ -286,12 +286,15 @@ export class PackingSheet {
    * signée par la révision. Un manque signalé reste écrit (§ 2.4) : fermer
    * le bac complet l'effacera, comme aujourd'hui.
    *
-   * @returns les lignes qui ont changé, de → à ; vide si rien.
+   * Les options de chaque ligne suivent la révision (« dont 2 tranchés »,
+   * `plan-options-de-commande.md`, § 4) ; elles ne touchent pas le bac.
+   *
+   * @returns les lignes dont la quantité a changé, de → à, et si une option a bougé.
    * @throws {PackedOrderSealedError} @throws {ContainersCountedError}
    * @throws {ShortfallAlreadyAuthorizedError} le départ incomplet est décidé.
    * @throws les refus de `revisedDueOf` : articles changés, sous le bac.
    */
-  reviseDue(revisions: readonly DueRevision[], mark: SheetMark): readonly RevisedDueLine[] {
+  reviseDue(revisions: readonly DueRevision[], mark: SheetMark): RevisedDue {
     this.assertNotWithdrawn();
     this.assertListedAndOpen();
     if (this.authorizedValue !== null) {
@@ -304,7 +307,7 @@ export class PackingSheet {
     for (const line of revised.lines) {
       this.markByAllocation(line, line.packed ?? { ...mark, initials: "" });
     }
-    return revised.changed;
+    return { changed: revised.changed, optionsChanged: revised.optionsChanged };
   }
 
   /**

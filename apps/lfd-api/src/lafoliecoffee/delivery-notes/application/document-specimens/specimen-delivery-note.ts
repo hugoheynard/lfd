@@ -8,6 +8,15 @@ import type {
 /** Le numéro de la commande d'exemple, sous la forme qu'un BL sait numéroter. */
 const SPECIMEN_ORDER_NUMBER = "ORD-EXEMPLE-0001";
 const SPECIMEN_NOTE_ID = "specimen-delivery-note";
+/** L'option de l'exemple : deux pièces de la première ligne, tranchées. */
+const SPECIMEN_OPTION = {
+  group: "tranchage",
+  groupName: "Tranchage",
+  choice: "tranche",
+  choiceLabel: "tranché",
+  quantity: 2,
+  position: 0,
+} as const;
 
 /** Un BL d'exemple et la commande qui le porte — ce que la planche imprime. */
 export interface SpecimenDeliveryNote {
@@ -29,7 +38,7 @@ export function specimenDeliveryNote(now: Date): SpecimenDeliveryNote {
     {
       orderId: sheet.orderId,
       orderNumber: SPECIMEN_ORDER_NUMBER,
-      lines: sheet.lines.map((line) => ({
+      lines: sheet.lines.map((line, index) => ({
         sku: line.sku,
         productName: line.productName,
         unitPriceMillicents: line.unitPriceMillicents,
@@ -40,6 +49,11 @@ export function specimenDeliveryNote(now: Date): SpecimenDeliveryNote {
         unitPriceTtcCents: line.unitPriceTtcCents,
         lineTotalTtcCents: line.lineTotalTtcCents,
         pickupDiscountEligible: line.pickupDiscountEligible !== false,
+        // La première ligne porte une option : « Tranchage : 2 × tranché »
+        // doit se lire sur la planche (`plan-options-de-commande.md`, § 3.4).
+        ...(index === 0 && line.saleUnit !== "weight" && line.quantity > 2
+          ? { optionChoices: [SPECIMEN_OPTION] }
+          : {}),
       })),
       terms: {
         subtotalCents: money.subtotalCents,

@@ -18,6 +18,16 @@ export type PackingRevisionOutcome = "revised" | "sheet_missing" | "packed" | "d
 export interface PackingDueLine {
   readonly sku: string;
   readonly quantity: number;
+  /**
+   * Les options révisées de la ligne (« dont 2 tranchés »,
+   * `plan-options-de-commande.md`, § 4) — nom du groupe, libellé du choix,
+   * quantité ; `[]` = aucune. Elles ne sont pas une clé du colisage.
+   */
+  readonly options: readonly {
+    readonly groupName: string;
+    readonly choiceLabel: string;
+    readonly quantity: number;
+  }[];
 }
 
 /**

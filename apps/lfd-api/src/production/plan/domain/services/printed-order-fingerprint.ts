@@ -8,7 +8,7 @@ import type { ProductionOrderSnapshot } from "../../../day/index.js";
  * `documentation/fournil/dossier-prod-du-jour.md`) : un condensat
  * de tout ce que la fiche de commande et son en-tête portent — référence,
  * client, acheminement, échéance, lignes (article, nom, quantité, unité, sur
- * mesure) et le bloc du bon (adresse, fenêtre, contact, note…).
+ * mesure, options) et le bloc du bon (adresse, fenêtre, contact, note…).
  *
  * « Modifiée depuis #N » = empreinte différente de celle gardée au tirage #N.
  * La commande servie au fournil ne porte aucun horodatage : l'empreinte évite
@@ -31,10 +31,20 @@ export function printedOrderFingerprint(order: ProductionOrderSnapshot): string 
       line.quantity,
       line.saleUnit,
       line.madeToOrder ?? null,
+      // Ajoutées seulement quand il y en a : l'empreinte d'une fiche sans
+      // option reste celle que le tirage précédent a gardée.
+      ...optionsOf(line),
     ]),
     sheetOf(order.sheetDetails),
   ];
   return createHash("sha256").update(JSON.stringify(printed)).digest("hex");
+}
+
+function optionsOf(line: ProductionOrderSnapshot["lines"][number]): readonly unknown[] {
+  const options = line.options ?? [];
+  return options.length === 0
+    ? []
+    : [options.map((option) => [option.groupName, option.choiceLabel, option.quantity])];
 }
 
 function sheetOf(details: OrderSheetDetails | null): unknown {

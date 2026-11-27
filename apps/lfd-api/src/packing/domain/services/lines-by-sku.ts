@@ -1,5 +1,6 @@
 import type { SaleUnit } from "@lfd/money";
 
+import type { SheetLineOption } from "../entities/packing-sheet.snapshot.js";
 import { MixedSaleUnitLineError } from "../errors/packing-sale-unit-errors.js";
 
 /** Une ligne à coliser : l'article, son nom, la quantité due. */
@@ -20,6 +21,8 @@ export interface SummableLine {
   readonly saleUnit?: SaleUnit;
   /** Le marqueur « sur mesure » d'une ligne de commande (M4) ; un réassort n'en porte pas. */
   readonly madeToOrder?: boolean | null;
+  /** Les options d'une ligne de commande (« dont 2 tranchés ») ; un réassort n'en porte pas. */
+  readonly options?: readonly SheetLineOption[];
 }
 
 /**
@@ -35,6 +38,8 @@ export interface SummableLine {
  * Le marqueur « sur mesure » (plan M4) : une seule ligne sur mesure fait la
  * ligne sur mesure — c'est ce qui doit se voir au bac ; un « non » connu
  * l'emporte sur une ignorance ; aucun marqueur connu, aucun marqueur.
+ *
+ * Les options s'additionnent par groupe et par choix, comme les quantités.
  */
 export function linesBySku<Line extends SummableLine>(lines: readonly Line[]): readonly Line[] {
   const bySku = new Map<string, Line>();
@@ -49,13 +54,31 @@ export function linesBySku<Line extends SummableLine>(lines: readonly Line[]): r
       throw new MixedSaleUnitLineError(line.sku);
     }
     const madeToOrder = mergedMadeToOrder(known.madeToOrder, line.madeToOrder);
+    const options = mergedOptions(known.options, line.options);
     bySku.set(line.sku, {
       ...known,
       quantity: known.quantity + line.quantity,
       ...(madeToOrder === undefined ? {} : { madeToOrder }),
+      ...(options === undefined ? {} : { options }),
     });
   }
   return [...bySku.values()];
+}
+
+function mergedOptions(
+  left: readonly SheetLineOption[] | undefined,
+  right: readonly SheetLineOption[] | undefined,
+): readonly SheetLineOption[] | undefined {
+  if (left === undefined && right === undefined) {
+    return undefined;
+  }
+  const merged = new Map<string, SheetLineOption>();
+  for (const option of [...(left ?? []), ...(right ?? [])]) {
+    const key = JSON.stringify([option.groupName, option.choiceLabel]);
+    const quantity = (merged.get(key)?.quantity ?? 0) + option.quantity;
+    merged.set(key, { ...option, quantity });
+  }
+  return [...merged.values()];
 }
 
 function mergedMadeToOrder(

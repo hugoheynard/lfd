@@ -4,6 +4,7 @@ import { BATCH_COLUMNS, batchOf, returnsByBatch } from "./prisma-production-batc
 import { signerOf } from "./production-day-signer.columns.js";
 import { SHEET_COLUMNS, clienteleOf, sheetDetailsOf } from "./production-order-sheet.columns.js";
 import { RESUPPLY_COLUMNS, splitResupplies } from "./production-resupply.columns.js";
+import { productionLineOptionsOf } from "./line-options.column.js";
 import { productionSaleUnitOf } from "./sale-unit.column.js";
 
 /**
@@ -42,6 +43,7 @@ export const DAY_COLUMNS = {
           quantity: true,
           saleUnit: true,
           madeToOrder: true,
+          options: true,
         },
         orderBy: { id: "asc" },
       },
@@ -131,6 +133,7 @@ function orderOf(order: DayRow["orders"][number]): ProductionDaySnapshot["orders
       quantity: line.quantity,
       saleUnit: productionSaleUnitOf(line.sku, line.saleUnit),
       madeToOrder: line.madeToOrder,
+      options: productionLineOptionsOf(line.sku, line.options),
     })),
     sheetDetails: sheetDetailsOf(order),
   };

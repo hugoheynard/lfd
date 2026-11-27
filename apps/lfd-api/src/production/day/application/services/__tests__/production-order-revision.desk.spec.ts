@@ -29,7 +29,7 @@ const NOW = new Date("2026-10-23T15:00:00.000Z");
 const EARLY = ServiceDay.of("2026-10-24");
 const LATE = ServiceDay.of("2026-10-25");
 
-const LINES = [{ sku: "BAG", quantity: 10 }];
+const LINES = [{ sku: "BAG", quantity: 10, options: [] }];
 
 function subject(
   inscribed: ReadonlyMap<string, string> = new Map(),
@@ -126,7 +126,7 @@ describe("ProductionOrderRevisionDesk — plan A2, `staff_quantities`", () => {
       [EARLY],
       "ord_1",
       3,
-      [{ sku: "BAG", quantity: 12 }],
+      [{ sku: "BAG", quantity: 12, options: [] }],
       "staff_quantities",
     );
 
@@ -151,7 +151,7 @@ describe("ProductionOrderRevisionDesk — plan A2, `staff_quantities`", () => {
       [EARLY],
       "ord_1",
       3,
-      [{ sku: "BAG", quantity: 4 }],
+      [{ sku: "BAG", quantity: 4, options: [] }],
       "staff_quantities",
     );
 
@@ -183,7 +183,7 @@ describe("ProductionOrderRevisionDesk — plan A2, `staff_quantities`", () => {
       [EARLY],
       "ord_1",
       3,
-      [{ sku: "BAG", quantity: 12 }],
+      [{ sku: "BAG", quantity: 12, options: [] }],
       "staff_quantities",
     );
 
@@ -202,7 +202,7 @@ describe("ProductionOrderRevisionDesk — plan A2, `staff_quantities`", () => {
       [EARLY],
       "ord_1",
       3,
-      [{ sku: "BAG", quantity: 12 }],
+      [{ sku: "BAG", quantity: 12, options: [] }],
       "before_inscription",
     );
 

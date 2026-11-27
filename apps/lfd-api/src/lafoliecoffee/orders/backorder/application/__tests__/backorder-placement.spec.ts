@@ -144,7 +144,7 @@ describe("backorderEntryOf — la saisie est garnie par le reliquat, jamais par 
       note: "gardée",
     };
 
-    const entry = backorderEntryOf(openBackorder({ quantity: 4 }), "co_bistrot", body);
+    const entry = backorderEntryOf(openBackorder({ quantity: 4 }), "co_bistrot", body, []);
 
     expect(entry.companyId).toBe("co_bistrot");
     expect(entry.lines).toEqual([{ sku: "PAI-001", quantity: 4, saleUnit: "piece" }]);
@@ -161,8 +161,42 @@ describe("backorderEntryOf — la saisie est garnie par le reliquat, jamais par 
       openedAt: new Date("2026-08-10T10:00:00.000Z"),
     });
 
-    const entry = backorderEntryOf(byWeight, "co_bistrot", {});
+    const entry = backorderEntryOf(byWeight, "co_bistrot", {}, []);
 
     expect(entry.lines).toEqual([{ sku: "FRO-001", quantity: 1_500, saleUnit: "weight" }]);
+  });
+
+  /**
+   * Régression : la saisie d'un reliquat reconstruisait ses lignes sans les
+   * options de l'origine — « dont 2 tranchés » se perdait en silence.
+   */
+  it("recopie les options de la ligne d'origine, plafonnées à ce qui reste", () => {
+    const origin = [
+      {
+        sku: "PAI-001",
+        saleUnit: "piece" as const,
+        optionChoices: [
+          {
+            group: "tranchage",
+            groupName: "Tranchage",
+            choice: "tranche",
+            choiceLabel: "tranché",
+            quantity: 3,
+            position: 0,
+          },
+        ],
+      },
+    ];
+
+    const entry = backorderEntryOf(openBackorder({ quantity: 2 }), "co_bistrot", {}, origin);
+
+    expect(entry.lines).toEqual([
+      {
+        sku: "PAI-001",
+        quantity: 2,
+        saleUnit: "piece",
+        optionChoices: [{ group: "tranchage", choice: "tranche", quantity: 2 }],
+      },
+    ]);
   });
 });

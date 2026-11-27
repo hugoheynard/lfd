@@ -14,6 +14,8 @@ import {
   CompanyBackorderNeedsStaffEntryError,
 } from "../domain/errors/backorder-errors.js";
 import type { BackorderRepository } from "../domain/ports/backorder.repository.js";
+import type { OriginOptionedLine } from "../domain/services/backorder-option-choices.js";
+import { backorderLinesOf } from "./backorder-placement.js";
 
 /**
  * Relit un reliquat de **particulier**, sans verrou ni jugement de son état :
@@ -48,23 +50,21 @@ export type ParticularBackorderConvertEntry =
 
 /**
  * **Le corps du particulier, garni par le reliquat** : ses lignes, à ses
- * quantités (des grammes au poids) et dans son unité ; l'acheteur choisi, ou
+ * quantités (des grammes au poids), dans son unité, avec les options de la
+ * ligne d'origine plafonnées à ce qui reste ; l'acheteur choisi, ou
  * celui de l'origine. Le lieu de règlement choisit la passation — la saisie
  * du comptoir ou l'offerte —, et le motif ne part qu'avec l'offerte.
  */
 export function particularBackorderQuoteEntryOf(
   backorder: Backorder,
   body: AdminBackorderParticularQuotePayload,
+  origin: readonly OriginOptionedLine[],
 ): ParticularBackorderQuoteEntry {
   const { venue, offer, buyerUserId, ...content } = body;
   const payload = {
     ...content,
     buyerUserId: buyerUserId ?? backorder.buyerUserId,
-    lines: backorder.lines.map((line) => ({
-      sku: line.sku,
-      quantity: line.quantity,
-      saleUnit: line.saleUnit,
-    })),
+    lines: [...backorderLinesOf(backorder, origin)],
   };
   if (venue === "shop_till") {
     return { venue, payload };
@@ -81,9 +81,10 @@ export function particularBackorderQuoteEntryOf(
 export function particularBackorderConvertEntryOf(
   backorder: Backorder,
   body: AdminBackorderParticularConvertPayload,
+  origin: readonly OriginOptionedLine[],
 ): ParticularBackorderConvertEntry {
   const { expectedTotalCents, ...quoted } = body;
-  const entry = particularBackorderQuoteEntryOf(backorder, quoted);
+  const entry = particularBackorderQuoteEntryOf(backorder, quoted, origin);
   if (entry.venue === "shop_till") {
     return { venue: entry.venue, payload: { ...entry.payload, expectedTotalCents } };
   }

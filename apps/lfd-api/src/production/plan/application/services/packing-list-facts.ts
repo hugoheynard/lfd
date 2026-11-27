@@ -43,6 +43,11 @@ export function packingListFactsOf(
             // Additif (`plan-sur-mesure-partout.md`, M4) : `null` écrit tel
             // quel, comme la journée l'a figé.
             madeToOrder: line.madeToOrder ?? null,
+            // Additif (`plan-options-de-commande.md`, § 3.4) : écrites
+            // seulement quand il y en a — une ligne sans option garde le fait d'avant.
+            ...((line.options ?? []).length === 0
+              ? {}
+              : { options: (line.options ?? []).map((option) => ({ ...option })) }),
           })),
         },
         reopenedAt,

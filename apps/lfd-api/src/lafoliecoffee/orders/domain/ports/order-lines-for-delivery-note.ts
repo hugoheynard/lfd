@@ -1,5 +1,6 @@
 import type { SaleUnit } from "@lfd/money";
 
+import type { OrderLineOptionChoice } from "../value-objects/order-line-options.js";
 import type { OrderRateAmounts } from "../value-objects/order-rate-amounts.js";
 
 /** Une ligne de commande figée, telle que le bon de livraison la recopie. */
@@ -16,6 +17,8 @@ export interface DeliveryNoteOrderLine {
   readonly unitPriceTtcCents: number | null;
   readonly lineTotalTtcCents: number | null;
   readonly pickupDiscountEligible: boolean;
+  /** Les options figées de la ligne (« dont 2 tranchés ») ; absent ou `[]` = aucune. */
+  readonly optionChoices?: readonly OrderLineOptionChoice[];
 }
 
 /** Une valeur JSON écrite sur la commande, transmise sans être lue. */

@@ -47,7 +47,7 @@ describe("PackingSheet.reviseDue", () => {
   it("une hausse : la ligne due monte, et perd sa marque « au bac » si elle n'est plus complète", () => {
     const target = sheet();
 
-    const changed = target.reviseDue(
+    const { changed } = target.reviseDue(
       [
         { sku: "BAG", quantity: 12 },
         { sku: "CRO", quantity: 6 },
@@ -95,7 +95,7 @@ describe("PackingSheet.reviseDue", () => {
         ],
         MARK,
       ),
-    ).toEqual([]);
+    ).toEqual({ changed: [], optionsChanged: false });
   });
 
   it("refuse une baisse sous ce qui est déjà au bac, en le disant", () => {
@@ -156,5 +156,51 @@ describe("PackingSheet.reviseDue", () => {
     );
 
     expect(target.shortfallReportedAt).toBe(AT);
+  });
+});
+
+describe("PackingSheet.reviseDue — les options (plan-options-de-commande.md, § 4)", () => {
+  const SLICED = { groupName: "Tranchage", choiceLabel: "tranché", quantity: 2 };
+
+  it("une révision qui ne change que les options : la feuille s'écrit, aucune quantité ne bouge", () => {
+    const target = sheet();
+
+    const revised = target.reviseDue(
+      [
+        { sku: "BAG", quantity: 10, options: [SLICED] },
+        { sku: "CRO", quantity: 6, options: [] },
+      ],
+      MARK,
+    );
+
+    expect(revised).toEqual({ changed: [], optionsChanged: true });
+    expect(target.lines[0]?.options).toEqual([SLICED]);
+    expect(target.lines[0]?.packed).toEqual(PACKED_LINE);
+  });
+
+  it("les mêmes options : rien n'a changé", () => {
+    const target = sheet({
+      lines: [
+        {
+          sku: "BAG",
+          productName: "Baguette",
+          quantity: 10,
+          packed: PACKED_LINE,
+          saleUnit: "piece",
+          options: [SLICED],
+        },
+        { sku: "CRO", productName: "Croissant", quantity: 6, packed: null, saleUnit: "piece" },
+      ],
+    });
+
+    const revised = target.reviseDue(
+      [
+        { sku: "BAG", quantity: 10, options: [SLICED] },
+        { sku: "CRO", quantity: 6, options: [] },
+      ],
+      MARK,
+    );
+
+    expect(revised).toEqual({ changed: [], optionsChanged: false });
   });
 });

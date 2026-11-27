@@ -71,3 +71,20 @@ describe("linesBySku — le marqueur « sur mesure »", () => {
     expect(linesBySku([cro, cro])).toEqual([{ ...cro, quantity: 2 }]);
   });
 });
+
+/** Les options (« dont 2 tranchés », `plan-options-de-commande.md`, § 3.4). */
+describe("linesBySku — les options", () => {
+  it("garde les options d'une ligne seule, et additionne celles d'un même article", () => {
+    const sliced = { groupName: "Tranchage", choiceLabel: "tranché", quantity: 2 };
+    expect(
+      linesBySku([
+        { sku: "PAI", productName: "Pain", quantity: 4, options: [sliced] },
+        { sku: "CRO", productName: "Croissant", quantity: 3 },
+        { sku: "PAI", productName: "Pain", quantity: 1, options: [{ ...sliced, quantity: 1 }] },
+      ]),
+    ).toEqual([
+      { sku: "PAI", productName: "Pain", quantity: 5, options: [{ ...sliced, quantity: 3 }] },
+      { sku: "CRO", productName: "Croissant", quantity: 3 },
+    ]);
+  });
+});

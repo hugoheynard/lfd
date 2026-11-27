@@ -118,6 +118,14 @@ function carrierLineOf(line: DeliveryNoteLineState): CarrierNoteLine {
     // Écrite pour le poids seul, comme sur le bon de commande : un BL à la
     // pièce se rend au bit près comme avant (P5).
     ...(line.saleUnit === "weight" ? { saleUnit: "weight" as const } : {}),
+    // Écrites seulement quand il y en a (`plan-options-de-commande.md`, § 3.4).
+    ...((line.optionChoices ?? []).length === 0
+      ? {}
+      : {
+          options: [...(line.optionChoices ?? [])]
+            .sort((a, b) => a.position - b.position)
+            .map(({ groupName, choiceLabel, quantity }) => ({ groupName, choiceLabel, quantity })),
+        }),
   };
 }
 

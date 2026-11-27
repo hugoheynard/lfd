@@ -1,0 +1,13 @@
+-- RETOUR ARRIÈRE de 20261127150000_les_options_aux_ateliers
+-- (documentation/catalogue/plan-options-de-commande.md, lot G3).
+--
+-- 🔴 NON APPLIQUÉ, et Prisma ne le lit pas. La migration reste inscrite
+-- « appliquée ».
+--
+-- Le code d'avant ignore les trois colonnes : le retour arrière est le retour
+-- du code seul. Les retirer perdrait la mention des options au fournil, au
+-- colisage et sur les bons ; à faire seulement sur décision de Hugo :
+--
+--   ALTER TABLE "public"."delivery_note_line" DROP COLUMN "options";
+--   ALTER TABLE "packing"."packing_line" DROP COLUMN "options";
+--   ALTER TABLE "production"."production_order_line" DROP COLUMN "options";

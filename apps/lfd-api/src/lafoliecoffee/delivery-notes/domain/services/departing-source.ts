@@ -5,6 +5,7 @@ import type { DeliveryNoteSource } from "../entities/delivery-note.js";
 import { DecisionOutsideOrderError } from "../errors/delivery-note-errors.js";
 import type { DeliveryNoteSourceLine } from "../value-objects/delivery-note-line.js";
 import { DeliveryNoteTerms } from "../value-objects/delivery-note-terms.js";
+import { departingOptionChoices } from "./departing-options.js";
 import { exactDepartureOf } from "./exact-departure.js";
 
 /**
@@ -48,7 +49,7 @@ export function departingSourceOf<T extends DeliveryNoteSource>(
   }
   const { adjustments } = decision;
   if (adjustments.exact !== null) {
-    const departing = order.lines.map((line, i) => ({ ...line, quantity: quantities[i] ?? 0 }));
+    const departing = order.lines.map((line, i) => withDepartingOptions(line, quantities[i] ?? 0));
     const exact = exactDepartureOf({
       orderNumber: order.orderNumber,
       lines: departing,
@@ -66,14 +67,26 @@ export function departingSourceOf<T extends DeliveryNoteSource>(
   return { ...order, lines, terms, departureDecided: true };
 }
 
+/** La ligne à la quantité qui part, ses options plafonnées (§ 3.4) ; ses montants inchangés. */
+function withDepartingOptions(
+  line: DeliveryNoteSourceLine,
+  quantity: number,
+): DeliveryNoteSourceLine {
+  const options = departingOptionChoices(line, quantity);
+  return {
+    ...line,
+    quantity,
+    ...(line.optionChoices === undefined ? {} : { optionChoices: options }),
+  };
+}
+
 function reducedLine(line: DeliveryNoteSourceLine, quantity: number): DeliveryNoteSourceLine {
   if (quantity === line.quantity) {
     return line;
   }
   const htCents = lineTotalCents(line.unitPriceMillicents, saleQuantity(quantity, line.saleUnit));
   return {
-    ...line,
-    quantity,
+    ...withDepartingOptions(line, quantity),
     lineTotalCents: htCents,
     lineTotalTtcCents: line.lineTotalTtcCents === null ? null : ttcCentsOf(htCents, line.vatRate),
   };

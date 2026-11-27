@@ -1,7 +1,7 @@
 import type { ProductionOrderSnapshot } from "../../../day/index.js";
 import { dossierSheetHeadOf, type DossierSheetHead } from "../../../shared/print/index.js";
 import { figureFontSize, lineFigure, piecesOfLines } from "../../../shared/print/index.js";
-import { isMadeToOrder, MADE_TO_ORDER_MENTION } from "../../../shared/print/index.js";
+import { drawLineMentions, lineMentionsHeight } from "../../../shared/print/index.js";
 import { drawRouting } from "../../../shared/print/index.js";
 import {
   LEFT,
@@ -72,15 +72,12 @@ function drawSheet(
   putCaps(doc, "FAIT", RIGHT - 8 * MM, y);
   y += 6 * MM;
   for (const line of order.lines) {
-    const marked = isMadeToOrder(line);
-    y = place.room(y, marked ? 14 * MM : 10 * MM);
+    y = place.room(y, 10 * MM + lineMentionsHeight(line));
     put(doc, lineFigure(line), LEFT, y - 1.2 * MM, { size: figureFontSize(line, 18), bold: true });
     put(doc, line.productName, LEFT + 18 * MM, y, { size: 13, width: WIDTH - 70 * MM });
     putRight(doc, line.sku, RIGHT - 14 * MM, y + 1 * MM, 9);
-    if (marked) {
-      // Comme la fiche d'atelier (`plan-sur-mesure-partout.md`, M3).
-      putCaps(doc, MADE_TO_ORDER_MENTION, LEFT + 18 * MM, y + 6 * MM);
-    }
+    // Comme la fiche d'atelier : « SUR MESURE », puis les options.
+    const below = drawLineMentions(doc, line, { x: LEFT + 18 * MM, y, width: WIDTH - 70 * MM });
     // La case à cocher au stylo : on coche en remplissant le bac.
     doc
       .save()
@@ -88,7 +85,7 @@ function drawSheet(
       .rect(RIGHT - 6 * MM, y - 0.5 * MM, 5 * MM, 5 * MM)
       .stroke()
       .restore();
-    y += marked ? 10.4 * MM : 6.4 * MM;
+    y += 6.4 * MM + below;
     rule(doc, y, 0.6, ROW_GRAY);
     y += 3 * MM;
   }

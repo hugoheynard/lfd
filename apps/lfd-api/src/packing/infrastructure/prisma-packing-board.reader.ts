@@ -19,6 +19,7 @@ import {
 import { reservedOf } from "../domain/services/stock-reservations.js";
 import { CONTAINER_SELECT, containerModeOf, containerOf } from "./packing-container.mapper.js";
 import { reservationsOn } from "./packing-stock-reservation.rows.js";
+import { packingLineOptionsOf } from "./line-options.column.js";
 import { packingSaleUnitOf } from "./sale-unit.column.js";
 
 /** Ce qu'on relit d'une commande pour le poste. */
@@ -48,6 +49,7 @@ export const ORDER_SELECT = {
       quantity: true,
       saleUnit: true,
       madeToOrder: true,
+      options: true,
       packedAt: true,
       packedBy: true,
       packedInitials: true,
@@ -149,6 +151,7 @@ export interface OrderRow {
     readonly quantity: number;
     readonly saleUnit: string;
     readonly madeToOrder: boolean | null;
+    readonly options: unknown;
     readonly packedAt: Date | null;
     readonly packedBy: string | null;
     readonly packedInitials: string;
@@ -184,6 +187,7 @@ export function boardOrderOf(row: OrderRow, liveBins: ReadonlySet<string>): Boar
       quantity: line.quantity,
       saleUnit: packingSaleUnitOf(line.sku, line.saleUnit),
       madeToOrder: line.madeToOrder,
+      options: packingLineOptionsOf(line.sku, line.options),
       packed:
         line.packedAt === null || line.packedBy === null
           ? null

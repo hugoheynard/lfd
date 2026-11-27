@@ -3,6 +3,22 @@ import type { SaleUnit } from "@lfd/money";
 import { InvalidDeliveryNoteLineError } from "../errors/delivery-note-errors.js";
 
 /**
+ * **Une option d'une ligne de bon** (« dont 2 tranchés »,
+ * `documentation/catalogue/plan-options-de-commande.md`, § 3.4), recopiée de
+ * la ligne de commande avec ses clés, ses libellés d'alors et sa position —
+ * de quoi la plafonner à ce qui part. Aucun montant.
+ */
+export interface DeliveryNoteLineOption {
+  readonly group: string;
+  readonly groupName: string;
+  readonly choice: string;
+  readonly choiceLabel: string;
+  /** Des pièces ; au poids, les grammes de toute la ligne. */
+  readonly quantity: number;
+  readonly position: number;
+}
+
+/**
  * Une ligne de bon de livraison, **recopiée** de sa ligne de commande
  * (invariant 3 du plan-cadre `plan-commande-bon-de-livraison-facture.md`) : un
  * reliquat garde les conditions de prix par construction.
@@ -36,6 +52,12 @@ export interface DeliveryNoteLineState {
    * avant E4a, jamais deviné.
    */
   readonly pickupDiscountEligible: boolean | null;
+  /**
+   * Les options de la ligne, **plafonnées à ce qui part** (§ 3.4) : au plus
+   * « dont 2 tranchés » si 2 pains partent ; au poids, elles suivent la
+   * ligne entière. Absent = aucune.
+   */
+  readonly optionChoices?: readonly DeliveryNoteLineOption[];
 }
 
 /** Une ligne telle que la commande la donne : l'éligibilité y est toujours connue. */

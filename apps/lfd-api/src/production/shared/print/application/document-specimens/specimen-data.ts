@@ -25,7 +25,15 @@ export const SPECIMEN_ORDER: ProductionOrderSnapshot = {
   clientele: "pro",
   siteId: null,
   lines: [
-    { sku: "EXEMPLE-BAG", productName: "Baguette tradition", quantity: 40, saleUnit: "piece" },
+    // Une ligne à options (`catalogue/plan-options-de-commande.md`, § 3.4) :
+    // « Tranchage : 12 × tranché » doit se lire sous le nom.
+    {
+      sku: "EXEMPLE-BAG",
+      productName: "Baguette tradition",
+      quantity: 40,
+      saleUnit: "piece",
+      options: [{ groupName: "Tranchage", choiceLabel: "tranché", quantity: 12 }],
+    },
     { sku: "EXEMPLE-CRO", productName: "Croissant pur beurre", quantity: 60, saleUnit: "piece" },
     { sku: "EXEMPLE-PAC", productName: "Pain au chocolat", quantity: 30, saleUnit: "piece" },
     { sku: "EXEMPLE-TAS", productName: "Tasse La Folie Coffee", quantity: 2, saleUnit: "piece" },

@@ -164,3 +164,48 @@ describe("ProductionDay.reviseOrder — les refus", () => {
     expect(day.toSnapshot()).toEqual(before);
   });
 });
+
+describe("ProductionDay.reviseOrder — les options (plan-options-de-commande.md, § 4)", () => {
+  const SLICED = { groupName: "Tranchage", choiceLabel: "tranché", quantity: 2 };
+
+  it("recopie les options de la commande à l'arrêt", () => {
+    const day = closedWith(
+      producibleOrder("a", {
+        lines: [{ ...orderLine("PAIN", 4, "Pain de campagne"), options: [SLICED] }],
+      }),
+    );
+
+    expect(day.orders[0]?.lines[0]?.options).toEqual([SLICED]);
+    expect(countOfSku(day, "PAIN")).toBe(4);
+  });
+
+  it("une révision qui ne change que les options les remplace, sans rien monter ni compter", () => {
+    const day = closedWith(
+      producibleOrder("a", {
+        lines: [{ ...orderLine("PAIN", 4, "Pain de campagne"), options: [SLICED] }],
+      }),
+    );
+
+    const raised = day.reviseOrder("a", [
+      { sku: "PAIN", quantity: 4, options: [{ ...SLICED, quantity: 3 }] },
+    ]);
+
+    expect(raised).toEqual([]);
+    expect(day.orders[0]?.lines[0]?.options).toEqual([{ ...SLICED, quantity: 3 }]);
+    expect(countOfSku(day, "PAIN")).toBe(4);
+  });
+
+  it("une révision qui retire les options (`[]`) les efface ; muette, elle les garde", () => {
+    const day = closedWith(
+      producibleOrder("a", {
+        lines: [{ ...orderLine("PAIN", 4, "Pain de campagne"), options: [SLICED] }],
+      }),
+    );
+
+    day.reviseOrder("a", [{ sku: "PAIN", quantity: 5 }]);
+    expect(day.orders[0]?.lines[0]?.options).toEqual([SLICED]);
+
+    day.reviseOrder("a", [{ sku: "PAIN", quantity: 5, options: [] }]);
+    expect(day.orders[0]?.lines[0]?.options).toEqual([]);
+  });
+});

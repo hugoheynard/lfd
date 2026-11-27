@@ -125,7 +125,7 @@ async function replaceCounts(tx: Prisma.TransactionClient, snapshot: DaySnapshot
 
 /**
  * La quantité due révisée, ligne à ligne : la révision garde les mêmes
- * articles (`revisedPlanOf`), seule la quantité change. La ligne garde son
+ * articles (`revisedPlanOf`), seules la quantité et les options changent. La ligne garde son
  * identifiant et son colisage de l'ancien poste — rien à recopier.
  *
  * Chaque écriture doit toucher UNE ligne, exactement (clé : jour, commande,
@@ -145,7 +145,7 @@ async function writeRevisions(
     for (const line of order.lines) {
       const written = await tx.productionOrderLine.updateMany({
         where: { order: parent, sku: line.sku },
-        data: { quantity: line.quantity },
+        data: { quantity: line.quantity, options: optionsColumnOf(line) },
       });
       if (written.count !== 1) {
         throw new RevisionNotWrittenError(serviceDay, order.reference, line.sku, written.count);
@@ -239,8 +239,18 @@ function lineRowOf(
     // `NULL` écrit tel quel : « on ne savait pas » ne devient pas « non » en
     // traversant (plan `plan-sur-mesure-partout.md`, M2).
     madeToOrder: line.madeToOrder ?? null,
+    options: optionsColumnOf(line),
     ...carried.lines.get(`${key}/${line.sku}`),
   };
+}
+
+/** La colonne `options`, dans l'ordre de la ligne ; `[]` sans option. */
+function optionsColumnOf(line: OrderSnapshot["lines"][number]) {
+  return (line.options ?? []).map((option) => ({
+    groupName: option.groupName,
+    choiceLabel: option.choiceLabel,
+    quantity: option.quantity,
+  }));
 }
 
 /**

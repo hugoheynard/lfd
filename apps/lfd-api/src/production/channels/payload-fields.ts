@@ -51,3 +51,38 @@ export function recordOf(value: unknown): Readonly<Record<string, unknown>> | nu
   }
   return Object.fromEntries(Object.entries(value));
 }
+
+/** Une option de ligne relue : le groupe, le choix, et combien d'unités la portent. */
+export interface LineOptionField {
+  readonly groupName: string;
+  readonly choiceLabel: string;
+  readonly quantity: number;
+}
+
+/**
+ * Les options d'une ligne (« dont 2 tranchés »,
+ * `documentation/catalogue/plan-options-de-commande.md`, § 3.4). **Absentes
+ * = `[]`** — un fait ou une colonne d'avant les options n'en portait aucune.
+ * Une forme illisible rend `null`, jamais `[]` : la relire « sans option »
+ * ferait livrer entier un pain qu'on a demandé tranché.
+ */
+export function lineOptionsOf(value: unknown): readonly LineOptionField[] | null {
+  if (value === undefined) {
+    return [];
+  }
+  if (!Array.isArray(value)) {
+    return null;
+  }
+  const options: LineOptionField[] = [];
+  for (const item of value) {
+    const raw = recordOf(item);
+    const groupName = textOf(raw?.["groupName"]);
+    const choiceLabel = textOf(raw?.["choiceLabel"]);
+    const quantity = piecesOf(raw?.["quantity"]);
+    if (groupName === null || choiceLabel === null || quantity === null) {
+      return null;
+    }
+    options.push({ groupName, choiceLabel, quantity });
+  }
+  return options;
+}

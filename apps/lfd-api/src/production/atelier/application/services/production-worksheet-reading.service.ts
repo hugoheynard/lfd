@@ -17,6 +17,7 @@ import { QualityLineStatusReader } from "../../../quality/index.js";
 import { worksheetGroupsFrom } from "../../domain/services/production-worksheet-groups.js";
 import { GroupingSourceReading } from "../../../workstations/index.js";
 import { worksheetOf, type DemandedItem } from "../../domain/services/production-worksheet.js";
+import { optionsBySku } from "../../domain/services/worksheet-line-options.js";
 import { ServiceDay } from "../../../day/index.js";
 import { ServiceRange } from "../../../day/index.js";
 import { DayTrackingLevelsReading } from "./day-tracking-levels-reading.service.js";
@@ -178,6 +179,9 @@ export class ProductionWorksheetReading {
       demand: mergedDemand([...demandOf(expected, day), ...demandOf(resupplies, day)]),
       arrivals: producible.filter((order) => !known.has(order.orderId)),
       containers,
+      // Arrêtée : les commandes inscrites, celles que le compte résume ;
+      // ouverte : celles que le commerce annonce.
+      options: optionsBySku(current.closedAt === null ? producible : current.orders),
     });
     const settings = display ?? ProductionDisplaySettings.defaults();
     const grouping = await this.grouping.read(

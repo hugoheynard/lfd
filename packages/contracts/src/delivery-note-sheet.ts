@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { lineOptionMentionSchema, type LineOptionMention } from "./line-option-mention.js";
 import {
   sheetCustomerSchema,
   sheetFulfillmentSchema,
@@ -80,6 +81,8 @@ export const carrierNoteLineSchema = z.object({
   quantity: z.number().int().nonnegative(),
   /** Cf. {@link CarrierNoteLine.saleUnit}. */
   saleUnit: z.literal("weight").optional(),
+  /** Cf. {@link CarrierNoteLine.options}. */
+  options: z.array(lineOptionMentionSchema).optional(),
 });
 export interface CarrierNoteLine {
   readonly sku: string;
@@ -93,6 +96,13 @@ export interface CarrierNoteLine {
    * près comme avant.
    */
   readonly saleUnit?: "weight";
+  /**
+   * Les options de la ligne (« dont 2 tranchés »,
+   * `plan-options-de-commande.md`, § 3.4), **plafonnées à ce qui part** ;
+   * au poids, elles suivent la ligne entière. **Absent = aucune** : un BL
+   * sans option se rend au bit près comme avant.
+   */
+  readonly options?: readonly LineOptionMention[];
 }
 
 /** Une ligne chiffrée, recopiée de la commande. */

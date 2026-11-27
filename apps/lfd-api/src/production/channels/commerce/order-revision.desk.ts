@@ -1,4 +1,5 @@
 import type { ServiceDay } from "../../day/domain/value-objects/service-day.value-object.js";
+import type { ProductionLineOption } from "./day-orders.reader.js";
 
 /**
  * Ce que le guichet a constaté :
@@ -25,10 +26,17 @@ export type OrderRevisionOutcome = "noted" | "inscribed" | "raised" | "unchanged
  */
 export type OrderRevisionAllowance = "before_inscription" | "staff_quantities";
 
-/** Une ligne de la commande révisée, telle que le fournil la reçoit : l'article et son dû. */
+/**
+ * Une ligne de la commande révisée, telle que le fournil la reçoit : l'article,
+ * son dû, et ses options à jour — changer les options d'une commande inscrite
+ * est permis comme changer une quantité (`plan-options-de-commande.md`, § 4),
+ * et elles arrivent par ce même chemin.
+ */
 export interface RevisedOrderLine {
   readonly sku: string;
   readonly quantity: number;
+  /** Les options révisées ; `[]` = aucune. */
+  readonly options: readonly ProductionLineOption[];
 }
 
 /**

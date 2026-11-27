@@ -18,7 +18,7 @@ import { OrderRepository } from "../../../domain/ports/order.repository.js";
 import { BackorderRepository } from "../../domain/ports/backorder.repository.js";
 import { BackorderReplayReader } from "../../domain/ports/backorder-replay.reader.js";
 import { backorderClosing } from "../backorder-closing.js";
-import { backorderPricingOf } from "../backorder-placement.js";
+import { backorderOriginOf, backorderPricingFrom } from "../backorder-placement.js";
 import {
   loadParticularBackorder,
   particularBackorderConvertEntryOf,
@@ -106,7 +106,9 @@ export class ConvertParticularBackorderHandler implements ICommandHandler<
     ensureMayOffer(command.payload.venue === "offered", command.mayOffer);
     // Sans juger l'état : un double clic après le succès retrouve sa commande.
     const backorder = await loadParticularBackorder(this.backorders, command.backorderId);
-    const entry = particularBackorderConvertEntryOf(backorder, command.payload);
+    // L'origine avant le sceau, sans juger l'état : ses options garnissent la saisie.
+    const origin = await backorderOriginOf(this.replays, backorder);
+    const entry = particularBackorderConvertEntryOf(backorder, command.payload, origin.lines);
     return await this.intents.runSealed(
       particularBackorderConversionIntent(
         command.staffUserId,
@@ -116,7 +118,7 @@ export class ConvertParticularBackorderHandler implements ICommandHandler<
       ),
       PARTICULAR_BACKORDER_CONVERSION_REPLAY,
       async (seal) => {
-        const { origin, policy } = await backorderPricingOf(this.replays, backorder);
+        const { policy } = backorderPricingFrom(backorder, origin);
         const binding = backorderClosing(
           { backorders: this.backorders, clock: this.clock, journal: this.journal },
           backorder,

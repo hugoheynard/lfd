@@ -51,6 +51,10 @@ export function freezeOrder(order: ProducibleOrder): ProductionOrderSnapshot {
       quantity: line.quantity,
       saleUnit: line.saleUnit,
       madeToOrder: line.madeToOrder,
+      // Écrites seulement quand il y en a : une ligne sans option garde sa forme.
+      ...((line.options ?? []).length === 0
+        ? {}
+        : { options: (line.options ?? []).map((option) => ({ ...option })) }),
     })),
     sheetDetails: order.sheetDetails,
   };

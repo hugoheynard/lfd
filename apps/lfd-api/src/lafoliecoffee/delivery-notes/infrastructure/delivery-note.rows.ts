@@ -1,6 +1,7 @@
 import type { Prisma } from "../../../platform/database/client/client.js";
 import type { DeliveryNoteState } from "../domain/entities/delivery-note.js";
 import { deliveryNoteSaleUnitOf } from "../domain/value-objects/delivery-note-line.js";
+import { deliveryNoteLineOptionsOf } from "./delivery-note-line-options.column.js";
 import { termsOf } from "./delivery-note-terms.columns.js";
 
 /**
@@ -20,6 +21,7 @@ const LINE_COLUMNS = {
   unitPriceTtcCents: true,
   lineTotalTtcCents: true,
   pickupDiscountEligible: true,
+  options: true,
 } as const;
 
 /** Les lignes d'un BL, dans leur ordre d'écriture. */
@@ -59,10 +61,11 @@ export function stateOf(row: NoteRow): DeliveryNoteState {
       row.printedVersion === null || row.printedAt === null || row.printedBy === null
         ? null
         : { version: row.printedVersion, at: row.printedAt, by: row.printedBy },
-    lines: row.lines.map((line) => ({
+    lines: row.lines.map(({ options, ...line }) => ({
       ...line,
       vatRate: line.vatRate.toNumber(),
       saleUnit: deliveryNoteSaleUnitOf(line.sku, line.saleUnit),
+      optionChoices: deliveryNoteLineOptionsOf(line.sku, options),
     })),
   };
 }

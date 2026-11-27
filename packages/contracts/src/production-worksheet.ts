@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import type { CatalogFamilyView } from "./catalog.js";
+import type { LineOptionMention } from "./line-option-mention.js";
 import type { OrderSaleUnit } from "./order.js";
 import type {
   WorkshopBatch,
@@ -194,6 +195,14 @@ export interface WorkshopLine {
   readonly stepState?: WorkshopStepState | null;
   /** La raison du rouge de cette étape ; `null` hors d'un rouge, ou rouge sans raison. */
   readonly stepRedReason?: string | null;
+  /**
+   * **Les options de l'article** sur les commandes du jour — « 4 pains de
+   * campagne, dont 2 tranchés » (`plan-options-de-commande.md`, § 3.4) —,
+   * additionnées par choix ; au poids, des grammes. Le compte à produire
+   * n'en dépend pas. Absent ou `[]` : aucune. Facultatif dans le TYPE
+   * seulement : le serveur l'envoie toujours.
+   */
+  readonly options?: readonly LineOptionMention[];
 }
 
 /** L'état de l'étape d'un poste sur une ligne qu'il ne finit pas. */

@@ -6,8 +6,15 @@ import {
   shipmentKeySuffix,
   shipmentRankOf,
 } from "../../day/domain/value-objects/shipment-ref.value-object.js";
-import type { Clientele } from "../commerce/day-orders.reader.js";
-import { instantOf, piecesOf, recordOf, saleUnitOf, textOf } from "../payload-fields.js";
+import type { Clientele, ProductionLineOption } from "../commerce/day-orders.reader.js";
+import {
+  instantOf,
+  lineOptionsOf,
+  piecesOf,
+  recordOf,
+  saleUnitOf,
+  textOf,
+} from "../payload-fields.js";
 
 /** Nom stable du fait, clé de routage vers `@DurableHandler`. */
 export const PRODUCTION_PACKING_LIST_DRAWN = "production.packing_list_drawn";
@@ -30,6 +37,12 @@ export interface PackingListLine {
    * marqueur — se relit `null`, « on ne savait pas », jamais `false`.
    */
   readonly madeToOrder?: boolean | null;
+  /**
+   * Les options de la ligne (« dont 2 tranchés »,
+   * `documentation/catalogue/plan-options-de-commande.md`, § 3.4). Additif
+   * et facultatif : un fait écrit avant le champ se relit sans option.
+   */
+  readonly options?: readonly ProductionLineOption[];
 }
 
 /** Une commande à coliser, telle que le fournil l'a inscrite au plan. */
@@ -195,7 +208,14 @@ function linesOf(value: unknown): readonly PackingListLine[] | null {
     const productName = raw?.["productName"];
     const quantity = piecesOf(raw?.["quantity"]);
     const saleUnit = saleUnitOf(raw?.["saleUnit"]);
-    if (sku === null || typeof productName !== "string" || quantity === null || saleUnit === null) {
+    const options = lineOptionsOf(raw?.["options"]);
+    if (
+      sku === null ||
+      typeof productName !== "string" ||
+      quantity === null ||
+      saleUnit === null ||
+      options === null
+    ) {
       return null;
     }
     const madeToOrder = flagOf(raw?.["madeToOrder"]);
@@ -206,6 +226,7 @@ function linesOf(value: unknown): readonly PackingListLine[] | null {
       saleUnit,
       // Absent reste absent : un fait d'avant le champ se relit tel qu'écrit.
       ...(madeToOrder === null ? {} : { madeToOrder }),
+      ...(options.length === 0 ? {} : { options }),
     });
   }
   return lines;

@@ -20,7 +20,8 @@ import {
 import { drawCountPie } from "./count-color-pie.js";
 import { figureFontSize, lineFigure, piecesOfLines } from "./line-tally.js";
 import type { CountColorShare } from "./count-color-shares.js";
-import { type CountPaperRow, isMadeToOrder, MADE_TO_ORDER_MENTION } from "./made-to-order.js";
+import { drawLineMentions, lineMentionsHeight } from "./line-mentions-pdf.js";
+import { type CountPaperRow, MADE_TO_ORDER_MENTION } from "./made-to-order.js";
 import { drawRouting } from "./order-routing-pdf.js";
 import { PaperPages } from "../../../../../platform/pdf/paper-pages.js";
 
@@ -129,18 +130,14 @@ function drawLines(
   putCaps(doc, `À PRÉPARER — ${String(pieces)} pièces`, LEFT, y);
   y += 6 * MM;
   for (const line of order.lines) {
-    const marked = isMadeToOrder(line);
-    y = room(y, marked ? 14 * MM : 10 * MM);
+    y = room(y, 10 * MM + lineMentionsHeight(line));
     // La quantité en GROS, à gauche : c'est le seul chiffre qu'on lit à un
     // mètre, les mains prises. Le nom suit, le SKU ferme la ligne.
     put(doc, lineFigure(line), LEFT, y - 1.2 * MM, { size: figureFontSize(line, 18), bold: true });
     put(doc, line.productName, LEFT + 18 * MM, y, { size: 13, width: WIDTH - 60 * MM });
     putRight(doc, line.sku, RIGHT, y + 1 * MM, 9);
-    if (marked) {
-      // Sous le nom, en petites capitales (`plan-sur-mesure-partout.md`, M3).
-      putCaps(doc, MADE_TO_ORDER_MENTION, LEFT + 18 * MM, y + 6 * MM);
-      y += 4 * MM;
-    }
+    // Sous le nom : « SUR MESURE », puis les options.
+    y += drawLineMentions(doc, line, { x: LEFT + 18 * MM, y, width: WIDTH - 60 * MM });
     y += 6.4 * MM;
     rule(doc, y, 0.6, ROW_GRAY);
     y += 3 * MM;

@@ -25,7 +25,12 @@ import { PayerCommitmentRequirements } from "../../../domain/ports/payer-commitm
 import { BackorderRepository } from "../../domain/ports/backorder.repository.js";
 import { BackorderReplayReader } from "../../domain/ports/backorder-replay.reader.js";
 import { backorderClosing } from "../backorder-closing.js";
-import { backorderEntryOf, backorderPricingOf, loadBackorder } from "../backorder-placement.js";
+import {
+  backorderEntryOf,
+  backorderOriginOf,
+  backorderPricingFrom,
+  loadBackorder,
+} from "../backorder-placement.js";
 import { backorderConversionIntent } from "./backorder-conversion-intent.js";
 import { ConvertBackorderCommand } from "./convert-backorder.command.js";
 
@@ -104,12 +109,20 @@ export class ConvertBackorderHandler implements ICommandHandler<
     if (!(await this.inHouse.isInHousePayer(loaded.companyId))) {
       ensureMayOffer(command.payload.settlement === "offered", command.mayOffer);
     }
-    const entry = backorderEntryOf(loaded.backorder, loaded.companyId, command.payload);
+    // L'origine avant le sceau, sans juger l'état : ses options garnissent la
+    // saisie, donc l'intention ; un double clic après le succès la relit pareil.
+    const origin = await backorderOriginOf(this.replays, loaded.backorder);
+    const entry = backorderEntryOf(
+      loaded.backorder,
+      loaded.companyId,
+      command.payload,
+      origin.lines,
+    );
     return await this.intents.runSealed(
       backorderConversionIntent(command.staffUserId, command.intentKey, command.backorderId, entry),
       STAFF_PLACEMENT_REPLAY,
       async (seal) => {
-        const { origin, policy } = await backorderPricingOf(this.replays, loaded.backorder);
+        const { policy } = backorderPricingFrom(loaded.backorder, origin);
         return this.placement.place(
           {
             staffUserId: command.staffUserId,

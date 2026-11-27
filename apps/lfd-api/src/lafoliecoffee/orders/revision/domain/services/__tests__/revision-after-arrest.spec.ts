@@ -1,3 +1,4 @@
+import type { OrderLineOptionChoice } from "../../../../domain/value-objects/order-line-options.js";
 import type { RevisionChange } from "../../entities/order-revision.js";
 import {
   isQuantitiesOnly,
@@ -7,10 +8,17 @@ import {
 
 /** Le périmètre d'A2 (plan A2, § 7) — pur. */
 
-type Line = { readonly sku: string; readonly quantity: number };
+type Line = {
+  readonly sku: string;
+  readonly quantity: number;
+  readonly optionChoices?: readonly OrderLineOptionChoice[];
+};
 
 function revisionWith(changes: readonly RevisionChange[], lines: readonly Line[]) {
-  return { changes, state: { lines } };
+  return {
+    changes,
+    state: { lines: lines.map((line) => ({ ...line, optionChoices: line.optionChoices ?? [] })) },
+  };
 }
 
 describe("quantitiesAfterArrestAllowed", () => {
@@ -61,8 +69,44 @@ describe("isQuantitiesOnly", () => {
 
     expect(isQuantitiesOnly(ORDER, revision)).toBe(true);
     expect(revisedQuantitiesOf(revision)).toEqual([
-      { sku: "A", quantity: 5 },
-      { sku: "B", quantity: 1 },
+      { sku: "A", quantity: 5, options: [] },
+      { sku: "B", quantity: 1, options: [] },
+    ]);
+  });
+
+  /**
+   * Changer les options d'une commande inscrite est permis comme une
+   * quantité (`plan-options-de-commande.md`, § 4) : les ateliers reçoivent
+   * les options à jour par ce même chemin, dans l'ordre du référentiel.
+   */
+  it("seules les options changent : oui, et les ateliers reçoivent les options à jour", () => {
+    const option = (choice: string, position: number, quantity: number) => ({
+      group: "tranchage",
+      groupName: "Tranchage",
+      choice,
+      choiceLabel: choice,
+      quantity,
+      position,
+    });
+    const revision = revisionWith(
+      ["lines"],
+      [
+        { sku: "A", quantity: 2, optionChoices: [option("fin", 1, 1), option("tranché", 0, 1)] },
+        { sku: "B", quantity: 3 },
+      ],
+    );
+
+    expect(isQuantitiesOnly(ORDER, revision)).toBe(true);
+    expect(revisedQuantitiesOf(revision)).toEqual([
+      {
+        sku: "A",
+        quantity: 2,
+        options: [
+          { groupName: "Tranchage", choiceLabel: "tranché", quantity: 1 },
+          { groupName: "Tranchage", choiceLabel: "fin", quantity: 1 },
+        ],
+      },
+      { sku: "B", quantity: 3, options: [] },
     ]);
   });
 

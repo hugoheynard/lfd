@@ -1,5 +1,6 @@
 import type { SaleUnit } from "@lfd/money";
 import type { ContainerMode } from "../entities/packing-sheet.js";
+import type { SheetLineOption } from "../entities/packing-sheet.snapshot.js";
 import type { PackingTrackingLevel } from "../entities/packing-tracking-level.js";
 
 /** Une commande à coliser, telle que l'ombre l'inscrit. */
@@ -37,6 +38,8 @@ export interface ShadowOrderToDraw {
     readonly saleUnit: SaleUnit;
     /** Le marqueur « sur mesure » du fait (plan sur mesure, M4) ; absent = fait sans le champ. */
     readonly madeToOrder?: boolean | null;
+    /** Les options (« dont 2 tranchés ») ; absent = aucune. */
+    readonly options?: readonly SheetLineOption[];
   }[];
 }
 

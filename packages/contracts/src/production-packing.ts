@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import type { LineOptionMention } from "./line-option-mention.js";
 import type { OrderSaleUnit } from "./order.js";
 import type { PackingTrackingLevel } from "./packing-settings.js";
 import type { PackingContainerView } from "./packing-containers.js";
@@ -98,6 +99,13 @@ export interface PackingLine {
    * Facultatif dans le TYPE seulement : le serveur l'envoie toujours.
    */
   readonly madeToOrder?: boolean | null;
+  /**
+   * Les options de la ligne (« dont 2 tranchés »,
+   * `plan-options-de-commande.md`, § 3.4), dans l'ordre du référentiel.
+   * Absent ou `[]` : aucune. Facultatif dans le TYPE seulement : le serveur
+   * l'envoie toujours.
+   */
+  readonly options?: readonly LineOptionMention[];
 }
 
 /**

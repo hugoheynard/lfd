@@ -10,6 +10,7 @@ import {
   type DeliveryNoteLineState,
   type DeliveryNoteSourceLine,
 } from "../value-objects/delivery-note-line.js";
+import { sameOptionChoices } from "../services/departing-options.js";
 import {
   copyOfTerms,
   termsDifferences,
@@ -228,7 +229,8 @@ export class DeliveryNote {
 
   /**
    * Ses lignes et son en-tête sont-ils ceux de la source — même SKU, même
-   * quantité, même total par ligne, même en-tête ?
+   * quantité, même total par ligne, mêmes options, même en-tête ? Une option
+   * changée change le papier : « dont 2 tranchés » s'y lit.
    */
   matches(source: DeliveryNoteSource): boolean {
     const terms = this.currentTerms;
@@ -241,7 +243,8 @@ export class DeliveryNote {
           other.sku === line.state.sku &&
           other.saleUnit === line.state.saleUnit &&
           other.quantity === line.state.quantity &&
-          other.lineTotalCents === line.state.lineTotalCents
+          other.lineTotalCents === line.state.lineTotalCents &&
+          sameOptionChoices(other.optionChoices ?? [], line.state.optionChoices ?? [])
         );
       });
     return sameLines && terms !== null && termsDifferences(terms, source.terms).length === 0;

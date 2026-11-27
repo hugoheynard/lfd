@@ -119,6 +119,9 @@ model DeliveryNoteLine {
   lineTotalTtcCents      Int?     @map("line_total_ttc_cents")
   /// Recopié de la ligne de commande (plan E4a) ; `NULL` sur une ligne d'avant E4a.
   pickupDiscountEligible Boolean? @map("pickup_discount_eligible")
+  /// Les options de la ligne (« dont 2 tranchés »), plafonnées à ce qui part
+  /// (`plan-options-de-commande.md`, § 3.4) ; `[]` = aucune. Aucun montant.
+  options                Json     @default("[]")
 
   @@index([noteId])
   @@map("delivery_note_line")

@@ -21,6 +21,18 @@ export interface SheetLineMark extends SheetMark {
   readonly initials: string;
 }
 
+/**
+ * **Une option d'une ligne** (« dont 2 tranchés »,
+ * `documentation/catalogue/plan-options-de-commande.md`, § 3.4), telle que le
+ * fournil l'a transmise : le colisage la montre, il n'en fait ni une clé ni un
+ * compte. Au poids, `quantity` est celle de toute la ligne.
+ */
+export interface SheetLineOption {
+  readonly groupName: string;
+  readonly choiceLabel: string;
+  readonly quantity: number;
+}
+
 /** Une ligne à coliser : l'article, la quantité due, et si elle est au bac. */
 export interface SheetLine {
   readonly sku: string;
@@ -32,6 +44,8 @@ export interface SheetLine {
    */
   readonly saleUnit: SaleUnit;
   readonly packed: SheetLineMark | null;
+  /** Les options de la ligne ; absent = aucune (un réassort, une feuille d'avant elles). */
+  readonly options?: readonly SheetLineOption[];
 }
 
 /**

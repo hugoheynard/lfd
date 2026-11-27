@@ -21,8 +21,8 @@ import { GetAtelierSheetSpecimenHandler } from "../get-atelier-sheet-specimen.ha
  * pourquoi le papier a changé.
  */
 const FINGERPRINTS = {
-  plain: "1fcfc01ae71df8ae7f5b7324e6df0552db22e1c614bf61435945d1d2e5d5b068",
-  withQr: "bcddcef721e937d3b2978c454b21510d46bb86ab8d7a1185863c0d18c9fd41c3",
+  plain: "84199030d94c41df553832854e271aeb9d9250d9154a690700bd1623111f66bd",
+  withQr: "9e170630686480c59d5767b5e8381e079f15ea2c632ae9a95231ed39b9f27ed6",
 } as const;
 
 const AT = new Date("2026-03-10T15:30:00.000Z");

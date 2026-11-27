@@ -228,7 +228,7 @@ describe("ReviseOrderHandler — le geste", () => {
         days: [DAY, NEXT_DAY],
         orderId: "ord_1",
         revision: 1,
-        lines: [{ sku: "VIE-001", quantity: 10 }],
+        lines: [{ sku: "VIE-001", quantity: 10, options: [] }],
         allowance: "before_inscription",
       },
     ]);

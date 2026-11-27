@@ -235,6 +235,7 @@ function linesOf(
         quantity: line.quantity,
         saleUnit: line.saleUnit,
         madeToOrder: line.madeToOrder ?? null,
+        options: (line.options ?? []).map((option) => ({ ...option })),
         packed: line.packed !== null,
         // La chaîne vide n'est pas une signature : `null`, comme l'ancien poste.
         initials: line.packed === null || line.packed.initials === "" ? null : line.packed.initials,

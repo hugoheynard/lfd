@@ -50,8 +50,8 @@ export class QuoteParticularBackorderHandler implements IQueryHandler<
    */
   async execute(query: QuoteParticularBackorderQuery): Promise<AdminOrderEstimateView> {
     const backorder = await loadParticularBackorder(this.backorders, query.backorderId);
-    const { policy } = await backorderPricingOf(this.replays, backorder);
-    const entry = particularBackorderQuoteEntryOf(backorder, query.payload);
+    const { origin, policy } = await backorderPricingOf(this.replays, backorder);
+    const entry = particularBackorderQuoteEntryOf(backorder, query.payload, origin.lines);
     return withCatalogueSnapshot(() =>
       estimateParticularOrder(
         () => this.draft(query.staffUserId, entry, policy),

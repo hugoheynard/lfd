@@ -6,6 +6,7 @@ import {
   type ShadowOrderToDraw,
   type ShadowReceipt,
 } from "../domain/ports/packing-shadow.ledger.js";
+import { packingLineOptionsColumnOf } from "./line-options.column.js";
 
 /**
  * L'adaptateur Prisma de l'ombre. Il tourne dans l'unité de travail que la
@@ -66,6 +67,7 @@ export class PrismaPackingShadowLedger extends PackingShadowLedger {
         saleUnit: line.saleUnit,
         // Un fait publié avant le plan sur mesure (M4) n'en dit rien : `NULL`.
         madeToOrder: line.madeToOrder ?? null,
+        options: packingLineOptionsColumnOf(line.options),
       })),
       skipDuplicates: true,
     });

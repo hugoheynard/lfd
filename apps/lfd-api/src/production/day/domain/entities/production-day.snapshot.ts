@@ -1,7 +1,11 @@
 import type { SaleUnit } from "@lfd/money";
 
 import type { PlanSigner } from "./plan-signer.js";
-import type { Clientele, OrderSheetDetails } from "../../../channels/commerce/day-orders.reader.js";
+import type {
+  Clientele,
+  OrderSheetDetails,
+  ProductionLineOption,
+} from "../../../channels/commerce/day-orders.reader.js";
 import type { PackingOwner } from "../value-objects/packing-owner.js";
 
 /**
@@ -37,6 +41,11 @@ export interface ProductionLineSnapshot {
    * savent rien, et ne l'écrivent pas.
    */
   readonly madeToOrder?: boolean | null;
+  /**
+   * Les options de la ligne (« dont 2 tranchés »), recopiées de la commande.
+   * Facultatif : absent vaut `[]` — un réassort n'en porte pas.
+   */
+  readonly options?: readonly ProductionLineOption[];
 }
 
 /**

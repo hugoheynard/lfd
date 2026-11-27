@@ -57,11 +57,18 @@ export class PackingSheetRevisionDesk extends PackingRevisionDesk {
       if (sheet.liveBinIds.length > 0) {
         return "delivery_bin";
       }
-      const changed = sheet.reviseDue(lines, { at: this.clock.now(), by: revisedBy });
-      if (changed.length === 0) {
+      const { changed, optionsChanged } = sheet.reviseDue(lines, {
+        at: this.clock.now(),
+        by: revisedBy,
+      });
+      if (changed.length === 0 && !optionsChanged) {
         return "revised";
       }
       await this.sheets.save(sheet);
+      // Le fait ne dit que les quantités : une option changée ne déplace rien au bac.
+      if (changed.length === 0) {
+        return "revised";
+      }
       await this.events.publishTraced(
         new PackingSheetRevisedEvent(sheet.serviceDay, sheet.orderId, sheet.reference, changed),
       );

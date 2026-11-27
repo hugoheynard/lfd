@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../platform/database/prisma.service.js";
 import type { PackingSheet } from "../domain/entities/packing-sheet.js";
+import { packingLineOptionsColumnOf } from "./line-options.column.js";
 import { saveContainers } from "./packing-container.mapper.js";
 import { loadPackingSheet } from "./packing-sheet.load.js";
 import { PackingSheetRepository } from "../domain/ports/packing-sheet.repository.js";
@@ -84,6 +85,8 @@ export class PrismaPackingSheetRepository extends PackingSheetRepository {
           // La quantité due ne bouge que par la décision d'un départ incomplet (E6b)
           // et par la révision d'une commande inscrite (plan A2).
           quantity: line.quantity,
+          // Les options suivent la révision (`plan-options-de-commande.md`, § 4).
+          options: packingLineOptionsColumnOf(line.options),
           packedAt: line.packed?.at ?? null,
           packedBy: line.packed?.by ?? null,
           packedInitials: line.packed?.initials ?? "",

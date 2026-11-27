@@ -42,6 +42,7 @@ import {
   type PrintableNote,
 } from "./delivery-note-pdf-parts.js";
 import { undeliveredMention, undeliveredSpace } from "./delivery-note-pdf-undelivered.js";
+import { noteOptionMentionOf, OPTION_MENTION_HEIGHT_MM } from "./note-option-mention.js";
 import type { UndeliveredLine } from "./undelivered-lines.js";
 import { orderDocumentFileName } from "@lfd/contracts";
 
@@ -140,7 +141,12 @@ function articleRow(
     putRight(doc, line.sku, columns.skuRight, y + 0.8 * MM, 8.5);
   }
   columns.row(doc, index, y);
-  const bottom = y + 4.6 * MM;
+  // Les options, sous le nom (`plan-options-de-commande.md`, § 3.4).
+  const mention = noteOptionMentionOf(line);
+  if (mention !== "") {
+    put(doc, mention, X_NAME, y + 4.4 * MM, { size: 9, width: nameRight - X_NAME });
+  }
+  const bottom = y + 4.6 * MM + (mention === "" ? 0 : OPTION_MENTION_HEIGHT_MM * MM);
   rule(doc, bottom, 0.6, ROW_GRAY);
   return bottom + 0.6;
 }
@@ -163,7 +169,10 @@ function table(doc: Doc, paper: Paper, columns: Columns, top: number): number {
     if (note.lines[index]?.quantity === 0) {
       continue;
     }
-    if (y > PAGE_HEIGHT - MARGIN_Y - ROW_SPACE - tail) {
+    const line = note.lines[index];
+    const extra =
+      line !== undefined && noteOptionMentionOf(line) !== "" ? OPTION_MENTION_HEIGHT_MM * MM : 0;
+    if (y > PAGE_HEIGHT - MARGIN_Y - ROW_SPACE - extra - tail) {
       y = tableHead(doc, note, columns, nextPage(doc, paper), false);
     }
     y = articleRow(doc, note, columns, index, y);

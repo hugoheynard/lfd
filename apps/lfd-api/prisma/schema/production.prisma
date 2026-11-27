@@ -217,6 +217,13 @@ model ProductionOrderLine {
   /// le marqueur : on ne savait pas.
   madeToOrder Boolean? @map("made_to_order")
 
+  /// **Les options de la ligne** (« dont 2 tranchés »,
+  /// `documentation/catalogue/plan-options-de-commande.md`, § 3.4), recopiées
+  /// de la commande à l'arrêt et à la révision : un tableau
+  /// `[{ groupName, choiceLabel, quantity, position }]`. `[]` = aucune option.
+  /// Le compte à produire n'en dépend pas.
+  options Json @default("[]")
+
   /// **La ligne est DANS le bac**, telle que le poste de colisage la constate.
   ///
   /// C'est l'état de travail du remplissage, et il est RÉVERSIBLE — une ligne

@@ -60,7 +60,12 @@ describe("PackingSheetRevisionDesk", () => {
   it("une hausse : la ligne due monte, la feuille est écrite, le fait est journalisé", async () => {
     const { desk, sheets, events } = setup();
 
-    const outcome = await desk.revise(DAY, "ord_1", [{ sku: "CRO", quantity: 9 }], STAFF);
+    const outcome = await desk.revise(
+      DAY,
+      "ord_1",
+      [{ sku: "CRO", quantity: 9, options: [] }],
+      STAFF,
+    );
 
     expect(outcome).toBe("revised");
     expect(sheets.of(DAY, "ord_1")?.lines[0]?.quantity).toBe(9);
@@ -75,14 +80,16 @@ describe("PackingSheetRevisionDesk", () => {
   it("la même composition : « revised », rien d'écrit, rien de publié", async () => {
     const { desk, events } = setup();
 
-    expect(await desk.revise(DAY, "ord_1", [{ sku: "CRO", quantity: 6 }], STAFF)).toBe("revised");
+    expect(await desk.revise(DAY, "ord_1", [{ sku: "CRO", quantity: 6, options: [] }], STAFF)).toBe(
+      "revised",
+    );
     expect(events.factTypes()).toEqual([]);
   });
 
   it("la feuille n'est pas encore arrivée : « sheet_missing », rien d'écrit", async () => {
     const { desk, sheets } = setup(null);
 
-    expect(await desk.revise(DAY, "ord_1", [{ sku: "CRO", quantity: 9 }], STAFF)).toBe(
+    expect(await desk.revise(DAY, "ord_1", [{ sku: "CRO", quantity: 9, options: [] }], STAFF)).toBe(
       "sheet_missing",
     );
     expect(sheets.rows.size).toBe(0);
@@ -91,7 +98,9 @@ describe("PackingSheetRevisionDesk", () => {
   it("un bac fermé : « packed », rien d'écrit", async () => {
     const { desk, sheets } = setup(sheetRow({ packed: MARK }));
 
-    expect(await desk.revise(DAY, "ord_1", [{ sku: "CRO", quantity: 9 }], STAFF)).toBe("packed");
+    expect(await desk.revise(DAY, "ord_1", [{ sku: "CRO", quantity: 9, options: [] }], STAFF)).toBe(
+      "packed",
+    );
     expect(sheets.of(DAY, "ord_1")?.lines[0]?.quantity).toBe(6);
   });
 
@@ -107,7 +116,7 @@ describe("PackingSheetRevisionDesk", () => {
     };
     const { desk, sheets } = setup(withBin);
 
-    expect(await desk.revise(DAY, "ord_1", [{ sku: "CRO", quantity: 9 }], STAFF)).toBe(
+    expect(await desk.revise(DAY, "ord_1", [{ sku: "CRO", quantity: 9, options: [] }], STAFF)).toBe(
       "delivery_bin",
     );
     expect(sheets.of(DAY, "ord_1")?.lines[0]?.quantity).toBe(6);
@@ -116,17 +125,17 @@ describe("PackingSheetRevisionDesk", () => {
   it("une baisse sous ce qui est au bac : refusée, rien d'écrit", async () => {
     const { desk, sheets } = setup();
 
-    await expect(desk.revise(DAY, "ord_1", [{ sku: "CRO", quantity: 3 }], STAFF)).rejects.toThrow(
-      RevisedDueBelowPackedError,
-    );
+    await expect(
+      desk.revise(DAY, "ord_1", [{ sku: "CRO", quantity: 3, options: [] }], STAFF),
+    ).rejects.toThrow(RevisedDueBelowPackedError);
     expect(sheets.of(DAY, "ord_1")?.lines[0]?.quantity).toBe(6);
   });
 
   it("une feuille retirée (A1) ne se révise pas", async () => {
     const { desk } = setup(sheetRow({ withdrawnAt: NOW, containerList: [] }));
 
-    await expect(desk.revise(DAY, "ord_1", [{ sku: "CRO", quantity: 9 }], STAFF)).rejects.toThrow(
-      PackingSheetWithdrawnError,
-    );
+    await expect(
+      desk.revise(DAY, "ord_1", [{ sku: "CRO", quantity: 9, options: [] }], STAFF),
+    ).rejects.toThrow(PackingSheetWithdrawnError);
   });
 });

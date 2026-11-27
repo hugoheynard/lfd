@@ -3,6 +3,20 @@ import type { SaleUnit } from "@lfd/money";
 import type { ServiceDay } from "../../day/domain/value-objects/service-day.value-object.js";
 
 /**
+ * **Une option d'une ligne** (« dont 2 tranchés »,
+ * `documentation/catalogue/plan-options-de-commande.md`, § 3.4) : le nom du
+ * groupe et le libellé du choix tels que la commande les a figés, et combien
+ * d'unités de la ligne les portent — au poids, les grammes de toute la ligne.
+ * Le fournil la recopie et l'affiche ; il ne compte rien de plus à cause
+ * d'elle.
+ */
+export interface ProductionLineOption {
+  readonly groupName: string;
+  readonly choiceLabel: string;
+  readonly quantity: number;
+}
+
+/**
  * Une ligne d'une commande, **telle que le fournil en a besoin**.
  *
  * Aucun montant, et ce n'est pas une omission : le fournil fabrique, il ne
@@ -29,6 +43,11 @@ export interface ProducibleLine {
    * d'avant le marqueur : on ne savait pas, et le papier n'en dit rien.
    */
   readonly madeToOrder: boolean | null;
+  /**
+   * Les options de la ligne, dans l'ordre du référentiel. Absent ou `[]` =
+   * aucune : le compte à produire ne change pas, seule la mention s'ajoute.
+   */
+  readonly options?: readonly ProductionLineOption[];
 }
 
 /**

@@ -1,6 +1,9 @@
 import type { PaymentStatus } from "@lfd/contracts";
 
+import type { ProductionLineOption } from "../../../../../production/channels/commerce/index.js";
 import type { RevisionChange } from "../entities/order-revision.js";
+import { productionOptionsOf } from "../../../domain/services/production-line-options.js";
+import type { OrderLineOptionChoice } from "../../../domain/value-objects/order-line-options.js";
 import { isOfferRegime, settlementRegimeOf } from "../../../domain/services/settlement-regime.js";
 import type { SettlementVenue } from "../../../domain/value-objects/settlement-venue.js";
 
@@ -46,7 +49,11 @@ export function quantitiesAfterArrestAllowed(
 export interface QuantitiesRevision {
   readonly changes: readonly RevisionChange[];
   readonly state: {
-    readonly lines: readonly { readonly sku: string; readonly quantity: number }[];
+    readonly lines: readonly {
+      readonly sku: string;
+      readonly quantity: number;
+      readonly optionChoices: readonly OrderLineOptionChoice[];
+    }[];
   };
 }
 
@@ -73,9 +80,23 @@ export function isQuantitiesOnly(
   );
 }
 
-/** La composition révisée, telle que les ateliers la reçoivent : un article, son dû. */
-export function revisedQuantitiesOf(
-  revision: QuantitiesRevision,
-): readonly { readonly sku: string; readonly quantity: number }[] {
-  return revision.state.lines.map((line) => ({ sku: line.sku, quantity: line.quantity }));
+/**
+ * La composition révisée, telle que les ateliers la reçoivent : un article,
+ * son dû, et ses options à jour. Changer les options d'une commande inscrite
+ * est permis comme changer une quantité (décision du 2026-11-27,
+ * `plan-options-de-commande.md`, § 4) : elles prennent ce même chemin.
+ */
+export function revisedQuantitiesOf(revision: QuantitiesRevision): readonly RevisedWorkshopLine[] {
+  return revision.state.lines.map((line) => ({
+    sku: line.sku,
+    quantity: line.quantity,
+    options: productionOptionsOf(line.optionChoices),
+  }));
+}
+
+/** Une ligne révisée, pour le fournil et le colisage. */
+export interface RevisedWorkshopLine {
+  readonly sku: string;
+  readonly quantity: number;
+  readonly options: readonly ProductionLineOption[];
 }

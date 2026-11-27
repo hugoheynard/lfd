@@ -19,7 +19,7 @@ import { backorderEntryOf } from "../../backorder-placement.js";
 
 function entryOf(over: Partial<AdminPlaceOrderPayload> = {}, quantity = 4): AdminPlaceOrderPayload {
   return {
-    ...backorderEntryOf(openBackorder({ quantity }), COMPANY, convertPayload()),
+    ...backorderEntryOf(openBackorder({ quantity }), COMPANY, convertPayload(), []),
     ...over,
   };
 }
