@@ -130,6 +130,7 @@ function snapshot(): CatalogSnapshot {
             allergensPrecautionary: false,
             allergenTexts: null,
             customRecipe: false,
+            optionGroups: [],
             allergens: null,
             allergenLabels: null,
             id: "var_1",

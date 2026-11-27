@@ -1,0 +1,84 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// LES OPTIONS DE COMMANDE — « tranché » pour le pain
+// (`documentation/catalogue/plan-options-de-commande.md`, § 3.1).
+//
+// Un référentiel de base (`reference/product-options/`) : le groupe et ses
+// choix. La fiche écrit son activation (`catalogue/product/`). Aucun prix :
+// les options sont gratuites dans cette version (décision de Hugo du
+// 2026-11-19). Archive, jamais suppression.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// **Un groupe d'options** (« Tranchage ») : un nom et des choix ordonnés.
+/// « Sans » est implicite — la ligne sans option.
+model OptionGroup {
+  id   String @id
+  name String
+
+  /// Archivé : n'est plus proposé, ne s'active plus, et quitte le fait du
+  /// catalogue. `NULL` = en service. Les commandes passées gardent leur
+  /// instantané.
+  archivedAt DateTime? @map("archived_at") @db.Timestamptz(6)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  choices     OptionChoice[]
+  activations ProductOptionActivation[]
+
+  @@map("option_group")
+  @@schema("pim")
+}
+
+/// **Un choix d'un groupe** (« tranché »). Sa clé est son identité dans le
+/// groupe — celle que la commande gardera — et ne change pas.
+model OptionChoice {
+  optionGroupId String      @map("option_group_id")
+  group         OptionGroup @relation(fields: [optionGroupId], references: [id], onDelete: Restrict)
+  key           String
+  label         String
+
+  /// `pro` | `public` | `both` (CHECK `option_choice_audience_known`) : à quelle
+  /// clientèle le choix se propose.
+  audience String
+
+  /// Le rang du choix dans le groupe, à partir de 0.
+  position Int
+
+  /// Archivé : n'est plus proposé. `NULL` = en service.
+  archivedAt DateTime? @map("archived_at") @db.Timestamptz(6)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@id([optionGroupId, key])
+  @@map("option_choice")
+  @@schema("pim")
+}
+
+/// **Un groupe activé sur une fiche** — pour toutes ses déclinaisons
+/// (`all_variants`), ou pour une liste (`variant_ids`), à la pièce comme au
+/// poids. Une ligne par couple ; une désactivation pose `revoked_at`, une
+/// réactivation l'efface.
+model ProductOptionActivation {
+  productId     String      @map("product_id")
+  product       Product     @relation(fields: [productId], references: [id], onDelete: Restrict)
+  optionGroupId String      @map("option_group_id")
+  group         OptionGroup @relation(fields: [optionGroupId], references: [id], onDelete: Restrict)
+
+  /// `true` = toutes les déclinaisons de la fiche, celles qui viendront
+  /// comprises ; `variant_ids` est alors vide (CHECK
+  /// `product_option_activation_scope`).
+  allVariants Boolean  @map("all_variants")
+  variantIds  String[] @default([]) @map("variant_ids")
+
+  /// Désactivé : le groupe n'est plus proposé sur cette fiche. `NULL` = actif.
+  revokedAt DateTime? @map("revoked_at") @db.Timestamptz(6)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@id([productId, optionGroupId])
+  @@index([optionGroupId])
+  @@map("product_option_activation")
+  @@schema("pim")
+}

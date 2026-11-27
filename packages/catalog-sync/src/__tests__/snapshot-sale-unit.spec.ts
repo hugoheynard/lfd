@@ -32,6 +32,7 @@ const piece = {
   weightStepGrams: null,
   minQuantities: { pro: null, public: null },
   customRecipe: false,
+  optionGroups: [],
 };
 
 const byWeight = {

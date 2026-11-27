@@ -31,6 +31,7 @@ const variant = {
   weightStepGrams: null,
   minQuantities: { pro: null, public: null },
   customRecipe: false,
+  optionGroups: [],
 };
 
 function snapshotOf(version: number, variants: readonly Record<string, unknown>[]) {

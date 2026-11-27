@@ -46,6 +46,10 @@ export class TimelineReemission extends CatalogReemission {
     this.timeline.events.push(`reemit:family:${ids.join(",")}`);
     return Promise.resolve();
   }
+  products(ids: readonly string[]): Promise<void> {
+    this.timeline.events.push(`reemit:products:${ids.join(",")}`);
+    return Promise.resolve();
+  }
   everything(): Promise<ReemissionReport> {
     this.timeline.events.push("reemit:everything");
     return Promise.resolve({ categories: 0, products: 0, failedProducts: [] });

@@ -111,6 +111,20 @@ export type {
 export { vatRatePayloadSchema } from "./commerce.js";
 export type { VatRatePayload, VatRateView } from "./commerce.js";
 
+export {
+  activateProductOptionGroupPayloadSchema,
+  optionChoicePayloadSchema,
+  optionGroupPayloadSchema,
+} from "./product-options.js";
+export type {
+  ActivateProductOptionGroupPayload,
+  OptionChoicePayload,
+  OptionChoiceView,
+  OptionGroupPayload,
+  OptionGroupView,
+  ProductOptionGroupView,
+} from "./product-options.js";
+
 export { proPriceOf } from "./pro-price.js";
 export type { ProPrice } from "./pro-price.js";
 

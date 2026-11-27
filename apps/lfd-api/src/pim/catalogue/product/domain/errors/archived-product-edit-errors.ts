@@ -2,7 +2,7 @@ import { BusinessError } from "../../../../../platform/shared/errors/app-error.j
 
 /** Les gestes qu'une fiche archivée refuse : son identité, ses textes, ses visuels. */
 export type ArchivedProductEdit =
-  "rename" | "change_kind" | "reclassify" | "edit_editorial" | "replace_media";
+  "rename" | "change_kind" | "reclassify" | "edit_editorial" | "replace_media" | "edit_options";
 
 const GESTURE_LABEL: Readonly<Record<ArchivedProductEdit, string>> = {
   rename: "renommée",
@@ -10,6 +10,7 @@ const GESTURE_LABEL: Readonly<Record<ArchivedProductEdit, string>> = {
   reclassify: "rangée dans une autre famille",
   edit_editorial: "modifiée dans ses textes",
   replace_media: "modifiée dans ses visuels",
+  edit_options: "modifiée dans ses options de commande",
 };
 
 /**

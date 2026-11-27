@@ -37,6 +37,9 @@ class CountingReemission {
   productsOfCategories(): Promise<void> {
     return Promise.resolve();
   }
+  products(): Promise<void> {
+    return Promise.resolve();
+  }
   everything(): Promise<{
     readonly categories: number;
     readonly products: number;

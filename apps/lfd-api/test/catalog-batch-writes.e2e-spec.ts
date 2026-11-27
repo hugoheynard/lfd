@@ -91,6 +91,7 @@ function variantsOf(productIndex: number, count: number): SyncProduct["variants"
     allergensPrecautionary: false,
     allergenTexts: null,
     customRecipe: false,
+    optionGroups: [],
   }));
 }
 

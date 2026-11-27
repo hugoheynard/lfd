@@ -49,6 +49,7 @@ function input(over: Partial<ProductFactInput> = {}): ProductFactInput {
     catalogueUnion: [],
     detachedFromSku: null,
     variantOrigins: new Map(),
+    optionGroups: new Map(),
     ...over,
   };
 }

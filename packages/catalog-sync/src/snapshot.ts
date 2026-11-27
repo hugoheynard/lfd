@@ -21,7 +21,7 @@ import { z } from "zod";
  * pire qu'un push refusé, parce qu'il facture des prix qui n'existent pas.
  * Toute rupture de forme incrémente ce nombre.
  */
-export const CATALOG_SNAPSHOT_VERSION = 18;
+export const CATALOG_SNAPSHOT_VERSION = 19;
 
 /**
  * Une famille de produits, **à plat**.
@@ -166,6 +166,32 @@ export const syncMinQuantitiesSchema = z.strictObject({
   public: z.number().int().min(2).nullable(),
 });
 export type SyncMinQuantities = z.infer<typeof syncMinQuantitiesSchema>;
+
+/**
+ * **Un choix d'option** (« tranché ») tel qu'il traverse (v19,
+ * `documentation/catalogue/plan-options-de-commande.md`, § 3.2) : sa clé —
+ * l'identité que la commande gardera —, son libellé, et la clientèle à qui il
+ * se propose. Le récepteur filtre par l'audience de l'appelant à la lecture.
+ * Aucun prix : les options sont gratuites.
+ */
+export const syncOptionChoiceSchema = z.strictObject({
+  key: z.string().min(1),
+  label: z.string().min(1),
+  audience: z.enum(["pro", "public", "both"]),
+});
+export type SyncOptionChoice = z.infer<typeof syncOptionChoiceSchema>;
+
+/**
+ * **Un groupe d'options actif sur une déclinaison** (« Tranchage »), avec ses
+ * choix en service dans leur ordre (v19). Un groupe archivé, ou sans choix en
+ * service, ne traverse pas.
+ */
+export const syncOptionGroupSchema = z.strictObject({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  choices: z.array(syncOptionChoiceSchema).min(1),
+});
+export type SyncOptionGroup = z.infer<typeof syncOptionGroupSchema>;
 
 export const syncVariantSchema = z.object({
   /**
@@ -403,6 +429,15 @@ export const syncVariantSchema = z.object({
    * laisser lire « ouvert à tous ».
    */
   customRecipe: z.boolean(),
+  /**
+   * **Les groupes d'options actifs** sur cette déclinaison (v19,
+   * `documentation/catalogue/plan-options-de-commande.md`, § 3.2) — à la
+   * pièce comme au poids. Vide = aucune option.
+   *
+   * Obligatoire : un émetteur qui l'oublie échoue à l'émission plutôt que de
+   * laisser lire « aucune option » sur une fiche qui en active.
+   */
+  optionGroups: z.array(syncOptionGroupSchema),
   /**
    * **L'audience EFFECTIVE de cette déclinaison** — la sienne, sinon celle de
    * sa fiche, sinon celle de sa famille
@@ -767,6 +802,7 @@ export const storedCatalogSnapshotSchema = catalogSnapshotSchema.extend({
     z.literal(16),
     z.literal(17),
     z.literal(18),
+    z.literal(19),
   ]),
   products: z.array(
     syncProductSchema.extend({
@@ -828,6 +864,9 @@ export const storedCatalogSnapshotSchema = catalogSnapshotSchema.extend({
             // (v17), ou ne traversait pas. Jamais lu `false` : c'est la
             // VERSION qui dit comment lire.
             customRecipe: z.boolean().optional(),
+            // Absentes avant la v19 : aucune option de commande ne traversait.
+            // C'est la VERSION qui dit comment lire.
+            optionGroups: z.array(syncOptionGroupSchema).optional(),
             // La limite RÉSOLUE, telle que la v6 la portait sur l'article. Elle
             // n'est plus émise, et reste lisible : une arrivée mise en file un
             // mardi peut être relue le jeudi, sur un code qui a changé.

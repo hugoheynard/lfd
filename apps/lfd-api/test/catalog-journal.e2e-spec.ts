@@ -100,6 +100,7 @@ function snapshot(skus: readonly string[]): CatalogSnapshot {
           allergensPrecautionary: false,
           allergenTexts: null,
           customRecipe: false,
+          optionGroups: [],
         },
       ],
       note: null,

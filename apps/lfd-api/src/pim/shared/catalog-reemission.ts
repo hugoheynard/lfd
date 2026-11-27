@@ -23,6 +23,9 @@ export abstract class CatalogReemission {
   /** Les fiches de ces familles (archivées comprises), une transaction chacune. */
   abstract productsOfCategories(categoryIds: readonly string[]): Promise<void>;
 
+  /** Ces fiches (archivées comprises), une transaction chacune — un groupe d'options révisé. */
+  abstract products(productIds: readonly string[]): Promise<void>;
+
   /**
    * Toutes les familles, puis toutes les fiches, puis les règles : la
    * plateforme reçoit la famille d'abord.

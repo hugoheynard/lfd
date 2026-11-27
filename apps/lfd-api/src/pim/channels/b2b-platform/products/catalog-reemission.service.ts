@@ -42,6 +42,10 @@ export class B2bCatalogReemission extends CatalogReemission {
     await this.emitEach(await this.facts.productIdsOfFamilies(categoryIds));
   }
 
+  async products(productIds: readonly string[]): Promise<void> {
+    await this.emitEach(productIds);
+  }
+
   async everything(progress?: ReemissionProgress): Promise<ReemissionReport> {
     // Les familles D'ABORD : une fiche apporte la sienne si la plateforme ne
     // la connaît pas, mais seule la famille émise pour elle-même porte son

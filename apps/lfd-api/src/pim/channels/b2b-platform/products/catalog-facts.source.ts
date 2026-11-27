@@ -16,10 +16,14 @@ import {
 import type { CategoryVatPercents } from "../../../catalogue/shared/domain/value-objects/vat-percents.js";
 import { effectiveVat } from "../../../catalogue/shared/domain/value-objects/context-vat.js";
 import { VatRateRepository } from "../../../reference/vat-rates/domain/ports/vat-rate.repository.js";
+import { ProductOptionActivationsReader } from "../../../catalogue/product/domain/ports/product-option-activations.reader.js";
+import { OptionGroupOffers } from "../../../reference/product-options/domain/ports/option-group-offers.reader.js";
+import type { SyncOptionGroup } from "@lfd/catalog-sync";
 import { projectFamilyFact, projectProductFact } from "./catalog-fact-projection.js";
 import type { CatalogFamilyFactBody, CatalogProductFactBody } from "./catalog-facts.js";
 import { CatalogSnapshots } from "./catalog-snapshots.js";
 import { showcaseOf } from "./showcase.js";
+import { variantOptionsOf } from "./variant-options.js";
 
 /**
  * **Relit et projette** les fiches et les familles qu'un fait va décrire.
@@ -45,6 +49,8 @@ export class CatalogFactsSource extends CatalogSnapshots {
     private readonly cited: CitedAllergensReader,
     private readonly published: PublishedAllergensReader,
     private readonly lineage: DetachmentLineageReader,
+    private readonly activations: ProductOptionActivationsReader,
+    private readonly offers: OptionGroupOffers,
   ) {
     super();
   }
@@ -56,18 +62,29 @@ export class CatalogFactsSource extends CatalogSnapshots {
       return new Map();
     }
     const familyIds = [...new Set(products.map((product) => product.categoryId))];
-    const [families, percentOf, rules, catalogue, notes, medias, cited, catalogueUnion, origins] =
-      await Promise.all([
-        this.facts.families(familyIds),
-        this.percentIndex(),
-        readCompletenessRules(this.contexts),
-        this.allergens.catalogue(),
-        this.editorials.findByProducts(ids),
-        this.editorials.mediaOfProducts(ids),
-        this.cited.ofProducts(ids),
-        this.published.union(),
-        this.originSkus(products),
-      ]);
+    const [
+      families,
+      percentOf,
+      rules,
+      catalogue,
+      notes,
+      medias,
+      cited,
+      catalogueUnion,
+      origins,
+      optionGroups,
+    ] = await Promise.all([
+      this.facts.families(familyIds),
+      this.percentIndex(),
+      readCompletenessRules(this.contexts),
+      this.allergens.catalogue(),
+      this.editorials.findByProducts(ids),
+      this.editorials.mediaOfProducts(ids),
+      this.cited.ofProducts(ids),
+      this.published.union(),
+      this.originSkus(products),
+      this.optionsOf(products),
+    ]);
     const familyById = new Map(families.map((family) => [family.id, family]));
     const naming = AllergenNaming.from(catalogue);
     const showcase = showcaseOf(products, notes, medias);
@@ -94,6 +111,7 @@ export class CatalogFactsSource extends CatalogSnapshots {
           detachedFromSku:
             product.originVariantId == null ? null : (origins.get(product.originVariantId) ?? null),
           variantOrigins: origins,
+          optionGroups,
         }),
       );
     }
@@ -141,6 +159,17 @@ export class CatalogFactsSource extends CatalogSnapshots {
       }),
     );
     return new Map(found.flat());
+  }
+
+  /** Les groupes d'options de chaque déclinaison (v19) : deux lectures, pour toutes les fiches. */
+  private async optionsOf(
+    products: readonly ProductRecord[],
+  ): Promise<ReadonlyMap<string, readonly SyncOptionGroup[]>> {
+    const activations = await this.activations.activeOf(products.map((product) => product.id));
+    const groupIds = [
+      ...new Set([...activations.values()].flat().map((activation) => activation.groupId)),
+    ];
+    return variantOptionsOf(products, activations, await this.offers.describe(groupIds));
   }
 
   private async percentIndex(): Promise<ReadonlyMap<string, number>> {

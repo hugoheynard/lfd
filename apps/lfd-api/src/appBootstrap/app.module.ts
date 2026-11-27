@@ -88,6 +88,7 @@ import { ResupplyArrivalFeedModule } from "./resupply-arrival-feed.module.js";
 import { PackingCommerceFeedModule } from "./packing-commerce-feed.module.js";
 import { CitedAllergensFeedModule } from "./cited-allergens-feed.module.js";
 import { VatRateUsageFeedModule } from "./vat-rate-usage-feed.module.js";
+import { OptionGroupHoldersFeedModule } from "./option-group-holders-feed.module.js";
 import { SalesContextUsageFeedModule } from "./sales-context-usage-feed.module.js";
 import { OrderTimeLimitTargetsFeedModule } from "./order-time-limit-targets-feed.module.js";
 import { ProductionDeskFeedModule } from "./production-desk-feed.module.js";
@@ -291,6 +292,7 @@ import { DevImpersonation } from "../platform/auth/dev-impersonation.js";
     PackingCommerceFeedModule,
     CitedAllergensFeedModule,
     VatRateUsageFeedModule,
+    OptionGroupHoldersFeedModule,
     SalesContextUsageFeedModule,
     OrderTimeLimitTargetsFeedModule,
     // Le bloc des e-mails : sa porte et le suivi des demandes

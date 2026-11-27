@@ -112,6 +112,10 @@ const TOUCHES: Readonly<Record<string, readonly string[] | "changes" | "*">> = {
   // L'audience d'une déclinaison non plus (`RevisionItemInput`, vérifié le
   // 2026-11-24) : elle traverse le fil, par déclinaison.
   [PIM_EVENTS.variantAudienceChanged]: [],
+  // Les options de commande ne sont dans aucun champ de révision
+  // (`RevisionItemInput`, vérifié le 2026-11-27) : elles traversent le fil v19.
+  [PIM_EVENTS.productOptionGroupActivated]: [],
+  [PIM_EVENTS.productOptionGroupDeactivated]: [],
   // La quantité minimale n'est dans aucun champ de révision
   // (`RevisionItemInput`, vérifié le 2026-10-29) : elle traverse le fil v15.
   [PIM_EVENTS.productMinQuantitiesChanged]: [],

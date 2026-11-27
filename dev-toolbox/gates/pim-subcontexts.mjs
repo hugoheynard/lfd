@@ -66,7 +66,7 @@ const DEBT_FILE = join(HERE, "pim-subcontexts-debt.json");
 
 export const ROOT_CONTEXT = "(racine)";
 const CORE = ["shared", "journal", "changes", "infra"];
-const REFERENCES = ["vat-rates", "sales-contexts", "allergens", "ingredients"];
+const REFERENCES = ["vat-rates", "sales-contexts", "allergens", "ingredients", "product-options"];
 const OTL = "order-time-limitation";
 const isReference = (context) => context.startsWith("reference/");
 const CATALOGUE = ["shared", "category", "product", "revision", "history", "allergen-matrix"];

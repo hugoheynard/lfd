@@ -1,4 +1,4 @@
-import type { SyncMedia, SyncMinQuantities, SyncVariant } from "@lfd/catalog-sync";
+import type { SyncMedia, SyncMinQuantities, SyncOptionGroup, SyncVariant } from "@lfd/catalog-sync";
 
 import type { AllergenNaming } from "../../../reference/allergens/domain/services/allergen-naming.js";
 import type { ProductRecord } from "../../../catalogue/product/domain/ports/product.repository.js";
@@ -165,4 +165,9 @@ export interface ProductFactInput {
    * déclinaison copiée ; un id absent n'est pas résolu, la trace part `null`.
    */
   readonly variantOrigins: ReadonlyMap<string, string>;
+  /**
+   * Id de déclinaison → ses groupes d'options actifs, en service et avec au
+   * moins un choix en service (v19). Une déclinaison absente n'en a aucun.
+   */
+  readonly optionGroups: ReadonlyMap<string, readonly SyncOptionGroup[]>;
 }

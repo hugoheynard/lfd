@@ -11,6 +11,7 @@ import { CatalogReemission } from "../../shared/catalog-reemission.js";
 import { PimDatabaseModule } from "../../infra/database/pim-database.module.js";
 import { SalesContextsModule } from "../../reference/sales-contexts/sales-contexts.module.js";
 import { VatRatesModule } from "../../reference/vat-rates/vat-rates.module.js";
+import { ProductOptionsModule } from "../../reference/product-options/product-options.module.js";
 import { B2bCatalogFactsEmitter } from "./products/catalog-facts.emitter.js";
 import { B2bCatalogRulesEmitter } from "./products/catalog-rules.emitter.js";
 import { CatalogFactsSource } from "./products/catalog-facts.source.js";
@@ -42,6 +43,8 @@ import { PublicationSequence } from "./products/publication-sequence.js";
     SalesContextsModule,
     // Les règles de limite de commande : relues par l'émetteur des règles.
     OrderTimeLimitationModule,
+    // Les groupes d'options et leurs choix : portés par déclinaison (fil v19).
+    ProductOptionsModule,
   ],
   providers: [
     { provide: CatalogFactsReader, useClass: CatalogueCatalogFactsReader },

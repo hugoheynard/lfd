@@ -82,6 +82,9 @@ class ScriptedReemission extends CatalogReemission {
   productsOfCategories(): Promise<void> {
     return Promise.resolve();
   }
+  products(): Promise<void> {
+    return Promise.resolve();
+  }
   async everything(progress?: ReemissionProgress): Promise<ReemissionReport> {
     for (const id of this.script.ok) {
       await progress?.productEmitted(id);

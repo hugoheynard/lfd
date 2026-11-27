@@ -177,6 +177,15 @@ describe("B2bCatalogReemission", () => {
     expect(uow.transactions.flat().some((entry) => entry.startsWith("product:"))).toBe(false);
   });
 
+  /** Un groupe d'options révisé réémet les seules fiches qui l'activent (G1). */
+  it("réémet les fiches nommées, une transaction chacune, sans s'arrêter sur un échec", async () => {
+    const { uow, reemission } = setup(["p_1"]);
+
+    await reemission.products(["p_1", "p_3"]);
+
+    expect(uow.transactions).toEqual([[], ["product:p_3"]]);
+  });
+
   /** Les règles partent en dernier : leur échec arrive après toutes les fiches. */
   it("lève une erreur nommée quand les règles échouent, après les fiches", async () => {
     const { uow, reemission } = setup([], true);

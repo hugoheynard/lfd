@@ -25,7 +25,13 @@ export class RecordingCatalogEmitter extends CatalogEmitter {
 /** La réémission doublée : elle note les familles demandées et les « tout ». */
 export class RecordingCatalogReemission extends CatalogReemission {
   readonly familyRequests: (readonly string[])[] = [];
+  readonly productRequests: (readonly string[])[] = [];
   everythingCalls = 0;
+
+  products(productIds: readonly string[]): Promise<void> {
+    this.productRequests.push([...productIds]);
+    return Promise.resolve();
+  }
 
   productsOfCategories(categoryIds: readonly string[]): Promise<void> {
     this.familyRequests.push([...categoryIds]);

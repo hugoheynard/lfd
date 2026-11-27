@@ -106,6 +106,10 @@ import { ProductMinQuantitiesController } from "./product/http/product-min-quant
 import { ProductVariantsAsTilesController } from "./product/http/product-variants-as-tiles.controller.js";
 import { ProductDeletionController } from "./product/http/product-deletion.controller.js";
 import { VariantCustomRecipeController } from "./product/http/variant-custom-recipe.controller.js";
+import { ProductOptionGroupsController } from "./product/http/product-option-groups.controller.js";
+import { PRODUCT_OPTION_PROVIDERS } from "./product/options/product-option.providers.js";
+import { ProductOptionActivationsReader } from "./product/domain/ports/product-option-activations.reader.js";
+import { ProductOptionsModule } from "../reference/product-options/product-options.module.js";
 import { VariantAudienceController } from "./product/http/variant-audience.controller.js";
 import { ProductVariantLifecycleController } from "./product/http/product-variant-lifecycle.controller.js";
 import { ReferenceController } from "./shared/http/reference.controller.js";
@@ -148,6 +152,7 @@ import { PrismaSkuAvailability } from "./product/infrastructure/prisma-sku-avail
     AllergensModule,
     VatRatesModule,
     SalesContextsModule,
+    ProductOptionsModule,
   ],
   controllers: [
     AllergenMatrixController,
@@ -160,6 +165,7 @@ import { PrismaSkuAvailability } from "./product/infrastructure/prisma-sku-avail
     ProductMinQuantitiesController,
     ProductVariantsAsTilesController,
     VariantCustomRecipeController,
+    ProductOptionGroupsController,
     VariantAudienceController,
     ProductVariantLifecycleController,
     ProductHistoryController,
@@ -264,6 +270,7 @@ import { PrismaSkuAvailability } from "./product/infrastructure/prisma-sku-avail
     GetAllergenMatrixHandler,
     ExportAllergenMatrixCsvHandler,
     ExportAllergenMatrixPdfHandler,
+    ...PRODUCT_OPTION_PROVIDERS,
   ],
   // Seul contrat visible depuis l'extérieur : les adaptateurs de canal lisent le
   // catalogue par ce port, jamais par ses dépôts ni ses tables (ADR-13).
@@ -281,6 +288,7 @@ import { PrismaSkuAvailability } from "./product/infrastructure/prisma-sku-avail
     // L7 de `plan-pro-voit-les-declinaisons.md` : le fait d'une fiche née
     // d'un détachement porte l'ancienne référence de vente. Lecture seule.
     DetachmentLineageReader,
+    ProductOptionActivationsReader,
   ],
 })
 export class CatalogueModule {}

@@ -8,6 +8,7 @@ import { PRICING_FACTS } from "./pricing.js";
 import { REFERENTIAL_CATALOGUE_FACTS } from "./referential-catalogue.js";
 import { REFERENTIAL_OPERATION_FACTS } from "./referential-operations.js";
 import { REFERENTIAL_SETTINGS_FACTS } from "./referential-settings.js";
+import { REFERENTIAL_PRODUCT_OPTION_FACTS } from "./referential-product-options.js";
 import { TEAM_FACTS } from "./team.js";
 
 /**
@@ -29,6 +30,7 @@ import { TEAM_FACTS } from "./team.js";
 export const JOURNAL_FACT_FAMILIES = {
   referentialCatalogue: REFERENTIAL_CATALOGUE_FACTS,
   referentialSettings: REFERENTIAL_SETTINGS_FACTS,
+  referentialProductOptions: REFERENTIAL_PRODUCT_OPTION_FACTS,
   referentialOperations: REFERENTIAL_OPERATION_FACTS,
   commerce: COMMERCE_FACTS,
   accountsAndCarts: ACCOUNTS_AND_CARTS_FACTS,
@@ -41,6 +43,7 @@ export const JOURNAL_FACT_FAMILIES = {
 export const JOURNAL_FACTS = {
   ...REFERENTIAL_CATALOGUE_FACTS,
   ...REFERENTIAL_SETTINGS_FACTS,
+  ...REFERENTIAL_PRODUCT_OPTION_FACTS,
   ...REFERENTIAL_OPERATION_FACTS,
   ...COMMERCE_FACTS,
   ...ACCOUNTS_AND_CARTS_FACTS,

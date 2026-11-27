@@ -67,6 +67,7 @@ const VARIANT: CatalogVariantFact = {
   allergenTexts: null,
   nameTranslations: { en: "Butter croissant" },
   detachedFromVariantSku: null,
+  optionGroups: [],
 };
 
 function productFact(

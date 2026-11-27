@@ -1,5 +1,6 @@
 import {
   syncMinQuantitiesSchema,
+  syncOptionGroupSchema,
   syncProductSchema,
   syncSaleUnitSchema,
   syncVariantSchema,
@@ -82,6 +83,10 @@ const payloadSchema = z.object({
       // `plan-sur-mesure-par-declinaison.md`, V3) : absent d'un fait émis
       // avant lui, et lu ABSENT — le commerce retombe sur l'en-tête v17.
       customRecipe: z.boolean().optional(),
+      // Les groupes d'options actifs (fil v19, `plan-options-de-commande.md`,
+      // § 3.2) : absents d'un fait émis avant eux, et lus comme une liste
+      // vide — aucune option n'existait.
+      optionGroups: z.array(syncOptionGroupSchema).default([]),
     }),
   ),
   gaps: z.record(z.string(), z.array(z.string().min(1))),

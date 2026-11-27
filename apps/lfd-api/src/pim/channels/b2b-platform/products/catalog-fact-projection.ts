@@ -150,6 +150,9 @@ function sellableVariant(
       variant.detachedFromVariantId == null
         ? null
         : (input.variantOrigins.get(variant.detachedFromVariantId) ?? null),
+    // Les groupes d'options actifs sur CETTE déclinaison (v19), résolus par
+    // la source : à la pièce comme au poids (décision de Hugo du 2026-11-19).
+    optionGroups: [...(input.optionGroups.get(variant.id) ?? [])],
     audience,
   };
 }

@@ -32,6 +32,7 @@ const variant = {
   weightStepGrams: null,
   minQuantities: { pro: null, public: null },
   customRecipe: true,
+  optionGroups: [],
 };
 
 const product = {
@@ -64,8 +65,8 @@ function stored(version: number, products: readonly unknown[]) {
 }
 
 describe("syncVariantSchema — customRecipe", () => {
-  it("le fil est en v18", () => {
-    expect(CATALOG_SNAPSHOT_VERSION).toBe(18);
+  it("le fil porte le champ depuis la v18", () => {
+    expect(CATALOG_SNAPSHOT_VERSION).toBeGreaterThanOrEqual(18);
   });
 
   it("porte le fait de CHAQUE déclinaison", () => {

@@ -165,6 +165,7 @@ export function snapshotOf(
             allergensPrecautionary: false,
             allergenTexts,
             customRecipe: false,
+            optionGroups: [],
           },
         ],
       }),

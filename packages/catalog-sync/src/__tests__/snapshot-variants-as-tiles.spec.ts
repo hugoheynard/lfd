@@ -30,6 +30,7 @@ const variant = {
   weightStepGrams: null,
   minQuantities: { pro: null, public: null },
   customRecipe: false,
+  optionGroups: [],
 };
 
 const product = {

@@ -42,6 +42,7 @@ import { QUALITY_CONTROL_SETTINGS_PHRASES } from './quality-control-settings-phr
 import { REFUND_PHRASES } from './refund-phrases';
 import { REFERENTIAL_PHRASES } from './referential-phrases';
 import { REFERENTIAL_SETTINGS_PHRASES } from './referential-settings-phrases';
+import { REFERENTIAL_PRODUCT_OPTION_PHRASES } from './referential-product-option-phrases';
 import { SETTINGS_PHRASES } from './settings-phrases';
 import { CONTACT_PHRASES } from './contact-phrases';
 import { ORDER_CUTOFF_SETTINGS_PHRASES } from './order-cutoff-settings-phrases';
@@ -79,6 +80,7 @@ import { TEAM_PHRASES } from './team-phrases';
  * | --------------------- | --------------------------------- | -------------------------------- |
  * | `referentialCatalogue`| `referential-phrases.ts`          | `values/referential-values.ts`   |
  * | `referentialSettings` | `referential-settings-phrases.ts` | `values/referential-values.ts`   |
+ * | `referentialProductOptions` | `referential-product-option-phrases.ts` | —                |
  * | `referentialOperations` | `operation-phrases.ts`          | `values/referential-values.ts`   |
  * | `commerce`            | `commerce-phrases.ts`, `storefront-phrases.ts`, `operation-phrases.ts` (`catalog_operation.*` sauf la surcharge), `bundle-phrases.ts` | `values/commerce-values.ts` |
  * | `accountsAndCarts`    | `accounts-phrases.ts`             | `values/accounts-values.ts`      |
@@ -176,6 +178,7 @@ import { TEAM_PHRASES } from './team-phrases';
 export const PHRASES: Readonly<Record<JournalFactType, Phrase>> = {
   ...REFERENTIAL_PHRASES,
   ...REFERENTIAL_SETTINGS_PHRASES,
+  ...REFERENTIAL_PRODUCT_OPTION_PHRASES,
   ...OPERATION_PHRASES,
   ...SETTINGS_PHRASES,
   ...ORDER_OPENING_PHRASES,

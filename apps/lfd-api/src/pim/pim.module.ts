@@ -10,6 +10,7 @@ import { IngredientsModule } from "./reference/ingredients/ingredients.module.js
 import { OrderTimeLimitationModule } from "./order-time-limitation/order-time-limitation.module.js";
 import { VatRatesModule } from "./reference/vat-rates/vat-rates.module.js";
 import { SalesContextsModule } from "./reference/sales-contexts/sales-contexts.module.js";
+import { ProductOptionsModule } from "./reference/product-options/product-options.module.js";
 
 /**
  * Le **référentiel produit** — un contexte du processus, plus une application.
@@ -39,6 +40,7 @@ import { SalesContextsModule } from "./reference/sales-contexts/sales-contexts.m
     AllergensModule,
     VatRatesModule,
     SalesContextsModule,
+    ProductOptionsModule,
     IngredientsModule,
     OrderTimeLimitationModule,
     B2bPlatformModule,
@@ -59,6 +61,7 @@ import { SalesContextsModule } from "./reference/sales-contexts/sales-contexts.m
           AllergensModule,
           VatRatesModule,
           SalesContextsModule,
+          ProductOptionsModule,
           IngredientsModule,
           OrderTimeLimitationModule,
           {

@@ -1,0 +1,13 @@
+-- RETOUR ARRIÈRE de 20261127100000_les_options_de_commande
+-- (documentation/catalogue/plan-options-de-commande.md, lot G1).
+--
+-- 🔴 NON APPLIQUÉ, et Prisma ne le lit pas. La migration reste inscrite
+-- « appliquée ».
+--
+-- Le code d'avant ignore les trois tables : le retour arrière est le retour
+-- du code seul. Les retirer perdrait les groupes saisis et leurs activations ;
+-- à faire seulement sur décision de Hugo :
+--
+--   DROP TABLE "pim"."product_option_activation";
+--   DROP TABLE "pim"."option_choice";
+--   DROP TABLE "pim"."option_group";

@@ -41,7 +41,8 @@ export type PimSubjectType =
   | "allergen_category"
   | "allergen_entry"
   | "order_time_limit"
-  | "operation";
+  | "operation"
+  | "option_group";
 
 /*
  * 🔴 **`media_asset` a quitté cette liste le 2026-09-23.** La bibliothèque est
@@ -93,6 +94,15 @@ export const PIM_EVENTS = {
   vatRateDeleted: "vat_rate.deleted",
   vatRateArchived: "vat_rate.archived",
   vatRateRestored: "vat_rate.restored",
+  /**
+   * Les groupes d'options de commande (`plan-options-de-commande.md`, § 3.1) :
+   * le groupe naît, se révise d'un bloc (nom et choix en service), s'archive
+   * et se restaure. Un choix retiré s'archive avec la révision.
+   */
+  optionGroupCreated: "option_group.created",
+  optionGroupRevised: "option_group.revised",
+  optionGroupArchived: "option_group.archived",
+  optionGroupRestored: "option_group.restored",
   productCategoryVatChanged: "product_category.vat_changed",
   /**
    * Une fiche DÉROGE au taux de sa famille — ou lui revient. Distinct du fait
@@ -141,6 +151,13 @@ export const PIM_EVENTS = {
    * compte attribué au commerce, il retire l'article à tous les pros.
    */
   variantCustomRecipeChanged: "product.variant_custom_recipe_changed",
+  /**
+   * Un groupe d'options est activé sur la fiche — pour toutes ses
+   * déclinaisons ou une liste —, ou n'y est plus proposé
+   * (`plan-options-de-commande.md`, § 3.1).
+   */
+  productOptionGroupActivated: "product.option_group_activated",
+  productOptionGroupDeactivated: "product.option_group_deactivated",
   /**
    * À qui une déclinaison vend, ou qu'elle suit sa fiche
    * (`plan-audience-par-declinaison.md`, A8). Sur sa propre route : il change

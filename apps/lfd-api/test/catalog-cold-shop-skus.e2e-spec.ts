@@ -65,6 +65,7 @@ function variant(sku: string, position: number, priceMillicents: number | null):
     allergensPrecautionary: false,
     allergenTexts: null,
     customRecipe: false,
+    optionGroups: [],
   };
 }
 

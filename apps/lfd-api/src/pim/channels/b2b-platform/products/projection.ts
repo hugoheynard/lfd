@@ -86,7 +86,7 @@ export function projectVariant(
   percents: CategoryVatPercents,
   naming: AllergenNaming,
   context: AllergenContext,
-): SyncVariant {
+): Omit<SyncVariant, "optionGroups"> {
   return {
     // L'identifiant traverse : une règle de rang « déclinaison » vise celui-ci,
     // et le récepteur ne pourrait pas la rattacher au SKU seul.

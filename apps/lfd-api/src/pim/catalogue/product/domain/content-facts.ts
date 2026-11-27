@@ -113,6 +113,11 @@ const CONTENT_FACTS: Readonly<Record<string, boolean>> = {
   // L'audience posée par déclinaison, comme celle de la fiche
   // (`plan-audience-par-declinaison.md`, A8).
   [PIM_EVENTS.variantAudienceChanged]: true,
+  // Les options de commande changent ce que le client peut demander sur la
+  // ligne (« tranché ») : un signataire qui a relu la fiche sans elles
+  // voudrait la revoir avec (`plan-options-de-commande.md`, § 3.1).
+  [PIM_EVENTS.productOptionGroupActivated]: true,
+  [PIM_EVENTS.productOptionGroupDeactivated]: true,
   // La quantité minimale change ce qu'un client doit prendre : un signataire
   // qui a relu la fiche sans minimum voudrait la revoir avec
   // (`plan-quantite-minimale.md`, M1).

@@ -509,6 +509,7 @@
   "test/pim-product-deletion.e2e-spec.ts": 5900,
   "test/pim-product-history.e2e-spec.ts": 6998,
   "test/pim-product-lifecycle.e2e-spec.ts": 3533,
+  "test/pim-product-options.e2e-spec.ts": 7000,
   "test/pim-publication-allergens.e2e-spec.ts": 3893,
   "test/pim-readiness.e2e-spec.ts": 5510,
   "test/pim-regulatory-sheet.e2e-spec.ts": 2872,

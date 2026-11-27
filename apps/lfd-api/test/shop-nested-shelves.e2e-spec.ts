@@ -65,6 +65,7 @@ function product(id: string, sku: string, categoryId: string): CatalogSnapshot["
         allergensPrecautionary: false,
         allergenTexts: null,
         customRecipe: false,
+        optionGroups: [],
       },
     ],
     note: null,

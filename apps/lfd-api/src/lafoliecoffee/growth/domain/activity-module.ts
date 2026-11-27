@@ -45,6 +45,9 @@ const PREFIXES: Readonly<Record<ActivityModule, readonly string[]>> = {
     // choisir les articles de Noël et fixer ses dates, c'est le travail du
     // catalogue (plan des opérations datées, D1 — 2026-09-24).
     "operation.",
+    // Les options de commande se règlent au référentiel, sous `pim_catalog`
+    // (`plan-options-de-commande.md`, § 3.1).
+    "option_group.",
   ],
   // La tarification négociée est du COMMERCIAL : c'est le même métier que le
   // lead et le rendez-vous — ce qu'on consent à un client pour qu'il achète.

@@ -102,6 +102,7 @@ function snapshot(skus: readonly string[], custom: readonly string[] = []): Cata
           allergensPrecautionary: false,
           allergenTexts: null,
           customRecipe: custom.includes(sku),
+          optionGroups: [],
         },
       ],
       note: null,

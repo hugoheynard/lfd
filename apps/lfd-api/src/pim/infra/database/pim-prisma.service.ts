@@ -69,6 +69,10 @@ export abstract class PimPrismaService {
   abstract readonly catalogReemissionJob: PrismaService["catalogReemissionJob"];
   /** Le journal du numéro `pim`, lu et balayé — ses lignes naissent des déclencheurs. */
   abstract readonly pimChange: PrismaService["pimChange"];
+  /** Les options de commande : le groupe, ses choix, et l'activation sur une fiche. */
+  abstract readonly optionGroup: PrismaService["optionGroup"];
+  abstract readonly optionChoice: PrismaService["optionChoice"];
+  abstract readonly productOptionActivation: PrismaService["productOptionActivation"];
 
   /**
    * Le SQL écrit à la main — pour **un seul usage** à ce jour (vérifié le

@@ -142,6 +142,9 @@ model Product {
   /// Les limites de famille qui excluent ce produit nommément.
   orderTimeLimitExclusions OrderTimeLimitExclusion[]
 
+  /// Les groupes d'options activés sur la fiche (`product-options.prisma`).
+  optionActivations ProductOptionActivation[]
+
   @@index([categoryId])
   @@map("product")
   @@schema("pim")
