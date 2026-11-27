@@ -2,7 +2,7 @@ import type { IntentRelabel } from "../entities/intent-relabel.js";
 
 /**
  * **Le port d'écriture des libellés à poser** (plan
- * `documentation/payment/plan-pointage-stripe.md`, lot 2) — table
+ * `documentation/payment/le-pointage-stripe.md`, § 3) — table
  * `payment.card_intent_relabel`, une ligne par paiement. Il prend et rend
  * l'agrégat ; la file du balayage est un port à part (`IntentRelabelQueue`).
  */

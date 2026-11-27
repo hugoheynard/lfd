@@ -37,7 +37,7 @@ export type IntentRelabelFailure = "retry" | "abandoned" | "stale";
 
 /**
  * **Le libellé définitif d'une intention, à poser chez le prestataire** (plan
- * `documentation/payment/plan-pointage-stripe.md`, lot 2) — un par paiement.
+ * `documentation/payment/le-pointage-stripe.md`, § 3) — un par paiement.
  *
  * Il porte les deux règles qui refusent une écriture : un libellé identique
  * à celui qu'il garde ne relance rien (un fait relivré est sans effet), et

@@ -711,7 +711,7 @@ describe("PlaceShopOrderHandler — la commande produite", () => {
 });
 
 describe("PlaceShopOrderHandler — le règlement", () => {
-  it("libelle l'intention « boutique », l'invité déclaré en payeur (plan-pointage-stripe.md, D5)", async () => {
+  it("libelle l'intention « boutique », l'invité déclaré en payeur (le-pointage-stripe.md, § 7)", async () => {
     const { handler, paid } = scene();
 
     await handler.execute(new PlaceShopOrderCommand(payload()));

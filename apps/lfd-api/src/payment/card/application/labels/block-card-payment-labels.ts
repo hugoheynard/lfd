@@ -20,7 +20,7 @@ const POST_RELABEL = "card-payment.post-intent-relabel";
 
 /**
  * **Le libellé définitif, gardé puis posé** (plan
- * `documentation/payment/plan-pointage-stripe.md`, lot 2) — l'implémentation
+ * `documentation/payment/le-pointage-stripe.md`, § 3) — l'implémentation
  * du canal. DANS la transaction de l'appelant : la ligne du libellé s'écrit
  * avec le reçu de son abonné, ou pas du tout ; l'appel au prestataire part
  * après validation, et le balayage reprend ce qui n'a pas abouti.

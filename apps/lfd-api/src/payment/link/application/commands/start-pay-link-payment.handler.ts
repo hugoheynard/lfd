@@ -186,7 +186,7 @@ export class StartPayLinkPaymentHandler implements ICommandHandler<
   }
 
   /**
-   * Le libellé d'un paiement par lien (plan-pointage-stripe.md, D5) : aucun
+   * Le libellé d'un paiement par lien (le-pointage-stripe.md, § 7) : aucun
    * payeur — la page est anonyme —, l'application d'origine du lien et le
    * sujet opaque. `app` est la valeur que l'application pose sur ses autres
    * intentions (un seul filtre chez le prestataire) ; l'origine persistée

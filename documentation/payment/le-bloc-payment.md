@@ -292,7 +292,7 @@ Le **journal** du bloc (sujet `card_payment`, phrases dans
 
 ### 2.9 Le pointage : le client du prestataire et le libellé définitif
 
-Plan [`plan-pointage-stripe.md`](plan-pointage-stripe.md). Chaque intention
+Doc [`le-pointage-stripe.md`](le-pointage-stripe.md). Chaque intention
 porte une **description** et des **métadonnées** composées par l'appelant
 (`CardPaymentLabel`, opaque pour le bloc), bornées par `IntentLabel` : clés
 préfixées, longueurs et nombre de clés de Stripe, clés du bloc (`companyId`,

@@ -1,6 +1,6 @@
 /**
  * E2E du **libellé définitif d'une passation par carte** (plan
- * `documentation/payment/plan-pointage-stripe.md`, lot 2) : une fois la
+ * `documentation/payment/le-pointage-stripe.md`, § 3) : une fois la
  * commande enregistrée, l'abonné durable de `commerce.order_placed` garde le
  * libellé, et le bloc le pose chez le prestataire après validation — le
  * numéro de commande, qui n'existait pas quand l'intention est née.

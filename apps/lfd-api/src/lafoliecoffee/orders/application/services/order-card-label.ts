@@ -8,7 +8,7 @@ import type { OwnedOrder } from "../../domain/ports/order.reader.js";
 /**
  * L'application, en valeur de métadonnée (`app`) puis en toutes lettres — 🔴
  * des valeurs lues dans le tableau de bord du prestataire pour pointer (plan
- * `documentation/payment/plan-pointage-stripe.md`, D3, Hugo le 2026-11-26).
+ * `documentation/payment/le-pointage-stripe.md`, § 1, Hugo le 2026-11-26).
  */
 const APP_KEY = "la-folie-coffee";
 const APP_NAME = "La Folie Coffee";
@@ -87,7 +87,7 @@ export function orderCardLabel(input: OrderCardLabelInput): CardPaymentLabel {
 
 /**
  * **Les clés de pointage d'une commande sur ce qui la touche sans intention
- * neuve** — un remboursement (plan-pointage-stripe.md, lot 3) : le numéro
+ * neuve** — un remboursement (le-pointage-stripe.md, § 4) : le numéro
  * lisible et l'application. Le canal n'y est pas : la lecture du sujet par le
  * bloc des cartes ne le porte pas.
  */

@@ -2136,7 +2136,7 @@
       "colonne": "payment.card_customer.user_id",
       "personne": "client",
       "categorie": "pseudonyme",
-      "finalite": "L'identifiant opaque du payeur, rattaché à son client chez Stripe sur un compte d'encaissement (`plan-pointage-stripe.md`, lot 1) : pointer chaque paiement sur une personne. Le nom et l'e-mail du payeur partent chez Stripe (objet Customer, un par compte), jamais dans cette table ni dans un journal. À la suppression du compte, le client Stripe de chaque compte est supprimé (`customers.del`) par le port `CardCustomerErasure` (`payment/channels/requests/`) — ⚠️ le parcours « supprimer mon compte » n'est pas bâti (vérifié le 2026-11-26), le port n'a encore aucun appelant.",
+      "finalite": "L'identifiant opaque du payeur, rattaché à son client chez Stripe sur un compte d'encaissement (`le-pointage-stripe.md`, § 2) : pointer chaque paiement sur une personne. Le nom et l'e-mail du payeur partent chez Stripe (objet Customer, un par compte), jamais dans cette table ni dans un journal. À la suppression du compte, le client Stripe de chaque compte est supprimé (`customers.del`) par le port `CardCustomerErasure` (`payment/channels/requests/`) — ⚠️ le parcours « supprimer mon compte » n'est pas bâti (vérifié le 2026-11-26), le port n'a encore aucun appelant.",
       "conservation": "aucune-limite-decidee",
       "purge": null,
       "information": false
@@ -2145,7 +2145,7 @@
       "colonne": "payment.card_customer.provider_ref",
       "personne": "client",
       "categorie": "pseudonyme",
-      "finalite": "La référence du client chez Stripe (`cus_…`) : rattacher les paiements suivants au même client sans recherche (`plan-pointage-stripe.md`, objection 2). Part avec la ligne à la suppression du compte (même port, même réserve que `user_id`).",
+      "finalite": "La référence du client chez Stripe (`cus_…`) : rattacher les paiements suivants au même client sans recherche (`le-pointage-stripe.md`, § 2). Part avec la ligne à la suppression du compte (même port, même réserve que `user_id`).",
       "conservation": "aucune-limite-decidee",
       "purge": null,
       "information": false

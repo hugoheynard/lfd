@@ -335,7 +335,7 @@ export class PlaceShopOrderHandler implements ICommandHandler<
       ORDER_CARD_SUBJECT_TYPE,
       order.totalCents,
       PERSONAL_CARD_TAG,
-      // L'acheteur qui vient de se déclarer paie (plan-pointage-stripe.md, D5).
+      // L'acheteur qui vient de se déclarer paie (le-pointage-stripe.md, § 7).
       orderCardLabel({ channel: "shop", kind: "first", orderId: null, orderNumber: null, payer }),
     );
     order.payByCard(preparation.prepared.providerRef);

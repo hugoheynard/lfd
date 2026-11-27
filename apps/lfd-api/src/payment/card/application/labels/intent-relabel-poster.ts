@@ -15,7 +15,7 @@ const NO_INTENT = "aucune intention sur le paiement";
 
 /**
  * **Pose un libellé chez le prestataire** (plan
- * `documentation/payment/plan-pointage-stripe.md`, lot 2) — après validation,
+ * `documentation/payment/le-pointage-stripe.md`, § 3) — après validation,
  * puis par le balayage. 🔴 HORS transaction : l'appel part sur le compte DE LA
  * LIGNE, puis l'issue s'écrit conditionnée à la révision lue — un libellé
  * remplacé entre-temps n'est pas conclu par cet essai.

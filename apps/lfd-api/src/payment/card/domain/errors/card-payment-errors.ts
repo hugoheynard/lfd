@@ -168,7 +168,7 @@ export class InvalidCardPaymentLabelError extends DomainError {
     super(
       "card_payment.label.invalid",
       `Libellé de paiement refusé : ${reason}. Corrigez la composition du libellé chez ` +
-        "l'appelant (plan-pointage-stripe.md, lot 1).",
+        "l'appelant (le-pointage-stripe.md, § 2).",
     );
   }
 }

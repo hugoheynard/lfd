@@ -2,7 +2,7 @@
 // LE LIBELLÉ DÉFINITIF D'UNE INTENTION — schéma `payment`
 // ─────────────────────────────────────────────────────────────────────────────
 //
-// Plan `documentation/payment/plan-pointage-stripe.md`, lot 2.
+// Doc `documentation/payment/le-pointage-stripe.md`, § 3.
 // Propriétaire : `src/payment/card/`.
 
 /// L'état d'un libellé à poser. 🔴 Valeurs écrites en base.

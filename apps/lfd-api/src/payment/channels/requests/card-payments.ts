@@ -33,7 +33,7 @@ export interface CardPaymentSource {
 
 /**
  * **Le payeur d'une intention**, quand l'appelant le connaît et que c'est bien
- * lui qui paie (plan `documentation/payment/plan-pointage-stripe.md`, D5).
+ * lui qui paie (doc `documentation/payment/le-pointage-stripe.md`, § 7).
  * Le bloc en fait un client chez le prestataire, un par compte ; le nom et
  * l'adresse n'y sont jamais journalisés.
  */
@@ -46,7 +46,7 @@ export interface CardPaymentPayer {
 
 /**
  * **Ce que l'intention montre chez le prestataire, pour être pointée** (plan
- * `documentation/payment/plan-pointage-stripe.md`, lot 1) — composé par
+ * `documentation/payment/le-pointage-stripe.md`, § 2) — composé par
  * l'appelant : le bloc ne sait pas ce qu'est une commande (D2).
  */
 export interface CardPaymentLabel {

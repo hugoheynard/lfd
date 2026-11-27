@@ -122,7 +122,7 @@ describe("BlockCardPayments.prepare puis attach", () => {
   });
 });
 
-describe("BlockCardPayments.prepare — le libellé et le client (plan-pointage-stripe.md, lot 1)", () => {
+describe("BlockCardPayments.prepare — le libellé et le client (le-pointage-stripe.md, § 2)", () => {
   it("pose la description et les clés de l'appelant, sans client quand il n'y a pas de payeur", async () => {
     const { provider, payments } = harness();
 

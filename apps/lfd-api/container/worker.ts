@@ -743,8 +743,8 @@ async function triggerPendingCardPaymentSweep(env: Env): Promise<void> {
 
 /**
  * Réveille le container et pose chez le prestataire les libellés définitifs
- * restés en attente (plan `documentation/payment/plan-pointage-stripe.md`,
- * lot 2) : le filet de l'envoi d'après validation, au plus 50 par passage,
+ * restés en attente (doc `documentation/payment/le-pointage-stripe.md`,
+ * § 3) : le filet de l'envoi d'après validation, au plus 50 par passage,
  * essais bornés. Même porte et même jeton que les remboursements ;
  * idempotent — poser deux fois le même libellé ne change rien.
  */

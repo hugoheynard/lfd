@@ -106,14 +106,14 @@ import { RegistryCardProviders } from "./infrastructure/registry-card-providers.
     { provide: TakeoverReader, useClass: PrismaTakeoverReader },
     { provide: CardProviders, useClass: RegistryCardProviders },
     CardAccountChoice,
-    // Le client du payeur, par compte (plan-pointage-stripe.md, lot 1).
+    // Le client du payeur, par compte (le-pointage-stripe.md, § 2).
     { provide: CardCustomerReader, useClass: PrismaCardCustomerDirectory },
     { provide: CardCustomerRecorder, useClass: PrismaCardCustomerRecorder },
     CardCustomerResolution,
     ProviderPaymentResolver,
     IntentOutcomeRecorder,
     { provide: CardPayments, useClass: BlockCardPayments },
-    // Le libellé définitif, une fois le sujet enregistré (plan-pointage-stripe.md, lot 2).
+    // Le libellé définitif, une fois le sujet enregistré (le-pointage-stripe.md, § 3).
     { provide: IntentRelabelRepository, useClass: PrismaIntentRelabelRepository },
     { provide: IntentRelabelQueue, useClass: PrismaIntentRelabelQueue },
     IntentRelabelPoster,

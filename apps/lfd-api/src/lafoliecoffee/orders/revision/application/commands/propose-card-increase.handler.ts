@@ -246,7 +246,7 @@ function intentActorOf(actor: RevisionActor): string {
 }
 
 /**
- * Qui paie le complément (plan-pointage-stripe.md, D5) : le client connecté
+ * Qui paie le complément (le-pointage-stripe.md, § 7) : le client connecté
  * qui le demande ; demandé par le staff, le porteur de la commande.
  */
 function payerOf(actor: RevisionActor, order: RevisableOrder): string {

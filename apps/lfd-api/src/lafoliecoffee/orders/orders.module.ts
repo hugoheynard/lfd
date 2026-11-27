@@ -620,7 +620,7 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     // Tout règlement pro qui meurt sonne, quelle qu'en soit la cause (D4).
     RingFailedProSettlement,
     // Le numéro de commande chez le prestataire des cartes, une fois écrite
-    // (plan-pointage-stripe.md, lot 2).
+    // (le-pointage-stripe.md, § 3).
     DescribeCardPaymentOnOrderPlaced,
     { provide: FailedSettlementReader, useClass: PrismaFailedSettlementReader },
     // Les avis au principal (plan-notifications-sous-comptes.md, N2) lisent la

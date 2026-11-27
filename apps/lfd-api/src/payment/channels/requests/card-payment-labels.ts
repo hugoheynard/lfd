@@ -4,13 +4,13 @@ import type { CardPaymentLabel } from "./card-payments.js";
 /**
  * Le libellé définitif d'une intention : la description et les clés de
  * l'appelant, sans payeur — le client du prestataire est posé à la création
- * (plan `documentation/payment/plan-pointage-stripe.md`, objection 4).
+ * (doc `documentation/payment/le-pointage-stripe.md`, § 2).
  */
 export type CardPaymentDescription = Pick<CardPaymentLabel, "description" | "metadata">;
 
 /**
  * **Redire une intention chez le prestataire, une fois le sujet enregistré**
- * (plan `documentation/payment/plan-pointage-stripe.md`, lot 2) — déclaré ET
+ * (doc `documentation/payment/le-pointage-stripe.md`, § 3) — déclaré ET
  * implémenté par `payment`, appelé par l'abonné durable du sujet. À part de
  * `CardPayments` : celui qui redit un libellé n'encaisse pas (ISP).
  *

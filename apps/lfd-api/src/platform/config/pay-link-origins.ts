@@ -23,7 +23,7 @@ export interface PayLinkOriginDeclaration {
    * L'application, telle que le prestataire des cartes la montre (métadonnée
    * `app`) — la MÊME valeur que les intentions de la même application posent
    * ailleurs, pour qu'un seul filtre du tableau de bord les réunisse (plan
-   * `documentation/payment/plan-pointage-stripe.md`, D3).
+   * `documentation/payment/le-pointage-stripe.md`, § 1).
    */
   readonly providerApp: string;
   readonly publicRoot: PayLinkPublicRoot;

@@ -54,7 +54,7 @@ export interface SubjectDescription {
   /**
    * Les clés de pointage que le sujet veut voir chez le prestataire sur ce
    * qui le touche (un remboursement : `order_number`, `app` — plan
-   * `documentation/payment/plan-pointage-stripe.md`, lot 3). Opaques pour le
+   * `documentation/payment/le-pointage-stripe.md`, § 4). Opaques pour le
    * bloc, qui les borne et refuse ses clés réservées. Absent : aucune.
    */
   readonly metadata?: Readonly<Record<string, string>>;

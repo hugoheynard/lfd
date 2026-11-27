@@ -8,7 +8,7 @@ const logger = new Logger("CardRefundLabel");
 
 /**
  * **Les clés de pointage d'un remboursement** (plan
- * `documentation/payment/plan-pointage-stripe.md`, lot 3) — celles que le
+ * `documentation/payment/le-pointage-stripe.md`, § 4) — celles que le
  * sujet déclare dans sa description (`order_number`, `app`), opaques pour le
  * bloc, bornées par `IntentLabel`. 🔴 Un texte de pointage ne bloque jamais un
  * remboursement : un sujet qui ne se décrit pas, ou une clé refusée, rend

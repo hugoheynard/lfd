@@ -19,7 +19,7 @@ export const DESCRIBE_CARD_PAYMENT_ON_PLACED = "orders.describe-card-payment.on-
 
 /**
  * **Le numéro de commande chez le prestataire des cartes** (plan
- * `documentation/payment/plan-pointage-stripe.md`, lot 2). L'intention d'une
+ * `documentation/payment/le-pointage-stripe.md`, § 3). L'intention d'une
  * passation pro, boutique ou staff naît AVANT l'écriture qui attribue le
  * numéro : sa description ne le porte pas. Une fois la commande enregistrée,
  * cet abonné compose le libellé définitif — `LFD · La Folie Coffee <canal> ·

@@ -201,7 +201,7 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, Pla
       order,
       companyId,
       payload.settlement,
-      // L'acheteur connecté paie (plan-pointage-stripe.md, D5) ; le numéro
+      // L'acheteur connecté paie (le-pointage-stripe.md, § 7) ; le numéro
       // n'existe pas encore.
       async () =>
         orderCardLabel({

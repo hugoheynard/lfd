@@ -395,7 +395,7 @@
   "test/order-cancel-after-plan-traces.e2e-spec.ts": 3917,
   "test/order-cancel-after-plan.e2e-spec.ts": 5147,
   "test/order-cancel-stage.e2e-spec.ts": 3539,
-  "test/order-card-label.e2e-spec.ts": 4000,
+  "test/order-card-label.e2e-spec.ts": 5975,
   "test/order-card-settled-before-all.e2e-spec.ts": 3953,
   "test/order-change-request.e2e-spec.ts": 7802,
   "test/order-customer-cancel.e2e-spec.ts": 15810,

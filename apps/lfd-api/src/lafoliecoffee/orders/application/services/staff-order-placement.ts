@@ -54,7 +54,7 @@ export interface StaffOrderPlacementPorts {
   readonly commitments: PayerCommitmentRequirements;
   readonly overrides: ItemLimitOverrideRecorder;
   readonly ids: IdGenerator;
-  /** Le client de la commande, nommé chez le prestataire (plan-pointage-stripe.md, D5). */
+  /** Le client de la commande, nommé chez le prestataire (le-pointage-stripe.md, § 7). */
   readonly recipients: OrderRecipientReader;
 }
 

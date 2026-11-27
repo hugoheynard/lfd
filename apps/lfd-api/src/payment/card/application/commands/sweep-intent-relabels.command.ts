@@ -10,7 +10,7 @@ export interface IntentRelabelSweepReport {
 
 /**
  * **Le balayage des libellés dus** (plan
- * `documentation/payment/plan-pointage-stripe.md`, lot 2) — le cron
+ * `documentation/payment/le-pointage-stripe.md`, § 3) — le cron
  * `admin/card-payments/labels/sweep`, toutes les cinq minutes : ce que
  * l'envoi d'après validation n'a pas posé.
  */

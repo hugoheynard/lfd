@@ -18,7 +18,7 @@
     anonymisation, ou « Client supprimé » (§8).
 - **À relever au bâti** : chaque ligne du §3 rouverte à la main (✔), et les
   systèmes tiers (Stripe, émetteur de factures, Resend) avec leur geste.
-- **Stripe (2026-11-26)** : depuis `plan-pointage-stripe.md` (lot 1), le nom et
+- **Stripe (2026-11-26)** : depuis `le-pointage-stripe.md` (§ 2), le nom et
   l'e-mail du payeur partent sur un client Stripe, **un par compte
   d'encaissement**, rattaché par `payment.card_customer`. Le geste S1 appelle
   `CardCustomerErasure.eraseCustomersOf(userId)`

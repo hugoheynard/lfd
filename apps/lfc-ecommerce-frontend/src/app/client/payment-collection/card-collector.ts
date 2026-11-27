@@ -28,7 +28,7 @@ export interface MountedCollection {
   /**
    * Le client a validé : on fait payer. `payerName` — le nom du client connecté,
    * transmis au prestataire comme titulaire ; **jamais l'e-mail**, que seul le
-   * serveur pose (doc `documentation/payment/plan-pointage-stripe.md`, lot 4).
+   * serveur pose (doc `documentation/payment/le-pointage-stripe.md`, § 5).
    * Absent, vide ou payeur anonyme (lien de paiement) : rien ne part.
    */
   collect(payerName?: string | null): Promise<CollectOutcome>;

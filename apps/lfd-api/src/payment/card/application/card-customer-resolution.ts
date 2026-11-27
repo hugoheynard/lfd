@@ -14,7 +14,7 @@ export function customerIdempotencyKey(account: PaymentAccount, userId: string):
 
 /**
  * **Le client du payeur sur le compte qui encaisse** (plan
- * `documentation/payment/plan-pointage-stripe.md`, lot 1, objections 2 et 4)
+ * `documentation/payment/le-pointage-stripe.md`, § 2)
  * — relu chez nous, sinon créé chez le prestataire sous une clé déterministe,
  * puis gardé.
  *

@@ -96,7 +96,7 @@ export type IntentCancellation =
 
 /**
  * **Le libellé définitif d'une intention** (plan
- * `documentation/payment/plan-pointage-stripe.md`, lot 2) — la description et
+ * `documentation/payment/le-pointage-stripe.md`, § 3) — la description et
  * les clés de l'appelant, déjà bornées par `IntentLabel`. Rien d'autre ne
  * change : ni montant, ni client.
  */
@@ -154,7 +154,7 @@ export interface RefundParams {
   readonly subjectLabel: string;
   /**
    * Les clés de pointage du sujet (`order_number`, `app`…), déjà bornées par
-   * `IntentLabel` : aucune ne recouvre une clé `lfd_*` (plan-pointage-stripe.md, lot 3).
+   * `IntentLabel` : aucune ne recouvre une clé `lfd_*` (le-pointage-stripe.md, § 4).
    */
   readonly labelMetadata: Readonly<Record<string, string>>;
   /** `null` : le reste du paiement ; sinon le montant exact d'une `amount`, en centimes. */

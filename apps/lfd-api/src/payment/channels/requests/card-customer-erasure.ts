@@ -1,6 +1,6 @@
 /**
  * **Effacer chez le prestataire les clients d'une personne qui supprime son
- * compte** (plan `documentation/payment/plan-pointage-stripe.md`, lot 5) —
+ * compte** (doc `documentation/payment/le-pointage-stripe.md`, § 6) —
  * déclaré par `payment`, à appeler par le parcours « supprimer mon compte »
  * (`documentation/legal/plan-supprimer-mon-compte.md`, lot S1), qui n'est pas
  * encore bâti : ce port n'a ni appelant ni adaptateur.

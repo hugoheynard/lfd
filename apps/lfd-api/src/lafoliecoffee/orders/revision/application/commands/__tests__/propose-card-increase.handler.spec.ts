@@ -58,7 +58,7 @@ async function proposeMore(
   );
 }
 
-describe("ProposeCardIncreaseHandler — le libellé du complément (plan-pointage-stripe.md)", () => {
+describe("ProposeCardIncreaseHandler — le libellé du complément (le-pointage-stripe.md)", () => {
   it("nomme la commande par son numéro, et le client connecté en payeur", async () => {
     const order = await paidOrder();
     const { handler, cards } = increaseScene(order);

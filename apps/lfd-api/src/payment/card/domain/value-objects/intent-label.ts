@@ -23,7 +23,7 @@ export interface IntentLabelInput {
 
 /**
  * **Le libellé d'une intention, tel que le prestataire l'accepte** (plan
- * `documentation/payment/plan-pointage-stripe.md`, lot 1, objection 8).
+ * `documentation/payment/le-pointage-stripe.md`, § 2).
  *
  * Il refuse ce qui ferait échouer l'appel ou écraserait une clé du bloc — une
  * clé mal formée, réservée, ou une clé de trop —, et borne une valeur trop

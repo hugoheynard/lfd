@@ -2,7 +2,7 @@
 // LE CLIENT DU PAYEUR CHEZ LE PRESTATAIRE — schéma `payment`
 // ─────────────────────────────────────────────────────────────────────────────
 //
-// Plan `documentation/payment/plan-pointage-stripe.md`, lot 1 (objection 2).
+// Doc `documentation/payment/le-pointage-stripe.md`, § 2.
 // Propriétaire : `src/payment/card/`.
 
 /// **La correspondance personne → client du prestataire, par compte** — table
