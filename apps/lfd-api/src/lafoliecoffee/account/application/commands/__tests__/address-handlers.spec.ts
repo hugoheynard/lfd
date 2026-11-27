@@ -88,23 +88,28 @@ function membershipReturning(role: CompanyRole | null): MembershipReader {
  * et donc de vérifier l'effet de chaque geste plutôt que le seul fait qu'une
  * méthode ait été appelée.
  */
-function addressesRecorder(recorder: Recorder): CompanyAddressRepository {
-  const book = DeliveryAddressBook.reconstitute({
-    companyId: "c1",
-    entries: [
-      {
-        id: "a1",
-        lines: { ...BILLING },
-        specs: withSlotList(DELIVERY.specs, null),
-        depositAllowed: false,
-        doorstepRule: null,
-        parking: null,
-        createdAt: new Date("2026-01-01T08:00:00Z"),
-        archivedAt: null,
-      },
-    ],
-    defaultId: "a1",
-  });
+function addressesRecorder(
+  recorder: Recorder,
+  given: DeliveryAddressBook | null = null,
+): CompanyAddressRepository {
+  const book =
+    given ??
+    DeliveryAddressBook.reconstitute({
+      companyId: "c1",
+      entries: [
+        {
+          id: "a1",
+          lines: { ...BILLING },
+          specs: withSlotList(DELIVERY.specs, null),
+          depositAllowed: false,
+          doorstepRule: null,
+          parking: null,
+          createdAt: new Date("2026-01-01T08:00:00Z"),
+          archivedAt: null,
+        },
+      ],
+      defaultId: "a1",
+    });
   return {
     findBilling: () => Promise.resolve(null),
     saveBilling: () => {
@@ -275,10 +280,7 @@ describe("handlers d'adresses — les murs member / admin", () => {
       entries: [],
       defaultId: null,
     });
-    const repo: CompanyAddressRepository = {
-      ...addressesRecorder(recorder),
-      loadDeliveryBook: () => Promise.resolve(empty),
-    };
+    const repo = addressesRecorder(recorder, empty);
     await addHandler("orders", recorder, repo).execute(
       new AddDeliveryAddressCommand("u1", "c1", { ...DELIVERY, isDefault: true }, randomUUID()),
     );
